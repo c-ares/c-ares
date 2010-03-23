@@ -80,3 +80,4 @@ ares_set_socket_callback.pdf
 ares_strerror.pdf
 ares_timeout.pdf
 ares_version.pdf
+c-ares-*.tar.gz.asc
