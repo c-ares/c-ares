@@ -2,14 +2,14 @@
 REM
 REM $Id$
 REM
-REM This batch file must be used to set up a CVS tree to build on
+REM This batch file must be used to set up a git tree to build on
 REM systems where there is no autotools support (i.e. Microsoft).
 REM
 REM This file is not included nor needed for c-ares' release
 REM archives, neither for c-ares' daily snapshot archives.
 
-if exist CVS-INFO goto start_doing
-ECHO ERROR: This file shall only be used with a c-ares CVS tree checkout.
+if exist GIT-INFO goto start_doing
+ECHO ERROR: This file shall only be used with a c-ares git checkout.
 goto end_all
 :start_doing
 

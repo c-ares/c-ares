@@ -1,5 +1,8 @@
   Changelog for the c-ares project
 
+* March 23, 2010 (Daniel Stenberg)
+- We switched from CVS to git. See http://github.com/bagder/c-ares
+
 * March 5, 2010 (Daniel Stenberg)
 - Daniel Johnson provided fixes for building with the clang compiler.
 

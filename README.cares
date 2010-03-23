@@ -10,8 +10,8 @@ within the curl project (hence the letter C) and it makes a nice pun. Also,
 c-ares is not API compatible with ares: a new name makes that more obvious to
 the public.
 
-The full source code is available in the 'c-ares' release archives, and in the
-'ares' subdir of the curl CVS source repository.
+The full source code is available in the 'c-ares' release archives, and in a
+git repository: http://github.com/bagder/c-ares
 
 If you find bugs, correct flaws, have questions or have comments in general in
 regard to c-ares (or by all means the original ares too), get in touch with us
@@ -35,7 +35,7 @@ The following notes apply to c-ares version 1.7.0 and later.
 * The distributed ares_build.h file is generated as a copy of ares_build.h.dist
   when the c-ares source code distribution archive file is originally created.
 
-* If you check out from CVS on a non-configure platform, you must run the
+* If you check out from git on a non-configure platform, you must run the
   appropriate buildconf* script to set up ares_build.h and other local files
   before being able of compiling the library.
 
