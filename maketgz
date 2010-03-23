@@ -71,4 +71,4 @@ print "removing temporary configure.ac file\n";
 print "removing temporary ares_version.h file\n";
 `rm ares_version.h.dist`;
 
-print "NOTE: now cvs tag this release!\n";
+print "NOTE: now tag this release!\n";
