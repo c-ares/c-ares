@@ -1,46 +1,60 @@
-This is c-ares, a forked version of the original ares. The original ares
-README follows below, the c-ares specific details are in README.cares
+c-ares
+======
 
-====================================================================
+This is c-ares, an asynchronous resolver library.  It is intended for
+applications which need to perform DNS queries without blocking, or need to
+perform multiple DNS queries in parallel.  The primary examples of such
+applications are servers which communicate with multiple clients and programs
+with graphical user interfaces.
 
-This is ares, an asynchronous resolver library.  It is intended for
-applications which need to perform DNS queries without blocking, or
-need to perform multiple DNS queries in parallel.  The primary
-examples of such applications are servers which communicate with
-multiple clients and programs with graphical user interfaces.
+The full source code is available in the 'c-ares' release archives, and in a
+git repository: http://github.com/bagder/c-ares
 
-This library implementation is not especially portable to crufty old
-systems like SunOS 4.  It assumes a compiler which can handle ANSI C
-syntax, a system malloc which properly handles realloc(NULL, foo) and
-free(NULL), and a reasonably up-to-date <arpa/nameser.h>.
+If you find bugs, correct flaws, have questions or have comments in general in
+regard to c-ares (or by all means the original ares too), get in touch with us
+on the c-ares mailing list: http://cool.haxx.se/mailman/listinfo/c-ares
 
-I have attempted to preserve the externally visible behavior of the
-BIND resolver in nearly all respects.  The API of the library is, of
-course, very different from the synchronous BIND API; instead of
-invoking a function like res_send() and getting a return value back
-indicating the number of bytes in the response, you invoke a function
-like ares_send() and give it a callback function to invoke when the
-response arrives.  You then have to select() on the file descriptors
-indicated by ares_fds(), with a timeout given by ares_timeout().  You
-call ares_process() when select() returns.
+c-ares is of course distributed under the same MIT-style license as the
+original ares.
 
-Some features are missing from the current version of ares, relative
-to the BIND resolver:
+You'll find all c-ares details and news here:
 
-	* There is no IPV6 support.                [not true for c-ares]
-	* There is no hostname verification.
-	* There is no logging of unexpected events.
-	* There is no debugging-oriented logging.
-	* There is no YP support.
+        http://c-ares.haxx.se/
 
-libares requires an ANSI compiler to compile and use.  To build the
-library, just run "./configure" and "make".  To install it, run "make
-install".  Run "./configure --help" to see a list of options you can
-provide to configure to change how the library builds.  libares has no
-data files, so you can move the include file and library around freely
-without leaving behind any dependencies on old paths.  Building the
-library will also build the "adig" program, a little toy for trying
-out the library.  It doesn't get installed.
 
-libares is distributed at athena-dist.mit.edu:pub/ATHENA/ares.  Please
-send bug reports and comments to ghudson@mit.edu.
+NOTES FOR C-ARES HACKERS
+
+The following notes apply to c-ares version 1.7.0 and later.
+
+* The distributed ares_build.h file is only intended to be used on systems
+  which can not run the also distributed configure script.
+
+* The distributed ares_build.h file is generated as a copy of ares_build.h.dist
+  when the c-ares source code distribution archive file is originally created.
+
+* If you check out from git on a non-configure platform, you must run the
+  appropriate buildconf* script to set up ares_build.h and other local files
+  before being able of compiling the library.
+
+* On systems capable of running the configure script, the configure process
+  will overwrite the distributed ares_build.h file with one that is suitable
+  and specific to the library being configured and built, this new file is
+  generated from the ares_build.h.in template file.
+
+* If you intend to distribute an already compiled c-ares library you _MUST_
+  also distribute along with it the generated ares_build.h which has been
+  used to compile it. Otherwise the library will be of no use for the users of
+  the library that you have built. It is _your_ responsability to provide this
+  file. No one at the c-ares project can know how you have built the library.
+
+* File ares_build.h includes platform and configuration dependent info,
+  and must not be modified by anyone. Configure script generates it for you.
+
+* We cannot assume anything else but very basic compiler features being
+  present. While c-ares requires an ANSI C compiler to build, some of the
+  earlier ANSI compilers clearly can't deal with some preprocessor operators.
+
+* Newlines must remain unix-style for older compilers' sake.
+
+* Comments must be written in the old-style /* unnested C-fashion */
+
