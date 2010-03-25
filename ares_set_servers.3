@@ -43,7 +43,7 @@ with more than one name server all the desired ones must be specified in a
 single list.
 
 \fBares_set_servers(3)\fP does not take ownership of the linked list argument.
-The caller is responsible to free the linked list when no longer needed.
+The caller is responsible for freeing the linked list when no longer needed.
 
 This function is capable of handling IPv4 and IPv6 name server
 addresses simultaneously, rendering \fBares_init_options(3)\fP with
@@ -75,7 +75,7 @@ c-ares library initialization not yet performed.
 ares_set_servers(3) was added in c-ares 1.7.1
 .SH AUTHOR
 Implementation of this function and associated library internals are based
-on code, comments and feedback provided November and December of 2008 by
+on code, comments and feedback provided in November and December of 2008 by
 Daniel Stenberg, Gregor Jasny, Phil Blundell and Yang Tse, December 2009
 by Cedric Bail, February 2010 by Jakub Hrozek. On March 2010 Yang Tse
 shuffled all the bits and this function popped out.

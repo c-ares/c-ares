@@ -27,7 +27,7 @@ Version 1.7.1 (Mar 23, 2010)
   functions do not support IPv6 name servers. This implies that if the user
   is capable of defining or providing an IPv6 name server, and the app is
   using ares_init_options() or ares_save_options() at some point to handle
-  the name servers, the app will likely loose IPv6 name servers.
+  the name servers, the app will likely lose IPv6 name servers.
 
 * January 28, 2010 (Daniel Stenberg)
 - Tommie Gannert pointed out a silly bug in ares_process_fd() since it didn't

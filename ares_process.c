@@ -948,7 +948,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
    * Disable the Nagle algorithm (only relevant for TCP sockets, and thus not
    * in configure_socket). In general, in DNS lookups we're pretty much
    * interested in firing off a single request and then waiting for a reply,
-   * so batching isn't very interesting in general.
+   * so batching isn't very interesting.
    */
   opt = 1;
   if (setsockopt(s, IPPROTO_TCP, TCP_NODELAY,
