@@ -1,7 +1,6 @@
 #ifndef __SETUP_ONCE_H
 #define __SETUP_ONCE_H
 
-/* $Id$ */
 
 /* Copyright (C) 2004 - 2009 by Daniel Stenberg et al
  *

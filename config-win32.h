@@ -1,7 +1,6 @@
 #ifndef __ARES_CONFIG_WIN32_H
 #define __ARES_CONFIG_WIN32_H
 
-/* $Id$ */
 
 /* Copyright (C) 2004 - 2008 by Daniel Stenberg et al
  *

@@ -1,6 +1,5 @@
 /* Copyright 1998 by the Massachusetts Institute of Technology.
  *
- * $Id$
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without

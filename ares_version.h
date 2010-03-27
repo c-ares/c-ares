@@ -1,4 +1,3 @@
-/* $Id$ */
 
 #ifndef ARES__VERSION_H
 #define ARES__VERSION_H

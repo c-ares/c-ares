@@ -1,5 +1,4 @@
 #############################################################
-# $Id$
 #
 ## Makefile for building libcares.a with MingW32 (GCC-3.2)
 ## Use: make -f Makefile.m32 [demos]

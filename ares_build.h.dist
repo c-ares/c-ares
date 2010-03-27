@@ -1,7 +1,6 @@
 #ifndef __CARES_BUILD_H
 #define __CARES_BUILD_H
 
-/* $Id$ */
 
 /* Copyright (C) 2009 - 2010 by Daniel Stenberg et al
  *

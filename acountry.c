@@ -1,5 +1,4 @@
 /*
- * $Id$
  *
  * IP-address/hostname to country converter.
  *

@@ -1,7 +1,6 @@
 #ifndef HEADER_CARES_SETUP_H
 #define HEADER_CARES_SETUP_H
 
-/* $Id$ */
 
 /* Copyright (C) 2004 - 2009 by Daniel Stenberg et al
  *
