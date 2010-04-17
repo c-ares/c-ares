@@ -44,6 +44,12 @@ will free the whole linked list of ares_srv_reply structures returned
 by ares_parse_srv_reply(3), along with any additional storage
 associated with those structures.
 .TP
+.B ares_parse_mx_reply(3)
+When used to free the data returned by ares_parse_mx_reply(3) this
+will free the whole linked list of ares_mx_reply structures returned
+by ares_parse_mx_reply(3), along with any additional storage
+associated with those structures.
+.TP
 .B ares_parse_txt_reply(3)
 When used to free the data returned by ares_parse_txt_reply(3) this
 will free the whole linked list of ares_txt_reply structures returned
@@ -56,6 +62,7 @@ This function was first introduced in c-ares version 1.7.0.
 .SH SEE ALSO
 .BR ares_get_servers(3),
 .BR ares_parse_srv_reply(3),
+.BR ares_parse_mx_reply(3),
 .BR ares_parse_txt_reply(3)
 .SH AUTHOR
 Yang Tse
