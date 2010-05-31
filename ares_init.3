@@ -109,7 +109,7 @@ or the domain derived from the kernel hostname variable.
 .B ARES_OPT_LOOKUPS
 .B char *\fIlookups\fP;
 .br
-The lookups to perform for host queries.  
+The lookups to perform for host queries.
 .I lookups
 should be set to a string of the characters "b" or "f", where "b"
 indicates a DNS lookup and "f" indicates a lookup in the hosts file.
@@ -189,6 +189,27 @@ The process's available memory was exhausted.
 .TP 14
 .B ARES_ENOTINITIALIZED
 c-ares library initialization not yet performed.
+.SH NOTES
+When initializing from
+.B /etc/resolv.conf,
+.BR ares_init (3)
+reads the
+.I domain
+and
+.I search
+directives to allow lookups of short names relative to the domains
+specified. The
+.I domain
+and
+.I search
+directives override one another. If more that one instance of either
+.I domain
+or
+.I search
+directives is specified, the last occurence wins. For more information,
+please see the
+.BR resolv.conf (5)
+manual page.
 .SH SEE ALSO
 .BR ares_destroy(3),
 .BR ares_dup(3),

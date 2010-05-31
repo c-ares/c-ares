@@ -2,6 +2,9 @@
 
 Version 1.7.1 (Mar 23, 2010)
 
+* May 31, 2010 (Jakub Hrozek)
+- Use the last instance of domain/search, not the first one
+
 * March 23, 2010 (Daniel Stenberg)
 - We switched from CVS to git. See http://github.com/bagder/c-ares
 
