@@ -1,16 +1,17 @@
-This is what's new and changed in the c-ares 1.7.2 release:
+c-ares version 1.7.2
 
 Changed:
 
- o 
+ o Added ares_parse_mx_reply()
 
 Fixed:
 
- o 
-
+ o ares_init: Last, not first instance of domain or search should win
+ o improve alternative definition of bool
+ o fix VS2010 compiler warnings
 
 Thanks go to these friendly people for their efforts and contributions:
 
- 
+ Yang Tse, Tor Arntsen, Peter Pentchev, Jeremy Lal, Jakub Hrozek
 
 Have fun!
