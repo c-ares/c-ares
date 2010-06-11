@@ -1,5 +1,12 @@
   Changelog for the c-ares project
 
+Version 1.7.3 (June 11, 2010)
+
+Fixed:
+
+ o builds on Android
+ o now includes all files necessary to build it (1.7.2 lacked a file)
+
 Version 1.7.2 (June 10, 2010)
 
 Changed:

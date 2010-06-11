@@ -1,17 +1,12 @@
-c-ares version 1.7.2
-
-Changed:
-
- o Added ares_parse_mx_reply()
+c-ares version 1.7.3
 
 Fixed:
 
- o ares_init: Last, not first instance of domain or search should win
- o improve alternative definition of bool
- o fix VS2010 compiler warnings
+ o builds on Android
+ o now includes all files necessary to build it (1.7.2 lacked a file)
 
 Thanks go to these friendly people for their efforts and contributions:
 
- Yang Tse, Tor Arntsen, Peter Pentchev, Jeremy Lal, Jakub Hrozek
+ Yang Tse, Bogdan Vatra
 
 Have fun!
