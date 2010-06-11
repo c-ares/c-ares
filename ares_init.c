@@ -69,6 +69,10 @@
 #include "ares_library_init.h"
 #include "ares_private.h"
 
+#ifdef ANDROID
+#include <sys/system_properties.h>
+#endif
+
 #ifdef WATT32
 #undef WIN32  /* Redefined in MingW/MSVC headers */
 #endif
@@ -824,6 +828,12 @@ DhcpNameServer
       servers[i].addr.addrV4.s_addr = htonl(def_nameservers[i]);
   status = ARES_EOF;
 
+#elif defined(ANDROID)
+  char value[PROP_VALUE_MAX]="";
+  __system_property_get("net.dns1", value);
+  status = config_nameserver(&servers, &nservers, value);
+  if (status == ARES_SUCCESS)
+    status = ARES_EOF;
 #else
   {
     char *p;
