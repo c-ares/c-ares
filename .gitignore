@@ -81,3 +81,4 @@ ares_strerror.pdf
 ares_timeout.pdf
 ares_version.pdf
 c-ares-*.tar.gz.asc
+ares_parse_mx_reply.pdf
