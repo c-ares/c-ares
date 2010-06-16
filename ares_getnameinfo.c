@@ -243,6 +243,7 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
       niquery->callback(niquery->arg, ARES_SUCCESS, niquery->timeouts,
                         (char *)(host->h_name),
                         service);
+      free(niquery);
       return;
     }
   /* We couldn't find the host, but it's OK, we can use the IP */
@@ -273,6 +274,7 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
         }
       niquery->callback(niquery->arg, ARES_SUCCESS, niquery->timeouts, ipbuf,
                         service);
+      free(niquery);
       return;
     }
   niquery->callback(niquery->arg, status, niquery->timeouts, NULL, NULL);
