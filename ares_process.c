@@ -91,7 +91,6 @@ static void skip_server(ares_channel channel, struct query *query,
                         int whichserver);
 static void next_server(ares_channel channel, struct query *query,
                         struct timeval *now);
-static int configure_socket(ares_socket_t s, ares_channel channel);
 static int open_tcp_socket(ares_channel channel, struct server_state *server);
 static int open_udp_socket(ares_channel channel, struct server_state *server);
 static int same_questions(const unsigned char *qbuf, int qlen,
@@ -869,7 +868,7 @@ static int setsocknonblock(ares_socket_t sockfd,    /* operate on this */
 #endif
 }
 
-static int configure_socket(ares_socket_t s, ares_channel channel)
+static int configure_socket(ares_socket_t s, int family, ares_channel channel)
 {
   setsocknonblock(s, TRUE);
 
@@ -892,8 +891,39 @@ static int configure_socket(ares_socket_t s, ares_channel channel)
                  sizeof(channel->socket_receive_buffer_size)) == -1)
     return -1;
 
+#ifdef SO_BINDTODEVICE
+  if (channel->local_dev_name[0]) {
+    if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE,
+                   channel->local_dev_name, sizeof(channel->local_dev_name))) {
+      /* Only root can do this, and usually not fatal if it doesn't work, so */
+      /* just continue on. */
+    }
+  }
+#endif
+
+  if (family == AF_INET) {
+    if (channel->local_ip4) {
+      struct sockaddr_in sa;
+      memset(&sa, 0, sizeof(sa));
+      sa.sin_family = AF_INET;
+      sa.sin_addr.s_addr = htonl(channel->local_ip4);
+      if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
+        return -1;
+    }
+  }
+  else if (family == AF_INET6) {
+    if (memcmp(channel->local_ip6, &in6addr_any, sizeof(channel->local_ip6)) != 0) {
+      struct sockaddr_in6 sa;
+      memset(&sa, 0, sizeof(sa));
+      sa.sin6_family = AF_INET6;
+      memcpy(&sa.sin6_addr, channel->local_ip6, sizeof(channel->local_ip6));
+      if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
+        return -1;
+    }
+  }
+
   return 0;
- }
+}
 
 static int open_tcp_socket(ares_channel channel, struct server_state *server)
 {
@@ -936,7 +966,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
     return -1;
 
   /* Configure it. */
-  if (configure_socket(s, channel) < 0)
+  if (configure_socket(s, server->addr.family, channel) < 0)
     {
        sclose(s);
        return -1;
@@ -1028,7 +1058,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
     return -1;
 
   /* Set the socket non-blocking. */
-  if (configure_socket(s, channel) < 0)
+  if (configure_socket(s, server->addr.family, channel) < 0)
     {
        sclose(s);
        return -1;

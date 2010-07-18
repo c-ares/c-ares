@@ -172,6 +172,10 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->last_server = 0;
   channel->last_timeout_processed = (time_t)now.tv_sec;
 
+  memset(&channel->local_dev_name, 0, sizeof(channel->local_dev_name));
+  channel->local_ip4 = 0;
+  memset(&channel->local_ip6, 0, sizeof(channel->local_ip6));
+
   /* Initialize our lists of queries */
   ares__init_list_head(&(channel->all_queries));
   for (i = 0; i < ARES_QID_TABLE_SIZE; i++)
@@ -285,6 +289,10 @@ int ares_dup(ares_channel *dest, ares_channel src)
   /* Now clone the options that ares_save_options() doesn't support. */
   (*dest)->sock_create_cb      = src->sock_create_cb;
   (*dest)->sock_create_cb_data = src->sock_create_cb_data;
+
+  strncpy((*dest)->local_dev_name, src->local_dev_name, sizeof(src->local_dev_name));
+  (*dest)->local_ip4 = src->local_ip4;
+  memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
 
   /* Full name server cloning required when not all are IPv4 */
   for (i = 0; i < src->nservers; i++)
@@ -1603,6 +1611,28 @@ unsigned short ares__generate_new_id(rc4_key* key)
   ares__rc4(key, (unsigned char *)&r, sizeof(r));
   return r;
 }
+
+void ares_set_local_ip4(ares_channel channel, uint32_t local_ip)
+{
+  channel->local_ip4 = local_ip;
+}
+
+/* local_ip6 should be 16 bytes in length */
+void ares_set_local_ip6(ares_channel channel,
+                        const unsigned char* local_ip6)
+{
+  memcpy(&channel->local_ip6, local_ip6, sizeof(channel->local_ip6));
+}
+
+/* local_dev_name should be null terminated. */
+void ares_set_local_dev(ares_channel channel,
+                        const char* local_dev_name)
+{
+  strncpy(channel->local_dev_name, local_dev_name,
+          sizeof(channel->local_dev_name));
+  channel->local_dev_name[sizeof(channel->local_dev_name) - 1] = 0;
+}
+
 
 void ares_set_socket_callback(ares_channel channel,
                               ares_sock_create_callback cb,
