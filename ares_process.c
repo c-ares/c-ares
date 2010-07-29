@@ -912,7 +912,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
     }
   }
   else if (family == AF_INET6) {
-    if (memcmp(channel->local_ip6, &in6addr_any, sizeof(channel->local_ip6)) != 0) {
+    if (memcmp(channel->local_ip6, &ares_in6addr_any, sizeof(channel->local_ip6)) != 0) {
       struct sockaddr_in6 sa;
       memset(&sa, 0, sizeof(sa));
       sa.sin6_family = AF_INET6;

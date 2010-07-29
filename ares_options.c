@@ -131,8 +131,6 @@ int ares_set_servers(ares_channel channel,
 int ares_set_servers_csv(ares_channel channel,
                          const char* _csv)
 {
-  struct ares_addr_node *srvr;
-  int num_srvrs = 0;
   int i;
   char* csv = NULL;
   char* ptr;
@@ -162,10 +160,9 @@ int ares_set_servers_csv(ares_channel channel,
     csv[i+1] = 0;
   }
 
-  ptr = csv;
   start_host = csv;
   found_port = false;
-  for (ptr; *ptr; ptr++) {
+  for (ptr = csv; *ptr; ptr++) {
     if (*ptr == ',') {
       char* pp = ptr - 1;
       struct in_addr in4;

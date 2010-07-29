@@ -46,6 +46,10 @@
 #include "ares_ipv6.h"
 #include "inet_net_pton.h"
 
+
+const struct ares_in6_addr ares_in6addr_any = { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 } } };
+
+
 #if !defined(HAVE_INET_NET_PTON) || !defined(HAVE_INET_NET_PTON_IPV6)
 
 /*
