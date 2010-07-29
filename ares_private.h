@@ -261,7 +261,7 @@ struct ares_channeldata {
    * them null/zero for no binding.
    */
   char local_dev_name[32];
-  uint32_t local_ip4;
+  unsigned int local_ip4;
   unsigned char local_ip6[16];
 
   int optmask; /* the option bitfield passed in at init time */

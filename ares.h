@@ -317,7 +317,7 @@ CARES_EXTERN void ares_cancel(ares_channel channel);
  * connection.  Use these to specify source IP and/or network device
  * on multi-homed systems.
  */
-CARES_EXTERN void ares_set_local_ip4(ares_channel channel, uint32_t local_ip);
+CARES_EXTERN void ares_set_local_ip4(ares_channel channel, unsigned int local_ip);
 
 /* local_ip6 should be 16 bytes in length */
 CARES_EXTERN void ares_set_local_ip6(ares_channel channel,
