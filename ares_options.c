@@ -178,7 +178,7 @@ int ares_set_servers_csv(ares_channel channel,
       while (pp > start_host) {
         if (*pp == ':')
           break; /* yes */
-        if (!isdigit((int)(*pp))) {
+        if (!ISDIGIT(*pp)) {
           /* Found end of digits before we found :, so wasn't a port */
           pp = ptr;
           break;
