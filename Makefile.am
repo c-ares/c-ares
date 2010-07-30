@@ -99,6 +99,9 @@ endif
 
 libcares_la_LDFLAGS = $(UNDEF) $(VER)
 
+# Add -Werror if defined
+CFLAGS += @CARES_CFLAG_EXTRAS@
+
 # Makefile.inc provides the CSOURCES and HHEADERS defines
 include Makefile.inc
 

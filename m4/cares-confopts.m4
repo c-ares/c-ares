@@ -253,6 +253,37 @@ AC_HELP_STRING([--disable-warnings],[Disable strict compiler warnings]),
   AC_MSG_RESULT([$want_warnings])
 ])
 
+dnl CARES_CHECK_OPTION_WERROR
+dnl -------------------------------------------------
+dnl Verify if configure has been invoked with option
+dnl --enable-werror or --disable-werror, and set
+dnl shell variable want_werror as appropriate.
+
+AC_DEFUN([CARES_CHECK_OPTION_WERROR], [
+  AC_MSG_CHECKING([whether to treat compile warnings as errors])
+  OPT_COMPILER_WERROR="default"
+  AC_ARG_ENABLE(werror,
+AC_HELP_STRING([--enable-werror],[Treat compile warnings as errors])
+AC_HELP_STRING([--disable-warnings],[Don't treat compile warnings as werrors]),
+  OPT_COMPILER_WERROR=$enableval)
+  case "$OPT_COMPILER_WERROR" in
+    no)
+      dnl --disable-werror option used
+      want_werror="no"
+      ;;
+    default)
+      dnl configure option not specified, so
+      dnl use same setting as --enable-debug
+      want_werror="no"
+      ;;
+    *)
+      dnl --enable-werror option used
+      want_werror="yes"
+      ;;
+  esac
+  AC_MSG_RESULT([$want_werror])
+])
+
 
 dnl CARES_CHECK_NONBLOCKING_SOCKET
 dnl -------------------------------------------------
