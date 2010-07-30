@@ -1612,7 +1612,7 @@ unsigned short ares__generate_new_id(rc4_key* key)
   return r;
 }
 
-void ares_set_local_ip4(ares_channel channel, uint32_t local_ip)
+void ares_set_local_ip4(ares_channel channel, unsigned int local_ip)
 {
   channel->local_ip4 = local_ip;
 }
