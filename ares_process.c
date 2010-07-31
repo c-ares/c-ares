@@ -495,7 +495,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
         else if (!((from.ss_family == server->addr.family) &&
                    same_address((struct sockaddr *)&from, &server->addr)))
 #else
-        else if (!same_address((struct sockaddr *)&from, &server->addr)))
+        else if (!same_address((struct sockaddr *)&from, &server->addr))
 #endif
           /* The address the response comes from does not match
            * the address we sent the request to. Someone may be
