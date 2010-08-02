@@ -52,9 +52,10 @@ noinst_PROGRAMS =$(PROGS)
 # adig and ahost are just sample programs and thus not mentioned with the
 # regular sources and headers
 EXTRA_DIST = AUTHORS CHANGES README.cares Makefile.inc Makefile.dj	   \
- Makefile.m32 Makefile.netware Makefile.msvc $(man_MANS) $(MSVCFILES)	   \
+ Makefile.m32 Makefile.netware Makefile.msvc Makefile.Watcom $(man_MANS)   \
  config-win32.h RELEASE-NOTES libcares.pc.in buildconf get_ver.awk maketgz \
- TODO ares_build.h.in $(PDFPAGES) cares.rc README.msvc $(CSOURCES) $(HHEADERS)
+ TODO ares_build.h.in $(PDFPAGES) cares.rc README.msvc $(MSVCFILES)	   \
+ $(CSOURCES) $(HHEADERS)
 
 CLEANFILES = $(PDFPAGES) $(HTMLPAGES)
 
