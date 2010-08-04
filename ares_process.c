@@ -434,7 +434,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
   unsigned char buf[PACKETSZ + 1];
 #ifdef HAVE_RECVFROM
   ares_socklen_t fromlen;
-#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE_SSFAM
   struct sockaddr_storage from;
 #else
   union {
@@ -488,7 +488,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
         else if (count <= 0)
           handle_error(channel, i, now);
 #ifdef HAVE_RECVFROM
-#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE_SSFAM
         /* This family hack works around compiler warnings about
          * aliases.
          */
@@ -1186,7 +1186,7 @@ static int same_address(struct sockaddr *sa, struct ares_addr *aa)
   void *addr1;
   void *addr2;
 
-#ifndef HAVE_STRUCT_SOCKADDR_STORAGE
+#ifndef HAVE_STRUCT_SOCKADDR_STORAGE_SSFAM
   if (sa->sa_family == aa->family)
     {
 #endif
@@ -1207,7 +1207,7 @@ static int same_address(struct sockaddr *sa, struct ares_addr *aa)
           default:
             break;
         }
-#ifndef HAVE_STRUCT_SOCKADDR_STORAGE
+#ifndef HAVE_STRUCT_SOCKADDR_STORAGE_SSFAM
     }
 #endif
   return 0; /* different */

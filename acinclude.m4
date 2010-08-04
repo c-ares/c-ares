@@ -669,6 +669,45 @@ AC_DEFUN([TYPE_SOCKADDR_STORAGE],
    ])
 ])
 
+dnl TYPE_SOCKADDR_STORAGE_SSFAM
+dnl -------------------------------------------------
+dnl Check for struct sockaddr_storage.ss_family
+dnl Seems some AIX systems don't have this.
+
+AC_DEFUN([TYPE_SOCKADDR_STORAGE_SSFAM],
+[
+   CARES_CHECK_STRUCT_MEMBER(
+   [
+#undef inline
+#ifdef HAVE_WINDOWS_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#endif
+#else
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#endif
+],
+	[sockaddr_storage], [ss_family],
+        AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE_SSFAM, 1,
+                  [if struct sockaddr_storage.ss_family is defined]), ,
+   )
+])
+
 
 dnl CURL_CHECK_NI_WITHSCOPEID
 dnl -------------------------------------------------
@@ -1894,6 +1933,26 @@ AC_DEFUN([CARES_CHECK_STRUCT], [
   else
     AC_MSG_RESULT(no)
     $4
+  fi
+])
+
+dnl This macro determines if the specified struct member exists in the specified file
+dnl Syntax:
+dnl CARES_CHECK_STRUCT_MEMBER(headers, struct name, member, if found, [if not found])
+
+AC_DEFUN([CARES_CHECK_STRUCT_MEMBER], [
+  AC_MSG_CHECKING([for struct $2.$3])
+  AC_TRY_COMPILE([$1], 
+    [
+      struct $2 struct_instance;
+      void* foo = &(struct_instance.$3);
+    ], ac_struct_member="yes", ac_found="no")
+  if test "$ac_struct_member" = "yes" ; then
+    AC_MSG_RESULT(yes)
+    $4
+  else
+    AC_MSG_RESULT(no)
+    $5
   fi
 ])
 
