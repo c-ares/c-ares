@@ -10,7 +10,10 @@ SYS_INCL = -I$(%watcom)\h\nt -I$(%watcom)\h
 SYS_LIBS = $(%watcom)\lib386\nt;$(%watcom)\lib386
 !endif
 
-TARGETS = cares_wc.dll cares_wc_imp.lib cares_wc.lib
+!ifndef %libname
+LIBNAME	= cares-1
+!endif
+TARGETS = $(LIBNAME).dll $(LIBNAME)_imp.lib $(LIBNAME).lib
 DEMOS   = adig.exe ahost.exe acountry.exe
 
 CC = wcc386
@@ -95,19 +98,19 @@ $(OBJ_BASE):
 $(ARESBUILDH): .EXISTSONLY
 	$(CP) $^@.dist $^@
 
-cares_wc.dll cares_wc_imp.lib: $(OBJS_DYN) $(RESOURCE) $(LINK_ARG)
-	$(LD) name cares_wc.dll @$(LINK_ARG)
+$(LIBNAME).dll: $(OBJS_DYN) $(RESOURCE) $(LINK_ARG)
+	$(LD) name $^@ @$]@
 
-cares_wc.lib: $(OBJS_STAT) $(LIB_ARG)
-	$(AR) -q -b -c $^@ @$(LIB_ARG)
+$(LIBNAME).lib: $(OBJS_STAT) $(LIB_ARG)
+	$(AR) -q -b -c $^@ @$]@
 
-adig.exe: $(OBJ_BASE)\demos\adig.obj $(OBJ_BASE)\demos\ares_getopt.obj cares_wc.lib
+adig.exe: $(OBJ_BASE)\demos\adig.obj $(OBJ_BASE)\demos\ares_getopt.obj $(LIBNAME).lib
 	$(LD) name $^@ system nt $(LFLAGS) file { $[@ $(OBJ_BASE)\demos\ares_getopt.obj } library $]@, ws2_32.lib
 
-ahost.exe: $(OBJ_BASE)\demos\ahost.obj $(OBJ_BASE)\demos\ares_getopt.obj cares_wc.lib
+ahost.exe: $(OBJ_BASE)\demos\ahost.obj $(OBJ_BASE)\demos\ares_getopt.obj $(LIBNAME).lib
 	$(LD) name $^@ system nt $(LFLAGS) file { $[@ $(OBJ_BASE)\demos\ares_getopt.obj } library $]@, ws2_32.lib
 
-acountry.exe: $(OBJ_BASE)\demos\acountry.obj $(OBJ_BASE)\demos\ares_getopt.obj cares_wc.lib
+acountry.exe: $(OBJ_BASE)\demos\acountry.obj $(OBJ_BASE)\demos\ares_getopt.obj $(LIBNAME).lib
 	$(LD) name $^@ system nt $(LFLAGS) file { $[@ $(OBJ_BASE)\demos\ares_getopt.obj } library $]@, ws2_32.lib
 
 clean: .SYMBOLIC
@@ -116,7 +119,7 @@ clean: .SYMBOLIC
 	-$(RM) $(RESOURCE) $(LINK_ARG) $(LIB_ARG)
 
 vclean realclean: clean .SYMBOLIC
-	-$(RM) $(TARGETS) cares_wc.map
+	-$(RM) $(TARGETS) $(LIBNAME).map
 	-$(RM) $(DEMOS) $(DEMOS:.exe=.map)
 	-$(RD) $(OBJ_BASE)\stat
 	-$(RD) $(OBJ_BASE)\dyn
@@ -143,7 +146,7 @@ $(LINK_ARG): $(__MAKEFILES__)
 	%create $^@
 	@%append $^@ system nt dll
 	@%append $^@ file { $(OBJS_DYN) }
-	@%append $^@ option res=$(RESOURCE), implib=cares_wc_imp.lib 
+	@%append $^@ option res=$(RESOURCE), implib=$(LIBNAME)_imp.lib 
 	@%append $^@ $(LFLAGS)
 	@%append $^@ libpath $(SYS_LIBS)
 #	@%append $^@ library clib3r.lib
