@@ -11,7 +11,7 @@ SYS_LIBS = $(%watcom)\lib386\nt;$(%watcom)\lib386
 !endif
 
 !ifndef %libname
-LIBNAME	= cares-1
+LIBNAME	= cares
 !endif
 TARGETS = $(LIBNAME).dll $(LIBNAME)_imp.lib $(LIBNAME).lib
 DEMOS   = adig.exe ahost.exe acountry.exe
