@@ -1,7 +1,7 @@
 #***************************************************************************
 # $Id$
 #
-# Copyright (C) 2008 - 2009 by Daniel Stenberg et al
+# Copyright (C) 2008 - 2010 by Daniel Stenberg et al
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted, provided
@@ -16,7 +16,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 8
+# serial 9
 
 
 dnl CARES_CHECK_OPTION_CURLDEBUG
@@ -228,6 +228,7 @@ dnl shell variable want_warnings as appropriate.
 
 AC_DEFUN([CARES_CHECK_OPTION_WARNINGS], [
   AC_REQUIRE([CARES_CHECK_OPTION_DEBUG])dnl
+  AC_BEFORE([$0],[CARES_CHECK_OPTION_WERROR])dnl
   AC_BEFORE([$0],[CARES_CHECK_PROG_CC])dnl
   AC_MSG_CHECKING([whether to enable strict compiler warnings])
   OPT_COMPILER_WARNINGS="default"
@@ -260,11 +261,12 @@ dnl --enable-werror or --disable-werror, and set
 dnl shell variable want_werror as appropriate.
 
 AC_DEFUN([CARES_CHECK_OPTION_WERROR], [
-  AC_MSG_CHECKING([whether to treat compile warnings as errors])
+  AC_BEFORE([$0],[CARES_CHECK_COMPILER])dnl
+  AC_MSG_CHECKING([whether to enable compiler warnings as errors])
   OPT_COMPILER_WERROR="default"
   AC_ARG_ENABLE(werror,
-AC_HELP_STRING([--enable-werror],[Treat compile warnings as errors])
-AC_HELP_STRING([--disable-warnings],[Don't treat compile warnings as werrors]),
+AC_HELP_STRING([--enable-werror],[Enable compiler warnings as errors])
+AC_HELP_STRING([--disable-werror],[Disable compiler warnings as errors]),
   OPT_COMPILER_WERROR=$enableval)
   case "$OPT_COMPILER_WERROR" in
     no)
@@ -272,8 +274,7 @@ AC_HELP_STRING([--disable-warnings],[Don't treat compile warnings as werrors]),
       want_werror="no"
       ;;
     default)
-      dnl configure option not specified, so
-      dnl use same setting as --enable-debug
+      dnl configure option not specified
       want_werror="no"
       ;;
     *)
