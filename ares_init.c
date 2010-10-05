@@ -401,10 +401,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
     if (!options->sortlist)
       return ARES_ENOMEM;
     for (i = 0; i < channel->nsort; i++)
-    {
-      memcpy(&(options->sortlist[i]), &(channel->sortlist[i]),
-             sizeof(struct apattern));
-    }
+      options->sortlist[i] = channel->sortlist[i];
   }
   options->nsort = channel->nsort;
 
