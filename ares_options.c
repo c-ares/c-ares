@@ -18,15 +18,15 @@
 
 #include "ares_setup.h"
 
-#include "ares.h"
-#include "ares_data.h"
-#include "ares_private.h"
-#include "inet_net_pton.h"
-
-/* For inet_pton */
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
+
+#include "ares.h"
+#include "ares_data.h"
+#include "inet_net_pton.h"
+#include "ares_private.h"
+
 
 int ares_get_servers(ares_channel channel,
                      struct ares_addr_node **servers)
