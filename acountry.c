@@ -558,8 +558,8 @@ static void find_country_from_cname(const char *cname, struct in_addr addr)
   unsigned long ip;
 
   ip = ntohl(addr.s_addr);
-  z0 = tolower(cname[0]);
-  z1 = tolower(cname[1]);
+  z0 = TOLOWER(cname[0]);
+  z1 = TOLOWER(cname[1]);
   ccopy = strdup(cname);
   dot_4 = NULL;
 
@@ -577,8 +577,8 @@ static void find_country_from_cname(const char *cname, struct in_addr addr)
     }
   else if (ver_2)
     {
-      z0 = tolower(dot_4[1]);
-      z1 = tolower(dot_4[2]);
+      z0 = TOLOWER(dot_4[1]);
+      z1 = TOLOWER(dot_4[2]);
       if (z0 != 'z' && z1 != 'z')
         {
           printf("Unexpected CNAME %s (ver_2)\n", cname);
@@ -593,8 +593,8 @@ static void find_country_from_cname(const char *cname, struct in_addr addr)
 
   if (ver_1)
     {
-      ccode_A2[0] = (char)tolower(cname[2]);
-      ccode_A2[1] = (char)tolower(cname[3]);
+      ccode_A2[0] = (char)TOLOWER(cname[2]);
+      ccode_A2[1] = (char)TOLOWER(cname[3]);
       ccode_A2[2] = '\0';
     }
   else

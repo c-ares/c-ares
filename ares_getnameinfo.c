@@ -408,8 +408,8 @@ static char *ares_striendstr(const char *s1, const char *s2)
   c2 = s2;
   while (c2 < s2+s2_len)
     {
-      lo1 = tolower(*c1);
-      lo2 = tolower(*c2);
+      lo1 = TOLOWER(*c1);
+      lo2 = TOLOWER(*c2);
       if (lo1 != lo2)
         return NULL;
       else
