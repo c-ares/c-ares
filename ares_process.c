@@ -478,7 +478,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
         else
           fromlen = sizeof(from.sa6);
         count = (ssize_t)recvfrom(server->udp_socket, (void *)buf, sizeof(buf),
-                                  0, (struct sockaddr *)&from, &fromlen);
+                                  0, (void *)&from, &fromlen);
 #else
         count = sread(server->udp_socket, buf, sizeof(buf));
 #endif
@@ -487,7 +487,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
         else if (count <= 0)
           handle_error(channel, i, now);
 #ifdef HAVE_RECVFROM
-        else if (!same_address((struct sockaddr *)&from, &server->addr))
+        else if (!same_address((void *)&from, &server->addr))
           /* The address the response comes from does not match
            * the address we sent the request to. Someone may be
            * attempting to perform a cache poisoning attack. */
