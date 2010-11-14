@@ -435,6 +435,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
 #ifdef HAVE_RECVFROM
   ares_socklen_t fromlen;
   union {
+    struct sockaddr     sa;
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
   } from;
@@ -478,7 +479,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
         else
           fromlen = sizeof(from.sa6);
         count = (ssize_t)recvfrom(server->udp_socket, (void *)buf, sizeof(buf),
-                                  0, (struct sockaddr *)&from, &fromlen);
+                                  0, &from.sa, &fromlen);
 #else
         count = sread(server->udp_socket, buf, sizeof(buf));
 #endif
@@ -487,7 +488,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
         else if (count <= 0)
           handle_error(channel, i, now);
 #ifdef HAVE_RECVFROM
-        else if (!same_address((struct sockaddr *)&from, &server->addr))
+        else if (!same_address(&from.sa, &server->addr))
           /* The address the response comes from does not match
            * the address we sent the request to. Someone may be
            * attempting to perform a cache poisoning attack. */
@@ -870,6 +871,12 @@ static int setsocknonblock(ares_socket_t sockfd,    /* operate on this */
 
 static int configure_socket(ares_socket_t s, int family, ares_channel channel)
 {
+  union {
+    struct sockaddr     sa;
+    struct sockaddr_in  sa4;
+    struct sockaddr_in6 sa6;
+  } local;
+
   setsocknonblock(s, TRUE);
 
 #if defined(FD_CLOEXEC) && !defined(MSDOS)
@@ -903,21 +910,19 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
 
   if (family == AF_INET) {
     if (channel->local_ip4) {
-      struct sockaddr_in sa;
-      memset(&sa, 0, sizeof(sa));
-      sa.sin_family = AF_INET;
-      sa.sin_addr.s_addr = htonl(channel->local_ip4);
-      if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
+      memset(&local.sa4, 0, sizeof(local.sa4));
+      local.sa4.sin_family = AF_INET;
+      local.sa4.sin_addr.s_addr = htonl(channel->local_ip4);
+      if (bind(s, &local.sa, sizeof(local.sa4)) < 0)
         return -1;
     }
   }
   else if (family == AF_INET6) {
     if (memcmp(channel->local_ip6, &ares_in6addr_any, sizeof(channel->local_ip6)) != 0) {
-      struct sockaddr_in6 sa;
-      memset(&sa, 0, sizeof(sa));
-      sa.sin6_family = AF_INET6;
-      memcpy(&sa.sin6_addr, channel->local_ip6, sizeof(channel->local_ip6));
-      if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
+      memset(&local.sa6, 0, sizeof(local.sa6));
+      local.sa6.sin6_family = AF_INET6;
+      memcpy(&local.sa6.sin6_addr, channel->local_ip6, sizeof(channel->local_ip6));
+      if (bind(s, &local.sa, sizeof(local.sa6)) < 0)
         return -1;
     }
   }
