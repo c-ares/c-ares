@@ -114,7 +114,7 @@ void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
     }
   else
     {
-      callback(arg, ARES_EBADFAMILY, 0, NULL, NULL);
+      callback(arg, ARES_ENOTIMP, 0, NULL, NULL);
       return;
     }
 
