@@ -99,20 +99,22 @@ void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
   struct nameinfo_query *niquery;
   unsigned int port = 0;
 
-  /* Verify the buffer size */
-  if (salen == sizeof(struct sockaddr_in))
+  /* Validate socket address family and length */
+  if ((sa->sa_family == AF_INET) &&
+      (salen == sizeof(struct sockaddr_in)))
     {
       addr = (struct sockaddr_in *)sa;
       port = addr->sin_port;
     }
-  else if (salen == sizeof(struct sockaddr_in6))
+  else if ((sa->sa_family == AF_INET6) &&
+           (salen == sizeof(struct sockaddr_in6)))
     {
       addr6 = (struct sockaddr_in6 *)sa;
       port = addr6->sin6_port;
     }
   else
     {
-      callback(arg, ARES_ENOTIMP, 0, NULL, NULL);
+      callback(arg, ARES_EBADFAMILY, 0, NULL, NULL);
       return;
     }
 
