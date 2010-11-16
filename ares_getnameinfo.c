@@ -232,7 +232,7 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
            char buf[255];
            char *domain;
            gethostname(buf, 255);
-           if ((domain = strchr(buf, '.')))
+           if ((domain = strchr(buf, '.')) != NULL)
              {
                char *end = ares_striendstr(host->h_name, domain);
                if (end)
@@ -356,11 +356,11 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int flags,
 #ifdef HAVE_IF_INDEXTONAME
   int is_ll, is_mcll;
 #endif
-  char fmt_u[] = "%u";
-  char fmt_lu[] = "%lu";
+  static const char fmt_u[] = "%u";
+  static const char fmt_lu[] = "%lu";
   char tmpbuf[IF_NAMESIZE + 2];
   size_t bufl;
-  char *fmt = (sizeof(addr6->sin6_scope_id) > sizeof(unsigned int))?
+  const char *fmt = (sizeof(addr6->sin6_scope_id) > sizeof(unsigned int))?
     fmt_lu:fmt_u;
 
   tmpbuf[0] = '%';
