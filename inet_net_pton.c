@@ -364,14 +364,14 @@ inet_net_pton_ipv6(const char *src, unsigned char *dst, size_t size)
      * Since some memmove()'s erroneously fail to handle
      * overlapping regions, we'll do the shift by hand.
      */
-    const int n = (int)(tp - colonp);
-    int i;
+    const ssize_t n = tp - colonp;
+    ssize_t i;
 
     if (tp == endp)
       goto enoent;
     for (i = 1; i <= n; i++) {
-      endp[- i] = colonp[n - i];
-      colonp[n - i] = 0;
+      *(endp - i) = *(colonp + n - i);
+      *(colonp + n - i) = 0;
     }
     tp = endp;
   }
