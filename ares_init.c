@@ -94,7 +94,7 @@ static int init_id_key(rc4_key* key,int key_data_len);
 
 #if !defined(WIN32) && !defined(WATT32)
 static int sortlist_alloc(struct apattern **sortlist, int *nsort, struct apattern *pat);
-static int ip_addr(const char *s, int len, struct in_addr *addr);
+static int ip_addr(const char *s, ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
 static int config_domain(ares_channel channel, char *str);
 static int config_lookup(ares_channel channel, const char *str,
@@ -1256,16 +1256,16 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
       q = str;
       while (*q && *q != '/' && *q != ';' && !ISSPACE(*q))
         q++;
-      memcpy(ipbuf, str, (int)(q-str));
-      ipbuf[(int)(q-str)] = '\0';
+      memcpy(ipbuf, str, q-str);
+      ipbuf[q-str] = '\0';
       /* Find the prefix */
       if (*q == '/')
         {
           const char *str2 = q+1;
           while (*q && *q != ';' && !ISSPACE(*q))
             q++;
-          memcpy(ipbufpfx, str, (int)(q-str));
-          ipbufpfx[(int)(q-str)] = '\0';
+          memcpy(ipbufpfx, str, q-str);
+          ipbufpfx[q-str] = '\0';
           str = str2;
         }
       else
@@ -1293,13 +1293,13 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
             return ARES_ENOMEM;
         }
       /* See if it is just a regular IP */
-      else if (ip_addr(ipbuf, (int)(q-str), &pat.addrV4) == 0)
+      else if (ip_addr(ipbuf, q-str, &pat.addrV4) == 0)
         {
           if (ipbufpfx[0])
             {
-              memcpy(ipbuf, str, (int)(q-str));
-              ipbuf[(int)(q-str)] = '\0';
-              if (ip_addr(ipbuf, (int)(q - str), &pat.mask.addr4) != 0)
+              memcpy(ipbuf, str, q-str);
+              ipbuf[q-str] = '\0';
+              if (ip_addr(ipbuf, q-str, &pat.mask.addr4) != 0)
                 natural_mask(&pat);
             }
           else
@@ -1497,7 +1497,7 @@ static int sortlist_alloc(struct apattern **sortlist, int *nsort,
   return 1;
 }
 
-static int ip_addr(const char *ipbuf, int len, struct in_addr *addr)
+static int ip_addr(const char *ipbuf, ssize_t len, struct in_addr *addr)
 {
 
   /* Four octets and three periods yields at most 15 characters. */
