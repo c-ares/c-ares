@@ -129,8 +129,12 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   if (env)
     curl_memdebug(env);
   env = getenv("CARES_MEMLIMIT");
-  if (env)
-    curl_memlimit(atoi(env));
+  if (env) {
+    char *endptr;
+    long num = strtol(env, &endptr, 10);
+    if((endptr != env) && (endptr == env + strlen(env)) && (num > 0))
+      curl_memlimit(num);
+  }
 #endif
 
   if (ares_library_initialized() != ARES_SUCCESS)
@@ -1396,13 +1400,13 @@ static int set_options(ares_channel channel, const char *str)
         q++;
       val = try_option(p, q, "ndots:");
       if (val && channel->ndots == -1)
-        channel->ndots = atoi(val);
+        channel->ndots = (int)strtol(val, NULL, 10);
       val = try_option(p, q, "retrans:");
       if (val && channel->timeout == -1)
-        channel->timeout = atoi(val);
+        channel->timeout = (int)strtol(val, NULL, 10);
       val = try_option(p, q, "retry:");
       if (val && channel->tries == -1)
-        channel->tries = atoi(val);
+        channel->tries = (int)strtol(val, NULL, 10);
       val = try_option(p, q, "rotate");
       if (val && channel->rotate == -1)
         channel->rotate = 1;

@@ -139,7 +139,7 @@ int ares_set_servers_csv(ares_channel channel,
   char* csv = NULL;
   char* ptr;
   char* start_host;
-  int port;
+  long port;
   bool found_port;
   int rv = ARES_SUCCESS;
   struct ares_addr_node *servers = NULL;
@@ -188,7 +188,7 @@ int ares_set_servers_csv(ares_channel channel,
       if ((pp != start_host) && ((pp + 1) < ptr)) {
         /* Found it. */
         found_port = true;
-        port = atoi(pp + 1);
+        port = strtol(pp + 1, NULL, 10);
         *pp = 0; /* null terminate host */
       }
       /* resolve host, try ipv4 first, rslt is in network byte order */
