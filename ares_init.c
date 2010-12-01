@@ -67,6 +67,7 @@
 #include "ares.h"
 #include "inet_net_pton.h"
 #include "ares_library_init.h"
+#include "ares_nowarn.h"
 #include "ares_private.h"
 
 #ifdef ANDROID
@@ -1400,13 +1401,13 @@ static int set_options(ares_channel channel, const char *str)
         q++;
       val = try_option(p, q, "ndots:");
       if (val && channel->ndots == -1)
-        channel->ndots = (int)strtol(val, NULL, 10);
+        channel->ndots = aresx_sltosi(strtol(val, NULL, 10));
       val = try_option(p, q, "retrans:");
       if (val && channel->timeout == -1)
-        channel->timeout = (int)strtol(val, NULL, 10);
+        channel->timeout = aresx_sltosi(strtol(val, NULL, 10));
       val = try_option(p, q, "retry:");
       if (val && channel->tries == -1)
-        channel->tries = (int)strtol(val, NULL, 10);
+        channel->tries = aresx_sltosi(strtol(val, NULL, 10));
       val = try_option(p, q, "rotate");
       if (val && channel->rotate == -1)
         channel->rotate = 1;
