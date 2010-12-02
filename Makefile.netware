@@ -302,6 +302,7 @@ ifeq ($(LIBARCH),CLIB)
 	@echo $(DL)#define SEND_TYPE_ARG3 int$(DL) >> $@
 	@echo $(DL)#define SEND_TYPE_ARG4 int$(DL) >> $@
 	@echo $(DL)#define SEND_TYPE_RETV int$(DL) >> $@
+	@echo $(DL)#define SIZEOF_SIZE_T 4$(DL) >> $@
 else
 	@echo $(DL)#define OS "i586-pc-libc-NetWare"$(DL) >> $@
 	@echo $(DL)#define HAVE_DLFCN_H 1$(DL) >> $@
@@ -344,6 +345,7 @@ else
 	@echo $(DL)#define SEND_TYPE_ARG3 size_t$(DL) >> $@
 	@echo $(DL)#define SEND_TYPE_ARG4 int$(DL) >> $@
 	@echo $(DL)#define SEND_TYPE_RETV ssize_t$(DL) >> $@
+	@echo $(DL)#define SIZEOF_SIZE_T 8$(DL) >> $@
 	@echo $(DL)#define SIZEOF_STRUCT_IN6_ADDR 16$(DL) >> $@
 endif
 	@echo $(DL)#define HAVE_ARPA_INET_H 1$(DL) >> $@
