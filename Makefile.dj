@@ -44,7 +44,7 @@ all: $(OBJ_DIR) ares_config.h libcares.a ahost.exe adig.exe acountry.exe
 libcares.a: $(OBJECTS)
 	ar rs $@ $?
 
-ares_config.h: config.dos
+ares_config.h: config-dos.h
 	$(COPY) $^ $@
 
 ahost.exe: ahost.c $(OBJ_DIR)/ares_getopt.o $(OBJ_HACK)

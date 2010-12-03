@@ -3,7 +3,7 @@
 
 
 /* ================================================================ */
-/*       ares/config.dos - Hand crafted config file for DOS         */
+/*       ares/config-dos.h - Hand crafted config file for DOS       */
 /* ================================================================ */
 
 #define PACKAGE  "c-ares"
