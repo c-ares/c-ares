@@ -32,6 +32,7 @@
 #define RETSIGTYPE             void
 #define SIZEOF_INT             4
 #define SIZEOF_SHORT           2
+#define SIZEOF_SIZE_T          4
 #define TIME_WITH_SYS_TIME     1
 
 /* Qualifiers for send(), recv(), recvfrom() and getnameinfo(). */
