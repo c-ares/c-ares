@@ -1,5 +1,13 @@
   Changelog for the c-ares project
 
+Changed:
+
+ o 
+
+Fixed:
+
+ o detection of semicolon comments in resolv.conf
+
 Version 1.7.4 (December 9, 2010)
 
 Changed:

@@ -102,7 +102,7 @@ static int config_lookup(ares_channel channel, const char *str,
                          const char *bindch, const char *filech);
 static int config_sortlist(struct apattern **sortlist, int *nsort,
                            const char *str);
-static char *try_config(char *s, const char *opt);
+static char *try_config(char *s, const char *opt, char scc);
 #endif
 
 #define ARES_CONFIG_CHECK(x) (x->lookups && x->nsort > -1 && \
@@ -856,17 +856,19 @@ DhcpNameServer
     if (fp) {
       while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
       {
-        if ((p = try_config(line, "domain")))
+        if ((p = try_config(line, "domain", ';')))
           status = config_domain(channel, p);
-        else if ((p = try_config(line, "lookup")) && !channel->lookups)
+        else if ((p = try_config(line, "lookup", ';')) && !channel->lookups)
           status = config_lookup(channel, p, "bind", "file");
-        else if ((p = try_config(line, "search")))
+        else if ((p = try_config(line, "search", ';')))
           status = set_search(channel, p);
-        else if ((p = try_config(line, "nameserver")) && channel->nservers == -1)
+        else if ((p = try_config(line, "nameserver", ';')) &&
+                 channel->nservers == -1)
           status = config_nameserver(&servers, &nservers, p);
-        else if ((p = try_config(line, "sortlist")) && channel->nsort == -1)
+        else if ((p = try_config(line, "sortlist", ';')) &&
+                 channel->nsort == -1)
           status = config_sortlist(&sortlist, &nsort, p);
-        else if ((p = try_config(line, "options")))
+        else if ((p = try_config(line, "options", ';')))
           status = set_options(channel, p);
         else
           status = ARES_SUCCESS;
@@ -896,7 +898,7 @@ DhcpNameServer
       if (fp) {
         while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
         {
-          if ((p = try_config(line, "hosts:")) && !channel->lookups)
+          if ((p = try_config(line, "hosts:", '\0')) && !channel->lookups)
             status = config_lookup(channel, p, "dns", "files");
         }
         fclose(fp);
@@ -923,7 +925,7 @@ DhcpNameServer
       if (fp) {
         while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
         {
-          if ((p = try_config(line, "order")) && !channel->lookups)
+          if ((p = try_config(line, "order", '\0')) && !channel->lookups)
             status = config_lookup(channel, p, "bind", "hosts");
         }
         fclose(fp);
@@ -950,7 +952,7 @@ DhcpNameServer
       if (fp) {
         while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
         {
-          if ((p = try_config(line, "hosts=")) && !channel->lookups)
+          if ((p = try_config(line, "hosts=", '\0')) && !channel->lookups)
             status = config_lookup(channel, p, "bind", "local");
         }
         fclose(fp);
@@ -1426,7 +1428,7 @@ static const char *try_option(const char *p, const char *q, const char *opt)
 }
 
 #if !defined(WIN32) && !defined(WATT32)
-static char *try_config(char *s, const char *opt)
+static char *try_config(char *s, const char *opt, char scc)
 {
   size_t len;
   char *p;
@@ -1436,10 +1438,17 @@ static char *try_config(char *s, const char *opt)
     /* no line or no option */
     return NULL;
 
+  /* Hash '#' character is always used as primary comment char, additionally
+     a not-NUL secondary comment char will be considered when specified. */
+
   /* trim line comment */
   p = s;
-  while (*p && (*p != '#'))
-    p++;
+  if(scc)
+    while (*p && (*p != '#') && (*p != scc))
+      p++;
+  else
+    while (*p && (*p != '#'))
+      p++;
   *p = '\0';
 
   /* trim trailing whitespace */

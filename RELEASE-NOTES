@@ -6,8 +6,10 @@ Changed:
 
 Fixed:
 
- o 
+ o detection of semicolon comments in resolv.conf
 
 Thanks go to these friendly people for their efforts and contributions:
+
+ Yang Tse
 
 Have fun!
