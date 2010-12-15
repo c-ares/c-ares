@@ -1,7 +1,6 @@
 #***************************************************************************
-# $Id$
 #
-# Copyright (C) 2008 - 2009 by Daniel Stenberg et al
+# Copyright (C) 2008 - 2010 by Daniel Stenberg et al
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted, provided
@@ -16,7 +15,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 39
+# serial 40
 
 
 dnl CARES_INCLUDES_ARPA_INET
@@ -1503,6 +1502,232 @@ AC_DEFUN([CARES_CHECK_FUNC_GETSERVBYPORT_R], [
   else
     AC_MSG_RESULT([no])
     ac_cv_func_getservbyport_r="no"
+  fi
+])
+
+
+dnl CARES_CHECK_FUNC_INET_NET_PTON
+dnl -------------------------------------------------
+dnl Verify if inet_net_pton is available, prototyped, can
+dnl be compiled and seems to work. If all of these are
+dnl true, and usage has not been previously disallowed
+dnl with shell variable cares_disallow_inet_net_pton, then
+dnl HAVE_INET_NET_PTON will be defined.
+
+AC_DEFUN([CARES_CHECK_FUNC_INET_NET_PTON], [
+  AC_REQUIRE([CARES_INCLUDES_STDLIB])dnl
+  AC_REQUIRE([CARES_INCLUDES_ARPA_INET])dnl
+  AC_REQUIRE([CARES_INCLUDES_STRING])dnl
+  #
+  tst_links_inet_net_pton="unknown"
+  tst_proto_inet_net_pton="unknown"
+  tst_compi_inet_net_pton="unknown"
+  tst_works_inet_net_pton="unknown"
+  tst_allow_inet_net_pton="unknown"
+  #
+  AC_MSG_CHECKING([if inet_net_pton can be linked])
+  AC_LINK_IFELSE([
+    AC_LANG_FUNC_LINK_TRY([inet_net_pton])
+  ],[
+    AC_MSG_RESULT([yes])
+    tst_links_inet_net_pton="yes"
+  ],[
+    AC_MSG_RESULT([no])
+    tst_links_inet_net_pton="no"
+  ])
+  #
+  if test "$tst_links_inet_net_pton" = "yes"; then
+    AC_MSG_CHECKING([if inet_net_pton is prototyped])
+    AC_EGREP_CPP([inet_net_pton],[
+      $cares_includes_arpa_inet
+    ],[
+      AC_MSG_RESULT([yes])
+      tst_proto_inet_net_pton="yes"
+    ],[
+      AC_MSG_RESULT([no])
+      tst_proto_inet_net_pton="no"
+    ])
+  fi
+  #
+  if test "$tst_proto_inet_net_pton" = "yes"; then
+    AC_MSG_CHECKING([if inet_net_pton is compilable])
+    AC_COMPILE_IFELSE([
+      AC_LANG_PROGRAM([[
+        $cares_includes_arpa_inet
+      ]],[[
+        if(0 != inet_net_pton(0, 0, 0, 0))
+          return 1;
+      ]])
+    ],[
+      AC_MSG_RESULT([yes])
+      tst_compi_inet_net_pton="yes"
+    ],[
+      AC_MSG_RESULT([no])
+      tst_compi_inet_net_pton="no"
+    ])
+  fi
+  #
+  dnl only do runtime verification when not cross-compiling
+  if test "x$cross_compiling" != "xyes" &&
+    test "$tst_compi_inet_net_pton" = "yes"; then
+    AC_MSG_CHECKING([if inet_net_pton seems to work])
+    AC_RUN_IFELSE([
+      AC_LANG_PROGRAM([[
+        $cares_includes_stdlib
+        $cares_includes_arpa_inet
+        $cares_includes_string
+      ]],[[
+        unsigned char ipv6a[16+1];
+        unsigned char ipv4a[4+1];
+        const char *ipv6net1 = "fe80::214:4fff:fe0b:76c8";
+        const char *ipv6net2 = "::fffe:7f00:1";
+        const char *ipv6net3 = "7f20:1::/64";
+        const char *ipv6net4 = "7f20:1::/2147483649";
+        const char *ipv4net1 = "192.168.100.1";
+        const char *ipv4net2 = "192.168.100/32";
+        const char *ipv4net3 = "192.168.100.1/2147483649";
+        /* - */
+        memset(ipv4a, 1, sizeof(ipv4a));
+        if(32 != inet_net_pton(AF_INET, ipv4net1, ipv4a, 4))
+          exit(1); /* fail */
+        /* - */
+        if( (ipv4a[0x00] != 0xc0) ||
+            (ipv4a[0x01] != 0xa8) ||
+            (ipv4a[0x02] != 0x64) ||
+            (ipv4a[0x03] != 0x01) ||
+            (ipv4a[0x04] != 0x01) )
+          exit(1); /* fail */
+        /* - */
+        memset(ipv4a, 1, sizeof(ipv4a));
+        if(32 != inet_net_pton(AF_INET, ipv4net2, ipv4a, 4))
+          exit(1); /* fail */
+        /* - */
+        if( (ipv4a[0x00] != 0xc0) ||
+            (ipv4a[0x01] != 0xa8) ||
+            (ipv4a[0x02] != 0x64) ||
+            (ipv4a[0x03] != 0x00) ||
+            (ipv4a[0x04] != 0x01) )
+          exit(1); /* fail */
+        /* - */
+        memset(ipv4a, 1, sizeof(ipv4a));
+        if(-1 != inet_net_pton(AF_INET, ipv4net3, ipv4a, 4))
+          exit(1); /* fail */
+        /* - */
+        memset(ipv6a, 1, sizeof(ipv6a));
+        if(128 != inet_net_pton(AF_INET6, ipv6net1, ipv6a, 16))
+          exit(1); /* fail */
+        /* - */
+        if( (ipv6a[0x00] != 0xfe) ||
+            (ipv6a[0x01] != 0x80) ||
+            (ipv6a[0x08] != 0x02) ||
+            (ipv6a[0x09] != 0x14) ||
+            (ipv6a[0x0a] != 0x4f) ||
+            (ipv6a[0x0b] != 0xff) ||
+            (ipv6a[0x0c] != 0xfe) ||
+            (ipv6a[0x0d] != 0x0b) ||
+            (ipv6a[0x0e] != 0x76) ||
+            (ipv6a[0x0f] != 0xc8) ||
+            (ipv6a[0x10] != 0x01) )
+          exit(1); /* fail */
+        /* - */
+        if( (ipv6a[0x02] != 0x0) ||
+            (ipv6a[0x03] != 0x0) ||
+            (ipv6a[0x04] != 0x0) ||
+            (ipv6a[0x05] != 0x0) ||
+            (ipv6a[0x06] != 0x0) ||
+            (ipv6a[0x07] != 0x0) )
+          exit(1); /* fail */
+        /* - */
+        memset(ipv6a, 0, sizeof(ipv6a));
+        ipv6a[0x10] = 0x01;
+        if(128 != inet_net_pton(AF_INET6, ipv6net2, ipv6a, 16))
+          exit(1); /* fail */
+        /* - */
+        if( (ipv6a[0x0a] != 0xff) ||
+            (ipv6a[0x0b] != 0xfe) ||
+            (ipv6a[0x0c] != 0x7f) ||
+            (ipv6a[0x0f] != 0x01) ||
+            (ipv6a[0x10] != 0x01) )
+          exit(1); /* fail */
+        /* - */
+        if( (ipv6a[0x00] != 0x0) ||
+            (ipv6a[0x01] != 0x0) ||
+            (ipv6a[0x02] != 0x0) ||
+            (ipv6a[0x03] != 0x0) ||
+            (ipv6a[0x04] != 0x0) ||
+            (ipv6a[0x05] != 0x0) ||
+            (ipv6a[0x06] != 0x0) ||
+            (ipv6a[0x07] != 0x0) ||
+            (ipv6a[0x08] != 0x0) ||
+            (ipv6a[0x09] != 0x0) ||
+            (ipv6a[0x0d] != 0x0) ||
+            (ipv6a[0x0e] != 0x0) )
+          exit(1); /* fail */
+        /* - */
+        memset(ipv6a, 1, sizeof(ipv6a));
+        if(64 != inet_net_pton(AF_INET6, ipv6net3, ipv6a, 16))
+          exit(1); /* fail */
+        if( (ipv6a[0x00] != 0x7f) ||
+            (ipv6a[0x01] != 0x20) ||
+            (ipv6a[0x03] != 0x01) ||
+            (ipv6a[0x08] != 0x01) ||
+            (ipv6a[0x09] != 0x01) ||
+            (ipv6a[0x0a] != 0x01) ||
+            (ipv6a[0x0b] != 0x01) ||
+            (ipv6a[0x0c] != 0x01) ||
+            (ipv6a[0x0d] != 0x01) ||
+            (ipv6a[0x0e] != 0x01) ||
+            (ipv6a[0x0f] != 0x01) ||
+            (ipv6a[0x10] != 0x01) )
+          exit(1); /* fail */
+        if( (ipv6a[0x02] != 0x0) ||
+            (ipv6a[0x04] != 0x0) ||
+            (ipv6a[0x05] != 0x0) ||
+            (ipv6a[0x06] != 0x0) ||
+            (ipv6a[0x07] != 0x0) ||
+            (ipv6a[0x07] != 0x0) )
+          exit(1); /* fail */
+        /* - */
+        memset(ipv6a, 1, sizeof(ipv6a));
+        if(-1 != inet_net_pton(AF_INET6, ipv6net4, ipv6a, 16))
+          exit(1); /* fail */
+        /* - */
+        exit(0);
+      ]])
+    ],[
+      AC_MSG_RESULT([yes])
+      tst_works_inet_net_pton="yes"
+    ],[
+      AC_MSG_RESULT([no])
+      tst_works_inet_net_pton="no"
+    ])
+  fi
+  #
+  if test "$tst_compi_inet_net_pton" = "yes" &&
+    test "$tst_works_inet_net_pton" != "no"; then
+    AC_MSG_CHECKING([if inet_net_pton usage allowed])
+    if test "x$cares_disallow_inet_net_pton" != "xyes"; then
+      AC_MSG_RESULT([yes])
+      tst_allow_inet_net_pton="yes"
+    else
+      AC_MSG_RESULT([no])
+      tst_allow_inet_net_pton="no"
+    fi
+  fi
+  #
+  AC_MSG_CHECKING([if inet_net_pton might be used])
+  if test "$tst_links_inet_net_pton" = "yes" &&
+     test "$tst_proto_inet_net_pton" = "yes" &&
+     test "$tst_compi_inet_net_pton" = "yes" &&
+     test "$tst_allow_inet_net_pton" = "yes" &&
+     test "$tst_works_inet_net_pton" != "no"; then
+    AC_MSG_RESULT([yes])
+    AC_DEFINE_UNQUOTED(HAVE_INET_NET_PTON, 1,
+      [Define to 1 if you have a IPv6 capable working inet_net_pton function.])
+    ac_cv_func_inet_net_pton="yes"
+  else
+    AC_MSG_RESULT([no])
+    ac_cv_func_inet_net_pton="no"
   fi
 ])
 

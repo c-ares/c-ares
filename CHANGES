@@ -7,6 +7,7 @@ Changed:
 Fixed:
 
  o detection of semicolon comments in resolv.conf
+ o avoid using system's inet_net_pton affected by the WLB-2008080064 advisory
 
 Version 1.7.4 (December 9, 2010)
 

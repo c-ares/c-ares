@@ -50,7 +50,7 @@
 const struct ares_in6_addr ares_in6addr_any = { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 } } };
 
 
-#if !defined(HAVE_INET_NET_PTON) || !defined(HAVE_INET_NET_PTON_IPV6)
+#ifndef HAVE_INET_NET_PTON
 
 /*
  * static int
@@ -425,7 +425,7 @@ ares_inet_net_pton(int af, const char *src, void *dst, size_t size)
   }
 }
 
-#endif
+#endif /* HAVE_INET_NET_PTON */
 
 #ifndef HAVE_INET_PTON
 int ares_inet_pton(int af, const char *src, void *dst)
@@ -447,4 +447,4 @@ int ares_inet_pton(int af, const char *src, void *dst)
     return 0;
   return (result > -1 ? 1 : -1);
 }
-#endif
+#endif /* HAVE_INET_PTON */
