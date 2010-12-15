@@ -83,13 +83,14 @@ inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
 
   ch = *src++;
   if (ch == '0' && (src[0] == 'x' || src[0] == 'X')
+      && ISASCII(src[1])
       && ISXDIGIT(src[1])) {
     /* Hexadecimal: Eat nybble string. */
     if (!size)
       goto emsgsize;
     dirty = 0;
     src++;  /* skip x or X. */
-    while ((ch = *src++) != '\0' && ISXDIGIT(ch)) {
+    while ((ch = *src++) != '\0' && ISASCII(ch) && ISXDIGIT(ch)) {
       if (ISUPPER(ch))
         ch = tolower(ch);
       n = (int)(strchr(xdigits, ch) - xdigits);
@@ -109,7 +110,7 @@ inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
         goto emsgsize;
       *dst++ = (unsigned char) (tmp << 4);
     }
-  } else if (ISDIGIT(ch)) {
+  } else if (ISASCII(ch) && ISDIGIT(ch)) {
     /* Decimal: eat dotted digit string. */
     for (;;) {
       tmp = 0;
@@ -120,7 +121,7 @@ inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
         if (tmp > 255)
           goto enoent;
       } while ((ch = *src++) != '\0' &&
-               ISDIGIT(ch));
+               ISASCII(ch) && ISDIGIT(ch));
       if (!size--)
         goto emsgsize;
       *dst++ = (unsigned char) tmp;
@@ -129,14 +130,14 @@ inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
       if (ch != '.')
         goto enoent;
       ch = *src++;
-      if (!ISDIGIT(ch))
+      if (!ISASCII(ch) || !ISDIGIT(ch))
         goto enoent;
     }
   } else
     goto enoent;
 
   bits = -1;
-  if (ch == '/' &&
+  if (ch == '/' && ISASCII(src[0]) &&
       ISDIGIT(src[0]) && dst > odst) {
     /* CIDR width specifier.  Nothing can follow it. */
     ch = *src++;    /* Skip over the /. */
@@ -145,11 +146,11 @@ inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
       n = (int)(strchr(digits, ch) - digits);
       bits *= 10;
       bits += n;
-    } while ((ch = *src++) != '\0' && ISDIGIT(ch));
+      if (bits > 32)
+        goto enoent;
+    } while ((ch = *src++) != '\0' && ISASCII(ch) && ISDIGIT(ch));
     if (ch != '\0')
       goto enoent;
-    if (bits > 32)
-      goto emsgsize;
   }
 
   /* Firey death and destruction unless we prefetched EOS. */
@@ -447,4 +448,4 @@ int ares_inet_pton(int af, const char *src, void *dst)
     return 0;
   return (result > -1 ? 1 : -1);
 }
-#endif /* HAVE_INET_PTON */
+#endif
