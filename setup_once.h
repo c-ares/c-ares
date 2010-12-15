@@ -248,6 +248,7 @@ struct timeval {
 #define ISPRINT(x)  (isprint((int)  ((unsigned char)x)))
 #define ISUPPER(x)  (isupper((int)  ((unsigned char)x)))
 #define ISLOWER(x)  (islower((int)  ((unsigned char)x)))
+#define ISASCII(x)  (isascii((int)  ((unsigned char)x)))
 
 #define ISBLANK(x)  (int)((((unsigned char)x) == ' ') || \
                           (((unsigned char)x) == '\t'))
