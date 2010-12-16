@@ -15,25 +15,38 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static const char rcsid[] = "$Id: inet_ntop.c,v 1.5 2005/11/03 22:59:52 marka Exp $";
-#endif /* LIBC_SCCS and not lint */
+#include "ares_setup.h"
 
-#include "port_before.h"
+#ifdef HAVE_SYS_SOCKET_H
+#  include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#  include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#  include <arpa/inet.h>
+#endif
+#ifdef HAVE_ARPA_NAMESER_H
+#  include <arpa/nameser.h>
+#else
+#  include "nameser.h"
+#endif
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#  include <arpa/nameser_compat.h>
+#endif
 
-#include <sys/param.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <arpa/nameser.h>
-
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-#include "port_after.h"
+#include "ares.h"
+#include "ares_ipv6.h"
+#include "inet_ntop.h"
+
+
+#ifndef HAVE_INET_NTOP
 
 #ifdef SPRINTF_CHAR
 # define SPRINTF(x) strlen(sprintf/**/x)
@@ -58,7 +71,7 @@ static const char *inet_ntop6(const u_char *src, char *dst, size_t size);
  *     Paul Vixie, 1996.
  */
 const char *
-inet_ntop(int af, const void *src, char *dst, size_t size)
+ares_inet_ntop(int af, const void *src, char *dst, size_t size)
 {
   switch (af) {
   case AF_INET:
@@ -193,5 +206,4 @@ inet_ntop6(const u_char *src, char *dst, size_t size)
   strcpy(dst, tmp);
   return (dst);
 }
-
-/*! \file */
+#endif
