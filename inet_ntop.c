@@ -59,14 +59,19 @@
  * sizeof(int) < 4.  sizeof(int) > 4 is fine; all the world's not a VAX.
  */
 
-static const char *inet_ntop4(const u_char *src, char *dst, size_t size);
-static const char *inet_ntop6(const u_char *src, char *dst, size_t size);
+static const char *inet_ntop4(const unsigned char *src, char *dst, size_t size);
+static const char *inet_ntop6(const unsigned char *src, char *dst, size_t size);
 
 /* char *
  * inet_ntop(af, src, dst, size)
  *     convert a network format address to presentation format.
  * return:
  *     pointer to presentation format address (`dst'), or NULL (see errno).
+ * note:
+ *     On Windows we store the error in the thread errno, not
+ *     in the winsock error code. This is to avoid loosing the
+ *     actual last winsock error. So use macro ERRNO to fetch the
+ *     errno this funtion sets when returning NULL, not SOCKERRNO.
  * author:
  *     Paul Vixie, 1996.
  */
@@ -79,7 +84,7 @@ ares_inet_ntop(int af, const void *src, char *dst, size_t size)
   case AF_INET6:
     return (inet_ntop6(src, dst, size));
   default:
-    errno = EAFNOSUPPORT;
+    SET_ERRNO(EAFNOSUPPORT);
     return (NULL);
   }
   /* NOTREACHED */
@@ -92,18 +97,18 @@ ares_inet_ntop(int af, const void *src, char *dst, size_t size)
  *     `dst' (as a const)
  * notes:
  *     (1) uses no statics
- *     (2) takes a u_char* not an in_addr as input
+ *     (2) takes a unsigned char* not an in_addr as input
  * author:
  *     Paul Vixie, 1996.
  */
 static const char *
-inet_ntop4(const u_char *src, char *dst, size_t size)
+inet_ntop4(const unsigned char *src, char *dst, size_t size)
 {
   static const char fmt[] = "%u.%u.%u.%u";
   char tmp[sizeof("255.255.255.255")];
 
   if (SPRINTF((tmp, fmt, src[0], src[1], src[2], src[3])) >= size) {
-    errno = ENOSPC;
+    SET_ERRNO(ENOSPC);
     return (NULL);
   }
   strcpy(dst, tmp);
@@ -117,7 +122,7 @@ inet_ntop4(const u_char *src, char *dst, size_t size)
  *     Paul Vixie, 1996.
  */
 static const char *
-inet_ntop6(const u_char *src, char *dst, size_t size)
+inet_ntop6(const unsigned char *src, char *dst, size_t size)
 {
   /*
    * Note that int32_t and int16_t need only be "at least" large enough
@@ -126,9 +131,10 @@ inet_ntop6(const u_char *src, char *dst, size_t size)
    * Keep this in mind if you think this function should have been coded
    * to use pointer overlays.  All the world's not a VAX.
    */
-  char tmp[sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")], *tp;
+  char tmp[sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")];
+  char *tp;
   struct { int base, len; } best, cur;
-  u_int words[NS_IN6ADDRSZ / NS_INT16SZ];
+  unsigned int words[NS_IN6ADDRSZ / NS_INT16SZ];
   int i;
 
   /*
@@ -200,7 +206,7 @@ inet_ntop6(const u_char *src, char *dst, size_t size)
    * Check for overflow, copy, and we're done.
    */
   if ((size_t)(tp - tmp) > size) {
-    errno = ENOSPC;
+    SET_ERRNO(ENOSPC);
     return (NULL);
   }
   strcpy(dst, tmp);
