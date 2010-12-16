@@ -17,6 +17,10 @@
 
 #include "ares_setup.h"
 
+#ifdef HAVE_ASSERT_H
+#  include <assert.h>
+#endif
+
 #include "ares_nowarn.h"
 
 #if (SIZEOF_INT == 2)
