@@ -182,11 +182,13 @@ PDFPAGES = ares_cancel.pdf		\
   ares_version.pdf
 
 SAMPLESOURCES = ares_getopt.c		\
+  ares_nowarn.c				\
   ares_strcasecmp.c			\
   inet_net_pton.c			\
   inet_ntop.c
 
 SAMPLEHEADERS = ares_getopt.h		\
+  ares_nowarn.h				\
   ares_strcasecmp.h			\
   inet_net_pton.h			\
   inet_ntop.h
