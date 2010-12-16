@@ -44,6 +44,7 @@
 
 #include "ares.h"
 #include "ares_ipv6.h"
+#include "ares_nowarn.h"
 #include "inet_net_pton.h"
 
 
@@ -93,7 +94,7 @@ inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
     while ((ch = *src++) != '\0' && ISASCII(ch) && ISXDIGIT(ch)) {
       if (ISUPPER(ch))
         ch = tolower(ch);
-      n = (int)(strchr(xdigits, ch) - xdigits);
+      n = aresx_sztosi(strchr(xdigits, ch) - xdigits);
       if (dirty == 0)
         tmp = n;
       else
@@ -115,7 +116,7 @@ inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
     for (;;) {
       tmp = 0;
       do {
-        n = (int)(strchr(digits, ch) - digits);
+        n = aresx_sztosi(strchr(digits, ch) - digits);
         tmp *= 10;
         tmp += n;
         if (tmp > 255)
@@ -143,7 +144,7 @@ inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
     ch = *src++;    /* Skip over the /. */
     bits = 0;
     do {
-      n = (int)(strchr(digits, ch) - digits);
+      n = aresx_sztosi(strchr(digits, ch) - digits);
       bits *= 10;
       bits += n;
       if (bits > 32)
@@ -174,7 +175,7 @@ inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
       bits = 8;
     /* If imputed mask is narrower than specified octets, widen. */
     if (bits < ((dst - odst) * 8))
-      bits = (int)(dst - odst) * 8;
+      bits = aresx_sztosi(dst - odst) * 8;
     /*
      * If there are no additional bits specified for a class D
      * address adjust bits to 4.
@@ -217,7 +218,7 @@ getbits(const char *src, int *bitsp)
       if (n++ != 0 && val == 0)       /* no leading zeros */
         return (0);
       val *= 10;
-      val += (pch - digits);
+      val += aresx_sztosi(pch - digits);
       if (val > 128)                  /* range */
         return (0);
       continue;
@@ -249,7 +250,7 @@ getv4(const char *src, unsigned char *dst, int *bitsp)
       if (n++ != 0 && val == 0)       /* no leading zeros */
         return (0);
       val *= 10;
-      val += (pch - digits);
+      val += aresx_sztoui(pch - digits);
       if (val > 255)                  /* range */
         return (0);
       continue;
@@ -309,7 +310,7 @@ inet_net_pton_ipv6(const char *src, unsigned char *dst, size_t size)
       pch = strchr((xdigits = xdigits_u), ch);
     if (pch != NULL) {
       val <<= 4;
-      val |= (pch - xdigits);
+      val |= aresx_sztoui(pch - xdigits);
       if (++digits > 4)
         goto enoent;
       saw_xdigit = 1;

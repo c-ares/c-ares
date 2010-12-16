@@ -34,7 +34,7 @@
 #endif
 
 /*
-** size_t to signed int
+** unsigned size_t to signed int
 */
 
 int aresx_uztosi(size_t uznum)
@@ -62,7 +62,46 @@ int aresx_sltosi(long slnum)
 #  pragma warning(disable:810) /* conversion may lose significant bits */
 #endif
 
+  DEBUGASSERT(slnum >= 0);
   return (int)(slnum & (long) CARES_MASK_SINT);
+
+#ifdef __INTEL_COMPILER
+#  pragma warning(pop)
+#endif
+}
+
+/*
+** signed ssize_t to signed int
+*/
+
+int aresx_sztosi(ssize_t sznum)
+{
+#ifdef __INTEL_COMPILER
+#  pragma warning(push)
+#  pragma warning(disable:810) /* conversion may lose significant bits */
+#endif
+
+  DEBUGASSERT(sznum >= 0);
+  return (int)(sznum & (ssize_t) CARES_MASK_SINT);
+
+#ifdef __INTEL_COMPILER
+#  pragma warning(pop)
+#endif
+}
+
+/*
+** signed ssize_t to unsigned int
+*/
+
+unsigned int aresx_sztoui(ssize_t sznum)
+{
+#ifdef __INTEL_COMPILER
+#  pragma warning(push)
+#  pragma warning(disable:810) /* conversion may lose significant bits */
+#endif
+
+  DEBUGASSERT(sznum >= 0);
+  return (unsigned int)(sznum & (ssize_t) CARES_MASK_UINT);
 
 #ifdef __INTEL_COMPILER
 #  pragma warning(pop)

@@ -21,4 +21,8 @@ int aresx_uztosi(size_t uznum);
 
 int aresx_sltosi(long slnum);
 
+int aresx_sztosi(ssize_t sznum);
+
+unsigned int aresx_sztoui(ssize_t sznum);
+
 #endif /* HEADER_CARES_NOWARN_H */
