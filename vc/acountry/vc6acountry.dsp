@@ -147,6 +147,10 @@ SOURCE=..\..\ares_getopt.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\ares_nowarn.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\ares_strcasecmp.c
 # End Source File
 # Begin Source File
