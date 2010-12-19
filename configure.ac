@@ -842,7 +842,7 @@ CARES_PRIVATE_LIBS="$LIBS"
 AC_SUBST(CARES_PRIVATE_LIBS)
 
 CARES_CFLAG_EXTRAS=""
-if test X"$want_werror" == Xyes; then
+if test X"$want_werror" = Xyes; then
   CARES_CFLAG_EXTRAS="-Werror"
 fi
 AC_SUBST(CARES_CFLAG_EXTRAS)
