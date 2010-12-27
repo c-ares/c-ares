@@ -899,7 +899,8 @@ DhcpNameServer
         while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
         {
           if ((p = try_config(line, "hosts:", '\0')) && !channel->lookups)
-            status = config_lookup(channel, p, "dns", "files");
+            /* ignore errors */
+            (void)config_lookup(channel, p, "dns", "files");
         }
         fclose(fp);
       }
@@ -926,7 +927,8 @@ DhcpNameServer
         while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
         {
           if ((p = try_config(line, "order", '\0')) && !channel->lookups)
-            status = config_lookup(channel, p, "bind", "hosts");
+            /* ignore errors */
+            (void)config_lookup(channel, p, "bind", "hosts");
         }
         fclose(fp);
       }
@@ -953,7 +955,8 @@ DhcpNameServer
         while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
         {
           if ((p = try_config(line, "hosts=", '\0')) && !channel->lookups)
-            status = config_lookup(channel, p, "bind", "local");
+            /* ignore errors */
+            (void)config_lookup(channel, p, "bind", "local");
         }
         fclose(fp);
       }
