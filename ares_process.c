@@ -300,29 +300,28 @@ static void advance_tcp_send_queue(ares_channel channel, int whichserver,
 {
   struct send_request *sendreq;
   struct server_state *server = &channel->servers[whichserver];
-  while (num_bytes > 0)
-    {
-      sendreq = server->qhead;
-      if ((size_t)num_bytes >= sendreq->len)
-       {
-         num_bytes -= sendreq->len;
-         server->qhead = sendreq->next;
-         if (server->qhead == NULL)
-           {
-             SOCK_STATE_CALLBACK(channel, server->tcp_socket, 1, 0);
-             server->qtail = NULL;
-           }
-         if (sendreq->data_storage != NULL)
-           free(sendreq->data_storage);
-         free(sendreq);
-       }
-      else
-       {
-         sendreq->data += num_bytes;
-         sendreq->len -= num_bytes;
-         num_bytes = 0;
-       }
+  while (num_bytes > 0) {
+    sendreq = server->qhead;
+    if ((size_t)num_bytes >= sendreq->len) {
+      num_bytes -= sendreq->len;
+      server->qhead = sendreq->next;
+      if (sendreq->data_storage)
+        free(sendreq->data_storage);
+      free(sendreq);
+      if (server->qhead == NULL) {
+        SOCK_STATE_CALLBACK(channel, server->tcp_socket, 1, 0);
+        server->qtail = NULL;
+
+        /* qhead is NULL so we cannot continue this loop */
+        break;
+      }
     }
+    else {
+      sendreq->data += num_bytes;
+      sendreq->len -= num_bytes;
+      num_bytes = 0;
+    }
+  }
 }
 
 /* If any TCP socket selects true for reading, read some data,
