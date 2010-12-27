@@ -139,8 +139,6 @@ int ares_set_servers_csv(ares_channel channel,
   char* csv = NULL;
   char* ptr;
   char* start_host;
-  long port;
-  bool found_port;
   int rv = ARES_SUCCESS;
   struct ares_addr_node *servers = NULL;
   struct ares_addr_node *last = NULL;
@@ -165,7 +163,6 @@ int ares_set_servers_csv(ares_channel channel,
   }
 
   start_host = csv;
-  found_port = false;
   for (ptr = csv; *ptr; ptr++) {
     if (*ptr == ',') {
       char* pp = ptr - 1;
@@ -186,9 +183,8 @@ int ares_set_servers_csv(ares_channel channel,
         pp--;
       }
       if ((pp != start_host) && ((pp + 1) < ptr)) {
-        /* Found it. */
-        found_port = true;
-        port = strtol(pp + 1, NULL, 10);
+        /* Found it. Parse over the port number */
+        (void)strtol(pp + 1, NULL, 10);
         *pp = 0; /* null terminate host */
       }
       /* resolve host, try ipv4 first, rslt is in network byte order */
@@ -233,7 +229,6 @@ int ares_set_servers_csv(ares_channel channel,
       }
 
       /* Set up for next one */
-      found_port = false;
       start_host = ptr + 1;
     }
   }
