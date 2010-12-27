@@ -271,8 +271,8 @@ getv4(const char *src, unsigned char *dst, int *bitsp)
     return (0);
   if (dst - odst > 3)             /* too many octets? */
     return (0);
-  *dst++ = (unsigned char)val;
-  return (1);
+  *dst = (unsigned char)val;
+  return 1;
 }
 
 static int
