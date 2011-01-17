@@ -10,6 +10,7 @@ Fixed:
  o avoid using system's inet_net_pton affected by the WLB-2008080064 advisory
  o replacement ares_inet_net_pton affected by the WLB-2008080064 advisory
  o replacement ares_inet_ntop affected by potential out of bounds write
+ o added install target to Makefile.msvc
 
 Version 1.7.4 (December 9, 2010)
 

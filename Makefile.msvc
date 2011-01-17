@@ -139,6 +139,22 @@ BASE_DIR = .\$(CC_VERS_STR)
 
 SRCDIR = .
 
+# -----------------------------
+# Default installation subdirs
+# -----------------------------
+
+!IFNDEF INSTALL_DIR
+INSTALL_DIR = .
+!ENDIF
+
+!IFNDEF INSTALL_DIR_LIB
+INSTALL_DIR_LIB = $(INSTALL_DIR)\lib
+!ENDIF
+
+!IFNDEF INSTALL_DIR_INC
+INSTALL_DIR_INC = $(INSTALL_DIR)\include
+!ENDIF
+
 # -------------------------
 # Configuration validation
 # -------------------------
@@ -397,6 +413,12 @@ ALL:
 clean:
     @-RMDIR /S /Q $(BASE_DIR) >NUL 2>&1
 
+install:
+    @$(MAKE) /nologo /f .\Makefile.msvc  CFG=lib-release  install
+    @$(MAKE) /nologo /f .\Makefile.msvc  CFG=lib-debug    install
+    @$(MAKE) /nologo /f .\Makefile.msvc  CFG=dll-release  install
+    @$(MAKE) /nologo /f .\Makefile.msvc  CFG=dll-debug    install
+
 !ENDIF
 
 # ---------------------------------------------------------------------
@@ -455,6 +477,19 @@ clean:
     @-RMDIR /S /Q $(PROG1_OUTDIR) >NUL 2>&1
     @-RMDIR /S /Q $(PROG2_OUTDIR) >NUL 2>&1
     @-RMDIR /S /Q $(PROG3_OUTDIR) >NUL 2>&1
+
+install:
+    @if not exist $(CARES_OUTDIR)\$(CARES_TARGET) \
+        $(MAKE) /f .\Makefile.msvc CFG=$(CFG) c-ares
+    @if not exist "$(INSTALL_DIR)"     mkdir "$(INSTALL_DIR)"
+    @if not exist "$(INSTALL_DIR_LIB)" mkdir "$(INSTALL_DIR_LIB)"
+    @if not exist "$(INSTALL_DIR_INC)" mkdir "$(INSTALL_DIR_INC)"
+    @copy /y $(CARES_OUTDIR)\*.*      "$(INSTALL_DIR_LIB)" >NUL
+    @copy /y $(SRCDIR)\ares.h         "$(INSTALL_DIR_INC)" >NUL
+    @copy /y $(SRCDIR)\ares_build.h   "$(INSTALL_DIR_INC)" >NUL
+    @copy /y $(SRCDIR)\ares_rules.h   "$(INSTALL_DIR_INC)" >NUL
+    @copy /y $(SRCDIR)\ares_version.h "$(INSTALL_DIR_INC)" >NUL
+    @echo Installed c-ares $(CFG)
 
 !ENDIF
 
