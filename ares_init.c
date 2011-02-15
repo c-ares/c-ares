@@ -1,6 +1,6 @@
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2007-2010 by Daniel Stenberg
+ * Copyright (C) 2007-2011 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -832,7 +832,10 @@ DhcpNameServer
      return ARES_ENOMEM;
 
   for (i = 0; def_nameservers[i]; i++)
-      servers[i].addr.addrV4.s_addr = htonl(def_nameservers[i]);
+  {
+    servers[i].addr.addrV4.s_addr = htonl(def_nameservers[i]);
+    servers[i].addr.family = AF_INET;
+  }
   status = ARES_EOF;
 
 #elif defined(ANDROID)
