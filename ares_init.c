@@ -1292,9 +1292,9 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
           if (!sortlist_alloc(sortlist, nsort, &pat))
             return ARES_ENOMEM;
         }
-      if (ipbufpfx[0] &&
-          (bits = ares_inet_net_pton(AF_INET, ipbufpfx, &pat.addrV4,
-                                     sizeof(pat.addrV4))) > 0)
+      else if (ipbufpfx[0] &&
+               (bits = ares_inet_net_pton(AF_INET, ipbufpfx, &pat.addrV4,
+                                          sizeof(pat.addrV4))) > 0)
         {
           pat.type = PATTERN_CIDR;
           pat.mask.bits = (unsigned short)bits;
