@@ -103,8 +103,13 @@ AR	= ar
 ARFLAGS	= -cq
 LIBEXT	= a
 RANLIB	= ranlib
-CFLAGS	+= -fno-builtin -fpcc-struct-return -fno-strict-aliasing
-CFLAGS	+= -Wall -Wno-format -Wno-uninitialized # -pedantic
+CFLAGS  += -m32
+CFLAGS  += -fno-builtin -fno-strict-aliasing
+ifeq ($(findstring gcc,$(CC)),gcc)
+CFLAGS  += -fpcc-struct-return
+endif
+CFLAGS  += -Wall # -pedantic
+#CFLAGS	+= -Wall -Wno-format -Wno-uninitialized # -pedantic
 ifeq ($(LIBARCH),LIBC)
 	PRELUDE = $(SDK_LIBC)/imports/libcpre.gcc.o
 else
