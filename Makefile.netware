@@ -109,7 +109,6 @@ ifeq ($(findstring gcc,$(CC)),gcc)
 CFLAGS  += -fpcc-struct-return
 endif
 CFLAGS  += -Wall # -pedantic
-#CFLAGS	+= -Wall -Wno-format -Wno-uninitialized # -pedantic
 ifeq ($(LIBARCH),LIBC)
 	PRELUDE = $(SDK_LIBC)/imports/libcpre.gcc.o
 else
