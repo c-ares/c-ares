@@ -66,11 +66,7 @@ if test -f ${srcdir}/ares_build.h; then
   rm -f ${srcdir}/ares_build.h
 fi
 
-dnl Fetch c-ares version from ares_version.h
-VERSION=`$SED -ne 's/^#define ARES_VERSION_STR "\(.*\)"/\1/p' ${srcdir}/ares_version.h`
-AM_INIT_AUTOMAKE([c-ares], [$VERSION])
-AC_MSG_CHECKING([c-ares version])
-AC_MSG_RESULT([$VERSION])
+AM_INIT_AUTOMAKE
 
 dnl
 dnl Detect the canonical host and target build environment
