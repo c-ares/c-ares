@@ -291,7 +291,7 @@ static int single_domain(ares_channel channel, const char *name, char **s)
             }
           else
             {
-              error = errno;
+              error = ERRNO;
               switch(error)
                 {
                 case ENOENT:
