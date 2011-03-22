@@ -460,6 +460,18 @@ typedef int sig_atomic_t;
 
 
 /*
+ *  System error codes for Windows CE
+ */
+
+#if defined(WIN32) && !defined(HAVE_ERRNO_H)
+#define ENOENT       ERROR_FILE_NOT_FOUND
+#define ESRCH        ERROR_PATH_NOT_FOUND
+#define ENOMEM       ERROR_NOT_ENOUGH_MEMORY
+#define ENOSPC       ERROR_INVALID_PARAMETER
+#endif
+
+
+/*
  *  Actually use __32_getpwuid() on 64-bit VMS builds for getpwuid()
  */
 
