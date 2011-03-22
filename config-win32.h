@@ -2,7 +2,7 @@
 #define __ARES_CONFIG_WIN32_H
 
 
-/* Copyright (C) 2004 - 2010 by Daniel Stenberg et al
+/* Copyright (C) 2004 - 2011 by Daniel Stenberg et al
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted, provided
@@ -25,6 +25,9 @@
 
 /* Define if you have the <assert.h> header file.  */
 #define HAVE_ASSERT_H 1
+
+/* Define if you have the <errno.h> header file.  */
+#define HAVE_ERRNO_H 1
 
 /* Define if you have the <getopt.h> header file.  */
 #if defined(__MINGW32__) || defined(__POCC__)

@@ -2,7 +2,7 @@
 #define __SETUP_ONCE_H
 
 
-/* Copyright (C) 2004 - 2010 by Daniel Stenberg et al
+/* Copyright (C) 2004 - 2011 by Daniel Stenberg et al
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted, provided
@@ -35,7 +35,10 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
+
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
+#endif
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

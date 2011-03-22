@@ -63,7 +63,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <time.h>
-#include <errno.h>
 
 #include "ares.h"
 #include "ares_dns.h"

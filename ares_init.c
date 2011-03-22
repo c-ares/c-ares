@@ -63,7 +63,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-#include <errno.h>
 #include "ares.h"
 #include "inet_net_pton.h"
 #include "ares_library_init.h"

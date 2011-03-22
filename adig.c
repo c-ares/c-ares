@@ -51,7 +51,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <errno.h>
 
 #include "ares.h"
 #include "ares_dns.h"
