@@ -1050,10 +1050,13 @@ static int init_by_defaults(ares_channel channel)
     channel->nservers = 1;
   }
 
-#ifdef ENAMETOOLONG
-#define toolong(x) (x == -1) && ((ENAMETOOLONG == errno) || (EINVAL == errno))
+#if defined(USE_WINSOCK)
+#define toolong(x) (x == -1) &&  (SOCKERRNO == WSAEFAULT)
+#elif defined(ENAMETOOLONG)
+#define toolong(x) (x == -1) && ((SOCKERRNO == ENAMETOOLONG) || \
+                                 (SOCKERRNO == EINVAL))
 #else
-#define toolong(x) (x == -1) && (EINVAL == errno)
+#define toolong(x) (x == -1) &&  (SOCKERRNO == EINVAL)
 #endif
 
   if (channel->ndomains == -1) {
