@@ -704,6 +704,7 @@ DhcpNameServer
   DWORD bytes;
   DWORD result;
   char  buf[256];
+  win_platform platform;
 
   if (channel->nservers > -1)  /* don't override ARES_OPT_SERVER */
      return ARES_SUCCESS;
@@ -715,7 +716,9 @@ DhcpNameServer
       goto okay;
   }
 
-  if (IS_NT())
+  platform = getplatform();
+
+  if (platform == WIN_NT)
   {
     if (RegOpenKeyEx(
           HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0,
@@ -749,7 +752,7 @@ DhcpNameServer
       RegCloseKey(mykey);
     }
   }
-  else
+  else if (platform == WIN_9X)
   {
     if (RegOpenKeyEx(
           HKEY_LOCAL_MACHINE, WIN_NS_9X, 0,

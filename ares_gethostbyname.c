@@ -344,7 +344,13 @@ static int file_lookup(const char *name, int family, struct hostent **host)
 
 #ifdef WIN32
   char PATH_HOSTS[MAX_PATH];
-  if (IS_NT()) {
+  win_platform platform;
+
+  PATH_HOSTS[0] = '\0';
+
+  platform = getplatform();
+
+  if (platform == WIN_NT) {
     char tmp[MAX_PATH];
     HKEY hkeyHosts;
 
@@ -358,8 +364,10 @@ static int file_lookup(const char *name, int family, struct hostent **host)
       RegCloseKey(hkeyHosts);
     }
   }
-  else
+  else if (platform == WIN_9X)
     GetWindowsDirectory(PATH_HOSTS, MAX_PATH);
+  else
+    return ARES_ENOTFOUND;
 
   strcat(PATH_HOSTS, WIN_PATH_HOSTS);
 
