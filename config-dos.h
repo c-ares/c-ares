@@ -9,6 +9,7 @@
 #define PACKAGE  "c-ares"
 
 #define HAVE_ERRNO_H           1
+#define HAVE_GETENV            1
 #define HAVE_GETTIMEOFDAY      1
 #define HAVE_IOCTLSOCKET       1
 #define HAVE_IOCTLSOCKET_FIONBIO   1

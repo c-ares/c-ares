@@ -198,6 +198,10 @@ SOURCE=..\..\ares_free_string.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\ares_getenv.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\ares_gethostbyaddr.c
 # End Source File
 # Begin Source File
@@ -339,6 +343,10 @@ SOURCE=..\..\ares_data.h
 # Begin Source File
 
 SOURCE=..\..\ares_dns.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\ares_getenv.h
 # End Source File
 # Begin Source File
 

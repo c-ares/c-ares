@@ -357,6 +357,7 @@ endif
 	@echo $(DL)#define HAVE_ERRNO_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_ERR_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_FCNTL_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_GETENV 1$(DL) >> $@
 	@echo $(DL)#define HAVE_GETHOSTBYADDR 1$(DL) >> $@
 	@echo $(DL)#define HAVE_GETHOSTBYNAME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_GETHOSTNAME 1$(DL) >> $@

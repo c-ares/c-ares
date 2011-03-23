@@ -1,6 +1,6 @@
 #***************************************************************************
 #
-# Copyright (C) 2008 - 2010 by Daniel Stenberg et al
+# Copyright (C) 2008 - 2011 by Daniel Stenberg et al
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted, provided
@@ -15,7 +15,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 40
+# serial 41
 
 
 dnl CARES_INCLUDES_ARPA_INET
@@ -1080,6 +1080,91 @@ AC_DEFUN([CARES_CHECK_FUNC_GETADDRINFO], [
     else
       ac_cv_func_getaddrinfo_threadsafe="no"
     fi
+  fi
+])
+
+
+dnl CARES_CHECK_FUNC_GETENV
+dnl -------------------------------------------------
+dnl Verify if getenv is available, prototyped, and
+dnl can be compiled. If all of these are true, and
+dnl usage has not been previously disallowed with
+dnl shell variable cares_disallow_getenv, then
+dnl HAVE_GETENV will be defined.
+
+AC_DEFUN([CARES_CHECK_FUNC_GETENV], [
+  AC_REQUIRE([CARES_INCLUDES_STDLIB])dnl
+  #
+  tst_links_getenv="unknown"
+  tst_proto_getenv="unknown"
+  tst_compi_getenv="unknown"
+  tst_allow_getenv="unknown"
+  #
+  AC_MSG_CHECKING([if getenv can be linked])
+  AC_LINK_IFELSE([
+    AC_LANG_FUNC_LINK_TRY([getenv])
+  ],[
+    AC_MSG_RESULT([yes])
+    tst_links_getenv="yes"
+  ],[
+    AC_MSG_RESULT([no])
+    tst_links_getenv="no"
+  ])
+  #
+  if test "$tst_links_getenv" = "yes"; then
+    AC_MSG_CHECKING([if getenv is prototyped])
+    AC_EGREP_CPP([getenv],[
+      $cares_includes_stdlib
+    ],[
+      AC_MSG_RESULT([yes])
+      tst_proto_getenv="yes"
+    ],[
+      AC_MSG_RESULT([no])
+      tst_proto_getenv="no"
+    ])
+  fi
+  #
+  if test "$tst_proto_getenv" = "yes"; then
+    AC_MSG_CHECKING([if getenv is compilable])
+    AC_COMPILE_IFELSE([
+      AC_LANG_PROGRAM([[
+        $cares_includes_stdlib
+      ]],[[
+        if(0 != getenv(0))
+          return 1;
+      ]])
+    ],[
+      AC_MSG_RESULT([yes])
+      tst_compi_getenv="yes"
+    ],[
+      AC_MSG_RESULT([no])
+      tst_compi_getenv="no"
+    ])
+  fi
+  #
+  if test "$tst_compi_getenv" = "yes"; then
+    AC_MSG_CHECKING([if getenv usage allowed])
+    if test "x$cares_disallow_getenv" != "xyes"; then
+      AC_MSG_RESULT([yes])
+      tst_allow_getenv="yes"
+    else
+      AC_MSG_RESULT([no])
+      tst_allow_getenv="no"
+    fi
+  fi
+  #
+  AC_MSG_CHECKING([if getenv might be used])
+  if test "$tst_links_getenv" = "yes" &&
+     test "$tst_proto_getenv" = "yes" &&
+     test "$tst_compi_getenv" = "yes" &&
+     test "$tst_allow_getenv" = "yes"; then
+    AC_MSG_RESULT([yes])
+    AC_DEFINE_UNQUOTED(HAVE_GETENV, 1,
+      [Define to 1 if you have the getenv function.])
+    ac_cv_func_getenv="yes"
+  else
+    AC_MSG_RESULT([no])
+    ac_cv_func_getenv="no"
   fi
 ])
 

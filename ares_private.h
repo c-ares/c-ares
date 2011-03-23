@@ -89,6 +89,11 @@
 #include "ares_ipv6.h"
 #include "ares_llist.h"
 
+#ifndef HAVE_GETENV
+#  include "ares_getenv.h"
+#  define getenv(ptr) ares_getenv(ptr)
+#endif
+
 #ifndef HAVE_STRDUP
 #  include "ares_strdup.h"
 #  define strdup(ptr) ares_strdup(ptr)

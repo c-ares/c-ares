@@ -93,6 +93,9 @@
 /* Define if you have the closesocket function.  */
 #define HAVE_CLOSESOCKET 1
 
+/* Define if you have the getenv function.  */
+#define HAVE_GETENV 1
+
 /* Define if you have the gethostname function.  */
 #define HAVE_GETHOSTNAME 1
 

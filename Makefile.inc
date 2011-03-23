@@ -11,6 +11,7 @@ CSOURCES = ares__close_sockets.c	\
   ares_fds.c				\
   ares_free_hostent.c			\
   ares_free_string.c			\
+  ares_getenv.c				\
   ares_gethostbyaddr.c			\
   ares_gethostbyname.c			\
   ares_getnameinfo.c			\
@@ -47,6 +48,7 @@ HHEADERS = ares.h			\
   ares_build.h				\
   ares_data.h				\
   ares_dns.h				\
+  ares_getenv.h				\
   ares_ipv6.h				\
   ares_library_init.h			\
   ares_llist.h				\
