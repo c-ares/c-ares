@@ -270,6 +270,10 @@ SOURCE=..\..\ares_parse_txt_reply.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\ares_platform.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\ares_process.c
 # End Source File
 # Begin Source File
@@ -363,6 +367,10 @@ SOURCE=..\..\ares_llist.h
 # Begin Source File
 
 SOURCE=..\..\ares_nowarn.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\ares_platform.h
 # End Source File
 # Begin Source File
 

@@ -67,6 +67,7 @@
 #include "inet_net_pton.h"
 #include "ares_library_init.h"
 #include "ares_nowarn.h"
+#include "ares_platform.h"
 #include "ares_private.h"
 
 #ifdef ANDROID

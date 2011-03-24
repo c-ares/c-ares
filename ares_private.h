@@ -344,20 +344,6 @@ long ares__tvdiff(struct timeval t1, struct timeval t2);
       (c)->sock_state_cb((c)->sock_state_cb_data, (s), (r), (w));       \
   } while (0)
 
-#if (defined(WIN32) || defined(WATT32)) && !defined(MSDOS)
-
-typedef enum {
-  WIN_UNKNOWN,
-  WIN_3X,
-  WIN_9X,
-  WIN_NT,
-  WIN_CE
-} win_platform;
-
-win_platform getplatform(void);
-
-#endif
-
 #ifdef CURLDEBUG
 /* This is low-level hard-hacking memory leak tracking and similar. Using the
    libcurl lowlevel code from within library is ugly and only works when
