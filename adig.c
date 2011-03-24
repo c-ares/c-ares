@@ -77,14 +77,26 @@
 #undef WIN32  /* Redefined in MingW headers */
 #endif
 
-/* Mac OS X portability check */
 #ifndef T_SRV
-#define T_SRV 33 /* server selection */
+#  define T_SRV     33 /* Server selection */
 #endif
-
-/* AIX portability check */
 #ifndef T_NAPTR
-#define T_NAPTR 35 /* naming authority pointer */
+#  define T_NAPTR   35 /* Naming authority pointer */
+#endif
+#ifndef T_DS
+#  define T_DS      43 /* Delegation Signer (RFC4034) */
+#endif
+#ifndef T_SSHFP
+#  define T_SSHFP   44 /* SSH Key Fingerprint (RFC4255) */
+#endif
+#ifndef T_RRSIG
+#  define T_RRSIG   46 /* Resource Record Signature (RFC4034) */
+#endif
+#ifndef T_NSEC
+#  define T_NSEC    47 /* Next Secure (RFC4034) */
+#endif
+#ifndef T_DNSKEY
+#  define T_DNSKEY  48 /* DNS Public Key (RFC4034) */
 #endif
 
 struct nv {
@@ -145,6 +157,11 @@ static const struct nv types[] = {
   { "MAILB",    T_MAILB },
   { "MAILA",    T_MAILA },
   { "NAPTR",    T_NAPTR },
+  { "DS",       T_DS },
+  { "SSHFP",    T_SSHFP },
+  { "RRSIG",    T_RRSIG },
+  { "NSEC",     T_NSEC },
+  { "DNSKEY",   T_DNSKEY },
   { "ANY",      T_ANY }
 };
 static const int ntypes = sizeof(types) / sizeof(types[0]);
@@ -750,6 +767,13 @@ static const unsigned char *display_rr(const unsigned char *aptr,
       ares_free_string(name.as_char);
       break;
 
+    case T_DS:
+    case T_SSHFP:
+    case T_RRSIG:
+    case T_NSEC:
+    case T_DNSKEY:
+      printf("\t[RR type parsing unavailable]");
+      break;
 
     default:
       printf("\t[Unknown RR; cannot parse]");
