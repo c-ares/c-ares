@@ -717,7 +717,7 @@ DhcpNameServer
       goto okay;
   }
 
-  platform = getplatform();
+  platform = ares__getplatform();
 
   if (platform == WIN_NT)
   {

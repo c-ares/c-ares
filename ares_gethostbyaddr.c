@@ -191,7 +191,7 @@ static int file_lookup(struct ares_addr *addr, struct hostent **host)
 
   PATH_HOSTS[0] = '\0';
 
-  platform = getplatform();
+  platform = ares__getplatform();
 
   if (platform == WIN_NT) {
     char tmp[MAX_PATH];
