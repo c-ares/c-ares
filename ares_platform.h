@@ -3,6 +3,7 @@
 
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
+ * Copyright (C) 2004 - 2011 by Daniel Stenberg et al
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -30,6 +31,12 @@ typedef enum {
 } win_platform;
 
 win_platform ares__getplatform(void);
+
+#endif
+
+#if defined(_WIN32_WCE)
+
+struct servent *getservbyport(int port, const char *proto);
 
 #endif
 
