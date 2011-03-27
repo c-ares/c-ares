@@ -17,6 +17,8 @@
  */
 
 #include "ares_setup.h"
+
+#include "ares.h"
 #include "ares_platform.h"
 #include "ares_private.h"
 
