@@ -853,6 +853,12 @@ DhcpNameServer
     FILE *fp;
     size_t linesize;
     int error;
+    
+    int ignore_domains = 0;
+    
+    /* Don't override ARES_OPT_DOMAINS */
+    if (channel->ndomains != -1)
+        ignore_domains = 1;
 
     /* Don't read resolv.conf and friends if we don't have to */
     if (ARES_CONFIG_CHECK(channel))
@@ -862,11 +868,11 @@ DhcpNameServer
     if (fp) {
       while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
       {
-        if ((p = try_config(line, "domain", ';')))
+        if ((p = try_config(line, "domain", ';')) && !ignore_domains)
           status = config_domain(channel, p);
         else if ((p = try_config(line, "lookup", ';')) && !channel->lookups)
           status = config_lookup(channel, p, "bind", "file");
-        else if ((p = try_config(line, "search", ';')))
+        else if ((p = try_config(line, "search", ';')) && !ignore_domains)
           status = set_search(channel, p);
         else if ((p = try_config(line, "nameserver", ';')) &&
                  channel->nservers == -1)
