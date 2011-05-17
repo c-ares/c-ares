@@ -684,7 +684,7 @@ static void next_server(ares_channel channel, struct query *query,
    * servers to try. In total, we need to do channel->nservers * channel->tries
    * attempts. Use query->try to remember how many times we already attempted
    * this query. Use modular arithmetic to find the next server to try. */
-  while (++(query->try) < (channel->nservers * channel->tries))
+  while (++(query->try_count) < (channel->nservers * channel->tries))
     {
       struct server_state *server;
 
@@ -789,7 +789,7 @@ void ares__send_query(ares_channel channel, struct query *query,
           return;
         }
     }
-    timeplus = channel->timeout << (query->try / channel->nservers);
+    timeplus = channel->timeout << (query->try_count / channel->nservers);
     timeplus = (timeplus * (9 + (rand () & 7))) / 16;
     query->timeout = *now;
     ares__timeadd(&query->timeout,

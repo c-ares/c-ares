@@ -203,7 +203,7 @@ struct query {
   void *arg;
 
   /* Query status */
-  int try; /* Number of times we tried this query already. */
+  int try_count; /* Number of times we tried this query already. */
   int server; /* Server this query has last been sent to. */
   struct query_server_info *server_info;   /* per-server state */
   int using_tcp;
