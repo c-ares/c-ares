@@ -50,6 +50,7 @@ HHEADERS = ares.h			\
   ares_data.h				\
   ares_dns.h				\
   ares_getenv.h				\
+  ares_iphlpapi.h			\
   ares_ipv6.h				\
   ares_library_init.h			\
   ares_llist.h				\

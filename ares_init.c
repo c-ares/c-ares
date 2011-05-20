@@ -17,10 +17,6 @@
 
 #include "ares_setup.h"
 
-#ifdef USE_WINSOCK
-#include <iphlpapi.h>
-#endif
-
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif

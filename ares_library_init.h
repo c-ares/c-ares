@@ -3,7 +3,7 @@
 
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2004-2009 by Daniel Stenberg
+ * Copyright (C) 2004-2011 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -23,6 +23,7 @@
 #ifdef USE_WINSOCK
 
 #include <iphlpapi.h>
+#include <ares_iphlpapi.h>
 
 typedef DWORD (WINAPI *fpGetNetworkParams_t) (FIXED_INFO*, DWORD*);
 typedef BOOLEAN (APIENTRY *fpSystemFunction036_t) (void*, ULONG);

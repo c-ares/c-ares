@@ -354,6 +354,10 @@ SOURCE=..\..\ares_getenv.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\ares_iphlpapi.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\ares_ipv6.h
 # End Source File
 # Begin Source File
