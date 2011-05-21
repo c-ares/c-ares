@@ -73,7 +73,7 @@ typedef enum {
   IpPrefixOriginManual,
   IpPrefixOriginWellKnown,
   IpPrefixOriginDhcp,
-  IpPrefixOriginRouterAdvertisement,
+  IpPrefixOriginRouterAdvertisement
 } IP_PREFIX_ORIGIN;
 
 typedef enum {
@@ -82,7 +82,7 @@ typedef enum {
   IpSuffixOriginWellKnown,
   IpSuffixOriginDhcp,
   IpSuffixOriginLinkLayerAddress,
-  IpSuffixOriginRandom,
+  IpSuffixOriginRandom
 } IP_SUFFIX_ORIGIN;
 
 typedef enum {
@@ -90,7 +90,7 @@ typedef enum {
   IpDadStateTentative,
   IpDadStateDuplicate,
   IpDadStateDeprecated,
-  IpDadStatePreferred,
+  IpDadStatePreferred
 } IP_DAD_STATE;
 
 typedef enum {
@@ -119,8 +119,8 @@ typedef struct _IP_ADAPTER_UNICAST_ADDRESS {
     struct {
       ULONG Length;
       DWORD Flags;
-    };
-  };
+    } s;
+  } u;
   struct _IP_ADAPTER_UNICAST_ADDRESS *Next;
   SOCKET_ADDRESS Address;
   IP_PREFIX_ORIGIN PrefixOrigin;
@@ -137,8 +137,8 @@ typedef struct _IP_ADAPTER_ANYCAST_ADDRESS {
     struct {
       ULONG Length;
       DWORD Flags;
-    };
-  };
+    } s;
+  } u;
   struct _IP_ADAPTER_ANYCAST_ADDRESS *Next;
   SOCKET_ADDRESS Address;
 } IP_ADAPTER_ANYCAST_ADDRESS, *PIP_ADAPTER_ANYCAST_ADDRESS;
@@ -149,8 +149,8 @@ typedef struct _IP_ADAPTER_MULTICAST_ADDRESS {
     struct {
       ULONG Length;
       DWORD Flags;
-    };
-  };
+    } s;
+  } u;
   struct _IP_ADAPTER_MULTICAST_ADDRESS *Next;
   SOCKET_ADDRESS Address;
 } IP_ADAPTER_MULTICAST_ADDRESS, *PIP_ADAPTER_MULTICAST_ADDRESS;
@@ -161,8 +161,8 @@ typedef struct _IP_ADAPTER_DNS_SERVER_ADDRESS {
     struct {
       ULONG Length;
       DWORD Reserved;
-    };
-  };
+    } s;
+  } u;
   struct _IP_ADAPTER_DNS_SERVER_ADDRESS *Next;
   SOCKET_ADDRESS Address;
 } IP_ADAPTER_DNS_SERVER_ADDRESS, *PIP_ADAPTER_DNS_SERVER_ADDRESS;
@@ -173,8 +173,8 @@ typedef struct _IP_ADAPTER_PREFIX {
     struct {
       ULONG Length;
       DWORD Flags;
-    };
-  };
+    } s;
+  } u;
   struct _IP_ADAPTER_PREFIX *Next;
   SOCKET_ADDRESS Address;
   ULONG PrefixLength;
@@ -186,8 +186,8 @@ typedef struct _IP_ADAPTER_ADDRESSES {
     struct {
       ULONG Length;
       DWORD IfIndex;
-    };
-  };
+    } s;
+  } u;
   struct _IP_ADAPTER_ADDRESSES *Next;
   PCHAR AdapterName;
   PIP_ADAPTER_UNICAST_ADDRESS FirstUnicastAddress;
