@@ -21,6 +21,8 @@
 #  include <assert.h>
 #endif
 
+#define BUILDING_ARES_NOWARN_C 1
+
 #include "ares_nowarn.h"
 
 #if (SIZEOF_INT == 2)
@@ -111,3 +113,31 @@ unsigned int aresx_sztoui(ssize_t sznum)
 #  pragma warning(pop)
 #endif
 }
+
+#if defined(__INTEL_COMPILER) && defined(__unix__)
+
+int aresx_FD_ISSET(int fd, fd_set *fdset)
+{
+  #pragma warning(push)
+  #pragma warning(disable:1469) /* clobber ignored */
+  return FD_ISSET(fd, fdset);
+  #pragma warning(pop)
+}
+
+void aresx_FD_SET(int fd, fd_set *fdset)
+{
+  #pragma warning(push)
+  #pragma warning(disable:1469) /* clobber ignored */
+  FD_SET(fd, fdset);
+  #pragma warning(pop)
+}
+
+void aresx_FD_ZERO(fd_set *fdset)
+{
+  #pragma warning(push)
+  #pragma warning(disable:593) /* variable was set but never used */
+  FD_ZERO(fdset);
+  #pragma warning(pop)
+}
+
+#endif /* __INTEL_COMPILER && __unix__ */

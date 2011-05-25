@@ -2,7 +2,7 @@
 #define HEADER_CARES_NOWARN_H
 
 
-/* Copyright (C) 2010 by Daniel Stenberg
+/* Copyright (C) 2010-2011 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -24,5 +24,24 @@ int aresx_sltosi(long slnum);
 int aresx_sztosi(ssize_t sznum);
 
 unsigned int aresx_sztoui(ssize_t sznum);
+
+#if defined(__INTEL_COMPILER) && defined(__unix__)
+
+int aresx_FD_ISSET(int fd, fd_set *fdset);
+
+void aresx_FD_SET(int fd, fd_set *fdset);
+
+void aresx_FD_ZERO(fd_set *fdset);
+
+#ifndef BUILDING_ARES_NOWARN_C
+#  undef  FD_ISSET
+#  define FD_ISSET(a,b) aresx_FD_ISSET((a),(b))
+#  undef  FD_SET
+#  define FD_SET(a,b)   aresx_FD_SET((a),(b))
+#  undef  FD_ZERO
+#  define FD_ZERO(a)    aresx_FD_ZERO((a))
+#endif
+
+#endif /* __INTEL_COMPILER && __unix__ */
 
 #endif /* HEADER_CARES_NOWARN_H */
