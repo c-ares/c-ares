@@ -59,17 +59,18 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+
+#ifdef ANDROID
+#include <sys/system_properties.h>
+#endif
+
 #include "ares.h"
 #include "inet_net_pton.h"
 #include "ares_library_init.h"
 #include "ares_nowarn.h"
 #include "ares_platform.h"
-#include "ares_private.h"
 #include "inet_ntop.h"
-
-#ifdef ANDROID
-#include <sys/system_properties.h>
-#endif
+#include "ares_private.h"
 
 #ifdef WATT32
 #undef WIN32  /* Redefined in MingW/MSVC headers */
