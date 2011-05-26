@@ -33,6 +33,10 @@ void aresx_FD_SET(int fd, fd_set *fdset);
 
 void aresx_FD_ZERO(fd_set *fdset);
 
+unsigned short aresx_htons(unsigned short usnum);
+
+unsigned short aresx_ntohs(unsigned short usnum);
+
 #ifndef BUILDING_ARES_NOWARN_C
 #  undef  FD_ISSET
 #  define FD_ISSET(a,b) aresx_FD_ISSET((a),(b))
@@ -40,6 +44,10 @@ void aresx_FD_ZERO(fd_set *fdset);
 #  define FD_SET(a,b)   aresx_FD_SET((a),(b))
 #  undef  FD_ZERO
 #  define FD_ZERO(a)    aresx_FD_ZERO((a))
+#  undef  htons
+#  define htons(a)      aresx_htons((a))
+#  undef  ntohs
+#  define ntohs(a)      aresx_ntohs((a))
 #endif
 
 #endif /* __INTEL_COMPILER && __unix__ */

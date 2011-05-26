@@ -1,5 +1,5 @@
 
-/* Copyright (C) 2010 by Daniel Stenberg
+/* Copyright (C) 2010-2011 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -137,6 +137,22 @@ void aresx_FD_ZERO(fd_set *fdset)
   #pragma warning(push)
   #pragma warning(disable:593) /* variable was set but never used */
   FD_ZERO(fdset);
+  #pragma warning(pop)
+}
+
+unsigned short aresx_htons(unsigned short usnum)
+{
+  #pragma warning(push)
+  #pragma warning(disable:810) /* conversion may lose significant bits */
+  return htons(usnum);
+  #pragma warning(pop)
+}
+
+unsigned short aresx_ntohs(unsigned short usnum)
+{
+  #pragma warning(push)
+  #pragma warning(disable:810) /* conversion may lose significant bits */
+  return ntohs(usnum);
   #pragma warning(pop)
 }
 
