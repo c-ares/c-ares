@@ -673,7 +673,7 @@ static int get_iphlpapi_dns_info (char *ret_buf, size_t ret_size)
       for( ; pDNSAddr != NULL ; pDNSAddr = pDNSAddr->Next )
       {
         struct sockaddr *pGenericAddr = pDNSAddr->Address.lpSockaddr;
-        int stringlen = 0;
+        size_t stringlen = 0;
 
         if( pGenericAddr->sa_family == AF_INET && left > ipv4_size )
         {

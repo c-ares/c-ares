@@ -1,6 +1,6 @@
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2008-2010 by Daniel Stenberg
+ * Copyright (C) 2008-2011 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -135,7 +135,7 @@ int ares_set_servers(ares_channel channel,
 int ares_set_servers_csv(ares_channel channel,
                          const char* _csv)
 {
-  int i;
+  size_t i;
   char* csv = NULL;
   char* ptr;
   char* start_host;
