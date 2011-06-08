@@ -145,7 +145,7 @@ AC_DEFUN([CARES_CHECK_AIX_ALL_SOURCE], [
 
 dnl CURL_CHECK_HEADER_WINDOWS
 dnl -------------------------------------------------
-dnl Check for compilable and valid windows.h header 
+dnl Check for compilable and valid windows.h header
 
 AC_DEFUN([CURL_CHECK_HEADER_WINDOWS], [
   AC_CACHE_CHECK([for windows.h], [ac_cv_header_windows_h], [
@@ -218,7 +218,7 @@ AC_DEFUN([CURL_CHECK_NATIVE_WINDOWS], [
 
 dnl CURL_CHECK_HEADER_WINSOCK
 dnl -------------------------------------------------
-dnl Check for compilable and valid winsock.h header 
+dnl Check for compilable and valid winsock.h header
 
 AC_DEFUN([CURL_CHECK_HEADER_WINSOCK], [
   AC_REQUIRE([CURL_CHECK_HEADER_WINDOWS])dnl
@@ -255,7 +255,7 @@ AC_DEFUN([CURL_CHECK_HEADER_WINSOCK], [
 
 dnl CURL_CHECK_HEADER_WINSOCK2
 dnl -------------------------------------------------
-dnl Check for compilable and valid winsock2.h header 
+dnl Check for compilable and valid winsock2.h header
 
 AC_DEFUN([CURL_CHECK_HEADER_WINSOCK2], [
   AC_REQUIRE([CURL_CHECK_HEADER_WINDOWS])dnl
@@ -433,13 +433,13 @@ AC_DEFUN([CURL_CHECK_HEADER_MEMORY], [
 
 dnl CURL_CHECK_FUNC_GETNAMEINFO
 dnl -------------------------------------------------
-dnl Test if the getnameinfo function is available, 
+dnl Test if the getnameinfo function is available,
 dnl and check the types of five of its arguments.
 dnl If the function succeeds HAVE_GETNAMEINFO will be
 dnl defined, defining the types of the arguments in
 dnl GETNAMEINFO_TYPE_ARG1, GETNAMEINFO_TYPE_ARG2,
 dnl GETNAMEINFO_TYPE_ARG46 and GETNAMEINFO_TYPE_ARG7,
-dnl and also defining the type qualifier of first 
+dnl and also defining the type qualifier of first
 dnl argument in GETNAMEINFO_QUAL_ARG1.
 
 AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
@@ -523,7 +523,7 @@ AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
               if test "$curl_cv_func_getnameinfo_args" = "unknown"; then
                 AC_COMPILE_IFELSE([
                   AC_LANG_PROGRAM([[
-#undef inline 
+#undef inline
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -534,7 +534,7 @@ AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
 #endif
 #include <windows.h>
 #ifdef HAVE_WINSOCK2_H
-#include <winsock2.h> 
+#include <winsock2.h>
 #ifdef HAVE_WS2TCPIP_H
 #include <ws2tcpip.h>
 #endif
@@ -634,7 +634,7 @@ AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
 
 dnl TYPE_SOCKADDR_STORAGE
 dnl -------------------------------------------------
-dnl Check for struct sockaddr_storage. Most IPv6-enabled 
+dnl Check for struct sockaddr_storage. Most IPv6-enabled
 dnl hosts have it, but AIX 4.3 is one known exception.
 
 AC_DEFUN([TYPE_SOCKADDR_STORAGE],
@@ -680,7 +680,7 @@ AC_DEFUN([CURL_CHECK_NI_WITHSCOPEID], [
   AC_CHECK_HEADERS(stdio.h sys/types.h sys/socket.h \
                    netdb.h netinet/in.h arpa/inet.h)
   #
-  AC_CACHE_CHECK([for working NI_WITHSCOPEID], 
+  AC_CACHE_CHECK([for working NI_WITHSCOPEID],
     [ac_cv_working_ni_withscopeid], [
     AC_RUN_IFELSE([
       AC_LANG_PROGRAM([[
@@ -772,11 +772,11 @@ AC_DEFUN([CURL_CHECK_NI_WITHSCOPEID], [
 
 dnl CURL_CHECK_FUNC_RECV
 dnl -------------------------------------------------
-dnl Test if the socket recv() function is available, 
-dnl and check its return type and the types of its 
-dnl arguments. If the function succeeds HAVE_RECV 
-dnl will be defined, defining the types of the arguments 
-dnl in RECV_TYPE_ARG1, RECV_TYPE_ARG2, RECV_TYPE_ARG3 
+dnl Test if the socket recv() function is available,
+dnl and check its return type and the types of its
+dnl arguments. If the function succeeds HAVE_RECV
+dnl will be defined, defining the types of the arguments
+dnl in RECV_TYPE_ARG1, RECV_TYPE_ARG2, RECV_TYPE_ARG3
 dnl and RECV_TYPE_ARG4, defining the type of the function
 dnl return value in RECV_TYPE_RETV.
 
@@ -788,7 +788,7 @@ AC_DEFUN([CURL_CHECK_FUNC_RECV], [
   AC_MSG_CHECKING([for recv])
   AC_LINK_IFELSE([
     AC_LANG_PROGRAM([[
-#undef inline 
+#undef inline
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -832,7 +832,7 @@ AC_DEFUN([CURL_CHECK_FUNC_RECV], [
                 if test "$curl_cv_func_recv_args" = "unknown"; then
                   AC_COMPILE_IFELSE([
                     AC_LANG_PROGRAM([[
-#undef inline 
+#undef inline
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -905,13 +905,13 @@ AC_DEFUN([CURL_CHECK_FUNC_RECV], [
 
 dnl CURL_CHECK_FUNC_SEND
 dnl -------------------------------------------------
-dnl Test if the socket send() function is available, 
-dnl and check its return type and the types of its 
-dnl arguments. If the function succeeds HAVE_SEND 
-dnl will be defined, defining the types of the arguments 
-dnl in SEND_TYPE_ARG1, SEND_TYPE_ARG2, SEND_TYPE_ARG3 
+dnl Test if the socket send() function is available,
+dnl and check its return type and the types of its
+dnl arguments. If the function succeeds HAVE_SEND
+dnl will be defined, defining the types of the arguments
+dnl in SEND_TYPE_ARG1, SEND_TYPE_ARG2, SEND_TYPE_ARG3
 dnl and SEND_TYPE_ARG4, defining the type of the function
-dnl return value in SEND_TYPE_RETV, and also defining the 
+dnl return value in SEND_TYPE_RETV, and also defining the
 dnl type qualifier of second argument in SEND_QUAL_ARG2.
 
 AC_DEFUN([CURL_CHECK_FUNC_SEND], [
@@ -922,7 +922,7 @@ AC_DEFUN([CURL_CHECK_FUNC_SEND], [
   AC_MSG_CHECKING([for send])
   AC_LINK_IFELSE([
     AC_LANG_PROGRAM([[
-#undef inline 
+#undef inline
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -966,7 +966,7 @@ AC_DEFUN([CURL_CHECK_FUNC_SEND], [
                 if test "$curl_cv_func_send_args" = "unknown"; then
                   AC_COMPILE_IFELSE([
                     AC_LANG_PROGRAM([[
-#undef inline 
+#undef inline
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -1090,7 +1090,7 @@ AC_DEFUN([CURL_CHECK_FUNC_RECVFROM], [
   AC_MSG_CHECKING([for recvfrom])
   AC_LINK_IFELSE([
     AC_LANG_PROGRAM([[
-#undef inline 
+#undef inline
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -1131,12 +1131,12 @@ AC_DEFUN([CURL_CHECK_FUNC_RECVFROM], [
           for recvfrom_arg2 in 'char *' 'void *'; do
             for recvfrom_arg3 in 'size_t' 'int' 'socklen_t' 'unsigned int'; do
               for recvfrom_arg4 in 'int' 'unsigned int'; do
-                for recvfrom_arg5 in 'struct sockaddr *' 'void *'; do
+                for recvfrom_arg5 in 'struct sockaddr *' 'void *' 'const struct sockaddr *'; do
                   for recvfrom_arg6 in 'socklen_t *' 'int *' 'unsigned int *' 'size_t *' 'void *'; do
                     if test "$curl_cv_func_recvfrom_args" = "unknown"; then
                       AC_COMPILE_IFELSE([
                         AC_LANG_PROGRAM([[
-#undef inline 
+#undef inline
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -1199,7 +1199,7 @@ AC_DEFUN([CURL_CHECK_FUNC_RECVFROM], [
       shift
       #
       recvfrom_ptrt_arg2=$[2]
-      recvfrom_ptrt_arg5=$[5]
+      recvfrom_qual_type_arg5=$[5]
       recvfrom_ptrt_arg6=$[6]
       #
       AC_DEFINE_UNQUOTED(RECVFROM_TYPE_ARG1, $[1],
@@ -1221,12 +1221,25 @@ AC_DEFUN([CURL_CHECK_FUNC_RECVFROM], [
           ;;
       esac
       #
+      case "$recvfrom_qual_type_arg5" in
+        const*)
+          recvfrom_qual_arg5=const
+          recvfrom_ptrt_arg5=`echo $recvfrom_qual_type_arg5 | sed 's/^const //'`
+        ;;
+        *)
+          recvfrom_qual_arg5=
+          recvfrom_ptrt_arg5=$recvfrom_qual_type_arg5
+        ;;
+      esac
+      #
       recvfrom_type_arg2=`echo $recvfrom_ptrt_arg2 | sed 's/ \*//'`
       recvfrom_type_arg5=`echo $recvfrom_ptrt_arg5 | sed 's/ \*//'`
       recvfrom_type_arg6=`echo $recvfrom_ptrt_arg6 | sed 's/ \*//'`
       #
       AC_DEFINE_UNQUOTED(RECVFROM_TYPE_ARG2, $recvfrom_type_arg2,
         [Define to the type pointed by arg 2 for recvfrom.])
+      AC_DEFINE_UNQUOTED(RECVFROM_QUAL_ARG5, $recvfrom_qual_arg5,
+        [Define to the type qualifier pointed by arg 5 for recvfrom.])
       AC_DEFINE_UNQUOTED(RECVFROM_TYPE_ARG5, $recvfrom_type_arg5,
         [Define to the type pointed by arg 5 for recvfrom.])
       AC_DEFINE_UNQUOTED(RECVFROM_TYPE_ARG6, $recvfrom_type_arg6,
@@ -1273,7 +1286,7 @@ AC_DEFUN([CURL_CHECK_MSG_NOSIGNAL], [
   AC_CACHE_CHECK([for MSG_NOSIGNAL], [ac_cv_msg_nosignal], [
     AC_COMPILE_IFELSE([
       AC_LANG_PROGRAM([[
-#undef inline 
+#undef inline
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -1324,7 +1337,7 @@ AC_DEFUN([CURL_CHECK_STRUCT_TIMEVAL], [
   AC_CACHE_CHECK([for struct timeval], [ac_cv_struct_timeval], [
     AC_COMPILE_IFELSE([
       AC_LANG_PROGRAM([[
-#undef inline 
+#undef inline
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -1884,7 +1897,7 @@ dnl CARES_CHECK_STRUCT(headers, struct name, if found, [if not found])
 
 AC_DEFUN([CARES_CHECK_STRUCT], [
   AC_MSG_CHECKING([for struct $2])
-  AC_TRY_COMPILE([$1], 
+  AC_TRY_COMPILE([$1],
     [
       struct $2 struct_instance;
     ], ac_struct="yes", ac_found="no")
