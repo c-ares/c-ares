@@ -194,11 +194,11 @@ static void host_callback(void *arg, int status, int timeouts,
       else if (hquery->sent_family == AF_INET6)
         {
           status = ares_parse_aaaa_reply(abuf, alen, &host, NULL, NULL);
-          if (status == ARES_ENODATA || status == ARES_EBADRESP) {
+          if ((status == ARES_ENODATA || status == ARES_EBADRESP) &&
+               hquery->want_family == AF_UNSPEC) {
             /* The query returned something but either there were no AAAA
                records (e.g. just CNAME) or the response was malformed.  Try
-               looking up A instead.  We should possibly limit this
-               attempt-next logic to AF_UNSPEC lookups only. */
+               looking up A instead. */
             hquery->sent_family = AF_INET;
             ares_search(hquery->channel, hquery->name, C_IN, T_A,
                         host_callback, hquery);
@@ -210,11 +210,10 @@ static void host_callback(void *arg, int status, int timeouts,
       end_hquery(hquery, status, host);
     }
   else if ((status == ARES_ENODATA || status == ARES_EBADRESP ||
-            status == ARES_ETIMEOUT) && hquery->sent_family == AF_INET6)
+            status == ARES_ETIMEOUT) && (hquery->sent_family == AF_INET6 &&
+            hquery->want_family == AF_UNSPEC))
     {
-      /* The AAAA query yielded no useful result.  Now look up an A instead.
-         We should possibly limit this attempt-next logic to AF_UNSPEC lookups
-         only. */
+      /* The AAAA query yielded no useful result.  Now look up an A instead. */
       hquery->sent_family = AF_INET;
       ares_search(hquery->channel, hquery->name, C_IN, T_A, host_callback,
                   hquery);
