@@ -361,7 +361,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
         ipv4_nservers++;
     }
     if (ipv4_nservers) {
-      options->servers = malloc(ipv4_nservers * sizeof(struct server_state));
+      options->servers = malloc(ipv4_nservers * sizeof(struct in_addr));
       if (!options->servers)
         return ARES_ENOMEM;
       for (i = j = 0; i < channel->nservers; i++)
