@@ -118,7 +118,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
           if (hostname)
             free(hostname);
           hostname = rr_data;
-          aliases[aliascnt] = malloc((strlen(rr_data)+1) * sizeof(char *));
+          aliases[aliascnt] = malloc((strlen(rr_data)+1) * sizeof(char));
           if (!aliases[aliascnt])
             {
               status = ARES_ENOMEM;
