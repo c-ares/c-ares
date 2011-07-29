@@ -15,7 +15,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 41
+# serial 43
 
 
 dnl CARES_INCLUDES_ARPA_INET
