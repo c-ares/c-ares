@@ -27,9 +27,11 @@
 #define INET6_ADDRSTRLEN 65
 #endif
 
-/* ---------------------------------------------------------- */
-#if !defined(__CSADDR_DEFINED__) && !defined(__CSADDR_T_DEFINED)
-/* ---------------------------------------------------------- */
+/* ---------------------------------- */
+#if !defined(_WS2DEF_)           && \
+    !defined(__CSADDR_DEFINED__) && \
+    !defined(__CSADDR_T_DEFINED)
+/* ---------------------------------- */
 
 typedef struct _SOCKET_ADDRESS {
   LPSOCKADDR lpSockaddr;
@@ -43,9 +45,11 @@ typedef struct _CSADDR_INFO {
   INT iProtocol;
 } CSADDR_INFO, *PCSADDR_INFO;
 
-/* --------------------------------------------------- */
-#endif /* ! __CSADDR_DEFINED__ && ! __CSADDR_T_DEFINED */
-/* --------------------------------------------------- */
+/* --------------------------------- */
+#endif /* ! _WS2DEF_           && \  */
+/*        ! __CSADDR_DEFINED__ && \  */
+/*        ! __CSADDR_T_DEFINED       */
+/* --------------------------------- */
 
 /* ------------------------------- */
 #if !defined(IP_ADAPTER_DDNS_ENABLED)
