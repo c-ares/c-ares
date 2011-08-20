@@ -15,7 +15,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 67
+# serial 68
 
 
 dnl CARES_CHECK_COMPILER
@@ -1484,12 +1484,18 @@ AC_DEFUN([CARES_CHECK_COMPILER_SYMBOL_HIDING], [
         }
       ]],[[
         char b[16];
-        char *r = dummy(&b);
+        char *r = dummy(&b[0]);
         if(r)
           return (int)*r;
       ]])
     ],[
       supports_symbol_hiding="yes"
+      if test -f conftest.err; then
+        grep 'visibility' conftest.err >/dev/null
+        if test "$?" -eq "0"; then
+          supports_symbol_hiding="no"
+        fi
+      fi
     ],[
       supports_symbol_hiding="no"
       echo " " >&6
