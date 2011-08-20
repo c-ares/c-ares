@@ -19,6 +19,10 @@
 
 int aresx_uztosi(size_t uznum);
 
+short aresx_uztoss(size_t uznum);
+
+short aresx_sitoss(int sinum);
+
 int aresx_sltosi(long slnum);
 
 int aresx_sztosi(ssize_t sznum);
