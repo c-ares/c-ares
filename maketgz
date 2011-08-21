@@ -59,6 +59,9 @@ print "running configure\n";
 print "running make pdf\n";
 `make -s pdf`;
 
+print "produce CHANGES\n";
+`git log --pretty=fuller --no-color --date=short --decorate=full -1000 | ./git2changes.pl > CHANGES.dist`;
+
 # now make the actual tarball
 print "running make dist\n";
 `make dist VERSION=$version`;
