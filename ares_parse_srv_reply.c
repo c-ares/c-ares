@@ -139,11 +139,11 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
           srv_last = srv_curr;
 
           vptr = aptr;
-          srv_curr->priority = DNS__16BIT(vptr);
+          srv_curr->priority = (unsigned short)DNS__16BIT(vptr);
           vptr += sizeof(unsigned short);
-          srv_curr->weight = DNS__16BIT(vptr);
+          srv_curr->weight = (unsigned short)DNS__16BIT(vptr);
           vptr += sizeof(unsigned short);
-          srv_curr->port = DNS__16BIT(vptr);
+          srv_curr->port = (unsigned short)DNS__16BIT(vptr);
           vptr += sizeof(unsigned short);
 
           status = ares_expand_name (vptr, abuf, alen, &srv_curr->host, &len);
