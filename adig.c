@@ -649,7 +649,7 @@ static const unsigned char *display_rr(const unsigned char *aptr,
        */
       if (dlen < 2)
         return NULL;
-      printf("\t%d", DNS__16BIT(aptr));
+      printf("\t%d", (int)DNS__16BIT(aptr));
       status = ares_expand_name(aptr + 2, abuf, alen, &name.as_char, &len);
       if (status != ARES_SUCCESS)
         return NULL;
@@ -676,10 +676,10 @@ static const unsigned char *display_rr(const unsigned char *aptr,
       p += len;
       if (p + 20 > aptr + dlen)
         return NULL;
-      printf("\t\t\t\t\t\t( %lu %lu %lu %lu %lu )",
-             (unsigned long)DNS__32BIT(p), (unsigned long)DNS__32BIT(p+4),
-             (unsigned long)DNS__32BIT(p+8), (unsigned long)DNS__32BIT(p+12),
-             (unsigned long)DNS__32BIT(p+16));
+      printf("\t\t\t\t\t\t( %u %u %u %u %u )",
+             DNS__32BIT(p), DNS__32BIT(p+4),
+             DNS__32BIT(p+8), DNS__32BIT(p+12),
+             DNS__32BIT(p+16));
       break;
 
     case T_TXT:
@@ -723,9 +723,9 @@ static const unsigned char *display_rr(const unsigned char *aptr,
        * priority, weight, and port, followed by a domain name.
        */
 
-      printf("\t%d", DNS__16BIT(aptr));
-      printf(" %d", DNS__16BIT(aptr + 2));
-      printf(" %d", DNS__16BIT(aptr + 4));
+      printf("\t%d", (int)DNS__16BIT(aptr));
+      printf(" %d", (int)DNS__16BIT(aptr + 2));
+      printf(" %d", (int)DNS__16BIT(aptr + 4));
 
       status = ares_expand_name(aptr + 6, abuf, alen, &name.as_char, &len);
       if (status != ARES_SUCCESS)
@@ -736,8 +736,8 @@ static const unsigned char *display_rr(const unsigned char *aptr,
 
     case T_NAPTR:
 
-      printf("\t%d", DNS__16BIT(aptr)); /* order */
-      printf(" %d\n", DNS__16BIT(aptr + 2)); /* preference */
+      printf("\t%d", (int)DNS__16BIT(aptr)); /* order */
+      printf(" %d\n", (int)DNS__16BIT(aptr + 2)); /* preference */
 
       p = aptr + 4;
       status = ares_expand_string(p, abuf, alen, &name.as_uchar, &len);
