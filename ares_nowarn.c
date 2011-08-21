@@ -64,7 +64,43 @@
 #elif (SIZEOF_INT == 16)
 #  define CARES_MASK_SINT  0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 #  define CARES_MASK_UINT  0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+#else
+#  error "SIZEOF_INT not defined"
 #endif
+
+#if (CARES_SIZEOF_LONG == 2)
+#  define CARES_MASK_SLONG  0x7FFFL
+#  define CARES_MASK_ULONG  0xFFFFUL
+#elif (CARES_SIZEOF_LONG == 4)
+#  define CARES_MASK_SLONG  0x7FFFFFFFL
+#  define CARES_MASK_ULONG  0xFFFFFFFFUL
+#elif (CARES_SIZEOF_LONG == 8)
+#  define CARES_MASK_SLONG  0x7FFFFFFFFFFFFFFFL
+#  define CARES_MASK_ULONG  0xFFFFFFFFFFFFFFFFUL
+#elif (CARES_SIZEOF_LONG == 16)
+#  define CARES_MASK_SLONG  0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFL
+#  define CARES_MASK_ULONG  0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFUL
+#else
+#  error "CARES_SIZEOF_LONG not defined"
+#endif
+
+/*
+** unsigned size_t to signed long
+*/
+
+long aresx_uztosl(size_t uznum)
+{
+#ifdef __INTEL_COMPILER
+#  pragma warning(push)
+#  pragma warning(disable:810) /* conversion may lose significant bits */
+#endif
+
+  return (long)(uznum & (size_t) CARES_MASK_SLONG);
+
+#ifdef __INTEL_COMPILER
+#  pragma warning(pop)
+#endif
+}
 
 /*
 ** unsigned size_t to signed int

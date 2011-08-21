@@ -17,8 +17,8 @@
  * without express or implied warranty.
  */
 
-int aresx_uztosi(size_t uznum);
-
+long  aresx_uztosl(size_t uznum);
+int   aresx_uztosi(size_t uznum);
 short aresx_uztoss(size_t uznum);
 
 short aresx_sitoss(int sinum);
