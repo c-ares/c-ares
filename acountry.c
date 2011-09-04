@@ -89,7 +89,7 @@ static int         verbose    = 0;
 #define TRACE(fmt) do {               \
                      if (verbose > 0) \
                        printf fmt ;   \
-                   } while (0)
+                   } WHILE_FALSE
 
 static void wait_ares(ares_channel channel);
 static void callback(void *arg, int status, int timeouts, struct hostent *host);
