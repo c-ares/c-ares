@@ -1249,15 +1249,22 @@ static int init_by_defaults(ares_channel channel)
 
   error:
   if(rc) {
-    if(channel->servers)
+    if(channel->servers) {
       free(channel->servers);
+      channel->servers = NULL;
+    }
 
     if(channel->domains && channel->domains[0])
       free(channel->domains[0]);
-    if(channel->domains)
+    if(channel->domains) {
       free(channel->domains);
-    if(channel->lookups)
+      channel->domains = NULL;
+    }
+
+    if(channel->lookups) {
       free(channel->lookups);
+      channel->lookups = NULL;
+    }
   }
 
   if(hostname)
