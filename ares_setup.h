@@ -2,7 +2,7 @@
 #define HEADER_CARES_SETUP_H
 
 
-/* Copyright (C) 2004 - 2009 by Daniel Stenberg et al
+/* Copyright (C) 2004 - 2012 by Daniel Stenberg et al
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted, provided
@@ -156,6 +156,18 @@
 #endif
 
 #endif /* HAVE_CONFIG_H */
+
+/*
+ * Arg 2 type for gethostname in case it hasn't been defined in config file.
+ */
+
+#ifndef GETHOSTNAME_TYPE_ARG2
+#  ifdef USE_WINSOCK
+#    define GETHOSTNAME_TYPE_ARG2 int
+#  else
+#    define GETHOSTNAME_TYPE_ARG2 size_t
+#  endif
+#endif
 
 #ifdef __POCC__
 #  include <sys/types.h>

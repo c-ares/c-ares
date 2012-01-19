@@ -1,6 +1,6 @@
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2007-2011 by Daniel Stenberg
+ * Copyright (C) 2007-2012 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -1186,11 +1186,14 @@ static int init_by_defaults(ares_channel channel)
     /* Derive a default domain search list from the kernel hostname,
      * or set it to empty if the hostname isn't helpful.
      */
+#ifndef HAVE_GETHOSTNAME
+    channel->ndomains = 0; /* default to none */
+#else
+    GETHOSTNAME_TYPE_ARG2 lenv = 64;
     size_t len = 64;
     int res;
     channel->ndomains = 0; /* default to none */
 
-#ifdef HAVE_GETHOSTNAME
     hostname = malloc(len);
     if(!hostname) {
       rc = ARES_ENOMEM;
@@ -1198,11 +1201,12 @@ static int init_by_defaults(ares_channel channel)
     }
 
     do {
-      res = gethostname(hostname, len);
+      res = gethostname(hostname, lenv);
 
       if(toolong(res)) {
         char *p;
         len *= 2;
+        lenv *= 2;
         p = realloc(hostname, len);
         if(!p) {
           rc = ARES_ENOMEM;
