@@ -465,6 +465,16 @@ struct ares_txt_reply {
   size_t                  length;  /* length excludes null termination */
 };
 
+struct ares_naptr_reply {
+  struct ares_naptr_reply *next;
+  unsigned char           *flags;
+  unsigned char           *service;
+  unsigned char           *regexp;
+  char                    *replacement;
+  unsigned short           order;
+  unsigned short           preference;
+};
+
 /*
 ** Parse the buffer, starting at *abuf and of length alen bytes, previously
 ** obtained from an ares_search call.  Put the results in *host, if nonnull.
@@ -507,6 +517,10 @@ CARES_EXTERN int ares_parse_mx_reply(const unsigned char* abuf,
 CARES_EXTERN int ares_parse_txt_reply(const unsigned char* abuf,
                                       int alen,
                                       struct ares_txt_reply** txt_out);
+
+CARES_EXTERN int ares_parse_naptr_reply(const unsigned char* abuf,
+                                        int alen,
+                                        struct ares_naptr_reply** naptr_out);
 
 CARES_EXTERN void ares_free_string(void *str);
 
