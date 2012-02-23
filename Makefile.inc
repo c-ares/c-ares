@@ -25,6 +25,7 @@ CSOURCES = ares__close_sockets.c	\
   ares_parse_a_reply.c			\
   ares_parse_aaaa_reply.c		\
   ares_parse_mx_reply.c			\
+  ares_parse_naptr_reply.c		\
   ares_parse_ns_reply.c			\
   ares_parse_ptr_reply.c		\
   ares_parse_srv_reply.c		\
@@ -93,6 +94,7 @@ MANPAGES = ares_cancel.3		\
   ares_parse_a_reply.3			\
   ares_parse_aaaa_reply.3		\
   ares_parse_mx_reply.3			\
+  ares_parse_naptr_reply.3		\
   ares_parse_ns_reply.3			\
   ares_parse_ptr_reply.3		\
   ares_parse_srv_reply.3		\
