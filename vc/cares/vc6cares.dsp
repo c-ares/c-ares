@@ -254,6 +254,10 @@ SOURCE=..\..\ares_parse_mx_reply.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\ares_parse_naptr_reply.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\ares_parse_ns_reply.c
 # End Source File
 # Begin Source File
