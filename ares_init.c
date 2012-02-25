@@ -434,9 +434,9 @@ static int init_by_options(ares_channel channel,
   if ((optmask & ARES_OPT_ROTATE) && channel->rotate == -1)
     channel->rotate = 1;
   if ((optmask & ARES_OPT_UDP_PORT) && channel->udp_port == -1)
-    channel->udp_port = options->udp_port;
+    channel->udp_port = htons(options->udp_port);
   if ((optmask & ARES_OPT_TCP_PORT) && channel->tcp_port == -1)
-    channel->tcp_port = options->tcp_port;
+    channel->tcp_port = htons(options->tcp_port);
   if ((optmask & ARES_OPT_SOCK_STATE_CB) && channel->sock_state_cb == NULL)
     {
       channel->sock_state_cb = options->sock_state_cb;
