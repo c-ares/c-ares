@@ -76,7 +76,8 @@
 #undef WIN32  /* Redefined in MingW/MSVC headers */
 #endif
 
-static int init_by_options(ares_channel channel, const struct ares_options *options,
+static int init_by_options(ares_channel channel,
+                           const struct ares_options *options,
                            int optmask);
 static int init_by_environment(ares_channel channel);
 static int init_by_resolv_conf(ares_channel channel);
@@ -92,7 +93,8 @@ static const char *try_option(const char *p, const char *q, const char *opt);
 static int init_id_key(rc4_key* key,int key_data_len);
 
 #if !defined(WIN32) && !defined(WATT32)
-static int sortlist_alloc(struct apattern **sortlist, int *nsort, struct apattern *pat);
+static int sortlist_alloc(struct apattern **sortlist, int *nsort,
+                          struct apattern *pat);
 static int ip_addr(const char *s, ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
 static int config_domain(ares_channel channel, char *str);
@@ -293,7 +295,8 @@ int ares_dup(ares_channel *dest, ares_channel src)
   (*dest)->sock_create_cb      = src->sock_create_cb;
   (*dest)->sock_create_cb_data = src->sock_create_cb_data;
 
-  strncpy((*dest)->local_dev_name, src->local_dev_name, sizeof(src->local_dev_name));
+  strncpy((*dest)->local_dev_name, src->local_dev_name,
+          sizeof(src->local_dev_name));
   (*dest)->local_ip4 = src->local_ip4;
   memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
 
@@ -611,7 +614,7 @@ static int get_res_interfaces_nt(HKEY hKey, const char *subkey, char **obuf)
 static int get_iphlpapi_dns_info (char *ret_buf, size_t ret_size)
 {
   const size_t  ipv4_size = INET_ADDRSTRLEN  + 1;  /* +1 for ',' at end */
-  const size_t  ipv6_size = INET6_ADDRSTRLEN + 12; /* +12 for "%0123456789," at end */
+  const size_t  ipv6_size = INET6_ADDRSTRLEN + 12; /* +12 for "%0123456789," */
   long          left = ret_size;
   char         *ret  = ret_buf;
   int           count = 0;
@@ -627,78 +630,85 @@ static int get_iphlpapi_dns_info (char *ret_buf, size_t ret_size)
     ULONG                  result = 0;
 
     /* According to MSDN, the recommended way to do this is to use a temporary
-       buffer of 15K, to "dramatically reduce the chance that the GetAdaptersAddresses
-       method returns ERROR_BUFFER_OVERFLOW" */
-    pFirstEntry  = ( IP_ADAPTER_ADDRESSES * ) malloc( working_buf_size );
+       buffer of 15K, to "dramatically reduce the chance that the
+       GetAdaptersAddresses method returns ERROR_BUFFER_OVERFLOW" */
+    pFirstEntry  = (IP_ADAPTER_ADDRESSES *) malloc(working_buf_size);
     bufSize = working_buf_size;
-    if( !pFirstEntry )
+    if(!pFirstEntry)
       return 0;
 
     /* Call the method one time */
-    result = ( *ares_fpGetAdaptersAddresses )( AF_UNSPEC, 0, 0, pFirstEntry, &bufSize );
-    if( result == ERROR_BUFFER_OVERFLOW )
+    result = (*ares_fpGetAdaptersAddresses)(AF_UNSPEC, 0, 0, pFirstEntry,
+                                               &bufSize);
+    if(result == ERROR_BUFFER_OVERFLOW)
     {
       /* Reallocate, bufSize should now be set to the required size */
-      pFirstEntry = ( IP_ADAPTER_ADDRESSES * ) realloc( pFirstEntry, bufSize );
-      if( !pFirstEntry )
+      pFirstEntry = (IP_ADAPTER_ADDRESSES *) realloc(pFirstEntry, bufSize);
+      if(!pFirstEntry)
         return 0;
 
       /* Call the method a second time */
-      result = ( *ares_fpGetAdaptersAddresses )( AF_UNSPEC, 0, 0, pFirstEntry, &bufSize );
-      if( result == ERROR_BUFFER_OVERFLOW )
+      result = (*ares_fpGetAdaptersAddresses)(AF_UNSPEC, 0, 0, pFirstEntry,
+                                                &bufSize);
+      if(result == ERROR_BUFFER_OVERFLOW)
       {
         /* Reallocate, bufSize should now be set to the required size */
-        pFirstEntry = ( IP_ADAPTER_ADDRESSES * ) realloc( pFirstEntry, bufSize );
-        if( !pFirstEntry )
+        pFirstEntry = (IP_ADAPTER_ADDRESSES *)realloc(pFirstEntry, bufSize);
+        if(!pFirstEntry)
           return 0;
 
-        /* Call the method a third time. The maximum number of times we're going to do
-           this is 3. Three shall be the number thou shalt count, and the number of the
-           counting shall be three.  Five is right out. */
-        result = ( *ares_fpGetAdaptersAddresses )( AF_UNSPEC, 0, 0, pFirstEntry, &bufSize );
+        /* Call the method a third time. The maximum number of times we're
+           going to do this is 3. Three shall be the number thou shalt count,
+           and the number of the counting shall be three.  Five is right
+           out. */
+        result = (*ares_fpGetAdaptersAddresses)(AF_UNSPEC, 0, 0, pFirstEntry,
+                                                &bufSize);
       }
     }
 
     /* Check the current result for failure */
-    if( result != ERROR_SUCCESS )
+    if(result != ERROR_SUCCESS)
     {
-      free( pFirstEntry );
+      free(pFirstEntry);
       return 0;
     }
 
     /* process the results */
-    for( pEntry = pFirstEntry ; pEntry != NULL ; pEntry = pEntry->Next )
+    for(pEntry = pFirstEntry ; pEntry != NULL ; pEntry = pEntry->Next)
     {
       IP_ADAPTER_DNS_SERVER_ADDRESS* pDNSAddr = pEntry->FirstDnsServerAddress;
-      for( ; pDNSAddr != NULL ; pDNSAddr = pDNSAddr->Next )
+      for(; pDNSAddr != NULL ; pDNSAddr = pDNSAddr->Next)
       {
         struct sockaddr *pGenericAddr = pDNSAddr->Address.lpSockaddr;
         size_t stringlen = 0;
 
-        if( pGenericAddr->sa_family == AF_INET && left > ipv4_size )
+        if(pGenericAddr->sa_family == AF_INET && left > ipv4_size)
         {
           /* Handle the v4 case */
-          struct sockaddr_in *pIPv4Addr = ( struct sockaddr_in * ) pGenericAddr;
-          ares_inet_ntop( AF_INET, &pIPv4Addr->sin_addr, ret, ipv4_size - 1 ); /* -1 for comma */
+          struct sockaddr_in *pIPv4Addr = (struct sockaddr_in *) pGenericAddr;
+
+          ares_inet_ntop(AF_INET, &pIPv4Addr->sin_addr, ret,
+                         ipv4_size - 1); /* -1 for comma */
 
           /* Append a comma to the end, THEN NULL. Should be OK because we
              already tested the size at the top of the if statement. */
-          stringlen = strlen( ret );
+          stringlen = strlen(ret);
           ret[ stringlen ] = ',';
           ret[ stringlen + 1 ] = '\0';
           ret += stringlen + 1;
           left -= stringlen + 1;
           ++count;
         }
-        else if( pGenericAddr->sa_family == AF_INET6 && left > ipv6_size )
+        else if(pGenericAddr->sa_family == AF_INET6 && left > ipv6_size)
         {
           /* Handle the v6 case */
-          struct sockaddr_in6 *pIPv6Addr = ( struct sockaddr_in6 * ) pGenericAddr;
-          ares_inet_ntop( AF_INET6, &pIPv6Addr->sin6_addr, ret, ipv6_size - 1 ); /* -1 for comma */
+          struct sockaddr_in6 *pIPv6Addr = (struct sockaddr_in6 *)pGenericAddr;
+          ares_inet_ntop(AF_INET6, &pIPv6Addr->sin6_addr, ret,
+                         ipv6_size - 1); /* -1 for comma */
 
           /* Append a comma to the end, THEN NULL. Should be OK because we
              already tested the size at the top of the if statement. */
-          stringlen = strlen( ret );
+          stringlen = strlen(ret);
           ret[ stringlen ] = ',';
           ret[ stringlen + 1 ] = '\0';
           ret += stringlen + 1;
@@ -711,8 +721,8 @@ static int get_iphlpapi_dns_info (char *ret_buf, size_t ret_size)
       }
     }
 
-    if( pFirstEntry )
-      free( pFirstEntry );
+    if(pFirstEntry)
+      free(pFirstEntry);
     if (ret > ret_buf)
       ret[-1] = '\0';
     return count;
@@ -844,7 +854,7 @@ DhcpNameServer
     if (RegOpenKeyEx(
           HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0,
           KEY_READ, &mykey
-          ) == ERROR_SUCCESS)
+         ) == ERROR_SUCCESS)
     {
       RegOpenKeyEx(mykey, "Interfaces", 0,
                    KEY_QUERY_VALUE|KEY_ENUMERATE_SUB_KEYS, &subkey);
@@ -878,13 +888,13 @@ DhcpNameServer
     if (RegOpenKeyEx(
           HKEY_LOCAL_MACHINE, WIN_NS_9X, 0,
           KEY_READ, &mykey
-          ) == ERROR_SUCCESS)
+         ) == ERROR_SUCCESS)
     {
       if ((result = RegQueryValueEx(
              mykey, NAMESERVER, NULL, &data_type,
              NULL, &bytes
-             )
-            ) == ERROR_SUCCESS ||
+            )
+           ) == ERROR_SUCCESS ||
           result == ERROR_MORE_DATA)
       {
         if (bytes)
@@ -1022,7 +1032,8 @@ DhcpNameServer
       /* Many systems (Solaris, Linux, BSD's) use nsswitch.conf */
       fp = fopen("/etc/nsswitch.conf", "r");
       if (fp) {
-        while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
+        while ((status = ares__read_line(fp, &line, &linesize)) ==
+               ARES_SUCCESS)
         {
           if ((p = try_config(line, "hosts:", '\0')) && !channel->lookups)
             /* ignore errors */
@@ -1040,7 +1051,8 @@ DhcpNameServer
         default:
           DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
                          error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n", "/etc/nsswitch.conf"));
+          DEBUGF(fprintf(stderr, "Error opening file: %s\n",
+                         "/etc/nsswitch.conf"));
           status = ARES_EFILE;
         }
       }
@@ -1050,7 +1062,8 @@ DhcpNameServer
       /* Linux / GNU libc 2.x and possibly others have host.conf */
       fp = fopen("/etc/host.conf", "r");
       if (fp) {
-        while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
+        while ((status = ares__read_line(fp, &line, &linesize)) ==
+               ARES_SUCCESS)
         {
           if ((p = try_config(line, "order", '\0')) && !channel->lookups)
             /* ignore errors */
@@ -1068,7 +1081,8 @@ DhcpNameServer
         default:
           DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
                          error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n", "/etc/host.conf"));
+          DEBUGF(fprintf(stderr, "Error opening file: %s\n",
+                         "/etc/host.conf"));
           status = ARES_EFILE;
         }
       }
@@ -1078,7 +1092,8 @@ DhcpNameServer
       /* Tru64 uses /etc/svc.conf */
       fp = fopen("/etc/svc.conf", "r");
       if (fp) {
-        while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
+        while ((status = ares__read_line(fp, &line, &linesize)) ==
+               ARES_SUCCESS)
         {
           if ((p = try_config(line, "hosts=", '\0')) && !channel->lookups)
             /* ignore errors */
@@ -1717,7 +1732,7 @@ static void randomize_key(unsigned char* key,int key_data_len)
 #endif
 #endif /* WIN32 */
 
-  if ( !randomized ) {
+  if (!randomized) {
     for (;counter<key_data_len;counter++)
       key[counter]=(unsigned char)(rand() % 256);
   }
