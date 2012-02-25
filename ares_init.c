@@ -612,7 +612,7 @@ static int get_iphlpapi_dns_info (char *ret_buf, size_t ret_size)
 {
   const size_t  ipv4_size = INET_ADDRSTRLEN  + 1;  /* +1 for ',' at end */
   const size_t  ipv6_size = INET6_ADDRSTRLEN + 12; /* +12 for "%0123456789," at end */
-  size_t        left = ret_size;
+  long          left = ret_size;
   char         *ret  = ret_buf;
   int           count = 0;
 
@@ -687,7 +687,7 @@ static int get_iphlpapi_dns_info (char *ret_buf, size_t ret_size)
           ret[ stringlen ] = ',';
           ret[ stringlen + 1 ] = '\0';
           ret += stringlen + 1;
-          left -= ret - ret_buf;
+          left -= stringlen + 1;
           ++count;
         }
         else if( pGenericAddr->sa_family == AF_INET6 && left > ipv6_size )
@@ -702,7 +702,7 @@ static int get_iphlpapi_dns_info (char *ret_buf, size_t ret_size)
           ret[ stringlen ] = ',';
           ret[ stringlen + 1 ] = '\0';
           ret += stringlen + 1;
-          left -= ret - ret_buf;
+          left -= stringlen + 1;
           ++count;
 
           /* NB on Windows this also returns stuff in the fec0::/10 range,
