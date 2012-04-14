@@ -176,6 +176,14 @@
 #endif
 
 /*
+ * Android does have the arpa/nameser.h header which is detected by configure
+ * but it appears to be empty with recent NDK r7b / r7c, so we undefine here.
+ */
+#if defined(__ANDROID__) && defined(HAVE_ARPA_NAMESER_H)
+#  undef HAVE_ARPA_NAMESER_H
+#endif
+
+/*
  * Recent autoconf versions define these symbols in ares_config.h. We don't
  * want them (since they collide with the libcurl ones when we build
  *  --enable-debug) so we undef them again here.
