@@ -65,11 +65,11 @@
 #endif
 
 #include "ares.h"
+#include "inet_ntop.h"
 #include "inet_net_pton.h"
 #include "ares_library_init.h"
 #include "ares_nowarn.h"
 #include "ares_platform.h"
-#include "inet_ntop.h"
 #include "ares_private.h"
 
 #ifdef WATT32
@@ -598,202 +598,182 @@ static int get_res_interfaces_nt(HKEY hKey, const char *subkey, char **obuf)
   return 0;
 }
 
-/**
- * The desired output for this method is that we set "ret_buf" to
- * something like:
- *
- * 192.168.0.1,dns01.my.domain,fe80::200:f8ff:fe21:67cf
- *
- * The only ordering requirement is that primary servers are listed
- * before secondary. There is no requirement that IPv4 addresses should
- * necessarily be before IPv6.
- *
- * Note that ret_size should ideally be big enough to hold around
- * 2-3 IPv4 and 2-3 IPv6 addresses.
- *
- * Finally, we need to return the total number of DNS servers located.
- */
-static int get_iphlpapi_dns_info (char *ret_buf, size_t ret_size)
+/* get_iphlpapi_dns_classic() is supported on W98 and newer */
+static int get_iphlpapi_dns_classic(char *ret_buf, size_t ret_size)
 {
-  const size_t  ipv4_size = INET_ADDRSTRLEN  + 1;  /* +1 for ',' at end */
-  const size_t  ipv6_size = INET6_ADDRSTRLEN + 12; /* +12 for "%0123456789," */
-  long          left = ret_size;
-  char         *ret  = ret_buf;
-  int           count = 0;
+  FIXED_INFO       *fi, *newfi;
+  struct ares_addr namesrvr;
+  char             *txtaddr;
+  IP_ADDR_STRING   *ipAddr;
+  size_t           txtlen;
+  HRESULT          res;
+  DWORD            size = sizeof (*fi);
+  char             *endptr = ret_buf;
+  int              count = 0;
 
-  /* Use the GetAdaptersAddresses method if it's available, otherwise
-     fall back to GetNetworkParams. */
-  if (ares_fpGetAdaptersAddresses != ZERO_NULL)
+  *endptr = '\0';
+
+  fi = malloc(size);
+  if (!fi)
+    return 0;
+
+  res = (*ares_fpGetNetworkParams) (fi, &size);
+  if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS))
+    goto quit;
+
+  newfi = realloc(fi, size);
+  if (!newfi)
+    goto quit;
+
+  fi = newfi;
+  res = (*ares_fpGetNetworkParams) (fi, &size);
+  if (res != ERROR_SUCCESS)
+    goto quit;
+
+  for (ipAddr = &fi->DnsServerList; ipAddr; ipAddr = ipAddr->Next)
   {
-    const ULONG            working_buf_size = 15000;
-    IP_ADAPTER_ADDRESSES   *pFirstEntry = NULL;
-    IP_ADAPTER_ADDRESSES   *pEntry = NULL;
-    ULONG                  bufSize = 0;
-    ULONG                  result = 0;
+    txtaddr = &ipAddr->IpAddress.String[0];
 
-    /* According to MSDN, the recommended way to do this is to use a temporary
-       buffer of 15K, to "dramatically reduce the chance that the
-       GetAdaptersAddresses method returns ERROR_BUFFER_OVERFLOW" */
-    pFirstEntry  = (IP_ADAPTER_ADDRESSES *) malloc(working_buf_size);
-    bufSize = working_buf_size;
-    if(!pFirstEntry)
-      return 0;
-
-    /* Call the method one time */
-    result = (*ares_fpGetAdaptersAddresses)(AF_UNSPEC, 0, 0, pFirstEntry,
-                                               &bufSize);
-    if(result == ERROR_BUFFER_OVERFLOW)
+    /* Validate converting textual address to binary format. */
+    if (ares_inet_pton(AF_INET, txtaddr, &namesrvr.addrV4) == 1)
     {
-      /* Reallocate, bufSize should now be set to the required size */
-      pFirstEntry = (IP_ADAPTER_ADDRESSES *) realloc(pFirstEntry, bufSize);
-      if(!pFirstEntry)
-        return 0;
-
-      /* Call the method a second time */
-      result = (*ares_fpGetAdaptersAddresses)(AF_UNSPEC, 0, 0, pFirstEntry,
-                                                &bufSize);
-      if(result == ERROR_BUFFER_OVERFLOW)
-      {
-        /* Reallocate, bufSize should now be set to the required size */
-        pFirstEntry = (IP_ADAPTER_ADDRESSES *)realloc(pFirstEntry, bufSize);
-        if(!pFirstEntry)
-          return 0;
-
-        /* Call the method a third time. The maximum number of times we're
-           going to do this is 3. Three shall be the number thou shalt count,
-           and the number of the counting shall be three.  Five is right
-           out. */
-        result = (*ares_fpGetAdaptersAddresses)(AF_UNSPEC, 0, 0, pFirstEntry,
-                                                &bufSize);
-      }
+      if ((namesrvr.addrV4.S_un.S_addr == INADDR_ANY) ||
+          (namesrvr.addrV4.S_un.S_addr == INADDR_NONE))
+        continue;
     }
-
-    /* Check the current result for failure */
-    if(result != ERROR_SUCCESS)
+    else if (ares_inet_pton(AF_INET6, txtaddr, &namesrvr.addrV6) == 1)
     {
-      free(pFirstEntry);
-      return 0;
+      if (memcmp(&namesrvr.addrV6, &ares_in6addr_any,
+                 sizeof(namesrvr.addrV6)) == 0)
+        continue;
     }
+    else
+      continue;
 
-    /* process the results */
-    for(pEntry = pFirstEntry ; pEntry != NULL ; pEntry = pEntry->Next)
+    txtlen = strlen(txtaddr);
+    if (ret_size >= strlen(ret_buf) + txtlen + 2)
     {
-      IP_ADAPTER_DNS_SERVER_ADDRESS* pDNSAddr = pEntry->FirstDnsServerAddress;
-      for(; pDNSAddr != NULL ; pDNSAddr = pDNSAddr->Next)
-      {
-        struct sockaddr *pGenericAddr = pDNSAddr->Address.lpSockaddr;
-        size_t stringlen = 0;
-
-        if(pGenericAddr->sa_family == AF_INET && left > ipv4_size)
-        {
-          /* Handle the v4 case */
-          struct sockaddr_in *pIPv4Addr = (struct sockaddr_in *) pGenericAddr;
-
-          ares_inet_ntop(AF_INET, &pIPv4Addr->sin_addr, ret,
-                         ipv4_size - 1); /* -1 for comma */
-
-          /* Append a comma to the end, THEN NULL. Should be OK because we
-             already tested the size at the top of the if statement. */
-          stringlen = strlen(ret);
-          ret[ stringlen ] = ',';
-          ret[ stringlen + 1 ] = '\0';
-          ret += stringlen + 1;
-          left -= stringlen + 1;
-          ++count;
-        }
-        else if(pGenericAddr->sa_family == AF_INET6 && left > ipv6_size)
-        {
-          /* Handle the v6 case */
-          struct sockaddr_in6 *pIPv6Addr = (struct sockaddr_in6 *)pGenericAddr;
-          ares_inet_ntop(AF_INET6, &pIPv6Addr->sin6_addr, ret,
-                         ipv6_size - 1); /* -1 for comma */
-
-          /* Append a comma to the end, THEN NULL. Should be OK because we
-             already tested the size at the top of the if statement. */
-          stringlen = strlen(ret);
-          ret[ stringlen ] = ',';
-          ret[ stringlen + 1 ] = '\0';
-          ret += stringlen + 1;
-          left -= stringlen + 1;
-          ++count;
-
-          /* NB on Windows this also returns stuff in the fec0::/10 range,
-             seems to be hard-coded somehow. Do we need to ignore them? */
-        }
-      }
+      sprintf(endptr, "%s,", txtaddr);
+      endptr += txtlen + 1;
+      count++;
     }
-
-    if(pFirstEntry)
-      free(pFirstEntry);
-    if (ret > ret_buf)
-      ret[-1] = '\0';
-    return count;
   }
-  else
-  {
-    FIXED_INFO    *fi, *newfi;
-    DWORD          size = sizeof (*fi);
-    IP_ADDR_STRING *ipAddr;
-    int            i;
-    int            debug  = 0;
-    HRESULT        res;
-
-    fi = malloc(size);
-    if (!fi)
-      return 0;
-
-    res = (*ares_fpGetNetworkParams) (fi, &size);
-    if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS))
-      goto quit;
-
-    newfi = realloc(fi, size);
-    if (!newfi)
-      goto quit;
-
-    fi = newfi;
-    res = (*ares_fpGetNetworkParams) (fi, &size);
-    if (res != ERROR_SUCCESS)
-      goto quit;
-
-    if (debug)
-    {
-      printf ("Host Name: %s\n", fi->HostName);
-      printf ("Domain Name: %s\n", fi->DomainName);
-      printf ("DNS Servers:\n"
-              "    %s (primary)\n", fi->DnsServerList.IpAddress.String);
-    }
-    if (strlen(fi->DnsServerList.IpAddress.String) > 0 &&
-        inet_addr(fi->DnsServerList.IpAddress.String) != INADDR_NONE &&
-        left > ipv4_size)
-    {
-      ret += sprintf (ret, "%s,", fi->DnsServerList.IpAddress.String);
-      left -= ret - ret_buf;
-      ++count;
-    }
-
-    for (i = 0, ipAddr = fi->DnsServerList.Next; ipAddr && left > ipv4_size;
-         ipAddr = ipAddr->Next, i++)
-    {
-      if (inet_addr(ipAddr->IpAddress.String) != INADDR_NONE)
-      {
-         ret += sprintf (ret, "%s,", ipAddr->IpAddress.String);
-         left -= ret - ret_buf;
-         ++count;
-      }
-      if (debug)
-         printf ("    %s (secondary %d)\n", ipAddr->IpAddress.String, i+1);
-    }
 
 quit:
-    if (fi)
-      free(fi);
+  if (fi)
+    free(fi);
 
-    if (debug && left <= ipv4_size)
-      printf ("Too many nameservers. Truncating to %d addressess", count);
-    if (ret > ret_buf)
-      ret[-1] = '\0';
-    return count;
+  if (endptr != ret_buf)
+    *(endptr - 1) = '\0';
+
+  return count;
+}
+
+#define IPAA_INITIAL_BUF_SZ 15 * 1024
+#define IPAA_MAX_TRIES 3
+
+static int get_iphlpapi_dns_info(char *ret_buf, size_t ret_size)
+{
+  IP_ADAPTER_DNS_SERVER_ADDRESS *ipaDNSAddr;
+  IP_ADAPTER_ADDRESSES *ipaa, *newipaa, *ipaaEntry;
+  ULONG res;
+  ULONG ReqBufsz = IPAA_INITIAL_BUF_SZ;
+  ULONG Bufsz = IPAA_INITIAL_BUF_SZ;
+  ULONG AddrFlags = 0;
+  char *endptr = ret_buf;
+  int trying = IPAA_MAX_TRIES;
+  int count = 0;
+
+  union {
+    struct sockaddr     *sa;
+    struct sockaddr_in  *sa4;
+    struct sockaddr_in6 *sa6;
+  } namesrvr;
+
+  char txtaddr[sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")];
+  size_t txtlen;
+
+  /* Unless GetAdaptersAddresses is available, use GetNetworkParams */
+  if (ares_fpGetAdaptersAddresses == ZERO_NULL)
+    return get_iphlpapi_dns_classic(ret_buf, ret_size);
+
+  *endptr = '\0';
+
+  ipaa = malloc(Bufsz);
+  if (!ipaa)
+    return 0;
+
+  /* Usually this call suceeds with initial buffer size */
+  res = (*ares_fpGetAdaptersAddresses) (AF_UNSPEC, AddrFlags, NULL,
+                                        ipaa, &ReqBufsz);
+  if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS))
+    goto quit;
+
+  while ((res == ERROR_BUFFER_OVERFLOW) && (--trying))
+  {
+    if (Bufsz < ReqBufsz)
+    {
+      newipaa = realloc(ipaa, ReqBufsz);
+      if (!newipaa)
+        goto quit;
+      Bufsz = ReqBufsz;
+      ipaa = newipaa;
+    }
+    res = (*ares_fpGetAdaptersAddresses) (AF_UNSPEC, AddrFlags, NULL,
+                                          ipaa, &ReqBufsz);
+    if (res == ERROR_SUCCESS)
+      break;
   }
+  if (res != ERROR_SUCCESS)
+    goto quit;
+
+  for (ipaaEntry = ipaa; ipaaEntry; ipaaEntry = ipaaEntry->Next)
+  {
+    for (ipaDNSAddr = ipaaEntry->FirstDnsServerAddress;
+         ipaDNSAddr;
+         ipaDNSAddr = ipaDNSAddr->Next)
+    {
+      namesrvr.sa = ipaDNSAddr->Address.lpSockaddr;
+
+      if (namesrvr.sa->sa_family == AF_INET)
+      {
+        if ((namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_ANY) ||
+            (namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_NONE))
+          continue;
+        if (! ares_inet_ntop(AF_INET, &namesrvr.sa4->sin_addr,
+                             txtaddr, sizeof(txtaddr)))
+          continue;
+      }
+      else if (namesrvr.sa->sa_family == AF_INET6)
+      {
+        if (memcmp(&namesrvr.sa6->sin6_addr, &ares_in6addr_any,
+                   sizeof(namesrvr.sa6->sin6_addr)) == 0)
+          continue;
+        if (! ares_inet_ntop(AF_INET, &namesrvr.sa6->sin6_addr,
+                             txtaddr, sizeof(txtaddr)))
+          continue;
+      }
+      else
+        continue;
+
+      txtlen = strlen(txtaddr);
+      if (ret_size >= strlen(ret_buf) + txtlen + 2)
+      {
+        sprintf(endptr, "%s,", txtaddr);
+        endptr += txtlen + 1;
+        count++;
+      }
+    }
+  }
+
+quit:
+  if (ipaa)
+    free(ipaa);
+
+  if (endptr != ret_buf)
+    *(endptr - 1) = '\0';
+
+  return count;
 }
 #endif
 
