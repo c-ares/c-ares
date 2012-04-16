@@ -60,7 +60,7 @@
 #include <ctype.h>
 #include <time.h>
 
-#elif defined(ANDROID) || defined(__ANDROID__)
+#if defined(ANDROID) || defined(__ANDROID__)
 #include <sys/system_properties.h>
 #endif
 
