@@ -97,12 +97,14 @@ static int sortlist_alloc(struct apattern **sortlist, int *nsort,
                           struct apattern *pat);
 static int ip_addr(const char *s, ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
+#if !defined(ANDROID) && !defined(__ANDROID__)
 static int config_domain(ares_channel channel, char *str);
 static int config_lookup(ares_channel channel, const char *str,
                          const char *bindch, const char *filech);
 static int config_sortlist(struct apattern **sortlist, int *nsort,
                            const char *str);
 static char *try_config(char *s, const char *opt, char scc);
+#endif
 #endif
 
 #define ARES_CONFIG_CHECK(x) (x->lookups && x->nsort > -1 && \
@@ -797,7 +799,7 @@ quit:
 
 static int init_by_resolv_conf(ares_channel channel)
 {
-#if !(defined(ANDROID) || defined(__ANDROID__) || defined(WATT32))
+#if !defined(ANDROID) && !defined(__ANDROID__) && !defined(WATT32)
   char *line = NULL;
 #endif
   int status = -1, nservers = 0, nsort = 0;
