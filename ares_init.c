@@ -797,7 +797,7 @@ quit:
 
 static int init_by_resolv_conf(ares_channel channel)
 {
-#ifndef WATT32
+#if !(defined(ANDROID) || defined(__ANDROID__) || defined(WATT32))
   char *line = NULL;
 #endif
   int status = -1, nservers = 0, nsort = 0;
