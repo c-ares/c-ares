@@ -60,7 +60,7 @@
 #include <ctype.h>
 #include <time.h>
 
-#ifdef ANDROID
+#elif defined(ANDROID) || defined(__ANDROID__)
 #include <sys/system_properties.h>
 #endif
 
@@ -971,7 +971,7 @@ DhcpNameServer
   }
   status = ARES_EOF;
 
-#elif defined(ANDROID)
+#elif defined(ANDROID) || defined(__ANDROID__)
   char value[PROP_VALUE_MAX]="";
   __system_property_get("net.dns1", value);
   status = config_nameserver(&servers, &nservers, value);
