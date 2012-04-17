@@ -1,6 +1,6 @@
 #***************************************************************************
 #
-# Copyright (C) 2009-2011 by Daniel Stenberg et al
+# Copyright (C) 2009-2012 by Daniel Stenberg et al
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted, provided
@@ -15,7 +15,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 68
+# serial 69
 
 
 dnl CARES_CHECK_COMPILER
@@ -1425,7 +1425,7 @@ AC_DEFUN([CARES_CHECK_COMPILER_SYMBOL_HIDING], [
   case "$compiler_id" in
     CLANG)
       dnl All versions of clang support -fvisibility=
-      tmp_EXTERN="__attribute__ ((visibility (\"default\")))"
+      tmp_EXTERN="__attribute__ ((__visibility__ (\"default\")))"
       tmp_CFLAGS="-fvisibility=hidden"
       supports_symbol_hiding="yes"
       ;;
@@ -1433,7 +1433,7 @@ AC_DEFUN([CARES_CHECK_COMPILER_SYMBOL_HIDING], [
       dnl Only gcc 3.4 or later
       if test "$compiler_num" -ge "304"; then
         if $CC --help --verbose 2>&1 | grep fvisibility= > /dev/null ; then
-          tmp_EXTERN="__attribute__ ((visibility (\"default\")))"
+          tmp_EXTERN="__attribute__ ((__visibility__ (\"default\")))"
           tmp_CFLAGS="-fvisibility=hidden"
           supports_symbol_hiding="yes"
         fi
@@ -1452,7 +1452,7 @@ AC_DEFUN([CARES_CHECK_COMPILER_SYMBOL_HIDING], [
               printf("icc fvisibility bug test");
             ]])
           ],[
-            tmp_EXTERN="__attribute__ ((visibility (\"default\")))"
+            tmp_EXTERN="__attribute__ ((__visibility__ (\"default\")))"
             tmp_CFLAGS="-fvisibility=hidden"
             supports_symbol_hiding="yes"
           ])
