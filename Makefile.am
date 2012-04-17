@@ -103,6 +103,8 @@ libcares_la_LDFLAGS = $(UNDEF) $(VER)
 # Add -Werror if defined
 CFLAGS += @CARES_CFLAG_EXTRAS@
 
+CFLAG_CARES_SYMBOL_HIDING = @CFLAG_CARES_SYMBOL_HIDING@
+
 # For Windows build targets, when building or using static c-ares
 if USE_CPPFLAG_CARES_STATICLIB
 AM_CPPFLAGS = -DCARES_STATICLIB
@@ -110,11 +112,20 @@ else
 AM_CPPFLAGS =
 endif
 
-# For Windows build targets, when building c-ares library
+if DOING_CARES_SYMBOL_HIDING
+if USE_CPPFLAG_CARES_BUILDING_LIBRARY
+libcares_la_CPPFLAGS = $(AM_CPPFLAGS) -DCARES_SYMBOL_HIDING -DCARES_BUILDING_LIBRARY
+else
+libcares_la_CPPFLAGS = $(AM_CPPFLAGS) -DCARES_SYMBOL_HIDING
+endif
+libcares_la_CFLAGS = $(AM_CFLAGS) $(CFLAG_CARES_SYMBOL_HIDING)
+else
 if USE_CPPFLAG_CARES_BUILDING_LIBRARY
 libcares_la_CPPFLAGS = $(AM_CPPFLAGS) -DCARES_BUILDING_LIBRARY
 else
 libcares_la_CPPFLAGS = $(AM_CPPFLAGS)
+endif
+libcares_la_CFLAGS = $(AM_CFLAGS)
 endif
 
 # Makefile.inc provides the CSOURCES and HHEADERS defines

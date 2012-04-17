@@ -1,7 +1,7 @@
 #***************************************************************************
 # $Id$
 #
-# Copyright (C) 2008 - 2010 by Daniel Stenberg et al
+# Copyright (C) 2008 - 2012 by Daniel Stenberg et al
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted, provided
@@ -16,7 +16,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 9
+# serial 10
 
 
 dnl CARES_CHECK_OPTION_CURLDEBUG
@@ -330,23 +330,26 @@ dnl -------------------------------------------------
 dnl Depending on --enable-symbol-hiding or --disable-symbol-hiding
 dnl configure option, and compiler capability to actually honor such
 dnl option, this will modify compiler flags as appropriate and also
-dnl provide needed definitions for configuration file.
+dnl provide needed definitions for configuration and Makefile.am files.
 dnl This macro should not be used until all compilation tests have
 dnl been done to prevent interferences on other tests.
 
 AC_DEFUN([CARES_CONFIGURE_SYMBOL_HIDING], [
   AC_MSG_CHECKING([whether hiding of library internal symbols will actually happen])
+  CFLAG_CARES_SYMBOL_HIDING=""
+  doing_symbol_hiding="no"
   if test x"$ac_cv_native_windows" != "xyes" &&
     test "$want_symbol_hiding" = "yes" &&
     test "$supports_symbol_hiding" = "yes"; then
-    CFLAGS="$CFLAGS $symbol_hiding_CFLAGS"
-    AC_DEFINE_UNQUOTED(CARES_SYMBOL_HIDING, 1,
-      [Define to 1 to enable hiding of library internal symbols.])
+    doing_symbol_hiding="yes"
+    CFLAG_CARES_SYMBOL_HIDING="$symbol_hiding_CFLAGS"
     AC_DEFINE_UNQUOTED(CARES_SYMBOL_SCOPE_EXTERN, $symbol_hiding_EXTERN,
       [Definition to make a library symbol externally visible.])
     AC_MSG_RESULT([yes])
   else
     AC_MSG_RESULT([no])
   fi
+  AM_CONDITIONAL(DOING_CARES_SYMBOL_HIDING, test x$doing_symbol_hiding = xyes)
+  AC_SUBST(CFLAG_CARES_SYMBOL_HIDING)
 ])
 
