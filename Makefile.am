@@ -103,6 +103,20 @@ libcares_la_LDFLAGS = $(UNDEF) $(VER)
 # Add -Werror if defined
 CFLAGS += @CARES_CFLAG_EXTRAS@
 
+# For Windows build targets, when building or using static c-ares
+if USE_CPPFLAG_CARES_STATICLIB
+AM_CPPFLAGS = -DCARES_STATICLIB
+else
+AM_CPPFLAGS =
+endif
+
+# For Windows build targets, when building c-ares library
+if USE_CPPFLAG_CARES_BUILDING_LIBRARY
+libcares_la_CPPFLAGS = $(AM_CPPFLAGS) -DCARES_BUILDING_LIBRARY
+else
+libcares_la_CPPFLAGS = $(AM_CPPFLAGS)
+endif
+
 # Makefile.inc provides the CSOURCES and HHEADERS defines
 include Makefile.inc
 
@@ -117,14 +131,17 @@ libcares_la_HEADERS = ares.h ares_version.h ares_dns.h \
 ahost_SOURCES = ahost.c $(SAMPLESOURCES) $(SAMPLEHEADERS)
 ahost_LDADD = $(top_builddir)/libcares.la
 ahost_CFLAGS = $(AM_CFLAGS)
+ahost_CPPFLAGS = $(AM_CPPFLAGS)
 
 adig_SOURCES = adig.c $(SAMPLESOURCES) $(SAMPLEHEADERS)
 adig_LDADD = $(top_builddir)/libcares.la
 adig_CFLAGS = $(AM_CFLAGS)
+adig_CPPFLAGS = $(AM_CPPFLAGS)
 
 acountry_SOURCES = acountry.c $(SAMPLESOURCES) $(SAMPLEHEADERS)
 acountry_LDADD = $(top_builddir)/libcares.la
 acountry_CFLAGS = $(AM_CFLAGS)
+acountry_CPPFLAGS = $(AM_CPPFLAGS)
 
 SOURCEDMANDIR = man3
 SOURCEDMANPAGES = ares_init.3

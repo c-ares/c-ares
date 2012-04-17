@@ -128,15 +128,17 @@ dnl libtool setup
 AC_PROG_LIBTOOL
 
 AC_MSG_CHECKING([if we need CARES_BUILDING_LIBRARY])
+use_cppflag_cares_building_library="no"
+use_cppflag_cares_staticlib="no"
 case $host in
   *-*-mingw*)
-    AC_DEFINE(CARES_BUILDING_LIBRARY, 1, [when building c-ares library])
     AC_MSG_RESULT(yes)
+    use_cppflag_cares_building_library="yes"
     AC_MSG_CHECKING([if we need CARES_STATICLIB])
     if test "X$enable_shared" = "Xno"
     then
-      AC_DEFINE(CARES_STATICLIB, 1, [when not building a shared library])
       AC_MSG_RESULT(yes)
+      use_cppflag_cares_staticlib="yes"
     else
       AC_MSG_RESULT(no)
     fi
@@ -145,6 +147,8 @@ case $host in
     AC_MSG_RESULT(no)
     ;;
 esac
+AM_CONDITIONAL(USE_CPPFLAG_CARES_BUILDING_LIBRARY, test x$use_cppflag_cares_building_library = xyes)
+AM_CONDITIONAL(USE_CPPFLAG_CARES_STATICLIB, test x$use_cppflag_cares_staticlib = xyes)
 
 dnl **********************************************************************
 dnl platform/compiler/architecture specific checks/flags
