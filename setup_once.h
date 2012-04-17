@@ -2,7 +2,7 @@
 #define __SETUP_ONCE_H
 
 
-/* Copyright (C) 2004 - 2011 by Daniel Stenberg et al
+/* Copyright (C) 2004 - 2012 by Daniel Stenberg et al
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted, provided
@@ -72,7 +72,7 @@
 #include <fcntl.h>
 #endif
 
-#ifdef HAVE_STDBOOL_H
+#if defined(HAVE_STDBOOL_H) && defined(HAVE_BOOL_T)
 #include <stdbool.h>
 #endif
 
@@ -510,4 +510,3 @@ typedef int sig_atomic_t;
 
 
 #endif /* __SETUP_ONCE_H */
-
