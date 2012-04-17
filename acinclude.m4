@@ -207,12 +207,7 @@ AC_DEFUN([CURL_CHECK_NATIVE_WINDOWS], [
       ])
     fi
   ])
-  case "$ac_cv_native_windows" in
-    yes)
-      AC_DEFINE_UNQUOTED(NATIVE_WINDOWS, 1,
-        [Define to 1 if you are building a native Windows target.])
-      ;;
-  esac
+  AM_CONDITIONAL(DOING_NATIVE_WINDOWS, test "x$ac_cv_native_windows" = xyes)
 ])
 
 
