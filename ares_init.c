@@ -92,19 +92,18 @@ static int set_options(ares_channel channel, const char *str);
 static const char *try_option(const char *p, const char *q, const char *opt);
 static int init_id_key(rc4_key* key,int key_data_len);
 
-#if !defined(WIN32) && !defined(WATT32)
+#if !defined(WIN32) && !defined(WATT32) && \
+    !defined(ANDROID) && !defined(__ANDROID__)
 static int sortlist_alloc(struct apattern **sortlist, int *nsort,
                           struct apattern *pat);
 static int ip_addr(const char *s, ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
-#if !defined(ANDROID) && !defined(__ANDROID__)
 static int config_domain(ares_channel channel, char *str);
 static int config_lookup(ares_channel channel, const char *str,
                          const char *bindch, const char *filech);
 static int config_sortlist(struct apattern **sortlist, int *nsort,
                            const char *str);
 static char *try_config(char *s, const char *opt, char scc);
-#endif
 #endif
 
 #define ARES_CONFIG_CHECK(x) (x->lookups && x->nsort > -1 && \
@@ -1274,7 +1273,8 @@ static int init_by_defaults(ares_channel channel)
   return rc;
 }
 
-#if !defined(WIN32) && !defined(WATT32)
+#if !defined(WIN32) && !defined(WATT32) && \
+    !defined(ANDROID) && !defined(__ANDROID__)
 static int config_domain(ares_channel channel, char *str)
 {
   char *q;
@@ -1322,7 +1322,7 @@ static int config_lookup(ares_channel channel, const char *str,
   channel->lookups = strdup(lookups);
   return (channel->lookups) ? ARES_SUCCESS : ARES_ENOMEM;
 }
-#endif  /* !WIN32 & !WATT32 */
+#endif  /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ */
 
 #ifndef WATT32
 static int config_nameserver(struct server_state **servers, int *nservers,
@@ -1387,7 +1387,7 @@ static int config_nameserver(struct server_state **servers, int *nservers,
   return ARES_SUCCESS;
 }
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(ANDROID) && !defined(__ANDROID__)
 static int config_sortlist(struct apattern **sortlist, int *nsort,
                            const char *str)
 {
@@ -1468,7 +1468,7 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
 
   return ARES_SUCCESS;
 }
-#endif  /* !WIN32 */
+#endif  /* !WIN32 & !ANDROID & !__ANDROID__ */
 #endif  /* !WATT32 */
 
 static int set_search(ares_channel channel, const char *str)
@@ -1567,7 +1567,8 @@ static const char *try_option(const char *p, const char *q, const char *opt)
   return ((size_t)(q - p) >= len && !strncmp(p, opt, len)) ? &p[len] : NULL;
 }
 
-#if !defined(WIN32) && !defined(WATT32)
+#if !defined(WIN32) && !defined(WATT32) && \
+    !defined(ANDROID) && !defined(__ANDROID__)
 static char *try_config(char *s, const char *opt, char scc)
 {
   size_t len;
@@ -1683,7 +1684,7 @@ static void natural_mask(struct apattern *pat)
   else
     pat->mask.addr4.s_addr = htonl(IN_CLASSC_NET);
 }
-#endif /* !WIN32 && !WATT32 */
+#endif  /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ */
 
 /* initialize an rc4 key. If possible a cryptographically secure random key
    is generated using a suitable function (for example win32's RtlGenRandom as
