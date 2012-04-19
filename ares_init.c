@@ -62,6 +62,7 @@
 
 #if defined(ANDROID) || defined(__ANDROID__)
 #include <sys/system_properties.h>
+#define MAX_DNS_PROPERTIES	8	/* From the Bionic sources */
 #endif
 
 #include "ares.h"
@@ -953,11 +954,22 @@ DhcpNameServer
   status = ARES_EOF;
 
 #elif defined(ANDROID) || defined(__ANDROID__)
+  unsigned int i;
+  char name[PROP_NAME_MAX];
   char value[PROP_VALUE_MAX]="";
-  __system_property_get("net.dns1", value);
-  status = config_nameserver(&servers, &nservers, value);
-  if (status == ARES_SUCCESS)
+  int len;
+  for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
+    snprintf(name, sizeof(name), "net.dns%u", i);
+    len = __system_property_get(name, value);
+    if (len < 1) {
+      status = ARES_EOF;
+      break;
+    }
+    status = config_nameserver(&servers, &nservers, value);
+    if (status != ARES_SUCCESS)
+      break;
     status = ARES_EOF;
+  }
 #else
   {
     char *p;
