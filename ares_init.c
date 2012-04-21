@@ -546,74 +546,331 @@ static int init_by_environment(ares_channel channel)
 
 #ifdef WIN32
 /*
- * Warning: returns a dynamically allocated buffer, the user MUST
- * use free() if the function returns 1
+ * get_REG_SZ()
+ *
+ * Given a 'hKey' handle to an open registry key and a 'leafKeyName' pointer
+ * to the name of the registry leaf key to be queried, fetch it's string
+ * value and return a pointer in *outptr to a newly allocated memory area
+ * holding it as a null-terminated string.
+ *
+ * Returns 0 and nullifies *outptr upon inability to return a string value.
+ *
+ * Returns 1 and sets *outptr when returning a dynamically allocated string.
+ *
+ * Supported on Windows NT 3.5 and newer.
  */
-static int get_res_nt(HKEY hKey, const char *subkey, char **obuf)
+static int get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
 {
-  /* Test for the size we need */
   DWORD size = 0;
-  int result;
+  int   res;
 
-  result = RegQueryValueEx(hKey, subkey, 0, NULL, NULL, &size);
-  if ((result != ERROR_SUCCESS && result != ERROR_MORE_DATA) || !size)
-    return 0;
-  *obuf = malloc(size+1);
-  if (!*obuf)
+  *outptr = NULL;
+
+  /* Find out size of string stored in registry */
+  res = RegQueryValueEx(hKey, leafKeyName, 0, NULL, NULL, &size);
+  if ((res != ERROR_SUCCESS && res != ERROR_MORE_DATA) || !size)
     return 0;
 
-  if (RegQueryValueEx(hKey, subkey, 0, NULL,
-                      (LPBYTE)*obuf, &size) != ERROR_SUCCESS)
+  /* Allocate buffer of indicated size plus one given that string
+     might have been stored without null termination */
+  *outptr = malloc(size+1);
+  if (!*outptr)
+    return 0;
+
+  /* Get the value for real */
+  res = RegQueryValueEx(hKey, leafKeyName, 0, NULL,
+                        (unsigned char *)*outptr, &size);
+  if ((res != ERROR_SUCCESS) || (size == 1))
   {
-    free(*obuf);
+    free(*outptr);
+    *outptr = NULL;
     return 0;
   }
-  if (size == 1)
-  {
-    free(*obuf);
-    return 0;
-  }
+
+  /* Null terminate buffer allways */
+  *(*outptr + size) = '\0';
+
   return 1;
 }
 
-static int get_res_interfaces_nt(HKEY hKey, const char *subkey, char **obuf)
+/*
+ * get_REG_SZ_9X()
+ *
+ * Functionally identical to get_REG_SZ()
+ *
+ * Supported on Windows 95, 98 and ME.
+ */
+static int get_REG_SZ_9X(HKEY hKey, const char *leafKeyName, char **outptr)
 {
-  char enumbuf[39]; /* GUIDs are 38 chars + 1 for NULL */
-  DWORD enum_size = 39;
-  int idx = 0;
-  HKEY hVal;
+  DWORD dataType = 0;
+  DWORD size = 0;
+  int   res;
 
-  while (RegEnumKeyEx(hKey, idx++, enumbuf, &enum_size, 0,
-                      NULL, NULL, NULL) != ERROR_NO_MORE_ITEMS)
+  *outptr = NULL;
+
+  /* Find out size of string stored in registry */
+  res = RegQueryValueEx(hKey, leafKeyName, 0, &dataType, NULL, &size);
+  if ((res != ERROR_SUCCESS && res != ERROR_MORE_DATA) || !size)
+    return 0;
+
+  /* Allocate buffer of indicated size plus one given that string
+     might have been stored without null termination */
+  *outptr = malloc(size+1);
+  if (!*outptr)
+    return 0;
+
+  /* Get the value for real */
+  res = RegQueryValueEx(hKey, leafKeyName, 0, &dataType,
+                        (unsigned char *)*outptr, &size);
+  if ((res != ERROR_SUCCESS) || (size == 1))
   {
-    int rc;
+    free(*outptr);
+    *outptr = NULL;
+    return 0;
+  }
 
-    enum_size = 39;
-    if (RegOpenKeyEx(hKey, enumbuf, 0, KEY_QUERY_VALUE, &hVal) !=
-        ERROR_SUCCESS)
-      continue;
-    rc = get_res_nt(hVal, subkey, obuf);
-      RegCloseKey(hVal);
-    if (rc)
-      return 1;
-    }
-  return 0;
+  /* Null terminate buffer allways */
+  *(*outptr + size) = '\0';
+
+  return 1;
 }
 
-/* get_iphlpapi_dns_classic() is supported on W98 and newer */
-static int get_iphlpapi_dns_classic(char *ret_buf, size_t ret_size)
+/*
+ * get_enum_REG_SZ()
+ *
+ * Given a 'hKeyParent' handle to an open registry key and a 'leafKeyName'
+ * pointer to the name of the registry leaf key to be queried, parent key
+ * is enumerated searching in child keys for given leaf key name and its
+ * associated string value. When located, this returns a pointer in *outptr
+ * to a newly allocated memory area holding it as a null-terminated string.
+ *
+ * Returns 0 and nullifies *outptr upon inability to return a string value.
+ *
+ * Returns 1 and sets *outptr when returning a dynamically allocated string.
+ *
+ * Supported on Windows NT 3.5 and newer.
+ */
+static int get_enum_REG_SZ(HKEY hKeyParent, const char *leafKeyName,
+                           char **outptr)
+{
+  char  enumKeyName[256];
+  DWORD enumKeyNameBuffSize;
+  DWORD enumKeyIdx = 0;
+  HKEY  hKeyEnum;
+  int   gotString;
+  int   res;
+
+  *outptr = NULL;
+
+  for(;;)
+  {
+    enumKeyNameBuffSize = sizeof(enumKeyName);
+    res = RegEnumKeyEx(hKeyParent, enumKeyIdx++, enumKeyName,
+                       &enumKeyNameBuffSize, 0, NULL, NULL, NULL);
+    if (res != ERROR_SUCCESS)
+      break;
+    res = RegOpenKeyEx(hKeyParent, enumKeyName, 0, KEY_QUERY_VALUE,
+                       &hKeyEnum);
+    if (res != ERROR_SUCCESS)
+      continue;
+    gotString = get_REG_SZ(hKeyEnum, leafKeyName, outptr);
+    RegCloseKey(hKeyEnum);
+    if (gotString)
+      break;
+  }
+
+  if (!*outptr)
+    return 0;
+
+  return 1;
+}
+
+/*
+ * get_DNS_Registry_9X()
+ *
+ * Functionally identical to get_DNS_Registry()
+ *
+ * Implementation supports Windows 95, 98 and ME.
+ */
+static int get_DNS_Registry_9X(char **outptr)
+{
+  HKEY hKey_VxD_MStcp;
+  int  gotString;
+  int  res;
+
+  *outptr = NULL;
+
+  res = RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_9X, 0, KEY_READ,
+                     &hKey_VxD_MStcp);
+  if (res != ERROR_SUCCESS)
+    return 0;
+
+  gotString = get_REG_SZ_9X(hKey_VxD_MStcp, NAMESERVER, outptr);
+  RegCloseKey(hKey_VxD_MStcp);
+
+  if (!gotString || !*outptr)
+    return 0;
+
+  return 1;
+}
+
+/*
+ * get_DNS_Registry_NT()
+ *
+ * Functionally identical to get_DNS_Registry()
+ *
+ * Refs: Microsoft Knowledge Base articles KB120642 and KB314053.
+ *
+ * Implementation supports Windows NT 3.5 and newer.
+ */
+static int get_DNS_Registry_NT(char **outptr)
+{
+  HKEY hKey_Interfaces = NULL;
+  HKEY hKey_Tcpip_Parameters;
+  int  gotString;
+  int  res;
+
+  *outptr = NULL;
+
+  res = RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
+                     &hKey_Tcpip_Parameters);
+  if (res != ERROR_SUCCESS)
+    return 0;
+
+  /*
+  ** Global DNS settings override adapter specific parameters when both
+  ** are set. Additionally static DNS settings override DHCP-configured
+  ** parameters when both are set.
+  */
+
+  /* Global DNS static parameters */
+  gotString = get_REG_SZ(hKey_Tcpip_Parameters, NAMESERVER, outptr);
+  if (gotString)
+    goto done;
+
+  /* Global DNS DHCP-configured parameters */
+  gotString = get_REG_SZ(hKey_Tcpip_Parameters, DHCPNAMESERVER, outptr);
+  if (gotString)
+    goto done;
+
+  /* Try adapter specific parameters */
+  res = RegOpenKeyEx(hKey_Tcpip_Parameters, "Interfaces", 0,
+                     KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS,
+                     &hKey_Interfaces);
+  if (res != ERROR_SUCCESS)
+  {
+    hKey_Interfaces = NULL;
+    goto done;
+  }
+
+  /* Adapter specific DNS static parameters */
+  gotString = get_enum_REG_SZ(hKey_Interfaces, NAMESERVER, outptr);
+  if (gotString)
+    goto done;
+
+  /* Adapter specific DNS DHCP-configured parameters */
+  gotString = get_enum_REG_SZ(hKey_Interfaces, DHCPNAMESERVER, outptr);
+
+done:
+  if (hKey_Interfaces)
+    RegCloseKey(hKey_Interfaces);
+
+  RegCloseKey(hKey_Tcpip_Parameters);
+
+  if (!gotString || !*outptr)
+    return 0;
+
+  return 1;
+}
+
+/*
+ * get_DNS_Registry()
+ *
+ * Locates DNS info in the registry. When located, this returns a pointer
+ * in *outptr to a newly allocated memory area holding a null-terminated
+ * string with a space or comma seperated list of DNS IP addresses.
+ *
+ * Returns 0 and nullifies *outptr upon inability to return DNSes string.
+ *
+ * Returns 1 and sets *outptr when returning a dynamically allocated string.
+ */
+static int get_DNS_Registry(char **outptr)
+{
+  win_platform platform;
+  int gotString = 0;
+
+  *outptr = NULL;
+
+  platform = ares__getplatform();
+
+  if (platform == WIN_NT)
+    gotString = get_DNS_Registry_NT(outptr);
+  else if (platform == WIN_9X)
+    gotString = get_DNS_Registry_9X(outptr);
+
+  if (!gotString)
+    return 0;
+
+  return 1;
+}
+
+/*
+ * commajoin()
+ *
+ * RTF code.
+ */
+static void commajoin(char **dst, const char *src)
+{
+  char *tmp;
+
+  if (*dst)
+  {
+    tmp = malloc(strlen(*dst) + strlen(src) + 2);
+    if (!tmp)
+      return;
+    sprintf(tmp, "%s,%s", *dst, src);
+    free(*dst);
+    *dst = tmp;
+  }
+  else
+  {
+    *dst = malloc(strlen(src) + 1);
+    if (!*dst)
+      return;
+    strcpy(*dst, src);
+  }
+}
+
+/*
+ * get_DNS_NetworkParams()
+ *
+ * Locates DNS info using GetNetworkParams() function from the Internet
+ * Protocol Helper (IP Helper) API. When located, this returns a pointer
+ * in *outptr to a newly allocated memory area holding a null-terminated
+ * string with a space or comma seperated list of DNS IP addresses.
+ *
+ * Returns 0 and nullifies *outptr upon inability to return DNSes string.
+ *
+ * Returns 1 and sets *outptr when returning a dynamically allocated string.
+ *
+ * Implementation supports Windows 98 and newer.
+ *
+ * Note: Ancient PSDK required in order to build a W98 target.
+ */
+static int get_DNS_NetworkParams(char **outptr)
 {
   FIXED_INFO       *fi, *newfi;
   struct ares_addr namesrvr;
   char             *txtaddr;
   IP_ADDR_STRING   *ipAddr;
-  size_t           txtlen;
-  HRESULT          res;
+  int              res;
   DWORD            size = sizeof (*fi);
-  char             *endptr = ret_buf;
-  int              count = 0;
 
-  *endptr = '\0';
+  *outptr = NULL;
+
+  /* Verify run-time availability of GetNetworkParams() */
+  if (ares_fpGetNetworkParams == ZERO_NULL)
+    return 0;
 
   fi = malloc(size);
   if (!fi)
@@ -621,16 +878,16 @@ static int get_iphlpapi_dns_classic(char *ret_buf, size_t ret_size)
 
   res = (*ares_fpGetNetworkParams) (fi, &size);
   if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS))
-    goto quit;
+    goto done;
 
   newfi = realloc(fi, size);
   if (!newfi)
-    goto quit;
+    goto done;
 
   fi = newfi;
   res = (*ares_fpGetNetworkParams) (fi, &size);
   if (res != ERROR_SUCCESS)
-    goto quit;
+    goto done;
 
   for (ipAddr = &fi->DnsServerList; ipAddr; ipAddr = ipAddr->Next)
   {
@@ -652,39 +909,47 @@ static int get_iphlpapi_dns_classic(char *ret_buf, size_t ret_size)
     else
       continue;
 
-    txtlen = strlen(txtaddr);
-    if (ret_size >= strlen(ret_buf) + txtlen + 2)
-    {
-      sprintf(endptr, "%s,", txtaddr);
-      endptr += txtlen + 1;
-      count++;
-    }
+    commajoin(outptr, txtaddr);
+
+    if (!*outptr)
+      break;
   }
 
-quit:
+done:
   if (fi)
     free(fi);
 
-  if (endptr != ret_buf)
-    *(endptr - 1) = '\0';
+  if (!*outptr)
+    return 0;
 
-  return count;
+  return 1;
 }
 
+/*
+ * get_DNS_AdaptersAddresses()
+ *
+ * Locates DNS info using GetAdaptersAddresses() function from the Internet
+ * Protocol Helper (IP Helper) API. When located, this returns a pointer
+ * in *outptr to a newly allocated memory area holding a null-terminated
+ * string with a space or comma seperated list of DNS IP addresses.
+ *
+ * Returns 0 and nullifies *outptr upon inability to return DNSes string.
+ *
+ * Returns 1 and sets *outptr when returning a dynamically allocated string.
+ *
+ * Implementation supports Windows XP and newer.
+ */
 #define IPAA_INITIAL_BUF_SZ 15 * 1024
 #define IPAA_MAX_TRIES 3
-
-static int get_iphlpapi_dns_info(char *ret_buf, size_t ret_size)
+static int get_DNS_AdaptersAddresses(char **outptr)
 {
   IP_ADAPTER_DNS_SERVER_ADDRESS *ipaDNSAddr;
   IP_ADAPTER_ADDRESSES *ipaa, *newipaa, *ipaaEntry;
-  ULONG res;
   ULONG ReqBufsz = IPAA_INITIAL_BUF_SZ;
   ULONG Bufsz = IPAA_INITIAL_BUF_SZ;
   ULONG AddrFlags = 0;
-  char *endptr = ret_buf;
   int trying = IPAA_MAX_TRIES;
-  int count = 0;
+  int res;
 
   union {
     struct sockaddr     *sa;
@@ -693,13 +958,12 @@ static int get_iphlpapi_dns_info(char *ret_buf, size_t ret_size)
   } namesrvr;
 
   char txtaddr[sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")];
-  size_t txtlen;
 
-  /* Unless GetAdaptersAddresses is available, use GetNetworkParams */
+  *outptr = NULL;
+
+  /* Verify run-time availability of GetAdaptersAddresses() */
   if (ares_fpGetAdaptersAddresses == ZERO_NULL)
-    return get_iphlpapi_dns_classic(ret_buf, ret_size);
-
-  *endptr = '\0';
+    return 0;
 
   ipaa = malloc(Bufsz);
   if (!ipaa)
@@ -709,7 +973,7 @@ static int get_iphlpapi_dns_info(char *ret_buf, size_t ret_size)
   res = (*ares_fpGetAdaptersAddresses) (AF_UNSPEC, AddrFlags, NULL,
                                         ipaa, &ReqBufsz);
   if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS))
-    goto quit;
+    goto done;
 
   while ((res == ERROR_BUFFER_OVERFLOW) && (--trying))
   {
@@ -717,7 +981,7 @@ static int get_iphlpapi_dns_info(char *ret_buf, size_t ret_size)
     {
       newipaa = realloc(ipaa, ReqBufsz);
       if (!newipaa)
-        goto quit;
+        goto done;
       Bufsz = ReqBufsz;
       ipaa = newipaa;
     }
@@ -727,7 +991,7 @@ static int get_iphlpapi_dns_info(char *ret_buf, size_t ret_size)
       break;
   }
   if (res != ERROR_SUCCESS)
-    goto quit;
+    goto done;
 
   for (ipaaEntry = ipaa; ipaaEntry; ipaaEntry = ipaaEntry->Next)
   {
@@ -758,24 +1022,49 @@ static int get_iphlpapi_dns_info(char *ret_buf, size_t ret_size)
       else
         continue;
 
-      txtlen = strlen(txtaddr);
-      if (ret_size >= strlen(ret_buf) + txtlen + 2)
-      {
-        sprintf(endptr, "%s,", txtaddr);
-        endptr += txtlen + 1;
-        count++;
-      }
+      commajoin(outptr, txtaddr);
+
+      if (!*outptr)
+        goto done;
     }
   }
 
-quit:
+done:
   if (ipaa)
     free(ipaa);
 
-  if (endptr != ret_buf)
-    *(endptr - 1) = '\0';
+  if (!*outptr)
+    return 0;
 
-  return count;
+  return 1;
+}
+
+/*
+ * get_DNS_Windows()
+ *
+ * Locates DNS info from Windows employing most suitable methods available at
+ * run-time no matter which Windows version it is. When located, this returns
+ * a pointer in *outptr to a newly allocated memory area holding a string with
+ * a space or comma seperated list of DNS IP addresses, null-terminated.
+ *
+ * Returns 0 and nullifies *outptr upon inability to return DNSes string.
+ *
+ * Returns 1 and sets *outptr when returning a dynamically allocated string.
+ *
+ * Implementation supports Windows 95 and newer.
+ */
+static int get_DNS_Windows(char **outptr)
+{
+  /* Try using IP helper API GetAdaptersAddresses() */
+  if (get_DNS_AdaptersAddresses(outptr))
+    return 1;
+
+  /* Try using IP helper API GetNetworkParams() */
+  if (get_DNS_NetworkParams(outptr))
+    return 1;
+
+  /* Fall-back to registry information */
+  return get_DNS_Registry(outptr);
 }
 #endif
 
@@ -790,111 +1079,13 @@ static int init_by_resolv_conf(ares_channel channel)
 
 #ifdef WIN32
 
-    /*
-  NameServer info via IPHLPAPI (IP helper API):
-    GetNetworkParams() should be the trusted source for this.
-    Available in Win-98/2000 and later. If that fail, fall-back to
-    registry information.
-
-  NameServer Registry:
-
-   On Windows 9X, the DNS server can be found in:
-HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\VxD\MSTCP\NameServer
-
-        On Windows NT/2000/XP/2003:
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\NameServer
-        or
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\DhcpNameServer
-        or
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\{AdapterID}\
-NameServer
-        or
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\{AdapterID}\
-DhcpNameServer
-   */
-
-  HKEY mykey;
-  HKEY subkey;
-  DWORD data_type;
-  DWORD bytes;
-  DWORD result;
-  char  buf[512];
-  win_platform platform;
-
   if (channel->nservers > -1)  /* don't override ARES_OPT_SERVER */
      return ARES_SUCCESS;
 
-  if (get_iphlpapi_dns_info(buf,sizeof(buf)) > 0)
+  if (get_DNS_Windows(&line))
   {
-    status = config_nameserver(&servers, &nservers, buf);
-    if (status == ARES_SUCCESS)
-      goto okay;
-  }
-
-  platform = ares__getplatform();
-
-  if (platform == WIN_NT)
-  {
-    if (RegOpenKeyEx(
-          HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0,
-          KEY_READ, &mykey
-         ) == ERROR_SUCCESS)
-    {
-      RegOpenKeyEx(mykey, "Interfaces", 0,
-                   KEY_QUERY_VALUE|KEY_ENUMERATE_SUB_KEYS, &subkey);
-      if (get_res_nt(mykey, NAMESERVER, &line))
-      {
-        status = config_nameserver(&servers, &nservers, line);
-        free(line);
-      }
-      else if (get_res_nt(mykey, DHCPNAMESERVER, &line))
-      {
-        status = config_nameserver(&servers, &nservers, line);
-        free(line);
-      }
-      /* Try the interfaces */
-      else if (get_res_interfaces_nt(subkey, NAMESERVER, &line))
-      {
-        status = config_nameserver(&servers, &nservers, line);
-        free(line);
-      }
-      else if (get_res_interfaces_nt(subkey, DHCPNAMESERVER, &line))
-      {
-        status = config_nameserver(&servers, &nservers, line);
-        free(line);
-      }
-      RegCloseKey(subkey);
-      RegCloseKey(mykey);
-    }
-  }
-  else if (platform == WIN_9X)
-  {
-    if (RegOpenKeyEx(
-          HKEY_LOCAL_MACHINE, WIN_NS_9X, 0,
-          KEY_READ, &mykey
-         ) == ERROR_SUCCESS)
-    {
-      if ((result = RegQueryValueEx(
-             mykey, NAMESERVER, NULL, &data_type,
-             NULL, &bytes
-            )
-           ) == ERROR_SUCCESS ||
-          result == ERROR_MORE_DATA)
-      {
-        if (bytes)
-        {
-          line = malloc(bytes+1);
-          if (RegQueryValueEx(mykey, NAMESERVER, NULL, &data_type,
-                              (unsigned char *)line, &bytes) ==
-              ERROR_SUCCESS)
-          {
-            status = config_nameserver(&servers, &nservers, line);
-          }
-          free(line);
-        }
-      }
-    }
-    RegCloseKey(mykey);
+    status = config_nameserver(&servers, &nservers, line);
+    free(line);
   }
 
   if (status == ARES_SUCCESS)
@@ -1128,9 +1319,6 @@ DhcpNameServer
     }
 
   /* If we got any name server entries, fill them in. */
-#ifdef WIN32
-okay:
-#endif
   if (servers)
     {
       channel->servers = servers;
