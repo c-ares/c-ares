@@ -10,12 +10,13 @@
 
 LIB	= libcares.a
 
+AR	= ar
 CC	= gcc
 LD	= gcc
 RANLIB	= ranlib
 #RM	= rm -f
 
-CFLAGS	= -O2 -Wall
+CFLAGS	= -O2 -Wall -I.
 LDFLAGS	= -s
 LIBS	= -lwsock32
 
@@ -26,7 +27,7 @@ OBJLIB	:= $(patsubst %.c,%.o,$(strip $(CSOURCES)))
 
 
 $(LIB): $(OBJLIB)
-	ar cru $@ $^
+	$(AR) cru $@ $^
 	$(RANLIB) $@
 
 all: $(LIB) demos
