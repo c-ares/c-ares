@@ -15,6 +15,6 @@ Description: asynchronous DNS lookup library
 Version: @VERSION@
 Requires: 
 Requires.private: 
-Cflags: -I${includedir}
+Cflags: -I${includedir} @CPPFLAG_CARES_STATICLIB@
 Libs: -L${libdir} -lcares
 Libs.private: @CARES_PRIVATE_LIBS@
