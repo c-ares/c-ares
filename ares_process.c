@@ -1,6 +1,6 @@
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2004-2011 by Daniel Stenberg
+ * Copyright (C) 2004-2012 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -946,7 +946,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
         salen = sizeof(saddr.sa4);
         memset(sa, 0, salen);
         saddr.sa4.sin_family = AF_INET;
-        saddr.sa4.sin_port = (unsigned short)(channel->tcp_port & 0xffff);
+        saddr.sa4.sin_port = aresx_sitous(channel->tcp_port);
         memcpy(&saddr.sa4.sin_addr, &server->addr.addrV4,
                sizeof(server->addr.addrV4));
         break;
@@ -955,7 +955,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
         salen = sizeof(saddr.sa6);
         memset(sa, 0, salen);
         saddr.sa6.sin6_family = AF_INET6;
-        saddr.sa6.sin6_port = (unsigned short)(channel->tcp_port & 0xffff);
+        saddr.sa6.sin6_port = aresx_sitous(channel->tcp_port);
         memcpy(&saddr.sa6.sin6_addr, &server->addr.addrV6,
                sizeof(server->addr.addrV6));
         break;
@@ -1038,7 +1038,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
         salen = sizeof(saddr.sa4);
         memset(sa, 0, salen);
         saddr.sa4.sin_family = AF_INET;
-        saddr.sa4.sin_port = (unsigned short)(channel->udp_port & 0xffff);
+        saddr.sa4.sin_port = aresx_sitous(channel->udp_port);
         memcpy(&saddr.sa4.sin_addr, &server->addr.addrV4,
                sizeof(server->addr.addrV4));
         break;
@@ -1047,7 +1047,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
         salen = sizeof(saddr.sa6);
         memset(sa, 0, salen);
         saddr.sa6.sin6_family = AF_INET6;
-        saddr.sa6.sin6_port = (unsigned short)(channel->udp_port & 0xffff);
+        saddr.sa6.sin6_port = aresx_sitous(channel->udp_port);
         memcpy(&saddr.sa6.sin6_addr, &server->addr.addrV6,
                sizeof(server->addr.addrV6));
         break;

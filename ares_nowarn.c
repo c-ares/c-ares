@@ -1,5 +1,5 @@
 
-/* Copyright (C) 2010-2011 by Daniel Stenberg
+/* Copyright (C) 2010-2012 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -208,6 +208,25 @@ unsigned int aresx_sztoui(ssize_t sznum)
 
   DEBUGASSERT(sznum >= 0);
   return (unsigned int)(sznum & (ssize_t) CARES_MASK_UINT);
+
+#ifdef __INTEL_COMPILER
+#  pragma warning(pop)
+#endif
+}
+
+/*
+** signed int to unsigned short
+*/
+
+unsigned short aresx_sitous(int sinum)
+{
+#ifdef __INTEL_COMPILER
+#  pragma warning(push)
+#  pragma warning(disable:810) /* conversion may lose significant bits */
+#endif
+
+  DEBUGASSERT(sinum >= 0);
+  return (unsigned short)(sinum & (int) CARES_MASK_USHORT);
 
 #ifdef __INTEL_COMPILER
 #  pragma warning(pop)
