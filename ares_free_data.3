@@ -55,6 +55,11 @@ When used to free the data returned by ares_parse_txt_reply(3) this
 will free the whole linked list of ares_txt_reply structures returned
 by ares_parse_txt_reply(3), along with any additional storage
 associated with those structures.
+.TP
+.B ares_parse_soa_reply(3)
+When used to free the data returned by ares_parse_soa_reply(3) this
+will free the ares_soa_reply structure, along with any additional storage
+associated with those structure.
 .SH RETURN VALUE
 The ares_free_data() function does not return a value.
 .SH AVAILABILITY
@@ -63,7 +68,8 @@ This function was first introduced in c-ares version 1.7.0.
 .BR ares_get_servers(3),
 .BR ares_parse_srv_reply(3),
 .BR ares_parse_mx_reply(3),
-.BR ares_parse_txt_reply(3)
+.BR ares_parse_txt_reply(3),
+.BR ares_parse_soa_reply(3)
 .SH AUTHOR
 Yang Tse
 .PP

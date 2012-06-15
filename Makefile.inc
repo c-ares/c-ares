@@ -28,6 +28,7 @@ CSOURCES = ares__close_sockets.c	\
   ares_parse_naptr_reply.c		\
   ares_parse_ns_reply.c			\
   ares_parse_ptr_reply.c		\
+  ares_parse_soa_reply.c		\
   ares_parse_srv_reply.c		\
   ares_parse_txt_reply.c		\
   ares_platform.c			\
@@ -97,6 +98,7 @@ MANPAGES = ares_cancel.3		\
   ares_parse_naptr_reply.3		\
   ares_parse_ns_reply.3			\
   ares_parse_ptr_reply.3		\
+  ares_parse_soa_reply.3		\
   ares_parse_srv_reply.3		\
   ares_parse_txt_reply.3		\
   ares_process.3			\
@@ -136,6 +138,7 @@ HTMLPAGES = ares_cancel.html		\
   ares_parse_mx_reply.html		\
   ares_parse_ns_reply.html		\
   ares_parse_ptr_reply.html		\
+  ares_parse_soa_reply.html		\
   ares_parse_srv_reply.html		\
   ares_parse_txt_reply.html		\
   ares_process.html			\
@@ -175,6 +178,7 @@ PDFPAGES = ares_cancel.pdf		\
   ares_parse_mx_reply.pdf		\
   ares_parse_ns_reply.pdf		\
   ares_parse_ptr_reply.pdf		\
+  ares_parse_soa_reply.pdf		\
   ares_parse_srv_reply.pdf		\
   ares_parse_txt_reply.pdf		\
   ares_process.pdf			\

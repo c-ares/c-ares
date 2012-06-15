@@ -476,6 +476,16 @@ struct ares_naptr_reply {
   unsigned short           preference;
 };
 
+struct ares_soa_reply {
+  char        *nsname;
+  char        *hostmaster;
+  unsigned int serial;
+  unsigned int refresh;
+  unsigned int retry;
+  unsigned int expire;
+  unsigned int minttl;
+};
+
 /*
 ** Parse the buffer, starting at *abuf and of length alen bytes, previously
 ** obtained from an ares_search call.  Put the results in *host, if nonnull.
@@ -523,9 +533,15 @@ CARES_EXTERN int ares_parse_naptr_reply(const unsigned char* abuf,
                                         int alen,
                                         struct ares_naptr_reply** naptr_out);
 
+CARES_EXTERN int ares_parse_soa_reply(const unsigned char* abuf,
+				      int alen,
+				      struct ares_soa_reply** soa_out);
+
 CARES_EXTERN void ares_free_string(void *str);
 
 CARES_EXTERN void ares_free_hostent(struct hostent *host);
+
+CARES_EXTERN void ares_free_soa(struct ares_soa_reply *soa);
 
 CARES_EXTERN void ares_free_data(void *dataptr);
 

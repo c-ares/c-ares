@@ -106,6 +106,13 @@ void ares_free_data(void *dataptr)
           free(ptr->data.naptr_reply.replacement);
         break;
 
+      case ARES_DATATYPE_SOA_REPLY:
+        if (ptr->data.soa_reply.nsname)
+          free(ptr->data.soa_reply.nsname);
+        if (ptr->data.soa_reply.hostmaster)
+          free(ptr->data.soa_reply.hostmaster);
+	break;
+
       default:
         return;
     }
@@ -171,6 +178,16 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.naptr_reply.order = 0;
         ptr->data.naptr_reply.preference = 0;
         break;
+
+      case ARES_DATATYPE_SOA_REPLY:
+        ptr->data.soa_reply.nsname = NULL;
+        ptr->data.soa_reply.hostmaster = NULL;
+        ptr->data.soa_reply.serial = 0;
+        ptr->data.soa_reply.refresh = 0;
+        ptr->data.soa_reply.retry = 0;
+        ptr->data.soa_reply.expire = 0;
+        ptr->data.soa_reply.minttl = 0;
+	break;
 
       default:
         free(ptr);

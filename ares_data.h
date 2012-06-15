@@ -21,6 +21,7 @@ typedef enum {
   ARES_DATATYPE_ADDR_NODE,    /* struct ares_addr_node - introduced in 1.7.1 */
   ARES_DATATYPE_MX_REPLY,    /* struct ares_mx_reply   - introduced in 1.7.2 */
   ARES_DATATYPE_NAPTR_REPLY,/* struct ares_naptr_reply - introduced in 1.7.6 */
+  ARES_DATATYPE_SOA_REPLY,    /* struct ares_soa_reply - introduced in 1.x.x */
 #if 0
   ARES_DATATYPE_ADDR6TTL,     /* struct ares_addrttl   */
   ARES_DATATYPE_ADDRTTL,      /* struct ares_addr6ttl  */
@@ -59,6 +60,7 @@ struct ares_data {
     struct ares_addr_node   addr_node;
     struct ares_mx_reply    mx_reply;
     struct ares_naptr_reply naptr_reply;
+    struct ares_soa_reply soa_reply;
   } data;
 };
 
