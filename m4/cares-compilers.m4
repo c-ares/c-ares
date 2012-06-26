@@ -15,7 +15,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 70
+# serial 71
 
 
 dnl CARES_CHECK_COMPILER
@@ -870,6 +870,7 @@ AC_DEFUN([CARES_SET_COMPILER_WARNING_OPTS], [
           tmp_CFLAGS="$tmp_CFLAGS -Wcast-align"
           tmp_CFLAGS="$tmp_CFLAGS -Wno-system-headers"
           tmp_CFLAGS="$tmp_CFLAGS -Wshorten-64-to-32"
+          tmp_CFLAGS="$tmp_CFLAGS -Wstrict-aliasing=3"
           #
           dnl Only clang 1.1 or later
           if test "$compiler_num" -ge "101"; then
@@ -958,6 +959,11 @@ AC_DEFUN([CARES_SET_COMPILER_WARNING_OPTS], [
           dnl Only gcc 3.4 or later
           if test "$compiler_num" -ge "304"; then
             tmp_CFLAGS="$tmp_CFLAGS -Wdeclaration-after-statement"
+          fi
+          #
+          dnl Only gcc 4.0 or later
+          if test "$compiler_num" -ge "400"; then
+            tmp_CFLAGS="$tmp_CFLAGS -Wstrict-aliasing=3"
           fi
           #
           dnl Only gcc 4.2 or later
