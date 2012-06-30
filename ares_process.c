@@ -472,16 +472,22 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
       /* To reduce event loop overhead, read and process as many
        * packets as we can. */
       do {
+        if (server->udp_socket == ARES_SOCKET_BAD)
+          count = 0;
+
+        else {
 #ifdef HAVE_RECVFROM
-        if (server->addr.family == AF_INET)
-          fromlen = sizeof(from.sa4);
-        else
-          fromlen = sizeof(from.sa6);
-        count = (ssize_t)recvfrom(server->udp_socket, (void *)buf, sizeof(buf),
-                                  0, &from.sa, &fromlen);
+          if (server->addr.family == AF_INET)
+            fromlen = sizeof(from.sa4);
+          else
+            fromlen = sizeof(from.sa6);
+          count = (ssize_t)recvfrom(server->udp_socket, (void *)buf, sizeof(buf),
+                                    0, &from.sa, &fromlen);
 #else
-        count = sread(server->udp_socket, buf, sizeof(buf));
+          count = sread(server->udp_socket, buf, sizeof(buf));
 #endif
+        }
+
         if (count == -1 && try_again(SOCKERRNO))
           continue;
         else if (count <= 0)
