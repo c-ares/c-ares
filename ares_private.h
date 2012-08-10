@@ -113,6 +113,13 @@
 #  define writev(s,ptr,cnt) ares_writev(s,ptr,cnt)
 #endif
 
+/********* EDNS defines section ******/
+#define EDNSPACKETSZ   1280  /* Reasonable UDP payload size, as suggested
+                                in RFC2671 */
+#define MAXENDSSZ      4096  /* Maximum (local) limit for edns packet size */
+#define EDNSFIXEDSZ    11    /* Size of EDNS header */
+/********* EDNS defines section ******/
+
 struct ares_addr {
   int family;
   union {
@@ -260,6 +267,7 @@ struct ares_channeldata {
   struct apattern *sortlist;
   int nsort;
   char *lookups;
+  int ednspsz;
 
   /* For binding to local devices and/or IP addresses.  Leave
    * them null/zero for no binding.

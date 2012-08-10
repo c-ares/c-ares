@@ -143,6 +143,7 @@ extern "C" {
 #define ARES_FLAG_NOSEARCH      (1 << 5)
 #define ARES_FLAG_NOALIASES     (1 << 6)
 #define ARES_FLAG_NOCHECKRESP   (1 << 7)
+#define ARES_FLAG_EDNS          (1 << 8)
 
 /* Option mask values */
 #define ARES_OPT_FLAGS          (1 << 0)
@@ -160,6 +161,7 @@ extern "C" {
 #define ARES_OPT_SOCK_RCVBUF    (1 << 12)
 #define ARES_OPT_TIMEOUTMS      (1 << 13)
 #define ARES_OPT_ROTATE         (1 << 14)
+#define ARES_OPT_EDNSPSZ        (1 << 15)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN                  (1 << 0)
@@ -265,6 +267,7 @@ struct ares_options {
   void *sock_state_cb_data;
   struct apattern *sortlist;
   int nsort;
+  int ednspsz;
 };
 
 struct hostent;
@@ -402,6 +405,15 @@ CARES_EXTERN void ares_process(ares_channel channel,
 CARES_EXTERN void ares_process_fd(ares_channel channel,
                                   ares_socket_t read_fd,
                                   ares_socket_t write_fd);
+
+CARES_EXTERN int ares_create_query(const char *name,
+                                   int dnsclass,
+                                   int type,
+                                   unsigned short id,
+                                   int rd,
+                                   unsigned char **buf,
+                                   int *buflen,
+                                   int max_udp_size);
 
 CARES_EXTERN int ares_mkquery(const char *name,
                               int dnsclass,

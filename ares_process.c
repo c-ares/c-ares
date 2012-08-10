@@ -430,7 +430,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
   struct server_state *server;
   int i;
   ssize_t count;
-  unsigned char buf[PACKETSZ + 1];
+  unsigned char buf[MAXENDSSZ + 1];
 #ifdef HAVE_RECVFROM
   ares_socklen_t fromlen;
   union {
@@ -541,7 +541,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
                            int alen, int whichserver, int tcp,
                            struct timeval *now)
 {
-  int tc, rcode;
+  int tc, rcode, packetsz;
   unsigned short id;
   struct query *query;
   struct list_node* list_head;
@@ -578,11 +578,34 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
   if (!query)
     return;
 
+  packetsz = PACKETSZ;
+  /* If we use EDNS and server answers with one of these RCODES, the protocol
+   * extension is not understood by the responder. We must retry the query
+   * without EDNS enabled.
+   */
+  if (channel->flags & ARES_FLAG_EDNS)
+  {
+      packetsz = channel->ednspsz;
+      if (rcode == NOTIMP || rcode == FORMERR || rcode == SERVFAIL)
+      {
+          int qlen = alen - EDNSFIXEDSZ;
+          channel->flags ^= ARES_FLAG_EDNS;
+          query->tcplen -= EDNSFIXEDSZ;
+          query->qlen -= EDNSFIXEDSZ;
+          query->tcpbuf[0] = (unsigned char)((qlen >> 8) & 0xff);
+          query->tcpbuf[1] = (unsigned char)(qlen & 0xff);
+          DNS_HEADER_SET_ARCOUNT(query->tcpbuf + 2, 0);
+          query->tcpbuf = realloc(query->tcpbuf, query->tcplen);
+          ares__send_query(channel, query, now);
+          return;
+      }
+  }
+
   /* If we got a truncated UDP packet and are not ignoring truncation,
    * don't accept the packet, and switch the query to TCP if we hadn't
    * done so already.
    */
-  if ((tc || alen > PACKETSZ) && !tcp && !(channel->flags & ARES_FLAG_IGNTC))
+  if ((tc || alen > packetsz) && !tcp && !(channel->flags & ARES_FLAG_IGNTC))
     {
       if (!query->using_tcp)
         {
@@ -595,8 +618,8 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
   /* Limit alen to PACKETSZ if we aren't using TCP (only relevant if we
    * are ignoring truncation.
    */
-  if (alen > PACKETSZ && !tcp)
-    alen = PACKETSZ;
+  if (alen > packetsz && !tcp)
+      alen = packetsz;
 
   /* If we aren't passing through all error packets, discard packets
    * with SERVFAIL, NOTIMP, or REFUSED response codes.

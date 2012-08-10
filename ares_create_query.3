@@ -13,22 +13,22 @@
 .\" this software for any purpose.  It is provided "as is"
 .\" without express or implied warranty.
 .\"
-.TH ARES_MKQUERY 3 "20 Nov 2009"
+.TH ARES_CREATE_QUERY 3 "20 Nov 2009"
 .SH NAME
-ares_mkquery \- Compose a single-question DNS query buffer
+ares_create_query \- Compose a single-question DNS query buffer
 .SH SYNOPSIS
 .nf
 .B #include <ares.h>
 .PP
-.B int ares_mkquery(const char *\fIname\fP, int \fIdnsclass\fP, int \fItype\fP,
-.B	unsigned short \fIid\fP, int \fIrd\fP, unsigned char **\fIbuf\fP,
-.B	int *\fIbuflen\fP)
+.B int ares_create_query(const char *\fIname\fP, int \fIdnsclass\fP,\
+                         int \fItype\fP,
+.B		                   unsigned short \fIid\fP, int \fIrd\fP,\
+                         unsigned char **\fIbuf\fP,
+.B		                   int *\fIbuflen\fP, int \fImax_udp_size\fP)
 .fi
 .SH DESCRIPTION
-Deprecated function. See \fIares_create_query(3)\fP instead!
-
 The
-.B ares_mkquery
+.B ares_create_query
 function composes a DNS query with a single question.
 The parameter
 .I name
@@ -52,13 +52,13 @@ and the length of which will be stored in the variable pointed to by
 .IR buflen .
 It is the caller's responsibility to free this buffer using
 \fIares_free_string(3)\fP when it is no longer needed.
-
-Usage of \fIares_mkquery(3)\fP is deprecated, whereas the function is
-equivalent to \fIares_create_query(3)\fP with \fBmax_udp_size\fP set to
-0.
-
+The parameter
+.I max_udp_size
+should be nonzero to activate EDNS. Usage of \fIares_create_query(3)\fP\ with
+.I max_udp_size
+set to zero is equivalent to \fIares_mkquery(3)\fP.
 .SH RETURN VALUES
-.B ares_mkquery
+.B ares_create_query
 can return any of the following values:
 .TP 15
 .B ARES_SUCCESS
@@ -77,6 +77,3 @@ Memory was exhausted.
 .BR ares_expand_name (3),
 .BR ares_free_string (3)
 .SH AUTHOR
-Greg Hudson, MIT Information Systems
-.br
-Copyright 1998, 2000 by the Massachusetts Institute of Technology.

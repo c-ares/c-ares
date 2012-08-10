@@ -163,6 +163,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->rotate = -1;
   channel->udp_port = -1;
   channel->tcp_port = -1;
+  channel->ednspsz = -1;
   channel->socket_send_buffer_size = -1;
   channel->socket_receive_buffer_size = -1;
   channel->nservers = -1;
@@ -452,6 +453,9 @@ static int init_by_options(ares_channel channel,
   if ((optmask & ARES_OPT_SOCK_RCVBUF)
       && channel->socket_receive_buffer_size == -1)
     channel->socket_receive_buffer_size = options->socket_receive_buffer_size;
+
+  if ((optmask & ARES_OPT_EDNSPSZ) && channel->ednspsz == -1)
+    channel->ednspsz = options->ednspsz;
 
   /* Copy the IPv4 servers, if given. */
   if ((optmask & ARES_OPT_SERVERS) && channel->nservers == -1)
@@ -1357,6 +1361,9 @@ static int init_by_defaults(ares_channel channel)
     channel->udp_port = htons(NAMESERVER_PORT);
   if (channel->tcp_port == -1)
     channel->tcp_port = htons(NAMESERVER_PORT);
+
+  if (channel->ednspsz == -1)
+    channel->ednspsz = EDNSPACKETSZ;
 
   if (channel->nservers == -1) {
     /* If nobody specified servers, try a local named. */
