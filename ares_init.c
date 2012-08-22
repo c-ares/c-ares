@@ -1019,7 +1019,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
         if (memcmp(&namesrvr.sa6->sin6_addr, &ares_in6addr_any,
                    sizeof(namesrvr.sa6->sin6_addr)) == 0)
           continue;
-        if (! ares_inet_ntop(AF_INET, &namesrvr.sa6->sin6_addr,
+        if (! ares_inet_ntop(AF_INET6, &namesrvr.sa6->sin6_addr,
                              txtaddr, sizeof(txtaddr)))
           continue;
       }
