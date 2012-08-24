@@ -390,9 +390,9 @@ int main(int argc, char **argv)
         break;
       tvp = ares_timeout(channel, NULL, &tv);
       count = select(nfds, &read_fds, &write_fds, NULL, tvp);
-      if (count < 0 && SOCKERRNO != EINVAL)
+      if (count < 0 && (status = SOCKERRNO) != EINVAL)
         {
-          perror("select");
+          printf("select fail: %d", status);
           return 1;
         }
       ares_process(channel, &read_fds, &write_fds);
