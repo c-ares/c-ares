@@ -242,7 +242,6 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
                     hostent->h_addr_list[i] = (char *) &addrs[i];
                   hostent->h_addr_list[naddrs] = NULL;
                   *host = hostent;
-                  free(addrs); /* since it isn't used anymore! */
                   return ARES_SUCCESS;
                 }
               free(hostent);
