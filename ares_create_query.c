@@ -37,6 +37,10 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
+#ifndef T_OPT
+#  define T_OPT  41 /* EDNS0 option (meta-RR) */
+#endif
+
 /* Header format, from RFC 1035:
  *                                  1  1  1  1  1  1
  *    0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -201,7 +205,7 @@ int ares_create_query(const char *name, int dnsclass, int type,
       q += QFIXEDSZ;
       memset(q, 0, EDNSFIXEDSZ);
       q++;
-      DNS_RR_SET_TYPE(q, ns_t_opt);
+      DNS_RR_SET_TYPE(q, T_OPT);
       DNS_RR_SET_CLASS(q, max_udp_size);
   }
 
