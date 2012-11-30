@@ -390,6 +390,10 @@ CARES_EXTERN int ares_fds(ares_channel channel,
                           fd_set *read_fds,
                           fd_set *write_fds);
 
+CARES_EXTERN int ares_fds_array(ares_channel channel,
+                          ares_socket_t **read_fds,
+                          ares_socket_t **write_fds);
+
 CARES_EXTERN int ares_getsock(ares_channel channel,
                               ares_socket_t *socks,
                               int numsocks);
