@@ -21,10 +21,6 @@
 #include <sys/param.h>
 #endif
 
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -44,10 +40,6 @@
 #endif
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #  include <arpa/nameser_compat.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
 #endif
 
 #if defined(ANDROID) || defined(__ANDROID__)

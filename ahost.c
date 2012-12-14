@@ -17,14 +17,11 @@
 #include "ares_setup.h"
 
 #if !defined(WIN32) || defined(WATT32)
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
 #endif
-#endif
+
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif

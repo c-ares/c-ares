@@ -16,10 +16,6 @@
 
 #include "ares_setup.h"
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #include "ares.h"
 #include "ares_private.h"
 
