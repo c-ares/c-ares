@@ -19,11 +19,6 @@
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#include <time.h>
 
 #include "ares.h"
 #include "ares_private.h"

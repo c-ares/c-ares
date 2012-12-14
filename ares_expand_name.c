@@ -31,7 +31,6 @@
 #  include <arpa/nameser_compat.h>
 #endif
 
-#include <stdlib.h>
 #include "ares.h"
 #include "ares_nowarn.h"
 #include "ares_private.h" /* for the memdebug */

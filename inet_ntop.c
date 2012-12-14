@@ -35,11 +35,6 @@
 #  include <arpa/nameser_compat.h>
 #endif
 
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
 #include "ares.h"
 #include "ares_ipv6.h"
 #include "inet_ntop.h"

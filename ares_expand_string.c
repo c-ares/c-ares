@@ -28,8 +28,6 @@
 #  include "nameser.h"
 #endif
 
-#include <string.h>
-#include <stdlib.h>
 #include "ares.h"
 #include "ares_private.h" /* for the memdebug */
 

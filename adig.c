@@ -37,20 +37,12 @@
 #  include <arpa/nameser_compat.h>
 #endif
 
-#ifdef HAVE_SYS_TIME_H
-#  include <sys/time.h>
-#endif
 #ifdef HAVE_UNISTD_H
 #  include <unistd.h>
 #endif
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
 #endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 
 #include "ares.h"
 #include "ares_dns.h"

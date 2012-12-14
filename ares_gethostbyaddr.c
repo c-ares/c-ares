@@ -36,10 +36,6 @@
 #  include <arpa/nameser_compat.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "ares.h"
 #include "inet_net_pton.h"
 #include "ares_platform.h"

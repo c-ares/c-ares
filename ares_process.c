@@ -41,10 +41,6 @@
 #  include <arpa/nameser_compat.h>
 #endif
 
-#ifdef HAVE_SYS_TIME_H
-#  include <sys/time.h>
-#endif
-
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
 #endif
@@ -59,10 +55,7 @@
 #endif
 
 #include <assert.h>
-#include <string.h>
-#include <stdlib.h>
 #include <fcntl.h>
-#include <time.h>
 
 #include "ares.h"
 #include "ares_dns.h"

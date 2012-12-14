@@ -31,8 +31,6 @@
 #  include <arpa/nameser_compat.h>
 #endif
 
-#include <stdlib.h>
-#include <string.h>
 #include "ares.h"
 #include "ares_dns.h"
 #include "ares_private.h"

@@ -26,9 +26,6 @@
 #define WIN32
 #endif
 
-#include <stdio.h>
-#include <sys/types.h>
-
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -38,10 +35,6 @@
 #include <sys/ioctl.h>
 #define writev(s,v,c)     writev_s(s,v,c)
 #define HAVE_WRITEV 1
-#endif
-
-#ifdef NETWARE
-#include <time.h>
 #endif
 
 #define DEFAULT_TIMEOUT         5000 /* milliseconds */

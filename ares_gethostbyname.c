@@ -37,10 +37,6 @@
 #  include <arpa/nameser_compat.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif

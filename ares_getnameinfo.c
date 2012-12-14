@@ -51,10 +51,6 @@
 #include <unistd.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "ares.h"
 #include "ares_ipv6.h"
 #include "inet_ntop.h"
