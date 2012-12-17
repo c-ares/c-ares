@@ -15,7 +15,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 45
+# serial 46
 
 
 dnl CARES_INCLUDES_ARPA_INET
@@ -1408,6 +1408,7 @@ dnl HAVE_GETHOSTNAME will be defined.
 AC_DEFUN([CARES_CHECK_FUNC_GETHOSTNAME], [
   AC_REQUIRE([CARES_INCLUDES_WINSOCK2])dnl
   AC_REQUIRE([CARES_INCLUDES_UNISTD])dnl
+  AC_REQUIRE([CARES_PREPROCESS_CALLCONV])dnl
   #
   tst_links_gethostname="unknown"
   tst_proto_gethostname="unknown"
@@ -1474,8 +1475,9 @@ AC_DEFUN([CARES_CHECK_FUNC_GETHOSTNAME], [
             AC_LANG_PROGRAM([[
               $cares_includes_winsock2
               $cares_includes_unistd
+              $cares_preprocess_callconv
+              extern int FUNCALLCONV gethostname($tst_arg1, $tst_arg2);
             ]],[[
-              int gethostname($tst_arg1 name, $tst_arg2 namelen);
               if(0 != gethostname(0, 0))
                 return 1;
             ]])
