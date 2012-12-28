@@ -350,7 +350,8 @@ long ares__tvdiff(struct timeval t1, struct timeval t2);
    libcurl lowlevel code from within library is ugly and only works when
    c-ares is built and linked with a similarly curldebug-enabled libcurl,
    but we do this anyway for convenience. */
-#include "../lib/memdebug.h"
+#define HEADER_CURL_SETUP_ONCE_H
+#include "../lib/curl_memdebug.h"
 #endif
 
 #endif /* __ARES_PRIVATE_H */
