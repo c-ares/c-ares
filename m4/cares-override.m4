@@ -2,7 +2,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 6
+# serial 7
 
 dnl CARES_OVERRIDE_AUTOCONF
 dnl -------------------------------------------------
@@ -88,13 +88,4 @@ m4_define([$0],[])])
 m4_defun([_LT_AC_LIBTOOL_SYS_PATH_SEPARATOR],
 [CARES_CHECK_PATH_SEPARATOR
 m4_define([$0],[])])
-
-dnl Provide Autoconf's AC_CONFIG_MACRO_DIR (DIR)
-dnl -------------------------------------------------
-dnl Allow usage of mentioned macro in configure.ac
-dnl even with ancient Autoconf versions, such as 2.57,
-dnl that do not provide a definition for this macro.
-
-m4_ifndef([AC_CONFIG_MACRO_DIR],
-[AC_DEFUN([AC_CONFIG_MACRO_DIR],[:])])
 

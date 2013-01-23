@@ -5,6 +5,7 @@ AC_INIT([c-ares], [-],
   [c-ares mailing list: http://cool.haxx.se/mailman/listinfo/c-ares])
 
 XC_OVR_ZZ50
+XC_OVR_ZZ60
 CARES_OVERRIDE_AUTOCONF
 
 AC_CONFIG_SRCDIR([ares_ipv6.h])
