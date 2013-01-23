@@ -4,6 +4,7 @@ dnl Version not hardcoded here. Fetched later from ares_version.h
 AC_INIT([c-ares], [-],
   [c-ares mailing list: http://cool.haxx.se/mailman/listinfo/c-ares])
 
+XC_OVR_ZZ40
 XC_OVR_ZZ50
 XC_OVR_ZZ60
 CARES_OVERRIDE_AUTOCONF
@@ -19,8 +20,6 @@ CARES_CHECK_OPTION_WARNINGS
 CARES_CHECK_OPTION_WERROR
 CARES_CHECK_OPTION_CURLDEBUG
 CARES_CHECK_OPTION_SYMBOL_HIDING
-
-CARES_CHECK_PATH_SEPARATOR_REQUIRED
 
 dnl SED is mandatory for configure process and libtool.
 dnl Set it now, allowing it to be changed later.
