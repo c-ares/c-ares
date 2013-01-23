@@ -69,8 +69,6 @@ if test -f ${srcdir}/ares_build.h; then
   rm -f ${srcdir}/ares_build.h
 fi
 
-AM_INIT_AUTOMAKE
-
 dnl
 dnl Detect the canonical host and target build environment
 dnl
@@ -79,9 +77,9 @@ AC_CANONICAL_HOST
 dnl Get system canonical name
 AC_DEFINE_UNQUOTED(OS, "${host}", [cpu-machine-OS])
 
-CARES_CHECK_PROG_CC
-AM_PROG_CC_C_O
-AC_PROG_INSTALL
+XC_CHECK_PROG_CC
+
+AM_INIT_AUTOMAKE
 
 dnl This defines _ALL_SOURCE for AIX
 CARES_CHECK_AIX_ALL_SOURCE
@@ -863,6 +861,8 @@ squeeze LDFLAGS
 squeeze LIBS
 
 squeeze CARES_PRIVATE_LIBS
+
+XC_CHECK_BUILD_FLAGS
 
 AC_CONFIG_FILES([Makefile libcares.pc])
 AC_OUTPUT

@@ -1,6 +1,6 @@
 #***************************************************************************
 #
-# Copyright (C) 2009-2012 by Daniel Stenberg et al
+# Copyright (C) 2009-2013 by Daniel Stenberg et al
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted, provided
@@ -15,7 +15,7 @@
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
-# serial 73
+# serial 74
 
 
 dnl CARES_CHECK_COMPILER
@@ -1293,20 +1293,6 @@ AC_DEFUN([CARES_CHECK_NO_UNDEFINED], [
     need_no_undefined="yes"
   fi
   AC_MSG_RESULT($need_no_undefined)
-])
-
-
-dnl CARES_CHECK_PROG_CC
-dnl -------------------------------------------------
-dnl Check for compiler program, preventing CFLAGS and
-dnl CPPFLAGS from being unexpectedly changed.
-
-AC_DEFUN([CARES_CHECK_PROG_CC], [
-  ac_save_CFLAGS="$CFLAGS"
-  ac_save_CPPFLAGS="$CPPFLAGS"
-  AC_PROG_CC
-  CFLAGS="$ac_save_CFLAGS"
-  CPPFLAGS="$ac_save_CPPFLAGS"
 ])
 
 
