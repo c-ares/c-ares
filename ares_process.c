@@ -1,6 +1,6 @@
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2004-2012 by Daniel Stenberg
+ * Copyright (C) 2004-2013 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -640,6 +640,31 @@ static void process_broken_connections(ares_channel channel,
     }
 }
 
+/* Swap the contents of two lists */
+static void swap_lists(struct list_node* head_a,
+                       struct list_node* head_b)
+{
+  int is_a_empty = ares__is_list_empty(head_a);
+  int is_b_empty = ares__is_list_empty(head_b);
+  struct list_node old_a = *head_a;
+  struct list_node old_b = *head_b;
+
+  if (is_a_empty) {
+    ares__init_list_head(head_b);
+  } else {
+    *head_b = old_a;
+    old_a.next->prev = head_b;
+    old_a.prev->next = head_b;
+  }
+  if (is_b_empty) {
+    ares__init_list_head(head_a);
+  } else {
+    *head_a = old_b;
+    old_b.next->prev = head_a;
+    old_b.prev->next = head_a;
+  }
+}
+
 static void handle_error(ares_channel channel, int whichserver,
                          struct timeval *now)
 {
@@ -660,7 +685,7 @@ static void handle_error(ares_channel channel, int whichserver,
    * same server->queries_to_server list.
    */
   ares__init_list_head(&list_head);
-  ares__swap_lists(&list_head, &(server->queries_to_server));
+  swap_lists(&list_head, &(server->queries_to_server));
   for (list_node = list_head.next; list_node != &list_head; )
     {
       query = list_node->data;
