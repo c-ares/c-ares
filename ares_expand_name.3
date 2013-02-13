@@ -43,6 +43,8 @@ The length of the encoded name is stored in the variable pointed to by
 .I enclen
 so that the caller can advance past the encoded domain name to read
 further data in the message.
+
+Use \fIares_free_string(3)\fP to free the allocated hostname.
 .SH RETURN VALUES
 .B ares_expand_name
 can return any of the following values:
@@ -56,7 +58,7 @@ The encoded domain name was malformed and could not be expanded.
 .B ARES_ENOMEM
 Memory was exhausted.
 .SH SEE ALSO
-.BR ares_mkquery (3)
+.BR ares_mkquery (3), ares_free_string (3)
 .SH AUTHOR
 Greg Hudson, MIT Information Systems
 .br
