@@ -1,5 +1,5 @@
 
-# Copyright (C) 2009-2010 by Daniel Stenberg
+# Copyright (C) 2009-2013 by Daniel Stenberg
 #
 # Permission to use, copy, modify, and distribute this
 # software and its documentation for any purpose and without
@@ -115,6 +115,14 @@ CC_VERS_NUM = 100
 CC_VERS_NUM = 100
 !ELSEIF "$(_NMAKE_VER)" == "10.00.30319.01"
 CC_VERS_NUM = 100
+!ELSEIF "$(_NMAKE_VER)" == "10.00.40219.01"
+CC_VERS_NUM = 100
+!ELSEIF "$(_NMAKE_VER)" == "11.00.50522.1"
+CC_VERS_NUM = 110
+!ELSEIF "$(_NMAKE_VER)" == "11.00.50727.1"
+CC_VERS_NUM = 110
+!ELSEIF "$(_NMAKE_VER)" == "11.00.51106.1"
+CC_VERS_NUM = 110
 !ELSE
 !  MESSAGE Unknown value for _NMAKE_VER macro: "$(_NMAKE_VER)"
 !  MESSAGE Please, report this condition on the c-ares development
