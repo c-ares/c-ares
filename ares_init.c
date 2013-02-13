@@ -1944,13 +1944,6 @@ static int init_id_key(rc4_key* key,int key_data_len)
   return ARES_SUCCESS;
 }
 
-unsigned short ares__generate_new_id(rc4_key* key)
-{
-  unsigned short r=0;
-  ares__rc4(key, (unsigned char *)&r, sizeof(r));
-  return r;
-}
-
 void ares_set_local_ip4(ares_channel channel, unsigned int local_ip)
 {
   channel->local_ip4 = local_ip;

@@ -318,7 +318,6 @@ long ares__timeoffset(struct timeval *now,
                       struct timeval *check);
 /* returns ARES_SUCCESS if library has been initialized */
 int ares_library_initialized(void);
-void ares__rc4(rc4_key* key,unsigned char *buffer_ptr, int buffer_len);
 void ares__send_query(ares_channel channel, struct query *query,
                       struct timeval *now);
 void ares__close_sockets(ares_channel channel, struct server_state *server);

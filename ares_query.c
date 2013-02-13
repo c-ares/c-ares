@@ -39,7 +39,7 @@ struct qquery {
 
 static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf, int alen);
 
-void ares__rc4(rc4_key* key, unsigned char *buffer_ptr, int buffer_len)
+static void rc4(rc4_key* key, unsigned char *buffer_ptr, int buffer_len)
 {
   unsigned char x;
   unsigned char y;
@@ -99,6 +99,13 @@ static unsigned short generate_unique_id(ares_channel channel)
   } while (find_query_by_id(channel, id));
 
   return (unsigned short)id;
+}
+
+unsigned short ares__generate_new_id(rc4_key* key)
+{
+  unsigned short r=0;
+  rc4(key, (unsigned char *)&r, sizeof(r));
+  return r;
 }
 
 void ares_query(ares_channel channel, const char *name, int dnsclass,
