@@ -460,8 +460,8 @@ static int get_address_index(const struct in_addr *addr,
         }
       else
         {
-          if (!ares_bitncmp(&addr->s_addr, &sortlist[i].addrV4.s_addr,
-                            sortlist[i].mask.bits))
+          if (!ares__bitncmp(&addr->s_addr, &sortlist[i].addrV4.s_addr,
+                             sortlist[i].mask.bits))
             break;
         }
     }
@@ -508,10 +508,8 @@ static int get6_address_index(const struct ares_in6_addr *addr,
     {
       if (sortlist[i].family != AF_INET6)
         continue;
-        if (!ares_bitncmp(addr,
-                          &sortlist[i].addrV6,
-                          sortlist[i].mask.bits))
-          break;
+      if (!ares__bitncmp(addr, &sortlist[i].addrV6, sortlist[i].mask.bits))
+        break;
     }
   return i;
 }
