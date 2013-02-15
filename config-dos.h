@@ -65,7 +65,7 @@
 
 #if defined(__HIGHC__) || \
     (defined(__GNUC__) && (__GNUC__ < 4))
-#define ssize_t    int
+  #define ssize_t  int
 #endif
 
 /* Target HAVE_x section */
@@ -86,6 +86,7 @@
 
 #elif defined(__HIGHC__)
   #define HAVE_SYS_TIME_H 1
+  #define strerror(e) strerror_s_((e))
 #endif
 
 #ifdef WATT32
