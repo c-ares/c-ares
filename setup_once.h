@@ -2,7 +2,7 @@
 #define __SETUP_ONCE_H
 
 
-/* Copyright (C) 2004 - 2012 by Daniel Stenberg et al
+/* Copyright (C) 2004 - 2013 by Daniel Stenberg et al
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted, provided
@@ -260,6 +260,8 @@ struct timeval {
 #  define sclose(x)  closesocket((x))
 #elif defined(HAVE_CLOSESOCKET_CAMEL)
 #  define sclose(x)  CloseSocket((x))
+#elif defined(HAVE_CLOSE_S)
+#  define sclose(x)  close_s((x))
 #else
 #  define sclose(x)  close((x))
 #endif
