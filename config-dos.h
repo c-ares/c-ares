@@ -93,7 +93,7 @@
   #define HAVE_AF_INET6                    1
   #define HAVE_ARPA_INET_H                 1
   #define HAVE_ARPA_NAMESER_H              1
-  #define HAVE_CLOSESOCKET_CAMEL           1
+  #define HAVE_CLOSE_S                     1
   #define HAVE_GETHOSTNAME                 1
   #define HAVE_NETDB_H                     1
   #define HAVE_NETINET_IN_H                1
@@ -107,7 +107,6 @@
   #define HAVE_SYS_UIO_H                   1
   #define NS_INADDRSZ                      4
   #define HAVE_STRUCT_SOCKADDR_IN6         1
-  #define CloseSocket(s)                   close_s((s))
 #endif
 
 #undef word
