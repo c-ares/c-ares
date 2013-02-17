@@ -20,7 +20,8 @@ ares_inet_ntop \- convert a network format address to presentation format
 .nf
 .B #include <ares.h>
 .PP
-.B const char *ares_inet_ntop(int af, const void *src, char *dst, size_t size);
+.B const char *
+.B ares_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 .fi
 .SH DESCRIPTION
 This is a portable version with the identical functionality of the commonly
