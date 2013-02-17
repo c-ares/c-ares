@@ -1,6 +1,6 @@
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2008-2011 by Daniel Stenberg
+ * Copyright (C) 2008-2013 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -24,7 +24,7 @@
 
 #include "ares.h"
 #include "ares_data.h"
-#include "inet_net_pton.h"
+#include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
 

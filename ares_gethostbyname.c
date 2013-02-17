@@ -1,5 +1,5 @@
 
-/* Copyright 1998, 2011 by the Massachusetts Institute of Technology.
+/* Copyright 1998, 2011, 2013 by the Massachusetts Institute of Technology.
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -39,7 +39,7 @@
 #endif
 
 #include "ares.h"
-#include "inet_net_pton.h"
+#include "ares_inet_net_pton.h"
 #include "bitncmp.h"
 #include "ares_platform.h"
 #include "ares_nowarn.h"

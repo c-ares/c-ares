@@ -36,7 +36,7 @@
 #include "ares.h"
 #include "ares_ipv6.h"
 #include "ares_nowarn.h"
-#include "inet_net_pton.h"
+#include "ares_inet_net_pton.h"
 
 
 const struct ares_in6_addr ares_in6addr_any = { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 } } };
@@ -440,4 +440,11 @@ int ares_inet_pton(int af, const char *src, void *dst)
     return 0;
   return (result > -1 ? 1 : -1);
 }
+#else /* HAVE_INET_PTON */
+int ares_inet_pton(int af, const char *src, void *dst)
+{
+  /* just relay this to the underlying function */
+  return inet_pton(af, src, dst);
+}
+
 #endif

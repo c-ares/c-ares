@@ -1,6 +1,6 @@
 
 /* Copyright 1998, 2009 by the Massachusetts Institute of Technology.
- * Copyright (C) 2007-2011 by Daniel Stenberg
+ * Copyright (C) 2007-2013 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -578,6 +578,12 @@ CARES_EXTERN int ares_set_servers_csv(ares_channel channel,
 
 CARES_EXTERN int ares_get_servers(ares_channel channel,
                                   struct ares_addr_node **servers);
+
+CARES_EXTERN const char *ares_inet_ntop(int af, const void *src, char *dst,
+                                        socklen_t size);
+
+CARES_EXTERN int ares_inet_pton(int af, const char *src, void *dst);
+
 
 #ifdef  __cplusplus
 }

@@ -45,7 +45,7 @@
 
 #include "ares.h"
 #include "ares_dns.h"
-#include "inet_net_pton.h"
+#include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
 int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,

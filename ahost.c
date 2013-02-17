@@ -28,8 +28,6 @@
 
 #include "ares.h"
 #include "ares_dns.h"
-#include "inet_ntop.h"
-#include "inet_net_pton.h"
 #include "ares_getopt.h"
 #include "ares_ipv6.h"
 #include "ares_nowarn.h"

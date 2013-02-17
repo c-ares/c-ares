@@ -34,8 +34,6 @@
 
 #include "ares.h"
 #include "ares_ipv6.h"
-#include "inet_ntop.h"
-
 
 #ifndef HAVE_INET_NTOP
 
@@ -61,7 +59,7 @@ static const char *inet_ntop6(const unsigned char *src, char *dst, size_t size);
  *     Paul Vixie, 1996.
  */
 const char *
-ares_inet_ntop(int af, const void *src, char *dst, size_t size)
+ares_inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {
   switch (af) {
   case AF_INET:
@@ -197,4 +195,11 @@ inet_ntop6(const unsigned char *src, char *dst, size_t size)
   strcpy(dst, tmp);
   return (dst);
 }
-#endif
+#else /* HAVE_INET_NTOP */
+
+const char *ares_inet_ntop(int af, const void *src, char *dst, socklen_t size)
+{
+  /* just relay this to the underlying function */
+  return inet_ntop(af, src, dst, size);
+}
+#endif /* HAVE_INET_NTOP */
