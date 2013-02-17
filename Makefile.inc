@@ -112,7 +112,9 @@ MANPAGES = ares_cancel.3		\
   ares_set_socket_callback.3		\
   ares_strerror.3			\
   ares_timeout.3			\
-  ares_version.3
+  ares_version.3		        \
+  ares_inet_pton.3                      \
+  ares_inet_ntop.3
 
 HTMLPAGES = ares_cancel.html		\
   ares_destroy.html			\
@@ -153,7 +155,9 @@ HTMLPAGES = ares_cancel.html		\
   ares_set_socket_callback.html		\
   ares_strerror.html			\
   ares_timeout.html			\
-  ares_version.html
+  ares_version.html                     \
+  ares_inet_pton.html                   \
+  ares_inet_ntop.html
 
 PDFPAGES = ares_cancel.pdf		\
   ares_destroy.pdf			\
@@ -194,7 +198,9 @@ PDFPAGES = ares_cancel.pdf		\
   ares_set_socket_callback.pdf		\
   ares_strerror.pdf			\
   ares_timeout.pdf			\
-  ares_version.pdf
+  ares_version.pdf                      \
+  ares_inet_pton.pdf                    \
+  ares_inet_ntop.pdf
 
 SAMPLESOURCES = ares_getopt.c		\
   ares_nowarn.c				\
