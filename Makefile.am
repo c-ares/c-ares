@@ -22,16 +22,16 @@ ACLOCAL_AMFLAGS = -I m4
 # $(top_srcdir) is for c-ares's ares_setup.h and other "c-ares-private" files
 
 if CURLDEBUG
-INCLUDES = -I$(top_builddir)/../include/curl \
-           -I$(top_builddir)/../include      \
-           -I$(top_srcdir)/../include        \
-           -I$(top_builddir)/../lib          \
-           -I$(top_srcdir)/../lib            \
-           -I$(top_builddir)                 \
-           -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_builddir)/../include/curl \
+              -I$(top_builddir)/../include      \
+              -I$(top_srcdir)/../include        \
+              -I$(top_builddir)/../lib          \
+              -I$(top_srcdir)/../lib            \
+              -I$(top_builddir)                 \
+              -I$(top_srcdir)
 else
-INCLUDES = -I$(top_builddir) \
-           -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_builddir) \
+              -I$(top_srcdir)
 endif
 
 lib_LTLIBRARIES = libcares.la
@@ -107,9 +107,7 @@ CFLAG_CARES_SYMBOL_HIDING = @CFLAG_CARES_SYMBOL_HIDING@
 
 # For Windows build targets, when building or using static c-ares
 if USE_CPPFLAG_CARES_STATICLIB
-AM_CPPFLAGS = -DCARES_STATICLIB
-else
-AM_CPPFLAGS =
+AM_CPPFLAGS += -DCARES_STATICLIB
 endif
 
 if DOING_CARES_SYMBOL_HIDING
