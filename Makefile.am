@@ -64,7 +64,7 @@ DISTCLEANFILES = ares_build.h
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
 
-VER=-version-info 2:0:0
+CARES_VERSION_INFO = -version-info 2:0:0
 # This flag accepts an argument of the form current[:revision[:age]]. So,
 # passing -version-info 3:12:1 sets current to 3, revision to 12, and age to
 # 1.
@@ -93,12 +93,21 @@ VER=-version-info 2:0:0
 # set age to 0. (c:r:a=0)
 #
 
-if NO_UNDEFINED
-# The -no-undefined flag is crucial for this to build fine on some platforms
-UNDEF = -no-undefined
+libcares_la_LDFLAGS_EXTRA =
+
+if CARES_LT_SHLIB_USE_VERSION_INFO
+libcares_la_LDFLAGS_EXTRA += $(CARES_VERSION_INFO)
 endif
 
-libcares_la_LDFLAGS = $(UNDEF) $(VER)
+if CARES_LT_SHLIB_USE_NO_UNDEFINED
+libcares_la_LDFLAGS_EXTRA += -no-undefined
+endif
+
+if CARES_LT_SHLIB_USE_MIMPURE_TEXT
+libcares_la_LDFLAGS_EXTRA += -mimpure-text
+endif
+
+libcares_la_LDFLAGS = $(AM_LDFLAGS) $(libcares_la_LDFLAGS_EXTRA)
 
 # Add -Werror if defined
 CFLAGS += @CARES_CFLAG_EXTRAS@

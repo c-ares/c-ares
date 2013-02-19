@@ -97,34 +97,19 @@ case $host_os in
     ;;
 esac
 
-dnl support building of Windows DLLs
-AC_LIBTOOL_WIN32_DLL
+XC_LIBTOOL
 
-dnl force libtool to build static libraries with PIC on AMD64-Linux & FreeBSD
-AC_MSG_CHECKING([if arch-OS host is AMD64-Linux/FreeBSD (to build static libraries with PIC)])
-case $host in
-  x86_64*linux*|amd64*freebsd*|ia64*freebsd*)
-    AC_MSG_RESULT([yes])
-    with_pic=yes
-    ;;
-  *)
-    AC_MSG_RESULT([no])
-    ;;
-esac
+#
+# Automake conditionals based on libtool related checks
+#
 
-AC_MSG_CHECKING([if compiler is icc (to build with PIC)])
-case $CC in
-  icc | */icc)
-    AC_MSG_RESULT([yes])
-    with_pic=yes
-    ;;
-  *)
-    AC_MSG_RESULT([no])
-    ;;
-esac
+AM_CONDITIONAL([CARES_LT_SHLIB_USE_VERSION_INFO],
+  [test "x$xc_lt_shlib_use_version_info" = 'xyes'])
+AM_CONDITIONAL([CARES_LT_SHLIB_USE_NO_UNDEFINED],
+  [test "x$xc_lt_shlib_use_no_undefined" = 'xyes'])
+AM_CONDITIONAL([CARES_LT_SHLIB_USE_MIMPURE_TEXT],
+  [test "x$xc_lt_shlib_use_mimpure_text" = 'xyes'])
 
-dnl libtool setup
-AC_PROG_LIBTOOL
 
 AC_MSG_CHECKING([if we need CARES_BUILDING_LIBRARY])
 use_cppflag_cares_building_library="no"
@@ -178,9 +163,6 @@ CARES_CHECK_COMPILER_HALT_ON_ERROR
 CARES_CHECK_COMPILER_ARRAY_SIZE_NEGATIVE
 CARES_CHECK_COMPILER_PROTOTYPE_MISMATCH
 CARES_CHECK_COMPILER_SYMBOL_HIDING
-
-CARES_CHECK_NO_UNDEFINED
-AM_CONDITIONAL(NO_UNDEFINED, test x$need_no_undefined = xyes)
 
 CARES_CHECK_CURLDEBUG
 AM_CONDITIONAL(CURLDEBUG, test x$want_curldebug = xyes)
