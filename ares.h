@@ -580,7 +580,7 @@ CARES_EXTERN int ares_get_servers(ares_channel channel,
                                   struct ares_addr_node **servers);
 
 CARES_EXTERN const char *ares_inet_ntop(int af, const void *src, char *dst,
-                                        socklen_t size);
+                                        ares_socklen_t size);
 
 CARES_EXTERN int ares_inet_pton(int af, const char *src, void *dst);
 
