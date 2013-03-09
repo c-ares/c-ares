@@ -93,6 +93,8 @@ CARES_VERSION_INFO = -version-info 2:0:0
 # set age to 0. (c:r:a=0)
 #
 
+AM_LDFLAGS =
+
 libcares_la_LDFLAGS_EXTRA =
 
 if CARES_LT_SHLIB_USE_VERSION_INFO
