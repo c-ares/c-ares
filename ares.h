@@ -1,5 +1,5 @@
 
-/* Copyright 1998, 2009 by the Massachusetts Institute of Technology.
+/* Copyright 1998 by the Massachusetts Institute of Technology.
  * Copyright (C) 2007-2013 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
@@ -552,8 +552,6 @@ CARES_EXTERN int ares_parse_soa_reply(const unsigned char* abuf,
 CARES_EXTERN void ares_free_string(void *str);
 
 CARES_EXTERN void ares_free_hostent(struct hostent *host);
-
-CARES_EXTERN void ares_free_soa(struct ares_soa_reply *soa);
 
 CARES_EXTERN void ares_free_data(void *dataptr);
 
