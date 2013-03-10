@@ -2,7 +2,7 @@
 #define __CARES_BUILD_H
 
 
-/* Copyright (C) 2009 - 2010 by Daniel Stenberg et al
+/* Copyright (C) 2009 - 2013 by Daniel Stenberg et al
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted, provided
@@ -216,9 +216,11 @@
 /* ===================================== */
 
 #elif defined(__GNUC__)
-#  if defined(__i386__) || defined(__ppc__)
+#  if defined(__ILP32__) || \
+      defined(__i386__) || defined(__ppc__) || defined(__arm__)
 #    define CARES_SIZEOF_LONG           4
-#  elif defined(__x86_64__) || defined(__ppc64__)
+#  elif defined(__LP64__) || \
+        defined(__x86_64__) || defined(__ppc64__)
 #    define CARES_SIZEOF_LONG           8
 #  endif
 #  define CARES_TYPEOF_ARES_SOCKLEN_T socklen_t
