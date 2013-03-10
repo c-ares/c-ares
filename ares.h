@@ -75,22 +75,18 @@ extern "C" {
 ** c-ares external API function linkage decorations.
 */
 
-#if !defined(CARES_STATICLIB) && \
-   (defined(WIN32) || defined(_WIN32) || defined(__SYMBIAN32__))
-   /* __declspec function decoration for Win32 and Symbian DLL's */
+#ifdef CARES_STATICLIB
+#  define CARES_EXTERN
+#elif defined(WIN32) || defined(_WIN32) || defined(__SYMBIAN32__)
 #  if defined(CARES_BUILDING_LIBRARY)
 #    define CARES_EXTERN  __declspec(dllexport)
 #  else
 #    define CARES_EXTERN  __declspec(dllimport)
 #  endif
+#elif defined(CARES_BUILDING_LIBRARY) && defined(CARES_SYMBOL_HIDING)
+#  define CARES_EXTERN CARES_SYMBOL_SCOPE_EXTERN
 #else
-   /* visibility function decoration for other cases */
-#  if !defined(CARES_SYMBOL_HIDING) || \
-     defined(WIN32) || defined(_WIN32) || defined(__SYMBIAN32__)
-#    define CARES_EXTERN
-#  else
-#    define CARES_EXTERN CARES_SYMBOL_SCOPE_EXTERN
-#  endif
+#  define CARES_EXTERN
 #endif
 
 

@@ -110,32 +110,36 @@ AM_CONDITIONAL([CARES_LT_SHLIB_USE_NO_UNDEFINED],
 AM_CONDITIONAL([CARES_LT_SHLIB_USE_MIMPURE_TEXT],
   [test "x$xc_lt_shlib_use_mimpure_text" = 'xyes'])
 
+#
+# Due to libtool and automake machinery limitations of not allowing
+# specifying separate CPPFLAGS or CFLAGS when compiling objects for
+# inclusion of these in shared or static libraries, we are forced to
+# build using separate configure runs for shared and static libraries
+# on systems where different CPPFLAGS or CFLAGS are mandatory in order
+# to compile objects for each kind of library. Notice that relying on
+# the '-DPIC' CFLAG that libtool provides is not valid given that the
+# user might for example choose to build static libraries with PIC.
+#
 
-AC_MSG_CHECKING([if we need CARES_BUILDING_LIBRARY])
-use_cppflag_cares_building_library="no"
-use_cppflag_cares_staticlib="no"
-CPPFLAG_CARES_STATICLIB=""
-case $host in
-  *-*-mingw*)
-    AC_MSG_RESULT(yes)
-    use_cppflag_cares_building_library="yes"
-    AC_MSG_CHECKING([if we need CARES_STATICLIB])
-    if test "X$enable_shared" = "Xno"
-    then
-      AC_MSG_RESULT(yes)
-      use_cppflag_cares_staticlib="yes"
-      CPPFLAG_CARES_STATICLIB="-DCARES_STATICLIB"
-    else
-      AC_MSG_RESULT(no)
-    fi
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-esac
-AM_CONDITIONAL(USE_CPPFLAG_CARES_BUILDING_LIBRARY, test x$use_cppflag_cares_building_library = xyes)
-AM_CONDITIONAL(USE_CPPFLAG_CARES_STATICLIB, test x$use_cppflag_cares_staticlib = xyes)
-AC_SUBST(CPPFLAG_CARES_STATICLIB)
+#
+# Make our Makefile.am files use the staticlib CPPFLAG only when strictly
+# targeting a static library and not building its shared counterpart.
+#
+
+AM_CONDITIONAL([USE_CPPFLAG_CARES_STATICLIB],
+  [test "x$xc_lt_build_static_only" = 'xyes'])
+
+#
+# Make staticlib CPPFLAG variable and its definition visible in output
+# files unconditionally, providing an empty definition unless strictly
+# targeting a static library and not building its shared counterpart.
+#
+
+CPPFLAG_CARES_STATICLIB=
+if test "x$xc_lt_build_static_only" = 'xyes'; then
+  CPPFLAG_CARES_STATICLIB='-DCARES_STATICLIB'
+fi
+AC_SUBST([CPPFLAG_CARES_STATICLIB])
 
 dnl **********************************************************************
 dnl platform/compiler/architecture specific checks/flags
