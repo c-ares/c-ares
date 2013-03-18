@@ -33,13 +33,15 @@ function performs initializations internally required by the c-ares
 library that must take place before any other function provided by
 c-ares can be used in a program.
 .PP
-This function must be called one time within the life of a program,
+This function must be called at least once within the life of a program,
 before the program actually executes any other c-ares library function.
-Initializations done by this function remain effective until a
-call to \fIares_library_cleanup(3)\fP is performed.
+Initializations done by this function remain effective until a number of
+calls to \fIares_library_cleanup(3)\fP equal to the number of calls to
+this function are performed.
 .PP
-Successive calls to this function do nothing, only the first call done
-when c-ares is in an uninitialized state is actually effective.
+Successive calls to this function do nothing further, only the first
+call done when c-ares is in an uninitialized state is actually
+effective.
 .PP
 The
 .I flags
@@ -77,7 +79,11 @@ non-zero error number will be returned to indicate the error. Except for
 .SH AVAILABILITY
 This function was first introduced in c-ares version 1.7.0 along with the
 definition of preprocessor symbol \fICARES_HAVE_ARES_LIBRARY_INIT\fP as an
-indication of the availability of this function.
+indication of the availability of this function. Its recursive behavior,
+which requires a matching number of calls to \fIares_library_cleanup()\fP
+in order to deinitialize the library, is present since c-ares version
+1.10.0. Earlier versions would deinitialize the library on the first call
+to \fIares_library_cleanup()\fP.
 .PP
 Since the introduction of this function it is absolutely mandatory to
 call it for any Win32/64 program using c-ares.
