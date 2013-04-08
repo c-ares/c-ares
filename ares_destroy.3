@@ -33,7 +33,8 @@ invokes the callbacks for each pending query on the channel, passing a
 status of
 .BR ARES_EDESTRUCTION .
 These calls give the callbacks a chance to clean up any state which
-might have been stored in their arguments.
+might have been stored in their arguments. A callback must not add new
+requests to a channel being destroyed.
 .SH SEE ALSO
 .BR ares_init (3),
 .BR ares_cancel (3)
