@@ -17,6 +17,7 @@ RANLIB	= ranlib
 #RM	= rm -f
 
 CFLAGS	= -O2 -Wall -I.
+CFLAGS	+= -DCARES_STATICLIB
 LDFLAGS	= -s
 LIBS	= -lwsock32
 
