@@ -15,6 +15,7 @@ CC	= gcc
 LD	= gcc
 RANLIB	= ranlib
 #RM	= rm -f
+CP	= cp -afv
 
 CFLAGS	= -O2 -Wall -I.
 CFLAGS	+= -DCARES_STATICLIB
@@ -46,6 +47,9 @@ $(OBJLIB): ares.h ares_dns.h ares_private.h ares_build.h ares_rules.h
 .c.o:
 	$(CC) $(CFLAGS) -c $<
 
+ares_build.h:
+	$(CP) ares_build.h.dist ares_build.h
+
 check:
 
 install:
@@ -67,4 +71,7 @@ clean:
 
 distclean: clean
 	$(RM) config.cache config.log config.status Makefile
+ifeq "$(wildcard ares_build.h.dist)" "ares_build.h.dist"
+	$(RM) ares_build.h
+endif
 
