@@ -106,6 +106,11 @@ ares_parse_txt_reply (const unsigned char *abuf, int alen,
       rr_class = DNS_RR_CLASS (aptr);
       rr_len = DNS_RR_LEN (aptr);
       aptr += RRFIXEDSZ;
+      if (aptr + rr_len > abuf + alen)
+        {
+          status = ARES_EBADRESP;
+          break;
+        }
 
       /* Check if we are really looking at a TXT record */
       if (rr_class == C_IN && rr_type == T_TXT)
@@ -142,6 +147,12 @@ ares_parse_txt_reply (const unsigned char *abuf, int alen,
               substr_len = (unsigned char)*strptr;
               txt_curr->length += substr_len;
               strptr += substr_len + 1;
+            }
+
+          if (strptr != (aptr + rr_len))
+            {
+              status = ARES_EBADRESP;
+              break;
             }
 
           /* Including null byte */

@@ -136,6 +136,12 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
       rr_len = DNS_RR_LEN(aptr);
       rr_ttl = DNS_RR_TTL(aptr);
       aptr += RRFIXEDSZ;
+      if (aptr + rr_len > abuf + alen)
+        {
+          free(rr_name);
+          status = ARES_EBADRESP;
+          break;
+        }
 
       if (rr_class == C_IN && rr_type == T_AAAA
           && rr_len == sizeof(struct ares_in6_addr)

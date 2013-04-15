@@ -143,7 +143,7 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
   int n = 0, offset, indir = 0;
 
   /* Allow the caller to pass us abuf + alen and have us check for it. */
-  if (encoded == abuf + alen)
+  if (encoded >= abuf + alen)
     return -1;
 
   while (*encoded)

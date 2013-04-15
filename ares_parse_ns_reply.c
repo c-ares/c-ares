@@ -105,6 +105,12 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
     rr_class = DNS_RR_CLASS( aptr );
     rr_len = DNS_RR_LEN( aptr );
     aptr += RRFIXEDSZ;
+    if (aptr + rr_len > abuf + alen)
+      {
+        free(rr_name);
+        status = ARES_EBADRESP;
+        break;
+      }
 
     if ( rr_class == C_IN && rr_type == T_NS )
     {
