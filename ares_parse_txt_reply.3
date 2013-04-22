@@ -27,7 +27,7 @@ ares_parse_txt_reply \- Parse a reply to a DNS query of type TXT
 The
 .B ares_parse_txt_reply
 function parses the response to a query of type TXT into a
-linked list of
+linked list (one element per sub-string) of
 .I struct ares_txt_reply 
 The parameters
 .I abuf
