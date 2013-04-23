@@ -64,7 +64,7 @@ DISTCLEANFILES = ares_build.h
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
 
-CARES_VERSION_INFO = -version-info 2:0:0
+CARES_VERSION_INFO = -version-info 3:0:1
 # This flag accepts an argument of the form current[:revision[:age]]. So,
 # passing -version-info 3:12:1 sets current to 3, revision to 12, and age to
 # 1.
