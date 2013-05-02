@@ -53,6 +53,7 @@ HHEADERS = ares.h			\
   ares_data.h				\
   ares_dns.h				\
   ares_getenv.h				\
+  ares_inet_net_pton.h		\
   ares_iphlpapi.h			\
   ares_ipv6.h				\
   ares_library_init.h			\
@@ -66,8 +67,6 @@ HHEADERS = ares.h			\
   ares_version.h			\
   ares_writev.h				\
   bitncmp.h				\
-  inet_net_pton.h			\
-  inet_ntop.h				\
   nameser.h				\
   ares_setup.h				\
   setup_once.h
