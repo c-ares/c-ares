@@ -166,9 +166,13 @@ int ares_set_servers_csv(ares_channel channel,
 
   start_host = csv;
   for (ptr = csv; *ptr; ptr++) {
-    // count colons to determin if we have an IPv6 number or IPv4 with port
     if (*ptr == ':') {
+      /* count colons to determin if we have an IPv6 number or IPv4 with port */
       cc++;
+    }
+    if (*ptr == '[') {
+      /* move start_host if an open square bracket is found wrapping an IPv6 address */
+      start_host = ptr + 1;
     }
     if (*ptr == ',') {
       char* pp = ptr - 1;
@@ -198,7 +202,11 @@ int ares_set_servers_csv(ares_channel channel,
         }
         if ((pp != start_host) && ((pp + 1) < ptr)) {
           /* Found it. Parse over the port number */
-          (void)strtol(pp + 1, NULL, 10);
+          /* when an IPv6 address is wrapped with square brackets the port starts at pp + 2 */
+          if (*pp == ']')
+            p++; /* move p before ':' */
+          /* p will point to the start of the port */
+          (void)strtol(p, NULL, 10);
           *pp = 0; /* null terminate host */
         }
       }
