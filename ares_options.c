@@ -244,6 +244,8 @@ int ares_set_servers_csv(ares_channel channel,
         s->next = NULL;
         if (last) {
           last->next = s;
+          /* need to move last to maintain the linked list */
+          last = last->next;
         }
         else {
           servers = s;
