@@ -22,11 +22,14 @@ Bug fixes:
  o protocol parsing: check input data stricter
  o library init: be recursive, reference count inits/cleanups
  o ares_parse_txt_reply: return a ares_txt_reply node for each sub-string
+ o ares_set_servers_csv: fixed IPv6 address parsing
+ o build: fix build on msvc11
  
 Thanks go to these friendly people for their efforts and contributions:
 
  Eugeny Gladkih, Yang Tse, Gisle Vanem, Guenter Knauf, Horatiu Popescu,
- Alexander Klauer, Patrick Valsecchi, Paul Saab
+ Alexander Klauer, Patrick Valsecchi, Paul Saab, Keith Shaw,
+ Alex Loukissas
  
 
 Have fun!
