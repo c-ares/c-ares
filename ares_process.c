@@ -115,15 +115,6 @@ static timeadd(struct timeval *now, int millisecs)
   return 0;
 }
 
-/* return time offset between now and (future) check, in milliseconds */
-long ares__timeoffset(struct timeval *now,
-                      struct timeval *check)
-{
-  return (check->tv_sec - now->tv_sec)*1000 +
-         (check->tv_usec - now->tv_usec)/1000;
-}
-
-
 /*
  * generic process function
  */
