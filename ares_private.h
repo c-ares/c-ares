@@ -310,9 +310,7 @@ struct ares_channeldata {
 /* return true if now is exactly check time or later */
 int ares__timedout(struct timeval *now,
                    struct timeval *check);
-/* add the specific number of milliseconds to the time in the first argument */
-int ares__timeadd(struct timeval *now,
-                  int millisecs);
+
 /* return time offset between now and (future) check, in milliseconds */
 long ares__timeoffset(struct timeval *now,
                       struct timeval *check);
