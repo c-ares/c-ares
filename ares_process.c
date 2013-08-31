@@ -102,7 +102,7 @@ int ares__timedout(struct timeval *now,
 }
 
 /* add the specific number of milliseconds to the time in the first argument */
-static timeadd(struct timeval *now, int millisecs)
+static void timeadd(struct timeval *now, int millisecs)
 {
   now->tv_sec += millisecs/1000;
   now->tv_usec += (millisecs%1000)*1000;
@@ -111,8 +111,6 @@ static timeadd(struct timeval *now, int millisecs)
     ++(now->tv_sec);
     now->tv_usec -= 1000000;
   }
-
-  return 0;
 }
 
 /*
