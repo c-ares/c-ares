@@ -1,4 +1,3 @@
-
 /* Copyright 1998 by the Massachusetts Institute of Technology.
  * Copyright (C) 2007-2013 by Daniel Stenberg
  *
@@ -1040,12 +1039,12 @@ done:
  */
 static int get_DNS_Windows(char **outptr)
 {
-  /* Try using IP helper API GetAdaptersAddresses() */
-  if (get_DNS_AdaptersAddresses(outptr))
-    return 1;
-
   /* Try using IP helper API GetNetworkParams() */
   if (get_DNS_NetworkParams(outptr))
+    return 1;
+
+  /* Try using IP helper API GetAdaptersAddresses() */
+  if (get_DNS_AdaptersAddresses(outptr))
     return 1;
 
   /* Fall-back to registry information */
