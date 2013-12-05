@@ -1,4 +1,3 @@
-
 /* Copyright 1998 by the Massachusetts Institute of Technology.
  * Copyright (C) 2007-2013 by Daniel Stenberg
  *
@@ -980,6 +979,9 @@ static int get_DNS_AdaptersAddresses(char **outptr)
 
   for (ipaaEntry = ipaa; ipaaEntry; ipaaEntry = ipaaEntry->Next)
   {
+    if(ipaaEntry->OperStatus != IfOperStatusUp)
+        continue;
+
     for (ipaDNSAddr = ipaaEntry->FirstDnsServerAddress;
          ipaDNSAddr;
          ipaDNSAddr = ipaDNSAddr->Next)
