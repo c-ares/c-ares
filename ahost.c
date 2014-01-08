@@ -52,12 +52,16 @@ static void usage(void);
 
 int main(int argc, char **argv)
 {
+  struct ares_options options;
+  int optmask = 0;
   ares_channel channel;
   int status, nfds, c, addr_family = AF_INET;
   fd_set read_fds, write_fds;
   struct timeval *tvp, tv;
   struct in_addr addr4;
   struct ares_in6_addr addr6;
+
+  memset(&options, 0, sizeof(options));
 
 #ifdef USE_WINSOCK
   WORD wVersionRequested = MAKEWORD(USE_WINSOCK,USE_WINSOCK);
@@ -72,7 +76,7 @@ int main(int argc, char **argv)
       return 1;
     }
 
-  while ((c = ares_getopt(argc,argv,"dt:h")) != -1)
+  while ((c = ares_getopt(argc,argv,"dt:hs:")) != -1)
     {
       switch (c)
         {
@@ -80,6 +84,12 @@ int main(int argc, char **argv)
 #ifdef WATT32
           dbug_init();
 #endif
+          break;
+        case 's':
+          optmask |= ARES_OPT_DOMAINS;
+          options.ndomains = 1;
+          options.domains = malloc(options.ndomains * sizeof(char *));
+          options.domains[0] = strdup(optarg);
           break;
         case 't':
           if (!strcasecmp(optarg,"a"))
@@ -101,7 +111,7 @@ int main(int argc, char **argv)
   if (argc < 1)
     usage();
 
-  status = ares_init(&channel);
+  status = ares_init_options(&channel, &options, optmask);
   if (status != ARES_SUCCESS)
     {
       fprintf(stderr, "ares_init: %s\n", ares_strerror(status));
