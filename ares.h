@@ -18,6 +18,7 @@
 #ifndef ARES__H
 #define ARES__H
 
+#include "ares_config.h"   /* TM: c-ares configuration added */
 #include "ares_version.h"  /* c-ares version defines   */
 #include "ares_build.h"    /* c-ares build definitions */
 #include "ares_rules.h"    /* c-ares rules enforcement */
@@ -62,9 +63,11 @@
 #  include <windows.h>
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
-#else
+#elif !defined(CC3000)
 #  include <sys/socket.h>
 #  include <netinet/in.h>
+#else
+#   include <cc3000.h>
 #endif
 
 #ifdef  __cplusplus
