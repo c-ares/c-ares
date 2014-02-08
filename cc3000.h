@@ -35,6 +35,9 @@
 #ifndef __CC3000_H__
 #define __CC3000_H__
 
+
+#include <stdint.h>
+
 // TODO this is a bad idea
 #define alloca malloc
 
