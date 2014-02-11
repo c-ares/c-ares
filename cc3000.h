@@ -37,9 +37,7 @@
 
 
 #include <stdint.h>
-
-// TODO this is a bad idea
-#define alloca malloc
+#include <sys/time.h>
 
 
 //*****************************************************************************
