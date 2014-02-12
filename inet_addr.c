@@ -75,16 +75,15 @@ static char sccsid[] = "@(#)inet_addr.c	8.1 (Berkeley) 6/17/93";
  * ASCII internet address interpretation routine.
  * The value returned is in network order.
  */
-struct in_addr		/* XXX should be struct in_addr :( */
+unsigned long		/* XXX should be struct in_addr :( */
 inet_addr(cp)
 	const char *cp;
 {
 	struct in_addr val;
 
 	if (inet_aton(cp, &val))
-		return val;
-	val.s_addr = INADDR_NONE;
-	return val;
+		return val.s_addr;
+	return INADDR_NONE;
 }
 
 /* 

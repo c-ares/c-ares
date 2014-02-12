@@ -125,7 +125,7 @@
 #define HAVE_GETTIMEOFDAY 1
 
 /* Define to 1 if you have the `if_indextoname' function. */
-#define HAVE_IF_INDEXTONAME 1
+#undef HAVE_IF_INDEXTONAME
 
 /* Define to 1 if you have a IPv6 capable working inet_net_pton function. */
 #define HAVE_INET_NET_PTON 1
@@ -659,13 +659,13 @@
 #define HAVE_GETNAMEINFO 1
 
 /* Define to 1 if you have the getservbyport_r function. */
-/* #undef HAVE_GETSERVBYPORT_R */
+#undef HAVE_GETSERVBYPORT_R
 
 /* Define to 1 if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
 
 /* Define to 1 if you have the `if_indextoname' function. */
-#define HAVE_IF_INDEXTONAME 1
+#undef HAVE_IF_INDEXTONAME
 
 /* Define to 1 if you have a IPv6 capable working inet_net_pton function. */
 #undef HAVE_INET_NET_PTON

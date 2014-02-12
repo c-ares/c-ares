@@ -146,78 +146,6 @@ struct sockaddr_in6 {
     uint32_t        sin6_scope_id; /* Scope ID (new in 2.4) */
 };
 
-/*
- * Definitions of the bits in an Internet address integer.
- * On subnets, host and network parts are found according
- * to the subnet mask, not these masks.
- */
-#define IN_CLASSA(a)            ((((long int) (a)) & 0x80000000) == 0)
-#define IN_CLASSA_NET           0xff000000
-#define IN_CLASSA_NSHIFT        24
-#define IN_CLASSA_HOST          (0xffffffff & ~IN_CLASSA_NET)
-#define IN_CLASSA_MAX           128
-
-#define IN_CLASSB(a)            ((((long int) (a)) & 0xc0000000) == 0x80000000)
-#define IN_CLASSB_NET           0xffff0000
-#define IN_CLASSB_NSHIFT        16
-#define IN_CLASSB_HOST          (0xffffffff & ~IN_CLASSB_NET)
-#define IN_CLASSB_MAX           65536
-
-#define IN_CLASSC(a)            ((((long int) (a)) & 0xe0000000) == 0xc0000000)
-#define IN_CLASSC_NET           0xffffff00
-#define IN_CLASSC_NSHIFT        8
-#define IN_CLASSC_HOST          (0xffffffff & ~IN_CLASSC_NET)
-
-#define IN_CLASSD(a)            ((((long int) (a)) & 0xf0000000) == 0xe0000000)
-#define IN_MULTICAST(a)         IN_CLASSD(a)
-#define IN_MULTICAST_NET        0xF0000000
-
-#define IN_EXPERIMENTAL(a)      ((((long int) (a)) & 0xf0000000) == 0xf0000000)
-#define IN_BADCLASS(a)          IN_EXPERIMENTAL((a))
-
-/* Address to accept any incoming messages. */
-#define INADDR_ANY              ((unsigned long int) 0x00000000)
-
-/* Address to send to all hosts. */
-#define INADDR_BROADCAST        ((unsigned long int) 0xffffffff)
-
-/* Address indicating an error return. */
-#define INADDR_NONE             ((unsigned long int) 0xffffffff)
-
-/* Network number for local host loopback. */
-#define IN_LOOPBACKNET          127
-
-/* Address to loopback in software to local host.  */
-#define INADDR_LOOPBACK         0x7f000001      /* 127.0.0.1   */
-#define IN_LOOPBACK(a)          ((((long int) (a)) & 0xff000000) == 0x7f000000)
-
-/* Defines for Multicast INADDR */
-#define INADDR_UNSPEC_GROUP     0xe0000000U     /* 224.0.0.0   */
-#define INADDR_ALLHOSTS_GROUP   0xe0000001U     /* 224.0.0.1   */
-#define INADDR_ALLRTRS_GROUP    0xe0000002U     /* 224.0.0.2 */
-#define INADDR_MAX_LOCAL_GROUP  0xe00000ffU     /* 224.0.0.255 */
-
-struct servent {
-   char  *s_name;       /* official service name */
-   char **s_aliases;    /* alias list */
-   int    s_port;       /* port number */
-   char  *s_proto;      /* protocol to use */
-};
-
-struct hostent {
-    char  *h_name;            /* official name of host */
-    char **h_aliases;         /* alias list */
-    int    h_addrtype;        /* host address type */
-    int    h_length;          /* length of address */
-    char **h_addr_list;       /* list of addresses */
-};
-
-#define h_addr h_addr_list[0] /* for backward compatibility */
-
-/* Address to loopback in software to local host.  */
-#define INADDR_LOOPBACK         0x7f000001      /* 127.0.0.1   */
-#define IN_LOOPBACK(a)          ((((long int) (a)) & 0xff000000) == 0x7f000000)
-
 // The fd_set member is required to be an array of longs.
 typedef long int __fd_mask;
 
@@ -753,5 +681,83 @@ extern int mdnsAdvertiser(unsigned short mdnsEnabled, char * deviceServiceName, 
 #ifdef  __cplusplus
 }
 #endif // __cplusplus
+
+
+
+/*
+ * Definitions of the bits in an Internet address integer.
+ * On subnets, host and network parts are found according
+ * to the subnet mask, not these masks.
+ */
+#define IN_CLASSA(a)            ((((long int) (a)) & 0x80000000) == 0)
+#define IN_CLASSA_NET           0xff000000
+#define IN_CLASSA_NSHIFT        24
+#define IN_CLASSA_HOST          (0xffffffff & ~IN_CLASSA_NET)
+#define IN_CLASSA_MAX           128
+
+#define IN_CLASSB(a)            ((((long int) (a)) & 0xc0000000) == 0x80000000)
+#define IN_CLASSB_NET           0xffff0000
+#define IN_CLASSB_NSHIFT        16
+#define IN_CLASSB_HOST          (0xffffffff & ~IN_CLASSB_NET)
+#define IN_CLASSB_MAX           65536
+
+#define IN_CLASSC(a)            ((((long int) (a)) & 0xe0000000) == 0xc0000000)
+#define IN_CLASSC_NET           0xffffff00
+#define IN_CLASSC_NSHIFT        8
+#define IN_CLASSC_HOST          (0xffffffff & ~IN_CLASSC_NET)
+
+#define IN_CLASSD(a)            ((((long int) (a)) & 0xf0000000) == 0xe0000000)
+#define IN_MULTICAST(a)         IN_CLASSD(a)
+#define IN_MULTICAST_NET        0xF0000000
+
+#define IN_EXPERIMENTAL(a)      ((((long int) (a)) & 0xf0000000) == 0xf0000000)
+#define IN_BADCLASS(a)          IN_EXPERIMENTAL((a))
+
+/* Address to accept any incoming messages. */
+#define INADDR_ANY              ((unsigned long int) 0x00000000)
+
+/* Address to send to all hosts. */
+#define INADDR_BROADCAST        ((unsigned long int) 0xffffffff)
+
+/* Address indicating an error return. */
+#define INADDR_NONE             ((unsigned long int) 0xffffffff)
+
+/* Network number for local host loopback. */
+#define IN_LOOPBACKNET          127
+
+/* Address to loopback in software to local host.  */
+#define INADDR_LOOPBACK         0x7f000001      /* 127.0.0.1   */
+#define IN_LOOPBACK(a)          ((((long int) (a)) & 0xff000000) == 0x7f000000)
+
+/* Defines for Multicast INADDR */
+#define INADDR_UNSPEC_GROUP     0xe0000000U     /* 224.0.0.0   */
+#define INADDR_ALLHOSTS_GROUP   0xe0000001U     /* 224.0.0.1   */
+#define INADDR_ALLRTRS_GROUP    0xe0000002U     /* 224.0.0.2 */
+#define INADDR_MAX_LOCAL_GROUP  0xe00000ffU     /* 224.0.0.255 */
+
+struct servent {
+   char  *s_name;       /* official service name */
+   char **s_aliases;    /* alias list */
+   int    s_port;       /* port number */
+   char  *s_proto;      /* protocol to use */
+};
+
+struct hostent {
+    char  *h_name;            /* official name of host */
+    char **h_aliases;         /* alias list */
+    int    h_addrtype;        /* host address type */
+    int    h_length;          /* length of address */
+    char **h_addr_list;       /* list of addresses */
+};
+
+#define h_addr h_addr_list[0] /* for backward compatibility */
+
+/* Address to loopback in software to local host.  */
+#define INADDR_LOOPBACK         0x7f000001      /* 127.0.0.1   */
+#define IN_LOOPBACK(a)          ((((long int) (a)) & 0xff000000) == 0x7f000000)
+
+int inet_aton(const char *cp, struct in_addr *inp);
+unsigned long inet_addr(const char *cp);
+struct servent *getservbyport(int port, const char *proto);
 
 #endif // __CC3000_H__
