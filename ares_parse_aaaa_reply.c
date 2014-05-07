@@ -239,8 +239,12 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
                   hostent->h_aliases = aliases;
                   hostent->h_addrtype = AF_INET6;
                   hostent->h_length = sizeof(struct ares_in6_addr);
-                  for (i = 0; i < naddrs; i++)
-                    hostent->h_addr_list[i] = (char *) &addrs[i];
+                  if (naddrs) {
+                    for (i = 0; i < naddrs; i++)
+                      hostent->h_addr_list[i] = (char *) &addrs[i];
+                  } else {
+                    free(addrs);
+                  }
                   hostent->h_addr_list[naddrs] = NULL;
                   if (!naddrs && addrs)
                     free(addrs);
