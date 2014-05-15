@@ -1158,7 +1158,7 @@ static int init_by_resolv_conf(ares_channel channel)
     if (ARES_CONFIG_CHECK(channel))
         return ARES_SUCCESS;
 
-    fp = fopen(PATH_RESOLV_CONF, "r");
+    fp = fopen(PATH_RESOLV_CONF, "re");
     if (fp) {
       while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
       {
@@ -1200,7 +1200,7 @@ static int init_by_resolv_conf(ares_channel channel)
 
     if ((status == ARES_EOF) && (!channel->lookups)) {
       /* Many systems (Solaris, Linux, BSD's) use nsswitch.conf */
-      fp = fopen("/etc/nsswitch.conf", "r");
+      fp = fopen("/etc/nsswitch.conf", "re");
       if (fp) {
         while ((status = ares__read_line(fp, &line, &linesize)) ==
                ARES_SUCCESS)
@@ -1230,7 +1230,7 @@ static int init_by_resolv_conf(ares_channel channel)
 
     if ((status == ARES_EOF) && (!channel->lookups)) {
       /* Linux / GNU libc 2.x and possibly others have host.conf */
-      fp = fopen("/etc/host.conf", "r");
+      fp = fopen("/etc/host.conf", "re");
       if (fp) {
         while ((status = ares__read_line(fp, &line, &linesize)) ==
                ARES_SUCCESS)
@@ -1260,7 +1260,7 @@ static int init_by_resolv_conf(ares_channel channel)
 
     if ((status == ARES_EOF) && (!channel->lookups)) {
       /* Tru64 uses /etc/svc.conf */
-      fp = fopen("/etc/svc.conf", "r");
+      fp = fopen("/etc/svc.conf", "re");
       if (fp) {
         while ((status = ares__read_line(fp, &line, &linesize)) ==
                ARES_SUCCESS)
@@ -1896,7 +1896,7 @@ static void randomize_key(unsigned char* key,int key_data_len)
     }
 #else /* !WIN32 */
 #ifdef RANDOM_FILE
-  FILE *f = fopen(RANDOM_FILE, "rb");
+  FILE *f = fopen(RANDOM_FILE, "rbe");
   if(f) {
     counter = aresx_uztosi(fread(key, 1, key_data_len, f));
     fclose(f);

@@ -373,7 +373,7 @@ static int file_lookup(const char *name, int family, struct hostent **host)
     return ARES_ENOTFOUND;
 #endif
 
-  fp = fopen(PATH_HOSTS, "r");
+  fp = fopen(PATH_HOSTS, "re");
   if (!fp)
     {
       error = ERRNO;
