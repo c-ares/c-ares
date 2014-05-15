@@ -902,7 +902,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
 
   setsocknonblock(s, TRUE);
 
-#if defined(FD_CLOEXEC) && !defined(MSDOS)
+#if  !defined(SOCK_CLOEXEC) && defined(FD_CLOEXEC) && !defined(MSDOS)
   /* Configure the socket fd as close-on-exec. */
   if (fcntl(s, F_SETFD, FD_CLOEXEC) == -1)
     return -1;
@@ -991,7 +991,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
     }
 
   /* Acquire a socket. */
-  s = socket(server->addr.family, SOCK_STREAM, 0);
+  s = socket(server->addr.family, SOCK_STREAM | SOCK_CLOEXEC, 0);
   if (s == ARES_SOCKET_BAD)
     return -1;
 
@@ -1083,7 +1083,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
     }
 
   /* Acquire a socket. */
-  s = socket(server->addr.family, SOCK_DGRAM, 0);
+  s = socket(server->addr.family, SOCK_DGRAM | SOCK_CLOEXEC, 0);
   if (s == ARES_SOCKET_BAD)
     return -1;
 
