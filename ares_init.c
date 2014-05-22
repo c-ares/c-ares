@@ -983,6 +983,9 @@ static int get_DNS_AdaptersAddresses(char **outptr)
 
   for (ipaaEntry = ipaa; ipaaEntry; ipaaEntry = ipaaEntry->Next)
   {
+    if(ipaaEntry->OperStatus != IfOperStatusUp)
+        continue;
+
     for (ipaDNSAddr = ipaaEntry->FirstDnsServerAddress;
          ipaDNSAddr;
          ipaDNSAddr = ipaDNSAddr->Next)
@@ -1043,12 +1046,18 @@ done:
  */
 static int get_DNS_Windows(char **outptr)
 {
-  /* Try using IP helper API GetAdaptersAddresses() */
-  if (get_DNS_AdaptersAddresses(outptr))
-    return 1;
-
+  /*
+     Use GetNetworkParams First in case of
+     multiple adapter is enabled on this machine.
+     GetAdaptersAddresses will retrive dummy dns servers.
+     That will slowing DNS lookup.
+  */
   /* Try using IP helper API GetNetworkParams() */
   if (get_DNS_NetworkParams(outptr))
+    return 1;
+
+  /* Try using IP helper API GetAdaptersAddresses() */
+  if (get_DNS_AdaptersAddresses(outptr))
     return 1;
 
   /* Fall-back to registry information */
