@@ -61,13 +61,13 @@ int main(int argc, char **argv)
   struct in_addr addr4;
   struct ares_in6_addr addr6;
 
-  memset(&options, 0, sizeof(options));
-
 #ifdef USE_WINSOCK
   WORD wVersionRequested = MAKEWORD(USE_WINSOCK,USE_WINSOCK);
   WSADATA wsaData;
   WSAStartup(wVersionRequested, &wsaData);
 #endif
+
+  memset(&options, 0, sizeof(options));
 
   status = ares_library_init(ARES_LIB_INIT_ALL);
   if (status != ARES_SUCCESS)
