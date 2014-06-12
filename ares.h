@@ -143,6 +143,7 @@ extern "C" {
 #define ARES_FLAG_EDNS          (1 << 8)
 /* implies ARES_FLAG_EDNS */
 #define ARES_FLAG_DNSSEC        (ARES_FLAG_EDNS|(1 << 9))
+#define ARES_FLAG_REQUIRE_DNSSEC (ARES_FLAG_DNSSEC|(1 << 10))
 
 /* Option mask values */
 #define ARES_OPT_FLAGS          (1 << 0)

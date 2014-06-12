@@ -516,7 +516,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
                            int alen, int whichserver, int tcp,
                            struct timeval *now)
 {
-  int tc, rcode, packetsz;
+  int tc, rcode, packetsz, ad, ret;
   unsigned short id;
   struct query *query;
   struct list_node* list_head;
@@ -531,6 +531,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
   id = DNS_HEADER_QID(abuf);
   tc = DNS_HEADER_TC(abuf);
   rcode = DNS_HEADER_RCODE(abuf);
+  ad = DNS_HEADER_AD(abuf);
 
   /* Find the query corresponding to this packet. The queries are
    * hashed/bucketed by query id, so this lookup should be quick.  Note that
@@ -610,7 +611,12 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
         }
     }
 
-  end_query(channel, query, ARES_SUCCESS, abuf, alen);
+  ret = ARES_SUCCESS;
+  if ((channel->flags & ARES_FLAG_REQUIRE_DNSSEC) == ARES_FLAG_REQUIRE_DNSSEC 
+      && ad == 0)
+    ret = ARES_ENODNSSEC;
+
+  end_query(channel, query, ret, abuf, alen);
 }
 
 /* Close all the connections that are no longer usable. */
