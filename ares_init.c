@@ -1067,67 +1067,82 @@ static int init_by_resolv_conf(ares_channel channel)
   if (channel->nservers > -1)  /* don't override ARES_OPT_SERVER */
      return ARES_SUCCESS;
 
-  if (get_DNS_Windows(&line))
-  {
-    status = config_nameserver(&servers, &nservers, line);
-    free(line);
-  }
+  /* FIXME: don't know how to read trusted DNSSEC servers on this platform */
+  if ((channel->flags & ARES_FLAG_DNSSEC) != ARES_FLAG_DNSSEC) {
+    if (get_DNS_Windows(&line))
+    {
+      status = config_nameserver(&servers, &nservers, line);
+      free(line);
+    }
 
-  if (status == ARES_SUCCESS)
-    status = ARES_EOF;
-  else
-    /* Catch the case when all the above checks fail (which happens when there
-       is no network card or the cable is unplugged) */
-    status = ARES_EFILE;
+    if (status == ARES_SUCCESS)
+      status = ARES_EOF;
+    else
+      /* Catch the case when all the above checks fail (which happens when there
+         is no network card or the cable is unplugged) */
+      status = ARES_EFILE;
+  } else {
+      status = ARES_EOF;
+  }
 
 #elif defined(__riscos__)
 
   /* Under RISC OS, name servers are listed in the
      system variable Inet$Resolvers, space separated. */
 
-  line = getenv("Inet$Resolvers");
   status = ARES_EOF;
-  if (line) {
-    char *resolvers = strdup(line), *pos, *space;
 
-    if (!resolvers)
-      return ARES_ENOMEM;
+  /* FIXME: I don't know how to read trusted DNSSEC servers on this platform */
+  if ((channel->flags & ARES_FLAG_DNSSEC) != ARES_FLAG_DNSSEC) {
 
-    pos = resolvers;
-    do {
-      space = strchr(pos, ' ');
-      if (space)
-        *space = '\0';
-      status = config_nameserver(&servers, &nservers, pos);
-      if (status != ARES_SUCCESS)
-        break;
-      pos = space + 1;
-    } while (space);
+    line = getenv("Inet$Resolvers");
+    if (line) {
+      char *resolvers = strdup(line), *pos, *space;
 
-    if (status == ARES_SUCCESS)
-      status = ARES_EOF;
+      if (!resolvers)
+        return ARES_ENOMEM;
 
-    free(resolvers);
+      pos = resolvers;
+      do {
+        space = strchr(pos, ' ');
+        if (space)
+          *space = '\0';
+        status = config_nameserver(&servers, &nservers, pos);
+        if (status != ARES_SUCCESS)
+          break;
+        pos = space + 1;
+      } while (space);
+
+      if (status == ARES_SUCCESS)
+        status = ARES_EOF;
+
+      free(resolvers);
+    }
   }
 
 #elif defined(WATT32)
   int i;
 
   sock_init();
-  for (i = 0; def_nameservers[i]; i++)
+
+  /* FIXME: I don't know how to read trusted DNSSEC servers on this platform */
+  if ((channel->flags & ARES_FLAG_DNSSEC) != ARES_FLAG_DNSSEC) {
+    for (i = 0; def_nameservers[i]; i++)
       ;
-  if (i == 0)
-    return ARES_SUCCESS; /* use localhost DNS server */
+    if (i == 0)
+      return ARES_SUCCESS; /* use localhost DNS server */
 
-  nservers = i;
-  servers = calloc(i, sizeof(struct server_state));
-  if (!servers)
-     return ARES_ENOMEM;
+    nservers = i;
+    servers = calloc(i, sizeof(struct server_state));
+    if (!servers)
+       return ARES_ENOMEM;
 
-  for (i = 0; def_nameservers[i]; i++)
-  {
-    servers[i].addr.addrV4.s_addr = htonl(def_nameservers[i]);
-    servers[i].addr.family = AF_INET;
+    for (i = 0; def_nameservers[i]; i++)
+    {
+      servers[i].addr.addrV4.s_addr = htonl(def_nameservers[i]);
+      servers[i].addr.family = AF_INET;
+    }
+  
   }
   status = ARES_EOF;
 
@@ -1136,15 +1151,20 @@ static int init_by_resolv_conf(ares_channel channel)
   char propname[PROP_NAME_MAX];
   char propvalue[PROP_VALUE_MAX]="";
 
-  for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
-    snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
-    if (__system_property_get(propname, propvalue) < 1) {
+  /* FIXME: I don't know how to read trusted DNSSEC servers on this platform */
+  if ((channel->flags & ARES_FLAG_DNSSEC) != ARES_FLAG_DNSSEC) {
+    for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
+      snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
+      if (__system_property_get(propname, propvalue) < 1) {
+        status = ARES_EOF;
+        break;
+      }
+      status = config_nameserver(&servers, &nservers, propvalue);
+      if (status != ARES_SUCCESS)
+        break;
       status = ARES_EOF;
-      break;
     }
-    status = config_nameserver(&servers, &nservers, propvalue);
-    if (status != ARES_SUCCESS)
-      break;
+  } else {
     status = ARES_EOF;
   }
 #else
@@ -1162,7 +1182,11 @@ static int init_by_resolv_conf(ares_channel channel)
     /* Only update search domains if they're not already specified */
     update_domains = (channel->ndomains == -1);
 
-    fp = fopen(PATH_RESOLV_CONF, "r");
+    if ((channel->flags & ARES_FLAG_DNSSEC) != ARES_FLAG_DNSSEC)
+      fp = fopen(PATH_RESOLV_CONF, "r");
+    else
+      fp = fopen(PATH_RESOLV_SEC_CONF, "r");
+
     if (fp) {
       while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
       {
@@ -1173,8 +1197,8 @@ static int init_by_resolv_conf(ares_channel channel)
         else if ((p = try_config(line, "search", ';')) && update_domains)
           status = set_search(channel, p);
         else if ((p = try_config(line, "nameserver", ';')) &&
-                 channel->nservers == -1)
-          status = config_nameserver(&servers, &nservers, p);
+	         channel->nservers == -1)
+	  status = config_nameserver(&servers, &nservers, p);
         else if ((p = try_config(line, "sortlist", ';')) &&
                  channel->nsort == -1)
           status = config_sortlist(&sortlist, &nsort, p);
