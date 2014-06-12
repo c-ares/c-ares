@@ -28,6 +28,7 @@ typedef enum {
   ARES_DATATYPE_HOSTENT,      /* struct hostent        */
   ARES_DATATYPE_OPTIONS,      /* struct ares_options   */
 #endif
+  ARES_DATATYPE_TLSA_REPLY,    /* struct ares_tlsa_reply - introduced in 1.10.1 */
   ARES_DATATYPE_LAST          /* not used              - introduced in 1.7.0 */
 } ares_datatype;
 
@@ -57,6 +58,7 @@ struct ares_data {
   union {
     struct ares_txt_reply   txt_reply;
     struct ares_srv_reply   srv_reply;
+    struct ares_tlsa_reply  tlsa_reply;
     struct ares_addr_node   addr_node;
     struct ares_mx_reply    mx_reply;
     struct ares_naptr_reply naptr_reply;

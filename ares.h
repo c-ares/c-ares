@@ -463,6 +463,15 @@ struct ares_addr6ttl {
   int             ttl;
 };
 
+struct ares_tlsa_reply {
+  struct ares_tlsa_reply  *next;
+  unsigned char		  usage;
+  unsigned char		  selector;
+  unsigned char		  mtype;
+  unsigned char		  *data;
+  unsigned int		  data_size;
+};
+
 struct ares_srv_reply {
   struct ares_srv_reply  *next;
   char                   *host;
@@ -533,6 +542,10 @@ CARES_EXTERN int ares_parse_ptr_reply(const unsigned char *abuf,
 CARES_EXTERN int ares_parse_ns_reply(const unsigned char *abuf,
                                      int alen,
                                      struct hostent **host);
+
+CARES_EXTERN int ares_parse_tlsa_reply(const unsigned char* abuf,
+                                      int alen,
+                                      struct ares_tlsa_reply** srv_out);
 
 CARES_EXTERN int ares_parse_srv_reply(const unsigned char* abuf,
                                       int alen,
