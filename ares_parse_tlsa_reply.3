@@ -1,0 +1,86 @@
+.\"
+.\" Copyright 2014 Red Hat
+.\"
+.\" Permission to use, copy, modify, and distribute this
+.\" software and its documentation for any purpose and without
+.\" fee is hereby granted, provided that the above copyright
+.\" notice appear in all copies and that both that copyright
+.\" notice and this permission notice appear in supporting
+.\" documentation, and that the name of M.I.T. not be used in
+.\" advertising or publicity pertaining to distribution of the
+.\" software without specific, written prior permission.
+.\" M.I.T. makes no representations about the suitability of
+.\" this software for any purpose.  It is provided "as is"
+.\" without express or implied warranty.
+.\"
+.TH ARES_PARSE_TLSA_REPLY 3 "11 June 2014"
+.SH NAME
+ares_parse_tlsa_reply \- Parse a reply to a DNS query of type TLSA
+.SH SYNOPSIS
+.nf
+.B #include <ares.h>
+.PP
+.B int ares_parse_tlsa_reply(const unsigned char* \fIabuf\fP, int \fIalen\fP,
+.B                          struct ares_tlsa_reply** \fItlsa_out\fP);
+.fi
+.SH DESCRIPTION
+The
+.B ares_parse_tlsa_reply
+function parses the response to a query of type SRV into a
+linked list of
+.I struct ares_tlsa_reply 
+The parameters
+.I abuf
+and
+.I alen
+give the contents of the response.  The result is stored in allocated
+memory and a pointer to it stored into the variable pointed to by
+.IR tlsa_out .
+It is the caller's responsibility to free the resulting
+.IR tlsa_out
+structure when it is no longer needed using the function
+.B ares_free_data .
+The flag
+.I ARES_FLAG_REQUIRE_DNSSEC
+should be used in the channel initialization, as DANE data should only
+be considered valid if obtained over DNSSEC.
+.PP
+The structure 
+.I ares_tlsa_reply
+contains the following fields:
+.sp
+.in +4n
+.nf
+struct ares_tlsa_reply {
+    struct ares_tlsa_reply  *next;
+    unsigned char usage;
+    unsigned char selector;
+    unsigned char mtype;
+    unsigned char *data;
+    unsigned int  data_size;
+};
+.fi
+.in
+.PP
+.SH RETURN VALUES
+.B ares_parse_tlsa_reply
+can return any of the following values:
+.TP 15
+.B ARES_SUCCESS
+The response was successfully parsed.
+.TP 15
+.B ARES_EBADRESP
+The response was malformatted.
+.TP 15
+.B ARES_ENODATA
+The response did not contain an answer to the query.
+.TP 15
+.B ARES_ENOMEM
+Memory was exhausted.
+.SH AVAILABILITY
+This function was first introduced in c-ares version 1.10.1.
+.SH SEE ALSO
+.BR ares_query (3)
+.BR ares_free_data (3)
+.SH AUTHOR
+Written by Nikos Mavrogiannopoulos <nmav@redhat.com>, on behalf of Red Hat, Inc http://www.redhat.com
