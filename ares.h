@@ -129,6 +129,7 @@ extern "C" {
 
 /* More error codes */
 #define ARES_ECANCELLED         24          /* introduced in 1.7.0 */
+#define ARES_ENODNSSEC          25          /* introduced in 1.10.1 */
 
 /* Flag values */
 #define ARES_FLAG_USEVC         (1 << 0)
@@ -140,6 +141,8 @@ extern "C" {
 #define ARES_FLAG_NOALIASES     (1 << 6)
 #define ARES_FLAG_NOCHECKRESP   (1 << 7)
 #define ARES_FLAG_EDNS          (1 << 8)
+/* implies ARES_FLAG_EDNS */
+#define ARES_FLAG_DNSSEC        (ARES_FLAG_EDNS|(1 << 9))
 
 /* Option mask values */
 #define ARES_OPT_FLAGS          (1 << 0)
@@ -401,6 +404,11 @@ CARES_EXTERN void ares_process(ares_channel channel,
 CARES_EXTERN void ares_process_fd(ares_channel channel,
                                   ares_socket_t read_fd,
                                   ares_socket_t write_fd);
+
+CARES_EXTERN int ares_create_query2(const char *name,
+                      int dnsclass, int type,
+                      unsigned short id, int rd, unsigned char **buf,
+                      int *buflen, int max_udp_size, unsigned flags);
 
 CARES_EXTERN int ares_create_query(const char *name,
                                    int dnsclass,
