@@ -88,6 +88,15 @@ int ares_create_query(const char *name, int dnsclass, int type,
                       unsigned short id, int rd, unsigned char **buf,
                       int *buflen, int max_udp_size)
 {
+  return ares_create_query2(name, dnsclass, type, id, rd, buf, buflen, max_udp_size, 0);
+}
+
+/* The same as ares_create_query(), but accepts the flags parameter (ARES_FLAG_*)
+ */
+int ares_create_query2(const char *name, int dnsclass, int type,
+                      unsigned short id, int rd, unsigned char **buf,
+                      int *buflen, int max_udp_size, unsigned flags)
+{
   int len;
   unsigned char *q;
   const char *p;
@@ -202,6 +211,8 @@ int ares_create_query(const char *name, int dnsclass, int type,
       q++;
       DNS_RR_SET_TYPE(q, T_OPT);
       DNS_RR_SET_CLASS(q, max_udp_size);
+      if ((flags & ARES_FLAG_DNSSEC) == ARES_FLAG_DNSSEC)
+        q[6] |= 0x80;
   }
 
   return ARES_SUCCESS;
