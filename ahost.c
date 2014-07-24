@@ -96,6 +96,8 @@ int main(int argc, char **argv)
             addr_family = AF_INET;
           else if (!strcasecmp(optarg,"aaaa"))
             addr_family = AF_INET6;
+          else if (!strcasecmp(optarg,"u"))
+            addr_family = AF_UNSPEC;
           else
             usage();
           break;
@@ -195,6 +197,6 @@ static void callback(void *arg, int status, int timeouts, struct hostent *host)
 
 static void usage(void)
 {
-  fprintf(stderr, "usage: ahost [-t {a|aaaa}] {host|addr} ...\n");
+  fprintf(stderr, "usage: ahost [-t {a|aaaa|u}] {host|addr} ...\n");
   exit(1);
 }
