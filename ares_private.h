@@ -55,10 +55,12 @@
 #elif defined(WATT32)
 
 #define PATH_RESOLV_CONF "/dev/ENV/etc/resolv.conf"
+#define PATH_RESOLV_SEC_CONF "/dev/ENV/etc/resolv-sec.conf"
 
 #elif defined(NETWARE)
 
 #define PATH_RESOLV_CONF "sys:/etc/resolv.cfg"
+#define PATH_RESOLV_SEC_CONF "sys:/etc/resolv-sec.cfg"
 #define PATH_HOSTS              "sys:/etc/hosts"
 
 #elif defined(__riscos__)
@@ -68,6 +70,7 @@
 #else
 
 #define PATH_RESOLV_CONF        "/etc/resolv.conf"
+#define PATH_RESOLV_SEC_CONF        "/etc/resolv-sec.conf"
 #ifdef ETC_INET
 #define PATH_HOSTS              "/etc/inet/hosts"
 #else

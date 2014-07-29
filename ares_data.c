@@ -78,6 +78,14 @@ void ares_free_data(void *dataptr)
           free(ptr->data.srv_reply.host);
         break;
 
+      case ARES_DATATYPE_TLSA_REPLY:
+
+        if (ptr->data.tlsa_reply.next)
+          ares_free_data(ptr->data.tlsa_reply.next);
+        if (ptr->data.tlsa_reply.data)
+          free(ptr->data.tlsa_reply.data);
+        break;
+
       case ARES_DATATYPE_TXT_REPLY:
 
         if (ptr->data.txt_reply.next)
@@ -154,6 +162,15 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.srv_reply.priority = 0;
         ptr->data.srv_reply.weight = 0;
         ptr->data.srv_reply.port = 0;
+        break;
+
+      case ARES_DATATYPE_TLSA_REPLY:
+        ptr->data.tlsa_reply.next = NULL;
+        ptr->data.tlsa_reply.selector = 0;
+        ptr->data.tlsa_reply.usage = 0;
+        ptr->data.tlsa_reply.mtype = 0;
+        ptr->data.tlsa_reply.data = NULL;
+        ptr->data.tlsa_reply.data_size = 0;
         break;
 
       case ARES_DATATYPE_TXT_REPLY:

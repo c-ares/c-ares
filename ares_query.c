@@ -117,8 +117,9 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
 
   /* Compose the query. */
   rd = !(channel->flags & ARES_FLAG_NORECURSE);
-  status = ares_create_query(name, dnsclass, type, channel->next_id, rd, &qbuf,
-              &qlen, (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : 0);
+  status = ares_create_query2(name, dnsclass, type, channel->next_id, rd, &qbuf,
+              &qlen, (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : 0,
+              channel->flags);
   if (status != ARES_SUCCESS)
     {
       if (qbuf != NULL) free(qbuf);
