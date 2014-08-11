@@ -60,7 +60,9 @@ int ares_get_servers(ares_channel channel,
       srvr_last = srvr_curr;
 
       /* Fill this server node data */
-      srvr_curr->family = channel->servers[i].addr.family;
+      srvr_curr->tcp_port = channel->servers[i].addr.tcp_port;
+      srvr_curr->udp_port = channel->servers[i].addr.udp_port;
+      srvr_curr->family   = channel->servers[i].addr.family;
       if (srvr_curr->family == AF_INET)
         memcpy(&srvr_curr->addrV4, &channel->servers[i].addr.addrV4,
                sizeof(srvr_curr->addrV4));
@@ -116,7 +118,19 @@ int ares_set_servers(ares_channel channel,
       /* Fill servers state address data */
       for (i = 0, srvr = servers; srvr; i++, srvr = srvr->next)
         {
-          channel->servers[i].addr.family = srvr->family;
+          // Port configure
+          channel->servers[i].addr.udp_port = channel->udp_port;
+          channel->servers[i].addr.tcp_port = channel->tcp_port;
+
+          if (srvr->tcp_port > -1) {
+            channel->servers[i].addr.tcp_port = srvr->tcp_port;
+          }
+
+          if (srvr->udp_port > -1) {
+            channel->servers[i].addr.udp_port = srvr->udp_port;
+          }
+
+          channel->servers[i].addr.family   = srvr->family;
           if (srvr->family == AF_INET)
             memcpy(&channel->servers[i].addr.addrV4, &srvr->addrV4,
                    sizeof(srvr->addrV4));
@@ -177,6 +191,7 @@ int ares_set_servers_csv(ares_channel channel,
       start_host = ptr + 1;
     }
     else if (*ptr == ',') {
+      int port = -1;
       char* pp = ptr - 1;
       char* p = ptr;
       struct in_addr in4;
@@ -210,7 +225,9 @@ int ares_set_servers_csv(ares_channel channel,
           if (*pp == ']')
             p++; /* move p before ':' */
           /* p will point to the start of the port */
-          (void)strtol(p, NULL, 10);
+          if (strlen(p) > 0) {
+            port = (unsigned short)strtol(p, NULL, 0);
+          }
           *pp = 0; /* null terminate host */
         }
       }
@@ -243,7 +260,8 @@ int ares_set_servers_csv(ares_channel channel,
         memcpy(&s->addr, &in4, sizeof(struct in_addr));
       }
       if (s) {
-        /* TODO:  Add port to ares_addr_node and assign it here. */
+        s->tcp_port = ntohs(aresx_sitous(port));
+        s->udp_port = ntohs(aresx_sitous(port));
 
         s->next = NULL;
         if (last) {
