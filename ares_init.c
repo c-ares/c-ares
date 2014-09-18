@@ -266,7 +266,10 @@ int ares_dup(ares_channel *dest, ares_channel src)
      which is most of them */
   rc = ares_save_options(src, &opts, &optmask);
   if(rc)
+  {
+    ares_destroy_options(&opts);
     return rc;
+  }
 
   /* Then create the new channel with those options */
   rc = ares_init_options(dest, &opts, optmask);
