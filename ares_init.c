@@ -1409,7 +1409,7 @@ static int init_by_defaults(ares_channel channel)
         goto error;
       }
 
-    } WHILE_FALSE;
+    } while (res != 0);
 
     dot = strchr(hostname, '.');
     if (dot) {
