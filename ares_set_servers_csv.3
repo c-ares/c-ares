@@ -20,7 +20,7 @@ ares_set_servers_csv \- Set list of DNS servers to be used.
 .nf
 .B #include <ares.h>
 .PP
-.B void ares_set_servers_csv(ares_channel \fIchannel\fP, const char* \fIservers\fP)
+.B int ares_set_servers_csv(ares_channel \fIchannel\fP, const char* \fIservers\fP)
 .fi
 .SH DESCRIPTION
 The \fBares_set_servers_csv\fP function sets the list of DNS servers
@@ -32,6 +32,23 @@ For example:
 
 192.168.1.100,192.168.1.101,3.4.5.6
 
+.SH RETURN VALUES
+.B ares_set_servers_csv(3)
+may return any of the following values:
+.TP 15
+.B ARES_SUCCESS
+The name servers configuration was successfuly initialized.
+.TP 15
+.B ARES_ENOMEM
+The process's available memory was exhausted.
+.TP 15
+.B ARES_ENODATA
+The channel data identified by
+.IR channel
+was invalid.
+.TP 15
+.B ARES_ENOTINITIALIZED
+c-ares library initialization not yet performed.
 .SH SEE ALSO
 .BR ares_set_servers (3)
 .SH NOTES
