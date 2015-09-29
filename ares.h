@@ -296,6 +296,8 @@ typedef int  (*ares_sock_create_callback)(ares_socket_t socket_fd,
 
 CARES_EXTERN int ares_library_init(int flags);
 
+CARES_EXTERN int ares_library_initialized(void);
+
 CARES_EXTERN void ares_library_cleanup(void);
 
 CARES_EXTERN const char *ares_version(int *version);
