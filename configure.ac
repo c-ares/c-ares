@@ -65,6 +65,8 @@ if test -z "$AR" || test "$AR" = "not_found"; then
 fi
 AC_SUBST([AR])
 
+AX_CODE_COVERAGE
+
 dnl Remove non-configure distributed ares_build.h
 if test -f ${srcdir}/ares_build.h; then
   rm -f ${srcdir}/ares_build.h
