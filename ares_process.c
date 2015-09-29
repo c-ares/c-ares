@@ -227,7 +227,7 @@ static void write_tcp_data(ares_channel channel,
         n++;
 
       /* Allocate iovecs so we can send all our data at once. */
-      vec = malloc(n * sizeof(struct iovec));
+      vec = ares_malloc(n * sizeof(struct iovec));
       if (vec)
         {
           /* Fill in the iovecs and send. */
@@ -239,7 +239,7 @@ static void write_tcp_data(ares_channel channel,
               n++;
             }
           wcount = (ssize_t)writev(server->tcp_socket, vec, (int)n);
-          free(vec);
+          ares_free(vec);
           if (wcount < 0)
             {
               if (!try_again(SOCKERRNO))
@@ -281,8 +281,8 @@ static void advance_tcp_send_queue(ares_channel channel, int whichserver,
       num_bytes -= sendreq->len;
       server->qhead = sendreq->next;
       if (sendreq->data_storage)
-        free(sendreq->data_storage);
-      free(sendreq);
+        ares_free(sendreq->data_storage);
+      ares_free(sendreq);
       if (server->qhead == NULL) {
         SOCK_STATE_CALLBACK(channel, server->tcp_socket, 1, 0);
         server->qtail = NULL;
@@ -361,7 +361,7 @@ static void read_tcp_data(ares_channel channel, fd_set *read_fds,
                */
               server->tcp_length = server->tcp_lenbuf[0] << 8
                 | server->tcp_lenbuf[1];
-              server->tcp_buffer = malloc(server->tcp_length);
+              server->tcp_buffer = ares_malloc(server->tcp_length);
               if (!server->tcp_buffer) {
                 handle_error(channel, i, now);
                 return; /* bail out on malloc failure. TODO: make this
@@ -392,7 +392,7 @@ static void read_tcp_data(ares_channel channel, fd_set *read_fds,
               process_answer(channel, server->tcp_buffer, server->tcp_length,
                              i, 1, now);
               if (server->tcp_buffer)
-                free(server->tcp_buffer);
+                ares_free(server->tcp_buffer);
               server->tcp_buffer = NULL;
               server->tcp_lenbuf_pos = 0;
               server->tcp_buffer_pos = 0;
@@ -573,7 +573,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
           query->tcpbuf[0] = (unsigned char)((qlen >> 8) & 0xff);
           query->tcpbuf[1] = (unsigned char)(qlen & 0xff);
           DNS_HEADER_SET_ARCOUNT(query->tcpbuf + 2, 0);
-          query->tcpbuf = realloc(query->tcpbuf, query->tcplen);
+          query->tcpbuf = ares_realloc(query->tcpbuf, query->tcplen);
           query->qbuf = query->tcpbuf + 2;
           ares__send_query(channel, query, now);
           return;
@@ -773,12 +773,13 @@ void ares__send_query(ares_channel channel, struct query *query,
               return;
             }
         }
-      sendreq = calloc(1, sizeof(struct send_request));
+      sendreq = ares_malloc(sizeof(struct send_request));
       if (!sendreq)
         {
         end_query(channel, query, ARES_ENOMEM, NULL, 0);
           return;
         }
+      memset(sendreq, 0, sizeof(struct send_request));
       /* To make the common case fast, we avoid copies by using the query's
        * tcpbuf for as long as the query is alive. In the rare case where the
        * query ends while it's queued for transmission, then we give the
@@ -1160,7 +1161,7 @@ static int same_questions(const unsigned char *qbuf, int qlen,
       q.p += q.namelen;
       if (q.p + QFIXEDSZ > qbuf + qlen)
         {
-          free(q.name);
+          ares_free(q.name);
           return 0;
         }
       q.type = DNS_QUESTION_TYPE(q.p);
@@ -1175,14 +1176,14 @@ static int same_questions(const unsigned char *qbuf, int qlen,
           if (ares_expand_name(a.p, abuf, alen, &a.name, &a.namelen)
               != ARES_SUCCESS)
             {
-              free(q.name);
+              ares_free(q.name);
               return 0;
             }
           a.p += a.namelen;
           if (a.p + QFIXEDSZ > abuf + alen)
             {
-              free(q.name);
-              free(a.name);
+              ares_free(q.name);
+              ares_free(a.name);
               return 0;
             }
           a.type = DNS_QUESTION_TYPE(a.p);
@@ -1193,13 +1194,13 @@ static int same_questions(const unsigned char *qbuf, int qlen,
           if (strcasecmp(q.name, a.name) == 0 && q.type == a.type
               && q.dnsclass == a.dnsclass)
             {
-              free(a.name);
+              ares_free(a.name);
               break;
             }
-          free(a.name);
+          ares_free(a.name);
         }
 
-      free(q.name);
+      ares_free(q.name);
       if (j == a.qdcount)
         return 0;
     }
@@ -1265,7 +1266,7 @@ static void end_query (ares_channel channel, struct query *query, int status,
                  * to the query's tcpbuf and handle these cases, we just give
                  * such sendreqs their own copy of the query packet.
                  */
-               sendreq->data_storage = malloc(sendreq->len);
+               sendreq->data_storage = ares_malloc(sendreq->len);
                if (sendreq->data_storage != NULL)
                  {
                    memcpy(sendreq->data_storage, sendreq->data, sendreq->len);
@@ -1315,7 +1316,7 @@ void ares__free_query(struct query *query)
   query->callback = NULL;
   query->arg = NULL;
   /* Deallocate the memory associated with the query */
-  free(query->tcpbuf);
-  free(query->server_info);
-  free(query);
+  ares_free(query->tcpbuf);
+  ares_free(query->server_info);
+  ares_free(query);
 }
