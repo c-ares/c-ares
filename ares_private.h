@@ -311,8 +311,6 @@ struct ares_channeldata {
 int ares__timedout(struct timeval *now,
                    struct timeval *check);
 
-/* returns ARES_SUCCESS if library has been initialized */
-int ares_library_initialized(void);
 void ares__send_query(ares_channel channel, struct query *query,
                       struct timeval *now);
 void ares__close_sockets(ares_channel channel, struct server_state *server);
