@@ -107,7 +107,7 @@ int ares_set_servers(ares_channel channel,
   if (num_srvrs > 0)
     {
       /* Allocate storage for servers state */
-      channel->servers = malloc(num_srvrs * sizeof(struct server_state));
+      channel->servers = ares_malloc(num_srvrs * sizeof(struct server_state));
       if (!channel->servers)
         {
           return ARES_ENOMEM;
@@ -157,7 +157,7 @@ int ares_set_servers_csv(ares_channel channel,
   if (i == 0)
      return ARES_SUCCESS; /* blank all servers */
 
-  csv = malloc(i + 2);
+  csv = ares_malloc(i + 2);
   if (!csv)
     return ARES_ENOMEM;
 
@@ -227,7 +227,7 @@ int ares_set_servers_csv(ares_channel channel,
           goto out;
         }
         /* was ipv6, add new server */
-        s = malloc(sizeof(*s));
+        s = ares_malloc(sizeof(*s));
         if (!s) {
           rv = ARES_ENOMEM;
           goto out;
@@ -237,7 +237,7 @@ int ares_set_servers_csv(ares_channel channel,
       }
       else {
         /* was ipv4, add new server */
-        s = malloc(sizeof(*s));
+        s = ares_malloc(sizeof(*s));
         if (!s) {
           rv = ARES_ENOMEM;
           goto out;
@@ -270,11 +270,11 @@ int ares_set_servers_csv(ares_channel channel,
 
   out:
   if (csv)
-    free(csv);
+    ares_free(csv);
   while (servers) {
     struct ares_addr_node *s = servers;
     servers = servers->next;
-    free(s);
+    ares_free(s);
   }
 
   return rv;

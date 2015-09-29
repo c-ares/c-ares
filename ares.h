@@ -296,6 +296,11 @@ typedef int  (*ares_sock_create_callback)(ares_socket_t socket_fd,
 
 CARES_EXTERN int ares_library_init(int flags);
 
+CARES_EXTERN int ares_library_init_mem(int flags,
+                                       void *(*amalloc)(size_t size),
+                                       void (*afree)(void *ptr),
+                                       void *(*arealloc)(void *ptr, size_t size));
+
 CARES_EXTERN int ares_library_initialized(void);
 
 CARES_EXTERN void ares_library_cleanup(void);

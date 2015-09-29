@@ -131,7 +131,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: no library init on non-WinSock */
 
-  channel = malloc(sizeof(struct ares_channeldata));
+  channel = ares_malloc(sizeof(struct ares_channeldata));
   if (!channel) {
     *channelptr = NULL;
     return ARES_ENOMEM;
@@ -233,18 +233,18 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
     {
       /* Something failed; clean up memory we may have allocated. */
       if (channel->servers)
-        free(channel->servers);
+        ares_free(channel->servers);
       if (channel->domains)
         {
           for (i = 0; i < channel->ndomains; i++)
-            free(channel->domains[i]);
-          free(channel->domains);
+            ares_free(channel->domains[i]);
+          ares_free(channel->domains);
         }
       if (channel->sortlist)
-        free(channel->sortlist);
+        ares_free(channel->sortlist);
       if(channel->lookups)
-        free(channel->lookups);
-      free(channel);
+        ares_free(channel->lookups);
+      ares_free(channel);
       return status;
     }
 
@@ -367,7 +367,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
         ipv4_nservers++;
     }
     if (ipv4_nservers) {
-      options->servers = malloc(ipv4_nservers * sizeof(struct in_addr));
+      options->servers = ares_malloc(ipv4_nservers * sizeof(struct in_addr));
       if (!options->servers)
         return ARES_ENOMEM;
       for (i = j = 0; i < channel->nservers; i++)
@@ -383,14 +383,14 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
 
   /* copy domains */
   if (channel->ndomains) {
-    options->domains = malloc(channel->ndomains * sizeof(char *));
+    options->domains = ares_malloc(channel->ndomains * sizeof(char *));
     if (!options->domains)
       return ARES_ENOMEM;
 
     for (i = 0; i < channel->ndomains; i++)
     {
       options->ndomains = i;
-      options->domains[i] = strdup(channel->domains[i]);
+      options->domains[i] = ares_strdup(channel->domains[i]);
       if (!options->domains[i])
         return ARES_ENOMEM;
     }
@@ -399,14 +399,14 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
 
   /* copy lookups */
   if (channel->lookups) {
-    options->lookups = strdup(channel->lookups);
+    options->lookups = ares_strdup(channel->lookups);
     if (!options->lookups && channel->lookups)
       return ARES_ENOMEM;
   }
 
   /* copy sortlist */
   if (channel->nsort) {
-    options->sortlist = malloc(channel->nsort * sizeof(struct apattern));
+    options->sortlist = ares_malloc(channel->nsort * sizeof(struct apattern));
     if (!options->sortlist)
       return ARES_ENOMEM;
     for (i = 0; i < channel->nsort; i++)
@@ -462,7 +462,7 @@ static int init_by_options(ares_channel channel,
       if (options->nservers > 0)
         {
           channel->servers =
-            malloc(options->nservers * sizeof(struct server_state));
+            ares_malloc(options->nservers * sizeof(struct server_state));
           if (!channel->servers)
             return ARES_ENOMEM;
           for (i = 0; i < options->nservers; i++)
@@ -484,13 +484,13 @@ static int init_by_options(ares_channel channel,
       /* Avoid zero size allocations at any cost */
       if (options->ndomains > 0)
       {
-        channel->domains = malloc(options->ndomains * sizeof(char *));
+        channel->domains = ares_malloc(options->ndomains * sizeof(char *));
         if (!channel->domains)
           return ARES_ENOMEM;
         for (i = 0; i < options->ndomains; i++)
           {
             channel->ndomains = i;
-            channel->domains[i] = strdup(options->domains[i]);
+            channel->domains[i] = ares_strdup(options->domains[i]);
             if (!channel->domains[i])
               return ARES_ENOMEM;
           }
@@ -501,7 +501,7 @@ static int init_by_options(ares_channel channel,
   /* Set lookups, if given. */
   if ((optmask & ARES_OPT_LOOKUPS) && !channel->lookups)
     {
-      channel->lookups = strdup(options->lookups);
+      channel->lookups = ares_strdup(options->lookups);
       if (!channel->lookups)
         return ARES_ENOMEM;
     }
@@ -509,7 +509,7 @@ static int init_by_options(ares_channel channel,
   /* copy sortlist */
   if ((optmask & ARES_OPT_SORTLIST) && (channel->nsort == -1) &&
       (options->nsort>0)) {
-    channel->sortlist = malloc(options->nsort * sizeof(struct apattern));
+    channel->sortlist = ares_malloc(options->nsort * sizeof(struct apattern));
     if (!channel->sortlist)
       return ARES_ENOMEM;
     for (i = 0; i < options->nsort; i++)
@@ -575,7 +575,7 @@ static int get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
 
   /* Allocate buffer of indicated size plus one given that string
      might have been stored without null termination */
-  *outptr = malloc(size+1);
+  *outptr = ares_malloc(size+1);
   if (!*outptr)
     return 0;
 
@@ -584,7 +584,7 @@ static int get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
                         (unsigned char *)*outptr, &size);
   if ((res != ERROR_SUCCESS) || (size == 1))
   {
-    free(*outptr);
+    ares_free(*outptr);
     *outptr = NULL;
     return 0;
   }
@@ -617,7 +617,7 @@ static int get_REG_SZ_9X(HKEY hKey, const char *leafKeyName, char **outptr)
 
   /* Allocate buffer of indicated size plus one given that string
      might have been stored without null termination */
-  *outptr = malloc(size+1);
+  *outptr = ares_malloc(size+1);
   if (!*outptr)
     return 0;
 
@@ -626,7 +626,7 @@ static int get_REG_SZ_9X(HKEY hKey, const char *leafKeyName, char **outptr)
                         (unsigned char *)*outptr, &size);
   if ((res != ERROR_SUCCESS) || (size == 1))
   {
-    free(*outptr);
+    ares_free(*outptr);
     *outptr = NULL;
     return 0;
   }
@@ -827,16 +827,16 @@ static void commajoin(char **dst, const char *src)
 
   if (*dst)
   {
-    tmp = malloc(strlen(*dst) + strlen(src) + 2);
+    tmp = ares_malloc(strlen(*dst) + strlen(src) + 2);
     if (!tmp)
       return;
     sprintf(tmp, "%s,%s", *dst, src);
-    free(*dst);
+    ares_free(*dst);
     *dst = tmp;
   }
   else
   {
-    *dst = malloc(strlen(src) + 1);
+    *dst = ares_malloc(strlen(src) + 1);
     if (!*dst)
       return;
     strcpy(*dst, src);
@@ -874,7 +874,7 @@ static int get_DNS_NetworkParams(char **outptr)
   if (ares_fpGetNetworkParams == ZERO_NULL)
     return 0;
 
-  fi = malloc(size);
+  fi = ares_malloc(size);
   if (!fi)
     return 0;
 
@@ -882,7 +882,7 @@ static int get_DNS_NetworkParams(char **outptr)
   if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS))
     goto done;
 
-  newfi = realloc(fi, size);
+  newfi = ares_realloc(fi, size);
   if (!newfi)
     goto done;
 
@@ -919,7 +919,7 @@ static int get_DNS_NetworkParams(char **outptr)
 
 done:
   if (fi)
-    free(fi);
+    ares_free(fi);
 
   if (!*outptr)
     return 0;
@@ -967,7 +967,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
   if (ares_fpGetAdaptersAddresses == ZERO_NULL)
     return 0;
 
-  ipaa = malloc(Bufsz);
+  ipaa = ares_malloc(Bufsz);
   if (!ipaa)
     return 0;
 
@@ -981,7 +981,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
   {
     if (Bufsz < ReqBufsz)
     {
-      newipaa = realloc(ipaa, ReqBufsz);
+      newipaa = ares_realloc(ipaa, ReqBufsz);
       if (!newipaa)
         goto done;
       Bufsz = ReqBufsz;
@@ -1036,7 +1036,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
 
 done:
   if (ipaa)
-    free(ipaa);
+    ares_free(ipaa);
 
   if (!*outptr)
     return 0;
@@ -1097,7 +1097,7 @@ static int init_by_resolv_conf(ares_channel channel)
   if (get_DNS_Windows(&line))
   {
     status = config_nameserver(&servers, &nservers, line);
-    free(line);
+    ares_free(line);
   }
 
   if (status == ARES_SUCCESS)
@@ -1115,7 +1115,7 @@ static int init_by_resolv_conf(ares_channel channel)
   line = getenv("Inet$Resolvers");
   status = ARES_EOF;
   if (line) {
-    char *resolvers = strdup(line), *pos, *space;
+    char *resolvers = ares_strdup(line), *pos, *space;
 
     if (!resolvers)
       return ARES_ENOMEM;
@@ -1134,7 +1134,7 @@ static int init_by_resolv_conf(ares_channel channel)
     if (status == ARES_SUCCESS)
       status = ARES_EOF;
 
-    free(resolvers);
+    ares_free(resolvers);
   }
 
 #elif defined(WATT32)
@@ -1147,9 +1147,10 @@ static int init_by_resolv_conf(ares_channel channel)
     return ARES_SUCCESS; /* use localhost DNS server */
 
   nservers = i;
-  servers = calloc(i, sizeof(struct server_state));
+  servers = ares_malloc(sizeof(struct server_state));
   if (!servers)
      return ARES_ENOMEM;
+  memset(servers, 0, sizeof(struct server_state));
 
   for (i = 0; def_nameservers[i]; i++)
   {
@@ -1208,13 +1209,13 @@ static int init_by_resolv_conf(ares_channel channel)
       while ((entries < MAXDNSRCH) && res.dnsrch[entries])
         entries++;
 
-      channel->domains = malloc(entries * sizeof(char *));
+      channel->domains = ares_malloc(entries * sizeof(char *));
       if (!channel->domains) {
         status = ARES_ENOMEM;
       } else {
         channel->ndomains = entries;
         for (int i = 0; i < channel->ndomains; ++i) {
-          channel->domains[i] = strdup(res.dnsrch[i]);
+          channel->domains[i] = ares_strdup(res.dnsrch[i]);
           if (!channel->domains[i])
             status = ARES_ENOMEM;
         }
@@ -1376,7 +1377,7 @@ static int init_by_resolv_conf(ares_channel channel)
     }
 
     if(line)
-      free(line);
+      ares_free(line);
   }
 
 #endif
@@ -1385,9 +1386,9 @@ static int init_by_resolv_conf(ares_channel channel)
   if (status != ARES_EOF)
     {
       if (servers != NULL)
-        free(servers);
+        ares_free(servers);
       if (sortlist != NULL)
-        free(sortlist);
+        ares_free(sortlist);
       return status;
     }
 
@@ -1436,7 +1437,7 @@ static int init_by_defaults(ares_channel channel)
 
   if (channel->nservers == -1) {
     /* If nobody specified servers, try a local named. */
-    channel->servers = malloc(sizeof(struct server_state));
+    channel->servers = ares_malloc(sizeof(struct server_state));
     if (!channel->servers) {
       rc = ARES_ENOMEM;
       goto error;
@@ -1467,7 +1468,7 @@ static int init_by_defaults(ares_channel channel)
     int res;
     channel->ndomains = 0; /* default to none */
 
-    hostname = malloc(len);
+    hostname = ares_malloc(len);
     if(!hostname) {
       rc = ARES_ENOMEM;
       goto error;
@@ -1480,7 +1481,7 @@ static int init_by_defaults(ares_channel channel)
         char *p;
         len *= 2;
         lenv *= 2;
-        p = realloc(hostname, len);
+        p = ares_realloc(hostname, len);
         if(!p) {
           rc = ARES_ENOMEM;
           goto error;
@@ -1498,12 +1499,12 @@ static int init_by_defaults(ares_channel channel)
     dot = strchr(hostname, '.');
     if (dot) {
       /* a dot was found */
-      channel->domains = malloc(sizeof(char *));
+      channel->domains = ares_malloc(sizeof(char *));
       if (!channel->domains) {
         rc = ARES_ENOMEM;
         goto error;
       }
-      channel->domains[0] = strdup(dot + 1);
+      channel->domains[0] = ares_strdup(dot + 1);
       if (!channel->domains[0]) {
         rc = ARES_ENOMEM;
         goto error;
@@ -1519,7 +1520,7 @@ static int init_by_defaults(ares_channel channel)
   }
 
   if (!channel->lookups) {
-    channel->lookups = strdup("fb");
+    channel->lookups = ares_strdup("fb");
     if (!channel->lookups)
       rc = ARES_ENOMEM;
   }
@@ -1527,25 +1528,25 @@ static int init_by_defaults(ares_channel channel)
   error:
   if(rc) {
     if(channel->servers) {
-      free(channel->servers);
+      ares_free(channel->servers);
       channel->servers = NULL;
     }
 
     if(channel->domains && channel->domains[0])
-      free(channel->domains[0]);
+      ares_free(channel->domains[0]);
     if(channel->domains) {
-      free(channel->domains);
+      ares_free(channel->domains);
       channel->domains = NULL;
     }
 
     if(channel->lookups) {
-      free(channel->lookups);
+      ares_free(channel->lookups);
       channel->lookups = NULL;
     }
   }
 
   if(hostname)
-    free(hostname);
+    ares_free(hostname);
 
   return rc;
 }
@@ -1596,7 +1597,7 @@ static int config_lookup(ares_channel channel, const char *str,
         p++;
     }
   *l = '\0';
-  channel->lookups = strdup(lookups);
+  channel->lookups = ares_strdup(lookups);
   return (channel->lookups) ? ARES_SUCCESS : ARES_ENOMEM;
 }
 #endif  /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ */
@@ -1642,8 +1643,8 @@ static int config_nameserver(struct server_state **servers, int *nservers,
         continue;
 
       /* Resize servers state array. */
-      newserv = realloc(*servers, (*nservers + 1) *
-                        sizeof(struct server_state));
+      newserv = ares_realloc(*servers, (*nservers + 1) *
+                             sizeof(struct server_state));
       if (!newserv)
         return ARES_ENOMEM;
 
@@ -1705,7 +1706,7 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
           pat.mask.bits = (unsigned short)bits;
           pat.family = AF_INET6;
           if (!sortlist_alloc(sortlist, nsort, &pat)) {
-            free(*sortlist);
+            ares_free(*sortlist);
             *sortlist = NULL;
             return ARES_ENOMEM;
           }
@@ -1718,7 +1719,7 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
           pat.mask.bits = (unsigned short)bits;
           pat.family = AF_INET;
           if (!sortlist_alloc(sortlist, nsort, &pat)) {
-            free(*sortlist);
+            ares_free(*sortlist);
             *sortlist = NULL;
             return ARES_ENOMEM;
           }
@@ -1738,7 +1739,7 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
           pat.family = AF_INET;
           pat.type = PATTERN_MASK;
           if (!sortlist_alloc(sortlist, nsort, &pat)) {
-            free(*sortlist);
+            ares_free(*sortlist);
             *sortlist = NULL;
             return ARES_ENOMEM;
           }
@@ -1767,8 +1768,8 @@ static int set_search(ares_channel channel, const char *str)
     /* LCOV_EXCL_START: all callers check ndomains == -1 */
     /* if we already have some domains present, free them first */
     for(n=0; n < channel->ndomains; n++)
-      free(channel->domains[n]);
-    free(channel->domains);
+      ares_free(channel->domains[n]);
+    ares_free(channel->domains);
     channel->domains = NULL;
     channel->ndomains = -1;
   } /* LCOV_EXCL_STOP */
@@ -1791,7 +1792,7 @@ static int set_search(ares_channel channel, const char *str)
       return ARES_SUCCESS;
     }
 
-  channel->domains = malloc(n * sizeof(char *));
+  channel->domains = ares_malloc(n * sizeof(char *));
   if (!channel->domains)
     return ARES_ENOMEM;
 
@@ -1804,7 +1805,7 @@ static int set_search(ares_channel channel, const char *str)
       q = p;
       while (*q && !ISSPACE(*q))
         q++;
-      channel->domains[n] = malloc(q - p + 1);
+      channel->domains[n] = ares_malloc(q - p + 1);
       if (!channel->domains[n])
         return ARES_ENOMEM;
       memcpy(channel->domains[n], p, q - p);
@@ -1931,7 +1932,7 @@ static int sortlist_alloc(struct apattern **sortlist, int *nsort,
                           struct apattern *pat)
 {
   struct apattern *newsort;
-  newsort = realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
+  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
   if (!newsort)
     return 0;
   newsort[*nsort] = *pat;
@@ -2017,9 +2018,10 @@ static int init_id_key(rc4_key* key,int key_data_len)
   short counter;
   unsigned char *key_data_ptr = 0;
 
-  key_data_ptr = calloc(1,key_data_len);
+  key_data_ptr = ares_malloc(key_data_len);
   if (!key_data_ptr)
     return ARES_ENOMEM;
+  memset(key_data_ptr, 0, key_data_len);
 
   state = &key->state[0];
   for(counter = 0; counter < 256; counter++)
@@ -2038,7 +2040,7 @@ static int init_id_key(rc4_key* key,int key_data_len)
 
     index1 = (unsigned char)((index1 + 1) % key_data_len);
   }
-  free(key_data_ptr);
+  ares_free(key_data_ptr);
   return ARES_SUCCESS;
 }
 

@@ -163,7 +163,7 @@ void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
     /* This is where a DNS lookup becomes necessary */
     else
       {
-        niquery = malloc(sizeof(struct nameinfo_query));
+        niquery = ares_malloc(sizeof(struct nameinfo_query));
         if (!niquery)
           {
             callback(arg, ARES_ENOMEM, 0, NULL, NULL);
@@ -234,7 +234,7 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
       niquery->callback(niquery->arg, ARES_SUCCESS, niquery->timeouts,
                         (char *)(host->h_name),
                         service);
-      free(niquery);
+      ares_free(niquery);
       return;
     }
   /* We couldn't find the host, but it's OK, we can use the IP */
@@ -265,11 +265,11 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
         }
       niquery->callback(niquery->arg, ARES_SUCCESS, niquery->timeouts, ipbuf,
                         service);
-      free(niquery);
+      ares_free(niquery);
       return;
     }
   niquery->callback(niquery->arg, status, niquery->timeouts, NULL, NULL);
-  free(niquery);
+  ares_free(niquery);
 }
 
 static char *lookup_service(unsigned short port, int flags,

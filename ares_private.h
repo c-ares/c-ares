@@ -93,10 +93,7 @@
 #  define getenv(ptr) ares_getenv(ptr)
 #endif
 
-#ifndef HAVE_STRDUP
-#  include "ares_strdup.h"
-#  define strdup(ptr) ares_strdup(ptr)
-#endif
+#include "ares_strdup.h"
 
 #ifndef HAVE_STRCASECMP
 #  include "ares_strcasecmp.h"
@@ -313,6 +310,11 @@ struct ares_channeldata {
   ares_sock_create_callback sock_create_cb;
   void *sock_create_cb_data;
 };
+
+/* Memory management functions */
+extern void *(*ares_malloc)(size_t size);
+extern void *(*ares_realloc)(void *ptr, size_t size);
+extern void (*ares_free)(void *ptr);
 
 /* return true if now is exactly check time or later */
 int ares__timedout(struct timeval *now,
