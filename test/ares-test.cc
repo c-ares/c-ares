@@ -56,6 +56,7 @@ void ProcessWork(ares_channel channel,
 }  // namespace
 
 bool verbose = false;
+int mock_port = 5300;
 
 unsigned long LibraryTest::fails_ = 0;
 std::map<size_t, int> LibraryTest::size_fails_;
@@ -218,7 +219,7 @@ void MockServer::ProcessRequest(struct sockaddr_storage* addr, int addrlen,
 
 MockChannelOptsTest::MockChannelOptsTest(struct ares_options* givenopts,
                                          int optmask)
-    : server_(5300), channel_(nullptr) {
+  : server_(mock_port), channel_(nullptr) {
   // Set up channel options.
   struct ares_options opts;
   if (givenopts) {
