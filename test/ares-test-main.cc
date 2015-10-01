@@ -1,8 +1,4 @@
-#include <sys/types.h>
-#include <ctype.h>
-#include <errno.h>
-#include <pwd.h>
-#include <iostream>
+#include <stdlib.h>
 
 #include "ares-test.h"
 
@@ -11,6 +7,9 @@ int main(int argc, char* argv[]) {
   for (int ii = 1; ii < argc; ii++) {
     if (strcmp(argv[ii], "-v") == 0) {
       ares::test::verbose = true;
+    } else if ((strcmp(argv[ii], "-p") == 0) && (ii + 1 < argc)) {
+      ii++;
+      ares::test::mock_port = atoi(argv[ii]);
     }
   }
 

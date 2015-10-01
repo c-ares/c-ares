@@ -21,6 +21,7 @@ typedef unsigned char byte;
 namespace test {
 
 extern bool verbose;
+extern int mock_port;
 
 // Test fixture that ensures library initialization, and allows
 // memory allocations to be failed.
