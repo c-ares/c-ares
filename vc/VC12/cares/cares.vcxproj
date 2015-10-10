@@ -1,0 +1,317 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="DLL Debug|Win32">
+      <Configuration>DLL Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DLL Release|Win32">
+      <Configuration>DLL Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="LIB Debug|Win32">
+      <Configuration>LIB Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="LIB Release|Win32">
+      <Configuration>LIB Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>cares</ProjectName>
+    <SccProjectName />
+    <SccLocalPath />
+    <ProjectGuid>{329A8304-6B73-441C-92E8-AFD05AD1A146}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LIB Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LIB Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='LIB Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='LIB Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LIB Debug|Win32'">
+    <OutDir>.\lib-debug\</OutDir>
+    <IntDir>.\lib-debug/obj\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">
+    <OutDir>.\dll-debug\</OutDir>
+    <IntDir>.\dll-debug/obj\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LIB Release|Win32'">
+    <OutDir>.\lib-release\</OutDir>
+    <IntDir>.\lib-release/obj\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">
+    <OutDir>.\dll-release\</OutDir>
+    <IntDir>.\dll-release/obj\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='LIB Debug|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;WIN32;DEBUGBUILD;CARES_BUILDING_LIBRARY;CARES_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\lib-debug/obj\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\lib-debug/obj\vc6cares.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\lib-debug/obj\</ObjectFileName>
+      <ProgramDataBaseFileName>.\lib-debug/obj\</ProgramDataBaseFileName>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\lib-debug\vc6cares.bsc</OutputFile>
+    </Bscmake>
+    <Lib>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>lib-debug/libcaresd.lib</OutputFile>
+      <AdditionalOptions> /machine:I386 </AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;WIN32;DEBUGBUILD;CARES_BUILDING_LIBRARY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\dll-debug/obj\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\dll-debug/obj\vc6cares.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\dll-debug/obj\</ObjectFileName>
+      <ProgramDataBaseFileName>.\dll-debug/obj\</ProgramDataBaseFileName>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\dll-debug\vc6cares.tlb</TypeLibraryName>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\dll-debug\vc6cares.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <LinkDLL>true</LinkDLL>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OutputFile>dll-debug/caresd.dll</OutputFile>
+      <ImportLibrary>dll-debug/caresd.lib</ImportLibrary>
+      <AdditionalOptions> /FIXED:NO</AdditionalOptions>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='LIB Release|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WIN32;CARES_BUILDING_LIBRARY;CARES_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\lib-release/obj\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\lib-release/obj\vc6cares.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\lib-release/obj\</ObjectFileName>
+      <ProgramDataBaseFileName>.\lib-release/obj\</ProgramDataBaseFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\lib-release\vc6cares.bsc</OutputFile>
+    </Bscmake>
+    <Lib>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>lib-release/libcares.lib</OutputFile>
+      <AdditionalOptions> /machine:I386 </AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WIN32;CARES_BUILDING_LIBRARY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\dll-release/obj\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\dll-release/obj\vc6cares.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\dll-release/obj\</ObjectFileName>
+      <ProgramDataBaseFileName>.\dll-release/obj\</ProgramDataBaseFileName>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\dll-release\vc6cares.tlb</TypeLibraryName>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\dll-release\vc6cares.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <LinkDLL>true</LinkDLL>
+      <SubSystem>Console</SubSystem>
+      <OutputFile>dll-release/cares.dll</OutputFile>
+      <ImportLibrary>dll-release/cares.lib</ImportLibrary>
+      <SetChecksum>true</SetChecksum>
+      <AdditionalOptions> /FIXED:NO</AdditionalOptions>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\ares_cancel.c" />
+    <ClCompile Include="..\..\..\ares_create_query.c" />
+    <ClCompile Include="..\..\..\ares_data.c" />
+    <ClCompile Include="..\..\..\ares_destroy.c" />
+    <ClCompile Include="..\..\..\ares_expand_name.c" />
+    <ClCompile Include="..\..\..\ares_expand_string.c" />
+    <ClCompile Include="..\..\..\ares_fds.c" />
+    <ClCompile Include="..\..\..\ares_free_hostent.c" />
+    <ClCompile Include="..\..\..\ares_free_string.c" />
+    <ClCompile Include="..\..\..\ares_getenv.c" />
+    <ClCompile Include="..\..\..\ares_gethostbyaddr.c" />
+    <ClCompile Include="..\..\..\ares_gethostbyname.c" />
+    <ClCompile Include="..\..\..\ares_getnameinfo.c" />
+    <ClCompile Include="..\..\..\ares_getsock.c" />
+    <ClCompile Include="..\..\..\ares_init.c" />
+    <ClCompile Include="..\..\..\ares_library_init.c" />
+    <ClCompile Include="..\..\..\ares_llist.c" />
+    <ClCompile Include="..\..\..\ares_mkquery.c" />
+    <ClCompile Include="..\..\..\ares_nowarn.c" />
+    <ClCompile Include="..\..\..\ares_options.c" />
+    <ClCompile Include="..\..\..\ares_parse_aaaa_reply.c" />
+    <ClCompile Include="..\..\..\ares_parse_a_reply.c" />
+    <ClCompile Include="..\..\..\ares_parse_mx_reply.c" />
+    <ClCompile Include="..\..\..\ares_parse_naptr_reply.c" />
+    <ClCompile Include="..\..\..\ares_parse_ns_reply.c" />
+    <ClCompile Include="..\..\..\ares_parse_ptr_reply.c" />
+    <ClCompile Include="..\..\..\ares_parse_soa_reply.c" />
+    <ClCompile Include="..\..\..\ares_parse_srv_reply.c" />
+    <ClCompile Include="..\..\..\ares_parse_txt_reply.c" />
+    <ClCompile Include="..\..\..\ares_platform.c" />
+    <ClCompile Include="..\..\..\ares_process.c" />
+    <ClCompile Include="..\..\..\ares_query.c" />
+    <ClCompile Include="..\..\..\ares_search.c" />
+    <ClCompile Include="..\..\..\ares_send.c" />
+    <ClCompile Include="..\..\..\ares_strcasecmp.c" />
+    <ClCompile Include="..\..\..\ares_strdup.c" />
+    <ClCompile Include="..\..\..\ares_strerror.c" />
+    <ClCompile Include="..\..\..\ares_timeout.c" />
+    <ClCompile Include="..\..\..\ares_version.c" />
+    <ClCompile Include="..\..\..\ares_writev.c" />
+    <ClCompile Include="..\..\..\ares__close_sockets.c" />
+    <ClCompile Include="..\..\..\ares__get_hostent.c" />
+    <ClCompile Include="..\..\..\ares__read_line.c" />
+    <ClCompile Include="..\..\..\ares__timeval.c" />
+    <ClCompile Include="..\..\..\bitncmp.c" />
+    <ClCompile Include="..\..\..\inet_net_pton.c" />
+    <ClCompile Include="..\..\..\inet_ntop.c" />
+    <ClCompile Include="..\..\..\windows_port.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\ares.h" />
+    <ClInclude Include="..\..\..\ares_build.h" />
+    <ClInclude Include="..\..\..\ares_data.h" />
+    <ClInclude Include="..\..\..\ares_dns.h" />
+    <ClInclude Include="..\..\..\ares_getenv.h" />
+    <ClInclude Include="..\..\..\ares_iphlpapi.h" />
+    <ClInclude Include="..\..\..\ares_ipv6.h" />
+    <ClInclude Include="..\..\..\ares_library_init.h" />
+    <ClInclude Include="..\..\..\ares_llist.h" />
+    <ClInclude Include="..\..\..\ares_nowarn.h" />
+    <ClInclude Include="..\..\..\ares_platform.h" />
+    <ClInclude Include="..\..\..\ares_private.h" />
+    <ClInclude Include="..\..\..\ares_rules.h" />
+    <ClInclude Include="..\..\..\ares_setup.h" />
+    <ClInclude Include="..\..\..\ares_strcasecmp.h" />
+    <ClInclude Include="..\..\..\ares_strdup.h" />
+    <ClInclude Include="..\..\..\ares_version.h" />
+    <ClInclude Include="..\..\..\ares_writev.h" />
+    <ClInclude Include="..\..\..\bitncmp.h" />
+    <ClInclude Include="..\..\..\config-win32.h" />
+    <ClInclude Include="..\..\..\inet_net_pton.h" />
+    <ClInclude Include="..\..\..\inet_ntop.h" />
+    <ClInclude Include="..\..\..\nameser.h" />
+    <ClInclude Include="..\..\..\setup_once.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\..\cares.rc">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='LIB Debug|Win32'">\c-ares-1.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">\c-ares-1.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='LIB Release|Win32'">\c-ares-1.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">\c-ares-1.10.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
