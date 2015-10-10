@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "acountry", "acountryProject\acountry.vcxproj", "{CF368F91-C148-4406-BD31-D41FBE97F33E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{329A8304-6B73-441C-92E8-AFD05AD1A146} = {329A8304-6B73-441C-92E8-AFD05AD1A146}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "adig", "adigProject\adig.vcxproj", "{14D67A6E-AFC9-4195-88FF-72D2C0D4631F}"
 EndProject
@@ -24,24 +27,24 @@ Global
 		using cares LIB Release|Win32 = using cares LIB Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.DLL Debug|Win32.ActiveCfg = using cares DLL Debug|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.DLL Debug|Win32.Build.0 = using cares DLL Debug|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.DLL Release|Win32.ActiveCfg = using cares DLL Release|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.DLL Release|Win32.Build.0 = using cares DLL Release|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.LIB Debug|Win32.ActiveCfg = using cares LIB Debug|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.LIB Debug|Win32.Build.0 = using cares LIB Debug|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.LIB Release|Win32.ActiveCfg = using cares LIB Release|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.LIB Release|Win32.Build.0 = using cares LIB Release|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.DLL Debug|Win32.ActiveCfg = DLL Debug|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.DLL Debug|Win32.Build.0 = DLL Debug|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.DLL Release|Win32.ActiveCfg = DLL Release|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.DLL Release|Win32.Build.0 = DLL Release|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.LIB Debug|Win32.ActiveCfg = LIB Debug|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.LIB Debug|Win32.Build.0 = LIB Debug|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.LIB Release|Win32.ActiveCfg = LIB Release|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.LIB Release|Win32.Build.0 = LIB Release|Win32
 		{CF368F91-C148-4406-BD31-D41FBE97F33E}.Template|Win32.ActiveCfg = Template|Win32
 		{CF368F91-C148-4406-BD31-D41FBE97F33E}.Template|Win32.Build.0 = Template|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares DLL Debug|Win32.ActiveCfg = using cares DLL Debug|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares DLL Debug|Win32.Build.0 = using cares DLL Debug|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares DLL Release|Win32.ActiveCfg = using cares DLL Release|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares DLL Release|Win32.Build.0 = using cares DLL Release|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares LIB Debug|Win32.ActiveCfg = using cares LIB Debug|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares LIB Debug|Win32.Build.0 = using cares LIB Debug|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares LIB Release|Win32.ActiveCfg = using cares LIB Release|Win32
-		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares LIB Release|Win32.Build.0 = using cares LIB Release|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares DLL Debug|Win32.ActiveCfg = DLL Debug|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares DLL Debug|Win32.Build.0 = DLL Debug|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares DLL Release|Win32.ActiveCfg = DLL Release|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares DLL Release|Win32.Build.0 = DLL Release|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares LIB Debug|Win32.ActiveCfg = LIB Debug|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares LIB Debug|Win32.Build.0 = LIB Debug|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares LIB Release|Win32.ActiveCfg = LIB Release|Win32
+		{CF368F91-C148-4406-BD31-D41FBE97F33E}.using cares LIB Release|Win32.Build.0 = LIB Release|Win32
 		{14D67A6E-AFC9-4195-88FF-72D2C0D4631F}.DLL Debug|Win32.ActiveCfg = using cares DLL Debug|Win32
 		{14D67A6E-AFC9-4195-88FF-72D2C0D4631F}.DLL Debug|Win32.Build.0 = using cares DLL Debug|Win32
 		{14D67A6E-AFC9-4195-88FF-72D2C0D4631F}.DLL Release|Win32.ActiveCfg = using cares DLL Release|Win32
