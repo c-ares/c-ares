@@ -9,8 +9,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "acountry", "acountryProject
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "adig", "adigProject\adig.vcxproj", "{14D67A6E-AFC9-4195-88FF-72D2C0D4631F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{329A8304-6B73-441C-92E8-AFD05AD1A146} = {329A8304-6B73-441C-92E8-AFD05AD1A146}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ahost", "ahostProject\ahost.vcxproj", "{590880ED-CD06-4658-ABCF-5A80EA5606D6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{329A8304-6B73-441C-92E8-AFD05AD1A146} = {329A8304-6B73-441C-92E8-AFD05AD1A146}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cares", "caresProject\cares.vcxproj", "{329A8304-6B73-441C-92E8-AFD05AD1A146}"
 EndProject
