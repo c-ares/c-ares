@@ -1,4 +1,8 @@
-/*.ncb
-/*.opensdf
-/*.sdf
-/*.suo
+*.ncb
+*.opensdf
+*.sdf
+*.suo
+*.user
+
+x86
+x64
