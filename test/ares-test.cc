@@ -119,6 +119,10 @@ void DefaultChannelTest::Process() {
   ProcessWork(channel_, -1, nullptr);
 }
 
+void DefaultChannelModeTest::Process() {
+  ProcessWork(channel_, -1, nullptr);
+}
+
 MockServer::MockServer(int port) : port_(port) {
   // Create a UDP socket to receive data on.
   sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);

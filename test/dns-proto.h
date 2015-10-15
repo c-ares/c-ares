@@ -22,8 +22,7 @@ std::string StatusToString(int status);
 std::string RcodeToString(int rcode);
 std::string RRTypeToString(int rrtype);
 std::string ClassToString(int qclass);
-std::string AddressToString(const byte* addr, int len);
-std::string AddressToString(const char* addr, int len);
+std::string AddressToString(const void* addr, int len);
 
 // Convert DNS protocol data to strings.
 // Note that these functions are not defensive; they assume
