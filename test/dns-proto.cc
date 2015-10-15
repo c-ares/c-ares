@@ -150,7 +150,8 @@ std::string ClassToString(int qclass) {
   }
 }
 
-std::string AddressToString(const byte* addr, int len) {
+std::string AddressToString(const void* vaddr, int len) {
+  const byte* addr = reinterpret_cast<const byte*>(vaddr);
   std::stringstream ss;
   if (len == 4) {
     char buffer[4*4 + 3 + 1];
@@ -171,10 +172,6 @@ std::string AddressToString(const byte* addr, int len) {
     ss << "!" << HexDump(addr, len) << "!";
   }
   return ss.str();
-}
-
-std::string AddressToString(const char* addr, int len) {
-  return AddressToString(reinterpret_cast<const byte*>(addr), len);
 }
 
 std::string PacketToString(const std::vector<byte>& packet) {

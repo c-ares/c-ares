@@ -207,6 +207,60 @@ TEST_F(LibraryTest, CreateQueryFailures) {
                     &p, &len, 0));
 }
 
+std::string ExpandName(const std::vector<byte>& data, ssize_t offset,
+                       long *enclen) {
+  char *name = nullptr;
+  int rc = ares_expand_name(data.data() + offset, data.data(), data.size(),
+                            &name, enclen);
+  EXPECT_EQ(ARES_SUCCESS, rc);
+  std::string result;
+  if (rc == ARES_SUCCESS) {
+    result = name;
+  } else {
+    result = "<error>";
+  }
+  free(name);
+  return result;
+}
+
+TEST_F(LibraryTest, ExpandName) {
+  long enclen;
+  std::vector<byte> data1 = {1, 'a', 2, 'b', 'c', 3, 'd', 'e', 'f', 0};
+  EXPECT_EQ("a.bc.def", ExpandName(data1, 0, &enclen));
+  EXPECT_EQ(data1.size(), enclen);
+
+  std::vector<byte> data2 = {0};
+  EXPECT_EQ("", ExpandName(data2, 0, &enclen));
+  EXPECT_EQ(1, enclen);
+
+  // Complete name indirection
+  std::vector<byte> data3 = {0x12, 0x23,
+                             3, 'd', 'e', 'f', 0,
+                             0xC0, 2};
+  EXPECT_EQ("def", ExpandName(data3, 2, &enclen));
+  EXPECT_EQ(5, enclen);
+  EXPECT_EQ("def", ExpandName(data3, 7, &enclen));
+  EXPECT_EQ(2, enclen);
+
+  // One label then indirection
+  std::vector<byte> data4 = {0x12, 0x23,
+                             3, 'd', 'e', 'f', 0,
+                             1, 'a', 0xC0, 2};
+  EXPECT_EQ("def", ExpandName(data4, 2, &enclen));
+  EXPECT_EQ(5, enclen);
+  EXPECT_EQ("a.def", ExpandName(data4, 7, &enclen));
+  EXPECT_EQ(4, enclen);
+
+  // Two labels then indirection
+  std::vector<byte> data5 = {0x12, 0x23,
+                             3, 'd', 'e', 'f', 0,
+                             1, 'a', 1, 'b', 0xC0, 2};
+  EXPECT_EQ("def", ExpandName(data5, 2, &enclen));
+  EXPECT_EQ(5, enclen);
+  EXPECT_EQ("a.b.def", ExpandName(data5, 7, &enclen));
+  EXPECT_EQ(6, enclen);
+}
+
 TEST_F(LibraryTest, ExpandNameFailure) {
   std::vector<byte> data1 = {0x03, 'c', 'o', 'm', 0x00};
   char *name = nullptr;
@@ -216,21 +270,37 @@ TEST_F(LibraryTest, ExpandNameFailure) {
             ares_expand_name(data1.data(), data1.data(), data1.size(),
                              &name, &enclen));
 
+  // Empty packet
+  EXPECT_EQ(ARES_EBADNAME,
+            ares_expand_name(data1.data(), data1.data(), 0, &name, &enclen));
+
   // Start beyond enclosing data
   EXPECT_EQ(ARES_EBADNAME,
             ares_expand_name(data1.data() + data1.size(), data1.data(), data1.size(),
                              &name, &enclen));
 
   // Length beyond size of enclosing data
-  std::vector<byte> data2 = {0x13, 'c', 'o', 'm', 0x00};
+  std::vector<byte> data2a = {0x13, 'c', 'o', 'm', 0x00};
   EXPECT_EQ(ARES_EBADNAME,
-            ares_expand_name(data2.data(), data2.data(), data2.size(),
+            ares_expand_name(data2a.data(), data2a.data(), data2a.size(),
+                             &name, &enclen));
+  std::vector<byte> data2b = {0x1};
+  EXPECT_EQ(ARES_EBADNAME,
+            ares_expand_name(data2b.data(), data2b.data(), data2b.size(),
+                             &name, &enclen));
+  std::vector<byte> data2c = {0xC0};
+  EXPECT_EQ(ARES_EBADNAME,
+            ares_expand_name(data2c.data(), data2c.data(), data2c.size(),
                              &name, &enclen));
 
   // Indirection beyond enclosing data
-  std::vector<byte> data3 = {0xCA, 'c', 'o', 'm', 0x00};
+  std::vector<byte> data3a = {0xC0, 0x02};
   EXPECT_EQ(ARES_EBADNAME,
-            ares_expand_name(data3.data(), data3.data(), data3.size(),
+            ares_expand_name(data3a.data(), data3a.data(), data3a.size(),
+                             &name, &enclen));
+  std::vector<byte> data3b = {0xC0, 0x0A, 'c', 'o', 'm', 0x00};
+  EXPECT_EQ(ARES_EBADNAME,
+            ares_expand_name(data3b.data(), data3b.data(), data3b.size(),
                              &name, &enclen));
 
   // Invalid top bits in label length
@@ -256,10 +326,20 @@ TEST_F(LibraryTest, ExpandNameFailure) {
             ares_expand_name(data6.data() + 5, data6.data(), data6.size(),
                              &name, &enclen));
 
-  // Indirection loop
+  // Indirection loops
   std::vector<byte> data7 = {0xC0, 0x02, 0xC0, 0x00};
   EXPECT_EQ(ARES_EBADNAME,
             ares_expand_name(data7.data(), data7.data(), data7.size(),
+                             &name, &enclen));
+  std::vector<byte> data8 = {3, 'd', 'e', 'f', 0xC0, 0x08, 0x00, 0x00,
+                             3, 'a', 'b', 'c', 0xC0, 0x00};
+  EXPECT_EQ(ARES_EBADNAME,
+            ares_expand_name(data8.data(), data8.data(), data8.size(),
+                             &name, &enclen));
+  std::vector<byte> data9 = {0x12, 0x23,  // start 2 bytes in
+                             3, 'd', 'e', 'f', 0xC0, 0x02};
+  EXPECT_EQ(ARES_EBADNAME,
+            ares_expand_name(data9.data() + 2, data9.data(), data9.size(),
                              &name, &enclen));
 }
 

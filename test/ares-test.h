@@ -75,6 +75,32 @@ class DefaultChannelTest : public LibraryTest {
   ares_channel channel_;
 };
 
+// Test fixture that uses a default channel with the specified lookup mode.
+class DefaultChannelModeTest
+    : public LibraryTest,
+      public ::testing::WithParamInterface<std::string> {
+ public:
+  DefaultChannelModeTest() : channel_(nullptr) {
+    struct ares_options opts = {0};
+    opts.lookups = strdup(GetParam().c_str());
+    int optmask = ARES_OPT_LOOKUPS;
+    EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
+    EXPECT_NE(nullptr, channel_);
+    free(opts.lookups);
+  }
+
+  ~DefaultChannelModeTest() {
+    ares_destroy(channel_);
+    channel_ = nullptr;
+  }
+
+  // Process all pending work on ares-owned file descriptors.
+  void Process();
+
+ protected:
+  ares_channel channel_;
+};
+
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
  public:
