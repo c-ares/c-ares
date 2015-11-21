@@ -331,5 +331,51 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoAllocFail) {
   EXPECT_EQ(ARES_ENOMEM, result.status_);
 }
 
+TEST_F(DefaultChannelTest, GetSock) {
+  ares_socket_t socks[3] = {-1, -1, -1};
+  int bitmask = ares_getsock(channel_, socks, 3);
+  EXPECT_EQ(0, bitmask);
+  bitmask = ares_getsock(channel_, nullptr, 0);
+  EXPECT_EQ(0, bitmask);
+
+  // Ask again with a pending query.
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  bitmask = ares_getsock(channel_, socks, 3);
+  EXPECT_NE(0, bitmask);
+  bitmask = ares_getsock(channel_, nullptr, 0);
+  EXPECT_EQ(0, bitmask);
+
+  Process();
+}
+
+TEST_F(LibraryTest, GetTCPSock) {
+  ares_channel channel;
+  struct ares_options opts = {0};
+  opts.tcp_port = 53;
+  opts.flags = ARES_FLAG_USEVC;
+  int optmask = ARES_OPT_TCP_PORT | ARES_OPT_FLAGS;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+  EXPECT_NE(nullptr, channel);
+
+  ares_socket_t socks[3] = {-1, -1, -1};
+  int bitmask = ares_getsock(channel, socks, 3);
+  EXPECT_EQ(0, bitmask);
+  bitmask = ares_getsock(channel, nullptr, 0);
+  EXPECT_EQ(0, bitmask);
+
+  // Ask again with a pending query.
+  HostResult result;
+  ares_gethostbyname(channel, "www.google.com.", AF_INET, HostCallback, &result);
+  bitmask = ares_getsock(channel, socks, 3);
+  EXPECT_NE(0, bitmask);
+  bitmask = ares_getsock(channel, nullptr, 0);
+  EXPECT_EQ(0, bitmask);
+
+  ProcessWork(channel, -1, nullptr);
+
+  ares_destroy(channel);
+}
+
 }  // namespace test
 }  // namespace ares
