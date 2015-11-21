@@ -12,6 +12,7 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
+#include <functional>
 #include <map>
 
 namespace ares {
@@ -22,6 +23,11 @@ namespace test {
 
 extern bool verbose;
 extern int mock_port;
+
+// Process all pending work on ares-owned file descriptors, plus
+// optionally the given FD + work function.
+void ProcessWork(ares_channel channel,
+                 int extrafd, std::function<void(int)> process_extra);
 
 // Test fixture that ensures library initialization, and allows
 // memory allocations to be failed.

@@ -13,8 +13,6 @@
 namespace ares {
 namespace test {
 
-namespace {
-
 void ProcessWork(ares_channel channel,
                  int extrafd, std::function<void(int)> process_extra) {
   int nfds, count;
@@ -52,8 +50,6 @@ void ProcessWork(ares_channel channel,
       process_extra(extrafd);
   }
 }
-
-}  // namespace
 
 bool verbose = false;
 int mock_port = 5300;
