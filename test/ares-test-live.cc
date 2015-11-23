@@ -266,6 +266,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV4) {
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_SUCCESS, result.status_);
+  if (verbose) std::cerr << "8.8.8.8:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
 TEST_F(DefaultChannelTest, LiveGetNameInfoV6) {
@@ -276,11 +277,119 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV6) {
   sockaddr.sin6_port = htons(53);
   memcpy(sockaddr.sin6_addr.s6_addr, gdns_addr6, 16);
   ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_TCP|ARES_NI_NOFQDN,  // Neither specified => assume lookup host.
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  if (verbose) std::cerr << "[2001:4860:4860::8888]:53 => " << result.node_ << "/" << result.service_ << std::endl;
+}
+
+TEST_F(DefaultChannelTest, LiveGetNameInfoV4Numeric) {
+  NameInfoResult result;
+  struct sockaddr_in sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin_family = AF_INET;
+  sockaddr.sin_port = htons(53);
+  sockaddr.sin_addr.s_addr = htonl(0x08080808);
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_TCP|ARES_NI_NUMERICHOST,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ("8.8.8.8", result.node_);
+  if (verbose) std::cerr << "8.8.8.8:53 => " << result.node_ << "/" << result.service_ << std::endl;
+}
+
+TEST_F(DefaultChannelTest, LiveGetNameInfoV6Numeric) {
+  NameInfoResult result;
+  struct sockaddr_in6 sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin6_family = AF_INET6;
+  sockaddr.sin6_port = htons(53);
+  memcpy(sockaddr.sin6_addr.s6_addr, gdns_addr6, 16);
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_DCCP|ARES_NI_NUMERICHOST,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ("2001:4860:4860::8888%0", result.node_);
+  if (verbose) std::cerr << "[2001:4860:4860::8888]:53 => " << result.node_ << "/" << result.service_ << std::endl;
+}
+
+TEST_F(DefaultChannelTest, LiveGetNameInfoV6LinkLocal) {
+  NameInfoResult result;
+  struct sockaddr_in6 sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin6_family = AF_INET6;
+  sockaddr.sin6_port = htons(53);
+  unsigned char addr6[16] = {0xfe, 0x80, 0x01, 0x02, 0x01, 0x02, 0x00, 0x00,
+                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04};
+  memcpy(sockaddr.sin6_addr.s6_addr, addr6, 16);
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_DCCP|ARES_NI_NUMERICHOST,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ("fe80:102:102::304%0", result.node_);
+  if (verbose) std::cerr << "[fe80:102:102::304]:53 => " << result.node_ << "/" << result.service_ << std::endl;
+}
+
+TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFound) {
+  NameInfoResult result;
+  struct sockaddr_in sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin_family = AF_INET;
+  sockaddr.sin_port = htons(4);  // Port 4 unassigned at IANA
+  // RFC5737 says 192.0.2.0 should not be used publically.
+  sockaddr.sin_addr.s_addr = htonl(0xC0000200);
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
                    ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP,
                    NameInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ("192.0.2.0", result.node_);
+  if (verbose) std::cerr << "192.0.2.0:53 => " << result.node_ << "/" << result.service_ << std::endl;
+}
+
+TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFoundFail) {
+  NameInfoResult result;
+  struct sockaddr_in sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin_family = AF_INET;
+  sockaddr.sin_port = htons(53);
+  // RFC5737 says 192.0.2.0 should not be used publically.
+  sockaddr.sin_addr.s_addr = htonl(0xC0000200);
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP|ARES_NI_NAMEREQD,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTFOUND, result.status_);
+}
+
+TEST_F(DefaultChannelTest, LiveGetNameInfoV6NotFound) {
+  NameInfoResult result;
+  struct sockaddr_in6 sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin6_family = AF_INET6;
+  sockaddr.sin6_port = htons(53);
+  // 2001:db8::/32 is only supposed to be used in documentation.
+  unsigned char addr6[16] = {0x20, 0x01, 0x0d, 0xb8, 0x01, 0x02, 0x00, 0x00,
+                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04};
+  memcpy(sockaddr.sin6_addr.s6_addr, addr6, 16);
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ("2001:db8:102::304%0", result.node_);
+  if (verbose) std::cerr << "[2001:db8:102::304]:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
 TEST_F(DefaultChannelTest, LiveGetNameInvalidFamily) {
@@ -298,6 +407,22 @@ TEST_F(DefaultChannelTest, LiveGetNameInvalidFamily) {
   EXPECT_EQ(ARES_ENOTIMP, result.status_);
 }
 
+TEST_F(DefaultChannelTest, LiveGetNameInvalidFlags) {
+  NameInfoResult result;
+  struct sockaddr_in6 sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin6_family = AF_INET6;
+  sockaddr.sin6_port = htons(53);
+  memcpy(sockaddr.sin6_addr.s6_addr, gdns_addr6, 16);
+  // Ask for both a name-required, and a numeric host.
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP|ARES_NI_NUMERICHOST|ARES_NI_NAMEREQD,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_EBADFLAGS, result.status_);
+}
+
 TEST_F(DefaultChannelTest, LiveGetServiceInfo) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
@@ -307,12 +432,30 @@ TEST_F(DefaultChannelTest, LiveGetServiceInfo) {
   sockaddr.sin_addr.s_addr = htonl(0x08080808);
   // Just look up service info
   ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
-                   ARES_NI_LOOKUPSERVICE|ARES_NI_UDP,
+                   ARES_NI_LOOKUPSERVICE|ARES_NI_SCTP,
                    NameInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_SUCCESS, result.status_);
   EXPECT_EQ("", result.node_);
+}
+
+TEST_F(DefaultChannelTest, LiveGetServiceInfoNumeric) {
+  NameInfoResult result;
+  struct sockaddr_in sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin_family = AF_INET;
+  sockaddr.sin_port = htons(53);
+  sockaddr.sin_addr.s_addr = htonl(0x08080808);
+  // Just look up service info
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_LOOKUPSERVICE|ARES_NI_SCTP|ARES_NI_NUMERICSERV,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ("", result.node_);
+  EXPECT_EQ("53", result.service_);
 }
 
 TEST_F(DefaultChannelTest, LiveGetNameInfoAllocFail) {
