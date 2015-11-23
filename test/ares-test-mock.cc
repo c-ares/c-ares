@@ -78,6 +78,50 @@ TEST_F(MockChannelTest, SearchDomains) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
+TEST_F(MockChannelTest, SearchDomainsAllocFail) {
+  DNSPacket nofirst;
+  nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.first.com", ns_t_a));
+  ON_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &nofirst));
+  DNSPacket nosecond;
+  nosecond.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.second.org", ns_t_a));
+  ON_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    .WillByDefault(SetReply(&server_, &nosecond));
+  DNSPacket yesthird;
+  yesthird.set_response().set_aa()
+    .add_question(new DNSQuestion("www.third.gov", ns_t_a))
+    .add_answer(new DNSARR("www.third.gov", 0x0200, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    .WillByDefault(SetReply(&server_, &yesthird));
+
+  // Fail a variety of different memory allocations, and confirm
+  // that the operation either fails with ENOMEM or succeeds
+  // with the expected result.
+  const int kCount = 34;
+  HostResult results[kCount];
+  for (int ii = 1; ii <= kCount; ii++) {
+    HostResult* result = &(results[ii - 1]);
+    ClearFails();
+    SetAllocFail(ii);
+    ares_gethostbyname(channel_, "www", AF_INET, HostCallback, result);
+    Process();
+    EXPECT_TRUE(result->done_);
+    if (result->status_ != ARES_ENOMEM) {
+      std::stringstream ss;
+      ss << result->host_;
+      EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str()) << " failed alloc #" << ii;
+      if (verbose) std::cerr << "Succeeded despite failure of alloc #" << ii << std::endl;
+    }
+  }
+
+  // Explicitly destroy the channel now, so that the HostResult objects
+  // are still valid (in case any pending work refers to them).
+  ares_destroy(channel_);
+  channel_ = nullptr;
+}
+
 TEST_F(MockChannelTest, Resend) {
   std::vector<byte> nothing;
   DNSPacket reply;

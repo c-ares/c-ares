@@ -174,6 +174,10 @@ void MockServer::Process(int fd) {
   char *name = nullptr;
   long enclen;
   ares_expand_name(question, buffer, len, &name, &enclen);
+  if (!name) {
+    std::cerr << "Failed to retrieve name" << std::endl;
+    return;
+  }
   qlen -= enclen;
   question += enclen;
   std::string namestr(name);
@@ -287,9 +291,11 @@ std::ostream& operator<<(std::ostream& os, const HostResult& result) {
   return os;
 }
 
-HostEnt::HostEnt(const struct hostent *hostent) {
-  if (!hostent) return;
-  if (hostent->h_name) name_ = hostent->h_name;
+HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
+  if (!hostent)
+    return;
+  if (hostent->h_name)
+    name_ = hostent->h_name;
   if (hostent->h_aliases) {
     char** palias = hostent->h_aliases;
     while (*palias != nullptr) {
@@ -326,6 +332,7 @@ std::ostream& operator<<(std::ostream& os, const HostEnt& host) {
   os << '}';
   return os;
 }
+
 void HostCallback(void *data, int status, int timeouts,
                   struct hostent *hostent) {
   EXPECT_NE(nullptr, data);

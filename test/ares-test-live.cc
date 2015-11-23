@@ -246,7 +246,7 @@ TEST_F(DefaultChannelTest, LiveSearchSRV) {
 
 TEST_F(DefaultChannelTest, LiveSearchANY) {
   SearchResult result;
-  ares_search(channel_, "facebook.com.", ns_c_in, ns_t_any,
+  ares_search(channel_, "google.com.", ns_c_in, ns_t_any,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
