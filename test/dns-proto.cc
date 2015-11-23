@@ -233,6 +233,10 @@ std::string QuestionToString(const std::vector<byte>& packet,
   char *name = nullptr;
   long enclen;
   ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
+  if (enclen > *len) {
+    ss << "(error, encoded name len " << enclen << "bigger than remaining data " << *len << " bytes)";
+    return ss.str();
+  }
   *len -= enclen;
   *data += enclen;
   ss << "'" << name << "' ";
@@ -261,6 +265,10 @@ std::string RRToString(const std::vector<byte>& packet,
   char *name = nullptr;
   long enclen;
   ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
+  if (enclen > *len) {
+    ss << "(error, encoded name len " << enclen << "bigger than remaining data " << *len << " bytes)";
+    return ss.str();
+  }
   *len -= enclen;
   *data += enclen;
   ss << "'" << name << "' ";
