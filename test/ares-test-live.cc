@@ -56,6 +56,24 @@ TEST_F(DefaultChannelTest, LiveGetHostByAddrV6) {
   EXPECT_EQ(AF_INET6, result.host_.addrtype_);
 }
 
+TEST_F(DefaultChannelTest, LiveGetHostByNameFile) {
+  struct hostent *host = nullptr;
+
+  // Still need a channel even to query /etc/hosts.
+  EXPECT_EQ(ARES_ENOTFOUND,
+            ares_gethostbyname_file(nullptr, "localhost", AF_INET, &host));
+
+  int rc = ares_gethostbyname_file(channel_, "bogus.mcname", AF_INET, &host);
+  EXPECT_EQ(nullptr, host);
+  EXPECT_EQ(ARES_ENOTFOUND, rc);
+
+  rc = ares_gethostbyname_file(channel_, "localhost", AF_INET, &host);
+  if (rc == ARES_SUCCESS) {
+    EXPECT_NE(nullptr, host);
+    ares_free_hostent(host);
+  }
+}
+
 TEST_P(DefaultChannelModeTest, LiveGetLocalhostByNameV4) {
   HostResult result;
   ares_gethostbyname(channel_, "localhost", AF_INET, HostCallback, &result);
