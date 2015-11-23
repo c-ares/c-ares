@@ -78,6 +78,123 @@ TEST_F(MockChannelTest, SearchDomains) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
+TEST_F(MockChannelTest, UnspecifiedFamilyV6) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_aaaa))
+    .add_answer(new DNSAaaaRR("example.com", 100,
+                              {0x21, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &rsp6));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "example.com.", AF_UNSPEC, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  // Default to IPv6 when both are available.
+  EXPECT_EQ("{'example.com' aliases=[] addrs=[2121:0000:0000:0000:0000:0000:0000:0303]}", ss.str());
+}
+
+TEST_F(MockChannelTest, UnspecifiedFamilyV4) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_aaaa));
+  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &rsp6));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "example.com.", AF_UNSPEC, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+TEST_F(MockChannelTest, SortListV4) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {22, 23, 24, 25}))
+    .add_answer(new DNSARR("example.com", 100, {12, 13, 14, 15}))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  {
+    ares_set_sortlist(channel_, "12.13.0.0/255.255.0.0");
+    HostResult result;
+    ares_gethostbyname(channel_, "example.com.", AF_INET, HostCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'example.com' aliases=[] addrs=[12.13.14.15, 22.23.24.25, 2.3.4.5]}", ss.str());
+  }
+  {
+    ares_set_sortlist(channel_, "2.3.0.0/255.255.0.0");
+    HostResult result;
+    ares_gethostbyname(channel_, "example.com.", AF_INET, HostCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'example.com' aliases=[] addrs=[2.3.4.5, 22.23.24.25, 12.13.14.15]}", ss.str());
+  }
+}
+
+TEST_F(MockChannelTest, SortListV6) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_aaaa))
+    .add_answer(new DNSAaaaRR("example.com", 100,
+                              {0x11, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x02}))
+    .add_answer(new DNSAaaaRR("example.com", 100,
+                              {0x21, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  {
+    ares_set_sortlist(channel_, "1111::/16");
+    HostResult result;
+    ares_gethostbyname(channel_, "example.com.", AF_INET6, HostCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'example.com' aliases=[] addrs=[1111:0000:0000:0000:0000:0000:0000:0202, "
+              "2121:0000:0000:0000:0000:0000:0000:0303]}", ss.str());
+  }
+  {
+    ares_set_sortlist(channel_, "2121::/8");
+    HostResult result;
+    ares_gethostbyname(channel_, "example.com.", AF_INET6, HostCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'example.com' aliases=[] addrs=[2121:0000:0000:0000:0000:0000:0000:0303, "
+              "1111:0000:0000:0000:0000:0000:0000:0202]}", ss.str());
+  }
+}
+
 TEST_F(MockChannelTest, SearchDomainsAllocFail) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
