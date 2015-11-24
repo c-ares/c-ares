@@ -188,23 +188,34 @@ TEST_F(LibraryTest, CreateQueryFailures) {
   for (int ii = 0; ii < 17; ii++) {
     longname += "fedcba9876543210";
   }
+  p = nullptr;
   EXPECT_EQ(ARES_EBADNAME,
             ares_create_query(longname.c_str(), ns_c_in, ns_t_a, 0x1234, 0,
                     &p, &len, 0));
+  if (p) ares_free_string(p);
+
   SetAllocFail(1);
+
+  p = nullptr;
   EXPECT_EQ(ARES_ENOMEM,
             ares_create_query("example.com", ns_c_in, ns_t_a, 0x1234, 0,
                     &p, &len, 0));
+  if (p) ares_free_string(p);
 
   // 63-char limit on a single label
   std::string longlabel = "a.a123456789b123456789c123456789d123456789e123456789f123456789g123456789.org";
+  p = nullptr;
   EXPECT_EQ(ARES_EBADNAME,
             ares_create_query(longlabel.c_str(), ns_c_in, ns_t_a, 0x1234, 0,
                     &p, &len, 0));
+  if (p) ares_free_string(p);
+
   // Empty non-terminal label
+  p = nullptr;
   EXPECT_EQ(ARES_EBADNAME,
             ares_create_query("example..com", ns_c_in, ns_t_a, 0x1234, 0,
                     &p, &len, 0));
+  if (p) ares_free_string(p);
 }
 
 std::string ExpandName(const std::vector<byte>& data, ssize_t offset,
@@ -394,13 +405,15 @@ TEST_F(LibraryTest, Strerror) {
 
 TEST_F(LibraryTest, ExpandString) {
   std::vector<byte> s1 = { 3, 'a', 'b', 'c'};
-  char* result;
+  char* result = nullptr;
   long len;
   EXPECT_EQ(ARES_SUCCESS,
             ares_expand_string(s1.data(), s1.data(), s1.size(),
                                (unsigned char**)&result, &len));
   EXPECT_EQ("abc", std::string(result));
   EXPECT_EQ(1 + 3, len);  // amount of data consumed includes 1 byte len
+  free(result);
+  result = nullptr;
   EXPECT_EQ(ARES_EBADSTR,
             ares_expand_string(s1.data() + 1, s1.data(), s1.size(),
                                (unsigned char**)&result, &len));
