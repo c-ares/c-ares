@@ -8,7 +8,7 @@ GMOCK_DIR = gmock-1.7.0
 GTEST_DIR = $(GMOCK_DIR)/gtest
 # Note use of -isystem to force use of local gMock/gTest even if there's an installed version.
 CPPFLAGS += -I$(ARES_SRC_DIR) -isystem $(GTEST_DIR)/include -isystem $(GMOCK_DIR)/include
-CXXFLAGS += -Wall --std=c++11 -g $(PTHREAD_CFLAGS)
+CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 
 TESTS = arestest
 
