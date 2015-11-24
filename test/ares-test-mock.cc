@@ -79,12 +79,6 @@ TEST_F(MockChannelTest, SearchDomains) {
 }
 
 TEST_F(MockChannelTest, UnspecifiedFamilyV6) {
-  DNSPacket rsp4;
-  rsp4.set_response().set_aa()
-    .add_question(new DNSQuestion("example.com", ns_t_a))
-    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
-  ON_CALL(server_, OnRequest("example.com", ns_t_a))
-    .WillByDefault(SetReply(&server_, &rsp4));
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_aaaa))

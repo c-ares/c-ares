@@ -39,6 +39,7 @@ struct DNSQuestion {
     : name_(name), rrtype_(rrtype), qclass_(qclass) {}
   DNSQuestion(const std::string& name, ns_type rrtype)
     : name_(name), rrtype_(rrtype), qclass_(ns_c_in) {}
+  virtual ~DNSQuestion() {}
   virtual std::vector<byte> data() const;
   std::string name_;
   ns_type rrtype_;
@@ -50,6 +51,7 @@ struct DNSRR : public DNSQuestion {
     : DNSQuestion(name, rrtype, qclass), ttl_(ttl) {}
   DNSRR(const std::string& name, ns_type rrtype, int ttl)
     : DNSQuestion(name, rrtype), ttl_(ttl) {}
+  virtual ~DNSRR() {}
   virtual std::vector<byte> data() const = 0;
   int ttl_;
 };
