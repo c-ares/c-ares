@@ -63,6 +63,7 @@ int ares__read_line(FILE *fp, char **buf, size_t *bufsize)
       if (!newbuf)
         {
           free(*buf);
+          *buf = NULL;
           return ARES_ENOMEM;
         }
       *buf = newbuf;
