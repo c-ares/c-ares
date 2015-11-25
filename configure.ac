@@ -346,6 +346,30 @@ if test "$HAVE_GETHOSTBYNAME" != "1"; then
   AC_MSG_ERROR([couldn't find libraries for gethostbyname()])
 fi
 
+dnl resolv lib for iPhone
+AS_IF([test "x$host_vendor" = "xapple"], [
+  AC_MSG_CHECKING([for iPhone target])
+  AC_COMPILE_IFELSE([
+    AC_LANG_PROGRAM([[
+#include "TargetConditionals.h"
+    ]], [[
+#if TARGET_OS_IPHONE == 0
+#error Not an iPhone target
+#endif
+return 0;
+    ]])
+  ],[
+    AC_MSG_RESULT([yes])
+    AC_SEARCH_LIBS([res_servicename], [resolv], [
+      AC_DEFINE([CARES_USE_LIBRESOLV], [1], [Use resolver library to configure cares])
+    ], [
+      AC_MSG_ERROR([Unable to find libresolv which is required for iPhone targets])
+    ])
+  ],[
+    AC_MSG_RESULT([no])
+  ])
+])
+
 dnl resolve lib?
 AC_CHECK_FUNC(strcasecmp, , [ AC_CHECK_LIB(resolve, strcasecmp) ])
 
