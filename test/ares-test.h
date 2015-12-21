@@ -223,6 +223,41 @@ void SearchCallback(void *data, int status, int timeouts,
 void NameInfoCallback(void *data, int status, int timeouts,
                       char *node, char *service);
 
+// RAII class for a temporary file with the given contents.
+class TempFile {
+ public:
+  TempFile(const std::string& contents);
+  ~TempFile();
+  const char *filename() const {
+    return filename_;
+  }
+ private:
+  char *filename_;
+};
+
+// RAII class for a temporary environment variable value.
+class EnvValue {
+ public:
+  EnvValue(const char *name, const char *value) : name_(name), restore_(false) {
+    char *original = getenv(name);
+    if (original) {
+      restore_ = true;
+      original_ = original;
+    }
+    setenv(name_.c_str(), value, 1);
+  }
+  ~EnvValue() {
+    if (restore_) {
+      setenv(name_.c_str(), original_.c_str(), 1);
+    } else {
+      unsetenv(name_.c_str());
+    }
+  }
+ private:
+  std::string name_;
+  bool restore_;
+  std::string original_;
+};
 
 }  // namespace test
 }  // namespace ares
