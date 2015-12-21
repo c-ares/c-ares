@@ -6,6 +6,8 @@
 #include "ares_dns.h"
 
 #include <netdb.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <functional>
 #include <sstream>
@@ -387,6 +389,31 @@ void NameInfoCallback(void *data, int status, int timeouts,
   result->node_ = std::string(node ? node : "");
   result->service_ = std::string(service ? service : "");
   if (verbose) std::cerr << "NameInfoCallback(" << *result << ")" << std::endl;
+}
+
+TempFile::TempFile(const std::string& contents)
+  : filename_(tempnam(nullptr, "ares")) {
+  if (!filename_) {
+    std::cerr << "Error: failed to generate temporary filename" << std::endl;
+    return;
+  }
+  FILE *f = fopen(filename_, "w");
+  if (!f) {
+    std::cerr << "Error: failed to create temporary file " << filename_ << std::endl;
+    return;
+  }
+  int rc = fwrite(contents.data(), 1, contents.size(), f);
+  if (rc < (int)contents.size()) {
+    std::cerr << "Error: failed to store data in temporary file " << filename_ << std::endl;
+  }
+  fclose(f);
+}
+
+TempFile::~TempFile() {
+  if (filename_) {
+    unlink(filename_);
+    free(filename_);
+  }
 }
 
 }  // namespace test
