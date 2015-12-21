@@ -414,5 +414,74 @@ TEST_F(MockChannelTest, Destroy) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
+TEST_F(MockChannelTest, HostAlias) {
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &reply));
+
+  TempFile aliases("\n\n# www commentedout\nwww www.google.com\n");
+  EnvValue with_env("HOSTALIASES", aliases.filename());
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
+}
+
+TEST_F(MockChannelTest, HostAliasMissing) {
+  DNSPacket yesfirst;
+  yesfirst.set_response().set_aa()
+    .add_question(new DNSQuestion("www.first.com", ns_t_a))
+    .add_answer(new DNSARR("www.first.com", 0x0200, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &yesfirst));
+
+  TempFile aliases("\n\n# www commentedout\nww www.google.com\n");
+  EnvValue with_env("HOSTALIASES", aliases.filename());
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.first.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+TEST_F(MockChannelTest, HostAliasMissingFile) {
+  DNSPacket yesfirst;
+  yesfirst.set_response().set_aa()
+    .add_question(new DNSQuestion("www.first.com", ns_t_a))
+    .add_answer(new DNSARR("www.first.com", 0x0200, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &yesfirst));
+
+  EnvValue with_env("HOSTALIASES", "bogus.mcfile");
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.first.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+TEST_F(MockChannelTest, HostAliasUnreadable) {
+  TempFile aliases("www www.google.com\n");
+  chmod(aliases.filename(), 0);
+  EnvValue with_env("HOSTALIASES", aliases.filename());
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_EFILE, result.status_);
+  chmod(aliases.filename(), 0777);
+}
+
 }  // namespace test
 }  // namespace ares
