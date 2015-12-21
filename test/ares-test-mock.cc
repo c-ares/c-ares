@@ -78,6 +78,130 @@ TEST_F(MockChannelTest, SearchDomains) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
+TEST_F(MockChannelTest, SearchDomainsBare) {
+  DNSPacket nofirst;
+  nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.first.com", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &nofirst));
+  DNSPacket nosecond;
+  nosecond.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.second.org", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    .WillOnce(SetReply(&server_, &nosecond));
+  DNSPacket nothird;
+  nothird.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.third.gov", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    .WillOnce(SetReply(&server_, &nothird));
+  DNSPacket yesbare;
+  yesbare.set_response().set_aa()
+    .add_question(new DNSQuestion("www", ns_t_a))
+    .add_answer(new DNSARR("www", 0x0200, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www", ns_t_a))
+    .WillOnce(SetReply(&server_, &yesbare));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+TEST_F(MockChannelTest, SearchNoDataThenSuccess) {
+  // First two search domains recognize the name but have no A records.
+  DNSPacket nofirst;
+  nofirst.set_response().set_aa()
+    .add_question(new DNSQuestion("www.first.com", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &nofirst));
+  DNSPacket nosecond;
+  nosecond.set_response().set_aa()
+    .add_question(new DNSQuestion("www.second.org", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    .WillOnce(SetReply(&server_, &nosecond));
+  DNSPacket yesthird;
+  yesthird.set_response().set_aa()
+    .add_question(new DNSQuestion("www.third.gov", ns_t_a))
+    .add_answer(new DNSARR("www.third.gov", 0x0200, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    .WillOnce(SetReply(&server_, &yesthird));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+TEST_F(MockChannelTest, SearchNoDataThenFail) {
+  // First two search domains recognize the name but have no A records.
+  DNSPacket nofirst;
+  nofirst.set_response().set_aa()
+    .add_question(new DNSQuestion("www.first.com", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &nofirst));
+  DNSPacket nosecond;
+  nosecond.set_response().set_aa()
+    .add_question(new DNSQuestion("www.second.org", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    .WillOnce(SetReply(&server_, &nosecond));
+  DNSPacket nothird;
+  nothird.set_response().set_aa()
+    .add_question(new DNSQuestion("www.third.gov", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    .WillOnce(SetReply(&server_, &nothird));
+  DNSPacket nobare;
+  nobare.set_response().set_aa()
+    .add_question(new DNSQuestion("www", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www", ns_t_a))
+    .WillOnce(SetReply(&server_, &nobare));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENODATA, result.status_);
+}
+
+TEST_F(MockChannelTest, SearchAllocFailure) {
+  SearchResult result;
+  SetAllocFail(1);
+  ares_search(channel_, "fully.qualified.", ns_c_in, ns_t_a, SearchCallback, &result);
+  /* Already done */
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOMEM, result.status_);
+}
+
+TEST_F(MockChannelTest, SearchHighNdots) {
+  DNSPacket nobare;
+  nobare.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("a.b.c.w.w.w", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("a.b.c.w.w.w", ns_t_a))
+    .WillOnce(SetReply(&server_, &nobare));
+  DNSPacket yesfirst;
+  yesfirst.set_response().set_aa()
+    .add_question(new DNSQuestion("a.b.c.w.w.w.first.com", ns_t_a))
+    .add_answer(new DNSARR("a.b.c.w.w.w.first.com", 0x0200, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("a.b.c.w.w.w.first.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &yesfirst));
+
+  SearchResult result;
+  ares_search(channel_, "a.b.c.w.w.w", ns_c_in, ns_t_a, SearchCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::stringstream ss;
+  ss << PacketToString(result.data_);
+  EXPECT_EQ("RSP QRY AA NOERROR Q:{'a.b.c.w.w.w.first.com' IN A} "
+            "A:{'a.b.c.w.w.w.first.com' IN A TTL=512 2.3.4.5}",
+            ss.str());
+}
+
 TEST_F(MockChannelTest, UnspecifiedFamilyV6) {
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
