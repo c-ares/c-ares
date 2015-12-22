@@ -194,6 +194,8 @@ static void host_callback(void *arg, int status, int timeouts,
             /* The query returned something but either there were no AAAA
                records (e.g. just CNAME) or the response was malformed.  Try
                looking up A instead. */
+            if (host)
+              ares_free_hostent(host);
             hquery->sent_family = AF_INET;
             ares_search(hquery->channel, hquery->name, C_IN, T_A,
                         host_callback, hquery);
