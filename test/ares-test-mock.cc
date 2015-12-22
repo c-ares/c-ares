@@ -11,7 +11,7 @@ using testing::InvokeWithoutArgs;
 namespace ares {
 namespace test {
 
-TEST_F(MockChannelTest, Basic) {
+TEST_P(MockChannelTest, Basic) {
   std::vector<byte> reply = {
     0x00, 0x00,  // qid
     0x84, // response + query + AA + not-TC + not-RD
@@ -51,7 +51,7 @@ TEST_F(MockChannelTest, Basic) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_F(MockChannelTest, SearchDomains) {
+TEST_P(MockChannelTest, SearchDomains) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
     .add_question(new DNSQuestion("www.first.com", ns_t_a));
@@ -78,7 +78,7 @@ TEST_F(MockChannelTest, SearchDomains) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_F(MockChannelTest, SearchDomainsBare) {
+TEST_P(MockChannelTest, SearchDomainsBare) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
     .add_question(new DNSQuestion("www.first.com", ns_t_a));
@@ -110,7 +110,7 @@ TEST_F(MockChannelTest, SearchDomainsBare) {
   EXPECT_EQ("{'www' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_F(MockChannelTest, SearchNoDataThenSuccess) {
+TEST_P(MockChannelTest, SearchNoDataThenSuccess) {
   // First two search domains recognize the name but have no A records.
   DNSPacket nofirst;
   nofirst.set_response().set_aa()
@@ -138,7 +138,7 @@ TEST_F(MockChannelTest, SearchNoDataThenSuccess) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_F(MockChannelTest, SearchNoDataThenFail) {
+TEST_P(MockChannelTest, SearchNoDataThenFail) {
   // First two search domains recognize the name but have no A records.
   DNSPacket nofirst;
   nofirst.set_response().set_aa()
@@ -168,7 +168,7 @@ TEST_F(MockChannelTest, SearchNoDataThenFail) {
   EXPECT_EQ(ARES_ENODATA, result.status_);
 }
 
-TEST_F(MockChannelTest, SearchAllocFailure) {
+TEST_P(MockChannelTest, SearchAllocFailure) {
   SearchResult result;
   SetAllocFail(1);
   ares_search(channel_, "fully.qualified.", ns_c_in, ns_t_a, SearchCallback, &result);
@@ -177,7 +177,7 @@ TEST_F(MockChannelTest, SearchAllocFailure) {
   EXPECT_EQ(ARES_ENOMEM, result.status_);
 }
 
-TEST_F(MockChannelTest, SearchHighNdots) {
+TEST_P(MockChannelTest, SearchHighNdots) {
   DNSPacket nobare;
   nobare.set_response().set_aa().set_rcode(ns_r_nxdomain)
     .add_question(new DNSQuestion("a.b.c.w.w.w", ns_t_a));
@@ -202,7 +202,7 @@ TEST_F(MockChannelTest, SearchHighNdots) {
             ss.str());
 }
 
-TEST_F(MockChannelTest, UnspecifiedFamilyV6) {
+TEST_P(MockChannelTest, UnspecifiedFamilyV6) {
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_aaaa))
@@ -222,7 +222,7 @@ TEST_F(MockChannelTest, UnspecifiedFamilyV6) {
   EXPECT_EQ("{'example.com' aliases=[] addrs=[2121:0000:0000:0000:0000:0000:0000:0303]}", ss.str());
 }
 
-TEST_F(MockChannelTest, UnspecifiedFamilyV4) {
+TEST_P(MockChannelTest, UnspecifiedFamilyV4) {
   DNSPacket rsp4;
   rsp4.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_a))
@@ -244,7 +244,7 @@ TEST_F(MockChannelTest, UnspecifiedFamilyV4) {
   EXPECT_EQ("{'example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_F(MockChannelTest, UnspecifiedFamilyNoData) {
+TEST_P(MockChannelTest, UnspecifiedFamilyNoData) {
   DNSPacket rsp4;
   rsp4.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_a));
@@ -266,7 +266,7 @@ TEST_F(MockChannelTest, UnspecifiedFamilyNoData) {
   EXPECT_EQ("{'' aliases=[] addrs=[]}", ss.str());
 }
 
-TEST_F(MockChannelTest, ExplicitIP) {
+TEST_P(MockChannelTest, ExplicitIP) {
   HostResult result;
   ares_gethostbyname(channel_, "1.2.3.4", AF_INET, HostCallback, &result);
   EXPECT_TRUE(result.done_);  // Immediate return
@@ -276,7 +276,7 @@ TEST_F(MockChannelTest, ExplicitIP) {
   EXPECT_EQ("{'1.2.3.4' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_F(MockChannelTest, ExplicitIPAllocFail) {
+TEST_P(MockChannelTest, ExplicitIPAllocFail) {
   HostResult result;
   SetAllocSizeFail(strlen("1.2.3.4") + 1);
   ares_gethostbyname(channel_, "1.2.3.4", AF_INET, HostCallback, &result);
@@ -284,7 +284,7 @@ TEST_F(MockChannelTest, ExplicitIPAllocFail) {
   EXPECT_EQ(ARES_ENOMEM, result.status_);
 }
 
-TEST_F(MockChannelTest, SortListV4) {
+TEST_P(MockChannelTest, SortListV4) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_a))
@@ -322,7 +322,7 @@ TEST_F(MockChannelTest, SortListV4) {
   ares_destroy_options(&options);
 }
 
-TEST_F(MockChannelTest, SortListV6) {
+TEST_P(MockChannelTest, SortListV6) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_aaaa))
@@ -359,7 +359,7 @@ TEST_F(MockChannelTest, SortListV6) {
   }
 }
 
-TEST_F(MockChannelTest, SearchDomainsAllocFail) {
+TEST_P(MockChannelTest, SearchDomainsAllocFail) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
     .add_question(new DNSQuestion("www.first.com", ns_t_a));
@@ -403,7 +403,7 @@ TEST_F(MockChannelTest, SearchDomainsAllocFail) {
   channel_ = nullptr;
 }
 
-TEST_F(MockChannelTest, Resend) {
+TEST_P(MockChannelTest, Resend) {
   std::vector<byte> nothing;
   DNSPacket reply;
   reply.set_response().set_aa()
@@ -425,7 +425,7 @@ TEST_F(MockChannelTest, Resend) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_F(MockChannelTest, CancelImmediate) {
+TEST_P(MockChannelTest, CancelImmediate) {
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   ares_cancel(channel_);
@@ -434,7 +434,7 @@ TEST_F(MockChannelTest, CancelImmediate) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
-TEST_F(MockChannelTest, CancelLater) {
+TEST_P(MockChannelTest, CancelLater) {
   std::vector<byte> nothing;
 
   // On second request, cancel the channel.
@@ -450,7 +450,7 @@ TEST_F(MockChannelTest, CancelLater) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
-TEST_F(MockChannelTest, GetHostByNameDestroyAbsolute) {
+TEST_P(MockChannelTest, GetHostByNameDestroyAbsolute) {
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
 
@@ -462,7 +462,7 @@ TEST_F(MockChannelTest, GetHostByNameDestroyAbsolute) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
-TEST_F(MockChannelTest, GetHostByNameDestroyRelative) {
+TEST_P(MockChannelTest, GetHostByNameDestroyRelative) {
   HostResult result;
   ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
 
@@ -474,7 +474,7 @@ TEST_F(MockChannelTest, GetHostByNameDestroyRelative) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
-TEST_F(MockChannelTest, GetHostByAddrDestroy) {
+TEST_P(MockChannelTest, GetHostByAddrDestroy) {
   unsigned char gdns_addr4[4] = {0x08, 0x08, 0x08, 0x08};
   HostResult result;
   ares_gethostbyaddr(channel_, gdns_addr4, sizeof(gdns_addr4), AF_INET, HostCallback, &result);
@@ -487,7 +487,7 @@ TEST_F(MockChannelTest, GetHostByAddrDestroy) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
-TEST_F(MockChannelTest, HostAlias) {
+TEST_P(MockChannelTest, HostAlias) {
   DNSPacket reply;
   reply.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", ns_t_a))
@@ -507,7 +507,7 @@ TEST_F(MockChannelTest, HostAlias) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_F(MockChannelTest, HostAliasMissing) {
+TEST_P(MockChannelTest, HostAliasMissing) {
   DNSPacket yesfirst;
   yesfirst.set_response().set_aa()
     .add_question(new DNSQuestion("www.first.com", ns_t_a))
@@ -526,7 +526,7 @@ TEST_F(MockChannelTest, HostAliasMissing) {
   EXPECT_EQ("{'www.first.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_F(MockChannelTest, HostAliasMissingFile) {
+TEST_P(MockChannelTest, HostAliasMissingFile) {
   DNSPacket yesfirst;
   yesfirst.set_response().set_aa()
     .add_question(new DNSQuestion("www.first.com", ns_t_a))
@@ -544,7 +544,7 @@ TEST_F(MockChannelTest, HostAliasMissingFile) {
   EXPECT_EQ("{'www.first.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_F(MockChannelTest, HostAliasUnreadable) {
+TEST_P(MockChannelTest, HostAliasUnreadable) {
   TempFile aliases("www www.google.com\n");
   chmod(aliases.filename(), 0);
   EnvValue with_env("HOSTALIASES", aliases.filename());
@@ -555,6 +555,9 @@ TEST_F(MockChannelTest, HostAliasUnreadable) {
   EXPECT_EQ(ARES_EFILE, result.status_);
   chmod(aliases.filename(), 0777);
 }
+
+INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTest,
+                        ::testing::Values(AF_INET, AF_INET6));
 
 }  // namespace test
 }  // namespace ares
