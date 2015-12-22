@@ -121,19 +121,30 @@ void DefaultChannelModeTest::Process() {
   ProcessWork(channel_, -1, nullptr);
 }
 
-MockServer::MockServer(int port) : port_(port) {
+MockServer::MockServer(int family, int port) : port_(port) {
   // Create a UDP socket to receive data on.
-  sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
+  sockfd_ = socket(family, SOCK_DGRAM, 0);
   EXPECT_NE(-1, sockfd_);
 
   // Bind it to the given port.
-  struct sockaddr_in addr;
-  memset(&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  addr.sin_port = htons(port_);
-  int rc = bind(sockfd_, (struct sockaddr*)&addr, sizeof(addr));
-  EXPECT_EQ(0, rc) << "Failed to bind to port " << port_;
+  if (family == AF_INET) {
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(port_);
+    int rc = bind(sockfd_, (struct sockaddr*)&addr, sizeof(addr));
+    EXPECT_EQ(0, rc) << "Failed to bind AF_INET to port " << port_;
+  } else {
+    EXPECT_EQ(AF_INET6, family);
+    struct sockaddr_in6 addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin6_family = AF_INET6;
+    addr.sin6_addr = in6addr_any;
+    addr.sin6_port = htons(port_);
+    int rc = bind(sockfd_, (struct sockaddr*)&addr, sizeof(addr));
+    EXPECT_EQ(0, rc) << "Failed to bind AF_INET6 to port " << port_;
+  }
 }
 
 MockServer::~MockServer() {
@@ -223,9 +234,10 @@ void MockServer::ProcessRequest(struct sockaddr_storage* addr, int addrlen,
   }
 }
 
-MockChannelOptsTest::MockChannelOptsTest(struct ares_options* givenopts,
+MockChannelOptsTest::MockChannelOptsTest(int family,
+                                         struct ares_options* givenopts,
                                          int optmask)
-  : server_(mock_port), channel_(nullptr) {
+  : server_(family, mock_port), channel_(nullptr) {
   // Set up channel options.
   struct ares_options opts;
   if (givenopts) {
@@ -242,10 +254,12 @@ MockChannelOptsTest::MockChannelOptsTest(struct ares_options* givenopts,
   optmask |= ARES_OPT_TCP_PORT;
   opts.nservers = 1;
   struct in_addr server_addr;
-  memset(&server_addr, 0, sizeof(server_addr));
-  server_addr.s_addr = htonl(0x7F000001);
-  opts.servers = &server_addr;
-  optmask |= ARES_OPT_SERVERS;
+  if (family == AF_INET) {
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.s_addr = htonl(0x7F000001);
+    opts.servers = &server_addr;
+    optmask |= ARES_OPT_SERVERS;
+  }
 
   // If not already overridden, set short timeouts.
   if (!(optmask & (ARES_OPT_TIMEOUTMS|ARES_OPT_TIMEOUT))) {
@@ -267,6 +281,15 @@ MockChannelOptsTest::MockChannelOptsTest(struct ares_options* givenopts,
 
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
   EXPECT_NE(nullptr, channel_);
+
+  // For IPv6 servers, have to set up after construction.
+  if (family == AF_INET6) {
+    struct ares_addr_node addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.family = AF_INET6;
+    addr.addr.addr6._S6_un._S6_u8[15] = 1;
+    EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, &addr));
+  }
 }
 
 MockChannelOptsTest::~MockChannelOptsTest() {

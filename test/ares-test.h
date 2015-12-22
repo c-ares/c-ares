@@ -110,7 +110,7 @@ class DefaultChannelModeTest
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
  public:
-  MockServer(int port);
+  MockServer(int family, int port);
   ~MockServer();
 
   // Mock method indicating the processing of a particular <name, RRtype>
@@ -140,7 +140,7 @@ class MockServer {
 // Test fixture that uses a mock DNS server.
 class MockChannelOptsTest : public LibraryTest {
  public:
-  MockChannelOptsTest(struct ares_options* givenopts, int optmask);
+  MockChannelOptsTest(int family, struct ares_options* givenopts, int optmask);
   ~MockChannelOptsTest();
 
   // Process all pending work on ares-owned and mock-server-owned file descriptors.
@@ -151,9 +151,11 @@ class MockChannelOptsTest : public LibraryTest {
   ares_channel channel_;
 };
 
-class MockChannelTest : public MockChannelOptsTest {
+class MockChannelTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
  public:
-  MockChannelTest() : MockChannelOptsTest(nullptr, 0) {}
+  MockChannelTest() : MockChannelOptsTest(GetParam(), nullptr, 0) {}
 };
 
 // gMock action to set the reply for a mock server.
