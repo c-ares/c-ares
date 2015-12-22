@@ -129,7 +129,7 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
   if (q > *s)
     *(q - 1) = 0;
   else
-    *q = 0; /* zero terminate */
+    *q = 0; /* zero terminate; LCOV_EXCL_LINE: empty names exit above */
 
   return ARES_SUCCESS;
 }

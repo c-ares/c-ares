@@ -150,22 +150,22 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
           if (addrs)
             {
               if (aptr + sizeof(struct in_addr) > abuf + alen)
-              {
+              {  /* LCOV_EXCL_START: already checked above */
                 free(rr_name);
                 status = ARES_EBADRESP;
                 break;
-              }
+              }  /* LCOV_EXCL_STOP */
               memcpy(&addrs[naddrs], aptr, sizeof(struct in_addr));
             }
           if (naddrs < max_addr_ttls)
             {
               struct ares_addrttl * const at = &addrttls[naddrs];
               if (aptr + sizeof(struct in_addr) > abuf + alen)
-              {
+              {  /* LCOV_EXCL_START: already checked above */
                 free(rr_name);
                 status = ARES_EBADRESP;
                 break;
-              }
+              }  /* LCOV_EXCL_STOP */
               memcpy(&at->ipaddr, aptr,  sizeof(struct in_addr));
               at->ttl = rr_ttl;
             }
@@ -199,10 +199,10 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
 
       aptr += rr_len;
       if (aptr > abuf + alen)
-        {
+        {  /* LCOV_EXCL_START: already checked above */
           status = ARES_EBADRESP;
           break;
-        }
+        }  /* LCOV_EXCL_STOP */
     }
 
   if (status == ARES_SUCCESS && naddrs == 0 && naliases == 0)

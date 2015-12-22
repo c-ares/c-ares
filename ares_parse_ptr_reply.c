@@ -163,10 +163,10 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
       free(rr_name);
       aptr += rr_len;
       if (aptr > abuf + alen)
-        {
+        {  /* LCOV_EXCL_START: already checked above */
           status = ARES_EBADRESP;
           break;
-        }
+        }  /* LCOV_EXCL_STOP */
     }
 
   if (status == ARES_SUCCESS && !hostname)

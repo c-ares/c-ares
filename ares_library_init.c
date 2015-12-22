@@ -111,7 +111,7 @@ int ares_library_init(int flags)
     {
       res = ares_win32_init();
       if (res != ARES_SUCCESS)
-        return res;
+        return res;  /* LCOV_EXCL_LINE: can't test Win32 init failure */
     }
 
   ares_init_flags = flags;

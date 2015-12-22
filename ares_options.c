@@ -92,7 +92,7 @@ int ares_set_servers(ares_channel channel,
   int i;
 
   if (ares_library_initialized() != ARES_SUCCESS)
-    return ARES_ENOTINITIALIZED;
+    return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: no library init on non-WinSock */
 
   if (!channel)
     return ARES_ENODATA;
@@ -146,7 +146,7 @@ int ares_set_servers_csv(ares_channel channel,
   struct ares_addr_node *last = NULL;
 
   if (ares_library_initialized() != ARES_SUCCESS)
-    return ARES_ENOTINITIALIZED;
+    return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: no library init on non-WinSock */
 
   if (!channel)
     return ARES_ENODATA;

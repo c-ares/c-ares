@@ -861,7 +861,7 @@ static int setsocknonblock(ares_socket_t sockfd,    /* operate on this */
   if (FALSE != nonblock)
     return fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
   else
-    return fcntl(sockfd, F_SETFL, flags & (~O_NONBLOCK));
+    return fcntl(sockfd, F_SETFL, flags & (~O_NONBLOCK));  /* LCOV_EXCL_LINE */
 
 #elif defined(HAVE_IOCTL_FIONBIO)
 
@@ -909,7 +909,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
 #if defined(FD_CLOEXEC) && !defined(MSDOS)
   /* Configure the socket fd as close-on-exec. */
   if (fcntl(s, F_SETFD, FD_CLOEXEC) == -1)
-    return -1;
+    return -1;  /* LCOV_EXCL_LINE */
 #endif
 
   /* Set the socket's send and receive buffer sizes. */
@@ -991,7 +991,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
                sizeof(server->addr.addrV6));
         break;
       default:
-        return -1;
+        return -1;  /* LCOV_EXCL_LINE */
     }
 
   /* Acquire a socket. */
@@ -1083,7 +1083,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
                sizeof(server->addr.addrV6));
         break;
       default:
-        return -1;
+        return -1;  /* LCOV_EXCL_LINE */
     }
 
   /* Acquire a socket. */
@@ -1228,7 +1228,7 @@ static int same_address(struct sockaddr *sa, struct ares_addr *aa)
               return 1; /* match */
             break;
           default:
-            break;
+            break;  /* LCOV_EXCL_LINE */
         }
     }
   return 0; /* different */

@@ -129,7 +129,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
 #endif
 
   if (ares_library_initialized() != ARES_SUCCESS)
-    return ARES_ENOTINITIALIZED;
+    return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: no library init on non-WinSock */
 
   channel = malloc(sizeof(struct ares_channeldata));
   if (!channel) {
@@ -540,7 +540,7 @@ static int init_by_environment(ares_channel channel)
     {
       status = set_options(channel, res_options);
       if (status != ARES_SUCCESS)
-        return status;
+        return status;  /* LCOV_EXCL_LINE: set_options() never fails */
     }
 
   return ARES_SUCCESS;
@@ -1764,13 +1764,14 @@ static int set_search(ares_channel channel, const char *str)
   const char *p, *q;
 
   if(channel->ndomains != -1) {
+    /* LCOV_EXCL_START: all callers check ndomains == -1 */
     /* if we already have some domains present, free them first */
     for(n=0; n < channel->ndomains; n++)
       free(channel->domains[n]);
     free(channel->domains);
     channel->domains = NULL;
     channel->ndomains = -1;
-  }
+  } /* LCOV_EXCL_STOP */
 
   /* Count the domains given. */
   n = 0;
@@ -1864,7 +1865,7 @@ static char *try_config(char *s, const char *opt, char scc)
 
   if (!s || !opt)
     /* no line or no option */
-    return NULL;
+    return NULL;  /* LCOV_EXCL_LINE */
 
   /* Hash '#' character is always used as primary comment char, additionally
      a not-NUL secondary comment char will be considered when specified. */
@@ -1896,7 +1897,7 @@ static char *try_config(char *s, const char *opt, char scc)
 
   if ((len = strlen(opt)) == 0)
     /* empty option */
-    return NULL;
+    return NULL;  /* LCOV_EXCL_LINE */
 
   if (strncmp(p, opt, len) != 0)
     /* line and option do not match */
@@ -1907,7 +1908,7 @@ static char *try_config(char *s, const char *opt, char scc)
 
   if (!*p)
     /* no option value */
-    return NULL;
+    return NULL;  /* LCOV_EXCL_LINE */
 
   if ((opt[len-1] != ':') && (opt[len-1] != '=') && !ISSPACE(*p))
     /* whitespace between option name and value is mandatory
@@ -2004,7 +2005,7 @@ static void randomize_key(unsigned char* key,int key_data_len)
 
   if (!randomized) {
     for (;counter<key_data_len;counter++)
-      key[counter]=(unsigned char)(rand() % 256);
+      key[counter]=(unsigned char)(rand() % 256);  /* LCOV_EXCL_LINE */
   }
 }
 
