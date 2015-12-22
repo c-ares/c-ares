@@ -244,6 +244,46 @@ TEST_F(MockChannelTest, UnspecifiedFamilyV4) {
   EXPECT_EQ("{'example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
+TEST_F(MockChannelTest, UnspecifiedFamilyNoData) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_aaaa))
+    .add_answer(new DNSCnameRR("example.com", 100, "elsewhere.com"));
+  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &rsp6));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "example.com.", AF_UNSPEC, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'' aliases=[] addrs=[]}", ss.str());
+}
+
+TEST_F(MockChannelTest, ExplicitIP) {
+  HostResult result;
+  ares_gethostbyname(channel_, "1.2.3.4", AF_INET, HostCallback, &result);
+  EXPECT_TRUE(result.done_);  // Immediate return
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'1.2.3.4' aliases=[] addrs=[1.2.3.4]}", ss.str());
+}
+
+TEST_F(MockChannelTest, ExplicitIPAllocFail) {
+  HostResult result;
+  SetAllocSizeFail(strlen("1.2.3.4") + 1);
+  ares_gethostbyname(channel_, "1.2.3.4", AF_INET, HostCallback, &result);
+  EXPECT_TRUE(result.done_);  // Immediate return
+  EXPECT_EQ(ARES_ENOMEM, result.status_);
+}
+
 TEST_F(MockChannelTest, SortListV4) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
@@ -255,7 +295,7 @@ TEST_F(MockChannelTest, SortListV4) {
     .WillByDefault(SetReply(&server_, &rsp));
 
   {
-    ares_set_sortlist(channel_, "12.13.0.0/255.255.0.0");
+    ares_set_sortlist(channel_, "12.13.0.0/255.255.0.0 1234::5678");
     HostResult result;
     ares_gethostbyname(channel_, "example.com.", AF_INET, HostCallback, &result);
     Process();
@@ -265,7 +305,7 @@ TEST_F(MockChannelTest, SortListV4) {
     EXPECT_EQ("{'example.com' aliases=[] addrs=[12.13.14.15, 22.23.24.25, 2.3.4.5]}", ss.str());
   }
   {
-    ares_set_sortlist(channel_, "2.3.0.0/255.255.0.0");
+    ares_set_sortlist(channel_, "2.3.0.0/16 130.140.150.160/26");
     HostResult result;
     ares_gethostbyname(channel_, "example.com.", AF_INET, HostCallback, &result);
     Process();
@@ -274,6 +314,12 @@ TEST_F(MockChannelTest, SortListV4) {
     ss << result.host_;
     EXPECT_EQ("{'example.com' aliases=[] addrs=[2.3.4.5, 22.23.24.25, 12.13.14.15]}", ss.str());
   }
+  struct ares_options options;
+  memset(&options, 0, sizeof(options));
+  int optmask = 0;
+  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel_, &options, &optmask));
+  EXPECT_TRUE(optmask & ARES_OPT_SORTLIST);
+  ares_destroy_options(&options);
 }
 
 TEST_F(MockChannelTest, SortListV6) {
@@ -290,7 +336,7 @@ TEST_F(MockChannelTest, SortListV6) {
     .WillByDefault(SetReply(&server_, &rsp));
 
   {
-    ares_set_sortlist(channel_, "1111::/16");
+    ares_set_sortlist(channel_, "1111::/16 2.3.0.0/255.255.0.0");
     HostResult result;
     ares_gethostbyname(channel_, "example.com.", AF_INET6, HostCallback, &result);
     Process();
@@ -404,12 +450,39 @@ TEST_F(MockChannelTest, CancelLater) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
-TEST_F(MockChannelTest, Destroy) {
+TEST_F(MockChannelTest, GetHostByNameDestroyAbsolute) {
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+
   ares_destroy(channel_);
   channel_ = nullptr;
-  EXPECT_TRUE(result.done_);
+
+  EXPECT_TRUE(result.done_);  // Synchronous
+  EXPECT_EQ(ARES_EDESTRUCTION, result.status_);
+  EXPECT_EQ(0, result.timeouts_);
+}
+
+TEST_F(MockChannelTest, GetHostByNameDestroyRelative) {
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+
+  ares_destroy(channel_);
+  channel_ = nullptr;
+
+  EXPECT_TRUE(result.done_);  // Synchronous
+  EXPECT_EQ(ARES_EDESTRUCTION, result.status_);
+  EXPECT_EQ(0, result.timeouts_);
+}
+
+TEST_F(MockChannelTest, GetHostByAddrDestroy) {
+  unsigned char gdns_addr4[4] = {0x08, 0x08, 0x08, 0x08};
+  HostResult result;
+  ares_gethostbyaddr(channel_, gdns_addr4, sizeof(gdns_addr4), AF_INET, HostCallback, &result);
+
+  ares_destroy(channel_);
+  channel_ = nullptr;
+
+  EXPECT_TRUE(result.done_);  // Synchronous
   EXPECT_EQ(ARES_EDESTRUCTION, result.status_);
   EXPECT_EQ(0, result.timeouts_);
 }

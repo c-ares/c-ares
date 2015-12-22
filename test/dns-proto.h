@@ -34,6 +34,12 @@ std::string QuestionToString(const std::vector<byte>& packet,
 std::string RRToString(const std::vector<byte>& packet,
                        const byte** data, int* len);
 
+
+// Manipulate DNS protocol data.
+void PushInt32(std::vector<byte>* data, int value);
+void PushInt16(std::vector<byte>* data, int value);
+std::vector<byte> EncodeString(const std::string& name);
+
 struct DNSQuestion {
   DNSQuestion(const std::string& name, ns_type rrtype, ns_class qclass)
     : name_(name), rrtype_(rrtype), qclass_(qclass) {}

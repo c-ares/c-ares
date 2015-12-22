@@ -108,10 +108,10 @@ TEST_F(LibraryTest, ParseTxtReplyAllocFail) {
   std::vector<byte> data = pkt.data();
   struct ares_txt_reply* txt = nullptr;
 
-  for (int ii = 1; ii <= 3; ii++) {
+  for (int ii = 1; ii <= 13; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    EXPECT_EQ(ARES_ENOMEM, ares_parse_txt_reply(data.data(), data.size(), &txt));
+    EXPECT_EQ(ARES_ENOMEM, ares_parse_txt_reply(data.data(), data.size(), &txt)) << ii;
   }
 }
 

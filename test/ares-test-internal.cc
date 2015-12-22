@@ -1,6 +1,8 @@
 #include "ares-test.h"
 #include "dns-proto.h"
 
+#include <stdio.h>
+
 extern "C" {
 // Remove command-line defines of package variables for the test project...
 #undef PACKAGE_NAME
@@ -12,8 +14,8 @@ extern "C" {
 #include "ares_nowarn.h"
 #include "ares_inet_net_pton.h"
 #include "ares_data.h"
+#include "ares_private.h"
 #include "bitncmp.h"
-char *ares_strdup(const char*);
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -232,6 +234,48 @@ TEST_F(LibraryTest, Casts) {
 
   ri = aresx_sltosi(l);
   EXPECT_EQ(l, (long)ri);
+}
+
+TEST_F(LibraryTest, ReadLine) {
+  TempFile temp("abcde\n0123456789\nXYZ\n012345678901234567890\n\n");
+  FILE *fp = fopen(temp.filename(), "r");
+  size_t bufsize = 4;
+  char *buf = (char *)malloc(bufsize);
+
+  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
+  EXPECT_EQ("abcde", std::string(buf));
+  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
+  EXPECT_EQ("0123456789", std::string(buf));
+  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
+  EXPECT_EQ("XYZ", std::string(buf));
+  SetAllocFail(1);
+  EXPECT_EQ(ARES_ENOMEM, ares__read_line(fp, &buf, &bufsize));
+  EXPECT_EQ(nullptr, buf);
+
+  fclose(fp);
+  free(buf);
+}
+
+TEST_F(LibraryTest, ReadLineNoBuf) {
+  TempFile temp("abcde\n0123456789\nXYZ\n012345678901234567890");
+  FILE *fp = fopen(temp.filename(), "r");
+  size_t bufsize = 0;
+  char *buf = nullptr;
+
+  SetAllocFail(1);
+  EXPECT_EQ(ARES_ENOMEM, ares__read_line(fp, &buf, &bufsize));
+
+  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
+  EXPECT_EQ("abcde", std::string(buf));
+  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
+  EXPECT_EQ("0123456789", std::string(buf));
+  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
+  EXPECT_EQ("XYZ", std::string(buf));
+  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
+  EXPECT_EQ("012345678901234567890", std::string(buf));
+
+  fclose(fp);
+  free(buf);
 }
 #endif
 

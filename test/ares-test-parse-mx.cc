@@ -30,6 +30,38 @@ TEST_F(LibraryTest, ParseMxReplyOK) {
   ares_free_data(mx);
 }
 
+TEST_F(LibraryTest, ParseMxReplyMalformed) {
+  std::vector<byte> data = {
+    0x12, 0x34,  // qid
+    0x84, // response + query + AA + not-TC + not-RD
+    0x00, // not-RA + not-Z + not-AD + not-CD + rc=NoError
+    0x00, 0x01,  // num questions
+    0x00, 0x01,  // num answer RRs
+    0x00, 0x00,  // num authority RRs
+    0x00, 0x00,  // num additional RRs
+    // Question
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x0F,  // type MX
+    0x00, 0x01,  // class IN
+    // Answer 1
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x0F,  // RR type
+    0x00, 0x01,  // class IN
+    0x01, 0x02, 0x03, 0x04, // TTL
+    0x00, 0x01,  // rdata length -- too short
+    0x02,
+  };
+
+  struct ares_mx_reply* mx = nullptr;
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), data.size(), &mx));
+  ASSERT_EQ(nullptr, mx);
+}
+
+
 TEST_F(LibraryTest, ParseMxReplyErrors) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
