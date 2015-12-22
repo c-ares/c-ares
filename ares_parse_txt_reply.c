@@ -168,6 +168,12 @@ ares_parse_txt_reply (const unsigned char *abuf, int alen,
             }
         }
 
+      /* Propagate any failures */
+      if (status != ARES_SUCCESS)
+        {
+          break;
+        }
+
       /* Don't lose memory in the next iteration */
       free (rr_name);
       rr_name = NULL;
