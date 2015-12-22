@@ -359,7 +359,8 @@ TEST_P(MockChannelTest, SortListV6) {
   }
 }
 
-TEST_P(MockChannelTest, SearchDomainsAllocFail) {
+// Relies on retries so is UDP-only
+TEST_P(MockUDPChannelTest, SearchDomainsAllocFail) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
     .add_question(new DNSQuestion("www.first.com", ns_t_a));
@@ -403,7 +404,8 @@ TEST_P(MockChannelTest, SearchDomainsAllocFail) {
   channel_ = nullptr;
 }
 
-TEST_P(MockChannelTest, Resend) {
+// Relies on retries so is UDP-only
+TEST_P(MockUDPChannelTest, Resend) {
   std::vector<byte> nothing;
   DNSPacket reply;
   reply.set_response().set_aa()
@@ -434,7 +436,8 @@ TEST_P(MockChannelTest, CancelImmediate) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
-TEST_P(MockChannelTest, CancelLater) {
+// Relies on retries so is UDP-only
+TEST_P(MockUDPChannelTest, CancelLater) {
   std::vector<byte> nothing;
 
   // On second request, cancel the channel.
@@ -557,6 +560,12 @@ TEST_P(MockChannelTest, HostAliasUnreadable) {
 }
 
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTest,
+                        ::testing::Values(std::make_pair<int, bool>(AF_INET, false),
+                                          std::make_pair<int, bool>(AF_INET, true),
+                                          std::make_pair<int, bool>(AF_INET6, false),
+                                          std::make_pair<int, bool>(AF_INET6, true)));
+
+INSTANTIATE_TEST_CASE_P(AddressFamilies, MockUDPChannelTest,
                         ::testing::Values(AF_INET, AF_INET6));
 
 }  // namespace test
