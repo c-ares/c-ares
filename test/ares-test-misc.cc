@@ -270,6 +270,15 @@ TEST_F(LibraryTest, ExpandName) {
   EXPECT_EQ(5, enclen);
   EXPECT_EQ("a.b.def", ExpandName(data5, 7, &enclen));
   EXPECT_EQ(6, enclen);
+
+  // Empty name, indirection to empty name
+  std::vector<byte> data6 = {0x12, 0x23,
+                             0,
+                             0xC0, 2};
+  EXPECT_EQ("", ExpandName(data6, 2, &enclen));
+  EXPECT_EQ(1, enclen);
+  EXPECT_EQ("", ExpandName(data6, 3, &enclen));
+  EXPECT_EQ(2, enclen);
 }
 
 TEST_F(LibraryTest, ExpandNameFailure) {

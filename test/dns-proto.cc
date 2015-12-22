@@ -387,8 +387,6 @@ std::string RRToString(const std::vector<byte>& packet,
   return ss.str();
 }
 
-namespace {
-
 void PushInt32(std::vector<byte>* data, int value) {
   data->push_back((value & 0xff000000) >> 24);
   data->push_back((value & 0x00ff0000) >> 16);
@@ -413,8 +411,6 @@ std::vector<byte> EncodeString(const std::string& name) {
   data.push_back(0);
   return data;
 }
-
-}  // namespace
 
 std::vector<byte> DNSQuestion::data() const {
   std::vector<byte> data;

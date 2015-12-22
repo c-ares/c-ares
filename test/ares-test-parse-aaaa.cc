@@ -60,6 +60,15 @@ TEST_F(LibraryTest, ParseAaaaReplyCname) {
   ss << HostEnt(host);
   EXPECT_EQ("{'c.example.com' aliases=[example.com] addrs=[0101:0101:0202:0202:0303:0303:0404:0404]}", ss.str());
   ares_free_hostent(host);
+
+  // Repeat without providing a hostent
+  count = 5;
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_aaaa_reply(data.data(), data.size(),
+                                                nullptr, info, &count));
+  EXPECT_EQ(1, count);
+  EXPECT_EQ(50, info[0].ttl);
+  EXPECT_EQ(0x01, info[0].ip6addr._S6_un._S6_u8[0]);
+  EXPECT_EQ(0x02, info[0].ip6addr._S6_un._S6_u8[4]);
 }
 
 TEST_F(LibraryTest, ParseAaaaReplyNoData) {

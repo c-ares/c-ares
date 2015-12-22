@@ -44,6 +44,36 @@ TEST_F(LibraryTest, ParsePtrReplyCname) {
   ares_free_hostent(host);
 }
 
+
+struct DNSMalformedCnameRR : public DNSCnameRR {
+  DNSMalformedCnameRR(const std::string& name, int ttl, const std::string& other)
+    : DNSCnameRR(name, ttl, other) {}
+  std::vector<byte> data() const {
+    std::vector<byte> data = DNSRR::data();
+    std::vector<byte> encname = EncodeString(other_);
+    encname[0] = encname[0] + 63;  // invalid label length
+    int len = encname.size();
+    PushInt16(&data, len);
+    data.insert(data.end(), encname.begin(), encname.end());
+    return data;
+  }
+};
+
+TEST_F(LibraryTest, ParsePtrReplyMalformedCname) {
+  byte addrv4[4] = {0x10, 0x20, 0x30, 0x40};
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("64.48.32.16.in-addr.arpa", ns_t_ptr))
+    .add_answer(new DNSMalformedCnameRR("64.48.32.16.in-addr.arpa", 50, "64.48.32.8.in-addr.arpa"))
+    .add_answer(new DNSPtrRR("64.48.32.8.in-addr.arpa", 100, "other.com"));
+  std::vector<byte> data = pkt.data();
+
+  struct hostent *host = nullptr;
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), data.size(),
+                                                addrv4, sizeof(addrv4), AF_INET, &host));
+  ASSERT_EQ(nullptr, host);
+}
+
 TEST_F(LibraryTest, ParseManyPtrReply) {
   byte addrv4[4] = {0x10, 0x20, 0x30, 0x40};
   DNSPacket pkt;
@@ -163,7 +193,27 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   }
 }
 
-TEST_F(LibraryTest, ParsePtrReplyAllocFail) {
+TEST_F(LibraryTest, ParsePtrReplyAllocFailSome) {
+  byte addrv4[4] = {0x10, 0x20, 0x30, 0x40};
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("64.48.32.16.in-addr.arpa", ns_t_ptr))
+    .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "main.com"))
+    .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other1.com"))
+    .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other2.com"))
+    .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other3.com"));
+  std::vector<byte> data = pkt.data();
+  struct hostent *host = nullptr;
+
+  for (int ii = 1; ii <= 18; ii++) {
+    ClearFails();
+    SetAllocFail(ii);
+    EXPECT_EQ(ARES_ENOMEM, ares_parse_ptr_reply(data.data(), data.size(),
+                                                addrv4, sizeof(addrv4), AF_INET, &host)) << ii;
+  }
+}
+
+TEST_F(LibraryTest, ParsePtrReplyAllocFailMany) {
   byte addrv4[4] = {0x10, 0x20, 0x30, 0x40};
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
