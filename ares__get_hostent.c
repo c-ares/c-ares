@@ -94,7 +94,7 @@ int ares__get_hostent(FILE *fp, int family, struct hostent **host)
         p++;
       if (!*p)
         /* Ignore line if reached end of line. */
-        continue;
+        continue;  /* LCOV_EXCL_LINE: trailing whitespace already stripped */
 
       /* Pointer to start of host name. */
       txthost = p;

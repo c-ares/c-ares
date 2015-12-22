@@ -304,7 +304,7 @@ static char *lookup_service(unsigned short port, int flags,
 #if GETSERVBYPORT_R_ARGS == 6
           if (getservbyport_r(port, proto, &se, (void *)tmpbuf,
                               sizeof(tmpbuf), &sep) != 0)
-            sep = NULL;
+            sep = NULL;  /* LCOV_EXCL_LINE: buffer large so this never fails */
 #elif GETSERVBYPORT_R_ARGS == 5
           sep = getservbyport_r(port, proto, &se, (void *)tmpbuf,
                                 sizeof(tmpbuf));
@@ -341,7 +341,7 @@ static char *lookup_service(unsigned short port, int flags,
         memcpy(buf, name, name_len + 1);
       else
         /* avoid reusing previous one */
-        buf[0] = '\0';
+        buf[0] = '\0';  /* LCOV_EXCL_LINE: no real service names are too big */
       return buf;
     }
   buf[0] = '\0';

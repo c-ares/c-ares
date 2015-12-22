@@ -142,10 +142,10 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
 
     aptr += rr_len;
     if ( aptr > abuf + alen )
-    {
+    {  /* LCOV_EXCL_START: already checked above */
       status = ARES_EBADRESP;
       break;
-    }
+    }  /* LCOV_EXCL_STOP */
   }
 
   if ( status == ARES_SUCCESS && nameservers_num == 0 )
