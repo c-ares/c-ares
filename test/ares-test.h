@@ -14,6 +14,8 @@
 
 #include <functional>
 #include <map>
+#include <set>
+#include <utility>
 
 namespace ares {
 
@@ -25,9 +27,11 @@ extern bool verbose;
 extern int mock_port;
 
 // Process all pending work on ares-owned file descriptors, plus
-// optionally the given FD + work function.
+// optionally the given set-of-FDs + work function.
 void ProcessWork(ares_channel channel,
-                 int extrafd, std::function<void(int)> process_extra);
+                 std::function<std::set<int>()> get_extrafds,
+                 std::function<void(int)> process_extra);
+std::set<int> NoExtraFDs();
 
 // Test fixture that ensures library initialization, and allows
 // memory allocations to be failed.
@@ -110,7 +114,7 @@ class DefaultChannelModeTest
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
  public:
-  MockServer(int family, int port);
+  MockServer(int family, bool tcp, int port);
   ~MockServer();
 
   // Mock method indicating the processing of a particular <name, RRtype>
@@ -122,25 +126,30 @@ class MockServer {
   void SetReplyData(const std::vector<byte>& reply) { reply_ = reply; }
   void SetReply(const DNSPacket* reply) { SetReplyData(reply->data()); }
 
-  // Process activity on the mock server's socket FD.
+  // The set of file descriptors that the server handles.
+  std::set<int> fds() const;
+
+  // Process activity on the mock server's socket FDs.
   void Process(int fd);
 
+  // Port the server is responding to
   int port() const { return port_; }
-  int sockfd() const { return sockfd_; }
 
  private:
-  void ProcessRequest(struct sockaddr_storage* addr, int addrlen,
+  void ProcessRequest(int fd, struct sockaddr_storage* addr, int addrlen,
                       int qid, const std::string& name, int rrtype);
 
+  bool tcp_;
   int port_;
   int sockfd_;
+  std::set<int> connfds_;
   std::vector<byte> reply_;
 };
 
 // Test fixture that uses a mock DNS server.
 class MockChannelOptsTest : public LibraryTest {
  public:
-  MockChannelOptsTest(int family, struct ares_options* givenopts, int optmask);
+  MockChannelOptsTest(int family, bool force_tcp, struct ares_options* givenopts, int optmask);
   ~MockChannelOptsTest();
 
   // Process all pending work on ares-owned and mock-server-owned file descriptors.
@@ -153,9 +162,16 @@ class MockChannelOptsTest : public LibraryTest {
 
 class MockChannelTest
     : public MockChannelOptsTest,
+      public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+  MockChannelTest() : MockChannelOptsTest(GetParam().first, GetParam().second, nullptr, 0) {}
+};
+
+class MockUDPChannelTest
+    : public MockChannelOptsTest,
       public ::testing::WithParamInterface<int> {
  public:
-  MockChannelTest() : MockChannelOptsTest(GetParam(), nullptr, 0) {}
+  MockUDPChannelTest() : MockChannelOptsTest(GetParam(), false, nullptr, 0) {}
 };
 
 // gMock action to set the reply for a mock server.

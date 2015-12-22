@@ -15,31 +15,39 @@
 namespace ares {
 namespace test {
 
+bool verbose = false;
+int mock_port = 5300;
+
+unsigned long LibraryTest::fails_ = 0;
+std::map<size_t, int> LibraryTest::size_fails_;
+
 void ProcessWork(ares_channel channel,
-                 int extrafd, std::function<void(int)> process_extra) {
+                 std::function<std::set<int>()> get_extrafds,
+                 std::function<void(int)> process_extra) {
   int nfds, count;
   fd_set readers, writers;
   struct timeval tv;
-  struct timeval* tvp;
   while (true) {
     // Retrieve the set of file descriptors that the library wants us to monitor.
     FD_ZERO(&readers);
     FD_ZERO(&writers);
     nfds = ares_fds(channel, &readers, &writers);
-
-    // Add in the extra FD if present
-    if (extrafd >= 0)
-      FD_SET(extrafd, &readers);
-
-    if (nfds == 0)  // no work left to do
+    if (nfds == 0)  // no work left to do in the library
       return;
 
-    // Also retrieve the timeout value that the library wants us to use.
-    tvp = ares_timeout(channel, nullptr, &tv);
-    EXPECT_EQ(tvp, &tv);
+    // Add in the extra FDs if present.
+    std::set<int> extrafds = get_extrafds();
+    for (int extrafd : extrafds) {
+      FD_SET(extrafd, &readers);
+      if (extrafd >= nfds) {
+        nfds = extrafd + 1;
+      }
+    }
 
     // Wait for activity or timeout.
-    count = select(nfds, &readers, &writers, nullptr, tvp);
+    tv.tv_sec = 0;
+    tv.tv_usec = 100000;  // 100ms
+    count = select(nfds, &readers, &writers, nullptr, &tv);
     if (count < 0) {
       fprintf(stderr, "select() failed, errno %d\n", errno);
       return;
@@ -47,17 +55,15 @@ void ProcessWork(ares_channel channel,
 
     // Let the library process any activity.
     ares_process(channel, &readers, &writers);
+
     // Let the provided callback process any activity on the extra FD.
-    if (extrafd > 0 && FD_ISSET(extrafd, &readers))
-      process_extra(extrafd);
+    for (int extrafd : extrafds) {
+      if (FD_ISSET(extrafd, &readers)) {
+        process_extra(extrafd);
+      }
+    }
   }
 }
-
-bool verbose = false;
-int mock_port = 5300;
-
-unsigned long LibraryTest::fails_ = 0;
-std::map<size_t, int> LibraryTest::size_fails_;
 
 // static
 void LibraryTest::SetAllocFail(int nth) {
@@ -113,18 +119,31 @@ void LibraryTest::afree(void *ptr) {
   free(ptr);
 }
 
+std::set<int> NoExtraFDs() {
+  return std::set<int>();
+}
+
 void DefaultChannelTest::Process() {
-  ProcessWork(channel_, -1, nullptr);
+  ProcessWork(channel_, NoExtraFDs, nullptr);
 }
 
 void DefaultChannelModeTest::Process() {
-  ProcessWork(channel_, -1, nullptr);
+  ProcessWork(channel_, NoExtraFDs, nullptr);
 }
 
-MockServer::MockServer(int family, int port) : port_(port) {
-  // Create a UDP socket to receive data on.
-  sockfd_ = socket(family, SOCK_DGRAM, 0);
-  EXPECT_NE(-1, sockfd_);
+MockServer::MockServer(int family, bool tcp, int port) : tcp_(tcp), port_(port) {
+  if (tcp_) {
+    // Create a TCP socket to receive data on.
+    sockfd_ = socket(family, SOCK_STREAM, 0);
+    EXPECT_NE(-1, sockfd_);
+    int optval = 1;
+    setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR,
+               (const void *)&optval , sizeof(int));
+  } else {
+    // Create a UDP socket to receive data on.
+    sockfd_ = socket(family, SOCK_DGRAM, 0);
+    EXPECT_NE(-1, sockfd_);
+  }
 
   // Bind it to the given port.
   if (family == AF_INET) {
@@ -145,20 +164,61 @@ MockServer::MockServer(int family, int port) : port_(port) {
     int rc = bind(sockfd_, (struct sockaddr*)&addr, sizeof(addr));
     EXPECT_EQ(0, rc) << "Failed to bind AF_INET6 to port " << port_;
   }
+
+  // For TCP, also need to listen for connections.
+  if (tcp_) {
+    EXPECT_EQ(0, listen(sockfd_, 5)) << "Failed to listen for TCP connections";
+  }
 }
 
 MockServer::~MockServer() {
+  for (int fd : connfds_) {
+    close(fd);
+  }
   close(sockfd_);
   sockfd_ = -1;
 }
 
 void MockServer::Process(int fd) {
-  if (fd != sockfd_) return;
+  if (fd != sockfd_ && connfds_.find(fd) == connfds_.end()) {
+    std::cerr << "Asked to process unknown fd " << fd << std::endl;
+    return;
+  }
+  if (tcp_ && fd == sockfd_) {
+    int connfd = accept(sockfd_, NULL, NULL);
+    if (connfd < 0) {
+      std::cerr << "Error accepting connection on fd " << fd << std::endl;
+    } else {
+      connfds_.insert(connfd);
+    }
+    return;
+  }
+
+  // Activity on a data-bearing file descriptor.
   struct sockaddr_storage addr;
   socklen_t addrlen = sizeof(addr);
   byte buffer[2048];
   int len = recvfrom(fd, buffer, sizeof(buffer), 0,
                      (struct sockaddr *)&addr, &addrlen);
+  byte* data = buffer;
+  if (tcp_) {
+    if (len == 0) {
+      connfds_.erase(std::find(connfds_.begin(), connfds_.end(), fd));
+      close(fd);
+      return;
+    }
+    if (len < 2) {
+      std::cerr << "Packet too short (" << len << ")" << std::endl;
+      return;
+    }
+    int tcplen = (data[0] << 8) + data[1];
+    data += 2;
+    if (tcplen + 2 != len) {
+      std::cerr << "Warning: TCP length " << tcplen
+                << " doesn't match data length (" << len
+                << " - 2)" << std::endl;
+    }
+  }
 
   // Assume the packet is a well-formed DNS request and extract the request
   // details.
@@ -166,27 +226,27 @@ void MockServer::Process(int fd) {
     std::cerr << "Packet too short (" << len << ")" << std::endl;
     return;
   }
-  int qid = DNS_HEADER_QID(buffer);
-  if (DNS_HEADER_QR(buffer) != 0) {
+  int qid = DNS_HEADER_QID(data);
+  if (DNS_HEADER_QR(data) != 0) {
     std::cerr << "Not a request" << std::endl;
     return;
   }
-  if (DNS_HEADER_OPCODE(buffer) != ns_o_query) {
-    std::cerr << "Not a query (opcode " << DNS_HEADER_OPCODE(buffer)
+  if (DNS_HEADER_OPCODE(data) != ns_o_query) {
+    std::cerr << "Not a query (opcode " << DNS_HEADER_OPCODE(data)
               << ")" << std::endl;
     return;
   }
-  if (DNS_HEADER_QDCOUNT(buffer) != 1) {
-    std::cerr << "Unexpected question count (" << DNS_HEADER_QDCOUNT(buffer)
+  if (DNS_HEADER_QDCOUNT(data) != 1) {
+    std::cerr << "Unexpected question count (" << DNS_HEADER_QDCOUNT(data)
               << ")" << std::endl;
     return;
   }
-  byte* question = buffer + 12;
+  byte* question = data + 12;
   int qlen = len - 12;
 
   char *name = nullptr;
   long enclen;
-  ares_expand_name(question, buffer, len, &name, &enclen);
+  ares_expand_name(question, data, len, &name, &enclen);
   if (!name) {
     std::cerr << "Failed to retrieve name" << std::endl;
     return;
@@ -210,34 +270,54 @@ void MockServer::Process(int fd) {
 
   if (verbose) std::cerr << "ProcessRequest(" << qid << ", '" << namestr
                          << "', " << RRTypeToString(rrtype) << ")" << std::endl;
-  ProcessRequest(&addr, addrlen, qid, namestr, rrtype);
+  ProcessRequest(fd, &addr, addrlen, qid, namestr, rrtype);
 }
 
-void MockServer::ProcessRequest(struct sockaddr_storage* addr, int addrlen,
+std::set<int> MockServer::fds() const {
+  std::set<int> result = connfds_;
+  result.insert(sockfd_);
+  return result;
+}
+
+void MockServer::ProcessRequest(int fd, struct sockaddr_storage* addr, int addrlen,
                                 int qid, const std::string& name, int rrtype) {
   // Before processing, let gMock know the request is happening.
   OnRequest(name, rrtype);
 
-  // Send the current pending reply.  First overwrite the qid with the value
-  // from the argument.
+  // Make a local copy of the current pending reply.
   if (reply_.size() <  2) {
     if (verbose) std::cerr << "Skipping reply as not-present/too-short" << std::endl;
     return;
   }
-  reply_[0] = (byte)((qid >> 8) & 0xff);
-  reply_[1] = (byte)(qid & 0xff);
-  if (verbose) std::cerr << "sending reply " << PacketToString(reply_) << std::endl;
-  int rc = sendto(sockfd_, reply_.data(), reply_.size(), 0,
+  std::vector<byte> reply = reply_;
+
+  // Overwrite the query ID with the value from the argument.
+  reply[0] = (byte)((qid >> 8) & 0xff);
+  reply[1] = (byte)(qid & 0xff);
+  if (verbose) std::cerr << "sending reply " << PacketToString(reply) << std::endl;
+
+  // Prefix with 2-byte length if TCP.
+  if (tcp_) {
+    int len = reply.size();
+    std::vector<byte> vlen = {(byte)((len & 0xFF00) >> 8), (byte)(len & 0xFF)};
+    reply.insert(reply.begin(), vlen.begin(), vlen.end());
+    // Also, don't bother with the destination address.
+    addr = nullptr;
+    addrlen = 0;
+  }
+
+  int rc = sendto(fd, reply.data(), reply.size(), 0,
                   (struct sockaddr *)addr, addrlen);
-  if (rc < static_cast<int>(reply_.size())) {
+  if (rc < static_cast<int>(reply.size())) {
     std::cerr << "Failed to send full reply, rc=" << rc << std::endl;
   }
 }
 
 MockChannelOptsTest::MockChannelOptsTest(int family,
+                                         bool force_tcp,
                                          struct ares_options* givenopts,
                                          int optmask)
-  : server_(family, mock_port), channel_(nullptr) {
+  : server_(family, force_tcp, mock_port), channel_(nullptr) {
   // Set up channel options.
   struct ares_options opts;
   if (givenopts) {
@@ -278,6 +358,10 @@ MockChannelOptsTest::MockChannelOptsTest(int family,
     opts.domains = (char**)domains;
     optmask |= ARES_OPT_DOMAINS;
   }
+  if (force_tcp) {
+    opts.flags = ARES_FLAG_USEVC;
+    optmask |= ARES_OPT_FLAGS;
+  }
 
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
   EXPECT_NE(nullptr, channel_);
@@ -301,7 +385,8 @@ MockChannelOptsTest::~MockChannelOptsTest() {
 
 void MockChannelOptsTest::Process() {
   using namespace std::placeholders;
-  ProcessWork(channel_, server_.sockfd(),
+  ProcessWork(channel_,
+              std::bind(&MockServer::fds, &server_),
               std::bind(&MockServer::Process, &server_, _1));
 }
 

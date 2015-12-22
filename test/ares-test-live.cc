@@ -533,7 +533,7 @@ TEST_F(LibraryTest, GetTCPSock) {
   bitmask = ares_getsock(channel, nullptr, 0);
   EXPECT_EQ(0, bitmask);
 
-  ProcessWork(channel, -1, nullptr);
+  ProcessWork(channel, NoExtraFDs, nullptr);
 
   ares_destroy(channel);
 }
