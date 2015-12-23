@@ -222,6 +222,31 @@ TEST_F(LibraryTest, FailChannelInit) {
   ares_library_cleanup();
 }
 
+TEST_F(LibraryTest, EnvInit) {
+  ares_channel channel = nullptr;
+  EnvValue v1("LOCALDOMAIN", "this.is.local");
+  EnvValue v2("RES_OPTIONS", "options debug ndots:3 retry:3 rotate retrans:2");
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  ares_destroy(channel);
+}
+
+TEST_F(LibraryTest, EnvInitAllocFail) {
+  ares_channel channel;
+  EnvValue v1("LOCALDOMAIN", "this.is.local");
+  EnvValue v2("RES_OPTIONS", "options debug ndots:3 retry:3 rotate retrans:2");
+  for (int ii = 1; ii <= 10; ii++) {
+    ClearFails();
+    SetAllocFail(ii);
+    channel = nullptr;
+    int rc = ares_init(&channel);
+    if (rc == ARES_SUCCESS) {
+      ares_destroy(channel);
+    } else {
+      EXPECT_EQ(ARES_ENOMEM, rc);
+    }
+  }
+}
+
 TEST_F(DefaultChannelTest, SetAddresses) {
   ares_set_local_ip4(channel_, 0x01020304);
   byte addr6[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
