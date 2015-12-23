@@ -307,12 +307,18 @@ int ares_dup(ares_channel *dest, ares_channel src)
     }
   if (ipv6_nservers) {
     rc = ares_get_servers(src, &servers);
-    if (rc != ARES_SUCCESS)
+    if (rc != ARES_SUCCESS) {
+      ares_destroy(*dest);
+      *dest = NULL;
       return rc;
+    }
     rc = ares_set_servers(*dest, servers);
     ares_free_data(servers);
-    if (rc != ARES_SUCCESS)
+    if (rc != ARES_SUCCESS) {
+      ares_destroy(*dest);
+      *dest = NULL;
       return rc;
+    }
   }
 
   return ARES_SUCCESS; /* everything went fine */
