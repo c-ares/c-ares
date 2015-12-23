@@ -287,7 +287,55 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV4) {
   if (verbose) std::cerr << "8.8.8.8:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV6) {
+TEST_F(DefaultChannelTest, LiveGetNameInfoV4NoPort) {
+  NameInfoResult result;
+  struct sockaddr_in sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin_family = AF_INET;
+  sockaddr.sin_port = htons(0);
+  sockaddr.sin_addr.s_addr = htonl(0x08080808);
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  if (verbose) std::cerr << "8.8.8.8:0 => " << result.node_ << "/" << result.service_ << std::endl;
+}
+
+TEST_F(DefaultChannelTest, LiveGetNameInfoV4UnassignedPort) {
+  NameInfoResult result;
+  struct sockaddr_in sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin_family = AF_INET;
+  sockaddr.sin_port = htons(4);  // Unassigned at IANA
+  sockaddr.sin_addr.s_addr = htonl(0x08080808);
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  if (verbose) std::cerr << "8.8.8.8:4 => " << result.node_ << "/" << result.service_ << std::endl;
+}
+
+TEST_F(DefaultChannelTest, LiveGetNameInfoV6Both) {
+  NameInfoResult result;
+  struct sockaddr_in6 sockaddr;
+  memset(&sockaddr, 0, sizeof(sockaddr));
+  sockaddr.sin6_family = AF_INET6;
+  sockaddr.sin6_port = htons(53);
+  memcpy(sockaddr.sin6_addr.s6_addr, gdns_addr6, 16);
+  ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
+                   ARES_NI_TCP|ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_NOFQDN,
+                   NameInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  if (verbose) std::cerr << "[2001:4860:4860::8888]:53 => " << result.node_ << "/" << result.service_ << std::endl;
+}
+
+TEST_F(DefaultChannelTest, LiveGetNameInfoV6Neither) {
   NameInfoResult result;
   struct sockaddr_in6 sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));

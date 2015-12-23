@@ -91,6 +91,12 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
             ares_set_servers_csv(channel_, "1.2.3.4:54,[0102:0304:0506:0708:0910:1112:1314:1516]:80,2.3.4.5:55"));
   EXPECT_EQ(expected, GetNameServers(channel_));
 
+  // Should survive duplication
+  ares_channel channel2;
+  EXPECT_EQ(ARES_SUCCESS, ares_dup(&channel2, channel_));
+  EXPECT_EQ(expected, GetNameServers(channel2));
+  ares_destroy(channel2);
+
   // Allocation failure cases
   for (int fail = 1; fail <= 5; fail++) {
     SetAllocFail(fail);

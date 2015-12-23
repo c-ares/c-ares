@@ -7,6 +7,7 @@
 #include <vector>
 
 using testing::InvokeWithoutArgs;
+using testing::DoAll;
 
 namespace ares {
 namespace test {
@@ -51,6 +52,202 @@ TEST_P(MockChannelTest, Basic) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
+// UDP only so mock server doesn't get confused by concatenated requests
+TEST_P(MockUDPChannelTest, ParallelLookups) {
+  DNSPacket rsp1;
+  rsp1.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp1))
+    .WillOnce(SetReply(&server_, &rsp1));
+  DNSPacket rsp2;
+  rsp2.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", ns_t_a))
+    .add_answer(new DNSARR("www.example.com", 100, {1, 2, 3, 4}));
+  EXPECT_CALL(server_, OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp2));
+
+  HostResult result1;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result1);
+  HostResult result2;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result2);
+  HostResult result3;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result3);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  EXPECT_TRUE(result2.done_);
+  EXPECT_TRUE(result3.done_);
+  std::stringstream ss1;
+  ss1 << result1.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss1.str());
+  std::stringstream ss2;
+  ss2 << result2.host_;
+  EXPECT_EQ("{'www.example.com' aliases=[] addrs=[1.2.3.4]}", ss2.str());
+  std::stringstream ss3;
+  ss3 << result3.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss3.str());
+}
+
+static int sock_cb_count = 0;
+static int SocketCallback(ares_socket_t fd, int type, void *data) {
+  if (verbose) std::cerr << "SocketCallback(" << fd << ") invoked" << std::endl;
+  sock_cb_count++;
+  return ARES_SUCCESS;
+}
+
+TEST_P(MockChannelTest, SockCallback) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  // Get notified of new sockets
+  ares_set_socket_callback(channel_, SocketCallback, nullptr);
+
+  HostResult result;
+  sock_cb_count = 0;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_EQ(1, sock_cb_count);
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+// TCP only to prevent retries
+TEST_P(MockTCPChannelTest, FormErrResponse) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a));
+  rsp.set_rcode(ns_r_formerr);
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_EFORMERR, result.status_);
+}
+
+TEST_P(MockTCPChannelTest, ServFailResponse) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a));
+  rsp.set_rcode(ns_r_servfail);
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  // ARES_FLAG_NOCHECKRESP not set, so SERVFAIL consumed
+  EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
+}
+
+TEST_P(MockTCPChannelTest, NotImplResponse) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a));
+  rsp.set_rcode(ns_r_notimpl);
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  // ARES_FLAG_NOCHECKRESP not set, so NOTIMPL consumed
+  EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
+}
+
+TEST_P(MockTCPChannelTest, RefusedResponse) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a));
+  rsp.set_rcode(ns_r_refused);
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  // ARES_FLAG_NOCHECKRESP not set, so REFUSED consumed
+  EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
+}
+
+TEST_P(MockTCPChannelTest, YXDomainResponse) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a));
+  rsp.set_rcode(ns_r_yxdomain);
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENODATA, result.status_);
+}
+
+class MockNoCheckRespChannelTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
+ public:
+  MockNoCheckRespChannelTest() : MockChannelOptsTest(GetParam(), true, FillOptions(&opts_), ARES_OPT_FLAGS) {}
+  static struct ares_options* FillOptions(struct ares_options * opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->flags = ARES_FLAG_NOCHECKRESP;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+TEST_P(MockNoCheckRespChannelTest, ServFailResponse) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a));
+  rsp.set_rcode(ns_r_servfail);
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ESERVFAIL, result.status_);
+}
+
+TEST_P(MockNoCheckRespChannelTest, NotImplResponse) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a));
+  rsp.set_rcode(ns_r_notimpl);
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTIMP, result.status_);
+}
+
+TEST_P(MockNoCheckRespChannelTest, RefusedResponse) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a));
+  rsp.set_rcode(ns_r_refused);
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_EREFUSED, result.status_);
+}
+
 TEST_P(MockChannelTest, SearchDomains) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
@@ -68,6 +265,38 @@ TEST_P(MockChannelTest, SearchDomains) {
     .add_answer(new DNSARR("www.third.gov", 0x0200, {2, 3, 4, 5}));
   EXPECT_CALL(server_, OnRequest("www.third.gov", ns_t_a))
     .WillOnce(SetReply(&server_, &yesthird));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+// Relies on retries so is UDP-only
+TEST_P(MockUDPChannelTest, SearchDomainsWithResentReply) {
+  DNSPacket nofirst;
+  nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.first.com", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &nofirst));
+  DNSPacket nosecond;
+  nosecond.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.second.org", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    .WillOnce(SetReply(&server_, &nosecond));
+  DNSPacket yesthird;
+  yesthird.set_response().set_aa()
+    .add_question(new DNSQuestion("www.third.gov", ns_t_a))
+    .add_answer(new DNSARR("www.third.gov", 0x0200, {2, 3, 4, 5}));
+  // Before sending the real answer, resend an earlier reply
+  EXPECT_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    .WillOnce(DoAll(SetReply(&server_, &nofirst),
+                    SetReplyQID(&server_, 123)))
+    .WillOnce(DoAll(SetReply(&server_, &yesthird),
+                    SetReplyQID(&server_, -1)));
 
   HostResult result;
   ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
@@ -295,7 +524,7 @@ TEST_P(MockChannelTest, SortListV4) {
     .WillByDefault(SetReply(&server_, &rsp));
 
   {
-    ares_set_sortlist(channel_, "12.13.0.0/255.255.0.0 1234::5678");
+    EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "12.13.0.0/255.255.0.0 1234::5678"));
     HostResult result;
     ares_gethostbyname(channel_, "example.com.", AF_INET, HostCallback, &result);
     Process();
@@ -305,7 +534,7 @@ TEST_P(MockChannelTest, SortListV4) {
     EXPECT_EQ("{'example.com' aliases=[] addrs=[12.13.14.15, 22.23.24.25, 2.3.4.5]}", ss.str());
   }
   {
-    ares_set_sortlist(channel_, "2.3.0.0/16 130.140.150.160/26");
+    EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "2.3.0.0/16 130.140.150.160/26"));
     HostResult result;
     ares_gethostbyname(channel_, "example.com.", AF_INET, HostCallback, &result);
     Process();
@@ -566,6 +795,12 @@ INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTest,
                                           std::make_pair<int, bool>(AF_INET6, true)));
 
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockUDPChannelTest,
+                        ::testing::Values(AF_INET, AF_INET6));
+
+INSTANTIATE_TEST_CASE_P(AddressFamilies, MockTCPChannelTest,
+                        ::testing::Values(AF_INET, AF_INET6));
+
+INSTANTIATE_TEST_CASE_P(AddressFamilies, MockNoCheckRespChannelTest,
                         ::testing::Values(AF_INET, AF_INET6));
 
 }  // namespace test
