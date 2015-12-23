@@ -1704,8 +1704,11 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
           pat.type = PATTERN_CIDR;
           pat.mask.bits = (unsigned short)bits;
           pat.family = AF_INET6;
-          if (!sortlist_alloc(sortlist, nsort, &pat))
+          if (!sortlist_alloc(sortlist, nsort, &pat)) {
+            free(*sortlist);
+            *sortlist = NULL;
             return ARES_ENOMEM;
+          }
         }
       else if (ipbufpfx[0] &&
                (bits = ares_inet_net_pton(AF_INET, ipbufpfx, &pat.addrV4,
@@ -1714,8 +1717,11 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
           pat.type = PATTERN_CIDR;
           pat.mask.bits = (unsigned short)bits;
           pat.family = AF_INET;
-          if (!sortlist_alloc(sortlist, nsort, &pat))
+          if (!sortlist_alloc(sortlist, nsort, &pat)) {
+            free(*sortlist);
+            *sortlist = NULL;
             return ARES_ENOMEM;
+          }
         }
       /* See if it is just a regular IP */
       else if (ip_addr(ipbuf, q-str, &pat.addrV4) == 0)
@@ -1731,8 +1737,11 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
             natural_mask(&pat);
           pat.family = AF_INET;
           pat.type = PATTERN_MASK;
-          if (!sortlist_alloc(sortlist, nsort, &pat))
+          if (!sortlist_alloc(sortlist, nsort, &pat)) {
+            free(*sortlist);
+            *sortlist = NULL;
             return ARES_ENOMEM;
+          }
         }
       else
         {
