@@ -114,7 +114,7 @@ class DefaultChannelModeTest
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
  public:
-  MockServer(int family, bool tcp, int port);
+  MockServer(int family, int port);
   ~MockServer();
 
   // Mock method indicating the processing of a particular <name, RRtype>
@@ -140,9 +140,9 @@ class MockServer {
   void ProcessRequest(int fd, struct sockaddr_storage* addr, int addrlen,
                       int qid, const std::string& name, int rrtype);
 
-  bool tcp_;
   int port_;
-  int sockfd_;
+  int udpfd_;
+  int tcpfd_;
   std::set<int> connfds_;
   std::vector<byte> reply_;
   int qid_;

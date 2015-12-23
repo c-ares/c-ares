@@ -68,6 +68,7 @@ void ProcessWork(ares_channel channel,
 // static
 void LibraryTest::SetAllocFail(int nth) {
   assert(nth > 0);
+  assert(nth <= (int)(8 * sizeof(fails_)));
   fails_ |= (1 << (nth - 1));
 }
 
@@ -131,29 +132,29 @@ void DefaultChannelModeTest::Process() {
   ProcessWork(channel_, NoExtraFDs, nullptr);
 }
 
-MockServer::MockServer(int family, bool tcp, int port) : tcp_(tcp), port_(port), qid_(-1) {
-  if (tcp_) {
-    // Create a TCP socket to receive data on.
-    sockfd_ = socket(family, SOCK_STREAM, 0);
-    EXPECT_NE(-1, sockfd_);
-    int optval = 1;
-    setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR,
-               (const void *)&optval , sizeof(int));
-  } else {
-    // Create a UDP socket to receive data on.
-    sockfd_ = socket(family, SOCK_DGRAM, 0);
-    EXPECT_NE(-1, sockfd_);
-  }
+MockServer::MockServer(int family, int port) : port_(port), qid_(-1) {
+  // Create a TCP socket to receive data on.
+  tcpfd_ = socket(family, SOCK_STREAM, 0);
+  EXPECT_NE(-1, tcpfd_);
+  int optval = 1;
+  setsockopt(tcpfd_, SOL_SOCKET, SO_REUSEADDR,
+             (const void *)&optval , sizeof(int));
 
-  // Bind it to the given port.
+  // Create a UDP socket to receive data on.
+  udpfd_ = socket(family, SOCK_DGRAM, 0);
+  EXPECT_NE(-1, udpfd_);
+
+  // Bind the sockets to the given port.
   if (family == AF_INET) {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port = htons(port_);
-    int rc = bind(sockfd_, (struct sockaddr*)&addr, sizeof(addr));
-    EXPECT_EQ(0, rc) << "Failed to bind AF_INET to port " << port_;
+    int tcprc = bind(tcpfd_, (struct sockaddr*)&addr, sizeof(addr));
+    EXPECT_EQ(0, tcprc) << "Failed to bind AF_INET to TCP port " << port_;
+    int udprc = bind(udpfd_, (struct sockaddr*)&addr, sizeof(addr));
+    EXPECT_EQ(0, udprc) << "Failed to bind AF_INET to UDP port " << port_;
   } else {
     EXPECT_EQ(AF_INET6, family);
     struct sockaddr_in6 addr;
@@ -161,31 +162,31 @@ MockServer::MockServer(int family, bool tcp, int port) : tcp_(tcp), port_(port),
     addr.sin6_family = AF_INET6;
     addr.sin6_addr = in6addr_any;
     addr.sin6_port = htons(port_);
-    int rc = bind(sockfd_, (struct sockaddr*)&addr, sizeof(addr));
-    EXPECT_EQ(0, rc) << "Failed to bind AF_INET6 to port " << port_;
+    int tcprc = bind(tcpfd_, (struct sockaddr*)&addr, sizeof(addr));
+    EXPECT_EQ(0, tcprc) << "Failed to bind AF_INET6 to UDP port " << port_;
+    int udprc = bind(udpfd_, (struct sockaddr*)&addr, sizeof(addr));
+    EXPECT_EQ(0, udprc) << "Failed to bind AF_INET6 to UDP port " << port_;
   }
 
   // For TCP, also need to listen for connections.
-  if (tcp_) {
-    EXPECT_EQ(0, listen(sockfd_, 5)) << "Failed to listen for TCP connections";
-  }
+  EXPECT_EQ(0, listen(tcpfd_, 5)) << "Failed to listen for TCP connections";
 }
 
 MockServer::~MockServer() {
   for (int fd : connfds_) {
     close(fd);
   }
-  close(sockfd_);
-  sockfd_ = -1;
+  close(tcpfd_);
+  close(udpfd_);
 }
 
 void MockServer::Process(int fd) {
-  if (fd != sockfd_ && connfds_.find(fd) == connfds_.end()) {
+  if (fd != tcpfd_ && fd != udpfd_ && connfds_.find(fd) == connfds_.end()) {
     std::cerr << "Asked to process unknown fd " << fd << std::endl;
     return;
   }
-  if (tcp_ && fd == sockfd_) {
-    int connfd = accept(sockfd_, NULL, NULL);
+  if (fd == tcpfd_) {
+    int connfd = accept(tcpfd_, NULL, NULL);
     if (connfd < 0) {
       std::cerr << "Error accepting connection on fd " << fd << std::endl;
     } else {
@@ -201,7 +202,7 @@ void MockServer::Process(int fd) {
   int len = recvfrom(fd, buffer, sizeof(buffer), 0,
                      (struct sockaddr *)&addr, &addrlen);
   byte* data = buffer;
-  if (tcp_) {
+  if (fd != udpfd_) {
     if (len == 0) {
       connfds_.erase(std::find(connfds_.begin(), connfds_.end(), fd));
       close(fd);
@@ -213,10 +214,10 @@ void MockServer::Process(int fd) {
     }
     int tcplen = (data[0] << 8) + data[1];
     data += 2;
-    if (tcplen + 2 != len) {
+    len -= 2;
+    if (tcplen != len) {
       std::cerr << "Warning: TCP length " << tcplen
-                << " doesn't match data length (" << len
-                << " - 2)" << std::endl;
+                << " doesn't match remaining data length " << len << std::endl;
     }
   }
 
@@ -268,14 +269,19 @@ void MockServer::Process(int fd) {
   }
   int rrtype = DNS_QUESTION_TYPE(question);
 
-  if (verbose) std::cerr << "ProcessRequest(" << qid << ", '" << namestr
-                         << "', " << RRTypeToString(rrtype) << ")" << std::endl;
+  if (verbose) {
+    std::vector<byte> req(data, data + len);
+    std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << PacketToString(req) << std::endl;
+    std::cerr << "ProcessRequest(" << qid << ", '" << namestr
+              << "', " << RRTypeToString(rrtype) << ")" << std::endl;
+  }
   ProcessRequest(fd, &addr, addrlen, qid, namestr, rrtype);
 }
 
 std::set<int> MockServer::fds() const {
   std::set<int> result = connfds_;
-  result.insert(sockfd_);
+  result.insert(tcpfd_);
+  result.insert(udpfd_);
   return result;
 }
 
@@ -284,24 +290,26 @@ void MockServer::ProcessRequest(int fd, struct sockaddr_storage* addr, int addrl
   // Before processing, let gMock know the request is happening.
   OnRequest(name, rrtype);
 
-  // Make a local copy of the current pending reply.
-  if (reply_.size() <  2) {
-    if (verbose) std::cerr << "Skipping reply as not-present/too-short" << std::endl;
+  if (reply_.size() == 0) {
     return;
   }
+
+  // Make a local copy of the current pending reply.
   std::vector<byte> reply = reply_;
 
   if (qid_ >= 0) {
     // Use the explicitly specified query ID.
     qid = qid_;
   }
-  // Overwrite the query ID.
-  reply[0] = (byte)((qid >> 8) & 0xff);
-  reply[1] = (byte)(qid & 0xff);
+  if (reply.size() >=  2) {
+    // Overwrite the query ID if space to do so.
+    reply[0] = (byte)((qid >> 8) & 0xff);
+    reply[1] = (byte)(qid & 0xff);
+  }
   if (verbose) std::cerr << "sending reply " << PacketToString(reply) << std::endl;
 
   // Prefix with 2-byte length if TCP.
-  if (tcp_) {
+  if (fd != udpfd_) {
     int len = reply.size();
     std::vector<byte> vlen = {(byte)((len & 0xFF00) >> 8), (byte)(len & 0xFF)};
     reply.insert(reply.begin(), vlen.begin(), vlen.end());
@@ -321,7 +329,7 @@ MockChannelOptsTest::MockChannelOptsTest(int family,
                                          bool force_tcp,
                                          struct ares_options* givenopts,
                                          int optmask)
-  : server_(family, force_tcp, mock_port), channel_(nullptr) {
+  : server_(family, mock_port), channel_(nullptr) {
   // Set up channel options.
   struct ares_options opts;
   if (givenopts) {

@@ -232,7 +232,11 @@ std::string QuestionToString(const std::vector<byte>& packet,
 
   char *name = nullptr;
   long enclen;
-  ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
+  int rc = ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
+  if (rc != ARES_SUCCESS) {
+    ss << "(error from ares_expand_name)";
+    return ss.str();
+  }
   if (enclen > *len) {
     ss << "(error, encoded name len " << enclen << "bigger than remaining data " << *len << " bytes)";
     return ss.str();
@@ -264,7 +268,11 @@ std::string RRToString(const std::vector<byte>& packet,
 
   char *name = nullptr;
   long enclen;
-  ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
+  int rc = ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
+  if (rc != ARES_SUCCESS) {
+    ss << "(error from ares_expand_name)";
+    return ss.str();
+  }
   if (enclen > *len) {
     ss << "(error, encoded name len " << enclen << "bigger than remaining data " << *len << " bytes)";
     return ss.str();
@@ -275,7 +283,7 @@ std::string RRToString(const std::vector<byte>& packet,
   free(name);
   name = nullptr;
 
-  if (*len < NS_QFIXEDSZ) {
+  if (*len < NS_RRFIXEDSZ) {
     ss << "(too short, len left " << *len << ")";
     return ss.str();
   }
@@ -293,92 +301,141 @@ std::string RRToString(const std::vector<byte>& packet,
 
   *data += NS_RRFIXEDSZ;
   *len -= NS_RRFIXEDSZ;
-  switch (rrtype) {
-  case ns_t_a:
-  case ns_t_aaaa:
-    ss << " " << AddressToString(*data, rdatalen);
-    break;
-  case ns_t_txt: {
-    const byte* p = *data;
-    while (p < (*data + rdatalen)) {
-      int len = *p++;
-      std::string txt(p, p + len);
-      ss << " " << len << ":'" << txt << "'";
-      p += len;
+  if (*len < rdatalen) {
+    ss << "(RR too long at " << rdatalen << ", len left " << *len << ")";
+  } else {
+    switch (rrtype) {
+    case ns_t_a:
+    case ns_t_aaaa:
+      ss << " " << AddressToString(*data, rdatalen);
+      break;
+    case ns_t_txt: {
+      const byte* p = *data;
+      while (p < (*data + rdatalen)) {
+        int len = *p++;
+        if ((p + len) <= (*data + rdatalen)) {
+          std::string txt(p, p + len);
+          ss << " " << len << ":'" << txt << "'";
+        } else {
+          ss << "(string too long)";
+        }
+        p += len;
+      }
+      break;
     }
-    break;
-  }
-  case ns_t_cname:
-  case ns_t_ns:
-  case ns_t_ptr:
-    ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
-    ss << " '" << name << "'";
-    free(name);
-    break;
-  case ns_t_mx:
-    ares_expand_name(*data + 2, packet.data(), packet.size(), &name, &enclen);
-    ss << " " << DNS__16BIT(*data) << " '" << name << "'";
-    free(name);
-    break;
-  case ns_t_srv: {
-    const byte* p = *data;
-    unsigned long prio = DNS__16BIT(p);
-    unsigned long weight = DNS__16BIT(p + 2);
-    unsigned long port = DNS__16BIT(p + 4);
-    p += 6;
-    ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
-    ss << prio << " " << weight << " " << port << " '" << name << "'";
-    free(name);
-    break;
-  }
-  case ns_t_soa: {
-    const byte* p = *data;
-    ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
-    ss << " '" << name << "'";
-    free(name);
-    p += enclen;
-    ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
-    ss << " '" << name << "'";
-    free(name);
-    p += enclen;
-    unsigned long serial = DNS__32BIT(p);
-    unsigned long refresh = DNS__32BIT(p + 4);
-    unsigned long retry = DNS__32BIT(p + 8);
-    unsigned long expire = DNS__32BIT(p + 12);
-    unsigned long minimum = DNS__32BIT(p + 16);
-    ss << " " << serial << " " << refresh << " " << retry << " " << expire << " " << minimum;
-    break;
-  }
-  case ns_t_naptr: {
-    const byte* p = *data;
-    unsigned long order = DNS__16BIT(p);
-    unsigned long pref = DNS__16BIT(p + 2);
-    p += 4;
-    ss << order << " " << pref;
+    case ns_t_cname:
+    case ns_t_ns:
+    case ns_t_ptr: {
+      int rc = ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
+      if (rc != ARES_SUCCESS) {
+        ss << "(error from ares_expand_name)";
+        break;
+      }
+      ss << " '" << name << "'";
+      free(name);
+      break;
+    }
+    case ns_t_mx:
+      if (rdatalen > 2) {
+        int rc = ares_expand_name(*data + 2, packet.data(), packet.size(), &name, &enclen);
+        if (rc != ARES_SUCCESS) {
+          ss << "(error from ares_expand_name)";
+          break;
+        }
+        ss << " " << DNS__16BIT(*data) << " '" << name << "'";
+        free(name);
+      } else {
+        ss << "(RR too short)";
+      }
+      break;
+    case ns_t_srv: {
+      if (rdatalen > 6) {
+        const byte* p = *data;
+        unsigned long prio = DNS__16BIT(p);
+        unsigned long weight = DNS__16BIT(p + 2);
+        unsigned long port = DNS__16BIT(p + 4);
+        p += 6;
+        int rc = ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
+        if (rc != ARES_SUCCESS) {
+          ss << "(error from ares_expand_name)";
+          break;
+        }
+        ss << prio << " " << weight << " " << port << " '" << name << "'";
+        free(name);
+      } else {
+        ss << "(RR too short)";
+      }
+      break;
+    }
+    case ns_t_soa: {
+      const byte* p = *data;
+      int rc = ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
+      if (rc != ARES_SUCCESS) {
+        ss << "(error from ares_expand_name)";
+        break;
+      }
+      ss << " '" << name << "'";
+      free(name);
+      p += enclen;
+      rc = ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
+      if (rc != ARES_SUCCESS) {
+        ss << "(error from ares_expand_name)";
+        break;
+      }
+      ss << " '" << name << "'";
+      free(name);
+      p += enclen;
+      if ((p + 20) <= (*data + rdatalen)) {
+        unsigned long serial = DNS__32BIT(p);
+        unsigned long refresh = DNS__32BIT(p + 4);
+        unsigned long retry = DNS__32BIT(p + 8);
+        unsigned long expire = DNS__32BIT(p + 12);
+        unsigned long minimum = DNS__32BIT(p + 16);
+        ss << " " << serial << " " << refresh << " " << retry << " " << expire << " " << minimum;
+      } else {
+        ss << "(RR too short)";
+      }
+      break;
+    }
+    case ns_t_naptr: {
+      if (rdatalen > 7) {
+        const byte* p = *data;
+        unsigned long order = DNS__16BIT(p);
+        unsigned long pref = DNS__16BIT(p + 2);
+        p += 4;
+        ss << order << " " << pref;
 
-    int len = *p++;
-    std::string flags(p, p + len);
-    ss << " " << flags;
-    p += len;
+        int len = *p++;
+        std::string flags(p, p + len);
+        ss << " " << flags;
+        p += len;
 
-    len = *p++;
-    std::string service(p, p + len);
-    ss << " '" << service << "'";
-    p += len;
+        len = *p++;
+        std::string service(p, p + len);
+        ss << " '" << service << "'";
+        p += len;
 
-    len = *p++;
-    std::string regexp(p, p + len);
-    ss << " '" << regexp << "'";
-    p += len;
+        len = *p++;
+        std::string regexp(p, p + len);
+        ss << " '" << regexp << "'";
+        p += len;
 
-    ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
-    ss << " '" << name << "'";
-    free(name);
-    break;
-  }
-  default:
-    ss << " " << HexDump(*data, rdatalen);
-    break;
+        int rc = ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
+        if (rc != ARES_SUCCESS) {
+          ss << "(error from ares_expand_name)";
+          break;
+        }
+        ss << " '" << name << "'";
+        free(name);
+      } else {
+        ss << "(RR too short)";
+      }
+      break;
+    }
+    default:
+      ss << " " << HexDump(*data, rdatalen);
+      break;
+    }
   }
   *data += rdatalen;
   *len -= rdatalen;
