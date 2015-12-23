@@ -125,6 +125,7 @@ class MockServer {
   // with the value from the request.
   void SetReplyData(const std::vector<byte>& reply) { reply_ = reply; }
   void SetReply(const DNSPacket* reply) { SetReplyData(reply->data()); }
+  void SetReplyQID(int qid) { qid_ = qid; }
 
   // The set of file descriptors that the server handles.
   std::set<int> fds() const;
@@ -144,6 +145,7 @@ class MockServer {
   int sockfd_;
   std::set<int> connfds_;
   std::vector<byte> reply_;
+  int qid_;
 };
 
 // Test fixture that uses a mock DNS server.
@@ -174,12 +176,22 @@ class MockUDPChannelTest
   MockUDPChannelTest() : MockChannelOptsTest(GetParam(), false, nullptr, 0) {}
 };
 
+class MockTCPChannelTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
+ public:
+  MockTCPChannelTest() : MockChannelOptsTest(GetParam(), true, nullptr, 0) {}
+};
+
 // gMock action to set the reply for a mock server.
 ACTION_P2(SetReplyData, mockserver, data) {
   mockserver->SetReplyData(data);
 }
 ACTION_P2(SetReply, mockserver, reply) {
   mockserver->SetReply(reply);
+}
+ACTION_P2(SetReplyQID, mockserver, qid) {
+  mockserver->SetReplyQID(qid);
 }
 // gMock action to cancel a channel.
 ACTION_P2(CancelChannel, mockserver, channel) {

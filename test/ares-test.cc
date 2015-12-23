@@ -131,7 +131,7 @@ void DefaultChannelModeTest::Process() {
   ProcessWork(channel_, NoExtraFDs, nullptr);
 }
 
-MockServer::MockServer(int family, bool tcp, int port) : tcp_(tcp), port_(port) {
+MockServer::MockServer(int family, bool tcp, int port) : tcp_(tcp), port_(port), qid_(-1) {
   if (tcp_) {
     // Create a TCP socket to receive data on.
     sockfd_ = socket(family, SOCK_STREAM, 0);
@@ -291,7 +291,11 @@ void MockServer::ProcessRequest(int fd, struct sockaddr_storage* addr, int addrl
   }
   std::vector<byte> reply = reply_;
 
-  // Overwrite the query ID with the value from the argument.
+  if (qid_ >= 0) {
+    // Use the explicitly specified query ID.
+    qid = qid_;
+  }
+  // Overwrite the query ID.
   reply[0] = (byte)((qid >> 8) & 0xff);
   reply[1] = (byte)(qid & 0xff);
   if (verbose) std::cerr << "sending reply " << PacketToString(reply) << std::endl;
@@ -359,7 +363,7 @@ MockChannelOptsTest::MockChannelOptsTest(int family,
     optmask |= ARES_OPT_DOMAINS;
   }
   if (force_tcp) {
-    opts.flags = ARES_FLAG_USEVC;
+    opts.flags |= ARES_FLAG_USEVC;
     optmask |= ARES_OPT_FLAGS;
   }
 
