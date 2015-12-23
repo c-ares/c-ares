@@ -111,6 +111,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   ares_channel channel;
   int i;
   int status = ARES_SUCCESS;
+  int status2;
   struct timeval now;
 
 #ifdef CURLDEBUG
@@ -209,10 +210,13 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
    * No matter what failed or succeeded, seed defaults to provide
    * useful behavior for things that we missed.
    */
-  status = init_by_defaults(channel);
-  if (status != ARES_SUCCESS)
+  status2 = init_by_defaults(channel);
+  if (status2 != ARES_SUCCESS) {
     DEBUGF(fprintf(stderr, "Error: init_by_defaults failed: %s\n",
                    ares_strerror(status)));
+    if (status == ARES_SUCCESS)
+      status = status2;
+  }
 
   /* Generate random key */
 
