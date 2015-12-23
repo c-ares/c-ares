@@ -566,7 +566,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
       packetsz = channel->ednspsz;
       if (rcode == NOTIMP || rcode == FORMERR || rcode == SERVFAIL)
       {
-          int qlen = alen - EDNSFIXEDSZ;
+          int qlen = (query->tcplen - 2) - EDNSFIXEDSZ;
           channel->flags ^= ARES_FLAG_EDNS;
           query->tcplen -= EDNSFIXEDSZ;
           query->qlen -= EDNSFIXEDSZ;
@@ -574,6 +574,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
           query->tcpbuf[1] = (unsigned char)(qlen & 0xff);
           DNS_HEADER_SET_ARCOUNT(query->tcpbuf + 2, 0);
           query->tcpbuf = realloc(query->tcpbuf, query->tcplen);
+          query->qbuf = query->tcpbuf + 2;
           ares__send_query(channel, query, now);
           return;
       }
