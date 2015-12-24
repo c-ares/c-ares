@@ -277,7 +277,111 @@ TEST_F(LibraryTest, ReadLineNoBuf) {
   fclose(fp);
   free(buf);
 }
+
+TEST(Misc, GetHostent) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  struct hostent *host = nullptr;
+  FILE *fp = fopen(hostsfile.filename(), "r");
+  ASSERT_NE(nullptr, fp);
+  EXPECT_EQ(ARES_EBADFAMILY, ares__get_hostent(fp, AF_INET+AF_INET6, &host));
+  rewind(fp);
+
+  EXPECT_EQ(ARES_SUCCESS, ares__get_hostent(fp, AF_INET, &host));
+  ASSERT_NE(nullptr, host);
+  std::stringstream ss1;
+  ss1 << HostEnt(host);
+  EXPECT_EQ("{'example.com' aliases=[] addrs=[1.2.3.4]}", ss1.str());
+  ares_free_hostent(host);
+  host = nullptr;
+
+  EXPECT_EQ(ARES_SUCCESS, ares__get_hostent(fp, AF_INET, &host));
+  ASSERT_NE(nullptr, host);
+  std::stringstream ss2;
+  ss2 << HostEnt(host);
+  EXPECT_EQ("{'google.com' aliases=[www.google.com, www2.google.com] addrs=[2.3.4.5]}", ss2.str());
+  ares_free_hostent(host);
+  host = nullptr;
+
+  EXPECT_EQ(ARES_EOF, ares__get_hostent(fp, AF_INET, &host));
+
+  rewind(fp);
+  EXPECT_EQ(ARES_SUCCESS, ares__get_hostent(fp, AF_INET6, &host));
+  ASSERT_NE(nullptr, host);
+  std::stringstream ss3;
+  ss3 << HostEnt(host);
+  EXPECT_EQ("{'ipv6.com' aliases=[] addrs=[0000:0000:0000:0000:0000:0000:0000:0001]}", ss3.str());
+  ares_free_hostent(host);
+  host = nullptr;
+  EXPECT_EQ(ARES_EOF, ares__get_hostent(fp, AF_INET6, &host));
+  fclose(fp);
+}
+
+TEST_F(LibraryTest, GetHostentAllocFail) {
+  TempFile hostsfile("1.2.3.4 example.com alias1 alias2\n");
+  struct hostent *host = nullptr;
+  FILE *fp = fopen(hostsfile.filename(), "r");
+  ASSERT_NE(nullptr, fp);
+
+  for (int ii = 1; ii <= 8; ii++) {
+    rewind(fp);
+    ClearFails();
+    SetAllocFail(ii);
+    host = nullptr;
+    EXPECT_EQ(ARES_ENOMEM, ares__get_hostent(fp, AF_INET, &host)) << ii;
+  }
+  fclose(fp);
+}
 #endif
+
+#ifdef CARES_EXPOSE_STATICS
+// These tests access internal static functions from the library, which
+// are only exposed when CARES_EXPOSE_STATICS has been configured. As such
+// they are tightly couple to the internal library implementation details.
+extern "C" char *ares_striendstr(const char*, const char*);
+TEST_F(LibraryTest, Striendstr) {
+  EXPECT_EQ(nullptr, ares_striendstr("abc", "12345"));
+  EXPECT_NE(nullptr, ares_striendstr("abc12345", "12345"));
+  EXPECT_NE(nullptr, ares_striendstr("abcxyzzy", "XYZZY"));
+  EXPECT_NE(nullptr, ares_striendstr("xyzzy", "XYZZY"));
+  EXPECT_EQ(nullptr, ares_striendstr("xyxzy", "XYZZY"));
+  EXPECT_NE(nullptr, ares_striendstr("", ""));
+  const char *str = "plugh";
+  EXPECT_NE(nullptr, ares_striendstr(str, str));
+}
+extern "C" int single_domain(ares_channel, const char*, char**);
+TEST_F(DefaultChannelTest, SingleDomain) {
+  TempFile aliases("www www.google.com\n");
+  EnvValue with_env("HOSTALIASES", aliases.filename());
+
+  SetAllocSizeFail(128);
+  char *ptr = nullptr;
+  EXPECT_EQ(ARES_ENOMEM, single_domain(channel_, "www", &ptr));
+
+  channel_->flags |= ARES_FLAG_NOSEARCH|ARES_FLAG_NOALIASES;
+  EXPECT_EQ(ARES_SUCCESS, single_domain(channel_, "www", &ptr));
+  EXPECT_EQ("www", std::string(ptr));
+  free(ptr);
+  ptr = nullptr;
+
+  SetAllocFail(1);
+  EXPECT_EQ(ARES_ENOMEM, single_domain(channel_, "www", &ptr));
+  EXPECT_EQ(nullptr, ptr);
+}
+#endif
+
+TEST_F(DefaultChannelTest, SaveInvalidChannel) {
+  int saved = channel_->nservers;
+  channel_->nservers = -1;
+  struct ares_options opts;
+  int optmask = 0;
+  EXPECT_EQ(ARES_ENODATA, ares_save_options(channel_, &opts, &optmask));
+  channel_->nservers = saved;
+}
 
 }  // namespace test
 }  // namespace ares

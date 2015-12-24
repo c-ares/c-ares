@@ -122,7 +122,7 @@ TEST_F(LibraryTest, OptionsChannelInit) {
 
 TEST_F(LibraryTest, ChannelAllocFail) {
   ares_channel channel;
-  for (int ii = 1; ii <= 16; ii++) {
+  for (int ii = 1; ii <= 25; ii++) {
     ClearFails();
     SetAllocFail(ii);
     channel = nullptr;

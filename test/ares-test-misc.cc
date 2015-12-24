@@ -109,6 +109,8 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
   std::vector<std::string> none;
   EXPECT_EQ(none, GetNameServers(channel_));
 
+  EXPECT_EQ(ARES_EBADSTR, ares_set_servers_csv(channel_, "2.3.4.5,1.2.3.4:,3.4.5.6"));
+  EXPECT_EQ(ARES_EBADSTR, ares_set_servers_csv(channel_, "2.3.4.5,1.2.3.4:Z,3.4.5.6"));
 }
 
 TEST_F(DefaultChannelTest, TimeoutValue) {
@@ -222,6 +224,14 @@ TEST_F(LibraryTest, CreateQueryFailures) {
             ares_create_query("example..com", ns_c_in, ns_t_a, 0x1234, 0,
                     &p, &len, 0));
   if (p) ares_free_string(p);
+}
+
+TEST_F(DefaultChannelTest, SendFailure) {
+  unsigned char buf[2];
+  SearchResult result;
+  ares_send(channel_, buf, sizeof(buf), SearchCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_EBADQUERY, result.status_);
 }
 
 std::string ExpandName(const std::vector<byte>& data, ssize_t offset,

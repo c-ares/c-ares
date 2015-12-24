@@ -52,6 +52,14 @@ TEST_F(LibraryTest, ParseAReplyOK) {
   ss << HostEnt(host);
   EXPECT_EQ("{'example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
   ares_free_hostent(host);
+
+  // Repeat without providing a hostent
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), data.size(),
+                                             nullptr, info, &count));
+  EXPECT_EQ(1, count);
+  EXPECT_EQ(0x01020304, info[0].ttl);
+  EXPECT_EQ(expected_addr, info[0].ipaddr.s_addr);
+  EXPECT_EQ("2.3.4.5", AddressToString(&(info[0].ipaddr), 4));
 }
 
 TEST_F(LibraryTest, ParseMalformedAReply) {
@@ -137,6 +145,25 @@ TEST_F(LibraryTest, ParseAReplyVariantA) {
   EXPECT_EQ(1, count);
   EXPECT_EQ("18.7.22.69", AddressToString(&(info[0].ipaddr), 4));
   EXPECT_EQ(52, info[0].ttl);
+  ares_free_hostent(host);
+}
+
+TEST_F(LibraryTest, ParseAReplyJustCname) {
+  DNSPacket pkt;
+  pkt.set_qid(6366).set_rd().set_ra()
+    .add_question(new DNSQuestion("mit.edu", ns_t_a))
+    .add_answer(new DNSCnameRR("mit.edu", 52, "other.mit.edu"));
+  struct hostent *host = nullptr;
+  struct ares_addrttl info[2];
+  int count = 2;
+  std::vector<byte> data = pkt.data();
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), data.size(),
+                                             &host, info, &count));
+  EXPECT_EQ(0, count);
+  ASSERT_NE(nullptr, host);
+  std::stringstream ss;
+  ss << HostEnt(host);
+  EXPECT_EQ("{'other.mit.edu' aliases=[mit.edu] addrs=[]}", ss.str());
   ares_free_hostent(host);
 }
 
