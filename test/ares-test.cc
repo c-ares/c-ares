@@ -374,6 +374,7 @@ MockChannelOptsTest::MockChannelOptsTest(int family,
     opts.flags |= ARES_FLAG_USEVC;
     optmask |= ARES_OPT_FLAGS;
   }
+  optmask |= ARES_OPT_ROTATE;
 
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
   EXPECT_NE(nullptr, channel_);

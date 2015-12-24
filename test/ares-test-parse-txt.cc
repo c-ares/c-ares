@@ -128,6 +128,28 @@ TEST_F(LibraryTest, ParseTxtMalformedReply3) {
   ASSERT_EQ(nullptr, txt);
 }
 
+TEST_F(LibraryTest, ParseTxtMalformedReply4) {
+  std::vector<byte> data = {
+    0x12, 0x34,  // qid
+    0x84, // response + query + AA + not-TC + not-RD
+    0x00, // not-RA + not-Z + not-AD + not-CD + rc=NoError
+    0x00, 0x01,  // num questions
+    0x00, 0x01,  // num answer RRs
+    0x00, 0x00,  // num authority RRs
+    0x00, 0x00,  // num additional RRs
+    // Question
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x10,  // type TXT
+    0x00, // TRUNCATED
+  };
+
+  struct ares_txt_reply* txt = nullptr;
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  ASSERT_EQ(nullptr, txt);
+}
+
 TEST_F(LibraryTest, ParseTxtReplyErrors) {
   DNSPacket pkt;
   std::string expected1 = "txt1.example.com";

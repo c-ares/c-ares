@@ -432,7 +432,7 @@ TEST_P(MockChannelTest, SearchNoDataThenSuccess) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_P(MockChannelTest, SearchNoDataThenFail) {
+TEST_P(MockChannelTest, SearchNoDataThenNoDataBare) {
   // First two search domains recognize the name but have no A records.
   DNSPacket nofirst;
   nofirst.set_response().set_aa()
@@ -451,6 +451,36 @@ TEST_P(MockChannelTest, SearchNoDataThenFail) {
     .WillOnce(SetReply(&server_, &nothird));
   DNSPacket nobare;
   nobare.set_response().set_aa()
+    .add_question(new DNSQuestion("www", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www", ns_t_a))
+    .WillOnce(SetReply(&server_, &nobare));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENODATA, result.status_);
+}
+
+TEST_P(MockChannelTest, SearchNoDataThenFail) {
+  // First two search domains recognize the name but have no A records.
+  DNSPacket nofirst;
+  nofirst.set_response().set_aa()
+    .add_question(new DNSQuestion("www.first.com", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &nofirst));
+  DNSPacket nosecond;
+  nosecond.set_response().set_aa()
+    .add_question(new DNSQuestion("www.second.org", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    .WillOnce(SetReply(&server_, &nosecond));
+  DNSPacket nothird;
+  nothird.set_response().set_aa()
+    .add_question(new DNSQuestion("www.third.gov", ns_t_a));
+  EXPECT_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    .WillOnce(SetReply(&server_, &nothird));
+  DNSPacket nobare;
+  nobare.set_response().set_aa().set_rcode(ns_r_nxdomain)
     .add_question(new DNSQuestion("www", ns_t_a));
   EXPECT_CALL(server_, OnRequest("www", ns_t_a))
     .WillOnce(SetReply(&server_, &nobare));
