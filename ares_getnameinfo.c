@@ -417,7 +417,5 @@ static char *ares_striendstr(const char *s1, const char *s2)
           c2++;
         }
     }
-  if (c2 == c1 && c2 == NULL)
-    return (char *)c1_begin;
-  return NULL;
+  return (char *)c1_begin;
 }
