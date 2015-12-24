@@ -77,7 +77,7 @@ static char *lookup_service(unsigned short port, int flags,
 static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int scopeid,
                            char *buf, size_t buflen);
 #endif
-static char *ares_striendstr(const char *s1, const char *s2);
+STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2);
 
 void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
                       ares_socklen_t salen,
@@ -391,7 +391,7 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int flags,
 #endif
 
 /* Determines if s1 ends with the string in s2 (case-insensitive) */
-static char *ares_striendstr(const char *s1, const char *s2)
+STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2)
 {
   const char *c1, *c2, *c1_begin;
   int lo1, lo2;

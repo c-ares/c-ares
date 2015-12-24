@@ -44,7 +44,7 @@ static void search_callback(void *arg, int status, int timeouts,
 static void end_squery(struct search_query *squery, int status,
                        unsigned char *abuf, int alen);
 static int cat_domain(const char *name, const char *domain, char **s);
-static int single_domain(ares_channel channel, const char *name, char **s);
+STATIC_TESTABLE int single_domain(ares_channel channel, const char *name, char **s);
 
 void ares_search(ares_channel channel, const char *name, int dnsclass,
                  int type, ares_callback callback, void *arg)
@@ -225,7 +225,7 @@ static int cat_domain(const char *name, const char *domain, char **s)
  * the string we should query, in an allocated buffer.  If not, set *s
  * to NULL.
  */
-static int single_domain(ares_channel channel, const char *name, char **s)
+STATIC_TESTABLE int single_domain(ares_channel channel, const char *name, char **s)
 {
   size_t len = strlen(name);
   const char *hostaliases;

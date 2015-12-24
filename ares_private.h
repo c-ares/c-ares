@@ -43,6 +43,13 @@
 #define INADDR_NONE 0xffffffff
 #endif
 
+#ifdef CARES_EXPOSE_STATICS
+/* Make some internal functions visible for testing */
+#define STATIC_TESTABLE
+#else
+#define STATIC_TESTABLE static
+#endif
+
 #if defined(WIN32) && !defined(WATT32)
 
 #define WIN_NS_9X      "System\\CurrentControlSet\\Services\\VxD\\MSTCP"
