@@ -132,7 +132,8 @@ void DefaultChannelModeTest::Process() {
   ProcessWork(channel_, NoExtraFDs, nullptr);
 }
 
-MockServer::MockServer(int family, int port) : port_(port), qid_(-1) {
+MockServer::MockServer(int family, int port, int tcpport)
+  : udpport_(port), tcpport_(tcpport ? tcpport : udpport_), qid_(-1) {
   // Create a TCP socket to receive data on.
   tcpfd_ = socket(family, SOCK_STREAM, 0);
   EXPECT_NE(-1, tcpfd_);
@@ -150,23 +151,29 @@ MockServer::MockServer(int family, int port) : port_(port), qid_(-1) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(port_);
+    addr.sin_port = htons(tcpport_);
     int tcprc = bind(tcpfd_, (struct sockaddr*)&addr, sizeof(addr));
-    EXPECT_EQ(0, tcprc) << "Failed to bind AF_INET to TCP port " << port_;
+    EXPECT_EQ(0, tcprc) << "Failed to bind AF_INET to TCP port " << tcpport_;
+    addr.sin_port = htons(udpport_);
     int udprc = bind(udpfd_, (struct sockaddr*)&addr, sizeof(addr));
-    EXPECT_EQ(0, udprc) << "Failed to bind AF_INET to UDP port " << port_;
+    EXPECT_EQ(0, udprc) << "Failed to bind AF_INET to UDP port " << udpport_;
   } else {
     EXPECT_EQ(AF_INET6, family);
     struct sockaddr_in6 addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin6_family = AF_INET6;
     addr.sin6_addr = in6addr_any;
-    addr.sin6_port = htons(port_);
+    addr.sin6_port = htons(tcpport_);
     int tcprc = bind(tcpfd_, (struct sockaddr*)&addr, sizeof(addr));
-    EXPECT_EQ(0, tcprc) << "Failed to bind AF_INET6 to UDP port " << port_;
+    EXPECT_EQ(0, tcprc) << "Failed to bind AF_INET6 to TCP port " << tcpport_;
+    addr.sin6_port = htons(udpport_);
     int udprc = bind(udpfd_, (struct sockaddr*)&addr, sizeof(addr));
-    EXPECT_EQ(0, udprc) << "Failed to bind AF_INET6 to UDP port " << port_;
+    EXPECT_EQ(0, udprc) << "Failed to bind AF_INET6 to UDP port " << udpport_;
   }
+  if (verbose) std::cerr << "Configured mock server with TCP socket " << tcpfd_
+                         << " on port " << tcpport_
+                         << " and UDP socket " << udpfd_
+                         << " on port " << udpport_ << std::endl;
 
   // For TCP, also need to listen for connections.
   EXPECT_EQ(0, listen(tcpfd_, 5)) << "Failed to listen for TCP connections";
@@ -180,9 +187,9 @@ MockServer::~MockServer() {
   close(udpfd_);
 }
 
-void MockServer::Process(int fd) {
+void MockServer::ProcessFD(int fd) {
   if (fd != tcpfd_ && fd != udpfd_ && connfds_.find(fd) == connfds_.end()) {
-    std::cerr << "Asked to process unknown fd " << fd << std::endl;
+    // Not one of our FDs.
     return;
   }
   if (fd == tcpfd_) {
@@ -271,7 +278,8 @@ void MockServer::Process(int fd) {
 
   if (verbose) {
     std::vector<byte> req(data, data + len);
-    std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << PacketToString(req) << std::endl;
+    std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << PacketToString(req)
+              << " on port " << (fd == udpfd_ ? udpport_ : tcpport_) << std::endl;
     std::cerr << "ProcessRequest(" << qid << ", '" << namestr
               << "', " << RRTypeToString(rrtype) << ")" << std::endl;
   }
@@ -306,7 +314,8 @@ void MockServer::ProcessRequest(int fd, struct sockaddr_storage* addr, int addrl
     reply[0] = (byte)((qid >> 8) & 0xff);
     reply[1] = (byte)(qid & 0xff);
   }
-  if (verbose) std::cerr << "sending reply " << PacketToString(reply) << std::endl;
+  if (verbose) std::cerr << "sending reply " << PacketToString(reply)
+                         << " on port " << ((fd == udpfd_) ? udpport_ : tcpport_) << std::endl;
 
   // Prefix with 2-byte length if TCP.
   if (fd != udpfd_) {
@@ -325,11 +334,24 @@ void MockServer::ProcessRequest(int fd, struct sockaddr_storage* addr, int addrl
   }
 }
 
-MockChannelOptsTest::MockChannelOptsTest(int family,
+// static
+MockChannelOptsTest::NiceMockServers MockChannelOptsTest::BuildServers(int count, int family, int base_port) {
+  NiceMockServers servers;
+  assert(count > 0);
+  for (int ii = 0; ii < count; ii++) {
+    std::unique_ptr<NiceMockServer> server(new NiceMockServer(family, base_port + ii));
+    servers.push_back(std::move(server));
+  }
+  return servers;
+}
+
+MockChannelOptsTest::MockChannelOptsTest(int count,
+                                         int family,
                                          bool force_tcp,
                                          struct ares_options* givenopts,
                                          int optmask)
-  : server_(family, mock_port), channel_(nullptr) {
+  : servers_(BuildServers(count, family, mock_port)),
+    server_(*servers_[0].get()), channel_(nullptr) {
   // Set up channel options.
   struct ares_options opts;
   if (givenopts) {
@@ -339,19 +361,11 @@ MockChannelOptsTest::MockChannelOptsTest(int family,
     memset(&opts, 0, sizeof(opts));
   }
 
-  // Force communication with the mock server.
-  opts.udp_port = server_.port();
+  // Point the library at the first mock server by default (overridden below).
+  opts.udp_port = mock_port;
   optmask |= ARES_OPT_UDP_PORT;
-  opts.tcp_port = server_.port();
+  opts.tcp_port = mock_port;
   optmask |= ARES_OPT_TCP_PORT;
-  opts.nservers = 1;
-  struct in_addr server_addr;
-  if (family == AF_INET) {
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.s_addr = htonl(0x7F000001);
-    opts.servers = &server_addr;
-    optmask |= ARES_OPT_SERVERS;
-  }
 
   // If not already overridden, set short timeouts.
   if (!(optmask & (ARES_OPT_TIMEOUTMS|ARES_OPT_TIMEOUT))) {
@@ -379,13 +393,42 @@ MockChannelOptsTest::MockChannelOptsTest(int family,
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
   EXPECT_NE(nullptr, channel_);
 
-  // For IPv6 servers, have to set up after construction.
-  if (family == AF_INET6) {
-    struct ares_addr_node addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.family = AF_INET6;
-    addr.addr.addr6._S6_un._S6_u8[15] = 1;
-    EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, &addr));
+  // Set up servers after construction so we can set individual ports
+  struct ares_addr_port_node* prev = nullptr;
+  struct ares_addr_port_node* first;
+  for (const auto& server : servers_) {
+    struct ares_addr_port_node* node = (struct ares_addr_port_node*)malloc(sizeof(*node));
+    if (prev) {
+      prev->next = node;
+    } else {
+      first = node;
+    }
+    node->next = nullptr;
+    node->family = family;
+    node->udp_port = server->udpport();
+    node->tcp_port = server->tcpport();
+    if (family == AF_INET) {
+      node->addr.addr4.s_addr = htonl(0x7F000001);
+    } else {
+      memset(&node->addr.addr6, 0, sizeof(node->addr.addr6));
+      node->addr.addr6._S6_un._S6_u8[15] = 1;
+    }
+    prev = node;
+  }
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, first));
+
+  while (first) {
+    prev = first;
+    first = first->next;
+    free(prev);
+  }
+  if (verbose) {
+    std::cerr << "Configured library with servers:";
+    std::vector<std::string> servers = GetNameServers(channel_);
+    for (const auto& server : servers) {
+      std::cerr << " " << server;
+    }
+    std::cerr << std::endl;
   }
 }
 
@@ -396,11 +439,26 @@ MockChannelOptsTest::~MockChannelOptsTest() {
   channel_ = nullptr;
 }
 
+std::set<int> MockChannelOptsTest::fds() const {
+  std::set<int> fds;
+  for (const auto& server : servers_) {
+    std::set<int> serverfds = server->fds();
+    fds.insert(serverfds.begin(), serverfds.end());
+  }
+  return fds;
+}
+
+void MockChannelOptsTest::ProcessFD(int fd) {
+  for (auto& server : servers_) {
+    server->ProcessFD(fd);
+  }
+}
+
 void MockChannelOptsTest::Process() {
   using namespace std::placeholders;
   ProcessWork(channel_,
-              std::bind(&MockServer::fds, &server_),
-              std::bind(&MockServer::Process, &server_, _1));
+              std::bind(&MockChannelOptsTest::fds, this),
+              std::bind(&MockChannelOptsTest::ProcessFD, this, _1));
 }
 
 std::ostream& operator<<(std::ostream& os, const HostResult& result) {
