@@ -14,6 +14,7 @@
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -116,7 +117,7 @@ class DefaultChannelModeTest
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
  public:
-  MockServer(int family, int port);
+  MockServer(int family, int port, int tcpport = 0);
   ~MockServer();
 
   // Mock method indicating the processing of a particular <name, RRtype>
@@ -132,17 +133,19 @@ class MockServer {
   // The set of file descriptors that the server handles.
   std::set<int> fds() const;
 
-  // Process activity on the mock server's socket FDs.
-  void Process(int fd);
+  // Process activity on a file descriptor.
+  void ProcessFD(int fd);
 
-  // Port the server is responding to
-  int port() const { return port_; }
+  // Ports the server is responding to
+  int udpport() const { return udpport_; }
+  int tcpport() const { return tcpport_; }
 
  private:
   void ProcessRequest(int fd, struct sockaddr_storage* addr, int addrlen,
                       int qid, const std::string& name, int rrtype);
 
-  int port_;
+  int udpport_;
+  int tcpport_;
   int udpfd_;
   int tcpfd_;
   std::set<int> connfds_;
@@ -153,14 +156,25 @@ class MockServer {
 // Test fixture that uses a mock DNS server.
 class MockChannelOptsTest : public LibraryTest {
  public:
-  MockChannelOptsTest(int family, bool force_tcp, struct ares_options* givenopts, int optmask);
+  MockChannelOptsTest(int count, int family, bool force_tcp, struct ares_options* givenopts, int optmask);
   ~MockChannelOptsTest();
 
   // Process all pending work on ares-owned and mock-server-owned file descriptors.
   void Process();
 
  protected:
-  testing::NiceMock<MockServer> server_;
+  // NiceMockServer doesn't complain about uninteresting calls.
+  typedef testing::NiceMock<MockServer> NiceMockServer;
+  typedef std::vector< std::unique_ptr<NiceMockServer> > NiceMockServers;
+
+  std::set<int> fds() const;
+  void ProcessFD(int fd);
+
+  static NiceMockServers BuildServers(int count, int family, int base_port);
+
+  NiceMockServers servers_;
+  // Convenience reference to first server.
+  NiceMockServer& server_;
   ares_channel channel_;
 };
 
@@ -168,21 +182,21 @@ class MockChannelTest
     : public MockChannelOptsTest,
       public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
-  MockChannelTest() : MockChannelOptsTest(GetParam().first, GetParam().second, nullptr, 0) {}
+  MockChannelTest() : MockChannelOptsTest(1, GetParam().first, GetParam().second, nullptr, 0) {}
 };
 
 class MockUDPChannelTest
     : public MockChannelOptsTest,
       public ::testing::WithParamInterface<int> {
  public:
-  MockUDPChannelTest() : MockChannelOptsTest(GetParam(), false, nullptr, 0) {}
+  MockUDPChannelTest() : MockChannelOptsTest(1, GetParam(), false, nullptr, 0) {}
 };
 
 class MockTCPChannelTest
     : public MockChannelOptsTest,
       public ::testing::WithParamInterface<int> {
  public:
-  MockTCPChannelTest() : MockChannelOptsTest(GetParam(), true, nullptr, 0) {}
+  MockTCPChannelTest() : MockChannelOptsTest(1, GetParam(), true, nullptr, 0) {}
 };
 
 // gMock action to set the reply for a mock server.

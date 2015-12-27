@@ -230,7 +230,7 @@ class MockFlagsChannelOptsTest
       public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   MockFlagsChannelOptsTest(int flags)
-    : MockChannelOptsTest(GetParam().first, GetParam().second,
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
                           FillOptions(&opts_, flags), ARES_OPT_FLAGS) {}
   static struct ares_options* FillOptions(struct ares_options * opts, int flags) {
     memset(opts, 0, sizeof(struct ares_options));
