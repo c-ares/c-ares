@@ -15,7 +15,9 @@
 #include <functional>
 #include <map>
 #include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace ares {
 
@@ -252,6 +254,9 @@ void SearchCallback(void *data, int status, int timeouts,
                     unsigned char *abuf, int alen);
 void NameInfoCallback(void *data, int status, int timeouts,
                       char *node, char *service);
+
+// Retrieve the name servers used by a channel.
+std::vector<std::string> GetNameServers(ares_channel channel);
 
 // RAII class for a temporary file with the given contents.
 class TempFile {

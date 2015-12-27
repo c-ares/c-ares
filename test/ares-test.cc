@@ -512,6 +512,40 @@ void NameInfoCallback(void *data, int status, int timeouts,
   if (verbose) std::cerr << "NameInfoCallback(" << *result << ")" << std::endl;
 }
 
+std::vector<std::string> GetNameServers(ares_channel channel) {
+  struct ares_addr_port_node* servers = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_get_servers_ports(channel, &servers));
+  struct ares_addr_port_node* server = servers;
+  std::vector<std::string> results;
+  while (server) {
+    std::stringstream ss;
+    switch (server->family) {
+    case AF_INET:
+      ss << AddressToString((char*)&server->addr.addr4, 4);
+      break;
+    case AF_INET6:
+      if (server->udp_port != 0) {
+        ss << '[';
+      }
+      ss << AddressToString((char*)&server->addr.addr6, 16);
+      if (server->udp_port != 0) {
+        ss << ']';
+      }
+      break;
+    default:
+      results.push_back("<unknown family>");
+      break;
+    }
+    if (server->udp_port != 0) {
+      ss << ":" << server->udp_port;
+    }
+    results.push_back(ss.str());
+    server = server->next;
+  }
+  if (servers) ares_free_data(servers);
+  return results;
+}
+
 TempFile::TempFile(const std::string& contents)
   : filename_(tempnam(nullptr, "ares")) {
   if (!filename_) {
