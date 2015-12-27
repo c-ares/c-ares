@@ -7,29 +7,6 @@
 namespace ares {
 namespace test {
 
-std::vector<std::string> GetNameServers(ares_channel channel) {
-  struct ares_addr_node* servers = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_get_servers(channel, &servers));
-  struct ares_addr_node* server = servers;
-  std::vector<std::string> results;
-  while (server) {
-    switch (server->family) {
-    case AF_INET:
-      results.push_back(AddressToString((char*)&server->addr.addr4, 4));
-      break;
-    case AF_INET6:
-      results.push_back(AddressToString((char*)&server->addr.addr6, 16));
-      break;
-    default:
-      results.push_back("<unknown family>");
-      break;
-    }
-    server = server->next;
-  }
-  if (servers) ares_free_data(servers);
-  return results;
-}
-
 TEST_F(DefaultChannelTest, GetServers) {
   std::vector<std::string> servers = GetNameServers(channel_);
   if (verbose) {
