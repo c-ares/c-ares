@@ -47,6 +47,30 @@ TEST_F(DefaultChannelTest, SetServers) {
   EXPECT_EQ(expected, GetNameServers(channel_));
 }
 
+TEST_F(DefaultChannelTest, SetServersPorts) {
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, nullptr));
+  std::vector<std::string> empty;
+  EXPECT_EQ(empty, GetNameServers(channel_));
+
+  struct ares_addr_port_node server1;
+  struct ares_addr_port_node server2;
+  server1.next = &server2;
+  server1.family = AF_INET;
+  server1.addr.addr4.s_addr = htonl(0x01020304);
+  server1.udp_port = 111;
+  server1.tcp_port = 111;
+  server2.next = nullptr;
+  server2.family = AF_INET;
+  server2.addr.addr4.s_addr = htonl(0x02030405);
+  server2.udp_port = 0;
+  server2.tcp_port = 0;;
+  EXPECT_EQ(ARES_ENODATA, ares_set_servers_ports(nullptr, &server1));
+
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, &server1));
+  std::vector<std::string> expected = {"1.2.3.4:111", "2.3.4.5"};
+  EXPECT_EQ(expected, GetNameServers(channel_));
+}
+
 TEST_F(DefaultChannelTest, SetServersCSV) {
   EXPECT_EQ(ARES_ENODATA, ares_set_servers_csv(nullptr, "1.2.3.4"));
   EXPECT_EQ(ARES_ENODATA, ares_set_servers_csv(nullptr, "xyzzy,plugh"));
@@ -63,15 +87,19 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
   EXPECT_EQ(ARES_EBADSTR,
             ares_set_servers_csv(channel_, "1.2.3.4 , 0102:0304:0506:0708:0910:1112:1314:1516, 2.3.4.5"));
 
-  // Same, with ports -- currently ignored
+  // Same, with ports
   EXPECT_EQ(ARES_SUCCESS,
             ares_set_servers_csv(channel_, "1.2.3.4:54,[0102:0304:0506:0708:0910:1112:1314:1516]:80,2.3.4.5:55"));
   EXPECT_EQ(expected, GetNameServers(channel_));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_set_servers_ports_csv(channel_, "1.2.3.4:54,[0102:0304:0506:0708:0910:1112:1314:1516]:80,2.3.4.5:55"));
+  std::vector<std::string> expected2 = {"1.2.3.4:54", "[0102:0304:0506:0708:0910:1112:1314:1516]:80", "2.3.4.5:55"};
+  EXPECT_EQ(expected2, GetNameServers(channel_));
 
   // Should survive duplication
   ares_channel channel2;
   EXPECT_EQ(ARES_SUCCESS, ares_dup(&channel2, channel_));
-  EXPECT_EQ(expected, GetNameServers(channel2));
+  EXPECT_EQ(expected2, GetNameServers(channel2));
   ares_destroy(channel2);
 
   // Allocation failure cases
