@@ -883,6 +883,113 @@ TEST_P(MockChannelTest, HostAliasUnreadable) {
   chmod(aliases.filename(), 0777);
 }
 
+class MockMultiServerChannelTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+  MockMultiServerChannelTest(bool rotate)
+    : MockChannelOptsTest(3, GetParam().first, GetParam().second, nullptr, rotate ? ARES_OPT_ROTATE : 0) {}
+  void CheckExample() {
+    HostResult result;
+    ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  }
+};
+
+class RotateMultiMockTest : public MockMultiServerChannelTest {
+ public:
+  RotateMultiMockTest() : MockMultiServerChannelTest(true) {}
+};
+
+class NoRotateMultiMockTest : public MockMultiServerChannelTest {
+ public:
+  NoRotateMultiMockTest() : MockMultiServerChannelTest(false) {}
+};
+
+
+TEST_P(RotateMultiMockTest, ThirdServer) {
+  DNSPacket servfailrsp;
+  servfailrsp.set_response().set_aa().set_rcode(ns_r_servfail)
+    .add_question(new DNSQuestion("www.example.com", ns_t_a));
+  DNSPacket notimplrsp;
+  notimplrsp.set_response().set_aa().set_rcode(ns_r_notimpl)
+    .add_question(new DNSQuestion("www.example.com", ns_t_a));
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", ns_t_a))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[1].get(), &notimplrsp));
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[2].get(), &okrsp));
+  CheckExample();
+
+  // Second time around, starts from server [1].
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[2].get(), &notimplrsp));
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  CheckExample();
+
+  // Third time around, starts from server [2].
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[0].get(), &notimplrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  CheckExample();
+}
+
+TEST_P(NoRotateMultiMockTest, ThirdServer) {
+  DNSPacket servfailrsp;
+  servfailrsp.set_response().set_aa().set_rcode(ns_r_servfail)
+    .add_question(new DNSQuestion("www.example.com", ns_t_a));
+  DNSPacket notimplrsp;
+  notimplrsp.set_response().set_aa().set_rcode(ns_r_notimpl)
+    .add_question(new DNSQuestion("www.example.com", ns_t_a));
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", ns_t_a))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[1].get(), &notimplrsp));
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[2].get(), &okrsp));
+  CheckExample();
+
+  // Second time around, still starts from server [0].
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[1].get(), &notimplrsp));
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[2].get(), &okrsp));
+  CheckExample();
+
+  // Third time around, still starts from server [0].
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[1].get(), &notimplrsp));
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", ns_t_a))
+    .WillOnce(SetReply(servers_[2].get(), &okrsp));
+  CheckExample();
+}
+
+
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTest,
                         ::testing::Values(std::make_pair<int, bool>(AF_INET, false),
                                           std::make_pair<int, bool>(AF_INET, true),
@@ -902,6 +1009,18 @@ INSTANTIATE_TEST_CASE_P(AddressFamilies, MockNoCheckRespChannelTest,
                                           std::make_pair<int, bool>(AF_INET6, true)));
 
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockEDNSChannelTest,
+                        ::testing::Values(std::make_pair<int, bool>(AF_INET, false),
+                                          std::make_pair<int, bool>(AF_INET, true),
+                                          std::make_pair<int, bool>(AF_INET6, false),
+                                          std::make_pair<int, bool>(AF_INET6, true)));
+
+INSTANTIATE_TEST_CASE_P(TransportModes, RotateMultiMockTest,
+                        ::testing::Values(std::make_pair<int, bool>(AF_INET, false),
+                                          std::make_pair<int, bool>(AF_INET, true),
+                                          std::make_pair<int, bool>(AF_INET6, false),
+                                          std::make_pair<int, bool>(AF_INET6, true)));
+
+INSTANTIATE_TEST_CASE_P(TransportModes, NoRotateMultiMockTest,
                         ::testing::Values(std::make_pair<int, bool>(AF_INET, false),
                                           std::make_pair<int, bool>(AF_INET, true),
                                           std::make_pair<int, bool>(AF_INET6, false),
