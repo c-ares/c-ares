@@ -357,7 +357,6 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
   if (givenopts) {
     memcpy(&opts, givenopts, sizeof(opts));
   } else {
-    EXPECT_EQ(0, optmask);
     memset(&opts, 0, sizeof(opts));
   }
 
@@ -388,7 +387,6 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
     opts.flags |= ARES_FLAG_USEVC;
     optmask |= ARES_OPT_FLAGS;
   }
-  optmask |= ARES_OPT_ROTATE;
 
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
   EXPECT_NE(nullptr, channel_);
