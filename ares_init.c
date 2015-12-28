@@ -263,8 +263,8 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
 int ares_dup(ares_channel *dest, ares_channel src)
 {
   struct ares_options opts;
-  struct ares_addr_node *servers;
-  int ipv6_nservers = 0;
+  struct ares_addr_port_node *servers;
+  int non_v4_default_port = 0;
   int i, rc;
   int optmask;
 
@@ -297,22 +297,24 @@ int ares_dup(ares_channel *dest, ares_channel src)
   (*dest)->local_ip4 = src->local_ip4;
   memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
 
-  /* Full name server cloning required when not all are IPv4 */
+  /* Full name server cloning required if there is a non-IPv4, or non-default port, nameserver */
   for (i = 0; i < src->nservers; i++)
     {
-      if (src->servers[i].addr.family != AF_INET) {
-        ipv6_nservers++;
+      if ((src->servers[i].addr.family != AF_INET) ||
+          (src->servers[i].addr.udp_port != 0) ||
+          (src->servers[i].addr.tcp_port != 0)) {
+        non_v4_default_port++;
         break;
       }
     }
-  if (ipv6_nservers) {
-    rc = ares_get_servers(src, &servers);
+  if (non_v4_default_port) {
+    rc = ares_get_servers_ports(src, &servers);
     if (rc != ARES_SUCCESS) {
       ares_destroy(*dest);
       *dest = NULL;
       return rc;
     }
-    rc = ares_set_servers(*dest, servers);
+    rc = ares_set_servers_ports(*dest, servers);
     ares_free_data(servers);
     if (rc != ARES_SUCCESS) {
       ares_destroy(*dest);
@@ -359,11 +361,13 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   options->sock_state_cb     = channel->sock_state_cb;
   options->sock_state_cb_data = channel->sock_state_cb_data;
 
-  /* Copy IPv4 servers */
+  /* Copy IPv4 servers that use the default port */
   if (channel->nservers) {
     for (i = 0; i < channel->nservers; i++)
     {
-      if (channel->servers[i].addr.family == AF_INET)
+      if ((channel->servers[i].addr.family == AF_INET) &&
+          (channel->servers[i].addr.udp_port == 0) &&
+          (channel->servers[i].addr.tcp_port == 0))
         ipv4_nservers++;
     }
     if (ipv4_nservers) {
@@ -372,7 +376,9 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
         return ARES_ENOMEM;
       for (i = j = 0; i < channel->nservers; i++)
       {
-        if (channel->servers[i].addr.family == AF_INET)
+        if ((channel->servers[i].addr.family == AF_INET) &&
+            (channel->servers[i].addr.udp_port == 0) &&
+            (channel->servers[i].addr.tcp_port == 0))
           memcpy(&options->servers[j++],
                  &channel->servers[i].addr.addrV4,
                  sizeof(channel->servers[i].addr.addrV4));
@@ -468,6 +474,8 @@ static int init_by_options(ares_channel channel,
           for (i = 0; i < options->nservers; i++)
             {
               channel->servers[i].addr.family = AF_INET;
+              channel->servers[i].addr.udp_port = 0;
+              channel->servers[i].addr.tcp_port = 0;
               memcpy(&channel->servers[i].addr.addrV4,
                      &options->servers[i],
                      sizeof(channel->servers[i].addr.addrV4));
@@ -1156,6 +1164,8 @@ static int init_by_resolv_conf(ares_channel channel)
   {
     servers[i].addr.addrV4.s_addr = htonl(def_nameservers[i]);
     servers[i].addr.family = AF_INET;
+    servers[i].addr.udp_port = 0;
+    servers[i].addr.tcp_port = 0;
   }
   status = ARES_EOF;
 
@@ -1444,6 +1454,8 @@ static int init_by_defaults(ares_channel channel)
     }
     channel->servers[0].addr.family = AF_INET;
     channel->servers[0].addr.addrV4.s_addr = htonl(INADDR_LOOPBACK);
+    channel->servers[0].addr.udp_port = 0;
+    channel->servers[0].addr.tcp_port = 0;
     channel->nservers = 1;
   }
 
@@ -1650,6 +1662,8 @@ static int config_nameserver(struct server_state **servers, int *nservers,
 
       /* Store address data. */
       newserv[*nservers].addr.family = host.family;
+      newserv[*nservers].addr.udp_port = 0;
+      newserv[*nservers].addr.tcp_port = 0;
       if (host.family == AF_INET)
         memcpy(&newserv[*nservers].addr.addrV4, &host.addrV4,
                sizeof(host.addrV4));

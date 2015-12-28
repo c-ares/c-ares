@@ -978,7 +978,11 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
         salen = sizeof(saddr.sa4);
         memset(sa, 0, salen);
         saddr.sa4.sin_family = AF_INET;
-        saddr.sa4.sin_port = aresx_sitous(channel->tcp_port);
+        if (server->addr.tcp_port) {
+          saddr.sa4.sin_port = aresx_sitous(server->addr.tcp_port);
+        } else {
+          saddr.sa4.sin_port = aresx_sitous(channel->tcp_port);
+        }
         memcpy(&saddr.sa4.sin_addr, &server->addr.addrV4,
                sizeof(server->addr.addrV4));
         break;
@@ -987,7 +991,11 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
         salen = sizeof(saddr.sa6);
         memset(sa, 0, salen);
         saddr.sa6.sin6_family = AF_INET6;
-        saddr.sa6.sin6_port = aresx_sitous(channel->tcp_port);
+        if (server->addr.tcp_port) {
+          saddr.sa6.sin6_port = aresx_sitous(server->addr.tcp_port);
+        } else {
+          saddr.sa6.sin6_port = aresx_sitous(channel->tcp_port);
+        }
         memcpy(&saddr.sa6.sin6_addr, &server->addr.addrV6,
                sizeof(server->addr.addrV6));
         break;
@@ -1070,7 +1078,11 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
         salen = sizeof(saddr.sa4);
         memset(sa, 0, salen);
         saddr.sa4.sin_family = AF_INET;
-        saddr.sa4.sin_port = aresx_sitous(channel->udp_port);
+        if (server->addr.udp_port) {
+          saddr.sa4.sin_port = aresx_sitous(server->addr.udp_port);
+        } else {
+          saddr.sa4.sin_port = aresx_sitous(channel->udp_port);
+        }
         memcpy(&saddr.sa4.sin_addr, &server->addr.addrV4,
                sizeof(server->addr.addrV4));
         break;
@@ -1079,7 +1091,11 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
         salen = sizeof(saddr.sa6);
         memset(sa, 0, salen);
         saddr.sa6.sin6_family = AF_INET6;
-        saddr.sa6.sin6_port = aresx_sitous(channel->udp_port);
+        if (server->addr.udp_port) {
+          saddr.sa6.sin6_port = aresx_sitous(server->addr.udp_port);
+        } else {
+          saddr.sa6.sin6_port = aresx_sitous(channel->udp_port);
+        }
         memcpy(&saddr.sa6.sin6_addr, &server->addr.addrV6,
                sizeof(server->addr.addrV6));
         break;
