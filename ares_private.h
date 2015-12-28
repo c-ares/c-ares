@@ -123,6 +123,8 @@ struct ares_addr {
     struct in_addr       addr4;
     struct ares_in6_addr addr6;
   } addr;
+  int udp_port;  /* stored in network order */
+  int tcp_port;  /* stored in network order */
 };
 #define addrV4 addr.addr4
 #define addrV6 addr.addr6
@@ -255,8 +257,8 @@ struct ares_channeldata {
   int tries;
   int ndots;
   int rotate; /* if true, all servers specified are used */
-  int udp_port;
-  int tcp_port;
+  int udp_port; /* stored in network order */
+  int tcp_port; /* stored in network order */
   int socket_send_buffer_size;
   int socket_receive_buffer_size;
   char **domains;

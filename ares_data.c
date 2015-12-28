@@ -92,6 +92,12 @@ void ares_free_data(void *dataptr)
           ares_free_data(ptr->data.addr_node.next);
         break;
 
+      case ARES_DATATYPE_ADDR_PORT_NODE:
+
+        if (ptr->data.addr_port_node.next)
+          ares_free_data(ptr->data.addr_port_node.next);
+        break;
+
       case ARES_DATATYPE_NAPTR_REPLY:
 
         if (ptr->data.naptr_reply.next)
@@ -167,6 +173,15 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.addr_node.family = 0;
         memset(&ptr->data.addr_node.addrV6, 0,
                sizeof(ptr->data.addr_node.addrV6));
+        break;
+
+      case ARES_DATATYPE_ADDR_PORT_NODE:
+        ptr->data.addr_port_node.next = NULL;
+        ptr->data.addr_port_node.family = 0;
+        ptr->data.addr_port_node.udp_port = 0;
+        ptr->data.addr_port_node.tcp_port = 0;
+        memset(&ptr->data.addr_port_node.addrV6, 0,
+               sizeof(ptr->data.addr_port_node.addrV6));
         break;
 
       case ARES_DATATYPE_NAPTR_REPLY:

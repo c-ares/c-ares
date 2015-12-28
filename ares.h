@@ -563,7 +563,6 @@ CARES_EXTERN void ares_free_data(void *dataptr);
 
 CARES_EXTERN const char *ares_strerror(int code);
 
-/* TODO:  Hold port here as well. */
 struct ares_addr_node {
   struct ares_addr_node *next;
   int family;
@@ -573,15 +572,32 @@ struct ares_addr_node {
   } addr;
 };
 
+struct ares_addr_port_node {
+  struct ares_addr_port_node *next;
+  int family;
+  union {
+    struct in_addr       addr4;
+    struct ares_in6_addr addr6;
+  } addr;
+  int udp_port;
+  int tcp_port;
+};
+
 CARES_EXTERN int ares_set_servers(ares_channel channel,
                                   struct ares_addr_node *servers);
+CARES_EXTERN int ares_set_servers_ports(ares_channel channel,
+                                        struct ares_addr_port_node *servers);
 
 /* Incomming string format: host[:port][,host[:port]]... */
 CARES_EXTERN int ares_set_servers_csv(ares_channel channel,
                                       const char* servers);
+CARES_EXTERN int ares_set_servers_ports_csv(ares_channel channel,
+                                            const char* servers);
 
 CARES_EXTERN int ares_get_servers(ares_channel channel,
                                   struct ares_addr_node **servers);
+CARES_EXTERN int ares_get_servers_ports(ares_channel channel,
+                                        struct ares_addr_port_node **servers);
 
 CARES_EXTERN const char *ares_inet_ntop(int af, const void *src, char *dst,
                                         ares_socklen_t size);
