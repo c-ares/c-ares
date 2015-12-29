@@ -113,6 +113,7 @@ MANPAGES = ares_cancel.3		\
   ares_set_servers.3			\
   ares_set_servers_csv.3		\
   ares_set_socket_callback.3		\
+  ares_set_sortlist.3			\
   ares_strerror.3			\
   ares_timeout.3			\
   ares_version.3		        \
@@ -160,6 +161,7 @@ HTMLPAGES = ares_cancel.html		\
   ares_set_servers.html			\
   ares_set_servers_csv.html		\
   ares_set_socket_callback.html		\
+  ares_set_sortlist.html			\
   ares_strerror.html			\
   ares_timeout.html			\
   ares_version.html                     \
@@ -207,6 +209,7 @@ PDFPAGES = ares_cancel.pdf		\
   ares_set_servers.pdf			\
   ares_set_servers_csv.pdf		\
   ares_set_socket_callback.pdf		\
+  ares_set_sortlist.pdf			\
   ares_strerror.pdf			\
   ares_timeout.pdf			\
   ares_version.pdf                      \
