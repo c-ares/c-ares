@@ -80,17 +80,17 @@ static int set_options(ares_channel channel, const char *str);
 static const char *try_option(const char *p, const char *q, const char *opt);
 static int init_id_key(rc4_key* key,int key_data_len);
 
-#if !defined(WIN32) && !defined(WATT32) && \
-    !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
+static int config_sortlist(struct apattern **sortlist, int *nsort,
+                           const char *str);
 static int sortlist_alloc(struct apattern **sortlist, int *nsort,
                           struct apattern *pat);
 static int ip_addr(const char *s, ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
+#if !defined(WIN32) && !defined(WATT32) && \
+    !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
 static int config_domain(ares_channel channel, char *str);
 static int config_lookup(ares_channel channel, const char *str,
                          const char *bindch, const char *filech);
-static int config_sortlist(struct apattern **sortlist, int *nsort,
-                           const char *str);
 static char *try_config(char *s, const char *opt, char scc);
 #endif
 
@@ -1664,9 +1664,8 @@ static int config_nameserver(struct server_state **servers, int *nservers,
 
   return ARES_SUCCESS;
 }
+#endif  /* !WATT32 */
 
-#if !defined(WIN32) && !defined(ANDROID) && !defined(__ANDROID__) && \
-    !defined(CARES_USE_LIBRESOLV)
 static int config_sortlist(struct apattern **sortlist, int *nsort,
                            const char *str)
 {
@@ -1756,8 +1755,6 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
 
   return ARES_SUCCESS;
 }
-#endif  /* !WIN32 & !ANDROID & !__ANDROID__ */
-#endif  /* !WATT32 */
 
 static int set_search(ares_channel channel, const char *str)
 {
@@ -1927,19 +1924,7 @@ static char *try_config(char *s, const char *opt, char scc)
   /* return pointer to option value */
   return p;
 }
-
-static int sortlist_alloc(struct apattern **sortlist, int *nsort,
-                          struct apattern *pat)
-{
-  struct apattern *newsort;
-  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
-  if (!newsort)
-    return 0;
-  newsort[*nsort] = *pat;
-  *sortlist = newsort;
-  (*nsort)++;
-  return 1;
-}
+#endif  /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ */
 
 static int ip_addr(const char *ipbuf, ssize_t len, struct in_addr *addr)
 {
@@ -1973,7 +1958,19 @@ static void natural_mask(struct apattern *pat)
   else
     pat->mask.addr4.s_addr = htonl(IN_CLASSC_NET);
 }
-#endif  /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ */
+
+static int sortlist_alloc(struct apattern **sortlist, int *nsort,
+                          struct apattern *pat)
+{
+  struct apattern *newsort;
+  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
+  if (!newsort)
+    return 0;
+  newsort[*nsort] = *pat;
+  *sortlist = newsort;
+  (*nsort)++;
+  return 1;
+}
 
 /* initialize an rc4 key. If possible a cryptographically secure random key
    is generated using a suitable function (for example win32's RtlGenRandom as
@@ -2072,6 +2069,25 @@ void ares_set_socket_callback(ares_channel channel,
 {
   channel->sock_create_cb = cb;
   channel->sock_create_cb_data = data;
+}
+
+int ares_set_sortlist(ares_channel channel, const char *sortstr)
+{
+  int nsort = 0;
+  struct apattern *sortlist = NULL;
+  int status;
+
+  if (!channel)
+    return ARES_ENODATA;
+
+  status = config_sortlist(&sortlist, &nsort, sortstr);
+  if (status == ARES_SUCCESS && sortlist) {
+    if (channel->sortlist)
+      ares_free(channel->sortlist);
+    channel->sortlist = sortlist;
+    channel->nsort = nsort;
+  }
+  return status;
 }
 
 void ares__init_servers_state(ares_channel channel)
