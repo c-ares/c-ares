@@ -222,6 +222,7 @@ TEST_F(LibraryTest, FailChannelInit) {
   ares_library_cleanup();
 }
 
+#ifndef WIN32
 TEST_F(LibraryTest, EnvInit) {
   ares_channel channel = nullptr;
   EnvValue v1("LOCALDOMAIN", "this.is.local");
@@ -246,6 +247,7 @@ TEST_F(LibraryTest, EnvInitAllocFail) {
     }
   }
 }
+#endif
 
 TEST_F(DefaultChannelTest, SetAddresses) {
   ares_set_local_ip4(channel_, 0x01020304);
