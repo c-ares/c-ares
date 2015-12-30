@@ -10,30 +10,13 @@ GTEST_DIR = $(GMOCK_DIR)/gtest
 CPPFLAGS += -I$(ARES_SRC_DIR) -isystem $(GTEST_DIR)/include -isystem $(GMOCK_DIR)/include
 CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 
+# Makefile.inc provides the TESTSOURCES, TESTHEADERS and FUZZSOURCES defines
+include Makefile.inc
+
 TESTS = arestest
 
 noinst_PROGRAMS = arestest aresfuzz
-arestest_SOURCES = ares-test-main.cc \
-	ares-test-init.cc \
-	ares-test.cc \
-	ares-test-parse.cc \
-	ares-test-parse-a.cc \
-	ares-test-parse-aaaa.cc \
-	ares-test-parse-mx.cc \
-	ares-test-parse-naptr.cc \
-	ares-test-parse-ns.cc \
-	ares-test-parse-ptr.cc \
-	ares-test-parse-soa.cc \
-	ares-test-parse-srv.cc \
-	ares-test-parse-txt.cc \
-	ares-test-misc.cc \
-	ares-test-live.cc \
-	ares-test-mock.cc \
-	ares-test-internal.cc \
-	dns-proto.cc \
-	dns-proto-test.cc \
-	ares-test.h \
-	dns-proto.h
+arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 arestest_LDADD = libgmock.la libgtest.la $(ARES_BLD_DIR)/libcares.la $(PTHREAD_LIBS)
 
 # Not interested in coverage of test code, but linking the test binary needs the coverage option
@@ -47,7 +30,7 @@ libgmock_la_CPPFLAGS = -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -isystem $(G
 libgtest_la_SOURCES = $(GTEST_DIR)/src/gtest-all.cc
 libgtest_la_CPPFLAGS = -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -isystem $(GMOCK_DIR)/include -I$(GMOCK_DIR)
 
-aresfuzz_SOURCES = ares-test-fuzz.cc ares-fuzz.cc
+aresfuzz_SOURCES = $(FUZZSOURCES)
 aresfuzz_LDADD = $(ARES_BLD_DIR)/libcares.la
 
 test: check
