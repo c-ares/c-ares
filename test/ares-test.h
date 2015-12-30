@@ -284,6 +284,7 @@ class TempFile {
   char *filename_;
 };
 
+#ifndef WIN32
 // RAII class for a temporary environment variable value.
 class EnvValue {
  public:
@@ -307,6 +308,7 @@ class EnvValue {
   bool restore_;
   std::string original_;
 };
+#endif
 
 }  // namespace test
 }  // namespace ares

@@ -814,6 +814,7 @@ TEST_P(MockChannelTest, GetHostByAddrDestroy) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
+#ifndef WIN32
 TEST_P(MockChannelTest, HostAlias) {
   DNSPacket reply;
   reply.set_response().set_aa()
@@ -882,6 +883,7 @@ TEST_P(MockChannelTest, HostAliasUnreadable) {
   EXPECT_EQ(ARES_EFILE, result.status_);
   chmod(aliases.filename(), 0777);
 }
+#endif
 
 class MockMultiServerChannelTest
   : public MockChannelOptsTest,
