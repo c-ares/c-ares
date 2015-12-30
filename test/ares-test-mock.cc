@@ -1,8 +1,6 @@
 #include "ares-test.h"
 #include "dns-proto.h"
 
-#include <sys/socket.h>
-
 #include <sstream>
 #include <vector>
 
@@ -642,7 +640,7 @@ TEST_P(MockChannelTest, SortListV4) {
   memset(&options, 0, sizeof(options));
   int optmask = 0;
   EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel_, &options, &optmask));
-  EXPECT_TRUE(optmask & ARES_OPT_SORTLIST);
+  EXPECT_TRUE((optmask & ARES_OPT_SORTLIST) == ARES_OPT_SORTLIST);
   ares_destroy_options(&options);
 }
 

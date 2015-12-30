@@ -2,7 +2,7 @@
 #include "ares-test.h"
 
 // library initialization is only needed for windows builds
-#ifdef USE_WINSOCK
+#ifdef WIN32
 #define EXPECTED_NONINIT ARES_ENOTINITIALIZED
 #else
 #define EXPECTED_NONINIT ARES_SUCCESS

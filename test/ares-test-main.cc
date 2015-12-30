@@ -13,6 +13,17 @@ int main(int argc, char* argv[]) {
     }
   }
 
+#ifdef WIN32
+  WORD wVersionRequested = MAKEWORD(2, 2);
+  WSADATA wsaData;
+  WSAStartup(wVersionRequested, &wsaData);
+#endif
+
   int rc = RUN_ALL_TESTS();
+
+#ifdef WIN32
+  WSACleanup();
+#endif
+
   return rc;
 }
