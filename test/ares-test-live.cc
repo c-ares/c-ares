@@ -5,7 +5,9 @@
 
 #include "ares-test.h"
 
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 
 namespace ares {
 namespace test {

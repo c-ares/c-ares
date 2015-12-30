@@ -5,12 +5,29 @@
 #include "nameser.h"
 #include "ares_dns.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <functional>
 #include <sstream>
+
+#ifdef WIN32
+#define BYTE_CAST (char *)
+#define sclose(x) closesocket(x)
+#else
+#define BYTE_CAST
+#define sclose(x) close(x)
+#endif
 
 namespace ares {
 namespace test {
@@ -18,7 +35,7 @@ namespace test {
 bool verbose = false;
 int mock_port = 5300;
 
-unsigned long LibraryTest::fails_ = 0;
+unsigned long long LibraryTest::fails_ = 0;
 std::map<size_t, int> LibraryTest::size_fails_;
 
 void ProcessWork(ares_channel channel,
@@ -69,7 +86,7 @@ void ProcessWork(ares_channel channel,
 void LibraryTest::SetAllocFail(int nth) {
   assert(nth > 0);
   assert(nth <= (int)(8 * sizeof(fails_)));
-  fails_ |= (1 << (nth - 1));
+  fails_ |= (1LL << (nth - 1));
 }
 
 // static
@@ -139,7 +156,10 @@ MockServer::MockServer(int family, int port, int tcpport)
   EXPECT_NE(-1, tcpfd_);
   int optval = 1;
   setsockopt(tcpfd_, SOL_SOCKET, SO_REUSEADDR,
-             (const void *)&optval , sizeof(int));
+             BYTE_CAST &optval , sizeof(int));
+  // Send TCP data right away.
+  setsockopt(tcpfd_, IPPROTO_TCP, TCP_NODELAY,
+             BYTE_CAST &optval , sizeof(int));
 
   // Create a UDP socket to receive data on.
   udpfd_ = socket(family, SOCK_DGRAM, 0);
@@ -181,10 +201,10 @@ MockServer::MockServer(int family, int port, int tcpport)
 
 MockServer::~MockServer() {
   for (int fd : connfds_) {
-    close(fd);
+    sclose(fd);
   }
-  close(tcpfd_);
-  close(udpfd_);
+  sclose(tcpfd_);
+  sclose(udpfd_);
 }
 
 void MockServer::ProcessFD(int fd) {
@@ -206,13 +226,13 @@ void MockServer::ProcessFD(int fd) {
   struct sockaddr_storage addr;
   socklen_t addrlen = sizeof(addr);
   byte buffer[2048];
-  int len = recvfrom(fd, buffer, sizeof(buffer), 0,
+  int len = recvfrom(fd, BYTE_CAST buffer, sizeof(buffer), 0,
                      (struct sockaddr *)&addr, &addrlen);
   byte* data = buffer;
   if (fd != udpfd_) {
     if (len == 0) {
       connfds_.erase(std::find(connfds_.begin(), connfds_.end(), fd));
-      close(fd);
+      sclose(fd);
       return;
     }
     if (len < 2) {
@@ -327,7 +347,7 @@ void MockServer::ProcessRequest(int fd, struct sockaddr_storage* addr, int addrl
     addrlen = 0;
   }
 
-  int rc = sendto(fd, reply.data(), reply.size(), 0,
+  int rc = sendto(fd, BYTE_CAST reply.data(), reply.size(), 0,
                   (struct sockaddr *)addr, addrlen);
   if (rc < static_cast<int>(reply.size())) {
     std::cerr << "Failed to send full reply, rc=" << rc << std::endl;

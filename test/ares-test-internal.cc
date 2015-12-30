@@ -10,7 +10,7 @@ extern "C" {
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 // ... so we can include the library's config without symbol redefinitions.
-#include "ares_config.h"
+#include "ares_setup.h"
 #include "ares_nowarn.h"
 #include "ares_inet_net_pton.h"
 #include "ares_data.h"

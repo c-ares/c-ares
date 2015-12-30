@@ -7,3 +7,5 @@ build_script:
   - if "%platform%" == "x64" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
   - copy ares_build.h.dist ares_build.h
   - nmake /f Makefile.msvc
+  - cd test
+  - nmake /f Makefile.msvc vtest

@@ -239,7 +239,7 @@ TEST_F(DefaultChannelTest, SendFailure) {
   EXPECT_EQ(ARES_EBADQUERY, result.status_);
 }
 
-std::string ExpandName(const std::vector<byte>& data, ssize_t offset,
+std::string ExpandName(const std::vector<byte>& data, int offset,
                        long *enclen) {
   char *name = nullptr;
   int rc = ares_expand_name(data.data() + offset, data.data(), data.size(),
