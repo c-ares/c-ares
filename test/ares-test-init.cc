@@ -44,7 +44,7 @@ TEST(LibraryInit, Nested) {
   EXPECT_EQ(EXPECTED_NONINIT, ares_library_initialized());
 }
 
-TEST_F(LibraryTest, BasicChannelInit) {
+TEST(LibraryInit, BasicChannelInit) {
   EXPECT_EQ(ARES_SUCCESS, ares_library_init(ARES_LIB_INIT_ALL));
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
@@ -175,9 +175,16 @@ TEST_F(LibraryTest, OptionsChannelAllocFail) {
   for (int ii = 1; ii <= 8; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    EXPECT_EQ(ARES_ENOMEM, ares_init_options(&channel, &opts, optmask)) << ii;
-    EXPECT_EQ(nullptr, channel);
+    int rc = ares_init_options(&channel, &opts, optmask);
+    if (rc == ARES_ENOMEM) {
+      EXPECT_EQ(nullptr, channel);
+    } else {
+      EXPECT_EQ(ARES_SUCCESS, rc);
+      ares_destroy(channel);
+      channel = nullptr;
+    }
   }
+  ClearFails();
 
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
   EXPECT_NE(nullptr, channel);

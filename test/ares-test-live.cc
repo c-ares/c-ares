@@ -81,7 +81,7 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByNameV4) {
   ares_gethostbyname(channel_, "localhost", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
-  if (result.status_ != ARES_ENOTFOUND) {
+  if ((result.status_ != ARES_ENOTFOUND) && (result.status_ != ARES_ECONNREFUSED)) {
     EXPECT_EQ(ARES_SUCCESS, result.status_);
     EXPECT_EQ(1, (int)result.host_.addrs_.size());
     EXPECT_EQ(AF_INET, result.host_.addrtype_);
