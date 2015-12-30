@@ -234,8 +234,13 @@ TEST_F(LibraryTest, ParsePtrReplyAllocFailMany) {
   for (int ii = 1; ii <= 63; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    EXPECT_EQ(ARES_ENOMEM, ares_parse_ptr_reply(data.data(), data.size(),
-                                                addrv4, sizeof(addrv4), AF_INET, &host)) << ii;
+    int rc = ares_parse_ptr_reply(data.data(), data.size(),
+                                  addrv4, sizeof(addrv4), AF_INET, &host);
+    if (rc != ARES_ENOMEM) {
+      EXPECT_EQ(ARES_SUCCESS, rc);
+      ares_free_hostent(host);
+      host = nullptr;
+    }
   }
 }
 
