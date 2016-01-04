@@ -190,7 +190,9 @@ MockServer::MockServer(int family, int port, int tcpport)
     int udprc = bind(udpfd_, (struct sockaddr*)&addr, sizeof(addr));
     EXPECT_EQ(0, udprc) << "Failed to bind AF_INET6 to UDP port " << udpport_;
   }
-  if (verbose) std::cerr << "Configured mock server with TCP socket " << tcpfd_
+  if (verbose) std::cerr << "Configured "
+                         << (family == AF_INET ? "IPv4" : "IPv6")
+                         << " mock server with TCP socket " << tcpfd_
                          << " on port " << tcpport_
                          << " and UDP socket " << udpfd_
                          << " on port " << udpport_ << std::endl;
@@ -386,9 +388,9 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
   opts.tcp_port = mock_port;
   optmask |= ARES_OPT_TCP_PORT;
 
-  // If not already overridden, set short timeouts.
+  // If not already overridden, set short-ish timeouts.
   if (!(optmask & (ARES_OPT_TIMEOUTMS|ARES_OPT_TIMEOUT))) {
-    opts.timeout = 100;
+    opts.timeout = 1500;
     optmask |= ARES_OPT_TIMEOUTMS;
   }
   // If not already overridden, set 3 retries.
