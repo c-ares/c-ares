@@ -5,10 +5,6 @@
 #include "nameser.h"
 #include "ares_dns.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
@@ -24,9 +20,11 @@
 #ifdef WIN32
 #define BYTE_CAST (char *)
 #define sclose(x) closesocket(x)
+#define mkdir_(d, p) mkdir(d)
 #else
 #define BYTE_CAST
 #define sclose(x) close(x)
+#define mkdir_(d, p) mkdir(d, p)
 #endif
 
 namespace ares {
@@ -415,7 +413,7 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
 
   // Set up servers after construction so we can set individual ports
   struct ares_addr_port_node* prev = nullptr;
-  struct ares_addr_port_node* first;
+  struct ares_addr_port_node* first = nullptr;
   for (const auto& server : servers_) {
     struct ares_addr_port_node* node = (struct ares_addr_port_node*)malloc(sizeof(*node));
     if (prev) {
@@ -624,29 +622,49 @@ std::vector<std::string> GetNameServers(ares_channel channel) {
   return results;
 }
 
-TempFile::TempFile(const std::string& contents)
-  : filename_(tempnam(nullptr, "ares")) {
-  if (!filename_) {
-    std::cerr << "Error: failed to generate temporary filename" << std::endl;
-    return;
+TransientDir::TransientDir(const std::string& dirname) : dirname_(dirname) {
+  if (mkdir_(dirname_.c_str(), 0755) != 0) {
+    std::cerr << "Failed to create subdirectory '" << dirname_ << "'" << std::endl;
   }
-  FILE *f = fopen(filename_, "w");
-  if (!f) {
-    std::cerr << "Error: failed to create temporary file " << filename_ << std::endl;
+}
+
+TransientDir::~TransientDir() {
+  rmdir(dirname_.c_str());
+}
+
+TransientFile::TransientFile(const std::string& filename,
+                             const std::string& contents)
+    : filename_(filename) {
+  FILE *f = fopen(filename.c_str(), "w");
+  if (f == nullptr) {
+    std::cerr << "Error: failed to create '" << filename << "'" << std::endl;
     return;
   }
   int rc = fwrite(contents.data(), 1, contents.size(), f);
-  if (rc < (int)contents.size()) {
-    std::cerr << "Error: failed to store data in temporary file " << filename_ << std::endl;
+  if (rc != (int)contents.size()) {
+    std::cerr << "Error: failed to write contents of '" << filename << "'" << std::endl;
   }
   fclose(f);
 }
 
-TempFile::~TempFile() {
-  if (filename_) {
-    unlink(filename_);
-    free(filename_);
-  }
+TransientFile::~TransientFile() {
+  unlink(filename_.c_str());
+}
+
+namespace {
+
+std::string TempNam(const char *dir, const char *prefix) {
+  char *p = tempnam(dir, prefix);
+  std::string result(p);
+  free(p);
+  return result;
+}
+
+}  // namespace
+
+TempFile::TempFile(const std::string& contents)
+  : TransientFile(TempNam(nullptr, "ares"), contents) {
+
 }
 
 }  // namespace test

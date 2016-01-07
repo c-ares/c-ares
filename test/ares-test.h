@@ -12,6 +12,10 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <functional>
 #include <map>
 #include <memory>
@@ -272,16 +276,32 @@ void NameInfoCallback(void *data, int status, int timeouts,
 // Retrieve the name servers used by a channel.
 std::vector<std::string> GetNameServers(ares_channel channel);
 
+
+// RAII class to temporarily create a directory of a given name.
+class TransientDir {
+ public:
+  TransientDir(const std::string& dirname);
+  ~TransientDir();
+
+ private:
+  std::string dirname_;
+};
+
+// RAII class to temporarily create file of a given name and contents.
+class TransientFile {
+ public:
+  TransientFile(const std::string &filename, const std::string &contents);
+  ~TransientFile();
+
+ protected:
+  std::string filename_;
+};
+
 // RAII class for a temporary file with the given contents.
-class TempFile {
+class TempFile : public TransientFile {
  public:
   TempFile(const std::string& contents);
-  ~TempFile();
-  const char *filename() const {
-    return filename_;
-  }
- private:
-  char *filename_;
+  const char* filename() const { return filename_.c_str(); }
 };
 
 #ifndef WIN32
@@ -308,6 +328,16 @@ class EnvValue {
   bool restore_;
   std::string original_;
 };
+#endif
+
+// Linux-specific functionality for running code in a container.
+#if defined(HAVE_USER_NAMESPACE) && defined(HAVE_UTS_NAMESPACE)
+#define HAVE_CONTAINER
+typedef std::function<int(void)> VoidToIntFn;
+int RunInContainer(const std::string& dirname, const std::string& hostname,
+                   const std::string& domainname, VoidToIntFn fn);
+#define CONTAINER_RUN(dir, host, domain, fn) \
+  EXPECT_EQ(0, RunInContainer(dir, host, domain, static_cast<VoidToIntFn>(fn)));
 #endif
 
 }  // namespace test
