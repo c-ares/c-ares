@@ -15,8 +15,12 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#if defined(HAVE_USER_NAMESPACE) && defined(HAVE_UTS_NAMESPACE)
+#define HAVE_CONTAINER
+#endif
 
 #include <functional>
+#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -287,6 +291,9 @@ class TransientDir {
   std::string dirname_;
 };
 
+// C++ wrapper around tempnam()
+std::string TempNam(const char *dir, const char *prefix);
+
 // RAII class to temporarily create file of a given name and contents.
 class TransientFile {
  public:
@@ -330,14 +337,40 @@ class EnvValue {
 };
 #endif
 
-// Linux-specific functionality for running code in a container.
-#if defined(HAVE_USER_NAMESPACE) && defined(HAVE_UTS_NAMESPACE)
-#define HAVE_CONTAINER
+// Linux-specific functionality for running code in a container, implemented
+// in ares-test-ns.cc
+#ifdef HAVE_CONTAINER
 typedef std::function<int(void)> VoidToIntFn;
+typedef std::vector<std::pair<std::string, std::string>> NameContentList;
 int RunInContainer(const std::string& dirname, const std::string& hostname,
                    const std::string& domainname, VoidToIntFn fn);
-#define CONTAINER_RUN(dir, host, domain, fn) \
-  EXPECT_EQ(0, RunInContainer(dir, host, domain, static_cast<VoidToIntFn>(fn)));
+
+class ContainerFilesystem {
+ public:
+  explicit ContainerFilesystem(NameContentList files);
+  ~ContainerFilesystem();
+  std::string root() const { return rootdir_; };
+ private:
+  void EnsureDirExists(const std::string& dir);
+  std::string rootdir_;
+  std::list<std::string> dirs_;
+  std::vector<std::unique_ptr<TransientFile>> files_;
+};
+
+#define ICLASS_NAME(casename, testname) Contained##casename##_##testname
+#define CONTAINED_TEST_F(casename, testname, hostname, domainname, files)       \
+  class ICLASS_NAME(casename, testname) : public casename {                     \
+   public:                                                                      \
+    ICLASS_NAME(casename, testname)() {}                                        \
+    static int InnerTestBody();                                                 \
+  };                                                                            \
+  TEST_F(ICLASS_NAME(casename, testname), _) {                                  \
+    ContainerFilesystem chroot(files);                                          \
+    VoidToIntFn fn(ICLASS_NAME(casename, testname)::InnerTestBody);             \
+    EXPECT_EQ(0, RunInContainer(chroot.root(), hostname, domainname, fn));      \
+  }                                                                             \
+  int ICLASS_NAME(casename, testname)::InnerTestBody()
+
 #endif
 
 }  // namespace test

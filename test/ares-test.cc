@@ -651,16 +651,12 @@ TransientFile::~TransientFile() {
   unlink(filename_.c_str());
 }
 
-namespace {
-
 std::string TempNam(const char *dir, const char *prefix) {
   char *p = tempnam(dir, prefix);
   std::string result(p);
   free(p);
   return result;
 }
-
-}  // namespace
 
 TempFile::TempFile(const std::string& contents)
   : TransientFile(TempNam(nullptr, "ares"), contents) {

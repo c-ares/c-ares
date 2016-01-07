@@ -135,6 +135,41 @@ int RunInContainer(const std::string& dirname, const std::string& hostname,
   return status;
 }
 
+ContainerFilesystem::ContainerFilesystem(NameContentList files) {
+  rootdir_ = TempNam(nullptr, "ares-chroot");
+  mkdir(rootdir_.c_str(), 0755);
+  dirs_.push_front(rootdir_);
+  for (const auto& nc : files) {
+    std::string fullpath = rootdir_ + nc.first;
+    int idx = fullpath.rfind('/');
+    std::string dir = fullpath.substr(0, idx);
+    EnsureDirExists(dir);
+    files_.push_back(std::unique_ptr<TransientFile>(
+        new TransientFile(fullpath, nc.second)));
+  }
+}
+
+ContainerFilesystem::~ContainerFilesystem() {
+  files_.clear();
+  for (const std::string& dir : dirs_) {
+    rmdir(dir.c_str());
+  }
+}
+
+void ContainerFilesystem::EnsureDirExists(const std::string& dir) {
+  if (std::find(dirs_.begin(), dirs_.end(), dir) != dirs_.end()) {
+    return;
+  }
+  size_t idx = dir.rfind('/');
+  if (idx != std::string::npos) {
+    std::string prevdir = dir.substr(0, idx);
+    EnsureDirExists(prevdir);
+  }
+  // Ensure this directory is in the list before its ancestors.
+  mkdir(dir.c_str(), 0755);
+  dirs_.push_front(dir);
+}
+
 }  // namespace test
 }  // namespace ares
 
