@@ -1,4 +1,3 @@
-
 #include "ares-test.h"
 
 // library initialization is only needed for windows builds
@@ -291,6 +290,49 @@ TEST_F(DefaultChannelTest, SetSortlistAllocFail) {
 TEST(Init, NoLibraryInit) {
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_ENOTINITIALIZED, ares_init(&channel));
+}
+#endif
+
+#ifdef HAVE_CONTAINER
+// These tests rely on the ability of non-root users to create a chroot
+// using Linux namespaces.
+
+TEST(LibraryInit, ContainerChannelInit) {
+  TransientDir root("chroot");
+  TransientDir etc("chroot/etc");
+  TransientFile resolv("chroot/etc/resolv.conf",
+                       "nameserver 1.2.3.4\n"
+                       "search first.com second.com\n");
+  TransientFile hosts("chroot/etc/hosts",
+                      "3.4.5.6 ahostname.com");
+  TransientFile nsswitch("chroot/etc/nsswitch.conf",
+                         "hosts: files\n");
+
+  auto testfn = [] () {
+    ares_channel channel = nullptr;
+    EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+    std::vector<std::string> actual = GetNameServers(channel);
+    std::vector<std::string> expected = {"1.2.3.4"};
+    EXPECT_EQ(expected, actual);
+
+    struct ares_options opts;
+    int optmask = 0;
+    ares_save_options(channel, &opts, &optmask);
+    EXPECT_EQ(2, opts.ndomains);
+    EXPECT_EQ(std::string("first.com"), std::string(opts.domains[0]));
+    EXPECT_EQ(std::string("second.com"), std::string(opts.domains[1]));
+    ares_destroy_options(&opts);
+
+    HostResult result;
+    ares_gethostbyname(channel, "ahostname.com", AF_INET, HostCallback, &result);
+    ProcessWork(channel, NoExtraFDs, nullptr);
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'ahostname.com' aliases=[] addrs=[3.4.5.6]}", ss.str());
+    return HasFailure();
+  };
+  CONTAINER_RUN("chroot", "myhostname", "mydomainname.org", testfn);
 }
 #endif
 
