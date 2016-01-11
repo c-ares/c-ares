@@ -297,8 +297,32 @@ TEST(Init, NoLibraryInit) {
 // These tests rely on the ability of non-root users to create a chroot
 // using Linux namespaces.
 
+
+// The library uses a variety of information sources to initialize a channel,
+// in particular to determine:
+//  - search: the search domains to use
+//  - servers: the name servers to use
+//  - lookup: whether to check files or DNS or both (e.g. "fb")
+//  - options: various resolver options
+//  - sortlist: the order of preference for IP addresses
+//
+// The first source from the following list is used:
+//  - init_by_options(): explicitly specified values in struct ares_options
+//  - init_by_environment(): values from the environment:
+//     - LOCALDOMAIN -> search (single value)
+//     - RES_OPTIONS -> options
+//  - init_by_resolv_conf(): values from various config files:
+//     - /etc/resolv.conf -> search, lookup, servers, sortlist, options
+//     - /etc/nsswitch.conf -> lookup
+//     - /etc/host.conf -> lookup
+//     - /etc/svc.conf -> lookup
+//  - init_by_defaults(): fallback values:
+//     - gethostname(3) -> domain
+//     - "fb" -> lookup
+
 NameContentList filelist = {
   {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "sortlist 1.2.3.4/16 2.3.4.5\n"
                        "search first.com second.com\n"},
   {"/etc/hosts", "3.4.5.6 ahostname.com\n"},
   {"/etc/nsswitch.conf", "hosts: files\n"}};
@@ -325,8 +349,158 @@ CONTAINED_TEST_F(LibraryTest, ContainerChannelInit,
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'ahostname.com' aliases=[] addrs=[3.4.5.6]}", ss.str());
+
+  ares_destroy(channel);
   return HasFailure();
 }
+
+NameContentList fullresolv = {
+  {"/etc/resolv.conf", " nameserver   1.2.3.4 \n"
+                       "search   first.com second.com\n"
+                       "lookup bind\n"
+                       "options debug ndots:5\n"
+                       "sortlist 1.2.3.4/16 2.3.4.5\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerFullResolvInit,
+                 "myhostname", "mydomainname.org", fullresolv) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(std::string("b"), std::string(opts.lookups));
+  EXPECT_EQ(5, opts.ndots);
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+NameContentList hostconf = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "sortlist1.2.3.4\n"  // malformed line
+                       "search first.com second.com\n"},
+  {"/etc/host.conf", "order bind hosts\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerHostConfInit,
+                 "myhostname", "mydomainname.org", hostconf) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(std::string("bf"), std::string(opts.lookups));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+NameContentList svcconf = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "search first.com second.com\n"},
+  {"/etc/svc.conf", "hosts= bind\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerSvcConfInit,
+                 "myhostname", "mydomainname.org", svcconf) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(std::string("b"), std::string(opts.lookups));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+// Failures when expected config filenames are inaccessible.
+class MakeUnreadable {
+ public:
+  explicit MakeUnreadable(const std::string& filename)
+    : filename_(filename) {
+    chmod(filename_.c_str(), 0000);
+  }
+  ~MakeUnreadable() { chmod(filename_.c_str(), 0644); }
+ private:
+  std::string filename_;
+};
+
+CONTAINED_TEST_F(LibraryTest, ContainerResolvConfNotReadable,
+                 "myhostname", "mydomainname.org", filelist) {
+  ares_channel channel = nullptr;
+  MakeUnreadable hide("/etc/resolv.conf");
+  EXPECT_EQ(ARES_EFILE, ares_init(&channel));
+  return HasFailure();
+}
+CONTAINED_TEST_F(LibraryTest, ContainerNsswitchConfNotReadable,
+                 "myhostname", "mydomainname.org", filelist) {
+  ares_channel channel = nullptr;
+  MakeUnreadable hide("/etc/nsswitch.conf");
+  EXPECT_EQ(ARES_EFILE, ares_init(&channel));
+  return HasFailure();
+}
+CONTAINED_TEST_F(LibraryTest, ContainerHostConfNotReadable,
+                 "myhostname", "mydomainname.org", hostconf) {
+  ares_channel channel = nullptr;
+  MakeUnreadable hide("/etc/host.conf");
+  EXPECT_EQ(ARES_EFILE, ares_init(&channel));
+  return HasFailure();
+}
+CONTAINED_TEST_F(LibraryTest, ContainerSvcConfNotReadable,
+                 "myhostname", "mydomainname.org", svcconf) {
+  ares_channel channel = nullptr;
+  MakeUnreadable hide("/etc/svc.conf");
+  EXPECT_EQ(ARES_EFILE, ares_init(&channel));
+  return HasFailure();
+}
+
+NameContentList multiresolv = {
+  {"/etc/resolv.conf", " nameserver 1::2 ;  ;;\n"
+                       " domain first.com\n"},
+  {"/etc/nsswitch.conf", "hosts: files\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerMultiResolvInit,
+                 "myhostname", "mydomainname.org", multiresolv) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  std::vector<std::string> actual = GetNameServers(channel);
+  std::vector<std::string> expected = {"0001:0000:0000:0000:0000:0000:0000:0002"};
+  EXPECT_EQ(expected, actual);
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(1, opts.ndomains);
+  EXPECT_EQ(std::string("first.com"), std::string(opts.domains[0]));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+NameContentList empty = {};  // no files
+CONTAINED_TEST_F(LibraryTest, ContainerEmptyInit,
+                 "host.domain.org", "domain.org", empty) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  std::vector<std::string> actual = GetNameServers(channel);
+  std::vector<std::string> expected = {"127.0.0.1"};
+  EXPECT_EQ(expected, actual);
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(1, opts.ndomains);
+  EXPECT_EQ(std::string("domain.org"), std::string(opts.domains[0]));
+  EXPECT_EQ(std::string("fb"), std::string(opts.lookups));
+  ares_destroy_options(&opts);
+
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 #endif
 
 }  // namespace test
