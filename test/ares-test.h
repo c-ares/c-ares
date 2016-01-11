@@ -337,25 +337,29 @@ class EnvValue {
 };
 #endif
 
+
+#ifdef HAVE_CONTAINER
 // Linux-specific functionality for running code in a container, implemented
 // in ares-test-ns.cc
-#ifdef HAVE_CONTAINER
 typedef std::function<int(void)> VoidToIntFn;
 typedef std::vector<std::pair<std::string, std::string>> NameContentList;
-int RunInContainer(const std::string& dirname, const std::string& hostname,
-                   const std::string& domainname, VoidToIntFn fn);
 
 class ContainerFilesystem {
  public:
-  explicit ContainerFilesystem(NameContentList files);
+  ContainerFilesystem(NameContentList files, const std::string& mountpt);
   ~ContainerFilesystem();
   std::string root() const { return rootdir_; };
+  std::string mountpt() const { return mountpt_; };
  private:
   void EnsureDirExists(const std::string& dir);
   std::string rootdir_;
+  std::string mountpt_;
   std::list<std::string> dirs_;
   std::vector<std::unique_ptr<TransientFile>> files_;
 };
+
+int RunInContainer(ContainerFilesystem* fs, const std::string& hostname,
+                   const std::string& domainname, VoidToIntFn fn);
 
 #define ICLASS_NAME(casename, testname) Contained##casename##_##testname
 #define CONTAINED_TEST_F(casename, testname, hostname, domainname, files)       \
@@ -365,9 +369,9 @@ class ContainerFilesystem {
     static int InnerTestBody();                                                 \
   };                                                                            \
   TEST_F(ICLASS_NAME(casename, testname), _) {                                  \
-    ContainerFilesystem chroot(files);                                          \
+    ContainerFilesystem chroot(files, "..");                                    \
     VoidToIntFn fn(ICLASS_NAME(casename, testname)::InnerTestBody);             \
-    EXPECT_EQ(0, RunInContainer(chroot.root(), hostname, domainname, fn));      \
+    EXPECT_EQ(0, RunInContainer(&chroot, hostname, domainname, fn));            \
   }                                                                             \
   int ICLASS_NAME(casename, testname)::InnerTestBody()
 

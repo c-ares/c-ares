@@ -1,5 +1,8 @@
 #include "ares-test.h"
 
+#ifdef HAVE_CONTAINER
+
+#include <sys/mount.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -10,15 +13,13 @@
 #include <sstream>
 #include <vector>
 
-#ifdef HAVE_CONTAINER
-
 namespace ares {
 namespace test {
 
 namespace {
 
 struct ContainerInfo {
-  std::string dirname_;
+  ContainerFilesystem* fs_;
   std::string hostname_;
   std::string domainname_;
   VoidToIntFn fn_;
@@ -29,7 +30,7 @@ int EnterContainer(void *data) {
 
   if (verbose) {
     std::cerr << "Running function in container {chroot='"
-              << container->dirname_ << "', hostname='" << container->hostname_
+              << container->fs_->root() << "', hostname='" << container->hostname_
               << "', domainname='" << container->domainname_ << "'}"
               << std::endl;
   }
@@ -44,9 +45,22 @@ int EnterContainer(void *data) {
     std::cerr << "Child in user namespace has uid " << getuid() << std::endl;
     return -1;
   }
+  if (!container->fs_->mountpt().empty()) {
+    // We want to bind mount this inside the specified directory.
+    std::string innerdir = container->fs_->root() + container->fs_->mountpt();
+    if (verbose) std::cerr << " mount --bind " << container->fs_->mountpt()
+                           << " " << innerdir << std::endl;
+    int rc = mount(container->fs_->mountpt().c_str(), innerdir.c_str(),
+                   "none", MS_BIND, 0);
+    if (rc != 0) {
+      std::cerr << "Warning: failed to bind mount " << container->fs_->mountpt() << " at "
+                << innerdir << ", errno=" << errno << std::endl;
+    }
+  }
+
   // Move into the specified directory.
-  if (chdir(container->dirname_.c_str()) != 0) {
-    std::cerr << "Failed to chdir('" << container->dirname_
+  if (chdir(container->fs_->root().c_str()) != 0) {
+    std::cerr << "Failed to chdir('" << container->fs_->root()
               << "'), errno=" << errno << std::endl;
     return -1;
   }
@@ -89,17 +103,18 @@ int EnterContainer(void *data) {
 //  - chroot()ed into a particular directory
 //  - having a specified hostname/domainname
 
-int RunInContainer(const std::string& dirname, const std::string& hostname,
+int RunInContainer(ContainerFilesystem* fs, const std::string& hostname,
                    const std::string& domainname, VoidToIntFn fn) {
   const int stack_size = 1024 * 1024;
   std::vector<byte> stack(stack_size, 0);
-  ContainerInfo container = {dirname, hostname, domainname, fn};
+  ContainerInfo container = {fs, hostname, domainname, fn};
 
   // Start a child process in a new user and UTS namespace
   pid_t child = clone(EnterContainer, stack.data() + stack_size,
-                      CLONE_NEWUSER|CLONE_NEWUTS|SIGCHLD, (void *)&container);
+                      CLONE_VM|CLONE_NEWNS|CLONE_NEWUSER|CLONE_NEWUTS|SIGCHLD,
+                      (void *)&container);
   if (child < 0) {
-    std::cerr << "Failed to clone()" << std::endl;
+    std::cerr << "Failed to clone(), errno=" << errno << std::endl;
     return -1;
   }
 
@@ -135,7 +150,7 @@ int RunInContainer(const std::string& dirname, const std::string& hostname,
   return status;
 }
 
-ContainerFilesystem::ContainerFilesystem(NameContentList files) {
+ContainerFilesystem::ContainerFilesystem(NameContentList files, const std::string& mountpt) {
   rootdir_ = TempNam(nullptr, "ares-chroot");
   mkdir(rootdir_.c_str(), 0755);
   dirs_.push_front(rootdir_);
@@ -146,6 +161,14 @@ ContainerFilesystem::ContainerFilesystem(NameContentList files) {
     EnsureDirExists(dir);
     files_.push_back(std::unique_ptr<TransientFile>(
         new TransientFile(fullpath, nc.second)));
+  }
+  if (!mountpt.empty()) {
+    char buffer[PATH_MAX + 1];
+    if (realpath(mountpt.c_str(), buffer)) {
+      mountpt_ = buffer;
+      std::string fullpath = rootdir_ + mountpt_;
+      EnsureDirExists(fullpath);
+    }
   }
 }
 
