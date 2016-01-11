@@ -1,15 +1,18 @@
-c-ares version 1.10.1
+c-ares version 1.11.0
 
 Changes:
 
- o 
+ o Add a unit test suite.
+ o Allow builds with code converage with --enable-code-coverage configure option.
+ o Allow library-wide override of malloc/free.
+ o Allow multiple -s options to the ahost command.
 
 Bug fixes:
 
- o 
- 
+ o
+
 Thanks go to these friendly people for their efforts and contributions:
 
-  
+ David Drysdale
 
 Have fun!
