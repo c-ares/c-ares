@@ -1,0 +1,83 @@
+language: c++
+sudo: false
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - gcc-4.8
+            - g++-4.8
+            - lcov
+matrix:
+    include:
+        - os: linux
+          compiler: gcc
+          env: BUILD_TYPE=normal
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=normal
+        - os: linux
+          compiler: gcc
+          env: BUILD_TYPE=coverage
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=ubsan
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=asan
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=lsan
+#        - os: linux
+#          compiler: clang
+#          env: BUILD_TYPE=analyse
+        - os: osx
+          compiler: gcc
+          env: BUILD_TYPE=normal
+        - os: osx
+          compiler: clang
+          env: BUILD_TYPE=normal
+install:
+    - pip install --user 'requests[security]'
+    - pip install --user cpp-coveralls
+before_script:
+    - |
+         if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" = "g++" ]; then
+             export CXX="g++-4.8"
+             export CC="gcc-4.8"
+         fi
+    - |
+        if [ "$BUILD_TYPE" = "coverage" ]; then
+             export CONFIG_OPTS="--enable-debug --disable-shared --enable-code-coverage"
+        fi
+    - |
+         if [ "$BUILD_TYPE" = "asan" ]; then
+             export CONFIG_OPTS=--enable-debug
+             export CFLAGS=-fsanitize=address
+             export CXXFLAGS=-fsanitize=address
+             export LDFLAGS=-fsanitize=address
+         fi
+    - |
+         if [ "$BUILD_TYPE" = "lsan" ]; then
+             export CONFIG_OPTS=--enable-debug
+             export CFLAGS=-fsanitize=leak
+             export CXXFLAGS=-fsanitize=leak
+             export LDFLAGS=-fsanitize=leak
+         fi
+    - |
+         if [ "$BUILD_TYPE" = "ubsan" ]; then
+             export CFLAGS="-fsanitize=undefined -fno-sanitize-recover"
+             export LDFLAGS="-fsanitize=undefined"
+         fi
+    - |
+         if [ "$BUILD_TYPE" = "analyse" ]; then
+             export SCAN_WRAP="scan-build"
+             export CONFIG_OPTS="--enable-debug"
+         fi
+script:
+    - ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics $CONFIG_OPTS && $SCAN_WRAP make
+    - cd test && autoreconf -iv && ./configure $CONFIG_OPTS && make && ./arestest -v && cd ..
+    - |
+          if [ "$BUILD_TYPE" = "coverage" ]; then
+              coveralls --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
+          fi
