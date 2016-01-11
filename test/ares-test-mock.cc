@@ -223,6 +223,48 @@ TEST_P(MockTCPChannelTest, YXDomainResponse) {
   EXPECT_EQ(ARES_ENODATA, result.status_);
 }
 
+class MockExtraOptsTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+  MockExtraOptsTest()
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
+                          FillOptions(&opts_),
+                          ARES_OPT_SOCK_SNDBUF|ARES_OPT_SOCK_RCVBUF) {}
+  static struct ares_options* FillOptions(struct ares_options * opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    // Set a few options that affect socket communications
+    opts->socket_send_buffer_size = 514;
+    opts->socket_receive_buffer_size = 514;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+TEST_P(MockExtraOptsTest, SimpleQuery) {
+  ares_set_local_ip4(channel_, 0x7F000001);
+  byte addr6[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+  ares_set_local_ip6(channel_, addr6);
+  ares_set_local_dev(channel_, "dummy");
+
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
 class MockFlagsChannelOptsTest
     : public MockChannelOptsTest,
       public ::testing::WithParamInterface< std::pair<int, bool> > {
@@ -1001,6 +1043,12 @@ INSTANTIATE_TEST_CASE_P(AddressFamilies, MockUDPChannelTest,
 
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockTCPChannelTest,
                         ::testing::Values(AF_INET, AF_INET6));
+
+INSTANTIATE_TEST_CASE_P(AddressFamilies, MockExtraOptsTest,
+                        ::testing::Values(std::make_pair<int, bool>(AF_INET, false),
+                                          std::make_pair<int, bool>(AF_INET, true),
+                                          std::make_pair<int, bool>(AF_INET6, false),
+                                          std::make_pair<int, bool>(AF_INET6, true)));
 
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockNoCheckRespChannelTest,
                         ::testing::Values(std::make_pair<int, bool>(AF_INET, false),
