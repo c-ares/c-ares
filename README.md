@@ -1,6 +1,10 @@
 c-ares
 ======
 
+[![Build Status](https://travis-ci.org/daviddrysdale/c-ares.svg?branch=test)](https://travis-ci.org/daviddrysdale/c-ares)
+[![Windows Build Status](https://ci.appveyor.com/api/projects/status/03i7151772eq3wn3/branch/test?svg=true)](https://ci.appveyor.com/project/daviddrysdale/c-ares)
+[![Coverage Status](https://coveralls.io/repos/daviddrysdale/c-ares/badge.svg?branch=test&service=github)](https://coveralls.io/github/daviddrysdale/c-ares?branch=test)
+
 This is c-ares, an asynchronous resolver library.  It is intended for
 applications which need to perform DNS queries without blocking, or need to
 perform multiple DNS queries in parallel.  The primary examples of such
@@ -55,4 +59,3 @@ Notes for c-ares hackers
 * Newlines must remain unix-style for older compilers' sake.
 
 * Comments must be written in the old-style /* unnested C-fashion */
-
