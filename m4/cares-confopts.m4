@@ -388,5 +388,9 @@ AC_DEFUN([CARES_CONFIGURE_SYMBOL_HIDING], [
   fi
   AM_CONDITIONAL(DOING_CARES_SYMBOL_HIDING, test x$doing_symbol_hiding = xyes)
   AC_SUBST(CFLAG_CARES_SYMBOL_HIDING)
+  if test "$doing_symbol_hiding" = "yes"; then
+    AC_DEFINE_UNQUOTED(CARES_SYMBOL_HIDING, 1,
+      [Defined for build with symbol hiding.])
+  fi
 ])
 
