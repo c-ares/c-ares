@@ -13,6 +13,7 @@ TEST_F(DefaultChannelTest, LiveGetHostByNameV4) {
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
   EXPECT_LT(0, (int)result.host_.addrs_.size());
   EXPECT_EQ(AF_INET, result.host_.addrtype_);
 }
@@ -22,6 +23,7 @@ TEST_F(DefaultChannelTest, LiveGetHostByNameV6) {
   ares_gethostbyname(channel_, "www.google.com.", AF_INET6, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
   EXPECT_LT(0, (int)result.host_.addrs_.size());
   EXPECT_EQ(AF_INET6, result.host_.addrtype_);
 }
@@ -32,6 +34,7 @@ TEST_F(DefaultChannelTest, LiveGetHostByAddrV4) {
   ares_gethostbyaddr(channel_, addr, sizeof(addr), AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
   EXPECT_LT(0, (int)result.host_.addrs_.size());
   EXPECT_EQ(AF_INET, result.host_.addrtype_);
 }
@@ -43,8 +46,37 @@ TEST_F(DefaultChannelTest, LiveGetHostByAddrV6) {
   ares_gethostbyaddr(channel_, addr, sizeof(addr), AF_INET6, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
   EXPECT_LT(0, (int)result.host_.addrs_.size());
   EXPECT_EQ(AF_INET6, result.host_.addrtype_);
+}
+
+TEST_F(DefaultChannelTest, LiveGetHostByAddrFailFamily) {
+  HostResult result;
+  unsigned char addr[4] = {8, 8, 8, 8};
+  ares_gethostbyaddr(channel_, addr, sizeof(addr), AF_INET6+AF_INET,
+                     HostCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTIMP, result.status_);
+}
+
+TEST_F(DefaultChannelTest, LiveGetHostByAddrFailAddrSize) {
+  HostResult result;
+  unsigned char addr[4] = {8, 8, 8, 8};
+  ares_gethostbyaddr(channel_, addr, sizeof(addr) - 1, AF_INET,
+                     HostCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTIMP, result.status_);
+}
+
+TEST_F(DefaultChannelTest, LiveGetHostByAddrFailAlloc) {
+  HostResult result;
+  unsigned char addr[4] = {8, 8, 8, 8};
+  SetAllocFail(1);
+  ares_gethostbyaddr(channel_, addr, sizeof(addr), AF_INET,
+                     HostCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOMEM, result.status_);
 }
 
 TEST_F(DefaultChannelTest, LiveSearchA) {
@@ -53,6 +85,7 @@ TEST_F(DefaultChannelTest, LiveSearchA) {
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
 TEST_F(DefaultChannelTest, LiveSearchNS) {
@@ -61,6 +94,7 @@ TEST_F(DefaultChannelTest, LiveSearchNS) {
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
 TEST_F(DefaultChannelTest, LiveSearchMX) {
@@ -69,6 +103,7 @@ TEST_F(DefaultChannelTest, LiveSearchMX) {
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
 TEST_F(DefaultChannelTest, LiveSearchTXT) {
@@ -77,6 +112,7 @@ TEST_F(DefaultChannelTest, LiveSearchTXT) {
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
 TEST_F(DefaultChannelTest, LiveSearchSOA) {
@@ -85,6 +121,7 @@ TEST_F(DefaultChannelTest, LiveSearchSOA) {
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
 TEST_F(DefaultChannelTest, LiveSearchANY) {
@@ -93,6 +130,7 @@ TEST_F(DefaultChannelTest, LiveSearchANY) {
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
 TEST_F(DefaultChannelTest, LiveGetNameInfo) {
@@ -107,14 +145,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfo) {
                    NameInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
-
-CARES_EXTERN void ares_getnameinfo(ares_channel channel,
-                                   const struct sockaddr *sa,
-                                   ares_socklen_t salen,
-                                   int flags,
-                                   ares_nameinfo_callback callback,
-                                   void *arg);
-
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
 }  // namespace test

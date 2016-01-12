@@ -411,7 +411,9 @@ TEST_F(LibraryTest, ParseNaptrReplyOK) {
   pkt.set_qid(0x1234).set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_soa))
     .add_answer(new DNSNaptrRR("example.com", 0x01020304,
-                               10, 20, "SP", "service", "regexp", "replace"));
+                               10, 20, "SP", "service", "regexp", "replace"))
+    .add_answer(new DNSNaptrRR("example.com", 0x0010,
+                               11, 21, "SP", "service2", "regexp2", "replace2"));
   std::vector<byte> data = pkt.data();
 
   struct ares_naptr_reply* naptr = nullptr;
@@ -423,7 +425,16 @@ TEST_F(LibraryTest, ParseNaptrReplyOK) {
   EXPECT_EQ("replace", std::string((char*)naptr->replacement));
   EXPECT_EQ(10, naptr->order);
   EXPECT_EQ(20, naptr->preference);
-  EXPECT_EQ(nullptr, naptr->next);
+
+  struct ares_naptr_reply* naptr2 = naptr->next;
+  ASSERT_NE(nullptr, naptr2);
+  EXPECT_EQ("SP", std::string((char*)naptr2->flags));
+  EXPECT_EQ("service2", std::string((char*)naptr2->service));
+  EXPECT_EQ("regexp2", std::string((char*)naptr2->regexp));
+  EXPECT_EQ("replace2", std::string((char*)naptr2->replacement));
+  EXPECT_EQ(11, naptr2->order);
+  EXPECT_EQ(21, naptr2->preference);
+  EXPECT_EQ(nullptr, naptr2->next);
 
   ares_free_data(naptr);
 }

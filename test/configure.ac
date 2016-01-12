@@ -3,7 +3,7 @@ AC_INIT([c-ares-test],[-],[-])
 AC_CONFIG_SRCDIR([ares-test.cc])
 AC_CONFIG_MACRO_DIR([../m4])
 
-AM_INIT_AUTOMAKE()
+AM_INIT_AUTOMAKE([no-define])
 
 dnl Checks for programs.
 AC_PROG_CXX

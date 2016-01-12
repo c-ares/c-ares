@@ -369,7 +369,6 @@ std::string RRToString(const std::vector<byte>& packet,
     ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
     ss << " '" << name << "'";
     free(name);
-    p += enclen;
     break;
   }
   default:
