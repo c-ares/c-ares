@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdlib.h>
 
 #include "ares-test.h"
@@ -17,6 +18,8 @@ int main(int argc, char* argv[]) {
   WORD wVersionRequested = MAKEWORD(2, 2);
   WSADATA wsaData;
   WSAStartup(wVersionRequested, &wsaData);
+#else
+  signal(SIGPIPE, SIG_IGN);
 #endif
 
   int rc = RUN_ALL_TESTS();
