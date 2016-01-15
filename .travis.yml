@@ -37,6 +37,10 @@ matrix:
         - os: osx
           compiler: clang
           env: BUILD_TYPE=normal
+        - os: osx
+          compiler: clang
+          language: objective-c
+          env: BUILD_TYPE=ios
 install:
     - pip install --user 'requests[security]<2.9.1'
     - pip install --user cpp-coveralls
@@ -74,9 +78,21 @@ before_script:
              export SCAN_WRAP="scan-build"
              export CONFIG_OPTS="--enable-debug"
          fi
+    - |
+         if [ "$BUILD_TYPE" = "ios" ]; then
+             export CONFIG_OPTS=--host=arm-apple-darwin10
+             export DEVPATH=`xcode-select -print-path`/Platforms/iPhoneOS.platform/Developer
+             export IOSFLAGS="-isysroot $DEVPATH/SDKs/iPhoneOS.sdk -arch armv7 -miphoneos-version-min=8.0.0"
+             export CFLAGS=$IOSFLAGS
+             export CXXFLAGS=$IOSFLAGS
+             export LDFLAGS=$IOSFLAGS
+         fi
 script:
     - ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics $CONFIG_OPTS && $SCAN_WRAP make
-    - cd test && autoreconf -iv && ./configure $CONFIG_OPTS && make && ./arestest -v && cd ..
+    - |
+          if [ "$BUILD_TYPE" != "ios" ]; then
+              cd test && autoreconf -iv && ./configure $CONFIG_OPTS && make && ./arestest -v && cd ..
+          fi
     - |
           if [ "$BUILD_TYPE" = "coverage" ]; then
               coveralls --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
