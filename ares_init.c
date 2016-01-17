@@ -49,6 +49,10 @@
 #define MAX_DNS_PROPERTIES    8
 #endif
 
+#if defined(CARES_USE_LIBRESOLV)
+#include <resolv.h>
+#endif
+
 #include "ares.h"
 #include "ares_inet_net_pton.h"
 #include "ares_library_init.h"
@@ -77,7 +81,7 @@ static const char *try_option(const char *p, const char *q, const char *opt);
 static int init_id_key(rc4_key* key,int key_data_len);
 
 #if !defined(WIN32) && !defined(WATT32) && \
-    !defined(ANDROID) && !defined(__ANDROID__)
+    !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
 static int sortlist_alloc(struct apattern **sortlist, int *nsort,
                           struct apattern *pat);
 static int ip_addr(const char *s, ssize_t len, struct in_addr *addr);
@@ -1067,7 +1071,8 @@ static int get_DNS_Windows(char **outptr)
 
 static int init_by_resolv_conf(ares_channel channel)
 {
-#if !defined(ANDROID) && !defined(__ANDROID__) && !defined(WATT32)
+#if !defined(ANDROID) && !defined(__ANDROID__) && !defined(WATT32) && \
+    !defined(CARES_USE_LIBRESOLV)
   char *line = NULL;
 #endif
   int status = -1, nservers = 0, nsort = 0;
@@ -1158,6 +1163,63 @@ static int init_by_resolv_conf(ares_channel channel)
     if (status != ARES_SUCCESS)
       break;
     status = ARES_EOF;
+  }
+#elif defined(CARES_USE_LIBRESOLV)
+  struct __res_state res;
+  memset(&res, 0, sizeof(res));
+  int result = res_ninit(&res);
+  if (result == 0 && (res.options & RES_INIT)) {
+    status = ARES_EOF;
+
+    if (channel->nservers == -1) {
+      union res_sockaddr_union addr[MAXNS];
+      int nscount = res_getservers(&res, addr, MAXNS);
+      for (int i = 0; i < nscount; ++i) {
+        char str[INET6_ADDRSTRLEN];
+        int config_status;
+        sa_family_t family = addr[i].sin.sin_family;
+        if (family == AF_INET) {
+          ares_inet_ntop(family, &addr[i].sin.sin_addr, str, sizeof(str));
+        } else if (family == AF_INET6) {
+          ares_inet_ntop(family, &addr[i].sin6.sin6_addr, str, sizeof(str));
+        } else {
+          continue;
+        }
+
+        config_status = config_nameserver(&servers, &nservers, str);
+        if (config_status != ARES_SUCCESS) {
+          status = config_status;
+          break;
+        }
+      }
+    }
+    if (channel->ndomains == -1) {
+      int entries = 0;
+      while ((entries < MAXDNSRCH) && res.dnsrch[entries])
+        entries++;
+
+      channel->domains = malloc(entries * sizeof(char *));
+      if (!channel->domains) {
+        status = ARES_ENOMEM;
+      } else {
+        channel->ndomains = entries;
+        for (int i = 0; i < channel->ndomains; ++i) {
+          channel->domains[i] = strdup(res.dnsrch[i]);
+          if (!channel->domains[i])
+            status = ARES_ENOMEM;
+        }
+      }
+    }
+    if (channel->ndots == -1)
+      channel->ndots = res.ndots;
+    if (channel->tries == -1)
+      channel->tries = res.retry;
+    if (channel->rotate == -1)
+      channel->rotate = res.options & RES_ROTATE;
+    if (channel->timeout == -1)
+      channel->timeout = res.retrans * 1000;
+
+    res_ndestroy(&res);
   }
 #else
   {
@@ -1479,7 +1541,7 @@ static int init_by_defaults(ares_channel channel)
 }
 
 #if !defined(WIN32) && !defined(WATT32) && \
-    !defined(ANDROID) && !defined(__ANDROID__)
+    !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
 static int config_domain(ares_channel channel, char *str)
 {
   char *q;
@@ -1592,7 +1654,8 @@ static int config_nameserver(struct server_state **servers, int *nservers,
   return ARES_SUCCESS;
 }
 
-#if !defined(WIN32) && !defined(ANDROID) && !defined(__ANDROID__)
+#if !defined(WIN32) && !defined(ANDROID) && !defined(__ANDROID__) && \
+    !defined(CARES_USE_LIBRESOLV)
 static int config_sortlist(struct apattern **sortlist, int *nsort,
                            const char *str)
 {
@@ -1773,7 +1836,7 @@ static const char *try_option(const char *p, const char *q, const char *opt)
 }
 
 #if !defined(WIN32) && !defined(WATT32) && \
-    !defined(ANDROID) && !defined(__ANDROID__)
+    !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
 static char *try_config(char *s, const char *opt, char scc)
 {
   size_t len;
