@@ -362,8 +362,11 @@ static void read_tcp_data(ares_channel channel, fd_set *read_fds,
               server->tcp_length = server->tcp_lenbuf[0] << 8
                 | server->tcp_lenbuf[1];
               server->tcp_buffer = malloc(server->tcp_length);
-              if (!server->tcp_buffer)
+              if (!server->tcp_buffer) {
                 handle_error(channel, i, now);
+                return; /* bail out on malloc failure. TODO: make this
+                           function return error codes */
+              }
               server->tcp_buffer_pos = 0;
             }
         }
@@ -388,8 +391,8 @@ static void read_tcp_data(ares_channel channel, fd_set *read_fds,
                */
               process_answer(channel, server->tcp_buffer, server->tcp_length,
                              i, 1, now);
-          if (server->tcp_buffer)
-                        free(server->tcp_buffer);
+              if (server->tcp_buffer)
+                free(server->tcp_buffer);
               server->tcp_buffer = NULL;
               server->tcp_lenbuf_pos = 0;
               server->tcp_buffer_pos = 0;
