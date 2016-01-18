@@ -78,7 +78,7 @@ want_lt_version=1.4.2
 # have GNU libtool named as 'glibtoolize' and libtoolize not being GNU's.
 
 libtoolize=`findtool glibtoolize 2>/dev/null`
-if test ! -x "$libtool"; then
+if test ! -x "$libtoolize"; then
   libtoolize=`findtool ${LIBTOOLIZE:-libtoolize}`
 fi
 if test -z "$libtoolize"; then
