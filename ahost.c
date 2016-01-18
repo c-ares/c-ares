@@ -142,13 +142,16 @@ int main(int argc, char **argv)
   /* Wait for all queries to complete. */
   for (;;)
     {
+      int res;
       FD_ZERO(&read_fds);
       FD_ZERO(&write_fds);
       nfds = ares_fds(channel, &read_fds, &write_fds);
       if (nfds == 0)
         break;
       tvp = ares_timeout(channel, NULL, &tv);
-      select(nfds, &read_fds, &write_fds, NULL, tvp);
+      res = select(nfds, &read_fds, &write_fds, NULL, tvp);
+      if (-1 == res)
+        break;
       ares_process(channel, &read_fds, &write_fds);
     }
 
