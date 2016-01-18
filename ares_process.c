@@ -1,6 +1,6 @@
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2004-2013 by Daniel Stenberg
+ * Copyright (C) 2004-2016 by Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -843,7 +843,7 @@ void ares__send_query(ares_channel channel, struct query *query,
  * portable.
  */
 static int setsocknonblock(ares_socket_t sockfd,    /* operate on this */
-                    int nonblock   /* TRUE or FALSE */)
+                           int nonblock   /* TRUE or FALSE */)
 {
 #if defined(USE_BLOCKING_SOCKETS)
 
@@ -900,7 +900,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
     struct sockaddr_in6 sa6;
   } local;
 
-  setsocknonblock(s, TRUE);
+  (void)setsocknonblock(s, TRUE);
 
 #if defined(FD_CLOEXEC) && !defined(MSDOS)
   /* Configure the socket fd as close-on-exec. */
