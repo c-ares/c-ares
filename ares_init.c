@@ -1205,10 +1205,8 @@ static int init_by_resolv_conf(ares_channel channel)
         channel->ndomains = entries;
         for (int i = 0; i < channel->ndomains; ++i) {
           channel->domains[i] = strdup(res.dnsrch[i]);
-          if (!channel->domains[i]) {
+          if (!channel->domains[i])
             status = ARES_ENOMEM;
-            break;
-          }
         }
       }
     }
