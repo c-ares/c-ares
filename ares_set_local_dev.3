@@ -26,7 +26,7 @@ ares_set_local_dev \- Bind to a specific network device when creating sockets.
 The \fBares_set_local_dev\fP function causes all future sockets
 to be bound to this device with SO_BINDTODEVICE.  This forces communications
 to go over a certain interface, which can be useful on multi-homed machines.
-This option is only supported on Linux, and root priviledges are required
+This option is only supported on Linux, and root privileges are required
 for the option to work.  If SO_BINDTODEVICE is not supported or the
 setsocktop call fails (probably because of permissions), the error is
 silently ignored.
