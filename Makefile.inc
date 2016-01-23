@@ -107,7 +107,11 @@ MANPAGES = ares_cancel.3		\
   ares_save_options.3			\
   ares_search.3				\
   ares_send.3				\
+  ares_set_local_dev.3			\
+  ares_set_local_ip4.3			\
+  ares_set_local_ip6.3			\
   ares_set_servers.3			\
+  ares_set_servers_csv.3		\
   ares_set_socket_callback.3		\
   ares_strerror.3			\
   ares_timeout.3			\
@@ -150,7 +154,11 @@ HTMLPAGES = ares_cancel.html		\
   ares_save_options.html		\
   ares_search.html			\
   ares_send.html			\
+  ares_set_local_dev.html		\
+  ares_set_local_ip4.html		\
+  ares_set_local_ip6.html		\
   ares_set_servers.html			\
+  ares_set_servers_csv.html		\
   ares_set_socket_callback.html		\
   ares_strerror.html			\
   ares_timeout.html			\
@@ -193,7 +201,11 @@ PDFPAGES = ares_cancel.pdf		\
   ares_save_options.pdf			\
   ares_search.pdf			\
   ares_send.pdf				\
+  ares_set_local_dev.pdf		\
+  ares_set_local_ip4.pdf		\
+  ares_set_local_ip6.pdf		\
   ares_set_servers.pdf			\
+  ares_set_servers_csv.pdf		\
   ares_set_socket_callback.pdf		\
   ares_strerror.pdf			\
   ares_timeout.pdf			\
