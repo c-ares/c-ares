@@ -219,6 +219,44 @@ AC_HELP_STRING([--disable-symbol-hiding],[Disable hiding of library internal sym
 ])
 
 
+dnl CARES_CHECK_OPTION_EXPOSE_STATICS
+dnl -------------------------------------------------
+dnl Verify if configure has been invoked with option
+dnl --enable-expose-statics or --disable-expose-statics,
+dnl setting shell variable want_expose_statics value.
+
+AC_DEFUN([CARES_CHECK_OPTION_EXPOSE_STATICS], [
+  AC_MSG_CHECKING([whether to expose internal static functions for testing])
+  OPT_EXPOSE_STATICS="default"
+  AC_ARG_ENABLE(expose-statics,
+AC_HELP_STRING([--enable-expose-statics],[Enable exposure of internal static functions for testing])
+AC_HELP_STRING([--disable-expose-statics],[Disable exposure of internal static functions for testing]),
+  OPT_EXPOSE_STATICS=$enableval)
+  case "$OPT_EXPOSE_STATICS" in
+    no)
+      dnl --disable-expose-statics option used.
+      want_expose_statics="no"
+      AC_MSG_RESULT([no])
+      ;;
+    default)
+      dnl configure's expose-statics option not specified.
+      dnl Handle this as if --disable-expose-statics option was given.
+      want_expose_statics="no"
+      AC_MSG_RESULT([no])
+      ;;
+    *)
+      dnl --enable-expose-statics option used.
+      want_expose_statics="yes"
+      AC_MSG_RESULT([yes])
+      ;;
+  esac
+  if test "$want_expose_statics" = "yes"; then
+    AC_DEFINE_UNQUOTED(CARES_EXPOSE_STATICS, 1,
+      [Defined for build that exposes internal static functions for testing.])
+  fi
+])
+
+
 dnl CARES_CHECK_OPTION_WARNINGS
 dnl -------------------------------------------------
 dnl Verify if configure has been invoked with option
@@ -350,5 +388,9 @@ AC_DEFUN([CARES_CONFIGURE_SYMBOL_HIDING], [
   fi
   AM_CONDITIONAL(DOING_CARES_SYMBOL_HIDING, test x$doing_symbol_hiding = xyes)
   AC_SUBST(CFLAG_CARES_SYMBOL_HIDING)
+  if test "$doing_symbol_hiding" = "yes"; then
+    AC_DEFINE_UNQUOTED(CARES_SYMBOL_HIDING, 1,
+      [Defined for build with symbol hiding.])
+  fi
 ])
 

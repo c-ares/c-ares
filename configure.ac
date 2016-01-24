@@ -19,6 +19,7 @@ CARES_CHECK_OPTION_WARNINGS
 CARES_CHECK_OPTION_WERROR
 CARES_CHECK_OPTION_CURLDEBUG
 CARES_CHECK_OPTION_SYMBOL_HIDING
+CARES_CHECK_OPTION_EXPOSE_STATICS
 
 XC_CHECK_PATH_SEPARATOR
 
@@ -63,6 +64,8 @@ if test -z "$AR" || test "$AR" = "not_found"; then
   AC_MSG_ERROR([ar not found in PATH. Cannot continue without ar.])
 fi
 AC_SUBST([AR])
+
+AX_CODE_COVERAGE
 
 dnl Remove non-configure distributed ares_build.h
 if test -f ${srcdir}/ares_build.h; then

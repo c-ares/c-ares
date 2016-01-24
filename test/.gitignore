@@ -1,0 +1,11 @@
+*.o
+libgtest.a
+libgmock.a
+arestest
+aresfuzz
+arestest.log
+arestest.trs
+test-suite.log
+fuzzoutput
+config.h.in
+config.h
