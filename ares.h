@@ -561,6 +561,8 @@ struct ares_addr_node {
     struct in_addr       addr4;
     struct ares_in6_addr addr6;
   } addr;
+  int tcp_port;
+  int udp_port;
 };
 
 CARES_EXTERN int ares_set_servers(ares_channel channel,

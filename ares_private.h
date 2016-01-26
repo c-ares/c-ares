@@ -119,6 +119,8 @@ struct ares_addr {
     struct in_addr       addr4;
     struct ares_in6_addr addr6;
   } addr;
+  int tcp_port;
+  int udp_port;
 };
 #define addrV4 addr.addr4
 #define addrV6 addr.addr6
