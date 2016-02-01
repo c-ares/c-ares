@@ -71,8 +71,8 @@
 
 static const char *usage      = "acountry [-vh?] {host|addr} ...\n";
 static const char  nerd_fmt[] = "%u.%u.%u.%u.zz.countries.nerd.dk";
-static const char *nerd_ver1  = nerd_fmt + 14;
-static const char *nerd_ver2  = nerd_fmt + 11;
+static const char *nerd_ver1  = nerd_fmt + 14;  /* .countries.nerd.dk */
+static const char *nerd_ver2  = nerd_fmt + 11;  /* .zz.countries.nerd.dk */
 static int         verbose    = 0;
 
 #define TRACE(fmt) do {               \
@@ -561,7 +561,7 @@ static void find_country_from_cname(const char *cname, struct in_addr addr)
   if (ver_1)
     {
       const char *dot = strchr(cname, '.');
-      if ((z0 != 'z' && z1 != 'z') || dot != cname+4)
+      if (dot != cname+4)
         {
           printf("Unexpected CNAME %s (ver_1)\n", cname);
           free(ccopy);
@@ -619,4 +619,3 @@ static void find_country_from_cname(const char *cname, struct in_addr addr)
     }
   free(ccopy);
 }
-
