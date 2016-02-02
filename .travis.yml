@@ -91,6 +91,9 @@ script:
     - ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS && $SCAN_WRAP make
     - |
           if [ "$BUILD_TYPE" != "ios" ]; then
+              ./adig www.google.com
+              ./acountry www.google.com
+              ./ahost www.google.com
               cd test && autoreconf -iv && ./configure $CONFIG_OPTS && make && ./arestest -v && cd ..
           fi
     - |
