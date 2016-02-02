@@ -59,3 +59,5 @@ Notes for c-ares hackers
 * Newlines must remain unix-style for older compilers' sake.
 
 * Comments must be written in the old-style /* unnested C-fashion */
+
+* Try to keep line lengths below 80 columns.
