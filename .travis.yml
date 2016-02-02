@@ -88,7 +88,7 @@ before_script:
              export LDFLAGS=$IOSFLAGS
          fi
 script:
-    - ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics $CONFIG_OPTS && $SCAN_WRAP make
+    - ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS && $SCAN_WRAP make
     - |
           if [ "$BUILD_TYPE" != "ios" ]; then
               cd test && autoreconf -iv && ./configure $CONFIG_OPTS && make && ./arestest -v && cd ..
