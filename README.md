@@ -1,9 +1,9 @@
 c-ares
 ======
 
-[![Build Status](https://travis-ci.org/c-ares/c-ares.svg?branch=master)](https://travis-ci.org/daviddrysdale/c-ares)
+[![Build Status](https://travis-ci.org/c-ares/c-ares.svg?branch=master)](https://travis-ci.org/c-ares/c-ares)
 [![Windows Build Status](https://ci.appveyor.com/api/projects/status/03i7151772eq3wn3/branch/master?svg=true)](https://ci.appveyor.com/project/c-ares/c-ares)
-[![Coverage Status](https://coveralls.io/repos/c-ares/c-ares/badge.svg?branch=master&service=github)](https://coveralls.io/github/daviddrysdale/c-ares?branch=master)
+[![Coverage Status](https://coveralls.io/repos/c-ares/c-ares/badge.svg?branch=master&service=github)](https://coveralls.io/github/c-ares/c-ares?branch=master)
 
 This is c-ares, an asynchronous resolver library.  It is intended for
 applications which need to perform DNS queries without blocking, or need to
