@@ -109,10 +109,11 @@ TEST_P(MockUDPChannelTest, TruncationRetry) {
 }
 
 static int sock_cb_count = 0;
-static int SocketCallback(ares_socket_t fd, int type, void *data) {
-  if (verbose) std::cerr << "SocketCallback(" << fd << ") invoked" << std::endl;
+static int SocketConnectCallback(ares_socket_t fd, int type, void *data) {
+  int rc = *(int*)data;
+  if (verbose) std::cerr << "SocketConnectCallback(" << fd << ") invoked" << std::endl;
   sock_cb_count++;
-  return ARES_SUCCESS;
+  return rc;
 }
 
 TEST_P(MockChannelTest, SockCallback) {
@@ -124,7 +125,8 @@ TEST_P(MockChannelTest, SockCallback) {
     .WillOnce(SetReply(&server_, &rsp));
 
   // Get notified of new sockets
-  ares_set_socket_callback(channel_, SocketCallback, nullptr);
+  int rc = ARES_SUCCESS;
+  ares_set_socket_callback(channel_, SocketConnectCallback, &rc);
 
   HostResult result;
   sock_cb_count = 0;
@@ -135,6 +137,20 @@ TEST_P(MockChannelTest, SockCallback) {
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+TEST_P(MockChannelTest, SockFailCallback) {
+  // Notification of new sockets gives an error.
+  int rc = -1;
+  ares_set_socket_callback(channel_, SocketConnectCallback, &rc);
+
+  HostResult result;
+  sock_cb_count = 0;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_LT(1, sock_cb_count);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
 }
 
 // TCP only to prevent retries
