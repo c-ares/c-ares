@@ -6,6 +6,10 @@ ares_set_socket_callback \- Set a socket creation callback
 .nf
 .B #include <ares.h>
 .PP
+.B typedef int (*ares_sock_create_callback)(ares_socket_t \fIsocket_fd\fP,
+                                         int \fItype\fP,
+                                         void *\fIuserdata\fP)
+.PP
 .B void ares_set_socket_callback(ares_channel \fIchannel\fP,
                              ares_sock_create_callback \fIcallback\fP,
                              void *\fIuserdata\fP)
