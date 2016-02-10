@@ -1315,15 +1315,16 @@ static int init_by_resolv_conf(ares_channel channel)
         switch(error) {
         case ENOENT:
         case ESRCH:
-          status = ARES_EOF;
           break;
         default:
           DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
                          error, strerror(error)));
           DEBUGF(fprintf(stderr, "Error opening file: %s\n",
                          "/etc/nsswitch.conf"));
-          status = ARES_EFILE;
         }
+
+        /* ignore error, maybe we will get luck in next if clause */
+        status = ARES_EOF;
       }
     }
 
@@ -1345,15 +1346,16 @@ static int init_by_resolv_conf(ares_channel channel)
         switch(error) {
         case ENOENT:
         case ESRCH:
-          status = ARES_EOF;
           break;
         default:
           DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
                          error, strerror(error)));
           DEBUGF(fprintf(stderr, "Error opening file: %s\n",
                          "/etc/host.conf"));
-          status = ARES_EFILE;
         }
+
+        /* ignore error, maybe we will get luck in next if clause */
+        status = ARES_EOF;
       }
     }
 
@@ -1375,14 +1377,15 @@ static int init_by_resolv_conf(ares_channel channel)
         switch(error) {
         case ENOENT:
         case ESRCH:
-          status = ARES_EOF;
           break;
         default:
           DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
                          error, strerror(error)));
           DEBUGF(fprintf(stderr, "Error opening file: %s\n", "/etc/svc.conf"));
-          status = ARES_EFILE;
         }
+
+        /* ignore error, default value will be chosen for `channel->lookups` */
+        status = ARES_EOF;
       }
     }
 
