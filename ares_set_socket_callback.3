@@ -6,6 +6,10 @@ ares_set_socket_callback \- Set a socket creation callback
 .nf
 .B #include <ares.h>
 .PP
+.B typedef int (*ares_sock_create_callback)(ares_socket_t \fIsocket_fd\fP,
+                                         int \fItype\fP,
+                                         void *\fIuserdata\fP)
+.PP
 .B void ares_set_socket_callback(ares_channel \fIchannel\fP,
                              ares_sock_create_callback \fIcallback\fP,
                              void *\fIuserdata\fP)
@@ -20,7 +24,7 @@ connected to the remote server. The callback must return ARES_SUCCESS if
 things are fine, or use the standard ares error codes to signal errors
 back. Returned errors will abort the ares operation.
 .SH SEE ALSO
-.BR ares_init_options (3)
+.BR ares_init_options (3), ares_set_socket_configure_callback (3)
 .SH AVAILABILITY
 ares_set_socket_callback(3) was added in c-ares 1.6.0
 .SH AUTHOR

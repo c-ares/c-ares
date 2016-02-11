@@ -153,6 +153,51 @@ TEST_P(MockChannelTest, SockFailCallback) {
   EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
 }
 
+static int sock_config_cb_count = 0;
+static int SocketConfigureCallback(ares_socket_t fd, int type, void *data) {
+  int rc = *(int*)data;
+  if (verbose) std::cerr << "SocketConfigureCallback(" << fd << ") invoked" << std::endl;
+  sock_config_cb_count++;
+  return rc;
+}
+
+TEST_P(MockChannelTest, SockConfigureCallback) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  // Get notified of new sockets
+  int rc = ARES_SUCCESS;
+  ares_set_socket_configure_callback(channel_, SocketConfigureCallback, &rc);
+
+  HostResult result;
+  sock_config_cb_count = 0;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_EQ(1, sock_config_cb_count);
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+TEST_P(MockChannelTest, SockConfigureFailCallback) {
+  // Notification of new sockets gives an error.
+  int rc = -1;
+  ares_set_socket_configure_callback(channel_, SocketConfigureCallback, &rc);
+
+  HostResult result;
+  sock_config_cb_count = 0;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_LT(1, sock_config_cb_count);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
+}
+
 // TCP only to prevent retries
 TEST_P(MockTCPChannelTest, MalformedResponse) {
   std::vector<byte> one = {0x01};
