@@ -493,6 +493,25 @@ CONTAINED_TEST_F(LibraryTest, ContainerMultiResolvInit,
   return HasFailure();
 }
 
+NameContentList systemdresolv = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "domain first.com\n"},
+  {"/etc/nsswitch.conf", "hosts: junk resolve files\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerSystemdResolvInit,
+                 "myhostname", "mydomainname.org", systemdresolv) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(std::string("bf"), std::string(opts.lookups));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 NameContentList empty = {};  // no files
 CONTAINED_TEST_F(LibraryTest, ContainerEmptyInit,
                  "host.domain.org", "domain.org", empty) {
