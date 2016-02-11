@@ -90,7 +90,8 @@ static void natural_mask(struct apattern *pat);
     !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
 static int config_domain(ares_channel channel, char *str);
 static int config_lookup(ares_channel channel, const char *str,
-                         const char *bindch, const char *filech);
+                         const char *bindch, const char *altbindch,
+                         const char *filech);
 static char *try_config(char *s, const char *opt, char scc);
 #endif
 
@@ -1268,7 +1269,7 @@ static int init_by_resolv_conf(ares_channel channel)
         if ((p = try_config(line, "domain", ';')) && update_domains)
           status = config_domain(channel, p);
         else if ((p = try_config(line, "lookup", ';')) && !channel->lookups)
-          status = config_lookup(channel, p, "bind", "file");
+          status = config_lookup(channel, p, "bind", NULL, "file");
         else if ((p = try_config(line, "search", ';')) && update_domains)
           status = set_search(channel, p);
         else if ((p = try_config(line, "nameserver", ';')) &&
@@ -1309,8 +1310,7 @@ static int init_by_resolv_conf(ares_channel channel)
                ARES_SUCCESS)
         {
           if ((p = try_config(line, "hosts:", '\0')) && !channel->lookups)
-            /* ignore errors */
-            (void)config_lookup(channel, p, "dns", "files");
+            (void)config_lookup(channel, p, "dns", "resolve", "files");
         }
         fclose(fp);
       }
@@ -1341,7 +1341,7 @@ static int init_by_resolv_conf(ares_channel channel)
         {
           if ((p = try_config(line, "order", '\0')) && !channel->lookups)
             /* ignore errors */
-            (void)config_lookup(channel, p, "bind", "hosts");
+            (void)config_lookup(channel, p, "bind", NULL, "hosts");
         }
         fclose(fp);
       }
@@ -1372,7 +1372,7 @@ static int init_by_resolv_conf(ares_channel channel)
         {
           if ((p = try_config(line, "hosts=", '\0')) && !channel->lookups)
             /* ignore errors */
-            (void)config_lookup(channel, p, "bind", "local");
+            (void)config_lookup(channel, p, "bind", NULL, "local");
         }
         fclose(fp);
       }
@@ -1593,10 +1593,14 @@ static int config_domain(ares_channel channel, char *str)
 #endif
 
 static int config_lookup(ares_channel channel, const char *str,
-                         const char *bindch, const char *filech)
+                         const char *bindch, const char *altbindch,
+                         const char *filech)
 {
   char lookups[3], *l;
   const char *vqualifier p;
+
+  if (altbindch == NULL)
+    altbindch = bindch;
 
   /* Set the lookup order.  Only the first letter of each work
    * is relevant, and it has to be "b" for DNS or "f" for the
@@ -1606,8 +1610,8 @@ static int config_lookup(ares_channel channel, const char *str,
   p = str;
   while (*p)
     {
-      if ((*p == *bindch || *p == *filech) && l < lookups + 2) {
-        if (*p == *bindch) *l++ = 'b';
+      if ((*p == *bindch || *p == *altbindch || *p == *filech) && l < lookups + 2) {
+        if (*p == *bindch || *p == *altbindch) *l++ = 'b';
         else *l++ = 'f';
       }
       while (*p && !ISSPACE(*p) && (*p != ','))
