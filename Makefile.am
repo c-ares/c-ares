@@ -61,6 +61,8 @@ CLEANFILES = $(PDFPAGES) $(HTMLPAGES)
 
 DISTCLEANFILES = ares_build.h
 
+DIST_SUBDIRS = test
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
 
