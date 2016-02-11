@@ -431,28 +431,42 @@ CONTAINED_TEST_F(LibraryTest, ContainerResolvConfNotReadable,
                  "myhostname", "mydomainname.org", filelist) {
   ares_channel channel = nullptr;
   MakeUnreadable hide("/etc/resolv.conf");
+  // Unavailable /etc/resolv.conf fails initialization.
   EXPECT_EQ(ARES_EFILE, ares_init(&channel));
   return HasFailure();
 }
 CONTAINED_TEST_F(LibraryTest, ContainerNsswitchConfNotReadable,
                  "myhostname", "mydomainname.org", filelist) {
   ares_channel channel = nullptr;
+  // Unavailable /etc/nsswitch.conf falls back to defaults.
   MakeUnreadable hide("/etc/nsswitch.conf");
-  EXPECT_EQ(ARES_EFILE, ares_init(&channel));
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(std::string("fb"), std::string(opts.lookups));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
   return HasFailure();
 }
 CONTAINED_TEST_F(LibraryTest, ContainerHostConfNotReadable,
                  "myhostname", "mydomainname.org", hostconf) {
   ares_channel channel = nullptr;
+  // Unavailable /etc/host.conf falls back to defaults.
   MakeUnreadable hide("/etc/host.conf");
-  EXPECT_EQ(ARES_EFILE, ares_init(&channel));
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  ares_destroy(channel);
   return HasFailure();
 }
 CONTAINED_TEST_F(LibraryTest, ContainerSvcConfNotReadable,
                  "myhostname", "mydomainname.org", svcconf) {
   ares_channel channel = nullptr;
+  // Unavailable /etc/svc.conf falls back to defaults.
   MakeUnreadable hide("/etc/svc.conf");
-  EXPECT_EQ(ARES_EFILE, ares_init(&channel));
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  ares_destroy(channel);
   return HasFailure();
 }
 
