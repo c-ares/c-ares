@@ -45,7 +45,7 @@ int main() {
   if (!WIFEXITED(status)) return 1;
   return WEXITSTATUS(status);
 }
-  ]])],[ax_cv_user_namespace=yes], [ax_cv_user_namespace=no])
+  ]])],[ax_cv_user_namespace=yes],[ax_cv_user_namespace=no],[ax_cv_user_namespace=no])
  AC_LANG_POP([C])
  ])
  if test "$ax_cv_user_namespace" = yes; then

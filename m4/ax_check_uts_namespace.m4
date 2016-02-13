@@ -67,7 +67,7 @@ int main() {
   return WEXITSTATUS(status);
 }
 ]])
-  ],[ax_cv_uts_namespace=yes], [ax_cv_uts_namespace=no])
+  ],[ax_cv_uts_namespace=yes],[ax_cv_uts_namespace=no],[ax_cv_uts_namespace=no])
  AC_LANG_POP([C])
  ])
  if test "$ax_cv_uts_namespace" = yes; then
