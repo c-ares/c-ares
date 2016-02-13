@@ -4,6 +4,7 @@ AC_CONFIG_SRCDIR([ares-test.cc])
 AC_CONFIG_MACRO_DIR([../m4])
 
 AM_INIT_AUTOMAKE([no-define])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 dnl Checks for programs.
 AC_PROG_CXX
