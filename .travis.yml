@@ -94,7 +94,7 @@ script:
               ./adig www.google.com
               ./acountry www.google.com
               ./ahost www.google.com
-              cd test && autoreconf -iv && ./configure $CONFIG_OPTS && make && ./arestest -v && cd ..
+              cd test && make && ./arestest -v && cd ..
           fi
     - |
           if [ "$BUILD_TYPE" = "coverage" ]; then
