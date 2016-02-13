@@ -877,7 +877,9 @@ squeeze CARES_PRIVATE_LIBS
 
 XC_CHECK_BUILD_FLAGS
 
-AC_CONFIG_SUBDIRS([test])
+if test "x$cross_compiling" = "xno"; then
+  AC_CONFIG_SUBDIRS([test])
+fi
 
 AC_CONFIG_FILES([Makefile libcares.pc])
 AC_OUTPUT
