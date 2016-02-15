@@ -17,9 +17,9 @@ RANLIB	= ranlib
 #RM	= rm -f
 CP	= cp -afv
 
-CFLAGS	= -O2 -Wall -I.
+CFLAGS	= $(CARES_CFLAG_EXTRAS) -O2 -Wall -I.
 CFLAGS	+= -DCARES_STATICLIB
-LDFLAGS	= -s
+LDFLAGS	= $(CARES_LDFLAG_EXTRAS) -s
 LIBS	= -lwsock32
 
 # Makefile.inc provides the CSOURCES and HHEADERS defines
@@ -74,4 +74,3 @@ distclean: clean
 ifeq "$(wildcard ares_build.h.dist)" "ares_build.h.dist"
 	$(RM) ares_build.h
 endif
-
