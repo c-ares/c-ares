@@ -57,6 +57,9 @@ Bug fixes:
  o init_by_resolv_conf: ignore `fopen` errors to use default values
  o Use "resolve" as synonym of "dns" in nsswitch.conf
  o ares_win32_init: make LoadLibrary work when using UNICODE too
+ o dist: Distribute README.md
+ o configure: build silently by default
+ o ares_dup.3: remove mention of nonexistent function
 
 Thanks go to these friendly people for their efforts and contributions:
 
