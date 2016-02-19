@@ -877,8 +877,28 @@ squeeze CARES_PRIVATE_LIBS
 
 XC_CHECK_BUILD_FLAGS
 
-if test "x$cross_compiling" = "xno"; then
-  AC_CONFIG_SUBDIRS([test])
+BUILDTESTS="yes"
+AC_MSG_CHECKING([whether to build the tests])
+AC_ARG_ENABLE(tests,
+AC_HELP_STRING([--disable-tests],[skip building the tests]),
+[ case "$enableval" in
+  no)
+       BUILDTESTS="no"
+       AC_MSG_RESULT(no)
+       ;;
+  yes)
+       AC_MSG_RESULT(yes)
+       ;;
+  *)   AC_MSG_RESULT(yes)
+       ;;
+  esac ],
+       AC_MSG_RESULT(yes)
+)
+
+if test "$BUILDTESTS" = "yes"; then
+  if test "x$cross_compiling" = "xno"; then
+    AC_CONFIG_SUBDIRS([test])
+  fi
 fi
 
 AC_CONFIG_FILES([Makefile libcares.pc])
