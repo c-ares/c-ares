@@ -10,10 +10,10 @@
 
 LIB	= libcares.a
 
-AR	= ar
-CC	= gcc
-LD	= gcc
-RANLIB	= ranlib
+AR	= $(CROSSPREFIX)ar
+CC	= $(CROSSPREFIX)gcc
+LD	= $(CROSSPREFIX)gcc
+RANLIB	= $(CROSSPREFIX)ranlib
 #RM	= rm -f
 CP	= cp -afv
 
