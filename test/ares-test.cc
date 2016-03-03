@@ -180,7 +180,7 @@ MockServer::MockServer(int family, int port, int tcpport)
     struct sockaddr_in6 addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin6_family = AF_INET6;
-    addr.sin6_addr = in6addr_any;
+    memset(&addr.sin6_addr, 0, sizeof(addr.sin6_addr));  // in6addr_any
     addr.sin6_port = htons(tcpport_);
     int tcprc = bind(tcpfd_, (struct sockaddr*)&addr, sizeof(addr));
     EXPECT_EQ(0, tcprc) << "Failed to bind AF_INET6 to TCP port " << tcpport_;

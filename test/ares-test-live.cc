@@ -157,7 +157,9 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrV4) {
 
 TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrV6) {
   HostResult result;
-  struct in6_addr addr = in6addr_loopback;
+  struct in6_addr addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.s6_addr[15] = 1;  // in6addr_loopback
   ares_gethostbyaddr(channel_, &addr, sizeof(addr), AF_INET6, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
