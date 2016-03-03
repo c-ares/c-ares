@@ -4,6 +4,9 @@
 #include "ares.h"
 #include "ares_dns.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <sstream>
 
 namespace ares {
