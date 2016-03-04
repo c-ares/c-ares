@@ -350,8 +350,8 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   (*optmask) = (ARES_OPT_FLAGS|ARES_OPT_TRIES|ARES_OPT_NDOTS|
                 ARES_OPT_UDP_PORT|ARES_OPT_TCP_PORT|ARES_OPT_SOCK_STATE_CB|
                 ARES_OPT_SERVERS|ARES_OPT_DOMAINS|ARES_OPT_LOOKUPS|
-                ARES_OPT_SORTLIST|ARES_OPT_TIMEOUTMS) |
-    (channel->optmask & ARES_OPT_ROTATE);
+                ARES_OPT_SORTLIST|ARES_OPT_TIMEOUTMS);
+  (*optmask) |= (channel->rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE);
 
   /* Copy easy stuff */
   options->flags   = channel->flags;
@@ -447,6 +447,8 @@ static int init_by_options(ares_channel channel,
     channel->ndots = options->ndots;
   if ((optmask & ARES_OPT_ROTATE) && channel->rotate == -1)
     channel->rotate = 1;
+  if ((optmask & ARES_OPT_NOROTATE) && channel->rotate == -1)
+    channel->rotate = 0;
   if ((optmask & ARES_OPT_UDP_PORT) && channel->udp_port == -1)
     channel->udp_port = htons(options->udp_port);
   if ((optmask & ARES_OPT_TCP_PORT) && channel->tcp_port == -1)

@@ -470,6 +470,41 @@ CONTAINED_TEST_F(LibraryTest, ContainerSvcConfNotReadable,
   return HasFailure();
 }
 
+NameContentList rotateenv = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "search first.com second.com\n"
+                       "options rotate\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerRotateInit,
+                 "myhostname", "mydomainname.org", rotateenv) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(ARES_OPT_ROTATE, (optmask & ARES_OPT_ROTATE));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+CONTAINED_TEST_F(LibraryTest, ContainerRotateOverride,
+                 "myhostname", "mydomainname.org", rotateenv) {
+  ares_channel channel = nullptr;
+  struct ares_options opts = {0};
+  int optmask = ARES_OPT_NOROTATE;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+
+  optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(ARES_OPT_NOROTATE, (optmask & ARES_OPT_NOROTATE));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 NameContentList multiresolv = {
   {"/etc/resolv.conf", " nameserver 1::2 ;  ;;\n"
                        " domain first.com\n"},
