@@ -205,7 +205,7 @@ INSTANTIATE_TEST_CASE_P(Modes, DefaultChannelModeTest,
 
 TEST_F(DefaultChannelTest, LiveSearchA) {
   SearchResult result;
-  ares_search(channel_, "www.facebook.com.", ns_c_in, ns_t_a,
+  ares_search(channel_, "www.youtube.com.", ns_c_in, ns_t_a,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
