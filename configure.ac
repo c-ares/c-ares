@@ -82,6 +82,7 @@ dnl Get system canonical name
 AC_DEFINE_UNQUOTED(OS, "${host}", [cpu-machine-OS])
 
 XC_CHECK_PROG_CC
+AX_CXX_COMPILE_STDCXX_11([noext],[optional])
 
 XC_AUTOMAKE
 
@@ -877,28 +878,30 @@ squeeze CARES_PRIVATE_LIBS
 
 XC_CHECK_BUILD_FLAGS
 
-BUILDTESTS="yes"
-AC_MSG_CHECKING([whether to build the tests])
+AC_MSG_CHECKING([whether to build tests])
 AC_ARG_ENABLE(tests,
-AC_HELP_STRING([--disable-tests],[skip building the tests]),
-[ case "$enableval" in
-  no)
-       BUILDTESTS="no"
-       AC_MSG_RESULT(no)
-       ;;
-  yes)
-       AC_MSG_RESULT(yes)
-       ;;
-  *)   AC_MSG_RESULT(yes)
-       ;;
-  esac ],
-       AC_MSG_RESULT(yes)
+	AC_HELP_STRING([--enable-tests], [build test suite]),
+	[ build_tests="$enableval" ],
+	[ if test "x$HAVE_CXX11" = "x1" && test "x$cross_compiling" = "xno" ; then
+	    build_tests="yes"
+	  else
+	    build_tests="no"
+	  fi
+	]
 )
 
-if test "$BUILDTESTS" = "yes"; then
-  if test "x$cross_compiling" = "xno"; then
-    AC_CONFIG_SUBDIRS([test])
-  fi
+if test "x$build_tests" = "xyes" ; then
+	if test "x$HAVE_CXX11" = "0" ; then
+		AC_MSG_ERROR([*** Building tests requires a CXX11 compiler])
+	fi
+	if test "x$cross_compiling" = "xyes" ; then
+		AC_MSG_ERROR([*** Tests not supported when cross compiling])
+	fi
+fi
+AC_MSG_RESULT([$build_tests])
+
+if test "x$build_tests" = "xyes" ; then
+  AC_CONFIG_SUBDIRS([test])
 fi
 
 AC_CONFIG_FILES([Makefile libcares.pc])
