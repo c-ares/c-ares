@@ -647,17 +647,17 @@ TEST_P(MockChannelTest, UnspecifiedFamilyV6) {
 }
 
 TEST_P(MockChannelTest, UnspecifiedFamilyV4) {
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_aaaa));
+  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &rsp6));
   DNSPacket rsp4;
   rsp4.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_a))
     .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
   ON_CALL(server_, OnRequest("example.com", ns_t_a))
     .WillByDefault(SetReply(&server_, &rsp4));
-  DNSPacket rsp6;
-  rsp6.set_response().set_aa()
-    .add_question(new DNSQuestion("example.com", ns_t_aaaa));
-  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
-    .WillByDefault(SetReply(&server_, &rsp6));
 
   HostResult result;
   ares_gethostbyname(channel_, "example.com.", AF_UNSPEC, HostCallback, &result);
@@ -669,17 +669,17 @@ TEST_P(MockChannelTest, UnspecifiedFamilyV4) {
 }
 
 TEST_P(MockChannelTest, UnspecifiedFamilyNoData) {
-  DNSPacket rsp4;
-  rsp4.set_response().set_aa()
-    .add_question(new DNSQuestion("example.com", ns_t_a));
-  ON_CALL(server_, OnRequest("example.com", ns_t_a))
-    .WillByDefault(SetReply(&server_, &rsp4));
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_aaaa))
     .add_answer(new DNSCnameRR("example.com", 100, "elsewhere.com"));
   ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
     .WillByDefault(SetReply(&server_, &rsp6));
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
 
   HostResult result;
   ares_gethostbyname(channel_, "example.com.", AF_UNSPEC, HostCallback, &result);
@@ -688,6 +688,29 @@ TEST_P(MockChannelTest, UnspecifiedFamilyNoData) {
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'' aliases=[] addrs=[]}", ss.str());
+}
+
+TEST_P(MockChannelTest, UnspecifiedFamilyCname6A4) {
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_aaaa))
+    .add_answer(new DNSCnameRR("example.com", 100, "elsewhere.com"));
+  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &rsp6));
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {1, 2, 3, 4}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "example.com.", AF_UNSPEC, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'example.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
 TEST_P(MockChannelTest, ExplicitIP) {
