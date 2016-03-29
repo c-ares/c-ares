@@ -354,6 +354,26 @@ CONTAINED_TEST_F(LibraryTest, ContainerChannelInit,
   return HasFailure();
 }
 
+CONTAINED_TEST_F(LibraryTest, ContainerSortlistOptionInit,
+                 "myhostname", "mydomainname.org", filelist) {
+  ares_channel channel = nullptr;
+  struct ares_options opts = {0};
+  int optmask = 0;
+  optmask |= ARES_OPT_SORTLIST;
+  opts.nsort = 0;
+  // Explicitly specifying an empty sortlist in the options should override the
+  // environment.
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(0, opts.nsort);
+  EXPECT_EQ(nullptr, opts.sortlist);
+  EXPECT_EQ(ARES_OPT_SORTLIST, (optmask & ARES_OPT_SORTLIST));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 NameContentList fullresolv = {
   {"/etc/resolv.conf", " nameserver   1.2.3.4 \n"
                        "search   first.com second.com\n"
