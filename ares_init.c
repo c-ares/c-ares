@@ -520,13 +520,14 @@ static int init_by_options(ares_channel channel,
     }
 
   /* copy sortlist */
-  if ((optmask & ARES_OPT_SORTLIST) && (channel->nsort == -1) &&
-      (options->nsort>0)) {
-    channel->sortlist = ares_malloc(options->nsort * sizeof(struct apattern));
-    if (!channel->sortlist)
-      return ARES_ENOMEM;
-    for (i = 0; i < options->nsort; i++)
-      channel->sortlist[i] = options->sortlist[i];
+  if ((optmask & ARES_OPT_SORTLIST) && (channel->nsort == -1)) {
+    if (options->nsort > 0) {
+      channel->sortlist = ares_malloc(options->nsort * sizeof(struct apattern));
+      if (!channel->sortlist)
+        return ARES_ENOMEM;
+      for (i = 0; i < options->nsort; i++)
+        channel->sortlist[i] = options->sortlist[i];
+    }
     channel->nsort = options->nsort;
   }
 
