@@ -5,8 +5,8 @@
 
 #include <vector>
 
-extern "C" void LLVMFuzzerTestOneInput(const unsigned char *data,
-                                       unsigned long size);
+extern "C" int LLVMFuzzerTestOneInput(const unsigned char *data,
+                                      unsigned long size);
 int main() {
   std::vector<unsigned char> input;
   while (true) {

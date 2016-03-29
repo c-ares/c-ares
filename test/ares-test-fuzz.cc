@@ -2,8 +2,8 @@
 #include <vector>
 
 // Entrypoint for Clang's libfuzzer
-extern "C" void LLVMFuzzerTestOneInput(const unsigned char *data,
-                                       unsigned long size) {
+extern "C" int LLVMFuzzerTestOneInput(const unsigned char *data,
+                                      unsigned long size) {
   // Feed the data into each of the ares_parse_*_reply functions.
   struct hostent *host = nullptr;
   struct ares_addrttl info[5];
@@ -41,4 +41,5 @@ extern "C" void LLVMFuzzerTestOneInput(const unsigned char *data,
   struct ares_soa_reply* soa = nullptr;
   ares_parse_soa_reply(data, size, &soa);
   if (soa) ares_free_data(soa);
+  return 0;
 }
