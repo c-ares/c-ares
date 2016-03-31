@@ -13,7 +13,7 @@ CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 # Makefile.inc provides the TESTSOURCES, TESTHEADERS and FUZZSOURCES defines
 include Makefile.inc
 
-TESTS = arestest
+TESTS = arestest fuzzcheck.sh
 
 noinst_PROGRAMS = arestest aresfuzz dnsdump
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)

@@ -5,6 +5,8 @@ arestest
 aresfuzz
 arestest.log
 arestest.trs
+fuzzcheck.sh.log
+fuzzcheck.sh.trs
 test-suite.log
 fuzzoutput
 config.h.in
