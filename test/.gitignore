@@ -9,3 +9,4 @@ test-suite.log
 fuzzoutput
 config.h.in
 config.h
+dnsdump
