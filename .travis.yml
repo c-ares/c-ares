@@ -95,6 +95,7 @@ script:
               ./acountry www.google.com
               ./ahost www.google.com
               cd test && make && ./arestest -v && cd ..
+              cd test && make && ./fuzzcheck.sh && cd ..
           fi
     - |
           if [ "$BUILD_TYPE" = "coverage" ]; then
