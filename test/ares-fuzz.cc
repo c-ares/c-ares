@@ -1,36 +1,53 @@
-// General driver to allow command-line fuzzer (i.e. afl) to
-// fuzz the libfuzzer entrypoint.
+/*
+ * General driver to allow command-line fuzzer (i.e. afl) to
+ * exercise the libFuzzer entrypoint.
+ */
+
 #include <sys/types.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-#include <iostream>
+static const int kMaxAflInputSize = 1 << 20;
+static unsigned char afl_buffer[kMaxAflInputSize];
 
-#include <vector>
+#ifdef __AFL_LOOP
+/* If we are built with afl-clang-fast, use persistent mode */
+#define KEEP_FUZZING(count)  __AFL_LOOP(1000)
+#else
+/* If we are built with afl-clang, execute each input once */
+#define KEEP_FUZZING(count) ((count) < 1)
+#endif
 
+/* In ares-test-fuzz.cc: */
 extern "C" int LLVMFuzzerTestOneInput(const unsigned char *data,
                                       unsigned long size);
 
 static void ProcessFile(int fd) {
-  std::vector<unsigned char> input;
-  while (true) {
-    unsigned char buffer[1024];
-    int len = read(fd, buffer, sizeof(buffer));
-    if (len <= 0) break;
-    input.insert(input.end(), buffer, buffer + len);
-  }
-  LLVMFuzzerTestOneInput(input.data(), input.size());
+  ssize_t count = read(fd, afl_buffer, kMaxAflInputSize);
+  /*
+   * Make a copy of the data so that it's not part of a larger
+   * buffer (where buffer overflows would go unnoticed).
+   */
+  unsigned char *copied_data = (unsigned char *)malloc(count);
+  LLVMFuzzerTestOneInput(copied_data, count);
+  free(copied_data);
 }
 
 int main(int argc, char *argv[]) {
   if (argc == 1) {
-    ProcessFile(fileno(stdin));
+    int count = 0;
+    while (KEEP_FUZZING(count)) {
+      ProcessFile(fileno(stdin));
+      count++;
+    }
   } else {
     for (int ii = 1; ii < argc; ++ii) {
       int fd = open(argv[ii], O_RDONLY);
       if (fd < 0) {
-        std::cerr << "Failed to open '" << argv[ii] << "'" << std::endl;
+        fprintf(stderr, "Failed to open '%s'\n", argv[ii]);
         continue;
       }
       ProcessFile(fd);
