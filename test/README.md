@@ -58,7 +58,7 @@ The test suite includes various different types of test.
    the packet parsing code in `ares_parse_*_reply`, together with a
    standalone wrapper for it (`./aresfuzz`) to allow use of command
    line fuzzers (such as [afl-fuzz](http://lcamtuf.coredump.cx/afl/))
-   for further fuzz testing.
+   for further [fuzz testing](#fuzzing).
 
 
 Code Coverage Information
@@ -73,3 +73,85 @@ To generate code coverage information:
  - Run the tests with `test/arestest`.
  - Generate code coverage output with `make code-coverage-capture` in the
    library directory (i.e. not in `test/`).
+
+
+Fuzzing
+-------
+
+### libFuzzer
+
+To fuzz the packet parsing code with libFuzzer, follow the main
+[libFuzzer build instructions](http://llvm.org/docs/LibFuzzer.html#building):
+
+ - Configure the c-ares library and test suite with a recent Clang and a sanitizer, for example:
+
+   ```console
+   % export CFLAGS="-fsanitize=address -fsanitize-coverage=edge"
+   % export CC=clang
+   % ./configure --disable-shared && make
+   ```
+ - Download and build the libFuzzer code:
+
+   ```console
+   % cd test
+   % svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer
+   % clang++ -c -g -O2 -std=c++11 Fuzzer/*.cpp -IFuzzer
+   % ar ruv libFuzzer.a Fuzzer*.o
+   ```
+ - Link the fuzzer entrypoint in with `ares-fuzz.cc`:
+
+   ```
+   % $CC $CFLAGS -I.. -c ares-test-fuzz.c
+   % clang++ $CFLAGS ares-test-fuzz.o ../.libs/libcares.a libFuzzer.a -o ares-libfuzzer
+   ```
+ - Run the fuzzer using the starting corpus with:
+
+   ```console
+   % ./ares-libfuzzer fuzzinput/
+   ```
+
+### AFL
+
+To fuzz using AFL, follow the
+[AFL quick start guide](http://lcamtuf.coredump.cx/afl/QuickStartGuide.txt):
+
+ - Download and build AFL.
+ - Configure the c-ares library and test tool to use AFL's compiler wrappers:
+
+   ```console
+   % export CC=$AFLDIR/afl-gcc
+   % ./configure --disable-shared && make
+   % cd test && ./configure && make aresfuzz
+   ```
+
+ - Run the AFL fuzzer against the starting corpus:
+
+   ```console
+   % mkdir fuzzoutput
+   % $AFLDIR/afl-fuzz -i fuzzinput -o fuzzoutput -- ./aresfuzz
+   ```
+
+### AFL Persistent Mode
+
+If a recent version of Clang is available, AFL can use its built-in compiler
+instrumentation; this configuration also allows the use of a (much) faster
+persistent mode, where multiple fuzz inputs are run for each process invocation.
+
+ - Download and build a recent AFL, and run `make` in the `llvm_mode`
+   subdirectory to ensure that `afl-clang-fast` gets built.
+ - Configure the c-ares library and test tool to use AFL's clang wrappers that
+   use compiler instrumentation:
+
+   ```console
+   % export CC=$AFLDIR/afl-clang-fast
+   % ./configure --disable-shared && make
+   % cd test && ./configure && make aresfuzz
+   ```
+
+ - Run the AFL fuzzer (in persistent mode) against the starting corpus:
+
+   ```console
+   % mkdir fuzzoutput
+   % $AFLDIR/afl-fuzz -i fuzzinput -o fuzzoutput -- ./aresfuzz
+   ```
+
