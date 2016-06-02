@@ -10,7 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 
-static const int kMaxAflInputSize = 1 << 20;
+#define kMaxAflInputSize (1 << 20)
 static unsigned char afl_buffer[kMaxAflInputSize];
 
 #ifdef __AFL_LOOP
@@ -21,9 +21,8 @@ static unsigned char afl_buffer[kMaxAflInputSize];
 #define KEEP_FUZZING(count) ((count) < 1)
 #endif
 
-/* In ares-test-fuzz.cc: */
-extern "C" int LLVMFuzzerTestOneInput(const unsigned char *data,
-                                      unsigned long size);
+/* In ares-test-fuzz.c: */
+int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
 static void ProcessFile(int fd) {
   ssize_t count = read(fd, afl_buffer, kMaxAflInputSize);
@@ -44,7 +43,8 @@ int main(int argc, char *argv[]) {
       count++;
     }
   } else {
-    for (int ii = 1; ii < argc; ++ii) {
+    int ii;
+    for (ii = 1; ii < argc; ++ii) {
       int fd = open(argv[ii], O_RDONLY);
       if (fd < 0) {
         fprintf(stderr, "Failed to open '%s'\n", argv[ii]);

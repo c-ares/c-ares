@@ -22,8 +22,8 @@ TESTSOURCES = ares-test-main.cc	\
 TESTHEADERS = ares-test.h		\
   dns-proto.h
 
-FUZZSOURCES = ares-test-fuzz.cc	\
-  ares-fuzz.cc
+FUZZSOURCES = ares-test-fuzz.c		\
+  ares-fuzz.c
 
 DUMPSOURCES = dns-proto.cc		\
   dns-dump.cc

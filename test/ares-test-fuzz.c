@@ -3,9 +3,6 @@
 #include "ares.h"
 
 // Entrypoint for Clang's libfuzzer
-#ifdef __cplusplus
-extern "C"
-#endif
 int LLVMFuzzerTestOneInput(const unsigned char *data,
                                       unsigned long size) {
   // Feed the data into each of the ares_parse_*_reply functions.
