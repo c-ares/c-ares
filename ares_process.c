@@ -148,6 +148,15 @@ void ares_process_fd(ares_channel channel,
   processfds(channel, NULL, read_fd, NULL, write_fd);
 }
 
+/* Closing process 
+*/
+void ares_process_timeouts(ares_channel channel)
+{
+  struct timeval now = ares__tvnow();
+  process_timeouts(channel, &now);
+  process_broken_connections(channel, &now);
+}
+
 
 /* Return 1 if the specified error number describes a readiness error, or 0
  * otherwise. This is mostly for HP-UX, which could return EAGAIN or
