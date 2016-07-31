@@ -451,8 +451,8 @@ CONTAINED_TEST_F(LibraryTest, ContainerResolvConfNotReadable,
                  "myhostname", "mydomainname.org", filelist) {
   ares_channel channel = nullptr;
   MakeUnreadable hide("/etc/resolv.conf");
-  // Unavailable /etc/resolv.conf fails initialization.
-  EXPECT_EQ(ARES_EFILE, ares_init(&channel));
+  // Unavailable /etc/resolv.conf falls back to defaults
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
   return HasFailure();
 }
 CONTAINED_TEST_F(LibraryTest, ContainerNsswitchConfNotReadable,
