@@ -112,7 +112,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   ares_channel channel;
   int i;
   int status = ARES_SUCCESS;
-  int status2;
   struct timeval now;
 
 #ifdef CURLDEBUG
@@ -190,18 +189,17 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
    * precedence to lowest.
    */
 
-  if (status == ARES_SUCCESS) {
-    status = init_by_options(channel, options, optmask);
-    if (status != ARES_SUCCESS)
-      DEBUGF(fprintf(stderr, "Error: init_by_options failed: %s\n",
-                     ares_strerror(status)));
+  status = init_by_options(channel, options, optmask);
+  if (status != ARES_SUCCESS) {
+    DEBUGF(fprintf(stderr, "Error: init_by_options failed: %s\n",
+                   ares_strerror(status)));
+    /* If we fail to apply user-specified options, fail the whole init process */
+    goto done;
   }
-  if (status == ARES_SUCCESS) {
-    status = init_by_environment(channel);
-    if (status != ARES_SUCCESS)
-      DEBUGF(fprintf(stderr, "Error: init_by_environment failed: %s\n",
-                     ares_strerror(status)));
-  }
+  status = init_by_environment(channel);
+  if (status != ARES_SUCCESS)
+    DEBUGF(fprintf(stderr, "Error: init_by_environment failed: %s\n",
+                   ares_strerror(status)));
   if (status == ARES_SUCCESS) {
     status = init_by_resolv_conf(channel);
     if (status != ARES_SUCCESS)
@@ -213,13 +211,10 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
    * No matter what failed or succeeded, seed defaults to provide
    * useful behavior for things that we missed.
    */
-  status2 = init_by_defaults(channel);
-  if (status2 != ARES_SUCCESS) {
+  status = init_by_defaults(channel);
+  if (status != ARES_SUCCESS)
     DEBUGF(fprintf(stderr, "Error: init_by_defaults failed: %s\n",
                    ares_strerror(status)));
-    if (status == ARES_SUCCESS)
-      status = status2;
-  }
 
   /* Generate random key */
 
@@ -232,6 +227,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
                      ares_strerror(status)));
   }
 
+done:
   if (status != ARES_SUCCESS)
     {
       /* Something failed; clean up memory we may have allocated. */
