@@ -22,7 +22,7 @@ c-ares is of course distributed under the same MIT-style license as the
 original ares.
 
 You'll find all c-ares details and news here:
-        http://c-ares.haxx.se/
+        https://c-ares.haxx.se/
 
 
 Notes for c-ares hackers
