@@ -10,4 +10,4 @@ build_script:
   - copy ares_build.h.dist ares_build.h
   - if "%platform%" == "mingw" ( make -f Makefile.m32 demos ) else ( nmake /f Makefile.msvc )
   - cd test
-  - if "%platform%" == "mingw" ( make -f Makefile.m32 vtest ) else ( nmake /f Makefile.msvc vtest )
+  - if "%platform%" == "mingw" ( make -f Makefile.m32 ) else ( nmake /f Makefile.msvc vtest )
