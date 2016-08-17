@@ -4,10 +4,12 @@ addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.7
         packages:
             - gcc-4.8
             - g++-4.8
             - lcov
+            - clang-3.7
 matrix:
     include:
         - os: linux
@@ -28,9 +30,9 @@ matrix:
         - os: linux
           compiler: clang
           env: BUILD_TYPE=lsan
-#        - os: linux
-#          compiler: clang
-#          env: BUILD_TYPE=analyse
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=analyse
         - os: osx
           compiler: gcc
           env: BUILD_TYPE=normal
@@ -75,8 +77,10 @@ before_script:
          fi
     - |
          if [ "$BUILD_TYPE" = "analyse" ]; then
-             export SCAN_WRAP="scan-build"
+             export SCAN_WRAP="scan-build-3.7 --status-bugs"
              export CONFIG_OPTS="--enable-debug"
+             export CXX="clang++-3.7"
+             export CC="clang-3.7"
          fi
     - |
          if [ "$BUILD_TYPE" = "ios" ]; then
@@ -90,7 +94,7 @@ before_script:
 script:
     - ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS && $SCAN_WRAP make
     - |
-          if [ "$BUILD_TYPE" != "ios" ]; then
+          if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" ]; then
               ./adig www.google.com
               ./acountry www.google.com
               ./ahost www.google.com
