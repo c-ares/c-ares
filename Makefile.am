@@ -56,7 +56,7 @@ EXTRA_DIST = AUTHORS CHANGES README.cares Makefile.inc Makefile.dj	   \
  config-win32.h RELEASE-NOTES libcares.pc.in buildconf get_ver.awk maketgz \
  TODO ares_build.h.in $(PDFPAGES) cares.rc README.msvc $(MSVCFILES)	   \
  $(CSOURCES) $(HHEADERS) config-dos.h acountry.1 adig.1 ahost.1 INSTALL	   \
- README.md
+ README.md LICENSE.md
 
 CLEANFILES = $(PDFPAGES) $(HTMLPAGES)
 
