@@ -59,10 +59,13 @@ AC_SUBST([EGREP])
 
 dnl AR is mandatory for configure process and libtool.
 dnl This is target dependent, so check it as a tool.
-AC_PATH_TOOL([AR], [ar], [not_found],
-  [$PATH:/usr/bin:/usr/local/bin])
-if test -z "$AR" || test "$AR" = "not_found"; then
-  AC_MSG_ERROR([ar not found in PATH. Cannot continue without ar.])
+if test -z "$AR"; then
+  dnl allow it to be overridden
+  AC_PATH_TOOL([AR], [ar], [not_found],
+    [$PATH:/usr/bin:/usr/local/bin])
+  if test -z "$AR" || test "$AR" = "not_found"; then
+    AC_MSG_ERROR([ar not found in PATH. Cannot continue without ar.])
+  fi
 fi
 AC_SUBST([AR])
 
