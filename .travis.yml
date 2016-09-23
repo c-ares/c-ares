@@ -10,6 +10,7 @@ addons:
             - g++-4.8
             - lcov
             - clang-3.7
+            - valgrind
 matrix:
     include:
         - os: linux
@@ -33,6 +34,9 @@ matrix:
         - os: linux
           compiler: clang
           env: BUILD_TYPE=analyse
+        - os: linux
+          compiler: gcc
+          env: BUILD_TYPE=valgrind
         - os: osx
           compiler: gcc
           env: BUILD_TYPE=normal
@@ -83,6 +87,12 @@ before_script:
              export CC="clang-3.7"
          fi
     - |
+         if [ "$BUILD_TYPE" = "valgrind" ]; then
+             export TEST_WRAP='libtool --mode=execute valgrind --leak-check=full'
+             # Skip container tests as valgrind doesn't cope with clone()
+             export TEST_FILTER="--gtest_filter=-*Container*"
+         fi
+    - |
          if [ "$BUILD_TYPE" = "ios" ]; then
              export CONFIG_OPTS=--host=arm-apple-darwin10
              export DEVPATH=`xcode-select -print-path`/Platforms/iPhoneOS.platform/Developer
@@ -95,10 +105,10 @@ script:
     - ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS && $SCAN_WRAP make
     - |
           if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" ]; then
-              ./adig www.google.com
-              ./acountry www.google.com
-              ./ahost www.google.com
-              cd test && make && ./arestest -v && cd ..
+              $TEST_WRAP ./adig www.google.com
+              $TEST_WRAP ./acountry www.google.com
+              $TEST_WRAP ./ahost www.google.com
+              cd test && make && $TEST_WRAP ./arestest -v $TEST_FILTER && cd ..
               cd test && make && ./fuzzcheck.sh && cd ..
           fi
     - |
