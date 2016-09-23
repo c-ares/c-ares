@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
     }
   }
   int gtest_argc = gtest_argv.size();
+  gtest_argv.push_back(nullptr);
   ::testing::InitGoogleTest(&gtest_argc, gtest_argv.data());
 
 #ifdef WIN32
