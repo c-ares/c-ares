@@ -50,6 +50,7 @@ matrix:
 install:
     - pip install --user 'requests[security]<2.9.1'
     - pip install --user cpp-coveralls
+    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew reinstall libtool > /dev/null; fi
 before_script:
     - |
          if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" = "g++" ]; then
