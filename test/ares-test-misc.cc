@@ -193,6 +193,19 @@ TEST_F(LibraryTest, CreateQuery) {
   EXPECT_EQ(expected, actual);
 }
 
+TEST_F(LibraryTest, CreateQueryTrailingEscapedDot) {
+  byte* p;
+  int len;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_create_query("example.com\\.", ns_c_in, ns_t_a, 0x1234, 0,
+                              &p, &len, 0));
+  std::vector<byte> data(p, p + len);
+  ares_free_string(p);
+
+  std::string actual = PacketToString(data);
+  EXPECT_EQ("REQ QRY  Q:{'example.com\\.' IN A}", actual);
+}
+
 TEST_F(LibraryTest, CreateQueryFailures) {
   byte* p;
   int len;
