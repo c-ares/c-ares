@@ -46,7 +46,8 @@ const char *ares_strerror(int code)
     "c-ares library initialization not yet performed",
     "Error loading iphlpapi.dll",
     "Could not find GetNetworkParams function",
-    "DNS query cancelled"
+    "DNS query cancelled",
+    "DNS server returned answer with no DNSSEC data"
   };
 
   if(code >= 0 && code < (int)(sizeof(errtext) / sizeof(*errtext)))
