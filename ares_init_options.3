@@ -33,7 +33,7 @@ for name service lookups.  If it returns successfully,
 caller should invoke \fIares_destroy(3)\fP on the handle when the channel is
 no longer needed.
 
-The \fIoptmask\fP parameter specifies which fields in the structure pointed to
+The \fIoptmask\fP parameter generally specifies which fields in the structure pointed to
 by \fIoptions\fP are set, as follows:
 .TP 18
 .B ARES_OPT_FLAGS
@@ -76,10 +76,17 @@ queried for "as is" prior to querying for it with the default domain
 extensions appended.  The default value is 1 unless set otherwise by
 resolv.conf or the RES_OPTIONS environment variable.
 .TP 18
-.B ARES_OPT_PORT
-.B unsigned short \fIport\fP;
+.B ARES_OPT_UDP_PORT
+.B unsigned short \fIudp_port\fP;
 .br
-The port to use for queries (both TCP and UDP), in network byte order.
+The port to use for queries over UDP, in network byte order.
+The default value is 53 (in network byte order), the standard name
+service port.
+.TP 18
+.B ARES_OPT_TCP_PORT
+.B unsigned short \fItcp_port\fP;
+.br
+The port to use for queries over TCP, in network byte order.
 The default value is 53 (in network byte order), the standard name
 service port.
 .TP 18
@@ -127,6 +134,49 @@ The value of
 will be passed as the
 .I data
 argument.
+.TP 18
+.B ARES_OPT_SORTLIST
+.B struct apattern *\fIsortlist\fP;
+.br
+.B int \fInsort\fP;
+.br
+A list of IP address ranges that specifies the order of preference that
+results from \fIares_gethostbyname\fP should be returned in.  Note that
+this can only be used with a sortlist retrieved via
+\fBares_save_options(3)\fP (because
+.B struct apattern
+is opaque); to set a fresh sort list, use \fBares_set_sortlist(3)\fP.
+.TP 18
+.B ARES_OPT_SOCK_SNDBUF
+.B int \fIsocket_send_buffer_size\fP;
+.br
+The send buffer size to set for the socket.
+.TP 18
+.B ARES_OPT_SOCK_RCVBUF
+.B int \fIsocket_receive_buffer_size\fP;
+.br
+The receive buffer size to set for the socket.
+.TP 18
+.B ARES_OPT_EDNSPSZ
+.B int \fIednspsz\fP;
+.br
+The message size to be advertized in EDNS; only takes effect if the
+.B ARES_FLAG_EDNS
+flag is set.
+.br
+.PP
+The \fIoptmask\fP parameter also includes options without a corresponding
+field in the
+.B ares_options
+structure, as follows:
+.TP 23
+.B ARES_OPT_ROTATE
+Perform round-robin selection of the nameservers configured for the channel
+for each resolution.
+.TP 23
+.B ARES_OPT_NOROTATE
+Do not perform round-robin nameserver selection; always use the list of
+nameservers in the same order.
 .PP
 The
 .I flags
@@ -168,6 +218,9 @@ Do not discard responses with the SERVFAIL, NOTIMP, or REFUSED
 response code or responses whose questions don't match the questions
 in the request.  Primarily useful for writing clients which might be
 used to test or debug name servers.
+.TP 23
+.B ARES_FLAG_EDNS
+Include an EDNS pseudo-resource record (RFC 2671) in generated requests.
 .SH RETURN VALUES
 \fBares_init_options(3)\fP can return any of the following values:
 .TP 14
@@ -197,7 +250,9 @@ manual page.
 .BR ares_destroy(3),
 .BR ares_dup(3),
 .BR ares_library_init(3),
-.BR ares_set_servers(3)
+.BR ares_save_options(3),
+.BR ares_set_servers(3),
+.BR ares_set_sortlist(3)
 .SH AUTHOR
 Greg Hudson, MIT Information Systems
 .br
