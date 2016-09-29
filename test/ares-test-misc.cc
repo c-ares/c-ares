@@ -206,6 +206,18 @@ TEST_F(LibraryTest, CreateQueryTrailingEscapedDot) {
   EXPECT_EQ("REQ QRY  Q:{'example.com\\.' IN A}", actual);
 }
 
+TEST_F(LibraryTest, CreateQueryNameTooLong) {
+  byte* p;
+  int len;
+  EXPECT_EQ(ARES_EBADNAME,
+            ares_create_query(
+              "a1234567890123456789.b1234567890123456789.c1234567890123456789.d1234567890123456789."
+              "a1234567890123456789.b1234567890123456789.c1234567890123456789.d1234567890123456789."
+              "a1234567890123456789.b1234567890123456789.c1234567890123456789.d1234567890123456789."
+              "x1234567890123456789.y1234567890123456789.",
+              ns_c_in, ns_t_a, 0x1234, 0, &p, &len, 0));
+}
+
 TEST_F(LibraryTest, CreateQueryFailures) {
   byte* p;
   int len;
