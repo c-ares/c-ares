@@ -9,6 +9,19 @@ INCLUDE (CheckLibraryExists)
 
 PROJECT (cares C)
 
+# This is for libtool compatibility, and specified in a form that is easily
+# translatable from libtool (even if the actual form doesn't make sense).
+# For instance, in an autotools project, in Makefile.am there is a line that
+# contains something like:
+#     -version-info 4:0:2
+# This breaks down into sections of current:revision:age
+# This then generates a version of  "(current-age).age.revision"  with an
+# interface version of "(current-age)"
+# For example, a version of 4:0:2 would generate output such as:
+#    libname.so   -> libname.so.2
+#    libname.so.2 -> libname.so.2.2.0
+SET (CARES_LIB_VERSIONINFO "4:0:2")
+
 
 OPTION (CARES_STATIC     "Build as a static library"                                             OFF)
 OPTION (CARES_SHARED     "Build as a shared library"                                             ON)
@@ -523,7 +536,19 @@ SET (CARES_SOURCES
 IF (${CARES_SHARED})
 	ADD_LIBRARY (${PROJECT_NAME} SHARED ${CARES_SOURCES})
 	SET_TARGET_PROPERTIES (${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DHAVE_CONFIG_H=1 -DCARES_BUILDING_LIBRARY")
-	SET_TARGET_PROPERTIES (${PROJECT_NAME} PROPERTIES SOVERSION 3.0.1)
+
+	# Convert CARES_LIB_VERSIONINFO libtool version format into VERSION and SOVERSION
+	# Convert from ":" separated into CMake list format using ";"
+	STRING (REPLACE ":" ";" CARES_LIB_VERSIONINFO ${CARES_LIB_VERSIONINFO})
+	LIST (GET CARES_LIB_VERSIONINFO 0 CARES_LIB_VERSION_CURRENT)
+	LIST (GET CARES_LIB_VERSIONINFO 1 CARES_LIB_VERSION_REVISION)
+	LIST (GET CARES_LIB_VERSIONINFO 2 CARES_LIB_VERSION_AGE)
+	MATH (EXPR CARES_LIB_VERSION_MAJOR "${CARES_LIB_VERSION_CURRENT} - ${CARES_LIB_VERSION_AGE}")
+	SET  (CARES_LIB_VERSION_MINOR "${CARES_LIB_VERSION_AGE}")
+	SET  (CARES_LIB_VERSION_RELEASE "${CARES_LIB_VERSION_REVISION}")
+	SET_TARGET_PROPERTIES (${PROJECT_NAME} PROPERTIES VERSION "${CARES_LIB_VERSION_MAJOR}.${CARES_LIB_VERSION_MINOR}.${CARES_LIB_VERSION_RELEASE}")
+	SET_TARGET_PROPERTIES (${PROJECT_NAME} PROPERTIES SOVERSION "${CARES_LIB_VERSION_MAJOR}")
+
 	TARGET_LINK_LIBRARIES (${PROJECT_NAME} ${CARES_DEPENDENT_LIBS})
 	IF (${CARES_INSTALL})
 		INSTALL (TARGETS ${PROJECT_NAME} DESTINATION ${CARES_INSTALL_LOCATION_LIBS})
@@ -537,7 +562,6 @@ ENDIF ()
 IF (${CARES_STATIC})
 	ADD_LIBRARY (${PROJECT_NAME}${STATIC_SUFFIX} STATIC ${CARES_SOURCES})
 	SET_TARGET_PROPERTIES (${PROJECT_NAME}${STATIC_SUFFIX} PROPERTIES COMPILE_FLAGS "-DHAVE_CONFIG_H=1 -DCARES_STATICLIB" OUTPUT_NAME ${PROJECT_NAME})
-	SET_TARGET_PROPERTIES (${PROJECT_NAME}${STATIC_SUFFIX} PROPERTIES SOVERSION 3.0.1)
 	IF (${CARES_STATIC_PIC})
 		SET_TARGET_PROPERTIES (${PROJECT_NAME}${STATIC_SUFFIX} PROPERTIES POSITION_INDEPENDENT_CODE True)
 	ENDIF ()
