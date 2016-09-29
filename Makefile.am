@@ -67,7 +67,7 @@ DIST_SUBDIRS = test
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
 
-CARES_VERSION_INFO = -version-info 3:0:1
+CARES_VERSION_INFO = -version-info 4:0:2
 # This flag accepts an argument of the form current[:revision[:age]]. So,
 # passing -version-info 3:12:1 sets current to 3, revision to 12, and age to
 # 1.
