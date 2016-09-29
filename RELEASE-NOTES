@@ -1,4 +1,4 @@
-c-ares version 1.11.1
+c-ares version 1.12.0
 
 Changes:
 
@@ -6,6 +6,7 @@ Changes:
  
 Bug fixes:
 
+ o CVE-2016-5180: ares_create_query single byte out of buffer write [4]
  o configure: acknowledge --disable-tests [1]
  o man pages: fix typos detected by Lintian
  o test: add missing #includes for dns-proto.cc
@@ -42,3 +43,4 @@ References to bug reports and discussions on issues:
  [1] = https://github.com/c-ares/c-ares/issues/44
  [2] = https://github.com/c-ares/c-ares/issues/60
  [3] = https://github.com/google/googletest/issues/705#issuecomment-235067917
+ [4] = https://c-ares.haxx.se/adv_20160929.html
