@@ -480,61 +480,47 @@ INCLUDE_DIRECTORIES (
 	${CARES_INCLUDE_DIRS}
 )
 
-# Source files.
-SET (CARES_SOURCES
-	ares__close_sockets.c
-	ares__get_hostent.c
-	ares__read_line.c
-	ares__timeval.c
-	ares_cancel.c
-	ares_data.c
-	ares_destroy.c
-	ares_expand_name.c
-	ares_expand_string.c
-	ares_fds.c
-	ares_free_hostent.c
-	ares_free_string.c
-	ares_getenv.c
-	ares_gethostbyaddr.c
-	ares_gethostbyname.c
-	ares_getnameinfo.c
-	ares_getsock.c
-	ares_init.c
-	ares_library_init.c
-	ares_llist.c
-	ares_mkquery.c
-	ares_create_query.c
-	ares_nowarn.c
-	ares_options.c
-	ares_parse_a_reply.c
-	ares_parse_aaaa_reply.c
-	ares_parse_mx_reply.c
-	ares_parse_naptr_reply.c
-	ares_parse_ns_reply.c
-	ares_parse_ptr_reply.c
-	ares_parse_soa_reply.c
-	ares_parse_srv_reply.c
-	ares_parse_txt_reply.c
-	ares_platform.c
-	ares_process.c
-	ares_query.c
-	ares_search.c
-	ares_send.c
-	ares_strcasecmp.c
-	ares_strdup.c
-	ares_strerror.c
-	ares_timeout.c
-	ares_version.c
-	ares_writev.c
-	bitncmp.c
-	inet_net_pton.c
-	inet_ntop.c
-	windows_port.c
-)
+
+# TRANSFORM_MAKEFILE_INC
+#
+# This function consumes the "Makefile.inc" autotools file, and converts it into
+#  "Makefile.inc.cmake", a cmake include file; transforming this:
+#
+# CSOURCES = ares__close_sockets.c	\
+#   ares__get_hostent.c			\
+#   ares__read_line.c			\
+#   ...
+#
+#   into this:
+# 
+# SET (CSOURCES
+# 	ares__close_sockets.c
+# 	ares__get_hostent.c
+# 	ares__read_line.c
+#	...
+function(TRANSFORM_MAKEFILE_INC INPUT_FILE OUTPUT_FILE)
+  file(READ ${INPUT_FILE} MAKEFILE_INC_TEXT)
+  string(REPLACE "$(top_srcdir)"   "\${CMAKE_CURRENT_SOURCE_DIR}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+  string(REPLACE "$(top_builddir)" "\${PROJECT_BINARY_DIR}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+
+  string(REGEX REPLACE "\\\\\n" "ß!ß" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+  string(REGEX REPLACE "([a-zA-Z_][a-zA-Z0-9_]*)[\t ]*=[\t ]*([^\n]*)" "SET(\\1 \\2)" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+  string(REPLACE "ß!ß" "\n" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+
+  string(REGEX REPLACE "\\$\\(([a-zA-Z_][a-zA-Z0-9_]*)\\)" "\${\\1}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})    # Replace $() with ${}
+  string(REGEX REPLACE "@([a-zA-Z_][a-zA-Z0-9_]*)@" "\${\\1}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})    # Replace @@ with ${}, even if that may not be read by CMake scripts.
+  file(WRITE ${OUTPUT_FILE} ${MAKEFILE_INC_TEXT})
+endfunction()
+
+# run the function...
+transform_makefile_inc("Makefile.inc" "${PROJECT_BINARY_DIR}/Makefile.inc.cmake")
+include(${PROJECT_BINARY_DIR}/Makefile.inc.cmake)
+
+
 
 # Build the dynamic/shared library
 IF (CARES_SHARED)
-	ADD_LIBRARY (${PROJECT_NAME} SHARED ${CARES_SOURCES})
+	ADD_LIBRARY (${PROJECT_NAME} SHARED ${CSOURCES})
 	SET_TARGET_PROPERTIES (${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DHAVE_CONFIG_H=1 -DCARES_BUILDING_LIBRARY")
 
 	# Convert CARES_LIB_VERSIONINFO libtool version format into VERSION and SOVERSION
@@ -560,7 +546,7 @@ ENDIF ()
 
 # Build the static library
 IF (CARES_STATIC)
-	ADD_LIBRARY (${PROJECT_NAME}${STATIC_SUFFIX} STATIC ${CARES_SOURCES})
+	ADD_LIBRARY (${PROJECT_NAME}${STATIC_SUFFIX} STATIC ${CSOURCES})
 	SET_TARGET_PROPERTIES (${PROJECT_NAME}${STATIC_SUFFIX} PROPERTIES COMPILE_FLAGS "-DHAVE_CONFIG_H=1 -DCARES_STATICLIB" OUTPUT_NAME ${PROJECT_NAME})
 	IF (CARES_STATIC_PIC)
 		SET_TARGET_PROPERTIES (${PROJECT_NAME}${STATIC_SUFFIX} PROPERTIES POSITION_INDEPENDENT_CODE True)
@@ -579,15 +565,8 @@ IF (CARES_INSTALL)
 ENDIF ()
 
 
-# Common sources for all examples
-SET (CARES_EXAMPLE_SOURCES
-	ares_getopt.c
-	ares_nowarn.c
-	ares_strcasecmp.c
-)
-
 # Build ahost
-ADD_EXECUTABLE (ahost ahost.c ${CARES_EXAMPLE_SOURCES})
+ADD_EXECUTABLE (ahost ahost.c ${SAMPLESOURCES})
 SET_TARGET_PROPERTIES(ahost PROPERTIES COMPILE_FLAGS "-DHAVE_CONFIG_H=1 ${CARES_DEFINITIONS}")
 TARGET_LINK_LIBRARIES (ahost ${CARES_LIBRARIES} ${CARES_DEPENDENT_LIBS})
 IF (CARES_INSTALL)
@@ -596,7 +575,7 @@ ENDIF ()
 
 
 # Build adig
-ADD_EXECUTABLE (adig adig.c ${CARES_EXAMPLE_SOURCES})
+ADD_EXECUTABLE (adig adig.c ${SAMPLESOURCES})
 SET_TARGET_PROPERTIES(adig PROPERTIES COMPILE_FLAGS "-DHAVE_CONFIG_H=1 ${CARES_DEFINITIONS}")
 TARGET_LINK_LIBRARIES (adig ${CARES_LIBRARIES} ${CARES_DEPENDENT_LIBS})
 IF (CARES_INSTALL)
@@ -605,7 +584,7 @@ ENDIF ()
 
 
 # Build acountry
-ADD_EXECUTABLE (acountry acountry.c ${CARES_EXAMPLE_SOURCES})
+ADD_EXECUTABLE (acountry acountry.c ${SAMPLESOURCES})
 SET_TARGET_PROPERTIES(acountry PROPERTIES COMPILE_FLAGS "-DHAVE_CONFIG_H=1 ${CARES_DEFINITIONS}")
 TARGET_LINK_LIBRARIES (acountry ${CARES_LIBRARIES} ${CARES_DEPENDENT_LIBS})
 IF (CARES_INSTALL)
