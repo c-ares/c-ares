@@ -48,7 +48,6 @@ matrix:
           language: objective-c
           env: BUILD_TYPE=ios
 install:
-    - pip install --user git+https://github.com/eliben/pycparser@release_v2.14
     - pip install --user 'requests[security]<2.9.1'
     - pip install --user cpp-coveralls
     - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew reinstall libtool > /dev/null; fi
