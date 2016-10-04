@@ -89,6 +89,18 @@ return 0;
 	}
 	"
 	IOS_V10)
+
+	CHECK_C_SOURCE_COMPILES ("
+	#include <stdio.h>
+	#include <AvailabilityMacros.h>
+	int main() {
+#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
+#error Not MacOSX 10.12 or higher
+#endif
+return 0;
+	}
+	"
+	MACOS_V1012)
 ENDIF ()
 
 IF (IOS AND HAVE_LIBRESOLV)
@@ -262,10 +274,11 @@ CHECK_SYMBOL_EXISTS (MSG_NOSIGNAL    "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_MSG_NOS
 CHECK_SYMBOL_EXISTS (PF_INET6        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_PF_INET6)
 CHECK_SYMBOL_EXISTS (SO_NONBLOCK     "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_SO_NONBLOCK)
 
-# XCode v8 bug: iOS when targeting less than v10 will say clock_gettime exists, it is a weak
-# symbol that only exists in iOS10 and will cause a crash at runtime when running on versions
-# less than 10.  Skip finding CLOCK_MONOTONIC on iOS target < 10.
-IF ((NOT IOS) OR IOS_V10)
+# XCode v8 bug: iOS when targeting less than v10, or MacOS when targeting less than v10.12 will
+# say clock_gettime exists, it is a weak symbol that only exists in iOS10/MacOS10.12 and will
+# cause a crash at runtime when running on older versions.  Skip finding CLOCK_MONOTONIC on older
+# OS's.
+IF ((NOT APPLE) OR IOS_V10 OR MACOS_V1012)
 	CHECK_SYMBOL_EXISTS (CLOCK_MONOTONIC "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_CLOCK_GETTIME_MONOTONIC)
 ENDIF ()
 
