@@ -79,11 +79,11 @@ return 0;
 	IOS)
 
 	CHECK_C_SOURCE_COMPILES ("
-	#include <stdio.h>
-	#include <TargetConditionals.h>
+#include <stdio.h>
+#include <TargetConditionals.h>
 	int main() {
 #if TARGET_OS_IPHONE == 0 || __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
-#error Not iOS v10
+#  error Not iOS v10
 #endif
 return 0;
 	}
@@ -91,11 +91,14 @@ return 0;
 	IOS_V10)
 
 	CHECK_C_SOURCE_COMPILES ("
-	#include <stdio.h>
-	#include <AvailabilityMacros.h>
+#include <stdio.h>
+#include <AvailabilityMacros.h>
+#ifndef MAC_OS_X_VERSION_10_12
+#  define MAC_OS_X_VERSION_10_12 101200
+#endif
 	int main() {
 #if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
-#error Not MacOSX 10.12 or higher
+#  error Not MacOSX 10.12 or higher
 #endif
 return 0;
 	}
