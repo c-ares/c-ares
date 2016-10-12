@@ -5,6 +5,7 @@ CSOURCES = ares__close_sockets.c	\
   ares__timeval.c			\
   ares_cancel.c				\
   ares_data.c				\
+  ares_debug.c				\
   ares_destroy.c			\
   ares_expand_name.c			\
   ares_expand_string.c			\

@@ -32,6 +32,7 @@
 #endif
 
 #include <sys/types.h>
+#include <stdarg.h>
 
 /* HP-UX systems version 9, 10 and 11 lack sys/select.h and so does oldish
    libc5-based Linux systems. Only include it on system that are known to
@@ -159,6 +160,7 @@ extern "C" {
 #define ARES_OPT_ROTATE         (1 << 14)
 #define ARES_OPT_EDNSPSZ        (1 << 15)
 #define ARES_OPT_NOROTATE       (1 << 16)
+#define ARES_OPT_DEBUG_CB       (1 << 17)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN                  (1 << 0)
@@ -246,6 +248,11 @@ struct apattern;
    duplicates this new option.
 
  */
+
+typedef void (*ares_debug_callback)(void *user_data,
+                                    const char *format,
+                                    va_list args);
+
 struct ares_options {
   int flags;
   int timeout; /* in seconds or milliseconds, depending on options */
@@ -265,6 +272,8 @@ struct ares_options {
   struct apattern *sortlist;
   int nsort;
   int ednspsz;
+  ares_debug_callback debug_cb;
+  void *debug_cb_data;
 };
 
 struct hostent;
@@ -576,8 +585,8 @@ CARES_EXTERN int ares_parse_naptr_reply(const unsigned char* abuf,
                                         struct ares_naptr_reply** naptr_out);
 
 CARES_EXTERN int ares_parse_soa_reply(const unsigned char* abuf,
-				      int alen,
-				      struct ares_soa_reply** soa_out);
+                      int alen,
+                      struct ares_soa_reply** soa_out);
 
 CARES_EXTERN void ares_free_string(void *str);
 
@@ -628,6 +637,7 @@ CARES_EXTERN const char *ares_inet_ntop(int af, const void *src, char *dst,
 
 CARES_EXTERN int ares_inet_pton(int af, const char *src, void *dst);
 
+CARES_EXTERN void ares_debug(ares_channel channel, const char *format, ...);
 
 #ifdef  __cplusplus
 }
