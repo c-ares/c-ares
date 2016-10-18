@@ -21,6 +21,12 @@ matrix:
           env: BUILD_TYPE=normal
         - os: linux
           compiler: gcc
+          env: BUILD_TYPE=cmake
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=cmake
+        - os: linux
+          compiler: gcc
           env: BUILD_TYPE=coverage
         - os: linux
           compiler: clang
@@ -43,6 +49,9 @@ matrix:
         - os: osx
           compiler: clang
           env: BUILD_TYPE=normal
+        - os: osx
+          compiler: clang
+          env: BUILD_TYPE=cmake
         - os: osx
           compiler: clang
           language: objective-c
@@ -103,9 +112,21 @@ before_script:
              export LDFLAGS=$IOSFLAGS
          fi
 script:
-    - ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS && $SCAN_WRAP make
     - |
-          if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" ]; then
+          if [ "$BUILD_TYPE" != "cmake" ]; then
+              ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS && $SCAN_WRAP make
+          else
+              mkdir cmakebld
+              cd cmakebld
+              cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON ..
+              make
+              ./bin/adig www.google.com
+              ./bin/acountry www.google.com
+              ./bin/ahost www.google.com
+              cd ..
+          fi
+    - |
+          if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" -a "$BUILD_TYPE" != "cmake" ]; then
               $TEST_WRAP ./adig www.google.com
               $TEST_WRAP ./acountry www.google.com
               $TEST_WRAP ./ahost www.google.com
