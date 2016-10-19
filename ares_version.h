@@ -6,12 +6,12 @@
 #define ARES_COPYRIGHT "2004 - 2016 Daniel Stenberg, <daniel@haxx.se>."
 
 #define ARES_VERSION_MAJOR 1
-#define ARES_VERSION_MINOR 11
+#define ARES_VERSION_MINOR 12
 #define ARES_VERSION_PATCH 1
 #define ARES_VERSION ((ARES_VERSION_MAJOR<<16)|\
                        (ARES_VERSION_MINOR<<8)|\
                        (ARES_VERSION_PATCH))
-#define ARES_VERSION_STR "1.11.1-DEV"
+#define ARES_VERSION_STR "1.12.1-DEV"
 
 #if (ARES_VERSION >= 0x010700)
 #  define CARES_HAVE_ARES_LIBRARY_INIT 1
