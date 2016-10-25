@@ -38,8 +38,9 @@ lib_LTLIBRARIES = libcares.la
 
 man_MANS = $(MANPAGES)
 
-MSVCFILES = vc/vc6aws.dsw vc/acountry/vc6acountry.dsp vc/adig/vc6adig.dsp \
- vc/ahost/vc6ahost.dsp vc/cares/vc6cares.dsp vc/cares/vc6cares.dsw
+MSVCFILES = vc/vc6aws.dsw vc/acountry/vc6acountry.dsp vc/adig/vc6adig.dsp	\
+ vc/ahost/vc6ahost.dsp vc/cares/vc6cares.dsp vc/cares/vc6cares.dsw		\
+ msvc_ver.inc
 
 if CURLDEBUG
 PROGS =
