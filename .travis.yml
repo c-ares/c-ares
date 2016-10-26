@@ -112,38 +112,4 @@ before_script:
              export LDFLAGS=$IOSFLAGS
          fi
 script:
-    - |
-          if [ "$BUILD_TYPE" != "cmake" ]; then
-              ./buildconf && $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS && $SCAN_WRAP make
-          else
-              mkdir cmakebld
-              cd cmakebld
-              cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON ..
-              make
-              ./bin/adig www.google.com
-              ./bin/acountry www.google.com
-              ./bin/ahost www.google.com
-              cd ..
-          fi
-    - |
-          if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" -a "$BUILD_TYPE" != "cmake" ]; then
-              $TEST_WRAP ./adig www.google.com
-              $TEST_WRAP ./acountry www.google.com
-              $TEST_WRAP ./ahost www.google.com
-              cd test && make && $TEST_WRAP ./arestest -v $TEST_FILTER && cd ..
-              cd test && make && ./fuzzcheck.sh && cd ..
-          fi
-    - |
-          if [ "$BUILD_TYPE" = "normal" -a "$TRAVIS_OS_NAME" = "linux" ]; then
-              ./maketgz 99.98.97
-              tar xvf c-ares-99.98.97.tar.gz
-              cd c-ares-99.98.97
-              ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug
-              make
-              cd test && make && $TEST_WRAP ./arestest -v $TEST_FILTER && cd ..
-              cd ..
-          fi
-    - |
-          if [ "$BUILD_TYPE" = "coverage" ]; then
-              coveralls --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
-          fi
+    - ./travis/build.sh && ./travis/test.sh && ./travis/distcheck.sh && ./travis/covupload.sh
