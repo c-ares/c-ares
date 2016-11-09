@@ -166,6 +166,8 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->sock_create_cb_data = NULL;
   channel->sock_config_cb = NULL;
   channel->sock_config_cb_data = NULL;
+  channel->sock_funcs = NULL;
+  channel->sock_func_cb_data = NULL;
 
   channel->last_server = 0;
   channel->last_timeout_processed = (time_t)now.tv_sec;
@@ -292,6 +294,8 @@ int ares_dup(ares_channel *dest, ares_channel src)
   (*dest)->sock_create_cb_data = src->sock_create_cb_data;
   (*dest)->sock_config_cb      = src->sock_config_cb;
   (*dest)->sock_config_cb_data = src->sock_config_cb_data;
+  (*dest)->sock_funcs          = src->sock_funcs;
+  (*dest)->sock_func_cb_data   = src->sock_func_cb_data;
 
   strncpy((*dest)->local_dev_name, src->local_dev_name,
           sizeof(src->local_dev_name));
@@ -2101,6 +2105,14 @@ void ares_set_socket_configure_callback(ares_channel channel,
 {
   channel->sock_config_cb = cb;
   channel->sock_config_cb_data = data;
+}
+
+void ares_set_socket_functions(ares_channel channel,
+                               const struct ares_socket_functions * funcs,
+                               void *data)
+{
+  channel->sock_funcs = funcs;
+  channel->sock_func_cb_data = data;
 }
 
 int ares_set_sortlist(ares_channel channel, const char *sortstr)

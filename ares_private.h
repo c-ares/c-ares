@@ -314,6 +314,9 @@ struct ares_channeldata {
 
   ares_sock_config_callback sock_config_cb;
   void *sock_config_cb_data;
+
+  const struct ares_socket_functions * sock_funcs;
+  void *sock_func_cb_data;
 };
 
 /* Memory management functions */
