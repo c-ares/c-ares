@@ -345,6 +345,8 @@ void ares__destroy_servers_state(ares_channel channel);
 long ares__tvdiff(struct timeval t1, struct timeval t2);
 #endif
 
+void ares__socket_close(ares_channel, ares_socket_t);
+
 #define ARES_SWAP_BYTE(a,b) \
   { unsigned char swapByte = *(a);  *(a) = *(b);  *(b) = swapByte; }
 
