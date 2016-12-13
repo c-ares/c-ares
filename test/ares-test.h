@@ -377,6 +377,47 @@ int RunInContainer(ContainerFilesystem* fs, const std::string& hostname,
 
 #endif
 
+/* Assigns virtual IO functions to a channel. These functions simply call
+ * the actual system functions.
+ */
+class VirtualizeIO {
+public:
+  VirtualizeIO(ares_channel);
+  ~VirtualizeIO();
+
+  static const ares_socket_functions default_functions;
+private:
+  ares_channel channel_;
+};
+
+/*
+ * Slightly white-box macro to generate two runs for a given test case:
+ * One with no modifications, and one with all IO functions set to use
+ * the virtual io structure.
+ * Since no magic socket setup or anything is done in the latter case
+ * this should probably only be used for test with very vanilla IO
+ * requirements.
+ */
+#define VCLASS_NAME(casename, testname) Virt##casename##_##testname
+#define VIRT_NONVIRT_TEST_F(casename, testname)                                 \
+  class VCLASS_NAME(casename, testname) : public casename {                     \
+  public:                                                                       \
+    VCLASS_NAME(casename, testname)() {}                                        \
+    void InnerTestBody();                                                       \
+  };                                                                            \
+  GTEST_TEST_(casename, testname, VCLASS_NAME(casename, testname),              \
+              ::testing::internal::GetTypeId<casename>()) {                     \
+    InnerTestBody();                                                            \
+  }                                                                             \
+  GTEST_TEST_(casename, testname##_virtualized,                                 \
+              VCLASS_NAME(casename, testname),                                  \
+              ::testing::internal::GetTypeId<casename>()) {                     \
+    VirtualizeIO vio(channel_);                                                 \
+    InnerTestBody();                                                            \
+  }                                                                             \
+  void VCLASS_NAME(casename, testname)::InnerTestBody()
+
+
 }  // namespace test
 }  // namespace ares
 

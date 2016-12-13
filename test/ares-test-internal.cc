@@ -2,6 +2,8 @@
 #include "dns-proto.h"
 
 #include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 extern "C" {
 // Remove command-line defines of package variables for the test project...
@@ -19,6 +21,9 @@ extern "C" {
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
+#ifdef HAVE_SYS_UIO_H
+#  include <sys/uio.h>
 #endif
 }
 
@@ -382,6 +387,72 @@ TEST_F(DefaultChannelTest, SaveInvalidChannel) {
   EXPECT_EQ(ARES_ENODATA, ares_save_options(channel_, &opts, &optmask));
   channel_->nservers = saved;
 }
+
+// TODO: This should not really be in this file, but we need ares config
+// flags, and here they are available.
+const struct ares_socket_functions VirtualizeIO::default_functions = {
+  [](int af, int type, int protocol, void *) {
+    auto s = ::socket(af, type, protocol);
+    if (s < 0) {
+      return s;
+    }
+    auto res = [s] {
+    // transposed from ares-process, simplified non-block setter.
+#if defined(USE_BLOCKING_SOCKETS)
+    return 0; /* returns success */
+#elif defined(HAVE_FCNTL_O_NONBLOCK)
+  /* most recent unix versions */
+    int flags;
+    flags = fcntl(s, F_GETFL, 0);
+    return fcntl(s, F_SETFL, flags | O_NONBLOCK);
+#elif defined(HAVE_IOCTL_FIONBIO)
+    /* older unix versions */
+    int flags = 1;
+    return ioctl(s, FIONBIO, &flags);
+#elif defined(HAVE_IOCTLSOCKET_FIONBIO)
+#ifdef WATT32
+    char flags = 1;
+#else
+    /* Windows */
+    unsigned long flags = 1UL;
+#endif
+    return ioctlsocket(s, FIONBIO, &flags);
+#elif defined(HAVE_IOCTLSOCKET_CAMEL_FIONBIO)
+    /* Amiga */
+    long flags = 1L;
+    return IoctlSocket(s, FIONBIO, flags);
+#elif defined(HAVE_SETSOCKOPT_SO_NONBLOCK)
+    /* BeOS */
+    long b = 1L;
+    return setsockopt(s, SOL_SOCKET, SO_NONBLOCK, &b, sizeof(b));
+#else
+#  error "no non-blocking method was found/used/set"
+#endif
+    }();
+    if (res != 0) {
+      ::close(s);
+      return -1;
+    }
+    return s;
+  },
+  [](ares_socket_t s, void * p) {
+    return ::close(s);
+  },
+  [](ares_socket_t s, const struct sockaddr * addr, socklen_t len, void *) {
+    return ::connect(s, addr, len);
+  },
+  [](ares_socket_t s, void * dst, size_t len, int flags, struct sockaddr * addr, socklen_t * alen, void *) {
+#ifdef HAVE_RECVFROM
+    return ::recvfrom(s, dst, len, flags, addr, alen);
+#else
+    return sread(s, dst, len);
+#endif
+  },
+  [](ares_socket_t s, const struct iovec * vec, int len, void *) {
+    return :: writev(s, vec, len);
+  }
+};
+
 
 }  // namespace test
 }  // namespace ares
