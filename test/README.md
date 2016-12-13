@@ -98,16 +98,19 @@ To fuzz the packet parsing code with libFuzzer, follow the main
    % clang++ -c -g -O2 -std=c++11 Fuzzer/*.cpp -IFuzzer
    % ar ruv libFuzzer.a Fuzzer*.o
    ```
- - Link the fuzzer entrypoint in with `ares-fuzz.cc`:
+ - Link each of the fuzzer entrypoints in with `ares-fuzz.cc`:
 
    ```
    % $CC $CFLAGS -I.. -c ares-test-fuzz.c
+   % $CC $CFLAGS -I.. -c ares-test-fuzz-name.c
    % clang++ $CFLAGS ares-test-fuzz.o ../.libs/libcares.a libFuzzer.a -o ares-libfuzzer
+   % clang++ $CFLAGS ares-test-fuzz-name.o ../.libs/libcares.a libFuzzer.a -o ares-libfuzzer-name
    ```
  - Run the fuzzer using the starting corpus with:
 
    ```console
-   % ./ares-libfuzzer fuzzinput/
+   % ./ares-libfuzzer fuzzinput/  # OR
+   % ./ares-libfuzzer-name fuzznames/
    ```
 
 ### AFL
@@ -121,14 +124,15 @@ To fuzz using AFL, follow the
    ```console
    % export CC=$AFLDIR/afl-gcc
    % ./configure --disable-shared && make
-   % cd test && ./configure && make aresfuzz
+   % cd test && ./configure && make aresfuzz aresfuzzname
    ```
 
  - Run the AFL fuzzer against the starting corpus:
 
    ```console
    % mkdir fuzzoutput
-   % $AFLDIR/afl-fuzz -i fuzzinput -o fuzzoutput -- ./aresfuzz
+   % $AFLDIR/afl-fuzz -i fuzzinput -o fuzzoutput -- ./aresfuzz  # OR
+   % $AFLDIR/afl-fuzz -i fuzznames -o fuzzoutput -- ./aresfuzzname
    ```
 
 ### AFL Persistent Mode

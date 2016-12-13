@@ -15,7 +15,7 @@ include Makefile.inc
 
 TESTS = arestest fuzzcheck.sh
 
-noinst_PROGRAMS = arestest aresfuzz dnsdump
+noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 arestest_LDADD = libgmock.la libgtest.la $(ARES_BLD_DIR)/libcares.la $(PTHREAD_LIBS)
 
@@ -82,6 +82,9 @@ libgtest_la_CPPFLAGS = -isystem $(GTEST_DIR)/include -I$(GTEST_DIR) -isystem $(G
 
 aresfuzz_SOURCES = $(FUZZSOURCES)
 aresfuzz_LDADD = $(ARES_BLD_DIR)/libcares.la
+
+aresfuzzname_SOURCES = $(FUZZNAMESOURCES)
+aresfuzzname_LDADD = $(ARES_BLD_DIR)/libcares.la
 
 dnsdump_SOURCES = $(DUMPSOURCES)
 dnsdump_LDADD = $(ARES_BLD_DIR)/libcares.la
