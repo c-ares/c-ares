@@ -663,5 +663,15 @@ TempFile::TempFile(const std::string& contents)
 
 }
 
+VirtualizeIO::VirtualizeIO(ares_channel c)
+  : channel_(c)
+{
+  ares_set_socket_functions(channel_, &default_functions, 0);
+}
+
+VirtualizeIO::~VirtualizeIO() {
+  ares_set_socket_functions(channel_, 0, 0);
+}
+
 }  // namespace test
 }  // namespace ares

@@ -18,7 +18,7 @@ unsigned char gdns_addr4[4] = {0x08, 0x08, 0x08, 0x08};
 unsigned char gdns_addr6[16] = {0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0x00, 0x00,
                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0x88};
 
-TEST_F(DefaultChannelTest, LiveGetHostByNameV4) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByNameV4) {
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();
@@ -28,7 +28,7 @@ TEST_F(DefaultChannelTest, LiveGetHostByNameV4) {
   EXPECT_EQ(AF_INET, result.host_.addrtype_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetHostByNameV6) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByNameV6) {
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET6, HostCallback, &result);
   Process();
@@ -38,7 +38,7 @@ TEST_F(DefaultChannelTest, LiveGetHostByNameV6) {
   EXPECT_EQ(AF_INET6, result.host_.addrtype_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetHostByAddrV4) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByAddrV4) {
   HostResult result;
   ares_gethostbyaddr(channel_, gdns_addr4, sizeof(gdns_addr4), AF_INET, HostCallback, &result);
   Process();
@@ -48,7 +48,7 @@ TEST_F(DefaultChannelTest, LiveGetHostByAddrV4) {
   EXPECT_EQ(AF_INET, result.host_.addrtype_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetHostByAddrV6) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByAddrV6) {
   HostResult result;
   ares_gethostbyaddr(channel_, gdns_addr6, sizeof(gdns_addr6), AF_INET6, HostCallback, &result);
   Process();
@@ -58,7 +58,7 @@ TEST_F(DefaultChannelTest, LiveGetHostByAddrV6) {
   EXPECT_EQ(AF_INET6, result.host_.addrtype_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetHostByNameFile) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByNameFile) {
   struct hostent *host = nullptr;
 
   // Still need a channel even to query /etc/hosts.
@@ -203,7 +203,7 @@ TEST_P(DefaultChannelModeTest, LiveGetHostByAddrFailAlloc) {
 INSTANTIATE_TEST_CASE_P(Modes, DefaultChannelModeTest,
                         ::testing::Values("f", "b", "fb", "bf"));
 
-TEST_F(DefaultChannelTest, LiveSearchA) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchA) {
   SearchResult result;
   ares_search(channel_, "www.youtube.com.", ns_c_in, ns_t_a,
               SearchCallback, &result);
@@ -212,7 +212,7 @@ TEST_F(DefaultChannelTest, LiveSearchA) {
   EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveSearchEmptyA) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchEmptyA) {
   SearchResult result;
   ares_search(channel_, "", ns_c_in, ns_t_a,
               SearchCallback, &result);
@@ -221,7 +221,7 @@ TEST_F(DefaultChannelTest, LiveSearchEmptyA) {
   EXPECT_NE(ARES_SUCCESS, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveSearchNS) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchNS) {
   SearchResult result;
   ares_search(channel_, "google.com.", ns_c_in, ns_t_ns,
               SearchCallback, &result);
@@ -230,7 +230,7 @@ TEST_F(DefaultChannelTest, LiveSearchNS) {
   EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveSearchMX) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchMX) {
   SearchResult result;
   ares_search(channel_, "google.com.", ns_c_in, ns_t_mx,
               SearchCallback, &result);
@@ -239,7 +239,7 @@ TEST_F(DefaultChannelTest, LiveSearchMX) {
   EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveSearchTXT) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchTXT) {
   SearchResult result;
   ares_search(channel_, "google.com.", ns_c_in, ns_t_txt,
               SearchCallback, &result);
@@ -248,7 +248,7 @@ TEST_F(DefaultChannelTest, LiveSearchTXT) {
   EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveSearchSOA) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchSOA) {
   SearchResult result;
   ares_search(channel_, "google.com.", ns_c_in, ns_t_soa,
               SearchCallback, &result);
@@ -257,7 +257,7 @@ TEST_F(DefaultChannelTest, LiveSearchSOA) {
   EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveSearchSRV) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchSRV) {
   SearchResult result;
   ares_search(channel_, "_imap._tcp.gmail.com.", ns_c_in, ns_t_srv,
               SearchCallback, &result);
@@ -266,7 +266,7 @@ TEST_F(DefaultChannelTest, LiveSearchSRV) {
   EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveSearchANY) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchANY) {
   SearchResult result;
   ares_search(channel_, "google.com.", ns_c_in, ns_t_any,
               SearchCallback, &result);
@@ -275,7 +275,7 @@ TEST_F(DefaultChannelTest, LiveSearchANY) {
   EXPECT_EQ(ARES_SUCCESS, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV4) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV4) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -291,7 +291,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV4) {
   if (verbose) std::cerr << "8.8.8.8:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV4NoPort) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV4NoPort) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -307,7 +307,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV4NoPort) {
   if (verbose) std::cerr << "8.8.8.8:0 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV4UnassignedPort) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV4UnassignedPort) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -323,7 +323,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV4UnassignedPort) {
   if (verbose) std::cerr << "8.8.8.8:4 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV6Both) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV6Both) {
   NameInfoResult result;
   struct sockaddr_in6 sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -339,7 +339,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV6Both) {
   if (verbose) std::cerr << "[2001:4860:4860::8888]:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV6Neither) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV6Neither) {
   NameInfoResult result;
   struct sockaddr_in6 sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -355,7 +355,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV6Neither) {
   if (verbose) std::cerr << "[2001:4860:4860::8888]:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV4Numeric) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV4Numeric) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -372,7 +372,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV4Numeric) {
   if (verbose) std::cerr << "8.8.8.8:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV6Numeric) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV6Numeric) {
   NameInfoResult result;
   struct sockaddr_in6 sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -389,7 +389,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV6Numeric) {
   if (verbose) std::cerr << "[2001:4860:4860::8888]:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV6LinkLocal) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV6LinkLocal) {
   NameInfoResult result;
   struct sockaddr_in6 sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -408,7 +408,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV6LinkLocal) {
   if (verbose) std::cerr << "[fe80:102:102::304]:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFound) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFound) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -426,7 +426,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFound) {
   if (verbose) std::cerr << "192.0.2.0:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFoundFail) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFoundFail) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -442,7 +442,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFoundFail) {
   EXPECT_EQ(ARES_ENOTFOUND, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoV6NotFound) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV6NotFound) {
   NameInfoResult result;
   struct sockaddr_in6 sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -462,7 +462,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoV6NotFound) {
   if (verbose) std::cerr << "[2001:db8:102::304]:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInvalidFamily) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInvalidFamily) {
   NameInfoResult result;
   struct sockaddr_in6 sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -477,7 +477,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInvalidFamily) {
   EXPECT_EQ(ARES_ENOTIMP, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInvalidFlags) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInvalidFlags) {
   NameInfoResult result;
   struct sockaddr_in6 sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -493,7 +493,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInvalidFlags) {
   EXPECT_EQ(ARES_EBADFLAGS, result.status_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetServiceInfo) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetServiceInfo) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -510,7 +510,7 @@ TEST_F(DefaultChannelTest, LiveGetServiceInfo) {
   EXPECT_EQ("", result.node_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetServiceInfoNumeric) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetServiceInfoNumeric) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -528,7 +528,7 @@ TEST_F(DefaultChannelTest, LiveGetServiceInfoNumeric) {
   EXPECT_EQ("53", result.service_);
 }
 
-TEST_F(DefaultChannelTest, LiveGetNameInfoAllocFail) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoAllocFail) {
   NameInfoResult result;
   struct sockaddr_in sockaddr;
   memset(&sockaddr, 0, sizeof(sockaddr));
@@ -544,7 +544,7 @@ TEST_F(DefaultChannelTest, LiveGetNameInfoAllocFail) {
   EXPECT_EQ(ARES_ENOMEM, result.status_);
 }
 
-TEST_F(DefaultChannelTest, GetSock) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, GetSock) {
   ares_socket_t socks[3] = {-1, -1, -1};
   int bitmask = ares_getsock(channel_, socks, 3);
   EXPECT_EQ(0, bitmask);
@@ -589,6 +589,45 @@ TEST_F(LibraryTest, GetTCPSock) {
 
   ares_destroy(channel);
 }
+
+TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
+  VirtualizeIO vio(channel_);
+
+  auto my_functions = VirtualizeIO::default_functions;
+  size_t count = 0;
+
+  my_functions.asocket = [](int af, int type, int protocol, void * p) {
+    EXPECT_NE(nullptr, p);
+    (*reinterpret_cast<size_t *>(p))++;
+    return ::socket(af, type, protocol);
+  };
+
+  ares_set_socket_functions(channel_, &my_functions, &count);
+
+  {
+    count = 0;
+    HostResult result;
+    ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    EXPECT_NE(0, count);
+  }
+
+  {
+    count = 0;
+    ares_channel copy;
+    EXPECT_EQ(ARES_SUCCESS, ares_dup(&copy, channel_));
+
+    HostResult result;
+    ares_gethostbyname(copy, "www.google.com.", AF_INET, HostCallback, &result);
+    ProcessWork(copy, NoExtraFDs, nullptr);
+    EXPECT_TRUE(result.done_);
+    ares_destroy(copy);
+    EXPECT_NE(0, count);
+  }
+
+}
+
 
 }  // namespace test
 }  // namespace ares
