@@ -68,7 +68,7 @@ static int init_by_options(ares_channel channel,
                            const struct ares_options *options,
                            int optmask);
 static int init_by_environment(ares_channel channel);
-static int init_by_resolv_conf(ares_channel channel);
+int init_by_resolv_conf(ares_channel channel);
 static int init_by_defaults(ares_channel channel);
 
 #ifndef WATT32
@@ -1091,7 +1091,7 @@ static int get_DNS_Windows(char **outptr)
 }
 #endif
 
-static int init_by_resolv_conf(ares_channel channel)
+int init_by_resolv_conf(ares_channel channel)
 {
 #if !defined(ANDROID) && !defined(__ANDROID__) && !defined(WATT32) && \
     !defined(CARES_USE_LIBRESOLV)
