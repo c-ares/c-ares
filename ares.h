@@ -618,6 +618,8 @@ CARES_EXTERN int ares_set_servers_csv(ares_channel channel,
 CARES_EXTERN int ares_set_servers_ports_csv(ares_channel channel,
                                             const char* servers);
 
+CARES_EXTERN int ares_refresh_servers(ares_channel channel);
+
 CARES_EXTERN int ares_get_servers(ares_channel channel,
                                   struct ares_addr_node **servers);
 CARES_EXTERN int ares_get_servers_ports(ares_channel channel,
