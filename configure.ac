@@ -417,7 +417,7 @@ AS_IF([test "x$host_vendor" = "xapple"], [
 #include <stdio.h>
 #include <TargetConditionals.h>
     ]], [[
-#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
+#if TARGET_OS_MAC == 0 || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
 #error Not macOS 10.12 or later
 #endif
 return 0;
@@ -438,7 +438,7 @@ dnl Xcode 8 bug: iOS when targeting less than 10, or macOS when targeting less t
 dnl say clock_gettime exists, it is a weak symbol that only exists in iOS 10 or macOS 10.12 and will
 dnl cause a crash at runtime when running on older versions.  Skip finding CLOCK_MONOTONIC on older
 dnl Apple OS's.
-if test "x$host_vendor" != "xapple" || "x$ac_cv_ios_10" = "x$yes" || "x$ac_cv_macos_10_12" = "x$yes"; then
+if test "x$host_vendor" != "xapple" || test "x$ac_cv_ios_10" = "x$yes" || test "x$ac_cv_macos_10_12" = "x$yes"; then
   CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC
 fi
 
