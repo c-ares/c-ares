@@ -417,7 +417,10 @@ AS_IF([test "x$host_vendor" = "xapple"], [
 #include <stdio.h>
 #include <TargetConditionals.h>
     ]], [[
-#if TARGET_OS_MAC == 0 || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
+#ifndef MAC_OS_X_VERSION_10_12
+#  define MAC_OS_X_VERSION_10_12 101200
+#endif
+#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
 #error Not macOS 10.12 or later
 #endif
 return 0;
