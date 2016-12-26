@@ -388,11 +388,62 @@ ac_cv_func_strcasecmp="no"
 
 CARES_CHECK_LIBS_CONNECT
 
+dnl iOS 10?
+AS_IF([test "x$host_vendor" = "xapple"], [
+  AC_MSG_CHECKING([for iOS minimum version 10 or later])
+  AC_COMPILE_IFELSE([
+    AC_LANG_PROGRAM([[
+#include <stdio.h>
+#include <TargetConditionals.h>
+    ]], [[
+#if TARGET_OS_IPHONE == 0 || __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
+#error Not iOS 10 or later
+#endif
+return 0;
+   ]])
+  ],[
+    AC_MSG_RESULT([yes])
+    ac_cv_ios_10="yes"
+  ],[
+    AC_MSG_RESULT([no])
+  ])
+])
+
+dnl macOS 10.12?
+AS_IF([test "x$host_vendor" = "xapple"], [
+  AC_MSG_CHECKING([for macOS minimum version 10.12 or later])
+  AC_COMPILE_IFELSE([
+    AC_LANG_PROGRAM([[
+#include <stdio.h>
+#include <TargetConditionals.h>
+    ]], [[
+#ifndef MAC_OS_X_VERSION_10_12
+#  define MAC_OS_X_VERSION_10_12 101200
+#endif
+#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
+#error Not macOS 10.12 or later
+#endif
+return 0;
+   ]])
+  ],[
+    AC_MSG_RESULT([yes])
+    ac_cv_macos_10_12="yes"
+  ],[
+    AC_MSG_RESULT([no])
+  ])
+])
+
 dnl **********************************************************************
 dnl In case that function clock_gettime with monotonic timer is available,
 dnl check for additional required libraries.
 dnl **********************************************************************
-CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC
+dnl Xcode 8 bug: iOS when targeting less than 10, or macOS when targeting less than 10.12 will
+dnl say clock_gettime exists, it is a weak symbol that only exists in iOS 10 or macOS 10.12 and will
+dnl cause a crash at runtime when running on older versions.  Skip finding CLOCK_MONOTONIC on older
+dnl Apple OS's.
+if test "x$host_vendor" != "xapple" || test "x$ac_cv_ios_10" = "xyes" || test "x$ac_cv_macos_10_12" = "xyes"; then
+  CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC
+fi
 
 AC_MSG_CHECKING([whether to use libgcc])
 AC_ARG_ENABLE(libgcc,
