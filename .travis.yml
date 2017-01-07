@@ -4,8 +4,10 @@ addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
+            - kubuntu-backports           # For CMake 2.8.12
             - llvm-toolchain-precise-3.7
         packages:
+            - cmake
             - gcc-4.8
             - g++-4.8
             - lcov
