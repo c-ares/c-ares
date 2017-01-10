@@ -194,6 +194,7 @@ case X-"$ac_cv_native_windows" in
     CURL_CHECK_HEADER_WINSOCK
     CURL_CHECK_HEADER_WINSOCK2
     CURL_CHECK_HEADER_WS2TCPIP
+    CPPFLAGS="$CPPFLAGS -D_WIN32_WINNT=0x0600"
     ;;
   *)
     ac_cv_header_winsock_h="no"
