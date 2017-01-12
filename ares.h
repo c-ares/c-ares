@@ -31,6 +31,7 @@
 #  define WIN32
 #endif
 
+#include <sys/time.h>
 #include <sys/types.h>
 
 /* HP-UX systems version 9, 10 and 11 lack sys/select.h and so does oldish
