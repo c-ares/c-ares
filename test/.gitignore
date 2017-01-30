@@ -3,6 +3,7 @@ libgtest.a
 libgmock.a
 arestest
 aresfuzz
+aresfuzzname
 arestest.log
 arestest.trs
 fuzzcheck.sh.log
