@@ -397,9 +397,9 @@ typedef int sig_atomic_t;
  */
 
 #ifdef DEBUGBUILD
-#define DEBUGF(x) x
+#define DEBUGF(channel, ...) ares_debug(channel, __VA_ARGS__)
 #else
-#define DEBUGF(x) do { } WHILE_FALSE
+#define DEBUGF(...) do { } WHILE_FALSE
 #endif
 
 

@@ -293,10 +293,10 @@ STATIC_TESTABLE int single_domain(ares_channel channel, const char *name, char *
                 case ESRCH:
                   break;
                 default:
-                  DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                                 error, strerror(error)));
-                  DEBUGF(fprintf(stderr, "Error opening file: %s\n",
-                                 hostaliases));
+                  DEBUGF(channel, "fopen() failed with error: %d %s\n",
+                         error, strerror(error));
+                  DEBUGF(channel,  "Error opening file: %s\n",
+                         hostaliases);
                   *s = NULL;
                   return ARES_EFILE;
                 }

@@ -166,6 +166,8 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->sock_create_cb_data = NULL;
   channel->sock_config_cb = NULL;
   channel->sock_config_cb_data = NULL;
+  channel->debug_cb = NULL;
+  channel->debug_cb_data = NULL;
 
   channel->last_server = 0;
   channel->last_timeout_processed = (time_t)now.tv_sec;
@@ -191,20 +193,20 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
 
   status = init_by_options(channel, options, optmask);
   if (status != ARES_SUCCESS) {
-    DEBUGF(fprintf(stderr, "Error: init_by_options failed: %s\n",
-                   ares_strerror(status)));
+    DEBUGF(channel, "Error: init_by_options failed: %s\n",
+           ares_strerror(status));
     /* If we fail to apply user-specified options, fail the whole init process */
     goto done;
   }
   status = init_by_environment(channel);
   if (status != ARES_SUCCESS)
-    DEBUGF(fprintf(stderr, "Error: init_by_environment failed: %s\n",
-                   ares_strerror(status)));
+    DEBUGF(channel, "Error: init_by_environment failed: %s\n",
+           ares_strerror(status));
   if (status == ARES_SUCCESS) {
     status = init_by_resolv_conf(channel);
     if (status != ARES_SUCCESS)
-      DEBUGF(fprintf(stderr, "Error: init_by_resolv_conf failed: %s\n",
-                     ares_strerror(status)));
+      DEBUGF(channel, "Error: init_by_resolv_conf failed: %s\n",
+             ares_strerror(status));
   }
 
   /*
@@ -213,8 +215,8 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
    */
   status = init_by_defaults(channel);
   if (status != ARES_SUCCESS)
-    DEBUGF(fprintf(stderr, "Error: init_by_defaults failed: %s\n",
-                   ares_strerror(status)));
+    DEBUGF(channel, "Error: init_by_defaults failed: %s\n",
+           ares_strerror(status));
 
   /* Generate random key */
 
@@ -223,8 +225,8 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
     if (status == ARES_SUCCESS)
       channel->next_id = ares__generate_new_id(&channel->id_key);
     else
-      DEBUGF(fprintf(stderr, "Error: init_id_key failed: %s\n",
-                     ares_strerror(status)));
+      DEBUGF(channel, "Error: init_id_key failed: %s\n",
+             ares_strerror(status));
   }
 
 done:
@@ -528,6 +530,11 @@ static int init_by_options(ares_channel channel,
     }
     channel->nsort = options->nsort;
   }
+  if ((optmask & ARES_OPT_DEBUG_CB) && channel->debug_cb == NULL)
+    {
+      channel->debug_cb = options->debug_cb;
+      channel->debug_cb_data = options->debug_cb_data;
+    }
 
   channel->optmask = optmask;
 
@@ -1294,9 +1301,9 @@ static int init_by_resolv_conf(ares_channel channel)
         status = ARES_EOF;
         break;
       default:
-        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                       error, strerror(error)));
-        DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_RESOLV_CONF));
+        DEBUGF(channel, "fopen() failed with error: %d %s\n",
+               error, strerror(error));
+        DEBUGF(channel, "Error opening file: %s\n", PATH_RESOLV_CONF);
         status = ARES_EFILE;
       }
     }
@@ -1320,10 +1327,10 @@ static int init_by_resolv_conf(ares_channel channel)
         case ESRCH:
           break;
         default:
-          DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                         error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n",
-                         "/etc/nsswitch.conf"));
+          DEBUGF(channel, "fopen() failed with error: %d %s\n",
+                 error, strerror(error));
+          DEBUGF(channel, "Error opening file: %s\n",
+                 "/etc/nsswitch.conf");
         }
 
         /* ignore error, maybe we will get luck in next if clause */
@@ -1351,10 +1358,10 @@ static int init_by_resolv_conf(ares_channel channel)
         case ESRCH:
           break;
         default:
-          DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                         error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n",
-                         "/etc/host.conf"));
+          DEBUGF(channel, "fopen() failed with error: %d %s\n",
+                 error, strerror(error));
+          DEBUGF(channel, "Error opening file: %s\n",
+                 "/etc/host.conf");
         }
 
         /* ignore error, maybe we will get luck in next if clause */
@@ -1382,9 +1389,9 @@ static int init_by_resolv_conf(ares_channel channel)
         case ESRCH:
           break;
         default:
-          DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                         error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n", "/etc/svc.conf"));
+          DEBUGF(channel, "fopen() failed with error: %d %s\n",
+                 error, strerror(error));
+          DEBUGF(channel, "Error opening file: %s\n", "/etc/svc.conf");
         }
 
         /* ignore error, default value will be chosen for `channel->lookups` */

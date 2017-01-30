@@ -58,7 +58,7 @@ static void addr_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
 static void end_aquery(struct addr_query *aquery, int status,
                        struct hostent *host);
-static int file_lookup(struct ares_addr *addr, struct hostent **host);
+static int file_lookup(ares_channel channel, struct ares_addr *addr, struct hostent **host);
 static void ptr_rr_name(char *name, const struct ares_addr *addr);
 
 void ares_gethostbyaddr(ares_channel channel, const void *addr, int addrlen,
@@ -117,7 +117,7 @@ static void next_lookup(struct addr_query *aquery)
                      aquery);
           return;
         case 'f':
-          status = file_lookup(&aquery->addr, &host);
+          status = file_lookup(aquery->channel, &aquery->addr, &host);
 
           /* this status check below previously checked for !ARES_ENOTFOUND,
              but we should not assume that this single error code is the one
@@ -172,7 +172,7 @@ static void end_aquery(struct addr_query *aquery, int status,
   ares_free(aquery);
 }
 
-static int file_lookup(struct ares_addr *addr, struct hostent **host)
+static int file_lookup(ares_channel channel, struct ares_addr *addr, struct hostent **host)
 {
   FILE *fp;
   int status;
@@ -225,10 +225,10 @@ static int file_lookup(struct ares_addr *addr, struct hostent **host)
         case ESRCH:
           return ARES_ENOTFOUND;
         default:
-          DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                         error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n",
-                         PATH_HOSTS));
+          DEBUGF(channel, "fopen() failed with error: %d %s\n",
+                 error, strerror(error));
+          DEBUGF(channel, "Error opening file: %s\n",
+                 PATH_HOSTS);
           *host = NULL;
           return ARES_EFILE;
         }

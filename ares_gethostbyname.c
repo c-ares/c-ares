@@ -68,7 +68,7 @@ static void end_hquery(struct host_query *hquery, int status,
                        struct hostent *host);
 static int fake_hostent(const char *name, int family,
                         ares_host_callback callback, void *arg);
-static int file_lookup(const char *name, int family, struct hostent **host);
+static int file_lookup(ares_channel channel, const char *name, int family, struct hostent **host);
 static void sort_addresses(struct hostent *host,
                            const struct apattern *sortlist, int nsort);
 static void sort6_addresses(struct hostent *host,
@@ -152,7 +152,7 @@ static void next_lookup(struct host_query *hquery, int status_code)
 
         case 'f':
           /* Host file lookup */
-          status = file_lookup(hquery->name, hquery->want_family, &host);
+          status = file_lookup(hquery->channel, hquery->name, hquery->want_family, &host);
 
           /* this status check below previously checked for !ARES_ENOTFOUND,
              but we should not assume that this single error code is the one
@@ -323,7 +323,7 @@ int ares_gethostbyname_file(ares_channel channel, const char *name,
   /* Just chain to the internal implementation we use here; it's exactly
    * what we want.
    */
-  result = file_lookup(name, family, host);
+  result = file_lookup(channel, name, family, host);
   if(result != ARES_SUCCESS)
     {
       /* We guarantee a NULL hostent on failure. */
@@ -332,7 +332,7 @@ int ares_gethostbyname_file(ares_channel channel, const char *name,
   return result;
 }
 
-static int file_lookup(const char *name, int family, struct hostent **host)
+static int file_lookup(ares_channel channel, const char *name, int family, struct hostent **host)
 {
   FILE *fp;
   char **alias;
@@ -386,10 +386,10 @@ static int file_lookup(const char *name, int family, struct hostent **host)
         case ESRCH:
           return ARES_ENOTFOUND;
         default:
-          DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                         error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n",
-                         PATH_HOSTS));
+          DEBUGF(channel, "fopen() failed with error: %d %s\n",
+                 error, strerror(error));
+          DEBUGF(channel, "Error opening file: %s\n",
+                 PATH_HOSTS);
           *host = NULL;
           return ARES_EFILE;
         }
