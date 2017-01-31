@@ -2,7 +2,10 @@
 #include "dns-proto.h"
 
 #include <stdio.h>
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 
 extern "C" {
@@ -388,68 +391,75 @@ TEST_F(DefaultChannelTest, SaveInvalidChannel) {
   channel_->nservers = saved;
 }
 
-// TODO: This should not really be in this file, but we need ares config
-// flags, and here they are available.
-const struct ares_socket_functions VirtualizeIO::default_functions = {
-  [](int af, int type, int protocol, void *) {
-    auto s = ::socket(af, type, protocol);
-    if (s < 0) {
-      return s;
-    }
-    auto res = [s] {
-    // transposed from ares-process, simplified non-block setter.
+// Need to put this in own function due to nested lambda bug
+// in VS2013. (C2888)
+static int configure_socket(ares_socket_t s) {
+  // transposed from ares-process, simplified non-block setter.
 #if defined(USE_BLOCKING_SOCKETS)
-    return 0; /* returns success */
+  return 0; /* returns success */
 #elif defined(HAVE_FCNTL_O_NONBLOCK)
   /* most recent unix versions */
-    int flags;
-    flags = fcntl(s, F_GETFL, 0);
-    return fcntl(s, F_SETFL, flags | O_NONBLOCK);
+  int flags;
+  flags = fcntl(s, F_GETFL, 0);
+  return fcntl(s, F_SETFL, flags | O_NONBLOCK);
 #elif defined(HAVE_IOCTL_FIONBIO)
-    /* older unix versions */
-    int flags = 1;
-    return ioctl(s, FIONBIO, &flags);
+  /* older unix versions */
+  int flags = 1;
+  return ioctl(s, FIONBIO, &flags);
 #elif defined(HAVE_IOCTLSOCKET_FIONBIO)
 #ifdef WATT32
-    char flags = 1;
+  char flags = 1;
 #else
-    /* Windows */
-    unsigned long flags = 1UL;
+  /* Windows */
+  unsigned long flags = 1UL;
 #endif
-    return ioctlsocket(s, FIONBIO, &flags);
+  return ioctlsocket(s, FIONBIO, &flags);
 #elif defined(HAVE_IOCTLSOCKET_CAMEL_FIONBIO)
-    /* Amiga */
-    long flags = 1L;
-    return IoctlSocket(s, FIONBIO, flags);
+  /* Amiga */
+  long flags = 1L;
+  return IoctlSocket(s, FIONBIO, flags);
 #elif defined(HAVE_SETSOCKOPT_SO_NONBLOCK)
-    /* BeOS */
-    long b = 1L;
-    return setsockopt(s, SOL_SOCKET, SO_NONBLOCK, &b, sizeof(b));
+  /* BeOS */
+  long b = 1L;
+  return setsockopt(s, SOL_SOCKET, SO_NONBLOCK, &b, sizeof(b));
 #else
 #  error "no non-blocking method was found/used/set"
 #endif
-    }();
-    if (res != 0) {
-      ::close(s);
-      return -1;
+}
+
+// TODO: This should not really be in this file, but we need ares config
+// flags, and here they are available.
+const struct ares_socket_functions VirtualizeIO::default_functions = {
+  [](int af, int type, int protocol, void *) -> ares_socket_t {
+    auto s = ::socket(af, type, protocol);
+    if (s == ARES_SOCKET_BAD) {
+      return s;
+    }
+    if (configure_socket(s) != 0) {
+      sclose(s);
+      return ares_socket_t(-1);
     }
     return s;
   },
   [](ares_socket_t s, void * p) {
-    return ::close(s);
+    return :: sclose(s);
   },
   [](ares_socket_t s, const struct sockaddr * addr, socklen_t len, void *) {
     return ::connect(s, addr, len);
   },
-  [](ares_socket_t s, void * dst, size_t len, int flags, struct sockaddr * addr, socklen_t * alen, void *) {
+  [](ares_socket_t s, void * dst, size_t len, int flags, struct sockaddr * addr, socklen_t * alen, void *) -> ssize_t {
 #ifdef HAVE_RECVFROM
-    return ::recvfrom(s, dst, len, flags, addr, alen);
+    return ::recvfrom(s, reinterpret_cast<RECV_TYPE_ARG2>(dst), len, flags, addr, alen);
 #else
     return sread(s, dst, len);
 #endif
   },
   [](ares_socket_t s, const struct iovec * vec, int len, void *) {
+#ifdef _WIN32
+    return ares_writev(s, vec, len);
+#else
     return :: writev(s, vec, len);
+#endif
   }
 };
 

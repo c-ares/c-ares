@@ -19,11 +19,9 @@
 
 #ifdef WIN32
 #define BYTE_CAST (char *)
-#define sclose(x) closesocket(x)
 #define mkdir_(d, p) mkdir(d)
 #else
 #define BYTE_CAST
-#define sclose(x) close(x)
 #define mkdir_(d, p) mkdir(d, p)
 #endif
 
