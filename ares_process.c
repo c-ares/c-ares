@@ -1011,7 +1011,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
   return 0;
 }
 
-static int open_socket(ares_channel channel, int af, int type, int protocol)
+static ares_socket_t open_socket(ares_channel channel, int af, int type, int protocol)
 {
   if (channel->sock_funcs != 0)
     return channel->sock_funcs->asocket(af,
