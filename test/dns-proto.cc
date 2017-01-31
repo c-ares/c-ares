@@ -1,6 +1,7 @@
 #include "dns-proto.h"
 
 // Include ares internal file for DNS protocol details
+#include "ares_setup.h"
 #include "ares.h"
 #include "ares_dns.h"
 
