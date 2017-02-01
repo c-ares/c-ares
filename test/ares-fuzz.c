@@ -35,6 +35,7 @@ static void ProcessFile(int fd) {
    * buffer (where buffer overflows would go unnoticed).
    */
   unsigned char *copied_data = (unsigned char *)malloc(count);
+  memcpy(copied_data, afl_buffer, count);
   LLVMFuzzerTestOneInput(copied_data, count);
   free(copied_data);
 }
