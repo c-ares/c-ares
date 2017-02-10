@@ -19,11 +19,9 @@
 
 #ifdef WIN32
 #define BYTE_CAST (char *)
-#define sclose(x) closesocket(x)
 #define mkdir_(d, p) mkdir(d)
 #else
 #define BYTE_CAST
-#define sclose(x) close(x)
 #define mkdir_(d, p) mkdir(d, p)
 #endif
 
@@ -661,6 +659,16 @@ std::string TempNam(const char *dir, const char *prefix) {
 TempFile::TempFile(const std::string& contents)
   : TransientFile(TempNam(nullptr, "ares"), contents) {
 
+}
+
+VirtualizeIO::VirtualizeIO(ares_channel c)
+  : channel_(c)
+{
+  ares_set_socket_functions(channel_, &default_functions, 0);
+}
+
+VirtualizeIO::~VirtualizeIO() {
+  ares_set_socket_functions(channel_, 0, 0);
 }
 
 }  // namespace test
