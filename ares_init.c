@@ -1093,6 +1093,52 @@ static int get_DNS_Windows(char **outptr)
   /* Fall-back to registry information */
   return get_DNS_Registry(outptr);
 }
+
+/*
+* get_SuffixList_Windows()
+*
+* Reads the "DNS Suffix Search List" from registry and writes the list items
+* whitespace separated to outptr. If the Search List is empty, the
+* "Primary Dns Suffix" is written to outptr.
+*
+* Returns 0 and nullifies *outptr upon inability to return the suffix list.
+*
+* Returns 1 and sets *outptr when returning a dynamically allocated string.
+*
+* Implementation supports Windows Server 2003 and newer
+*/
+static int get_SuffixList_Windows(char **outptr)
+{
+  HKEY hKey_Tcpip_Parameters;
+  char *p;
+  *outptr = NULL;
+
+  if (ares__getplatform() != WIN_NT)
+    return 0;
+
+  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
+    &hKey_Tcpip_Parameters) != ERROR_SUCCESS)
+    return 0;
+
+  if (get_REG_SZ(hKey_Tcpip_Parameters, SEARCHLIST, outptr))
+  {
+    /* replace ',' by ' ' to coincide with resolv.conf search parameter */
+    for (p = *outptr; *p != '\0'; p++)
+    {
+      if (*p == ',')
+        *p = ' ';
+    }
+    goto done;
+  }
+
+  if (get_REG_SZ(hKey_Tcpip_Parameters, DHCPDOMAIN, outptr))
+    goto done;
+
+done:
+  RegCloseKey(hKey_Tcpip_Parameters);
+  return *outptr == NULL ? 0 : 1;
+}
+
 #endif
 
 static int init_by_resolv_conf(ares_channel channel)
@@ -1114,6 +1160,12 @@ static int init_by_resolv_conf(ares_channel channel)
   {
     status = config_nameserver(&servers, &nservers, line);
     ares_free(line);
+  }
+
+  if (channel->ndomains == -1 && get_SuffixList_Windows(&line))
+  {
+      status = set_search(channel, line);
+      ares_free(line);
   }
 
   if (status == ARES_SUCCESS)

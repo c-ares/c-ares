@@ -58,6 +58,8 @@
 #define DHCPNAMESERVER "DhcpNameServer"
 #define DATABASEPATH   "DatabasePath"
 #define WIN_PATH_HOSTS  "\\hosts"
+#define DHCPDOMAIN     "DhcpDomain"
+#define SEARCHLIST     "SearchList"
 
 #elif defined(WATT32)
 
