@@ -1131,7 +1131,7 @@ static int get_SuffixList_Windows(char **outptr)
     goto done;
   }
 
-  if (get_REG_SZ(hKey_Tcpip_Parameters, DHCPDOMAIN, outptr))
+  if (get_REG_SZ(hKey_Tcpip_Parameters, DOMAIN, outptr))
     goto done;
 
 done:
