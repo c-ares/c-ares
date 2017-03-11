@@ -1128,13 +1128,12 @@ static int get_SuffixList_Windows(char **outptr)
       if (*p == ',')
         *p = ' ';
     }
-    goto done;
+  }
+  else
+  {
+    get_REG_SZ(hKey_Tcpip_Parameters, DOMAIN, outptr);
   }
 
-  if (get_REG_SZ(hKey_Tcpip_Parameters, DOMAIN, outptr))
-    goto done;
-
-done:
   RegCloseKey(hKey_Tcpip_Parameters);
   return *outptr == NULL ? 0 : 1;
 }
