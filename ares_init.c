@@ -943,6 +943,116 @@ done:
   return 1;
 }
 
+static BOOL ares_IsWindowsVistaOrGreater(void)
+{
+  OSVERSIONINFO vinfo;
+  memset(&vinfo, 0, sizeof(vinfo));
+  vinfo.dwOSVersionInfoSize = sizeof(vinfo);
+  if (!GetVersionEx(&vinfo) || vinfo.dwMajorVersion < 6)
+    return FALSE;
+  return TRUE;
+}
+
+/* A structure to hold the string form of IPv4 and IPv6 addresses so we can
+ * sort them by a metric.
+ */
+typedef struct
+{
+  /* The metric we sort them by. */
+  ULONG metric;
+
+  /* Room enough for the string form of any IPv4 or IPv6 address that
+   * ares_inet_ntop() will create.  Based on the existing c-ares practice.
+   */
+  char text[sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")];
+} Address;
+
+/* Sort Address values \a left and \a right by metric, returning the usual
+ * indicators for qsort().
+ */
+static int compareAddresses(const void *arg1,
+                            const void *arg2)
+{
+  const Address * const left = arg1;
+  const Address * const right = arg2;
+  if(left->metric < right->metric) return -1;
+  if(left->metric > right->metric) return 1;
+  return 0;
+}
+
+/* There can be multiple routes to "the Internet".  And there can be different
+ * DNS servers associated with each of the interfaces that offer those routes.
+ * We have to assume that any DNS server can serve any request.  But, some DNS
+ * servers may only respond if requested over their associated interface.  But
+ * we also want to use "the preferred route to the Internet" whenever possible
+ * (and not use DNS servers on a non-preferred route even by forcing request
+ * to go out on the associated non-preferred interface).  i.e. We want to use
+ * the DNS servers associated with the same interface that we would use to
+ * make a general request to anything else.
+ *
+ * But, Windows won't sort the DNS servers by the metrics associated with the
+ * routes and interfaces _even_ though it obviously sends IP packets based on
+ * those same routes and metrics.  So, we must do it ourselves.
+ *
+ * So, we sort the DNS servers by the same metric values used to determine how
+ * an outgoing IP packet will go, thus effectively using the DNS servers
+ * associated with the interface that the DNS requests themselves will
+ * travel.  This gives us optimal routing and avoids issues where DNS servers
+ * won't respond to requests that don't arrive via some specific subnetwork
+ * (and thus some specific interface).
+ *
+ * This function computes the metric we use to sort.  On the interface
+ * identified by \a luid, it determines the best route to \a dest and combines
+ * that route's metric with \a interfaceMetric to compute a metric for the
+ * destination address on that interface.  This metric can be used as a weight
+ * to sort the DNS server addresses associated with each interface (lower is
+ * better).
+ *
+ * Note that by restricting the route search to the specific interface with
+ * which the DNS servers are associated, this function asks the question "What
+ * is the metric for sending IP packets to this DNS server?" which allows us
+ * to sort the DNS servers correctly.
+ */
+static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
+                                const SOCKADDR_INET * const dest,
+                                const ULONG interfaceMetric)
+{
+  /* On this interface, get the best route to that destination. */
+  MIB_IPFORWARD_ROW2 row;
+  SOCKADDR_INET ignored;
+  if(!ares_fpGetBestRoute2 ||
+     ares_fpGetBestRoute2(/* The interface to use.  The index is ignored since we are
+                           * passing a LUID.
+                           */
+                           luid, 0,
+                           /* No specific source address. */
+                           NULL,
+                           /* Our destination address. */
+                           dest,
+                           /* No options. */
+                           0,
+                           /* The route row. */
+                           &row,
+                           /* The best source address, which we don't need. */
+                           &ignored) != NO_ERROR
+     /* If the metric is "unused" (-1) or too large for us to add the two
+      * metrics, use the worst possible, thus sorting this last.
+      */
+     || row.Metric == (ULONG)-1
+     || row.Metric > ((ULONG)-1) - interfaceMetric) {
+    /* Return the worst possible metric. */
+    return (ULONG)-1;
+  }
+
+  /* Return the metric value from that row, plus the interface metric.
+   *
+   * See
+   * http://msdn.microsoft.com/en-us/library/windows/desktop/aa814494(v=vs.85).aspx
+   * which describes the combination as a "sum".
+   */
+  return row.Metric + interfaceMetric;
+}
+
 /*
  * get_DNS_AdaptersAddresses()
  *
@@ -969,13 +1079,18 @@ static int get_DNS_AdaptersAddresses(char **outptr)
   int trying = IPAA_MAX_TRIES;
   int res;
 
+  /* The capacity of addresses, in elements. */
+  size_t addressesSize;
+  /* The number of elements in addresses. */
+  size_t addressesIndex = 0;
+  /* The addresses we will sort. */
+  Address *addresses;
+
   union {
     struct sockaddr     *sa;
     struct sockaddr_in  *sa4;
     struct sockaddr_in6 *sa6;
   } namesrvr;
-
-  char txtaddr[sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")];
 
   *outptr = NULL;
 
@@ -986,6 +1101,17 @@ static int get_DNS_AdaptersAddresses(char **outptr)
   ipaa = ares_malloc(Bufsz);
   if (!ipaa)
     return 0;
+
+  /* Start with enough room for a few DNS server addresses and we'll grow it
+   * as we encounter more.
+   */
+  addressesSize = 4;
+  addresses = (Address*)ares_malloc(sizeof(Address) * addressesSize);
+  if(addresses == NULL) {
+    /* We need room for at least some addresses to function. */
+    ares_free(ipaa);
+    return 0;
+  }
 
   /* Usually this call suceeds with initial buffer size */
   res = (*ares_fpGetAdaptersAddresses) (AF_UNSPEC, AddrFlags, NULL,
@@ -1016,6 +1142,12 @@ static int get_DNS_AdaptersAddresses(char **outptr)
     if(ipaaEntry->OperStatus != IfOperStatusUp)
         continue;
 
+    /* For each interface, find any associated DNS servers as IPv4 or IPv6
+     * addresses.  For each found address, find the best route to that DNS
+     * server address _on_ _that_ _interface_ (at this moment in time) and
+     * compute the resulting total metric, just as Windows routing will do.
+     * Then, sort all the addresses found by the metric.
+     */
     for (ipaDNSAddr = ipaaEntry->FirstDnsServerAddress;
          ipaDNSAddr;
          ipaDNSAddr = ipaDNSAddr->Next)
@@ -1027,35 +1159,117 @@ static int get_DNS_AdaptersAddresses(char **outptr)
         if ((namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_ANY) ||
             (namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_NONE))
           continue;
+
+        /* Allocate room for another address, if necessary, else skip. */
+        if(addressesIndex == addressesSize) {
+          const size_t newSize = addressesSize + 4;
+          Address * const newMem = 
+            (Address*)ares_realloc(addresses, sizeof(Address) * newSize);
+          if(newMem == NULL) {
+            continue;
+          }
+          addresses = newMem;
+          addressesSize = newSize;
+        }
+
+        /* Vista required for Luid or Ipv4Metric */
+        if (ares_IsWindowsVistaOrGreater())
+        {
+          /* Save the address as the next element in addresses. */
+          addresses[addressesIndex].metric =
+            getBestRouteMetric(&ipaaEntry->Luid,
+                               (SOCKADDR_INET*)(namesrvr.sa),
+                               ipaaEntry->Ipv4Metric);
+        }
+        else
+        {
+          addresses[addressesIndex].metric = -1;
+        }
+
         if (! ares_inet_ntop(AF_INET, &namesrvr.sa4->sin_addr,
-                             txtaddr, sizeof(txtaddr)))
+                             addresses[addressesIndex].text,
+                             sizeof(addresses[0].text))) {
           continue;
+        }
+        ++addressesIndex;
       }
       else if (namesrvr.sa->sa_family == AF_INET6)
       {
         if (memcmp(&namesrvr.sa6->sin6_addr, &ares_in6addr_any,
                    sizeof(namesrvr.sa6->sin6_addr)) == 0)
           continue;
+
+        /* Allocate room for another address, if necessary, else skip. */
+        if(addressesIndex == addressesSize) {
+          const size_t newSize = addressesSize + 4;
+          Address * const newMem =
+            (Address*)ares_realloc(addresses, sizeof(Address) * newSize);
+          if(newMem == NULL) {
+            continue;
+          }
+          addresses = newMem;
+          addressesSize = newSize;
+        }
+
+        /* Vista required for Luid or Ipv4Metric */
+        if (ares_IsWindowsVistaOrGreater())
+        {
+          /* Save the address as the next element in addresses. */
+          addresses[addressesIndex].metric =
+            getBestRouteMetric(&ipaaEntry->Luid,
+                               (SOCKADDR_INET*)(namesrvr.sa), 
+                               ipaaEntry->Ipv6Metric);
+        }
+        else
+        {
+          addresses[addressesIndex].metric = -1;
+        }
+
         if (! ares_inet_ntop(AF_INET6, &namesrvr.sa6->sin6_addr,
-                             txtaddr, sizeof(txtaddr)))
+                             addresses[addressesIndex].text,
+                             sizeof(addresses[0].text))) {
           continue;
+        }
+        ++addressesIndex;
       }
-      else
+      else {
+        /* Skip non-IPv4/IPv6 addresses completely. */
         continue;
+      }
+    }
+  }
 
-      commajoin(outptr, txtaddr);
+  /* Sort all of the textual addresses by their metric. */
+  qsort(addresses, addressesIndex, sizeof(*addresses), compareAddresses);
 
-      if (!*outptr)
-        goto done;
+  /* Join them all into a single string, removing duplicates. */
+  {
+    size_t i;
+    for(i = 0; i < addressesIndex; ++i) {
+      size_t j;
+      /* Look for this address text appearing previously in the results. */
+      for(j = 0; j < i; ++j) {
+        if(strcmp(addresses[j].text, addresses[i].text) == 0) {
+          break;
+        }
+      }
+      /* Iff we didn't emit this address already, emit it now. */
+      if(j == i) {
+        /* Add that to outptr (if we can). */
+        commajoin(outptr, addresses[i].text);
+      }
     }
   }
 
 done:
+  ares_free(addresses);
+  
   if (ipaa)
     ares_free(ipaa);
 
-  if (!*outptr)
+  if (!*outptr) {
     return 0;
+  }
 
   return 1;
 }
@@ -1076,18 +1290,13 @@ done:
  */
 static int get_DNS_Windows(char **outptr)
 {
-  /*
-     Use GetNetworkParams First in case of
-     multiple adapter is enabled on this machine.
-     GetAdaptersAddresses will retrive dummy dns servers.
-     That will slowing DNS lookup.
-  */
-  /* Try using IP helper API GetNetworkParams() */
-  if (get_DNS_NetworkParams(outptr))
+  /* Try using IP helper API GetAdaptersAddresses(). IPv4 + IPv6, also sorts
+   * DNS servers by interface route metrics to try to use the best DNS server. */
+  if (get_DNS_AdaptersAddresses(outptr))
     return 1;
 
-  /* Try using IP helper API GetAdaptersAddresses() */
-  if (get_DNS_AdaptersAddresses(outptr))
+  /* Try using IP helper API GetNetworkParams(). IPv4 only. */
+  if (get_DNS_NetworkParams(outptr))
     return 1;
 
   /* Fall-back to registry information */
