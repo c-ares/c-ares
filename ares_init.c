@@ -84,7 +84,7 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
                            const char *str);
 static int sortlist_alloc(struct apattern **sortlist, int *nsort,
                           struct apattern *pat);
-static int ip_addr(const char *s, ssize_t len, struct in_addr *addr);
+static int ip_addr(const char *s, ares_ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
 #if !defined(WIN32) && !defined(WATT32) && \
     !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
@@ -2163,7 +2163,7 @@ static char *try_config(char *s, const char *opt, char scc)
 }
 #endif  /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ */
 
-static int ip_addr(const char *ipbuf, ssize_t len, struct in_addr *addr)
+static int ip_addr(const char *ipbuf, ares_ssize_t len, struct in_addr *addr)
 {
 
   /* Four octets and three periods yields at most 15 characters. */

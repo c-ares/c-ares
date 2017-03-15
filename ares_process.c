@@ -65,7 +65,7 @@ static void read_tcp_data(ares_channel channel, fd_set *read_fds,
 static void read_udp_packets(ares_channel channel, fd_set *read_fds,
                              ares_socket_t read_fd, struct timeval *now);
 static void advance_tcp_send_queue(ares_channel channel, int whichserver,
-                                   ssize_t num_bytes);
+                                   ares_ssize_t num_bytes);
 static void process_timeouts(ares_channel channel, struct timeval *now);
 static void process_broken_connections(ares_channel channel,
                                        struct timeval *now);
@@ -175,7 +175,7 @@ static int try_again(int errnum)
   return 0;
 }
 
-static ssize_t socket_writev(ares_channel channel, ares_socket_t s, const struct iovec * vec, int len)
+static ares_ssize_t socket_writev(ares_channel channel, ares_socket_t s, const struct iovec * vec, int len)
 {
   if (channel->sock_funcs)
     return channel->sock_funcs->asendv(s, vec, len, channel->sock_func_cb_data);
@@ -183,7 +183,7 @@ static ssize_t socket_writev(ares_channel channel, ares_socket_t s, const struct
   return writev(s, vec, len);
 }
 
-static ssize_t socket_write(ares_channel channel, ares_socket_t s, const void * data, size_t len)
+static ares_ssize_t socket_write(ares_channel channel, ares_socket_t s, const void * data, size_t len)
 {
   if (channel->sock_funcs)
     {
@@ -207,8 +207,8 @@ static void write_tcp_data(ares_channel channel,
   struct send_request *sendreq;
   struct iovec *vec;
   int i;
-  ssize_t scount;
-  ssize_t wcount;
+  ares_ssize_t scount;
+  ares_ssize_t wcount;
   size_t n;
 
   if(!write_fds && (write_fd == ARES_SOCKET_BAD))
@@ -291,7 +291,7 @@ static void write_tcp_data(ares_channel channel,
 
 /* Consume the given number of bytes from the head of the TCP send queue. */
 static void advance_tcp_send_queue(ares_channel channel, int whichserver,
-                                   ssize_t num_bytes)
+                                   ares_ssize_t num_bytes)
 {
   struct send_request *sendreq;
   struct server_state *server = &channel->servers[whichserver];
@@ -319,13 +319,13 @@ static void advance_tcp_send_queue(ares_channel channel, int whichserver,
   }
 }
 
-static ssize_t socket_recvfrom(ares_channel channel,
+static ares_ssize_t socket_recvfrom(ares_channel channel,
    ares_socket_t s,
    void * data,
    size_t data_len,
    int flags,
    struct sockaddr *from,
-   socklen_t *from_len)
+   ares_socklen_t *from_len)
 {
    if (channel->sock_funcs)
       return channel->sock_funcs->arecvfrom(s, data, data_len,
@@ -339,7 +339,7 @@ static ssize_t socket_recvfrom(ares_channel channel,
 #endif
 }
 
-static ssize_t socket_recv(ares_channel channel,
+static ares_ssize_t socket_recv(ares_channel channel,
    ares_socket_t s,
    void * data,
    size_t data_len)
@@ -360,7 +360,7 @@ static void read_tcp_data(ares_channel channel, fd_set *read_fds,
 {
   struct server_state *server;
   int i;
-  ssize_t count;
+  ares_ssize_t count;
 
   if(!read_fds && (read_fd == ARES_SOCKET_BAD))
     /* no possible action */
@@ -458,7 +458,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
 {
   struct server_state *server;
   int i;
-  ssize_t count;
+  ares_ssize_t count;
   unsigned char buf[MAXENDSSZ + 1];
 #ifdef HAVE_RECVFROM
   ares_socklen_t fromlen;
@@ -1024,7 +1024,7 @@ static ares_socket_t open_socket(ares_channel channel, int af, int type, int pro
 
 static int connect_socket(ares_channel channel, ares_socket_t sockfd,
 			  const struct sockaddr * addr,
-	                  socklen_t addrlen)
+	                  ares_socklen_t addrlen)
 {
    if (channel->sock_funcs != 0)
       return channel->sock_funcs->aconnect(sockfd,

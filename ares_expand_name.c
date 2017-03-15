@@ -66,7 +66,7 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
   char *q;
   const unsigned char *p;
   union {
-    ssize_t sig;
+    ares_ssize_t sig;
      size_t uns;
   } nlen;
 

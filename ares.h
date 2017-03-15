@@ -368,9 +368,9 @@ struct iovec;
 struct ares_socket_functions {
    ares_socket_t(*asocket)(int, int, int, void *);
    int(*aclose)(ares_socket_t, void *);
-   int(*aconnect)(ares_socket_t, const struct sockaddr *, socklen_t, void *);
-   ssize_t(*arecvfrom)(ares_socket_t, void *, size_t, int, struct sockaddr *, socklen_t *, void *);
-   ssize_t(*asendv)(ares_socket_t, const struct iovec *, int, void *);
+   int(*aconnect)(ares_socket_t, const struct sockaddr *, ares_socklen_t, void *);
+   ares_ssize_t(*arecvfrom)(ares_socket_t, void *, size_t, int, struct sockaddr *, ares_socklen_t *, void *);
+   ares_ssize_t(*asendv)(ares_socket_t, const struct iovec *, int, void *);
 };
 
 CARES_EXTERN void ares_set_socket_functions(ares_channel channel,

@@ -216,20 +216,6 @@
 #define HAVE_BOOL_T
 #endif
 
-/* Define if ssize_t is not an available 'typedefed' type. */
-#ifndef _SSIZE_T_DEFINED
-#  if (defined(__WATCOMC__) && (__WATCOMC__ >= 1240)) || \
-      defined(__POCC__) || \
-      defined(__MINGW32__)
-#  elif defined(_WIN64)
-#    define _SSIZE_T_DEFINED
-#    define ssize_t __int64
-#  else
-#    define _SSIZE_T_DEFINED
-#    define ssize_t int
-#  endif
-#endif
-
 /* ---------------------------------------------------------------- */
 /*                            TYPE SIZES                            */
 /* ---------------------------------------------------------------- */
