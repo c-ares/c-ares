@@ -2,6 +2,7 @@
 #define __CARES_BUILD_H
 
 #define CARES_TYPEOF_ARES_SOCKLEN_T @CARES_TYPEOF_ARES_SOCKLEN_T@
+#define CARES_TYPEOF_ARES_SSIZE_T @CARES_TYPEOF_ARES_SSIZE_T@
 
 /* Prefix names with CARES_ to make sure they don't conflict with other config.h
  * files.  We need to include some dependent headers that may be system specific
@@ -35,5 +36,6 @@
 
 
 typedef CARES_TYPEOF_ARES_SOCKLEN_T ares_socklen_t;
+typedef CARES_TYPEOF_ARES_SSIZE_T ares_ssize_t;
 
 #endif /* __CARES_BUILD_H */

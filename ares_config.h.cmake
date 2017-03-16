@@ -421,13 +421,3 @@
 /* Type to use in place of in_addr_t when system does not provide it. */
 #undef in_addr_t
 
-#cmakedefine HAVE_SSIZE_T
-
-/* Create our own ssize_t */
-#ifndef HAVE_SSIZE_T
-#  ifdef _WIN64
-typedef __int64 ssize_t;
-#  else
-typedef long ssize_t;
-#  endif
-#endif

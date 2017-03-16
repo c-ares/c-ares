@@ -557,8 +557,12 @@ fi
 
 
 # check for ssize_t
-AC_CHECK_TYPE(ssize_t, ,
-   AC_DEFINE(ssize_t, int, [the signed version of size_t]))
+AC_CHECK_TYPE(ssize_t, [ CARES_TYPEOF_ARES_SSIZE_T=ssize_t ],
+  [ CARES_TYPEOF_ARES_SSIZE_T=int ])
+
+AC_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SSIZE_T], ${CARES_TYPEOF_ARES_SSIZE_T},
+  [the signed version of size_t])
+
 
 # check for bool type
 AC_CHECK_TYPE([bool],[
