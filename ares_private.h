@@ -54,10 +54,14 @@
 
 #define WIN_NS_9X      "System\\CurrentControlSet\\Services\\VxD\\MSTCP"
 #define WIN_NS_NT_KEY  "System\\CurrentControlSet\\Services\\Tcpip\\Parameters"
+#define WIN_DNSCLIENT  "Software\\Policies\\Microsoft\\System\\DNSClient"
 #define NAMESERVER     "NameServer"
 #define DHCPNAMESERVER "DhcpNameServer"
 #define DATABASEPATH   "DatabasePath"
 #define WIN_PATH_HOSTS  "\\hosts"
+#define SEARCHLIST     "SearchList"
+#define PRIMARYDNSSUFFIX "PrimaryDNSSuffix"
+#define INTERFACES     "Interfaces"
 
 #elif defined(WATT32)
 

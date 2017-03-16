@@ -1302,6 +1302,102 @@ static int get_DNS_Windows(char **outptr)
   /* Fall-back to registry information */
   return get_DNS_Registry(outptr);
 }
+
+static void replaceColonBySpace(char* str)
+{
+  /* replace ',' by ' ' to coincide with resolv.conf search parameter */
+  char *p;
+  for (p = str; *p != '\0'; p++)
+  {
+    if (*p == ',')
+      *p = ' ';
+  }
+}
+
+/*
+* get_SuffixList_Windows()
+*
+* Reads the "DNS Suffix Search List" from registry and writes the list items
+* whitespace separated to outptr. If the Search List is empty, the
+* "Primary Dns Suffix" is written to outptr.
+*
+* Returns 0 and nullifies *outptr upon inability to return the suffix list.
+*
+* Returns 1 and sets *outptr when returning a dynamically allocated string.
+*
+* Implementation supports Windows Server 2003 and newer
+*/
+static int get_SuffixList_Windows(char **outptr)
+{
+  HKEY hKey, hKeyEnum;
+  char *p;
+  char  keyName[256];
+  DWORD keyNameBuffSize;
+  DWORD keyIdx = 0;
+  char *newbuf;
+  size_t newsize;
+
+  *outptr = NULL;
+
+  if (ares__getplatform() != WIN_NT)
+    return 0;
+
+  /* 1. Global DNS Suffix Search List */
+  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0,
+      KEY_READ, &hKey) == ERROR_SUCCESS)
+  {
+    if (get_REG_SZ(hKey, SEARCHLIST, outptr))
+      replaceColonBySpace(*outptr);
+    RegCloseKey(hKey);
+    if (*outptr != NULL)
+      return 1;
+  }
+
+  /* 2. Connection Specific Search List composed of:
+   *  a. Primary DNS Suffix */
+  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_DNSCLIENT, 0,
+      KEY_READ, &hKey) == ERROR_SUCCESS)
+  {
+    get_REG_SZ(hKey, PRIMARYDNSSUFFIX, outptr);
+    RegCloseKey(hKey);
+  }
+
+  /*  b. Connection Specific Search List */
+  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY "\\" INTERFACES, 0,
+      KEY_READ, &hKey) == ERROR_SUCCESS)
+  {
+    for(;;)
+    {
+      keyNameBuffSize = sizeof(keyName);
+      if (RegEnumKeyEx(hKey, keyIdx++, keyName, &keyNameBuffSize,
+          0, NULL, NULL, NULL)
+        != ERROR_SUCCESS)
+        break;
+      if (RegOpenKeyEx(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum)
+        != ERROR_SUCCESS)
+        continue;
+      if (get_REG_SZ(hKeyEnum, SEARCHLIST, &p))
+      {
+        /* 1 for terminating 0 and 2 for , and terminating 0 */
+        newsize = strlen(p) + (*outptr ? (strlen(*outptr) + 2) : 1);
+        newbuf = ares_realloc(*outptr, newsize);
+        if (*outptr == NULL)
+          *newbuf = '\0';
+        *outptr = newbuf;
+        if (strlen(*outptr) != 0)
+          strcat(*outptr, ",");
+        strcat(*outptr, p);
+        ares_free(p);
+      }
+      RegCloseKey(hKeyEnum);
+    }
+    RegCloseKey(hKey);
+  }
+  if (*outptr)
+    replaceColonBySpace(*outptr);
+  return *outptr != NULL;
+}
+
 #endif
 
 static int init_by_resolv_conf(ares_channel channel)
@@ -1323,6 +1419,12 @@ static int init_by_resolv_conf(ares_channel channel)
   {
     status = config_nameserver(&servers, &nservers, line);
     ares_free(line);
+  }
+
+  if (channel->ndomains == -1 && get_SuffixList_Windows(&line))
+  {
+      status = set_search(channel, line);
+      ares_free(line);
   }
 
   if (status == ARES_SUCCESS)
