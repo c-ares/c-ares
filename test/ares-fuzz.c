@@ -25,7 +25,7 @@ static unsigned char afl_buffer[kMaxAflInputSize];
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
 static void ProcessFile(int fd) {
-  ssize_t count = read(fd, afl_buffer, kMaxAflInputSize);
+  ares_ssize_t count = read(fd, afl_buffer, kMaxAflInputSize);
   /*
    * Make a copy of the data so that it's not part of a larger
    * buffer (where buffer overflows would go unnoticed).
