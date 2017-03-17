@@ -1037,6 +1037,12 @@ class NoRotateMultiMockTest : public MockMultiServerChannelTest {
 
 
 TEST_P(RotateMultiMockTest, ThirdServer) {
+  struct ares_options opts = {0};
+  int optmask = 0;
+  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel_, &opts, &optmask));
+  EXPECT_EQ(0, (optmask & ARES_OPT_NOROTATE));
+  ares_destroy_options(&opts);
+
   DNSPacket servfailrsp;
   servfailrsp.set_response().set_aa().set_rcode(ns_r_servfail)
     .add_question(new DNSQuestion("www.example.com", ns_t_a));
@@ -1076,6 +1082,12 @@ TEST_P(RotateMultiMockTest, ThirdServer) {
 }
 
 TEST_P(NoRotateMultiMockTest, ThirdServer) {
+  struct ares_options opts = {0};
+  int optmask = 0;
+  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel_, &opts, &optmask));
+  EXPECT_EQ(ARES_OPT_NOROTATE, (optmask & ARES_OPT_NOROTATE));
+  ares_destroy_options(&opts);
+
   DNSPacket servfailrsp;
   servfailrsp.set_response().set_aa().set_rcode(ns_r_servfail)
     .add_question(new DNSQuestion("www.example.com", ns_t_a));
