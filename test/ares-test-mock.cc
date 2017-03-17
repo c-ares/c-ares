@@ -1013,7 +1013,7 @@ class MockMultiServerChannelTest
     public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   MockMultiServerChannelTest(bool rotate)
-    : MockChannelOptsTest(3, GetParam().first, GetParam().second, nullptr, rotate ? ARES_OPT_ROTATE : 0) {}
+    : MockChannelOptsTest(3, GetParam().first, GetParam().second, nullptr, rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE) {}
   void CheckExample() {
     HostResult result;
     ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
