@@ -20,7 +20,7 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
-int ares_fds(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
+int ares_fds(const struct ares_channeldata *channel, fd_set *read_fds, fd_set *write_fds)
 {
   struct server_state *server;
   ares_socket_t nfds;

@@ -29,7 +29,7 @@ void ares__init_list_head(struct list_node* head);
 
 void ares__init_list_node(struct list_node* node, void* d);
 
-int ares__is_list_empty(struct list_node* head);
+int ares__is_list_empty(const struct list_node* head);
 
 void ares__insert_in_list(struct list_node* new_node,
                           struct list_node* old_node);

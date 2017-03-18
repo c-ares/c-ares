@@ -38,7 +38,7 @@ void ares__init_list_node(struct list_node* node, void* d) {
 }
 
 /* Returns true iff the given list is empty */
-int ares__is_list_empty(struct list_node* head) {
+int ares__is_list_empty(const struct list_node* head) {
   return ((head->next == head) && (head->prev == head));
 }
 
