@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "ares.h"
 
 #define kMaxAflInputSize (1 << 20)
 static unsigned char afl_buffer[kMaxAflInputSize];
