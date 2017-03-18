@@ -11,3 +11,4 @@ build_script:
   - if "%platform%" == "mingw" ( mingw32-make.exe -f Makefile.m32 demos ) else ( nmake /f Makefile.msvc )
   - cd test
   - if "%platform%" == "mingw" ( mingw32-make.exe -f Makefile.m32 ) else ( nmake /f Makefile.msvc vtest )
+  - if "%platform%" == "mingw" ( mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe ) else ( nmake /f Makefile.msvc aresfuzz aresfuzzname )

@@ -5,6 +5,7 @@
 #
 ########################################################
 CXX = g++
+CC = gcc
 LD = g++
 
 # Where to find the c-ares source code; needed because the tests use library-internal headers
@@ -23,16 +24,26 @@ LDLIBS = -lwsock32
 include Makefile.inc
 
 OBJS := $(patsubst %.cc,%.o,$(strip $(TESTSOURCES)))
+FUZZOBJS := $(patsubst %.c,%.o,$(strip $(FUZZSOURCES)))
+FUZZNAMEOBJS := $(patsubst %.c,%.o,$(strip $(FUZZNAMESOURCES)))
 
-all: arestest.exe
+all: arestest.exe aresfuzz.exe aresfuzzname.exe
 
 arestest.exe: $(OBJS) gmock-all.o gtest-all.o
+	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR) -lcares $(LDLIBS)
+
+aresfuzz.exe: $(FUZZOBJS)
+	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR) -lcares $(LDLIBS)
+
+aresfuzzname.exe: $(FUZZNAMEOBJS)
 	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR) -lcares $(LDLIBS)
 
 $(OBJS): $(TESTHEADERS)
 
 .cc.o:
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
+.c.o:
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 gmock-all.o: $(GMOCK_DIR)/src/gmock-all.cc
 	$(CXX) -I$(GTEST_DIR) -I$(GMOCK_DIR) $(CPPFLAGS) $(CXXFLAGS) -c $<
 gtest-all.o: $(GTEST_DIR)/src/gtest-all.cc
@@ -44,5 +55,5 @@ vtest: arestest.exe
 	./arestest.exe -v
 
 clean:
-	$(RM) $(OBJS) gmock-all.o gtest-all.o arestest.exe
+	$(RM) $(OBJS) gmock-all.o gtest-all.o arestest.exe aresfuzz.exe aresfuzzname.exe
 

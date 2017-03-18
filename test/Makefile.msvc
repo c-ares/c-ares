@@ -109,7 +109,7 @@ VALID_CFGSET = TRUE
 !  MESSAGE Usage: nmake /f makefile.msvc CFG=<config> <target>
 !  MESSAGE
 !  MESSAGE <config> can be one of: [ lib-release | lib-debug | dll-release | dll-debug }
-!  MESSAGE <target> can be one of: [ all | arestest | clean }
+!  MESSAGE <target> can be one of: [ all | arestest | aresfuzz | aresfuzzname | clean }
 !  MESSAGE
 !  MESSAGE If <target> is not specified then all targets are built.
 !  MESSAGE If <config> is not specified then lib-debug will be assumed.
@@ -252,6 +252,25 @@ RC_CMD       = $(RC_CMD_DBG)
 !ERROR Problem generating PROG_OBJS list.
 !ENDIF
 PROG_OBJS = $(PROG_OBJS:.cc=.obj)
+
+!IF [ECHO FUZZ_OBJS=^$(PROG_OBJDIR)\$(FUZZSOURCES: = $(PROG_OBJDIR^)\) > .\fuzz_objs.inc] == 0
+!INCLUDE .\fuzz_objs.inc
+!IF [DEL .\fuzz_objs.inc]
+!ENDIF
+!ELSE
+!ERROR Problem generating FUZZ_OBJS list.
+!ENDIF
+FUZZ_OBJS = $(FUZZ_OBJS:.c=.obj)
+
+!IF [ECHO FUZZNAME_OBJS=^$(PROG_OBJDIR)\$(FUZZNAMESOURCES: = $(PROG_OBJDIR^)\) > .\fuzzname_objs.inc] == 0
+!INCLUDE .\fuzzname_objs.inc
+!IF [DEL .\fuzzname_objs.inc]
+!ENDIF
+!ELSE
+!ERROR Problem generating FUZZNAME_OBJS list.
+!ENDIF
+FUZZNAME_OBJS = $(FUZZNAME_OBJS:.c=.obj)
+
 GTEST_OBJ = $(PROG_OBJDIR)\gtest-all.obj
 GMOCK_OBJ = $(PROG_OBJDIR)\gmock-all.obj
 
@@ -260,9 +279,11 @@ GMOCK_OBJ = $(PROG_OBJDIR)\gmock-all.obj
 # --------------------------------
 
 .SUFFIXES:
-.SUFFIXES: .cc
+.SUFFIXES: .cc .c
 
 {$(SRCDIR)}.cc{$(PROG_OBJDIR)}.obj:
+    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
+{$(SRCDIR)}.c{$(PROG_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 {$(GMOCK_SRC_DIR)}.cc{$(PROG_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /I $(GMOCK_DIR) /Fo$@ /Fd$(@D)\ /c $<
@@ -274,7 +295,7 @@ GMOCK_OBJ = $(PROG_OBJDIR)\gmock-all.obj
 # Main targets
 # ---------------------------------------------------------------------
 
-ALL: arestest
+ALL: arestest aresfuzz aresfuzzname
     @
 
 test: arestest
@@ -282,9 +303,17 @@ test: arestest
 vtest: arestest
     $(PROG_OUTDIR)\arestest -v
 
-arestest: $(TESTSOURCES) $(PROB_OUTDIR) $(PROG_OBJDIR) $(PROG_OBJS) $(GTEST_OBJ) $(GMOCK_OBJ)
+arestest: $(TESTSOURCES) $(PROG_OUTDIR) $(PROG_OBJDIR) $(PROG_OBJS) $(GTEST_OBJ) $(GMOCK_OBJ)
     $(SPROG_LINK) $(SPROG_LFLAGS) /out:$(PROG_OUTDIR)\arestest.exe $(PROG_OBJS) $(GTEST_OBJ) $(GMOCK_OBJ)
     @if exist $(PROG_OUTDIR)\arestest.exe.manifest mt -nologo -manifest $(PROG_OUTDIR)\arestest.exe.manifest -outputresource:$(PROG_OUTDIR)\arestest.exe;1
+
+aresfuzz: $(FUZZSOURCES) $(PROG_OUTDIR) $(PROG_OBJDIR) $(FUZZ_OBJS)
+    $(SPROG_LINK) $(SPROG_LFLAGS) /out:$(PROG_OUTDIR)\aresfuzz.exe $(FUZZ_OBJS)
+    @if exist $(PROG_OUTDIR)\aresfuzz.exe.manifest mt -nologo -manifest $(PROG_OUTDIR)\aresfuzz.exe.manifest -outputresource:$(PROG_OUTDIR)\aresfuzz.exe;1
+
+aresfuzzname: $(FUZZNAMESOURCES) $(PROG_OUTDIR) $(PROG_OBJDIR) $(FUZZNAME_OBJS)
+    $(SPROG_LINK) $(SPROG_LFLAGS) /out:$(PROG_OUTDIR)\aresfuzzname.exe $(FUZZNAME_OBJS)
+    @if exist $(PROG_OUTDIR)\aresfuzzname.exe.manifest mt -nologo -manifest $(PROG_OUTDIR)\aresfuzzname.exe.manifest -outputresource:$(PROG_OUTDIR)\aresfuzzname.exe;1
 
 $(PROG_OUTDIR): $(PROG_DIR)
     @if not exist $(PROG_OUTDIR) mkdir $(PROG_OUTDIR)
