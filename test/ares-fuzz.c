@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "ares.h"
 
 #define kMaxAflInputSize (1 << 20)
 static unsigned char afl_buffer[kMaxAflInputSize];
@@ -26,7 +25,7 @@ static unsigned char afl_buffer[kMaxAflInputSize];
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
 static void ProcessFile(int fd) {
-  ares_ssize_t count = read(fd, afl_buffer, kMaxAflInputSize);
+  int count = read(fd, afl_buffer, kMaxAflInputSize);
   /*
    * Make a copy of the data so that it's not part of a larger
    * buffer (where buffer overflows would go unnoticed).
