@@ -60,7 +60,7 @@ struct host_query {
   const char *remaining_lookups;
   int timeouts;      /* number of timeouts we saw for this request */
   int next_domain;   /* next search domain to try */
-  int ever_got_data; /* did we ever get a valid AF_INET/AF_INET6 response? */
+  int callback_called; /* did we ever get a valid AF_INET/AF_INET6 response? */
   int single_domain; /* do not check other domains */
 };
 
@@ -69,7 +69,6 @@ static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
 static void end_hquery(struct host_query *hquery, int status,
                        struct hostent *host);
-static void free_hquery(struct host_query *hquery, struct hostent *host);
 static int fake_hostent(const char *name, int family,
                         ares_host_callback callback, void *arg);
 static int file_lookup(const char *name, int family, struct hostent **host);
@@ -82,6 +81,8 @@ static int get_address_index(const struct in_addr *addr,
 static int get6_address_index(const struct ares_in6_addr *addr,
                               const struct apattern *sortlist, int nsort);
 static int as_is_first(const struct host_query *hquery);
+static void invoke_callback(struct host_query *hquery, int status,
+  struct hostent* host);
 
 
 void ares_gethostbyname(ares_channel channel, const char *name, int family,
@@ -135,7 +136,7 @@ void ares_gethostbyname(ares_channel channel, const char *name, int family,
   hquery->remaining_lookups = channel->lookups;
   hquery->timeouts = 0;
   hquery->next_domain = 0;
-  hquery->ever_got_data = 0;
+  hquery->callback_called = 0;
 
   /* Start performing lookups according to channel->lookups. */
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
@@ -168,12 +169,12 @@ static void next_dns_lookup(struct host_query *hquery, int status) {
         }
     }
 
-  if (next_d && hquery->ever_got_data)
+  if (next_d && hquery->callback_called)
     {
       /* No more queries on another domain to check since
          we already made a successful query for another type
       */
-      free_hquery(hquery, NULL);
+      end_hquery(hquery, status, NULL);
       return;
     }
 
@@ -216,10 +217,7 @@ static void next_dns_lookup(struct host_query *hquery, int status) {
   else
     {
       /* nothing left */
-      if (hquery->ever_got_data)
-          free_hquery(hquery, NULL);
-      else
-          end_hquery(hquery, ARES_ENODATA, NULL);
+      end_hquery(hquery, ARES_ENODATA, NULL);
     }
 }
 
@@ -269,7 +267,6 @@ static void host_callback(void *arg, int status, int timeouts,
   hquery->timeouts += timeouts;
   if (status == ARES_SUCCESS)
     {
-      hquery->ever_got_data = 1;
       status = ares__parse_qtype_reply(abuf, alen, &qtype);
       if (status == ARES_SUCCESS && qtype == T_A)
         {
@@ -284,7 +281,7 @@ static void host_callback(void *arg, int status, int timeouts,
           if (host && channel->nsort)
             sort6_addresses(host, channel->sortlist, channel->nsort);
           if (status == ARES_SUCCESS && host && host->h_addr_list[0] != NULL)
-            hquery->callback(hquery->arg, status, hquery->timeouts, host);
+            invoke_callback(hquery, status, host);
           if (host)
             ares_free_hostent(host);
           host = NULL;
@@ -292,7 +289,7 @@ static void host_callback(void *arg, int status, int timeouts,
             /* we also want a T_A response, no end_hquery */
             next_dns_lookup(hquery, status);
           else
-            free_hquery(hquery, host);
+            end_hquery(hquery, status, host);
         }
       else
         end_hquery(hquery, status, host);
@@ -306,20 +303,22 @@ static void host_callback(void *arg, int status, int timeouts,
     next_lookup(hquery, status);
 }
 
-static void free_hquery(struct host_query *hquery, struct hostent *host)
+static void invoke_callback(struct host_query *hquery, int status,
+  struct hostent* host)
 {
-  if (host)
-    ares_free_hostent(host);
-  ares_free(hquery->name);
-  ares_free(hquery);
+  hquery->callback(hquery->arg, status, hquery->timeouts, host);
+  hquery->callback_called = 1;
 }
-
 
 static void end_hquery(struct host_query *hquery, int status,
                        struct hostent *host)
 {
-  hquery->callback(hquery->arg, status, hquery->timeouts, host);
-  free_hquery(hquery, host);
+  if (host || !hquery->callback_called)
+    invoke_callback(hquery, status, host);
+  if (host)
+    ares_free_hostent(host);
+  ares_free(hquery->name);
+  ares_free(hquery);
 }
 
 /* If the name looks like an IP address, fake up a host entry, end the
