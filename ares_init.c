@@ -1370,11 +1370,10 @@ static int get_SuffixList_Windows(char **outptr)
     {
       keyNameBuffSize = sizeof(keyName);
       if (RegEnumKeyEx(hKey, keyIdx++, keyName, &keyNameBuffSize,
-          0, NULL, NULL, NULL)
-        != ERROR_SUCCESS)
+          0, NULL, NULL, NULL) != ERROR_SUCCESS)
         break;
-      if (RegOpenKeyEx(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum)
-        != ERROR_SUCCESS)
+      if (RegOpenKeyEx(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum) !=
+          ERROR_SUCCESS)
         continue;
       if (get_REG_SZ(hKeyEnum, SEARCHLIST, &p))
       {
