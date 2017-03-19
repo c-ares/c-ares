@@ -78,7 +78,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByNameFile) {
 
 TEST_P(DefaultChannelModeTest, LiveGetLocalhostByNameV4) {
   HostResult result;
-  ares_gethostbyname(channel_, "localhost", AF_INET, HostCallback, &result);
+  ares_gethostbyname(channel_, "localhost.", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   if ((result.status_ != ARES_ENOTFOUND) && (result.status_ != ARES_ECONNREFUSED)) {
@@ -91,7 +91,7 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByNameV4) {
 
 TEST_P(DefaultChannelModeTest, LiveGetLocalhostByNameV6) {
   HostResult result;
-  ares_gethostbyname(channel_, "localhost", AF_INET6, HostCallback, &result);
+  ares_gethostbyname(channel_, "localhost.", AF_INET6, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   if (result.status_ == ARES_SUCCESS) {
