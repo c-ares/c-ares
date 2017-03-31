@@ -59,9 +59,11 @@
 #define DHCPNAMESERVER "DhcpNameServer"
 #define DATABASEPATH   "DatabasePath"
 #define WIN_PATH_HOSTS  "\\hosts"
-#define SEARCHLIST     "SearchList"
-#define PRIMARYDNSSUFFIX "PrimaryDNSSuffix"
-#define INTERFACES     "Interfaces"
+#define SEARCHLIST_KEY "SearchList"
+#define PRIMARYDNSSUFFIX_KEY "PrimaryDNSSuffix"
+#define INTERFACES_KEY "Interfaces"
+#define DOMAIN_KEY     "Domain"
+#define DHCPDOMAIN_KEY "DhcpDomain"
 
 #elif defined(WATT32)
 

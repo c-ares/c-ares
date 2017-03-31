@@ -1314,6 +1314,45 @@ static void replaceColonBySpace(char* str)
   }
 }
 
+static void add_suffix(char** outptr, const char* const suffix)
+{
+  char *newbuf;
+  size_t newsize;
+
+  /* 1 for terminating 0 and 2 for , and terminating 0 */
+  newsize = strlen(suffix) + (*outptr ? (strlen(*outptr) + 2) : 1);
+  newbuf = ares_realloc(*outptr, newsize);
+  if (!newbuf)
+    return;
+  if (*outptr == NULL)
+    *newbuf = '\0';
+  *outptr = newbuf;
+  if (strlen(*outptr) != 0)
+    strcat(*outptr, ",");
+  strcat(*outptr, suffix);
+}
+
+static const char *istrstr(const char* str, const char* substr)
+{
+  const char* fnd = str;
+  const char* fit;
+  const char* sit;
+  if (!*substr)
+    return str;
+  for (; *fnd; ++fnd)
+  {
+    for (fit = fnd, sit = substr; *fit && *sit; ++fit, ++sit)
+    {
+      if (tolower((unsigned char)(*fit) != tolower((unsigned char)(*sit))))
+        break;
+    }
+    if (!*sit)
+      return fnd;
+  }
+  return NULL;
+}
+
+
 /*
 * get_SuffixList_Windows()
 *
@@ -1330,12 +1369,10 @@ static void replaceColonBySpace(char* str)
 static int get_SuffixList_Windows(char **outptr)
 {
   HKEY hKey, hKeyEnum;
-  char *p;
+  char *p = NULL;
   char  keyName[256];
   DWORD keyNameBuffSize;
   DWORD keyIdx = 0;
-  char *newbuf;
-  size_t newsize;
 
   *outptr = NULL;
 
@@ -1346,10 +1383,10 @@ static int get_SuffixList_Windows(char **outptr)
   if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0,
       KEY_READ, &hKey) == ERROR_SUCCESS)
   {
-    if (get_REG_SZ(hKey, SEARCHLIST, outptr))
+    if (get_REG_SZ(hKey, SEARCHLIST_KEY, outptr))
       replaceColonBySpace(*outptr);
     RegCloseKey(hKey);
-    if (*outptr != NULL)
+    if (*outptr)
       return 1;
   }
 
@@ -1358,35 +1395,36 @@ static int get_SuffixList_Windows(char **outptr)
   if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_DNSCLIENT, 0,
       KEY_READ, &hKey) == ERROR_SUCCESS)
   {
-    get_REG_SZ(hKey, PRIMARYDNSSUFFIX, outptr);
+    get_REG_SZ(hKey, PRIMARYDNSSUFFIX_KEY, outptr);
     RegCloseKey(hKey);
   }
+  if (!*outptr)
+  return 0;
 
-  /*  b. Connection Specific Search List */
-  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY "\\" INTERFACES, 0,
+  /*  b. Interface SearchList, Domain, DhcpDomain */
+  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY "\\" INTERFACES_KEY, 0,
       KEY_READ, &hKey) == ERROR_SUCCESS)
   {
     for(;;)
     {
       keyNameBuffSize = sizeof(keyName);
       if (RegEnumKeyEx(hKey, keyIdx++, keyName, &keyNameBuffSize,
-          0, NULL, NULL, NULL) != ERROR_SUCCESS)
+          0, NULL, NULL, NULL)
+        != ERROR_SUCCESS)
         break;
-      if (RegOpenKeyEx(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum) !=
-          ERROR_SUCCESS)
+      if (RegOpenKeyEx(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum)
+        != ERROR_SUCCESS)
         continue;
-      if (get_REG_SZ(hKeyEnum, SEARCHLIST, &p))
+      if (get_REG_SZ(hKeyEnum, SEARCHLIST_KEY, &p) ||
+      get_REG_SZ(hKeyEnum, DOMAIN_KEY, &p) ||
+      get_REG_SZ(hKeyEnum, DHCPDOMAIN_KEY, &p))
       {
-        /* 1 for terminating 0 and 2 for , and terminating 0 */
-        newsize = strlen(p) + (*outptr ? (strlen(*outptr) + 2) : 1);
-        newbuf = ares_realloc(*outptr, newsize);
-        if (*outptr == NULL)
-          *newbuf = '\0';
-        *outptr = newbuf;
-        if (strlen(*outptr) != 0)
-          strcat(*outptr, ",");
-        strcat(*outptr, p);
-        ares_free(p);
+    if (!istrstr(*outptr, p))
+    {
+      add_suffix(outptr, p);
+      ares_free(p);
+    }
+    p = NULL;
       }
       RegCloseKey(hKeyEnum);
     }
