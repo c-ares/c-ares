@@ -1421,7 +1421,7 @@ static int get_SuffixList_Windows(char **outptr)
     RegCloseKey(hKey);
   }
   if (!*outptr)
-  return 0;
+    return 0;
 
   /*  b. Interface SearchList, Domain, DhcpDomain */
   if (!RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY "\\" INTERFACES_KEY, 0,
@@ -1433,10 +1433,10 @@ static int get_SuffixList_Windows(char **outptr)
     if (RegEnumKeyEx(hKey, keyIdx++, keyName, &keyNameBuffSize,
         0, NULL, NULL, NULL)
         != ERROR_SUCCESS)
-    break;
+      break;
     if (RegOpenKeyEx(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum)
         != ERROR_SUCCESS)
-    continue;
+      continue;
     if (get_REG_SZ(hKeyEnum, SEARCHLIST_KEY, &p) ||
         get_REG_SZ(hKeyEnum, DOMAIN_KEY, &p) ||
         get_REG_SZ(hKeyEnum, DHCPDOMAIN_KEY, &p))
