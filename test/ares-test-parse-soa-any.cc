@@ -7,10 +7,13 @@
 namespace ares {
 namespace test {
 
-TEST_F(LibraryTest, ParseSoaReplyOK) {
+TEST_F(LibraryTest, ParseSoaAnyReplyOK) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
-    .add_question(new DNSQuestion("example.com", ns_t_soa))
+    .add_question(new DNSQuestion("example.com", ns_t_any))\
+    .add_answer(new DNSARR("example.com", 0x01020304, {2,3,4,5}))
+    .add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"))
+    .add_answer(new DNSMxRR("example.com", 100, 200, "mx2.example.com"))
     .add_answer(new DNSSoaRR("example.com", 100,
                              "soa1.example.com", "fred.example.com",
                              1, 2, 3, 4, 5));
@@ -29,10 +32,10 @@ TEST_F(LibraryTest, ParseSoaReplyOK) {
   ares_free_data(soa);
 }
 
-TEST_F(LibraryTest, ParseSoaReplyErrors) {
+TEST_F(LibraryTest, ParseSoaAnyReplyErrors) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
-    .add_question(new DNSQuestion("example.com", ns_t_soa))
+    .add_question(new DNSQuestion("example.com", ns_t_any))
     .add_answer(new DNSSoaRR("example.com", 100,
                              "soa1.example.com", "fred.example.com",
                              1, 2, 3, 4, 5));
@@ -43,24 +46,24 @@ TEST_F(LibraryTest, ParseSoaReplyErrors) {
   pkt.questions_.clear();
   data = pkt.data();
   EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), data.size(), &soa));
-  pkt.add_question(new DNSQuestion("example.com", ns_t_soa));
+  pkt.add_question(new DNSQuestion("example.com", ns_t_any));
 
 #ifdef DISABLED
   // Question != answer
   pkt.questions_.clear();
-  pkt.add_question(new DNSQuestion("Axample.com", ns_t_soa));
+  pkt.add_question(new DNSQuestion("Axample.com", ns_t_any));
   data = pkt.data();
   EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), data.size(), &soa));
   pkt.questions_.clear();
-  pkt.add_question(new DNSQuestion("example.com", ns_t_soa));
+  pkt.add_question(new DNSQuestion("example.com", ns_t_any));
 #endif
 
   // Two questions
-  pkt.add_question(new DNSQuestion("example.com", ns_t_soa));
+  pkt.add_question(new DNSQuestion("example.com", ns_t_any));
   data = pkt.data();
   EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), data.size(), &soa));
   pkt.questions_.clear();
-  pkt.add_question(new DNSQuestion("example.com", ns_t_soa));
+  pkt.add_question(new DNSQuestion("example.com", ns_t_any));
 
   // Wrong sort of answer.
   pkt.answers_.clear();
@@ -87,10 +90,10 @@ TEST_F(LibraryTest, ParseSoaReplyErrors) {
   }
 }
 
-TEST_F(LibraryTest, ParseSoaReplyAllocFail) {
+TEST_F(LibraryTest, ParseSoaAnyReplyAllocFail) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
-    .add_question(new DNSQuestion("example.com", ns_t_soa))
+    .add_question(new DNSQuestion("example.com", ns_t_any))
     .add_answer(new DNSSoaRR("example.com", 100,
                              "soa1.example.com", "fred.example.com",
                              1, 2, 3, 4, 5));
