@@ -87,11 +87,15 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   {
     status = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len);
     if (status != ARES_SUCCESS)
+     {
+      ares_free(rr_name);
       goto failed_stat;
+     }
 
     aptr += len;
     if ( aptr + RRFIXEDSZ > abuf + alen )
     {
+      ares_free(rr_name);
       status = ARES_EBADRESP;
       goto failed_stat;
     }
@@ -101,6 +105,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
     aptr += RRFIXEDSZ;
     if (aptr + rr_len > abuf + alen)
       {
+        ares_free(rr_name);
         status = ARES_EBADRESP;
         goto failed_stat;
       }
@@ -110,6 +115,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
       soa = ares_malloc_data(ARES_DATATYPE_SOA_REPLY);
       if (!soa)
         {
+          ares_free(rr_name);
           status = ARES_ENOMEM;
           goto failed_stat;
         }
@@ -118,19 +124,28 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
       status = ares__expand_name_for_response(aptr, abuf, alen, &soa->nsname,
                                                &len);
       if (status != ARES_SUCCESS)
+       {
+        ares_free(rr_name);
         goto failed_stat;
+       }
       aptr += len;
 
       /* hostmaster */
       status = ares__expand_name_for_response(aptr, abuf, alen,
                                                &soa->hostmaster, &len);
       if (status != ARES_SUCCESS)
+       {
+        ares_free(rr_name);
         goto failed_stat;
+       }
       aptr += len;
 
       /* integer fields */
       if (aptr + 5 * 4 > abuf + alen)
+       {
+        ares_free(rr_name);
         goto failed;
+       }
       soa->serial = DNS__32BIT(aptr + 0 * 4);
       soa->refresh = DNS__32BIT(aptr + 1 * 4);
       soa->retry = DNS__32BIT(aptr + 2 * 4);
@@ -145,6 +160,9 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
       return ARES_SUCCESS;
     }
     aptr += rr_len;
+    
+    ares_free(rr_name);
+    
     if (aptr > abuf + alen)
       goto failed_stat;
   }
@@ -159,7 +177,5 @@ failed_stat:
     ares_free_data(soa);
   if (qname)
     ares_free(qname);
-  if (rr_name)
-    ares_free(rr_name);
   return status;
 }
