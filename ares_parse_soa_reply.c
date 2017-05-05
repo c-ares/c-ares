@@ -149,6 +149,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
       goto failed_stat;
   }
   /* no SOA record found */
+  status = ARES_EBADRESP;
   goto failed_stat;
 failed:
   status = ARES_EBADRESP;
