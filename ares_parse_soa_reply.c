@@ -42,7 +42,7 @@
 
 int
 ares_parse_soa_reply(const unsigned char *abuf, int alen,
-         struct ares_soa_reply **soa_out)
+		     struct ares_soa_reply **soa_out)
 {
   const unsigned char *aptr;
   long len;
