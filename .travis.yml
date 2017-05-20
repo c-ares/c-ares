@@ -4,7 +4,6 @@ addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
-            - kubuntu-backports           # For CMake 2.8.12
             - llvm-toolchain-precise-3.7
         packages:
             - cmake
@@ -23,9 +22,11 @@ matrix:
           env: BUILD_TYPE=normal
         - os: linux
           compiler: gcc
+          dist: trusty
           env: BUILD_TYPE=cmake
         - os: linux
           compiler: clang
+          dist: trusty
           env: BUILD_TYPE=cmake
         - os: linux
           compiler: gcc
