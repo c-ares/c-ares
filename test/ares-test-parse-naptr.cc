@@ -97,6 +97,35 @@ TEST_F(LibraryTest, ParseNaptrReplyErrors) {
   }
 }
 
+TEST_F(LibraryTest, ParseNaptrReplyTooShort) {
+  std::vector<byte> data = {
+    0x12, 0x34,  // qid
+    0x84, // response + query + AA + not-TC + not-RD
+    0x00, // not-RA + not-Z + not-AD + not-CD + rc=NoError
+    0x00, 0x01,  // num questions
+    0x00, 0x01,  // num answer RRs
+    0x00, 0x00,  // num authority RRs
+    0x00, 0x00,  // num additional RRs
+    // Question
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x23,  // type NAPTR
+    0x00, 0x01,  // class IN
+    // Answer 1
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x23,  // RR type
+    0x00, 0x01,  // class IN
+    0x01, 0x02, 0x03, 0x04, // TTL
+    0x00, 0x01,  // rdata length
+    0x00,  // Too short: expect 2 x int16 and 3 x name (min 1 byte each)
+  };
+  struct ares_naptr_reply* naptr = nullptr;
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_naptr_reply(data.data(), data.size(), &naptr));
+}
+
 TEST_F(LibraryTest, ParseNaptrReplyAllocFail) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
