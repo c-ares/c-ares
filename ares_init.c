@@ -832,6 +832,24 @@ static int get_DNS_Registry(char **outptr)
   return 1;
 }
 
+static void commanjoin(char** dst, const char* const src, const size_t len)
+{
+  char *newbuf;
+  size_t newsize;
+
+  /* 1 for terminating 0 and 2 for , and terminating 0 */
+  newsize = len + (*dst ? (strlen(*dst) + 2) : 1);
+  newbuf = ares_realloc(*dst, newsize);
+  if (!newbuf)
+    return;
+  if (*dst == NULL)
+    *newbuf = '\0';
+  *dst = newbuf;
+  if (strlen(*dst) != 0)
+    strcat(*dst, ",");
+  strncat(*dst, src, len);
+}
+
 /*
  * commajoin()
  *
@@ -839,24 +857,7 @@ static int get_DNS_Registry(char **outptr)
  */
 static void commajoin(char **dst, const char *src)
 {
-  char *tmp;
-
-  if (*dst)
-  {
-    tmp = ares_malloc(strlen(*dst) + strlen(src) + 2);
-    if (!tmp)
-      return;
-    sprintf(tmp, "%s,%s", *dst, src);
-    ares_free(*dst);
-    *dst = tmp;
-  }
-  else
-  {
-    *dst = ares_malloc(strlen(src) + 1);
-    if (!*dst)
-      return;
-    strcpy(*dst, src);
-  }
+  commanjoin(dst, src, strlen(src));
 }
 
 /*
@@ -1314,24 +1315,6 @@ static void replaceColonBySpace(char* str)
   }
 }
 
-static void add_suffix(char** outptr, const char* const suffix, const size_t len)
-{
-  char *newbuf;
-  size_t newsize;
-
-  /* 1 for terminating 0 and 2 for , and terminating 0 */
-  newsize = len + (*outptr ? (strlen(*outptr) + 2) : 1);
-  newbuf = ares_realloc(*outptr, newsize);
-  if (!newbuf)
-    return;
-  if (*outptr == NULL)
-    *newbuf = '\0';
-  *outptr = newbuf;
-  if (strlen(*outptr) != 0)
-    strcat(*outptr, ",");
-  strncat(*outptr, suffix, len);
-}
-
 /* Search if 'suffix' is containted in the 'searchlist'. Returns true if yes,
  * otherwise false. 'searchlist' is a comma separated list of domain suffixes,
  * 'suffix' is one domain suffix, 'len' is the length of 'suffix'.
@@ -1426,7 +1409,7 @@ static int get_SuffixList_Windows(char **outptr)
   /*  b. Interface SearchList, Domain, DhcpDomain */
   if (!RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY "\\" INTERFACES_KEY, 0,
       KEY_READ, &hKey) == ERROR_SUCCESS)
-  return 0;
+    return 0;
   for(;;)
   {
     keyNameBuffSize = sizeof(keyName);
@@ -1446,7 +1429,7 @@ static int get_SuffixList_Windows(char **outptr)
       while (len = next_suffix(&pp, len))
       {
         if (!contains(*outptr, pp, len))
-          add_suffix(outptr, pp, len);
+          commajoin(outptr, pp, len);
       }
       ares_free(p);
       p = NULL;
