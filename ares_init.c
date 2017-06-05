@@ -1304,7 +1304,7 @@ static int get_DNS_Windows(char **outptr)
   return get_DNS_Registry(outptr);
 }
 
-static void replaceColonBySpace(char* str)
+static void replace_comma_by_space(char* str)
 {
   /* replace ',' by ' ' to coincide with resolv.conf search parameter */
   char *p;
@@ -1319,8 +1319,9 @@ static void replaceColonBySpace(char* str)
  * otherwise false. 'searchlist' is a comma separated list of domain suffixes,
  * 'suffix' is one domain suffix, 'len' is the length of 'suffix'.
  * The search ignores case. E.g.:
- * contains("abc.def,ghi.jkl", "ghi.JKL") returns true  */
-static bool contains(const char* const searchlist, const char* const suffix, const size_t len)
+ * contains_suffix("abc.def,ghi.jkl", "ghi.JKL") returns true  */
+static bool contains_suffix(const char* const searchlist,
+                            const char* const suffix, const size_t len)
 {
   if (!*suffix)
     return true;
@@ -1389,7 +1390,7 @@ static int get_SuffixList_Windows(char **outptr)
       KEY_READ, &hKey) == ERROR_SUCCESS)
   {
     if (get_REG_SZ(hKey, SEARCHLIST_KEY, outptr))
-      replaceColonBySpace(*outptr);
+      replace_comma_by_space(*outptr);
     RegCloseKey(hKey);
     if (*outptr)
       return 1;
@@ -1428,7 +1429,7 @@ static int get_SuffixList_Windows(char **outptr)
       pp = p;
       while (len = next_suffix(&pp, len))
       {
-        if (!contains(*outptr, pp, len))
+        if (!contains_suffix(*outptr, pp, len))
           commajoin(outptr, pp, len);
       }
       ares_free(p);
@@ -1438,7 +1439,7 @@ static int get_SuffixList_Windows(char **outptr)
   }
   RegCloseKey(hKey);
   if (*outptr)
-    replaceColonBySpace(*outptr);
+    replace_comma_by_space(*outptr);
   return *outptr != NULL;
 }
 
