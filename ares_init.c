@@ -1323,10 +1323,10 @@ static void replace_comma_by_space(char* str)
 static bool contains_suffix(const char* const searchlist,
                             const char* const suffix, const size_t len)
 {
-  if (!*suffix)
-    return true;
   const char* beg = searchlist;
   const char* end;
+  if (!*suffix)
+    return true;
   for (;;)
   {
     while (*beg && (ISSPACE(*beg) || (*beg == ',')))
@@ -1430,7 +1430,7 @@ static int get_SuffixList_Windows(char **outptr)
       while (len = next_suffix(&pp, len))
       {
         if (!contains_suffix(*outptr, pp, len))
-          commajoin(outptr, pp, len);
+          commanjoin(outptr, pp, len);
       }
       ares_free(p);
       p = NULL;
