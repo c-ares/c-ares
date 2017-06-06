@@ -832,6 +832,24 @@ static int get_DNS_Registry(char **outptr)
   return 1;
 }
 
+static void commanjoin(char** dst, const char* const src, const size_t len)
+{
+  char *newbuf;
+  size_t newsize;
+
+  /* 1 for terminating 0 and 2 for , and terminating 0 */
+  newsize = len + (*dst ? (strlen(*dst) + 2) : 1);
+  newbuf = ares_realloc(*dst, newsize);
+  if (!newbuf)
+    return;
+  if (*dst == NULL)
+    *newbuf = '\0';
+  *dst = newbuf;
+  if (strlen(*dst) != 0)
+    strcat(*dst, ",");
+  strncat(*dst, src, len);
+}
+
 /*
  * commajoin()
  *
@@ -839,24 +857,7 @@ static int get_DNS_Registry(char **outptr)
  */
 static void commajoin(char **dst, const char *src)
 {
-  char *tmp;
-
-  if (*dst)
-  {
-    tmp = ares_malloc(strlen(*dst) + strlen(src) + 2);
-    if (!tmp)
-      return;
-    sprintf(tmp, "%s,%s", *dst, src);
-    ares_free(*dst);
-    *dst = tmp;
-  }
-  else
-  {
-    *dst = ares_malloc(strlen(src) + 1);
-    if (!*dst)
-      return;
-    strcpy(*dst, src);
-  }
+  commanjoin(dst, src, strlen(src));
 }
 
 /*
@@ -1302,6 +1303,146 @@ static int get_DNS_Windows(char **outptr)
   /* Fall-back to registry information */
   return get_DNS_Registry(outptr);
 }
+
+static void replace_comma_by_space(char* str)
+{
+  /* replace ',' by ' ' to coincide with resolv.conf search parameter */
+  char *p;
+  for (p = str; *p != '\0'; p++)
+  {
+    if (*p == ',')
+      *p = ' ';
+  }
+}
+
+/* Search if 'suffix' is containted in the 'searchlist'. Returns true if yes,
+ * otherwise false. 'searchlist' is a comma separated list of domain suffixes,
+ * 'suffix' is one domain suffix, 'len' is the length of 'suffix'.
+ * The search ignores case. E.g.:
+ * contains_suffix("abc.def,ghi.jkl", "ghi.JKL") returns true  */
+static bool contains_suffix(const char* const searchlist,
+                            const char* const suffix, const size_t len)
+{
+  const char* beg = searchlist;
+  const char* end;
+  if (!*suffix)
+    return true;
+  for (;;)
+  {
+    while (*beg && (ISSPACE(*beg) || (*beg == ',')))
+      ++beg;
+    if (!*beg)
+      return false;
+    end = beg;
+    while (*end && !ISSPACE(*end) && (*end != ','))
+      ++end;
+    if (len == (end - beg) && !strnicmp(beg, suffix, len))
+      return true;
+    beg = end;
+  }
+}
+
+/* advances list to the next suffix within a comma separated search list.
+ * len is the length of the next suffix. */
+static size_t next_suffix(const char** list, const size_t advance)
+{
+  const char* beg = *list + advance;
+  const char* end;
+  while (*beg && (ISSPACE(*beg) || (*beg == ',')))
+    ++beg;
+  end = beg;
+  while (*end && !ISSPACE(*end) && (*end != ','))
+    ++end;
+  *list = beg;
+  return end - beg;
+}
+
+/*
+ * get_SuffixList_Windows()
+ *
+ * Reads the "DNS Suffix Search List" from registry and writes the list items
+ * whitespace separated to outptr. If the Search List is empty, the
+ * "Primary Dns Suffix" is written to outptr.
+ *
+ * Returns 0 and nullifies *outptr upon inability to return the suffix list.
+ *
+ * Returns 1 and sets *outptr when returning a dynamically allocated string.
+ *
+ * Implementation supports Windows Server 2003 and newer 
+ */
+static int get_SuffixList_Windows(char **outptr)
+{
+  HKEY hKey, hKeyEnum;
+  char  keyName[256];
+  DWORD keyNameBuffSize;
+  DWORD keyIdx = 0;
+  char *p = NULL;
+  char *pp;
+  size_t len = 0;
+
+  *outptr = NULL;
+
+  if (ares__getplatform() != WIN_NT)
+    return 0;
+
+  /* 1. Global DNS Suffix Search List */
+  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0,
+      KEY_READ, &hKey) == ERROR_SUCCESS)
+  {
+    if (get_REG_SZ(hKey, SEARCHLIST_KEY, outptr))
+      replace_comma_by_space(*outptr);
+    RegCloseKey(hKey);
+    if (*outptr)
+      return 1;
+  }
+
+  /* 2. Connection Specific Search List composed of:
+   *  a. Primary DNS Suffix */
+  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_DNSCLIENT, 0,
+      KEY_READ, &hKey) == ERROR_SUCCESS)
+  {
+    get_REG_SZ(hKey, PRIMARYDNSSUFFIX_KEY, outptr);
+    RegCloseKey(hKey);
+  }
+  if (!*outptr)
+    return 0;
+
+  /*  b. Interface SearchList, Domain, DhcpDomain */
+  if (!RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY "\\" INTERFACES_KEY, 0,
+      KEY_READ, &hKey) == ERROR_SUCCESS)
+    return 0;
+  for(;;)
+  {
+    keyNameBuffSize = sizeof(keyName);
+    if (RegEnumKeyEx(hKey, keyIdx++, keyName, &keyNameBuffSize,
+        0, NULL, NULL, NULL)
+        != ERROR_SUCCESS)
+      break;
+    if (RegOpenKeyEx(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum)
+        != ERROR_SUCCESS)
+      continue;
+    if (get_REG_SZ(hKeyEnum, SEARCHLIST_KEY, &p) ||
+        get_REG_SZ(hKeyEnum, DOMAIN_KEY, &p) ||
+        get_REG_SZ(hKeyEnum, DHCPDOMAIN_KEY, &p))
+    {
+      /* p can be comma separated (SearchList) */
+      pp = p;
+      while (len = next_suffix(&pp, len))
+      {
+        if (!contains_suffix(*outptr, pp, len))
+          commanjoin(outptr, pp, len);
+      }
+      ares_free(p);
+      p = NULL;
+    }
+    RegCloseKey(hKeyEnum);
+  }
+  RegCloseKey(hKey);
+  if (*outptr)
+    replace_comma_by_space(*outptr);
+  return *outptr != NULL;
+}
+
 #endif
 
 static int init_by_resolv_conf(ares_channel channel)
@@ -1323,6 +1464,12 @@ static int init_by_resolv_conf(ares_channel channel)
   {
     status = config_nameserver(&servers, &nservers, line);
     ares_free(line);
+  }
+
+  if (channel->ndomains == -1 && get_SuffixList_Windows(&line))
+  {
+      status = set_search(channel, line);
+      ares_free(line);
   }
 
   if (status == ARES_SUCCESS)
