@@ -27,6 +27,17 @@
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
+int ares_refresh_servers(ares_channel channel) {
+
+	channel->nservers = -1;
+
+	int status = init_by_resolv_conf(channel);
+	if (status != ARES_SUCCESS)
+		DEBUGF(fprintf(stderr, "Error: init_by_resolv_conf failed: %s\n",
+			ares_strerror(status)));
+
+	return status;
+}
 
 int ares_get_servers(ares_channel channel,
                      struct ares_addr_node **servers)
