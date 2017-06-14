@@ -29,8 +29,8 @@ struct AIResult {
   bool done;
   // Explicitly provided result information.
   int status;
-  // Contents of the ares_addrinfo structure, if provided.
-  struct ares_addrinfo* airesult;
+  // Contents of the addrinfo structure, if provided.
+  struct addrinfo** airesult;
 };
 
 }

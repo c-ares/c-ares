@@ -1,10 +1,5 @@
 #include "ares-test-ai.h"
 #include "dns-proto.h"
-
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-
 #include <arpa/inet.h>
 #include <sstream>
 #include <vector>
@@ -17,7 +12,7 @@ namespace test {
 
 MATCHER_P(IncludesNumAddresses, n, "") {
   int cnt = 0;
-  for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next)
+  for (const addrinfo* ai = *arg; ai != NULL; ai = ai->ai_next)
     cnt++;
   return n == cnt;
 }
@@ -26,7 +21,7 @@ MATCHER_P(IncludesV4Address, address, "") {
   in_addr addressnum = {};
   if (!inet_pton(AF_INET, address, &addressnum))
     return false; // wrong number format?
-  for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next) {
+  for (const addrinfo* ai = *arg; ai != NULL; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET)
       continue;
     if (reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_addr.s_addr ==
@@ -41,7 +36,7 @@ MATCHER_P(IncludesV6Address, address, "") {
   if (!inet_pton(AF_INET6, address, &addressnum)) {
     return false; // wrong number format?
   }
-  for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next) {
+  for (const addrinfo* ai = *arg; ai != NULL; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET6)
       continue;
     if (!memcmp(
@@ -106,7 +101,7 @@ TEST_P(MockChannelTestAI, FamilyV6) {
   ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
     .WillByDefault(SetReply(&server_, &rsp6));
   AIResult result;
-  struct ares_addrinfo hints = {};
+  struct addrinfo hints = {};
   hints.ai_family = AF_INET6;
   ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
                    AICallback, &result);
@@ -115,7 +110,6 @@ TEST_P(MockChannelTestAI, FamilyV6) {
   EXPECT_EQ(result.status, ARES_SUCCESS);
   EXPECT_THAT(result.airesult, IncludesNumAddresses(1));
   EXPECT_THAT(result.airesult, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
-  ares_freeaddrinfo(result.airesult);
 }
 
 
@@ -127,7 +121,7 @@ TEST_P(MockChannelTestAI, FamilyV4) {
   ON_CALL(server_, OnRequest("example.com", ns_t_a))
     .WillByDefault(SetReply(&server_, &rsp4));
   AIResult result = {};
-  struct ares_addrinfo hints = {};
+  struct addrinfo hints = {};
   hints.ai_family = AF_INET;
   ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
                    AICallback, &result);
@@ -136,29 +130,6 @@ TEST_P(MockChannelTestAI, FamilyV4) {
   EXPECT_EQ(result.status, ARES_SUCCESS);
   EXPECT_THAT(result.airesult, IncludesNumAddresses(1));
   EXPECT_THAT(result.airesult, IncludesV4Address("2.3.4.5"));
-  ares_freeaddrinfo(result.airesult);
-}
-
-TEST_P(MockChannelTestAI, FamilyV4_MultipleAddresses) {
-  DNSPacket rsp4;
-  rsp4.set_response().set_aa()
-    .add_question(new DNSQuestion("example.com", ns_t_a))
-    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}))
-    .add_answer(new DNSARR("example.com", 100, {7, 8, 9, 0}));
-  ON_CALL(server_, OnRequest("example.com", ns_t_a))
-    .WillByDefault(SetReply(&server_, &rsp4));
-  AIResult result = {};
-  struct ares_addrinfo hints = {};
-  hints.ai_family = AF_INET;
-  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
-                   AICallback, &result);
-  Process();
-  EXPECT_TRUE(result.done);
-  EXPECT_EQ(result.status, ARES_SUCCESS);
-  EXPECT_THAT(result.airesult, IncludesNumAddresses(2));
-  EXPECT_THAT(result.airesult, IncludesV4Address("2.3.4.5"));
-  EXPECT_THAT(result.airesult, IncludesV4Address("7.8.9.0"));
-  ares_freeaddrinfo(result.airesult);
 }
 
 TEST_P(MockChannelTestAI, FamilyUnspecified) {
@@ -177,7 +148,7 @@ TEST_P(MockChannelTestAI, FamilyUnspecified) {
   ON_CALL(server_, OnRequest("example.com", ns_t_a))
     .WillByDefault(SetReply(&server_, &rsp4));
   AIResult result;
-  struct ares_addrinfo hints = {};
+  struct addrinfo hints = {};
   hints.ai_family = AF_UNSPEC;
   ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
                    AICallback, &result);
@@ -187,7 +158,6 @@ TEST_P(MockChannelTestAI, FamilyUnspecified) {
   EXPECT_THAT(result.airesult, IncludesNumAddresses(2));
   EXPECT_THAT(result.airesult, IncludesV4Address("2.3.4.5"));
   EXPECT_THAT(result.airesult, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
-  ares_freeaddrinfo(result.airesult);
 }
 
 TEST_P(MockChannelTestAI, SearchDomains) {

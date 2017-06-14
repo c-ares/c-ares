@@ -566,7 +566,7 @@ void HostCallback(void *data, int status, int timeouts,
 }
 
 void AICallback(void *data, int status,
-                struct ares_addrinfo *res) {
+                struct addrinfo **res) {
   EXPECT_NE(nullptr, data);
   AIResult* result = reinterpret_cast<AIResult*>(data);
   result->done = true;

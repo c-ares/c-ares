@@ -18,6 +18,10 @@
 #ifndef ARES__H
 #define ARES__H
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
 #include "ares_version.h"  /* c-ares version defines   */
 #include "ares_build.h"    /* c-ares build definitions */
 #include "ares_rules.h"    /* c-ares rules enforcement */
@@ -278,7 +282,6 @@ struct hostent;
 struct timeval;
 struct sockaddr;
 struct ares_channeldata;
-struct ares_addrinfo;
 
 typedef struct ares_channeldata *ares_channel;
 
@@ -309,7 +312,7 @@ typedef int  (*ares_sock_config_callback)(ares_socket_t socket_fd,
 
 typedef void (*ares_addr_callback)(void *arg,
                                    int status,
-                                   struct ares_addrinfo *res);
+                                   struct addrinfo **res);
 
 CARES_EXTERN int ares_library_init(int flags);
 
@@ -376,9 +379,8 @@ CARES_EXTERN int ares_set_sortlist(ares_channel channel,
 
 CARES_EXTERN void ares_getaddrinfo(ares_channel channel,
                                    const char* node, const char* service,
-                                   const struct ares_addrinfo* hints,
+                                   const struct addrinfo* hints,
                                    ares_addr_callback callback, void* arg);
-CARES_EXTERN void ares_freeaddrinfo(struct ares_addrinfo* ai);
 
 /*
  * Virtual function set to have user-managed socket IO.
@@ -567,17 +569,6 @@ struct ares_soa_reply {
   unsigned int retry;
   unsigned int expire;
   unsigned int minttl;
-};
-
-struct ares_addrinfo {
-  int                  ai_flags;
-  int                  ai_family;
-  int                  ai_socktype;
-  int                  ai_protocol;
-  ares_socklen_t       ai_addrlen;
-  char                 *ai_canonname;
-  struct sockaddr      *ai_addr;
-  struct ares_addrinfo *ai_next;
 };
 
 /*
