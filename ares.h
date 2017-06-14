@@ -18,6 +18,10 @@
 #ifndef ARES__H
 #define ARES__H
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
 #include "ares_version.h"  /* c-ares version defines   */
 #include "ares_build.h"    /* c-ares build definitions */
 #include "ares_rules.h"    /* c-ares rules enforcement */
@@ -299,6 +303,10 @@ typedef int  (*ares_sock_config_callback)(ares_socket_t socket_fd,
                                           int type,
                                           void *data);
 
+typedef void (*ares_addr_callback)(void *arg,
+                                   int status,
+                                   struct addrinfo **res);
+
 CARES_EXTERN int ares_library_init(int flags);
 
 CARES_EXTERN int ares_library_init_mem(int flags,
@@ -355,6 +363,11 @@ CARES_EXTERN void ares_set_socket_configure_callback(ares_channel channel,
 
 CARES_EXTERN int ares_set_sortlist(ares_channel channel,
                                    const char *sortstr);
+
+CARES_EXTERN void ares_getaddrinfo(ares_channel channel,
+                                   const char* node, const char* service,
+                                   const struct addrinfo* hints,
+                                   ares_addr_callback callback, void* arg);
 
 /*
  * Virtual function set to have user-managed socket IO.

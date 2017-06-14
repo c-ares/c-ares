@@ -14,6 +14,7 @@ CSOURCES = ares__close_sockets.c	\
   ares_getenv.c				\
   ares_gethostbyaddr.c			\
   ares_gethostbyname.c			\
+  ares_getaddrinfo.c                    \
   ares_getnameinfo.c			\
   ares_getsock.c			\
   ares_init.c				\

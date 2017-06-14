@@ -262,3 +262,41 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
   ares_free(hostname);
   return status;
 }
+
+/* returned size includes terminating 0. */
+static long encoded_name_size(const unsigned char *begin, const unsigned char *end)
+{
+  const unsigned char* it = begin;
+  for (; *it && it != end; ++it);
+  return it == end ? -1 : (long)((it + 1) - begin);
+}
+
+int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype)
+{
+  unsigned int qdcount, ancount;
+  const unsigned char* aptr;
+  long len;
+
+  /* Give up if abuf doesn't have room for a header. */
+  if (alen < HFIXEDSZ)
+    return ARES_EBADRESP;
+
+  /* Fetch the question and answer count from the header. */
+  qdcount = DNS_HEADER_QDCOUNT(abuf);
+  ancount = DNS_HEADER_ANCOUNT(abuf);
+  if (qdcount != 1)
+    return ARES_EBADRESP;
+
+  /* Expand the name from the question, and skip past the question. */
+  aptr = abuf + HFIXEDSZ;
+  len = encoded_name_size(aptr, abuf + alen);
+  if (len == -1)
+    return ARES_EBADRESP;
+  if (aptr + len + QFIXEDSZ > abuf + alen)
+    return ARES_EBADRESP;
+  aptr += len;
+  if (!ancount)
+    return ARES_ENODATA;
+  *qtype = DNS__16BIT(aptr);
+  return ARES_SUCCESS;
+}

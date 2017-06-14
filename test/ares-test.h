@@ -276,6 +276,8 @@ void SearchCallback(void *data, int status, int timeouts,
                     unsigned char *abuf, int alen);
 void NameInfoCallback(void *data, int status, int timeouts,
                       char *node, char *service);
+void AICallback(void *data, int status,
+                struct addrinfo **res);
 
 // Retrieve the name servers used by a channel.
 std::vector<std::string> GetNameServers(ares_channel channel);
