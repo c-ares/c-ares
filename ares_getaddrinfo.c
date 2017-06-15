@@ -85,7 +85,6 @@ void ares_getaddrinfo(ares_channel channel,
   struct host_query *hquery;
   char *single = NULL;
   int ai_family;
-  (void*)service; /* warning unused parameter */
 
   ai_family = hints ? hints->ai_family : AF_UNSPEC;
   if (!is_implemented(ai_family)) {
