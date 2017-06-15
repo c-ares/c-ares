@@ -85,6 +85,7 @@ void ares_getaddrinfo(ares_channel channel,
   struct host_query *hquery;
   char *single = NULL;
   int ai_family;
+  (void*)service; /* warning unused parameter */
 
   ai_family = hints ? hints->ai_family : AF_UNSPEC;
   if (!is_implemented(ai_family)) {
@@ -128,9 +129,9 @@ void ares_getaddrinfo(ares_channel channel,
     hquery->callback(hquery->arg, ARES_SUCCESS, &hquery->ai);
   else
     next_dns_lookup(hquery);
-  //free_hquery(hquery);
-  //next_dns_lookup(hquery, status_code);
-  //return;
+  /*free_hquery(hquery);
+  next_dns_lookup(hquery, status_code);
+  return;*/
 }
 
 static int file_lookup(const char *name, int family, struct addrinfo **ai)
@@ -216,20 +217,6 @@ static int file_lookup(const char *name, int family, struct addrinfo **ai)
   fclose(fp);
   return status;
 }
-
-/*if (ai_family == AF_UNSPEC || ai_family == AF_INET6) {
-    host = NULL;
-    status = ares__get_hostent(fp, AF_INET6, &host);
-    add_to_addrinfo(&hquery->ai, host);
-    free_host(&host);
-}
-if (ai_family == AF_UNSPEC || ai_family == AF_INET) {
-    host = NULL;
-    status = ares__get_hostent(fp, AF_INET, &host);
-    add_to_addrinfo(&hquery->ai, host);
-    free_host(&host);
-}*/
-
 
 static void add_to_addrinfo(struct addrinfo** ai, const struct hostent* host) {
   struct addrinfo* next_ai;
@@ -322,156 +309,6 @@ static void host_callback(void *arg, int status, int timeouts,
     next_dns_lookup(hquery);
 }
 
-/*static void invoke_callback(struct host_query *hquery, int status,
-  struct hostent* host) {
-  hquery->callback(hquery->arg, status, NULL);
-  hquery->callback_called = 1;
-}*/
-
-
-
-/* If the name looks like an IP address, fake up a host entry, end the
- * query immediately, and return true.  Otherwise return false.
- */
-/*static int fake_hostent(const char *name, int family,
-                        ares_host_callback callback, void *arg) {
-  struct hostent hostent;
-  char *aliases[1] = { NULL };
-  char *addrs[2];
-  int result = 0;
-  struct in_addr in;
-  struct ares_in6_addr in6;
-
-  if (family == AF_INET || family == AF_INET6)
-    {
-      /* It only looks like an IP address if it's all numbers and dots. * /
-      int numdots = 0, valid = 1;
-      const char *p;
-      for (p = name; *p; p++)
-        {
-          if (!ISDIGIT(*p) && *p != '.') {
-            valid = 0;
-            break;
-          } else if (*p == '.') {
-            numdots++;
-          }
-        }
-
-      /* if we don't have 3 dots, it is illegal
-       * (although inet_addr doesn't think so).
-       * /
-      if (numdots != 3 || !valid)
-        result = 0;
-      else
-        result = ((in.s_addr = inet_addr(name)) == INADDR_NONE ? 0 : 1);
-
-      if (result)
-        family = AF_INET;
-    }
-  if (family == AF_INET6)
-    result = (ares_inet_pton(AF_INET6, name, &in6) < 1 ? 0 : 1);
-
-  if (!result)
-    return 0;
-
-  if (family == AF_INET)
-    {
-      hostent.h_length = (int)sizeof(struct in_addr);
-      addrs[0] = (char *)&in;
-    }
-  else if (family == AF_INET6)
-    {
-      hostent.h_length = (int)sizeof(struct ares_in6_addr);
-      addrs[0] = (char *)&in6;
-    }
-  /* Duplicate the name, to avoid a constness violation. * /
-  hostent.h_name = ares_strdup(name);
-  if (!hostent.h_name)
-    {
-      callback(arg, ARES_ENOMEM, 0, NULL);
-      return 1;
-    }
-
-  /* Fill in the rest of the host structure and terminate the query. * /
-  addrs[1] = NULL;
-  hostent.h_aliases = aliases;
-  hostent.h_addrtype = aresx_sitoss(family);
-  hostent.h_addr_list = addrs;
-  callback(arg, ARES_SUCCESS, 0, &hostent);
-
-  ares_free((char *)(hostent.h_name));
-  return 1;
-}
-*/
-/*static int file_lookup(const char *name, int family, struct hostent **host) {
-  FILE *fp;
-  char **alias;
-  int status;
-  int error;
-
-#ifdef WIN32
-  char PATH_HOSTS[MAX_PATH];
-  win_platform platform;
-  PATH_HOSTS[0] = '\0';
-  platform = ares__getplatform();
-  if (platform == WIN_NT) {
-    char tmp[MAX_PATH];
-    HKEY hkeyHosts;
-    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
-                     &hkeyHosts) == ERROR_SUCCESS) {
-      DWORD dwLength = MAX_PATH;
-      RegQueryValueEx(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
-                      &dwLength);
-      ExpandEnvironmentStrings(tmp, PATH_HOSTS, MAX_PATH);
-      RegCloseKey(hkeyHosts);
-    }
-  }
-  else if (platform == WIN_9X)
-    GetWindowsDirectory(PATH_HOSTS, MAX_PATH);
-  else
-    return ARES_ENOTFOUND;
-  strcat(PATH_HOSTS, WIN_PATH_HOSTS);
-#elif defined(WATT32)
-  extern const char *_w32_GetHostsFile (void);
-  const char *PATH_HOSTS = _w32_GetHostsFile();
-  if (!PATH_HOSTS)
-    return ARES_ENOTFOUND;
-#endif
-  fp = fopen(PATH_HOSTS, "r");
-  if (!fp) {
-      error = ERRNO;
-      switch(error) {
-        case ENOENT:
-        case ESRCH:
-          return ARES_ENOTFOUND;
-        default:
-          DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                         error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n",
-                         PATH_HOSTS));
-          *host = NULL;
-          return ARES_EFILE;
-        }
-  }
-  while ((status = ares__get_hostent(fp, family, host)) == ARES_SUCCESS) {
-      if (strcasecmp((*host)->h_name, name) == 0)
-        break;
-      for (alias = (*host)->h_aliases; *alias; alias++) {
-          if (strcasecmp(*alias, name) == 0)
-            break;
-      }
-      if (*alias)
-        break;
-      ares_free_hostent(*host);
-    }
-  fclose(fp);
-  if (status == ARES_EOF)
-    status = ARES_ENOTFOUND;
-  if (status != ARES_SUCCESS)
-    *host = NULL;
-  return status;
-}
-*/
 static void sort_addresses(struct hostent *host,
                            const struct apattern *sortlist, int nsort) {
   struct in_addr a1, a2;
