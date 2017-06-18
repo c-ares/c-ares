@@ -66,6 +66,7 @@ TEST_P(MockChannelTestAI, FamilyV6) {
   EXPECT_EQ(result.status, ARES_SUCCESS);
   EXPECT_THAT(result.airesult, IncludesNumAddresses(1));
   EXPECT_THAT(result.airesult, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
+  ares_freeaddrinfo(*result.airesult);
 }
 
 
@@ -86,6 +87,7 @@ TEST_P(MockChannelTestAI, FamilyV4) {
   EXPECT_EQ(result.status, ARES_SUCCESS);
   EXPECT_THAT(result.airesult, IncludesNumAddresses(1));
   EXPECT_THAT(result.airesult, IncludesV4Address("2.3.4.5"));
+  ares_freeaddrinfo(*result.airesult);
 }
 
 TEST_P(MockChannelTestAI, FamilyUnspecified) {
@@ -114,6 +116,7 @@ TEST_P(MockChannelTestAI, FamilyUnspecified) {
   EXPECT_THAT(result.airesult, IncludesNumAddresses(2));
   EXPECT_THAT(result.airesult, IncludesV4Address("2.3.4.5"));
   EXPECT_THAT(result.airesult, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
+  ares_freeaddrinfo(*result.airesult);
 }
 
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTestAI,

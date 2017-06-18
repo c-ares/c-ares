@@ -133,6 +133,16 @@ void ares_getaddrinfo(ares_channel channel,
   return;*/
 }
 
+void ares_freeaddrinfo(struct addrinfo* ai) {
+  struct addrinfo* ai_free;
+  while (ai) {
+    ai_free = ai;
+    ai = ai->ai_next;
+    ares_free(ai_free->ai_addr);
+    ares_free(ai_free);
+  }
+}
+
 static int file_lookup(const char *name, int family, struct addrinfo **ai)
 {
   FILE *fp;
