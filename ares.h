@@ -381,6 +381,7 @@ CARES_EXTERN void ares_getaddrinfo(ares_channel channel,
                                    const char* node, const char* service,
                                    const struct addrinfo* hints,
                                    ares_addr_callback callback, void* arg);
+CARES_EXTERN void ares_freeaddrinfo(struct addrinfo* ai);
 
 /*
  * Virtual function set to have user-managed socket IO.
