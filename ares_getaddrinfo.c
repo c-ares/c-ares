@@ -28,6 +28,7 @@
 #include "ares_platform.h"
 #include "ares_nowarn.h"
 #include "ares_private.h"
+#include <assert.h>
 
 #ifdef WATT32
 #undef WIN32
@@ -51,8 +52,7 @@ struct host_query {
 
 static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
-/*static void end_hquery(struct host_query *hquery, int status,
-                       struct hostent *host);*/
+static void end_hquery(struct host_query *hquery, int status);
 /*static int fake_hostent(const char *name, int family,
                         ares_host_callback callback, void *arg);*/
 static int file_lookup(const char *name, int family, struct addrinfo **ai);
@@ -125,7 +125,7 @@ void ares_getaddrinfo(ares_channel channel,
 
   /* Host file lookup */
   if (file_lookup(hquery->name, ai_family, &hquery->ai) == ARES_SUCCESS)
-    hquery->callback(hquery->arg, ARES_SUCCESS, &hquery->ai);
+    end_hquery(hquery, ARES_SUCCESS);
   else
     next_dns_lookup(hquery);
   /*free_hquery(hquery);
@@ -279,8 +279,18 @@ static void next_dns_lookup(struct host_query *hquery) {
     if (is_s_allocated)
       ares_free(s);
   }
-  else
-    hquery->callback(hquery->arg, ARES_ENOTFOUND, NULL);
+  else {
+    assert(!hquery->ai);
+    end_hquery(hquery, ARES_ENOTFOUND);
+  }
+}
+
+static void end_hquery(struct host_query *hquery, int status) {
+  if (hquery->ai) {
+    hquery->callback(hquery->arg, status, &hquery->ai);
+  }
+  ares_free(hquery->name);
+  ares_free(hquery);
 }
 
 static void host_callback(void *arg, int status, int timeouts,
@@ -300,7 +310,7 @@ static void host_callback(void *arg, int status, int timeouts,
       add_to_addrinfo(&hquery->ai, host);
       ares_free_hostent(host);
       if (!--hquery->remaining)
-        hquery->callback(hquery->arg, ARES_SUCCESS, &hquery->ai);
+	end_hquery(hquery, ARES_SUCCESS);
     }
     else if (status == ARES_SUCCESS && qtype == T_AAAA) {
       status = ares_parse_aaaa_reply(abuf, alen, &host, NULL, NULL);
@@ -309,10 +319,12 @@ static void host_callback(void *arg, int status, int timeouts,
       add_to_addrinfo(&hquery->ai, host);
       ares_free_hostent(host);
       if (!--hquery->remaining)
-        hquery->callback(hquery->arg, ARES_SUCCESS, &hquery->ai);
+        end_hquery(hquery, ARES_SUCCESS);
     }
-    else
-      hquery->callback(hquery->arg, status, NULL);
+    else {
+      assert(!hquery->ai);
+      end_hquery(hquery, status);
+    }
   }
   else
     next_dns_lookup(hquery);
