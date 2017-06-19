@@ -210,18 +210,18 @@ static int file_lookup(const char *name, int family, struct addrinfo **ai)
   while (ares__get_hostent(fp, family, &host) == ARES_SUCCESS) {
     if (strcasecmp(host->h_name, name) == 0) {
       add_to_addrinfo(ai, host);
-      ares_free_hostent(host);
       status = ARES_SUCCESS;
-      continue;
     }
-    for (alias = host->h_aliases; *alias; alias++) {
-      if (strcasecmp(*alias, name) == 0) {
-        add_to_addrinfo(ai, host);
-        ares_free_hostent(host);
-        status = ARES_SUCCESS;
-        break;
+    else {
+      for (alias = host->h_aliases; *alias; alias++) {
+        if (strcasecmp(*alias, name) == 0) {
+          add_to_addrinfo(ai, host);
+          status = ARES_SUCCESS;
+          break;
+        }
       }
     }
+    ares_free_hostent(host);
   }
   fclose(fp);
   return status;
