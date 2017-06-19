@@ -305,7 +305,7 @@ typedef int  (*ares_sock_config_callback)(ares_socket_t socket_fd,
 
 typedef void (*ares_addr_callback)(void *arg,
                                    int status,
-                                   struct addrinfo **res);
+                                   struct addrinfo *res);
 
 CARES_EXTERN int ares_library_init(int flags);
 

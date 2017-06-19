@@ -287,7 +287,7 @@ static void next_dns_lookup(struct host_query *hquery) {
 
 static void end_hquery(struct host_query *hquery, int status) {
   if (hquery->ai) {
-    hquery->callback(hquery->arg, status, &hquery->ai);
+    hquery->callback(hquery->arg, status, hquery->ai);
   }
   ares_free(hquery->name);
   ares_free(hquery);
