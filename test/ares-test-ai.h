@@ -30,7 +30,7 @@ struct AIResult {
   // Explicitly provided result information.
   int status;
   // Contents of the addrinfo structure, if provided.
-  struct addrinfo** airesult;
+  struct addrinfo* airesult;
 };
 
 }
