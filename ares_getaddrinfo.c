@@ -229,7 +229,8 @@ static int file_lookup(const char *name, int family, struct addrinfo **ai)
 
 static void add_to_addrinfo(struct addrinfo** ai, const struct hostent* host) {
   struct addrinfo* next_ai;
-  if (!host || (host->h_addrtype != AF_INET && host->h_addrtype != AF_INET6))
+  if (!host || !host->h_addr_list[0] ||
+      (host->h_addrtype != AF_INET && host->h_addrtype != AF_INET6))
     return;
   next_ai = ares_malloc(sizeof(struct addrinfo));
   memset(next_ai, 0, sizeof(*next_ai));
@@ -304,7 +305,8 @@ static void host_callback(void *arg, int status, int timeouts,
   if (status == ARES_SUCCESS) {
     status = ares__parse_qtype_reply(abuf, alen, &qtype);
     if (status == ARES_SUCCESS && qtype == T_A) {
-      status = ares_parse_a_reply(abuf, alen, &host, NULL, NULL);
+      /* Can ares_parse_a_reply be unsuccessful (after parse_qtype) */
+      ares_parse_a_reply(abuf, alen, &host, NULL, NULL);
       if (host && channel->nsort)
         sort_addresses(host, channel->sortlist, channel->nsort);
       add_to_addrinfo(&hquery->ai, host);
@@ -313,7 +315,8 @@ static void host_callback(void *arg, int status, int timeouts,
 	end_hquery(hquery, ARES_SUCCESS);
     }
     else if (status == ARES_SUCCESS && qtype == T_AAAA) {
-      status = ares_parse_aaaa_reply(abuf, alen, &host, NULL, NULL);
+      /* Can ares_parse_a_reply be unsuccessful (after parse_qtype) */
+      ares_parse_aaaa_reply(abuf, alen, &host, NULL, NULL);
       if (host && channel->nsort)
         sort6_addresses(host, channel->sortlist, channel->nsort);
       add_to_addrinfo(&hquery->ai, host);
