@@ -228,29 +228,33 @@ static int file_lookup(const char *name, int family, struct addrinfo **ai)
 }
 
 static void add_to_addrinfo(struct addrinfo** ai, const struct hostent* host) {
+  static const struct addrinfo EmptyAddrinfo; 
   struct addrinfo* next_ai;
-  if (!host || !host->h_addr_list[0] ||
+  char** p;
+  if (!host ||
       (host->h_addrtype != AF_INET && host->h_addrtype != AF_INET6))
     return;
-  next_ai = ares_malloc(sizeof(struct addrinfo));
-  memset(next_ai, 0, sizeof(*next_ai));
-  if (!(*ai))
-    *ai = next_ai;
-  else
-    (*ai)->ai_next = next_ai;
-  if (host->h_addrtype == AF_INET) {
-    next_ai->ai_protocol = IPPROTO_UDP;
-    next_ai->ai_family = AF_INET;
-    next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in));
-    memcpy(&((struct sockaddr_in*)(next_ai->ai_addr))->sin_addr,
-      host->h_addr_list[0], host->h_length);
-  }
-  else {
-    next_ai->ai_protocol = IPPROTO_UDP;
-    next_ai->ai_family = AF_INET6;
-    next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in6));
-    memcpy(&((struct sockaddr_in6*)(next_ai->ai_addr))->sin6_addr,
-      host->h_addr_list[0], host->h_length);
+  for (p = host->h_addr_list; *p; ++p) {
+    next_ai = ares_malloc(sizeof(struct addrinfo));
+    *next_ai = EmptyAddrinfo;
+    if (*ai)
+      (*ai)->ai_next = next_ai;
+    else
+      *ai = next_ai;
+    if (host->h_addrtype == AF_INET) {
+      next_ai->ai_protocol = IPPROTO_UDP;
+      next_ai->ai_family = AF_INET;
+      next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in));
+      memcpy(&((struct sockaddr_in*)(next_ai->ai_addr))->sin_addr,
+        *p, host->h_length);
+    }
+    else {
+      next_ai->ai_protocol = IPPROTO_UDP;
+      next_ai->ai_family = AF_INET6;
+      next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in6));
+      memcpy(&((struct sockaddr_in6*)(next_ai->ai_addr))->sin6_addr,
+        *p, host->h_length);
+    }
   }
 }
 
