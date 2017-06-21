@@ -10,12 +10,13 @@ GTEST_DIR = $(GMOCK_DIR)/gtest
 CPPFLAGS += -I$(ARES_SRC_DIR) -isystem $(GTEST_DIR)/include -isystem $(GMOCK_DIR)/include
 CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 
-# Makefile.inc provides the TESTSOURCES, TESTHEADERS and FUZZSOURCES defines
+# Makefile.inc provides the various *SOURCES and *HEADERS defines
 include Makefile.inc
 
 TESTS = arestest fuzzcheck.sh
 
 noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump
+EXTRA_DIST = fuzzcheck.sh
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 arestest_LDADD = libgmock.la libgtest.la $(ARES_BLD_DIR)/libcares.la $(PTHREAD_LIBS)
 
