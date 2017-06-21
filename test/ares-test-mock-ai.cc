@@ -90,6 +90,28 @@ TEST_P(MockChannelTestAI, FamilyV4) {
   ares_freeaddrinfo(result.airesult);
 }
 
+TEST_P(MockChannelTestAI, FamilyV4_MultipleAddresses) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}))
+    .add_answer(new DNSARR("example.com", 100, {7, 8, 9, 0}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AIResult result = {};
+  struct addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
+                   AICallback, &result);
+  Process();
+  EXPECT_TRUE(result.done);
+  EXPECT_EQ(result.status, ARES_SUCCESS);
+  EXPECT_THAT(result.airesult, IncludesNumAddresses(2));
+  EXPECT_THAT(result.airesult, IncludesV4Address("2.3.4.5"));
+  EXPECT_THAT(result.airesult, IncludesV4Address("7.8.9.0"));
+  ares_freeaddrinfo(result.airesult);
+}
+
 TEST_P(MockChannelTestAI, FamilyUnspecified) {
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
