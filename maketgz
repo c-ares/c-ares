@@ -48,17 +48,6 @@ print "makes a new configure script\n";
 print "running configure\n";
 `./configure`;
 
-# generate HTML versions of man pages
-# Deactivated for now. It seems that man pages need some adjustments
-# relative to paragraph and/or line breaks for proper html formatting.
-# EXTRA_DIST will need $(HTMLPAGES) when this is fully activated.
-# print "running make html\n";
-# `make -s html`;
-
-# generate PDF versions of man pages
-print "running make pdf\n";
-`make -s pdf`;
-
 print "produce CHANGES\n";
 `git log --pretty=fuller --no-color --date=short --decorate=full -1000 | ./git2changes.pl > CHANGES.dist`;
 
