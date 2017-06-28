@@ -88,7 +88,7 @@ To fuzz the packet parsing code with libFuzzer, follow the main
    ```console
    % export CFLAGS="-fsanitize=address -fsanitize-coverage=edge"
    % export CC=clang
-   % ./configure --disable-shared && make
+   % ./configure && make
    ```
  - Download and build the libFuzzer code:
 
