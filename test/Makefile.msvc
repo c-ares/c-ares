@@ -109,7 +109,7 @@ VALID_CFGSET = TRUE
 !  MESSAGE Usage: nmake /f makefile.msvc CFG=<config> <target>
 !  MESSAGE
 !  MESSAGE <config> can be one of: [ lib-release | lib-debug | dll-release | dll-debug }
-!  MESSAGE <target> can be one of: [ all | arestest | aresfuzz | aresfuzzname | clean }
+!  MESSAGE <target> can be one of: [ all | arestest | aresfuzz | aresfuzzname | dnsdump | clean }
 !  MESSAGE
 !  MESSAGE If <target> is not specified then all targets are built.
 !  MESSAGE If <config> is not specified then lib-debug will be assumed.
@@ -271,6 +271,15 @@ FUZZ_OBJS = $(FUZZ_OBJS:.c=.obj)
 !ENDIF
 FUZZNAME_OBJS = $(FUZZNAME_OBJS:.c=.obj)
 
+!IF [ECHO DNSDUMP_OBJS=^$(PROG_OBJDIR)\$(DUMPSOURCES: = $(PROG_OBJDIR^)\) > .\dnsdump_objs.inc] == 0
+!INCLUDE .\dnsdump_objs.inc
+!IF [DEL .\dnsdump_objs.inc]
+!ENDIF
+!ELSE
+!ERROR Problem generating DNSDUMP_OBJS list.
+!ENDIF
+DNSDUMP_OBJS = $(DNSDUMP_OBJS:.cc=.obj)
+
 GTEST_OBJ = $(PROG_OBJDIR)\gtest-all.obj
 GMOCK_OBJ = $(PROG_OBJDIR)\gmock-all.obj
 
@@ -295,7 +304,7 @@ GMOCK_OBJ = $(PROG_OBJDIR)\gmock-all.obj
 # Main targets
 # ---------------------------------------------------------------------
 
-ALL: arestest aresfuzz aresfuzzname
+ALL: arestest aresfuzz aresfuzzname dnsdump
     @
 
 test: arestest
@@ -314,6 +323,10 @@ aresfuzz: $(FUZZSOURCES) $(PROG_OUTDIR) $(PROG_OBJDIR) $(FUZZ_OBJS)
 aresfuzzname: $(FUZZNAMESOURCES) $(PROG_OUTDIR) $(PROG_OBJDIR) $(FUZZNAME_OBJS)
     $(SPROG_LINK) $(SPROG_LFLAGS) /out:$(PROG_OUTDIR)\aresfuzzname.exe $(FUZZNAME_OBJS)
     @if exist $(PROG_OUTDIR)\aresfuzzname.exe.manifest mt -nologo -manifest $(PROG_OUTDIR)\aresfuzzname.exe.manifest -outputresource:$(PROG_OUTDIR)\aresfuzzname.exe;1
+
+dnsdump: $(DUMPSOURCES) $(PROG_OUTDIR) $(PROG_OBJDIR) $(DNSDUMP_OBJS)
+    $(SPROG_LINK) $(SPROG_LFLAGS) /out:$(PROG_OUTDIR)\dnsdump.exe $(DNSDUMP_OBJS)
+    @if exist $(PROG_OUTDIR)\dnsdump.exe.manifest mt -nologo -manifest $(PROG_OUTDIR)\dnsdump.exe.manifest -outputresource:$(PROG_OUTDIR)\dnsdump.exe;1
 
 $(PROG_OUTDIR): $(PROG_DIR)
     @if not exist $(PROG_OUTDIR) mkdir $(PROG_OUTDIR)
