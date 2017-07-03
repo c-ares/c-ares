@@ -59,7 +59,7 @@ removethis(){
 # Ensure that buildconf runs from the subdirectory where configure.ac lives
 #
 if test ! -f configure.ac ||
-  test ! -f ares_init.c ||
+  test ! -f lib/ares_init.c ||
   test ! -f m4/cares-functions.m4; then
   echo "Can not run buildconf from outside of c-ares source subdirectory!"
   echo "Change to the subdirectory where buildconf is found, and try again."

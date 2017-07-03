@@ -1,7 +1,7 @@
 # Where to find the c-ares source code; needed because the tests use library-internal headers
 ARES_SRC_DIR = ..
 # Where to find the built c-ares static library
-ARES_BLD_DIR = ..
+ARES_BLD_DIR = $(top_builddir)/lib
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I ../m4
 GMOCK_DIR = gmock-1.7.0
