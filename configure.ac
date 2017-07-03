@@ -8,8 +8,8 @@ XC_OVR_ZZ50
 XC_OVR_ZZ60
 CARES_OVERRIDE_AUTOCONF
 
-AC_CONFIG_SRCDIR([ares_ipv6.h])
-AC_CONFIG_HEADERS([ares_config.h ares_build.h])
+AC_CONFIG_SRCDIR([lib/ares_ipv6.h])
+AC_CONFIG_HEADERS([lib/ares_config.h include/ares_build.h])
 AC_CONFIG_MACRO_DIR([m4])
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -72,8 +72,8 @@ AC_SUBST([AR])
 AX_CODE_COVERAGE
 
 dnl Remove non-configure distributed ares_build.h
-if test -f ${srcdir}/ares_build.h; then
-  rm -f ${srcdir}/ares_build.h
+if test -f ${srcdir}/lib/ares_build.h; then
+  rm -f ${srcdir}/lib/ares_build.h
 fi
 
 dnl
@@ -900,6 +900,10 @@ if test "x$build_tests" = "xyes" ; then
   AC_CONFIG_SUBDIRS([test])
 fi
 
-AC_CONFIG_FILES([Makefile libcares.pc])
+AC_CONFIG_FILES([Makefile \
+                 libcares.pc \
+                 docs/Makefile \
+                 examples/Makefile \
+                 lib/Makefile ])
 AC_OUTPUT
 XC_AMEND_DISTCLEAN(['.'])
