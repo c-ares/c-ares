@@ -21,7 +21,7 @@ DIST_SUBDIRS = test docs examples include
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
 
-SUBDIRS = lib
+SUBDIRS = lib examples
 
 # where to install the c-ares headers
 libcares_ladir = $(includedir)
