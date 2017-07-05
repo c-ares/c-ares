@@ -390,7 +390,10 @@ install:
 ALL: c-ares acountry adig ahost
     @
 
-c-ares: $(HHEADERS) $(CSOURCES) $(CARES_OBJDIR) $(CARES_OBJS) $(CARES_OUTDIR)
+setup_build:
+    @copy /y $(SRCDIR)\ares_build.h.dist $(SRCDIR)\ares_build.h >NUL
+
+c-ares: setup_build $(HHEADERS) $(CSOURCES) $(CARES_OBJDIR) $(CARES_OBJS) $(CARES_OUTDIR)
     $(CARES_LINK) $(CARES_LFLAGS) /out:$(CARES_OUTDIR)\$(CARES_TARGET) $(CARES_OBJS)
 !   IF "$(USE_RES_FILE)" == "TRUE"
     @if exist $(CARES_OUTDIR)\$(CARES_TARGET).manifest mt -nologo -manifest $(CARES_OUTDIR)\$(CARES_TARGET).manifest -outputresource:$(CARES_OUTDIR)\$(CARES_TARGET);2
