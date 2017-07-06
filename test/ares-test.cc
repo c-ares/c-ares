@@ -280,7 +280,7 @@ void MockServer::ProcessFD(int fd) {
   qlen -= enclen;
   question += enclen;
   std::string namestr(name);
-  free(name);
+  ares_free_string(name);
 
   if (qlen < 4) {
     std::cerr << "Unexpected question size (" << qlen
