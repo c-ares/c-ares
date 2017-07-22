@@ -31,11 +31,11 @@ PROJECT (c-ares C)
 SET (CARES_LIB_VERSIONINFO "4:0:2")
 
 
-OPTION (CARES_STATIC     "Build as a static library"                                             OFF)
-OPTION (CARES_SHARED     "Build as a shared library"                                             ON)
-OPTION (CARES_INSTALL    "Create installation targets (chain builders may want to disable this)" ON)
-OPTION (CARES_STATIC_PIC "Build the static library as PIC (position independent)"                OFF)
-
+OPTION (CARES_STATIC        "Build as a static library"                                             OFF)
+OPTION (CARES_SHARED        "Build as a shared library"                                             ON)
+OPTION (CARES_INSTALL       "Create installation targets (chain builders may want to disable this)" ON)
+OPTION (CARES_STATIC_PIC    "Build the static library as PIC (position independent)"                OFF)
+OPTION (CARES_DEBUG_POSTFIX "Use 'd' as postfix for debug libraries"                                OFF)
 
 # Keep build organized.
 SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
@@ -50,6 +50,10 @@ SET (TARGETS_INST_DEST
 	ARCHIVE DESTINATION  ${CMAKE_INSTALL_LIBDIR}
 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+IF (CARES_DEBUG_POSTFIX)
+	SET (CMAKE_DEBUG_POSTFIX "d")
+ENDIF ()
 
 # Look for dependent/required libraries
 CHECK_LIBRARY_EXISTS (resolv res_servicename "" HAVE_RES_SERVICENAME_IN_LIBRESOLV)
