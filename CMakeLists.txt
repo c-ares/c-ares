@@ -36,6 +36,13 @@ OPTION (CARES_SHARED     "Build as a shared library"                            
 OPTION (CARES_INSTALL    "Create installation targets (chain builders may want to disable this)" ON)
 OPTION (CARES_STATIC_PIC "Build the static library as PIC (position independent)"                OFF)
 
+# allow linking against the static runtime library in msvc
+IF (MSVC)
+	OPTION (CARES_MSVC_STATIC_RUNTIME "Link against the static runtime library" OFF)
+	IF (CARES_MSVC_STATIC_RUNTIME)
+		INCLUDE (cmake/msvc_static_runtime.cmake)
+	ENDIF ()
+endif ()
 
 # Keep build organized.
 SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)

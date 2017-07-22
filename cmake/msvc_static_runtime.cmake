@@ -1,0 +1,8 @@
+FOREACH (flag_var
+    CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+    CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+
+    IF (${flag_var} MATCHES "/MD")
+        STRING (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+    ENDIF (${flag_var} MATCHES "/MD")
+ENDFOREACH ()
