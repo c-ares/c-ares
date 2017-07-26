@@ -962,6 +962,10 @@ typedef struct
   /* The metric we sort them by. */
   ULONG metric;
 
+  /* Original index of the item, used as a secondary sort parameter to make
+   * qsort() stable if the metrics are equal */
+  size_t orig_idx;
+
   /* Room enough for the string form of any IPv4 or IPv6 address that
    * ares_inet_ntop() will create.  Based on the existing c-ares practice.
    */
@@ -976,8 +980,12 @@ static int compareAddresses(const void *arg1,
 {
   const Address * const left = arg1;
   const Address * const right = arg2;
+  /* Lower metric the more preferred */
   if(left->metric < right->metric) return -1;
   if(left->metric > right->metric) return 1;
+  /* If metrics are equal, lower original index more preferred */
+  if(left->orig_idx < right->orig_idx) return -1;
+  if(left->orig_idx > right->orig_idx) return 1;
   return 0;
 }
 
@@ -1187,6 +1195,9 @@ static int get_DNS_AdaptersAddresses(char **outptr)
           addresses[addressesIndex].metric = -1;
         }
 
+        /* Record insertion index to make qsort stable */
+        addresses[addressesIndex].orig_idx = addressesIndex;
+
         if (! ares_inet_ntop(AF_INET, &namesrvr.sa4->sin_addr,
                              addresses[addressesIndex].text,
                              sizeof(addresses[0].text))) {
@@ -1226,6 +1237,9 @@ static int get_DNS_AdaptersAddresses(char **outptr)
           addresses[addressesIndex].metric = -1;
         }
 
+        /* Record insertion index to make qsort stable */
+        addresses[addressesIndex].orig_idx = addressesIndex;
+
         if (! ares_inet_ntop(AF_INET6, &namesrvr.sa6->sin6_addr,
                              addresses[addressesIndex].text,
                              sizeof(addresses[0].text))) {
@@ -1240,7 +1254,8 @@ static int get_DNS_AdaptersAddresses(char **outptr)
     }
   }
 
-  /* Sort all of the textual addresses by their metric. */
+  /* Sort all of the textual addresses by their metric (and original index if
+   * metrics are equal). */
   qsort(addresses, addressesIndex, sizeof(*addresses), compareAddresses);
 
   /* Join them all into a single string, removing duplicates. */
