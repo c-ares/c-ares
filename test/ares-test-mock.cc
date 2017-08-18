@@ -883,6 +883,18 @@ TEST_P(MockChannelTest, CancelImmediate) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
+TEST_P(MockChannelTest, CancelImmediateGetHostByAddr) {
+  HostResult result;
+  struct in_addr addr;
+  addr.s_addr = htonl(0x08080808);
+  
+  ares_gethostbyaddr(channel_, &addr, sizeof(addr), AF_INET, HostCallback, &result);
+  ares_cancel(channel_);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ECANCELLED, result.status_);
+  EXPECT_EQ(0, result.timeouts_);
+}
+
 // Relies on retries so is UDP-only
 TEST_P(MockUDPChannelTest, CancelLater) {
   std::vector<byte> nothing;
