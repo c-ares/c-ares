@@ -988,8 +988,8 @@ static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
                                     unsigned char netmask,
                                     const unsigned char ipaddr[16])
 {
-  const unsigned char mask[16] = { 0 };
-  unsigned char       i;
+  unsigned char mask[16] = { 0 };
+  unsigned char i;
 
   /* Misuse */
   if (netmask > 128)
@@ -1004,7 +1004,7 @@ static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
   }
 
   for (i=0; i<sizeof(ipaddr); i++) {
-    if (netbase[i] & mask[i] != ipaddr[i] & mask[i])
+    if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i]))
       return 0;
   }
 
@@ -1025,8 +1025,15 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
   };
   size_t i;
 
-  for (i=0; blacklist[i] != NULL; i++) {
+  for (i=0; blacklist[i].netbase != NULL; i++) {
     unsigned char netbase[16];
+
+/* Debugging */
+#if 1
+    char          addr[128];
+    ares_inet_ntop(AF_INET6, ipaddr, addr, sizeof(addr));
+    printf("comparing netmask %s/%d to %s", blacklist[i].netbase, blacklist[i].netmask, addr);
+#endif
 
     if (ares_inet_pton(AF_INET6, blacklist[i].netbase, netbase) != 1)
       continue;
@@ -1257,7 +1264,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
           continue;
 
         if (ares_ipv6_server_blacklisted(
-              (const unsigned char[16])&namesrvr.sa6->sin6_addr)
+              (const unsigned char *)&namesrvr.sa6->sin6_addr)
            )
           continue;
 
