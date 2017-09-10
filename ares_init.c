@@ -1032,7 +1032,7 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
 #if 1
     char          addr[128];
     ares_inet_ntop(AF_INET6, ipaddr, addr, sizeof(addr));
-    printf("comparing netmask %s/%d to %s", blacklist[i].netbase, blacklist[i].netmask, addr);
+    printf("comparing netmask %s/%d to %s\n", blacklist[i].netbase, blacklist[i].netmask, addr);
 #endif
 
     if (ares_inet_pton(AF_INET6, blacklist[i].netbase, netbase) != 1)
