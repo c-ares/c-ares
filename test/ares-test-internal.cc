@@ -230,7 +230,7 @@ TEST(Misc, Bitncmp) {
 }
 
 TEST_F(LibraryTest, Casts) {
-  ssize_t ssz = 100;
+  ares_ssize_t ssz = 100;
   unsigned int u = 100;
   int i = 100;
   long l = 100;
@@ -447,7 +447,7 @@ const struct ares_socket_functions VirtualizeIO::default_functions = {
   [](ares_socket_t s, const struct sockaddr * addr, socklen_t len, void *) {
     return ::connect(s, addr, len);
   },
-  [](ares_socket_t s, void * dst, size_t len, int flags, struct sockaddr * addr, socklen_t * alen, void *) -> ssize_t {
+  [](ares_socket_t s, void * dst, size_t len, int flags, struct sockaddr * addr, socklen_t * alen, void *) -> ares_ssize_t {
 #ifdef HAVE_RECVFROM
     return ::recvfrom(s, reinterpret_cast<RECV_TYPE_ARG2>(dst), len, flags, addr, alen);
 #else
