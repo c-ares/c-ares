@@ -985,7 +985,7 @@ static int compareAddresses(const void *arg1,
  * 16 bytes, and the netmask is 0 to 128 (bits).
  */
 static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
-                                    M_uint8 netmask,
+                                    unsigned char netmask,
                                     const unsigned char ipaddr[16])
 {
   const unsigned char mask[16] = { 0 };
@@ -1014,8 +1014,8 @@ static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
 static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
 {
   const struct {
-    const char *netbase;
-    M_uint8     netmask;
+    const char   *netbase;
+    unsigned char netmask;
   } blacklist[] = {
     /* Deprecated by [RFC3879] in September 2004. Formerly a Site-Local scoped
      * address prefix. Causes known issues on Windows as these are not valid DNS
