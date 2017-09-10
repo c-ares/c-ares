@@ -980,7 +980,6 @@ static int compareAddresses(const void *arg1,
   return 0;
 }
 
-
 /* Validate that the ip address matches the subnet (network base and network
  * mask) specified. Addresses are specified in standard Network Byte Order as
  * 16 bytes, and the netmask is 0 to 128 (bits).
@@ -1012,7 +1011,6 @@ static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
   return 1;
 }
 
-
 static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
 {
   const struct {
@@ -1038,7 +1036,6 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
   }
   return 0;
 }
-
 
 /* There can be multiple routes to "the Internet".  And there can be different
  * DNS servers associated with each of the interfaces that offer those routes.
