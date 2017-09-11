@@ -989,6 +989,63 @@ static int compareAddresses(const void *arg1,
   return 0;
 }
 
+/* Validate that the ip address matches the subnet (network base and network
+ * mask) specified. Addresses are specified in standard Network Byte Order as
+ * 16 bytes, and the netmask is 0 to 128 (bits).
+ */
+static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
+                                    unsigned char netmask,
+                                    const unsigned char ipaddr[16])
+{
+  unsigned char mask[16] = { 0 };
+  unsigned char i;
+
+  /* Misuse */
+  if (netmask > 128)
+    return 0;
+
+  /* Quickly set whole bytes */
+  memset(mask, 0xFF, netmask / 8);
+
+  /* Set remaining bits */
+  for (i=(netmask / 8)*8; i<netmask; i++) {
+    mask[i / 8] |= 1 << ((7-i) % 8);
+  }
+
+  for (i=0; i<sizeof(ipaddr); i++) {
+    if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i]))
+      return 0;
+  }
+
+  return 1;
+}
+
+static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
+{
+  const struct {
+    const char   *netbase;
+    unsigned char netmask;
+  } blacklist[] = {
+    /* Deprecated by [RFC3879] in September 2004. Formerly a Site-Local scoped
+     * address prefix. Causes known issues on Windows as these are not valid DNS
+     * servers. */
+    { "fec0::", 10 },
+    { NULL,     0  }
+  };
+  size_t i;
+
+  for (i=0; blacklist[i].netbase != NULL; i++) {
+    unsigned char netbase[16];
+
+    if (ares_inet_pton(AF_INET6, blacklist[i].netbase, netbase) != 1)
+      continue;
+
+    if (ares_ipv6_subnet_matches(netbase, blacklist[i].netmask, ipaddr))
+      return 1;
+  }
+  return 0;
+}
+
 /* There can be multiple routes to "the Internet".  And there can be different
  * DNS servers associated with each of the interfaces that offer those routes.
  * We have to assume that any DNS server can serve any request.  But, some DNS
@@ -1209,6 +1266,11 @@ static int get_DNS_AdaptersAddresses(char **outptr)
       {
         if (memcmp(&namesrvr.sa6->sin6_addr, &ares_in6addr_any,
                    sizeof(namesrvr.sa6->sin6_addr)) == 0)
+          continue;
+
+        if (ares_ipv6_server_blacklisted(
+              (const unsigned char *)&namesrvr.sa6->sin6_addr)
+           )
           continue;
 
         /* Allocate room for another address, if necessary, else skip. */
