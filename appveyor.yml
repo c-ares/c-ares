@@ -12,4 +12,4 @@ build_script:
   - cd test
   - if "%platform%" == "mingw" ( mingw32-make.exe -f Makefile.m32 ) else ( nmake /f Makefile.msvc vtest )
   - if "%platform%" == "mingw" ( mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe ) else ( nmake /f Makefile.msvc aresfuzz aresfuzzname dnsdump )
-  - if "%platform%" == "mingw" ( .\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa ) else ( .\msvc120\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa )
+  - if "%platform%" == "mingw" ( .\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa ) else ( .\msvc\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa )
