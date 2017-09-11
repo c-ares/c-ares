@@ -79,9 +79,9 @@ RTLIBD = /MTd
 # the name depends on MSVC version being used when building c-ares.
 # ------------------------------------------------------------------
 
-BASE_DIR = .\$(CC_VERS_STR)
+BASE_DIR = .\msvc
 # Look for a built library of the same configuration in the directory above.
-LIB_BASE_DIR = ..\$(CC_VERS_STR)
+LIB_BASE_DIR = ..\msvc
 
 # ----------------------------------------
 # Subdir holding sources for all projects
@@ -146,9 +146,9 @@ CFLAGS  = /DWIN32
 EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib
 EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib
 
-# -----------------------------------------
-# Switches that depend on compiler version
-# -----------------------------------------
+# -------------------------------------------------
+# Switches that depend on ancient compiler versions
+# -------------------------------------------------
 
 !IF $(CC_VERS_NUM) == 60
 PDB_NONE            = /pdb:none
