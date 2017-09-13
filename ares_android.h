@@ -23,4 +23,4 @@ void ares_library_cleanup_android(void);
 
 #endif
 
-#endif /* __JNI_COMMON_H__ */
+#endif /* __ARES_ANDROID_H__ */
