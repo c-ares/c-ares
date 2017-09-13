@@ -52,8 +52,10 @@ Deinitalization will take place though \fIares_library_cleanup(3)\fP.
 .PP
 The
 .B ares_library_init_jvm
-function allows the caller to register the JVM with c-ares. The JVM
-is required in order to use the Connectivty Manager registered using
+function allows the caller to register the JVM with c-ares.
+It's meant to be called during JNI_OnLoad because you're guaranteed
+to have the JVM in that function. The JVM is required in order 
+to use the Connectivty Manager registered using
 \fIares_library_android_init\fP. This must be call before
 \fIares_library_android_init\fP.
 .PP
@@ -94,10 +96,6 @@ Register the \fIares_library_android_init\fP.
   
     cls = (*env)->FindClass(env, JNIT_CLASS);
     if (cls == NULL)
-      return -1;
-  
-    /* Initalize libmdevices for bluetooth. */
-    if (!init_lmd(vm))
       return -1;
   
     res = (*env)->RegisterNatives(env, cls, funcs, sizeof(funcs)/sizeof(funcs[0]));
