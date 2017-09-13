@@ -44,6 +44,7 @@
 
 #if defined(ANDROID) || defined(__ANDROID__)
 #include <sys/system_properties.h>
+#include "ares_android.h"
 /* From the Bionic sources */
 #define DNS_PROP_NAME_PREFIX  "net.dns"
 #define MAX_DNS_PROPERTIES    8
@@ -1614,17 +1615,52 @@ static int init_by_resolv_conf(ares_channel channel)
   unsigned int i;
   char propname[PROP_NAME_MAX];
   char propvalue[PROP_VALUE_MAX]="";
+  char **dns_servers;
+  size_t *num_servers;
 
-  for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
-    snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
-    if (__system_property_get(propname, propvalue) < 1) {
+  /* Use the Android connectivity manager to get a list
+   * of DNS servers. As of Android 8 (Oreo) net.dns#
+   * system properties are no longer available. Google claims this
+   * improves privacy. Apps now need the ACCESS_NETWORK_STATE
+   * permission and must use the ConnectivityManager which
+   * is Java only. */
+  dns_servers = ares_get_android_server_list(MAX_DNS_PROPERTIES, &num_servers);
+  if (dns_servers != NULL)
+  {
+    for (i = 0; i < num_servers; i++)
+    {
+      status = config_nameserver(&servers, &nservers, dns_servers[i]);
+      if (status != ARES_SUCCESS)
+        break;
       status = ARES_EOF;
-      break;
     }
-    status = config_nameserver(&servers, &nservers, propvalue);
-    if (status != ARES_SUCCESS)
-      break;
-    status = ARES_EOF;
+    for (i = 0; i < num_servers; i++)
+    {
+      ares_free(dns_servers[i]);
+    }
+    ares_free(dns_servers);
+  }
+
+  /* Old way using the system property still in place as
+   * a fallback. Older android versions can still use this.
+   * it's possible for older apps not not have added the new
+   * permission and we want to try to avoid breaking those.
+   *
+   * We'll only run this if we don't have any dns servers
+   * because this will get the same ones (if it works). */
+  if (status != ARES_EOF) {
+    for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
+      snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
+      if (__system_property_get(propname, propvalue) < 1) {
+        status = ARES_EOF;
+        break;
+      }
+
+      status = config_nameserver(&servers, &nservers, propvalue);
+      if (status != ARES_SUCCESS)
+        break;
+      status = ARES_EOF;
+    }
   }
 #elif defined(CARES_USE_LIBRESOLV)
   struct __res_state res;
