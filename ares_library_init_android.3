@@ -128,14 +128,17 @@ Initalizing the Connectivity Manager in JNI directly using an Android Context. I
 the JVM has aleady been registered through \fIJNI_OnLoad\fP.
 .PP
 .Bd -literal
-  jclass obj_cls = jni_get_class(env, "android/content/Context");
-  jmethodID obj_mid = jni_get_method_id(env, obj_cls, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
-  jfieldID fid = (*env)->GetStaticFieldID(env, obj_cls, "CONNECTIVITY_SERVICE", "Ljava/lang/String;");
-  jstring str = (*env)->GetStaticObjectField(env, obj_cls, fid);
-  connectivity_manager = (*env)->CallObjectMethod(env, android_app_context, obj_mid, str);
-  if (connectivity_manager == NULL)
-    return;
-  ares_library_android_init(connectivity_manager);
+  void initialize(jobject android_context)
+  {
+    jclass obj_cls = jni_get_class(env, "android/content/Context");
+    jmethodID obj_mid = jni_get_method_id(env, obj_cls, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
+    jfieldID fid = (*env)->GetStaticFieldID(env, obj_cls, "CONNECTIVITY_SERVICE", "Ljava/lang/String;");
+    jstring str = (*env)->GetStaticObjectField(env, obj_cls, fid);
+    connectivity_manager = (*env)->CallObjectMethod(env, android_context, obj_mid, str);
+    if (connectivity_manager == NULL)
+      return;
+    ares_library_android_init(connectivity_manager);
+  }
 .Ed
 .SH AVAILABILITY
 This function was first introduced in c-ares version 1.?.?.
