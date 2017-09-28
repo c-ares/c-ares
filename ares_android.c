@@ -163,23 +163,23 @@ char **ares_get_android_server_list(size_t max_servers,
 
   /* JNI below is equivalent to this Java code.
      import android.content.Context;
-	 import android.net.ConnectivityManager;
-	 import android.net.LinkProperties;
-	 import android.net.Network;
-	 import java.net.InetAddress;
-	 import java.util.List;
+     import android.net.ConnectivityManager;
+     import android.net.LinkProperties;
+     import android.net.Network;
+     import java.net.InetAddress;
+     import java.util.List;
 
-	 ConnectivityManager cm = (ConnectivityManager)this.getApplicationContext()
-	   .getSystemService(Context.CONNECTIVITY_SERVICE);
-	 Network an = cm.getActiveNetwork();
-	 LinkProperties lp = cm.getLinkProperties(an);
-	 List<InetAddress> dns = lp.getDnsServers();
-	 for (InetAddress ia: dns) {
-	   String ha = ia.getHostAddress();
-	 }
+     ConnectivityManager cm = (ConnectivityManager)this.getApplicationContext()
+       .getSystemService(Context.CONNECTIVITY_SERVICE);
+     Network an = cm.getActiveNetwork();
+     LinkProperties lp = cm.getLinkProperties(an);
+     List<InetAddress> dns = lp.getDnsServers();
+     for (InetAddress ia: dns) {
+       String ha = ia.getHostAddress();
+     }
 
      Note: The JNI ConnectivityManager object was previously initialized in
-	       ares_library_init_android.
+           ares_library_init_android.
    */
 
   obj_cls = jni_get_class(env, "android/net/ConnectivityManager");
