@@ -1641,6 +1641,8 @@ static int init_by_resolv_conf(ares_channel channel)
     ares_free(dns_servers);
   }
 
+  // Call to __system_property_get causes a linker error on arm64 on Android:
+#ifndef __aarch64__
   /* Old way using the system property still in place as
    * a fallback. Older android versions can still use this.
    * it's possible for older apps not not have added the new
@@ -1662,6 +1664,7 @@ static int init_by_resolv_conf(ares_channel channel)
       status = ARES_EOF;
     }
   }
+#endif
 #elif defined(CARES_USE_LIBRESOLV)
   struct __res_state res;
   memset(&res, 0, sizeof(res));
