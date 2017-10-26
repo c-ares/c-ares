@@ -186,6 +186,17 @@ TEST_F(LibraryTest, FreeCorruptData) {
 }
 
 #ifndef CARES_SYMBOL_HIDING
+TEST_F(LibraryTest, FreeLongChain) {
+  struct ares_addr_node *data = nullptr;
+  for (int ii = 0; ii < 100000; ii++) {
+    struct ares_addr_node *prev = (struct ares_addr_node*)ares_malloc_data(ARES_DATATYPE_ADDR_NODE);
+    prev->next = data;
+    data = prev;
+  }
+
+  ares_free_data(data);
+}
+
 TEST(LibraryInit, StrdupFailures) {
   EXPECT_EQ(ARES_SUCCESS, ares_library_init(ARES_LIB_INIT_ALL));
   char* copy = ares_strdup("string");
