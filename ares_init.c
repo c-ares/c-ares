@@ -1902,9 +1902,6 @@ static int init_by_defaults(ares_channel channel)
 {
   char *hostname = NULL;
   int rc = ARES_SUCCESS;
-#ifdef HAVE_GETHOSTNAME
-  char *dot;
-#endif
 
   if (channel->flags == -1)
     channel->flags = 0;
@@ -1939,12 +1936,12 @@ static int init_by_defaults(ares_channel channel)
   }
 
 #if defined(USE_WINSOCK)
-#define toolong(x) (x == -1) &&  (SOCKERRNO == WSAEFAULT)
+#define toolong(x) ((x == -1) &&  (SOCKERRNO == WSAEFAULT))
 #elif defined(ENAMETOOLONG)
-#define toolong(x) (x == -1) && ((SOCKERRNO == ENAMETOOLONG) || \
-                                 (SOCKERRNO == EINVAL))
+#define toolong(x) ((x == -1) && ((SOCKERRNO == ENAMETOOLONG) || \
+                                  (SOCKERRNO == EINVAL)))
 #else
-#define toolong(x) (x == -1) &&  (SOCKERRNO == EINVAL)
+#define toolong(x) ((x == -1) &&  (SOCKERRNO == EINVAL))
 #endif
 
   if (channel->ndomains == -1) {
@@ -1957,6 +1954,7 @@ static int init_by_defaults(ares_channel channel)
     GETHOSTNAME_TYPE_ARG2 lenv = 64;
     size_t len = 64;
     int res;
+    char *dot;
     channel->ndomains = 0; /* default to none */
 
     hostname = ares_malloc(len);
@@ -1965,42 +1963,41 @@ static int init_by_defaults(ares_channel channel)
       goto error;
     }
 
-    do {
+    while (1) {
       res = gethostname(hostname, lenv);
 
-      if(toolong(res)) {
+      if (toolong(res)) {
         char *p;
         len *= 2;
         lenv *= 2;
         p = ares_realloc(hostname, len);
-        if(!p) {
+        if (!p) {
           rc = ARES_ENOMEM;
           goto error;
         }
         hostname = p;
         continue;
       }
-      else if(res) {
-        rc = ARES_EBADNAME;
-        goto error;
-      }
+      break;
+    }
 
-    } while (res != 0);
-
-    dot = strchr(hostname, '.');
-    if (dot) {
-      /* a dot was found */
-      channel->domains = ares_malloc(sizeof(char *));
-      if (!channel->domains) {
-        rc = ARES_ENOMEM;
-        goto error;
+    if (!res) {
+    /* hostname was successfully retrieved */
+      dot = strchr(hostname, '.');
+      if (dot) {
+        /* a dot was found */
+        channel->domains = ares_malloc(sizeof(char *));
+        if (!channel->domains) {
+          rc = ARES_ENOMEM;
+          goto error;
+        }
+        channel->domains[0] = ares_strdup(dot + 1);
+        if (!channel->domains[0]) {
+          rc = ARES_ENOMEM;
+          goto error;
+        }
+        channel->ndomains = 1;
       }
-      channel->domains[0] = ares_strdup(dot + 1);
-      if (!channel->domains[0]) {
-        rc = ARES_ENOMEM;
-        goto error;
-      }
-      channel->ndomains = 1;
     }
 #endif
   }
