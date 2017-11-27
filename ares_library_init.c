@@ -53,17 +53,26 @@ static HMODULE hnd_advapi32;
 static int ares_win32_init(void)
 {
 #ifdef USE_WINSOCK
+  WSADATA winsock_wsadata;
+  if (WSAStartup(MAKEWORD(USE_WINSOCK, USE_WINSOCK), &winsock_wsadata))
+    {
+      return ARES_EWSASTARTUP;
+    }
 
   hnd_iphlpapi = 0;
   hnd_iphlpapi = LoadLibraryW(L"iphlpapi.dll");
   if (!hnd_iphlpapi)
-    return ARES_ELOADIPHLPAPI;
+    {
+      WSACleanup();
+      return ARES_ELOADIPHLPAPI;
+    }
 
   ares_fpGetNetworkParams = (fpGetNetworkParams_t)
     GetProcAddress(hnd_iphlpapi, "GetNetworkParams");
   if (!ares_fpGetNetworkParams)
     {
       FreeLibrary(hnd_iphlpapi);
+      WSACleanup();
       return ARES_EADDRGETNETWORKPARAMS;
     }
 
@@ -111,6 +120,7 @@ static void ares_win32_cleanup(void)
     FreeLibrary(hnd_advapi32);
   if (hnd_iphlpapi)
     FreeLibrary(hnd_iphlpapi);
+  WSACleanup();
 #endif
 }
 
@@ -124,7 +134,6 @@ int ares_library_init(int flags)
       ares_initialized++;
       return ARES_SUCCESS;
     }
-  ares_initialized++;
 
   if (flags & ARES_LIB_INIT_WIN32)
     {
@@ -133,6 +142,7 @@ int ares_library_init(int flags)
         return res;  /* LCOV_EXCL_LINE: can't test Win32 init failure */
     }
 
+  ares_initialized++;
   ares_init_flags = flags;
 
   return ARES_SUCCESS;
