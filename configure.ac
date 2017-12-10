@@ -812,6 +812,11 @@ AC_CHECK_FUNCS([bitncmp \
   ])
 ])
 
+dnl Android. Some variants like arm64 may no longer have __system_property_get
+dnl in libc, but they are defined in the headers.  Perform a link check.
+AC_CHECK_FUNC([__system_property_get], [
+    AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET], [1], [Define if __system_property_get exists.])
+])
 
 dnl Check if the getnameinfo function is available
 dnl and get the types of five of its arguments.

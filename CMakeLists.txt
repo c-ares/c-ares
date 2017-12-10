@@ -350,6 +350,10 @@ CHECK_SYMBOL_EXISTS (strncmpi        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNCMP
 CHECK_SYMBOL_EXISTS (strnicmp        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNICMP)
 CHECK_SYMBOL_EXISTS (writev          "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_WRITEV)
 
+# On Android, the system headers may define __system_property_get(), but excluded
+# from libc.  We need to perform a link test instead of a header/symbol test.
+CHECK_FUNCTION_EXISTS (__system_property_get HAVE___SYSTEM_PROPERTY_GET)
+
 # Unset temporary data
 SET (CMAKE_EXTRA_INCLUDE_FILES)
 SET (CMAKE_REQUIRED_DEFINITIONS)
