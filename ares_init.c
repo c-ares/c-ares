@@ -1013,7 +1013,7 @@ static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
     mask[i / 8] |= 1 << ((7-i) % 8);
   }
 
-  for (i=0; i<sizeof(ipaddr); i++) {
+  for (i=0; i<16; i++) {
     if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i]))
       return 0;
   }
@@ -1505,7 +1505,7 @@ static int get_SuffixList_Windows(char **outptr)
     {
       /* p can be comma separated (SearchList) */
       pp = p;
-      while (len = next_suffix(&pp, len))
+      while ((len = next_suffix(&pp, len)) != 0)
       {
         if (!contains_suffix(*outptr, pp, len))
           commanjoin(outptr, pp, len);
