@@ -1455,7 +1455,7 @@ static int get_SuffixList_Windows(char **outptr)
   DWORD keyNameBuffSize;
   DWORD keyIdx = 0;
   char *p = NULL;
-  char *pp;
+  const char *pp;
   size_t len = 0;
 
   *outptr = NULL;
