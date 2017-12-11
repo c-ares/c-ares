@@ -1010,7 +1010,7 @@ static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
 
   /* Set remaining bits */
   for (i=(netmask / 8)*8; i<netmask; i++) {
-    mask[i / 8] |= 1 << ((7-i) % 8);
+    mask[i / 8] |= (1 << ((7-i) % 8)) & 0xFF;
   }
 
   for (i=0; i<16; i++) {
