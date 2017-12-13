@@ -1616,7 +1616,7 @@ static int init_by_resolv_conf(ares_channel channel)
   char propname[PROP_NAME_MAX];
   char propvalue[PROP_VALUE_MAX]="";
   char **dns_servers;
-  size_t *num_servers;
+  size_t num_servers;
 
   /* Use the Android connectivity manager to get a list
    * of DNS servers. As of Android 8 (Oreo) net.dns#
