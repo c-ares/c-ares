@@ -114,4 +114,5 @@ before_script:
              export LDFLAGS=$IOSFLAGS
          fi
 script:
-    - ./travis/build.sh && ./travis/test.sh && ./travis/distcheck.sh && ./travis/covupload.sh
+    - ./travis/build.sh && ./travis/test.sh
+    - if [ "$BUILD_TYPE" = "normal" ]; then ./travis/distcheck.sh && ./travis/covupload.sh; fi
