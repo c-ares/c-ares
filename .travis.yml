@@ -60,8 +60,7 @@ matrix:
           language: objective-c
           env: BUILD_TYPE=ios
 install:
-    - pip install --user 'requests[security]<2.9.1'
-    - pip install --user cpp-coveralls
+    - if [ "$TRAVIS_OS_NAME" != "osx" ]; then pip install --user cpp-coveralls > /dev/null; fi
     - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew reinstall libtool > /dev/null; fi
 before_script:
     - |
