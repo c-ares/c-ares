@@ -6,7 +6,7 @@ if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" -a "$BUILD_TYPE" != "c
     $TEST_WRAP ./ahost www.google.com
     cd test
     make
-    $TEST_WRAP ./arestest -v $TEST_FILTER
+    $TEST_WRAP ./arestest -4 -v $TEST_FILTER
     ./fuzzcheck.sh
     ./dnsdump  fuzzinput/answer_a fuzzinput/answer_aaaa
     cd ..
