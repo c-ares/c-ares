@@ -1009,8 +1009,8 @@ static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
   memset(mask, 0xFF, netmask / 8);
 
   /* Set remaining bits */
-  for (i=(netmask / 8)*8; i<netmask; i++) {
-    mask[i / 8] |= (1 << ((7-i) % 8)) & 0xFF;
+  if(netmask % 8) {
+    mask[netmask / 8] = (unsigned char)(0xff << (8 - (netmask % 8)));
   }
 
   for (i=0; i<16; i++) {
