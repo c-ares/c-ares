@@ -185,6 +185,10 @@ char **ares_get_android_server_list(size_t max_servers,
   obj_cls = jni_get_class(env, "android/net/ConnectivityManager");
   obj_mid = jni_get_method_id(env, obj_cls, "getActiveNetwork",
                               "()Landroid/net/Network;");
+
+  if (obj_cls == NULL || obj_mid == NULL)
+    goto done;
+
   active_network = (*env)->CallObjectMethod(env, android_connectivity_manager,
                                             obj_mid);
   if (active_network == NULL)
@@ -192,6 +196,10 @@ char **ares_get_android_server_list(size_t max_servers,
 
   obj_mid = jni_get_method_id(env, obj_cls, "getLinkProperties",
             "(Landroid/net/Network;)Landroid/net/LinkProperties;");
+
+  if (obj_mid == NULL)
+    goto done;
+
   link_properties = (*env)->CallObjectMethod(env, android_connectivity_manager,
                                              obj_mid, active_network);
   if (link_properties == NULL)
@@ -200,12 +208,20 @@ char **ares_get_android_server_list(size_t max_servers,
   obj_cls = jni_get_class(env, "android/net/LinkProperties");
   obj_mid = jni_get_method_id(env, obj_cls, "getDnsServers",
                               "()Ljava/util/List;");
+
+  if (obj_cls == NULL || obj_mid == NULL)
+    goto done;
+
   server_list = (*env)->CallObjectMethod(env, link_properties, obj_mid);
   if (server_list == NULL)
     goto done;
 
   list_cls = jni_get_class(env, "java/util/List");
   list_mid = jni_get_method_id(env, list_cls, "size", "()I");
+
+  if (list_cls == NULL || list_mid == NULL)
+    goto done;
+
   nserv = (*env)->CallIntMethod(env, server_list, list_mid);
   if (nserv > (jint)max_servers)
     nserv = (jint)max_servers;
@@ -214,9 +230,16 @@ char **ares_get_android_server_list(size_t max_servers,
   *num_servers = (size_t)nserv;
   list_mid = jni_get_method_id(env, list_cls, "get", "(I)Ljava/lang/Object;");
 
+  if (list_mid == NULL)
+    goto done;
+
   obj_cls = jni_get_class(env, "java/net/InetAddress");
   obj_mid = jni_get_method_id(env, obj_cls, "getHostAddress",
                               "()Ljava/lang/String;");
+
+  if (obj_cls == NULL || obj_mid == NULL)
+    goto done;
+
   dns_list = ares_malloc(sizeof(*dns_list)*(*num_servers));
   for (i=0; i<*num_servers; i++)
   {
