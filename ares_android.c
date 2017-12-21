@@ -182,30 +182,49 @@ char **ares_get_android_server_list(size_t max_servers,
            ares_library_init_android.
    */
 
+  /* ConnectivityManager in API 1. */
   obj_cls = jni_get_class(env, "android/net/ConnectivityManager");
+  if (obj_cls == NULL)
+    goto done;
+  /* ConnectivityManager.getActiveNetwork in API 23. */
   obj_mid = jni_get_method_id(env, obj_cls, "getActiveNetwork",
                               "()Landroid/net/Network;");
+  if (obj_mid == NULL)
+    goto done;
   active_network = (*env)->CallObjectMethod(env, android_connectivity_manager,
                                             obj_mid);
   if (active_network == NULL)
     goto done;
 
+  /* ConnectivityManager.getLinkProperties in API 21. */
   obj_mid = jni_get_method_id(env, obj_cls, "getLinkProperties",
             "(Landroid/net/Network;)Landroid/net/LinkProperties;");
+  if (obj_mid == NULL)
+    goto done;
   link_properties = (*env)->CallObjectMethod(env, android_connectivity_manager,
                                              obj_mid, active_network);
   if (link_properties == NULL)
     goto done;
 
+  /* LinkProperties in API 21. */
   obj_cls = jni_get_class(env, "android/net/LinkProperties");
+  if (obj_cls == NULL)
+    goto done;
+  /* getDnsServers in API 21. */
   obj_mid = jni_get_method_id(env, obj_cls, "getDnsServers",
                               "()Ljava/util/List;");
+  if (obj_mid == NULL)
+    goto done;
   server_list = (*env)->CallObjectMethod(env, link_properties, obj_mid);
   if (server_list == NULL)
     goto done;
 
   list_cls = jni_get_class(env, "java/util/List");
+  if (list_cls == NULL)
+    goto done;
   list_mid = jni_get_method_id(env, list_cls, "size", "()I");
+  if (list_mid == NULL)
+    goto done;
   nserv = (*env)->CallIntMethod(env, server_list, list_mid);
   if (nserv > (jint)max_servers)
     nserv = (jint)max_servers;
@@ -213,10 +232,16 @@ char **ares_get_android_server_list(size_t max_servers,
     goto done;
   *num_servers = (size_t)nserv;
   list_mid = jni_get_method_id(env, list_cls, "get", "(I)Ljava/lang/Object;");
+  if (list_mid == NULL)
+    goto done;
 
   obj_cls = jni_get_class(env, "java/net/InetAddress");
+  if (obj_cls == NULL)
+    goto done;
   obj_mid = jni_get_method_id(env, obj_cls, "getHostAddress",
                               "()Ljava/lang/String;");
+  if (obj_mid == NULL)
+    goto done;
   dns_list = ares_malloc(sizeof(*dns_list)*(*num_servers));
   for (i=0; i<*num_servers; i++)
   {
