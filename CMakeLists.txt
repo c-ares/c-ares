@@ -268,6 +268,7 @@ MACRO (CARES_TYPE_EXISTS type var)
 	SET(_CARES_C_SOURCE "${_CARES_C_SOURCE}
 		int main() {
 			${type} var_exists;
+			(void)var_exists;
 			return 0;
 		}
 	")
