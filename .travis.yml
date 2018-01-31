@@ -37,9 +37,11 @@ matrix:
         - os: linux
           compiler: clang
           env: BUILD_TYPE=asan
+          sudo: true  # ASAN requires ptrace which is disabled in containers (https://github.com/travis-ci/travis-ci/issues/9033)
         - os: linux
           compiler: clang
           env: BUILD_TYPE=lsan
+          sudo: true  # LSAN requires ptrace which is disabled in containers (https://github.com/travis-ci/travis-ci/issues/9033)
         - os: linux
           compiler: clang
           env: BUILD_TYPE=analyse
