@@ -87,7 +87,7 @@ int ares_library_init_android(jobject connectivity_manager)
   jclass obj_cls = NULL;
 
   if (android_jvm == NULL)
-    goto fail;
+    goto cleanup;
 
   res = (*android_jvm)->GetEnv(android_jvm, (void **)&env, JNI_VERSION_1_6);
   if (res == JNI_EDETACHED)
@@ -97,73 +97,76 @@ int ares_library_init_android(jobject connectivity_manager)
     need_detatch = 1;
   }
   if (res != JNI_OK || env == NULL)
-    goto fail;
+    goto cleanup;
 
   android_connectivity_manager =
       (*env)->NewGlobalRef(env, connectivity_manager);
   if (android_connectivity_manager == NULL)
-    goto fail;
+    goto cleanup;
+
+  /* Initialization has succeeded. Now attempt to cache the methods that will be
+   * called by ares_get_android_server_list. */
+  ret = ARES_SUCCESS;
 
   /* ConnectivityManager in API 1. */
   obj_cls = jni_get_class(env, "android/net/ConnectivityManager");
   if (obj_cls == NULL)
-    goto fail;
+    goto cleanup;
 
   /* ConnectivityManager.getActiveNetwork in API 23. */
   android_cm_active_net_mid =
       jni_get_method_id(env, obj_cls, "getActiveNetwork",
                         "()Landroid/net/Network;");
   if (android_cm_active_net_mid == NULL)
-    goto fail;
+    goto cleanup;
 
   /* ConnectivityManager.getLinkProperties in API 21. */
   android_cm_link_props_mid =
       jni_get_method_id(env, obj_cls, "getLinkProperties",
                         "(Landroid/net/Network;)Landroid/net/LinkProperties;");
   if (android_cm_link_props_mid == NULL)
-    goto fail;
+    goto cleanup;
 
   /* LinkProperties in API 21. */
   (*env)->DeleteLocalRef(env, obj_cls);
   obj_cls = jni_get_class(env, "android/net/LinkProperties");
   if (obj_cls == NULL)
-    goto fail;
+    goto cleanup;
 
   /* getDnsServers in API 21. */
   android_lp_dns_servers_mid = jni_get_method_id(env, obj_cls, "getDnsServers",
                                                  "()Ljava/util/List;");
   if (android_lp_dns_servers_mid == NULL)
-    goto fail;
+    goto cleanup;
 
   (*env)->DeleteLocalRef(env, obj_cls);
   obj_cls = jni_get_class(env, "java/util/List");
   if (obj_cls == NULL)
-    goto fail;
+    goto cleanup;
 
   android_list_size_mid = jni_get_method_id(env, obj_cls, "size", "()I");
   if (android_list_size_mid == NULL)
-    goto fail;
+    goto cleanup;
 
   android_list_get_mid = jni_get_method_id(env, obj_cls, "get",
                                            "(I)Ljava/lang/Object;");
   if (android_list_get_mid == NULL)
-    goto fail;
+    goto cleanup;
 
   (*env)->DeleteLocalRef(env, obj_cls);
   obj_cls = jni_get_class(env, "java/net/InetAddress");
   if (obj_cls == NULL)
-    goto fail;
+    goto cleanup;
 
   android_ia_host_addr_mid = jni_get_method_id(env, obj_cls, "getHostAddress",
                                                "()Ljava/lang/String;");
   if (android_ia_host_addr_mid == NULL)
-    goto fail;
+    goto cleanup;
 
   (*env)->DeleteLocalRef(env, obj_cls);
-  ret = ARES_SUCCESS;
   goto done;
 
-fail:
+cleanup:
   if (obj_cls != NULL)
     (*env)->DeleteLocalRef(env, obj_cls);
 
@@ -173,12 +176,6 @@ fail:
   android_list_size_mid = NULL;
   android_list_get_mid = NULL;
   android_ia_host_addr_mid = NULL;
-
-  if (android_connectivity_manager != NULL)
-  {
-    (*env)->DeleteGlobalRef(env, android_connectivity_manager);
-    android_connectivity_manager = NULL;
-  }
 
 done:
   if (need_detatch)
@@ -245,6 +242,13 @@ char **ares_get_android_server_list(size_t max_servers,
 
   if (android_jvm == NULL || android_connectivity_manager == NULL ||
           max_servers == 0 || num_servers == NULL)
+  {
+    return NULL;
+  }
+
+  if (android_cm_active_net_mid == NULL || android_cm_link_props_mid == NULL ||
+      android_lp_dns_servers_mid == NULL || android_list_size_mid == NULL ||
+      android_list_get_mid == NULL || android_ia_host_addr_mid == NULL)
   {
     return NULL;
   }
