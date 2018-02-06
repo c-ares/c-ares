@@ -135,6 +135,9 @@ extern "C" {
 /* More error codes */
 #define ARES_ECANCELLED         24          /* introduced in 1.7.0 */
 
+/* ares_library_init error codes */
+#define ARES_EWSASTARTUP             25
+
 /* Flag values */
 #define ARES_FLAG_USEVC         (1 << 0)
 #define ARES_FLAG_PRIMARY       (1 << 1)
