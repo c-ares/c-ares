@@ -340,7 +340,7 @@ CARES_EXTERN int ares_save_options(ares_channel_t *channel,
 CARES_EXTERN void ares_destroy_options(struct ares_options *options);
 
 CARES_EXTERN int ares_dup(ares_channel_t **dest,
-                          ares_channel_t src);
+                          ares_channel_t *src);
 
 CARES_EXTERN void ares_destroy(ares_channel_t *channel);
 
@@ -437,11 +437,11 @@ CARES_EXTERN void ares_getnameinfo(ares_channel_t *channel,
                                    ares_nameinfo_callback callback,
                                    void *arg);
 
-CARES_EXTERN int ares_fds(ares_channel_t *channel,
+CARES_EXTERN int ares_fds(const ares_channel_t *channel,
                           fd_set *read_fds,
                           fd_set *write_fds);
 
-CARES_EXTERN int ares_getsock(ares_channel_t *channel,
+CARES_EXTERN int ares_getsock(const ares_channel_t *channel,
                               ares_socket_t *socks,
                               int numsocks);
 
