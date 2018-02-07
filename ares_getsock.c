@@ -17,7 +17,7 @@
 #include "ares.h"
 #include "ares_private.h"
 
-int ares_getsock(ares_channel channel,
+int ares_getsock(const struct ares_channeldata *channel,
                  ares_socket_t *socks,
                  int numsocks) /* size of the 'socks' array */
 {

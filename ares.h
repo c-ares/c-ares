@@ -433,11 +433,11 @@ CARES_EXTERN void ares_getnameinfo(ares_channel channel,
                                    ares_nameinfo_callback callback,
                                    void *arg);
 
-CARES_EXTERN int ares_fds(ares_channel channel,
+CARES_EXTERN int ares_fds(const struct ares_channeldata *channel,
                           fd_set *read_fds,
                           fd_set *write_fds);
 
-CARES_EXTERN int ares_getsock(ares_channel channel,
+CARES_EXTERN int ares_getsock(const struct ares_channeldata *channel,
                               ares_socket_t *socks,
                               int numsocks);
 
