@@ -15,12 +15,12 @@
 .\"
 .TH ARES_SAVE_OPTIONS 3 "5 March 2010"
 .SH NAME
-ares_save_options \- Save configuration values obtained from initialized ares_channel
+ares_save_options \- Save configuration values obtained from initialized ares_channel_t
 .SH SYNOPSIS
 .nf
 .B #include <ares.h>
 .PP
-.B int ares_save_options(ares_channel \fIchannel\fP, struct ares_options *\fIoptions\fP, int *\fIoptmask\fP)
+.B int ares_save_options(ares_channel_t *\fIchannel\fP, struct ares_options *\fIoptions\fP, int *\fIoptmask\fP)
 .fi
 .SH DESCRIPTION
 The \fBares_save_options(3)\fP function saves the channel data identified by
@@ -57,9 +57,9 @@ this config struct, which may no longer be the complete set of config
 options. \fBares_dup(3)\fP will not have that restriction.
 
 The ares_options struct can not handle potential IPv6 name servers the
-ares_channel might be configured to use. The \fBares_save_options(3)\fP function
+ares_channel_t might be configured to use. The \fBares_save_options(3)\fP function
 will only return IPv4 servers, if any. In order to retrieve all name servers
-an ares_channel might be using, the \fBares_get_servers(3)\fP function must be
+an ares_channel_t might be using, the \fBares_get_servers(3)\fP function must be
 used instead.
 .SH SEE ALSO
 .BR ares_destroy_options (3),

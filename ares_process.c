@@ -61,32 +61,32 @@
 
 
 static int try_again(int errnum);
-static void write_tcp_data(ares_channel channel, fd_set *write_fds,
+static void write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
                            ares_socket_t write_fd, struct timeval *now);
-static void read_tcp_data(ares_channel channel, fd_set *read_fds,
+static void read_tcp_data(ares_channel_t *channel, fd_set *read_fds,
                           ares_socket_t read_fd, struct timeval *now);
-static void read_udp_packets(ares_channel channel, fd_set *read_fds,
+static void read_udp_packets(ares_channel_t *channel, fd_set *read_fds,
                              ares_socket_t read_fd, struct timeval *now);
-static void advance_tcp_send_queue(ares_channel channel, int whichserver,
+static void advance_tcp_send_queue(ares_channel_t *channel, int whichserver,
                                    ares_ssize_t num_bytes);
-static void process_timeouts(ares_channel channel, struct timeval *now);
-static void process_broken_connections(ares_channel channel,
+static void process_timeouts(ares_channel_t *channel, struct timeval *now);
+static void process_broken_connections(ares_channel_t *channel,
                                        struct timeval *now);
-static void process_answer(ares_channel channel, unsigned char *abuf,
+static void process_answer(ares_channel_t *channel, unsigned char *abuf,
                            int alen, int whichserver, int tcp,
                            struct timeval *now);
-static void handle_error(ares_channel channel, int whichserver,
+static void handle_error(ares_channel_t *channel, int whichserver,
                          struct timeval *now);
-static void skip_server(ares_channel channel, struct query *query,
+static void skip_server(ares_channel_t *channel, struct query *query,
                         int whichserver);
-static void next_server(ares_channel channel, struct query *query,
+static void next_server(ares_channel_t *channel, struct query *query,
                         struct timeval *now);
-static int open_tcp_socket(ares_channel channel, struct server_state *server);
-static int open_udp_socket(ares_channel channel, struct server_state *server);
+static int open_tcp_socket(ares_channel_t *channel, struct server_state *server);
+static int open_udp_socket(ares_channel_t *channel, struct server_state *server);
 static int same_questions(const unsigned char *qbuf, int qlen,
                           const unsigned char *abuf, int alen);
 static int same_address(struct sockaddr *sa, struct ares_addr *aa);
-static void end_query(ares_channel channel, struct query *query, int status,
+static void end_query(ares_channel_t *channel, struct query *query, int status,
                       unsigned char *abuf, int alen);
 
 /* return true if now is exactly check time or later */
@@ -119,7 +119,7 @@ static void timeadd(struct timeval *now, int millisecs)
 /*
  * generic process function
  */
-static void processfds(ares_channel channel,
+static void processfds(ares_channel_t *channel,
                        fd_set *read_fds, ares_socket_t read_fd,
                        fd_set *write_fds, ares_socket_t write_fd)
 {
@@ -135,7 +135,7 @@ static void processfds(ares_channel channel,
 /* Something interesting happened on the wire, or there was a timeout.
  * See what's up and respond accordingly.
  */
-void ares_process(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
+void ares_process(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
 {
   processfds(channel, read_fds, ARES_SOCKET_BAD, write_fds, ARES_SOCKET_BAD);
 }
@@ -143,7 +143,7 @@ void ares_process(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
 /* Something interesting happened on the wire, or there was a timeout.
  * See what's up and respond accordingly.
  */
-void ares_process_fd(ares_channel channel,
+void ares_process_fd(ares_channel_t *channel,
                      ares_socket_t read_fd, /* use ARES_SOCKET_BAD or valid
                                                file descriptors */
                      ares_socket_t write_fd)
@@ -178,7 +178,7 @@ static int try_again(int errnum)
   return 0;
 }
 
-static ares_ssize_t socket_writev(ares_channel channel, ares_socket_t s, const struct iovec * vec, int len)
+static ares_ssize_t socket_writev(ares_channel_t *channel, ares_socket_t s, const struct iovec * vec, int len)
 {
   if (channel->sock_funcs)
     return channel->sock_funcs->asendv(s, vec, len, channel->sock_func_cb_data);
@@ -186,7 +186,7 @@ static ares_ssize_t socket_writev(ares_channel channel, ares_socket_t s, const s
   return writev(s, vec, len);
 }
 
-static ares_ssize_t socket_write(ares_channel channel, ares_socket_t s, const void * data, size_t len)
+static ares_ssize_t socket_write(ares_channel_t *channel, ares_socket_t s, const void * data, size_t len)
 {
   if (channel->sock_funcs)
     {
@@ -201,7 +201,7 @@ static ares_ssize_t socket_write(ares_channel channel, ares_socket_t s, const vo
 /* If any TCP sockets select true for writing, write out queued data
  * we have for them.
  */
-static void write_tcp_data(ares_channel channel,
+static void write_tcp_data(ares_channel_t *channel,
                            fd_set *write_fds,
                            ares_socket_t write_fd,
                            struct timeval *now)
@@ -293,7 +293,7 @@ static void write_tcp_data(ares_channel channel,
 }
 
 /* Consume the given number of bytes from the head of the TCP send queue. */
-static void advance_tcp_send_queue(ares_channel channel, int whichserver,
+static void advance_tcp_send_queue(ares_channel_t *channel, int whichserver,
                                    ares_ssize_t num_bytes)
 {
   struct send_request *sendreq;
@@ -322,7 +322,7 @@ static void advance_tcp_send_queue(ares_channel channel, int whichserver,
   }
 }
 
-static ares_ssize_t socket_recvfrom(ares_channel channel,
+static ares_ssize_t socket_recvfrom(ares_channel_t *channel,
    ares_socket_t s,
    void * data,
    size_t data_len,
@@ -342,7 +342,7 @@ static ares_ssize_t socket_recvfrom(ares_channel channel,
 #endif
 }
 
-static ares_ssize_t socket_recv(ares_channel channel,
+static ares_ssize_t socket_recv(ares_channel_t *channel,
    ares_socket_t s,
    void * data,
    size_t data_len)
@@ -358,7 +358,7 @@ static ares_ssize_t socket_recv(ares_channel channel,
  * allocate a buffer if we finish reading the length word, and process
  * a packet if we finish reading one.
  */
-static void read_tcp_data(ares_channel channel, fd_set *read_fds,
+static void read_tcp_data(ares_channel_t *channel, fd_set *read_fds,
                           ares_socket_t read_fd, struct timeval *now)
 {
   struct server_state *server;
@@ -456,7 +456,7 @@ static void read_tcp_data(ares_channel channel, fd_set *read_fds,
 }
 
 /* If any UDP sockets select true for reading, process them. */
-static void read_udp_packets(ares_channel channel, fd_set *read_fds,
+static void read_udp_packets(ares_channel_t *channel, fd_set *read_fds,
                              ares_socket_t read_fd, struct timeval *now)
 {
   struct server_state *server;
@@ -534,7 +534,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
 }
 
 /* If any queries have timed out, note the timeout and move them on. */
-static void process_timeouts(ares_channel channel, struct timeval *now)
+static void process_timeouts(ares_channel_t *channel, struct timeval *now)
 {
   time_t t;  /* the time of the timeouts we're processing */
   struct query *query;
@@ -565,7 +565,7 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
 }
 
 /* Handle an answer from a server. */
-static void process_answer(ares_channel channel, unsigned char *abuf,
+static void process_answer(ares_channel_t *channel, unsigned char *abuf,
                            int alen, int whichserver, int tcp,
                            struct timeval *now)
 {
@@ -668,7 +668,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
 }
 
 /* Close all the connections that are no longer usable. */
-static void process_broken_connections(ares_channel channel,
+static void process_broken_connections(ares_channel_t *channel,
                                        struct timeval *now)
 {
   int i;
@@ -707,7 +707,7 @@ static void swap_lists(struct list_node* head_a,
   }
 }
 
-static void handle_error(ares_channel channel, int whichserver,
+static void handle_error(ares_channel_t *channel, int whichserver,
                          struct timeval *now)
 {
   struct server_state *server;
@@ -742,7 +742,7 @@ static void handle_error(ares_channel channel, int whichserver,
   assert(ares__is_list_empty(&list_head));
 }
 
-static void skip_server(ares_channel channel, struct query *query,
+static void skip_server(ares_channel_t *channel, struct query *query,
                         int whichserver)
 {
   /* The given server gave us problems with this query, so if we have the
@@ -759,7 +759,7 @@ static void skip_server(ares_channel channel, struct query *query,
     }
 }
 
-static void next_server(ares_channel channel, struct query *query,
+static void next_server(ares_channel_t *channel, struct query *query,
                         struct timeval *now)
 {
   /* We need to try each server channel->tries times. We have channel->nservers
@@ -801,7 +801,7 @@ static void next_server(ares_channel channel, struct query *query,
   end_query(channel, query, query->error_status, NULL, 0);
 }
 
-void ares__send_query(ares_channel channel, struct query *query,
+void ares__send_query(ares_channel_t *channel, struct query *query,
                       struct timeval *now)
 {
   struct send_request *sendreq;
@@ -947,7 +947,7 @@ static int setsocknonblock(ares_socket_t sockfd,    /* operate on this */
 #endif
 }
 
-static int configure_socket(ares_socket_t s, int family, ares_channel channel)
+static int configure_socket(ares_socket_t s, int family, ares_channel_t *channel)
 {
   union {
     struct sockaddr     sa;
@@ -1014,7 +1014,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
   return 0;
 }
 
-static ares_socket_t open_socket(ares_channel channel, int af, int type, int protocol)
+static ares_socket_t open_socket(ares_channel_t *channel, int af, int type, int protocol)
 {
   if (channel->sock_funcs != 0)
     return channel->sock_funcs->asocket(af,
@@ -1025,7 +1025,7 @@ static ares_socket_t open_socket(ares_channel channel, int af, int type, int pro
   return socket(af, type, protocol);
 }
 
-static int connect_socket(ares_channel channel, ares_socket_t sockfd,
+static int connect_socket(ares_channel_t *channel, ares_socket_t sockfd,
 			  const struct sockaddr * addr,
 	                  ares_socklen_t addrlen)
 {
@@ -1038,7 +1038,7 @@ static int connect_socket(ares_channel channel, ares_socket_t sockfd,
    return connect(sockfd, addr, addrlen);
 }
 
-static int open_tcp_socket(ares_channel channel, struct server_state *server)
+static int open_tcp_socket(ares_channel_t *channel, struct server_state *server)
 {
   ares_socket_t s;
   int opt;
@@ -1152,7 +1152,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
   return 0;
 }
 
-static int open_udp_socket(ares_channel channel, struct server_state *server)
+static int open_udp_socket(ares_channel_t *channel, struct server_state *server)
 {
   ares_socket_t s;
   ares_socklen_t salen;
@@ -1353,7 +1353,7 @@ static int same_address(struct sockaddr *sa, struct ares_addr *aa)
   return 0; /* different */
 }
 
-static void end_query (ares_channel channel, struct query *query, int status,
+static void end_query (ares_channel_t *channel, struct query *query, int status,
                        unsigned char *abuf, int alen)
 {
   int i;
@@ -1439,7 +1439,7 @@ void ares__free_query(struct query *query)
   ares_free(query);
 }
 
-void ares__socket_close(ares_channel channel, ares_socket_t s)
+void ares__socket_close(ares_channel_t *channel, ares_socket_t s)
 {
   if (channel->sock_funcs)
     channel->sock_funcs->aclose(s, channel->sock_func_cb_data);

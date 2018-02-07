@@ -19,7 +19,7 @@
 #include "ares.h"
 #include "ares_private.h"
 
-void ares__close_sockets(ares_channel channel, struct server_state *server)
+void ares__close_sockets(ares_channel_t *channel, struct server_state *server)
 {
   struct send_request *sendreq;
 

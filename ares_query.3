@@ -23,7 +23,7 @@ ares_query \- Initiate a single-question DNS query
 .B typedef void (*ares_callback)(void *\fIarg\fP, int \fIstatus\fP,
 .B	int \fItimeouts\fP, unsigned char *\fIabuf\fP, int \fIalen\fP)
 .PP
-.B void ares_query(ares_channel \fIchannel\fP, const char *\fIname\fP,
+.B void ares_query(ares_channel_t *\fIchannel\fP, const char *\fIname\fP,
 .B 	int \fIdnsclass\fP, int \fItype\fP, ares_callback \fIcallback\fP,
 .B	void *\fIarg\fP)
 .fi

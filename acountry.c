@@ -80,7 +80,7 @@ static int         verbose    = 0;
                        printf fmt ;   \
                    } WHILE_FALSE
 
-static void wait_ares(ares_channel channel);
+static void wait_ares(ares_channel_t *channel);
 static void callback(void *arg, int status, int timeouts, struct hostent *host);
 static void callback2(void *arg, int status, int timeouts, struct hostent *host);
 static void find_country_from_cname(const char *cname, struct in_addr addr);
@@ -96,7 +96,7 @@ static void Abort(const char *fmt, ...)
 
 int main(int argc, char **argv)
 {
-  ares_channel channel;
+  ares_channel_t *channel;
   int    ch, status;
 
 #if defined(WIN32) && !defined(WATT32)
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
 /*
  * Wait for the queries to complete.
  */
-static void wait_ares(ares_channel channel)
+static void wait_ares(ares_channel_t *channel)
 {
   for (;;)
     {

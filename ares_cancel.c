@@ -23,7 +23,7 @@
  * on the given channel. It does NOT kill the channel, use ares_destroy() for
  * that.
  */
-void ares_cancel(ares_channel channel)
+void ares_cancel(ares_channel_t *channel)
 {
   struct query *query;
   struct list_node list_head_copy;

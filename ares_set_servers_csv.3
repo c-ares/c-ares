@@ -20,8 +20,8 @@ ares_set_servers_csv, ares_set_servers_ports_csv \- Set list of DNS servers to b
 .nf
 .B #include <ares.h>
 .PP
-.B int ares_set_servers_csv(ares_channel \fIchannel\fP, const char* \fIservers\fP)
-.B int ares_set_servers_ports_csv(ares_channel \fIchannel\fP, const char* \fIservers\fP)
+.B int ares_set_servers_csv(ares_channel_t *\fIchannel\fP, const char* \fIservers\fP)
+.B int ares_set_servers_ports_csv(ares_channel_t *\fIchannel\fP, const char* \fIservers\fP)
 .fi
 .SH DESCRIPTION
 The \fBares_set_servers_csv\fP and \fBares_set_servers_ports_csv\fPfunctions set

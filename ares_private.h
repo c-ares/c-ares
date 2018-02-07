@@ -179,7 +179,7 @@ struct server_state {
   struct list_node queries_to_server;
 
   /* Link back to owning channel */
-  ares_channel channel;
+  ares_channel_t *channel;
 
   /* Is this server broken? We mark connections as broken when a
    * request that is queued for sending times out.
@@ -334,9 +334,9 @@ extern void (*ares_free)(void *ptr);
 int ares__timedout(struct timeval *now,
                    struct timeval *check);
 
-void ares__send_query(ares_channel channel, struct query *query,
+void ares__send_query(ares_channel_t *channel, struct query *query,
                       struct timeval *now);
-void ares__close_sockets(ares_channel channel, struct server_state *server);
+void ares__close_sockets(ares_channel_t *channel, struct server_state *server);
 int ares__get_hostent(FILE *fp, int family, struct hostent **host);
 int ares__read_line(FILE *fp, char **buf, size_t *bufsize);
 void ares__free_query(struct query *query);
@@ -345,13 +345,13 @@ struct timeval ares__tvnow(void);
 int ares__expand_name_for_response(const unsigned char *encoded,
                                    const unsigned char *abuf, int alen,
                                    char **s, long *enclen);
-void ares__init_servers_state(ares_channel channel);
-void ares__destroy_servers_state(ares_channel channel);
+void ares__init_servers_state(ares_channel_t *channel);
+void ares__destroy_servers_state(ares_channel_t *channel);
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);
 #endif
 
-void ares__socket_close(ares_channel, ares_socket_t);
+void ares__socket_close(ares_channel_t *, ares_socket_t);
 
 #define ARES_SWAP_BYTE(a,b) \
   { unsigned char swapByte = *(a);  *(a) = *(b);  *(b) = swapByte; }

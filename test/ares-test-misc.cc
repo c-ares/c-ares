@@ -97,7 +97,7 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
   EXPECT_EQ(expected2, GetNameServers(channel_));
 
   // Should survive duplication
-  ares_channel channel2;
+  ares_channel_t * channel2;
   EXPECT_EQ(ARES_SUCCESS, ares_dup(&channel2, channel_));
   EXPECT_EQ(expected2, GetNameServers(channel2));
   ares_destroy(channel2);

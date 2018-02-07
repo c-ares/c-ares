@@ -20,7 +20,7 @@ ares_dup \- Duplicate a resolver channel
 .nf
 .B #include <ares.h>
 .PP
-.B int ares_dup(ares_channel *\fIdest\fP, ares_channel \fIsource\fP)
+.B int ares_dup(ares_channel_t **\fIdest\fP, ares_channel_t *\fIsource\fP)
 .fi
 .SH DESCRIPTION
 The \fBares_dup(3)\fP function duplicates an existing communications channel

@@ -180,7 +180,7 @@ static void append_addr_list(struct ares_addr_node **head,
 
 int main(int argc, char **argv)
 {
-  ares_channel channel;
+  ares_channel_t *channel;
   int c, i, optmask = ARES_OPT_FLAGS, dnsclass = C_IN, type = T_A;
   int status, nfds, count;
   struct ares_options options;

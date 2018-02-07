@@ -51,7 +51,7 @@
 
 struct host_query {
   /* Arguments passed to ares_gethostbyname() */
-  ares_channel channel;
+  ares_channel_t *channel;
   char *name;
   ares_host_callback callback;
   void *arg;
@@ -78,7 +78,7 @@ static int get_address_index(const struct in_addr *addr,
 static int get6_address_index(const struct ares_in6_addr *addr,
                               const struct apattern *sortlist, int nsort);
 
-void ares_gethostbyname(ares_channel channel, const char *name, int family,
+void ares_gethostbyname(ares_channel_t *channel, const char *name, int family,
                         ares_host_callback callback, void *arg)
 {
   struct host_query *hquery;
@@ -173,7 +173,7 @@ static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen)
 {
   struct host_query *hquery = (struct host_query *) arg;
-  ares_channel channel = hquery->channel;
+  ares_channel_t *channel = hquery->channel;
   struct hostent *host = NULL;
 
   hquery->timeouts += timeouts;
@@ -306,7 +306,7 @@ static int fake_hostent(const char *name, int family,
 }
 
 /* This is an API method */
-int ares_gethostbyname_file(ares_channel channel, const char *name,
+int ares_gethostbyname_file(ares_channel_t *channel, const char *name,
                             int family, struct hostent **host)
 {
   int result;
