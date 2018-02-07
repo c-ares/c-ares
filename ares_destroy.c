@@ -38,7 +38,7 @@ void ares_destroy_options(struct ares_options *options)
     ares_free(options->lookups);
 }
 
-void ares_destroy(ares_channel channel)
+void ares_destroy(ares_channel_t *channel)
 {
   int i;
   struct query *query;
@@ -88,7 +88,7 @@ void ares_destroy(ares_channel channel)
   ares_free(channel);
 }
 
-void ares__destroy_servers_state(ares_channel channel)
+void ares__destroy_servers_state(ares_channel_t *channel)
 {
   struct server_state *server;
   int i;

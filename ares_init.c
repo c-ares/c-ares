@@ -65,19 +65,19 @@
 #undef WIN32  /* Redefined in MingW/MSVC headers */
 #endif
 
-static int init_by_options(ares_channel channel,
+static int init_by_options(ares_channel_t *channel,
                            const struct ares_options *options,
                            int optmask);
-static int init_by_environment(ares_channel channel);
-static int init_by_resolv_conf(ares_channel channel);
-static int init_by_defaults(ares_channel channel);
+static int init_by_environment(ares_channel_t *channel);
+static int init_by_resolv_conf(ares_channel_t *channel);
+static int init_by_defaults(ares_channel_t *channel);
 
 #ifndef WATT32
 static int config_nameserver(struct server_state **servers, int *nservers,
                              char *str);
 #endif
-static int set_search(ares_channel channel, const char *str);
-static int set_options(ares_channel channel, const char *str);
+static int set_search(ares_channel_t *channel, const char *str);
+static int set_options(ares_channel_t *channel, const char *str);
 static const char *try_option(const char *p, const char *q, const char *opt);
 static int init_id_key(rc4_key* key,int key_data_len);
 
@@ -89,8 +89,8 @@ static int ip_addr(const char *s, ares_ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
 #if !defined(WIN32) && !defined(WATT32) && \
     !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
-static int config_domain(ares_channel channel, char *str);
-static int config_lookup(ares_channel channel, const char *str,
+static int config_domain(ares_channel_t *channel, char *str);
+static int config_lookup(ares_channel_t *channel, const char *str,
                          const char *bindch, const char *altbindch,
                          const char *filech);
 static char *try_config(char *s, const char *opt, char scc);
@@ -102,15 +102,15 @@ static char *try_config(char *s, const char *opt, char scc);
                              x->ndots > -1 && x->timeout > -1 && \
                              x->tries > -1)
 
-int ares_init(ares_channel *channelptr)
+int ares_init(ares_channel_t **channelptr)
 {
   return ares_init_options(channelptr, NULL, 0);
 }
 
-int ares_init_options(ares_channel *channelptr, struct ares_options *options,
+int ares_init_options(ares_channel_t **channelptr, struct ares_options *options,
                       int optmask)
 {
-  ares_channel channel;
+  ares_channel_t *channel;
   int i;
   int status = ARES_SUCCESS;
   struct timeval now;
@@ -132,7 +132,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: n/a on non-WinSock */
 
-  channel = ares_malloc(sizeof(struct ares_channeldata));
+  channel = ares_malloc(sizeof(ares_channel_t));
   if (!channel) {
     *channelptr = NULL;
     return ARES_ENOMEM;
@@ -262,7 +262,7 @@ done:
 
 /* ares_dup() duplicates a channel handle with all its options and returns a
    new channel handle */
-int ares_dup(ares_channel *dest, ares_channel src)
+int ares_dup(ares_channel_t **dest, ares_channel_t *src)
 {
   struct ares_options opts;
   struct ares_addr_port_node *servers;
@@ -333,7 +333,7 @@ int ares_dup(ares_channel *dest, ares_channel src)
 }
 
 /* Save options from initialized channel */
-int ares_save_options(ares_channel channel, struct ares_options *options,
+int ares_save_options(ares_channel_t *channel, struct ares_options *options,
                       int *optmask)
 {
   int i, j;
@@ -429,7 +429,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   return ARES_SUCCESS;
 }
 
-static int init_by_options(ares_channel channel,
+static int init_by_options(ares_channel_t *channel,
                            const struct ares_options *options,
                            int optmask)
 {
@@ -539,7 +539,7 @@ static int init_by_options(ares_channel channel,
   return ARES_SUCCESS;
 }
 
-static int init_by_environment(ares_channel channel)
+static int init_by_environment(ares_channel_t *channel)
 {
   const char *localdomain, *res_options;
   int status;
@@ -1523,7 +1523,7 @@ static int get_SuffixList_Windows(char **outptr)
 
 #endif
 
-static int init_by_resolv_conf(ares_channel channel)
+static int init_by_resolv_conf(ares_channel_t *channel)
 {
 #if !defined(ANDROID) && !defined(__ANDROID__) && !defined(WATT32) && \
     !defined(CARES_USE_LIBRESOLV)
@@ -1900,7 +1900,7 @@ static int init_by_resolv_conf(ares_channel channel)
   return ARES_SUCCESS;
 }
 
-static int init_by_defaults(ares_channel channel)
+static int init_by_defaults(ares_channel_t *channel)
 {
   char *hostname = NULL;
   int rc = ARES_SUCCESS;
@@ -2046,7 +2046,7 @@ static int init_by_defaults(ares_channel channel)
 
 #if !defined(WIN32) && !defined(WATT32) && \
     !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
-static int config_domain(ares_channel channel, char *str)
+static int config_domain(ares_channel_t *channel, char *str)
 {
   char *q;
 
@@ -2066,7 +2066,7 @@ static int config_domain(ares_channel channel, char *str)
 # define vqualifier
 #endif
 
-static int config_lookup(ares_channel channel, const char *str,
+static int config_lookup(ares_channel_t *channel, const char *str,
                          const char *bindch, const char *altbindch,
                          const char *filech)
 {
@@ -2255,7 +2255,7 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
   return ARES_SUCCESS;
 }
 
-static int set_search(ares_channel channel, const char *str)
+static int set_search(ares_channel_t *channel, const char *str)
 {
   int n;
   const char *p, *q;
@@ -2316,7 +2316,7 @@ static int set_search(ares_channel channel, const char *str)
   return ARES_SUCCESS;
 }
 
-static int set_options(ares_channel channel, const char *str)
+static int set_options(ares_channel_t *channel, const char *str)
 {
   const char *p, *q, *val;
 
@@ -2540,20 +2540,20 @@ static int init_id_key(rc4_key* key,int key_data_len)
   return ARES_SUCCESS;
 }
 
-void ares_set_local_ip4(ares_channel channel, unsigned int local_ip)
+void ares_set_local_ip4(ares_channel_t *channel, unsigned int local_ip)
 {
   channel->local_ip4 = local_ip;
 }
 
 /* local_ip6 should be 16 bytes in length */
-void ares_set_local_ip6(ares_channel channel,
+void ares_set_local_ip6(ares_channel_t *channel,
                         const unsigned char* local_ip6)
 {
   memcpy(&channel->local_ip6, local_ip6, sizeof(channel->local_ip6));
 }
 
 /* local_dev_name should be null terminated. */
-void ares_set_local_dev(ares_channel channel,
+void ares_set_local_dev(ares_channel_t *channel,
                         const char* local_dev_name)
 {
   strncpy(channel->local_dev_name, local_dev_name,
@@ -2562,7 +2562,7 @@ void ares_set_local_dev(ares_channel channel,
 }
 
 
-void ares_set_socket_callback(ares_channel channel,
+void ares_set_socket_callback(ares_channel_t *channel,
                               ares_sock_create_callback cb,
                               void *data)
 {
@@ -2570,7 +2570,7 @@ void ares_set_socket_callback(ares_channel channel,
   channel->sock_create_cb_data = data;
 }
 
-void ares_set_socket_configure_callback(ares_channel channel,
+void ares_set_socket_configure_callback(ares_channel_t *channel,
                                         ares_sock_config_callback cb,
                                         void *data)
 {
@@ -2578,7 +2578,7 @@ void ares_set_socket_configure_callback(ares_channel channel,
   channel->sock_config_cb_data = data;
 }
 
-void ares_set_socket_functions(ares_channel channel,
+void ares_set_socket_functions(ares_channel_t *channel,
                                const struct ares_socket_functions * funcs,
                                void *data)
 {
@@ -2586,7 +2586,7 @@ void ares_set_socket_functions(ares_channel channel,
   channel->sock_func_cb_data = data;
 }
 
-int ares_set_sortlist(ares_channel channel, const char *sortstr)
+int ares_set_sortlist(ares_channel_t *channel, const char *sortstr)
 {
   int nsort = 0;
   struct apattern *sortlist = NULL;
@@ -2605,7 +2605,7 @@ int ares_set_sortlist(ares_channel channel, const char *sortstr)
   return status;
 }
 
-void ares__init_servers_state(ares_channel channel)
+void ares__init_servers_state(ares_channel_t *channel)
 {
   struct server_state *server;
   int i;

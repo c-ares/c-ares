@@ -44,7 +44,7 @@
 
 struct addr_query {
   /* Arguments passed to ares_gethostbyaddr() */
-  ares_channel channel;
+  ares_channel_t *channel;
   struct ares_addr addr;
   ares_host_callback callback;
   void *arg;
@@ -61,7 +61,7 @@ static void end_aquery(struct addr_query *aquery, int status,
 static int file_lookup(struct ares_addr *addr, struct hostent **host);
 static void ptr_rr_name(char *name, const struct ares_addr *addr);
 
-void ares_gethostbyaddr(ares_channel channel, const void *addr, int addrlen,
+void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
                         int family, ares_host_callback callback, void *arg)
 {
   struct addr_query *aquery;

@@ -20,7 +20,7 @@ ares_set_local_dev \- Bind to a specific network device when creating sockets.
 .nf
 .B #include <ares.h>
 .PP
-.B void ares_set_local_dev(ares_channel \fIchannel\fP, const char* \fIlocal_dev_name\fP)
+.B void ares_set_local_dev(ares_channel_t *\fIchannel\fP, const char* \fIlocal_dev_name\fP)
 .fi
 .SH DESCRIPTION
 The \fBares_set_local_dev\fP function causes all future sockets

@@ -35,7 +35,7 @@ static long timeoffset(struct timeval *now, struct timeval *check)
  * once per second, rather than calling ares_timeout() to figure out
  * when to next call ares_process().
  */
-struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
+struct timeval *ares_timeout(ares_channel_t *channel, struct timeval *maxtv,
                              struct timeval *tvbuf)
 {
   struct query *query;

@@ -28,7 +28,7 @@
 #include "ares_private.h"
 
 
-int ares_get_servers(ares_channel channel,
+int ares_get_servers(ares_channel_t *channel,
                      struct ares_addr_node **servers)
 {
   struct ares_addr_node *srvr_head = NULL;
@@ -83,7 +83,7 @@ int ares_get_servers(ares_channel channel,
   return status;
 }
 
-int ares_get_servers_ports(ares_channel channel,
+int ares_get_servers_ports(ares_channel_t *channel,
                            struct ares_addr_port_node **servers)
 {
   struct ares_addr_port_node *srvr_head = NULL;
@@ -140,7 +140,7 @@ int ares_get_servers_ports(ares_channel channel,
   return status;
 }
 
-int ares_set_servers(ares_channel channel,
+int ares_set_servers(ares_channel_t *channel,
                      struct ares_addr_node *servers)
 {
   struct ares_addr_node *srvr;
@@ -189,7 +189,7 @@ int ares_set_servers(ares_channel channel,
   return ARES_SUCCESS;
 }
 
-int ares_set_servers_ports(ares_channel channel,
+int ares_set_servers_ports(ares_channel_t *channel,
                            struct ares_addr_port_node *servers)
 {
   struct ares_addr_port_node *srvr;
@@ -240,7 +240,7 @@ int ares_set_servers_ports(ares_channel channel,
 
 /* Incomming string format: host[:port][,host[:port]]... */
 /* IPv6 addresses with ports require square brackets [fe80::1%lo0]:53 */
-static int set_servers_csv(ares_channel channel,
+static int set_servers_csv(ares_channel_t *channel,
                            const char* _csv, int use_port)
 {
   size_t i;
@@ -388,13 +388,13 @@ static int set_servers_csv(ares_channel channel,
   return rv;
 }
 
-int ares_set_servers_csv(ares_channel channel,
+int ares_set_servers_csv(ares_channel_t *channel,
                          const char* _csv)
 {
   return set_servers_csv(channel, _csv, FALSE);
 }
 
-int ares_set_servers_ports_csv(ares_channel channel,
+int ares_set_servers_ports_csv(ares_channel_t *channel,
                                const char* _csv)
 {
   return set_servers_csv(channel, _csv, TRUE);

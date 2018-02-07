@@ -79,7 +79,7 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int scopeid,
 #endif
 STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2);
 
-void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
+void ares_getnameinfo(ares_channel_t *channel, const struct sockaddr *sa,
                       ares_socklen_t salen,
                       int flags, ares_nameinfo_callback callback, void *arg)
 {

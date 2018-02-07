@@ -32,7 +32,7 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
+void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
                ares_callback callback, void *arg)
 {
   struct query *query;

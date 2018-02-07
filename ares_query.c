@@ -65,7 +65,7 @@ static void rc4(rc4_key* key, unsigned char *buffer_ptr, int buffer_len)
   key->y = y;
 }
 
-static struct query* find_query_by_id(ares_channel channel, unsigned short id)
+static struct query* find_query_by_id(ares_channel_t *channel, unsigned short id)
 {
   unsigned short qid;
   struct list_node* list_head;
@@ -90,7 +90,7 @@ static struct query* find_query_by_id(ares_channel channel, unsigned short id)
    performed per id generation. In practice this search should happen only
    once per newly generated id
 */
-static unsigned short generate_unique_id(ares_channel channel)
+static unsigned short generate_unique_id(ares_channel_t *channel)
 {
   unsigned short id;
 
@@ -108,7 +108,7 @@ unsigned short ares__generate_new_id(rc4_key* key)
   return r;
 }
 
-void ares_query(ares_channel channel, const char *name, int dnsclass,
+void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
                 int type, ares_callback callback, void *arg)
 {
   struct qquery *qquery;

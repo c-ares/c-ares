@@ -15,7 +15,7 @@ ares_set_socket_functions \- Set socket io callbacks
    };
 
 .PP
-.B void ares_set_socket_functions(ares_channel \fIchannel\fP,
+.B void ares_set_socket_functions(ares_channel_t *\fIchannel\fP,
 				  const struct ares_socket_functions * \fIfunctions\fP,
 				  void *\fIuser_data\fP);
 

@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 {
   struct ares_options options;
   int optmask = 0;
-  ares_channel channel;
+  ares_channel_t *channel;
   int status, nfds, c, addr_family = AF_INET;
   fd_set read_fds, write_fds;
   struct timeval *tvp, tv;
