@@ -1983,8 +1983,10 @@ static int init_by_defaults(ares_channel channel)
         continue;
       }
       else if(res) {
-        rc = ARES_EBADNAME;
-        goto error;
+        /* Lets not treat a gethostname failure as critical, since we
+         * are ok if gethostname doesn't even exist */
+        *hostname = '\0';
+        break;
       }
 
     } while (res != 0);
