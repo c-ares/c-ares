@@ -453,6 +453,8 @@ CARES_EXTERN void ares_process_fd(ares_channel channel,
                                   ares_socket_t read_fd,
                                   ares_socket_t write_fd);
 
+CARES_EXTERN void ares_process_timeouts(ares_channel channel);
+
 CARES_EXTERN int ares_create_query(const char *name,
                                    int dnsclass,
                                    int type,
