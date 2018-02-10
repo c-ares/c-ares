@@ -952,7 +952,7 @@ static BOOL ares_IsWindowsVistaOrGreater(void)
   vinfo.dwOSVersionInfoSize = sizeof(vinfo);
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable:4996) // warning C4996: 'GetVersionExW': was declared deprecated
+#pragma warning(disable:4996) /* warning C4996: 'GetVersionExW': was declared deprecated */
 #endif
   if (!GetVersionEx(&vinfo) || vinfo.dwMajorVersion < 6)
     return FALSE;
