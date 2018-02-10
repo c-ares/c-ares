@@ -1,16 +1,17 @@
 language: c++
+dist: trusty
 sudo: false
 addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.7
+            - sourceline: 'ppa:adrozdoff/cmake' # newer cmake
+            - llvm-toolchain-trusty-5.0
         packages:
             - cmake
-            - gcc-4.8
-            - g++-4.8
             - lcov
-            - clang-3.7
+            - clang-5.0
+            - clang-tools-5.0
             - valgrind
 matrix:
     include:
@@ -22,11 +23,9 @@ matrix:
           env: BUILD_TYPE=normal
         - os: linux
           compiler: gcc
-          dist: trusty
           env: BUILD_TYPE=cmake
         - os: linux
           compiler: clang
-          dist: trusty
           env: BUILD_TYPE=cmake
         - os: linux
           compiler: gcc
@@ -66,11 +65,6 @@ install:
     - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew reinstall libtool > /dev/null; fi
 before_script:
     - |
-         if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" = "g++" ]; then
-             export CXX="g++-4.8"
-             export CC="gcc-4.8"
-         fi
-    - |
         if [ "$BUILD_TYPE" = "coverage" ]; then
              export CONFIG_OPTS="--enable-debug --disable-shared --enable-code-coverage"
         fi
@@ -95,10 +89,10 @@ before_script:
          fi
     - |
          if [ "$BUILD_TYPE" = "analyse" ]; then
-             export SCAN_WRAP="scan-build-3.7 --status-bugs"
+             export SCAN_WRAP="scan-build-5.0 --status-bugs"
              export CONFIG_OPTS="--enable-debug"
-             export CXX="clang++-3.7"
-             export CC="clang-3.7"
+             export CXX="clang++-5.0"
+             export CC="clang-5.0"
          fi
     - |
          if [ "$BUILD_TYPE" = "valgrind" ]; then
