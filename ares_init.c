@@ -950,9 +950,16 @@ static BOOL ares_IsWindowsVistaOrGreater(void)
   OSVERSIONINFO vinfo;
   memset(&vinfo, 0, sizeof(vinfo));
   vinfo.dwOSVersionInfoSize = sizeof(vinfo);
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996) // warning C4996: 'GetVersionExW': was declared deprecated
+#endif
   if (!GetVersionEx(&vinfo) || vinfo.dwMajorVersion < 6)
     return FALSE;
   return TRUE;
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 }
 
 /* A structure to hold the string form of IPv4 and IPv6 addresses so we can
