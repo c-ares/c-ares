@@ -6,12 +6,16 @@ in the source code repo
 
 - edit `RELEASE-NOTES` to be accurate
 
+- edit `Makefile.am`'s `CARES_VERSION_INFO`, and `CMakeLists.txt`'s
+  `CARES_LIB_VERSIONINFO` set to the same value to denote the current shared
+  object versioning.
+
 - make sure all relevant changes are committed on the master branch
 
-- tag the git repo in this style: `git tag -a cares-1_13_0` -a annotates the
+- tag the git repo in this style: `git tag -a cares-1_14_0` -a annotates the
   tag and we use underscores instead of dots in the version number.
 
-- run "./maketgz 1.13.0" to build the release tarball. It is important that
+- run "./maketgz 1.14.0" to build the release tarball. It is important that
   you run this on a machine with the correct set of autotools etc installed
   as this is what then will be shipped and used by most users on *nix like
   systems.
