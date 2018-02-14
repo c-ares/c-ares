@@ -5,10 +5,9 @@ addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
-            - sourceline: 'ppa:adrozdoff/cmake' # newer cmake
             - llvm-toolchain-trusty-5.0
         packages:
-            - cmake
+            - cmake3
             - lcov
             - clang-5.0
             - clang-tools-5.0
