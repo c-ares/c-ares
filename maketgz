@@ -40,6 +40,9 @@ if(!-f "configure") {
 print "adding $version in the configure.ac file\n";
 `sed -e 's/AC_INIT.*/AC_INIT([c-ares], [$version],/' < configure.ac > configure.ac.dist`;
 
+print "adding $version in the CMakeLists.txt file\n";
+`sed -e 's/SET.*CARES_VERSION.*/SET (CARES_VERSION "$version")/' < CMakeLists.txt > CMakeLists.txt.dist && rm -f CMakeLists.txt && mv CMakeLists.txt.dist CMakeLists.txt`;
+
 # now make a new configure script with this
 print "makes a new configure script\n";
 `autoconf configure.ac.dist >configure`;

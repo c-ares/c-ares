@@ -6,9 +6,6 @@ in the source code repo
 
 - edit `RELEASE-NOTES` to be accurate
 
-- edit `configure.ac` and `CMakeLists.txt` to set the current version.
-  This is used to generate libcares.pc, otherwise it would not be necessary.
-
 - edit `Makefile.am`'s `CARES_VERSION_INFO`, and `CMakeLists.txt`'s
   `CARES_LIB_VERSIONINFO` set to the same value to denote the current shared
   object versioning.
