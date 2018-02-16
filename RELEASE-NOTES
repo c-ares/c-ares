@@ -17,13 +17,19 @@ Bug fixes:
    [5] [7]
  o win32: Force use of ANSI functions [6]
  o CMake minimum version is now 3.1
+ o ares_gethostbyname.3: fix callback status values [8]
+ o docs: Document WSAStartup requirement [9]
+ o Fix a typo in init_by_resolv_conf [10]
+ o Android JNI code leaks local references in some cases [11]
+ o Force using the ANSI versions of WinAPI functions [12]
 
 Thanks go to these friendly people for their efforts and contributions:
 
-  Anna Henningsen, David Drysdale, Brad House, Daniel Stenberg, David Hotham,
-  Konstantinos Sofokleous, John Schember, Felix Yan, Gergely Nagy, Gregor Jasny,
-  Roman Teterin, AC Thompson, Brad Spencer, Antonio Tajuelo
-  (14 contributors)
+  AC Thompson, Anna Henningsen, Antonio Tajuelo, Brad House, Brad Spencer,
+  Christian Ammer, Daniel Stenberg, David Drysdale, David Hotham, Felix Yan,
+  Gergely Nagy, Gregor Jasny, Jakub Hrozek, John Schember,
+  Konstantinos Sofokleous, Roman Teterin, Sergey Kolomenkin, Sheel Bedi,
+  (18 contributors)
 
 References to bug reports and discussions on issues:
 
@@ -34,6 +40,8 @@ References to bug reports and discussions on issues:
  [5] = https://github.com/c-ares/c-ares/pull/148
  [6] = https://github.com/c-ares/c-ares/pull/142
  [7] = https://github.com/c-ares/c-ares/pull/175
-
-
-
+ [8] = https://c-ares.haxx.se/mail/c-ares-archive-2011-06/0012.shtml
+ [9] = https://github.com/c-ares/c-ares/pull/180
+ [10] = https://github.com/c-ares/c-ares/pull/160
+ [11] = https://github.com/c-ares/c-ares/pull/175
+ [12] = https://github.com/c-ares/c-ares/pull/142
