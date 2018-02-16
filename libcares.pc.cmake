@@ -12,7 +12,7 @@ includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
 Name: c-ares
 URL: https://c-ares.haxx.se/
 Description: asynchronous DNS lookup library
-Version: @VERSION@
+Version: @CARES_VERSION@
 Requires: 
 Requires.private: 
 Cflags: -I${includedir} @CPPFLAG_CARES_STATICLIB@

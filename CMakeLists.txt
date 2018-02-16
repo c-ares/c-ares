@@ -12,7 +12,7 @@ INCLUDE (GNUInstallDirs)
 PROJECT (c-ares C)
 
 # Set this version before release
-SET (CARES_VERSION "1.14.1")
+SET (CARES_VERSION "1.14.0")
 
 # This is for libtool compatibility, and specified in a form that is easily
 # translatable from libtool (even if the actual form doesn't make sense).
