@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" ]; then
+if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" -a "$BUILD_TYPE" != "cmake" ]; then
     $TEST_WRAP ./adig www.google.com
     $TEST_WRAP ./acountry www.google.com
     $TEST_WRAP ./ahost www.google.com
