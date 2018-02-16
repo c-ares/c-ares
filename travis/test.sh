@@ -10,4 +10,8 @@ if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" -a "$BUILD_TYPE" != "c
     ./fuzzcheck.sh
     ./dnsdump  fuzzinput/answer_a fuzzinput/answer_aaaa
     cd ..
+elif [ "$BUILD_TYPE" = "cmake" ] ; then
+    cd cmakebld
+    make test
+    cd ..
 fi
