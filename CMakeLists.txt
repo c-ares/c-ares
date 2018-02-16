@@ -11,6 +11,9 @@ INCLUDE (GNUInstallDirs)
 
 PROJECT (c-ares C)
 
+# Set this version before release
+SET (CARES_VERSION "1.14.0")
+
 # This is for libtool compatibility, and specified in a form that is easily
 # translatable from libtool (even if the actual form doesn't make sense).
 # For instance, in an autotools project, in Makefile.am there is a line that
@@ -649,6 +652,16 @@ IF (CARES_INSTALL)
 	)
 	INSTALL (EXPORT ${PROJECT_NAME}-targets DESTINATION ${CMAKECONFIG_INSTALL_DIR} NAMESPACE ${PROJECT_NAME}::)
 	INSTALL (FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake" DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+
+	# pkgconfig support
+	IF (NOT CARES_SHARED)
+		SET (CPPFLAG_CARES_STATICLIB "-DCARES_STATICLIB")
+		FOREACH (LIB ${CARES_DEPENDENT_LIBS})
+			SET (CARES_PRIVATE_LIBS "${CARES_PRIVATE_LIBS} -l${LIB}")
+		ENDFOREACH ()
+	ENDIF ()
+	CONFIGURE_FILE("libcares.pc.cmake" "libcares.pc" @ONLY)
+	INSTALL (FILES "${CMAKE_CURRENT_BINARY_DIR}/libcares.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 ENDIF ()
 
 # Legacy chain-building variables (provided for compatibility with old code).

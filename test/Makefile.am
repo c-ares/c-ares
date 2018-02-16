@@ -15,7 +15,7 @@ include Makefile.inc
 TESTS = arestest fuzzcheck.sh
 
 noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump
-EXTRA_DIST = fuzzcheck.sh
+EXTRA_DIST = fuzzcheck.sh CMakeLists.txt
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 arestest_LDADD = libgmock.la $(ARES_BLD_DIR)/libcares.la $(PTHREAD_LIBS)
 
