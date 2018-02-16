@@ -341,5 +341,7 @@ done:
     (*android_jvm)->DetachCurrentThread(android_jvm);
   return dns_list;
 }
-
+#else
+/* warning: ISO C forbids an empty translation unit */
+typedef int dummy_make_iso_compilers_happy;
 #endif
