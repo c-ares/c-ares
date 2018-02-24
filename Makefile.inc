@@ -73,6 +73,7 @@ HHEADERS = ares.h			\
   setup_once.h
 
 MANPAGES = ares_cancel.3		\
+  ares_create_query.3			\
   ares_destroy.3			\
   ares_destroy_options.3		\
   ares_dup.3				\
@@ -83,19 +84,21 @@ MANPAGES = ares_cancel.3		\
   ares_free_hostent.3			\
   ares_free_string.3			\
   ares_get_servers.3			\
-  ares_get_servers_ports.3			\
+  ares_get_servers_ports.3		\
   ares_gethostbyaddr.3			\
   ares_gethostbyname.3			\
   ares_gethostbyname_file.3		\
   ares_getnameinfo.3			\
   ares_getsock.3			\
+  ares_inet_ntop.3			\
+  ares_inet_pton.3			\
   ares_init.3				\
   ares_init_options.3			\
   ares_library_cleanup.3		\
   ares_library_init.3			\
+  ares_library_init_android.3		\
   ares_library_initialized.3		\
   ares_mkquery.3			\
-  ares_create_query.3			\
   ares_parse_a_reply.3			\
   ares_parse_aaaa_reply.3		\
   ares_parse_mx_reply.3			\
@@ -119,14 +122,14 @@ MANPAGES = ares_cancel.3		\
   ares_set_servers_ports_csv.3		\
   ares_set_socket_callback.3		\
   ares_set_socket_configure_callback.3	\
+  ares_set_socket_functions.3		\
   ares_set_sortlist.3			\
   ares_strerror.3			\
   ares_timeout.3			\
-  ares_version.3		        \
-  ares_inet_pton.3                      \
-  ares_inet_ntop.3
+  ares_version.3		        
 
 HTMLPAGES = ares_cancel.html		\
+  ares_create_query.html		\
   ares_destroy.html			\
   ares_destroy_options.html		\
   ares_dup.html				\
@@ -137,19 +140,21 @@ HTMLPAGES = ares_cancel.html		\
   ares_free_hostent.html		\
   ares_free_string.html			\
   ares_get_servers.html			\
-  ares_get_servers_ports.html			\
+  ares_get_servers_ports.html		\
   ares_gethostbyaddr.html		\
   ares_gethostbyname.html		\
   ares_gethostbyname_file.html		\
   ares_getnameinfo.html			\
   ares_getsock.html			\
+  ares_inet_ntop.html			\
+  ares_inet_pton.html			\
   ares_init.html			\
   ares_init_options.html		\
   ares_library_cleanup.html		\
   ares_library_init.html		\
+  ares_library_init_android.html	\
   ares_library_initialized.html		\
   ares_mkquery.html			\
-  ares_create_query.html			\
   ares_parse_a_reply.html		\
   ares_parse_aaaa_reply.html		\
   ares_parse_mx_reply.html		\
@@ -168,18 +173,18 @@ HTMLPAGES = ares_cancel.html		\
   ares_set_local_ip6.html		\
   ares_set_servers.html			\
   ares_set_servers_csv.html		\
-  ares_set_servers_ports.html			\
-  ares_set_servers_ports_csv.html			\
+  ares_set_servers_ports.html		\
+  ares_set_servers_ports_csv.html	\
   ares_set_socket_callback.html		\
-  ares_set_socket_configure_callback.html		\
-  ares_set_sortlist.html			\
+  ares_set_socket_configure_callback.html	\
+  ares_set_socket_functions.html	\
+  ares_set_sortlist.html		\
   ares_strerror.html			\
   ares_timeout.html			\
-  ares_version.html                     \
-  ares_inet_pton.html                   \
-  ares_inet_ntop.html
+  ares_version.html                     
 
 PDFPAGES = ares_cancel.pdf		\
+  ares_create_query.pdf			\
   ares_destroy.pdf			\
   ares_destroy_options.pdf		\
   ares_dup.pdf				\
@@ -190,19 +195,21 @@ PDFPAGES = ares_cancel.pdf		\
   ares_free_hostent.pdf			\
   ares_free_string.pdf			\
   ares_get_servers.pdf			\
-  ares_get_servers_ports.pdf			\
+  ares_get_servers_ports.pdf		\
   ares_gethostbyaddr.pdf		\
   ares_gethostbyname.pdf		\
   ares_gethostbyname_file.pdf		\
   ares_getnameinfo.pdf			\
   ares_getsock.pdf			\
+  ares_inet_ntop.pdf			\
+  ares_inet_pton.pdf			\
   ares_init.pdf				\
   ares_init_options.pdf			\
   ares_library_cleanup.pdf		\
   ares_library_init.pdf			\
+  ares_library_init_android.pdf		\
   ares_library_initialized.pdf		\
   ares_mkquery.pdf			\
-  ares_create_query.pdf			\
   ares_parse_a_reply.pdf		\
   ares_parse_aaaa_reply.pdf		\
   ares_parse_mx_reply.pdf		\
@@ -221,16 +228,15 @@ PDFPAGES = ares_cancel.pdf		\
   ares_set_local_ip6.pdf		\
   ares_set_servers.pdf			\
   ares_set_servers_csv.pdf		\
-  ares_set_servers_ports.pdf			\
-  ares_set_servers_ports_csv.pdf			\
+  ares_set_servers_ports.pdf		\
+  ares_set_servers_ports_csv.pdf	\
   ares_set_socket_callback.pdf		\
-  ares_set_socket_configure_callback.pdf		\
+  ares_set_socket_configure_callback.pdf	\
+  ares_set_socket_functions.pdf		\
   ares_set_sortlist.pdf			\
   ares_strerror.pdf			\
   ares_timeout.pdf			\
-  ares_version.pdf                      \
-  ares_inet_pton.pdf                    \
-  ares_inet_ntop.pdf
+  ares_version.pdf                      
 
 SAMPLESOURCES = ares_getopt.c		\
   ares_nowarn.c				\
