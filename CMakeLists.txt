@@ -550,7 +550,7 @@ endfunction()
 transform_makefile_inc("Makefile.inc" "${PROJECT_BINARY_DIR}/Makefile.inc.cmake")
 include(${PROJECT_BINARY_DIR}/Makefile.inc.cmake)
 
-
+SET(CMAKE_DEBUG_POSTFIX d)
 
 # Build the dynamic/shared library
 IF (CARES_SHARED)
