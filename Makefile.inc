@@ -50,6 +50,7 @@ CSOURCES = ares__close_sockets.c	\
   windows_port.c
 
 HHEADERS = ares.h			\
+  ares_android.h                        \
   ares_build.h				\
   ares_data.h				\
   ares_dns.h				\
