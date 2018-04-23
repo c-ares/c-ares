@@ -8,10 +8,6 @@ if [ "$BUILD_TYPE" != "cmake" ]; then
 else
     mkdir cmakebld
     cd cmakebld
-    cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON ..
+    cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ..
     make
-    ./bin/adig www.google.com
-    ./bin/acountry www.google.com
-    ./bin/ahost www.google.com
-    cd ..
 fi

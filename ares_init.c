@@ -950,9 +950,16 @@ static BOOL ares_IsWindowsVistaOrGreater(void)
   OSVERSIONINFO vinfo;
   memset(&vinfo, 0, sizeof(vinfo));
   vinfo.dwOSVersionInfoSize = sizeof(vinfo);
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996) /* warning C4996: 'GetVersionExW': was declared deprecated */
+#endif
   if (!GetVersionEx(&vinfo) || vinfo.dwMajorVersion < 6)
     return FALSE;
   return TRUE;
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 }
 
 /* A structure to hold the string form of IPv4 and IPv6 addresses so we can
@@ -1983,8 +1990,10 @@ static int init_by_defaults(ares_channel channel)
         continue;
       }
       else if(res) {
-        rc = ARES_EBADNAME;
-        goto error;
+        /* Lets not treat a gethostname failure as critical, since we
+         * are ok if gethostname doesn't even exist */
+        *hostname = '\0';
+        break;
       }
 
     } while (res != 0);

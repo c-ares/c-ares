@@ -258,8 +258,6 @@ static int set_servers_csv(ares_channel channel,
   if (!channel)
     return ARES_ENODATA;
 
-  ares__destroy_servers_state(channel);
-
   i = strlen(_csv);
   if (i == 0)
      return ARES_SUCCESS; /* blank all servers */
