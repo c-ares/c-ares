@@ -898,18 +898,6 @@ void ares__send_query(ares_channel channel, struct query *query,
       }
     }
 
-    /* Add a small random amount (between 0 and 511 ms) to the the timeout to
-     * help avoid sending many requests packets at the same time if timeouts
-     * all align.
-     *
-     * Do not _shrink_ the timeout because that will break user expectations
-     * and can lead to spurious failures.  Don't increase the timeout by too
-     * much because that will also break user expectations.
-     *
-     * Even a weak non-uniform random source will do for this purpose.
-     */
-    timeplus += rand() & 0x1ff;
-
     query->timeout = *now;
     timeadd(&query->timeout, timeplus);
     /* Keep track of queries bucketed by timeout, so we can process
