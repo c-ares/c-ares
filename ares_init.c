@@ -997,63 +997,6 @@ static int compareAddresses(const void *arg1,
   return 0;
 }
 
-/* Validate that the ip address matches the subnet (network base and network
- * mask) specified. Addresses are specified in standard Network Byte Order as
- * 16 bytes, and the netmask is 0 to 128 (bits).
- */
-static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
-                                    unsigned char netmask,
-                                    const unsigned char ipaddr[16])
-{
-  unsigned char mask[16] = { 0 };
-  unsigned char i;
-
-  /* Misuse */
-  if (netmask > 128)
-    return 0;
-
-  /* Quickly set whole bytes */
-  memset(mask, 0xFF, netmask / 8);
-
-  /* Set remaining bits */
-  if(netmask % 8) {
-    mask[netmask / 8] = (unsigned char)(0xff << (8 - (netmask % 8)));
-  }
-
-  for (i=0; i<16; i++) {
-    if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i]))
-      return 0;
-  }
-
-  return 1;
-}
-
-static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
-{
-  const struct {
-    const char   *netbase;
-    unsigned char netmask;
-  } blacklist[] = {
-    /* Deprecated by [RFC3879] in September 2004. Formerly a Site-Local scoped
-     * address prefix. Causes known issues on Windows as these are not valid DNS
-     * servers. */
-    { "fec0::", 10 },
-    { NULL,     0  }
-  };
-  size_t i;
-
-  for (i=0; blacklist[i].netbase != NULL; i++) {
-    unsigned char netbase[16];
-
-    if (ares_inet_pton(AF_INET6, blacklist[i].netbase, netbase) != 1)
-      continue;
-
-    if (ares_ipv6_subnet_matches(netbase, blacklist[i].netmask, ipaddr))
-      return 1;
-  }
-  return 0;
-}
-
 /* There can be multiple routes to "the Internet".  And there can be different
  * DNS servers associated with each of the interfaces that offer those routes.
  * We have to assume that any DNS server can serve any request.  But, some DNS
@@ -1274,11 +1217,6 @@ static int get_DNS_AdaptersAddresses(char **outptr)
       {
         if (memcmp(&namesrvr.sa6->sin6_addr, &ares_in6addr_any,
                    sizeof(namesrvr.sa6->sin6_addr)) == 0)
-          continue;
-
-        if (ares_ipv6_server_blacklisted(
-              (const unsigned char *)&namesrvr.sa6->sin6_addr)
-           )
           continue;
 
         /* Allocate room for another address, if necessary, else skip. */
@@ -2109,6 +2047,76 @@ static int config_lookup(ares_channel channel, const char *str,
 #endif  /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ & !CARES_USE_LIBRESOLV */
 
 #ifndef WATT32
+/* Validate that the ip address matches the subnet (network base and network
+ * mask) specified. Addresses are specified in standard Network Byte Order as
+ * 16 bytes, and the netmask is 0 to 128 (bits).
+ */
+static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
+                                    unsigned char netmask,
+                                    const unsigned char ipaddr[16])
+{
+  unsigned char mask[16] = { 0 };
+  unsigned char i;
+
+  /* Misuse */
+  if (netmask > 128)
+    return 0;
+
+  /* Quickly set whole bytes */
+  memset(mask, 0xFF, netmask / 8);
+
+  /* Set remaining bits */
+  if(netmask % 8) {
+    mask[netmask / 8] = (unsigned char)(0xff << (8 - (netmask % 8)));
+  }
+
+  for (i=0; i<16; i++) {
+    if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i]))
+      return 0;
+  }
+
+  return 1;
+}
+
+/* Return true iff the IPv6 ipaddr is blacklisted. */
+static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
+{
+  /* A list of blacklisted IPv6 subnets. */
+  const struct {
+    const unsigned char netbase[16];
+    unsigned char netmask;
+  } blacklist[] = {
+    /* fec0::/10 was deprecated by [RFC3879] in September 2004. Formerly a
+     * Site-Local scoped address prefix.  These are never valid DNS servers,
+     * but are known to be returned at least sometimes on Windows and Android.
+     */
+    {
+      {
+        0xfe, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+      },
+      10
+    }
+  };
+  size_t i;
+
+  /* See if ipaddr matches any of the entries in the blacklist. */
+  for (i = 0; i < sizeof(blacklist) / sizeof(blacklist[0]); ++i) {
+    if (ares_ipv6_subnet_matches(
+          blacklist[i].netbase, blacklist[i].netmask, ipaddr))
+      return 1;
+  }
+  return 0;
+}
+
+/* Add the IPv4 or IPv6 nameservers in str (separated by commas) to the
+ * servers list, updating servers and nservers as required.
+ *
+ * This will silently ignore blacklisted IPv6 nameservers as detected by
+ * ares_ipv6_server_blacklisted().
+ *
+ * Returns an error code on failure, else ARES_SUCCESS.
+ */
 static int config_nameserver(struct server_state **servers, int *nservers,
                              char *str)
 {
@@ -2143,7 +2151,10 @@ static int config_nameserver(struct server_state **servers, int *nservers,
       /* Convert textual address to binary format. */
       if (ares_inet_pton(AF_INET, txtaddr, &host.addrV4) == 1)
         host.family = AF_INET;
-      else if (ares_inet_pton(AF_INET6, txtaddr, &host.addrV6) == 1)
+      else if (ares_inet_pton(AF_INET6, txtaddr, &host.addrV6) == 1
+               /* Silently skip blacklisted IPv6 servers. */
+               && !ares_ipv6_server_blacklisted(
+                    (const unsigned char *)&host.addrV6))
         host.family = AF_INET6;
       else
         continue;

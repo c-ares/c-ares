@@ -525,6 +525,36 @@ CONTAINED_TEST_F(LibraryTest, ContainerRotateOverride,
   return HasFailure();
 }
 
+// Test that blacklisted IPv6 resolves are ignored.  They're filtered from any
+// source, so resolv.conf is as good as any.
+NameContentList blacklistedIpv6 = {
+  {"/etc/resolv.conf", " nameserver 254.192.1.1\n" // 0xfe.0xc0.0x01.0x01
+                       " nameserver fec0::dead\n"  // Blacklisted
+                       " nameserver ffc0::c001\n"  // Not blacklisted
+                       " domain first.com\n"},
+  {"/etc/nsswitch.conf", "hosts: files\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerBlacklistedIpv6,
+                 "myhostname", "mydomainname.org", blacklistedIpv6) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  std::vector<std::string> actual = GetNameServers(channel);
+  std::vector<std::string> expected = {
+    "254.192.1.1",
+    "ffc0:0000:0000:0000:0000:0000:0000:c001"
+  };
+  EXPECT_EQ(expected, actual);
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(1, opts.ndomains);
+  EXPECT_EQ(std::string("first.com"), std::string(opts.domains[0]));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 NameContentList multiresolv = {
   {"/etc/resolv.conf", " nameserver 1::2 ;  ;;\n"
                        " domain first.com\n"},
