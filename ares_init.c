@@ -1257,7 +1257,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
         }
         else
         {
-          addresses[addressesIndex].metric = -1;
+          addresses[addressesIndex].metric = (ULONG)-1;
         }
 
         /* Record insertion index to make qsort stable */
@@ -1304,7 +1304,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
         }
         else
         {
-          addresses[addressesIndex].metric = -1;
+          addresses[addressesIndex].metric = (ULONG)-1;
         }
 
         /* Record insertion index to make qsort stable */
@@ -1405,24 +1405,24 @@ static void replace_comma_by_space(char* str)
  * 'suffix' is one domain suffix, 'len' is the length of 'suffix'.
  * The search ignores case. E.g.:
  * contains_suffix("abc.def,ghi.jkl", "ghi.JKL") returns true  */
-static bool contains_suffix(const char* const searchlist,
+static BOOL contains_suffix(const char* const searchlist,
                             const char* const suffix, const size_t len)
 {
   const char* beg = searchlist;
   const char* end;
   if (!*suffix)
-    return true;
+    return TRUE;
   for (;;)
   {
     while (*beg && (ISSPACE(*beg) || (*beg == ',')))
       ++beg;
     if (!*beg)
-      return false;
+      return FALSE;
     end = beg;
     while (*end && !ISSPACE(*end) && (*end != ','))
       ++end;
-    if (len == (end - beg) && !strnicmp(beg, suffix, len))
-      return true;
+    if (len == (size_t)(end - beg) && !strnicmp(beg, suffix, len))
+      return TRUE;
     beg = end;
   }
 }
