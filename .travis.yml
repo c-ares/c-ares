@@ -110,4 +110,5 @@ before_script:
          fi
 script:
     - ./travis/build.sh && ./travis/test.sh
-    - if [ "$BUILD_TYPE" = "normal" ]; then ./travis/distcheck.sh && ./travis/covupload.sh; fi
+    - if [ "$BUILD_TYPE" = "normal" ]; then ./travis/distcheck.sh ; fi
+    - if [ "$BUILD_TYPE" = "coverage" ]; then ./travis/covupload.sh ; fi
