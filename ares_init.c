@@ -476,7 +476,7 @@ static int init_by_options(ares_channel channel,
       if (options->nservers > 0)
         {
           channel->servers =
-            (server_state*)ares_malloc(options->nservers * sizeof(struct server_state));
+            (struct server_state*)ares_malloc(options->nservers * sizeof(struct server_state));
           if (!channel->servers)
             return ARES_ENOMEM;
           for (i = 0; i < options->nservers; i++)

@@ -129,7 +129,7 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
   channel->next_id = generate_unique_id(channel);
 
   /* Allocate and fill in the query structure. */
-  qquery_ptr = (qquery*)ares_malloc(sizeof(struct qquery));
+  qquery_ptr = (struct qquery*)ares_malloc(sizeof(struct qquery));
   if (!qquery_ptr)
     {
       ares_free_string(qbuf);
