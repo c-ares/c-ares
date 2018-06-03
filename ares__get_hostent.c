@@ -164,8 +164,7 @@ int ares__get_hostent(FILE *fp, int family, struct hostent **host)
       */
 
       /* Allocate memory for the hostent structure. */
-      void* tempPtr = ares_malloc(sizeof(struct hostent));
-      hostent_ptr = (hostent*)tempPtr;
+      hostent_ptr = (hostent*)ares_malloc(sizeof(struct hostent));
       if (!hostent_ptr)
         break;
 
