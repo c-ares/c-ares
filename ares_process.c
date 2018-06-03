@@ -251,7 +251,7 @@ static void write_tcp_data(ares_channel channel,
         n++;
 
       /* Allocate iovecs so we can send all our data at once. */
-      vec = (iovec*)ares_malloc(n * sizeof(struct iovec));
+      vec = (struct iovec*)ares_malloc(n * sizeof(struct iovec));
       if (vec)
         {
           /* Fill in the iovecs and send. */
@@ -552,7 +552,7 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
       list_head = &(channel->queries_by_timeout[t % ARES_TIMEOUT_TABLE_SIZE]);
       for (list_node = list_head->next; list_node != list_head; )
         {
-          query_ptr = (query*)list_node->data;
+          query_ptr = (struct query*)list_node->data;
           list_node = list_node->next;  /* in case the query gets deleted */
           if (query_ptr->timeout.tv_sec && ares__timedout(now, &query_ptr->timeout))
             {
@@ -732,7 +732,7 @@ static void handle_error(ares_channel channel, int whichserver,
   swap_lists(&list_head, &(server->queries_to_server));
   for (list_node = list_head.next; list_node != &list_head; )
     {
-      query_ptr = (query*)list_node->data;
+      query_ptr = (struct query*)list_node->data;
       list_node = list_node->next;  /* in case the query gets deleted */
       assert(query_ptr->server == whichserver);
       skip_server(channel, query_ptr, whichserver);
@@ -825,7 +825,7 @@ void ares__send_query(ares_channel channel, struct query *query,
               return;
             }
         }
-      sendreq = (send_request*)ares_malloc(sizeof(struct send_request));
+      sendreq = (struct send_request*)ares_malloc(sizeof(struct send_request));
       if (!sendreq)
         {
         end_query(channel, query, ARES_ENOMEM, NULL, 0);
@@ -1078,7 +1078,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
   switch (server->addr.family)
     {
       case AF_INET:
-        sa = (sockaddr *)&saddr.sa4;
+        sa = (struct sockaddr *)&saddr.sa4;
         salen = sizeof(saddr.sa4);
         memset(sa, 0, salen);
         saddr.sa4.sin_family = AF_INET;
@@ -1091,7 +1091,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
                sizeof(server->addr.addrV4));
         break;
       case AF_INET6:
-        sa = (sockaddr *)&saddr.sa6;
+        sa = (struct sockaddr *)&saddr.sa6;
         salen = sizeof(saddr.sa6);
         memset(sa, 0, salen);
         saddr.sa6.sin6_family = AF_INET6;
@@ -1191,7 +1191,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
   switch (server->addr.family)
     {
       case AF_INET:
-        sa = (sockaddr *)&saddr.sa4;
+        sa = (struct sockaddr *)&saddr.sa4;
         salen = sizeof(saddr.sa4);
         memset(sa, 0, salen);
         saddr.sa4.sin_family = AF_INET;
@@ -1204,7 +1204,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
                sizeof(server->addr.addrV4));
         break;
       case AF_INET6:
-        sa = (sockaddr *)&saddr.sa6;
+        sa = (struct sockaddr *)&saddr.sa6;
         salen = sizeof(saddr.sa6);
         memset(sa, 0, salen);
         saddr.sa6.sin6_family = AF_INET6;

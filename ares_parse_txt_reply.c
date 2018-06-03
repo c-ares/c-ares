@@ -134,7 +134,7 @@ ares__parse_txt_reply (const unsigned char *abuf, int alen,
                 }
 
               /* Allocate storage for this TXT answer appending it to the list */
-              txt_curr = (ares_txt_ext*)ares_malloc_data(ex ? ARES_DATATYPE_TXT_EXT :
+              txt_curr = (struct ares_txt_ext*)ares_malloc_data(ex ? ARES_DATATYPE_TXT_EXT :
                                                ARES_DATATYPE_TXT_REPLY);
               if (!txt_curr)
                 {

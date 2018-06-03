@@ -47,7 +47,7 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
     }
 
   /* Allocate space for query and allocated fields. */
-  query_ptr = (query*)ares_malloc(sizeof(struct query));
+  query_ptr = (struct query*)ares_malloc(sizeof(struct query));
   if (!query_ptr)
     {
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
@@ -66,7 +66,7 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
       callback(arg, ARES_ESERVFAIL, 0, NULL, 0);
       return;
     }
-  query_ptr->server_info = (query_server_info*)ares_malloc(channel->nservers *
+  query_ptr->server_info = (struct query_server_info*)ares_malloc(channel->nservers *
                                    sizeof(query_ptr->server_info[0]));
   if (!query_ptr->server_info)
     {

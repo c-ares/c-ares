@@ -57,7 +57,7 @@ struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
   for (list_node = list_head->next; list_node != list_head;
        list_node = list_node->next)
     {
-      query_ptr = (query*)list_node->data;
+      query_ptr = (struct query*)list_node->data;
       if (query_ptr->timeout.tv_sec == 0)
         continue;
       offset = timeoffset(&now, &query_ptr->timeout);

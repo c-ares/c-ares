@@ -174,7 +174,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
   if (status == ARES_SUCCESS)
     {
       /* We got our answer.  Allocate memory to build the host entry. */
-      hostent_ptr = (hostent*)ares_malloc(sizeof(struct hostent));
+      hostent_ptr = (struct hostent*)ares_malloc(sizeof(struct hostent));
       if (hostent_ptr)
         {
           hostent_ptr->h_addr_list = (char**)ares_malloc(2 * sizeof(char *));

@@ -94,7 +94,7 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
     {
       /* Allocate addresses and aliases; ancount gives an upper bound for
          both. */
-      addrs = (in_addr*)ares_malloc(ancount * sizeof(struct in_addr));
+      addrs = (struct in_addr*)ares_malloc(ancount * sizeof(struct in_addr));
       if (!addrs)
         {
           ares_free(hostname);
@@ -228,7 +228,7 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
       if (host)
         {
           /* Allocate memory to build the host entry. */
-          hostent_ptr = (hostent*)ares_malloc(sizeof(struct hostent));
+          hostent_ptr = (struct hostent*)ares_malloc(sizeof(struct hostent));
           if (hostent_ptr)
             {
               hostent_ptr->h_addr_list = (char**)ares_malloc((naddrs + 1) * sizeof(char *));

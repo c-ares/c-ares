@@ -132,7 +132,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: n/a on non-WinSock */
 
-  channel = (ares_channeldata*)ares_malloc(sizeof(struct ares_channeldata));
+  channel = (struct ares_channeldata*)ares_malloc(sizeof(struct ares_channeldata));
   if (!channel) {
     *channelptr = NULL;
     return ARES_ENOMEM;
@@ -377,7 +377,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
         ipv4_nservers++;
     }
     if (ipv4_nservers) {
-      options->servers = (in_addr*)ares_malloc(ipv4_nservers * sizeof(struct in_addr));
+      options->servers = (struct in_addr*)ares_malloc(ipv4_nservers * sizeof(struct in_addr));
       if (!options->servers)
         return ARES_ENOMEM;
       for (i = j = 0; i < channel->nservers; i++)
@@ -418,7 +418,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
 
   /* copy sortlist */
   if (channel->nsort) {
-    options->sortlist = (apattern*)ares_malloc(channel->nsort * sizeof(struct apattern));
+    options->sortlist = (struct apattern*)ares_malloc(channel->nsort * sizeof(struct apattern));
     if (!options->sortlist)
       return ARES_ENOMEM;
     for (i = 0; i < channel->nsort; i++)
@@ -525,7 +525,7 @@ static int init_by_options(ares_channel channel,
   /* copy sortlist */
   if ((optmask & ARES_OPT_SORTLIST) && (channel->nsort == -1)) {
     if (options->nsort > 0) {
-      channel->sortlist = (apattern*)ares_malloc(options->nsort * sizeof(struct apattern));
+      channel->sortlist = (struct apattern*)ares_malloc(options->nsort * sizeof(struct apattern));
       if (!channel->sortlist)
         return ARES_ENOMEM;
       for (i = 0; i < options->nsort; i++)
@@ -2160,7 +2160,7 @@ static int config_nameserver(struct server_state **servers, int *nservers,
         continue;
 
       /* Resize servers state array. */
-      newserv = (server_state*)ares_realloc(*servers, (*nservers + 1) *
+      newserv = (struct server_state*)ares_realloc(*servers, (*nservers + 1) *
                              sizeof(struct server_state));
       if (!newserv)
         return ARES_ENOMEM;

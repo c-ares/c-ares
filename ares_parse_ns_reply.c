@@ -156,7 +156,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
   {
     /* We got our answer.  Allocate memory to build the host entry. */
     nameservers[nameservers_num] = NULL;
-    hostent_ptr = (hostent*)ares_malloc( sizeof( struct hostent ) );
+    hostent_ptr = (struct hostent*)ares_malloc( sizeof( struct hostent ) );
     if ( hostent_ptr )
     {
       hostent_ptr->h_addr_list = (char**)ares_malloc( 1 * sizeof( char * ) );

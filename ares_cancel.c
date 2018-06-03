@@ -46,7 +46,7 @@ void ares_cancel(ares_channel channel)
     list_head->next = list_head;
     for (list_node = list_head_copy.next; list_node != &list_head_copy; )
     {
-      query_ptr = (query*)list_node->data;
+      query_ptr = (struct query*)list_node->data;
       list_node = list_node->next;  /* since we're deleting the query */
       query_ptr->callback(query_ptr->arg, ARES_ECANCELLED, 0, NULL, 0);
       ares__free_query(query_ptr);
