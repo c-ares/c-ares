@@ -73,7 +73,7 @@ void ares_search(ares_channel channel, const char *name, int dnsclass,
   /* Allocate a search_query structure to hold the state necessary for
    * doing multiple lookups.
    */
-  squery = (search_query*)ares_malloc(sizeof(struct search_query));
+  squery = (struct search_query*)ares_malloc(sizeof(struct search_query));
   if (!squery)
     {
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
