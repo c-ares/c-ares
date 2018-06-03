@@ -1873,7 +1873,7 @@ static int init_by_defaults(ares_channel channel)
 
   if (channel->nservers == -1) {
     /* If nobody specified servers, try a local named. */
-    channel->servers = (server_state*)ares_malloc(sizeof(struct server_state));
+    channel->servers = (struct server_state*)ares_malloc(sizeof(struct server_state));
     if (!channel->servers) {
       rc = ARES_ENOMEM;
       goto error;
@@ -2482,7 +2482,7 @@ static int sortlist_alloc(struct apattern **sortlist, int *nsort,
                           struct apattern *pat)
 {
   struct apattern *newsort;
-  newsort = (apattern*)ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
+  newsort = (struct apattern*)ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
   if (!newsort)
     return 0;
   newsort[*nsort] = *pat;
