@@ -50,7 +50,7 @@ void ares_free_data(void *dataptr)
    /* 1684: conversion from pointer to same-sized integral type */
 #endif
 
-    ptr = (void *)((char *)dataptr - offsetof(struct ares_data, data));
+    ptr = (ares_data *)((char *)dataptr - offsetof(struct ares_data, data));
 
 #ifdef __INTEL_COMPILER
 #  pragma warning(pop)
@@ -144,7 +144,7 @@ void *ares_malloc_data(ares_datatype type)
 {
   struct ares_data *ptr;
 
-  ptr = ares_malloc(sizeof(struct ares_data));
+  ptr = (ares_data*)ares_malloc(sizeof(struct ares_data));
   if (!ptr)
     return NULL;
 

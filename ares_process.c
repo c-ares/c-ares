@@ -251,7 +251,7 @@ static void write_tcp_data(ares_channel channel,
         n++;
 
       /* Allocate iovecs so we can send all our data at once. */
-      vec = ares_malloc(n * sizeof(struct iovec));
+      vec = (iovec*)ares_malloc(n * sizeof(struct iovec));
       if (vec)
         {
           /* Fill in the iovecs and send. */
@@ -417,7 +417,7 @@ static void read_tcp_data(ares_channel channel, fd_set *read_fds,
                */
               server->tcp_length = server->tcp_lenbuf[0] << 8
                 | server->tcp_lenbuf[1];
-              server->tcp_buffer = ares_malloc(server->tcp_length);
+              server->tcp_buffer = (unsigned char*)ares_malloc(server->tcp_length);
               if (!server->tcp_buffer) {
                 handle_error(channel, i, now);
                 return; /* bail out on malloc failure. TODO: make this
@@ -538,7 +538,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
 static void process_timeouts(ares_channel channel, struct timeval *now)
 {
   time_t t;  /* the time of the timeouts we're processing */
-  struct query *query;
+  struct query *query_ptr;
   struct list_node* list_head;
   struct list_node* list_node;
 
@@ -552,13 +552,13 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
       list_head = &(channel->queries_by_timeout[t % ARES_TIMEOUT_TABLE_SIZE]);
       for (list_node = list_head->next; list_node != list_head; )
         {
-          query = list_node->data;
+          query_ptr = (query*)list_node->data;
           list_node = list_node->next;  /* in case the query gets deleted */
-          if (query->timeout.tv_sec && ares__timedout(now, &query->timeout))
+          if (query_ptr->timeout.tv_sec && ares__timedout(now, &query_ptr->timeout))
             {
-              query->error_status = ARES_ETIMEOUT;
-              ++query->timeouts;
-              next_server(channel, query, now);
+              query_ptr->error_status = ARES_ETIMEOUT;
+              ++query_ptr->timeouts;
+              next_server(channel, query_ptr, now);
             }
         }
      }
@@ -572,7 +572,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
 {
   int tc, rcode, packetsz;
   unsigned short id;
-  struct query *query;
+  struct query *query_ptr;
   struct list_node* list_head;
   struct list_node* list_node;
 
@@ -592,19 +592,20 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
    * wraps around we can have multiple outstanding queries with the same query
    * id, so we need to check both the id and question.
    */
-  query = NULL;
+  query_ptr = NULL;
   list_head = &(channel->queries_by_qid[id % ARES_QID_TABLE_SIZE]);
   for (list_node = list_head->next; list_node != list_head;
        list_node = list_node->next)
     {
-      struct query *q = list_node->data;
+      struct query *q = (query*)list_node->data;
       if ((q->qid == id) && same_questions(q->qbuf, q->qlen, abuf, alen))
         {
-          query = q;
+          query_ptr = q;
           break;
         }
     }
-  if (!query)
+
+  if (!query_ptr)
     return;
 
   packetsz = PACKETSZ;
@@ -617,16 +618,16 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
       packetsz = channel->ednspsz;
       if (rcode == NOTIMP || rcode == FORMERR || rcode == SERVFAIL)
       {
-          int qlen = (query->tcplen - 2) - EDNSFIXEDSZ;
+          int qlen = (query_ptr->tcplen - 2) - EDNSFIXEDSZ;
           channel->flags ^= ARES_FLAG_EDNS;
-          query->tcplen -= EDNSFIXEDSZ;
-          query->qlen -= EDNSFIXEDSZ;
-          query->tcpbuf[0] = (unsigned char)((qlen >> 8) & 0xff);
-          query->tcpbuf[1] = (unsigned char)(qlen & 0xff);
-          DNS_HEADER_SET_ARCOUNT(query->tcpbuf + 2, 0);
-          query->tcpbuf = ares_realloc(query->tcpbuf, query->tcplen);
-          query->qbuf = query->tcpbuf + 2;
-          ares__send_query(channel, query, now);
+          query_ptr->tcplen -= EDNSFIXEDSZ;
+          query_ptr->qlen -= EDNSFIXEDSZ;
+          query_ptr->tcpbuf[0] = (unsigned char)((qlen >> 8) & 0xff);
+          query_ptr->tcpbuf[1] = (unsigned char)(qlen & 0xff);
+          DNS_HEADER_SET_ARCOUNT(query_ptr->tcpbuf + 2, 0);
+          query_ptr->tcpbuf = (unsigned char*)ares_realloc(query_ptr->tcpbuf, query_ptr->tcplen);
+          query_ptr->qbuf = query_ptr->tcpbuf + 2;
+          ares__send_query(channel, query_ptr, now);
           return;
       }
   }
@@ -637,10 +638,10 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
    */
   if ((tc || alen > packetsz) && !tcp && !(channel->flags & ARES_FLAG_IGNTC))
     {
-      if (!query->using_tcp)
+      if (!query_ptr->using_tcp)
         {
-          query->using_tcp = 1;
-          ares__send_query(channel, query, now);
+          query_ptr->using_tcp = 1;
+          ares__send_query(channel, query_ptr, now);
         }
       return;
     }
@@ -658,14 +659,14 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
     {
       if (rcode == SERVFAIL || rcode == NOTIMP || rcode == REFUSED)
         {
-          skip_server(channel, query, whichserver);
-          if (query->server == whichserver)
-            next_server(channel, query, now);
+          skip_server(channel, query_ptr, whichserver);
+          if (query_ptr->server == whichserver)
+            next_server(channel, query_ptr, now);
           return;
         }
     }
 
-  end_query(channel, query, ARES_SUCCESS, abuf, alen);
+  end_query(channel, query_ptr, ARES_SUCCESS, abuf, alen);
 }
 
 /* Close all the connections that are no longer usable. */
@@ -712,7 +713,7 @@ static void handle_error(ares_channel channel, int whichserver,
                          struct timeval *now)
 {
   struct server_state *server;
-  struct query *query;
+  struct query *query_ptr;
   struct list_node list_head;
   struct list_node* list_node;
 
@@ -731,11 +732,11 @@ static void handle_error(ares_channel channel, int whichserver,
   swap_lists(&list_head, &(server->queries_to_server));
   for (list_node = list_head.next; list_node != &list_head; )
     {
-      query = list_node->data;
+      query_ptr = (query*)list_node->data;
       list_node = list_node->next;  /* in case the query gets deleted */
-      assert(query->server == whichserver);
-      skip_server(channel, query, whichserver);
-      next_server(channel, query, now);
+      assert(query_ptr->server == whichserver);
+      skip_server(channel, query_ptr, whichserver);
+      next_server(channel, query_ptr, now);
     }
   /* Each query should have removed itself from our temporary list as
    * it re-sent itself or finished up...
@@ -824,7 +825,7 @@ void ares__send_query(ares_channel channel, struct query *query,
               return;
             }
         }
-      sendreq = ares_malloc(sizeof(struct send_request));
+      sendreq = (send_request*)ares_malloc(sizeof(struct send_request));
       if (!sendreq)
         {
         end_query(channel, query, ARES_ENOMEM, NULL, 0);
@@ -1077,7 +1078,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
   switch (server->addr.family)
     {
       case AF_INET:
-        sa = (void *)&saddr.sa4;
+        sa = (sockaddr *)&saddr.sa4;
         salen = sizeof(saddr.sa4);
         memset(sa, 0, salen);
         saddr.sa4.sin_family = AF_INET;
@@ -1090,7 +1091,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
                sizeof(server->addr.addrV4));
         break;
       case AF_INET6:
-        sa = (void *)&saddr.sa6;
+        sa = (sockaddr *)&saddr.sa6;
         salen = sizeof(saddr.sa6);
         memset(sa, 0, salen);
         saddr.sa6.sin6_family = AF_INET6;
@@ -1190,7 +1191,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
   switch (server->addr.family)
     {
       case AF_INET:
-        sa = (void *)&saddr.sa4;
+        sa = (sockaddr *)&saddr.sa4;
         salen = sizeof(saddr.sa4);
         memset(sa, 0, salen);
         saddr.sa4.sin_family = AF_INET;
@@ -1203,7 +1204,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
                sizeof(server->addr.addrV4));
         break;
       case AF_INET6:
-        sa = (void *)&saddr.sa6;
+        sa = (sockaddr *)&saddr.sa6;
         salen = sizeof(saddr.sa6);
         memset(sa, 0, salen);
         saddr.sa6.sin6_family = AF_INET6;
@@ -1409,7 +1410,7 @@ static void end_query (ares_channel channel, struct query *query, int status,
                  * to the query's tcpbuf and handle these cases, we just give
                  * such sendreqs their own copy of the query packet.
                  */
-               sendreq->data_storage = ares_malloc(sendreq->len);
+               sendreq->data_storage = (unsigned char*)ares_malloc(sendreq->len);
                if (sendreq->data_storage != NULL)
                  {
                    memcpy(sendreq->data_storage, sendreq->data, sendreq->len);

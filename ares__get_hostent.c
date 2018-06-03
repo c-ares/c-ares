@@ -38,7 +38,7 @@ int ares__get_hostent(FILE *fp, int family, struct hostent **host)
   int status;
   size_t addrlen, linesize, naliases;
   struct ares_addr addr;
-  struct hostent *hostent = NULL;
+  struct hostent *hostent_ptr = NULL;
 
   *host = NULL; /* Assume failure */
 
@@ -164,37 +164,38 @@ int ares__get_hostent(FILE *fp, int family, struct hostent **host)
       */
 
       /* Allocate memory for the hostent structure. */
-      hostent = ares_malloc(sizeof(struct hostent));
-      if (!hostent)
+      void* tempPtr = ares_malloc(sizeof(struct hostent));
+      hostent_ptr = (hostent*)tempPtr;
+      if (!hostent_ptr)
         break;
 
       /* Initialize fields for out of memory condition. */
-      hostent->h_aliases = NULL;
-      hostent->h_addr_list = NULL;
+      hostent_ptr->h_aliases = NULL;
+      hostent_ptr->h_addr_list = NULL;
 
       /* Copy official host name. */
-      hostent->h_name = ares_strdup(txthost);
-      if (!hostent->h_name)
+      hostent_ptr->h_name = ares_strdup(txthost);
+      if (!hostent_ptr->h_name)
         break;
 
       /* Copy network address. */
-      hostent->h_addr_list = ares_malloc(2 * sizeof(char *));
-      if (!hostent->h_addr_list)
+      hostent_ptr->h_addr_list = (char**)ares_malloc(2 * sizeof(char *));
+      if (!hostent_ptr->h_addr_list)
         break;
-      hostent->h_addr_list[1] = NULL;
-      hostent->h_addr_list[0] = ares_malloc(addrlen);
-      if (!hostent->h_addr_list[0])
+      hostent_ptr->h_addr_list[1] = NULL;
+      hostent_ptr->h_addr_list[0] = (char*)ares_malloc(addrlen);
+      if (!hostent_ptr->h_addr_list[0])
         break;
       if (addr.family == AF_INET)
-        memcpy(hostent->h_addr_list[0], &addr.addrV4, sizeof(addr.addrV4));
+        memcpy(hostent_ptr->h_addr_list[0], &addr.addrV4, sizeof(addr.addrV4));
       else
-        memcpy(hostent->h_addr_list[0], &addr.addrV6, sizeof(addr.addrV6));
+        memcpy(hostent_ptr->h_addr_list[0], &addr.addrV6, sizeof(addr.addrV6));
 
       /* Copy aliases. */
-      hostent->h_aliases = ares_malloc((naliases + 1) * sizeof(char *));
-      if (!hostent->h_aliases)
+      hostent_ptr->h_aliases = (char**)ares_malloc((naliases + 1) * sizeof(char *));
+      if (!hostent_ptr->h_aliases)
         break;
-      alias = hostent->h_aliases;
+      alias = hostent_ptr->h_aliases;
       while (naliases)
         *(alias + naliases--) = NULL;
       *alias = NULL;
@@ -217,14 +218,14 @@ int ares__get_hostent(FILE *fp, int family, struct hostent **host)
         break;
 
       /* Copy actual network address family and length. */
-      hostent->h_addrtype = aresx_sitoss(addr.family);
-      hostent->h_length = aresx_uztoss(addrlen);
+      hostent_ptr->h_addrtype = aresx_sitoss(addr.family);
+      hostent_ptr->h_length = aresx_uztoss(addrlen);
 
       /* Free line buffer. */
       ares_free(line);
 
       /* Return hostent successfully */
-      *host = hostent;
+      *host = hostent_ptr;
       return ARES_SUCCESS;
 
     }
@@ -236,23 +237,23 @@ int ares__get_hostent(FILE *fp, int family, struct hostent **host)
   if (status == ARES_SUCCESS)
     {
       /* Memory allocation failure; clean up. */
-      if (hostent)
+      if (hostent_ptr)
         {
-          if (hostent->h_name)
-            ares_free((char *) hostent->h_name);
-          if (hostent->h_aliases)
+          if (hostent_ptr->h_name)
+            ares_free((char *) hostent_ptr->h_name);
+          if (hostent_ptr->h_aliases)
             {
-              for (alias = hostent->h_aliases; *alias; alias++)
+              for (alias = hostent_ptr->h_aliases; *alias; alias++)
                 ares_free(*alias);
-              ares_free(hostent->h_aliases);
+              ares_free(hostent_ptr->h_aliases);
             }
-          if (hostent->h_addr_list)
+          if (hostent_ptr->h_addr_list)
             {
-              if (hostent->h_addr_list[0])
-                ares_free(hostent->h_addr_list[0]);
-              ares_free(hostent->h_addr_list);
+              if (hostent_ptr->h_addr_list[0])
+                ares_free(hostent_ptr->h_addr_list[0]);
+              ares_free(hostent_ptr->h_addr_list);
             }
-          ares_free(hostent);
+          ares_free(hostent_ptr);
         }
       return ARES_ENOMEM;
     }

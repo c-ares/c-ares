@@ -132,7 +132,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: n/a on non-WinSock */
 
-  channel = ares_malloc(sizeof(struct ares_channeldata));
+  channel = (ares_channeldata*)ares_malloc(sizeof(struct ares_channeldata));
   if (!channel) {
     *channelptr = NULL;
     return ARES_ENOMEM;
@@ -377,7 +377,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
         ipv4_nservers++;
     }
     if (ipv4_nservers) {
-      options->servers = ares_malloc(ipv4_nservers * sizeof(struct in_addr));
+      options->servers = (in_addr*)ares_malloc(ipv4_nservers * sizeof(struct in_addr));
       if (!options->servers)
         return ARES_ENOMEM;
       for (i = j = 0; i < channel->nservers; i++)
@@ -395,7 +395,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
 
   /* copy domains */
   if (channel->ndomains) {
-    options->domains = ares_malloc(channel->ndomains * sizeof(char *));
+    options->domains = (char**)ares_malloc(channel->ndomains * sizeof(char *));
     if (!options->domains)
       return ARES_ENOMEM;
 
@@ -418,7 +418,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
 
   /* copy sortlist */
   if (channel->nsort) {
-    options->sortlist = ares_malloc(channel->nsort * sizeof(struct apattern));
+    options->sortlist = (apattern*)ares_malloc(channel->nsort * sizeof(struct apattern));
     if (!options->sortlist)
       return ARES_ENOMEM;
     for (i = 0; i < channel->nsort; i++)
@@ -476,7 +476,7 @@ static int init_by_options(ares_channel channel,
       if (options->nservers > 0)
         {
           channel->servers =
-            ares_malloc(options->nservers * sizeof(struct server_state));
+            (server_state*)ares_malloc(options->nservers * sizeof(struct server_state));
           if (!channel->servers)
             return ARES_ENOMEM;
           for (i = 0; i < options->nservers; i++)
@@ -500,7 +500,7 @@ static int init_by_options(ares_channel channel,
       /* Avoid zero size allocations at any cost */
       if (options->ndomains > 0)
       {
-        channel->domains = ares_malloc(options->ndomains * sizeof(char *));
+        channel->domains = (char**)ares_malloc(options->ndomains * sizeof(char *));
         if (!channel->domains)
           return ARES_ENOMEM;
         for (i = 0; i < options->ndomains; i++)
@@ -525,7 +525,7 @@ static int init_by_options(ares_channel channel,
   /* copy sortlist */
   if ((optmask & ARES_OPT_SORTLIST) && (channel->nsort == -1)) {
     if (options->nsort > 0) {
-      channel->sortlist = ares_malloc(options->nsort * sizeof(struct apattern));
+      channel->sortlist = (apattern*)ares_malloc(options->nsort * sizeof(struct apattern));
       if (!channel->sortlist)
         return ARES_ENOMEM;
       for (i = 0; i < options->nsort; i++)
@@ -1873,7 +1873,7 @@ static int init_by_defaults(ares_channel channel)
 
   if (channel->nservers == -1) {
     /* If nobody specified servers, try a local named. */
-    channel->servers = ares_malloc(sizeof(struct server_state));
+    channel->servers = (server_state*)ares_malloc(sizeof(struct server_state));
     if (!channel->servers) {
       rc = ARES_ENOMEM;
       goto error;
@@ -1906,7 +1906,7 @@ static int init_by_defaults(ares_channel channel)
     int res;
     channel->ndomains = 0; /* default to none */
 
-    hostname = ares_malloc(len);
+    hostname = (char*)ares_malloc(len);
     if(!hostname) {
       rc = ARES_ENOMEM;
       goto error;
@@ -1919,7 +1919,7 @@ static int init_by_defaults(ares_channel channel)
         char *p;
         len *= 2;
         lenv *= 2;
-        p = ares_realloc(hostname, len);
+        p = (char*)ares_realloc(hostname, len);
         if(!p) {
           rc = ARES_ENOMEM;
           goto error;
@@ -1939,7 +1939,7 @@ static int init_by_defaults(ares_channel channel)
     dot = strchr(hostname, '.');
     if (dot) {
       /* a dot was found */
-      channel->domains = ares_malloc(sizeof(char *));
+      channel->domains = (char**)ares_malloc(sizeof(char *));
       if (!channel->domains) {
         rc = ARES_ENOMEM;
         goto error;
@@ -2160,7 +2160,7 @@ static int config_nameserver(struct server_state **servers, int *nservers,
         continue;
 
       /* Resize servers state array. */
-      newserv = ares_realloc(*servers, (*nservers + 1) *
+      newserv = (server_state*)ares_realloc(*servers, (*nservers + 1) *
                              sizeof(struct server_state));
       if (!newserv)
         return ARES_ENOMEM;
@@ -2308,7 +2308,7 @@ static int set_search(ares_channel channel, const char *str)
       return ARES_SUCCESS;
     }
 
-  channel->domains = ares_malloc(n * sizeof(char *));
+  channel->domains = (char**)ares_malloc(n * sizeof(char *));
   if (!channel->domains)
     return ARES_ENOMEM;
 
@@ -2321,7 +2321,7 @@ static int set_search(ares_channel channel, const char *str)
       q = p;
       while (*q && !ISSPACE(*q))
         q++;
-      channel->domains[n] = ares_malloc(q - p + 1);
+      channel->domains[n] = (char*)ares_malloc(q - p + 1);
       if (!channel->domains[n])
         return ARES_ENOMEM;
       memcpy(channel->domains[n], p, q - p);
@@ -2482,7 +2482,7 @@ static int sortlist_alloc(struct apattern **sortlist, int *nsort,
                           struct apattern *pat)
 {
   struct apattern *newsort;
-  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
+  newsort = (apattern*)ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
   if (!newsort)
     return 0;
   newsort[*nsort] = *pat;
@@ -2534,7 +2534,7 @@ static int init_id_key(rc4_key* key,int key_data_len)
   short counter;
   unsigned char *key_data_ptr = 0;
 
-  key_data_ptr = ares_malloc(key_data_len);
+  key_data_ptr = (unsigned char*)ares_malloc(key_data_len);
   if (!key_data_ptr)
     return ARES_ENOMEM;
   memset(key_data_ptr, 0, key_data_len);

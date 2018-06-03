@@ -38,7 +38,7 @@ static long timeoffset(struct timeval *now, struct timeval *check)
 struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
                              struct timeval *tvbuf)
 {
-  struct query *query;
+  struct query *query_ptr;
   struct list_node* list_head;
   struct list_node* list_node;
   struct timeval now;
@@ -57,10 +57,10 @@ struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
   for (list_node = list_head->next; list_node != list_head;
        list_node = list_node->next)
     {
-      query = list_node->data;
-      if (query->timeout.tv_sec == 0)
+      query_ptr = (query*)list_node->data;
+      if (query_ptr->timeout.tv_sec == 0)
         continue;
-      offset = timeoffset(&now, &query->timeout);
+      offset = timeoffset(&now, &query_ptr->timeout);
       if (offset < 0)
         offset = 0;
       if (min_offset == -1 || offset < min_offset)

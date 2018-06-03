@@ -84,7 +84,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   aptr += RRFIXEDSZ;
 
   /* allocate result struct */
-  soa = ares_malloc_data(ARES_DATATYPE_SOA_REPLY);
+  soa = (ares_soa_reply*)ares_malloc_data(ARES_DATATYPE_SOA_REPLY);
   if (!soa)
     {
       status = ARES_ENOMEM;

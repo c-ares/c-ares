@@ -81,7 +81,7 @@ ares_getopt(int nargc, char * const nargv[], const char *ostr)
         }
     }                                         /* option letter okay? */
     if ((optopt = (int)*place++) == (int)':' ||
-        (oli = strchr(ostr, optopt)) == NULL) {
+        (oli = (char*)strchr(ostr, optopt)) == NULL) {
         /*
          * if the user didn't specify '-' as an option,
          * assume it means EOF.
