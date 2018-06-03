@@ -163,7 +163,7 @@ void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
     /* This is where a DNS lookup becomes necessary */
     else
       {
-        niquery = (nameinfo_query*)ares_malloc(sizeof(struct nameinfo_query));
+        niquery = (struct nameinfo_query*)ares_malloc(sizeof(struct nameinfo_query));
         if (!niquery)
           {
             callback(arg, ARES_ENOMEM, 0, NULL, NULL);
