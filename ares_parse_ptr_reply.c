@@ -48,7 +48,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
   long len;
   const unsigned char *aptr;
   char *ptrname, *hostname, *rr_name, *rr_data;
-  struct hostent *hostent;
+  struct hostent *hostent_ptr;
   int aliascnt = 0;
   int alias_alloc = 8;
   char ** aliases;
@@ -80,7 +80,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
 
   /* Examine each answer resource record (RR) in turn. */
   hostname = NULL;
-  aliases = ares_malloc(alias_alloc * sizeof(char *));
+  aliases = (char**)ares_malloc(alias_alloc * sizeof(char *));
   if (!aliases)
     {
       ares_free(ptrname);
@@ -124,7 +124,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
           if (hostname)
             ares_free(hostname);
           hostname = rr_data;
-          aliases[aliascnt] = ares_malloc((strlen(rr_data)+1) * sizeof(char));
+          aliases[aliascnt] = (char*)ares_malloc((strlen(rr_data)+1) * sizeof(char));
           if (!aliases[aliascnt])
             {
               ares_free(rr_name);
@@ -136,7 +136,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
           if (aliascnt >= alias_alloc) {
             char **ptr;
             alias_alloc *= 2;
-            ptr = ares_realloc(aliases, alias_alloc * sizeof(char *));
+            ptr = (char**)ares_realloc(aliases, alias_alloc * sizeof(char *));
             if(!ptr) {
               ares_free(rr_name);
               status = ARES_ENOMEM;
@@ -174,37 +174,37 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
   if (status == ARES_SUCCESS)
     {
       /* We got our answer.  Allocate memory to build the host entry. */
-      hostent = ares_malloc(sizeof(struct hostent));
-      if (hostent)
+      hostent_ptr = (struct hostent*)ares_malloc(sizeof(struct hostent));
+      if (hostent_ptr)
         {
-          hostent->h_addr_list = ares_malloc(2 * sizeof(char *));
-          if (hostent->h_addr_list)
+          hostent_ptr->h_addr_list = (char**)ares_malloc(2 * sizeof(char *));
+          if (hostent_ptr->h_addr_list)
             {
-              hostent->h_addr_list[0] = ares_malloc(addrlen);
-              if (hostent->h_addr_list[0])
+              hostent_ptr->h_addr_list[0] = (char*)ares_malloc(addrlen);
+              if (hostent_ptr->h_addr_list[0])
                 {
-                  hostent->h_aliases = ares_malloc((aliascnt+1) * sizeof (char *));
-                  if (hostent->h_aliases)
+                  hostent_ptr->h_aliases = (char**)ares_malloc((aliascnt+1) * sizeof (char *));
+                  if (hostent_ptr->h_aliases)
                     {
                       /* Fill in the hostent and return successfully. */
-                      hostent->h_name = hostname;
+                      hostent_ptr->h_name = hostname;
                       for (i=0 ; i<aliascnt ; i++)
-                        hostent->h_aliases[i] = aliases[i];
-                      hostent->h_aliases[aliascnt] = NULL;
-                      hostent->h_addrtype = aresx_sitoss(family);
-                      hostent->h_length = aresx_sitoss(addrlen);
-                      memcpy(hostent->h_addr_list[0], addr, addrlen);
-                      hostent->h_addr_list[1] = NULL;
-                      *host = hostent;
+                        hostent_ptr->h_aliases[i] = aliases[i];
+                      hostent_ptr->h_aliases[aliascnt] = NULL;
+                      hostent_ptr->h_addrtype = aresx_sitoss(family);
+                      hostent_ptr->h_length = aresx_sitoss(addrlen);
+                      memcpy(hostent_ptr->h_addr_list[0], addr, addrlen);
+                      hostent_ptr->h_addr_list[1] = NULL;
+                      *host = hostent_ptr;
                       ares_free(aliases);
                       ares_free(ptrname);
                       return ARES_SUCCESS;
                     }
-                  ares_free(hostent->h_addr_list[0]);
+                  ares_free(hostent_ptr->h_addr_list[0]);
                 }
-              ares_free(hostent->h_addr_list);
+              ares_free(hostent_ptr->h_addr_list);
             }
-          ares_free(hostent);
+          ares_free(hostent_ptr);
         }
       status = ARES_ENOMEM;
     }

@@ -41,7 +41,7 @@ void ares_destroy_options(struct ares_options *options)
 void ares_destroy(ares_channel channel)
 {
   int i;
-  struct query *query;
+  struct query *query_ptr;
   struct list_node* list_head;
   struct list_node* list_node;
   
@@ -51,10 +51,10 @@ void ares_destroy(ares_channel channel)
   list_head = &(channel->all_queries);
   for (list_node = list_head->next; list_node != list_head; )
     {
-      query = list_node->data;
+      query_ptr = (struct query*)list_node->data;
       list_node = list_node->next;  /* since we're deleting the query */
-      query->callback(query->arg, ARES_EDESTRUCTION, 0, NULL, 0);
-      ares__free_query(query);
+      query_ptr->callback(query_ptr->arg, ARES_EDESTRUCTION, 0, NULL, 0);
+      ares__free_query(query_ptr);
     }
 #ifndef NDEBUG
   /* Freeing the query should remove it from all the lists in which it sits,

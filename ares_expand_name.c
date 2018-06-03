@@ -77,7 +77,7 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
   if (nlen.sig < 0)
     return ARES_EBADNAME;
 
-  *s = ares_malloc(nlen.uns + 1);
+  *s = (char*)ares_malloc(nlen.uns + 1);
   if (!*s)
     return ARES_ENOMEM;
   q = *s;

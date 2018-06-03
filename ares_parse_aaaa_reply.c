@@ -60,7 +60,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
   const unsigned char *aptr;
   char *hostname, *rr_name, *rr_data, **aliases;
   struct ares_in6_addr *addrs;
-  struct hostent *hostent;
+  struct hostent *hostent_ptr;
   const int max_addr_ttls = (addrttls && naddrttls) ? *naddrttls : 0;
 
   /* Set *host to NULL for all failure cases. */
@@ -95,13 +95,13 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
   /* Allocate addresses and aliases; ancount gives an upper bound for both. */
   if (host)
     {
-      addrs = ares_malloc(ancount * sizeof(struct ares_in6_addr));
+      addrs = (struct ares_in6_addr*)ares_malloc(ancount * sizeof(struct ares_in6_addr));
       if (!addrs)
         {
           ares_free(hostname);
           return ARES_ENOMEM;
         }
-      aliases = ares_malloc((ancount + 1) * sizeof(char *));
+      aliases = (char**)ares_malloc((ancount + 1) * sizeof(char *));
       if (!aliases)
         {
           ares_free(hostname);
@@ -228,26 +228,26 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
       if (host)
         {
           /* Allocate memory to build the host entry. */
-          hostent = ares_malloc(sizeof(struct hostent));
-          if (hostent)
+          hostent_ptr = (struct hostent*)ares_malloc(sizeof(struct hostent));
+          if (hostent_ptr)
             {
-              hostent->h_addr_list = ares_malloc((naddrs + 1) * sizeof(char *));
-              if (hostent->h_addr_list)
+              hostent_ptr->h_addr_list = (char**)ares_malloc((naddrs + 1) * sizeof(char *));
+              if (hostent_ptr->h_addr_list)
                 {
                   /* Fill in the hostent and return successfully. */
-                  hostent->h_name = hostname;
-                  hostent->h_aliases = aliases;
-                  hostent->h_addrtype = AF_INET6;
-                  hostent->h_length = sizeof(struct ares_in6_addr);
+                  hostent_ptr->h_name = hostname;
+                  hostent_ptr->h_aliases = aliases;
+                  hostent_ptr->h_addrtype = AF_INET6;
+                  hostent_ptr->h_length = sizeof(struct ares_in6_addr);
                   for (i = 0; i < naddrs; i++)
-                    hostent->h_addr_list[i] = (char *) &addrs[i];
-                  hostent->h_addr_list[naddrs] = NULL;
+                    hostent_ptr->h_addr_list[i] = (char *) &addrs[i];
+                  hostent_ptr->h_addr_list[naddrs] = NULL;
                   if (!naddrs && addrs)
                     ares_free(addrs);
-                  *host = hostent;
+                  *host = hostent_ptr;
                   return ARES_SUCCESS;
                 }
-              ares_free(hostent);
+              ares_free(hostent_ptr);
             }
           status = ARES_ENOMEM;
         }

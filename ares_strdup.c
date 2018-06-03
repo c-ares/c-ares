@@ -36,7 +36,7 @@ char *ares_strdup(const char *s1)
       if(sz < (size_t)-1) {
         sz++;
         if(sz < ((size_t)-1) / sizeof(char)) {
-          s2 = ares_malloc(sz * sizeof(char));
+          s2 = (char*)ares_malloc(sz * sizeof(char));
           if(s2) {
             memcpy(s2, s1, sz * sizeof(char));
             return s2;

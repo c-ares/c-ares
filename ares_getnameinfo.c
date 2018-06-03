@@ -163,7 +163,7 @@ void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
     /* This is where a DNS lookup becomes necessary */
     else
       {
-        niquery = ares_malloc(sizeof(struct nameinfo_query));
+        niquery = (struct nameinfo_query*)ares_malloc(sizeof(struct nameinfo_query));
         if (!niquery)
           {
             callback(arg, ARES_ENOMEM, 0, NULL, NULL);
@@ -303,7 +303,7 @@ static char *lookup_service(unsigned short port, int flags,
           sep = &se;
           memset(tmpbuf, 0, sizeof(tmpbuf));
 #if GETSERVBYPORT_R_ARGS == 6
-          if (getservbyport_r(port, proto, &se, (void *)tmpbuf,
+          if (getservbyport_r(port, proto, &se, (char *)tmpbuf,
                               sizeof(tmpbuf), &sep) != 0)
             sep = NULL;  /* LCOV_EXCL_LINE: buffer large so this never fails */
 #elif GETSERVBYPORT_R_ARGS == 5

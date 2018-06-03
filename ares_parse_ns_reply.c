@@ -51,7 +51,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
   long len;
   const unsigned char *aptr;
   char* hostname, *rr_name, *rr_data, **nameservers;
-  struct hostent *hostent;
+  struct hostent *hostent_ptr;
 
   /* Set *host to NULL for all failure cases. */
   *host = NULL;
@@ -79,7 +79,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
   aptr += len + QFIXEDSZ;
 
   /* Allocate nameservers array; ancount gives an upper bound */
-  nameservers = ares_malloc( ( ancount + 1 ) * sizeof( char * ) );
+  nameservers = (char**)ares_malloc( ( ancount + 1 ) * sizeof( char * ) );
   if ( !nameservers )
   {
     ares_free( hostname );
@@ -123,7 +123,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
         break;
       }
 
-      nameservers[nameservers_num] = ares_malloc(strlen(rr_data)+1);
+      nameservers[nameservers_num] = (char*)ares_malloc(strlen(rr_data)+1);
 
       if (nameservers[nameservers_num]==NULL)
       {
@@ -156,22 +156,22 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
   {
     /* We got our answer.  Allocate memory to build the host entry. */
     nameservers[nameservers_num] = NULL;
-    hostent = ares_malloc( sizeof( struct hostent ) );
-    if ( hostent )
+    hostent_ptr = (struct hostent*)ares_malloc( sizeof( struct hostent ) );
+    if ( hostent_ptr )
     {
-      hostent->h_addr_list = ares_malloc( 1 * sizeof( char * ) );
-      if ( hostent->h_addr_list )
+      hostent_ptr->h_addr_list = (char**)ares_malloc( 1 * sizeof( char * ) );
+      if ( hostent_ptr->h_addr_list )
       {
         /* Fill in the hostent and return successfully. */
-        hostent->h_name = hostname;
-        hostent->h_aliases = nameservers;
-        hostent->h_addrtype = AF_INET;
-        hostent->h_length = sizeof( struct in_addr );
-        hostent->h_addr_list[0] = NULL;
-        *host = hostent;
+        hostent_ptr->h_name = hostname;
+        hostent_ptr->h_aliases = nameservers;
+        hostent_ptr->h_addrtype = AF_INET;
+        hostent_ptr->h_length = sizeof( struct in_addr );
+        hostent_ptr->h_addr_list[0] = NULL;
+        *host = hostent_ptr;
         return ARES_SUCCESS;
       }
-      ares_free( hostent );
+      ares_free( hostent_ptr );
     }
     status = ARES_ENOMEM;
   }

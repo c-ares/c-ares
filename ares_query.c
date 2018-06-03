@@ -77,7 +77,7 @@ static struct query* find_query_by_id(ares_channel channel, unsigned short id)
   for (list_node = list_head->next; list_node != list_head;
        list_node = list_node->next)
     {
-       struct query *q = list_node->data;
+       struct query *q = (struct query*)list_node->data;
        if (q->qid == qid)
 	  return q;
     }
@@ -111,7 +111,7 @@ unsigned short ares__generate_new_id(rc4_key* key)
 void ares_query(ares_channel channel, const char *name, int dnsclass,
                 int type, ares_callback callback, void *arg)
 {
-  struct qquery *qquery;
+  struct qquery *qquery_ptr;
   unsigned char *qbuf;
   int qlen, rd, status;
 
@@ -129,18 +129,18 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
   channel->next_id = generate_unique_id(channel);
 
   /* Allocate and fill in the query structure. */
-  qquery = ares_malloc(sizeof(struct qquery));
-  if (!qquery)
+  qquery_ptr = (struct qquery*)ares_malloc(sizeof(struct qquery));
+  if (!qquery_ptr)
     {
       ares_free_string(qbuf);
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
       return;
     }
-  qquery->callback = callback;
-  qquery->arg = arg;
+  qquery_ptr->callback = callback;
+  qquery_ptr->arg = arg;
 
   /* Send it off.  qcallback will be called when we get an answer. */
-  ares_send(channel, qbuf, qlen, qcallback, qquery);
+  ares_send(channel, qbuf, qlen, qcallback, qquery_ptr);
   ares_free_string(qbuf);
 }
 

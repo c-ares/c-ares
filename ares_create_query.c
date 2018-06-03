@@ -104,7 +104,7 @@ int ares_create_query(const char *name, int dnsclass, int type,
    */
   len = strlen(name) + 2 + HFIXEDSZ + QFIXEDSZ +
     (max_udp_size ? EDNSFIXEDSZ : 0);
-  buf = ares_malloc(len);
+  buf = (unsigned char *)ares_malloc(len);
   if (!buf)
     return ARES_ENOMEM;
 

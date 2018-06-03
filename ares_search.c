@@ -73,7 +73,7 @@ void ares_search(ares_channel channel, const char *name, int dnsclass,
   /* Allocate a search_query structure to hold the state necessary for
    * doing multiple lookups.
    */
-  squery = ares_malloc(sizeof(struct search_query));
+  squery = (struct search_query*)ares_malloc(sizeof(struct search_query));
   if (!squery)
     {
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
@@ -211,7 +211,7 @@ static int cat_domain(const char *name, const char *domain, char **s)
   size_t nlen = strlen(name);
   size_t dlen = strlen(domain);
 
-  *s = ares_malloc(nlen + 1 + dlen + 1);
+  *s = (char*)ares_malloc(nlen + 1 + dlen + 1);
   if (!*s)
     return ARES_ENOMEM;
   memcpy(*s, name, nlen);
@@ -268,7 +268,7 @@ STATIC_TESTABLE int single_domain(ares_channel channel, const char *name, char *
                       q = p + 1;
                       while (*q && !ISSPACE(*q))
                         q++;
-                      *s = ares_malloc(q - p + 1);
+                      *s = (char*)ares_malloc(q - p + 1);
                       if (*s)
                         {
                           memcpy(*s, p, q - p);
