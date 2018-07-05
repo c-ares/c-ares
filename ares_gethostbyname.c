@@ -244,7 +244,7 @@ static int fake_hostent(const char *name, int family,
   struct in_addr in;
   struct ares_in6_addr in6;
 
-  if (family == AF_INET || family == AF_INET6)
+  if (family == AF_INET || family == AF_UNSPEC)
     {
       /* It only looks like an IP address if it's all numbers and dots. */
       int numdots = 0, valid = 1;
@@ -267,8 +267,11 @@ static int fake_hostent(const char *name, int family,
       else
         result = ((in.s_addr = inet_addr(name)) == INADDR_NONE ? 0 : 1);
 
-      if (result)
-        family = AF_INET;
+      /*
+       * Set address family in case of failure,
+       * as we will try to convert it later afterwards
+       */
+        family = result ? AF_INET : AF_INET6;
     }
   if (family == AF_INET6)
     result = (ares_inet_pton(AF_INET6, name, &in6) < 1 ? 0 : 1);
