@@ -299,7 +299,7 @@ int ares_dup(ares_channel *dest, ares_channel src)
   (*dest)->sock_func_cb_data   = src->sock_func_cb_data;
 
   strncpy((*dest)->local_dev_name, src->local_dev_name,
-          sizeof(src->local_dev_name));
+          sizeof((*dest)->local_dev_name));
   (*dest)->local_ip4 = src->local_ip4;
   memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
 
