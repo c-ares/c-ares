@@ -299,7 +299,7 @@ int ares_dup(ares_channel *dest, ares_channel src)
   (*dest)->sock_func_cb_data   = src->sock_func_cb_data;
 
   strncpy((*dest)->local_dev_name, src->local_dev_name,
-          sizeof(src->local_dev_name));
+          sizeof((*dest)->local_dev_name));
   (*dest)->local_ip4 = src->local_ip4;
   memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
 
@@ -1180,7 +1180,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
         /* Allocate room for another address, if necessary, else skip. */
         if(addressesIndex == addressesSize) {
           const size_t newSize = addressesSize + 4;
-          Address * const newMem = 
+          Address * const newMem =
             (Address*)ares_realloc(addresses, sizeof(Address) * newSize);
           if(newMem == NULL) {
             continue;
@@ -1237,7 +1237,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
           /* Save the address as the next element in addresses. */
           addresses[addressesIndex].metric =
             getBestRouteMetric(&ipaaEntry->Luid,
-                               (SOCKADDR_INET*)(namesrvr.sa), 
+                               (SOCKADDR_INET*)(namesrvr.sa),
                                ipaaEntry->Ipv6Metric);
         }
         else
@@ -1287,7 +1287,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
 
 done:
   ares_free(addresses);
-  
+
   if (ipaa)
     ares_free(ipaa);
 
@@ -1391,7 +1391,7 @@ static size_t next_suffix(const char** list, const size_t advance)
  *
  * Returns 1 and sets *outptr when returning a dynamically allocated string.
  *
- * Implementation supports Windows Server 2003 and newer 
+ * Implementation supports Windows Server 2003 and newer
  */
 static int get_SuffixList_Windows(char **outptr)
 {
