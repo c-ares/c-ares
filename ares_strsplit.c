@@ -18,7 +18,42 @@
 #include "ares.h"
 #include "ares_private.h"
 
-char **ares_strsplit(const char *in, char delm, size_t *num_elm)
+static int list_contains(const char **list, size_t num_elem, const char *str, int insensitive)
+{
+  size_t len;
+  size_t i;
+
+  len = strlen(str);
+  for (i=0; i<num_elem; i++)
+  {
+    if (insensitive)
+    {
+      if (strncmp(list[i], str, len) == 0)
+        return 1;
+    }
+    else
+    {
+      if (strnicmp(list[i], str, len) == 0)
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
+static int is_delim(char c, const char *delims, size_t num_delims)
+{
+  size_t i;
+
+  for (i=0; i<num_delims; i++)
+  {
+    if (c == delims[i])
+      return 1;
+  }
+  return 0;
+}
+
+char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *num_elm)
 {
   char *parsestr;
   char **temp;
@@ -26,19 +61,21 @@ char **ares_strsplit(const char *in, char delm, size_t *num_elm)
   size_t cnt;
   size_t nelms;
   size_t in_len;
+  size_t num_delims;
   size_t i;
 
-  if (in == NULL || num_elm == NULL)
+  if (in == NULL || delms == NULL || num_elm == NULL)
     return NULL;
   *num_elm = 0;
 
   in_len = strlen(in);
+  num_delims = strlen(delms);
 
   /* Figure out how many elements. */
   nelms = 1;
   for (i=0; i<in_len; i++)
   {
-    if (in[i] == delm)
+    if (is_delim(c, delms, num_delims))
     {
       nelms++;
     }
@@ -46,17 +83,24 @@ char **ares_strsplit(const char *in, char delm, size_t *num_elm)
 
   /* Copy of input so we can cut it up. */
   parsestr = ares_malloc(in_len+1);
+  if (parsestr == NULL)
+    return NULL;
   memcpy(parsestr, in, in_len+1);
   parsestr[in_len] = '\0';
 
   /* Temporary array to store locations of start of each element
    * within parsestr. */
   temp = ares_malloc(nelms * sizeof(*temp));
+  if (temp == NULL)
+  {
+    free(parsestr);
+    return NULL;
+  }
   temp[0] = parsestr;
   cnt = 1;
   for (i=0; i<in_len && cnt<nelms; i++)
   {
-    if (parsestr[i] != delm)
+    if (!is_delim(c, delms, num_delims))
       continue;
 
     /* Replace sep with NULL. */
@@ -67,7 +111,8 @@ char **ares_strsplit(const char *in, char delm, size_t *num_elm)
   }
 
   /* Find out how many actual elements (non-empty)
-   * we have. */
+   * we have. This is a maximum because if make_set
+   * is enabled we could have fewer that can be added. */
   *num_elm = 0;
   for (i=0; i<cnt; i++)
   {
@@ -85,14 +130,32 @@ char **ares_strsplit(const char *in, char delm, size_t *num_elm)
 
   /* Copy each element to our output array. */
   out = ares_malloc(*num_elm * sizeof(*out));
+  if (out == NULL)
+  {
+    free(parsestr);
+    free(temp);
+    return NULL;
+  }
   nelms = 0;
   for (i=0; i<cnt; i++)
   {
     if (temp[i][0] == '\0')
       continue;
+
+    if (make_set && list_contains(out, nelms, temp[i], 1))
+      continue;
+
     out[nelms] = ares_strdup(temp[i]);
+    if (out[nelms] == NULL)
+    {
+      free(parsestr);
+      free(temp);
+      return NULL;
+    }
     nelms++;
   }
+  /* Get the true number of elements if make_set. */
+  *num_elm = nelms;
 
   free(parsestr);
   free(temp);

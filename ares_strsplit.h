@@ -19,7 +19,7 @@
 #include "ares_setup.h"
 
 /* Split a string on delem skipping empty elements. */
-char **ares_strsplit(const char *in, char delm, size_t *num_elm);
+char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *num_elm);
 
 #endif /* HEADER_CARES_STRSPLIT_H */
 

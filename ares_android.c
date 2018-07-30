@@ -424,7 +424,7 @@ char **ares_get_android_search_domains_list(int *num_domains)
 
   /* Split on , */
   domain = (*env)->GetStringUTFChars(env, domains, 0);
-  domain_list = ares_strsplit(domain, ',', &cnt);
+  domain_list = ares_strsplit(domain, ",", 1, &cnt);
   *num_domains = (int)cnt;
   (*env)->ReleaseStringUTFChars(env, domains, domain);
   (*env)->DeleteLocalRef(env, domains);
