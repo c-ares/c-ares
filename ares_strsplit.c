@@ -71,7 +71,7 @@ char **ares_strsplit(const char *in, char delm, size_t *num_elm)
   *num_elm = 0;
   for (i=0; i<cnt; i++)
   {
-    if (temp[i] != '\0')
+    if (temp[i][0] != '\0')
       (*num_elm)++;
   }
 
@@ -88,7 +88,7 @@ char **ares_strsplit(const char *in, char delm, size_t *num_elm)
   nelms = 0;
   for (i=0; i<cnt; i++)
   {
-    if (temp[i] == '\0')
+    if (temp[i][0] == '\0')
       continue;
     out[nelms] = ares_strdup(temp[i]);
     nelms++;

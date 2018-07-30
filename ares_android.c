@@ -361,6 +361,7 @@ char **ares_get_android_search_domains_list(int *num_domains)
   const char *domain;
   int res;
   size_t i;
+  size_t cnt;
   char **domain_list = NULL;
   int need_detatch = 0;
 
@@ -423,7 +424,8 @@ char **ares_get_android_search_domains_list(int *num_domains)
 
   /* Split on , */
   domain = (*env)->GetStringUTFChars(env, domains, 0);
-  domain_list = ares_strsplit(domain, ',', num_domains);
+  domain_list = ares_strsplit(domain, ',', &cnt);
+  *num_domains = (int)cnt;
   (*env)->ReleaseStringUTFChars(env, domains, domain);
   (*env)->DeleteLocalRef(env, domains);
 
