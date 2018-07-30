@@ -1585,6 +1585,10 @@ static int init_by_resolv_conf(ares_channel channel)
     }
     ares_free(dns_servers);
   }
+  if (channel->ndomains == -1)
+  {
+	channel->domains = ares_get_android_search_domains_list(*channel->ndomains);
+  }
 
 #  ifdef HAVE___SYSTEM_PROPERTY_GET
   /* Old way using the system property still in place as

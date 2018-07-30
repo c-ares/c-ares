@@ -1,4 +1,7 @@
-/* Copyright (C) 2017 by John Schember <john@nachtimwald.com>
+#ifndef HEADER_CARES_STRSPLIT_H
+#define HEADER_CARES_STRSPLIT_H
+
+/* Copyright (C) 2018 by John Schember <john@nachtimwald.com>
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -13,15 +16,10 @@
  * without express or implied warranty.
  */
 
-#ifndef __ARES_ANDROID_H__
-#define __ARES_ANDROID_H__
+#include "ares_setup.h"
 
-#if defined(ANDROID) || defined(__ANDROID__)
+/* Split a string on delem skipping empty elements. */
+char **ares_strsplit(const char *in, char delm, size_t *num_elm);
 
-char **ares_get_android_server_list(size_t max_servers, size_t *num_servers);
-char **ares_get_android_search_domains_list(size_t *num_domains);
-void ares_library_cleanup_android(void);
+#endif /* HEADER_CARES_STRSPLIT_H */
 
-#endif
-
-#endif /* __ARES_ANDROID_H__ */

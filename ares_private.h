@@ -100,6 +100,7 @@
 #endif
 
 #include "ares_strdup.h"
+#include "ares_strsplit.h"
 
 #ifndef HAVE_STRCASECMP
 #  include "ares_strcasecmp.h"
