@@ -361,7 +361,7 @@ char **ares_get_android_search_domains_list(int *num_domains)
   const char *domain;
   int res;
   size_t i;
-  size_t cnt;
+  size_t cnt = 0;
   char **domain_list = NULL;
   int need_detatch = 0;
 
