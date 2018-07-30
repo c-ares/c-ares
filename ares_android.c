@@ -352,7 +352,7 @@ done:
   return dns_list;
 }
 
-char **ares_get_android_search_domains_list(size_t *num_domains)
+char **ares_get_android_search_domains_list(int *num_domains)
 {
   JNIEnv *env = NULL;
   jobject active_network = NULL;
