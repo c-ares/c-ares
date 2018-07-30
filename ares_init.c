@@ -1529,7 +1529,7 @@ static int init_by_resolv_conf(ares_channel channel)
   char propname[PROP_NAME_MAX];
   char propvalue[PROP_VALUE_MAX]="";
   char **dns_servers;
-  const char *domains;
+  char *domains;
   size_t num_servers;
 
   /* Use the Android connectivity manager to get a list
