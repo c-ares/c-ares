@@ -1558,6 +1558,7 @@ static int init_by_resolv_conf(ares_channel channel)
   {
     domains = ares_get_android_search_domains_list();
 	set_search(channel, domains);
+	ares_free(domains);
   }
 
 #  ifdef HAVE___SYSTEM_PROPERTY_GET
