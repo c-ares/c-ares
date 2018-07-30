@@ -352,7 +352,7 @@ done:
   return dns_list;
 }
 
-char **ares_get_android_search_domains_list(int *num_domains)
+char *ares_get_android_search_domains_list(void)
 {
   JNIEnv *env = NULL;
   jobject active_network = NULL;
@@ -362,11 +362,10 @@ char **ares_get_android_search_domains_list(int *num_domains)
   int res;
   size_t i;
   size_t cnt = 0;
-  char **domain_list = NULL;
+  char *domain_list = NULL;
   int need_detatch = 0;
 
-  if (android_jvm == NULL || android_connectivity_manager == NULL ||
-      num_domains == NULL)
+  if (android_jvm == NULL || android_connectivity_manager == NULL)
   {
     return NULL;
   }
@@ -424,8 +423,7 @@ char **ares_get_android_search_domains_list(int *num_domains)
 
   /* Split on , */
   domain = (*env)->GetStringUTFChars(env, domains, 0);
-  domain_list = ares_strsplit(domain, ",", 1, &cnt);
-  *num_domains = (int)cnt;
+  domain_list = ares_strdup(domain);
   (*env)->ReleaseStringUTFChars(env, domains, domain);
   (*env)->DeleteLocalRef(env, domains);
 

@@ -18,7 +18,7 @@
 #include "ares.h"
 #include "ares_private.h"
 
-static int list_contains(const char **list, size_t num_elem, const char *str, int insensitive)
+static int list_contains(char * const *list, size_t num_elem, const char *str, int insensitive)
 {
   size_t len;
   size_t i;
@@ -33,7 +33,7 @@ static int list_contains(const char **list, size_t num_elem, const char *str, in
     }
     else
     {
-      if (strnicmp(list[i], str, len) == 0)
+      if (strncasecmp(list[i], str, len) == 0)
         return 1;
     }
   }
@@ -75,7 +75,7 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
   nelms = 1;
   for (i=0; i<in_len; i++)
   {
-    if (is_delim(c, delms, num_delims))
+    if (is_delim(in[i], delms, num_delims))
     {
       nelms++;
     }
@@ -93,14 +93,14 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
   temp = ares_malloc(nelms * sizeof(*temp));
   if (temp == NULL)
   {
-    free(parsestr);
+    ares_free(parsestr);
     return NULL;
   }
   temp[0] = parsestr;
   cnt = 1;
   for (i=0; i<in_len && cnt<nelms; i++)
   {
-    if (!is_delim(c, delms, num_delims))
+    if (!is_delim(parsestr[i], delms, num_delims))
       continue;
 
     /* Replace sep with NULL. */
@@ -123,8 +123,8 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
   /* Check if there are actual elements. */
   if (*num_elm == 0)
   {
-    free(parsestr);
-    free(temp);
+    ares_free(parsestr);
+    ares_free(temp);
     return NULL;
   }
 
@@ -132,8 +132,8 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
   out = ares_malloc(*num_elm * sizeof(*out));
   if (out == NULL)
   {
-    free(parsestr);
-    free(temp);
+    ares_free(parsestr);
+    ares_free(temp);
     return NULL;
   }
   nelms = 0;
@@ -148,8 +148,8 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
     out[nelms] = ares_strdup(temp[i]);
     if (out[nelms] == NULL)
     {
-      free(parsestr);
-      free(temp);
+      ares_free(parsestr);
+      ares_free(temp);
       return NULL;
     }
     nelms++;
@@ -157,7 +157,15 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
   /* Get the true number of elements if make_set. */
   *num_elm = nelms;
 
-  free(parsestr);
-  free(temp);
+  /* If there are no elements don't return an empty allocated
+   * array. */
+  if (*num_elm == 0)
+  {
+	  ares_free(out);
+	  out = NULL;
+  }
+
+  ares_free(parsestr);
+  ares_free(temp);
   return out;
 }

@@ -1327,74 +1327,6 @@ static int get_DNS_Windows(char **outptr)
   return get_DNS_Registry(outptr);
 }
 
-static void replace_comma_by_space(char* str)
-{
-  /* replace ',' by ' ' to coincide with resolv.conf search parameter */
-  char *p;
-  for (p = str; *p != '\0'; p++)
-  {
-    if (*p == ',')
-      *p = ' ';
-  }
-}
-
-/* Search if 'suffix' is containted in the 'searchlist'. Returns true if yes,
- * otherwise false. 'searchlist' is a comma separated list of domain suffixes,
- * 'suffix' is one domain suffix, 'len' is the length of 'suffix'.
- * The search ignores case. E.g.:
- * contains_suffix("abc.def,ghi.jkl", "ghi.JKL") returns true  */
-static BOOL contains_suffix(const char* const searchlist,
-                            const char* const suffix, const size_t len)
-{
-  const char* beg = searchlist;
-  const char* end;
-  if (!*suffix)
-    return TRUE;
-  for (;;)
-  {
-    while (*beg && (ISSPACE(*beg) || (*beg == ',')))
-      ++beg;
-    if (!*beg)
-      return FALSE;
-    end = beg;
-    while (*end && !ISSPACE(*end) && (*end != ','))
-      ++end;
-    if (len == (size_t)(end - beg) && !strnicmp(beg, suffix, len))
-      return TRUE;
-    beg = end;
-  }
-}
-
-/* advances list to the next suffix within a comma separated search list.
- * len is the length of the next suffix. */
-static size_t next_suffix(const char** list, const size_t advance)
-{
-  const char* beg = *list + advance;
-  const char* end;
-  while (*beg && (ISSPACE(*beg) || (*beg == ',')))
-    ++beg;
-  end = beg;
-  while (*end && !ISSPACE(*end) && (*end != ','))
-    ++end;
-  *list = beg;
-  return end - beg;
-}
-
-/* Appends suffixes from 'tail' to 'searchlist' if not contains yet.
- * Arguments are comma separated lists of domain suffixes. */
-static void append_suffixes(char** searchlist, const char* const tail)
-{
-  const char *suffix = tail;
-  size_t len = 0;
-  if (!tail || !*tail)
-    return;
-  while (len = next_suffix(&suffix, len))
-  {
-    if (!*searchlist || !contains_suffix(*searchlist, suffix, len))
-      commanjoin(searchlist, suffix, len);
-  }
-}
-
 /*
  * get_SuffixList_Windows()
  *
@@ -1428,7 +1360,7 @@ static int get_SuffixList_Windows(char **outptr)
     get_REG_SZ(hKey, SEARCHLIST_KEY, outptr);
     if (get_REG_SZ(hKey, DOMAIN_KEY, &p))
     {
-      append_suffixes(outptr, p);
+      commajoin(outptr, p);
       ares_free(p);
       p = NULL;
     }
@@ -1440,7 +1372,7 @@ static int get_SuffixList_Windows(char **outptr)
   {
     if (get_REG_SZ(hKey, SEARCHLIST_KEY, &p))
     {
-      append_suffixes(outptr, p);
+      commajoin(outptr, p);
       ares_free(p);
       p = NULL;
     }
@@ -1454,7 +1386,7 @@ static int get_SuffixList_Windows(char **outptr)
   {
     if (get_REG_SZ(hKey, PRIMARYDNSSUFFIX_KEY, &p))
     {
-      append_suffixes(outptr, p);
+      commajoin(outptr, p);
       ares_free(p);
       p = NULL;
     }
@@ -1478,19 +1410,19 @@ static int get_SuffixList_Windows(char **outptr)
       /* p can be comma separated (SearchList) */
       if (get_REG_SZ(hKeyEnum, SEARCHLIST_KEY, &p))
       {
-        append_suffixes(outptr, p);
+        commajoin(outptr, p);
         ares_free(p);
         p = NULL;
       }
       if (get_REG_SZ(hKeyEnum, DOMAIN_KEY, &p))
       {
-        append_suffixes(outptr, p);
+        commajoin(outptr, p);
         ares_free(p);
         p = NULL;
       }
       if (get_REG_SZ(hKeyEnum, DHCPDOMAIN_KEY, &p))
       {
-        append_suffixes(outptr, p);
+        commajoin(outptr, p);
         ares_free(p);
         p = NULL;
       }
@@ -1498,9 +1430,6 @@ static int get_SuffixList_Windows(char **outptr)
     }
     RegCloseKey(hKey);
   }
-
-  if (*outptr)
-    replace_comma_by_space(*outptr);
 
   return *outptr != NULL;
 }
@@ -1600,6 +1529,7 @@ static int init_by_resolv_conf(ares_channel channel)
   char propname[PROP_NAME_MAX];
   char propvalue[PROP_VALUE_MAX]="";
   char **dns_servers;
+  const char *domains;
   size_t num_servers;
 
   /* Use the Android connectivity manager to get a list
@@ -1626,7 +1556,8 @@ static int init_by_resolv_conf(ares_channel channel)
   }
   if (channel->ndomains == -1)
   {
-    channel->domains = ares_get_android_search_domains_list(&(channel->ndomains));
+    domains = ares_get_android_search_domains_list();
+	set_search(channel, domains);
   }
 
 #  ifdef HAVE___SYSTEM_PROPERTY_GET
@@ -2321,6 +2252,7 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
 static int set_search(ares_channel channel, const char *str)
 {
   int n;
+  size_t cnt;
   const char *p, *q;
 
   if(channel->ndomains != -1) {
@@ -2333,48 +2265,10 @@ static int set_search(ares_channel channel, const char *str)
     channel->ndomains = -1;
   } /* LCOV_EXCL_STOP */
 
-  /* Count the domains given. */
-  n = 0;
-  p = str;
-  while (*p)
-    {
-      while (*p && !ISSPACE(*p))
-        p++;
-      while (ISSPACE(*p))
-        p++;
-      n++;
-    }
-
-  if (!n)
-    {
-      channel->ndomains = 0;
-      return ARES_SUCCESS;
-    }
-
-  channel->domains = ares_malloc(n * sizeof(char *));
-  if (!channel->domains)
-    return ARES_ENOMEM;
-
-  /* Now copy the domains. */
-  n = 0;
-  p = str;
-  while (*p)
-    {
-      channel->ndomains = n;
-      q = p;
-      while (*q && !ISSPACE(*q))
-        q++;
-      channel->domains[n] = ares_malloc(q - p + 1);
-      if (!channel->domains[n])
-        return ARES_ENOMEM;
-      memcpy(channel->domains[n], p, q - p);
-      channel->domains[n][q - p] = 0;
-      p = q;
-      while (ISSPACE(*p))
-        p++;
-      n++;
-    }
-  channel->ndomains = n;
+  channel->domains = ares_strsplit(str, ", ", 1, &cnt); 
+  channel->ndomains = (size_t)cnt;
+  if (channel->domains == NULL)
+	  channel->ndomains = -1;
 
   return ARES_SUCCESS;
 }
