@@ -365,7 +365,7 @@ char **ares_get_android_search_domains_list(size_t *num_domains)
   int need_detatch = 0;
 
   if (android_jvm == NULL || android_connectivity_manager == NULL ||
-          max_domains == 0 || num_domains == NULL)
+      num_domains == NULL)
   {
     return NULL;
   }
@@ -423,7 +423,7 @@ char **ares_get_android_search_domains_list(size_t *num_domains)
 
   /* Split on , */
   domain = (*env)->GetStringUTFChars(env, domains, 0);
-  domain_list = ares_strsplit(domain, strlen(domain), ',', num_domains);
+  domain_list = ares_strsplit(domain, ',', num_domains);
   (*env)->ReleaseStringUTFChars(env, domains, domain);
   (*env)->DeleteLocalRef(env, domains);
 
