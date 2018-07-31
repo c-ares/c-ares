@@ -33,7 +33,11 @@ static int list_contains(char * const *list, size_t num_elem, const char *str, i
     }
     else
     {
+#ifdef WIN32
+      if (strnicmp(list[i], str, len) == 0)
+#else
       if (strncasecmp(list[i], str, len) == 0)
+#endif
         return 1;
     }
   }
