@@ -86,11 +86,9 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
   }
 
   /* Copy of input so we can cut it up. */
-  parsestr = ares_malloc(in_len+1);
+  parsestr = ares_strdup(in);
   if (parsestr == NULL)
     return NULL;
-  memcpy(parsestr, in, in_len+1);
-  parsestr[in_len] = '\0';
 
   /* Temporary array to store locations of start of each element
    * within parsestr. */
