@@ -1557,8 +1557,8 @@ static int init_by_resolv_conf(ares_channel channel)
   if (channel->ndomains == -1)
   {
     domains = ares_get_android_search_domains_list();
-	set_search(channel, domains);
-	ares_free(domains);
+    set_search(channel, domains);
+    ares_free(domains);
   }
 
 #  ifdef HAVE___SYSTEM_PROPERTY_GET
@@ -2269,7 +2269,7 @@ static int set_search(ares_channel channel, const char *str)
   channel->domains = ares_strsplit(str, ", ", 1, &cnt); 
   channel->ndomains = (size_t)cnt;
   if (channel->domains == NULL)
-	  channel->ndomains = -1;
+    channel->ndomains = -1;
 
   return ARES_SUCCESS;
 }

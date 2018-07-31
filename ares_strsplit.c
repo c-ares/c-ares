@@ -28,16 +28,16 @@ static int list_contains(char * const *list, size_t num_elem, const char *str, i
   {
     if (insensitive)
     {
-      if (strncmp(list[i], str, len) == 0)
-        return 1;
-    }
-    else
-    {
 #ifdef WIN32
       if (strnicmp(list[i], str, len) == 0)
 #else
       if (strncasecmp(list[i], str, len) == 0)
 #endif
+        return 1;
+    }
+    else
+    {
+      if (strncmp(list[i], str, len) == 0)
         return 1;
     }
   }
@@ -165,8 +165,8 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
    * array. */
   if (*num_elm == 0)
   {
-	  ares_free(out);
-	  out = NULL;
+    ares_free(out);
+    out = NULL;
   }
 
   ares_free(parsestr);
