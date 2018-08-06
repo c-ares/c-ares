@@ -44,7 +44,7 @@ void ares_destroy(ares_channel channel)
   struct query *query;
   struct list_node* list_head;
   struct list_node* list_node;
-  
+
   if (!channel)
     return;
 
