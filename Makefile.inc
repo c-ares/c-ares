@@ -41,6 +41,7 @@ CSOURCES = ares__close_sockets.c	\
   ares_strcasecmp.c			\
   ares_strdup.c				\
   ares_strerror.c			\
+  ares_strsplit.c		\
   ares_timeout.c			\
   ares_version.c			\
   ares_writev.c				\
