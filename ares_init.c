@@ -2261,7 +2261,7 @@ static int set_search(ares_channel channel, const char *str)
   } /* LCOV_EXCL_STOP */
 
   channel->domains  = ares_strsplit(str, ", ", 1, &cnt); 
-  channel->ndomains = (size_t)cnt;
+  channel->ndomains = (int)cnt;
   if (channel->domains == NULL || channel->ndomains == 0) {
     channel->domains  = NULL;
     channel->ndomains = -1;
