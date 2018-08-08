@@ -57,6 +57,20 @@ static int is_delim(char c, const char *delims, size_t num_delims)
   return 0;
 }
 
+
+void ares_splitstr_free(char **elms, size_t num_elm)
+{
+  size_t i;
+
+  if (elms == NULL)
+    return;
+
+  for (i=0; i<num_elm; i++)
+    ares_free(elms[i]);
+  ares_free(elms);
+}
+
+
 char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *num_elm)
 {
   char *parsestr;
@@ -70,6 +84,7 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
 
   if (in == NULL || delms == NULL || num_elm == NULL)
     return NULL;
+
   *num_elm = 0;
 
   in_len = strlen(in);
@@ -112,32 +127,15 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
     cnt++;
   }
 
-  /* Find out how many actual elements (non-empty)
-   * we have. This is a maximum because if make_set
-   * is enabled we could have fewer that can be added. */
-  *num_elm = 0;
-  for (i=0; i<cnt; i++)
-  {
-    if (temp[i][0] != '\0')
-      (*num_elm)++;
-  }
-
-  /* Check if there are actual elements. */
-  if (*num_elm == 0)
-  {
-    ares_free(parsestr);
-    ares_free(temp);
-    return NULL;
-  }
-
   /* Copy each element to our output array. */
-  out = ares_malloc(*num_elm * sizeof(*out));
+  out = ares_malloc(nelms * sizeof(*out));
   if (out == NULL)
   {
     ares_free(parsestr);
     ares_free(temp);
     return NULL;
   }
+
   nelms = 0;
   for (i=0; i<cnt; i++)
   {
@@ -150,22 +148,25 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
     out[nelms] = ares_strdup(temp[i]);
     if (out[nelms] == NULL)
     {
+      ares_splitstr_free(out, nelms);
       ares_free(parsestr);
       ares_free(temp);
       return NULL;
     }
     nelms++;
   }
-  /* Get the true number of elements if make_set. */
-  *num_elm = nelms;
+
 
   /* If there are no elements don't return an empty allocated
    * array. */
-  if (*num_elm == 0)
+  if (nelms == 0)
   {
-    ares_free(out);
+    ares_splitstr_free(out, nelms);
     out = NULL;
   }
+
+  /* Get the true number of elements (recalculated because of make_set) */
+  *num_elm = nelms;
 
   ares_free(parsestr);
   ares_free(temp);

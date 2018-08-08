@@ -236,12 +236,8 @@ done:
       /* Something failed; clean up memory we may have allocated. */
       if (channel->servers)
         ares_free(channel->servers);
-      if (channel->domains)
-        {
-          for (i = 0; i < channel->ndomains; i++)
-            ares_free(channel->domains[i]);
-          ares_free(channel->domains);
-        }
+      if (channel->ndomains != -1)
+        ares_strsplit_free(channel->domains, channel->ndomains);
       if (channel->sortlist)
         ares_free(channel->sortlist);
       if(channel->lookups)
@@ -2259,17 +2255,17 @@ static int set_search(ares_channel channel, const char *str)
   if(channel->ndomains != -1) {
     /* LCOV_EXCL_START: all callers check ndomains == -1 */
     /* if we already have some domains present, free them first */
-    for(n=0; n < channel->ndomains; n++)
-      ares_free(channel->domains[n]);
-    ares_free(channel->domains);
+    ares_strsplit_free(channel->domains, channel->ndomains);
     channel->domains = NULL;
     channel->ndomains = -1;
   } /* LCOV_EXCL_STOP */
 
-  channel->domains = ares_strsplit(str, ", ", 1, &cnt); 
+  channel->domains  = ares_strsplit(str, ", ", 1, &cnt); 
   channel->ndomains = (size_t)cnt;
-  if (channel->domains == NULL)
+  if (channel->domains == NULL || channel->ndomains == 0) {
+    channel->domains  = NULL;
     channel->ndomains = -1;
+  }
 
   return ARES_SUCCESS;
 }
