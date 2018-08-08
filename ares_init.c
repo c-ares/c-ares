@@ -2248,9 +2248,7 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
 
 static int set_search(ares_channel channel, const char *str)
 {
-  int n;
   size_t cnt;
-  const char *p, *q;
 
   if(channel->ndomains != -1) {
     /* LCOV_EXCL_START: all callers check ndomains == -1 */
