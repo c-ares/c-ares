@@ -58,7 +58,7 @@ static int is_delim(char c, const char *delims, size_t num_delims)
 }
 
 
-void ares_splitstr_free(char **elms, size_t num_elm)
+void ares_strsplit_free(char **elms, size_t num_elm)
 {
   size_t i;
 
@@ -148,7 +148,7 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
     out[nelms] = ares_strdup(temp[i]);
     if (out[nelms] == NULL)
     {
-      ares_splitstr_free(out, nelms);
+      ares_strsplit_free(out, nelms);
       ares_free(parsestr);
       ares_free(temp);
       return NULL;
@@ -161,7 +161,7 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
    * array. */
   if (nelms == 0)
   {
-    ares_splitstr_free(out, nelms);
+    ares_strsplit_free(out, nelms);
     out = NULL;
   }
 
