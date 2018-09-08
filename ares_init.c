@@ -1662,6 +1662,7 @@ static int init_by_resolv_conf(ares_channel channel)
     size_t linesize;
     int error;
     int update_domains;
+    const char *resolvconf_path;
 
     /* Don't read resolv.conf and friends if we don't have to */
     if (ARES_CONFIG_CHECK(channel))
@@ -1671,89 +1672,49 @@ static int init_by_resolv_conf(ares_channel channel)
     update_domains = (channel->ndomains == -1);
 
     /* Support path for resolvconf filename set by ares_init_options */
-    if (channel->resolvconf_path) {
-      fp = fopen(channel->resolvconf_path, "r");
-      if (fp) {
-        while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
-        {
-          if ((p = try_config(line, "domain", ';')) && update_domains)
-            status = config_domain(channel, p);
-          else if ((p = try_config(line, "lookup", ';')) && !channel->lookups)
-            status = config_lookup(channel, p, "bind", NULL, "file");
-          else if ((p = try_config(line, "search", ';')) && update_domains)
-            status = set_search(channel, p);
-          else if ((p = try_config(line, "nameserver", ';')) &&
-                  channel->nservers == -1)
-            status = config_nameserver(&servers, &nservers, p);
-          else if ((p = try_config(line, "sortlist", ';')) &&
-                  channel->nsort == -1)
-            status = config_sortlist(&sortlist, &nsort, p);
-          else if ((p = try_config(line, "options", ';')))
-            status = set_options(channel, p);
-          else
-            status = ARES_SUCCESS;
-          if (status != ARES_SUCCESS)
-            break;
-        }
-        fclose(fp);
-      }
-      else {
-        error = ERRNO;
-        switch(error) {
-        case ENOENT:
-        case ESRCH:
-          status = ARES_EOF;
-          break;
-        default:
-          DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                        error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_RESOLV_CONF));
-          status = ARES_EFILE;
-        }
-      }
+    if(channel->resolvconf_path) {
+      resolvconf_path = channel->resolvconf_path;
+    } else {
+      resolvconf_path = PATH_RESOLV_CONF;
     }
 
-    if ((channel->resolvconf_path && status == ARES_EFILE) ||
-        !(channel->resolvconf_path))
-    {
-      fp = fopen(PATH_RESOLV_CONF, "r");
-      if (fp) {
-        while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
-        {
-          if ((p = try_config(line, "domain", ';')) && update_domains)
-            status = config_domain(channel, p);
-          else if ((p = try_config(line, "lookup", ';')) && !channel->lookups)
-            status = config_lookup(channel, p, "bind", NULL, "file");
-          else if ((p = try_config(line, "search", ';')) && update_domains)
-            status = set_search(channel, p);
-          else if ((p = try_config(line, "nameserver", ';')) &&
-                  channel->nservers == -1)
-            status = config_nameserver(&servers, &nservers, p);
-          else if ((p = try_config(line, "sortlist", ';')) &&
-                  channel->nsort == -1)
-            status = config_sortlist(&sortlist, &nsort, p);
-          else if ((p = try_config(line, "options", ';')))
-            status = set_options(channel, p);
-          else
-            status = ARES_SUCCESS;
-          if (status != ARES_SUCCESS)
-            break;
-        }
-        fclose(fp);
-      }
-      else {
-        error = ERRNO;
-        switch(error) {
-        case ENOENT:
-        case ESRCH:
-          status = ARES_EOF;
+    fp = fopen(resolvconf_path, "r");
+    if (fp) {
+      while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
+      {
+        if ((p = try_config(line, "domain", ';')) && update_domains)
+          status = config_domain(channel, p);
+        else if ((p = try_config(line, "lookup", ';')) && !channel->lookups)
+          status = config_lookup(channel, p, "bind", NULL, "file");
+        else if ((p = try_config(line, "search", ';')) && update_domains)
+          status = set_search(channel, p);
+        else if ((p = try_config(line, "nameserver", ';')) &&
+                channel->nservers == -1)
+          status = config_nameserver(&servers, &nservers, p);
+        else if ((p = try_config(line, "sortlist", ';')) &&
+                channel->nsort == -1)
+          status = config_sortlist(&sortlist, &nsort, p);
+        else if ((p = try_config(line, "options", ';')))
+          status = set_options(channel, p);
+        else
+          status = ARES_SUCCESS;
+        if (status != ARES_SUCCESS)
           break;
-        default:
-          DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                        error, strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_RESOLV_CONF));
-          status = ARES_EFILE;
-        }
+      }
+      fclose(fp);
+    }
+    else {
+      error = ERRNO;
+      switch(error) {
+      case ENOENT:
+      case ESRCH:
+        status = ARES_EOF;
+        break;
+      default:
+        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
+                      error, strerror(error)));
+        DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_RESOLV_CONF));
+        status = ARES_EFILE;
       }
     }
 
