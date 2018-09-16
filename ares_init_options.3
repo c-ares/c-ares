@@ -40,6 +40,7 @@ struct ares_options {
   struct apattern *sortlist;
   int nsort;
   int ednspsz;
+  char *resolvconf_path;
 };
 
 int ares_init_options(ares_channel *\fIchannelptr\fP,
@@ -181,6 +182,15 @@ The receive buffer size to set for the socket.
 .B ARES_OPT_EDNSPSZ
 .B int \fIednspsz\fP;
 .br
+.TP 18
+.B ARES_OPT_RESOLVCONF
+.B char *\fIresolvconf_path\fP;
+The path to use for reading the resolv.conf file. The
+.I resolvconf_path
+should be set to a path string, and will be honoured on *nix like systems. The
+default is
+.B /etc/resolv.conf
+.br
 The message size to be advertized in EDNS; only takes effect if the
 .B ARES_FLAG_EDNS
 flag is set.
@@ -259,6 +269,9 @@ c-ares library initialization not yet performed.
 .SH NOTES
 When initializing from
 .B /etc/resolv.conf,
+(or, alternatively when specified by the
+.I resolvconf_path
+path location)
 \fBares_init_options(3)\fP reads the \fIdomain\fP and \fIsearch\fP directives
 to allow lookups of short names relative to the domains specified. The
 \fIdomain\fP and \fIsearch\fP directives override one another. If more that

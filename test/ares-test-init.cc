@@ -86,6 +86,8 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   opts.lookups = strdup("b");
   optmask |= ARES_OPT_LOOKUPS;
   optmask |= ARES_OPT_ROTATE;
+  opts.resolvconf_path = strdup("/etc/resolv.conf");
+  optmask |= ARES_OPT_RESOLVCONF;
 
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
@@ -112,6 +114,7 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   EXPECT_EQ(std::string(opts.domains[0]), std::string(opts2.domains[0]));
   EXPECT_EQ(std::string(opts.domains[1]), std::string(opts2.domains[1]));
   EXPECT_EQ(std::string(opts.lookups), std::string(opts2.lookups));
+  EXPECT_EQ(std::string(opts.resolvconf_path), std::string(opts2.resolvconf_path));
 
   ares_destroy_options(&opts);
   ares_destroy_options(&opts2);
@@ -169,6 +172,8 @@ TEST_F(LibraryTest, OptionsChannelAllocFail) {
   opts.lookups = strdup("b");
   optmask |= ARES_OPT_LOOKUPS;
   optmask |= ARES_OPT_ROTATE;
+  opts.resolvconf_path = strdup("/etc/resolv.conf");
+  optmask |= ARES_OPT_RESOLVCONF;
 
   ares_channel channel = nullptr;
   for (int ii = 1; ii <= 8; ii++) {
@@ -392,6 +397,35 @@ CONTAINED_TEST_F(LibraryTest, ContainerFullResolvInit,
   EXPECT_EQ(5, opts.ndots);
   ares_destroy_options(&opts);
 
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+// Allow path for resolv.conf to be configurable
+NameContentList myresolvconf = {
+  {"/tmp/myresolv.cnf", " nameserver   1.2.3.4 \n"
+                       "search   first.com second.com\n"
+                       "lookup bind\n"
+                       "options debug ndots:5\n"
+                       "sortlist 1.2.3.4/16 2.3.4.5\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerMyResolvConfInit,
+                 "myhostname", "mydomain.org", myresolvconf) {
+  char filename[] = "/tmp/myresolv.cnf";
+  ares_channel channel = nullptr;
+  struct ares_options options = {0};
+  options.resolvconf_path = strdup(filename);
+  int optmask = ARES_OPT_RESOLVCONF;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &options, optmask));
+
+  optmask = 0;
+  free(options.resolvconf_path);
+  options.resolvconf_path = NULL;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel, &options, &optmask));
+  EXPECT_EQ(ARES_OPT_RESOLVCONF, (optmask & ARES_OPT_RESOLVCONF));
+  EXPECT_EQ(std::string(filename), std::string(options.resolvconf_path));
+
+  ares_destroy_options(&options);
   ares_destroy(channel);
   return HasFailure();
 }
