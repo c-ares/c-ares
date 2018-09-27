@@ -6,6 +6,8 @@ c-ares
 [![Coverage Status](https://coveralls.io/repos/c-ares/c-ares/badge.svg?branch=master&service=github)](https://coveralls.io/github/c-ares/c-ares?branch=master)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/291/badge)](https://bestpractices.coreinfrastructure.org/projects/291)
 [![Releases](https://coderelease.io/badge/c-ares/c-ares)](https://coderelease.io/github/repository/c-ares/c-ares)
+[![Code Quality: Cpp](https://img.shields.io/lgtm/grade/cpp/g/c-ares/c-ares.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/c-ares/c-ares/context:cpp)
+[![Total Alerts](https://img.shields.io/lgtm/alerts/g/c-ares/c-ares.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/c-ares/c-ares/alerts)
 
 This is c-ares, an asynchronous resolver library.  It is intended for
 applications which need to perform DNS queries without blocking, or need to
