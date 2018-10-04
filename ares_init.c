@@ -350,8 +350,11 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   (*optmask) = (ARES_OPT_FLAGS|ARES_OPT_TRIES|ARES_OPT_NDOTS|
                 ARES_OPT_UDP_PORT|ARES_OPT_TCP_PORT|ARES_OPT_SOCK_STATE_CB|
                 ARES_OPT_SERVERS|ARES_OPT_DOMAINS|ARES_OPT_LOOKUPS|
-                ARES_OPT_SORTLIST|ARES_OPT_TIMEOUTMS|ARES_OPT_RESOLVCONF);
+                ARES_OPT_SORTLIST|ARES_OPT_TIMEOUTMS);
   (*optmask) |= (channel->rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE);
+
+  if (channel->resolvconf_path)
+    (*optmask) |= ARES_OPT_RESOLVCONF;
 
   /* Copy easy stuff */
   options->flags   = channel->flags;
