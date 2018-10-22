@@ -355,6 +355,17 @@ TEST_F(LibraryTest, GetHostentAllocFail) {
   }
   fclose(fp);
 }
+
+TEST(Misc, OnionDomain) {
+  EXPECT_EQ(0, ares__is_onion_domain("onion.no"));
+  EXPECT_EQ(0, ares__is_onion_domain(".onion.no"));
+  EXPECT_EQ(1, ares__is_onion_domain(".onion"));
+  EXPECT_EQ(1, ares__is_onion_domain(".onion."));
+  EXPECT_EQ(1, ares__is_onion_domain("yes.onion"));
+  EXPECT_EQ(1, ares__is_onion_domain("yes.onion."));
+  EXPECT_EQ(1, ares__is_onion_domain("YES.ONION"));
+  EXPECT_EQ(1, ares__is_onion_domain("YES.ONION."));
+}
 #endif
 
 #ifdef CARES_EXPOSE_STATICS
