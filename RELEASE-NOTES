@@ -4,6 +4,7 @@ Changes:
  o Add ares_init_options() configurability for path to resolv.conf file [1]
  o Ability to exclude building of tools (adig, ahost, acountry) in CMake [3]
  o Android: Support for domain search suffix [4]
+ o Report ARES_ENOTFOUND for .onion domain names as per RFC7686. [13]
 
 Bug fixes:
  o AIX build fix for trying to include both nameser_compat.h and
@@ -21,9 +22,9 @@ Bug fixes:
  o Add missing docs to distribution
 
 Thanks go to these friendly people for their efforts and contributions:
-  @afalin, Andi Schnebinger, Brad House, Brad Spencer, David Hotham,
-  @flyingdutchman23, John Schember, Ruslan Baratov, Sarat Addepalli,
-  Tobias Nießen (10 contributors)
+  @afalin, Andi Schnebinger, Ben Noordhuis, Brad House, Brad Spencer,
+  David Hotham, @flyingdutchman23, John Schember, Ruslan Baratov,
+  Sarat Addepalli, Tobias Nießen (11 contributors)
 
 References to bug reports and discussions on issues:
  [1] = https://github.com/c-ares/c-ares/issues/220
@@ -38,3 +39,5 @@ References to bug reports and discussions on issues:
  [10] = https://github.com/c-ares/c-ares/pull/187
  [11] = https://c-ares.haxx.se/mail/c-ares-archive-2018-04/0000.shtml
  [12] = https://c-ares.haxx.se/mail/c-ares-archive-2018-03/0000.shtml
+ [13] = https://github.com/c-ares/c-ares/issues/196
+
