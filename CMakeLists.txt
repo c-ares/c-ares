@@ -12,7 +12,7 @@ INCLUDE (GNUInstallDirs)
 PROJECT (c-ares C)
 
 # Set this version before release
-SET (CARES_VERSION "1.14.0")
+SET (CARES_VERSION "1.15.0")
 
 # This is for libtool compatibility, and specified in a form that is easily
 # translatable from libtool (even if the actual form doesn't make sense).
@@ -25,7 +25,7 @@ SET (CARES_VERSION "1.14.0")
 # For example, a version of 4:0:2 would generate output such as:
 #    libname.so   -> libname.so.2
 #    libname.so.2 -> libname.so.2.2.0
-SET (CARES_LIB_VERSIONINFO "4:0:2")
+SET (CARES_LIB_VERSIONINFO "5:0:3")
 
 
 OPTION (CARES_STATIC     "Build as a static library"                                             OFF)
