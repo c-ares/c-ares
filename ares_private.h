@@ -330,6 +330,9 @@ struct ares_channeldata {
   char *resolvconf_path;
 };
 
+/* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
+int ares__is_onion_domain(const char *name);
+
 /* Memory management functions */
 extern void *(*ares_malloc)(size_t size);
 extern void *(*ares_realloc)(void *ptr, size_t size);

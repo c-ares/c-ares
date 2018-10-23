@@ -64,6 +64,13 @@ can return any of the following values:
 .B ARES_SUCCESS
 Construction of the DNS query succeeded.
 .TP 15
+.B ARES_ENOTFOUND
+The query name
+.I name
+refers to a
+.I .onion
+domain name. See RFC 7686.
+.TP 15
 .B ARES_EBADNAME
 The query name
 .I name
