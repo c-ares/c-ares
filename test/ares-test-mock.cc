@@ -1138,6 +1138,197 @@ TEST_P(NoRotateMultiMockTest, ThirdServer) {
   CheckExample();
 }
 
+TEST_P(MockChannelTest, FamilyV6) {
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_aaaa))
+    .add_answer(new DNSAaaaRR("example.com", 100,
+                              {0x21, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &rsp6));
+  AddrInfoResult result;
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET6;
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+  EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
+}
+
+TEST_P(MockChannelTest, FamilyV4) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+  EXPECT_THAT(result.ai_, IncludesV4Address("2.3.4.5"));
+}
+
+TEST_P(MockChannelTest, FamilyV4AddressInHostName) {
+  AddrInfoResult result;
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET6;
+  ares_getaddrinfo(channel_, "1.2.3.4", "http", &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+  EXPECT_EQ("{addr=[1.2.3.4:80]}", ss.str());
+}
+
+TEST_P(MockChannelTest, FamilyV6AddressInHostName) {
+  AddrInfoResult result;
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET6;
+  ares_getaddrinfo(channel_, "2121:0000:0000:0000:0000:0000:0000:0303", "http", &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+  EXPECT_EQ("{addr=[[2121:0000:0000:0000:0000:0000:0000:0303]:80]}", ss.str());
+}
+
+TEST_P(MockChannelTest, FamilyV4ServiceName) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {1, 1, 1, 1}))
+    .add_answer(new DNSARR("example.com", 100, {2, 2, 2, 2}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "example.com", "http", &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(2));
+  EXPECT_EQ("{addr=[1.1.1.1:80], addr=[2.2.2.2:80]}", ss.str());
+}
+
+TEST_P(MockChannelTest, FamilyV4ServiceNumericName) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "example.com", "80", &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{addr=[2.3.4.5:80]}", ss.str());
+}
+
+TEST_P(MockChannelTest, FamilyV4ServiceNotNumericName) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_NUMERICSERV;
+  ares_getaddrinfo(channel_, "example.com", "http", &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ESERVICE, result.status_);
+}
+
+TEST_P(MockChannelTest, FamilyV4CanonicalName) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {1, 1, 1, 1}))
+    .add_answer(new DNSARR("example.com", 100, {2, 2, 2, 2}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME;
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{'example.com' addr=[1.1.1.1], addr=[2.2.2.2]}", ss.str());
+}
+
+TEST_P(MockChannelTest, FamilyV4MultipleAddresses) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {1, 1, 1, 1}))
+    .add_answer(new DNSARR("example.com", 100, {2, 2, 2, 2}))
+    .add_answer(new DNSARR("example.com", 100, {3, 3, 3, 3}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(3));
+  EXPECT_THAT(result.ai_, IncludesV4Address("1.1.1.1"));
+  EXPECT_THAT(result.ai_, IncludesV4Address("2.2.2.2"));
+  EXPECT_THAT(result.ai_, IncludesV4Address("3.3.3.3"));
+}
+
+TEST_P(MockChannelTest, FamilyUnspecified) {
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_aaaa))
+    .add_answer(new DNSAaaaRR("example.com", 100,
+                              {0x21, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &rsp6));
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AddrInfoResult result;
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_UNSPEC;
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(2));
+  EXPECT_THAT(result.ai_, IncludesV4Address("2.3.4.5"));
+  EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
+}
+
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families));

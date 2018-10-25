@@ -1,0 +1,6 @@
+---
+BinPackParameters: false
+BreakBeforeBraces: GNU
+Language: Cpp
+
+...

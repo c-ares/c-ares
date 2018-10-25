@@ -13,30 +13,20 @@
 .\" this software for any purpose.  It is provided "as is"
 .\" without express or implied warranty.
 .\"
-.TH ARES_GETADDRINFO 3 "4 November 2018"
+.TH ARES_GETADDRINFO 3 "6 November 2018"
 .SH NAME
-ares_getaddrinfo \- Initiate a host query by name
+ares_getaddrinfo \- Initiate a host query by name and service
 .SH SYNOPSIS
 .nf
 .B #include <ares.h>
 .PP
-.B typedef void (*ares_addr_callback)(void *\fIarg\fP, int \fIstatus\fP,
-.B 	struct ares_addrinfo *\fIresult\fP)
+.B typedef void (*ares_addrinfo_callback)(void *\fIarg\fP, int \fIstatus\fP,
+.B 	int \fItimeouts\fP, struct ares_addrinfo *\fIres\fP)
 .PP
-.B void ares_getaddrinfo(ares_channel \fIchannel\fP, const char *\fIname\fP,
-.B 	const char* \fIservice\fP, const struct ares_addrinfo *\fIhints\fP,
-.B 	ares_addr_callback \fIcallback\fP, void *\fIarg\fP)
-.PP
-.B struct ares_addrinfo {
-.B 	int                  \fIai_flags\fP;
-.B 	int                  \fIai_family\fP;
-.B 	int                  \fIai_socktype\fP;
-.B 	int                  \fIai_protocol\fP;
-.B 	ares_socklen_t       \fIai_addrlen\fP;
-.B 	char                 \fI*ai_canonname\fP;
-.B 	struct sockaddr      \fI*ai_addr\fP;
-.B 	struct ares_addrinfo \fI*ai_next\fP;
-.B };
+.B void ares_getaddrinfo(ares_channel \fIchannel\fP,
+.B 	const char *\fIname\fP, const char *\fIservice\fP,
+.B 	const struct ares_addrinfo *\fIhints\fP,
+.B 	ares_addrinfo_callback \fIcallback\fP, void *\fIarg\fP)
 .fi
 .SH DESCRIPTION
 The
@@ -44,20 +34,47 @@ The
 function initiates a host query by name on the name service channel
 identified by
 .IR channel .
-The parameter
+The
 .I name
-gives the hostname as a NUL-terminated C string, and
-.I hints->ai_family
-gives the desired type of address for the resulting addrinfo result list.
-The parameter
+and
 .I service
-and the other properties from the
+parameters give the hostname and service as NULL-terminated C strings.
+The
 .I hints
-parameter are ignored. When the
-query is complete or has failed, the ares library will invoke \fIcallback\fP.
-Completion or failure of the query may happen immediately, or may happen
-during a later call to \fIares_process(3)\fP, \fIares_destroy(3)\fP or
-\fIares_cancel(3)\fP.
+parameter is an
+.BR "ares_addrinfo"
+structure. Every field except
+.I ai_family,
+.I ai_socktype,
+.I ai_protocol,
+and
+.I ai_flags
+must be set to zero.
+.TP
+.I ai_family
+Specifies desired address family. AF_UNSPEC means
+return both AF_INET and AF_INET6.
+.TP
+.I ai_socktype
+Specifies desired socket type, for example SOCK_STREAM or SOCK_DGRAM.
+Setting this to 0 means any type.
+.TP
+.I ai_protocol
+Setting this to 0 means any protocol.
+.TP
+.I ai_flags
+Specifies additional options, see below.
+.PP
+If ARES_AI_NUMERICSERV option is set
+.I service
+field will be treated as a numeric value.
+If ARES_AI_CANONNAME is set the first ares_addrinfo structure
+will contain a canonical name of the host in ai_canonname field.
+.PP
+When the query is complete or has failed, the ares
+library will invoke \fIcallback\fP.  Completion or failure of the query may
+happen immediately, or may happen during a later call to
+\fIares_process(3)\fP, \fIares_destroy(3)\fP or \fIares_cancel(3)\fP.
 .PP
 The callback argument
 .I arg
@@ -69,46 +86,66 @@ The callback argument
 .I status
 indicates whether the query succeeded and, if not, how it failed.  It
 may have any of the following values:
-.TP 19
+.TP
 .B ARES_SUCCESS
 The host lookup completed successfully.
-.TP 19
+.TP
 .B ARES_ENOTIMP
-The ares library does not know how to find addresses of type
+The ares library does not know how to look up addresses of type
 .IR family .
-.TP 19
+.TP
 .B ARES_ENOTFOUND
-The name
+The requested host
 .I name
-was not found.
-.TP 19
+is not found.
+.TP
+.B ARES_ESERVICE
+The requested
+.I service
+is not found.
+.TP
 .B ARES_ENOMEM
 Memory was exhausted.
-.TP 19
+.TP
 .B ARES_ECANCELLED
 The query was cancelled.
-.TP 19
+.TP
 .B ARES_EDESTRUCTION
 The name service channel
 .I channel
 is being destroyed; the query will not be completed.
 .PP
+The callback argument
+.I timeouts
+reports how many times a query timed out during the execution of the
+given request.
+.PP
 On successful completion of the query, the callback argument
-.I result
+.I res
 points to a
-.B struct addrinfo
-which is a linked list, where each item contains family and address of
-the requested name. The list is not sorted. The reserved memory has to be
-deleted by
-.B ares_freeaddrinfo.
-.SH SEE ALSO
+.B struct ares_addrinfo
+containing the addresses of the host returned by the query.
+The result is not sorted in any way and ignores sortlist.
+The ares will not attempt to free the memory pointed to by
+.IR res
+it is the caller's responsibility to free the resulting ares_addrinfo
+structure using
 .BR ares_freeaddrinfo (3)
-.SH AUTHOR
-Christian Ammer
+when it is no longer needed.  If the query did not complete successfully,
+.I res
+will be
+.BR NULL .
+.SH SEE ALSO
+.BR ares_freeaddrinfo (3),
+.BR ares_gethostbyname (3)
+.BR ares_process (3),
 .SH CAVEATS
 This function is under development. It only supports a minimum feature set
 of the function
 .B getaddrinfo
 defined in RFC-3493. It also does not support the destination address selection
 algorithm defined in RFC-6724.
-.br
+.SH AUTHOR
+Andrew Selivanov <andrew.selivanov@gmail.com>, on behalf of Crazy Panda http://www.crazypandagames.com
+.PP
+Christian Ammer

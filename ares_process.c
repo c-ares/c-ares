@@ -466,11 +466,7 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
   unsigned char buf[MAXENDSSZ + 1];
 #ifdef HAVE_RECVFROM
   ares_socklen_t fromlen;
-  union {
-    struct sockaddr     sa;
-    struct sockaddr_in  sa4;
-    struct sockaddr_in6 sa6;
-  } from;
+  ares_sockaddr from;
 #endif
 
   if(!read_fds && (read_fd == ARES_SOCKET_BAD))
@@ -974,11 +970,7 @@ static int setsocknonblock(ares_socket_t sockfd,    /* operate on this */
 
 static int configure_socket(ares_socket_t s, int family, ares_channel channel)
 {
-  union {
-    struct sockaddr     sa;
-    struct sockaddr_in  sa4;
-    struct sockaddr_in6 sa6;
-  } local;
+  ares_sockaddr local;
 
   /* do not set options for user-managed sockets */
   if (channel->sock_funcs)
@@ -1068,10 +1060,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
   ares_socket_t s;
   int opt;
   ares_socklen_t salen;
-  union {
-    struct sockaddr_in  sa4;
-    struct sockaddr_in6 sa6;
-  } saddr;
+  ares_sockaddr saddr;
   struct sockaddr *sa;
 
   switch (server->addr.family)
@@ -1181,10 +1170,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
 {
   ares_socket_t s;
   ares_socklen_t salen;
-  union {
-    struct sockaddr_in  sa4;
-    struct sockaddr_in6 sa6;
-  } saddr;
+  ares_sockaddr saddr;
   struct sockaddr *sa;
 
   switch (server->addr.family)

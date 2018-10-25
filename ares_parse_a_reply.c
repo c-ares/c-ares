@@ -1,4 +1,3 @@
-
 /* Copyright 1998 by the Massachusetts Institute of Technology.
  *
  * Permission to use, copy, modify, and distribute this
@@ -46,9 +45,9 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-int ares_parse_a_reply(const unsigned char *abuf, int alen,
-                       struct hostent **host,
-                       struct ares_addrttl *addrttls, int *naddrttls)
+int ares__parse_a_reply(const unsigned char *abuf, int alen,
+                        struct hostent **host, struct ares_addrinfo **ai,
+                        struct ares_addrttl *addrttls, int *naddrttls)
 {
   unsigned int qdcount, ancount;
   int status, i, rr_type, rr_class, rr_len, rr_ttl, naddrs;
@@ -59,6 +58,7 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
   char *hostname, *rr_name, *rr_data, **aliases;
   struct in_addr *addrs;
   struct hostent *hostent;
+  struct ares_addrinfo *nested_ai, *head_ai = NULL;
   const int max_addr_ttls = (addrttls && naddrttls) ? *naddrttls : 0;
 
   /* Set *host to NULL for all failure cases. */
@@ -107,6 +107,17 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
           ares_free(addrs);
           return ARES_ENOMEM;
         }
+    }
+  /* Allocate addresses; ancount gives an upper bound. */
+  else if (ai)
+    {
+      addrs = ares_malloc(ancount * sizeof(struct in_addr));
+      if (!addrs)
+        {
+          ares_free(hostname);
+          return ARES_ENOMEM;
+        }
+      aliases = NULL;
     }
   else
     {
@@ -251,7 +262,81 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
             }
           status = ARES_ENOMEM;
         }
+      else if (ai)
+        {
+          /* Allocate memory to build the addrinfo entry. */
+          head_ai = nested_ai = ares__malloc_addrinfo();
+          if (!head_ai)
+            {
+              status = ARES_ENOMEM;
+              goto failed_stat;
+            }
+
+          /* Fill in the head_ai and return successfully. */
+          if (naddrs > 0)
+            {
+              struct sockaddr_in *sin = ares_malloc(sizeof(struct sockaddr_in));
+              if (!sin)
+                {
+                  status = ARES_ENOMEM;
+                  goto failed_stat;
+                }
+
+              memset(sin, 0, sizeof(struct sockaddr_in));
+              memcpy(&sin->sin_addr.s_addr, &addrs[0], sizeof(struct in_addr));
+              sin->sin_family = AF_INET;
+
+              head_ai->ai_addr = (struct sockaddr *)sin;
+              head_ai->ai_family = AF_INET;
+              head_ai->ai_addrlen = sizeof(struct sockaddr_in);
+              for (i = 1; i < naddrs; i++)
+                {
+                  nested_ai->ai_next = ares__malloc_addrinfo();
+                  if (!nested_ai->ai_next)
+                    {
+                      status = ARES_ENOMEM;
+                      goto failed_stat;
+                    }
+
+                  nested_ai = nested_ai->ai_next;
+
+                  sin = ares_malloc(sizeof(struct sockaddr_in));
+                  if (!sin)
+                    {
+                      status = ARES_ENOMEM;
+                      goto failed_stat;
+                    }
+
+                  memset(sin, 0, sizeof(struct sockaddr_in));
+                  memcpy(&sin->sin_addr.s_addr, &addrs[i],
+                         sizeof(struct in_addr));
+                  sin->sin_family = AF_INET;
+
+                  nested_ai->ai_addr = (struct sockaddr *)sin;
+                  nested_ai->ai_family = AF_INET;
+                  nested_ai->ai_addrlen = sizeof(struct sockaddr_in);
+                }
+            }
+
+          /* Append to existing addrinfo or set it if there are none.  */
+          if (*ai)
+            {
+              ares_free(hostname);
+              (*ai)->ai_next = head_ai;
+            }
+          else
+            {
+              /* Copy canonname in case we need it later */
+              head_ai->ai_canonname = hostname;
+              *ai = head_ai;
+            }
+
+          ares_free(addrs);
+          return ARES_SUCCESS;
+        }
      }
+
+failed_stat:
   if (aliases)
     {
       for (i = 0; i < naliases; i++)
@@ -260,43 +345,13 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
     }
   ares_free(addrs);
   ares_free(hostname);
+  ares_freeaddrinfo(head_ai);
   return status;
 }
 
-/* returned size includes terminating 0. */
-static long encoded_name_size(const unsigned char *begin, const unsigned char *end)
+int ares_parse_a_reply(const unsigned char *abuf, int alen,
+                       struct hostent **host,
+                       struct ares_addrttl *addrttls, int *naddrttls)
 {
-  const unsigned char* it = begin;
-  for (; *it && it != end; ++it);
-  return it == end ? -1 : (long)((it + 1) - begin);
-}
-
-int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype)
-{
-  unsigned int qdcount, ancount;
-  const unsigned char* aptr;
-  long len;
-
-  /* Give up if abuf doesn't have room for a header. */
-  if (alen < HFIXEDSZ)
-    return ARES_EBADRESP;
-
-  /* Fetch the question and answer count from the header. */
-  qdcount = DNS_HEADER_QDCOUNT(abuf);
-  ancount = DNS_HEADER_ANCOUNT(abuf);
-  if (qdcount != 1)
-    return ARES_EBADRESP;
-
-  /* Expand the name from the question, and skip past the question. */
-  aptr = abuf + HFIXEDSZ;
-  len = encoded_name_size(aptr, abuf + alen);
-  if (len == -1)
-    return ARES_EBADRESP;
-  if (aptr + len + QFIXEDSZ > abuf + alen)
-    return ARES_EBADRESP;
-  aptr += len;
-  if (!ancount)
-    return ARES_ENODATA;
-  *qtype = DNS__16BIT(aptr);
-  return ARES_SUCCESS;
+  return ares__parse_a_reply(abuf, alen, host, NULL, addrttls, naddrttls);
 }

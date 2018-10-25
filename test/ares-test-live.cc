@@ -76,6 +76,62 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByNameFile) {
   }
 }
 
+TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrInfoV4) {
+  AddrInfoResult result;
+  ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "localhost", nullptr, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  if ((result.status_ != ARES_ENOTFOUND) && (result.status_ != ARES_ECONNREFUSED)) {
+    EXPECT_EQ(ARES_SUCCESS, result.status_);
+    EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+    EXPECT_THAT(result.ai_, IncludesV4Address("127.0.0.1"));
+  }
+}
+
+TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrInfoV6) {
+  AddrInfoResult result;
+  ares_addrinfo hints = {};
+  hints.ai_family = AF_INET6;
+  ares_getaddrinfo(channel_, "localhost", nullptr, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  if ((result.status_ != ARES_ENOTFOUND) && (result.status_ != ARES_ECONNREFUSED)) {
+    EXPECT_EQ(ARES_SUCCESS, result.status_);
+    EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+    EXPECT_THAT(result.ai_, IncludesV6Address("::1"));
+  }
+}
+
+TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrInfoIPV4) {
+  AddrInfoResult result;
+  ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "127.0.0.1", nullptr, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{addr=[127.0.0.1]}", ss.str());
+}
+
+TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrInfoIPV6) {
+  AddrInfoResult result;
+  ares_addrinfo hints = {};
+  hints.ai_family = AF_INET6;
+  ares_getaddrinfo(channel_, "::1", nullptr, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  if (result.status_ != ARES_ENOTFOUND) {
+    EXPECT_EQ(ARES_SUCCESS, result.status_);
+    std::stringstream ss;
+    ss << result.ai_;
+    EXPECT_EQ("{addr=[0000:0000:0000:0000:0000:0000:0000:0001]}", ss.str());
+  }
+}
+
 TEST_P(DefaultChannelModeTest, LiveGetLocalhostByNameV4) {
   HostResult result;
   ares_gethostbyname(channel_, "localhost", AF_INET, HostCallback, &result);

@@ -279,6 +279,30 @@ struct NameInfoResult {
 };
 std::ostream& operator<<(std::ostream& os, const NameInfoResult& result);
 
+struct AddrInfoDeleter {
+  void operator() (ares_addrinfo *ptr) {
+    if (ptr) ares_freeaddrinfo(ptr);
+  }
+};
+
+// C++ wrapper for struct ares_addrinfo.
+using AddrInfo = std::unique_ptr<ares_addrinfo, AddrInfoDeleter>;
+
+std::ostream& operator<<(std::ostream& os, const AddrInfo& result);
+
+// Structure that describes the result of an ares_addrinfo_callback invocation.
+struct AddrInfoResult {
+  AddrInfoResult() : done_(false), status_(-1), timeouts_(0) {}
+  // Whether the callback has been invoked.
+  bool done_;
+  // Explicitly provided result information.
+  int status_;
+  int timeouts_;
+  // Contents of the ares_addrinfo structure, if provided.
+  AddrInfo ai_;
+};
+std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result);
+
 // Standard implementation of ares callbacks that fill out the corresponding
 // structures.
 void HostCallback(void *data, int status, int timeouts,
@@ -287,12 +311,55 @@ void SearchCallback(void *data, int status, int timeouts,
                     unsigned char *abuf, int alen);
 void NameInfoCallback(void *data, int status, int timeouts,
                       char *node, char *service);
-void AICallback(void *data, int status,
-                struct addrinfo *res);
+void AddrInfoCallback(void *data, int status, int timeouts, 
+                      struct ares_addrinfo *res);
+
+// Matchers for AddrInfo
+MATCHER_P(IncludesNumAddresses, n, "") {
+  if(!arg)
+    return false;
+  int cnt = 0;
+  for (const ares_addrinfo* ai = arg.get(); ai != NULL; ai = ai->ai_next)
+    cnt++;
+  return n == cnt;
+}
+
+MATCHER_P(IncludesV4Address, address, "") {
+  if(!arg)
+    return false;
+  in_addr addressnum = {};
+  if (!ares_inet_pton(AF_INET, address, &addressnum))
+    return false; // wrong number format?
+  for (const ares_addrinfo* ai = arg.get(); ai != NULL; ai = ai->ai_next) {
+    if (ai->ai_family != AF_INET)
+      continue;
+    if (reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_addr.s_addr ==
+        addressnum.s_addr)
+      return true; // found
+  }
+  return false;
+}
+
+MATCHER_P(IncludesV6Address, address, "") {
+  if(!arg)
+    return false;
+  in6_addr addressnum = {};
+  if (!ares_inet_pton(AF_INET6, address, &addressnum)) {
+    return false; // wrong number format?
+  }
+  for (const ares_addrinfo* ai = arg.get(); ai != NULL; ai = ai->ai_next) {
+    if (ai->ai_family != AF_INET6)
+      continue;
+    if (!memcmp(
+        reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_addr.s6_addr,
+        addressnum.s6_addr, sizeof(addressnum.s6_addr)))
+      return true; // found
+  }
+  return false;
+}
 
 // Retrieve the name servers used by a channel.
 std::vector<std::string> GetNameServers(ares_channel channel);
-
 
 // RAII class to temporarily create a directory of a given name.
 class TransientDir {

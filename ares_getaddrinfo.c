@@ -1,4 +1,28 @@
+/* Copyright 1998, 2011, 2013 by the Massachusetts Institute of Technology.
+ * Copyright (C) 2017 - 2018 by Christian Ammer
+ * Copyright 2018 by Andrew Selivanov
+ *
+ * Permission to use, copy, modify, and distribute this
+ * software and its documentation for any purpose and without
+ * fee is hereby granted, provided that the above copyright
+ * notice appear in all copies and that both that copyright
+ * notice and this permission notice appear in supporting
+ * documentation, and that the name of M.I.T. not be used in
+ * advertising or publicity pertaining to distribution of the
+ * software without specific, written prior permission.
+ * M.I.T. makes no representations about the suitability of
+ * this software for any purpose.  It is provided "as is"
+ * without express or implied warranty.
+ */
+
 #include "ares_setup.h"
+
+#ifdef HAVE_GETSERVBYNAME_R
+#  if !defined(GETSERVBYNAME_R_ARGS) || \
+     (GETSERVBYNAME_R_ARGS < 4) || (GETSERVBYNAME_R_ARGS > 6)
+#    error "you MUST specifiy a valid number of arguments for getservbyname_r"
+#  endif
+#endif
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
@@ -34,122 +58,179 @@
 #undef WIN32
 #endif
 
-struct host_query {
-  /* Arguments passed to ares_gethostbyname() */
+struct host_query
+{
   ares_channel channel;
   char *name;
-  ares_addr_callback callback;
+  unsigned short port; /* in host order */
+  ares_addrinfo_callback callback;
   void *arg;
+  struct ares_addrinfo hints;
   int sent_family; /* this family is what was is being used */
-  int ai_family; /* this family is what is asked for in the API */
-  int timeouts;      /* number of timeouts we saw for this request */
-  int next_domain;   /* next search domain to try */
-  int single_domain; /* do not check other domains */
-  int status;
-  int remaining;
-  struct addrinfo* ai;
+  int timeouts;    /* number of timeouts we saw for this request */
+  const char *remaining_lookups; /* types of lookup we need to perform ("fb" by
+                                    default, file and dns respectively) */
+  struct ares_addrinfo *ai; /* store results between lookups */
 };
 
+static void next_lookup(struct host_query *hquery, int status_code);
 static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
 static void end_hquery(struct host_query *hquery, int status);
-/*static int fake_hostent(const char *name, int family,
-                        ares_host_callback callback, void *arg);*/
-static int file_lookup(const char *name, int family, struct addrinfo **ai);
-static void sort_addresses(struct hostent *host,
-                           const struct apattern *sortlist, int nsort);
-static void sort6_addresses(struct hostent *host,
-                            const struct apattern *sortlist, int nsort);
-static int get_address_index(const struct in_addr *addr,
-                             const struct apattern *sortlist, int nsort);
-static int get6_address_index(const struct ares_in6_addr *addr,
-                              const struct apattern *sortlist, int nsort);
-static int as_is_first(const struct host_query *hquery);
-/*static void invoke_callback(struct host_query *hquery, int status,
-  struct hostent* host);*/
-static void add_to_addrinfo(struct addrinfo** ai, const struct hostent* host);
-static void next_dns_lookup(struct host_query *hquery);
+static int fake_addrinfo(const char *name,
+                         unsigned short port,
+                         const struct ares_addrinfo *hints,
+                         ares_addrinfo_callback callback,
+                         void *arg);
+static int file_lookup(struct host_query *hquery);
+static unsigned short lookup_service(const char *service, int flags);
 
-
-static int is_implemented(const int family) {
-  return
-    family == AF_INET ||
-    family == AF_INET6 ||
-    family == AF_UNSPEC;
+static int is_implemented(int family)
+{
+  return family == AF_INET || family == AF_INET6 || family == AF_UNSPEC;
 }
 
+static const struct ares_addrinfo default_hints =
+{
+    0,         /* ai_flags */
+    AF_UNSPEC, /* ai_family */
+    0,         /* ai_socktype */
+    0,         /* ai_protocol */
+    0,         /* ai_addrlen */
+    NULL,      /* ai_addr */
+    NULL,      /* ai_canoname */
+    NULL       /* ai_next */
+};
+
 void ares_getaddrinfo(ares_channel channel,
-                      const char* node, const char* service,
-                      const struct addrinfo* hints,
-                      ares_addr_callback callback, void* arg) {
+                      const char *name,
+                      const char *service,
+                      const struct ares_addrinfo *hints,
+                      ares_addrinfo_callback callback,
+                      void *arg)
+{
+  unsigned short port = 0;
   struct host_query *hquery;
-  char *single = NULL;
-  int ai_family;
 
-  ai_family = hints ? hints->ai_family : AF_UNSPEC;
-  if (!is_implemented(ai_family)) {
-    callback(arg, ARES_ENOTIMP, NULL);
-    return;
-  }
+  if (!hints)
+    {
+      hints = &default_hints;
+    }
 
-  /*if (fake_hostent(name, family, callback, arg))
-    return;*/
-  /*status = ares__single_domain(channel, node, &single);
-  if (status != ARES_SUCCESS) {
-      callback(arg, status, NULL);
+  /* Right now we only know how to look up Internet addresses - and unspec
+     means try both basically. */
+  if (!is_implemented(hints->ai_family))
+    {
+      callback(arg, ARES_ENOTIMP, 0, NULL);
       return;
-  }*/
+    }
+
+  if (service)
+    {
+      if (hints->ai_flags & ARES_AI_NUMERICSERV)
+        {
+          port = (unsigned short)strtoul(service, NULL, 0);
+          if (!port)
+            {
+              callback(arg, ARES_ESERVICE, 0, NULL);
+              return;
+            }
+        }
+      else
+        {
+          port = lookup_service(service, 0);
+          if (!port)
+            {
+              port = (unsigned short)strtoul(service, NULL, 0);
+              if (!port)
+                {
+                  callback(arg, ARES_ESERVICE, 0, NULL);
+                  return;
+                }
+            }
+        }
+    }
+  if (fake_addrinfo(name, port, hints, callback, arg))
+    return;
 
   /* Allocate and fill in the host query structure. */
   hquery = ares_malloc(sizeof(struct host_query));
-  if (!hquery) {
-    callback(arg, ARES_ENOMEM, NULL);
-    return;
-  }
-  hquery->ai = NULL;
+  if (!hquery)
+    {
+      callback(arg, ARES_ENOMEM, 0, NULL);
+      return;
+    }
+  hquery->name = ares_strdup(name);
+  if (!hquery->name)
+    {
+      ares_free(hquery);
+      callback(arg, ARES_ENOMEM, 0, NULL);
+      return;
+    }
+  hquery->port = port;
   hquery->channel = channel;
-  hquery->name = single != NULL ? single : ares_strdup(node);
-  hquery->single_domain = single != NULL;
-  hquery->ai_family = ai_family;
+  hquery->hints = *hints;
   hquery->sent_family = -1; /* nothing is sent yet */
-  if (!hquery->name) {
-    ares_free(hquery);
-    callback(arg, ARES_ENOMEM, NULL);
-    return;
-  }
   hquery->callback = callback;
   hquery->arg = arg;
+  hquery->remaining_lookups = channel->lookups;
   hquery->timeouts = 0;
-  hquery->next_domain = 0;
-  hquery->remaining = 0;
+  hquery->ai = NULL;
 
-  /* Host file lookup */
-  if (file_lookup(hquery->name, ai_family, &hquery->ai) == ARES_SUCCESS)
-    end_hquery(hquery, ARES_SUCCESS);
-  else
-    next_dns_lookup(hquery);
-  /*free_hquery(hquery);
-  next_dns_lookup(hquery, status_code);
-  return;*/
+  /* Start performing lookups according to channel->lookups. */
+  next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
 }
 
-void ares_freeaddrinfo(struct addrinfo* ai) {
-  struct addrinfo* ai_free;
-  while (ai) {
-    ai_free = ai;
-    ai = ai->ai_next;
-    ares_free(ai_free->ai_addr);
-    ares_free(ai_free);
-  }
+static void next_lookup(struct host_query *hquery, int status_code)
+{
+  const char *p;
+  int status = status_code;
+
+  for (p = hquery->remaining_lookups; *p; p++)
+    {
+      switch (*p)
+        {
+        case 'b':
+          /* DNS lookup */
+          hquery->remaining_lookups = p + 1;
+          if ((hquery->hints.ai_family == AF_INET6) ||
+              (hquery->hints.ai_family == AF_UNSPEC)) {
+            /* if inet6 or unspec, start out with AAAA */
+            hquery->sent_family = AF_INET6;
+            ares_search(hquery->channel, hquery->name, C_IN, T_AAAA,
+                        host_callback, hquery);
+          }
+          else {
+            hquery->sent_family = AF_INET;
+            ares_search(hquery->channel, hquery->name, C_IN, T_A,
+                        host_callback, hquery);
+          }
+          return;
+
+        case 'f':
+          /* Host file lookup */
+          status = file_lookup(hquery);
+
+          /* this status check below previously checked for !ARES_ENOTFOUND,
+             but we should not assume that this single error code is the one
+             that can occur, as that is in fact no longer the case */
+          if (status == ARES_SUCCESS)
+            {
+              end_hquery(hquery, status);
+              return;
+            }
+          status = status_code;   /* Use original status code */
+          break;
+        }
+    }
+  end_hquery(hquery, status);
 }
 
-static int file_lookup(const char *name, int family, struct addrinfo **ai)
+static int file_lookup(struct host_query *hquery)
 {
   FILE *fp;
-  char **alias;
-  int status;
   int error;
-  struct hostent *host = NULL;
+  int status;
 
 #ifdef WIN32
   char PATH_HOSTS[MAX_PATH];
@@ -202,249 +283,240 @@ static int file_lookup(const char *name, int family, struct addrinfo **ai)
                          error, strerror(error)));
           DEBUGF(fprintf(stderr, "Error opening file: %s\n",
                          PATH_HOSTS));
-          host = NULL;
           return ARES_EFILE;
         }
     }
-  status = ARES_ENOTFOUND;
-  while (ares__get_hostent(fp, family, &host) == ARES_SUCCESS) {
-    if (strcasecmp(host->h_name, name) == 0) {
-      add_to_addrinfo(ai, host);
-      status = ARES_SUCCESS;
-    }
-    else {
-      for (alias = host->h_aliases; *alias; alias++) {
-        if (strcasecmp(*alias, name) == 0) {
-          add_to_addrinfo(ai, host);
-          status = ARES_SUCCESS;
-          break;
-        }
-      }
-    }
-    ares_free_hostent(host);
-  }
+  status = ares__get_addrinfo(fp, hquery->name, hquery->port, &hquery->hints, &hquery->ai);
   fclose(fp);
   return status;
 }
 
-static void add_to_addrinfo(struct addrinfo** ai, const struct hostent* host) {
-  static const struct addrinfo EmptyAddrinfo; 
-  struct addrinfo* next_ai;
-  char** p;
-  if (!host ||
-      (host->h_addrtype != AF_INET && host->h_addrtype != AF_INET6))
-    return;
-  for (p = host->h_addr_list; *p; ++p) {
-    next_ai = ares_malloc(sizeof(struct addrinfo));
-    *next_ai = EmptyAddrinfo;
-    if (*ai)
-      (*ai)->ai_next = next_ai;
-    else
-      *ai = next_ai;
-    if (host->h_addrtype == AF_INET) {
-      next_ai->ai_protocol = IPPROTO_UDP;
-      next_ai->ai_family = AF_INET;
-      next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in));
-      memcpy(&((struct sockaddr_in*)(next_ai->ai_addr))->sin_addr,
-        *p, host->h_length);
+/* Resolve service name into port number given in host byte order.
+ * If not resolved, return 0.
+ */
+static unsigned short lookup_service(const char *service, int flags)
+{
+  const char *proto;
+  struct servent *sep;
+#ifdef HAVE_GETSERVBYNAME_R
+  struct servent se;
+  char tmpbuf[4096];
+#endif
+
+  if (service)
+    {
+      if (flags & ARES_NI_UDP)
+        proto = "udp";
+      else if (flags & ARES_NI_SCTP)
+        proto = "sctp";
+      else if (flags & ARES_NI_DCCP)
+        proto = "dccp";
+      else
+        proto = "tcp";
+#ifdef HAVE_GETSERVBYNAME_R
+      memset(&se, 0, sizeof(se));
+      sep = &se;
+      memset(tmpbuf, 0, sizeof(tmpbuf));
+#if GETSERVBYNAME_R_ARGS == 6
+      if (getservbyname_r(service, proto, &se, (void *)tmpbuf, sizeof(tmpbuf),
+                          &sep) != 0)
+        sep = NULL; /* LCOV_EXCL_LINE: buffer large so this never fails */
+#elif GETSERVBYNAME_R_ARGS == 5
+      sep = getservbyname_r(service, proto, &se, (void *)tmpbuf, sizeof(tmpbuf));
+#elif GETSERVBYNAME_R_ARGS == 4
+      if (getservbyname_r(service, proto, &se, (void *)tmpbuf) != 0)
+        sep = NULL;
+#else
+      /* Lets just hope the OS uses TLS! */
+      sep = getservbyname(service, proto);
+#endif
+#else
+        /* Lets just hope the OS uses TLS! */
+#if (defined(NETWARE) && !defined(__NOVELL_LIBC__))
+      sep = getservbyname(service, (char *)proto);
+#else
+      sep = getservbyname(service, proto);
+#endif
+#endif
+      return (sep ? ntohs((unsigned short)sep->s_port) : 0);
     }
-    else {
-      next_ai->ai_protocol = IPPROTO_UDP;
-      next_ai->ai_family = AF_INET6;
-      next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in6));
-      memcpy(&((struct sockaddr_in6*)(next_ai->ai_addr))->sin6_addr,
-        *p, host->h_length);
-    }
-  }
+  return 0;
 }
 
-static void next_dns_lookup(struct host_query *hquery) {
-  char *s = NULL;
-  int is_s_allocated = 0;
-  int status;
+/* If the name looks like an IP address, fake up a host entry, end the
+ * query immediately, and return true.  Otherwise return false.
+ */
+static int fake_addrinfo(const char *name,
+                         unsigned short port,
+                         const struct ares_addrinfo *hints,
+                         ares_addrinfo_callback callback,
+                         void *arg)
+{
+  struct ares_addrinfo *ai;
+  ares_sockaddr addr;
+  size_t addrlen;
+  int result = 0;
+  int family = hints->ai_family;
+  if (family == AF_INET || family == AF_INET6)
+    {
+      /* It only looks like an IP address if it's all numbers and dots. */
+      int numdots = 0, valid = 1;
+      const char *p;
+      for (p = name; *p; p++)
+        {
+          if (!ISDIGIT(*p) && *p != '.')
+            {
+              valid = 0;
+              break;
+            }
+          else if (*p == '.')
+            {
+              numdots++;
+            }
+        }
 
-  if (( as_is_first(hquery) && hquery->next_domain == 0) ||
-      (!as_is_first(hquery) && hquery->next_domain == hquery->channel->ndomains))
-    s = hquery->name;
+      memset(&addr, 0, sizeof(addr));
 
-  if (!s && hquery->next_domain < hquery->channel->ndomains) {
-    status = ares__cat_domain(
-      hquery->name,
-      hquery->channel->domains[hquery->next_domain++],
-      &s);
-    if (status == ARES_SUCCESS)
-      is_s_allocated = 1;
-  }
+      /* if we don't have 3 dots, it is illegal
+       * (although inet_addr doesn't think so).
+       */
+      if (numdots != 3 || !valid)
+        result = 0;
+      else
+        result =
+            ((addr.sa4.sin_addr.s_addr = inet_addr(name))
+             == INADDR_NONE ? 0 : 1);
 
-  if (s) {
-    if (hquery->ai_family == AF_INET || hquery->ai_family == AF_UNSPEC)
-      ares_query(hquery->channel, s, C_IN, T_A, host_callback, hquery);
-    if (hquery->ai_family == AF_INET6 || hquery->ai_family == AF_UNSPEC)
-      ares_query(hquery->channel, s, C_IN, T_AAAA, host_callback, hquery);
-    if (is_s_allocated)
-      ares_free(s);
-  }
-  else {
-    assert(!hquery->ai);
-    end_hquery(hquery, ARES_ENOTFOUND);
-  }
-}
+      if (result)
+        {
+          family = addr.sa.sa_family = AF_INET;
+          addr.sa4.sin_port = htons(port);
+          addrlen = sizeof(addr.sa4);
+        }
+    }
 
-static void end_hquery(struct host_query *hquery, int status) {
-  if (hquery->ai) {
-    hquery->callback(hquery->arg, status, hquery->ai);
-  }
-  ares_free(hquery->name);
-  ares_free(hquery);
+  if (family == AF_INET6)
+    {
+      result = (ares_inet_pton(AF_INET6, name, &addr.sa6.sin6_addr) < 1 ? 0 : 1);
+      addr.sa6.sin6_family = AF_INET6;
+      addr.sa6.sin6_port = htons(port);
+      addrlen = sizeof(addr.sa6);
+    }
+
+  if (!result)
+    return 0;
+
+  ai = ares__malloc_addrinfo();
+  if (!ai)
+    {
+      callback(arg, ARES_ENOMEM, 0, NULL);
+      return 1;
+    }
+
+  ai->ai_addr = ares_malloc(addrlen);
+  if (!ai->ai_addr)
+    {
+      ares_free(ai);
+      callback(arg, ARES_ENOMEM, 0, NULL);
+      return 1;
+    }
+
+  ai->ai_addrlen = (unsigned int)addrlen;
+  ai->ai_family = addr.sa.sa_family;
+  if (addr.sa.sa_family == AF_INET)
+    memcpy(ai->ai_addr, &addr.sa4, sizeof(addr.sa4));
+  else
+    memcpy(ai->ai_addr, &addr.sa6, sizeof(addr.sa6));
+
+  if (hints->ai_flags & ARES_AI_CANONNAME)
+    {
+      /* Duplicate the name, to avoid a constness violation. */
+      ai->ai_canonname = ares_strdup(name);
+      if (!ai->ai_canonname)
+        {
+          ares_free(ai->ai_addr);
+          ares_free(ai);
+          callback(arg, ARES_ENOMEM, 0, NULL);
+          return 1;
+        }
+    }
+
+  callback(arg, ARES_SUCCESS, 0, ai);
+  return 1;
 }
 
 static void host_callback(void *arg, int status, int timeouts,
-                          unsigned char *abuf, int alen) {
-  struct host_query *hquery = (struct host_query*)arg;
-  ares_channel channel = hquery->channel;
-  struct hostent *host = NULL;
-  int qtype;
-  int qtypestatus;
+                          unsigned char *abuf, int alen)
+{
+  struct host_query *hquery = (struct host_query *) arg;
   hquery->timeouts += timeouts;
-
-  hquery->remaining--;
-
-  if (status == ARES_SUCCESS) {
-    status = ares__parse_qtype_reply(abuf, alen, &qtype);
-    if (status == ARES_SUCCESS && qtype == T_A) {
-      /* Can ares_parse_a_reply be unsuccessful (after parse_qtype) */
-      ares_parse_a_reply(abuf, alen, &host, NULL, NULL);
-      if (host && channel->nsort)
-        sort_addresses(host, channel->sortlist, channel->nsort);
-      add_to_addrinfo(&hquery->ai, host);
-      ares_free_hostent(host);
-      if (!--hquery->remaining)
-	end_hquery(hquery, ARES_SUCCESS);
-    }
-    else if (status == ARES_SUCCESS && qtype == T_AAAA) {
-      /* Can ares_parse_a_reply be unsuccessful (after parse_qtype) */
-      ares_parse_aaaa_reply(abuf, alen, &host, NULL, NULL);
-      if (host && channel->nsort)
-        sort6_addresses(host, channel->sortlist, channel->nsort);
-      add_to_addrinfo(&hquery->ai, host);
-      ares_free_hostent(host);
-      if (!--hquery->remaining)
-        end_hquery(hquery, ARES_SUCCESS);
-    }
-    else {
-      assert(!hquery->ai);
+  if (status == ARES_SUCCESS)
+    {
+      if (hquery->sent_family == AF_INET)
+        {
+          status = ares__parse_a_reply(abuf, alen, NULL, &hquery->ai, NULL, NULL);
+        }
+      else if (hquery->sent_family == AF_INET6)
+        {
+          status = ares__parse_aaaa_reply(abuf, alen, NULL, &hquery->ai, NULL, NULL);
+          if (hquery->hints.ai_family == AF_UNSPEC)
+            {
+              /* Now look for A records and append them to existing results. */
+              hquery->sent_family = AF_INET;
+              ares_search(hquery->channel, hquery->name, C_IN, T_A,
+                          host_callback, hquery);
+              return;
+            }
+        }
       end_hquery(hquery, status);
     }
-  }
+  else if ((status == ARES_ENODATA || status == ARES_EBADRESP ||
+            status == ARES_ETIMEOUT) && (hquery->sent_family == AF_INET6 &&
+            hquery->hints.ai_family == AF_UNSPEC))
+    {
+      /* The AAAA query yielded no useful result.  Now look up an A instead. */
+      hquery->sent_family = AF_INET;
+      ares_search(hquery->channel, hquery->name, C_IN, T_A, host_callback,
+                  hquery);
+    }
+  else if (status == ARES_EDESTRUCTION)
+    end_hquery(hquery, status);
   else
-    next_dns_lookup(hquery);
+    next_lookup(hquery, status);
 }
 
-static void sort_addresses(struct hostent *host,
-                           const struct apattern *sortlist, int nsort) {
-  struct in_addr a1, a2;
-  int i1, i2, ind1, ind2;
-
-  /* This is a simple insertion sort, not optimized at all.  i1 walks
-   * through the address list, with the loop invariant that everything
-   * to the left of i1 is sorted.  In the loop body, the value at i1 is moved
-   * back through the list (via i2) until it is in sorted order.
-   */
-  for (i1 = 0; host->h_addr_list[i1]; i1++)
+static void end_hquery(struct host_query *hquery, int status)
+{
+  struct ares_addrinfo *next = hquery->ai;
+  if (status == ARES_SUCCESS)
     {
-      memcpy(&a1, host->h_addr_list[i1], sizeof(struct in_addr));
-      ind1 = get_address_index(&a1, sortlist, nsort);
-      for (i2 = i1 - 1; i2 >= 0; i2--)
+      /* Free canonname if we are not asked for it. */
+      if (!(hquery->hints.ai_flags & ARES_AI_CANONNAME))
         {
-          memcpy(&a2, host->h_addr_list[i2], sizeof(struct in_addr));
-          ind2 = get_address_index(&a2, sortlist, nsort);
-          if (ind2 <= ind1)
-            break;
-          memcpy(host->h_addr_list[i2 + 1], &a2, sizeof(struct in_addr));
+          ares_free(hquery->ai->ai_canonname);
+          hquery->ai->ai_canonname = NULL;
         }
-      memcpy(host->h_addr_list[i2 + 1], &a1, sizeof(struct in_addr));
-    }
-}
-
-/* Find the first entry in sortlist which matches addr.  Return nsort
- * if none of them match.
- */
-static int get_address_index(const struct in_addr *addr,
-                             const struct apattern *sortlist,
-                             int nsort) {
-  int i;
-
-  for (i = 0; i < nsort; i++)
-    {
-      if (sortlist[i].family != AF_INET)
-        continue;
-      if (sortlist[i].type == PATTERN_MASK)
+      while (next)
         {
-          if ((addr->s_addr & sortlist[i].mask.addr4.s_addr)
-              == sortlist[i].addrV4.s_addr)
-            break;
-        }
-      else
-        {
-          if (!ares__bitncmp(&addr->s_addr, &sortlist[i].addrV4.s_addr,
-                             sortlist[i].mask.bits))
-            break;
+          if (next->ai_family == AF_INET)
+            {
+              ((struct sockaddr_in *)next->ai_addr)->sin_port = htons(hquery->port);
+            }
+          else
+            {
+              ((struct sockaddr_in6 *)next->ai_addr)->sin6_port = htons(hquery->port);
+            }
+          next = next->ai_next;
         }
     }
-  return i;
-}
-
-static void sort6_addresses(struct hostent *host,
-                            const struct apattern *sortlist, int nsort) {
-  struct ares_in6_addr a1, a2;
-  int i1, i2, ind1, ind2;
-
-  /* This is a simple insertion sort, not optimized at all.  i1 walks
-   * through the address list, with the loop invariant that everything
-   * to the left of i1 is sorted.  In the loop body, the value at i1 is moved
-   * back through the list (via i2) until it is in sorted order.
-   */
-  for (i1 = 0; host->h_addr_list[i1]; i1++)
+  else
     {
-      memcpy(&a1, host->h_addr_list[i1], sizeof(struct ares_in6_addr));
-      ind1 = get6_address_index(&a1, sortlist, nsort);
-      for (i2 = i1 - 1; i2 >= 0; i2--)
-        {
-          memcpy(&a2, host->h_addr_list[i2], sizeof(struct ares_in6_addr));
-          ind2 = get6_address_index(&a2, sortlist, nsort);
-          if (ind2 <= ind1)
-            break;
-          memcpy(host->h_addr_list[i2 + 1], &a2, sizeof(struct ares_in6_addr));
-        }
-      memcpy(host->h_addr_list[i2 + 1], &a1, sizeof(struct ares_in6_addr));
+      /* Clean up what we have collected by so far. */
+      ares_freeaddrinfo(hquery->ai);
+      hquery->ai = NULL;
     }
-}
 
-/* Find the first entry in sortlist which matches addr.  Return nsort
- * if none of them match.
- */
-static int get6_address_index(const struct ares_in6_addr *addr,
-                              const struct apattern *sortlist,
-                              int nsort) {
-  int i;
-
-  for (i = 0; i < nsort; i++)
-    {
-      if (sortlist[i].family != AF_INET6)
-        continue;
-      if (!ares__bitncmp(addr, &sortlist[i].addrV6, sortlist[i].mask.bits))
-        break;
-    }
-  return i;
-}
-
-static int as_is_first(const struct host_query* hquery) {
-  char* p;
-  int ndots = 0;
-  for (p = hquery->name; *p; p++)
-    {
-      if (*p == '.')
-        ndots++;
-    }
-  return ndots >= hquery->channel->ndots;
+  hquery->callback(hquery->arg, status, hquery->timeouts, hquery->ai);
+  ares_free(hquery->name);
+  ares_free(hquery);
 }

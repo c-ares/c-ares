@@ -355,9 +355,28 @@ int ares__expand_name_for_response(const unsigned char *encoded,
                                    char **s, long *enclen);
 void ares__init_servers_state(ares_channel channel);
 void ares__destroy_servers_state(ares_channel channel);
-int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
-int ares__single_domain(ares_channel channel, const char *name, char **s);
-int ares__cat_domain(const char *name, const char *domain, char **s);
+struct ares_addrinfo *ares__malloc_addrinfo(void);
+struct ares_addrinfo *ares__append_addrinfo(struct ares_addrinfo *ai,
+                                            struct ares_addrinfo **head_ai);
+int ares__get_addrinfo(FILE *fp,
+                       const char *name,
+                       unsigned short port,
+                       const struct ares_addrinfo *hints,
+                       struct ares_addrinfo **result);
+
+int ares__parse_a_reply(const unsigned char *abuf,
+                        int alen,
+                        struct hostent **host,
+                        struct ares_addrinfo **ai,
+                        struct ares_addrttl *addrttls,
+                        int *naddrttls);
+
+int ares__parse_aaaa_reply(const unsigned char *abuf,
+                           int alen,
+                           struct hostent **host,
+                           struct ares_addrinfo **ai,
+                           struct ares_addr6ttl *addrttls,
+                           int *naddrttls);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);
