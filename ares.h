@@ -42,7 +42,8 @@
    require it! */
 #if defined(_AIX) || defined(__NOVELL_LIBC__) || defined(__NetBSD__) || \
     defined(__minix) || defined(__SYMBIAN32__) || defined(__INTEGRITY) || \
-    defined(ANDROID) || defined(__ANDROID__) || defined(__OpenBSD__)
+    defined(ANDROID) || defined(__ANDROID__) || defined(__OpenBSD__) || \
+    defined(__QNXNTO__)
 #include <sys/select.h>
 #endif
 #if (defined(NETWARE) && !defined(__NOVELL_LIBC__))
@@ -69,6 +70,10 @@
 #else
 #  include <sys/socket.h>
 #  include <netinet/in.h>
+#endif
+
+#if defined(ANDROID) || defined(__ANDROID__)
+#include <jni.h>
 #endif
 
 #ifdef  __cplusplus
@@ -163,6 +168,7 @@ extern "C" {
 #define ARES_OPT_ROTATE         (1 << 14)
 #define ARES_OPT_EDNSPSZ        (1 << 15)
 #define ARES_OPT_NOROTATE       (1 << 16)
+#define ARES_OPT_RESOLVCONF     (1 << 17)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN                  (1 << 0)
@@ -269,6 +275,7 @@ struct ares_options {
   struct apattern *sortlist;
   int nsort;
   int ednspsz;
+  char *resolvconf_path;
 };
 
 struct hostent;
@@ -313,6 +320,12 @@ CARES_EXTERN int ares_library_init_mem(int flags,
                                        void *(*amalloc)(size_t size),
                                        void (*afree)(void *ptr),
                                        void *(*arealloc)(void *ptr, size_t size));
+
+#if defined(ANDROID) || defined(__ANDROID__)
+CARES_EXTERN void ares_library_init_jvm(JavaVM *jvm);
+CARES_EXTERN int ares_library_init_android(jobject connectivity_manager);
+CARES_EXTERN int ares_library_android_initialized(void);
+#endif
 
 CARES_EXTERN int ares_library_initialized(void);
 

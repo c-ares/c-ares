@@ -72,6 +72,9 @@ was invalid.
 .TP 15
 .B ARES_ENOTINITIALIZED
 c-ares library initialization not yet performed.
+.TP 15
+.B ARES_ENOTIMP
+Changing name servers configuration while queries are outstanding is not implemented.
 .SH SEE ALSO
 .BR ares_set_servers_csv (3),
 .BR ares_get_servers (3),

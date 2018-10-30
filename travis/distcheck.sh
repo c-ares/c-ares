@@ -10,7 +10,7 @@ if [ "$BUILD_TYPE" = "normal" -a "$TRAVIS_OS_NAME" = "linux" ]; then
 
     cd test
     make
-    $TEST_WRAP ./arestest -v $TEST_FILTER
+    $TEST_WRAP ./arestest -4 -v $TEST_FILTER
     cd ..
 
     cd ..

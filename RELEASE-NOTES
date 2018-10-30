@@ -1,46 +1,43 @@
-c-ares version 1.12.0
+c-ares version 1.15.0
 
 Changes:
+ o Add ares_init_options() configurability for path to resolv.conf file [1]
+ o Ability to exclude building of tools (adig, ahost, acountry) in CMake [3]
+ o Android: Support for domain search suffix [4]
+ o Report ARES_ENOTFOUND for .onion domain names as per RFC7686. [13]
 
- o api: add ARES_OPT_NOROTATE optmask value
- 
 Bug fixes:
+ o AIX build fix for trying to include both nameser_compat.h and
+   onameser_compat.h [2]
+ o Windows: Improve DNS suffixes extracting from WinNT registry [5]
+ o Fix modern GCC warnings [6]
+ o Apply the IPv6 server blacklist to all nameserver sources, not just Windows
+   [7]
+ o Fix warnings emitted by MSVC when using -W4 [8]
+ o Prevent changing name servers while queries are outstanding [9]
+ o Harden and rationalize c-ares timeout computation [10]
+ o Distribute ares_android.h [11]
+ o ares_set_servers_csv() on failure should not leave channel in a bad state
+   [12]
+ o Add missing docs to distribution
 
- o CVE-2016-5180: ares_create_query single byte out of buffer write [4]
- o configure: acknowledge --disable-tests [1]
- o man pages: fix typos detected by Lintian
- o test: add missing #includes for dns-proto.cc
- o test: avoid in6addr_* constants
- o test: Build with MinGW on AppVeyor
- o Makefile.m32: add support for extra flags
- o Makefile.m32: add support for CROSSPREFIX
- o configure: check if tests can get built before enabled
- o ares_library_cleanup: reset ares_realloc too
- o ahost.c: add cast to fix C++ compile
- o test: Only pass unused args to GoogleTest
- o build: commonize MSVC version detection
- o msvc_ver.inc: support Visual Studio 2015 Update 1, 2, 3
- o test: for AF_UNSPEC, return CNAME only for AAAA, but valid A record
- o ares_getnameinfo: explicitly clear struct servent before use
- o test: Update fuzzing function prototype
- o init: fix nsort initialization
- o test: add fuzzing check script to tests
- o web: http => https
- o read_tcp_data: remove superfluous NULL check
- o LICENSE.md: add a stand-alone license file
- o SECURITY.md: suggested "security process" for the project
- o ares_init_options: only propagate init failures from options [2]
- o headers: remove checks for and defines of variable sizes
- o test: fix gMock to work with gcc >= 6.x [3]
- 
 Thanks go to these friendly people for their efforts and contributions:
-
-  Alexander Drachevskiy, Brad House, Chris Araman, Daniel Stenberg,
-  David Drysdale, Gregor Jasny, Svante Karlsson, Viktor Szakats
+  @afalin, Andi Schnebinger, Ben Noordhuis, Brad House, Brad Spencer,
+  David Hotham, @flyingdutchman23, John Schember, Ruslan Baratov,
+  Sarat Addepalli, Tobias Nießen (11 contributors)
 
 References to bug reports and discussions on issues:
+ [1] = https://github.com/c-ares/c-ares/issues/220
+ [2] = https://github.com/c-ares/c-ares/issues/224
+ [3] = https://github.com/c-ares/c-ares/issues/200
+ [4] = https://github.com/c-ares/c-ares/issues/207
+ [5] = https://github.com/c-ares/c-ares/pull/202
+ [6] = https://github.com/c-ares/c-ares/pull/201
+ [7] = https://github.com/c-ares/c-ares/pull/193
+ [8] = https://github.com/c-ares/c-ares/pull/192
+ [9] = https://github.com/c-ares/c-ares/pull/191
+ [10] = https://github.com/c-ares/c-ares/pull/187
+ [11] = https://c-ares.haxx.se/mail/c-ares-archive-2018-04/0000.shtml
+ [12] = https://c-ares.haxx.se/mail/c-ares-archive-2018-03/0000.shtml
+ [13] = https://github.com/c-ares/c-ares/issues/196
 
- [1] = https://github.com/c-ares/c-ares/issues/44
- [2] = https://github.com/c-ares/c-ares/issues/60
- [3] = https://github.com/google/googletest/issues/705#issuecomment-235067917
- [4] = https://c-ares.haxx.se/adv_20160929.html

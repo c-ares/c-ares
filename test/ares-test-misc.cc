@@ -45,6 +45,12 @@ TEST_F(DefaultChannelTest, SetServers) {
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, &server1));
   std::vector<std::string> expected = {"1.2.3.4", "2.3.4.5"};
   EXPECT_EQ(expected, GetNameServers(channel_));
+
+  // Change not allowed while request is pending
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers(channel_, &server1));
+  ares_cancel(channel_);
 }
 
 TEST_F(DefaultChannelTest, SetServersPorts) {
@@ -69,6 +75,12 @@ TEST_F(DefaultChannelTest, SetServersPorts) {
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, &server1));
   std::vector<std::string> expected = {"1.2.3.4:111", "2.3.4.5"};
   EXPECT_EQ(expected, GetNameServers(channel_));
+
+  // Change not allowed while request is pending
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_ports(channel_, &server1));
+  ares_cancel(channel_);
 }
 
 TEST_F(DefaultChannelTest, SetServersCSV) {
@@ -95,6 +107,13 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
             ares_set_servers_ports_csv(channel_, "1.2.3.4:54,[0102:0304:0506:0708:0910:1112:1314:1516]:80,2.3.4.5:55"));
   std::vector<std::string> expected2 = {"1.2.3.4:54", "[0102:0304:0506:0708:0910:1112:1314:1516]:80", "2.3.4.5:55"};
   EXPECT_EQ(expected2, GetNameServers(channel_));
+
+  // Change not allowed while request is pending
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_csv(channel_, "1.2.3.4,2.3.4.5"));
+  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_ports_csv(channel_, "1.2.3.4:56,2.3.4.5:67"));
+  ares_cancel(channel_);
 
   // Should survive duplication
   ares_channel channel2;
@@ -256,6 +275,38 @@ TEST_F(LibraryTest, CreateQueryFailures) {
   if (p) ares_free_string(p);
 }
 
+TEST_F(LibraryTest, CreateQueryOnionDomain) {
+  byte* p;
+  int len;
+  EXPECT_EQ(ARES_ENOTFOUND,
+            ares_create_query("dontleak.onion", ns_c_in, ns_t_a, 0x1234, 0,
+                              &p, &len, 0));
+}
+
+TEST_F(DefaultChannelTest, HostByNameOnionDomain) {
+  HostResult result;
+  ares_gethostbyname(channel_, "dontleak.onion", AF_INET, HostCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTFOUND, result.status_);
+}
+
+TEST_F(DefaultChannelTest, HostByNameFileOnionDomain) {
+  struct hostent *h;
+  EXPECT_EQ(ARES_ENOTFOUND,
+            ares_gethostbyname_file(channel_, "dontleak.onion", AF_INET, &h));
+}
+
+// Interesting question: should tacking on a search domain let the query
+// through? It seems safer to reject it because "supersecret.onion.search"
+// still leaks information about the query to malicious resolvers.
+TEST_F(DefaultChannelTest, SearchOnionDomain) {
+  SearchResult result;
+  ares_search(channel_, "dontleak.onion", ns_c_in, ns_t_a,
+              SearchCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTFOUND, result.status_);
+}
+
 TEST_F(DefaultChannelTest, SendFailure) {
   unsigned char buf[2];
   SearchResult result;
@@ -276,7 +327,7 @@ std::string ExpandName(const std::vector<byte>& data, int offset,
   } else {
     result = "<error>";
   }
-  free(name);
+  ares_free_string(name);
   return result;
 }
 
@@ -467,7 +518,7 @@ TEST_F(LibraryTest, ExpandString) {
                                (unsigned char**)&result, &len));
   EXPECT_EQ("abc", std::string(result));
   EXPECT_EQ(1 + 3, len);  // amount of data consumed includes 1 byte len
-  free(result);
+  ares_free_string(result);
   result = nullptr;
   EXPECT_EQ(ARES_EBADSTR,
             ares_expand_string(s1.data() + 1, s1.data(), s1.size(),

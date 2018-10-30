@@ -40,6 +40,7 @@ struct ares_options {
   struct apattern *sortlist;
   int nsort;
   int ednspsz;
+  char *resolvconf_path;
 };
 
 int ares_init_options(ares_channel *\fIchannelptr\fP,
@@ -139,16 +140,16 @@ should be set to a string of the characters "b" or "f", where "b"
 indicates a DNS lookup and "f" indicates a lookup in the hosts file.
 .TP 18
 .B ARES_OPT_SOCK_STATE_CB
-.B void (*\fIsock_state_cb\fP)(void *data, int s, int read, int write);
+.B void (*\fIsock_state_cb\fP)(void *data, ares_socket_t socket_fd, int readable, int writable);
 .br
 .B void *\fIsock_state_cb_data\fP;
 .br
 A callback function to be invoked when a socket changes state.
-.I s
+.I socket_fd
 will be passed the socket whose state has changed;
-.I read
+.I readable
 will be set to true if the socket should listen for read events, and
-.I write
+.I writable
 will be set to true if the socket should listen for write events.
 The value of
 .I sock_state_cb_data
@@ -180,6 +181,15 @@ The receive buffer size to set for the socket.
 .TP 18
 .B ARES_OPT_EDNSPSZ
 .B int \fIednspsz\fP;
+.br
+.TP 18
+.B ARES_OPT_RESOLVCONF
+.B char *\fIresolvconf_path\fP;
+The path to use for reading the resolv.conf file. The
+.I resolvconf_path
+should be set to a path string, and will be honoured on *nix like systems. The
+default is
+.B /etc/resolv.conf
 .br
 The message size to be advertized in EDNS; only takes effect if the
 .B ARES_FLAG_EDNS
@@ -259,6 +269,9 @@ c-ares library initialization not yet performed.
 .SH NOTES
 When initializing from
 .B /etc/resolv.conf,
+(or, alternatively when specified by the
+.I resolvconf_path
+path location)
 \fBares_init_options(3)\fP reads the \fIdomain\fP and \fIsearch\fP directives
 to allow lookups of short names relative to the domains specified. The
 \fIdomain\fP and \fIsearch\fP directives override one another. If more that
@@ -280,4 +293,3 @@ Greg Hudson, MIT Information Systems
 Copyright 1998 by the Massachusetts Institute of Technology.
 .br
 Copyright (C) 2004-2010 by Daniel Stenberg.
-

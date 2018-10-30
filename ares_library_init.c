@@ -30,15 +30,29 @@ fpGetAdaptersAddresses_t ares_fpGetAdaptersAddresses = ZERO_NULL;
 fpGetBestRoute2_t ares_fpGetBestRoute2 = ZERO_NULL;
 #endif
 
+#if defined(ANDROID) || defined(__ANDROID__)
+#include "ares_android.h"
+#endif
+
 /* library-private global vars with source visibility restricted to this file */
 
 static unsigned int ares_initialized;
 static int          ares_init_flags;
 
 /* library-private global vars with visibility across the whole library */
-void *(*ares_malloc)(size_t size) = malloc;
-void *(*ares_realloc)(void *ptr, size_t size) = realloc;
-void (*ares_free)(void *ptr) = free;
+#if defined(WIN32)
+/* We need indirections to handle Windows DLL rules. */
+static void *default_malloc(size_t size) { return malloc(size); }
+static void *default_realloc(void *p, size_t size) { return realloc(p, size); }
+static void default_free(void *p) { free(p); }
+#else
+# define default_malloc malloc
+# define default_realloc realloc
+# define default_free free
+#endif
+void *(*ares_malloc)(size_t size) = default_malloc;
+void *(*ares_realloc)(void *ptr, size_t size) = default_realloc;
+void (*ares_free)(void *ptr) = default_free;
 
 #ifdef USE_WINSOCK
 static HMODULE hnd_iphlpapi;
@@ -159,6 +173,10 @@ void ares_library_cleanup(void)
 
   if (ares_init_flags & ARES_LIB_INIT_WIN32)
     ares_win32_cleanup();
+
+#if defined(ANDROID) || defined(__ANDROID__)
+  ares_library_cleanup_android();
+#endif
 
   ares_init_flags = ARES_LIB_INIT_NONE;
   ares_malloc = malloc;

@@ -1,16 +1,16 @@
 language: c++
+dist: trusty
 sudo: false
 addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.7
+            - llvm-toolchain-trusty-5.0
         packages:
-            - cmake
-            - gcc-4.8
-            - g++-4.8
+            - cmake3
             - lcov
-            - clang-3.7
+            - clang-5.0
+            - clang-tools-5.0
             - valgrind
 matrix:
     include:
@@ -22,11 +22,9 @@ matrix:
           env: BUILD_TYPE=normal
         - os: linux
           compiler: gcc
-          dist: trusty
           env: BUILD_TYPE=cmake
         - os: linux
           compiler: clang
-          dist: trusty
           env: BUILD_TYPE=cmake
         - os: linux
           compiler: gcc
@@ -37,9 +35,11 @@ matrix:
         - os: linux
           compiler: clang
           env: BUILD_TYPE=asan
+          sudo: true  # ASAN requires ptrace which is disabled in containers (https://github.com/travis-ci/travis-ci/issues/9033)
         - os: linux
           compiler: clang
           env: BUILD_TYPE=lsan
+          sudo: true  # LSAN requires ptrace which is disabled in containers (https://github.com/travis-ci/travis-ci/issues/9033)
         - os: linux
           compiler: clang
           env: BUILD_TYPE=analyse
@@ -60,15 +60,9 @@ matrix:
           language: objective-c
           env: BUILD_TYPE=ios
 install:
-    - pip install --user 'requests[security]<2.9.1'
-    - pip install --user cpp-coveralls
+    - if [ "$TRAVIS_OS_NAME" != "osx" ]; then pip install --user cpp-coveralls > /dev/null; fi
     - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew reinstall libtool > /dev/null; fi
 before_script:
-    - |
-         if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CXX" = "g++" ]; then
-             export CXX="g++-4.8"
-             export CC="gcc-4.8"
-         fi
     - |
         if [ "$BUILD_TYPE" = "coverage" ]; then
              export CONFIG_OPTS="--enable-debug --disable-shared --enable-code-coverage"
@@ -94,10 +88,10 @@ before_script:
          fi
     - |
          if [ "$BUILD_TYPE" = "analyse" ]; then
-             export SCAN_WRAP="scan-build-3.7 --status-bugs"
+             export SCAN_WRAP="scan-build-5.0 --status-bugs"
              export CONFIG_OPTS="--enable-debug"
-             export CXX="clang++-3.7"
-             export CC="clang-3.7"
+             export CXX="clang++-5.0"
+             export CC="clang-5.0"
          fi
     - |
          if [ "$BUILD_TYPE" = "valgrind" ]; then
@@ -115,4 +109,6 @@ before_script:
              export LDFLAGS=$IOSFLAGS
          fi
 script:
-    - ./travis/build.sh && ./travis/test.sh && ./travis/distcheck.sh && ./travis/covupload.sh
+    - ./travis/build.sh && ./travis/test.sh
+    - if [ "$BUILD_TYPE" = "normal" ]; then ./travis/distcheck.sh ; fi
+    - if [ "$BUILD_TYPE" = "coverage" ]; then ./travis/covupload.sh ; fi

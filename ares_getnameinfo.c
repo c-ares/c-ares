@@ -356,12 +356,9 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int flags,
 #ifdef HAVE_IF_INDEXTONAME
   int is_ll, is_mcll;
 #endif
-  static const char fmt_u[] = "%u";
-  static const char fmt_lu[] = "%lu";
   char tmpbuf[IF_NAMESIZE + 2];
   size_t bufl;
-  const char *fmt = (sizeof(addr6->sin6_scope_id) > sizeof(unsigned int))?
-    fmt_lu:fmt_u;
+  int is_scope_long = sizeof(addr6->sin6_scope_id) > sizeof(unsigned int);
 
   tmpbuf[0] = '%';
 
@@ -371,15 +368,38 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int flags,
   if ((flags & ARES_NI_NUMERICSCOPE) ||
       (!is_ll && !is_mcll))
     {
-       sprintf(&tmpbuf[1], fmt, addr6->sin6_scope_id);
+      if (is_scope_long)
+        {
+          sprintf(&tmpbuf[1], "%lu", (unsigned long)addr6->sin6_scope_id);
+        }
+      else
+        {
+          sprintf(&tmpbuf[1], "%u", (unsigned int)addr6->sin6_scope_id);
+        }
     }
   else
     {
       if (if_indextoname(addr6->sin6_scope_id, &tmpbuf[1]) == NULL)
-        sprintf(&tmpbuf[1], fmt, addr6->sin6_scope_id);
+        {
+          if (is_scope_long)
+            {
+              sprintf(&tmpbuf[1], "%lu", (unsigned long)addr6->sin6_scope_id);
+            }
+          else
+            {
+              sprintf(&tmpbuf[1], "%u", (unsigned int)addr6->sin6_scope_id);
+            }
+        }
     }
 #else
-  sprintf(&tmpbuf[1], fmt, addr6->sin6_scope_id);
+  if (is_scope_long)
+    {
+      sprintf(&tmpbuf[1], "%lu", (unsigned long)addr6->sin6_scope_id);
+    }
+  else
+    {
+      sprintf(&tmpbuf[1], "%u", (unsigned int)addr6->sin6_scope_id);
+    }
   (void) flags;
 #endif
   tmpbuf[IF_NAMESIZE + 1] = '\0';
@@ -419,4 +439,15 @@ STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2)
         }
     }
   return (char *)c1_begin;
+}
+
+int ares__is_onion_domain(const char *name)
+{
+  if (ares_striendstr(name, ".onion"))
+    return 1;
+
+  if (ares_striendstr(name, ".onion."))
+    return 1;
+
+  return 0;
 }

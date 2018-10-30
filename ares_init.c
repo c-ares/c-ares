@@ -44,6 +44,7 @@
 
 #if defined(ANDROID) || defined(__ANDROID__)
 #include <sys/system_properties.h>
+#include "ares_android.h"
 /* From the Bionic sources */
 #define DNS_PROP_NAME_PREFIX  "net.dns"
 #define MAX_DNS_PROPERTIES    8
@@ -168,6 +169,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->sock_config_cb_data = NULL;
   channel->sock_funcs = NULL;
   channel->sock_func_cb_data = NULL;
+  channel->resolvconf_path = NULL;
 
   channel->last_server = 0;
   channel->last_timeout_processed = (time_t)now.tv_sec;
@@ -235,16 +237,14 @@ done:
       /* Something failed; clean up memory we may have allocated. */
       if (channel->servers)
         ares_free(channel->servers);
-      if (channel->domains)
-        {
-          for (i = 0; i < channel->ndomains; i++)
-            ares_free(channel->domains[i]);
-          ares_free(channel->domains);
-        }
+      if (channel->ndomains != -1)
+        ares_strsplit_free(channel->domains, channel->ndomains);
       if (channel->sortlist)
         ares_free(channel->sortlist);
       if(channel->lookups)
         ares_free(channel->lookups);
+      if(channel->resolvconf_path)
+        ares_free(channel->resolvconf_path);
       ares_free(channel);
       return status;
     }
@@ -298,7 +298,7 @@ int ares_dup(ares_channel *dest, ares_channel src)
   (*dest)->sock_func_cb_data   = src->sock_func_cb_data;
 
   strncpy((*dest)->local_dev_name, src->local_dev_name,
-          sizeof(src->local_dev_name));
+          sizeof((*dest)->local_dev_name));
   (*dest)->local_ip4 = src->local_ip4;
   memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
 
@@ -352,6 +352,9 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
                 ARES_OPT_SERVERS|ARES_OPT_DOMAINS|ARES_OPT_LOOKUPS|
                 ARES_OPT_SORTLIST|ARES_OPT_TIMEOUTMS);
   (*optmask) |= (channel->rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE);
+
+  if (channel->resolvconf_path)
+    (*optmask) |= ARES_OPT_RESOLVCONF;
 
   /* Copy easy stuff */
   options->flags   = channel->flags;
@@ -424,6 +427,13 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
       options->sortlist[i] = channel->sortlist[i];
   }
   options->nsort = channel->nsort;
+
+  /* copy path for resolv.conf file */
+  if (channel->resolvconf_path) {
+    options->resolvconf_path = ares_strdup(channel->resolvconf_path);
+    if (!options->resolvconf_path)
+      return ARES_ENOMEM;
+  }
 
   return ARES_SUCCESS;
 }
@@ -533,6 +543,14 @@ static int init_by_options(ares_channel channel,
     channel->nsort = options->nsort;
   }
 
+  /* Set path for resolv.conf file, if given. */
+  if ((optmask & ARES_OPT_RESOLVCONF) && !channel->resolvconf_path)
+    {
+      channel->resolvconf_path = ares_strdup(options->resolvconf_path);
+      if (!channel->resolvconf_path && options->resolvconf_path)
+        return ARES_ENOMEM;
+    }
+
   channel->optmask = optmask;
 
   return ARES_SUCCESS;
@@ -585,7 +603,7 @@ static int get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
   *outptr = NULL;
 
   /* Find out size of string stored in registry */
-  res = RegQueryValueEx(hKey, leafKeyName, 0, NULL, NULL, &size);
+  res = RegQueryValueExA(hKey, leafKeyName, 0, NULL, NULL, &size);
   if ((res != ERROR_SUCCESS && res != ERROR_MORE_DATA) || !size)
     return 0;
 
@@ -596,7 +614,7 @@ static int get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
     return 0;
 
   /* Get the value for real */
-  res = RegQueryValueEx(hKey, leafKeyName, 0, NULL,
+  res = RegQueryValueExA(hKey, leafKeyName, 0, NULL,
                         (unsigned char *)*outptr, &size);
   if ((res != ERROR_SUCCESS) || (size == 1))
   {
@@ -627,7 +645,7 @@ static int get_REG_SZ_9X(HKEY hKey, const char *leafKeyName, char **outptr)
   *outptr = NULL;
 
   /* Find out size of string stored in registry */
-  res = RegQueryValueEx(hKey, leafKeyName, 0, &dataType, NULL, &size);
+  res = RegQueryValueExA(hKey, leafKeyName, 0, &dataType, NULL, &size);
   if ((res != ERROR_SUCCESS && res != ERROR_MORE_DATA) || !size)
     return 0;
 
@@ -638,7 +656,7 @@ static int get_REG_SZ_9X(HKEY hKey, const char *leafKeyName, char **outptr)
     return 0;
 
   /* Get the value for real */
-  res = RegQueryValueEx(hKey, leafKeyName, 0, &dataType,
+  res = RegQueryValueExA(hKey, leafKeyName, 0, &dataType,
                         (unsigned char *)*outptr, &size);
   if ((res != ERROR_SUCCESS) || (size == 1))
   {
@@ -683,11 +701,11 @@ static int get_enum_REG_SZ(HKEY hKeyParent, const char *leafKeyName,
   for(;;)
   {
     enumKeyNameBuffSize = sizeof(enumKeyName);
-    res = RegEnumKeyEx(hKeyParent, enumKeyIdx++, enumKeyName,
+    res = RegEnumKeyExA(hKeyParent, enumKeyIdx++, enumKeyName,
                        &enumKeyNameBuffSize, 0, NULL, NULL, NULL);
     if (res != ERROR_SUCCESS)
       break;
-    res = RegOpenKeyEx(hKeyParent, enumKeyName, 0, KEY_QUERY_VALUE,
+    res = RegOpenKeyExA(hKeyParent, enumKeyName, 0, KEY_QUERY_VALUE,
                        &hKeyEnum);
     if (res != ERROR_SUCCESS)
       continue;
@@ -718,7 +736,7 @@ static int get_DNS_Registry_9X(char **outptr)
 
   *outptr = NULL;
 
-  res = RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_9X, 0, KEY_READ,
+  res = RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_9X, 0, KEY_READ,
                      &hKey_VxD_MStcp);
   if (res != ERROR_SUCCESS)
     return 0;
@@ -750,7 +768,7 @@ static int get_DNS_Registry_NT(char **outptr)
 
   *outptr = NULL;
 
-  res = RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
+  res = RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
                      &hKey_Tcpip_Parameters);
   if (res != ERROR_SUCCESS)
     return 0;
@@ -772,7 +790,7 @@ static int get_DNS_Registry_NT(char **outptr)
     goto done;
 
   /* Try adapter specific parameters */
-  res = RegOpenKeyEx(hKey_Tcpip_Parameters, "Interfaces", 0,
+  res = RegOpenKeyExA(hKey_Tcpip_Parameters, "Interfaces", 0,
                      KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS,
                      &hKey_Interfaces);
   if (res != ERROR_SUCCESS)
@@ -949,9 +967,16 @@ static BOOL ares_IsWindowsVistaOrGreater(void)
   OSVERSIONINFO vinfo;
   memset(&vinfo, 0, sizeof(vinfo));
   vinfo.dwOSVersionInfoSize = sizeof(vinfo);
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996) /* warning C4996: 'GetVersionExW': was declared deprecated */
+#endif
   if (!GetVersionEx(&vinfo) || vinfo.dwMajorVersion < 6)
     return FALSE;
   return TRUE;
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 }
 
 /* A structure to hold the string form of IPv4 and IPv6 addresses so we can
@@ -961,6 +986,10 @@ typedef struct
 {
   /* The metric we sort them by. */
   ULONG metric;
+
+  /* Original index of the item, used as a secondary sort parameter to make
+   * qsort() stable if the metrics are equal */
+  size_t orig_idx;
 
   /* Room enough for the string form of any IPv4 or IPv6 address that
    * ares_inet_ntop() will create.  Based on the existing c-ares practice.
@@ -976,8 +1005,12 @@ static int compareAddresses(const void *arg1,
 {
   const Address * const left = arg1;
   const Address * const right = arg2;
+  /* Lower metric the more preferred */
   if(left->metric < right->metric) return -1;
   if(left->metric > right->metric) return 1;
+  /* If metrics are equal, lower original index more preferred */
+  if(left->orig_idx < right->orig_idx) return -1;
+  if(left->orig_idx > right->orig_idx) return 1;
   return 0;
 }
 
@@ -1164,7 +1197,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
         /* Allocate room for another address, if necessary, else skip. */
         if(addressesIndex == addressesSize) {
           const size_t newSize = addressesSize + 4;
-          Address * const newMem = 
+          Address * const newMem =
             (Address*)ares_realloc(addresses, sizeof(Address) * newSize);
           if(newMem == NULL) {
             continue;
@@ -1184,8 +1217,11 @@ static int get_DNS_AdaptersAddresses(char **outptr)
         }
         else
         {
-          addresses[addressesIndex].metric = -1;
+          addresses[addressesIndex].metric = (ULONG)-1;
         }
+
+        /* Record insertion index to make qsort stable */
+        addresses[addressesIndex].orig_idx = addressesIndex;
 
         if (! ares_inet_ntop(AF_INET, &namesrvr.sa4->sin_addr,
                              addresses[addressesIndex].text,
@@ -1218,13 +1254,16 @@ static int get_DNS_AdaptersAddresses(char **outptr)
           /* Save the address as the next element in addresses. */
           addresses[addressesIndex].metric =
             getBestRouteMetric(&ipaaEntry->Luid,
-                               (SOCKADDR_INET*)(namesrvr.sa), 
+                               (SOCKADDR_INET*)(namesrvr.sa),
                                ipaaEntry->Ipv6Metric);
         }
         else
         {
-          addresses[addressesIndex].metric = -1;
+          addresses[addressesIndex].metric = (ULONG)-1;
         }
+
+        /* Record insertion index to make qsort stable */
+        addresses[addressesIndex].orig_idx = addressesIndex;
 
         if (! ares_inet_ntop(AF_INET6, &namesrvr.sa6->sin6_addr,
                              addresses[addressesIndex].text,
@@ -1240,7 +1279,8 @@ static int get_DNS_AdaptersAddresses(char **outptr)
     }
   }
 
-  /* Sort all of the textual addresses by their metric. */
+  /* Sort all of the textual addresses by their metric (and original index if
+   * metrics are equal). */
   qsort(addresses, addressesIndex, sizeof(*addresses), compareAddresses);
 
   /* Join them all into a single string, removing duplicates. */
@@ -1264,7 +1304,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
 
 done:
   ares_free(addresses);
-  
+
   if (ipaa)
     ares_free(ipaa);
 
@@ -1304,59 +1344,6 @@ static int get_DNS_Windows(char **outptr)
   return get_DNS_Registry(outptr);
 }
 
-static void replace_comma_by_space(char* str)
-{
-  /* replace ',' by ' ' to coincide with resolv.conf search parameter */
-  char *p;
-  for (p = str; *p != '\0'; p++)
-  {
-    if (*p == ',')
-      *p = ' ';
-  }
-}
-
-/* Search if 'suffix' is containted in the 'searchlist'. Returns true if yes,
- * otherwise false. 'searchlist' is a comma separated list of domain suffixes,
- * 'suffix' is one domain suffix, 'len' is the length of 'suffix'.
- * The search ignores case. E.g.:
- * contains_suffix("abc.def,ghi.jkl", "ghi.JKL") returns true  */
-static bool contains_suffix(const char* const searchlist,
-                            const char* const suffix, const size_t len)
-{
-  const char* beg = searchlist;
-  const char* end;
-  if (!*suffix)
-    return true;
-  for (;;)
-  {
-    while (*beg && (ISSPACE(*beg) || (*beg == ',')))
-      ++beg;
-    if (!*beg)
-      return false;
-    end = beg;
-    while (*end && !ISSPACE(*end) && (*end != ','))
-      ++end;
-    if (len == (end - beg) && !strnicmp(beg, suffix, len))
-      return true;
-    beg = end;
-  }
-}
-
-/* advances list to the next suffix within a comma separated search list.
- * len is the length of the next suffix. */
-static size_t next_suffix(const char** list, const size_t advance)
-{
-  const char* beg = *list + advance;
-  const char* end;
-  while (*beg && (ISSPACE(*beg) || (*beg == ',')))
-    ++beg;
-  end = beg;
-  while (*end && !ISSPACE(*end) && (*end != ','))
-    ++end;
-  *list = beg;
-  return end - beg;
-}
-
 /*
  * get_SuffixList_Windows()
  *
@@ -1368,7 +1355,7 @@ static size_t next_suffix(const char** list, const size_t advance)
  *
  * Returns 1 and sets *outptr when returning a dynamically allocated string.
  *
- * Implementation supports Windows Server 2003 and newer 
+ * Implementation supports Windows Server 2003 and newer
  */
 static int get_SuffixList_Windows(char **outptr)
 {
@@ -1377,8 +1364,6 @@ static int get_SuffixList_Windows(char **outptr)
   DWORD keyNameBuffSize;
   DWORD keyIdx = 0;
   char *p = NULL;
-  char *pp;
-  size_t len = 0;
 
   *outptr = NULL;
 
@@ -1386,60 +1371,83 @@ static int get_SuffixList_Windows(char **outptr)
     return 0;
 
   /* 1. Global DNS Suffix Search List */
-  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0,
+  if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0,
       KEY_READ, &hKey) == ERROR_SUCCESS)
   {
-    if (get_REG_SZ(hKey, SEARCHLIST_KEY, outptr))
-      replace_comma_by_space(*outptr);
+    get_REG_SZ(hKey, SEARCHLIST_KEY, outptr);
+    if (get_REG_SZ(hKey, DOMAIN_KEY, &p))
+    {
+      commajoin(outptr, p);
+      ares_free(p);
+      p = NULL;
+    }
     RegCloseKey(hKey);
-    if (*outptr)
-      return 1;
+  }
+
+  if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NT_DNSCLIENT, 0,
+      KEY_READ, &hKey) == ERROR_SUCCESS)
+  {
+    if (get_REG_SZ(hKey, SEARCHLIST_KEY, &p))
+    {
+      commajoin(outptr, p);
+      ares_free(p);
+      p = NULL;
+    }
+    RegCloseKey(hKey);
   }
 
   /* 2. Connection Specific Search List composed of:
    *  a. Primary DNS Suffix */
-  if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_DNSCLIENT, 0,
+  if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_DNSCLIENT, 0,
       KEY_READ, &hKey) == ERROR_SUCCESS)
   {
-    get_REG_SZ(hKey, PRIMARYDNSSUFFIX_KEY, outptr);
-    RegCloseKey(hKey);
-  }
-  if (!*outptr)
-    return 0;
-
-  /*  b. Interface SearchList, Domain, DhcpDomain */
-  if (!RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY "\\" INTERFACES_KEY, 0,
-      KEY_READ, &hKey) == ERROR_SUCCESS)
-    return 0;
-  for(;;)
-  {
-    keyNameBuffSize = sizeof(keyName);
-    if (RegEnumKeyEx(hKey, keyIdx++, keyName, &keyNameBuffSize,
-        0, NULL, NULL, NULL)
-        != ERROR_SUCCESS)
-      break;
-    if (RegOpenKeyEx(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum)
-        != ERROR_SUCCESS)
-      continue;
-    if (get_REG_SZ(hKeyEnum, SEARCHLIST_KEY, &p) ||
-        get_REG_SZ(hKeyEnum, DOMAIN_KEY, &p) ||
-        get_REG_SZ(hKeyEnum, DHCPDOMAIN_KEY, &p))
+    if (get_REG_SZ(hKey, PRIMARYDNSSUFFIX_KEY, &p))
     {
-      /* p can be comma separated (SearchList) */
-      pp = p;
-      while (len = next_suffix(&pp, len))
-      {
-        if (!contains_suffix(*outptr, pp, len))
-          commanjoin(outptr, pp, len);
-      }
+      commajoin(outptr, p);
       ares_free(p);
       p = NULL;
     }
-    RegCloseKey(hKeyEnum);
+    RegCloseKey(hKey);
   }
-  RegCloseKey(hKey);
-  if (*outptr)
-    replace_comma_by_space(*outptr);
+
+  /*  b. Interface SearchList, Domain, DhcpDomain */
+  if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY "\\" INTERFACES_KEY, 0,
+      KEY_READ, &hKey) == ERROR_SUCCESS)
+  {
+    for(;;)
+    {
+      keyNameBuffSize = sizeof(keyName);
+      if (RegEnumKeyExA(hKey, keyIdx++, keyName, &keyNameBuffSize,
+          0, NULL, NULL, NULL)
+          != ERROR_SUCCESS)
+        break;
+      if (RegOpenKeyExA(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum)
+          != ERROR_SUCCESS)
+        continue;
+      /* p can be comma separated (SearchList) */
+      if (get_REG_SZ(hKeyEnum, SEARCHLIST_KEY, &p))
+      {
+        commajoin(outptr, p);
+        ares_free(p);
+        p = NULL;
+      }
+      if (get_REG_SZ(hKeyEnum, DOMAIN_KEY, &p))
+      {
+        commajoin(outptr, p);
+        ares_free(p);
+        p = NULL;
+      }
+      if (get_REG_SZ(hKeyEnum, DHCPDOMAIN_KEY, &p))
+      {
+        commajoin(outptr, p);
+        ares_free(p);
+        p = NULL;
+      }
+      RegCloseKey(hKeyEnum);
+    }
+    RegCloseKey(hKey);
+  }
+
   return *outptr != NULL;
 }
 
@@ -1537,18 +1545,62 @@ static int init_by_resolv_conf(ares_channel channel)
   unsigned int i;
   char propname[PROP_NAME_MAX];
   char propvalue[PROP_VALUE_MAX]="";
+  char **dns_servers;
+  char *domains;
+  size_t num_servers;
 
-  for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
-    snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
-    if (__system_property_get(propname, propvalue) < 1) {
+  /* Use the Android connectivity manager to get a list
+   * of DNS servers. As of Android 8 (Oreo) net.dns#
+   * system properties are no longer available. Google claims this
+   * improves privacy. Apps now need the ACCESS_NETWORK_STATE
+   * permission and must use the ConnectivityManager which
+   * is Java only. */
+  dns_servers = ares_get_android_server_list(MAX_DNS_PROPERTIES, &num_servers);
+  if (dns_servers != NULL)
+  {
+    for (i = 0; i < num_servers; i++)
+    {
+      status = config_nameserver(&servers, &nservers, dns_servers[i]);
+      if (status != ARES_SUCCESS)
+        break;
       status = ARES_EOF;
-      break;
     }
-    status = config_nameserver(&servers, &nservers, propvalue);
-    if (status != ARES_SUCCESS)
-      break;
-    status = ARES_EOF;
+    for (i = 0; i < num_servers; i++)
+    {
+      ares_free(dns_servers[i]);
+    }
+    ares_free(dns_servers);
   }
+  if (channel->ndomains == -1)
+  {
+    domains = ares_get_android_search_domains_list();
+    set_search(channel, domains);
+    ares_free(domains);
+  }
+
+#  ifdef HAVE___SYSTEM_PROPERTY_GET
+  /* Old way using the system property still in place as
+   * a fallback. Older android versions can still use this.
+   * it's possible for older apps not not have added the new
+   * permission and we want to try to avoid breaking those.
+   *
+   * We'll only run this if we don't have any dns servers
+   * because this will get the same ones (if it works). */
+  if (status != ARES_EOF) {
+    for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
+      snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
+      if (__system_property_get(propname, propvalue) < 1) {
+        status = ARES_EOF;
+        break;
+      }
+
+      status = config_nameserver(&servers, &nservers, propvalue);
+      if (status != ARES_SUCCESS)
+        break;
+      status = ARES_EOF;
+    }
+  }
+#  endif /* HAVE___SYSTEM_PROPERTY_GET */
 #elif defined(CARES_USE_LIBRESOLV)
   struct __res_state res;
   memset(&res, 0, sizeof(res));
@@ -1613,6 +1665,7 @@ static int init_by_resolv_conf(ares_channel channel)
     size_t linesize;
     int error;
     int update_domains;
+    const char *resolvconf_path;
 
     /* Don't read resolv.conf and friends if we don't have to */
     if (ARES_CONFIG_CHECK(channel))
@@ -1621,7 +1674,14 @@ static int init_by_resolv_conf(ares_channel channel)
     /* Only update search domains if they're not already specified */
     update_domains = (channel->ndomains == -1);
 
-    fp = fopen(PATH_RESOLV_CONF, "r");
+    /* Support path for resolvconf filename set by ares_init_options */
+    if(channel->resolvconf_path) {
+      resolvconf_path = channel->resolvconf_path;
+    } else {
+      resolvconf_path = PATH_RESOLV_CONF;
+    }
+
+    fp = fopen(resolvconf_path, "r");
     if (fp) {
       while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
       {
@@ -1632,10 +1692,10 @@ static int init_by_resolv_conf(ares_channel channel)
         else if ((p = try_config(line, "search", ';')) && update_domains)
           status = set_search(channel, p);
         else if ((p = try_config(line, "nameserver", ';')) &&
-                 channel->nservers == -1)
+                channel->nservers == -1)
           status = config_nameserver(&servers, &nservers, p);
         else if ((p = try_config(line, "sortlist", ';')) &&
-                 channel->nsort == -1)
+                channel->nsort == -1)
           status = config_sortlist(&sortlist, &nsort, p);
         else if ((p = try_config(line, "options", ';')))
           status = set_options(channel, p);
@@ -1655,7 +1715,7 @@ static int init_by_resolv_conf(ares_channel channel)
         break;
       default:
         DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n",
-                       error, strerror(error)));
+                      error, strerror(error)));
         DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_RESOLV_CONF));
         status = ARES_EFILE;
       }
@@ -1868,8 +1928,10 @@ static int init_by_defaults(ares_channel channel)
         continue;
       }
       else if(res) {
-        rc = ARES_EBADNAME;
-        goto error;
+        /* Lets not treat a gethostname failure as critical, since we
+         * are ok if gethostname doesn't even exist */
+        *hostname = '\0';
+        break;
       }
 
     } while (res != 0);
@@ -1920,6 +1982,11 @@ static int init_by_defaults(ares_channel channel)
     if(channel->lookups) {
       ares_free(channel->lookups);
       channel->lookups = NULL;
+    }
+
+    if(channel->resolvconf_path) {
+      ares_free(channel->resolvconf_path);
+      channel->resolvconf_path = NULL;
     }
   }
 
@@ -1985,6 +2052,76 @@ static int config_lookup(ares_channel channel, const char *str,
 #endif  /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ & !CARES_USE_LIBRESOLV */
 
 #ifndef WATT32
+/* Validate that the ip address matches the subnet (network base and network
+ * mask) specified. Addresses are specified in standard Network Byte Order as
+ * 16 bytes, and the netmask is 0 to 128 (bits).
+ */
+static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
+                                    unsigned char netmask,
+                                    const unsigned char ipaddr[16])
+{
+  unsigned char mask[16] = { 0 };
+  unsigned char i;
+
+  /* Misuse */
+  if (netmask > 128)
+    return 0;
+
+  /* Quickly set whole bytes */
+  memset(mask, 0xFF, netmask / 8);
+
+  /* Set remaining bits */
+  if(netmask % 8) {
+    mask[netmask / 8] = (unsigned char)(0xff << (8 - (netmask % 8)));
+  }
+
+  for (i=0; i<16; i++) {
+    if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i]))
+      return 0;
+  }
+
+  return 1;
+}
+
+/* Return true iff the IPv6 ipaddr is blacklisted. */
+static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
+{
+  /* A list of blacklisted IPv6 subnets. */
+  const struct {
+    const unsigned char netbase[16];
+    unsigned char netmask;
+  } blacklist[] = {
+    /* fec0::/10 was deprecated by [RFC3879] in September 2004. Formerly a
+     * Site-Local scoped address prefix.  These are never valid DNS servers,
+     * but are known to be returned at least sometimes on Windows and Android.
+     */
+    {
+      {
+        0xfe, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+      },
+      10
+    }
+  };
+  size_t i;
+
+  /* See if ipaddr matches any of the entries in the blacklist. */
+  for (i = 0; i < sizeof(blacklist) / sizeof(blacklist[0]); ++i) {
+    if (ares_ipv6_subnet_matches(
+          blacklist[i].netbase, blacklist[i].netmask, ipaddr))
+      return 1;
+  }
+  return 0;
+}
+
+/* Add the IPv4 or IPv6 nameservers in str (separated by commas) to the
+ * servers list, updating servers and nservers as required.
+ *
+ * This will silently ignore blacklisted IPv6 nameservers as detected by
+ * ares_ipv6_server_blacklisted().
+ *
+ * Returns an error code on failure, else ARES_SUCCESS.
+ */
 static int config_nameserver(struct server_state **servers, int *nservers,
                              char *str)
 {
@@ -2019,7 +2156,10 @@ static int config_nameserver(struct server_state **servers, int *nservers,
       /* Convert textual address to binary format. */
       if (ares_inet_pton(AF_INET, txtaddr, &host.addrV4) == 1)
         host.family = AF_INET;
-      else if (ares_inet_pton(AF_INET6, txtaddr, &host.addrV6) == 1)
+      else if (ares_inet_pton(AF_INET6, txtaddr, &host.addrV6) == 1
+               /* Silently skip blacklisted IPv6 servers. */
+               && !ares_ipv6_server_blacklisted(
+                    (const unsigned char *)&host.addrV6))
         host.family = AF_INET6;
       else
         continue;
@@ -2142,61 +2282,22 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
 
 static int set_search(ares_channel channel, const char *str)
 {
-  int n;
-  const char *p, *q;
+  size_t cnt;
 
   if(channel->ndomains != -1) {
     /* LCOV_EXCL_START: all callers check ndomains == -1 */
     /* if we already have some domains present, free them first */
-    for(n=0; n < channel->ndomains; n++)
-      ares_free(channel->domains[n]);
-    ares_free(channel->domains);
+    ares_strsplit_free(channel->domains, channel->ndomains);
     channel->domains = NULL;
     channel->ndomains = -1;
   } /* LCOV_EXCL_STOP */
 
-  /* Count the domains given. */
-  n = 0;
-  p = str;
-  while (*p)
-    {
-      while (*p && !ISSPACE(*p))
-        p++;
-      while (ISSPACE(*p))
-        p++;
-      n++;
-    }
-
-  if (!n)
-    {
-      channel->ndomains = 0;
-      return ARES_SUCCESS;
-    }
-
-  channel->domains = ares_malloc(n * sizeof(char *));
-  if (!channel->domains)
-    return ARES_ENOMEM;
-
-  /* Now copy the domains. */
-  n = 0;
-  p = str;
-  while (*p)
-    {
-      channel->ndomains = n;
-      q = p;
-      while (*q && !ISSPACE(*q))
-        q++;
-      channel->domains[n] = ares_malloc(q - p + 1);
-      if (!channel->domains[n])
-        return ARES_ENOMEM;
-      memcpy(channel->domains[n], p, q - p);
-      channel->domains[n][q - p] = 0;
-      p = q;
-      while (ISSPACE(*p))
-        p++;
-      n++;
-    }
-  channel->ndomains = n;
+  channel->domains  = ares_strsplit(str, ", ", 1, &cnt); 
+  channel->ndomains = (int)cnt;
+  if (channel->domains == NULL || channel->ndomains == 0) {
+    channel->domains  = NULL;
+    channel->ndomains = -1;
+  }
 
   return ARES_SUCCESS;
 }

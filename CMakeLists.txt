@@ -1,10 +1,4 @@
-CMAKE_MINIMUM_REQUIRED (VERSION 2.8.12)
-
-# Fix for CMake policy warning when building with CMake >= 3.0.
-# TODO: remove this fix once minimum version is updated to 3.0 or newer.
-IF (NOT CMAKE_VERSION VERSION_LESS 3.0)
-	CMAKE_POLICY (SET CMP0048 NEW)
-ENDIF ()
+CMAKE_MINIMUM_REQUIRED (VERSION 3.1.0)
 
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckTypeSize)
@@ -17,6 +11,9 @@ INCLUDE (GNUInstallDirs)
 
 PROJECT (c-ares C)
 
+# Set this version before release
+SET (CARES_VERSION "1.15.0")
+
 # This is for libtool compatibility, and specified in a form that is easily
 # translatable from libtool (even if the actual form doesn't make sense).
 # For instance, in an autotools project, in Makefile.am there is a line that
@@ -28,14 +25,37 @@ PROJECT (c-ares C)
 # For example, a version of 4:0:2 would generate output such as:
 #    libname.so   -> libname.so.2
 #    libname.so.2 -> libname.so.2.2.0
-SET (CARES_LIB_VERSIONINFO "4:0:2")
+SET (CARES_LIB_VERSIONINFO "5:0:3")
 
 
 OPTION (CARES_STATIC     "Build as a static library"                                             OFF)
 OPTION (CARES_SHARED     "Build as a shared library"                                             ON)
 OPTION (CARES_INSTALL    "Create installation targets (chain builders may want to disable this)" ON)
 OPTION (CARES_STATIC_PIC "Build the static library as PIC (position independent)"                OFF)
+OPTION (CARES_BUILD_TESTS "Build and run tests"                                                  OFF)
+OPTION (CARES_BUILD_TOOLS "Build tools"                                                          ON)
 
+# allow linking against the static runtime library in msvc
+IF (MSVC)
+	OPTION (CARES_MSVC_STATIC_RUNTIME "Link against the static runtime library" OFF)
+	IF (CARES_MSVC_STATIC_RUNTIME)
+		# CMAKE_CONFIGURATION_TYPES is empty on non-IDE generators (Ninja, NMake)
+		# and that's why we also use CMAKE_BUILD_TYPE to cover for those generators.
+		# For IDE generators, CMAKE_BUILD_TYPE is usually empty
+		FOREACH (config_type ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
+			STRING (TOUPPER ${config_type} upper_config_type)
+			SET (flag_var "CMAKE_C_FLAGS_${upper_config_type}")
+			IF (${flag_var} MATCHES "/MD")
+				STRING (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+			ENDIF ()
+		ENDFOREACH ()
+
+		# clean up
+		SET (upper_config_type)
+		SET (config_type)
+		SET (flag_var)
+	ENDIF ()
+ENDIF ()
 
 # Keep build organized.
 SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
@@ -103,9 +123,10 @@ IF (IOS AND HAVE_LIBRESOLV)
 ENDIF()
 
 CHECK_LIBRARY_EXISTS (nsl gethostbyname "" HAVE_LIBNSL)
-CHECK_LIBRARY_EXISTS (socket gethostbyname "" HAVE_LIBSOCKET)
-IF (NOT HAVE_LIBSOCKET)
-	CHECK_LIBRARY_EXISTS (socket socket "" HAVE_LIBSOCKET)
+CHECK_LIBRARY_EXISTS (socket gethostbyname "" HAVE_GHBN_LIBSOCKET)
+CHECK_LIBRARY_EXISTS (socket socket "" HAVE_SOCKET_LIBSOCKET)
+IF (HAVE_GHBN_LIBSOCKET OR HAVE_SOCKET_LIBSOCKET)
+	SET(HAVE_LIBSOCKET TRUE)
 ENDIF ()
 CHECK_LIBRARY_EXISTS (rt clock_gettime "" HAVE_LIBRT)
 
@@ -162,7 +183,7 @@ ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
 	LIST (APPEND SYSFLAGS -D__EXTENSIONS__ -D_REENTRANT -D_XOPEN_SOURCE=600)
 ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "AIX")
-	LIST (APPEND SYSFLAGS -D_ALL_SOURCE -D_XOPEN_SOURCE=600)
+	LIST (APPEND SYSFLAGS -D_ALL_SOURCE -D_XOPEN_SOURCE=600 -D_USE_IRS)
 ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
 	# Don't define _XOPEN_SOURCE on FreeBSD, it actually reduces visibility instead of increasing it
 ELSEIF (WIN32)
@@ -246,6 +267,7 @@ MACRO (CARES_TYPE_EXISTS type var)
 	SET(_CARES_C_SOURCE "${_CARES_C_SOURCE}
 		int main() {
 			${type} var_exists;
+			(void)var_exists;
 			return 0;
 		}
 	")
@@ -327,6 +349,10 @@ CHECK_SYMBOL_EXISTS (strncasecmp     "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNCAS
 CHECK_SYMBOL_EXISTS (strncmpi        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNCMPI)
 CHECK_SYMBOL_EXISTS (strnicmp        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNICMP)
 CHECK_SYMBOL_EXISTS (writev          "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_WRITEV)
+
+# On Android, the system headers may define __system_property_get(), but excluded
+# from libc.  We need to perform a link test instead of a header/symbol test.
+CHECK_FUNCTION_EXISTS (__system_property_get HAVE___SYSTEM_PROPERTY_GET)
 
 # Unset temporary data
 SET (CMAKE_EXTRA_INCLUDE_FILES)
@@ -508,23 +534,22 @@ CONFIGURE_FILE (ares_config.h.cmake ${PROJECT_BINARY_DIR}/ares_config.h)
 # 	ares__read_line.c
 #	...
 function(TRANSFORM_MAKEFILE_INC INPUT_FILE OUTPUT_FILE)
-  file(READ ${INPUT_FILE} MAKEFILE_INC_TEXT)
-  string(REPLACE "$(top_srcdir)"   "\${PROJECT_SOURCE_DIR}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
-  string(REPLACE "$(top_builddir)" "\${PROJECT_BINARY_DIR}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+	file(READ ${INPUT_FILE} MAKEFILE_INC_TEXT)
+	string(REPLACE "$(top_srcdir)"   "\${PROJECT_SOURCE_DIR}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+	string(REPLACE "$(top_builddir)" "\${PROJECT_BINARY_DIR}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
 
-  string(REGEX REPLACE "\\\\\n" "ß!ß" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
-  string(REGEX REPLACE "([a-zA-Z_][a-zA-Z0-9_]*)[\t ]*=[\t ]*([^\n]*)" "SET(\\1 \\2)" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
-  string(REPLACE "ß!ß" "\n" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+	string(REGEX REPLACE "\\\\\n" "ß!ß" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+	string(REGEX REPLACE "([a-zA-Z_][a-zA-Z0-9_]*)[\t ]*=[\t ]*([^\n]*)" "SET(\\1 \\2)" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
+	string(REPLACE "ß!ß" "\n" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})
 
-  string(REGEX REPLACE "\\$\\(([a-zA-Z_][a-zA-Z0-9_]*)\\)" "\${\\1}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})    # Replace $() with ${}
-  string(REGEX REPLACE "@([a-zA-Z_][a-zA-Z0-9_]*)@" "\${\\1}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})    # Replace @@ with ${}, even if that may not be read by CMake scripts.
-  file(WRITE ${OUTPUT_FILE} ${MAKEFILE_INC_TEXT})
+	string(REGEX REPLACE "\\$\\(([a-zA-Z_][a-zA-Z0-9_]*)\\)" "\${\\1}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})    # Replace $() with ${}
+	string(REGEX REPLACE "@([a-zA-Z_][a-zA-Z0-9_]*)@" "\${\\1}" MAKEFILE_INC_TEXT ${MAKEFILE_INC_TEXT})    # Replace @@ with ${}, even if that may not be read by CMake scripts.
+	file(WRITE ${OUTPUT_FILE} ${MAKEFILE_INC_TEXT})
 endfunction()
 
 # run the function...
 transform_makefile_inc("Makefile.inc" "${PROJECT_BINARY_DIR}/Makefile.inc.cmake")
 include(${PROJECT_BINARY_DIR}/Makefile.inc.cmake)
-
 
 
 # Build the dynamic/shared library
@@ -605,6 +630,10 @@ IF (CARES_STATIC)
 	ENDIF ()
 ENDIF ()
 
+IF (CARES_BUILD_TESTS)
+	ENABLE_TESTING ()
+	ADD_SUBDIRECTORY (test)
+ENDIF ()
 
 # Headers installation target
 IF (CARES_INSTALL)
@@ -623,6 +652,16 @@ IF (CARES_INSTALL)
 	)
 	INSTALL (EXPORT ${PROJECT_NAME}-targets DESTINATION ${CMAKECONFIG_INSTALL_DIR} NAMESPACE ${PROJECT_NAME}::)
 	INSTALL (FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake" DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+
+	# pkgconfig support
+	IF (NOT CARES_SHARED)
+		SET (CPPFLAG_CARES_STATICLIB "-DCARES_STATICLIB")
+		FOREACH (LIB ${CARES_DEPENDENT_LIBS})
+			SET (CARES_PRIVATE_LIBS "${CARES_PRIVATE_LIBS} -l${LIB}")
+		ENDFOREACH ()
+	ENDIF ()
+	CONFIGURE_FILE("libcares.pc.cmake" "libcares.pc" @ONLY)
+	INSTALL (FILES "${CMAKE_CURRENT_BINARY_DIR}/libcares.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 ENDIF ()
 
 # Legacy chain-building variables (provided for compatibility with old code).
@@ -630,29 +669,30 @@ ENDIF ()
 SET (CARES_FOUND 1 CACHE INTERNAL "CARES LIBRARY FOUND")
 SET (CARES_LIBRARIES ${PROJECT_NAME}::cares CACHE INTERNAL "CARES LIBRARIES")
 
-
-# Build ahost
-ADD_EXECUTABLE (ahost ahost.c ${SAMPLESOURCES})
-TARGET_COMPILE_DEFINITIONS (ahost PRIVATE HAVE_CONFIG_H=1)
-TARGET_LINK_LIBRARIES (ahost PRIVATE ${PROJECT_NAME})
-IF (CARES_INSTALL)
-	INSTALL (TARGETS ahost ${TARGETS_INST_DEST})
-ENDIF ()
-
-
-# Build adig
-ADD_EXECUTABLE (adig adig.c ${SAMPLESOURCES})
-TARGET_COMPILE_DEFINITIONS (adig PRIVATE HAVE_CONFIG_H=1)
-TARGET_LINK_LIBRARIES (adig PRIVATE ${PROJECT_NAME})
-IF (CARES_INSTALL)
-	INSTALL (TARGETS adig ${TARGETS_INST_DEST})
-ENDIF ()
+IF (CARES_BUILD_TOOLS)
+	# Build ahost
+	ADD_EXECUTABLE (ahost ahost.c ${SAMPLESOURCES})
+	TARGET_COMPILE_DEFINITIONS (ahost PRIVATE HAVE_CONFIG_H=1)
+	TARGET_LINK_LIBRARIES (ahost PRIVATE ${PROJECT_NAME})
+	IF (CARES_INSTALL)
+		INSTALL (TARGETS ahost ${TARGETS_INST_DEST})
+	ENDIF ()
 
 
-# Build acountry
-ADD_EXECUTABLE (acountry acountry.c ${SAMPLESOURCES})
-TARGET_COMPILE_DEFINITIONS (acountry PRIVATE HAVE_CONFIG_H=1)
-TARGET_LINK_LIBRARIES (acountry PRIVATE ${PROJECT_NAME})
-IF (CARES_INSTALL)
-	INSTALL (TARGETS acountry ${TARGETS_INST_DEST})
+	# Build adig
+	ADD_EXECUTABLE (adig adig.c ${SAMPLESOURCES})
+	TARGET_COMPILE_DEFINITIONS (adig PRIVATE HAVE_CONFIG_H=1)
+	TARGET_LINK_LIBRARIES (adig PRIVATE ${PROJECT_NAME})
+	IF (CARES_INSTALL)
+		INSTALL (TARGETS adig ${TARGETS_INST_DEST})
+	ENDIF ()
+
+
+	# Build acountry
+	ADD_EXECUTABLE (acountry acountry.c ${SAMPLESOURCES})
+	TARGET_COMPILE_DEFINITIONS (acountry PRIVATE HAVE_CONFIG_H=1)
+	TARGET_LINK_LIBRARIES (acountry PRIVATE ${PROJECT_NAME})
+	IF (CARES_INSTALL)
+		INSTALL (TARGETS acountry ${TARGETS_INST_DEST})
+	ENDIF ()
 ENDIF ()
