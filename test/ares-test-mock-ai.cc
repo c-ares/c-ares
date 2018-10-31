@@ -1,5 +1,10 @@
 #include "ares-test-ai.h"
 #include "dns-proto.h"
+
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
+
 #include <arpa/inet.h>
 #include <sstream>
 #include <vector>

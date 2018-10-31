@@ -18,10 +18,6 @@
 #ifndef ARES__H
 #define ARES__H
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-
 #include "ares_version.h"  /* c-ares version defines   */
 #include "ares_build.h"    /* c-ares build definitions */
 #include "ares_rules.h"    /* c-ares rules enforcement */
@@ -279,6 +275,7 @@ struct ares_options {
 };
 
 struct hostent;
+struct addrinfo;
 struct timeval;
 struct sockaddr;
 struct ares_channeldata;
