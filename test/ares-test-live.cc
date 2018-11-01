@@ -167,8 +167,9 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrV6) {
     EXPECT_EQ(ARES_SUCCESS, result.status_);
     EXPECT_LT(0, (int)result.host_.addrs_.size());
     EXPECT_EQ(AF_INET6, result.host_.addrtype_);
-    EXPECT_NE(std::string::npos,
-              result.host_.name_.find("localhost"));
+    const std::string& name = result.host_.name_;
+    EXPECT_TRUE(std::string::npos != name.find("localhost") ||
+                std::string::npos != name.find("ip6-loopback"));
   }
 }
 
