@@ -47,7 +47,7 @@ struct host_query {
   int single_domain; /* do not check other domains */
   int status;
   int remaining;
-  struct addrinfo* ai;
+  struct ares_addrinfo* ai;
 };
 
 static void host_callback(void *arg, int status, int timeouts,
@@ -55,7 +55,7 @@ static void host_callback(void *arg, int status, int timeouts,
 static void end_hquery(struct host_query *hquery, int status);
 /*static int fake_hostent(const char *name, int family,
                         ares_host_callback callback, void *arg);*/
-static int file_lookup(const char *name, int family, struct addrinfo **ai);
+static int file_lookup(const char *name, int family, struct ares_addrinfo **ai);
 static void sort_addresses(struct hostent *host,
                            const struct apattern *sortlist, int nsort);
 static void sort6_addresses(struct hostent *host,
@@ -67,7 +67,7 @@ static int get6_address_index(const struct ares_in6_addr *addr,
 static int as_is_first(const struct host_query *hquery);
 /*static void invoke_callback(struct host_query *hquery, int status,
   struct hostent* host);*/
-static void add_to_addrinfo(struct addrinfo** ai, const struct hostent* host);
+static void add_to_addrinfo(struct ares_addrinfo** ai, const struct hostent* host);
 static void next_dns_lookup(struct host_query *hquery);
 
 
@@ -80,7 +80,7 @@ static int is_implemented(const int family) {
 
 void ares_getaddrinfo(ares_channel channel,
                       const char* node, const char* service,
-                      const struct addrinfo* hints,
+                      const struct ares_addrinfo* hints,
                       ares_addr_callback callback, void* arg) {
   struct host_query *hquery;
   char *single = NULL;
@@ -133,8 +133,8 @@ void ares_getaddrinfo(ares_channel channel,
   return;*/
 }
 
-void ares_freeaddrinfo(struct addrinfo* ai) {
-  struct addrinfo* ai_free;
+void ares_freeaddrinfo(struct ares_addrinfo* ai) {
+  struct ares_addrinfo* ai_free;
   while (ai) {
     ai_free = ai;
     ai = ai->ai_next;
@@ -143,7 +143,7 @@ void ares_freeaddrinfo(struct addrinfo* ai) {
   }
 }
 
-static int file_lookup(const char *name, int family, struct addrinfo **ai)
+static int file_lookup(const char *name, int family, struct ares_addrinfo **ai)
 {
   FILE *fp;
   char **alias;
@@ -227,15 +227,15 @@ static int file_lookup(const char *name, int family, struct addrinfo **ai)
   return status;
 }
 
-static void add_to_addrinfo(struct addrinfo** ai, const struct hostent* host) {
-  static const struct addrinfo EmptyAddrinfo; 
-  struct addrinfo* next_ai;
+static void add_to_addrinfo(struct ares_addrinfo** ai, const struct hostent* host) {
+  static const struct ares_addrinfo EmptyAddrinfo; 
+  struct ares_addrinfo* next_ai;
   char** p;
   if (!host ||
       (host->h_addrtype != AF_INET && host->h_addrtype != AF_INET6))
     return;
   for (p = host->h_addr_list; *p; ++p) {
-    next_ai = ares_malloc(sizeof(struct addrinfo));
+    next_ai = ares_malloc(sizeof(struct ares_addrinfo));
     *next_ai = EmptyAddrinfo;
     if (*ai)
       (*ai)->ai_next = next_ai;

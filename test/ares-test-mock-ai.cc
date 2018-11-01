@@ -17,7 +17,7 @@ namespace test {
 
 MATCHER_P(IncludesNumAddresses, n, "") {
   int cnt = 0;
-  for (const addrinfo* ai = arg; ai != NULL; ai = ai->ai_next)
+  for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next)
     cnt++;
   return n == cnt;
 }
@@ -26,7 +26,7 @@ MATCHER_P(IncludesV4Address, address, "") {
   in_addr addressnum = {};
   if (!inet_pton(AF_INET, address, &addressnum))
     return false; // wrong number format?
-  for (const addrinfo* ai = arg; ai != NULL; ai = ai->ai_next) {
+  for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET)
       continue;
     if (reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_addr.s_addr ==
@@ -41,7 +41,7 @@ MATCHER_P(IncludesV6Address, address, "") {
   if (!inet_pton(AF_INET6, address, &addressnum)) {
     return false; // wrong number format?
   }
-  for (const addrinfo* ai = arg; ai != NULL; ai = ai->ai_next) {
+  for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET6)
       continue;
     if (!memcmp(
@@ -62,7 +62,7 @@ TEST_P(MockChannelTestAI, FamilyV6) {
   ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
     .WillByDefault(SetReply(&server_, &rsp6));
   AIResult result;
-  struct addrinfo hints = {};
+  struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET6;
   ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
                    AICallback, &result);
@@ -83,7 +83,7 @@ TEST_P(MockChannelTestAI, FamilyV4) {
   ON_CALL(server_, OnRequest("example.com", ns_t_a))
     .WillByDefault(SetReply(&server_, &rsp4));
   AIResult result = {};
-  struct addrinfo hints = {};
+  struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
                    AICallback, &result);
@@ -104,7 +104,7 @@ TEST_P(MockChannelTestAI, FamilyV4_MultipleAddresses) {
   ON_CALL(server_, OnRequest("example.com", ns_t_a))
     .WillByDefault(SetReply(&server_, &rsp4));
   AIResult result = {};
-  struct addrinfo hints = {};
+  struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
                    AICallback, &result);
@@ -133,7 +133,7 @@ TEST_P(MockChannelTestAI, FamilyUnspecified) {
   ON_CALL(server_, OnRequest("example.com", ns_t_a))
     .WillByDefault(SetReply(&server_, &rsp4));
   AIResult result;
-  struct addrinfo hints = {};
+  struct ares_addrinfo hints = {};
   hints.ai_family = AF_UNSPEC;
   ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
                    AICallback, &result);

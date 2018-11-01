@@ -21,11 +21,22 @@ ares_getaddrinfo \- Initiate a host query by name
 .B #include <ares.h>
 .PP
 .B typedef void (*ares_addr_callback)(void *\fIarg\fP, int \fIstatus\fP,
-.B 	struct addrinfo *\fIresult\fP)
+.B 	struct ares_addrinfo *\fIresult\fP)
 .PP
 .B void ares_getaddrinfo(ares_channel \fIchannel\fP, const char *\fIname\fP,
-.B 	const char* \fIservice\fP, const struct addrinfo *\fIhints\fP,
+.B 	const char* \fIservice\fP, const struct ares_addrinfo *\fIhints\fP,
 .B 	ares_addr_callback \fIcallback\fP, void *\fIarg\fP)
+.PP
+.B struct ares_addrinfo {
+.B 	int                  \fIai_flags\fP;
+.B 	int                  \fIai_family\fP;
+.B 	int                  \fIai_socktype\fP;
+.B 	int                  \fIai_protocol\fP;
+.B 	ares_socklen_t       \fIai_addrlen\fP;
+.B 	char                 \fI*ai_canonname\fP;
+.B 	struct sockaddr      \fI*ai_addr\fP;
+.B 	struct ares_addrinfo \fI*ai_next\fP;
+.B };
 .fi
 .SH DESCRIPTION
 The
@@ -87,7 +98,8 @@ On successful completion of the query, the callback argument
 points to a
 .B struct addrinfo
 which is a linked list, where each item contains the name of the host and its
-address. The reserved memory has to be deleted by
+address. The list is currently not sorted according to RFC 6724. The reserved
+memory has to be deleted by
 .B ares_freeaddrinfo.
 .SH SEE ALSO
 .BR ares_freeaddrinfo (3)
