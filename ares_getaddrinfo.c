@@ -1,6 +1,6 @@
 
 /* Copyright 1998, 2011, 2013 by the Massachusetts Institute of Technology.
- * Copyright (C) 2017 - 1018 by Christian Ammer
+ * Copyright (C) 2017 - 2018 by Christian Ammer
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -42,13 +42,13 @@
 
 #include "ares.h"
 #include "bitncmp.h"
-#ifdef WIN32
-#  include "ares_platform.h"
-#endif
 #include "ares_private.h"
 
 #ifdef WATT32
 #undef WIN32
+#endif
+#ifdef WIN32
+#  include "ares_platform.h"
 #endif
 
 struct host_query {
