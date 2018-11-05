@@ -15,7 +15,6 @@ CSOURCES = ares__close_sockets.c	\
   ares_getenv.c				\
   ares_gethostbyaddr.c			\
   ares_gethostbyname.c			\
-  ares_getaddrinfo.c                    \
   ares_getnameinfo.c			\
   ares_getsock.c			\
   ares_init.c				\
@@ -49,7 +48,8 @@ CSOURCES = ares__close_sockets.c	\
   bitncmp.c				\
   inet_net_pton.c			\
   inet_ntop.c				\
-  windows_port.c
+  windows_port.c			\
+  ares_getaddrinfo.c
 
 HHEADERS = ares.h			\
   ares_android.h                        \
@@ -130,7 +130,8 @@ MANPAGES = ares_cancel.3		\
   ares_set_sortlist.3			\
   ares_strerror.3			\
   ares_timeout.3			\
-  ares_version.3
+  ares_version.3			\
+  ares_getaddrinfo.3
 
 HTMLPAGES = ares_cancel.html		\
   ares_create_query.html		\
@@ -185,7 +186,8 @@ HTMLPAGES = ares_cancel.html		\
   ares_set_sortlist.html		\
   ares_strerror.html			\
   ares_timeout.html			\
-  ares_version.html
+  ares_version.html			\
+  ares_getaddrinfo.html
 
 PDFPAGES = ares_cancel.pdf		\
   ares_create_query.pdf			\
@@ -240,7 +242,8 @@ PDFPAGES = ares_cancel.pdf		\
   ares_set_sortlist.pdf			\
   ares_strerror.pdf			\
   ares_timeout.pdf			\
-  ares_version.pdf
+  ares_version.pdf			\
+  ares_getaddrinfo.pdf
 
 SAMPLESOURCES = ares_getopt.c		\
   ares_nowarn.c				\

@@ -52,7 +52,7 @@
 #endif
 
 struct host_query {
-  /* Arguments passed to ares_gethostbyname() */
+  /* Arguments passed to ares_getaddrinfo */
   ares_channel channel;
   char *name;
   ares_addr_callback callback;
