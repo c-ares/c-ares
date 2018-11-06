@@ -1179,7 +1179,20 @@ TEST_P(MockChannelTest, FamilyV4) {
 TEST_P(MockChannelTest, FamilyV4AddressInHostName) {
   AddrInfoResult result;
   struct ares_addrinfo hints = {};
-  hints.ai_family = AF_INET6;
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "1.2.3.4", "http", &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+  EXPECT_EQ("{addr=[1.2.3.4:80]}", ss.str());
+}
+
+TEST_P(MockChannelTest, FamilyV4AddressUnspecInHostName) {
+  AddrInfoResult result;
+  struct ares_addrinfo hints = {};
   ares_getaddrinfo(channel_, "1.2.3.4", "http", &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -1194,6 +1207,19 @@ TEST_P(MockChannelTest, FamilyV6AddressInHostName) {
   AddrInfoResult result;
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET6;
+  ares_getaddrinfo(channel_, "2121:0000:0000:0000:0000:0000:0000:0303", "http", &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+  EXPECT_EQ("{addr=[[2121:0000:0000:0000:0000:0000:0000:0303]:80]}", ss.str());
+}
+
+TEST_P(MockChannelTest, FamilyV6AddressUnspecInHostName) {
+  AddrInfoResult result;
+  struct ares_addrinfo hints = {};
   ares_getaddrinfo(channel_, "2121:0000:0000:0000:0000:0000:0000:0303", "http", &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);

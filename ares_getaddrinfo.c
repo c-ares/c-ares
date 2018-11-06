@@ -357,7 +357,7 @@ static int fake_addrinfo(const char *name,
   size_t addrlen;
   int result = 0;
   int family = hints->ai_family;
-  if (family == AF_INET || family == AF_INET6)
+  if (family == AF_INET || family == AF_INET6 || family == AF_UNSPEC)
     {
       /* It only looks like an IP address if it's all numbers and dots. */
       int numdots = 0, valid = 1;
@@ -395,7 +395,7 @@ static int fake_addrinfo(const char *name,
         }
     }
 
-  if (family == AF_INET6)
+  if (family == AF_INET6 || family == AF_UNSPEC)
     {
       result = (ares_inet_pton(AF_INET6, name, &addr.sa6.sin6_addr) < 1 ? 0 : 1);
       addr.sa6.sin6_family = AF_INET6;
