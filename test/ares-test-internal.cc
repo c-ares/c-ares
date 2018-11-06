@@ -383,23 +383,23 @@ TEST_F(LibraryTest, Striendstr) {
   const char *str = "plugh";
   EXPECT_NE(nullptr, ares_striendstr(str, str));
 }
-extern "C" int single_domain(ares_channel, const char*, char**);
+extern "C" int ares__single_domain(ares_channel, const char*, char**);
 TEST_F(DefaultChannelTest, SingleDomain) {
   TempFile aliases("www www.google.com\n");
   EnvValue with_env("HOSTALIASES", aliases.filename());
 
   SetAllocSizeFail(128);
   char *ptr = nullptr;
-  EXPECT_EQ(ARES_ENOMEM, single_domain(channel_, "www", &ptr));
+  EXPECT_EQ(ARES_ENOMEM, ares__single_domain(channel_, "www", &ptr));
 
   channel_->flags |= ARES_FLAG_NOSEARCH|ARES_FLAG_NOALIASES;
-  EXPECT_EQ(ARES_SUCCESS, single_domain(channel_, "www", &ptr));
+  EXPECT_EQ(ARES_SUCCESS, ares__single_domain(channel_, "www", &ptr));
   EXPECT_EQ("www", std::string(ptr));
   ares_free(ptr);
   ptr = nullptr;
 
   SetAllocFail(1);
-  EXPECT_EQ(ARES_ENOMEM, single_domain(channel_, "www", &ptr));
+  EXPECT_EQ(ARES_ENOMEM, ares__single_domain(channel_, "www", &ptr));
   EXPECT_EQ(nullptr, ptr);
 }
 #endif

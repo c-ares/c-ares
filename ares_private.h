@@ -355,6 +355,10 @@ int ares__expand_name_for_response(const unsigned char *encoded,
                                    char **s, long *enclen);
 void ares__init_servers_state(ares_channel channel);
 void ares__destroy_servers_state(ares_channel channel);
+int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
+int ares__single_domain(ares_channel channel, const char *name, char **s);
+int ares__cat_domain(const char *name, const char *domain, char **s);
+
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);
 #endif

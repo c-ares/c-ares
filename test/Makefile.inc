@@ -1,6 +1,7 @@
 TESTSOURCES = ares-test-main.cc	\
   ares-test-init.cc			\
   ares-test.cc				\
+  ares-test-ai.cc			\
   ares-test-ns.cc			\
   ares-test-parse.cc			\
   ares-test-parse-a.cc			\
@@ -15,12 +16,14 @@ TESTSOURCES = ares-test-main.cc	\
   ares-test-misc.cc			\
   ares-test-live.cc			\
   ares-test-mock.cc			\
+  ares-test-mock-ai.cc			\
   ares-test-internal.cc		\
   dns-proto.cc				\
   dns-proto-test.cc
 
 TESTHEADERS = ares-test.h		\
-  dns-proto.h
+  dns-proto.h                           \
+  ares-test-ai.h
 
 FUZZSOURCES = ares-test-fuzz.c		\
   ares-fuzz.c

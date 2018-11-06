@@ -1,4 +1,5 @@
 #include "ares-test.h"
+#include "ares-test-ai.h"
 #include "dns-proto.h"
 
 // Include ares internal files for DNS protocol details
@@ -562,6 +563,16 @@ void HostCallback(void *data, int status, int timeouts,
   result->timeouts_ = timeouts;
   result->host_ = HostEnt(hostent);
   if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
+}
+
+void AICallback(void *data, int status,
+                struct ares_addrinfo *res) {
+  EXPECT_NE(nullptr, data);
+  AIResult* result = reinterpret_cast<AIResult*>(data);
+  result->done = true;
+  result->status = status;
+  result->airesult = res;
+  //if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
 }
 
 std::ostream& operator<<(std::ostream& os, const SearchResult& result) {
