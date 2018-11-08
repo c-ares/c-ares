@@ -134,6 +134,8 @@ void ares_getaddrinfo(ares_channel channel,
 }
 
 void ares_freeaddrinfo(struct ares_addrinfo* ai) {
+  if (!ai)
+    return;
   struct ares_addrinfo* ai_free;
   while (ai) {
     ai_free = ai;

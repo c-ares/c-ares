@@ -267,6 +267,8 @@ TEST_P(MockChannelTestAI, SearchDomainsServFailOnAAAA) {
   ares_freeaddrinfo(result.airesult);
 }
 
+//INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockChannelTestAI,
+//                        ::testing::ValuesIn(ares::test::families_modes));
 INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockChannelTestAI,
                         ::testing::Values(std::make_pair<int, bool>(AF_INET, false)));
 
