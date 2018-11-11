@@ -122,7 +122,7 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->arg = arg;
   hquery->timeouts = 0;
   hquery->next_domain = 0;
-  hquery->remaining = ai_family == AF_UNSPEC ? 2 : 1;
+  hquery->remaining = 0;
 
   /* Host file lookup */
   if (file_lookup(hquery->name, ai_family, &hquery->ai) == ARES_SUCCESS) {
@@ -291,9 +291,11 @@ static void next_dns_lookup(struct host_query *hquery) {
   if (s) {
     if (hquery->ai_family == AF_INET || hquery->ai_family == AF_UNSPEC) {
       ares_query(hquery->channel, s, C_IN, T_A, host_callback, hquery);
+      hquery->remaining++;
     }
     if (hquery->ai_family == AF_INET6 || hquery->ai_family == AF_UNSPEC) {
       ares_query(hquery->channel, s, C_IN, T_AAAA, host_callback, hquery);
+      hquery->remaining++;
     }
     if (is_s_allocated) {
       ares_free(s);
@@ -306,9 +308,7 @@ static void next_dns_lookup(struct host_query *hquery) {
 }
 
 static void end_hquery(struct host_query *hquery, int status) {
-  if (hquery->ai) {
-    hquery->callback(hquery->arg, status, hquery->ai);
-  }
+  hquery->callback(hquery->arg, status, hquery->ai);
   ares_free(hquery->name);
   ares_free(hquery);
 }
@@ -319,11 +319,14 @@ static void host_callback(void *arg, int status, int timeouts,
   ares_channel channel = hquery->channel;
   struct hostent *host = NULL;
   int qtype;
+  int qtypestatus;
   hquery->timeouts += timeouts;
 
+  hquery->remaining--;
+
   if (status == ARES_SUCCESS) {
-    status = ares__parse_qtype_reply(abuf, alen, &qtype);
-    if (status == ARES_SUCCESS && qtype == T_A) {
+    qtypestatus = ares__parse_qtype_reply(abuf, alen, &qtype);
+    if (qtypestatus == ARES_SUCCESS && qtype == T_A) {
       /* Can ares_parse_a_reply be unsuccessful (after parse_qtype) */
       ares_parse_a_reply(abuf, alen, &host, NULL, NULL);
       if (host && channel->nsort) {
@@ -331,11 +334,8 @@ static void host_callback(void *arg, int status, int timeouts,
       }
       add_to_addrinfo(&hquery->ai, host);
       ares_free_hostent(host);
-      if (!--hquery->remaining) {
-	end_hquery(hquery, ARES_SUCCESS);
-      }
     }
-    else if (status == ARES_SUCCESS && qtype == T_AAAA) {
+    else if (qtypestatus == ARES_SUCCESS && qtype == T_AAAA) {
       /* Can ares_parse_a_reply be unsuccessful (after parse_qtype) */
       ares_parse_aaaa_reply(abuf, alen, &host, NULL, NULL);
       if (host && channel->nsort) {
@@ -343,18 +343,23 @@ static void host_callback(void *arg, int status, int timeouts,
       }
       add_to_addrinfo(&hquery->ai, host);
       ares_free_hostent(host);
-      if (!--hquery->remaining) {
-        end_hquery(hquery, ARES_SUCCESS);
-      }
+    }
+  }
+
+  if (!hquery->remaining) {
+    if (hquery->ai) {
+      // at least one query ended with ARES_SUCCESS
+      end_hquery(hquery, ARES_SUCCESS);
+    }
+    else if (status == ARES_ENOTFOUND) {
+      next_dns_lookup(hquery);
     }
     else {
-      assert(!hquery->ai);
       end_hquery(hquery, status);
     }
   }
-  else {
-    next_dns_lookup(hquery);
-  }
+
+  // at this point we keep on waiting for the next query to finish
 }
 
 static void sort_addresses(struct hostent *host,

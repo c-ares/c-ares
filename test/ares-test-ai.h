@@ -16,6 +16,13 @@ class MockChannelTestAI
   MockChannelTestAI() : MockChannelOptsTest(1, GetParam().first, GetParam().second, nullptr, 0) {}
 };
 
+class MockUDPChannelTestAI
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
+ public:
+  MockUDPChannelTestAI() : MockChannelOptsTest(1, GetParam(), false, nullptr, 0) {}
+};
+
 // Structure that describes the result of an ares_addr_callback invocation.
 struct AIResult {
   // Whether the callback has been invoked.

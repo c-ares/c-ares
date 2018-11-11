@@ -52,6 +52,50 @@ MATCHER_P(IncludesV6Address, address, "") {
   return false;
 }
 
+// UDP only so mock server doesn't get confused by concatenated requests
+TEST_P(MockUDPChannelTestAI, ParallelLookups) {
+  DNSPacket rsp1;
+  rsp1.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp1));
+  DNSPacket rsp2;
+  rsp2.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", ns_t_a))
+    .add_answer(new DNSARR("www.example.com", 100, {1, 2, 3, 4}));
+  ON_CALL(server_, OnRequest("www.example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp2));
+
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  AIResult result1;
+  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AICallback, &result1);
+  AIResult result2;
+  ares_getaddrinfo(channel_, "www.example.com.", NULL, &hints, AICallback, &result2);
+  AIResult result3;
+  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AICallback, &result3);
+  Process();
+
+  EXPECT_TRUE(result1.done);
+  EXPECT_EQ(result1.status, ARES_SUCCESS);
+  EXPECT_THAT(result1.airesult, IncludesNumAddresses(1));
+  EXPECT_THAT(result1.airesult, IncludesV4Address("2.3.4.5"));
+  ares_freeaddrinfo(result1.airesult);
+
+  EXPECT_TRUE(result2.done);
+  EXPECT_EQ(result2.status, ARES_SUCCESS);
+  EXPECT_THAT(result2.airesult, IncludesNumAddresses(1));
+  EXPECT_THAT(result2.airesult, IncludesV4Address("1.2.3.4"));
+  ares_freeaddrinfo(result2.airesult);
+
+  EXPECT_TRUE(result3.done);
+  EXPECT_EQ(result3.status, ARES_SUCCESS);
+  EXPECT_THAT(result3.airesult, IncludesNumAddresses(1));
+  EXPECT_THAT(result3.airesult, IncludesV4Address("2.3.4.5"));
+  ares_freeaddrinfo(result3.airesult);
+}
+
 TEST_P(MockChannelTestAI, FamilyV6) {
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
@@ -146,9 +190,88 @@ TEST_P(MockChannelTestAI, FamilyUnspecified) {
   ares_freeaddrinfo(result.airesult);
 }
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTestAI,
+TEST_P(MockChannelTestAI, SearchDomains) {
+  DNSPacket nofirst;
+  nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.first.com", ns_t_a));
+  ON_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &nofirst));
+  DNSPacket nosecond;
+  nosecond.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.second.org", ns_t_a));
+  ON_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    .WillByDefault(SetReply(&server_, &nosecond));
+  DNSPacket yesthird;
+  yesthird.set_response().set_aa()
+    .add_question(new DNSQuestion("www.third.gov", ns_t_a))
+    .add_answer(new DNSARR("www.third.gov", 0x0200, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    .WillByDefault(SetReply(&server_, &yesthird));
+
+  AIResult result;
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "www", NULL, &hints, AICallback, &result);
+  Process();
+  EXPECT_TRUE(result.done);
+  EXPECT_EQ(result.status, ARES_SUCCESS);
+  EXPECT_THAT(result.airesult, IncludesNumAddresses(1));
+  EXPECT_THAT(result.airesult, IncludesV4Address("2.3.4.5"));
+  ares_freeaddrinfo(result.airesult);
+}
+
+TEST_P(MockChannelTestAI, SearchDomainsServFailOnAAAA) {
+  DNSPacket nofirst;
+  nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.first.com", ns_t_aaaa));
+  ON_CALL(server_, OnRequest("www.first.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &nofirst));
+  DNSPacket nofirst4;
+  nofirst4.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.first.com", ns_t_a));
+  ON_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &nofirst4));
+  
+  DNSPacket nosecond;
+  nosecond.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.second.org", ns_t_aaaa));
+  ON_CALL(server_, OnRequest("www.second.org", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &nosecond));
+  DNSPacket yessecond4;
+  yessecond4.set_response().set_aa()
+    .add_question(new DNSQuestion("www.second.org", ns_t_a))
+    .add_answer(new DNSARR("www.second.org", 0x0200, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    .WillByDefault(SetReply(&server_, &yessecond4));
+  
+  DNSPacket failthird;
+  failthird.set_response().set_aa().set_rcode(ns_r_servfail)
+    .add_question(new DNSQuestion("www.third.gov", ns_t_aaaa));
+  ON_CALL(server_, OnRequest("www.third.gov", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &failthird));
+  DNSPacket failthird4;
+  failthird4.set_response().set_aa().set_rcode(ns_r_servfail)
+    .add_question(new DNSQuestion("www.third.gov", ns_t_a));
+  ON_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    .WillByDefault(SetReply(&server_, &failthird4));
+  
+  AIResult result;
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_UNSPEC;
+  ares_getaddrinfo(channel_, "www", NULL, &hints, AICallback, &result);
+  Process();
+  EXPECT_TRUE(result.done);
+  EXPECT_EQ(result.status, ARES_SUCCESS);
+  EXPECT_THAT(result.airesult, IncludesNumAddresses(1));
+  EXPECT_THAT(result.airesult, IncludesV4Address("2.3.4.5"));
+  ares_freeaddrinfo(result.airesult);
+}
+
+INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockChannelTestAI,
                         ::testing::Values(std::make_pair<int, bool>(AF_INET, false)));
 
+INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockUDPChannelTestAI,
+                        ::testing::ValuesIn(ares::test::families));
 
 }  // namespace test
 }  // namespace ares
