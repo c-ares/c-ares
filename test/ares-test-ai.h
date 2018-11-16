@@ -30,6 +30,27 @@ class MockTCPChannelTestAI
   MockTCPChannelTestAI() : MockChannelOptsTest(1, GetParam(), true, nullptr, 0) {}
 };
 
+
+// Test fixture that uses a default channel.
+class DefaultChannelTestAI : public LibraryTest {
+ public:
+  DefaultChannelTestAI() : channel_(nullptr) {
+    EXPECT_EQ(ARES_SUCCESS, ares_init(&channel_));
+    EXPECT_NE(nullptr, channel_);
+  }
+
+  ~DefaultChannelTestAI() {
+    ares_destroy(channel_);
+    channel_ = nullptr;
+  }
+
+  // Process all pending work on ares-owned file descriptors.
+  void Process();
+
+ protected:
+  ares_channel channel_;
+};
+
 // Structure that describes the result of an ares_addr_callback invocation.
 struct AIResult {
   // Whether the callback has been invoked.
