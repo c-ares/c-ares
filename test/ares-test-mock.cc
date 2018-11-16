@@ -51,7 +51,7 @@ TEST_P(MockChannelTest, Basic) {
 }
 
 // UDP only so mock server doesn't get confused by concatenated requests
-TEST_P(MockUDPChannelTest, ParallelLookups) {
+TEST_P(MockUDPChannelTest, GetHostByNameParallelLookups) {
   DNSPacket rsp1;
   rsp1.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", ns_t_a))
@@ -84,6 +84,48 @@ TEST_P(MockUDPChannelTest, ParallelLookups) {
   std::stringstream ss3;
   ss3 << result3.host_;
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss3.str());
+}
+
+// UDP only so mock server doesn't get confused by concatenated requests
+TEST_P(MockUDPChannelTest, GetAddrInfoParallelLookups)
+{
+  DNSPacket rsp1;
+  rsp1.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", ns_t_a))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.google.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp1));
+  DNSPacket rsp2;
+  rsp2.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", ns_t_a))
+    .add_answer(new DNSARR("www.example.com", 100, {1, 2, 3, 4}));
+  ON_CALL(server_, OnRequest("www.example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp2));
+
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+
+  AddrInfoResult result1;
+  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback,
+                   &result1);
+  AddrInfoResult result2;
+  ares_getaddrinfo(channel_, "www.example.com.", NULL, &hints, AddrInfoCallback,
+                   &result2);
+  AddrInfoResult result3;
+  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback,
+                   &result3);
+
+  Process();
+
+  std::stringstream ss1;
+  ss1 << result1.ai_;
+  EXPECT_EQ("{addr=[2.3.4.5]}", ss1.str());
+  std::stringstream ss2;
+  ss2 << result2.ai_;
+  EXPECT_EQ("{addr=[1.2.3.4]}", ss2.str());
+  std::stringstream ss3;
+  ss3 << result3.ai_;
+  EXPECT_EQ("{addr=[2.3.4.5]}", ss3.str());
 }
 
 // UDP to TCP specific test
@@ -413,7 +455,7 @@ TEST_P(MockEDNSChannelTest, RetryWithoutEDNS) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_P(MockChannelTest, SearchDomains) {
+TEST_P(MockChannelTest, GetHostByNameSearchDomains) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
     .add_question(new DNSQuestion("www.first.com", ns_t_a));
@@ -439,6 +481,87 @@ TEST_P(MockChannelTest, SearchDomains) {
   ss << result.host_;
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
+
+TEST_P(MockChannelTest, GetAddrInfoSearchDomains)
+{
+  DNSPacket nofirst;
+  nofirst.set_response()
+    .set_aa()
+    .set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.first.com", ns_t_a));
+  ON_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &nofirst));
+  DNSPacket nosecond;
+  nosecond.set_response()
+    .set_aa()
+    .set_rcode(ns_r_nxdomain)
+    .add_question(new DNSQuestion("www.second.org", ns_t_a));
+  ON_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    .WillByDefault(SetReply(&server_, &nosecond));
+  DNSPacket yesthird;
+  yesthird.set_response()
+    .set_aa()
+    .add_question(new DNSQuestion("www.third.gov", ns_t_a))
+    .add_answer(new DNSARR("www.third.gov", 0x0200, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    .WillByDefault(SetReply(&server_, &yesthird));
+
+  AddrInfoResult result;
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(channel_, "www", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{addr=[2.3.4.5]}", ss.str());
+}
+
+//TODO won't work until ares_search is fixed
+//TEST_P(MockChannelTest, GetAddrInfoSearchDomainsServFailOnAAAA) {
+  //DNSPacket nofirst;
+  //nofirst.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    //.add_question(new DNSQuestion("www.first.com", ns_t_aaaa));
+  //EXPECT_CALL(server_, OnRequest("www.first.com", ns_t_aaaa))
+    //.WillOnce(SetReply(&server_, &nofirst));
+  //DNSPacket nofirst4;
+  //nofirst4.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    //.add_question(new DNSQuestion("www.first.com", ns_t_a));
+  //EXPECT_CALL(server_, OnRequest("www.first.com", ns_t_a))
+    //.WillOnce(SetReply(&server_, &nofirst4));
+
+  //DNSPacket nosecond;
+  //nosecond.set_response().set_aa().set_rcode(ns_r_nxdomain)
+    //.add_question(new DNSQuestion("www.second.org", ns_t_aaaa));
+  //EXPECT_CALL(server_, OnRequest("www.second.org", ns_t_aaaa))
+    //.WillOnce(SetReply(&server_, &nosecond));
+  //DNSPacket yessecond4;
+  //yessecond4.set_response().set_aa()
+    //.add_question(new DNSQuestion("www.second.org", ns_t_a))
+    //.add_answer(new DNSARR("www.second.org", 0x0200, {2, 3, 4, 5}));
+  //EXPECT_CALL(server_, OnRequest("www.second.org", ns_t_a))
+    //.WillOnce(SetReply(&server_, &yessecond4));
+
+  //DNSPacket failthird;
+  //failthird.set_response().set_aa().set_rcode(ns_r_servfail)
+    //.add_question(new DNSQuestion("www.third.gov", ns_t_aaaa));
+  //EXPECT_CALL(server_, OnRequest("www.third.gov", ns_t_aaaa))
+    //.WillOnce(SetReply(&server_, &failthird));
+  //DNSPacket failthird4;
+  //failthird4.set_response().set_aa().set_rcode(ns_r_servfail)
+    //.add_question(new DNSQuestion("www.third.gov", ns_t_a));
+  //EXPECT_CALL(server_, OnRequest("www.third.gov", ns_t_a))
+    //.WillOnce(SetReply(&server_, &failthird4));
+
+  //AddrInfoResult result;
+  //struct ares_addrinfo hints = {};
+  //ares_getaddrinfo(channel_, "www", NULL, &hints, AddrInfoCallback, &result);
+  //Process();
+  //EXPECT_TRUE(result.done_);
+  //std::stringstream ss;
+  //ss << result.ai_;
+  //EXPECT_EQ("{addr=[2.3.4.5]}", ss.str());
+//}
 
 // Relies on retries so is UDP-only
 TEST_P(MockUDPChannelTest, SearchDomainsWithResentReply) {
@@ -1354,6 +1477,7 @@ TEST_P(MockChannelTest, FamilyUnspecified) {
   EXPECT_THAT(result.ai_, IncludesV4Address("2.3.4.5"));
   EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
 }
+
 
 INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 

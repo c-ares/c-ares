@@ -368,6 +368,8 @@ int ares__parse_a_reply(const unsigned char *abuf,
                         int alen,
                         struct hostent **host,
                         struct ares_addrinfo **ai,
+                        unsigned short port,
+                        char **cname,
                         struct ares_addrttl *addrttls,
                         int *naddrttls);
 
@@ -375,6 +377,8 @@ int ares__parse_aaaa_reply(const unsigned char *abuf,
                            int alen,
                            struct hostent **host,
                            struct ares_addrinfo **ai,
+                           unsigned short port,
+                           char **cname,
                            struct ares_addr6ttl *addrttls,
                            int *naddrttls);
 

@@ -386,9 +386,9 @@ struct ares_addrinfo
   int                   ai_family;
   int                   ai_socktype;
   int                   ai_protocol;
-  ares_socklen_t        ai_addrlen;   /* Follow rfc3493 struct addrinfo */
-  char                 *ai_canonname;
+  ares_socklen_t        ai_addrlen;
   struct sockaddr      *ai_addr;
+  char                 *ai_canonname;
   struct ares_addrinfo *ai_next;
 };
 

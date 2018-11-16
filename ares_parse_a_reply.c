@@ -47,6 +47,7 @@
 
 int ares__parse_a_reply(const unsigned char *abuf, int alen,
                         struct hostent **host, struct ares_addrinfo **ai,
+                        unsigned short port, char **cname,
                         struct ares_addrttl *addrttls, int *naddrttls)
 {
   unsigned int qdcount, ancount;
@@ -59,6 +60,7 @@ int ares__parse_a_reply(const unsigned char *abuf, int alen,
   struct in_addr *addrs;
   struct hostent *hostent;
   struct ares_addrinfo *nested_ai, *head_ai = NULL;
+  struct sockaddr_in *sin;
   const int max_addr_ttls = (addrttls && naddrttls) ? *naddrttls : 0;
 
   /* Set *host to NULL for all failure cases. */
@@ -264,18 +266,17 @@ int ares__parse_a_reply(const unsigned char *abuf, int alen,
         }
       else if (ai)
         {
-          /* Allocate memory to build the addrinfo entry. */
-          head_ai = nested_ai = ares__malloc_addrinfo();
-          if (!head_ai)
-            {
-              status = ARES_ENOMEM;
-              goto failed_stat;
-            }
-
-          /* Fill in the head_ai and return successfully. */
           if (naddrs > 0)
             {
-              struct sockaddr_in *sin = ares_malloc(sizeof(struct sockaddr_in));
+              /* Allocate memory to build the addrinfo entry. */
+              head_ai = nested_ai = ares__malloc_addrinfo();
+              if (!head_ai)
+                {
+                  status = ARES_ENOMEM;
+                  goto failed_stat;
+                }
+
+              sin = ares_malloc(sizeof(struct sockaddr_in));
               if (!sin)
                 {
                   status = ARES_ENOMEM;
@@ -285,6 +286,7 @@ int ares__parse_a_reply(const unsigned char *abuf, int alen,
               memset(sin, 0, sizeof(struct sockaddr_in));
               memcpy(&sin->sin_addr.s_addr, &addrs[0], sizeof(struct in_addr));
               sin->sin_family = AF_INET;
+              sin->sin_port = htons(port);
 
               head_ai->ai_addr = (struct sockaddr *)sin;
               head_ai->ai_family = AF_INET;
@@ -311,24 +313,32 @@ int ares__parse_a_reply(const unsigned char *abuf, int alen,
                   memcpy(&sin->sin_addr.s_addr, &addrs[i],
                          sizeof(struct in_addr));
                   sin->sin_family = AF_INET;
+                  sin->sin_port = htons(port);
 
                   nested_ai->ai_addr = (struct sockaddr *)sin;
                   nested_ai->ai_family = AF_INET;
                   nested_ai->ai_addrlen = sizeof(struct sockaddr_in);
                 }
+              /* Append to existing addrinfo or set it if there are none.  */
+              if (*ai)
+                {
+                  (*ai)->ai_next = head_ai;
+                }
+              else
+                {
+                  *ai = head_ai;
+                }
             }
 
-          /* Append to existing addrinfo or set it if there are none.  */
-          if (*ai)
+          if (*cname)
             {
+              /* Already have canonical name. */
               ares_free(hostname);
-              (*ai)->ai_next = head_ai;
             }
           else
             {
-              /* Copy canonname in case we need it later */
-              head_ai->ai_canonname = hostname;
-              *ai = head_ai;
+              /* Copy canonical in case we need it later. */
+              *cname = hostname;
             }
 
           ares_free(addrs);
@@ -353,5 +363,5 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
                        struct hostent **host,
                        struct ares_addrttl *addrttls, int *naddrttls)
 {
-  return ares__parse_a_reply(abuf, alen, host, NULL, addrttls, naddrttls);
+  return ares__parse_a_reply(abuf, alen, host, NULL, 0, NULL, addrttls, naddrttls);
 }

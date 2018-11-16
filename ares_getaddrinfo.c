@@ -71,6 +71,7 @@ struct host_query
   const char *remaining_lookups; /* types of lookup we need to perform ("fb" by
                                     default, file and dns respectively) */
   struct ares_addrinfo *ai; /* store results between lookups */
+  char *cname; /* store canonical name between lookups */
 };
 
 static void next_lookup(struct host_query *hquery, int status_code);
@@ -176,6 +177,7 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->remaining_lookups = channel->lookups;
   hquery->timeouts = 0;
   hquery->ai = NULL;
+  hquery->cname = NULL;
 
   /* Start performing lookups according to channel->lookups. */
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
@@ -454,11 +456,15 @@ static void host_callback(void *arg, int status, int timeouts,
     {
       if (hquery->sent_family == AF_INET)
         {
-          status = ares__parse_a_reply(abuf, alen, NULL, &hquery->ai, NULL, NULL);
+          status =
+              ares__parse_a_reply(abuf, alen, NULL, &hquery->ai, hquery->port,
+                                  &hquery->cname, NULL, NULL);
         }
       else if (hquery->sent_family == AF_INET6)
         {
-          status = ares__parse_aaaa_reply(abuf, alen, NULL, &hquery->ai, NULL, NULL);
+          status =
+              ares__parse_aaaa_reply(abuf, alen, NULL, &hquery->ai,
+                                     hquery->port, &hquery->cname, NULL, NULL);
           if (hquery->hints.ai_family == AF_UNSPEC)
             {
               /* Now look for A records and append them to existing results. */
@@ -487,26 +493,19 @@ static void host_callback(void *arg, int status, int timeouts,
 
 static void end_hquery(struct host_query *hquery, int status)
 {
-  struct ares_addrinfo *next = hquery->ai;
   if (status == ARES_SUCCESS)
     {
-      /* Free canonname if we are not asked for it. */
-      if (!(hquery->hints.ai_flags & ARES_AI_CANONNAME))
+      if (hquery->ai)
         {
-          ares_free(hquery->ai->ai_canonname);
-          hquery->ai->ai_canonname = NULL;
+          if (hquery->hints.ai_flags & ARES_AI_CANONNAME)
+            {
+              hquery->ai->ai_canonname = hquery->cname;
+              hquery->cname = NULL;
+            }
         }
-      while (next)
+      else
         {
-          if (next->ai_family == AF_INET)
-            {
-              ((struct sockaddr_in *)next->ai_addr)->sin_port = htons(hquery->port);
-            }
-          else
-            {
-              ((struct sockaddr_in6 *)next->ai_addr)->sin6_port = htons(hquery->port);
-            }
-          next = next->ai_next;
+          status = ARES_ENODATA;
         }
     }
   else
@@ -518,5 +517,6 @@ static void end_hquery(struct host_query *hquery, int status)
 
   hquery->callback(hquery->arg, status, hquery->timeouts, hquery->ai);
   ares_free(hquery->name);
+  ares_free(hquery->cname);
   ares_free(hquery);
 }

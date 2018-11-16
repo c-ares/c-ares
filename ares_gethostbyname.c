@@ -188,13 +188,13 @@ static void host_callback(void *arg, int status, int timeouts,
     {
       if (hquery->sent_family == AF_INET)
         {
-          status = ares__parse_a_reply(abuf, alen, &host, NULL, NULL, NULL);
+          status = ares_parse_a_reply(abuf, alen, &host, NULL, NULL);
           if (host && channel->nsort)
             sort_addresses(host, channel->sortlist, channel->nsort);
         }
       else if (hquery->sent_family == AF_INET6)
         {
-          status = ares__parse_aaaa_reply(abuf, alen, &host, NULL, NULL, NULL);
+          status = ares_parse_aaaa_reply(abuf, alen, &host, NULL, NULL);
           if ((status == ARES_ENODATA || status == ARES_EBADRESP ||
                (status == ARES_SUCCESS && host && host->h_addr_list[0] == NULL)) &&
                 hquery->want_family == AF_UNSPEC) {
