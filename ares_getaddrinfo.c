@@ -234,40 +234,38 @@ static int file_lookup(const char *name, int family, struct ares_addrinfo **ai) 
 static int add_to_addrinfo(struct ares_addrinfo** ai,
 		            const struct hostent* host) {
   static const struct ares_addrinfo EmptyAddrinfo; 
-  struct ares_addrinfo* next_ai;
+  struct ares_addrinfo* front;
   char** p;
   if (!host || (host->h_addrtype != AF_INET && host->h_addrtype != AF_INET6)) {
     return ARES_SUCCESS;
   }
   for (p = host->h_addr_list; *p; ++p) {
-    next_ai = ares_malloc(sizeof(struct ares_addrinfo));
-    if (!next_ai) {
-      ares_freeaddrinfo(*ai);
-      return ARES_ENOMEM;
-    }
-    *next_ai = EmptyAddrinfo;
-    if (*ai) {
-      (*ai)->ai_next = next_ai;
-    }
-    else {
-      *ai = next_ai;
-    }
+    front = ares_malloc(sizeof(struct ares_addrinfo));
+    if (!front) goto nomem;
+    *front = EmptyAddrinfo;
+    front->ai_next = *ai; /* insert at front */
+    *ai = front;
     if (host->h_addrtype == AF_INET) {
-      next_ai->ai_protocol = IPPROTO_UDP;
-      next_ai->ai_family = AF_INET;
-      next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in));
-      memcpy(&((struct sockaddr_in*)(next_ai->ai_addr))->sin_addr, *p,
+      front->ai_protocol = IPPROTO_UDP;
+      front->ai_family = AF_INET;
+      front->ai_addr = ares_malloc(sizeof(struct sockaddr_in));
+      if (!front->ai_addr) goto nomem;
+      memcpy(&((struct sockaddr_in*)(front->ai_addr))->sin_addr, *p,
         host->h_length);
     }
     else {
-      next_ai->ai_protocol = IPPROTO_UDP;
-      next_ai->ai_family = AF_INET6;
-      next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in6));
-      memcpy(&((struct sockaddr_in6*)(next_ai->ai_addr))->sin6_addr, *p,
+      front->ai_protocol = IPPROTO_UDP;
+      front->ai_family = AF_INET6;
+      front->ai_addr = ares_malloc(sizeof(struct sockaddr_in6));
+      if (!front->ai_addr) goto nomem;
+      memcpy(&((struct sockaddr_in6*)(front->ai_addr))->sin6_addr, *p,
         host->h_length);
     }
   }
   return ARES_SUCCESS;
+nomem:
+  ares_freeaddrinfo(*ai);
+  return ARES_ENOMEM;
 }
 
 static void next_dns_lookup(struct host_query *hquery) {
