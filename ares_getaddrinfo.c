@@ -213,14 +213,15 @@ static int file_lookup(const char *name, int family, struct ares_addrinfo **ai) 
     }
   }
   status = ARES_ENOTFOUND;
-  while (ares__get_hostent(fp, family, &host) == ARES_SUCCESS) {
+  while (status != ARES_ENOMEM &&
+      ares__get_hostent(fp, family, &host) == ARES_SUCCESS) {
     if (strcasecmp(host->h_name, name) == 0) {
       status = add_to_addrinfo(ai, host);
     }
     else {
       for (alias = host->h_aliases; *alias; alias++) {
         if (strcasecmp(*alias, name) == 0) {
-          add_to_addrinfo(ai, host);
+          status = add_to_addrinfo(ai, host);
           break;
         }
       }
