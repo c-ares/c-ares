@@ -81,8 +81,8 @@ static int get_address_index(const struct in_addr *addr,
 static int get6_address_index(const struct ares_in6_addr *addr,
                               const struct apattern *sortlist, int nsort);
 static int as_is_first(const struct host_query *hquery);
-static void add_to_addrinfo(struct ares_addrinfo** ai,
-                            const struct hostent* host);
+static int add_to_addrinfo(struct ares_addrinfo** ai,
+                           const struct hostent* host);
 static void next_dns_lookup(struct host_query *hquery);
 static int is_implemented(const int family);
 
@@ -213,16 +213,15 @@ static int file_lookup(const char *name, int family, struct ares_addrinfo **ai) 
     }
   }
   status = ARES_ENOTFOUND;
-  while (ares__get_hostent(fp, family, &host) == ARES_SUCCESS) {
+  while (status != ARES_ENOMEM &&
+      ares__get_hostent(fp, family, &host) == ARES_SUCCESS) {
     if (strcasecmp(host->h_name, name) == 0) {
-      add_to_addrinfo(ai, host);
-      status = ARES_SUCCESS;
+      status = add_to_addrinfo(ai, host);
     }
     else {
       for (alias = host->h_aliases; *alias; alias++) {
         if (strcasecmp(*alias, name) == 0) {
-          add_to_addrinfo(ai, host);
-          status = ARES_SUCCESS;
+          status = add_to_addrinfo(ai, host);
           break;
         }
       }
@@ -233,38 +232,41 @@ static int file_lookup(const char *name, int family, struct ares_addrinfo **ai) 
   return status;
 }
 
-static void add_to_addrinfo(struct ares_addrinfo** ai,
+static int add_to_addrinfo(struct ares_addrinfo** ai,
 		            const struct hostent* host) {
   static const struct ares_addrinfo EmptyAddrinfo; 
-  struct ares_addrinfo* next_ai;
+  struct ares_addrinfo* front;
   char** p;
   if (!host || (host->h_addrtype != AF_INET && host->h_addrtype != AF_INET6)) {
-    return;
+    return ARES_SUCCESS;
   }
   for (p = host->h_addr_list; *p; ++p) {
-    next_ai = ares_malloc(sizeof(struct ares_addrinfo));
-    *next_ai = EmptyAddrinfo;
-    if (*ai) {
-      (*ai)->ai_next = next_ai;
-    }
-    else {
-      *ai = next_ai;
-    }
+    front = ares_malloc(sizeof(struct ares_addrinfo));
+    if (!front) goto nomem;
+    *front = EmptyAddrinfo;
+    front->ai_next = *ai; /* insert at front */
+    *ai = front;
     if (host->h_addrtype == AF_INET) {
-      next_ai->ai_protocol = IPPROTO_UDP;
-      next_ai->ai_family = AF_INET;
-      next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in));
-      memcpy(&((struct sockaddr_in*)(next_ai->ai_addr))->sin_addr, *p,
+      front->ai_protocol = IPPROTO_UDP;
+      front->ai_family = AF_INET;
+      front->ai_addr = ares_malloc(sizeof(struct sockaddr_in));
+      if (!front->ai_addr) goto nomem;
+      memcpy(&((struct sockaddr_in*)(front->ai_addr))->sin_addr, *p,
         host->h_length);
     }
     else {
-      next_ai->ai_protocol = IPPROTO_UDP;
-      next_ai->ai_family = AF_INET6;
-      next_ai->ai_addr = ares_malloc(sizeof(struct sockaddr_in6));
-      memcpy(&((struct sockaddr_in6*)(next_ai->ai_addr))->sin6_addr, *p,
+      front->ai_protocol = IPPROTO_UDP;
+      front->ai_family = AF_INET6;
+      front->ai_addr = ares_malloc(sizeof(struct sockaddr_in6));
+      if (!front->ai_addr) goto nomem;
+      memcpy(&((struct sockaddr_in6*)(front->ai_addr))->sin6_addr, *p,
         host->h_length);
     }
   }
+  return ARES_SUCCESS;
+nomem:
+  ares_freeaddrinfo(*ai);
+  return ARES_ENOMEM;
 }
 
 static void next_dns_lookup(struct host_query *hquery) {
@@ -320,6 +322,7 @@ static void host_callback(void *arg, int status, int timeouts,
   struct hostent *host = NULL;
   int qtype;
   int qtypestatus;
+  int addinfostatus = ARES_SUCCESS;
   hquery->timeouts += timeouts;
 
   hquery->remaining--;
@@ -332,7 +335,7 @@ static void host_callback(void *arg, int status, int timeouts,
       if (host && channel->nsort) {
         sort_addresses(host, channel->sortlist, channel->nsort);
       }
-      add_to_addrinfo(&hquery->ai, host);
+      addinfostatus = add_to_addrinfo(&hquery->ai, host);
       ares_free_hostent(host);
     }
     else if (qtypestatus == ARES_SUCCESS && qtype == T_AAAA) {
@@ -341,14 +344,18 @@ static void host_callback(void *arg, int status, int timeouts,
       if (host && channel->nsort) {
         sort6_addresses(host, channel->sortlist, channel->nsort);
       }
-      add_to_addrinfo(&hquery->ai, host);
+      addinfostatus = add_to_addrinfo(&hquery->ai, host);
       ares_free_hostent(host);
     }
   }
 
   if (!hquery->remaining) {
-    if (hquery->ai) {
-      // at least one query ended with ARES_SUCCESS
+    if (addinfostatus != ARES_SUCCESS) {
+      /* no memory */
+      end_hquery(hquery, addinfostatus);
+    }
+    else if (hquery->ai) {
+      /* at least one query ended with ARES_SUCCESS */
       end_hquery(hquery, ARES_SUCCESS);
     }
     else if (status == ARES_ENOTFOUND) {
@@ -359,7 +366,7 @@ static void host_callback(void *arg, int status, int timeouts,
     }
   }
 
-  // at this point we keep on waiting for the next query to finish
+  /* at this point we keep on waiting for the next query to finish */
 }
 
 static void sort_addresses(struct hostent *host,
