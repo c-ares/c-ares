@@ -1,11 +1,10 @@
 #include "ares-test-ai.h"
 #include "dns-proto.h"
 
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
 #endif
 
-#include <arpa/inet.h>
 #include <sstream>
 #include <vector>
 
@@ -24,7 +23,7 @@ MATCHER_P(IncludesNumAddresses, n, "") {
 
 MATCHER_P(IncludesV4Address, address, "") {
   in_addr addressnum = {};
-  if (!inet_pton(AF_INET, address, &addressnum))
+  if (!ares_inet_pton(AF_INET, address, &addressnum))
     return false; // wrong number format?
   for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET)
@@ -38,7 +37,7 @@ MATCHER_P(IncludesV4Address, address, "") {
 
 MATCHER_P(IncludesV6Address, address, "") {
   in6_addr addressnum = {};
-  if (!inet_pton(AF_INET6, address, &addressnum)) {
+  if (!ares_inet_pton(AF_INET6, address, &addressnum)) {
     return false; // wrong number format?
   }
   for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next) {

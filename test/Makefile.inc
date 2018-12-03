@@ -1,7 +1,6 @@
 TESTSOURCES = ares-test-main.cc	\
   ares-test-init.cc			\
   ares-test.cc				\
-  ares-test-ai.cc			\
   ares-test-ns.cc			\
   ares-test-parse.cc			\
   ares-test-parse-a.cc			\
