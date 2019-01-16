@@ -669,6 +669,40 @@ TEST_P(NoRotateMultiMockTestAI, ThirdServer) {
   CheckExample();
 }
 
+TEST_P(MockChannelTestAI, UnspecSorted) {
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_aaaa))
+    .add_answer(new DNSAaaaRR("example.com", 100,
+                              {0x21, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
+    .WillByDefault(SetReply(&server_, &rsp6));
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AIResult result;
+  struct ares_addrinfo hints = {};
+  hints.ai_family = AF_UNSPEC;
+  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
+                   AICallback, &result);
+  Process();
+
+  int sort_result = ares_sort_addrinfo(result.airesult);
+  EXPECT_EQ(sort_result, ARES_SUCCESS);
+
+  EXPECT_TRUE(result.done);
+  EXPECT_EQ(result.status, ARES_SUCCESS);
+  // TODO port tools from another branch to compare order
+  EXPECT_THAT(result.airesult, IncludesNumAddresses(2));
+  EXPECT_THAT(result.airesult, IncludesV4Address("2.3.4.5"));
+  EXPECT_THAT(result.airesult, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
+  ares_freeaddrinfo(result.airesult);
+}
+
 // force-tcp does currently not work, possibly test DNS server swallows
 // bytes from second query
 //INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockChannelTestAI,
