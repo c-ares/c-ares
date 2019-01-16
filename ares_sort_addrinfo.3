@@ -1,0 +1,53 @@
+.\"
+.\" Copyright 1998 by the Massachusetts Institute of Technology.
+.\"
+.\" Permission to use, copy, modify, and distribute this
+.\" software and its documentation for any purpose and without
+.\" fee is hereby granted, provided that the above copyright
+.\" notice appear in all copies and that both that copyright
+.\" notice and this permission notice appear in supporting
+.\" documentation, and that the name of M.I.T. not be used in
+.\" advertising or publicity pertaining to distribution of the
+.\" software without specific, written prior permission.
+.\" M.I.T. makes no representations about the suitability of
+.\" this software for any purpose.  It is provided "as is"
+.\" without express or implied warranty.
+.\"
+.TH ARES_SORT_ADDRINFO 3 "16 January 2019"
+.SH NAME
+ares_sort_addrinfo \- Sort addrinfo according to the subset
+of RFC6724
+.SH SYNOPSIS
+.nf
+.B #include <ares.h>
+.PP
+.B void ares_sort_addrinfo(ares_addrinfo \fIai\fP)
+.fi
+.SH DESCRIPTION
+The
+.B ares_sort_addrinfo
+function sort addresses identified by
+.IR ai
+according to RFC6724 except:
+ - Rule 3 (Avoid deprecated addresses)
+ - Rule 4 (Prefer home addresses)
+ - Rule 7 (Prefer native transport)
+
+Please note that the function will attempt a connection
+on each of the resolved addresses as per aforementioned RFC.
+.SH RETURN VALUES
+.TP
+.B ARES_SUCCESS
+The host lookup completed successfully.
+.TP
+.B ARES_ENOTFOUND
+Connection to some of the resolved addresses failed.
+.TP
+.B ARES_ENOMEM
+Memory was exhausted.
+.SH SEE ALSO
+.BR ares_getaddrinfo (3)
+.SH AUTHOR
+Andrew Selivanov <andrew.selivanov@gmail.com>
+.br
+Copyright (C) 2008 The Android Open Source Project
