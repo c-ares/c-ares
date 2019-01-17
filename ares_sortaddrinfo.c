@@ -1,12 +1,11 @@
 /*
- * Original file name getaddrinfo.c  Initial import into the c-ares source tree
- * on 2018-11-20.  Lifted from the 'Android Bionic' project with
- * the BSD license.
+ * Original file name getaddrinfo.c
+ * Lifted from the 'Android Bionic' project with the BSD license.
  */
 
 /*
  * Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project.
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * Copyright (C) 2019 by Andrew Selivanov
  * All rights reserved.
  *
@@ -440,7 +439,7 @@ static int find_src_addr(const struct sockaddr *addr,
  * Sort the linked list starting at sentinel->ai_next in RFC6724 order.
  * Will leave the list unchanged if an error occurs.
  */
-int ares_sort_addrinfo(struct ares_addrinfo *list_sentinel)
+int ares_sortaddrinfo(struct ares_addrinfo *list_sentinel)
 {
   struct ares_addrinfo *cur;
   int nelem = 0, i;

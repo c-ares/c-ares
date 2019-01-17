@@ -380,7 +380,7 @@ CARES_EXTERN void ares_getaddrinfo(ares_channel channel,
                                    ares_addr_callback callback, void* arg);
 CARES_EXTERN void ares_freeaddrinfo(struct ares_addrinfo* ai);
 
-CARES_EXTERN int ares_sort_addrinfo(struct ares_addrinfo *ai);
+CARES_EXTERN int ares_sortaddrinfo(struct ares_addrinfo *ai);
 
 /*
  * Virtual function set to have user-managed socket IO.

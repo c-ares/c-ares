@@ -38,7 +38,7 @@ CSOURCES = ares__close_sockets.c	\
   ares_query.c				\
   ares_search.c				\
   ares_send.c				\
-  ares_sort_addrinfo.c			\
+  ares_sortaddrinfo.c			\
   ares_strcasecmp.c			\
   ares_strdup.c				\
   ares_strerror.c			\
@@ -129,7 +129,7 @@ MANPAGES = ares_cancel.3		\
   ares_set_socket_configure_callback.3	\
   ares_set_socket_functions.3		\
   ares_set_sortlist.3			\
-  ares_sort_addrinfo.3			\
+  ares_sortaddrinfo.3			\
   ares_strerror.3			\
   ares_timeout.3			\
   ares_version.3			\
@@ -186,7 +186,7 @@ HTMLPAGES = ares_cancel.html		\
   ares_set_socket_configure_callback.html	\
   ares_set_socket_functions.html	\
   ares_set_sortlist.html		\
-  ares_sort_addrinfo.html		\
+  ares_sortaddrinfo.html		\
   ares_strerror.html			\
   ares_timeout.html			\
   ares_version.html			\
@@ -243,7 +243,7 @@ PDFPAGES = ares_cancel.pdf		\
   ares_set_socket_configure_callback.pdf	\
   ares_set_socket_functions.pdf		\
   ares_set_sortlist.pdf			\
-  ares_sort_addrinfo.pdf			\
+  ares_sortaddrinfo.pdf			\
   ares_strerror.pdf			\
   ares_timeout.pdf			\
   ares_version.pdf			\

@@ -691,7 +691,7 @@ TEST_P(MockChannelTestAI, UnspecSorted) {
                    AICallback, &result);
   Process();
 
-  int sort_result = ares_sort_addrinfo(result.airesult);
+  int sort_result = ares_sortaddrinfo(result.airesult);
   EXPECT_EQ(sort_result, ARES_SUCCESS);
 
   EXPECT_TRUE(result.done);
