@@ -358,6 +358,7 @@ void ares__destroy_servers_state(ares_channel channel);
 int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
 int ares__single_domain(ares_channel channel, const char *name, char **s);
 int ares__cat_domain(const char *name, const char *domain, char **s);
+int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo *ai);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);

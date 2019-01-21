@@ -118,7 +118,7 @@ static int get_scope(const struct sockaddr *addr)
       unsigned long int na = ntohl(addr4->sin_addr.s_addr);
       if (IN_LOOPBACK(na) || /* 127.0.0.0/8 */
           (na & 0xffff0000) == 0xa9fe0000) /* 169.254.0.0/16 */
-        { 
+        {
           return IPV6_ADDR_SCOPE_LINKLOCAL;
         }
       else
@@ -380,8 +380,9 @@ static int rfc6724_compare(const void *ptr1, const void *ptr2)
  * and -1 if a fatal error occurred. If 0 or 1, the contents of src_addr are
  * undefined.
  */
-static int find_src_addr(const struct sockaddr *addr,
-                          struct sockaddr *src_addr)
+static int find_src_addr(ares_channel channel,
+                         const struct sockaddr *addr,
+                         struct sockaddr *src_addr)
 {
   int sock;
   int ret;
@@ -400,7 +401,7 @@ static int find_src_addr(const struct sockaddr *addr,
       return 0;
     }
 
-  sock = socket(addr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
+  sock = channel->sock_funcs->asocket(addr->sa_family, SOCK_DGRAM, IPPROTO_UDP, channel->sock_func_cb_data);
   if (sock == -1)
     {
       if (errno == EAFNOSUPPORT)
@@ -415,23 +416,23 @@ static int find_src_addr(const struct sockaddr *addr,
 
   do
     {
-      ret = connect(sock, addr, len);
+      ret = channel->sock_funcs->aconnect(sock, addr, len, channel->sock_func_cb_data);
     }
   while (ret == -1 && errno == EINTR);
 
   if (ret == -1)
     {
-      close(sock);
+      channel->sock_funcs->aclose(sock, channel->sock_func_cb_data);
       return 0;
     }
 
   if (getsockname(sock, src_addr, &len) == -1)
     {
-      close(sock);
+      channel->sock_funcs->aclose(sock, channel->sock_func_cb_data);
       return -1;
     }
 
-  close(sock);
+  channel->sock_funcs->aclose(sock, channel->sock_func_cb_data);
   return 1;
 }
 
@@ -439,7 +440,7 @@ static int find_src_addr(const struct sockaddr *addr,
  * Sort the linked list starting at sentinel->ai_next in RFC6724 order.
  * Will leave the list unchanged if an error occurs.
  */
-int ares_sortaddrinfo(struct ares_addrinfo *list_sentinel)
+int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo *list_sentinel)
 {
   struct ares_addrinfo *cur;
   int nelem = 0, i;
@@ -468,7 +469,7 @@ int ares_sortaddrinfo(struct ares_addrinfo *list_sentinel)
       assert(cur != NULL);
       elems[i].ai = cur;
       elems[i].original_order = i;
-      has_src_addr = find_src_addr(cur->ai_addr, &elems[i].src_addr.sa);
+      has_src_addr = find_src_addr(channel, cur->ai_addr, &elems[i].src_addr.sa);
       if (has_src_addr == -1)
         {
           ares_free(elems);

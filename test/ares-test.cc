@@ -565,14 +565,58 @@ void HostCallback(void *data, int status, int timeouts,
   if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
 }
 
-void AICallback(void *data, int status,
-                struct ares_addrinfo *res) {
+std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result) {
+  os << '{';
+  if (result.done_) {
+    os << StatusToString(result.status_) << " " << result.ai_;
+  } else {
+    os << "(incomplete)";
+  }
+  os << '}';
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
+  os << '{';
+  struct ares_addrinfo *next = ai.get();
+  while(next) {
+    if(next->ai_canonname) {
+      os << "'" << next->ai_canonname << "' ";
+    }
+    unsigned short port = 0;
+    os << "addr=[";
+    if(next->ai_family == AF_INET) {
+      sockaddr_in* sin = (sockaddr_in*)next->ai_addr;
+      port = ntohs(sin->sin_port);
+      os << AddressToString(&sin->sin_addr, 4);
+    }
+    else if (next->ai_family == AF_INET6) {
+      sockaddr_in6* sin = (sockaddr_in6*)next->ai_addr;
+      port = ntohs(sin->sin6_port);
+      os << "[" << AddressToString(&sin->sin6_addr, 16) << "]";
+    }
+    else
+      os << "unknown family";
+    if(port) {
+      os << ":" << port;
+    }
+    os << "]";
+    if((next = next->ai_next))
+      os << ", ";
+  }
+  os << '}';
+  return os;
+}
+
+void AddrInfoCallback(void *data, int status, int timeouts,
+                      struct ares_addrinfo *ai) {
   EXPECT_NE(nullptr, data);
-  AIResult* result = reinterpret_cast<AIResult*>(data);
-  result->done = true;
-  result->status = status;
-  result->airesult = res;
-  //if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
+  AddrInfoResult* result = reinterpret_cast<AddrInfoResult*>(data);
+  result->done_ = true;
+  result->status_ = status;
+  result->timeouts_= timeouts;
+  result->ai_ = AddrInfo(ai);
+  if (verbose) std::cerr << "AddrInfoCallback(" << *result << ")" << std::endl;
 }
 
 std::ostream& operator<<(std::ostream& os, const SearchResult& result) {

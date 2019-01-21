@@ -309,6 +309,7 @@ typedef int  (*ares_sock_config_callback)(ares_socket_t socket_fd,
 
 typedef void (*ares_addr_callback)(void *arg,
                                    int status,
+                                   int timeouts,
                                    struct ares_addrinfo *res);
 
 CARES_EXTERN int ares_library_init(int flags);
@@ -379,8 +380,6 @@ CARES_EXTERN void ares_getaddrinfo(ares_channel channel,
                                    const struct ares_addrinfo* hints,
                                    ares_addr_callback callback, void* arg);
 CARES_EXTERN void ares_freeaddrinfo(struct ares_addrinfo* ai);
-
-CARES_EXTERN int ares_sortaddrinfo(struct ares_addrinfo *ai);
 
 /*
  * Virtual function set to have user-managed socket IO.
