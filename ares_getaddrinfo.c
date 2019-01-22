@@ -129,6 +129,7 @@ void ares_getaddrinfo(ares_channel channel,
   if (file_lookup(hquery->name, ai_family, &hquery->ai) == ARES_SUCCESS) {
     sentinel.ai_next = hquery->ai;
     ares__sortaddrinfo(channel, &sentinel);
+    hquery->ai = sentinel.ai_next;
     end_hquery(hquery, ARES_SUCCESS);
   }
   else {
