@@ -21,7 +21,7 @@ ares_getaddrinfo \- Initiate a host query by name
 .B #include <ares.h>
 .PP
 .B typedef void (*ares_addr_callback)(void *\fIarg\fP, int \fIstatus\fP,
-.B 	struct ares_addrinfo *\fIresult\fP)
+.B 	int \fItimeouts\fP, struct ares_addrinfo *\fIresult\fP)
 .PP
 .B void ares_getaddrinfo(ares_channel \fIchannel\fP, const char *\fIname\fP,
 .B 	const char* \fIservice\fP, const struct ares_addrinfo *\fIhints\fP,
@@ -98,17 +98,25 @@ On successful completion of the query, the callback argument
 points to a
 .B struct addrinfo
 which is a linked list, where each item contains family and address of
-the requested name. The list is not sorted. The reserved memory has to be
-deleted by
+the requested name. The reserved memory has to be deleted by
 .B ares_freeaddrinfo.
+
+The result is sorted according to RFC6724 except:
+ - Rule 3 (Avoid deprecated addresses)
+ - Rule 4 (Prefer home addresses)
+ - Rule 7 (Prefer native transport)
+
+Please note that the function will attempt a connection
+on each of the resolved addresses as per RFC6724.
 .SH SEE ALSO
 .BR ares_freeaddrinfo (3)
 .SH AUTHOR
 Christian Ammer
+.br
+Andrew Selivanov <andrew.selivanov@gmail.com>
 .SH CAVEATS
 This function is under development. It only supports a minimum feature set
 of the function
 .B getaddrinfo
-defined in RFC-3493. It also does not support the destination address selection
-algorithm defined in RFC-6724.
+defined in RFC-3493
 .br

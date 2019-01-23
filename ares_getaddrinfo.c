@@ -91,20 +91,21 @@ void ares_getaddrinfo(ares_channel channel,
                       const char* node, const char* service,
                       const struct ares_addrinfo* hints,
                       ares_addr_callback callback, void* arg) {
+  struct ares_addrinfo sentinel;
   struct host_query *hquery;
   char *single = NULL;
   int ai_family;
 
   ai_family = hints ? hints->ai_family : AF_UNSPEC;
   if (!is_implemented(ai_family)) {
-    callback(arg, ARES_ENOTIMP, NULL);
+    callback(arg, ARES_ENOTIMP, 0, NULL);
     return;
   }
 
   /* Allocate and fill in the host query structure. */
   hquery = ares_malloc(sizeof(struct host_query));
   if (!hquery) {
-    callback(arg, ARES_ENOMEM, NULL);
+    callback(arg, ARES_ENOMEM, 0, NULL);
     return;
   }
   hquery->ai = NULL;
@@ -115,7 +116,7 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->sent_family = -1; /* nothing is sent yet */
   if (!hquery->name) {
     ares_free(hquery);
-    callback(arg, ARES_ENOMEM, NULL);
+    callback(arg, ARES_ENOMEM, 0, NULL);
     return;
   }
   hquery->callback = callback;
@@ -126,6 +127,9 @@ void ares_getaddrinfo(ares_channel channel,
 
   /* Host file lookup */
   if (file_lookup(hquery->name, ai_family, &hquery->ai) == ARES_SUCCESS) {
+    sentinel.ai_next = hquery->ai;
+    ares__sortaddrinfo(channel, &sentinel);
+    hquery->ai = sentinel.ai_next;
     end_hquery(hquery, ARES_SUCCESS);
   }
   else {
@@ -251,6 +255,7 @@ static int add_to_addrinfo(struct ares_addrinfo** ai,
       front->ai_family = AF_INET;
       front->ai_addr = ares_malloc(sizeof(struct sockaddr_in));
       if (!front->ai_addr) goto nomem;
+      memset(front->ai_addr, 0, sizeof(struct sockaddr_in));
       memcpy(&((struct sockaddr_in*)(front->ai_addr))->sin_addr, *p,
         host->h_length);
     }
@@ -259,6 +264,7 @@ static int add_to_addrinfo(struct ares_addrinfo** ai,
       front->ai_family = AF_INET6;
       front->ai_addr = ares_malloc(sizeof(struct sockaddr_in6));
       if (!front->ai_addr) goto nomem;
+      memset(front->ai_addr, 0, sizeof(struct sockaddr_in6));
       memcpy(&((struct sockaddr_in6*)(front->ai_addr))->sin6_addr, *p,
         host->h_length);
     }
@@ -310,7 +316,7 @@ static void next_dns_lookup(struct host_query *hquery) {
 }
 
 static void end_hquery(struct host_query *hquery, int status) {
-  hquery->callback(hquery->arg, status, hquery->ai);
+  hquery->callback(hquery->arg, status, hquery->timeouts, hquery->ai);
   ares_free(hquery->name);
   ares_free(hquery);
 }

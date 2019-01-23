@@ -1,6 +1,7 @@
 
 CSOURCES = ares__close_sockets.c	\
   ares__get_hostent.c			\
+  ares__sortaddrinfo.c			\
   ares__read_line.c			\
   ares__timeval.c			\
   ares_android.c			\

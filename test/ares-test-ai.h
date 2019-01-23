@@ -51,17 +51,6 @@ class DefaultChannelTestAI : public LibraryTest {
   ares_channel channel_;
 };
 
-// Structure that describes the result of an ares_addr_callback invocation.
-struct AIResult {
-  AIResult() : done(), status(), airesult() {}
-  // Whether the callback has been invoked.
-  bool done;
-  // Explicitly provided result information.
-  int status;
-  // Contents of the ares_addrinfo structure, if provided.
-  struct ares_addrinfo* airesult;
-};
-
 }
 }
 

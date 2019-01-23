@@ -15,20 +15,20 @@ namespace test {
 
 MATCHER_P(IncludesAtLeastNumAddresses, n, "") {
   int cnt = 0;
-  for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next)
+  for (const ares_addrinfo* ai = arg.get(); ai != NULL; ai = ai->ai_next)
     cnt++;
   return cnt >= n;
 }
 
 MATCHER_P(OnlyIncludesAddrType, addrtype, "") {
-  for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next)
+  for (const ares_addrinfo* ai = arg.get(); ai != NULL; ai = ai->ai_next)
     if (ai->ai_family != addrtype)
       return false;
   return true;
 }
 
 MATCHER_P(IncludesAddrType, addrtype, "") {
-  for (const ares_addrinfo* ai = arg; ai != NULL; ai = ai->ai_next)
+  for (const ares_addrinfo* ai = arg.get(); ai != NULL; ai = ai->ai_next)
     if (ai->ai_family == addrtype)
       return true;
   return false;
@@ -44,41 +44,38 @@ void DefaultChannelTestAI::Process() {
 VIRT_NONVIRT_TEST_F(DefaultChannelTestAI, LiveGetHostByNameV4) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
-  AIResult result;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AICallback, &result);
+  AddrInfoResult result;
+  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
-  EXPECT_TRUE(result.done);
-  EXPECT_EQ(ARES_SUCCESS, result.status);
-  EXPECT_THAT(result.airesult, IncludesAtLeastNumAddresses(1));
-  EXPECT_THAT(result.airesult, OnlyIncludesAddrType(AF_INET));
-  ares_freeaddrinfo(result.airesult);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_THAT(result.ai_, IncludesAtLeastNumAddresses(1));
+  EXPECT_THAT(result.ai_, OnlyIncludesAddrType(AF_INET));
 }
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTestAI, LiveGetHostByNameV6) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET6;
-  AIResult result;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AICallback, &result);
+  AddrInfoResult result;
+  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
-  EXPECT_TRUE(result.done);
-  EXPECT_EQ(ARES_SUCCESS, result.status);
-  EXPECT_THAT(result.airesult, IncludesAtLeastNumAddresses(1));
-  EXPECT_THAT(result.airesult, OnlyIncludesAddrType(AF_INET6));
-  ares_freeaddrinfo(result.airesult);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_THAT(result.ai_, IncludesAtLeastNumAddresses(1));
+  EXPECT_THAT(result.ai_, OnlyIncludesAddrType(AF_INET6));
 }
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTestAI, LiveGetHostByNameV4AndV6) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_UNSPEC;
-  AIResult result;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AICallback, &result);
+  AddrInfoResult result;
+  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
-  EXPECT_TRUE(result.done);
-  EXPECT_EQ(ARES_SUCCESS, result.status);
-  EXPECT_THAT(result.airesult, IncludesAtLeastNumAddresses(2));
-  EXPECT_THAT(result.airesult, IncludesAddrType(AF_INET6));
-  EXPECT_THAT(result.airesult, IncludesAddrType(AF_INET));
-  ares_freeaddrinfo(result.airesult);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_THAT(result.ai_, IncludesAtLeastNumAddresses(2));
+  EXPECT_THAT(result.ai_, IncludesAddrType(AF_INET6));
+  EXPECT_THAT(result.ai_, IncludesAddrType(AF_INET));
 }
 
 }  // namespace test
