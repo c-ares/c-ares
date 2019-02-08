@@ -77,7 +77,7 @@ struct addrinfo_sort_elem
 /* These macros are modelled after the ones in <netinet/in6.h>. */
 /* RFC 4380, section 2.6 */
 #define IN6_IS_ADDR_TEREDO(a)    \
-        ((*(const uint32_t *)(const void *)(&(a)->s6_addr[0]) == ntohl(0x20010000)))
+        ((*(const unsigned int *)(const void *)(&(a)->s6_addr[0]) == ntohl(0x20010000)))
 /* RFC 3056, section 2. */
 #define IN6_IS_ADDR_6TO4(a)      \
         (((a)->s6_addr[0] == 0x20) && ((a)->s6_addr[1] == 0x02))
@@ -386,7 +386,7 @@ static int find_src_addr(ares_channel channel,
 {
   int sock;
   int ret;
-  socklen_t len;
+  ares_socklen_t len;
 
   switch (addr->sa_family)
     {
