@@ -122,7 +122,7 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->callback = callback;
   hquery->arg = arg;
   hquery->timeouts = 0;
-  hquery->next_domain = 0;
+  hquery->next_domain = -1; /* see next_dns_lookup for more info  */
   hquery->remaining = 0;
 
   /* Host file lookup */
@@ -279,11 +279,20 @@ static void next_dns_lookup(struct host_query *hquery) {
   char *s = NULL;
   int is_s_allocated = 0;
   int status;
-
-  if (( as_is_first(hquery) && hquery->next_domain == 0) ||
-      (!as_is_first(hquery) && hquery->next_domain ==
-       hquery->channel->ndomains)) {
-    s = hquery->name;
+  /* if next_domain == -1 and as_is_first is true, try hquery->name */
+  if(hquery->next_domain == -1) {
+    if(as_is_first(hquery)) {
+      s = hquery->name;
+    }
+    hquery->next_domain = 0;
+  }
+  /* if as_is_first is false, try hquery->name at last */
+  if(!s && hquery->next_domain == hquery->channel->ndomains) {
+    if(!as_is_first(hquery)) {
+      s = hquery->name;
+    }
+    /* avoid infinite loop */
+    hquery->next_domain++;
   }
 
   if (!s && hquery->next_domain < hquery->channel->ndomains) {
