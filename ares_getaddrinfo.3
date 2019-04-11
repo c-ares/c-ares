@@ -20,12 +20,12 @@ ares_getaddrinfo \- Initiate a host query by name
 .nf
 .B #include <ares.h>
 .PP
-.B typedef void (*ares_addr_callback)(void *\fIarg\fP, int \fIstatus\fP,
+.B typedef void (*ares_addrinfo_callback)(void *\fIarg\fP, int \fIstatus\fP,
 .B 	int \fItimeouts\fP, struct ares_addrinfo *\fIresult\fP)
 .PP
 .B void ares_getaddrinfo(ares_channel \fIchannel\fP, const char *\fIname\fP,
 .B 	const char* \fIservice\fP, const struct ares_addrinfo *\fIhints\fP,
-.B 	ares_addr_callback \fIcallback\fP, void *\fIarg\fP)
+.B 	ares_addrinfo_callback \fIcallback\fP, void *\fIarg\fP)
 .PP
 .B struct ares_addrinfo {
 .B 	int                  \fIai_flags\fP;

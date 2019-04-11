@@ -307,7 +307,7 @@ typedef int  (*ares_sock_config_callback)(ares_socket_t socket_fd,
                                           int type,
                                           void *data);
 
-typedef void (*ares_addr_callback)(void *arg,
+typedef void (*ares_addrinfo_callback)(void *arg,
                                    int status,
                                    int timeouts,
                                    struct ares_addrinfo *res);
@@ -376,9 +376,12 @@ CARES_EXTERN int ares_set_sortlist(ares_channel channel,
                                    const char *sortstr);
 
 CARES_EXTERN void ares_getaddrinfo(ares_channel channel,
-                                   const char* node, const char* service,
+                                   const char* node,
+                                   const char* service,
                                    const struct ares_addrinfo* hints,
-                                   ares_addr_callback callback, void* arg);
+                                   ares_addrinfo_callback callback,
+                                   void* arg);
+
 CARES_EXTERN void ares_freeaddrinfo(struct ares_addrinfo* ai);
 
 /*

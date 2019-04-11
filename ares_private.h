@@ -359,6 +359,7 @@ int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
 int ares__single_domain(ares_channel channel, const char *name, char **s);
 int ares__cat_domain(const char *name, const char *domain, char **s);
 int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo *ai);
+struct ares_addrinfo *ares__malloc_addrinfo(void);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);

@@ -55,7 +55,7 @@ struct host_query {
   /* Arguments passed to ares_getaddrinfo */
   ares_channel channel;
   char *name;
-  ares_addr_callback callback;
+  ares_addrinfo_callback callback;
   void *arg;
   int sent_family;   /* this family is what was is being used */
   int ai_family;     /* this family is what is asked for in the API */
@@ -67,39 +67,39 @@ struct host_query {
   struct ares_addrinfo* ai;
 };
 
+static const struct ares_addrinfo empty_addrinfo;
+
 static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
 static void end_hquery(struct host_query *hquery, int status);
 static int file_lookup(const char *name, int family,
                        struct ares_addrinfo **ai);
-static void sort_addresses(struct hostent *host,
-                           const struct apattern *sortlist, int nsort);
-static void sort6_addresses(struct hostent *host,
-                            const struct apattern *sortlist, int nsort);
-static int get_address_index(const struct in_addr *addr,
-                             const struct apattern *sortlist, int nsort);
-static int get6_address_index(const struct ares_in6_addr *addr,
-                              const struct apattern *sortlist, int nsort);
 static int as_is_first(const struct host_query *hquery);
 static int add_to_addrinfo(struct ares_addrinfo** ai,
                            const struct hostent* host);
 static void next_dns_lookup(struct host_query *hquery);
-static int is_implemented(const int family);
 
+struct ares_addrinfo *ares__malloc_addrinfo()
+{
+  struct ares_addrinfo *ai = ares_malloc(sizeof(struct ares_addrinfo));
+  if (!ai)
+    return NULL;
+
+   *ai = empty_addrinfo;
+  return ai;
+}
 
 void ares_getaddrinfo(ares_channel channel,
                       const char* node, const char* service,
                       const struct ares_addrinfo* hints,
-                      ares_addr_callback callback, void* arg) {
+                      ares_addrinfo_callback callback, void* arg) {
   struct ares_addrinfo sentinel;
   struct host_query *hquery;
   char *single = NULL;
-  int ai_family;
-
-  ai_family = hints ? hints->ai_family : AF_UNSPEC;
-  if (!is_implemented(ai_family)) {
-    callback(arg, ARES_ENOTIMP, 0, NULL);
-    return;
+  int family = hints ? hints->ai_family : AF_UNSPEC;
+  if (family != AF_INET && family != AF_INET6 && family != AF_UNSPEC) {
+      callback(arg, ARES_ENOTIMP, 0, NULL);
+      return;
   }
 
   /* Allocate and fill in the host query structure. */
@@ -112,7 +112,7 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->channel = channel;
   hquery->name = single != NULL ? single : ares_strdup(node);
   hquery->single_domain = single != NULL;
-  hquery->ai_family = ai_family;
+  hquery->ai_family = family;
   hquery->sent_family = -1; /* nothing is sent yet */
   if (!hquery->name) {
     ares_free(hquery);
@@ -126,7 +126,7 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->remaining = 0;
 
   /* Host file lookup */
-  if (file_lookup(hquery->name, ai_family, &hquery->ai) == ARES_SUCCESS) {
+  if (file_lookup(hquery->name, family, &hquery->ai) == ARES_SUCCESS) {
     sentinel.ai_next = hquery->ai;
     ares__sortaddrinfo(channel, &sentinel);
     hquery->ai = sentinel.ai_next;
@@ -135,23 +135,6 @@ void ares_getaddrinfo(ares_channel channel,
   else {
     next_dns_lookup(hquery);
   }
-}
-
-void ares_freeaddrinfo(struct ares_addrinfo* ai) {
-  struct ares_addrinfo* ai_free;
-  while (ai) {
-    ai_free = ai;
-    ai = ai->ai_next;
-    ares_free(ai_free->ai_addr);
-    ares_free(ai_free);
-  }
-}
-
-static int is_implemented(const int family) {
-  return
-    family == AF_INET ||
-    family == AF_INET6 ||
-    family == AF_UNSPEC;
 }
 
 static int file_lookup(const char *name, int family, struct ares_addrinfo **ai) {
@@ -347,18 +330,12 @@ static void host_callback(void *arg, int status, int timeouts,
     if (qtypestatus == ARES_SUCCESS && qtype == T_A) {
       /* Can ares_parse_a_reply be unsuccessful (after parse_qtype) */
       ares_parse_a_reply(abuf, alen, &host, NULL, NULL);
-      if (host && channel->nsort) {
-        sort_addresses(host, channel->sortlist, channel->nsort);
-      }
       addinfostatus = add_to_addrinfo(&hquery->ai, host);
       ares_free_hostent(host);
     }
     else if (qtypestatus == ARES_SUCCESS && qtype == T_AAAA) {
       /* Can ares_parse_a_reply be unsuccessful (after parse_qtype) */
       ares_parse_aaaa_reply(abuf, alen, &host, NULL, NULL);
-      if (host && channel->nsort) {
-        sort6_addresses(host, channel->sortlist, channel->nsort);
-      }
       addinfostatus = add_to_addrinfo(&hquery->ai, host);
       ares_free_hostent(host);
     }
@@ -384,101 +361,6 @@ static void host_callback(void *arg, int status, int timeouts,
   /* at this point we keep on waiting for the next query to finish */
 }
 
-static void sort_addresses(struct hostent *host,
-                           const struct apattern *sortlist, int nsort) {
-  struct in_addr a1, a2;
-  int i1, i2, ind1, ind2;
-
-  /* This is a simple insertion sort, not optimized at all.  i1 walks
-   * through the address list, with the loop invariant that everything
-   * to the left of i1 is sorted.  In the loop body, the value at i1 is moved
-   * back through the list (via i2) until it is in sorted order.
-   */
-  for (i1 = 0; host->h_addr_list[i1]; i1++) {
-    memcpy(&a1, host->h_addr_list[i1], sizeof(struct in_addr));
-    ind1 = get_address_index(&a1, sortlist, nsort);
-    for (i2 = i1 - 1; i2 >= 0; i2--) {
-      memcpy(&a2, host->h_addr_list[i2], sizeof(struct in_addr));
-      ind2 = get_address_index(&a2, sortlist, nsort);
-      if (ind2 <= ind1) {
-        break;
-      }
-      memcpy(host->h_addr_list[i2 + 1], &a2, sizeof(struct in_addr));
-    }
-    memcpy(host->h_addr_list[i2 + 1], &a1, sizeof(struct in_addr));
-  }
-}
-
-/* Find the first entry in sortlist which matches addr.  Return nsort
- * if none of them match.
- */
-static int get_address_index(const struct in_addr *addr,
-                             const struct apattern *sortlist,
-                             int nsort) {
-  int i;
-
-  for (i = 0; i < nsort; i++) {
-    if (sortlist[i].family != AF_INET) {
-      continue;
-    }
-    if (sortlist[i].type == PATTERN_MASK) {
-      if ((addr->s_addr & sortlist[i].mask.addr4.s_addr) ==
-          sortlist[i].addrV4.s_addr) {
-        break;
-      }
-    }
-    else {
-      if (!ares__bitncmp(&addr->s_addr, &sortlist[i].addrV4.s_addr,
-          sortlist[i].mask.bits)) {
-        break;
-      }
-    }
-  }
-  return i;
-}
-
-static void sort6_addresses(struct hostent *host,
-                            const struct apattern *sortlist, int nsort) {
-  struct ares_in6_addr a1, a2;
-  int i1, i2, ind1, ind2;
-
-  /* This is a simple insertion sort, not optimized at all.  i1 walks
-   * through the address list, with the loop invariant that everything
-   * to the left of i1 is sorted.  In the loop body, the value at i1 is moved
-   * back through the list (via i2) until it is in sorted order.
-   */
-  for (i1 = 0; host->h_addr_list[i1]; i1++) {
-    memcpy(&a1, host->h_addr_list[i1], sizeof(struct ares_in6_addr));
-    ind1 = get6_address_index(&a1, sortlist, nsort);
-    for (i2 = i1 - 1; i2 >= 0; i2--) {
-      memcpy(&a2, host->h_addr_list[i2], sizeof(struct ares_in6_addr));
-      ind2 = get6_address_index(&a2, sortlist, nsort);
-      if (ind2 <= ind1) {
-        break;
-      }
-      memcpy(host->h_addr_list[i2 + 1], &a2, sizeof(struct ares_in6_addr));
-    }
-    memcpy(host->h_addr_list[i2 + 1], &a1, sizeof(struct ares_in6_addr));
-  }
-}
-
-/* Find the first entry in sortlist which matches addr.  Return nsort
- * if none of them match.
- */
-static int get6_address_index(const struct ares_in6_addr *addr,
-                              const struct apattern *sortlist,
-                              int nsort) {
-  int i;
-
-  for (i = 0; i < nsort; i++) {
-    if (sortlist[i].family != AF_INET6)
-      continue;
-    if (!ares__bitncmp(addr, &sortlist[i].addrV6, sortlist[i].mask.bits))
-      break;
-  }
-  return i;
-}
-
 static int as_is_first(const struct host_query* hquery) {
   char* p;
   int ndots = 0;
@@ -489,4 +371,3 @@ static int as_is_first(const struct host_query* hquery) {
   }
   return ndots >= hquery->channel->ndots;
 }
-
