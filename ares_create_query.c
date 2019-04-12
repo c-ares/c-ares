@@ -85,7 +85,7 @@
  */
 
 int ares_create_query(const char *name, int dnsclass, int type,
-                      unsigned short id, int rd, unsigned char **bufp,
+                      unsigned short id, int flags, unsigned char **bufp,
                       int *buflenp, int max_udp_size)
 {
   size_t len;
@@ -117,11 +117,17 @@ int ares_create_query(const char *name, int dnsclass, int type,
   memset(q, 0, HFIXEDSZ);
   DNS_HEADER_SET_QID(q, id);
   DNS_HEADER_SET_OPCODE(q, QUERY);
-  if (rd) {
+  if (flags & ARES_DNS_FLAG_RD) {
     DNS_HEADER_SET_RD(q, 1);
   }
   else {
     DNS_HEADER_SET_RD(q, 0);
+  }
+  if (flags & ARES_DNS_FLAG_AD) {
+    DNS_HEADER_SET_AD(q, 1);
+  }
+  else {
+    DNS_HEADER_SET_AD(q, 0);
   }
   DNS_HEADER_SET_QDCOUNT(q, 1);
 
@@ -184,6 +190,9 @@ int ares_create_query(const char *name, int dnsclass, int type,
       q++;
       DNS_RR_SET_TYPE(q, T_OPT);
       DNS_RR_SET_CLASS(q, max_udp_size);
+      if (flags & ARES_DNS_FLAG_EDNS_DO) {
+        DNS_HEADER_SET_EDNS_DO(q, 1);
+      }
       q += (EDNSFIXEDSZ-1);
   }
   buflen = (q - buf);

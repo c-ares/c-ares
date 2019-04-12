@@ -145,6 +145,8 @@ extern "C" {
 #define ARES_FLAG_NOALIASES     (1 << 6)
 #define ARES_FLAG_NOCHECKRESP   (1 << 7)
 #define ARES_FLAG_EDNS          (1 << 8)
+#define ARES_FLAG_EDNS_DO       (ARES_FLAG_EDNS | (1 << 9))
+#define ARES_FLAG_DNS_AD        (1 << 10)
 
 /* Option mask values */
 #define ARES_OPT_FLAGS          (1 << 0)
@@ -165,6 +167,11 @@ extern "C" {
 #define ARES_OPT_EDNSPSZ        (1 << 15)
 #define ARES_OPT_NOROTATE       (1 << 16)
 #define ARES_OPT_RESOLVCONF     (1 << 17)
+
+/* DNS header flag values */
+#define ARES_DNS_FLAG_RD                (1 << 0)
+#define ARES_DNS_FLAG_AD                (1 << 1)
+#define ARES_DNS_FLAG_EDNS_DO           (1 << 2)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN                  (1 << 0)
@@ -471,7 +478,7 @@ CARES_EXTERN int ares_create_query(const char *name,
                                    int dnsclass,
                                    int type,
                                    unsigned short id,
-                                   int rd,
+                                   int flags,
                                    unsigned char **buf,
                                    int *buflen,
                                    int max_udp_size);
@@ -480,7 +487,7 @@ CARES_EXTERN int ares_mkquery(const char *name,
                               int dnsclass,
                               int type,
                               unsigned short id,
-                              int rd,
+                              int flags,
                               unsigned char **buf,
                               int *buflen);
 

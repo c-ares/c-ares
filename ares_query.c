@@ -113,11 +113,20 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
 {
   struct qquery *qquery;
   unsigned char *qbuf;
-  int qlen, rd, status;
+  int qlen, flags, status;
 
   /* Compose the query. */
-  rd = !(channel->flags & ARES_FLAG_NORECURSE);
-  status = ares_create_query(name, dnsclass, type, channel->next_id, rd, &qbuf,
+  flags = 0;
+  if (!(channel->flags & ARES_FLAG_NORECURSE))
+    flags |= ARES_DNS_FLAG_RD;
+
+  if (channel->flags & ARES_FLAG_DNS_AD)
+    flags |= ARES_DNS_FLAG_AD;
+
+  if (channel->flags & ARES_FLAG_EDNS_DO)
+    flags |= ARES_DNS_FLAG_EDNS_DO;
+
+  status = ares_create_query(name, dnsclass, type, channel->next_id, flags, &qbuf,
               &qlen, (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : 0);
   if (status != ARES_SUCCESS)
     {
