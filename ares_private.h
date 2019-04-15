@@ -221,6 +221,7 @@ struct query {
   int server; /* Server this query has last been sent to. */
   struct query_server_info *server_info;   /* per-server state */
   int using_tcp;
+  int using_edns;
   int error_status;
   int timeouts; /* number of timeouts we saw for this request */
 };
