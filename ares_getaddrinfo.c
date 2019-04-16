@@ -51,7 +51,8 @@
 #  include "ares_platform.h"
 #endif
 
-struct host_query {
+struct host_query
+{
   /* Arguments passed to ares_getaddrinfo */
   ares_channel channel;
   char *name;
@@ -61,10 +62,20 @@ struct host_query {
   int ai_family;     /* this family is what is asked for in the API */
   int timeouts;      /* number of timeouts we saw for this request */
   int next_domain;   /* next search domain to try */
-  int single_domain; /* do not check other domains */
   int status;
   int remaining;
-  struct ares_addrinfo* ai;
+  struct ares_addrinfo *ai;
+};
+
+static const struct ares_addrinfo default_hints = {
+    0,         /* ai_flags */
+    AF_UNSPEC, /* ai_family */
+    0,         /* ai_socktype */
+    0,         /* ai_protocol */
+    0,         /* ai_addrlen */
+    NULL,      /* ai_addr */
+    NULL,      /* ai_canoname */
+    NULL       /* ai_next */
 };
 
 static const struct ares_addrinfo empty_addrinfo;
@@ -85,7 +96,7 @@ struct ares_addrinfo *ares__malloc_addrinfo()
   if (!ai)
     return NULL;
 
-   *ai = empty_addrinfo;
+  *ai = empty_addrinfo;
   return ai;
 }
 
@@ -95,12 +106,18 @@ void ares_getaddrinfo(ares_channel channel,
                       ares_addrinfo_callback callback, void* arg) {
   struct ares_addrinfo sentinel;
   struct host_query *hquery;
-  char *single = NULL;
+
+  if (!hints)
+    {
+      hints = &default_hints;
+    }
+
   int family = hints ? hints->ai_family : AF_UNSPEC;
-  if (family != AF_INET && family != AF_INET6 && family != AF_UNSPEC) {
+  if (family != AF_INET && family != AF_INET6 && family != AF_UNSPEC)
+    {
       callback(arg, ARES_ENOTIMP, 0, NULL);
       return;
-  }
+    }
 
   /* Allocate and fill in the host query structure. */
   hquery = ares_malloc(sizeof(struct host_query));
@@ -108,10 +125,9 @@ void ares_getaddrinfo(ares_channel channel,
     callback(arg, ARES_ENOMEM, 0, NULL);
     return;
   }
+
   hquery->ai = NULL;
   hquery->channel = channel;
-  hquery->name = single != NULL ? single : ares_strdup(node);
-  hquery->single_domain = single != NULL;
   hquery->ai_family = family;
   hquery->sent_family = -1; /* nothing is sent yet */
   if (!hquery->name) {
@@ -119,6 +135,7 @@ void ares_getaddrinfo(ares_channel channel,
     callback(arg, ARES_ENOMEM, 0, NULL);
     return;
   }
+
   hquery->callback = callback;
   hquery->arg = arg;
   hquery->timeouts = 0;

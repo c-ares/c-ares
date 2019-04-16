@@ -579,8 +579,8 @@ struct ares_addrinfo {
   int                  ai_socktype;
   int                  ai_protocol;
   ares_socklen_t       ai_addrlen;
-  char                 *ai_canonname;
   struct sockaddr      *ai_addr;
+  char                 *ai_canonname;
   struct ares_addrinfo *ai_next;
 };
 
