@@ -112,7 +112,6 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
 
   packetsz = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : PACKETSZ;
   query->using_tcp = (channel->flags & ARES_FLAG_USEVC) || qlen > packetsz;
-  query->using_edns = (channel->flags & ARES_FLAG_EDNS);
 
   query->error_status = ARES_ECONNREFUSED;
   query->timeouts = 0;
