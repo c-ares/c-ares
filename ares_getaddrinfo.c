@@ -82,6 +82,11 @@ static const struct ares_addrinfo empty_addrinfo;
 
 static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
+static int fake_addrinfo(const char *name,
+                         unsigned short port,
+                         const struct ares_addrinfo *hints,
+                         ares_addrinfo_callback callback,
+                         void *arg);
 static void end_hquery(struct host_query *hquery, int status);
 static int file_lookup(const char *name, int family,
                        struct ares_addrinfo **ai);
@@ -111,6 +116,9 @@ void ares_getaddrinfo(ares_channel channel,
     {
       hints = &default_hints;
     }
+
+  /*if (fake_addrinfo(name, port, hints, callback, arg))*/
+    /*return;*/
 
   int family = hints ? hints->ai_family : AF_UNSPEC;
   if (family != AF_INET && family != AF_INET6 && family != AF_UNSPEC)
@@ -234,6 +242,108 @@ static int file_lookup(const char *name, int family, struct ares_addrinfo **ai) 
   }
   fclose(fp);
   return status;
+}
+
+/* If the name looks like an IP address, fake up a host entry, end the
+ * query immediately, and return true.  Otherwise return false.
+ */
+static int fake_addrinfo(const char *name,
+                         unsigned short port,
+                         const struct ares_addrinfo *hints,
+                         ares_addrinfo_callback callback,
+                         void *arg)
+{
+  struct ares_addrinfo *ai;
+  ares_sockaddr addr;
+  size_t addrlen;
+  int result = 0;
+  int family = hints->ai_family;
+  if (family == AF_INET || family == AF_INET6 || family == AF_UNSPEC)
+    {
+      /* It only looks like an IP address if it's all numbers and dots. */
+      int numdots = 0, valid = 1;
+      const char *p;
+      for (p = name; *p; p++)
+        {
+          if (!ISDIGIT(*p) && *p != '.')
+            {
+              valid = 0;
+              break;
+            }
+          else if (*p == '.')
+            {
+              numdots++;
+            }
+        }
+
+      memset(&addr, 0, sizeof(addr));
+
+      /* if we don't have 3 dots, it is illegal
+       * (although inet_addr doesn't think so).
+       */
+      if (numdots != 3 || !valid)
+        result = 0;
+      else
+        result =
+            ((addr.sa4.sin_addr.s_addr = inet_addr(name))
+             == INADDR_NONE ? 0 : 1);
+
+      if (result)
+        {
+          family = addr.sa.sa_family = AF_INET;
+          addr.sa4.sin_port = htons(port);
+          addrlen = sizeof(addr.sa4);
+        }
+    }
+
+  if (family == AF_INET6 || family == AF_UNSPEC)
+    {
+      result = (ares_inet_pton(AF_INET6, name, &addr.sa6.sin6_addr) < 1 ? 0 : 1);
+      addr.sa6.sin6_family = AF_INET6;
+      addr.sa6.sin6_port = htons(port);
+      addrlen = sizeof(addr.sa6);
+    }
+
+  if (!result)
+    return 0;
+
+  ai = ares__malloc_addrinfo();
+  if (!ai)
+    {
+      callback(arg, ARES_ENOMEM, 0, NULL);
+      return 1;
+    }
+
+  ai->ai_addr = ares_malloc(addrlen);
+  if (!ai->ai_addr)
+    {
+      ares_free(ai);
+      callback(arg, ARES_ENOMEM, 0, NULL);
+      return 1;
+    }
+
+  ai->ai_addrlen = (unsigned int)addrlen;
+  ai->ai_family = addr.sa.sa_family;
+  if (addr.sa.sa_family == AF_INET)
+    memcpy(ai->ai_addr, &addr.sa4, sizeof(addr.sa4));
+  else
+    memcpy(ai->ai_addr, &addr.sa6, sizeof(addr.sa6));
+
+  if (hints->ai_flags & ARES_AI_CANONNAME)
+    {
+      /* Duplicate the name, to avoid a constness violation. */
+      ai->ai_canonname = ares_strdup(name);
+      if (!ai->ai_canonname)
+        {
+          ares_free(ai->ai_addr);
+          ares_free(ai);
+          callback(arg, ARES_ENOMEM, 0, NULL);
+          return 1;
+        }
+    }
+
+  callback(arg, ARES_SUCCESS, 0, ai);
+  return 1;
 }
 
 static int add_to_addrinfo(struct ares_addrinfo** ai,
