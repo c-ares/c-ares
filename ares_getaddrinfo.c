@@ -307,12 +307,12 @@ static void next_dns_lookup(struct host_query *hquery) {
 
   if (s) {
     if (hquery->ai_family == AF_INET || hquery->ai_family == AF_UNSPEC) {
-      ares_query(hquery->channel, s, C_IN, T_A, host_callback, hquery);
       hquery->remaining++;
+      ares_query(hquery->channel, s, C_IN, T_A, host_callback, hquery);
     }
     if (hquery->ai_family == AF_INET6 || hquery->ai_family == AF_UNSPEC) {
-      ares_query(hquery->channel, s, C_IN, T_AAAA, host_callback, hquery);
       hquery->remaining++;
+      ares_query(hquery->channel, s, C_IN, T_AAAA, host_callback, hquery);
     }
     if (is_s_allocated) {
       ares_free(s);
