@@ -58,7 +58,7 @@ MATCHER_P(IncludesV6Address, address, "") {
 }
 
 // UDP only so mock server doesn't get confused by concatenated requests
-TEST_P(MockUDPChannelTestAI, ParallelLookups) {
+TEST_P(MockUDPChannelTestAI, GetAddrInfoParallelLookups) {
   DNSPacket rsp1;
   rsp1.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", ns_t_a))

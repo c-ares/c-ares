@@ -135,6 +135,9 @@ extern "C" {
 /* More error codes */
 #define ARES_ECANCELLED         24          /* introduced in 1.7.0 */
 
+/* More ares_getaddrinfo error codes */
+#define ARES_ESERVICE           25          /* introduced in 1.?.0 */
+
 /* Flag values */
 #define ARES_FLAG_USEVC         (1 << 0)
 #define ARES_FLAG_PRIMARY       (1 << 1)
@@ -573,7 +576,12 @@ struct ares_soa_reply {
   unsigned int minttl;
 };
 
+/*
+ * NOTE: ttl and cname_ttl are not standard.
+ */
 struct ares_addrinfo {
+  int                  ai_ttl;
+  int                  ai_cname_ttl;
   int                  ai_flags;
   int                  ai_family;
   int                  ai_socktype;

@@ -359,7 +359,14 @@ int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
 int ares__single_domain(ares_channel channel, const char *name, char **s);
 int ares__cat_domain(const char *name, const char *domain, char **s);
 int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo *ai);
+int ares__readaddrinfo(FILE *fp, const char *name, unsigned short port,
+                       const struct ares_addrinfo *hints,
+                       struct ares_addrinfo **result);
 struct ares_addrinfo *ares__malloc_addrinfo(void);
+struct ares_addrinfo *ares__append_addrinfo(struct ares_addrinfo **head_ai);
+int ares__parse_into_addrinfo(const unsigned char *abuf,
+                              int alen,
+                              struct ares_addrinfo **result);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);

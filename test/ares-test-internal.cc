@@ -356,6 +356,90 @@ TEST_F(LibraryTest, GetHostentAllocFail) {
   fclose(fp);
 }
 
+TEST(Misc, GetAddrInfo) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  struct ares_addrinfo *ai = nullptr;
+  struct ares_addrinfo hints;
+  unsigned short port = 80;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_flags = ARES_AI_CANONNAME;
+
+  FILE *fp = fopen(hostsfile.filename(), "r");
+  ASSERT_NE(nullptr, fp);
+  hints.ai_family = AF_INET+AF_INET6;
+  EXPECT_EQ(ARES_EBADFAMILY, ares__readaddrinfo(fp, "example.com", port, &hints, &ai));
+  rewind(fp);
+  ai = nullptr;
+
+  hints.ai_family = AF_INET;
+  EXPECT_EQ(ARES_SUCCESS, ares__readaddrinfo(fp, "example.com", port, &hints, &ai));
+  rewind(fp);
+  ASSERT_NE(nullptr, ai);
+  std::stringstream ss1;
+  ss1 << AddrInfo(ai);
+  EXPECT_EQ("{'example.com' addr=[1.2.3.4:80]}", ss1.str());
+  ai = nullptr;
+
+  hints.ai_family = AF_INET;
+  EXPECT_EQ(ARES_SUCCESS, ares__readaddrinfo(fp, "google.com", port, &hints, &ai));
+  rewind(fp);
+  ASSERT_NE(nullptr, ai);
+  std::stringstream ss2;
+  ss2 << AddrInfo(ai);
+  EXPECT_EQ("{'google.com' addr=[2.3.4.5:80]}", ss2.str());
+  ai = nullptr;
+
+  hints.ai_family = AF_INET;
+  EXPECT_EQ(ARES_SUCCESS, ares__readaddrinfo(fp, "www2.google.com", port, &hints, &ai));
+  rewind(fp);
+  ASSERT_NE(nullptr, ai);
+  std::stringstream ss3;
+  ss3 << AddrInfo(ai);
+  EXPECT_EQ("{'google.com' addr=[2.3.4.5:80]}", ss3.str());
+  ai = nullptr;
+
+  hints.ai_family = AF_INET;
+  EXPECT_EQ(ARES_ENOTFOUND, ares__readaddrinfo(fp, "some.unknown.domain", port, &hints, &ai));
+  rewind(fp);
+  EXPECT_EQ(nullptr, ai);
+
+  hints.ai_family = AF_INET6;
+  EXPECT_EQ(ARES_SUCCESS, ares__readaddrinfo(fp, "ipv6.com", port, &hints, &ai));
+  ASSERT_NE(nullptr, ai);
+  std::stringstream ss4;
+  ss4 << AddrInfo(ai);
+  EXPECT_EQ("{'ipv6.com' addr=[[0000:0000:0000:0000:0000:0000:0000:0001]:80]}", ss4.str());
+  fclose(fp);
+}
+
+TEST_F(LibraryTest, GetAddrInfoAllocFail) {
+  TempFile hostsfile("1.2.3.4 example.com alias1 alias2\n");
+  struct ares_addrinfo *ai;
+  struct ares_addrinfo hints;
+  unsigned short port = 80;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+
+  FILE *fp = fopen(hostsfile.filename(), "r");
+  ASSERT_NE(nullptr, fp);
+
+  for (int ii = 1; ii <= 3; ii++) {
+    rewind(fp);
+    ClearFails();
+    SetAllocFail(ii);
+    ai = nullptr;
+    EXPECT_EQ(ARES_ENOMEM, ares__readaddrinfo(fp, "example.com", port, &hints, &ai)) << ii;
+  }
+  fclose(fp);
+}
+
 TEST(Misc, OnionDomain) {
   EXPECT_EQ(0, ares__is_onion_domain("onion.no"));
   EXPECT_EQ(0, ares__is_onion_domain(".onion.no"));
