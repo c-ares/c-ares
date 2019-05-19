@@ -230,6 +230,7 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
         {
           ares_free((*head_ai)->ai_canonname);
           (*head_ai)->ai_canonname = hostname;
+          return status;
         }
       else if (got_a == 0 && got_aaaa == 0)
         {
@@ -239,6 +240,7 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
         }
     }
 
+  ares_free(hostname);
   return status;
 
 failed_stat:
