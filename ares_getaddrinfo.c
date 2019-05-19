@@ -71,9 +71,6 @@ struct host_query
   const char *remaining_lookups; /* types of lookup we need to perform ("fb" by
                                     default, file and dns respectively) */
   struct ares_addrinfo *ai;      /* store results between lookups */
-
-  int next_domain; /* next search domain to try */
-  int remaining;
 };
 
 static const struct ares_addrinfo default_hints = {
@@ -556,9 +553,6 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->remaining_lookups = channel->lookups;
   hquery->timeouts = 0;
   hquery->ai = NULL;
-
-  hquery->next_domain = -1;
-  hquery->remaining = 0;
 
   /* Start performing lookups according to channel->lookups. */
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
