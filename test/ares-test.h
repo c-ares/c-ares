@@ -454,6 +454,23 @@ private:
   }                                                                             \
   void VCLASS_NAME(casename, testname)::InnerTestBody()
 
+/*
+ * Same as above, but virtual only.
+ */
+#define VIRT_TEST_F(casename, testname)                                 \
+  class VCLASS_NAME(casename, testname) : public casename {                     \
+  public:                                                                       \
+    VCLASS_NAME(casename, testname)() {}                                        \
+    void InnerTestBody();                                                       \
+  };                                                                            \
+  GTEST_TEST_(casename, testname##_virtualized,                                 \
+              VCLASS_NAME(casename, testname),                                  \
+              ::testing::internal::GetTypeId<casename>()) {                     \
+    VirtualizeIO vio(channel_);                                                 \
+    InnerTestBody();                                                            \
+  }                                                                             \
+  void VCLASS_NAME(casename, testname)::InnerTestBody()
+
 
 }  // namespace test
 }  // namespace ares

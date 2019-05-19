@@ -77,14 +77,8 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
       ares_free(hostname);
       return ARES_EBADRESP;
     }
-  aptr += len + QFIXEDSZ;
 
-  ai = ares__append_addrinfo(head_ai);
-  if (!ai)
-    {
-      ares_free(hostname);
-      return ARES_ENOMEM;
-    }
+  aptr += len + QFIXEDSZ;
 
   /* Examine each answer resource record (RR) in turn. */
   for (i = 0; i < (int)ancount; i++)
@@ -124,6 +118,13 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
             break;
           }  /* LCOV_EXCL_STOP */
 
+          ai = ares__append_addrinfo(head_ai);
+          if (!ai)
+            {
+              status = ARES_ENOMEM;
+              goto failed_stat;
+            }
+
           struct sockaddr_in *sin = ares_malloc(sizeof(struct sockaddr_in));
           if (!sin)
             {
@@ -157,6 +158,13 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
             status = ARES_EBADRESP;
             break;
           }  /* LCOV_EXCL_STOP */
+
+          ai = ares__append_addrinfo(head_ai);
+          if (!ai)
+            {
+              status = ARES_ENOMEM;
+              goto failed_stat;
+            }
 
           struct sockaddr_in6 *sin = ares_malloc(sizeof(struct sockaddr_in6));
           if (!sin)
@@ -192,7 +200,15 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
 
           ares_free(hostname);
           hostname = rr_data;
-
+          if (*head_ai == NULL)
+            {
+              ai = ares__append_addrinfo(head_ai);
+              if (!ai)
+                {
+                  status = ARES_ENOMEM;
+                  goto failed_stat;
+                }
+            }
           /* Take the min of the TTLs we see in the CNAME chain. */
           if ((*head_ai)->ai_cname_ttl > rr_ttl)
             (*head_ai)->ai_cname_ttl = rr_ttl;
@@ -227,6 +243,6 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
 
 failed_stat:
   ares_free(hostname);
-  ares_freeaddrinfo(head_ai);
+  ares_freeaddrinfo(*head_ai);
   return status;
 }

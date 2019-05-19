@@ -195,6 +195,7 @@ extern "C" {
 #define ARES_AI_V4MAPPED                (1 << 4)
 #define ARES_AI_ALL                     (1 << 5)
 #define ARES_AI_ADDRCONFIG              (1 << 6)
+#define ARES_AI_NOSORT                  (1 << 7)
 /* Reserved for future use */
 #define ARES_AI_IDN                     (1 << 10)
 #define ARES_AI_IDN_ALLOW_UNASSIGNED    (1 << 11)

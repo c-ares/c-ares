@@ -104,9 +104,6 @@ static const struct ares_addrinfo empty_addrinfo = {
 
 static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
-static int add_to_addrinfo(struct ares_addrinfo** ai,
-                           const struct hostent* host);
-static void next_dns_lookup(struct host_query *hquery);
 
 struct ares_addrinfo *ares__malloc_addrinfo()
 {
@@ -294,9 +291,18 @@ static int fake_addrinfo(const char *name,
 
 static void end_hquery(struct host_query *hquery, int status)
 {
-  struct ares_addrinfo *next = hquery->ai;
+  struct ares_addrinfo sentinel;
+  struct ares_addrinfo *next;
   if (status == ARES_SUCCESS)
     {
+      if (!(hquery->hints.ai_flags & ARES_AI_NOSORT))
+        {
+          sentinel.ai_next = hquery->ai;
+          ares__sortaddrinfo(hquery->channel, &sentinel);
+          hquery->ai = sentinel.ai_next;
+        }
+      next = hquery->ai;
+      /* Set port into each address (resolved separately). */
       while (next)
         {
           if (next->ai_family == AF_INET)
@@ -391,7 +397,6 @@ static void next_lookup(struct host_query *hquery, int status_code)
 {
   const char *p;
   struct ares_addrinfo *ai;
-  struct ares_addrinfo sentinel;
   int status = status_code;
 
   for (p = hquery->remaining_lookups; *p; p++)
@@ -422,14 +427,6 @@ static void next_lookup(struct host_query *hquery, int status_code)
           /* this status check below previously checked for !ARES_ENOTFOUND,
              but we should not assume that this single error code is the one
              that can occur, as that is in fact no longer the case */
-          if (status == ARES_SUCCESS)
-            {
-              sentinel.ai_next = hquery->ai;
-              ares__sortaddrinfo(hquery->channel, &sentinel);
-              hquery->ai = sentinel.ai_next;
-              end_hquery(hquery, status);
-              return;
-            }
           status = status_code;   /* Use original status code */
           break;
         }
@@ -463,7 +460,8 @@ static void host_callback(void *arg, int status, int timeouts,
       end_hquery(hquery, status);
     }
   else if ((status == ARES_ENODATA || status == ARES_ESERVFAIL ||
-            status == ARES_EBADRESP || status == ARES_ETIMEOUT) &&
+            status == ARES_ECONNREFUSED || status == ARES_EBADRESP ||
+            status == ARES_ETIMEOUT) &&
            (hquery->sent_family == AF_INET6 &&
             hquery->hints.ai_family == AF_UNSPEC))
     {
@@ -565,145 +563,3 @@ void ares_getaddrinfo(ares_channel channel,
   /* Start performing lookups according to channel->lookups. */
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
 }
-
-static int add_to_addrinfo(struct ares_addrinfo** ai,
-		            const struct hostent* host) {
-  static const struct ares_addrinfo EmptyAddrinfo;
-  struct ares_addrinfo* front;
-  char** p;
-  if (!host || (host->h_addrtype != AF_INET && host->h_addrtype != AF_INET6)) {
-    return ARES_SUCCESS;
-  }
-  for (p = host->h_addr_list; *p; ++p) {
-    front = ares_malloc(sizeof(struct ares_addrinfo));
-    if (!front) goto nomem;
-    *front = EmptyAddrinfo;
-    front->ai_next = *ai; /* insert at front */
-    *ai = front;
-    if (host->h_addrtype == AF_INET) {
-      front->ai_protocol = IPPROTO_UDP;
-      front->ai_family = AF_INET;
-      front->ai_addr = ares_malloc(sizeof(struct sockaddr_in));
-      if (!front->ai_addr) goto nomem;
-      memset(front->ai_addr, 0, sizeof(struct sockaddr_in));
-      memcpy(&((struct sockaddr_in*)(front->ai_addr))->sin_addr, *p,
-        host->h_length);
-    }
-    else {
-      front->ai_protocol = IPPROTO_UDP;
-      front->ai_family = AF_INET6;
-      front->ai_addr = ares_malloc(sizeof(struct sockaddr_in6));
-      if (!front->ai_addr) goto nomem;
-      memset(front->ai_addr, 0, sizeof(struct sockaddr_in6));
-      memcpy(&((struct sockaddr_in6*)(front->ai_addr))->sin6_addr, *p,
-        host->h_length);
-    }
-  }
-  return ARES_SUCCESS;
-nomem:
-  ares_freeaddrinfo(*ai);
-  return ARES_ENOMEM;
-}
-
-static int as_is_first(const struct host_query* hquery) {
-  char* p;
-  int ndots = 0;
-  for (p = hquery->name; *p; p++) {
-    if (*p == '.') {
-      ndots++;
-    }
-  }
-  return ndots >= hquery->channel->ndots;
-}
-
-static void next_dns_lookup(struct host_query *hquery) {
-  char *s = NULL;
-  int is_s_allocated = 0;
-  int status;
-  /* if next_domain == -1 and as_is_first is true, try hquery->name */
-  if(hquery->next_domain == -1) {
-    if(as_is_first(hquery)) {
-      s = hquery->name;
-    }
-    hquery->next_domain = 0;
-  }
-  /* if as_is_first is false, try hquery->name at last */
-  if(!s && hquery->next_domain == hquery->channel->ndomains) {
-    if(!as_is_first(hquery)) {
-      s = hquery->name;
-    }
-    /* avoid infinite loop */
-    hquery->next_domain++;
-  }
-
-  if (!s && hquery->next_domain < hquery->channel->ndomains) {
-    status = ares__cat_domain(
-      hquery->name,
-      hquery->channel->domains[hquery->next_domain++],
-      &s);
-    if (status == ARES_SUCCESS) {
-      is_s_allocated = 1;
-    }
-  }
-
-  if (s) {
-    if (hquery->hints.ai_family == AF_INET || hquery->hints.ai_family == AF_UNSPEC) {
-      ares_query(hquery->channel, s, C_IN, T_A, host_callback, hquery);
-      hquery->remaining++;
-    }
-    if (hquery->hints.ai_family == AF_INET6 || hquery->hints.ai_family == AF_UNSPEC) {
-      ares_query(hquery->channel, s, C_IN, T_AAAA, host_callback, hquery);
-      hquery->remaining++;
-    }
-    if (is_s_allocated) {
-      ares_free(s);
-    }
-  }
-  else {
-    assert(!hquery->ai);
-    end_hquery(hquery, ARES_ENOTFOUND);
-  }
-}
-/*
-static void host_callback(void *arg, int status, int timeouts,
-                          unsigned char *abuf, int alen) {
-  struct host_query *hquery = (struct host_query*)arg;
-  struct hostent *host = NULL;
-  int qtype;
-  int qtypestatus;
-  int addinfostatus = ARES_SUCCESS;
-  hquery->timeouts += timeouts;
-
-  hquery->remaining--;
-
-  if (status == ARES_SUCCESS) {
-    qtypestatus = ares__parse_qtype_reply(abuf, alen, &qtype);
-    if (qtypestatus == ARES_SUCCESS && qtype == T_A) {
-      ares_parse_a_reply(abuf, alen, &host, NULL, NULL);
-      addinfostatus = add_to_addrinfo(&hquery->ai, host);
-      ares_free_hostent(host);
-    }
-    else if (qtypestatus == ARES_SUCCESS && qtype == T_AAAA) {
-      ares_parse_aaaa_reply(abuf, alen, &host, NULL, NULL);
-      addinfostatus = add_to_addrinfo(&hquery->ai, host);
-      ares_free_hostent(host);
-    }
-  }
-
-  if (!hquery->remaining) {
-    if (addinfostatus != ARES_SUCCESS) {
-      end_hquery(hquery, addinfostatus);
-    }
-    else if (hquery->ai) {
-      end_hquery(hquery, ARES_SUCCESS);
-    }
-    else if (status == ARES_ENOTFOUND) {
-      next_dns_lookup(hquery);
-    }
-    else {
-      end_hquery(hquery, status);
-    }
-  }
-}
-*/
-
