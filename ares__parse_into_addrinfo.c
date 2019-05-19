@@ -56,6 +56,8 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
   const unsigned char *aptr;
   char *hostname, *rr_name, *rr_data;
   struct ares_addrinfo *ai;
+  struct sockaddr_in *sin;
+  struct sockaddr_in6 *sin6;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -125,7 +127,7 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
               goto failed_stat;
             }
 
-          struct sockaddr_in *sin = ares_malloc(sizeof(struct sockaddr_in));
+          sin = ares_malloc(sizeof(struct sockaddr_in));
           if (!sin)
             {
               status = ARES_ENOMEM;
@@ -166,18 +168,18 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
               goto failed_stat;
             }
 
-          struct sockaddr_in6 *sin = ares_malloc(sizeof(struct sockaddr_in6));
-          if (!sin)
+          sin6 = ares_malloc(sizeof(struct sockaddr_in6));
+          if (!sin6)
             {
               status = ARES_ENOMEM;
               goto failed_stat;
             }
 
-          memset(sin, 0, sizeof(struct sockaddr_in6));
-          memcpy(&sin->sin6_addr.s6_addr, aptr, sizeof(struct ares_in6_addr));
-          sin->sin6_family = AF_INET6;
+          memset(sin6, 0, sizeof(struct sockaddr_in6));
+          memcpy(&sin6->sin6_addr.s6_addr, aptr, sizeof(struct ares_in6_addr));
+          sin6->sin6_family = AF_INET6;
 
-          ai->ai_addr = (struct sockaddr *)sin;
+          ai->ai_addr = (struct sockaddr *)sin6;
           ai->ai_family = AF_INET6;
           ai->ai_addrlen = sizeof(struct sockaddr_in6);
 

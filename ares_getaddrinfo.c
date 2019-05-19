@@ -424,6 +424,11 @@ static void next_lookup(struct host_query *hquery, int status_code)
           /* this status check below previously checked for !ARES_ENOTFOUND,
              but we should not assume that this single error code is the one
              that can occur, as that is in fact no longer the case */
+          if (status == ARES_SUCCESS)
+            {
+              end_hquery(hquery, status);
+              return;
+            }
           status = status_code;   /* Use original status code */
           break;
         }
