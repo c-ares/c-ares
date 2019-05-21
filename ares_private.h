@@ -364,7 +364,13 @@ int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo *ai);
 long ares__tvdiff(struct timeval t1, struct timeval t2);
 #endif
 
-void ares__socket_close(ares_channel, ares_socket_t);
+ares_socket_t ares__open_socket(ares_channel channel,
+                                int af, int type, int protocol);
+void ares__close_socket(ares_channel, ares_socket_t);
+int ares__connect_socket(ares_channel channel,
+                         ares_socket_t sockfd,
+                         const struct sockaddr *addr,
+                         ares_socklen_t addrlen);
 
 #define ARES_SWAP_BYTE(a,b) \
   { unsigned char swapByte = *(a);  *(a) = *(b);  *(b) = swapByte; }
