@@ -47,7 +47,7 @@
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
                               int alen,
-                              struct ares_addrinfo **head_ai)
+                              struct ares_addrinfo *ai)
 {
   unsigned int qdcount, ancount;
   int status, i, rr_type, rr_class, rr_len, rr_ttl;
@@ -55,7 +55,7 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
   long len;
   const unsigned char *aptr;
   char *hostname, *rr_name, *rr_data;
-  struct ares_addrinfo *ai;
+  struct ares_addrinfo_node *node, *head_node = NULL;
   struct sockaddr_in *sin;
   struct sockaddr_in6 *sin6;
 
@@ -120,8 +120,8 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
             break;
           }  /* LCOV_EXCL_STOP */
 
-          ai = ares__append_addrinfo(head_ai);
-          if (!ai)
+          node = ares__append_addrinfo_node(&head_node);
+          if (!node)
             {
               status = ARES_ENOMEM;
               goto failed_stat;
@@ -137,15 +137,15 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           memcpy(&sin->sin_addr.s_addr, aptr, sizeof(struct in_addr));
           sin->sin_family = AF_INET;
 
-          ai->ai_addr = (struct sockaddr *)sin;
-          ai->ai_family = AF_INET;
-          ai->ai_addrlen = sizeof(struct sockaddr_in);
+          node->ai_addr = (struct sockaddr *)sin;
+          node->ai_family = AF_INET;
+          node->ai_addrlen = sizeof(struct sockaddr_in);
 
           /* Ensure that each A TTL is no larger than the CNAME TTL. */
-          if (rr_ttl < (*head_ai)->ai_cname_ttl)
-            ai->ai_ttl = rr_ttl;
+          if (rr_ttl < ai->cname.ttl)
+            node->ai_ttl = rr_ttl;
           else
-            ai->ai_ttl = (*head_ai)->ai_cname_ttl;
+            node->ai_ttl = ai->cname.ttl;
 
           status = ARES_SUCCESS;
         }
@@ -161,8 +161,8 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
             break;
           }  /* LCOV_EXCL_STOP */
 
-          ai = ares__append_addrinfo(head_ai);
-          if (!ai)
+          node = ares__append_addrinfo_node(&head_node);
+          if (!node)
             {
               status = ARES_ENOMEM;
               goto failed_stat;
@@ -179,15 +179,15 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           memcpy(&sin6->sin6_addr.s6_addr, aptr, sizeof(struct ares_in6_addr));
           sin6->sin6_family = AF_INET6;
 
-          ai->ai_addr = (struct sockaddr *)sin6;
-          ai->ai_family = AF_INET6;
-          ai->ai_addrlen = sizeof(struct sockaddr_in6);
+          node->ai_addr = (struct sockaddr *)sin6;
+          node->ai_family = AF_INET6;
+          node->ai_addrlen = sizeof(struct sockaddr_in6);
 
           /* Ensure that each A TTL is no larger than the CNAME TTL. */
-          if (rr_ttl < (*head_ai)->ai_cname_ttl)
-            ai->ai_ttl = rr_ttl;
+          if (rr_ttl < ai->cname.ttl)
+            node->ai_ttl = rr_ttl;
           else
-            ai->ai_ttl = (*head_ai)->ai_cname_ttl;
+            node->ai_ttl = ai->cname.ttl;
 
           status = ARES_SUCCESS;
         }
@@ -202,18 +202,13 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
 
           ares_free(hostname);
           hostname = rr_data;
-          if (*head_ai == NULL)
-            {
-              ai = ares__append_addrinfo(head_ai);
-              if (!ai)
-                {
-                  status = ARES_ENOMEM;
-                  goto failed_stat;
-                }
-            }
+
           /* Take the min of the TTLs we see in the CNAME chain. */
-          if ((*head_ai)->ai_cname_ttl > rr_ttl)
-            (*head_ai)->ai_cname_ttl = rr_ttl;
+          if (ai->cname.ttl > rr_ttl)
+            ai->cname.ttl = rr_ttl;
+
+          ares_free(ai->cname.name);
+          ai->cname.name = hostname;
         }
 
       ares_free(rr_name);
@@ -228,10 +223,12 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
 
   if (status == ARES_SUCCESS)
     {
+      /* XXX */
+      ai->nodes = head_node;
       if (got_cname)
         {
-          ares_free((*head_ai)->ai_canonname);
-          (*head_ai)->ai_canonname = hostname;
+          ares_free(ai->cname.name);
+          ai->cname.name = hostname;
           return status;
         }
       else if (got_a == 0 && got_aaaa == 0)
@@ -247,6 +244,6 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
 
 failed_stat:
   ares_free(hostname);
-  ares_freeaddrinfo(*head_ai);
+  ares__freeaddrinfo_nodes(head_node);
   return status;
 }

@@ -1,6 +1,7 @@
 
 /* Copyright 1998, 2011, 2013 by the Massachusetts Institute of Technology.
  * Copyright (C) 2017 - 2018 by Christian Ammer
+ * Copyright (C) 2019 by Andrew Selivanov
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -65,7 +66,7 @@ struct host_query
   unsigned short port; /* in host order */
   ares_addrinfo_callback callback;
   void *arg;
-  struct ares_addrinfo hints;
+  struct ares_addrinfo_hints hints;
   int sent_family; /* this family is what was is being used */
   int timeouts;    /* number of timeouts we saw for this request */
   const char *remaining_lookups; /* types of lookup we need to perform ("fb" by
@@ -73,30 +74,22 @@ struct host_query
   struct ares_addrinfo *ai;      /* store results between lookups */
 };
 
-static const struct ares_addrinfo default_hints = {
-    0,         /* ai_ttl */
-    0,         /* ai_cname_ttl */
-    0,         /* ai_flags */
-    AF_UNSPEC, /* ai_family */
-    0,         /* ai_socktype */
-    0,         /* ai_protocol */
-    0,         /* ai_addrlen */
-    NULL,      /* ai_addr */
-    NULL,      /* ai_canoname */
-    NULL       /* ai_next */
+static const struct ares_addrinfo_hints default_hints = {
+  0,         /* ai_flags */
+  AF_UNSPEC, /* ai_family */
+  0,         /* ai_socktype */
+  0,         /* ai_protocol */
 };
 
-static const struct ares_addrinfo empty_addrinfo = {
-    0,       /* ai_ttl */
-    INT_MAX, /* ai_cname_ttl */
-    0,       /* ai_flags */
-    0,       /* ai_family */
-    0,       /* ai_socktype */
-    0,       /* ai_protocol */
-    0,       /* ai_addrlen */
-    NULL,    /* ai_addr */
-    NULL,    /* ai_canoname */
-    NULL     /* ai_next */
+static const struct ares_addrinfo_node empty_addrinfo_node = {
+  0,    /* ai_ttl */
+  0,    /* ai_flags */
+  0,    /* ai_family */
+  0,    /* ai_socktype */
+  0,    /* ai_protocol */
+  0,    /* ai_addrlen */
+  NULL, /* ai_addr */
+  NULL  /* ai_next */
 };
 
 static void host_callback(void *arg, int status, int timeouts,
@@ -108,15 +101,30 @@ struct ares_addrinfo *ares__malloc_addrinfo()
   if (!ai)
     return NULL;
 
-  *ai = empty_addrinfo;
+  ai->cname.name = NULL;
+  ai->cname.ttl = INT_MAX;
+  ai->aliases = NULL;
+  ai->nodes = NULL;
+
   return ai;
 }
 
-/* Allocate new addrinfo and append to the tail. */
-struct ares_addrinfo *ares__append_addrinfo(struct ares_addrinfo **head_ai)
+struct ares_addrinfo_node *ares__malloc_addrinfo_node()
 {
-  struct ares_addrinfo *ai = ares__malloc_addrinfo();
-  struct ares_addrinfo *last_ai = *head_ai;
+  struct ares_addrinfo_node *node =
+      ares_malloc(sizeof(struct ares_addrinfo_node));
+  if (!node)
+    return NULL;
+
+  *node = empty_addrinfo_node;
+  return node;
+}
+
+/* Allocate new addrinfo and append to the tail. */
+struct ares_addrinfo_node *ares__append_addrinfo_node(struct ares_addrinfo_node **head_ai)
+{
+  struct ares_addrinfo_node *ai = ares__malloc_addrinfo_node();
+  struct ares_addrinfo_node *last_ai = *head_ai;
   if (!last_ai)
     {
       *head_ai = ai;
@@ -128,10 +136,9 @@ struct ares_addrinfo *ares__append_addrinfo(struct ares_addrinfo **head_ai)
       last_ai = last_ai->ai_next;
     }
 
-    last_ai->ai_next = ai;
-    return ai;
+  last_ai->ai_next = ai;
+  return ai;
 }
-
 
 /* Resolve service name into port number given in host byte order.
  * If not resolved, return 0.
@@ -186,16 +193,18 @@ static unsigned short lookup_service(const char *service, int flags)
   return 0;
 }
 
-/* If the name looks like an IP address, fake up a host entry, end the
- * query immediately, and return true. Otherwise return false.
+/* If the name looks like an IP address or an error occured,
+ * fake up a host entry, end the query immediately, and return true.
+ * Otherwise return false.
  */
 static int fake_addrinfo(const char *name,
                          unsigned short port,
-                         const struct ares_addrinfo *hints,
+                         const struct ares_addrinfo_hints *hints,
+                         struct ares_addrinfo *ai,
                          ares_addrinfo_callback callback,
                          void *arg)
 {
-  struct ares_addrinfo *ai;
+  struct ares_addrinfo_node *node;
   ares_sockaddr addr;
   size_t addrlen;
   int result = 0;
@@ -250,36 +259,41 @@ static int fake_addrinfo(const char *name,
   if (!result)
     return 0;
 
-  ai = ares__malloc_addrinfo();
-  if (!ai)
+  node = ares__malloc_addrinfo_node();
+  if (!node)
     {
+      ares_freeaddrinfo(ai);
       callback(arg, ARES_ENOMEM, 0, NULL);
       return 1;
     }
 
-  ai->ai_addr = ares_malloc(addrlen);
-  if (!ai->ai_addr)
+  ai->nodes = node;
+
+  node->ai_addr = ares_malloc(addrlen);
+  if (!node->ai_addr)
     {
-      ares_free(ai);
+      ares_freeaddrinfo(ai);
       callback(arg, ARES_ENOMEM, 0, NULL);
       return 1;
     }
 
-  ai->ai_addrlen = (unsigned int)addrlen;
-  ai->ai_family = addr.sa.sa_family;
+  node->ai_addrlen = (unsigned int)addrlen;
+  node->ai_family = addr.sa.sa_family;
   if (addr.sa.sa_family == AF_INET)
-    memcpy(ai->ai_addr, &addr.sa4, sizeof(addr.sa4));
+    memcpy(node->ai_addr, &addr.sa4, sizeof(addr.sa4));
   else
-    memcpy(ai->ai_addr, &addr.sa6, sizeof(addr.sa6));
+    memcpy(node->ai_addr, &addr.sa6, sizeof(addr.sa6));
 
-  /* Duplicate the name, to avoid a constness violation. */
-  ai->ai_canonname = ares_strdup(name);
-  if (!ai->ai_canonname)
+  if (hints->ai_flags & ARES_AI_CANONNAME)
     {
-      ares_free(ai->ai_addr);
-      ares_free(ai);
-      callback(arg, ARES_ENOMEM, 0, NULL);
-      return 1;
+      /* Duplicate the name, to avoid a constness violation. */
+      ai->cname.name = ares_strdup(name);
+      if (!ai->cname.name)
+        {
+          ares_freeaddrinfo(ai);
+          callback(arg, ARES_ENOMEM, 0, NULL);
+          return 1;
+        }
     }
 
   callback(arg, ARES_SUCCESS, 0, ai);
@@ -288,17 +302,17 @@ static int fake_addrinfo(const char *name,
 
 static void end_hquery(struct host_query *hquery, int status)
 {
-  struct ares_addrinfo sentinel;
-  struct ares_addrinfo *next;
+  struct ares_addrinfo_node sentinel;
+  struct ares_addrinfo_node *next;
   if (status == ARES_SUCCESS)
     {
       if (!(hquery->hints.ai_flags & ARES_AI_NOSORT))
         {
-          sentinel.ai_next = hquery->ai;
+          sentinel.ai_next = hquery->ai->nodes;
           ares__sortaddrinfo(hquery->channel, &sentinel);
-          hquery->ai = sentinel.ai_next;
+          hquery->ai->nodes = sentinel.ai_next;
         }
-      next = hquery->ai;
+      next = hquery->ai->nodes;
       /* Set port into each address (resolved separately). */
       while (next)
         {
@@ -325,7 +339,7 @@ static void end_hquery(struct host_query *hquery, int status)
   ares_free(hquery);
 }
 
-static int file_lookup(struct host_query *hquery, struct ares_addrinfo **ai)
+static int file_lookup(struct host_query *hquery)
 {
   FILE *fp;
   int error;
@@ -385,7 +399,7 @@ static int file_lookup(struct host_query *hquery, struct ares_addrinfo **ai)
           return ARES_EFILE;
         }
     }
-  status = ares__readaddrinfo(fp, hquery->name, hquery->port, &hquery->hints, ai);
+  status = ares__readaddrinfo(fp, hquery->name, hquery->port, &hquery->hints, hquery->ai);
   fclose(fp);
   return status;
 }
@@ -393,7 +407,6 @@ static int file_lookup(struct host_query *hquery, struct ares_addrinfo **ai)
 static void next_lookup(struct host_query *hquery, int status_code)
 {
   const char *p;
-  struct ares_addrinfo *ai;
   int status = status_code;
 
   for (p = hquery->remaining_lookups; *p; p++)
@@ -419,7 +432,7 @@ static void next_lookup(struct host_query *hquery, int status_code)
 
         case 'f':
           /* Host file lookup */
-          status = file_lookup(hquery, &ai);
+          status = file_lookup(hquery);
 
           /* this status check below previously checked for !ARES_ENOTFOUND,
              but we should not assume that this single error code is the one
@@ -445,11 +458,11 @@ static void host_callback(void *arg, int status, int timeouts,
     {
       if (hquery->sent_family == AF_INET)
         {
-          status = ares__parse_into_addrinfo(abuf, alen, &hquery->ai);
+          status = ares__parse_into_addrinfo(abuf, alen, hquery->ai);
         }
       else if (hquery->sent_family == AF_INET6)
         {
-          status = ares__parse_into_addrinfo(abuf, alen, &hquery->ai);
+          status = ares__parse_into_addrinfo(abuf, alen, hquery->ai);
           if (hquery->hints.ai_family == AF_UNSPEC)
             {
               /* Now look for A records and append them to existing results. */
@@ -480,12 +493,13 @@ static void host_callback(void *arg, int status, int timeouts,
 
 void ares_getaddrinfo(ares_channel channel,
                       const char* name, const char* service,
-                      const struct ares_addrinfo* hints,
+                      const struct ares_addrinfo_hints* hints,
                       ares_addrinfo_callback callback, void* arg)
 {
   struct host_query *hquery;
   unsigned short port = 0;
   int family;
+  struct ares_addrinfo *ai;
 
   if (!hints)
     {
@@ -530,13 +544,23 @@ void ares_getaddrinfo(ares_channel channel,
         }
     }
 
-  if (fake_addrinfo(name, port, hints, callback, arg))
-	return;
+  ai = ares__malloc_addrinfo();
+  if (!ai)
+    {
+      callback(arg, ARES_ENOMEM, 0, NULL);
+      return;
+    }
+
+  if (fake_addrinfo(name, port, hints, ai, callback, arg))
+    {
+      return;
+    }
 
   /* Allocate and fill in the host query structure. */
   hquery = ares_malloc(sizeof(struct host_query));
   if (!hquery)
     {
+      ares_freeaddrinfo(ai);
       callback(arg, ARES_ENOMEM, 0, NULL);
       return;
     }
@@ -545,6 +569,7 @@ void ares_getaddrinfo(ares_channel channel,
   if (!hquery->name)
     {
       ares_free(hquery);
+      ares_freeaddrinfo(ai);
       callback(arg, ARES_ENOMEM, 0, NULL);
       return;
     }
@@ -557,7 +582,7 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->arg = arg;
   hquery->remaining_lookups = channel->lookups;
   hquery->timeouts = 0;
-  hquery->ai = NULL;
+  hquery->ai = ai;
 
   /* Start performing lookups according to channel->lookups. */
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);

@@ -358,15 +358,21 @@ void ares__destroy_servers_state(ares_channel channel);
 int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
 int ares__single_domain(ares_channel channel, const char *name, char **s);
 int ares__cat_domain(const char *name, const char *domain, char **s);
-int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo *ai);
+int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo_node *ai_node);
 int ares__readaddrinfo(FILE *fp, const char *name, unsigned short port,
-                       const struct ares_addrinfo *hints,
-                       struct ares_addrinfo **result);
+                       const struct ares_addrinfo_hints *hints,
+                       struct ares_addrinfo *ai);
+
 struct ares_addrinfo *ares__malloc_addrinfo(void);
-struct ares_addrinfo *ares__append_addrinfo(struct ares_addrinfo **head_ai);
+
+struct ares_addrinfo_node *ares__malloc_addrinfo_node(void);
+void ares__freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node);
+
+struct ares_addrinfo_node *ares__append_addrinfo_node(struct ares_addrinfo_node **ai_node);
+
 int ares__parse_into_addrinfo(const unsigned char *abuf,
                               int alen,
-                              struct ares_addrinfo **result);
+                              struct ares_addrinfo *ai);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);

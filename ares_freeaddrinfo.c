@@ -1,5 +1,6 @@
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
+ * Copyright (C) 2019 by Andrew Selivanov
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -23,15 +24,21 @@
 #include "ares.h"
 #include "ares_private.h"
 
-void ares_freeaddrinfo(struct ares_addrinfo *ai)
+void ares__freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node)
 {
-  struct ares_addrinfo *ai_free;
-  while (ai)
+  struct ares_addrinfo_node *ai_free;
+  while (ai_node)
     {
-      ai_free = ai;
-      ai = ai->ai_next;
-      ares_free(ai_free->ai_canonname);
+      ai_free = ai_node;
+      ai_node = ai_node->ai_next;
       ares_free(ai_free->ai_addr);
       ares_free(ai_free);
     }
+}
+
+void ares_freeaddrinfo(struct ares_addrinfo *ai)
+{
+  ares__freeaddrinfo_nodes(ai->nodes);
+  ares_free(ai->cname.name);
+  ares_free(ai);
 }

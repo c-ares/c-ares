@@ -33,15 +33,15 @@
 int ares__readaddrinfo(FILE *fp,
                        const char *name,
                        unsigned short port,
-                       const struct ares_addrinfo *hints,
-                       struct ares_addrinfo **head_ai)
+                       const struct ares_addrinfo_hints *hints,
+                       struct ares_addrinfo *ai)
 {
   char *line = NULL, *p, *q;
-  char *txtaddr, *txthost, *txtalias;
+  char *txtaddr, *txthost, *txtalias, *cname = NULL;
   int status;
   size_t linesize;
   ares_sockaddr addr;
-  struct ares_addrinfo *ai = NULL;
+  struct ares_addrinfo_node *node = NULL, *head_node = NULL;
   int match_with_alias, match_with_canonical;
 
   /* Validate family */
@@ -161,20 +161,20 @@ int ares__readaddrinfo(FILE *fp,
           addr.sa4.sin_addr.s_addr = inet_addr(txtaddr);
           if (addr.sa4.sin_addr.s_addr != INADDR_NONE)
             {
-              ai = ares__append_addrinfo(head_ai);
-              if(!ai)
+              node = ares__append_addrinfo_node(&head_node);
+              if(!node)
                 {
                   goto enomem;
                 }
 
-              ai->ai_family = addr.sa.sa_family = AF_INET;
-              ai->ai_addrlen = sizeof(sizeof(addr.sa4));
-              ai->ai_addr = ares_malloc(sizeof(addr.sa4));
-              if (!ai->ai_addr)
+              node->ai_family = addr.sa.sa_family = AF_INET;
+              node->ai_addrlen = sizeof(sizeof(addr.sa4));
+              node->ai_addr = ares_malloc(sizeof(addr.sa4));
+              if (!node->ai_addr)
                 {
                   goto enomem;
                 }
-              memcpy(ai->ai_addr, &addr.sa4, sizeof(addr.sa4));
+              memcpy(node->ai_addr, &addr.sa4, sizeof(addr.sa4));
             }
         }
       if ((hints->ai_family == AF_INET6) || (hints->ai_family == AF_UNSPEC))
@@ -182,31 +182,34 @@ int ares__readaddrinfo(FILE *fp,
           addr.sa6.sin6_port = htons(port);
           if (ares_inet_pton(AF_INET6, txtaddr, &addr.sa6.sin6_addr) > 0)
             {
-              ai = ares__append_addrinfo(head_ai);
-              if (!ai)
+              node = ares__append_addrinfo_node(&head_node);
+              if (!node)
                 {
                   goto enomem;
                 }
 
-              ai->ai_family = addr.sa.sa_family = AF_INET6;
-              ai->ai_addrlen = sizeof(sizeof(addr.sa6));
-              ai->ai_addr = ares_malloc(sizeof(addr.sa6));
-              if (!ai->ai_addr)
+              node->ai_family = addr.sa.sa_family = AF_INET6;
+              node->ai_addrlen = sizeof(sizeof(addr.sa6));
+              node->ai_addr = ares_malloc(sizeof(addr.sa6));
+              if (!node->ai_addr)
                 {
                   goto enomem;
                 }
-              memcpy(ai->ai_addr, &addr.sa6, sizeof(addr.sa6));
+              memcpy(node->ai_addr, &addr.sa6, sizeof(addr.sa6));
             }
         }
-      if (!ai)
+      if (!node)
         /* Ignore line if invalid address string for the requested family. */
         continue;
 
-      /* Copy official host name into the first addrinfo. */
-      (*head_ai)->ai_canonname = ares_strdup(txthost);
-      if (!(*head_ai)->ai_canonname)
+      if (hints->ai_flags & ARES_AI_CANONNAME)
         {
-          goto enomem;
+          ares_free(cname);
+          cname = ares_strdup(txthost);
+          if (!cname)
+            {
+              goto enomem;
+            }
         }
     }
 
@@ -219,10 +222,17 @@ int ares__readaddrinfo(FILE *fp,
   /* Free line buffer. */
   ares_free(line);
 
-  return ai ? ARES_SUCCESS : ARES_ENOTFOUND;
+  if (hints->ai_flags & ARES_AI_CANONNAME)
+    {
+      ai->cname.name = cname;
+    }
+
+  ai->nodes = head_node;
+
+  return node ? ARES_SUCCESS : ARES_ENOTFOUND;
 
 enomem:
   ares_free(line);
-  ares_freeaddrinfo(*head_ai);
+  ares__freeaddrinfo_nodes(head_node);
   return ARES_ENOMEM;
 }

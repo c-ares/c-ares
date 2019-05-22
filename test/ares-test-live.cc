@@ -45,7 +45,7 @@ MATCHER_P(IncludesAddrType, addrtype, "") {
   return false;
 }
 
-VIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoV4) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoV4) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   AddrInfoResult result;
@@ -57,7 +57,7 @@ VIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoV4) {
   EXPECT_THAT(result.ai_, OnlyIncludesAddrType(AF_INET));
 }
 
-VIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoV6) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoV6) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET6;
   AddrInfoResult result;
@@ -69,7 +69,7 @@ VIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoV6) {
   EXPECT_THAT(result.ai_, OnlyIncludesAddrType(AF_INET6));
 }
 
-VIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoUnspec) {
+VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoUnspec) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_UNSPEC;
   AddrInfoResult result;
