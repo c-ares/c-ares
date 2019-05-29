@@ -196,7 +196,7 @@ extern "C" {
 #define ARES_AI_ALL                     (1 << 5)
 #define ARES_AI_ADDRCONFIG              (1 << 6)
 #define ARES_AI_NOSORT                  (1 << 7)
-#define ARES_AI_ALIASES                 (1 << 8)
+#define ARES_AI_ENVHOSTS                (1 << 8)
 /* Reserved for future use */
 #define ARES_AI_IDN                     (1 << 10)
 #define ARES_AI_IDN_ALLOW_UNASSIGNED    (1 << 11)
@@ -593,15 +593,21 @@ struct ares_addrinfo_node {
   struct ares_addrinfo_node *ai_next;
 };
 
+/*
+ * alias - label of the resource record.
+ * name - value (canonical name) of the resource record.
+ * See RFC2181 10.1.1. CNAME terminology.
+ */
 struct ares_addrinfo_cname {
-  char *name;
-  int   ttl;
+  int                         ttl;
+  char                       *alias;
+  char                       *name;
+  struct ares_addrinfo_cname *next;
 };
 
 struct ares_addrinfo {
-  struct ares_addrinfo_cname     cname;
-  char                       **aliases;
-  struct ares_addrinfo_node     *nodes;
+  struct ares_addrinfo_cname *cnames;
+  struct ares_addrinfo_node  *nodes;
 };
 
 struct ares_addrinfo_hints {

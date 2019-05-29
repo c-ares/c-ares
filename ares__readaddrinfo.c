@@ -30,6 +30,8 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
+#define MAX_ALIASES 40
+
 int ares__readaddrinfo(FILE *fp,
                        const char *name,
                        unsigned short port,
@@ -37,12 +39,16 @@ int ares__readaddrinfo(FILE *fp,
                        struct ares_addrinfo *ai)
 {
   char *line = NULL, *p, *q;
-  char *txtaddr, *txthost, *txtalias, *cname = NULL;
+  char *txtaddr, *txthost, *txtalias;
+  char *aliases[MAX_ALIASES];
+  unsigned int i, alias_count;
   int status;
   size_t linesize;
   ares_sockaddr addr;
-  struct ares_addrinfo_node *node = NULL, *head_node = NULL;
+  struct ares_addrinfo_cname *cname = NULL, *cnames = NULL;
+  struct ares_addrinfo_node *node = NULL, *nodes = NULL;
   int match_with_alias, match_with_canonical;
+  int want_cname = hints->ai_flags & ARES_AI_CANONNAME;
 
   /* Validate family */
   switch (hints->ai_family) {
@@ -54,11 +60,12 @@ int ares__readaddrinfo(FILE *fp,
       return ARES_EBADFAMILY;
   }
 
+
   while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
     {
       match_with_alias = 0;
       match_with_canonical = 0;
-
+      alias_count = 0;
       /* Trim line comment. */
       p = line;
       while (*p && (*p != '#'))
@@ -121,6 +128,12 @@ int ares__readaddrinfo(FILE *fp,
       /* Null terminate host name. */
       *p = '\0';
 
+      /* Find out if host name matches with canonical host name. */
+      if (strcasecmp(txthost, name) == 0)
+        {
+          match_with_canonical = 1;
+        }
+
       /* Find out if host name matches with one of the aliases. */
       while (txtalias)
         {
@@ -134,15 +147,14 @@ int ares__readaddrinfo(FILE *fp,
           if (strcasecmp(txtalias, name) == 0)
             {
               match_with_alias = 1;
-              break;
+              if (!want_cname)
+                break;
+            }
+          if (alias_count < MAX_ALIASES)
+            {
+              aliases[alias_count++] = txtalias;
             }
           txtalias = *q ? q : NULL;
-        }
-
-      /* Find out if host name matches with canonical host name. */
-      if (strcasecmp(txthost, name) == 0)
-        {
-          match_with_canonical = 1;
         }
 
       /* Try next line if host does not match. */
@@ -161,7 +173,7 @@ int ares__readaddrinfo(FILE *fp,
           addr.sa4.sin_addr.s_addr = inet_addr(txtaddr);
           if (addr.sa4.sin_addr.s_addr != INADDR_NONE)
             {
-              node = ares__append_addrinfo_node(&head_node);
+              node = ares__append_addrinfo_node(&nodes);
               if(!node)
                 {
                   goto enomem;
@@ -182,7 +194,7 @@ int ares__readaddrinfo(FILE *fp,
           addr.sa6.sin6_port = htons(port);
           if (ares_inet_pton(AF_INET6, txtaddr, &addr.sa6.sin6_addr) > 0)
             {
-              node = ares__append_addrinfo_node(&head_node);
+              node = ares__append_addrinfo_node(&nodes);
               if (!node)
                 {
                   goto enomem;
@@ -202,13 +214,29 @@ int ares__readaddrinfo(FILE *fp,
         /* Ignore line if invalid address string for the requested family. */
         continue;
 
-      if (hints->ai_flags & ARES_AI_CANONNAME)
+      if (want_cname)
         {
-          ares_free(cname);
-          cname = ares_strdup(txthost);
-          if (!cname)
+          for (i = 0; i < alias_count; ++i)
             {
-              goto enomem;
+              cname = ares__append_addrinfo_cname(&cnames);
+              if (!cname)
+                {
+                  status = ARES_ENOMEM;
+                  goto enomem;
+                }
+              cname->alias = ares_strdup(aliases[i]);
+              cname->name = ares_strdup(txthost);
+            }
+          // no aliases, cname only
+          if(!alias_count)
+            {
+              cname = ares__append_addrinfo_cname(&cnames);
+              if (!cname)
+                {
+                  status = ARES_ENOMEM;
+                  goto enomem;
+                }
+              cname->name = ares_strdup(txthost);
             }
         }
     }
@@ -222,17 +250,14 @@ int ares__readaddrinfo(FILE *fp,
   /* Free line buffer. */
   ares_free(line);
 
-  if (hints->ai_flags & ARES_AI_CANONNAME)
-    {
-      ai->cname.name = cname;
-    }
-
-  ai->nodes = head_node;
+  ares__addrinfo_cat_cnames(&ai->cnames, cnames);
+  ares__addrinfo_cat_nodes(&ai->nodes, nodes);
 
   return node ? ARES_SUCCESS : ARES_ENOTFOUND;
 
 enomem:
   ares_free(line);
-  ares__freeaddrinfo_nodes(head_node);
+  ares__freeaddrinfo_cnames(cnames);
+  ares__freeaddrinfo_nodes(nodes);
   return ARES_ENOMEM;
 }

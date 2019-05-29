@@ -54,8 +54,9 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
   int got_a = 0, got_aaaa = 0, got_cname = 0;
   long len;
   const unsigned char *aptr;
-  char *hostname, *rr_name, *rr_data;
-  struct ares_addrinfo_node *node, *head_node = NULL;
+  char *hostname, *question_hostname, *rr_name, *rr_data;
+  struct ares_addrinfo_cname *cname, *cnames = NULL;
+  struct ares_addrinfo_node *node, *nodes = NULL;
   struct sockaddr_in *sin;
   struct sockaddr_in6 *sin6;
 
@@ -71,14 +72,16 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &question_hostname, &len);
   if (status != ARES_SUCCESS)
     return status;
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
-      ares_free(hostname);
+      ares_free(question_hostname);
       return ARES_EBADRESP;
     }
+
+  hostname = question_hostname;
 
   aptr += len + QFIXEDSZ;
 
@@ -120,7 +123,7 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
             break;
           }  /* LCOV_EXCL_STOP */
 
-          node = ares__append_addrinfo_node(&head_node);
+          node = ares__append_addrinfo_node(&nodes);
           if (!node)
             {
               status = ARES_ENOMEM;
@@ -141,11 +144,7 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           node->ai_family = AF_INET;
           node->ai_addrlen = sizeof(struct sockaddr_in);
 
-          /* Ensure that each A TTL is no larger than the CNAME TTL. */
-          if (rr_ttl < ai->cname.ttl)
-            node->ai_ttl = rr_ttl;
-          else
-            node->ai_ttl = ai->cname.ttl;
+          node->ai_ttl = rr_ttl;
 
           status = ARES_SUCCESS;
         }
@@ -161,7 +160,7 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
             break;
           }  /* LCOV_EXCL_STOP */
 
-          node = ares__append_addrinfo_node(&head_node);
+          node = ares__append_addrinfo_node(&nodes);
           if (!node)
             {
               status = ARES_ENOMEM;
@@ -183,32 +182,31 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           node->ai_family = AF_INET6;
           node->ai_addrlen = sizeof(struct sockaddr_in6);
 
-          /* Ensure that each A TTL is no larger than the CNAME TTL. */
-          if (rr_ttl < ai->cname.ttl)
-            node->ai_ttl = rr_ttl;
-          else
-            node->ai_ttl = ai->cname.ttl;
+          node->ai_ttl = rr_ttl;
 
           status = ARES_SUCCESS;
         }
       else if (rr_class == C_IN && rr_type == T_CNAME)
         {
           got_cname = 1;
-          /* Decode the RR data and replace the hostname with it. */
           status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data,
                                                   &len);
           if (status != ARES_SUCCESS)
             break;
 
-          ares_free(hostname);
+          /* Decode the RR data and replace the hostname with it. */
+          /* SA: Seems wrong as it introduses order dependency. */
           hostname = rr_data;
 
-          /* Take the min of the TTLs we see in the CNAME chain. */
-          if (ai->cname.ttl > rr_ttl)
-            ai->cname.ttl = rr_ttl;
-
-          ares_free(ai->cname.name);
-          ai->cname.name = hostname;
+          cname = ares__append_addrinfo_cname(&cnames);
+          if (!cname)
+            {
+              status = ARES_ENOMEM;
+              goto failed_stat;
+            }
+          cname->ttl = rr_ttl;
+          cname->alias = rr_name;
+          cname->name = rr_data;
         }
 
       ares_free(rr_name);
@@ -223,12 +221,10 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
 
   if (status == ARES_SUCCESS)
     {
-      /* XXX */
-      ai->nodes = head_node;
+      ares__addrinfo_cat_nodes(&ai->nodes, nodes);
       if (got_cname)
         {
-          ares_free(ai->cname.name);
-          ai->cname.name = hostname;
+          ares__addrinfo_cat_cnames(&ai->cnames, cnames);
           return status;
         }
       else if (got_a == 0 && got_aaaa == 0)
@@ -239,11 +235,12 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
         }
     }
 
-  ares_free(hostname);
+  ares_free(question_hostname);
   return status;
 
 failed_stat:
-  ares_free(hostname);
-  ares__freeaddrinfo_nodes(head_node);
+  ares_free(question_hostname);
+  ares__freeaddrinfo_cnames(cnames);
+  ares__freeaddrinfo_nodes(nodes);
   return status;
 }

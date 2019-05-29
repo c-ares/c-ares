@@ -81,6 +81,13 @@ static const struct ares_addrinfo_hints default_hints = {
   0,         /* ai_protocol */
 };
 
+static const struct ares_addrinfo_cname empty_addrinfo_cname = {
+  INT_MAX, /* ttl */
+  NULL,    /* alias */
+  NULL,    /* name */
+  NULL,    /* next */
+};
+
 static const struct ares_addrinfo_node empty_addrinfo_node = {
   0,    /* ai_ttl */
   0,    /* ai_flags */
@@ -92,8 +99,60 @@ static const struct ares_addrinfo_node empty_addrinfo_node = {
   NULL  /* ai_next */
 };
 
+static const struct ares_addrinfo empty_addrinfo = {
+  NULL, /* cnames */
+  NULL  /* nodes */
+};
+
 static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
+
+struct ares_addrinfo_cname *ares__malloc_addrinfo_cname()
+{
+  struct ares_addrinfo_cname *cname = ares_malloc(sizeof(struct ares_addrinfo_cname));
+  if (!cname)
+    return NULL;
+
+  *cname = empty_addrinfo_cname;
+  return cname;
+}
+
+struct ares_addrinfo_cname *ares__append_addrinfo_cname(struct ares_addrinfo_cname **head)
+{
+  struct ares_addrinfo_cname *tail = ares__malloc_addrinfo_cname();
+  struct ares_addrinfo_cname *last = *head;
+  if (!last)
+    {
+      *head = tail;
+      return tail;
+    }
+
+  while (last->next)
+    {
+      last = last->next;
+    }
+
+  last->next = tail;
+  return tail;
+}
+
+void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
+                               struct ares_addrinfo_cname *tail)
+{
+  struct ares_addrinfo_cname *last = *head;
+  if (!last)
+    {
+      *head = tail;
+      return;
+    }
+
+  while (last->next)
+    {
+      last = last->next;
+    }
+
+  last->next = tail;
+}
 
 struct ares_addrinfo *ares__malloc_addrinfo()
 {
@@ -101,11 +160,7 @@ struct ares_addrinfo *ares__malloc_addrinfo()
   if (!ai)
     return NULL;
 
-  ai->cname.name = NULL;
-  ai->cname.ttl = INT_MAX;
-  ai->aliases = NULL;
-  ai->nodes = NULL;
-
+  *ai = empty_addrinfo;
   return ai;
 }
 
@@ -121,23 +176,41 @@ struct ares_addrinfo_node *ares__malloc_addrinfo_node()
 }
 
 /* Allocate new addrinfo and append to the tail. */
-struct ares_addrinfo_node *ares__append_addrinfo_node(struct ares_addrinfo_node **head_ai)
+struct ares_addrinfo_node *ares__append_addrinfo_node(struct ares_addrinfo_node **head)
 {
-  struct ares_addrinfo_node *ai = ares__malloc_addrinfo_node();
-  struct ares_addrinfo_node *last_ai = *head_ai;
-  if (!last_ai)
+  struct ares_addrinfo_node *tail = ares__malloc_addrinfo_node();
+  struct ares_addrinfo_node *last = *head;
+  if (!last)
     {
-      *head_ai = ai;
-      return ai;
+      *head = tail;
+      return tail;
     }
 
-  while (last_ai->ai_next)
+  while (last->ai_next)
     {
-      last_ai = last_ai->ai_next;
+      last = last->ai_next;
     }
 
-  last_ai->ai_next = ai;
-  return ai;
+  last->ai_next = tail;
+  return tail;
+}
+
+void ares__addrinfo_cat_nodes(struct ares_addrinfo_node **head,
+                              struct ares_addrinfo_node *tail)
+{
+  struct ares_addrinfo_node *last = *head;
+  if (!last)
+    {
+      *head = tail;
+      return;
+    }
+
+  while (last->ai_next)
+    {
+      last = last->ai_next;
+    }
+
+  last->ai_next = tail;
 }
 
 /* Resolve service name into port number given in host byte order.
@@ -204,6 +277,7 @@ static int fake_addrinfo(const char *name,
                          ares_addrinfo_callback callback,
                          void *arg)
 {
+  struct ares_addrinfo_cname *cname;
   struct ares_addrinfo_node *node;
   ares_sockaddr addr;
   size_t addrlen;
@@ -286,9 +360,17 @@ static int fake_addrinfo(const char *name,
 
   if (hints->ai_flags & ARES_AI_CANONNAME)
     {
+      cname = ares__append_addrinfo_cname(&ai->cnames);
+      if (!cname)
+        {
+          ares_freeaddrinfo(ai);
+          callback(arg, ARES_ENOMEM, 0, NULL);
+          return 1;
+        }
+
       /* Duplicate the name, to avoid a constness violation. */
-      ai->cname.name = ares_strdup(name);
-      if (!ai->cname.name)
+      cname->name = ares_strdup(name);
+      if (!cname->name)
         {
           ares_freeaddrinfo(ai);
           callback(arg, ARES_ENOMEM, 0, NULL);
@@ -344,46 +426,56 @@ static int file_lookup(struct host_query *hquery)
   FILE *fp;
   int error;
   int status;
+  const char *path_hosts = NULL;
 
-#ifdef WIN32
-  char PATH_HOSTS[MAX_PATH];
-  win_platform platform;
-
-  PATH_HOSTS[0] = '\0';
-
-  platform = ares__getplatform();
-
-  if (platform == WIN_NT)
+  if (hquery->hints.ai_flags & ARES_AI_ENVHOSTS)
     {
-      char tmp[MAX_PATH];
-      HKEY hkeyHosts;
-
-      if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
-                       &hkeyHosts) == ERROR_SUCCESS)
-        {
-          DWORD dwLength = MAX_PATH;
-          RegQueryValueEx(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
-                          &dwLength);
-          ExpandEnvironmentStrings(tmp, PATH_HOSTS, MAX_PATH);
-          RegCloseKey(hkeyHosts);
-        }
+      path_hosts = getenv("CARES_HOSTS");
     }
-  else if (platform == WIN_9X)
-    GetWindowsDirectory(PATH_HOSTS, MAX_PATH);
-  else
-    return ARES_ENOTFOUND;
 
-  strcat(PATH_HOSTS, WIN_PATH_HOSTS);
+  if (!path_hosts)
+    {
+#ifdef WIN32
+      char PATH_HOSTS[MAX_PATH];
+      win_platform platform;
+
+      PATH_HOSTS[0] = '\0';
+
+      platform = ares__getplatform();
+
+      if (platform == WIN_NT)
+        {
+          char tmp[MAX_PATH];
+          HKEY hkeyHosts;
+
+          if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
+                           &hkeyHosts) == ERROR_SUCCESS)
+            {
+              DWORD dwLength = MAX_PATH;
+              RegQueryValueEx(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
+                              &dwLength);
+              ExpandEnvironmentStrings(tmp, PATH_HOSTS, MAX_PATH);
+              RegCloseKey(hkeyHosts);
+            }
+        }
+      else if (platform == WIN_9X)
+        GetWindowsDirectory(PATH_HOSTS, MAX_PATH);
+      else
+        return ARES_ENOTFOUND;
+
+      strcat(PATH_HOSTS, WIN_PATH_HOSTS);
+      path_hosts = PATH_HOSTS;
 
 #elif defined(WATT32)
-  extern const char *_w32_GetHostsFile(void);
-  const char *PATH_HOSTS = _w32_GetHostsFile();
+      const char *PATH_HOSTS = _w32_GetHostsFile();
 
-  if (!PATH_HOSTS)
-    return ARES_ENOTFOUND;
+      if (!PATH_HOSTS)
+        return ARES_ENOTFOUND;
 #endif
+      path_hosts = PATH_HOSTS;
+    }
 
-  fp = fopen(PATH_HOSTS, "r");
+  fp = fopen(path_hosts, "r");
   if (!fp)
     {
       error = ERRNO;
@@ -395,7 +487,7 @@ static int file_lookup(struct host_query *hquery)
         default:
           DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
                          strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_HOSTS));
+          DEBUGF(fprintf(stderr, "Error opening file: %s\n", path_hosts));
           return ARES_EFILE;
         }
     }

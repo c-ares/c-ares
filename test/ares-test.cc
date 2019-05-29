@@ -578,11 +578,25 @@ std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result) {
 
 std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
   os << '{';
-  struct ares_addrinfo *next = ai.get();
-  while(next) {
-    if(next->ai_canonname) {
-      os << "'" << next->ai_canonname << "' ";
+  struct ares_addrinfo_cname *next_cname = ai->cnames;
+  while(next_cname) {
+    if(next_cname->alias) {
+      os << next_cname->alias << "->";
     }
+    if(next_cname->name) {
+      os << next_cname->name;
+    }
+    if((next_cname = next_cname->next))
+      os << ", ";
+    else
+      os << " ";
+  }
+
+  struct ares_addrinfo_node *next = ai->nodes;
+  while(next) {
+    //if(next->ai_canonname) {
+      //os << "'" << next->ai_canonname << "' ";
+    //}
     unsigned short port = 0;
     os << "addr=[";
     if(next->ai_family == AF_INET) {

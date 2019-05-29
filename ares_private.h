@@ -369,6 +369,16 @@ struct ares_addrinfo_node *ares__malloc_addrinfo_node(void);
 void ares__freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node);
 
 struct ares_addrinfo_node *ares__append_addrinfo_node(struct ares_addrinfo_node **ai_node);
+void ares__addrinfo_cat_nodes(struct ares_addrinfo_node **head,
+                              struct ares_addrinfo_node *tail);
+
+struct ares_addrinfo_cname *ares__malloc_addrinfo_cname(void);
+void ares__freeaddrinfo_cnames(struct ares_addrinfo_cname *ai_cname);
+
+struct ares_addrinfo_cname *ares__append_addrinfo_cname(struct ares_addrinfo_cname **ai_cname);
+
+void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
+                               struct ares_addrinfo_cname *tail);
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
                               int alen,
