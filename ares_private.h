@@ -384,6 +384,11 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
                               int alen,
                               struct ares_addrinfo *ai);
 
+int ares__parse_into_addrinfo2(const unsigned char *abuf,
+                               int alen,
+                               char **question_hostname,
+                               struct ares_addrinfo *ai);
+
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);
 #endif

@@ -567,7 +567,7 @@ void HostCallback(void *data, int status, int timeouts,
 
 std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result) {
   os << '{';
-  if (result.done_) {
+  if (result.done_ && result.ai_) {
     os << StatusToString(result.status_) << " " << result.ai_;
   } else {
     os << "(incomplete)";

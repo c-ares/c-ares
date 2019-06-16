@@ -1,4 +1,4 @@
-/* Copyright 1998, 2011 by the Massachusetts Institute of Technology.
+/* Copyright (C) 2019 by Andrew Selivanov
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -221,19 +221,17 @@ int ares__readaddrinfo(FILE *fp,
               cname = ares__append_addrinfo_cname(&cnames);
               if (!cname)
                 {
-                  status = ARES_ENOMEM;
                   goto enomem;
                 }
               cname->alias = ares_strdup(aliases[i]);
               cname->name = ares_strdup(txthost);
             }
-          // no aliases, cname only
+          /* No aliases, cname only. */
           if(!alias_count)
             {
               cname = ares__append_addrinfo_cname(&cnames);
               if (!cname)
                 {
-                  status = ARES_ENOMEM;
                   goto enomem;
                 }
               cname->name = ares_strdup(txthost);

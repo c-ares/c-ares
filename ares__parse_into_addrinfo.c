@@ -1,4 +1,4 @@
-/* Copyright 1998 by the Massachusetts Institute of Technology.
+/* Copyright (C) 2019 by Andrew Selivanov
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -45,20 +45,23 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-int ares__parse_into_addrinfo(const unsigned char *abuf,
-                              int alen,
-                              struct ares_addrinfo *ai)
+int ares__parse_into_addrinfo2(const unsigned char *abuf,
+                               int alen,
+                               char **question_hostname,
+                               struct ares_addrinfo *ai)
 {
   unsigned int qdcount, ancount;
   int status, i, rr_type, rr_class, rr_len, rr_ttl;
   int got_a = 0, got_aaaa = 0, got_cname = 0;
   long len;
   const unsigned char *aptr;
-  char *hostname, *question_hostname, *rr_name, *rr_data;
+  char *hostname, *rr_name = NULL, *rr_data;
   struct ares_addrinfo_cname *cname, *cnames = NULL;
   struct ares_addrinfo_node *node, *nodes = NULL;
   struct sockaddr_in *sin;
   struct sockaddr_in6 *sin6;
+
+  *question_hostname = NULL;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -70,18 +73,18 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
   if (qdcount != 1)
     return ARES_EBADRESP;
 
+
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response(aptr, abuf, alen, &question_hostname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, question_hostname, &len);
   if (status != ARES_SUCCESS)
     return status;
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
-      ares_free(question_hostname);
       return ARES_EBADRESP;
     }
 
-  hostname = question_hostname;
+  hostname = *question_hostname;
 
   aptr += len + QFIXEDSZ;
 
@@ -91,13 +94,16 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
       /* Decode the RR up to the data field. */
       status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len);
       if (status != ARES_SUCCESS)
-        break;
+        {
+          rr_name = NULL;
+          goto failed_stat;
+        }
+
       aptr += len;
       if (aptr + RRFIXEDSZ > abuf + alen)
         {
-          ares_free(rr_name);
           status = ARES_EBADRESP;
-          break;
+          goto failed_stat;
         }
       rr_type = DNS_RR_TYPE(aptr);
       rr_class = DNS_RR_CLASS(aptr);
@@ -106,9 +112,8 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
       aptr += RRFIXEDSZ;
       if (aptr + rr_len > abuf + alen)
         {
-          ares_free(rr_name);
           status = ARES_EBADRESP;
-          break;
+          goto failed_stat;
         }
 
       if (rr_class == C_IN && rr_type == T_A
@@ -118,9 +123,8 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           got_a = 1;
           if (aptr + sizeof(struct in_addr) > abuf + alen)
           {  /* LCOV_EXCL_START: already checked above */
-            ares_free(rr_name);
             status = ARES_EBADRESP;
-            break;
+            goto failed_stat;
           }  /* LCOV_EXCL_STOP */
 
           node = ares__append_addrinfo_node(&nodes);
@@ -155,9 +159,8 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           got_aaaa = 1;
           if (aptr + sizeof(struct ares_in6_addr) > abuf + alen)
           {  /* LCOV_EXCL_START: already checked above */
-            ares_free(rr_name);
             status = ARES_EBADRESP;
-            break;
+            goto failed_stat;
           }  /* LCOV_EXCL_STOP */
 
           node = ares__append_addrinfo_node(&nodes);
@@ -186,13 +189,16 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
 
           status = ARES_SUCCESS;
         }
-      else if (rr_class == C_IN && rr_type == T_CNAME)
+
+      if (rr_class == C_IN && rr_type == T_CNAME)
         {
           got_cname = 1;
           status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data,
                                                   &len);
           if (status != ARES_SUCCESS)
-            break;
+            {
+              goto failed_stat;
+            }
 
           /* Decode the RR data and replace the hostname with it. */
           /* SA: Seems wrong as it introduses order dependency. */
@@ -202,20 +208,24 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           if (!cname)
             {
               status = ARES_ENOMEM;
+              ares_free(rr_data);
               goto failed_stat;
             }
           cname->ttl = rr_ttl;
           cname->alias = rr_name;
           cname->name = rr_data;
         }
+      else
+        {
+          ares_free(rr_name);
+        }
 
-      ares_free(rr_name);
 
       aptr += rr_len;
       if (aptr > abuf + alen)
         {  /* LCOV_EXCL_START: already checked above */
           status = ARES_EBADRESP;
-          break;
+          goto failed_stat;
         }  /* LCOV_EXCL_STOP */
     }
 
@@ -235,12 +245,22 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
         }
     }
 
-  ares_free(question_hostname);
   return status;
 
 failed_stat:
-  ares_free(question_hostname);
+  ares_free(rr_name);
   ares__freeaddrinfo_cnames(cnames);
   ares__freeaddrinfo_nodes(nodes);
+  return status;
+}
+
+int ares__parse_into_addrinfo(const unsigned char *abuf,
+                              int alen,
+                              struct ares_addrinfo *ai)
+{
+  int status;
+  char *question_hostname;
+  status = ares__parse_into_addrinfo2(abuf, alen, &question_hostname, ai);
+  ares_free(question_hostname);
   return status;
 }
