@@ -51,7 +51,7 @@ TEST_P(MockChannelTest, Basic) {
 }
 
 // UDP only so mock server doesn't get confused by concatenated requests
-TEST_P(MockUDPChannelTest, ParallelLookups) {
+TEST_P(MockUDPChannelTest, GetHostByNameParallelLookups) {
   DNSPacket rsp1;
   rsp1.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", ns_t_a))

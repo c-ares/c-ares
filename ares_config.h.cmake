@@ -45,6 +45,9 @@
 /* Specifies the number of arguments to getservbyport_r */
 #define GETSERVBYPORT_R_ARGS @GETSERVBYPORT_R_ARGS@
 
+/* Specifies the number of arguments to getservbyname_r */
+#define GETSERVBYNAME_R_ARGS @GETSERVBYNAME_R_ARGS@
+
 /* Define to 1 if you have AF_INET6. */
 #cmakedefine HAVE_AF_INET6
 
@@ -122,6 +125,9 @@
 
 /* Define to 1 if you have the getservbyport_r function. */
 #cmakedefine HAVE_GETSERVBYPORT_R
+
+/* Define to 1 if you have the getservbyname_r function. */
+#cmakedefine HAVE_GETSERVBYNAME_R
 
 /* Define to 1 if you have the `gettimeofday' function. */
 #cmakedefine HAVE_GETTIMEOFDAY

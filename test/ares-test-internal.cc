@@ -356,6 +356,107 @@ TEST_F(LibraryTest, GetHostentAllocFail) {
   fclose(fp);
 }
 
+TEST_F(DefaultChannelTest, GetAddrInfoHostsPositive) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {};
+  AddrInfoResult result = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{example.com addr=[1.2.3.4]}", ss.str());
+}
+
+TEST_F(DefaultChannelTest, GetAddrInfoHostsSpaces) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {};
+  AddrInfoResult result = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "google.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{www.google.com->google.com, www2.google.com->google.com addr=[2.3.4.5]}", ss.str());
+}
+
+TEST_F(DefaultChannelTest, GetAddrInfoHostsByALias) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {};
+  AddrInfoResult result = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "www2.google.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{www.google.com->google.com, www2.google.com->google.com addr=[2.3.4.5]}", ss.str());
+}
+
+TEST_F(DefaultChannelTest, GetAddrInfoHostsIPV6) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {};
+  AddrInfoResult result = {};
+  hints.ai_family = AF_INET6;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "ipv6.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{ipv6.com addr=[[0000:0000:0000:0000:0000:0000:0000:0001]]}", ss.str());
+}
+
+TEST_F(LibraryTest, GetAddrInfoAllocFail) {
+  TempFile hostsfile("1.2.3.4 example.com alias1 alias2\n");
+  struct ares_addrinfo_hints hints;
+  unsigned short port = 80;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+
+  FILE *fp = fopen(hostsfile.filename(), "r");
+  ASSERT_NE(nullptr, fp);
+
+  for (int ii = 1; ii <= 3; ii++) {
+    rewind(fp);
+    ClearFails();
+    SetAllocFail(ii);
+    struct ares_addrinfo ai;
+    EXPECT_EQ(ARES_ENOMEM, ares__readaddrinfo(fp, "example.com", port, &hints, &ai)) << ii;
+  }
+  fclose(fp);
+}
+
 TEST(Misc, OnionDomain) {
   EXPECT_EQ(0, ares__is_onion_domain("onion.no"));
   EXPECT_EQ(0, ares__is_onion_domain(".onion.no"));

@@ -1,6 +1,8 @@
 
 CSOURCES = ares__close_sockets.c	\
   ares__get_hostent.c			\
+  ares__parse_into_addrinfo.c		\
+  ares__readaddrinfo.c			\
   ares__sortaddrinfo.c			\
   ares__read_line.c			\
   ares__timeval.c			\
@@ -13,6 +15,8 @@ CSOURCES = ares__close_sockets.c	\
   ares_fds.c				\
   ares_free_hostent.c			\
   ares_free_string.c			\
+  ares_freeaddrinfo.c			\
+  ares_getaddrinfo.c			\
   ares_getenv.c				\
   ares_gethostbyaddr.c			\
   ares_gethostbyname.c			\
@@ -49,8 +53,7 @@ CSOURCES = ares__close_sockets.c	\
   bitncmp.c				\
   inet_net_pton.c			\
   inet_ntop.c				\
-  windows_port.c			\
-  ares_getaddrinfo.c
+  windows_port.c
 
 HHEADERS = ares.h			\
   ares_android.h                        \
@@ -88,8 +91,10 @@ MANPAGES = ares_cancel.3		\
   ares_free_data.3			\
   ares_free_hostent.3			\
   ares_free_string.3			\
+  ares_freeaddrinfo.3			\
   ares_get_servers.3			\
   ares_get_servers_ports.3		\
+  ares_getaddrinfo.3			\
   ares_gethostbyaddr.3			\
   ares_gethostbyname.3			\
   ares_gethostbyname_file.3		\
@@ -131,8 +136,7 @@ MANPAGES = ares_cancel.3		\
   ares_set_sortlist.3			\
   ares_strerror.3			\
   ares_timeout.3			\
-  ares_version.3			\
-  ares_getaddrinfo.3
+  ares_version.3
 
 HTMLPAGES = ares_cancel.html		\
   ares_create_query.html		\
@@ -145,8 +149,10 @@ HTMLPAGES = ares_cancel.html		\
   ares_free_data.html			\
   ares_free_hostent.html		\
   ares_free_string.html			\
+  ares_freeaddrinfo.html		\
   ares_get_servers.html			\
   ares_get_servers_ports.html		\
+  ares_getaddrinfo.html			\
   ares_gethostbyaddr.html		\
   ares_gethostbyname.html		\
   ares_gethostbyname_file.html		\
@@ -187,8 +193,7 @@ HTMLPAGES = ares_cancel.html		\
   ares_set_sortlist.html		\
   ares_strerror.html			\
   ares_timeout.html			\
-  ares_version.html			\
-  ares_getaddrinfo.html
+  ares_version.html
 
 PDFPAGES = ares_cancel.pdf		\
   ares_create_query.pdf			\
@@ -201,8 +206,10 @@ PDFPAGES = ares_cancel.pdf		\
   ares_free_data.pdf			\
   ares_free_hostent.pdf			\
   ares_free_string.pdf			\
+  ares_freeaddrinfo.pdf			\
   ares_get_servers.pdf			\
   ares_get_servers_ports.pdf		\
+  ares_getaddrinfo.pdf			\
   ares_gethostbyaddr.pdf		\
   ares_gethostbyname.pdf		\
   ares_gethostbyname_file.pdf		\
@@ -243,8 +250,7 @@ PDFPAGES = ares_cancel.pdf		\
   ares_set_sortlist.pdf			\
   ares_strerror.pdf			\
   ares_timeout.pdf			\
-  ares_version.pdf			\
-  ares_getaddrinfo.pdf
+  ares_version.pdf
 
 SAMPLESOURCES = ares_getopt.c		\
   ares_nowarn.c				\

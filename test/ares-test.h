@@ -454,7 +454,6 @@ private:
   }                                                                             \
   void VCLASS_NAME(casename, testname)::InnerTestBody()
 
-
 }  // namespace test
 }  // namespace ares
 
