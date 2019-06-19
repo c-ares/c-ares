@@ -365,7 +365,7 @@ extern "C" static int setenv(const char *name, const char *value, int overwrite)
   }
 
   buf_size = strlen(name) + strlen(value) + 1 /* = */ + 1 /* NULL */;
-  buffer   = malloc(buf_size);
+  buffer   = (char *)malloc(buf_size);
   _snprintf(buffer, buf_size, "%s=%s", name, value);
   _putenv(buffer);
   free(buffer);
