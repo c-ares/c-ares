@@ -349,7 +349,9 @@ class TempFile : public TransientFile {
 };
 
 #ifdef _WIN32
-extern "C" static int setenv(const char *name, const char *value, int overwrite)
+extern "C" {
+
+static int setenv(const char *name, const char *value, int overwrite)
 {
   char  *buffer;
   size_t buf_size;
@@ -372,11 +374,12 @@ extern "C" static int setenv(const char *name, const char *value, int overwrite)
   return 0;
 }
 
-extern "C" static int unsetenv(const char *name)
+static int unsetenv(const char *name)
 {
   return setenv(name, NULL, 1);
 }
 
+} /* extern "C" */
 #endif
 
 // RAII class for a temporary environment variable value.
