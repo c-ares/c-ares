@@ -60,7 +60,7 @@ matrix:
           language: objective-c
           env: BUILD_TYPE=ios
         - os: linux-ppc64le
-          compiler: gcc
+          compiler: clang
           env: BUILD_TYPE=normal
 install:
     - if [ "$TRAVIS_OS_NAME" != "osx" ]; then pip install --user cpp-coveralls > /dev/null; fi
