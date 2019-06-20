@@ -125,6 +125,11 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
       goto enomem;
     }
 
+  for (i = 0; i < naddrs + 1; ++i)
+    {
+      hostent->h_addr_list[i] = NULL;
+    }
+
   if (ai.cnames)
     {
       hostent->h_name = strdup(ai.cnames->name);
@@ -147,25 +152,32 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
           goto enomem;
         }
 
+      i = 0;
       next = ai.nodes;
-      for (i = 0; i < naddrs; i++)
+      while (next)
         {
-          hostent->h_addr_list[i] = (char*)&addrs[i];
-          memcpy(hostent->h_addr_list[i], &(((struct sockaddr_in *)next->ai_addr)->sin_addr), sizeof(struct in_addr));
-          if (naddrttls)
+          if (next->ai_family == AF_INET)
             {
-                if(next->ai_ttl > cname_ttl)
-                  addrttls[i].ttl = cname_ttl;
-                else
-                  addrttls[i].ttl = next->ai_ttl;
+              hostent->h_addr_list[i] = (char *)&addrs[i];
+              memcpy(hostent->h_addr_list[i],
+                     &(((struct sockaddr_in *)next->ai_addr)->sin_addr),
+                     sizeof(struct in_addr));
+              if (naddrttls)
+                {
+                  if (next->ai_ttl > cname_ttl)
+                    addrttls[i].ttl = cname_ttl;
+                  else
+                    addrttls[i].ttl = next->ai_ttl;
 
-                memcpy(&addrttls[i].ipaddr, &(((struct sockaddr_in *)next->ai_addr)->sin_addr), sizeof(struct in_addr));
+                  memcpy(&addrttls[i].ipaddr,
+                         &(((struct sockaddr_in *)next->ai_addr)->sin_addr),
+                         sizeof(struct in_addr));
+                }
+              ++i;
             }
           next = next->ai_next;
         }
     }
-
-  hostent->h_addr_list[naddrs] = NULL;
 
   if (host)
     {
