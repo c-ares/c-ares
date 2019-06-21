@@ -62,6 +62,9 @@ matrix:
         - os: linux-ppc64le
           compiler: clang
           env: BUILD_TYPE=normal
+        - os: linux-ppc64le
+          compiler: gcc
+          env: BUILD_TYPE=normal
 install:
     - if [ "$TRAVIS_OS_NAME" != "osx" ]; then pip install --user cpp-coveralls > /dev/null; fi
     - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew reinstall libtool > /dev/null; fi
