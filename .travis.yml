@@ -7,7 +7,7 @@ addons:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-5.0
         packages:
-            - cmake3
+            - cmake
             - lcov
             - clang-5.0
             - clang-tools-5.0
