@@ -10,7 +10,7 @@ addons:
             - cmake
             - lcov
             - clang-5.0
-            - clang-tools-5.0
+            - clang-tools
             - valgrind
 matrix:
     include:
