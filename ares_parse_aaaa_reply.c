@@ -73,7 +73,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
 
       if (naddrttls)
         {
-          *naddrttls = naddrs;
+          *naddrttls = 0;
         }
 
       return status;
@@ -178,6 +178,11 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
               ++i;
             }
           next = next->ai_next;
+        }
+
+      if (i == 0)
+        {
+          ares_free(addrs);
         }
     }
 
