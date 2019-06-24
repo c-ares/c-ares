@@ -71,7 +71,7 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
 
       if (naddrttls)
         {
-          *naddrttls = naddrs;
+          *naddrttls = 0;
         }
 
       return status;
@@ -162,7 +162,7 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
               memcpy(hostent->h_addr_list[i],
                      &(((struct sockaddr_in *)next->ai_addr)->sin_addr),
                      sizeof(struct in_addr));
-              if (naddrttls)
+              if (naddrttls && i < *naddrttls)
                 {
                   if (next->ai_ttl > cname_ttl)
                     addrttls[i].ttl = cname_ttl;
@@ -176,6 +176,10 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
               ++i;
             }
           next = next->ai_next;
+        }
+      if (i == 0)
+        {
+          ares_free(addrs);
         }
     }
 
