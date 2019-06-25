@@ -15,7 +15,7 @@
 .\"
 .TH ARES_GETADDRINFO 3 "4 November 2018"
 .SH NAME
-ares_getaddrinfo \- Initiate a host query by name
+ares_getaddrinfo \- Initiate a host query by name and service
 .SH SYNOPSIS
 .nf
 .B #include <ares.h>
@@ -24,19 +24,8 @@ ares_getaddrinfo \- Initiate a host query by name
 .B 	int \fItimeouts\fP, struct ares_addrinfo *\fIresult\fP)
 .PP
 .B void ares_getaddrinfo(ares_channel \fIchannel\fP, const char *\fIname\fP,
-.B 	const char* \fIservice\fP, const struct ares_addrinfo *\fIhints\fP,
+.B 	const char* \fIservice\fP, const struct ares_addrinfo_hints *\fIhints\fP,
 .B 	ares_addrinfo_callback \fIcallback\fP, void *\fIarg\fP)
-.PP
-.B struct ares_addrinfo {
-.B 	int                  \fIai_flags\fP;
-.B 	int                  \fIai_family\fP;
-.B 	int                  \fIai_socktype\fP;
-.B 	int                  \fIai_protocol\fP;
-.B 	ares_socklen_t       \fIai_addrlen\fP;
-.B 	char                 \fI*ai_canonname\fP;
-.B 	struct sockaddr      \fI*ai_addr\fP;
-.B 	struct ares_addrinfo \fI*ai_next\fP;
-.B };
 .fi
 .SH DESCRIPTION
 The
@@ -44,17 +33,58 @@ The
 function initiates a host query by name on the name service channel
 identified by
 .IR channel .
-The parameter
+The
 .I name
-gives the hostname as a NUL-terminated C string, and
-.I hints->ai_family
-gives the desired type of address for the resulting addrinfo result list.
-The parameter
+and
 .I service
-and the other properties from the
+parameters give the hostname and service as NULL-terminated C strings.
+The
 .I hints
-parameter are ignored. When the
-query is complete or has failed, the ares library will invoke \fIcallback\fP.
+parameter is an
+.BR ares_addrinfo_hints
+structure:
+.PP
+.IN +4n
+.EX
+struct ares_addrinfo_hints {
+  int ai_flags;
+  int ai_family;
+  int ai_socktype;
+  int ai_protocol;
+};
+.EE
+.IN
+.TP
+.I ai_family
+Specifies desired address family. AF_UNSPEC means return both AF_INET and AF_INET6.
+.TP
+.I ai_socktype
+Specifies desired socket type, for example SOCK_STREAM or SOCK_DGRAM.
+Setting this to 0 means any type.
+.TP
+.I ai_protocol
+Setting this to 0 means any protocol.
+.TP
+.I ai_flags
+Specifies additional options, see below.
+.PP
+.TP 19
+.B ARES_AI_NUMERICSERV
+If this option is set
+.I service
+field will be treated as a numeric value.
+.TP 19
+.B ARES_AI_CANONNAME
+The ares_addrinfo structure will return a canonical names list.
+.TP 19
+.B ARES_AI_NOSORT
+Result addresses will not be sorted and no connections to resolved addresses will be attempted.
+.TP 19
+.B ARES_AI_ENVHOSTS
+Read hosts file path from the environment variable
+.I CARES_HOSTS .
+.PP
+When the query is complete or has failed, the ares library will invoke \fIcallback\fP.
 Completion or failure of the query may happen immediately, or may happen
 during a later call to \fIares_process(3)\fP, \fIares_destroy(3)\fP or
 \fIares_cancel(3)\fP.
@@ -78,7 +108,7 @@ The ares library does not know how to find addresses of type
 .IR family .
 .TP 19
 .B ARES_ENOTFOUND
-The name
+The
 .I name
 was not found.
 .TP 19
@@ -96,9 +126,58 @@ is being destroyed; the query will not be completed.
 On successful completion of the query, the callback argument
 .I result
 points to a
-.B struct addrinfo
-which is a linked list, where each item contains family and address of
-the requested name. The reserved memory has to be deleted by
+.B struct ares_addrinfo
+which contains two linked lists, one with resolved addresses and another with canonical names.
+.PP
+.IN +4n
+.EX
+struct ares_addrinfo {
+  struct ares_addrinfo_cname *cnames;
+  struct ares_addrinfo_node  *nodes;
+};
+.EE
+.IN
+.PP
+.I ares_addrinfo_node
+structure is similar to RFC3493 addrinfo, but without canonname and with extra ttl field.
+.IN +4n
+.PP
+.EX
+struct ares_addrinfo_node {
+  int                        ai_ttl;
+  int                        ai_flags;
+  int                        ai_family;
+  int                        ai_socktype;
+  int                        ai_protocol;
+  ares_socklen_t             ai_addrlen;
+  struct sockaddr           *ai_addr;
+  struct ares_addrinfo_node *ai_next;
+};
+.EE
+.IN
+.PP
+.I ares_addrinfo_cname
+structure is a linked list of CNAME records where
+.I ttl
+is a time to live
+.I alias
+is a label of the resource record and
+.I name
+is a value (canonical name) of the resource record.
+See RFC2181 10.1.1. CNAME terminology.
+.IN +4n
+.PP
+.EX
+struct ares_addrinfo_cname {
+  int                         ttl;
+  char                       *alias;
+  char                       *name;
+  struct ares_addrinfo_cname *next;
+};
+.EE
+.IN
+.PP
+The reserved memory has to be deleted by
 .B ares_freeaddrinfo.
 
 The result is sorted according to RFC6724 except:
@@ -114,9 +193,3 @@ on each of the resolved addresses as per RFC6724.
 Christian Ammer
 .br
 Andrew Selivanov <andrew.selivanov@gmail.com>
-.SH CAVEATS
-This function is under development. It only supports a minimum feature set
-of the function
-.B getaddrinfo
-defined in RFC-3493
-.br
