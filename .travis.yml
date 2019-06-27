@@ -1,5 +1,5 @@
 language: c++
-dist: trusty
+dist: xenial
 sudo: false
 addons:
     apt:
@@ -10,7 +10,7 @@ addons:
             - cmake
             - lcov
             - clang-5.0
-            - clang-tools
+            - clang-tools-5.0
             - valgrind
 matrix:
     include:
