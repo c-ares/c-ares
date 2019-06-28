@@ -6,8 +6,8 @@ addons:
         packages:
             - cmake
             - lcov
-            - clang-5.0
-            - clang-tools-5.0
+            - clang-6.0
+            - clang-tools-6.0
             - valgrind
 matrix:
     include:
