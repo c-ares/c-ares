@@ -7,7 +7,7 @@ addons:
             - llvm-toolchain-xenial-6.0
         packages:
             - cmake
-            - lcov-1.10
+            - lcov
             - clang-6.0
             - clang-tools-6.0
             - valgrind
