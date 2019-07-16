@@ -578,6 +578,11 @@ std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result) {
 
 std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
   os << '{';
+  if (ai == nullptr) {
+    os << "nullptr}";
+    return os;
+  }
+
   struct ares_addrinfo_cname *next_cname = ai->cnames;
   while(next_cname) {
     if(next_cname->alias) {
