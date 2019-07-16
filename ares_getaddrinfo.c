@@ -48,6 +48,10 @@
 #endif
 #include <assert.h>
 
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
+
 #include "ares.h"
 #include "bitncmp.h"
 #include "ares_private.h"
