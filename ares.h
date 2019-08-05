@@ -534,6 +534,7 @@ struct ares_srv_reply {
   unsigned short          priority;
   unsigned short          weight;
   unsigned short          port;
+  unsigned int            ttl;
 };
 
 struct ares_mx_reply {

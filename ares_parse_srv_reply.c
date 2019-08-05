@@ -49,7 +49,7 @@ int
 ares_parse_srv_reply (const unsigned char *abuf, int alen,
                       struct ares_srv_reply **srv_out)
 {
-  unsigned int qdcount, ancount, i;
+  unsigned int qdcount, ancount, i, rr_ttl;
   const unsigned char *aptr, *vptr;
   int status, rr_type, rr_class, rr_len;
   long len;
@@ -103,6 +103,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
         }
       rr_type = DNS_RR_TYPE (aptr);
       rr_class = DNS_RR_CLASS (aptr);
+      rr_ttl = DNS_RR_TTL (aptr);
       rr_len = DNS_RR_LEN (aptr);
       aptr += RRFIXEDSZ;
       if (aptr + rr_len > abuf + alen)
@@ -145,6 +146,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
           vptr += sizeof(unsigned short);
           srv_curr->port = DNS__16BIT(vptr);
           vptr += sizeof(unsigned short);
+          srv_curr->ttl = rr_ttl;
 
           status = ares_expand_name (vptr, abuf, alen, &srv_curr->host, &len);
           if (status != ARES_SUCCESS)

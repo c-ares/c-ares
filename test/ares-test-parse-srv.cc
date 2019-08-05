@@ -12,7 +12,7 @@ TEST_F(LibraryTest, ParseSrvReplyOK) {
   pkt.set_qid(0x1234).set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_srv))
     .add_answer(new DNSSrvRR("example.com", 100, 10, 20, 30, "srv.example.com"))
-    .add_answer(new DNSSrvRR("example.com", 100, 11, 21, 31, "srv2.example.com"));
+    .add_answer(new DNSSrvRR("example.com", 200, 11, 21, 31, "srv2.example.com"));
   std::vector<byte> data = pkt.data();
 
   struct ares_srv_reply* srv = nullptr;
@@ -23,6 +23,7 @@ TEST_F(LibraryTest, ParseSrvReplyOK) {
   EXPECT_EQ(10, srv->priority);
   EXPECT_EQ(20, srv->weight);
   EXPECT_EQ(30, srv->port);
+  EXPECT_EQ(100, srv->ttl);
 
   struct ares_srv_reply* srv2 = srv->next;
   ASSERT_NE(nullptr, srv2);
@@ -30,6 +31,7 @@ TEST_F(LibraryTest, ParseSrvReplyOK) {
   EXPECT_EQ(11, srv2->priority);
   EXPECT_EQ(21, srv2->weight);
   EXPECT_EQ(31, srv2->port);
+  EXPECT_EQ(200, srv2->ttl);
   EXPECT_EQ(nullptr, srv2->next);
 
   ares_free_data(srv);
@@ -57,6 +59,7 @@ TEST_F(LibraryTest, ParseSrvReplySingle) {
   EXPECT_EQ(0, srv->priority);
   EXPECT_EQ(10, srv->weight);
   EXPECT_EQ(8160, srv->port);
+  EXPECT_EQ(180, srv->ttl);
   EXPECT_EQ(nullptr, srv->next);
 
   ares_free_data(srv);
@@ -98,8 +101,8 @@ TEST_F(LibraryTest, ParseSrvReplyMultiple) {
   pkt.set_qid(0x1234).set_response().set_ra().set_rd()
     .add_question(new DNSQuestion("srv.example.com", ns_t_srv))
     .add_answer(new DNSSrvRR("srv.example.com", 300, 0, 5, 6789, "a1.srv.example.com"))
-    .add_answer(new DNSSrvRR("srv.example.com", 300, 0, 5, 4567, "a2.srv.example.com"))
-    .add_answer(new DNSSrvRR("srv.example.com", 300, 0, 5, 5678, "a3.srv.example.com"))
+    .add_answer(new DNSSrvRR("srv.example.com", 400, 0, 5, 4567, "a2.srv.example.com"))
+    .add_answer(new DNSSrvRR("srv.example.com", 500, 0, 5, 5678, "a3.srv.example.com"))
     .add_auth(new DNSNsRR("example.com", 300, "ns1.example.com"))
     .add_auth(new DNSNsRR("example.com", 300, "ns2.example.com"))
     .add_auth(new DNSNsRR("example.com", 300, "ns3.example.com"))
@@ -120,6 +123,7 @@ TEST_F(LibraryTest, ParseSrvReplyMultiple) {
   EXPECT_EQ(0, srv->priority);
   EXPECT_EQ(5, srv->weight);
   EXPECT_EQ(6789, srv->port);
+  EXPECT_EQ(300, srv->ttl);
   EXPECT_NE(nullptr, srv->next);
   srv = srv->next;
 
@@ -127,6 +131,7 @@ TEST_F(LibraryTest, ParseSrvReplyMultiple) {
   EXPECT_EQ(0, srv->priority);
   EXPECT_EQ(5, srv->weight);
   EXPECT_EQ(4567, srv->port);
+  EXPECT_EQ(400, srv->ttl);
   EXPECT_NE(nullptr, srv->next);
   srv = srv->next;
 
@@ -134,6 +139,7 @@ TEST_F(LibraryTest, ParseSrvReplyMultiple) {
   EXPECT_EQ(0, srv->priority);
   EXPECT_EQ(5, srv->weight);
   EXPECT_EQ(5678, srv->port);
+  EXPECT_EQ(500, srv->ttl);
   EXPECT_EQ(nullptr, srv->next);
 
   ares_free_data(srv0);
@@ -162,6 +168,7 @@ TEST_F(LibraryTest, ParseSrvReplyCname) {
   EXPECT_EQ(0, srv->priority);
   EXPECT_EQ(10, srv->weight);
   EXPECT_EQ(1234, srv->port);
+  EXPECT_EQ(300, srv->ttl);
   EXPECT_EQ(nullptr, srv->next);
 
   ares_free_data(srv);
@@ -173,8 +180,8 @@ TEST_F(LibraryTest, ParseSrvReplyCnameMultiple) {
     .add_question(new DNSQuestion("query.example.com", ns_t_srv))
     .add_answer(new DNSCnameRR("query.example.com", 300, "srv.example.com"))
     .add_answer(new DNSSrvRR("srv.example.com", 300, 0, 5, 6789, "a1.srv.example.com"))
-    .add_answer(new DNSSrvRR("srv.example.com", 300, 0, 5, 4567, "a2.srv.example.com"))
-    .add_answer(new DNSSrvRR("srv.example.com", 300, 0, 5, 5678, "a3.srv.example.com"))
+    .add_answer(new DNSSrvRR("srv.example.com", 400, 0, 5, 4567, "a2.srv.example.com"))
+    .add_answer(new DNSSrvRR("srv.example.com", 500, 0, 5, 5678, "a3.srv.example.com"))
     .add_auth(new DNSNsRR("example.com", 300, "ns1.example.com"))
     .add_auth(new DNSNsRR("example.com", 300, "ns2.example.com"))
     .add_auth(new DNSNsRR("example.com", 300, "ns3.example.com"))
@@ -195,6 +202,7 @@ TEST_F(LibraryTest, ParseSrvReplyCnameMultiple) {
   EXPECT_EQ(0, srv->priority);
   EXPECT_EQ(5, srv->weight);
   EXPECT_EQ(6789, srv->port);
+  EXPECT_EQ(300, srv->ttl);
   EXPECT_NE(nullptr, srv->next);
   srv = srv->next;
 
@@ -202,6 +210,7 @@ TEST_F(LibraryTest, ParseSrvReplyCnameMultiple) {
   EXPECT_EQ(0, srv->priority);
   EXPECT_EQ(5, srv->weight);
   EXPECT_EQ(4567, srv->port);
+  EXPECT_EQ(400, srv->ttl);
   EXPECT_NE(nullptr, srv->next);
   srv = srv->next;
 
@@ -209,6 +218,7 @@ TEST_F(LibraryTest, ParseSrvReplyCnameMultiple) {
   EXPECT_EQ(0, srv->priority);
   EXPECT_EQ(5, srv->weight);
   EXPECT_EQ(5678, srv->port);
+  EXPECT_EQ(500, srv->ttl);
   EXPECT_EQ(nullptr, srv->next);
 
   ares_free_data(srv0);
