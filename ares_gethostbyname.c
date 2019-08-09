@@ -83,6 +83,10 @@ void ares_gethostbyname(ares_channel channel, const char *name, int family,
 {
   struct host_query *hquery;
 
+  /* nameserver list migh have changed since ares_init,
+     check if this is the case, if yes then reload it */
+  ares_reinit_by_resolv_conf_file(channel);
+
   /* Right now we only know how to look up Internet addresses - and unspec
      means try both basically. */
   switch (family) {

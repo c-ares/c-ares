@@ -339,6 +339,8 @@ CARES_EXTERN const char *ares_version(int *version);
 
 CARES_EXTERN int ares_init(ares_channel *channelptr);
 
+CARES_EXTERN int ares_reinit_by_resolv_conf_file(ares_channel channel);
+
 CARES_EXTERN int ares_init_options(ares_channel *channelptr,
                                    struct ares_options *options,
                                    int optmask);

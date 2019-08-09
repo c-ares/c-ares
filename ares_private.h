@@ -30,6 +30,10 @@
 #include <netinet/in.h>
 #endif
 
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 #ifdef WATT32
 #include <tcp.h>
 #include <sys/ioctl.h>
@@ -328,6 +332,10 @@ struct ares_channeldata {
 
   /* Path for resolv.conf file, configurable via ares_options */
   char *resolvconf_path;
+  struct timespec resolvconf_mtime;
+  struct timespec resolvconf_ctime;
+  off_t resolvconf_size;
+  ino_t resolvconf_ino;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */

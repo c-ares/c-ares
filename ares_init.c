@@ -1683,6 +1683,21 @@ static int init_by_resolv_conf(ares_channel channel)
 
     fp = fopen(resolvconf_path, "r");
     if (fp) {
+      /* Every time this init function is called, update the stat values */
+      struct stat st;
+      if (stat(resolvconf_path, &st) == 0)
+      {
+#ifdef __APPLE__
+        channel->resolvconf_mtime = st.st_mtimespec;
+        channel->resolvconf_ctime = st.st_ctimespec;
+#else
+        channel->resolvconf_mtime = st.st_mtim;
+        channel->resolvconf_ctime = st.st_ctim;
+#endif
+        channel->resolvconf_size = st.st_size;
+        channel->resolvconf_ino = st.st_ino;
+      }
+
       while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
       {
         if ((p = try_config(line, "domain", ';')) && update_domains)
@@ -1843,6 +1858,87 @@ static int init_by_resolv_conf(ares_channel channel)
     }
 
   return ARES_SUCCESS;
+}
+
+int ares_reinit_by_resolv_conf_file(ares_channel channel)
+{
+#if defined(ANDROID) || defined(__ANDROID__) || defined(WIN32) || defined(WATT32) || \
+    defined(CARES_USE_LIBRESOLV) || defined(__riscos__)
+
+    return -1;
+
+#else
+
+  struct stat st;
+  const char *resolvconf_path;
+  if (channel->resolvconf_path) {
+    resolvconf_path = channel->resolvconf_path;
+  }
+  else {
+    resolvconf_path = PATH_RESOLV_CONF;
+  }
+  if (stat(resolvconf_path, &st) != 0) {
+      return ARES_ENODATA;
+  }
+
+  /* If the stat values are the same, we do not want to reinit */
+#ifdef __APPLE__
+  if (channel->resolvconf_mtime.tv_sec == st.st_mtimespec.tv_sec
+      && channel->resolvconf_mtime.tv_nsec == st.st_mtimespec.tv_nsec
+      && channel->resolvconf_ctime.tv_sec == st.st_ctimespec.tv_sec
+      && channel->resolvconf_ctime.tv_nsec == st.st_ctimespec.tv_nsec
+#else
+  if (channel->resolvconf_mtime.tv_sec == st.st_mtim.tv_sec
+      && channel->resolvconf_mtime.tv_nsec == st.st_mtim.tv_nsec
+      && channel->resolvconf_ctime.tv_sec == st.st_ctim.tv_sec
+      && channel->resolvconf_ctime.tv_nsec == st.st_ctim.tv_nsec
+#endif
+      && channel->resolvconf_ino == st.st_ino
+      && channel->resolvconf_size == st.st_size) {
+    return ARES_SUCCESS;
+  }
+
+  if (channel->ndomains != -1) {
+    ares_strsplit_free(channel->domains, channel->ndomains);
+    channel->domains = NULL;
+    channel->ndomains = -1;
+  }
+
+  if (channel->lookups) {
+    ares_free(channel->lookups);
+    channel->lookups = NULL;
+  }
+
+  /* if we have channel server created,
+     we need to also disconnect and close sockets */
+  if (channel->nservers != -1) {
+    ares__destroy_servers_state(channel);
+  }
+
+  if (channel->sortlist) {
+    ares_free(channel->sortlist);
+  }
+  channel->nsort = -1;
+
+  /* clear options */
+  channel->ndots = -1;
+  channel->timeout = -1;
+  channel->tries = -1;
+  channel->rotate = -1;
+
+  int rc = init_by_resolv_conf(channel);
+  if (init_by_resolv_conf(channel) != ARES_SUCCESS) {
+    return rc;
+  }
+  if (rc == ARES_SUCCESS) {
+    ares__init_servers_state(channel);
+  }
+
+  /* for any options that were not loaded from resolv.conf file,
+     make sure they have at least default values */
+  return init_by_defaults(channel);
+
+#endif
 }
 
 static int init_by_defaults(ares_channel channel)
