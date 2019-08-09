@@ -41,12 +41,12 @@ Connectivity Manager. It is necessary to pass the connectivity
 manager to c-ares via JNI. Also, the ACCESS_NETWORK_STATE permission
 must be present in the Android application.
 
-Android older than 8 do not need to to be initalized as they
+Android older than 8 do not need to to be initialized as they
 are less restrictive. However, this is a run time not compile time
-limitation. Proper Android initalization should take place regardless
+limitation. Proper Android initialization should take place regardless
 of the targeted Android version.
 
-Deinitalization will take place though \fIares_library_cleanup(3)\fP.
+Deinitialization will take place though \fIares_library_cleanup(3)\fP.
 
 The \fBares_library_init_jvm\fP function allows the caller to register the JVM
 with c-ares.  It's meant to be called during JNI_OnLoad because you're
@@ -56,7 +56,7 @@ use the Connectivty Manager registered using
 \fIares_library_init_android(3)\fP.
 
 The \fBares_library_android_initialized\fP function can be used to check
-whether c-ares has been initalized for use with Android.
+whether c-ares has been initialized for use with Android.
 .SH RETURN VALUES
 ARES_SUCCESS will be returned on success otherwise an error code will be
 returned.
@@ -69,7 +69,7 @@ these might call functions from other libraries that
 are thread unsafe, and could conflict with any other thread that is already
 using these other libraries.
 .SH JNI
-Accesing the Connectivity Manager though Java:
+Accessing the Connectivity Manager though Java:
 
 Register the \fIares_library_android_init\fP.
 .nf
@@ -114,7 +114,7 @@ Calling the registered function from Java:
     }
   }
 .fi
-Initalizing the Connectivity Manager in JNI directly using an Android
+Initializing the Connectivity Manager in JNI directly using an Android
 Context. It is assumed the JVM has aleady been registered through
 \fIJNI_OnLoad\fP.
 .nf
