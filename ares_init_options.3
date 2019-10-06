@@ -182,18 +182,18 @@ The receive buffer size to set for the socket.
 .B ARES_OPT_EDNSPSZ
 .B int \fIednspsz\fP;
 .br
+The message size to be advertized in EDNS; only takes effect if the
+.B ARES_FLAG_EDNS
+flag is set.
 .TP 18
 .B ARES_OPT_RESOLVCONF
 .B char *\fIresolvconf_path\fP;
+.br
 The path to use for reading the resolv.conf file. The
 .I resolvconf_path
 should be set to a path string, and will be honoured on *nix like systems. The
 default is
 .B /etc/resolv.conf
-.br
-The message size to be advertized in EDNS; only takes effect if the
-.B ARES_FLAG_EDNS
-flag is set.
 .br
 .PP
 The \fIoptmask\fP parameter also includes options without a corresponding
