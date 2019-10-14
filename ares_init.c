@@ -1543,8 +1543,6 @@ static int init_by_resolv_conf(ares_channel channel)
 
 #elif defined(ANDROID) || defined(__ANDROID__)
   unsigned int i;
-  char propname[PROP_NAME_MAX];
-  char propvalue[PROP_VALUE_MAX]="";
   char **dns_servers;
   char *domains;
   size_t num_servers;
@@ -1587,6 +1585,8 @@ static int init_by_resolv_conf(ares_channel channel)
    * We'll only run this if we don't have any dns servers
    * because this will get the same ones (if it works). */
   if (status != ARES_EOF) {
+    char propname[PROP_NAME_MAX];
+    char propvalue[PROP_VALUE_MAX]="";
     for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
       snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
       if (__system_property_get(propname, propvalue) < 1) {
