@@ -60,29 +60,29 @@ struct addrinfo_sort_elem
   int original_order;
 };
 
-#define IPV6_ADDR_MC_SCOPE(a) ((a)->s6_addr[1] & 0x0f)
+#define ARES_IPV6_ADDR_MC_SCOPE(a) ((a)->s6_addr[1] & 0x0f)
 
-#define IPV6_ADDR_SCOPE_NODELOCAL       0x01
-#define IPV6_ADDR_SCOPE_INTFACELOCAL    0x01
-#define IPV6_ADDR_SCOPE_LINKLOCAL       0x02
-#define IPV6_ADDR_SCOPE_SITELOCAL       0x05
-#define IPV6_ADDR_SCOPE_ORGLOCAL        0x08
-#define IPV6_ADDR_SCOPE_GLOBAL          0x0e
+#define ARES_IPV6_ADDR_SCOPE_NODELOCAL       0x01
+#define ARES_IPV6_ADDR_SCOPE_INTFACELOCAL    0x01
+#define ARES_IPV6_ADDR_SCOPE_LINKLOCAL       0x02
+#define ARES_IPV6_ADDR_SCOPE_SITELOCAL       0x05
+#define ARES_IPV6_ADDR_SCOPE_ORGLOCAL        0x08
+#define ARES_IPV6_ADDR_SCOPE_GLOBAL          0x0e
 
-#define IN_LOOPBACK(a) ((((long int)(a)) & 0xff000000) == 0x7f000000)
+#define ARES_IN_LOOPBACK(a) ((((long int)(a)) & 0xff000000) == 0x7f000000)
 
 /* RFC 4193. */
-#define IN6_IS_ADDR_ULA(a) (((a)->s6_addr[0] & 0xfe) == 0xfc)
+#define ARES_IN6_IS_ADDR_ULA(a) (((a)->s6_addr[0] & 0xfe) == 0xfc)
 
 /* These macros are modelled after the ones in <netinet/in6.h>. */
 /* RFC 4380, section 2.6 */
-#define IN6_IS_ADDR_TEREDO(a)    \
+#define ARES_IN6_IS_ADDR_TEREDO(a)    \
         ((*(const unsigned int *)(const void *)(&(a)->s6_addr[0]) == ntohl(0x20010000)))
 /* RFC 3056, section 2. */
-#define IN6_IS_ADDR_6TO4(a)      \
+#define ARES_IN6_IS_ADDR_6TO4(a)      \
         (((a)->s6_addr[0] == 0x20) && ((a)->s6_addr[1] == 0x02))
 /* 6bone testing address area (3ffe::/16), deprecated in RFC 3701. */
-#define IN6_IS_ADDR_6BONE(a)      \
+#define ARES_IN6_IS_ADDR_6BONE(a)      \
         (((a)->s6_addr[0] == 0x3f) && ((a)->s6_addr[1] == 0xfe))
 
 static int get_scope(const struct sockaddr *addr)
@@ -92,7 +92,7 @@ static int get_scope(const struct sockaddr *addr)
       const struct sockaddr_in6 *addr6 = (const struct sockaddr_in6 *)addr;
       if (IN6_IS_ADDR_MULTICAST(&addr6->sin6_addr))
         {
-          return IPV6_ADDR_MC_SCOPE(&addr6->sin6_addr);
+          return ARES_IPV6_ADDR_MC_SCOPE(&addr6->sin6_addr);
         }
       else if (IN6_IS_ADDR_LOOPBACK(&addr6->sin6_addr) ||
                IN6_IS_ADDR_LINKLOCAL(&addr6->sin6_addr))
@@ -101,25 +101,25 @@ static int get_scope(const struct sockaddr *addr)
            * RFC 4291 section 2.5.3 says loopback is to be treated as having
            * link-local scope.
            */
-          return IPV6_ADDR_SCOPE_LINKLOCAL;
+          return ARES_IPV6_ADDR_SCOPE_LINKLOCAL;
         }
       else if (IN6_IS_ADDR_SITELOCAL(&addr6->sin6_addr))
         {
-          return IPV6_ADDR_SCOPE_SITELOCAL;
+          return ARES_IPV6_ADDR_SCOPE_SITELOCAL;
         }
       else
         {
-          return IPV6_ADDR_SCOPE_GLOBAL;
+          return ARES_IPV6_ADDR_SCOPE_GLOBAL;
         }
     }
   else if (addr->sa_family == AF_INET)
     {
       const struct sockaddr_in *addr4 = (const struct sockaddr_in *)addr;
       unsigned long int na = ntohl(addr4->sin_addr.s_addr);
-      if (IN_LOOPBACK(na) || /* 127.0.0.0/8 */
+      if (ARES_IN_LOOPBACK(na) || /* 127.0.0.0/8 */
           (na & 0xffff0000) == 0xa9fe0000) /* 169.254.0.0/16 */
         {
-          return IPV6_ADDR_SCOPE_LINKLOCAL;
+          return ARES_IPV6_ADDR_SCOPE_LINKLOCAL;
         }
       else
         {
@@ -128,7 +128,7 @@ static int get_scope(const struct sockaddr *addr)
            * addresses and shared addresses (100.64.0.0/10), are assigned global
            * scope.
            */
-          return IPV6_ADDR_SCOPE_GLOBAL;
+          return ARES_IPV6_ADDR_SCOPE_GLOBAL;
         }
     }
   else
@@ -137,7 +137,7 @@ static int get_scope(const struct sockaddr *addr)
        * This should never happen.
        * Return a scope with low priority as a last resort.
        */
-      return IPV6_ADDR_SCOPE_NODELOCAL;
+      return ARES_IPV6_ADDR_SCOPE_NODELOCAL;
     }
 }
 
@@ -158,15 +158,15 @@ static int get_label(const struct sockaddr *addr)
         {
           return 4;
         }
-      else if (IN6_IS_ADDR_6TO4(&addr6->sin6_addr))
+      else if (ARES_IN6_IS_ADDR_6TO4(&addr6->sin6_addr))
         {
           return 2;
         }
-      else if (IN6_IS_ADDR_TEREDO(&addr6->sin6_addr))
+      else if (ARES_IN6_IS_ADDR_TEREDO(&addr6->sin6_addr))
         {
           return 5;
         }
-      else if (IN6_IS_ADDR_ULA(&addr6->sin6_addr))
+      else if (ARES_IN6_IS_ADDR_ULA(&addr6->sin6_addr))
         {
           return 13;
         }
@@ -178,7 +178,7 @@ static int get_label(const struct sockaddr *addr)
         {
           return 11;
         }
-      else if (IN6_IS_ADDR_6BONE(&addr6->sin6_addr))
+      else if (ARES_IN6_IS_ADDR_6BONE(&addr6->sin6_addr))
         {
           return 12;
         }
@@ -219,21 +219,21 @@ static int get_precedence(const struct sockaddr *addr)
         {
           return 35;
         }
-      else if (IN6_IS_ADDR_6TO4(&addr6->sin6_addr))
+      else if (ARES_IN6_IS_ADDR_6TO4(&addr6->sin6_addr))
         {
           return 30;
         }
-      else if (IN6_IS_ADDR_TEREDO(&addr6->sin6_addr))
+      else if (ARES_IN6_IS_ADDR_TEREDO(&addr6->sin6_addr))
         {
           return 5;
         }
-      else if (IN6_IS_ADDR_ULA(&addr6->sin6_addr))
+      else if (ARES_IN6_IS_ADDR_ULA(&addr6->sin6_addr))
         {
           return 3;
         }
       else if (IN6_IS_ADDR_V4COMPAT(&addr6->sin6_addr) ||
                IN6_IS_ADDR_SITELOCAL(&addr6->sin6_addr) ||
-               IN6_IS_ADDR_6BONE(&addr6->sin6_addr))
+               ARES_IN6_IS_ADDR_6BONE(&addr6->sin6_addr))
         {
           return 1;
         }
