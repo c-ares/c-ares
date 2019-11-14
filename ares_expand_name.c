@@ -73,6 +73,8 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
      size_t uns;
   } nlen;
 
+  memset(&nlen, 0, sizeof(nlen));
+
   nlen.sig = name_length(encoded, abuf, alen);
   if (nlen.sig < 0)
     return ARES_EBADNAME;
