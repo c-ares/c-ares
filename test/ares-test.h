@@ -279,29 +279,29 @@ struct NameInfoResult {
 };
 std::ostream& operator<<(std::ostream& os, const NameInfoResult& result);
 
-struct AddrInfoDeleter {
-  void operator() (ares_addrinfo *ptr) {
+struct AddrInfoResultDeleter {
+  void operator() (ares_addrinfo_result *ptr) {
     if (ptr) ares_freeaddrinfo(ptr);
   }
 };
 
-// C++ wrapper for struct ares_addrinfo.
-using AddrInfo = std::unique_ptr<ares_addrinfo, AddrInfoDeleter>;
+// C++ wrapper for struct ares_addrinfo_result.
+using AddrInfoResult = std::unique_ptr<ares_addrinfo_result, AddrInfoResultDeleter>;
 
-std::ostream& operator<<(std::ostream& os, const AddrInfo& result);
+std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result);
 
 // Structure that describes the result of an ares_addrinfo_callback invocation.
-struct AddrInfoResult {
-  AddrInfoResult() : done_(false), status_(-1), timeouts_(0) {}
+struct AddrInfoTestResult {
+  AddrInfoTestResult() : done_(false), status_(-1), timeouts_(0) {}
   // Whether the callback has been invoked.
   bool done_;
   // Explicitly provided result information.
   int status_;
   int timeouts_;
-  // Contents of the ares_addrinfo structure, if provided.
-  AddrInfo ai_;
+  // Contents of the ares_addrinfo_result structure, if provided.
+  AddrInfoResult ai_;
 };
-std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result);
+std::ostream& operator<<(std::ostream& os, const AddrInfoTestResult& result);
 
 // Standard implementation of ares callbacks that fill out the corresponding
 // structures.
@@ -312,7 +312,7 @@ void SearchCallback(void *data, int status, int timeouts,
 void NameInfoCallback(void *data, int status, int timeouts,
                       char *node, char *service);
 void AddrInfoCallback(void *data, int status, int timeouts,
-                      struct ares_addrinfo *res);
+                      struct ares_addrinfo_result *res);
 
 // Retrieve the name servers used by a channel.
 std::vector<std::string> GetNameServers(ares_channel channel);

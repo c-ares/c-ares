@@ -565,7 +565,7 @@ void HostCallback(void *data, int status, int timeouts,
   if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
 }
 
-std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result) {
+std::ostream& operator<<(std::ostream& os, const AddrInfoTestResult& result) {
   os << '{';
   if (result.done_ && result.ai_) {
     os << StatusToString(result.status_) << " " << result.ai_;
@@ -576,7 +576,7 @@ std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result) {
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
+std::ostream& operator<<(std::ostream& os, const AddrInfoResult& ai) {
   os << '{';
   if (ai == nullptr) {
     os << "nullptr}";
@@ -597,7 +597,7 @@ std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
       os << " ";
   }
 
-  struct ares_addrinfo_node *next = ai->nodes;
+  struct ares_addrinfo *next = ai->nodes;
   while(next) {
     //if(next->ai_canonname) {
       //os << "'" << next->ai_canonname << "' ";
@@ -628,13 +628,13 @@ std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
 }
 
 void AddrInfoCallback(void *data, int status, int timeouts,
-                      struct ares_addrinfo *ai) {
+                      struct ares_addrinfo_result *ai) {
   EXPECT_NE(nullptr, data);
-  AddrInfoResult* result = reinterpret_cast<AddrInfoResult*>(data);
+  AddrInfoTestResult* result = reinterpret_cast<AddrInfoTestResult*>(data);
   result->done_ = true;
   result->status_ = status;
   result->timeouts_= timeouts;
-  result->ai_ = AddrInfo(ai);
+  result->ai_ = AddrInfoResult(ai);
   if (verbose) std::cerr << "AddrInfoCallback(" << *result << ")" << std::endl;
 }
 

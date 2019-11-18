@@ -297,8 +297,8 @@ TEST_F(DefaultChannelTest, HostByNameFileOnionDomain) {
 }
 
 TEST_F(DefaultChannelTest, GetAddrinfoOnionDomain) {
-  AddrInfoResult result;
-  struct ares_addrinfo_hints hints = {};
+  AddrInfoTestResult result;
+  struct ares_addrinfo hints = {};
   hints.ai_family = AF_UNSPEC;
   ares_getaddrinfo(channel_, "dontleak.onion", NULL, &hints, AddrInfoCallback, &result);
   EXPECT_TRUE(result.done_);

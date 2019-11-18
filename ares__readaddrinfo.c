@@ -35,8 +35,8 @@
 int ares__readaddrinfo(FILE *fp,
                        const char *name,
                        unsigned short port,
-                       const struct ares_addrinfo_hints *hints,
-                       struct ares_addrinfo *ai)
+                       const struct ares_addrinfo *hints,
+                       struct ares_addrinfo_result *ai)
 {
   char *line = NULL, *p, *q;
   char *txtaddr, *txthost, *txtalias;
@@ -46,7 +46,7 @@ int ares__readaddrinfo(FILE *fp,
   size_t linesize;
   ares_sockaddr addr;
   struct ares_addrinfo_cname *cname = NULL, *cnames = NULL;
-  struct ares_addrinfo_node *node = NULL, *nodes = NULL;
+  struct ares_addrinfo *node = NULL, *nodes = NULL;
   int match_with_alias, match_with_canonical;
   int want_cname = hints->ai_flags & ARES_AI_CANONNAME;
 
@@ -173,7 +173,7 @@ int ares__readaddrinfo(FILE *fp,
           addr.sa4.sin_addr.s_addr = inet_addr(txtaddr);
           if (addr.sa4.sin_addr.s_addr != INADDR_NONE)
             {
-              node = ares__append_addrinfo_node(&nodes);
+              node = ares__append_addrinfo(&nodes);
               if(!node)
                 {
                   goto enomem;
@@ -194,7 +194,7 @@ int ares__readaddrinfo(FILE *fp,
           addr.sa6.sin6_port = htons(port);
           if (ares_inet_pton(AF_INET6, txtaddr, &addr.sa6.sin6_addr) > 0)
             {
-              node = ares__append_addrinfo_node(&nodes);
+              node = ares__append_addrinfo(&nodes);
               if (!node)
                 {
                   goto enomem;

@@ -20,13 +20,13 @@ ares_freeaddrinfo \- Free addrinfo structure allocated by ares functions
 .nf
 .B #include <ares.h>
 .PP
-.B void ares_freeaddrinfo(struct ares_addrinfo *\fIai\fP)
+.B void ares_freeaddrinfo(struct ares_addrinfo_result *\fIai\fP)
 .fi
 .SH DESCRIPTION
 The
 .B ares_freeaddrinfo
 function frees a
-.B struct ares_addrinfo
+.B struct ares_addrinfo_result
 returned in \fIresult\fP of
 .B ares_addrinfo_callback
 .SH SEE ALSO

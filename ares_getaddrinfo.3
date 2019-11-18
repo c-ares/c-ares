@@ -21,10 +21,10 @@ ares_getaddrinfo \- Initiate a host query by name and service
 .B #include <ares.h>
 .PP
 .B typedef void (*ares_addrinfo_callback)(void *\fIarg\fP, int \fIstatus\fP,
-.B 	int \fItimeouts\fP, struct ares_addrinfo *\fIresult\fP)
+.B 	int \fItimeouts\fP, struct ares_addrinfo_result *\fIresult\fP)
 .PP
 .B void ares_getaddrinfo(ares_channel \fIchannel\fP, const char *\fIname\fP,
-.B 	const char* \fIservice\fP, const struct ares_addrinfo_hints *\fIhints\fP,
+.B 	const char* \fIservice\fP, const struct ares_addrinfo *\fIhints\fP,
 .B 	ares_addrinfo_callback \fIcallback\fP, void *\fIarg\fP)
 .fi
 .SH DESCRIPTION
@@ -41,12 +41,12 @@ parameters give the hostname and service as NULL-terminated C strings.
 The
 .I hints
 parameter is an
-.BR ares_addrinfo_hints
+.BR ares_addrinfo
 structure:
 .PP
 .IN +4n
 .EX
-struct ares_addrinfo_hints {
+struct ares_addrinfo {
   int ai_flags;
   int ai_family;
   int ai_socktype;
@@ -75,7 +75,7 @@ If this option is set
 field will be treated as a numeric value.
 .TP 19
 .B ARES_AI_CANONNAME
-The ares_addrinfo structure will return a canonical names list.
+The ares_addrinfo_result structure will return a canonical names list.
 .TP 19
 .B ARES_AI_NOSORT
 Result addresses will not be sorted and no connections to resolved addresses will be attempted.
@@ -126,24 +126,24 @@ is being destroyed; the query will not be completed.
 On successful completion of the query, the callback argument
 .I result
 points to a
-.B struct ares_addrinfo
+.B struct ares_addrinfo_result
 which contains two linked lists, one with resolved addresses and another with canonical names.
 .PP
 .IN +4n
 .EX
-struct ares_addrinfo {
+struct ares_addrinfo_result {
   struct ares_addrinfo_cname *cnames;
-  struct ares_addrinfo_node  *nodes;
+  struct ares_addrinfo  *nodes;
 };
 .EE
 .IN
 .PP
-.I ares_addrinfo_node
+.I ares_addrinfo
 structure is similar to RFC3493 addrinfo, but without canonname and with extra ttl field.
 .IN +4n
 .PP
 .EX
-struct ares_addrinfo_node {
+struct ares_addrinfo {
   int                        ai_ttl;
   int                        ai_flags;
   int                        ai_family;
@@ -151,7 +151,7 @@ struct ares_addrinfo_node {
   int                        ai_protocol;
   ares_socklen_t             ai_addrlen;
   struct sockaddr           *ai_addr;
-  struct ares_addrinfo_node *ai_next;
+  struct ares_addrinfo *ai_next;
 };
 .EE
 .IN

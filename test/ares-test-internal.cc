@@ -364,8 +364,8 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsPositive) {
                      "1.3.5.7  \n"
                      "::1    ipv6.com");
   EnvValue with_env("CARES_HOSTS", hostsfile.filename());
-  struct ares_addrinfo_hints hints = {};
-  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  AddrInfoTestResult result = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
   ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
@@ -384,8 +384,8 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsSpaces) {
                      "1.3.5.7  \n"
                      "::1    ipv6.com");
   EnvValue with_env("CARES_HOSTS", hostsfile.filename());
-  struct ares_addrinfo_hints hints = {};
-  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  AddrInfoTestResult result = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
   ares_getaddrinfo(channel_, "google.com", NULL, &hints, AddrInfoCallback, &result);
@@ -404,8 +404,8 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsByALias) {
                      "1.3.5.7  \n"
                      "::1    ipv6.com");
   EnvValue with_env("CARES_HOSTS", hostsfile.filename());
-  struct ares_addrinfo_hints hints = {};
-  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  AddrInfoTestResult result = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
   ares_getaddrinfo(channel_, "www2.google.com", NULL, &hints, AddrInfoCallback, &result);
@@ -424,8 +424,8 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsIPV6) {
                      "1.3.5.7  \n"
                      "::1    ipv6.com");
   EnvValue with_env("CARES_HOSTS", hostsfile.filename());
-  struct ares_addrinfo_hints hints = {};
-  AddrInfoResult result = {};
+  struct ares_addrinfo hints = {};
+  AddrInfoTestResult result = {};
   hints.ai_family = AF_INET6;
   hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
   ares_getaddrinfo(channel_, "ipv6.com", NULL, &hints, AddrInfoCallback, &result);
@@ -438,7 +438,7 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsIPV6) {
 
 TEST_F(LibraryTest, GetAddrInfoAllocFail) {
   TempFile hostsfile("1.2.3.4 example.com alias1 alias2\n");
-  struct ares_addrinfo_hints hints;
+  struct ares_addrinfo hints;
   unsigned short port = 80;
 
   memset(&hints, 0, sizeof(hints));
@@ -451,7 +451,7 @@ TEST_F(LibraryTest, GetAddrInfoAllocFail) {
     rewind(fp);
     ClearFails();
     SetAllocFail(ii);
-    struct ares_addrinfo ai;
+    struct ares_addrinfo_result ai;
     EXPECT_EQ(ARES_ENOMEM, ares__readaddrinfo(fp, "example.com", port, &hints, &ai)) << ii;
   }
   fclose(fp);

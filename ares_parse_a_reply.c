@@ -51,8 +51,8 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
                        struct hostent **host,
                        struct ares_addrttl *addrttls, int *naddrttls)
 {
-  struct ares_addrinfo ai;
-  struct ares_addrinfo_node *next;
+  struct ares_addrinfo_result ai;
+  struct ares_addrinfo *next;
   struct ares_addrinfo_cname *next_cname;
   char **aliases = NULL;
   char *question_hostname = NULL;

@@ -37,9 +37,9 @@ void ares__freeaddrinfo_cnames(struct ares_addrinfo_cname *head)
     }
 }
 
-void ares__freeaddrinfo_nodes(struct ares_addrinfo_node *head)
+void ares__freeaddrinfo_nodes(struct ares_addrinfo *head)
 {
-  struct ares_addrinfo_node *current;
+  struct ares_addrinfo *current;
   while (head)
     {
       current = head;
@@ -49,7 +49,7 @@ void ares__freeaddrinfo_nodes(struct ares_addrinfo_node *head)
     }
 }
 
-void ares_freeaddrinfo(struct ares_addrinfo *ai)
+void ares_freeaddrinfo(struct ares_addrinfo_result *ai)
 {
   ares__freeaddrinfo_cnames(ai->cnames);
   ares__freeaddrinfo_nodes(ai->nodes);

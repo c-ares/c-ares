@@ -283,8 +283,8 @@ struct hostent;
 struct timeval;
 struct sockaddr;
 struct ares_channeldata;
+struct ares_addrinfo_result;
 struct ares_addrinfo;
-struct ares_addrinfo_hints;
 
 typedef struct ares_channeldata *ares_channel;
 
@@ -316,7 +316,7 @@ typedef int  (*ares_sock_config_callback)(ares_socket_t socket_fd,
 typedef void (*ares_addrinfo_callback)(void *arg,
                                    int status,
                                    int timeouts,
-                                   struct ares_addrinfo *res);
+                                   struct ares_addrinfo_result *res);
 
 CARES_EXTERN int ares_library_init(int flags);
 
@@ -384,11 +384,11 @@ CARES_EXTERN int ares_set_sortlist(ares_channel channel,
 CARES_EXTERN void ares_getaddrinfo(ares_channel channel,
                                    const char* node,
                                    const char* service,
-                                   const struct ares_addrinfo_hints* hints,
+                                   const struct ares_addrinfo* hints,
                                    ares_addrinfo_callback callback,
                                    void* arg);
 
-CARES_EXTERN void ares_freeaddrinfo(struct ares_addrinfo* ai);
+CARES_EXTERN void ares_freeaddrinfo(struct ares_addrinfo_result* ai);
 
 /*
  * Virtual function set to have user-managed socket IO.
@@ -582,7 +582,7 @@ struct ares_soa_reply {
 /*
  * Similar to addrinfo, but with extra ttl and missing canonname.
  */
-struct ares_addrinfo_node {
+struct ares_addrinfo {
   int                        ai_ttl;
   int                        ai_flags;
   int                        ai_family;
@@ -590,7 +590,7 @@ struct ares_addrinfo_node {
   int                        ai_protocol;
   ares_socklen_t             ai_addrlen;
   struct sockaddr           *ai_addr;
-  struct ares_addrinfo_node *ai_next;
+  struct ares_addrinfo *ai_next;
 };
 
 /*
@@ -605,16 +605,9 @@ struct ares_addrinfo_cname {
   struct ares_addrinfo_cname *next;
 };
 
-struct ares_addrinfo {
+struct ares_addrinfo_result {
   struct ares_addrinfo_cname *cnames;
-  struct ares_addrinfo_node  *nodes;
-};
-
-struct ares_addrinfo_hints {
-  int ai_flags;
-  int ai_family;
-  int ai_socktype;
-  int ai_protocol;
+  struct ares_addrinfo  *nodes;
 };
 
 /*

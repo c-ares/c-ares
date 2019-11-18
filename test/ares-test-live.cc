@@ -22,7 +22,7 @@ MATCHER_P(IncludesAtLeastNumAddresses, n, "") {
   if(!arg)
     return false;
   int cnt = 0;
-  for (const ares_addrinfo_node* ai = arg->nodes; ai != NULL; ai = ai->ai_next)
+  for (const ares_addrinfo* ai = arg->nodes; ai != NULL; ai = ai->ai_next)
     cnt++;
   return cnt >= n;
 }
@@ -30,7 +30,7 @@ MATCHER_P(IncludesAtLeastNumAddresses, n, "") {
 MATCHER_P(OnlyIncludesAddrType, addrtype, "") {
   if(!arg)
     return false;
-  for (const ares_addrinfo_node* ai = arg->nodes; ai != NULL; ai = ai->ai_next)
+  for (const ares_addrinfo* ai = arg->nodes; ai != NULL; ai = ai->ai_next)
     if (ai->ai_family != addrtype)
       return false;
   return true;
@@ -39,16 +39,16 @@ MATCHER_P(OnlyIncludesAddrType, addrtype, "") {
 MATCHER_P(IncludesAddrType, addrtype, "") {
   if(!arg)
     return false;
-  for (const ares_addrinfo_node* ai = arg->nodes; ai != NULL; ai = ai->ai_next)
+  for (const ares_addrinfo* ai = arg->nodes; ai != NULL; ai = ai->ai_next)
     if (ai->ai_family == addrtype)
       return true;
   return false;
 }
 
 //VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoV4) {
-  //struct ares_addrinfo_hints hints = {};
+  //struct ares_addrinfo hints = {};
   //hints.ai_family = AF_INET;
-  //AddrInfoResult result;
+  //AddrInfoTestResult result;
   //ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   //Process();
   //EXPECT_TRUE(result.done_);
@@ -58,9 +58,9 @@ MATCHER_P(IncludesAddrType, addrtype, "") {
 //}
 
 //VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoV6) {
-  //struct ares_addrinfo_hints hints = {};
+  //struct ares_addrinfo hints = {};
   //hints.ai_family = AF_INET6;
-  //AddrInfoResult result;
+  //AddrInfoTestResult result;
   //ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   //Process();
   //EXPECT_TRUE(result.done_);
@@ -70,9 +70,9 @@ MATCHER_P(IncludesAddrType, addrtype, "") {
 //}
 
 //VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetAddrInfoUnspec) {
-  //struct ares_addrinfo_hints hints = {};
+  //struct ares_addrinfo hints = {};
   //hints.ai_family = AF_UNSPEC;
-  //AddrInfoResult result;
+  //AddrInfoTestResult result;
   //ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   //Process();
   //EXPECT_TRUE(result.done_);

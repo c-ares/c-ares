@@ -48,7 +48,7 @@
 int ares__parse_into_addrinfo2(const unsigned char *abuf,
                                int alen,
                                char **question_hostname,
-                               struct ares_addrinfo *ai)
+                               struct ares_addrinfo_result *ai)
 {
   unsigned int qdcount, ancount;
   int status, i, rr_type, rr_class, rr_len, rr_ttl;
@@ -57,7 +57,7 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
   const unsigned char *aptr;
   char *hostname, *rr_name = NULL, *rr_data;
   struct ares_addrinfo_cname *cname, *cnames = NULL;
-  struct ares_addrinfo_node *node, *nodes = NULL;
+  struct ares_addrinfo *node, *nodes = NULL;
   struct sockaddr_in *sin;
   struct sockaddr_in6 *sin6;
 
@@ -127,7 +127,7 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
             goto failed_stat;
           }  /* LCOV_EXCL_STOP */
 
-          node = ares__append_addrinfo_node(&nodes);
+          node = ares__append_addrinfo(&nodes);
           if (!node)
             {
               status = ARES_ENOMEM;
@@ -163,7 +163,7 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
             goto failed_stat;
           }  /* LCOV_EXCL_STOP */
 
-          node = ares__append_addrinfo_node(&nodes);
+          node = ares__append_addrinfo(&nodes);
           if (!node)
             {
               status = ARES_ENOMEM;
@@ -256,7 +256,7 @@ failed_stat:
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
                               int alen,
-                              struct ares_addrinfo *ai)
+                              struct ares_addrinfo_result *ai)
 {
   int status;
   char *question_hostname;
