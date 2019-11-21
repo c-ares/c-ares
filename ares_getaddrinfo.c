@@ -75,7 +75,7 @@ struct host_query
   int timeouts;    /* number of timeouts we saw for this request */
   const char *remaining_lookups; /* types of lookup we need to perform ("fb" by
                                     default, file and dns respectively) */
-  struct ares_addrinfo_result *ai;      /* store results between lookups */
+  struct ares_addrinfo_ex *ai;      /* store results between lookups */
   int remaining;   /* number of DNS answers waiting for */
   int next_domain; /* next search domain to try */
 };
@@ -100,7 +100,7 @@ static const struct ares_addrinfo empty_addrinfo = {
 
 static const struct ares_addrinfo* default_hints = &empty_addrinfo;
 
-static const struct ares_addrinfo_result empty_addrinfo_result = {
+static const struct ares_addrinfo_ex empty_addrinfo_result = {
   NULL, /* cnames */
   NULL  /* nodes */
 };
@@ -158,9 +158,9 @@ void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
   last->next = tail;
 }
 
-struct ares_addrinfo_result *ares__malloc_addrinfo_result()
+struct ares_addrinfo_ex *ares__malloc_addrinfo_result()
 {
-  struct ares_addrinfo_result *ai = ares_malloc(sizeof(struct ares_addrinfo_result));
+  struct ares_addrinfo_ex *ai = ares_malloc(sizeof(struct ares_addrinfo_ex));
   if (!ai)
     return NULL;
 
@@ -277,7 +277,7 @@ static unsigned short lookup_service(const char *service, int flags)
 static int fake_addrinfo(const char *name,
                          unsigned short port,
                          const struct ares_addrinfo *hints,
-                         struct ares_addrinfo_result *ai,
+                         struct ares_addrinfo_ex *ai,
                          ares_addrinfo_callback callback,
                          void *arg)
 {
@@ -579,7 +579,7 @@ void ares_getaddrinfo_ex(ares_channel channel,
   struct host_query *hquery;
   unsigned short port = 0;
   int family;
-  struct ares_addrinfo_result *ai;
+  struct ares_addrinfo_ex *ai;
 
   if (!hints)
     {

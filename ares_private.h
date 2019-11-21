@@ -361,9 +361,9 @@ int ares__cat_domain(const char *name, const char *domain, char **s);
 int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo *ai_node);
 int ares__readaddrinfo(FILE *fp, const char *name, unsigned short port,
                        const struct ares_addrinfo *hints,
-                       struct ares_addrinfo_result *ai);
+                       struct ares_addrinfo_ex *ai);
 
-struct ares_addrinfo_result *ares__malloc_addrinfo_result(void);
+struct ares_addrinfo_ex *ares__malloc_addrinfo_result(void);
 
 struct ares_addrinfo *ares__malloc_addrinfo(void);
 void ares__freeaddrinfo_nodes(struct ares_addrinfo *ai_node);
@@ -382,12 +382,12 @@ void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
                               int alen,
-                              struct ares_addrinfo_result *ai);
+                              struct ares_addrinfo_ex *ai);
 
 int ares__parse_into_addrinfo2(const unsigned char *abuf,
                                int alen,
                                char **question_hostname,
-                               struct ares_addrinfo_result *ai);
+                               struct ares_addrinfo_ex *ai);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);

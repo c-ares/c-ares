@@ -628,7 +628,7 @@ std::ostream& operator<<(std::ostream& os, const AddrInfoResult& ai) {
 }
 
 void AddrInfoCallback(void *data, int status, int timeouts,
-                      struct ares_addrinfo_result *ai) {
+                      struct ares_addrinfo_ex *ai) {
   EXPECT_NE(nullptr, data);
   AddrInfoTestResult* result = reinterpret_cast<AddrInfoTestResult*>(data);
   result->done_ = true;

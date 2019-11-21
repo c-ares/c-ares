@@ -48,7 +48,7 @@
 int ares__parse_into_addrinfo2(const unsigned char *abuf,
                                int alen,
                                char **question_hostname,
-                               struct ares_addrinfo_result *ai)
+                               struct ares_addrinfo_ex *ai)
 {
   unsigned int qdcount, ancount;
   int status, i, rr_type, rr_class, rr_len, rr_ttl;
@@ -256,7 +256,7 @@ failed_stat:
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
                               int alen,
-                              struct ares_addrinfo_result *ai)
+                              struct ares_addrinfo_ex *ai)
 {
   int status;
   char *question_hostname;

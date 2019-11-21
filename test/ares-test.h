@@ -280,13 +280,13 @@ struct NameInfoResult {
 std::ostream& operator<<(std::ostream& os, const NameInfoResult& result);
 
 struct AddrInfoResultDeleter {
-  void operator() (ares_addrinfo_result *ptr) {
+  void operator() (ares_addrinfo_ex *ptr) {
     if (ptr) ares_freeaddrinfo(ptr);
   }
 };
 
-// C++ wrapper for struct ares_addrinfo_result.
-using AddrInfoResult = std::unique_ptr<ares_addrinfo_result, AddrInfoResultDeleter>;
+// C++ wrapper for struct ares_addrinfo_ex.
+using AddrInfoResult = std::unique_ptr<ares_addrinfo_ex, AddrInfoResultDeleter>;
 
 std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result);
 
@@ -298,7 +298,7 @@ struct AddrInfoTestResult {
   // Explicitly provided result information.
   int status_;
   int timeouts_;
-  // Contents of the ares_addrinfo_result structure, if provided.
+  // Contents of the ares_addrinfo_ex structure, if provided.
   AddrInfoResult ai_;
 };
 std::ostream& operator<<(std::ostream& os, const AddrInfoTestResult& result);
@@ -312,7 +312,7 @@ void SearchCallback(void *data, int status, int timeouts,
 void NameInfoCallback(void *data, int status, int timeouts,
                       char *node, char *service);
 void AddrInfoCallback(void *data, int status, int timeouts,
-                      struct ares_addrinfo_result *res);
+                      struct ares_addrinfo_ex *res);
 
 // Retrieve the name servers used by a channel.
 std::vector<std::string> GetNameServers(ares_channel channel);

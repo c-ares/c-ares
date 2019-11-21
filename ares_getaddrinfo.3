@@ -21,7 +21,7 @@ ares_getaddrinfo_ex \- Initiate a host query by name and service
 .B #include <ares.h>
 .PP
 .B typedef void (*ares_addrinfo_callback)(void *\fIarg\fP, int \fIstatus\fP,
-.B 	int \fItimeouts\fP, struct ares_addrinfo_result *\fIresult\fP)
+.B 	int \fItimeouts\fP, struct ares_addrinfo_ex *\fIresult\fP)
 .PP
 .B void ares_getaddrinfo_ex(ares_channel \fIchannel\fP, const char *\fIname\fP,
 .B 	const char* \fIservice\fP, const struct ares_addrinfo *\fIhints\fP,
@@ -66,7 +66,7 @@ If this option is set
 field will be treated as a numeric value.
 .TP 19
 .B ARES_AI_CANONNAME
-The ares_addrinfo_result structure will return a canonical names list.
+The ares_addrinfo_ex structure will return a canonical names list.
 .TP 19
 .B ARES_AI_NOSORT
 Result addresses will not be sorted and no connections to resolved addresses will be attempted.
@@ -117,12 +117,12 @@ is being destroyed; the query will not be completed.
 On successful completion of the query, the callback argument
 .I result
 points to a
-.B struct ares_addrinfo_result
+.B struct ares_addrinfo_ex
 which contains two linked lists, one with resolved addresses and another with canonical names.
 .PP
 .IN +4n
 .EX
-struct ares_addrinfo_result {
+struct ares_addrinfo_ex {
   struct ares_addrinfo_cname *cnames;
   struct ares_addrinfo  *nodes;
 };

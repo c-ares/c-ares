@@ -36,7 +36,7 @@ int ares__readaddrinfo(FILE *fp,
                        const char *name,
                        unsigned short port,
                        const struct ares_addrinfo *hints,
-                       struct ares_addrinfo_result *ai)
+                       struct ares_addrinfo_ex *ai)
 {
   char *line = NULL, *p, *q;
   char *txtaddr, *txthost, *txtalias;

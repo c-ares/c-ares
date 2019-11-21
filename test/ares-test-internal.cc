@@ -451,7 +451,7 @@ TEST_F(LibraryTest, GetAddrInfoAllocFail) {
     rewind(fp);
     ClearFails();
     SetAllocFail(ii);
-    struct ares_addrinfo_result ai;
+    struct ares_addrinfo_ex ai;
     EXPECT_EQ(ARES_ENOMEM, ares__readaddrinfo(fp, "example.com", port, &hints, &ai)) << ii;
   }
   fclose(fp);
