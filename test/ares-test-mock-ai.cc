@@ -76,11 +76,11 @@ TEST_P(MockUDPChannelTestAI, GetAddrInfoParallelLookups) {
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
   AddrInfoTestResult result1;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result1);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result1);
   AddrInfoTestResult result2;
-  ares_getaddrinfo(channel_, "www.example.com.", NULL, &hints, AddrInfoCallback, &result2);
+  ares_getaddrinfo_ex(channel_, "www.example.com.", NULL, &hints, AddrInfoCallback, &result2);
   AddrInfoTestResult result3;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result3);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result3);
   Process();
 
   EXPECT_TRUE(result1.done_);
@@ -116,7 +116,7 @@ TEST_P(MockUDPChannelTestAI, TruncationRetry) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(result.status_, ARES_SUCCESS);
@@ -134,7 +134,7 @@ TEST_P(MockTCPChannelTestAI, MalformedResponse) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ETIMEOUT, result.status_);
@@ -152,7 +152,7 @@ TEST_P(MockTCPChannelTestAI, FormErrResponse) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_EFORMERR, result.status_);
@@ -170,7 +170,7 @@ TEST_P(MockTCPChannelTestAI, ServFailResponse) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   // ARES_FLAG_NOCHECKRESP not set, so SERVFAIL consumed
@@ -189,7 +189,7 @@ TEST_P(MockTCPChannelTestAI, NotImplResponse) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   // ARES_FLAG_NOCHECKRESP not set, so NOTIMPL consumed
@@ -208,7 +208,7 @@ TEST_P(MockTCPChannelTestAI, RefusedResponse) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   // ARES_FLAG_NOCHECKRESP not set, so REFUSED consumed
@@ -227,7 +227,7 @@ TEST_P(MockTCPChannelTestAI, YXDomainResponse) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ENODATA, result.status_);
@@ -270,7 +270,7 @@ TEST_P(MockExtraOptsTestAI, SimpleQuery) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_SUCCESS, result.status_);
@@ -311,7 +311,7 @@ TEST_P(MockNoCheckRespChannelTestAI, ServFailResponse) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ESERVFAIL, result.status_);
@@ -329,7 +329,7 @@ TEST_P(MockNoCheckRespChannelTestAI, NotImplResponse) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ENOTIMP, result.status_);
@@ -347,7 +347,7 @@ TEST_P(MockNoCheckRespChannelTestAI, RefusedResponse) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_EREFUSED, result.status_);
@@ -366,7 +366,7 @@ TEST_P(MockChannelTestAI, FamilyV6) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET6;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
+  ares_getaddrinfo_ex(channel_, "example.com.", NULL, &hints,
                    AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -385,7 +385,7 @@ TEST_P(MockChannelTestAI, FamilyV4) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
+  ares_getaddrinfo_ex(channel_, "example.com.", NULL, &hints,
                    AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -405,7 +405,7 @@ TEST_P(MockChannelTestAI, FamilyV4_MultipleAddresses) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
+  ares_getaddrinfo_ex(channel_, "example.com.", NULL, &hints,
                    AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -433,7 +433,7 @@ TEST_P(MockChannelTestAI, FamilyUnspecified) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_UNSPEC;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
+  ares_getaddrinfo_ex(channel_, "example.com.", NULL, &hints,
                    AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -463,7 +463,7 @@ TEST_P(MockEDNSChannelTestAI, RetryWithoutEDNS) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
@@ -492,7 +492,7 @@ TEST_P(MockChannelTestAI, SearchDomains) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
@@ -538,7 +538,7 @@ TEST_P(MockChannelTestAI, SearchDomainsServFailOnAAAA) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_UNSPEC;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
@@ -556,7 +556,7 @@ class MockMultiServerChannelTestAI
     struct ares_addrinfo hints = {};
     hints.ai_family = AF_INET;
     hints.ai_flags = ARES_AI_NOSORT;
-    ares_getaddrinfo(channel_, "www.example.com.", NULL, &hints, AddrInfoCallback, &result);
+    ares_getaddrinfo_ex(channel_, "www.example.com.", NULL, &hints, AddrInfoCallback, &result);
     Process();
     EXPECT_TRUE(result.done_);
     EXPECT_EQ(result.status_, ARES_SUCCESS);
@@ -678,7 +678,7 @@ TEST_P(MockChannelTestAI, FamilyV4ServiceName) {
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "example.com", "http", &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "example.com", "http", &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   std::stringstream ss;

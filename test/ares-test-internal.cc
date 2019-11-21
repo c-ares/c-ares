@@ -368,7 +368,7 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsPositive) {
   AddrInfoTestResult result = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   std::stringstream ss;
@@ -388,7 +388,7 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsSpaces) {
   AddrInfoTestResult result = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "google.com", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "google.com", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   std::stringstream ss;
@@ -408,7 +408,7 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsByALias) {
   AddrInfoTestResult result = {};
   hints.ai_family = AF_INET;
   hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "www2.google.com", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "www2.google.com", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   std::stringstream ss;
@@ -428,7 +428,7 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsIPV6) {
   AddrInfoTestResult result = {};
   hints.ai_family = AF_INET6;
   hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "ipv6.com", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "ipv6.com", NULL, &hints, AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   std::stringstream ss;

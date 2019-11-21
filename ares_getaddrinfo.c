@@ -571,7 +571,7 @@ static void host_callback(void *arg, int status, int timeouts,
   /* at this point we keep on waiting for the next query to finish */
 }
 
-void ares_getaddrinfo(ares_channel channel,
+void ares_getaddrinfo_ex(ares_channel channel,
                       const char* name, const char* service,
                       const struct ares_addrinfo* hints,
                       ares_addrinfo_callback callback, void* arg)

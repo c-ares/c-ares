@@ -121,7 +121,7 @@ extern "C" {
 /* ares_getnameinfo error codes */
 #define ARES_EBADFLAGS          18
 
-/* ares_getaddrinfo error codes */
+/* ares_getaddrinfo_ex error codes */
 #define ARES_ENONAME            19
 #define ARES_EBADHINTS          20
 
@@ -135,7 +135,7 @@ extern "C" {
 /* More error codes */
 #define ARES_ECANCELLED         24          /* introduced in 1.7.0 */
 
-/* More ares_getaddrinfo error codes */
+/* More ares_getaddrinfo_ex error codes */
 #define ARES_ESERVICE           25          /* introduced in 1.?.0 */
 
 /* Flag values */
@@ -381,7 +381,7 @@ CARES_EXTERN void ares_set_socket_configure_callback(ares_channel channel,
 CARES_EXTERN int ares_set_sortlist(ares_channel channel,
                                    const char *sortstr);
 
-CARES_EXTERN void ares_getaddrinfo(ares_channel channel,
+CARES_EXTERN void ares_getaddrinfo_ex(ares_channel channel,
                                    const char* node,
                                    const char* service,
                                    const struct ares_addrinfo* hints,

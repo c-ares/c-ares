@@ -49,7 +49,7 @@ MATCHER_P(IncludesAddrType, addrtype, "") {
   //struct ares_addrinfo hints = {};
   //hints.ai_family = AF_INET;
   //AddrInfoTestResult result;
-  //ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  //ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   //Process();
   //EXPECT_TRUE(result.done_);
   //EXPECT_EQ(ARES_SUCCESS, result.status_);
@@ -61,7 +61,7 @@ MATCHER_P(IncludesAddrType, addrtype, "") {
   //struct ares_addrinfo hints = {};
   //hints.ai_family = AF_INET6;
   //AddrInfoTestResult result;
-  //ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  //ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   //Process();
   //EXPECT_TRUE(result.done_);
   //EXPECT_EQ(ARES_SUCCESS, result.status_);
@@ -73,7 +73,7 @@ MATCHER_P(IncludesAddrType, addrtype, "") {
   //struct ares_addrinfo hints = {};
   //hints.ai_family = AF_UNSPEC;
   //AddrInfoTestResult result;
-  //ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
+  //ares_getaddrinfo_ex(channel_, "www.google.com.", NULL, &hints, AddrInfoCallback, &result);
   //Process();
   //EXPECT_TRUE(result.done_);
   //EXPECT_EQ(ARES_SUCCESS, result.status_);

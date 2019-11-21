@@ -300,7 +300,7 @@ TEST_F(DefaultChannelTest, GetAddrinfoOnionDomain) {
   AddrInfoTestResult result;
   struct ares_addrinfo hints = {};
   hints.ai_family = AF_UNSPEC;
-  ares_getaddrinfo(channel_, "dontleak.onion", NULL, &hints, AddrInfoCallback, &result);
+  ares_getaddrinfo_ex(channel_, "dontleak.onion", NULL, &hints, AddrInfoCallback, &result);
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ENOTFOUND, result.status_);
 }
