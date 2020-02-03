@@ -88,7 +88,10 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
   next = ai.nodes;
   while (next)
     {
-      ++naddrs;
+      if(next->ai_family == AF_INET6)
+        {
+          ++naddrs;
+        }
       next = next->ai_next;
     }
 

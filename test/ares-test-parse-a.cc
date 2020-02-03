@@ -11,13 +11,14 @@ TEST_F(LibraryTest, ParseAReplyOK) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
     .add_question(new DNSQuestion("example.com", ns_t_a))
-    .add_answer(new DNSARR("example.com", 0x01020304, {2,3,4,5}));
+    .add_answer(new DNSARR("example.com", 0x01020304, {2,3,4,5}))
+    .add_answer(new DNSAaaaRR("example.com", 0x01020304, {0,0,0,0,0,0,0,0,0,0,0,0,2,3,4,5}));
   std::vector<byte> data = {
     0x12, 0x34,  // qid
     0x84, // response + query + AA + not-TC + not-RD
     0x00, // not-RA + not-Z + not-AD + not-CD + rc=NoError
     0x00, 0x01,  // num questions
-    0x00, 0x01,  // num answer RRs
+    0x00, 0x02,  // num answer RRs
     0x00, 0x00,  // num authority RRs
     0x00, 0x00,  // num additional RRs
     // Question
@@ -35,6 +36,15 @@ TEST_F(LibraryTest, ParseAReplyOK) {
     0x01, 0x02, 0x03, 0x04, // TTL
     0x00, 0x04,  // rdata length
     0x02, 0x03, 0x04, 0x05,
+    // Answer 2
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x1c,  //  RR type
+    0x00, 0x01,  //  class IN
+    0x01, 0x02, 0x03, 0x04, // TTL
+    0x00, 0x10,  // rdata length
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x04, 0x05,
   };
   EXPECT_EQ(data, pkt.data());
   struct hostent *host = nullptr;
@@ -68,7 +78,7 @@ TEST_F(LibraryTest, ParseMalformedAReply) {
     0x84, // [2] response + query + AA + not-TC + not-RD
     0x00, // [3] not-RA + not-Z + not-AD + not-CD + rc=NoError
     0x00, 0x01,  // [4:6) num questions
-    0x00, 0x01,  // [6:8) num answer RRs
+    0x00, 0x02,  // [6:8) num answer RRs
     0x00, 0x00,  // [8:10) num authority RRs
     0x00, 0x00,  // [10:12) num additional RRs
     // Question
