@@ -140,6 +140,7 @@ TEST_F(LibraryTest, ParseAReplyNoData) {
   std::stringstream ss;
   ss << HostEnt(host);
   EXPECT_EQ("{'c.example.com' aliases=[example.com] addrs=[]}", ss.str());
+  ares_free_hostent(host);
 }
 
 TEST_F(LibraryTest, ParseAReplyVariantA) {
