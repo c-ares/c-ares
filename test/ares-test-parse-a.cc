@@ -131,10 +131,16 @@ TEST_F(LibraryTest, ParseAReplyNoData) {
 
   // Again but with a CNAME.
   pkt.add_answer(new DNSCnameRR("example.com", 200, "c.example.com"));
-  EXPECT_EQ(ARES_ENODATA, ares_parse_a_reply(data.data(), data.size(),
+  data = pkt.data();
+  // Expect success as per https://github.com/c-ares/c-ares/commit/2c63440127feed70ccefb148b8f938a2df6c15f8
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), data.size(),
                                              &host, info, &count));
   EXPECT_EQ(0, count);
-  EXPECT_EQ(nullptr, host);
+  EXPECT_NE(nullptr, host);
+  std::stringstream ss;
+  ss << HostEnt(host);
+  EXPECT_EQ("{'c.example.com' aliases=[example.com] addrs=[]}", ss.str());
+  ares_free_hostent(host);
 }
 
 TEST_F(LibraryTest, ParseAReplyVariantA) {

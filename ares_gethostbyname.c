@@ -211,6 +211,13 @@ static void host_callback(void *arg, int status, int timeouts,
           if (host && channel->nsort)
             sort6_addresses(host, channel->sortlist, channel->nsort);
         }
+      if (status == ARES_SUCCESS && host && host->h_addr_list[0] == NULL)
+      {
+        /* The query returned something but had no A/AAAA record 
+           (even after potentially retrying AAAA with A)
+           so we should treat this as an error */
+        status = ARES_ENODATA;
+      }
       end_hquery(hquery, status, host);
     }
   else if ((status == ARES_ENODATA || status == ARES_EBADRESP ||
