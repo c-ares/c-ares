@@ -45,12 +45,6 @@ TEST_F(DefaultChannelTest, SetServers) {
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, &server1));
   std::vector<std::string> expected = {"1.2.3.4", "2.3.4.5"};
   EXPECT_EQ(expected, GetNameServers(channel_));
-
-  // Change not allowed while request is pending
-  HostResult result;
-  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers(channel_, &server1));
-  ares_cancel(channel_);
 }
 
 TEST_F(DefaultChannelTest, SetServersPorts) {
@@ -75,12 +69,6 @@ TEST_F(DefaultChannelTest, SetServersPorts) {
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, &server1));
   std::vector<std::string> expected = {"1.2.3.4:111", "2.3.4.5"};
   EXPECT_EQ(expected, GetNameServers(channel_));
-
-  // Change not allowed while request is pending
-  HostResult result;
-  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_ports(channel_, &server1));
-  ares_cancel(channel_);
 }
 
 TEST_F(DefaultChannelTest, SetServersCSV) {
@@ -107,13 +95,6 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
             ares_set_servers_ports_csv(channel_, "1.2.3.4:54,[0102:0304:0506:0708:0910:1112:1314:1516]:80,2.3.4.5:55"));
   std::vector<std::string> expected2 = {"1.2.3.4:54", "[0102:0304:0506:0708:0910:1112:1314:1516]:80", "2.3.4.5:55"};
   EXPECT_EQ(expected2, GetNameServers(channel_));
-
-  // Change not allowed while request is pending
-  HostResult result;
-  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_csv(channel_, "1.2.3.4,2.3.4.5"));
-  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_ports_csv(channel_, "1.2.3.4:56,2.3.4.5:67"));
-  ares_cancel(channel_);
 
   // Should survive duplication
   ares_channel channel2;
@@ -294,6 +275,15 @@ TEST_F(DefaultChannelTest, HostByNameFileOnionDomain) {
   struct hostent *h;
   EXPECT_EQ(ARES_ENOTFOUND,
             ares_gethostbyname_file(channel_, "dontleak.onion", AF_INET, &h));
+}
+
+TEST_F(DefaultChannelTest, GetAddrinfoOnionDomain) {
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {};
+  hints.ai_family = AF_UNSPEC;
+  ares_getaddrinfo(channel_, "dontleak.onion", NULL, &hints, AddrInfoCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTFOUND, result.status_);
 }
 
 // Interesting question: should tacking on a search domain let the query

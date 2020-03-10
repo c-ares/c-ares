@@ -2,6 +2,7 @@
 
 set_and_check(c-ares_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
 
+include("${CMAKE_CURRENT_LIST_DIR}/c-ares-config-version.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/c-ares-targets.cmake")
 
 set(c-ares_LIBRARY c-ares::cares)

@@ -34,6 +34,7 @@ OPTION (CARES_SHARED     "Build as a shared library"                            
 OPTION (CARES_INSTALL    "Create installation targets (chain builders may want to disable this)" ON)
 OPTION (CARES_STATIC_PIC "Build the static library as PIC (position independent)"                OFF)
 OPTION (CARES_BUILD_TESTS "Build and run tests"                                                  OFF)
+OPTION (CARES_BUILD_CONTAINER_TESTS "Build and run container tests (implies CARES_BUILD_TESTS, Linux only)" OFF)
 OPTION (CARES_BUILD_TOOLS "Build tools"                                                          ON)
 
 # allow linking against the static runtime library in msvc
@@ -644,7 +645,7 @@ IF (CARES_STATIC)
 	ENDIF ()
 ENDIF ()
 
-IF (CARES_BUILD_TESTS)
+IF (CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS)
 	ENABLE_TESTING ()
 	ADD_SUBDIRECTORY (test)
 ENDIF ()
@@ -664,8 +665,10 @@ IF (CARES_INSTALL)
 		PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 		NO_CHECK_REQUIRED_COMPONENTS_MACRO
 	)
+
+	WRITE_BASIC_PACKAGE_VERSION_FILE(${PROJECT_NAME}-config-version.cmake VERSION "${CARES_VERSION}" COMPATIBILITY SameMajorVersion)
 	INSTALL (EXPORT ${PROJECT_NAME}-targets COMPONENT Devel DESTINATION ${CMAKECONFIG_INSTALL_DIR} NAMESPACE ${PROJECT_NAME}::)
-	INSTALL (FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake" COMPONENT Devel DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+	INSTALL (FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake" "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake" COMPONENT Devel DESTINATION ${CMAKECONFIG_INSTALL_DIR})
 
 	# pkgconfig support
 	IF (NOT CARES_SHARED)

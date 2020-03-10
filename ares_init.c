@@ -2024,6 +2024,7 @@ static int config_lookup(ares_channel channel, const char *str,
 {
   char lookups[3], *l;
   const char *vqualifier p;
+  int found;
 
   if (altbindch == NULL)
     altbindch = bindch;
@@ -2034,17 +2035,21 @@ static int config_lookup(ares_channel channel, const char *str,
    */
   l = lookups;
   p = str;
+  found = 0;
   while (*p)
     {
       if ((*p == *bindch || *p == *altbindch || *p == *filech) && l < lookups + 2) {
         if (*p == *bindch || *p == *altbindch) *l++ = 'b';
         else *l++ = 'f';
+        found = 1;
       }
       while (*p && !ISSPACE(*p) && (*p != ','))
         p++;
       while (*p && (ISSPACE(*p) || (*p == ',')))
         p++;
     }
+  if (!found)
+    return ARES_ENOTINITIALIZED;
   *l = '\0';
   channel->lookups = ares_strdup(lookups);
   return (channel->lookups) ? ARES_SUCCESS : ARES_ENOMEM;
