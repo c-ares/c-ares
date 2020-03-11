@@ -12,7 +12,7 @@ skip_commits:
 
 # List of build configurations to test.
 configuration:
-  - DEBUG
+  - RelWithDebInfo
 
 # Note: You can set extra cmake args for a particular matrix entry with CMAKE_EXTRA_OPTIONS. For example:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
