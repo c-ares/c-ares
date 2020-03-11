@@ -170,8 +170,7 @@ int ares__readaddrinfo(FILE *fp,
       if ((hints->ai_family == AF_INET) || (hints->ai_family == AF_UNSPEC))
         {
           addr.sa4.sin_port = htons(port);
-          addr.sa4.sin_addr.s_addr = inet_addr(txtaddr);
-          if (addr.sa4.sin_addr.s_addr != INADDR_NONE)
+          if (ares_inet_pton(AF_INET, txtaddr, &addr.sa4.sin_addr) > 0)
             {
               node = ares__append_addrinfo_node(&nodes);
               if(!node)

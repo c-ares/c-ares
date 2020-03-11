@@ -2297,7 +2297,7 @@ static int set_search(ares_channel channel, const char *str)
     channel->ndomains = -1;
   } /* LCOV_EXCL_STOP */
 
-  channel->domains  = ares_strsplit(str, ", ", 1, &cnt); 
+  channel->domains  = ares_strsplit(str, ", ", 1, &cnt);
   channel->ndomains = (int)cnt;
   if (channel->domains == NULL || channel->ndomains == 0) {
     channel->domains  = NULL;
@@ -2423,9 +2423,9 @@ static int ip_addr(const char *ipbuf, ares_ssize_t len, struct in_addr *addr)
   if (len > 15)
     return -1;
 
-  addr->s_addr = inet_addr(ipbuf);
-  if (addr->s_addr == INADDR_NONE && strcmp(ipbuf, "255.255.255.255") != 0)
+  if (ares_inet_pton(AF_INET, ipbuf, addr) < 1)
     return -1;
+
   return 0;
 }
 
