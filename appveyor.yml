@@ -10,6 +10,10 @@ skip_commits:
     - '**/*.md'
     - .travis.yml
 
+# List of build configurations to test.
+configuration:
+  - RelWithDebInfo
+
 # Note: You can set extra cmake args for a particular matrix entry with CMAKE_EXTRA_OPTIONS. For example:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
@@ -77,8 +81,8 @@ build_script:
       if ($env:BUILDTOOL -eq "CMAKE") {
          mkdir C:\projects\build-cares
          cd C:\projects\build-cares
-         cmake -GNinja -DCMAKE_BUILD_TYPE=$configuration -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install $env:CMAKE_EXTRA_OPTIONS $env:APPVEYOR_BUILD_FOLDER
-         echo "Config: $configuration  BuildFolder: $env:APPVEYOR_BUILD_FOLDER"
+         cmake -GNinja -DCMAKE_BUILD_TYPE=$env:configuration -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install $env:CMAKE_EXTRA_OPTIONS $env:APPVEYOR_BUILD_FOLDER
+         echo "Config: $env:configuration  BuildFolder: $env:APPVEYOR_BUILD_FOLDER"
          ninja install
       }
   - ps: |
