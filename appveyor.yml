@@ -53,12 +53,7 @@ environment:
       PATH: C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin;%PATH%
 
 install:
-  - ps: |
-      $ErrorActionPreference = "Stop"
-      if ($env:COMPILER -eq "MINGW") {
-        # Rename sh.exe as sh.exe in PATH interferes with MinGW.
-        Rename-Item -Path "C:\Program Files\Git\usr\bin\sh.exe" -NewName "sh2.exe"
-      }
+  - if "%COMPILER%" == "MINGW" rename "C:\Program Files\Git\usr\bin\sh.exe" "sh2.exe"
 
 before_build:
   # Setup build environment for the selected compiler (not all compilers need to do anything here).
@@ -66,41 +61,29 @@ before_build:
   - if "%COMPILER%" == "MSVC" call "%MSVC_SETUP_PATH%" %MSVC_SETUP_ARG%
 
 build_script:
-  - ps: |
-      $ErrorActionPreference = "Stop"
-      if ($env:BUILDTOOL -eq "NMAKE") {
-         Copy-Item -Path "$env:APPVEYOR_BUILD_FOLDER\ares_build.h.dist" -Destination "ares_build.h"
-         nmake /NOLOGO /f .\Makefile.msvc
-      }
-  - ps: |
-      $ErrorActionPreference = "Stop"
-      if ($env:BUILDTOOL -eq "CMAKE") {
-         mkdir C:\projects\build-cares
-         cd C:\projects\build-cares
-         cmake -GNinja -DCMAKE_BUILD_TYPE="$env:configuration" -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install $env:CMAKE_EXTRA_OPTIONS $env:APPVEYOR_BUILD_FOLDER
-         # -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON
-         # Note: Tests currently fail to compile due to ares-test-internal.cc needing access to :
-         #       _aresx_sltosi
-         #       _aresx_sztoui
-         #       _ares_inet_net_pton
-         #       _ares_malloc_data
-         #       _ares_strdup
-         #       _ares_writev
-         #       _ares__is_onion_domain
-         #       _ares__get_hostent
-         #       _ares__read_line
-         #       _ares__readaddrinfo
-         #       _ares__bitncmp
-         #       _ares_malloc
-         #       _ares_free
-         ninja install
-      }
-  - ps: |
-      $ErrorActionPreference = "Stop"
-      if ($env:BUILDTOOL -eq "MAKE") {
-        Copy-Item -Path "ares_build.h.dist" -Destination "ares_build.h"
-        mingw32-make.exe -f Makefile.m32 demos
-      }
+  - if "%BUILDTOOL%" == "NMAKE" copy ares_build.h.dist ares_build.h
+  - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc
+  - if "%BUILDTOOL%" == "CMAKE" mkdir C:\projects\build-cares
+  - if "%BUILDTOOL%" == "CMAKE" cd C:\projects\build-cares
+  - if "%BUILDTOOL%" == "CMAKE" cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install %CMAKE_EXTRA_OPTIONS% %APPVEYOR_BUILD_FOLDER%
+    # -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON
+    # Note: Tests currently fail to compile due to ares-test-internal.cc needing access to :
+    #       _aresx_sltosi
+    #       _aresx_sztoui
+    #       _ares_inet_net_pton
+    #       _ares_malloc_data
+    #       _ares_strdup
+    #       _ares_writev
+    #       _ares__is_onion_domain
+    #       _ares__get_hostent
+    #       _ares__read_line
+    #       _ares__readaddrinfo
+    #       _ares__bitncmp
+    #       _ares_malloc
+    #       _ares_free
+  - if "%BUILDTOOL%" == "CMAKE" ninja install
+  - if "%BUILDTOOL%" == "MAKE" copy ares_build.h.dist ares_build.h
+  - if "%BUILDTOOL%" == "MAKE" mingw32-make.exe -f Makefile.m32 demos
 
 test_script:
   # We can't use powershell for tests due to treating stderr as an error
