@@ -71,10 +71,6 @@ build_script:
       if ($env:BUILDTOOL -eq "NMAKE") {
          Copy-Item -Path "ares_build.h.dist" -Destination "ares_build.h"
          nmake /f Makefile.msvc
-         cd test
-         nmake /f Makefile.msvc vtest
-         nmake /f Makefile.msvc aresfuzz aresfuzzname dnsdump
-         cd ..
       }
   - ps: |
       $ErrorActionPreference = "Stop"
@@ -89,14 +85,27 @@ build_script:
       if ($env:BUILDTOOL -eq "MAKE") {
         Copy-Item -Path "ares_build.h.dist" -Destination "ares_build.h"
         mingw32-make.exe -f Makefile.m32 demos
+      }
+
+test_script:
+  - ps: |
+      $ErrorActionPreference = "Stop"
+      if ($env:BUILDTOOL -eq "NMAKE") {
+        cd test
+        nmake /f Makefile.msvc vtest
+        nmake /f Makefile.msvc aresfuzz aresfuzzname dnsdump
+      }
+  - ps: |
+      $ErrorActionPreference = "Stop"
+      if ($env:BUILDTOOL -eq "MAKE") {
         cd test
         mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
       }
+  - ps: |
+      $ErrorActionPreference = "Stop"
+      if ($env:BUILDTOOL -eq "CMAKE") {
+      }
 
-#test_script:
-#  - cd C:\projects\build-cares\test
-#  - set CTEST_OUTPUT_ON_FAILURE=1
-#  - ps: ctest | tee -FilePath "all_tests.log"
 
 #on_finish:
 #  - cd C:\projects\build-cares\test
