@@ -77,7 +77,7 @@ SET (TARGETS_INST_DEST
 # is found in a different dependent library.
 MACRO (CARES_FUNCTION_IN_LIBRARY func lib var)
 	CHECK_FUNCTION_EXISTS ("${func}" "_CARES_FUNC_IN_LIB_GLOBAL_${func}")
-	IF ("_CARES_FUNC_IN_LIB_GLOBAL_${func}")
+	IF ("${_CARES_FUNC_IN_LIB_GLOBAL_${func}}")
 		SET (${var} FALSE)
 	ELSE ()
 		CHECK_LIBRARY_EXISTS ("${lib}" "${func}" "" ${var})
