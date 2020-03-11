@@ -70,7 +70,9 @@ build_script:
       $ErrorActionPreference = "Stop"
       if ($env:BUILDTOOL -eq "NMAKE") {
          Copy-Item -Path "$env:APPVEYOR_BUILD_FOLDER\ares_build.h.dist" -Destination "ares_build.h"
-         nmake /f Makefile.msvc
+         cd
+         dir
+         #nmake /f Makefile.msvc
       }
   - ps: |
       $ErrorActionPreference = "Stop"
