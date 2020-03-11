@@ -1,15 +1,113 @@
-platform:
-  - x64
-  - x86
-  - mingw
+image: Visual Studio 2015
+
+# Github/Bitbucket only: get source code for one particular commit as zip archive, instead of git clone'ing.
+shallow_clone: true
+
+# Github/Bitbucket only: per-file commit filtering
+skip_commits:
+  files:
+    - .gitignore
+    - '**/*.md'
+    - .travis.yml
+
+# Note: You can set extra cmake args for a particular matrix entry with CMAKE_EXTRA_OPTIONS. For example:
+#     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
+environment:
+  matrix:
+    # MSVC 2015, 32-bit x86 (cmake)
+    - COMPILER: MSVC
+      MSVC_SETUP_PATH: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      MSVC_SETUP_ARG: x86
+      BUILDTOOL: CMAKE
+
+    # MSVC 2015, 64-bit x86 (cmake)
+    - COMPILER: MSVC
+      MSVC_SETUP_PATH: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      MSVC_SETUP_ARG: x64
+      BUILDTOOL: CMAKE
+
+    # MinGW, 32-bit x86 (cmake)
+    - COMPILER: MINGW
+      PATH: C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin;%PATH%
+      BUILDTOOL: CMAKE
+
+    # MSVC 2015, 32-bit x86 (nmake)
+    - COMPILER: MSVC
+      MSVC_SETUP_PATH: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      MSVC_SETUP_ARG: x86
+      BUILDTOOL: NMAKE
+
+    # MSVC 2015, 64-bit x86 (nmake)
+    - COMPILER: MSVC
+      MSVC_SETUP_PATH: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      MSVC_SETUP_ARG: x64
+      BUILDTOOL: NMAKE
+
+    # MinGW, 32-bit x86 (makefiles)
+    - COMPILER: MINGW
+      PATH: C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin;%PATH%
+      BUILDTOOL: MAKE
+
+install:
+  - ps: |
+      if ($env:COMPILER -eq "MINGW") {
+        # Rename sh.exe as sh.exe in PATH interferes with MinGW.
+        rename "C:\Program Files\Git\usr\bin\sh.exe" "sh2.exe"
+      }
+  - ps: |
+      if ($env:BUILDTOOL -eq "CMAKE") {
+        # Download and extract ninja, add it to PATH.
+        mkdir C:\projects\ninja
+        cd C:\projects\ninja
+        (New-Object Net.WebClient).DownloadFile('https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip', 'ninja.zip')
+        7z x ninja.zip > nul
+        $env:PATH += ";c:\projects\ninja"
+        ninja --version
+      }
+
+before_build:
+  # Setup build environment for the selected compiler (not all compilers need to do anything here).
+  #  -- Visual Studio --
+  - if "%COMPILER%" == "MSVC" call "%MSVC_SETUP_PATH%" %MSVC_SETUP_ARG%
+
 build_script:
-  - if "%platform%" == "x86" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
-  - if "%platform%" == "x64" "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
-  - if "%platform%" == "x64" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
-  - if "%platform%" == "mingw" set PATH=%PATH%;C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin
-  - copy ares_build.h.dist ares_build.h
-  - if "%platform%" == "mingw" ( mingw32-make.exe -f Makefile.m32 demos ) else ( nmake /f Makefile.msvc )
-  - cd test
-  - if "%platform%" == "mingw" ( mingw32-make.exe -f Makefile.m32 ) else ( nmake /f Makefile.msvc vtest )
-  - if "%platform%" == "mingw" ( mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe ) else ( nmake /f Makefile.msvc aresfuzz aresfuzzname dnsdump )
-  - if "%platform%" == "mingw" ( .\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa ) else ( .\msvc\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa )
+  - ps: |
+      if ($env:BUILDTOOL -eq "NMAKE") {
+         copy ares_build.h.dist ares_build.h
+         nmake /f Makefile.msvc
+         cd test
+         nmake /f Makefile.msvc vtest
+         nmake /f Makefile.msvc aresfuzz aresfuzzname dnsdump
+         cd ..
+      }
+  - ps: |
+      if ($env:BUILDTOOL -eq "CMAKE") {
+         mkdir C:\projects\build-cares
+         cd C:\projects\build-cares
+         cmake -GNinja -DCMAKE_BUILD_TYPE=$env:configuration -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install $env:CMAKE_EXTRA_OPTIONS $env:APPVEYOR_BUILD_FOLDER
+         ninja install
+      }
+   - ps: |
+       if ($env:BUILDTOOL -eq "MAKE") {
+         copy ares_build.h.dist ares_build.h
+         mingw32-make.exe -f Makefile.m32 demos
+         cd test
+         mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
+       }
+
+#test_script:
+#  - cd C:\projects\build-cares\test
+#  - set CTEST_OUTPUT_ON_FAILURE=1
+#  - ps: ctest | tee -FilePath "all_tests.log"
+
+#on_finish:
+#  - cd C:\projects\build-cares\test
+#  - dir /B *.log > list.txt
+#  - cmake -E tar cfv all_tests.zip --format=zip --files-from=list.txt
+#  - appveyor PushArtifact all_tests.zip
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+# Force build worker to stay open after build is done, so we can RDP into it.
+
+# Enable RDP connections into build worker.
+#init:
+#  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
