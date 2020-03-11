@@ -92,16 +92,11 @@ test_script:
   - if "%BUILDTOOL%" == "NMAKE" cd test
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc vtest
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
-  - ps: |
-      $ErrorActionPreference = "Stop"
-      if ($env:BUILDTOOL -eq "MAKE") {
-        cd test
-        mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
-      }
-  - ps: |
-      $ErrorActionPreference = "Stop"
-      if ($env:BUILDTOOL -eq "CMAKE") {
-      }
+  - if "%BUILDTOOL%" == "NMAKE" .\msvc\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
+  - if "%BUILDTOOL%" == "NMAKE" cd test
+  - if "%BUILDTOOL%" == "MAKE" mingw32-make.exe -f Makefile.m32
+  - if "%BUILDTOOL%" == "MAKE" mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
+  - if "%BUILDTOOL%" == "MAKE" .\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
 
 
 #on_finish:
