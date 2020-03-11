@@ -313,14 +313,13 @@ static int fake_addrinfo(const char *name,
       memset(&addr, 0, sizeof(addr));
 
       /* if we don't have 3 dots, it is illegal
-       * (although inet_addr doesn't think so).
+       * (although inet_pton doesn't think so).
        */
       if (numdots != 3 || !valid)
         result = 0;
       else
         result =
-            ((addr.sa4.sin_addr.s_addr = inet_addr(name)) == INADDR_NONE ? 0
-                                                                         : 1);
+            (ares_inet_pton(AF_INET, name, &addr.sa4.sin_addr) < 1 ? 0 : 1);
 
       if (result)
         {

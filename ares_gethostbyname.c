@@ -213,7 +213,7 @@ static void host_callback(void *arg, int status, int timeouts,
         }
       if (status == ARES_SUCCESS && host && host->h_addr_list[0] == NULL)
       {
-        /* The query returned something but had no A/AAAA record 
+        /* The query returned something but had no A/AAAA record
            (even after potentially retrying AAAA with A)
            so we should treat this as an error */
         status = ARES_ENODATA;
@@ -274,12 +274,12 @@ static int fake_hostent(const char *name, int family,
         }
 
       /* if we don't have 3 dots, it is illegal
-       * (although inet_addr doesn't think so).
+       * (although inet_pton doesn't think so).
        */
       if (numdots != 3 || !valid)
         result = 0;
       else
-        result = ((in.s_addr = inet_addr(name)) == INADDR_NONE ? 0 : 1);
+        result = (ares_inet_pton(AF_INET, name, &in) < 1 ? 0 : 1);
 
       if (result)
         family = AF_INET;
