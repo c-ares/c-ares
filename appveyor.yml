@@ -87,13 +87,13 @@ build_script:
          cmake -GNinja -DCMAKE_BUILD_TYPE=$env:configuration -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install $env:CMAKE_EXTRA_OPTIONS $env:APPVEYOR_BUILD_FOLDER
          ninja install
       }
-   - ps: |
-       if ($env:BUILDTOOL -eq "MAKE") {
-         copy ares_build.h.dist ares_build.h
-         mingw32-make.exe -f Makefile.m32 demos
-         cd test
-         mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
-       }
+  - ps: |
+      if ($env:BUILDTOOL -eq "MAKE") {
+        copy ares_build.h.dist ares_build.h
+        mingw32-make.exe -f Makefile.m32 demos
+        cd test
+        mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
+      }
 
 #test_script:
 #  - cd C:\projects\build-cares\test
