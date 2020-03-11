@@ -54,7 +54,7 @@ environment:
 
 install:
   - ps: |
-      $ErrorActionPreference = "Stop"
+      #$ErrorActionPreference = "Stop"
       if ($env:COMPILER -eq "MINGW") {
         # Rename sh.exe as sh.exe in PATH interferes with MinGW.
         Rename-Item -Path "C:\Program Files\Git\usr\bin\sh.exe" -NewName "sh2.exe"
@@ -76,7 +76,7 @@ build_script:
          nmake /f Makefile.msvc
       }
   - ps: |
-      $ErrorActionPreference = "Stop"
+      #$ErrorActionPreference = "Stop"
       if ($env:BUILDTOOL -eq "CMAKE") {
          mkdir C:\projects\build-cares
          cd C:\projects\build-cares
@@ -84,7 +84,7 @@ build_script:
          ninja install
       }
   - ps: |
-      $ErrorActionPreference = "Stop"
+      #$ErrorActionPreference = "Stop"
       if ($env:BUILDTOOL -eq "MAKE") {
         Copy-Item -Path "ares_build.h.dist" -Destination "ares_build.h"
         mingw32-make.exe -f Makefile.m32 demos
@@ -92,20 +92,20 @@ build_script:
 
 test_script:
   - ps: |
-      $ErrorActionPreference = "Stop"
+      #$ErrorActionPreference = "Stop"
       if ($env:BUILDTOOL -eq "NMAKE") {
         cd test
         nmake /f Makefile.msvc vtest
         nmake /f Makefile.msvc aresfuzz aresfuzzname dnsdump
       }
   - ps: |
-      $ErrorActionPreference = "Stop"
+      #$ErrorActionPreference = "Stop"
       if ($env:BUILDTOOL -eq "MAKE") {
         cd test
         mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
       }
   - ps: |
-      $ErrorActionPreference = "Stop"
+      #$ErrorActionPreference = "Stop"
       if ($env:BUILDTOOL -eq "CMAKE") {
       }
 
