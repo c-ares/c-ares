@@ -77,7 +77,7 @@ build_script:
       if ($env:BUILDTOOL -eq "CMAKE") {
          mkdir C:\projects\build-cares
          cd C:\projects\build-cares
-         cmake -GNinja -DCMAKE_BUILD_TYPE="$env:configuration" -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install $env:CMAKE_EXTRA_OPTIONS $env:APPVEYOR_BUILD_FOLDER
+         cmake -GNinja -DCMAKE_BUILD_TYPE="$env:configuration" -DCARES_BUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install $env:CMAKE_EXTRA_OPTIONS $env:APPVEYOR_BUILD_FOLDER
          ninja install
       }
   - ps: |
@@ -97,7 +97,14 @@ test_script:
   - if "%BUILDTOOL%" == "MAKE" mingw32-make.exe -f Makefile.m32
   - if "%BUILDTOOL%" == "MAKE" mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
   - if "%BUILDTOOL%" == "MAKE" .\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
-
+  - if "%BUILDTOOL%" == "CMAKE" cd C:\projects\build-cares\bin
+  - if "%BUILDTOOL%" == "CMAKE" ./adig www.google.com
+  - if "%BUILDTOOL%" == "CMAKE" ./acountry www.google.com
+  - if "%BUILDTOOL%" == "CMAKE" ./ahost www.google.com
+  - if "%BUILDTOOL%" == "CMAKE" ./arestest -4 -v
+  - if "%BUILDTOOL%" == "CMAKE" ./aresfuzz "$env:APPVEYOR_BUILD_FOLDER\test\fuzzinput\*"
+  - if "%BUILDTOOL%" == "CMAKE" ./aresfuzzname "$env:APPVEYOR_BUILD_FOLDER\test\fuzznames\*"
+  - if "%BUILDTOOL%" == "CMAKE" ./dnsdump "$env:APPVEYOR_BUILD_FOLDER\test\fuzzinput\answer_a" "$env:APPVEYOR_BUILD_FOLDER\test\fuzzinput\answer_aaaa"
 
 #on_finish:
 #  - cd C:\projects\build-cares\test
