@@ -85,9 +85,9 @@ test_script:
   - if "%BUILDTOOL%" == "CMAKE" .\acountry.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKE" .\ahost.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKE" .\arestest.exe -4 -v
-  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzz.exe "$env:APPVEYOR_BUILD_FOLDER\test\fuzzinput\*"
-  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzzname.exe "$env:APPVEYOR_BUILD_FOLDER\test\fuzznames\*"
-  - if "%BUILDTOOL%" == "CMAKE" .\dnsdump.exe "$env:APPVEYOR_BUILD_FOLDER\test\fuzzinput\answer_a" "$env:APPVEYOR_BUILD_FOLDER\test\fuzzinput\answer_aaaa"
+  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzz.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\*"
+  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzzname.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzznames\*"
+  - if "%BUILDTOOL%" == "CMAKE" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
 
 #on_finish:
 #  - cd C:\projects\build-cares\test
