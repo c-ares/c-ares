@@ -85,8 +85,9 @@ test_script:
   - if "%BUILDTOOL%" == "CMAKE" .\acountry.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKE" .\ahost.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKE" .\arestest.exe -4 -v
-  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzz.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\*"
-  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzzname.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzznames\*"
+# Windows cant do shell expansion
+#  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzz.exe %APPVEYOR_BUILD_FOLDER%\test\fuzzinput\*
+#  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzzname.exe %APPVEYOR_BUILD_FOLDER%\test\fuzznames\*
   - if "%BUILDTOOL%" == "CMAKE" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
 
 #on_finish:
