@@ -85,7 +85,8 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   /* examine all the records, break and return if found soa */
   for (i = 0; i < ancount; i++)
   {
-    status = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len);
+    rr_name = NULL;
+    status  = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len);
     if (status != ARES_SUCCESS)
      {
       ares_free(rr_name);
