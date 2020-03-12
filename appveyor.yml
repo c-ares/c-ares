@@ -65,22 +65,7 @@ build_script:
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc
   - if "%BUILDTOOL%" == "CMAKE" mkdir C:\projects\build-cares
   - if "%BUILDTOOL%" == "CMAKE" cd C:\projects\build-cares
-  - if "%BUILDTOOL%" == "CMAKE" cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install %CMAKE_EXTRA_OPTIONS% %APPVEYOR_BUILD_FOLDER%
-    # -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON
-    # Note: Tests currently fail to compile due to ares-test-internal.cc needing access to :
-    #       _aresx_sltosi
-    #       _aresx_sztoui
-    #       _ares_inet_net_pton
-    #       _ares_malloc_data
-    #       _ares_strdup
-    #       _ares_writev
-    #       _ares__is_onion_domain
-    #       _ares__get_hostent
-    #       _ares__read_line
-    #       _ares__readaddrinfo
-    #       _ares__bitncmp
-    #       _ares_malloc
-    #       _ares_free
+  - if "%BUILDTOOL%" == "CMAKE" cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% %APPVEYOR_BUILD_FOLDER%
   - if "%BUILDTOOL%" == "CMAKE" ninja install
   - if "%BUILDTOOL%" == "MAKE" copy ares_build.h.dist ares_build.h
   - if "%BUILDTOOL%" == "MAKE" mingw32-make.exe -f Makefile.m32 demos
@@ -99,10 +84,11 @@ test_script:
   - if "%BUILDTOOL%" == "CMAKE" .\adig.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKE" .\acountry.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKE" .\ahost.exe www.google.com
-#  - if "%BUILDTOOL%" == "CMAKE" .\arestest.exe -4 -v
-#  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzz.exe "$env:APPVEYOR_BUILD_FOLDER\test\fuzzinput\*"
-#  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzzname.exe "$env:APPVEYOR_BUILD_FOLDER\test\fuzznames\*"
-#  - if "%BUILDTOOL%" == "CMAKE" .\dnsdump.exe "$env:APPVEYOR_BUILD_FOLDER\test\fuzzinput\answer_a" "$env:APPVEYOR_BUILD_FOLDER\test\fuzzinput\answer_aaaa"
+  - if "%BUILDTOOL%" == "CMAKE" .\arestest.exe -4 -v
+# Windows cant do shell expansion
+#  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzz.exe %APPVEYOR_BUILD_FOLDER%\test\fuzzinput\*
+#  - if "%BUILDTOOL%" == "CMAKE" .\aresfuzzname.exe %APPVEYOR_BUILD_FOLDER%\test\fuzznames\*
+  - if "%BUILDTOOL%" == "CMAKE" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
 
 #on_finish:
 #  - cd C:\projects\build-cares\test

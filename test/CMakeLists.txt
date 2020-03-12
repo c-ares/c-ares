@@ -11,7 +11,7 @@ set(ARES_SRC_DIR ${c-ares_SOURCE_DIR})
 add_library(caresinternal INTERFACE)
 target_compile_definitions(caresinternal INTERFACE HAVE_CONFIG_H=1)
 target_include_directories(caresinternal INTERFACE ${ARES_SRC_DIR})
-target_link_libraries(caresinternal INTERFACE ${PROJECT_NAME})
+target_link_libraries(caresinternal INTERFACE ${PROJECT_NAME}::cares_static)
 
 # Google Test and Mock
 set(GMOCK_DIR gmock-1.8.0)

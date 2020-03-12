@@ -37,6 +37,12 @@ OPTION (CARES_BUILD_TESTS "Build and run tests"                                 
 OPTION (CARES_BUILD_CONTAINER_TESTS "Build and run container tests (implies CARES_BUILD_TESTS, Linux only)" OFF)
 OPTION (CARES_BUILD_TOOLS "Build tools"                                                          ON)
 
+# Tests require static to be enabled
+IF (CARES_BUILD_TESTS)
+	SET (CARES_STATIC ON)
+	SET (CARES_STATIC_PIC ON)
+ENDIF ()
+
 # allow linking against the static runtime library in msvc
 IF (MSVC)
 	OPTION (CARES_MSVC_STATIC_RUNTIME "Link against the static runtime library" OFF)
@@ -641,8 +647,10 @@ IF (CARES_STATIC)
 	ADD_LIBRARY (${LIBNAME} STATIC ${CSOURCES})
 
 	SET_TARGET_PROPERTIES (${LIBNAME} PROPERTIES
-		EXPORT_NAME cares${STATIC_SUFFIX}
-		OUTPUT_NAME cares${STATIC_SUFFIX}
+		EXPORT_NAME                  cares${STATIC_SUFFIX}
+		OUTPUT_NAME                  cares${STATIC_SUFFIX}
+		COMPILE_PDB_NAME             cares${STATIC_SUFFIX}
+		COMPILE_PDB_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 	)
 
 	IF (CARES_STATIC_PIC)
@@ -661,6 +669,11 @@ IF (CARES_STATIC)
 	IF (CARES_INSTALL)
 		INSTALL (TARGETS ${LIBNAME} EXPORT ${PROJECT_NAME}-targets COMPONENT Devel
 			${TARGETS_INST_DEST}
+		)
+		INSTALL(FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cares${STATIC_SUFFIX}.pdb
+			DESTINATION ${CMAKE_INSTALL_BINDIR}
+			COMPONENT Library
+			OPTIONAL
 		)
 	ENDIF ()
 
