@@ -690,10 +690,17 @@ IF (CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS)
 	ADD_SUBDIRECTORY (test)
 ENDIF ()
 
-# Headers installation target
+# Headers and Man Pages installation target
 IF (CARES_INSTALL)
 	SET (CARES_HEADERS ares.h ares_version.h ares_dns.h "${PROJECT_BINARY_DIR}/ares_build.h" ares_rules.h)
 	INSTALL (FILES ${CARES_HEADERS} COMPONENT Devel DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+	# ManPages
+	FILE (GLOB DevelManPages "." "*.3")
+	INSTALL (FILES ${DevelManPages}
+		DESTINATION ${CMAKE_INSTALL_MANDIR}/man3
+		COMPONENT Devel
+	)
 ENDIF ()
 
 # Export targets
@@ -751,6 +758,15 @@ IF (CARES_BUILD_TOOLS)
 	TARGET_LINK_LIBRARIES (acountry PRIVATE ${PROJECT_NAME})
 	IF (CARES_INSTALL)
 		INSTALL (TARGETS acountry COMPONENT Tools ${TARGETS_INST_DEST})
+	ENDIF ()
+
+	# Install Man Pages
+	IF (CARES_INSTALL)
+		FILE (GLOB ToolManPages "." "*.1")
+		INSTALL (FILES ${ToolManPages}
+			DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
+			COMPONENT Tools
+		)
 	ENDIF ()
 ENDIF ()
 
