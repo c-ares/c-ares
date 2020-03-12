@@ -37,6 +37,12 @@ OPTION (CARES_BUILD_TESTS "Build and run tests"                                 
 OPTION (CARES_BUILD_CONTAINER_TESTS "Build and run container tests (implies CARES_BUILD_TESTS, Linux only)" OFF)
 OPTION (CARES_BUILD_TOOLS "Build tools"                                                          ON)
 
+# Tests require static to be enabled
+IF (CARES_BUILD_TESTS)
+	SET (CARES_STATIC ON)
+	SET (CARES_STATIC_PIC ON)
+ENDIF ()
+
 # allow linking against the static runtime library in msvc
 IF (MSVC)
 	OPTION (CARES_MSVC_STATIC_RUNTIME "Link against the static runtime library" OFF)
