@@ -48,12 +48,14 @@ structure:
 .PP
 .IN +4n
 .EX
+.nf
 struct ares_addrinfo_hints {
   int ai_flags;
   int ai_family;
   int ai_socktype;
   int ai_protocol;
 };
+.fi
 .EE
 .IN
 .TP
@@ -133,10 +135,12 @@ which contains two linked lists, one with resolved addresses and another with ca
 .PP
 .IN +4n
 .EX
+.nf
 struct ares_addrinfo {
   struct ares_addrinfo_cname *cnames;
   struct ares_addrinfo_node  *nodes;
 };
+.fi
 .EE
 .IN
 .PP
@@ -145,6 +149,7 @@ structure is similar to RFC3493 addrinfo, but without canonname and with extra t
 .IN +4n
 .PP
 .EX
+.nf
 struct ares_addrinfo_node {
   int                        ai_ttl;
   int                        ai_flags;
@@ -155,6 +160,7 @@ struct ares_addrinfo_node {
   struct sockaddr           *ai_addr;
   struct ares_addrinfo_node *ai_next;
 };
+.fi
 .EE
 .IN
 .PP
@@ -170,12 +176,14 @@ See RFC2181 10.1.1. CNAME terminology.
 .IN +4n
 .PP
 .EX
+.nf
 struct ares_addrinfo_cname {
   int                         ttl;
   char                       *alias;
   char                       *name;
   struct ares_addrinfo_cname *next;
 };
+.fi
 .EE
 .IN
 .PP
@@ -183,10 +191,13 @@ The reserved memory has to be deleted by
 .B ares_freeaddrinfo.
 
 The result is sorted according to RFC6724 except:
+.PP
  - Rule 3 (Avoid deprecated addresses)
+.PP
  - Rule 4 (Prefer home addresses)
+.PP
  - Rule 7 (Prefer native transport)
-
+.PP
 Please note that the function will attempt a connection
 on each of the resolved addresses as per RFC6724.
 .SH SEE ALSO
