@@ -1,16 +1,15 @@
 language: c++
-dist: trusty
+dist: xenial
 sudo: false
 addons:
     apt:
         sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-5.0
+            - llvm-toolchain-xenial-6.0
         packages:
-            - cmake3
+            - cmake
             - lcov
-            - clang-5.0
-            - clang-tools-5.0
+            - clang-6.0
+            - clang-tools-6.0
             - valgrind
 matrix:
     include:
@@ -59,6 +58,12 @@ matrix:
           compiler: clang
           language: objective-c
           env: BUILD_TYPE=ios
+        - os: linux-ppc64le
+          compiler: clang
+          env: BUILD_TYPE=normal
+        - os: linux-ppc64le
+          compiler: gcc
+          env: BUILD_TYPE=normal
 install:
     - if [ "$TRAVIS_OS_NAME" != "osx" ]; then pip install --user cpp-coveralls > /dev/null; fi
     - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew reinstall libtool > /dev/null; fi
