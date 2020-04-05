@@ -18,16 +18,14 @@
 ares_getaddrinfo \- Initiate a host query by name and service
 .SH SYNOPSIS
 .nf
-#include <ares.h>
-
-typedef void (*ares_addrinfo_callback)(void *\fIarg\fP, int \fIstatus\fP,
-                                       int \fItimeouts\fP,
-                                       struct ares_addrinfo *\fIresult\fP)
-
-void ares_getaddrinfo(ares_channel \fIchannel\fP, const char *\fIname\fP,
-                      const char* \fIservice\fP,
-                      const struct ares_addrinfo_hints *\fIhints\fP,
-                      ares_addrinfo_callback \fIcallback\fP, void *\fIarg\fP)
+.B #include <ares.h>
+.PP
+.B typedef void (*ares_addrinfo_callback)(void *\fIarg\fP, int \fIstatus\fP,
+.B 	int \fItimeouts\fP, struct ares_addrinfo *\fIresult\fP)
+.PP
+.B void ares_getaddrinfo(ares_channel \fIchannel\fP, const char *\fIname\fP,
+.B 	const char* \fIservice\fP, const struct ares_addrinfo_hints *\fIhints\fP,
+.B 	ares_addrinfo_callback \fIcallback\fP, void *\fIarg\fP)
 .fi
 .SH DESCRIPTION
 The
@@ -46,18 +44,16 @@ parameter is an
 .BR ares_addrinfo_hints
 structure:
 .PP
-.IN +4n
+.RS
 .EX
-.nf
 struct ares_addrinfo_hints {
   int ai_flags;
   int ai_family;
   int ai_socktype;
   int ai_protocol;
 };
-.fi
 .EE
-.IN
+.RE
 .TP
 .I ai_family
 Specifies desired address family. AF_UNSPEC means return both AF_INET and AF_INET6.
@@ -133,23 +129,20 @@ points to a
 .B struct ares_addrinfo
 which contains two linked lists, one with resolved addresses and another with canonical names.
 .PP
-.IN +4n
+.RS
 .EX
-.nf
 struct ares_addrinfo {
   struct ares_addrinfo_cname *cnames;
   struct ares_addrinfo_node  *nodes;
 };
-.fi
 .EE
-.IN
+.RE
 .PP
 .I ares_addrinfo_node
 structure is similar to RFC3493 addrinfo, but without canonname and with extra ttl field.
-.IN +4n
+.RS
 .PP
 .EX
-.nf
 struct ares_addrinfo_node {
   int                        ai_ttl;
   int                        ai_flags;
@@ -160,9 +153,8 @@ struct ares_addrinfo_node {
   struct sockaddr           *ai_addr;
   struct ares_addrinfo_node *ai_next;
 };
-.fi
 .EE
-.IN
+.RE
 .PP
 .I ares_addrinfo_cname
 structure is a linked list of CNAME records where
@@ -173,31 +165,26 @@ is a label of the resource record and
 .I name
 is a value (canonical name) of the resource record.
 See RFC2181 10.1.1. CNAME terminology.
-.IN +4n
+.RS
 .PP
 .EX
-.nf
 struct ares_addrinfo_cname {
   int                         ttl;
   char                       *alias;
   char                       *name;
   struct ares_addrinfo_cname *next;
 };
-.fi
 .EE
-.IN
+.RE
 .PP
 The reserved memory has to be deleted by
 .B ares_freeaddrinfo.
 
 The result is sorted according to RFC6724 except:
-.PP
  - Rule 3 (Avoid deprecated addresses)
-.PP
  - Rule 4 (Prefer home addresses)
-.PP
  - Rule 7 (Prefer native transport)
-.PP
+
 Please note that the function will attempt a connection
 on each of the resolved addresses as per RFC6724.
 .SH SEE ALSO
