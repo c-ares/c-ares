@@ -37,6 +37,10 @@ OPTION (CARES_BUILD_TESTS "Build and run tests"                                 
 OPTION (CARES_BUILD_CONTAINER_TESTS "Build and run container tests (implies CARES_BUILD_TESTS, Linux only)" OFF)
 OPTION (CARES_BUILD_TOOLS "Build tools"                                                          ON)
 
+IF (IOS)
+       SET(CMAKE_OSX_ARCHITECTURES "arm64 arm64e armv7 armv7s")
+ENDIF ()
+
 # Tests require static to be enabled
 IF (CARES_BUILD_TESTS)
 	SET (CARES_STATIC ON)
