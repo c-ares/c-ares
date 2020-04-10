@@ -82,10 +82,10 @@ before_script:
          fi
     - |
          if [ "$BUILD_TYPE" = "analyse" ]; then
-             export SCAN_WRAP="scan-build-5.0 --status-bugs"
+             export SCAN_WRAP="scan-build-7 --status-bugs"
              export CONFIG_OPTS="--enable-debug"
-             export CXX="clang++-5.0"
-             export CC="clang-5.0"
+             export CXX="clang++-7"
+             export CC="clang-7"
          fi
     - |
          if [ "$BUILD_TYPE" = "valgrind" ]; then
