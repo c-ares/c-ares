@@ -1,6 +1,6 @@
 language: c++
 dist: bionic
-sudo: true
+sudo: false
 addons:
     apt:
         packages:
