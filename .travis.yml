@@ -8,6 +8,8 @@ addons:
             - lcov
             - clang-tools-7
             - valgrind
+            - libtool
+
 matrix:
     include:
         - os: linux
