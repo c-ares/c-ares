@@ -1,16 +1,12 @@
 language: c++
-dist: trusty
-sudo: false
+dist: bionic
+sudo: true
 addons:
     apt:
-        sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-5.0
         packages:
-            - cmake3
+            - cmake
             - lcov
-            - clang-5.0
-            - clang-tools-5.0
+            - clang-tools-7
             - valgrind
 matrix:
     include:
@@ -35,11 +31,9 @@ matrix:
         - os: linux
           compiler: clang
           env: BUILD_TYPE=asan
-          sudo: true  # ASAN requires ptrace which is disabled in containers (https://github.com/travis-ci/travis-ci/issues/9033)
         - os: linux
           compiler: clang
           env: BUILD_TYPE=lsan
-          sudo: true  # LSAN requires ptrace which is disabled in containers (https://github.com/travis-ci/travis-ci/issues/9033)
         - os: linux
           compiler: clang
           env: BUILD_TYPE=analyse
