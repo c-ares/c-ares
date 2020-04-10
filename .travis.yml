@@ -8,7 +8,6 @@ addons:
             - lcov
             - clang-tools-7
             - valgrind
-            - libtool
 
 matrix:
     include:
@@ -91,7 +90,7 @@ before_script:
          fi
     - |
          if [ "$BUILD_TYPE" = "valgrind" ]; then
-             export TEST_WRAP='libtool --mode=execute valgrind --leak-check=full'
+             export TEST_WRAP='valgrind --leak-check=full'
              # Skip container tests as valgrind doesn't cope with clone()
              export TEST_FILTER="--gtest_filter=-*Container*"
          fi
