@@ -214,9 +214,11 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrV4) {
     EXPECT_EQ(ARES_SUCCESS, result.status_);
     EXPECT_LT(0, (int)result.host_.addrs_.size());
     EXPECT_EQ(AF_INET, result.host_.addrtype_);
-std::cerr << "LiveGetLocalhostByAddrV4 => " << result.host_.name_ << std::endl;
-    EXPECT_NE(std::string::npos,
-              result.host_.name_.find("localhost"));
+    // oddly, travis does not resolve to localhost, but a random hostname starting with travis-job
+    if (result.host_.name_.find("travis-job") == std::string::npos) {
+        EXPECT_NE(std::string::npos,
+                  result.host_.name_.find("localhost"));
+    }
   }
 }
 
