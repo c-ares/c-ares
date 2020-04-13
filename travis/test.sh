@@ -1,5 +1,10 @@
 #!/bin/sh
 set -e
+
+# Travis on MacOS uses CloudFlare's DNS (1.1.1.1/1.0.0.1) which rejects ANY requests
+# Note res_ninit() and /etc/resolv.conf actually have different configs, bad Travis
+[ -z "$TEST_FILTER" ] && export TEST_FILTER="--gtest_filter=-*LiveSearchANY*"
+
 if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" -a "$BUILD_TYPE" != "cmake" -a "$BUILD_TYPE" != "valgrind" ]; then
     $TEST_WRAP ./adig www.google.com
     $TEST_WRAP ./acountry www.google.com

@@ -96,7 +96,7 @@ before_script:
          if [ "$BUILD_TYPE" = "valgrind" ]; then
              export TEST_WRAP='valgrind --leak-check=full'
              # Skip container tests as valgrind doesn't cope with clone()
-             export TEST_FILTER="--gtest_filter=-*Container*"
+             export TEST_FILTER="--gtest_filter=-*Container*:-*LiveSearchANY*"
          fi
     - |
          if [ "$BUILD_TYPE" = "ios" ]; then
