@@ -42,15 +42,19 @@ matrix:
           compiler: gcc
           env: BUILD_TYPE=valgrind
         - os: osx
+          osx_image: xcode11.3
           compiler: gcc
           env: BUILD_TYPE=normal
         - os: osx
+          osx_image: xcode11.3
           compiler: clang
           env: BUILD_TYPE=normal
         - os: osx
+          osx_image: xcode11.3
           compiler: clang
           env: BUILD_TYPE=cmake
         - os: osx
+          osx_image: xcode11.3
           compiler: clang
           language: objective-c
           env: BUILD_TYPE=ios
