@@ -179,7 +179,7 @@ int ares__readaddrinfo(FILE *fp,
                 }
 
               node->ai_family = addr.sa.sa_family = AF_INET;
-              node->ai_addrlen = sizeof(sizeof(addr.sa4));
+              node->ai_addrlen = sizeof(addr.sa4);
               node->ai_addr = ares_malloc(sizeof(addr.sa4));
               if (!node->ai_addr)
                 {
@@ -200,7 +200,7 @@ int ares__readaddrinfo(FILE *fp,
                 }
 
               node->ai_family = addr.sa.sa_family = AF_INET6;
-              node->ai_addrlen = sizeof(sizeof(addr.sa6));
+              node->ai_addrlen = sizeof(addr.sa6);
               node->ai_addr = ares_malloc(sizeof(addr.sa6));
               if (!node->ai_addr)
                 {
