@@ -548,6 +548,7 @@ static void host_callback(void *arg, int status, int timeouts,
   else if (status == ARES_EDESTRUCTION)
     {
       end_hquery(hquery, status);
+      return;
     }
 
   if (!hquery->remaining)
