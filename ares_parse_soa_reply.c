@@ -70,7 +70,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   if (status != ARES_SUCCESS)
     goto failed_stat;
 
-  if (alen <= len + HFIXEDSZ)
+  if (alen <= len + HFIXEDSZ + 1)
     goto failed;
   aptr += len;
 
