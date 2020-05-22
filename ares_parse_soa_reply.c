@@ -69,6 +69,9 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   status = ares__expand_name_for_response(aptr, abuf, alen, &qname, &len);
   if (status != ARES_SUCCESS)
     goto failed_stat;
+
+  if (alen <= len + HFIXEDSZ + 1)
+    goto failed;
   aptr += len;
 
   qclass = DNS_QUESTION_TYPE(aptr);
