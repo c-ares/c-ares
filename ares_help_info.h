@@ -7,7 +7,7 @@
 void print_help_info_adig() {
     printf("adig, version %s \n\n", ARES_VERSION_STR);
     printf("usage: adig [-h] [-d] [-f flag] [-s server] [-c class] [-t type] [-T|U port] name ...\n\n"
-    "  d : Print some extra debugging output.\n");
+    "  d : Print some extra debugging output.\n"
     "  f : Add a flag. Possible values for flag are igntc, noaliases, norecurse, primary, stayopen, usevc.\n"
     "  h : Display this help and exit.\n\n"
     "  T port   : Use specified TCP port to connect to DNS server.\n"
