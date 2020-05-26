@@ -22,7 +22,6 @@ CSOURCES = ares__close_sockets.c	\
   ares_gethostbyname.c			\
   ares_getnameinfo.c			\
   ares_getsock.c			\
-  ares_help_info.c			\
   ares_init.c				\
   ares_library_init.c			\
   ares_llist.c				\
