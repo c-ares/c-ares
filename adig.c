@@ -42,6 +42,7 @@
 #include "ares_dns.h"
 #include "ares_getopt.h"
 #include "ares_nowarn.h"
+#include "ares_help_info.h"
 
 #ifndef HAVE_STRDUP
 #  include "ares_strdup.h"
@@ -205,7 +206,7 @@ int main(int argc, char **argv)
   options.flags = ARES_FLAG_NOCHECKRESP;
   options.servers = NULL;
   options.nservers = 0;
-  while ((c = ares_getopt(argc, argv, "df:s:c:t:T:U:")) != -1)
+  while ((c = ares_getopt(argc, argv, "dhf:s:c:t:T:U:")) != -1)
     {
       switch (c)
         {
@@ -214,7 +215,9 @@ int main(int argc, char **argv)
           dbug_init();
 #endif
           break;
-
+        case 'h':
+          print_help_info_adig();
+          break;
         case 'f':
           /* Add a flag. */
           for (i = 0; i < nflags; i++)

@@ -31,6 +31,7 @@
 #include "ares_getopt.h"
 #include "ares_ipv6.h"
 #include "ares_nowarn.h"
+#include "ares_help_info.h"
 
 #ifndef HAVE_STRDUP
 #  include "ares_strdup.h"
@@ -103,6 +104,8 @@ int main(int argc, char **argv)
             usage();
           break;
         case 'h':
+          print_help_info_ahost();
+          break;
         default:
           usage();
           break;

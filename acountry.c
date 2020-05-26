@@ -49,6 +49,7 @@
 #include "ares.h"
 #include "ares_getopt.h"
 #include "ares_nowarn.h"
+#include "ares_help_info.h"
 
 #ifndef HAVE_STRDUP
 #  include "ares_strdup.h"
@@ -129,6 +130,8 @@ int main(int argc, char **argv)
         verbose++;
         break;
       case 'h':
+        print_help_info_acountry();
+        break;
       case '?':
       default:
         Abort(usage);
