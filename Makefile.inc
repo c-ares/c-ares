@@ -22,6 +22,7 @@ CSOURCES = ares__close_sockets.c	\
   ares_gethostbyname.c			\
   ares_getnameinfo.c			\
   ares_getsock.c			\
+  ares_help_info.c			\
   ares_init.c				\
   ares_library_init.c			\
   ares_llist.c				\
@@ -61,6 +62,7 @@ HHEADERS = ares.h			\
   ares_data.h				\
   ares_dns.h				\
   ares_getenv.h				\
+  ares_help_info.h				\
   ares_inet_net_pton.h			\
   ares_iphlpapi.h			\
   ares_ipv6.h				\
