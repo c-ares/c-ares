@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include "ares_version.h"
 #include "ares_help_info.h"
 
 /* Information from the man page. Formatting taken from man -h */
