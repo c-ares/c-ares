@@ -49,7 +49,6 @@
 #include "ares.h"
 #include "ares_getopt.h"
 #include "ares_nowarn.h"
-#include "ares_help_info.h"
 
 #ifndef HAVE_STRDUP
 #  include "ares_strdup.h"
@@ -90,6 +89,7 @@ static void wait_ares(ares_channel channel);
 static void callback(void *arg, int status, int timeouts, struct hostent *host);
 static void callback2(void *arg, int status, int timeouts, struct hostent *host);
 static void find_country_from_cname(const char *cname, struct in_addr addr);
+static void print_help_info_acountry();
 
 static void Abort(const char *fmt, ...)
 {
@@ -626,4 +626,14 @@ static void find_country_from_cname(const char *cname, struct in_addr addr)
              country->long_name, country->short_name, cnumber);
     }
   free(ccopy);
+}
+
+/* Information from the man page. Formatting taken from man -h */
+static void print_help_info_acountry() {
+    printf("acountry, version %s \n\n", ARES_VERSION_STR);
+    printf("usage: acountry [-?hdv] {host|addr} ...\n\n"
+    "  d : Print some extra debugging output.\n"
+    "  h : Display this help and exit.\n"
+    "  v : Be more verbose. Print extra information.\n\n");
+    exit(0);
 }
