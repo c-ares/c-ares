@@ -206,7 +206,7 @@ int main(int argc, char **argv)
   options.flags = ARES_FLAG_NOCHECKRESP;
   options.servers = NULL;
   options.nservers = 0;
-  while ((c = ares_getopt(argc, argv, "dhf:s:c:t:T:U:")) != -1)
+  while ((c = ares_getopt(argc, argv, "dh?f:s:c:t:T:U:")) != -1)
     {
       switch (c)
         {
@@ -216,6 +216,9 @@ int main(int argc, char **argv)
 #endif
           break;
         case 'h':
+          print_help_info_adig();
+          break;
+        case '?':
           print_help_info_adig();
           break;
         case 'f':

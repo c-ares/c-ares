@@ -77,7 +77,7 @@ int main(int argc, char **argv)
       return 1;
     }
 
-  while ((c = ares_getopt(argc,argv,"dt:hs:")) != -1)
+  while ((c = ares_getopt(argc,argv,"dt:h?s:")) != -1)
     {
       switch (c)
         {
@@ -104,6 +104,9 @@ int main(int argc, char **argv)
             usage();
           break;
         case 'h':
+          print_help_info_ahost();
+          break;
+        case '?':
           print_help_info_ahost();
           break;
         default:
