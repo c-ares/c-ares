@@ -1611,7 +1611,8 @@ static int init_by_resolv_conf(ares_channel channel)
     if (channel->nservers == -1) {
       union res_sockaddr_union addr[MAXNS];
       int nscount = res_getservers(&res, addr, MAXNS);
-      for (int i = 0; i < nscount; ++i) {
+      int i;
+      for (i = 0; i < nscount; ++i) {
         char str[INET6_ADDRSTRLEN];
         int config_status;
         sa_family_t family = addr[i].sin.sin_family;
@@ -1639,8 +1640,9 @@ static int init_by_resolv_conf(ares_channel channel)
       if (!channel->domains) {
         status = ARES_ENOMEM;
       } else {
+        int i;
         channel->ndomains = entries;
-        for (int i = 0; i < channel->ndomains; ++i) {
+        for (i = 0; i < channel->ndomains; ++i) {
           channel->domains[i] = ares_strdup(res.dnsrch[i]);
           if (!channel->domains[i])
             status = ARES_ENOMEM;
