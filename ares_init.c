@@ -1603,6 +1603,7 @@ static int init_by_resolv_conf(ares_channel channel)
 #  endif /* HAVE___SYSTEM_PROPERTY_GET */
 #elif defined(CARES_USE_LIBRESOLV)
   struct __res_state res;
+  int i, j;
   memset(&res, 0, sizeof(res));
   int result = res_ninit(&res);
   if (result == 0 && (res.options & RES_INIT)) {
@@ -1611,7 +1612,7 @@ static int init_by_resolv_conf(ares_channel channel)
     if (channel->nservers == -1) {
       union res_sockaddr_union addr[MAXNS];
       int nscount = res_getservers(&res, addr, MAXNS);
-      for (int i = 0; i < nscount; ++i) {
+      for (i = 0; i < nscount; ++i) {
         char str[INET6_ADDRSTRLEN];
         int config_status;
         sa_family_t family = addr[i].sin.sin_family;
@@ -1640,9 +1641,9 @@ static int init_by_resolv_conf(ares_channel channel)
         status = ARES_ENOMEM;
       } else {
         channel->ndomains = entries;
-        for (int i = 0; i < channel->ndomains; ++i) {
-          channel->domains[i] = ares_strdup(res.dnsrch[i]);
-          if (!channel->domains[i])
+        for (j = 0; j < channel->ndomains; ++j) {
+          channel->domains[j] = ares_strdup(res.dnsrch[j]);
+          if (!channel->domains[j])
             status = ARES_ENOMEM;
         }
       }
