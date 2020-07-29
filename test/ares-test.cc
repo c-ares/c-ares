@@ -26,6 +26,10 @@
 #define mkdir_(d, p) mkdir(d, p)
 #endif
 
+#ifdef __MVS__
+#include <sys/time.h>
+#endif
+
 namespace ares {
 namespace test {
 
