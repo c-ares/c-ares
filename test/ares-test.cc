@@ -197,6 +197,22 @@ MockServer::MockServer(int family, int port, int tcpport)
     addr.sin_port = htons(udpport_);
     int udprc = bind(udpfd_, (struct sockaddr*)&addr, sizeof(addr));
     EXPECT_EQ(0, udprc) << "Failed to bind AF_INET to UDP port " << udpport_;
+    // retrieve system-assigned port
+    if (udpport_ == 0) {
+        int len = sizeof(addr);
+        int result = getsockname(udpfd_, (struct sockaddr*) & addr, &len);
+        EXPECT_NE(SOCKET_ERROR, result);
+        udpport_ = ntohs(addr.sin_port);
+        EXPECT_NE(0, udpport_);
+    }
+    if (tcpport_ == 0)
+    {
+       int len = sizeof(addr);
+       int result = getsockname(tcpfd_, (struct sockaddr*) &addr, &len);
+       EXPECT_NE(SOCKET_ERROR, result);
+       tcpport_ = ntohs(addr.sin_port);
+       EXPECT_NE(0, tcpport_);
+    }
   } else {
     EXPECT_EQ(AF_INET6, family);
     struct sockaddr_in6 addr;
@@ -209,6 +225,22 @@ MockServer::MockServer(int family, int port, int tcpport)
     addr.sin6_port = htons(udpport_);
     int udprc = bind(udpfd_, (struct sockaddr*)&addr, sizeof(addr));
     EXPECT_EQ(0, udprc) << "Failed to bind AF_INET6 to UDP port " << udpport_;
+    // retrieve system-assigned port
+    if (udpport_ == 0) {
+        int len = sizeof(addr);
+        int result = getsockname(udpfd_, (struct sockaddr*)&addr, &len);
+        EXPECT_NE(SOCKET_ERROR, result);
+        udpport_ = ntohs(addr.sin6_port);
+        EXPECT_NE(0, udpport_);
+    }
+    if (tcpport_ == 0)
+    {
+       int len = sizeof(addr);
+       int result = getsockname(tcpfd_, (struct sockaddr*) &addr, &len);
+       EXPECT_NE(SOCKET_ERROR, result);
+       tcpport_ = ntohs(addr.sin6_port);
+       EXPECT_NE(0, tcpport_);
+    }
   }
   if (verbose) std::cerr << "Configured "
                          << (family == AF_INET ? "IPv4" : "IPv6")
@@ -403,9 +435,9 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
   }
 
   // Point the library at the first mock server by default (overridden below).
-  opts.udp_port = mock_port;
+  opts.udp_port = server_.udpport();
   optmask |= ARES_OPT_UDP_PORT;
-  opts.tcp_port = mock_port;
+  opts.tcp_port = server_.tcpport();
   optmask |= ARES_OPT_TCP_PORT;
 
   // If not already overridden, set short-ish timeouts.
