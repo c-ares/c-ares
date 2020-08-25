@@ -171,7 +171,7 @@ void DefaultChannelModeTest::Process() {
 }
 
 MockServer::MockServer(int family, int port)
-  : udpport_(port), tcpport_(udpport_), qid_(-1) {
+  : udpport_(port), tcpport_(port), qid_(-1) {
   // Create a TCP socket to receive data on.
   tcpfd_ = socket(family, SOCK_STREAM, 0);
   EXPECT_NE(-1, tcpfd_);
