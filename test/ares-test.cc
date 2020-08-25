@@ -199,19 +199,18 @@ MockServer::MockServer(int family, int port, int tcpport)
     EXPECT_EQ(0, udprc) << "Failed to bind AF_INET to UDP port " << udpport_;
     // retrieve system-assigned port
     if (udpport_ == 0) {
-        int len = sizeof(addr);
-        auto result = getsockname(udpfd_, (struct sockaddr*)&addr, &len);
-        EXPECT_NE(SOCKET_ERROR, result);
-        udpport_ = ntohs(addr.sin_port);
-        EXPECT_NE(0, udpport_);
+      ares_socklen_t len = sizeof(addr);
+      auto result = getsockname(udpfd_, (struct sockaddr*)&addr, &len);
+      EXPECT_EQ(0, result);
+      udpport_ = ntohs(addr.sin_port);
+      EXPECT_NE(0, udpport_);
     }
-    if (tcpport_ == 0)
-    {
-       int len = sizeof(addr);
-       auto result = getsockname(tcpfd_, (struct sockaddr*)&addr, &len);
-       EXPECT_NE(SOCKET_ERROR, result);
-       tcpport_ = ntohs(addr.sin_port);
-       EXPECT_NE(0, tcpport_);
+    if (tcpport_ == 0) {
+      ares_socklen_t len = sizeof(addr);
+      auto result = getsockname(tcpfd_, (struct sockaddr*)&addr, &len);
+      EXPECT_EQ(0, result);
+      tcpport_ = ntohs(addr.sin_port);
+      EXPECT_NE(0, tcpport_);
     }
   } else {
     EXPECT_EQ(AF_INET6, family);
@@ -227,19 +226,18 @@ MockServer::MockServer(int family, int port, int tcpport)
     EXPECT_EQ(0, udprc) << "Failed to bind AF_INET6 to UDP port " << udpport_;
     // retrieve system-assigned port
     if (udpport_ == 0) {
-        int len = sizeof(addr);
-        auto result = getsockname(udpfd_, (struct sockaddr*)&addr, &len);
-        EXPECT_NE(SOCKET_ERROR, result);
-        udpport_ = ntohs(addr.sin6_port);
-        EXPECT_NE(0, udpport_);
+      ares_socklen_t len = sizeof(addr);
+      auto result = getsockname(udpfd_, (struct sockaddr*)&addr, &len);
+      EXPECT_EQ(0, result);
+      udpport_ = ntohs(addr.sin6_port);
+      EXPECT_NE(0, udpport_);
     }
-    if (tcpport_ == 0)
-    {
-       int len = sizeof(addr);
-       auto result = getsockname(tcpfd_, (struct sockaddr*)&addr, &len);
-       EXPECT_NE(SOCKET_ERROR, result);
-       tcpport_ = ntohs(addr.sin6_port);
-       EXPECT_NE(0, tcpport_);
+    if (tcpport_ == 0) {
+      ares_socklen_t len = sizeof(addr);
+      auto result = getsockname(tcpfd_, (struct sockaddr*)&addr, &len);
+      EXPECT_EQ(0, result);
+      tcpport_ = ntohs(addr.sin6_port);
+      EXPECT_NE(0, tcpport_);
     }
   }
   if (verbose) std::cerr << "Configured "
