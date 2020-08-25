@@ -411,7 +411,7 @@ MockChannelOptsTest::NiceMockServers MockChannelOptsTest::BuildServers(int count
   NiceMockServers servers;
   assert(count > 0);
   for (int ii = 0; ii < count; ii++) {
-    std::unique_ptr<NiceMockServer> server(new NiceMockServer(family, base_port + ii));
+    std::unique_ptr<NiceMockServer> server(new NiceMockServer(family, base_port ? base_port + ii : 0));
     servers.push_back(std::move(server));
   }
   return servers;
