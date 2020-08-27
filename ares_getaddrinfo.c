@@ -764,7 +764,7 @@ static int as_is_first(const struct host_query* hquery)
     }
   if (*last_char == '.') {
     /* prevent ARES_EBADNAME for valid FQDN, where ndots < channel->ndots  */
-    return true;
+    return 1;
   }
   return ndots >= hquery->channel->ndots;
 }
