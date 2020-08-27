@@ -177,6 +177,7 @@ static void usage(void);
 static void destroy_addr_list(struct ares_addr_node *head);
 static void append_addr_list(struct ares_addr_node **head,
                              struct ares_addr_node *node);
+static void print_help_info_adig();
 
 int main(int argc, char **argv)
 {
@@ -205,7 +206,7 @@ int main(int argc, char **argv)
   options.flags = ARES_FLAG_NOCHECKRESP;
   options.servers = NULL;
   options.nservers = 0;
-  while ((c = ares_getopt(argc, argv, "df:s:c:t:T:U:")) != -1)
+  while ((c = ares_getopt(argc, argv, "dh?f:s:c:t:T:U:")) != -1)
     {
       switch (c)
         {
@@ -214,7 +215,12 @@ int main(int argc, char **argv)
           dbug_init();
 #endif
           break;
-
+        case 'h':
+          print_help_info_adig();
+          break;
+        case '?':
+          print_help_info_adig();
+          break;
         case 'f':
           /* Add a flag. */
           for (i = 0; i < nflags; i++)
@@ -795,8 +801,8 @@ static const char *class_name(int dnsclass)
 
 static void usage(void)
 {
-  fprintf(stderr, "usage: adig [-f flag] [-s server] [-c class] "
-          "[-t type] [-p port] name ...\n");
+  fprintf(stderr, "usage: adig [-h] [-d] [-f flag] [-s server] [-c class] "
+          "[-t type] [-T|U port] name ...\n");
   exit(1);
 }
 
@@ -824,4 +830,27 @@ static void append_addr_list(struct ares_addr_node **head,
     }
   else
     *head = node;
+}
+
+
+/* Information from the man page. Formatting taken from man -h */
+static void print_help_info_adig() {
+    printf("adig, version %s \n\n", ARES_VERSION_STR);
+    printf("usage: adig [-h] [-d] [-f flag] [-s server] [-c class] [-t type] [-T|U port] name ...\n\n"
+    "  d : Print some extra debugging output.\n"
+    "  f : Add a flag. Possible values for flag are igntc, noaliases, norecurse, primary, stayopen, usevc.\n"
+    "  h : Display this help and exit.\n\n"
+    "  T port   : Use specified TCP port to connect to DNS server.\n"
+    "  U port   : Use specified UDP port to connect to DNS server.\n"
+    "  c class  : Set the query class. Possible values for class are NY, CHAOS, HS, IN  (default).\n"
+    "  s server : Connect to specified DNS server, instead of the system's default one(s).\n"
+    "  t type   : Query records of specified type.  \n"
+    "              Possible values for type are A  \n"
+    "              (default), AAAA, AFSDB,  ANY,\n"
+    "              AXFR, CNAME, GPOS, HINFO, ISDN,\n"
+    "              KEY, LOC, MAILA, MAILB, MB, MD,\n"
+    "              MF, MG, MINFO, MR, MX, NAPTR, NS,\n"
+    "              NSAP, NSAP_PTR, NULL, PTR, PX, RP,\n"
+    "              RT,  SIG,  SOA, SRV, TXT, WKS, X25\n\n");
+    exit(0);
 }

@@ -1,46 +1,30 @@
-c-ares version 1.12.0
+c-ares version 1.16.1
+
+Security:
+ o Prevent possible use-after-free and double-free in ares_getaddrinfo() if
+   ares_destroy() is called prior to ares_getaddrinfo() completing.  Reported
+   by Jann Horn at Google Project Zero.
 
 Changes:
+ o Allow TXT records on CHAOS qclass.  Used for retriving things like
+   version.bind, version.server, authoris.bind, hostname.bind, and id.server.
+   [3]
 
- o api: add ARES_OPT_NOROTATE optmask value
- 
 Bug fixes:
+ o Fix Windows Unicode incompatibilities with ares_getaddrinfo() [1]
+ o Silence false cast-align compiler warnings due to valid casts of
+   struct sockaddr to struct sockaddr_in and struct sockaddr_in6.
+ o MacOS should use libresolv for retrieving DNS servers, like iOS
+ o CMake build system should populate the INCLUDE_DIRECTORIES property of 
+   installed targets [2]
+ o Correct macros in use for the ares_getaddrinfo.3 man page
 
- o CVE-2016-5180: ares_create_query single byte out of buffer write [4]
- o configure: acknowledge --disable-tests [1]
- o man pages: fix typos detected by Lintian
- o test: add missing #includes for dns-proto.cc
- o test: avoid in6addr_* constants
- o test: Build with MinGW on AppVeyor
- o Makefile.m32: add support for extra flags
- o Makefile.m32: add support for CROSSPREFIX
- o configure: check if tests can get built before enabled
- o ares_library_cleanup: reset ares_realloc too
- o ahost.c: add cast to fix C++ compile
- o test: Only pass unused args to GoogleTest
- o build: commonize MSVC version detection
- o msvc_ver.inc: support Visual Studio 2015 Update 1, 2, 3
- o test: for AF_UNSPEC, return CNAME only for AAAA, but valid A record
- o ares_getnameinfo: explicitly clear struct servent before use
- o test: Update fuzzing function prototype
- o init: fix nsort initialization
- o test: add fuzzing check script to tests
- o web: http => https
- o read_tcp_data: remove superfluous NULL check
- o LICENSE.md: add a stand-alone license file
- o SECURITY.md: suggested "security process" for the project
- o ares_init_options: only propagate init failures from options [2]
- o headers: remove checks for and defines of variable sizes
- o test: fix gMock to work with gcc >= 6.x [3]
- 
 Thanks go to these friendly people for their efforts and contributions:
-
-  Alexander Drachevskiy, Brad House, Chris Araman, Daniel Stenberg,
-  David Drysdale, Gregor Jasny, Svante Karlsson, Viktor Szakats
+ Brad House (@bradh352), Daniel Stenberg (@bagder), Dmitry Igrishin (@dmitigr),
+ Jann Horn, Shelly Vohr, Teemu R (@rytilahti)
+ (6 contributors)
 
 References to bug reports and discussions on issues:
-
- [1] = https://github.com/c-ares/c-ares/issues/44
- [2] = https://github.com/c-ares/c-ares/issues/60
- [3] = https://github.com/google/googletest/issues/705#issuecomment-235067917
- [4] = https://c-ares.haxx.se/adv_20160929.html
+ [1] = https://github.com/c-ares/c-ares/pull/328
+ [2] = https://github.com/c-ares/c-ares/pull/323
+ [3] = https://github.com/c-ares/c-ares/pull/321

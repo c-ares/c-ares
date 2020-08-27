@@ -1,4 +1,5 @@
 #include "ares-test.h"
+#include "ares-test-ai.h"
 #include "dns-proto.h"
 
 // Include ares internal files for DNS protocol details
@@ -29,7 +30,31 @@ namespace ares {
 namespace test {
 
 bool verbose = false;
-int mock_port = 5300;
+static constexpr int dynamic_port = 0;
+int mock_port = dynamic_port;
+
+const std::vector<int> both_families = {AF_INET, AF_INET6};
+const std::vector<int> ipv4_family = {AF_INET};
+const std::vector<int> ipv6_family = {AF_INET6};
+
+const std::vector<std::pair<int, bool>> both_families_both_modes = {
+  std::make_pair<int, bool>(AF_INET, false),
+  std::make_pair<int, bool>(AF_INET, true),
+  std::make_pair<int, bool>(AF_INET6, false),
+  std::make_pair<int, bool>(AF_INET6, true)
+};
+const std::vector<std::pair<int, bool>> ipv4_family_both_modes = {
+  std::make_pair<int, bool>(AF_INET, false),
+  std::make_pair<int, bool>(AF_INET, true)
+};
+const std::vector<std::pair<int, bool>> ipv6_family_both_modes = {
+  std::make_pair<int, bool>(AF_INET6, false),
+  std::make_pair<int, bool>(AF_INET6, true)
+};
+
+// Which parameters to use in tests
+std::vector<int> families = both_families;
+std::vector<std::pair<int, bool>> families_modes = both_families_both_modes;
 
 unsigned long long LibraryTest::fails_ = 0;
 std::map<size_t, int> LibraryTest::size_fails_;
@@ -145,8 +170,8 @@ void DefaultChannelModeTest::Process() {
   ProcessWork(channel_, NoExtraFDs, nullptr);
 }
 
-MockServer::MockServer(int family, int port, int tcpport)
-  : udpport_(port), tcpport_(tcpport ? tcpport : udpport_), qid_(-1) {
+MockServer::MockServer(int family, int port)
+  : udpport_(port), tcpport_(port), qid_(-1) {
   // Create a TCP socket to receive data on.
   tcpfd_ = socket(family, SOCK_STREAM, 0);
   EXPECT_NE(-1, tcpfd_);
@@ -173,6 +198,21 @@ MockServer::MockServer(int family, int port, int tcpport)
     addr.sin_port = htons(udpport_);
     int udprc = bind(udpfd_, (struct sockaddr*)&addr, sizeof(addr));
     EXPECT_EQ(0, udprc) << "Failed to bind AF_INET to UDP port " << udpport_;
+    // retrieve system-assigned port
+    if (udpport_ == dynamic_port) {
+      ares_socklen_t len = sizeof(addr);
+      auto result = getsockname(udpfd_, (struct sockaddr*)&addr, &len);
+      EXPECT_EQ(0, result);
+      udpport_ = ntohs(addr.sin_port);
+      EXPECT_NE(dynamic_port, udpport_);
+    }
+    if (tcpport_ == dynamic_port) {
+      ares_socklen_t len = sizeof(addr);
+      auto result = getsockname(tcpfd_, (struct sockaddr*)&addr, &len);
+      EXPECT_EQ(0, result);
+      tcpport_ = ntohs(addr.sin_port);
+      EXPECT_NE(dynamic_port, tcpport_);
+    }
   } else {
     EXPECT_EQ(AF_INET6, family);
     struct sockaddr_in6 addr;
@@ -185,6 +225,21 @@ MockServer::MockServer(int family, int port, int tcpport)
     addr.sin6_port = htons(udpport_);
     int udprc = bind(udpfd_, (struct sockaddr*)&addr, sizeof(addr));
     EXPECT_EQ(0, udprc) << "Failed to bind AF_INET6 to UDP port " << udpport_;
+    // retrieve system-assigned port
+    if (udpport_ == dynamic_port) {
+      ares_socklen_t len = sizeof(addr);
+      auto result = getsockname(udpfd_, (struct sockaddr*)&addr, &len);
+      EXPECT_EQ(0, result);
+      udpport_ = ntohs(addr.sin6_port);
+      EXPECT_NE(dynamic_port, udpport_);
+    }
+    if (tcpport_ == dynamic_port) {
+      ares_socklen_t len = sizeof(addr);
+      auto result = getsockname(tcpfd_, (struct sockaddr*)&addr, &len);
+      EXPECT_EQ(0, result);
+      tcpport_ = ntohs(addr.sin6_port);
+      EXPECT_NE(dynamic_port, tcpport_);
+    }
   }
   if (verbose) std::cerr << "Configured "
                          << (family == AF_INET ? "IPv4" : "IPv6")
@@ -280,7 +335,7 @@ void MockServer::ProcessFD(int fd) {
   qlen -= enclen;
   question += enclen;
   std::string namestr(name);
-  free(name);
+  ares_free_string(name);
 
   if (qlen < 4) {
     std::cerr << "Unexpected question size (" << qlen
@@ -357,7 +412,8 @@ MockChannelOptsTest::NiceMockServers MockChannelOptsTest::BuildServers(int count
   NiceMockServers servers;
   assert(count > 0);
   for (int ii = 0; ii < count; ii++) {
-    std::unique_ptr<NiceMockServer> server(new NiceMockServer(family, base_port + ii));
+    int port = base_port == dynamic_port ? dynamic_port : base_port + ii;
+    std::unique_ptr<NiceMockServer> server(new NiceMockServer(family, port));
     servers.push_back(std::move(server));
   }
   return servers;
@@ -379,9 +435,9 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
   }
 
   // Point the library at the first mock server by default (overridden below).
-  opts.udp_port = mock_port;
+  opts.udp_port = server_.udpport();
   optmask |= ARES_OPT_UDP_PORT;
-  opts.tcp_port = mock_port;
+  opts.tcp_port = server_.tcpport();
   optmask |= ARES_OPT_TCP_PORT;
 
   // If not already overridden, set short-ish timeouts.
@@ -539,6 +595,79 @@ void HostCallback(void *data, int status, int timeouts,
   result->timeouts_ = timeouts;
   result->host_ = HostEnt(hostent);
   if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
+}
+
+std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result) {
+  os << '{';
+  if (result.done_ && result.ai_) {
+    os << StatusToString(result.status_) << " " << result.ai_;
+  } else {
+    os << "(incomplete)";
+  }
+  os << '}';
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
+  os << '{';
+  if (ai == nullptr) {
+    os << "nullptr}";
+    return os;
+  }
+
+  struct ares_addrinfo_cname *next_cname = ai->cnames;
+  while(next_cname) {
+    if(next_cname->alias) {
+      os << next_cname->alias << "->";
+    }
+    if(next_cname->name) {
+      os << next_cname->name;
+    }
+    if((next_cname = next_cname->next))
+      os << ", ";
+    else
+      os << " ";
+  }
+
+  struct ares_addrinfo_node *next = ai->nodes;
+  while(next) {
+    //if(next->ai_canonname) {
+      //os << "'" << next->ai_canonname << "' ";
+    //}
+    unsigned short port = 0;
+    os << "addr=[";
+    if(next->ai_family == AF_INET) {
+      sockaddr_in* sin = (sockaddr_in*)next->ai_addr;
+      port = ntohs(sin->sin_port);
+      os << AddressToString(&sin->sin_addr, 4);
+    }
+    else if (next->ai_family == AF_INET6) {
+      sockaddr_in6* sin = (sockaddr_in6*)next->ai_addr;
+      port = ntohs(sin->sin6_port);
+      os << "[" << AddressToString(&sin->sin6_addr, 16) << "]";
+    }
+    else
+      os << "unknown family";
+    if(port) {
+      os << ":" << port;
+    }
+    os << "]";
+    if((next = next->ai_next))
+      os << ", ";
+  }
+  os << '}';
+  return os;
+}
+
+void AddrInfoCallback(void *data, int status, int timeouts,
+                      struct ares_addrinfo *ai) {
+  EXPECT_NE(nullptr, data);
+  AddrInfoResult* result = reinterpret_cast<AddrInfoResult*>(data);
+  result->done_ = true;
+  result->status_ = status;
+  result->timeouts_= timeouts;
+  result->ai_ = AddrInfo(ai);
+  if (verbose) std::cerr << "AddrInfoCallback(" << *result << ")" << std::endl;
 }
 
 std::ostream& operator<<(std::ostream& os, const SearchResult& result) {

@@ -32,6 +32,9 @@
 #include "ares_nowarn.h"
 #include "ares_private.h" /* for the memdebug */
 
+/* Maximum number of indirections allowed for a name */
+#define MAX_INDIRS 50
+
 static int name_length(const unsigned char *encoded, const unsigned char *abuf,
                        int alen);
 
@@ -162,7 +165,8 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
           /* If we've seen more indirects than the message length,
            * then there's a loop.
            */
-          if (++indir > alen)
+          ++indir;
+          if (indir > alen || indir > MAX_INDIRS)
             return -1;
         }
       else if (top == 0x00)

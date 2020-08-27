@@ -256,6 +256,47 @@ TEST_F(LibraryTest, CreateQueryFailures) {
   if (p) ares_free_string(p);
 }
 
+TEST_F(LibraryTest, CreateQueryOnionDomain) {
+  byte* p;
+  int len;
+  EXPECT_EQ(ARES_ENOTFOUND,
+            ares_create_query("dontleak.onion", ns_c_in, ns_t_a, 0x1234, 0,
+                              &p, &len, 0));
+}
+
+TEST_F(DefaultChannelTest, HostByNameOnionDomain) {
+  HostResult result;
+  ares_gethostbyname(channel_, "dontleak.onion", AF_INET, HostCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTFOUND, result.status_);
+}
+
+TEST_F(DefaultChannelTest, HostByNameFileOnionDomain) {
+  struct hostent *h;
+  EXPECT_EQ(ARES_ENOTFOUND,
+            ares_gethostbyname_file(channel_, "dontleak.onion", AF_INET, &h));
+}
+
+TEST_F(DefaultChannelTest, GetAddrinfoOnionDomain) {
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {};
+  hints.ai_family = AF_UNSPEC;
+  ares_getaddrinfo(channel_, "dontleak.onion", NULL, &hints, AddrInfoCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTFOUND, result.status_);
+}
+
+// Interesting question: should tacking on a search domain let the query
+// through? It seems safer to reject it because "supersecret.onion.search"
+// still leaks information about the query to malicious resolvers.
+TEST_F(DefaultChannelTest, SearchOnionDomain) {
+  SearchResult result;
+  ares_search(channel_, "dontleak.onion", ns_c_in, ns_t_a,
+              SearchCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTFOUND, result.status_);
+}
+
 TEST_F(DefaultChannelTest, SendFailure) {
   unsigned char buf[2];
   SearchResult result;
@@ -276,7 +317,7 @@ std::string ExpandName(const std::vector<byte>& data, int offset,
   } else {
     result = "<error>";
   }
-  free(name);
+  ares_free_string(name);
   return result;
 }
 
@@ -467,7 +508,7 @@ TEST_F(LibraryTest, ExpandString) {
                                (unsigned char**)&result, &len));
   EXPECT_EQ("abc", std::string(result));
   EXPECT_EQ(1 + 3, len);  // amount of data consumed includes 1 byte len
-  free(result);
+  ares_free_string(result);
   result = nullptr;
   EXPECT_EQ(ARES_EBADSTR,
             ares_expand_string(s1.data() + 1, s1.data(), s1.size(),

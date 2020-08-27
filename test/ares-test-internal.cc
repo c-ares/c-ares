@@ -186,11 +186,22 @@ TEST_F(LibraryTest, FreeCorruptData) {
 }
 
 #ifndef CARES_SYMBOL_HIDING
+TEST_F(LibraryTest, FreeLongChain) {
+  struct ares_addr_node *data = nullptr;
+  for (int ii = 0; ii < 100000; ii++) {
+    struct ares_addr_node *prev = (struct ares_addr_node*)ares_malloc_data(ARES_DATATYPE_ADDR_NODE);
+    prev->next = data;
+    data = prev;
+  }
+
+  ares_free_data(data);
+}
+
 TEST(LibraryInit, StrdupFailures) {
   EXPECT_EQ(ARES_SUCCESS, ares_library_init(ARES_LIB_INIT_ALL));
   char* copy = ares_strdup("string");
   EXPECT_NE(nullptr, copy);
-  free(copy);
+  ares_free(copy);
   ares_library_cleanup();
 }
 
@@ -248,7 +259,7 @@ TEST_F(LibraryTest, ReadLine) {
   TempFile temp("abcde\n0123456789\nXYZ\n012345678901234567890\n\n");
   FILE *fp = fopen(temp.filename(), "r");
   size_t bufsize = 4;
-  char *buf = (char *)malloc(bufsize);
+  char *buf = (char *)ares_malloc(bufsize);
 
   EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
   EXPECT_EQ("abcde", std::string(buf));
@@ -261,7 +272,7 @@ TEST_F(LibraryTest, ReadLine) {
   EXPECT_EQ(nullptr, buf);
 
   fclose(fp);
-  free(buf);
+  ares_free(buf);
 }
 
 TEST_F(LibraryTest, ReadLineNoBuf) {
@@ -283,7 +294,7 @@ TEST_F(LibraryTest, ReadLineNoBuf) {
   EXPECT_EQ("012345678901234567890", std::string(buf));
 
   fclose(fp);
-  free(buf);
+  ares_free(buf);
 }
 
 TEST(Misc, GetHostent) {
@@ -344,6 +355,118 @@ TEST_F(LibraryTest, GetHostentAllocFail) {
   }
   fclose(fp);
 }
+
+TEST_F(DefaultChannelTest, GetAddrInfoHostsPositive) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {};
+  AddrInfoResult result = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{example.com addr=[1.2.3.4]}", ss.str());
+}
+
+TEST_F(DefaultChannelTest, GetAddrInfoHostsSpaces) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {};
+  AddrInfoResult result = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "google.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{www.google.com->google.com, www2.google.com->google.com addr=[2.3.4.5]}", ss.str());
+}
+
+TEST_F(DefaultChannelTest, GetAddrInfoHostsByALias) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {};
+  AddrInfoResult result = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "www2.google.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{www.google.com->google.com, www2.google.com->google.com addr=[2.3.4.5]}", ss.str());
+}
+
+TEST_F(DefaultChannelTest, GetAddrInfoHostsIPV6) {
+  TempFile hostsfile("1.2.3.4 example.com  \n"
+                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
+                     "#comment\n"
+                     "4.5.6.7\n"
+                     "1.3.5.7  \n"
+                     "::1    ipv6.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {};
+  AddrInfoResult result = {};
+  hints.ai_family = AF_INET6;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "ipv6.com", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{ipv6.com addr=[[0000:0000:0000:0000:0000:0000:0000:0001]]}", ss.str());
+}
+
+TEST_F(LibraryTest, GetAddrInfoAllocFail) {
+  TempFile hostsfile("1.2.3.4 example.com alias1 alias2\n");
+  struct ares_addrinfo_hints hints;
+  unsigned short port = 80;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+
+  FILE *fp = fopen(hostsfile.filename(), "r");
+  ASSERT_NE(nullptr, fp);
+
+  for (int ii = 1; ii <= 3; ii++) {
+    rewind(fp);
+    ClearFails();
+    SetAllocFail(ii);
+    struct ares_addrinfo ai;
+    EXPECT_EQ(ARES_ENOMEM, ares__readaddrinfo(fp, "example.com", port, &hints, &ai)) << ii;
+  }
+  fclose(fp);
+}
+
+TEST(Misc, OnionDomain) {
+  EXPECT_EQ(0, ares__is_onion_domain("onion.no"));
+  EXPECT_EQ(0, ares__is_onion_domain(".onion.no"));
+  EXPECT_EQ(1, ares__is_onion_domain(".onion"));
+  EXPECT_EQ(1, ares__is_onion_domain(".onion."));
+  EXPECT_EQ(1, ares__is_onion_domain("yes.onion"));
+  EXPECT_EQ(1, ares__is_onion_domain("yes.onion."));
+  EXPECT_EQ(1, ares__is_onion_domain("YES.ONION"));
+  EXPECT_EQ(1, ares__is_onion_domain("YES.ONION."));
+}
 #endif
 
 #ifdef CARES_EXPOSE_STATICS
@@ -362,6 +485,7 @@ TEST_F(LibraryTest, Striendstr) {
   EXPECT_NE(nullptr, ares_striendstr(str, str));
 }
 
+extern "C" int ares__single_domain(ares_channel, const char*, char**);
 TEST_F(DefaultChannelTest, SingleDomain) {
   TempFile aliases("www www.google.com\n");
   EnvValue with_env("HOSTALIASES", aliases.filename());
@@ -373,7 +497,7 @@ TEST_F(DefaultChannelTest, SingleDomain) {
   channel_->flags |= ARES_FLAG_NOSEARCH|ARES_FLAG_NOALIASES;
   EXPECT_EQ(ARES_SUCCESS, ares__single_domain(channel_, "www", &ptr));
   EXPECT_EQ("www", std::string(ptr));
-  free(ptr);
+  ares_free(ptr);
   ptr = nullptr;
 
   SetAllocFail(1);
@@ -455,7 +579,7 @@ const struct ares_socket_functions VirtualizeIO::default_functions = {
 #endif
   },
   [](ares_socket_t s, const struct iovec * vec, int len, void *) {
-#ifdef _WIN32
+#ifndef HAVE_WRITEV
     return ares_writev(s, vec, len);
 #else
     return :: writev(s, vec, len);

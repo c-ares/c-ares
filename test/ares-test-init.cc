@@ -86,6 +86,8 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   opts.lookups = strdup("b");
   optmask |= ARES_OPT_LOOKUPS;
   optmask |= ARES_OPT_ROTATE;
+  opts.resolvconf_path = strdup("/etc/resolv.conf");
+  optmask |= ARES_OPT_RESOLVCONF;
 
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
@@ -112,6 +114,7 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   EXPECT_EQ(std::string(opts.domains[0]), std::string(opts2.domains[0]));
   EXPECT_EQ(std::string(opts.domains[1]), std::string(opts2.domains[1]));
   EXPECT_EQ(std::string(opts.lookups), std::string(opts2.lookups));
+  EXPECT_EQ(std::string(opts.resolvconf_path), std::string(opts2.resolvconf_path));
 
   ares_destroy_options(&opts);
   ares_destroy_options(&opts2);
@@ -169,6 +172,8 @@ TEST_F(LibraryTest, OptionsChannelAllocFail) {
   opts.lookups = strdup("b");
   optmask |= ARES_OPT_LOOKUPS;
   optmask |= ARES_OPT_ROTATE;
+  opts.resolvconf_path = strdup("/etc/resolv.conf");
+  optmask |= ARES_OPT_RESOLVCONF;
 
   ares_channel channel = nullptr;
   for (int ii = 1; ii <= 8; ii++) {
@@ -396,6 +401,35 @@ CONTAINED_TEST_F(LibraryTest, ContainerFullResolvInit,
   return HasFailure();
 }
 
+// Allow path for resolv.conf to be configurable
+NameContentList myresolvconf = {
+  {"/tmp/myresolv.cnf", " nameserver   1.2.3.4 \n"
+                       "search   first.com second.com\n"
+                       "lookup bind\n"
+                       "options debug ndots:5\n"
+                       "sortlist 1.2.3.4/16 2.3.4.5\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerMyResolvConfInit,
+                 "myhostname", "mydomain.org", myresolvconf) {
+  char filename[] = "/tmp/myresolv.cnf";
+  ares_channel channel = nullptr;
+  struct ares_options options = {0};
+  options.resolvconf_path = strdup(filename);
+  int optmask = ARES_OPT_RESOLVCONF;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &options, optmask));
+
+  optmask = 0;
+  free(options.resolvconf_path);
+  options.resolvconf_path = NULL;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel, &options, &optmask));
+  EXPECT_EQ(ARES_OPT_RESOLVCONF, (optmask & ARES_OPT_RESOLVCONF));
+  EXPECT_EQ(std::string(filename), std::string(options.resolvconf_path));
+
+  ares_destroy_options(&options);
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 NameContentList hostconf = {
   {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
                        "sortlist1.2.3.4\n"  // malformed line
@@ -429,6 +463,24 @@ CONTAINED_TEST_F(LibraryTest, ContainerSvcConfInit,
   int optmask = 0;
   ares_save_options(channel, &opts, &optmask);
   EXPECT_EQ(std::string("b"), std::string(opts.lookups));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+NameContentList malformedresolvconflookup = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "lookup garbage\n"}};  // malformed line
+CONTAINED_TEST_F(LibraryTest, ContainerMalformedResolvConfLookup,
+                 "myhostname", "mydomainname.org", malformedresolvconflookup) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(std::string("fb"), std::string(opts.lookups));
   ares_destroy_options(&opts);
 
   ares_destroy(channel);
@@ -519,6 +571,36 @@ CONTAINED_TEST_F(LibraryTest, ContainerRotateOverride,
   optmask = 0;
   ares_save_options(channel, &opts, &optmask);
   EXPECT_EQ(ARES_OPT_NOROTATE, (optmask & ARES_OPT_NOROTATE));
+  ares_destroy_options(&opts);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+// Test that blacklisted IPv6 resolves are ignored.  They're filtered from any
+// source, so resolv.conf is as good as any.
+NameContentList blacklistedIpv6 = {
+  {"/etc/resolv.conf", " nameserver 254.192.1.1\n" // 0xfe.0xc0.0x01.0x01
+                       " nameserver fec0::dead\n"  // Blacklisted
+                       " nameserver ffc0::c001\n"  // Not blacklisted
+                       " domain first.com\n"},
+  {"/etc/nsswitch.conf", "hosts: files\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerBlacklistedIpv6,
+                 "myhostname", "mydomainname.org", blacklistedIpv6) {
+  ares_channel channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  std::vector<std::string> actual = GetNameServers(channel);
+  std::vector<std::string> expected = {
+    "254.192.1.1",
+    "ffc0:0000:0000:0000:0000:0000:0000:c001"
+  };
+  EXPECT_EQ(expected, actual);
+
+  struct ares_options opts;
+  int optmask = 0;
+  ares_save_options(channel, &opts, &optmask);
+  EXPECT_EQ(1, opts.ndomains);
+  EXPECT_EQ(std::string("first.com"), std::string(opts.domains[0]));
   ares_destroy_options(&opts);
 
   ares_destroy(channel);

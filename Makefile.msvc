@@ -87,11 +87,10 @@ USE_WATT32 = 0
 !ENDIF
 
 # ------------------------------------------------------------------
-# Base subdir is the common root from which other subdirs will hang,
-# the name depends on MSVC version being used when building c-ares.
+# Base subdir is the common root from which other subdirs will hang.
 # ------------------------------------------------------------------
 
-BASE_DIR = .\$(CC_VERS_STR)
+BASE_DIR = .\msvc
 
 # ----------------------------------------
 # Subdir holding sources for all projects
@@ -189,9 +188,9 @@ EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib
 EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib
 !ENDIF
 
-# -----------------------------------------
-# Switches that depend on compiler version
-# -----------------------------------------
+# -------------------------------------------------
+# Switches that depend on ancient compiler versions
+# -------------------------------------------------
 
 !IF $(CC_VERS_NUM) == 60
 PDB_NONE            = /pdb:none
@@ -365,10 +364,10 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 !IF "$(VALID_CFGSET)" == "FALSE"
 
 ALL:
-    $(MAKE) /f .\Makefile.msvc  CFG=lib-release  ALL
-    $(MAKE) /f .\Makefile.msvc  CFG=lib-debug    ALL
-    $(MAKE) /f .\Makefile.msvc  CFG=dll-release  ALL
-    $(MAKE) /f .\Makefile.msvc  CFG=dll-debug    ALL
+    $(MAKE) /NOLOGO /f .\Makefile.msvc  CFG=lib-release  ALL
+    $(MAKE) /NOLOGO /f .\Makefile.msvc  CFG=lib-debug    ALL
+    $(MAKE) /NOLOGO /f .\Makefile.msvc  CFG=dll-release  ALL
+    $(MAKE) /NOLOGO /f .\Makefile.msvc  CFG=dll-debug    ALL
 
 clean:
     @-RMDIR /S /Q $(BASE_DIR) >NUL 2>&1
