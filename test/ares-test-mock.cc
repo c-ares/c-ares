@@ -395,7 +395,7 @@ class MockEDNSChannelTest : public MockFlagsChannelOptsTest {
 
 TEST_P(MockEDNSChannelTest, RetryWithoutEDNS) {
   DNSPacket rspfail;
-  rspfail.set_response().set_aa().set_rcode(ns_r_servfail)
+  rspfail.set_response().set_aa().set_rcode(ns_r_formerr)
     .add_question(new DNSQuestion("www.google.com", ns_t_a));
   DNSPacket rspok;
   rspok.set_response()
