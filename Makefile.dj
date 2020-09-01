@@ -15,12 +15,7 @@ CFLAGS += -DWATT32 -Dselect=select_s
 
 LDFLAGS = -s
 
-ifeq ($(USE_CURLDEBUG),1)
-  EX_LIBS  = ../lib/libcurl.a
-  OBJ_HACK = $(OBJECTS)
-else
-  OBJ_HACK = libcares.a
-endif
+OBJ_HACK = libcares.a
 
 ifeq ($(USE_SSL),1)
   EX_LIBS += $(OPENSSL_ROOT)/lib/libssl.a $(OPENSSL_ROOT)/lib/libcrypt.a

@@ -115,20 +115,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   int status = ARES_SUCCESS;
   struct timeval now;
 
-#ifdef CURLDEBUG
-  const char *env = getenv("CARES_MEMDEBUG");
-
-  if (env)
-    curl_memdebug(env);
-  env = getenv("CARES_MEMLIMIT");
-  if (env) {
-    char *endptr;
-    long num = strtol(env, &endptr, 10);
-    if((endptr != env) && (endptr == env + strlen(env)) && (num > 0))
-      curl_memlimit(num);
-  }
-#endif
-
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: n/a on non-WinSock */
 
