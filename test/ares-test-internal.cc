@@ -484,6 +484,7 @@ TEST_F(LibraryTest, Striendstr) {
   const char *str = "plugh";
   EXPECT_NE(nullptr, ares_striendstr(str, str));
 }
+
 extern "C" int ares__single_domain(ares_channel, const char*, char**);
 TEST_F(DefaultChannelTest, SingleDomain) {
   TempFile aliases("www www.google.com\n");

@@ -276,6 +276,7 @@ TEST_P(MockTCPChannelTest, YXDomainResponse) {
   rsp.set_rcode(ns_r_yxdomain);
   EXPECT_CALL(server_, OnRequest("www.google.com", ns_t_a))
     .WillOnce(SetReply(&server_, &rsp));
+
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();
@@ -635,6 +636,11 @@ TEST_P(MockChannelTest, UnspecifiedFamilyV6) {
                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}));
   ON_CALL(server_, OnRequest("example.com", ns_t_aaaa))
     .WillByDefault(SetReply(&server_, &rsp6));
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", ns_t_a));
+  ON_CALL(server_, OnRequest("example.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp4));
 
   HostResult result;
   ares_gethostbyname(channel_, "example.com.", AF_UNSPEC, HostCallback, &result);
