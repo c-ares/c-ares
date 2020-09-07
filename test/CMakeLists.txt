@@ -7,10 +7,17 @@ enable_language(CXX)
 find_package(Threads)
 
 # create target to access and use internal cares library
-set(ARES_SRC_DIR ${c-ares_SOURCE_DIR})
 add_library(caresinternal INTERFACE)
 target_compile_definitions(caresinternal INTERFACE HAVE_CONFIG_H=1)
-target_include_directories(caresinternal INTERFACE ${ARES_SRC_DIR})
+
+target_include_directories(caresinternal
+   INTERFACE "${PROJECT_BINARY_DIR}"
+             "${PROJECT_SOURCE_DIR}"
+             "${PROJECT_SOURCE_DIR}/src/lib"
+             "${CARES_TOPLEVEL_DIR}/include"
+             "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+
 target_link_libraries(caresinternal INTERFACE ${PROJECT_NAME}::cares_static)
 
 # Google Test and Mock
@@ -28,7 +35,7 @@ target_link_libraries(gmock PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 transform_makefile_inc("Makefile.inc" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")
 include(${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake)
 
-configure_file(${ARES_SRC_DIR}/ares_config.h.cmake config.h)
+configure_file(${CARES_TOPLEVEL_DIR}/src/lib/ares_config.h.cmake config.h)
 
 add_executable(arestest ${TESTSOURCES} ${TESTHEADERS})
 target_include_directories(arestest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
