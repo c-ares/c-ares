@@ -1,6 +1,6 @@
 AC_PREREQ(2.57)
 
-AC_INIT([c-ares], [1.16.0],
+AC_INIT([c-ares], [1.16.1],
   [c-ares mailing list: http://cool.haxx.se/mailman/listinfo/c-ares])
 
 XC_OVR_ZZ50
@@ -17,7 +17,6 @@ CARES_CHECK_OPTION_DEBUG
 CARES_CHECK_OPTION_OPTIMIZE
 CARES_CHECK_OPTION_WARNINGS
 CARES_CHECK_OPTION_WERROR
-CARES_CHECK_OPTION_CURLDEBUG
 CARES_CHECK_OPTION_SYMBOL_HIDING
 CARES_CHECK_OPTION_EXPOSE_STATICS
 
@@ -174,9 +173,6 @@ CARES_CHECK_COMPILER_HALT_ON_ERROR
 CARES_CHECK_COMPILER_ARRAY_SIZE_NEGATIVE
 CARES_CHECK_COMPILER_PROTOTYPE_MISMATCH
 CARES_CHECK_COMPILER_SYMBOL_HIDING
-
-CARES_CHECK_CURLDEBUG
-AM_CONDITIONAL(CURLDEBUG, test x$want_curldebug = xyes)
 
 dnl **********************************************************************
 dnl Compilation based checks should not be done before this point.

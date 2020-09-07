@@ -136,7 +136,7 @@ class DefaultChannelModeTest
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
  public:
-  MockServer(int family, int port, int tcpport = 0);
+  MockServer(int family, int port);
   ~MockServer();
 
   // Mock method indicating the processing of a particular <name, RRtype>

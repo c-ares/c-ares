@@ -21,18 +21,8 @@ ACLOCAL_AMFLAGS = -I m4
 # $(top_builddir) is for c-ares's generated ares_config.h file
 # $(top_srcdir) is for c-ares's ares_setup.h and other "c-ares-private" files
 
-if CURLDEBUG
-AM_CPPFLAGS = -I$(top_builddir)/../include/curl \
-              -I$(top_builddir)/../include      \
-              -I$(top_srcdir)/../include        \
-              -I$(top_builddir)/../lib          \
-              -I$(top_srcdir)/../lib            \
-              -I$(top_builddir)                 \
-              -I$(top_srcdir)
-else
 AM_CPPFLAGS = -I$(top_builddir) \
               -I$(top_srcdir)
-endif
 
 lib_LTLIBRARIES = libcares.la
 
@@ -42,11 +32,7 @@ MSVCFILES = vc/vc6aws.dsw vc/acountry/vc6acountry.dsp vc/adig/vc6adig.dsp	\
  vc/ahost/vc6ahost.dsp vc/cares/vc6cares.dsp vc/cares/vc6cares.dsw		\
  msvc_ver.inc
 
-if CURLDEBUG
-PROGS =
-else
 PROGS = ahost adig acountry
-endif
 
 noinst_PROGRAMS =$(PROGS)
 
@@ -69,7 +55,7 @@ DIST_SUBDIRS = test
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
 
-CARES_VERSION_INFO = -version-info 6:0:4
+CARES_VERSION_INFO = -version-info 6:1:4
 # This flag accepts an argument of the form current[:revision[:age]]. So,
 # passing -version-info 3:12:1 sets current to 3, revision to 12, and age to
 # 1.

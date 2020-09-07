@@ -278,6 +278,57 @@ TEST_P(MockExtraOptsTestAI, SimpleQuery) {
   EXPECT_THAT(result.ai_, IncludesV4Address("2.3.4.5"));
 }
 
+class MockExtraOptsNDotsTestAI
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+  MockExtraOptsNDotsTestAI(int ndots)
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
+                          FillOptions(&opts_, ndots),
+                          ARES_OPT_SOCK_SNDBUF|ARES_OPT_SOCK_RCVBUF|ARES_OPT_NDOTS) {}
+  static struct ares_options* FillOptions(struct ares_options * opts, int ndots) {
+    memset(opts, 0, sizeof(struct ares_options));
+    // Set a few options that affect socket communications
+    opts->socket_send_buffer_size = 514;
+    opts->socket_receive_buffer_size = 514;
+    opts->ndots = ndots;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+class MockExtraOptsNDots5TestAI : public MockExtraOptsNDotsTestAI {
+ public:
+  MockExtraOptsNDots5TestAI() : MockExtraOptsNDotsTestAI(5) {}
+};
+
+TEST_P(MockExtraOptsNDots5TestAI, SimpleQuery) {
+  ares_set_local_ip4(channel_, 0x7F000001);
+  byte addr6[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+  ares_set_local_ip6(channel_, addr6);
+  ares_set_local_dev(channel_, "dummy");
+
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("dynamodb.us-east-1.amazonaws.com", ns_t_a))
+    .add_answer(new DNSARR("dynamodb.us-east-1.amazonaws.com", 100, {123, 45, 67, 8}));
+  ON_CALL(server_, OnRequest("dynamodb.us-east-1.amazonaws.com", ns_t_a))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "dynamodb.us-east-1.amazonaws.com.", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+  EXPECT_THAT(result.ai_, IncludesV4Address("123.45.67.8"));
+}
+
 class MockFlagsChannelOptsTestAI
     : public MockChannelOptsTest,
       public ::testing::WithParamInterface< std::pair<int, bool> > {
@@ -449,7 +500,7 @@ class MockEDNSChannelTestAI : public MockFlagsChannelOptsTestAI {
 
 TEST_P(MockEDNSChannelTestAI, RetryWithoutEDNS) {
   DNSPacket rspfail;
-  rspfail.set_response().set_aa().set_rcode(ns_r_servfail)
+  rspfail.set_response().set_aa().set_rcode(ns_r_formerr)
     .add_question(new DNSQuestion("www.google.com", ns_t_a));
   DNSPacket rspok;
   rspok.set_response()
@@ -705,6 +756,9 @@ INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockTCPChannelTestAI,
 
 INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockExtraOptsTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
+
+INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockExtraOptsNDots5TestAI,
+      ::testing::ValuesIn(ares::test::families_modes));
 
 INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockNoCheckRespChannelTestAI,
 			::testing::ValuesIn(ares::test::families_modes));

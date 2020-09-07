@@ -427,7 +427,7 @@ static int find_src_addr(ares_channel channel,
       return 0;
     }
 
-  if (getsockname(sock, src_addr, &len) == -1)
+  if (getsockname(sock, src_addr, &len) != 0)
     {
       ares__close_socket(channel, sock);
       return -1;

@@ -456,18 +456,18 @@ static int file_lookup(struct host_query *hquery)
           char tmp[MAX_PATH];
           HKEY hkeyHosts;
 
-          if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
+          if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
                            &hkeyHosts) == ERROR_SUCCESS)
             {
               DWORD dwLength = MAX_PATH;
-              RegQueryValueEx(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
+              RegQueryValueExA(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
                               &dwLength);
-              ExpandEnvironmentStrings(tmp, PATH_HOSTS, MAX_PATH);
+              ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
               RegCloseKey(hkeyHosts);
             }
         }
       else if (platform == WIN_9X)
-        GetWindowsDirectory(PATH_HOSTS, MAX_PATH);
+        GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
       else
         return ARES_ENOTFOUND;
 
@@ -548,6 +548,7 @@ static void host_callback(void *arg, int status, int timeouts,
   else if (status == ARES_EDESTRUCTION)
     {
       end_hquery(hquery, status);
+      return;
     }
 
   if (!hquery->remaining)
@@ -753,6 +754,7 @@ static int as_is_first(const struct host_query* hquery)
 {
   char* p;
   int ndots = 0;
+  char* last_char = &hquery->name[strlen(hquery->name)-1];
   for (p = hquery->name; *p; p++)
     {
       if (*p == '.')
@@ -760,5 +762,9 @@ static int as_is_first(const struct host_query* hquery)
           ndots++;
         }
     }
+  if (*last_char == '.') {
+    /* prevent ARES_EBADNAME for valid FQDN, where ndots < channel->ndots  */
+    return 1;
+  }
   return ndots >= hquery->channel->ndots;
 }
