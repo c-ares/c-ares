@@ -3,6 +3,8 @@
 transform_makefile_inc("Makefile.inc" "${PROJECT_BINARY_DIR}/src/lib/Makefile.inc.cmake")
 include(${PROJECT_BINARY_DIR}/src/lib/Makefile.inc.cmake)
 
+# Write ares_config.h configuration file.  This is used only for the build.
+CONFIGURE_FILE (ares_config.h.cmake ${PROJECT_BINARY_DIR}/ares_config.h)
 
 # Build the dynamic/shared library
 IF (CARES_SHARED)

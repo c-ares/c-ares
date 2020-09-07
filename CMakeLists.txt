@@ -587,9 +587,6 @@ endfunction()
 # Write ares_build.h configuration file.  This is an installed file.
 CONFIGURE_FILE (include/ares_build.h.cmake ${PROJECT_BINARY_DIR}/ares_build.h)
 
-# Write ares_config.h configuration file.  This is used only for the build.
-CONFIGURE_FILE (src/lib/ares_config.h.cmake ${PROJECT_BINARY_DIR}/ares_config.h)
-
 # Directory for lib and tools
 ADD_SUBDIRECTORY (src)
 
