@@ -583,28 +583,19 @@ function(TRANSFORM_MAKEFILE_INC INPUT_FILE OUTPUT_FILE)
 	file(WRITE ${OUTPUT_FILE} ${MAKEFILE_INC_TEXT})
 endfunction()
 
-
-# Write ares_build.h configuration file.  This is an installed file.
-CONFIGURE_FILE (include/ares_build.h.cmake ${PROJECT_BINARY_DIR}/ares_build.h)
+# Directory for includes
+ADD_SUBDIRECTORY (include)
 
 # Directory for lib and tools
 ADD_SUBDIRECTORY (src)
 
+# Docs
+ADD_SUBDIRECTORY (docs)
 
+# Tests
 IF (CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS)
 	ENABLE_TESTING ()
 	ADD_SUBDIRECTORY (test)
-ENDIF ()
-
-
-# Headers and Man Pages installation target
-IF (CARES_INSTALL)
-	# ManPages
-	FILE (GLOB DevelManPages "." "*.3")
-	INSTALL (FILES ${DevelManPages}
-		DESTINATION ${CMAKE_INSTALL_MANDIR}/man3
-		COMPONENT Devel
-	)
 ENDIF ()
 
 
@@ -638,18 +629,6 @@ ENDIF ()
 # Don't use these, external code should be updated to refer to the aliases directly (e.g., Cares::cares).
 SET (CARES_FOUND 1 CACHE INTERNAL "CARES LIBRARY FOUND")
 SET (CARES_LIBRARIES ${PROJECT_NAME}::cares CACHE INTERNAL "CARES LIBRARIES")
-
-
-IF (CARES_BUILD_TOOLS)
-	# Install Man Pages
-	IF (CARES_INSTALL)
-		FILE (GLOB ToolManPages "." "*.1")
-		INSTALL (FILES ${ToolManPages}
-			DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
-			COMPONENT Tools
-		)
-	ENDIF ()
-ENDIF ()
 
 
 IF (CARES_INSTALL)

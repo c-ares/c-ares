@@ -111,10 +111,5 @@ IF (CARES_STATIC)
 ENDIF ()
 
 
-# Headers installation target
-IF (CARES_INSTALL)
-	SET (CARES_HEADERS ares.h ares_version.h ares_dns.h "${PROJECT_BINARY_DIR}/ares_build.h" ares_rules.h)
-	INSTALL (FILES ${CARES_HEADERS} COMPONENT Devel DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-ENDIF ()
 
 
