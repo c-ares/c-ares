@@ -16,8 +16,9 @@ man_MANS = $(MANPAGES)
 
 # adig and ahost are just sample programs and thus not mentioned with the
 # regular sources and headers
-EXTRA_DIST = Makefile.inc config-win32.h ares_build.h.in CMakeLists.txt $(CSOURCES)	\
- $(HHEADERS) config-dos.h
+EXTRA_DIST = Makefile.inc config-win32.h CMakeLists.txt \
+  ares_config.h.in ares_config.h.cmake \
+  $(CSOURCES) $(HHEADERS) config-dos.h
 
 DISTCLEANFILES = ares_config.h
 
