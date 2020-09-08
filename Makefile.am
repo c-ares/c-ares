@@ -9,7 +9,11 @@ MSVCFILES = vc/vc6aws.dsw vc/acountry/vc6acountry.dsp vc/adig/vc6adig.dsp	\
 # regular sources and headers
 EXTRA_DIST = AUTHORS CHANGES README.cares $(man_MANS) RELEASE-NOTES	\
  libcares.pc.in buildconf get_ver.awk maketgz TODO cares.rc README.msvc	\
- $(MSVCFILES) INSTALL.md README.md LICENSE.md
+ $(MSVCFILES) INSTALL.md README.md LICENSE.md \
+ CMakeLists.txt \
+ Makefile.dj Makefile.m32 Makefile.netware Makefile.msvc Makefile.Watcom \
+ AUTHORS CONTRIBUTING.md SECURITY.md TODO
+
 
 CLEANFILES = $(PDFPAGES) $(HTMLPAGES)
 
