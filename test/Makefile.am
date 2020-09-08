@@ -18,6 +18,16 @@ include Makefile.inc
 
 TESTS = arestest fuzzcheck.sh
 
+noinst_LTLIBRARIES = libgmock.la
+
+libgmock_la_SOURCES = \
+  $(GMOCK_DIR)/gmock-gtest-all.cc	\
+  $(GMOCK_DIR)/gmock/gmock.h		\
+  $(GMOCK_DIR)/gtest/gtest.h
+
+libgmock_la_CPPFLAGS = -isystem $(srcdir)/$(GMOCK_DIR)
+
+
 noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump
 EXTRA_DIST = fuzzcheck.sh CMakeLists.txt
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
@@ -27,14 +37,7 @@ arestest_LDADD = libgmock.la $(ARES_BLD_DIR)/src/lib/libcares.la $(PTHREAD_LIBS)
 @CODE_COVERAGE_RULES@
 arestest_LDFLAGS = $(CODE_COVERAGE_LDFLAGS)
 
-noinst_LTLIBRARIES = libgmock.la
 
-libgmock_la_SOURCES = \
-  $(GMOCK_DIR)/gmock-gtest-all.cc	\
-  $(GMOCK_DIR)/gmock/gmock.h		\
-  $(GMOCK_DIR)/gtest/gtest.h
-
-libgmock_la_CPPFLAGS = -isystem $(GMOCK_DIR)
 
 aresfuzz_SOURCES = $(FUZZSOURCES)
 aresfuzz_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la

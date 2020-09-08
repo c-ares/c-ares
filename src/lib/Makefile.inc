@@ -55,11 +55,8 @@ CSOURCES = ares__close_sockets.c	\
   inet_ntop.c				\
   windows_port.c
 
-HHEADERS = ares.h			\
-  ares_android.h                        \
-  ares_build.h				\
+HHEADERS = ares_android.h                        \
   ares_data.h				\
-  ares_dns.h				\
   ares_getenv.h				\
   ares_inet_net_pton.h			\
   ares_iphlpapi.h			\
@@ -69,11 +66,9 @@ HHEADERS = ares.h			\
   ares_nowarn.h				\
   ares_platform.h			\
   ares_private.h			\
-  ares_rules.h				\
   ares_strcasecmp.h			\
   ares_strdup.h				\
   ares_strsplit.h			\
-  ares_version.h			\
   ares_writev.h				\
   bitncmp.h				\
   nameser.h				\

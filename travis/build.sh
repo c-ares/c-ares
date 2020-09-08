@@ -6,7 +6,7 @@ if [ "$BUILD_TYPE" != "cmake" -a "$BUILD_TYPE" != "valgrind" ]; then
     mkdir atoolsbld
     cd atoolsbld
     $SCAN_WRAP ../configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS
-    $SCAN_WRAP make
+    $SCAN_WRAP make V=1
 else
     # Use cmake for valgrind to prevent libtool script wrapping of tests that interfere with valgrind
     mkdir cmakebld
