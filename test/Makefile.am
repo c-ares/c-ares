@@ -3,14 +3,14 @@ ARES_SRC_DIR = $(top_srcdir)/..
 
 AUTOMAKE_OPTIONS = foreign subdir-objects nostdinc 1.9.6
 ACLOCAL_AMFLAGS = -I ../m4 --install
-GMOCK_DIR = gmock-1.8.0
+
 # Note use of -isystem to force use of local gMock/gTest even if there's an installed version.
 CPPFLAGS += -I$(ARES_BLD_DIR)/include \
             -I$(ARES_BLD_DIR)/src/lib \
             -I$(ARES_SRC_DIR)/include \
             -I$(ARES_SRC_DIR)/src/lib \
             -I$(top_builddir)         \
-            -isystem $(srcdir)/$(GMOCK_DIR)
+            -isystem $(srcdir)/gmock-1.8.0
 CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 
 # Makefile.inc provides the various *SOURCES and *HEADERS defines
@@ -21,11 +21,11 @@ TESTS = arestest fuzzcheck.sh
 noinst_LTLIBRARIES = libgmock.la
 
 libgmock_la_SOURCES = \
-  $(GMOCK_DIR)/gmock-gtest-all.cc	\
-  $(GMOCK_DIR)/gmock/gmock.h		\
-  $(GMOCK_DIR)/gtest/gtest.h
+  gmock-1.8.0/gmock-gtest-all.cc	\
+  gmock-1.8.0/gmock/gmock.h		\
+  gmock-1.8.0/gtest/gtest.h
 
-libgmock_la_CPPFLAGS = -isystem $(srcdir)/$(GMOCK_DIR)
+libgmock_la_CPPFLAGS = -isystem $(srcdir)/gmock-1.8.0
 
 
 noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump
