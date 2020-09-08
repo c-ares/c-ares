@@ -17,7 +17,7 @@ TESTS = arestest fuzzcheck.sh
 noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump
 EXTRA_DIST = fuzzcheck.sh CMakeLists.txt
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
-arestest_LDADD = libgmock.la $(ARES_BLD_DIR)/libcares.la $(PTHREAD_LIBS)
+arestest_LDADD = libgmock.la $(ARES_BLD_DIR)/src/lib/libcares.la $(PTHREAD_LIBS)
 
 # Not interested in coverage of test code, but linking the test binary needs the coverage option
 @CODE_COVERAGE_RULES@
@@ -33,12 +33,12 @@ libgmock_la_SOURCES = \
 libgmock_la_CPPFLAGS = -isystem $(GMOCK_DIR)
 
 aresfuzz_SOURCES = $(FUZZSOURCES)
-aresfuzz_LDADD = $(ARES_BLD_DIR)/libcares.la
+aresfuzz_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la
 
 aresfuzzname_SOURCES = $(FUZZNAMESOURCES)
-aresfuzzname_LDADD = $(ARES_BLD_DIR)/libcares.la
+aresfuzzname_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la
 
 dnsdump_SOURCES = $(DUMPSOURCES)
-dnsdump_LDADD = $(ARES_BLD_DIR)/libcares.la
+dnsdump_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la
 
 test: check
