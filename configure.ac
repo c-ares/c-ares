@@ -7,8 +7,8 @@ XC_OVR_ZZ50
 XC_OVR_ZZ60
 CARES_OVERRIDE_AUTOCONF
 
-AC_CONFIG_SRCDIR([ares_ipv6.h])
-AC_CONFIG_HEADERS([ares_config.h ares_build.h])
+AC_CONFIG_SRCDIR([src/lib/ares_ipv6.h])
+AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h])
 AC_CONFIG_MACRO_DIR([m4])
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -69,10 +69,6 @@ AC_SUBST([AR])
 
 AX_CODE_COVERAGE
 
-dnl Remove non-configure distributed ares_build.h
-if test -f ${srcdir}/ares_build.h; then
-  rm -f ${srcdir}/ares_build.h
-fi
 
 dnl
 dnl Detect the canonical host and target build environment
@@ -179,8 +175,8 @@ dnl Compilation based checks should not be done before this point.
 dnl **********************************************************************
 
 dnl **********************************************************************
-dnl Make sure that our checks for headers windows.h winsock.h winsock2.h 
-dnl and ws2tcpip.h take precedence over any other further checks which 
+dnl Make sure that our checks for headers windows.h winsock.h winsock2.h
+dnl and ws2tcpip.h take precedence over any other further checks which
 dnl could be done later using AC_CHECK_HEADER or AC_CHECK_HEADERS for
 dnl this specific header files. And do them before its results are used.
 dnl **********************************************************************
@@ -520,7 +516,7 @@ CURL_CHECK_STRUCT_TIMEVAL
 AC_CHECK_TYPE(long long,
    [AC_DEFINE(HAVE_LONGLONG, 1,
      [Define to 1 if the compiler supports the 'long long' data type.])]
-   longlong="yes"  
+   longlong="yes"
 )
 
 if test "xyes" = "x$longlong"; then
@@ -624,7 +620,7 @@ CARES_CHECK_CONSTANT(
 #include <sys/socket.h>
 #endif
 #endif
-  ], [PF_INET6], 
+  ], [PF_INET6],
      AC_DEFINE_UNQUOTED(HAVE_PF_INET6,1,[Define to 1 if you have PF_INET6.])
 )
 
@@ -648,7 +644,7 @@ CARES_CHECK_CONSTANT(
 #include <sys/socket.h>
 #endif
 #endif
-  ], [AF_INET6], 
+  ], [AF_INET6],
      AC_DEFINE_UNQUOTED(HAVE_AF_INET6,1,[Define to 1 if you have AF_INET6.])
 )
 
@@ -676,7 +672,7 @@ CARES_CHECK_STRUCT(
 #include <netinet/in.h>
 #endif
 #endif
-  ], [in6_addr], 
+  ], [in6_addr],
      AC_DEFINE_UNQUOTED(HAVE_STRUCT_IN6_ADDR,1,[Define to 1 if you have struct in6_addr.])
 )
 
@@ -703,7 +699,7 @@ CARES_CHECK_STRUCT(
 #include <netinet/in.h>
 #endif
 #endif
-  ], [sockaddr_in6], 
+  ], [sockaddr_in6],
      AC_DEFINE_UNQUOTED(HAVE_STRUCT_SOCKADDR_IN6,1,
        [Define to 1 if you have struct sockaddr_in6.]) ac_have_sockaddr_in6=yes
 )
@@ -824,7 +820,7 @@ AC_HELP_STRING([--with-random=FILE],
         else
           AC_MSG_WARN([cannot check for /dev/urandom while cross compiling; assuming none])
         fi
-        
+
     ]
 )
 if test -n "$RANDOM_FILE" && test X"$RANDOM_FILE" != Xno ; then
@@ -885,6 +881,12 @@ if test "x$build_tests" = "xyes" ; then
   AC_CONFIG_SUBDIRS([test])
 fi
 
-AC_CONFIG_FILES([Makefile libcares.pc])
+AC_CONFIG_FILES([Makefile           \
+                 src/Makefile       \
+                 src/lib/Makefile   \
+                 src/tools/Makefile \
+                 docs/Makefile      \
+                 libcares.pc ])
+
 AC_OUTPUT
 XC_AMEND_DISTCLEAN(['.'])
