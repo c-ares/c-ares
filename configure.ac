@@ -13,8 +13,6 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-AM_INIT_AUTOMAKE([foreign subdir-objects 1.9.6])
-
 CARES_CHECK_OPTION_DEBUG
 CARES_CHECK_OPTION_OPTIMIZE
 CARES_CHECK_OPTION_WARNINGS
@@ -102,6 +100,7 @@ case $host_os in
 esac
 
 XC_LIBTOOL
+
 
 #
 # Automake conditionals based on libtool related checks

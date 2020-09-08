@@ -1,3 +1,4 @@
+AUTOMAKE_OPTIONS = foreign subdir-objects nostdinc 1.9.6
 ACLOCAL_AMFLAGS = -I m4 --install
 
 # Specify our include paths here, and do it relative to $(top_srcdir) and

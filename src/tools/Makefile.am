@@ -1,3 +1,4 @@
+AUTOMAKE_OPTIONS = foreign subdir-objects nostdinc 1.9.6
 PROGS = ahost adig acountry
 
 EXTRA_DIST = acountry.1 adig.1 ahost.1
