@@ -878,9 +878,14 @@ if test "x$build_tests" = "xyes" ; then
 fi
 AC_MSG_RESULT([$build_tests])
 
+
+BUILD_SUBDIRS="include src docs"
 if test "x$build_tests" = "xyes" ; then
   AC_CONFIG_SUBDIRS([test])
+  BUILD_SUBDIRS="${BUILD_SUBDIRS} test"
 fi
+
+AC_SUBST(BUILD_SUBDIRS)
 
 AC_CONFIG_FILES([Makefile           \
                  include/Makefile   \

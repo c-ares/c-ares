@@ -64,7 +64,7 @@ install:
 before_script:
     - |
         if [ "$BUILD_TYPE" = "coverage" ]; then
-             export CONFIG_OPTS="--enable-debug --disable-shared --enable-code-coverage"
+             export CONFIG_OPTS="--enable-debug --disable-shared --enable-code-coverage --enable-tests"
         fi
     - |
          if [ "$BUILD_TYPE" = "asan" ]; then
@@ -88,7 +88,7 @@ before_script:
     - |
          if [ "$BUILD_TYPE" = "analyze" ]; then
              export SCAN_WRAP="scan-build-7 --status-bugs"
-             export CONFIG_OPTS="--enable-debug"
+             export CONFIG_OPTS="--enable-debug --disable-tests"
              export CXX="clang++-7"
              export CC="clang-7"
          fi
@@ -100,7 +100,7 @@ before_script:
          fi
     - |
          if [ "$BUILD_TYPE" = "ios" ]; then
-             export CONFIG_OPTS=--host=arm-apple-darwin10
+             export CONFIG_OPTS="--host=arm-apple-darwin10 --disable-tests"
              export DEVPATH=`xcode-select -print-path`/Platforms/iPhoneOS.platform/Developer
              export IOSFLAGS="-isysroot $DEVPATH/SDKs/iPhoneOS.sdk -arch armv7 -miphoneos-version-min=8.0.0"
              export CFLAGS=$IOSFLAGS

@@ -67,7 +67,7 @@ build_script:
   - if "%BUILDTOOL%" == "CMAKE" cd C:\projects\build-cares
   - if "%BUILDTOOL%" == "CMAKE" cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% %APPVEYOR_BUILD_FOLDER%
   - if "%BUILDTOOL%" == "CMAKE" ninja install
-  - if "%BUILDTOOL%" == "MAKE" copy ares_build.h.dist ares_build.h
+  - if "%BUILDTOOL%" == "MAKE" copy include/ares_build.h.dist include/ares_build.h
   - if "%BUILDTOOL%" == "MAKE" mingw32-make.exe -f Makefile.m32 demos
 
 test_script:

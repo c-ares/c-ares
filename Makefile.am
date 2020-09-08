@@ -21,7 +21,7 @@ DISTCLEANFILES = include/ares_build.h
 
 DIST_SUBDIRS = include src test docs
 
-SUBDIRS = include src test docs
+SUBDIRS = @BUILD_SUBDIRS@
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
