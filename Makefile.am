@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign subdir-objects nostdinc 1.9.6
+AUTOMAKE_OPTIONS = foreign nostdinc 1.9.6
 ACLOCAL_AMFLAGS = -I m4 --install
 
 MSVCFILES = vc/vc6aws.dsw vc/acountry/vc6acountry.dsp vc/adig/vc6adig.dsp	\
