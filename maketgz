@@ -64,6 +64,6 @@ print "running make dist\n";
 print "removing temporary configure.ac file\n";
 `rm configure.ac.dist`;
 print "removing temporary ares_version.h file\n";
-`rm ares_version.h.dist`;
+`rm include/ares_version.h.dist`;
 
 print "NOTE: now tag this release!\n";
