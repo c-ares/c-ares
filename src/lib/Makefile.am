@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign nostdinc 1.9.6
+AUTOMAKE_OPTIONS = foreign subdir-objects nostdinc 1.9.6
 ACLOCAL_AMFLAGS = -I m4 --install
 
 # Specify our include paths here, and do it relative to $(top_srcdir) and
@@ -7,6 +7,7 @@ ACLOCAL_AMFLAGS = -I m4 --install
 # might possibly already be installed in the system.
 
 AM_CPPFLAGS = -I$(top_builddir)/include \
+              -I$(top_builddir)/src/lib \
               -I$(top_srcdir)/include
 
 lib_LTLIBRARIES = libcares.la
@@ -19,7 +20,7 @@ EXTRA_DIST = Makefile.inc Makefile.dj Makefile.m32 Makefile.netware		\
  Makefile.msvc Makefile.Watcom config-win32.h ares_build.h.in $(CSOURCES)	\
  $(HHEADERS) config-dos.h
 
-DISTCLEANFILES = ares_build.h
+DISTCLEANFILES = ares_config.h
 
 DIST_SUBDIRS =
 

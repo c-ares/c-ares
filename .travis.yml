@@ -37,7 +37,7 @@ matrix:
           env: BUILD_TYPE=lsan
         - os: linux
           compiler: clang
-          env: BUILD_TYPE=analyse
+          env: BUILD_TYPE=analyze
         - os: linux
           compiler: gcc
           env: BUILD_TYPE=valgrind
@@ -86,7 +86,7 @@ before_script:
              export LDFLAGS="-fsanitize=undefined"
          fi
     - |
-         if [ "$BUILD_TYPE" = "analyse" ]; then
+         if [ "$BUILD_TYPE" = "analyze" ]; then
              export SCAN_WRAP="scan-build-7 --status-bugs"
              export CONFIG_OPTS="--enable-debug"
              export CXX="clang++-7"

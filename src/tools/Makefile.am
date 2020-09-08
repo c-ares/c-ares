@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign nostdinc 1.9.6
+AUTOMAKE_OPTIONS = foreign subdir-objects nostdinc 1.9.6
 PROGS = ahost adig acountry
 
 EXTRA_DIST = acountry.1 adig.1 ahost.1
@@ -11,8 +11,9 @@ noinst_PROGRAMS =$(PROGS)
 # might possibly already be installed in the system.
 
 AM_CPPFLAGS = -I$(top_builddir)/include \
-  -I$(top_srcdir)/include \
-  -I$(top_srcdir)/src/lib
+              -I$(top_builddir)/src/lib \
+              -I$(top_srcdir)/include \
+              -I$(top_srcdir)/src/lib
 
 include Makefile.inc
 

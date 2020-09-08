@@ -1,12 +1,16 @@
-# Where to find the c-ares source code; needed because the tests use library-internal headers
-ARES_SRC_DIR = ..
-# Where to find the built c-ares static library
-ARES_BLD_DIR = ..
-AUTOMAKE_OPTIONS = foreign nostdinc 1.9.6
+ARES_BLD_DIR = $(top_builddir)/..
+ARES_SRC_DIR = $(top_srcdir)/..
+
+AUTOMAKE_OPTIONS = foreign subdir-objects nostdinc 1.9.6
 ACLOCAL_AMFLAGS = -I ../m4 --install
 GMOCK_DIR = gmock-1.8.0
 # Note use of -isystem to force use of local gMock/gTest even if there's an installed version.
-CPPFLAGS += -I$(ARES_SRC_DIR)/src/lib -I$(ARES_SRC_DIR)/include -isystem $(GMOCK_DIR)
+CPPFLAGS += -I$(ARES_BLD_DIR)/include \
+            -I$(ARES_BLD_DIR)/src/lib \
+            -I$(ARES_SRC_DIR)/include \
+            -I$(ARES_SRC_DIR)/src/lib \
+            -I$(top_builddir)         \
+            -isystem $(srcdir)/$(GMOCK_DIR)
 CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 
 # Makefile.inc provides the various *SOURCES and *HEADERS defines
