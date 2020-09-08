@@ -2,7 +2,7 @@
 ARES_SRC_DIR = ..
 # Where to find the built c-ares static library
 ARES_BLD_DIR = ..
-AUTOMAKE_OPTIONS = foreign subdir-objects nostdinc 1.9.6
+AUTOMAKE_OPTIONS = foreign nostdinc 1.9.6
 ACLOCAL_AMFLAGS = -I ../m4 --install
 GMOCK_DIR = gmock-1.8.0
 # Note use of -isystem to force use of local gMock/gTest even if there's an installed version.
