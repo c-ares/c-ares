@@ -6,9 +6,9 @@ set -e
 [ -z "$TEST_FILTER" ] && export TEST_FILTER="--gtest_filter=-*LiveSearchANY*"
 
 if [ "$BUILD_TYPE" != "ios" -a "$BUILD_TYPE" != "analyse" -a "$BUILD_TYPE" != "cmake" -a "$BUILD_TYPE" != "valgrind" ]; then
-    $TEST_WRAP ./adig www.google.com
-    $TEST_WRAP ./acountry www.google.com
-    $TEST_WRAP ./ahost www.google.com
+    $TEST_WRAP ./src/tools/adig www.google.com
+    $TEST_WRAP ./src/tools/acountry www.google.com
+    $TEST_WRAP ./src/tools/ahost www.google.com
     cd test
     make
     $TEST_WRAP ./arestest -4 -v $TEST_FILTER
