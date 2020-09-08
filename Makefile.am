@@ -15,9 +15,9 @@ CLEANFILES = $(PDFPAGES) $(HTMLPAGES)
 
 DISTCLEANFILES = include/ares_build.h
 
-DIST_SUBDIRS = test docs include src
+DIST_SUBDIRS = include src test docs
 
-SUBDIRS = src test docs
+SUBDIRS = include src test docs
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
@@ -53,10 +53,6 @@ CARES_VERSION_INFO = -version-info 6:1:4
 
 # where to install the c-ares headers
 libcares_ladir = $(includedir)
-
-# what headers to install on 'make install':
-include_HEADERS = include/ares.h include/ares_version.h include/ares_dns.h \
-	include/ares_build.h include/ares_rules.h
 
 
 # Make files named *.dist replace the file without .dist extension

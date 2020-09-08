@@ -883,6 +883,7 @@ if test "x$build_tests" = "xyes" ; then
 fi
 
 AC_CONFIG_FILES([Makefile           \
+                 include/Makefile   \
                  src/Makefile       \
                  src/lib/Makefile   \
                  src/tools/Makefile \

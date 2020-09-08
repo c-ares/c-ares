@@ -1,0 +1,5 @@
+AUTOMAKE_OPTIONS = foreign nostdinc 1.9.6
+ACLOCAL_AMFLAGS = -I m4 --install
+
+# what headers to install on 'make install':
+include_HEADERS = ares.h ares_version.h ares_dns.h ares_build.h ares_rules.h
