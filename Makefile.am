@@ -1,6 +1,4 @@
-AUTOMAKE_OPTIONS = foreign nostdinc
-
-ACLOCAL_AMFLAGS = -I m4
+ACLOCAL_AMFLAGS = -I m4 --install
 
 MSVCFILES = vc/vc6aws.dsw vc/acountry/vc6acountry.dsp vc/adig/vc6adig.dsp	\
  vc/ahost/vc6ahost.dsp vc/cares/vc6cares.dsp vc/cares/vc6cares.dsw		\
@@ -16,7 +14,9 @@ CLEANFILES = $(PDFPAGES) $(HTMLPAGES)
 
 DISTCLEANFILES = include/ares_build.h
 
-DIST_SUBDIRS = test docs include src/tools
+DIST_SUBDIRS = test docs include src
+
+SUBDIRS = include src test docs
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
