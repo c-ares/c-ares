@@ -385,7 +385,7 @@ static int find_src_addr(ares_channel channel,
                          const struct sockaddr *addr,
                          struct sockaddr *src_addr)
 {
-  int sock;
+  ares_socket_t sock;
   int ret;
   ares_socklen_t len;
 
@@ -403,7 +403,7 @@ static int find_src_addr(ares_channel channel,
     }
 
   sock = ares__open_socket(channel, addr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
-  if (sock == -1)
+  if (sock == ARES_SOCKET_BAD)
     {
       if (errno == EAFNOSUPPORT)
         {

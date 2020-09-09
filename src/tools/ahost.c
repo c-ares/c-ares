@@ -49,7 +49,7 @@
 
 static void callback(void *arg, int status, int timeouts, struct hostent *host);
 static void usage(void);
-static void print_help_info_ahost();
+static void print_help_info_ahost(void);
 
 int main(int argc, char **argv)
 {
@@ -212,7 +212,7 @@ static void usage(void)
 }
 
 /* Information from the man page. Formatting taken from man -h */
-static void print_help_info_ahost() {
+static void print_help_info_ahost(void) {
     printf("ahost, version %s \n\n", ARES_VERSION_STR);
     printf("usage: ahost [-h] [-d] [-s {domain}] [-t {a|aaaa|u}] {host|addr} ...\n\n"
     "  d : Print some extra debugging output.\n"

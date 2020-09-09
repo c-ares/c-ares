@@ -177,7 +177,7 @@ static void usage(void);
 static void destroy_addr_list(struct ares_addr_node *head);
 static void append_addr_list(struct ares_addr_node **head,
                              struct ares_addr_node *node);
-static void print_help_info_adig();
+static void print_help_info_adig(void);
 
 int main(int argc, char **argv)
 {
@@ -834,7 +834,7 @@ static void append_addr_list(struct ares_addr_node **head,
 
 
 /* Information from the man page. Formatting taken from man -h */
-static void print_help_info_adig() {
+static void print_help_info_adig(void) {
     printf("adig, version %s \n\n", ARES_VERSION_STR);
     printf("usage: adig [-h] [-d] [-f flag] [-s server] [-c class] [-t type] [-T|U port] name ...\n\n"
     "  d : Print some extra debugging output.\n"

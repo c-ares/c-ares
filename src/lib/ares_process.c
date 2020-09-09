@@ -1392,6 +1392,7 @@ static int has_opt_rr(const unsigned char *abuf, int alen)
     {
       char* name;
       long len;
+      int dlen;
       status = ares_expand_name(aptr, abuf, alen, &name, &len);
       if (status != ARES_SUCCESS)
         return -1;
@@ -1399,7 +1400,7 @@ static int has_opt_rr(const unsigned char *abuf, int alen)
       if (aptr + len + RRFIXEDSZ > abuf + alen)
         return -1;
       aptr += len;
-      int dlen = DNS_RR_LEN(aptr);
+      dlen = DNS_RR_LEN(aptr);
       aptr += RRFIXEDSZ;
       if (aptr + dlen > abuf + alen)
         return -1;
@@ -1411,6 +1412,7 @@ static int has_opt_rr(const unsigned char *abuf, int alen)
     {
       char* name;
       long len;
+      int dlen;
       status = ares_expand_name(aptr, abuf, alen, &name, &len);
       if (status != ARES_SUCCESS)
         return -1;
@@ -1422,7 +1424,7 @@ static int has_opt_rr(const unsigned char *abuf, int alen)
       if (DNS_RR_TYPE(aptr) == ns_t_opt)
         return 1;
 
-      int dlen = DNS_RR_LEN(aptr);
+      dlen = DNS_RR_LEN(aptr);
       aptr += RRFIXEDSZ;
       if (aptr + dlen > abuf + alen)
         return -1;
