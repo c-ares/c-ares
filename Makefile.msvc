@@ -80,7 +80,7 @@ USE_WATT32 = 0
 # Verify that current subdir is the c-ares source one
 # ----------------------------------------------------
 
-!IF ! EXIST(.\ares_init.c)
+!IF ! EXIST(.\src\lib\ares_init.c)
 !  MESSAGE Can not process Makefile.msvc from outside of c-ares source subdirectory.
 !  MESSAGE Change to the subdirectory where Makefile.msvc is found, and try again.
 !  ERROR   See previous message.
