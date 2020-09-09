@@ -17,7 +17,7 @@ configuration:
 # Note: You can set extra cmake args for a particular matrix entry with CMAKE_EXTRA_OPTIONS. For example:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
-#  matrix:
+  matrix:
 #    # MSVC 2015, 32-bit x86 (cmake)
 #    - COMPILER: MSVC
 #      BUILDTOOL: CMAKE
