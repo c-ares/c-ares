@@ -12,9 +12,9 @@ LD = g++
 ARES_SRC_DIR = ..
 # Where to find the built c-ares static library
 ARES_BLD_DIR = ..
-ARESLIB = $(ARES_BLD_DIR)/libcares.a
+ARESLIB = $(ARES_BLD_DIR)/src/lib/libcares.a
 GMOCK_DIR = gmock-1.8.0
-CPPFLAGS = -I$(ARES_SRC_DIR) -I$(GMOCK_DIR) -DCARES_STATICLIB
+CPPFLAGS = -I$(ARES_SRC_DIR)/include -I$(ARES_SRC_DIR)/src/lib -I$(GMOCK_DIR) -DCARES_STATICLIB
 CXXFLAGS = -Wall $(PTHREAD_CFLAGS) -std=gnu++11
 LDFLAGS =
 LDLIBS = -lwsock32
@@ -30,16 +30,16 @@ DNSDUMPOBJS := $(patsubst %.cc,%.o,$(strip $(DUMPSOURCES)))
 all: arestest.exe aresfuzz.exe aresfuzzname.exe dnsdump.exe
 
 arestest.exe: $(OBJS) gmock-gtest-all.o
-	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR) -lcares $(LDLIBS)
+	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR)/src/lib -lcares $(LDLIBS)
 
 aresfuzz.exe: $(FUZZOBJS)
-	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR) -lcares $(LDLIBS)
+	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR)/src/lib -lcares $(LDLIBS)
 
 aresfuzzname.exe: $(FUZZNAMEOBJS)
-	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR) -lcares $(LDLIBS)
+	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR)/src/lib -lcares $(LDLIBS)
 
 dnsdump.exe: $(DNSDUMPOBJS)
-	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR) -lcares $(LDLIBS)
+	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR)/src/lib -lcares $(LDLIBS)
 
 $(OBJS): $(TESTHEADERS)
 

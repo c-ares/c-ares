@@ -45,7 +45,7 @@ tags:
 $(OBJLIB): include/ares.h src/lib/ares_dns.h include/ares_build.h
 
 .c.o:
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 include/ares_build.h:
 	$(CP) include/ares_build.h.dist include/ares_build.h
