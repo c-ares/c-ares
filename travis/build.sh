@@ -3,7 +3,9 @@ set -e
 
 if [ "$BUILD_TYPE" != "cmake" -a "$BUILD_TYPE" != "valgrind" ]; then
     ./buildconf
-    $SCAN_WRAP ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS
+    mkdir atoolsbld
+    cd atoolsbld
+    $SCAN_WRAP ../configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS
     $SCAN_WRAP make
 else
     # Use cmake for valgrind to prevent libtool script wrapping of tests that interfere with valgrind

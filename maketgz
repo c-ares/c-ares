@@ -7,7 +7,7 @@ if($version eq "") {
     exit;
 }
 
-if(!-f "ares.h") {
+if(!-f "include/ares.h") {
     print "run this script in the ares source root dir\n";
     exit;
 }
@@ -18,9 +18,9 @@ $major += 0;
 $minor += 0;
 $patch += 0;
 
-open(VER, "<ares_version.h") ||
-    die "can't open ares_version.h";
-open(NEWV, ">ares_version.h.dist");
+open(VER, "<include/ares_version.h") ||
+    die "can't open include/ares_version.h";
+open(NEWV, ">include/ares_version.h.dist");
 while(<VER>) {
     $_ =~ s/^\#define ARES_VERSION_MAJOR .*/\#define ARES_VERSION_MAJOR $major/;
     $_ =~ s/^\#define ARES_VERSION_MINOR .*/\#define ARES_VERSION_MINOR $minor/;
@@ -31,7 +31,7 @@ while(<VER>) {
 }
 close(VER);
 close(NEWV);
-print "ares_version.h.dist created\n";
+print "include/ares_version.h.dist created\n";
 
 if(!-f "configure") {
     print "running buildconf\n";
@@ -64,6 +64,6 @@ print "running make dist\n";
 print "removing temporary configure.ac file\n";
 `rm configure.ac.dist`;
 print "removing temporary ares_version.h file\n";
-`rm ares_version.h.dist`;
+`rm include/ares_version.h.dist`;
 
 print "NOTE: now tag this release!\n";
