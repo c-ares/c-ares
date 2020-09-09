@@ -280,7 +280,8 @@ RC_CMD       = $(RC_CMD_DBG)
 # Makefile.inc provides lists of source files
 # --------------------------------------------
 
-!INCLUDE .\Makefile.inc
+!INCLUDE .\src\lib\Makefile.inc
+!INCLUDE .\src\tools\Makefile.inc
 
 # ----------------------------
 # Build lists of object files
@@ -339,19 +340,19 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 .SUFFIXES:
 .SUFFIXES: .c .rc
 
-{$(SRCDIR)}.rc{$(CARES_OBJDIR)}.res:
+{$(SRCDIR)\src\lib}.rc{$(CARES_OBJDIR)}.res:
     $(RC_CMD) /Fo $@ $<
 
-{$(SRCDIR)}.c{$(CARES_OBJDIR)}.obj:
+{$(SRCDIR)\src\lib}.c{$(CARES_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(CARES_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
-{$(SRCDIR)}.c{$(PROG1_OBJDIR)}.obj:
+{$(SRCDIR\src\tools)}.c{$(PROG1_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
-{$(SRCDIR)}.c{$(PROG2_OBJDIR)}.obj:
+{$(SRCDIR\src\tools)}.c{$(PROG2_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
-{$(SRCDIR)}.c{$(PROG3_OBJDIR)}.obj:
+{$(SRCDIR\src\tools)}.c{$(PROG3_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
 # ------------------------------------------------------------- #
@@ -443,11 +444,11 @@ install:
     @if not exist "$(INSTALL_DIR)"     mkdir "$(INSTALL_DIR)"
     @if not exist "$(INSTALL_DIR_LIB)" mkdir "$(INSTALL_DIR_LIB)"
     @if not exist "$(INSTALL_DIR_INC)" mkdir "$(INSTALL_DIR_INC)"
-    @copy /y $(CARES_OUTDIR)\*.*      "$(INSTALL_DIR_LIB)" >NUL
-    @copy /y $(SRCDIR)\ares.h         "$(INSTALL_DIR_INC)" >NUL
-    @copy /y $(SRCDIR)\ares_build.h   "$(INSTALL_DIR_INC)" >NUL
-    @copy /y $(SRCDIR)\ares_rules.h   "$(INSTALL_DIR_INC)" >NUL
-    @copy /y $(SRCDIR)\ares_version.h "$(INSTALL_DIR_INC)" >NUL
+    @copy /y $(CARES_OUTDIR)\*.*              "$(INSTALL_DIR_LIB)" >NUL
+    @copy /y $(SRCDIR)\include\ares.h         "$(INSTALL_DIR_INC)" >NUL
+    @copy /y $(SRCDIR)\include\ares_build.h   "$(INSTALL_DIR_INC)" >NUL
+    @copy /y $(SRCDIR)\include\ares_rules.h   "$(INSTALL_DIR_INC)" >NUL
+    @copy /y $(SRCDIR)\include\ares_version.h "$(INSTALL_DIR_INC)" >NUL
     @echo Installed c-ares $(CFG)
 
 !ENDIF
