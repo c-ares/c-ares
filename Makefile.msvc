@@ -359,19 +359,19 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
 {$(SRCDIR)\src\lib}.c{$(PROG1_OBJDIR)\..\lib}.obj:
-    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG1_OBJDIR)$(@F) /Fd$(PROG1_OBJDIR)\ /c $<
+    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG1_OBJDIR)\$(@F) /Fd$(PROG1_OBJDIR)\ /c $<
 
 {$(SRCDIR)\src\tools}.c{$(PROG2_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
 {$(SRCDIR)\src\lib}.c{$(PROG2_OBJDIR)\..\lib}.obj:
-    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG2_OBJDIR)$(@F) /Fd$(PROG2_OBJDIR)\ /c $<
+    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG2_OBJDIR)\$(@F) /Fd$(PROG2_OBJDIR)\ /c $<
 
 {$(SRCDIR)\src\tools}.c{$(PROG3_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
 {$(SRCDIR)\src\lib}.c{$(PROG3_OBJDIR)\..\lib}.obj:
-    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
+    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG3_OBJDIR)\$(@F) /Fd$(PROG3_OBJDIR)\ /c $<
 
 # ------------------------------------------------------------- #
 # ------------------------------------------------------------- #
