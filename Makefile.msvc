@@ -336,11 +336,6 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 
 !ENDIF
 
-!IF [ECHO $(CARES_OBJS)] == 0
-!ENDIF
-
-!IF [ECHO $(PROG1_OBJS)] == 0
-!ENDIF
 
 # --------------------------------
 # Only our custom inference rules
@@ -358,17 +353,20 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 {$(SRCDIR)\src\tools}.c{$(PROG1_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
-{$(SRCDIR)\src\lib}.c{$(PROG1_OBJDIR)\..\lib}.obj:
-    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG1_OBJDIR)\$(@F) /Fd$(PROG1_OBJDIR)\ /c $<
-
 {$(SRCDIR)\src\tools}.c{$(PROG2_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
-{$(SRCDIR)\src\lib}.c{$(PROG2_OBJDIR)\..\lib}.obj:
-    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG2_OBJDIR)\$(@F) /Fd$(PROG2_OBJDIR)\ /c $<
-
 {$(SRCDIR)\src\tools}.c{$(PROG3_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
+
+# Hack Alert! we reference ../lib/ files in the Makefile.inc for tools as they
+# share some files with the library itself.  We need to hack around that here.
+
+{$(SRCDIR)\src\lib}.c{$(PROG1_OBJDIR)\..\lib}.obj:
+    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG1_OBJDIR)\$(@F) /Fd$(PROG1_OBJDIR)\ /c $<
+
+{$(SRCDIR)\src\lib}.c{$(PROG2_OBJDIR)\..\lib}.obj:
+    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG2_OBJDIR)\$(@F) /Fd$(PROG2_OBJDIR)\ /c $<
 
 {$(SRCDIR)\src\lib}.c{$(PROG3_OBJDIR)\..\lib}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG3_OBJDIR)\$(@F) /Fd$(PROG3_OBJDIR)\ /c $<
