@@ -15,7 +15,7 @@
  */
 
 #include <winver.h>
-#include "ares_version.h"
+#include "../../include/ares_version.h"
 
 LANGUAGE  0x09,0x01
 
