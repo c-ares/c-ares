@@ -1,9 +1,7 @@
 AUTOMAKE_OPTIONS = foreign nostdinc 1.9.6
 ACLOCAL_AMFLAGS = -I m4 --install
 
-MSVCFILES = vc/vc6aws.dsw vc/acountry/vc6acountry.dsp vc/adig/vc6adig.dsp	\
- vc/ahost/vc6ahost.dsp vc/cares/vc6cares.dsp vc/cares/vc6cares.dsw		\
- msvc_ver.inc
+MSVCFILES = msvc_ver.inc
 
 # adig and ahost are just sample programs and thus not mentioned with the
 # regular sources and headers
