@@ -23,7 +23,7 @@ LDFLAGS	= $(CARES_LDFLAG_EXTRAS) -s
 LIBS	= -lwsock32
 
 # Makefile.inc provides the CSOURCES and HHEADERS defines
-include Makefile.inc
+include src/lib/Makefile.inc
 
 OBJLIB	:= $(patsubst %.c,src/lib/%.o,$(strip $(CSOURCES)))
 
