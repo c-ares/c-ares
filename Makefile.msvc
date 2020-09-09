@@ -309,6 +309,7 @@ CARES_OBJS = $(CARES_OBJS) $(CARES_OBJDIR)\cares.res
 !ERROR Problem generating PROG1_OBJS list.
 !ENDIF
 PROG1_OBJS = $(PROG1_OBJS:.c=.obj)
+PROG1_OBJS = $(PROG1_OBJS:/=\)
 PROG1_OBJS = $(PROG1_OBJS) $(PROG1_OBJDIR)\acountry.obj
 
 !IF [ECHO PROG2_OBJS=^$(PROG2_OBJDIR)\$(SAMPLESOURCES: = $(PROG2_OBJDIR^)\) > .\prog2_objs.inc] == 0
@@ -319,6 +320,7 @@ PROG1_OBJS = $(PROG1_OBJS) $(PROG1_OBJDIR)\acountry.obj
 !ERROR Problem generating PROG2_OBJS list.
 !ENDIF
 PROG2_OBJS = $(PROG2_OBJS:.c=.obj)
+PROG2_OBJS = $(PROG2_OBJS:/=\)
 PROG2_OBJS = $(PROG2_OBJS) $(PROG2_OBJDIR)\adig.obj
 
 !IF [ECHO PROG3_OBJS=^$(PROG3_OBJDIR)\$(SAMPLESOURCES: = $(PROG3_OBJDIR^)\) > .\prog3_objs.inc] == 0
@@ -329,14 +331,15 @@ PROG2_OBJS = $(PROG2_OBJS) $(PROG2_OBJDIR)\adig.obj
 !ERROR Problem generating PROG3_OBJS list.
 !ENDIF
 PROG3_OBJS = $(PROG3_OBJS:.c=.obj)
+PROG3_OBJS = $(PROG3_OBJS:/=\)
 PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 
 !ENDIF
 
-!IF [ECHO HELLO WORLD] == 0
+!IF [ECHO $(CARES_OBJS)] == 0
 !ENDIF
 
-!IF [ECHO $(CARES_OBJS)] == 0
+!IF [ECHO $(PROG1_OBJS)] == 0
 !ENDIF
 
 # --------------------------------
@@ -353,6 +356,9 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
     $(CC_CMD) $(CC_CFLAGS) $(CARES_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
 {$(SRCDIR)\src\tools}.c{$(PROG1_OBJDIR)}.obj:
+    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
+
+{$(SRCDIR)\src\tools}.c{$(PROG1_OBJDIR)\..\lib}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
 {$(SRCDIR)\src\tools}.c{$(PROG2_OBJDIR)}.obj:
