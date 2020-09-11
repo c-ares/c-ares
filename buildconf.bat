@@ -12,8 +12,8 @@ ECHO ERROR: This file shall only be used with a c-ares git checkout.
 goto end_all
 :start_doing
 
-if not exist ares_build.h.dist goto end_ares_build_h
-copy /Y ares_build.h.dist ares_build.h
+if not exist include\ares_build.h.dist goto end_ares_build_h
+copy /Y include\ares_build.h.dist include\ares_build.h
 :end_ares_build_h
 
 :end_all
