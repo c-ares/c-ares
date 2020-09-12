@@ -80,10 +80,10 @@ static const char *nerd_ver1  = nerd_fmt + 14;  /* .countries.nerd.dk */
 static const char *nerd_ver2  = nerd_fmt + 11;  /* .zz.countries.nerd.dk */
 static int         verbose    = 0;
 
-#define TRACE(fmt) do {               \
-                     if (verbose > 0) \
-                       printf fmt ;   \
-                   } WHILE_FALSE
+#define TRACE(fmt, ...) do {                             \
+                        if (verbose > 0)                 \
+                           printf (fmt, ## __VA_ARGS__); \
+                        } WHILE_FALSE
 
 static void wait_ares(ares_channel channel);
 static void callback(void *arg, int status, int timeouts, struct hostent *host);
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
               (unsigned int)((addr.s_addr >> 16) & 255),
               (unsigned int)((addr.s_addr >> 8) & 255),
               (unsigned int)(addr.s_addr & 255));
-      TRACE(("Looking up %s...", buf));
+      TRACE("Looking up %s...", buf);
       fflush(stdout);
       ares_gethostbyname(channel, buf, AF_INET, callback, buf);
     }
@@ -218,7 +218,7 @@ static void wait_ares(ares_channel channel)
 }
 
 /*
- * This is the callback used when we have the IP-address of interest.
+ * This is the callback used when we have the IPv4-address of interest.
  * Extract the CNAME and figure out the country-code from it.
  */
 static void callback(void *arg, int status, int timeouts, struct hostent *host)
@@ -235,9 +235,9 @@ static void callback(void *arg, int status, int timeouts, struct hostent *host)
       return;
     }
 
-  TRACE(("\nFound address %s, name %s\n",
-         ares_inet_ntop(AF_INET,(const char*)host->h_addr,buf,sizeof(buf)),
-         host->h_name));
+  TRACE("\nFound address %s, name %s\n",
+        ares_inet_ntop(AF_INET,(const char*)host->h_addr,buf,sizeof(buf)),
+        host->h_name);
 
   cname = host->h_name;  /* CNAME gets put here */
   if (!cname)
@@ -247,7 +247,7 @@ static void callback(void *arg, int status, int timeouts, struct hostent *host)
 }
 
 /*
- * This is the callback used to obtain the IP-address of the host of interest.
+ * This is the callback used to obtain the IPv4-address of the host of interest.
  */
 static void callback2(void *arg, int status, int timeouts, struct hostent *host)
 {
@@ -618,8 +618,8 @@ static void find_country_from_cname(const char *cname, struct in_addr addr)
 
   cnumber = ip & 0xFFFF;
 
-  TRACE(("Found country-code `%s', number %d\n",
-         ver_1 ? ccode_A2 : "<n/a>", cnumber));
+  TRACE("Found country-code `%s', number %d\n",
+        ver_1 ? ccode_A2 : "<n/a>", cnumber);
 
   country = list_lookup(cnumber, country_list,
                         sizeof(country_list) / sizeof(country_list[0]));
@@ -645,8 +645,8 @@ static void find_country_from_cname(const char *cname, struct in_addr addr)
 static void print_help_info_acountry(void) {
     printf("acountry, version %s \n\n", ARES_VERSION_STR);
     printf("usage: acountry [-hdv] {host|addr} ...\n\n"
-    "  d : Print some extra debugging output.\n"
-    "  h : Display this help and exit.\n"
-    "  v : Be more verbose. Print extra information.\n\n");
+    "  -d : Print some extra debugging output.\n"
+    "  -h : Display this help and exit.\n"
+    "  -v : Be more verbose. Print extra information.\n\n");
     exit(0);
 }
