@@ -28,6 +28,7 @@
 #define HAVE_SYS_TYPES_H       1
 #define HAVE_TIME_H            1
 #define HAVE_UNISTD_H          1
+#define HAVE_WRITEV            1
 
 #define NEED_MALLOC_H          1
 
@@ -63,6 +64,9 @@
 /* Target HAVE_x section */
 
 #if defined(DJGPP)
+  #undef _SSIZE_T
+  #include <sys/types.h>               /* For 'ssize_t' */
+
   #define HAVE_STRCASECMP           1
   #define HAVE_STRNCASECMP          1
   #define HAVE_SYS_TIME_H           1
@@ -99,6 +103,9 @@
   #define HAVE_SYS_UIO_H                   1
   #define NS_INADDRSZ                      4
   #define HAVE_STRUCT_SOCKADDR_IN6         1
+
+  #define HAVE_GETSERVBYPORT_R             1
+  #define GETSERVBYPORT_R_ARGS             5
 #endif
 
 #undef word
