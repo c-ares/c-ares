@@ -171,6 +171,7 @@ static const unsigned char *display_question(const unsigned char *aptr,
                                              int alen);
 static const unsigned char *display_rr(const unsigned char *aptr,
                                        const unsigned char *abuf, int alen);
+static int convert_query (char **name, int use_bitstring);
 static const char *type_name(int type);
 static const char *class_name(int dnsclass);
 static void usage(void);
@@ -184,6 +185,7 @@ int main(int argc, char **argv)
   ares_channel channel;
   int c, i, optmask = ARES_OPT_FLAGS, dnsclass = C_IN, type = T_A;
   int status, nfds, count;
+  int use_ptr_helper = 0;
   struct ares_options options;
   struct hostent *hostent;
   fd_set read_fds, write_fds;
@@ -206,7 +208,7 @@ int main(int argc, char **argv)
   options.flags = ARES_FLAG_NOCHECKRESP;
   options.servers = NULL;
   options.nservers = 0;
-  while ((c = ares_getopt(argc, argv, "dh?f:s:c:t:T:U:")) != -1)
+  while ((c = ares_getopt(argc, argv, "dh?f:s:c:t:T:U:x")) != -1)
     {
       switch (c)
         {
@@ -329,6 +331,10 @@ int main(int argc, char **argv)
           options.udp_port = (unsigned short)strtol(optarg, NULL, 0);
           optmask |= ARES_OPT_UDP_PORT;
           break;
+          
+        case 'x':
+          use_ptr_helper++;
+          break;
         }
     }
   argc -= optind;
@@ -362,12 +368,15 @@ int main(int argc, char **argv)
    * otherwise, supply the query name as an argument so we can
    * distinguish responses for the user when printing them out.
    */
-  if (argc == 1)
-    ares_query(channel, *argv, dnsclass, type, callback, (char *) NULL);
-  else
+  for (i = 1; *argv; i++, argv++)
     {
-      for (; *argv; argv++)
-        ares_query(channel, *argv, dnsclass, type, callback, *argv);
+      char *query = *argv;
+
+      if (type == T_PTR && dnsclass == C_IN && use_ptr_helper)
+         if (!convert_query (&query, use_ptr_helper >= 2))
+            continue;
+
+      ares_query(channel, query, dnsclass, type, callback, i < argc-1 ? (void*)query : NULL);
     }
 
   /* Wait for all queries to complete. */
@@ -775,6 +784,104 @@ static const unsigned char *display_rr(const unsigned char *aptr,
   return aptr + dlen;
 }
 
+/*
+ * With the '-x' (or '-xx') and '-t PTR' options, convert a query for an
+ * address into a more useful 'T_PTR' type question.
+ * Like with an input 'query':
+ *  "a.b.c.d"  ->  "d.c.b.a".in-addr.arpa"          for an IPv4 address.
+ *  "a.b.c....x.y.z" -> "z.y.x....c.d.e.IP6.ARPA"   for an IPv6 address.
+ *
+ * An example from 'dig -x PTR 2001:470:1:1b9::31':
+ *
+ * QUESTION SECTION:
+ * 1.3.0.0.0.0.0.0.0.0.0.0.0.0.0.0.9.b.1.0.1.0.0.0.0.7.4.0.1.0.0.2.IP6.ARPA. IN PTR
+ *
+ * ANSWER SECTION:
+ * 1.3.0.0.0.0.0.0.0.0.0.0.0.0.0.0.9.b.1.0.1.0.0.0.0.7.4.0.1.0.0.2.IP6.ARPA. 254148 IN PTR ipv6.cybernode.com.
+ *
+ * If 'use_bitstring == 1', try to use the more compact RFC-2673 bitstring format.
+ * Thus the above 'dig' query should become:
+ *   [x13000000000000009b10100007401002].IP6.ARPA. IN PTR
+ */
+static int convert_query (char **name_p, int use_bitstring)
+{
+#ifndef MAX_IP6_RR
+#define MAX_IP6_RR  (16*sizeof(".x.x") + sizeof(".IP6.ARPA") + 1)
+#endif
+
+#ifdef HAVE_INET_PTON
+ #define ACCEPTED_RETVAL4 1
+ #define ACCEPTED_RETVAL6 1
+#else
+ #define ACCEPTED_RETVAL4 32
+ #define ACCEPTED_RETVAL6 128
+#endif
+
+  static char new_name [MAX_IP6_RR];
+  static const char hex_chars[] = "0123456789ABCDEF";
+
+  union {
+    struct in_addr       addr4;
+    struct ares_in6_addr addr6;
+  } addr;
+
+  if (ares_inet_pton (AF_INET, *name_p, &addr.addr4) == 1)
+    {
+       unsigned long laddr = ntohl(addr.addr4.s_addr);
+       unsigned long a1 = (laddr >> 24UL) & 0xFFUL;
+       unsigned long a2 = (laddr >> 16UL) & 0xFFUL;
+       unsigned long a3 = (laddr >>  8UL) & 0xFFUL;
+       unsigned long a4 = laddr & 0xFFUL;
+
+       snprintf(new_name, sizeof(new_name), "%lu.%lu.%lu.%lu.in-addr.arpa", a4, a3, a2, a1);
+       *name_p = new_name;
+       return (1);
+    }
+
+  if (ares_inet_pton(AF_INET6, *name_p, &addr.addr6) == 1)
+    {
+       char *c = new_name;
+       const unsigned char *ip = (const unsigned char*) &addr.addr6;
+       int   max_i = (int)sizeof(addr.addr6) - 1;
+       int   i, hi, lo;
+
+       /* Use the more compact RFC-2673 notation?
+        * Currently doesn't work or unsupported by the DNS-servers I've tested against.
+        */
+       if (use_bitstring)
+       {
+         *c++ = '\\';
+         *c++ = '[';
+         *c++ = 'x';
+         for (i = max_i; i >= 0; i--)
+         {
+           hi = ip[i] >> 4;
+           lo = ip[i] & 15;
+           *c++ = hex_chars [lo];
+           *c++ = hex_chars [hi];
+         }
+         strcpy (c, "].IP6.ARPA");
+       }
+       else
+       {
+         for (i = max_i; i >= 0; i--)
+         {
+           hi = ip[i] >> 4;
+           lo = ip[i] & 15;
+           *c++ = hex_chars [lo];
+           *c++ = '.';
+           *c++ = hex_chars [hi];
+           *c++ = '.';
+         }
+         strcpy (c, "IP6.ARPA");
+       }
+       *name_p = new_name;
+       return (1);
+    }
+  printf("Address %s was not legal for this query.\n", *name_p);
+  return (0);
+}
+
 static const char *type_name(int type)
 {
   int i;
@@ -802,7 +909,7 @@ static const char *class_name(int dnsclass)
 static void usage(void)
 {
   fprintf(stderr, "usage: adig [-h] [-d] [-f flag] [-s server] [-c class] "
-          "[-t type] [-T|U port] name ...\n");
+          "[-t type] [-T|U port] [-x|-xx] name ...\n");
   exit(1);
 }
 
@@ -836,7 +943,7 @@ static void append_addr_list(struct ares_addr_node **head,
 /* Information from the man page. Formatting taken from man -h */
 static void print_help_info_adig(void) {
     printf("adig, version %s \n\n", ARES_VERSION_STR);
-    printf("usage: adig [-h] [-d] [-f flag] [-s server] [-c class] [-t type] [-T|U port] name ...\n\n"
+    printf("usage: adig [-h] [-d] [-f flag] [-s server] [-c class] [-t type] [-T|U port] [-x | -xx] name ...\n\n"
     "  d : Print some extra debugging output.\n"
     "  f : Add a flag. Possible values for flag are igntc, noaliases, norecurse, primary, stayopen, usevc.\n"
     "  h : Display this help and exit.\n\n"
@@ -851,6 +958,9 @@ static void print_help_info_adig(void) {
     "              KEY, LOC, MAILA, MAILB, MB, MD,\n"
     "              MF, MG, MINFO, MR, MX, NAPTR, NS,\n"
     "              NSAP, NSAP_PTR, NULL, PTR, PX, RP,\n"
-    "              RT,  SIG,  SOA, SRV, TXT, WKS, X25\n\n");
+    "              RT,  SIG,  SOA, SRV, TXT, WKS, X25\n\n"
+    " -x  : For a '-t PTR a.b.c.d' lookup, query for 'd.c.b.a.in-addr.arpa.'\n"
+    " -xx : As above, but for IPv6, compact the format into a bitstring like\n"
+    "       '[xabcdef00000000000000000000000000].IP6.ARPA.'\n");
     exit(0);
 }
