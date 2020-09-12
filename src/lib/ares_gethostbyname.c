@@ -276,16 +276,17 @@ static int fake_hostent(const char *name, int family,
       /* if we don't have 3 dots, it is illegal
        * (although inet_pton doesn't think so).
        */
-      if (numdots != 3 || !valid)
+      if (numdots != 3 || !valid) {
         result = 0;
-      else
+      } else {
         result = (ares_inet_pton(AF_INET, name, &in) < 1 ? 0 : 1);
+      }
 
       /*
        * Set address family in case of failure,
        * as we will try to convert it later afterwards
        */
-        family = result ? AF_INET : AF_INET6;
+      family = result ? AF_INET : AF_INET6;
     }
   if (family == AF_INET6)
     result = (ares_inet_pton(AF_INET6, name, &in6) < 1 ? 0 : 1);
