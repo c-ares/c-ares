@@ -699,6 +699,15 @@ struct ares_addr_port_node {
   int udp_port;
   int tcp_port;
 };
+ 
+struct ares_caa_reply {
+  struct ares_caa_reply  *next;
+  int                     critical;
+  unsigned char          *property;
+  size_t                  plength;  /* plength excludes null termination */
+  unsigned char          *value;
+  size_t                  length;   /* length excludes null termination */
+};
 
 CARES_EXTERN int ares_set_servers(ares_channel channel,
                                   struct ares_addr_node *servers);

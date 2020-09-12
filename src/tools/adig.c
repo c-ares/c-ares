@@ -83,6 +83,9 @@
 #ifndef T_DNSKEY
 #  define T_DNSKEY  48 /* DNS Public Key (RFC4034) */
 #endif
+#ifndef T_CAA
+#  define T_CAA    257 /* Certification Authority Authorization */
+#endif
 
 struct nv {
   const char *name;
@@ -147,6 +150,7 @@ static const struct nv types[] = {
   { "RRSIG",    T_RRSIG },
   { "NSEC",     T_NSEC },
   { "DNSKEY",   T_DNSKEY },
+  { "CAA",      T_CAA },
   { "ANY",      T_ANY }
 };
 static const int ntypes = sizeof(types) / sizeof(types[0]);
@@ -697,6 +701,32 @@ static const unsigned char *display_rr(const unsigned char *aptr,
           ares_free_string(name.as_char);
           p += len;
         }
+      break;
+ 
+    case T_CAA:
+
+      p = aptr;
+
+      /* Flags */
+      printf(" %u", (int)*p);
+      p += 1;
+
+      /* Remainder of record */
+      int vlen = (int) dlen - ((char) *p) - 2;
+
+      /* The Property identifier, one of:
+          - "issue",
+          - "iodef", or
+          - "issuewild" */
+      status = ares_expand_string(p, abuf, alen, &name.as_uchar, &len);
+      if (status != ARES_SUCCESS)
+        return NULL;
+      printf(" %s", name.as_char);
+      ares_free_string(name.as_char);
+      p += len;
+
+      /* A sequence of octets representing the Property Value */
+      printf(" %.*s", vlen, p);
       break;
 
     case T_A:
