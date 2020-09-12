@@ -74,6 +74,7 @@
 #elif defined(WATT32)
 
 #define PATH_RESOLV_CONF "/dev/ENV/etc/resolv.conf"
+W32_FUNC const char *_w32_GetHostsFile (void);
 
 #elif defined(NETWARE)
 
