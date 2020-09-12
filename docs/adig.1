@@ -46,6 +46,19 @@ PTR, PX, RP, RT, SIG, SOA, SRV, TXT, WKS, X25,
 .TP
 \fB\-U\fR port
 Use specified UDP port to connect to DNS server.
+.TP
+\fB\-x\fR
+For an IPv4 \fB-t PTR a.b.c.d\fR lookup, query for
+.br
+\fBd.c.b.a.in-addr.arpa.\fR
+This more often gives correct names in the \fBANSWER\fR.
+.br
+For an IPv6 \fB-t PTR addr\fR lookup, query for \fBa.b.c....z.IP6.ARPA.\fR
+.TP
+\fB\-xx\fR
+As for \fB-x\fR and an IPv6 address, compact \fBa.b.c....z.IP6.ARPA.\fR into a RFC-2673 bit-string.
+This compacted \fBbit-string\fR form is not supported by many DNS-servers.
+
 .SH "REPORTING BUGS"
 Report bugs to the c-ares mailing list:
 \fBhttp://cool.haxx.se/mailman/listinfo/c-ares\fR
