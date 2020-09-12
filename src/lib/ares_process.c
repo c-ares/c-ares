@@ -1421,7 +1421,7 @@ static int has_opt_rr(const unsigned char *abuf, int alen)
         return -1;
       aptr += len;
 
-      if (DNS_RR_TYPE(aptr) == ns_t_opt)
+      if (DNS_RR_TYPE(aptr) == T_OPT)
         return 1;
 
       dlen = DNS_RR_LEN(aptr);
