@@ -34,12 +34,12 @@
 #endif
 #ifdef HAVE_ARPA_NAMESER_H
 #  include <arpa/nameser.h>
-#else
-#  include "nameser.h"
 #endif
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #  include <arpa/nameser_compat.h>
 #endif
+
+#include "nameser.h"
 
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
