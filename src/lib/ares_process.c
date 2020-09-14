@@ -50,6 +50,9 @@
 #ifdef NETWARE
 #  include <sys/filio.h>
 #endif
+#ifndef T_OPT
+#  define T_OPT  41 /* EDNS0 option (meta-RR) */
+#endif
 
 #include <assert.h>
 #include <fcntl.h>
