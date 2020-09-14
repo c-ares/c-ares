@@ -208,4 +208,9 @@ typedef enum __ns_rcode {
 
 #endif /* HAVE_ARPA_NAMESER_COMPAT_H */
 
+/* Android's bionic arpa/nameser_compat.h, nor glibc versions prior to 2.25 have T_OPT defined */
+#ifndef T_OPT
+#  define T_OPT ns_t_opt
+#endif
+
 #endif /* ARES_NAMESER_H */
