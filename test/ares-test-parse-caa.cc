@@ -47,9 +47,9 @@ TEST_F(LibraryTest, ParseCaaReplySingleOK) {
 
   EXPECT_EQ(caa->critical, 0);
   EXPECT_EQ(caa->plength, 5);
-  EXPECT_EQ(caa->property, "issue");
+  EXPECT_STREQ(caa->property, "issue");
   EXPECT_EQ(caa->length, 8);
-  EXPECT_EQ(caa->value, "pki.goog");
+  EXPECT_STREQ(caa->value, "pki.goog");
 
   ares_free_data(caa);
 }
