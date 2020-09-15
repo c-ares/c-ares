@@ -528,6 +528,15 @@ struct ares_addr6ttl {
   int             ttl;
 };
 
+struct ares_caa_reply {
+  struct ares_caa_reply  *next;
+  int                     critical;
+  unsigned char          *property;
+  size_t                  plength;  /* plength excludes null termination */
+  unsigned char          *value;
+  size_t                  length;   /* length excludes null termination */
+};
+
 struct ares_srv_reply {
   struct ares_srv_reply  *next;
   char                   *host;
@@ -637,6 +646,10 @@ CARES_EXTERN int ares_parse_aaaa_reply(const unsigned char *abuf,
                                        struct ares_addr6ttl *addrttls,
                                        int *naddrttls);
 
+CARES_EXTERN int ares_parse_caa_reply(const unsigned char* abuf,
+				      int alen,
+				      struct ares_caa_reply** caa_out);
+
 CARES_EXTERN int ares_parse_ptr_reply(const unsigned char *abuf,
                                       int alen,
                                       const void *addr,
@@ -698,15 +711,6 @@ struct ares_addr_port_node {
   } addr;
   int udp_port;
   int tcp_port;
-};
- 
-struct ares_caa_reply {
-  struct ares_caa_reply  *next;
-  int                     critical;
-  unsigned char          *property;
-  size_t                  plength;  /* plength excludes null termination */
-  unsigned char          *value;
-  size_t                  length;   /* length excludes null termination */
 };
 
 CARES_EXTERN int ares_set_servers(ares_channel channel,

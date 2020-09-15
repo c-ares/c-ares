@@ -548,6 +548,7 @@ static const unsigned char *display_rr(const unsigned char *aptr,
   const unsigned char *p;
   int type, dnsclass, ttl, dlen, status;
   long len;
+  int vlen;
   char addr[46];
   union {
     unsigned char * as_uchar;
@@ -712,7 +713,7 @@ static const unsigned char *display_rr(const unsigned char *aptr,
       p += 1;
 
       /* Remainder of record */
-      int vlen = (int) dlen - ((char) *p) - 2;
+      vlen = (int)dlen - ((char)*p) - 2;
 
       /* The Property identifier, one of:
           - "issue",
@@ -724,6 +725,9 @@ static const unsigned char *display_rr(const unsigned char *aptr,
       printf(" %s", name.as_char);
       ares_free_string(name.as_char);
       p += len;
+
+      if (p + vlen > abuf + alen)
+        return NULL;
 
       /* A sequence of octets representing the Property Value */
       printf(" %.*s", vlen, p);

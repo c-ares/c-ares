@@ -47,9 +47,9 @@
 #  define T_CAA    257 /* Certification Authority Authorization */
 #endif
 
-static int
-ares__parse_caa_reply (const unsigned char *abuf, int alen,
-                       int ex, void **caa_out)
+int
+ares_parse_caa_reply (const unsigned char *abuf, int alen,
+                      struct ares_caa_reply **caa_out)
 {
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr;
@@ -138,7 +138,7 @@ ares__parse_caa_reply (const unsigned char *abuf, int alen,
 
           caa_curr->critical = (int)*strptr++;  
           caa_curr->plength = (int)*strptr++;
-          if (caa_curr->plength <= 0 || caa_curr->plength >= rr_len - 2)
+          if (caa_curr->plength <= 0 || (int)caa_curr->plength >= rr_len - 2)
             {
               status = ARES_EBADRESP;
               break;
@@ -169,7 +169,6 @@ ares__parse_caa_reply (const unsigned char *abuf, int alen,
           memcpy ((char *) caa_curr->value, strptr, caa_curr->length);
           /* Make sure we NULL-terminate */
           caa_curr->value[caa_curr->length] = 0;
-          strptr += caa_curr->length;
         }
 
       /* Propagate any failures */
@@ -204,11 +203,3 @@ ares__parse_caa_reply (const unsigned char *abuf, int alen,
 
   return ARES_SUCCESS;
 }
-
-int
-ares_parse_caa_reply (const unsigned char *abuf, int alen,
-                      struct ares_caa_reply **caa_out)
-{
-  return ares__parse_caa_reply(abuf, alen, 0, (void **) caa_out);
-}
-
