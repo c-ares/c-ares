@@ -29,6 +29,7 @@ MANPAGES = ares_cancel.3		\
   ares_mkquery.3			\
   ares_parse_a_reply.3			\
   ares_parse_aaaa_reply.3		\
+  ares_parse_caa_reply.3		\
   ares_parse_mx_reply.3			\
   ares_parse_naptr_reply.3		\
   ares_parse_ns_reply.3			\
