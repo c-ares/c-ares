@@ -135,8 +135,12 @@ ares_parse_caa_reply (const unsigned char *abuf, int alen,
               caa_head = caa_curr;
             }
           caa_last = caa_curr;
-
-          caa_curr->critical = (int)*strptr++;  
+          if (rr_len < 2)
+            {
+              status = ARES_EBADRESP;
+              break;
+            }
+          caa_curr->critical = (int)*strptr++;
           caa_curr->plength = (int)*strptr++;
           if (caa_curr->plength <= 0 || (int)caa_curr->plength >= rr_len - 2)
             {
