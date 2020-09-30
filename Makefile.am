@@ -24,6 +24,9 @@ SUBDIRS = @BUILD_SUBDIRS@
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcares.pc
 
+cmakedir = $(libdir)/cmake/c-ares
+cmake_DATA = c-ares-config.cmake
+
 CARES_VERSION_INFO = -version-info 6:1:4
 # This flag accepts an argument of the form current[:revision[:age]]. So,
 # passing -version-info 3:12:1 sets current to 3, revision to 12, and age to

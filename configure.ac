@@ -893,7 +893,8 @@ AC_CONFIG_FILES([Makefile           \
                  src/lib/Makefile   \
                  src/tools/Makefile \
                  docs/Makefile      \
-                 libcares.pc ])
+                 libcares.pc        \
+                 c-ares-config.cmake])
 
 AC_OUTPUT
 XC_AMEND_DISTCLEAN(['.'])
