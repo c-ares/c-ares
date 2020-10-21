@@ -754,7 +754,7 @@ static int as_is_first(const struct host_query* hquery)
 {
   char* p;
   int ndots = 0;
-  char* last_char = &hquery->name[strlen(hquery->name)-1];
+  size_t nname = strlen(hquery->name);
   for (p = hquery->name; *p; p++)
     {
       if (*p == '.')
@@ -762,9 +762,10 @@ static int as_is_first(const struct host_query* hquery)
           ndots++;
         }
     }
-  if (*last_char == '.') {
-    /* prevent ARES_EBADNAME for valid FQDN, where ndots < channel->ndots  */
-    return 1;
-  }
+  if (nname && hquery->name[nname-1] == '.')
+    {
+      /* prevent ARES_EBADNAME for valid FQDN, where ndots < channel->ndots  */
+      return 1;
+    }
   return ndots >= hquery->channel->ndots;
 }
