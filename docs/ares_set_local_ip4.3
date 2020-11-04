@@ -24,8 +24,8 @@ ares_set_local_ip4 \- Set local IPv4 address outgoing requests.
 .fi
 .SH DESCRIPTION
 The \fBares_set_local_ip4\fP function sets the IP address for outbound
-requests.  This allows users to specify outbound interfaces when used
-on multi-homed systems.
+requests.  The parameter \fIlocal_ip\fP is specified in host byte order.  This
+allows users to specify outbound interfaces when used on multi-homed systems.
 .SH SEE ALSO
 .BR ares_set_local_ip6 (3)
 .SH NOTES
