@@ -1,6 +1,6 @@
 AC_PREREQ(2.57)
 
-AC_INIT([c-ares], [1.16.1],
+AC_INIT([c-ares], [1.17.0],
   [c-ares mailing list: http://cool.haxx.se/mailman/listinfo/c-ares])
 
 XC_OVR_ZZ50
