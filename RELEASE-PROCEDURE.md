@@ -6,7 +6,7 @@ in the source code repo
 
 - edit `RELEASE-NOTES` to be accurate
 
-- edit `Makefile.am`'s `CARES_VERSION_INFO`, and `CMakeLists.txt`'s
+- edit `configure.ac`'s `CARES_VERSION_INFO`, and `CMakeLists.txt`'s
   `CARES_LIB_VERSIONINFO` set to the same value to denote the current shared
   object versioning.
 
