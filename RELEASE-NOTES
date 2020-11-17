@@ -1,3 +1,9 @@
+c-ares version 1.17.1
+
+Due to a packaging issue with 1.17.0, we have released 1.17.1 to address that
+issue.  See 1.17.0 release notes below..
+
+
 c-ares version 1.17.0
 
 Security:
