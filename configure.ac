@@ -132,9 +132,9 @@ esac
 XC_LIBTOOL
 
 
-dnl
-dnl Automake conditionals based on libtool related checks
-dnl
+#
+# Automake conditionals based on libtool related checks
+#
 
 AM_CONDITIONAL([CARES_LT_SHLIB_USE_VERSION_INFO],
   [test "x$xc_lt_shlib_use_version_info" = 'xyes'])
@@ -143,30 +143,30 @@ AM_CONDITIONAL([CARES_LT_SHLIB_USE_NO_UNDEFINED],
 AM_CONDITIONAL([CARES_LT_SHLIB_USE_MIMPURE_TEXT],
   [test "x$xc_lt_shlib_use_mimpure_text" = 'xyes'])
 
-dnl
-dnl Due to libtool and automake machinery limitations of not allowing
-dnl specifying separate CPPFLAGS or CFLAGS when compiling objects for
-dnl inclusion of these in shared or static libraries, we are forced to
-dnl build using separate configure runs for shared and static libraries
-dnl on systems where different CPPFLAGS or CFLAGS are mandatory in order
-dnl to compile objects for each kind of library. Notice that relying on
-dnl the '-DPIC' CFLAG that libtool provides is not valid given that the
-dnl user might for example choose to build static libraries with PIC.
-dnl
+#
+# Due to libtool and automake machinery limitations of not allowing
+# specifying separate CPPFLAGS or CFLAGS when compiling objects for
+# inclusion of these in shared or static libraries, we are forced to
+# build using separate configure runs for shared and static libraries
+# on systems where different CPPFLAGS or CFLAGS are mandatory in order
+# to compile objects for each kind of library. Notice that relying on
+# the '-DPIC' CFLAG that libtool provides is not valid given that the
+# user might for example choose to build static libraries with PIC.
+#
 
-dnl
-dnl Make our Makefile.am files use the staticlib CPPFLAG only when strictly
-dnl targeting a static library and not building its shared counterpart.
-dnl
+#
+# Make our Makefile.am files use the staticlib CPPFLAG only when strictly
+# targeting a static library and not building its shared counterpart.
+#
 
 AM_CONDITIONAL([USE_CPPFLAG_CARES_STATICLIB],
   [test "x$xc_lt_build_static_only" = 'xyes'])
 
-dnl
-dnl Make staticlib CPPFLAG variable and its definition visible in output
-dnl files unconditionally, providing an empty definition unless strictly
-dnl targeting a static library and not building its shared counterpart.
-dnl
+#
+# Make staticlib CPPFLAG variable and its definition visible in output
+# files unconditionally, providing an empty definition unless strictly
+# targeting a static library and not building its shared counterpart.
+#
 
 CPPFLAG_CARES_STATICLIB=
 if test "x$xc_lt_build_static_only" = 'xyes'; then
@@ -185,7 +185,7 @@ CARES_SET_COMPILER_OPTIMIZE_OPTS
 CARES_SET_COMPILER_WARNING_OPTS
 
 if test "$compiler_id" = "INTEL_UNIX_C"; then
-  dnl
+  #
   if test "$compiler_num" -ge "1000"; then
     dnl icc 10.X or later
     CFLAGS="$CFLAGS -shared-intel"
@@ -193,7 +193,7 @@ if test "$compiler_id" = "INTEL_UNIX_C"; then
     dnl icc 9.X specific
     CFLAGS="$CFLAGS -i-dynamic"
   fi
-  dnl
+  #
 fi
 
 CARES_CHECK_COMPILER_HALT_ON_ERROR
@@ -297,19 +297,19 @@ then
       AC_MSG_CHECKING([for gethostbyname in $winsock_LIB])
       AC_LINK_IFELSE([
         AC_LANG_PROGRAM([[
-dnlifdef HAVE_WINDOWS_H
-dnlifndef WIN32_LEAN_AND_MEAN
-dnldefine WIN32_LEAN_AND_MEAN
-dnlendif
-dnlinclude <windows.h>
-dnlifdef HAVE_WINSOCK2_H
-dnlinclude <winsock2.h>
-dnlelse
-dnlifdef HAVE_WINSOCK_H
-dnlinclude <winsock.h>
-dnlendif
-dnlendif
-dnlendif
+#ifdef HAVE_WINDOWS_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#else
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+#endif
+#endif
         ]],[[
           gethostbyname("www.dummysite.com");
         ]])
@@ -332,7 +332,7 @@ then
   AC_LINK_IFELSE([
     AC_LANG_PROGRAM([[
 /* Older Minix versions may need <net/gen/netdb.h> here instead */
-dnlinclude <netdb.h>
+#include <netdb.h>
     ]],[[
       gethostbyname("www.dummysite.com");
     ]])
@@ -350,8 +350,8 @@ then
   AC_MSG_CHECKING([for gethostbyname for eCos])
   AC_LINK_IFELSE([
     AC_LANG_PROGRAM([[
-dnlinclude <stdio.h>
-dnlinclude <netdb.h>
+#include <stdio.h>
+#include <netdb.h>
     ]],[[
       gethostbyname("www.dummysite.com");
     ]])
@@ -404,12 +404,12 @@ AS_IF([test "x$host_vendor" = "xapple"], [
   AC_MSG_CHECKING([for iOS minimum version 10 or later])
   AC_COMPILE_IFELSE([
     AC_LANG_PROGRAM([[
-dnlinclude <stdio.h>
-dnlinclude <TargetConditionals.h>
+#include <stdio.h>
+#include <TargetConditionals.h>
     ]], [[
-dnlif TARGET_OS_IPHONE == 0 || __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
-dnlerror Not iOS 10 or later
-dnlendif
+#if TARGET_OS_IPHONE == 0 || __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
+#error Not iOS 10 or later
+#endif
 return 0;
    ]])
   ],[
@@ -425,15 +425,15 @@ AS_IF([test "x$host_vendor" = "xapple"], [
   AC_MSG_CHECKING([for macOS minimum version 10.12 or later])
   AC_COMPILE_IFELSE([
     AC_LANG_PROGRAM([[
-dnlinclude <stdio.h>
-dnlinclude <TargetConditionals.h>
+#include <stdio.h>
+#include <TargetConditionals.h>
     ]], [[
-dnlifndef MAC_OS_X_VERSION_10_12
-dnl  define MAC_OS_X_VERSION_10_12 101200
-dnlendif
-dnlif MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
-dnlerror Not macOS 10.12 or later
-dnlendif
+#ifndef MAC_OS_X_VERSION_10_12
+#  define MAC_OS_X_VERSION_10_12 101200
+#endif
+#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
+#error Not macOS 10.12 or later
+#endif
 return 0;
    ]])
   ],[
@@ -515,26 +515,26 @@ dnl to do if found
 [],
 dnl default includes
 [
-dnlifdef HAVE_SYS_TYPES_H
-dnlinclude <sys/types.h>
-dnlendif
-dnlifdef HAVE_SYS_TIME_H
-dnlinclude <sys/time.h>
-dnlendif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 dnl We do this default-include simply to make sure that the nameser_compat.h
 dnl header *REALLY* can be include after the new nameser.h. It seems AIX 5.1
 dnl (and others?) is not designed to allow this.
-dnlifdef HAVE_ARPA_NAMESER_H
-dnlinclude <arpa/nameser.h>
-dnlendif
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
 
 dnl *Sigh* these are needed in order for net/if.h to get properly detected.
-dnlifdef HAVE_SYS_SOCKET_H
-dnlinclude <sys/socket.h>
-dnlendif
-dnlifdef HAVE_NETINET_IN_H
-dnlinclude <netinet/in.h>
-dnlendif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 ]
 )
 
@@ -566,7 +566,7 @@ if test "xyes" = "x$longlong"; then
 fi
 
 
-dnl check for ssize_t
+# check for ssize_t
 AC_CHECK_TYPE(ssize_t, [ CARES_TYPEOF_ARES_SSIZE_T=ssize_t ],
   [ CARES_TYPEOF_ARES_SSIZE_T=int ])
 
@@ -574,17 +574,17 @@ AC_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SSIZE_T], ${CARES_TYPEOF_ARES_SSIZE_T},
   [the signed version of size_t])
 
 
-dnl check for bool type
+# check for bool type
 AC_CHECK_TYPE([bool],[
   AC_DEFINE(HAVE_BOOL_T, 1,
     [Define to 1 if bool is an available type.])
 ], ,[
-dnlifdef HAVE_SYS_TYPES_H
-dnlinclude <sys/types.h>
-dnlendif
-dnlifdef HAVE_STDBOOL_H
-dnlinclude <stdbool.h>
-dnlendif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_STDBOOL_H
+#include <stdbool.h>
+#endif
 ])
 
 CARES_CONFIGURE_ARES_SOCKLEN_T
@@ -634,23 +634,23 @@ CARES_CHECK_FUNC_WRITEV
 dnl check for AF_INET6
 CARES_CHECK_CONSTANT(
   [
-dnlundef inline
-dnlifdef HAVE_WINDOWS_H
-dnlifndef WIN32_LEAN_AND_MEAN
-dnldefine WIN32_LEAN_AND_MEAN
-dnlendif
-dnlinclude <windows.h>
-dnlifdef HAVE_WINSOCK2_H
-dnlinclude <winsock2.h>
-dnlendif
-dnlelse
-dnlifdef HAVE_SYS_TYPES_H
-dnlinclude <sys/types.h>
-dnlendif
-dnlifdef HAVE_SYS_SOCKET_H
-dnlinclude <sys/socket.h>
-dnlendif
-dnlendif
+#undef inline
+#ifdef HAVE_WINDOWS_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#endif
+#else
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#endif
   ], [PF_INET6],
      AC_DEFINE_UNQUOTED(HAVE_PF_INET6,1,[Define to 1 if you have PF_INET6.])
 )
@@ -658,23 +658,23 @@ dnlendif
 dnl check for PF_INET6
 CARES_CHECK_CONSTANT(
   [
-dnlundef inline
-dnlifdef HAVE_WINDOWS_H
-dnlifndef WIN32_LEAN_AND_MEAN
-dnldefine WIN32_LEAN_AND_MEAN
-dnlendif
-dnlinclude <windows.h>
-dnlifdef HAVE_WINSOCK2_H
-dnlinclude <winsock2.h>
-dnlendif
-dnlelse
-dnlifdef HAVE_SYS_TYPES_H
-dnlinclude <sys/types.h>
-dnlendif
-dnlifdef HAVE_SYS_SOCKET_H
-dnlinclude <sys/socket.h>
-dnlendif
-dnlendif
+#undef inline
+#ifdef HAVE_WINDOWS_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#endif
+#else
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#endif
   ], [AF_INET6],
      AC_DEFINE_UNQUOTED(HAVE_AF_INET6,1,[Define to 1 if you have AF_INET6.])
 )
@@ -683,26 +683,26 @@ dnlendif
 dnl check for the in6_addr structure
 CARES_CHECK_STRUCT(
   [
-dnlundef inline
-dnlifdef HAVE_WINDOWS_H
-dnlifndef WIN32_LEAN_AND_MEAN
-dnldefine WIN32_LEAN_AND_MEAN
-dnlendif
-dnlinclude <windows.h>
-dnlifdef HAVE_WINSOCK2_H
-dnlinclude <winsock2.h>
-dnlifdef HAVE_WS2TCPIP_H
-dnlinclude <ws2tcpip.h>
-dnlendif
-dnlendif
-dnlelse
-dnlifdef HAVE_SYS_TYPES_H
-dnlinclude <sys/types.h>
-dnlendif
-dnlifdef HAVE_NETINET_IN_H
-dnlinclude <netinet/in.h>
-dnlendif
-dnlendif
+#undef inline
+#ifdef HAVE_WINDOWS_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#ifdef HAVE_WS2TCPIP_H
+#include <ws2tcpip.h>
+#endif
+#endif
+#else
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#endif
   ], [in6_addr],
      AC_DEFINE_UNQUOTED(HAVE_STRUCT_IN6_ADDR,1,[Define to 1 if you have struct in6_addr.])
 )
@@ -710,26 +710,26 @@ dnlendif
 dnl check for the sockaddr_in6 structure
 CARES_CHECK_STRUCT(
   [
-dnlundef inline
-dnlifdef HAVE_WINDOWS_H
-dnlifndef WIN32_LEAN_AND_MEAN
-dnldefine WIN32_LEAN_AND_MEAN
-dnlendif
-dnlinclude <windows.h>
-dnlifdef HAVE_WINSOCK2_H
-dnlinclude <winsock2.h>
-dnlifdef HAVE_WS2TCPIP_H
-dnlinclude <ws2tcpip.h>
-dnlendif
-dnlendif
-dnlelse
-dnlifdef HAVE_SYS_TYPES_H
-dnlinclude <sys/types.h>
-dnlendif
-dnlifdef HAVE_NETINET_IN_H
-dnlinclude <netinet/in.h>
-dnlendif
-dnlendif
+#undef inline
+#ifdef HAVE_WINDOWS_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#ifdef HAVE_WS2TCPIP_H
+#include <ws2tcpip.h>
+#endif
+#endif
+#else
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#endif
   ], [sockaddr_in6],
      AC_DEFINE_UNQUOTED(HAVE_STRUCT_SOCKADDR_IN6,1,
        [Define to 1 if you have struct sockaddr_in6.]) ac_have_sockaddr_in6=yes
@@ -740,26 +740,26 @@ AC_CHECK_MEMBER(struct sockaddr_in6.sin6_scope_id,
       [Define to 1 if your struct sockaddr_in6 has sin6_scope_id.])
    , ,
   [
-dnlundef inline
-dnlifdef HAVE_WINDOWS_H
-dnlifndef WIN32_LEAN_AND_MEAN
-dnldefine WIN32_LEAN_AND_MEAN
-dnlendif
-dnlinclude <windows.h>
-dnlifdef HAVE_WINSOCK2_H
-dnlinclude <winsock2.h>
-dnlifdef HAVE_WS2TCPIP_H
-dnlinclude <ws2tcpip.h>
-dnlendif
-dnlendif
-dnlelse
-dnlifdef HAVE_SYS_TYPES_H
-dnlinclude <sys/types.h>
-dnlendif
-dnlifdef HAVE_NETINET_IN_H
-dnlinclude <netinet/in.h>
-dnlendif
-dnlendif
+#undef inline
+#ifdef HAVE_WINDOWS_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#ifdef HAVE_WS2TCPIP_H
+#include <ws2tcpip.h>
+#endif
+#endif
+#else
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#endif
   ])
 
 dnl check for the addrinfo structure
@@ -767,32 +767,32 @@ AC_CHECK_MEMBER(struct addrinfo.ai_flags,
      AC_DEFINE_UNQUOTED(HAVE_STRUCT_ADDRINFO,1,
        [Define to 1 if you have struct addrinfo.]),,
   [
-dnlundef inline
-dnlifdef HAVE_WINDOWS_H
-dnlifndef WIN32_LEAN_AND_MEAN
-dnldefine WIN32_LEAN_AND_MEAN
-dnlendif
-dnlinclude <windows.h>
-dnlifdef HAVE_WINSOCK2_H
-dnlinclude <winsock2.h>
-dnlifdef HAVE_WS2TCPIP_H
-dnlinclude <ws2tcpip.h>
-dnlendif
-dnlendif
-dnlelse
-dnlifdef HAVE_SYS_TYPES_H
-dnlinclude <sys/types.h>
-dnlendif
-dnlifdef HAVE_NETINET_IN_H
-dnlinclude <netinet/in.h>
-dnlendif
-dnlifdef HAVE_SYS_SOCKET_H
-dnlinclude <sys/socket.h>
-dnlendif
-dnlifdef HAVE_NETDB_H
-dnlinclude <netdb.h>
-dnlendif
-dnlendif
+#undef inline
+#ifdef HAVE_WINDOWS_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#ifdef HAVE_WS2TCPIP_H
+#include <ws2tcpip.h>
+#endif
+#endif
+#else
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
+#endif
   ]
 )
 
