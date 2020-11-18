@@ -42,7 +42,7 @@ tags:
 %.exe: %.o src/tools/ares_getopt.o $(LIB)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-$(OBJLIB): include/ares.h src/lib/ares_dns.h include/ares_build.h
+$(OBJLIB): include/ares.h include/ares_dns.h include/ares_build.h
 
 .c.o:
 	$(CC) $(CFLAGS) -o $@ -c $<
