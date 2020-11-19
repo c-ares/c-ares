@@ -11,53 +11,53 @@ addons:
 
 matrix:
     include:
-#        - os: linux
-#          compiler: gcc
-#          env: BUILD_TYPE=normal
-#        - os: linux
-#          compiler: clang
-#          env: BUILD_TYPE=normal
-#        - os: linux
-#          compiler: gcc
-#          env: BUILD_TYPE=cmake
-#        - os: linux
-#          compiler: clang
-#          env: BUILD_TYPE=cmake
-#        - os: linux
-#          compiler: gcc
-#          env: BUILD_TYPE=coverage
-#        - os: linux
-#          compiler: clang
-#          env: BUILD_TYPE=ubsan
-#        - os: linux
-#          compiler: clang
-#          env: BUILD_TYPE=asan
-#        - os: linux
-#          compiler: clang
-#          env: BUILD_TYPE=lsan
-#        - os: linux
-#          compiler: clang
-#          env: BUILD_TYPE=analyze
-#        - os: linux
-#          compiler: gcc
-#          env: BUILD_TYPE=valgrind
-#        - os: osx
-#          osx_image: xcode11.4
-#          compiler: gcc
-#          env: BUILD_TYPE=normal
-#        - os: osx
-#          osx_image: xcode11.4
-#          compiler: clang
-#          env: BUILD_TYPE=normal
-#        - os: osx
-#          osx_image: xcode11.4
-#          compiler: clang
-#          env: BUILD_TYPE=cmake
-#        - os: osx
-#          osx_image: xcode11.4
-#          compiler: clang
-#          language: objective-c
-#          env: BUILD_TYPE=ios
+        - os: linux
+          compiler: gcc
+          env: BUILD_TYPE=normal
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=normal
+        - os: linux
+          compiler: gcc
+          env: BUILD_TYPE=cmake
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=cmake
+        - os: linux
+          compiler: gcc
+          env: BUILD_TYPE=coverage
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=ubsan
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=asan
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=lsan
+        - os: linux
+          compiler: clang
+          env: BUILD_TYPE=analyze
+        - os: linux
+          compiler: gcc
+          env: BUILD_TYPE=valgrind
+        - os: osx
+          osx_image: xcode11.4
+          compiler: gcc
+          env: BUILD_TYPE=normal
+        - os: osx
+          osx_image: xcode11.4
+          compiler: clang
+          env: BUILD_TYPE=normal
+        - os: osx
+          osx_image: xcode11.4
+          compiler: clang
+          env: BUILD_TYPE=cmake
+        - os: osx
+          osx_image: xcode11.4
+          compiler: clang
+          language: objective-c
+          env: BUILD_TYPE=ios
         - os: osx
           osx_image: xcode11.4
           compiler: clang
