@@ -29,7 +29,7 @@ libgmock_la_CPPFLAGS = -isystem $(srcdir)/gmock-1.8.0
 
 
 noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump
-EXTRA_DIST = fuzzcheck.sh CMakeLists.txt Makefile.m32 Makefile.msvc README.md buildconf
+EXTRA_DIST = fuzzcheck.sh CMakeLists.txt Makefile.m32 Makefile.msvc README.md buildconf $(srcdir)/fuzzinput/* $(srcdir)/fuzznames/*
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 arestest_LDADD = libgmock.la $(ARES_BLD_DIR)/src/lib/libcares.la $(PTHREAD_LIBS)
 
