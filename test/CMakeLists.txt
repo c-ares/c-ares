@@ -18,7 +18,11 @@ target_include_directories(caresinternal
              "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
-target_link_libraries(caresinternal INTERFACE ${PROJECT_NAME}::cares_static)
+IF (CARES_STATIC)
+  target_link_libraries(caresinternal INTERFACE ${PROJECT_NAME}::cares_static)
+ELSE ()
+  target_link_libraries(caresinternal INTERFACE ${PROJECT_NAME}::cares)
+ENDIF ()
 
 # Google Test and Mock
 set(GMOCK_DIR gmock-1.8.0)
