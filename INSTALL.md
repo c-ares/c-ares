@@ -39,7 +39,6 @@ unpacked the source archive):
 
     ./configure
     make
-    make ahost adig acountry (optional)
     make install
 
 You probably need to be root when doing the last command.
