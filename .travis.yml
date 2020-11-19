@@ -58,6 +58,11 @@ matrix:
           compiler: clang
           language: objective-c
           env: BUILD_TYPE=ios
+        - os: osx
+          osx_image: xcode11.4
+          compiler: clang
+          language: objective-c
+          env: BUILD_TYPE=ios-cmake
 install:
     - if [ "$TRAVIS_OS_NAME" != "osx" ]; then pip install --user cpp-coveralls > /dev/null; fi
     - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew reinstall libtool > /dev/null; fi
@@ -103,6 +108,15 @@ before_script:
              export CONFIG_OPTS="--host=arm-apple-darwin10 --disable-tests"
              export DEVPATH=`xcode-select -print-path`/Platforms/iPhoneOS.platform/Developer
              export IOSFLAGS="-isysroot $DEVPATH/SDKs/iPhoneOS.sdk -arch armv7 -miphoneos-version-min=8.0.0"
+             export CFLAGS=$IOSFLAGS
+             export CXXFLAGS=$IOSFLAGS
+             export LDFLAGS=$IOSFLAGS
+         fi
+    - |
+         if [ "$BUILD_TYPE" = "ios-cmake" ]; then
+             export SYSROOT="$(xcode-select -print-path)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/"
+             export IOSFLAGS="-miphoneos-version-min=10.0"
+             export ARCHITECTURES="armv7;armv7s;arm64"
              export CFLAGS=$IOSFLAGS
              export CXXFLAGS=$IOSFLAGS
              export LDFLAGS=$IOSFLAGS
