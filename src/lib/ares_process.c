@@ -60,6 +60,9 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
+#ifndef T_OPT
+#  define T_OPT  41 /* EDNS0 option (meta-RR) */
+#endif
 
 static int try_again(int errnum);
 static void write_tcp_data(ares_channel channel, fd_set *write_fds,
