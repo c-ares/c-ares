@@ -545,6 +545,13 @@ struct ares_srv_reply {
   unsigned short          port;
 };
 
+struct ares_uri_reply {
+  struct ares_uri_reply  *next;
+  char                   *uri;
+  unsigned short          priority;
+  unsigned short          weight;
+};
+
 struct ares_mx_reply {
   struct ares_mx_reply   *next;
   char                   *host;

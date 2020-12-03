@@ -83,6 +83,9 @@
 #ifndef T_DNSKEY
 #  define T_DNSKEY  48 /* DNS Public Key (RFC4034) */
 #endif
+#ifndef T_URI
+#  define T_URI     256 /* URI selection */
+#endif
 #ifndef T_CAA
 #  define T_CAA    257 /* Certification Authority Authorization */
 #endif
@@ -152,6 +155,7 @@ static const struct nv types[] = {
   { "DNSKEY",   T_DNSKEY },
   { "CAA",      T_CAA },
   { "ANY",      T_ANY }
+  { "URI",      T_URI }
 };
 static const int ntypes = sizeof(types) / sizeof(types[0]);
 
@@ -800,6 +804,15 @@ static const unsigned char *display_rr(const unsigned char *aptr,
       printf("\t\t\t\t\t\t%s", name.as_char);
       ares_free_string(name.as_char);
       break;
+	  
+	case T_URI:
+      printf("\t%d ", (int)DNS__16BIT(aptr));
+      printf("%d \t\t", (int)DNS__16BIT(aptr+2));
+      p = aptr +4;
+      for (i=0; i <dlen-4; ++i)
+    	printf("%c",p[i]);
+
+      break;
 
     case T_DS:
     case T_SSHFP:
@@ -808,7 +821,7 @@ static const unsigned char *display_rr(const unsigned char *aptr,
     case T_DNSKEY:
       printf("\t[RR type parsing unavailable]");
       break;
-
+	
     default:
       printf("\t[Unknown RR; cannot parse]");
       break;
