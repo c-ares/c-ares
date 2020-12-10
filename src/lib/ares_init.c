@@ -50,7 +50,11 @@
 #define MAX_DNS_PROPERTIES    8
 #endif
 
-#if defined(CARES_USE_LIBRESOLV)
+#if defined(__MVS__)
+#include <assert.h>
+#endif
+
+#if defined(CARES_USE_LIBRESOLV) || defined(__MVS__)
 #include <resolv.h>
 #endif
 
@@ -1472,7 +1476,57 @@ static int init_by_resolv_conf(ares_channel channel)
     /* Catch the case when all the above checks fail (which happens when there
        is no network card or the cable is unplugged) */
     status = ARES_EFILE;
+#elif defined(__MVS__)
 
+  static struct __res_state *res = 0;
+  if (0 == res) {
+    int rc = res_init();
+    while (rc == -1 && h_errno == TRY_AGAIN) {
+      rc = res_init();
+    }
+    if (rc == -1) {
+      return ARES_ENOMEM;
+    }
+    res = __res();
+  }
+
+  int count4, count6;
+  __STATEEXTIPV6 *v6 = res->__res_extIPv6;
+  count4 = res->nscount;
+  if (v6) {
+    count6 = v6->__stat_nscount;
+  } else {
+    count6 = 0;
+  }
+
+  nservers = count4 + count6;
+  servers = ares_malloc(nservers * sizeof(struct server_state));
+  if (!servers)
+    return ARES_ENOMEM;
+
+  memset(servers, 0, nservers * sizeof(struct server_state));
+
+  struct server_state *pserver = servers;
+  for (int i = 0; i < count4; ++i, ++pserver) {
+    struct sockaddr_in *addr_in = &(res->nsaddr_list[i]);
+    pserver->addr.addrV4.s_addr = addr_in->sin_addr.s_addr;
+    pserver->addr.family = AF_INET;
+    pserver->addr.udp_port = addr_in->sin_port;
+    pserver->addr.tcp_port = addr_in->sin_port;
+  }
+
+  for (int j = 0; j < count6; ++j, ++pserver) {
+    struct sockaddr_in6 *addr_in = &(v6->__stat_nsaddr_list[j]);
+    assert(sizeof(pserver->addr.addr.addr6) == sizeof(addr_in->sin6_addr));
+    memcpy(&(pserver->addr.addr.addr6), &(addr_in->sin6_addr),
+           sizeof(addr_in->sin6_addr));
+    pserver->addr.family = AF_INET6;
+    pserver->addr.udp_port = addr_in->sin6_port;
+    pserver->addr.tcp_port = addr_in->sin6_port;
+  }
+
+  status = ARES_EOF;
+  
 #elif defined(__riscos__)
 
   /* Under RISC OS, name servers are listed in the
