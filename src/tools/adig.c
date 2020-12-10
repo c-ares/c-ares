@@ -154,7 +154,7 @@ static const struct nv types[] = {
   { "NSEC",     T_NSEC },
   { "DNSKEY",   T_DNSKEY },
   { "CAA",      T_CAA },
-  { "ANY",      T_ANY }
+  { "ANY",      T_ANY },
   { "URI",      T_URI }
 };
 static const int ntypes = sizeof(types) / sizeof(types[0]);
