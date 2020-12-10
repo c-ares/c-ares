@@ -45,6 +45,14 @@ static int          ares_init_flags;
 static void *default_malloc(size_t size) { return malloc(size); }
 static void *default_realloc(void *p, size_t size) { return realloc(p, size); }
 static void default_free(void *p) { free(p); }
+#elif defined(__MVS__)
+static void *default_malloc(size_t size) {
+  if (size == 0)
+    size = 1;
+  return malloc(size); 
+}
+# define default_realloc realloc
+# define default_free free
 #else
 # define default_malloc malloc
 # define default_realloc realloc
