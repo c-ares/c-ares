@@ -50,11 +50,7 @@
 #define MAX_DNS_PROPERTIES    8
 #endif
 
-#if defined(__MVS__)
-#include <assert.h>
-#endif
-
-#if defined(CARES_USE_LIBRESOLV) || defined(__MVS__)
+#if defined(CARES_USE_LIBRESOLV)
 #include <resolv.h>
 #endif
 
@@ -1479,6 +1475,9 @@ static int init_by_resolv_conf(ares_channel channel)
 #elif defined(__MVS__)
 
   static struct __res_state *res = 0;
+  int count4, count6;
+  __STATEEXTIPV6 *v6 = res->__res_extIPv6;
+  struct server_state *pserver
   if (0 == res) {
     int rc = res_init();
     while (rc == -1 && h_errno == TRY_AGAIN) {
@@ -1490,8 +1489,6 @@ static int init_by_resolv_conf(ares_channel channel)
     res = __res();
   }
 
-  int count4, count6;
-  __STATEEXTIPV6 *v6 = res->__res_extIPv6;
   count4 = res->nscount;
   if (v6) {
     count6 = v6->__stat_nscount;
@@ -1506,7 +1503,7 @@ static int init_by_resolv_conf(ares_channel channel)
 
   memset(servers, 0, nservers * sizeof(struct server_state));
 
-  struct server_state *pserver = servers;
+  pserver = servers;
   for (int i = 0; i < count4; ++i, ++pserver) {
     struct sockaddr_in *addr_in = &(res->nsaddr_list[i]);
     pserver->addr.addrV4.s_addr = addr_in->sin_addr.s_addr;
@@ -1517,7 +1514,6 @@ static int init_by_resolv_conf(ares_channel channel)
 
   for (int j = 0; j < count6; ++j, ++pserver) {
     struct sockaddr_in6 *addr_in = &(v6->__stat_nsaddr_list[j]);
-    assert(sizeof(pserver->addr.addr.addr6) == sizeof(addr_in->sin6_addr));
     memcpy(&(pserver->addr.addr.addr6), &(addr_in->sin6_addr),
            sizeof(addr_in->sin6_addr));
     pserver->addr.family = AF_INET6;
