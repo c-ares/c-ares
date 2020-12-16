@@ -129,6 +129,12 @@ void ares_free_data(void *dataptr)
             ares_free(ptr->data.caa_reply.value);
           break;
 
+		case ARES_DATATYPE_URI_REPLY:
+          if (ptr->data.uri_reply.next)
+          	next_data = ptr->data.uri_reply.next;
+          if (ptr->data.uri_reply.uri)
+           	ares_free(ptr->data.uri_reply.uri);
+          break;
         default:
           return;
       }
@@ -228,6 +234,13 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.soa_reply.minttl = 0;
 	break;
 
+ 	  case ARES_DATATYPE_URI_REPLY:
+        ptr->data.uri_reply.next = NULL;
+        ptr->data.uri_reply.uri = NULL;
+        ptr->data.uri_reply.priority = 0;
+        ptr->data.uri_reply.weight = 0;
+     	break;
+		
       default:
         ares_free(ptr);
         return NULL;
