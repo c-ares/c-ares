@@ -1474,9 +1474,9 @@ static int init_by_resolv_conf(ares_channel channel)
     status = ARES_EFILE;
 #elif defined(__MVS__)
 
-  static struct __res_state *res = 0;
+  struct __res_state *res = 0;
   int count4, count6;
-  __STATEEXTIPV6 *v6 = res->__res_extIPv6;
+  __STATEEXTIPV6 *v6;
   struct server_state *pserver
   if (0 == res) {
     int rc = res_init();
@@ -1489,6 +1489,7 @@ static int init_by_resolv_conf(ares_channel channel)
     res = __res();
   }
 
+  v6 = res->__res_extIPv6;
   count4 = res->nscount;
   if (v6) {
     count6 = v6->__stat_nscount;
