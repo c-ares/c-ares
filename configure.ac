@@ -386,6 +386,15 @@ AS_IF([test "x$host_vendor" = "xapple"], [
   ])
 ])
 
+dnl resolv lib for z/OS
+AS_IF([test "x$host_vendor" = "xibm" -a "x$host_os" = "xopenedition" ], [
+  AC_SEARCH_LIBS([res_init], [resolv], [
+    AC_DEFINE([CARES_USE_LIBRESOLV], [1], [Use resolver library to configure cares])
+  ], [
+    AC_MSG_ERROR([Unable to find libresolv which is required for z/OS])
+  ])
+])
+
 dnl resolve lib?
 AC_CHECK_FUNC(strcasecmp, , [ AC_CHECK_LIB(resolve, strcasecmp) ])
 
