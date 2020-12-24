@@ -135,7 +135,7 @@ bool LibraryTest::ShouldAllocFail(size_t size) {
 
 // static
 void* LibraryTest::amalloc(size_t size) {
-  if (ShouldAllocFail(size)) {
+  if (ShouldAllocFail(size) || size == 0) {
     if (verbose) std::cerr << "Failing malloc(" << size << ") request" << std::endl;
     return nullptr;
   } else {
