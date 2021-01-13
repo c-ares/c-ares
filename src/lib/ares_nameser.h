@@ -219,11 +219,26 @@ typedef enum __ns_rcode {
 #  define NAMESERVER_PORT  NS_DEFAULTPORT
 #endif
 
-#ifndef QUERY
-#  define QUERY           ns_o_query
+
+/* opcodes */
+#ifndef O_QUERY
+#  define O_QUERY 0  /* ns_o_query */
+#endif
+#ifndef O_IQUERY
+#  define O_IQUERY 1 /* ns_o_iquery */
+#endif
+#ifndef O_STATUS
+#  define O_STATUS 2 /* ns_o_status */
+#endif
+#ifndef O_NOTIFY
+#  define O_NOTIFY 4 /* ns_o_notify */
+#endif
+#ifndef O_UPDATE
+#  define O_UPDATE 5 /* ns_o_update */
 #endif
 
 
+/* response codes */
 #ifndef SERVFAIL
 #  define SERVFAIL        ns_r_servfail
 #endif
@@ -271,22 +286,26 @@ typedef enum __ns_rcode {
 #  define TSIG_BADTIME    18 /* ns_r_badtime */
 #endif
 
+
+/* classes */
 #ifndef C_IN
-#  define C_IN            ns_c_in
+#  define C_IN            1 /* ns_c_in */
 #endif
 #ifndef C_CHAOS
-#  define C_CHAOS         ns_c_chaos
+#  define C_CHAOS         3 /* ns_c_chaos */
 #endif
 #ifndef C_HS
-#  define C_HS            ns_c_hs
+#  define C_HS            4 /* ns_c_hs */
 #endif
 #ifndef C_NONE
-#  define C_NONE          ns_c_none
+#  define C_NONE          254 /* ns_c_none */
 #endif
 #ifndef C_ANY
-#  define C_ANY           ns_c_any
+#  define C_ANY           255 /*  ns_c_any */
 #endif
 
+
+/* types */
 #ifndef T_A
 #  define T_A             1   /* ns_t_a */
 #endif

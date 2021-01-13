@@ -46,7 +46,7 @@ struct DNSQuestion {
   DNSQuestion(const std::string& name, int rrtype, int qclass)
     : name_(name), rrtype_(rrtype), qclass_(qclass) {}
   DNSQuestion(const std::string& name, int rrtype)
-    : name_(name), rrtype_(rrtype), qclass_(ns_c_in) {}
+    : name_(name), rrtype_(rrtype), qclass_(C_IN) {}
   virtual ~DNSQuestion() {}
   virtual std::vector<byte> data() const;
   std::string name_;
@@ -187,7 +187,7 @@ struct DNSOptRR : public DNSRR {
 
 struct DNSPacket {
   DNSPacket()
-    : qid_(0), response_(false), opcode_(ns_o_query),
+    : qid_(0), response_(false), opcode_(O_QUERY),
       aa_(false), tc_(false), rd_(false), ra_(false),
       z_(false), ad_(false), cd_(false), rcode_(NOERROR) {}
   // Convenience functions that take ownership of given pointers.
@@ -224,7 +224,7 @@ struct DNSPacket {
 
   int qid_;
   bool response_;
-  ns_opcode opcode_;
+  int opcode_;
   bool aa_;
   bool tc_;
   bool rd_;

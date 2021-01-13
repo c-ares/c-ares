@@ -145,11 +145,11 @@ std::string RRTypeToString(int rrtype) {
 
 std::string ClassToString(int qclass) {
   switch (qclass) {
-  case ns_c_in: return "IN";
-  case ns_c_chaos: return "CHAOS";
-  case ns_c_hs: return "HESIOD";
-  case ns_c_none: return "NONE";
-  case ns_c_any: return "ANY";
+  case C_IN: return "IN";
+  case C_CHAOS: return "CHAOS";
+  case C_HS: return "HESIOD";
+  case C_NONE: return "NONE";
+  case C_ANY: return "ANY";
   default: return "UNKNOWN";
   }
 }
@@ -188,11 +188,11 @@ std::string PacketToString(const std::vector<byte>& packet) {
   }
   ss << ((DNS_HEADER_QR(data) == 0) ? "REQ " : "RSP ");
   switch (DNS_HEADER_OPCODE(data)) {
-  case ns_o_query: ss << "QRY "; break;
-  case ns_o_iquery: ss << "IQRY "; break;
-  case ns_o_status: ss << "STATUS "; break;
-  case ns_o_notify: ss << "NOTIFY "; break;
-  case ns_o_update: ss << "UPDATE "; break;
+  case O_QUERY: ss << "QRY "; break;
+  case O_IQUERY: ss << "IQRY "; break;
+  case O_STATUS: ss << "STATUS "; break;
+  case O_NOTIFY: ss << "NOTIFY "; break;
+  case O_UPDATE: ss << "UPDATE "; break;
   default: ss << "UNKNOWN(" << DNS_HEADER_OPCODE(data) << ") "; break;
   }
   if (DNS_HEADER_AA(data)) ss << "AA ";

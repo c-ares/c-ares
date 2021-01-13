@@ -595,7 +595,7 @@ TEST_P(MockChannelTest, SearchNoDataThenFail) {
 TEST_P(MockChannelTest, SearchAllocFailure) {
   SearchResult result;
   SetAllocFail(1);
-  ares_search(channel_, "fully.qualified.", ns_c_in, T_A, SearchCallback, &result);
+  ares_search(channel_, "fully.qualified.", C_IN, T_A, SearchCallback, &result);
   /* Already done */
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ENOMEM, result.status_);
@@ -615,7 +615,7 @@ TEST_P(MockChannelTest, SearchHighNdots) {
     .WillByDefault(SetReply(&server_, &yesfirst));
 
   SearchResult result;
-  ares_search(channel_, "a.b.c.w.w.w", ns_c_in, T_A, SearchCallback, &result);
+  ares_search(channel_, "a.b.c.w.w.w", C_IN, T_A, SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_SUCCESS, result.status_);

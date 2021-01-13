@@ -48,7 +48,7 @@
  * of the remaining fields:
  *      ID      Identifier to match responses with queries
  *      QR      Query (0) or response (1)
- *      Opcode  For our purposes, always QUERY
+ *      Opcode  For our purposes, always O_QUERY
  *      RD      Recursion desired
  *      Z       Reserved (zero)
  *      QDCOUNT Number of queries
@@ -107,7 +107,7 @@ int ares_create_query(const char *name, int dnsclass, int type,
   q = buf;
   memset(q, 0, HFIXEDSZ);
   DNS_HEADER_SET_QID(q, id);
-  DNS_HEADER_SET_OPCODE(q, QUERY);
+  DNS_HEADER_SET_OPCODE(q, O_QUERY);
   if (rd) {
     DNS_HEADER_SET_RD(q, 1);
   }

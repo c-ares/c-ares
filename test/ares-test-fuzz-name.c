@@ -17,7 +17,7 @@ int LLVMFuzzerTestOneInput(const unsigned char *data,
 
   unsigned char *buf = NULL;
   int buflen = 0;
-  ares_create_query(name, ns_c_in, T_AAAA, 1234, 0, &buf, &buflen, 1024);
+  ares_create_query(name, C_IN, T_AAAA, 1234, 0, &buf, &buflen, 1024);
   free(buf);
   free(name);
   return 0;

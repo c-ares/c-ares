@@ -273,7 +273,7 @@ INSTANTIATE_TEST_CASE_P(Modes, DefaultChannelModeTest,
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchA) {
   SearchResult result;
-  ares_search(channel_, "www.youtube.com.", ns_c_in, T_A,
+  ares_search(channel_, "www.youtube.com.", C_IN, T_A,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -282,7 +282,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchA) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchEmptyA) {
   SearchResult result;
-  ares_search(channel_, "", ns_c_in, T_A,
+  ares_search(channel_, "", C_IN, T_A,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -291,7 +291,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchEmptyA) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchNS) {
   SearchResult result;
-  ares_search(channel_, "google.com.", ns_c_in, T_NS,
+  ares_search(channel_, "google.com.", C_IN, T_NS,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -300,7 +300,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchNS) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchMX) {
   SearchResult result;
-  ares_search(channel_, "google.com.", ns_c_in, T_MX,
+  ares_search(channel_, "google.com.", C_IN, T_MX,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -309,7 +309,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchMX) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchTXT) {
   SearchResult result;
-  ares_search(channel_, "google.com.", ns_c_in, T_TXT,
+  ares_search(channel_, "google.com.", C_IN, T_TXT,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -318,7 +318,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchTXT) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchSOA) {
   SearchResult result;
-  ares_search(channel_, "google.com.", ns_c_in, T_SOA,
+  ares_search(channel_, "google.com.", C_IN, T_SOA,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -327,7 +327,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchSOA) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchSRV) {
   SearchResult result;
-  ares_search(channel_, "_imap._tcp.gmail.com.", ns_c_in, T_SRV,
+  ares_search(channel_, "_imap._tcp.gmail.com.", C_IN, T_SRV,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
@@ -336,7 +336,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchSRV) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchANY) {
   SearchResult result;
-  ares_search(channel_, "google.com.", ns_c_in, T_ANY,
+  ares_search(channel_, "google.com.", C_IN, T_ANY,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
