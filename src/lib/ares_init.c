@@ -33,14 +33,7 @@
 #include <arpa/inet.h>
 #endif
 
-#ifdef HAVE_ARPA_NAMESER_H
-#  include <arpa/nameser.h>
-#else
-#  include "nameser.h"
-#endif
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#  include <arpa/nameser_compat.h>
-#endif
+#include "ares_nameser.h"
 
 #if defined(ANDROID) || defined(__ANDROID__)
 #include <sys/system_properties.h>
@@ -1523,7 +1516,7 @@ static int init_by_resolv_conf(ares_channel channel)
   }
 
   status = ARES_EOF;
-  
+
 #elif defined(__riscos__)
 
   /* Under RISC OS, name servers are listed in the

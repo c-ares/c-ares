@@ -4,7 +4,7 @@
 // Utilities for processing DNS packet contents
 
 // Include ares internal file for DNS protocol constants
-#include "nameser.h"
+#include "ares_nameser.h"
 
 #include <memory>
 #include <string>

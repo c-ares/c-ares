@@ -25,14 +25,8 @@
 #ifdef HAVE_NETDB_H
 #  include <netdb.h>
 #endif
-#ifdef HAVE_ARPA_NAMESER_H
-#  include <arpa/nameser.h>
-#else
-#  include "nameser.h"
-#endif
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#  include <arpa/nameser_compat.h>
-#endif
+
+#include "ares_nameser.h"
 
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
@@ -62,30 +56,6 @@
 #undef WIN32  /* Redefined in MingW headers */
 #endif
 
-#ifndef T_SRV
-#  define T_SRV     33 /* Server selection */
-#endif
-#ifndef T_NAPTR
-#  define T_NAPTR   35 /* Naming authority pointer */
-#endif
-#ifndef T_DS
-#  define T_DS      43 /* Delegation Signer (RFC4034) */
-#endif
-#ifndef T_SSHFP
-#  define T_SSHFP   44 /* SSH Key Fingerprint (RFC4255) */
-#endif
-#ifndef T_RRSIG
-#  define T_RRSIG   46 /* Resource Record Signature (RFC4034) */
-#endif
-#ifndef T_NSEC
-#  define T_NSEC    47 /* Next Secure (RFC4034) */
-#endif
-#ifndef T_DNSKEY
-#  define T_DNSKEY  48 /* DNS Public Key (RFC4034) */
-#endif
-#ifndef T_CAA
-#  define T_CAA    257 /* Certification Authority Authorization */
-#endif
 
 struct nv {
   const char *name;
@@ -335,7 +305,7 @@ int main(int argc, char **argv)
           options.udp_port = (unsigned short)strtol(optarg, NULL, 0);
           optmask |= ARES_OPT_UDP_PORT;
           break;
-          
+
         case 'x':
           use_ptr_helper++;
           break;
@@ -703,7 +673,7 @@ static const unsigned char *display_rr(const unsigned char *aptr,
           p += len;
         }
       break;
- 
+
     case T_CAA:
 
       p = aptr;

@@ -32,14 +32,8 @@
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
-#ifdef HAVE_ARPA_NAMESER_H
-#  include <arpa/nameser.h>
-#endif
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#  include <arpa/nameser_compat.h>
-#endif
 
-#include "nameser.h"
+#include "ares_nameser.h"
 
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>

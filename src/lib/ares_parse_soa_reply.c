@@ -26,14 +26,8 @@
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
-#ifdef HAVE_ARPA_NAMESER_H
-#  include <arpa/nameser.h>
-#else
-#  include "nameser.h"
-#endif
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#  include <arpa/nameser_compat.h>
-#endif
+
+#include "ares_nameser.h"
 
 #include "ares.h"
 #include "ares_dns.h"
@@ -62,7 +56,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
     return ARES_EBADRESP;
   if (ancount == 0)
     return ARES_EBADRESP;
-  
+
   aptr = abuf + HFIXEDSZ;
 
   /* query name */
@@ -164,9 +158,9 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
       return ARES_SUCCESS;
     }
     aptr += rr_len;
-    
+
     ares_free(rr_name);
-    
+
     if (aptr > abuf + alen)
       goto failed_stat;
   }

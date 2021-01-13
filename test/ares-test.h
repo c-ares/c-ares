@@ -2,12 +2,12 @@
 #ifndef ARES_TEST_H
 #define ARES_TEST_H
 
-#include "dns-proto.h"
-// Include ares internal file for DNS protocol constants
-#include "nameser.h"
-
 #include "ares_setup.h"
 #include "ares.h"
+
+#include "dns-proto.h"
+// Include ares internal file for DNS protocol constants
+#include "ares_nameser.h"
 
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
