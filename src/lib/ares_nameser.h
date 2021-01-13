@@ -223,32 +223,52 @@ typedef enum __ns_rcode {
 #  define QUERY           ns_o_query
 #endif
 
+
 #ifndef SERVFAIL
 #  define SERVFAIL        ns_r_servfail
 #endif
-
 #ifndef NOTIMP
 #  define NOTIMP          ns_r_notimpl
 #endif
-
 #ifndef REFUSED
 #  define REFUSED         ns_r_refused
 #endif
-
 #if defined(_WIN32) && !defined(HAVE_ARPA_NAMESER_COMPAT_H) && defined(NOERROR)
 #  undef NOERROR /* it seems this is already defined in winerror.h */
 #endif
-
 #ifndef NOERROR
 #  define NOERROR         ns_r_noerror
 #endif
-
 #ifndef FORMERR
 #  define FORMERR         ns_r_formerr
 #endif
-
 #ifndef NXDOMAIN
 #  define NXDOMAIN        ns_r_nxdomain
+#endif
+/* Non-standard response codes, use numeric values */
+#ifndef YXDOMAIN
+#  define YXDOMAIN        6 /* ns_r_yxdomain */
+#endif
+#ifndef YXRRSET
+#  define YXRRSET         7 /* ns_r_yxrrset */
+#endif
+#ifndef NXRRSET
+#  define NXRRSET         8 /* ns_r_nxrrset */
+#endif
+#ifndef NOTAUTH
+#  define NOTAUTH         9 /* ns_r_notauth */
+#endif
+#ifndef NOTZONE
+#  define NOTZONE         10 /* ns_r_notzone */
+#endif
+#ifndef TSIG_BADSIG
+#  define TSIG_BADSIG     16 /* ns_r_badsig */
+#endif
+#ifndef TSIG_BADKEY
+#  define TSIG_BADKEY     17 /* ns_r_badkey */
+#endif
+#ifndef TSIG_BADTIME
+#  define TSIG_BADTIME    18 /* ns_r_badtime */
 #endif
 
 #ifndef C_IN

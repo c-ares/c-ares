@@ -312,7 +312,7 @@ TEST_F(LibraryTest, ParseAReplyErrors) {
   EXPECT_EQ(ARES_ENODATA, ares_parse_a_reply(data.data(), data.size(),
                                               &host, info, &count));
   EXPECT_EQ(nullptr, host);
-  pkt.set_rcode(ns_r_noerror);
+  pkt.set_rcode(NOERROR);
 #endif
 
   // Two questions

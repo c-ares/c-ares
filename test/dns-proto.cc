@@ -63,20 +63,20 @@ std::string StatusToString(int status) {
 
 std::string RcodeToString(int rcode) {
   switch (rcode) {
-  case ns_r_noerror: return "NOERROR";
+  case NOERROR: return "NOERROR";
   case FORMERR: return "FORMERR";
   case SERVFAIL: return "SERVFAIL";
   case NXDOMAIN: return "NXDOMAIN";
   case NOTIMP: return "NOTIMP";
   case REFUSED: return "REFUSED";
   case YXDOMAIN: return "YXDOMAIN";
-  case ns_r_yxrrset: return "YXRRSET";
-  case ns_r_nxrrset: return "NXRRSET";
-  case ns_r_notauth: return "NOTAUTH";
-  case ns_r_notzone: return "NOTZONE";
-  case ns_r_badsig: return "BADSIG";
-  case ns_r_badkey: return "BADKEY";
-  case ns_r_badtime: return "BADTIME";
+  case YXRRSET: return "YXRRSET";
+  case NXRRSET: return "NXRRSET";
+  case NOTAUTH: return "NOTAUTH";
+  case NOTZONE: return "NOTZONE";
+  case TSIG_BADSIG: return "BADSIG";
+  case TSIG_BADKEY: return "BADKEY";
+  case TSIG_BADTIME: return "BADTIME";
   default: return "UNKNOWN";
   }
 }
