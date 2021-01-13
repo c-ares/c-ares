@@ -72,7 +72,7 @@ HHEADERS = ares_android.h                        \
   ares_strsplit.h			\
   ares_writev.h				\
   bitncmp.h				\
-  nameser.h				\
+  ares_nameser.h			\
   ares_setup.h				\
   setup_once.h
 
