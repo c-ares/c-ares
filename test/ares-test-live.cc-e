@@ -336,7 +336,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchSRV) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchANY) {
   SearchResult result;
-  ares_search(channel_, "google.com.", ns_c_in, T_ANY,
+  ares_search(channel_, "google.com.", ns_c_in, T_Any,
               SearchCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);

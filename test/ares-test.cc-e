@@ -1,11 +1,9 @@
-#include "ares_setup.h"
-#include "ares.h"
-#include "ares_nameser.h"
 #include "ares-test.h"
 #include "ares-test-ai.h"
 #include "dns-proto.h"
 
 // Include ares internal files for DNS protocol details
+#include "nameser.h"
 #include "ares_dns.h"
 
 #ifdef HAVE_NETDB_H
