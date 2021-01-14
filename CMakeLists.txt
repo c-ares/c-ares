@@ -167,7 +167,6 @@ CHECK_INCLUDE_FILES (malloc.h              HAVE_MALLOC_H)
 CHECK_INCLUDE_FILES (memory.h              HAVE_MEMORY_H)
 CHECK_INCLUDE_FILES (netdb.h               HAVE_NETDB_H)
 CHECK_INCLUDE_FILES (netinet/in.h          HAVE_NETINET_IN_H)
-CHECK_INCLUDE_FILES (netinet/tcp.h         HAVE_NETINET_TCP_H)
 CHECK_INCLUDE_FILES (net/if.h              HAVE_NET_IF_H)
 CHECK_INCLUDE_FILES (signal.h              HAVE_SIGNAL_H)
 CHECK_INCLUDE_FILES (socket.h              HAVE_SOCKET_H)
@@ -188,6 +187,13 @@ CHECK_INCLUDE_FILES (sys/uio.h             HAVE_SYS_UIO_H)
 CHECK_INCLUDE_FILES (time.h                HAVE_TIME_H)
 CHECK_INCLUDE_FILES (dlfcn.h               HAVE_DLFCN_H)
 CHECK_INCLUDE_FILES (unistd.h              HAVE_UNISTD_H)
+
+# On OpenBSD, you must include sys/types.h before netinet/tcp.h
+IF (HAVE_SYS_TYPES_H)
+  CHECK_INCLUDE_FILES ("sys/types.h;netinet/tcp.h"         HAVE_NETINET_TCP_H)
+ELSE ()
+  CHECK_INCLUDE_FILES (netinet/tcp.h                       HAVE_NETINET_TCP_H)
+ENDIF ()
 
 # Include order matters for these windows files.
 CHECK_INCLUDE_FILES ("winsock2.h;windows.h"            HAVE_WINSOCK2_H)
