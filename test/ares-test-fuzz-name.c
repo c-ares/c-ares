@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ares_setup.h"
 #include "ares.h"
 // Include ares internal file for DNS protocol constants
 #include "ares_nameser.h"
