@@ -14,9 +14,11 @@
  * without express or implied warranty.
  */
 
+#include "ares_private.h"
 typedef enum {
   ARES_DATATYPE_UNKNOWN = 1,  /* unknown data type     - introduced in 1.7.0 */
   ARES_DATATYPE_SRV_REPLY,    /* struct ares_srv_reply - introduced in 1.7.0 */
+  ARES_DATATYPE_SRV_EXT,      /* struct ares_srv_ext */
   ARES_DATATYPE_TXT_REPLY,    /* struct ares_txt_reply - introduced in 1.7.0 */
   ARES_DATATYPE_TXT_EXT,      /* struct ares_txt_ext   - introduced in 1.11.0 */
   ARES_DATATYPE_ADDR_NODE,    /* struct ares_addr_node - introduced in 1.7.1 */
@@ -61,6 +63,7 @@ struct ares_data {
     struct ares_txt_reply    txt_reply;
     struct ares_txt_ext      txt_ext;
     struct ares_srv_reply    srv_reply;
+    struct ares_srv_ext      srv_ext;
     struct ares_addr_node    addr_node;
     struct ares_addr_port_node  addr_port_node;
     struct ares_mx_reply     mx_reply;

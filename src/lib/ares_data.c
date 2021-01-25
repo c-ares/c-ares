@@ -70,6 +70,7 @@ void ares_free_data(void *dataptr)
           break;
 
         case ARES_DATATYPE_SRV_REPLY:
+        case ARES_DATATYPE_SRV_EXT:
 
           if (ptr->data.srv_reply.next)
             next_data = ptr->data.srv_reply.next;
@@ -120,7 +121,7 @@ void ares_free_data(void *dataptr)
           break;
 
         case ARES_DATATYPE_CAA_REPLY:
- 
+
           if (ptr->data.caa_reply.next)
             next_data = ptr->data.caa_reply.next;
           if (ptr->data.caa_reply.property)
@@ -165,6 +166,10 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.mx_reply.host = NULL;
         ptr->data.mx_reply.priority = 0;
         break;
+
+      case ARES_DATATYPE_SRV_EXT:
+        ptr->data.srv_ext.ttl = 0;
+        /* FALLTHROUGH */
 
       case ARES_DATATYPE_SRV_REPLY:
         ptr->data.srv_reply.next = NULL;

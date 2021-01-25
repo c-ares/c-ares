@@ -545,6 +545,10 @@ struct ares_srv_reply {
   unsigned short          port;
 };
 
+struct ares_srv_ext;
+
+typedef struct ares_srv_ext ares_srv_ext;
+
 struct ares_mx_reply {
   struct ares_mx_reply   *next;
   char                   *host;
@@ -664,6 +668,39 @@ CARES_EXTERN int ares_parse_ns_reply(const unsigned char *abuf,
 CARES_EXTERN int ares_parse_srv_reply(const unsigned char* abuf,
                                       int alen,
                                       struct ares_srv_reply** srv_out);
+
+CARES_EXTERN int ares_parse_srv_reply_ext(const unsigned char* abuf,
+                                          int alen,
+                                          struct ares_srv_ext** srv_out);
+
+CARES_EXTERN struct ares_srv_ext* ares_srv_ext_get_next(const ares_srv_ext* srv_reply);
+
+CARES_EXTERN char* ares_srv_ext_get_host(const ares_srv_ext* srv_reply);
+
+CARES_EXTERN unsigned short ares_srv_ext_get_priority(const ares_srv_ext* srv_reply);
+
+CARES_EXTERN unsigned short ares_srv_ext_get_weight(const ares_srv_ext* srv_reply);
+
+CARES_EXTERN unsigned short ares_srv_ext_get_port(const ares_srv_ext* srv_reply);
+
+CARES_EXTERN int ares_srv_ext_get_ttl(const ares_srv_ext* srv_reply);
+
+CARES_EXTERN void ares_srv_ext_set_next(ares_srv_ext* srv_reply,
+                                        struct ares_srv_ext* next);
+
+CARES_EXTERN void ares_srv_ext_set_host(ares_srv_ext* srv_reply, char* host);
+
+CARES_EXTERN void ares_srv_ext_set_priority(ares_srv_ext* srv_reply,
+                                            const unsigned short priority);
+
+CARES_EXTERN void ares_srv_ext_set_weight(ares_srv_ext* srv_reply,
+                                          const unsigned short weight);
+
+CARES_EXTERN void ares_srv_ext_set_port(ares_srv_ext* srv_reply,
+                                        const unsigned short port);
+
+CARES_EXTERN void ares_srv_ext_set_ttl(ares_srv_ext* srv_reply,
+                                       const int ttl);
 
 CARES_EXTERN int ares_parse_mx_reply(const unsigned char* abuf,
                                       int alen,

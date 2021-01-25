@@ -416,4 +416,18 @@ int ares__connect_socket(ares_channel channel,
       (c)->sock_state_cb((c)->sock_state_cb_data, (s), (r), (w));       \
   } WHILE_FALSE
 
+/* Private definition of extended ares srv reply so that c-ares users
+ * only have access to the type definition in ares.h and must use
+ * accessor functions to interact with the struct.  This way,
+ * ares_srv_reply_ext can be modified without breaking ABI.
+ */
+ struct ares_srv_ext {
+  struct ares_srv_ext  *next;
+  char                 *host;
+  unsigned short        priority;
+  unsigned short        weight;
+  unsigned short        port;
+  int                   ttl;
+};
+
 #endif /* __ARES_PRIVATE_H */

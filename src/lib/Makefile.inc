@@ -38,10 +38,12 @@ CSOURCES = ares__close_sockets.c	\
   ares_parse_ptr_reply.c		\
   ares_parse_soa_reply.c		\
   ares_parse_srv_reply.c		\
+  ares_parse_srv_reply_ext.c		\
   ares_parse_txt_reply.c		\
   ares_platform.c			\
   ares_process.c			\
   ares_query.c				\
+  ares_reply_ext.c    \
   ares_search.c				\
   ares_send.c				\
   ares_strcasecmp.c			\

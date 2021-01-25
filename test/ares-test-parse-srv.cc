@@ -35,6 +35,35 @@ TEST_F(LibraryTest, ParseSrvReplyOK) {
   ares_free_data(srv);
 }
 
+TEST_F(LibraryTest, ParseSrvExtReplyOK) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_SRV))
+    .add_answer(new DNSSrvRR("example.com", 100, 10, 20, 30, "srv.example.com"))
+    .add_answer(new DNSSrvRR("example.com", 100, 11, 21, 31, "srv2.example.com"));
+  std::vector<byte> data = pkt.data();
+
+  struct ares_srv_ext* srv = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_srv_reply_ext(data.data(), data.size(), &srv));
+  ASSERT_NE(nullptr, srv);
+
+  EXPECT_EQ("srv.example.com", std::string(ares_srv_ext_get_host(srv)));
+  EXPECT_EQ(10, ares_srv_ext_get_priority(srv));
+  EXPECT_EQ(20, ares_srv_ext_get_weight(srv));
+  EXPECT_EQ(30, ares_srv_ext_get_port(srv));
+  EXPECT_EQ(100, ares_srv_ext_get_ttl(srv));
+
+  struct ares_srv_ext* srv2 = ares_srv_ext_get_next(srv);
+  ASSERT_NE(nullptr, srv2);
+  EXPECT_EQ("srv2.example.com", std::string(ares_srv_ext_get_host(srv2)));
+  EXPECT_EQ(11, ares_srv_ext_get_priority(srv2));
+  EXPECT_EQ(21, ares_srv_ext_get_weight(srv2));
+  EXPECT_EQ(31, ares_srv_ext_get_port(srv2));
+  EXPECT_EQ(100, ares_srv_ext_get_ttl(srv2));
+  EXPECT_EQ(nullptr, ares_srv_ext_get_next(srv2));
+  ares_free_data(srv);
+}
+
 TEST_F(LibraryTest, ParseSrvReplySingle) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
