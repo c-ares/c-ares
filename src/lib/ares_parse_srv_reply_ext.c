@@ -140,9 +140,7 @@ ares_parse_srv_reply_ext (const unsigned char *abuf, int alen,
           char* srv_host = NULL;
 
           status = ares_expand_name (vptr, abuf, alen, &srv_host, &len);
-          printf("srv host: %s\n", srv_host);
           ares_srv_ext_set_host(srv_curr, srv_host);
-          printf("srv curr host: %s\n", ares_srv_ext_get_host(srv_curr));
           if (status != ARES_SUCCESS)
             break;
         }
