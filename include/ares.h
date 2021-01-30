@@ -676,7 +676,8 @@ CARES_EXTERN int cares_parse_srv_reply(const unsigned char* abuf,
 CARES_EXTERN struct cares_srv_reply*
 cares_srv_reply_get_next(const cares_srv_reply* srv_reply);
 
-CARES_EXTERN char* cares_srv_reply_get_host(const cares_srv_reply* srv_reply);
+CARES_EXTERN const char*
+cares_srv_reply_get_host(const cares_srv_reply* srv_reply);
 
 CARES_EXTERN unsigned short
 cares_srv_reply_get_priority(const cares_srv_reply* srv_reply);

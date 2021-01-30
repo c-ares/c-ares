@@ -47,7 +47,7 @@ TEST_F(LibraryTest, ParseCSrvReplyOK) {
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv));
   ASSERT_NE(nullptr, srv);
 
-  EXPECT_EQ("srv.example.com", std::string(std::unique_ptr<char[]>(cares_srv_reply_get_host(srv)).get()));
+  EXPECT_EQ("srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(10, cares_srv_reply_get_priority(srv));
   EXPECT_EQ(20, cares_srv_reply_get_weight(srv));
   EXPECT_EQ(30, cares_srv_reply_get_port(srv));
@@ -109,7 +109,7 @@ TEST_F(LibraryTest, ParseCSrvReplySingle) {
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv));
   ASSERT_NE(nullptr, srv);
 
-  EXPECT_EQ("example.abc.def.com", std::string(std::unique_ptr<char[]>(cares_srv_reply_get_host(srv)).get()));
+  EXPECT_EQ("example.abc.def.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
   EXPECT_EQ(10, cares_srv_reply_get_weight(srv));
   EXPECT_EQ(8160, cares_srv_reply_get_port(srv));
@@ -250,7 +250,7 @@ TEST_F(LibraryTest, ParseCSrvReplyMultiple) {
   ASSERT_NE(nullptr, srv0);
   struct cares_srv_reply* srv = srv0;
 
-  EXPECT_EQ("a1.srv.example.com", std::string(std::unique_ptr<char[]>(cares_srv_reply_get_host(srv)).get()));
+  EXPECT_EQ("a1.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
   EXPECT_EQ(5, cares_srv_reply_get_weight(srv));
   EXPECT_EQ(6789, cares_srv_reply_get_port(srv));
@@ -258,7 +258,7 @@ TEST_F(LibraryTest, ParseCSrvReplyMultiple) {
   EXPECT_NE(nullptr, cares_srv_reply_get_next(srv));
   srv = cares_srv_reply_get_next(srv);
 
-  EXPECT_EQ("a2.srv.example.com", std::string(std::unique_ptr<char[]>(cares_srv_reply_get_host(srv)).get()));
+  EXPECT_EQ("a2.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
   EXPECT_EQ(5, cares_srv_reply_get_weight(srv));
   EXPECT_EQ(4567, cares_srv_reply_get_port(srv));
@@ -266,7 +266,7 @@ TEST_F(LibraryTest, ParseCSrvReplyMultiple) {
   EXPECT_NE(nullptr, cares_srv_reply_get_next(srv));
   srv = cares_srv_reply_get_next(srv);
 
-  EXPECT_EQ("a3.srv.example.com", std::string(std::unique_ptr<char[]>(cares_srv_reply_get_host(srv)).get()));
+  EXPECT_EQ("a3.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
   EXPECT_EQ(5, cares_srv_reply_get_weight(srv));
   EXPECT_EQ(5678, cares_srv_reply_get_port(srv));
@@ -323,7 +323,7 @@ TEST_F(LibraryTest, ParseCSrvReplyCname) {
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv));
   ASSERT_NE(nullptr, srv);
 
-  EXPECT_EQ("srv.abc.def.com", std::string(std::unique_ptr<char[]>(cares_srv_reply_get_host(srv)).get()));
+  EXPECT_EQ("srv.abc.def.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
   EXPECT_EQ(10, cares_srv_reply_get_weight(srv));
   EXPECT_EQ(1234, cares_srv_reply_get_port(srv));
@@ -404,7 +404,7 @@ TEST_F(LibraryTest, ParseCSrvReplyCnameMultiple) {
   ASSERT_NE(nullptr, srv0);
   struct cares_srv_reply* srv = srv0;
 
-  EXPECT_EQ("a1.srv.example.com", std::string(std::unique_ptr<char[]>(cares_srv_reply_get_host(srv)).get()));
+  EXPECT_EQ("a1.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
   EXPECT_EQ(5, cares_srv_reply_get_weight(srv));
   EXPECT_EQ(6789, cares_srv_reply_get_port(srv));
@@ -412,7 +412,7 @@ TEST_F(LibraryTest, ParseCSrvReplyCnameMultiple) {
   EXPECT_NE(nullptr, cares_srv_reply_get_next(srv));
   srv = cares_srv_reply_get_next(srv);
 
-  EXPECT_EQ("a2.srv.example.com", std::string(std::unique_ptr<char[]>(cares_srv_reply_get_host(srv)).get()));
+  EXPECT_EQ("a2.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
   EXPECT_EQ(5, cares_srv_reply_get_weight(srv));
   EXPECT_EQ(4567, cares_srv_reply_get_port(srv));
@@ -420,7 +420,7 @@ TEST_F(LibraryTest, ParseCSrvReplyCnameMultiple) {
   EXPECT_NE(nullptr, cares_srv_reply_get_next(srv));
   srv = cares_srv_reply_get_next(srv);
 
-  EXPECT_EQ("a3.srv.example.com", std::string(std::unique_ptr<char[]>(cares_srv_reply_get_host(srv)).get()));
+  EXPECT_EQ("a3.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
   EXPECT_EQ(5, cares_srv_reply_get_weight(srv));
   EXPECT_EQ(5678, cares_srv_reply_get_port(srv));

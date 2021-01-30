@@ -22,13 +22,9 @@ cares_srv_reply_get_next(const struct cares_srv_reply* srv_reply)
   return srv_reply->next;
 }
 
-char* cares_srv_reply_get_host(const struct cares_srv_reply* srv_reply)
+const char* cares_srv_reply_get_host(const struct cares_srv_reply* srv_reply)
 {
-  char *newhost = NULL;
-  if ((newhost = malloc(strlen(srv_reply->host) + 1)) != NULL) {
-    strcpy(newhost, srv_reply->host);
-  }
-  return newhost;
+  return srv_reply->host;
 }
 
 unsigned short

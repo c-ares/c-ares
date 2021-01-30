@@ -82,12 +82,19 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
       srv_head = srv_curr;
     }
     srv_last = srv_curr;
-    srv_curr->host = cares_srv_reply_get_host(csrv_curr);
-    if (!srv_curr->host)
+
+    /* copy the host to newhost so we can free csrv_out */
+    char *newhost = NULL;
+    const char *tmphost = cares_srv_reply_get_host(csrv_curr);
+    if (!tmphost)
     {
       status = ARES_ENOMEM;
       break;
     }
+    if ((newhost = malloc(strlen(tmphost) + 1)) != NULL) {
+      strcpy(newhost, tmphost);
+    }
+    srv_curr->host = newhost;
     srv_curr->priority = cares_srv_reply_get_priority(csrv_curr);
     srv_curr->weight = cares_srv_reply_get_weight(csrv_curr);
     srv_curr->port = cares_srv_reply_get_port(csrv_curr);
