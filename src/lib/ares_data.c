@@ -34,6 +34,7 @@
 ** function is:
 **
 **   ares_get_servers()
+**   cares_parse_srv_reply()
 **   ares_parse_srv_reply()
 **   ares_parse_txt_reply()
 */
@@ -70,7 +71,7 @@ void ares_free_data(void *dataptr)
           break;
 
         case ARES_DATATYPE_SRV_REPLY:
-        case ARES_DATATYPE_SRV_EXT:
+        case ARES_DATATYPE_CSRV_REPLY:
 
           if (ptr->data.srv_reply.next)
             next_data = ptr->data.srv_reply.next;
@@ -167,8 +168,8 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.mx_reply.priority = 0;
         break;
 
-      case ARES_DATATYPE_SRV_EXT:
-        ptr->data.srv_ext.ttl = 0;
+      case ARES_DATATYPE_CSRV_REPLY:
+        ptr->data.csrv_reply.ttl = 0;
         /* FALLTHROUGH */
 
       case ARES_DATATYPE_SRV_REPLY:

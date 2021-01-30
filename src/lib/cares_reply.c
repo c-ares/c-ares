@@ -14,67 +14,76 @@
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
+#include "string.h"
 
-struct ares_srv_ext* ares_srv_ext_get_next(const struct ares_srv_ext* srv_reply)
+struct cares_srv_reply*
+cares_srv_reply_get_next(const struct cares_srv_reply* srv_reply)
 {
   return srv_reply->next;
 }
 
-char* ares_srv_ext_get_host(const struct ares_srv_ext* srv_reply)
+char* cares_srv_reply_get_host(const struct cares_srv_reply* srv_reply)
 {
-  return srv_reply->host;
+  char *newhost = NULL;
+  if ((newhost = malloc(strlen(srv_reply->host) + 1)) != NULL) {
+    strcpy(newhost, srv_reply->host);
+  }
+  return newhost;
 }
 
-unsigned short ares_srv_ext_get_priority(const struct ares_srv_ext* srv_reply)
+unsigned short
+cares_srv_reply_get_priority(const struct cares_srv_reply* srv_reply)
 {
   return srv_reply->priority;
 }
 
-unsigned short ares_srv_ext_get_weight(const struct ares_srv_ext* srv_reply)
+unsigned short
+cares_srv_reply_get_weight(const struct cares_srv_reply* srv_reply)
 {
   return srv_reply->weight;
 }
 
-unsigned short ares_srv_ext_get_port(const struct ares_srv_ext* srv_reply)
+unsigned short
+cares_srv_reply_get_port(const struct cares_srv_reply* srv_reply)
 {
   return srv_reply->port;
 }
 
-int ares_srv_ext_get_ttl(const struct ares_srv_ext* srv_reply)
+int cares_srv_reply_get_ttl(const struct cares_srv_reply* srv_reply)
 {
   return srv_reply->ttl;
 }
 
-void ares_srv_ext_set_next(struct ares_srv_ext* srv_reply,
-                           struct ares_srv_ext* next)
+void cares_srv_reply_set_next(struct cares_srv_reply* srv_reply,
+                              struct cares_srv_reply* next)
 {
   srv_reply->next = next;
 }
 
-void ares_srv_ext_set_host(struct ares_srv_ext* srv_reply, char* host)
+void cares_srv_reply_set_host(struct cares_srv_reply* srv_reply, char* host)
 {
   srv_reply->host = host;
 }
 
-void ares_srv_ext_set_priority(struct ares_srv_ext* srv_reply,
+void cares_srv_reply_set_priority(struct cares_srv_reply* srv_reply,
                                const unsigned short priority)
 {
   srv_reply->priority = priority;
 }
 
-void ares_srv_ext_set_weight(struct ares_srv_ext* srv_reply,
+void cares_srv_reply_set_weight(struct cares_srv_reply* srv_reply,
                              const unsigned short weight)
 {
   srv_reply->weight = weight;
 }
 
-void ares_srv_ext_set_port(struct ares_srv_ext* srv_reply,
+void cares_srv_reply_set_port(struct cares_srv_reply* srv_reply,
                            const unsigned short port)
 {
   srv_reply->port = port;
 }
 
-void ares_srv_ext_set_ttl(struct ares_srv_ext* srv_reply, const int ttl)
+void cares_srv_reply_set_ttl(struct cares_srv_reply* srv_reply, const int ttl)
 {
   srv_reply->ttl = ttl;
 }

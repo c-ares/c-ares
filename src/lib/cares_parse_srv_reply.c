@@ -35,17 +35,17 @@
 #include "ares_private.h"
 
 int
-ares_parse_srv_reply_ext (const unsigned char *abuf, int alen,
-                          struct ares_srv_ext **srv_out)
+cares_parse_srv_reply (const unsigned char *abuf, int alen,
+                          struct cares_srv_reply **srv_out)
 {
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
   int status, rr_type, rr_class, rr_ttl, rr_len;
   long len;
   char *hostname = NULL, *rr_name = NULL;
-  struct ares_srv_ext *srv_head = NULL;
-  struct ares_srv_ext *srv_last = NULL;
-  struct ares_srv_ext *srv_curr;
+  struct cares_srv_reply *srv_head = NULL;
+  struct cares_srv_reply *srv_last = NULL;
+  struct cares_srv_reply *srv_curr;
 
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;
@@ -112,7 +112,7 @@ ares_parse_srv_reply_ext (const unsigned char *abuf, int alen,
             }
 
           /* Allocate storage for this SRV answer appending it to the list */
-          srv_curr = ares_malloc_data(ARES_DATATYPE_SRV_EXT);
+          srv_curr = ares_malloc_data(ARES_DATATYPE_CSRV_REPLY);
           if (!srv_curr)
             {
               status = ARES_ENOMEM;
@@ -129,20 +129,20 @@ ares_parse_srv_reply_ext (const unsigned char *abuf, int alen,
           srv_last = srv_curr;
 
           vptr = aptr;
-          ares_srv_ext_set_priority(srv_curr, DNS__16BIT(vptr));
+          cares_srv_reply_set_priority(srv_curr, DNS__16BIT(vptr));
           vptr += sizeof(unsigned short);
-          ares_srv_ext_set_weight(srv_curr, DNS__16BIT(vptr));
+          cares_srv_reply_set_weight(srv_curr, DNS__16BIT(vptr));
           vptr += sizeof(unsigned short);
-          ares_srv_ext_set_port(srv_curr, DNS__16BIT(vptr));
+          cares_srv_reply_set_port(srv_curr, DNS__16BIT(vptr));
           vptr += sizeof(unsigned short);
-          ares_srv_ext_set_ttl(srv_curr, rr_ttl);
+          cares_srv_reply_set_ttl(srv_curr, rr_ttl);
 
           char* srv_host = NULL;
 
           status = ares_expand_name (vptr, abuf, alen, &srv_host, &len);
-          ares_srv_ext_set_host(srv_curr, srv_host);
           if (status != ARES_SUCCESS)
             break;
+          cares_srv_reply_set_host(srv_curr, srv_host);
         }
 
       /* Don't lose memory in the next iteration */
