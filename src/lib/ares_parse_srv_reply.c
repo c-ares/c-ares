@@ -16,6 +16,7 @@
  */
 
 #include "ares_setup.h"
+#include "ares_strdup.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
@@ -57,8 +58,8 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* clean up on error */
   if (status != ARES_SUCCESS)
   {
-    if (srv_out)
-      ares_free_data (*srv_out);
+    if (csrv_out)
+      ares_free_data (csrv_out);
     return status;
   }
 
@@ -84,16 +85,12 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
     srv_last = srv_curr;
 
     /* copy the host to newhost so we can free csrv_out */
-    char *newhost = NULL;
-    const char *tmphost = cares_srv_reply_get_host(csrv_curr);
-    if (!tmphost)
-    {
+    char *newhost = ares_strdup(cares_srv_reply_get_host(csrv_curr));
+    if (!newhost) {
       status = ARES_ENOMEM;
       break;
     }
-    if ((newhost = malloc(strlen(tmphost) + 1)) != NULL) {
-      strcpy(newhost, tmphost);
-    }
+
     srv_curr->host = newhost;
     srv_curr->priority = cares_srv_reply_get_priority(csrv_curr);
     srv_curr->weight = cares_srv_reply_get_weight(csrv_curr);
@@ -105,7 +102,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
     ares_free_data (csrv_out);
   }
 
-    /* clean up on error */
+  /* clean up on error */
   if (status != ARES_SUCCESS)
   {
     if (srv_head)
