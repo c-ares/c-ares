@@ -67,6 +67,14 @@ int ares_get_servers(ares_channel channel,
       else
         memcpy(&srvr_curr->addrV6, &channel->servers[i].addr.addrV6,
                sizeof(srvr_curr->addrV6));
+
+      srvr_curr->ll_family = channel->servers[i].ll_addr.family;
+      if (srvr_curr->ll_family == AF_INET6)
+        {
+          srvr_curr->ll_scope = channel->servers[i].ll_scope;
+          memcpy(&srvr_curr->ll_addr6, &channel->servers[i].ll_addr.addr.addr6,
+                 sizeof(srvr_curr->ll_addr6));
+        }
     }
 
   if (status != ARES_SUCCESS)
@@ -124,6 +132,14 @@ int ares_get_servers_ports(ares_channel channel,
       else
         memcpy(&srvr_curr->addrV6, &channel->servers[i].addr.addrV6,
                sizeof(srvr_curr->addrV6));
+
+      srvr_curr->ll_family = channel->servers[i].ll_addr.family;
+      if (srvr_curr->ll_family == AF_INET6)
+        {
+          srvr_curr->ll_scope = channel->servers[i].ll_scope;
+          memcpy(&srvr_curr->ll_addr6, &channel->servers[i].ll_addr.addr.addr6,
+                 sizeof(srvr_curr->ll_addr6));
+        }
     }
 
   if (status != ARES_SUCCESS)
@@ -184,6 +200,14 @@ int ares_set_servers(ares_channel channel,
           else
             memcpy(&channel->servers[i].addr.addrV6, &srvr->addrV6,
                    sizeof(srvr->addrV6));
+
+          channel->servers[i].ll_addr.family= srvr->ll_family;
+          if (srvr->ll_family == AF_INET6)
+            {
+              memcpy(&channel->servers[i].ll_addr.addr.addr6, &srvr->ll_addr6,
+                     sizeof(srvr->ll_addr6));
+              channel->servers[i].ll_scope = srvr->ll_scope;
+            }
         }
       /* Initialize servers state remaining data */
       ares__init_servers_state(channel);
@@ -236,6 +260,14 @@ int ares_set_servers_ports(ares_channel channel,
           else
             memcpy(&channel->servers[i].addr.addrV6, &srvr->addrV6,
                    sizeof(srvr->addrV6));
+
+          channel->servers[i].ll_addr.family= srvr->ll_family;
+          if (srvr->ll_family == AF_INET6)
+            {
+              memcpy(&channel->servers[i].ll_addr.addr.addr6, &srvr->ll_addr6,
+                     sizeof(srvr->ll_addr6));
+              channel->servers[i].ll_scope = srvr->ll_scope;
+            }
         }
       /* Initialize servers state remaining data */
       ares__init_servers_state(channel);
@@ -360,6 +392,7 @@ static int set_servers_csv(ares_channel channel,
       if (s) {
         s->udp_port = use_port ? port: 0;
         s->tcp_port = s->udp_port;
+        s->ll_family = AF_UNSPEC;
         s->next = NULL;
         if (last) {
           last->next = s;

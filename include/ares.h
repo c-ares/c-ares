@@ -257,6 +257,7 @@ struct apattern;
    duplicates this new option.
 
  */
+
 struct ares_options {
   int flags;
   int timeout; /* in seconds or milliseconds, depending on options */
@@ -700,6 +701,9 @@ struct ares_addr_node {
     struct in_addr       addr4;
     struct ares_in6_addr addr6;
   } addr;
+  int ll_family;
+  unsigned int ll_scope;
+  struct ares_in6_addr ll_addr6;
 };
 
 struct ares_addr_port_node {
@@ -711,6 +715,9 @@ struct ares_addr_port_node {
   } addr;
   int udp_port;
   int tcp_port;
+  int ll_family;
+  unsigned int ll_scope;
+  struct ares_in6_addr ll_addr6;
 };
 
 CARES_EXTERN int ares_set_servers(ares_channel channel,

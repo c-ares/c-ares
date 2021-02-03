@@ -973,7 +973,44 @@ static int setsocknonblock(ares_socket_t sockfd,    /* operate on this */
 #endif
 }
 
-static int configure_socket(ares_socket_t s, int family, ares_channel channel)
+static void ares_log_sockaddr(const char* prefix,
+                              const struct sockaddr * const sa,
+                              const socklen_t salen)
+{
+    char host_str[NI_MAXHOST];
+    char port_str[NI_MAXSERV];
+    const int ret = getnameinfo(sa, salen,
+                                host_str, sizeof(host_str),
+                                port_str, sizeof(port_str),
+                                NI_NUMERICHOST | NI_NUMERICSERV);
+    if (ret == 0)
+    {
+      if (sa->sa_family == AF_INET)
+      {
+          fprintf(stderr, "%s server %s:%s\n", prefix,
+                  host_str, port_str);
+      }
+      else
+      {
+          const struct sockaddr_in6 *sa6 = (struct sockaddr_in6*)sa;
+          DEBUGF(fprintf(stderr, "%s [%s%%%u]:%s\n", prefix,
+                         host_str, sa6->sin6_scope_id, port_str));
+      }
+    }
+    else
+    {
+        if (ret != EAI_SYSTEM)
+            fprintf(stderr, "c-ares::%s: getnameinfo() %s, %s\n",
+                    __FUNCTION__, strerror(ret), prefix);
+        else
+            DEBUGF(fprintf(stderr, "c-ares::%s: getnameinfo() %s, %s\n",
+                           __FUNCTION__, strerror(errno), prefix));
+    }
+}
+
+static int configure_socket(ares_socket_t s, int family,
+                            const struct sockaddr_in6* const local_sa6,
+                            ares_channel channel)
 {
   union {
     struct sockaddr     sa;
@@ -990,7 +1027,11 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
 #if defined(FD_CLOEXEC) && !defined(MSDOS)
   /* Configure the socket fd as close-on-exec. */
   if (fcntl(s, F_SETFD, FD_CLOEXEC) == -1)
+  {
+    DEBUGF(fprintf(stderr, "c-ares::%s: fcntl(FD_CLOEXEC) %s\n",
+                   __FUNCTION__, strerror(errno)));
     return -1;  /* LCOV_EXCL_LINE */
+  }
 #endif
 
   /* Set the socket's send and receive buffer sizes. */
@@ -998,13 +1039,21 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
       setsockopt(s, SOL_SOCKET, SO_SNDBUF,
                  (void *)&channel->socket_send_buffer_size,
                  sizeof(channel->socket_send_buffer_size)) == -1)
+  {
+    DEBUGF(fprintf(stderr, "c-ares::%s: setsockopt(SO_SNDBUF) %s\n",
+                   __FUNCTION__, strerror(errno)));
     return -1;
+  }
 
   if ((channel->socket_receive_buffer_size > 0) &&
       setsockopt(s, SOL_SOCKET, SO_RCVBUF,
                  (void *)&channel->socket_receive_buffer_size,
                  sizeof(channel->socket_receive_buffer_size)) == -1)
+  {
+    DEBUGF(fprintf(stderr, "c-ares::%s: setsockopt(SO_RCVBUF) %s\n",
+                   __FUNCTION__, strerror(errno)));
     return -1;
+  }
 
 #ifdef SO_BINDTODEVICE
   if (channel->local_dev_name[0]) {
@@ -1022,18 +1071,41 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
       local.sa4.sin_family = AF_INET;
       local.sa4.sin_addr.s_addr = htonl(channel->local_ip4);
       if (bind(s, &local.sa, sizeof(local.sa4)) < 0)
+      {
+        DEBUGF(fprintf(stderr, "c-ares::%s: AF_INET bind() %s\n",
+                       __FUNCTION__, strerror(errno)));
         return -1;
+      }
     }
   }
   else if (family == AF_INET6) {
-    if (memcmp(channel->local_ip6, &ares_in6addr_any,
+    if (local_sa6 && local_sa6->sin6_family == AF_INET6) {
+
+      if (bind(s, (const struct sockaddr*)local_sa6, sizeof(*local_sa6)) < 0)
+        {
+          DEBUGF(fprintf(stderr, "c-ares::%s: AF_INET6 LL bind() %s\n",
+                  __FUNCTION__, strerror(errno)));
+          ares_log_sockaddr("c-ares::configure_socket: AF_INET6 LL bind ",
+                            (const struct sockaddr*)local_sa6,
+                            sizeof(*local_sa6));
+          return -1;
+        }
+    }
+    else if (memcmp(channel->local_ip6, &ares_in6addr_any,
                sizeof(channel->local_ip6)) != 0) {
       memset(&local.sa6, 0, sizeof(local.sa6));
       local.sa6.sin6_family = AF_INET6;
       memcpy(&local.sa6.sin6_addr, channel->local_ip6,
              sizeof(channel->local_ip6));
       if (bind(s, &local.sa, sizeof(local.sa6)) < 0)
+      {
+        DEBUGF(fprintf(stderr, "c-ares::%s: AF_INET6 bind() %s\n",
+                       __FUNCTION__, strerror(errno)));
+        ares_log_sockaddr("c-ares::configure_socket: AF_INET6 bind ",
+                          (const struct sockaddr*)local_sa6,
+                          sizeof(*local_sa6));
         return -1;
+      }
     }
   }
 
@@ -1050,6 +1122,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
     struct sockaddr_in6 sa6;
   } saddr;
   struct sockaddr *sa;
+  struct sockaddr_in6 local_sa6 = { .sin6_family = AF_UNSPEC };
 
   switch (server->addr.family)
     {
@@ -1078,6 +1151,20 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
         }
         memcpy(&saddr.sa6.sin6_addr, &server->addr.addrV6,
                sizeof(server->addr.addrV6));
+
+        if (server->ll_addr.family == AF_INET6 )
+        {
+            local_sa6.sin6_family = AF_INET6;
+            local_sa6.sin6_port = 0;
+            local_sa6.sin6_flowinfo = 0;
+            memcpy(&local_sa6.sin6_addr, &server->ll_addr.addr.addr6,
+                   sizeof(server->ll_addr.addr.addr6));
+            local_sa6.sin6_scope_id = server->ll_scope;
+
+            saddr.sa6.sin6_scope_id = server->ll_scope;
+            fprintf(stderr, "c-ares::%s: use scope %u\n",
+                    __FUNCTION__, server->ll_scope);
+        }
         break;
       default:
         return -1;  /* LCOV_EXCL_LINE */
@@ -1089,7 +1176,7 @@ static int open_tcp_socket(ares_channel channel, struct server_state *server)
     return -1;
 
   /* Configure it. */
-  if (configure_socket(s, server->addr.family, channel) < 0)
+  if (configure_socket(s, server->addr.family, &local_sa6, channel) < 0)
     {
        ares__close_socket(channel, s);
        return -1;
@@ -1163,6 +1250,7 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
     struct sockaddr_in6 sa6;
   } saddr;
   struct sockaddr *sa;
+  struct sockaddr_in6 local_sa6 = { .sin6_family = AF_UNSPEC };
 
   switch (server->addr.family)
     {
@@ -1191,6 +1279,16 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
         }
         memcpy(&saddr.sa6.sin6_addr, &server->addr.addrV6,
                sizeof(server->addr.addrV6));
+
+        if (server->ll_addr.family == AF_INET6 )
+        {
+            local_sa6.sin6_family = AF_INET6;
+            local_sa6.sin6_port = 0;
+            local_sa6.sin6_flowinfo = 0;
+            memcpy(&local_sa6.sin6_addr, &server->ll_addr.addr.addr6,
+                   sizeof(server->ll_addr.addr.addr6));
+            local_sa6.sin6_scope_id = server->ll_scope;
+        }
         break;
       default:
         return -1;  /* LCOV_EXCL_LINE */
@@ -1199,10 +1297,12 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
   /* Acquire a socket. */
   s = ares__open_socket(channel, server->addr.family, SOCK_DGRAM, 0);
   if (s == ARES_SOCKET_BAD)
+  {
     return -1;
+  }
 
   /* Set the socket non-blocking. */
-  if (configure_socket(s, server->addr.family, channel) < 0)
+  if (configure_socket(s, server->addr.family, &local_sa6, channel) < 0)
     {
        ares__close_socket(channel, s);
        return -1;
@@ -1223,6 +1323,8 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
   if (ares__connect_socket(channel, s, sa, salen) == -1)
     {
       int err = SOCKERRNO;
+      fprintf(stderr, "c-ares::%s: ares__connect_socket %s\n",
+              __FUNCTION__, strerror(errno));
 
       if (err != EINPROGRESS && err != EWOULDBLOCK)
         {

@@ -22,6 +22,7 @@
 void ares__close_sockets(ares_channel channel, struct server_state *server)
 {
   struct send_request *sendreq;
+  server->ll_addr.family = AF_UNSPEC;
 
   /* Free all pending output buffers. */
   while (server->qhead)

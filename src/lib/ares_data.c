@@ -197,6 +197,10 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.addr_node.family = 0;
         memset(&ptr->data.addr_node.addrV6, 0,
                sizeof(ptr->data.addr_node.addrV6));
+        ptr->data.addr_node.ll_family = AF_UNSPEC;
+        ptr->data.addr_node.ll_scope = 0;
+        memset(&ptr->data.addr_node.ll_addr6, 0,
+               sizeof(ptr->data.addr_node.ll_addr6));
         break;
 
       case ARES_DATATYPE_ADDR_PORT_NODE:
@@ -206,6 +210,10 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.addr_port_node.tcp_port = 0;
         memset(&ptr->data.addr_port_node.addrV6, 0,
                sizeof(ptr->data.addr_port_node.addrV6));
+        ptr->data.addr_node.ll_family = AF_UNSPEC;
+        ptr->data.addr_node.ll_scope = 0;
+        memset(&ptr->data.addr_node.ll_addr6, 0,
+               sizeof(ptr->data.addr_node.ll_addr6));
         break;
 
       case ARES_DATATYPE_NAPTR_REPLY:

@@ -98,6 +98,7 @@ W32_FUNC const char *_w32_GetHostsFile (void);
 
 #define ARES_ID_KEY_LEN 31
 
+#include "ares.h"
 #include "ares_ipv6.h"
 #include "ares_llist.h"
 
@@ -161,6 +162,10 @@ struct send_request {
 
 struct server_state {
   struct ares_addr addr;
+  /* Link-Local IPv6 */
+  struct ares_addr ll_addr;
+  /* Link-Local IPv6 Scope ID */
+  unsigned int ll_scope;
   ares_socket_t udp_socket;
   ares_socket_t tcp_socket;
 
