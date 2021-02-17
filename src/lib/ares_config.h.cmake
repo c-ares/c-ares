@@ -347,7 +347,7 @@
 #cmakedefine NEED_MEMORY_H
 
 /* a suitable file/device to read random data from */
-#cmakedefine RANDOM_FILE
+#cmakedefine RANDOM_FILE "@RANDOM_FILE@"
 
 /* Define to the type qualifier pointed by arg 5 for recvfrom. */
 #define RECVFROM_QUAL_ARG5 @RECVFROM_QUAL_ARG5@
