@@ -387,6 +387,10 @@ SET (CMAKE_REQUIRED_DEFINITIONS)
 SET (CMAKE_REQUIRED_LIBRARIES)
 
 
+find_file(CARES_RANDOM_FILE urandom /dev)
+mark_as_advanced(CARES_RANDOM_FILE)
+
+
 ################################################################################
 # recv, recvfrom, send, getnameinfo, gethostname
 # ARGUMENTS AND RETURN VALUES
