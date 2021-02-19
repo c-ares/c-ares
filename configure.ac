@@ -850,22 +850,22 @@ dnl Check for user-specified random device
 AC_ARG_WITH(random,
 AC_HELP_STRING([--with-random=FILE],
                [read randomness from FILE (default=/dev/urandom)]),
-    [ RANDOM_FILE="$withval" ],
+    [ CARES_RANDOM_FILE="$withval" ],
     [
         dnl Check for random device.  If we're cross compiling, we can't
         dnl check, and it's better to assume it doesn't exist than it is
         dnl to fail on AC_CHECK_FILE or later.
         if test "$cross_compiling" = "no"; then
-          AC_CHECK_FILE("/dev/urandom", [ RANDOM_FILE="/dev/urandom"] )
+          AC_CHECK_FILE("/dev/urandom", [ CARES_RANDOM_FILE="/dev/urandom"] )
         else
           AC_MSG_WARN([cannot check for /dev/urandom while cross compiling; assuming none])
         fi
 
     ]
 )
-if test -n "$RANDOM_FILE" && test X"$RANDOM_FILE" != Xno ; then
-        AC_SUBST(RANDOM_FILE)
-        AC_DEFINE_UNQUOTED(RANDOM_FILE, "$RANDOM_FILE",
+if test -n "$CARES_RANDOM_FILE" && test X"$CARES_RANDOM_FILE" != Xno ; then
+        AC_SUBST(CARES_RANDOM_FILE)
+        AC_DEFINE_UNQUOTED(CARES_RANDOM_FILE, "$CARES_RANDOM_FILE",
         [a suitable file/device to read random data from])
 fi
 
