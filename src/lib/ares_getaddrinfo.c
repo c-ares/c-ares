@@ -544,11 +544,6 @@ static void host_callback(void *arg, int status, int timeouts,
     {
       addinfostatus = ares__parse_into_addrinfo(abuf, alen, hquery->ai);
     }
-  else if (status == ARES_EDESTRUCTION)
-    {
-      end_hquery(hquery, status);
-      return;
-    }
 
   if (!hquery->remaining)
     {
@@ -565,6 +560,13 @@ static void host_callback(void *arg, int status, int timeouts,
       else if (status == ARES_ENOTFOUND)
         {
           next_lookup(hquery, status);
+        }
+      else if (status == ARES_EDESTRUCTION)
+        {
+          /* NOTE: Could also be ARES_EDESTRUCTION.  We need to only call this
+           * once all queries (there can be multiple for getaddrinfo) are
+           * terminated.  */
+          end_hquery(hquery, status);
         }
       else
         {
