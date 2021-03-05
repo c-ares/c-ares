@@ -393,7 +393,7 @@ static void end_hquery(struct host_query *hquery, int status)
   struct ares_addrinfo_node *next;
   if (status == ARES_SUCCESS)
     {
-      if (!(hquery->hints.ai_flags & ARES_AI_NOSORT))
+      if (!(hquery->hints.ai_flags & ARES_AI_NOSORT) && hquery->ai->nodes)
         {
           sentinel.ai_next = hquery->ai->nodes;
           ares__sortaddrinfo(hquery->channel, &sentinel);
