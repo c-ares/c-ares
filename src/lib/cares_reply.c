@@ -15,7 +15,6 @@
 #include "ares.h"
 #include "ares_private.h"
 #include "string.h"
-#include <unistd.h>
 
 
 cares_srv_reply*

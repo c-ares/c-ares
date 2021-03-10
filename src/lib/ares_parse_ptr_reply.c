@@ -120,7 +120,8 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
               }
               ares_free(hostent->h_name);
               ares_free(hostent->h_aliases);
-              ares_free(hostent->h_addr_list[0]);
+              if (hostent->h_addr_list[0])
+                ares_free(hostent->h_addr_list[0]);
               ares_free(hostent->h_addr_list);
               ares_free(hostent);
               return status;
