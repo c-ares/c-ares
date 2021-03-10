@@ -111,7 +111,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
               if (ptr_out)
                 ares_free_data(ptr_out);
 
-              for (int j = 0; j <= i; ++j)
+              for (int j = 0; j < i; ++j)
               {
                 if (hostent->h_aliases[j])
                 {
@@ -134,14 +134,15 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
             if (ptr_out)
               ares_free_data(ptr_out);
 
-            for (int j = 0; j <= i; ++j)
+            for (int j = 0; j < i; ++j)
             {
               if (hostent->h_aliases[j])
                 ares_free(hostent->h_aliases[j]);
             }
             ares_free(hostent->h_name);
             ares_free(hostent->h_aliases);
-            ares_free(hostent->h_addr_list[0]);
+            if (hostent->h_addr_list[0])
+              ares_free(hostent->h_addr_list[0]);
             ares_free(hostent->h_addr_list);
             ares_free(hostent);
             return status;
