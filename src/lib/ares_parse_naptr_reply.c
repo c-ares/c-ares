@@ -38,145 +38,109 @@ int
 ares_parse_naptr_reply (const unsigned char *abuf, int alen,
                         struct ares_naptr_reply **naptr_out)
 {
-  unsigned int qdcount, ancount, i;
-  const unsigned char *aptr, *vptr;
-  int status, rr_type, rr_class, rr_len;
-  long len;
-  char *hostname = NULL, *rr_name = NULL;
+  int status;
   struct ares_naptr_reply *naptr_head = NULL;
   struct ares_naptr_reply *naptr_last = NULL;
   struct ares_naptr_reply *naptr_curr;
+  cares_naptr_reply *cnaptr_curr = NULL;
+  cares_naptr_reply *cnaptr_out = NULL;
 
   /* Set *naptr_out to NULL for all failure cases. */
   *naptr_out = NULL;
 
-  /* Give up if abuf doesn't have room for a header. */
-  if (alen < HFIXEDSZ)
-    return ARES_EBADRESP;
+  status = cares_parse_naptr_reply(abuf, alen, &cnaptr_out);
 
-  /* Fetch the question and answer count from the header. */
-  qdcount = DNS_HEADER_QDCOUNT (abuf);
-  ancount = DNS_HEADER_ANCOUNT (abuf);
-  if (qdcount != 1)
-    return ARES_EBADRESP;
-  if (ancount == 0)
-    return ARES_ENODATA;
-
-  /* Expand the name from the question, and skip past the question. */
-  aptr = abuf + HFIXEDSZ;
-  status = ares_expand_name (aptr, abuf, alen, &hostname, &len);
   if (status != ARES_SUCCESS)
+  {
+    if (cnaptr_out)
+      ares_free_data(cnaptr_out);
     return status;
+  }
 
-  if (aptr + len + QFIXEDSZ > abuf + alen)
+  /* iterate through the cares_naptr_reply list and
+   * create a new ares_naptr_reply */
+  for(cnaptr_curr = cnaptr_out; cnaptr_curr;
+      cnaptr_curr = cares_naptr_reply_get_next(cnaptr_curr))
+  {
+    naptr_curr = ares_malloc_data(ARES_DATATYPE_NAPTR_REPLY);
+    if (!naptr_curr)
     {
-      ares_free (hostname);
-      return ARES_EBADRESP;
+      status = ARES_ENOMEM;
+      break;
     }
-  aptr += len + QFIXEDSZ;
-
-  /* Examine each answer resource record (RR) in turn. */
-  for (i = 0; i < ancount; i++)
+    if (naptr_last)
     {
-      /* Decode the RR up to the data field. */
-      status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
-      if (status != ARES_SUCCESS)
-        {
-          break;
-        }
-      aptr += len;
-      if (aptr + RRFIXEDSZ > abuf + alen)
-        {
-          status = ARES_EBADRESP;
-          break;
-        }
-      rr_type = DNS_RR_TYPE (aptr);
-      rr_class = DNS_RR_CLASS (aptr);
-      rr_len = DNS_RR_LEN (aptr);
-      aptr += RRFIXEDSZ;
-      if (aptr + rr_len > abuf + alen)
-        {
-          status = ARES_EBADRESP;
-          break;
-        }
+      naptr_last->next = naptr_curr;
+    }
+    else {
+      naptr_head = naptr_curr;
+    }
+    naptr_last = naptr_curr;
 
-      /* Check if we are really looking at a NAPTR record */
-      if (rr_class == C_IN && rr_type == T_NAPTR)
-        {
-          /* parse the NAPTR record itself */
+    /* fill in the ares_naptr_reply fields */
+    naptr_curr->order = cares_naptr_reply_get_order(cnaptr_curr);
+    naptr_curr->preference = cares_naptr_reply_get_preference(cnaptr_curr);
 
-          /* RR must contain at least 7 bytes = 2 x int16 + 3 x name */
-          if (rr_len < 7)
-            {
-              status = ARES_EBADRESP;
-              break;
-            }
+    const unsigned char* flags = cares_naptr_reply_get_flags(cnaptr_curr);
+    unsigned long len;
+    len = strlen((char *)flags);
+    naptr_curr->flags = ares_malloc(len + 1);
+    if (!naptr_curr->flags)
+    {
+      status = ARES_ENOMEM;
+      break;
+    }
+    memcpy(naptr_curr->flags, flags, len);
+    /* Make sure we NULL-terminate */
+    naptr_curr->flags[len] = 0;
 
-          /* Allocate storage for this NAPTR answer appending it to the list */
-          naptr_curr = ares_malloc_data(ARES_DATATYPE_NAPTR_REPLY);
-          if (!naptr_curr)
-            {
-              status = ARES_ENOMEM;
-              break;
-            }
-          if (naptr_last)
-            {
-              naptr_last->next = naptr_curr;
-            }
-          else
-            {
-              naptr_head = naptr_curr;
-            }
-          naptr_last = naptr_curr;
+    const unsigned char* service = cares_naptr_reply_get_service(cnaptr_curr);
+    len = strlen((char *)service);
+    naptr_curr->service = ares_malloc(len + 1);
+    if (!naptr_curr->service)
+    {
+      status = ARES_ENOMEM;
+      break;
+    }
+    memcpy(naptr_curr->service, service, len);
+    /* Make sure we NULL-terminate */
+    naptr_curr->service[len] = 0;
 
-          vptr = aptr;
-          naptr_curr->order = DNS__16BIT(vptr);
-          vptr += sizeof(unsigned short);
-          naptr_curr->preference = DNS__16BIT(vptr);
-          vptr += sizeof(unsigned short);
+    const unsigned char* regexp = cares_naptr_reply_get_regexp(cnaptr_curr);
+    len = strlen((char *)regexp);
+    naptr_curr->regexp = ares_malloc(len + 1);
+    if (!naptr_curr->regexp)
+    {
+      status = ARES_ENOMEM;
+      break;
+    }
+    memcpy(naptr_curr->regexp, regexp, len);
+    /* Make sure we NULL-terminate */
+    naptr_curr->regexp[len] = 0;
 
-          status = ares_expand_string(vptr, abuf, alen, &naptr_curr->flags, &len);
-          if (status != ARES_SUCCESS)
-            break;
-          vptr += len;
-
-          status = ares_expand_string(vptr, abuf, alen, &naptr_curr->service, &len);
-          if (status != ARES_SUCCESS)
-            break;
-          vptr += len;
-
-          status = ares_expand_string(vptr, abuf, alen, &naptr_curr->regexp, &len);
-          if (status != ARES_SUCCESS)
-            break;
-          vptr += len;
-
-          status = ares_expand_name(vptr, abuf, alen, &naptr_curr->replacement, &len);
-          if (status != ARES_SUCCESS)
-            break;
-        }
-
-      /* Don't lose memory in the next iteration */
-      ares_free (rr_name);
-      rr_name = NULL;
-
-      /* Move on to the next record */
-      aptr += rr_len;
+    char *replacement = ares_strdup(
+                        cares_naptr_reply_get_replacement(cnaptr_curr));
+    if (!replacement) {
+      status = ARES_ENOMEM;
+      break;
     }
 
-  if (hostname)
-    ares_free (hostname);
-  if (rr_name)
-    ares_free (rr_name);
+    naptr_curr->replacement = replacement;
+  }
+
+  if (cnaptr_out)
+  {
+    ares_free_data(cnaptr_out);
+  }
 
   /* clean up on error */
   if (status != ARES_SUCCESS)
-    {
-      if (naptr_head)
-        ares_free_data (naptr_head);
-      return status;
-    }
+  {
+    if (naptr_head)
+      ares_free_data(naptr_head);
+    return status;
+  }
 
-  /* everything looks fine, return the data */
   *naptr_out = naptr_head;
 
   return ARES_SUCCESS;

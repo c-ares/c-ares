@@ -462,7 +462,7 @@ TEST_F(LibraryTest, ParseSrvReplyErrors) {
   pkt.answers_.clear();
   pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
   data = pkt.data();
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_srv_reply(data.data(), data.size(), &srv));
+  EXPECT_EQ(ARES_ENODATA, ares_parse_srv_reply(data.data(), data.size(), &srv));
   EXPECT_EQ(nullptr, srv);
   pkt.answers_.clear();
   pkt.add_answer(new DNSSrvRR("example.abc.def.com", 180, 0, 10, 8160, "example.abc.def.com"));
@@ -514,7 +514,7 @@ TEST_F(LibraryTest, ParseCSrvReplyErrors) {
   pkt.answers_.clear();
   pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
   data = pkt.data();
-  EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv));
+  EXPECT_EQ(ARES_ENODATA, cares_parse_srv_reply(data.data(), data.size(), &srv));
   EXPECT_EQ(nullptr, srv);
   pkt.answers_.clear();
   pkt.add_answer(new DNSSrvRR("example.abc.def.com", 180, 0, 10, 8160, "example.abc.def.com"));

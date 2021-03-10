@@ -35,8 +35,8 @@
 #include "ares_private.h"
 
 int
-cares_parse_srv_reply (const unsigned char *abuf, int alen,
-                          cares_srv_reply **srv_out)
+cares_parse_naptr_reply (const unsigned char *abuf, int alen,
+                        struct cares_naptr_reply **naptr_out)
 {
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
@@ -44,12 +44,12 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   unsigned int rr_ttl;
   long len;
   char *hostname = NULL, *rr_name = NULL;
-  cares_srv_reply *srv_head = NULL;
-  cares_srv_reply *srv_last = NULL;
-  cares_srv_reply *srv_curr;
+  struct cares_naptr_reply *naptr_head = NULL;
+  struct cares_naptr_reply *naptr_last = NULL;
+  struct cares_naptr_reply *naptr_curr;
 
-  /* Set *srv_out to NULL for all failure cases. */
-  *srv_out = NULL;
+  /* Set *naptr_out to NULL for all failure cases. */
+  *naptr_out = NULL;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -93,7 +93,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
         }
       rr_type = DNS_RR_TYPE (aptr);
       rr_class = DNS_RR_CLASS (aptr);
-      rr_ttl = DNS_RR_TTL (aptr);
+      rr_ttl = DNS_RR_TTL(aptr);
       rr_len = DNS_RR_LEN (aptr);
       aptr += RRFIXEDSZ;
       if (aptr + rr_len > abuf + alen)
@@ -102,48 +102,68 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           break;
         }
 
-      /* Check if we are really looking at a SRV record */
-      if (rr_class == C_IN && rr_type == T_SRV)
+      /* Check if we are really looking at a NAPTR record */
+      if (rr_class == C_IN && rr_type == T_NAPTR)
         {
-          /* parse the SRV record itself */
-          if (rr_len < 6)
+          /* parse the NAPTR record itself */
+
+          /* RR must contain at least 7 bytes = 2 x int16 + 3 x name */
+          if (rr_len < 7)
             {
               status = ARES_EBADRESP;
               break;
             }
 
-          /* Allocate storage for this SRV answer appending it to the list */
-          srv_curr = ares_malloc_data(ARES_DATATYPE_CSRV_REPLY);
-          if (!srv_curr)
+          /* Allocate storage for this NAPTR answer appending it to the list */
+          naptr_curr = ares_malloc_data(ARES_DATATYPE_CNAPTR_REPLY);
+          if (!naptr_curr)
             {
               status = ARES_ENOMEM;
               break;
             }
-          if (srv_last)
+          if (naptr_last)
             {
-              cares_srv_reply_set_next(srv_last, srv_curr);
+              cares_naptr_reply_set_next(naptr_last, naptr_curr);
             }
           else
             {
-              srv_head = srv_curr;
+              naptr_head = naptr_curr;
             }
-          srv_last = srv_curr;
+          naptr_last = naptr_curr;
 
           vptr = aptr;
-          cares_srv_reply_set_priority(srv_curr, DNS__16BIT(vptr));
+          cares_naptr_reply_set_order(naptr_curr, DNS__16BIT(vptr));
           vptr += sizeof(unsigned short);
-          cares_srv_reply_set_weight(srv_curr, DNS__16BIT(vptr));
+          cares_naptr_reply_set_preference(naptr_curr, DNS__16BIT(vptr));
           vptr += sizeof(unsigned short);
-          cares_srv_reply_set_port(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_ttl(srv_curr, rr_ttl);
+          cares_naptr_reply_set_ttl(naptr_curr, rr_ttl);
 
-          char* srv_host = NULL;
-
-          status = ares_expand_name (vptr, abuf, alen, &srv_host, &len);
+          unsigned char* flags;
+          status = ares_expand_string(vptr, abuf, alen, &flags, &len);
           if (status != ARES_SUCCESS)
             break;
-          cares_srv_reply_set_host(srv_curr, srv_host);
+          vptr += len;
+          cares_naptr_reply_set_flags(naptr_curr, flags);
+
+          unsigned char* service;
+          status = ares_expand_string(vptr, abuf, alen, &service, &len);
+          if (status != ARES_SUCCESS)
+            break;
+          vptr += len;
+          cares_naptr_reply_set_service(naptr_curr, service);
+
+          unsigned char* regexp;
+          status = ares_expand_string(vptr, abuf, alen, &regexp, &len);
+          if (status != ARES_SUCCESS)
+            break;
+          vptr += len;
+          cares_naptr_reply_set_regexp(naptr_curr, regexp);
+
+          char* replacement;
+          status = ares_expand_name(vptr, abuf, alen, &replacement, &len);
+          if (status != ARES_SUCCESS)
+            break;
+          cares_naptr_reply_set_replacement(naptr_curr, replacement);
         }
       else if (rr_type != T_CNAME)
         {
@@ -159,6 +179,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
       /* Move on to the next record */
       aptr += rr_len;
     }
+
   if (hostname)
     ares_free (hostname);
   if (rr_name)
@@ -167,12 +188,13 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* clean up on error */
   if (status != ARES_SUCCESS)
     {
-      if (srv_head)
-        ares_free_data (srv_head);
+      if (naptr_head)
+        ares_free_data (naptr_head);
       return status;
     }
 
   /* everything looks fine, return the data */
-  *srv_out = srv_head;
+  *naptr_out = naptr_head;
+
   return ARES_SUCCESS;
 }

@@ -32,14 +32,21 @@ CSOURCES = ares__close_sockets.c	\
   ares_parse_a_reply.c			\
   ares_parse_aaaa_reply.c		\
   ares_parse_caa_reply.c		\
+  cares_parse_caa_reply.c		\
   ares_parse_mx_reply.c			\
+  cares_parse_mx_reply.c			\
   ares_parse_naptr_reply.c		\
+  cares_parse_naptr_reply.c		\
   ares_parse_ns_reply.c			\
+  cares_parse_ns_reply.c			\
   ares_parse_ptr_reply.c		\
+  cares_parse_ptr_reply.c		\
   ares_parse_soa_reply.c		\
+  cares_parse_soa_reply.c		\
   ares_parse_srv_reply.c		\
   cares_parse_srv_reply.c		\
   ares_parse_txt_reply.c		\
+  cares_parse_txt_reply.c		\
   ares_platform.c			\
   ares_process.c			\
   ares_query.c				\

@@ -1,6 +1,5 @@
 
-/* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2009 by Jakub Hrozek <jhrozek@redhat.com>
+/* Copyright 2020 by <danny.sonnenschein@platynum.ch>
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -29,27 +28,32 @@
 
 #include "ares_nameser.h"
 
+#ifdef HAVE_STRINGS_H
+#  include <strings.h>
+#endif
+
 #include "ares.h"
 #include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
 
 int
-cares_parse_srv_reply (const unsigned char *abuf, int alen,
-                          cares_srv_reply **srv_out)
+cares_parse_caa_reply (const unsigned char *abuf, int alen,
+                      cares_caa_reply **caa_out)
 {
   unsigned int qdcount, ancount, i;
-  const unsigned char *aptr, *vptr;
+  const unsigned char *aptr;
+  const unsigned char *strptr;
   int status, rr_type, rr_class, rr_len;
   unsigned int rr_ttl;
   long len;
   char *hostname = NULL, *rr_name = NULL;
-  cares_srv_reply *srv_head = NULL;
-  cares_srv_reply *srv_last = NULL;
-  cares_srv_reply *srv_curr;
+  cares_caa_reply *caa_head = NULL;
+  cares_caa_reply *caa_last = NULL;
+  cares_caa_reply *caa_curr;
 
-  /* Set *srv_out to NULL for all failure cases. */
-  *srv_out = NULL;
+  /* Set *caa_out to NULL for all failure cases. */
+  *caa_out = NULL;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -102,53 +106,81 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           break;
         }
 
-      /* Check if we are really looking at a SRV record */
-      if (rr_class == C_IN && rr_type == T_SRV)
+      /* Check if we are really looking at a CAA record */
+      if ((rr_class == C_IN || rr_class == C_CHAOS) && rr_type == T_CAA)
         {
-          /* parse the SRV record itself */
-          if (rr_len < 6)
-            {
-              status = ARES_EBADRESP;
-              break;
-            }
+          strptr = aptr;
 
-          /* Allocate storage for this SRV answer appending it to the list */
-          srv_curr = ares_malloc_data(ARES_DATATYPE_CSRV_REPLY);
-          if (!srv_curr)
+          /* Allocate storage for this CAA answer appending it to the list */
+          caa_curr = ares_malloc_data(ARES_DATATYPE_CCAA_REPLY);
+          if (!caa_curr)
             {
               status = ARES_ENOMEM;
               break;
             }
-          if (srv_last)
+          if (caa_last)
             {
-              cares_srv_reply_set_next(srv_last, srv_curr);
+              cares_caa_reply_set_next(caa_last, caa_curr);
             }
           else
             {
-              srv_head = srv_curr;
+              caa_head = caa_curr;
             }
-          srv_last = srv_curr;
+          caa_last = caa_curr;
+          if (rr_len < 2)
+            {
+              status = ARES_EBADRESP;
+              break;
+            }
+          cares_caa_reply_set_critical(caa_curr, (int)*strptr++);
+          cares_caa_reply_set_plength(caa_curr, (int)*strptr++);
+          if (cares_caa_reply_get_plength(caa_curr) <= 0 || (int)cares_caa_reply_get_plength(caa_curr) >= rr_len - 2)
+            {
+              status = ARES_EBADRESP;
+              break;
+            }
+          unsigned char *property;
+          property = ares_malloc (cares_caa_reply_get_plength(caa_curr) + 1/* Including null byte */);
+          if (property == NULL)
+            {
+              status = ARES_ENOMEM;
+              break;
+            }
+          memcpy ((char *) property, strptr, cares_caa_reply_get_plength(caa_curr));
+          /* Make sure we NULL-terminate */
+          property[cares_caa_reply_get_plength(caa_curr)] = 0;
+          cares_caa_reply_set_property(caa_curr, property);
+          strptr += cares_caa_reply_get_plength(caa_curr);
 
-          vptr = aptr;
-          cares_srv_reply_set_priority(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_weight(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_port(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_ttl(srv_curr, rr_ttl);
-
-          char* srv_host = NULL;
-
-          status = ares_expand_name (vptr, abuf, alen, &srv_host, &len);
-          if (status != ARES_SUCCESS)
-            break;
-          cares_srv_reply_set_host(srv_curr, srv_host);
+          cares_caa_reply_set_length(caa_curr, rr_len - cares_caa_reply_get_plength(caa_curr) - 2);
+          if (cares_caa_reply_get_length(caa_curr) <= 0)
+            {
+              status = ARES_EBADRESP;
+              break;
+            }
+          unsigned char *value;
+          value = ares_malloc (cares_caa_reply_get_length(caa_curr) + 1/* Including null byte */);
+          if (value == NULL)
+            {
+              status = ARES_ENOMEM;
+              break;
+            }
+          memcpy ((char *) value, strptr, cares_caa_reply_get_length(caa_curr));
+          /* Make sure we NULL-terminate */
+          value[caa_curr->length] = 0;
+          cares_caa_reply_set_value(caa_curr, value);
+          cares_caa_reply_set_ttl(caa_curr, rr_ttl);
         }
       else if (rr_type != T_CNAME)
         {
           /* wrong record type */
           status = ARES_ENODATA;
+          break;
+        }
+
+      /* Propagate any failures */
+      if (status != ARES_SUCCESS)
+        {
           break;
         }
 
@@ -159,6 +191,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
       /* Move on to the next record */
       aptr += rr_len;
     }
+
   if (hostname)
     ares_free (hostname);
   if (rr_name)
@@ -167,12 +200,13 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* clean up on error */
   if (status != ARES_SUCCESS)
     {
-      if (srv_head)
-        ares_free_data (srv_head);
+      if (caa_head)
+        ares_free_data (caa_head);
       return status;
     }
 
   /* everything looks fine, return the data */
-  *srv_out = srv_head;
+  *caa_out = caa_head;
+
   return ARES_SUCCESS;
 }

@@ -21,10 +21,14 @@ typedef enum {
   ARES_DATATYPE_CSRV_REPLY,      /* struct cares_srv_reply */
   ARES_DATATYPE_TXT_REPLY,    /* struct ares_txt_reply - introduced in 1.7.0 */
   ARES_DATATYPE_TXT_EXT,      /* struct ares_txt_ext   - introduced in 1.11.0 */
+  ARES_DATATYPE_CTXT_REPLY,
   ARES_DATATYPE_ADDR_NODE,    /* struct ares_addr_node - introduced in 1.7.1 */
   ARES_DATATYPE_MX_REPLY,    /* struct ares_mx_reply   - introduced in 1.7.2 */
+  ARES_DATATYPE_CMX_REPLY,
   ARES_DATATYPE_NAPTR_REPLY,/* struct ares_naptr_reply - introduced in 1.7.6 */
+  ARES_DATATYPE_CNAPTR_REPLY,
   ARES_DATATYPE_SOA_REPLY,    /* struct ares_soa_reply - introduced in 1.9.0 */
+  ARES_DATATYPE_CSOA_REPLY,
 #if 0
   ARES_DATATYPE_ADDR6TTL,     /* struct ares_addrttl   */
   ARES_DATATYPE_ADDRTTL,      /* struct ares_addr6ttl  */
@@ -33,6 +37,9 @@ typedef enum {
 #endif
   ARES_DATATYPE_ADDR_PORT_NODE, /* struct ares_addr_port_node - introduced in 1.11.0 */
   ARES_DATATYPE_CAA_REPLY,    /* struct ares_caa_reply   - introduced in 1.17 */
+  ARES_DATATYPE_CCAA_REPLY,
+  ARES_DATATYPE_CPTR_REPLY,
+  ARES_DATATYPE_CNS_REPLY,
   ARES_DATATYPE_LAST          /* not used              - introduced in 1.7.0 */
 } ares_datatype;
 
@@ -62,14 +69,21 @@ struct ares_data {
   union {
     struct ares_txt_reply    txt_reply;
     struct ares_txt_ext      txt_ext;
+    struct cares_txt_reply   ctxt_reply;
     struct ares_srv_reply    srv_reply;
     struct cares_srv_reply   csrv_reply;
     struct ares_addr_node    addr_node;
     struct ares_addr_port_node  addr_port_node;
     struct ares_mx_reply     mx_reply;
+    struct cares_mx_reply    cmx_reply;
     struct ares_naptr_reply  naptr_reply;
+    struct cares_naptr_reply cnaptr_reply;
     struct ares_soa_reply    soa_reply;
+    struct cares_soa_reply   csoa_reply;
     struct ares_caa_reply    caa_reply;
+    struct cares_caa_reply   ccaa_reply;
+    struct cares_ptr_reply   cptr_reply;
+    struct cares_ns_reply    cns_reply;
   } data;
 };
 

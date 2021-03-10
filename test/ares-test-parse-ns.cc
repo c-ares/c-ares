@@ -23,6 +23,21 @@ TEST_F(LibraryTest, ParseNsReplyOK) {
   ares_free_hostent(host);
 }
 
+TEST_F(LibraryTest, ParseCNsReplyOK) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_NS))
+    .add_answer(new DNSNsRR("example.com", 100, "ns.example.com"));
+  std::vector<byte> data = pkt.data();
+
+  cares_ns_reply* ns  = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, cares_parse_ns_reply(data.data(), data.size(), &ns));
+  ASSERT_NE(nullptr, ns);
+  EXPECT_EQ("ns.example.com", std::string(cares_ns_reply_get_host(ns)));
+  EXPECT_EQ(100, cares_ns_reply_get_ttl(ns));
+  ares_free_data(ns);
+}
+
 TEST_F(LibraryTest, ParseNsReplyMultiple) {
   DNSPacket pkt;
   pkt.set_qid(10501).set_response().set_rd().set_ra()
@@ -44,6 +59,37 @@ TEST_F(LibraryTest, ParseNsReplyMultiple) {
   ss << HostEnt(host);
   EXPECT_EQ("{'google.com' aliases=[ns1.google.com, ns2.google.com, ns3.google.com, ns4.google.com] addrs=[]}", ss.str());
   ares_free_hostent(host);
+}
+
+TEST_F(LibraryTest, ParseCNsReplyMultiple) {
+  DNSPacket pkt;
+  pkt.set_qid(10501).set_response().set_rd().set_ra()
+    .add_question(new DNSQuestion("google.com", T_NS))
+    .add_answer(new DNSNsRR("google.com", 59, "ns1.google.com"))
+    .add_answer(new DNSNsRR("google.com", 59, "ns2.google.com"))
+    .add_answer(new DNSNsRR("google.com", 59, "ns3.google.com"))
+    .add_answer(new DNSNsRR("google.com", 59, "ns4.google.com"))
+    .add_additional(new DNSARR("ns4.google.com", 247, {216,239,38,10}))
+    .add_additional(new DNSARR("ns2.google.com", 247, {216,239,34,10}))
+    .add_additional(new DNSARR("ns1.google.com", 247, {216,239,32,10}))
+    .add_additional(new DNSARR("ns3.google.com", 247, {216,239,36,10}));
+  std::vector<byte> data = pkt.data();
+
+  cares_ns_reply* ns  = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, cares_parse_ns_reply(data.data(), data.size(), &ns));
+  ASSERT_NE(nullptr, ns);
+  EXPECT_EQ("ns1.google.com", std::string(cares_ns_reply_get_host(ns)));
+  EXPECT_EQ(59, cares_ns_reply_get_ttl(ns));
+  ns = cares_ns_reply_get_next(ns);
+  EXPECT_EQ("ns2.google.com", std::string(cares_ns_reply_get_host(ns)));
+  EXPECT_EQ(59, cares_ns_reply_get_ttl(ns));
+  ns = cares_ns_reply_get_next(ns);
+  EXPECT_EQ("ns3.google.com", std::string(cares_ns_reply_get_host(ns)));
+  EXPECT_EQ(59, cares_ns_reply_get_ttl(ns));
+  ns = cares_ns_reply_get_next(ns);
+  EXPECT_EQ("ns4.google.com", std::string(cares_ns_reply_get_host(ns)));
+  EXPECT_EQ(59, cares_ns_reply_get_ttl(ns));
+  ares_free_data(ns);
 }
 
 TEST_F(LibraryTest, ParseNsReplyErrors) {
@@ -98,6 +144,58 @@ TEST_F(LibraryTest, ParseNsReplyErrors) {
   }
 }
 
+TEST_F(LibraryTest, ParseCNsReplyErrors) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_NS))
+    .add_answer(new DNSNsRR("example.com", 100, "ns.example.com"));
+  std::vector<byte> data;
+  cares_ns_reply* ns  = nullptr;
+
+  // No question.
+  pkt.questions_.clear();
+  data = pkt.data();
+  EXPECT_EQ(ARES_EBADRESP, cares_parse_ns_reply(data.data(), data.size(), &ns));
+  pkt.add_question(new DNSQuestion("example.com", T_NS));
+
+#ifdef DISABLED
+  // Question != answer
+  pkt.questions_.clear();
+  pkt.add_question(new DNSQuestion("Axample.com", T_NS));
+  data = pkt.data();
+  EXPECT_EQ(ARES_ENODATA, cares_parse_ns_reply(data.data(), data.size(), &ns));
+  pkt.questions_.clear();
+  pkt.add_question(new DNSQuestion("example.com", T_NS));
+#endif
+
+  // Two questions.
+  pkt.add_question(new DNSQuestion("example.com", T_NS));
+  data = pkt.data();
+  EXPECT_EQ(ARES_EBADRESP, cares_parse_ns_reply(data.data(), data.size(), &ns));
+  pkt.questions_.clear();
+  pkt.add_question(new DNSQuestion("example.com", T_NS));
+
+  // Wrong sort of answer.
+  pkt.answers_.clear();
+  pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
+  data = pkt.data();
+  EXPECT_EQ(ARES_ENODATA, cares_parse_ns_reply(data.data(), data.size(), &ns));
+  pkt.answers_.clear();
+  pkt.add_answer(new DNSNsRR("example.com", 100, "ns.example.com"));
+
+  // No answer.
+  pkt.answers_.clear();
+  data = pkt.data();
+  EXPECT_EQ(ARES_ENODATA, cares_parse_ns_reply(data.data(), data.size(), &ns));
+  pkt.add_answer(new DNSNsRR("example.com", 100, "ns.example.com"));
+
+  // Truncated packets.
+  data = pkt.data();
+  for (size_t len = 1; len < data.size(); len++) {
+    EXPECT_EQ(ARES_EBADRESP, cares_parse_ns_reply(data.data(), len, &ns));
+  }
+}
+
 TEST_F(LibraryTest, ParseNsReplyAllocFail) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
@@ -114,6 +212,21 @@ TEST_F(LibraryTest, ParseNsReplyAllocFail) {
   }
 }
 
+TEST_F(LibraryTest, ParseCNsReplyAllocFail) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_NS))
+    .add_answer(new DNSCnameRR("example.com", 300, "c.example.com"))
+    .add_answer(new DNSNsRR("c.example.com", 100, "ns.example.com"));
+  std::vector<byte> data = pkt.data();
+  cares_ns_reply* ns  = nullptr;
+
+  for (int ii = 1; ii <= 5; ii++) {
+    ClearFails();
+    SetAllocFail(ii);
+    EXPECT_EQ(ARES_ENOMEM, cares_parse_ns_reply(data.data(), data.size(), &ns)) << ii;
+  }
+}
 
 }  // namespace test
 }  // namespace ares

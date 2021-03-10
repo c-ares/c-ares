@@ -537,6 +537,18 @@ struct ares_caa_reply {
   size_t                  length;   /* length excludes null termination */
 };
 
+struct cares_caa_reply;
+
+typedef struct cares_caa_reply cares_caa_reply;
+
+struct cares_ptr_reply;
+
+typedef struct cares_ptr_reply cares_ptr_reply;
+
+struct cares_ns_reply;
+
+typedef struct cares_ns_reply cares_ns_reply;
+
 struct ares_srv_reply {
   struct ares_srv_reply  *next;
   char                   *host;
@@ -549,11 +561,19 @@ struct cares_srv_reply;
 
 typedef struct cares_srv_reply cares_srv_reply;
 
+struct cares_host_reply;
+
+typedef struct cares_host_reply cares_host_reply;
+
 struct ares_mx_reply {
   struct ares_mx_reply   *next;
   char                   *host;
   unsigned short          priority;
 };
+
+struct cares_mx_reply;
+
+typedef struct cares_mx_reply cares_mx_reply;
 
 struct ares_txt_reply {
   struct ares_txt_reply  *next;
@@ -572,6 +592,10 @@ struct ares_txt_ext {
   unsigned char            record_start;
 };
 
+struct cares_txt_reply;
+
+typedef struct cares_txt_reply cares_txt_reply;
+
 struct ares_naptr_reply {
   struct ares_naptr_reply *next;
   unsigned char           *flags;
@@ -582,6 +606,10 @@ struct ares_naptr_reply {
   unsigned short           preference;
 };
 
+struct cares_naptr_reply;
+
+typedef struct cares_naptr_reply cares_naptr_reply;
+
 struct ares_soa_reply {
   char        *nsname;
   char        *hostmaster;
@@ -591,6 +619,10 @@ struct ares_soa_reply {
   unsigned int expire;
   unsigned int minttl;
 };
+
+struct cares_soa_reply;
+
+typedef struct cares_soa_reply cares_soa_reply;
 
 /*
  * Similar to addrinfo, but with extra ttl and missing canonname.
@@ -654,6 +686,31 @@ CARES_EXTERN int ares_parse_caa_reply(const unsigned char* abuf,
 				                              int alen,
 				                              struct ares_caa_reply** caa_out);
 
+CARES_EXTERN int cares_parse_caa_reply(const unsigned char* abuf,
+				                               int alen,
+				                               struct cares_caa_reply** caa_out);
+
+CARES_EXTERN struct cares_caa_reply*
+cares_caa_reply_get_next(const cares_caa_reply* caa_reply);
+
+CARES_EXTERN int
+cares_caa_reply_get_critical(const cares_caa_reply* caa_reply);
+
+CARES_EXTERN const unsigned char*
+cares_caa_reply_get_property(const cares_caa_reply* caa_reply);
+
+CARES_EXTERN size_t
+cares_caa_reply_get_plength(const cares_caa_reply* caa_reply);
+
+CARES_EXTERN const unsigned char*
+cares_caa_reply_get_value(const cares_caa_reply* caa_reply);
+
+CARES_EXTERN size_t
+cares_caa_reply_get_length(const cares_caa_reply* caa_reply);
+
+CARES_EXTERN unsigned int cares_caa_reply_get_ttl(const cares_caa_reply*
+                                                  caa_reply);
+
 CARES_EXTERN int ares_parse_ptr_reply(const unsigned char *abuf,
                                       int alen,
                                       const void *addr,
@@ -661,19 +718,45 @@ CARES_EXTERN int ares_parse_ptr_reply(const unsigned char *abuf,
                                       int family,
                                       struct hostent **host);
 
+CARES_EXTERN int cares_parse_ptr_reply(const unsigned char *abuf,
+                                       int alen,
+                                       struct cares_ptr_reply **ptr_out);
+
+CARES_EXTERN struct cares_ptr_reply*
+cares_ptr_reply_get_next(const cares_ptr_reply* ptr_reply);
+
+CARES_EXTERN const char*
+cares_ptr_reply_get_host(const cares_ptr_reply* ptr_reply);
+
+CARES_EXTERN unsigned int cares_ptr_reply_get_ttl(const cares_ptr_reply*
+                                                  ptr_reply);
+
 CARES_EXTERN int ares_parse_ns_reply(const unsigned char *abuf,
                                      int alen,
                                      struct hostent **host);
+
+CARES_EXTERN int cares_parse_ns_reply(const unsigned char *abuf,
+                                     int alen,
+                                     struct cares_ns_reply **ns_out);
+
+CARES_EXTERN struct cares_ns_reply*
+cares_ns_reply_get_next(const cares_ns_reply* ns_reply);
+
+CARES_EXTERN const char*
+cares_ns_reply_get_host(const cares_ns_reply* ns_reply);
+
+CARES_EXTERN unsigned int cares_ns_reply_get_ttl(const cares_ns_reply*
+                                                 ns_reply);
 
 CARES_EXTERN int ares_parse_srv_reply(const unsigned char* abuf,
                                       int alen,
                                       struct ares_srv_reply** srv_out);
 
 CARES_EXTERN int cares_parse_srv_reply(const unsigned char* abuf,
-                                          int alen,
-                                          struct cares_srv_reply** srv_out);
+                                       int alen,
+                                       struct cares_srv_reply** srv_out);
 
-CARES_EXTERN struct cares_srv_reply*
+CARES_EXTERN cares_srv_reply*
 cares_srv_reply_get_next(const cares_srv_reply* srv_reply);
 
 CARES_EXTERN const char*
@@ -688,29 +771,28 @@ cares_srv_reply_get_weight(const cares_srv_reply* srv_reply);
 CARES_EXTERN unsigned short
 cares_srv_reply_get_port(const cares_srv_reply* srv_reply);
 
-CARES_EXTERN int cares_srv_reply_get_ttl(const cares_srv_reply* srv_reply);
-
-CARES_EXTERN void cares_srv_reply_set_next(cares_srv_reply* srv_reply,
-                                           struct cares_srv_reply* next);
-
-CARES_EXTERN void
-cares_srv_reply_set_host(cares_srv_reply* srv_reply, char* host);
-
-CARES_EXTERN void cares_srv_reply_set_priority(cares_srv_reply* srv_reply,
-                                               const unsigned short priority);
-
-CARES_EXTERN void cares_srv_reply_set_weight(cares_srv_reply* srv_reply,
-                                             const unsigned short weight);
-
-CARES_EXTERN void cares_srv_reply_set_port(cares_srv_reply* srv_reply,
-                                           const unsigned short port);
-
-CARES_EXTERN void cares_srv_reply_set_ttl(cares_srv_reply* srv_reply,
-                                          const int ttl);
+CARES_EXTERN unsigned int cares_srv_reply_get_ttl(const cares_srv_reply*
+                                                  srv_reply);
 
 CARES_EXTERN int ares_parse_mx_reply(const unsigned char* abuf,
                                      int alen,
                                      struct ares_mx_reply** mx_out);
+
+CARES_EXTERN int cares_parse_mx_reply(const unsigned char* abuf,
+                                      int alen,
+                                      struct cares_mx_reply** mx_out);
+
+CARES_EXTERN struct cares_mx_reply*
+cares_mx_reply_get_next(const cares_mx_reply* mx_reply);
+
+CARES_EXTERN const char*
+cares_mx_reply_get_host(const cares_mx_reply* mx_reply);
+
+CARES_EXTERN unsigned short
+cares_mx_reply_get_priority(const cares_mx_reply* mx_reply);
+
+CARES_EXTERN unsigned int cares_mx_reply_get_ttl(const cares_mx_reply*
+                                                 mx_reply);
 
 CARES_EXTERN int ares_parse_txt_reply(const unsigned char* abuf,
                                       int alen,
@@ -720,13 +802,88 @@ CARES_EXTERN int ares_parse_txt_reply_ext(const unsigned char* abuf,
                                           int alen,
                                           struct ares_txt_ext** txt_out);
 
+CARES_EXTERN int cares_parse_txt_reply(const unsigned char* abuf,
+                                       int alen,
+                                       struct cares_txt_reply** txt_out);
+
+CARES_EXTERN struct cares_txt_reply*
+cares_txt_reply_get_next(const cares_txt_reply* txt_reply);
+
+CARES_EXTERN const unsigned char*
+cares_txt_reply_get_txt(const cares_txt_reply* txt_reply);
+
+CARES_EXTERN size_t
+cares_txt_reply_get_length(const cares_txt_reply* txt_reply);
+
+CARES_EXTERN unsigned char
+cares_txt_reply_get_record_start(const cares_txt_reply* txt_reply);
+
+CARES_EXTERN unsigned int cares_txt_reply_get_ttl(const cares_txt_reply*
+                                                  txt_reply);
+
 CARES_EXTERN int ares_parse_naptr_reply(const unsigned char* abuf,
                                         int alen,
                                         struct ares_naptr_reply** naptr_out);
 
+CARES_EXTERN int cares_parse_naptr_reply(const unsigned char* abuf,
+                                         int alen,
+                                         struct cares_naptr_reply** naptr_out);
+
+CARES_EXTERN struct cares_naptr_reply*
+cares_naptr_reply_get_next(const cares_naptr_reply* naptr_reply);
+
+CARES_EXTERN const unsigned char*
+cares_naptr_reply_get_flags(const cares_naptr_reply* naptr_reply);
+
+CARES_EXTERN const unsigned char*
+cares_naptr_reply_get_service(const cares_naptr_reply* naptr_reply);
+
+CARES_EXTERN const unsigned char*
+cares_naptr_reply_get_regexp(const cares_naptr_reply* naptr_reply);
+
+CARES_EXTERN const char*
+cares_naptr_reply_get_replacement(const cares_naptr_reply* naptr_reply);
+
+CARES_EXTERN unsigned short
+cares_naptr_reply_get_order(const cares_naptr_reply* naptr_reply);
+
+CARES_EXTERN unsigned short
+cares_naptr_reply_get_preference(const cares_naptr_reply* naptr_reply);
+
+CARES_EXTERN unsigned int cares_naptr_reply_get_ttl(const cares_naptr_reply*
+                                                    naptr_reply);
+
 CARES_EXTERN int ares_parse_soa_reply(const unsigned char* abuf,
 				                              int alen,
 				                              struct ares_soa_reply** soa_out);
+
+CARES_EXTERN int cares_parse_soa_reply(const unsigned char* abuf,
+				                               int alen,
+				                               struct cares_soa_reply** soa_out);
+
+CARES_EXTERN const char*
+cares_soa_reply_get_nsname(const cares_soa_reply* soa_reply);
+
+CARES_EXTERN const char*
+cares_soa_reply_get_hostmaster(const cares_soa_reply* soa_reply);
+
+CARES_EXTERN unsigned int
+cares_soa_reply_get_serial(const cares_soa_reply* soa_reply);
+
+CARES_EXTERN unsigned int
+cares_soa_reply_get_refresh(const cares_soa_reply* soa_reply);
+
+CARES_EXTERN unsigned int
+cares_soa_reply_get_retry(const cares_soa_reply* soa_reply);
+
+CARES_EXTERN unsigned int
+cares_soa_reply_get_expire(const cares_soa_reply* soa_reply);
+
+CARES_EXTERN unsigned int
+cares_soa_reply_get_minttl(const cares_soa_reply* soa_reply);
+
+CARES_EXTERN unsigned int cares_soa_reply_get_ttl(const cares_soa_reply*
+                                                  soa_reply);
 
 CARES_EXTERN void ares_free_string(void *str);
 

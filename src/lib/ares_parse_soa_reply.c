@@ -38,142 +38,68 @@ int
 ares_parse_soa_reply(const unsigned char *abuf, int alen,
 		     struct ares_soa_reply **soa_out)
 {
-  const unsigned char *aptr;
-  long len;
-  char *qname = NULL, *rr_name = NULL;
+  int status;
+  cares_soa_reply *csoa_out = NULL;
   struct ares_soa_reply *soa = NULL;
-  int qdcount, ancount, qclass;
-  int status, i, rr_type, rr_class, rr_len;
 
-  if (alen < HFIXEDSZ)
-    return ARES_EBADRESP;
+  /* Set *soa_out to NULL for all failure cases. */
+  *soa_out = NULL;
 
-  /* parse message header */
-  qdcount = DNS_HEADER_QDCOUNT(abuf);
-  ancount = DNS_HEADER_ANCOUNT(abuf);
+  status = cares_parse_soa_reply(abuf, alen, &csoa_out);
 
-  if (qdcount != 1)
-    return ARES_EBADRESP;
-  if (ancount == 0)
-    return ARES_EBADRESP;
-
-  aptr = abuf + HFIXEDSZ;
-
-  /* query name */
-  status = ares__expand_name_for_response(aptr, abuf, alen, &qname, &len);
+  /* clean up on error */
   if (status != ARES_SUCCESS)
-    goto failed_stat;
-
-  if (alen <= len + HFIXEDSZ + 1)
-    goto failed;
-  aptr += len;
-
-  qclass = DNS_QUESTION_TYPE(aptr);
-
-  /* skip qtype & qclass */
-  if (aptr + QFIXEDSZ > abuf + alen)
-    goto failed;
-  aptr += QFIXEDSZ;
-
-  /* qclass of SOA with multiple answers */
-  if (qclass == T_SOA && ancount > 1)
-    goto failed;
-
-  /* examine all the records, break and return if found soa */
-  for (i = 0; i < ancount; i++)
   {
-    rr_name = NULL;
-    status  = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len);
-    if (status != ARES_SUCCESS)
-     {
-      ares_free(rr_name);
-      goto failed_stat;
-     }
-
-    aptr += len;
-    if ( aptr + RRFIXEDSZ > abuf + alen )
-    {
-      ares_free(rr_name);
-      status = ARES_EBADRESP;
-      goto failed_stat;
-    }
-    rr_type = DNS_RR_TYPE( aptr );
-    rr_class = DNS_RR_CLASS( aptr );
-    rr_len = DNS_RR_LEN( aptr );
-    aptr += RRFIXEDSZ;
-    if (aptr + rr_len > abuf + alen)
-      {
-        ares_free(rr_name);
-        status = ARES_EBADRESP;
-        goto failed_stat;
-      }
-    if ( rr_class == C_IN && rr_type == T_SOA )
-    {
-      /* allocate result struct */
-      soa = ares_malloc_data(ARES_DATATYPE_SOA_REPLY);
-      if (!soa)
-        {
-          ares_free(rr_name);
-          status = ARES_ENOMEM;
-          goto failed_stat;
-        }
-
-      /* nsname */
-      status = ares__expand_name_for_response(aptr, abuf, alen, &soa->nsname,
-                                               &len);
-      if (status != ARES_SUCCESS)
-       {
-        ares_free(rr_name);
-        goto failed_stat;
-       }
-      aptr += len;
-
-      /* hostmaster */
-      status = ares__expand_name_for_response(aptr, abuf, alen,
-                                               &soa->hostmaster, &len);
-      if (status != ARES_SUCCESS)
-       {
-        ares_free(rr_name);
-        goto failed_stat;
-       }
-      aptr += len;
-
-      /* integer fields */
-      if (aptr + 5 * 4 > abuf + alen)
-       {
-        ares_free(rr_name);
-        goto failed;
-       }
-      soa->serial = DNS__32BIT(aptr + 0 * 4);
-      soa->refresh = DNS__32BIT(aptr + 1 * 4);
-      soa->retry = DNS__32BIT(aptr + 2 * 4);
-      soa->expire = DNS__32BIT(aptr + 3 * 4);
-      soa->minttl = DNS__32BIT(aptr + 4 * 4);
-
-      ares_free(qname);
-      ares_free(rr_name);
-
-      *soa_out = soa;
-
-      return ARES_SUCCESS;
-    }
-    aptr += rr_len;
-
-    ares_free(rr_name);
-
-    if (aptr > abuf + alen)
-      goto failed_stat;
+    if (csoa_out)
+      ares_free_data (csoa_out);
+    return status;
   }
-  /* no SOA record found */
-  status = ARES_EBADRESP;
-  goto failed_stat;
-failed:
-  status = ARES_EBADRESP;
+  soa = ares_malloc_data(ARES_DATATYPE_SOA_REPLY);
 
-failed_stat:
-  if (soa)
-    ares_free_data(soa);
-  if (qname)
-    ares_free(qname);
-  return status;
+  char *nsname = ares_strdup(cares_soa_reply_get_nsname(csoa_out));
+  if (!nsname)
+  {
+    status = ARES_ENOMEM;
+    if (soa)
+    {
+      ares_free_data (soa);
+    }
+    if (csoa_out)
+    {
+      ares_free_data (csoa_out);
+    }
+    return status;
+  }
+  soa->nsname = nsname;
+
+  char *hostmaster = ares_strdup(cares_soa_reply_get_hostmaster(csoa_out));
+  if (!hostmaster)
+  {
+    status = ARES_ENOMEM;
+    if (soa)
+    {
+      ares_free_data (soa);
+    }
+    if (csoa_out)
+    {
+      ares_free_data (csoa_out);
+    }
+    return status;
+  }
+  soa->hostmaster = hostmaster;
+
+  soa->serial = cares_soa_reply_get_serial(csoa_out);
+  soa->refresh = cares_soa_reply_get_refresh(csoa_out);
+  soa->retry = cares_soa_reply_get_retry(csoa_out);
+  soa->expire = cares_soa_reply_get_expire(csoa_out);
+  soa->minttl = cares_soa_reply_get_minttl(csoa_out);
+
+  if (csoa_out)
+  {
+    ares_free_data (csoa_out);
+  }
+  /* everything looks fine, return the data */
+  *soa_out = soa;
+
+  return ARES_SUCCESS;
 }

@@ -47,8 +47,8 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
   struct ares_srv_reply *srv_head = NULL;
   struct ares_srv_reply *srv_curr = NULL;
   struct ares_srv_reply *srv_last = NULL;
-  struct cares_srv_reply *csrv_curr = NULL;
-  struct cares_srv_reply *csrv_out = NULL;
+  cares_srv_reply *csrv_curr = NULL;
+  cares_srv_reply *csrv_out = NULL;
 
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;

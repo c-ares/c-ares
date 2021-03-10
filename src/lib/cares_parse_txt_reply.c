@@ -29,27 +29,32 @@
 
 #include "ares_nameser.h"
 
+#ifdef HAVE_STRINGS_H
+#  include <strings.h>
+#endif
+
 #include "ares.h"
 #include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
 
-int
-cares_parse_srv_reply (const unsigned char *abuf, int alen,
-                          cares_srv_reply **srv_out)
+int cares_parse_txt_reply (const unsigned char *abuf, int alen,
+                           cares_txt_reply **txt_out)
 {
+  size_t substr_len;
   unsigned int qdcount, ancount, i;
-  const unsigned char *aptr, *vptr;
+  const unsigned char *aptr;
+  const unsigned char *strptr;
   int status, rr_type, rr_class, rr_len;
   unsigned int rr_ttl;
   long len;
   char *hostname = NULL, *rr_name = NULL;
-  cares_srv_reply *srv_head = NULL;
-  cares_srv_reply *srv_last = NULL;
-  cares_srv_reply *srv_curr;
+  struct cares_txt_reply *txt_head = NULL;
+  struct cares_txt_reply *txt_last = NULL;
+  struct cares_txt_reply *txt_curr;
 
-  /* Set *srv_out to NULL for all failure cases. */
-  *srv_out = NULL;
+  /* Set *txt_out to NULL for all failure cases. */
+  *txt_out = NULL;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -93,7 +98,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
         }
       rr_type = DNS_RR_TYPE (aptr);
       rr_class = DNS_RR_CLASS (aptr);
-      rr_ttl = DNS_RR_TTL (aptr);
+      rr_ttl = DNS_RR_TTL(aptr);
       rr_len = DNS_RR_LEN (aptr);
       aptr += RRFIXEDSZ;
       if (aptr + rr_len > abuf + alen)
@@ -102,53 +107,78 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           break;
         }
 
-      /* Check if we are really looking at a SRV record */
-      if (rr_class == C_IN && rr_type == T_SRV)
+      /* Check if we are really looking at a TXT record */
+      if ((rr_class == C_IN || rr_class == C_CHAOS) && rr_type == T_TXT)
         {
-          /* parse the SRV record itself */
-          if (rr_len < 6)
-            {
-              status = ARES_EBADRESP;
-              break;
-            }
+          /*
+           * There may be multiple substrings in a single TXT record. Each
+           * substring may be up to 255 characters in length, with a
+           * "length byte" indicating the size of the substring payload.
+           * RDATA contains both the length-bytes and payloads of all
+           * substrings contained therein.
+           */
 
-          /* Allocate storage for this SRV answer appending it to the list */
-          srv_curr = ares_malloc_data(ARES_DATATYPE_CSRV_REPLY);
-          if (!srv_curr)
+          strptr = aptr;
+          while (strptr < (aptr + rr_len))
             {
-              status = ARES_ENOMEM;
-              break;
-            }
-          if (srv_last)
-            {
-              cares_srv_reply_set_next(srv_last, srv_curr);
-            }
-          else
-            {
-              srv_head = srv_curr;
-            }
-          srv_last = srv_curr;
+              substr_len = (unsigned char)*strptr;
+              if (strptr + substr_len + 1 > aptr + rr_len)
+                {
+                  status = ARES_EBADRESP;
+                  break;
+                }
 
-          vptr = aptr;
-          cares_srv_reply_set_priority(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_weight(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_port(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_ttl(srv_curr, rr_ttl);
+              /* Allocate storage for this TXT answer appending it to the list */
+              txt_curr = ares_malloc_data(ARES_DATATYPE_CTXT_REPLY);
+              if (!txt_curr)
+                {
+                  status = ARES_ENOMEM;
+                  break;
+                }
+              if (txt_last)
+                {
+                  cares_txt_reply_set_next(txt_last, txt_curr);
+                }
+              else
+                {
+                  txt_head = txt_curr;
+                }
+              txt_last = txt_curr;
 
-          char* srv_host = NULL;
 
-          status = ares_expand_name (vptr, abuf, alen, &srv_host, &len);
-          if (status != ARES_SUCCESS)
-            break;
-          cares_srv_reply_set_host(srv_curr, srv_host);
+              cares_txt_reply_set_record_start(txt_curr, (strptr == aptr));
+              cares_txt_reply_set_length(txt_curr, substr_len);
+              cares_txt_reply_set_ttl(txt_curr, rr_ttl);
+
+              unsigned char* txt = NULL;
+              txt = ares_malloc (substr_len + 1/* Including null byte */);
+              if (txt == NULL)
+                {
+                  status = ARES_ENOMEM;
+                  break;
+                }
+
+              ++strptr;
+              memcpy ((char *) txt, strptr, substr_len);
+
+              /* Make sure we NULL-terminate */
+              txt[substr_len] = 0;
+
+              cares_txt_reply_set_txt(txt_curr, txt);
+
+              strptr += substr_len;
+            }
         }
       else if (rr_type != T_CNAME)
         {
           /* wrong record type */
           status = ARES_ENODATA;
+          break;
+        }
+
+      /* Propagate any failures */
+      if (status != ARES_SUCCESS)
+        {
           break;
         }
 
@@ -159,6 +189,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
       /* Move on to the next record */
       aptr += rr_len;
     }
+
   if (hostname)
     ares_free (hostname);
   if (rr_name)
@@ -167,12 +198,13 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* clean up on error */
   if (status != ARES_SUCCESS)
     {
-      if (srv_head)
-        ares_free_data (srv_head);
+      if (txt_head)
+        ares_free_data (txt_head);
       return status;
     }
 
   /* everything looks fine, return the data */
-  *srv_out = srv_head;
+  *txt_out = txt_head;
+
   return ARES_SUCCESS;
 }

@@ -1,6 +1,5 @@
 
 /* Copyright 1998 by the Massachusetts Institute of Technology.
- * Copyright (C) 2009 by Jakub Hrozek <jhrozek@redhat.com>
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -23,41 +22,42 @@
 #ifdef HAVE_NETDB_H
 #  include <netdb.h>
 #endif
-#ifdef HAVE_ARPA_INET_H
-#  include <arpa/inet.h>
-#endif
 
 #include "ares_nameser.h"
 
+#ifdef HAVE_STRINGS_H
+#  include <strings.h>
+#endif
+
 #include "ares.h"
 #include "ares_dns.h"
+#include "ares_nowarn.h"
 #include "ares_data.h"
 #include "ares_private.h"
 
-int
-cares_parse_srv_reply (const unsigned char *abuf, int alen,
-                          cares_srv_reply **srv_out)
+int cares_parse_ns_reply(const unsigned char *abuf, int alen,
+                         cares_ns_reply **ns_out)
 {
-  unsigned int qdcount, ancount, i;
-  const unsigned char *aptr, *vptr;
-  int status, rr_type, rr_class, rr_len;
+  unsigned int qdcount, ancount;
+  int status, i, rr_type, rr_class, rr_len;
   unsigned int rr_ttl;
   long len;
-  char *hostname = NULL, *rr_name = NULL;
-  cares_srv_reply *srv_head = NULL;
-  cares_srv_reply *srv_last = NULL;
-  cares_srv_reply *srv_curr;
+  const unsigned char *aptr;
+  char *ptrname = NULL, *rr_name = NULL;
+  cares_ns_reply *ns_head = NULL;
+  cares_ns_reply *ns_last = NULL;
+  cares_ns_reply *ns_curr;
 
-  /* Set *srv_out to NULL for all failure cases. */
-  *srv_out = NULL;
+  /* Set *ns_out to NULL for all failure cases. */
+  *ns_out = NULL;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
     return ARES_EBADRESP;
 
   /* Fetch the question and answer count from the header. */
-  qdcount = DNS_HEADER_QDCOUNT (abuf);
-  ancount = DNS_HEADER_ANCOUNT (abuf);
+  qdcount = DNS_HEADER_QDCOUNT(abuf);
+  ancount = DNS_HEADER_ANCOUNT(abuf);
   if (qdcount != 1)
     return ARES_EBADRESP;
   if (ancount == 0)
@@ -65,36 +65,33 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares_expand_name (aptr, abuf, alen, &hostname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &ptrname, &len);
   if (status != ARES_SUCCESS)
     return status;
-
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
-      ares_free (hostname);
+      ares_free(ptrname);
       return ARES_EBADRESP;
     }
   aptr += len + QFIXEDSZ;
 
   /* Examine each answer resource record (RR) in turn. */
-  for (i = 0; i < ancount; i++)
+  for (i = 0; i < (int)ancount; i++)
     {
       /* Decode the RR up to the data field. */
-      status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len);
       if (status != ARES_SUCCESS)
-        {
-          break;
-        }
+        break;
       aptr += len;
       if (aptr + RRFIXEDSZ > abuf + alen)
         {
           status = ARES_EBADRESP;
           break;
         }
-      rr_type = DNS_RR_TYPE (aptr);
-      rr_class = DNS_RR_CLASS (aptr);
-      rr_ttl = DNS_RR_TTL (aptr);
-      rr_len = DNS_RR_LEN (aptr);
+      rr_type = DNS_RR_TYPE(aptr);
+      rr_class = DNS_RR_CLASS(aptr);
+      rr_ttl = DNS_RR_TTL(aptr);
+      rr_len = DNS_RR_LEN(aptr);
       aptr += RRFIXEDSZ;
       if (aptr + rr_len > abuf + alen)
         {
@@ -102,48 +99,36 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           break;
         }
 
-      /* Check if we are really looking at a SRV record */
-      if (rr_class == C_IN && rr_type == T_SRV)
+      if (rr_class == C_IN && rr_type == T_NS)
         {
-          /* parse the SRV record itself */
-          if (rr_len < 6)
-            {
-              status = ARES_EBADRESP;
-              break;
-            }
-
-          /* Allocate storage for this SRV answer appending it to the list */
-          srv_curr = ares_malloc_data(ARES_DATATYPE_CSRV_REPLY);
-          if (!srv_curr)
+          /* Allocate storage for this NS answer appending it to the list */
+          ns_curr = ares_malloc_data(ARES_DATATYPE_CNS_REPLY);
+          if (!ns_curr)
             {
               status = ARES_ENOMEM;
               break;
             }
-          if (srv_last)
+          if (ns_last)
             {
-              cares_srv_reply_set_next(srv_last, srv_curr);
+              cares_ns_reply_set_next(ns_last, ns_curr);
             }
           else
             {
-              srv_head = srv_curr;
+              ns_head = ns_curr;
             }
-          srv_last = srv_curr;
+          ns_last = ns_curr;
 
-          vptr = aptr;
-          cares_srv_reply_set_priority(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_weight(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_port(srv_curr, DNS__16BIT(vptr));
-          vptr += sizeof(unsigned short);
-          cares_srv_reply_set_ttl(srv_curr, rr_ttl);
-
-          char* srv_host = NULL;
-
-          status = ares_expand_name (vptr, abuf, alen, &srv_host, &len);
+          char* ns_host = NULL;
+          /* Decode the RR data and set hostname to it. */
+          status = ares__expand_name_for_response(aptr, abuf, alen, &ns_host,
+                                                  &len);
           if (status != ARES_SUCCESS)
-            break;
-          cares_srv_reply_set_host(srv_curr, srv_host);
+            {
+              break;
+            }
+
+          cares_ns_reply_set_host(ns_curr, ns_host);
+          cares_ns_reply_set_ttl(ns_curr, rr_ttl);
         }
       else if (rr_type != T_CNAME)
         {
@@ -153,26 +138,34 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
         }
 
       /* Don't lose memory in the next iteration */
-      ares_free (rr_name);
+      ares_free(rr_name);
       rr_name = NULL;
 
       /* Move on to the next record */
       aptr += rr_len;
+      if (aptr > abuf + alen)
+        {  /* LCOV_EXCL_START: already checked above */
+          status = ARES_EBADRESP;
+          break;
+        }  /* LCOV_EXCL_STOP */
     }
-  if (hostname)
-    ares_free (hostname);
+
+  if (ptrname)
+    ares_free(ptrname);
   if (rr_name)
-    ares_free (rr_name);
+    ares_free(rr_name);
 
   /* clean up on error */
   if (status != ARES_SUCCESS)
     {
-      if (srv_head)
-        ares_free_data (srv_head);
+      if (ns_head)
+      {
+        ares_free_data(ns_head);
+      }
       return status;
     }
 
   /* everything looks fine, return the data */
-  *srv_out = srv_head;
+  *ns_out = ns_head;
   return ARES_SUCCESS;
 }

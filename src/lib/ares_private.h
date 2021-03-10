@@ -416,18 +416,211 @@ int ares__connect_socket(ares_channel channel,
       (c)->sock_state_cb((c)->sock_state_cb_data, (s), (r), (w));       \
   } WHILE_FALSE
 
-/* Private definition of c-ares srv reply so that c-ares users
+/* Private definition of c-ares reply structs so that c-ares users
  * only have access to the type definition in ares.h and must use
- * accessor functions to interact with the struct.  This way,
- * cares_srv_reply can be modified without breaking ABI.
+ * accessor functions to interact with the structs.  This way,
+ * cares reply structs can be modified without breaking ABI.
  */
- struct cares_srv_reply {
+ struct cares_caa_reply {
+  struct cares_caa_reply  *next;
+  int                      critical;
+  unsigned char           *property;
+  size_t                   plength;  /* plength excludes null termination */
+  unsigned char           *value;
+  size_t                   length;   /* length excludes null termination */
+  unsigned int             ttl;
+};
+
+struct cares_ptr_reply {
+  struct cares_ptr_reply *next;
+  char                   *host;
+  unsigned int            ttl;
+};
+
+struct cares_ns_reply {
+  struct cares_ns_reply *next;
+  char                  *host;
+  unsigned int           ttl;
+};
+
+struct cares_srv_reply {
   struct cares_srv_reply *next;
   char                   *host;
   unsigned short          priority;
   unsigned short          weight;
   unsigned short          port;
-  int                     ttl;
+  unsigned int            ttl;
 };
+
+struct cares_mx_reply {
+  struct cares_mx_reply   *next;
+  char                    *host;
+  unsigned short           priority;
+  unsigned int             ttl;
+};
+
+struct cares_txt_reply {
+  struct cares_txt_reply *next;
+  unsigned char          *txt;
+  size_t                  length;
+  /* 1 - if start of new record
+   * 0 - if a chunk in the same record */
+  unsigned char           record_start;
+  unsigned int            ttl;
+};
+
+struct cares_naptr_reply {
+  struct cares_naptr_reply *next;
+  unsigned char            *flags;
+  unsigned char            *service;
+  unsigned char            *regexp;
+  char                     *replacement;
+  unsigned short            order;
+  unsigned short            preference;
+  unsigned int              ttl;
+};
+
+struct cares_soa_reply {
+  char        *nsname;
+  char        *hostmaster;
+  unsigned int serial;
+  unsigned int refresh;
+  unsigned int retry;
+  unsigned int expire;
+  unsigned int minttl;
+  unsigned int ttl;
+};
+
+/* Private declaration of c-ares reply setters */
+void cares_srv_reply_set_next(cares_srv_reply* srv_reply,
+                              cares_srv_reply* next);
+
+void cares_srv_reply_set_host(cares_srv_reply* srv_reply, char* host);
+
+void cares_srv_reply_set_priority(cares_srv_reply* srv_reply,
+                                  const unsigned short priority);
+
+void cares_srv_reply_set_weight(cares_srv_reply* srv_reply,
+                                const unsigned short weight);
+
+void cares_srv_reply_set_port(cares_srv_reply* srv_reply,
+                              const unsigned short port);
+
+void cares_srv_reply_set_ttl(cares_srv_reply* srv_reply,
+                             const unsigned int ttl);
+
+
+
+void cares_caa_reply_set_next(cares_caa_reply* caa_reply,
+                              cares_caa_reply* next);
+
+void cares_caa_reply_set_critical(cares_caa_reply* caa_reply,
+                                  const int critical);
+
+void cares_caa_reply_set_property(cares_caa_reply* caa_reply,
+                                  unsigned char* property);
+
+void cares_caa_reply_set_plength(cares_caa_reply* caa_reply,
+                                 const size_t plength);
+
+void cares_caa_reply_set_value(cares_caa_reply* caa_reply,
+                               unsigned char* value);
+
+void cares_caa_reply_set_length(cares_caa_reply* caa_reply,
+                                const size_t length);
+
+void cares_caa_reply_set_ttl(cares_caa_reply* caa_reply,
+                             const unsigned int ttl);
+
+void cares_ptr_reply_set_next(cares_ptr_reply* ptr_reply,
+                               cares_ptr_reply* next);
+
+void cares_ptr_reply_set_host(cares_ptr_reply* ptr_reply, char* host);
+
+void cares_ptr_reply_set_ttl(cares_ptr_reply* ptr_reply,
+                             const unsigned int ttl);
+
+void cares_ns_reply_set_next(cares_ns_reply* ns_reply,
+                               cares_ns_reply* next);
+
+void cares_ns_reply_set_host(cares_ns_reply* ns_reply, char* host);
+
+void cares_ns_reply_set_ttl(cares_ns_reply* ns_reply,
+                            const unsigned int ttl);
+
+void cares_mx_reply_set_next(cares_mx_reply* mx_reply,
+                             cares_mx_reply* next);
+
+void cares_mx_reply_set_host(cares_mx_reply* mx_reply, char *host);
+
+void cares_mx_reply_set_priority(cares_mx_reply* mx_reply,
+                                 const unsigned short priority);
+
+void cares_mx_reply_set_ttl(cares_mx_reply* mx_reply,
+                            const unsigned int ttl);
+
+void cares_txt_reply_set_next(cares_txt_reply* txt_reply,
+                              cares_txt_reply* next);
+
+void cares_txt_reply_set_txt(cares_txt_reply* txt_reply,
+                             unsigned char* txt);
+
+void cares_txt_reply_set_length(cares_txt_reply* txt_reply,
+                                const size_t length);
+
+void cares_txt_reply_set_record_start(cares_txt_reply* txt_reply,
+                                      const unsigned char record_start);
+
+void cares_txt_reply_set_ttl(cares_txt_reply* txt_reply,
+                             const unsigned int ttl);
+
+void cares_naptr_reply_set_next(cares_naptr_reply* naptr_reply,
+                                cares_naptr_reply* next);
+
+void cares_naptr_reply_set_flags(cares_naptr_reply* naptr_reply,
+                                 unsigned char* flags);
+
+void cares_naptr_reply_set_service(cares_naptr_reply* naptr_reply,
+                                   unsigned char* service);
+
+void cares_naptr_reply_set_regexp(cares_naptr_reply* naptr_reply,
+                                  unsigned char* regexp);
+
+void cares_naptr_reply_set_replacement(cares_naptr_reply* naptr_reply,
+                                       char* replacement);
+
+void cares_naptr_reply_set_order(cares_naptr_reply* naptr_reply,
+                                 const unsigned short order);
+
+void cares_naptr_reply_set_preference(cares_naptr_reply* naptr_reply,
+                                      const unsigned short preference);
+
+void cares_naptr_reply_set_ttl(cares_naptr_reply* naptr_reply,
+                               const unsigned int ttl);
+
+void cares_soa_reply_set_nsname(cares_soa_reply* soa_reply, char* nsname);
+
+void cares_soa_reply_set_hostmaster(cares_soa_reply* soa_reply,
+                                    char* hostmaster);
+
+void cares_soa_reply_set_serial(cares_soa_reply* soa_reply,
+                                const unsigned int serial);
+
+void cares_soa_reply_set_refresh(cares_soa_reply* soa_reply,
+                                 const unsigned int refresh);
+
+void cares_soa_reply_set_retry(cares_soa_reply* soa_reply,
+                               const unsigned int retry);
+
+void cares_soa_reply_set_expire(cares_soa_reply* soa_reply,
+                                const unsigned int expire);
+
+void cares_soa_reply_set_minttl(cares_soa_reply* soa_reply,
+                                const unsigned int minttl);
+
+void cares_soa_reply_set_ttl(cares_soa_reply* soa_reply,
+                             const unsigned int ttl);
+
+
 
 #endif /* __ARES_PRIVATE_H */
