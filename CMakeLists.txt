@@ -75,6 +75,7 @@ SET (PACKAGE_DIRECTORY ${PROJECT_BINARY_DIR}/package)
 # Destinations for installing different kinds of targets (pass to install command).
 SET (TARGETS_INST_DEST
 	RUNTIME DESTINATION  ${CMAKE_INSTALL_BINDIR}
+	BUNDLE DESTINATION   ${CMAKE_INSTALL_BINDIR}
 	LIBRARY DESTINATION  ${CMAKE_INSTALL_LIBDIR}
 	ARCHIVE DESTINATION  ${CMAKE_INSTALL_LIBDIR}
 )
@@ -384,6 +385,10 @@ CHECK_FUNCTION_EXISTS (__system_property_get HAVE___SYSTEM_PROPERTY_GET)
 SET (CMAKE_EXTRA_INCLUDE_FILES)
 SET (CMAKE_REQUIRED_DEFINITIONS)
 SET (CMAKE_REQUIRED_LIBRARIES)
+
+
+find_file(CARES_RANDOM_FILE urandom /dev)
+mark_as_advanced(CARES_RANDOM_FILE)
 
 
 ################################################################################

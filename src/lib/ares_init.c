@@ -2514,8 +2514,8 @@ static void randomize_key(unsigned char* key,int key_data_len)
         randomized = 1;
     }
 #else /* !WIN32 */
-#ifdef RANDOM_FILE
-  FILE *f = fopen(RANDOM_FILE, "rb");
+#ifdef CARES_RANDOM_FILE
+  FILE *f = fopen(CARES_RANDOM_FILE, "rb");
   if(f) {
     setvbuf(f, NULL, _IONBF, 0);
     counter = aresx_uztosi(fread(key, 1, key_data_len, f));
