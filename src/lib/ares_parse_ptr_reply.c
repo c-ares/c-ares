@@ -82,7 +82,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
       if (hostent->h_aliases)
       {
         /* Fill in the hostent and return successfully. */
-        hostent->h_name = NULL; 
+        hostent->h_name = NULL;
         /* iterate through the linked list of cares_ptr_reply
           and build the h_aliases array.                      */
         i = 0;
@@ -91,8 +91,8 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
         {
           if (!cares_ptr_reply_get_next(ptr_curr))
           {
-            hostent->h_name = ares_strdup(cares_ptr_reply_get_host(ptr_out));
-            if (!hostent->h_name) 
+            hostent->h_name = ares_strdup(cares_ptr_reply_get_host(ptr_curr));
+            if (!hostent->h_name)
             {
               status = ARES_ENOMEM;
               if (ptr_out)
