@@ -45,6 +45,7 @@ int cares_parse_txt_reply (const unsigned char *abuf, int alen,
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr;
   const unsigned char *strptr;
+  unsigned char* txt = NULL;
   int status, rr_type, rr_class, rr_len;
   unsigned int rr_ttl;
   long len;
@@ -150,7 +151,6 @@ int cares_parse_txt_reply (const unsigned char *abuf, int alen,
               cares_txt_reply_set_length(txt_curr, substr_len);
               cares_txt_reply_set_ttl(txt_curr, rr_ttl);
 
-              unsigned char* txt = NULL;
               txt = ares_malloc (substr_len + 1/* Including null byte */);
               if (txt == NULL)
                 {

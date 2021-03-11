@@ -44,6 +44,7 @@ int cares_parse_ptr_reply(const unsigned char *abuf, int alen,
   long len;
   const unsigned char *aptr;
   char *ptrname = NULL, *rr_name = NULL;
+  char* ptr_host = NULL;
   cares_ptr_reply *ptr_head = NULL;
   cares_ptr_reply *ptr_last = NULL;
   cares_ptr_reply *ptr_curr;
@@ -124,7 +125,6 @@ int cares_parse_ptr_reply(const unsigned char *abuf, int alen,
             }
           ptr_last = ptr_curr;
 
-          char* ptr_host = NULL;
           /* Decode the RR data and set hostname to it. */
           status = ares__expand_name_for_response(aptr, abuf, alen, &ptr_host,
                                                   &len);

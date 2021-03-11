@@ -39,6 +39,11 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
                         struct ares_naptr_reply **naptr_out)
 {
   int status;
+  const unsigned char* flags = NULL;
+  const unsigned char* service = NULL;
+  const unsigned char* regexp = NULL;
+  char* replacement = NULL;
+  unsigned long len;
   struct ares_naptr_reply *naptr_head = NULL;
   struct ares_naptr_reply *naptr_last = NULL;
   struct ares_naptr_reply *naptr_curr;
@@ -81,8 +86,7 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
     naptr_curr->order = cares_naptr_reply_get_order(cnaptr_curr);
     naptr_curr->preference = cares_naptr_reply_get_preference(cnaptr_curr);
 
-    const unsigned char* flags = cares_naptr_reply_get_flags(cnaptr_curr);
-    unsigned long len;
+    flags = cares_naptr_reply_get_flags(cnaptr_curr);
     len = strlen((char *)flags);
     naptr_curr->flags = ares_malloc(len + 1);
     if (!naptr_curr->flags)
@@ -94,7 +98,7 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
     /* Make sure we NULL-terminate */
     naptr_curr->flags[len] = 0;
 
-    const unsigned char* service = cares_naptr_reply_get_service(cnaptr_curr);
+    service = cares_naptr_reply_get_service(cnaptr_curr);
     len = strlen((char *)service);
     naptr_curr->service = ares_malloc(len + 1);
     if (!naptr_curr->service)
@@ -106,7 +110,7 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
     /* Make sure we NULL-terminate */
     naptr_curr->service[len] = 0;
 
-    const unsigned char* regexp = cares_naptr_reply_get_regexp(cnaptr_curr);
+    regexp = cares_naptr_reply_get_regexp(cnaptr_curr);
     len = strlen((char *)regexp);
     naptr_curr->regexp = ares_malloc(len + 1);
     if (!naptr_curr->regexp)
@@ -118,7 +122,7 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
     /* Make sure we NULL-terminate */
     naptr_curr->regexp[len] = 0;
 
-    char *replacement = ares_strdup(
+    replacement = ares_strdup(
                         cares_naptr_reply_get_replacement(cnaptr_curr));
     if (!replacement) {
       status = ARES_ENOMEM;

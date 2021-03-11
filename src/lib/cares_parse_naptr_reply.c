@@ -44,6 +44,10 @@ cares_parse_naptr_reply (const unsigned char *abuf, int alen,
   unsigned int rr_ttl;
   long len;
   char *hostname = NULL, *rr_name = NULL;
+  unsigned char* flags = NULL;
+  unsigned char* service = NULL;
+  unsigned char* regexp = NULL;
+  char* replacement = NULL;
   struct cares_naptr_reply *naptr_head = NULL;
   struct cares_naptr_reply *naptr_last = NULL;
   struct cares_naptr_reply *naptr_curr;
@@ -138,28 +142,24 @@ cares_parse_naptr_reply (const unsigned char *abuf, int alen,
           vptr += sizeof(unsigned short);
           cares_naptr_reply_set_ttl(naptr_curr, rr_ttl);
 
-          unsigned char* flags;
           status = ares_expand_string(vptr, abuf, alen, &flags, &len);
           if (status != ARES_SUCCESS)
             break;
           vptr += len;
           cares_naptr_reply_set_flags(naptr_curr, flags);
 
-          unsigned char* service;
           status = ares_expand_string(vptr, abuf, alen, &service, &len);
           if (status != ARES_SUCCESS)
             break;
           vptr += len;
           cares_naptr_reply_set_service(naptr_curr, service);
 
-          unsigned char* regexp;
           status = ares_expand_string(vptr, abuf, alen, &regexp, &len);
           if (status != ARES_SUCCESS)
             break;
           vptr += len;
           cares_naptr_reply_set_regexp(naptr_curr, regexp);
 
-          char* replacement;
           status = ares_expand_name(vptr, abuf, alen, &replacement, &len);
           if (status != ARES_SUCCESS)
             break;

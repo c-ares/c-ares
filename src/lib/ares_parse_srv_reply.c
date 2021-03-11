@@ -44,6 +44,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
    * create a linked list of struct ares_srv_reply to return */
 
   int status;
+  char* newhost = NULL;
   struct ares_srv_reply *srv_head = NULL;
   struct ares_srv_reply *srv_curr = NULL;
   struct ares_srv_reply *srv_last = NULL;
@@ -85,7 +86,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
     srv_last = srv_curr;
 
     /* copy the host to newhost so we can free csrv_out */
-    char *newhost = ares_strdup(cares_srv_reply_get_host(csrv_curr));
+    newhost = ares_strdup(cares_srv_reply_get_host(csrv_curr));
     if (!newhost) {
       status = ARES_ENOMEM;
       break;

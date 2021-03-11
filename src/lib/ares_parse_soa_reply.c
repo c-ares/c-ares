@@ -39,6 +39,8 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
 		     struct ares_soa_reply **soa_out)
 {
   int status;
+  char* nsname = NULL;
+  char* hostmaster = NULL;
   cares_soa_reply *csoa_out = NULL;
   struct ares_soa_reply *soa = NULL;
 
@@ -56,7 +58,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   }
   soa = ares_malloc_data(ARES_DATATYPE_SOA_REPLY);
 
-  char *nsname = ares_strdup(cares_soa_reply_get_nsname(csoa_out));
+  nsname = ares_strdup(cares_soa_reply_get_nsname(csoa_out));
   if (!nsname)
   {
     status = ARES_ENOMEM;
@@ -72,7 +74,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   }
   soa->nsname = nsname;
 
-  char *hostmaster = ares_strdup(cares_soa_reply_get_hostmaster(csoa_out));
+  hostmaster = ares_strdup(cares_soa_reply_get_hostmaster(csoa_out));
   if (!hostmaster)
   {
     status = ARES_ENOMEM;

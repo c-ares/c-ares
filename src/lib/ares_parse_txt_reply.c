@@ -46,6 +46,7 @@ ares__parse_txt_reply (const unsigned char *abuf, int alen,
    * create a linked list of struct ares_txt_reply to return */
 
   int status;
+  const unsigned char* txt = NULL;
   struct ares_txt_ext *txt_head = NULL;
   struct ares_txt_ext *txt_curr = NULL;
   struct ares_txt_ext *txt_last = NULL;
@@ -87,7 +88,7 @@ ares__parse_txt_reply (const unsigned char *abuf, int alen,
     }
     txt_last = txt_curr;
 
-    const unsigned char* txt = cares_txt_reply_get_txt(ctxt_curr);
+    txt = cares_txt_reply_get_txt(ctxt_curr);
     txt_curr->txt = ares_malloc(cares_txt_reply_get_length(ctxt_curr) + 1);
     if (!txt_curr->txt)
     {

@@ -44,6 +44,7 @@ int cares_parse_ns_reply(const unsigned char *abuf, int alen,
   long len;
   const unsigned char *aptr;
   char *ptrname = NULL, *rr_name = NULL;
+  char* ns_host = NULL;
   cares_ns_reply *ns_head = NULL;
   cares_ns_reply *ns_last = NULL;
   cares_ns_reply *ns_curr;
@@ -118,7 +119,6 @@ int cares_parse_ns_reply(const unsigned char *abuf, int alen,
             }
           ns_last = ns_curr;
 
-          char* ns_host = NULL;
           /* Decode the RR data and set hostname to it. */
           status = ares__expand_name_for_response(aptr, abuf, alen, &ns_host,
                                                   &len);

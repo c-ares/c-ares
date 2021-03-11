@@ -43,6 +43,7 @@ ares_parse_mx_reply (const unsigned char *abuf, int alen,
    * create a linked list of struct ares_mx_reply to return */
 
   int status;
+  char* newhost;
   struct ares_mx_reply *mx_head = NULL;
   struct ares_mx_reply *mx_curr = NULL;
   struct ares_mx_reply *mx_last = NULL;
@@ -84,7 +85,7 @@ ares_parse_mx_reply (const unsigned char *abuf, int alen,
     mx_last = mx_curr;
 
     /* copy the host to newhost so we can free cmx_out */
-    char *newhost = ares_strdup(cares_mx_reply_get_host(cmx_curr));
+    newhost = ares_strdup(cares_mx_reply_get_host(cmx_curr));
     if (!newhost) {
       status = ARES_ENOMEM;
       break;

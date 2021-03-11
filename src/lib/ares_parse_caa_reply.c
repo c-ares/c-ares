@@ -66,6 +66,8 @@ ares_parse_caa_reply (const unsigned char *abuf, int alen,
   for(ccaa_curr = ccaa_out; ccaa_curr;
       ccaa_curr = cares_caa_reply_get_next(ccaa_curr))
   {
+    const unsigned char* property;
+    const unsigned char* value;
     caa_curr = ares_malloc_data(ARES_DATATYPE_CAA_REPLY);
     if (!caa_curr)
     {
@@ -84,7 +86,7 @@ ares_parse_caa_reply (const unsigned char *abuf, int alen,
     /* fill in the ares_caa_reply fields */
     caa_curr->critical = cares_caa_reply_get_critical(ccaa_curr);
 
-    const unsigned char* property = cares_caa_reply_get_property(ccaa_curr);
+    property = cares_caa_reply_get_property(ccaa_curr);
     caa_curr->property = ares_malloc(cares_caa_reply_get_plength(ccaa_curr) + 1);
     if (!caa_curr->property)
     {
@@ -97,7 +99,7 @@ ares_parse_caa_reply (const unsigned char *abuf, int alen,
 
     caa_curr->plength = cares_caa_reply_get_plength(ccaa_curr);
 
-    const unsigned char* value = cares_caa_reply_get_value(ccaa_curr);
+    value = cares_caa_reply_get_value(ccaa_curr);
     caa_curr->value = ares_malloc(cares_caa_reply_get_length(ccaa_curr) + 1);
     if (!caa_curr->value)
     {

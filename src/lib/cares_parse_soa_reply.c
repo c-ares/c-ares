@@ -36,9 +36,11 @@
 
 int
 cares_parse_soa_reply(const unsigned char *abuf, int alen,
-		     struct cares_soa_reply **soa_out)
+                      struct cares_soa_reply **soa_out)
 {
   const unsigned char *aptr;
+  char* nsname = NULL;
+  char* hostmaster = NULL;
   long len;
   char *qname = NULL, *rr_name = NULL;
   struct cares_soa_reply *soa = NULL;
@@ -123,7 +125,6 @@ cares_parse_soa_reply(const unsigned char *abuf, int alen,
         }
 
       /* nsname */
-      char* nsname;
       status = ares__expand_name_for_response(aptr, abuf, alen, &nsname,
                                                &len);
       if (status != ARES_SUCCESS)
@@ -132,7 +133,6 @@ cares_parse_soa_reply(const unsigned char *abuf, int alen,
       aptr += len;
 
       /* hostmaster */
-      char* hostmaster;
       status = ares__expand_name_for_response(aptr, abuf, alen,
                                               &hostmaster, &len);
       if (status != ARES_SUCCESS)

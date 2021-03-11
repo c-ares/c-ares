@@ -44,6 +44,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   unsigned int rr_ttl;
   long len;
   char *hostname = NULL, *rr_name = NULL;
+  char* srv_host = NULL;
   cares_srv_reply *srv_head = NULL;
   cares_srv_reply *srv_last = NULL;
   cares_srv_reply *srv_curr;
@@ -137,8 +138,6 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           cares_srv_reply_set_port(srv_curr, DNS__16BIT(vptr));
           vptr += sizeof(unsigned short);
           cares_srv_reply_set_ttl(srv_curr, rr_ttl);
-
-          char* srv_host = NULL;
 
           status = ares_expand_name (vptr, abuf, alen, &srv_host, &len);
           if (status != ARES_SUCCESS)

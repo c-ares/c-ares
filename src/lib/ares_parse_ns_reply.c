@@ -45,11 +45,11 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
   int status, i;
   long len;
   int alias_alloc = 2;
+  cares_ns_reply* ns_out = NULL;
 
   /* Set *host to NULL for all failure cases. */
   *host = NULL;
 
-  cares_ns_reply* ns_out = NULL;
   status = cares_parse_ns_reply(abuf, alen, &ns_out);
 
   /* clean up on error */
@@ -142,11 +142,11 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
 
         return ARES_SUCCESS;
       }
-      ares_free(hostent->h_aliases);
+      ares_free(hostent->h_addr_list);
     }
-    ares_free(hostent->h_addr_list);
+    ares_free(hostent);
   }
-  ares_free(hostent);
+  ares_free(hname);
   if (ns_out)
     ares_free_data(ns_out);
 

@@ -40,6 +40,7 @@ cares_parse_mx_reply (const unsigned char *abuf, int alen,
 {
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
+  char* mx_host = NULL;
   int status, rr_type, rr_class, rr_len;
   unsigned int rr_ttl;
   long len;
@@ -105,6 +106,7 @@ cares_parse_mx_reply (const unsigned char *abuf, int alen,
       /* Check if we are really looking at a MX record */
       if (rr_class == C_IN && rr_type == T_MX)
         {
+
           /* parse the MX record itself */
           if (rr_len < 2)
             {
@@ -134,7 +136,6 @@ cares_parse_mx_reply (const unsigned char *abuf, int alen,
           cares_mx_reply_set_ttl(mx_curr, rr_ttl);
           vptr += sizeof(unsigned short);
 
-          char* mx_host = NULL;
           status = ares_expand_name (vptr, abuf, alen, &mx_host, &len);
           if (status != ARES_SUCCESS)
             break;
