@@ -83,6 +83,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
       {
         /* Fill in the hostent and return successfully. */
         hostent->h_name = NULL;
+
         /* iterate through the linked list of cares_ptr_reply
           and build the h_aliases array.                      */
         i = 0;
@@ -105,6 +106,8 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
                   ares_free(hostent->h_aliases[j]);
                 }
               }
+              if (hostent->h_aliases)
+                ares_free(hostent->h_aliases);
               if (hostent->h_addr_list[0])
                 ares_free(hostent->h_addr_list[0]);
               ares_free(hostent->h_addr_list);
@@ -117,7 +120,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
           {
             char** ptr;
             ptr = ares_realloc(hostent->h_aliases,
-            alias_alloc * sizeof(char *));
+                               alias_alloc * sizeof(char *));
             if (!ptr)
             {
               status = ARES_ENOMEM;

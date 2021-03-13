@@ -68,7 +68,10 @@ cares_parse_soa_reply(const unsigned char *abuf, int alen,
     return status;
 
   if (alen <= len + HFIXEDSZ + 1)
+  {
+    ares_free(qname);
     return ARES_EBADRESP;
+  }
   aptr += len;
 
   qclass = DNS_QUESTION_TYPE(aptr);

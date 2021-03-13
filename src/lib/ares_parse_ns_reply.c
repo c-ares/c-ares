@@ -64,8 +64,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
   status = ares__expand_name_for_response(aptr, abuf, alen, &hname, &len);
   if (status != ARES_SUCCESS)
   {
-    if (hname)
-      ares_free(hname);
+    ares_free_data(ns_out);
     return status;
   }
 
@@ -99,7 +98,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
               if (ns_out)
                 ares_free_data(ns_out);
 
-              for (int j = 0; j <= i; ++j)
+              for (int j = 0; j < i; ++j)
               {
                 if (hostent->h_aliases[j])
                   ares_free(hostent->h_aliases[j]);
@@ -118,7 +117,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
             if (ns_out)
               ares_free_data(ns_out);
 
-            for (int j = 0; j <= i; ++j)
+            for (int j = 0; j < i; ++j)
             {
               if (hostent->h_aliases[j])
                 ares_free(hostent->h_aliases[j]);

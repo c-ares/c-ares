@@ -43,11 +43,11 @@ int cares_parse_ns_reply(const unsigned char *abuf, int alen,
   unsigned int rr_ttl;
   long len;
   const unsigned char *aptr;
-  char *ptrname = NULL, *rr_name = NULL;
+  char *nsname = NULL, *rr_name = NULL;
   char* ns_host = NULL;
   cares_ns_reply *ns_head = NULL;
   cares_ns_reply *ns_last = NULL;
-  cares_ns_reply *ns_curr;
+  cares_ns_reply *ns_curr = NULL;
 
   /* Set *ns_out to NULL for all failure cases. */
   *ns_out = NULL;
@@ -66,12 +66,12 @@ int cares_parse_ns_reply(const unsigned char *abuf, int alen,
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response(aptr, abuf, alen, &ptrname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &nsname, &len);
   if (status != ARES_SUCCESS)
     return status;
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
-      ares_free(ptrname);
+      ares_free(nsname);
       return ARES_EBADRESP;
     }
   aptr += len + QFIXEDSZ;
@@ -150,8 +150,8 @@ int cares_parse_ns_reply(const unsigned char *abuf, int alen,
         }  /* LCOV_EXCL_STOP */
     }
 
-  if (ptrname)
-    ares_free(ptrname);
+  if (nsname)
+    ares_free(nsname);
   if (rr_name)
     ares_free(rr_name);
 

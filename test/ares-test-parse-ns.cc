@@ -75,9 +75,10 @@ TEST_F(LibraryTest, ParseCNsReplyMultiple) {
     .add_additional(new DNSARR("ns3.google.com", 247, {216,239,36,10}));
   std::vector<byte> data = pkt.data();
 
-  cares_ns_reply* ns  = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, cares_parse_ns_reply(data.data(), data.size(), &ns));
-  ASSERT_NE(nullptr, ns);
+  cares_ns_reply* ns0  = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, cares_parse_ns_reply(data.data(), data.size(), &ns0));
+  ASSERT_NE(nullptr, ns0);
+  cares_ns_reply* ns = ns0;
   EXPECT_EQ("ns1.google.com", std::string(cares_ns_reply_get_host(ns)));
   EXPECT_EQ(59, cares_ns_reply_get_ttl(ns));
   ns = cares_ns_reply_get_next(ns);
@@ -89,7 +90,7 @@ TEST_F(LibraryTest, ParseCNsReplyMultiple) {
   ns = cares_ns_reply_get_next(ns);
   EXPECT_EQ("ns4.google.com", std::string(cares_ns_reply_get_host(ns)));
   EXPECT_EQ(59, cares_ns_reply_get_ttl(ns));
-  ares_free_data(ns);
+  ares_free_data(ns0);
 }
 
 TEST_F(LibraryTest, ParseNsReplyErrors) {

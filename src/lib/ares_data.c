@@ -135,10 +135,30 @@ void ares_free_data(void *dataptr)
             ares_free(ptr->data.caa_reply.value);
           break;
 
+        case ARES_DATATYPE_CPTR_REPLY:
+
+          if (ptr->data.cptr_reply.next)
+            next_data = ptr->data.cptr_reply.next;
+          if (ptr->data.cptr_reply.host)
+            ares_free(ptr->data.cptr_reply.host);
+          break;
+
+        case ARES_DATATYPE_CNS_REPLY:
+
+          printf("free ns\n");
+          if (ptr->data.cns_reply.next)
+            next_data = ptr->data.cns_reply.next;
+          if (ptr->data.cns_reply.host)
+          {
+            printf("free host\n");
+            ares_free(ptr->data.cns_reply.host);
+          }
+          break;
+
         default:
           return;
       }
-
+    printf("free ptr\n");
     ares_free(ptr);
     dataptr = next_data;
   }
