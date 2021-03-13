@@ -505,6 +505,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerResolvConfNotReadable,
   MakeUnreadable hide("/etc/resolv.conf");
   // Unavailable /etc/resolv.conf falls back to defaults
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  ares_destroy(channel);
   return HasFailure();
 }
 CONTAINED_TEST_F(LibraryTest, ContainerNsswitchConfNotReadable,

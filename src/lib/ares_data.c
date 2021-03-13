@@ -145,12 +145,10 @@ void ares_free_data(void *dataptr)
 
         case ARES_DATATYPE_CNS_REPLY:
 
-          printf("free ns\n");
           if (ptr->data.cns_reply.next)
             next_data = ptr->data.cns_reply.next;
           if (ptr->data.cns_reply.host)
           {
-            printf("free host\n");
             ares_free(ptr->data.cns_reply.host);
           }
           break;
@@ -158,7 +156,6 @@ void ares_free_data(void *dataptr)
         default:
           return;
       }
-    printf("free ptr\n");
     ares_free(ptr);
     dataptr = next_data;
   }
