@@ -1665,17 +1665,18 @@ static int init_by_resolv_conf(ares_channel channel)
       int entries = 0;
       while ((entries < MAXDNSRCH) && res.dnsrch[entries])
         entries++;
-
-      channel->domains = ares_malloc(entries * sizeof(char *));
-      if (!channel->domains) {
-        status = ARES_ENOMEM;
-      } else {
-        int i;
-        channel->ndomains = entries;
-        for (i = 0; i < channel->ndomains; ++i) {
-          channel->domains[i] = ares_strdup(res.dnsrch[i]);
-          if (!channel->domains[i])
-            status = ARES_ENOMEM;
+      if(entries) {
+        channel->domains = ares_malloc(entries * sizeof(char *));
+        if (!channel->domains) {
+          status = ARES_ENOMEM;
+        } else {
+          int i;
+          channel->ndomains = entries;
+          for (i = 0; i < channel->ndomains; ++i) {
+            channel->domains[i] = ares_strdup(res.dnsrch[i]);
+            if (!channel->domains[i])
+              status = ARES_ENOMEM;
+          }
         }
       }
     }
