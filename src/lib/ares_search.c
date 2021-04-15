@@ -115,7 +115,7 @@ void ares_search(ares_channel channel, const char *name, int dnsclass,
   if (ndots >= channel->ndots)
     {
       /* Try the name as-is first. */
-      squery->next_domain = 0;
+      squery->next_domain = channel->ndomains;
       squery->trying_as_is = 1;
       ares_query(channel, name, dnsclass, type, search_callback, squery);
     }
