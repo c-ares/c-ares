@@ -32,6 +32,32 @@ TEST_F(LibraryTest, ParseSoaAnyReplyOK) {
   ares_free_data(soa);
 }
 
+TEST_F(LibraryTest, ParseCSoaAnyReplyOK) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_ANY))\
+    .add_answer(new DNSARR("example.com", 0x01020304, {2,3,4,5}))
+    .add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"))
+    .add_answer(new DNSMxRR("example.com", 100, 200, "mx2.example.com"))
+    .add_answer(new DNSSoaRR("example.com", 100,
+                             "soa1.example.com", "fred.example.com",
+                             1, 2, 3, 4, 5));
+  std::vector<byte> data = pkt.data();
+
+  struct cares_soa_reply* soa = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, cares_parse_soa_reply(data.data(), data.size(), &soa));
+  ASSERT_NE(nullptr, soa);
+  EXPECT_EQ("soa1.example.com", std::string(cares_soa_reply_get_nsname(soa)));
+  EXPECT_EQ("fred.example.com", std::string(cares_soa_reply_get_hostmaster(soa)));
+  EXPECT_EQ(1, cares_soa_reply_get_serial(soa));
+  EXPECT_EQ(2, cares_soa_reply_get_refresh(soa));
+  EXPECT_EQ(3, cares_soa_reply_get_retry(soa));
+  EXPECT_EQ(4, cares_soa_reply_get_expire(soa));
+  EXPECT_EQ(5, cares_soa_reply_get_minttl(soa));
+  EXPECT_EQ(100, cares_soa_reply_get_ttl(soa));
+  ares_free_data(soa);
+}
+
 TEST_F(LibraryTest, ParseSoaAnyReplyErrors) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
@@ -90,6 +116,64 @@ TEST_F(LibraryTest, ParseSoaAnyReplyErrors) {
   }
 }
 
+TEST_F(LibraryTest, ParseCSoaAnyReplyErrors) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_ANY))
+    .add_answer(new DNSSoaRR("example.com", 100,
+                             "soa1.example.com", "fred.example.com",
+                             1, 2, 3, 4, 5));
+  std::vector<byte> data;
+  struct cares_soa_reply* soa = nullptr;
+
+  // No question.
+  pkt.questions_.clear();
+  data = pkt.data();
+  EXPECT_EQ(ARES_EBADRESP, cares_parse_soa_reply(data.data(), data.size(), &soa));
+  pkt.add_question(new DNSQuestion("example.com", T_ANY));
+
+#ifdef DISABLED
+  // Question != answer
+  pkt.questions_.clear();
+  pkt.add_question(new DNSQuestion("Axample.com", T_ANY));
+  data = pkt.data();
+  EXPECT_EQ(ARES_EBADRESP, cares_parse_soa_reply(data.data(), data.size(), &soa));
+  pkt.questions_.clear();
+  pkt.add_question(new DNSQuestion("example.com", T_ANY));
+#endif
+
+  // Two questions
+  pkt.add_question(new DNSQuestion("example.com", T_ANY));
+  data = pkt.data();
+  EXPECT_EQ(ARES_EBADRESP, cares_parse_soa_reply(data.data(), data.size(), &soa));
+  pkt.questions_.clear();
+  pkt.add_question(new DNSQuestion("example.com", T_ANY));
+
+  // Wrong sort of answer.
+  pkt.answers_.clear();
+  pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
+  data = pkt.data();
+  EXPECT_EQ(ARES_EBADRESP, cares_parse_soa_reply(data.data(), data.size(), &soa));
+  pkt.answers_.clear();
+  pkt.add_answer(new DNSSoaRR("example.com", 100,
+                             "soa1.example.com", "fred.example.com",
+                             1, 2, 3, 4, 5));
+
+  // No answer.
+  pkt.answers_.clear();
+  data = pkt.data();
+  EXPECT_EQ(ARES_EBADRESP, cares_parse_soa_reply(data.data(), data.size(), &soa));
+  pkt.add_answer(new DNSSoaRR("example.com", 100,
+                             "soa1.example.com", "fred.example.com",
+                             1, 2, 3, 4, 5));
+
+  // Truncated packets.
+  data = pkt.data();
+  for (size_t len = 1; len < data.size(); len++) {
+    EXPECT_EQ(ARES_EBADRESP, cares_parse_soa_reply(data.data(), len, &soa));
+  }
+}
+
 TEST_F(LibraryTest, ParseSoaAnyReplyAllocFail) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
@@ -104,6 +188,23 @@ TEST_F(LibraryTest, ParseSoaAnyReplyAllocFail) {
     ClearFails();
     SetAllocFail(ii);
     EXPECT_EQ(ARES_ENOMEM, ares_parse_soa_reply(data.data(), data.size(), &soa)) << ii;
+  }
+}
+
+TEST_F(LibraryTest, ParseCSoaAnyReplyAllocFail) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_ANY))
+    .add_answer(new DNSSoaRR("example.com", 100,
+                             "soa1.example.com", "fred.example.com",
+                             1, 2, 3, 4, 5));
+  std::vector<byte> data = pkt.data();
+  struct cares_soa_reply* soa = nullptr;
+
+  for (int ii = 1; ii <= 5; ii++) {
+    ClearFails();
+    SetAllocFail(ii);
+    EXPECT_EQ(ARES_ENOMEM, cares_parse_soa_reply(data.data(), data.size(), &soa)) << ii;
   }
 }
 
