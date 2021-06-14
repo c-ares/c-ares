@@ -60,6 +60,8 @@ TEST_F(LibraryTest, ParseIndirectRootName) {
   ares_free_hostent(host);
 }
 
+
+#if 0 /* We are validating hostnames now, its not clear how this would ever be valid */
 TEST_F(LibraryTest, ParseEscapedName) {
   std::vector<byte> data = {
     0x12, 0x34,  // qid
@@ -105,6 +107,7 @@ TEST_F(LibraryTest, ParseEscapedName) {
   EXPECT_EQ('c', hent.name_[6]);
   ares_free_hostent(host);
 }
+#endif
 
 TEST_F(LibraryTest, ParsePartialCompressedName) {
   std::vector<byte> data = {
