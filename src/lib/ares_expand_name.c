@@ -52,6 +52,31 @@ static int is_reservedch(int ch)
   return 0;
 }
 
+static int ares__isprint(int ch)
+{
+  if (ch >= 0x20 && ch <= 0x7E)
+    return 1;
+  return 0;
+}
+
+/* Character set allowed by hostnames */
+static int is_hostnamech(int ch)
+{
+  /* [A-Za-z0-9-.]
+   * Don't use isalnum() as it is locale-specific
+   */
+  if (ch >= 'A' && ch <= 'Z')
+    return 1;
+  if (ch >= 'a' && ch <= 'z')
+    return 1;
+  if (ch >= '0' && ch <= '9')
+    return 1;
+  if (ch == '-' || ch == '.')
+    return 1;
+
+  return 0;
+}
+
 /* Expand an RFC1035-encoded domain name given by encoded.  The
  * containing message is given by abuf and alen.  The result given by
  * *s, which is set to a NUL-terminated allocated buffer.  *enclen is
@@ -140,7 +165,7 @@ int ares__expand_name_validated(const unsigned char *encoded,
             {
               /* Output as \DDD for consistency with RFC1035 5.1, except
                * for the special case of a root name response  */
-              if (!isprint(*p) && !(name_len == 1 && *p == 0))
+              if (!ares__isprint(*p) && !(name_len == 1 && *p == 0))
                 {
                   *q++ = '\\';
                   *q++ = '0' + *p / 100;
@@ -223,7 +248,7 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
 
           while (offset--)
             {
-              if (!isprint(*encoded) && !(name_len == 1 && *encoded == 0))
+              if (!ares__isprint(*encoded) && !(name_len == 1 && *encoded == 0))
                 {
                   if (is_hostname)
                     return -1;
@@ -237,6 +262,8 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
                 }
               else
                 {
+                  if (is_hostname && !is_hostnamech(*encoded))
+                    return -1;
                   n += 1;
                 }
               encoded++;
