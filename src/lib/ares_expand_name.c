@@ -30,7 +30,7 @@
 #define MAX_INDIRS 50
 
 static int name_length(const unsigned char *encoded, const unsigned char *abuf,
-                       int alen);
+                       int alen, int is_hostname);
 
 /* Reserved characters for names that need to be escaped */
 static int is_reservedch(int ch)
@@ -48,6 +48,31 @@ static int is_reservedch(int ch)
     default:
       break;
   }
+
+  return 0;
+}
+
+static int ares__isprint(int ch)
+{
+  if (ch >= 0x20 && ch <= 0x7E)
+    return 1;
+  return 0;
+}
+
+/* Character set allowed by hostnames */
+static int is_hostnamech(int ch)
+{
+  /* [A-Za-z0-9-.]
+   * Don't use isalnum() as it is locale-specific
+   */
+  if (ch >= 'A' && ch <= 'Z')
+    return 1;
+  if (ch >= 'a' && ch <= 'z')
+    return 1;
+  if (ch >= '0' && ch <= '9')
+    return 1;
+  if (ch == '-' || ch == '.')
+    return 1;
 
   return 0;
 }
@@ -74,10 +99,15 @@ static int is_reservedch(int ch)
  *
  * Since the expanded name uses '.' as a label separator, we use
  * backslashes to escape periods or backslashes in the expanded name.
+ *
+ * If the result is expected to be a hostname, then no escaped data is allowed
+ * and will return error.
  */
 
-int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
-                     int alen, char **s, long *enclen)
+int ares__expand_name_validated(const unsigned char *encoded,
+                                const unsigned char *abuf,
+                                int alen, char **s, long *enclen,
+                                int is_hostname)
 {
   int len, indir = 0;
   char *q;
@@ -87,7 +117,7 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
      size_t uns;
   } nlen;
 
-  nlen.sig = name_length(encoded, abuf, alen);
+  nlen.sig = name_length(encoded, abuf, alen, is_hostname);
   if (nlen.sig < 0)
     return ARES_EBADNAME;
 
@@ -135,9 +165,8 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
             {
               /* Output as \DDD for consistency with RFC1035 5.1, except
                * for the special case of a root name response  */
-              if (!isprint(*p) && !(name_len == 1 && *p == 0))
+              if (!ares__isprint(*p) && !(name_len == 1 && *p == 0))
                 {
-
                   *q++ = '\\';
                   *q++ = '0' + *p / 100;
                   *q++ = '0' + (*p % 100) / 10;
@@ -170,11 +199,18 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
   return ARES_SUCCESS;
 }
 
+
+int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
+                     int alen, char **s, long *enclen)
+{
+  return ares__expand_name_validated(encoded, abuf, alen, s, enclen, 0);
+}
+
 /* Return the length of the expansion of an encoded domain name, or
  * -1 if the encoding is invalid.
  */
 static int name_length(const unsigned char *encoded, const unsigned char *abuf,
-                       int alen)
+                       int alen, int is_hostname)
 {
   int n = 0, offset, indir = 0, top;
 
@@ -212,16 +248,22 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
 
           while (offset--)
             {
-              if (!isprint(*encoded) && !(name_len == 1 && *encoded == 0))
+              if (!ares__isprint(*encoded) && !(name_len == 1 && *encoded == 0))
                 {
+                  if (is_hostname)
+                    return -1;
                   n += 4;
                 }
               else if (is_reservedch(*encoded))
                 {
+                  if (is_hostname)
+                    return -1;
                   n += 2;
                 }
               else
                 {
+                  if (is_hostname && !is_hostnamech(*encoded))
+                    return -1;
                   n += 1;
                 }
               encoded++;
@@ -244,12 +286,14 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
   return (n) ? n - 1 : n;
 }
 
-/* Like ares_expand_name but returns EBADRESP in case of invalid input. */
+/* Like ares_expand_name_validated  but returns EBADRESP in case of invalid
+ * input. */
 int ares__expand_name_for_response(const unsigned char *encoded,
                                    const unsigned char *abuf, int alen,
-                                   char **s, long *enclen)
+                                   char **s, long *enclen, int is_hostname)
 {
-  int status = ares_expand_name(encoded, abuf, alen, s, enclen);
+  int status = ares__expand_name_validated(encoded, abuf, alen, s, enclen,
+    is_hostname);
   if (status == ARES_EBADNAME)
     status = ARES_EBADRESP;
   return status;

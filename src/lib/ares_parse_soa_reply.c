@@ -60,7 +60,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   aptr = abuf + HFIXEDSZ;
 
   /* query name */
-  status = ares__expand_name_for_response(aptr, abuf, alen, &qname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &qname, &len, 0);
   if (status != ARES_SUCCESS)
     goto failed_stat;
 
@@ -83,7 +83,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   for (i = 0; i < ancount; i++)
   {
     rr_name = NULL;
-    status  = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len);
+    status  = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len, 0);
     if (status != ARES_SUCCESS)
      {
       ares_free(rr_name);
@@ -120,7 +120,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
 
       /* nsname */
       status = ares__expand_name_for_response(aptr, abuf, alen, &soa->nsname,
-                                               &len);
+                                               &len, 0);
       if (status != ARES_SUCCESS)
        {
         ares_free(rr_name);
@@ -130,7 +130,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
 
       /* hostmaster */
       status = ares__expand_name_for_response(aptr, abuf, alen,
-                                               &soa->hostmaster, &len);
+                                               &soa->hostmaster, &len, 0);
       if (status != ARES_SUCCESS)
        {
         ares_free(rr_name);
