@@ -109,7 +109,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
       while (next_cname)
         {
           if(next_cname->alias)
-            aliases[alias++] = strdup(next_cname->alias);
+            aliases[alias++] = ares_strdup(next_cname->alias);
           if(next_cname->ttl < cname_ttl)
             cname_ttl = next_cname->ttl;
           next_cname = next_cname->next;
@@ -131,7 +131,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
 
   if (ai.cnames)
     {
-      hostent->h_name = strdup(ai.cnames->name);
+      hostent->h_name = ares_strdup(ai.cnames->name);
       ares_free(question_hostname);
     }
   else
