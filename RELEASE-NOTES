@@ -18,7 +18,7 @@ Security:
    not performing valiation themselves [18]
 
 Changes:
- o Use unbuffered /dev/urandom for random data to prevent early startup
+ o Use non-blocking /dev/urandom for random data to prevent early startup
    performance issues [5]
  o z/OS port [6]
  o ares_malloc(0) is now defined behavior (returns NULL) rather than
