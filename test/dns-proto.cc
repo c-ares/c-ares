@@ -137,7 +137,7 @@ std::string RRTypeToString(int rrtype) {
   case T_MAILB: return "MAILB";
   case T_MAILA: return "MAILA";
   case T_ANY: return "ANY";
-  case T_ZXFR: return "ZXFR";
+  case T_URI: return "URI";
   case T_MAX: return "MAX";
   default: return "UNKNOWN";
   }
@@ -371,6 +371,24 @@ std::string RRToString(const std::vector<byte>& packet,
       }
       break;
     }
+    case T_URI: {
+      if (rdatalen > 4) {
+        const byte* p = *data;
+        unsigned long prio = DNS__16BIT(p);
+        unsigned long weight = DNS__16BIT(p + 2);
+        p += 4;
+        int rc = ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
+        if (rc != ARES_SUCCESS) {
+          ss << "(error from ares_expand_name)";
+          break;
+        }
+        ss << prio << " " << weight << " '" << name << "'";
+        ares_free_string(name);
+      } else {
+        ss << "(RR too short)";
+      }
+      break;
+    }
     case T_SOA: {
       const byte* p = *data;
       int rc = ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
@@ -529,6 +547,17 @@ std::vector<byte> DNSSrvRR::data() const {
   PushInt16(&data, prio_);
   PushInt16(&data, weight_);
   PushInt16(&data, port_);
+  data.insert(data.end(), encname.begin(), encname.end());
+  return data;
+}
+
+std::vector<byte> DNSUriRR::data() const {
+  std::vector<byte> data = DNSRR::data();
+  std::vector<byte> encname = EncodeString(target_);
+  int len = 4 + encname.size();
+  PushInt16(&data, len);
+  PushInt16(&data, prio_);
+  PushInt16(&data, weight_);
   data.insert(data.end(), encname.begin(), encname.end());
   return data;
 }

@@ -14,6 +14,7 @@ TESTSOURCES = ares-test-main.cc	\
   ares-test-parse-soa-any.cc		\
   ares-test-parse-srv.cc		\
   ares-test-parse-txt.cc		\
+  ares-test-parse-uri.cc		\
   ares-test-misc.cc			\
   ares-test-live.cc			\
   ares-test-mock.cc			\

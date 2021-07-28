@@ -588,6 +588,14 @@ struct ares_soa_reply {
   unsigned int minttl;
 };
 
+struct ares_uri_reply {
+  struct ares_uri_reply  *next;
+  unsigned short          priority;
+  unsigned short          weight;
+  char                   *uri;
+  int                     ttl;
+};
+
 /*
  * Similar to addrinfo, but with extra ttl and missing canonname.
  */
@@ -684,6 +692,10 @@ CARES_EXTERN int ares_parse_naptr_reply(const unsigned char* abuf,
 CARES_EXTERN int ares_parse_soa_reply(const unsigned char* abuf,
 				      int alen,
 				      struct ares_soa_reply** soa_out);
+
+CARES_EXTERN int ares_parse_uri_reply(const unsigned char* abuf,
+                                      int alen,
+                                      struct ares_uri_reply** uri_out);
 
 CARES_EXTERN void ares_free_string(void *str);
 
