@@ -377,13 +377,8 @@ std::string RRToString(const std::vector<byte>& packet,
         unsigned long prio = DNS__16BIT(p);
         unsigned long weight = DNS__16BIT(p + 2);
         p += 4;
-        int rc = ares_expand_name(p, packet.data(), packet.size(), &name, &enclen);
-        if (rc != ARES_SUCCESS) {
-          ss << "(error from ares_expand_name)";
-          break;
-        }
-        ss << prio << " " << weight << " '" << name << "'";
-        ares_free_string(name);
+        std::string uri(p, rdatalen - 4);
+        ss << prio << " " << weight << " '" << uri << "'";
       } else {
         ss << "(RR too short)";
       }
@@ -553,12 +548,11 @@ std::vector<byte> DNSSrvRR::data() const {
 
 std::vector<byte> DNSUriRR::data() const {
   std::vector<byte> data = DNSRR::data();
-  std::vector<byte> encname = EncodeString(target_);
-  int len = 4 + encname.size();
+  int len = 4 + target_.size();
   PushInt16(&data, len);
   PushInt16(&data, prio_);
   PushInt16(&data, weight_);
-  data.insert(data.end(), encname.begin(), encname.end());
+  data.insert(data.end(), target_.begin(), target_.end());
   return data;
 }
 
