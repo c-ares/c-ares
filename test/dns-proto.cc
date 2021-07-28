@@ -377,7 +377,7 @@ std::string RRToString(const std::vector<byte>& packet,
         unsigned long prio = DNS__16BIT(p);
         unsigned long weight = DNS__16BIT(p + 2);
         p += 4;
-        std::string uri(p, rdatalen - 4);
+        std::string uri(p, p + (rdatalen - 4));
         ss << prio << " " << weight << " '" << uri << "'";
       } else {
         ss << "(RR too short)";
