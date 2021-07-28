@@ -144,7 +144,7 @@ TEST_F(LibraryTest, ParseUriReplyCname) {
   pkt.set_qid(0x1234).set_response().set_aa()
     .add_question(new DNSQuestion("example.abc.def.com", T_URI))
     .add_answer(new DNSCnameRR("example.abc.def.com", 300, "cname.abc.def.com"))
-    .add_answer(new DNSUriRR("cname.abc.def.com", 600, 0, 10 "uri.abc.def.com"))
+    .add_answer(new DNSUriRR("cname.abc.def.com", 600, 0, 10, "uri.abc.def.com"))
     .add_auth(new DNSNsRR("abc.def.com", 44, "else1.where.com"))
     .add_auth(new DNSNsRR("abc.def.com", 44, "else2.where.com"))
     .add_auth(new DNSNsRR("abc.def.com", 44, "else3.where.com"))
