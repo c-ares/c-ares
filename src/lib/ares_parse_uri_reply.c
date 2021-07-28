@@ -149,6 +149,11 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen,
           uri_curr->weight = DNS__16BIT(vptr);
           vptr += sizeof(unsigned short);
           uri_curr->uri = (char *)ares_malloc(rr_len-3);
+	  	  if (!uri_curr->uri)
+	      	{
+	      	  status = ARES_ENOMEM;
+			  break;
+		    }
           uri_curr->uri = strncpy(uri_curr->uri, vptr, rr_len-4);
           uri_curr->uri[rr_len-4]='\0';
           uri_curr->ttl = rr_ttl;
