@@ -37,6 +37,7 @@ MANPAGES = ares_cancel.3		\
   ares_parse_soa_reply.3		\
   ares_parse_srv_reply.3		\
   ares_parse_txt_reply.3		\
+  ares_parse_uri_reply.3		\
   ares_process.3			\
   ares_query.3				\
   ares_save_options.3			\

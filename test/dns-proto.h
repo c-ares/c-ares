@@ -138,6 +138,16 @@ struct DNSSrvRR : public DNSRR {
   std::string target_;
 };
 
+struct DNSUriRR : public DNSRR {
+  DNSUriRR(const std::string& name, int ttl,
+           int prio, int weight, const std::string& target)
+    : DNSRR(name, T_URI, ttl), prio_(prio), weight_(weight), target_(target) {}
+  virtual std::vector<byte> data() const;
+  int prio_;
+  int weight_;
+  std::string target_;
+};
+
 struct DNSSoaRR : public DNSRR {
   DNSSoaRR(const std::string& name, int ttl,
            const std::string& nsname, const std::string& rname,
