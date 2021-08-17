@@ -55,6 +55,13 @@
    Error Compilation_aborted_CARES_TYPEOF_ARES_SOCKLEN_T_already_defined
 #endif
 
+#ifdef HAVE_ARPA_NAMESER_H
+#define CARES_HAVE_ARPA_NAMESER_H
+#endif
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#define CARES_HAVE_ARPA_NAMESER_COMPAT_H
+#endif
+
 /* ================================================================ */
 /*  EXTERNAL INTERFACE SETTINGS FOR CONFIGURE CAPABLE SYSTEMS ONLY  */
 /* ================================================================ */

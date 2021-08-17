@@ -2,6 +2,8 @@
 #ifndef ARES_NAMESER_H
 #define ARES_NAMESER_H
 
+#include "ares_build.h"
+
 #ifdef CARES_HAVE_ARPA_NAMESER_H
 #  include <arpa/nameser.h>
 #endif
