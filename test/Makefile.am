@@ -34,9 +34,9 @@ arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 arestest_LDADD = libgmock.la $(ARES_BLD_DIR)/src/lib/libcares.la $(PTHREAD_LIBS)
 
 # Not interested in coverage of test code, but linking the test binary needs the coverage option
-@CODE_COVERAGE_RULES@
-arestest_LDFLAGS = $(CODE_COVERAGE_LDFLAGS)
 
+include $(top_srcdir)/aminclude_static.am
+arestest_LIBS = $(CODE_COVERAGE_LIBS)
 
 
 aresfuzz_SOURCES = $(FUZZSOURCES)

@@ -59,9 +59,10 @@ libcares_la_CFLAGS_EXTRA += $(CFLAG_CARES_SYMBOL_HIDING)
 libcares_la_CPPFLAGS_EXTRA += -DCARES_SYMBOL_HIDING
 endif
 
-@CODE_COVERAGE_RULES@
-libcares_la_LDFLAGS += $(CODE_COVERAGE_LDFLAGS)
+include $(top_srcdir)/aminclude_static.am
+libcares_la_LIBS = $(CODE_COVERAGE_LIBS)
 libcares_la_CFLAGS_EXTRA += $(CODE_COVERAGE_CFLAGS)
+libcares_la_CPPFLAGS_EXTRA += $(CODE_COVERAGE_CPPFLAGS)
 
 libcares_la_CFLAGS = $(AM_CFLAGS) $(libcares_la_CFLAGS_EXTRA)
 
