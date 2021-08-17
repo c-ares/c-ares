@@ -547,6 +547,20 @@ dnl *Sigh* these are needed in order for net/if.h to get properly detected.
 ]
 )
 
+dnl Test and set CARES_HAVE_ARPA_NAMESER_H / CARES_HAVE_ARPA_NAMESER_COMPAT_H
+AC_CHECK_DECL([HAVE_ARPA_NAMESER_H],
+[
+CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_H])
+],
+[]
+)
+AC_CHECK_DECL([HAVE_ARPA_NAMESER_COMPAT_H],
+[
+CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_COMPAT_H])
+],
+[]
+)
+
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_SIZE_T
