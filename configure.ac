@@ -463,7 +463,7 @@ fi
 
 AC_MSG_CHECKING([whether to use libgcc])
 AC_ARG_ENABLE(libgcc,
-AC_HELP_STRING([--enable-libgcc],[use libgcc when linking]),
+AS_HELP_STRING([--enable-libgcc],[use libgcc when linking]),
 [ case "$enableval" in
   yes)
         LIBS="$LIBS -lgcc"
@@ -858,7 +858,7 @@ AC_C_BIGENDIAN(
 
 dnl Check for user-specified random device
 AC_ARG_WITH(random,
-AC_HELP_STRING([--with-random=FILE],
+AS_HELP_STRING([--with-random=FILE],
                [read randomness from FILE (default=/dev/urandom)]),
     [ CARES_RANDOM_FILE="$withval" ],
     [
@@ -907,7 +907,7 @@ XC_CHECK_BUILD_FLAGS
 
 AC_MSG_CHECKING([whether to build tests])
 AC_ARG_ENABLE(tests,
-	AC_HELP_STRING([--enable-tests], [build test suite]),
+	AS_HELP_STRING([--enable-tests], [build test suite]),
 	[ build_tests="$enableval" ],
 	[ if test "x$HAVE_CXX11" = "x1" && test "x$cross_compiling" = "xno" ; then
 	    build_tests="yes"
