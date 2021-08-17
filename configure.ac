@@ -43,6 +43,10 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+AX_REQUIRE_DEFINED([AX_ADD_FORTIFY_SOURCE])
+AX_REQUIRE_DEFINED([AX_CXX_COMPILE_STDCXX])
+AX_REQUIRE_DEFINED([AX_PTHREAD])
+
 CARES_CHECK_OPTION_DEBUG
 CARES_CHECK_OPTION_OPTIMIZE
 CARES_CHECK_OPTION_WARNINGS
@@ -98,6 +102,8 @@ fi
 AC_SUBST([AR])
 
 AX_CODE_COVERAGE
+AX_ADD_FORTIFY_SOURCE
+AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])
 
 
 dnl
@@ -478,6 +484,14 @@ AC_HELP_STRING([--enable-libgcc],[use libgcc when linking]),
   esac ],
        AC_MSG_RESULT(no)
 )
+
+AX_PTHREAD([
+    LIBS="$PTHREAD_LIBS $LIBS"
+    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+    CC="$PTHREAD_CC"
+  ], [
+    AC_MSG_ERROR([Could not configure pthreads support])
+])
 
 
 dnl Let's hope this split URL remains working:
