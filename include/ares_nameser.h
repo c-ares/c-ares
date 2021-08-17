@@ -2,10 +2,12 @@
 #ifndef ARES_NAMESER_H
 #define ARES_NAMESER_H
 
-#ifdef HAVE_ARPA_NAMESER_H
+#include "ares_build.h"
+
+#ifdef CARES_HAVE_ARPA_NAMESER_H
 #  include <arpa/nameser.h>
 #endif
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#ifdef CARES_HAVE_ARPA_NAMESER_COMPAT_H
 #  include <arpa/nameser_compat.h>
 #endif
 
@@ -68,7 +70,7 @@
  * provide them
  * ============================================================================
  */
-#ifndef HAVE_ARPA_NAMESER_H
+#ifndef CARES_HAVE_ARPA_NAMESER_H
 
 typedef enum __ns_class {
     ns_c_invalid = 0,       /* Cookie. */
@@ -173,7 +175,7 @@ typedef enum __ns_rcode {
     ns_r_badtime = 18
 } ns_rcode;
 
-#endif /* HAVE_ARPA_NAMESER_H */
+#endif /* CARES_HAVE_ARPA_NAMESER_H */
 
 
 /* ============================================================================
