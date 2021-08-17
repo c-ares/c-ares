@@ -1,4 +1,4 @@
-AC_PREREQ(2.57)
+AC_PREREQ(2.60)
 
 AC_INIT([c-ares], [1.17.2],
   [c-ares mailing list: http://cool.haxx.se/mailman/listinfo/c-ares])
@@ -32,10 +32,6 @@ dnl 6.If any interfaces have been removed since the last public release, then
 dnl set age to 0. (c:r:a=0)
 dnl
 AC_SUBST([CARES_VERSION_INFO])
-
-XC_OVR_ZZ50
-XC_OVR_ZZ60
-CARES_OVERRIDE_AUTOCONF
 
 AC_CONFIG_SRCDIR([src/lib/ares_ipv6.h])
 AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h])
