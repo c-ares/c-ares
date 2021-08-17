@@ -206,14 +206,14 @@ code-coverage-capture-hook:
 ])
 
 AC_DEFUN([_AX_CODE_COVERAGE_ENABLED],[
-	AX_CHECK_GNU_MAKE([],[AC_MSG_ERROR([not using GNU make that is needed for coverage])])
+	AX_CHECK_GNU_MAKE([],AC_MSG_ERROR([not using GNU make that is needed for coverage]))
 	AC_REQUIRE([AX_ADD_AM_MACRO_STATIC])
 	# check for gcov
 	AC_CHECK_TOOL([GCOV],
 		  [$_AX_CODE_COVERAGE_GCOV_PROG_WITH],
 		  [:])
 	AS_IF([test "X$GCOV" = "X:"],
-	      [AC_MSG_ERROR([gcov is needed to do coverage])])
+	      AC_MSG_ERROR([gcov is needed to do coverage]))
 	AC_SUBST([GCOV])
 
 	dnl Check if gcc is being used
