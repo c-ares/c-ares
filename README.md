@@ -20,7 +20,7 @@ and in a git repository: https://github.com/c-ares/c-ares.  See the
 
 If you find bugs, correct flaws, have questions or have comments in general in
 regard to c-ares (or by all means the original ares too), get in touch with us
-on the c-ares mailing list: https://cool.haxx.se/mailman/listinfo/c-ares
+on the c-ares mailing list: https://lists.haxx.se/listinfo/c-ares
 
 c-ares is of course distributed under the same MIT-style license as the
 original ares.

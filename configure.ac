@@ -1,7 +1,7 @@
 AC_PREREQ([2.60])
 
 AC_INIT([c-ares], [1.17.2],
-  [c-ares mailing list: http://cool.haxx.se/mailman/listinfo/c-ares])
+  [c-ares mailing list: http://lists.haxx.se/listinfo/c-ares])
 
 CARES_VERSION_INFO="6:3:4"
 dnl This flag accepts an argument of the form current[:revision[:age]]. So,
