@@ -59,10 +59,16 @@ static int ares__isprint(int ch)
   return 0;
 }
 
-/* Character set allowed by hostnames */
+/* Character set allowed by hostnames.  This is to include the normal
+ * domain name character set plus underscores which are used in SRV
+ * records.  While RFC 2181 section 11 does state not to do validation,
+ * that applies to servers, not clients.  Vulnerabilities have been
+ * reported when this validation is not performed.  Security is more
+ * important than edge-case compatibility (which is probably invalid
+ * anyhow). */
 static int is_hostnamech(int ch)
 {
-  /* [A-Za-z0-9-.]
+  /* [A-Za-z0-9-._]
    * Don't use isalnum() as it is locale-specific
    */
   if (ch >= 'A' && ch <= 'Z')
@@ -71,7 +77,7 @@ static int is_hostnamech(int ch)
     return 1;
   if (ch >= '0' && ch <= '9')
     return 1;
-  if (ch == '-' || ch == '.')
+  if (ch == '-' || ch == '.' || ch == '_')
     return 1;
 
   return 0;
