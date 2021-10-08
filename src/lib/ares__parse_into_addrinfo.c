@@ -211,7 +211,9 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
         }
       else
         {
+          /* rr_name is only saved for cname */
           ares_free(rr_name);
+          rr_name = NULL;
         }
 
 
@@ -225,18 +227,21 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
 
   if (status == ARES_SUCCESS)
     {
-      ares__addrinfo_cat_nodes(&ai->nodes, nodes);
+      if (got_a || got_aaaa)
+        {
+          ares__addrinfo_cat_nodes(&ai->nodes, nodes);
+        }
+
       if (got_cname)
         {
           ares__addrinfo_cat_cnames(&ai->cnames, cnames);
-          return status;
         }
-      else if (got_a == 0 && got_aaaa == 0)
-        {
-          /* the check for naliases to be zero is to make sure CNAME responses
-             don't get caught here */
+
+      if (!got_cname && !got_a && !got_aaaa)
+       {
           status = ARES_ENODATA;
-        }
+          goto failed_stat;
+       }
     }
 
   return status;

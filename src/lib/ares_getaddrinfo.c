@@ -72,6 +72,7 @@ struct host_query
   struct ares_addrinfo *ai;      /* store results between lookups */
   int remaining;   /* number of DNS answers waiting for */
   int next_domain; /* next search domain to try */
+  int nodata_cnt; /* Track nodata responses to possibly override final result */
 };
 
 static const struct ares_addrinfo_hints default_hints = {
@@ -108,6 +109,7 @@ static const struct ares_addrinfo empty_addrinfo = {
 static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
 static int as_is_first(const struct host_query *hquery);
+static int as_is_only(const struct host_query* hquery);
 static int next_dns_lookup(struct host_query *hquery);
 
 struct ares_addrinfo_cname *ares__malloc_addrinfo_cname()
@@ -511,6 +513,7 @@ static void next_lookup(struct host_query *hquery, int status)
           /* DNS lookup */
           if (next_dns_lookup(hquery))
             break;
+
           hquery->remaining_lookups++;
           next_lookup(hquery, status);
           break;
@@ -547,7 +550,7 @@ static void host_callback(void *arg, int status, int timeouts,
 
   if (!hquery->remaining)
     {
-      if (addinfostatus != ARES_SUCCESS)
+      if (addinfostatus != ARES_SUCCESS && addinfostatus != ARES_ENODATA)
         {
           /* error in parsing result e.g. no memory */
           end_hquery(hquery, addinfostatus);
@@ -557,9 +560,11 @@ static void host_callback(void *arg, int status, int timeouts,
           /* at least one query ended with ARES_SUCCESS */
           end_hquery(hquery, ARES_SUCCESS);
         }
-      else if (status == ARES_ENOTFOUND)
+      else if (status == ARES_ENOTFOUND || addinfostatus == ARES_ENODATA)
         {
-          next_lookup(hquery, status);
+          if (addinfostatus == ARES_ENODATA)
+            hquery->nodata_cnt++;
+          next_lookup(hquery, hquery->nodata_cnt?ARES_ENODATA:status);
         }
       else if (status == ARES_EDESTRUCTION)
         {
@@ -677,6 +682,7 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->ai = ai;
   hquery->next_domain = -1;
   hquery->remaining = 0;
+  hquery->nodata_cnt = 0;
 
   /* Start performing lookups according to channel->lookups. */
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
@@ -707,7 +713,7 @@ static int next_dns_lookup(struct host_query *hquery)
     hquery->next_domain++;
   }
 
-  if (!s && hquery->next_domain < hquery->channel->ndomains)
+  if (!s && hquery->next_domain < hquery->channel->ndomains && !as_is_only(hquery))
     {
       status = ares__cat_domain(
           hquery->name,
@@ -770,3 +776,12 @@ static int as_is_first(const struct host_query* hquery)
     }
   return ndots >= hquery->channel->ndots;
 }
+
+static int as_is_only(const struct host_query* hquery)
+{
+  size_t nname = strlen(hquery->name);
+  if (nname && hquery->name[nname-1] == '.')
+    return 1;
+  return 0;
+}
+
