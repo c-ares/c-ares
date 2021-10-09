@@ -1,5 +1,6 @@
 
-CSOURCES = ares__close_sockets.c	\
+CSOURCES = ares__addrinfo2hostent.c \
+  ares__close_sockets.c	\
   ares__get_hostent.c			\
   ares__parse_into_addrinfo.c		\
   ares__readaddrinfo.c			\

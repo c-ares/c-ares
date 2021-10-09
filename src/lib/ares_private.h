@@ -398,6 +398,11 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
                                int alen,
                                char **question_hostname,
                                struct ares_addrinfo *ai);
+int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int ai_family,
+                           const char *question_hostname, struct hostent **host);
+int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int ai_family,
+                           int req_naddrttls, struct ares_addrttl *addrttls,
+                           struct ares_addr6ttl *addr6ttls, int *naddrttls);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);
