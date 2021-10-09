@@ -560,9 +560,10 @@ static void host_callback(void *arg, int status, int timeouts,
           /* at least one query ended with ARES_SUCCESS */
           end_hquery(hquery, ARES_SUCCESS);
         }
-      else if (status == ARES_ENOTFOUND || addinfostatus == ARES_ENODATA)
+      else if (status == ARES_ENOTFOUND || status == ARES_ENODATA ||
+               addinfostatus == ARES_ENODATA)
         {
-          if (addinfostatus == ARES_ENODATA)
+          if (status == ARES_ENODATA || addinfostatus == ARES_ENODATA)
             hquery->nodata_cnt++;
           next_lookup(hquery, hquery->nodata_cnt?ARES_ENODATA:status);
         }
