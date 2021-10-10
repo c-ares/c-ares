@@ -44,7 +44,7 @@
 #include "ares_private.h"
 
 int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
-                           const char *question_hostname, struct hostent **host)
+                           struct hostent **host)
 {
   struct ares_addrinfo_node *next;
   struct ares_addrinfo_cname *next_cname;
@@ -126,7 +126,7 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
     }
   else
     {
-      (*host)->h_name = ares_strdup(question_hostname);
+      (*host)->h_name = ares_strdup(ai->name);
     }
 
   if (!(*host)->h_name)

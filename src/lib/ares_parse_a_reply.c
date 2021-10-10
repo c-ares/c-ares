@@ -58,7 +58,7 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
 
   memset(&ai, 0, sizeof(ai));
 
-  status = ares__parse_into_addrinfo2(abuf, alen, &question_hostname, &ai);
+  status = ares__parse_into_addrinfo(abuf, alen, &ai);
   if (status != ARES_SUCCESS)
     {
       goto fail;
@@ -66,7 +66,7 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
 
   if (host != NULL)
     {
-      status = ares__addrinfo2hostent(&ai, AF_INET, question_hostname, host);
+      status = ares__addrinfo2hostent(&ai, AF_INET, host);
       if (status != ARES_SUCCESS)
         {
           goto fail;

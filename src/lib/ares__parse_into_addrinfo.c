@@ -39,23 +39,21 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-int ares__parse_into_addrinfo2(const unsigned char *abuf,
-                               int alen,
-                               char **question_hostname,
-                               struct ares_addrinfo *ai)
+int ares__parse_into_addrinfo(const unsigned char *abuf,
+                              int alen,
+                              struct ares_addrinfo *ai)
 {
   unsigned int qdcount, ancount;
   int status, i, rr_type, rr_class, rr_len, rr_ttl;
   int got_a = 0, got_aaaa = 0, got_cname = 0;
   long len;
   const unsigned char *aptr;
+  char *question_hostname = NULL;
   char *hostname, *rr_name = NULL, *rr_data;
   struct ares_addrinfo_cname *cname, *cnames = NULL;
   struct ares_addrinfo_node *node, *nodes = NULL;
   struct sockaddr_in *sin;
   struct sockaddr_in6 *sin6;
-
-  *question_hostname = NULL;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -70,15 +68,16 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response(aptr, abuf, alen, question_hostname, &len, 0);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &question_hostname, &len, 0);
   if (status != ARES_SUCCESS)
     return status;
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
-      return ARES_EBADRESP;
+      status = ARES_EBADRESP;
+      goto failed_stat;
     }
 
-  hostname = *question_hostname;
+  hostname = question_hostname;
 
   aptr += len + QFIXEDSZ;
 
@@ -194,6 +193,10 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
               goto failed_stat;
             }
 
+          /* Decode the RR data and replace the hostname with it. */
+          /* SA: Seems wrong as it introduses order dependency. */
+          hostname = rr_data;
+
           cname = ares__append_addrinfo_cname(&cnames);
           if (!cname)
             {
@@ -242,34 +245,26 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
        }
       else
         {
-          if (ai->name == NULL || strcasecmp(ai->name, hostname) != 0)
+          if (ai->name == NULL || strcasecmp(ai->name, question_hostname) != 0)
             {
               ares_free(ai->name);
-              ai->name = ares_strdup(hostname);
+              ai->name = ares_strdup(question_hostname);
               if (!ai->name) {
                 status = ARES_ENOMEM;
                 goto failed_stat;
               }
             }
+
         }
     }
 
+  ares_free(question_hostname);
   return status;
 
 failed_stat:
+  ares_free(question_hostname);
   ares_free(rr_name);
   ares__freeaddrinfo_cnames(cnames);
   ares__freeaddrinfo_nodes(nodes);
-  return status;
-}
-
-int ares__parse_into_addrinfo(const unsigned char *abuf,
-                              int alen,
-                              struct ares_addrinfo *ai)
-{
-  int status;
-  char *question_hostname;
-  status = ares__parse_into_addrinfo2(abuf, alen, &question_hostname, ai);
-  ares_free(question_hostname);
   return status;
 }
