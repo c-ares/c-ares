@@ -625,6 +625,7 @@ struct ares_addrinfo_cname {
 struct ares_addrinfo {
   struct ares_addrinfo_cname *cnames;
   struct ares_addrinfo_node  *nodes;
+  char                       *name;
 };
 
 struct ares_addrinfo_hints {

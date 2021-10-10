@@ -82,6 +82,7 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
 fail:
   ares__freeaddrinfo_cnames(ai.cnames);
   ares__freeaddrinfo_nodes(ai.nodes);
+  ares_free(ai.name);
   ares_free(question_hostname);
 
   return status;

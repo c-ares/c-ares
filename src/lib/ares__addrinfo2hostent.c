@@ -61,6 +61,7 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
     {
       goto enomem;
     }
+  memset(*host, 0, sizeof(**host));
 
   /* Use the first node of the response as the family, since hostent can only
    * represent one family.  We assume getaddrinfo() returned a sorted list if
@@ -91,19 +92,25 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
     {
       goto enomem;
     }
+  (*host)->h_aliases = aliases;
+  memset(aliases, 0, (naliases + 1) * sizeof(char *));
 
   if (naliases)
     {
       next_cname = ai->cnames;
       while (next_cname)
         {
-          if(next_cname->alias)
-            aliases[alias++] = ares_strdup(next_cname->alias);
+          if(next_cname->alias) {
+            aliases[alias] = ares_strdup(next_cname->alias);
+            if (!aliases[alias]) {
+              goto enomem;
+            }
+            alias++;
+          }
           next_cname = next_cname->next;
         }
     }
 
-  aliases[alias] = NULL;
 
   (*host)->h_addr_list = ares_malloc((naddrs + 1) * sizeof(char *));
   if (!(*host)->h_addr_list)
@@ -111,10 +118,7 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
       goto enomem;
     }
 
-  for (i = 0; i < naddrs + 1; ++i)
-    {
-      (*host)->h_addr_list[i] = NULL;
-    }
+  memset((*host)->h_addr_list, 0, (naddrs + 1) * sizeof(char *));
 
   if (ai->cnames)
     {
@@ -125,8 +129,9 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
       (*host)->h_name = ares_strdup(question_hostname);
     }
 
-  (*host)->h_aliases = aliases;
-  aliases = NULL; /* owned by hostent */
+  if (!(*host)->h_name)
+    goto enomem;
+
   (*host)->h_addrtype = family;
   (*host)->h_length = (family == AF_INET)?
      sizeof(struct in_addr):sizeof(struct ares_in6_addr);
@@ -172,7 +177,6 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
   return ARES_SUCCESS;
 
 enomem:
-  ares_free(aliases);
   ares_free_hostent(*host);
   *host = NULL;
   return ARES_ENOMEM;

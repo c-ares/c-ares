@@ -85,6 +85,7 @@ fail:
   ares__freeaddrinfo_cnames(ai.cnames);
   ares__freeaddrinfo_nodes(ai.nodes);
   ares_free(question_hostname);
+  ares_free(ai.name);
 
   return status;
 }

@@ -102,7 +102,8 @@ static const struct ares_addrinfo_node empty_addrinfo_node = {
 
 static const struct ares_addrinfo empty_addrinfo = {
   NULL, /* cnames */
-  NULL  /* nodes */
+  NULL, /* nodes */
+  NULL  /* name */
 };
 
 /* forward declarations */

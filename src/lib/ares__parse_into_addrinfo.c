@@ -194,10 +194,6 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
               goto failed_stat;
             }
 
-          /* Decode the RR data and replace the hostname with it. */
-          /* SA: Seems wrong as it introduses order dependency. */
-          hostname = rr_data;
-
           cname = ares__append_addrinfo_cname(&cnames);
           if (!cname)
             {
@@ -230,11 +226,13 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
       if (got_a || got_aaaa)
         {
           ares__addrinfo_cat_nodes(&ai->nodes, nodes);
+          nodes = NULL;
         }
 
       if (got_cname)
         {
           ares__addrinfo_cat_cnames(&ai->cnames, cnames);
+          cnames = NULL;
         }
 
       if (!got_cname && !got_a && !got_aaaa)
@@ -242,6 +240,18 @@ int ares__parse_into_addrinfo2(const unsigned char *abuf,
           status = ARES_ENODATA;
           goto failed_stat;
        }
+      else
+        {
+          if (ai->name == NULL || strcasecmp(ai->name, hostname) != 0)
+            {
+              ares_free(ai->name);
+              ai->name = ares_strdup(hostname);
+              if (!ai->name) {
+                status = ARES_ENOMEM;
+                goto failed_stat;
+              }
+            }
+        }
     }
 
   return status;
