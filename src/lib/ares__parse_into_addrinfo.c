@@ -243,19 +243,17 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           status = ARES_ENODATA;
           goto failed_stat;
        }
-      else
-        {
-          if (ai->name == NULL || strcasecmp(ai->name, question_hostname) != 0)
-            {
-              ares_free(ai->name);
-              ai->name = ares_strdup(question_hostname);
-              if (!ai->name) {
-                status = ARES_ENOMEM;
-                goto failed_stat;
-              }
-            }
 
+      if (ai->name == NULL || strcasecmp(ai->name, question_hostname) != 0)
+        {
+          ares_free(ai->name);
+          ai->name = ares_strdup(question_hostname);
+          if (!ai->name) {
+            status = ARES_ENOMEM;
+            goto failed_stat;
+          }
         }
+
     }
 
   ares_free(question_hostname);

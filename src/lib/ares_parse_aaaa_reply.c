@@ -61,7 +61,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
   memset(&ai, 0, sizeof(ai));
 
   status = ares__parse_into_addrinfo(abuf, alen, &ai);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS && status != ARES_ENODATA)
     {
       goto fail;
     }
@@ -69,7 +69,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
   if (host != NULL)
     {
       status = ares__addrinfo2hostent(&ai, AF_INET6, host);
-      if (status != ARES_SUCCESS)
+      if (status != ARES_SUCCESS && status != ARES_ENODATA)
         {
           goto fail;
         }
@@ -77,8 +77,8 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
 
   if (addrttls != NULL && req_naddrttls)
    {
-     status = ares__addrinfo2addrttl(&ai, AF_INET6, req_naddrttls, NULL,
-                                     addrttls, naddrttls);
+     ares__addrinfo2addrttl(&ai, AF_INET6, req_naddrttls, NULL,
+                            addrttls, naddrttls);
    }
 
 fail:

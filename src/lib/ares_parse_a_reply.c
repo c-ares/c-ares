@@ -59,25 +59,28 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
   memset(&ai, 0, sizeof(ai));
 
   status = ares__parse_into_addrinfo(abuf, alen, &ai);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS && status != ARES_ENODATA)
     {
+printf("%s(): parse_into_addrinfo: status = %d\n", __FUNCTION__, status);
       goto fail;
     }
 
   if (host != NULL)
     {
       status = ares__addrinfo2hostent(&ai, AF_INET, host);
-      if (status != ARES_SUCCESS)
+      if (status != ARES_SUCCESS && status != ARES_ENODATA)
         {
+printf("%s(): addrinfo2hostent: status = %d\n", __FUNCTION__, status);
           goto fail;
         }
     }
 
   if (addrttls != NULL && req_naddrttls)
    {
-     status = ares__addrinfo2addrttl(&ai, AF_INET, req_naddrttls, addrttls,
-                                     NULL, naddrttls);
+     ares__addrinfo2addrttl(&ai, AF_INET, req_naddrttls, addrttls,
+                            NULL, naddrttls);
    }
+
 
 fail:
   ares__freeaddrinfo_cnames(ai.cnames);

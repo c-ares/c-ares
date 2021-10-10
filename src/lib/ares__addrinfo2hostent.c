@@ -123,14 +123,19 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
   if (ai->cnames)
     {
       (*host)->h_name = ares_strdup(ai->cnames->name);
+      if ((*host)->h_name == NULL && ai->cnames->name)
+        {
+          goto enomem;
+        }
     }
   else
     {
       (*host)->h_name = ares_strdup(ai->name);
+      if ((*host)->h_name == NULL && ai->name)
+        {
+          goto enomem;
+        }
     }
-
-  if (!(*host)->h_name)
-    goto enomem;
 
   (*host)->h_addrtype = family;
   (*host)->h_length = (family == AF_INET)?
@@ -172,6 +177,13 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
         {
           ares_free(addrs);
         }
+    }
+
+  if (naddrs == 0 && naliases == 0)
+    {
+      ares_free_hostent(*host);
+      *host = NULL;
+      return ARES_ENODATA;
     }
 
   return ARES_SUCCESS;
