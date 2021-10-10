@@ -43,7 +43,7 @@
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
-int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int ai_family,
+int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
                            const char *question_hostname, struct hostent **host)
 {
   struct ares_addrinfo_node *next;
@@ -65,13 +65,13 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int ai_family,
   /* Use the first node of the response as the family, since hostent can only
    * represent one family.  We assume getaddrinfo() returned a sorted list if
    * the user requested AF_UNSPEC. */
-  if (ai_family == AF_UNSPEC && ai->nodes)
-    ai_family = ai->nodes->ai_family;
+  if (family == AF_UNSPEC && ai->nodes)
+    family = ai->nodes->ai_family;
 
   next = ai->nodes;
   while (next)
     {
-      if(next->ai_family == ai_family)
+      if(next->ai_family == family)
         {
           ++naddrs;
         }
@@ -127,8 +127,8 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int ai_family,
 
   (*host)->h_aliases = aliases;
   aliases = NULL; /* owned by hostent */
-  (*host)->h_addrtype = ai_family;
-  (*host)->h_length = (ai_family == AF_INET)?
+  (*host)->h_addrtype = family;
+  (*host)->h_length = (family == AF_INET)?
      sizeof(struct in_addr):sizeof(struct ares_in6_addr);
 
   if (naddrs)
@@ -143,10 +143,10 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int ai_family,
       next = ai->nodes;
       while (next)
         {
-          if(next->ai_family == ai_family)
+          if(next->ai_family == family)
             {
               (*host)->h_addr_list[i] = addrs + (i * (*host)->h_length);
-              if (ai_family == AF_INET6)
+              if (family == AF_INET6)
                 {
                   memcpy((*host)->h_addr_list[i],
                      &(CARES_INADDR_CAST(struct sockaddr_in6 *, next->ai_addr)->sin6_addr),
@@ -179,7 +179,7 @@ enomem:
 }
 
 
-int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int ai_family,
+int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
                            int req_naddrttls, struct ares_addrttl *addrttls,
                            struct ares_addr6ttl *addr6ttls, int *naddrttls)
 {
@@ -189,16 +189,16 @@ int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int ai_family,
   int cname_ttl = INT_MAX;
   int status;
 
-  if (ai_family != AF_INET && ai_family != AF_INET6)
+  if (family != AF_INET && family != AF_INET6)
     return ARES_EBADQUERY;
 
   if (ai == NULL || naddrttls == NULL)
     return ARES_EBADQUERY;
 
-  if (ai_family == AF_INET && addrttls == NULL)
+  if (family == AF_INET && addrttls == NULL)
     return ARES_EBADQUERY;
 
-  if (ai_family == AF_INET6 && addr6ttls == NULL)
+  if (family == AF_INET6 && addr6ttls == NULL)
     return ARES_EBADQUERY;
 
   if (req_naddrttls == 0)
@@ -217,11 +217,11 @@ int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int ai_family,
   next = ai->nodes;
   while (next)
     {
-      if(next->ai_family == ai_family)
+      if(next->ai_family == family)
         {
           if (*naddrttls < req_naddrttls)
             {
-                if (ai_family == AF_INET6)
+                if (family == AF_INET6)
                   {
                     if(next->ai_ttl > cname_ttl)
                       addr6ttls[*naddrttls].ttl = cname_ttl;
