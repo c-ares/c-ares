@@ -546,7 +546,7 @@ static void host_callback(void *arg, int status, int timeouts,
 
   if (status == ARES_SUCCESS)
     {
-      addinfostatus = ares__parse_into_addrinfo(abuf, alen, hquery->ai);
+      addinfostatus = ares__parse_into_addrinfo(abuf, alen, 1, hquery->ai);
     }
 
   if (!hquery->remaining)

@@ -951,7 +951,7 @@ TEST_P(MockChannelTest, GetHostByNameCNAMENoData) {
     .WillByDefault(SetReply(&server_, &response));
 
   HostResult result;
-  ares_gethostbyname(channel_, "cname.first.com", AF_INET, HostCallback, &result);
+  ares_gethostbyname(channel_, "cname.first.com.", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ENODATA, result.status_);

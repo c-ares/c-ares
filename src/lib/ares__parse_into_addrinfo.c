@@ -40,7 +40,7 @@
 #include "ares_private.h"
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
-                              int alen,
+                              int alen, int cname_only_is_enodata,
                               struct ares_addrinfo *ai)
 {
   unsigned int qdcount, ancount;
@@ -207,6 +207,7 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           cname->ttl = rr_ttl;
           cname->alias = rr_name;
           cname->name = rr_data;
+          rr_name = NULL;
         }
       else
         {
@@ -226,6 +227,27 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
 
   if (status == ARES_SUCCESS)
     {
+      if (!got_a && !got_aaaa)
+        {
+          if (!got_cname || (got_cname && cname_only_is_enodata))
+            {
+              status = ARES_ENODATA;
+              goto failed_stat;
+            }
+        }
+
+      /* save the question hostname as ai->name */
+      if (ai->name == NULL || strcasecmp(ai->name, question_hostname) != 0)
+        {
+          ares_free(ai->name);
+          ai->name = ares_strdup(question_hostname);
+          if (!ai->name)
+            {
+              status = ARES_ENOMEM;
+              goto failed_stat;
+            }
+        }
+
       if (got_a || got_aaaa)
         {
           ares__addrinfo_cat_nodes(&ai->nodes, nodes);
@@ -237,23 +259,6 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
           ares__addrinfo_cat_cnames(&ai->cnames, cnames);
           cnames = NULL;
         }
-
-      if (!got_cname && !got_a && !got_aaaa)
-       {
-          status = ARES_ENODATA;
-          goto failed_stat;
-       }
-
-      if (ai->name == NULL || strcasecmp(ai->name, question_hostname) != 0)
-        {
-          ares_free(ai->name);
-          ai->name = ares_strdup(question_hostname);
-          if (!ai->name) {
-            status = ARES_ENOMEM;
-            goto failed_stat;
-          }
-        }
-
     }
 
   ares_free(question_hostname);

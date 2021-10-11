@@ -391,7 +391,7 @@ void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
                                struct ares_addrinfo_cname *tail);
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
-                              int alen,
+                              int alen, int cname_only_is_enodata,
                               struct ares_addrinfo *ai);
 
 int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,

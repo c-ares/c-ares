@@ -60,7 +60,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
 
   memset(&ai, 0, sizeof(ai));
 
-  status = ares__parse_into_addrinfo(abuf, alen, &ai);
+  status = ares__parse_into_addrinfo(abuf, alen, 0, &ai);
   if (status != ARES_SUCCESS && status != ARES_ENODATA)
     {
       goto fail;
