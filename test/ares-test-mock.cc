@@ -636,6 +636,12 @@ TEST_P(MockChannelTest, UnspecifiedFamilyV6) {
   ON_CALL(server_, OnRequest("example.com", T_AAAA))
     .WillByDefault(SetReply(&server_, &rsp6));
 
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_A));
+  ON_CALL(server_, OnRequest("example.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp4));
+
   HostResult result;
   ares_gethostbyname(channel_, "example.com.", AF_UNSPEC, HostCallback, &result);
   Process();
