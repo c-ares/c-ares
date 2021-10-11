@@ -61,7 +61,6 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
   status = ares__parse_into_addrinfo(abuf, alen, 0, &ai);
   if (status != ARES_SUCCESS && status != ARES_ENODATA)
     {
-printf("%s(): parse_into_addrinfo: status = %d\n", __FUNCTION__, status);
       goto fail;
     }
 
@@ -70,7 +69,6 @@ printf("%s(): parse_into_addrinfo: status = %d\n", __FUNCTION__, status);
       status = ares__addrinfo2hostent(&ai, AF_INET, host);
       if (status != ARES_SUCCESS && status != ARES_ENODATA)
         {
-printf("%s(): addrinfo2hostent: status = %d\n", __FUNCTION__, status);
           goto fail;
         }
     }
