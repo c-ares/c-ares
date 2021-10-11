@@ -546,7 +546,7 @@ std::ostream& operator<<(std::ostream& os, const HostResult& result) {
   return os;
 }
 
-HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
+HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1), name_("") {
   if (!hostent)
     return;
   if (hostent->h_name)
@@ -595,7 +595,8 @@ void HostCallback(void *data, int status, int timeouts,
   result->done_ = true;
   result->status_ = status;
   result->timeouts_ = timeouts;
-  result->host_ = HostEnt(hostent);
+  if (hostent)
+    result->host_ = HostEnt(hostent);
   if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
 }
 
