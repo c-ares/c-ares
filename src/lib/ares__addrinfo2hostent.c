@@ -50,7 +50,7 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
   struct ares_addrinfo_cname *next_cname;
   char **aliases = NULL;
   char *addrs = NULL;
-  int naliases = 0, naddrs = 0, alias = 0;
+  int naliases = 0, naddrs = 0, alias = 0, i;
 
   if (ai == NULL || host == NULL)
     return ARES_EBADQUERY;
@@ -200,9 +200,7 @@ int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
 {
   struct ares_addrinfo_node *next;
   struct ares_addrinfo_cname *next_cname;
-  int i;
   int cname_ttl = INT_MAX;
-  int status;
 
   if (family != AF_INET && family != AF_INET6)
     return ARES_EBADQUERY;
