@@ -50,8 +50,7 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
   struct ares_addrinfo_cname *next_cname;
   char **aliases = NULL;
   char *addrs = NULL;
-  int naliases = 0, naddrs = 0, alias = 0, i;
-  int status;
+  int naliases = 0, naddrs = 0, alias = 0;
 
   if (ai == NULL || host == NULL)
     return ARES_EBADQUERY;
