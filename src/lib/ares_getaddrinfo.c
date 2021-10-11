@@ -593,6 +593,8 @@ void ares_getaddrinfo(ares_channel channel,
   unsigned short port = 0;
   int family;
   struct ares_addrinfo *ai;
+  char *alias_name = NULL;
+  int status;
 
   if (!hints)
     {
@@ -617,6 +619,17 @@ void ares_getaddrinfo(ares_channel channel,
       return;
     }
 
+  /* perform HOSTALIAS resolution (technically this function does some other
+   * things we are going to ignore) */
+  status = ares__single_domain(channel, name, &alias_name);
+  if (status != ARES_SUCCESS) {
+    callback(arg, status, 0, NULL);
+    return;
+  }
+
+  if (alias_name)
+    name = alias_name;
+
   if (service)
     {
       if (hints->ai_flags & ARES_AI_NUMERICSERV)
@@ -624,6 +637,7 @@ void ares_getaddrinfo(ares_channel channel,
           port = (unsigned short)strtoul(service, NULL, 0);
           if (!port)
             {
+              ares_free(alias_name);
               callback(arg, ARES_ESERVICE, 0, NULL);
               return;
             }
@@ -636,6 +650,7 @@ void ares_getaddrinfo(ares_channel channel,
               port = (unsigned short)strtoul(service, NULL, 0);
               if (!port)
                 {
+                  ares_free(alias_name);
                   callback(arg, ARES_ESERVICE, 0, NULL);
                   return;
                 }
@@ -646,12 +661,14 @@ void ares_getaddrinfo(ares_channel channel,
   ai = ares__malloc_addrinfo();
   if (!ai)
     {
+      ares_free(alias_name);
       callback(arg, ARES_ENOMEM, 0, NULL);
       return;
     }
 
   if (fake_addrinfo(name, port, hints, ai, callback, arg))
     {
+      ares_free(alias_name);
       return;
     }
 
@@ -659,12 +676,14 @@ void ares_getaddrinfo(ares_channel channel,
   hquery = ares_malloc(sizeof(struct host_query));
   if (!hquery)
     {
+      ares_free(alias_name);
       ares_freeaddrinfo(ai);
       callback(arg, ARES_ENOMEM, 0, NULL);
       return;
     }
 
   hquery->name = ares_strdup(name);
+  ares_free(alias_name);
   if (!hquery->name)
     {
       ares_free(hquery);
