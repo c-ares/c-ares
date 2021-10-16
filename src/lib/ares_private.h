@@ -391,13 +391,14 @@ void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
                                struct ares_addrinfo_cname *tail);
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
-                              int alen,
+                              int alen, int cname_only_is_enodata,
                               struct ares_addrinfo *ai);
 
-int ares__parse_into_addrinfo2(const unsigned char *abuf,
-                               int alen,
-                               char **question_hostname,
-                               struct ares_addrinfo *ai);
+int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
+                           struct hostent **host);
+int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
+                           int req_naddrttls, struct ares_addrttl *addrttls,
+                           struct ares_addr6ttl *addr6ttls, int *naddrttls);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);

@@ -162,7 +162,8 @@ class MockServer {
  private:
   void ProcessRequest(int fd, struct sockaddr_storage* addr, int addrlen,
                       int qid, const std::string& name, int rrtype);
-
+  void ProcessPacket(int fd, struct sockaddr_storage *addr, socklen_t addrlen,
+                     byte *data, int len);
   int udpport_;
   int tcpport_;
   int udpfd_;

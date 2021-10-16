@@ -60,6 +60,11 @@ int ares__readaddrinfo(FILE *fp,
       return ARES_EBADFAMILY;
   }
 
+  ai->name = ares_strdup(name);
+  if(!ai->name)
+    {
+      goto enomem;
+    }
 
   while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
     {

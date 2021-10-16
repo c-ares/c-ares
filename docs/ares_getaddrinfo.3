@@ -127,13 +127,15 @@ On successful completion of the query, the callback argument
 .I result
 points to a
 .B struct ares_addrinfo
-which contains two linked lists, one with resolved addresses and another with canonical names.
+which contains two linked lists, one with resolved addresses and another with canonical names. 
+Also included is the official name of the host (analogous to gethostbyname() h_name).
 .PP
 .RS
 .EX
 struct ares_addrinfo {
   struct ares_addrinfo_cname *cnames;
   struct ares_addrinfo_node  *nodes;
+  char *name;
 };
 .EE
 .RE
