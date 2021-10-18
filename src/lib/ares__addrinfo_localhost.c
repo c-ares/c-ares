@@ -25,15 +25,17 @@
 #  include <arpa/inet.h>
 #endif
 
+#if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#include <ws2ipdef.h>
+#include <iphlpapi.h>
+#endif
+
 #include "ares.h"
 #include "ares_inet_net_pton.h"
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
-#if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
-#include <ws2ipdef.h>
-#include <iphlpapi.h>
-#endif
+
 
 static int ares_append_ai_node(int aftype,
                                unsigned short port,
@@ -156,7 +158,7 @@ static int ares__system_loopback_addrs(int aftype,
       else if (table->Table[i].Address.si_family == AF_INET6)
         {
           status = ares_append_ai_node(table->Table[i].Address.si_family, port,
-                                       &table->Table[i].Address.Ipv6.sin_addr,
+                                       &table->Table[i].Address.Ipv6.sin6_addr,
                                        nodes);
         }
       else
