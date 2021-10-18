@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 by Andrew Selivanov
+/* Copyright (C) 2021
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
