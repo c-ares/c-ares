@@ -30,6 +30,10 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
+#if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#include <ws2ipdef.h>
+#include <iphlpapi.h>
+#endif
 
 static int ares_append_ai_node(int aftype,
                                unsigned short port,
