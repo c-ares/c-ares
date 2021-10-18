@@ -42,7 +42,6 @@ static int ares_append_ai_node(int aftype,
                                const void *adata,
                                struct ares_addrinfo_node **nodes)
 {
-  struct sockaddr_in6 *sin6 = NULL;
   struct ares_addrinfo_node *node;
 
   node = ares__append_addrinfo_node(nodes);
