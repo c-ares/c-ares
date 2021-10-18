@@ -265,5 +265,7 @@ enomem:
   ares_free(line);
   ares__freeaddrinfo_cnames(cnames);
   ares__freeaddrinfo_nodes(nodes);
+  ares_free(ai->name);
+  ai->name = NULL;
   return ARES_ENOMEM;
 }

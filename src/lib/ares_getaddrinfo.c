@@ -503,6 +503,16 @@ static int file_lookup(struct host_query *hquery)
     }
   status = ares__readaddrinfo(fp, hquery->name, hquery->port, &hquery->hints, hquery->ai);
   fclose(fp);
+
+  /* RFC6761 section 6.3 #3 states that "Name resolution APIs and libraries
+   * SHOULD recognize localhost names as special and SHOULD always return the
+   * IP loopback address for address queries" */
+  if (status == ARES_ENOTFOUND && strcmp(hquery->name, "localhost") == 0)
+    {
+      return ares__addrinfo_localhost(hquery->name, hquery->port,
+                                      &hquery->hints, hquery->ai);
+    }
+
   return status;
 }
 

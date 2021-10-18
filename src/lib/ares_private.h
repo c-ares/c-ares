@@ -399,6 +399,9 @@ int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
 int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
                            int req_naddrttls, struct ares_addrttl *addrttls,
                            struct ares_addr6ttl *addr6ttls, int *naddrttls);
+int ares__addrinfo_localhost(const char *name, unsigned short port,
+                             const struct ares_addrinfo_hints *hints,
+                             struct ares_addrinfo *ai);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);
