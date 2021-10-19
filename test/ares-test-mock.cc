@@ -1,6 +1,11 @@
 #include "ares-test.h"
 #include "dns-proto.h"
 
+#ifndef WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
+
 #include <sstream>
 #include <vector>
 
@@ -1030,7 +1035,7 @@ TEST_P(MockChannelTest, HostAliasMissingFile) {
 
 TEST_P(MockChannelTest, HostAliasUnreadable) {
   TempFile aliases("www www.google.com\n");
-  chmod(aliases.filename(), 0);
+  EXPECT_EQ(chmod(aliases.filename(), S_IWUSR), 0);
   EnvValue with_env("HOSTALIASES", aliases.filename());
 
   HostResult result;
