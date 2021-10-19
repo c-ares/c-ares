@@ -35,12 +35,11 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
-
-
-static int ares_append_ai_node(int aftype,
-                               unsigned short port,
-                               const void *adata,
-                               struct ares_addrinfo_node **nodes)
+int ares_append_ai_node(int aftype,
+                        unsigned short port,
+                        int ttl,
+                        const void *adata,
+                        struct ares_addrinfo_node **nodes)
 {
   struct ares_addrinfo_node *node;
 
@@ -69,6 +68,7 @@ static int ares_append_ai_node(int aftype,
       node->ai_family = AF_INET;
       node->ai_addrlen = sizeof(struct sockaddr_in);
       node->ai_addr = (struct sockaddr *)sin;
+      node->ai_ttl = ttl;
     }
 
   if (aftype == AF_INET6)
@@ -88,6 +88,7 @@ static int ares_append_ai_node(int aftype,
       node->ai_family = AF_INET6;
       node->ai_addrlen = sizeof(struct ares_in6_addr);
       node->ai_addr = (struct sockaddr *)sin6;
+      node->ai_ttl = ttl;
     }
 
   return ARES_SUCCESS;
@@ -104,7 +105,7 @@ static int ares__default_loopback_addrs(int aftype,
     {
       struct ares_in6_addr addr6;
       ares_inet_pton(AF_INET6, "::1", &addr6);
-      status = ares_append_ai_node(AF_INET6, port, &addr6, nodes);
+      status = ares_append_ai_node(AF_INET6, port, 0, &addr6, nodes);
       if (status != ARES_SUCCESS)
         {
           return status;
@@ -115,7 +116,7 @@ static int ares__default_loopback_addrs(int aftype,
     {
       struct in_addr addr4;
       ares_inet_pton(AF_INET, "127.0.0.1", &addr4);
-      status = ares_append_ai_node(AF_INET, port, &addr4, nodes);
+      status = ares_append_ai_node(AF_INET, port, 0, &addr4, nodes);
       if (status != ARES_SUCCESS)
         {
           return status;
@@ -150,13 +151,13 @@ static int ares__system_loopback_addrs(int aftype,
 
       if (table->Table[i].Address.si_family == AF_INET)
         {
-          status = ares_append_ai_node(table->Table[i].Address.si_family, port,
+          status = ares_append_ai_node(table->Table[i].Address.si_family, port, 0,
                                        &table->Table[i].Address.Ipv4.sin_addr,
                                        nodes);
         }
       else if (table->Table[i].Address.si_family == AF_INET6)
         {
-          status = ares_append_ai_node(table->Table[i].Address.si_family, port,
+          status = ares_append_ai_node(table->Table[i].Address.si_family, port, 0,
                                        &table->Table[i].Address.Ipv6.sin6_addr,
                                        nodes);
         }

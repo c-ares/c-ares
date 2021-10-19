@@ -564,11 +564,13 @@ std::ostream& operator<<(std::ostream& os, const HostResult& result) {
   return os;
 }
 
-HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1), name_("") {
+HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
   if (!hostent)
     return;
+
   if (hostent->h_name)
     name_ = hostent->h_name;
+
   if (hostent->h_aliases) {
     char** palias = hostent->h_aliases;
     while (*palias != nullptr) {
@@ -576,7 +578,9 @@ HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1), name_("") {
       palias++;
     }
   }
+
   addrtype_ = hostent->h_addrtype;
+
   if (hostent->h_addr_list) {
     char** paddr = hostent->h_addr_list;
     while (*paddr != nullptr) {
@@ -616,7 +620,6 @@ void HostCallback(void *data, int status, int timeouts,
   result->done_ = true;
   result->status_ = status;
   result->timeouts_ = timeouts;
-  result->host_ = nullptr;
   if (hostent)
     result->host_ = HostEnt(hostent);
   if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;

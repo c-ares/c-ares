@@ -41,6 +41,7 @@
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
                               int alen, int cname_only_is_enodata,
+                              unsigned short port,
                               struct ares_addrinfo *ai)
 {
   unsigned int qdcount, ancount;
@@ -120,30 +121,9 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
             goto failed_stat;
           }  /* LCOV_EXCL_STOP */
 
-          node = ares__append_addrinfo_node(&nodes);
-          if (!node)
-            {
-              status = ARES_ENOMEM;
-              goto failed_stat;
-            }
-
-          sin = ares_malloc(sizeof(struct sockaddr_in));
-          if (!sin)
-            {
-              status = ARES_ENOMEM;
-              goto failed_stat;
-            }
-          memset(sin, 0, sizeof(struct sockaddr_in));
-          memcpy(&sin->sin_addr.s_addr, aptr, sizeof(struct in_addr));
-          sin->sin_family = AF_INET;
-
-          node->ai_addr = (struct sockaddr *)sin;
-          node->ai_family = AF_INET;
-          node->ai_addrlen = sizeof(struct sockaddr_in);
-
-          node->ai_ttl = rr_ttl;
-
-          status = ARES_SUCCESS;
+          status = ares_append_ai_node(AF_INET, port, rr_ttl, aptr, &nodes);
+          if (status != ARES_SUCCESS)
+            goto failed_stat;
         }
       else if (rr_class == C_IN && rr_type == T_AAAA
           && rr_len == sizeof(struct ares_in6_addr)
@@ -156,31 +136,9 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
             goto failed_stat;
           }  /* LCOV_EXCL_STOP */
 
-          node = ares__append_addrinfo_node(&nodes);
-          if (!node)
-            {
-              status = ARES_ENOMEM;
-              goto failed_stat;
-            }
-
-          sin6 = ares_malloc(sizeof(struct sockaddr_in6));
-          if (!sin6)
-            {
-              status = ARES_ENOMEM;
-              goto failed_stat;
-            }
-
-          memset(sin6, 0, sizeof(struct sockaddr_in6));
-          memcpy(&sin6->sin6_addr.s6_addr, aptr, sizeof(struct ares_in6_addr));
-          sin6->sin6_family = AF_INET6;
-
-          node->ai_addr = (struct sockaddr *)sin6;
-          node->ai_family = AF_INET6;
-          node->ai_addrlen = sizeof(struct sockaddr_in6);
-
-          node->ai_ttl = rr_ttl;
-
-          status = ARES_SUCCESS;
+          status = ares_append_ai_node(AF_INET6, port, rr_ttl, aptr, &nodes);
+          if (status != ARES_SUCCESS)
+            goto failed_stat;
         }
 
       if (rr_class == C_IN && rr_type == T_CNAME)

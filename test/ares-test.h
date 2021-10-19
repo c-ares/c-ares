@@ -247,6 +247,7 @@ std::ostream& operator<<(std::ostream& os, const HostEnt& result);
 
 // Structure that describes the result of an ares_host_callback invocation.
 struct HostResult {
+  HostResult() : done_(false), status_(0), timeouts_(0) {}
   // Whether the callback has been invoked.
   bool done_;
   // Explicitly provided result information.

@@ -284,9 +284,7 @@ static int fake_addrinfo(const char *name,
                          void *arg)
 {
   struct ares_addrinfo_cname *cname;
-  struct ares_addrinfo_node *node;
-  ares_sockaddr addr;
-  size_t addrlen;
+  int status = ARES_SUCCESS;
   int result = 0;
   int family = hints->ai_family;
   if (family == AF_INET || family == AF_INET6 || family == AF_UNSPEC)
@@ -307,61 +305,44 @@ static int fake_addrinfo(const char *name,
             }
         }
 
-      memset(&addr, 0, sizeof(addr));
-
       /* if we don't have 3 dots, it is illegal
        * (although inet_pton doesn't think so).
        */
       if (numdots != 3 || !valid)
         result = 0;
       else
-        result =
-            (ares_inet_pton(AF_INET, name, &addr.sa4.sin_addr) < 1 ? 0 : 1);
-
-      if (result)
         {
-          family = addr.sa.sa_family = AF_INET;
-          addr.sa4.sin_port = htons(port);
-          addrlen = sizeof(addr.sa4);
+          struct in_addr addr4;
+          result = ares_inet_pton(AF_INET, name, &addr4) < 1 ? 0 : 1;
+          if (result)
+            {
+              status = ares_append_ai_node(AF_INET, port, 0, &addr4, &ai->nodes);
+              if (status != ARES_SUCCESS)
+                {
+                  callback(arg, status, 0, NULL);
+                  return 1;
+                }
+            }
         }
     }
 
   if (family == AF_INET6 || family == AF_UNSPEC)
     {
-      result =
-          (ares_inet_pton(AF_INET6, name, &addr.sa6.sin6_addr) < 1 ? 0 : 1);
-      addr.sa6.sin6_family = AF_INET6;
-      addr.sa6.sin6_port = htons(port);
-      addrlen = sizeof(addr.sa6);
+      struct ares_in6_addr addr6;
+      result = ares_inet_pton(AF_INET6, name, &addr6) < 1 ? 0 : 1;
+      if (result)
+        {
+          status = ares_append_ai_node(AF_INET6, port, 0, &addr6, &ai->nodes);
+          if (status != ARES_SUCCESS)
+            {
+              callback(arg, status, 0, NULL);
+              return 1;
+            }
+        }
     }
 
   if (!result)
     return 0;
-
-  node = ares__malloc_addrinfo_node();
-  if (!node)
-    {
-      ares_freeaddrinfo(ai);
-      callback(arg, ARES_ENOMEM, 0, NULL);
-      return 1;
-    }
-
-  ai->nodes = node;
-
-  node->ai_addr = ares_malloc(addrlen);
-  if (!node->ai_addr)
-    {
-      ares_freeaddrinfo(ai);
-      callback(arg, ARES_ENOMEM, 0, NULL);
-      return 1;
-    }
-
-  node->ai_addrlen = (unsigned int)addrlen;
-  node->ai_family = addr.sa.sa_family;
-  if (addr.sa.sa_family == AF_INET)
-    memcpy(node->ai_addr, &addr.sa4, sizeof(addr.sa4));
-  else
-    memcpy(node->ai_addr, &addr.sa6, sizeof(addr.sa6));
 
   if (hints->ai_flags & ARES_AI_CANONNAME)
     {
@@ -383,8 +364,8 @@ static int fake_addrinfo(const char *name,
         }
     }
 
-  node->ai_socktype = hints->ai_socktype;
-  node->ai_protocol = hints->ai_protocol;
+  ai->nodes->ai_socktype = hints->ai_socktype;
+  ai->nodes->ai_protocol = hints->ai_protocol;
 
   callback(arg, ARES_SUCCESS, 0, ai);
   return 1;
@@ -403,19 +384,11 @@ static void end_hquery(struct host_query *hquery, int status)
           hquery->ai->nodes = sentinel.ai_next;
         }
       next = hquery->ai->nodes;
-      /* Set port into each address (resolved separately). */
+
       while (next)
         {
           next->ai_socktype = hquery->hints.ai_socktype;
           next->ai_protocol = hquery->hints.ai_protocol;
-          if (next->ai_family == AF_INET)
-            {
-              (CARES_INADDR_CAST(struct sockaddr_in *, next->ai_addr))->sin_port = htons(hquery->port);
-            }
-          else
-            {
-              (CARES_INADDR_CAST(struct sockaddr_in6 *, next->ai_addr))->sin6_port = htons(hquery->port);
-            }
           next = next->ai_next;
         }
     }
@@ -562,7 +535,7 @@ static void host_callback(void *arg, int status, int timeouts,
 
   if (status == ARES_SUCCESS)
     {
-      addinfostatus = ares__parse_into_addrinfo(abuf, alen, 1, hquery->ai);
+      addinfostatus = ares__parse_into_addrinfo(abuf, alen, 1, hquery->port, hquery->ai);
     }
 
   if (!hquery->remaining)
