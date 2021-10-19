@@ -188,6 +188,9 @@ fail:
   return status;
 
 #else
+  (void)aftype;
+  (void)port;
+  (void)nodes;
   /* Not supported on any other OS at this time */
   return ARES_ENOTFOUND;
 #endif

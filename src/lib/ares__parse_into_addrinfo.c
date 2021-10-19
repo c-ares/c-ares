@@ -52,9 +52,7 @@ int ares__parse_into_addrinfo(const unsigned char *abuf,
   char *question_hostname = NULL;
   char *hostname, *rr_name = NULL, *rr_data;
   struct ares_addrinfo_cname *cname, *cnames = NULL;
-  struct ares_addrinfo_node *node, *nodes = NULL;
-  struct sockaddr_in *sin;
-  struct sockaddr_in6 *sin6;
+  struct ares_addrinfo_node *nodes = NULL;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
