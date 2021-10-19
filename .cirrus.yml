@@ -1,0 +1,113 @@
+env:
+  CIRRUS_CLONE_DEPTH: 1
+
+task:
+  matrix:
+    - name: "Debian amd64"
+      env:
+        DIST: "DEBIAN"
+        LC_ALL: "C"
+        SCAN_BUILD: "scan-build"
+        MAKE: "make"
+      container:
+        image: debian:latest
+    - name: "Debian arm64"
+      env:
+        DIST: "DEBIAN"
+        LC_ALL: "C"
+        SCAN_BUILD: "scan-build"
+        MAKE: "make"
+      arm_container:
+        image: debian:latest
+    - name: "FreeBSD amd64"
+      env:
+        DIST: "FREEBSD"
+        SCAN_BUILD: "scan-build"
+        MAKE: "gmake"
+      freebsd_instance:
+        image_family: freebsd-13-0
+    - name: "MacOS"
+      env:
+        DIST: "MACOS"
+        SCAN_BUILD: "/usr/local/opt/llvm/bin/scan-build"
+        MAKE: "make"
+      macos_instance:
+        image: big-sur-xcode
+  matrix:
+    - name: "CMAKE"
+      env:
+        BUILD_TYPE: "cmake"
+    - name: "AUTOTOOLS"
+      env:
+        BUILD_TYPE: "autotools"
+    - name: "ASAN"
+      # FreeBSD just hangs trying to run tests, think it may be trying to run leak sanitizer
+      only_if: $DIST != 'FREEBSD'
+      env:
+        BUILD_TYPE: "asan"
+        CONFIG_OPTS: "--enable-debug"
+        CFLAGS: "-fsanitize=address"
+        CXXFLAGS: "-fsanitize=address"
+        LDFLAGS: "-fsanitize=address"
+    - name: "ANALYZE"
+      env:
+        BUILD_TYPE: "analyze"
+        SCAN_WRAP: "${SCAN_BUILD} -v --status-bugs"
+        CONFIG_OPTS: "--enable-debug --disable-tests"
+    - name: "VALGRIND"
+      # FreeBSD just hangs trying to run tests, think it may be trying to run leak sanitizer
+      only_if: $DIST == 'DEBIAN'
+      env:
+        BUILD_TYPE: "valgrind"
+        TEST_WRAP: "valgrind --leak-check=full"
+        TEST_FILTER: "--gtest_filter=-*Container*:-*LiveSearchANY*"
+
+  install_script:
+    - |
+      case "${DIST}" in
+        DEBIAN)
+          apt-get update && \
+          apt-get install -y cmake ninja-build
+          case "${BUILD_TYPE}" in
+            asan)
+              apt-get install -y clang
+              ;;
+            analyze)
+              apt-get install -y clang clang-tools
+              ;;
+            valgrind)
+              apt-get install -y valgrind
+              ;;
+          esac
+          ;;
+        FREEBSD)
+          # pkg upgrade -y && \
+          pkg install -y cmake ninja
+          case "${BUILD_TYPE}" in
+            asan|analyze)
+              pkg install -y llvm
+              ;;
+            autotools)
+              pkg install -y autoconf automake libtool gmake
+              ;;
+          esac
+          ;;
+        MACOS)
+          brew update && \
+          brew install ninja cmake
+          case "${BUILD_TYPE}" in
+            asan|analyze)
+              brew install llvm
+              ;;
+            autotools)
+              brew install autoconf automake libtool make
+              ;;
+          esac
+          ;;
+      esac
+
+  script:
+    - ./ci/build.sh && ./ci/test.sh
+    - if [ "$BUILD_TYPE" = "normal" ]; then ./ci/distcheck.sh ; fi
+    - if [ "$BUILD_TYPE" = "coverage" ]; then ./ci/covupload.sh ; fi
+
