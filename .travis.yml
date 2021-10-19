@@ -122,6 +122,6 @@ before_script:
              export LDFLAGS=$IOSFLAGS
          fi
 script:
-    - ./travis/build.sh && ./travis/test.sh
-    - if [ "$BUILD_TYPE" = "normal" ]; then ./travis/distcheck.sh ; fi
-    - if [ "$BUILD_TYPE" = "coverage" ]; then ./travis/covupload.sh ; fi
+    - ./ci/build.sh && ./ci/test.sh
+    - if [ "$BUILD_TYPE" = "normal" ]; then ./ci/distcheck.sh ; fi
+    - if [ "$BUILD_TYPE" = "coverage" ]; then ./ci/covupload.sh ; fi

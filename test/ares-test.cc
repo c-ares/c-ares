@@ -609,10 +609,14 @@ std::ostream& operator<<(std::ostream& os, const HostEnt& host) {
 void HostCallback(void *data, int status, int timeouts,
                   struct hostent *hostent) {
   EXPECT_NE(nullptr, data);
+  if (data == nullptr)
+    return;
+
   HostResult* result = reinterpret_cast<HostResult*>(data);
   result->done_ = true;
   result->status_ = status;
   result->timeouts_ = timeouts;
+  result->host_ = nullptr;
   if (hostent)
     result->host_ = HostEnt(hostent);
   if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
