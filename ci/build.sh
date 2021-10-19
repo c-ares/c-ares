@@ -9,7 +9,7 @@ elif [ "$CIRRUS_OS" != "" ]; then
 fi
 
 if [ "$BUILD_TYPE" != "cmake" -a "$BUILD_TYPE" != "valgrind" -a "$BUILD_TYPE" != "ios-cmake" ]; then
-    ./buildconf
+    autoreconf -fi
     mkdir atoolsbld
     cd atoolsbld
     $SCAN_WRAP ../configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS

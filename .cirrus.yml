@@ -67,7 +67,7 @@ task:
       case "${DIST}" in
         DEBIAN)
           apt-get update && \
-          apt-get install -y cmake ninja-build
+          apt-get install -y cmake ninja-build autoconf automake libtool gcc
           case "${BUILD_TYPE}" in
             asan)
               apt-get install -y clang
@@ -107,7 +107,8 @@ task:
       esac
 
   script:
-    - ./ci/build.sh && ./ci/test.sh
+    - ./ci/build.sh
+    - ./ci/test.sh
     - if [ "$BUILD_TYPE" = "normal" ]; then ./ci/distcheck.sh ; fi
     - if [ "$BUILD_TYPE" = "coverage" ]; then ./ci/covupload.sh ; fi
 
