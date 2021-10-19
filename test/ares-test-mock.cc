@@ -1035,6 +1035,7 @@ TEST_P(MockChannelTest, HostAliasUnreadable) {
 
   HostResult result;
   ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_EFILE, result.status_);
   chmod(aliases.filename(), 0777);
