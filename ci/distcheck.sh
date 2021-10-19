@@ -8,7 +8,7 @@ elif [ "$CIRRUS_OS" != "" ]; then
     OS="$CIRRUS_OS"
 fi
 
-if [ "$BUILD_TYPE" = "normal" -a "$OS" = "linux" ]; then
+if [ "$OS" = "linux" ]; then
     # Make distribution tarball
     ./maketgz 99.98.97
     # Extract distribution tarball for building
