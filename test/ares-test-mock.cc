@@ -1035,11 +1035,20 @@ TEST_P(MockChannelTest, HostAliasMissingFile) {
 
 TEST_P(MockChannelTest, HostAliasUnreadable) {
   TempFile aliases("www www.google.com\n");
-  EXPECT_EQ(chmod(aliases.filename(), S_IWUSR), 0);
+  EXPECT_EQ(chmod(aliases.filename(), 0), 0);
+
+  /* Perform OS sanity checks.  We are observing on Debian after the chmod(fn, 0)
+   * that we are still able to fopen() the file which is unexpected.  Skip the
+   * test if we observe this behavior */
   struct stat st;
   EXPECT_EQ(stat(aliases.filename(), &st), 0);
-  EXPECT_EQ(st.st_mode & (S_IRWXU|S_IRWXG|S_IRWXO), S_IWUSR);
-  EXPECT_EQ(fopen(aliases.filename(), "r"), nullptr);
+  EXPECT_EQ(st.st_mode & (S_IRWXU|S_IRWXG|S_IRWXO), 0);
+  FILE *fp = fopen(aliases.filename(), "r");
+  if (fp != NULL) {
+    if (verbose) std::cerr << "Skipping Test due to OS incompatibility (open file caching)" << std::endl;
+    fclose(fp);
+    return;
+  }
 
   EnvValue with_env("HOSTALIASES", aliases.filename());
 
