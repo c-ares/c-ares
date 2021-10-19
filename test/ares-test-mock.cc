@@ -1159,21 +1159,21 @@ TEST_P(NoRotateMultiMockTest, ThirdServer) {
   CheckExample();
 }
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockTCPChannelTest, ::testing::ValuesIn(ares::test::families));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPChannelTest, ::testing::ValuesIn(ares::test::families));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockExtraOptsTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockExtraOptsTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockNoCheckRespChannelTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockNoCheckRespChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockEDNSChannelTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEDNSChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(TransportModes, RotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(TransportModes, RotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
 
 }  // namespace test
 }  // namespace ares

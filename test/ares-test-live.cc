@@ -268,7 +268,7 @@ TEST_P(DefaultChannelModeTest, LiveGetHostByAddrFailAlloc) {
   EXPECT_EQ(ARES_ENOMEM, result.status_);
 }
 
-INSTANTIATE_TEST_CASE_P(Modes, DefaultChannelModeTest,
+INSTANTIATE_TEST_SUITE_P(Modes, DefaultChannelModeTest,
                         ::testing::Values("f", "b", "fb", "bf"));
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchA) {

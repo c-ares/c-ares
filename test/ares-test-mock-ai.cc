@@ -737,31 +737,31 @@ TEST_P(MockChannelTestAI, FamilyV4ServiceName) {
   EXPECT_EQ("{addr=[1.1.1.1:80], addr=[2.2.2.2:80]}", ss.str());
 }
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockChannelTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockChannelTestAI,
                        ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockUDPChannelTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockUDPChannelTestAI,
                         ::testing::ValuesIn(ares::test::families));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockTCPChannelTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockTCPChannelTestAI,
                         ::testing::ValuesIn(ares::test::families));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockExtraOptsTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockExtraOptsTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockExtraOptsNDots5TestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockExtraOptsNDots5TestAI,
       ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockNoCheckRespChannelTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockNoCheckRespChannelTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockEDNSChannelTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockEDNSChannelTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(TransportModesAI, RotateMultiMockTestAI,
+INSTANTIATE_TEST_SUITE_P(TransportModesAI, RotateMultiMockTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(TransportModesAI, NoRotateMultiMockTestAI,
+INSTANTIATE_TEST_SUITE_P(TransportModesAI, NoRotateMultiMockTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
 
