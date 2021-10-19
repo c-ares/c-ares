@@ -771,7 +771,7 @@ static int as_is_first(const struct host_query* hquery)
 {
   char* p;
   int ndots = 0;
-  size_t nname = strlen(hquery->name);
+  size_t nname = hquery->name?strlen(hquery->name):0;
   for (p = hquery->name; *p; p++)
     {
       if (*p == '.')
@@ -789,7 +789,7 @@ static int as_is_first(const struct host_query* hquery)
 
 static int as_is_only(const struct host_query* hquery)
 {
-  size_t nname = strlen(hquery->name);
+  size_t nname = hquery->name?strlen(hquery->name):0;
   if (nname && hquery->name[nname-1] == '.')
     return 1;
   return 0;
