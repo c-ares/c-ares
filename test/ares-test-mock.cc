@@ -1036,6 +1036,11 @@ TEST_P(MockChannelTest, HostAliasMissingFile) {
 TEST_P(MockChannelTest, HostAliasUnreadable) {
   TempFile aliases("www www.google.com\n");
   EXPECT_EQ(chmod(aliases.filename(), S_IWUSR), 0);
+  struct stat st;
+  EXPECT_EQ(stat(aliases.filename(), &st), 0);
+  EXPECT_EQ(st.st_mode & (S_IRWXU|S_IRWXG|S_IRWXO), S_IWUSR);
+  EXPECT_EQ(fopen(aliases.filename(), "r"), nullptr);
+
   EnvValue with_env("HOSTALIASES", aliases.filename());
 
   HostResult result;
