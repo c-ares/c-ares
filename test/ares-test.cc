@@ -556,7 +556,12 @@ void MockChannelOptsTest::Process() {
 std::ostream& operator<<(std::ostream& os, const HostResult& result) {
   os << '{';
   if (result.done_) {
-    os << StatusToString(result.status_) << " " << result.host_;
+    os << StatusToString(result.status_);
+    if (result.host_.addrtype_ != -1) {
+      os << " " << result.host_;
+    } else {
+      os << ", (no hostent)";
+    }
   } else {
     os << "(incomplete)";
   }
@@ -592,9 +597,11 @@ HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
 }
 
 std::ostream& operator<<(std::ostream& os, const HostEnt& host) {
-  os << '{';
-  os << "'" << host.name_ << "' "
-     << "aliases=[";
+  os << "{'";
+  if (host.name_.length() > 0) {
+    os << host.name_;
+  }
+  os << "' aliases=[";
   for (size_t ii = 0; ii < host.aliases_.size(); ii++) {
     if (ii > 0) os << ", ";
     os << host.aliases_[ii];
