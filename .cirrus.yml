@@ -87,7 +87,7 @@ task:
           pkg install -y cmake ninja
           case "${BUILD_TYPE}" in
             asan|analyze)
-              pkg install -y llvm
+              pkg install -y llvm autoconf automake libtool gmake
               ;;
             autotools)
               pkg install -y autoconf automake libtool gmake
@@ -99,7 +99,7 @@ task:
           brew install ninja cmake
           case "${BUILD_TYPE}" in
             asan|analyze)
-              brew install llvm
+              brew install llvm autoconf automake libtool make
               ;;
             autotools)
               brew install autoconf automake libtool make
