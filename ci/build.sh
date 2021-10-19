@@ -8,7 +8,6 @@ elif [ "$CIRRUS_OS" != "" ]; then
     OS="$CIRRUS_OS"
 fi
 
-
 if [ "$BUILD_TYPE" != "cmake" -a "$BUILD_TYPE" != "valgrind" -a "$BUILD_TYPE" != "ios-cmake" ]; then
     ./buildconf
     mkdir atoolsbld
