@@ -124,7 +124,7 @@ VALID_CFGSET = TRUE
 PROG_DIR = $(BASE_DIR)\arestest
 LIB_DIR = $(LIB_BASE_DIR)\cares
 
-GMOCK_DIR = gmock-1.8.0
+GMOCK_DIR = gmock-1.11.0
 
 # ---------------------------------------------------
 # Subdirs which are configuration dependent are only

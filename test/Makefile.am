@@ -10,7 +10,7 @@ CPPFLAGS += -I$(ARES_BLD_DIR)/include \
             -I$(ARES_SRC_DIR)/include \
             -I$(ARES_SRC_DIR)/src/lib \
             -I$(top_builddir)         \
-            -isystem $(srcdir)/gmock-1.8.0
+            -isystem $(srcdir)/gmock-1.11.0
 CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 
 # Makefile.inc provides the various *SOURCES and *HEADERS defines
@@ -21,11 +21,11 @@ TESTS = arestest fuzzcheck.sh
 noinst_LTLIBRARIES = libgmock.la
 
 libgmock_la_SOURCES = \
-  gmock-1.8.0/gmock-gtest-all.cc	\
-  gmock-1.8.0/gmock/gmock.h		\
-  gmock-1.8.0/gtest/gtest.h
+  gmock-1.11.0/gmock-gtest-all.cc	\
+  gmock-1.11.0/gmock/gmock.h		\
+  gmock-1.11.0/gtest/gtest.h
 
-libgmock_la_CPPFLAGS = -isystem $(srcdir)/gmock-1.8.0
+libgmock_la_CPPFLAGS = -isystem $(srcdir)/gmock-1.11.0
 
 
 noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump

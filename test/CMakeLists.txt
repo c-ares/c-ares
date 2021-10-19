@@ -25,7 +25,7 @@ ELSE ()
 ENDIF ()
 
 # Google Test and Mock
-set(GMOCK_DIR gmock-1.8.0)
+set(GMOCK_DIR gmock-1.11.0)
 add_library(gmock STATIC
   ${GMOCK_DIR}/gmock-gtest-all.cc
   ${GMOCK_DIR}/gmock/gmock.h
