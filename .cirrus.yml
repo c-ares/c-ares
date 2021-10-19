@@ -9,6 +9,7 @@ task:
         LC_ALL: "C"
         SCAN_BUILD: "scan-build"
         MAKE: "make"
+        TEST_FILTER: "--gtest_filter=-*Container*"
       container:
         image: debian:latest
     - name: "Debian arm64"
@@ -17,6 +18,7 @@ task:
         LC_ALL: "C"
         SCAN_BUILD: "scan-build"
         MAKE: "make"
+        TEST_FILTER: "--gtest_filter=-*Container*"
       arm_container:
         image: debian:latest
     - name: "FreeBSD amd64"
