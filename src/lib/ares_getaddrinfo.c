@@ -57,7 +57,7 @@
 #  include "ares_platform.h"
 #endif
 
-#ifdef _WIN32 && _WIN32_WINNT >= 0x0601
+#if defined(_WIN32) && _WIN32_WINNT >= 0x0601
 #  include <windns.h>
 #  define CARES_ENABLE_WINS_LOOKUPS
 
