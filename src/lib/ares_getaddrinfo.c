@@ -383,13 +383,13 @@ static int wins_lookup(struct host_query *hquery)
   request.Version = DNS_QUERY_REQUEST_VERSION1;
 
   /* QueryName is a PCWSTR, convert */
-  size = MultiByteToWideChar(CP_ACP, 0, p, -1, NULL, 0);
-  wname = ares_malloc(size * sizeof(*name));
+  size = MultiByteToWideChar(CP_ACP, 0, hquery->name, -1, NULL, 0);
+  wname = ares_malloc(size * sizeof(*wname));
   if (wname == NULL)
     return ARES_ENOMEM;
-  MultiByteToWideChar(CP_ACP, 0, p, -1, (LPWSTR)wname, size);
+  MultiByteToWideChar(CP_ACP, 0, hquery->name, -1, (LPWSTR)wname, size);
 
-  request.QueryName = pcswName;
+  request.QueryName = wname;
   request.QueryOptions = DNS_QUERY_MULTICAST_ONLY /* | DNS_QUERY_FALLBACK_NETBIOS */;
   switch (hquery->hints.ai_family)
     {
