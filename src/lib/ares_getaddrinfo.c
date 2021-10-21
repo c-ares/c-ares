@@ -239,26 +239,15 @@ void ares__addrinfo_cat_nodes(struct ares_addrinfo_node **head,
 
 
 #ifdef CARES_ENABLE_WINS_LOOKUPS
-#include <stdarg.h>
-static void wins_debug(const char *fmt, ...)
-{
-  va_list     ap;
-  va_start(ap, fmt);
-  vfprintf(stdout, fmt, ap);
-  fprintf(stdout, "\n");
-  fflush(stdout);
-  va_end(ap);
-}
+
 static void wins_cleanup(struct host_query *hquery)
 {
-wins_debug("%s(): trace 1", __FUNCTION__);
   if (!hquery->wins)
     return;
 
   /* Should really only happen on an ares_destroy() */
   if (hquery->wins->is_running == 1)
     {
-wins_debug("%s(): trace 2", __FUNCTION__);
       /* Cancel here */
       DnsCancelQuery(&hquery->wins->cancelctx);
 
@@ -266,7 +255,6 @@ wins_debug("%s(): trace 2", __FUNCTION__);
       while (WaitForSingleObjectEx(hquery->wins->complete_event, INFINITE, TRUE)
              != WAIT_OBJECT_0)
         ;
-wins_debug("%s(): trace 3", __FUNCTION__);
     }
 
   if (hquery->wins->result.pQueryRecords)
@@ -274,14 +262,12 @@ wins_debug("%s(): trace 3", __FUNCTION__);
       DnsRecordListFree(hquery->wins->result.pQueryRecords, DnsFreeRecordList);
     }
 
-wins_debug("%s(): trace 4", __FUNCTION__);
 
   if (hquery->wins->complete_event)
     CloseHandle(hquery->wins->complete_event);
 
   ares_free(hquery->wins);
   hquery->wins = NULL;
-wins_debug("%s(): trace 5", __FUNCTION__);
 }
 
 static void WINAPI wins_callback(PVOID pQueryContext, PDNS_QUERY_RESULT pQueryResults)
@@ -290,8 +276,6 @@ static void WINAPI wins_callback(PVOID pQueryContext, PDNS_QUERY_RESULT pQueryRe
   DNS_RECORD *record = NULL;
   int status = ARES_SUCCESS;
   struct ares_addrinfo_node *nodes = NULL;
-
-wins_debug("%s(): trace 1", __FUNCTION__);
 
   /* Cancel called as there are no docs on what QueryStatus are set for
    * DnsCancelQuery(), so we track state ourselves */
@@ -303,7 +287,6 @@ wins_debug("%s(): trace 1", __FUNCTION__);
   hquery->channel->nondns_query_cnt--;
   hquery->wins->is_running = 0;
   SetEvent(hquery->wins->complete_event);
-wins_debug("%s(): trace 2", __FUNCTION__);
 
   switch (hquery->wins->result.QueryStatus)
     {
@@ -319,7 +302,6 @@ wins_debug("%s(): trace 2", __FUNCTION__);
         status = ARES_ESERVFAIL;
         break;
     }
-wins_debug("%s(): trace 3 - status: %d, QueryStatus: %d", __FUNCTION__, status, (int)hquery->wins->result.QueryStatus);
 
   if (status != ARES_SUCCESS)
     goto fail;
@@ -330,19 +312,14 @@ wins_debug("%s(): trace 3 - status: %d, QueryStatus: %d", __FUNCTION__, status, 
       switch (record->wType)
         {
           case DNS_TYPE_A:
-wins_debug("%s(): trace 4a - A", __FUNCTION__);
-
             aptr = &record->Data.A.IpAddress;
             status = ares_append_ai_node(AF_INET, hquery->port, 0, aptr,
                                          &nodes);
-wins_debug("%s(): trace 4b - A", __FUNCTION__);
             break;
           case DNS_TYPE_AAAA:
-wins_debug("%s(): trace 4a - AAAA", __FUNCTION__);
             aptr = &record->Data.AAAA.Ip6Address;
             status = ares_append_ai_node(AF_INET6, hquery->port, 0, aptr,
                                          &nodes);
-wins_debug("%s(): trace 4b - AAAA", __FUNCTION__);
             break;
         }
         if (status != ARES_SUCCESS)
@@ -350,7 +327,6 @@ wins_debug("%s(): trace 4b - AAAA", __FUNCTION__);
     }
 
   if (nodes == NULL) {
-wins_debug("%s(): trace 5", __FUNCTION__);
     status = ARES_ENOTFOUND;
     goto fail;
   }
@@ -360,29 +336,24 @@ wins_debug("%s(): trace 5", __FUNCTION__);
   nodes = NULL;
 
 fail:
-wins_debug("%s(): trace 6", __FUNCTION__);
   /* Clean up most of what we can, though the actual wins pointer and event
    * must stay and will be cleaned up later */
   if (hquery->wins->result.pQueryRecords)
     DnsRecordListFree(hquery->wins->result.pQueryRecords, DnsFreeRecordList);
   hquery->wins->result.pQueryRecords = NULL;
   ares__freeaddrinfo_nodes(nodes);
-wins_debug("%s(): trace 7", __FUNCTION__);
   switch (status)
     {
       case ARES_EDESTRUCTION:
         /* Do Nothing, this is a cancellation */
         break;
       case ARES_ENOTFOUND:
-wins_debug("%s(): trace 8a", __FUNCTION__);
         next_lookup(hquery, status);
         break;
       default:
-wins_debug("%s(): trace 8b", __FUNCTION__);
         end_hquery(hquery, status);
         break;
     }
-wins_debug("%s(): trace 9", __FUNCTION__);
 }
 
 static int wins_lookup(struct host_query *hquery)
@@ -391,7 +362,7 @@ static int wins_lookup(struct host_query *hquery)
   DNS_STATUS result;
   int   size;
   WCHAR *wname = NULL;
-wins_debug("%s(): trace 1", __FUNCTION__);
+
   /* Shouldn't be possible */
   if (hquery->wins)
     wins_cleanup(hquery);
@@ -407,7 +378,7 @@ wins_debug("%s(): trace 1", __FUNCTION__);
   hquery->wins->complete_event = CreateEvent(NULL, TRUE, FALSE, NULL);
   if (hquery->wins->complete_event == NULL)
     return ARES_ENOMEM;
-wins_debug("%s(): trace 2", __FUNCTION__);
+
   hquery->wins->result.Version = DNS_QUERY_RESULTS_VERSION1;
 
   request.Version = DNS_QUERY_REQUEST_VERSION1;
@@ -418,7 +389,7 @@ wins_debug("%s(): trace 2", __FUNCTION__);
   if (wname == NULL)
     return ARES_ENOMEM;
   MultiByteToWideChar(CP_ACP, 0, hquery->name, -1, (LPWSTR)wname, size);
-wins_debug("%s(): trace 3", __FUNCTION__);
+
   request.QueryName = wname;
   request.QueryOptions = DNS_QUERY_MULTICAST_ONLY /* | DNS_QUERY_FALLBACK_NETBIOS */;
   switch (hquery->hints.ai_family)
@@ -440,23 +411,16 @@ wins_debug("%s(): trace 3", __FUNCTION__);
 
   hquery->channel->nondns_query_cnt++;
   hquery->wins->is_running = 1;
-wins_debug("%s(): trace 4", __FUNCTION__);
+
   result = DnsQueryEx(&request, &hquery->wins->result, &hquery->wins->cancelctx);
-wins_debug("%s(): trace 5 - result: %d", __FUNCTION__, (int)result);
   ares_free(wname);
 
   /* If the result is not DNS_REQUEST_PENDING, then it returned immediately,
    * trigger callback */
   if (result != DNS_REQUEST_PENDING)
     {
-wins_debug("%s(): trace 6", __FUNCTION__);
-      if (hquery->wins->is_running == 1) {
-        wins_callback(hquery, &hquery->wins->result);
-      } else {
-wins_debug("%s(): trace 6b: result is DNS_REQUEST_PENDING, but callback was already called", __FUNCTION__);
-      }
+       wins_callback(hquery, &hquery->wins->result);
     }
-wins_debug("%s(): trace 7", __FUNCTION__);
   return ARES_SUCCESS;
 }
 #endif
