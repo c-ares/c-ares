@@ -57,7 +57,7 @@
 #  include "ares_platform.h"
 #endif
 
-#if defined(HAVE_WINDNS_H) && defined(HAVE_DNSQUERYEX)
+#if defined(HAVE_WINDNS_H) && defined(HAVE_DNSQUERYEX) && _WIN32_WINNT >= 0x0602
 #  include <windns.h>
 #  define CARES_ENABLE_WINS_LOOKUPS
 
@@ -746,10 +746,16 @@ static void next_lookup(struct host_query *hquery, int status)
           break;
 #endif
 
-      default:
-          /* No lookup left */
+      case 0:
+         /* No lookup left */
          end_hquery(hquery, status);
          break;
+
+      default:
+        /* Unknown or unsupported lookup type. Go to next */
+        hquery->remaining_lookups++;
+        next_lookup(hquery, status);
+        break;
     }
 }
 
