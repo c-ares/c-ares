@@ -318,7 +318,7 @@ wins_debug("%s(): trace 2", __FUNCTION__);
         status = ARES_ESERVFAIL;
         break;
     }
-wins_debug("%s(): trace 3 - status: %d, QueryStatus: %d", __FUNCTION__, status. (int)hquery->wins->result.QueryStatus);
+wins_debug("%s(): trace 3 - status: %d, QueryStatus: %d", __FUNCTION__, status, (int)hquery->wins->result.QueryStatus);
 
   if (status != ARES_SUCCESS)
     goto fail;
