@@ -66,7 +66,7 @@ struct wins_query {
   DNS_QUERY_RESULT result;
   DNS_QUERY_CANCEL cancelctx;
   HANDLE           complete_event;
-}
+};
 #endif
 
 struct host_query
@@ -372,7 +372,7 @@ static int wins_lookup(struct host_query *hquery)
 
   memset(hquery->wins, 0, sizeof(*(hquery->wins)));
 
-  hquery->wins->complete_event = CreateEvent(NULL, TRUE, FALSE, NULL)
+  hquery->wins->complete_event = CreateEvent(NULL, TRUE, FALSE, NULL);
   if (hquery->wins->complete_event == NULL)
     return ARES_ENOMEM;
 
