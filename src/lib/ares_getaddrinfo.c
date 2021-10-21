@@ -128,6 +128,8 @@ static void host_callback(void *arg, int status, int timeouts,
 static int as_is_first(const struct host_query *hquery);
 static int as_is_only(const struct host_query* hquery);
 static int next_dns_lookup(struct host_query *hquery);
+static void next_lookup(struct host_query *hquery, int status);
+static void end_hquery(struct host_query *hquery, int status);
 
 struct ares_addrinfo_cname *ares__malloc_addrinfo_cname()
 {
@@ -308,13 +310,13 @@ static void wins_callback(PVOID pQueryContext, PDNS_QUERY_RESULT pQueryResults)
       switch (record->wType)
         {
           case DNS_TYPE_A:
-            aptr = &record->Data.A.Ip4Address;
-            status = ares_append_ai_node(AF_INET, hquery->port, 0, &aptr,
+            aptr = &record->Data.A.IpAddress;
+            status = ares_append_ai_node(AF_INET, hquery->port, 0, aptr,
                                          &nodes);
             break;
           case DNS_TYPE_AAAA:
             aptr = &record->Data.AAAA.Ip6Address;
-            status = ares_append_ai_node(AF_INET6, hquery->port, 0, &aptr,
+            status = ares_append_ai_node(AF_INET6, hquery->port, 0, aptr,
                                          &nodes);
             break;
         }
