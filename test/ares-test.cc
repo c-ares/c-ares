@@ -90,7 +90,16 @@ void ProcessWork(ares_channel channel,
     }
 
     // Wait for activity or timeout.
-    count = select(nfds?nfds:1, &readers, &writers, nullptr, &tv);
+#ifdef _WIN32
+    if (nfds == 0) {
+      Sleep(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+      count = 0;
+    } else {
+      count = select(nfds, &readers, &writers, nullptr, &tv);
+    }
+#else
+    count = select(nfds, &readers, &writers, nullptr, &tv);
+#endif
     if (count < 0) {
       fprintf(stderr, "select() failed, errno %d\n", errno);
       return;
