@@ -202,6 +202,7 @@ CHECK_INCLUDE_FILES ("winsock2.h;windows.h"            HAVE_WINSOCK2_H)
 CHECK_INCLUDE_FILES ("winsock2.h;ws2tcpip.h;windows.h" HAVE_WS2TCPIP_H)
 CHECK_INCLUDE_FILES ("winsock.h;windows.h"             HAVE_WINSOCK_H)
 CHECK_INCLUDE_FILES (windows.h                         HAVE_WINDOWS_H)
+CHECK_INCLUDE_FILES (windns.h                          HAVE_WINDNS_H)
 ENDIF ()
 
 # Set system-specific compiler flags
