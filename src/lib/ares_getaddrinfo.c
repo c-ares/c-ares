@@ -312,6 +312,7 @@ wins_debug("%s(): trace 2", __FUNCTION__);
         break;
       case DNS_INFO_NO_RECORDS:
       case DNS_RCODE_NXDOMAIN:
+      case ERROR_TIMEOUT: /* Multicast will timeout, treat as not found */
         status = ARES_ENOTFOUND;
         break;
       default:
