@@ -144,6 +144,9 @@
 /* Define to 1 if you have a IPv6 capable working inet_pton function. */
 #cmakedefine HAVE_INET_PTON
 
+/* Define to 1 if you have the `DnsQueryEx` function */
+#cmakedefine HAVE_DNSQUERYEX
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H
 
@@ -201,6 +204,9 @@
 
 /* Define to 1 if you have the <net/if.h> header file. */
 #cmakedefine HAVE_NET_IF_H
+
+/* Define to 1 if you have the <windns.h> header file. */
+#cmakedefine HAVE_WINDNS_H
 
 /* Define to 1 if you have PF_INET6. */
 #cmakedefine HAVE_PF_INET6

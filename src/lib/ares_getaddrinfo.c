@@ -57,7 +57,7 @@
 #  include "ares_platform.h"
 #endif
 
-#if defined(_WIN32) && _WIN32_WINNT >= 0x0601
+#if defined(HAVE_WINDNS_H) && defined(HAVE_DNSQUERYEX)
 #  include <windns.h>
 #  define CARES_ENABLE_WINS_LOOKUPS
 
@@ -269,7 +269,7 @@ static void wins_cleanup(struct host_query *hquery)
   hquery->wins = NULL;
 }
 
-static void wins_callback(PVOID pQueryContext, PDNS_QUERY_RESULT pQueryResults)
+static void WINAPI wins_callback(PVOID pQueryContext, PDNS_QUERY_RESULT pQueryResults)
 {
   struct host_query *hquery = pQueryContext;
   DNS_RECORD *record = NULL;
@@ -418,7 +418,7 @@ static int wins_lookup(struct host_query *hquery)
    * trigger callback */
   if (result != DNS_REQUEST_PENDING)
     {
-      ares_free(pcswName);
+      ares_free(wname);
       wins_callback(hquery, &hquery->wins->result);
     }
 

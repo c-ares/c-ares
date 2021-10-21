@@ -279,6 +279,7 @@ CARES_EXTRAINCLUDE_IFSET (HAVE_UNISTD_H       unistd.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_WINSOCK2_H     winsock2.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_WS2TCPIP_H     ws2tcpip.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_WINDOWS_H      windows.h)
+CARES_EXTRAINCLUDE_IFSET (HAVE_WINDNS_H       windns.h)
 
 # Check Types
 # CHECK_TYPE_SIZE can't be used to see if a type exists because on Apple when
@@ -380,6 +381,7 @@ CHECK_SYMBOL_EXISTS (strncasecmp     "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNCAS
 CHECK_SYMBOL_EXISTS (strncmpi        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNCMPI)
 CHECK_SYMBOL_EXISTS (strnicmp        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNICMP)
 CHECK_SYMBOL_EXISTS (writev          "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_WRITEV)
+CHECK_SYMBOL_EXISTS (DnsQueryEx      "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_DNSQUERYEX)
 
 # On Android, the system headers may define __system_property_get(), but excluded
 # from libc.  We need to perform a link test instead of a header/symbol test.
