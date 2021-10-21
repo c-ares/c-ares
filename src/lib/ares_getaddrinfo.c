@@ -243,8 +243,6 @@ void ares__addrinfo_cat_nodes(struct ares_addrinfo_node **head,
 static void wins_debug(const char *fmt, ...)
 {
   va_list     ap;
-  char        buf[1024];
-
   va_start(ap, fmt);
   vfprintf(stdout, fmt, ap);
   fprintf(stdout, "\n");
@@ -320,7 +318,7 @@ wins_debug("%s(): trace 2", __FUNCTION__);
         status = ARES_ESERVFAIL;
         break;
     }
-wins_debug("%s(): trace 3 - status: %d", __FUNCTION__, status);
+wins_debug("%s(): trace 3 - status: %d, QueryStatus: %d", __FUNCTION__, status. (int)hquery->wins->result.QueryStatus);
 
   if (status != ARES_SUCCESS)
     goto fail;
@@ -442,7 +440,7 @@ wins_debug("%s(): trace 3", __FUNCTION__);
   hquery->wins->is_running = 1;
 wins_debug("%s(): trace 4", __FUNCTION__);
   result = DnsQueryEx(&request, &hquery->wins->result, &hquery->wins->cancelctx);
-wins_debug("%s(): trace 5", __FUNCTION__);
+wins_debug("%s(): trace 5 - result: %d", __FUNCTION__, (int)result);
   ares_free(wname);
 
   /* If the result is not DNS_REQUEST_PENDING, then it returned immediately,
@@ -450,7 +448,11 @@ wins_debug("%s(): trace 5", __FUNCTION__);
   if (result != DNS_REQUEST_PENDING)
     {
 wins_debug("%s(): trace 6", __FUNCTION__);
-      wins_callback(hquery, &hquery->wins->result);
+      if (hquery->wins->is_running == 1) {
+        wins_callback(hquery, &hquery->wins->result);
+      } else {
+wins_debug("%s(): trace 6b: result is DNS_REQUEST_PENDING, but callback was already called", __FUNCTION__);
+      }
     }
 wins_debug("%s(): trace 7", __FUNCTION__);
   return ARES_SUCCESS;
