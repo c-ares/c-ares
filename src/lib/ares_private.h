@@ -85,6 +85,11 @@ W32_FUNC const char *_w32_GetHostsFile (void);
 
 #define PATH_HOSTS             "InetDBase:Hosts"
 
+#elif defined(__HAIKU__)
+
+#define PATH_RESOLV_CONF "/system/settings/network/resolv.conf"
+#define PATH_HOSTS              "/system/settings/network/hosts"
+
 #else
 
 #define PATH_RESOLV_CONF        "/etc/resolv.conf"
