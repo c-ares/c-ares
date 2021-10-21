@@ -269,7 +269,7 @@ TEST_P(DefaultChannelModeTest, LiveGetHostByAddrFailAlloc) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Modes, DefaultChannelModeTest,
-                        ::testing::Values("f", "b", "fb", "bf"));
+                        ::testing::Values("fw", "b", "fbw", "bwf"));
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveSearchA) {
   SearchResult result;
