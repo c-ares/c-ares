@@ -360,7 +360,7 @@ static int wins_lookup(struct host_query *hquery)
   DNS_QUERY_REQUEST request;
   DNS_STATUS result;
   int   size;
-  WCHAR *pwcsName = NULL;
+  WCHAR *wname = NULL;
 
   /* Shouldn't be possible */
   if (hquery->wins)
@@ -384,13 +384,13 @@ static int wins_lookup(struct host_query *hquery)
 
   /* QueryName is a PCWSTR, convert */
   size = MultiByteToWideChar(CP_ACP, 0, p, -1, NULL, 0);
-  pcswName = ares_malloc(size * sizeof(*pwcsName));
-  if (pcswName == NULL)
+  wname = ares_malloc(size * sizeof(*name));
+  if (wname == NULL)
     return ARES_ENOMEM;
-  MultiByteToWideChar(CP_ACP, 0, p, -1, (LPWSTR)pwcsName, size);
+  MultiByteToWideChar(CP_ACP, 0, p, -1, (LPWSTR)wname, size);
 
   request.QueryName = pcswName;
-  request.QueryOptions = DNS_QUERY_MULTICAST_ONLY | DNS_QUERY_FALLBACK_NETBIOS;
+  request.QueryOptions = DNS_QUERY_MULTICAST_ONLY /* | DNS_QUERY_FALLBACK_NETBIOS */;
   switch (hquery->hints.ai_family)
     {
       case AF_INET:
@@ -412,7 +412,7 @@ static int wins_lookup(struct host_query *hquery)
 
   result = DnsQueryEx(&request, &hquery->wins->result, &hquery->wins->cancelctx);
 
-  ares_free(pcswName);
+  ares_free(wname);
 
   /* If the result is not DNS_REQUEST_PENDING, then it returned immediately,
    * trigger callback */
