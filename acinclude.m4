@@ -525,7 +525,7 @@ AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
 #endif
 #if (!defined(_WIN32_WINNT)) || (_WIN32_WINNT < 0x0501)
 #undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
+#define _WIN32_WINNT 0x0602
 #endif
 #include <windows.h>
 #ifdef HAVE_WINSOCK2_H
