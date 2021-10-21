@@ -358,7 +358,9 @@ fail:
 static int wins_lookup(struct host_query *hquery)
 {
   DNS_QUERY_REQUEST request;
-  DWORD result;
+  DNS_STATUS result;
+  int   size;
+  WCHAR *pwcsName = NULL;
 
   /* Shouldn't be possible */
   if (hquery->wins)
@@ -379,7 +381,15 @@ static int wins_lookup(struct host_query *hquery)
   hquery->wins->result.Version = DNS_QUERY_RESULTS_VERSION1;
 
   request.Version = DNS_QUERY_REQUEST_VERSION1;
-  request.QueryName = hquery->name;
+
+  /* QueryName is a PCWSTR, convert */
+  size = MultiByteToWideChar(CP_ACP, 0, p, -1, NULL, 0);
+  pcswName = ares_malloc(size * sizeof(*pwcsName));
+  if (pcswName == NULL)
+    return ARES_ENOMEM;
+  MultiByteToWideChar(CP_ACP, 0, p, -1, (LPWSTR)pwcsName, size);
+
+  request.QueryName = pcswName;
   request.QueryOptions = DNS_QUERY_MULTICAST_ONLY | DNS_QUERY_FALLBACK_NETBIOS;
   switch (hquery->hints.ai_family)
     {
@@ -399,11 +409,16 @@ static int wins_lookup(struct host_query *hquery)
   request.pQueryCompletionCallback = wins_callback;
 
   hquery->wins->is_running = 1;
+
+  result = DnsQueryEx(&request, &hquery->wins->result, &hquery->wins->cancelctx);
+
+  ares_free(pcswName);
+
   /* If the result is not DNS_REQUEST_PENDING, then it returned immediately,
    * trigger callback */
-  if (DnsQueryExA(&request, &hquery->wins->result, &hquery->wins->cancelctx) !=
-      DNS_REQUEST_PENDING)
+  if (result != DNS_REQUEST_PENDING)
     {
+      ares_free(pcswName);
       wins_callback(hquery, &hquery->wins->result);
     }
 
