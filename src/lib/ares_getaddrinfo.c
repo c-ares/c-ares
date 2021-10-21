@@ -300,7 +300,7 @@ wins_debug("%s(): trace 1", __FUNCTION__);
     status = ARES_EDESTRUCTION;
     goto fail;
   }
-
+  hquery->channel->nondns_query_cnt--;
   hquery->wins->is_running = 0;
   SetEvent(hquery->wins->complete_event);
 wins_debug("%s(): trace 2", __FUNCTION__);
@@ -437,6 +437,7 @@ wins_debug("%s(): trace 3", __FUNCTION__);
   request.pQueryContext = hquery;
   request.pQueryCompletionCallback = wins_callback;
 
+  hquery->channel->nondns_query_cnt++;
   hquery->wins->is_running = 1;
 wins_debug("%s(): trace 4", __FUNCTION__);
   result = DnsQueryEx(&request, &hquery->wins->result, &hquery->wins->cancelctx);

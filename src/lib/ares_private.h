@@ -310,6 +310,9 @@ struct ares_channeldata {
   /* Last server we sent a query to. */
   int last_server;
 
+  /* Mainly used for WINS/NetBIOS external queries */
+  int nondns_query_cnt;
+
   /* Circular, doubly-linked list of queries, bucketed various ways.... */
   /* All active queries in a single list: */
   struct list_node all_queries;
