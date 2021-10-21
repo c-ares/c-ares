@@ -74,7 +74,7 @@ struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
 
   if (min_offset == -1 && !maxtv)
     {
-       min_offset = 3600 * 1000; /* 1hr - only used for nondns_query_cnt  */
+       min_offset = 100; /* 100ms - only used for nondns_query_cnt  */
     }
 
   /* If we found a minimum timeout and it's sooner than the one specified in
