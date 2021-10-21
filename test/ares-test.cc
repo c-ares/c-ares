@@ -66,14 +66,19 @@ void ProcessWork(ares_channel channel,
                  std::function<void(int)> process_extra) {
   int nfds, count;
   fd_set readers, writers;
-  struct timeval tv;
+  struct timeval tv, *tv_rv;
   while (true) {
     // Retrieve the set of file descriptors that the library wants us to monitor.
     FD_ZERO(&readers);
     FD_ZERO(&writers);
     nfds = ares_fds(channel, &readers, &writers);
-    if (nfds == 0)  // no work left to do in the library
+    tv_rv = ares_timeout(channel, NULL, &tv);
+
+    /* Use a neat trick that ares_timeout() will return NULL if there are no
+     * pending queries and no max_tv parameter was provided. */
+    if (tv_rv == NULL && nfds == 0) {
       return;
+    }
 
     // Add in the extra FDs if present.
     std::set<int> extrafds = get_extrafds();
@@ -85,8 +90,7 @@ void ProcessWork(ares_channel channel,
     }
 
     // Wait for activity or timeout.
-    tv.tv_sec = 0;
-    tv.tv_usec = 100000;  // 100ms
+
     count = select(nfds, &readers, &writers, nullptr, &tv);
     if (count < 0) {
       fprintf(stderr, "select() failed, errno %d\n", errno);

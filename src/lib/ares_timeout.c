@@ -45,9 +45,13 @@ struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
   struct timeval nextstop;
   long offset, min_offset;
 
+  memset(tvbuf, 0, sizeof(*tvbuf));
+
   /* No queries, no timeout (and no fetch of the current time). */
   if (ares__is_list_empty(&(channel->all_queries)))
-    return maxtv;
+    {
+      return maxtv;
+    }
 
   /* Find the minimum timeout for the current set of queries. */
   now = ares__tvnow();
@@ -58,7 +62,7 @@ struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
        list_node = list_node->next)
     {
       query = list_node->data;
-      if (query->timeout.tv_sec == 0)
+      if (query->timeout.tv_sec == 0 && query->timeout.tv_usec == 0)
         continue;
       offset = timeoffset(&now, &query->timeout);
       if (offset < 0)
@@ -84,5 +88,7 @@ struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
         }
     }
 
-  return maxtv;
+  if (maxtv)
+    return maxtv;
+  return tvbuf;
 }
