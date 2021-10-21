@@ -398,13 +398,13 @@ static int wins_lookup(struct host_query *hquery)
   request.pQueryContext = hquery;
   request.pQueryCompletionCallback = wins_callback;
 
-  hquery->wins.is_running = 1;
+  hquery->wins->is_running = 1;
   /* If the result is not DNS_REQUEST_PENDING, then it returned immediately,
    * trigger callback */
-  if (DnsQueryEx(&request, &hquery->wins_result, &hquery->wins_cancelctx) !=
+  if (DnsQueryExA(&request, &hquery->wins->result, &hquery->wins->cancelctx) !=
       DNS_REQUEST_PENDING)
     {
-      wins_callback(hquery, &hquery->wins_result);
+      wins_callback(hquery, &hquery->wins->result);
     }
 
   return ARES_SUCCESS;
