@@ -1,6 +1,6 @@
 AC_PREREQ([2.60])
 
-AC_INIT([c-ares], [1.18.0],
+AC_INIT([c-ares], [1.18.1],
   [c-ares mailing list: http://lists.haxx.se/listinfo/c-ares])
 
 CARES_VERSION_INFO="7:1:5"
