@@ -1,3 +1,13 @@
+c-ares version 1.18.1
+
+This is an urgent bugfix release for a regression made in 1.18.0.
+
+Bug fixes:
+ o ares_getaddrinfo() would return ai_addrlen of 16 for ipv6
+   adddresses rather than the sizeof(struct sockaddr_in6)
+
+
+
 c-ares version 1.18.0
 
 This is a feature and bugfix release.  It addresses a couple of new feature
