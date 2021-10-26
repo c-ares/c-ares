@@ -32,6 +32,8 @@ MATCHER_P(IncludesV4Address, address, "") {
   for (const ares_addrinfo_node* ai = arg->nodes; ai != NULL; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET)
       continue;
+    if (ai->ai_addrlen != sizeof(struct sockaddr_in))
+      continue;
     if (reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_addr.s_addr ==
         addressnum.s_addr)
       return true; // found
@@ -48,6 +50,8 @@ MATCHER_P(IncludesV6Address, address, "") {
   }
   for (const ares_addrinfo_node* ai = arg->nodes; ai != NULL; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET6)
+      continue;
+    if (ai->ai_addrlen != sizeof(struct sockaddr_in6))
       continue;
     if (!memcmp(
         reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_addr.s6_addr,

@@ -60,13 +60,13 @@ int ares_append_ai_node(int aftype,
         }
 
       memset(sin, 0, sizeof(*sin));
-      memcpy(&sin->sin_addr.s_addr, adata, sizeof(struct in_addr));
+      memcpy(&sin->sin_addr.s_addr, adata, sizeof(sin->sin_addr.s_addr));
       sin->sin_family = AF_INET;
       sin->sin_port = htons(port);
 
       node->ai_addr = (struct sockaddr *)sin;
       node->ai_family = AF_INET;
-      node->ai_addrlen = sizeof(struct sockaddr_in);
+      node->ai_addrlen = sizeof(*sin);
       node->ai_addr = (struct sockaddr *)sin;
       node->ai_ttl = ttl;
     }
@@ -80,13 +80,13 @@ int ares_append_ai_node(int aftype,
         }
 
       memset(sin6, 0, sizeof(*sin6));
-      memcpy(&sin6->sin6_addr.s6_addr, adata, sizeof(struct ares_in6_addr));
+      memcpy(&sin6->sin6_addr.s6_addr, adata, sizeof(sin6->sin6_addr.s6_addr));
       sin6->sin6_family = AF_INET6;
       sin6->sin6_port = htons(port);
 
       node->ai_addr = (struct sockaddr *)sin6;
       node->ai_family = AF_INET6;
-      node->ai_addrlen = sizeof(struct ares_in6_addr);
+      node->ai_addrlen = sizeof(*sin6);
       node->ai_addr = (struct sockaddr *)sin6;
       node->ai_ttl = ttl;
     }
