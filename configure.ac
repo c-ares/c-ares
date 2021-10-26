@@ -404,6 +404,11 @@ if test "$ac_cv_lib_resolve_strcasecmp" = "$ac_cv_func_strcasecmp"; then
 fi
 ac_cv_func_strcasecmp="no"
 
+dnl Windows builds require linking to iphlpapi
+if test "$ac_cv_header_winsock2_h" = "yes"; then
+  LIBS="$LIBS -liphlpapi"
+fi
+
 CARES_CHECK_LIBS_CONNECT
 
 dnl iOS 10?
