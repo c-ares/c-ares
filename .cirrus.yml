@@ -106,7 +106,7 @@ task:
               apt-get install -y valgrind
               ;;
             coverage)
-              pip install --user cpp-coveralls
+              python3 -m pip install --user cpp-coveralls
               ;;
           esac
           ;;
