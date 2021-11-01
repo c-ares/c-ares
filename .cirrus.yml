@@ -111,7 +111,7 @@ task:
               apt-get install -y valgrind
               ;;
             coverage)
-              apt-get install -y lcov
+              apt-get install -y lcov git
               pip3 install --user cpp-coveralls
               ;;
           esac
