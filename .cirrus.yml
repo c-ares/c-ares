@@ -90,7 +90,7 @@ task:
         CI_NAME: "cirrus-ci"
         CI_BUILD_NUMBER: "${CIRRUS_BUILD_ID}"
         CI_BUILD_URL: "${CIRRUS_REPO_CLONE_URL}"
-        CI_BRANCH: "${CIRRUS_BASE_BRANCH}"
+        CI_BRANCH: "${CIRRUS_BRANCH}"
         CI_PULL_REQUEST: "${CIRRUS_PR}"
         CONFIG_OPTS: "--enable-debug --disable-shared --enable-code-coverage --enable-tests"
 
