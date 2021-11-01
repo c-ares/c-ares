@@ -45,13 +45,35 @@ task:
       only_if: $DIST != 'FREEBSD'
       env:
         BUILD_TYPE: "asan"
+        CC: "clang"
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=address"
         CXXFLAGS: "-fsanitize=address"
         LDFLAGS: "-fsanitize=address"
+    - name: "UBSAN"
+      # FreeBSD just hangs trying to run tests, think it may be trying to run leak sanitizer
+      only_if: $DIST != 'FREEBSD'
+      env:
+        BUILD_TYPE: "ubsan"
+        CC: "clang"
+        CONFIG_OPTS: "--enable-debug"
+        CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+        CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+        LDFLAGS: "-fsanitize=undefined"
+    - name: "LSAN"
+      # lsan only works on debian x86/x64
+      only_if: $DIST == 'DEBIAN'
+      env:
+        BUILD_TYPE: "lsan"
+        CC: "clang"
+        CONFIG_OPTS: "--enable-debug"
+        CFLAGS: "-fsanitize=leak"
+        CXXFLAGS: "-fsanitize=leak"
+        LDFLAGS: "-fsanitize=leak"
     - name: "ANALYZE"
       env:
         BUILD_TYPE: "analyze"
+        CC: "clang"
         SCAN_WRAP: "${SCAN_BUILD} -v --status-bugs"
         CONFIG_OPTS: "--enable-debug --disable-tests"
     - name: "VALGRIND"
@@ -61,6 +83,11 @@ task:
         BUILD_TYPE: "valgrind"
         TEST_WRAP: "valgrind --leak-check=full"
         TEST_FILTER: "--gtest_filter=-*Container*:-*LiveSearchANY*"
+    - name: "COVERAGE"
+      only_if: $DIST == 'DEBIAN'
+      env:
+        BUILD_TYPE: "coverage"
+        CONFIG_OPTS: "--enable-debug --disable-shared --enable-code-coverage --enable-tests"
 
   install_script:
     - |
@@ -69,7 +96,7 @@ task:
           apt-get update && \
           apt-get install -y cmake ninja-build autoconf automake libtool g++
           case "${BUILD_TYPE}" in
-            asan)
+            asan|lsan|ubsan)
               apt-get install -y clang
               ;;
             analyze)
@@ -78,13 +105,16 @@ task:
             valgrind)
               apt-get install -y valgrind
               ;;
+            coverage)
+              pip install --user cpp-coveralls
+              ;;
           esac
           ;;
         FREEBSD)
           # pkg upgrade -y && \
           pkg install -y cmake ninja
           case "${BUILD_TYPE}" in
-            asan|analyze)
+            asan|analyze|ubsan|lsan)
               pkg install -y llvm autoconf automake libtool gmake
               ;;
             autotools)
@@ -96,7 +126,7 @@ task:
           brew update && \
           brew install ninja cmake
           case "${BUILD_TYPE}" in
-            asan|analyze)
+            asan|ubsan|lsan|analyze)
               brew install llvm autoconf automake libtool make
               ;;
             autotools)
