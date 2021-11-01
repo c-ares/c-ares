@@ -88,10 +88,11 @@ task:
       env:
         BUILD_TYPE: "coverage"
         CI_NAME: "cirrus-ci"
-        CI_BUILD_NUMBER: "${CIRRUS_BUILD_ID}"
-        CI_BUILD_URL: "${CIRRUS_REPO_CLONE_URL}"
+        CI_BUILD_NUMBER: "${CIRRUS_TASK_ID}"
+        CI_BUILD_URL: "https://cirrus-ci.com/task/${CIRRUS_TASK_ID}"
         CI_BRANCH: "${CIRRUS_BRANCH}"
         CI_PULL_REQUEST: "${CIRRUS_PR}"
+        COVERALLS_REPO_TOKEN: "ENCRYPTED[a46bc6ca908e9e74f102c686cde67cae21d3e792dff46a60e860d1179d9349e8eb5a529132d0effefebdb0dbc3f95810]"
         CONFIG_OPTS: "--enable-debug --disable-shared --enable-code-coverage --enable-tests"
 
   install_script:
