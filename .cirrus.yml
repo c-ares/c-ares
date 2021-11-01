@@ -49,7 +49,7 @@ task:
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=address"
         CXXFLAGS: "-fsanitize=address"
-        LDFLAGS: "-fsanitize=address"
+        LDFLAGS: "-fsanitize=address -lpthread"
     - name: "UBSAN"
       # FreeBSD just hangs trying to run tests, think it may be trying to run leak sanitizer
       only_if: $DIST != 'FREEBSD'
@@ -59,7 +59,7 @@ task:
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
         CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
-        LDFLAGS: "-fsanitize=undefined"
+        LDFLAGS: "-fsanitize=undefined -lpthread"
     - name: "LSAN"
       # lsan only works on debian x86/x64
       only_if: $DIST == 'DEBIAN'
@@ -69,7 +69,7 @@ task:
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=leak"
         CXXFLAGS: "-fsanitize=leak"
-        LDFLAGS: "-fsanitize=leak"
+        LDFLAGS: "-fsanitize=leak -lpthread"
     - name: "ANALYZE"
       env:
         BUILD_TYPE: "analyze"
@@ -87,6 +87,11 @@ task:
       only_if: $DIST == 'DEBIAN'
       env:
         BUILD_TYPE: "coverage"
+        CI_NAME: "cirrus-ci"
+        CI_BUILD_NUMBER: "${CIRRUS_BUILD_ID}"
+        CI_BUILD_URL: "${CIRRUS_REPO_CLONE_URL}"
+        CI_BRANCH: "${CIRRUS_BASE_BRANCH}"
+        CI_PULL_REQUEST: "${CIRRUS_PR}"
         CONFIG_OPTS: "--enable-debug --disable-shared --enable-code-coverage --enable-tests"
 
   install_script:
