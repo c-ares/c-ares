@@ -689,6 +689,12 @@ IF (CARES_INSTALL)
     if( ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" )
 
         if ( "${CPACK_PACKAGE_ARCHITECTURE}" STREQUAL "" )
+            set( CPACK_PACKAGE_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}" )
+        endif()
+        if ( "${CPACK_PACKAGE_ARCHITECTURE}" STREQUAL "" )
+            if ( "${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows" )
+                message( FATAL_ERROR "Failed to determine CPACK_PACKAGE_ARCHITECTURE. Is CMAKE_SYSTEM_PROCESSOR set?" )
+            endif()
             # Note: the architecture should default to the local architecture, but it
             # in fact comes up empty.  We call `uname -m` to ask the kernel instead.
             EXECUTE_PROCESS( COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE CPACK_PACKAGE_ARCHITECTURE )
