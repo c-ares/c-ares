@@ -66,7 +66,7 @@ int cares_parse_ns_reply(const unsigned char *abuf, int alen,
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response(aptr, abuf, alen, &nsname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &nsname, &len, 0);
   if (status != ARES_SUCCESS)
     return status;
   if (aptr + len + QFIXEDSZ > abuf + alen)
@@ -80,7 +80,7 @@ int cares_parse_ns_reply(const unsigned char *abuf, int alen,
   for (i = 0; i < (int)ancount; i++)
     {
       /* Decode the RR up to the data field. */
-      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len);
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, 0);
       if (status != ARES_SUCCESS)
         break;
       aptr += len;
@@ -121,7 +121,7 @@ int cares_parse_ns_reply(const unsigned char *abuf, int alen,
 
           /* Decode the RR data and set hostname to it. */
           status = ares__expand_name_for_response(aptr, abuf, alen, &ns_host,
-                                                  &len);
+                                                  &len, 1);
           if (status != ARES_SUCCESS)
             {
               break;

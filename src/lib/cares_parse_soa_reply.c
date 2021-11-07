@@ -63,7 +63,7 @@ cares_parse_soa_reply(const unsigned char *abuf, int alen,
   aptr = abuf + HFIXEDSZ;
 
   /* query name */
-  status = ares__expand_name_for_response(aptr, abuf, alen, &qname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &qname, &len, 0);
   if (status != ARES_SUCCESS)
     return status;
 
@@ -95,7 +95,7 @@ cares_parse_soa_reply(const unsigned char *abuf, int alen,
   for (i = 0; i < ancount; i++)
   {
     rr_name = NULL;
-    status  = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len);
+    status  = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len, 0);
     if (status != ARES_SUCCESS)
     {
       break;
@@ -129,7 +129,7 @@ cares_parse_soa_reply(const unsigned char *abuf, int alen,
 
       /* nsname */
       status = ares__expand_name_for_response(aptr, abuf, alen, &nsname,
-                                               &len);
+                                               &len, 0);
       if (status != ARES_SUCCESS)
         break;
       cares_soa_reply_set_nsname(soa, nsname);
@@ -137,7 +137,7 @@ cares_parse_soa_reply(const unsigned char *abuf, int alen,
 
       /* hostmaster */
       status = ares__expand_name_for_response(aptr, abuf, alen,
-                                              &hostmaster, &len);
+                                              &hostmaster, &len, 0);
       if (status != ARES_SUCCESS)
         break;
       cares_soa_reply_set_hostmaster(soa, hostmaster);
