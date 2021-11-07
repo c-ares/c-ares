@@ -620,11 +620,9 @@ struct ares_soa_reply {
   unsigned int minttl;
 };
 
-<<<<<<< HEAD
 struct cares_soa_reply;
 
 typedef struct cares_soa_reply cares_soa_reply;
-=======
 struct ares_uri_reply {
   struct ares_uri_reply  *next;
   unsigned short          priority;
@@ -632,7 +630,6 @@ struct ares_uri_reply {
   char                   *uri;
   int                     ttl;
 };
->>>>>>> main
 
 /*
  * Similar to addrinfo, but with extra ttl and missing canonname.
