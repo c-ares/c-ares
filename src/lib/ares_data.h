@@ -18,17 +18,17 @@
 typedef enum {
   ARES_DATATYPE_UNKNOWN = 1,  /* unknown data type     - introduced in 1.7.0 */
   ARES_DATATYPE_SRV_REPLY,    /* struct ares_srv_reply - introduced in 1.7.0 */
-  ARES_DATATYPE_CSRV_REPLY,      /* struct cares_srv_reply */
+  CARES_DATATYPE_SRV_REPLY,      /* struct cares_srv_reply */
   ARES_DATATYPE_TXT_REPLY,    /* struct ares_txt_reply - introduced in 1.7.0 */
   ARES_DATATYPE_TXT_EXT,      /* struct ares_txt_ext   - introduced in 1.11.0 */
-  ARES_DATATYPE_CTXT_REPLY,
+  CARES_DATATYPE_TXT_REPLY,
   ARES_DATATYPE_ADDR_NODE,    /* struct ares_addr_node - introduced in 1.7.1 */
   ARES_DATATYPE_MX_REPLY,    /* struct ares_mx_reply   - introduced in 1.7.2 */
-  ARES_DATATYPE_CMX_REPLY,
+  CARES_DATATYPE_MX_REPLY,
   ARES_DATATYPE_NAPTR_REPLY,/* struct ares_naptr_reply - introduced in 1.7.6 */
-  ARES_DATATYPE_CNAPTR_REPLY,
+  CARES_DATATYPE_NAPTR_REPLY,
   ARES_DATATYPE_SOA_REPLY,    /* struct ares_soa_reply - introduced in 1.9.0 */
-  ARES_DATATYPE_CSOA_REPLY,
+  CARES_DATATYPE_SOA_REPLY,
   ARES_DATATYPE_URI_REPLY, 	/* struct ares_uri_reply */
 #if 0
   ARES_DATATYPE_ADDR6TTL,     /* struct ares_addrttl   */
@@ -38,9 +38,9 @@ typedef enum {
 #endif
   ARES_DATATYPE_ADDR_PORT_NODE, /* struct ares_addr_port_node - introduced in 1.11.0 */
   ARES_DATATYPE_CAA_REPLY,    /* struct ares_caa_reply   - introduced in 1.17 */
-  ARES_DATATYPE_CCAA_REPLY,
-  ARES_DATATYPE_CPTR_REPLY,
-  ARES_DATATYPE_CNS_REPLY,
+  CARES_DATATYPE_CAA_REPLY,
+  CARES_DATATYPE_PTR_REPLY,
+  CARES_DATATYPE_NS_REPLY,
   ARES_DATATYPE_LAST          /* not used              - introduced in 1.7.0 */
 } ares_datatype;
 

@@ -120,7 +120,7 @@ cares_parse_soa_reply(const unsigned char *abuf, int alen,
     if ( rr_class == C_IN && rr_type == T_SOA )
     {
       /* allocate result struct */
-      soa = ares_malloc_data(ARES_DATATYPE_CSOA_REPLY);
+      soa = ares_malloc_data(CARES_DATATYPE_SOA_REPLY);
       if (!soa)
         {
           status = ARES_ENOMEM;

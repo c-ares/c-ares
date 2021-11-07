@@ -114,7 +114,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
             }
 
           /* Allocate storage for this SRV answer appending it to the list */
-          srv_curr = ares_malloc_data(ARES_DATATYPE_CSRV_REPLY);
+          srv_curr = ares_malloc_data(CARES_DATATYPE_SRV_REPLY);
           if (!srv_curr)
             {
               status = ARES_ENOMEM;

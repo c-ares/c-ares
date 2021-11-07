@@ -103,7 +103,7 @@ int cares_parse_ns_reply(const unsigned char *abuf, int alen,
       if (rr_class == C_IN && rr_type == T_NS)
         {
           /* Allocate storage for this NS answer appending it to the list */
-          ns_curr = ares_malloc_data(ARES_DATATYPE_CNS_REPLY);
+          ns_curr = ares_malloc_data(CARES_DATATYPE_NS_REPLY);
           if (!ns_curr)
             {
               status = ARES_ENOMEM;

@@ -114,7 +114,7 @@ cares_parse_caa_reply (const unsigned char *abuf, int alen,
           strptr = aptr;
 
           /* Allocate storage for this CAA answer appending it to the list */
-          caa_curr = ares_malloc_data(ARES_DATATYPE_CCAA_REPLY);
+          caa_curr = ares_malloc_data(CARES_DATATYPE_CAA_REPLY);
           if (!caa_curr)
             {
               status = ARES_ENOMEM;

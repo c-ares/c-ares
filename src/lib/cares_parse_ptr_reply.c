@@ -109,7 +109,7 @@ int cares_parse_ptr_reply(const unsigned char *abuf, int alen,
             break;
           }
           /* Allocate storage for this PTR answer appending it to the list */
-          ptr_curr = ares_malloc_data(ARES_DATATYPE_CPTR_REPLY);
+          ptr_curr = ares_malloc_data(CARES_DATATYPE_PTR_REPLY);
           if (!ptr_curr)
             {
               status = ARES_ENOMEM;

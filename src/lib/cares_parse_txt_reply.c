@@ -130,7 +130,7 @@ int cares_parse_txt_reply (const unsigned char *abuf, int alen,
                 }
 
               /* Allocate storage for this TXT answer appending it to the list */
-              txt_curr = ares_malloc_data(ARES_DATATYPE_CTXT_REPLY);
+              txt_curr = ares_malloc_data(CARES_DATATYPE_TXT_REPLY);
               if (!txt_curr)
                 {
                   status = ARES_ENOMEM;

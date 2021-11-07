@@ -63,7 +63,7 @@ void ares_free_data(void *dataptr)
     switch (ptr->type)
       {
         case ARES_DATATYPE_MX_REPLY:
-        case ARES_DATATYPE_CMX_REPLY:
+        case CARES_DATATYPE_MX_REPLY:
 
           if (ptr->data.mx_reply.next)
             next_data = ptr->data.mx_reply.next;
@@ -72,7 +72,7 @@ void ares_free_data(void *dataptr)
           break;
 
         case ARES_DATATYPE_SRV_REPLY:
-        case ARES_DATATYPE_CSRV_REPLY:
+        case CARES_DATATYPE_SRV_REPLY:
 
           if (ptr->data.srv_reply.next)
             next_data = ptr->data.srv_reply.next;
@@ -90,7 +90,7 @@ void ares_free_data(void *dataptr)
 
         case ARES_DATATYPE_TXT_REPLY:
         case ARES_DATATYPE_TXT_EXT:
-        case ARES_DATATYPE_CTXT_REPLY:
+        case CARES_DATATYPE_TXT_REPLY:
 
           if (ptr->data.txt_reply.next)
             next_data = ptr->data.txt_reply.next;
@@ -111,7 +111,7 @@ void ares_free_data(void *dataptr)
           break;
 
         case ARES_DATATYPE_NAPTR_REPLY:
-        case ARES_DATATYPE_CNAPTR_REPLY:
+        case CARES_DATATYPE_NAPTR_REPLY:
 
           if (ptr->data.naptr_reply.next)
             next_data = ptr->data.naptr_reply.next;
@@ -126,7 +126,7 @@ void ares_free_data(void *dataptr)
           break;
 
         case ARES_DATATYPE_SOA_REPLY:
-        case ARES_DATATYPE_CSOA_REPLY:
+        case CARES_DATATYPE_SOA_REPLY:
           if (ptr->data.soa_reply.nsname)
             ares_free(ptr->data.soa_reply.nsname);
           if (ptr->data.soa_reply.hostmaster)
@@ -134,7 +134,7 @@ void ares_free_data(void *dataptr)
           break;
 
         case ARES_DATATYPE_CAA_REPLY:
-        case ARES_DATATYPE_CCAA_REPLY:
+        case CARES_DATATYPE_CAA_REPLY:
           if (ptr->data.caa_reply.next)
             next_data = ptr->data.caa_reply.next;
           if (ptr->data.caa_reply.property)
@@ -143,7 +143,7 @@ void ares_free_data(void *dataptr)
             ares_free(ptr->data.caa_reply.value);
           break;
 
-        case ARES_DATATYPE_CPTR_REPLY:
+        case CARES_DATATYPE_PTR_REPLY:
 
           if (ptr->data.cptr_reply.next)
             next_data = ptr->data.cptr_reply.next;
@@ -151,7 +151,7 @@ void ares_free_data(void *dataptr)
             ares_free(ptr->data.cptr_reply.host);
           break;
 
-        case ARES_DATATYPE_CNS_REPLY:
+        case CARES_DATATYPE_NS_REPLY:
 
           if (ptr->data.cns_reply.next)
             next_data = ptr->data.cns_reply.next;
@@ -191,7 +191,7 @@ void *ares_malloc_data(ares_datatype type)
 
   switch (type)
     {
-      case ARES_DATATYPE_CMX_REPLY:
+      case CARES_DATATYPE_MX_REPLY:
         ptr->data.cmx_reply.ttl = 0;
         /* FALLTHROUGH */
 
@@ -201,7 +201,7 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.mx_reply.priority = 0;
         break;
 
-      case ARES_DATATYPE_CSRV_REPLY:
+      case CARES_DATATYPE_SRV_REPLY:
         ptr->data.csrv_reply.ttl = 0;
         /* FALLTHROUGH */
 
@@ -221,7 +221,7 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.uri_reply.ttl = 0;
         break;
 
-      case ARES_DATATYPE_CTXT_REPLY:
+      case CARES_DATATYPE_TXT_REPLY:
         ptr->data.ctxt_reply.ttl = 0;
         /* FALLTHROUGH */
 
@@ -235,7 +235,7 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.txt_reply.length = 0;
         break;
 
-      case ARES_DATATYPE_CCAA_REPLY:
+      case CARES_DATATYPE_CAA_REPLY:
         ptr->data.ccaa_reply.ttl = 0;
         /* FALLTHROUGH */
 
@@ -263,7 +263,7 @@ void *ares_malloc_data(ares_datatype type)
         sizeof(ptr->data.addr_port_node.addrV6));
         break;
 
-      case ARES_DATATYPE_CNAPTR_REPLY:
+      case CARES_DATATYPE_NAPTR_REPLY:
         ptr->data.cnaptr_reply.ttl = 0;
         /* FALLTHROUGH */
 
@@ -277,7 +277,7 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.naptr_reply.preference = 0;
         break;
 
-      case ARES_DATATYPE_CSOA_REPLY:
+      case CARES_DATATYPE_SOA_REPLY:
         ptr->data.csoa_reply.ttl = 0;
         /* FALLTHROUGH */
 
@@ -291,13 +291,13 @@ void *ares_malloc_data(ares_datatype type)
         ptr->data.soa_reply.minttl = 0;
 	      break;
 
-      case ARES_DATATYPE_CPTR_REPLY:
+      case CARES_DATATYPE_PTR_REPLY:
         ptr->data.cptr_reply.next = NULL;
         ptr->data.cptr_reply.host = NULL;
         ptr->data.cptr_reply.ttl = 0;
         break;
 
-      case ARES_DATATYPE_CNS_REPLY:
+      case CARES_DATATYPE_NS_REPLY:
         ptr->data.cns_reply.next = NULL;
         ptr->data.cns_reply.host = NULL;
         ptr->data.cns_reply.ttl = 0;

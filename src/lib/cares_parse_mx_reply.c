@@ -115,7 +115,7 @@ cares_parse_mx_reply (const unsigned char *abuf, int alen,
             }
 
           /* Allocate storage for this MX answer appending it to the list */
-          mx_curr = ares_malloc_data(ARES_DATATYPE_CMX_REPLY);
+          mx_curr = ares_malloc_data(CARES_DATATYPE_MX_REPLY);
           if (!mx_curr)
             {
               status = ARES_ENOMEM;
