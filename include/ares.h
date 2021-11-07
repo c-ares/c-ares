@@ -629,7 +629,7 @@ struct ares_uri_reply {
   unsigned short          priority;
   unsigned short          weight;
   char                   *uri;
-  int                     ttl;
+  unsigned int            ttl;
 };
 
 /*
