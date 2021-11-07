@@ -1470,7 +1470,7 @@ static int init_by_resolv_conf(ares_channel channel)
   struct __res_state *res = 0;
   int count4, count6;
   __STATEEXTIPV6 *v6;
-  struct server_state *pserver
+  struct server_state *pserver;
   if (0 == res) {
     int rc = res_init();
     while (rc == -1 && h_errno == TRY_AGAIN) {
@@ -1665,17 +1665,18 @@ static int init_by_resolv_conf(ares_channel channel)
       int entries = 0;
       while ((entries < MAXDNSRCH) && res.dnsrch[entries])
         entries++;
-
-      channel->domains = ares_malloc(entries * sizeof(char *));
-      if (!channel->domains) {
-        status = ARES_ENOMEM;
-      } else {
-        int i;
-        channel->ndomains = entries;
-        for (i = 0; i < channel->ndomains; ++i) {
-          channel->domains[i] = ares_strdup(res.dnsrch[i]);
-          if (!channel->domains[i])
-            status = ARES_ENOMEM;
+      if(entries) {
+        channel->domains = ares_malloc(entries * sizeof(char *));
+        if (!channel->domains) {
+          status = ARES_ENOMEM;
+        } else {
+          int i;
+          channel->ndomains = entries;
+          for (i = 0; i < channel->ndomains; ++i) {
+            channel->domains[i] = ares_strdup(res.dnsrch[i]);
+            if (!channel->domains[i])
+              status = ARES_ENOMEM;
+          }
         }
       }
     }

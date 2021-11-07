@@ -8,7 +8,7 @@ INCLUDE (CheckCSourceCompiles)
 INCLUDE (CheckStructHasMember)
 INCLUDE (CheckLibraryExists)
 
-PROJECT (c-ares LANGUAGES C VERSION "1.17.0" )
+PROJECT (c-ares LANGUAGES C VERSION "1.18.0" )
 
 # Set this version before release
 SET (CARES_VERSION "${PROJECT_VERSION}")
@@ -26,7 +26,7 @@ INCLUDE (GNUInstallDirs) # include this *AFTER* PROJECT(), otherwise paths are w
 # For example, a version of 4:0:2 would generate output such as:
 #    libname.so   -> libname.so.2
 #    libname.so.2 -> libname.so.2.2.0
-SET (CARES_LIB_VERSIONINFO "6:2:4")
+SET (CARES_LIB_VERSIONINFO "7:1:5")
 
 
 OPTION (CARES_STATIC     "Build as a static library"                                             OFF)
@@ -146,16 +146,19 @@ ENDIF()
 
 CARES_FUNCTION_IN_LIBRARY (gethostbyname nsl HAVE_LIBNSL)
 CARES_FUNCTION_IN_LIBRARY (gethostbyname socket HAVE_GHBN_LIBSOCKET)
+CARES_FUNCTION_IN_LIBRARY (gethostbyname network HAVE_LIBNETWORK)
 CARES_FUNCTION_IN_LIBRARY (socket socket HAVE_SOCKET_LIBSOCKET)
 IF (HAVE_GHBN_LIBSOCKET OR HAVE_SOCKET_LIBSOCKET)
 	SET(HAVE_LIBSOCKET TRUE)
 ENDIF ()
+CARES_FUNCTION_IN_LIBRARY (socket network HAVE_LIBNETWORK)
 CARES_FUNCTION_IN_LIBRARY (clock_gettime rt HAVE_LIBRT)
 
 
 # Look for necessary includes
 CHECK_INCLUDE_FILES (sys/types.h           HAVE_SYS_TYPES_H)
 CHECK_INCLUDE_FILES (sys/socket.h          HAVE_SYS_SOCKET_H)
+CHECK_INCLUDE_FILES (sys/sockio.h          HAVE_SYS_SOCKIO_H)
 CHECK_INCLUDE_FILES (arpa/inet.h           HAVE_ARPA_INET_H)
 CHECK_INCLUDE_FILES (arpa/nameser_compat.h HAVE_ARPA_NAMESER_COMPAT_H)
 CHECK_INCLUDE_FILES (arpa/nameser.h        HAVE_ARPA_NAMESER_H)
@@ -195,11 +198,14 @@ ELSE ()
 ENDIF ()
 
 # Include order matters for these windows files.
+# As cygwin environment has both socket.h and winsock2.h
+# headers check WIN32 not to include the later one here
+IF (WIN32)
 CHECK_INCLUDE_FILES ("winsock2.h;windows.h"            HAVE_WINSOCK2_H)
 CHECK_INCLUDE_FILES ("winsock2.h;ws2tcpip.h;windows.h" HAVE_WS2TCPIP_H)
 CHECK_INCLUDE_FILES ("winsock.h;windows.h"             HAVE_WINSOCK_H)
 CHECK_INCLUDE_FILES (windows.h                         HAVE_WINDOWS_H)
-
+ENDIF ()
 
 # Set system-specific compiler flags
 IF (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -229,11 +235,14 @@ ENDIF ()
 IF (HAVE_LIBSOCKET)
 	LIST (APPEND CARES_DEPENDENT_LIBS socket)
 ENDIF ()
+IF (HAVE_LIBNETWORK)
+	LIST (APPEND CARES_DEPENDENT_LIBS network)
+ENDIF ()
 IF (HAVE_LIBRT)
 	LIST (APPEND CARES_DEPENDENT_LIBS rt)
 ENDIF ()
 IF (WIN32)
-	LIST (APPEND CARES_DEPENDENT_LIBS ws2_32 Advapi32)
+	LIST (APPEND CARES_DEPENDENT_LIBS ws2_32 advapi32 iphlpapi)
 ENDIF ()
 
 
@@ -267,6 +276,7 @@ CARES_EXTRAINCLUDE_IFSET (HAVE_STRINGS_H      strings.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_IOCTL_H    sys/ioctl.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_SELECT_H   sys/select.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_SOCKET_H   sys/socket.h)
+CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_SOCKIO_H	sys/sockio.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_TIME_H     sys/time.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_UIO_H      sys/uio.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_TIME_H         time.h)
@@ -520,7 +530,8 @@ IF (HAVE_GETSERVBYPORT_R)
 	IF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
 		SET (GETSERVBYPORT_R_ARGS 5)
 	ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "AIX" OR
-		CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+		CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR
+		HAIKU)
 		SET (GETSERVBYPORT_R_ARGS 4)
 	ELSE ()
 		# Probably linux
@@ -533,7 +544,8 @@ IF (HAVE_GETSERVBYNAME_R)
 	IF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
 		SET (GETSERVBYNAME_R_ARGS 5)
 	ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "AIX" OR
-		CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+		CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR
+		HAIKU)
 		SET (GETSERVBYNAME_R_ARGS 4)
 	ELSE ()
 		# Probably linux
@@ -556,6 +568,12 @@ IF (HAVE_WINSOCK2_H)
 ENDIF()
 IF (HAVE_WINDOWS_H)
 	SET (CARES_HAVE_WINDOWS_H 1)
+ENDIF()
+IF (HAVE_ARPA_NAMESER_H)
+	SET (CARES_HAVE_ARPA_NAMESER_H 1)
+ENDIF()
+IF (HAVE_ARPA_NAMESER_COMPAT_H)
+	SET (CARES_HAVE_ARPA_NAMESER_COMPAT_H 1)
 ENDIF()
 
 # Record toplevel CMakeLists.txt path
@@ -646,8 +664,8 @@ IF (CARES_INSTALL)
     set( CPACK_PACKAGE_NAME ${PROJECT_NAME} )
     set( CPACK_PACKAGE_VENDOR "Daniel Stenberg" ) # Github project owner
     set( CPACK_PACKAGE_DESCRIPTION_SUMMARY "A C library for asynchronous DNS requests" )
-    set( CPACK_PACKAGE_HOMEPAGE_URL "https://c-ares.haxx.se/" )
-    set( CPACK_PACKAGE_CONTACT      "https://c-ares.haxx.se/" )
+    set( CPACK_PACKAGE_HOMEPAGE_URL "https://c-ares.org/" )
+    set( CPACK_PACKAGE_CONTACT      "https://c-ares.org/" )
     set( CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR} )
     set( CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR} )
     set( CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH} )
@@ -671,6 +689,12 @@ IF (CARES_INSTALL)
     if( ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" )
 
         if ( "${CPACK_PACKAGE_ARCHITECTURE}" STREQUAL "" )
+            set( CPACK_PACKAGE_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}" )
+        endif()
+        if ( "${CPACK_PACKAGE_ARCHITECTURE}" STREQUAL "" )
+            if ( "${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows" )
+                message( FATAL_ERROR "Failed to determine CPACK_PACKAGE_ARCHITECTURE. Is CMAKE_SYSTEM_PROCESSOR set?" )
+            endif()
             # Note: the architecture should default to the local architecture, but it
             # in fact comes up empty.  We call `uname -m` to ask the kernel instead.
             EXECUTE_PROCESS( COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE CPACK_PACKAGE_ARCHITECTURE )

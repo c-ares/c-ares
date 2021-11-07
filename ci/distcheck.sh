@@ -1,7 +1,14 @@
 #!/bin/sh
 set -e
 
-if [ "$BUILD_TYPE" = "normal" -a "$TRAVIS_OS_NAME" = "linux" ]; then
+OS=""
+if [ "$TRAVIS_OS_NAME" != "" ]; then
+    OS="$TRAVIS_OS_NAME"
+elif [ "$CIRRUS_OS" != "" ]; then
+    OS="$CIRRUS_OS"
+fi
+
+if [ "$OS" = "linux" ]; then
     # Make distribution tarball
     ./maketgz 99.98.97
     # Extract distribution tarball for building

@@ -29,6 +29,7 @@ typedef enum {
   ARES_DATATYPE_CNAPTR_REPLY,
   ARES_DATATYPE_SOA_REPLY,    /* struct ares_soa_reply - introduced in 1.9.0 */
   ARES_DATATYPE_CSOA_REPLY,
+  ARES_DATATYPE_URI_REPLY, 	/* struct ares_uri_reply */
 #if 0
   ARES_DATATYPE_ADDR6TTL,     /* struct ares_addrttl   */
   ARES_DATATYPE_ADDRTTL,      /* struct ares_addr6ttl  */
@@ -84,6 +85,7 @@ struct ares_data {
     struct cares_caa_reply   ccaa_reply;
     struct cares_ptr_reply   cptr_reply;
     struct cares_ns_reply    cns_reply;
+    struct ares_uri_reply    uri_reply;
   } data;
 };
 

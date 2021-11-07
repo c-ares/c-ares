@@ -55,3 +55,4 @@ c-ares-*.tar.gz.asc
 ares_parse_mx_reply.pdf
 /[0-9]*.patch
 .dirstamp
+build

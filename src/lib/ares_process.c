@@ -605,8 +605,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
   packetsz = PACKETSZ;
   /* If we use EDNS and server answers with FORMERR without an OPT RR, the protocol
    * extension is not understood by the responder. We must retry the query
-   * without EDNS enabled.
-   */
+   * without EDNS enabled. */
   if (channel->flags & ARES_FLAG_EDNS)
   {
       packetsz = channel->ednspsz;

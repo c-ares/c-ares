@@ -162,7 +162,8 @@ class MockServer {
  private:
   void ProcessRequest(int fd, struct sockaddr_storage* addr, int addrlen,
                       int qid, const std::string& name, int rrtype);
-
+  void ProcessPacket(int fd, struct sockaddr_storage *addr, socklen_t addrlen,
+                     byte *data, int len);
   int udpport_;
   int tcpport_;
   int udpfd_;
@@ -246,6 +247,7 @@ std::ostream& operator<<(std::ostream& os, const HostEnt& result);
 
 // Structure that describes the result of an ares_host_callback invocation.
 struct HostResult {
+  HostResult() : done_(false), status_(0), timeouts_(0) {}
   // Whether the callback has been invoked.
   bool done_;
   // Explicitly provided result information.

@@ -124,7 +124,7 @@ VALID_CFGSET = TRUE
 PROG_DIR = $(BASE_DIR)\arestest
 LIB_DIR = $(LIB_BASE_DIR)\cares
 
-GMOCK_DIR = gmock-1.8.0
+GMOCK_DIR = gmock-1.11.0
 
 # ---------------------------------------------------
 # Subdirs which are configuration dependent are only
@@ -140,8 +140,8 @@ LIB_OUTDIR = $(LIB_DIR)\$(CFG)
 # TCP/IP stack settings
 # -------------------------------------
 CFLAGS  = /DWIN32
-EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib
-EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib
+EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
+EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
 
 # -------------------------------------------------
 # Switches that depend on ancient compiler versions

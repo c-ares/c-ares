@@ -121,6 +121,7 @@ static const struct nv types[] = {
   { "NSEC",     T_NSEC },
   { "DNSKEY",   T_DNSKEY },
   { "CAA",      T_CAA },
+  { "URI",      T_URI },
   { "ANY",      T_ANY }
 };
 static const int ntypes = sizeof(types) / sizeof(types[0]);
@@ -516,7 +517,7 @@ static const unsigned char *display_rr(const unsigned char *aptr,
                                        const unsigned char *abuf, int alen)
 {
   const unsigned char *p;
-  int type, dnsclass, ttl, dlen, status;
+  int type, dnsclass, ttl, dlen, status, i;
   long len;
   int vlen;
   char addr[46];
@@ -735,6 +736,18 @@ static const unsigned char *display_rr(const unsigned char *aptr,
         return NULL;
       printf("\t%s.", name.as_char);
       ares_free_string(name.as_char);
+      break;
+
+    case T_URI:
+      /* The RR data is two two-byte numbers representing the
+       * priority and weight, followed by a target.
+       */
+
+      printf("\t%d ", (int)DNS__16BIT(aptr));
+      printf("%d \t\t", (int)DNS__16BIT(aptr+2));
+      p = aptr +4;
+      for (i=0; i <dlen-4; ++i)
+        printf("%c",p[i]);
       break;
 
     case T_NAPTR:
@@ -962,7 +975,7 @@ static void print_help_info_adig(void) {
     "              KEY, LOC, MAILA, MAILB, MB, MD,\n"
     "              MF, MG, MINFO, MR, MX, NAPTR, NS,\n"
     "              NSAP, NSAP_PTR, NULL, PTR, PX, RP,\n"
-    "              RT,  SIG,  SOA, SRV, TXT, WKS, X25\n\n"
+    "              RT,  SIG,  SOA, SRV, TXT, URI, WKS, X25\n\n"
     " -x  : For a '-t PTR a.b.c.d' lookup, query for 'd.c.b.a.in-addr.arpa.'\n"
     " -xx : As above, but for IPv6, compact the format into a bitstring like\n"
     "       '[xabcdef00000000000000000000000000].IP6.ARPA.'\n");

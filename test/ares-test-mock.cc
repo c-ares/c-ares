@@ -1,6 +1,11 @@
 #include "ares-test.h"
 #include "dns-proto.h"
 
+#ifndef WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
+
 #include <sstream>
 #include <vector>
 
@@ -636,6 +641,12 @@ TEST_P(MockChannelTest, UnspecifiedFamilyV6) {
   ON_CALL(server_, OnRequest("example.com", T_AAAA))
     .WillByDefault(SetReply(&server_, &rsp6));
 
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_A));
+  ON_CALL(server_, OnRequest("example.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp4));
+
   HostResult result;
   ares_gethostbyname(channel_, "example.com.", AF_UNSPEC, HostCallback, &result);
   Process();
@@ -945,7 +956,7 @@ TEST_P(MockChannelTest, GetHostByNameCNAMENoData) {
     .WillByDefault(SetReply(&server_, &response));
 
   HostResult result;
-  ares_gethostbyname(channel_, "cname.first.com", AF_INET, HostCallback, &result);
+  ares_gethostbyname(channel_, "cname.first.com.", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ENODATA, result.status_);
@@ -1024,11 +1035,26 @@ TEST_P(MockChannelTest, HostAliasMissingFile) {
 
 TEST_P(MockChannelTest, HostAliasUnreadable) {
   TempFile aliases("www www.google.com\n");
-  chmod(aliases.filename(), 0);
+  EXPECT_EQ(chmod(aliases.filename(), 0), 0);
+
+  /* Perform OS sanity checks.  We are observing on Debian after the chmod(fn, 0)
+   * that we are still able to fopen() the file which is unexpected.  Skip the
+   * test if we observe this behavior */
+  struct stat st;
+  EXPECT_EQ(stat(aliases.filename(), &st), 0);
+  EXPECT_EQ(st.st_mode & (S_IRWXU|S_IRWXG|S_IRWXO), 0);
+  FILE *fp = fopen(aliases.filename(), "r");
+  if (fp != NULL) {
+    if (verbose) std::cerr << "Skipping Test due to OS incompatibility (open file caching)" << std::endl;
+    fclose(fp);
+    return;
+  }
+
   EnvValue with_env("HOSTALIASES", aliases.filename());
 
   HostResult result;
   ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_EFILE, result.status_);
   chmod(aliases.filename(), 0777);
@@ -1153,21 +1179,21 @@ TEST_P(NoRotateMultiMockTest, ThirdServer) {
   CheckExample();
 }
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockTCPChannelTest, ::testing::ValuesIn(ares::test::families));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPChannelTest, ::testing::ValuesIn(ares::test::families));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockExtraOptsTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockExtraOptsTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockNoCheckRespChannelTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockNoCheckRespChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamilies, MockEDNSChannelTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEDNSChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(TransportModes, RotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(TransportModes, RotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
+INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
 
 }  // namespace test
 }  // namespace ares

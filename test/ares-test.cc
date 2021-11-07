@@ -262,46 +262,8 @@ MockServer::~MockServer() {
   sclose(udpfd_);
 }
 
-void MockServer::ProcessFD(int fd) {
-  if (fd != tcpfd_ && fd != udpfd_ && connfds_.find(fd) == connfds_.end()) {
-    // Not one of our FDs.
-    return;
-  }
-  if (fd == tcpfd_) {
-    int connfd = accept(tcpfd_, NULL, NULL);
-    if (connfd < 0) {
-      std::cerr << "Error accepting connection on fd " << fd << std::endl;
-    } else {
-      connfds_.insert(connfd);
-    }
-    return;
-  }
-
-  // Activity on a data-bearing file descriptor.
-  struct sockaddr_storage addr;
-  socklen_t addrlen = sizeof(addr);
-  byte buffer[2048];
-  int len = recvfrom(fd, BYTE_CAST buffer, sizeof(buffer), 0,
-                     (struct sockaddr *)&addr, &addrlen);
-  byte* data = buffer;
-  if (fd != udpfd_) {
-    if (len == 0) {
-      connfds_.erase(std::find(connfds_.begin(), connfds_.end(), fd));
-      sclose(fd);
-      return;
-    }
-    if (len < 2) {
-      std::cerr << "Packet too short (" << len << ")" << std::endl;
-      return;
-    }
-    int tcplen = (data[0] << 8) + data[1];
-    data += 2;
-    len -= 2;
-    if (tcplen != len) {
-      std::cerr << "Warning: TCP length " << tcplen
-                << " doesn't match remaining data length " << len << std::endl;
-    }
-  }
+void MockServer::ProcessPacket(int fd, struct sockaddr_storage *addr, socklen_t addrlen,
+                               byte *data, int len) {
 
   // Assume the packet is a well-formed DNS request and extract the request
   // details.
@@ -358,7 +320,63 @@ void MockServer::ProcessFD(int fd) {
     std::cerr << "ProcessRequest(" << qid << ", '" << namestr
               << "', " << RRTypeToString(rrtype) << ")" << std::endl;
   }
-  ProcessRequest(fd, &addr, addrlen, qid, namestr, rrtype);
+  ProcessRequest(fd, addr, addrlen, qid, namestr, rrtype);
+
+}
+
+void MockServer::ProcessFD(int fd) {
+  if (fd != tcpfd_ && fd != udpfd_ && connfds_.find(fd) == connfds_.end()) {
+    // Not one of our FDs.
+    return;
+  }
+  if (fd == tcpfd_) {
+    int connfd = accept(tcpfd_, NULL, NULL);
+    if (connfd < 0) {
+      std::cerr << "Error accepting connection on fd " << fd << std::endl;
+    } else {
+      connfds_.insert(connfd);
+    }
+    return;
+  }
+
+  // Activity on a data-bearing file descriptor.
+  struct sockaddr_storage addr;
+  socklen_t addrlen = sizeof(addr);
+  byte buffer[2048];
+  int len = recvfrom(fd, BYTE_CAST buffer, sizeof(buffer), 0,
+                     (struct sockaddr *)&addr, &addrlen);
+  byte* data = buffer;
+
+  if (fd != udpfd_) {
+    if (len == 0) {
+      connfds_.erase(std::find(connfds_.begin(), connfds_.end(), fd));
+      sclose(fd);
+      return;
+    }
+    if (len < 2) {
+      std::cerr << "Packet too short (" << len << ")" << std::endl;
+      return;
+    }
+    /* TCP might aggregate the various requests into a single packet, so we
+     * need to split */
+    while (len) {
+      int tcplen = (data[0] << 8) + data[1];
+      data += 2;
+      len -= 2;
+      if (tcplen > len) {
+        std::cerr << "Warning: TCP length " << tcplen
+                  << " doesn't match remaining data length " << len << std::endl;
+      }
+      int process_len = (tcplen > len)?len:tcplen;
+      ProcessPacket(fd, &addr, addrlen, data, process_len);
+      len -= process_len;
+      data += process_len;
+    }
+  } else {
+    /* UDP is always a single packet */
+    ProcessPacket(fd, &addr, addrlen, data, len);
+  }
+
 }
 
 std::set<int> MockServer::fds() const {
@@ -538,7 +556,12 @@ void MockChannelOptsTest::Process() {
 std::ostream& operator<<(std::ostream& os, const HostResult& result) {
   os << '{';
   if (result.done_) {
-    os << StatusToString(result.status_) << " " << result.host_;
+    os << StatusToString(result.status_);
+    if (result.host_.addrtype_ != -1) {
+      os << " " << result.host_;
+    } else {
+      os << ", (no hostent)";
+    }
   } else {
     os << "(incomplete)";
   }
@@ -549,8 +572,10 @@ std::ostream& operator<<(std::ostream& os, const HostResult& result) {
 HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
   if (!hostent)
     return;
+
   if (hostent->h_name)
     name_ = hostent->h_name;
+
   if (hostent->h_aliases) {
     char** palias = hostent->h_aliases;
     while (*palias != nullptr) {
@@ -558,7 +583,9 @@ HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
       palias++;
     }
   }
+
   addrtype_ = hostent->h_addrtype;
+
   if (hostent->h_addr_list) {
     char** paddr = hostent->h_addr_list;
     while (*paddr != nullptr) {
@@ -570,9 +597,11 @@ HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
 }
 
 std::ostream& operator<<(std::ostream& os, const HostEnt& host) {
-  os << '{';
-  os << "'" << host.name_ << "' "
-     << "aliases=[";
+  os << "{'";
+  if (host.name_.length() > 0) {
+    os << host.name_;
+  }
+  os << "' aliases=[";
   for (size_t ii = 0; ii < host.aliases_.size(); ii++) {
     if (ii > 0) os << ", ";
     os << host.aliases_[ii];
@@ -591,11 +620,15 @@ std::ostream& operator<<(std::ostream& os, const HostEnt& host) {
 void HostCallback(void *data, int status, int timeouts,
                   struct hostent *hostent) {
   EXPECT_NE(nullptr, data);
+  if (data == nullptr)
+    return;
+
   HostResult* result = reinterpret_cast<HostResult*>(data);
   result->done_ = true;
   result->status_ = status;
   result->timeouts_ = timeouts;
-  result->host_ = HostEnt(hostent);
+  if (hostent)
+    result->host_ = HostEnt(hostent);
   if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
 }
 

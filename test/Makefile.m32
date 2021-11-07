@@ -13,11 +13,11 @@ ARES_SRC_DIR = ..
 # Where to find the built c-ares static library
 ARES_BLD_DIR = ..
 ARESLIB = $(ARES_BLD_DIR)/src/lib/libcares.a
-GMOCK_DIR = gmock-1.8.0
+GMOCK_DIR = gmock-1.11.0
 CPPFLAGS = -I$(ARES_SRC_DIR)/include -I$(ARES_SRC_DIR)/src/lib -I$(GMOCK_DIR) -DCARES_STATICLIB
 CXXFLAGS = -Wall $(PTHREAD_CFLAGS) -std=gnu++11
 LDFLAGS =
-LDLIBS = -lwsock32
+LDLIBS = -lws2_32 -liphlpapi
 
 # Makefile.inc provides the TESTSOURCES and TESTHEADERS defines
 include Makefile.inc

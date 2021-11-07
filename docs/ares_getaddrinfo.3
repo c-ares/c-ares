@@ -127,13 +127,15 @@ On successful completion of the query, the callback argument
 .I result
 points to a
 .B struct ares_addrinfo
-which contains two linked lists, one with resolved addresses and another with canonical names.
+which contains two linked lists, one with resolved addresses and another with canonical names. 
+Also included is the official name of the host (analogous to gethostbyname() h_name).
 .PP
 .RS
 .EX
 struct ares_addrinfo {
   struct ares_addrinfo_cname *cnames;
   struct ares_addrinfo_node  *nodes;
+  char *name;
 };
 .EE
 .RE
@@ -187,6 +189,8 @@ The result is sorted according to RFC6724 except:
 
 Please note that the function will attempt a connection
 on each of the resolved addresses as per RFC6724.
+.SH AVAILABILITY
+This function was added in c-ares 1.16.0, released in March 2020.
 .SH SEE ALSO
 .BR ares_freeaddrinfo (3)
 .SH AUTHOR

@@ -32,6 +32,8 @@ MATCHER_P(IncludesV4Address, address, "") {
   for (const ares_addrinfo_node* ai = arg->nodes; ai != NULL; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET)
       continue;
+    if (ai->ai_addrlen != sizeof(struct sockaddr_in))
+      continue;
     if (reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_addr.s_addr ==
         addressnum.s_addr)
       return true; // found
@@ -48,6 +50,8 @@ MATCHER_P(IncludesV6Address, address, "") {
   }
   for (const ares_addrinfo_node* ai = arg->nodes; ai != NULL; ai = ai->ai_next) {
     if (ai->ai_family != AF_INET6)
+      continue;
+    if (ai->ai_addrlen != sizeof(struct sockaddr_in6))
       continue;
     if (!memcmp(
         reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_addr.s6_addr,
@@ -737,39 +741,31 @@ TEST_P(MockChannelTestAI, FamilyV4ServiceName) {
   EXPECT_EQ("{addr=[1.1.1.1:80], addr=[2.2.2.2:80]}", ss.str());
 }
 
-// force-tcp does currently not work, possibly test DNS server swallows
-// bytes from second query
-//INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockChannelTestAI,
-//                       ::testing::ValuesIn(ares::test::families_modes));
-//const std::vector<std::pair<int, bool>> both_families_udponly = {
-//  std::make_pair<int, bool>(AF_INET, false),
-//  std::make_pair<int, bool>(AF_INET6, false)
-//};
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockChannelTestAI,
-			::testing::Values(std::make_pair<int, bool>(AF_INET, false)));
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockChannelTestAI,
+                       ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockUDPChannelTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockUDPChannelTestAI,
                         ::testing::ValuesIn(ares::test::families));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockTCPChannelTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockTCPChannelTestAI,
                         ::testing::ValuesIn(ares::test::families));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockExtraOptsTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockExtraOptsTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockExtraOptsNDots5TestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockExtraOptsNDots5TestAI,
       ::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockNoCheckRespChannelTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockNoCheckRespChannelTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(AddressFamiliesAI, MockEDNSChannelTestAI,
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockEDNSChannelTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(TransportModesAI, RotateMultiMockTestAI,
+INSTANTIATE_TEST_SUITE_P(TransportModesAI, RotateMultiMockTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
-INSTANTIATE_TEST_CASE_P(TransportModesAI, NoRotateMultiMockTestAI,
+INSTANTIATE_TEST_SUITE_P(TransportModesAI, NoRotateMultiMockTestAI,
 			::testing::ValuesIn(ares::test::families_modes));
 
 
