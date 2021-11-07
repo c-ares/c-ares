@@ -83,7 +83,7 @@ TEST_F(LibraryTest, ParseCTxtReplyOK) {
     .add_answer(new DNSTxtRR("example.com", 100, {expected2a, expected2b}));
   std::vector<byte> data = pkt.data();
 
-  struct cares_txt_reply* txt = nullptr;
+  cares_txt_reply* txt = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_txt_reply(data.data(), data.size(), &txt));
   ASSERT_NE(nullptr, txt);
   EXPECT_EQ(std::vector<byte>(expected1.data(), expected1.data() + expected1.size()),
@@ -91,14 +91,14 @@ TEST_F(LibraryTest, ParseCTxtReplyOK) {
               cares_txt_reply_get_txt(txt) + cares_txt_reply_get_length(txt)));
   EXPECT_EQ(100, cares_txt_reply_get_ttl(txt));
 
-  struct cares_txt_reply* txt2 = cares_txt_reply_get_next(txt);
+  cares_txt_reply* txt2 = cares_txt_reply_get_next(txt);
   ASSERT_NE(nullptr, txt2);
   EXPECT_EQ(std::vector<byte>(expected2a.data(), expected2a.data() + expected2a.size()),
             std::vector<byte>(cares_txt_reply_get_txt(txt2),
               cares_txt_reply_get_txt(txt2) + cares_txt_reply_get_length(txt2)));
   EXPECT_EQ(100, cares_txt_reply_get_ttl(txt2));
 
-  struct cares_txt_reply* txt3 = cares_txt_reply_get_next(txt2);
+  cares_txt_reply* txt3 = cares_txt_reply_get_next(txt2);
   ASSERT_NE(nullptr, txt3);
   EXPECT_EQ(std::vector<byte>(expected2b.data(), expected2b.data() + expected2b.size()),
             std::vector<byte>(cares_txt_reply_get_txt(txt3),
@@ -166,7 +166,7 @@ TEST_F(LibraryTest, ParseCTxtMalformedReply1) {
     0x12, 'a', 'b',  // invalid length
   };
 
-  struct cares_txt_reply* txt = nullptr;
+  cares_txt_reply* txt = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_txt_reply(data.data(), data.size(), &txt));
   ASSERT_EQ(nullptr, txt);
 }
@@ -222,7 +222,7 @@ TEST_F(LibraryTest, ParseCTxtMalformedReply2) {
     // truncated
   };
 
-  struct cares_txt_reply* txt = nullptr;
+  cares_txt_reply* txt = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_txt_reply(data.data(), data.size(), &txt));
   ASSERT_EQ(nullptr, txt);
 }
@@ -284,7 +284,7 @@ TEST_F(LibraryTest, ParseCTxtMalformedReply3) {
     0x02, 'a', 'b',
   };
 
-  struct cares_txt_reply* txt = nullptr;
+  cares_txt_reply* txt = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_txt_reply(data.data(), data.size(), &txt));
   ASSERT_EQ(nullptr, txt);
 }
@@ -328,7 +328,7 @@ TEST_F(LibraryTest, ParseCTxtMalformedReply4) {
     0x00, // TRUNCATED
   };
 
-  struct cares_txt_reply* txt = nullptr;
+  cares_txt_reply* txt = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_txt_reply(data.data(), data.size(), &txt));
   ASSERT_EQ(nullptr, txt);
 }
@@ -400,7 +400,7 @@ TEST_F(LibraryTest, ParseCTxtReplyErrors) {
     .add_answer(new DNSTxtRR("example.com", 100, {expected1}))
     .add_answer(new DNSTxtRR("example.com", 100, {expected2a, expected2b}));
   std::vector<byte> data = pkt.data();
-  struct cares_txt_reply* txt = nullptr;
+  cares_txt_reply* txt = nullptr;
 
   // No question.
   pkt.questions_.clear();
@@ -478,7 +478,7 @@ TEST_F(LibraryTest, ParseCTxtReplyAllocFail) {
     .add_answer(new DNSTxtRR("c.example.com", 100, {expected1}))
     .add_answer(new DNSTxtRR("c.example.com", 100, {expected2a, expected2b}));
   std::vector<byte> data = pkt.data();
-  struct cares_txt_reply* txt = nullptr;
+  cares_txt_reply* txt = nullptr;
 
   for (int ii = 1; ii <= 13; ii++) {
     ClearFails();

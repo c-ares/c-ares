@@ -50,9 +50,9 @@ int cares_parse_txt_reply (const unsigned char *abuf, int alen,
   unsigned int rr_ttl;
   long len;
   char *hostname = NULL, *rr_name = NULL;
-  struct cares_txt_reply *txt_head = NULL;
-  struct cares_txt_reply *txt_last = NULL;
-  struct cares_txt_reply *txt_curr;
+  cares_txt_reply *txt_head = NULL;
+  cares_txt_reply *txt_last = NULL;
+  cares_txt_reply *txt_curr;
 
   /* Set *txt_out to NULL for all failure cases. */
   *txt_out = NULL;

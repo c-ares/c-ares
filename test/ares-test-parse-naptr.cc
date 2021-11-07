@@ -50,7 +50,7 @@ TEST_F(LibraryTest, ParseCNaptrReplyOK) {
                                11, 21, "SP", "service2", "regexp2", "replace2"));
   std::vector<byte> data = pkt.data();
 
-  struct cares_naptr_reply* naptr = nullptr;
+  cares_naptr_reply* naptr = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_naptr_reply(data.data(), data.size(), &naptr));
   ASSERT_NE(nullptr, naptr);
   EXPECT_EQ("SP", std::string((char*)cares_naptr_reply_get_flags(naptr)));
@@ -61,7 +61,7 @@ TEST_F(LibraryTest, ParseCNaptrReplyOK) {
   EXPECT_EQ(20, cares_naptr_reply_get_preference(naptr));
   EXPECT_EQ(100, cares_naptr_reply_get_ttl(naptr));
 
-  struct cares_naptr_reply* naptr2 = cares_naptr_reply_get_next(naptr);
+  cares_naptr_reply* naptr2 = cares_naptr_reply_get_next(naptr);
   ASSERT_NE(nullptr, naptr2);
   EXPECT_EQ("SP", std::string((char*)cares_naptr_reply_get_flags(naptr2)));
   EXPECT_EQ("service2", std::string((char*)cares_naptr_reply_get_service(naptr2)));
@@ -139,7 +139,7 @@ TEST_F(LibraryTest, ParseCNaptrReplyErrors) {
     .add_answer(new DNSNaptrRR("example.com", 100,
                                10, 20, "SP", "service", "regexp", "replace"));
   std::vector<byte> data;
-  struct cares_naptr_reply* naptr = nullptr;
+  cares_naptr_reply* naptr = nullptr;
 
   // No question.
   pkt.questions_.clear();
@@ -243,7 +243,7 @@ TEST_F(LibraryTest, ParseCNaptrReplyTooShort) {
     0x00, 0x01,  // rdata length
     0x00,  // Too short: expect 2 x int16 and 3 x name (min 1 byte each)
   };
-  struct cares_naptr_reply* naptr = nullptr;
+  cares_naptr_reply* naptr = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_naptr_reply(data.data(), data.size(), &naptr));
 }
 
@@ -274,7 +274,7 @@ TEST_F(LibraryTest, ParseCNaptrReplyAllocFail) {
     .add_answer(new DNSNaptrRR("example.com", 0x0010,
                                11, 21, "SP", "service2", "regexp2", "replace2"));
   std::vector<byte> data = pkt.data();
-  struct cares_naptr_reply* naptr = nullptr;
+  cares_naptr_reply* naptr = nullptr;
 
   for (int ii = 1; ii <= 13; ii++) {
     ClearFails();

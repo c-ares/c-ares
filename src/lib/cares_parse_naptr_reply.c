@@ -36,7 +36,7 @@
 
 int
 cares_parse_naptr_reply (const unsigned char *abuf, int alen,
-                        struct cares_naptr_reply **naptr_out)
+                         cares_naptr_reply **naptr_out)
 {
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
@@ -48,9 +48,9 @@ cares_parse_naptr_reply (const unsigned char *abuf, int alen,
   unsigned char* service = NULL;
   unsigned char* regexp = NULL;
   char* replacement = NULL;
-  struct cares_naptr_reply *naptr_head = NULL;
-  struct cares_naptr_reply *naptr_last = NULL;
-  struct cares_naptr_reply *naptr_curr;
+  cares_naptr_reply *naptr_head = NULL;
+  cares_naptr_reply *naptr_last = NULL;
+  cares_naptr_reply *naptr_curr;
 
   /* Set *naptr_out to NULL for all failure cases. */
   *naptr_out = NULL;

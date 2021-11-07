@@ -123,7 +123,7 @@ TEST_F(LibraryTest, ParseCCaaBogusReply1) {
     0x6B, 0x69, 0x2E, 0x67, 0x6F, 0x6F, 0x67                                                          //  ki.goog
   };
 
-  struct cares_caa_reply* caa = nullptr;
+  cares_caa_reply* caa = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_caa_reply(data.data(), data.size(), &caa));
   ASSERT_EQ(nullptr, caa);
 }
@@ -149,7 +149,7 @@ TEST_F(LibraryTest, ParseCCaaBogusReply2) {
     0x6B, 0x69, 0x2E, 0x67, 0x6F, 0x6F, 0x67                                                          //  ki.goog
   };
 
-  struct cares_caa_reply* caa = nullptr;
+  cares_caa_reply* caa = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_caa_reply(data.data(), data.size(), &caa));
   ASSERT_EQ(nullptr, caa);
 }
@@ -175,7 +175,7 @@ TEST_F(LibraryTest, ParseCCaaBogusReply3) {
     0x6B, 0x69, 0x2E, 0x67, 0x6F, 0x6F, 0x67                                                          //  ki.goog
   };
 
-  struct cares_caa_reply* caa = nullptr;
+  cares_caa_reply* caa = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_caa_reply(data.data(), data.size(), &caa));
   ASSERT_EQ(nullptr, caa);
 }
@@ -207,7 +207,7 @@ TEST_F(LibraryTest, ParseCCaaEmptyReply) {
     0x80, 0x00, 0x00, 0x02, 0x58                                                                      //  ....X
   };
 
-  struct cares_caa_reply* caa = nullptr;
+  cares_caa_reply* caa = nullptr;
   EXPECT_EQ(ARES_ENODATA, cares_parse_caa_reply(data.data(), data.size(), &caa));
   ASSERT_EQ(nullptr, caa);
 }

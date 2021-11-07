@@ -32,7 +32,7 @@ TEST_F(LibraryTest, ParseCPtrReplyOK) {
     .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other.com"));
   std::vector<byte> data = pkt.data();
 
-  struct cares_ptr_reply *ptr = nullptr;
+  cares_ptr_reply *ptr = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_ptr_reply(data.data(), data.size(), &ptr));
   ASSERT_NE(nullptr, ptr);
 
@@ -68,7 +68,7 @@ TEST_F(LibraryTest, ParseCPtrReplyCname) {
     .add_answer(new DNSPtrRR("64.48.32.8.in-addr.arpa", 100, "other.com"));
   std::vector<byte> data = pkt.data();
 
-  struct cares_ptr_reply *ptr = nullptr;
+  cares_ptr_reply *ptr = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_ptr_reply(data.data(), data.size(), &ptr));
   ASSERT_NE(nullptr, ptr);
 
@@ -115,7 +115,7 @@ TEST_F(LibraryTest, ParseCPtrReplyMalformedCname) {
     .add_answer(new DNSPtrRR("64.48.32.8.in-addr.arpa", 100, "other.com"));
   std::vector<byte> data = pkt.data();
 
-  struct cares_ptr_reply *ptr = nullptr;
+  cares_ptr_reply *ptr = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_ptr_reply(data.data(), data.size(), &ptr));
   ASSERT_EQ(nullptr, ptr);
 }
@@ -160,7 +160,7 @@ TEST_F(LibraryTest, ParseManyCPtrReply) {
     .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other9.com"));
   std::vector<byte> data = pkt.data();
 
-  struct cares_ptr_reply *ptr = nullptr;
+  cares_ptr_reply *ptr = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_ptr_reply(data.data(), data.size(), &ptr));
   ASSERT_NE(nullptr, ptr);
   ares_free_data(ptr);
@@ -203,7 +203,7 @@ TEST_F(LibraryTest, ParseCPtrReplyAdditional) {
     .add_additional(new DNSARR("ns3.other.com", 229, {10,20,30,43}));
   std::vector<byte> data = pkt.data();
 
-  struct cares_ptr_reply *ptr = nullptr;
+  cares_ptr_reply *ptr = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_ptr_reply(data.data(), data.size(), &ptr));
   ASSERT_NE(nullptr, ptr);
   EXPECT_EQ("other.com", std::string(cares_ptr_reply_get_host(ptr)));
@@ -288,7 +288,7 @@ TEST_F(LibraryTest, ParseCPtrReplyErrors) {
     .add_question(new DNSQuestion("64.48.32.16.in-addr.arpa", T_PTR))
     .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other.com"));
   std::vector<byte> data;
-  struct cares_ptr_reply *ptr = nullptr;
+  cares_ptr_reply *ptr = nullptr;
 
   // No question.
   pkt.questions_.clear();
@@ -374,7 +374,7 @@ TEST_F(LibraryTest, ParseCPtrReplyAllocFailSome) {
     .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other2.com"))
     .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other3.com"));
   std::vector<byte> data = pkt.data();
-  struct cares_ptr_reply *ptr = nullptr;
+  cares_ptr_reply *ptr = nullptr;
 
   for (int ii = 1; ii <= 13; ii++) {
     ClearFails();
@@ -429,7 +429,7 @@ TEST_F(LibraryTest, ParseCPtrReplyAllocFailMany) {
     .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other8.com"))
     .add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other9.com"));
   std::vector<byte> data = pkt.data();
-  struct cares_ptr_reply *ptr = nullptr;
+  cares_ptr_reply *ptr = nullptr;
 
   for (int ii = 1; ii <= 63; ii++) {
     ClearFails();

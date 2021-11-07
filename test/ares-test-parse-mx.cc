@@ -38,14 +38,14 @@ TEST_F(LibraryTest, ParseCMxReplyOK) {
     .add_answer(new DNSMxRR("example.com", 100, 200, "mx2.example.com"));
   std::vector<byte> data = pkt.data();
 
-  struct cares_mx_reply* mx = nullptr;
+  cares_mx_reply* mx = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_mx_reply(data.data(), data.size(), &mx));
   ASSERT_NE(nullptr, mx);
   EXPECT_EQ("mx1.example.com", std::string(cares_mx_reply_get_host(mx)));
   EXPECT_EQ(100, cares_mx_reply_get_priority(mx));
   EXPECT_EQ(100, cares_mx_reply_get_ttl(mx));
 
-  struct cares_mx_reply* mx2 = cares_mx_reply_get_next(mx);
+  cares_mx_reply* mx2 = cares_mx_reply_get_next(mx);
   ASSERT_NE(nullptr, mx2);
   EXPECT_EQ("mx2.example.com", std::string(cares_mx_reply_get_host(mx2)));
   EXPECT_EQ(200, cares_mx_reply_get_priority(mx2));
@@ -112,7 +112,7 @@ TEST_F(LibraryTest, ParseCMxReplyMalformed) {
     0x02,
   };
 
-  struct cares_mx_reply* mx = nullptr;
+  cares_mx_reply* mx = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_mx_reply(data.data(), data.size(), &mx));
   ASSERT_EQ(nullptr, mx);
 }
@@ -182,7 +182,7 @@ TEST_F(LibraryTest, ParseCMxReplyErrors) {
     .add_question(new DNSQuestion("example.com", T_MX))
     .add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
   std::vector<byte> data;
-  struct cares_mx_reply* mx = nullptr;
+  cares_mx_reply* mx = nullptr;
 
   // No question.
   pkt.questions_.clear();

@@ -43,7 +43,7 @@ TEST_F(LibraryTest, ParseCSrvReplyOK) {
     .add_answer(new DNSSrvRR("example.com", 100, 11, 21, 31, "srv2.example.com"));
   std::vector<byte> data = pkt.data();
 
-  struct cares_srv_reply* srv = nullptr;
+  cares_srv_reply* srv = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv));
   ASSERT_NE(nullptr, srv);
 
@@ -53,7 +53,7 @@ TEST_F(LibraryTest, ParseCSrvReplyOK) {
   EXPECT_EQ(30, cares_srv_reply_get_port(srv));
   EXPECT_EQ(100, cares_srv_reply_get_ttl(srv));
 
-  struct cares_srv_reply* srv2 = cares_srv_reply_get_next(srv);
+  cares_srv_reply* srv2 = cares_srv_reply_get_next(srv);
   ASSERT_NE(nullptr, srv2);
   EXPECT_EQ("srv2.example.com", std::string(cares_srv_reply_get_host(srv2)));
   EXPECT_EQ(11, cares_srv_reply_get_priority(srv2));
@@ -105,7 +105,7 @@ TEST_F(LibraryTest, ParseCSrvReplySingle) {
     .add_additional(new DNSARR("else5.where.com", 42, {172,19,0,2}));
   std::vector<byte> data = pkt.data();
 
-  struct cares_srv_reply* srv = nullptr;
+  cares_srv_reply* srv = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv));
   ASSERT_NE(nullptr, srv);
 
@@ -176,7 +176,7 @@ TEST_F(LibraryTest, ParseCSrvReplyMalformed) {
     0x02, 0x03, 0x04, 0x05,
   };
 
-  struct cares_srv_reply* srv = nullptr;
+  cares_srv_reply* srv = nullptr;
   EXPECT_EQ(ARES_EBADRESP, cares_parse_srv_reply(data.data(), data.size(), &srv));
   ASSERT_EQ(nullptr, srv);
 }
@@ -245,10 +245,10 @@ TEST_F(LibraryTest, ParseCSrvReplyMultiple) {
     .add_additional(new DNSARR("n3.example.com", 300, {172,19,0,3}));
   std::vector<byte> data = pkt.data();
 
-  struct cares_srv_reply* srv0 = nullptr;
+  cares_srv_reply* srv0 = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv0));
   ASSERT_NE(nullptr, srv0);
-  struct cares_srv_reply* srv = srv0;
+  cares_srv_reply* srv = srv0;
 
   EXPECT_EQ("a1.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
@@ -319,7 +319,7 @@ TEST_F(LibraryTest, ParseCSrvReplyCname) {
     .add_additional(new DNSARR("else3.where.com", 42, {172,19,0,3}));
   std::vector<byte> data = pkt.data();
 
-  struct cares_srv_reply* srv = nullptr;
+  cares_srv_reply* srv = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv));
   ASSERT_NE(nullptr, srv);
 
@@ -399,10 +399,10 @@ TEST_F(LibraryTest, ParseCSrvReplyCnameMultiple) {
     .add_additional(new DNSARR("n3.example.com", 300, {172,19,0,3}));
   std::vector<byte> data = pkt.data();
 
-  struct cares_srv_reply* srv0 = nullptr;
+  cares_srv_reply* srv0 = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv0));
   ASSERT_NE(nullptr, srv0);
-  struct cares_srv_reply* srv = srv0;
+  cares_srv_reply* srv = srv0;
 
   EXPECT_EQ("a1.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
@@ -485,7 +485,7 @@ TEST_F(LibraryTest, ParseCSrvReplyErrors) {
     .add_question(new DNSQuestion("example.abc.def.com", T_SRV))
     .add_answer(new DNSSrvRR("example.abc.def.com", 180, 0, 10, 8160, "example.abc.def.com"));
   std::vector<byte> data;
-  struct cares_srv_reply* srv = nullptr;
+  cares_srv_reply* srv = nullptr;
 
   // No question.
   pkt.questions_.clear();
@@ -556,7 +556,7 @@ TEST_F(LibraryTest, ParseCSrvReplyAllocFail) {
     .add_answer(new DNSCnameRR("example.com", 300, "c.example.com"))
     .add_answer(new DNSSrvRR("example.abc.def.com", 180, 0, 10, 8160, "example.abc.def.com"));
   std::vector<byte> data = pkt.data();
-  struct cares_srv_reply* srv = nullptr;
+  cares_srv_reply* srv = nullptr;
 
   for (int ii = 1; ii <= 5; ii++) {
     ClearFails();

@@ -623,6 +623,7 @@ struct ares_soa_reply {
 struct cares_soa_reply;
 
 typedef struct cares_soa_reply cares_soa_reply;
+
 struct ares_uri_reply {
   struct ares_uri_reply  *next;
   unsigned short          priority;

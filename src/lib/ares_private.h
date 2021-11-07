@@ -440,7 +440,7 @@ int ares__connect_socket(ares_channel channel,
  * cares reply structs can be modified without breaking ABI.
  */
  struct cares_caa_reply {
-  struct cares_caa_reply  *next;
+  cares_caa_reply         *next;
   int                      critical;
   unsigned char           *property;
   size_t                   plength;  /* plength excludes null termination */
@@ -450,19 +450,19 @@ int ares__connect_socket(ares_channel channel,
 };
 
 struct cares_ptr_reply {
-  struct cares_ptr_reply *next;
+  cares_ptr_reply        *next;
   char                   *host;
   unsigned int            ttl;
 };
 
 struct cares_ns_reply {
-  struct cares_ns_reply *next;
+  cares_ns_reply        *next;
   char                  *host;
   unsigned int           ttl;
 };
 
 struct cares_srv_reply {
-  struct cares_srv_reply *next;
+  cares_srv_reply        *next;
   char                   *host;
   unsigned short          priority;
   unsigned short          weight;
@@ -471,14 +471,14 @@ struct cares_srv_reply {
 };
 
 struct cares_mx_reply {
-  struct cares_mx_reply   *next;
+  cares_mx_reply          *next;
   char                    *host;
   unsigned short           priority;
   unsigned int             ttl;
 };
 
 struct cares_txt_reply {
-  struct cares_txt_reply *next;
+  cares_txt_reply        *next;
   unsigned char          *txt;
   size_t                  length;
   /* 1 - if start of new record
@@ -488,7 +488,7 @@ struct cares_txt_reply {
 };
 
 struct cares_naptr_reply {
-  struct cares_naptr_reply *next;
+  cares_naptr_reply        *next;
   unsigned char            *flags;
   unsigned char            *service;
   unsigned char            *regexp;

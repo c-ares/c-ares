@@ -36,14 +36,14 @@
 
 int
 cares_parse_soa_reply(const unsigned char *abuf, int alen,
-                      struct cares_soa_reply **soa_out)
+                      cares_soa_reply **soa_out)
 {
   const unsigned char *aptr;
   char* nsname = NULL;
   char* hostmaster = NULL;
   long len;
   char *qname = NULL, *rr_name = NULL;
-  struct cares_soa_reply *soa = NULL;
+  cares_soa_reply *soa = NULL;
   int qdcount, ancount, qclass;
   int status, i, rr_type, rr_class, rr_len;
   unsigned int rr_ttl;

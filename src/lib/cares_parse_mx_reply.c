@@ -45,9 +45,9 @@ cares_parse_mx_reply (const unsigned char *abuf, int alen,
   unsigned int rr_ttl;
   long len;
   char *hostname = NULL, *rr_name = NULL;
-  struct cares_mx_reply *mx_head = NULL;
-  struct cares_mx_reply *mx_last = NULL;
-  struct cares_mx_reply *mx_curr;
+  cares_mx_reply *mx_head = NULL;
+  cares_mx_reply *mx_last = NULL;
+  cares_mx_reply *mx_curr;
 
   /* Set *mx_out to NULL for all failure cases. */
   *mx_out = NULL;

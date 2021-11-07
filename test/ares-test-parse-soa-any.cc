@@ -44,7 +44,7 @@ TEST_F(LibraryTest, ParseCSoaAnyReplyOK) {
                              1, 2, 3, 4, 5));
   std::vector<byte> data = pkt.data();
 
-  struct cares_soa_reply* soa = nullptr;
+  cares_soa_reply* soa = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_soa_reply(data.data(), data.size(), &soa));
   ASSERT_NE(nullptr, soa);
   EXPECT_EQ("soa1.example.com", std::string(cares_soa_reply_get_nsname(soa)));
@@ -124,7 +124,7 @@ TEST_F(LibraryTest, ParseCSoaAnyReplyErrors) {
                              "soa1.example.com", "fred.example.com",
                              1, 2, 3, 4, 5));
   std::vector<byte> data;
-  struct cares_soa_reply* soa = nullptr;
+  cares_soa_reply* soa = nullptr;
 
   // No question.
   pkt.questions_.clear();
@@ -199,7 +199,7 @@ TEST_F(LibraryTest, ParseCSoaAnyReplyAllocFail) {
                              "soa1.example.com", "fred.example.com",
                              1, 2, 3, 4, 5));
   std::vector<byte> data = pkt.data();
-  struct cares_soa_reply* soa = nullptr;
+  cares_soa_reply* soa = nullptr;
 
   for (int ii = 1; ii <= 5; ii++) {
     ClearFails();
