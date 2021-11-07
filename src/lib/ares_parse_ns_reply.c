@@ -61,7 +61,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
   }
 
   aptr = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response(aptr, abuf, alen, &hname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &hname, &len, 0);
   if (status != ARES_SUCCESS)
   {
     ares_free_data(ns_out);
