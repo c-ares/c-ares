@@ -699,7 +699,7 @@ CARES_EXTERN int cares_parse_caa_reply(const unsigned char* abuf,
 				                               int alen,
 				                               struct cares_caa_reply** caa_out);
 
-CARES_EXTERN struct cares_caa_reply*
+CARES_EXTERN const cares_caa_reply*
 cares_caa_reply_get_next(const cares_caa_reply* caa_reply);
 
 CARES_EXTERN int
@@ -731,7 +731,7 @@ CARES_EXTERN int cares_parse_ptr_reply(const unsigned char *abuf,
                                        int alen,
                                        struct cares_ptr_reply **ptr_out);
 
-CARES_EXTERN struct cares_ptr_reply*
+CARES_EXTERN const cares_ptr_reply*
 cares_ptr_reply_get_next(const cares_ptr_reply* ptr_reply);
 
 CARES_EXTERN const char*
@@ -748,7 +748,7 @@ CARES_EXTERN int cares_parse_ns_reply(const unsigned char *abuf,
                                      int alen,
                                      struct cares_ns_reply **ns_out);
 
-CARES_EXTERN struct cares_ns_reply*
+CARES_EXTERN const cares_ns_reply*
 cares_ns_reply_get_next(const cares_ns_reply* ns_reply);
 
 CARES_EXTERN const char*
@@ -765,7 +765,7 @@ CARES_EXTERN int cares_parse_srv_reply(const unsigned char* abuf,
                                        int alen,
                                        struct cares_srv_reply** srv_out);
 
-CARES_EXTERN cares_srv_reply*
+CARES_EXTERN const cares_srv_reply*
 cares_srv_reply_get_next(const cares_srv_reply* srv_reply);
 
 CARES_EXTERN const char*
@@ -791,7 +791,7 @@ CARES_EXTERN int cares_parse_mx_reply(const unsigned char* abuf,
                                       int alen,
                                       struct cares_mx_reply** mx_out);
 
-CARES_EXTERN struct cares_mx_reply*
+CARES_EXTERN const cares_mx_reply*
 cares_mx_reply_get_next(const cares_mx_reply* mx_reply);
 
 CARES_EXTERN const char*
@@ -815,7 +815,7 @@ CARES_EXTERN int cares_parse_txt_reply(const unsigned char* abuf,
                                        int alen,
                                        struct cares_txt_reply** txt_out);
 
-CARES_EXTERN struct cares_txt_reply*
+CARES_EXTERN const cares_txt_reply*
 cares_txt_reply_get_next(const cares_txt_reply* txt_reply);
 
 CARES_EXTERN const unsigned char*
@@ -838,7 +838,7 @@ CARES_EXTERN int cares_parse_naptr_reply(const unsigned char* abuf,
                                          int alen,
                                          struct cares_naptr_reply** naptr_out);
 
-CARES_EXTERN struct cares_naptr_reply*
+CARES_EXTERN const cares_naptr_reply*
 cares_naptr_reply_get_next(const cares_naptr_reply* naptr_reply);
 
 CARES_EXTERN const unsigned char*

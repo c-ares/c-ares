@@ -53,7 +53,7 @@ TEST_F(LibraryTest, ParseCSrvReplyOK) {
   EXPECT_EQ(30, cares_srv_reply_get_port(srv));
   EXPECT_EQ(100, cares_srv_reply_get_ttl(srv));
 
-  cares_srv_reply* srv2 = cares_srv_reply_get_next(srv);
+  const cares_srv_reply* srv2 = cares_srv_reply_get_next(srv);
   ASSERT_NE(nullptr, srv2);
   EXPECT_EQ("srv2.example.com", std::string(cares_srv_reply_get_host(srv2)));
   EXPECT_EQ(11, cares_srv_reply_get_priority(srv2));
@@ -248,7 +248,7 @@ TEST_F(LibraryTest, ParseCSrvReplyMultiple) {
   cares_srv_reply* srv0 = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv0));
   ASSERT_NE(nullptr, srv0);
-  cares_srv_reply* srv = srv0;
+  const cares_srv_reply* srv = srv0;
 
   EXPECT_EQ("a1.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));
@@ -402,7 +402,7 @@ TEST_F(LibraryTest, ParseCSrvReplyCnameMultiple) {
   cares_srv_reply* srv0 = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_srv_reply(data.data(), data.size(), &srv0));
   ASSERT_NE(nullptr, srv0);
-  cares_srv_reply* srv = srv0;
+  const cares_srv_reply* srv = srv0;
 
   EXPECT_EQ("a1.srv.example.com", std::string(cares_srv_reply_get_host(srv)));
   EXPECT_EQ(0, cares_srv_reply_get_priority(srv));

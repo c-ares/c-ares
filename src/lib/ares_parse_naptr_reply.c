@@ -47,7 +47,7 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
   struct ares_naptr_reply *naptr_head = NULL;
   struct ares_naptr_reply *naptr_last = NULL;
   struct ares_naptr_reply *naptr_curr;
-  cares_naptr_reply *cnaptr_curr = NULL;
+  const cares_naptr_reply *cnaptr_curr = NULL;
   cares_naptr_reply *cnaptr_out = NULL;
 
   /* Set *naptr_out to NULL for all failure cases. */

@@ -50,7 +50,7 @@ ares__parse_txt_reply (const unsigned char *abuf, int alen,
   struct ares_txt_ext *txt_head = NULL;
   struct ares_txt_ext *txt_curr = NULL;
   struct ares_txt_ext *txt_last = NULL;
-  cares_txt_reply *ctxt_curr = NULL;
+  const cares_txt_reply *ctxt_curr = NULL;
   cares_txt_reply *ctxt_out = NULL;
 
   /* Set *txt_out to NULL for all failure cases. */

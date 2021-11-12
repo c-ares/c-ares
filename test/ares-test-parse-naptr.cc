@@ -61,7 +61,7 @@ TEST_F(LibraryTest, ParseCNaptrReplyOK) {
   EXPECT_EQ(20, cares_naptr_reply_get_preference(naptr));
   EXPECT_EQ(100, cares_naptr_reply_get_ttl(naptr));
 
-  cares_naptr_reply* naptr2 = cares_naptr_reply_get_next(naptr);
+  const cares_naptr_reply* naptr2 = cares_naptr_reply_get_next(naptr);
   ASSERT_NE(nullptr, naptr2);
   EXPECT_EQ("SP", std::string((char*)cares_naptr_reply_get_flags(naptr2)));
   EXPECT_EQ("service2", std::string((char*)cares_naptr_reply_get_service(naptr2)));

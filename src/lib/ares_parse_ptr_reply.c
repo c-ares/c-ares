@@ -87,7 +87,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
         /* iterate through the linked list of cares_ptr_reply
           and build the h_aliases array.                      */
         i = 0;
-        for (cares_ptr_reply* ptr_curr=ptr_out; ptr_curr;
+        for (const cares_ptr_reply* ptr_curr=ptr_out; ptr_curr;
             ptr_curr = cares_ptr_reply_get_next(ptr_curr))
         {
           if (!cares_ptr_reply_get_next(ptr_curr))

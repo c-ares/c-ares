@@ -78,7 +78,7 @@ TEST_F(LibraryTest, ParseCNsReplyMultiple) {
   cares_ns_reply* ns0  = nullptr;
   EXPECT_EQ(ARES_SUCCESS, cares_parse_ns_reply(data.data(), data.size(), &ns0));
   ASSERT_NE(nullptr, ns0);
-  cares_ns_reply* ns = ns0;
+  const cares_ns_reply* ns = ns0;
   EXPECT_EQ("ns1.google.com", std::string(cares_ns_reply_get_host(ns)));
   EXPECT_EQ(59, cares_ns_reply_get_ttl(ns));
   ns = cares_ns_reply_get_next(ns);

@@ -17,7 +17,7 @@
 #include "string.h"
 
 
-cares_srv_reply*
+const cares_srv_reply*
 cares_srv_reply_get_next(const cares_srv_reply* srv_reply)
 {
   return srv_reply->next;
@@ -88,7 +88,7 @@ void cares_srv_reply_set_ttl(cares_srv_reply* srv_reply,
 
 
 
-cares_caa_reply*
+const cares_caa_reply*
 cares_caa_reply_get_next(const cares_caa_reply* caa_reply)
 {
   return caa_reply->next;
@@ -171,7 +171,7 @@ void cares_caa_reply_set_ttl(cares_caa_reply* caa_reply,
   caa_reply->ttl = ttl;
 }
 
-cares_ptr_reply*
+const cares_ptr_reply*
 cares_ptr_reply_get_next(const cares_ptr_reply* ptr_reply)
 {
   return ptr_reply->next;
@@ -205,7 +205,7 @@ void cares_ptr_reply_set_ttl(cares_ptr_reply* ptr_reply,
   ptr_reply->ttl = ttl;
 }
 
-cares_ns_reply*
+const cares_ns_reply*
 cares_ns_reply_get_next(const cares_ns_reply* ns_reply)
 {
   return ns_reply->next;
@@ -239,7 +239,7 @@ void cares_ns_reply_set_ttl(cares_ns_reply* ns_reply,
   ns_reply->ttl = ttl;
 }
 
-cares_mx_reply*
+const cares_mx_reply*
 cares_mx_reply_get_next(const cares_mx_reply* mx_reply)
 {
   return mx_reply->next;
@@ -285,7 +285,7 @@ void cares_mx_reply_set_ttl(cares_mx_reply* mx_reply,
   mx_reply->ttl = ttl;
 }
 
-cares_txt_reply*
+const cares_txt_reply*
 cares_txt_reply_get_next(const cares_txt_reply* txt_reply)
 {
   return txt_reply->next;
@@ -344,7 +344,7 @@ void cares_txt_reply_set_ttl(cares_txt_reply* txt_reply,
   txt_reply->ttl = ttl;
 }
 
-cares_naptr_reply*
+const cares_naptr_reply*
 cares_naptr_reply_get_next(const cares_naptr_reply* naptr_reply)
 {
   return naptr_reply->next;

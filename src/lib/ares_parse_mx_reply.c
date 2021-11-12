@@ -47,7 +47,7 @@ ares_parse_mx_reply (const unsigned char *abuf, int alen,
   struct ares_mx_reply *mx_head = NULL;
   struct ares_mx_reply *mx_curr = NULL;
   struct ares_mx_reply *mx_last = NULL;
-  cares_mx_reply *cmx_curr = NULL;
+  const cares_mx_reply *cmx_curr = NULL;
   cares_mx_reply *cmx_out = NULL;
 
   /* Set *mx_out to NULL for all failure cases. */

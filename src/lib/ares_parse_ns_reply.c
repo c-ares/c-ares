@@ -84,7 +84,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
         /* iterate through the linked list of cares_ns_reply
           and build the h_aliases array.                      */
         i = 0;
-        for (cares_ns_reply* ns_curr=ns_out; ns_curr;
+        for (const cares_ns_reply* ns_curr=ns_out; ns_curr;
               ns_curr = cares_ns_reply_get_next(ns_curr))
         {
           if (alias_alloc > 2)

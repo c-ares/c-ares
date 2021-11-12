@@ -45,7 +45,7 @@ TEST_F(LibraryTest, ParseCMxReplyOK) {
   EXPECT_EQ(100, cares_mx_reply_get_priority(mx));
   EXPECT_EQ(100, cares_mx_reply_get_ttl(mx));
 
-  cares_mx_reply* mx2 = cares_mx_reply_get_next(mx);
+  const cares_mx_reply* mx2 = cares_mx_reply_get_next(mx);
   ASSERT_NE(nullptr, mx2);
   EXPECT_EQ("mx2.example.com", std::string(cares_mx_reply_get_host(mx2)));
   EXPECT_EQ(200, cares_mx_reply_get_priority(mx2));

@@ -46,7 +46,7 @@ ares_parse_caa_reply (const unsigned char *abuf, int alen,
   struct ares_caa_reply *caa_head = NULL;
   struct ares_caa_reply *caa_last = NULL;
   struct ares_caa_reply *caa_curr;
-  cares_caa_reply *ccaa_curr = NULL;
+  const cares_caa_reply *ccaa_curr = NULL;
   cares_caa_reply *ccaa_out = NULL;
 
   /* Set *caa_out to NULL for all failure cases. */

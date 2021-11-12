@@ -91,14 +91,14 @@ TEST_F(LibraryTest, ParseCTxtReplyOK) {
               cares_txt_reply_get_txt(txt) + cares_txt_reply_get_length(txt)));
   EXPECT_EQ(100, cares_txt_reply_get_ttl(txt));
 
-  cares_txt_reply* txt2 = cares_txt_reply_get_next(txt);
+  const cares_txt_reply* txt2 = cares_txt_reply_get_next(txt);
   ASSERT_NE(nullptr, txt2);
   EXPECT_EQ(std::vector<byte>(expected2a.data(), expected2a.data() + expected2a.size()),
             std::vector<byte>(cares_txt_reply_get_txt(txt2),
               cares_txt_reply_get_txt(txt2) + cares_txt_reply_get_length(txt2)));
   EXPECT_EQ(100, cares_txt_reply_get_ttl(txt2));
 
-  cares_txt_reply* txt3 = cares_txt_reply_get_next(txt2);
+  const cares_txt_reply* txt3 = cares_txt_reply_get_next(txt2);
   ASSERT_NE(nullptr, txt3);
   EXPECT_EQ(std::vector<byte>(expected2b.data(), expected2b.data() + expected2b.size()),
             std::vector<byte>(cares_txt_reply_get_txt(txt3),
