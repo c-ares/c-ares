@@ -33,6 +33,7 @@
 #include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
+#include "cares_memdup.h"
 
 int
 ares_parse_naptr_reply (const unsigned char *abuf, int alen,
@@ -88,39 +89,27 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
 
     flags = cares_naptr_reply_get_flags(cnaptr_curr);
     len = strlen((char *)flags);
-    naptr_curr->flags = ares_malloc(len + 1);
-    if (!naptr_curr->flags)
-    {
+    naptr_curr->flags = cares_memdup(flags, len);
+    if (!naptr_curr->flags) {
       status = ARES_ENOMEM;
       break;
     }
-    memcpy(naptr_curr->flags, flags, len);
-    /* Make sure we NULL-terminate */
-    naptr_curr->flags[len] = 0;
 
     service = cares_naptr_reply_get_service(cnaptr_curr);
     len = strlen((char *)service);
-    naptr_curr->service = ares_malloc(len + 1);
-    if (!naptr_curr->service)
-    {
+    naptr_curr->service = cares_memdup(service, len);
+    if (!naptr_curr->service) {
       status = ARES_ENOMEM;
       break;
     }
-    memcpy(naptr_curr->service, service, len);
-    /* Make sure we NULL-terminate */
-    naptr_curr->service[len] = 0;
 
     regexp = cares_naptr_reply_get_regexp(cnaptr_curr);
     len = strlen((char *)regexp);
-    naptr_curr->regexp = ares_malloc(len + 1);
-    if (!naptr_curr->regexp)
-    {
+    naptr_curr->regexp = cares_memdup(regexp, len);
+    if (!naptr_curr->regexp) {
       status = ARES_ENOMEM;
       break;
     }
-    memcpy(naptr_curr->regexp, regexp, len);
-    /* Make sure we NULL-terminate */
-    naptr_curr->regexp[len] = 0;
 
     replacement = ares_strdup(
                         cares_naptr_reply_get_replacement(cnaptr_curr));

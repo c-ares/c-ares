@@ -58,6 +58,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_send.c				\
   ares_strcasecmp.c			\
   ares_strdup.c				\
+  cares_memdup.c			\
   ares_strerror.c			\
   ares_strsplit.c			\
   ares_timeout.c			\
@@ -81,6 +82,7 @@ HHEADERS = ares_android.h                        \
   ares_private.h			\
   ares_strcasecmp.h			\
   ares_strdup.h				\
+  cares_memdup.h			\
   ares_strsplit.h			\
   ares_writev.h				\
   bitncmp.h				\

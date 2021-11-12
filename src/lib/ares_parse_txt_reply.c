@@ -37,6 +37,7 @@
 #include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
+#include "cares_memdup.h"
 
 static int
 ares__parse_txt_reply (const unsigned char *abuf, int alen,
@@ -89,15 +90,11 @@ ares__parse_txt_reply (const unsigned char *abuf, int alen,
     txt_last = txt_curr;
 
     txt = cares_txt_reply_get_txt(ctxt_curr);
-    txt_curr->txt = ares_malloc(cares_txt_reply_get_length(ctxt_curr) + 1);
-    if (!txt_curr->txt)
-    {
+    txt_curr->txt = cares_memdup(txt, cares_txt_reply_get_length(ctxt_curr));
+    if (!txt_curr->txt) {
       status = ARES_ENOMEM;
       break;
     }
-    memcpy(txt_curr->txt, txt, cares_txt_reply_get_length(ctxt_curr));
-    /* Make sure we NULL-terminate */
-    txt_curr->txt[cares_txt_reply_get_length(ctxt_curr)] = 0;
 
     txt_curr->length = cares_txt_reply_get_length(ctxt_curr);
     if (ex)

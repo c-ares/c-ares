@@ -36,7 +36,7 @@
 #include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
-#include <stdio.h>
+#include "cares_memdup.h"
 
 int
 ares_parse_caa_reply (const unsigned char *abuf, int alen,
@@ -87,28 +87,20 @@ ares_parse_caa_reply (const unsigned char *abuf, int alen,
     caa_curr->critical = cares_caa_reply_get_critical(ccaa_curr);
 
     property = cares_caa_reply_get_property(ccaa_curr);
-    caa_curr->property = ares_malloc(cares_caa_reply_get_plength(ccaa_curr) + 1);
-    if (!caa_curr->property)
-    {
+    caa_curr->property = cares_memdup(property, cares_caa_reply_get_plength(ccaa_curr));
+    if (!caa_curr->property) {
       status = ARES_ENOMEM;
       break;
     }
-    memcpy(caa_curr->property, property, cares_caa_reply_get_plength(ccaa_curr));
-    /* Make sure we NULL-terminate */
-    caa_curr->property[cares_caa_reply_get_plength(ccaa_curr)] = 0;
 
     caa_curr->plength = cares_caa_reply_get_plength(ccaa_curr);
 
     value = cares_caa_reply_get_value(ccaa_curr);
-    caa_curr->value = ares_malloc(cares_caa_reply_get_length(ccaa_curr) + 1);
-    if (!caa_curr->value)
-    {
+    caa_curr->value = cares_memdup(value, cares_caa_reply_get_length(ccaa_curr));
+    if (!caa_curr->value) {
       status = ARES_ENOMEM;
       break;
     }
-    memcpy(caa_curr->value, value, cares_caa_reply_get_length(ccaa_curr));
-    /* Make sure we NULL-terminate */
-    caa_curr->value[cares_caa_reply_get_length(ccaa_curr)] = 0;
 
     caa_curr->length = cares_caa_reply_get_length(ccaa_curr);
   }
