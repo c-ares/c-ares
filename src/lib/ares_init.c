@@ -67,7 +67,7 @@
  * https://docs.microsoft.com/en-us/windows/win32/api/ntsecapi/nf-ntsecapi-rtlgenrandom
  */
 #ifdef _WIN32
-WINAPI BOOLEAN SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
+BOOLEAN WINAPI SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
 #  ifndef RtlGenRandom
 #    define RtlGenRandom(a,b) SystemFunction036(a,b)
 #  endif

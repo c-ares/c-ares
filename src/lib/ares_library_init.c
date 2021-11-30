@@ -53,8 +53,6 @@ void (*ares_free)(void *ptr) = default_free;
 
 int ares_library_init(int flags)
 {
-  int res;
-
   if (ares_initialized)
     {
       ares_initialized++;
