@@ -47,15 +47,30 @@
 #include <resolv.h>
 #endif
 
+#if defined(USE_WINSOCK)
+#  include <iphlpapi.h>
+#endif
+
 #include "ares.h"
 #include "ares_inet_net_pton.h"
-#include "ares_library_init.h"
 #include "ares_nowarn.h"
 #include "ares_platform.h"
 #include "ares_private.h"
 
 #ifdef WATT32
 #undef WIN32  /* Redefined in MingW/MSVC headers */
+#endif
+
+/* Define RtlGenRandom = SystemFunction036.  This is in advapi32.dll.  There is
+ * no need to dynamically load this, other software used widely does not.
+ * http://blogs.msdn.com/michael_howard/archive/2005/01/14/353379.aspx
+ * https://docs.microsoft.com/en-us/windows/win32/api/ntsecapi/nf-ntsecapi-rtlgenrandom
+ */
+#ifdef _WIN32
+WINAPI BOOLEAN SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
+#  ifndef RtlGenRandom
+#    define RtlGenRandom(a,b) SystemFunction036(a,b)
+#  endif
 #endif
 
 static int init_by_options(ares_channel channel,
@@ -870,8 +885,6 @@ static void commajoin(char **dst, const char *src)
  * Returns 1 and sets *outptr when returning a dynamically allocated string.
  *
  * Implementation supports Windows 98 and newer.
- *
- * Note: Ancient PSDK required in order to build a W98 target.
  */
 static int get_DNS_NetworkParams(char **outptr)
 {
@@ -884,15 +897,11 @@ static int get_DNS_NetworkParams(char **outptr)
 
   *outptr = NULL;
 
-  /* Verify run-time availability of GetNetworkParams() */
-  if (ares_fpGetNetworkParams == ZERO_NULL)
-    return 0;
-
   fi = ares_malloc(size);
   if (!fi)
     return 0;
 
-  res = (*ares_fpGetNetworkParams) (fi, &size);
+  res = GetNetworkParams(fi, &size);
   if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS))
     goto done;
 
@@ -901,7 +910,7 @@ static int get_DNS_NetworkParams(char **outptr)
     goto done;
 
   fi = newfi;
-  res = (*ares_fpGetNetworkParams) (fi, &size);
+  res = GetNetworkParams(fi, &size);
   if (res != ERROR_SUCCESS)
     goto done;
 
@@ -1033,21 +1042,20 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
   /* On this interface, get the best route to that destination. */
   MIB_IPFORWARD_ROW2 row;
   SOCKADDR_INET ignored;
-  if(!ares_fpGetBestRoute2 ||
-     ares_fpGetBestRoute2(/* The interface to use.  The index is ignored since we are
-                           * passing a LUID.
-                           */
-                           luid, 0,
-                           /* No specific source address. */
-                           NULL,
-                           /* Our destination address. */
-                           dest,
-                           /* No options. */
-                           0,
-                           /* The route row. */
-                           &row,
-                           /* The best source address, which we don't need. */
-                           &ignored) != NO_ERROR
+  if(GetBestRoute2(/* The interface to use.  The index is ignored since we are
+                    * passing a LUID.
+                    */
+                   luid, 0,
+                   /* No specific source address. */
+                   NULL,
+                   /* Our destination address. */
+                   dest,
+                   /* No options. */
+                   0,
+                   /* The route row. */
+                   &row,
+                   /* The best source address, which we don't need. */
+                   &ignored) != NO_ERROR
      /* If the metric is "unused" (-1) or too large for us to add the two
       * metrics, use the worst possible, thus sorting this last.
       */
@@ -1107,10 +1115,6 @@ static int get_DNS_AdaptersAddresses(char **outptr)
 
   *outptr = NULL;
 
-  /* Verify run-time availability of GetAdaptersAddresses() */
-  if (ares_fpGetAdaptersAddresses == ZERO_NULL)
-    return 0;
-
   ipaa = ares_malloc(Bufsz);
   if (!ipaa)
     return 0;
@@ -1127,8 +1131,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
   }
 
   /* Usually this call suceeds with initial buffer size */
-  res = (*ares_fpGetAdaptersAddresses) (AF_UNSPEC, AddrFlags, NULL,
-                                        ipaa, &ReqBufsz);
+  res = GetAdaptersAddresses(AF_UNSPEC, AddrFlags, NULL, ipaa, &ReqBufsz);
   if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS))
     goto done;
 
@@ -1142,8 +1145,7 @@ static int get_DNS_AdaptersAddresses(char **outptr)
       Bufsz = ReqBufsz;
       ipaa = newipaa;
     }
-    res = (*ares_fpGetAdaptersAddresses) (AF_UNSPEC, AddrFlags, NULL,
-                                          ipaa, &ReqBufsz);
+    res = GetAdaptersAddresses(AF_UNSPEC, AddrFlags, NULL, ipaa, &ReqBufsz);
     if (res == ERROR_SUCCESS)
       break;
   }
@@ -1202,9 +1204,9 @@ static int get_DNS_AdaptersAddresses(char **outptr)
         /* Record insertion index to make qsort stable */
         addresses[addressesIndex].orig_idx = addressesIndex;
 
-        if (! ares_inet_ntop(AF_INET, &namesrvr.sa4->sin_addr,
-                             addresses[addressesIndex].text,
-                             sizeof(addresses[0].text))) {
+        if (!ares_inet_ntop(AF_INET, &namesrvr.sa4->sin_addr,
+                            addresses[addressesIndex].text,
+                            sizeof(addresses[0].text))) {
           continue;
         }
         ++addressesIndex;
@@ -1244,9 +1246,9 @@ static int get_DNS_AdaptersAddresses(char **outptr)
         /* Record insertion index to make qsort stable */
         addresses[addressesIndex].orig_idx = addressesIndex;
 
-        if (! ares_inet_ntop(AF_INET6, &namesrvr.sa6->sin6_addr,
-                             addresses[addressesIndex].text,
-                             sizeof(addresses[0].text))) {
+        if (!ares_inet_ntop(AF_INET6, &namesrvr.sa6->sin6_addr,
+                            addresses[addressesIndex].text,
+                            sizeof(addresses[0].text))) {
           continue;
         }
         ++addressesIndex;
@@ -2495,12 +2497,10 @@ static int sortlist_alloc(struct apattern **sortlist, int *nsort,
   return 1;
 }
 
+
 /* initialize an rc4 key. If possible a cryptographically secure random key
-   is generated using a suitable function (for example win32's RtlGenRandom as
-   described in
-   http://blogs.msdn.com/michael_howard/archive/2005/01/14/353379.aspx
-   otherwise the code defaults to cross-platform albeit less secure mechanism
-   using rand
+   is generated using a suitable function otherwise the code defaults to
+   cross-platform albeit less secure mechanism using rand
 */
 static void randomize_key(unsigned char* key,int key_data_len)
 {
@@ -2508,21 +2508,20 @@ static void randomize_key(unsigned char* key,int key_data_len)
   int counter=0;
 #ifdef WIN32
   BOOLEAN res;
-  if (ares_fpSystemFunction036)
-    {
-      res = (*ares_fpSystemFunction036) (key, key_data_len);
-      if (res)
-        randomized = 1;
-    }
+
+  res = RtlGenRandom(key, key_data_len);
+  if (res)
+    randomized = 1;
+
 #else /* !WIN32 */
-#ifdef CARES_RANDOM_FILE
+#  ifdef CARES_RANDOM_FILE
   FILE *f = fopen(CARES_RANDOM_FILE, "rb");
   if(f) {
     setvbuf(f, NULL, _IONBF, 0);
     counter = aresx_uztosi(fread(key, 1, key_data_len, f));
     fclose(f);
   }
-#endif
+#  endif
 #endif /* WIN32 */
 
   if (!randomized) {
