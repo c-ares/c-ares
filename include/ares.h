@@ -63,6 +63,13 @@
 #  include <windows.h>
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
+/* To aid with linking against a static c-ares build, lets tell the microsoft
+ * compiler to pull in needed dependencies */
+#  ifdef _MSC_VER
+#    pragma comment(lib, "ws2_32")
+#    pragma comment(lib, "advapi32")
+#    pragma comment(lib, "iphlpapi")
+#  endif
 #else
 #  include <sys/socket.h>
 #  include <netinet/in.h>
