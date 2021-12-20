@@ -1,5 +1,6 @@
 env:
   CIRRUS_CLONE_DEPTH: 1
+  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON"
 
 task:
   matrix:
@@ -9,6 +10,10 @@ task:
         LC_ALL: "C"
         SCAN_BUILD: "scan-build"
         MAKE: "make"
+        BUILD_ASAN: "yes"
+        BUILD_UBSAN: "yes"
+        BUILD_LSAN: "yes"
+        BUILD_VALGRIND: "yes"
       container:
         image: debian:latest
     - name: "Debian arm64"
@@ -17,6 +22,9 @@ task:
         LC_ALL: "C"
         SCAN_BUILD: "scan-build"
         MAKE: "make"
+        BUILD_ASAN: "yes"
+        BUILD_UBSAN: "yes"
+        BUILD_LSAN: "yes"
       arm_container:
         image: debian:latest
     - name: "FreeBSD amd64"
@@ -31,6 +39,17 @@ task:
         DIST: "MACOS"
         SCAN_BUILD: "/usr/local/opt/llvm/bin/scan-build"
         MAKE: "make"
+        BUILD_ASAN: "yes"
+      macos_instance:
+        image: big-sur-xcode
+    - name: "iOS"
+      env:
+        DIST: "iOS"
+        MAKE: "make"
+        SYSROOT: "$(xcode-select -print-path)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/"
+        CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=OFF -DCMAKE_C_FLAGS=-miphoneos-version-min=10.0 -DCMAKE_CXX_FLAGS=-miphoneos-version-min=10.0 -DCMAKE_OSX_SYSROOT=$SYSROOT -DCMAKE_OSX_ARCHITECTURES=armv7;armv7s;arm64"
+        CFLAGS: "-isysroot $SYSROOT -arch armv7 -arch armv7s -arch arm64 -miphoneos-version-min=10.0"
+        CONFIG_OPTS: "--host=arm-apple-darwin10 --disable-tests"
       macos_instance:
         image: big-sur-xcode
   matrix:
@@ -42,7 +61,7 @@ task:
         BUILD_TYPE: "autotools"
     - name: "ASAN"
       # FreeBSD just hangs trying to run tests, think it may be trying to run leak sanitizer
-      only_if: $DIST != 'FREEBSD'
+      only_if: $BUILD_ASAN == 'yes'
       env:
         BUILD_TYPE: "asan"
         CC: "clang"
@@ -52,7 +71,7 @@ task:
         LDFLAGS: "-fsanitize=address -lpthread"
     - name: "UBSAN"
       # FreeBSD just hangs trying to run tests, think it may be trying to run leak sanitizer
-      only_if: $DIST != 'FREEBSD'
+      only_if: $BUILD_UBSAN == 'yes'
       env:
         BUILD_TYPE: "ubsan"
         CC: "clang"
@@ -62,7 +81,7 @@ task:
         LDFLAGS: "-fsanitize=undefined -lpthread"
     - name: "LSAN"
       # lsan only works on debian x86/x64
-      only_if: $DIST == 'DEBIAN'
+      only_if: $BUILD_LSAN == 'yes'
       env:
         BUILD_TYPE: "lsan"
         CC: "clang"
@@ -78,13 +97,13 @@ task:
         CONFIG_OPTS: "--enable-debug --disable-tests"
     - name: "VALGRIND"
       # FreeBSD just hangs trying to run tests, think it may be trying to run leak sanitizer
-      only_if: $DIST == 'DEBIAN'
+      only_if: $BUILD_VALGRIND == 'yes'
       env:
         BUILD_TYPE: "valgrind"
         TEST_WRAP: "valgrind --leak-check=full"
         TEST_FILTER: "--gtest_filter=-*Container*:-*LiveSearchANY*"
     - name: "COVERAGE"
-      only_if: $DIST == 'DEBIAN'
+      only_if: $BUILD_COVERAGE == 'yes'
       env:
         BUILD_TYPE: "coverage"
         CI_NAME: "cirrus-ci"
