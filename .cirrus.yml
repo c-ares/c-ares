@@ -148,7 +148,7 @@ task:
               ;;
           esac
           ;;
-        MACOS|IOS)
+        MACOS|iOS)
           brew update && \
           brew install ninja cmake
           case "${BUILD_TYPE}" in
