@@ -6,7 +6,7 @@ set -e
 [ -z "$TEST_FILTER" ] && export TEST_FILTER="--gtest_filter=-*LiveSearchANY*"
 
 # No tests for ios as it is a cross-compile
-if [ "$BUILD_TYPE" = "ios" -o "$BUILD_TYPE" = "ios-cmake" ] ; then
+if [ "$BUILD_TYPE" = "ios" -o "$BUILD_TYPE" = "ios-cmake" -o "$DIST" = "iOS" ] ; then
     exit 0
 fi
 
