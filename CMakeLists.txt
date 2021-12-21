@@ -82,9 +82,14 @@ SET (TARGETS_INST_DEST
 
 # Function in Library
 # CHECK_LIBRARY_EXISTS can't be used as it will return true if the function
-# is found in a different dependent library.
+# is found in a different required/dependent library.
 MACRO (CARES_FUNCTION_IN_LIBRARY func lib var)
+
+	SET (_ORIG_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+	SET (CMAKE_REQUIRED_LIBRARIES )
 	CHECK_FUNCTION_EXISTS ("${func}" "_CARES_FUNC_IN_LIB_GLOBAL_${func}")
+	SET (CMAKE_REQUIRED_LIBRARIES "${_ORIG_CMAKE_REQUIRED_LIBRARIES}")
+
 	IF ("${_CARES_FUNC_IN_LIB_GLOBAL_${func}}")
 		SET (${var} FALSE)
 	ELSE ()
