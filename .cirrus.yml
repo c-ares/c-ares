@@ -15,6 +15,7 @@ task:
         BUILD_LSAN: "yes"
         BUILD_VALGRIND: "yes"
         BUILD_COVERAGE: "yes"
+        BUILD_ANALYZE: "yes"
       container:
         image: debian:latest
     - name: "Debian arm64"
@@ -26,6 +27,7 @@ task:
         BUILD_ASAN: "yes"
         BUILD_UBSAN: "yes"
         BUILD_LSAN: "yes"
+        BUILD_ANALYZE: "yes"
       arm_container:
         image: debian:latest
     - name: "FreeBSD amd64"
@@ -33,6 +35,7 @@ task:
         DIST: "FREEBSD"
         SCAN_BUILD: "scan-build"
         MAKE: "gmake"
+        BUILD_ANALYZE: "yes"
       freebsd_instance:
         image_family: freebsd-13-0
     - name: "MacOS"
@@ -41,6 +44,7 @@ task:
         SCAN_BUILD: "/usr/local/opt/llvm/bin/scan-build"
         MAKE: "make"
         BUILD_ASAN: "yes"
+        BUILD_ANALYZE: "yes"
       macos_instance:
         image: big-sur-xcode
     - name: "iOS"
@@ -48,7 +52,6 @@ task:
         DIST: "iOS"
         MAKE: "make"
         CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 -DCMAKE_OSX_ARCHITECTURES=armv7;armv7s;arm64"
-        SCAN_BUILD: "/usr/local/opt/llvm/bin/scan-build"
         CFLAGS: "-arch armv7 -arch armv7s -arch arm64 -miphoneos-version-min=10.0"
         CONFIG_OPTS: "--host=arm-apple-darwin10 --disable-tests"
       macos_instance:
@@ -91,6 +94,7 @@ task:
         CXXFLAGS: "-fsanitize=leak"
         LDFLAGS: "-fsanitize=leak -lpthread"
     - name: "ANALYZE"
+      only_if: $BUILD_ANALYZE == 'yes'
       env:
         BUILD_TYPE: "analyze"
         CC: "clang"
