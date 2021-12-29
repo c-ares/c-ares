@@ -36,7 +36,7 @@
 
 int
 cares_parse_srv_reply (const unsigned char *abuf, int alen,
-                          cares_srv_reply **srv_out)
+                          cares_srv_reply_container **srv_out)
 {
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
@@ -45,8 +45,8 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   long len;
   char *hostname = NULL, *rr_name = NULL;
   char* srv_host = NULL;
-  cares_srv_reply *srv_head = NULL;
-  cares_srv_reply *srv_last = NULL;
+  // cares_srv_reply *srv_head = NULL;
+  // cares_srv_reply *srv_last = NULL;
   cares_srv_reply *srv_curr;
 
   /* Set *srv_out to NULL for all failure cases. */
@@ -76,6 +76,8 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
       return ARES_EBADRESP;
     }
   aptr += len + QFIXEDSZ;
+
+  cares_srv_reply* 
 
   /* Examine each answer resource record (RR) in turn. */
   for (i = 0; i < ancount; i++)
