@@ -462,13 +462,19 @@ struct cares_ns_reply {
 };
 
 struct cares_srv_reply {
-  cares_srv_reply        *next;
+//  cares_srv_reply        *next;
   char                   *host;
   unsigned short          priority;
   unsigned short          weight;
   unsigned short          port;
   unsigned int            ttl;
 };
+
+struct cares_srv_reply_container {
+  cares_srv_reply        *replies;
+  int                     curr;
+  int                     count;
+}
 
 struct cares_mx_reply {
   cares_mx_reply          *next;
@@ -510,8 +516,8 @@ struct cares_soa_reply {
 };
 
 /* Private declaration of c-ares reply setters */
-void cares_srv_reply_set_next(cares_srv_reply* srv_reply,
-                              cares_srv_reply* next);
+// void cares_srv_reply_set_next(cares_srv_reply* srv_reply,
+//                               cares_srv_reply* next);
 
 void cares_srv_reply_set_host(cares_srv_reply* srv_reply, char* host);
 
@@ -527,7 +533,14 @@ void cares_srv_reply_set_port(cares_srv_reply* srv_reply,
 void cares_srv_reply_set_ttl(cares_srv_reply* srv_reply,
                              const unsigned int ttl);
 
+void cares_srv_reply_container_set_replies(cares_srv_reply_container* container,
+                                           cares_srv_reply* replies);
 
+void cares_srv_reply_container_set_curr(cares_srv_reply_container* container,
+                                        const unsigned int index);
+
+void cares_srv_reply_container_set_count(cares_srv_reply_container* container,
+                                         const unsigned int count);
 
 void cares_caa_reply_set_next(cares_caa_reply* caa_reply,
                               cares_caa_reply* next);

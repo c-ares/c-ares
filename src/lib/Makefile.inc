@@ -67,6 +67,8 @@ CSOURCES = ares__addrinfo2hostent.c	\
   bitncmp.c				\
   inet_net_pton.c			\
   inet_ntop.c				\
+  cares_container.c		\
+  cares_free_container.c		\
   windows_port.c
 
 HHEADERS = ares_android.h                        \
@@ -87,6 +89,7 @@ HHEADERS = ares_android.h                        \
   ares_writev.h				\
   bitncmp.h				\
   ares_setup.h				\
+  ares_free_container.h		\
   setup_once.h
 
 

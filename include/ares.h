@@ -561,6 +561,10 @@ struct cares_srv_reply;
 
 typedef struct cares_srv_reply cares_srv_reply;
 
+struct cares_srv_reply_container
+
+typedef struct cares_srv_reply_container cares_srv_reply_container;
+
 struct cares_host_reply;
 
 typedef struct cares_host_reply cares_host_reply;
@@ -766,7 +770,16 @@ CARES_EXTERN int cares_parse_srv_reply(const unsigned char* abuf,
                                        struct cares_srv_reply** srv_out);
 
 CARES_EXTERN const cares_srv_reply*
-cares_srv_reply_get_next(const cares_srv_reply* srv_reply);
+cares_srv_reply_container_get_first(const cares_srv_reply_container* container);
+
+CARES_EXTERN const cares_srv_reply*
+cares_srv_reply_container_get_next(const cares_srv_reply_container* container);
+
+CARES_EXTERN const cares_srv_reply*
+cares_srv_reply_container_get_last(const cares_srv_reply_container* container);
+
+CARES_EXTERN const unsigned int
+cares_srv_reply_container_get_count(const cares_srv_reply_container* container);
 
 CARES_EXTERN const char*
 cares_srv_reply_get_host(const cares_srv_reply* srv_reply);
