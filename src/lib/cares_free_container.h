@@ -17,15 +17,15 @@
 typedef enum {
   CARES_CONTAINER_SRV_REPLY_CONTAINER,
   CARES_CONTAINER_LAST          /* not used */
-} cares_datatype;
+} cares_container_type;
 
 
-struct cares_data_container {
-  cares_datatype type;  /* Actual data type identifier. */
+struct cares_container {
+  cares_container_type type;  /* Actual data type identifier. */
   unsigned int  mark;  /* Private ares_data signature. */
   union {
     struct cares_srv_reply_container    srv_container;
   } container;
 };
 
-void *ares_malloc_container(cares_datatype type);
+void *ares_malloc_container(cares_container_type type);

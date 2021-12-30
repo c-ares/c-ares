@@ -15,4 +15,13 @@
 #include "ares.h"
 #include "ares_private.h"
 
+void cares_free_container(void *containerptr)
+{
+    if (containerptr == NULL) {
+        return;
+    }
+
+    ptr = (void *)((char *)containerptr - offsetof(struct cares_container, container));
+}
+
 for ()

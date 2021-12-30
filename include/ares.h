@@ -960,6 +960,8 @@ CARES_EXTERN const char *ares_inet_ntop(int af, const void *src, char *dst,
 
 CARES_EXTERN int ares_inet_pton(int af, const char *src, void *dst);
 
+CARES_EXTERN void ares_free_container(void *containerptr);
+
 
 #ifdef  __cplusplus
 }
