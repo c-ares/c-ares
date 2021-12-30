@@ -28,4 +28,4 @@ struct cares_container {
   } container;
 };
 
-void *ares_malloc_container(cares_container_type type);
+void *cares_malloc_container(cares_container_type type);

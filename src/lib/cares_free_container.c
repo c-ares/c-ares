@@ -22,6 +22,30 @@ void cares_free_container(void *containerptr)
     }
 
     ptr = (void *)((char *)containerptr - offsetof(struct cares_container, container));
+
+    if (ptr->mark != ARES_DATATYPE_MARK)
+      return;
+
+    for (int i = 0; i < ptr->count; ++i)
+    {
+        curr = ptr->container->replies;
+        switch (ptr->type)
+        {
+          case CARES_CONTAINER_SRV_REPLY_CONTAINER:
+            ares_free_data((cares_srv_reply *)curr[i]);
+            break;
+        
+          default:
+            return;
+        }
+    }
+
+    ares_free(ptr->container->replies);
+    ares_free(ptr->container);
+    ares_free(ptr);
 }
 
-for ()
+void *cares_malloc_container(cares_container_type type)
+{
+    
+}
