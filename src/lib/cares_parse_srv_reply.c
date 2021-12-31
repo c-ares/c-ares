@@ -48,9 +48,14 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   // cares_srv_reply *srv_head = NULL;
   // cares_srv_reply *srv_last = NULL;
   cares_srv_reply *srv_curr;
+  cares_srv_reply *srv_replies = NULL;
 
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;
+
+  *srv_out = ares_malloc_container(CARES_CONTAINER_SRV_REPLY_CONTAINER);
+  if (*srv_out == NULL)
+    return ARES_ENOMEM;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -64,6 +69,9 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   if (ancount == 0)
     return ARES_ENODATA;
 
+  *srv_out->count = ancount;
+  srv_replies = ares_malloc(ancount * sizeof(*srv_replies));
+
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
   status = ares_expand_name (aptr, abuf, alen, &hostname, &len);
@@ -76,8 +84,6 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
       return ARES_EBADRESP;
     }
   aptr += len + QFIXEDSZ;
-
-  cares_srv_reply* 
 
   /* Examine each answer resource record (RR) in turn. */
   for (i = 0; i < ancount; i++)
@@ -122,15 +128,6 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
               status = ARES_ENOMEM;
               break;
             }
-          if (srv_last)
-            {
-              cares_srv_reply_set_next(srv_last, srv_curr);
-            }
-          else
-            {
-              srv_head = srv_curr;
-            }
-          srv_last = srv_curr;
 
           vptr = aptr;
           cares_srv_reply_set_priority(srv_curr, DNS__16BIT(vptr));
@@ -145,6 +142,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           if (status != ARES_SUCCESS)
             break;
           cares_srv_reply_set_host(srv_curr, srv_host);
+          srv_replies[i] = srv_curr;
         }
       else if (rr_type != T_CNAME)
         {
@@ -174,6 +172,6 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
     }
 
   /* everything looks fine, return the data */
-  *srv_out = srv_head;
+  *srv_out->replies = srv_replies;
   return ARES_SUCCESS;
 }
