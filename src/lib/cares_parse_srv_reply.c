@@ -39,7 +39,7 @@ int
 cares_parse_srv_reply (const unsigned char *abuf, int alen,
                           cares_srv_reply_container **srv_out)
 {
-  unsigned int qdcount, ancount, i;
+  unsigned int qdcount, ancount, i, count;
   const unsigned char *aptr, *vptr;
   int status, rr_type, rr_class, rr_len;
   unsigned int rr_ttl;
@@ -49,8 +49,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   // cares_srv_reply *srv_head = NULL;
   // cares_srv_reply *srv_last = NULL;
   cares_srv_reply *srv_curr;
-  cares_srv_reply *srv_replies = NULL;
-  int count;
+  cares_srv_reply **srv_replies = NULL;
 
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;
@@ -72,7 +71,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
     return ARES_ENODATA;
 
   cares_srv_reply_container_set_count(*srv_out, ancount);
-  srv_replies = ares_malloc(ancount * sizeof(*srv_replies));
+  *srv_replies = ares_malloc(ancount * sizeof(**srv_replies));
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
@@ -145,7 +144,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           if (status != ARES_SUCCESS)
             break;
           cares_srv_reply_set_host(srv_curr, srv_host);
-          srv_replies[i] = *srv_curr;
+          srv_replies[i] = srv_curr;
         }
       else if (rr_type != T_CNAME)
         {
@@ -181,6 +180,6 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
     }
 
   /* everything looks fine, return the data */
-  *srv_out->replies = srv_replies;
+  (*srv_out)->replies = srv_replies;
   return ARES_SUCCESS;
 }

@@ -17,11 +17,11 @@
 #include "string.h"
 
 
-const cares_srv_reply*
-cares_srv_reply_get_next(const cares_srv_reply* srv_reply)
-{
-  return srv_reply->next;
-}
+// const cares_srv_reply*
+// cares_srv_reply_get_next(const cares_srv_reply* srv_reply)
+// {
+//   return srv_reply->next;
+// }
 
 const char* cares_srv_reply_get_host(const cares_srv_reply* srv_reply)
 {
@@ -51,11 +51,11 @@ unsigned int cares_srv_reply_get_ttl(const cares_srv_reply* srv_reply)
   return srv_reply->ttl;
 }
 
-void cares_srv_reply_set_next(cares_srv_reply* srv_reply,
-                              cares_srv_reply* next)
-{
-  srv_reply->next = next;
-}
+// void cares_srv_reply_set_next(cares_srv_reply* srv_reply,
+//                               cares_srv_reply* next)
+// {
+//   srv_reply->next = next;
+// }
 
 void cares_srv_reply_set_host(cares_srv_reply* srv_reply, char* host)
 {

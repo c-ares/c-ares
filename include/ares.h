@@ -773,7 +773,7 @@ CARES_EXTERN const cares_srv_reply*
 cares_srv_reply_container_get_first(const cares_srv_reply_container* container);
 
 CARES_EXTERN const cares_srv_reply*
-cares_srv_reply_container_get_next(const cares_srv_reply_container* container);
+cares_srv_reply_container_get_next(cares_srv_reply_container* container);
 
 CARES_EXTERN const cares_srv_reply*
 cares_srv_reply_container_get_last(const cares_srv_reply_container* container);
@@ -784,7 +784,7 @@ cares_srv_reply_container_get_count(const cares_srv_reply_container* container);
 CARES_EXTERN unsigned int
 cares_srv_reply_container_get_curr(const cares_srv_reply_container* container);
 
-CARES_EXTERN bool
+CARES_EXTERN int
 cares_srv_reply_container_at_end(const cares_srv_reply_container* container);
 
 CARES_EXTERN const char*

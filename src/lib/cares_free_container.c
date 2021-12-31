@@ -11,9 +11,12 @@
  * without express or implied warranty.
  */
 
+#include <stddef.h>
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
+#include "cares_free_container.h"
+#include "ares_data.h"
 
 void cares_free_container(void *containerptr)
 {
@@ -21,18 +24,32 @@ void cares_free_container(void *containerptr)
         return;
     }
 
+    struct cares_container *ptr;
+    unsigned int count;
+
     ptr = (void *)((char *)containerptr - offsetof(struct cares_container, container));
 
     if (ptr->mark != ARES_DATATYPE_MARK)
       return;
 
-    for (int i = 0; i < ptr->count; ++i)
+    switch (ptr->type)
     {
-        curr = ptr->container->replies;
+      case CARES_CONTAINER_SRV_REPLY_CONTAINER:
+        count = ptr->container.srv_container.count;
+        break;
+    
+      default:
+        return;
+    }
+
+    for (unsigned int i = 0; i < count; ++i)
+    {
         switch (ptr->type)
         {
           case CARES_CONTAINER_SRV_REPLY_CONTAINER:
-            ares_free_data((cares_srv_reply *)curr[i]);
+            ares_free_data(ptr->container.srv_container.replies[i]);
+            if (i == count - 1)
+              ares_free(ptr->container.srv_container.replies);
             break;
         
           default:
@@ -40,8 +57,6 @@ void cares_free_container(void *containerptr)
         }
     }
 
-    ares_free(ptr->container->replies);
-    ares_free(ptr->container);
     ares_free(ptr);
 }
 

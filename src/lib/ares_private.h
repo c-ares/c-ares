@@ -471,7 +471,7 @@ struct cares_srv_reply {
 };
 
 struct cares_srv_reply_container {
-  cares_srv_reply        *replies;
+  cares_srv_reply       **replies;
   unsigned int            curr;
   unsigned int            count;
 };
@@ -534,7 +534,7 @@ void cares_srv_reply_set_ttl(cares_srv_reply* srv_reply,
                              const unsigned int ttl);
 
 void cares_srv_reply_container_set_replies(cares_srv_reply_container* container,
-                                           cares_srv_reply* replies);
+                                           cares_srv_reply** replies);
 
 void cares_srv_reply_container_set_curr(cares_srv_reply_container* container,
                                         const unsigned int index);

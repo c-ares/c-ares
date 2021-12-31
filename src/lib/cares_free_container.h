@@ -12,7 +12,6 @@
  */
 
 #include "ares_private.h"
-#include "ares_data.h"
 
 typedef enum {
   CARES_CONTAINER_SRV_REPLY_CONTAINER,
@@ -22,7 +21,7 @@ typedef enum {
 
 struct cares_container {
   cares_container_type type;  /* Actual data type identifier. */
-  unsigned int  mark;  /* Private ares_data signature. */
+  unsigned int mark;  /* Private ares_data signature. */
   union {
     struct cares_srv_reply_container    srv_container;
   } container;
