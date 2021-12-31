@@ -33,6 +33,7 @@
 #include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
+#include "cares_free_container.h"
 
 int
 cares_parse_srv_reply (const unsigned char *abuf, int alen,
@@ -54,7 +55,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;
 
-  *srv_out = ares_malloc_container(CARES_CONTAINER_SRV_REPLY_CONTAINER);
+  *srv_out = cares_malloc_container(CARES_CONTAINER_SRV_REPLY_CONTAINER);
   if (*srv_out == NULL)
     return ARES_ENOMEM;
 
@@ -70,7 +71,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   if (ancount == 0)
     return ARES_ENODATA;
 
-  *srv_out->count = ancount;
+  cares_srv_reply_container_set_count(*srv_out, ancount);
   srv_replies = ares_malloc(ancount * sizeof(*srv_replies));
 
   /* Expand the name from the question, and skip past the question. */
@@ -144,7 +145,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           if (status != ARES_SUCCESS)
             break;
           cares_srv_reply_set_host(srv_curr, srv_host);
-          srv_replies[i] = srv_curr;
+          srv_replies[i] = *srv_curr;
         }
       else if (rr_type != T_CNAME)
         {

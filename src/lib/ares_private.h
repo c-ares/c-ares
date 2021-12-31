@@ -472,9 +472,9 @@ struct cares_srv_reply {
 
 struct cares_srv_reply_container {
   cares_srv_reply        *replies;
-  int                     curr;
-  int                     count;
-}
+  unsigned int            curr;
+  unsigned int            count;
+};
 
 struct cares_mx_reply {
   cares_mx_reply          *next;

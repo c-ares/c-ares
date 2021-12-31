@@ -60,7 +60,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
   if (status != ARES_SUCCESS)
   {
     if (csrv_out)
-      ares_free_container(csrv_out);
+      cares_free_container(csrv_out);
     return status;
   }
 
@@ -68,7 +68,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
    * create a new ares_srv_reply */
   for (csrv_curr = cares_srv_reply_container_get_first(csrv_out);
     !cares_srv_reply_container_at_end(csrv_out);
-    csrv_curr = cares_srv_reply_get_next(csrv_curr))
+    csrv_curr = cares_srv_reply_container_get_next(csrv_out))
   {
     srv_curr = ares_malloc_data(ARES_DATATYPE_SRV_REPLY);
     if (!srv_curr)
@@ -101,7 +101,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
 
   if (csrv_out)
   {
-    ares_free_container(csrv_out);
+    cares_free_container(csrv_out);
   }
 
   /* clean up on error */

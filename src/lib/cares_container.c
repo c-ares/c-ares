@@ -37,7 +37,7 @@ cares_srv_reply_container_get_next(const cares_srv_reply_container* container)
 
   cares_srv_reply_container_set_curr(container,
     cares_srv_reply_container_get_curr(container) + 1);
-    
+
   return &container->replies[container->curr];
 }
 
@@ -52,19 +52,19 @@ cares_srv_reply_container_get_last(const cares_srv_reply_container* container)
   return &container->replies[cares_srv_reply_container_get_count(container) - 1];
 }
 
-const int
+unsigned int
 cares_srv_reply_container_get_count(const cares_srv_reply_container* container)
 {
   return container->count;
 }
 
-const int
+unsigned int
 cares_srv_reply_container_get_curr(const cares_srv_reply_container* container)
 {
   return container->curr;
 }
 
-const bool
+bool
 cares_srv_reply_container_at_end(const cares_srv_reply_container* container)
 {
   return cares_srv_reply_get_curr(container) == cares_srv_reply_get_count(container);
