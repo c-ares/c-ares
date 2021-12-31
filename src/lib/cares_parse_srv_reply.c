@@ -49,6 +49,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   // cares_srv_reply *srv_last = NULL;
   cares_srv_reply *srv_curr;
   cares_srv_reply *srv_replies = NULL;
+  int count;
 
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;
@@ -88,6 +89,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* Examine each answer resource record (RR) in turn. */
   for (i = 0; i < ancount; i++)
     {
+      count = i;
       /* Decode the RR up to the data field. */
       status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
       if (status != ARES_SUCCESS)
@@ -166,8 +168,14 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* clean up on error */
   if (status != ARES_SUCCESS)
     {
-      if (srv_head)
-        ares_free_data (srv_head);
+      if (srv_replies)
+      {
+        for(i = 0; i <= count; ++i) {
+          if (srv_replies[i])
+            ares_free_data(srv_replies[i]);
+        }
+        ares_free(srv_replies);
+      }
       return status;
     }
 
