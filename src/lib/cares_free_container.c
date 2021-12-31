@@ -47,5 +47,27 @@ void cares_free_container(void *containerptr)
 
 void *cares_malloc_container(cares_container_type type)
 {
-    
+  struct cares_container *ptr;
+
+  ptr = ares_malloc(sizeof(struct cares_container));
+  if (!ptr)
+    return NULL;
+
+  switch (type)
+    {
+      case CARES_CONTAINER_SRV_REPLY_CONTAINER:
+        ptr->container.srv_container.replies = NULL;
+        ptr->container.srv_container.curr = 0;
+        ptr->container.srv_container.count = 0;
+        break;
+
+      default:
+        ares_free(ptr);
+        return NULL;
+    }
+
+  ptr->mark = ARES_DATATYPE_MARK;
+  ptr->type = type;
+
+  return &ptr->container;
 }
