@@ -30,7 +30,7 @@ cares_srv_reply_container_get_next(cares_srv_reply_container* container)
     return container->replies[0];
   }
 
-  if (container->curr == cares_srv_reply_container_get_count(container) - 1)
+  if (container->curr == cares_srv_reply_container_get_count(container))
   {
     return container->replies[cares_srv_reply_container_get_count(container) - 1];
   }
@@ -67,7 +67,7 @@ cares_srv_reply_container_get_curr(const cares_srv_reply_container* container)
 int
 cares_srv_reply_container_at_end(const cares_srv_reply_container* container)
 {
-  return cares_srv_reply_container_get_curr(container) ==
+  return cares_srv_reply_container_get_curr(container) >=
     cares_srv_reply_container_get_count(container);
 }
 
@@ -87,4 +87,9 @@ void cares_srv_reply_container_set_count(cares_srv_reply_container* container,
                                          const unsigned int count)
 {
   container->count = count;
+}
+
+void cares_srv_reply_container_reset(cares_srv_reply_container* container)
+{
+  cares_srv_reply_container_set_curr(container, 0);
 }

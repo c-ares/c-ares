@@ -22,6 +22,7 @@
 #include "ares.h"
 #include "ares_data.h"
 #include "ares_private.h"
+#include "stdio.h"
 
 
 /*
@@ -41,6 +42,8 @@
 
 void ares_free_data(void *dataptr)
 {
+  printf("dataptr: %p\n", (void *)dataptr);
+  printf("dataptr->host: %p; host: %s\n", (void *)((cares_srv_reply *)dataptr)->host, ((cares_srv_reply *)dataptr)->host);
   while (dataptr != NULL) {
     struct ares_data *ptr;
     void *next_data = NULL;
@@ -52,6 +55,7 @@ void ares_free_data(void *dataptr)
 #endif
 
     ptr = (void *)((char *)dataptr - offsetof(struct ares_data, data));
+    printf("ptr in ares_data: %p\n", (void *)ptr);
 
 #ifdef __INTEL_COMPILER
 #  pragma warning(pop)
@@ -77,7 +81,11 @@ void ares_free_data(void *dataptr)
           if (ptr->data.srv_reply.next)
             next_data = ptr->data.srv_reply.next;
           if (ptr->data.srv_reply.host)
+          {
+            printf("before ares_free in ares_data; srv_reply.host: %p, dataptr: %p; host:%s\n", (void *)ptr->data.srv_reply.host, (void *)&ptr->data, ptr->data.csrv_reply.host);
             ares_free(ptr->data.srv_reply.host);
+            printf("after ares_free in ares_data\n");
+          }
           break;
 
         case ARES_DATATYPE_URI_REPLY:

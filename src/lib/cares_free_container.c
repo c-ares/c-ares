@@ -17,17 +17,21 @@
 #include "ares_private.h"
 #include "cares_free_container.h"
 #include "ares_data.h"
+#include "stdio.h"
 
 void cares_free_container(void *containerptr)
 {
     if (containerptr == NULL) {
         return;
     }
+    printf("containerptr: %p\n", (void *)containerptr);
 
     struct cares_container *ptr;
     unsigned int count;
 
     ptr = (void *)((char *)containerptr - offsetof(struct cares_container, container));
+
+    printf("ptr: %p\n", (void *)ptr);
 
     if (ptr->mark != ARES_DATATYPE_MARK)
       return;
@@ -47,17 +51,29 @@ void cares_free_container(void *containerptr)
         switch (ptr->type)
         {
           case CARES_CONTAINER_SRV_REPLY_CONTAINER:
-            ares_free_data(ptr->container.srv_container.replies[i]);
+            if (ptr->container.srv_container.replies[i])
+            {
+              printf("before free data; replies[i]: %p\n", (void *)ptr->container.srv_container.replies[i]);
+              ares_free_data(ptr->container.srv_container.replies[i]);
+              printf("after free data\n");
+            }
+
             if (i == count - 1)
+            {
+              printf("before free replies\n");
               ares_free(ptr->container.srv_container.replies);
-            break;
+              printf("after free replies\n");
+              break;
+            }
         
           default:
             return;
         }
     }
 
+    printf("before free ptr\n");
     ares_free(ptr);
+    printf("after free ptr\n");
 }
 
 void *cares_malloc_container(cares_container_type type)

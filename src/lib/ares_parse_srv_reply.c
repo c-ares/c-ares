@@ -34,6 +34,7 @@
 #include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
+#include "stdio.h"
 
 int
 ares_parse_srv_reply (const unsigned char *abuf, int alen,
@@ -55,6 +56,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
   *srv_out = NULL;
 
   status = cares_parse_srv_reply(abuf, alen, &csrv_out);
+  printf("After cares_parse_srv_reply in ares_parse_srv_reply\n");
 
   /* clean up on error */
   if (status != ARES_SUCCESS)
@@ -70,7 +72,10 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
     !cares_srv_reply_container_at_end(csrv_out);
     csrv_curr = cares_srv_reply_container_get_next(csrv_out))
   {
+    printf("csrv_out curr: %u\n", cares_srv_reply_container_get_curr(csrv_out));
+    printf("csrv_out count: %u\n", cares_srv_reply_container_get_count(csrv_out));
     srv_curr = ares_malloc_data(ARES_DATATYPE_SRV_REPLY);
+    printf("after srv_curr malloc\n");
     if (!srv_curr)
     {
       status = ARES_ENOMEM;
@@ -86,12 +91,14 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
     }
     srv_last = srv_curr;
 
+    printf("csrv_curr host: %p\n", (void *)cares_srv_reply_get_host(csrv_curr));
     /* copy the host to newhost so we can free csrv_out */
     newhost = ares_strdup(cares_srv_reply_get_host(csrv_curr));
     if (!newhost) {
       status = ARES_ENOMEM;
       break;
     }
+    printf("newhost: %p\n", (void *)newhost);
 
     srv_curr->host = newhost;
     srv_curr->priority = cares_srv_reply_get_priority(csrv_curr);
@@ -101,7 +108,9 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
 
   if (csrv_out)
   {
+    printf("before cares_free_container\n");
     cares_free_container(csrv_out);
+    printf("after cares_free_container\n");
   }
 
   /* clean up on error */

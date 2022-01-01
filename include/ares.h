@@ -787,6 +787,9 @@ cares_srv_reply_container_get_curr(const cares_srv_reply_container* container);
 CARES_EXTERN int
 cares_srv_reply_container_at_end(const cares_srv_reply_container* container);
 
+CARES_EXTERN void
+cares_srv_reply_container_reset(cares_srv_reply_container* container);
+
 CARES_EXTERN const char*
 cares_srv_reply_get_host(const cares_srv_reply* srv_reply);
 

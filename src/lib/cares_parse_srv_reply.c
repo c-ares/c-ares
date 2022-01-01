@@ -34,6 +34,7 @@
 #include "ares_data.h"
 #include "ares_private.h"
 #include "cares_free_container.h"
+#include "stdio.h"
 
 int
 cares_parse_srv_reply (const unsigned char *abuf, int alen,
@@ -54,7 +55,9 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;
 
+  printf("before cares_malloc_container\n");
   *srv_out = cares_malloc_container(CARES_CONTAINER_SRV_REPLY_CONTAINER);
+  printf("after cares_malloc_container\n");
   if (*srv_out == NULL)
     return ARES_ENOMEM;
 
@@ -69,9 +72,14 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
     return ARES_EBADRESP;
   if (ancount == 0)
     return ARES_ENODATA;
-
+  
+  printf("before set count\n");
   cares_srv_reply_container_set_count(*srv_out, ancount);
-  *srv_replies = ares_malloc(ancount * sizeof(**srv_replies));
+  printf("after set count\n");
+  printf("before srv_replies malloc, ancount: %d\n", ancount);
+  printf("ancount * sizeof(**srv_replies): %lu\n", ancount * sizeof(**srv_replies));
+  srv_replies = ares_malloc(ancount * sizeof(**srv_replies));
+  printf("after srv_replies malloc\n");
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
@@ -89,6 +97,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* Examine each answer resource record (RR) in turn. */
   for (i = 0; i < ancount; i++)
     {
+      printf("start loop\n");
       count = i;
       /* Decode the RR up to the data field. */
       status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
@@ -144,7 +153,10 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           if (status != ARES_SUCCESS)
             break;
           cares_srv_reply_set_host(srv_curr, srv_host);
+          printf("srv_curr->host: %p; host: %s\n", (void *)srv_curr->host, srv_curr->host);
+          printf("before assign to srv_replies[i]; srv_curr: %p\n", (void *)srv_curr);
           srv_replies[i] = srv_curr;
+          printf("after assign to srv_replies[i]: %p; srv_replies[i]->host: %p\n", (void *)srv_replies[i], (void *)srv_replies[i]->host);
         }
       else if (rr_type != T_CNAME)
         {
