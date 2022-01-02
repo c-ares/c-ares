@@ -55,14 +55,19 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;
 
+  printf("Before cares_parse_srv_reply in ares_parse_srv_reply; csrv_out: %p\n", (void *)csrv_out);
   status = cares_parse_srv_reply(abuf, alen, &csrv_out);
-  printf("After cares_parse_srv_reply in ares_parse_srv_reply\n");
+  printf("After cares_parse_srv_reply in ares_parse_srv_reply; csrv_out: %p\n", (void *)csrv_out);
 
   /* clean up on error */
   if (status != ARES_SUCCESS)
   {
     if (csrv_out)
+    {
+      printf("before cares_free_container in ares_parse\n");
       cares_free_container(csrv_out);
+      printf("after cares_free_container in ares_parse\n");
+    }
     return status;
   }
 
@@ -79,6 +84,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
     if (!srv_curr)
     {
       status = ARES_ENOMEM;
+      printf("ares_parse ENOMEM after srv_curr malloc\n");
       break;
     }
     if (srv_last)
@@ -90,6 +96,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
       srv_head = srv_curr;
     }
     srv_last = srv_curr;
+    printf("before printing csrv_curr host in ares_parse\n");
 
     printf("csrv_curr host: %p\n", (void *)cares_srv_reply_get_host(csrv_curr));
     /* copy the host to newhost so we can free csrv_out */

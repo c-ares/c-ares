@@ -42,8 +42,10 @@
 
 void ares_free_data(void *dataptr)
 {
-  printf("dataptr: %p\n", (void *)dataptr);
-  printf("dataptr->host: %p; host: %s\n", (void *)((cares_srv_reply *)dataptr)->host, ((cares_srv_reply *)dataptr)->host);
+  printf("start ares_free_data\n");
+  if (dataptr) {
+    printf("dataptr is good: %p\n", (void *)dataptr);
+  }
   while (dataptr != NULL) {
     struct ares_data *ptr;
     void *next_data = NULL;
@@ -56,13 +58,20 @@ void ares_free_data(void *dataptr)
 
     ptr = (void *)((char *)dataptr - offsetof(struct ares_data, data));
     printf("ptr in ares_data: %p\n", (void *)ptr);
+    if (ptr) {
+      printf("ptr in ares_data is good\n");
+    }
 
 #ifdef __INTEL_COMPILER
 #  pragma warning(pop)
 #endif
-
-    if (ptr->mark != ARES_DATATYPE_MARK)
+    printf("before ptr mark check\n");
+    if (ptr->mark != ARES_DATATYPE_MARK) {
+      printf("inside ptr mark\n");
       return;
+    }
+
+    printf("after ptr mark check\n");
 
     switch (ptr->type)
       {
@@ -76,15 +85,26 @@ void ares_free_data(void *dataptr)
           break;
 
         case ARES_DATATYPE_SRV_REPLY:
-        case CARES_DATATYPE_SRV_REPLY:
 
+          printf("inside ARES_DATATYPE case in ares_free_data\n");
           if (ptr->data.srv_reply.next)
             next_data = ptr->data.srv_reply.next;
           if (ptr->data.srv_reply.host)
           {
-            printf("before ares_free in ares_data; srv_reply.host: %p, dataptr: %p; host:%s\n", (void *)ptr->data.srv_reply.host, (void *)&ptr->data, ptr->data.csrv_reply.host);
+            printf("before ares_free in ares_data srv\n");
             ares_free(ptr->data.srv_reply.host);
-            printf("after ares_free in ares_data\n");
+            printf("after ares_free in ares_data srv\n");
+          }
+          break;
+
+        case CARES_DATATYPE_SRV_REPLY:
+          
+          printf("inside CARES_DATATYPE case in ares_free_data\n");
+          if (ptr->data.srv_reply.host)
+          {
+            printf("before ares_free in ares_data csrv\n");
+            ares_free(ptr->data.csrv_reply.host);
+            printf("after ares_free in ares_data csrv\n");
           }
           break;
 

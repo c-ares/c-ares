@@ -73,13 +73,14 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   if (ancount == 0)
     return ARES_ENODATA;
   
-  printf("before set count\n");
-  cares_srv_reply_container_set_count(*srv_out, ancount);
-  printf("after set count\n");
   printf("before srv_replies malloc, ancount: %d\n", ancount);
   printf("ancount * sizeof(**srv_replies): %lu\n", ancount * sizeof(**srv_replies));
   srv_replies = ares_malloc(ancount * sizeof(**srv_replies));
   printf("after srv_replies malloc\n");
+  for (i = 0; i < ancount; ++i)
+  {
+    srv_replies[i] = NULL;
+  }
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
@@ -97,7 +98,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* Examine each answer resource record (RR) in turn. */
   for (i = 0; i < ancount; i++)
     {
-      printf("start loop\n");
+      printf("start loop cares_parse_srv_reply\n");
       count = i;
       /* Decode the RR up to the data field. */
       status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
@@ -184,14 +185,24 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
       {
         for(i = 0; i <= count; ++i) {
           if (srv_replies[i])
+          {
+            printf("before ares_free_data srv_replies[i] in cares_parse_srv: %p\n", (void *)srv_replies[i]);
             ares_free_data(srv_replies[i]);
+            printf("after ares_free_data srv_replies[i] in cares_parse_srv\n");
+          }
+
         }
+        printf("before ares_free srv_replies in cares_parse_srv\n");
         ares_free(srv_replies);
+        printf("after ares_free srv_replies in cares_parse_srv\n");
       }
       return status;
     }
 
   /* everything looks fine, return the data */
   (*srv_out)->replies = srv_replies;
+  printf("before set count\n");
+  cares_srv_reply_container_set_count(*srv_out, ancount);
+  printf("after set count\n");
   return ARES_SUCCESS;
 }

@@ -36,9 +36,12 @@ void cares_free_container(void *containerptr)
     if (ptr->mark != ARES_DATATYPE_MARK)
       return;
 
+    printf("after mark in free container\n");
+
     switch (ptr->type)
     {
       case CARES_CONTAINER_SRV_REPLY_CONTAINER:
+        printf("inside switch 1\n");
         count = ptr->container.srv_container.count;
         break;
     
@@ -46,11 +49,14 @@ void cares_free_container(void *containerptr)
         return;
     }
 
+    printf("before for loop in free container; count: %u\n", count);
     for (unsigned int i = 0; i < count; ++i)
     {
+        printf("outside switch 2\n");
         switch (ptr->type)
         {
           case CARES_CONTAINER_SRV_REPLY_CONTAINER:
+            printf("inside switch 2\n");
             if (ptr->container.srv_container.replies[i])
             {
               printf("before free data; replies[i]: %p\n", (void *)ptr->container.srv_container.replies[i]);
