@@ -20,6 +20,7 @@ export BUILD_TYPE=asan
 export CFLAGS=-fsanitize=address
 export CXXFLAGS=-fsanitize=address
 export LDFLAGS=-fsanitize=address
+autoreconf -fi
 ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug
 make
 ASAN_OPTIONS=detect_leaks=1 test/arestest --gtest_filter='-*.Live*' 
