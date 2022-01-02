@@ -184,6 +184,10 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
         }
         ares_free(srv_replies);
       }
+      if (srv_host)
+      {
+        ares_free(srv_host);
+      }
       return status;
     }
 
