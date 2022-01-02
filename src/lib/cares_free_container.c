@@ -55,8 +55,8 @@ void cares_free_container(void *containerptr)
             if (i == count - 1)
             {
               ares_free(ptr->container.srv_container.replies);
-              break;
             }
+            break;
         
           default:
             break;

@@ -3,7 +3,6 @@
 
 #include <sstream>
 #include <vector>
-#include "stdio.h"
 
 namespace ares {
 namespace test {
@@ -18,7 +17,6 @@ TEST_F(LibraryTest, ParseSrvReplyOK) {
 
   struct ares_srv_reply* srv = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_parse_srv_reply(data.data(), data.size(), &srv));
-  printf("After ares_parse_srv_reply\n");
   ASSERT_NE(nullptr, srv);
 
   EXPECT_EQ("srv.example.com", std::string(srv->host));
