@@ -25,7 +25,7 @@ void cares_free_container(void *containerptr)
     }
 
     struct cares_container *ptr;
-    unsigned int count;
+    unsigned int count = 0;
 
     ptr = (void *)((char *)containerptr - offsetof(struct cares_container, container));
 
@@ -39,7 +39,7 @@ void cares_free_container(void *containerptr)
         break;
     
       default:
-        return;
+        break;
     }
 
     for (unsigned int i = 0; i < count; ++i)
@@ -59,7 +59,7 @@ void cares_free_container(void *containerptr)
             }
         
           default:
-            return;
+            break;
         }
     }
 
