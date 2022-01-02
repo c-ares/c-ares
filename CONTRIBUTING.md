@@ -14,7 +14,7 @@ To improve the chances of the c-ares maintainers responding to your request:
  - Also send an email to the mailing list at `c-ares@lists.haxx.se` describing your change.
  - To follow any associated discussion, please subscribe to the [mailing list](http://lists.haxx.se/listinfo/c-ares).
 
-To build locally with asan, ubsan, and lsan:
+To build locally with asan and lsan:
 ```
 export BUILD_TYPE=asan
 export CFLAGS=-fsanitize=address
@@ -24,4 +24,11 @@ autoreconf -fi
 ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug
 make
 ASAN_OPTIONS=detect_leaks=1 test/arestest --gtest_filter='-*.Live*' 
+```
+
+To build locally with ubsan, same instructions as asan but switch out CFLAGS, CXXFLAGS, and LDFLAGS:
+```
+export CFLAGS=-fsanitize=undefined -fno-sanitize-recover
+export CXXFLAGS=-fsanitize=undefined -fno-sanitize-recover
+export LDFLAGS=CFLAGS=-fsanitize=undefined
 ```
