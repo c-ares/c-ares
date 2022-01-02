@@ -13,3 +13,13 @@ To improve the chances of the c-ares maintainers responding to your request:
 
  - Also send an email to the mailing list at `c-ares@lists.haxx.se` describing your change.
  - To follow any associated discussion, please subscribe to the [mailing list](http://lists.haxx.se/listinfo/c-ares).
+
+To build locally with asan, ubsan, and lsan:
+```
+export BUILD_TYPE=asan
+export CFLAGS=-fsanitize=address
+export CXXFLAGS=-fsanitize=address
+export LDFLAGS=-fsanitize=address
+./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug
+ASAN_OPTIONS=detect_leaks=1 test/arestest --gtest_filter='-*.Live*' 
+```
