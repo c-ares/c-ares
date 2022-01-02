@@ -34,7 +34,6 @@
 #include "ares_data.h"
 #include "ares_private.h"
 #include "cares_free_container.h"
-#include "stdio.h"
 
 int
 cares_parse_srv_reply (const unsigned char *abuf, int alen,
@@ -80,10 +79,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
     }
   aptr += len + QFIXEDSZ;
 
-  printf("before srv_replies malloc, ancount: %d\n", ancount);
-  printf("ancount * sizeof(**srv_replies): %lu\n", ancount * sizeof(**srv_replies));
   srv_replies = ares_malloc(ancount * sizeof(**srv_replies));
-  printf("after srv_replies malloc\n");
   if (srv_replies == NULL)
   {
     ares_free (hostname);
@@ -98,7 +94,6 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* Examine each answer resource record (RR) in turn. */
   for (i = 0; i < ancount; i++)
     {
-      printf("start loop cares_parse_srv_reply\n");
       /* Decode the RR up to the data field. */
       status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
       if (status != ARES_SUCCESS)
@@ -153,10 +148,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           if (status != ARES_SUCCESS)
             break;
           cares_srv_reply_set_host(srv_curr, srv_host);
-          printf("srv_curr->host: %p; host: %s\n", (void *)srv_curr->host, srv_curr->host);
-          printf("before assign to srv_replies[count]; count: %u; srv_curr: %p\n", count, (void *)srv_curr);
           srv_replies[count] = srv_curr;
-          printf("after assign to srv_replies[count]: %p; srv_replies[count]->host: %p\n", (void *)srv_replies[count], (void *)srv_replies[count]->host);
           count++;
         }
       else if (rr_type != T_CNAME)
@@ -186,29 +178,21 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
         for(i = 0; i < count; ++i) {
           if (srv_replies[i])
           {
-            printf("before ares_free_data srv_replies[i] in cares_parse_srv: %p\n", (void *)srv_replies[i]);
             ares_free_data(srv_replies[i]);
-            printf("after ares_free_data srv_replies[i] in cares_parse_srv\n");
           }
 
         }
-        printf("before ares_free srv_replies in cares_parse_srv\n");
         ares_free(srv_replies);
-        printf("after ares_free srv_replies in cares_parse_srv\n");
       }
       return status;
     }
 
-  printf("before cares_malloc_container\n");
   *srv_out = cares_malloc_container(CARES_CONTAINER_SRV_REPLY_CONTAINER);
-  printf("after cares_malloc_container\n");
   if (*srv_out == NULL)
     return ARES_ENOMEM;
 
   /* everything looks fine, return the data */
   (*srv_out)->replies = srv_replies;
-  printf("before set count\n");
   cares_srv_reply_container_set_count(*srv_out, count);
-  printf("after set count\n");
   return ARES_SUCCESS;
 }
