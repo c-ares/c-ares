@@ -59,9 +59,9 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* clean up on error */
   if (status != ARES_SUCCESS)
   {
-    if (csrv_out)
+    if (*csrv_out)
     {
-      cares_free_container(csrv_out);
+      cares_free_container(*csrv_out);
     }
     return status;
   }
@@ -101,9 +101,9 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
     srv_curr->port = cares_srv_reply_get_port(csrv_curr);
   }
 
-  if (csrv_out)
+  if (*csrv_out)
   {
-    cares_free_container(csrv_out);
+    cares_free_container(*csrv_out);
   }
 
   /* clean up on error */
