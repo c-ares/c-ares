@@ -40,7 +40,7 @@ int
 cares_parse_srv_reply (const unsigned char *abuf, int alen,
                           cares_srv_reply_container **srv_out)
 {
-  unsigned int qdcount, ancount, i, count;
+  unsigned int qdcount, ancount, i, count = 0;
   const unsigned char *aptr, *vptr;
   int status, rr_type, rr_class, rr_len;
   unsigned int rr_ttl;
@@ -55,12 +55,6 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;
 
-  printf("before cares_malloc_container\n");
-  *srv_out = cares_malloc_container(CARES_CONTAINER_SRV_REPLY_CONTAINER);
-  printf("after cares_malloc_container\n");
-  if (*srv_out == NULL)
-    return ARES_ENOMEM;
-
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
     return ARES_EBADRESP;
@@ -72,15 +66,6 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
     return ARES_EBADRESP;
   if (ancount == 0)
     return ARES_ENODATA;
-  
-  printf("before srv_replies malloc, ancount: %d\n", ancount);
-  printf("ancount * sizeof(**srv_replies): %lu\n", ancount * sizeof(**srv_replies));
-  srv_replies = ares_malloc(ancount * sizeof(**srv_replies));
-  printf("after srv_replies malloc\n");
-  for (i = 0; i < ancount; ++i)
-  {
-    srv_replies[i] = NULL;
-  }
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
@@ -95,11 +80,25 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
     }
   aptr += len + QFIXEDSZ;
 
+  printf("before srv_replies malloc, ancount: %d\n", ancount);
+  printf("ancount * sizeof(**srv_replies): %lu\n", ancount * sizeof(**srv_replies));
+  srv_replies = ares_malloc(ancount * sizeof(**srv_replies));
+  printf("after srv_replies malloc\n");
+  if (srv_replies == NULL)
+  {
+    ares_free (hostname);
+    return ARES_ENOMEM;
+  }
+  
+  for (i = 0; i < ancount; ++i)
+  {
+    srv_replies[i] = NULL;
+  }
+
   /* Examine each answer resource record (RR) in turn. */
   for (i = 0; i < ancount; i++)
     {
       printf("start loop cares_parse_srv_reply\n");
-      count = i;
       /* Decode the RR up to the data field. */
       status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
       if (status != ARES_SUCCESS)
@@ -155,9 +154,10 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
             break;
           cares_srv_reply_set_host(srv_curr, srv_host);
           printf("srv_curr->host: %p; host: %s\n", (void *)srv_curr->host, srv_curr->host);
-          printf("before assign to srv_replies[i]; srv_curr: %p\n", (void *)srv_curr);
-          srv_replies[i] = srv_curr;
-          printf("after assign to srv_replies[i]: %p; srv_replies[i]->host: %p\n", (void *)srv_replies[i], (void *)srv_replies[i]->host);
+          printf("before assign to srv_replies[count]; count: %u; srv_curr: %p\n", count, (void *)srv_curr);
+          srv_replies[count] = srv_curr;
+          printf("after assign to srv_replies[count]: %p; srv_replies[count]->host: %p\n", (void *)srv_replies[count], (void *)srv_replies[count]->host);
+          count++;
         }
       else if (rr_type != T_CNAME)
         {
@@ -183,7 +183,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
     {
       if (srv_replies)
       {
-        for(i = 0; i <= count; ++i) {
+        for(i = 0; i < count; ++i) {
           if (srv_replies[i])
           {
             printf("before ares_free_data srv_replies[i] in cares_parse_srv: %p\n", (void *)srv_replies[i]);
@@ -199,10 +199,16 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
       return status;
     }
 
+  printf("before cares_malloc_container\n");
+  *srv_out = cares_malloc_container(CARES_CONTAINER_SRV_REPLY_CONTAINER);
+  printf("after cares_malloc_container\n");
+  if (*srv_out == NULL)
+    return ARES_ENOMEM;
+
   /* everything looks fine, return the data */
   (*srv_out)->replies = srv_replies;
   printf("before set count\n");
-  cares_srv_reply_container_set_count(*srv_out, ancount);
+  cares_srv_reply_container_set_count(*srv_out, count);
   printf("after set count\n");
   return ARES_SUCCESS;
 }
