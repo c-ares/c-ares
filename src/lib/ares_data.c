@@ -22,7 +22,6 @@
 #include "ares.h"
 #include "ares_data.h"
 #include "ares_private.h"
-#include "stdio.h"
 
 /*
 ** ares_free_data() - c-ares external API function.
@@ -80,7 +79,6 @@ void ares_free_data(void *dataptr)
             next_data = ptr->data.srv_reply.next;
           if (ptr->data.srv_reply.host)
           {
-	    printf("free host srv\n");
             ares_free(ptr->data.srv_reply.host);
           }
           break;
@@ -89,7 +87,6 @@ void ares_free_data(void *dataptr)
           
           if (ptr->data.srv_reply.host)
           {
-	    printf("free host csrv\n");
             ares_free(ptr->data.csrv_reply.host);
           }
           break;

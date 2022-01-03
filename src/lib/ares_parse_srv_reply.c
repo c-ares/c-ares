@@ -34,7 +34,6 @@
 #include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
-#include "stdio.h"
 
 int
 ares_parse_srv_reply (const unsigned char *abuf, int alen,
@@ -56,7 +55,6 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
   *srv_out = NULL;
 
   status = cares_parse_srv_reply(abuf, alen, &csrv_out);
-  printf("status after cares_parse_srv_reply: %d\n", status);
 
   /* clean up on error */
   if (status != ARES_SUCCESS)
@@ -105,14 +103,12 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
 
   if (csrv_out)
   {
-    printf("free container in ares_parse\n");
     cares_free_container(csrv_out);
   }
 
   /* clean up on error */
   if (status != ARES_SUCCESS)
   {
-    printf("free srv_head in ares_parse\n");
     if (srv_head)
       ares_free_data (srv_head);
     return status;
