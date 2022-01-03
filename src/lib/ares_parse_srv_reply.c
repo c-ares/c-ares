@@ -105,12 +105,14 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
 
   if (csrv_out)
   {
+    printf("free container in ares_parse\n");
     cares_free_container(csrv_out);
   }
 
   /* clean up on error */
   if (status != ARES_SUCCESS)
   {
+    printf("free srv_head in ares_parse\n");
     if (srv_head)
       ares_free_data (srv_head);
     return status;

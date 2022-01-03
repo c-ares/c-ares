@@ -56,25 +56,42 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
+  {
+    printf("alen return\n");
     return ARES_EBADRESP;
+  }
 
   /* Fetch the question and answer count from the header. */
   qdcount = DNS_HEADER_QDCOUNT (abuf);
   ancount = DNS_HEADER_ANCOUNT (abuf);
   if (qdcount != 1)
+  {
+    printf("qdcount return\n");
     return ARES_EBADRESP;
+  }
   if (ancount == 0)
+  {
+    printf("ancount return\n");
     return ARES_ENODATA;
+  }
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
   status = ares_expand_name (aptr, abuf, alen, &hostname, &len);
   if (status != ARES_SUCCESS)
+  {
+    if (hostname)
+    {
+      ares_free(hostname);
+    }
+    printf("expand_name return\n");
     return status;
+  }
 
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
       ares_free (hostname);
+      printf("aptr + len + QFIXED return\n");
       return ARES_EBADRESP;
     }
   aptr += len + QFIXEDSZ;
@@ -83,6 +100,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   if (srv_replies == NULL)
   {
     ares_free (hostname);
+    printf("srv_replies null return\n");
     return ARES_ENOMEM;
   }
   
@@ -90,6 +108,8 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   {
     srv_replies[i] = NULL;
   }
+
+  printf("ancount: %u\n", ancount);
 
   /* Examine each answer resource record (RR) in turn. */
   for (i = 0; i < ancount; i++)
@@ -120,6 +140,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
       /* Check if we are really looking at a SRV record */
       if (rr_class == C_IN && rr_type == T_SRV)
         {
+          printf("rr is srv\n");
           /* parse the SRV record itself */
           if (rr_len < 6)
             {
@@ -147,6 +168,7 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
           status = ares_expand_name (vptr, abuf, alen, &srv_host, &len);
           if (status != ARES_SUCCESS)
             break;
+	  printf("expand name succeeded; srv_host: %p\n", (void *)srv_host);
           cares_srv_reply_set_host(srv_curr, srv_host);
           srv_replies[count] = srv_curr;
           count++;
@@ -170,9 +192,17 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
   if (rr_name)
     ares_free (rr_name);
 
+  *srv_out = cares_malloc_container(CARES_CONTAINER_SRV_REPLY_CONTAINER);
+  if (*srv_out == NULL)
+    status = ARES_ENOMEM;
+
+  if (count == 0 && status == ARES_SUCCESS)
+    status = ARES_ENODATA;
+
   /* clean up on error */
   if (status != ARES_SUCCESS)
     {
+      printf("status not success in cares_parse_srv\n");
       if (srv_replies)
       {
         for(i = 0; i < count; ++i) {
@@ -188,15 +218,13 @@ cares_parse_srv_reply (const unsigned char *abuf, int alen,
       {
         ares_free(srv_host);
       }
+      printf("should have been freed return\n");
       return status;
     }
-
-  *srv_out = cares_malloc_container(CARES_CONTAINER_SRV_REPLY_CONTAINER);
-  if (*srv_out == NULL)
-    return ARES_ENOMEM;
 
   /* everything looks fine, return the data */
   (*srv_out)->replies = srv_replies;
   cares_srv_reply_container_set_count(*srv_out, count);
+  printf("should have been success return\n");
   return ARES_SUCCESS;
 }

@@ -49,11 +49,13 @@ void cares_free_container(void *containerptr)
           case CARES_CONTAINER_SRV_REPLY_CONTAINER:
             if (ptr->container.srv_container.replies[i])
             {
+	      printf("before ares_free_data in free container; count: %u\n", count);
               ares_free_data(ptr->container.srv_container.replies[i]);
             }
 
             if (i == count - 1)
             {
+	      printf("before free replies in free container\n");
               ares_free(ptr->container.srv_container.replies);
             }
             break;
