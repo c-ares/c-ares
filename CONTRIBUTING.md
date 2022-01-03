@@ -24,6 +24,7 @@ autoreconf -fi
 ./configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug
 make
 ASAN_OPTIONS=detect_leaks=1 test/arestest --gtest_filter='-*.Live*' 
+for file in $(ls test/fuzzinput); do echo "$file"; test/aresfuzz "test/fuzzinput/$file"; done
 ```
 
 To build locally with ubsan, same instructions as asan but switch out CFLAGS, CXXFLAGS, and LDFLAGS:
