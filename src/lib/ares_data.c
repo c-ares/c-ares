@@ -85,7 +85,7 @@ void ares_free_data(void *dataptr)
 
         case CARES_DATATYPE_SRV_REPLY:
           
-          if (ptr->data.srv_reply.host)
+          if (ptr->data.csrv_reply.host)
           {
             ares_free(ptr->data.csrv_reply.host);
           }
