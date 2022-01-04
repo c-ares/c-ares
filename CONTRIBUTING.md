@@ -40,5 +40,5 @@ To build locally with lsan, same instructions as asan but switch out BUILD_TYPE,
 export BUILD_TYPE=lsan
 export CFLAGS=-fsanitize=leak
 export CXXFLAGS=-fsanitize=leak
-export LDFLAGS=CFLAGS=-fsanitize=leak
+export LDFLAGS=-fsanitize=leak
 ```
