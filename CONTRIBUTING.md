@@ -14,7 +14,7 @@ To improve the chances of the c-ares maintainers responding to your request:
  - Also send an email to the mailing list at `c-ares@lists.haxx.se` describing your change.
  - To follow any associated discussion, please subscribe to the [mailing list](http://lists.haxx.se/listinfo/c-ares).
 
-To build locally with asan and lsan:
+To build locally with asan:
 ```
 export BUILD_TYPE=asan
 export CFLAGS=-fsanitize=address
@@ -27,9 +27,18 @@ ASAN_OPTIONS=detect_leaks=1 test/arestest --gtest_filter='-*.Live*'
 for file in $(ls test/fuzzinput); do echo "$file"; test/aresfuzz "test/fuzzinput/$file"; done
 ```
 
-To build locally with ubsan, same instructions as asan but switch out CFLAGS, CXXFLAGS, and LDFLAGS:
+To build locally with ubsan, same instructions as asan but switch out BUILD_TYPE, CFLAGS, CXXFLAGS, and LDFLAGS:
 ```
+export BUILD_TYPE=ubsan
 export CFLAGS=-fsanitize=undefined -fno-sanitize-recover
 export CXXFLAGS=-fsanitize=undefined -fno-sanitize-recover
 export LDFLAGS=CFLAGS=-fsanitize=undefined
+```
+
+To build locally with lsan, same instructions as asan but switch out BUILD_TYPE, CFLAGS, CXXFLAGS, and LDFLAGS:
+```
+export BUILD_TYPE=lsan
+export CFLAGS=-fsanitize=leak
+export CXXFLAGS=-fsanitize=leak
+export LDFLAGS=CFLAGS=-fsanitize=leak
 ```
