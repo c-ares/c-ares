@@ -479,8 +479,10 @@ static int file_lookup(struct host_query *hquery)
 
   /* RFC6761 section 6.3 #3 states that "Name resolution APIs and libraries
    * SHOULD recognize localhost names as special and SHOULD always return the
-   * IP loopback address for address queries" */
-  if (status == ARES_ENOTFOUND && strcmp(hquery->name, "localhost") == 0)
+   * IP loopback address for address queries".
+   * We will also ignore ALL errors when trying to resolve localhost, such
+   * as permissions errors reading /etc/hosts or a malformed /etc/hosts */
+  if (status != ARES_SUCCESS && strcmp(hquery->name, "localhost") == 0)
     {
       return ares__addrinfo_localhost(hquery->name, hquery->port,
                                       &hquery->hints, hquery->ai);
