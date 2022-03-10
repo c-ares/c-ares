@@ -493,7 +493,7 @@ dnl Back to "normal" configuring
 dnl **********************************************************************
 
 dnl Checks for header files.
-STDC_HEADERS
+AC_HEADER_STDC
 
 AC_PROG_EGREP
 
