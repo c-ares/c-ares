@@ -550,7 +550,16 @@ static void host_callback(void *arg, int status, int timeouts,
       if (addinfostatus != ARES_SUCCESS && addinfostatus != ARES_ENODATA)
         {
           /* error in parsing result e.g. no memory */
-          end_hquery(hquery, addinfostatus);
+          if (addinfostatus == ARES_EBADRESP && hquery->ai->nodes)
+            {
+              /* We got a bad response from server, but at least one query
+               * ended with ARES_SUCCESS */
+              end_hquery(hquery, ARES_SUCCESS);
+            }
+          else
+            {
+              end_hquery(hquery, addinfostatus);
+            }
         }
       else if (hquery->ai->nodes)
         {
