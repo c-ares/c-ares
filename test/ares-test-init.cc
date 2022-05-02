@@ -88,6 +88,8 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   optmask |= ARES_OPT_ROTATE;
   opts.resolvconf_path = strdup("/etc/resolv.conf");
   optmask |= ARES_OPT_RESOLVCONF;
+  opts.hosts_path = strdup("/etc/hosts");
+  optmask |= ARES_OPT_HOSTS_FILE;
 
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
@@ -115,6 +117,7 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   EXPECT_EQ(std::string(opts.domains[1]), std::string(opts2.domains[1]));
   EXPECT_EQ(std::string(opts.lookups), std::string(opts2.lookups));
   EXPECT_EQ(std::string(opts.resolvconf_path), std::string(opts2.resolvconf_path));
+  EXPECT_EQ(std::string(opts.hosts_path), std::string(opts2.hosts_path));
 
   ares_destroy_options(&opts);
   ares_destroy_options(&opts2);
@@ -174,6 +177,8 @@ TEST_F(LibraryTest, OptionsChannelAllocFail) {
   optmask |= ARES_OPT_ROTATE;
   opts.resolvconf_path = strdup("/etc/resolv.conf");
   optmask |= ARES_OPT_RESOLVCONF;
+  opts.hosts_path = strdup("/etc/hosts");
+  optmask |= ARES_OPT_HOSTS_FILE;
 
   ares_channel channel = nullptr;
   for (int ii = 1; ii <= 8; ii++) {
@@ -424,6 +429,32 @@ CONTAINED_TEST_F(LibraryTest, ContainerMyResolvConfInit,
   EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel, &options, &optmask));
   EXPECT_EQ(ARES_OPT_RESOLVCONF, (optmask & ARES_OPT_RESOLVCONF));
   EXPECT_EQ(std::string(filename), std::string(options.resolvconf_path));
+
+  ares_destroy_options(&options);
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+// Allow hosts path to be configurable
+NameContentList myhosts = {
+  {"/tmp/hosts", "10.0.12.26     foobar\n"
+                 "2001:A0:C::1A  foobar\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerMyHostsInit,
+                 "myhostname", "mydomain.org", myhosts) {
+  char filename[] = "/tmp/hosts";
+  ares_channel channel = nullptr;
+  struct ares_options options = {0};
+  options.hosts_path = strdup(filename);
+  int optmask = ARES_OPT_HOSTS_FILE;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &options, optmask));
+
+  optmask = 0;
+  free(options.hosts_path);
+  options.hosts_path = NULL;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel, &options, &optmask));
+  EXPECT_EQ(ARES_OPT_HOSTS_FILE, (optmask & ARES_OPT_HOSTS_FILE));
+  EXPECT_EQ(std::string(filename), std::string(options.hosts_path));
 
   ares_destroy_options(&options);
   ares_destroy(channel);

@@ -41,6 +41,7 @@ struct ares_options {
   int nsort;
   int ednspsz;
   char *resolvconf_path;
+  char *hosts_path;
 };
 
 int ares_init_options(ares_channel *\fIchannelptr\fP,
@@ -194,6 +195,16 @@ The path to use for reading the resolv.conf file. The
 should be set to a path string, and will be honoured on *nix like systems. The
 default is
 .B /etc/resolv.conf
+.br
+.TP 18
+.B ARES_OPT_HOSTS_FILE
+.B char *\fIhosts_path\fP;
+.br
+The path to use for reading the hosts file. The
+.I hosts_path
+should be set to a path string, and will be honoured on *nix like systems. The
+default is
+.B /etc/hosts
 .br
 .PP
 The \fIoptmask\fP parameter also includes options without a corresponding
