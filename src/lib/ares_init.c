@@ -164,6 +164,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->sock_funcs = NULL;
   channel->sock_func_cb_data = NULL;
   channel->resolvconf_path = NULL;
+  channel->hosts_path = NULL;
 
   channel->last_server = 0;
   channel->last_timeout_processed = (time_t)now.tv_sec;
@@ -239,6 +240,8 @@ done:
         ares_free(channel->lookups);
       if(channel->resolvconf_path)
         ares_free(channel->resolvconf_path);
+      if(channel->hosts_path)
+        ares_free(channel->hosts_path);
       ares_free(channel);
       return status;
     }
@@ -350,6 +353,9 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   if (channel->resolvconf_path)
     (*optmask) |= ARES_OPT_RESOLVCONF;
 
+  if (channel->hosts_path)
+    (*optmask) |= ARES_OPT_HOSTS_FILE;
+
   /* Copy easy stuff */
   options->flags   = channel->flags;
 
@@ -426,6 +432,13 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   if (channel->resolvconf_path) {
     options->resolvconf_path = ares_strdup(channel->resolvconf_path);
     if (!options->resolvconf_path)
+      return ARES_ENOMEM;
+  }
+
+  /* copy path for hosts file */
+  if (channel->hosts_path) {
+    options->hosts_path = ares_strdup(channel->hosts_path);
+    if (!options->hosts_path)
       return ARES_ENOMEM;
   }
 
@@ -542,6 +555,14 @@ static int init_by_options(ares_channel channel,
     {
       channel->resolvconf_path = ares_strdup(options->resolvconf_path);
       if (!channel->resolvconf_path && options->resolvconf_path)
+        return ARES_ENOMEM;
+    }
+
+  /* Set path for hosts file, if given. */
+  if ((optmask & ARES_OPT_HOSTS_FILE) && !channel->hosts_path)
+    {
+      channel->hosts_path = ares_strdup(options->hosts_path);
+      if (!channel->hosts_path && options->hosts_path)
         return ARES_ENOMEM;
     }
 
@@ -1660,6 +1681,11 @@ static int init_by_defaults(ares_channel channel)
     if(channel->resolvconf_path) {
       ares_free(channel->resolvconf_path);
       channel->resolvconf_path = NULL;
+    }
+
+    if(channel->hosts_path) {
+      ares_free(channel->hosts_path);
+      channel->hosts_path = NULL;
     }
   }
 

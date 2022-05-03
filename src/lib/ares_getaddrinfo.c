@@ -416,6 +416,11 @@ static int file_lookup(struct host_query *hquery)
       path_hosts = getenv("CARES_HOSTS");
     }
 
+  if (hquery->channel->hosts_path)
+    {
+      path_hosts = hquery->channel->hosts_path;
+    }
+
   if (!path_hosts)
     {
 #ifdef WIN32
