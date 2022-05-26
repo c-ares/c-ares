@@ -1347,8 +1347,12 @@ static int init_by_resolv_conf(ares_channel channel)
       channel->tries = res.retry;
     if (channel->rotate == -1)
       channel->rotate = res.options & RES_ROTATE;
-    if (channel->timeout == -1)
+    if (channel->timeout == -1) {
       channel->timeout = res.retrans * 1000;
+#ifdef __APPLE__
+      channel->timeout /= (res.retry + 1) * (res.nscount > 0 ? res.nscount : 1);
+#endif
+    }
 
     res_ndestroy(&res);
   }
