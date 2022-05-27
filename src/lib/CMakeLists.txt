@@ -3,17 +3,17 @@
 transform_makefile_inc("Makefile.inc" "${PROJECT_BINARY_DIR}/src/lib/Makefile.inc.cmake")
 include(${PROJECT_BINARY_DIR}/src/lib/Makefile.inc.cmake)
 
-# Include resource file in windows builds for versioned DLLs
-IF (WIN32)
-	LIST (APPEND CSOURCES cares.rc)
-ENDIF()
-
 # Write ares_config.h configuration file.  This is used only for the build.
 CONFIGURE_FILE (ares_config.h.cmake ${PROJECT_BINARY_DIR}/ares_config.h)
 
 # Build the dynamic/shared library
 IF (CARES_SHARED)
 	ADD_LIBRARY (${PROJECT_NAME} SHARED ${CSOURCES})
+
+	# Include resource file in windows builds for versioned DLLs
+	IF (WIN32)
+		TARGET_SOURCES (${PROJECT_NAME} PRIVATE cares.rc)
+	ENDIF()
 
 	# Convert CARES_LIB_VERSIONINFO libtool version format into VERSION and SOVERSION
 	# Convert from ":" separated into CMake list format using ";"
