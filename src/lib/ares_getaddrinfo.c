@@ -326,7 +326,7 @@ static int fake_addrinfo(const char *name,
         }
     }
 
-  if (family == AF_INET6 || family == AF_UNSPEC)
+  if (!result && (family == AF_INET6 || family == AF_UNSPEC))
     {
       struct ares_in6_addr addr6;
       result = ares_inet_pton(AF_INET6, name, &addr6) < 1 ? 0 : 1;
