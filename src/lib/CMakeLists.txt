@@ -82,6 +82,19 @@ IF (CARES_STATIC)
 		SET_TARGET_PROPERTIES (${LIBNAME} PROPERTIES POSITION_INDEPENDENT_CODE True)
 	ENDIF ()
 
+	IF (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+		# This defaults to "qc" but since macOS always runs ranlib right after, we can pass "Sqc" and avoid
+		# the step of generating a symbol table. ranlib will do it for us.
+		set(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> Sqc <TARGET> <LINK_FLAGS> <OBJECTS>")
+		set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> Sqc <TARGET> <LINK_FLAGS> <OBJECTS>")
+
+		# -no_warning_for_no_symbols is a special flag in the macOS version of ranlib that stops it from
+		# printing a warning about object files that don't contain any symbols. This warning is printed for
+		# android/windows/etc files when building on macOS.
+		set(CMAKE_C_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+		set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+	endif()
+
 	TARGET_INCLUDE_DIRECTORIES (${LIBNAME}
 		PUBLIC "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
 		       "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
@@ -114,7 +127,3 @@ IF (CARES_STATIC)
 		ADD_LIBRARY (${PROJECT_NAME}::cares ALIAS ${LIBNAME})
 	ENDIF ()
 ENDIF ()
-
-
-
-
