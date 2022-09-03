@@ -643,10 +643,10 @@ static void find_country_from_cname(const char *cname, struct in_addr addr)
 
 /* Information from the man page. Formatting taken from man -h */
 static void print_help_info_acountry(void) {
-    printf("acountry, version %s \n\n", ARES_VERSION_STR);
-    printf("usage: acountry [-hdv] {host|addr} ...\n\n"
-    "  d : Print some extra debugging output.\n"
+    printf("acountry, version %s\n\n", ARES_VERSION_STR);
+    printf("usage: acountry [-hdv] host|addr ...\n\n"
     "  h : Display this help and exit.\n"
+    "  d : Print some extra debugging output.\n"
     "  v : Be more verbose. Print extra information.\n\n");
     exit(0);
 }
