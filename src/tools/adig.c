@@ -296,6 +296,7 @@ int main(int argc, char **argv)
           if (!ISDIGIT(*optarg))
             usage();
           options.tcp_port = (unsigned short)strtol(optarg, NULL, 0);
+          options.flags |= ARES_FLAG_USEVC;
           optmask |= ARES_OPT_TCP_PORT;
           break;
 
