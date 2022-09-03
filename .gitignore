@@ -28,6 +28,7 @@ test-driver
 c-ares-*.tar.gz
 INSTALL
 install-sh
+*.a
 *.o
 *.lo
 *.la
@@ -55,3 +56,12 @@ c-ares-*.tar.gz.asc
 ares_parse_mx_reply.pdf
 /[0-9]*.patch
 build
+bin/
+CMakeFiles/
+CMakeCache.txt
+CPackConfig.cmake
+CPackSourceConfig.cmake
+c-ares-config.cmake
+c-ares-config-version.cmake
+Makefile.inc.cmake
+cmake_install.cmake
