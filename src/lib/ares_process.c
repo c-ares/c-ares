@@ -256,6 +256,8 @@ static void write_tcp_data(ares_channel channel,
               vec[n].iov_base = (char *) sendreq->data;
               vec[n].iov_len = sendreq->len;
               n++;
+              if(n >= __IOV_MAX)
+                break;
             }
           wcount = socket_writev(channel, server->tcp_socket, vec, (int)n);
           ares_free(vec);
