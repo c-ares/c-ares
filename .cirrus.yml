@@ -37,7 +37,7 @@ task:
         MAKE: "gmake"
         BUILD_ANALYZE: "yes"
       freebsd_instance:
-        image_family: freebsd-13-0
+        image_family: freebsd-13-1
     - name: "MacOS"
       env:
         DIST: "MACOS"
