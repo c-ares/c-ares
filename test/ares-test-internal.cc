@@ -74,7 +74,7 @@ TEST_F(LibraryTest, Strsplit) {
   };
   for(size_t i = 0; i < data.inputs.size(); i++) {
     char **out = ares_strsplit(data.inputs.at(i).c_str(),
-                               data.delimiters.at(i).c_str(), 1, &n);
+                               data.delimiters.at(i).c_str(), &n);
     if(data.expected.at(i).size() == 0) {
       EXPECT_EQ(out, nullptr);
     }
