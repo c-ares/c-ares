@@ -1,4 +1,4 @@
-/* Copyright (C) 2018 by John Schember <john@nachtimwald.com>
+/* Copyright (C) 2018 - 2022 by John Schember <john@nachtimwald.com>
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -62,7 +62,7 @@ static int is_delim(char c, const char *delims, size_t num_delims)
 }
 
 
-void ares_strsplit_free(char **elms, size_t num_elm)
+void ares__strsplit_free(char **elms, size_t num_elm)
 {
   size_t i;
 
@@ -75,7 +75,7 @@ void ares_strsplit_free(char **elms, size_t num_elm)
 }
 
 
-char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *num_elm)
+char **ares__strsplit(const char *in, const char *delms, int make_set, size_t *num_elm)
 {
   char *parsestr;
   char **temp;
@@ -152,7 +152,7 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
     out[nelms] = ares_strdup(temp[i]);
     if (out[nelms] == NULL)
     {
-      ares_strsplit_free(out, nelms);
+      ares__strsplit_free(out, nelms);
       ares_free(parsestr);
       ares_free(temp);
       return NULL;
@@ -165,7 +165,7 @@ char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *nu
    * array. */
   if (nelms == 0)
   {
-    ares_strsplit_free(out, nelms);
+    ares__strsplit_free(out, nelms);
     out = NULL;
   }
 

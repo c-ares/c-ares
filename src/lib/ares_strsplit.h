@@ -1,7 +1,8 @@
+
 #ifndef HEADER_CARES_STRSPLIT_H
 #define HEADER_CARES_STRSPLIT_H
 
-/* Copyright (C) 2018 by John Schember <john@nachtimwald.com>
+/* Copyright (C) 2018 - 2022 by John Schember <john@nachtimwald.com>
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -33,10 +34,10 @@
  * returns an allocated array of allocated string elements.
  *
  */
-char **ares_strsplit(const char *in, const char *delms, int make_set, size_t *num_elm);
+char **ares__strsplit(const char *in, const char *delms, int make_set, size_t *num_elm);
 
-/* Frees the result returned from ares_strsplit(). */
-void ares_strsplit_free(char **elms, size_t num_elm);
+/* Frees the result returned from ares__strsplit(). */
+void ares__strsplit_free(char **elms, size_t num_elm);
 
 
 #endif /* HEADER_CARES_STRSPLIT_H */
