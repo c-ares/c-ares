@@ -2000,7 +2000,7 @@ static int set_search(ares_channel channel, const char *str)
     channel->ndomains = -1;
   } /* LCOV_EXCL_STOP */
 
-  channel->domains  = ares__strsplit(str, ", ", 1, &cnt);
+  channel->domains  = ares__strsplit(str, ", ", &cnt);
   channel->ndomains = (int)cnt;
   if (channel->domains == NULL || channel->ndomains == 0) {
     channel->domains  = NULL;
