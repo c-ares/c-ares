@@ -158,12 +158,37 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByNameV6) {
   ares_gethostbyname(channel_, "localhost", AF_INET6, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+
+  EXPECT_EQ(1, (int)result.host_.addrs_.size());
+  EXPECT_EQ(AF_INET6, result.host_.addrtype_);
+  std::stringstream ss;
+  ss << HostEnt(result.host_);
+  EXPECT_NE(std::string::npos, result.host_.name_.find("localhost"));
+
+}
+
+TEST_P(DefaultChannelModeTest, LiveGetNonExistLocalhostByNameV4) {
+  HostResult result;
+  ares_gethostbyname(channel_, "idonotexist.localhost", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ(1, (int)result.host_.addrs_.size());
+  EXPECT_EQ(AF_INET, result.host_.addrtype_);
+  EXPECT_NE(std::string::npos, result.host_.name_.find("idonotexist.localhost"));
+}
+
+TEST_P(DefaultChannelModeTest, LiveGetNonExistLocalhostByNameV6) {
+  HostResult result;
+  ares_gethostbyname(channel_, "idonotexist.localhost", AF_INET6, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
   if (result.status_ != ARES_ECONNREFUSED) {
     EXPECT_EQ(1, (int)result.host_.addrs_.size());
     EXPECT_EQ(AF_INET6, result.host_.addrtype_);
     std::stringstream ss;
     ss << HostEnt(result.host_);
-    EXPECT_NE(std::string::npos, result.host_.name_.find("localhost"));
+    EXPECT_NE(std::string::npos, result.host_.name_.find("idonotexist.localhost"));
   }
 }
 

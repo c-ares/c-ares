@@ -404,6 +404,27 @@ static void end_hquery(struct host_query *hquery, int status)
   ares_free(hquery);
 }
 
+static int is_localhost(const char *name)
+{
+  /* RFC6761 6.3 says : The domain "localhost." and any names falling within ".localhost." */
+  size_t len;
+
+  if (name == NULL)
+    return 0;
+
+  if (strcmp(name, "localhost") == 0)
+    return 1;
+
+  len = strlen(name);
+  if (len < 10 /* strlen(".localhost") */)
+    return 0;
+
+  if (strcmp(name + (len - 10 /* strlen(".localhost") */), ".localhost") == 0)
+    return 1;
+
+  return 0;
+}
+
 static int file_lookup(struct host_query *hquery)
 {
   FILE *fp;
@@ -492,7 +513,7 @@ static int file_lookup(struct host_query *hquery)
    * IP loopback address for address queries".
    * We will also ignore ALL errors when trying to resolve localhost, such
    * as permissions errors reading /etc/hosts or a malformed /etc/hosts */
-  if (status != ARES_SUCCESS && strcmp(hquery->name, "localhost") == 0)
+  if (status != ARES_SUCCESS && is_localhost(hquery->name))
     {
       return ares__addrinfo_localhost(hquery->name, hquery->port,
                                       &hquery->hints, hquery->ai);
@@ -509,7 +530,7 @@ static void next_lookup(struct host_query *hquery, int status)
           /* RFC6761 section 6.3 #3 says "Name resolution APIs SHOULD NOT send
            * queries for localhost names to their configured caching DNS
            * server(s)." */
-          if (strcmp(hquery->name, "localhost") != 0)
+          if (is_localhost(hquery->name))
             {
               /* DNS lookup */
               if (next_dns_lookup(hquery))
