@@ -155,7 +155,7 @@ int main(int argc, char **argv)
   for ( ; *argv; argv++)
     {
       struct in_addr addr;
-      char buf[100];
+      char *buf;
 
       /* If this fails, assume '*argv' is a host-name that
        * must be resolved first
@@ -171,6 +171,7 @@ int main(int argc, char **argv)
             }
         }
 
+      buf = malloc(100);
       sprintf(buf, nerd_fmt,
               (unsigned int)(addr.s_addr >> 24),
               (unsigned int)((addr.s_addr >> 16) & 255),
@@ -232,6 +233,7 @@ static void callback(void *arg, int status, int timeouts, struct hostent *host)
   if (!host || status != ARES_SUCCESS)
     {
       printf("Failed to lookup %s: %s\n", name, ares_strerror(status));
+      free(arg);
       return;
     }
 
@@ -244,6 +246,7 @@ static void callback(void *arg, int status, int timeouts, struct hostent *host)
     printf("Failed to get CNAME for %s\n", name);
   else
     find_country_from_cname(cname, *(CARES_INADDR_CAST(struct in_addr *, host->h_addr)));
+  free(arg);
 }
 
 /*
