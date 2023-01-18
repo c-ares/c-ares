@@ -46,7 +46,7 @@ task:
         BUILD_ASAN: "yes"
         BUILD_ANALYZE: "yes"
       macos_instance:
-        image: big-sur-xcode
+        image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
     - name: "iOS"
       env:
         DIST: "iOS"
