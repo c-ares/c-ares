@@ -19,7 +19,7 @@ extern "C" {
 #include "ares_nowarn.h"
 #include "ares_inet_net_pton.h"
 #include "ares_data.h"
-#include "ares__strsplit.h"
+#include "ares_strsplit.h"
 #include "ares_private.h"
 #include "bitncmp.h"
 

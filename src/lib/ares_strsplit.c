@@ -18,7 +18,7 @@
 #endif
 
 #include "ares_setup.h"
-#include "ares__strsplit.h"
+#include "ares_strsplit.h"
 #include "ares.h"
 #include "ares_private.h"
 

@@ -112,7 +112,7 @@ W32_FUNC const char *_w32_GetHostsFile (void);
 #endif
 
 #include "ares_strdup.h"
-#include "ares__strsplit.h"
+#include "ares_strsplit.h"
 
 #ifndef HAVE_STRCASECMP
 #  include "ares_strcasecmp.h"
