@@ -18,11 +18,11 @@
 #endif
 
 #include "ares_setup.h"
-#include "ares_strsplit.h"
+#include "ares__strsplit.h"
 #include "ares.h"
 #include "ares_private.h"
 
-void ares_strsplit_free(char **elms, size_t num_elm)
+void ares__strsplit_free(char **elms, size_t num_elm)
 {
   size_t i;
 
@@ -34,7 +34,7 @@ void ares_strsplit_free(char **elms, size_t num_elm)
   ares_free(elms);
 }
 
-char **ares_strsplit(const char *in, const char *delms, size_t *num_elm) {
+char **ares__strsplit(const char *in, const char *delms, size_t *num_elm) {
   const char *p;
   char **table;
   void *tmp;
@@ -81,7 +81,7 @@ char **ares_strsplit(const char *in, const char *delms, size_t *num_elm) {
         /* copy unique strings only */
         table[j] = ares_malloc(i + 1);
         if (table[j] == NULL) {
-          ares_strsplit_free(table, j);
+          ares__strsplit_free(table, j);
           return NULL;
         }
         strncpy(table[j], p, i);
