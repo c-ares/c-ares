@@ -530,7 +530,7 @@ static void next_lookup(struct host_query *hquery, int status)
           /* RFC6761 section 6.3 #3 says "Name resolution APIs SHOULD NOT send
            * queries for localhost names to their configured caching DNS
            * server(s)." */
-          if (is_localhost(hquery->name))
+          if (!is_localhost(hquery->name))
             {
               /* DNS lookup */
               if (next_dns_lookup(hquery))
