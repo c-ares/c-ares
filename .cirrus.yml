@@ -55,7 +55,7 @@ task:
         CFLAGS: "-arch armv7 -arch armv7s -arch arm64 -miphoneos-version-min=10.0"
         CONFIG_OPTS: "--host=arm-apple-darwin10 --disable-tests"
       macos_instance:
-        image: big-sur-xcode
+        image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
   matrix:
     - name: "CMAKE"
       env:
