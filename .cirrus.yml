@@ -41,7 +41,7 @@ task:
     - name: "MacOS"
       env:
         DIST: "MACOS"
-        SCAN_BUILD: "/usr/local/opt/llvm/bin/scan-build"
+        SCAN_BUILD: "/opt/homebrew/llvm/bin/scan-build"
         MAKE: "make"
         BUILD_ASAN: "yes"
         BUILD_ANALYZE: "yes"
