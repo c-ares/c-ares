@@ -65,3 +65,4 @@ c-ares-config.cmake
 c-ares-config-version.cmake
 Makefile.inc.cmake
 cmake_install.cmake
+aminclude_static.am

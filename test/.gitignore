@@ -17,3 +17,4 @@ ares-libfuzzer
 ares-libfuzzer-name
 libFuzzer.a
 Fuzzer
+aminclude_static.am
