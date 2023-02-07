@@ -75,7 +75,6 @@ LIB_ARG  = $(OBJ_BASE)\stat\wlib.arg
 
 OBJS = $(CSOURCES:.c=.obj)
 OBJS = $OBJ_DIR\$(OBJS: = $OBJ_DIR\)
-SAMPLEOBJS = $(SAMPLESOURCES:.c=.obj)
 
 #
 # Use $(OBJS) as a template to generate $(OBJS_STAT) and $(OBJS_DYN).
