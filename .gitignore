@@ -5,6 +5,7 @@
 *.dll
 *.exe
 *.obj
+*.map
 .*.swp
 Debug
 Release
