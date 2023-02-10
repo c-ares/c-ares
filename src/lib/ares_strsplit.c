@@ -67,9 +67,10 @@ char **ares__strsplit(const char *in, const char *delms, size_t *num_elm) {
   for (p = in; j < count; p += i + 1) {
     i = strcspn(p, delms);
     if (i != 0) {
-      for (k = 0; k < j; k++)
+      for (k = 0; k < j; k++) {
         if (strncasecmp(table[k], p, i) == 0 && table[k][i] == 0)
           break;
+      }
       if (k == j) {
         /* copy unique strings only */
         table[j] = ares_malloc(i + 1);
