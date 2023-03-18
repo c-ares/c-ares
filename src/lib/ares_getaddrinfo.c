@@ -670,26 +670,32 @@ void ares_getaddrinfo(ares_channel channel,
     {
       if (hints->ai_flags & ARES_AI_NUMERICSERV)
         {
-          port = (unsigned short)strtoul(service, NULL, 0);
-          if (!port)
+          unsigned long val;
+          errno = 0;
+          val = strtoul(service, NULL, 0);
+          if ((val == 0 && errno != 0) || val > 65535)
             {
               ares_free(alias_name);
               callback(arg, ARES_ESERVICE, 0, NULL);
               return;
             }
+          port = (unsigned short)val;
         }
       else
         {
           port = lookup_service(service, 0);
           if (!port)
             {
-              port = (unsigned short)strtoul(service, NULL, 0);
-              if (!port)
+              unsigned long val;
+              errno = 0;
+              val = strtoul(service, NULL, 0);
+              if ((val == 0 && errno != 0) || val > 65535)
                 {
                   ares_free(alias_name);
                   callback(arg, ARES_ESERVICE, 0, NULL);
                   return;
                 }
+              port = (unsigned short)val;
             }
         }
     }
