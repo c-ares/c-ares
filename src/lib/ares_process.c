@@ -983,14 +983,16 @@ static int setsocknonblock(ares_socket_t sockfd,    /* operate on this */
 /* It makes support for IPv4-mapped IPv6 addresses.
  * Linux kernel, NetBSD, FreeBSD and Darwin: default is off;
  * Windows Vista and later: default is on;
- * DragonFly BSD: off and dummy setting;
- * OpenBSD and previous Windows: unsupported.
+ * DragonFly BSD: acts like off, and dummy setting;
+ * OpenBSD and earlier Windows: unsupported.
  * Linux: controlled by /proc/sys/net/ipv6/bindv6only.
  */
 static void set_ipv6_v6only(ares_socket_t sockfd, int on)
 {
   (void)setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&on, sizeof(on));
 }
+#else
+#define set_ipv6_v6only(s,v)
 #endif
 
 static int configure_socket(ares_socket_t s, int family, ares_channel channel)
@@ -1055,9 +1057,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
       if (bind(s, &local.sa, sizeof(local.sa6)) < 0)
         return -1;
     }
-#if defined(IPV6_V6ONLY) && defined(WIN32)
     set_ipv6_v6only(s, 0);
-#endif
   }
 
   return 0;
