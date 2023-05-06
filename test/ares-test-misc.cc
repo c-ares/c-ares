@@ -298,7 +298,7 @@ TEST_F(DefaultChannelTest, SearchOnionDomain) {
 }
 
 TEST_F(DefaultChannelTest, SendFailure) {
-  unsigned char buf[2];
+  unsigned char buf[2] = {};
   SearchResult result;
   ares_send(channel_, buf, sizeof(buf), SearchCallback, &result);
   EXPECT_TRUE(result.done_);
