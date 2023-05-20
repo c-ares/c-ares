@@ -1,9 +1,9 @@
 AC_PREREQ([2.60])
 
-AC_INIT([c-ares], [1.19.0],
+AC_INIT([c-ares], [1.19.1],
   [c-ares mailing list: http://lists.haxx.se/listinfo/c-ares])
 
-CARES_VERSION_INFO="8:0:6"
+CARES_VERSION_INFO="8:1:6"
 dnl This flag accepts an argument of the form current[:revision[:age]]. So,
 dnl passing -version-info 3:12:1 sets current to 3, revision to 12, and age to
 dnl 1.
