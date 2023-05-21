@@ -62,6 +62,9 @@
 /* Define if you have the <winsock.h> header file. */
 #define HAVE_WINSOCK_H 1
 
+/* Define if you have the <windns.h> header file. */
+#define HAVE_WINDNS_H 1
+
 /* Define if you have the <winsock2.h> header file. */
 #ifndef __SALFORDC__
 #define HAVE_WINSOCK2_H 1
@@ -181,6 +184,13 @@
 
 /* Define to the function return type for send. */
 #define SEND_TYPE_RETV int
+
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0602
+/* Doesn't look like MinGW yet supports DnsQueryEx (as of 2021-10-21) */
+#  if !defined(__MINGW64__) && !defined(__MINGW32__)
+#    define HAVE_DNSQUERYEX 1
+#  endif
+#endif
 
 /* Specifics for the Watt-32 tcp/ip stack. */
 #ifdef WATT32

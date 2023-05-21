@@ -57,6 +57,18 @@
 #  include "ares_platform.h"
 #endif
 
+#if defined(HAVE_WINDNS_H) && defined(HAVE_DNSQUERYEX) && _WIN32_WINNT >= 0x0602
+#  include <windns.h>
+#  define CARES_ENABLE_WINS_LOOKUPS
+
+struct wins_query {
+  int is_running;
+  DNS_QUERY_RESULT result;
+  DNS_QUERY_CANCEL cancelctx;
+  HANDLE           complete_event;
+};
+#endif
+
 struct host_query
 {
   ares_channel channel;
@@ -73,6 +85,10 @@ struct host_query
   int remaining;   /* number of DNS answers waiting for */
   int next_domain; /* next search domain to try */
   int nodata_cnt; /* Track nodata responses to possibly override final result */
+
+#ifdef CARES_ENABLE_WINS_LOOKUPS
+  struct wins_query *wins;
+#endif
 };
 
 static const struct ares_addrinfo_hints default_hints = {
@@ -112,6 +128,8 @@ static void host_callback(void *arg, int status, int timeouts,
 static int as_is_first(const struct host_query *hquery);
 static int as_is_only(const struct host_query* hquery);
 static int next_dns_lookup(struct host_query *hquery);
+static void next_lookup(struct host_query *hquery, int status);
+static void end_hquery(struct host_query *hquery, int status);
 
 struct ares_addrinfo_cname *ares__malloc_addrinfo_cname()
 {
@@ -218,6 +236,194 @@ void ares__addrinfo_cat_nodes(struct ares_addrinfo_node **head,
 
   last->ai_next = tail;
 }
+
+
+#ifdef CARES_ENABLE_WINS_LOOKUPS
+
+static void wins_cleanup(struct host_query *hquery)
+{
+  if (!hquery->wins)
+    return;
+
+  /* Should really only happen on an ares_destroy() */
+  if (hquery->wins->is_running == 1)
+    {
+      /* Cancel here */
+      DnsCancelQuery(&hquery->wins->cancelctx);
+
+      /* Wait until cancel comes through */
+      while (WaitForSingleObjectEx(hquery->wins->complete_event, INFINITE, TRUE)
+             != WAIT_OBJECT_0)
+        ;
+    }
+
+  if (hquery->wins->result.pQueryRecords)
+    {
+      DnsRecordListFree(hquery->wins->result.pQueryRecords, DnsFreeRecordList);
+    }
+
+
+  if (hquery->wins->complete_event)
+    CloseHandle(hquery->wins->complete_event);
+
+  ares_free(hquery->wins);
+  hquery->wins = NULL;
+}
+
+static void WINAPI wins_callback(PVOID pQueryContext, PDNS_QUERY_RESULT pQueryResults)
+{
+  struct host_query *hquery = pQueryContext;
+  DNS_RECORD *record = NULL;
+  int status = ARES_SUCCESS;
+  struct ares_addrinfo_node *nodes = NULL;
+
+  /* Cancel called as there are no docs on what QueryStatus are set for
+   * DnsCancelQuery(), so we track state ourselves */
+  if (hquery->wins->is_running == -1) {
+    hquery->wins->is_running = 0;
+    status = ARES_EDESTRUCTION;
+    goto fail;
+  }
+  hquery->channel->nondns_query_cnt--;
+  hquery->wins->is_running = 0;
+  SetEvent(hquery->wins->complete_event);
+
+  switch (hquery->wins->result.QueryStatus)
+    {
+      case ERROR_SUCCESS:
+        status = ARES_SUCCESS;
+        break;
+      case DNS_INFO_NO_RECORDS:
+      case DNS_RCODE_NXDOMAIN:
+      case ERROR_TIMEOUT: /* Multicast will timeout, treat as not found */
+        status = ARES_ENOTFOUND;
+        break;
+      default:
+        status = ARES_ESERVFAIL;
+        break;
+    }
+
+  if (status != ARES_SUCCESS)
+    goto fail;
+
+  for (record = hquery->wins->result.pQueryRecords; record != NULL; record = record->pNext)
+    {
+      void *aptr;
+      switch (record->wType)
+        {
+          case DNS_TYPE_A:
+            aptr = &record->Data.A.IpAddress;
+            status = ares_append_ai_node(AF_INET, hquery->port, 0, aptr,
+                                         &nodes);
+            break;
+          case DNS_TYPE_AAAA:
+            aptr = &record->Data.AAAA.Ip6Address;
+            status = ares_append_ai_node(AF_INET6, hquery->port, 0, aptr,
+                                         &nodes);
+            break;
+        }
+        if (status != ARES_SUCCESS)
+          goto fail;
+    }
+
+  if (nodes == NULL) {
+    status = ARES_ENOTFOUND;
+    goto fail;
+  }
+
+  /* Save results */
+  ares__addrinfo_cat_nodes(&hquery->ai->nodes, nodes);
+  nodes = NULL;
+
+fail:
+  /* Clean up most of what we can, though the actual wins pointer and event
+   * must stay and will be cleaned up later */
+  if (hquery->wins->result.pQueryRecords)
+    DnsRecordListFree(hquery->wins->result.pQueryRecords, DnsFreeRecordList);
+  hquery->wins->result.pQueryRecords = NULL;
+  ares__freeaddrinfo_nodes(nodes);
+  switch (status)
+    {
+      case ARES_EDESTRUCTION:
+        /* Do Nothing, this is a cancellation */
+        break;
+      case ARES_ENOTFOUND:
+        next_lookup(hquery, status);
+        break;
+      default:
+        end_hquery(hquery, status);
+        break;
+    }
+}
+
+static int wins_lookup(struct host_query *hquery)
+{
+  DNS_QUERY_REQUEST request;
+  DNS_STATUS result;
+  int   size;
+  WCHAR *wname = NULL;
+
+  /* Shouldn't be possible */
+  if (hquery->wins)
+    wins_cleanup(hquery);
+
+  memset(&request, 0, sizeof(request));
+
+  hquery->wins = ares_malloc(sizeof(*(hquery->wins)));
+  if (hquery->wins == NULL)
+    return ARES_ENOMEM;
+
+  memset(hquery->wins, 0, sizeof(*(hquery->wins)));
+
+  hquery->wins->complete_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+  if (hquery->wins->complete_event == NULL)
+    return ARES_ENOMEM;
+
+  hquery->wins->result.Version = DNS_QUERY_RESULTS_VERSION1;
+
+  request.Version = DNS_QUERY_REQUEST_VERSION1;
+
+  /* QueryName is a PCWSTR, convert */
+  size = MultiByteToWideChar(CP_ACP, 0, hquery->name, -1, NULL, 0);
+  wname = ares_malloc(size * sizeof(*wname));
+  if (wname == NULL)
+    return ARES_ENOMEM;
+  MultiByteToWideChar(CP_ACP, 0, hquery->name, -1, (LPWSTR)wname, size);
+
+  request.QueryName = wname;
+  request.QueryOptions = DNS_QUERY_MULTICAST_ONLY /* | DNS_QUERY_FALLBACK_NETBIOS */;
+  switch (hquery->hints.ai_family)
+    {
+      case AF_INET:
+        request.QueryType = DNS_TYPE_A;
+        break;
+      case AF_INET6:
+        request.QueryType = DNS_TYPE_AAAA;
+        break;
+      case AF_UNSPEC:
+        /* IPv4 records will get mapped to IPv6, must unmap */
+        request.QueryType = DNS_TYPE_AAAA;
+        request.QueryOptions |= DNS_QUERY_DUAL_ADDR;
+        break;
+    }
+  request.pQueryContext = hquery;
+  request.pQueryCompletionCallback = wins_callback;
+
+  hquery->channel->nondns_query_cnt++;
+  hquery->wins->is_running = 1;
+
+  result = DnsQueryEx(&request, &hquery->wins->result, &hquery->wins->cancelctx);
+  ares_free(wname);
+
+  /* If the result is not DNS_REQUEST_PENDING, then it returned immediately,
+   * trigger callback */
+  if (result != DNS_REQUEST_PENDING)
+    {
+       wins_callback(hquery, &hquery->wins->result);
+    }
+  return ARES_SUCCESS;
+}
+#endif
 
 /* Resolve service name into port number given in host byte order.
  * If not resolved, return 0.
@@ -391,6 +597,9 @@ static void end_hquery(struct host_query *hquery, int status)
           next->ai_protocol = hquery->hints.ai_protocol;
           next = next->ai_next;
         }
+
+      if (hquery->ai->name == NULL)
+        hquery->ai->name = ares_strdup(hquery->name);
     }
   else
     {
@@ -400,6 +609,11 @@ static void end_hquery(struct host_query *hquery, int status)
     }
 
   hquery->callback(hquery->arg, status, hquery->timeouts, hquery->ai);
+
+#ifdef CARES_ENABLE_WINS_LOOKUPS
+  wins_cleanup(hquery);
+#endif
+
   ares_free(hquery->name);
   ares_free(hquery);
 }
@@ -527,6 +741,7 @@ static int file_lookup(struct host_query *hquery)
   return status;
 }
 
+
 static void next_lookup(struct host_query *hquery, int status)
 {
   switch (*hquery->remaining_lookups)
@@ -556,10 +771,28 @@ static void next_lookup(struct host_query *hquery, int status)
           hquery->remaining_lookups++;
           next_lookup(hquery, status);
           break;
-      default:
-          /* No lookup left */
+
+#ifdef CARES_ENABLE_WINS_LOOKUPS
+      case 'w':
+          status = wins_lookup(hquery);
+          if (status != ARES_SUCCESS)
+            {
+              end_hquery(hquery, status);
+            }
+          hquery->remaining_lookups++;
+          break;
+#endif
+
+      case 0:
+         /* No lookup left */
          end_hquery(hquery, status);
          break;
+
+      default:
+        /* Unknown or unsupported lookup type. Go to next */
+        hquery->remaining_lookups++;
+        next_lookup(hquery, status);
+        break;
     }
 }
 
@@ -723,6 +956,8 @@ void ares_getaddrinfo(ares_channel channel,
       callback(arg, ARES_ENOMEM, 0, NULL);
       return;
     }
+
+  memset(hquery, 0, sizeof(*hquery));
 
   hquery->name = ares_strdup(name);
   ares_free(alias_name);

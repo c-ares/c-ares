@@ -122,6 +122,9 @@ static void next_lookup(struct addr_query *aquery)
               return;
             }
           break;
+        default:
+          /* Unsupported, skip */
+          break;
         }
     }
   end_aquery(aquery, ARES_ENOTFOUND, NULL);

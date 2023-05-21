@@ -173,6 +173,8 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->local_ip4 = 0;
   memset(&channel->local_ip6, 0, sizeof(channel->local_ip6));
 
+  channel->nondns_query_cnt = 0;
+
   /* Initialize our lists of queries */
   ares__init_list_head(&(channel->all_queries));
   for (i = 0; i < ARES_QID_TABLE_SIZE; i++)
