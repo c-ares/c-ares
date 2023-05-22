@@ -125,7 +125,7 @@ static void ares_rc4_init(ares_rand_rc4 *rc4_state)
 }
 
 /* Just outputs the key schedule, no need to XOR with any data since we have none */
-static void ares_rc4_prng(ares_rand_rc4 *rc4_state, unsigned char *buf, int len)
+static void ares_rc4_prng(ares_rand_rc4 *rc4_state, unsigned char *buf, size_t len)
 {
   unsigned char *S = rc4_state->S;
   size_t         i = rc4_state->i;
@@ -225,7 +225,6 @@ static void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t 
 {
 
   while (1) {
-    size_t rv;
     size_t bytes_read = 0;
 
     switch (state->type) {
