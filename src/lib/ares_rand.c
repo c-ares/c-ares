@@ -58,10 +58,16 @@ BOOLEAN WINAPI SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
 
 #define ARES_RC4_KEY_LEN 32 /* 256 bits */
 
+#ifdef _MSC_VER
+typedef unsigned __int64 cares_u64;
+#else
+typedef unsigned long long cares_u64;
+#endif
+
 static unsigned int ares_u32_from_ptr(void *addr)
 {
     if (sizeof(void *) == 8) {
-        return (unsigned int)((((size_t)addr >> 32) & 0xFFFFFFFF) | ((size_t)addr & 0xFFFFFFFF));
+        return (unsigned int)((((cares_u64)addr >> 32) & 0xFFFFFFFF) | ((cares_u64)addr & 0xFFFFFFFF));
     }
     return (unsigned int)((size_t)addr & 0xFFFFFFFF);
 }
