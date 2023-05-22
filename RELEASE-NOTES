@@ -1,13 +1,18 @@
 c-ares version 1.19.1
 
-This is a security and bugfix release.  It addresses a couple of new feature
-requests as well as a couple of bug fixes.
+This is a security and bugfix release.
+
+A special thanks goes out to the Open Source Technology Improvement Fund
+(https://ostif.org) for sponsoring a security audit of c-ares performed by X41
+(https://x41-dsec.de).
 
 Security:
- o
- o
- o
- o
+ o CVE-2023-32067. High. 0-byte UDP payload causes Denial of Service [12]
+ o CVE-2023-31147. Moderate. Insufficient randomness in generation of DNS
+   query IDs [13]
+ o CVE-2023-31130. Moderate. Buffer Underwrite in ares_inet_net_pton() [14]
+ o CVE-2023-31124. Low. AutoTools does not set CARES_RANDOM_FILE during cross
+   compilation [15]
 
 Bug fixes:
  o Fix uninitialized memory warning in test [1]
@@ -46,3 +51,7 @@ References to bug reports and discussions on issues:
  [9] = https://github.com/c-ares/c-ares/pull/507
  [10] = https://github.com/c-ares/c-ares/pull/502
  [11] = https://github.com/c-ares/c-ares/pull/505
+ [12] = https://github.com/advisories/GHSA-9g78-jv2r-p7vc
+ [13] = https://github.com/advisories/GHSA-8r8p-23f3-64c2
+ [14] = https://github.com/advisories/GHSA-x6mf-cxr9-8q6v
+ [15] = https://github.com/advisories/GHSA-54xr-f67r-4pc4
