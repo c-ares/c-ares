@@ -314,8 +314,8 @@ ares_inet_pton6(const char *src, unsigned char *dst)
       continue;
     }
     if (ch == '.' && ((tp + NS_INADDRSZ) <= endp) &&
-        ares_inet_net_pton_ipv4(curtok, tp, INADDRSZ) > 0) {
-      tp += INADDRSZ;
+        ares_inet_net_pton_ipv4(curtok, tp, NS_INADDRSZ) > 0) {
+      tp += NS_INADDRSZ;
       saw_xdigit = 0;
       count_xdigit = 0;
       break;  /* '\0' was seen by inet_pton4(). */
