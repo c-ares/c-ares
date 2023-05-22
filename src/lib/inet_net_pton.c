@@ -214,49 +214,6 @@ getbits(const char *src, int *bitsp)
   return (1);
 }
 
-static int
-getv4(const char *src, unsigned char *dst, int *bitsp)
-{
-  static const char digits[] = "0123456789";
-  unsigned char *odst = dst;
-  int n;
-  unsigned int val;
-  char ch;
-
-  val = 0;
-  n = 0;
-  while ((ch = *src++) != '\0') {
-    const char *pch;
-
-    pch = strchr(digits, ch);
-    if (pch != NULL) {
-      if (n++ != 0 && val == 0)       /* no leading zeros */
-        return (0);
-      val *= 10;
-      val += aresx_sztoui(pch - digits);
-      if (val > 255)                  /* range */
-        return (0);
-      continue;
-    }
-    if (ch == '.' || ch == '/') {
-      if (dst - odst > 3)             /* too many octets? */
-        return (0);
-      *dst++ = (unsigned char)val;
-      if (ch == '/')
-        return (getbits(src, bitsp));
-      val = 0;
-      n = 0;
-      continue;
-    }
-    return (0);
-  }
-  if (n == 0)
-    return (0);
-  if (dst - odst > 3)             /* too many octets? */
-    return (0);
-  *dst = (unsigned char)val;
-  return 1;
-}
 
 static int
 ares_inet_pton6(const char *src, unsigned char *dst)
@@ -287,7 +244,7 @@ ares_inet_pton6(const char *src, unsigned char *dst)
       if (count_xdigit >= 4)
         goto enoent;
       val <<= 4;
-      val |= (pch - xdigits);
+      val |= (unsigned int)(pch - xdigits);
       if (val > 0xffff)
         goto enoent;
       saw_xdigit = 1;
@@ -317,7 +274,6 @@ ares_inet_pton6(const char *src, unsigned char *dst)
         ares_inet_net_pton_ipv4(curtok, tp, NS_INADDRSZ) > 0) {
       tp += NS_INADDRSZ;
       saw_xdigit = 0;
-      count_xdigit = 0;
       break;  /* '\0' was seen by inet_pton4(). */
     }
     goto enoent;
@@ -333,7 +289,7 @@ ares_inet_pton6(const char *src, unsigned char *dst)
      * Since some memmove()'s erroneously fail to handle
      * overlapping regions, we'll do the shift by hand.
      */
-    const int n = tp - colonp;
+    const int n = (int)(tp - colonp);
     int i;
 
     if (tp == endp)
@@ -353,10 +309,6 @@ ares_inet_pton6(const char *src, unsigned char *dst)
 enoent:
   SET_ERRNO(ENOENT);
   return (-1);
-
-emsgsize:
-  SET_ERRNO(EMSGSIZE);
-  return (-1);
 }
 
 static int
@@ -368,7 +320,6 @@ ares_inet_net_pton_ipv6(const char *src, unsigned char *dst, size_t size)
   size_t               bytes;
   char                 buf[INET6_ADDRSTRLEN + sizeof("/128")];
   char                *sep;
-  const char          *errstr;
 
   if (strlen(src) >= sizeof buf) {
     SET_ERRNO(EMSGSIZE);
