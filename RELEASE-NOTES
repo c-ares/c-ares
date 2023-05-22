@@ -51,7 +51,7 @@ References to bug reports and discussions on issues:
  [9] = https://github.com/c-ares/c-ares/pull/507
  [10] = https://github.com/c-ares/c-ares/pull/502
  [11] = https://github.com/c-ares/c-ares/pull/505
- [12] = https://github.com/advisories/GHSA-9g78-jv2r-p7vc
- [13] = https://github.com/advisories/GHSA-8r8p-23f3-64c2
- [14] = https://github.com/advisories/GHSA-x6mf-cxr9-8q6v
- [15] = https://github.com/advisories/GHSA-54xr-f67r-4pc4
+ [12] = https://github.com/c-ares/c-ares/security/advisories/GHSA-9g78-jv2r-p7vc
+ [13] = https://github.com/c-ares/c-ares/security/advisories/GHSA-8r8p-23f3-64c2
+ [14] = https://github.com/c-ares/c-ares/security/advisories/GHSA-x6mf-cxr9-8q6v
+ [15] = https://github.com/c-ares/c-ares/security/advisories/GHSA-54xr-f67r-4pc4
