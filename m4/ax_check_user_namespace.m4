@@ -34,9 +34,9 @@ int main() {
   pid_t child = clone(userfn, userst + 1024*1024, CLONE_NEWUSER|SIGCHLD, 0);
   if (child < 0) return 1;
 
-  sprintf(buffer, "/proc/%d/uid_map", child);
+  snprintf(buffer, sizeof(buffer), "/proc/%d/uid_map", child);
   fd = open(buffer, O_CREAT|O_WRONLY|O_TRUNC, 0755);
-  sprintf(buffer, "0 %d 1\n", getuid());
+  snprintf(buffer, sizeof(buffer), "0 %d 1\n", getuid());
   write(fd, buffer, strlen(buffer));
   close(fd);
 

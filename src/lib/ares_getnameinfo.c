@@ -327,7 +327,7 @@ static char *lookup_service(unsigned short port, int flags,
       else
         {
           /* get port as a string */
-          sprintf(tmpbuf, "%u", (unsigned int)ntohs(port));
+          snprintf(tmpbuf, sizeof(tmpbuf), "%u", (unsigned int)ntohs(port));
           name = tmpbuf;
         }
       name_len = strlen(name);
@@ -364,11 +364,11 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int flags,
     {
       if (is_scope_long)
         {
-          sprintf(&tmpbuf[1], "%lu", (unsigned long)addr6->sin6_scope_id);
+          snprintf(&tmpbuf[1], sizeof(tmpbuf)-1, "%lu", (unsigned long)addr6->sin6_scope_id);
         }
       else
         {
-          sprintf(&tmpbuf[1], "%u", (unsigned int)addr6->sin6_scope_id);
+          snprintf(&tmpbuf[1], sizeof(tmpbuf)-1, "%u", (unsigned int)addr6->sin6_scope_id);
         }
     }
   else
@@ -377,22 +377,22 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int flags,
         {
           if (is_scope_long)
             {
-              sprintf(&tmpbuf[1], "%lu", (unsigned long)addr6->sin6_scope_id);
+              snprintf(&tmpbuf[1], sizeof(tmpbuf)-1, "%lu", (unsigned long)addr6->sin6_scope_id);
             }
           else
             {
-              sprintf(&tmpbuf[1], "%u", (unsigned int)addr6->sin6_scope_id);
+              snprintf(&tmpbuf[1], sizeof(tmpbuf)-1, "%u", (unsigned int)addr6->sin6_scope_id);
             }
         }
     }
 #else
   if (is_scope_long)
     {
-      sprintf(&tmpbuf[1], "%lu", (unsigned long)addr6->sin6_scope_id);
+      snprintf(&tmpbuf[1], sizeof(tmpbuf)-1, "%lu", (unsigned long)addr6->sin6_scope_id);
     }
   else
     {
-      sprintf(&tmpbuf[1], "%u", (unsigned int)addr6->sin6_scope_id);
+      snprintf(&tmpbuf[1], sizeof(tmpbuf)-1, "%u", (unsigned int)addr6->sin6_scope_id);
     }
   (void) flags;
 #endif
