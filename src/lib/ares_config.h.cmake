@@ -123,6 +123,9 @@
 /* Define to 1 if you have the getnameinfo function. */
 #cmakedefine HAVE_GETNAMEINFO
 
+/* Define to 1 if you have the getrandom function. */
+#cmakedefine HAVE_GETRANDOM
+
 /* Define to 1 if you have the getservbyport_r function. */
 #cmakedefine HAVE_GETSERVBYPORT_R
 

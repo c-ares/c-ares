@@ -155,7 +155,7 @@ static int ares__init_rand_engine(ares_rand_state *state)
 {
   memset(state, 0, sizeof(*state));
 
-#if defined(HAVE_ARC4RANDOM_BUF) || defined(_WIN32)
+#if defined(HAVE_ARC4RANDOM_BUF) || defined(HAVE_GETRANDOM) || defined(_WIN32)
   state->type = ARES_RAND_OS;
   return 1;
 #elif defined(CARES_RANDOM_FILE)
@@ -241,6 +241,21 @@ static void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t 
 #elif defined(HAVE_ARC4RANDOM_BUF)
         arc4random_buf(buf, len);
         return;
+#elif defined(HAVE_GETRANDOM)
+        while (1) {
+          size_t n = len - bytes_read;
+          /* getrandom() on Linux always succeeds and is never
+           * interrupted by a signal when requesting <= 256 bytes.
+           */
+          ssize_t rv = getrandom(buf + bytes_read, n > 256 ? 256 : n, 0);
+          if (rv <= 0)
+            break;
+
+          bytes_read += rv;
+          if (bytes_read == len)
+            return;
+        }
+        break;
 #else
         /* Shouldn't be possible to be here */
         break;
