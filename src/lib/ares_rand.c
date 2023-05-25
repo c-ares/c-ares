@@ -249,7 +249,7 @@ static void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t 
            */
           ssize_t rv = getrandom(buf + bytes_read, n > 256 ? 256 : n, 0);
           if (rv <= 0)
-            break;
+            continue; /* Just retry. */
 
           bytes_read += rv;
           if (bytes_read == len)
