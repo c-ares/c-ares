@@ -151,9 +151,6 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen,
           uri_curr->uri = strncpy(uri_curr->uri, (const char *)vptr, rr_len-4);
           uri_curr->uri[rr_len-4]='\0';
           uri_curr->ttl = rr_ttl;
-
-          if (status != ARES_SUCCESS)
-            break;
         }
 
       /* Don't lose memory in the next iteration */
