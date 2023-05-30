@@ -197,10 +197,6 @@ int ares__readaddrinfo(FILE *fp,
             }
         }
 
-      if (status != ARES_SUCCESS)
-        /* Ignore line if invalid address string for the requested family. */
-        continue;
-
       if (want_cname)
         {
           for (i = 0; i < alias_count; ++i)
