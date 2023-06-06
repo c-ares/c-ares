@@ -1,3 +1,24 @@
+#############################################################
+#
+# Copyright (C) the Massachusetts Institute of Technology.
+# Copyright (C) Daniel Stenberg
+#
+# Permission to use, copy, modify, and distribute this
+# software and its documentation for any purpose and without
+# fee is hereby granted, provided that the above copyright
+# notice appear in all copies and that both that copyright
+# notice and this permission notice appear in supporting
+# documentation, and that the name of M.I.T. not be used in
+# advertising or publicity pertaining to distribution of the
+# software without specific, written prior permission.
+# M.I.T. makes no representations about the suitability of
+# this software for any purpose.  It is provided "as is"
+# without express or implied warranty.
+#
+# SPDX-License-Identifier: MIT
+#
+#############################################################
+
 ARES_BLD_DIR = $(top_builddir)/..
 ARES_SRC_DIR = $(top_srcdir)/..
 
@@ -16,7 +37,7 @@ CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 # Makefile.inc provides the various *SOURCES and *HEADERS defines
 include Makefile.inc
 
-TESTS = arestest fuzzcheck.sh
+TESTS = arestest fuzzcheck.sho
 
 noinst_LTLIBRARIES = libgmock.la
 

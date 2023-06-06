@@ -1,9 +1,10 @@
 #################################################################
 #
-## Makefile for building libcares (NetWare version - gnu make)
-## Use: make -f Makefile.netware
-##
-## Comments to: Guenter Knauf http://www.gknw.de/phpbb
+# Makefile for building libcares (NetWare version - gnu make)
+# Use: make -f Makefile.netware
+#
+# Copyright (C) Guenter Knauf
+# SPDX-License-Identifier: MIT
 #
 #################################################################
 

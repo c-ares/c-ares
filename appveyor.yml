@@ -1,3 +1,6 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+
 image: Visual Studio 2015
 
 # Github/Bitbucket only: get source code for one particular commit as zip archive, instead of git clone'ing.

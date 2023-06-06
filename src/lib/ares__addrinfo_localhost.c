@@ -1,4 +1,6 @@
-/* Copyright (C) 2021
+/*
+ * Copyright (C) the Massachusetts Institute of Technology.
+ * Copyright (C) Daniel Stenberg
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -11,6 +13,8 @@
  * M.I.T. makes no representations about the suitability of
  * this software for any purpose.  It is provided "as is"
  * without express or implied warranty.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "ares_setup.h"

@@ -1,6 +1,5 @@
-#***************************************************************************
-
-###########################################################################
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
 
 AUTOMAKE_OPTIONS = foreign subdir-objects no-dependencies
 

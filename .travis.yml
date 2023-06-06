@@ -1,3 +1,6 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+
 language: c++
 dist: bionic
 sudo: false

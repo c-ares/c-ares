@@ -1,5 +1,5 @@
 
-/* Copyright 2005 by Dominick Meglio
+/* Copyright 2005, 2023 by Dominick Meglio
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -12,6 +12,8 @@
  * M.I.T. makes no representations about the suitability of
  * this software for any purpose.  It is provided "as is"
  * without express or implied warranty.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include "ares_setup.h"
 

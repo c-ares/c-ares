@@ -10,6 +10,9 @@
 #   Also requires user namespaces to be available, so that non-root users
 #   can enter the namespace.
 #   If so, it calls AC_DEFINE(HAVE_UTS_NAMESPACE).
+#
+# Copyright (C) The c-ares team
+# SPDX-License-Identifier: MIT
 
 AC_DEFUN([AX_CHECK_UTS_NAMESPACE],[dnl
  AC_CACHE_CHECK([whether UTS namespaces are supported],

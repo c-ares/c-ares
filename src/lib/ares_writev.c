@@ -1,5 +1,3 @@
-
-
 /* Copyright 1998 by the Massachusetts Institute of Technology.
  *
  * Permission to use, copy, modify, and distribute this
@@ -13,6 +11,8 @@
  * M.I.T. makes no representations about the suitability of
  * this software for any purpose.  It is provided "as is"
  * without express or implied warranty.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "ares_setup.h"

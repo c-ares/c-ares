@@ -1,7 +1,9 @@
 #############################################################
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
 #
-## Makefile for building arestest.exe with MingW32 (GCC-3.2)
-## Use: make -f Makefile.m32
+# Makefile for building arestest.exe with MingW32 (GCC-3.2)
+# Use: make -f Makefile.m32
 #
 ########################################################
 CXX = g++

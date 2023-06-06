@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
 set -e
 
 # Travis on MacOS uses CloudFlare's DNS (1.1.1.1/1.0.0.1) which rejects ANY requests
