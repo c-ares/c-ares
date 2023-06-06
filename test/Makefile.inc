@@ -1,3 +1,5 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
 TESTSOURCES = ares-test-main.cc	\
   ares-test-init.cc			\
   ares-test.cc				\

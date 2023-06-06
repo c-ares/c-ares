@@ -1,3 +1,7 @@
+/* Copyright (C) The c-ares project and its contributors
+ * SPDX-License-Identifier: MIT
+ */
+
 /* Generated from ares_config.h.cmake */
 
 /* Define if building universal (internal helper macro) */

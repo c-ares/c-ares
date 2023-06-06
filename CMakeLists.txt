@@ -1,3 +1,5 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
 CMAKE_MINIMUM_REQUIRED (VERSION 3.1.0)
 
 INCLUDE (CheckIncludeFiles)

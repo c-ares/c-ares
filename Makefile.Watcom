@@ -1,3 +1,5 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
 #
 #  Watcom / OpenWatcom / Win32 makefile for cares.
 #  Quick hack by Guenter; comments to: /dev/nul

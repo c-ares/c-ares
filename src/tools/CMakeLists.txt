@@ -1,3 +1,5 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
 IF (CARES_BUILD_TOOLS)
 	# Transform Makefile.inc
 	transform_makefile_inc("Makefile.inc" "${PROJECT_BINARY_DIR}/src/tools/Makefile.inc.cmake")

@@ -15,7 +15,7 @@
  *
  * Ref: http://countries.nerd.dk/more.html
  *
- * Written by G. Vanem <gvanem@yahoo.no> 2006, 2007
+ * Copyright (C) G. Vanem <gvanem@yahoo.no>
  *
  * NB! This program may not be big-endian aware.
  *
@@ -30,6 +30,8 @@
  * M.I.T. makes no representations about the suitability of
  * this software for any purpose.  It is provided "as is"
  * without express or implied warranty.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "ares_setup.h"

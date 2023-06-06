@@ -1,3 +1,5 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
 
 CSOURCES = ares__addrinfo2hostent.c	\
   ares__addrinfo_localhost.c	\

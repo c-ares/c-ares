@@ -1,10 +1,12 @@
 #############################################################
 #
-## Makefile for building libcares.a with MingW32 (GCC-3.2)
-## Use: make -f Makefile.m32 [demos]
-##
-## Quick hack by Guenter; comments to: /dev/nul
+# Makefile for building libcares.a with MingW32 (GCC-3.2)
+# Use: make -f Makefile.m32 [demos]
 #
+# Quick hack by Guenter; comments to: /dev/nul
+#
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
 ########################################################
 ## Nothing more to do below this line!
 

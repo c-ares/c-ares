@@ -1,3 +1,6 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+
 env:
   CIRRUS_CLONE_DEPTH: 1
   CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON"
