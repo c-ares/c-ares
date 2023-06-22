@@ -110,7 +110,7 @@ static void ares_rc4_generate_key(ares_rand_rc4 *rc4_state, unsigned char *key, 
   }
 }
 
-
+#if defined(CARES_RANDOM_FILE) && !defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_GETRANDOM) && !defined(_WIN32)
 static void ares_rc4_init(ares_rand_rc4 *rc4_state)
 {
   unsigned char key[ARES_RC4_KEY_LEN];
@@ -131,6 +131,7 @@ static void ares_rc4_init(ares_rand_rc4 *rc4_state)
   rc4_state->i = 0;
   rc4_state->j = 0;
 }
+#endif
 
 /* Just outputs the key schedule, no need to XOR with any data since we have none */
 static void ares_rc4_prng(ares_rand_rc4 *rc4_state, unsigned char *buf, size_t len)
