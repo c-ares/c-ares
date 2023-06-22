@@ -168,13 +168,13 @@ static int ares__init_rand_engine(ares_rand_state *state)
     return 1;
   }
   /* Fall-Thru on failure to RC4 */
-#endif
 
   state->type = ARES_RAND_RC4;
   ares_rc4_init(&state->state.rc4);
 
   /* Currently cannot fail */
   return 1;
+#endif
 }
 
 
