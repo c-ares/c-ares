@@ -58,6 +58,8 @@ BOOLEAN WINAPI SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
 #endif
 
 
+#if defined(CARES_RANDOM_FILE) && !defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_GETRANDOM) && !defined(_WIN32)
+
 #define ARES_RC4_KEY_LEN 32 /* 256 bits */
 
 #ifdef _MSC_VER
@@ -73,8 +75,6 @@ static unsigned int ares_u32_from_ptr(void *addr)
     }
     return (unsigned int)((size_t)addr & 0xFFFFFFFF);
 }
-
-#if defined(CARES_RANDOM_FILE) && !defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_GETRANDOM) && !defined(_WIN32)
 
 /* initialize an rc4 key as the last possible fallback. */
 static void ares_rc4_generate_key(ares_rand_rc4 *rc4_state, unsigned char *key, size_t key_len)
