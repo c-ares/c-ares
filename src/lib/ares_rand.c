@@ -155,26 +155,37 @@ static void ares_rc4_prng(ares_rand_rc4 *rc4_state, unsigned char *buf, size_t l
 
 static int ares__init_rand_engine(ares_rand_state *state)
 {
+  bool ok = false;
+
   memset(state, 0, sizeof(*state));
 
 #if defined(HAVE_ARC4RANDOM_BUF) || defined(HAVE_GETRANDOM) || defined(_WIN32)
-  state->type = ARES_RAND_OS;
-  return 1;
-#elif defined(CARES_RANDOM_FILE)
-  state->type            = ARES_RAND_FILE;
-  state->state.rand_file = fopen(CARES_RANDOM_FILE, "rb");
-  if (state->state.rand_file) {
-    setvbuf(state->state.rand_file, NULL, _IONBF, 0);
-    return 1;
+  /* prefer the OS' RNG when available */
+  if (!ok) {
+    state->type = ARES_RAND_OS;
+    ok = true;
   }
-  /* Fall-Thru on failure to RC4 */
 #endif
 
-  state->type = ARES_RAND_RC4;
-  ares_rc4_init(&state->state.rc4);
+#if defined(CARES_RANDOM_FILE)
+  if (!ok) {
+    state->type = ARES_RAND_FILE;
+    state->state.rand_file = fopen(CARES_RANDOM_FILE, "rb");
+    if (state->state.rand_file) {
+      setvbuf(state->state.rand_file, NULL, _IONBF, 0);
+      ok = true;
+    }
+  }
+#endif
 
-  /* Currently cannot fail */
-  return 1;
+  /* if nothing else worked, use our rng of last resort */
+  if (!ok) {
+    state->type = ARES_RAND_RC4;
+    ares_rc4_init(&state->state.rc4);
+    ok = true;
+  }
+
+  return ok;
 }
 
 
