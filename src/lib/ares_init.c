@@ -1328,7 +1328,12 @@ static int init_by_resolv_conf(ares_channel channel)
           continue;
         }
 
-        snprintf(ipaddr_port, sizeof(ipaddr_port), "[%s]:%u", ipaddr, port?port:53);
+        if (port) {
+          snprintf(ipaddr_port, sizeof(ipaddr_port), "[%s]:%u", ipaddr, port);
+        } else {
+          snprintf(ipaddr_port, sizeof(ipaddr_port), "%s", ipaddr);
+        }
+
         config_status = config_nameserver(&servers, &nservers, ipaddr_port);
         if (config_status != ARES_SUCCESS) {
           status = config_status;
@@ -1842,7 +1847,7 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
  *   [ipaddr]
  *   [ipaddr]:port
  *
- * If a port is not specified, will return fill in the default port of 53.
+ * If a port is not specified, will set port to 0.
  *
  * Will fail if an IPv6 nameserver as detected by
  * ares_ipv6_server_blacklisted()
@@ -1914,7 +1919,7 @@ static int parse_dnsaddrport(const char *str, size_t len,
     memset(ipport, 0, sizeof(ipport));
     memcpy(ipport, port_start, mylen);
   } else {
-    snprintf(ipport, sizeof(ipport), "53");
+    snprintf(ipport, sizeof(ipport), "0");
   }
 
   /* Convert textual address to binary format. */
