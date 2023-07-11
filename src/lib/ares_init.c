@@ -1860,7 +1860,6 @@ static int parse_dnsaddrport(const char *str, size_t len,
   char ipaddr[INET6_ADDRSTRLEN] = "";
   char ipport[6] = "";
   size_t mylen;
-  int  has_brackets = 0;
   const char *addr_start = NULL;
   const char *addr_end   = NULL;
   const char *port_start = NULL;
@@ -1882,14 +1881,14 @@ static int parse_dnsaddrport(const char *str, size_t len,
     addr_end = ptr-1;
 
     /* Try to pull off port */
-    if (ptr - str < len) {
+    if ((size_t)(ptr - str) < len) {
       ptr++;
       if (*ptr != ':') {
         return ARES_EBADSTR;
       }
 
       /* Missing port number */
-      if (ptr - str == len) {
+      if ((size_t)(ptr - str) == len) {
         return ARES_EBADSTR;
       }
 
