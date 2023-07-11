@@ -20,7 +20,7 @@ task:
         BUILD_COVERAGE: "yes"
         BUILD_ANALYZE: "yes"
       container:
-        image: debian:latest
+        image: debian:11
     - name: "Debian arm64"
       env:
         DIST: "DEBIAN-ARM"
