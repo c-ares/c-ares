@@ -685,7 +685,7 @@ typedef struct
   /* Room enough for the string form of any IPv4 or IPv6 address that
    * ares_inet_ntop() will create.  Based on the existing c-ares practice.
    */
-  char text[sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")];
+  char text[INET6_ADDRSTRLEN + 8]; /* [%s]:NNNNN */
 } Address;
 
 /* Sort Address values \a left and \a right by metric, returning the usual
@@ -882,6 +882,7 @@ static int get_DNS_Windows(char **outptr)
          ipaDNSAddr;
          ipaDNSAddr = ipaDNSAddr->Next)
     {
+      char ipaddr[INET6_ADDRSTRLEN] = "";
       namesrvr.sa = ipaDNSAddr->Address.lpSockaddr;
 
       if (namesrvr.sa->sa_family == AF_INET)
@@ -911,10 +912,14 @@ static int get_DNS_Windows(char **outptr)
         addresses[addressesIndex].orig_idx = addressesIndex;
 
         if (!ares_inet_ntop(AF_INET, &namesrvr.sa4->sin_addr,
-                            addresses[addressesIndex].text,
-                            sizeof(addresses[0].text))) {
+                            ipaddr, sizeof(ipaddr))) {
           continue;
         }
+        snprintf(addresses[addressesIndex].text,
+                 sizeof(addresses[addressesIndex].text),
+                 "[%s]:%u",
+                 ipaddr,
+                 namesrvr.sa4->sin_port);
         ++addressesIndex;
       }
       else if (namesrvr.sa->sa_family == AF_INET6)
@@ -944,10 +949,14 @@ static int get_DNS_Windows(char **outptr)
         addresses[addressesIndex].orig_idx = addressesIndex;
 
         if (!ares_inet_ntop(AF_INET6, &namesrvr.sa6->sin6_addr,
-                            addresses[addressesIndex].text,
-                            sizeof(addresses[0].text))) {
+                            ipaddr, sizeof(ipaddr))) {
           continue;
         }
+        snprintf(addresses[addressesIndex].text,
+                 sizeof(addresses[addressesIndex].text),
+                 "[%s]:%u",
+                 ipaddr,
+                 namesrvr.sa4->sin_port);
         ++addressesIndex;
       }
       else {
