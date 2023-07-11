@@ -13,8 +13,6 @@
  * M.I.T. makes no representations about the suitability of
  * this software for any purpose.  It is provided "as is"
  * without express or implied warranty.
- *
- * SPDX-License-Identifier: MIT
  */
 
 #include "ares_setup.h"
@@ -63,6 +61,17 @@
 #undef WIN32  /* Redefined in MingW/MSVC headers */
 #endif
 
+/* Define RtlGenRandom = SystemFunction036.  This is in advapi32.dll.  There is
+ * no need to dynamically load this, other software used widely does not.
+ * http://blogs.msdn.com/michael_howard/archive/2005/01/14/353379.aspx
+ * https://docs.microsoft.com/en-us/windows/win32/api/ntsecapi/nf-ntsecapi-rtlgenrandom
+ */
+#ifdef _WIN32
+BOOLEAN WINAPI SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
+#  ifndef RtlGenRandom
+#    define RtlGenRandom(a,b) SystemFunction036(a,b)
+#  endif
+#endif
 
 static int init_by_options(ares_channel channel,
                            const struct ares_options *options,
@@ -73,11 +82,12 @@ static int init_by_defaults(ares_channel channel);
 
 #ifndef WATT32
 static int config_nameserver(struct server_state **servers, int *nservers,
-                             char *str);
+                             const char *str);
 #endif
 static int set_search(ares_channel channel, const char *str);
 static int set_options(ares_channel channel, const char *str);
 static const char *try_option(const char *p, const char *q, const char *opt);
+static int init_id_key(rc4_key* key,int key_data_len);
 
 static int config_sortlist(struct apattern **sortlist, int *nsort,
                            const char *str);
@@ -155,7 +165,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->sock_func_cb_data = NULL;
   channel->resolvconf_path = NULL;
   channel->hosts_path = NULL;
-  channel->rand_state = NULL;
 
   channel->last_server = 0;
   channel->last_timeout_processed = (time_t)now.tv_sec;
@@ -209,13 +218,9 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   /* Generate random key */
 
   if (status == ARES_SUCCESS) {
-    channel->rand_state = ares__init_rand_state();
-    if (channel->rand_state == NULL) {
-      status = ARES_ENOMEM;
-    }
-
+    status = init_id_key(&channel->id_key, ARES_ID_KEY_LEN);
     if (status == ARES_SUCCESS)
-      channel->next_id = ares__generate_new_id(channel->rand_state);
+      channel->next_id = ares__generate_new_id(&channel->id_key);
     else
       DEBUGF(fprintf(stderr, "Error: init_id_key failed: %s\n",
                      ares_strerror(status)));
@@ -237,8 +242,6 @@ done:
         ares_free(channel->resolvconf_path);
       if(channel->hosts_path)
         ares_free(channel->hosts_path);
-      if (channel->rand_state)
-        ares__destroy_rand_state(channel->rand_state);
       ares_free(channel);
       return status;
     }
@@ -743,17 +746,6 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
                                 const ULONG interfaceMetric)
 {
   /* On this interface, get the best route to that destination. */
-#if defined(__WATCOMC__)
-  /* OpenWatcom's builtin Windows SDK does not have a definition for
-   * MIB_IPFORWARD_ROW2, and also does not allow the usage of SOCKADDR_INET
-   * as a variable. Let's work around this by returning the worst possible
-   * metric, but only when using the OpenWatcom compiler.
-   * It may be worth investigating using a different version of the Windows
-   * SDK with OpenWatcom in the future, though this may be fixed in OpenWatcom
-   * 2.0.
-   */
-  return (ULONG)-1;
-#else
   MIB_IPFORWARD_ROW2 row;
   SOCKADDR_INET ignored;
   if(GetBestRoute2(/* The interface to use.  The index is ignored since we are
@@ -786,7 +778,6 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
    * which describes the combination as a "sum".
    */
   return row.Metric + interfaceMetric;
-#endif /* __WATCOMC__ */
 }
 
 /*
@@ -1313,18 +1304,23 @@ static int init_by_resolv_conf(ares_channel channel)
       int nscount = res_getservers(&res, addr, MAXNS);
       int i;
       for (i = 0; i < nscount; ++i) {
-        char str[INET6_ADDRSTRLEN];
+        char ipaddr[INET6_ADDRSTRLEN] = "";
+        char ipaddr_port[INET6_ADDRSTRLEN + 8]; /* [%s]:NNNNN */
+        unsigned short port = 0;
         int config_status;
         sa_family_t family = addr[i].sin.sin_family;
         if (family == AF_INET) {
-          ares_inet_ntop(family, &addr[i].sin.sin_addr, str, sizeof(str));
+          ares_inet_ntop(family, &addr[i].sin.sin_addr, ipaddr, sizeof(ipaddr));
+          port = ntohs(addr[i].sin.sin_port);
         } else if (family == AF_INET6) {
-          ares_inet_ntop(family, &addr[i].sin6.sin6_addr, str, sizeof(str));
+          ares_inet_ntop(family, &addr[i].sin6.sin6_addr, ipaddr, sizeof(ipaddr));
+          port = ntohs(addr[i].sin6.sin6_port);
         } else {
           continue;
         }
 
-        config_status = config_nameserver(&servers, &nservers, str);
+        snprintf(ipaddr_port, sizeof(ipaddr_port), "[%s]:%u", ipaddr, port?port:53);
+        config_status = config_nameserver(&servers, &nservers, ipaddr_port);
         if (config_status != ARES_SUCCESS) {
           status = config_status;
           break;
@@ -1831,8 +1827,113 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
   return 0;
 }
 
-/* Add the IPv4 or IPv6 nameservers in str (separated by commas) to the
- * servers list, updating servers and nservers as required.
+/* Parse address and port in these formats, either ipv4 or ipv6 addresses
+ * are allowed:
+ *   ipaddr
+ *   [ipaddr]
+ *   [ipaddr]:port
+ *
+ * If a port is not specified, will return fill in the default port of 53.
+ *
+ * Will fail if an IPv6 nameserver as detected by
+ * ares_ipv6_server_blacklisted()
+ *
+ * Returns an error code on failure, else ARES_SUCCESS
+ */
+static int parse_dnsaddrport(const char *str, size_t len,
+                             struct ares_addr *host, unsigned short *port)
+{
+  char ipaddr[INET6_ADDRSTRLEN] = "";
+  char ipport[6] = "";
+  size_t mylen;
+  int  has_brackets = 0;
+  const char *addr_start = NULL;
+  const char *addr_end   = NULL;
+  const char *port_start = NULL;
+  const char *port_end   = NULL;
+
+  /* Must start with [, hex digit or : */
+  if (len == 0 || (*str != '[' && !isxdigit(*str) && *str != ':')) {
+    return ARES_EBADSTR;
+  }
+
+  /* If it starts with a bracket, must end with a bracket */
+  if (*str == '[') {
+    const char *ptr;
+    addr_start = str+1;
+    ptr        = memchr(addr_start, ']', len-1);
+    if (ptr == NULL) {
+      return ARES_EBADSTR;
+    }
+    addr_end = ptr-1;
+
+    /* Try to pull off port */
+    if (ptr - str < len) {
+      ptr++;
+      if (*ptr != ':') {
+        return ARES_EBADSTR;
+      }
+
+      /* Missing port number */
+      if (ptr - str == len) {
+        return ARES_EBADSTR;
+      }
+
+      port_start = ptr+1;
+      port_end   = str+(len-1);
+    }
+  } else {
+    addr_start = str;
+    addr_end   = str+(len-1);
+  }
+
+  mylen = (addr_end-addr_start)+1;
+  /* Larger than buffer with null term */
+  if (mylen+1 > sizeof(ipaddr)) {
+    return ARES_EBADSTR;
+  }
+
+  memset(ipaddr, 0, sizeof(ipaddr));
+  memcpy(ipaddr, addr_start, mylen);
+
+  if (port_start) {
+    mylen = (port_end-port_start)+1;
+    /* Larger than buffer with null term */
+    if (mylen+1 > sizeof(ipport)) {
+      return ARES_EBADSTR;
+    }
+    memset(ipport, 0, sizeof(ipport));
+    memcpy(ipport, port_start, mylen);
+  } else {
+    snprintf(ipport, sizeof(ipport), "53");
+  }
+
+  /* Convert textual address to binary format. */
+  if (ares_inet_pton(AF_INET, ipaddr, &host->addrV4) == 1) {
+    host->family = AF_INET;
+  } else if (ares_inet_pton(AF_INET6, ipaddr, &host->addrV6) == 1
+           /* Silently skip blacklisted IPv6 servers. */
+           && !ares_ipv6_server_blacklisted(
+                 (const unsigned char *)&host->addrV6)) {
+    host->family = AF_INET6;
+  } else {
+    return ARES_EBADSTR;
+  }
+
+  *port = (unsigned short)atoi(ipport);
+  return ARES_SUCCESS;
+}
+
+/* Add the IPv4 or IPv6 nameservers in str (separated by commas or spaces) to
+ * the servers list, updating servers and nservers as required.
+ *
+ * If a nameserver is encapsulated in [ ] it may optionally include a port
+ * suffix, e.g.:
+ *    [127.0.0.1]:59591
+ *
+ * The extended format is required to support OpenBSD's resolv.conf format:
+ *   https://man.openbsd.org/OpenBSD-5.1/resolv.conf.5
+ * As well as MacOS libresolv that may include a non-default port number.
  *
  * This will silently ignore blacklisted IPv6 nameservers as detected by
  * ares_ipv6_server_blacklisted().
@@ -1840,16 +1941,18 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
  * Returns an error code on failure, else ARES_SUCCESS.
  */
 static int config_nameserver(struct server_state **servers, int *nservers,
-                             char *str)
+                             const char *str)
 {
   struct ares_addr host;
   struct server_state *newserv;
-  char *p, *txtaddr;
+  const char *p, *txtaddr;
   /* On Windows, there may be more than one nameserver specified in the same
    * registry key, so we parse input as a space or comma seperated list.
    */
   for (p = str; p;)
     {
+      unsigned short port;
+
       /* Skip whitespace and commas. */
       while (*p && (ISSPACE(*p) || (*p == ',')))
         p++;
@@ -1863,23 +1966,11 @@ static int config_nameserver(struct server_state **servers, int *nservers,
       /* Advance past this address. */
       while (*p && !ISSPACE(*p) && (*p != ','))
         p++;
-      if (*p)
-        /* Null terminate this address. */
-        *p++ = '\0';
-      else
-        /* Reached end of input, done when this address is processed. */
-        p = NULL;
 
-      /* Convert textual address to binary format. */
-      if (ares_inet_pton(AF_INET, txtaddr, &host.addrV4) == 1)
-        host.family = AF_INET;
-      else if (ares_inet_pton(AF_INET6, txtaddr, &host.addrV6) == 1
-               /* Silently skip blacklisted IPv6 servers. */
-               && !ares_ipv6_server_blacklisted(
-                    (const unsigned char *)&host.addrV6))
-        host.family = AF_INET6;
-      else
+      if (parse_dnsaddrport(txtaddr, p-txtaddr, &host, &port) !=
+          ARES_SUCCESS) {
         continue;
+      }
 
       /* Resize servers state array. */
       newserv = ares_realloc(*servers, (*nservers + 1) *
@@ -1889,8 +1980,8 @@ static int config_nameserver(struct server_state **servers, int *nservers,
 
       /* Store address data. */
       newserv[*nservers].addr.family = host.family;
-      newserv[*nservers].addr.udp_port = 0;
-      newserv[*nservers].addr.tcp_port = 0;
+      newserv[*nservers].addr.udp_port = htons(port);
+      newserv[*nservers].addr.tcp_port = htons(port);
       if (host.family == AF_INET)
         memcpy(&newserv[*nservers].addr.addrV4, &host.addrV4,
                sizeof(host.addrV4));
@@ -2178,6 +2269,72 @@ static int sortlist_alloc(struct apattern **sortlist, int *nsort,
   return 1;
 }
 
+
+/* initialize an rc4 key. If possible a cryptographically secure random key
+   is generated using a suitable function otherwise the code defaults to
+   cross-platform albeit less secure mechanism using rand
+*/
+static void randomize_key(unsigned char* key,int key_data_len)
+{
+  int randomized = 0;
+  int counter=0;
+#ifdef WIN32
+  BOOLEAN res;
+
+  res = RtlGenRandom(key, key_data_len);
+  if (res)
+    randomized = 1;
+
+#else /* !WIN32 */
+#  ifdef CARES_RANDOM_FILE
+  FILE *f = fopen(CARES_RANDOM_FILE, "rb");
+  if(f) {
+    setvbuf(f, NULL, _IONBF, 0);
+    counter = aresx_uztosi(fread(key, 1, key_data_len, f));
+    fclose(f);
+  }
+#  endif
+#endif /* WIN32 */
+
+  if (!randomized) {
+    for (;counter<key_data_len;counter++)
+      key[counter]=(unsigned char)(rand() % 256);  /* LCOV_EXCL_LINE */
+  }
+}
+
+static int init_id_key(rc4_key* key,int key_data_len)
+{
+  unsigned char index1;
+  unsigned char index2;
+  unsigned char* state;
+  short counter;
+  unsigned char *key_data_ptr = 0;
+
+  key_data_ptr = ares_malloc(key_data_len);
+  if (!key_data_ptr)
+    return ARES_ENOMEM;
+  memset(key_data_ptr, 0, key_data_len);
+
+  state = &key->state[0];
+  for(counter = 0; counter < 256; counter++)
+    /* unnecessary AND but it keeps some compilers happier */
+    state[counter] = (unsigned char)(counter & 0xff);
+  randomize_key(key->state,key_data_len);
+  key->x = 0;
+  key->y = 0;
+  index1 = 0;
+  index2 = 0;
+  for(counter = 0; counter < 256; counter++)
+  {
+    index2 = (unsigned char)((key_data_ptr[index1] + state[counter] +
+                              index2) % 256);
+    ARES_SWAP_BYTE(&state[counter], &state[index2]);
+
+    index1 = (unsigned char)((index1 + 1) % key_data_len);
+  }
+  ares_free(key_data_ptr);
+  return ARES_SUCCESS;
+}
 
 void ares_set_local_ip4(ares_channel channel, unsigned int local_ip)
 {
