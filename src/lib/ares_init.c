@@ -82,7 +82,7 @@ static int init_by_defaults(ares_channel channel);
 
 #ifndef WATT32
 static int config_nameserver(struct server_state **servers, int *nservers,
-                             char *str);
+                             const char *str);
 #endif
 static int set_search(ares_channel channel, const char *str);
 static int set_options(ares_channel channel, const char *str);
@@ -1304,18 +1304,23 @@ static int init_by_resolv_conf(ares_channel channel)
       int nscount = res_getservers(&res, addr, MAXNS);
       int i;
       for (i = 0; i < nscount; ++i) {
-        char str[INET6_ADDRSTRLEN];
+        char ipaddr[INET6_ADDRSTRLEN] = "";
+        char ipaddr_port[INET6_ADDRSTRLEN + 8]; /* [%s]:NNNNN */
+        unsigned short port = 0;
         int config_status;
         sa_family_t family = addr[i].sin.sin_family;
         if (family == AF_INET) {
-          ares_inet_ntop(family, &addr[i].sin.sin_addr, str, sizeof(str));
+          ares_inet_ntop(family, &addr[i].sin.sin_addr, ipaddr, sizeof(ipaddr));
+          port = ntohs(addr[i].sin.sin_port);
         } else if (family == AF_INET6) {
-          ares_inet_ntop(family, &addr[i].sin6.sin6_addr, str, sizeof(str));
+          ares_inet_ntop(family, &addr[i].sin6.sin6_addr, ipaddr, sizeof(ipaddr));
+          port = ntohs(addr[i].sin6.sin6_port);
         } else {
           continue;
         }
 
-        config_status = config_nameserver(&servers, &nservers, str);
+        snprintf(ipaddr_port, sizeof(ipaddr_port), "[%s]:%u", ipaddr, port?port:53);
+        config_status = config_nameserver(&servers, &nservers, ipaddr_port);
         if (config_status != ARES_SUCCESS) {
           status = config_status;
           break;
@@ -1822,8 +1827,113 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
   return 0;
 }
 
-/* Add the IPv4 or IPv6 nameservers in str (separated by commas) to the
- * servers list, updating servers and nservers as required.
+/* Parse address and port in these formats, either ipv4 or ipv6 addresses
+ * are allowed:
+ *   ipaddr
+ *   [ipaddr]
+ *   [ipaddr]:port
+ *
+ * If a port is not specified, will return fill in the default port of 53.
+ *
+ * Will fail if an IPv6 nameserver as detected by
+ * ares_ipv6_server_blacklisted()
+ *
+ * Returns an error code on failure, else ARES_SUCCESS
+ */
+static int parse_dnsaddrport(const char *str, size_t len,
+                             struct ares_addr *host, unsigned short *port)
+{
+  char ipaddr[INET6_ADDRSTRLEN] = "";
+  char ipport[6] = "";
+  size_t mylen;
+  int  has_brackets = 0;
+  const char *addr_start = NULL;
+  const char *addr_end   = NULL;
+  const char *port_start = NULL;
+  const char *port_end   = NULL;
+
+  /* Must start with [, hex digit or : */
+  if (len == 0 || (*str != '[' && !isxdigit(*str) && *str != ':')) {
+    return ARES_EBADSTR;
+  }
+
+  /* If it starts with a bracket, must end with a bracket */
+  if (*str == '[') {
+    const char *ptr;
+    addr_start = str+1;
+    ptr        = memchr(addr_start, ']', len-1);
+    if (ptr == NULL) {
+      return ARES_EBADSTR;
+    }
+    addr_end = ptr-1;
+
+    /* Try to pull off port */
+    if (ptr - str < len) {
+      ptr++;
+      if (*ptr != ':') {
+        return ARES_EBADSTR;
+      }
+
+      /* Missing port number */
+      if (ptr - str == len) {
+        return ARES_EBADSTR;
+      }
+
+      port_start = ptr+1;
+      port_end   = str+(len-1);
+    }
+  } else {
+    addr_start = str;
+    addr_end   = str+(len-1);
+  }
+
+  mylen = (addr_end-addr_start)+1;
+  /* Larger than buffer with null term */
+  if (mylen+1 > sizeof(ipaddr)) {
+    return ARES_EBADSTR;
+  }
+
+  memset(ipaddr, 0, sizeof(ipaddr));
+  memcpy(ipaddr, addr_start, mylen);
+
+  if (port_start) {
+    mylen = (port_end-port_start)+1;
+    /* Larger than buffer with null term */
+    if (mylen+1 > sizeof(ipport)) {
+      return ARES_EBADSTR;
+    }
+    memset(ipport, 0, sizeof(ipport));
+    memcpy(ipport, port_start, mylen);
+  } else {
+    snprintf(ipport, sizeof(ipport), "53");
+  }
+
+  /* Convert textual address to binary format. */
+  if (ares_inet_pton(AF_INET, ipaddr, &host->addrV4) == 1) {
+    host->family = AF_INET;
+  } else if (ares_inet_pton(AF_INET6, ipaddr, &host->addrV6) == 1
+           /* Silently skip blacklisted IPv6 servers. */
+           && !ares_ipv6_server_blacklisted(
+                 (const unsigned char *)&host->addrV6)) {
+    host->family = AF_INET6;
+  } else {
+    return ARES_EBADSTR;
+  }
+
+  *port = (unsigned short)atoi(ipport);
+  return ARES_SUCCESS;
+}
+
+/* Add the IPv4 or IPv6 nameservers in str (separated by commas or spaces) to
+ * the servers list, updating servers and nservers as required.
+ *
+ * If a nameserver is encapsulated in [ ] it may optionally include a port
+ * suffix, e.g.:
+ *    [127.0.0.1]:59591
+ *
+ * The extended format is required to support OpenBSD's resolv.conf format:
+ *   https://man.openbsd.org/OpenBSD-5.1/resolv.conf.5
+ * As well as MacOS libresolv that may include a non-default port number.
  *
  * This will silently ignore blacklisted IPv6 nameservers as detected by
  * ares_ipv6_server_blacklisted().
@@ -1831,16 +1941,18 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
  * Returns an error code on failure, else ARES_SUCCESS.
  */
 static int config_nameserver(struct server_state **servers, int *nservers,
-                             char *str)
+                             const char *str)
 {
   struct ares_addr host;
   struct server_state *newserv;
-  char *p, *txtaddr;
+  const char *p, *txtaddr;
   /* On Windows, there may be more than one nameserver specified in the same
    * registry key, so we parse input as a space or comma seperated list.
    */
   for (p = str; p;)
     {
+      unsigned short port;
+
       /* Skip whitespace and commas. */
       while (*p && (ISSPACE(*p) || (*p == ',')))
         p++;
@@ -1854,23 +1966,11 @@ static int config_nameserver(struct server_state **servers, int *nservers,
       /* Advance past this address. */
       while (*p && !ISSPACE(*p) && (*p != ','))
         p++;
-      if (*p)
-        /* Null terminate this address. */
-        *p++ = '\0';
-      else
-        /* Reached end of input, done when this address is processed. */
-        p = NULL;
 
-      /* Convert textual address to binary format. */
-      if (ares_inet_pton(AF_INET, txtaddr, &host.addrV4) == 1)
-        host.family = AF_INET;
-      else if (ares_inet_pton(AF_INET6, txtaddr, &host.addrV6) == 1
-               /* Silently skip blacklisted IPv6 servers. */
-               && !ares_ipv6_server_blacklisted(
-                    (const unsigned char *)&host.addrV6))
-        host.family = AF_INET6;
-      else
+      if (parse_dnsaddrport(txtaddr, p-txtaddr, &host, &port) !=
+          ARES_SUCCESS) {
         continue;
+      }
 
       /* Resize servers state array. */
       newserv = ares_realloc(*servers, (*nservers + 1) *
@@ -1880,8 +1980,8 @@ static int config_nameserver(struct server_state **servers, int *nservers,
 
       /* Store address data. */
       newserv[*nservers].addr.family = host.family;
-      newserv[*nservers].addr.udp_port = 0;
-      newserv[*nservers].addr.tcp_port = 0;
+      newserv[*nservers].addr.udp_port = htons(port);
+      newserv[*nservers].addr.tcp_port = htons(port);
       if (host.family == AF_INET)
         memcpy(&newserv[*nservers].addr.addrV4, &host.addrV4,
                sizeof(host.addrV4));
