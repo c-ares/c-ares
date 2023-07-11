@@ -956,7 +956,7 @@ static int get_DNS_Windows(char **outptr)
                  sizeof(addresses[addressesIndex].text),
                  "[%s]:%u",
                  ipaddr,
-                 ntohs(namesrvr.sa4->sin_port));
+                 ntohs(namesrvr.sa6->sin6_port));
         ++addressesIndex;
       }
       else {
