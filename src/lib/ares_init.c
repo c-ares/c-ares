@@ -919,7 +919,7 @@ static int get_DNS_Windows(char **outptr)
                  sizeof(addresses[addressesIndex].text),
                  "[%s]:%u",
                  ipaddr,
-                 namesrvr.sa4->sin_port);
+                 ntohs(namesrvr.sa4->sin_port));
         ++addressesIndex;
       }
       else if (namesrvr.sa->sa_family == AF_INET6)
@@ -956,7 +956,7 @@ static int get_DNS_Windows(char **outptr)
                  sizeof(addresses[addressesIndex].text),
                  "[%s]:%u",
                  ipaddr,
-                 namesrvr.sa4->sin_port);
+                 ntohs(namesrvr.sa4->sin_port));
         ++addressesIndex;
       }
       else {
