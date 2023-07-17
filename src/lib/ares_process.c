@@ -573,7 +573,7 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
         {
           query = list_node->data;
           list_node = list_node->next;  /* in case the query gets deleted */
-          if (query->timeout.tv_sec && ares__timedout(now, &query->timeout))
+          if (query && query->timeout.tv_sec && ares__timedout(now, &query->timeout))
             {
               query->error_status = ARES_ETIMEOUT;
               ++query->timeouts;
