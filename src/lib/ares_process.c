@@ -617,7 +617,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
        list_node = list_node->next)
     {
       struct query *q = list_node->data;
-      if ((q->qid == id) && same_questions(q->qbuf, q->qlen, abuf, alen))
+      if (q && (q->qid == id) && same_questions(q->qbuf, q->qlen, abuf, alen))
         {
           query = q;
           break;
