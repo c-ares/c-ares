@@ -292,6 +292,68 @@ fail:
 }
 
 
+ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val)
+{
+  size_t              i;
+  ares__slist_node_t *node = NULL;
+  unsigned int        rv = -1;
+
+  if (list == NULL || val == NULL)
+    return NULL;
+
+  /* Look for a matching node dropping from level to level.
+   * - Start at the highest level looking for a match.
+   * - Look at each node in the level if the node val is less val than try the next node.
+   *   If the node val is greater than val then go to the previous node.
+   * - At the previous node again start looking forward dropping each time the next node is greater.
+   * - If there is no levels below to drop to then the value doesn't exist in the list.
+   * - When we find a matching value we stop everything and use that node.
+   */
+  for (i=list->levels - 1; i-- >= 0; ) {
+    if (node == NULL)
+      node = list->head[i];
+
+    if (node == NULL)
+      continue;
+
+    do {
+      rv = list->cmp(val, node->data);
+
+      if (rv < 0) {
+        /* back off, our value is greater than current node reference */
+        node = node->prev[i];
+      } else if (rv > 0) {
+        /* move forward and try again. if it goes past, it will loop again and
+         * go to previous entry */
+        node = node->next[i];
+      }
+
+      /* rv == 0 will terminate loop */
+
+    } while (node != NULL && rv > 0);
+
+    /* Found a match, no need to continue */
+    if (rv == 0) {
+      break;
+    }
+  }
+
+  /* no match */
+  if (rv != 0) {
+    return NULL;
+  }
+
+  /* The list may have multiple entries that match.  They're guaranteed to be
+   * in order, but we're not guaranteed to have selected the _first_ matching
+   * node.  Lets scan backwards to find the first match */
+  while (node->prev[0] != NULL && list->cmp(node->prev[0]->data, val) == 0) {
+    node = node->prev[0];
+  }
+
+  return node;
+}
+
+
 ares__slist_node_t *ares__slist_node_first(ares__slist_t *list)
 {
   if (list == NULL)
