@@ -9,6 +9,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
   ares__readaddrinfo.c			\
+  ares__slist.c 	\
   ares__sortaddrinfo.c			\
   ares__read_line.c			\
   ares__timeval.c			\

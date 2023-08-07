@@ -229,7 +229,7 @@ void ares__destroy_rand_state(ares_rand_state *state)
 }
 
 
-static void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len)
+void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len)
 {
 
   while (1) {
