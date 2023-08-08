@@ -112,7 +112,7 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
 
   /* Initialize our list nodes. */
   ares__init_list_node(&(query->queries_by_qid),     query);
-  ares__init_list_node(&(query->queries_by_timeout), query);
+  query->node_queries_by_timeout = NULL;
   ares__init_list_node(&(query->queries_to_server),  query);
   ares__init_list_node(&(query->all_queries),        query);
 

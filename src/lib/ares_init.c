@@ -105,6 +105,24 @@ int ares_init(ares_channel *channelptr)
   return ares_init_options(channelptr, NULL, 0);
 }
 
+static int ares_query_timeout_cmp_cb(const void *arg1, const void *arg2)
+{
+  const struct query *q1 = arg1;
+  const struct query *q2 = arg2;
+
+  if (q1->timeout.tv_sec > q2->timeout.tv_sec)
+    return 1;
+  if (q1->timeout.tv_sec < q2->timeout.tv_sec)
+    return -1;
+
+  if (q1->timeout.tv_usec > q2->timeout.tv_usec)
+    return 1;
+  if (q1->timeout.tv_usec < q2->timeout.tv_usec)
+    return -1;
+
+  return 0;
+}
+
 int ares_init_options(ares_channel *channelptr, struct ares_options *options,
                       int optmask)
 {
@@ -158,11 +176,22 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->rand_state = NULL;
 
   channel->last_server = 0;
-  channel->last_timeout_processed = (time_t)now.tv_sec;
 
   memset(&channel->local_dev_name, 0, sizeof(channel->local_dev_name));
   channel->local_ip4 = 0;
   memset(&channel->local_ip6, 0, sizeof(channel->local_ip6));
+
+  /* Generate random key */
+
+  channel->rand_state = ares__init_rand_state();
+  if (channel->rand_state == NULL) {
+    status = ARES_ENOMEM;
+    DEBUGF(fprintf(stderr, "Error: init_id_key failed: %s\n",
+          ares_strerror(status)));
+    goto done;
+  }
+
+  channel->next_id = ares__generate_new_id(channel->rand_state);
 
   /* Initialize our lists of queries */
   ares__init_list_head(&(channel->all_queries));
@@ -170,10 +199,14 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
     {
       ares__init_list_head(&(channel->queries_by_qid[i]));
     }
-  for (i = 0; i < ARES_TIMEOUT_TABLE_SIZE; i++)
-    {
-      ares__init_list_head(&(channel->queries_by_timeout[i]));
-    }
+
+  channel->queries_by_timeout = ares__slist_create(channel->rand_state, 
+                                                   ares_query_timeout_cmp_cb,
+                                                   NULL);
+  if (channel->queries_by_timeout == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
 
   /* Initialize configuration by each of the four sources, from highest
    * precedence to lowest.
@@ -206,20 +239,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
     DEBUGF(fprintf(stderr, "Error: init_by_defaults failed: %s\n",
                    ares_strerror(status)));
 
-  /* Generate random key */
-
-  if (status == ARES_SUCCESS) {
-    channel->rand_state = ares__init_rand_state();
-    if (channel->rand_state == NULL) {
-      status = ARES_ENOMEM;
-    }
-
-    if (status == ARES_SUCCESS)
-      channel->next_id = ares__generate_new_id(channel->rand_state);
-    else
-      DEBUGF(fprintf(stderr, "Error: init_id_key failed: %s\n",
-                     ares_strerror(status)));
-  }
 
 done:
   if (status != ARES_SUCCESS)
@@ -239,6 +258,7 @@ done:
         ares_free(channel->hosts_path);
       if (channel->rand_state)
         ares__destroy_rand_state(channel->rand_state);
+      ares__slist_destroy(channel->queries_by_timeout);
       ares_free(channel);
       return status;
     }

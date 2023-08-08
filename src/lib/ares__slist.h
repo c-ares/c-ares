@@ -39,7 +39,7 @@ ares__slist_node_t *ares__slist_node_prev(ares__slist_node_t *node);
 ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val);
 void *ares__slist_node_val(ares__slist_node_t *node);
 size_t ares__slist_len(ares__slist_t *list);
-ares__slist_t *ares__llist_node_parent(ares__slist_node_t *node);
+ares__slist_t *ares__slist_node_parent(ares__slist_node_t *node);
 void *ares__slist_first_val(ares__slist_t *list);
 void *ares__slist_last_val(ares__slist_t *list);
 void *ares__slist_node_claim(ares__slist_node_t *node);

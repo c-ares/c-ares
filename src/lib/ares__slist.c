@@ -232,7 +232,7 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
 
   /* Scan from highest level in the slist, even if we're not using that number
    * of levels for this entry as this is what makes it O(log n) */
-  for (i=list->levels - 1; i-- >= 0; ) {
+  for (i=list->levels; i-- > 0; ) {
 
     /* set left if left is NULL and the current node value is greater than the 
      * head at this level */
@@ -301,15 +301,10 @@ ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val)
   if (list == NULL || val == NULL)
     return NULL;
 
-  /* Look for a matching node dropping from level to level.
-   * - Start at the highest level looking for a match.
-   * - Look at each node in the level if the node val is less val than try the next node.
-   *   If the node val is greater than val then go to the previous node.
-   * - At the previous node again start looking forward dropping each time the next node is greater.
-   * - If there is no levels below to drop to then the value doesn't exist in the list.
-   * - When we find a matching value we stop everything and use that node.
-   */
-  for (i=list->levels - 1; i-- >= 0; ) {
+  /* Scan nodes starting at the highest level. For each level scan forward
+   * until the value is between the prior and next node, or if equal quit
+   * as we found a match */
+  for (i=list->levels; i-- > 0; ) {
     if (node == NULL)
       node = list->head[i];
 
@@ -358,6 +353,7 @@ ares__slist_node_t *ares__slist_node_first(ares__slist_t *list)
 {
   if (list == NULL)
     return NULL;
+
   return list->head[0];
 }
 
@@ -436,7 +432,7 @@ void *ares__slist_node_claim(ares__slist_node_t *node)
   val  = node->data;
 
   /* relink each node at each level */
-  for (i=node->levels-1; i-- >= 0; ) {
+  for (i=node->levels; i-- > 0; ) {
     if (node->next[i] == NULL) {
       if (i == 0) {
         list->tail = node->prev[0];
@@ -471,8 +467,8 @@ void ares__slist_node_destroy(ares__slist_node_t *node)
     return;
 
   destruct = node->parent->destruct;
-
   val = ares__slist_node_claim(node);
+
   if (val != NULL && destruct != NULL)
     destruct(val);
 }

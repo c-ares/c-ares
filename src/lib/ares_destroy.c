@@ -71,10 +71,7 @@ void ares_destroy(ares_channel channel)
     {
       assert(ares__is_list_empty(&(channel->queries_by_qid[i])));
     }
-  for (i = 0; i < ARES_TIMEOUT_TABLE_SIZE; i++)
-    {
-      assert(ares__is_list_empty(&(channel->queries_by_timeout[i])));
-    }
+  assert(ares__slist_len(channel->queries_by_timeout) == 0);
 #endif
 
   ares__destroy_servers_state(channel);
@@ -84,6 +81,8 @@ void ares_destroy(ares_channel channel)
       ares_free(channel->domains[i]);
     ares_free(channel->domains);
   }
+
+  ares__slist_destroy(channel->queries_by_timeout);
 
   if(channel->sortlist)
     ares_free(channel->sortlist);

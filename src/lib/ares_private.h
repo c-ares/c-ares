@@ -106,6 +106,11 @@ W32_FUNC const char *_w32_GetHostsFile (void);
 #include "ares_ipv6.h"
 #include "ares_llist.h"
 
+struct ares_rand_state;
+typedef struct ares_rand_state ares_rand_state;
+
+#include "ares__slist.h"
+
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
 #  define getenv(ptr) ares_getenv(ptr)
@@ -213,7 +218,7 @@ struct query {
    * operations O(1).
    */
   struct list_node queries_by_qid;    /* hopefully in same cache line as qid */
-  struct list_node queries_by_timeout;
+  ares__slist_node_t *node_queries_by_timeout;
   struct list_node queries_to_server;
   struct list_node all_queries;
 
@@ -262,9 +267,6 @@ struct apattern {
   unsigned short type;
 };
 
-struct ares_rand_state;
-typedef struct ares_rand_state ares_rand_state;
-
 struct ares_channeldata {
   /* Configuration data */
   int flags;
@@ -304,10 +306,6 @@ struct ares_channeldata {
   /* Generation number to use for the next TCP socket open/close */
   int tcp_connection_generation;
 
-  /* The time at which we last called process_timeouts(). Uses integer seconds
-     just to draw the line somewhere. */
-  time_t last_timeout_processed;
-
   /* Last server we sent a query to. */
   int last_server;
 
@@ -318,8 +316,7 @@ struct ares_channeldata {
 #define ARES_QID_TABLE_SIZE 2048
   struct list_node queries_by_qid[ARES_QID_TABLE_SIZE];
   /* Queries bucketed by timeout, for quickly handling timeouts: */
-#define ARES_TIMEOUT_TABLE_SIZE 1024
-  struct list_node queries_by_timeout[ARES_TIMEOUT_TABLE_SIZE];
+  ares__slist_t   *queries_by_timeout;
 
   ares_sock_state_cb sock_state_cb;
   void *sock_state_cb_data;

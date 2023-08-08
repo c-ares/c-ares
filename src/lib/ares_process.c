@@ -556,32 +556,24 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
 /* If any queries have timed out, note the timeout and move them on. */
 static void process_timeouts(ares_channel channel, struct timeval *now)
 {
-  time_t t;  /* the time of the timeouts we're processing */
-  struct query *query;
-  struct list_node* list_head;
-  struct list_node* list_node;
+  ares__slist_node_t *node = ares__slist_node_first(channel->queries_by_timeout);
 
-  /* Process all the timeouts that have fired since the last time we processed
-   * timeouts. If things are going well, then we'll have hundreds/thousands of
-   * queries that fall into future buckets, and only a handful of requests
-   * that fall into the "now" bucket, so this should be quite quick.
-   */
-  for (t = channel->last_timeout_processed; t <= now->tv_sec; t++)
-    {
-      list_head = &(channel->queries_by_timeout[t % ARES_TIMEOUT_TABLE_SIZE]);
-      for (list_node = list_head->next; list_node != list_head; )
-        {
-          query = list_node->data;
-          list_node = list_node->next;  /* in case the query gets deleted */
-          if (query->timeout.tv_sec && ares__timedout(now, &query->timeout))
-            {
-              query->error_status = ARES_ETIMEOUT;
-              ++query->timeouts;
-              next_server(channel, query, now);
-            }
-        }
-     }
-  channel->last_timeout_processed = now->tv_sec;
+  while (node != NULL) {
+    struct query       *query = ares__slist_node_val(node);
+    /* Node might be removed, cache next */
+    ares__slist_node_t *next  = ares__slist_node_next(node);
+
+    /* Since this is sorted, as soon as we hit a query that isn't timed out, break */
+    if (!ares__timedout(now, &query->timeout))
+      break;
+
+    
+    query->error_status = ARES_ETIMEOUT;
+    query->timeouts++;
+    next_server(channel, query, now);
+
+    node = next;
+  }
 }
 
 /* Handle an answer from a server. */
@@ -916,16 +908,13 @@ void ares__send_query(ares_channel channel, struct query *query,
       }
     }
 
-    query->timeout = *now;
-    timeadd(&query->timeout, timeplus);
     /* Keep track of queries bucketed by timeout, so we can process
      * timeout events quickly.
      */
-    ares__remove_from_list(&(query->queries_by_timeout));
-    ares__insert_in_list(
-        &(query->queries_by_timeout),
-        &(channel->queries_by_timeout[query->timeout.tv_sec %
-                                      ARES_TIMEOUT_TABLE_SIZE]));
+    ares__slist_node_destroy(query->node_queries_by_timeout);
+    query->timeout = *now;
+    timeadd(&query->timeout, timeplus);
+    query->node_queries_by_timeout = ares__slist_insert(channel->queries_by_timeout, query);
 
     /* Keep track of queries bucketed by server, so we can process server
      * errors quickly.
@@ -1542,7 +1531,7 @@ void ares__free_query(struct query *query)
 {
   /* Remove the query from all the lists in which it is linked */
   ares__remove_from_list(&(query->queries_by_qid));
-  ares__remove_from_list(&(query->queries_by_timeout));
+  ares__slist_node_destroy(query->node_queries_by_timeout);
   ares__remove_from_list(&(query->queries_to_server));
   ares__remove_from_list(&(query->all_queries));
   /* Zero out some important stuff, to help catch bugs */
