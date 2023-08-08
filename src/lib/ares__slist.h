@@ -134,8 +134,6 @@ ares__slist_t *ares__slist_node_parent(ares__slist_node_t *node);
  */
 void *ares__slist_first_val(ares__slist_t *list);
 
-
-
 /*! Fetch last Node Value in SkipList
  * 
  *  \param[in] list  Initialized SkipList Object

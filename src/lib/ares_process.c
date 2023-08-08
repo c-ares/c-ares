@@ -567,7 +567,6 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
     if (!ares__timedout(now, &query->timeout))
       break;
 
-    
     query->error_status = ARES_ETIMEOUT;
     query->timeouts++;
     next_server(channel, query, now);
