@@ -474,21 +474,6 @@ void ares__slist_node_destroy(ares__slist_node_t *node)
 }
 
 
-void ares__slist_node_replace(ares__slist_node_t *node, void *val)
-{
-  ares__slist_destructor_t destruct;
-  
-  if (node == NULL)
-    return;
-
-  destruct = node->parent->destruct;
-  if (destruct != NULL)
-    destruct(node->data);
-
-  node->data = val;
-}
-
-
 void ares__slist_destroy(ares__slist_t *list)
 {
   ares__slist_node_t *node;
