@@ -296,7 +296,7 @@ ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val)
 {
   size_t              i;
   ares__slist_node_t *node = NULL;
-  unsigned int        rv = -1;
+  int                 rv = -1;
 
   if (list == NULL || val == NULL)
     return NULL;

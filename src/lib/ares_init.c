@@ -129,7 +129,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   ares_channel channel;
   int i;
   int status = ARES_SUCCESS;
-  struct timeval now;
 
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: n/a on non-WinSock */
@@ -141,8 +140,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   }
 
   memset(channel, 0, sizeof(*channel));
-
-  now = ares__tvnow();
 
   /* Set everything to distinguished values so we know they haven't
    * been set yet.

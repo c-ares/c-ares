@@ -206,7 +206,7 @@ fail:
 
 unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket)
 {
-  size_t              idx  = 0;
+  unsigned int        idx  = 0;
   ares__llist_node_t *node = NULL;
   const void         *key  = NULL;
 
