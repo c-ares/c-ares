@@ -171,7 +171,12 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->next_id = ares__generate_new_id(channel->rand_state);
 
   /* Initialize our lists of queries */
-  ares__init_list_head(&(channel->all_queries));
+  channel->all_queries = ares__llist_create(NULL);
+  if (channel->all_queries == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
   for (i = 0; i < ARES_QID_TABLE_SIZE; i++)
     {
       ares__init_list_head(&(channel->queries_by_qid[i]));
@@ -235,6 +240,7 @@ done:
         ares_free(channel->hosts_path);
       if (channel->rand_state)
         ares__destroy_rand_state(channel->rand_state);
+      ares__llist_destroy(channel->all_queries);
       ares__slist_destroy(channel->queries_by_timeout);
       ares_free(channel);
       return status;

@@ -30,7 +30,7 @@ int ares_getsock(ares_channel channel,
   unsigned int setbits = 0xffffffff;
 
   /* Are there any active queries? */
-  int active_queries = !ares__is_list_empty(&(channel->all_queries));
+  size_t active_queries = ares__llist_len(channel->all_queries);
 
   for (i = 0; i < channel->nservers; i++)
     {

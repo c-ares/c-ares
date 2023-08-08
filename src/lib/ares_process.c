@@ -1519,7 +1519,7 @@ static void end_query (ares_channel channel, struct query *query, int status,
    * sockets unless STAYOPEN is set.
    */
   if (!(channel->flags & ARES_FLAG_STAYOPEN) &&
-      ares__is_list_empty(&(channel->all_queries)))
+      ares__llist_len(channel->all_queries) == 0)
     {
       for (i = 0; i < channel->nservers; i++)
         ares__close_sockets(channel, &channel->servers[i]);
@@ -1532,7 +1532,7 @@ void ares__free_query(struct query *query)
   ares__remove_from_list(&(query->queries_by_qid));
   ares__slist_node_destroy(query->node_queries_by_timeout);
   ares__remove_from_list(&(query->queries_to_server));
-  ares__remove_from_list(&(query->all_queries));
+  ares__llist_node_destroy(query->node_all_queries);
   /* Zero out some important stuff, to help catch bugs */
   query->callback = NULL;
   query->arg = NULL;

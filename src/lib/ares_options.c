@@ -155,7 +155,7 @@ int ares_set_servers(ares_channel channel,
   if (!channel)
     return ARES_ENODATA;
 
-  if (!ares__is_list_empty(&channel->all_queries))
+  if (ares__llist_len(channel->all_queries) != 0)
     return ARES_ENOTIMP;
 
   ares__destroy_servers_state(channel);
@@ -207,7 +207,7 @@ int ares_set_servers_ports(ares_channel channel,
   if (!channel)
     return ARES_ENODATA;
 
-  if (!ares__is_list_empty(&channel->all_queries))
+  if (ares__llist_len(channel->all_queries) != 0)
     return ARES_ENOTIMP;
 
   ares__destroy_servers_state(channel);

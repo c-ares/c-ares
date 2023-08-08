@@ -46,27 +46,28 @@ void ares_destroy_options(struct ares_options *options)
 
 void ares_destroy(ares_channel channel)
 {
-  int i;
-  struct query *query;
-  struct list_node* list_head;
-  struct list_node* list_node;
+  int                 i;
+  ares__llist_node_t *node = NULL;
 
   if (!channel)
     return;
 
-  list_head = &(channel->all_queries);
-  for (list_node = list_head->next; list_node != list_head; )
-    {
-      query = list_node->data;
-      list_node = list_node->next;  /* since we're deleting the query */
-      query->callback(query->arg, ARES_EDESTRUCTION, 0, NULL, 0);
-      ares__free_query(query);
-    }
+  node = ares__llist_node_first(channel->all_queries);
+  while (node != NULL) {
+    ares__llist_node_t *next  = ares__llist_node_next(node);
+    struct query       *query = ares__llist_node_claim(node);
+
+    query->callback(query->arg, ARES_EDESTRUCTION, 0, NULL, 0);
+    ares__free_query(query);
+
+    node = next;
+  }
+  
 #ifndef NDEBUG
   /* Freeing the query should remove it from all the lists in which it sits,
    * so all query lists should be empty now.
    */
-  assert(ares__is_list_empty(&(channel->all_queries)));
+  assert(ares__llist_len(channel->all_queries) == 0);
   for (i = 0; i < ARES_QID_TABLE_SIZE; i++)
     {
       assert(ares__is_list_empty(&(channel->queries_by_qid[i])));
@@ -82,6 +83,7 @@ void ares_destroy(ares_channel channel)
     ares_free(channel->domains);
   }
 
+  ares__llist_destroy(channel->all_queries);
   ares__slist_destroy(channel->queries_by_timeout);
 
   if(channel->sortlist)

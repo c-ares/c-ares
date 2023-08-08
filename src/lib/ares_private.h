@@ -109,6 +109,7 @@ W32_FUNC const char *_w32_GetHostsFile (void);
 struct ares_rand_state;
 typedef struct ares_rand_state ares_rand_state;
 
+#include "ares__llist.h"
 #include "ares__slist.h"
 
 #ifndef HAVE_GETENV
@@ -212,15 +213,13 @@ struct query {
   struct timeval timeout;
 
   /*
-   * Links for the doubly-linked lists in which we insert a query.
-   * These circular, doubly-linked lists that are hash-bucketed based
-   * the attributes we care about, help making most important
-   * operations O(1).
+   * Node object for each list entry the query belongs to in order to
+   * make removal operations O(1).
    */
   struct list_node queries_by_qid;    /* hopefully in same cache line as qid */
   ares__slist_node_t *node_queries_by_timeout;
   struct list_node queries_to_server;
-  struct list_node all_queries;
+  ares__llist_node_t *node_all_queries;
 
   /* Query buf with length at beginning, for TCP transmission */
   unsigned char *tcpbuf;
@@ -309,9 +308,8 @@ struct ares_channeldata {
   /* Last server we sent a query to. */
   int last_server;
 
-  /* Circular, doubly-linked list of queries, bucketed various ways.... */
-  /* All active queries in a single list: */
-  struct list_node all_queries;
+  /* All active queries in a single list */
+  ares__llist_t   *all_queries;
   /* Queries bucketed by qid, for quickly dispatching DNS responses: */
 #define ARES_QID_TABLE_SIZE 2048
   struct list_node queries_by_qid[ARES_QID_TABLE_SIZE];
