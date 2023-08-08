@@ -117,6 +117,11 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
 
   /* Chain the query into the list of all queries. */
   query->node_all_queries = ares__llist_insert_last(channel->all_queries, query);
+  if (query->node_all_queries == NULL) {
+    callback(arg, ARES_ENOMEM, 0, NULL, 0);
+    ares__free_query(query);
+    return;
+  }
 
   /* Keep track of queries bucketed by qid, so we can process DNS
    * responses quickly.

@@ -914,7 +914,10 @@ void ares__send_query(ares_channel channel, struct query *query,
     query->timeout = *now;
     timeadd(&query->timeout, timeplus);
     query->node_queries_by_timeout = ares__slist_insert(channel->queries_by_timeout, query);
-
+    if (!query->node_queries_by_timeout) {
+      end_query(channel, query, ARES_ENOMEM, NULL, 0);
+      return;
+    }
     /* Keep track of queries bucketed by server, so we can process server
      * errors quickly.
      */
