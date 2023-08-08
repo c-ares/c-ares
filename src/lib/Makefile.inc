@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: MIT
 
 CSOURCES = ares__addrinfo2hostent.c	\
-  ares__addrinfo_localhost.c	\
-  ares__close_sockets.c	\
+  ares__addrinfo_localhost.c		\
+  ares__close_sockets.c			\
   ares__get_hostent.c			\
-  ares__htable.c 	\
+  ares__htable.c 			\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
   ares__readaddrinfo.c			\
-  ares__slist.c 	\
+  ares__slist.c 			\
   ares__sortaddrinfo.c			\
   ares__read_line.c			\
   ares__timeval.c			\
@@ -65,7 +65,10 @@ CSOURCES = ares__addrinfo2hostent.c	\
   inet_ntop.c				\
   windows_port.c
 
-HHEADERS = ares_android.h	\
+HHEADERS = ares__htable.h		\
+  ares__llist.h				\
+  ares__slist.h				\
+  ares_android.h			\
   ares_data.h				\
   ares_getenv.h				\
   ares_inet_net_pton.h			\
