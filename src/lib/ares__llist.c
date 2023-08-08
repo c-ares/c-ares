@@ -112,6 +112,8 @@ static ares__llist_node_t *ares__llist_insert_at(ares__llist_t *list,
   }
   if (list->tail == NULL)
     list->tail = node;
+  if (list->head == NULL)
+    list->head = node;
 
   list->cnt++;
 

@@ -54,6 +54,7 @@ void ares_cancel(ares_channel channel)
       next = ares__llist_node_next(node);
 
       query = ares__llist_node_claim(node);
+      query->node_all_queries = NULL;
 
       /* NOTE: its possible this may enqueue new queries */
       query->callback(query->arg, ARES_ECANCELLED, 0, NULL, 0);
