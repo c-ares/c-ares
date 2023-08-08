@@ -134,11 +134,13 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: n/a on non-WinSock */
 
-  channel = ares_malloc(sizeof(struct ares_channeldata));
+  channel = ares_malloc(sizeof(*channel));
   if (!channel) {
     *channelptr = NULL;
     return ARES_ENOMEM;
   }
+
+  memset(channel, 0, sizeof(*channel));
 
   now = ares__tvnow();
 
@@ -158,28 +160,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->nservers = -1;
   channel->ndomains = -1;
   channel->nsort = -1;
-  channel->tcp_connection_generation = 0;
-  channel->lookups = NULL;
-  channel->domains = NULL;
-  channel->sortlist = NULL;
-  channel->servers = NULL;
-  channel->sock_state_cb = NULL;
-  channel->sock_state_cb_data = NULL;
-  channel->sock_create_cb = NULL;
-  channel->sock_create_cb_data = NULL;
-  channel->sock_config_cb = NULL;
-  channel->sock_config_cb_data = NULL;
-  channel->sock_funcs = NULL;
-  channel->sock_func_cb_data = NULL;
-  channel->resolvconf_path = NULL;
-  channel->hosts_path = NULL;
-  channel->rand_state = NULL;
-
-  channel->last_server = 0;
-
-  memset(&channel->local_dev_name, 0, sizeof(channel->local_dev_name));
-  channel->local_ip4 = 0;
-  memset(&channel->local_ip6, 0, sizeof(channel->local_ip6));
 
   /* Generate random key */
 
