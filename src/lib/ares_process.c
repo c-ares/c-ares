@@ -705,36 +705,11 @@ static void process_broken_connections(ares_channel channel,
     }
 }
 
-/* Swap the contents of two lists */
-static void swap_lists(struct list_node* head_a,
-                       struct list_node* head_b)
-{
-  int is_a_empty = ares__is_list_empty(head_a);
-  int is_b_empty = ares__is_list_empty(head_b);
-  struct list_node old_a = *head_a;
-  struct list_node old_b = *head_b;
-
-  if (is_a_empty) {
-    ares__init_list_head(head_b);
-  } else {
-    *head_b = old_a;
-    old_a.next->prev = head_b;
-    old_a.prev->next = head_b;
-  }
-  if (is_b_empty) {
-    ares__init_list_head(head_a);
-  } else {
-    *head_a = old_b;
-    old_b.next->prev = head_a;
-    old_b.prev->next = head_a;
-  }
-}
 
 static void handle_error(ares_channel channel, int whichserver,
                          struct timeval *now)
 {
   struct server_state *server;
-  struct query *query;
   ares__llist_t *list_copy;
   ares__llist_node_t *node;
 

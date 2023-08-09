@@ -2013,7 +2013,8 @@ static int config_nameserver(struct server_state **servers, int *nservers,
       if (!newserv)
         return ARES_ENOMEM;
 
-      memset(newserv + ((*nservers) * sizeof(*newserv)), 0, sizeof(*newserv));
+      memset(((unsigned char *)newserv) + ((*nservers) * sizeof(*newserv)), 0, sizeof(*newserv));
+
       /* Store address data. */
       newserv[*nservers].addr.family = host.family;
       newserv[*nservers].addr.udp_port = htons(port);
