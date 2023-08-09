@@ -257,7 +257,7 @@ static void write_tcp_data(ares_channel channel,
       n = 0;
       for (sendreq = server->qhead; sendreq; sendreq = sendreq->next)
         n++;
-
+printf("%s(): tcp socket write %zu vectors\n", __FUNCTION__, n);
       /* Allocate iovecs so we can send all our data at once. */
       vec = ares_malloc(n * sizeof(struct iovec));
       if (vec)
@@ -587,7 +587,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
   struct query *query;
   struct list_node* list_head;
   struct list_node* list_node;
-
+printf("%s(): processing answer len %d\n", __FUNCTION__, alen);
   /* If there's no room in the answer for a header, we can't do much
    * with it. */
   if (alen < HFIXEDSZ)
@@ -875,6 +875,7 @@ void ares__send_query(ares_channel channel, struct query *query,
               return;
             }
         }
+printf("%s(): udp socket write len %d\n", __FUNCTION__, (int)query->qlen);
       if (socket_write(channel, server->udp_socket, query->qbuf, query->qlen) == -1)
         {
           /* FIXME: Handle EAGAIN here since it likely can happen. */
