@@ -566,8 +566,10 @@ printf("%s(): %zu nodes\n", __FUNCTION__, ares__slist_len(channel->queries_by_ti
 printf("%s(): query %p tv_sec=%ld, tv_usec=%ld (now %ld, %ld)\n", __FUNCTION__, query, (long)query->timeout.tv_sec, (long)query->timeout.tv_usec, (long)now->tv_sec, (long)now->tv_usec);
 
     /* Since this is sorted, as soon as we hit a query that isn't timed out, break */
-    if (!ares__timedout(now, &query->timeout))
+    if (!ares__timedout(now, &query->timeout)) {
+printf("%s(): query %p NOT timed out\n", __FUNCTION__, query);
       break;
+    }
 printf("%s(): query %p timed out\n", __FUNCTION__, query);
     query->error_status = ARES_ETIMEOUT;
     query->timeouts++;
@@ -616,8 +618,10 @@ printf("%s(): processing answer len %d\n", __FUNCTION__, alen);
           break;
         }
     }
-  if (!query)
+  if (!query) {
+printf("%s(): query not found for id %d\n", __FUNCTION__, id);
     return;
+  }
 
   packetsz = PACKETSZ;
   /* If we use EDNS and server answers with FORMERR without an OPT RR, the protocol
@@ -637,6 +641,7 @@ printf("%s(): processing answer len %d\n", __FUNCTION__, alen);
           DNS_HEADER_SET_ARCOUNT(query->tcpbuf + 2, 0);
           query->tcpbuf = ares_realloc(query->tcpbuf, query->tcplen);
           query->qbuf = query->tcpbuf + 2;
+printf("%s(): resend %p without EDNS\n", __FUNCTION__, query);
           ares__send_query(channel, query, now);
           return;
       }
@@ -650,6 +655,7 @@ printf("%s(): processing answer len %d\n", __FUNCTION__, alen);
     {
       if (!query->using_tcp)
         {
+printf("%s(): resend %p as TCP\n", __FUNCTION__, query);
           query->using_tcp = 1;
           ares__send_query(channel, query, now);
         }
@@ -669,6 +675,7 @@ printf("%s(): processing answer len %d\n", __FUNCTION__, alen);
     {
       if (rcode == SERVFAIL || rcode == NOTIMP || rcode == REFUSED)
         {
+printf("%s(): query %p returned DNS failure condition\n", __FUNCTION__, query);
           skip_server(channel, query, whichserver);
           if (query->server == whichserver)
             next_server(channel, query, now);
