@@ -194,8 +194,8 @@ struct server_state {
    * re-send. */
   int tcp_connection_generation;
 
-  /* Circular, doubly-linked list of outstanding queries to this server */
-  struct list_node queries_to_server;
+  /* list of outstanding queries to this server */
+  ares__llist_t *queries_to_server;
 
   /* Link back to owning channel */
   ares_channel channel;
@@ -218,7 +218,7 @@ struct query {
    */
   struct list_node queries_by_qid;    /* hopefully in same cache line as qid */
   ares__slist_node_t *node_queries_by_timeout;
-  struct list_node queries_to_server;
+  ares__llist_node_t *node_queries_to_server;
   ares__llist_node_t *node_all_queries;
 
   /* Query buf with length at beginning, for TCP transmission */
@@ -367,7 +367,7 @@ int ares__expand_name_validated(const unsigned char *encoded,
 int ares__expand_name_for_response(const unsigned char *encoded,
                                    const unsigned char *abuf, int alen,
                                    char **s, long *enclen, int is_hostname);
-void ares__init_servers_state(ares_channel channel);
+int ares__init_servers_state(ares_channel channel);
 void ares__destroy_servers_state(ares_channel channel);
 int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
 int ares__single_domain(ares_channel channel, const char *name, char **s);

@@ -735,8 +735,8 @@ static void handle_error(ares_channel channel, int whichserver,
 {
   struct server_state *server;
   struct query *query;
-  struct list_node list_head;
-  struct list_node* list_node;
+  ares__llist_t *list_copy;
+  ares__llist_node_t *node;
 
   server = &channel->servers[whichserver];
 
@@ -749,20 +749,32 @@ static void handle_error(ares_channel channel, int whichserver,
    * be re-sent to this server, which will re-insert these queries in that
    * same server->queries_to_server list.
    */
-  ares__init_list_head(&list_head);
-  swap_lists(&list_head, &(server->queries_to_server));
-  for (list_node = list_head.next; list_node != &list_head; )
-    {
-      query = list_node->data;
-      list_node = list_node->next;  /* in case the query gets deleted */
-      assert(query->server == whichserver);
-      skip_server(channel, query, whichserver);
-      next_server(channel, query, now);
-    }
+  list_copy                 = server->queries_to_server;
+  server->queries_to_server = ares__llist_create(NULL);
+  if (server->queries_to_server == NULL) {
+    /* No way to recover from this type of out of memory, just restore the list.
+     * Timeouts should handle this condition. */
+    server->queries_to_server = list_copy;
+    return;
+  }
+
+  node = ares__llist_node_first(list_copy);
+  while (node != NULL) {
+    ares__llist_node_t *next  = ares__llist_node_next(node);
+    struct query       *query = ares__llist_node_val(node);
+
+    assert(query->server == whichserver);
+    skip_server(channel, query, whichserver);
+    next_server(channel, query, now);
+
+    node = next;
+  }
+
   /* Each query should have removed itself from our temporary list as
    * it re-sent itself or finished up...
    */
-  assert(ares__is_list_empty(&list_head));
+  assert(ares__llist_len(list_copy) == 0);
+  ares__llist_destroy(list_copy);
 }
 
 static void skip_server(ares_channel channel, struct query *query,
@@ -936,9 +948,9 @@ void ares__send_query(ares_channel channel, struct query *query,
     /* Keep track of queries bucketed by server, so we can process server
      * errors quickly.
      */
-    ares__remove_from_list(&(query->queries_to_server));
-    ares__insert_in_list(&(query->queries_to_server),
-                         &(server->queries_to_server));
+    ares__llist_node_destroy(query->node_queries_to_server);
+    query->node_queries_to_server =
+      ares__llist_insert_last(server->queries_to_server, query);
 }
 
 /*
@@ -1549,7 +1561,7 @@ void ares__free_query(struct query *query)
   /* Remove the query from all the lists in which it is linked */
   ares__remove_from_list(&(query->queries_by_qid));
   ares__slist_node_destroy(query->node_queries_by_timeout);
-  ares__remove_from_list(&(query->queries_to_server));
+  ares__llist_node_destroy(query->node_queries_to_server);
   ares__llist_node_destroy(query->node_all_queries);
   /* Zero out some important stuff, to help catch bugs */
   query->callback = NULL;
