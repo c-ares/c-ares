@@ -257,7 +257,7 @@ static void write_tcp_data(ares_channel channel,
       n = 0;
       for (sendreq = server->qhead; sendreq; sendreq = sendreq->next)
         n++;
-printf("%s(): tcp socket write %zu vectors\n", __FUNCTION__, n);
+
       /* Allocate iovecs so we can send all our data at once. */
       vec = ares_malloc(n * sizeof(struct iovec));
       if (vec)
@@ -557,20 +557,17 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
 static void process_timeouts(ares_channel channel, struct timeval *now)
 {
   ares__slist_node_t *node = ares__slist_node_first(channel->queries_by_timeout);
-printf("%s(): %zu nodes\n", __FUNCTION__, ares__slist_len(channel->queries_by_timeout));
 
   while (node != NULL) {
     struct query       *query = ares__slist_node_val(node);
     /* Node might be removed, cache next */
     ares__slist_node_t *next  = ares__slist_node_next(node);
-printf("%s(): query %p tv_sec=%ld, tv_usec=%ld (now %ld, %ld)\n", __FUNCTION__, query, (long)query->timeout.tv_sec, (long)query->timeout.tv_usec, (long)now->tv_sec, (long)now->tv_usec);
 
     /* Since this is sorted, as soon as we hit a query that isn't timed out, break */
     if (!ares__timedout(now, &query->timeout)) {
-printf("%s(): query %p NOT timed out\n", __FUNCTION__, query);
       break;
     }
-printf("%s(): query %p timed out\n", __FUNCTION__, query);
+
     query->error_status = ARES_ETIMEOUT;
     query->timeouts++;
     next_server(channel, query, now);
@@ -589,7 +586,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
   struct query *query;
   struct list_node* list_head;
   struct list_node* list_node;
-printf("%s(): processing answer len %d\n", __FUNCTION__, alen);
+
   /* If there's no room in the answer for a header, we can't do much
    * with it. */
   if (alen < HFIXEDSZ)
@@ -619,7 +616,6 @@ printf("%s(): processing answer len %d\n", __FUNCTION__, alen);
         }
     }
   if (!query) {
-printf("%s(): query not found for id %d\n", __FUNCTION__, id);
     return;
   }
 
@@ -641,7 +637,6 @@ printf("%s(): query not found for id %d\n", __FUNCTION__, id);
           DNS_HEADER_SET_ARCOUNT(query->tcpbuf + 2, 0);
           query->tcpbuf = ares_realloc(query->tcpbuf, query->tcplen);
           query->qbuf = query->tcpbuf + 2;
-printf("%s(): resend %p without EDNS\n", __FUNCTION__, query);
           ares__send_query(channel, query, now);
           return;
       }
@@ -655,7 +650,6 @@ printf("%s(): resend %p without EDNS\n", __FUNCTION__, query);
     {
       if (!query->using_tcp)
         {
-printf("%s(): resend %p as TCP\n", __FUNCTION__, query);
           query->using_tcp = 1;
           ares__send_query(channel, query, now);
         }
@@ -686,7 +680,6 @@ printf("%s(): resend %p as TCP\n", __FUNCTION__, query);
               query->error_status = ARES_EREFUSED;
               break;
           }
-printf("%s(): query %p returned DNS failure condition %d\n", __FUNCTION__, query, rcode);
           skip_server(channel, query, whichserver);
           if (query->server == whichserver)
             next_server(channel, query, now);
@@ -893,7 +886,6 @@ void ares__send_query(ares_channel channel, struct query *query,
               return;
             }
         }
-printf("%s(): udp socket write len %d\n", __FUNCTION__, (int)query->qlen);
       if (socket_write(channel, server->udp_socket, query->qbuf, query->qlen) == -1)
         {
           /* FIXME: Handle EAGAIN here since it likely can happen. */
@@ -931,8 +923,6 @@ printf("%s(): udp socket write len %d\n", __FUNCTION__, (int)query->qlen);
     /* Keep track of queries bucketed by timeout, so we can process
      * timeout events quickly.
      */
-if (query->node_queries_by_timeout)
-  printf("%s(): remove timeout for query %p\n", __FUNCTION__, query);
 
     ares__slist_node_destroy(query->node_queries_by_timeout);
     query->timeout = *now;
@@ -942,7 +932,7 @@ if (query->node_queries_by_timeout)
       end_query(channel, query, ARES_ENOMEM, NULL, 0);
       return;
     }
-printf("%s(): insert timeout for query %p tv_sec=%ld, tv_usec=%ld\n", __FUNCTION__, query, (long)query->timeout.tv_sec, (long)query->timeout.tv_usec);
+
     /* Keep track of queries bucketed by server, so we can process server
      * errors quickly.
      */
@@ -1558,8 +1548,6 @@ void ares__free_query(struct query *query)
 {
   /* Remove the query from all the lists in which it is linked */
   ares__remove_from_list(&(query->queries_by_qid));
-if (query->node_queries_by_timeout)
-  printf("%s(): remove timeout for query %p\n", __FUNCTION__, query);
   ares__slist_node_destroy(query->node_queries_by_timeout);
   ares__remove_from_list(&(query->queries_to_server));
   ares__llist_node_destroy(query->node_all_queries);
