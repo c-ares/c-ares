@@ -40,6 +40,7 @@ struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
   struct timeval      now;
   long                offset;
 
+printf("%s(): %zu nodes\n", __FUNCTION__, ares__slist_len(channel->queries_by_timeout));
   /* The minimum timeout of all queries is always the first entry in
    * channel->queries_by_timeout */
   node = ares__slist_node_first(channel->queries_by_timeout);
@@ -51,6 +52,7 @@ struct timeval *ares_timeout(ares_channel channel, struct timeval *maxtv,
   query = ares__slist_node_val(node);
 
   now = ares__tvnow();
+printf("%s(): first timeout tv_sec=%ld, tv_usec=%ld (now %ld, %ld)\n", __FUNCTION__, (long)query->timeout.tv_sec, (long)query->timeout.tv_usec, (long)now.tv_sec, (long)now.tv_usec);
 
   offset = timeoffset(&now, &query->timeout);
   if (offset < 0)

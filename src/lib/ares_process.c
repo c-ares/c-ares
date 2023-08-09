@@ -557,16 +557,18 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
 static void process_timeouts(ares_channel channel, struct timeval *now)
 {
   ares__slist_node_t *node = ares__slist_node_first(channel->queries_by_timeout);
+printf("%s(): %zu nodes\n", __FUNCTION__, ares__slist_len(channel->queries_by_timeout));
 
   while (node != NULL) {
     struct query       *query = ares__slist_node_val(node);
     /* Node might be removed, cache next */
     ares__slist_node_t *next  = ares__slist_node_next(node);
+printf("%s(): query %p tv_sec=%ld, tv_usec=%ld (now %ld, %ld)\n", __FUNCTION__, query, (long)query->timeout.tv_sec, (long)query->timeout.tv_usec, (long)now->tv_sec, (long)now->tv_usec);
 
     /* Since this is sorted, as soon as we hit a query that isn't timed out, break */
     if (!ares__timedout(now, &query->timeout))
       break;
-
+printf("%s(): query %p timed out\n", __FUNCTION__, query);
     query->error_status = ARES_ETIMEOUT;
     query->timeouts++;
     next_server(channel, query, now);
@@ -910,6 +912,9 @@ void ares__send_query(ares_channel channel, struct query *query,
     /* Keep track of queries bucketed by timeout, so we can process
      * timeout events quickly.
      */
+if (query->node_queries_by_timeout)
+  printf("%s(): remove timeout for query %p\n", __FUNCTION__, query);
+
     ares__slist_node_destroy(query->node_queries_by_timeout);
     query->timeout = *now;
     timeadd(&query->timeout, timeplus);
@@ -918,6 +923,7 @@ void ares__send_query(ares_channel channel, struct query *query,
       end_query(channel, query, ARES_ENOMEM, NULL, 0);
       return;
     }
+printf("%s(): insert timeout for query %p tv_sec=%ld, tv_usec=%ld\n", __FUNCTION__, query, (long)query->timeout.tv_sec, (long)query->timeout.tv_usec);
     /* Keep track of queries bucketed by server, so we can process server
      * errors quickly.
      */
@@ -1533,6 +1539,8 @@ void ares__free_query(struct query *query)
 {
   /* Remove the query from all the lists in which it is linked */
   ares__remove_from_list(&(query->queries_by_qid));
+if (query->node_queries_by_timeout)
+  printf("%s(): remove timeout for query %p\n", __FUNCTION__, query);
   ares__slist_node_destroy(query->node_queries_by_timeout);
   ares__remove_from_list(&(query->queries_to_server));
   ares__llist_node_destroy(query->node_all_queries);
