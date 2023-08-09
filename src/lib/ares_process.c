@@ -675,7 +675,18 @@ printf("%s(): resend %p as TCP\n", __FUNCTION__, query);
     {
       if (rcode == SERVFAIL || rcode == NOTIMP || rcode == REFUSED)
         {
-printf("%s(): query %p returned DNS failure condition\n", __FUNCTION__, query);
+          switch (rcode) {
+            case SERVFAIL:
+              query->error_status = ARES_ESERVFAIL;
+              break;
+            case NOTIMP:
+              query->error_status = ARES_ENOTIMP;
+              break;
+            case REFUSED:
+              query->error_status = ARES_EREFUSED;
+              break;
+          }
+printf("%s(): query %p returned DNS failure condition %d\n", __FUNCTION__, query, rcode);
           skip_server(channel, query, whichserver);
           if (query->server == whichserver)
             next_server(channel, query, now);

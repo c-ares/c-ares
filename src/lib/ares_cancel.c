@@ -71,7 +71,7 @@ void ares_cancel(ares_channel channel)
   {
     if (channel->servers)
     {
-      size_t i;
+      int i;
       for (i = 0; i < channel->nservers; i++)
         ares__close_sockets(channel, &channel->servers[i]);
     }

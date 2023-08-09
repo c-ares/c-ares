@@ -178,7 +178,7 @@ static int ares__init_rand_engine(ares_rand_state *state)
 }
 
 
-ares_rand_state *ares__init_rand_state()
+ares_rand_state *ares__init_rand_state(void)
 {
   ares_rand_state *state = NULL;
 

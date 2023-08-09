@@ -1315,8 +1315,9 @@ static int init_by_resolv_conf(ares_channel channel)
 #  endif /* HAVE___SYSTEM_PROPERTY_GET */
 #elif defined(CARES_USE_LIBRESOLV)
   struct __res_state res;
+  int                result;
   memset(&res, 0, sizeof(res));
-  int result = res_ninit(&res);
+  result = res_ninit(&res);
   if (result == 0 && (res.options & RES_INIT)) {
     status = ARES_EOF;
 
