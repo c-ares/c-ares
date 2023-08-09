@@ -168,11 +168,12 @@ int ares_set_servers(ares_channel channel,
   if (num_srvrs > 0)
     {
       /* Allocate storage for servers state */
-      channel->servers = ares_malloc(num_srvrs * sizeof(struct server_state));
+      channel->servers = ares_malloc(num_srvrs * sizeof(*channel->servers));
       if (!channel->servers)
         {
           return ARES_ENOMEM;
         }
+      memset(channel->servers, 0, num_srvrs * sizeof(*channel->servers));
       channel->nservers = num_srvrs;
       /* Fill servers state address data */
       for (i = 0, srvr = servers; srvr; i++, srvr = srvr->next)
@@ -220,11 +221,12 @@ int ares_set_servers_ports(ares_channel channel,
   if (num_srvrs > 0)
     {
       /* Allocate storage for servers state */
-      channel->servers = ares_malloc(num_srvrs * sizeof(struct server_state));
+      channel->servers = ares_malloc(num_srvrs * sizeof(*channel->servers));
       if (!channel->servers)
         {
           return ARES_ENOMEM;
         }
+      memset(channel->servers, 0, num_srvrs * sizeof(*channel->servers));
       channel->nservers = num_srvrs;
       /* Fill servers state address data */
       for (i = 0, srvr = servers; srvr; i++, srvr = srvr->next)

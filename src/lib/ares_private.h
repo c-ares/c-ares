@@ -297,8 +297,6 @@ struct ares_channeldata {
   struct server_state *servers;
   int nservers;
 
-  /* ID to use for next query */
-  unsigned short next_id;
   /* random state to use when generating new ids */
   ares_rand_state *rand_state;
 

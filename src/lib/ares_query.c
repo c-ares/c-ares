@@ -76,10 +76,11 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
   struct qquery *qquery;
   unsigned char *qbuf;
   int qlen, rd, status;
+  unsigned short id = generate_unique_id(channel);
 
   /* Compose the query. */
   rd = !(channel->flags & ARES_FLAG_NORECURSE);
-  status = ares_create_query(name, dnsclass, type, channel->next_id, rd, &qbuf,
+  status = ares_create_query(name, dnsclass, type, id, rd, &qbuf,
               &qlen, (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : 0);
   if (status != ARES_SUCCESS)
     {
@@ -87,8 +88,6 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
       callback(arg, status, 0, NULL, 0);
       return;
     }
-
-  channel->next_id = generate_unique_id(channel);
 
   /* Allocate and fill in the query structure. */
   qquery = ares_malloc(sizeof(struct qquery));

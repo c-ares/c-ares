@@ -168,8 +168,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
     goto done;
   }
 
-  channel->next_id = ares__generate_new_id(channel->rand_state);
-
   /* Initialize our lists of queries */
   channel->all_queries = ares__llist_create(NULL);
   if (channel->all_queries == NULL) {
@@ -1182,11 +1180,11 @@ static int init_by_resolv_conf(ares_channel channel)
   }
 
   nservers = count4 + count6;
-  servers = ares_malloc(nservers * sizeof(struct server_state));
+  servers = ares_malloc(nservers * sizeof(*servers));
   if (!servers)
     return ARES_ENOMEM;
 
-  memset(servers, 0, nservers * sizeof(struct server_state));
+  memset(servers, 0, nservers * sizeof(*servers));
 
   pserver = servers;
   for (int i = 0; i < count4; ++i, ++pserver) {
@@ -1248,10 +1246,10 @@ static int init_by_resolv_conf(ares_channel channel)
     return ARES_SUCCESS; /* use localhost DNS server */
 
   nservers = i;
-  servers = ares_malloc(sizeof(struct server_state));
+  servers = ares_malloc(sizeof(*servers));
   if (!servers)
      return ARES_ENOMEM;
-  memset(servers, 0, sizeof(struct server_state));
+  memset(servers, 0, sizeof(*servers));
 
   for (i = 0; def_nameservers[i]; i++)
   {
@@ -1711,6 +1709,7 @@ static int init_by_defaults(ares_channel channel)
       ares_free(channel->servers);
       channel->servers = NULL;
     }
+    channel->nservers = 0;
 
     if(channel->domains && channel->domains[0])
       ares_free(channel->domains[0]);
@@ -2010,10 +2009,11 @@ static int config_nameserver(struct server_state **servers, int *nservers,
 
       /* Resize servers state array. */
       newserv = ares_realloc(*servers, (*nservers + 1) *
-                             sizeof(struct server_state));
+                             sizeof(*newserv));
       if (!newserv)
         return ARES_ENOMEM;
 
+      memset(newserv + ((*nservers) * sizeof(*newserv)), 0, sizeof(*newserv));
       /* Store address data. */
       newserv[*nservers].addr.family = host.family;
       newserv[*nservers].addr.udp_port = htons(port);
@@ -2394,4 +2394,5 @@ int ares__init_servers_state(ares_channel channel)
       if (server->queries_to_server == NULL)
         return ARES_ENOMEM;
     }
+  return ARES_SUCCESS;
 }
