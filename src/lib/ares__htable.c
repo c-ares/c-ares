@@ -30,7 +30,7 @@ struct ares__htable {
   ares__htable_hashfunc_t    hash;
   ares__htable_bucket_key_t  bucket_key;
   ares__htable_bucket_free_t bucket_free;
-  ares__htable_key_cmp_t     key_cmp;
+  ares__htable_key_eq_t      key_eq;
   unsigned int               seed;
   unsigned int               size;
   size_t                     num_keys;
@@ -86,12 +86,12 @@ void ares__htable_destroy(ares__htable_t *htable)
 ares__htable_t *ares__htable_create(ares__htable_hashfunc_t    hash_func,
                                     ares__htable_bucket_key_t  bucket_key,
                                     ares__htable_bucket_free_t bucket_free,
-                                    ares__htable_key_cmp_t     key_cmp)
+                                    ares__htable_key_eq_t      key_eq)
 {
   ares__htable_t *htable = NULL;
 
   if (hash_func == NULL || bucket_key == NULL || bucket_free == NULL ||
-      key_cmp == NULL) {
+      key_eq == NULL) {
     goto fail;
   }
 
@@ -104,7 +104,7 @@ ares__htable_t *ares__htable_create(ares__htable_hashfunc_t    hash_func,
   htable->hash        = hash_func;
   htable->bucket_key  = bucket_key;
   htable->bucket_free = bucket_free;
-  htable->key_cmp     = key_cmp;
+  htable->key_eq      = key_eq;
   htable->seed        = ares__htable_generate_seed(htable);
   htable->size        = ARES__HTABLE_MIN_BUCKETS;
   htable->buckets     = ares_malloc(sizeof(*htable->buckets) * htable->size);
@@ -139,7 +139,7 @@ static ares__llist_node_t *ares__htable_find(ares__htable_t *htable,
        node != NULL;
        node = ares__llist_node_next(node)) {
 
-    if (htable->key_cmp(key, htable->bucket_key(ares__llist_node_val(node))))
+    if (htable->key_eq(key, htable->bucket_key(ares__llist_node_val(node))))
       break;
   }
 
@@ -278,3 +278,37 @@ unsigned int ares__htable_remove(ares__htable_t *htable, const void *key)
   return 1;
 }
 
+
+unsigned int ares__htable_hash_FNV1a(const void *key, size_t key_len,
+                                     unsigned int seed)
+{
+  const unsigned char *data = key;
+  /* recommended seed is 2166136261U, but we don't want collisions */
+  unsigned int         hv   = seed; 
+  size_t               i;
+
+  for (i = 0; i < key_len; i++) {
+    hv ^= (unsigned int)data[i];
+    /* hv *= 0x01000193 */
+    hv += (hv<<1) + (hv<<4) + (hv<<7) + (hv<<8) + (hv<<24);
+  }
+
+  return hv;
+}
+
+/* Case insensitive version, meant for strings */
+unsigned int ares__htable_hash_FNV1a_casecmp(const void *key, size_t key_len,
+                                             unsigned int seed)
+{
+  const unsigned char *data = key;
+  unsigned int         hv   = seed;
+  size_t               i;
+
+  for (i = 0; i < key_len; i++) {
+    hv ^= (unsigned int)tolower((char)data[i]);
+    /* hv *=  16777619 */
+    hv += (hv<<1) + (hv<<4) + (hv<<7) + (hv<<8) + (hv<<24);
+  }
+
+  return hv;
+}
