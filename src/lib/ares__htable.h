@@ -85,7 +85,8 @@ size_t ares__htable_num_keys(ares__htable_t *htable);
 /*! Insert bucket into hashtable
  * 
  *  \param[in] htable  Initialized hashtable.
- *  \param[in] bucket  User-provided bucket to insert. Takes "ownership".
+ *  \param[in] bucket  User-provided bucket to insert. Takes "ownership". Not
+ *                     allowed to be NULL.
  *  \return 1 on success, 0 if out of memory
  */
 unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket);
