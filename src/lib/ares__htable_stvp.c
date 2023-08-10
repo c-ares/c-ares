@@ -20,10 +20,12 @@
 #include "ares__htable.h"
 #include "ares__htable_stvp.h"
 
+
 struct ares__htable_stvp {
   ares__htable_stvp_val_free_t free_val;
   ares__htable_t              *hash;
 };
+
 
 typedef struct {
   size_t               key;
@@ -41,17 +43,20 @@ void ares__htable_stvp_destroy(ares__htable_stvp_t *htable)
   ares_free(htable);
 }
 
+
 static unsigned int hash_func(const void *bucket, unsigned int seed)
 {
   const ares__htable_stvp_bucket_t *arg = bucket;
   return ares__htable_hash_FNV1a(&arg->key, sizeof(arg->key), seed);
 }
 
+
 static const void *bucket_key(const void *bucket)
 {
   const ares__htable_stvp_bucket_t *arg = bucket;
   return &arg->key;
 }
+
 
 static void bucket_free(void *bucket)
 {
@@ -74,6 +79,7 @@ static unsigned int key_eq(const void *key1, const void *key2)
 
   return 0;
 }
+
 
 ares__htable_stvp_t *ares__htable_stvp_create(
     ares__htable_stvp_val_free_t val_free)
@@ -98,6 +104,7 @@ fail:
   }
   return NULL;
 }
+
 
 unsigned int ares__htable_stvp_insert(ares__htable_stvp_t *htable, size_t key,
                                       void *val)
@@ -127,7 +134,9 @@ fail:
   return 0;
 }
 
-unsigned int ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key, void **val)
+
+unsigned int ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key,
+                                   void **val)
 {
   ares__htable_stvp_bucket_t *bucket = NULL;
 
@@ -144,12 +153,14 @@ unsigned int ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key, void
   return 1;
 }
 
+
 void **ares__htable_get_direct(ares__htable_stvp_t *htable, size_t key)
 {
   void *val = NULL;
   ares__htable_stvp_get(htable, key, &val);
   return val;
 }
+
 
 unsigned int ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key)
 {
