@@ -140,21 +140,23 @@ unsigned int ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key,
 {
   ares__htable_stvp_bucket_t *bucket = NULL;
 
+  if (val)
+    *val = NULL;
+
   if (htable == NULL)
     return 0;
-
-  *val = NULL;
 
   bucket = ares__htable_get(htable->hash, &key);
   if (bucket == NULL)
     return 0;
 
-  *val = bucket->val;
+  if (val)
+    *val = bucket->val;
   return 1;
 }
 
 
-void **ares__htable_get_direct(ares__htable_stvp_t *htable, size_t key)
+void *ares__htable_stvp_get_direct(ares__htable_stvp_t *htable, size_t key)
 {
   void *val = NULL;
   ares__htable_stvp_get(htable, key, &val);
@@ -167,4 +169,12 @@ unsigned int ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key)
   if (htable == NULL)
     return 0;
   return ares__htable_remove(htable->hash, &key);
+}
+
+
+size_t ares__htable_stvp_num_keys(ares__htable_stvp_t *htable)
+{
+  if (htable == NULL)
+    return 0;
+  return ares__htable_num_keys(htable->hash);
 }

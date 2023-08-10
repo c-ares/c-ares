@@ -243,6 +243,8 @@ unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket)
   if (ares__llist_insert_first(htable->buckets[idx], bucket) == NULL)
     return 0;
 
+  htable->num_keys++;
+
   return 1;
 }
 
@@ -278,6 +280,12 @@ unsigned int ares__htable_remove(ares__htable_t *htable, const void *key)
   return 1;
 }
 
+size_t ares__htable_num_keys(ares__htable_t *htable)
+{
+  if (htable == NULL)
+    return 0;
+  return htable->num_keys;
+}
 
 unsigned int ares__htable_hash_FNV1a(const void *key, size_t key_len,
                                      unsigned int seed)

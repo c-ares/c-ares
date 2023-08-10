@@ -32,6 +32,7 @@ ares__htable_t *ares__htable_create(ares__htable_hashfunc_t    hash_func,
                                     ares__htable_bucket_key_t  bucket_key,
                                     ares__htable_bucket_free_t bucket_free,
                                     ares__htable_key_eq_t      key_eq);
+size_t ares__htable_num_keys(ares__htable_t *htable);
 unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket);
 void *ares__htable_get(ares__htable_t *htable, const void *key);
 unsigned int ares__htable_remove(ares__htable_t *htable, const void *key);

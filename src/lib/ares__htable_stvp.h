@@ -38,4 +38,6 @@ void *ares__htable_stvp_get_direct(ares__htable_stvp_t *htable, size_t key);
 
 unsigned int ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key);
 
+size_t ares__htable_stvp_num_keys(ares__htable_stvp_t *htable);
+
 #endif /* __ARES__HTABLE_STVP_H */
