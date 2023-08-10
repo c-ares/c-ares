@@ -213,6 +213,7 @@ unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket)
   if (htable == NULL || bucket == NULL)
     return 0;
 
+
   key  = htable->bucket_key(bucket);
   idx  = HASH_IDX(htable, key);
 
@@ -240,7 +241,8 @@ unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket)
       return 0;
   }
   
-  if (ares__llist_insert_first(htable->buckets[idx], bucket) == NULL)
+  node = ares__llist_insert_first(htable->buckets[idx], bucket);
+  if (node == NULL)
     return 0;
 
   htable->num_keys++;

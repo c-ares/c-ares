@@ -95,6 +95,8 @@ ares__htable_stvp_t *ares__htable_stvp_create(
   if (htable->hash == NULL)
     goto fail;
 
+  htable->free_val = val_free;
+
   return htable;
 
 fail:
@@ -168,6 +170,7 @@ unsigned int ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key)
 {
   if (htable == NULL)
     return 0;
+
   return ares__htable_remove(htable->hash, &key);
 }
 
