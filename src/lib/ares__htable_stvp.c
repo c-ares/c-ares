@@ -62,7 +62,7 @@ static void bucket_free(void *bucket)
 {
   ares__htable_stvp_bucket_t *arg = bucket;
 
-  if (!arg->parent->free_val)
+  if (arg->parent->free_val)
     arg->parent->free_val(arg->val);
 
   ares_free(arg);
