@@ -35,24 +35,6 @@ struct qquery {
 
 static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf, int alen);
 
-static struct query* find_query_by_id(ares_channel channel, unsigned short id)
-{
-  unsigned short qid;
-  struct list_node* list_head;
-  struct list_node* list_node;
-  DNS_HEADER_SET_QID(((unsigned char*)&qid), id);
-
-  /* Find the query corresponding to this packet. */
-  list_head = &(channel->queries_by_qid[qid % ARES_QID_TABLE_SIZE]);
-  for (list_node = list_head->next; list_node != list_head;
-       list_node = list_node->next)
-    {
-       struct query *q = list_node->data;
-       if (q->qid == qid)
-	  return q;
-    }
-  return NULL;
-}
 
 /* a unique query id is generated using an rc4 key. Since the id may already
    be used by a running query (as infrequent as it may be), a lookup is
@@ -65,7 +47,7 @@ static unsigned short generate_unique_id(ares_channel channel)
 
   do {
     id = ares__generate_new_id(channel->rand_state);
-  } while (find_query_by_id(channel, id));
+  } while (ares__htable_stvp_get(channel->queries_by_qid, id, NULL));
 
   return (unsigned short)id;
 }

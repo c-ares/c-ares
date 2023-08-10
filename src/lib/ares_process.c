@@ -584,8 +584,6 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
   int tc, rcode, packetsz;
   unsigned short id;
   struct query *query;
-  struct list_node* list_head;
-  struct list_node* list_node;
 
   /* If there's no room in the answer for a header, we can't do much
    * with it. */
@@ -593,31 +591,21 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
     return;
 
   /* Grab the query ID, truncate bit, and response code from the packet. */
-  id = DNS_HEADER_QID(abuf);
+  id = DNS_HEADER_QID(abuf); /* Converts to host byte order */
   tc = DNS_HEADER_TC(abuf);
   rcode = DNS_HEADER_RCODE(abuf);
 
   /* Find the query corresponding to this packet. The queries are
-   * hashed/bucketed by query id, so this lookup should be quick.  Note that
-   * both the query id and the questions must be the same; when the query id
-   * wraps around we can have multiple outstanding queries with the same query
-   * id, so we need to check both the id and question.
+   * hashed/bucketed by query id, so this lookup should be quick.  
    */
-  query = NULL;
-  list_head = &(channel->queries_by_qid[id % ARES_QID_TABLE_SIZE]);
-  for (list_node = list_head->next; list_node != list_head;
-       list_node = list_node->next)
-    {
-      struct query *q = list_node->data;
-      if ((q->qid == id) && same_questions(q->qbuf, q->qlen, abuf, alen))
-        {
-          query = q;
-          break;
-        }
-    }
-  if (!query) {
+  query = ares__htable_stvp_get_direct(channel->queries_by_qid, id);
+  if (!query)
     return;
-  }
+
+  /* Both the query id and the questions must be the same. We will drop any
+   * replies that aren't for the same query as this is considered invalid. */
+  if (!same_questions(query->qbuf, query->qlen, abuf, alen))
+    return;
 
   packetsz = PACKETSZ;
   /* If we use EDNS and server answers with FORMERR without an OPT RR, the protocol
@@ -1534,7 +1522,7 @@ static void end_query (ares_channel channel, struct query *query, int status,
 void ares__free_query(struct query *query)
 {
   /* Remove the query from all the lists in which it is linked */
-  ares__remove_from_list(&(query->queries_by_qid));
+  ares__htable_stvp_remove(query->channel->queries_by_qid, query->qid);
   ares__slist_node_destroy(query->node_queries_by_timeout);
   ares__llist_node_destroy(query->node_queries_to_server);
   ares__llist_node_destroy(query->node_all_queries);

@@ -69,10 +69,7 @@ void ares_destroy(ares_channel channel)
    * so all query lists should be empty now.
    */
   assert(ares__llist_len(channel->all_queries) == 0);
-  for (i = 0; i < ARES_QID_TABLE_SIZE; i++)
-    {
-      assert(ares__is_list_empty(&(channel->queries_by_qid[i])));
-    }
+  assert(ares__htable_stvp_num_keys(channel->queries_by_qid) == 0);
   assert(ares__slist_len(channel->queries_by_timeout) == 0);
 #endif
 
@@ -86,6 +83,7 @@ void ares_destroy(ares_channel channel)
 
   ares__llist_destroy(channel->all_queries);
   ares__slist_destroy(channel->queries_by_timeout);
+  ares__htable_stvp_destroy(channel->queries_by_qid);
 
   if(channel->sortlist)
     ares_free(channel->sortlist);

@@ -111,6 +111,7 @@ typedef struct ares_rand_state ares_rand_state;
 
 #include "ares__llist.h"
 #include "ares__slist.h"
+#include "ares__htable_stvp.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -209,14 +210,14 @@ struct server_state {
 /* State to represent a DNS query */
 struct query {
   /* Query ID from qbuf, for faster lookup, and current timeout */
-  unsigned short qid;
+  unsigned short qid; /* host byte order */
   struct timeval timeout;
+  ares_channel channel;
 
   /*
    * Node object for each list entry the query belongs to in order to
    * make removal operations O(1).
    */
-  struct list_node queries_by_qid;    /* hopefully in same cache line as qid */
   ares__slist_node_t *node_queries_by_timeout;
   ares__llist_node_t *node_queries_to_server;
   ares__llist_node_t *node_all_queries;
@@ -309,8 +310,8 @@ struct ares_channeldata {
   /* All active queries in a single list */
   ares__llist_t   *all_queries;
   /* Queries bucketed by qid, for quickly dispatching DNS responses: */
-#define ARES_QID_TABLE_SIZE 2048
-  struct list_node queries_by_qid[ARES_QID_TABLE_SIZE];
+  ares__htable_stvp_t *queries_by_qid;
+
   /* Queries bucketed by timeout, for quickly handling timeouts: */
   ares__slist_t   *queries_by_timeout;
 
