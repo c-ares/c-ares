@@ -104,7 +104,6 @@ W32_FUNC const char *_w32_GetHostsFile (void);
 #endif
 
 #include "ares_ipv6.h"
-#include "ares_llist.h"
 
 struct ares_rand_state;
 typedef struct ares_rand_state ares_rand_state;
