@@ -54,6 +54,7 @@ typedef unsigned __int64 cares_u64;
 typedef unsigned long long cares_u64;
 #endif
 
+
 static unsigned int ares_u32_from_ptr(void *addr)
 {
     if (sizeof(void *) == 8) {
@@ -153,6 +154,14 @@ struct ares_rand_state
     ares_rand_rc4 rc4;
 #endif
   } state;
+
+  /* Since except for RC4, random data will likely result in a syscall, lets
+   * pre-pull 256 bytes at a time.  Every query will pull 2 bytes off this so
+   * that means we should only need a syscall every 128 queries. 256bytes
+   * appears to be a sweet spot that may be able to be served without
+   * interruption */
+  unsigned char     cache[256];
+  size_t            cache_remaining;
 };
 
 
@@ -249,7 +258,8 @@ void ares__destroy_rand_state(ares_rand_state *state)
 }
 
 
-void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len)
+static void ares__rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
+                                   size_t len)
 {
 
   while (1) {
@@ -306,6 +316,29 @@ void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len)
      * failure and need to reinitialized */
     ares__reinit_rand(state);
   }
+}
+
+
+void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len)
+{
+  /* See if we need to refill the cache to serve the request, but if len is
+   * excessive, we're not going to update our cache or serve from cache */
+  if (len > state->cache_remaining && len < sizeof(state->cache)) {
+    size_t fetch_size = sizeof(state->cache) - state->cache_remaining;
+    ares__rand_bytes_fetch(state, state->cache, fetch_size);
+    state->cache_remaining = sizeof(state->cache);
+  }
+
+  /* Serve from cache */
+  if (len <= state->cache_remaining) {
+    size_t offset = sizeof(state->cache) - state->cache_remaining;
+    memcpy(buf, state->cache + offset, len);
+    state->cache_remaining -= len;
+    return;
+  }
+
+  /* Serve direct due to excess size of request */
+  ares__rand_bytes_fetch(state, buf, len);
 }
 
 
