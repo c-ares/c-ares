@@ -20,11 +20,9 @@
 #include "ares__llist.h"
 #include "ares__htable.h"
 
-
 #define ARES__HTABLE_MAX_BUCKETS (1U<<24)
 #define ARES__HTABLE_MIN_BUCKETS (1U<<4)
 #define ARES__HTABLE_EXPAND_PERCENT 75
-
 
 struct ares__htable {
   ares__htable_hashfunc_t    hash;

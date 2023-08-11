@@ -5,12 +5,12 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__addrinfo_localhost.c		\
   ares__close_sockets.c			\
   ares__get_hostent.c			\
-  ares__htable.c 			\
-  ares__htable_stvp.c 			\
+  ares__htable.c			\
+  ares__htable_stvp.c			\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
   ares__readaddrinfo.c			\
-  ares__slist.c 			\
+  ares__slist.c			\
   ares__sortaddrinfo.c			\
   ares__read_line.c			\
   ares__timeval.c			\
