@@ -17,7 +17,18 @@
 #ifndef __ARES__HTABLE_STVP_H
 #define __ARES__HTABLE_STVP_H
 
-/* Hashtable with size_t key and void pointer value */
+/*! \addtogroup ares__htable_stvp HashTable with size_t Key and void pointer Value
+ *
+ * This data structure wraps the base ares__htable data structure in order to
+ * split the key and value data types as size_t and void pointer, respectively.
+ *
+ * Average time complexity:
+ *  - Insert: O(1)
+ *  - Search: O(1)
+ *  - Delete: O(1)
+ *
+ * @{
+ */
 
 struct ares__htable_stvp;
 
@@ -89,5 +100,7 @@ unsigned int ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key);
  *  \return count
  */
 size_t ares__htable_stvp_num_keys(ares__htable_stvp_t *htable);
+
+/*! @} */
 
 #endif /* __ARES__HTABLE_STVP_H */

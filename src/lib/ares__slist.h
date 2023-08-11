@@ -17,6 +17,29 @@
 #ifndef __ARES__SLIST_H
 #define __ARES__SLIST_H
 
+
+/*! \addtogroup ares__slist SkipList Data Structure
+ *
+ * This data structure is known as a Skip List, which in essence is a sorted
+ * linked list with multiple levels of linkage to gain some algorithmic
+ * advantages.  The usage symantecs are almost identical to what you'd expect
+ * with a linked list.
+ *
+ * Average time complexity:
+ *  - Insert: O(log n)
+ *  - Search: O(log n)
+ *  - Delete: O(1)   -- delete assumes you hold a node pointer
+ *
+ * It should be noted, however, that "effort" involved with an insert or
+ * remove operation is higher than a normal linked list.  For very small
+ * lists this may be less efficient, but for any list with a moderate number
+ * of entries this will prove much more efficient.
+ *
+ * This data structure is often compared with a Binary Search Tree in
+ * functionality and usage.
+ *
+ * @{
+ */
 struct ares__slist;
 
 /*! SkipList Object, opaque */
@@ -159,5 +182,7 @@ void ares__slist_node_destroy(ares__slist_node_t *node);
  *  \param[in] list  Initialized SkipList Object
  */
 void ares__slist_destroy(ares__slist_t *list);
+
+/*! @} */
 
 #endif /* __ARES__SLIST_H */

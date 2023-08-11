@@ -17,6 +17,18 @@
 #ifndef __ARES__LLIST_H
 #define __ARES__LLIST_H
 
+/*! \addtogroup ares__llist LinkedList Data Structure
+ *
+ * This is a doubly-linked list data structure.
+ *
+ * Average time complexity:
+ *  - Insert: O(1)   -- head or tail
+ *  - Search: O(n)
+ *  - Delete: O(1)   -- delete assumes you hold a node pointer
+ *
+ * @{
+ */
+
 struct ares__llist;
 
 /*! Opaque data structure for linked list */
@@ -176,5 +188,7 @@ void ares__llist_node_destroy(ares__llist_node_t *node);
  *  \param[in] list Initialized list object
  */
 void ares__llist_destroy(ares__llist_t *list);
+
+/*! @} */
 
 #endif /* __ARES__LLIST_H */

@@ -19,7 +19,6 @@
 #include "ares_private.h"
 #include "ares__llist.h"
 
-
 struct ares__llist {
   ares__llist_node_t      *head;
   ares__llist_node_t      *tail;

@@ -17,6 +17,25 @@
 #ifndef __ARES__HTABLE_H
 #define __ARES__HTABLE_H
 
+
+/*! \addtogroup ares__htable Base HashTable Data Structure
+ *
+ * This is a basic hashtable data structure that is meant to be wrapped
+ * by a higher level implementation.  This data structure is designed to
+ * be callback-based in order to facilitate wrapping without needing to
+ * worry about any underlying complexities of the hashtable implementation.
+ *
+ * This implementation supports automatic growing by powers of 2 when reaching
+ * 75% capacity.  A rehash will be performed on the expanded bucket list.
+ *
+ * Average time complexity:
+ *  - Insert: O(1)
+ *  - Search: O(1)
+ *  - Delete: O(1)
+ *
+ * @{
+ */
+
 struct ares__htable_t;
 
 /*! Opaque data type for generic hash table implementation */
@@ -129,5 +148,7 @@ unsigned int ares__htable_hash_FNV1a(const void *key, size_t key_len,
  */
 unsigned int ares__htable_hash_FNV1a_casecmp(const void *key, size_t key_len,
                                              unsigned int);
+
+/*! @} */
 
 #endif /* __ARES__HTABLE_H */
