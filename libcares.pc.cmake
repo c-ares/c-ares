@@ -6,6 +6,7 @@
 #
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
+prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=@CMAKE_INSTALL_FULL_BINDIR@
 libdir=@CMAKE_INSTALL_FULL_LIBDIR@
 includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
