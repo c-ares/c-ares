@@ -556,32 +556,24 @@ static void read_udp_packets(ares_channel channel, fd_set *read_fds,
 /* If any queries have timed out, note the timeout and move them on. */
 static void process_timeouts(ares_channel channel, struct timeval *now)
 {
-  time_t t;  /* the time of the timeouts we're processing */
-  struct query *query;
-  struct list_node* list_head;
-  struct list_node* list_node;
+  ares__slist_node_t *node = ares__slist_node_first(channel->queries_by_timeout);
 
-  /* Process all the timeouts that have fired since the last time we processed
-   * timeouts. If things are going well, then we'll have hundreds/thousands of
-   * queries that fall into future buckets, and only a handful of requests
-   * that fall into the "now" bucket, so this should be quite quick.
-   */
-  for (t = channel->last_timeout_processed; t <= now->tv_sec; t++)
-    {
-      list_head = &(channel->queries_by_timeout[t % ARES_TIMEOUT_TABLE_SIZE]);
-      for (list_node = list_head->next; list_node != list_head; )
-        {
-          query = list_node->data;
-          list_node = list_node->next;  /* in case the query gets deleted */
-          if (query->timeout.tv_sec && ares__timedout(now, &query->timeout))
-            {
-              query->error_status = ARES_ETIMEOUT;
-              ++query->timeouts;
-              next_server(channel, query, now);
-            }
-        }
-     }
-  channel->last_timeout_processed = now->tv_sec;
+  while (node != NULL) {
+    struct query       *query = ares__slist_node_val(node);
+    /* Node might be removed, cache next */
+    ares__slist_node_t *next  = ares__slist_node_next(node);
+
+    /* Since this is sorted, as soon as we hit a query that isn't timed out, break */
+    if (!ares__timedout(now, &query->timeout)) {
+      break;
+    }
+
+    query->error_status = ARES_ETIMEOUT;
+    query->timeouts++;
+    next_server(channel, query, now);
+
+    node = next;
+  }
 }
 
 /* Handle an answer from a server. */
@@ -592,8 +584,6 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
   int tc, rcode, packetsz;
   unsigned short id;
   struct query *query;
-  struct list_node* list_head;
-  struct list_node* list_node;
 
   /* If there's no room in the answer for a header, we can't do much
    * with it. */
@@ -601,29 +591,20 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
     return;
 
   /* Grab the query ID, truncate bit, and response code from the packet. */
-  id = DNS_HEADER_QID(abuf);
+  id = DNS_HEADER_QID(abuf); /* Converts to host byte order */
   tc = DNS_HEADER_TC(abuf);
   rcode = DNS_HEADER_RCODE(abuf);
 
   /* Find the query corresponding to this packet. The queries are
-   * hashed/bucketed by query id, so this lookup should be quick.  Note that
-   * both the query id and the questions must be the same; when the query id
-   * wraps around we can have multiple outstanding queries with the same query
-   * id, so we need to check both the id and question.
+   * hashed/bucketed by query id, so this lookup should be quick.  
    */
-  query = NULL;
-  list_head = &(channel->queries_by_qid[id % ARES_QID_TABLE_SIZE]);
-  for (list_node = list_head->next; list_node != list_head;
-       list_node = list_node->next)
-    {
-      struct query *q = list_node->data;
-      if ((q->qid == id) && same_questions(q->qbuf, q->qlen, abuf, alen))
-        {
-          query = q;
-          break;
-        }
-    }
+  query = ares__htable_stvp_get_direct(channel->queries_by_qid, id);
   if (!query)
+    return;
+
+  /* Both the query id and the questions must be the same. We will drop any
+   * replies that aren't for the same query as this is considered invalid. */
+  if (!same_questions(query->qbuf, query->qlen, abuf, alen))
     return;
 
   packetsz = PACKETSZ;
@@ -676,6 +657,17 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
     {
       if (rcode == SERVFAIL || rcode == NOTIMP || rcode == REFUSED)
         {
+          switch (rcode) {
+            case SERVFAIL:
+              query->error_status = ARES_ESERVFAIL;
+              break;
+            case NOTIMP:
+              query->error_status = ARES_ENOTIMP;
+              break;
+            case REFUSED:
+              query->error_status = ARES_EREFUSED;
+              break;
+          }
           skip_server(channel, query, whichserver);
           if (query->server == whichserver)
             next_server(channel, query, now);
@@ -701,38 +693,13 @@ static void process_broken_connections(ares_channel channel,
     }
 }
 
-/* Swap the contents of two lists */
-static void swap_lists(struct list_node* head_a,
-                       struct list_node* head_b)
-{
-  int is_a_empty = ares__is_list_empty(head_a);
-  int is_b_empty = ares__is_list_empty(head_b);
-  struct list_node old_a = *head_a;
-  struct list_node old_b = *head_b;
-
-  if (is_a_empty) {
-    ares__init_list_head(head_b);
-  } else {
-    *head_b = old_a;
-    old_a.next->prev = head_b;
-    old_a.prev->next = head_b;
-  }
-  if (is_b_empty) {
-    ares__init_list_head(head_a);
-  } else {
-    *head_a = old_b;
-    old_b.next->prev = head_a;
-    old_b.prev->next = head_a;
-  }
-}
 
 static void handle_error(ares_channel channel, int whichserver,
                          struct timeval *now)
 {
   struct server_state *server;
-  struct query *query;
-  struct list_node list_head;
-  struct list_node* list_node;
+  ares__llist_t *list_copy;
+  ares__llist_node_t *node;
 
   server = &channel->servers[whichserver];
 
@@ -745,20 +712,32 @@ static void handle_error(ares_channel channel, int whichserver,
    * be re-sent to this server, which will re-insert these queries in that
    * same server->queries_to_server list.
    */
-  ares__init_list_head(&list_head);
-  swap_lists(&list_head, &(server->queries_to_server));
-  for (list_node = list_head.next; list_node != &list_head; )
-    {
-      query = list_node->data;
-      list_node = list_node->next;  /* in case the query gets deleted */
-      assert(query->server == whichserver);
-      skip_server(channel, query, whichserver);
-      next_server(channel, query, now);
-    }
+  list_copy                 = server->queries_to_server;
+  server->queries_to_server = ares__llist_create(NULL);
+  if (server->queries_to_server == NULL) {
+    /* No way to recover from this type of out of memory, just restore the list.
+     * Timeouts should handle this condition. */
+    server->queries_to_server = list_copy;
+    return;
+  }
+
+  node = ares__llist_node_first(list_copy);
+  while (node != NULL) {
+    ares__llist_node_t *next  = ares__llist_node_next(node);
+    struct query       *query = ares__llist_node_val(node);
+
+    assert(query->server == whichserver);
+    skip_server(channel, query, whichserver);
+    next_server(channel, query, now);
+
+    node = next;
+  }
+
   /* Each query should have removed itself from our temporary list as
    * it re-sent itself or finished up...
    */
-  assert(ares__is_list_empty(&list_head));
+  assert(ares__llist_len(list_copy) == 0);
+  ares__llist_destroy(list_copy);
 }
 
 static void skip_server(ares_channel channel, struct query *query,
@@ -916,23 +895,25 @@ void ares__send_query(ares_channel channel, struct query *query,
       }
     }
 
-    query->timeout = *now;
-    timeadd(&query->timeout, timeplus);
     /* Keep track of queries bucketed by timeout, so we can process
      * timeout events quickly.
      */
-    ares__remove_from_list(&(query->queries_by_timeout));
-    ares__insert_in_list(
-        &(query->queries_by_timeout),
-        &(channel->queries_by_timeout[query->timeout.tv_sec %
-                                      ARES_TIMEOUT_TABLE_SIZE]));
+
+    ares__slist_node_destroy(query->node_queries_by_timeout);
+    query->timeout = *now;
+    timeadd(&query->timeout, timeplus);
+    query->node_queries_by_timeout = ares__slist_insert(channel->queries_by_timeout, query);
+    if (!query->node_queries_by_timeout) {
+      end_query(channel, query, ARES_ENOMEM, NULL, 0);
+      return;
+    }
 
     /* Keep track of queries bucketed by server, so we can process server
      * errors quickly.
      */
-    ares__remove_from_list(&(query->queries_to_server));
-    ares__insert_in_list(&(query->queries_to_server),
-                         &(server->queries_to_server));
+    ares__llist_node_destroy(query->node_queries_to_server);
+    query->node_queries_to_server =
+      ares__llist_insert_last(server->queries_to_server, query);
 }
 
 /*
@@ -1531,7 +1512,7 @@ static void end_query (ares_channel channel, struct query *query, int status,
    * sockets unless STAYOPEN is set.
    */
   if (!(channel->flags & ARES_FLAG_STAYOPEN) &&
-      ares__is_list_empty(&(channel->all_queries)))
+      ares__llist_len(channel->all_queries) == 0)
     {
       for (i = 0; i < channel->nservers; i++)
         ares__close_sockets(channel, &channel->servers[i]);
@@ -1541,10 +1522,10 @@ static void end_query (ares_channel channel, struct query *query, int status,
 void ares__free_query(struct query *query)
 {
   /* Remove the query from all the lists in which it is linked */
-  ares__remove_from_list(&(query->queries_by_qid));
-  ares__remove_from_list(&(query->queries_by_timeout));
-  ares__remove_from_list(&(query->queries_to_server));
-  ares__remove_from_list(&(query->all_queries));
+  ares__htable_stvp_remove(query->channel->queries_by_qid, query->qid);
+  ares__slist_node_destroy(query->node_queries_by_timeout);
+  ares__llist_node_destroy(query->node_queries_to_server);
+  ares__llist_node_destroy(query->node_all_queries);
   /* Zero out some important stuff, to help catch bugs */
   query->callback = NULL;
   query->arg = NULL;

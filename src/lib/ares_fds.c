@@ -29,7 +29,7 @@ int ares_fds(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
   int i;
 
   /* Are there any active queries? */
-  int active_queries = !ares__is_list_empty(&(channel->all_queries));
+  size_t active_queries = ares__llist_len(channel->all_queries);
 
   nfds = 0;
   for (i = 0; i < channel->nservers; i++)

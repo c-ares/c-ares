@@ -53,6 +53,7 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
       return;
     }
+  query->channel = channel;
   query->tcpbuf = ares_malloc(qlen + 2);
   if (!query->tcpbuf)
     {
@@ -111,19 +112,25 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
   query->timeouts = 0;
 
   /* Initialize our list nodes. */
-  ares__init_list_node(&(query->queries_by_qid),     query);
-  ares__init_list_node(&(query->queries_by_timeout), query);
-  ares__init_list_node(&(query->queries_to_server),  query);
-  ares__init_list_node(&(query->all_queries),        query);
+  query->node_queries_by_timeout = NULL;
+  query->node_queries_to_server  = NULL;
 
   /* Chain the query into the list of all queries. */
-  ares__insert_in_list(&(query->all_queries), &(channel->all_queries));
+  query->node_all_queries = ares__llist_insert_last(channel->all_queries, query);
+  if (query->node_all_queries == NULL) {
+    callback(arg, ARES_ENOMEM, 0, NULL, 0);
+    ares__free_query(query);
+    return;
+  }
+
   /* Keep track of queries bucketed by qid, so we can process DNS
    * responses quickly.
    */
-  ares__insert_in_list(
-    &(query->queries_by_qid),
-    &(channel->queries_by_qid[query->qid % ARES_QID_TABLE_SIZE]));
+  if (!ares__htable_stvp_insert(channel->queries_by_qid, query->qid, query)) {
+    callback(arg, ARES_ENOMEM, 0, NULL, 0);
+    ares__free_query(query);
+    return;
+  }
 
   /* Perform the first query action. */
   now = ares__tvnow();

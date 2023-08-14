@@ -104,7 +104,13 @@ W32_FUNC const char *_w32_GetHostsFile (void);
 #endif
 
 #include "ares_ipv6.h"
-#include "ares_llist.h"
+
+struct ares_rand_state;
+typedef struct ares_rand_state ares_rand_state;
+
+#include "ares__llist.h"
+#include "ares__slist.h"
+#include "ares__htable_stvp.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -188,8 +194,8 @@ struct server_state {
    * re-send. */
   int tcp_connection_generation;
 
-  /* Circular, doubly-linked list of outstanding queries to this server */
-  struct list_node queries_to_server;
+  /* list of outstanding queries to this server */
+  ares__llist_t *queries_to_server;
 
   /* Link back to owning channel */
   ares_channel channel;
@@ -203,19 +209,17 @@ struct server_state {
 /* State to represent a DNS query */
 struct query {
   /* Query ID from qbuf, for faster lookup, and current timeout */
-  unsigned short qid;
+  unsigned short qid; /* host byte order */
   struct timeval timeout;
+  ares_channel channel;
 
   /*
-   * Links for the doubly-linked lists in which we insert a query.
-   * These circular, doubly-linked lists that are hash-bucketed based
-   * the attributes we care about, help making most important
-   * operations O(1).
+   * Node object for each list entry the query belongs to in order to
+   * make removal operations O(1).
    */
-  struct list_node queries_by_qid;    /* hopefully in same cache line as qid */
-  struct list_node queries_by_timeout;
-  struct list_node queries_to_server;
-  struct list_node all_queries;
+  ares__slist_node_t *node_queries_by_timeout;
+  ares__llist_node_t *node_queries_to_server;
+  ares__llist_node_t *node_all_queries;
 
   /* Query buf with length at beginning, for TCP transmission */
   unsigned char *tcpbuf;
@@ -262,9 +266,6 @@ struct apattern {
   unsigned short type;
 };
 
-struct ares_rand_state;
-typedef struct ares_rand_state ares_rand_state;
-
 struct ares_channeldata {
   /* Configuration data */
   int flags;
@@ -296,30 +297,22 @@ struct ares_channeldata {
   struct server_state *servers;
   int nservers;
 
-  /* ID to use for next query */
-  unsigned short next_id;
   /* random state to use when generating new ids */
   ares_rand_state *rand_state;
 
   /* Generation number to use for the next TCP socket open/close */
   int tcp_connection_generation;
 
-  /* The time at which we last called process_timeouts(). Uses integer seconds
-     just to draw the line somewhere. */
-  time_t last_timeout_processed;
-
   /* Last server we sent a query to. */
   int last_server;
 
-  /* Circular, doubly-linked list of queries, bucketed various ways.... */
-  /* All active queries in a single list: */
-  struct list_node all_queries;
+  /* All active queries in a single list */
+  ares__llist_t   *all_queries;
   /* Queries bucketed by qid, for quickly dispatching DNS responses: */
-#define ARES_QID_TABLE_SIZE 2048
-  struct list_node queries_by_qid[ARES_QID_TABLE_SIZE];
+  ares__htable_stvp_t *queries_by_qid;
+
   /* Queries bucketed by timeout, for quickly handling timeouts: */
-#define ARES_TIMEOUT_TABLE_SIZE 1024
-  struct list_node queries_by_timeout[ARES_TIMEOUT_TABLE_SIZE];
+  ares__slist_t   *queries_by_timeout;
 
   ares_sock_state_cb sock_state_cb;
   void *sock_state_cb_data;
@@ -361,6 +354,8 @@ void ares__free_query(struct query *query);
 
 ares_rand_state *ares__init_rand_state(void);
 void ares__destroy_rand_state(ares_rand_state *state);
+void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len);
+
 unsigned short ares__generate_new_id(ares_rand_state *state);
 struct timeval ares__tvnow(void);
 int ares__expand_name_validated(const unsigned char *encoded,
@@ -370,7 +365,7 @@ int ares__expand_name_validated(const unsigned char *encoded,
 int ares__expand_name_for_response(const unsigned char *encoded,
                                    const unsigned char *abuf, int alen,
                                    char **s, long *enclen, int is_hostname);
-void ares__init_servers_state(ares_channel channel);
+int ares__init_servers_state(ares_channel channel);
 void ares__destroy_servers_state(ares_channel channel);
 int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
 int ares__single_domain(ares_channel channel, const char *name, char **s);
@@ -380,16 +375,12 @@ int ares__readaddrinfo(FILE *fp, const char *name, unsigned short port,
                        const struct ares_addrinfo_hints *hints,
                        struct ares_addrinfo *ai);
 
-struct ares_addrinfo *ares__malloc_addrinfo(void);
-
-struct ares_addrinfo_node *ares__malloc_addrinfo_node(void);
 void ares__freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node);
 
 struct ares_addrinfo_node *ares__append_addrinfo_node(struct ares_addrinfo_node **ai_node);
 void ares__addrinfo_cat_nodes(struct ares_addrinfo_node **head,
                               struct ares_addrinfo_node *tail);
 
-struct ares_addrinfo_cname *ares__malloc_addrinfo_cname(void);
 void ares__freeaddrinfo_cnames(struct ares_addrinfo_cname *ai_cname);
 
 struct ares_addrinfo_cname *ares__append_addrinfo_cname(struct ares_addrinfo_cname **ai_cname);
