@@ -26,7 +26,7 @@
 
 struct ares__slist {
   ares_rand_state         *rand_state;
-  unsigned char            rand_data[256];
+  unsigned char            rand_data[8];
   size_t                   rand_bits;
 
   ares__slist_node_t     **head;
@@ -86,8 +86,10 @@ static unsigned int ares__slist_coin_flip(ares__slist_t *list)
   size_t total_bits = sizeof(list->rand_data) * 8;
   size_t bit;
 
-  /* Refill random data used for coin flips.  We pull this in 256 byte chunks
-   * for efficiency as it requires a syscall */
+  /* Refill random data used for coin flips.  We pull this in 8 byte chunks.
+   * ares__rand_bytes() has some built-in caching of its own so we don't need
+   * to be excessive in caching ourselves.  Prefer to require less memory per
+   * skiplist */
   if (list->rand_bits == 0) {
     ares__rand_bytes(list->rand_state, list->rand_data,
                      sizeof(list->rand_data));

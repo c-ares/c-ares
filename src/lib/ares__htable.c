@@ -32,6 +32,12 @@ struct ares__htable {
   unsigned int               seed;
   unsigned int               size;
   size_t                     num_keys;
+  /* NOTE: if we converted buckets into ares__slist_t we could guarantee on
+   *       hash collisions we would have O(log n) worst case insert and search
+   *       performance.  (We'd also need to make key_eq into a key_cmp to
+   *       support sort).  That said, risk with a random hash seed is near zero,
+   *       and ares__slist_t is heavier weight so I think using ares__llist_t is
+   *       is an overall win. */
   ares__llist_t            **buckets;
 };
 
