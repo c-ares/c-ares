@@ -73,7 +73,7 @@ description of possible flag values.
 The number of seconds each name server is given to respond to a query on the
 first try.  (After the first try, the timeout algorithm becomes more
 complicated, but scales linearly with the value of \fItimeout\fP.)  The
-default is five seconds. This option is being deprecated by
+default is two seconds. This option is being deprecated by
 \fIARES_OPT_TIMEOUTMS\fP starting in c-ares 1.5.2.
 .TP 18
 .B ARES_OPT_TIMEOUTMS
@@ -82,7 +82,7 @@ default is five seconds. This option is being deprecated by
 The number of milliseconds each name server is given to respond to a query on
 the first try.  (After the first try, the timeout algorithm becomes more
 complicated, but scales linearly with the value of \fItimeout\fP.)  The
-default is five seconds. Note that this option is specified with the same
+default is two seconds. Note that this option is specified with the same
 struct field as the former \fIARES_OPT_TIMEOUT\fP, it is but the option bits
 that tell c-ares how to interpret the number. This option was added in c-ares
 1.5.2.
@@ -91,7 +91,7 @@ that tell c-ares how to interpret the number. This option was added in c-ares
 .B int \fItries\fP;
 .br
 The number of tries the resolver will try contacting each name server
-before giving up.  The default is four tries.
+before giving up.  The default is three tries.
 .TP 18
 .B ARES_OPT_NDOTS
 .B int \fIndots\fP;

@@ -39,8 +39,8 @@
 #define HAVE_WRITEV 1
 #endif
 
-#define DEFAULT_TIMEOUT         5000 /* milliseconds */
-#define DEFAULT_TRIES           4
+#define DEFAULT_TIMEOUT         2000 /* milliseconds */
+#define DEFAULT_TRIES           3
 #ifndef INADDR_NONE
 #define INADDR_NONE 0xffffffff
 #endif
