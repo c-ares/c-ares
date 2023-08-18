@@ -158,25 +158,26 @@ extern "C" {
 #define ARES_FLAG_EDNS          (1 << 8)
 
 /* Option mask values */
-#define ARES_OPT_FLAGS          (1 << 0)
-#define ARES_OPT_TIMEOUT        (1 << 1)
-#define ARES_OPT_TRIES          (1 << 2)
-#define ARES_OPT_NDOTS          (1 << 3)
-#define ARES_OPT_UDP_PORT       (1 << 4)
-#define ARES_OPT_TCP_PORT       (1 << 5)
-#define ARES_OPT_SERVERS        (1 << 6)
-#define ARES_OPT_DOMAINS        (1 << 7)
-#define ARES_OPT_LOOKUPS        (1 << 8)
-#define ARES_OPT_SOCK_STATE_CB  (1 << 9)
-#define ARES_OPT_SORTLIST       (1 << 10)
-#define ARES_OPT_SOCK_SNDBUF    (1 << 11)
-#define ARES_OPT_SOCK_RCVBUF    (1 << 12)
-#define ARES_OPT_TIMEOUTMS      (1 << 13)
-#define ARES_OPT_ROTATE         (1 << 14)
-#define ARES_OPT_EDNSPSZ        (1 << 15)
-#define ARES_OPT_NOROTATE       (1 << 16)
-#define ARES_OPT_RESOLVCONF     (1 << 17)
-#define ARES_OPT_HOSTS_FILE     (1 << 18)
+#define ARES_OPT_FLAGS           (1 << 0)
+#define ARES_OPT_TIMEOUT         (1 << 1)
+#define ARES_OPT_TRIES           (1 << 2)
+#define ARES_OPT_NDOTS           (1 << 3)
+#define ARES_OPT_UDP_PORT        (1 << 4)
+#define ARES_OPT_TCP_PORT        (1 << 5)
+#define ARES_OPT_SERVERS         (1 << 6)
+#define ARES_OPT_DOMAINS         (1 << 7)
+#define ARES_OPT_LOOKUPS         (1 << 8)
+#define ARES_OPT_SOCK_STATE_CB   (1 << 9)
+#define ARES_OPT_SORTLIST        (1 << 10)
+#define ARES_OPT_SOCK_SNDBUF     (1 << 11)
+#define ARES_OPT_SOCK_RCVBUF     (1 << 12)
+#define ARES_OPT_TIMEOUTMS       (1 << 13)
+#define ARES_OPT_ROTATE          (1 << 14)
+#define ARES_OPT_EDNSPSZ         (1 << 15)
+#define ARES_OPT_NOROTATE        (1 << 16)
+#define ARES_OPT_RESOLVCONF      (1 << 17)
+#define ARES_OPT_HOSTS_FILE      (1 << 18)
+#define ARES_OPT_UDP_MAX_QUERIES (1 << 19)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN                  (1 << 0)
@@ -287,6 +288,7 @@ struct ares_options {
   int ednspsz;
   char *resolvconf_path;
   char *hosts_path;
+  int udp_max_queries;
 };
 
 struct hostent;
