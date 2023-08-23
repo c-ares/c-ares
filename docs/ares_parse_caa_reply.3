@@ -92,7 +92,7 @@ static void dns_callback(void *arg,
                          int status,
                          int timeouts,
                          unsigned char *abuf,
-                         int alen)
+                         size_t alen)
   {
     struct ares_caa_reply *caa_out;
     int err;

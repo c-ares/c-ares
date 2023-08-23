@@ -142,12 +142,12 @@ static const char *rcodes[] = {
 };
 
 static void callback(void *arg, int status, int timeouts,
-                     unsigned char *abuf, int alen);
+                     unsigned char *abuf, size_t alen);
 static const unsigned char *display_question(const unsigned char *aptr,
                                              const unsigned char *abuf,
-                                             int alen);
+                                             size_t alen);
 static const unsigned char *display_rr(const unsigned char *aptr,
-                                       const unsigned char *abuf, int alen);
+                                       const unsigned char *abuf, size_t alen);
 static int convert_query (char **name, int use_bitstring);
 static const char *type_name(int type);
 static const char *class_name(int dnsclass);
@@ -387,7 +387,7 @@ int main(int argc, char **argv)
 }
 
 static void callback(void *arg, int status, int timeouts,
-                     unsigned char *abuf, int alen)
+                     unsigned char *abuf, size_t alen)
 {
   char *name = (char *) arg;
   int id, qr, opcode, aa, tc, rd, ra, rcode;
@@ -479,11 +479,11 @@ static void callback(void *arg, int status, int timeouts,
 
 static const unsigned char *display_question(const unsigned char *aptr,
                                              const unsigned char *abuf,
-                                             int alen)
+                                             size_t alen)
 {
   char *name;
   int type, dnsclass, status;
-  long len;
+  size_t len;
 
   /* Parse the question name. */
   status = ares_expand_name(aptr, abuf, alen, &name, &len);
@@ -517,11 +517,11 @@ static const unsigned char *display_question(const unsigned char *aptr,
 }
 
 static const unsigned char *display_rr(const unsigned char *aptr,
-                                       const unsigned char *abuf, int alen)
+                                       const unsigned char *abuf, size_t alen)
 {
   const unsigned char *p;
   int type, dnsclass, ttl, dlen, status, i;
-  long len;
+  size_t len;
   int vlen;
   char addr[46];
   union {

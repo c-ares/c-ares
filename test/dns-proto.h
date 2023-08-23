@@ -49,9 +49,9 @@ std::string AddressToString(const void* addr, int len);
 // externally-determined inputs.
 std::string PacketToString(const std::vector<byte>& packet);
 std::string QuestionToString(const std::vector<byte>& packet,
-                             const byte** data, int* len);
+                             const byte** data, size_t* len);
 std::string RRToString(const std::vector<byte>& packet,
-                       const byte** data, int* len);
+                       const byte** data, size_t* len);
 
 
 // Manipulate DNS protocol data.

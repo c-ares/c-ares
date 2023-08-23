@@ -40,7 +40,7 @@
 #include "ares_private.h"
 
 int
-ares_parse_caa_reply (const unsigned char *abuf, int alen,
+ares_parse_caa_reply (const unsigned char *abuf, size_t alen,
                       struct ares_caa_reply **caa_out)
 {
   unsigned int qdcount, ancount, i;

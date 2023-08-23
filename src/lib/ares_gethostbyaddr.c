@@ -51,7 +51,7 @@ struct addr_query {
 
 static void next_lookup(struct addr_query *aquery);
 static void addr_callback(void *arg, int status, int timeouts,
-                          unsigned char *abuf, int alen);
+                          unsigned char *abuf, size_t alen);
 static void end_aquery(struct addr_query *aquery, int status,
                        struct hostent *host);
 static int file_lookup(struct ares_addr *addr, struct hostent **host);
@@ -130,7 +130,7 @@ static void next_lookup(struct addr_query *aquery)
 }
 
 static void addr_callback(void *arg, int status, int timeouts,
-                          unsigned char *abuf, int alen)
+                          unsigned char *abuf, size_t alen)
 {
   struct addr_query *aquery = (struct addr_query *) arg;
   struct hostent *host;

@@ -79,7 +79,7 @@
 
 int ares_create_query(const char *name, int dnsclass, int type,
                       unsigned short id, int rd, unsigned char **bufp,
-                      int *buflenp, int max_udp_size)
+                      size_t *buflenp, int max_udp_size)
 {
   size_t len;
   unsigned char *q;
@@ -191,8 +191,7 @@ int ares_create_query(const char *name, int dnsclass, int type,
     return ARES_EBADNAME;
   }
 
-  /* we know this fits in an int at this point */
-  *buflenp = (int) buflen;
+  *buflenp = buflen;
   *bufp = buf;
 
   return ARES_SUCCESS;

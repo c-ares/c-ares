@@ -42,14 +42,14 @@
 #include "ares_private.h"
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
-                              int alen, int cname_only_is_enodata,
+                              size_t alen, int cname_only_is_enodata,
                               unsigned short port,
                               struct ares_addrinfo *ai)
 {
   unsigned int qdcount, ancount;
   int status, i, rr_type, rr_class, rr_len, rr_ttl;
   int got_a = 0, got_aaaa = 0, got_cname = 0;
-  long len;
+  size_t len;
   const unsigned char *aptr;
   char *question_hostname = NULL;
   char *hostname, *rr_name = NULL, *rr_data;

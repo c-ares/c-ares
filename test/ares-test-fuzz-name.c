@@ -32,7 +32,7 @@ int LLVMFuzzerTestOneInput(const unsigned char *data,
   memcpy(name, data, size);
 
   unsigned char *buf = NULL;
-  int buflen = 0;
+  size_t buflen = 0;
   ares_create_query(name, C_IN, T_AAAA, 1234, 0, &buf, &buflen, 1024);
   free(buf);
   free(name);

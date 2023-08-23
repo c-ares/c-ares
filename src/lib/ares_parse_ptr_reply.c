@@ -36,12 +36,12 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
-int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
+int ares_parse_ptr_reply(const unsigned char *abuf, size_t alen, const void *addr,
                          int addrlen, int family, struct hostent **host)
 {
   unsigned int qdcount, ancount;
   int status, i, rr_type, rr_class, rr_len;
-  long len;
+  size_t len;
   const unsigned char *aptr;
   char *ptrname, *hostname, *rr_name, *rr_data;
   struct hostent *hostent = NULL;

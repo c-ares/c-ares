@@ -37,7 +37,7 @@
 #include "ares_private.h"
 
 int
-ares_parse_srv_reply (const unsigned char *abuf, int alen,
+ares_parse_srv_reply (const unsigned char *abuf, size_t alen,
                       struct ares_srv_reply **srv_out)
 {
   unsigned int qdcount, ancount, i;

@@ -42,7 +42,7 @@
 #endif
 
 int
-ares_parse_uri_reply (const unsigned char *abuf, int alen,
+ares_parse_uri_reply (const unsigned char *abuf, size_t alen,
                       struct ares_uri_reply **uri_out)
 {
   unsigned int qdcount, ancount, i;

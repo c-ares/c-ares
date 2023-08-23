@@ -302,7 +302,7 @@ typedef void (*ares_callback)(void *arg,
                               int status,
                               int timeouts,
                               unsigned char *abuf,
-                              int alen);
+                              size_t alen);
 
 typedef void (*ares_host_callback)(void *arg,
                                    int status,
@@ -423,7 +423,7 @@ CARES_EXTERN void ares_set_socket_functions(ares_channel channel,
 
 CARES_EXTERN void ares_send(ares_channel channel,
                             const unsigned char *qbuf,
-                            int qlen,
+                            size_t qlen,
                             ares_callback callback,
                             void *arg);
 
@@ -492,7 +492,7 @@ CARES_EXTERN int ares_create_query(const char *name,
                                    unsigned short id,
                                    int rd,
                                    unsigned char **buf,
-                                   int *buflen,
+                                   size_t *buflen,
                                    int max_udp_size);
 
 CARES_EXTERN int ares_mkquery(const char *name,
@@ -501,19 +501,19 @@ CARES_EXTERN int ares_mkquery(const char *name,
                               unsigned short id,
                               int rd,
                               unsigned char **buf,
-                              int *buflen);
+                              size_t *buflen);
 
 CARES_EXTERN int ares_expand_name(const unsigned char *encoded,
                                   const unsigned char *abuf,
-                                  int alen,
+                                  size_t alen,
                                   char **s,
-                                  long *enclen);
+                                  size_t *enclen);
 
 CARES_EXTERN int ares_expand_string(const unsigned char *encoded,
                                     const unsigned char *abuf,
-                                    int alen,
+                                    size_t alen,
                                     unsigned char **s,
-                                    long *enclen);
+                                    size_t *enclen);
 
 /*
  * NOTE: before c-ares 1.7.0 we would most often use the system in6_addr
@@ -654,58 +654,58 @@ struct ares_addrinfo_hints {
 */
 
 CARES_EXTERN int ares_parse_a_reply(const unsigned char *abuf,
-                                    int alen,
+                                    size_t alen,
                                     struct hostent **host,
                                     struct ares_addrttl *addrttls,
                                     int *naddrttls);
 
 CARES_EXTERN int ares_parse_aaaa_reply(const unsigned char *abuf,
-                                       int alen,
+                                       size_t alen,
                                        struct hostent **host,
                                        struct ares_addr6ttl *addrttls,
                                        int *naddrttls);
 
 CARES_EXTERN int ares_parse_caa_reply(const unsigned char* abuf,
-				      int alen,
+				      size_t alen,
 				      struct ares_caa_reply** caa_out);
 
 CARES_EXTERN int ares_parse_ptr_reply(const unsigned char *abuf,
-                                      int alen,
+                                      size_t alen,
                                       const void *addr,
                                       int addrlen,
                                       int family,
                                       struct hostent **host);
 
 CARES_EXTERN int ares_parse_ns_reply(const unsigned char *abuf,
-                                     int alen,
+                                     size_t alen,
                                      struct hostent **host);
 
 CARES_EXTERN int ares_parse_srv_reply(const unsigned char* abuf,
-                                      int alen,
+                                      size_t alen,
                                       struct ares_srv_reply** srv_out);
 
 CARES_EXTERN int ares_parse_mx_reply(const unsigned char* abuf,
-                                      int alen,
+                                      size_t alen,
                                       struct ares_mx_reply** mx_out);
 
 CARES_EXTERN int ares_parse_txt_reply(const unsigned char* abuf,
-                                      int alen,
+                                      size_t alen,
                                       struct ares_txt_reply** txt_out);
 
 CARES_EXTERN int ares_parse_txt_reply_ext(const unsigned char* abuf,
-                                          int alen,
+                                          size_t alen,
                                           struct ares_txt_ext** txt_out);
 
 CARES_EXTERN int ares_parse_naptr_reply(const unsigned char* abuf,
-                                        int alen,
+                                        size_t alen,
                                         struct ares_naptr_reply** naptr_out);
 
 CARES_EXTERN int ares_parse_soa_reply(const unsigned char* abuf,
-				      int alen,
+				      size_t alen,
 				      struct ares_soa_reply** soa_out);
 
 CARES_EXTERN int ares_parse_uri_reply(const unsigned char* abuf,
-                                      int alen,
+                                      size_t alen,
                                       struct ares_uri_reply** uri_out);
 
 CARES_EXTERN void ares_free_string(void *str);

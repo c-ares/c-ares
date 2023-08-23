@@ -34,35 +34,32 @@
  */
 int ares_expand_string(const unsigned char *encoded,
                        const unsigned char *abuf,
-                       int alen,
+                       size_t alen,
                        unsigned char **s,
-                       long *enclen)
+                       size_t *enclen)
 {
   unsigned char *q;
-  union {
-    ares_ssize_t sig;
-     size_t uns;
-  } elen;
+  size_t elen;
 
   if (encoded == abuf+alen)
     return ARES_EBADSTR;
 
-  elen.uns = *encoded;
-  if (encoded+elen.sig+1 > abuf+alen)
+  elen = *encoded;
+  if (encoded+elen+1 > abuf+alen)
     return ARES_EBADSTR;
 
   encoded++;
 
-  *s = ares_malloc(elen.uns+1);
+  *s = ares_malloc(elen+1);
   if (*s == NULL)
     return ARES_ENOMEM;
   q = *s;
-  strncpy((char *)q, (char *)encoded, elen.uns);
-  q[elen.uns] = '\0';
+  strncpy((char *)q, (char *)encoded, elen);
+  q[elen] = '\0';
 
   *s = q;
 
-  *enclen = (long)(elen.sig+1);
+  *enclen = elen+1;
 
   return ARES_SUCCESS;
 }

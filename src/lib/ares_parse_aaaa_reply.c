@@ -45,7 +45,7 @@
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
-int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
+int ares_parse_aaaa_reply(const unsigned char *abuf, size_t alen,
                           struct hostent **host, struct ares_addr6ttl *addrttls,
                           int *naddrttls)
 {

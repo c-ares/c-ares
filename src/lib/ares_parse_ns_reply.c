@@ -38,13 +38,13 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-int ares_parse_ns_reply( const unsigned char* abuf, int alen,
+int ares_parse_ns_reply( const unsigned char* abuf, size_t alen,
                          struct hostent** host )
 {
   unsigned int qdcount, ancount;
   int status, i, rr_type, rr_class, rr_len;
   int nameservers_num;
-  long len;
+  size_t len;
   const unsigned char *aptr;
   char* hostname, *rr_name, *rr_data, **nameservers;
   struct hostent *hostent;

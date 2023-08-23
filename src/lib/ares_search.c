@@ -42,9 +42,9 @@ struct search_query {
 };
 
 static void search_callback(void *arg, int status, int timeouts,
-                            unsigned char *abuf, int alen);
+                            unsigned char *abuf, size_t alen);
 static void end_squery(struct search_query *squery, int status,
-                       unsigned char *abuf, int alen);
+                       unsigned char *abuf, size_t alen);
 
 void ares_search(ares_channel channel, const char *name, int dnsclass,
                  int type, ares_callback callback, void *arg)
@@ -143,7 +143,7 @@ void ares_search(ares_channel channel, const char *name, int dnsclass,
 }
 
 static void search_callback(void *arg, int status, int timeouts,
-                            unsigned char *abuf, int alen)
+                            unsigned char *abuf, size_t alen)
 {
   struct search_query *squery = (struct search_query *) arg;
   ares_channel channel = squery->channel;
@@ -205,7 +205,7 @@ static void search_callback(void *arg, int status, int timeouts,
 }
 
 static void end_squery(struct search_query *squery, int status,
-                       unsigned char *abuf, int alen)
+                       unsigned char *abuf, size_t alen)
 {
   squery->callback(squery->arg, status, squery->timeouts, abuf, alen);
   ares_free(squery->name);

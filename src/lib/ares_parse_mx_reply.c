@@ -37,7 +37,7 @@
 #include "ares_private.h"
 
 int
-ares_parse_mx_reply (const unsigned char *abuf, int alen,
+ares_parse_mx_reply (const unsigned char *abuf, size_t alen,
                      struct ares_mx_reply **mx_out)
 {
   unsigned int qdcount, ancount, i;

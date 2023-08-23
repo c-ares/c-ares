@@ -110,7 +110,7 @@ static const struct ares_addrinfo empty_addrinfo = {
 
 /* forward declarations */
 static void host_callback(void *arg, int status, int timeouts,
-                          unsigned char *abuf, int alen);
+                          unsigned char *abuf, size_t alen);
 static int as_is_first(const struct host_query *hquery);
 static int as_is_only(const struct host_query* hquery);
 static int next_dns_lookup(struct host_query *hquery);
@@ -566,7 +566,7 @@ static void next_lookup(struct host_query *hquery, int status)
 }
 
 static void host_callback(void *arg, int status, int timeouts,
-                          unsigned char *abuf, int alen)
+                          unsigned char *abuf, size_t alen)
 {
   struct host_query *hquery = (struct host_query*)arg;
   int addinfostatus = ARES_SUCCESS;

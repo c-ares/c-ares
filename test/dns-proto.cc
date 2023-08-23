@@ -197,7 +197,7 @@ std::string AddressToString(const void* vaddr, int len) {
 
 std::string PacketToString(const std::vector<byte>& packet) {
   const byte* data = packet.data();
-  int len = packet.size();
+  size_t len = packet.size();
   std::stringstream ss;
   if (len < NS_HFIXEDSZ) {
     ss << "(too short, len " << len << ")";
@@ -243,7 +243,7 @@ std::string PacketToString(const std::vector<byte>& packet) {
 }
 
 std::string QuestionToString(const std::vector<byte>& packet,
-                             const byte** data, int* len) {
+                             const byte** data, size_t* len) {
   std::stringstream ss;
   ss << "{";
   if (*len < NS_QFIXEDSZ) {
@@ -252,7 +252,7 @@ std::string QuestionToString(const std::vector<byte>& packet,
   }
 
   char *name = nullptr;
-  long enclen;
+  size_t enclen;
   int rc = ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
   if (rc != ARES_SUCCESS) {
     ss << "(error from ares_expand_name)";
@@ -279,7 +279,7 @@ std::string QuestionToString(const std::vector<byte>& packet,
 }
 
 std::string RRToString(const std::vector<byte>& packet,
-                       const byte** data, int* len) {
+                       const byte** data, size_t* len) {
   std::stringstream ss;
   ss << "{";
   if (*len < NS_RRFIXEDSZ) {
@@ -288,7 +288,7 @@ std::string RRToString(const std::vector<byte>& packet,
   }
 
   char *name = nullptr;
-  long enclen;
+  size_t enclen;
   int rc = ares_expand_name(*data, packet.data(), packet.size(), &name, &enclen);
   if (rc != ARES_SUCCESS) {
     ss << "(error from ares_expand_name)";
@@ -318,7 +318,7 @@ std::string RRToString(const std::vector<byte>& packet,
     ss << RRTypeToString(rrtype) << " ";
     ss << "TTL=" << DNS_RR_TTL(*data);
   }
-  int rdatalen = DNS_RR_LEN(*data);
+  size_t rdatalen = DNS_RR_LEN(*data);
 
   *data += NS_RRFIXEDSZ;
   *len -= NS_RRFIXEDSZ;

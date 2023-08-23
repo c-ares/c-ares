@@ -70,7 +70,7 @@ static void process_timeouts(ares_channel channel, struct timeval *now);
 static void process_broken_connections(ares_channel channel,
                                        struct timeval *now);
 static void process_answer(ares_channel channel, unsigned char *abuf,
-                           int alen, int whichserver, int tcp,
+                           size_t alen, int whichserver, int tcp,
                            struct timeval *now);
 static void handle_error(ares_channel channel, int whichserver,
                          struct timeval *now);
@@ -80,12 +80,12 @@ static void next_server(ares_channel channel, struct query *query,
                         struct timeval *now);
 static int open_tcp_socket(ares_channel channel, struct server_state *server);
 static int open_udp_socket(ares_channel channel, struct server_state *server);
-static int same_questions(const unsigned char *qbuf, int qlen,
-                          const unsigned char *abuf, int alen);
+static int same_questions(const unsigned char *qbuf, size_t qlen,
+                          const unsigned char *abuf, size_t alen);
 static int same_address(struct sockaddr *sa, struct ares_addr *aa);
-static int has_opt_rr(const unsigned char *abuf, int alen);
+static int has_opt_rr(const unsigned char *abuf, size_t alen);
 static void end_query(ares_channel channel, struct query *query, int status,
-                      unsigned char *abuf, int alen);
+                      unsigned char *abuf, size_t alen);
 
 /* return true if now is exactly check time or later */
 int ares__timedout(struct timeval *now,
@@ -578,7 +578,7 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
 
 /* Handle an answer from a server. */
 static void process_answer(ares_channel channel, unsigned char *abuf,
-                           int alen, int whichserver, int tcp,
+                           size_t alen, int whichserver, int tcp,
                            struct timeval *now)
 {
   int tc, rcode, packetsz;
@@ -616,7 +616,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
       packetsz = channel->ednspsz;
       if (rcode == FORMERR && has_opt_rr(abuf, alen) != 1)
       {
-          int qlen = (query->tcplen - 2) - EDNSFIXEDSZ;
+          size_t qlen = (query->tcplen - 2) - EDNSFIXEDSZ;
           channel->flags ^= ARES_FLAG_EDNS;
           query->tcplen -= EDNSFIXEDSZ;
           query->qlen -= EDNSFIXEDSZ;
@@ -1263,8 +1263,8 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
   return 0;
 }
 
-static int same_questions(const unsigned char *qbuf, int qlen,
-                          const unsigned char *abuf, int alen)
+static int same_questions(const unsigned char *qbuf, size_t qlen,
+                          const unsigned char *abuf, size_t alen)
 {
   struct {
     const unsigned char *p;
@@ -1371,7 +1371,7 @@ static int same_address(struct sockaddr *sa, struct ares_addr *aa)
 }
 
 /* search for an OPT RR in the response */
-static int has_opt_rr(const unsigned char *abuf, int alen)
+static int has_opt_rr(const unsigned char *abuf, size_t alen)
 {
   unsigned int qdcount, ancount, nscount, arcount, i;
   const unsigned char *aptr;
@@ -1450,7 +1450,7 @@ static int has_opt_rr(const unsigned char *abuf, int alen)
 }
 
 static void end_query (ares_channel channel, struct query *query, int status,
-                       unsigned char *abuf, int alen)
+                       unsigned char *abuf, size_t alen)
 {
   int i;
 

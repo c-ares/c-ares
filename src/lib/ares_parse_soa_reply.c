@@ -37,11 +37,11 @@
 #include "ares_private.h"
 
 int
-ares_parse_soa_reply(const unsigned char *abuf, int alen,
+ares_parse_soa_reply(const unsigned char *abuf, size_t alen,
 		     struct ares_soa_reply **soa_out)
 {
   const unsigned char *aptr;
-  long len;
+  size_t len;
   char *qname = NULL, *rr_name = NULL;
   struct ares_soa_reply *soa = NULL;
   int qdcount, ancount, qclass;

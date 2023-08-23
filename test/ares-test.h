@@ -327,7 +327,7 @@ std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result);
 void HostCallback(void *data, int status, int timeouts,
                   struct hostent *hostent);
 void SearchCallback(void *data, int status, int timeouts,
-                    unsigned char *abuf, int alen);
+                    unsigned char *abuf, size_t alen);
 void NameInfoCallback(void *data, int status, int timeouts,
                       char *node, char *service);
 void AddrInfoCallback(void *data, int status, int timeouts,

@@ -33,7 +33,7 @@ struct qquery {
   void *arg;
 };
 
-static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf, int alen);
+static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf, size_t alen);
 
 
 /* a unique query id is generated using an rc4 key. Since the id may already
@@ -57,7 +57,8 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
 {
   struct qquery *qquery;
   unsigned char *qbuf;
-  int qlen, rd, status;
+  int rd, status;
+  size_t qlen;
   unsigned short id = generate_unique_id(channel);
 
   /* Compose the query. */
@@ -87,7 +88,7 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
   ares_free_string(qbuf);
 }
 
-static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf, int alen)
+static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf, size_t alen)
 {
   struct qquery *qquery = (struct qquery *) arg;
   unsigned int ancount;

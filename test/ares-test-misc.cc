@@ -182,7 +182,7 @@ TEST_F(LibraryTest, InetNtoP) {
 
 TEST_F(LibraryTest, Mkquery) {
   byte* p;
-  int len;
+  size_t len;
   ares_mkquery("example.com", C_IN, T_A, 0x1234, 0, &p, &len);
   std::vector<byte> data(p, p + len);
   ares_free_string(p);
@@ -196,7 +196,7 @@ TEST_F(LibraryTest, Mkquery) {
 
 TEST_F(LibraryTest, CreateQuery) {
   byte* p;
-  int len;
+  size_t len;
   EXPECT_EQ(ARES_SUCCESS,
             ares_create_query("exam\\@le.com", C_IN, T_A, 0x1234, 0,
                               &p, &len, 0));
@@ -212,7 +212,7 @@ TEST_F(LibraryTest, CreateQuery) {
 
 TEST_F(LibraryTest, CreateQueryTrailingEscapedDot) {
   byte* p;
-  int len;
+  size_t len;
   EXPECT_EQ(ARES_SUCCESS,
             ares_create_query("example.com\\.", C_IN, T_A, 0x1234, 0,
                               &p, &len, 0));
@@ -225,7 +225,7 @@ TEST_F(LibraryTest, CreateQueryTrailingEscapedDot) {
 
 TEST_F(LibraryTest, CreateQueryNameTooLong) {
   byte* p;
-  int len;
+  size_t len;
   EXPECT_EQ(ARES_EBADNAME,
             ares_create_query(
               "a1234567890123456789.b1234567890123456789.c1234567890123456789.d1234567890123456789."
@@ -237,7 +237,7 @@ TEST_F(LibraryTest, CreateQueryNameTooLong) {
 
 TEST_F(LibraryTest, CreateQueryFailures) {
   byte* p;
-  int len;
+  size_t len;
   // RC1035 has a 255 byte limit on names.
   std::string longname;
   for (int ii = 0; ii < 17; ii++) {
@@ -275,7 +275,7 @@ TEST_F(LibraryTest, CreateQueryFailures) {
 
 TEST_F(LibraryTest, CreateQueryOnionDomain) {
   byte* p;
-  int len;
+  size_t len;
   EXPECT_EQ(ARES_ENOTFOUND,
             ares_create_query("dontleak.onion", C_IN, T_A, 0x1234, 0,
                               &p, &len, 0));
@@ -323,7 +323,7 @@ TEST_F(DefaultChannelTest, SendFailure) {
 }
 
 std::string ExpandName(const std::vector<byte>& data, int offset,
-                       long *enclen) {
+                       size_t *enclen) {
   char *name = nullptr;
   int rc = ares_expand_name(data.data() + offset, data.data(), data.size(),
                             &name, enclen);
@@ -339,7 +339,7 @@ std::string ExpandName(const std::vector<byte>& data, int offset,
 }
 
 TEST_F(LibraryTest, ExpandName) {
-  long enclen;
+  size_t enclen;
   std::vector<byte> data1 = {1, 'a', 2, 'b', 'c', 3, 'd', 'e', 'f', 0};
   EXPECT_EQ("a.bc.def", ExpandName(data1, 0, &enclen));
   EXPECT_EQ(data1.size(), enclen);
@@ -388,7 +388,7 @@ TEST_F(LibraryTest, ExpandName) {
 TEST_F(LibraryTest, ExpandNameFailure) {
   std::vector<byte> data1 = {0x03, 'c', 'o', 'm', 0x00};
   char *name = nullptr;
-  long enclen;
+  size_t enclen;
   SetAllocFail(1);
   EXPECT_EQ(ARES_ENOMEM,
             ares_expand_name(data1.data(), data1.data(), data1.size(),
@@ -469,7 +469,7 @@ TEST_F(LibraryTest, ExpandNameFailure) {
 
 TEST_F(LibraryTest, CreateEDNSQuery) {
   byte* p;
-  int len;
+  size_t len;
   EXPECT_EQ(ARES_SUCCESS,
             ares_create_query("example.com", C_IN, T_A, 0x1234, 0,
                               &p, &len, 1280));
@@ -486,7 +486,7 @@ TEST_F(LibraryTest, CreateEDNSQuery) {
 
 TEST_F(LibraryTest, CreateRootQuery) {
   byte* p;
-  int len;
+  size_t len;
   ares_create_query(".", C_IN, T_A, 0x1234, 0, &p, &len, 0);
   std::vector<byte> data(p, p + len);
   ares_free_string(p);
@@ -519,7 +519,7 @@ TEST_F(LibraryTest, Strerror) {
 TEST_F(LibraryTest, ExpandString) {
   std::vector<byte> s1 = { 3, 'a', 'b', 'c'};
   char* result = nullptr;
-  long len;
+  size_t len;
   EXPECT_EQ(ARES_SUCCESS,
             ares_expand_string(s1.data(), s1.data(), s1.size(),
                                (unsigned char**)&result, &len));

@@ -41,7 +41,7 @@
 #include "ares_private.h"
 
 static int
-ares__parse_txt_reply (const unsigned char *abuf, int alen,
+ares__parse_txt_reply (const unsigned char *abuf, size_t alen,
                        int ex, void **txt_out)
 {
   size_t substr_len;
@@ -201,7 +201,7 @@ ares__parse_txt_reply (const unsigned char *abuf, int alen,
 }
 
 int
-ares_parse_txt_reply (const unsigned char *abuf, int alen,
+ares_parse_txt_reply (const unsigned char *abuf, size_t alen,
                       struct ares_txt_reply **txt_out)
 {
   return ares__parse_txt_reply(abuf, alen, 0, (void **) txt_out);
@@ -209,7 +209,7 @@ ares_parse_txt_reply (const unsigned char *abuf, int alen,
 
 
 int
-ares_parse_txt_reply_ext (const unsigned char *abuf, int alen,
+ares_parse_txt_reply_ext (const unsigned char *abuf, size_t alen,
                           struct ares_txt_ext **txt_out)
 {
   return ares__parse_txt_reply(abuf, alen, 1, (void **) txt_out);

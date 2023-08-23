@@ -304,10 +304,10 @@ void MockServer::ProcessPacket(int fd, struct sockaddr_storage *addr, socklen_t 
     return;
   }
   byte* question = data + 12;
-  int qlen = len - 12;
+  size_t qlen = len - 12;
 
   char *name = nullptr;
-  long enclen;
+  size_t enclen;
   ares_expand_name(question, data, len, &name, &enclen);
   if (!name) {
     std::cerr << "Failed to retrieve name" << std::endl;
@@ -734,7 +734,7 @@ std::ostream& operator<<(std::ostream& os, const SearchResult& result) {
 }
 
 void SearchCallback(void *data, int status, int timeouts,
-                    unsigned char *abuf, int alen) {
+                    unsigned char *abuf, size_t alen) {
   EXPECT_NE(nullptr, data);
   SearchResult* result = reinterpret_cast<SearchResult*>(data);
   result->done_ = true;

@@ -227,7 +227,7 @@ struct query {
 
   /* Arguments passed to ares_send() (qbuf points into tcpbuf) */
   const unsigned char *qbuf;
-  int qlen;
+  size_t qlen;
   ares_callback callback;
   void *arg;
 
@@ -360,14 +360,14 @@ unsigned short ares__generate_new_id(ares_rand_state *state);
 struct timeval ares__tvnow(void);
 int ares__expand_name_validated(const unsigned char *encoded,
                                 const unsigned char *abuf,
-                                int alen, char **s, long *enclen,
+                                size_t alen, char **s, size_t *enclen,
                                 int is_hostname);
 int ares__expand_name_for_response(const unsigned char *encoded,
-                                   const unsigned char *abuf, int alen,
-                                   char **s, long *enclen, int is_hostname);
+                                   const unsigned char *abuf, size_t alen,
+                                   char **s, size_t *enclen, int is_hostname);
 int ares__init_servers_state(ares_channel channel);
 void ares__destroy_servers_state(ares_channel channel);
-int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
+int ares__parse_qtype_reply(const unsigned char* abuf, size_t alen, int* qtype);
 int ares__single_domain(ares_channel channel, const char *name, char **s);
 int ares__cat_domain(const char *name, const char *domain, char **s);
 int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo_node *ai_node);
@@ -393,7 +393,7 @@ void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
                                struct ares_addrinfo_cname *tail);
 
 int ares__parse_into_addrinfo(const unsigned char *abuf,
-                              int alen, int cname_only_is_enodata,
+                              size_t alen, int cname_only_is_enodata,
                               unsigned short port,
                               struct ares_addrinfo *ai);
 

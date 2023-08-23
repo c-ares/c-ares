@@ -43,7 +43,7 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-int ares_parse_a_reply(const unsigned char *abuf, int alen,
+int ares_parse_a_reply(const unsigned char *abuf, size_t alen,
                        struct hostent **host, struct ares_addrttl *addrttls,
                        int *naddrttls)
 {
