@@ -462,12 +462,20 @@ static int init_by_options(ares_channel channel,
   /* Easy stuff. */
   if ((optmask & ARES_OPT_FLAGS) && channel->flags == -1)
     channel->flags = options->flags;
-  if ((optmask & ARES_OPT_TIMEOUTMS) && channel->timeout == -1)
-    channel->timeout = options->timeout;
-  else if ((optmask & ARES_OPT_TIMEOUT) && channel->timeout == -1)
-    channel->timeout = options->timeout * 1000;
   if ((optmask & ARES_OPT_TRIES) && channel->tries == -1)
     channel->tries = options->tries;
+  if (channel->tries == -1) {
+    if ((optmask & ARES_OPT_TIMEOUTMS) && channel->timeout == -1)
+      channel->timeout = (options->timeout >> DEFAULT_TRIES);
+    else if ((optmask & ARES_OPT_TIMEOUT) && channel->timeout == -1)
+      channel->timeout = ((options->timeout * 1000) >> DEFAULT_TRIES);
+  } 
+  else {
+    if ((optmask & ARES_OPT_TIMEOUTMS) && channel->timeout == -1)
+      channel->timeout = (options->timeout >> channel->tries);
+    else if ((optmask & ARES_OPT_TIMEOUT) && channel->timeout == -1)
+      channel->timeout = ((options->timeout * 1000) >> channel->tries);
+  }
   if ((optmask & ARES_OPT_NDOTS) && channel->ndots == -1)
     channel->ndots = options->ndots;
   if ((optmask & ARES_OPT_ROTATE) && channel->rotate == -1)
