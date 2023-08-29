@@ -223,6 +223,11 @@ int ares__cat_domain(const char *name, const char *domain, char **s)
     return ARES_ENOMEM;
   memcpy(*s, name, nlen);
   (*s)[nlen] = '.';
+  if (strcmp(domain, ".") == 0) {
+    /* Avoid appending the root domain to the separator, which would set *s to
+       an ill-formed value (ending in two consequtive dots). */
+    dlen = 0;
+  }
   memcpy(*s + nlen + 1, domain, dlen);
   (*s)[nlen + 1 + dlen] = 0;
   return ARES_SUCCESS;
