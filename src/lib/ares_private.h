@@ -331,6 +331,7 @@ struct ares_channeldata {
 
   /* Path for hosts file, configurable via ares_options */
   char *hosts_path;
+  int ares_succ_resp_flag;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */

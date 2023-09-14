@@ -764,7 +764,7 @@ static void next_server(ares_channel channel, struct query *query,
    * servers to try. In total, we need to do channel->nservers * channel->tries
    * attempts. Use query->try to remember how many times we already attempted
    * this query. Use modular arithmetic to find the next server to try. */
-  while (++(query->try_count) < (channel->nservers * channel->tries))
+  while ((++(query->try_count) < (channel->nservers * channel->tries)) && (!channel->ares_succ_resp_flag))
     {
       struct server_state *server;
 

@@ -576,6 +576,10 @@ static void host_callback(void *arg, int status, int timeouts,
   if (status == ARES_SUCCESS)
     {
       addinfostatus = ares__parse_into_addrinfo(abuf, alen, 1, hquery->port, hquery->ai);
+      if (hquery->hints.ai_family  == AF_UNSPEC && addinfostatus == ARES_SUCCESS && hquery->ai->nodes)
+        {
+          hquery->channel->ares_succ_resp_flag = 1;
+        }
     }
 
   if (!hquery->remaining)
@@ -748,6 +752,7 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->next_domain = -1;
   hquery->remaining = 0;
   hquery->nodata_cnt = 0;
+  hquery->channel->ares_succ_resp_flag = 0;
 
   /* Start performing lookups according to channel->lookups. */
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
