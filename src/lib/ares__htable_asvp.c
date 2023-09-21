@@ -71,8 +71,8 @@ static void bucket_free(void *bucket)
 
 static unsigned int key_eq(const void *key1, const void *key2)
 {
-  const size_t *k1 = key1;
-  const size_t *k2 = key2;
+  const ares_socket_t *k1 = key1;
+  const ares_socket_t *k2 = key2;
 
   if (*k1 == *k2)
     return 1;

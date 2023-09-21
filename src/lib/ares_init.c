@@ -2387,7 +2387,17 @@ int ares__init_servers_state(ares_channel channel)
 
   for (i = 0; i < channel->nservers; i++) {
     server = &channel->servers[i];
-    memset(server, 0, sizeof(*server));
+
+    /* NOTE: Can't use memset() here because the server addresses have been
+     *       filled in already */
+    server->tcp_lenbuf_pos = 0;
+    server->tcp_buffer_pos = 0;
+    server->tcp_buffer = NULL;
+    server->tcp_length = 0;
+    server->qhead = NULL;
+    server->qtail = NULL;
+    server->is_broken = 0;
+
     server->idx = i;
 #warning should we register a destructor here?  maybe free?  close socket?  unregister from global hashtable?
     server->udp_sockets = ares__llist_create(NULL);

@@ -578,6 +578,7 @@ static void read_packets(ares_channel channel, fd_set *read_fds,
   /* There is no good way to iterate across an fd_set, instead we must pull a list
    * of all known fds, and iterate across that checking against the fd_set. */
   socketlist = channel_socket_list(channel, &num_sockets);
+
   for (i=0; i<num_sockets; i++) {
     if (!FD_ISSET(socketlist[i], read_fds))
       continue;
@@ -914,6 +915,7 @@ void ares__send_query(ares_channel channel, struct query *query,
       }
       node = ares__llist_node_first(server->udp_sockets);
       conn = ares__llist_node_val(node);
+
       if (socket_write(channel, conn->fd, query->qbuf, query->qlen) == -1) {
         /* FIXME: Handle EAGAIN here since it likely can happen. */
         skip_server(channel, query, server);
@@ -1344,7 +1346,6 @@ static int open_udp_socket(ares_channel channel, struct server_state *server)
   }
 
   SOCK_STATE_CALLBACK(channel, s, 1, 0);
-
   return 0;
 }
 
