@@ -32,30 +32,37 @@ int ares_fds(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
   size_t active_queries = ares__llist_len(channel->all_queries);
 
   nfds = 0;
-  for (i = 0; i < channel->nservers; i++)
-    {
-      server = &channel->servers[i];
-      /* We only need to register interest in UDP sockets if we have
-       * outstanding queries.
-       */
-      if (active_queries && server->udp_socket != ARES_SOCKET_BAD)
-        {
-          FD_SET(server->udp_socket, read_fds);
-          if (server->udp_socket >= nfds)
-            nfds = server->udp_socket + 1;
-        }
-      /* We always register for TCP events, because we want to know
-       * when the other side closes the connection, so we don't waste
-       * time trying to use a broken connection.
-       */
-      if (server->tcp_socket != ARES_SOCKET_BAD)
-       {
-         FD_SET(server->tcp_socket, read_fds);
-         if (server->qhead)
-           FD_SET(server->tcp_socket, write_fds);
-         if (server->tcp_socket >= nfds)
-           nfds = server->tcp_socket + 1;
-	}
+  for (i = 0; i < channel->nservers; i++) {
+    server = &channel->servers[i];
+
+    /* We only need to register interest in UDP sockets if we have
+     * outstanding queries.
+     */
+    if (active_queries) {
+      ares__llist_node_t *node;
+
+      for (node = ares__llist_node_first(server->udp_sockets);
+           node != NULL;
+           node = ares__llist_node_next(node)) {
+        struct server_connection *conn = ares__llist_node_val(node);
+
+        FD_SET(conn->fd, read_fds);
+        if (conn->fd >= nfds)
+          nfds = conn->fd + 1;
+      }
     }
+
+    /* We always register for TCP events, because we want to know
+     * when the other side closes the connection, so we don't waste
+     * time trying to use a broken connection.
+     */
+    if (server->tcp_socket.fd != ARES_SOCKET_BAD) {
+       FD_SET(server->tcp_socket.fd, read_fds);
+       if (server->qhead)
+         FD_SET(server->tcp_socket.fd, write_fds);
+       if (server->tcp_socket.fd >= nfds)
+         nfds = server->tcp_socket.fd + 1;
+     }
+  }
   return (int)nfds;
 }

@@ -111,6 +111,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__llist.h"
 #include "ares__slist.h"
 #include "ares__htable_stvp.h"
+#include "ares__htable_asvp.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -170,10 +171,21 @@ struct send_request {
   struct send_request *next;
 };
 
+struct server_state;
+
+struct server_connection {
+  struct server_state *server;
+  ares_socket_t        fd;
+  int                  is_tcp;
+  size_t               num_queries;
+};
+
 struct server_state {
+  size_t idx; /* index for server in ares_channel */
   struct ares_addr addr;
-  ares_socket_t udp_socket;
-  ares_socket_t tcp_socket;
+
+  ares__llist_t            *udp_sockets;
+  struct server_connection  tcp_socket;
 
   /* Mini-buffer for reading the length word */
   unsigned char tcp_lenbuf[2];
@@ -220,6 +232,9 @@ struct query {
   ares__slist_node_t *node_queries_by_timeout;
   ares__llist_node_t *node_queries_to_server;
   ares__llist_node_t *node_all_queries;
+
+  /* connection handle for validation purposes */
+  const struct server_connection *connection;
 
   /* Query buf with length at beginning, for TCP transmission */
   unsigned char *tcpbuf;
@@ -313,6 +328,9 @@ struct ares_channeldata {
 
   /* Queries bucketed by timeout, for quickly handling timeouts: */
   ares__slist_t   *queries_by_timeout;
+
+  /* Map connection to file descriptor */
+  ares__htable_asvp_t *conns_by_socket;
 
   ares_sock_state_cb sock_state_cb;
   void *sock_state_cb_data;

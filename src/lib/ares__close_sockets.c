@@ -24,17 +24,17 @@
 void ares__close_sockets(ares_channel channel, struct server_state *server)
 {
   struct send_request *sendreq;
+  ares__llist_node_t  *node;
 
   /* Free all pending output buffers. */
-  while (server->qhead)
-    {
-      /* Advance server->qhead; pull out query as we go. */
-      sendreq = server->qhead;
-      server->qhead = sendreq->next;
-      if (sendreq->data_storage != NULL)
-        ares_free(sendreq->data_storage);
-      ares_free(sendreq);
-    }
+  while (server->qhead) {
+    /* Advance server->qhead; pull out query as we go. */
+    sendreq = server->qhead;
+    server->qhead = sendreq->next;
+    if (sendreq->data_storage != NULL)
+      ares_free(sendreq->data_storage);
+    ares_free(sendreq);
+  }
   server->qtail = NULL;
 
   /* Reset any existing input buffer. */
@@ -47,17 +47,28 @@ void ares__close_sockets(ares_channel channel, struct server_state *server)
   server->is_broken = 0;
 
   /* Close the TCP and UDP sockets. */
-  if (server->tcp_socket != ARES_SOCKET_BAD)
-    {
-      SOCK_STATE_CALLBACK(channel, server->tcp_socket, 0, 0);
-      ares__close_socket(channel, server->tcp_socket);
-      server->tcp_socket = ARES_SOCKET_BAD;
-      server->tcp_connection_generation = ++channel->tcp_connection_generation;
+  if (server->tcp_socket.fd != ARES_SOCKET_BAD) {
+    ares__htable_asvp_remove(channel->conns_by_socket,
+                             server->tcp_socket.fd);
+    SOCK_STATE_CALLBACK(channel, server->tcp_socket.fd, 0, 0);
+    ares__close_socket(channel, server->tcp_socket.fd);
+    server->tcp_socket.fd = ARES_SOCKET_BAD;
+    server->tcp_connection_generation = ++channel->tcp_connection_generation;
+  }
+
+  node = ares__llist_node_first(server->udp_sockets);
+  while (node != NULL) {
+    ares__llist_node_t       *next = ares__llist_node_next(node);
+    struct server_connection *conn = ares__llist_node_val(node);
+
+    if (conn->fd != ARES_SOCKET_BAD) {
+      SOCK_STATE_CALLBACK(channel, conn->fd, 0, 0);
+      ares__close_socket(channel, conn->fd);
+      ares__htable_asvp_remove(channel->conns_by_socket, conn->fd);
     }
-  if (server->udp_socket != ARES_SOCKET_BAD)
-    {
-      SOCK_STATE_CALLBACK(channel, server->udp_socket, 0, 0);
-      ares__close_socket(channel, server->udp_socket);
-      server->udp_socket = ARES_SOCKET_BAD;
-    }
+
+    ares__llist_node_destroy(node);
+    node = next;
+  }
+
 }
