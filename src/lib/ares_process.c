@@ -497,6 +497,8 @@ static void read_udp_packets_fd(ares_channel channel,
 {
   ares_ssize_t read_len;
   unsigned char buf[MAXENDSSZ + 1];
+  ares_socket_t fd = conn->fd; /* Cache for validation */
+
 #ifdef HAVE_RECVFROM
   ares_socklen_t fromlen;
   union {
@@ -509,6 +511,8 @@ static void read_udp_packets_fd(ares_channel channel,
   /* To reduce event loop overhead, read and process as many
    * packets as we can. */
   do {
+    ares_socket_t fd = conn->fd;
+
     if (conn->fd == ARES_SOCKET_BAD) {
       read_len = -1;
     } else {
@@ -543,7 +547,10 @@ static void read_udp_packets_fd(ares_channel channel,
     } else {
       process_answer(channel, buf, (int)read_len, conn->server, 0, now);
     }
-  } while (read_len >= 0);
+  /* process_answer may invalidate "conn" and close the file descriptor, so
+   * check to see if file descriptor is still valid before looping! */
+  } while (read_len >= 0 &&
+           ares__htable_asvp_get_direct(channel->conns_by_socket, fd) != NULL);
 
 }
 
