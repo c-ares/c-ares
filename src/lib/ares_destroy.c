@@ -65,11 +65,6 @@ void ares_destroy(ares_channel channel)
     node = next;
   }
 
-  /* Close all connections */
-  for (i=0; i<channel->nservers; i++) {
-    ares__close_sockets(channel, &channel->servers[i]);
-    ares__llist_destroy(channel->servers[i].udp_sockets);
-  }
 
 #ifndef NDEBUG
   /* Freeing the query should remove it from all the lists in which it sits,
@@ -78,10 +73,13 @@ void ares_destroy(ares_channel channel)
   assert(ares__llist_len(channel->all_queries) == 0);
   assert(ares__htable_stvp_num_keys(channel->queries_by_qid) == 0);
   assert(ares__slist_len(channel->queries_by_timeout) == 0);
-  assert(ares__htable_asvp_num_keys(channel->conns_by_socket) == 0);
 #endif
 
   ares__destroy_servers_state(channel);
+
+#ifndef NDEBUG
+  assert(ares__htable_asvp_num_keys(channel->conns_by_socket) == 0);
+#endif
 
   if (channel->domains) {
     for (i = 0; i < channel->ndomains; i++)
@@ -125,6 +123,7 @@ void ares__destroy_servers_state(ares_channel channel)
           ares__close_sockets(channel, server);
           assert(ares__llist_len(server->queries_to_server) == 0);
           ares__llist_destroy(server->queries_to_server);
+          ares__llist_destroy(servers->udp_sockets);
         }
       ares_free(channel->servers);
       channel->servers = NULL;
