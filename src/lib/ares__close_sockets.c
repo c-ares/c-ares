@@ -66,6 +66,7 @@ void ares__close_sockets(ares_channel channel, struct server_state *server)
       ares__close_socket(channel, conn->fd);
       ares__htable_asvp_remove(channel->conns_by_socket, conn->fd);
     }
+    ares_free(conn);
 
     ares__llist_node_destroy(node);
     node = next;
