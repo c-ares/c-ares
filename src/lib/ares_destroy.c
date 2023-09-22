@@ -68,6 +68,7 @@ void ares_destroy(ares_channel channel)
   /* Close all connections */
   for (i=0; i<channel->nservers; i++) {
     ares__close_sockets(channel, &channel->servers[i]);
+    ares__llist_destroy(channel->servers[i].udp_sockets);
   }
 
 #ifndef NDEBUG

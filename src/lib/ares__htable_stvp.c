@@ -47,7 +47,8 @@ void ares__htable_stvp_destroy(ares__htable_stvp_t *htable)
 static unsigned int hash_func(const void *bucket, unsigned int seed)
 {
   const ares__htable_stvp_bucket_t *arg = bucket;
-  return ares__htable_hash_FNV1a(&arg->key, sizeof(arg->key), seed);
+  return ares__htable_hash_FNV1a((const unsigned char *)&arg->key,
+                                 sizeof(arg->key), seed);
 }
 
 

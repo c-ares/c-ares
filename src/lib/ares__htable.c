@@ -293,16 +293,15 @@ size_t ares__htable_num_keys(ares__htable_t *htable)
   return htable->num_keys;
 }
 
-unsigned int ares__htable_hash_FNV1a(const void *key, size_t key_len,
+unsigned int ares__htable_hash_FNV1a(const unsigned char *key, size_t key_len,
                                      unsigned int seed)
 {
-  const unsigned char *data = key;
   /* recommended seed is 2166136261U, but we don't want collisions */
   unsigned int         hv   = seed; 
   size_t               i;
 
   for (i = 0; i < key_len; i++) {
-    hv ^= (unsigned int)data[i];
+    hv ^= (unsigned int)key[i];
     /* hv *= 0x01000193 */
     hv += (hv<<1) + (hv<<4) + (hv<<7) + (hv<<8) + (hv<<24);
   }
@@ -311,15 +310,14 @@ unsigned int ares__htable_hash_FNV1a(const void *key, size_t key_len,
 }
 
 /* Case insensitive version, meant for strings */
-unsigned int ares__htable_hash_FNV1a_casecmp(const void *key, size_t key_len,
+unsigned int ares__htable_hash_FNV1a_casecmp(const unsigned char *key, size_t key_len,
                                              unsigned int seed)
 {
-  const unsigned char *data = key;
   unsigned int         hv   = seed;
   size_t               i;
 
   for (i = 0; i < key_len; i++) {
-    hv ^= (unsigned int)tolower((char)data[i]);
+    hv ^= (unsigned int)tolower((char)key[i]);
     /* hv *=  16777619 */
     hv += (hv<<1) + (hv<<4) + (hv<<7) + (hv<<8) + (hv<<24);
   }
