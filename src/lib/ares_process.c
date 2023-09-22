@@ -451,7 +451,7 @@ static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
 static ares_socket_t *channel_socket_list(ares_channel channel, size_t *num)
 {
   size_t         alloc_cnt = 1 << 4;
-  size_t         i;
+  int            i;
   ares_socket_t *out       = ares_malloc(alloc_cnt * sizeof(*out));
 
   *num = 0;
@@ -511,8 +511,6 @@ static void read_udp_packets_fd(ares_channel channel,
   /* To reduce event loop overhead, read and process as many
    * packets as we can. */
   do {
-    ares_socket_t fd = conn->fd;
-
     if (conn->fd == ARES_SOCKET_BAD) {
       read_len = -1;
     } else {
@@ -784,7 +782,7 @@ static void handle_error(ares_channel channel, struct server_state *server,
     ares__llist_node_t *next  = ares__llist_node_next(node);
     struct query       *query = ares__llist_node_val(node);
 
-    assert(query->server == server->idx);
+    assert(query->server == (int)server->idx);
     skip_server(channel, query, server);
     next_server(channel, query, now);
 

@@ -44,11 +44,10 @@ void ares__htable_asvp_destroy(ares__htable_asvp_t *htable)
 }
 
 
-static unsigned int hash_func(const void *bucket, unsigned int seed)
+static unsigned int hash_func(const void *key, unsigned int seed)
 {
-  const ares__htable_asvp_bucket_t *arg = bucket;
-  ares_socket_t key = arg->key;
-  return ares__htable_hash_FNV1a((const unsigned char *)&key, sizeof(key),
+  const ares_socket_t *arg = key;
+  return ares__htable_hash_FNV1a((const unsigned char *)arg, sizeof(*arg),
                                  seed);
 }
 

@@ -2399,7 +2399,6 @@ int ares__init_servers_state(ares_channel channel)
     server->is_broken = 0;
 
     server->idx = i;
-#warning should we register a destructor here?  maybe free?  close socket?  unregister from global hashtable?
     server->udp_sockets = ares__llist_create(NULL);
     if (server->udp_sockets == NULL)
       return ARES_ENOMEM;
