@@ -2405,6 +2405,7 @@ int ares__init_servers_state(ares_channel channel)
       return ARES_ENOMEM;
     server->tcp_socket.fd = ARES_SOCKET_BAD;
     server->tcp_socket.server = server;
+    server->tcp_socket.is_tcp = 1;
 #warning determine how/why tcp_connection_generation is used
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->channel = channel;
