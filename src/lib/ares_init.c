@@ -261,6 +261,7 @@ done:
       ares__htable_stvp_destroy(channel->queries_by_qid);
       ares__llist_destroy(channel->all_queries);
       ares__slist_destroy(channel->queries_by_timeout);
+      ares__htable_asvp_destroy(channel->conns_by_socket);
       ares_free(channel);
       return status;
     }
@@ -2409,8 +2410,10 @@ int ares__init_servers_state(ares_channel channel)
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->channel = channel;
     server->queries_to_server = ares__llist_create(NULL);
-    if (server->queries_to_server == NULL)
+    if (server->queries_to_server == NULL) {
+      ares__llist_destroy(server->udp_sockets);
       return ARES_ENOMEM;
+    }
   }
   return ARES_SUCCESS;
 }
