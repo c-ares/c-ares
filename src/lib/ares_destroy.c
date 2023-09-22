@@ -52,6 +52,7 @@ void ares_destroy(ares_channel channel)
   if (!channel)
     return;
 
+  /* Destroy all queries */
   node = ares__llist_node_first(channel->all_queries);
   while (node != NULL) {
     ares__llist_node_t *next  = ares__llist_node_next(node);
@@ -63,7 +64,12 @@ void ares_destroy(ares_channel channel)
 
     node = next;
   }
-  
+
+  /* Close all connections */
+  for (i=0; i<channel->nservers; i++) {
+    ares__close_sockets(channel, &channel->servers[i]);
+  }
+
 #ifndef NDEBUG
   /* Freeing the query should remove it from all the lists in which it sits,
    * so all query lists should be empty now.
@@ -71,7 +77,6 @@ void ares_destroy(ares_channel channel)
   assert(ares__llist_len(channel->all_queries) == 0);
   assert(ares__htable_stvp_num_keys(channel->queries_by_qid) == 0);
   assert(ares__slist_len(channel->queries_by_timeout) == 0);
-#warning are we sure connections are destroyed by the time we get here?
   assert(ares__htable_asvp_num_keys(channel->conns_by_socket) == 0);
 #endif
 
