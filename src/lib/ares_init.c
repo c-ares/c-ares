@@ -127,7 +127,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
                       int optmask)
 {
   ares_channel channel;
-  int i;
   int status = ARES_SUCCESS;
 
   if (ares_library_initialized() != ARES_SUCCESS)
@@ -2411,7 +2410,6 @@ int ares__init_servers_state(ares_channel channel)
     server->tcp_socket.server = server;
     server->tcp_socket.is_tcp = 1;
     server->tcp_socket.queries_to_conn = NULL;
-#warning determine how/why tcp_connection_generation is used
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->channel = channel;
   }

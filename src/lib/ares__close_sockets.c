@@ -27,7 +27,7 @@
  * we'd need to have the tcp connection and udp connections in the same list. */
 static void ares_remove_udp_conn(struct server_connection *conn)
 {
-  ares__llist_node_t *node = ares__llist_node_first(conn->server->udp_sockets);
+  ares__llist_node_t *node;
 
   for (node = ares__llist_node_first(conn->server->udp_sockets);
        node != NULL;
@@ -85,7 +85,7 @@ void ares__close_connection(struct server_connection *conn)
   }
 }
 
-void ares__close_sockets(ares_channel channel, struct server_state *server)
+void ares__close_sockets(struct server_state *server)
 {
   ares__llist_node_t  *node;
 

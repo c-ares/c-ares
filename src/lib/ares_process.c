@@ -722,7 +722,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
               break;
           }
           skip_server(channel, query, server);
-          if (query->server == server->idx) /* Is this ever not true? */
+          if (query->server == (int)server->idx) /* Is this ever not true? */
             next_server(channel, query, now);
           return;
         }
@@ -1621,7 +1621,7 @@ static void end_query (ares_channel channel, struct query *query, int status,
       ares__llist_len(channel->all_queries) == 0)
     {
       for (i = 0; i < channel->nservers; i++)
-        ares__close_sockets(channel, &channel->servers[i]);
+        ares__close_sockets(&channel->servers[i]);
     }
 }
 
