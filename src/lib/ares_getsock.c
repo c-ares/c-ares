@@ -34,41 +34,34 @@ int ares_getsock(ares_channel channel,
 
   for (i = 0; i < channel->nservers; i++) {
     server = &channel->servers[i];
-    /* We only need to register interest in UDP sockets if we have
-     * outstanding queries.
-     */
-    if (active_queries) {
-      ares__llist_node_t *node;
-      for (node = ares__llist_node_first(server->udp_sockets);
-           node != NULL;
-           node = ares__llist_node_next(node)) {
 
-        struct server_connection *conn = ares__llist_node_val(node);
+    ares__llist_node_t *node;
+    for (node = ares__llist_node_first(server->connections);
+         node != NULL;
+         node = ares__llist_node_next(node)) {
 
-        if(sockindex >= numsocks || sockindex >= ARES_GETSOCK_MAXNUM)
-          break;
+      struct server_connection *conn = ares__llist_node_val(node);
 
-        socks[sockindex] = conn->fd;
+      if (sockindex >= numsocks || sockindex >= ARES_GETSOCK_MAXNUM)
+        break;
+
+      /* We only need to register interest in UDP sockets if we have
+       * outstanding queries.
+       */
+      if (!active_queries && !conn->is_tcp)
+        continue;
+
+      socks[sockindex] = conn->fd;
+
+      if (active_queries || conn->is_tcp) {
         bitmap |= ARES_GETSOCK_READABLE(setbits, sockindex);
-        sockindex++;
       }
-    }
 
-    /* We always register for TCP events, because we want to know
-     * when the other side closes the connection, so we don't waste
-     * time trying to use a broken connection.
-     */
-    if (server->tcp_socket.fd != ARES_SOCKET_BAD) {
-      if(sockindex >= numsocks || sockindex >= ARES_GETSOCK_MAXNUM)
-       break;
-
-      socks[sockindex] = server->tcp_socket.fd;
-      bitmap |= ARES_GETSOCK_READABLE(setbits, sockindex);
-
-      if (server->qhead && active_queries) {
-       /* then the tcp socket is also writable! */
-       bitmap |= ARES_GETSOCK_WRITABLE(setbits, sockindex);
+      if (conn->is_tcp && server->qhead) {
+        /* then the tcp socket is also writable! */
+        bitmap |= ARES_GETSOCK_WRITABLE(setbits, sockindex);
       }
+
       sockindex++;
     }
   }

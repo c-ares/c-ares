@@ -2403,13 +2403,10 @@ int ares__init_servers_state(ares_channel channel)
     server->qtail = NULL;
 
     server->idx = i;
-    server->udp_sockets = ares__llist_create(NULL);
-    if (server->udp_sockets == NULL)
+    server->connections = ares__llist_create(NULL);
+    if (server->connections == NULL)
       return ARES_ENOMEM;
-    server->tcp_socket.fd = ARES_SOCKET_BAD;
-    server->tcp_socket.server = server;
-    server->tcp_socket.is_tcp = 1;
-    server->tcp_socket.queries_to_conn = NULL;
+
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->channel = channel;
   }

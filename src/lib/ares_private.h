@@ -187,8 +187,8 @@ struct server_state {
   size_t idx; /* index for server in ares_channel */
   struct ares_addr addr;
 
-  ares__llist_t            *udp_sockets;
-  struct server_connection  tcp_socket;
+  ares__llist_t            *connections;
+  struct server_connection *tcp_conn;
 
   /* Mini-buffer for reading the length word */
   unsigned char tcp_lenbuf[2];

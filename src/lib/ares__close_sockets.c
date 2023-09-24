@@ -25,11 +25,11 @@
 /* This isn't optimal, we should consider how to make this O(1).  Maybe like
  * making channel->conns_by_socket return a node pointer, but that would mean
  * we'd need to have the tcp connection and udp connections in the same list. */
-static void ares_remove_udp_conn(struct server_connection *conn)
+static void ares_remove_conn(struct server_connection *conn)
 {
   ares__llist_node_t *node;
 
-  for (node = ares__llist_node_first(conn->server->udp_sockets);
+  for (node = ares__llist_node_first(conn->server->connections);
        node != NULL;
        node = ares__llist_node_next(node)) {
     if (ares__llist_node_val(node) != conn)
@@ -65,6 +65,7 @@ void ares__close_connection(struct server_connection *conn)
     server->tcp_buffer = NULL;
     server->tcp_lenbuf_pos = 0;
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
+    server->tcp_conn = NULL;
   }
 
   if (conn->fd != ARES_SOCKET_BAD) {
@@ -76,26 +77,16 @@ void ares__close_connection(struct server_connection *conn)
   assert(ares__llist_len(conn->queries_to_conn) == 0);
 #endif
   ares__llist_destroy(conn->queries_to_conn);
-  conn->queries_to_conn = NULL;
-  conn->fd              = ARES_SOCKET_BAD;
-
-  if (!conn->is_tcp) {
-    ares_remove_udp_conn(conn);
-    ares_free(conn);
-  }
+  ares_remove_conn(conn);
+  ares_free(conn);
 }
 
 void ares__close_sockets(struct server_state *server)
 {
   ares__llist_node_t  *node;
 
-  /* Close TCP socket */
-  ares__close_connection(&server->tcp_socket);
-
-  /* Close UDP sockets */
-  while ((node = ares__llist_node_first(server->udp_sockets)) != NULL) {
+  while ((node = ares__llist_node_first(server->connections)) != NULL) {
     struct server_connection *conn = ares__llist_node_claim(node);
     ares__close_connection(conn);
   }
-
 }
