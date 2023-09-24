@@ -66,7 +66,7 @@ static void advance_tcp_send_queue(ares_channel channel, int whichserver,
                                    ares_ssize_t num_bytes);
 static void process_timeouts(ares_channel channel, struct timeval *now);
 static void process_answer(ares_channel channel, unsigned char *abuf,
-                           int alen, struct server_state *server, int tcp,
+                           int alen, struct server_connection *conn, int tcp,
                            struct timeval *now);
 static void handle_error(struct server_connection *conn, struct timeval *now);
 static void skip_server(ares_channel channel, struct query *query,
@@ -398,7 +398,7 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
     }
   } else {
     /* Read data into the allocated buffer. */
-    count = socket_recv(channel, server->tcp_conn->fd,
+    count = socket_recv(channel, conn->fd,
       server->tcp_buffer + server->tcp_buffer_pos,
       server->tcp_length - server->tcp_buffer_pos);
 
@@ -414,7 +414,7 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
        * prepare to read another length word.
        */
       process_answer(channel, server->tcp_buffer, server->tcp_length,
-                     server, 1, now);
+                     conn, 1, now);
       ares_free(server->tcp_buffer);
       server->tcp_buffer = NULL;
       server->tcp_lenbuf_pos = 0;
@@ -530,7 +530,7 @@ static void read_udp_packets_fd(ares_channel channel,
 #endif
 
     } else {
-      process_answer(channel, buf, (int)read_len, conn->server, 0, now);
+      process_answer(channel, buf, (int)read_len, conn, 0, now);
     }
   /* process_answer may invalidate "conn" and close the file descriptor, so
    * check to see if file descriptor is still valid before looping! */
@@ -601,11 +601,11 @@ static void read_packets(ares_channel channel, fd_set *read_fds,
 static void process_timeouts(ares_channel channel, struct timeval *now)
 {
   ares__slist_node_t *node = ares__slist_node_first(channel->queries_by_timeout);
-
   while (node != NULL) {
     struct query       *query = ares__slist_node_val(node);
     /* Node might be removed, cache next */
     ares__slist_node_t *next  = ares__slist_node_next(node);
+    ares_socket_t       fd;
 
     /* Since this is sorted, as soon as we hit a query that isn't timed out, break */
     if (!ares__timedout(now, &query->timeout)) {
@@ -614,7 +614,13 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
 
     query->error_status = ARES_ETIMEOUT;
     query->timeouts++;
+
+
+    fd = query->conn->fd;
     next_server(channel, query, now);
+    /* A timeout is a special case where we need to possibly cleanup a
+     * a connection */
+    ares__check_cleanup_conn(channel, fd);
 
     node = next;
   }
@@ -623,17 +629,22 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
 
 /* Handle an answer from a server. */
 static void process_answer(ares_channel channel, unsigned char *abuf,
-                           int alen, struct server_state *server, int tcp,
+                           int alen, struct server_connection *conn, int tcp,
                            struct timeval *now)
 {
   int tc, rcode, packetsz;
   unsigned short id;
   struct query *query;
+  /* Cache these as once ares__send_query() gets called, it may end up
+   * invalidating the connection all-together */
+  struct server_state *server = conn->server;
+  ares_socket_t fd = conn->fd;
 
   /* If there's no room in the answer for a header, we can't do much
    * with it. */
-  if (alen < HFIXEDSZ)
+  if (alen < HFIXEDSZ) {
     return;
+  }
 
   /* Grab the query ID, truncate bit, and response code from the packet. */
   id = DNS_HEADER_QID(abuf); /* Converts to host byte order */
@@ -644,13 +655,22 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
    * hashed/bucketed by query id, so this lookup should be quick.  
    */
   query = ares__htable_stvp_get_direct(channel->queries_by_qid, id);
-  if (!query)
+  if (!query) {
     return;
+  }
 
   /* Both the query id and the questions must be the same. We will drop any
    * replies that aren't for the same query as this is considered invalid. */
-  if (!same_questions(query->qbuf, query->qlen, abuf, alen))
+  if (!same_questions(query->qbuf, query->qlen, abuf, alen)) {
     return;
+  }
+
+  /* At this point we know we've received an answer for this query, so we should
+   * remove it from the connection's queue so we can possibly invalidate the
+   * connection. Delay cleaning up the connection though as we may enqueue
+   * something new.  */
+  ares__llist_node_destroy(query->node_queries_to_conn);
+  query->node_queries_to_conn = NULL;
 
   packetsz = PACKETSZ;
   /* If we use EDNS and server answers with FORMERR without an OPT RR, the protocol
@@ -671,6 +691,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
           query->tcpbuf = ares_realloc(query->tcpbuf, query->tcplen);
           query->qbuf = query->tcpbuf + 2;
           ares__send_query(channel, query, now);
+          ares__check_cleanup_conn(channel, fd);
           return;
       }
   }
@@ -686,6 +707,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
           query->using_tcp = 1;
           ares__send_query(channel, query, now);
         }
+      ares__check_cleanup_conn(channel, fd);
       return;
     }
 
@@ -716,11 +738,14 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
           skip_server(channel, query, server);
           if (query->server == (int)server->idx) /* Is this ever not true? */
             next_server(channel, query, now);
+          ares__check_cleanup_conn(channel, fd);
           return;
         }
     }
 
   end_query(channel, query, ARES_SUCCESS, abuf, alen);
+
+  ares__check_cleanup_conn(channel, fd);
 }
 
 
@@ -816,7 +841,6 @@ void ares__send_query(ares_channel channel, struct query *query,
   int timeplus;
 
   server = &channel->servers[query->server];
-
   if (query->using_tcp) {
     /* Make sure the TCP socket for this server is set up and queue
      * a send request.
@@ -947,7 +971,6 @@ void ares__send_query(ares_channel channel, struct query *query,
   /* Keep track of queries bucketed by timeout, so we can process
    * timeout events quickly.
    */
-
   ares__slist_node_destroy(query->node_queries_by_timeout);
   query->timeout = *now;
   timeadd(&query->timeout, timeplus);
@@ -962,6 +985,7 @@ void ares__send_query(ares_channel channel, struct query *query,
   ares__llist_node_destroy(query->node_queries_to_conn);
   query->node_queries_to_conn =
     ares__llist_insert_last(conn->queries_to_conn, query);
+  query->conn = conn;
   conn->total_queries++;
 }
 
@@ -1508,16 +1532,6 @@ static void end_query (ares_channel channel, struct query *query, int status,
   /* Invoke the callback */
   query->callback(query->arg, status, query->timeouts, abuf, alen);
   ares__free_query(query);
-
-  /* Simple cleanup policy: if no queries are remaining, close all network
-   * sockets unless STAYOPEN is set.
-   */
-  if (!(channel->flags & ARES_FLAG_STAYOPEN) &&
-      ares__llist_len(channel->all_queries) == 0)
-    {
-      for (i = 0; i < channel->nservers; i++)
-        ares__close_sockets(&channel->servers[i]);
-    }
 }
 
 void ares__free_query(struct query *query)

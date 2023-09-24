@@ -90,3 +90,33 @@ void ares__close_sockets(struct server_state *server)
     ares__close_connection(conn);
   }
 }
+
+void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd)
+{
+  struct server_connection *conn;
+  int                       do_cleanup = 0;
+
+  conn = ares__htable_asvp_get_direct(channel->conns_by_socket, fd);
+  if (conn == NULL) {
+    return;
+  }
+
+  if (ares__llist_len(conn->queries_to_conn)) {
+    return;
+  }
+
+  /* If we are configured not to stay open, close it out */
+  if (!(channel->flags & ARES_FLAG_STAYOPEN)) {
+    do_cleanup = 1;
+  }
+
+  /* If the udp connection hit its max queries, always close it */
+  if (!conn->is_tcp && channel->udp_max_queries > 0 &&
+      conn->total_queries >= channel->udp_max_queries) {
+    do_cleanup = 1;
+  }
+
+  if (do_cleanup) {
+    ares__close_connection(conn);
+  }
+}
