@@ -121,8 +121,6 @@ void ares__destroy_servers_state(ares_channel channel)
         {
           server = &channel->servers[i];
           ares__close_sockets(channel, server);
-          assert(ares__llist_len(server->queries_to_server) == 0);
-          ares__llist_destroy(server->queries_to_server);
           ares__llist_destroy(server->udp_sockets);
         }
       ares_free(channel->servers);

@@ -177,7 +177,10 @@ struct server_connection {
   struct server_state *server;
   ares_socket_t        fd;
   int                  is_tcp;
-  size_t               num_queries;
+  /* total number of queries run on this connection since it was established */
+  size_t               total_queries;
+  /* list of outstanding queries to this connection */
+  ares__llist_t       *queries_to_conn;
 };
 
 struct server_state {
@@ -206,16 +209,8 @@ struct server_state {
    * re-send. */
   int tcp_connection_generation;
 
-  /* list of outstanding queries to this server */
-  ares__llist_t *queries_to_server;
-
   /* Link back to owning channel */
   ares_channel channel;
-
-  /* Is this server broken? We mark connections as broken when a
-   * request that is queued for sending times out.
-   */
-  int is_broken;
 };
 
 /* State to represent a DNS query */
@@ -230,7 +225,7 @@ struct query {
    * make removal operations O(1).
    */
   ares__slist_node_t *node_queries_by_timeout;
-  ares__llist_node_t *node_queries_to_server;
+  ares__llist_node_t *node_queries_to_conn;
   ares__llist_node_t *node_all_queries;
 
   /* connection handle for validation purposes */
@@ -349,6 +344,9 @@ struct ares_channeldata {
 
   /* Path for hosts file, configurable via ares_options */
   char *hosts_path;
+
+  /* Maximum UDP queries per connection allowed */
+  int udp_max_queries;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
@@ -365,6 +363,7 @@ int ares__timedout(struct timeval *now,
 
 void ares__send_query(ares_channel channel, struct query *query,
                       struct timeval *now);
+void ares__close_connection(struct server_connection *conn);
 void ares__close_sockets(ares_channel channel, struct server_state *server);
 int ares__get_hostent(FILE *fp, int family, struct hostent **host);
 int ares__read_line(FILE *fp, char **buf, size_t *bufsize);

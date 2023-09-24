@@ -132,7 +132,8 @@ class DefaultChannelModeTest
   DefaultChannelModeTest() : channel_(nullptr) {
     struct ares_options opts = {0};
     opts.lookups = strdup(GetParam().c_str());
-    int optmask = ARES_OPT_LOOKUPS;
+    opts.udp_max_queries = 1;
+    int optmask = ARES_OPT_LOOKUPS|ARES_OPT_UDP_MAX_QUERIES;
     EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
     EXPECT_NE(nullptr, channel_);
     free(opts.lookups);

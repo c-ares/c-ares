@@ -240,9 +240,6 @@ done:
     {
       /* Something failed; clean up memory we may have allocated. */
       if (channel->servers) {
-        for (i = 0; i < channel->nservers; i++) {
-          ares__llist_destroy(channel->servers[i].queries_to_server);
-        }
         ares_free(channel->servers);
       }
       if (channel->ndomains != -1)
@@ -457,6 +454,11 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
       return ARES_ENOMEM;
   }
 
+  if (channel->udp_max_queries > 0) {
+    (*optmask) |= ARES_OPT_UDP_MAX_QUERIES;
+    options->udp_max_queries = channel->udp_max_queries;
+  }
+
   return ARES_SUCCESS;
 }
 
@@ -581,6 +583,9 @@ static int init_by_options(ares_channel channel,
       if (!channel->hosts_path && options->hosts_path)
         return ARES_ENOMEM;
     }
+
+  if (optmask & ARES_OPT_UDP_MAX_QUERIES)
+    channel->udp_max_queries = options->udp_max_queries;
 
   channel->optmask = optmask;
 
@@ -2397,7 +2402,6 @@ int ares__init_servers_state(ares_channel channel)
     server->tcp_length = 0;
     server->qhead = NULL;
     server->qtail = NULL;
-    server->is_broken = 0;
 
     server->idx = i;
     server->udp_sockets = ares__llist_create(NULL);
@@ -2406,14 +2410,10 @@ int ares__init_servers_state(ares_channel channel)
     server->tcp_socket.fd = ARES_SOCKET_BAD;
     server->tcp_socket.server = server;
     server->tcp_socket.is_tcp = 1;
+    server->tcp_socket.queries_to_conn = NULL;
 #warning determine how/why tcp_connection_generation is used
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->channel = channel;
-    server->queries_to_server = ares__llist_create(NULL);
-    if (server->queries_to_server == NULL) {
-      ares__llist_destroy(server->udp_sockets);
-      return ARES_ENOMEM;
-    }
   }
   return ARES_SUCCESS;
 }

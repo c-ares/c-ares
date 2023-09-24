@@ -20,56 +20,82 @@
 
 #include "ares.h"
 #include "ares_private.h"
+#include <assert.h>
 
-void ares__close_sockets(ares_channel channel, struct server_state *server)
+/* This isn't optimal, we should consider how to make this O(1).  Maybe like
+ * making channel->conns_by_socket return a node pointer, but that would mean
+ * we'd need to have the tcp connection and udp connections in the same list. */
+static void ares_remove_udp_conn(struct server_connection *conn)
 {
-  struct send_request *sendreq;
-  ares__llist_node_t  *node;
+  ares__llist_node_t *node = ares__llist_node_first(conn->server->udp_sockets);
 
-  /* Free all pending output buffers. */
-  while (server->qhead) {
-    /* Advance server->qhead; pull out query as we go. */
-    sendreq = server->qhead;
-    server->qhead = sendreq->next;
-    if (sendreq->data_storage != NULL)
-      ares_free(sendreq->data_storage);
-    ares_free(sendreq);
+  for (node = ares__llist_node_first(conn->server->udp_sockets);
+       node != NULL;
+       node = ares__llist_node_next(node)) {
+    if (ares__llist_node_val(node) != conn)
+      continue;
+
+    ares__llist_node_claim(node);
+    break;
   }
-  server->qtail = NULL;
+}
 
-  /* Reset any existing input buffer. */
-  if (server->tcp_buffer)
-    ares_free(server->tcp_buffer);
-  server->tcp_buffer = NULL;
-  server->tcp_lenbuf_pos = 0;
+void ares__close_connection(struct server_connection *conn)
+{
+  struct server_state *server  = conn->server;
+  ares_channel         channel = server->channel;
 
-  /* Reset brokenness */
-  server->is_broken = 0;
+  if (conn->is_tcp) {
+    struct send_request *sendreq;
 
-  /* Close the TCP and UDP sockets. */
-  if (server->tcp_socket.fd != ARES_SOCKET_BAD) {
-    ares__htable_asvp_remove(channel->conns_by_socket,
-                             server->tcp_socket.fd);
-    SOCK_STATE_CALLBACK(channel, server->tcp_socket.fd, 0, 0);
-    ares__close_socket(channel, server->tcp_socket.fd);
-    server->tcp_socket.fd = ARES_SOCKET_BAD;
+    /* Free all pending output buffers. */
+    while (server->qhead) {
+      /* Advance server->qhead; pull out query as we go. */
+      sendreq = server->qhead;
+      server->qhead = sendreq->next;
+      if (sendreq->data_storage != NULL)
+        ares_free(sendreq->data_storage);
+      ares_free(sendreq);
+    }
+    server->qtail = NULL;
+
+    /* Reset any existing input buffer. */
+    if (server->tcp_buffer)
+      ares_free(server->tcp_buffer);
+    server->tcp_buffer = NULL;
+    server->tcp_lenbuf_pos = 0;
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
   }
 
-  node = ares__llist_node_first(server->udp_sockets);
-  while (node != NULL) {
-    ares__llist_node_t       *next = ares__llist_node_next(node);
-    struct server_connection *conn = ares__llist_node_val(node);
+  if (conn->fd != ARES_SOCKET_BAD) {
+    SOCK_STATE_CALLBACK(channel, conn->fd, 0, 0);
+    ares__close_socket(channel, conn->fd);
+    ares__htable_asvp_remove(channel->conns_by_socket, conn->fd);
+  }
+#ifndef NDEBUG
+  assert(ares__llist_len(conn->queries_to_conn) == 0);
+#endif
+  ares__llist_destroy(conn->queries_to_conn);
+  conn->queries_to_conn = NULL;
+  conn->fd              = ARES_SOCKET_BAD;
 
-    if (conn->fd != ARES_SOCKET_BAD) {
-      SOCK_STATE_CALLBACK(channel, conn->fd, 0, 0);
-      ares__close_socket(channel, conn->fd);
-      ares__htable_asvp_remove(channel->conns_by_socket, conn->fd);
-    }
+  if (!conn->is_tcp) {
+    ares_remove_udp_conn(conn);
     ares_free(conn);
+  }
+}
 
-    ares__llist_node_destroy(node);
-    node = next;
+void ares__close_sockets(ares_channel channel, struct server_state *server)
+{
+  ares__llist_node_t  *node;
+
+  /* Close TCP socket */
+  ares__close_connection(&server->tcp_socket);
+
+  /* Close UDP sockets */
+  while ((node = ares__llist_node_first(server->udp_sockets)) != NULL) {
+    struct server_connection *conn = ares__llist_node_claim(node);
+    ares__close_connection(conn);
   }
 
 }
