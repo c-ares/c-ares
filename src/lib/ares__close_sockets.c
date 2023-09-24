@@ -22,23 +22,6 @@
 #include "ares_private.h"
 #include <assert.h>
 
-/* This isn't optimal, we should consider how to make this O(1).  Maybe like
- * making channel->conns_by_socket return a node pointer, but that would mean
- * we'd need to have the tcp connection and udp connections in the same list. */
-static void ares_remove_conn(struct server_connection *conn)
-{
-  ares__llist_node_t *node;
-
-  for (node = ares__llist_node_first(conn->server->connections);
-       node != NULL;
-       node = ares__llist_node_next(node)) {
-    if (ares__llist_node_val(node) != conn)
-      continue;
-
-    ares__llist_node_claim(node);
-    break;
-  }
-}
 
 void ares__close_connection(struct server_connection *conn)
 {
@@ -68,16 +51,18 @@ void ares__close_connection(struct server_connection *conn)
     server->tcp_conn = NULL;
   }
 
-  if (conn->fd != ARES_SOCKET_BAD) {
-    SOCK_STATE_CALLBACK(channel, conn->fd, 0, 0);
-    ares__close_socket(channel, conn->fd);
-    ares__htable_asvp_remove(channel->conns_by_socket, conn->fd);
-  }
+
+  SOCK_STATE_CALLBACK(channel, conn->fd, 0, 0);
+  ares__close_socket(channel, conn->fd);
+  ares__llist_node_claim(
+    ares__htable_asvp_get_direct(channel->connnode_by_socket, conn->fd)
+  );
+  ares__htable_asvp_remove(channel->connnode_by_socket, conn->fd);
+
 #ifndef NDEBUG
   assert(ares__llist_len(conn->queries_to_conn) == 0);
 #endif
   ares__llist_destroy(conn->queries_to_conn);
-  ares_remove_conn(conn);
   ares_free(conn);
 }
 
@@ -86,20 +71,23 @@ void ares__close_sockets(struct server_state *server)
   ares__llist_node_t  *node;
 
   while ((node = ares__llist_node_first(server->connections)) != NULL) {
-    struct server_connection *conn = ares__llist_node_claim(node);
+    struct server_connection *conn = ares__llist_node_val(node);
     ares__close_connection(conn);
   }
 }
 
 void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd)
 {
+  ares__llist_node_t       *node;
   struct server_connection *conn;
   int                       do_cleanup = 0;
 
-  conn = ares__htable_asvp_get_direct(channel->conns_by_socket, fd);
-  if (conn == NULL) {
+  node = ares__htable_asvp_get_direct(channel->connnode_by_socket, fd);
+  if (node == NULL) {
     return;
   }
+
+  conn = ares__llist_node_val(node);
 
   if (ares__llist_len(conn->queries_to_conn)) {
     return;

@@ -78,7 +78,7 @@ void ares_destroy(ares_channel channel)
   ares__destroy_servers_state(channel);
 
 #ifndef NDEBUG
-  assert(ares__htable_asvp_num_keys(channel->conns_by_socket) == 0);
+  assert(ares__htable_asvp_num_keys(channel->connnode_by_socket) == 0);
 #endif
 
   if (channel->domains) {
@@ -90,7 +90,7 @@ void ares_destroy(ares_channel channel)
   ares__llist_destroy(channel->all_queries);
   ares__slist_destroy(channel->queries_by_timeout);
   ares__htable_stvp_destroy(channel->queries_by_qid);
-  ares__htable_asvp_destroy(channel->conns_by_socket);
+  ares__htable_asvp_destroy(channel->connnode_by_socket);
 
   if(channel->sortlist)
     ares_free(channel->sortlist);

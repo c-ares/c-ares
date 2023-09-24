@@ -535,7 +535,7 @@ static void read_udp_packets_fd(ares_channel channel,
   /* process_answer may invalidate "conn" and close the file descriptor, so
    * check to see if file descriptor is still valid before looping! */
   } while (read_len >= 0 &&
-           ares__htable_asvp_get_direct(channel->conns_by_socket, fd) != NULL);
+           ares__htable_asvp_get_direct(channel->connnode_by_socket, fd) != NULL);
 
 }
 
@@ -547,6 +547,7 @@ static void read_packets(ares_channel channel, fd_set *read_fds,
   ares_socket_t            *socketlist  = NULL;
   size_t                    num_sockets = 0;
   struct server_connection *conn        = NULL;
+  ares__llist_node_t       *node        = NULL;
 
   if (!read_fds && (read_fd == ARES_SOCKET_BAD))
     /* no possible action */
@@ -554,9 +555,11 @@ static void read_packets(ares_channel channel, fd_set *read_fds,
 
   /* Single socket specified */
   if (!read_fds) {
-    conn = ares__htable_asvp_get_direct(channel->conns_by_socket, read_fd);
-    if (conn == NULL)
+    node = ares__htable_asvp_get_direct(channel->connnode_by_socket, read_fd);
+    if (node == NULL)
       return;
+
+    conn = ares__llist_node_val(node);
 
     if (conn->is_tcp) {
       read_tcp_data(channel, conn, now);
@@ -582,9 +585,12 @@ static void read_packets(ares_channel channel, fd_set *read_fds,
      * extra system calls and confusion. */
     FD_CLR(socketlist[i], read_fds);
 
-    conn = ares__htable_asvp_get_direct(channel->conns_by_socket, socketlist[i]);
-    if (conn == NULL)
+    node = ares__htable_asvp_get_direct(channel->connnode_by_socket,
+                                        socketlist[i]);
+    if (node == NULL)
       return;
+
+    conn = ares__llist_node_val(node);
 
     if (conn->is_tcp) {
       read_tcp_data(channel, conn, now);
@@ -1264,8 +1270,9 @@ static int open_socket(ares_channel channel, struct server_state *server,
     return ARES_ENOMEM;
   }
 
-  /* Register globally to quickly map event on file descriptor to object */
-  if (!ares__htable_asvp_insert(channel->conns_by_socket, s, conn)) {
+  /* Register globally to quickly map event on file descriptor to connection
+   * node object */
+  if (!ares__htable_asvp_insert(channel->connnode_by_socket, s, node)) {
     ares__close_socket(channel, s);
     ares__llist_destroy(conn->queries_to_conn);
     ares__llist_node_claim(node);

@@ -188,8 +188,8 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
     goto done;
   }
 
-  channel->conns_by_socket = ares__htable_asvp_create(NULL);
-  if (channel->conns_by_socket == NULL) {
+  channel->connnode_by_socket = ares__htable_asvp_create(NULL);
+  if (channel->connnode_by_socket == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
@@ -257,7 +257,7 @@ done:
       ares__htable_stvp_destroy(channel->queries_by_qid);
       ares__llist_destroy(channel->all_queries);
       ares__slist_destroy(channel->queries_by_timeout);
-      ares__htable_asvp_destroy(channel->conns_by_socket);
+      ares__htable_asvp_destroy(channel->connnode_by_socket);
       ares_free(channel);
       return status;
     }

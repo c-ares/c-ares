@@ -324,8 +324,11 @@ struct ares_channeldata {
   /* Queries bucketed by timeout, for quickly handling timeouts: */
   ares__slist_t   *queries_by_timeout;
 
-  /* Map connection to file descriptor */
-  ares__htable_asvp_t *conns_by_socket;
+  /* Map linked list node member for connection to file descriptor.  We use
+   * the node instead of the connection object itself so we can quickly look
+   * up a connection and remove it if necessary (as otherwise we'd have to
+   * scan all connections) */
+  ares__htable_asvp_t *connnode_by_socket;
 
   ares_sock_state_cb sock_state_cb;
   void *sock_state_cb_data;
