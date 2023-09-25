@@ -28,8 +28,8 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
-               ares_callback callback, void *arg)
+int ares_send_ex(ares_channel channel, const unsigned char *qbuf, int qlen,
+                 ares_callback callback, void *arg)
 {
   struct query *query;
   int i, packetsz;
@@ -39,19 +39,19 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
   if (qlen < HFIXEDSZ || qlen >= (1 << 16))
     {
       callback(arg, ARES_EBADQUERY, 0, NULL, 0);
-      return;
+      return ARES_EBADQUERY;
     }
   if (channel->nservers < 1)
     {
       callback(arg, ARES_ESERVFAIL, 0, NULL, 0);
-      return;
+      return ARES_ESERVFAIL;
     }
   /* Allocate space for query and allocated fields. */
   query = ares_malloc(sizeof(struct query));
   if (!query)
     {
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
-      return;
+      return ARES_ENOMEM;
     }
   memset(query, 0, sizeof(*query));
   query->channel = channel;
@@ -60,7 +60,7 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
     {
       ares_free(query);
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
-      return;
+      return ARES_ENOMEM;
     }
   query->server_info = ares_malloc(channel->nservers *
                                    sizeof(query->server_info[0]));
@@ -69,7 +69,7 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
       ares_free(query->tcpbuf);
       ares_free(query);
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
-      return;
+      return ARES_ENOMEM;
     }
 
   /* Compute the query ID.  Start with no timeout. */
@@ -121,7 +121,7 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
   if (query->node_all_queries == NULL) {
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     ares__free_query(query);
-    return;
+    return ARES_ENOMEM;
   }
 
   /* Keep track of queries bucketed by qid, so we can process DNS
@@ -130,10 +130,16 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
   if (!ares__htable_stvp_insert(channel->queries_by_qid, query->qid, query)) {
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     ares__free_query(query);
-    return;
+    return ARES_ENOMEM;
   }
 
   /* Perform the first query action. */
   now = ares__tvnow();
-  ares__send_query(channel, query, &now);
+  return ares__send_query(channel, query, &now);
+}
+
+void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
+               ares_callback callback, void *arg)
+{
+  ares_send_ex(channel, qbuf, qlen, callback, arg);
 }

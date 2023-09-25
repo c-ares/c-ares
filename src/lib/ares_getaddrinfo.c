@@ -73,11 +73,12 @@ struct host_query
   const char *remaining_lookups; /* types of lookup we need to perform ("fb" by
                                     default, file and dns respectively) */
   struct ares_addrinfo *ai;      /* store results between lookups */
+  unsigned short qid_a;    /* qid for A request */
+  unsigned short qid_aaaa; /* qid for AAAA request */
   int remaining;   /* number of DNS answers waiting for */
   int next_domain; /* next search domain to try */
   int nodata_cnt; /* Track nodata responses to possibly override final result */
-  unsigned short qid_a;    /* qid for A request */
-  unsigned short qid_aaaa; /* qid for AAAA request */
+
 };
 
 static const struct ares_addrinfo_hints default_hints = {
@@ -380,6 +381,7 @@ static void end_hquery(struct host_query *hquery, int status)
 {
   struct ares_addrinfo_node sentinel;
   struct ares_addrinfo_node *next;
+
   if (status == ARES_SUCCESS)
     {
       if (!(hquery->hints.ai_flags & ARES_AI_NOSORT) && hquery->ai->nodes)
@@ -745,7 +747,7 @@ void ares_getaddrinfo(ares_channel channel,
     }
 
   /* Allocate and fill in the host query structure. */
-  hquery = ares_malloc(sizeof(struct host_query));
+  hquery = ares_malloc(sizeof(*hquery));
   if (!hquery)
     {
       ares_free(alias_name);
@@ -771,11 +773,8 @@ void ares_getaddrinfo(ares_channel channel,
   hquery->callback = callback;
   hquery->arg = arg;
   hquery->remaining_lookups = channel->lookups;
-  hquery->timeouts = 0;
   hquery->ai = ai;
   hquery->next_domain = -1;
-  hquery->remaining = 0;
-  hquery->nodata_cnt = 0;
 
   /* Start performing lookups according to channel->lookups. */
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
@@ -820,24 +819,26 @@ static int next_dns_lookup(struct host_query *hquery)
 
   if (s)
     {
+      /* NOTE: hquery may be invalidated during the call to ares_query_qid(),
+       *       so should not be referenced after this point */
       switch (hquery->hints.ai_family)
         {
           case AF_INET:
             hquery->remaining += 1;
-            hquery->qid_a = ares_query_qid(hquery->channel, s, C_IN, T_A,
-                                           host_callback, hquery);
+            ares_query_qid(hquery->channel, s, C_IN, T_A, host_callback, hquery,
+                           &hquery->qid_a);
             break;
           case AF_INET6:
             hquery->remaining += 1;
-            hquery->qid_aaaa = ares_query_qid(hquery->channel, s, C_IN, T_AAAA,
-                                              host_callback, hquery);
+            ares_query_qid(hquery->channel, s, C_IN, T_AAAA, host_callback,
+                           hquery, &hquery->qid_aaaa);
             break;
           case AF_UNSPEC:
             hquery->remaining += 2;
-            hquery->qid_a = ares_query_qid(hquery->channel, s, C_IN, T_A,
-                                           host_callback, hquery);
-            hquery->qid_aaaa = ares_query_qid(hquery->channel, s, C_IN, T_AAAA,
-                                              host_callback, hquery);
+            ares_query_qid(hquery->channel, s, C_IN, T_A, host_callback,
+                           hquery, &hquery->qid_a);
+            ares_query_qid(hquery->channel, s, C_IN, T_AAAA, host_callback,
+                           hquery, &hquery->qid_aaaa);
             break;
           default: break;
         }

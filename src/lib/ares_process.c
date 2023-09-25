@@ -71,7 +71,7 @@ static void process_answer(ares_channel channel, unsigned char *abuf,
 static void handle_error(struct server_connection *conn, struct timeval *now);
 static void skip_server(ares_channel channel, struct query *query,
                         struct server_state *server);
-static void next_server(ares_channel channel, struct query *query,
+static int next_server(ares_channel channel, struct query *query,
                         struct timeval *now);
 static int open_socket(ares_channel channel, struct server_state *server,
                        int is_tcp);
@@ -800,9 +800,10 @@ static void skip_server(ares_channel channel, struct query *query,
     }
 }
 
-static void next_server(ares_channel channel, struct query *query,
+static int next_server(ares_channel channel, struct query *query,
                         struct timeval *now)
 {
+  int status;
   /* We need to try each server channel->tries times. We have channel->nservers
    * servers to try. In total, we need to do channel->nservers * channel->tries
    * attempts. Use query->try to remember how many times we already attempted
@@ -825,8 +826,7 @@ static void next_server(ares_channel channel, struct query *query,
         !(query->using_tcp &&
          (query->server_info[query->server].tcp_connection_generation ==
             server->tcp_connection_generation))) {
-      ares__send_query(channel, query, now);
-      return;
+      return ares__send_query(channel, query, now);
     }
 
     /* You might think that with TCP we only need one try. However, even
@@ -838,10 +838,12 @@ static void next_server(ares_channel channel, struct query *query,
   }
 
   /* If we are here, all attempts to perform query failed. */
+  status = query->error_status;
   end_query(channel, query, query->error_status, NULL, 0);
+  return status;
 }
 
-void ares__send_query(ares_channel channel, struct query *query,
+int ares__send_query(ares_channel channel, struct query *query,
                       struct timeval *now)
 {
   struct send_request *sendreq;
@@ -866,13 +868,12 @@ void ares__send_query(ares_channel channel, struct query *query,
         case ARES_ECONNREFUSED:
         case ARES_EBADFAMILY:
           skip_server(channel, query, server);
-          next_server(channel, query, now);
-          return;
+          return next_server(channel, query, now);
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
           end_query(channel, query, err, NULL, 0);
-          return;
+          return err;
       }
     }
 
@@ -881,7 +882,7 @@ void ares__send_query(ares_channel channel, struct query *query,
     sendreq = ares_malloc(sizeof(struct send_request));
     if (!sendreq) {
       end_query(channel, query, ARES_ENOMEM, NULL, 0);
-      return;
+      return ARES_ENOMEM;
     }
     memset(sendreq, 0, sizeof(struct send_request));
     /* To make the common case fast, we avoid copies by using the query's
@@ -932,13 +933,12 @@ void ares__send_query(ares_channel channel, struct query *query,
         case ARES_ECONNREFUSED:
         case ARES_EBADFAMILY:
           skip_server(channel, query, server);
-          next_server(channel, query, now);
-          return;
+          return next_server(channel, query, now);
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
           end_query(channel, query, err, NULL, 0);
-          return;
+          return err;
       }
       node = ares__llist_node_first(server->connections);
     }
@@ -947,8 +947,7 @@ void ares__send_query(ares_channel channel, struct query *query,
     if (socket_write(channel, conn->fd, query->qbuf, query->qlen) == -1) {
       /* FIXME: Handle EAGAIN here since it likely can happen. */
       skip_server(channel, query, server);
-      next_server(channel, query, now);
-      return;
+      return next_server(channel, query, now);
     }
   }
 
@@ -986,7 +985,7 @@ void ares__send_query(ares_channel channel, struct query *query,
   query->node_queries_by_timeout = ares__slist_insert(channel->queries_by_timeout, query);
   if (!query->node_queries_by_timeout) {
     end_query(channel, query, ARES_ENOMEM, NULL, 0);
-    return;
+    return ARES_ENOMEM;
   }
 
   /* Keep track of queries bucketed by connection, so we can process errors
@@ -996,6 +995,7 @@ void ares__send_query(ares_channel channel, struct query *query,
     ares__llist_insert_last(conn->queries_to_conn, query);
   query->conn = conn;
   conn->total_queries++;
+  return ARES_SUCCESS;
 }
 
 /*
