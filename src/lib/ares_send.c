@@ -53,6 +53,7 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
       return;
     }
+  memset(query, 0, sizeof(*query));
   query->channel = channel;
   query->tcpbuf = ares_malloc(qlen + 2);
   if (!query->tcpbuf)
