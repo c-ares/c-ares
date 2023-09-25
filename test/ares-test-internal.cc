@@ -525,6 +525,22 @@ TEST(Misc, OnionDomain) {
   EXPECT_EQ(1, ares__is_onion_domain("YES.ONION"));
   EXPECT_EQ(1, ares__is_onion_domain("YES.ONION."));
 }
+
+TEST_F(LibraryTest, CatDomain) {
+  char *s;
+
+  ares__cat_domain("foo", "example.net", &s);
+  EXPECT_STREQ("foo.example.net", s);
+  ares_free(s);
+
+  ares__cat_domain("foo", ".", &s);
+  EXPECT_STREQ("foo.", s);
+  ares_free(s);
+
+  ares__cat_domain("foo", "example.net.", &s);
+  EXPECT_STREQ("foo.example.net.", s);
+  ares_free(s);
+}
 #endif
 
 #ifdef CARES_EXPOSE_STATICS
