@@ -753,7 +753,7 @@ void ares_getaddrinfo(ares_channel channel,
       callback(arg, ARES_ENOMEM, 0, NULL);
       return;
     }
-
+  memset(hquery, 0, sizeof(*hquery));
   hquery->name = ares_strdup(name);
   ares_free(alias_name);
   if (!hquery->name)
