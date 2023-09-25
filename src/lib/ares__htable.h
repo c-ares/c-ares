@@ -134,7 +134,7 @@ unsigned int ares__htable_remove(ares__htable_t *htable, const void *key);
  *  \param[in] seed     Seed for generating hash
  *  \return hash value
  */
-unsigned int ares__htable_hash_FNV1a(const void *key, size_t key_len,
+unsigned int ares__htable_hash_FNV1a(const unsigned char *key, size_t key_len,
                                      unsigned int seed);
 
 /*! FNV1a hash algorithm, but converts all characters to lowercase before 
@@ -146,8 +146,9 @@ unsigned int ares__htable_hash_FNV1a(const void *key, size_t key_len,
  *  \param[in] seed     Seed for generating hash
  *  \return hash value
  */
-unsigned int ares__htable_hash_FNV1a_casecmp(const void *key, size_t key_len,
-                                             unsigned int);
+unsigned int ares__htable_hash_FNV1a_casecmp(const unsigned char *key,
+                                             size_t key_len,
+                                             unsigned int seed);
 
 /*! @} */
 

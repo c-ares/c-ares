@@ -6,6 +6,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__close_sockets.c			\
   ares__get_hostent.c			\
   ares__htable.c			\
+  ares__htable_asvp.c			\
   ares__htable_stvp.c			\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
@@ -66,6 +67,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   windows_port.c
 
 HHEADERS = ares__htable.h		\
+  ares__htable_asvp.h			\
   ares__htable_stvp.h			\
   ares__llist.h				\
   ares__slist.h				\

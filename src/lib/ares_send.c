@@ -113,7 +113,7 @@ void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
 
   /* Initialize our list nodes. */
   query->node_queries_by_timeout = NULL;
-  query->node_queries_to_server  = NULL;
+  query->node_queries_to_conn    = NULL;
 
   /* Chain the query into the list of all queries. */
   query->node_all_queries = ares__llist_insert_last(channel->all_queries, query);

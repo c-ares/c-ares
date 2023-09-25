@@ -44,6 +44,7 @@ struct ares_options {
   int ednspsz;
   char *resolvconf_path;
   char *hosts_path;
+  int udp_max_queries;
 };
 
 int ares_init_options(ares_channel *\fIchannelptr\fP,
@@ -205,6 +206,14 @@ The path to use for reading the hosts file. The
 should be set to a path string, and will be honoured on *nix like systems. The
 default is
 .B /etc/hosts
+.br
+.TP 18
+.B ARES_OPT_UDP_MAX_QUERIES
+.B int \fIudp_max_queries\fP;
+.br
+The maximum number of udp queries that can be sent on a single ephemeral port
+to a given DNS server before a new ephemeral port is assigned.  Any value of 0
+or less will be considered unlimited, and is the default.
 .br
 .PP
 The \fIoptmask\fP parameter also includes options without a corresponding

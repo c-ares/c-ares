@@ -223,7 +223,7 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
   if (list->levels < node->levels) {
     size_t zero_len = sizeof(*list->head) * (node->levels - list->levels);
     size_t offset   = sizeof(*list->head) * list->levels;
-    void  *ptr      = ares_realloc(list->head, sizeof(*list->head) * list->levels);
+    void  *ptr      = ares_realloc(list->head, sizeof(*list->head) * node->levels);
     if (ptr == NULL)
       goto fail;
 
@@ -236,7 +236,6 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
   /* Scan from highest level in the slist, even if we're not using that number
    * of levels for this entry as this is what makes it O(log n) */
   for (i=list->levels; i-- > 0; ) {
-
     /* set left if left is NULL and the current node value is greater than the 
      * head at this level */
     if (left == NULL          && 
@@ -307,7 +306,7 @@ ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val)
   /* Scan nodes starting at the highest level. For each level scan forward
    * until the value is between the prior and next node, or if equal quit
    * as we found a match */
-  for (i=list->levels; i-- > 0; ) {
+  for (i=list->levels-1; i-- > 0; ) {
     if (node == NULL)
       node = list->head[i];
 

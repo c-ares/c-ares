@@ -18,23 +18,23 @@
 #include "ares.h"
 #include "ares_private.h"
 #include "ares__htable.h"
-#include "ares__htable_stvp.h"
+#include "ares__htable_asvp.h"
 
 
-struct ares__htable_stvp {
-  ares__htable_stvp_val_free_t free_val;
+struct ares__htable_asvp {
+  ares__htable_asvp_val_free_t free_val;
   ares__htable_t              *hash;
 };
 
 
 typedef struct {
-  size_t               key;
+  ares_socket_t        key;
   void                *val;
-  ares__htable_stvp_t *parent;
-} ares__htable_stvp_bucket_t;
+  ares__htable_asvp_t *parent;
+} ares__htable_asvp_bucket_t;
 
 
-void ares__htable_stvp_destroy(ares__htable_stvp_t *htable)
+void ares__htable_asvp_destroy(ares__htable_asvp_t *htable)
 {
   if (htable == NULL)
     return;
@@ -46,7 +46,7 @@ void ares__htable_stvp_destroy(ares__htable_stvp_t *htable)
 
 static unsigned int hash_func(const void *key, unsigned int seed)
 {
-  const size_t *arg = key;
+  const ares_socket_t *arg = key;
   return ares__htable_hash_FNV1a((const unsigned char *)arg, sizeof(*arg),
                                  seed);
 }
@@ -54,14 +54,14 @@ static unsigned int hash_func(const void *key, unsigned int seed)
 
 static const void *bucket_key(const void *bucket)
 {
-  const ares__htable_stvp_bucket_t *arg = bucket;
+  const ares__htable_asvp_bucket_t *arg = bucket;
   return &arg->key;
 }
 
 
 static void bucket_free(void *bucket)
 {
-  ares__htable_stvp_bucket_t *arg = bucket;
+  ares__htable_asvp_bucket_t *arg = bucket;
 
   if (arg->parent->free_val)
     arg->parent->free_val(arg->val);
@@ -72,8 +72,8 @@ static void bucket_free(void *bucket)
 
 static unsigned int key_eq(const void *key1, const void *key2)
 {
-  const size_t *k1 = key1;
-  const size_t *k2 = key2;
+  const ares_socket_t *k1 = key1;
+  const ares_socket_t *k2 = key2;
 
   if (*k1 == *k2)
     return 1;
@@ -82,10 +82,10 @@ static unsigned int key_eq(const void *key1, const void *key2)
 }
 
 
-ares__htable_stvp_t *ares__htable_stvp_create(
-    ares__htable_stvp_val_free_t val_free)
+ares__htable_asvp_t *ares__htable_asvp_create(
+    ares__htable_asvp_val_free_t val_free)
 {
-  ares__htable_stvp_t *htable = ares_malloc(sizeof(*htable));
+  ares__htable_asvp_t *htable = ares_malloc(sizeof(*htable));
   if (htable == NULL)
     goto fail;
 
@@ -109,10 +109,10 @@ fail:
 }
 
 
-unsigned int ares__htable_stvp_insert(ares__htable_stvp_t *htable, size_t key,
-                                      void *val)
+unsigned int ares__htable_asvp_insert(ares__htable_asvp_t *htable,
+                                      ares_socket_t key, void *val)
 {
-  ares__htable_stvp_bucket_t *bucket = NULL;
+  ares__htable_asvp_bucket_t *bucket = NULL;
 
   if (htable == NULL)
     goto fail;
@@ -138,10 +138,10 @@ fail:
 }
 
 
-unsigned int ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key,
-                                   void **val)
+unsigned int ares__htable_asvp_get(ares__htable_asvp_t *htable,
+                                   ares_socket_t key, void **val)
 {
-  ares__htable_stvp_bucket_t *bucket = NULL;
+  ares__htable_asvp_bucket_t *bucket = NULL;
 
   if (val)
     *val = NULL;
@@ -159,15 +159,17 @@ unsigned int ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key,
 }
 
 
-void *ares__htable_stvp_get_direct(ares__htable_stvp_t *htable, size_t key)
+void *ares__htable_asvp_get_direct(ares__htable_asvp_t *htable,
+                                   ares_socket_t key)
 {
   void *val = NULL;
-  ares__htable_stvp_get(htable, key, &val);
+  ares__htable_asvp_get(htable, key, &val);
   return val;
 }
 
 
-unsigned int ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key)
+unsigned int ares__htable_asvp_remove(ares__htable_asvp_t *htable,
+                                      ares_socket_t key)
 {
   if (htable == NULL)
     return 0;
@@ -176,7 +178,7 @@ unsigned int ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key)
 }
 
 
-size_t ares__htable_stvp_num_keys(ares__htable_stvp_t *htable)
+size_t ares__htable_asvp_num_keys(ares__htable_asvp_t *htable)
 {
   if (htable == NULL)
     return 0;

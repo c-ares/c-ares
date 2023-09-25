@@ -127,7 +127,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
                       int optmask)
 {
   ares_channel channel;
-  int i;
   int status = ARES_SUCCESS;
 
   if (ares_library_initialized() != ARES_SUCCESS)
@@ -189,6 +188,12 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
     goto done;
   }
 
+  channel->connnode_by_socket = ares__htable_asvp_create(NULL);
+  if (channel->connnode_by_socket == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
   /* Initialize configuration by each of the four sources, from highest
    * precedence to lowest.
    */
@@ -234,9 +239,6 @@ done:
     {
       /* Something failed; clean up memory we may have allocated. */
       if (channel->servers) {
-        for (i = 0; i < channel->nservers; i++) {
-          ares__llist_destroy(channel->servers[i].queries_to_server);
-        }
         ares_free(channel->servers);
       }
       if (channel->ndomains != -1)
@@ -255,6 +257,7 @@ done:
       ares__htable_stvp_destroy(channel->queries_by_qid);
       ares__llist_destroy(channel->all_queries);
       ares__slist_destroy(channel->queries_by_timeout);
+      ares__htable_asvp_destroy(channel->connnode_by_socket);
       ares_free(channel);
       return status;
     }
@@ -450,6 +453,11 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
       return ARES_ENOMEM;
   }
 
+  if (channel->udp_max_queries > 0) {
+    (*optmask) |= ARES_OPT_UDP_MAX_QUERIES;
+    options->udp_max_queries = channel->udp_max_queries;
+  }
+
   return ARES_SUCCESS;
 }
 
@@ -574,6 +582,9 @@ static int init_by_options(ares_channel channel,
       if (!channel->hosts_path && options->hosts_path)
         return ARES_ENOMEM;
     }
+
+  if (optmask & ARES_OPT_UDP_MAX_QUERIES)
+    channel->udp_max_queries = options->udp_max_queries;
 
   channel->optmask = optmask;
 
@@ -2379,23 +2390,25 @@ int ares__init_servers_state(ares_channel channel)
   struct server_state *server;
   int i;
 
-  for (i = 0; i < channel->nservers; i++)
-    {
-      server = &channel->servers[i];
-      server->udp_socket = ARES_SOCKET_BAD;
-      server->tcp_socket = ARES_SOCKET_BAD;
-      server->tcp_connection_generation = ++channel->tcp_connection_generation;
-      server->tcp_lenbuf_pos = 0;
-      server->tcp_buffer_pos = 0;
-      server->tcp_buffer = NULL;
-      server->tcp_length = 0;
-      server->qhead = NULL;
-      server->qtail = NULL;
-      server->channel = channel;
-      server->is_broken = 0;
-      server->queries_to_server = ares__llist_create(NULL);
-      if (server->queries_to_server == NULL)
-        return ARES_ENOMEM;
-    }
+  for (i = 0; i < channel->nservers; i++) {
+    server = &channel->servers[i];
+
+    /* NOTE: Can't use memset() here because the server addresses have been
+     *       filled in already */
+    server->tcp_lenbuf_pos = 0;
+    server->tcp_buffer_pos = 0;
+    server->tcp_buffer = NULL;
+    server->tcp_length = 0;
+    server->qhead = NULL;
+    server->qtail = NULL;
+
+    server->idx = i;
+    server->connections = ares__llist_create(NULL);
+    if (server->connections == NULL)
+      return ARES_ENOMEM;
+
+    server->tcp_connection_generation = ++channel->tcp_connection_generation;
+    server->channel = channel;
+  }
   return ARES_SUCCESS;
 }

@@ -219,7 +219,91 @@ TEST_P(MockChannelTest, SockConfigureFailCallback) {
   EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
 }
 
-// TCP only to prevent retries
+#define MAXUDPQUERIES_TOTAL 256
+#define MAXUDPQUERIES_LIMIT 16
+
+class MockUDPMaxQueriesTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
+ public:
+  MockUDPMaxQueriesTest()
+    : MockChannelOptsTest(1, GetParam(), false,
+                          FillOptions(&opts_),
+                          ARES_OPT_UDP_MAX_QUERIES) {}
+  static struct ares_options* FillOptions(struct ares_options * opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->udp_max_queries = MAXUDPQUERIES_LIMIT;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+TEST_P(MockUDPMaxQueriesTest, GetHostByNameParallelLookups) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  // Get notified of new sockets so we can validate how many are created
+  int rc = ARES_SUCCESS;
+  ares_set_socket_callback(channel_, SocketConnectCallback, &rc);
+  sock_cb_count = 0;
+
+  HostResult result[MAXUDPQUERIES_TOTAL];
+  for (size_t i=0; i<MAXUDPQUERIES_TOTAL; i++) {
+    ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result[i]);
+  }
+
+  Process();
+
+  EXPECT_EQ(MAXUDPQUERIES_TOTAL / MAXUDPQUERIES_LIMIT, sock_cb_count);
+
+  for (size_t i=0; i<MAXUDPQUERIES_TOTAL; i++) {
+    std::stringstream ss;
+    EXPECT_TRUE(result[i].done_);
+    ss << result[i].host_;
+    EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  }
+}
+
+/* There may be an issue with TCP parallel queries, this test fails, as does
+ * issue #266 indicate */
+#if 0
+#define TCPPARALLELLOOKUPS 256
+TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  // Get notified of new sockets so we can validate how many are created
+  int rc = ARES_SUCCESS;
+  ares_set_socket_callback(channel_, SocketConnectCallback, &rc);
+  sock_cb_count = 0;
+
+  HostResult result[TCPPARALLELLOOKUPS];
+  for (size_t i=0; i<TCPPARALLELLOOKUPS; i++) {
+    ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result[i]);
+  }
+
+  Process();
+
+  EXPECT_EQ(1, sock_cb_count);
+
+  for (size_t i=0; i<TCPPARALLELLOOKUPS; i++) {
+    std::stringstream ss;
+    EXPECT_TRUE(result[i].done_);
+    ss << result[i].host_;
+    EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  }
+}
+#endif
+
 TEST_P(MockTCPChannelTest, MalformedResponse) {
   std::vector<byte> one = {0x01};
   EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
@@ -1196,6 +1280,8 @@ TEST_P(NoRotateMultiMockTest, ThirdServer) {
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families));
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPMaxQueriesTest, ::testing::ValuesIn(ares::test::families));
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPChannelTest, ::testing::ValuesIn(ares::test::families));
 

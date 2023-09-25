@@ -52,6 +52,7 @@ void ares_destroy(ares_channel channel)
   if (!channel)
     return;
 
+  /* Destroy all queries */
   node = ares__llist_node_first(channel->all_queries);
   while (node != NULL) {
     ares__llist_node_t *next  = ares__llist_node_next(node);
@@ -63,7 +64,8 @@ void ares_destroy(ares_channel channel)
 
     node = next;
   }
-  
+
+
 #ifndef NDEBUG
   /* Freeing the query should remove it from all the lists in which it sits,
    * so all query lists should be empty now.
@@ -75,6 +77,10 @@ void ares_destroy(ares_channel channel)
 
   ares__destroy_servers_state(channel);
 
+#ifndef NDEBUG
+  assert(ares__htable_asvp_num_keys(channel->connnode_by_socket) == 0);
+#endif
+
   if (channel->domains) {
     for (i = 0; i < channel->ndomains; i++)
       ares_free(channel->domains[i]);
@@ -84,6 +90,7 @@ void ares_destroy(ares_channel channel)
   ares__llist_destroy(channel->all_queries);
   ares__slist_destroy(channel->queries_by_timeout);
   ares__htable_stvp_destroy(channel->queries_by_qid);
+  ares__htable_asvp_destroy(channel->connnode_by_socket);
 
   if(channel->sortlist)
     ares_free(channel->sortlist);
@@ -113,9 +120,8 @@ void ares__destroy_servers_state(ares_channel channel)
       for (i = 0; i < channel->nservers; i++)
         {
           server = &channel->servers[i];
-          ares__close_sockets(channel, server);
-          assert(ares__llist_len(server->queries_to_server) == 0);
-          ares__llist_destroy(server->queries_to_server);
+          ares__close_sockets(server);
+          ares__llist_destroy(server->connections);
         }
       ares_free(channel->servers);
       channel->servers = NULL;
