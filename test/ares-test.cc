@@ -499,9 +499,6 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
     optmask |= ARES_OPT_FLAGS;
   }
 
-  opts.udp_max_queries = 1;
-  optmask |= ARES_OPT_UDP_MAX_QUERIES;
-
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
   EXPECT_NE(nullptr, channel_);
 
