@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: MIT
 set -e
 
-# Travis on MacOS uses CloudFlare's DNS (1.1.1.1/1.0.0.1) which rejects ANY requests
+# Travis on MacOS uses CloudFlare's DNS (1.1.1.1/1.0.0.1) which rejects ANY requests.
+# Also, LiveSearchTXT is known to fail on Cirrus-CI on some MacOS hosts, we don't get
+# a truncated UDP response so we never follow up with TCP.
 # Note res_ninit() and /etc/resolv.conf actually have different configs, bad Travis
-[ -z "$TEST_FILTER" ] && export TEST_FILTER="--gtest_filter=-*LiveSearchANY*"
+[ -z "$TEST_FILTER" ] && export TEST_FILTER="--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
 
 # No tests for ios as it is a cross-compile
 if [ "$BUILD_TYPE" = "ios" -o "$BUILD_TYPE" = "ios-cmake" -o "$DIST" = "iOS" ] ; then
