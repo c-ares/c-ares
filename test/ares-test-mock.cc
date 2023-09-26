@@ -729,6 +729,29 @@ TEST_P(MockChannelTest, SearchHighNdots) {
             ss.str());
 }
 
+TEST_P(MockUDPChannelTest, V4WorksV6Timeout) {
+  std::vector<byte> nothing;
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  ON_CALL(server_, OnRequest("www.google.com", T_AAAA))
+    .WillByDefault(SetReplyData(&server_, nothing));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_UNSPEC, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(1, result.timeouts_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
+}
+
 TEST_P(MockChannelTest, UnspecifiedFamilyV6) {
   DNSPacket rsp6;
   rsp6.set_response().set_aa()

@@ -248,6 +248,8 @@ struct query {
   int using_tcp;
   int error_status;
   int timeouts; /* number of timeouts we saw for this request */
+  int no_retries; /* do not perform any additional retries, this is set when
+                   * a query is to be canceled */
 };
 
 /* Per-server state for a query */
@@ -364,8 +366,20 @@ extern void (*ares_free)(void *ptr);
 int ares__timedout(struct timeval *now,
                    struct timeval *check);
 
-void ares__send_query(ares_channel channel, struct query *query,
-                      struct timeval *now);
+/* Returns one of the normal ares status codes like ARES_SUCCESS */
+int ares__send_query(ares_channel channel, struct query *query,
+                     struct timeval *now);
+
+/* Identical to ares_query, but returns a normal ares return code like
+ * ARES_SUCCESS, and can be passed the qid by reference which will be
+ * filled in on ARES_SUCCESS */
+int ares_query_qid(ares_channel channel, const char *name,
+                              int dnsclass, int type, ares_callback callback,
+                              void *arg, unsigned short *qid);
+/* Identical to ares_send() except returns normal ares return codes like
+ * ARES_SUCCESS */
+int ares_send_ex(ares_channel channel, const unsigned char *qbuf, int qlen,
+                 ares_callback callback, void *arg);
 void ares__close_connection(struct server_connection *conn);
 void ares__close_sockets(struct server_state *server);
 void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd);
