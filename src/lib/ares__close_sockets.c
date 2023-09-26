@@ -100,7 +100,7 @@ void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd)
 
   /* If the udp connection hit its max queries, always close it */
   if (!conn->is_tcp && channel->udp_max_queries > 0 &&
-      conn->total_queries >= channel->udp_max_queries) {
+      conn->total_queries >= (size_t)channel->udp_max_queries) {
     do_cleanup = 1;
   }
 

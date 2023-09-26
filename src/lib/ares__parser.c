@@ -285,7 +285,7 @@ int ares__parser_fetch_be16(ares__parser_t *parser, unsigned short *u16)
   if (parser == NULL || u16 == NULL || remaining_len < sizeof(*u16))
     return 0;
 
-  *u16 = (unsigned short)(ptr[0]) << 8 | ptr[1];
+  *u16 = (unsigned short)(ptr[0]) << 8 | (unsigned short)ptr[1];
 
   return ares__parser_consume(parser, sizeof(*u16));
 }
