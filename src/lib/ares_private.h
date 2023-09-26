@@ -112,6 +112,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__slist.h"
 #include "ares__htable_stvp.h"
 #include "ares__htable_asvp.h"
+#include "ares__parser.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -190,14 +191,9 @@ struct server_state {
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
 
-  /* Mini-buffer for reading the length word */
-  unsigned char tcp_lenbuf[2];
-  int tcp_lenbuf_pos;
-  int tcp_length;
-
-  /* Buffer for reading actual TCP data */
-  unsigned char *tcp_buffer;
-  int tcp_buffer_pos;
+  /* TCP buffer since multiple responses can come back in one read, or partial
+   * in a read */
+  ares__parser_t           *tcp_parser;
 
   /* TCP output queue */
   struct send_request *qhead;

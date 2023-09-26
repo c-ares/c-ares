@@ -65,7 +65,7 @@ static void read_packets(ares_channel channel, fd_set *read_fds,
 static void advance_tcp_send_queue(ares_channel channel, int whichserver,
                                    ares_ssize_t num_bytes);
 static void process_timeouts(ares_channel channel, struct timeval *now);
-static void process_answer(ares_channel channel, unsigned char *abuf,
+static void process_answer(ares_channel channel, const unsigned char *abuf,
                            int alen, struct server_connection *conn, int tcp,
                            struct timeval *now);
 static void handle_error(struct server_connection *conn, struct timeval *now);
@@ -80,7 +80,7 @@ static int same_questions(const unsigned char *qbuf, int qlen,
 static int same_address(struct sockaddr *sa, struct ares_addr *aa);
 static int has_opt_rr(const unsigned char *abuf, int alen);
 static void end_query(ares_channel channel, struct query *query, int status,
-                      unsigned char *abuf, int alen);
+                      const unsigned char *abuf, int alen);
 
 /* return true if now is exactly check time or later */
 int ares__timedout(struct timeval *now,
@@ -366,60 +366,68 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
                           struct timeval *now)
 {
   ares_ssize_t         count;
-  struct server_state *server = conn->server;
+  struct server_state *server   = conn->server;
 
-  if (server->tcp_lenbuf_pos != 2) {
-    /* We haven't yet read a length word, so read that (or
-     * what's left to read of it).
-     */
-    count = socket_recv(channel, conn->fd,
-      server->tcp_lenbuf + server->tcp_lenbuf_pos,
-      2 - server->tcp_lenbuf_pos);
+  /* Fetch buffer to store data we are reading */
+  size_t               ptr_len  = 512;
+  unsigned char       *ptr      = ares__parser_append_start(server->tcp_parser,
+                                                            &ptr_len);
 
-    if (count <= 0) {
-      if (!(count == -1 && try_again(SOCKERRNO)))
-        handle_error(conn, now);
+  if (ptr == NULL) {
+    handle_error(conn, now);
+    return; /* bail out on malloc failure. TODO: make this
+               function return error codes */
+  }
+
+  /* Read from socket */
+  count = socket_recv(channel, conn->fd, ptr, ptr_len);
+  if (count <= 0) {
+    ares__parser_append_finish(server->tcp_parser, 0);
+    if (!(count == -1 && try_again(SOCKERRNO)))
+      handle_error(conn, now);
+    return;
+  }
+
+  /* Record amount of data read */
+  ares__parser_append_finish(server->tcp_parser, count);
+
+  /* Process all queued answers */
+  while (1) {
+     unsigned short       dns_len  = 0;
+     const unsigned char *data     = NULL;
+     size_t               data_len = 0;
+
+    /* Tag so we can roll back */
+    ares__parser_tag(server->tcp_parser);
+
+    /* Read length indicator */
+    if (!ares__parser_fetch_be16(server->tcp_parser, &dns_len)) {
+      ares__parser_tag_rollback(server->tcp_parser);
       return;
     }
 
-    server->tcp_lenbuf_pos += (int)count;
-    if (server->tcp_lenbuf_pos == 2) {
-      /* We finished reading the length word.  Decode the
-       * length and allocate a buffer for the data.
-       */
-      server->tcp_length = server->tcp_lenbuf[0] << 8 | server->tcp_lenbuf[1];
-      server->tcp_buffer = ares_malloc(server->tcp_length);
-      if (!server->tcp_buffer) {
-        handle_error(conn, now);
-        return; /* bail out on malloc failure. TODO: make this
-                   function return error codes */
-      }
-      server->tcp_buffer_pos = 0;
-    }
-  } else {
-    /* Read data into the allocated buffer. */
-    count = socket_recv(channel, conn->fd,
-      server->tcp_buffer + server->tcp_buffer_pos,
-      server->tcp_length - server->tcp_buffer_pos);
-
-    if (count <= 0) {
-      if (!(count == -1 && try_again(SOCKERRNO)))
-        handle_error(conn, now);
+    /* Not enough data for a full response yet */
+    if (!ares__parser_consume(server->tcp_parser, dns_len)) {
+      ares__parser_tag_rollback(server->tcp_parser);
       return;
     }
 
-    server->tcp_buffer_pos += (int)count;
-    if (server->tcp_buffer_pos == server->tcp_length) {
-      /* We finished reading this answer; process it and
-       * prepare to read another length word.
-       */
-      process_answer(channel, server->tcp_buffer, server->tcp_length,
-                     conn, 1, now);
-      ares_free(server->tcp_buffer);
-      server->tcp_buffer = NULL;
-      server->tcp_lenbuf_pos = 0;
-      server->tcp_buffer_pos = 0;
+    /* Can't fail except for misuse */
+    data = ares__parser_tag_fetch(server->tcp_parser, &data_len);
+    if (data == NULL) {
+      ares__parser_tag_clear(server->tcp_parser);
+      return;
     }
+
+    /* Strip off 2 bytes length */
+    data     += 2;
+    data_len -= 2;
+
+    /* We finished reading this answer; process it */
+    process_answer(channel, data, data_len, conn, 1, now);
+
+    /* Since we processed the answer, clear the tag so space can be reclaimed */
+    ares__parser_tag_clear(server->tcp_parser);
   }
 }
 
@@ -634,7 +642,7 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
 
 
 /* Handle an answer from a server. */
-static void process_answer(ares_channel channel, unsigned char *abuf,
+static void process_answer(ares_channel channel, const unsigned char *abuf,
                            int alen, struct server_connection *conn, int tcp,
                            struct timeval *now)
 {
@@ -1286,7 +1294,6 @@ static int open_socket(ares_channel channel, struct server_state *server,
   SOCK_STATE_CALLBACK(channel, s, 1, 0);
 
   if (is_tcp) {
-    server->tcp_buffer_pos = 0;
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->tcp_conn = conn;
   }
@@ -1493,8 +1500,8 @@ static void ares_detach_query(struct query *query)
   query->node_all_queries        = NULL;
 }
 
-static void end_query (ares_channel channel, struct query *query, int status,
-                       unsigned char *abuf, int alen)
+static void end_query(ares_channel channel, struct query *query, int status,
+                      const unsigned char *abuf, int alen)
 {
   int i;
 
@@ -1539,8 +1546,12 @@ static void end_query (ares_channel channel, struct query *query, int status,
     }
   }
 
-  /* Invoke the callback */
-  query->callback(query->arg, status, query->timeouts, abuf, alen);
+  /* Invoke the callback. */
+  query->callback(query->arg, status, query->timeouts,
+                  /* due to prior design flaws, abuf isn't meant to be modified,
+                   * but bad prototypes, ugh.  Lets cast off constfor compat. */
+                  (unsigned char *)((void *)((size_t)abuf)),
+                  alen);
   ares__free_query(query);
 }
 
