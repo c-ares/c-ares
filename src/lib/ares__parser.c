@@ -19,6 +19,9 @@
 #include "ares_private.h"
 #include "ares__parser.h"
 #include <limits.h>
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 struct ares__parser {
   const unsigned char *data;           /*!< pointer to start of data buffer */
