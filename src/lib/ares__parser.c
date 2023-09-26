@@ -18,6 +18,7 @@
 #include "ares.h"
 #include "ares_private.h"
 #include "ares__parser.h"
+#include <limits.h>
 
 struct ares__parser {
   const unsigned char *data;           /*!< pointer to start of data buffer */
