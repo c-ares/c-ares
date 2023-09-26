@@ -33,9 +33,8 @@ int ares_fds(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
 
   nfds = 0;
   for (i = 0; i < channel->nservers; i++) {
-    server = &channel->servers[i];
-
     ares__llist_node_t *node;
+    server = &channel->servers[i];
 
     for (node = ares__llist_node_first(server->connections);
          node != NULL;

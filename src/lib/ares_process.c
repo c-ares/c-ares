@@ -1148,7 +1148,7 @@ static int open_socket(ares_channel channel, struct server_state *server,
     struct sockaddr_in6 sa6;
   } saddr;
   struct sockaddr *sa;
-  unsigned int port;
+  unsigned short port;
   struct server_connection *conn;
   ares__llist_node_t *node;
 

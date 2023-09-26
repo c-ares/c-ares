@@ -33,9 +33,9 @@ int ares_getsock(ares_channel channel,
   size_t active_queries = ares__llist_len(channel->all_queries);
 
   for (i = 0; i < channel->nservers; i++) {
+    ares__llist_node_t *node;
     server = &channel->servers[i];
 
-    ares__llist_node_t *node;
     for (node = ares__llist_node_first(server->connections);
          node != NULL;
          node = ares__llist_node_next(node)) {
