@@ -10,6 +10,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__htable_stvp.c			\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
+  ares__parser.c			\
   ares__readaddrinfo.c			\
   ares__slist.c			\
   ares__sortaddrinfo.c			\
@@ -70,6 +71,7 @@ HHEADERS = ares__htable.h		\
   ares__htable_asvp.h			\
   ares__htable_stvp.h			\
   ares__llist.h				\
+  ares__parser.h			\
   ares__slist.h				\
   ares_android.h			\
   ares_data.h				\
