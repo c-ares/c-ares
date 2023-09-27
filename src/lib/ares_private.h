@@ -151,20 +151,6 @@ struct ares_addr {
 
 struct query;
 
-struct send_request {
-  /* Remaining data to send */
-  const unsigned char *data;
-  size_t len;
-
-  /* The query for which we're sending this data */
-  struct query* owner_query;
-  /* The buffer we're using, if we have our own copy of the packet */
-  unsigned char *data_storage;
-
-  /* Next request in queue */
-  struct send_request *next;
-};
-
 struct server_state;
 
 struct server_connection {

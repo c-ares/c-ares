@@ -282,7 +282,7 @@ int ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16)
   if (buf == NULL || u16 == NULL || remaining_len < sizeof(*u16))
     return 0;
 
-  *u16 = (unsigned short)(ptr[0]) << 8 | (unsigned short)ptr[1];
+  *u16 = (unsigned short)((unsigned short)(ptr[0]) << 8 | (unsigned short)ptr[1]);
 
   return ares__buf_consume(buf, sizeof(*u16));
 }

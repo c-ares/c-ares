@@ -62,8 +62,6 @@ static void write_tcp_data(ares_channel channel, fd_set *write_fds,
                            ares_socket_t write_fd, struct timeval *now);
 static void read_packets(ares_channel channel, fd_set *read_fds,
                          ares_socket_t read_fd, struct timeval *now);
-static void advance_tcp_send_queue(ares_channel channel, int whichserver,
-                                   ares_ssize_t num_bytes);
 static void process_timeouts(ares_channel channel, struct timeval *now);
 static void process_answer(ares_channel channel, const unsigned char *abuf,
                            int alen, struct server_connection *conn, int tcp,
@@ -200,7 +198,6 @@ static void write_tcp_data(ares_channel channel,
 {
   struct server_state *server;
   int i;
-  size_t n;
 
   if(!write_fds && (write_fd == ARES_SOCKET_BAD))
     /* no possible action */
@@ -353,7 +350,7 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
     data_len -= 2;
 
     /* We finished reading this answer; process it */
-    process_answer(channel, data, data_len, conn, 1, now);
+    process_answer(channel, data, (int)data_len, conn, 1, now);
 
     /* Since we processed the answer, clear the tag so space can be reclaimed */
     ares__buf_tag_clear(server->tcp_parser);
@@ -783,7 +780,6 @@ static int next_server(ares_channel channel, struct query *query,
 int ares__send_query(ares_channel channel, struct query *query,
                       struct timeval *now)
 {
-  struct send_request *sendreq;
   struct server_state *server;
   struct server_connection *conn;
   int timeplus;
@@ -1420,7 +1416,7 @@ static void ares_detach_query(struct query *query)
 static void end_query(ares_channel channel, struct query *query, int status,
                       const unsigned char *abuf, int alen)
 {
-  int i;
+  (void)channel;
 
   ares_detach_query(query);
 
