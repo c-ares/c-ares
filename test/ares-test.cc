@@ -101,9 +101,11 @@ void ProcessWork(ares_channel channel,
       }
     }
 
-    // Wait for activity or timeout.
-    tv.tv_sec = 0;
-    tv.tv_usec = 100000;  // 100ms
+    /* If ares_timeout returns NULL, it means there are no requests in queue,
+     * so we can break out */
+    if (ares_timeout(channel, NULL, &tv) == NULL)
+      return;
+
     count = select(nfds, &readers, &writers, nullptr, &tv);
     if (count < 0) {
       fprintf(stderr, "select() failed, errno %d\n", errno);
