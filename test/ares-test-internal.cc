@@ -638,26 +638,10 @@ const struct ares_socket_functions VirtualizeIO::default_functions = {
     }
     return s;
   },
-  [](ares_socket_t s, void * p) {
-    return :: sclose(s);
-  },
-  [](ares_socket_t s, const struct sockaddr * addr, socklen_t len, void *) {
-    return ::connect(s, addr, len);
-  },
-  [](ares_socket_t s, void * dst, size_t len, int flags, struct sockaddr * addr, socklen_t * alen, void *) -> ares_ssize_t {
-#ifdef HAVE_RECVFROM
-    return ::recvfrom(s, reinterpret_cast<RECV_TYPE_ARG2>(dst), len, flags, addr, alen);
-#else
-    return sread(s, dst, len);
-#endif
-  },
-  [](ares_socket_t s, const struct iovec * vec, int len, void *) {
-#ifndef HAVE_WRITEV
-    return ares_writev(s, vec, len);
-#else
-    return :: writev(s, vec, len);
-#endif
-  }
+  NULL,
+  NULL,
+  NULL,
+  NULL
 };
 
 
