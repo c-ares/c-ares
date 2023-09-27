@@ -79,6 +79,8 @@ static int same_address(struct sockaddr *sa, struct ares_addr *aa);
 static int has_opt_rr(const unsigned char *abuf, int alen);
 static void end_query(ares_channel channel, struct query *query, int status,
                       const unsigned char *abuf, int alen);
+static ares_ssize_t ares__socket_write(ares_channel channel, ares_socket_t s,
+                                       const void * data, size_t len);
 
 /* return true if now is exactly check time or later */
 int ares__timedout(struct timeval *now,
@@ -167,26 +169,6 @@ static int try_again(int errnum)
   return 0;
 }
 
-#ifndef HAVE_WRITEV
-/* Structure for scatter/gather I/O. */
-struct iovec
-{
-  void *iov_base;  /* Pointer to data. */
-  size_t iov_len;  /* Length of data.  */
-};
-#endif
-
-static ares_ssize_t socket_write(ares_channel channel, ares_socket_t s, const void * data, size_t len)
-{
-  if (channel->sock_funcs)
-    {
-      struct iovec vec;
-      vec.iov_base = (void*)data;
-      vec.iov_len = len;
-      return channel->sock_funcs->asendv(s, &vec, 1, channel->sock_func_cb_data);
-    }
-  return swrite(s, data, len);
-}
 
 /* If any TCP sockets select true for writing, write out queued data
  * we have for them.
@@ -232,7 +214,7 @@ static void write_tcp_data(ares_channel channel,
     }
 
     data  = ares__buf_peek(server->tcp_send, &data_len);
-    count = socket_write(channel, server->tcp_conn->fd, data, data_len);
+    count = ares__socket_write(channel, server->tcp_conn->fd, data, data_len);
     if (count <= 0) {
       if (!try_again(SOCKERRNO)) {
         handle_error(server->tcp_conn, now);
@@ -259,7 +241,7 @@ static ares_ssize_t socket_recvfrom(ares_channel channel,
    struct sockaddr *from,
    ares_socklen_t *from_len)
 {
-   if (channel->sock_funcs)
+   if (channel->sock_funcs && channel->sock_funcs->arecvfrom)
       return channel->sock_funcs->arecvfrom(s, data, data_len,
 	 flags, from, from_len,
 	 channel->sock_func_cb_data);
@@ -276,7 +258,7 @@ static ares_ssize_t socket_recv(ares_channel channel,
    void * data,
    size_t data_len)
 {
-   if (channel->sock_funcs)
+   if (channel->sock_funcs && channel->sock_funcs->arecvfrom)
       return channel->sock_funcs->arecvfrom(s, data, data_len, 0, 0, 0,
 	 channel->sock_func_cb_data);
 
@@ -865,7 +847,7 @@ int ares__send_query(ares_channel channel, struct query *query,
     }
 
     conn = ares__llist_node_val(node);
-    if (socket_write(channel, conn->fd, query->qbuf, query->qlen) == -1) {
+    if (ares__socket_write(channel, conn->fd, query->qbuf, query->qlen) == -1) {
       /* FIXME: Handle EAGAIN here since it likely can happen. */
       skip_server(channel, query, server);
       return next_server(channel, query, now);
@@ -999,7 +981,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
   } local;
 
   /* do not set options for user-managed sockets */
-  if (channel->sock_funcs)
+  if (channel->sock_funcs && channel->sock_funcs->asocket)
     return 0;
 
   (void)setsocknonblock(s, TRUE);
@@ -1125,12 +1107,12 @@ static int open_socket(ares_channel channel, struct server_state *server,
      * so batching isn't very interesting.
      */
     opt = 1;
-    if (channel->sock_funcs == 0
-       &&
-       setsockopt(s, IPPROTO_TCP, TCP_NODELAY,
-                  (void *)&opt, sizeof(opt)) == -1) {
-      ares__close_socket(channel, s);
-      return ARES_ECONNREFUSED;
+    if (!channel->sock_funcs || !channel->sock_funcs->asocket) {
+      if (setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (void *)&opt, sizeof(opt))
+          == -1) {
+        ares__close_socket(channel, s);
+        return ARES_ECONNREFUSED;
+      }
     }
   }
 #endif
@@ -1444,13 +1426,14 @@ void ares__free_query(struct query *query)
 ares_socket_t ares__open_socket(ares_channel channel,
                                 int af, int type, int protocol)
 {
-  if (channel->sock_funcs)
+  if (channel->sock_funcs && channel->sock_funcs->asocket) {
     return channel->sock_funcs->asocket(af,
                                         type,
                                         protocol,
                                         channel->sock_func_cb_data);
-  else
-    return socket(af, type, protocol);
+  }
+
+  return socket(af, type, protocol);
 }
 
 int ares__connect_socket(ares_channel channel,
@@ -1458,19 +1441,41 @@ int ares__connect_socket(ares_channel channel,
                          const struct sockaddr *addr,
                          ares_socklen_t addrlen)
 {
-  if (channel->sock_funcs)
+  if (channel->sock_funcs && channel->sock_funcs->aconnect) {
     return channel->sock_funcs->aconnect(sockfd,
                                          addr,
                                          addrlen,
                                          channel->sock_func_cb_data);
-  else
-    return connect(sockfd, addr, addrlen);
+  }
+
+  return connect(sockfd, addr, addrlen);
 }
 
 void ares__close_socket(ares_channel channel, ares_socket_t s)
 {
-  if (channel->sock_funcs)
+  if (channel->sock_funcs && channel->sock_funcs->aclose) {
     channel->sock_funcs->aclose(s, channel->sock_func_cb_data);
-  else
+  } else {
     sclose(s);
+  }
+}
+
+#ifndef HAVE_WRITEV
+/* Structure for scatter/gather I/O. */
+struct iovec
+{
+  void *iov_base;  /* Pointer to data. */
+  size_t iov_len;  /* Length of data.  */
+};
+#endif
+
+static ares_ssize_t ares__socket_write(ares_channel channel, ares_socket_t s, const void * data, size_t len)
+{
+  if (channel->sock_funcs && channel->sock_funcs->asendv) {
+    struct iovec vec;
+    vec.iov_base = (void*)data;
+    vec.iov_len = len;
+    return channel->sock_funcs->asendv(s, &vec, 1, channel->sock_func_cb_data);
+  }
+  return swrite(s, data, len);
 }
