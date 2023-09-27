@@ -252,7 +252,7 @@ static const unsigned char *ares__buf_fetch(const ares__buf_t *buf, size_t *len)
   if (len != NULL)
     *len = 0;
 
-  if (buf == NULL || len == NULL)
+  if (buf == NULL || len == NULL || buf->data == NULL)
     return NULL;
 
   *len = buf->data_len - buf->offset;
