@@ -406,7 +406,7 @@ After installing OpenWatcom, open a new command prompt and execute the following
   wmake -u -f Makefile.Watcom
 ```
 
-After running wmake, you should get acountry.exe, adig.exe, ahost.exe, and the static and dynamic versions of libcares.
+After running wmake, you should get adig.exe, ahost.exe, and the static and dynamic versions of libcares.
 
 PORTS
 =====
