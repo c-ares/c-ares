@@ -598,56 +598,40 @@ static void host_callback(void *arg, int status, int timeouts,
   hquery->timeouts += timeouts;
   hquery->remaining--;
 
-  if (status == ARES_SUCCESS)
-    {
-      addinfostatus = ares__parse_into_addrinfo(abuf, alen, 1, hquery->port, hquery->ai);
-      if (addinfostatus == ARES_SUCCESS && alen >= HFIXEDSZ)
-        {
-          qid = DNS_HEADER_QID(abuf); /* Converts to host byte order */
-          terminate_retries(hquery, qid);
-        }
+  if (status == ARES_SUCCESS) {
+    addinfostatus = ares__parse_into_addrinfo(abuf, alen, 1, hquery->port,
+                                              hquery->ai);
+    if (addinfostatus == ARES_SUCCESS && alen >= HFIXEDSZ) {
+      qid = DNS_HEADER_QID(abuf); /* Converts to host byte order */
+      terminate_retries(hquery, qid);
     }
+  }
 
-  if (!hquery->remaining)
-    {
-      if (addinfostatus != ARES_SUCCESS && addinfostatus != ARES_ENODATA)
-        {
-          /* error in parsing result e.g. no memory */
-          if (addinfostatus == ARES_EBADRESP && hquery->ai->nodes)
-            {
-              /* We got a bad response from server, but at least one query
-               * ended with ARES_SUCCESS */
-              end_hquery(hquery, ARES_SUCCESS);
-            }
-          else
-            {
-              end_hquery(hquery, addinfostatus);
-            }
-        }
-      else if (hquery->ai->nodes)
-        {
-          /* at least one query ended with ARES_SUCCESS */
-          end_hquery(hquery, ARES_SUCCESS);
-        }
-      else if (status == ARES_ENOTFOUND || status == ARES_ENODATA ||
-               addinfostatus == ARES_ENODATA)
-        {
-          if (status == ARES_ENODATA || addinfostatus == ARES_ENODATA)
-            hquery->nodata_cnt++;
-          next_lookup(hquery, hquery->nodata_cnt?ARES_ENODATA:status);
-        }
-      else if (status == ARES_EDESTRUCTION)
-        {
-          /* NOTE: Could also be ARES_EDESTRUCTION.  We need to only call this
-           * once all queries (there can be multiple for getaddrinfo) are
-           * terminated.  */
-          end_hquery(hquery, status);
-        }
-      else
-        {
-          end_hquery(hquery, status);
-        }
+  if (!hquery->remaining) {
+    if (addinfostatus != ARES_SUCCESS && addinfostatus != ARES_ENODATA) {
+      /* error in parsing result e.g. no memory */
+      if (addinfostatus == ARES_EBADRESP && hquery->ai->nodes) {
+        /* We got a bad response from server, but at least one query
+         * ended with ARES_SUCCESS */
+        end_hquery(hquery, ARES_SUCCESS);
+      } else {
+        end_hquery(hquery, addinfostatus);
+      }
+    } else if (hquery->ai->nodes) {
+      /* at least one query ended with ARES_SUCCESS */
+      end_hquery(hquery, ARES_SUCCESS);
+    } else if (status == ARES_EDESTRUCTION || status == ARES_ECANCELLED) {
+      /* must make sure we don't do next_lookup() on destroy or cancel */
+      end_hquery(hquery, status);
+    } else if (status == ARES_ENOTFOUND || status == ARES_ENODATA ||
+               addinfostatus == ARES_ENODATA) {
+      if (status == ARES_ENODATA || addinfostatus == ARES_ENODATA)
+        hquery->nodata_cnt++;
+      next_lookup(hquery, hquery->nodata_cnt?ARES_ENODATA:status);
+    } else {
+      end_hquery(hquery, status);
     }
+  }
 
   /* at this point we keep on waiting for the next query to finish */
 }
