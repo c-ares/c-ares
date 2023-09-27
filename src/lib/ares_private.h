@@ -35,8 +35,6 @@
 #ifdef WATT32
 #include <tcp.h>
 #include <sys/ioctl.h>
-#define writev(s,v,c)     writev_s(s,v,c)
-#define HAVE_WRITEV 1
 #endif
 
 #define DEFAULT_TIMEOUT         2000 /* milliseconds */
@@ -130,11 +128,6 @@ typedef struct ares_rand_state ares_rand_state;
 #ifndef HAVE_STRNCASECMP
 #  include "ares_strcasecmp.h"
 #  define strncasecmp(p1,p2,n) ares_strncasecmp(p1,p2,n)
-#endif
-
-#ifndef HAVE_WRITEV
-#  include "ares_writev.h"
-#  define writev(s,ptr,cnt) ares_writev(s,ptr,cnt)
 #endif
 
 /********* EDNS defines section ******/

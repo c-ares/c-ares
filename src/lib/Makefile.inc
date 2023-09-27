@@ -61,7 +61,6 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_strsplit.c			\
   ares_timeout.c			\
   ares_version.c			\
-  ares_writev.c				\
   bitncmp.c				\
   inet_net_pton.c			\
   inet_ntop.c				\
@@ -85,7 +84,6 @@ HHEADERS = ares__htable.h		\
   ares_strcasecmp.h			\
   ares_strdup.h				\
   ares_strsplit.h			\
-  ares_writev.h				\
   bitncmp.h				\
   ares_setup.h				\
   setup_once.h

@@ -169,6 +169,14 @@ static int try_again(int errnum)
   return 0;
 }
 
+#ifndef HAVE_WRITEV
+/* Structure for scatter/gather I/O. */
+struct iovec
+{
+  void *iov_base;  /* Pointer to data. */
+  size_t iov_len;  /* Length of data.  */
+};
+#endif
 
 static ares_ssize_t socket_write(ares_channel channel, ares_socket_t s, const void * data, size_t len)
 {
