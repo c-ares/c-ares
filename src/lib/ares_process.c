@@ -370,8 +370,8 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
 
   /* Fetch buffer to store data we are reading */
   size_t               ptr_len  = 512;
-  unsigned char       *ptr      = ares__parser_append_start(server->tcp_parser,
-                                                            &ptr_len);
+  unsigned char       *ptr      = ares__buf_append_start(server->tcp_parser,
+                                                         &ptr_len);
 
   if (ptr == NULL) {
     handle_error(conn, now);
@@ -382,14 +382,14 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
   /* Read from socket */
   count = socket_recv(channel, conn->fd, ptr, ptr_len);
   if (count <= 0) {
-    ares__parser_append_finish(server->tcp_parser, 0);
+    ares__buf_append_finish(server->tcp_parser, 0);
     if (!(count == -1 && try_again(SOCKERRNO)))
       handle_error(conn, now);
     return;
   }
 
   /* Record amount of data read */
-  ares__parser_append_finish(server->tcp_parser, count);
+  ares__buf_append_finish(server->tcp_parser, count);
 
   /* Process all queued answers */
   while (1) {
@@ -398,24 +398,24 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
      size_t               data_len = 0;
 
     /* Tag so we can roll back */
-    ares__parser_tag(server->tcp_parser);
+    ares__buf_tag(server->tcp_parser);
 
     /* Read length indicator */
-    if (!ares__parser_fetch_be16(server->tcp_parser, &dns_len)) {
-      ares__parser_tag_rollback(server->tcp_parser);
+    if (!ares__buf_fetch_be16(server->tcp_parser, &dns_len)) {
+      ares__buf_tag_rollback(server->tcp_parser);
       return;
     }
 
     /* Not enough data for a full response yet */
-    if (!ares__parser_consume(server->tcp_parser, dns_len)) {
-      ares__parser_tag_rollback(server->tcp_parser);
+    if (!ares__buf_consume(server->tcp_parser, dns_len)) {
+      ares__buf_tag_rollback(server->tcp_parser);
       return;
     }
 
     /* Can't fail except for misuse */
-    data = ares__parser_tag_fetch(server->tcp_parser, &data_len);
+    data = ares__buf_tag_fetch(server->tcp_parser, &data_len);
     if (data == NULL) {
-      ares__parser_tag_clear(server->tcp_parser);
+      ares__buf_tag_clear(server->tcp_parser);
       return;
     }
 
@@ -427,7 +427,7 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
     process_answer(channel, data, data_len, conn, 1, now);
 
     /* Since we processed the answer, clear the tag so space can be reclaimed */
-    ares__parser_tag_clear(server->tcp_parser);
+    ares__buf_tag_clear(server->tcp_parser);
   }
 }
 

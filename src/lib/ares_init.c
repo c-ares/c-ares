@@ -2395,7 +2395,7 @@ int ares__init_servers_state(ares_channel channel)
 
     /* NOTE: Can't use memset() here because the server addresses have been
      *       filled in already */
-    server->tcp_parser = ares__parser_create();
+    server->tcp_parser = ares__buf_create();
     if (server->tcp_parser == NULL)
       return ARES_ENOMEM;
 
@@ -2405,7 +2405,7 @@ int ares__init_servers_state(ares_channel channel)
     server->idx = i;
     server->connections = ares__llist_create(NULL);
     if (server->connections == NULL) {
-      ares__parser_destroy(server->tcp_parser);
+      ares__buf_destroy(server->tcp_parser);
       return ARES_ENOMEM;
     }
 

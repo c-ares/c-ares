@@ -112,7 +112,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__slist.h"
 #include "ares__htable_stvp.h"
 #include "ares__htable_asvp.h"
-#include "ares__parser.h"
+#include "ares__buf.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -193,7 +193,7 @@ struct server_state {
 
   /* TCP buffer since multiple responses can come back in one read, or partial
    * in a read */
-  ares__parser_t           *tcp_parser;
+  ares__buf_t              *tcp_parser;
 
   /* TCP output queue */
   struct send_request *qhead;

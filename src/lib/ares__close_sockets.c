@@ -43,8 +43,7 @@ void ares__close_connection(struct server_connection *conn)
     server->qtail = NULL;
 
     /* Reset any existing input buffer. */
-    ares__parser_consume(server->tcp_parser,
-                         ares__parser_len(server->tcp_parser));
+    ares__buf_consume(server->tcp_parser, ares__buf_len(server->tcp_parser));
 
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->tcp_conn = NULL;
