@@ -57,7 +57,7 @@ int ares_getsock(ares_channel channel,
         bitmap |= ARES_GETSOCK_READABLE(setbits, sockindex);
       }
 
-      if (conn->is_tcp && server->qhead) {
+      if (conn->is_tcp && ares__buf_len(server->tcp_send)) {
         /* then the tcp socket is also writable! */
         bitmap |= ARES_GETSOCK_WRITABLE(setbits, sockindex);
       }

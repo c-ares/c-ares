@@ -169,13 +169,6 @@ static int try_again(int errnum)
   return 0;
 }
 
-static ares_ssize_t socket_writev(ares_channel channel, ares_socket_t s, const struct iovec * vec, int len)
-{
-  if (channel->sock_funcs)
-    return channel->sock_funcs->asendv(s, vec, len, channel->sock_func_cb_data);
-
-  return writev(s, vec, len);
-}
 
 static ares_ssize_t socket_write(ares_channel channel, ares_socket_t s, const void * data, size_t len)
 {
@@ -198,132 +191,60 @@ static void write_tcp_data(ares_channel channel,
                            struct timeval *now)
 {
   struct server_state *server;
-  struct send_request *sendreq;
-  struct iovec *vec;
   int i;
-  ares_ssize_t scount;
-  ares_ssize_t wcount;
   size_t n;
-  /* From writev manpage: An implementation can advertise its limit by defining
-     IOV_MAX in <limits.h> or at run time via the return value from
-     sysconf(_SC_IOV_MAX). On modern Linux systems, the limit is 1024. Back in
-     Linux 2.0 days, this limit was 16. */
-#if defined(IOV_MAX)
-  const size_t maxn = IOV_MAX;   /* FreeBSD */
-#elif defined(_SC_IOV_MAX)
-  const size_t maxn = sysconf(_SC_IOV_MAX);   /* Linux */
-#else
-  const size_t maxn = 16;   /* Safe default */
-#endif
 
   if(!write_fds && (write_fd == ARES_SOCKET_BAD))
     /* no possible action */
     return;
 
-  for (i = 0; i < channel->nservers; i++)
-    {
-      /* Make sure server has data to send and is selected in write_fds or
-         write_fd. */
-      server = &channel->servers[i];
-      if (!server->qhead || server->tcp_conn == NULL)
+  for (i = 0; i < channel->nservers; i++) {
+    const unsigned char *data;
+    size_t               data_len;
+    ares_ssize_t         count;
+
+    /* Make sure server has data to send and is selected in write_fds or
+       write_fd. */
+    server = &channel->servers[i];
+    if (ares__buf_len(server->tcp_send) == 0 || server->tcp_conn == NULL)
+      continue;
+
+    if (write_fds) {
+      if (!FD_ISSET(server->tcp_conn->fd, write_fds))
         continue;
-
-      if(write_fds) {
-        if(!FD_ISSET(server->tcp_conn->fd, write_fds))
-          continue;
-      }
-      else {
-        if(server->tcp_conn->fd != write_fd)
-          continue;
-      }
-
-      if(write_fds)
-        /* If there's an error and we close this socket, then open
-         * another with the same fd to talk to another server, then we
-         * don't want to think that it was the new socket that was
-         * ready. This is not disastrous, but is likely to result in
-         * extra system calls and confusion. */
-        FD_CLR(server->tcp_conn->fd, write_fds);
-
-      /* Count the number of send queue items. */
-      n = 0;
-      for (sendreq = server->qhead; sendreq; sendreq = sendreq->next)
-        n++;
-
-      /* Allocate iovecs so we can send all our data at once. */
-      vec = ares_malloc(n * sizeof(struct iovec));
-      if (vec)
-        {
-          /* Fill in the iovecs and send. */
-          n = 0;
-          for (sendreq = server->qhead; sendreq; sendreq = sendreq->next)
-            {
-              vec[n].iov_base = (char *) sendreq->data;
-              vec[n].iov_len = sendreq->len;
-              n++;
-              if(n >= maxn)
-                break;
-            }
-          wcount = socket_writev(channel, server->tcp_conn->fd, vec, (int)n);
-          ares_free(vec);
-          if (wcount < 0)
-            {
-              if (!try_again(SOCKERRNO))
-                handle_error(server->tcp_conn, now);
-              continue;
-            }
-
-          /* Advance the send queue by as many bytes as we sent. */
-          advance_tcp_send_queue(channel, i, wcount);
-        }
-      else
-        {
-          /* Can't allocate iovecs; just send the first request. */
-          sendreq = server->qhead;
-
-          scount = socket_write(channel, server->tcp_conn->fd, sendreq->data, sendreq->len);
-          if (scount < 0)
-            {
-              if (!try_again(SOCKERRNO))
-                handle_error(server->tcp_conn, now);
-              continue;
-            }
-
-          /* Advance the send queue by as many bytes as we sent. */
-          advance_tcp_send_queue(channel, i, scount);
-        }
+    } else {
+      if (server->tcp_conn->fd != write_fd)
+        continue;
     }
-}
 
-/* Consume the given number of bytes from the head of the TCP send queue. */
-static void advance_tcp_send_queue(ares_channel channel, int whichserver,
-                                   ares_ssize_t num_bytes)
-{
-  struct send_request *sendreq;
-  struct server_state *server = &channel->servers[whichserver];
-  while (num_bytes > 0) {
-    sendreq = server->qhead;
-    if ((size_t)num_bytes >= sendreq->len) {
-      num_bytes -= sendreq->len;
-      server->qhead = sendreq->next;
-      if (sendreq->data_storage)
-        ares_free(sendreq->data_storage);
-      ares_free(sendreq);
-      if (server->qhead == NULL) {
-        SOCK_STATE_CALLBACK(channel, server->tcp_conn->fd, 1, 0);
-        server->qtail = NULL;
-
-        /* qhead is NULL so we cannot continue this loop */
-        break;
-      }
+    if (write_fds) {
+      /* If there's an error and we close this socket, then open
+       * another with the same fd to talk to another server, then we
+       * don't want to think that it was the new socket that was
+       * ready. This is not disastrous, but is likely to result in
+       * extra system calls and confusion. */
+      FD_CLR(server->tcp_conn->fd, write_fds);
     }
-    else {
-      sendreq->data += num_bytes;
-      sendreq->len -= num_bytes;
-      num_bytes = 0;
+
+    data  = ares__buf_peek(server->tcp_send, &data_len);
+    count = socket_write(channel, server->tcp_conn->fd, data, data_len);
+    if (count <= 0) {
+      if (!try_again(SOCKERRNO)) {
+        handle_error(server->tcp_conn, now);
+      }
+      continue;
+    }
+
+    /* Strip data written from the buffer */
+    ares__buf_consume(server->tcp_send, count);
+
+    /* Notify state callback all data is written */
+    if (ares__buf_len(server->tcp_send) == 0) {
+      SOCK_STATE_CALLBACK(channel, server->tcp_conn->fd, 1, 0);
     }
   }
 }
+
 
 static ares_ssize_t socket_recvfrom(ares_channel channel,
    ares_socket_t s,
@@ -861,6 +782,7 @@ int ares__send_query(ares_channel channel, struct query *query,
 
   server = &channel->servers[query->server];
   if (query->using_tcp) {
+    size_t prior_len = 0;
     /* Make sure the TCP socket for this server is set up and queue
      * a send request.
      */
@@ -887,30 +809,17 @@ int ares__send_query(ares_channel channel, struct query *query,
 
     conn = server->tcp_conn;
 
-    sendreq = ares_malloc(sizeof(struct send_request));
-    if (!sendreq) {
+    prior_len = ares__buf_len(server->tcp_send);
+
+    if (!ares__buf_append(server->tcp_send, query->tcpbuf, query->tcplen)) {
       end_query(channel, query, ARES_ENOMEM, NULL, 0);
       return ARES_ENOMEM;
     }
-    memset(sendreq, 0, sizeof(struct send_request));
-    /* To make the common case fast, we avoid copies by using the query's
-     * tcpbuf for as long as the query is alive. In the rare case where the
-     * query ends while it's queued for transmission, then we give the
-     * sendreq its own copy of the request packet and put it in
-     * sendreq->data_storage.
-     */
-    sendreq->data_storage = NULL;
-    sendreq->data = query->tcpbuf;
-    sendreq->len = query->tcplen;
-    sendreq->owner_query = query;
-    sendreq->next = NULL;
-    if (server->qtail) {
-      server->qtail->next = sendreq;
-    } else {
+
+    if (prior_len == 0) {
       SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
-      server->qhead = sendreq;
     }
-    server->qtail = sendreq;
+
     query->server_info[query->server].tcp_connection_generation =
       server->tcp_connection_generation;
   } else {
@@ -1506,45 +1415,6 @@ static void end_query(ares_channel channel, struct query *query, int status,
   int i;
 
   ares_detach_query(query);
-
-  /* First we check to see if this query ended while one of our send
-   * queues still has pointers to it.
-   */
-  for (i = 0; i < channel->nservers; i++) {
-    struct server_state *server = &channel->servers[i];
-    struct send_request *sendreq;
-    for (sendreq = server->qhead; sendreq; sendreq = sendreq->next) {
-      if (sendreq->owner_query == query) {
-        sendreq->owner_query = NULL;
-        assert(sendreq->data_storage == NULL);
-        if (status == ARES_SUCCESS) {
-          /* We got a reply for this query, but this queued sendreq
-           * points into this soon-to-be-gone query's tcpbuf. Probably
-           * this means we timed out and queued the query for
-           * retransmission, then received a response before actually
-           * retransmitting. This is perfectly fine, so we want to keep
-           * the connection running smoothly if we can. But in the worst
-           * case we may have sent only some prefix of the query, with
-           * some suffix of the query left to send. Also, the buffer may
-           * be queued on multiple queues. To prevent dangling pointers
-           * to the query's tcpbuf and handle these cases, we just give
-           * such sendreqs their own copy of the query packet.
-           */
-          sendreq->data_storage = ares_malloc(sendreq->len);
-          if (sendreq->data_storage != NULL) {
-            memcpy(sendreq->data_storage, sendreq->data, sendreq->len);
-            sendreq->data = sendreq->data_storage;
-          }
-        }
-
-        if (status != ARES_SUCCESS || sendreq->data_storage == NULL) {
-          /* Just to be paranoid, zero out this sendreq... */
-          sendreq->data = NULL;
-          sendreq->len = 0;
-        }
-      }
-    }
-  }
 
   /* Invoke the callback. */
   query->callback(query->arg, status, query->timeouts,

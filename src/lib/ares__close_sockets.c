@@ -29,22 +29,9 @@ void ares__close_connection(struct server_connection *conn)
   ares_channel         channel = server->channel;
 
   if (conn->is_tcp) {
-    struct send_request *sendreq;
-
-    /* Free all pending output buffers. */
-    while (server->qhead) {
-      /* Advance server->qhead; pull out query as we go. */
-      sendreq = server->qhead;
-      server->qhead = sendreq->next;
-      if (sendreq->data_storage != NULL)
-        ares_free(sendreq->data_storage);
-      ares_free(sendreq);
-    }
-    server->qtail = NULL;
-
-    /* Reset any existing input buffer. */
+    /* Reset any existing input and output buffer. */
     ares__buf_consume(server->tcp_parser, ares__buf_len(server->tcp_parser));
-
+    ares__buf_consume(server->tcp_send, ares__buf_len(server->tcp_send));
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->tcp_conn = NULL;
   }

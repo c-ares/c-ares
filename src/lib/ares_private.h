@@ -196,8 +196,7 @@ struct server_state {
   ares__buf_t              *tcp_parser;
 
   /* TCP output queue */
-  struct send_request *qhead;
-  struct send_request *qtail;
+  ares__buf_t              *tcp_send;
 
   /* Which incarnation of this connection is this? We don't want to
    * retransmit requests into the very same socket, but if the server
