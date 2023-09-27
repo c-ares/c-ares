@@ -157,20 +157,16 @@ PROG3_DIR = $(BASE_DIR)\ahost
 
 !IF "$(VALID_CFGSET)" == "TRUE"
 CARES_OUTDIR = $(CARES_DIR)\$(CFG)
-PROG1_OUTDIR = $(PROG1_DIR)\$(CFG)
 PROG2_OUTDIR = $(PROG2_DIR)\$(CFG)
 PROG3_OUTDIR = $(PROG3_DIR)\$(CFG)
 CARES_OBJDIR = $(CARES_OUTDIR)\obj
-PROG1_OBJDIR = $(PROG1_OUTDIR)\obj
 PROG2_OBJDIR = $(PROG2_OUTDIR)\obj
 PROG3_OBJDIR = $(PROG3_OUTDIR)\obj
 !ELSE
 !UNDEF CARES_OUTDIR
-!UNDEF PROG1_OUTDIR
 !UNDEF PROG2_OUTDIR
 !UNDEF PROG3_OUTDIR
 !UNDEF CARES_OBJDIR
-!UNDEF PROG1_OBJDIR
 !UNDEF PROG2_OBJDIR
 !UNDEF PROG3_OBJDIR
 !ENDIF
@@ -340,9 +336,6 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 {$(SRCDIR)\src\lib}.c{$(CARES_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(CARES_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
-{$(SRCDIR)\src\tools}.c{$(PROG1_OBJDIR)}.obj:
-    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
-
 {$(SRCDIR)\src\tools}.c{$(PROG2_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
@@ -351,9 +344,6 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 
 # Hack Alert! we reference ../lib/ files in the Makefile.inc for tools as they
 # share some files with the library itself.  We need to hack around that here.
-
-{$(SRCDIR)\src\lib}.c{$(PROG1_OBJDIR)\..\lib}.obj:
-    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG1_OBJDIR)\$(@F) /Fd$(PROG1_OBJDIR)\ /c $<
 
 {$(SRCDIR)\src\lib}.c{$(PROG2_OBJDIR)\..\lib}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG2_OBJDIR)\$(@F) /Fd$(PROG2_OBJDIR)\ /c $<
@@ -416,9 +406,6 @@ ahost: c-ares $(PROG3_OBJDIR) $(PROG3_OBJS) $(PROG3_OUTDIR)
 $(CARES_OUTDIR): $(CARES_DIR)
     @if not exist $(CARES_OUTDIR) mkdir $(CARES_OUTDIR)
 
-$(PROG1_OUTDIR): $(PROG1_DIR)
-    @if not exist $(PROG1_OUTDIR) mkdir $(PROG1_OUTDIR)
-
 $(PROG2_OUTDIR): $(PROG2_DIR)
     @if not exist $(PROG2_OUTDIR) mkdir $(PROG2_OUTDIR)
 
@@ -428,9 +415,6 @@ $(PROG3_OUTDIR): $(PROG3_DIR)
 $(CARES_OBJDIR): $(CARES_OUTDIR)
     @if not exist $(CARES_OBJDIR) mkdir $(CARES_OBJDIR)
 
-$(PROG1_OBJDIR): $(PROG1_OUTDIR)
-    @if not exist $(PROG1_OBJDIR) mkdir $(PROG1_OBJDIR)
-
 $(PROG2_OBJDIR): $(PROG2_OUTDIR)
     @if not exist $(PROG2_OBJDIR) mkdir $(PROG2_OBJDIR)
 
@@ -439,7 +423,6 @@ $(PROG3_OBJDIR): $(PROG3_OUTDIR)
 
 clean:
     @-RMDIR /S /Q $(CARES_OUTDIR) >NUL 2>&1
-    @-RMDIR /S /Q $(PROG1_OUTDIR) >NUL 2>&1
     @-RMDIR /S /Q $(PROG2_OUTDIR) >NUL 2>&1
     @-RMDIR /S /Q $(PROG3_OUTDIR) >NUL 2>&1
 
@@ -463,9 +446,6 @@ $(BASE_DIR):
 
 $(CARES_DIR): $(BASE_DIR)
     @if not exist $(CARES_DIR) mkdir $(CARES_DIR)
-
-$(PROG1_DIR): $(BASE_DIR)
-    @if not exist $(PROG1_DIR) mkdir $(PROG1_DIR)
 
 $(PROG2_DIR): $(BASE_DIR)
     @if not exist $(PROG2_DIR) mkdir $(PROG2_DIR)
