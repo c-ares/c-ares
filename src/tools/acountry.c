@@ -1,3 +1,6 @@
+/* NOTE: As of late 2022, nerd.dk has been down, and is still down as of 10/2023.
+ *       As there is no similar service.  This file remains for historic purposes.
+ *       It is no longer built or tested. */
 /*
  *
  * IP-address/hostname to country converter.

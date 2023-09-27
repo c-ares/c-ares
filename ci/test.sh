@@ -31,7 +31,6 @@ else
 fi
 
 $TEST_WRAP "${TOOLSBIN}/adig" www.google.com
-$TEST_WRAP "${TOOLSBIN}/acountry" www.google.com
 $TEST_WRAP "${TOOLSBIN}/ahost" www.google.com
 cd "${TESTSBIN}"
 $TEST_WRAP ./arestest -4 -v $TEST_FILTER

@@ -47,7 +47,7 @@ OBJECTS = $(addprefix $(OBJ_DIR)/, \
 GENERATED = src/lib/ares_config.h \
             include/ares_build.h
 
-TARGETS = libcares.a acountry.exe adig.exe ahost.exe
+TARGETS = libcares.a adig.exe ahost.exe
 
 .SECONDARY: $(OBJ_DIR)/ares_getopt.o
 
