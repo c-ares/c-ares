@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) Daniel Stenberg
+ * Copyright (c) The c-ares project and its contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
