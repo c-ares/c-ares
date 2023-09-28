@@ -33,9 +33,9 @@ int ares_getsock(ares_channel channel,
   size_t active_queries = ares__llist_len(channel->all_queries);
 
   for (i = 0; i < channel->nservers; i++) {
+    ares__llist_node_t *node;
     server = &channel->servers[i];
 
-    ares__llist_node_t *node;
     for (node = ares__llist_node_first(server->connections);
          node != NULL;
          node = ares__llist_node_next(node)) {
@@ -57,7 +57,7 @@ int ares_getsock(ares_channel channel,
         bitmap |= ARES_GETSOCK_READABLE(setbits, sockindex);
       }
 
-      if (conn->is_tcp && server->qhead) {
+      if (conn->is_tcp && ares__buf_len(server->tcp_send)) {
         /* then the tcp socket is also writable! */
         bitmap |= ARES_GETSOCK_WRITABLE(setbits, sockindex);
       }

@@ -29,24 +29,9 @@ void ares__close_connection(struct server_connection *conn)
   ares_channel         channel = server->channel;
 
   if (conn->is_tcp) {
-    struct send_request *sendreq;
-
-    /* Free all pending output buffers. */
-    while (server->qhead) {
-      /* Advance server->qhead; pull out query as we go. */
-      sendreq = server->qhead;
-      server->qhead = sendreq->next;
-      if (sendreq->data_storage != NULL)
-        ares_free(sendreq->data_storage);
-      ares_free(sendreq);
-    }
-    server->qtail = NULL;
-
-    /* Reset any existing input buffer. */
-    if (server->tcp_buffer)
-      ares_free(server->tcp_buffer);
-    server->tcp_buffer = NULL;
-    server->tcp_lenbuf_pos = 0;
+    /* Reset any existing input and output buffer. */
+    ares__buf_consume(server->tcp_parser, ares__buf_len(server->tcp_parser));
+    ares__buf_consume(server->tcp_send, ares__buf_len(server->tcp_send));
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->tcp_conn = NULL;
   }
@@ -100,7 +85,7 @@ void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd)
 
   /* If the udp connection hit its max queries, always close it */
   if (!conn->is_tcp && channel->udp_max_queries > 0 &&
-      conn->total_queries >= channel->udp_max_queries) {
+      conn->total_queries >= (size_t)channel->udp_max_queries) {
     do_cleanup = 1;
   }
 

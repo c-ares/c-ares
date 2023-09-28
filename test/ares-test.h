@@ -188,6 +188,8 @@ class MockServer {
   std::set<int> connfds_;
   std::vector<byte> reply_;
   int qid_;
+  unsigned char *tcp_data_;
+  size_t tcp_data_len_;
 };
 
 // Test fixture that uses a mock DNS server.

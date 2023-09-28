@@ -10,6 +10,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__htable_stvp.c			\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
+  ares__buf.c				\
   ares__readaddrinfo.c			\
   ares__slist.c			\
   ares__sortaddrinfo.c			\
@@ -60,7 +61,6 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_strsplit.c			\
   ares_timeout.c			\
   ares_version.c			\
-  ares_writev.c				\
   bitncmp.c				\
   inet_net_pton.c			\
   inet_ntop.c				\
@@ -70,6 +70,7 @@ HHEADERS = ares__htable.h		\
   ares__htable_asvp.h			\
   ares__htable_stvp.h			\
   ares__llist.h				\
+  ares__buf.h				\
   ares__slist.h				\
   ares_android.h			\
   ares_data.h				\
@@ -83,7 +84,6 @@ HHEADERS = ares__htable.h		\
   ares_strcasecmp.h			\
   ares_strdup.h				\
   ares_strsplit.h			\
-  ares_writev.h				\
   bitncmp.h				\
   ares_setup.h				\
   setup_once.h

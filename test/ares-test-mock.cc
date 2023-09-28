@@ -271,7 +271,6 @@ TEST_P(MockUDPMaxQueriesTest, GetHostByNameParallelLookups) {
 
 /* There may be an issue with TCP parallel queries, this test fails, as does
  * issue #266 indicate */
-#if 0
 #define TCPPARALLELLOOKUPS 256
 TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
   DNSPacket rsp;
@@ -302,7 +301,7 @@ TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
     EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
   }
 }
-#endif
+
 
 TEST_P(MockTCPChannelTest, MalformedResponse) {
   std::vector<byte> one = {0x01};

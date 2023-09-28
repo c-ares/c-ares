@@ -35,8 +35,6 @@
 #ifdef WATT32
 #include <tcp.h>
 #include <sys/ioctl.h>
-#define writev(s,v,c)     writev_s(s,v,c)
-#define HAVE_WRITEV 1
 #endif
 
 #define DEFAULT_TIMEOUT         2000 /* milliseconds */
@@ -112,6 +110,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__slist.h"
 #include "ares__htable_stvp.h"
 #include "ares__htable_asvp.h"
+#include "ares__buf.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -129,11 +128,6 @@ typedef struct ares_rand_state ares_rand_state;
 #ifndef HAVE_STRNCASECMP
 #  include "ares_strcasecmp.h"
 #  define strncasecmp(p1,p2,n) ares_strncasecmp(p1,p2,n)
-#endif
-
-#ifndef HAVE_WRITEV
-#  include "ares_writev.h"
-#  define writev(s,ptr,cnt) ares_writev(s,ptr,cnt)
 #endif
 
 /********* EDNS defines section ******/
@@ -157,20 +151,6 @@ struct ares_addr {
 
 struct query;
 
-struct send_request {
-  /* Remaining data to send */
-  const unsigned char *data;
-  size_t len;
-
-  /* The query for which we're sending this data */
-  struct query* owner_query;
-  /* The buffer we're using, if we have our own copy of the packet */
-  unsigned char *data_storage;
-
-  /* Next request in queue */
-  struct send_request *next;
-};
-
 struct server_state;
 
 struct server_connection {
@@ -190,18 +170,12 @@ struct server_state {
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
 
-  /* Mini-buffer for reading the length word */
-  unsigned char tcp_lenbuf[2];
-  int tcp_lenbuf_pos;
-  int tcp_length;
-
-  /* Buffer for reading actual TCP data */
-  unsigned char *tcp_buffer;
-  int tcp_buffer_pos;
+  /* TCP buffer since multiple responses can come back in one read, or partial
+   * in a read */
+  ares__buf_t              *tcp_parser;
 
   /* TCP output queue */
-  struct send_request *qhead;
-  struct send_request *qtail;
+  ares__buf_t              *tcp_send;
 
   /* Which incarnation of this connection is this? We don't want to
    * retransmit requests into the very same socket, but if the server

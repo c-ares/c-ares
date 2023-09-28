@@ -2395,17 +2395,23 @@ int ares__init_servers_state(ares_channel channel)
 
     /* NOTE: Can't use memset() here because the server addresses have been
      *       filled in already */
-    server->tcp_lenbuf_pos = 0;
-    server->tcp_buffer_pos = 0;
-    server->tcp_buffer = NULL;
-    server->tcp_length = 0;
-    server->qhead = NULL;
-    server->qtail = NULL;
+    server->tcp_parser = ares__buf_create();
+    if (server->tcp_parser == NULL)
+      return ARES_ENOMEM;
+
+    server->tcp_send = ares__buf_create();
+    if (server->tcp_send == NULL) {
+      ares__buf_destroy(server->tcp_parser);
+      return ARES_ENOMEM;
+    }
 
     server->idx = i;
     server->connections = ares__llist_create(NULL);
-    if (server->connections == NULL)
+    if (server->connections == NULL) {
+      ares__buf_destroy(server->tcp_parser);
+      ares__buf_destroy(server->tcp_send);
       return ARES_ENOMEM;
+    }
 
     server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->channel = channel;

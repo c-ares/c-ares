@@ -122,6 +122,8 @@ void ares__destroy_servers_state(ares_channel channel)
           server = &channel->servers[i];
           ares__close_sockets(server);
           ares__llist_destroy(server->connections);
+          ares__buf_destroy(server->tcp_parser);
+          ares__buf_destroy(server->tcp_send);
         }
       ares_free(channel->servers);
       channel->servers = NULL;
