@@ -6,7 +6,7 @@
 /*
  * Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project.
  * Copyright (C) 2018 The Android Open Source Project
- * Copyright (C) 2019 by Andrew Selivanov
+ * Copyright (C) 2019 Andrew Selivanov
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

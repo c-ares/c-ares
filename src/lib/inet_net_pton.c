@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2012 by Gilles Chehade <gilles@openbsd.org>
  * Copyright (c) 1996,1999 by Internet Software Consortium.
