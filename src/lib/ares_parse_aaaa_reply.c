@@ -1,5 +1,6 @@
 /* MIT License
  *
+ * Copyright (c) 1998 Massachusetts Institute of Technology
  * Copyright (c) 2005 Dominick Meglio
  * Copyright (c) 2019 Andrew Selivanov
  *

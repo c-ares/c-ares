@@ -1,5 +1,6 @@
 /* MIT License
  *
+ * Copyright (c) 1998, 2011, 2013 Massachusetts Institute of Technology
  * Copyright (c) 2017 Christian Ammer
  * Copyright (c) 2019 Andrew Selivanov
  *

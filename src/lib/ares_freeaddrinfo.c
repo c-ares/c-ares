@@ -1,5 +1,6 @@
 /* MIT License
  *
+ * Copyright (c) 1998 Massachusetts Institute of Technology
  * Copyright (c) 2019 Andrew Selivanov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy

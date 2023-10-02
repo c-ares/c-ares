@@ -1,5 +1,6 @@
 /* MIT License
  *
+ * Copyright (c) 1998, 2011, 2013 Massachusetts Institute of Technology
  * Copyright (c) The c-ares project and its contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy

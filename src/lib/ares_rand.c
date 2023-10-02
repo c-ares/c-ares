@@ -1,6 +1,5 @@
 /* MIT License
  *
- * Copyright (c) 2007 Daniel Stenberg
  * Copyright (c) 2023 Brad House
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy

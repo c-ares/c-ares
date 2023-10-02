@@ -1,5 +1,6 @@
 /* MIT License
  *
+ * Copyright (c) 1998 Massachusetts Institute of Technology
  * Copyright (c) 2012 Marko Kreen
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy

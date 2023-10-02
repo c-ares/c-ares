@@ -1,5 +1,6 @@
 /* MIT License
  *
+ * Copyright (c) Massachusetts Institute of Technology
  * Copyright (c) Daniel Stenberg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
