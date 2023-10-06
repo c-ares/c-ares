@@ -317,13 +317,13 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
     ares__buf_tag(server->tcp_parser);
 
     /* Read length indicator */
-    if (!ares__buf_fetch_be16(server->tcp_parser, &dns_len)) {
+    if (ares__buf_fetch_be16(server->tcp_parser, &dns_len) != ARES_SUCCESS) {
       ares__buf_tag_rollback(server->tcp_parser);
       return;
     }
 
     /* Not enough data for a full response yet */
-    if (!ares__buf_consume(server->tcp_parser, dns_len)) {
+    if (ares__buf_consume(server->tcp_parser, dns_len) != ARES_SUCCESS) {
       ares__buf_tag_rollback(server->tcp_parser);
       return;
     }
@@ -773,6 +773,7 @@ int ares__send_query(ares_channel channel, struct query *query,
   struct server_state *server;
   struct server_connection *conn;
   int timeplus;
+  int status;
 
   server = &channel->servers[query->server];
   if (query->using_tcp) {
@@ -805,8 +806,9 @@ int ares__send_query(ares_channel channel, struct query *query,
 
     prior_len = ares__buf_len(server->tcp_send);
 
-    if (!ares__buf_append(server->tcp_send, query->tcpbuf, query->tcplen)) {
-      end_query(channel, query, ARES_ENOMEM, NULL, 0);
+    status = ares__buf_append(server->tcp_send, query->tcpbuf, query->tcplen);
+    if (status != ARES_SUCCESS) {
+      end_query(channel, query, status, NULL, 0);
       return ARES_ENOMEM;
     }
 

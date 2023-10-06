@@ -71,7 +71,7 @@ void ares__buf_destroy(ares__buf_t *buf);
  *  \param[in] buf      Initialized buffer object
  *  \param[in] data     Data to copy to buffer object
  *  \param[in] data_len Length of data to copy to buffer object.
- *  \return 1 on success, 0 on failure (out of memory, const buffer, usage, etc)
+ *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 int ares__buf_append(ares__buf_t *buf, const unsigned char *data,
                      size_t data_len);
@@ -100,6 +100,32 @@ unsigned char *ares__buf_append_start(ares__buf_t *buf, size_t *len);
  */
 void ares__buf_append_finish(ares__buf_t *buf, size_t len);
 
+/*! Clean up ares__buf_t and return allocated pointer to unprocessed data.  It
+ *  is the responsibility of the  caller to ares_free() the returned buffer.
+ *  The passed in buf parameter is invalidated by this call.
+ *
+ * \param[in]  buf    Initialized buffer object. Can not be a "const" buffer.
+ * \param[out] len    Length of data returned
+ * \return pointer to unprocessed data or NULL on error.
+ */
+unsigned char *ares__buf_finish_bin(ares__buf_t *buf, size_t *len);
+
+/*! Clean up ares__buf_t and return allocated pointer to unprocessed data and
+ *  return it as a string (null terminated).  It is the responsibility of the
+ *  caller to ares_free() the returned buffer. The passed in buf parameter is
+ *  invalidated by this call.
+ *
+ *  This function in no way validates the data in this buffer is actually
+ *  a string, that characters are printable, or that there aren't multiple
+ *  NULL terminators.  It is assumed that the caller will either validate that
+ *  themselves or has built this buffer with only a valid character set.
+ *
+ * \param[in]  buf    Initialized buffer object. Can not be a "const" buffer.
+ * \param[out] len    Optional. Length of data returned, or NULL if not needed.
+ * \return pointer to unprocessed data or NULL on error.
+ */
+char *ares__buf_finish_str(ares__buf_t *buf, size_t *len);
+
 /*! Tag a position to save in the buffer in case parsing needs to rollback,
  *  such as if insufficient data is available, but more data may be added in
  *  the future.  Only a single tag can be set per buffer object.  Setting a
@@ -112,7 +138,7 @@ void ares__buf_tag(ares__buf_t *buf);
 /*! Rollback to a tagged position.  Will automatically clear the tag.
  *
  *  \param[in] buf Initialized buffer object
- *  \return 1 on success, 0 if no tag
+ *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 int ares__buf_tag_rollback(ares__buf_t *buf);
 
@@ -121,7 +147,7 @@ int ares__buf_tag_rollback(ares__buf_t *buf);
  *  buffer space.
  *
  *  \param[in] buf Initialized buffer object
- *  \return 1 on success, 0 if no tag
+ *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 int ares__buf_tag_clear(ares__buf_t *buf);
 
@@ -140,7 +166,7 @@ const unsigned char *ares__buf_tag_fetch(const ares__buf_t *buf, size_t *len);
  *
  *  \param[in] buf    Initialized buffer object
  *  \param[in] len    Length to consume
- *  \return 1 on success, 0 if insufficient buffer remaining
+ *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 int ares__buf_consume(ares__buf_t *buf, size_t len);
 
@@ -148,7 +174,7 @@ int ares__buf_consume(ares__buf_t *buf, size_t len);
  *
  *  \param[in]  buf     Initialized buffer object
  *  \param[out] u16     Buffer to hold 16bit integer
- *  \return 1 on success, 0 if insufficient buffer remaining
+ *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 int ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16);
 
@@ -157,10 +183,50 @@ int ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16);
  *  \param[in]  buf     Initialized buffer object
  *  \param[out] bytes   Buffer to hold data
  *  \param[in]  len     Requested number of bytes (must be > 0)
- *  \return 1 on success, 0 if insufficient buffer remaining (or misuse)
+ *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 int ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
                           size_t len);
+
+/*! Consume whitespace characters (0x09, 0x0B, 0x0C, 0x0D, 0x20, and optionally
+ *  0x0A).
+ *
+ *  \param[in]  buf               Initialized buffer object
+ *  \param[in]  include_linefeed  1 to include consuming 0x0A, 0 otherwise.
+ *  \return number of whitespace characters consumed
+ */
+size_t ares__buf_consume_whitespace(ares__buf_t *buf, int include_linefeed);
+
+
+/*! Consume any non-whitespace character (anything other than 0x09, 0x0B, 0x0C,
+ *  0x0D, 0x20, and 0x0A).
+ *
+ *  \param[in]  buf               Initialized buffer object
+ *  \return number of characters consumed
+ */
+size_t ares__buf_consume_nonwhitespace(ares__buf_t *buf);
+
+/*! Consume from the current position until the end of the line, and optionally
+ *  the end of line character (0x0A) itself.
+ *
+ *  \param[in]  buf               Initialized buffer object
+ *  \param[in]  include_linefeed  1 to include consuming 0x0A, 0 otherwise.
+ *  \return number of characters consumed
+ */
+size_t ares__buf_consume_line(ares__buf_t *buf, int include_linefeed);
+
+
+/*! Check the unprocessed buffer to see if it begins with the sequence of
+ *  characters provided.
+ *
+ *  \param[in] buf          Initialized buffer object
+ *  \param[in] data         Bytes of data to compare.
+ *  \param[in] data_len     Length of data to compare.
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+int ares__buf_begins_with(ares__buf_t *buf, const unsigned char *data,
+                          size_t data_len);
+
 
 /*! Size of unprocessed remaining data length
  *
@@ -180,10 +246,7 @@ size_t ares__buf_len(const ares__buf_t *buf);
 const unsigned char *ares__buf_peek(const ares__buf_t *buf,
                                        size_t *len);
 
-#if 0
-int ares__buf_fetch_dnsheader(ares__buf_t *buf, ares_dns_header_t *header);
-#endif
 
 /*! @} */
 
-#endif /* __ARES__buffer_H */
+#endif /* __ARES__BUF_H */
