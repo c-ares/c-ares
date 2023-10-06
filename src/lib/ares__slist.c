@@ -315,7 +315,7 @@ ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val)
   /* Scan nodes starting at the highest level. For each level scan forward
    * until the value is between the prior and next node, or if equal quit
    * as we found a match */
-  for (i=list->levels-1; i-- > 0; ) {
+  for (i=list->levels; i-- > 0; ) {
     if (node == NULL)
       node = list->head[i];
 
