@@ -219,8 +219,8 @@ TEST_P(MockChannelTest, SockConfigureFailCallback) {
   EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
 }
 
-#define MAXUDPQUERIES_TOTAL 256
-#define MAXUDPQUERIES_LIMIT 16
+#define MAXUDPQUERIES_TOTAL 32
+#define MAXUDPQUERIES_LIMIT 8
 
 class MockUDPMaxQueriesTest
     : public MockChannelOptsTest,
@@ -269,9 +269,7 @@ TEST_P(MockUDPMaxQueriesTest, GetHostByNameParallelLookups) {
   }
 }
 
-/* There may be an issue with TCP parallel queries, this test fails, as does
- * issue #266 indicate */
-#define TCPPARALLELLOOKUPS 256
+#define TCPPARALLELLOOKUPS 32
 TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
