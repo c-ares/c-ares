@@ -37,7 +37,7 @@ CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 # Makefile.inc provides the various *SOURCES and *HEADERS defines
 include Makefile.inc
 
-TESTS = arestest fuzzcheck.sho
+TESTS = arestest fuzzcheck.sh
 
 noinst_LTLIBRARIES = libgmock.la
 
