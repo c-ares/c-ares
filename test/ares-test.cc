@@ -384,7 +384,7 @@ void MockServer::ProcessFD(int fd) {
     /* TCP might aggregate the various requests into a single packet, so we
      * need to split */
     while (tcp_data_len_ > 2) {
-      int tcplen = (tcp_data_[0] << 8) + tcp_data_[1];
+      size_t tcplen = (tcp_data_[0] << 8) + tcp_data_[1];
       if (tcp_data_len_ - 2 < tcplen)
         break;
 
