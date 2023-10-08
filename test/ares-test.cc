@@ -390,9 +390,11 @@ void MockServer::ProcessFD(int fd) {
 
       ProcessPacket(fd, &addr, addrlen, tcp_data_ + 2, tcplen);
 
-      /* strip off processed data */
-      memmove(tcp_data_, tcp_data_ + tcplen + 2, tcp_data_len_ - 2 - tcplen);
-      tcp_data_len_ -= 2 + tcplen;
+      /* strip off processed data if connection not terminated */
+      if (tcp_data_ != NULL) {
+        memmove(tcp_data_, tcp_data_ + tcplen + 2, tcp_data_len_ - 2 - tcplen);
+        tcp_data_len_ -= 2 + tcplen;
+      }
     }
   } else {
     /* UDP is always a single packet */

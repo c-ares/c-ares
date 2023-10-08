@@ -1041,6 +1041,26 @@ TEST_P(MockUDPChannelTest, CancelLater) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
+TEST_P(MockChannelTest, DisconnectFirstAttempt) {
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+
+  // On second request, cancel the channel.
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(Disconnect(&server_))
+    .WillOnce(SetReply(&server_, &reply));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
+}
+
 TEST_P(MockChannelTest, GetHostByNameDestroyAbsolute) {
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
