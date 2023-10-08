@@ -165,6 +165,15 @@ class MockServer {
   void SetReplyData(const std::vector<byte>& reply) { reply_ = reply; }
   void SetReply(const DNSPacket* reply) { SetReplyData(reply->data()); }
   void SetReplyQID(int qid) { qid_ = qid; }
+  void Disconnect() {
+    for (int fd : connfds_) {
+      sclose(fd);
+    }
+    connfds_.clear();
+    free(tcp_data_);
+    tcp_data_ = NULL;
+    tcp_data_len_ = 0;
+  }
 
   // The set of file descriptors that the server handles.
   std::set<int> fds() const;
@@ -251,6 +260,10 @@ ACTION_P2(SetReplyQID, mockserver, qid) {
 // gMock action to cancel a channel.
 ACTION_P2(CancelChannel, mockserver, channel) {
   ares_cancel(channel);
+}
+// gMock action to disconnect all connections.
+ACTION_P2(Disconnect, mockserver) {
+  mockserver->Disconnect();
 }
 
 // C++ wrapper for struct hostent.
