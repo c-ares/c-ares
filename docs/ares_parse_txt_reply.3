@@ -29,8 +29,9 @@ int ares_parse_txt_reply_ext(const unsigned char* \fIabuf\fP, int \fIalen\fP,
                              struct ares_txt_ext **\fItxt_out\fP);
 .fi
 .SH DESCRIPTION
-The \fIares_parse_txt_reply(3)\fP function parses the response to a query of
-type TXT into a linked list (one element per sub-string) of
+The \fIares_parse_txt_reply(3)\fP and \fIares_parse_txt_reply_ext(3)\fP
+functions parse the response to a query of type TXT into a linked list (one
+element per sub-string) of
 .IR "struct ares_txt_reply" " (" "struct ares_txt_ext" ")"
 The parameters
 .I abuf
