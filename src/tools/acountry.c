@@ -229,6 +229,8 @@ static void wait_ares(ares_channel channel)
       if (nfds == 0)
         break;
       tvp = ares_timeout(channel, NULL, &tv);
+      if (tvp == NULL)
+        break;
       nfds = select(nfds, &read_fds, &write_fds, NULL, tvp);
       if (nfds < 0)
         continue;
