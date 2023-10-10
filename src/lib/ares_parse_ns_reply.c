@@ -52,7 +52,8 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
                          struct hostent** host )
 {
   unsigned int qdcount, ancount;
-  int status, i, rr_type, rr_class, rr_len;
+  ares_status_t status;
+  int i, rr_type, rr_class, rr_len;
   int nameservers_num;
   long len;
   const unsigned char *aptr;

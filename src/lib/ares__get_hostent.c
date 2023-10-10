@@ -42,11 +42,11 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
-int ares__get_hostent(FILE *fp, int family, struct hostent **host)
+ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host)
 {
   char *line = NULL, *p, *q, **alias;
   char *txtaddr, *txthost, *txtalias;
-  int status;
+  ares_status_t status;
   size_t addrlen, linesize, naliases;
   struct ares_addr addr;
   struct hostent *hostent = NULL;

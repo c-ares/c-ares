@@ -49,13 +49,14 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-int ares__parse_into_addrinfo(const unsigned char *abuf,
-                              int alen, int cname_only_is_enodata,
-                              unsigned short port,
-                              struct ares_addrinfo *ai)
+ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
+                                        int alen, int cname_only_is_enodata,
+                                        unsigned short port,
+                                        struct ares_addrinfo *ai)
 {
   unsigned int qdcount, ancount;
-  int status, i, rr_type, rr_class, rr_len, rr_ttl;
+  ares_status_t status;
+  int i, rr_type, rr_class, rr_len, rr_ttl;
   int got_a = 0, got_aaaa = 0, got_cname = 0;
   long len;
   const unsigned char *aptr;

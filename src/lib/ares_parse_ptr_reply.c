@@ -49,7 +49,8 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
                          int addrlen, int family, struct hostent **host)
 {
   unsigned int qdcount, ancount;
-  int status, i, rr_type, rr_class, rr_len;
+  ares_status_t status;
+  int i, rr_type, rr_class, rr_len;
   long len;
   const unsigned char *aptr;
   char *ptrname, *hostname, *rr_name, *rr_data;

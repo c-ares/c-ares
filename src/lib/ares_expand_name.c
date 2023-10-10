@@ -126,10 +126,10 @@ static int is_hostnamech(int ch)
  * and will return error.
  */
 
-int ares__expand_name_validated(const unsigned char *encoded,
-                                const unsigned char *abuf,
-                                int alen, char **s, long *enclen,
-                                int is_hostname)
+ares_status_t ares__expand_name_validated(const unsigned char *encoded,
+                                          const unsigned char *abuf,
+                                          int alen, char **s, long *enclen,
+                                          int is_hostname)
 {
   int len, indir = 0;
   char *q;
@@ -310,12 +310,13 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
 
 /* Like ares_expand_name_validated  but returns EBADRESP in case of invalid
  * input. */
-int ares__expand_name_for_response(const unsigned char *encoded,
-                                   const unsigned char *abuf, int alen,
-                                   char **s, long *enclen, int is_hostname)
+ares_status_t ares__expand_name_for_response(const unsigned char *encoded,
+                                             const unsigned char *abuf,
+                                             int alen, char **s, long *enclen,
+                                             int is_hostname)
 {
-  int status = ares__expand_name_validated(encoded, abuf, alen, s, enclen,
-    is_hostname);
+  ares_status_t status = ares__expand_name_validated(encoded, abuf, alen, s,
+                                                     enclen, is_hostname);
   if (status == ARES_EBADNAME)
     status = ARES_EBADRESP;
   return status;

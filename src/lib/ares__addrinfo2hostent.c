@@ -54,8 +54,8 @@
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
-int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
-                           struct hostent **host)
+ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
+                                     struct hostent **host)
 {
   struct ares_addrinfo_node *next;
   struct ares_addrinfo_cname *next_cname;
@@ -205,9 +205,11 @@ enomem:
 }
 
 
-int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
-                           int req_naddrttls, struct ares_addrttl *addrttls,
-                           struct ares_addr6ttl *addr6ttls, int *naddrttls)
+ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
+                                     int req_naddrttls,
+                                     struct ares_addrttl *addrttls,
+                                     struct ares_addr6ttl *addr6ttls,
+                                     int *naddrttls)
 {
   struct ares_addrinfo_node *next;
   struct ares_addrinfo_cname *next_cname;

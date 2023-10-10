@@ -56,7 +56,8 @@ ares__parse_txt_reply (const unsigned char *abuf, int alen,
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr;
   const unsigned char *strptr;
-  int status, rr_type, rr_class, rr_len;
+  ares_status_t status;
+  int rr_type, rr_class, rr_len;
   long len;
   char *hostname = NULL, *rr_name = NULL;
   struct ares_txt_ext *txt_head = NULL;

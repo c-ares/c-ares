@@ -53,7 +53,8 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   char *qname = NULL, *rr_name = NULL;
   struct ares_soa_reply *soa = NULL;
   int qdcount, ancount, qclass;
-  int status, i, rr_type, rr_class, rr_len;
+  ares_status_t status;
+  int i, rr_type, rr_class, rr_len;
 
   if (alen < HFIXEDSZ)
     return ARES_EBADRESP;

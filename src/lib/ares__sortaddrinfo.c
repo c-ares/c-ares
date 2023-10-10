@@ -450,7 +450,8 @@ static int find_src_addr(ares_channel channel,
  * Sort the linked list starting at sentinel->ai_next in RFC6724 order.
  * Will leave the list unchanged if an error occurs.
  */
-int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo_node *list_sentinel)
+ares_status_t ares__sortaddrinfo(ares_channel channel,
+                                 struct ares_addrinfo_node *list_sentinel)
 {
   struct ares_addrinfo_node *cur;
   int nelem = 0, i;

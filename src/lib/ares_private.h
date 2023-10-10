@@ -227,7 +227,7 @@ struct query {
   int server; /* Server this query has last been sent to. */
   struct query_server_info *server_info;   /* per-server state */
   int using_tcp;
-  int error_status;
+  ares_status_t error_status;
   int timeouts; /* number of timeouts we saw for this request */
   int no_retries; /* do not perform any additional retries, this is set when
                    * a query is to be canceled */
@@ -348,24 +348,24 @@ int ares__timedout(struct timeval *now,
                    struct timeval *check);
 
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
-int ares__send_query(ares_channel channel, struct query *query,
-                     struct timeval *now);
+ares_status_t ares__send_query(ares_channel channel, struct query *query,
+                               struct timeval *now);
 
 /* Identical to ares_query, but returns a normal ares return code like
  * ARES_SUCCESS, and can be passed the qid by reference which will be
  * filled in on ARES_SUCCESS */
-int ares_query_qid(ares_channel channel, const char *name,
-                              int dnsclass, int type, ares_callback callback,
-                              void *arg, unsigned short *qid);
+ares_status_t ares_query_qid(ares_channel channel, const char *name,
+                             int dnsclass, int type, ares_callback callback,
+                             void *arg, unsigned short *qid);
 /* Identical to ares_send() except returns normal ares return codes like
  * ARES_SUCCESS */
-int ares_send_ex(ares_channel channel, const unsigned char *qbuf, int qlen,
-                 ares_callback callback, void *arg);
+ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
+                           int qlen, ares_callback callback, void *arg);
 void ares__close_connection(struct server_connection *conn);
 void ares__close_sockets(struct server_state *server);
 void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd);
-int ares__get_hostent(FILE *fp, int family, struct hostent **host);
-int ares__read_line(FILE *fp, char **buf, size_t *bufsize);
+ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host);
+ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize);
 void ares__free_query(struct query *query);
 
 ares_rand_state *ares__init_rand_state(void);
@@ -374,22 +374,25 @@ void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len);
 
 unsigned short ares__generate_new_id(ares_rand_state *state);
 struct timeval ares__tvnow(void);
-int ares__expand_name_validated(const unsigned char *encoded,
-                                const unsigned char *abuf,
-                                int alen, char **s, long *enclen,
-                                int is_hostname);
-int ares__expand_name_for_response(const unsigned char *encoded,
-                                   const unsigned char *abuf, int alen,
-                                   char **s, long *enclen, int is_hostname);
-int ares__init_servers_state(ares_channel channel);
+ares_status_t ares__expand_name_validated(const unsigned char *encoded,
+                                          const unsigned char *abuf,
+                                          int alen, char **s, long *enclen,
+                                          int is_hostname);
+ares_status_t ares__expand_name_for_response(const unsigned char *encoded,
+                                             const unsigned char *abuf,
+                                             int alen, char **s, long *enclen,
+                                             int is_hostname);
+ares_status_t ares__init_servers_state(ares_channel channel);
 void ares__destroy_servers_state(ares_channel channel);
-int ares__parse_qtype_reply(const unsigned char* abuf, int alen, int* qtype);
-int ares__single_domain(ares_channel channel, const char *name, char **s);
-int ares__cat_domain(const char *name, const char *domain, char **s);
-int ares__sortaddrinfo(ares_channel channel, struct ares_addrinfo_node *ai_node);
-int ares__readaddrinfo(FILE *fp, const char *name, unsigned short port,
-                       const struct ares_addrinfo_hints *hints,
-                       struct ares_addrinfo *ai);
+ares_status_t ares__single_domain(ares_channel channel, const char *name,
+                                  char **s);
+ares_status_t ares__cat_domain(const char *name, const char *domain, char **s);
+ares_status_t ares__sortaddrinfo(ares_channel channel,
+                                 struct ares_addrinfo_node *ai_node);
+ares_status_t ares__readaddrinfo(FILE *fp, const char *name,
+                                 unsigned short port,
+                                 const struct ares_addrinfo_hints *hints,
+                                 struct ares_addrinfo *ai);
 
 void ares__freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node);
 
@@ -401,26 +404,28 @@ void ares__freeaddrinfo_cnames(struct ares_addrinfo_cname *ai_cname);
 
 struct ares_addrinfo_cname *ares__append_addrinfo_cname(struct ares_addrinfo_cname **ai_cname);
 
-int ares_append_ai_node(int aftype, unsigned short port, int ttl,
-                        const void *adata,
-                        struct ares_addrinfo_node **nodes);
+ares_status_t ares_append_ai_node(int aftype, unsigned short port, int ttl,
+                                  const void *adata,
+                                  struct ares_addrinfo_node **nodes);
 
 void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
                                struct ares_addrinfo_cname *tail);
 
-int ares__parse_into_addrinfo(const unsigned char *abuf,
-                              int alen, int cname_only_is_enodata,
-                              unsigned short port,
-                              struct ares_addrinfo *ai);
+ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
+                                        int alen, int cname_only_is_enodata,
+                                        unsigned short port,
+                                        struct ares_addrinfo *ai);
 
-int ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
-                           struct hostent **host);
-int ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
-                           int req_naddrttls, struct ares_addrttl *addrttls,
-                           struct ares_addr6ttl *addr6ttls, int *naddrttls);
-int ares__addrinfo_localhost(const char *name, unsigned short port,
-                             const struct ares_addrinfo_hints *hints,
-                             struct ares_addrinfo *ai);
+ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
+                                     struct hostent **host);
+ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
+                                     int req_naddrttls,
+                                     struct ares_addrttl *addrttls,
+                                     struct ares_addr6ttl *addr6ttls,
+                                     int *naddrttls);
+ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
+                                       const struct ares_addrinfo_hints *hints,
+                                       struct ares_addrinfo *ai);
 
 #if 0 /* Not used */
 long ares__tvdiff(struct timeval t1, struct timeval t2);

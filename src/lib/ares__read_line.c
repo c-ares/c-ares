@@ -39,7 +39,7 @@
  * appropriate.  The initial value of *buf should be NULL.  After the
  * calling routine is done reading lines, it should free *buf.
  */
-int ares__read_line(FILE *fp, char **buf, size_t *bufsize)
+ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize)
 {
   char *newbuf;
   size_t offset = 0;
