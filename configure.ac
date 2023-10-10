@@ -200,6 +200,7 @@ CARES_CHECK_COMPILER
 CARES_SET_COMPILER_BASIC_OPTS
 CARES_SET_COMPILER_DEBUG_OPTS
 CARES_SET_COMPILER_OPTIMIZE_OPTS
+CARES_SET_COMPILER_WARNING_OPTS
 
 if test "$want_warnings" = "yes"; then
   AX_APPEND_COMPILE_FLAGS([-Wall \
@@ -239,8 +240,6 @@ if test "$want_warnings" = "yes"; then
     -Werror=partial-availability \
   ], [CFLAGS], [-Werror])
 fi
-
-CARES_SET_COMPILER_WARNING_OPTS
 
 if test "$compiler_id" = "INTEL_UNIX_C"; then
   #
