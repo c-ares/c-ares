@@ -298,7 +298,7 @@ static int fake_addrinfo(const char *name,
                          void *arg)
 {
   struct ares_addrinfo_cname *cname;
-  int status = ARES_SUCCESS;
+  ares_status_t status = ARES_SUCCESS;
   int result = 0;
   int family = hints->ai_family;
   if (family == AF_INET || family == AF_INET6 || family == AF_UNSPEC)
@@ -385,7 +385,7 @@ static int fake_addrinfo(const char *name,
   return 1;
 }
 
-static void end_hquery(struct host_query *hquery, int status)
+static void end_hquery(struct host_query *hquery, ares_status_t status)
 {
   struct ares_addrinfo_node sentinel;
   struct ares_addrinfo_node *next;
@@ -440,11 +440,11 @@ static int is_localhost(const char *name)
   return 0;
 }
 
-static int file_lookup(struct host_query *hquery)
+static ares_status_t file_lookup(struct host_query *hquery)
 {
   FILE *fp;
   int error;
-  int status;
+  ares_status_t status;
   char *path_hosts = NULL;
 
   if (hquery->hints.ai_flags & ARES_AI_ENVHOSTS)
@@ -542,7 +542,7 @@ static int file_lookup(struct host_query *hquery)
   return status;
 }
 
-static void next_lookup(struct host_query *hquery, int status)
+static void next_lookup(struct host_query *hquery, ares_status_t status)
 {
   switch (*hquery->remaining_lookups)
     {
@@ -601,7 +601,7 @@ static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen)
 {
   struct host_query *hquery = (struct host_query*)arg;
-  int addinfostatus = ARES_SUCCESS;
+  ares_status_t addinfostatus = ARES_SUCCESS;
   unsigned short qid = 0;
   hquery->timeouts += timeouts;
   hquery->remaining--;
@@ -654,7 +654,7 @@ void ares_getaddrinfo(ares_channel channel,
   int family;
   struct ares_addrinfo *ai;
   char *alias_name = NULL;
-  int status;
+  ares_status_t status;
 
   if (!hints)
     {
@@ -776,7 +776,7 @@ static int next_dns_lookup(struct host_query *hquery)
 {
   char *s = NULL;
   int is_s_allocated = 0;
-  int status;
+  ares_status_t status;
 
   /* if next_domain == -1 and as_is_first is true, try hquery->name */
   if (hquery->next_domain == -1)

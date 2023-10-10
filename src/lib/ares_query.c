@@ -61,13 +61,14 @@ static unsigned short generate_unique_id(ares_channel channel)
   return (unsigned short)id;
 }
 
-int ares_query_qid(ares_channel channel, const char *name,
-                   int dnsclass, int type, ares_callback callback,
-                   void *arg, unsigned short *qid)
+ares_status_t ares_query_qid(ares_channel channel, const char *name,
+                             int dnsclass, int type, ares_callback callback,
+                             void *arg, unsigned short *qid)
 {
   struct qquery *qquery;
   unsigned char *qbuf;
-  int qlen, rd, status;
+  int qlen, rd;
+  ares_status_t status;
   unsigned short id = generate_unique_id(channel);
 
   /* Compose the query. */

@@ -61,7 +61,8 @@ void ares_search(ares_channel channel, const char *name, int dnsclass,
   struct search_query *squery;
   char *s;
   const char *p;
-  int status, ndots;
+  ares_status_t status;
+  int ndots;
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
   if (ares__is_onion_domain(name))
@@ -222,7 +223,7 @@ static void end_squery(struct search_query *squery, int status,
 }
 
 /* Concatenate two domains. */
-int ares__cat_domain(const char *name, const char *domain, char **s)
+ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
 {
   size_t nlen = strlen(name);
   size_t dlen = strlen(domain);
@@ -246,13 +247,14 @@ int ares__cat_domain(const char *name, const char *domain, char **s)
  * the string we should query, in an allocated buffer.  If not, set *s
  * to NULL.
  */
-int ares__single_domain(ares_channel channel, const char *name, char **s)
+ares_status_t ares__single_domain(ares_channel channel, const char *name,
+                                  char **s)
 {
   size_t len = strlen(name);
   const char *hostaliases;
   FILE *fp;
   char *line = NULL;
-  int status;
+  ares_status_t status;
   size_t linesize;
   const char *p, *q;
   int error;

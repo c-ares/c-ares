@@ -43,7 +43,7 @@ int ares_get_servers(ares_channel channel,
   struct ares_addr_node *srvr_head = NULL;
   struct ares_addr_node *srvr_last = NULL;
   struct ares_addr_node *srvr_curr;
-  int status = ARES_SUCCESS;
+  ares_status_t status = ARES_SUCCESS;
   int i;
 
   if (!channel)
@@ -98,7 +98,7 @@ int ares_get_servers_ports(ares_channel channel,
   struct ares_addr_port_node *srvr_head = NULL;
   struct ares_addr_port_node *srvr_last = NULL;
   struct ares_addr_port_node *srvr_curr;
-  int status = ARES_SUCCESS;
+  ares_status_t status = ARES_SUCCESS;
   int i;
 
   if (!channel)
@@ -257,15 +257,15 @@ int ares_set_servers_ports(ares_channel channel,
 
 /* Incomming string format: host[:port][,host[:port]]... */
 /* IPv6 addresses with ports require square brackets [fe80::1%lo0]:53 */
-static int set_servers_csv(ares_channel channel,
-                           const char* _csv, int use_port)
+static ares_status_t set_servers_csv(ares_channel channel,
+                                     const char* _csv, int use_port)
 {
   size_t i;
   char* csv = NULL;
   char* ptr;
   char* start_host;
   int cc = 0;
-  int rv = ARES_SUCCESS;
+  ares_status_t rv = ARES_SUCCESS;
   struct ares_addr_port_node *servers = NULL;
   struct ares_addr_port_node *last = NULL;
 

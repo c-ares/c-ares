@@ -43,17 +43,17 @@
 
 #define MAX_ALIASES 40
 
-int ares__readaddrinfo(FILE *fp,
-                       const char *name,
-                       unsigned short port,
-                       const struct ares_addrinfo_hints *hints,
-                       struct ares_addrinfo *ai)
+ares_status_t ares__readaddrinfo(FILE *fp,
+                                 const char *name,
+                                 unsigned short port,
+                                 const struct ares_addrinfo_hints *hints,
+                                 struct ares_addrinfo *ai)
 {
   char *line = NULL, *p, *q;
   char *txtaddr, *txthost, *txtalias;
   char *aliases[MAX_ALIASES];
   unsigned int i, alias_count;
-  int status = ARES_SUCCESS;
+  ares_status_t status = ARES_SUCCESS;
   size_t linesize;
   struct ares_addrinfo_cname *cname = NULL, *cnames = NULL;
   struct ares_addrinfo_node *nodes = NULL;

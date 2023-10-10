@@ -73,8 +73,8 @@ void ares__buf_destroy(ares__buf_t *buf);
  *  \param[in] data_len Length of data to copy to buffer object.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-int ares__buf_append(ares__buf_t *buf, const unsigned char *data,
-                     size_t data_len);
+ares_status_t ares__buf_append(ares__buf_t *buf, const unsigned char *data,
+                               size_t data_len);
 
 
 /*! Start a dynamic append operation that returns a buffer suitable for
@@ -140,7 +140,7 @@ void ares__buf_tag(ares__buf_t *buf);
  *  \param[in] buf Initialized buffer object
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-int ares__buf_tag_rollback(ares__buf_t *buf);
+ares_status_t ares__buf_tag_rollback(ares__buf_t *buf);
 
 /*! Clear the tagged position without rolling back.  You should do this any
  *  time a tag is no longer needed as future append operations can reclaim
@@ -149,7 +149,7 @@ int ares__buf_tag_rollback(ares__buf_t *buf);
  *  \param[in] buf Initialized buffer object
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-int ares__buf_tag_clear(ares__buf_t *buf);
+ares_status_t ares__buf_tag_clear(ares__buf_t *buf);
 
 /*! Fetch the buffer and length of data starting from the tagged position up
  *  to the _current_ position.  It will not unset the tagged position.  The
@@ -168,7 +168,7 @@ const unsigned char *ares__buf_tag_fetch(const ares__buf_t *buf, size_t *len);
  *  \param[in] len    Length to consume
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-int ares__buf_consume(ares__buf_t *buf, size_t len);
+ares_status_t ares__buf_consume(ares__buf_t *buf, size_t len);
 
 /*! Fetch a 16bit Big Endian number from the buffer.
  *
@@ -176,7 +176,7 @@ int ares__buf_consume(ares__buf_t *buf, size_t len);
  *  \param[out] u16     Buffer to hold 16bit integer
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-int ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16);
+ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16);
 
 /*! Fetch the requested number of bytes into the provided buffer
  *
@@ -185,8 +185,8 @@ int ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16);
  *  \param[in]  len     Requested number of bytes (must be > 0)
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-int ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
-                          size_t len);
+ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
+                                    size_t len);
 
 /*! Consume whitespace characters (0x09, 0x0B, 0x0C, 0x0D, 0x20, and optionally
  *  0x0A).
@@ -224,8 +224,8 @@ size_t ares__buf_consume_line(ares__buf_t *buf, int include_linefeed);
  *  \param[in] data_len     Length of data to compare.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-int ares__buf_begins_with(ares__buf_t *buf, const unsigned char *data,
-                          size_t data_len);
+ares_status_t ares__buf_begins_with(ares__buf_t *buf, const unsigned char *data,
+                                    size_t data_len);
 
 
 /*! Size of unprocessed remaining data length

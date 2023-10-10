@@ -72,33 +72,33 @@
 #endif
 
 
-static int init_by_options(ares_channel channel,
-                           const struct ares_options *options,
-                           int optmask);
-static int init_by_environment(ares_channel channel);
-static int init_by_resolv_conf(ares_channel channel);
-static int init_by_defaults(ares_channel channel);
+static ares_status_t init_by_options(ares_channel channel,
+                                     const struct ares_options *options,
+                                     int optmask);
+static ares_status_t init_by_environment(ares_channel channel);
+static ares_status_t init_by_resolv_conf(ares_channel channel);
+static ares_status_t init_by_defaults(ares_channel channel);
 
 #ifndef WATT32
-static int config_nameserver(struct server_state **servers, int *nservers,
-                             const char *str);
+static ares_status_t config_nameserver(struct server_state **servers,
+                                       int *nservers, const char *str);
 #endif
-static int set_search(ares_channel channel, const char *str);
-static int set_options(ares_channel channel, const char *str);
+static ares_status_t set_search(ares_channel channel, const char *str);
+static ares_status_t set_options(ares_channel channel, const char *str);
 static const char *try_option(const char *p, const char *q, const char *opt);
 
-static int config_sortlist(struct apattern **sortlist, int *nsort,
-                           const char *str);
+static ares_status_t config_sortlist(struct apattern **sortlist, int *nsort,
+                                     const char *str);
 static int sortlist_alloc(struct apattern **sortlist, int *nsort,
                           struct apattern *pat);
 static int ip_addr(const char *s, ares_ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
 #if !defined(WIN32) && !defined(WATT32) && \
     !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
-static int config_domain(ares_channel channel, char *str);
-static int config_lookup(ares_channel channel, const char *str,
-                         const char *bindch, const char *altbindch,
-                         const char *filech);
+static ares_status_t config_domain(ares_channel channel, char *str);
+static ares_status_t config_lookup(ares_channel channel, const char *str,
+                                   const char *bindch, const char *altbindch,
+                                   const char *filech);
 static char *try_config(char *s, const char *opt, char scc);
 #endif
 
@@ -135,7 +135,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
                       int optmask)
 {
   ares_channel channel;
-  int status = ARES_SUCCESS;
+  ares_status_t status = ARES_SUCCESS;
 
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: n/a on non-WinSock */
@@ -281,7 +281,8 @@ int ares_dup(ares_channel *dest, ares_channel src)
   struct ares_options opts;
   struct ares_addr_port_node *servers;
   int non_v4_default_port = 0;
-  int i, rc;
+  int i;
+  ares_status_t rc;
   int optmask;
 
   *dest = NULL; /* in case of failure return NULL explicitly */
@@ -469,9 +470,9 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   return ARES_SUCCESS;
 }
 
-static int init_by_options(ares_channel channel,
-                           const struct ares_options *options,
-                           int optmask)
+static ares_status_t init_by_options(ares_channel channel,
+                                     const struct ares_options *options,
+                                     int optmask)
 {
   int i;
 
@@ -599,10 +600,10 @@ static int init_by_options(ares_channel channel,
   return ARES_SUCCESS;
 }
 
-static int init_by_environment(ares_channel channel)
+static ares_status_t init_by_environment(ares_channel channel)
 {
   const char *localdomain, *res_options;
-  int status;
+  ares_status_t status;
 
   localdomain = getenv("LOCALDOMAIN");
   if (localdomain && channel->ndomains == -1)
@@ -1142,13 +1143,14 @@ static int get_SuffixList_Windows(char **outptr)
 
 #endif
 
-static int init_by_resolv_conf(ares_channel channel)
+static ares_status_t init_by_resolv_conf(ares_channel channel)
 {
 #if !defined(ANDROID) && !defined(__ANDROID__) && !defined(WATT32) && \
     !defined(CARES_USE_LIBRESOLV)
   char *line = NULL;
 #endif
-  int status = -1, nservers = 0, nsort = 0;
+  ares_status_t status = ARES_EOF;
+  int nservers = 0, nsort = 0;
   struct server_state *servers = NULL;
   struct apattern *sortlist = NULL;
 
@@ -1603,10 +1605,10 @@ static int init_by_resolv_conf(ares_channel channel)
   return ARES_SUCCESS;
 }
 
-static int init_by_defaults(ares_channel channel)
+static ares_status_t init_by_defaults(ares_channel channel)
 {
   char *hostname = NULL;
-  int rc = ARES_SUCCESS;
+  ares_status_t rc = ARES_SUCCESS;
 #ifdef HAVE_GETHOSTNAME
   char *dot;
 #endif
@@ -1783,9 +1785,9 @@ static int config_domain(ares_channel channel, char *str)
 # define vqualifier
 #endif
 
-static int config_lookup(ares_channel channel, const char *str,
-                         const char *bindch, const char *altbindch,
-                         const char *filech)
+static ares_status_t config_lookup(ares_channel channel, const char *str,
+                                   const char *bindch, const char *altbindch,
+                                   const char *filech)
 {
   char lookups[3], *l;
   const char *vqualifier p;
@@ -1897,8 +1899,9 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
  *
  * Returns an error code on failure, else ARES_SUCCESS
  */
-static int parse_dnsaddrport(const char *str, size_t len,
-                             struct ares_addr *host, unsigned short *port)
+static ares_status_t parse_dnsaddrport(const char *str, size_t len,
+                                       struct ares_addr *host,
+                                       unsigned short *port)
 {
   char ipaddr[INET6_ADDRSTRLEN] = "";
   char ipport[6] = "";
@@ -1996,8 +1999,8 @@ static int parse_dnsaddrport(const char *str, size_t len,
  *
  * Returns an error code on failure, else ARES_SUCCESS.
  */
-static int config_nameserver(struct server_state **servers, int *nservers,
-                             const char *str)
+static ares_status_t config_nameserver(struct server_state **servers,
+                                       int *nservers, const char *str)
 {
   struct ares_addr host;
   struct server_state *newserv;
@@ -2056,7 +2059,7 @@ static int config_nameserver(struct server_state **servers, int *nservers,
 }
 #endif  /* !WATT32 */
 
-static int config_sortlist(struct apattern **sortlist, int *nsort,
+static ares_status_t config_sortlist(struct apattern **sortlist, int *nsort,
                            const char *str)
 {
   struct apattern pat;
@@ -2150,7 +2153,7 @@ static int config_sortlist(struct apattern **sortlist, int *nsort,
   return ARES_SUCCESS;
 }
 
-static int set_search(ares_channel channel, const char *str)
+static ares_status_t set_search(ares_channel channel, const char *str)
 {
   size_t cnt;
 
@@ -2172,7 +2175,7 @@ static int set_search(ares_channel channel, const char *str)
   return ARES_SUCCESS;
 }
 
-static int set_options(ares_channel channel, const char *str)
+static ares_status_t set_options(ares_channel channel, const char *str)
 {
   const char *p, *q, *val;
 
@@ -2378,7 +2381,7 @@ int ares_set_sortlist(ares_channel channel, const char *sortstr)
 {
   int nsort = 0;
   struct apattern *sortlist = NULL;
-  int status;
+  ares_status_t status;
 
   if (!channel)
     return ARES_ENODATA;
@@ -2393,7 +2396,7 @@ int ares_set_sortlist(ares_channel channel, const char *sortstr)
   return status;
 }
 
-int ares__init_servers_state(ares_channel channel)
+ares_status_t ares__init_servers_state(ares_channel channel)
 {
   struct server_state *server;
   int i;

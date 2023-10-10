@@ -47,11 +47,11 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
-int ares_append_ai_node(int aftype,
-                        unsigned short port,
-                        int ttl,
-                        const void *adata,
-                        struct ares_addrinfo_node **nodes)
+ares_status_t ares_append_ai_node(int aftype,
+                                  unsigned short port,
+                                  int ttl,
+                                  const void *adata,
+                                  struct ares_addrinfo_node **nodes)
 {
   struct ares_addrinfo_node *node;
 
@@ -107,11 +107,11 @@ int ares_append_ai_node(int aftype,
 }
 
 
-static int ares__default_loopback_addrs(int aftype,
-                                        unsigned short port,
-                                        struct ares_addrinfo_node **nodes)
+static ares_status_t ares__default_loopback_addrs(int aftype,
+                                                  unsigned short port,
+                                                  struct ares_addrinfo_node **nodes)
 {
-  int status = ARES_SUCCESS;
+  ares_status_t status = ARES_SUCCESS;
 
   if (aftype == AF_UNSPEC || aftype == AF_INET6)
     {
@@ -139,14 +139,14 @@ static int ares__default_loopback_addrs(int aftype,
 }
 
 
-static int ares__system_loopback_addrs(int aftype,
-                                       unsigned short port,
-                                       struct ares_addrinfo_node **nodes)
+static ares_status_t ares__system_loopback_addrs(int aftype,
+                                                 unsigned short port,
+                                                 struct ares_addrinfo_node **nodes)
 {
 #if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600 && !defined(__WATCOMC__)
   PMIB_UNICASTIPADDRESS_TABLE table;
   unsigned int i;
-  int status;
+  ares_status_t status;
 
   *nodes = NULL;
 
@@ -209,13 +209,13 @@ fail:
 }
 
 
-int ares__addrinfo_localhost(const char *name,
-                             unsigned short port,
-                             const struct ares_addrinfo_hints *hints,
-                             struct ares_addrinfo *ai)
+ares_status_t ares__addrinfo_localhost(const char *name,
+                                       unsigned short port,
+                                       const struct ares_addrinfo_hints *hints,
+                                       struct ares_addrinfo *ai)
 {
   struct ares_addrinfo_node *nodes = NULL;
-  int result;
+  ares_status_t result;
 
   /* Validate family */
   switch (hints->ai_family) {

@@ -129,7 +129,8 @@ static void ares__buf_reclaim(ares__buf_t *buf)
 }
 
 
-static int ares__buf_ensure_space(ares__buf_t *buf, size_t needed_size)
+static ares_status_t ares__buf_ensure_space(ares__buf_t *buf,
+                                            size_t needed_size)
 {
   size_t         remaining_size;
   size_t         alloc_size;
@@ -182,10 +183,10 @@ static int ares__buf_ensure_space(ares__buf_t *buf, size_t needed_size)
 }
 
 
-int ares__buf_append(ares__buf_t *buf, const unsigned char *data,
-                     size_t data_len)
+ares_status_t ares__buf_append(ares__buf_t *buf, const unsigned char *data,
+                               size_t data_len)
 {
-  int status;
+  ares_status_t status;
 
   if (data == NULL || data_len == 0)
     return ARES_EFORMERR;
@@ -202,7 +203,7 @@ int ares__buf_append(ares__buf_t *buf, const unsigned char *data,
 
 unsigned char *ares__buf_append_start(ares__buf_t *buf, size_t *len)
 {
-  int status;
+  ares_status_t status;
 
   if (len == NULL || *len == 0)
     return NULL;
@@ -268,7 +269,7 @@ void ares__buf_tag(ares__buf_t *buf)
 }
 
 
-int ares__buf_tag_rollback(ares__buf_t *buf)
+ares_status_t ares__buf_tag_rollback(ares__buf_t *buf)
 {
   if (buf == NULL || buf->tag_offset == SIZE_MAX)
     return ARES_EFORMERR;
@@ -279,7 +280,7 @@ int ares__buf_tag_rollback(ares__buf_t *buf)
 }
 
 
-int ares__buf_tag_clear(ares__buf_t *buf)
+ares_status_t ares__buf_tag_clear(ares__buf_t *buf)
 {
   if (buf == NULL || buf->tag_offset == SIZE_MAX)
     return ARES_EFORMERR;
@@ -312,7 +313,7 @@ static const unsigned char *ares__buf_fetch(const ares__buf_t *buf, size_t *len)
 }
 
 
-int ares__buf_consume(ares__buf_t *buf, size_t len)
+ares_status_t ares__buf_consume(ares__buf_t *buf, size_t len)
 {
   size_t remaining_len;
 
@@ -326,7 +327,7 @@ int ares__buf_consume(ares__buf_t *buf, size_t len)
 }
 
 
-int ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16)
+ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
@@ -340,8 +341,8 @@ int ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16)
 }
 
 
-int ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
-                          size_t len)
+ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
+                                    size_t len)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
@@ -442,8 +443,8 @@ done:
 }
 
 
-int ares__buf_begins_with(ares__buf_t *buf, const unsigned char *data,
-                          size_t data_len)
+ares_status_t ares__buf_begins_with(ares__buf_t *buf, const unsigned char *data,
+                                    size_t data_len)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);

@@ -62,9 +62,9 @@ struct addr_query {
 static void next_lookup(struct addr_query *aquery);
 static void addr_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
-static void end_aquery(struct addr_query *aquery, int status,
+static void end_aquery(struct addr_query *aquery, ares_status_t status,
                        struct hostent *host);
-static int file_lookup(struct ares_addr *addr, struct hostent **host);
+static ares_status_t file_lookup(struct ares_addr *addr, struct hostent **host);
 static void ptr_rr_name(char *name, int name_size, const struct ares_addr *addr);
 
 void ares_gethostbyaddr(ares_channel channel, const void *addr, int addrlen,
@@ -109,7 +109,7 @@ static void next_lookup(struct addr_query *aquery)
 {
   const char *p;
   char name[128];
-  int status;
+  ares_status_t status;
   struct hostent *host;
 
   for (p = aquery->remaining_lookups; *p; p++)
@@ -169,7 +169,7 @@ static void addr_callback(void *arg, int status, int timeouts,
     next_lookup(aquery);
 }
 
-static void end_aquery(struct addr_query *aquery, int status,
+static void end_aquery(struct addr_query *aquery, ares_status_t status,
                        struct hostent *host)
 {
   aquery->callback(aquery->arg, status, aquery->timeouts, host);
@@ -178,10 +178,10 @@ static void end_aquery(struct addr_query *aquery, int status,
   ares_free(aquery);
 }
 
-static int file_lookup(struct ares_addr *addr, struct hostent **host)
+static ares_status_t file_lookup(struct ares_addr *addr, struct hostent **host)
 {
   FILE *fp;
-  int status;
+  ares_status_t status;
   int error;
 
 #ifdef WIN32

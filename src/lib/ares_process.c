@@ -77,10 +77,10 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
 static void handle_error(struct server_connection *conn, struct timeval *now);
 static void skip_server(ares_channel channel, struct query *query,
                         struct server_state *server);
-static int next_server(ares_channel channel, struct query *query,
-                        struct timeval *now);
-static int open_socket(ares_channel channel, struct server_state *server,
-                       int is_tcp);
+static ares_status_t next_server(ares_channel channel, struct query *query,
+                                 struct timeval *now);
+static ares_status_t open_socket(ares_channel channel,
+                                 struct server_state *server, int is_tcp);
 static int same_questions(const unsigned char *qbuf, int qlen,
                           const unsigned char *abuf, int alen);
 static int same_address(struct sockaddr *sa, struct ares_addr *aa);
@@ -725,10 +725,10 @@ static void skip_server(ares_channel channel, struct query *query,
     }
 }
 
-static int next_server(ares_channel channel, struct query *query,
-                        struct timeval *now)
+static ares_status_t next_server(ares_channel channel, struct query *query,
+                                 struct timeval *now)
 {
-  int status;
+  ares_status_t status;
   /* We need to try each server channel->tries times. We have channel->nservers
    * servers to try. In total, we need to do channel->nservers * channel->tries
    * attempts. Use query->try to remember how many times we already attempted
@@ -768,13 +768,13 @@ static int next_server(ares_channel channel, struct query *query,
   return status;
 }
 
-int ares__send_query(ares_channel channel, struct query *query,
-                      struct timeval *now)
+ares_status_t ares__send_query(ares_channel channel, struct query *query,
+                               struct timeval *now)
 {
   struct server_state *server;
   struct server_connection *conn;
   int timeplus;
-  int status;
+  ares_status_t status;
 
   server = &channel->servers[query->server];
   if (query->using_tcp) {
@@ -783,7 +783,7 @@ int ares__send_query(ares_channel channel, struct query *query,
      * a send request.
      */
     if (server->tcp_conn == NULL) {
-      int err = open_socket(channel, server, 1);
+      ares_status_t err = open_socket(channel, server, 1);
       switch (err) {
         /* Good result, continue on */
         case ARES_SUCCESS:
@@ -836,7 +836,7 @@ int ares__send_query(ares_channel channel, struct query *query,
     }
 
     if (node == NULL) {
-      int err = open_socket(channel, server, 0);
+      ares_status_t err = open_socket(channel, server, 0);
       switch (err) {
         /* Good result, continue on */
         case ARES_SUCCESS:
@@ -1051,8 +1051,8 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
   return 0;
 }
 
-static int open_socket(ares_channel channel, struct server_state *server,
-                       int is_tcp)
+static ares_status_t open_socket(ares_channel channel,
+                                 struct server_state *server, int is_tcp)
 {
   ares_socket_t s;
   int opt;

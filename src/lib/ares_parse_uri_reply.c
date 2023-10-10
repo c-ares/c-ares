@@ -55,7 +55,8 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen,
 {
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
-  int status, rr_type, rr_class, rr_len, rr_ttl;
+  ares_status_t status;
+  int rr_type, rr_class, rr_len, rr_ttl;
   long len;
   char *uri_str = NULL, *rr_name = NULL;
   struct ares_uri_reply *uri_head = NULL;

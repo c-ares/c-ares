@@ -37,8 +37,8 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-int ares_send_ex(ares_channel channel, const unsigned char *qbuf, int qlen,
-                 ares_callback callback, void *arg)
+ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
+                           int qlen, ares_callback callback, void *arg)
 {
   struct query *query;
   int i, packetsz;

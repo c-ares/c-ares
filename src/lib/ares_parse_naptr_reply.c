@@ -49,7 +49,8 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
 {
   unsigned int qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
-  int status, rr_type, rr_class, rr_len;
+  ares_status_t status;
+  int rr_type, rr_class, rr_len;
   long len;
   char *hostname = NULL, *rr_name = NULL;
   struct ares_naptr_reply *naptr_head = NULL;

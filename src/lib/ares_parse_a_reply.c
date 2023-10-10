@@ -57,7 +57,7 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
 {
   struct ares_addrinfo ai;
   char *question_hostname = NULL;
-  int status;
+  ares_status_t status;
   int req_naddrttls = 0;
 
   if (naddrttls)

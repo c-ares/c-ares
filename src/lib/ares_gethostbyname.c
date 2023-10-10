@@ -231,14 +231,15 @@ static int get6_address_index(const struct ares_in6_addr *addr,
 
 
 
-static int file_lookup(const char *name, int family, struct hostent **host);
+static ares_status_t file_lookup(const char *name, int family,
+                                 struct hostent **host);
 
 /* I really have no idea why this is exposed as a public function, but since
  * it is, we can't kill this legacy function. */
 int ares_gethostbyname_file(ares_channel channel, const char *name,
                             int family, struct hostent **host)
 {
-  int result;
+  ares_status_t result;
 
   /* We only take the channel to ensure that ares_init() been called. */
   if(channel == NULL)
@@ -261,11 +262,12 @@ int ares_gethostbyname_file(ares_channel channel, const char *name,
   return result;
 }
 
-static int file_lookup(const char *name, int family, struct hostent **host)
+static ares_status_t file_lookup(const char *name, int family,
+                                 struct hostent **host)
 {
   FILE *fp;
   char **alias;
-  int status;
+  ares_status_t status;
   int error;
 
 #ifdef WIN32

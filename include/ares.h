@@ -112,48 +112,51 @@ extern "C" {
 #endif
 
 
-#define ARES_SUCCESS            0
+typedef enum {
+  ARES_SUCCESS                = 0,
 
-/* Server error codes (ARES_ENODATA indicates no relevant answer) */
-#define ARES_ENODATA            1
-#define ARES_EFORMERR           2
-#define ARES_ESERVFAIL          3
-#define ARES_ENOTFOUND          4
-#define ARES_ENOTIMP            5
-#define ARES_EREFUSED           6
+  /* Server error codes (ARES_ENODATA indicates no relevant answer) */
+  ARES_ENODATA                = 1,
+  ARES_EFORMERR               = 2,
+  ARES_ESERVFAIL              = 3,
+  ARES_ENOTFOUND              = 4,
+  ARES_ENOTIMP                = 5,
+  ARES_EREFUSED               = 6,
 
-/* Locally generated error codes */
-#define ARES_EBADQUERY          7
-#define ARES_EBADNAME           8
-#define ARES_EBADFAMILY         9
-#define ARES_EBADRESP           10
-#define ARES_ECONNREFUSED       11
-#define ARES_ETIMEOUT           12
-#define ARES_EOF                13
-#define ARES_EFILE              14
-#define ARES_ENOMEM             15
-#define ARES_EDESTRUCTION       16
-#define ARES_EBADSTR            17
+  /* Locally generated error codes */
+  ARES_EBADQUERY              = 7,
+  ARES_EBADNAME               = 8,
+  ARES_EBADFAMILY             = 9,
+  ARES_EBADRESP               = 10,
+  ARES_ECONNREFUSED           = 11,
+  ARES_ETIMEOUT               = 12,
+  ARES_EOF                    = 13,
+  ARES_EFILE                  = 14,
+  ARES_ENOMEM                 = 15,
+  ARES_EDESTRUCTION           = 16,
+  ARES_EBADSTR                = 17,
 
 /* ares_getnameinfo error codes */
-#define ARES_EBADFLAGS          18
+  ARES_EBADFLAGS              = 18,
 
 /* ares_getaddrinfo error codes */
-#define ARES_ENONAME            19
-#define ARES_EBADHINTS          20
+  ARES_ENONAME                = 19,
+  ARES_EBADHINTS              = 20,
 
-/* Uninitialized library error code */
-#define ARES_ENOTINITIALIZED    21          /* introduced in 1.7.0 */
+  /* Uninitialized library error code */
+  ARES_ENOTINITIALIZED        = 21,          /* introduced in 1.7.0 */
 
-/* ares_library_init error codes */
-#define ARES_ELOADIPHLPAPI           22     /* introduced in 1.7.0 */
-#define ARES_EADDRGETNETWORKPARAMS   23     /* introduced in 1.7.0 */
+  /* ares_library_init error codes */
+  ARES_ELOADIPHLPAPI          = 22,     /* introduced in 1.7.0 */
+  ARES_EADDRGETNETWORKPARAMS  = 23,     /* introduced in 1.7.0 */
 
-/* More error codes */
-#define ARES_ECANCELLED         24          /* introduced in 1.7.0 */
+  /* More error codes */
+  ARES_ECANCELLED             = 24,          /* introduced in 1.7.0 */
 
-/* More ares_getaddrinfo error codes */
-#define ARES_ESERVICE           25          /* introduced in 1.?.0 */
+  /* More ares_getaddrinfo error codes */
+  ARES_ESERVICE               = 25          /* introduced in 1.?.0 */
+} ares_status_t;
+
 
 /* Flag values */
 #define ARES_FLAG_USEVC         (1 << 0)
