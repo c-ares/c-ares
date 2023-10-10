@@ -836,8 +836,8 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
     }
 
     if (node == NULL) {
-      ares_status_t err = open_socket(channel, server, 0);
-      switch (err) {
+      status = open_socket(channel, server, 0);
+      switch (status) {
         /* Good result, continue on */
         case ARES_SUCCESS:
           break;
