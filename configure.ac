@@ -940,6 +940,49 @@ if test X"$want_werror" = Xyes; then
 fi
 AC_SUBST(CARES_CFLAG_EXTRAS)
 
+
+dnl
+dnl CFLAGS
+dnl
+
+AX_APPEND_COMPILE_FLAGS([\
+  -Wall \
+  -Wextra \
+  -Wcast-align \
+  -Wconversion \
+  -Wdeclaration-after-statement \
+  -Wdouble-promotion \
+  -Wfloat-equal \
+  -Wformat-security \
+  -Winit-self \
+  -Wjump-misses-init \
+  -Wlogical-op \
+  -Wmissing-braces \
+  -Wmissing-declarations \
+  -Wmissing-format-attribute \
+  -Wmissing-include-dirs \
+  -Wmissing-prototypes \
+  -Wnested-externs \
+  -Wno-coverage-mismatch \
+  -Wold-style-definition \
+  -Wpacked \
+  -Wpointer-arith \
+  -Wredundant-decls \
+  -Wshadow \
+  -Wsign-conversion \
+  -Wstrict-overflow \
+  -Wstrict-prototypes \
+  -Wtrampolines \
+  -Wundef \
+  -Wunused \
+  -Wvariadic-macros \
+  -Wvla \
+  -Wwrite-strings \
+  -Werror=implicit-int \
+  -Werror=implicit-function-declaration \
+  -Werror=partial-availability \
+], [CFLAGS], [-Werror])
+
 dnl squeeze whitespace out of some variables
 
 squeeze CFLAGS

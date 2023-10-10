@@ -1,6 +1,8 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-CMAKE_MINIMUM_REQUIRED (VERSION 3.1.0)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.4.3)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckTypeSize)
@@ -11,6 +13,8 @@ INCLUDE (CheckStructHasMember)
 INCLUDE (CheckLibraryExists)
 
 PROJECT (c-ares LANGUAGES C VERSION "1.20.1" )
+
+INCLUDE (EnableWarnings)
 
 # Set this version before release
 SET (CARES_VERSION "${PROJECT_VERSION}")
