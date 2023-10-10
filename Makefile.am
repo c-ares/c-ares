@@ -32,12 +32,11 @@ EXTRA_DIST = AUTHORS CHANGES README.cares $(man_MANS) RELEASE-NOTES	\
  CMakeLists.txt Makefile.dj Makefile.m32 Makefile.netware Makefile.msvc \
  Makefile.Watcom AUTHORS CONTRIBUTING.md SECURITY.md TODO
 
-
 CLEANFILES = $(PDFPAGES) $(HTMLPAGES)
 
 DISTCLEANFILES = include/ares_build.h
 
-DIST_SUBDIRS = include src test docs
+DIST_SUBDIRS = include src test docs cmake
 
 SUBDIRS = @BUILD_SUBDIRS@
 
