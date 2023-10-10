@@ -1765,7 +1765,7 @@ static ares_status_t init_by_defaults(ares_channel channel)
 
 #if !defined(WIN32) && !defined(WATT32) && \
     !defined(ANDROID) && !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
-static int config_domain(ares_channel channel, char *str)
+static ares_status_t config_domain(ares_channel channel, char *str)
 {
   char *q;
 
