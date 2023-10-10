@@ -30,13 +30,14 @@ EXTRA_DIST = AUTHORS CHANGES README.cares $(man_MANS) RELEASE-NOTES	\
  c-ares-config.cmake.in libcares.pc.cmake libcares.pc.in buildconf get_ver.awk \
  maketgz TODO README.msvc $(MSVCFILES) INSTALL.md README.md LICENSE.md \
  CMakeLists.txt Makefile.dj Makefile.m32 Makefile.netware Makefile.msvc \
- Makefile.Watcom AUTHORS CONTRIBUTING.md SECURITY.md TODO
+ Makefile.Watcom AUTHORS CONTRIBUTING.md SECURITY.md TODO \
+ cmake/EnableWarnings.cmake
 
 CLEANFILES = $(PDFPAGES) $(HTMLPAGES)
 
 DISTCLEANFILES = include/ares_build.h
 
-DIST_SUBDIRS = include src test docs cmake
+DIST_SUBDIRS = include src test docs
 
 SUBDIRS = @BUILD_SUBDIRS@
 
