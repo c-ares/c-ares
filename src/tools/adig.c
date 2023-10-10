@@ -375,6 +375,8 @@ int main(int argc, char **argv)
       if (nfds == 0)
         break;
       tvp = ares_timeout(channel, NULL, &tv);
+      if (tvp == NULL)
+        break;
       count = select(nfds, &read_fds, &write_fds, NULL, tvp);
       if (count < 0 && (status = SOCKERRNO) != EINVAL)
         {

@@ -167,6 +167,8 @@ int main(int argc, char **argv)
       if (nfds == 0)
         break;
       tvp = ares_timeout(channel, NULL, &tv);
+      if (tvp == NULL)
+        break;
       res = select(nfds, &read_fds, &write_fds, NULL, tvp);
       if (-1 == res)
         break;
