@@ -17,7 +17,10 @@
 #undef CARES_EXPOSE_STATICS
 
 /* Defined for build with symbol hiding. */
-#undef CARES_SYMBOL_HIDING
+#cmakedefine CARES_SYMBOL_HIDING
+
+/* Defined for build with CMake powered symbol hiding. */
+#cmakedefine CARES_HAVE_ARES_EXPORT
 
 /* Definition to make a library symbol externally visible. */
 #undef CARES_SYMBOL_SCOPE_EXTERN

@@ -97,7 +97,9 @@ extern "C" {
 ** c-ares external API function linkage decorations.
 */
 
-#ifdef CARES_STATICLIB
+#if defined(CARES_HAVE_ARES_EXPORT)
+#  include "ares_export.h"
+#elif defined(CARES_STATICLIB)
 #  define CARES_EXTERN
 #elif defined(WIN32) || defined(_WIN32) || defined(__SYMBIAN32__)
 #  if defined(CARES_BUILDING_LIBRARY)
