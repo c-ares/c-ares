@@ -1,3 +1,6 @@
+# Copyright (c) Monetra Technologies LLC
+# SPDX-License-Identifier: MIT
+
 # EnableWarnings.cmake
 #
 # Checks for and turns on a large number of warning C flags.
