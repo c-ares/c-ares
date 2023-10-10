@@ -798,8 +798,8 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
-          end_query(channel, query, err, NULL, 0);
-          return err;
+          end_query(channel, query, status, NULL, 0);
+          return status;
       }
     }
 
@@ -851,8 +851,8 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
-          end_query(channel, query, err, NULL, 0);
-          return err;
+          end_query(channel, query, status, NULL, 0);
+          return status;
       }
       node = ares__llist_node_first(server->connections);
     }

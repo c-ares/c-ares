@@ -215,7 +215,7 @@ ares_status_t ares__addrinfo_localhost(const char *name,
                                        struct ares_addrinfo *ai)
 {
   struct ares_addrinfo_node *nodes = NULL;
-  ares_status_t result;
+  ares_status_t status;
 
   /* Validate family */
   switch (hints->ai_family) {
@@ -233,16 +233,16 @@ ares_status_t ares__addrinfo_localhost(const char *name,
       goto enomem;
     }
 
-  result = ares__system_loopback_addrs(hints->ai_family, port, &nodes);
+  status = ares__system_loopback_addrs(hints->ai_family, port, &nodes);
 
-  if (result == ARES_ENOTFOUND)
+  if (status == ARES_ENOTFOUND)
     {
-      result = ares__default_loopback_addrs(hints->ai_family, port, &nodes);
+      status = ares__default_loopback_addrs(hints->ai_family, port, &nodes);
     }
 
   ares__addrinfo_cat_nodes(&ai->nodes, nodes);
 
-  return result;
+  return status;
 
 enomem:
   ares__freeaddrinfo_nodes(nodes);
