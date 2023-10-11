@@ -593,7 +593,7 @@ static void terminate_retries(struct host_query *hquery, unsigned short qid)
   if (query == NULL)
     return;
 
-  query->no_retries = 1;
+  query->no_retries = ARES_TRUE;
 }
 
 

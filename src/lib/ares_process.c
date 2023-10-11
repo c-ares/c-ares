@@ -80,7 +80,8 @@ static void skip_server(ares_channel channel, struct query *query,
 static ares_status_t next_server(ares_channel channel, struct query *query,
                                  struct timeval *now);
 static ares_status_t open_socket(ares_channel channel,
-                                 struct server_state *server, int is_tcp);
+                                 struct server_state *server,
+                                 ares_bool_t is_tcp);
 static ares_bool_t same_questions(const unsigned char *qbuf, int qlen,
                                   const unsigned char *abuf, int alen);
 static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa);
@@ -634,7 +635,7 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
     {
       if (!query->using_tcp)
         {
-          query->using_tcp = 1;
+          query->using_tcp = ARES_TRUE;
           ares__send_query(channel, query, now);
         }
       ares__check_cleanup_conn(channel, fd);
@@ -721,7 +722,7 @@ static void skip_server(ares_channel channel, struct query *query,
    */
   if (channel->nservers > 1)
     {
-      query->server_info[server->idx].skip_server = 1;
+      query->server_info[server->idx].skip_server = ARES_TRUE;
     }
 }
 
@@ -1052,7 +1053,8 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
 }
 
 static ares_status_t open_socket(ares_channel channel,
-                                 struct server_state *server, int is_tcp)
+                                 struct server_state *server,
+                                 ares_bool_t is_tcp)
 {
   ares_socket_t s;
   int opt;
