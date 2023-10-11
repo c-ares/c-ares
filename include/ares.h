@@ -158,6 +158,11 @@ typedef enum {
 } ares_status_t;
 
 
+typedef enum {
+  ARES_FALSE = 0,
+  ARES_TRUE  = 1
+} ares_bool_t;
+
 /* Flag values */
 #define ARES_FLAG_USEVC         (1 << 0)
 #define ARES_FLAG_PRIMARY       (1 << 1)

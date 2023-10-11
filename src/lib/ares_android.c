@@ -96,7 +96,7 @@ int ares_library_init_android(jobject connectivity_manager)
   JNIEnv *env = NULL;
   int need_detatch = 0;
   int res;
-  int ret = ARES_ENOTINITIALIZED;
+  ares_status_t ret = ARES_ENOTINITIALIZED;
   jclass obj_cls = NULL;
 
   if (android_jvm == NULL)

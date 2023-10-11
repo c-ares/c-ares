@@ -57,8 +57,8 @@ ares_status_t ares__readaddrinfo(FILE *fp,
   size_t linesize;
   struct ares_addrinfo_cname *cname = NULL, *cnames = NULL;
   struct ares_addrinfo_node *nodes = NULL;
-  int match_with_alias, match_with_canonical;
-  int want_cname = hints->ai_flags & ARES_AI_CANONNAME;
+  ares_bool_t match_with_alias, match_with_canonical;
+  ares_bool_t want_cname = (hints->ai_flags & ARES_AI_CANONNAME)?ARES_TRUE:ARES_FALSE;
 
   /* Validate family */
   switch (hints->ai_family) {
@@ -79,8 +79,8 @@ ares_status_t ares__readaddrinfo(FILE *fp,
 
   while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS)
     {
-      match_with_alias = 0;
-      match_with_canonical = 0;
+      match_with_alias = ARES_FALSE;
+      match_with_canonical = ARES_FALSE;
       alias_count = 0;
       /* Trim line comment. */
       p = line;
@@ -147,7 +147,7 @@ ares_status_t ares__readaddrinfo(FILE *fp,
       /* Find out if host name matches with canonical host name. */
       if (strcasecmp(txthost, name) == 0)
         {
-          match_with_canonical = 1;
+          match_with_canonical = ARES_TRUE;
         }
 
       /* Find out if host name matches with one of the aliases. */
@@ -162,7 +162,7 @@ ares_status_t ares__readaddrinfo(FILE *fp,
           *p = '\0';
           if (strcasecmp(txtalias, name) == 0)
             {
-              match_with_alias = 1;
+              match_with_alias = ARES_TRUE;
               if (!want_cname)
                 break;
             }

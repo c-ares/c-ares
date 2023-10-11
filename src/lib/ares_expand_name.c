@@ -41,10 +41,10 @@
 #define MAX_INDIRS 50
 
 static int name_length(const unsigned char *encoded, const unsigned char *abuf,
-                       int alen, int is_hostname);
+                       int alen, ares_bool_t is_hostname);
 
 /* Reserved characters for names that need to be escaped */
-static int is_reservedch(int ch)
+static ares_bool_t is_reservedch(int ch)
 {
   switch (ch) {
     case '"':
@@ -55,19 +55,19 @@ static int is_reservedch(int ch)
     case ')':
     case '@':
     case '$':
-      return 1;
+      return ARES_TRUE;
     default:
       break;
   }
 
-  return 0;
+  return ARES_FALSE;
 }
 
-static int ares__isprint(int ch)
+static ares_bool_t ares__isprint(int ch)
 {
   if (ch >= 0x20 && ch <= 0x7E)
-    return 1;
-  return 0;
+    return ARES_TRUE;
+  return ARES_FALSE;
 }
 
 /* Character set allowed by hostnames.  This is to include the normal
@@ -82,21 +82,21 @@ static int ares__isprint(int ch)
  * reported when this validation is not performed.  Security is more
  * important than edge-case compatibility (which is probably invalid
  * anyhow). */
-static int is_hostnamech(int ch)
+static ares_bool_t is_hostnamech(int ch)
 {
   /* [A-Za-z0-9-*._/]
    * Don't use isalnum() as it is locale-specific
    */
   if (ch >= 'A' && ch <= 'Z')
-    return 1;
+    return ARES_TRUE;
   if (ch >= 'a' && ch <= 'z')
-    return 1;
+    return ARES_TRUE;
   if (ch >= '0' && ch <= '9')
-    return 1;
+    return ARES_TRUE;
   if (ch == '-' || ch == '.' || ch == '_' || ch == '/' || ch == '*')
-    return 1;
+    return ARES_TRUE;
 
-  return 0;
+  return ARES_FALSE;
 }
 
 /* Expand an RFC1035-encoded domain name given by encoded.  The
@@ -129,14 +129,14 @@ static int is_hostnamech(int ch)
 ares_status_t ares__expand_name_validated(const unsigned char *encoded,
                                           const unsigned char *abuf,
                                           int alen, char **s, long *enclen,
-                                          int is_hostname)
+                                          ares_bool_t is_hostname)
 {
   int len, indir = 0;
   char *q;
   const unsigned char *p;
   union {
     ares_ssize_t sig;
-     size_t uns;
+    size_t uns;
   } nlen;
 
   nlen.sig = name_length(encoded, abuf, alen, is_hostname);
@@ -225,14 +225,14 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
 int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
                      int alen, char **s, long *enclen)
 {
-  return ares__expand_name_validated(encoded, abuf, alen, s, enclen, 0);
+  return ares__expand_name_validated(encoded, abuf, alen, s, enclen, ARES_FALSE);
 }
 
 /* Return the length of the expansion of an encoded domain name, or
  * -1 if the encoding is invalid.
  */
 static int name_length(const unsigned char *encoded, const unsigned char *abuf,
-                       int alen, int is_hostname)
+                       int alen, ares_bool_t is_hostname)
 {
   int n = 0, offset, indir = 0, top;
 
@@ -313,7 +313,7 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
 ares_status_t ares__expand_name_for_response(const unsigned char *encoded,
                                              const unsigned char *abuf,
                                              int alen, char **s, long *enclen,
-                                             int is_hostname)
+                                             ares_bool_t is_hostname)
 {
   ares_status_t status = ares__expand_name_validated(encoded, abuf, alen, s,
                                                      enclen, is_hostname);

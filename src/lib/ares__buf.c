@@ -84,15 +84,15 @@ void ares__buf_destroy(ares__buf_t *buf)
 }
 
 
-static int ares__buf_is_const(const ares__buf_t *buf)
+static ares_bool_t ares__buf_is_const(const ares__buf_t *buf)
 {
   if (buf == NULL)
-    return 0;
+    return ARES_FALSE;
 
   if (buf->data != NULL && buf->alloc_buf == NULL)
-    return 1;
+    return ARES_TRUE;
 
-  return 0;
+  return ARES_FALSE;
 }
 
 

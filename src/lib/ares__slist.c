@@ -90,7 +90,7 @@ ares__slist_t *ares__slist_create(ares_rand_state *rand_state,
 }
 
 
-static unsigned int ares__slist_coin_flip(ares__slist_t *list)
+static ares_bool_t ares__slist_coin_flip(ares__slist_t *list)
 {
   size_t total_bits = sizeof(list->rand_data) * 8;
   size_t bit;
@@ -108,7 +108,7 @@ static unsigned int ares__slist_coin_flip(ares__slist_t *list)
   bit = total_bits - list->rand_bits;
   list->rand_bits--;
 
-  return (list->rand_data[bit / 8] & (1 << (bit % 8)))?1:0;
+  return (list->rand_data[bit / 8] & (1 << (bit % 8)))?ARES_TRUE:ARES_FALSE;
 }
 
 

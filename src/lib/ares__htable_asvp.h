@@ -73,9 +73,9 @@ ares__htable_asvp_t *ares__htable_asvp_create(
  *  \param[in] htable Initialized hash table
  *  \param[in] key    key to associate with value
  *  \param[in] val    value to store (takes ownership). May be NULL.
- *  \return 1 on success, 0 on out of memory or misuse
+ *  \return ARES_TRUE on success, ARES_FALSE on out of memory or misuse
  */
-unsigned int ares__htable_asvp_insert(ares__htable_asvp_t *htable,
+ares_bool_t ares__htable_asvp_insert(ares__htable_asvp_t *htable,
                                       ares_socket_t key, void *val);
 
 /*! Retrieve value from hashtable based on key
@@ -83,9 +83,9 @@ unsigned int ares__htable_asvp_insert(ares__htable_asvp_t *htable,
  *  \param[in]  htable  Initialized hash table
  *  \param[in]  key     key to use to search
  *  \param[out] val     Optional.  Pointer to store value.
- *  \return 1 on success, 0 on failure
+ *  \return ARES_TRUE on success, ARES_FALSE on failure
  */
-unsigned int ares__htable_asvp_get(ares__htable_asvp_t *htable,
+ares_bool_t ares__htable_asvp_get(ares__htable_asvp_t *htable,
                                    ares_socket_t key, void **val);
 
 /*! Retrieve value from hashtable directly as return value.  Caveat to this
@@ -103,9 +103,9 @@ void *ares__htable_asvp_get_direct(ares__htable_asvp_t *htable,
  * 
  *  \param[in] htable  Initialized hash table
  *  \param[in] key     key to use to search
- *  \return 1 if found, 0 if not
+ *  \return ARES_TRUE if found, ARES_FALSE if not found
  */
-unsigned int ares__htable_asvp_remove(ares__htable_asvp_t *htable,
+ares_bool_t ares__htable_asvp_remove(ares__htable_asvp_t *htable,
                                       ares_socket_t key);
 
 /*! Retrieve the number of keys stored in the hash table

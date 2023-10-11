@@ -160,7 +160,7 @@ static ares__llist_node_t *ares__htable_find(ares__htable_t *htable,
 }
 
 
-static unsigned int ares__htable_expand(ares__htable_t *htable)
+static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 {
   ares__llist_t **buckets  = NULL;
   unsigned int    old_size = htable->size;
@@ -168,7 +168,7 @@ static unsigned int ares__htable_expand(ares__htable_t *htable)
 
   /* Not a failure, just won't expand */
   if (old_size == ARES__HTABLE_MAX_BUCKETS)
-    return 1;
+    return ARES_TRUE;
 
   htable->size <<= 1;
 
@@ -207,24 +207,24 @@ static unsigned int ares__htable_expand(ares__htable_t *htable)
   /* Swap out buckets */
   ares__htable_buckets_destroy(htable->buckets, old_size, 0);
   htable->buckets = buckets;
-  return 1;
+  return ARES_TRUE;
 
 fail:
   ares__htable_buckets_destroy(buckets, htable->size, 0);
   htable->size = old_size;
 
-  return 0;
+  return ARES_FALSE;
 }
 
 
-unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket)
+ares_bool_t ares__htable_insert(ares__htable_t *htable, void *bucket)
 {
   unsigned int        idx  = 0;
   ares__llist_node_t *node = NULL;
   const void         *key  = NULL;
 
   if (htable == NULL || bucket == NULL)
-    return 0;
+    return ARES_FALSE;
 
 
   key  = htable->bucket_key(bucket);
@@ -234,14 +234,14 @@ unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket)
   node = ares__htable_find(htable, idx, key);
   if (node != NULL) {
     ares__llist_node_replace(node, bucket);
-    return 1;
+    return ARES_TRUE;
   }
 
   /* Check to see if we should rehash because likelihood of collisions has
    * increased beyond our threshold */
   if (htable->num_keys+1 > (htable->size * ARES__HTABLE_EXPAND_PERCENT) / 100) {
     if (!ares__htable_expand(htable)) {
-      return 0;
+      return ARES_FALSE;
     }
     /* If we expanded, need to calculate a new index */
     idx = HASH_IDX(htable, key);
@@ -251,16 +251,16 @@ unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket)
   if (htable->buckets[idx] == NULL) {
     htable->buckets[idx] = ares__llist_create(htable->bucket_free);
     if (htable->buckets[idx] == NULL)
-      return 0;
+      return ARES_FALSE;
   }
   
   node = ares__llist_insert_first(htable->buckets[idx], bucket);
   if (node == NULL)
-    return 0;
+    return ARES_FALSE;
 
   htable->num_keys++;
 
-  return 1;
+  return ARES_TRUE;
 }
 
   
@@ -277,22 +277,22 @@ void *ares__htable_get(ares__htable_t *htable, const void *key)
 }
 
 
-unsigned int ares__htable_remove(ares__htable_t *htable, const void *key)
+ares_bool_t ares__htable_remove(ares__htable_t *htable, const void *key)
 {
   ares__llist_node_t *node;
   unsigned int        idx;
 
   if (htable == NULL || key == NULL)
-    return 0;
+    return ARES_FALSE;
 
   idx  = HASH_IDX(htable, key);
   node = ares__htable_find(htable, idx, key);
   if (node == NULL)
-    return 0;
+    return ARES_FALSE;
 
   htable->num_keys--;
   ares__llist_node_destroy(node);
-  return 1;
+  return ARES_TRUE;
 }
 
 size_t ares__htable_num_keys(ares__htable_t *htable)

@@ -50,14 +50,15 @@
 #include "ares_private.h"
 
 ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
-                                        int alen, int cname_only_is_enodata,
+                                        int alen,
+                                        ares_bool_t cname_only_is_enodata,
                                         unsigned short port,
                                         struct ares_addrinfo *ai)
 {
   unsigned int qdcount, ancount;
   ares_status_t status;
   int i, rr_type, rr_class, rr_len, rr_ttl;
-  int got_a = 0, got_aaaa = 0, got_cname = 0;
+  ares_bool_t got_a = ARES_FALSE, got_aaaa = ARES_FALSE, got_cname = ARES_FALSE;
   long len;
   const unsigned char *aptr;
   char *question_hostname = NULL;
@@ -123,7 +124,7 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
           && rr_len == sizeof(struct in_addr)
           && strcasecmp(rr_name, hostname) == 0)
         {
-          got_a = 1;
+          got_a = ARES_TRUE;
           if (aptr + sizeof(struct in_addr) > abuf + alen)
           {  /* LCOV_EXCL_START: already checked above */
             status = ARES_EBADRESP;
@@ -138,7 +139,7 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
           && rr_len == sizeof(struct ares_in6_addr)
           && strcasecmp(rr_name, hostname) == 0)
         {
-          got_aaaa = 1;
+          got_aaaa = ARES_TRUE;
           if (aptr + sizeof(struct ares_in6_addr) > abuf + alen)
           {  /* LCOV_EXCL_START: already checked above */
             status = ARES_EBADRESP;
@@ -152,7 +153,7 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
 
       if (rr_class == C_IN && rr_type == T_CNAME)
         {
-          got_cname = 1;
+          got_cname = ARES_TRUE;
           status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data,
                                                   &len, 1);
           if (status != ARES_SUCCESS)
