@@ -86,14 +86,13 @@ static ares_bool_t same_questions(const unsigned char *qbuf, int qlen,
                                   const unsigned char *abuf, int alen);
 static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa);
 static int has_opt_rr(const unsigned char *abuf, int alen);
-static void end_query(ares_channel channel, struct query *query, int status,
-                      const unsigned char *abuf, int alen);
+static void end_query(ares_channel channel, struct query *query,
+                      ares_status_t status, const unsigned char *abuf, int alen);
 static ares_ssize_t ares__socket_write(ares_channel channel, ares_socket_t s,
                                        const void * data, size_t len);
 
 /* return true if now is exactly check time or later */
-ares_bool_t ares__timedout(struct timeval *now,
-                   struct timeval *check)
+ares_bool_t ares__timedout(struct timeval *now, struct timeval *check)
 {
   long secs = (now->tv_sec - check->tv_sec);
 
@@ -1408,8 +1407,8 @@ static void ares_detach_query(struct query *query)
   query->node_all_queries        = NULL;
 }
 
-static void end_query(ares_channel channel, struct query *query, int status,
-                      const unsigned char *abuf, int alen)
+static void end_query(ares_channel channel, struct query *query,
+                      ares_status_t status, const unsigned char *abuf, int alen)
 {
   (void)channel;
 
