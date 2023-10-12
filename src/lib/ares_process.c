@@ -1065,6 +1065,7 @@ static ares_status_t open_socket(ares_channel channel,
   unsigned short port;
   struct server_connection *conn;
   ares__llist_node_t *node;
+  int type = is_tcp?SOCK_STREAM:SOCK_DGRAM;
 
   if (is_tcp) {
     port = aresx_sitous(server->addr.tcp_port?
@@ -1098,8 +1099,7 @@ static ares_status_t open_socket(ares_channel channel,
   }
 
   /* Acquire a socket. */
-  s = ares__open_socket(channel, server->addr.family,
-                        is_tcp?SOCK_STREAM:SOCK_DGRAM, 0);
+  s = ares__open_socket(channel, server->addr.family, type, 0);
   if (s == ARES_SOCKET_BAD)
     return ARES_ECONNREFUSED;
 
@@ -1129,8 +1129,7 @@ static ares_status_t open_socket(ares_channel channel,
 #endif
 
   if (channel->sock_config_cb) {
-    int err = channel->sock_config_cb(s, SOCK_STREAM,
-                                      channel->sock_config_cb_data);
+    int err = channel->sock_config_cb(s, type, channel->sock_config_cb_data);
     if (err < 0) {
       ares__close_socket(channel, s);
       return ARES_ECONNREFUSED;
@@ -1148,8 +1147,7 @@ static ares_status_t open_socket(ares_channel channel,
   }
 
   if (channel->sock_create_cb) {
-    int err = channel->sock_create_cb(s, SOCK_STREAM,
-                                      channel->sock_create_cb_data);
+    int err = channel->sock_create_cb(s, type, channel->sock_create_cb_data);
     if (err < 0) {
       ares__close_socket(channel, s);
       return ARES_ECONNREFUSED;
