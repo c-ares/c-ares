@@ -670,6 +670,17 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, GetSock) {
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   bitmask = ares_getsock(channel_, socks, 3);
   EXPECT_NE(0, bitmask);
+
+  size_t sock_cnt = 0;
+  for (size_t i=0; i<3; i++) {
+    if (ARES_GETSOCK_READABLE(bitmask, i) || ARES_GETSOCK_WRITABLE(bitmask, i)) {
+      EXPECT_NE(ARES_SOCKET_BAD, socks[i]);
+      if (socks[i] != ARES_SOCKET_BAD)
+        sock_cnt++;
+    }
+  }
+  EXPECT_NE(0, sock_cnt);
+
   bitmask = ares_getsock(channel_, nullptr, 0);
   EXPECT_EQ(0, bitmask);
 
@@ -696,6 +707,17 @@ TEST_F(LibraryTest, GetTCPSock) {
   ares_gethostbyname(channel, "www.google.com.", AF_INET, HostCallback, &result);
   bitmask = ares_getsock(channel, socks, 3);
   EXPECT_NE(0, bitmask);
+
+  size_t sock_cnt = 0;
+  for (size_t i=0; i<3; i++) {
+    if (ARES_GETSOCK_READABLE(bitmask, i) || ARES_GETSOCK_WRITABLE(bitmask, i)) {
+      EXPECT_NE(ARES_SOCKET_BAD, socks[i]);
+      if (socks[i] != ARES_SOCKET_BAD)
+        sock_cnt++;
+    }
+  }
+  EXPECT_NE(0, sock_cnt);
+
   bitmask = ares_getsock(channel, nullptr, 0);
   EXPECT_EQ(0, bitmask);
 
