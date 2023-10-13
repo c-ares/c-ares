@@ -84,7 +84,7 @@ ares__parse_txt_reply (const unsigned char *abuf, size_t alen,
   aptr = abuf + HFIXEDSZ;
   status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len, ARES_TRUE);
   if (status != ARES_SUCCESS)
-    return status;
+    return (int)status;
 
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
@@ -201,7 +201,7 @@ ares__parse_txt_reply (const unsigned char *abuf, size_t alen,
     {
       if (txt_head)
         ares_free_data (txt_head);
-      return status;
+      return (int)status;
     }
 
   /* everything looks fine, return the data */

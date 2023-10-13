@@ -34,15 +34,16 @@
  * author:
  *	Paul Vixie (ISC), June 1996
  */
-int ares__bitncmp(const void *l, const void *r, int n)
+int ares__bitncmp(const void *l, const void *r, size_t n)
 {
-  unsigned int lb, rb;
-  int x, b;
+  size_t lb, rb;
+  ares_ssize_t x;
+  size_t b;
 
   b = n / 8;
   x = memcmp(l, r, b);
   if (x || (n % 8) == 0)
-    return (x);
+    return (int)x;
 
   lb = ((const unsigned char *)l)[b];
   rb = ((const unsigned char *)r)[b];

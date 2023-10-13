@@ -112,7 +112,7 @@ ares_parse_caa_reply (const unsigned char *abuf, int alen_int,
   aptr = abuf + HFIXEDSZ;
   status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len, ARES_TRUE);
   if (status != ARES_SUCCESS)
-    return status;
+    return (int)status;
 
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
@@ -173,8 +173,8 @@ ares_parse_caa_reply (const unsigned char *abuf, int alen_int,
               break;
             }
           caa_curr->critical = (int)*strptr++;
-          caa_curr->plength = (int)*strptr++;
-          if (caa_curr->plength <= 0 || (int)caa_curr->plength >= rr_len - 2)
+          caa_curr->plength = *strptr++;
+          if (caa_curr->plength <= 0 || caa_curr->plength >= rr_len - 2)
             {
               status = ARES_EBADRESP;
               break;
@@ -231,7 +231,7 @@ ares_parse_caa_reply (const unsigned char *abuf, int alen_int,
     {
       if (caa_head)
         ares_free_data (caa_head);
-      return status;
+      return (int)status;
     }
 
   /* everything looks fine, return the data */

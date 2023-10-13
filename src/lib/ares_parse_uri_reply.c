@@ -58,7 +58,7 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
   ares_status_t status;
   int rr_type, rr_class;
   size_t rr_len;
-  unsigned short rr_ttl;
+  unsigned int rr_ttl;
   size_t len;
   size_t alen;
   char *uri_str = NULL, *rr_name = NULL;
@@ -76,7 +76,7 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ){
-	  return ARES_EBADRESP;
+    return ARES_EBADRESP;
   }
 
   /* Fetch the question and answer count from the header. */
@@ -86,14 +86,14 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
       return ARES_EBADRESP;
   }
   if (ancount == 0) {
-	  return ARES_ENODATA;
+    return ARES_ENODATA;
   }
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
 
   status = ares__expand_name_for_response(aptr, abuf, alen, &uri_str, &len, ARES_TRUE);
-  if (status != ARES_SUCCESS){
-	  return status;
+  if (status != ARES_SUCCESS) {
+    return (int)status;
   }
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
@@ -162,14 +162,13 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
           uri_curr->weight = DNS__16BIT(vptr);
           vptr += sizeof(unsigned short);
           uri_curr->uri = (char *)ares_malloc(rr_len-3);
-	  	  if (!uri_curr->uri)
-	      	{
-	      	  status = ARES_ENOMEM;
-			  break;
-		    }
+          if (!uri_curr->uri) {
+            status = ARES_ENOMEM;
+            break;
+          }
           uri_curr->uri = strncpy(uri_curr->uri, (const char *)vptr, rr_len-4);
           uri_curr->uri[rr_len-4]='\0';
-          uri_curr->ttl = rr_ttl;
+          uri_curr->ttl = (int)rr_ttl;
         }
 
       /* Don't lose memory in the next iteration */
@@ -190,7 +189,7 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
     {
       if (uri_head)
         ares_free_data (uri_head);
-      return status;
+      return (int)status;
     }
 
   /* everything looks fine, return the data */

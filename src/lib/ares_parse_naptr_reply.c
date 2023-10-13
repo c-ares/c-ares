@@ -83,7 +83,7 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen_int,
   aptr = abuf + HFIXEDSZ;
   status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len, ARES_TRUE);
   if (status != ARES_SUCCESS)
-    return status;
+    return (int)status;
 
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
@@ -190,7 +190,7 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen_int,
     {
       if (naptr_head)
         ares_free_data (naptr_head);
-      return status;
+      return (int)status;
     }
 
   /* everything looks fine, return the data */

@@ -71,7 +71,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
       return ARES_ENOMEM;
     }
-  query->server_info = ares_malloc(channel->nservers *
+  query->server_info = ares_malloc((size_t)channel->nservers *
                                    sizeof(query->server_info[0]));
   if (!query->server_info)
     {
@@ -107,15 +107,15 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
    * of the next server we want to use. */
   query->server = channel->last_server;
   if (channel->rotate == 1)
-    channel->last_server = (channel->last_server + 1) % channel->nservers;
+    channel->last_server = (channel->last_server + 1) % (size_t)channel->nservers;
 
-  for (i = 0; i < channel->nservers; i++)
+  for (i = 0; i < (size_t)channel->nservers; i++)
     {
       query->server_info[i].skip_server = ARES_FALSE;
       query->server_info[i].tcp_connection_generation = 0;
     }
 
-  packetsz = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : PACKETSZ;
+  packetsz = (channel->flags & ARES_FLAG_EDNS) ? (size_t)channel->ednspsz : PACKETSZ;
   query->using_tcp = (channel->flags & ARES_FLAG_USEVC) || qlen > packetsz;
 
   query->error_status = ARES_ECONNREFUSED;

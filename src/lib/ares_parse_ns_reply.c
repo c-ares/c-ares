@@ -85,7 +85,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
   aptr = abuf + HFIXEDSZ;
   status = ares__expand_name_for_response( aptr, abuf, alen, &hostname, &len, ARES_FALSE);
   if ( status != ARES_SUCCESS )
-    return status;
+    return (int)status;
   if ( aptr + len + QFIXEDSZ > abuf + alen )
   {
     ares_free( hostname );
@@ -194,5 +194,5 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
     ares_free( nameservers[i] );
   ares_free( nameservers );
   ares_free( hostname );
-  return status;
+  return (int)status;
 }

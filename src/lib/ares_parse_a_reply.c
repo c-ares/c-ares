@@ -96,5 +96,5 @@ fail:
   ares_free(ai.name);
   ares_free(question_hostname);
 
-  return status;
+  return (int)status;
 }

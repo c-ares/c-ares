@@ -73,12 +73,12 @@ ares_status_t ares_query_qid(ares_channel channel, const char *name,
 
   /* Compose the query. */
   rd = !(channel->flags & ARES_FLAG_NORECURSE);
-  status = ares_create_query(name, dnsclass, type, id, rd, &qbuf,
+  status = (ares_status_t)ares_create_query(name, dnsclass, type, id, rd, &qbuf,
               &qlen, (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : 0);
   if (status != ARES_SUCCESS)
     {
       if (qbuf != NULL) ares_free(qbuf);
-      callback(arg, status, 0, NULL, 0);
+      callback(arg, (int)status, 0, NULL, 0);
       return status;
     }
 

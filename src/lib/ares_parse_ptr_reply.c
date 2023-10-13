@@ -85,7 +85,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int, const void *ad
   aptr = abuf + HFIXEDSZ;
   status = ares__expand_name_for_response(aptr, abuf, alen, &ptrname, &len, 0);
   if (status != ARES_SUCCESS)
-    return status;
+    return (int)status;
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
       ares_free(ptrname);
@@ -101,7 +101,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int, const void *ad
       ares_free(ptrname);
       return ARES_ENOMEM;
     }
-  for (i = 0; i < (int)ancount; i++)
+  for (i = 0; i < ancount; i++)
     {
       /* Decode the RR up to the data field. */
       status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
@@ -206,7 +206,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int, const void *ad
 
 
       if (addr && addrlen) {
-        hostent->h_addr_list[0] = ares_malloc(addrlen);
+        hostent->h_addr_list[0] = ares_malloc((size_t)addrlen);
         if (!hostent->h_addr_list[0])
           goto fail;
       } else {
@@ -244,5 +244,5 @@ fail:
   if (hostname)
     ares_free(hostname);
   ares_free(ptrname);
-  return status;
+  return (int)status;
 }

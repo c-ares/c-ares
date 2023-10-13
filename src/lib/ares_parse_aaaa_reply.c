@@ -66,7 +66,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
     return ARES_EBADRESP;
 
   if (naddrttls) {
-    req_naddrttls = *naddrttls;
+    req_naddrttls = (size_t)*naddrttls;
     *naddrttls = 0;
   }
 
@@ -97,6 +97,6 @@ fail:
   ares_free(question_hostname);
   ares_free(ai.name);
 
-  return status;
+  return (int)status;
 }
 

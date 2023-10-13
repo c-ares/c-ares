@@ -195,5 +195,5 @@ failed_stat:
     ares_free_data(soa);
   if (qname)
     ares_free(qname);
-  return status;
+  return (int)status;
 }
