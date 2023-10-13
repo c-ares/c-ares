@@ -50,14 +50,17 @@
 #endif
 
 int
-ares_parse_uri_reply (const unsigned char *abuf, int alen,
+ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
                       struct ares_uri_reply **uri_out)
 {
-  unsigned int qdcount, ancount, i;
+  size_t qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
   ares_status_t status;
-  int rr_type, rr_class, rr_len, rr_ttl;
-  long len;
+  int rr_type, rr_class;
+  size_t rr_len;
+  unsigned short rr_ttl;
+  size_t len;
+  size_t alen;
   char *uri_str = NULL, *rr_name = NULL;
   struct ares_uri_reply *uri_head = NULL;
   struct ares_uri_reply *uri_last = NULL;
@@ -65,6 +68,11 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen,
 
   /* Set *uri_out to NULL for all failure cases. */
   *uri_out = NULL;
+
+  if (alen_int < 0)
+    return ARES_EBADRESP;
+
+  alen = (size_t)alen_int;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ){
@@ -83,7 +91,7 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen,
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
 
-  status = ares_expand_name (aptr, abuf, alen, &uri_str, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &uri_str, &len, ARES_TRUE);
   if (status != ARES_SUCCESS){
 	  return status;
   }
@@ -98,7 +106,7 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen,
   for (i = 0; i < ancount; i++)
     {
       /* Decode the RR up to the data field. */
-      status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
         {
           break;

@@ -50,16 +50,17 @@
 #include "ares_private.h"
 
 ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
-                                        int alen,
+                                        size_t alen,
                                         ares_bool_t cname_only_is_enodata,
                                         unsigned short port,
                                         struct ares_addrinfo *ai)
 {
-  unsigned int qdcount, ancount;
+  size_t qdcount, ancount;
   ares_status_t status;
-  int i, rr_type, rr_class, rr_len, rr_ttl;
+  size_t i;
+  int rr_type, rr_class, rr_len, rr_ttl;
   ares_bool_t got_a = ARES_FALSE, got_aaaa = ARES_FALSE, got_cname = ARES_FALSE;
-  long len;
+  size_t len;
   const unsigned char *aptr;
   char *question_hostname = NULL;
   char *hostname, *rr_name = NULL, *rr_data;

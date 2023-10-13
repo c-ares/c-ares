@@ -185,11 +185,11 @@ ares_inet_net_pton_ipv4(const char *src, unsigned char *dst, size_t size)
 }
 
 static int
-getbits(const char *src, int *bitsp)
+getbits(const char *src, size_t *bitsp)
 {
   static const char digits[] = "0123456789";
-  int n;
-  int val;
+  size_t n;
+  size_t val;
   char ch;
 
   val = 0;
@@ -202,7 +202,7 @@ getbits(const char *src, int *bitsp)
       if (n++ != 0 && val == 0)       /* no leading zeros */
         return (0);
       val *= 10;
-      val += aresx_sztosi(pch - digits);
+      val += (size_t)(pch - digits);
       if (val > 128)                  /* range */
         return (0);
       continue;
@@ -317,7 +317,7 @@ ares_inet_net_pton_ipv6(const char *src, unsigned char *dst, size_t size)
 {
   struct ares_in6_addr in6;
   int                  ret;
-  int                  bits;
+  size_t               bits;
   size_t               bytes;
   char                 buf[INET6_ADDRSTRLEN + sizeof("/128")];
   char                *sep;
@@ -351,7 +351,7 @@ ares_inet_net_pton_ipv6(const char *src, unsigned char *dst, size_t size)
     return (-1);
   }
   memcpy(dst, &in6, bytes);
-  return (bits);
+  return (int)bits;
 }
 
 /*

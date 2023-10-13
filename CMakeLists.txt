@@ -1,6 +1,6 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-CMAKE_MINIMUM_REQUIRED (VERSION 3.4.3)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.5.0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 

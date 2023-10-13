@@ -49,16 +49,17 @@
 #include "ares_private.h"
 
 static int
-ares__parse_txt_reply (const unsigned char *abuf, int alen,
-                       int ex, void **txt_out)
+ares__parse_txt_reply (const unsigned char *abuf, size_t alen,
+                       ares_bool_t ex, void **txt_out)
 {
   size_t substr_len;
-  unsigned int qdcount, ancount, i;
+  size_t qdcount, ancount, i;
   const unsigned char *aptr;
   const unsigned char *strptr;
   ares_status_t status;
-  int rr_type, rr_class, rr_len;
-  long len;
+  int rr_type, rr_class;
+  size_t rr_len;
+  size_t len;
   char *hostname = NULL, *rr_name = NULL;
   struct ares_txt_ext *txt_head = NULL;
   struct ares_txt_ext *txt_last = NULL;
@@ -81,7 +82,7 @@ ares__parse_txt_reply (const unsigned char *abuf, int alen,
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares_expand_name (aptr, abuf, alen, &hostname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len, ARES_TRUE);
   if (status != ARES_SUCCESS)
     return status;
 
@@ -96,7 +97,7 @@ ares__parse_txt_reply (const unsigned char *abuf, int alen,
   for (i = 0; i < ancount; i++)
     {
       /* Decode the RR up to the data field. */
-      status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
         {
           break;
@@ -213,7 +214,9 @@ int
 ares_parse_txt_reply (const unsigned char *abuf, int alen,
                       struct ares_txt_reply **txt_out)
 {
-  return ares__parse_txt_reply(abuf, alen, 0, (void **) txt_out);
+  if (alen < 0)
+    return ARES_EBADRESP;
+  return ares__parse_txt_reply(abuf, (size_t)alen, ARES_FALSE, (void **) txt_out);
 }
 
 
@@ -221,5 +224,7 @@ int
 ares_parse_txt_reply_ext (const unsigned char *abuf, int alen,
                           struct ares_txt_ext **txt_out)
 {
-  return ares__parse_txt_reply(abuf, alen, 1, (void **) txt_out);
+  if (alen < 0)
+    return ARES_EBADRESP;
+  return ares__parse_txt_reply(abuf, (size_t)alen, ARES_TRUE, (void **) txt_out);
 }

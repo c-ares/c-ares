@@ -57,9 +57,9 @@
 struct addrinfo_sort_elem
 {
   struct ares_addrinfo_node *ai;
-  int has_src_addr;
+  ares_bool_t has_src_addr;
   ares_sockaddr src_addr;
-  int original_order;
+  size_t original_order;
 };
 
 #define ARES_IPV6_ADDR_MC_SCOPE(a) ((a)->s6_addr[1] & 0x0f)
@@ -299,7 +299,7 @@ static int rfc6724_compare(const void *ptr1, const void *ptr2)
   /* Rule 1: Avoid unusable destinations. */
   if (a1->has_src_addr != a2->has_src_addr)
     {
-      return a2->has_src_addr - a1->has_src_addr;
+      return ((int)a2->has_src_addr) - ((int)a1->has_src_addr);
     }
 
   /* Rule 2: Prefer matching scope. */
@@ -380,7 +380,7 @@ static int rfc6724_compare(const void *ptr1, const void *ptr2)
    * Rule 10: Leave the order unchanged.
    * We need this since qsort() is not necessarily stable.
    */
-  return a1->original_order - a2->original_order;
+  return ((int)a1->original_order) - ((int)a2->original_order);
 }
 
 /*
@@ -454,8 +454,8 @@ ares_status_t ares__sortaddrinfo(ares_channel channel,
                                  struct ares_addrinfo_node *list_sentinel)
 {
   struct ares_addrinfo_node *cur;
-  int nelem = 0, i;
-  int has_src_addr;
+  size_t nelem = 0, i;
+  ares_bool_t has_src_addr;
   struct addrinfo_sort_elem *elems;
 
   cur = list_sentinel->ai_next;

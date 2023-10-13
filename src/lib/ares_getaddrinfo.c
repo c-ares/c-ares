@@ -77,16 +77,15 @@ struct host_query
   void *arg;
   struct ares_addrinfo_hints hints;
   int sent_family; /* this family is what was is being used */
-  int timeouts;    /* number of timeouts we saw for this request */
+  size_t timeouts;    /* number of timeouts we saw for this request */
   const char *remaining_lookups; /* types of lookup we need to perform ("fb" by
                                     default, file and dns respectively) */
   struct ares_addrinfo *ai;      /* store results between lookups */
   unsigned short qid_a;    /* qid for A request */
   unsigned short qid_aaaa; /* qid for AAAA request */
-  int remaining;   /* number of DNS answers waiting for */
-  int next_domain; /* next search domain to try */
-  int nodata_cnt; /* Track nodata responses to possibly override final result */
-
+  size_t remaining;   /* number of DNS answers waiting for */
+  ares_ssize_t next_domain; /* next search domain to try */
+  size_t nodata_cnt; /* Track nodata responses to possibly override final result */
 };
 
 static const struct ares_addrinfo_hints default_hints = {
@@ -290,27 +289,28 @@ static unsigned short lookup_service(const char *service, int flags)
  * fake up a host entry, end the query immediately, and return true.
  * Otherwise return false.
  */
-static int fake_addrinfo(const char *name,
-                         unsigned short port,
-                         const struct ares_addrinfo_hints *hints,
-                         struct ares_addrinfo *ai,
-                         ares_addrinfo_callback callback,
-                         void *arg)
+static ares_bool_t fake_addrinfo(const char *name,
+                                 unsigned short port,
+                                 const struct ares_addrinfo_hints *hints,
+                                 struct ares_addrinfo *ai,
+                                 ares_addrinfo_callback callback,
+                                 void *arg)
 {
   struct ares_addrinfo_cname *cname;
   ares_status_t status = ARES_SUCCESS;
-  int result = 0;
+  ares_bool_t result = ARES_FALSE;
   int family = hints->ai_family;
   if (family == AF_INET || family == AF_INET6 || family == AF_UNSPEC)
     {
       /* It only looks like an IP address if it's all numbers and dots. */
-      int numdots = 0, valid = 1;
+      size_t numdots = 0;
+      ares_bool_t valid = ARES_TRUE;
       const char *p;
       for (p = name; *p; p++)
         {
           if (!ISDIGIT(*p) && *p != '.')
             {
-              valid = 0;
+              valid = ARES_FALSE;
               break;
             }
           else if (*p == '.')
@@ -323,18 +323,18 @@ static int fake_addrinfo(const char *name,
        * (although inet_pton doesn't think so).
        */
       if (numdots != 3 || !valid)
-        result = 0;
+        result = ARES_FALSE;
       else
         {
           struct in_addr addr4;
-          result = ares_inet_pton(AF_INET, name, &addr4) < 1 ? 0 : 1;
+          result = ares_inet_pton(AF_INET, name, &addr4) < 1 ? ARES_FALSE : ARES_TRUE;
           if (result)
             {
               status = ares_append_ai_node(AF_INET, port, 0, &addr4, &ai->nodes);
               if (status != ARES_SUCCESS)
                 {
                   callback(arg, status, 0, NULL);
-                  return 1;
+                  return ARES_TRUE;
                 }
             }
         }
@@ -343,20 +343,20 @@ static int fake_addrinfo(const char *name,
   if (!result && (family == AF_INET6 || family == AF_UNSPEC))
     {
       struct ares_in6_addr addr6;
-      result = ares_inet_pton(AF_INET6, name, &addr6) < 1 ? 0 : 1;
+      result = ares_inet_pton(AF_INET6, name, &addr6) < 1 ? ARES_FALSE : ARES_TRUE;
       if (result)
         {
           status = ares_append_ai_node(AF_INET6, port, 0, &addr6, &ai->nodes);
           if (status != ARES_SUCCESS)
             {
               callback(arg, status, 0, NULL);
-              return 1;
+              return ARES_TRUE;
             }
         }
     }
 
   if (!result)
-    return 0;
+    return ARES_FALSE;
 
   if (hints->ai_flags & ARES_AI_CANONNAME)
     {
@@ -365,7 +365,7 @@ static int fake_addrinfo(const char *name,
         {
           ares_freeaddrinfo(ai);
           callback(arg, ARES_ENOMEM, 0, NULL);
-          return 1;
+          return ARES_TRUE;
         }
 
       /* Duplicate the name, to avoid a constness violation. */
@@ -374,7 +374,7 @@ static int fake_addrinfo(const char *name,
         {
           ares_freeaddrinfo(ai);
           callback(arg, ARES_ENOMEM, 0, NULL);
-          return 1;
+          return ARES_TRUE;
         }
     }
 
@@ -382,7 +382,7 @@ static int fake_addrinfo(const char *name,
   ai->nodes->ai_protocol = hints->ai_protocol;
 
   callback(arg, ARES_SUCCESS, 0, ai);
-  return 1;
+  return ARES_TRUE;
 }
 
 static void end_hquery(struct host_query *hquery, ares_status_t status)
@@ -850,7 +850,7 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
 static ares_bool_t as_is_first(const struct host_query* hquery)
 {
   char* p;
-  int ndots = 0;
+  size_t ndots = 0;
   size_t nname = hquery->name?strlen(hquery->name):0;
   for (p = hquery->name; p && *p; p++)
     {

@@ -52,7 +52,7 @@ ares_status_t ares__readaddrinfo(FILE *fp,
   char *line = NULL, *p, *q;
   char *txtaddr, *txthost, *txtalias;
   char *aliases[MAX_ALIASES];
-  unsigned int i, alias_count;
+  size_t i, alias_count;
   ares_status_t status = ARES_SUCCESS;
   size_t linesize;
   struct ares_addrinfo_cname *cname = NULL, *cnames = NULL;

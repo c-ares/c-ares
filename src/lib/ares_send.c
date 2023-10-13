@@ -38,10 +38,10 @@
 #include "ares_private.h"
 
 ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
-                           int qlen, ares_callback callback, void *arg)
+                           size_t qlen, ares_callback callback, void *arg)
 {
   struct query *query;
-  int i, packetsz;
+  size_t i, packetsz;
   struct timeval now;
 
   /* Verify that the query is at least long enough to hold the header. */
@@ -150,5 +150,5 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
 void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
                ares_callback callback, void *arg)
 {
-  ares_send_ex(channel, qbuf, qlen, callback, arg);
+  ares_send_ex(channel, qbuf, (size_t)qlen, callback, arg);
 }

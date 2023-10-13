@@ -56,7 +56,7 @@ struct addr_query {
   void *arg;
 
   const char *remaining_lookups;
-  int timeouts;
+  size_t timeouts;
 };
 
 static void next_lookup(struct addr_query *aquery);
@@ -65,7 +65,7 @@ static void addr_callback(void *arg, int status, int timeouts,
 static void end_aquery(struct addr_query *aquery, ares_status_t status,
                        struct hostent *host);
 static ares_status_t file_lookup(struct ares_addr *addr, struct hostent **host);
-static void ptr_rr_name(char *name, int name_size, const struct ares_addr *addr);
+static void ptr_rr_name(char *name, size_t name_size, const struct ares_addr *addr);
 
 void ares_gethostbyaddr(ares_channel channel, const void *addr, int addrlen,
                         int family, ares_host_callback callback, void *arg)
@@ -267,7 +267,7 @@ static ares_status_t file_lookup(struct ares_addr *addr, struct hostent **host)
   return status;
 }
 
-static void ptr_rr_name(char *name, int name_size, const struct ares_addr *addr)
+static void ptr_rr_name(char *name, size_t name_size, const struct ares_addr *addr)
 {
   if (addr->family == AF_INET)
     {

@@ -35,7 +35,7 @@ int ares_getsock(ares_channel channel,
 {
   struct server_state *server;
   int i;
-  int sockindex=0;
+  size_t sockindex=0;
   int bitmap = 0;
   unsigned int setbits = 0xffffffff;
 

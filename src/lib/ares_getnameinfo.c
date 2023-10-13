@@ -62,7 +62,7 @@ struct nameinfo_query {
   } addr;
   int family;
   int flags;
-  int timeouts;
+  size_t timeouts;
 };
 
 #ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
@@ -90,7 +90,7 @@ void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
   struct sockaddr_in *addr = NULL;
   struct sockaddr_in6 *addr6 = NULL;
   struct nameinfo_query *niquery;
-  unsigned int port = 0;
+  unsigned short port = 0;
 
   /* Validate socket address family and length */
   if ((sa->sa_family == AF_INET) &&

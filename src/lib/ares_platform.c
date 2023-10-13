@@ -11003,7 +11003,8 @@ struct servent *getservbyport(int port, const char *proto)
 {
   unsigned short u_port;
   const char *protocol = NULL;
-  int i, error = 0;
+  int error = 0;
+  size_t i;
 
   u_port = ntohs((unsigned short)port);
 

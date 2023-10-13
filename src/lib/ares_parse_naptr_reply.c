@@ -44,14 +44,16 @@
 #include "ares_private.h"
 
 int
-ares_parse_naptr_reply (const unsigned char *abuf, int alen,
+ares_parse_naptr_reply (const unsigned char *abuf, int alen_int,
                         struct ares_naptr_reply **naptr_out)
 {
-  unsigned int qdcount, ancount, i;
+  size_t qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
   ares_status_t status;
-  int rr_type, rr_class, rr_len;
-  long len;
+  int rr_type, rr_class;
+  size_t rr_len;
+  size_t len;
+  size_t alen;
   char *hostname = NULL, *rr_name = NULL;
   struct ares_naptr_reply *naptr_head = NULL;
   struct ares_naptr_reply *naptr_last = NULL;
@@ -59,6 +61,11 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
 
   /* Set *naptr_out to NULL for all failure cases. */
   *naptr_out = NULL;
+
+  if (alen_int < 0)
+    return ARES_EBADRESP;
+
+  alen = (size_t)alen_int;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -74,7 +81,7 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares_expand_name (aptr, abuf, alen, &hostname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len, ARES_TRUE);
   if (status != ARES_SUCCESS)
     return status;
 
@@ -89,7 +96,7 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
   for (i = 0; i < ancount; i++)
     {
       /* Decode the RR up to the data field. */
-      status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
         {
           break;
@@ -145,22 +152,22 @@ ares_parse_naptr_reply (const unsigned char *abuf, int alen,
           naptr_curr->preference = DNS__16BIT(vptr);
           vptr += sizeof(unsigned short);
 
-          status = ares_expand_string(vptr, abuf, alen, &naptr_curr->flags, &len);
+          status = ares_expand_string_ex(vptr, abuf, alen, &naptr_curr->flags, &len);
           if (status != ARES_SUCCESS)
             break;
           vptr += len;
 
-          status = ares_expand_string(vptr, abuf, alen, &naptr_curr->service, &len);
+          status = ares_expand_string_ex(vptr, abuf, alen, &naptr_curr->service, &len);
           if (status != ARES_SUCCESS)
             break;
           vptr += len;
 
-          status = ares_expand_string(vptr, abuf, alen, &naptr_curr->regexp, &len);
+          status = ares_expand_string_ex(vptr, abuf, alen, &naptr_curr->regexp, &len);
           if (status != ARES_SUCCESS)
             break;
           vptr += len;
 
-          status = ares_expand_name(vptr, abuf, alen, &naptr_curr->replacement, &len);
+          status = ares__expand_name_for_response(vptr, abuf, alen, &naptr_curr->replacement, &len, ARES_FALSE);
           if (status != ARES_SUCCESS)
             break;
         }

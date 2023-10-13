@@ -94,7 +94,7 @@ ares_status_t ares_query_qid(ares_channel channel, const char *name,
   qquery->arg = arg;
 
   /* Send it off.  qcallback will be called when we get an answer. */
-  status = ares_send_ex(channel, qbuf, qlen, qcallback, qquery);
+  status = ares_send_ex(channel, qbuf, (size_t)qlen, qcallback, qquery);
   ares_free_string(qbuf);
 
   if (status == ARES_SUCCESS && qid)
@@ -113,7 +113,7 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
 static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf, int alen)
 {
   struct qquery *qquery = (struct qquery *) arg;
-  unsigned int ancount;
+  size_t ancount;
   int rcode;
 
   if (status != ARES_SUCCESS)

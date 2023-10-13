@@ -46,15 +46,17 @@ static unsigned char afl_buffer[kMaxAflInputSize];
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
 static void ProcessFile(int fd) {
-  int count = read(fd, afl_buffer, kMaxAflInputSize);
+  ssize_t count = read(fd, afl_buffer, kMaxAflInputSize);
   /*
    * Make a copy of the data so that it's not part of a larger
    * buffer (where buffer overflows would go unnoticed).
    */
-  unsigned char *copied_data = (unsigned char *)malloc(count);
-  memcpy(copied_data, afl_buffer, count);
-  LLVMFuzzerTestOneInput(copied_data, count);
-  free(copied_data);
+  if (count > 0) {
+    unsigned char *copied_data = (unsigned char *)malloc((size_t)count);
+    memcpy(copied_data, afl_buffer, (size_t)count);
+    LLVMFuzzerTestOneInput(copied_data, (size_t)count);
+    free(copied_data);
+  }
 }
 
 int main(int argc, char *argv[]) {

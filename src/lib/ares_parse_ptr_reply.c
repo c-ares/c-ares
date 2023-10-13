@@ -45,23 +45,31 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
-int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
+int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int, const void *addr,
                          int addrlen, int family, struct hostent **host)
 {
-  unsigned int qdcount, ancount;
+  size_t qdcount, ancount;
   ares_status_t status;
-  int i, rr_type, rr_class, rr_len;
-  long len;
+  size_t i;
+  int rr_type, rr_class;
+  size_t rr_len;
+  size_t len;
+  size_t alen;
   const unsigned char *aptr;
   char *ptrname, *hostname, *rr_name, *rr_data;
   struct hostent *hostent = NULL;
-  int aliascnt = 0;
-  int alias_alloc = 8;
+  size_t aliascnt = 0;
+  size_t alias_alloc = 8;
   char ** aliases;
   size_t rr_data_len;
 
   /* Set *host to NULL for all failure cases. */
   *host = NULL;
+
+  if (alen_int < 0)
+    return ARES_EBADRESP;
+
+  alen = (size_t)alen_int;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -96,7 +104,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
   for (i = 0; i < (int)ancount; i++)
     {
       /* Decode the RR up to the data field. */
-      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, 0);
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
         break;
       aptr += len;
@@ -122,7 +130,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
         {
           /* Decode the RR data and set hostname to it. */
           status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data,
-                                                  &len, 1);
+                                                  &len, ARES_TRUE);
           if (status != ARES_SUCCESS)
             {
               ares_free(rr_name);
@@ -158,7 +166,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen, const void *addr,
         {
           /* Decode the RR data and replace ptrname with it. */
           status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data,
-                                                  &len, 1);
+                                                  &len, ARES_TRUE);
           if (status != ARES_SUCCESS)
             {
               ares_free(rr_name);

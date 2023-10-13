@@ -531,7 +531,9 @@ static const unsigned char *display_rr(const unsigned char *aptr,
                                        const unsigned char *abuf, int alen)
 {
   const unsigned char *p;
-  int type, dnsclass, ttl, dlen, status, i;
+  int type, dnsclass;
+  unsigned int ttl;
+  int dlen, status, i;
   long len;
   int vlen;
   char addr[46];

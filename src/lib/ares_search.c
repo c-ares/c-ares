@@ -44,16 +44,16 @@ struct search_query {
   void *arg;
 
   int status_as_is;             /* error status from trying as-is */
-  int next_domain;              /* next search domain to try */
+  size_t next_domain;              /* next search domain to try */
   ares_bool_t trying_as_is;     /* current query is for name as-is */
-  int timeouts;                 /* number of timeouts we saw for this request */
+  size_t timeouts;                 /* number of timeouts we saw for this request */
   ares_bool_t ever_got_nodata;  /* did we ever get ARES_ENODATA along the way? */
 };
 
 static void search_callback(void *arg, int status, int timeouts,
                             unsigned char *abuf, int alen);
-static void end_squery(struct search_query *squery, int status,
-                       unsigned char *abuf, int alen);
+static void end_squery(struct search_query *squery, ares_status_t status,
+                       unsigned char *abuf, size_t alen);
 
 void ares_search(ares_channel channel, const char *name, int dnsclass,
                  int type, ares_callback callback, void *arg)
@@ -62,7 +62,7 @@ void ares_search(ares_channel channel, const char *name, int dnsclass,
   char *s;
   const char *p;
   ares_status_t status;
-  int ndots;
+  size_t ndots;
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
   if (ares__is_onion_domain(name))
@@ -164,7 +164,7 @@ static void search_callback(void *arg, int status, int timeouts,
   /* Stop searching unless we got a non-fatal error. */
   if (status != ARES_ENODATA && status != ARES_ESERVFAIL
       && status != ARES_ENOTFOUND)
-    end_squery(squery, status, abuf, alen);
+    end_squery(squery, (ares_status_t)status, abuf, (size_t)alen);
   else
     {
       /* Save the status if we were trying as-is. */
@@ -187,7 +187,7 @@ static void search_callback(void *arg, int status, int timeouts,
           status = ares__cat_domain(squery->name,
                               channel->domains[squery->next_domain], &s);
           if (status != ARES_SUCCESS)
-            end_squery(squery, status, NULL, 0);
+            end_squery(squery, (ares_status_t)status, NULL, 0);
           else
             {
               squery->trying_as_is = ARES_FALSE;
@@ -209,15 +209,15 @@ static void search_callback(void *arg, int status, int timeouts,
           end_squery(squery, ARES_ENODATA, NULL, 0);
         }
         else
-          end_squery(squery, squery->status_as_is, NULL, 0);
+          end_squery(squery, (ares_status_t)squery->status_as_is, NULL, 0);
       }
     }
 }
 
-static void end_squery(struct search_query *squery, int status,
-                       unsigned char *abuf, int alen)
+static void end_squery(struct search_query *squery, ares_status_t status,
+                       unsigned char *abuf, size_t alen)
 {
-  squery->callback(squery->arg, status, squery->timeouts, abuf, alen);
+  squery->callback(squery->arg, (int)status, squery->timeouts, abuf, (int)alen);
   ares_free(squery->name);
   ares_free(squery);
 }

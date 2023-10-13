@@ -49,7 +49,7 @@
 
 ares_status_t ares_append_ai_node(int aftype,
                                   unsigned short port,
-                                  int ttl,
+                                  unsigned short ttl,
                                   const void *adata,
                                   struct ares_addrinfo_node **nodes)
 {
