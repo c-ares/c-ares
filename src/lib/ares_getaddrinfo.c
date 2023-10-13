@@ -793,7 +793,7 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
     }
 
   /* if as_is_first is false, try hquery->name at last */
-  if (!s && hquery->next_domain == hquery->channel->ndomains) {
+  if (!s && (size_t)hquery->next_domain == hquery->channel->ndomains) {
     if (!as_is_first(hquery))
       {
         s = hquery->name;
@@ -801,7 +801,7 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
     hquery->next_domain++;
   }
 
-  if (!s && hquery->next_domain < hquery->channel->ndomains && !as_is_only(hquery))
+  if (!s && (size_t)hquery->next_domain < hquery->channel->ndomains && !as_is_only(hquery))
     {
       status = ares__cat_domain(
           hquery->name,

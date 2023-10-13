@@ -54,7 +54,7 @@ void ares_destroy_options(struct ares_options *options)
 
 void ares_destroy(ares_channel channel)
 {
-  int                 i;
+  size_t              i;
   ares__llist_node_t *node = NULL;
 
   if (!channel)

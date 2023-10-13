@@ -265,13 +265,13 @@ struct ares_channeldata {
   size_t timeout; /* in milliseconds */
   size_t tries;
   size_t ndots;
-  int rotate; /* if true, all servers specified are used */
+  int rotate; /* -1 unset, 0 = no rotate, 1 = rotate */
   unsigned short udp_port; /* stored in network order */
   unsigned short tcp_port; /* stored in network order */
   int socket_send_buffer_size;
   int socket_receive_buffer_size;
   char **domains;
-  int ndomains;
+  size_t ndomains;
   struct apattern *sortlist;
   int nsort;
   char *lookups;

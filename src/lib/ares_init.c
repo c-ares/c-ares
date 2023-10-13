@@ -104,7 +104,6 @@ static char *try_config(char *s, const char *opt, char scc);
 
 #define ARES_CONFIG_CHECK(x) (x->lookups && x->nsort > -1 && \
                              x->nservers > 0 && \
-                             x->ndomains > -1 && \
                              x->ndots > 0 && \
                              x->timeout > 0 && \
                              x->tries > 0)
@@ -156,7 +155,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->ednspsz = -1;
   channel->socket_send_buffer_size = -1;
   channel->socket_receive_buffer_size = -1;
-  channel->ndomains = -1;
   channel->nsort = -1;
 
   /* Generate random key */
@@ -244,7 +242,7 @@ done:
         ares_free(channel->servers);
       }
       if (channel->ndomains > 0)
-        ares__strsplit_free(channel->domains, (size_t)channel->ndomains);
+        ares__strsplit_free(channel->domains, channel->ndomains);
       if (channel->sortlist)
         ares_free(channel->sortlist);
       if(channel->lookups)
@@ -411,19 +409,18 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
 
   /* copy domains */
   if (channel->ndomains) {
-    options->domains = ares_malloc((size_t)channel->ndomains * sizeof(char *));
+    options->domains = ares_malloc(channel->ndomains * sizeof(char *));
     if (!options->domains)
       return ARES_ENOMEM;
 
-    for (i = 0; i < (size_t)channel->ndomains; i++)
+    for (i = 0; i < channel->ndomains; i++)
     {
-      options->ndomains = (int)i;
       options->domains[i] = ares_strdup(channel->domains[i]);
       if (!options->domains[i])
         return ARES_ENOMEM;
     }
   }
-  options->ndomains = channel->ndomains;
+  options->ndomains = (int)channel->ndomains;
 
   /* copy lookups */
   if (channel->lookups) {
@@ -541,7 +538,7 @@ static ares_status_t init_by_options(ares_channel channel,
   /* Copy the domains, if given.  Keep channel->ndomains consistent so
    * we can clean up in case of error.
    */
-  if ((optmask & ARES_OPT_DOMAINS) && channel->ndomains == -1)
+  if (optmask & ARES_OPT_DOMAINS)
     {
       /* Avoid zero size allocations at any cost */
       if (options->ndomains > 0)
@@ -551,13 +548,12 @@ static ares_status_t init_by_options(ares_channel channel,
           return ARES_ENOMEM;
         for (i = 0; i < (size_t)options->ndomains; i++)
           {
-            channel->ndomains = (int)i;
             channel->domains[i] = ares_strdup(options->domains[i]);
             if (!channel->domains[i])
               return ARES_ENOMEM;
           }
       }
-      channel->ndomains = options->ndomains;
+      channel->ndomains = (size_t)options->ndomains;
     }
 
   /* Set lookups, if given. */
@@ -610,7 +606,7 @@ static ares_status_t init_by_environment(ares_channel channel)
   ares_status_t status;
 
   localdomain = getenv("LOCALDOMAIN");
-  if (localdomain && channel->ndomains == -1)
+  if (localdomain && channel->ndomains == 0)
     {
       status = set_search(channel, localdomain);
       if (status != ARES_SUCCESS)
@@ -1170,7 +1166,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
     ares_free(line);
   }
 
-  if (channel->ndomains == -1 && get_SuffixList_Windows(&line))
+  if (channel->ndomains == 0 && get_SuffixList_Windows(&line))
   {
       status = set_search(channel, line);
       ares_free(line);
@@ -1318,7 +1314,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
     }
     ares_free(dns_servers);
   }
-  if (channel->ndomains == -1)
+  if (channel->ndomains == 0)
   {
     domains = ares_get_android_search_domains_list();
     set_search(channel, domains);
@@ -1391,7 +1387,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
         }
       }
     }
-    if (channel->ndomains == -1) {
+    if (channel->ndomains == 0) {
       size_t entries = 0;
       while ((entries < MAXDNSRCH) && res.dnsrch[entries])
         entries++;
@@ -1400,8 +1396,8 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
         if (!channel->domains) {
           status = ARES_ENOMEM;
         } else {
-          int i;
-          channel->ndomains = (int)entries;
+          size_t i;
+          channel->ndomains = entries;
           for (i = 0; i < channel->ndomains; ++i) {
             channel->domains[i] = ares_strdup(res.dnsrch[i]);
             if (!channel->domains[i])
@@ -1444,7 +1440,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
         return ARES_SUCCESS;
 
     /* Only update search domains if they're not already specified */
-    update_domains = (channel->ndomains == -1);
+    update_domains = (channel->ndomains == 0);
 
     /* Support path for resolvconf filename set by ares_init_options */
     if(channel->resolvconf_path) {
@@ -1668,7 +1664,7 @@ static ares_status_t init_by_defaults(ares_channel channel)
 #define toolong(x) (x == -1) &&  (SOCKERRNO == EINVAL)
 #endif
 
-  if (channel->ndomains == -1) {
+  if (channel->ndomains == 0) {
     /* Derive a default domain search list from the kernel hostname,
      * or set it to empty if the hostname isn't helpful.
      */
@@ -2175,14 +2171,14 @@ static ares_status_t set_search(ares_channel channel, const char *str)
     /* if we already have some domains present, free them first */
     ares__strsplit_free(channel->domains, (size_t)channel->ndomains);
     channel->domains = NULL;
-    channel->ndomains = -1;
+    channel->ndomains = 0;
   } /* LCOV_EXCL_STOP */
 
   channel->domains  = ares__strsplit(str, ", ", &cnt);
-  channel->ndomains = (int)cnt;
+  channel->ndomains = cnt;
   if (channel->domains == NULL || channel->ndomains == 0) {
     channel->domains  = NULL;
-    channel->ndomains = -1;
+    channel->ndomains = 0;
   }
 
   return ARES_SUCCESS;
