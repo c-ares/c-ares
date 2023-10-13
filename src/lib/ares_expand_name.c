@@ -173,14 +173,14 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
         {
           if (!indir)
             {
-              *enclen = aresx_uztosl(p + 2U - encoded);
+              *enclen = (size_t)(p + 2U - encoded);
               indir = 1;
             }
           p = abuf + ((*p & ~INDIR_MASK) << 8 | *(p + 1));
         }
       else
         {
-          int name_len = *p;
+          size_t name_len = *p;
           len = name_len;
           p++;
 
@@ -198,11 +198,11 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
               else if (is_reservedch(*p))
                 {
                   *q++ = '\\';
-                  *q++ = *p;
+                  *q++ = (char)*p;
                 }
               else
                 {
-                  *q++ = *p;
+                  *q++ = (char)*p;
                 }
               p++;
             }
@@ -211,7 +211,7 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
      }
 
   if (!indir)
-    *enclen = aresx_uztosl(p + 1U - encoded);
+    *enclen = (size_t)(p + 1U - encoded);
 
   /* Nuke the trailing period if we wrote one. */
   if (q > *s)
@@ -235,8 +235,8 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
 
   status = ares__expand_name_validated(encoded, abuf, (size_t)alen, s,
                                        &enclen_temp, ARES_FALSE);
-  *enclen = enclen_temp;
-  return status;
+  *enclen = (long)enclen_temp;
+  return (int)status;
 }
 
 /* Return the length of the expansion of an encoded domain name, or
@@ -260,7 +260,7 @@ static ares_ssize_t name_length(const unsigned char *encoded,
           /* Check the offset and go there. */
           if (encoded + 1 >= abuf + alen)
             return -1;
-          offset = (*encoded & ~INDIR_MASK) << 8 | *(encoded + 1);
+          offset = (size_t)(*encoded & ~INDIR_MASK) << 8 | *(encoded + 1);
           if (offset >= alen)
             return -1;
           encoded = abuf + offset;
@@ -274,7 +274,7 @@ static ares_ssize_t name_length(const unsigned char *encoded,
         }
       else if (top == 0x00)
         {
-          int name_len = *encoded;
+          size_t name_len = *encoded;
           offset = name_len;
           if (encoded + offset + 1 >= abuf + alen)
             return -1;
@@ -317,7 +317,7 @@ static ares_ssize_t name_length(const unsigned char *encoded,
   /* If there were any labels at all, then the number of dots is one
    * less than the number of labels, so subtract one.
    */
-  return (n) ? n - 1 : n;
+  return (ares_ssize_t)((n) ? n - 1 : n);
 }
 
 /* Like ares_expand_name_validated  but returns EBADRESP in case of invalid

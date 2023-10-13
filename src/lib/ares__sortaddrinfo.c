@@ -255,15 +255,16 @@ static int get_precedence(const struct sockaddr *addr)
 /*
  * Find number of matching initial bits between the two addresses a1 and a2.
  */
-static int common_prefix_len(const struct in6_addr *a1,
+static size_t common_prefix_len(const struct in6_addr *a1,
                              const struct in6_addr *a2)
 {
-  const char *p1 = (const char *)a1;
-  const char *p2 = (const char *)a2;
-  unsigned i;
+  const unsigned char *p1 = (const unsigned char *)a1;
+  const unsigned char *p2 = (const unsigned char *)a2;
+  size_t i;
   for (i = 0; i < sizeof(*a1); ++i)
     {
-      int x, j;
+      unsigned char x;
+      size_t j;
       if (p1[i] == p2[i])
         {
           continue;
@@ -294,7 +295,7 @@ static int rfc6724_compare(const void *ptr1, const void *ptr2)
   int label_src1, label_dst1, label_match1;
   int label_src2, label_dst2, label_match2;
   int precedence1, precedence2;
-  int prefixlen1, prefixlen2;
+  size_t prefixlen1, prefixlen2;
 
   /* Rule 1: Avoid unusable destinations. */
   if (a1->has_src_addr != a2->has_src_addr)
@@ -372,7 +373,7 @@ static int rfc6724_compare(const void *ptr1, const void *ptr2)
       prefixlen2 = common_prefix_len(&a2_src->sin6_addr, &a2_dst->sin6_addr);
       if (prefixlen1 != prefixlen2)
         {
-          return prefixlen2 - prefixlen1;
+          return (int)prefixlen2 - (int)prefixlen1;
         }
     }
 
@@ -387,7 +388,7 @@ static int rfc6724_compare(const void *ptr1, const void *ptr2)
  * Find the source address that will be used if trying to connect to the given
  * address.
  *
- * Returns 1 if a source address was found, 0 if the address is unreachable,
+ * Returns 1 if a source address was found, 0 if the address is unreachable
  * and -1 if a fatal error occurred. If 0 or 1, the contents of src_addr are
  * undefined.
  */
@@ -455,7 +456,7 @@ ares_status_t ares__sortaddrinfo(ares_channel channel,
 {
   struct ares_addrinfo_node *cur;
   size_t nelem = 0, i;
-  ares_bool_t has_src_addr;
+  int has_src_addr;
   struct addrinfo_sort_elem *elems;
 
   cur = list_sentinel->ai_next;
@@ -490,7 +491,7 @@ ares_status_t ares__sortaddrinfo(ares_channel channel,
           ares_free(elems);
           return ARES_ENOTFOUND;
         }
-      elems[i].has_src_addr = has_src_addr;
+      elems[i].has_src_addr = (has_src_addr == 1)?ARES_TRUE:ARES_FALSE;
     }
 
   /* Sort the addresses, and rearrange the linked list so it matches the sorted

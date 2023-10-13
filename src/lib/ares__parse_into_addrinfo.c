@@ -58,7 +58,9 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
   size_t qdcount, ancount;
   ares_status_t status;
   size_t i;
-  int rr_type, rr_class, rr_len, rr_ttl;
+  int rr_type, rr_class;
+  size_t rr_len;
+  unsigned int rr_ttl;
   ares_bool_t got_a = ARES_FALSE, got_aaaa = ARES_FALSE, got_cname = ARES_FALSE;
   size_t len;
   const unsigned char *aptr;
@@ -94,7 +96,7 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
   aptr += len + QFIXEDSZ;
 
   /* Examine each answer resource record (RR) in turn. */
-  for (i = 0; i < (int)ancount; i++)
+  for (i = 0; i < ancount; i++)
     {
       /* Decode the RR up to the data field. */
       status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, 0);
@@ -173,7 +175,7 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
               ares_free(rr_data);
               goto failed_stat;
             }
-          cname->ttl = rr_ttl;
+          cname->ttl = (int)rr_ttl;
           cname->alias = rr_name;
           cname->name = rr_data;
           rr_name = NULL;

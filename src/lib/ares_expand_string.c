@@ -87,9 +87,9 @@ int ares_expand_string(const unsigned char *encoded,
   if (alen < 0)
     return ARES_EBADRESP;
 
-  status = ares_expand_string_ex(encoded, abuf, alen, s, &temp_enclen);
+  status = ares_expand_string_ex(encoded, abuf, (size_t)alen, s, &temp_enclen);
 
   *enclen = (long)temp_enclen;
-  return status;
+  return (int)status;
 }
 

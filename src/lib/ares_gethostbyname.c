@@ -73,7 +73,7 @@ static void ares_gethostbyname_callback(void *arg, int status, int timeouts,
 
   if (status == ARES_SUCCESS)
     {
-      status = ares__addrinfo2hostent(result, AF_UNSPEC, &hostent);
+      status = (int)ares__addrinfo2hostent(result, AF_UNSPEC, &hostent);
     }
 
   /* addrinfo2hostent will only return ENODATA if there are no addresses _and_
@@ -239,7 +239,7 @@ static ares_status_t file_lookup(const char *name, int family,
 int ares_gethostbyname_file(ares_channel channel, const char *name,
                             int family, struct hostent **host)
 {
-  ares_status_t result;
+  ares_status_t status;
 
   /* We only take the channel to ensure that ares_init() been called. */
   if(channel == NULL)
@@ -253,13 +253,13 @@ int ares_gethostbyname_file(ares_channel channel, const char *name,
   /* Just chain to the internal implementation we use here; it's exactly
    * what we want.
    */
-  result = file_lookup(name, family, host);
-  if(result != ARES_SUCCESS)
+  status = file_lookup(name, family, host);
+  if(status != ARES_SUCCESS)
     {
       /* We guarantee a NULL hostent on failure. */
       *host = NULL;
     }
-  return result;
+  return (int)status;
 }
 
 static ares_status_t file_lookup(const char *name, int family,

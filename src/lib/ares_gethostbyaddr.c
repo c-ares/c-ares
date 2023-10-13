@@ -146,7 +146,7 @@ static void addr_callback(void *arg, int status, int timeouts,
   struct hostent *host;
   size_t addrlen;
 
-  aquery->timeouts += timeouts;
+  aquery->timeouts += (size_t)timeouts;
   if (status == ARES_SUCCESS)
     {
       if (aquery->addr.family == AF_INET)
@@ -161,10 +161,10 @@ static void addr_callback(void *arg, int status, int timeouts,
           status = ares_parse_ptr_reply(abuf, alen, &aquery->addr.addrV6,
                                         (int)addrlen, AF_INET6, &host);
         }
-      end_aquery(aquery, status, host);
+      end_aquery(aquery, (ares_status_t)status, host);
     }
   else if (status == ARES_EDESTRUCTION || status == ARES_ECANCELLED)
-    end_aquery(aquery, status, NULL);
+    end_aquery(aquery, (ares_status_t)status, NULL);
   else
     next_lookup(aquery);
 }
@@ -172,7 +172,7 @@ static void addr_callback(void *arg, int status, int timeouts,
 static void end_aquery(struct addr_query *aquery, ares_status_t status,
                        struct hostent *host)
 {
-  aquery->callback(aquery->arg, status, aquery->timeouts, host);
+  aquery->callback(aquery->arg, (int)status, (int)aquery->timeouts, host);
   if (host)
     ares_free_hostent(host);
   ares_free(aquery);

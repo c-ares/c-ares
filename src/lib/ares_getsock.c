@@ -42,6 +42,9 @@ int ares_getsock(ares_channel channel,
   /* Are there any active queries? */
   size_t active_queries = ares__llist_len(channel->all_queries);
 
+  if (numsocks <= 0)
+    return 0;
+
   for (i = 0; i < channel->nservers; i++) {
     ares__llist_node_t *node;
     server = &channel->servers[i];
@@ -52,7 +55,7 @@ int ares_getsock(ares_channel channel,
 
       struct server_connection *conn = ares__llist_node_val(node);
 
-      if (sockindex >= numsocks || sockindex >= ARES_GETSOCK_MAXNUM)
+      if (sockindex >= (size_t)numsocks || sockindex >= ARES_GETSOCK_MAXNUM)
         break;
 
       /* We only need to register interest in UDP sockets if we have

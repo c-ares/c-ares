@@ -411,7 +411,7 @@ void ares__freeaddrinfo_cnames(struct ares_addrinfo_cname *ai_cname);
 struct ares_addrinfo_cname *ares__append_addrinfo_cname(struct ares_addrinfo_cname **ai_cname);
 
 ares_status_t ares_append_ai_node(int aftype, unsigned short port,
-                                  unsigned short ttl,
+                                  unsigned int ttl,
                                   const void *adata,
                                   struct ares_addrinfo_node **nodes);
 
