@@ -291,7 +291,7 @@ static void ares__rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
           if (rv <= 0)
             continue; /* Just retry. */
 
-          bytes_read += rv;
+          bytes_read += (size_t)rv;
           if (bytes_read == len)
             return;
         }

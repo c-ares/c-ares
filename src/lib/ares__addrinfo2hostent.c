@@ -170,13 +170,13 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
                 {
                   memcpy((*host)->h_addr_list[i],
                      &(CARES_INADDR_CAST(struct sockaddr_in6 *, next->ai_addr)->sin6_addr),
-                     (*host)->h_length);
+                     (size_t)(*host)->h_length);
                 }
               else
                 {
                   memcpy((*host)->h_addr_list[i],
                      &(CARES_INADDR_CAST(struct sockaddr_in *, next->ai_addr)->sin_addr),
-                     (*host)->h_length);
+                     (size_t)(*host)->h_length);
                 }
               ++i;
             }

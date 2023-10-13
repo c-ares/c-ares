@@ -225,7 +225,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int, const void *ad
       hostent->h_addrtype = aresx_sitoss(family);
       hostent->h_length = aresx_sitoss(addrlen);
       if (addr && addrlen)
-        memcpy(hostent->h_addr_list[0], addr, addrlen);
+        memcpy(hostent->h_addr_list[0], addr, (size_t)addrlen);
       hostent->h_addr_list[1] = NULL;
       *host = hostent;
       ares_free(aliases);

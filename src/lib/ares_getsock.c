@@ -36,7 +36,7 @@ int ares_getsock(ares_channel channel,
   struct server_state *server;
   int i;
   size_t sockindex=0;
-  int bitmap = 0;
+  unsigned int bitmap = 0;
   unsigned int setbits = 0xffffffff;
 
   /* Are there any active queries? */
@@ -78,5 +78,5 @@ int ares_getsock(ares_channel channel,
       sockindex++;
     }
   }
-  return bitmap;
+  return (int)bitmap;
 }

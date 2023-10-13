@@ -295,7 +295,7 @@ ares_status_t ares__single_domain(ares_channel channel, const char *name,
                       *s = ares_malloc((size_t)(q - p + 1));
                       if (*s)
                         {
-                          memcpy(*s, p, q - p);
+                          memcpy(*s, p, (size_t)(q - p));
                           (*s)[q - p] = 0;
                         }
                       ares_free(line);

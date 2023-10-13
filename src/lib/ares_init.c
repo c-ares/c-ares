@@ -2074,7 +2074,7 @@ static ares_status_t config_sortlist(struct apattern **sortlist, int *nsort,
         q++;
       if (q-str >= 16)
         return ARES_EBADSTR;
-      memcpy(ipbuf, str, q-str);
+      memcpy(ipbuf, str, (size_t)(q-str));
       ipbuf[q-str] = '\0';
       /* Find the prefix */
       if (*q == '/')
@@ -2084,7 +2084,7 @@ static ares_status_t config_sortlist(struct apattern **sortlist, int *nsort,
             q++;
           if (q-str >= 32)
             return ARES_EBADSTR;
-          memcpy(ipbufpfx, str, q-str);
+          memcpy(ipbufpfx, str, (size_t)(q-str));
           ipbufpfx[q-str] = '\0';
           str = str2;
         }
@@ -2123,7 +2123,7 @@ static ares_status_t config_sortlist(struct apattern **sortlist, int *nsort,
         {
           if (ipbufpfx[0])
             {
-              memcpy(ipbuf, str, q-str);
+              memcpy(ipbuf, str, (size_t)(q-str));
               ipbuf[q-str] = '\0';
               if (ip_addr(ipbuf, q-str, &pat.mask.addr4) != 0)
                 natural_mask(&pat);
