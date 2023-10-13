@@ -261,10 +261,10 @@ struct apattern {
 
 struct ares_channeldata {
   /* Configuration data */
-  int flags;
-  int timeout; /* in milliseconds */
-  int tries;
-  int ndots;
+  unsigned int flags;
+  size_t timeout; /* in milliseconds */
+  size_t tries;
+  size_t ndots;
   int rotate; /* if true, all servers specified are used */
   unsigned short udp_port; /* stored in network order */
   unsigned short tcp_port; /* stored in network order */
@@ -288,7 +288,7 @@ struct ares_channeldata {
 
   /* Server addresses and communications state */
   struct server_state *servers;
-  int nservers;
+  size_t nservers;
 
   /* random state to use when generating new ids */
   ares_rand_state *rand_state;

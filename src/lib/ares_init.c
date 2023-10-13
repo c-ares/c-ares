@@ -81,7 +81,7 @@ static ares_status_t init_by_defaults(ares_channel channel);
 
 #ifndef WATT32
 static ares_status_t config_nameserver(struct server_state **servers,
-                                       int *nservers, const char *str);
+                                       size_t *nservers, const char *str);
 #endif
 static ares_status_t set_search(ares_channel channel, const char *str);
 static ares_status_t set_options(ares_channel channel, const char *str);
@@ -103,10 +103,11 @@ static char *try_config(char *s, const char *opt, char scc);
 #endif
 
 #define ARES_CONFIG_CHECK(x) (x->lookups && x->nsort > -1 && \
-                             x->nservers > -1 && \
+                             x->nservers > 0 && \
                              x->ndomains > -1 && \
-                             x->ndots > -1 && x->timeout > -1 && \
-                             x->tries > -1)
+                             x->ndots > 0 && \
+                             x->timeout > 0 && \
+                             x->tries > 0)
 
 int ares_init(ares_channel *channelptr)
 {
@@ -151,15 +152,10 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   /* Set everything to distinguished values so we know they haven't
    * been set yet.
    */
-  channel->flags = -1;
-  channel->timeout = -1;
-  channel->tries = -1;
-  channel->ndots = -1;
   channel->rotate = -1;
   channel->ednspsz = -1;
   channel->socket_send_buffer_size = -1;
   channel->socket_receive_buffer_size = -1;
-  channel->nservers = -1;
   channel->ndomains = -1;
   channel->nsort = -1;
 
@@ -279,7 +275,7 @@ int ares_dup(ares_channel *dest, ares_channel src)
   struct ares_options opts;
   struct ares_addr_port_node *servers;
   int non_v4_default_port = 0;
-  int i;
+  size_t i;
   ares_status_t rc;
   int optmask;
 
@@ -349,7 +345,7 @@ int ares_dup(ares_channel *dest, ares_channel src)
 int ares_save_options(ares_channel channel, struct ares_options *options,
                       int *optmask)
 {
-  int i, j;
+  size_t i, j;
   size_t ipv4_nservers = 0;
 
   /* Zero everything out */
@@ -374,13 +370,13 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
     (*optmask) |= ARES_OPT_HOSTS_FILE;
 
   /* Copy easy stuff */
-  options->flags   = channel->flags;
+  options->flags   = (int)channel->flags;
 
   /* We return full millisecond resolution but that's only because we don't
      set the ARES_OPT_TIMEOUT anymore, only the new ARES_OPT_TIMEOUTMS */
-  options->timeout = channel->timeout;
-  options->tries   = channel->tries;
-  options->ndots   = channel->ndots;
+  options->timeout = (int)channel->timeout;
+  options->tries   = (int)channel->tries;
+  options->ndots   = (int)channel->ndots;
   options->udp_port = ntohs(aresx_sitous(channel->udp_port));
   options->tcp_port = ntohs(aresx_sitous(channel->tcp_port));
   options->sock_state_cb     = channel->sock_state_cb;
@@ -419,9 +415,9 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
     if (!options->domains)
       return ARES_ENOMEM;
 
-    for (i = 0; i < channel->ndomains; i++)
+    for (i = 0; i < (size_t)channel->ndomains; i++)
     {
-      options->ndomains = i;
+      options->ndomains = (int)i;
       options->domains[i] = ares_strdup(channel->domains[i]);
       if (!options->domains[i])
         return ARES_ENOMEM;
@@ -441,7 +437,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
     options->sortlist = ares_malloc((size_t)channel->nsort * sizeof(struct apattern));
     if (!options->sortlist)
       return ARES_ENOMEM;
-    for (i = 0; i < channel->nsort; i++)
+    for (i = 0; i < (size_t)channel->nsort; i++)
       options->sortlist[i] = channel->sortlist[i];
   }
   options->nsort = channel->nsort;
@@ -472,35 +468,45 @@ static ares_status_t init_by_options(ares_channel channel,
                                      const struct ares_options *options,
                                      int optmask)
 {
-  int i;
+  size_t i;
 
   /* Easy stuff. */
-  if ((optmask & ARES_OPT_FLAGS) && channel->flags == -1)
-    channel->flags = options->flags;
-  if ((optmask & ARES_OPT_TIMEOUTMS) && channel->timeout == -1)
-    channel->timeout = options->timeout;
-  else if ((optmask & ARES_OPT_TIMEOUT) && channel->timeout == -1)
-    channel->timeout = options->timeout * 1000;
-  if ((optmask & ARES_OPT_TRIES) && channel->tries == -1)
-    channel->tries = options->tries;
-  if ((optmask & ARES_OPT_NDOTS) && channel->ndots == -1)
-    channel->ndots = options->ndots;
+  if (optmask & ARES_OPT_FLAGS)
+    channel->flags = (unsigned int)options->flags;
+
+  if (optmask & ARES_OPT_TIMEOUTMS)
+    channel->timeout = (unsigned int)options->timeout;
+  else if (optmask & ARES_OPT_TIMEOUT)
+    channel->timeout = (unsigned int)options->timeout * 1000;
+
+  if (optmask & ARES_OPT_TRIES)
+    channel->tries = (size_t)options->tries;
+
+  if (optmask & ARES_OPT_NDOTS)
+    channel->ndots = (size_t)options->ndots;
+
   if ((optmask & ARES_OPT_ROTATE) && channel->rotate == -1)
     channel->rotate = 1;
+
   if ((optmask & ARES_OPT_NOROTATE) && channel->rotate == -1)
     channel->rotate = 0;
+
   if ((optmask & ARES_OPT_UDP_PORT) && channel->udp_port == 0)
     channel->udp_port = htons(options->udp_port);
+
   if ((optmask & ARES_OPT_TCP_PORT) && channel->tcp_port == 0)
     channel->tcp_port = htons(options->tcp_port);
+
   if ((optmask & ARES_OPT_SOCK_STATE_CB) && channel->sock_state_cb == NULL)
     {
       channel->sock_state_cb = options->sock_state_cb;
       channel->sock_state_cb_data = options->sock_state_cb_data;
     }
+
   if ((optmask & ARES_OPT_SOCK_SNDBUF)
       && channel->socket_send_buffer_size == -1)
     channel->socket_send_buffer_size = options->socket_send_buffer_size;
+
   if ((optmask & ARES_OPT_SOCK_RCVBUF)
       && channel->socket_receive_buffer_size == -1)
     channel->socket_receive_buffer_size = options->socket_receive_buffer_size;
@@ -509,7 +515,7 @@ static ares_status_t init_by_options(ares_channel channel,
     channel->ednspsz = options->ednspsz;
 
   /* Copy the IPv4 servers, if given. */
-  if ((optmask & ARES_OPT_SERVERS) && channel->nservers == -1)
+  if (optmask & ARES_OPT_SERVERS)
     {
       /* Avoid zero size allocations at any cost */
       if (options->nservers > 0)
@@ -519,7 +525,7 @@ static ares_status_t init_by_options(ares_channel channel,
           if (!channel->servers)
             return ARES_ENOMEM;
           memset(channel->servers, 0, (size_t)options->nservers * sizeof(*channel->servers));
-          for (i = 0; i < options->nservers; i++)
+          for (i = 0; i < (size_t)options->nservers; i++)
             {
               channel->servers[i].addr.family = AF_INET;
               channel->servers[i].addr.udp_port = 0;
@@ -529,7 +535,7 @@ static ares_status_t init_by_options(ares_channel channel,
                      sizeof(channel->servers[i].addr.addrV4));
             }
         }
-      channel->nservers = options->nservers;
+      channel->nservers = (size_t)options->nservers;
     }
 
   /* Copy the domains, if given.  Keep channel->ndomains consistent so
@@ -543,9 +549,9 @@ static ares_status_t init_by_options(ares_channel channel,
         channel->domains = ares_malloc((size_t)options->ndomains * sizeof(char *));
         if (!channel->domains)
           return ARES_ENOMEM;
-        for (i = 0; i < options->ndomains; i++)
+        for (i = 0; i < (size_t)options->ndomains; i++)
           {
-            channel->ndomains = i;
+            channel->ndomains = (int)i;
             channel->domains[i] = ares_strdup(options->domains[i]);
             if (!channel->domains[i])
               return ARES_ENOMEM;
@@ -568,7 +574,7 @@ static ares_status_t init_by_options(ares_channel channel,
       channel->sortlist = ares_malloc((size_t)options->nsort * sizeof(struct apattern));
       if (!channel->sortlist)
         return ARES_ENOMEM;
-      for (i = 0; i < options->nsort; i++)
+      for (i = 0; i < (size_t)options->nsort; i++)
         channel->sortlist[i] = options->sortlist[i];
     }
     channel->nsort = options->nsort;
@@ -1148,13 +1154,14 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
   char *line = NULL;
 #endif
   ares_status_t status = ARES_EOF;
-  int nservers = 0, nsort = 0;
+  size_t nservers = 0;
+  int nsort = 0;
   struct server_state *servers = NULL;
   struct apattern *sortlist = NULL;
 
 #ifdef WIN32
 
-  if (channel->nservers > -1)  /* don't override ARES_OPT_SERVER */
+  if (channel->nservers > 0)  /* don't override ARES_OPT_SERVER */
      return ARES_SUCCESS;
 
   if (get_DNS_Windows(&line))
@@ -1178,7 +1185,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
 #elif defined(__MVS__)
 
   struct __res_state *res = 0;
-  int count4, count6;
+  size_t count4, count6;
   __STATEEXTIPV6 *v6;
   struct server_state *pserver;
   if (0 == res) {
@@ -1193,14 +1200,16 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
   }
 
   v6 = res->__res_extIPv6;
-  count4 = res->nscount;
-  if (v6) {
-    count6 = v6->__stat_nscount;
+  if (res->nscount > 0)
+    count4 = (size_t)res->nscount;
+
+  if (v6 && v6->__stat_nscount > 0) {
+    count6 = (size_t)v6->__stat_nscount;
   } else {
     count6 = 0;
   }
 
-  nservers = count4 + count6;
+  nservers = (size_t)(count4 + count6);
   servers = ares_malloc(nservers * sizeof(*servers));
   if (!servers)
     return ARES_ENOMEM;
@@ -1258,7 +1267,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
   }
 
 #elif defined(WATT32)
-  int i;
+  size_t i;
 
   sock_init();
   for (i = 0; def_nameservers[i]; i++)
@@ -1267,10 +1276,10 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
     return ARES_SUCCESS; /* use localhost DNS server */
 
   nservers = i;
-  servers = ares_malloc(sizeof(*servers));
+  servers = ares_malloc(nservers * sizeof(*servers));
   if (!servers)
      return ARES_ENOMEM;
-  memset(servers, 0, sizeof(*servers));
+  memset(servers, 0, nservers * sizeof(*servers));
 
   for (i = 0; def_nameservers[i]; i++)
   {
@@ -1282,7 +1291,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
   status = ARES_EOF;
 
 #elif defined(ANDROID) || defined(__ANDROID__)
-  unsigned int i;
+  size_t i;
   char **dns_servers;
   char *domains;
   size_t num_servers;
@@ -1349,7 +1358,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
   if (result == 0 && (res.options & RES_INIT)) {
     status = ARES_EOF;
 
-    if (channel->nservers == -1) {
+    if (channel->nservers == 0) {
       union res_sockaddr_union addr[MAXNS];
       int nscount = res_getservers(&res, addr, MAXNS);
       int i;
@@ -1401,16 +1410,21 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
         }
       }
     }
-    if (channel->ndots == -1)
-      channel->ndots = res.ndots;
-    if (channel->tries == -1)
-      channel->tries = res.retry;
+    if (channel->ndots == 0 && res.ndots > 0)
+      channel->ndots = (size_t)res.ndots;
+
+    if (channel->tries == 0 && res.retry > 0)
+      channel->tries = (size_t)res.retry;
+
     if (channel->rotate == -1)
       channel->rotate = res.options & RES_ROTATE;
-    if (channel->timeout == -1) {
-      channel->timeout = res.retrans * 1000;
+
+    if (channel->timeout == 0) {
+      if (res.retrans > 0)
+        channel->timeout = (unsigned int)res.retrans * 1000;
 #ifdef __APPLE__
-      channel->timeout /= (res.retry + 1) * (res.nscount > 0 ? res.nscount : 1);
+      if (res.retry >= 0)
+        channel->timeout /= ((unsigned int)res.retry + 1) * (unsigned int)(res.nscount > 0 ? res.nscount : 1);
 #endif
     }
 
@@ -1450,7 +1464,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
         else if ((p = try_config(line, "search", ';')) && update_domains)
           status = set_search(channel, p);
         else if ((p = try_config(line, "nameserver", ';')) &&
-                channel->nservers == -1)
+                channel->nservers == 0)
           status = config_nameserver(&servers, &nservers, p);
         else if ((p = try_config(line, "sortlist", ';')) &&
                 channel->nsort == -1)
@@ -1611,14 +1625,15 @@ static ares_status_t init_by_defaults(ares_channel channel)
   char *dot;
 #endif
 
-  if (channel->flags == -1)
-    channel->flags = 0;
-  if (channel->timeout == -1)
+  if (channel->timeout == 0)
     channel->timeout = DEFAULT_TIMEOUT;
-  if (channel->tries == -1)
+
+  if (channel->tries == 0)
     channel->tries = DEFAULT_TRIES;
-  if (channel->ndots == -1)
+
+  if (channel->ndots == 0)
     channel->ndots = 1;
+
   if (channel->rotate == -1)
     channel->rotate = 0;
   if (channel->udp_port == 0)
@@ -1629,7 +1644,7 @@ static ares_status_t init_by_defaults(ares_channel channel)
   if (channel->ednspsz == -1)
     channel->ednspsz = EDNSPACKETSZ;
 
-  if (channel->nservers == -1) {
+  if (channel->nservers == 0) {
     /* If nobody specified servers, try a local named. */
     channel->servers = ares_malloc(sizeof(*channel->servers));
     if (!channel->servers) {
@@ -1998,7 +2013,7 @@ static ares_status_t parse_dnsaddrport(const char *str, size_t len,
  * Returns an error code on failure, else ARES_SUCCESS.
  */
 static ares_status_t config_nameserver(struct server_state **servers,
-                                       int *nservers, const char *str)
+                                       size_t *nservers, const char *str)
 {
   struct ares_addr host;
   struct server_state *newserv;
@@ -2030,12 +2045,12 @@ static ares_status_t config_nameserver(struct server_state **servers,
       }
 
       /* Resize servers state array. */
-      newserv = ares_realloc(*servers, (size_t)(*nservers + 1) *
+      newserv = ares_realloc(*servers, (*nservers + 1) *
                              sizeof(*newserv));
       if (!newserv)
         return ARES_ENOMEM;
 
-      memset(((unsigned char *)newserv) + ((size_t)(*nservers) * sizeof(*newserv)), 0, sizeof(*newserv));
+      memset(((unsigned char *)newserv) + ((*nservers) * sizeof(*newserv)), 0, sizeof(*newserv));
 
       /* Store address data. */
       newserv[*nservers].addr.family = host.family;
@@ -2184,17 +2199,21 @@ static ares_status_t set_options(ares_channel channel, const char *str)
       while (*q && !ISSPACE(*q))
         q++;
       val = try_option(p, q, "ndots:");
-      if (val && channel->ndots == -1)
-        channel->ndots = aresx_sltosi(strtol(val, NULL, 10));
+      if (val && channel->ndots == 0)
+        channel->ndots = strtoul(val, NULL, 10);
+
       val = try_option(p, q, "retrans:");
-      if (val && channel->timeout == -1)
-        channel->timeout = aresx_sltosi(strtol(val, NULL, 10));
+      if (val && channel->timeout == 0)
+        channel->timeout = strtoul(val, NULL, 10);
+
       val = try_option(p, q, "retry:");
-      if (val && channel->tries == -1)
-        channel->tries = aresx_sltosi(strtol(val, NULL, 10));
+      if (val && channel->tries == 0)
+        channel->tries = strtoul(val, NULL, 10);
+
       val = try_option(p, q, "rotate");
       if (val && channel->rotate == -1)
         channel->rotate = 1;
+
       p = q;
       while (ISSPACE(*p))
         p++;
@@ -2397,7 +2416,7 @@ int ares_set_sortlist(ares_channel channel, const char *sortstr)
 ares_status_t ares__init_servers_state(ares_channel channel)
 {
   struct server_state *server;
-  int i;
+  size_t i;
 
   for (i = 0; i < channel->nservers; i++) {
     server = &channel->servers[i];

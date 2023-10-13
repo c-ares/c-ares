@@ -581,7 +581,7 @@ TEST_F(DefaultChannelTest, SingleDomain) {
 
 TEST_F(DefaultChannelTest, SaveInvalidChannel) {
   int saved = channel_->nservers;
-  channel_->nservers = -1;
+  channel_->nservers = 0;
   struct ares_options opts;
   int optmask = 0;
   EXPECT_EQ(ARES_ENODATA, ares_save_options(channel_, &opts, &optmask));

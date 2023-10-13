@@ -44,7 +44,7 @@ int ares_get_servers(ares_channel channel,
   struct ares_addr_node *srvr_last = NULL;
   struct ares_addr_node *srvr_curr;
   ares_status_t status = ARES_SUCCESS;
-  int i;
+  size_t i;
 
   if (!channel)
     return ARES_ENODATA;
@@ -99,7 +99,7 @@ int ares_get_servers_ports(ares_channel channel,
   struct ares_addr_port_node *srvr_last = NULL;
   struct ares_addr_port_node *srvr_curr;
   ares_status_t status = ARES_SUCCESS;
-  int i;
+  size_t i;
 
   if (!channel)
     return ARES_ENODATA;
@@ -181,7 +181,7 @@ int ares_set_servers(ares_channel channel,
           return ARES_ENOMEM;
         }
       memset(channel->servers, 0, num_srvrs * sizeof(*channel->servers));
-      channel->nservers = (int)num_srvrs;
+      channel->nservers = num_srvrs;
       /* Fill servers state address data */
       for (i = 0, srvr = servers; srvr; i++, srvr = srvr->next)
         {
@@ -234,7 +234,7 @@ int ares_set_servers_ports(ares_channel channel,
           return ARES_ENOMEM;
         }
       memset(channel->servers, 0, num_srvrs * sizeof(*channel->servers));
-      channel->nservers = (int)num_srvrs;
+      channel->nservers = num_srvrs;
       /* Fill servers state address data */
       for (i = 0, srvr = servers; srvr; i++, srvr = srvr->next)
         {

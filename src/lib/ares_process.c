@@ -107,9 +107,9 @@ ares_bool_t ares__timedout(struct timeval *now, struct timeval *check)
 }
 
 /* add the specific number of milliseconds to the time in the first argument */
-static void timeadd(struct timeval *now, int millisecs)
+static void timeadd(struct timeval *now, size_t millisecs)
 {
-  now->tv_sec += millisecs/1000;
+  now->tv_sec += (time_t)millisecs/1000;
   now->tv_usec += (millisecs%1000)*1000;
 
   if(now->tv_usec >= 1000000) {
@@ -188,7 +188,7 @@ static void write_tcp_data(ares_channel channel,
                            struct timeval *now)
 {
   struct server_state *server;
-  int i;
+  size_t i;
 
   if(!write_fds && (write_fd == ARES_SOCKET_BAD))
     /* no possible action */
@@ -371,7 +371,7 @@ static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
 static ares_socket_t *channel_socket_list(ares_channel channel, size_t *num)
 {
   size_t         alloc_cnt = 1 << 4;
-  int            i;
+  size_t         i;
   ares_socket_t *out       = ares_malloc(alloc_cnt * sizeof(*out));
 
   *num = 0;
@@ -738,7 +738,7 @@ static ares_status_t next_server(ares_channel channel, struct query *query,
    * this query. Use modular arithmetic to find the next server to try.
    * A query can be requested be terminated at the next interval by setting
    * query->no_retries */
-  while (++(query->try_count) < (size_t)(channel->nservers * channel->tries) &&
+  while (++(query->try_count) < ((size_t)channel->nservers * channel->tries) &&
          !query->no_retries) {
     struct server_state *server;
 
@@ -776,7 +776,7 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
 {
   struct server_state *server;
   struct server_connection *conn;
-  int timeplus;
+  size_t timeplus;
   ares_status_t status;
 
   server = &channel->servers[query->server];
