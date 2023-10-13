@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Brad House
+ * Copyright (C) The c-ares project
  *
  * Permission to use, copy, modify, and distribute this
  * software and its documentation for any purpose and without
@@ -31,6 +31,8 @@
 #include <unistd.h>
 #endif
 
+#include "ares.h"
+
 #define kMaxAflInputSize (1 << 20)
 static unsigned char afl_buffer[kMaxAflInputSize];
 
@@ -46,7 +48,7 @@ static unsigned char afl_buffer[kMaxAflInputSize];
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
 static void ProcessFile(int fd) {
-  ssize_t count = read(fd, afl_buffer, kMaxAflInputSize);
+  ares_ssize_t count = read(fd, afl_buffer, kMaxAflInputSize);
   /*
    * Make a copy of the data so that it's not part of a larger
    * buffer (where buffer overflows would go unnoticed).
