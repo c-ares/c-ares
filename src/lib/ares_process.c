@@ -1384,7 +1384,7 @@ static ares_bool_t has_opt_rr(const unsigned char *abuf, size_t alen)
       aptr += len;
 
       if (DNS_RR_TYPE(aptr) == T_OPT)
-        return 1;
+        return ARES_TRUE;
 
       dlen = DNS_RR_LEN(aptr);
       aptr += RRFIXEDSZ;
@@ -1393,7 +1393,7 @@ static ares_bool_t has_opt_rr(const unsigned char *abuf, size_t alen)
       aptr += dlen;
     }
 
-  return ARES_TRUE;
+  return ARES_FALSE;
 }
 
 static void ares_detach_query(struct query *query)
