@@ -416,8 +416,10 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
     for (i = 0; i < channel->ndomains; i++)
     {
       options->domains[i] = ares_strdup(channel->domains[i]);
-      if (!options->domains[i])
+      if (!options->domains[i]) {
+        options->ndomains = (int)i;
         return ARES_ENOMEM;
+      }
     }
   }
   options->ndomains = (int)channel->ndomains;
