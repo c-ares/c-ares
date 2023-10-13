@@ -70,20 +70,20 @@ ares__htable_stvp_t *ares__htable_stvp_create(
  *  \param[in] htable Initialized hash table
  *  \param[in] key    key to associate with value
  *  \param[in] val    value to store (takes ownership). May be NULL.
- *  \return 1 on success, 0 on out of memory or misuse
+ *  \return ARES_TRUE on success, ARES_FALSE on failure or out of memory
  */
-unsigned int ares__htable_stvp_insert(ares__htable_stvp_t *htable, size_t key,
-                                      void *val);
+ares_bool_t ares__htable_stvp_insert(ares__htable_stvp_t *htable, size_t key,
+                                     void *val);
 
 /*! Retrieve value from hashtable based on key
  * 
  *  \param[in]  htable  Initialized hash table
  *  \param[in]  key     key to use to search
  *  \param[out] val     Optional.  Pointer to store value.
- *  \return 1 on success, 0 on failure
+ *  \return ARES_TRUE on success, ARES_FALSE on failure
  */
-unsigned int ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key,
-                                   void **val);
+ares_bool_t ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key,
+                                  void **val);
 
 /*! Retrieve value from hashtable directly as return value.  Caveat to this
  *  function over ares__htable_stvp_get() is that if a NULL value is stored
@@ -99,9 +99,9 @@ void *ares__htable_stvp_get_direct(ares__htable_stvp_t *htable, size_t key);
  * 
  *  \param[in] htable  Initialized hash table
  *  \param[in] key     key to use to search
- *  \return 1 if found, 0 if not
+ *  \return ARES_TRUE if found, ARES_FALSE if not
  */
-unsigned int ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key);
+ares_bool_t ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key);
 
 /*! Retrieve the number of keys stored in the hash table
  * 

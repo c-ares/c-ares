@@ -111,7 +111,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
 
   for (i = 0; i < channel->nservers; i++)
     {
-      query->server_info[i].skip_server = 0;
+      query->server_info[i].skip_server = ARES_FALSE;
       query->server_info[i].tcp_connection_generation = 0;
     }
 

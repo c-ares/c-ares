@@ -163,7 +163,7 @@ struct server_state;
 struct server_connection {
   struct server_state *server;
   ares_socket_t        fd;
-  int                  is_tcp;
+  ares_bool_t          is_tcp;
   /* total number of queries run on this connection since it was established */
   size_t               total_queries;
   /* list of outstanding queries to this connection */
@@ -226,16 +226,16 @@ struct query {
   int try_count; /* Number of times we tried this query already. */
   int server; /* Server this query has last been sent to. */
   struct query_server_info *server_info;   /* per-server state */
-  int using_tcp;
+  ares_bool_t using_tcp;
   ares_status_t error_status;
   int timeouts; /* number of timeouts we saw for this request */
-  int no_retries; /* do not perform any additional retries, this is set when
-                   * a query is to be canceled */
+  ares_bool_t no_retries; /* do not perform any additional retries, this is set when
+                           * a query is to be canceled */
 };
 
 /* Per-server state for a query */
 struct query_server_info {
-  int skip_server;  /* should we skip server, due to errors, etc? */
+  ares_bool_t skip_server;  /* should we skip server, due to errors, etc? */
   int tcp_connection_generation;  /* into which TCP connection did we send? */
 };
 
@@ -336,7 +336,7 @@ struct ares_channeldata {
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
-int ares__is_onion_domain(const char *name);
+ares_bool_t ares__is_onion_domain(const char *name);
 
 /* Memory management functions */
 extern void *(*ares_malloc)(size_t size);
@@ -344,8 +344,8 @@ extern void *(*ares_realloc)(void *ptr, size_t size);
 extern void (*ares_free)(void *ptr);
 
 /* return true if now is exactly check time or later */
-int ares__timedout(struct timeval *now,
-                   struct timeval *check);
+ares_bool_t ares__timedout(struct timeval *now,
+                           struct timeval *check);
 
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
 ares_status_t ares__send_query(ares_channel channel, struct query *query,
@@ -377,11 +377,11 @@ struct timeval ares__tvnow(void);
 ares_status_t ares__expand_name_validated(const unsigned char *encoded,
                                           const unsigned char *abuf,
                                           int alen, char **s, long *enclen,
-                                          int is_hostname);
+                                          ares_bool_t is_hostname);
 ares_status_t ares__expand_name_for_response(const unsigned char *encoded,
                                              const unsigned char *abuf,
                                              int alen, char **s, long *enclen,
-                                             int is_hostname);
+                                             ares_bool_t is_hostname);
 ares_status_t ares__init_servers_state(ares_channel channel);
 void ares__destroy_servers_state(ares_channel channel);
 ares_status_t ares__single_domain(ares_channel channel, const char *name,
@@ -412,7 +412,8 @@ void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
                                struct ares_addrinfo_cname *tail);
 
 ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf,
-                                        int alen, int cname_only_is_enodata,
+                                        int alen,
+                                        ares_bool_t cname_only_is_enodata,
                                         unsigned short port,
                                         struct ares_addrinfo *ai);
 
@@ -426,10 +427,6 @@ ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
 ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
                                        const struct ares_addrinfo_hints *hints,
                                        struct ares_addrinfo *ai);
-
-#if 0 /* Not used */
-long ares__tvdiff(struct timeval t1, struct timeval t2);
-#endif
 
 ares_socket_t ares__open_socket(ares_channel channel,
                                 int af, int type, int protocol);

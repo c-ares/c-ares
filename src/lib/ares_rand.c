@@ -186,19 +186,19 @@ BOOLEAN WINAPI SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
 #endif
 
 
-static int ares__init_rand_engine(ares_rand_state *state)
+static ares_bool_t ares__init_rand_engine(ares_rand_state *state)
 {
   memset(state, 0, sizeof(*state));
 
 #if defined(HAVE_ARC4RANDOM_BUF) || defined(HAVE_GETRANDOM) || defined(_WIN32)
   state->type = ARES_RAND_OS;
-  return 1;
+  return ARES_TRUE;
 #elif defined(CARES_RANDOM_FILE)
   state->type            = ARES_RAND_FILE;
   state->state.rand_file = fopen(CARES_RANDOM_FILE, "rb");
   if (state->state.rand_file) {
     setvbuf(state->state.rand_file, NULL, _IONBF, 0);
-    return 1;
+    return ARES_TRUE;
   }
   /* Fall-Thru on failure to RC4 */
 #endif
@@ -208,7 +208,7 @@ static int ares__init_rand_engine(ares_rand_state *state)
   ares_rc4_init(&state->state.rc4);
 
   /* Currently cannot fail */
-  return 1;
+  return ARES_TRUE;
 #endif
 }
 

@@ -89,8 +89,8 @@ static const char *try_option(const char *p, const char *q, const char *opt);
 
 static ares_status_t config_sortlist(struct apattern **sortlist, int *nsort,
                                      const char *str);
-static int sortlist_alloc(struct apattern **sortlist, int *nsort,
-                          struct apattern *pat);
+static ares_bool_t sortlist_alloc(struct apattern **sortlist, int *nsort,
+                                  struct apattern *pat);
 static int ip_addr(const char *s, ares_ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
 #if !defined(WIN32) && !defined(WATT32) && \
@@ -639,7 +639,7 @@ static ares_status_t init_by_environment(ares_channel channel)
  *
  * Supported on Windows NT 3.5 and newer.
  */
-static int get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
+static ares_bool_t get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
 {
   DWORD size = 0;
   int   res;
@@ -649,13 +649,13 @@ static int get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
   /* Find out size of string stored in registry */
   res = RegQueryValueExA(hKey, leafKeyName, 0, NULL, NULL, &size);
   if ((res != ERROR_SUCCESS && res != ERROR_MORE_DATA) || !size)
-    return 0;
+    return ARES_FALSE;
 
   /* Allocate buffer of indicated size plus one given that string
      might have been stored without null termination */
   *outptr = ares_malloc(size+1);
   if (!*outptr)
-    return 0;
+    return ARES_FALSE;
 
   /* Get the value for real */
   res = RegQueryValueExA(hKey, leafKeyName, 0, NULL,
@@ -664,13 +664,13 @@ static int get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
   {
     ares_free(*outptr);
     *outptr = NULL;
-    return 0;
+    return ARES_FALSE;
   }
 
   /* Null terminate buffer allways */
   *(*outptr + size) = '\0';
 
-  return 1;
+  return ARES_TRUE;
 }
 
 static void commanjoin(char** dst, const char* const src, const size_t len)
@@ -837,7 +837,7 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
  */
 #define IPAA_INITIAL_BUF_SZ 15 * 1024
 #define IPAA_MAX_TRIES 3
-static int get_DNS_Windows(char **outptr)
+static ares_bool_t get_DNS_Windows(char **outptr)
 {
   IP_ADAPTER_DNS_SERVER_ADDRESS *ipaDNSAddr;
   IP_ADAPTER_ADDRESSES *ipaa, *newipaa, *ipaaEntry;
@@ -864,7 +864,7 @@ static int get_DNS_Windows(char **outptr)
 
   ipaa = ares_malloc(Bufsz);
   if (!ipaa)
-    return 0;
+    return ARES_FALSE;
 
   /* Start with enough room for a few DNS server addresses and we'll grow it
    * as we encounter more.
@@ -874,7 +874,7 @@ static int get_DNS_Windows(char **outptr)
   if(addresses == NULL) {
     /* We need room for at least some addresses to function. */
     ares_free(ipaa);
-    return 0;
+    return ARES_FALSE;
   }
 
   /* Usually this call suceeds with initial buffer size */
@@ -1028,10 +1028,10 @@ done:
     ares_free(ipaa);
 
   if (!*outptr) {
-    return 0;
+    return ARES_FALSE;
   }
 
-  return 1;
+  return ARES_TRUE;
 }
 
 /*
@@ -1047,7 +1047,7 @@ done:
  *
  * Implementation supports Windows Server 2003 and newer
  */
-static int get_SuffixList_Windows(char **outptr)
+static ares_bool_t get_SuffixList_Windows(char **outptr)
 {
   HKEY hKey, hKeyEnum;
   char  keyName[256];
@@ -1058,7 +1058,7 @@ static int get_SuffixList_Windows(char **outptr)
   *outptr = NULL;
 
   if (ares__getplatform() != WIN_NT)
-    return 0;
+    return ARES_FALSE;
 
   /* 1. Global DNS Suffix Search List */
   if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0,
@@ -1138,7 +1138,7 @@ static int get_SuffixList_Windows(char **outptr)
     RegCloseKey(hKey);
   }
 
-  return *outptr != NULL;
+  return *outptr != NULL?ARES_TRUE:ARES_FALSE;
 }
 
 #endif
@@ -1791,7 +1791,7 @@ static ares_status_t config_lookup(ares_channel channel, const char *str,
 {
   char lookups[3], *l;
   const char *vqualifier p;
-  int found;
+  ares_bool_t found;
 
   if (altbindch == NULL)
     altbindch = bindch;
@@ -1802,13 +1802,13 @@ static ares_status_t config_lookup(ares_channel channel, const char *str,
    */
   l = lookups;
   p = str;
-  found = 0;
+  found = ARES_FALSE;
   while (*p)
     {
       if ((*p == *bindch || *p == *altbindch || *p == *filech) && l < lookups + 2) {
         if (*p == *bindch || *p == *altbindch) *l++ = 'b';
         else *l++ = 'f';
-        found = 1;
+        found = ARES_TRUE;
       }
       while (*p && !ISSPACE(*p) && (*p != ','))
         p++;
@@ -1828,7 +1828,7 @@ static ares_status_t config_lookup(ares_channel channel, const char *str,
  * mask) specified. Addresses are specified in standard Network Byte Order as
  * 16 bytes, and the netmask is 0 to 128 (bits).
  */
-static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
+static ares_bool_t ares_ipv6_subnet_matches(const unsigned char netbase[16],
                                     unsigned char netmask,
                                     const unsigned char ipaddr[16])
 {
@@ -1837,7 +1837,7 @@ static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
 
   /* Misuse */
   if (netmask > 128)
-    return 0;
+    return ARES_FALSE;
 
   /* Quickly set whole bytes */
   memset(mask, 0xFF, netmask / 8);
@@ -1849,14 +1849,14 @@ static int ares_ipv6_subnet_matches(const unsigned char netbase[16],
 
   for (i=0; i<16; i++) {
     if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i]))
-      return 0;
+      return ARES_FALSE;
   }
 
-  return 1;
+  return ARES_TRUE;
 }
 
 /* Return true iff the IPv6 ipaddr is blacklisted. */
-static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
+static ares_bool_t ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
 {
   /* A list of blacklisted IPv6 subnets. */
   const struct {
@@ -1881,9 +1881,9 @@ static int ares_ipv6_server_blacklisted(const unsigned char ipaddr[16])
   for (i = 0; i < sizeof(blacklist) / sizeof(blacklist[0]); ++i) {
     if (ares_ipv6_subnet_matches(
           blacklist[i].netbase, blacklist[i].netmask, ipaddr))
-      return 1;
+      return ARES_TRUE;
   }
-  return 0;
+  return ARES_FALSE;
 }
 
 /* Parse address and port in these formats, either ipv4 or ipv6 addresses
@@ -2317,17 +2317,17 @@ static void natural_mask(struct apattern *pat)
     pat->mask.addr4.s_addr = htonl(IN_CLASSC_NET);
 }
 
-static int sortlist_alloc(struct apattern **sortlist, int *nsort,
-                          struct apattern *pat)
+static ares_bool_t sortlist_alloc(struct apattern **sortlist, int *nsort,
+                                  struct apattern *pat)
 {
   struct apattern *newsort;
   newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
   if (!newsort)
-    return 0;
+    return ARES_FALSE;
   newsort[*nsort] = *pat;
   *sortlist = newsort;
   (*nsort)++;
-  return 1;
+  return ARES_TRUE;
 }
 
 

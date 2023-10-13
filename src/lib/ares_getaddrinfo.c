@@ -123,9 +123,9 @@ static const struct ares_addrinfo empty_addrinfo = {
 /* forward declarations */
 static void host_callback(void *arg, int status, int timeouts,
                           unsigned char *abuf, int alen);
-static int as_is_first(const struct host_query *hquery);
-static int as_is_only(const struct host_query* hquery);
-static int next_dns_lookup(struct host_query *hquery);
+static ares_bool_t as_is_first(const struct host_query *hquery);
+static ares_bool_t as_is_only(const struct host_query* hquery);
+static ares_bool_t next_dns_lookup(struct host_query *hquery);
 
 static struct ares_addrinfo_cname *ares__malloc_addrinfo_cname(void)
 {
@@ -419,25 +419,25 @@ static void end_hquery(struct host_query *hquery, ares_status_t status)
   ares_free(hquery);
 }
 
-static int is_localhost(const char *name)
+static ares_bool_t is_localhost(const char *name)
 {
   /* RFC6761 6.3 says : The domain "localhost." and any names falling within ".localhost." */
   size_t len;
 
   if (name == NULL)
-    return 0;
+    return ARES_FALSE;
 
   if (strcmp(name, "localhost") == 0)
-    return 1;
+    return ARES_TRUE;
 
   len = strlen(name);
   if (len < 10 /* strlen(".localhost") */)
-    return 0;
+    return ARES_FALSE;
 
   if (strcmp(name + (len - 10 /* strlen(".localhost") */), ".localhost") == 0)
-    return 1;
+    return ARES_TRUE;
 
-  return 0;
+  return ARES_FALSE;
 }
 
 static ares_status_t file_lookup(struct host_query *hquery)
@@ -593,7 +593,7 @@ static void terminate_retries(struct host_query *hquery, unsigned short qid)
   if (query == NULL)
     return;
 
-  query->no_retries = 1;
+  query->no_retries = ARES_TRUE;
 }
 
 
@@ -772,10 +772,10 @@ void ares_getaddrinfo(ares_channel channel,
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
 }
 
-static int next_dns_lookup(struct host_query *hquery)
+static ares_bool_t next_dns_lookup(struct host_query *hquery)
 {
   char *s = NULL;
-  int is_s_allocated = 0;
+  ares_bool_t is_s_allocated = ARES_FALSE;
   ares_status_t status;
 
   /* if next_domain == -1 and as_is_first is true, try hquery->name */
@@ -805,7 +805,7 @@ static int next_dns_lookup(struct host_query *hquery)
           &s);
       if (status == ARES_SUCCESS)
         {
-          is_s_allocated = 1;
+          is_s_allocated = ARES_TRUE;
         }
     }
 
@@ -838,16 +838,16 @@ static int next_dns_lookup(struct host_query *hquery)
         {
           ares_free(s);
         }
-      return 1;
+      return ARES_TRUE;
     }
   else
     {
       assert(!hquery->ai->nodes);
-      return 0;
+      return ARES_FALSE;
     }
 }
 
-static int as_is_first(const struct host_query* hquery)
+static ares_bool_t as_is_first(const struct host_query* hquery)
 {
   char* p;
   int ndots = 0;
@@ -862,16 +862,16 @@ static int as_is_first(const struct host_query* hquery)
   if (nname && hquery->name[nname-1] == '.')
     {
       /* prevent ARES_EBADNAME for valid FQDN, where ndots < channel->ndots  */
-      return 1;
+      return ARES_TRUE;
     }
-  return ndots >= hquery->channel->ndots;
+  return ndots >= hquery->channel->ndots?ARES_TRUE:ARES_FALSE;
 }
 
-static int as_is_only(const struct host_query* hquery)
+static ares_bool_t as_is_only(const struct host_query* hquery)
 {
   size_t nname = hquery->name?strlen(hquery->name):0;
   if (nname && hquery->name[nname-1] == '.')
-    return 1;
-  return 0;
+    return ARES_TRUE;
+  return ARES_FALSE;
 }
 

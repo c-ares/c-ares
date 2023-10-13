@@ -45,9 +45,9 @@ struct search_query {
 
   int status_as_is;             /* error status from trying as-is */
   int next_domain;              /* next search domain to try */
-  int trying_as_is;             /* current query is for name as-is */
+  ares_bool_t trying_as_is;     /* current query is for name as-is */
   int timeouts;                 /* number of timeouts we saw for this request */
-  int ever_got_nodata;          /* did we ever get ARES_ENODATA along the way? */
+  ares_bool_t ever_got_nodata;  /* did we ever get ARES_ENODATA along the way? */
 };
 
 static void search_callback(void *arg, int status, int timeouts,
@@ -110,7 +110,7 @@ void ares_search(ares_channel channel, const char *name, int dnsclass,
   squery->callback = callback;
   squery->arg = arg;
   squery->timeouts = 0;
-  squery->ever_got_nodata = 0;
+  squery->ever_got_nodata = ARES_FALSE;
 
   /* Count the number of dots in name. */
   ndots = 0;
@@ -128,14 +128,14 @@ void ares_search(ares_channel channel, const char *name, int dnsclass,
     {
       /* Try the name as-is first. */
       squery->next_domain = 0;
-      squery->trying_as_is = 1;
+      squery->trying_as_is = ARES_TRUE;
       ares_query(channel, name, dnsclass, type, search_callback, squery);
     }
   else
     {
       /* Try the name as-is last; start with the first search domain. */
       squery->next_domain = 1;
-      squery->trying_as_is = 0;
+      squery->trying_as_is = ARES_FALSE;
       status = ares__cat_domain(name, channel->domains[0], &s);
       if (status == ARES_SUCCESS)
         {
@@ -179,7 +179,7 @@ static void search_callback(void *arg, int status, int timeouts,
        * returned ARES_ENOTFOUND.
        */
       if (status == ARES_ENODATA)
-        squery->ever_got_nodata = 1;
+        squery->ever_got_nodata = ARES_TRUE;
 
       if (squery->next_domain < channel->ndomains)
         {
@@ -190,7 +190,7 @@ static void search_callback(void *arg, int status, int timeouts,
             end_squery(squery, status, NULL, 0);
           else
             {
-              squery->trying_as_is = 0;
+              squery->trying_as_is = ARES_FALSE;
               squery->next_domain++;
               ares_query(channel, s, squery->dnsclass, squery->type,
                          search_callback, squery);
@@ -200,7 +200,7 @@ static void search_callback(void *arg, int status, int timeouts,
       else if (squery->status_as_is == -1)
         {
           /* Try the name as-is at the end. */
-          squery->trying_as_is = 1;
+          squery->trying_as_is = ARES_TRUE;
           ares_query(channel, squery->name, squery->dnsclass, squery->type,
                      search_callback, squery);
         }

@@ -79,15 +79,15 @@ static void bucket_free(void *bucket)
 }
 
 
-static unsigned int key_eq(const void *key1, const void *key2)
+static ares_bool_t key_eq(const void *key1, const void *key2)
 {
   const size_t *k1 = key1;
   const size_t *k2 = key2;
 
   if (*k1 == *k2)
-    return 1;
+    return ARES_TRUE;
 
-  return 0;
+  return ARES_FALSE;
 }
 
 
@@ -118,7 +118,7 @@ fail:
 }
 
 
-unsigned int ares__htable_stvp_insert(ares__htable_stvp_t *htable, size_t key,
+ares_bool_t ares__htable_stvp_insert(ares__htable_stvp_t *htable, size_t key,
                                       void *val)
 {
   ares__htable_stvp_bucket_t *bucket = NULL;
@@ -137,17 +137,17 @@ unsigned int ares__htable_stvp_insert(ares__htable_stvp_t *htable, size_t key,
   if (!ares__htable_insert(htable->hash, bucket))
     goto fail;
 
-  return 1;
+  return ARES_TRUE;
 
 fail:
   if (bucket) {
     ares_free(bucket);
   }
-  return 0;
+  return ARES_FALSE;
 }
 
 
-unsigned int ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key,
+ares_bool_t ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key,
                                    void **val)
 {
   ares__htable_stvp_bucket_t *bucket = NULL;
@@ -156,15 +156,15 @@ unsigned int ares__htable_stvp_get(ares__htable_stvp_t *htable, size_t key,
     *val = NULL;
 
   if (htable == NULL)
-    return 0;
+    return ARES_FALSE;
 
   bucket = ares__htable_get(htable->hash, &key);
   if (bucket == NULL)
-    return 0;
+    return ARES_FALSE;
 
   if (val)
     *val = bucket->val;
-  return 1;
+  return ARES_TRUE;
 }
 
 
@@ -176,10 +176,10 @@ void *ares__htable_stvp_get_direct(ares__htable_stvp_t *htable, size_t key)
 }
 
 
-unsigned int ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key)
+ares_bool_t ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key)
 {
   if (htable == NULL)
-    return 0;
+    return ARES_FALSE;
 
   return ares__htable_remove(htable->hash, &key);
 }

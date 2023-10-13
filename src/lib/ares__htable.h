@@ -78,10 +78,10 @@ typedef const void *(*ares__htable_bucket_key_t)(const void *bucket);
  * 
  *  \param[in] key1  first key
  *  \param[in] key2  second key
- *  \return 1 if equal, 0 if not
+ *  \return ARES_TRUE if equal, ARES_FALSE if not
  */
-typedef unsigned int (*ares__htable_key_eq_t)(const void *key1,
-                                              const void *key2);
+typedef ares_bool_t (*ares__htable_key_eq_t)(const void *key1,
+                                             const void *key2);
 
 
 /*! Destroy the initialized hashtable 
@@ -115,9 +115,9 @@ size_t ares__htable_num_keys(ares__htable_t *htable);
  *  \param[in] htable  Initialized hashtable.
  *  \param[in] bucket  User-provided bucket to insert. Takes "ownership". Not
  *                     allowed to be NULL.
- *  \return 1 on success, 0 if out of memory
+ *  \return ARES_TRUE on success, ARES_FALSE if out of memory
  */
-unsigned int ares__htable_insert(ares__htable_t *htable, void *bucket);
+ares_bool_t ares__htable_insert(ares__htable_t *htable, void *bucket);
 
 /*! Retrieve bucket from hashtable based on key.
  * 
@@ -131,9 +131,9 @@ void *ares__htable_get(ares__htable_t *htable, const void *key);
  * 
  *  \param[in] htable  Initialized hashtable
  *  \param[in] key     Pointer to key to use for comparison
- *  \return 1 if found, 0 if not found
+ *  \return ARES_TRUE if found, ARES_FALSE if not found
  */
-unsigned int ares__htable_remove(ares__htable_t *htable, const void *key);
+ares_bool_t ares__htable_remove(ares__htable_t *htable, const void *key);
 
 /*! FNV1a hash algorithm.  Can be used as underlying primitive for building
  *  a wrapper hashtable.
