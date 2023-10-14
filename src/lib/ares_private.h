@@ -273,7 +273,7 @@ struct ares_channeldata {
   char **domains;
   size_t ndomains;
   struct apattern *sortlist;
-  int nsort;
+  size_t nsort;
   char *lookups;
   int ednspsz;
 

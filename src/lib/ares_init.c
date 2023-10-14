@@ -87,9 +87,9 @@ static ares_status_t set_search(ares_channel channel, const char *str);
 static ares_status_t set_options(ares_channel channel, const char *str);
 static const char *try_option(const char *p, const char *q, const char *opt);
 
-static ares_status_t config_sortlist(struct apattern **sortlist, int *nsort,
+static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
                                      const char *str);
-static ares_bool_t sortlist_alloc(struct apattern **sortlist, int *nsort,
+static ares_bool_t sortlist_alloc(struct apattern **sortlist, size_t *nsort,
                                   struct apattern *pat);
 static int ip_addr(const char *s, ares_ssize_t len, struct in_addr *addr);
 static void natural_mask(struct apattern *pat);
@@ -102,7 +102,7 @@ static ares_status_t config_lookup(ares_channel channel, const char *str,
 static char *try_config(char *s, const char *opt, char scc);
 #endif
 
-#define ARES_CONFIG_CHECK(x) (x->lookups && x->nsort > -1 && \
+#define ARES_CONFIG_CHECK(x) (x->lookups && \
                              x->nservers > 0 && \
                              x->ndots > 0 && \
                              x->timeout > 0 && \
@@ -155,7 +155,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   channel->ednspsz = -1;
   channel->socket_send_buffer_size = -1;
   channel->socket_receive_buffer_size = -1;
-  channel->nsort = -1;
 
   /* Generate random key */
 
@@ -433,13 +432,13 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
 
   /* copy sortlist */
   if (channel->nsort) {
-    options->sortlist = ares_malloc((size_t)channel->nsort * sizeof(struct apattern));
+    options->sortlist = ares_malloc(channel->nsort * sizeof(struct apattern));
     if (!options->sortlist)
       return ARES_ENOMEM;
-    for (i = 0; i < (size_t)channel->nsort; i++)
+    for (i = 0; i < channel->nsort; i++)
       options->sortlist[i] = channel->sortlist[i];
   }
-  options->nsort = channel->nsort;
+  options->nsort = (int)channel->nsort;
 
   /* copy path for resolv.conf file */
   if (channel->resolvconf_path) {
@@ -567,15 +566,13 @@ static ares_status_t init_by_options(ares_channel channel,
     }
 
   /* copy sortlist */
-  if ((optmask & ARES_OPT_SORTLIST) && (channel->nsort == -1)) {
-    if (options->nsort > 0) {
-      channel->sortlist = ares_malloc((size_t)options->nsort * sizeof(struct apattern));
-      if (!channel->sortlist)
-        return ARES_ENOMEM;
-      for (i = 0; i < (size_t)options->nsort; i++)
-        channel->sortlist[i] = options->sortlist[i];
-    }
-    channel->nsort = options->nsort;
+  if (optmask & ARES_OPT_SORTLIST && options->nsort > 0) {
+    channel->nsort = (size_t)options->nsort;
+    channel->sortlist = ares_malloc((size_t)options->nsort * sizeof(struct apattern));
+    if (!channel->sortlist)
+      return ARES_ENOMEM;
+    for (i = 0; i < (size_t)options->nsort; i++)
+      channel->sortlist[i] = options->sortlist[i];
   }
 
   /* Set path for resolv.conf file, if given. */
@@ -1153,7 +1150,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
 #endif
   ares_status_t status = ARES_EOF;
   size_t nservers = 0;
-  int nsort = 0;
+  size_t nsort = 0;
   struct server_state *servers = NULL;
   struct apattern *sortlist = NULL;
 
@@ -1464,8 +1461,7 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
         else if ((p = try_config(line, "nameserver", ';')) &&
                 channel->nservers == 0)
           status = config_nameserver(&servers, &nservers, p);
-        else if ((p = try_config(line, "sortlist", ';')) &&
-                channel->nsort == -1)
+        else if ((p = try_config(line, "sortlist", ';')) && channel->nsort == 0)
           status = config_sortlist(&sortlist, &nsort, p);
         else if ((p = try_config(line, "options", ';')))
           status = set_options(channel, p);
@@ -1726,9 +1722,8 @@ static ares_status_t init_by_defaults(ares_channel channel)
 #endif
   }
 
-  if (channel->nsort == -1) {
+  if (channel->nsort == 0) {
     channel->sortlist = NULL;
-    channel->nsort = 0;
   }
 
   if (!channel->lookups) {
@@ -2070,8 +2065,8 @@ static ares_status_t config_nameserver(struct server_state **servers,
 }
 #endif  /* !WATT32 */
 
-static ares_status_t config_sortlist(struct apattern **sortlist, int *nsort,
-                           const char *str)
+static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
+                                     const char *str)
 {
   struct apattern pat;
   const char *q;
@@ -2332,11 +2327,11 @@ static void natural_mask(struct apattern *pat)
     pat->mask.addr4.s_addr = htonl(IN_CLASSC_NET);
 }
 
-static ares_bool_t sortlist_alloc(struct apattern **sortlist, int *nsort,
+static ares_bool_t sortlist_alloc(struct apattern **sortlist, size_t *nsort,
                                   struct apattern *pat)
 {
   struct apattern *newsort;
-  newsort = ares_realloc(*sortlist, ((size_t)*nsort + 1) * sizeof(struct apattern));
+  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
   if (!newsort)
     return ARES_FALSE;
   newsort[*nsort] = *pat;
@@ -2394,7 +2389,7 @@ void ares_set_socket_functions(ares_channel channel,
 
 int ares_set_sortlist(ares_channel channel, const char *sortstr)
 {
-  int nsort = 0;
+  size_t nsort = 0;
   struct apattern *sortlist = NULL;
   ares_status_t status;
 
