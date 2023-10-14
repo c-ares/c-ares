@@ -115,7 +115,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
       query->server_info[i].tcp_connection_generation = 0;
     }
 
-  packetsz = (channel->flags & ARES_FLAG_EDNS) ? (size_t)channel->ednspsz : PACKETSZ;
+  packetsz = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : PACKETSZ;
   query->using_tcp = (channel->flags & ARES_FLAG_USEVC) || qlen > packetsz;
 
   query->error_status = ARES_ECONNREFUSED;

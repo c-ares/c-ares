@@ -152,7 +152,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
    * been set yet.
    */
   channel->rotate = -1;
-  channel->ednspsz = -1;
   channel->socket_send_buffer_size = -1;
   channel->socket_receive_buffer_size = -1;
 
@@ -509,8 +508,8 @@ static ares_status_t init_by_options(ares_channel channel,
       && channel->socket_receive_buffer_size == -1)
     channel->socket_receive_buffer_size = options->socket_receive_buffer_size;
 
-  if ((optmask & ARES_OPT_EDNSPSZ) && channel->ednspsz == -1)
-    channel->ednspsz = options->ednspsz;
+  if (optmask & ARES_OPT_EDNSPSZ)
+    channel->ednspsz = (size_t)options->ednspsz;
 
   /* Copy the IPv4 servers, if given. */
   if (optmask & ARES_OPT_SERVERS)
@@ -1635,7 +1634,7 @@ static ares_status_t init_by_defaults(ares_channel channel)
   if (channel->tcp_port == 0)
     channel->tcp_port = htons(NAMESERVER_PORT);
 
-  if (channel->ednspsz == -1)
+  if (channel->ednspsz == 0)
     channel->ednspsz = EDNSPACKETSZ;
 
   if (channel->nservers == 0) {
