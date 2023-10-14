@@ -268,8 +268,8 @@ struct ares_channeldata {
   int rotate; /* -1 unset, 0 = no rotate, 1 = rotate */
   unsigned short udp_port; /* stored in network order */
   unsigned short tcp_port; /* stored in network order */
-  int socket_send_buffer_size;
-  int socket_receive_buffer_size;
+  int socket_send_buffer_size; /* setsockopt takes int */
+  int socket_receive_buffer_size; /* setsockopt takes int */
   char **domains;
   size_t ndomains;
   struct apattern *sortlist;
