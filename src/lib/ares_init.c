@@ -589,8 +589,6 @@ static ares_status_t init_by_options(ares_channel channel,
   if (optmask & ARES_OPT_UDP_MAX_QUERIES)
     channel->udp_max_queries = (size_t)options->udp_max_queries;
 
-  channel->optmask = optmask;
-
   return ARES_SUCCESS;
 }
 

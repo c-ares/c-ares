@@ -284,8 +284,6 @@ struct ares_channeldata {
   unsigned int local_ip4;
   unsigned char local_ip6[16];
 
-  int optmask; /* the option bitfield passed in at init time */
-
   /* Server addresses and communications state */
   struct server_state *servers;
   size_t nservers;
