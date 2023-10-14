@@ -276,6 +276,7 @@ struct ares_channeldata {
   size_t nsort;
   char *lookups;
   size_t ednspsz;
+  int optmask;
 
   /* For binding to local devices and/or IP addresses.  Leave
    * them null/zero for no binding.

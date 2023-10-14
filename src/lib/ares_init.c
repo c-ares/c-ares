@@ -589,6 +589,8 @@ static ares_status_t init_by_options(ares_channel channel,
   if (optmask & ARES_OPT_UDP_MAX_QUERIES)
     channel->udp_max_queries = (size_t)options->udp_max_queries;
 
+  channel->optmask = optmask;
+
   return ARES_SUCCESS;
 }
 
@@ -1454,7 +1456,8 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
         else if ((p = try_config(line, "nameserver", ';')) &&
                 channel->nservers == 0)
           status = config_nameserver(&servers, &nservers, p);
-        else if ((p = try_config(line, "sortlist", ';')) && channel->nsort == 0)
+        else if ((p = try_config(line, "sortlist", ';')) &&
+          !(channel->optmask & ARES_OPT_SORTLIST))
           status = config_sortlist(&sortlist, &nsort, p);
         else if ((p = try_config(line, "options", ';')))
           status = set_options(channel, p);
