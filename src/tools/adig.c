@@ -166,6 +166,28 @@ static void append_addr_list(struct ares_addr_node **head,
                              struct ares_addr_node *node);
 static void print_help_info_adig(void);
 
+static size_t ares_strcpy(char *dest, const char *src, size_t dest_size)
+{
+  size_t len = 0;
+
+  if (dest == NULL || dest_size == 0)
+    return 0;
+
+  if (src != NULL)
+    len = strlen(src);
+
+  if (len >= dest_size)
+    len = dest_size - 1;
+
+  if (len) {
+    memcpy(dest, src, len);
+  }
+
+  dest[len] = 0;
+  return len;
+}
+
+
 int main(int argc, char **argv)
 {
   ares_channel channel;
@@ -893,7 +915,7 @@ static int convert_query (char **name_p, int use_bitstring)
            *c++ = hex_chars [lo];
            *c++ = hex_chars [hi];
          }
-         strcpy (c, "].IP6.ARPA");
+         ares_strcpy (c, "].IP6.ARPA", sizeof(new_name) - strlen(c));
        }
        else
        {
@@ -906,7 +928,7 @@ static int convert_query (char **name_p, int use_bitstring)
            *c++ = hex_chars [hi];
            *c++ = '.';
          }
-         strcpy (c, "IP6.ARPA");
+         ares_strcpy (c, "IP6.ARPA", sizeof(new_name) - strlen(c));
        }
        *name_p = new_name;
        return (1);
