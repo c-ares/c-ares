@@ -72,7 +72,7 @@ InsertTrailingCommas: None
 KeepEmptyLinesAtEOF: false
 KeepEmptyLinesAtTheStartOfBlocks: false
 LineEnding: LF
-#PackConstructorInitializers: BinPack
+PackConstructorInitializers: BinPack
 PointerAlignment: Right
 QualifierAlignment: Leave
 ReferenceAlignment: Pointer

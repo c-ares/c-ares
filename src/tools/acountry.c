@@ -336,9 +336,8 @@ static const struct search_list country_list[] = {
   {   60, "bm",                              "Bermuda"},
   {   64, "bt",                               "Bhutan"},
   {   68, "bo",                              "Bolivia"},
-  {  535, "bq",
-   "Bonaire, Sint Eustatius and Saba"                 }, /* Formerly 'Bonaire' / 'Netherlands
-  Antilles' */
+  {  535, "bq",     "Bonaire, Sint Eustatius and Saba"}, /* Formerly 'Bonaire' /
+  'Netherlands   Antilles' */
   {   70, "ba",                 "Bosnia & Herzegovina"},
   {   72, "bw",                             "Botswana"},
   {   74, "bv",                        "Bouvet Island"},
