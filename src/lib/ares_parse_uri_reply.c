@@ -152,12 +152,14 @@ int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
       vptr               += sizeof(unsigned short);
       uri_curr->weight    = DNS__16BIT(vptr);
       vptr               += sizeof(unsigned short);
-      uri_curr->uri       = (char *)ares_malloc(rr_len - 3);
+      len                 = rr_len - 4;
+      uri_curr->uri       = (char *)ares_malloc(len + 1);
       if (!uri_curr->uri) {
         status = ARES_ENOMEM;
         break;
       }
-      ares_strcpy(uri_curr->uri, (const char *)vptr, rr_len - 3);
+      memcpy(uri_curr->uri, vptr, len);
+      uri_curr->uri[len] = 0;
       uri_curr->ttl = (int)rr_ttl;
     }
 
