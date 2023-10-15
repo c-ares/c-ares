@@ -265,7 +265,7 @@ struct ares_channeldata {
   size_t timeout; /* in milliseconds */
   size_t tries;
   size_t ndots;
-  int rotate; /* -1 unset, 0 = no rotate, 1 = rotate */
+  ares_bool_t rotate;
   unsigned short udp_port; /* stored in network order */
   unsigned short tcp_port; /* stored in network order */
   int socket_send_buffer_size; /* setsockopt takes int */
@@ -276,7 +276,7 @@ struct ares_channeldata {
   size_t nsort;
   char *lookups;
   size_t ednspsz;
-  int optmask;
+  unsigned int optmask;
 
   /* For binding to local devices and/or IP addresses.  Leave
    * them null/zero for no binding.

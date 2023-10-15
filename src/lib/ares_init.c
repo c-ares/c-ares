@@ -148,11 +148,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
 
   memset(channel, 0, sizeof(*channel));
 
-  /* Set everything to distinguished values so we know they haven't
-   * been set yet.
-   */
-  channel->rotate = -1;
-
   /* Generate random key */
 
   channel->rand_state = ares__init_rand_state();
@@ -480,11 +475,11 @@ static ares_status_t init_by_options(ares_channel channel,
   if (optmask & ARES_OPT_NDOTS)
     channel->ndots = (size_t)options->ndots;
 
-  if ((optmask & ARES_OPT_ROTATE) && channel->rotate == -1)
-    channel->rotate = 1;
+  if (optmask & ARES_OPT_ROTATE)
+    channel->rotate = ARES_TRUE;
 
-  if ((optmask & ARES_OPT_NOROTATE) && channel->rotate == -1)
-    channel->rotate = 0;
+  if (optmask & ARES_OPT_NOROTATE)
+    channel->rotate = ARES_FALSE;
 
   if ((optmask & ARES_OPT_UDP_PORT) && channel->udp_port == 0)
     channel->udp_port = htons(options->udp_port);
@@ -589,7 +584,7 @@ static ares_status_t init_by_options(ares_channel channel,
   if (optmask & ARES_OPT_UDP_MAX_QUERIES)
     channel->udp_max_queries = (size_t)options->udp_max_queries;
 
-  channel->optmask = optmask;
+  channel->optmask = (unsigned int)optmask;
 
   return ARES_SUCCESS;
 }
@@ -1406,8 +1401,8 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
     if (channel->tries == 0 && res.retry > 0)
       channel->tries = (size_t)res.retry;
 
-    if (channel->rotate == -1)
-      channel->rotate = res.options & RES_ROTATE;
+    if (!(channel->optmask & (ARES_OPT_ROTATE|ARES_OPT_NOROTATE)))
+      channel->rotate = (res.options & RES_ROTATE)?ARES_TRUE:ARES_FALSE;
 
     if (channel->timeout == 0) {
       if (res.retrans > 0)
@@ -1624,8 +1619,6 @@ static ares_status_t init_by_defaults(ares_channel channel)
   if (channel->ndots == 0)
     channel->ndots = 1;
 
-  if (channel->rotate == -1)
-    channel->rotate = 0;
   if (channel->udp_port == 0)
     channel->udp_port = htons(NAMESERVER_PORT);
   if (channel->tcp_port == 0)
@@ -2200,8 +2193,8 @@ static ares_status_t set_options(ares_channel channel, const char *str)
         channel->tries = strtoul(val, NULL, 10);
 
       val = try_option(p, q, "rotate");
-      if (val && channel->rotate == -1)
-        channel->rotate = 1;
+      if (val && !(channel->optmask & (ARES_OPT_ROTATE|ARES_OPT_NOROTATE)))
+        channel->rotate = ARES_TRUE;
 
       p = q;
       while (ISSPACE(*p))
