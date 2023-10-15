@@ -72,7 +72,8 @@ static void read_packets(ares_channel channel, fd_set *read_fds,
                          ares_socket_t read_fd, struct timeval *now);
 static void process_timeouts(ares_channel channel, struct timeval *now);
 static void process_answer(ares_channel channel, const unsigned char *abuf,
-                           int alen, struct server_connection *conn, int tcp,
+                           size_t alen, struct server_connection *conn,
+                           ares_bool_t tcp,
                            struct timeval *now);
 static void handle_error(struct server_connection *conn, struct timeval *now);
 static void skip_server(ares_channel channel, struct query *query,
@@ -82,19 +83,19 @@ static ares_status_t next_server(ares_channel channel, struct query *query,
 static ares_status_t open_socket(ares_channel channel,
                                  struct server_state *server,
                                  ares_bool_t is_tcp);
-static ares_bool_t same_questions(const unsigned char *qbuf, int qlen,
-                                  const unsigned char *abuf, int alen);
+static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
+                                  const unsigned char *abuf, size_t alen);
 static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa);
-static int has_opt_rr(const unsigned char *abuf, int alen);
+static ares_bool_t has_opt_rr(const unsigned char *abuf, size_t alen);
 static void end_query(ares_channel channel, struct query *query,
-                      ares_status_t status, const unsigned char *abuf, int alen);
+                      ares_status_t status, const unsigned char *abuf, size_t alen);
 static ares_ssize_t ares__socket_write(ares_channel channel, ares_socket_t s,
                                        const void * data, size_t len);
 
 /* return true if now is exactly check time or later */
 ares_bool_t ares__timedout(struct timeval *now, struct timeval *check)
 {
-  long secs = (now->tv_sec - check->tv_sec);
+  time_t secs = (now->tv_sec - check->tv_sec);
 
   if(secs > 0)
     return ARES_TRUE; /* yes, timed out */
@@ -106,9 +107,9 @@ ares_bool_t ares__timedout(struct timeval *now, struct timeval *check)
 }
 
 /* add the specific number of milliseconds to the time in the first argument */
-static void timeadd(struct timeval *now, int millisecs)
+static void timeadd(struct timeval *now, size_t millisecs)
 {
-  now->tv_sec += millisecs/1000;
+  now->tv_sec += (time_t)millisecs/1000;
   now->tv_usec += (millisecs%1000)*1000;
 
   if(now->tv_usec >= 1000000) {
@@ -187,7 +188,7 @@ static void write_tcp_data(ares_channel channel,
                            struct timeval *now)
 {
   struct server_state *server;
-  int i;
+  size_t i;
 
   if(!write_fds && (write_fd == ARES_SOCKET_BAD))
     /* no possible action */
@@ -231,7 +232,7 @@ static void write_tcp_data(ares_channel channel,
     }
 
     /* Strip data written from the buffer */
-    ares__buf_consume(server->tcp_send, count);
+    ares__buf_consume(server->tcp_send, (size_t)count);
 
     /* Notify state callback all data is written */
     if (ares__buf_len(server->tcp_send) == 0) {
@@ -305,7 +306,7 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
   }
 
   /* Record amount of data read */
-  ares__buf_append_finish(server->tcp_parser, count);
+  ares__buf_append_finish(server->tcp_parser, (size_t)count);
 
   /* Process all queued answers */
   while (1) {
@@ -340,7 +341,7 @@ static void read_tcp_data(ares_channel channel, struct server_connection *conn,
     data_len -= 2;
 
     /* We finished reading this answer; process it */
-    process_answer(channel, data, (int)data_len, conn, 1, now);
+    process_answer(channel, data, data_len, conn, ARES_TRUE, now);
 
     /* Since we processed the answer, clear the tag so space can be reclaimed */
     ares__buf_tag_clear(server->tcp_parser);
@@ -370,7 +371,7 @@ static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
 static ares_socket_t *channel_socket_list(ares_channel channel, size_t *num)
 {
   size_t         alloc_cnt = 1 << 4;
-  int            i;
+  size_t         i;
   ares_socket_t *out       = ares_malloc(alloc_cnt * sizeof(*out));
 
   *num = 0;
@@ -454,7 +455,7 @@ static void read_udp_packets_fd(ares_channel channel,
 #endif
 
     } else {
-      process_answer(channel, buf, (int)read_len, conn, 0, now);
+      process_answer(channel, buf, (size_t)read_len, conn, ARES_FALSE, now);
     }
   /* process_answer may invalidate "conn" and close the file descriptor, so
    * check to see if file descriptor is still valid before looping! */
@@ -559,10 +560,12 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
 
 /* Handle an answer from a server. */
 static void process_answer(ares_channel channel, const unsigned char *abuf,
-                           int alen, struct server_connection *conn, int tcp,
+                           size_t alen, struct server_connection *conn,
+                           ares_bool_t tcp,
                            struct timeval *now)
 {
-  int tc, rcode, packetsz;
+  int tc, rcode;
+  size_t packetsz;
   unsigned short id;
   struct query *query;
   /* Cache these as once ares__send_query() gets called, it may end up
@@ -608,10 +611,10 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
    * without EDNS enabled. */
   if (channel->flags & ARES_FLAG_EDNS)
   {
-      packetsz = channel->ednspsz;
-      if (rcode == FORMERR && has_opt_rr(abuf, alen) != 1)
+      packetsz = (size_t)channel->ednspsz;
+      if (rcode == FORMERR && !has_opt_rr(abuf, alen))
       {
-          int qlen = (query->tcplen - 2) - EDNSFIXEDSZ;
+          size_t qlen = (query->tcplen - 2) - EDNSFIXEDSZ;
           channel->flags ^= ARES_FLAG_EDNS;
           query->tcplen -= EDNSFIXEDSZ;
           query->qlen -= EDNSFIXEDSZ;
@@ -666,7 +669,7 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
               break;
           }
           skip_server(channel, query, server);
-          if (query->server == (int)server->idx) /* Is this ever not true? */
+          if (query->server == server->idx) /* Is this ever not true? */
             next_server(channel, query, now);
           ares__check_cleanup_conn(channel, fd);
           return;
@@ -698,7 +701,7 @@ static void handle_error(struct server_connection *conn,
   while ((node = ares__llist_node_first(list_copy)) != NULL) {
     struct query       *query = ares__llist_node_val(node);
 
-    assert(query->server == (int)server->idx);
+    assert(query->server == server->idx);
     skip_server(channel, query, server);
     /* next_server will remove the current node from the list */
     next_server(channel, query, now);
@@ -735,12 +738,12 @@ static ares_status_t next_server(ares_channel channel, struct query *query,
    * this query. Use modular arithmetic to find the next server to try.
    * A query can be requested be terminated at the next interval by setting
    * query->no_retries */
-  while (++(query->try_count) < (channel->nservers * channel->tries) &&
+  while (++(query->try_count) < ((size_t)channel->nservers * channel->tries) &&
          !query->no_retries) {
     struct server_state *server;
 
     /* Move on to the next server. */
-    query->server = (query->server + 1) % channel->nservers;
+    query->server = (query->server + 1) % (size_t)channel->nservers;
     server = &channel->servers[query->server];
 
     /* We don't want to use this server if (1) we've decided to skip this
@@ -773,7 +776,7 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
 {
   struct server_state *server;
   struct server_connection *conn;
-  int timeplus;
+  size_t timeplus;
   ares_status_t status;
 
   server = &channel->servers[query->server];
@@ -872,7 +875,7 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
   timeplus = channel->timeout;
   {
     /* How many times do we want to double it?  Presume sane values here. */
-    const int shift = query->try_count / channel->nservers;
+    const size_t shift = query->try_count / (size_t)channel->nservers;
 
     /* Is there enough room to shift timeplus left that many times?
      *
@@ -883,7 +886,7 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
      *
      * This has the side benefit of leaving negative numbers unchanged.
      */
-    if(shift <= (int)(sizeof(int) * CHAR_BIT - 1)
+    if(shift <= (sizeof(int) * CHAR_BIT - 1)
        && (timeplus >> (sizeof(int) * CHAR_BIT - 1 - shift)) == 0)
     {
       timeplus <<= shift;
@@ -1207,18 +1210,18 @@ static ares_status_t open_socket(ares_channel channel,
 }
 
 
-static ares_bool_t same_questions(const unsigned char *qbuf, int qlen,
-                                  const unsigned char *abuf, int alen)
+static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
+                                  const unsigned char *abuf, size_t alen)
 {
   struct {
     const unsigned char *p;
-    int qdcount;
+    size_t qdcount;
     char *name;
-    long namelen;
+    size_t namelen;
     int type;
     int dnsclass;
   } q, a;
-  int i, j;
+  size_t i, j;
 
   if (qlen < HFIXEDSZ || alen < HFIXEDSZ)
     return ARES_FALSE;
@@ -1234,7 +1237,7 @@ static ares_bool_t same_questions(const unsigned char *qbuf, int qlen,
   for (i = 0; i < q.qdcount; i++)
     {
       /* Decode the question in the query. */
-      if (ares_expand_name(q.p, qbuf, qlen, &q.name, &q.namelen)
+      if (ares__expand_name_for_response(q.p, qbuf, qlen, &q.name, &q.namelen, ARES_FALSE)
           != ARES_SUCCESS)
         return ARES_FALSE;
       q.p += q.namelen;
@@ -1252,7 +1255,7 @@ static ares_bool_t same_questions(const unsigned char *qbuf, int qlen,
       for (j = 0; j < a.qdcount; j++)
         {
           /* Decode the question in the answer. */
-          if (ares_expand_name(a.p, abuf, alen, &a.name, &a.namelen)
+          if (ares__expand_name_for_response(a.p, abuf, alen, &a.name, &a.namelen, ARES_FALSE)
               != ARES_SUCCESS)
             {
               ares_free(q.name);
@@ -1315,14 +1318,14 @@ static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa)
 }
 
 /* search for an OPT RR in the response */
-static int has_opt_rr(const unsigned char *abuf, int alen)
+static ares_bool_t has_opt_rr(const unsigned char *abuf, size_t alen)
 {
-  unsigned int qdcount, ancount, nscount, arcount, i;
+  size_t qdcount, ancount, nscount, arcount, i;
   const unsigned char *aptr;
-  int status;
+  ares_status_t status;
 
   if (alen < HFIXEDSZ)
-    return -1;
+    return ARES_FALSE;
 
   /* Parse the answer header. */
   qdcount = DNS_HEADER_QDCOUNT(abuf);
@@ -1336,13 +1339,13 @@ static int has_opt_rr(const unsigned char *abuf, int alen)
   for (i = 0; i < qdcount; i++)
     {
       char* name;
-      long len;
-      status = ares_expand_name(aptr, abuf, alen, &name, &len);
+      size_t len;
+      status = ares__expand_name_for_response(aptr, abuf, alen, &name, &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
-        return -1;
+        return ARES_FALSE;
       ares_free_string(name);
       if (aptr + len + QFIXEDSZ > abuf + alen)
-        return -1;
+        return ARES_FALSE;
       aptr += len + QFIXEDSZ;
     }
 
@@ -1350,19 +1353,19 @@ static int has_opt_rr(const unsigned char *abuf, int alen)
   for (i = 0; i < ancount + nscount; i++)
     {
       char* name;
-      long len;
-      int dlen;
-      status = ares_expand_name(aptr, abuf, alen, &name, &len);
+      size_t len;
+      size_t dlen;
+      status = ares__expand_name_for_response(aptr, abuf, alen, &name, &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
-        return -1;
+        return ARES_FALSE;
       ares_free_string(name);
       if (aptr + len + RRFIXEDSZ > abuf + alen)
-        return -1;
+        return ARES_FALSE;
       aptr += len;
       dlen = DNS_RR_LEN(aptr);
       aptr += RRFIXEDSZ;
       if (aptr + dlen > abuf + alen)
-        return -1;
+        return ARES_FALSE;
       aptr += dlen;
     }
 
@@ -1370,27 +1373,27 @@ static int has_opt_rr(const unsigned char *abuf, int alen)
   for (i = 0; i < arcount; i++)
     {
       char* name;
-      long len;
-      int dlen;
-      status = ares_expand_name(aptr, abuf, alen, &name, &len);
+      size_t len;
+      size_t dlen;
+      status = ares__expand_name_for_response(aptr, abuf, alen, &name, &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
-        return -1;
+        return ARES_FALSE;
       ares_free_string(name);
       if (aptr + len + RRFIXEDSZ > abuf + alen)
-        return -1;
+        return ARES_FALSE;
       aptr += len;
 
       if (DNS_RR_TYPE(aptr) == T_OPT)
-        return 1;
+        return ARES_TRUE;
 
       dlen = DNS_RR_LEN(aptr);
       aptr += RRFIXEDSZ;
       if (aptr + dlen > abuf + alen)
-        return -1;
+        return ARES_FALSE;
       aptr += dlen;
     }
 
-  return 0;
+  return ARES_FALSE;
 }
 
 static void ares_detach_query(struct query *query)
@@ -1406,18 +1409,18 @@ static void ares_detach_query(struct query *query)
 }
 
 static void end_query(ares_channel channel, struct query *query,
-                      ares_status_t status, const unsigned char *abuf, int alen)
+                      ares_status_t status, const unsigned char *abuf, size_t alen)
 {
   (void)channel;
 
   ares_detach_query(query);
 
   /* Invoke the callback. */
-  query->callback(query->arg, status, query->timeouts,
+  query->callback(query->arg, (int)status, (int)query->timeouts,
                   /* due to prior design flaws, abuf isn't meant to be modified,
                    * but bad prototypes, ugh.  Lets cast off constfor compat. */
                   (unsigned char *)((void *)((size_t)abuf)),
-                  alen);
+                  (int)alen);
   ares__free_query(query);
 }
 

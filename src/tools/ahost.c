@@ -101,7 +101,7 @@ int main(int argc, char **argv)
           optmask |= ARES_OPT_DOMAINS;
           options.ndomains++;
           options.domains = (char **)realloc(options.domains,
-                                             options.ndomains * sizeof(char *));
+                                             (size_t)options.ndomains * sizeof(char *));
           options.domains[options.ndomains - 1] = strdup(optarg);
           break;
         case 't':

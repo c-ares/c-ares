@@ -31,7 +31,7 @@
 
 const char *ares_strerror(int code)
 {
-  ares_status_t status = code;
+  ares_status_t status = (ares_status_t)code;
   switch (status) {
     case ARES_SUCCESS:
       return "Successful completion";

@@ -40,8 +40,9 @@
 /* Maximum number of indirections allowed for a name */
 #define MAX_INDIRS 50
 
-static int name_length(const unsigned char *encoded, const unsigned char *abuf,
-                       int alen, ares_bool_t is_hostname);
+static ares_ssize_t name_length(const unsigned char *encoded,
+                                const unsigned char *abuf, size_t alen,
+                                ares_bool_t is_hostname);
 
 /* Reserved characters for names that need to be escaped */
 static ares_bool_t is_reservedch(int ch)
@@ -128,10 +129,10 @@ static ares_bool_t is_hostnamech(int ch)
 
 ares_status_t ares__expand_name_validated(const unsigned char *encoded,
                                           const unsigned char *abuf,
-                                          int alen, char **s, long *enclen,
+                                          size_t alen, char **s, size_t *enclen,
                                           ares_bool_t is_hostname)
 {
-  int len, indir = 0;
+  size_t len, indir = 0;
   char *q;
   const unsigned char *p;
   union {
@@ -172,14 +173,14 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
         {
           if (!indir)
             {
-              *enclen = aresx_uztosl(p + 2U - encoded);
+              *enclen = (size_t)(p + 2U - encoded);
               indir = 1;
             }
           p = abuf + ((*p & ~INDIR_MASK) << 8 | *(p + 1));
         }
       else
         {
-          int name_len = *p;
+          size_t name_len = *p;
           len = name_len;
           p++;
 
@@ -197,11 +198,11 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
               else if (is_reservedch(*p))
                 {
                   *q++ = '\\';
-                  *q++ = *p;
+                  *q++ = (char)*p;
                 }
               else
                 {
-                  *q++ = *p;
+                  *q++ = (char)*p;
                 }
               p++;
             }
@@ -210,7 +211,7 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
      }
 
   if (!indir)
-    *enclen = aresx_uztosl(p + 1U - encoded);
+    *enclen = (size_t)(p + 1U - encoded);
 
   /* Nuke the trailing period if we wrote one. */
   if (q > *s)
@@ -225,16 +226,27 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
 int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
                      int alen, char **s, long *enclen)
 {
-  return ares__expand_name_validated(encoded, abuf, alen, s, enclen, ARES_FALSE);
+  /* Keep public API compatible */
+  size_t enclen_temp = 0;
+  ares_status_t status;
+
+  if (alen < 0)
+    return ARES_EBADRESP;
+
+  status = ares__expand_name_validated(encoded, abuf, (size_t)alen, s,
+                                       &enclen_temp, ARES_FALSE);
+  *enclen = (long)enclen_temp;
+  return (int)status;
 }
 
 /* Return the length of the expansion of an encoded domain name, or
  * -1 if the encoding is invalid.
  */
-static int name_length(const unsigned char *encoded, const unsigned char *abuf,
-                       int alen, ares_bool_t is_hostname)
+static ares_ssize_t name_length(const unsigned char *encoded,
+                                const unsigned char *abuf,
+                                size_t alen, ares_bool_t is_hostname)
 {
-  int n = 0, offset, indir = 0, top;
+  size_t n = 0, offset, indir = 0, top;
 
   /* Allow the caller to pass us abuf + alen and have us check for it. */
   if (encoded >= abuf + alen)
@@ -248,7 +260,7 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
           /* Check the offset and go there. */
           if (encoded + 1 >= abuf + alen)
             return -1;
-          offset = (*encoded & ~INDIR_MASK) << 8 | *(encoded + 1);
+          offset = (size_t)(*encoded & ~INDIR_MASK) << 8 | *(encoded + 1);
           if (offset >= alen)
             return -1;
           encoded = abuf + offset;
@@ -262,7 +274,7 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
         }
       else if (top == 0x00)
         {
-          int name_len = *encoded;
+          size_t name_len = *encoded;
           offset = name_len;
           if (encoded + offset + 1 >= abuf + alen)
             return -1;
@@ -305,14 +317,15 @@ static int name_length(const unsigned char *encoded, const unsigned char *abuf,
   /* If there were any labels at all, then the number of dots is one
    * less than the number of labels, so subtract one.
    */
-  return (n) ? n - 1 : n;
+  return (ares_ssize_t)((n) ? n - 1 : n);
 }
 
 /* Like ares_expand_name_validated  but returns EBADRESP in case of invalid
  * input. */
 ares_status_t ares__expand_name_for_response(const unsigned char *encoded,
                                              const unsigned char *abuf,
-                                             int alen, char **s, long *enclen,
+                                             size_t alen, char **s,
+                                             size_t *enclen,
                                              ares_bool_t is_hostname)
 {
   ares_status_t status = ares__expand_name_validated(encoded, abuf, alen, s,

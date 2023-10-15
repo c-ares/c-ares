@@ -61,8 +61,8 @@ struct nameinfo_query {
     struct sockaddr_in6 addr6;
   } addr;
   int family;
-  int flags;
-  int timeouts;
+  unsigned int flags;
+  size_t timeouts;
 };
 
 #ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
@@ -75,7 +75,7 @@ struct nameinfo_query {
 
 static void nameinfo_callback(void *arg, int status, int timeouts,
                               struct hostent *host);
-static char *lookup_service(unsigned short port, int flags,
+static char *lookup_service(unsigned short port, unsigned int flags,
                             char *buf, size_t buflen);
 #ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
 static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int scopeid,
@@ -85,12 +85,13 @@ STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2);
 
 void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
                       ares_socklen_t salen,
-                      int flags, ares_nameinfo_callback callback, void *arg)
+                      int flags_int, ares_nameinfo_callback callback, void *arg)
 {
   struct sockaddr_in *addr = NULL;
   struct sockaddr_in6 *addr6 = NULL;
   struct nameinfo_query *niquery;
-  unsigned int port = 0;
+  unsigned short port = 0;
+  unsigned int flags = (unsigned int)flags_int;
 
   /* Validate socket address family and length */
   if ((sa->sa_family == AF_INET) &&
@@ -204,7 +205,7 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
   char srvbuf[33];
   char *service = NULL;
 
-  niquery->timeouts += timeouts;
+  niquery->timeouts += (size_t)timeouts;
   if (status == ARES_SUCCESS)
     {
       /* They want a service too */
@@ -235,7 +236,7 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
              }
         }
 #endif
-      niquery->callback(niquery->arg, ARES_SUCCESS, niquery->timeouts,
+      niquery->callback(niquery->arg, ARES_SUCCESS, (int)niquery->timeouts,
                         (char *)(host->h_name),
                         service);
       ares_free(niquery);
@@ -267,16 +268,16 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
             service = lookup_service(niquery->addr.addr6.sin6_port,
                                      niquery->flags, srvbuf, sizeof(srvbuf));
         }
-      niquery->callback(niquery->arg, ARES_SUCCESS, niquery->timeouts, ipbuf,
+      niquery->callback(niquery->arg, ARES_SUCCESS, (int)niquery->timeouts, ipbuf,
                         service);
       ares_free(niquery);
       return;
     }
-  niquery->callback(niquery->arg, status, niquery->timeouts, NULL, NULL);
+  niquery->callback(niquery->arg, status, (int)niquery->timeouts, NULL, NULL);
   ares_free(niquery);
 }
 
-static char *lookup_service(unsigned short port, int flags,
+static char *lookup_service(unsigned short port, unsigned int flags,
                             char *buf, size_t buflen)
 {
   const char *proto;

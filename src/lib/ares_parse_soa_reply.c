@@ -45,16 +45,25 @@
 #include "ares_private.h"
 
 int
-ares_parse_soa_reply(const unsigned char *abuf, int alen,
+ares_parse_soa_reply(const unsigned char *abuf, int alen_int,
 		     struct ares_soa_reply **soa_out)
 {
   const unsigned char *aptr;
-  long len;
+  size_t len;
+  size_t alen;
   char *qname = NULL, *rr_name = NULL;
   struct ares_soa_reply *soa = NULL;
-  int qdcount, ancount, qclass;
+  size_t qdcount, ancount;
+  int qclass;
   ares_status_t status;
-  int i, rr_type, rr_class, rr_len;
+  size_t i;
+  int rr_type, rr_class;
+  size_t rr_len;
+
+  if (alen_int < 0)
+    return ARES_EBADRESP;
+
+  alen = (size_t)alen_int;
 
   if (alen < HFIXEDSZ)
     return ARES_EBADRESP;
@@ -71,7 +80,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   aptr = abuf + HFIXEDSZ;
 
   /* query name */
-  status = ares__expand_name_for_response(aptr, abuf, alen, &qname, &len, 0);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &qname, &len, ARES_FALSE);
   if (status != ARES_SUCCESS)
     goto failed_stat;
 
@@ -94,7 +103,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
   for (i = 0; i < ancount; i++)
   {
     rr_name = NULL;
-    status  = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len, 0);
+    status  = ares__expand_name_for_response (aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
     if (status != ARES_SUCCESS)
      {
       ares_free(rr_name);
@@ -131,7 +140,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
 
       /* nsname */
       status = ares__expand_name_for_response(aptr, abuf, alen, &soa->nsname,
-                                               &len, 0);
+                                               &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
        {
         ares_free(rr_name);
@@ -141,7 +150,7 @@ ares_parse_soa_reply(const unsigned char *abuf, int alen,
 
       /* hostmaster */
       status = ares__expand_name_for_response(aptr, abuf, alen,
-                                               &soa->hostmaster, &len, 0);
+                                               &soa->hostmaster, &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
        {
         ares_free(rr_name);
@@ -186,5 +195,5 @@ failed_stat:
     ares_free_data(soa);
   if (qname)
     ares_free(qname);
-  return status;
+  return (int)status;
 }

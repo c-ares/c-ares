@@ -74,7 +74,7 @@ void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd)
 {
   ares__llist_node_t       *node;
   struct server_connection *conn;
-  int                       do_cleanup = 0;
+  ares_bool_t               do_cleanup = ARES_FALSE;
 
   node = ares__htable_asvp_get_direct(channel->connnode_by_socket, fd);
   if (node == NULL) {
@@ -89,13 +89,13 @@ void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd)
 
   /* If we are configured not to stay open, close it out */
   if (!(channel->flags & ARES_FLAG_STAYOPEN)) {
-    do_cleanup = 1;
+    do_cleanup = ARES_TRUE;
   }
 
   /* If the udp connection hit its max queries, always close it */
   if (!conn->is_tcp && channel->udp_max_queries > 0 &&
-      conn->total_queries >= (size_t)channel->udp_max_queries) {
-    do_cleanup = 1;
+      conn->total_queries >= channel->udp_max_queries) {
+    do_cleanup = ARES_TRUE;
   }
 
   if (do_cleanup) {

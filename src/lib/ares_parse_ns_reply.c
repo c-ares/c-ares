@@ -48,20 +48,28 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-int ares_parse_ns_reply( const unsigned char* abuf, int alen,
+int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
                          struct hostent** host )
 {
-  unsigned int qdcount, ancount;
+  size_t qdcount, ancount;
   ares_status_t status;
-  int i, rr_type, rr_class, rr_len;
-  int nameservers_num;
-  long len;
+  size_t i;
+  int rr_type, rr_class;
+  size_t rr_len;
+  size_t nameservers_num;
+  size_t alen;
+  size_t len;
   const unsigned char *aptr;
   char* hostname, *rr_name, *rr_data, **nameservers;
   struct hostent *hostent;
 
   /* Set *host to NULL for all failure cases. */
   *host = NULL;
+
+  if (alen_int < 0)
+    return ARES_EBADRESP;
+
+  alen = (size_t)alen_int;
 
   /* Give up if abuf doesn't have room for a header. */
   if ( alen < HFIXEDSZ )
@@ -75,9 +83,9 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response( aptr, abuf, alen, &hostname, &len, 0);
+  status = ares__expand_name_for_response( aptr, abuf, alen, &hostname, &len, ARES_FALSE);
   if ( status != ARES_SUCCESS )
-    return status;
+    return (int)status;
   if ( aptr + len + QFIXEDSZ > abuf + alen )
   {
     ares_free( hostname );
@@ -95,10 +103,10 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
   nameservers_num = 0;
 
   /* Examine each answer resource record (RR) in turn. */
-  for ( i = 0; i < ( int ) ancount; i++ )
+  for ( i = 0; i < ancount; i++ )
   {
     /* Decode the RR up to the data field. */
-    status = ares__expand_name_for_response( aptr, abuf, alen, &rr_name, &len, 0);
+    status = ares__expand_name_for_response( aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
     if ( status != ARES_SUCCESS )
       break;
     aptr += len;
@@ -123,7 +131,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
     {
       /* Decode the RR data and add it to the nameservers list */
       status = ares__expand_name_for_response( aptr, abuf, alen, &rr_data,
-                                               &len, 1);
+                                               &len, ARES_TRUE);
       if ( status != ARES_SUCCESS )
       {
         ares_free(rr_name);
@@ -186,5 +194,5 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen,
     ares_free( nameservers[i] );
   ares_free( nameservers );
   ares_free( hostname );
-  return status;
+  return (int)status;
 }

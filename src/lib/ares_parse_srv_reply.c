@@ -45,14 +45,16 @@
 #include "ares_private.h"
 
 int
-ares_parse_srv_reply (const unsigned char *abuf, int alen,
+ares_parse_srv_reply (const unsigned char *abuf, int alen_int,
                       struct ares_srv_reply **srv_out)
 {
-  unsigned int qdcount, ancount, i;
+  size_t qdcount, ancount, i;
   const unsigned char *aptr, *vptr;
   ares_status_t status;
-  int rr_type, rr_class, rr_len;
-  long len;
+  int rr_type, rr_class;
+  size_t rr_len;
+  size_t len;
+  size_t alen;
   char *hostname = NULL, *rr_name = NULL;
   struct ares_srv_reply *srv_head = NULL;
   struct ares_srv_reply *srv_last = NULL;
@@ -60,6 +62,11 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
 
   /* Set *srv_out to NULL for all failure cases. */
   *srv_out = NULL;
+
+  if (alen_int < 0)
+    return ARES_EBADRESP;
+
+  alen = (size_t)alen_int;
 
   /* Give up if abuf doesn't have room for a header. */
   if (alen < HFIXEDSZ)
@@ -75,9 +82,9 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
 
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
-  status = ares_expand_name (aptr, abuf, alen, &hostname, &len);
+  status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len, ARES_TRUE);
   if (status != ARES_SUCCESS)
-    return status;
+    return (int)status;
 
   if (aptr + len + QFIXEDSZ > abuf + alen)
     {
@@ -90,7 +97,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
   for (i = 0; i < ancount; i++)
     {
       /* Decode the RR up to the data field. */
-      status = ares_expand_name (aptr, abuf, alen, &rr_name, &len);
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
       if (status != ARES_SUCCESS)
         {
           break;
@@ -146,7 +153,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
           srv_curr->port = DNS__16BIT(vptr);
           vptr += sizeof(unsigned short);
 
-          status = ares_expand_name (vptr, abuf, alen, &srv_curr->host, &len);
+          status = ares__expand_name_for_response(vptr, abuf, alen, &srv_curr->host, &len, ARES_FALSE);
           if (status != ARES_SUCCESS)
             break;
         }
@@ -169,7 +176,7 @@ ares_parse_srv_reply (const unsigned char *abuf, int alen,
     {
       if (srv_head)
         ares_free_data (srv_head);
-      return status;
+      return (int)status;
     }
 
   /* everything looks fine, return the data */

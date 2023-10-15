@@ -44,7 +44,7 @@ int ares_get_servers(ares_channel channel,
   struct ares_addr_node *srvr_last = NULL;
   struct ares_addr_node *srvr_curr;
   ares_status_t status = ARES_SUCCESS;
-  int i;
+  size_t i;
 
   if (!channel)
     return ARES_ENODATA;
@@ -89,7 +89,7 @@ int ares_get_servers(ares_channel channel,
 
   *servers = srvr_head;
 
-  return status;
+  return (int)status;
 }
 
 int ares_get_servers_ports(ares_channel channel,
@@ -99,7 +99,7 @@ int ares_get_servers_ports(ares_channel channel,
   struct ares_addr_port_node *srvr_last = NULL;
   struct ares_addr_port_node *srvr_curr;
   ares_status_t status = ARES_SUCCESS;
-  int i;
+  size_t i;
 
   if (!channel)
     return ARES_ENODATA;
@@ -146,15 +146,15 @@ int ares_get_servers_ports(ares_channel channel,
 
   *servers = srvr_head;
 
-  return status;
+  return (int)status;
 }
 
 int ares_set_servers(ares_channel channel,
                      struct ares_addr_node *servers)
 {
   struct ares_addr_node *srvr;
-  int num_srvrs = 0;
-  int i;
+  size_t num_srvrs = 0;
+  size_t i;
 
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: n/a on non-WinSock */
@@ -206,8 +206,8 @@ int ares_set_servers_ports(ares_channel channel,
                            struct ares_addr_port_node *servers)
 {
   struct ares_addr_port_node *srvr;
-  int num_srvrs = 0;
-  int i;
+  size_t num_srvrs = 0;
+  size_t i;
 
   if (ares_library_initialized() != ARES_SUCCESS)
     return ARES_ENOTINITIALIZED;  /* LCOV_EXCL_LINE: n/a on non-WinSock */
@@ -265,7 +265,7 @@ static ares_status_t set_servers_csv(ares_channel channel,
   char* ptr;
   char* start_host;
   int cc = 0;
-  ares_status_t rv = ARES_SUCCESS;
+  ares_status_t status = ARES_SUCCESS;
   struct ares_addr_port_node *servers = NULL;
   struct ares_addr_port_node *last = NULL;
 
@@ -341,18 +341,16 @@ static ares_status_t set_servers_csv(ares_channel channel,
         }
       }
       /* resolve host, try ipv4 first, rslt is in network byte order */
-      rv = ares_inet_pton(AF_INET, start_host, &in4);
-      if (!rv) {
+      if (!ares_inet_pton(AF_INET, start_host, &in4)) {
         /* Ok, try IPv6 then */
-        rv = ares_inet_pton(AF_INET6, start_host, &in6);
-        if (!rv) {
-          rv = ARES_EBADSTR;
+        if (!ares_inet_pton(AF_INET6, start_host, &in6)) {
+          status = ARES_EBADSTR;
           goto out;
         }
         /* was ipv6, add new server */
         s = ares_malloc(sizeof(*s));
         if (!s) {
-          rv = ARES_ENOMEM;
+          status = ARES_ENOMEM;
           goto out;
         }
         s->family = AF_INET6;
@@ -362,7 +360,7 @@ static ares_status_t set_servers_csv(ares_channel channel,
         /* was ipv4, add new server */
         s = ares_malloc(sizeof(*s));
         if (!s) {
-          rv = ARES_ENOMEM;
+          status = ARES_ENOMEM;
           goto out;
         }
         s->family = AF_INET;
@@ -389,7 +387,7 @@ static ares_status_t set_servers_csv(ares_channel channel,
     }
   }
 
-  rv = ares_set_servers_ports(channel, servers);
+  status = (ares_status_t)ares_set_servers_ports(channel, servers);
 
   out:
   if (csv)
@@ -400,18 +398,18 @@ static ares_status_t set_servers_csv(ares_channel channel,
     ares_free(s);
   }
 
-  return rv;
+  return status;
 }
 
 int ares_set_servers_csv(ares_channel channel,
                          const char* _csv)
 {
-  return set_servers_csv(channel, _csv, FALSE);
+  return (int)set_servers_csv(channel, _csv, FALSE);
 }
 
 int ares_set_servers_ports_csv(ares_channel channel,
                                const char* _csv)
 {
-  return set_servers_csv(channel, _csv, TRUE);
+  return (int)set_servers_csv(channel, _csv, TRUE);
 }
 

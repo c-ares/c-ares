@@ -38,10 +38,10 @@
 #include "ares_private.h"
 
 ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
-                           int qlen, ares_callback callback, void *arg)
+                           size_t qlen, ares_callback callback, void *arg)
 {
   struct query *query;
-  int i, packetsz;
+  size_t i, packetsz;
   struct timeval now;
 
   /* Verify that the query is at least long enough to hold the header. */
@@ -71,7 +71,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
       return ARES_ENOMEM;
     }
-  query->server_info = ares_malloc(channel->nservers *
+  query->server_info = ares_malloc((size_t)channel->nservers *
                                    sizeof(query->server_info[0]));
   if (!query->server_info)
     {
@@ -107,9 +107,9 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
    * of the next server we want to use. */
   query->server = channel->last_server;
   if (channel->rotate == 1)
-    channel->last_server = (channel->last_server + 1) % channel->nservers;
+    channel->last_server = (channel->last_server + 1) % (size_t)channel->nservers;
 
-  for (i = 0; i < channel->nservers; i++)
+  for (i = 0; i < (size_t)channel->nservers; i++)
     {
       query->server_info[i].skip_server = ARES_FALSE;
       query->server_info[i].tcp_connection_generation = 0;
@@ -150,5 +150,5 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
 void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
                ares_callback callback, void *arg)
 {
-  ares_send_ex(channel, qbuf, qlen, callback, arg);
+  ares_send_ex(channel, qbuf, (size_t)qlen, callback, arg);
 }

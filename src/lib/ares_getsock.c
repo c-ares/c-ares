@@ -34,13 +34,16 @@ int ares_getsock(ares_channel channel,
                  int numsocks) /* size of the 'socks' array */
 {
   struct server_state *server;
-  int i;
-  int sockindex=0;
-  int bitmap = 0;
+  size_t i;
+  size_t sockindex=0;
+  unsigned int bitmap = 0;
   unsigned int setbits = 0xffffffff;
 
   /* Are there any active queries? */
   size_t active_queries = ares__llist_len(channel->all_queries);
+
+  if (numsocks <= 0)
+    return 0;
 
   for (i = 0; i < channel->nservers; i++) {
     ares__llist_node_t *node;
@@ -52,7 +55,7 @@ int ares_getsock(ares_channel channel,
 
       struct server_connection *conn = ares__llist_node_val(node);
 
-      if (sockindex >= numsocks || sockindex >= ARES_GETSOCK_MAXNUM)
+      if (sockindex >= (size_t)numsocks || sockindex >= ARES_GETSOCK_MAXNUM)
         break;
 
       /* We only need to register interest in UDP sockets if we have
@@ -75,5 +78,5 @@ int ares_getsock(ares_channel channel,
       sockindex++;
     }
   }
-  return bitmap;
+  return (int)bitmap;
 }

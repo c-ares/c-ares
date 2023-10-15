@@ -49,7 +49,7 @@
 
 ares_status_t ares_append_ai_node(int aftype,
                                   unsigned short port,
-                                  int ttl,
+                                  unsigned int ttl,
                                   const void *adata,
                                   struct ares_addrinfo_node **nodes)
 {
@@ -80,7 +80,7 @@ ares_status_t ares_append_ai_node(int aftype,
       node->ai_family = AF_INET;
       node->ai_addrlen = sizeof(*sin);
       node->ai_addr = (struct sockaddr *)sin;
-      node->ai_ttl = ttl;
+      node->ai_ttl = (int)ttl;
     }
 
   if (aftype == AF_INET6)
@@ -100,7 +100,7 @@ ares_status_t ares_append_ai_node(int aftype,
       node->ai_family = AF_INET6;
       node->ai_addrlen = sizeof(*sin6);
       node->ai_addr = (struct sockaddr *)sin6;
-      node->ai_ttl = ttl;
+      node->ai_ttl = (int)ttl;
     }
 
   return ARES_SUCCESS;

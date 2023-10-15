@@ -163,7 +163,7 @@ int ares_create_query(const char *name, int dnsclass, int type,
         {
           if (*p == '\\' && *(p + 1) != 0)
             p++;
-          *q++ = *p;
+          *q++ = (unsigned char)*p;
         }
 
       /* Go to the next label and repeat, unless we hit the end. */
@@ -188,7 +188,7 @@ int ares_create_query(const char *name, int dnsclass, int type,
       DNS_RR_SET_CLASS(q, max_udp_size);
       q += (EDNSFIXEDSZ-1);
   }
-  buflen = (q - buf);
+  buflen = (size_t)(q - buf);
 
   /* Reject names that are longer than the maximum of 255 bytes that's
    * specified in RFC 1035 ("To simplify implementations, the total length of

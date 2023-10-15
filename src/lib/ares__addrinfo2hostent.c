@@ -61,7 +61,7 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
   struct ares_addrinfo_cname *next_cname;
   char **aliases = NULL;
   char *addrs = NULL;
-  int naliases = 0, naddrs = 0, alias = 0, i;
+  size_t naliases = 0, naddrs = 0, alias = 0, i;
 
   if (ai == NULL || host == NULL)
     return ARES_EBADQUERY;
@@ -153,7 +153,7 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
 
   if (naddrs)
     {
-      addrs = ares_malloc(naddrs * (*host)->h_length);
+      addrs = ares_malloc(naddrs * (size_t)(*host)->h_length);
       if (!addrs)
         {
           goto enomem;
@@ -165,18 +165,18 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
         {
           if(next->ai_family == family)
             {
-              (*host)->h_addr_list[i] = addrs + (i * (*host)->h_length);
+              (*host)->h_addr_list[i] = addrs + (i * (size_t)(*host)->h_length);
               if (family == AF_INET6)
                 {
                   memcpy((*host)->h_addr_list[i],
                      &(CARES_INADDR_CAST(struct sockaddr_in6 *, next->ai_addr)->sin6_addr),
-                     (*host)->h_length);
+                     (size_t)(*host)->h_length);
                 }
               else
                 {
                   memcpy((*host)->h_addr_list[i],
                      &(CARES_INADDR_CAST(struct sockaddr_in *, next->ai_addr)->sin_addr),
-                     (*host)->h_length);
+                     (size_t)(*host)->h_length);
                 }
               ++i;
             }
@@ -206,10 +206,10 @@ enomem:
 
 
 ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
-                                     int req_naddrttls,
+                                     size_t req_naddrttls,
                                      struct ares_addrttl *addrttls,
                                      struct ares_addr6ttl *addr6ttls,
-                                     int *naddrttls)
+                                     size_t *naddrttls)
 {
   struct ares_addrinfo_node *next;
   struct ares_addrinfo_cname *next_cname;

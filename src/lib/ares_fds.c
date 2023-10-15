@@ -35,7 +35,7 @@ int ares_fds(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
 {
   struct server_state *server;
   ares_socket_t nfds;
-  int i;
+  size_t i;
 
   /* Are there any active queries? */
   size_t active_queries = ares__llist_len(channel->all_queries);

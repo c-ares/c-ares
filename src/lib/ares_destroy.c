@@ -54,7 +54,7 @@ void ares_destroy_options(struct ares_options *options)
 
 void ares_destroy(ares_channel channel)
 {
-  int                 i;
+  size_t              i;
   ares__llist_node_t *node = NULL;
 
   if (!channel)
@@ -121,7 +121,7 @@ void ares_destroy(ares_channel channel)
 void ares__destroy_servers_state(ares_channel channel)
 {
   struct server_state *server;
-  int i;
+  size_t i;
 
   if (channel->servers)
     {
@@ -136,5 +136,5 @@ void ares__destroy_servers_state(ares_channel channel)
       ares_free(channel->servers);
       channel->servers = NULL;
     }
-  channel->nservers = -1;
+  channel->nservers = 0;
 }

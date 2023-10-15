@@ -51,13 +51,13 @@
 #include "ares_private.h"
 
 static void sort_addresses(struct hostent *host,
-                           const struct apattern *sortlist, int nsort);
+                           const struct apattern *sortlist, size_t nsort);
 static void sort6_addresses(struct hostent *host,
-                            const struct apattern *sortlist, int nsort);
-static int get_address_index(const struct in_addr *addr,
-                             const struct apattern *sortlist, int nsort);
-static int get6_address_index(const struct ares_in6_addr *addr,
-                              const struct apattern *sortlist, int nsort);
+                            const struct apattern *sortlist, size_t nsort);
+static size_t get_address_index(const struct in_addr *addr,
+                                const struct apattern *sortlist, size_t nsort);
+static size_t get6_address_index(const struct ares_in6_addr *addr,
+                                 const struct apattern *sortlist, size_t nsort);
 
 struct host_query {
   ares_host_callback callback;
@@ -73,7 +73,7 @@ static void ares_gethostbyname_callback(void *arg, int status, int timeouts,
 
   if (status == ARES_SUCCESS)
     {
-      status = ares__addrinfo2hostent(result, AF_UNSPEC, &hostent);
+      status = (int)ares__addrinfo2hostent(result, AF_UNSPEC, &hostent);
     }
 
   /* addrinfo2hostent will only return ENODATA if there are no addresses _and_
@@ -128,10 +128,11 @@ void ares_gethostbyname(ares_channel channel, const char *name, int family,
 
 
 static void sort_addresses(struct hostent *host,
-                           const struct apattern *sortlist, int nsort)
+                           const struct apattern *sortlist, size_t nsort)
 {
   struct in_addr a1, a2;
-  int i1, i2, ind1, ind2;
+  int i1, i2;
+  size_t ind1, ind2;
 
   /* This is a simple insertion sort, not optimized at all.  i1 walks
    * through the address list, with the loop invariant that everything
@@ -157,11 +158,11 @@ static void sort_addresses(struct hostent *host,
 /* Find the first entry in sortlist which matches addr.  Return nsort
  * if none of them match.
  */
-static int get_address_index(const struct in_addr *addr,
-                             const struct apattern *sortlist,
-                             int nsort)
+static size_t get_address_index(const struct in_addr *addr,
+                                const struct apattern *sortlist,
+                                size_t nsort)
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < nsort; i++)
     {
@@ -184,10 +185,11 @@ static int get_address_index(const struct in_addr *addr,
 }
 
 static void sort6_addresses(struct hostent *host,
-                            const struct apattern *sortlist, int nsort)
+                            const struct apattern *sortlist, size_t nsort)
 {
   struct ares_in6_addr a1, a2;
-  int i1, i2, ind1, ind2;
+  int i1, i2;
+  size_t ind1, ind2;
 
   /* This is a simple insertion sort, not optimized at all.  i1 walks
    * through the address list, with the loop invariant that everything
@@ -213,11 +215,11 @@ static void sort6_addresses(struct hostent *host,
 /* Find the first entry in sortlist which matches addr.  Return nsort
  * if none of them match.
  */
-static int get6_address_index(const struct ares_in6_addr *addr,
-                              const struct apattern *sortlist,
-                              int nsort)
+static size_t get6_address_index(const struct ares_in6_addr *addr,
+                                 const struct apattern *sortlist,
+                                 size_t nsort)
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < nsort; i++)
     {
@@ -239,7 +241,7 @@ static ares_status_t file_lookup(const char *name, int family,
 int ares_gethostbyname_file(ares_channel channel, const char *name,
                             int family, struct hostent **host)
 {
-  ares_status_t result;
+  ares_status_t status;
 
   /* We only take the channel to ensure that ares_init() been called. */
   if(channel == NULL)
@@ -253,13 +255,13 @@ int ares_gethostbyname_file(ares_channel channel, const char *name,
   /* Just chain to the internal implementation we use here; it's exactly
    * what we want.
    */
-  result = file_lookup(name, family, host);
-  if(result != ARES_SUCCESS)
+  status = file_lookup(name, family, host);
+  if(status != ARES_SUCCESS)
     {
       /* We guarantee a NULL hostent on failure. */
       *host = NULL;
     }
-  return result;
+  return (int)status;
 }
 
 static ares_status_t file_lookup(const char *name, int family,
