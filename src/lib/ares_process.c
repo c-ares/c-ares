@@ -112,7 +112,7 @@ ares_bool_t          ares__timedout(struct timeval *now, struct timeval *check)
 static void timeadd(struct timeval *now, size_t millisecs)
 {
   now->tv_sec  += (time_t)millisecs / 1000;
-  now->tv_usec += (millisecs % 1000) * 1000;
+  now->tv_usec += (time_t)((millisecs % 1000) * 1000);
 
   if (now->tv_usec >= 1000000) {
     ++(now->tv_sec);
