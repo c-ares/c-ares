@@ -129,7 +129,6 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
 
     if ( rr_class == C_IN && rr_type == T_NS )
     {
-      size_t len;
       /* Decode the RR data and add it to the nameservers list */
       status = ares__expand_name_for_response( aptr, abuf, alen, &rr_data,
                                                &len, ARES_TRUE);
