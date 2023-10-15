@@ -2064,15 +2064,20 @@ static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
   while (*str && *str != ';')
     {
       int bits;
-      char ipbuf[16], ipbufpfx[32];
+      char ipbuf[17], ipbufpfx[32];
+      size_t len;
+
       /* Find just the IP */
       q = str;
       while (*q && *q != '/' && *q != ';' && !ISSPACE(*q))
         q++;
-      if (q-str >= 16)
+
+      len = (size_t)(q-str);
+      if (len >= sizeof(ipbuf)-1)
         return ARES_EBADSTR;
-      memcpy(ipbuf, str, (size_t)(q-str));
-      ipbuf[q-str] = '\0';
+      memcpy(ipbuf, str, len);
+      ipbuf[len] = '\0';
+
       /* Find the prefix */
       if (*q == '/')
         {
@@ -2120,10 +2125,12 @@ static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
         {
           if (ipbufpfx[0])
             {
-              if (q-str >= 16)
+              len = (size_t)(q-str);
+              if (len >= sizeof(ipbuf)-1)
                 return ARES_EBADSTR;
-              memcpy(ipbuf, str, (size_t)(q-str));
-              ipbuf[q-str] = '\0';
+              memcpy(ipbuf, str, len);
+              ipbuf[len] = '\0';
+
               if (ip_addr(ipbuf, q-str, &pat.mask.addr4) != 0)
                 natural_mask(&pat);
             }

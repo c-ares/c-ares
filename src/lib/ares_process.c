@@ -1040,7 +1040,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
     }
   }
   else if (family == AF_INET6) {
-    if (memcmp(channel->local_ip6, &ares_in6addr_any,
+    if (memcmp(channel->local_ip6, ares_in6addr_any._S6_un._S6_u8,
                sizeof(channel->local_ip6)) != 0) {
       memset(&local.sa6, 0, sizeof(local.sa6));
       local.sa6.sin6_family = AF_INET6;
