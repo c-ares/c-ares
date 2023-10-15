@@ -74,8 +74,7 @@ size_t ares_strcpy(char *dest, const char *src, size_t dest_size)
   if (dest == NULL || dest_size == 0)
     return 0;
 
-  if (src != NULL)
-    len = strlen(src);
+  len = ares_strlen(src);
 
   if (len >= dest_size)
     len = dest_size - 1;
@@ -84,5 +83,6 @@ size_t ares_strcpy(char *dest, const char *src, size_t dest_size)
     memcpy(dest, src, len);
   }
 
+  dest[len] = 0;
   return len;
 }
