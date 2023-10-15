@@ -30,6 +30,10 @@
 #include "ares.h"
 #include "ares_private.h"
 
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+
 size_t ares_strlen(const char *str)
 {
   if (str == NULL)
