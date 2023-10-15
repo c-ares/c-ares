@@ -56,7 +56,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_search.c				\
   ares_send.c				\
   ares_strcasecmp.c			\
-  ares_strdup.c				\
+  ares_str.c				\
   ares_strerror.c			\
   ares_strsplit.c			\
   ares_timeout.c			\
@@ -82,7 +82,7 @@ HHEADERS = ares__htable.h		\
   ares_platform.h			\
   ares_private.h			\
   ares_strcasecmp.h			\
-  ares_strdup.h				\
+  ares_str.h				\
   ares_strsplit.h			\
   bitncmp.h				\
   ares_setup.h				\

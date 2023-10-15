@@ -124,7 +124,7 @@ typedef struct ares_rand_state ares_rand_state;
 #  define getenv(ptr) ares_getenv(ptr)
 #endif
 
-#include "ares_strdup.h"
+#include "ares_str.h"
 #include "ares_strsplit.h"
 
 #ifndef HAVE_STRCASECMP

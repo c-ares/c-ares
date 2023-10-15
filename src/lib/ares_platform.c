@@ -11010,7 +11010,7 @@ struct servent *getservbyport(int port, const char *proto)
 
   if (proto)
     {
-      switch (strlen(proto)) {
+      switch (ares_strlen(proto)) {
       case 3:
         if (!strncasecmp(proto, "tcp", 3))
           protocol = "tcp";

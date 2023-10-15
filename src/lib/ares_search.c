@@ -226,8 +226,8 @@ static void end_squery(struct search_query *squery, ares_status_t status,
 /* Concatenate two domains. */
 ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
 {
-  size_t nlen = strlen(name);
-  size_t dlen = strlen(domain);
+  size_t nlen = ares_strlen(name);
+  size_t dlen = ares_strlen(domain);
 
   *s = ares_malloc(nlen + 1 + dlen + 1);
   if (!*s)
@@ -251,7 +251,7 @@ ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
 ares_status_t ares__single_domain(ares_channel channel, const char *name,
                                   char **s)
 {
-  size_t len = strlen(name);
+  size_t len = ares_strlen(name);
   const char *hostaliases;
   FILE *fp;
   char *line = NULL;

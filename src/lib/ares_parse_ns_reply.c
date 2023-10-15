@@ -138,7 +138,8 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
         break;
       }
 
-      nameservers[nameservers_num] = ares_malloc(strlen(rr_data)+1);
+      len = ares_strlen(rr_data)+1;
+      nameservers[nameservers_num] = ares_malloc(len);
 
       if (nameservers[nameservers_num]==NULL)
       {
@@ -147,7 +148,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
         status=ARES_ENOMEM;
         break;
       }
-      strcpy(nameservers[nameservers_num],rr_data);
+      ares_strcpy(nameservers[nameservers_num], rr_data, len);
       ares_free(rr_data);
 
       nameservers_num++;

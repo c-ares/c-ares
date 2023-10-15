@@ -341,7 +341,7 @@ static char *lookup_service(unsigned short port, unsigned int flags,
           snprintf(tmpbuf, sizeof(tmpbuf), "%u", (unsigned int)ntohs(port));
           name = tmpbuf;
         }
-      name_len = strlen(name);
+      name_len = ares_strlen(name);
       if (name_len < buflen)
         /* return it if buffer big enough */
         memcpy(buf, name, name_len + 1);
@@ -408,11 +408,11 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int flags,
   (void) flags;
 #endif
   tmpbuf[IF_NAMESIZE + 1] = '\0';
-  bufl = strlen(buf);
+  bufl = ares_strlen(buf);
 
-  if(bufl + strlen(tmpbuf) < buflen)
+  if(bufl + ares_strlen(tmpbuf) < buflen)
     /* only append the scopeid string if it fits in the target buffer */
-    strcpy(&buf[bufl], tmpbuf);
+    ares_strcpy(&buf[bufl], tmpbuf, buflen - bufl);
 }
 #endif
 
@@ -421,7 +421,7 @@ STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2)
 {
   const char *c1, *c2, *c1_begin;
   int lo1, lo2;
-  size_t s1_len = strlen(s1), s2_len = strlen(s2);
+  size_t s1_len = ares_strlen(s1), s2_len = ares_strlen(s2);
 
   /* If the substr is longer than the full str, it can't match */
   if (s2_len > s1_len)

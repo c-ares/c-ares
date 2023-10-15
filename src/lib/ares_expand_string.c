@@ -64,7 +64,7 @@ ares_status_t ares_expand_string_ex(const unsigned char *encoded,
   if (*s == NULL)
     return ARES_ENOMEM;
   q = *s;
-  strncpy((char *)q, (char *)encoded, len);
+  ares_strcpy((char *)q, (char *)encoded, len+1);
   q[len] = '\0';
 
   *s = q;

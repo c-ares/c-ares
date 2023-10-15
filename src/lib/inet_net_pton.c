@@ -33,6 +33,7 @@
 #include "ares_ipv6.h"
 #include "ares_nowarn.h"
 #include "ares_inet_net_pton.h"
+#include "ares_private.h"
 
 
 const struct ares_in6_addr ares_in6addr_any = { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 } } };
@@ -322,11 +323,11 @@ ares_inet_net_pton_ipv6(const char *src, unsigned char *dst, size_t size)
   char                 buf[INET6_ADDRSTRLEN + sizeof("/128")];
   char                *sep;
 
-  if (strlen(src) >= sizeof buf) {
+  if (ares_strlen(src) >= sizeof buf) {
     SET_ERRNO(EMSGSIZE);
     return (-1);
   }
-  strncpy(buf, src, sizeof buf);
+  ares_strcpy(buf, src, sizeof buf);
 
   sep = strchr(buf, '/');
   if (sep != NULL)
