@@ -49,19 +49,18 @@
 #  define T_URI 256 /* uri selection */
 #endif
 
-int
-ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
-                      struct ares_uri_reply **uri_out)
+int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
+                         struct ares_uri_reply **uri_out)
 {
-  size_t qdcount, ancount, i;
-  const unsigned char *aptr, *vptr;
-  ares_status_t status;
-  int rr_type, rr_class;
-  size_t rr_len;
-  unsigned int rr_ttl;
-  size_t len;
-  size_t alen;
-  char *uri_str = NULL, *rr_name = NULL;
+  size_t                 qdcount, ancount, i;
+  const unsigned char   *aptr, *vptr;
+  ares_status_t          status;
+  int                    rr_type, rr_class;
+  size_t                 rr_len;
+  unsigned int           rr_ttl;
+  size_t                 len;
+  size_t                 alen;
+  char                  *uri_str = NULL, *rr_name = NULL;
   struct ares_uri_reply *uri_head = NULL;
   struct ares_uri_reply *uri_last = NULL;
   struct ares_uri_reply *uri_curr;
@@ -69,21 +68,22 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
   /* Set *uri_out to NULL for all failure cases. */
   *uri_out = NULL;
 
-  if (alen_int < 0)
+  if (alen_int < 0) {
     return ARES_EBADRESP;
+  }
 
   alen = (size_t)alen_int;
 
   /* Give up if abuf doesn't have room for a header. */
-  if (alen < HFIXEDSZ){
+  if (alen < HFIXEDSZ) {
     return ARES_EBADRESP;
   }
 
   /* Fetch the question and answer count from the header. */
-  qdcount = DNS_HEADER_QDCOUNT (abuf);
-  ancount = DNS_HEADER_ANCOUNT (abuf);
+  qdcount = DNS_HEADER_QDCOUNT(abuf);
+  ancount = DNS_HEADER_ANCOUNT(abuf);
   if (qdcount != 1) {
-      return ARES_EBADRESP;
+    return ARES_EBADRESP;
   }
   if (ancount == 0) {
     return ARES_ENODATA;
@@ -91,105 +91,98 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
   /* Expand the name from the question, and skip past the question. */
   aptr = abuf + HFIXEDSZ;
 
-  status = ares__expand_name_for_response(aptr, abuf, alen, &uri_str, &len, ARES_TRUE);
+  status =
+    ares__expand_name_for_response(aptr, abuf, alen, &uri_str, &len, ARES_TRUE);
   if (status != ARES_SUCCESS) {
     return (int)status;
   }
-  if (aptr + len + QFIXEDSZ > abuf + alen)
-    {
-      ares_free (uri_str);
-      return ARES_EBADRESP;
-    }
+  if (aptr + len + QFIXEDSZ > abuf + alen) {
+    ares_free(uri_str);
+    return ARES_EBADRESP;
+  }
   aptr += len + QFIXEDSZ;
 
   /* Examine each answer resource record (RR) in turn. */
-  for (i = 0; i < ancount; i++)
-    {
-      /* Decode the RR up to the data field. */
-      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
-      if (status != ARES_SUCCESS)
-        {
-          break;
-        }
-      aptr += len;
-      if (aptr + RRFIXEDSZ > abuf + alen)
-        {
-          status = ARES_EBADRESP;
-          break;
-        }
-
-      rr_type 	= DNS_RR_TYPE (aptr);
-      rr_class 	= DNS_RR_CLASS (aptr);
-      rr_ttl 	= DNS_RR_TTL(aptr);
-      rr_len 	= DNS_RR_LEN (aptr);
-      aptr += RRFIXEDSZ;
-
-      if (aptr + rr_len > abuf + alen)
-        {
-          status = ARES_EBADRESP;
-          break;
-        }
-
-      /* Check if we are really looking at a URI record */
-      if (rr_class == C_IN && rr_type == T_URI)
-        {
-          /* parse the URI record itself */
-          if (rr_len < 5)
-            {
-              status = ARES_EBADRESP;
-              break;
-            }
-          /* Allocate storage for this URI answer appending it to the list */
-          uri_curr = ares_malloc_data(ARES_DATATYPE_URI_REPLY);
-          if (!uri_curr)
-            {
-              status = ARES_ENOMEM;
-              break;
-            }
-          if (uri_last)
-            {
-              uri_last->next = uri_curr;
-            }
-          else
-            {
-              uri_head = uri_curr;
-            }
-          uri_last = uri_curr;
-
-          vptr = aptr;
-          uri_curr->priority = DNS__16BIT(vptr);
-          vptr += sizeof(unsigned short);
-          uri_curr->weight = DNS__16BIT(vptr);
-          vptr += sizeof(unsigned short);
-          uri_curr->uri = (char *)ares_malloc(rr_len-3);
-          if (!uri_curr->uri) {
-            status = ARES_ENOMEM;
-            break;
-          }
-          ares_strcpy(uri_curr->uri, (const char *)vptr, rr_len-3);
-          uri_curr->ttl = (int)rr_ttl;
-        }
-
-      /* Don't lose memory in the next iteration */
-      ares_free (rr_name);
-      rr_name = NULL;
-
-      /* Move on to the next record */
-      aptr += rr_len;
+  for (i = 0; i < ancount; i++) {
+    /* Decode the RR up to the data field. */
+    status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len,
+                                            ARES_FALSE);
+    if (status != ARES_SUCCESS) {
+      break;
+    }
+    aptr += len;
+    if (aptr + RRFIXEDSZ > abuf + alen) {
+      status = ARES_EBADRESP;
+      break;
     }
 
-  if (uri_str)
-    ares_free (uri_str);
-  if (rr_name)
-    ares_free (rr_name);
+    rr_type   = DNS_RR_TYPE(aptr);
+    rr_class  = DNS_RR_CLASS(aptr);
+    rr_ttl    = DNS_RR_TTL(aptr);
+    rr_len    = DNS_RR_LEN(aptr);
+    aptr     += RRFIXEDSZ;
+
+    if (aptr + rr_len > abuf + alen) {
+      status = ARES_EBADRESP;
+      break;
+    }
+
+    /* Check if we are really looking at a URI record */
+    if (rr_class == C_IN && rr_type == T_URI) {
+      /* parse the URI record itself */
+      if (rr_len < 5) {
+        status = ARES_EBADRESP;
+        break;
+      }
+      /* Allocate storage for this URI answer appending it to the list */
+      uri_curr = ares_malloc_data(ARES_DATATYPE_URI_REPLY);
+      if (!uri_curr) {
+        status = ARES_ENOMEM;
+        break;
+      }
+      if (uri_last) {
+        uri_last->next = uri_curr;
+      } else {
+        uri_head = uri_curr;
+      }
+      uri_last = uri_curr;
+
+      vptr                = aptr;
+      uri_curr->priority  = DNS__16BIT(vptr);
+      vptr               += sizeof(unsigned short);
+      uri_curr->weight    = DNS__16BIT(vptr);
+      vptr               += sizeof(unsigned short);
+      uri_curr->uri       = (char *)ares_malloc(rr_len - 3);
+      if (!uri_curr->uri) {
+        status = ARES_ENOMEM;
+        break;
+      }
+      ares_strcpy(uri_curr->uri, (const char *)vptr, rr_len - 3);
+      uri_curr->ttl = (int)rr_ttl;
+    }
+
+    /* Don't lose memory in the next iteration */
+    ares_free(rr_name);
+    rr_name = NULL;
+
+    /* Move on to the next record */
+    aptr += rr_len;
+  }
+
+  if (uri_str) {
+    ares_free(uri_str);
+  }
+  if (rr_name) {
+    ares_free(rr_name);
+  }
 
   /* clean up on error */
-  if (status != ARES_SUCCESS)
-    {
-      if (uri_head)
-        ares_free_data (uri_head);
-      return (int)status;
+  if (status != ARES_SUCCESS) {
+    if (uri_head) {
+      ares_free_data(uri_head);
     }
+    return (int)status;
+  }
 
   /* everything looks fine, return the data */
   *uri_out = uri_head;

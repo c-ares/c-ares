@@ -45,204 +45,210 @@
 #include "ares_nowarn.h"
 #include "ares_private.h"
 
-int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int, const void *addr,
-                         int addrlen, int family, struct hostent **host)
+int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
+                         const void *addr, int addrlen, int family,
+                         struct hostent **host)
 {
-  size_t qdcount, ancount;
-  ares_status_t status;
-  size_t i;
-  int rr_type, rr_class;
-  size_t rr_len;
-  size_t len;
-  size_t alen;
+  size_t               qdcount, ancount;
+  ares_status_t        status;
+  size_t               i;
+  int                  rr_type, rr_class;
+  size_t               rr_len;
+  size_t               len;
+  size_t               alen;
   const unsigned char *aptr;
-  char *ptrname, *hostname, *rr_name, *rr_data;
-  struct hostent *hostent = NULL;
-  size_t aliascnt = 0;
-  size_t alias_alloc = 8;
-  char ** aliases;
-  size_t rr_data_len;
+  char                *ptrname, *hostname, *rr_name, *rr_data;
+  struct hostent      *hostent     = NULL;
+  size_t               aliascnt    = 0;
+  size_t               alias_alloc = 8;
+  char               **aliases;
+  size_t               rr_data_len;
 
   /* Set *host to NULL for all failure cases. */
   *host = NULL;
 
-  if (alen_int < 0)
+  if (alen_int < 0) {
     return ARES_EBADRESP;
+  }
 
   alen = (size_t)alen_int;
 
   /* Give up if abuf doesn't have room for a header. */
-  if (alen < HFIXEDSZ)
+  if (alen < HFIXEDSZ) {
     return ARES_EBADRESP;
+  }
 
   /* Fetch the question and answer count from the header. */
   qdcount = DNS_HEADER_QDCOUNT(abuf);
   ancount = DNS_HEADER_ANCOUNT(abuf);
-  if (qdcount != 1)
+  if (qdcount != 1) {
     return ARES_EBADRESP;
+  }
 
   /* Expand the name from the question, and skip past the question. */
-  aptr = abuf + HFIXEDSZ;
+  aptr   = abuf + HFIXEDSZ;
   status = ares__expand_name_for_response(aptr, abuf, alen, &ptrname, &len, 0);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return (int)status;
-  if (aptr + len + QFIXEDSZ > abuf + alen)
-    {
-      ares_free(ptrname);
-      return ARES_EBADRESP;
-    }
+  }
+  if (aptr + len + QFIXEDSZ > abuf + alen) {
+    ares_free(ptrname);
+    return ARES_EBADRESP;
+  }
   aptr += len + QFIXEDSZ;
 
   /* Examine each answer resource record (RR) in turn. */
   hostname = NULL;
-  aliases = ares_malloc(alias_alloc * sizeof(char *));
-  if (!aliases)
-    {
-      ares_free(ptrname);
-      return ARES_ENOMEM;
+  aliases  = ares_malloc(alias_alloc * sizeof(char *));
+  if (!aliases) {
+    ares_free(ptrname);
+    return ARES_ENOMEM;
+  }
+  for (i = 0; i < ancount; i++) {
+    /* Decode the RR up to the data field. */
+    status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len,
+                                            ARES_FALSE);
+    if (status != ARES_SUCCESS) {
+      break;
     }
-  for (i = 0; i < ancount; i++)
-    {
-      /* Decode the RR up to the data field. */
-      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
-      if (status != ARES_SUCCESS)
-        break;
-      aptr += len;
-      if (aptr + RRFIXEDSZ > abuf + alen)
-        {
-          ares_free(rr_name);
-          status = ARES_EBADRESP;
-          break;
-        }
-      rr_type = DNS_RR_TYPE(aptr);
-      rr_class = DNS_RR_CLASS(aptr);
-      rr_len = DNS_RR_LEN(aptr);
-      aptr += RRFIXEDSZ;
-      if (aptr + rr_len > abuf + alen)
-        {
-          ares_free(rr_name);
-          status = ARES_EBADRESP;
-          break;
-        }
-
-      if (rr_class == C_IN && rr_type == T_PTR
-          && strcasecmp(rr_name, ptrname) == 0)
-        {
-          /* Decode the RR data and set hostname to it. */
-          status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data,
-                                                  &len, ARES_TRUE);
-          if (status != ARES_SUCCESS)
-            {
-              ares_free(rr_name);
-              break;
-            }
-          if (hostname)
-            ares_free(hostname);
-          hostname = rr_data;
-          rr_data_len = ares_strlen(rr_data)+1;
-          aliases[aliascnt] = ares_malloc(rr_data_len);
-          if (!aliases[aliascnt])
-            {
-              ares_free(rr_name);
-              status = ARES_ENOMEM;
-              break;
-            }
-          ares_strcpy(aliases[aliascnt], rr_data, rr_data_len);
-          aliascnt++;
-          if (aliascnt >= alias_alloc) {
-            char **ptr;
-            alias_alloc *= 2;
-            ptr = ares_realloc(aliases, alias_alloc * sizeof(char *));
-            if(!ptr) {
-              ares_free(rr_name);
-              status = ARES_ENOMEM;
-              break;
-            }
-            aliases = ptr;
-          }
-        }
-
-      if (rr_class == C_IN && rr_type == T_CNAME)
-        {
-          /* Decode the RR data and replace ptrname with it. */
-          status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data,
-                                                  &len, ARES_TRUE);
-          if (status != ARES_SUCCESS)
-            {
-              ares_free(rr_name);
-              break;
-            }
-          ares_free(ptrname);
-          ptrname = rr_data;
-        }
-
+    aptr += len;
+    if (aptr + RRFIXEDSZ > abuf + alen) {
       ares_free(rr_name);
-      aptr += rr_len;
-      if (aptr > abuf + alen)
-        {  /* LCOV_EXCL_START: already checked above */
-          status = ARES_EBADRESP;
-          break;
-        }  /* LCOV_EXCL_STOP */
+      status = ARES_EBADRESP;
+      break;
+    }
+    rr_type   = DNS_RR_TYPE(aptr);
+    rr_class  = DNS_RR_CLASS(aptr);
+    rr_len    = DNS_RR_LEN(aptr);
+    aptr     += RRFIXEDSZ;
+    if (aptr + rr_len > abuf + alen) {
+      ares_free(rr_name);
+      status = ARES_EBADRESP;
+      break;
     }
 
-  if (status == ARES_SUCCESS && !hostname)
-    status = ARES_ENODATA;
-  if (status == ARES_SUCCESS)
-    {
-      /* If we don't reach the end, we must have failed due to out of memory */
-      status = ARES_ENOMEM;
-
-      /* We got our answer.  Allocate memory to build the host entry. */
-      hostent = ares_malloc(sizeof(*hostent));
-      if (!hostent)
-        goto fail;
-
-      /* If we don't memset here, cleanups may fail */
-      memset(hostent, 0, sizeof(*hostent));
-
-      hostent->h_addr_list = ares_malloc(2 * sizeof(char *));
-      if (!hostent->h_addr_list)
-        goto fail;
-
-
-      if (addr && addrlen) {
-        hostent->h_addr_list[0] = ares_malloc((size_t)addrlen);
-        if (!hostent->h_addr_list[0])
-          goto fail;
-      } else {
-        hostent->h_addr_list[0] = NULL;
+    if (rr_class == C_IN && rr_type == T_PTR &&
+        strcasecmp(rr_name, ptrname) == 0) {
+      /* Decode the RR data and set hostname to it. */
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data, &len,
+                                              ARES_TRUE);
+      if (status != ARES_SUCCESS) {
+        ares_free(rr_name);
+        break;
       }
-
-      hostent->h_aliases = ares_malloc((aliascnt+1) * sizeof (char *));
-      if (!hostent->h_aliases)
-        goto fail;
-
-      /* Fill in the hostent and return successfully. */
-      hostent->h_name = hostname;
-      for (i=0 ; i<aliascnt ; i++)
-        hostent->h_aliases[i] = aliases[i];
-      hostent->h_aliases[aliascnt] = NULL;
-      hostent->h_addrtype = aresx_sitoss(family);
-      hostent->h_length = aresx_sitoss(addrlen);
-      if (addr && addrlen)
-        memcpy(hostent->h_addr_list[0], addr, (size_t)addrlen);
-      hostent->h_addr_list[1] = NULL;
-      *host = hostent;
-      ares_free(aliases);
-      ares_free(ptrname);
-
-      return ARES_SUCCESS;
+      if (hostname) {
+        ares_free(hostname);
+      }
+      hostname          = rr_data;
+      rr_data_len       = ares_strlen(rr_data) + 1;
+      aliases[aliascnt] = ares_malloc(rr_data_len);
+      if (!aliases[aliascnt]) {
+        ares_free(rr_name);
+        status = ARES_ENOMEM;
+        break;
+      }
+      ares_strcpy(aliases[aliascnt], rr_data, rr_data_len);
+      aliascnt++;
+      if (aliascnt >= alias_alloc) {
+        char **ptr;
+        alias_alloc *= 2;
+        ptr          = ares_realloc(aliases, alias_alloc * sizeof(char *));
+        if (!ptr) {
+          ares_free(rr_name);
+          status = ARES_ENOMEM;
+          break;
+        }
+        aliases = ptr;
+      }
     }
+
+    if (rr_class == C_IN && rr_type == T_CNAME) {
+      /* Decode the RR data and replace ptrname with it. */
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data, &len,
+                                              ARES_TRUE);
+      if (status != ARES_SUCCESS) {
+        ares_free(rr_name);
+        break;
+      }
+      ares_free(ptrname);
+      ptrname = rr_data;
+    }
+
+    ares_free(rr_name);
+    aptr += rr_len;
+    if (aptr > abuf + alen) { /* LCOV_EXCL_START: already checked above */
+      status = ARES_EBADRESP;
+      break;
+    } /* LCOV_EXCL_STOP */
+  }
+
+  if (status == ARES_SUCCESS && !hostname) {
+    status = ARES_ENODATA;
+  }
+  if (status == ARES_SUCCESS) {
+    /* If we don't reach the end, we must have failed due to out of memory */
+    status = ARES_ENOMEM;
+
+    /* We got our answer.  Allocate memory to build the host entry. */
+    hostent = ares_malloc(sizeof(*hostent));
+    if (!hostent) {
+      goto fail;
+    }
+
+    /* If we don't memset here, cleanups may fail */
+    memset(hostent, 0, sizeof(*hostent));
+
+    hostent->h_addr_list = ares_malloc(2 * sizeof(char *));
+    if (!hostent->h_addr_list) {
+      goto fail;
+    }
+
+
+    if (addr && addrlen) {
+      hostent->h_addr_list[0] = ares_malloc((size_t)addrlen);
+      if (!hostent->h_addr_list[0]) {
+        goto fail;
+      }
+    } else {
+      hostent->h_addr_list[0] = NULL;
+    }
+
+    hostent->h_aliases = ares_malloc((aliascnt + 1) * sizeof(char *));
+    if (!hostent->h_aliases) {
+      goto fail;
+    }
+
+    /* Fill in the hostent and return successfully. */
+    hostent->h_name = hostname;
+    for (i = 0; i < aliascnt; i++) {
+      hostent->h_aliases[i] = aliases[i];
+    }
+    hostent->h_aliases[aliascnt] = NULL;
+    hostent->h_addrtype          = aresx_sitoss(family);
+    hostent->h_length            = aresx_sitoss(addrlen);
+    if (addr && addrlen) {
+      memcpy(hostent->h_addr_list[0], addr, (size_t)addrlen);
+    }
+    hostent->h_addr_list[1] = NULL;
+    *host                   = hostent;
+    ares_free(aliases);
+    ares_free(ptrname);
+
+    return ARES_SUCCESS;
+  }
 
 fail:
   ares_free_hostent(hostent);
 
-  for (i=0 ; i<aliascnt ; i++)
-    if (aliases[i])
+  for (i = 0; i < aliascnt; i++) {
+    if (aliases[i]) {
       ares_free(aliases[i]);
+    }
+  }
   ares_free(aliases);
-  if (hostname)
+  if (hostname) {
     ares_free(hostname);
+  }
   ares_free(ptrname);
   return (int)status;
 }

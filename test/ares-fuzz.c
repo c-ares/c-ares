@@ -26,9 +26,9 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef WIN32
-#include <io.h>
+#  include <io.h>
 #else
-#include <unistd.h>
+#  include <unistd.h>
 #endif
 
 #include "ares.h"
@@ -38,16 +38,17 @@ static unsigned char afl_buffer[kMaxAflInputSize];
 
 #ifdef __AFL_LOOP
 /* If we are built with afl-clang-fast, use persistent mode */
-#define KEEP_FUZZING(count)  __AFL_LOOP(1000)
+#  define KEEP_FUZZING(count) __AFL_LOOP(1000)
 #else
 /* If we are built with afl-clang, execute each input once */
-#define KEEP_FUZZING(count) ((count) < 1)
+#  define KEEP_FUZZING(count) ((count) < 1)
 #endif
 
 /* In ares-test-fuzz.c and ares-test-fuzz-name.c: */
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
-static void ProcessFile(int fd) {
+static void ProcessFile(int fd)
+{
   ares_ssize_t count = read(fd, afl_buffer, kMaxAflInputSize);
   /*
    * Make a copy of the data so that it's not part of a larger
@@ -61,7 +62,8 @@ static void ProcessFile(int fd) {
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   if (argc == 1) {
     int count = 0;
     while (KEEP_FUZZING(count)) {

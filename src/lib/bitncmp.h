@@ -29,7 +29,7 @@
 #ifndef HAVE_BITNCMP
 int ares__bitncmp(const void *l, const void *r, size_t n);
 #else
-#define ares__bitncmp(x,y,z) bitncmp(x,y,z)
+#  define ares__bitncmp(x, y, z) bitncmp(x, y, z)
 #endif
 
 #endif /* __ARES_BITNCMP_H */

@@ -45,7 +45,7 @@ static ares_ssize_t name_length(const unsigned char *encoded,
                                 ares_bool_t is_hostname);
 
 /* Reserved characters for names that need to be escaped */
-static ares_bool_t is_reservedch(int ch)
+static ares_bool_t  is_reservedch(int ch)
 {
   switch (ch) {
     case '"':
@@ -66,15 +66,16 @@ static ares_bool_t is_reservedch(int ch)
 
 static ares_bool_t ares__isprint(int ch)
 {
-  if (ch >= 0x20 && ch <= 0x7E)
+  if (ch >= 0x20 && ch <= 0x7E) {
     return ARES_TRUE;
+  }
   return ARES_FALSE;
 }
 
 /* Character set allowed by hostnames.  This is to include the normal
  * domain name character set plus:
  *  - underscores which are used in SRV records.
- *  - Forward slashes such as are used for classless in-addr.arpa 
+ *  - Forward slashes such as are used for classless in-addr.arpa
  *    delegation (CNAMEs)
  *  - Asterisks may be used for wildcard domains in CNAMEs as seen in the
  *    real world.
@@ -88,14 +89,18 @@ static ares_bool_t is_hostnamech(int ch)
   /* [A-Za-z0-9-*._/]
    * Don't use isalnum() as it is locale-specific
    */
-  if (ch >= 'A' && ch <= 'Z')
+  if (ch >= 'A' && ch <= 'Z') {
     return ARES_TRUE;
-  if (ch >= 'a' && ch <= 'z')
+  }
+  if (ch >= 'a' && ch <= 'z') {
     return ARES_TRUE;
-  if (ch >= '0' && ch <= '9')
+  }
+  if (ch >= '0' && ch <= '9') {
     return ARES_TRUE;
-  if (ch == '-' || ch == '.' || ch == '_' || ch == '/' || ch == '*')
+  }
+  if (ch == '-' || ch == '.' || ch == '_' || ch == '/' || ch == '*') {
     return ARES_TRUE;
+  }
 
   return ARES_FALSE;
 }
@@ -132,21 +137,24 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
                                           size_t alen, char **s, size_t *enclen,
                                           ares_bool_t is_hostname)
 {
-  size_t len, indir = 0;
-  char *q;
+  size_t               len, indir = 0;
+  char                *q;
   const unsigned char *p;
+
   union {
     ares_ssize_t sig;
-    size_t uns;
+    size_t       uns;
   } nlen;
 
   nlen.sig = name_length(encoded, abuf, alen, is_hostname);
-  if (nlen.sig < 0)
+  if (nlen.sig < 0) {
     return ARES_EBADNAME;
+  }
 
   *s = ares_malloc(nlen.uns + 1);
-  if (!*s)
+  if (!*s) {
     return ARES_ENOMEM;
+  }
   q = *s;
 
   if (nlen.uns == 0) {
@@ -157,84 +165,76 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
 
     /* indirect root label (like 0xc0 0x0c) is 2 bytes long (stupid, but
        valid) */
-    if ((*encoded & INDIR_MASK) == INDIR_MASK)
+    if ((*encoded & INDIR_MASK) == INDIR_MASK) {
       *enclen = 2L;
-    else
-      *enclen = 1L;  /* the caller should move one byte to get past this */
+    } else {
+      *enclen = 1L; /* the caller should move one byte to get past this */
+    }
 
     return ARES_SUCCESS;
   }
 
   /* No error-checking necessary; it was all done by name_length(). */
   p = encoded;
-  while (*p)
-    {
-      if ((*p & INDIR_MASK) == INDIR_MASK)
-        {
-          if (!indir)
-            {
-              *enclen = (size_t)(p + 2U - encoded);
-              indir = 1;
-            }
-          p = abuf + ((*p & ~INDIR_MASK) << 8 | *(p + 1));
-        }
-      else
-        {
-          size_t name_len = *p;
-          len = name_len;
-          p++;
+  while (*p) {
+    if ((*p & INDIR_MASK) == INDIR_MASK) {
+      if (!indir) {
+        *enclen = (size_t)(p + 2U - encoded);
+        indir   = 1;
+      }
+      p = abuf + ((*p & ~INDIR_MASK) << 8 | *(p + 1));
+    } else {
+      size_t name_len = *p;
+      len             = name_len;
+      p++;
 
-          while (len--)
-            {
-              /* Output as \DDD for consistency with RFC1035 5.1, except
-               * for the special case of a root name response  */
-              if (!ares__isprint(*p) && !(name_len == 1 && *p == 0))
-                {
-                  *q++ = '\\';
-                  *q++ = (char)('0' + *p / 100);
-                  *q++ = (char)('0' + (*p % 100) / 10);
-                  *q++ = (char)('0' + (*p % 10));
-                }
-              else if (is_reservedch(*p))
-                {
-                  *q++ = '\\';
-                  *q++ = (char)*p;
-                }
-              else
-                {
-                  *q++ = (char)*p;
-                }
-              p++;
-            }
-          *q++ = '.';
+      while (len--) {
+        /* Output as \DDD for consistency with RFC1035 5.1, except
+         * for the special case of a root name response  */
+        if (!ares__isprint(*p) && !(name_len == 1 && *p == 0)) {
+          *q++ = '\\';
+          *q++ = (char)('0' + *p / 100);
+          *q++ = (char)('0' + (*p % 100) / 10);
+          *q++ = (char)('0' + (*p % 10));
+        } else if (is_reservedch(*p)) {
+          *q++ = '\\';
+          *q++ = (char)*p;
+        } else {
+          *q++ = (char)*p;
         }
-     }
+        p++;
+      }
+      *q++ = '.';
+    }
+  }
 
-  if (!indir)
+  if (!indir) {
     *enclen = (size_t)(p + 1U - encoded);
+  }
 
   /* Nuke the trailing period if we wrote one. */
-  if (q > *s)
+  if (q > *s) {
     *(q - 1) = 0;
-  else
+  } else {
     *q = 0; /* zero terminate; LCOV_EXCL_LINE: empty names exit above */
+  }
 
   return ARES_SUCCESS;
 }
-
 
 int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
                      int alen, char **s, long *enclen)
 {
   /* Keep public API compatible */
-  size_t enclen_temp = 0;
+  size_t        enclen_temp = 0;
   ares_status_t status;
 
-  if (alen < 0)
+  if (alen < 0) {
     return ARES_EBADRESP;
+  }
 
-  status = ares__expand_name_validated(encoded, abuf, (size_t)alen, s,
-                                       &enclen_temp, ARES_FALSE);
+  status  = ares__expand_name_validated(encoded, abuf, (size_t)alen, s,
+                                        &enclen_temp, ARES_FALSE);
   *enclen = (long)enclen_temp;
   return (int)status;
 }
@@ -243,76 +243,72 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
  * -1 if the encoding is invalid.
  */
 static ares_ssize_t name_length(const unsigned char *encoded,
-                                const unsigned char *abuf,
-                                size_t alen, ares_bool_t is_hostname)
+                                const unsigned char *abuf, size_t alen,
+                                ares_bool_t is_hostname)
 {
   size_t n = 0, offset, indir = 0, top;
 
   /* Allow the caller to pass us abuf + alen and have us check for it. */
-  if (encoded >= abuf + alen)
+  if (encoded >= abuf + alen) {
     return -1;
+  }
 
-  while (*encoded)
-    {
-      top = (*encoded & INDIR_MASK);
-      if (top == INDIR_MASK)
-        {
-          /* Check the offset and go there. */
-          if (encoded + 1 >= abuf + alen)
-            return -1;
-          offset = (size_t)(*encoded & ~INDIR_MASK) << 8 | *(encoded + 1);
-          if (offset >= alen)
-            return -1;
-          encoded = abuf + offset;
+  while (*encoded) {
+    top = (*encoded & INDIR_MASK);
+    if (top == INDIR_MASK) {
+      /* Check the offset and go there. */
+      if (encoded + 1 >= abuf + alen) {
+        return -1;
+      }
+      offset = (size_t)(*encoded & ~INDIR_MASK) << 8 | *(encoded + 1);
+      if (offset >= alen) {
+        return -1;
+      }
+      encoded = abuf + offset;
 
-          /* If we've seen more indirects than the message length,
-           * then there's a loop.
-           */
-          ++indir;
-          if (indir > alen || indir > MAX_INDIRS)
+      /* If we've seen more indirects than the message length,
+       * then there's a loop.
+       */
+      ++indir;
+      if (indir > alen || indir > MAX_INDIRS) {
+        return -1;
+      }
+    } else if (top == 0x00) {
+      size_t name_len = *encoded;
+      offset          = name_len;
+      if (encoded + offset + 1 >= abuf + alen) {
+        return -1;
+      }
+      encoded++;
+
+      while (offset--) {
+        if (!ares__isprint(*encoded) && !(name_len == 1 && *encoded == 0)) {
+          if (is_hostname) {
             return -1;
+          }
+          n += 4;
+        } else if (is_reservedch(*encoded)) {
+          if (is_hostname) {
+            return -1;
+          }
+          n += 2;
+        } else {
+          if (is_hostname && !is_hostnamech(*encoded)) {
+            return -1;
+          }
+          n += 1;
         }
-      else if (top == 0x00)
-        {
-          size_t name_len = *encoded;
-          offset = name_len;
-          if (encoded + offset + 1 >= abuf + alen)
-            return -1;
-          encoded++;
+        encoded++;
+      }
 
-          while (offset--)
-            {
-              if (!ares__isprint(*encoded) && !(name_len == 1 && *encoded == 0))
-                {
-                  if (is_hostname)
-                    return -1;
-                  n += 4;
-                }
-              else if (is_reservedch(*encoded))
-                {
-                  if (is_hostname)
-                    return -1;
-                  n += 2;
-                }
-              else
-                {
-                  if (is_hostname && !is_hostnamech(*encoded))
-                    return -1;
-                  n += 1;
-                }
-              encoded++;
-            }
-
-          n++;
-        }
-      else
-        {
-          /* RFC 1035 4.1.4 says other options (01, 10) for top 2
-           * bits are reserved.
-           */
-          return -1;
-        }
+      n++;
+    } else {
+      /* RFC 1035 4.1.4 says other options (01, 10) for top 2
+       * bits are reserved.
+       */
+      return -1;
     }
+  }
 
   /* If there were any labels at all, then the number of dots is one
    * less than the number of labels, so subtract one.
@@ -325,12 +321,13 @@ static ares_ssize_t name_length(const unsigned char *encoded,
 ares_status_t ares__expand_name_for_response(const unsigned char *encoded,
                                              const unsigned char *abuf,
                                              size_t alen, char **s,
-                                             size_t *enclen,
+                                             size_t     *enclen,
                                              ares_bool_t is_hostname)
 {
-  ares_status_t status = ares__expand_name_validated(encoded, abuf, alen, s,
-                                                     enclen, is_hostname);
-  if (status == ARES_EBADNAME)
+  ares_status_t status =
+    ares__expand_name_validated(encoded, abuf, alen, s, enclen, is_hostname);
+  if (status == ARES_EBADNAME) {
     status = ARES_EBADRESP;
+  }
   return status;
 }
