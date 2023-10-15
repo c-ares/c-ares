@@ -2120,6 +2120,8 @@ static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
         {
           if (ipbufpfx[0])
             {
+              if (q-str >= 16)
+                return ARES_EBADSTR;
               memcpy(ipbuf, str, (size_t)(q-str));
               ipbuf[q-str] = '\0';
               if (ip_addr(ipbuf, q-str, &pat.mask.addr4) != 0)

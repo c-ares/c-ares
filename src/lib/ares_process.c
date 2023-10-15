@@ -418,6 +418,7 @@ static void read_udp_packets_fd(ares_channel channel,
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
   } from;
+  memset(&from, 0, sizeof(from));
 #endif
 
   /* To reduce event loop overhead, read and process as many

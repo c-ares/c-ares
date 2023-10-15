@@ -66,18 +66,21 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
   if (ai == NULL || host == NULL)
     return ARES_EBADQUERY;
 
+  /* Use the first node of the response as the family, since hostent can only
+   * represent one family.  We assume getaddrinfo() returned a sorted list if
+   * the user requested AF_UNSPEC. */
+  if (family == AF_UNSPEC && ai->nodes)
+    family = ai->nodes->ai_family;
+
+  if (family != AF_INET && family != AF_INET6)
+    return ARES_EBADQUERY;
+
   *host = ares_malloc(sizeof(**host));
   if (!(*host))
     {
       goto enomem;
     }
   memset(*host, 0, sizeof(**host));
-
-  /* Use the first node of the response as the family, since hostent can only
-   * represent one family.  We assume getaddrinfo() returned a sorted list if
-   * the user requested AF_UNSPEC. */
-  if (family == AF_UNSPEC && ai->nodes)
-    family = ai->nodes->ai_family;
 
   next = ai->nodes;
   while (next)
@@ -148,8 +151,12 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
     }
 
   (*host)->h_addrtype = family;
-  (*host)->h_length = (family == AF_INET)?
-     sizeof(struct in_addr):sizeof(struct ares_in6_addr);
+
+  if (family == AF_INET)
+    (*host)->h_length = sizeof(struct in_addr);
+
+  if (family == AF_INET6)
+    (*host)->h_length = sizeof(struct ares_in6_addr);
 
   if (naddrs)
     {
@@ -172,7 +179,7 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
                      &(CARES_INADDR_CAST(struct sockaddr_in6 *, next->ai_addr)->sin6_addr),
                      (size_t)(*host)->h_length);
                 }
-              else
+              if (family == AF_INET)
                 {
                   memcpy((*host)->h_addr_list[i],
                      &(CARES_INADDR_CAST(struct sockaddr_in *, next->ai_addr)->sin_addr),

@@ -253,7 +253,7 @@ static ares_status_t file_lookup(struct ares_addr *addr, struct hostent **host)
         }
       else if (addr->family == AF_INET6)
         {
-          if (memcmp((*host)->h_addr, &addr->addrV6,
+          if (memcmp((*host)->h_addr, addr->addrV6._S6_un._S6_u8,
                      sizeof(addr->addrV6)) == 0)
             break;
         }
