@@ -430,7 +430,7 @@ static ares_bool_t is_localhost(const char *name)
   if (strcmp(name, "localhost") == 0)
     return ARES_TRUE;
 
-  len = strlen(name);
+  len = ares_strlen(name);
   if (len < 10 /* strlen(".localhost") */)
     return ARES_FALSE;
 
@@ -855,7 +855,7 @@ static ares_bool_t as_is_first(const struct host_query* hquery)
 {
   char* p;
   size_t ndots = 0;
-  size_t nname = hquery->name?strlen(hquery->name):0;
+  size_t nname = ares_strlen(hquery->name);
   for (p = hquery->name; p && *p; p++)
     {
       if (*p == '.')
@@ -873,7 +873,7 @@ static ares_bool_t as_is_first(const struct host_query* hquery)
 
 static ares_bool_t as_is_only(const struct host_query* hquery)
 {
-  size_t nname = hquery->name?strlen(hquery->name):0;
+  size_t nname = ares_strlen(hquery->name);
   if (nname && hquery->name[nname-1] == '.')
     return ARES_TRUE;
   return ARES_FALSE;

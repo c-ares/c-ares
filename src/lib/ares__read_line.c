@@ -59,7 +59,7 @@ ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize)
 
       if (!fgets(*buf + offset, bytestoread, fp))
         return (offset != 0) ? 0 : (ferror(fp)) ? ARES_EFILE : ARES_EOF;
-      len = offset + strlen(*buf + offset);
+      len = offset + ares_strlen(*buf + offset);
       if ((*buf)[len - 1] == '\n')
         {
           (*buf)[len - 1] = 0;

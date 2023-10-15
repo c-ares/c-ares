@@ -129,6 +129,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
 
     if ( rr_class == C_IN && rr_type == T_NS )
     {
+      size_t len;
       /* Decode the RR data and add it to the nameservers list */
       status = ares__expand_name_for_response( aptr, abuf, alen, &rr_data,
                                                &len, ARES_TRUE);
@@ -138,7 +139,8 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
         break;
       }
 
-      nameservers[nameservers_num] = ares_malloc(strlen(rr_data)+1);
+      len = ares_strlen(rr_data)+1;
+      nameservers[nameservers_num] = ares_malloc(len);
 
       if (nameservers[nameservers_num]==NULL)
       {
@@ -147,7 +149,7 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
         status=ARES_ENOMEM;
         break;
       }
-      strcpy(nameservers[nameservers_num],rr_data);
+      ares_strcpy(nameservers[nameservers_num], rr_data, len);
       ares_free(rr_data);
 
       nameservers_num++;

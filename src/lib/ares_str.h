@@ -24,29 +24,26 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#ifndef HEADER_CARES_STRDUP_H
+#define HEADER_CARES_STRDUP_H
 
 #include "ares_setup.h"
-#include "ares_strdup.h"
-#include "ares.h"
-#include "ares_private.h"
 
-char *ares_strdup(const char *s1)
-{
-  size_t sz;
-  char * s2;
+char *ares_strdup(const char *s1);
 
-  if(s1) {
-    sz = strlen(s1);
-    if(sz < (size_t)-1) {
-      sz++;
-      if(sz < ((size_t)-1)) {
-        s2 = ares_malloc(sz);
-        if(s2) {
-          memcpy(s2, s1, sz);
-          return s2;
-        }
-      }
-    }
-  }
-  return (char *)NULL;
-}
+size_t ares_strlen(const char *str);
+
+/*! Copy string from source to destination with destination buffer size
+ *  provided.  The destination is guaranteed to be null terminated, if the
+ *  provided buffer isn't large enough, only those bytes from the source that
+ *  will fit will be copied.
+ *
+ *  \param[out] dest       Destination buffer
+ *  \param[in]  src        Source to copy
+ *  \param[in]  dest_size  Size of destination buffer
+ *  \return String length.  Will be at most dest_size-1
+ */
+size_t ares_strcpy(char *dest, const char *src, size_t dest_size);
+
+
+#endif /* HEADER_CARES_STRDUP_H */

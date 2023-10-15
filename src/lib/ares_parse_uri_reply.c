@@ -166,8 +166,7 @@ ares_parse_uri_reply (const unsigned char *abuf, int alen_int,
             status = ARES_ENOMEM;
             break;
           }
-          uri_curr->uri = strncpy(uri_curr->uri, (const char *)vptr, rr_len-4);
-          uri_curr->uri[rr_len-4]='\0';
+          ares_strcpy(uri_curr->uri, (const char *)vptr, rr_len-3);
           uri_curr->ttl = (int)rr_ttl;
         }
 

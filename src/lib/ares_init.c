@@ -296,8 +296,8 @@ int ares_dup(ares_channel *dest, ares_channel src)
   (*dest)->sock_funcs          = src->sock_funcs;
   (*dest)->sock_func_cb_data   = src->sock_func_cb_data;
 
-  strncpy((*dest)->local_dev_name, src->local_dev_name,
-          sizeof((*dest)->local_dev_name));
+  ares_strcpy((*dest)->local_dev_name, src->local_dev_name,
+              sizeof((*dest)->local_dev_name));
   (*dest)->local_ip4 = src->local_ip4;
   memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
 
@@ -668,14 +668,14 @@ static void commanjoin(char** dst, const char* const src, const size_t len)
   size_t newsize;
 
   /* 1 for terminating 0 and 2 for , and terminating 0 */
-  newsize = len + (*dst ? (strlen(*dst) + 2) : 1);
+  newsize = len + (*dst ? (ares_strlen(*dst) + 2) : 1);
   newbuf = ares_realloc(*dst, newsize);
   if (!newbuf)
     return;
   if (*dst == NULL)
     *newbuf = '\0';
   *dst = newbuf;
-  if (strlen(*dst) != 0)
+  if (ares_strlen(*dst) != 0)
     strcat(*dst, ",");
   strncat(*dst, src, len);
 }
@@ -687,7 +687,7 @@ static void commanjoin(char** dst, const char* const src, const size_t len)
  */
 static void commajoin(char **dst, const char *src)
 {
-  commanjoin(dst, src, strlen(src));
+  commanjoin(dst, src, ares_strlen(src));
 }
 
 
@@ -2215,7 +2215,7 @@ static ares_status_t set_options(ares_channel channel, const char *str)
 
 static const char *try_option(const char *p, const char *q, const char *opt)
 {
-  size_t len = strlen(opt);
+  size_t len = ares_strlen(opt);
   return ((size_t)(q - p) >= len && !strncmp(p, opt, len)) ? &p[len] : NULL;
 }
 
@@ -2259,7 +2259,7 @@ static char *try_config(char *s, const char *opt, char scc)
     /* empty line */
     return NULL;
 
-  if ((len = strlen(opt)) == 0)
+  if ((len = ares_strlen(opt)) == 0)
     /* empty option */
     return NULL;  /* LCOV_EXCL_LINE */
 
@@ -2355,8 +2355,8 @@ void ares_set_local_ip6(ares_channel channel,
 void ares_set_local_dev(ares_channel channel,
                         const char* local_dev_name)
 {
-  strncpy(channel->local_dev_name, local_dev_name,
-          sizeof(channel->local_dev_name));
+  ares_strcpy(channel->local_dev_name, local_dev_name,
+              sizeof(channel->local_dev_name));
   channel->local_dev_name[sizeof(channel->local_dev_name) - 1] = 0;
 }
 

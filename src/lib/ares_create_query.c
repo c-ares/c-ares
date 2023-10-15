@@ -108,7 +108,7 @@ int ares_create_query(const char *name, int dnsclass, int type,
    * is for the length byte and zero termination if no dots or ecscaping is
    * used.
    */
-  len = strlen(name) + 2 + HFIXEDSZ + QFIXEDSZ +
+  len = ares_strlen(name) + 2 + HFIXEDSZ + QFIXEDSZ +
     (max_udp_size ? EDNSFIXEDSZ : 0);
   buf = ares_malloc(len);
   if (!buf)

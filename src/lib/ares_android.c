@@ -331,9 +331,10 @@ char **ares_get_android_server_list(size_t max_servers,
   dns_list = ares_malloc(sizeof(*dns_list)*(*num_servers));
   for (i=0; i<*num_servers; i++)
   {
+    size_t len = 64;
     server = (*env)->CallObjectMethod(env, server_list, android_list_get_mid,
                                       (jint)i);
-    dns_list[i] = ares_malloc(64);
+    dns_list[i] = ares_malloc(len);
     dns_list[i][0] = 0;
     if (server == NULL)
     {
@@ -341,7 +342,7 @@ char **ares_get_android_server_list(size_t max_servers,
     }
     str = (*env)->CallObjectMethod(env, server, android_ia_host_addr_mid);
     ch_server_address = (*env)->GetStringUTFChars(env, str, 0);
-    strncpy(dns_list[i], ch_server_address, 64);
+    ares_strcpy(dns_list[i], ch_server_address, len);
     (*env)->ReleaseStringUTFChars(env, str, ch_server_address);
     (*env)->DeleteLocalRef(env, str);
     (*env)->DeleteLocalRef(env, server);

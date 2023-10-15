@@ -90,7 +90,7 @@ inet_ntop4(const unsigned char *src, char *dst, size_t size)
     SET_ERRNO(ENOSPC);
     return (NULL);
   }
-  strcpy(dst, tmp);
+  ares_strcpy(dst, tmp, size);
   return (dst);
 }
 
@@ -170,7 +170,7 @@ inet_ntop6(const unsigned char *src, char *dst, size_t size)
         (best.len == 5 && words[5] == 0xffff))) {
       if (!inet_ntop4(src+12, tp, sizeof(tmp) - (tp - tmp)))
         return (NULL);
-      tp += strlen(tp);
+      tp += ares_strlen(tp);
       break;
     }
     tp += snprintf(tp, sizeof(tmp)-(tp-tmp), "%x", words[i]);
@@ -187,7 +187,7 @@ inet_ntop6(const unsigned char *src, char *dst, size_t size)
     SET_ERRNO(ENOSPC);
     return (NULL);
   }
-  strcpy(dst, tmp);
+  ares_strcpy(dst, tmp, size);
   return (dst);
 }
 

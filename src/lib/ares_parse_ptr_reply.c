@@ -139,15 +139,15 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int, const void *ad
           if (hostname)
             ares_free(hostname);
           hostname = rr_data;
-          rr_data_len = strlen(rr_data)+1;
-          aliases[aliascnt] = ares_malloc(rr_data_len * sizeof(char));
+          rr_data_len = ares_strlen(rr_data)+1;
+          aliases[aliascnt] = ares_malloc(rr_data_len);
           if (!aliases[aliascnt])
             {
               ares_free(rr_name);
               status = ARES_ENOMEM;
               break;
             }
-          strncpy(aliases[aliascnt], rr_data, rr_data_len);
+          ares_strcpy(aliases[aliascnt], rr_data, rr_data_len);
           aliascnt++;
           if (aliascnt >= alias_alloc) {
             char **ptr;

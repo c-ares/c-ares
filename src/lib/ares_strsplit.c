@@ -89,8 +89,8 @@ char **ares__strsplit(const char *in, const char *delms, size_t *num_elm) {
           ares__strsplit_free(table, j);
           return NULL;
         }
-        strncpy(table[j], p, i);
-        table[j++][i] = 0;
+        ares_strcpy(table[j], p, i+1);
+        j++;
       } else
         count--;
     }
