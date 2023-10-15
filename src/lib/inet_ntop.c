@@ -30,6 +30,7 @@
 
 #include "ares.h"
 #include "ares_ipv6.h"
+#include "ares_private.h"
 
 #ifndef HAVE_INET_NTOP
 
