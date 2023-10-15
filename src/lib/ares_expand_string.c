@@ -36,60 +36,56 @@
 #include "ares.h"
 #include "ares_private.h" /* for the memdebug */
 
-
 /* Simply decodes a length-encoded character string. The first byte of the
  * input is the length of the string to be returned and the bytes thereafter
  * are the characters of the string. The returned result will be NULL
  * terminated.
  */
 ares_status_t ares_expand_string_ex(const unsigned char *encoded,
-                                    const unsigned char *abuf,
-                                    size_t alen,
-                                    unsigned char **s,
-                                    size_t *enclen)
+                                    const unsigned char *abuf, size_t alen,
+                                    unsigned char **s, size_t *enclen)
 {
   unsigned char *q;
   size_t         len;
 
-  if (encoded == abuf+alen)
+  if (encoded == abuf + alen) {
     return ARES_EBADSTR;
+  }
 
   len = *encoded;
-  if (encoded + len + 1 > abuf + alen)
+  if (encoded + len + 1 > abuf + alen) {
     return ARES_EBADSTR;
+  }
 
   encoded++;
 
-  *s = ares_malloc(len+1);
-  if (*s == NULL)
+  *s = ares_malloc(len + 1);
+  if (*s == NULL) {
     return ARES_ENOMEM;
+  }
   q = *s;
-  ares_strcpy((char *)q, (char *)encoded, len+1);
+  ares_strcpy((char *)q, (char *)encoded, len + 1);
   q[len] = '\0';
 
   *s = q;
 
-  *enclen = len+1;
+  *enclen = len + 1;
 
   return ARES_SUCCESS;
 }
 
-
-int ares_expand_string(const unsigned char *encoded,
-                       const unsigned char *abuf,
-                       int alen,
-                       unsigned char **s,
-                       long *enclen)
+int ares_expand_string(const unsigned char *encoded, const unsigned char *abuf,
+                       int alen, unsigned char **s, long *enclen)
 {
   ares_status_t status;
   size_t        temp_enclen = 0;
 
-  if (alen < 0)
+  if (alen < 0) {
     return ARES_EBADRESP;
+  }
 
   status = ares_expand_string_ex(encoded, abuf, (size_t)alen, s, &temp_enclen);
 
   *enclen = (long)temp_enclen;
   return (int)status;
 }
-

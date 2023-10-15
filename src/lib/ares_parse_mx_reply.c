@@ -44,18 +44,17 @@
 #include "ares_data.h"
 #include "ares_private.h"
 
-int
-ares_parse_mx_reply (const unsigned char *abuf, int alen_int,
-                     struct ares_mx_reply **mx_out)
+int ares_parse_mx_reply(const unsigned char *abuf, int alen_int,
+                        struct ares_mx_reply **mx_out)
 {
-  size_t qdcount, ancount, i;
-  const unsigned char *aptr, *vptr;
-  ares_status_t status;
-  int rr_type, rr_class;
-  size_t rr_len;
-  size_t alen;
-  size_t len;
-  char *hostname = NULL, *rr_name = NULL;
+  size_t                qdcount, ancount, i;
+  const unsigned char  *aptr, *vptr;
+  ares_status_t         status;
+  int                   rr_type, rr_class;
+  size_t                rr_len;
+  size_t                alen;
+  size_t                len;
+  char                 *hostname = NULL, *rr_name = NULL;
   struct ares_mx_reply *mx_head = NULL;
   struct ares_mx_reply *mx_last = NULL;
   struct ares_mx_reply *mx_curr;
@@ -63,117 +62,117 @@ ares_parse_mx_reply (const unsigned char *abuf, int alen_int,
   /* Set *mx_out to NULL for all failure cases. */
   *mx_out = NULL;
 
-  if (alen_int < 0)
+  if (alen_int < 0) {
     return ARES_EBADRESP;
+  }
 
   alen = (size_t)alen_int;
 
   /* Give up if abuf doesn't have room for a header. */
-  if (alen < HFIXEDSZ)
+  if (alen < HFIXEDSZ) {
     return ARES_EBADRESP;
+  }
 
   /* Fetch the question and answer count from the header. */
-  qdcount = DNS_HEADER_QDCOUNT (abuf);
-  ancount = DNS_HEADER_ANCOUNT (abuf);
-  if (qdcount != 1)
+  qdcount = DNS_HEADER_QDCOUNT(abuf);
+  ancount = DNS_HEADER_ANCOUNT(abuf);
+  if (qdcount != 1) {
     return ARES_EBADRESP;
-  if (ancount == 0)
+  }
+  if (ancount == 0) {
     return ARES_ENODATA;
+  }
 
   /* Expand the name from the question, and skip past the question. */
-  aptr = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len, ARES_TRUE);
-  if (status != ARES_SUCCESS)
+  aptr   = abuf + HFIXEDSZ;
+  status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len,
+                                          ARES_TRUE);
+  if (status != ARES_SUCCESS) {
     return (int)status;
+  }
 
-  if (aptr + len + QFIXEDSZ > abuf + alen)
-    {
-      ares_free (hostname);
-      return ARES_EBADRESP;
-    }
+  if (aptr + len + QFIXEDSZ > abuf + alen) {
+    ares_free(hostname);
+    return ARES_EBADRESP;
+  }
   aptr += len + QFIXEDSZ;
 
   /* Examine each answer resource record (RR) in turn. */
-  for (i = 0; i < ancount; i++)
-    {
-      /* Decode the RR up to the data field. */
-      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
-      if (status != ARES_SUCCESS)
-        {
-          break;
-        }
-      aptr += len;
-      if (aptr + RRFIXEDSZ > abuf + alen)
-        {
-          status = ARES_EBADRESP;
-          break;
-        }
-      rr_type = DNS_RR_TYPE (aptr);
-      rr_class = DNS_RR_CLASS (aptr);
-      rr_len = DNS_RR_LEN (aptr);
-      aptr += RRFIXEDSZ;
-      if (aptr + rr_len > abuf + alen)
-        {
-          status = ARES_EBADRESP;
-          break;
-        }
-
-      /* Check if we are really looking at a MX record */
-      if (rr_class == C_IN && rr_type == T_MX)
-        {
-          /* parse the MX record itself */
-          if (rr_len < 2)
-            {
-              status = ARES_EBADRESP;
-              break;
-            }
-
-          /* Allocate storage for this MX answer appending it to the list */
-          mx_curr = ares_malloc_data(ARES_DATATYPE_MX_REPLY);
-          if (!mx_curr)
-            {
-              status = ARES_ENOMEM;
-              break;
-            }
-          if (mx_last)
-            {
-              mx_last->next = mx_curr;
-            }
-          else
-            {
-              mx_head = mx_curr;
-            }
-          mx_last = mx_curr;
-
-          vptr = aptr;
-          mx_curr->priority = DNS__16BIT(vptr);
-          vptr += sizeof(unsigned short);
-
-          status = ares__expand_name_for_response(vptr, abuf, alen, &mx_curr->host, &len, ARES_FALSE);
-          if (status != ARES_SUCCESS)
-            break;
-        }
-
-      /* Don't lose memory in the next iteration */
-      ares_free (rr_name);
-      rr_name = NULL;
-
-      /* Move on to the next record */
-      aptr += rr_len;
+  for (i = 0; i < ancount; i++) {
+    /* Decode the RR up to the data field. */
+    status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len,
+                                            ARES_FALSE);
+    if (status != ARES_SUCCESS) {
+      break;
+    }
+    aptr += len;
+    if (aptr + RRFIXEDSZ > abuf + alen) {
+      status = ARES_EBADRESP;
+      break;
+    }
+    rr_type   = DNS_RR_TYPE(aptr);
+    rr_class  = DNS_RR_CLASS(aptr);
+    rr_len    = DNS_RR_LEN(aptr);
+    aptr     += RRFIXEDSZ;
+    if (aptr + rr_len > abuf + alen) {
+      status = ARES_EBADRESP;
+      break;
     }
 
-  if (hostname)
-    ares_free (hostname);
-  if (rr_name)
-    ares_free (rr_name);
+    /* Check if we are really looking at a MX record */
+    if (rr_class == C_IN && rr_type == T_MX) {
+      /* parse the MX record itself */
+      if (rr_len < 2) {
+        status = ARES_EBADRESP;
+        break;
+      }
+
+      /* Allocate storage for this MX answer appending it to the list */
+      mx_curr = ares_malloc_data(ARES_DATATYPE_MX_REPLY);
+      if (!mx_curr) {
+        status = ARES_ENOMEM;
+        break;
+      }
+      if (mx_last) {
+        mx_last->next = mx_curr;
+      } else {
+        mx_head = mx_curr;
+      }
+      mx_last = mx_curr;
+
+      vptr               = aptr;
+      mx_curr->priority  = DNS__16BIT(vptr);
+      vptr              += sizeof(unsigned short);
+
+      status = ares__expand_name_for_response(vptr, abuf, alen, &mx_curr->host,
+                                              &len, ARES_FALSE);
+      if (status != ARES_SUCCESS) {
+        break;
+      }
+    }
+
+    /* Don't lose memory in the next iteration */
+    ares_free(rr_name);
+    rr_name = NULL;
+
+    /* Move on to the next record */
+    aptr += rr_len;
+  }
+
+  if (hostname) {
+    ares_free(hostname);
+  }
+  if (rr_name) {
+    ares_free(rr_name);
+  }
 
   /* clean up on error */
-  if (status != ARES_SUCCESS)
-    {
-      if (mx_head)
-        ares_free_data (mx_head);
-      return (int)status;
+  if (status != ARES_SUCCESS) {
+    if (mx_head) {
+      ares_free_data(mx_head);
     }
+    return (int)status;
+  }
 
   /* everything looks fine, return the data */
   *mx_out = mx_head;
