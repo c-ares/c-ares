@@ -42,6 +42,7 @@ OPTION (CARES_STATIC_PIC "Build the static library as PIC (position independent)
 OPTION (CARES_BUILD_TESTS "Build and run tests"                                                  OFF)
 OPTION (CARES_BUILD_CONTAINER_TESTS "Build and run container tests (implies CARES_BUILD_TESTS, Linux only)" OFF)
 OPTION (CARES_BUILD_TOOLS "Build tools"                                                          ON)
+OPTION (CARES_SYMBOL_HIDING "Hide private symbols in shared libraries"                           OFF)
 SET    (CARES_RANDOM_FILE "/dev/urandom" CACHE STRING "Suitable File / Device Path for entropy, such as /dev/urandom")
 
 
@@ -71,6 +72,21 @@ IF (MSVC)
 		SET (upper_config_type)
 		SET (config_type)
 		SET (flag_var)
+	ENDIF ()
+ENDIF ()
+
+IF (CARES_SYMBOL_HIDING)
+	IF (CMAKE_VERSION VERSION_LESS 3.12)
+		MESSAGE (FATAL_ERROR "Hiding symbols requires CMake 3.12")
+	ENDIF ()
+	CMAKE_POLICY (SET CMP0063 NEW)
+	SET (CARES_SYMBOL_SCOPE_EXTERN [=[__attribute__ ((visibility("default")))]=])
+	CHECK_C_SOURCE_COMPILES ("
+		${CARES_SYMBOL_SCOPE_EXTERN} int somefunc() { return 0; }
+		int main() { return somefunc(); }
+	" HAVE_VISIBILITY_ATTRIBUTE)
+	IF (NOT HAVE_VISIBILITY_ATTRIBUTE)
+		MESSAGE (FATAL_ERROR "C compiler does not accept visibility attribute")
 	ENDIF ()
 ENDIF ()
 
