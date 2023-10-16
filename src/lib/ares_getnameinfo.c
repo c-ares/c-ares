@@ -389,7 +389,12 @@ STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2)
 {
   const char *c1, *c2, *c1_begin;
   int         lo1, lo2;
-  size_t      s1_len = ares_strlen(s1), s2_len = ares_strlen(s2);
+  size_t      s1_len = ares_strlen(s1);
+  size_t      s2_len = ares_strlen(s2);
+
+  if (s1 == NULL || s2 == NULL) {
+    return NULL;
+  }
 
   /* If the substr is longer than the full str, it can't match */
   if (s2_len > s1_len) {
