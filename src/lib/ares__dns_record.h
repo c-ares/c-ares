@@ -26,10 +26,68 @@
 #ifndef __ARES__DNS_RECORD_H
 #define __ARES__DNS_RECORD_H
 
+
+/* ----- LIKELY MAKE THESE PUBLIC ----- */
+
+/*! DNS Record types handled by c-ares.  Some record types may only be valid
+ *  on requests (e.g. ARES_REC_TYPE_ANY), and some may only be valid on
+ *  responses (e.g. ARES_REC_TYPE_OPT) */
+typedef enum {
+  ARES_REC_TYPE_A        = 1,     /*!< Host address. */
+  ARES_REC_TYPE_NS       = 2,     /*!< Authoritative server. */
+  ARES_REC_TYPE_CNAME    = 5,     /*!< Canonical name. */
+  ARES_REC_TYPE_SOA      = 6,     /*!< Start of authority zone. */
+  ARES_REC_TYPE_PTR      = 12,    /*!< Domain name pointer. */
+  ARES_REC_TYPE_HINFO    = 13,    /*!< Host information. */
+  ARES_REC_TYPE_MX       = 15,    /*!< Mail routing information. */
+  ARES_REC_TYPE_TXT      = 16,    /*!< Text strings. */
+  ARES_REC_TYPE_AAAA     = 28,    /*!< Ip6 Address. */
+  ARES_REC_TYPE_SRV      = 33,    /*!< Server Selection. */
+  ARES_REC_TYPE_NAPTR    = 35,    /*!< Naming Authority Pointer */
+  ARES_REC_TYPE_OPT      = 41,    /*!< EDNS0 option (meta-RR) */
+  ARES_REC_TYPE_TLSA     = 52,    /*!< DNS-Based Authentication of Named
+                                   *   Entities (DANE) Transport Layer Security
+                                   *   (TLS) Protocol: TLSA */
+  ARES_REC_TYPE_SVBC     = 64,    /*!< General Purpose Service Binding */
+  ARES_REC_TYPE_HTTPS    = 65,    /*!< Service Binding type for use with HTTP */
+  ARES_REC_TYPE_ANY      = 255,   /*!< Wildcard match.  Not response RR. */
+  ARES_REC_TYPE_URI      = 256,   /*!< Uniform Resource Identifier (RFC7553) */
+  ARES_REC_TYPE_CAA      = 257,   /*!< Certification Authority Authorization. */
+  ARES_REC_TYPE_RAW_RR   = 65536  /*!< Used as an indicator that the RR record
+                                   *   is not parsed, but provided in wire
+                                   *   format */
+} ares_rec_type_t;
+
+
+/*! DNS Classes for requests and responses.  */
+typedef enum  {
+  ARES_CLASS_IN      = 1,  /*<! Internet */
+  ARES_CLASS_CHAOS   = 3,  /*<! CHAOS */
+  ARES_CLASS_HESOID  = 4,  /*<! Hesoid [Dyer 87] */
+  ARES_CLASS_ANY     = 255 /*<! Any class (requests only) */
+} ares_class_t;
+
+/*! Opaque data type representing a DNS RR (Resource Record) */
+struct ares_dns_rr;
+
+/*! Typedef for opaque data type representing a DNS RR (Resource Record) */
+typedef struct ares_dns_rr ares_dns_rr_t;
+
+/*! Opaque data type representing a DNS Packet */
+struct ares_dns_record;
+
+/*! Typedef for opaque data type representing a DNS Packet */
+typedef struct ares_dns_record ares_dns_record_t;
+
+
+
+/* ---- PRIVATE BELOW ----- */
+
+
 typedef struct {
-  char          *name;
-  unsigned short qtype;
-  unsigned short qclass;
+  char           *name;
+  ares_rec_type_t qtype;
+  ares_class_t    qclass;
 } ares__dns_qd_t;
 
 typedef struct {
@@ -100,17 +158,21 @@ typedef struct {
   char           *replacement;
 } ares__dns_naptr_t;
 
+/*! Raw, unparsed RR data */
 typedef struct {
-  unsigned char  *rdata;
-  unsigned short  rdlength;
+  unsigned short  type;     /*!< Not ares_rec_type_t because it likely isn't one
+                             *   of those values since it wasn't parsed */
+  unsigned char  *rdata;    /*!< Raw RR data */
+  unsigned short  rdlength; /*!< Length of raw RR data */
 } ares__dns_raw_rr_t;
 
+
 /*! DNS RR data structure */
-typedef struct {
-  char          *name;
-  unsigned short type;
-  unsigned short rclass;
-  unsigned int   ttl;
+struct ares_dns_rr {
+  char           *name;
+  ares_rec_type_t type;
+  ares_class_t    rclass;
+  unsigned int    ttl;
 
   union {
     ares__dns_cname_t  cname;
@@ -127,11 +189,11 @@ typedef struct {
     ares__dns_naptr_t  naptr;
     ares__dns_raw_rr_t raw_rr;
   } r;
-} ares__dns_rr_t;
+};
 
 
 /*! DNS data structure */
-typedef struct {
+struct ares_dns_record {
   unsigned short  id;
   unsigned short  qr     : 1;
   unsigned short  opcode : 4;
@@ -145,15 +207,15 @@ typedef struct {
   ares__dns_qd_t *qd;
   unsigned short  qdcount;
 
-  ares__dns_rr_t *an;
+  ares_dns_rr_t  *an;
   unsigned short  ancount;
 
-  ares__dns_rr_t *ns;
+  ares_dns_rr_t  *ns;
   unsigned short  nscount;
 
-  ares__dns_rr_t *ar;
+  ares_dns_rr_t  *ar;
   unsigned short  arcount;
-} ares__dns_record_t;
+};
 
 
 #endif /* __ARES__DNS_RECORD_H */
