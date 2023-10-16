@@ -39,7 +39,6 @@
 
 #include "ares.h"
 #include "ares_inet_net_pton.h"
-#include "ares_nowarn.h"
 #include "ares_private.h"
 
 ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host)
@@ -242,8 +241,8 @@ ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host)
     }
 
     /* Copy actual network address family and length. */
-    hostent->h_addrtype = aresx_sitoss(addr.family);
-    hostent->h_length   = aresx_uztoss(addrlen);
+    hostent->h_addrtype = addr.family;
+    hostent->h_length   = (int)addrlen;
 
     /* Free line buffer. */
     ares_free(line);

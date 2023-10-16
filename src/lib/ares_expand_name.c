@@ -34,7 +34,6 @@
 #include "ares_nameser.h"
 
 #include "ares.h"
-#include "ares_nowarn.h"
 #include "ares_private.h" /* for the memdebug */
 
 /* Maximum number of indirections allowed for a name */

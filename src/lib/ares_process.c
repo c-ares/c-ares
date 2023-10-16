@@ -61,7 +61,6 @@
 
 #include "ares.h"
 #include "ares_dns.h"
-#include "ares_nowarn.h"
 #include "ares_private.h"
 
 
@@ -1073,11 +1072,9 @@ static ares_status_t open_socket(ares_channel         channel,
   int                       type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
 
   if (is_tcp) {
-    port = aresx_sitous(server->addr.tcp_port ? server->addr.tcp_port
-                                              : channel->tcp_port);
+    port = server->addr.tcp_port ? server->addr.tcp_port : channel->tcp_port;
   } else {
-    port = aresx_sitous(server->addr.udp_port ? server->addr.udp_port
-                                              : channel->udp_port);
+    port = server->addr.udp_port ? server->addr.udp_port : channel->udp_port;
   }
 
   switch (server->addr.family) {

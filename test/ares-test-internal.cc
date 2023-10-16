@@ -33,7 +33,6 @@ extern "C" {
 #undef PACKAGE_TARNAME
 // ... so we can include the library's config without symbol redefinitions.
 #include "ares_setup.h"
-#include "ares_nowarn.h"
 #include "ares_inet_net_pton.h"
 #include "ares_data.h"
 #include "ares_strsplit.h"
@@ -298,20 +297,6 @@ TEST(Misc, Bitncmp) {
   EXPECT_GT(0, ares__bitncmp(a, b, 3*8 + 7));
 }
 
-TEST_F(LibraryTest, Casts) {
-  ares_ssize_t ssz = 100;
-  unsigned int u = 100;
-  int i = 100;
-  long l = 100;
-
-  unsigned int ru = aresx_sztoui(ssz);
-  EXPECT_EQ(u, ru);
-  int ri = aresx_sztosi(ssz);
-  EXPECT_EQ(i, ri);
-
-  ri = aresx_sltosi(l);
-  EXPECT_EQ(l, (long)ri);
-}
 
 TEST_F(LibraryTest, ReadLine) {
   TempFile temp("abcde\n0123456789\nXYZ\n012345678901234567890\n\n");

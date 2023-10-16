@@ -29,7 +29,6 @@
 
 #include "ares.h"
 #include "ares_platform.h"
-#include "ares_nowarn.h"
 #include "ares_private.h"
 
 #if defined(WIN32) && !defined(MSDOS)

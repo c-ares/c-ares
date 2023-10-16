@@ -50,7 +50,6 @@
 
 #include "ares.h"
 #include "ares_ipv6.h"
-#include "ares_nowarn.h"
 #include "ares_private.h"
 
 struct nameinfo_query {

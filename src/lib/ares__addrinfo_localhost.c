@@ -44,7 +44,6 @@
 
 #include "ares.h"
 #include "ares_inet_net_pton.h"
-#include "ares_nowarn.h"
 #include "ares_private.h"
 
 ares_status_t ares_append_ai_node(int aftype, unsigned short port,

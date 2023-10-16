@@ -28,7 +28,6 @@
 #include "ares_setup.h"
 
 #include "ares.h"
-#include "ares_nowarn.h"
 #include "ares_private.h"
 
 /* This is an internal function.  Its contract is to read a line from
@@ -54,7 +53,7 @@ ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize)
   }
 
   for (;;) {
-    int bytestoread = aresx_uztosi(*bufsize - offset);
+    int bytestoread = (int)(*bufsize - offset);
 
     if (!fgets(*buf + offset, bytestoread, fp)) {
       return (offset != 0) ? 0 : (ferror(fp)) ? ARES_EFILE : ARES_EOF;

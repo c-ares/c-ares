@@ -38,7 +38,6 @@
 
 #include "ares.h"
 #include "ares_inet_net_pton.h"
-#include "ares_nowarn.h"
 #include "ares_private.h"
 
 #define MAX_ALIASES 40
