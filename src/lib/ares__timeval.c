@@ -38,9 +38,9 @@ struct timeval ares__tvnow(void)
   ** increases monotonically and wraps once 49.7 days have elapsed.
   */
   struct timeval now;
-  DWORD milliseconds = GetTickCount();
-  now.tv_sec = milliseconds / 1000;
-  now.tv_usec = (milliseconds % 1000) * 1000;
+  DWORD          milliseconds = GetTickCount();
+  now.tv_sec                  = milliseconds / 1000;
+  now.tv_usec                 = (milliseconds % 1000) * 1000;
   return now;
 }
 
@@ -55,10 +55,10 @@ struct timeval ares__tvnow(void)
   ** in any case the time starting point does not change once that the
   ** system has started up.
   */
-  struct timeval now;
+  struct timeval  now;
   struct timespec tsnow;
-  if(0 == clock_gettime(CLOCK_MONOTONIC, &tsnow)) {
-    now.tv_sec = tsnow.tv_sec;
+  if (0 == clock_gettime(CLOCK_MONOTONIC, &tsnow)) {
+    now.tv_sec  = tsnow.tv_sec;
     now.tv_usec = (int)(tsnow.tv_nsec / 1000);
   }
   /*
@@ -66,15 +66,15 @@ struct timeval ares__tvnow(void)
   ** availability, it might happen that it is not actually available at
   ** run-time. When this occurs simply fallback to other time source.
   */
-#ifdef HAVE_GETTIMEOFDAY
+#  ifdef HAVE_GETTIMEOFDAY
   else
-    (void)gettimeofday(&now, NULL);  /* LCOV_EXCL_LINE */
-#else
+    (void)gettimeofday(&now, NULL); /* LCOV_EXCL_LINE */
+#  else
   else {
-    now.tv_sec = (long)time(NULL);
+    now.tv_sec  = (long)time(NULL);
     now.tv_usec = 0;
   }
-#endif
+#  endif
   return now;
 }
 
@@ -100,7 +100,7 @@ struct timeval ares__tvnow(void)
   ** time() returns the value of time in seconds since the Epoch.
   */
   struct timeval now;
-  now.tv_sec = (long)time(NULL);
+  now.tv_sec  = (long)time(NULL);
   now.tv_usec = 0;
   return now;
 }

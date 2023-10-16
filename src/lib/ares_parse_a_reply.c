@@ -56,16 +56,17 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
                        int *naddrttls)
 {
   struct ares_addrinfo ai;
-  char *question_hostname = NULL;
-  ares_status_t status;
-  size_t req_naddrttls = 0;
+  char                *question_hostname = NULL;
+  ares_status_t        status;
+  size_t               req_naddrttls = 0;
 
-  if (alen < 0)
+  if (alen < 0) {
     return ARES_EBADRESP;
+  }
 
   if (naddrttls) {
     req_naddrttls = (size_t)*naddrttls;
-    *naddrttls = 0;
+    *naddrttls    = 0;
   }
 
   memset(&ai, 0, sizeof(ai));
@@ -84,8 +85,8 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
 
   if (addrttls != NULL && req_naddrttls) {
     size_t temp_naddrttls = 0;
-    ares__addrinfo2addrttl(&ai, AF_INET, req_naddrttls, addrttls,
-                           NULL, &temp_naddrttls);
+    ares__addrinfo2addrttl(&ai, AF_INET, req_naddrttls, addrttls, NULL,
+                           &temp_naddrttls);
     *naddrttls = (int)temp_naddrttls;
   }
 

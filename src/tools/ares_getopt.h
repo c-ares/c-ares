@@ -48,8 +48,8 @@ int ares_getopt(int nargc, char * const nargv[], const char *ostr);
 #define optreset ares_optreset
 
 extern char *optarg;
-extern int optind;
-extern int opterr;
-extern int optopt;
+extern int   optind;
+extern int   opterr;
+extern int   optopt;
 
 #endif /* ARES_GETOPT_H */

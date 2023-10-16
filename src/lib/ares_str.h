@@ -29,7 +29,7 @@
 
 #include "ares_setup.h"
 
-char *ares_strdup(const char *s1);
+char  *ares_strdup(const char *s1);
 
 size_t ares_strlen(const char *str);
 

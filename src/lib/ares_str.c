@@ -36,8 +36,9 @@
 
 size_t ares_strlen(const char *str)
 {
-  if (str == NULL)
+  if (str == NULL) {
     return 0;
+  }
 
   return strlen(str);
 }
@@ -45,23 +46,27 @@ size_t ares_strlen(const char *str)
 char *ares_strdup(const char *s1)
 {
   size_t len;
-  char *out;
+  char  *out;
 
-  if (s1 == NULL)
+  if (s1 == NULL) {
     return NULL;
+  }
 
   len = ares_strlen(s1);
 
   /* Don't see how this is possible */
-  if (len == SIZE_MAX)
+  if (len == SIZE_MAX) {
     return NULL;
+  }
 
-  out = ares_malloc(len+1);
-  if (out == NULL)
+  out = ares_malloc(len + 1);
+  if (out == NULL) {
     return NULL;
+  }
 
-  if (len)
+  if (len) {
     memcpy(out, s1, len);
+  }
 
   out[len] = 0;
   return out;
@@ -71,13 +76,15 @@ size_t ares_strcpy(char *dest, const char *src, size_t dest_size)
 {
   size_t len = 0;
 
-  if (dest == NULL || dest_size == 0)
+  if (dest == NULL || dest_size == 0) {
     return 0;
+  }
 
   len = ares_strlen(src);
 
-  if (len >= dest_size)
+  if (len >= dest_size) {
     len = dest_size - 1;
+  }
 
   if (len) {
     memcpy(dest, src, len);

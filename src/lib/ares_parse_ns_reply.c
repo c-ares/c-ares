@@ -48,104 +48,103 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
-                         struct hostent** host )
+int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
+                        struct hostent **host)
 {
-  size_t qdcount, ancount;
-  ares_status_t status;
-  size_t i;
-  int rr_type, rr_class;
-  size_t rr_len;
-  size_t nameservers_num;
-  size_t alen;
-  size_t len;
+  size_t               qdcount, ancount;
+  ares_status_t        status;
+  size_t               i;
+  int                  rr_type, rr_class;
+  size_t               rr_len;
+  size_t               nameservers_num;
+  size_t               alen;
+  size_t               len;
   const unsigned char *aptr;
-  char* hostname, *rr_name, *rr_data, **nameservers;
-  struct hostent *hostent;
+  char                *hostname, *rr_name, *rr_data, **nameservers;
+  struct hostent      *hostent;
 
   /* Set *host to NULL for all failure cases. */
   *host = NULL;
 
-  if (alen_int < 0)
+  if (alen_int < 0) {
     return ARES_EBADRESP;
+  }
 
   alen = (size_t)alen_int;
 
   /* Give up if abuf doesn't have room for a header. */
-  if ( alen < HFIXEDSZ )
+  if (alen < HFIXEDSZ) {
     return ARES_EBADRESP;
+  }
 
   /* Fetch the question and answer count from the header. */
-  qdcount = DNS_HEADER_QDCOUNT( abuf );
-  ancount = DNS_HEADER_ANCOUNT( abuf );
-  if ( qdcount != 1 )
+  qdcount = DNS_HEADER_QDCOUNT(abuf);
+  ancount = DNS_HEADER_ANCOUNT(abuf);
+  if (qdcount != 1) {
     return ARES_EBADRESP;
+  }
 
   /* Expand the name from the question, and skip past the question. */
-  aptr = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response( aptr, abuf, alen, &hostname, &len, ARES_FALSE);
-  if ( status != ARES_SUCCESS )
+  aptr   = abuf + HFIXEDSZ;
+  status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len,
+                                          ARES_FALSE);
+  if (status != ARES_SUCCESS) {
     return (int)status;
-  if ( aptr + len + QFIXEDSZ > abuf + alen )
-  {
-    ares_free( hostname );
+  }
+  if (aptr + len + QFIXEDSZ > abuf + alen) {
+    ares_free(hostname);
     return ARES_EBADRESP;
   }
   aptr += len + QFIXEDSZ;
 
   /* Allocate nameservers array; ancount gives an upper bound */
-  nameservers = ares_malloc( ( ancount + 1 ) * sizeof( char * ) );
-  if ( !nameservers )
-  {
-    ares_free( hostname );
+  nameservers = ares_malloc((ancount + 1) * sizeof(char *));
+  if (!nameservers) {
+    ares_free(hostname);
     return ARES_ENOMEM;
   }
   nameservers_num = 0;
 
   /* Examine each answer resource record (RR) in turn. */
-  for ( i = 0; i < ancount; i++ )
-  {
+  for (i = 0; i < ancount; i++) {
     /* Decode the RR up to the data field. */
-    status = ares__expand_name_for_response( aptr, abuf, alen, &rr_name, &len, ARES_FALSE);
-    if ( status != ARES_SUCCESS )
+    status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len,
+                                            ARES_FALSE);
+    if (status != ARES_SUCCESS) {
       break;
+    }
     aptr += len;
-    if ( aptr + RRFIXEDSZ > abuf + alen )
-    {
+    if (aptr + RRFIXEDSZ > abuf + alen) {
       status = ARES_EBADRESP;
       ares_free(rr_name);
       break;
     }
-    rr_type = DNS_RR_TYPE( aptr );
-    rr_class = DNS_RR_CLASS( aptr );
-    rr_len = DNS_RR_LEN( aptr );
-    aptr += RRFIXEDSZ;
-    if (aptr + rr_len > abuf + alen)
-      {
-        ares_free(rr_name);
-        status = ARES_EBADRESP;
-        break;
-      }
+    rr_type   = DNS_RR_TYPE(aptr);
+    rr_class  = DNS_RR_CLASS(aptr);
+    rr_len    = DNS_RR_LEN(aptr);
+    aptr     += RRFIXEDSZ;
+    if (aptr + rr_len > abuf + alen) {
+      ares_free(rr_name);
+      status = ARES_EBADRESP;
+      break;
+    }
 
-    if ( rr_class == C_IN && rr_type == T_NS )
-    {
+    if (rr_class == C_IN && rr_type == T_NS) {
       /* Decode the RR data and add it to the nameservers list */
-      status = ares__expand_name_for_response( aptr, abuf, alen, &rr_data,
-                                               &len, ARES_TRUE);
-      if ( status != ARES_SUCCESS )
-      {
+      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data, &len,
+                                              ARES_TRUE);
+      if (status != ARES_SUCCESS) {
         ares_free(rr_name);
         break;
       }
 
-      len = ares_strlen(rr_data)+1;
+      len                          = ares_strlen(rr_data) + 1;
       nameservers[nameservers_num] = ares_malloc(len);
 
-      if (nameservers[nameservers_num]==NULL)
-      {
+      if (nameservers[nameservers_num] == NULL) {
         ares_free(rr_name);
         ares_free(rr_data);
-        status=ARES_ENOMEM;
+        status = ARES_ENOMEM;
         break;
       }
       ares_strcpy(nameservers[nameservers_num], rr_data, len);
@@ -154,46 +153,42 @@ int ares_parse_ns_reply( const unsigned char* abuf, int alen_int,
       nameservers_num++;
     }
 
-    ares_free( rr_name );
+    ares_free(rr_name);
 
     aptr += rr_len;
-    if ( aptr > abuf + alen )
-    {  /* LCOV_EXCL_START: already checked above */
+    if (aptr > abuf + alen) { /* LCOV_EXCL_START: already checked above */
       status = ARES_EBADRESP;
       break;
-    }  /* LCOV_EXCL_STOP */
+    } /* LCOV_EXCL_STOP */
   }
 
-  if ( status == ARES_SUCCESS && nameservers_num == 0 )
-  {
+  if (status == ARES_SUCCESS && nameservers_num == 0) {
     status = ARES_ENODATA;
   }
-  if ( status == ARES_SUCCESS )
-  {
+  if (status == ARES_SUCCESS) {
     /* We got our answer.  Allocate memory to build the host entry. */
     nameservers[nameservers_num] = NULL;
-    hostent = ares_malloc( sizeof( struct hostent ) );
-    if ( hostent )
-    {
-      hostent->h_addr_list = ares_malloc( 1 * sizeof( char * ) );
-      if ( hostent->h_addr_list )
-      {
+    hostent                      = ares_malloc(sizeof(struct hostent));
+    if (hostent) {
+      hostent->h_addr_list = ares_malloc(1 * sizeof(char *));
+      if (hostent->h_addr_list) {
         /* Fill in the hostent and return successfully. */
-        hostent->h_name = hostname;
-        hostent->h_aliases = nameservers;
-        hostent->h_addrtype = AF_INET;
-        hostent->h_length = sizeof( struct in_addr );
+        hostent->h_name         = hostname;
+        hostent->h_aliases      = nameservers;
+        hostent->h_addrtype     = AF_INET;
+        hostent->h_length       = sizeof(struct in_addr);
         hostent->h_addr_list[0] = NULL;
-        *host = hostent;
+        *host                   = hostent;
         return ARES_SUCCESS;
       }
-      ares_free( hostent );
+      ares_free(hostent);
     }
     status = ARES_ENOMEM;
   }
-  for ( i = 0; i < nameservers_num; i++ )
-    ares_free( nameservers[i] );
-  ares_free( nameservers );
-  ares_free( hostname );
+  for (i = 0; i < nameservers_num; i++) {
+    ares_free(nameservers[i]);
+  }
+  ares_free(nameservers);
+  ares_free(hostname);
   return (int)status;
 }

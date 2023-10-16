@@ -33,7 +33,7 @@
 /* library-private global and unique instance vars */
 
 #if defined(ANDROID) || defined(__ANDROID__)
-#include "ares_android.h"
+#  include "ares_android.h"
 #endif
 
 /* library-private global vars with source visibility restricted to this file */
@@ -43,31 +43,43 @@ static int          ares_init_flags;
 
 /* library-private global vars with visibility across the whole library */
 
-/* Some systems may return either NULL or a valid pointer on malloc(0).  c-ares should
- * never call malloc(0) so lets return NULL so we're more likely to find an issue if it
- * were to occur. */
+/* Some systems may return either NULL or a valid pointer on malloc(0).  c-ares
+ * should never call malloc(0) so lets return NULL so we're more likely to find
+ * an issue if it were to occur. */
 
-static void *default_malloc(size_t size) { if (size == 0) { return NULL; } return malloc(size); }
+static void        *default_malloc(size_t size)
+{
+  if (size == 0) {
+    return NULL;
+  }
+  return malloc(size);
+}
 
 #if defined(WIN32)
 /* We need indirections to handle Windows DLL rules. */
-static void *default_realloc(void *p, size_t size) { return realloc(p, size); }
-static void default_free(void *p) { free(p); }
-#else
-# define default_realloc realloc
-# define default_free free
-#endif
-void *(*ares_malloc)(size_t size) = default_malloc;
-void *(*ares_realloc)(void *ptr, size_t size) = default_realloc;
-void (*ares_free)(void *ptr) = default_free;
-
-int ares_library_init(int flags)
+static void *default_realloc(void *p, size_t size)
 {
-  if (ares_initialized)
-    {
-      ares_initialized++;
-      return ARES_SUCCESS;
-    }
+  return realloc(p, size);
+}
+
+static void default_free(void *p)
+{
+  free(p);
+}
+#else
+#  define default_realloc realloc
+#  define default_free    free
+#endif
+void *(*ares_malloc)(size_t size)             = default_malloc;
+void *(*ares_realloc)(void *ptr, size_t size) = default_realloc;
+void  (*ares_free)(void *ptr)                 = default_free;
+
+int   ares_library_init(int flags)
+{
+  if (ares_initialized) {
+    ares_initialized++;
+    return ARES_SUCCESS;
+  }
   ares_initialized++;
 
   /* NOTE: ARES_LIB_INIT_WIN32 flag no longer used */
@@ -77,28 +89,31 @@ int ares_library_init(int flags)
   return ARES_SUCCESS;
 }
 
-int ares_library_init_mem(int flags,
-                          void *(*amalloc)(size_t size),
-                          void (*afree)(void *ptr),
+int ares_library_init_mem(int flags, void *(*amalloc)(size_t size),
+                          void  (*afree)(void *ptr),
                           void *(*arealloc)(void *ptr, size_t size))
 {
-  if (amalloc)
+  if (amalloc) {
     ares_malloc = amalloc;
-  if (arealloc)
+  }
+  if (arealloc) {
     ares_realloc = arealloc;
-  if (afree)
+  }
+  if (afree) {
     ares_free = afree;
+  }
   return ares_library_init(flags);
 }
 
-
 void ares_library_cleanup(void)
 {
-  if (!ares_initialized)
+  if (!ares_initialized) {
     return;
+  }
   ares_initialized--;
-  if (ares_initialized)
+  if (ares_initialized) {
     return;
+  }
 
   /* NOTE: ARES_LIB_INIT_WIN32 flag no longer used */
 
@@ -107,17 +122,17 @@ void ares_library_cleanup(void)
 #endif
 
   ares_init_flags = ARES_LIB_INIT_NONE;
-  ares_malloc = malloc;
-  ares_realloc = realloc;
-  ares_free = free;
+  ares_malloc     = malloc;
+  ares_realloc    = realloc;
+  ares_free       = free;
 }
-
 
 int ares_library_initialized(void)
 {
 #ifdef USE_WINSOCK
-  if (!ares_initialized)
+  if (!ares_initialized) {
     return ARES_ENOTINITIALIZED;
+  }
 #endif
   return ARES_SUCCESS;
 }

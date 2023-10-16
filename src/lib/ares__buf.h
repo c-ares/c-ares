@@ -44,10 +44,10 @@ struct ares__buf;
 typedef struct ares__buf ares__buf_t;
 
 /*! Create a new buffer object that dynamically allocates buffers for data.
- * 
+ *
  *  \return initialized buffer object or NULL if out of memory.
  */
-ares__buf_t *ares__buf_create(void);
+ares__buf_t             *ares__buf_create(void);
 
 /*! Create a new buffer object that uses a user-provided data pointer.  The
  *  data provided will not be manipulated, and cannot be appended to.  This
@@ -64,7 +64,7 @@ ares__buf_t *ares__buf_create_const(const unsigned char *data, size_t data_len);
  *
  *  \param[in] buf  Initialized buf object
  */
-void ares__buf_destroy(ares__buf_t *buf);
+void         ares__buf_destroy(ares__buf_t *buf);
 
 /*! Append to a dynamic buffer object
  *
@@ -73,8 +73,8 @@ void ares__buf_destroy(ares__buf_t *buf);
  *  \param[in] data_len Length of data to copy to buffer object.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_append(ares__buf_t *buf, const unsigned char *data,
-                               size_t data_len);
+ares_status_t  ares__buf_append(ares__buf_t *buf, const unsigned char *data,
+                                size_t data_len);
 
 
 /*! Start a dynamic append operation that returns a buffer suitable for
@@ -98,7 +98,7 @@ unsigned char *ares__buf_append_start(ares__buf_t *buf, size_t *len);
  *                    operation. Must not be greater than returned from
  *                    ares__buf_append_start().
  */
-void ares__buf_append_finish(ares__buf_t *buf, size_t len);
+void           ares__buf_append_finish(ares__buf_t *buf, size_t len);
 
 /*! Clean up ares__buf_t and return allocated pointer to unprocessed data.  It
  *  is the responsibility of the  caller to ares_free() the returned buffer.
@@ -124,7 +124,7 @@ unsigned char *ares__buf_finish_bin(ares__buf_t *buf, size_t *len);
  * \param[out] len    Optional. Length of data returned, or NULL if not needed.
  * \return pointer to unprocessed data or NULL on error.
  */
-char *ares__buf_finish_str(ares__buf_t *buf, size_t *len);
+char          *ares__buf_finish_str(ares__buf_t *buf, size_t *len);
 
 /*! Tag a position to save in the buffer in case parsing needs to rollback,
  *  such as if insufficient data is available, but more data may be added in
@@ -133,14 +133,14 @@ char *ares__buf_finish_str(ares__buf_t *buf, size_t *len);
  *
  *  \param[in] buf Initialized buffer object
  */
-void ares__buf_tag(ares__buf_t *buf);
+void           ares__buf_tag(ares__buf_t *buf);
 
 /*! Rollback to a tagged position.  Will automatically clear the tag.
  *
  *  \param[in] buf Initialized buffer object
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_tag_rollback(ares__buf_t *buf);
+ares_status_t  ares__buf_tag_rollback(ares__buf_t *buf);
 
 /*! Clear the tagged position without rolling back.  You should do this any
  *  time a tag is no longer needed as future append operations can reclaim
@@ -149,7 +149,7 @@ ares_status_t ares__buf_tag_rollback(ares__buf_t *buf);
  *  \param[in] buf Initialized buffer object
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_tag_clear(ares__buf_t *buf);
+ares_status_t  ares__buf_tag_clear(ares__buf_t *buf);
 
 /*! Fetch the buffer and length of data starting from the tagged position up
  *  to the _current_ position.  It will not unset the tagged position.  The
@@ -168,7 +168,7 @@ const unsigned char *ares__buf_tag_fetch(const ares__buf_t *buf, size_t *len);
  *  \param[in] len    Length to consume
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_consume(ares__buf_t *buf, size_t len);
+ares_status_t        ares__buf_consume(ares__buf_t *buf, size_t len);
 
 /*! Fetch a 16bit Big Endian number from the buffer.
  *
@@ -233,7 +233,7 @@ ares_status_t ares__buf_begins_with(ares__buf_t *buf, const unsigned char *data,
  *  \param[in] buf Initialized buffer object
  *  \return length remaining
  */
-size_t ares__buf_len(const ares__buf_t *buf);
+size_t        ares__buf_len(const ares__buf_t *buf);
 
 /*! Retrieve a pointer to the currently unprocessed data.  Generally this isn't
  *  recommended to be used in practice.  The returned pointer may be invalidated
@@ -243,8 +243,7 @@ size_t ares__buf_len(const ares__buf_t *buf);
  *  \param[out] len    Length of available data
  *  \return Pointer to buffer of unprocessed data
  */
-const unsigned char *ares__buf_peek(const ares__buf_t *buf,
-                                       size_t *len);
+const unsigned char *ares__buf_peek(const ares__buf_t *buf, size_t *len);
 
 
 /*! @} */
