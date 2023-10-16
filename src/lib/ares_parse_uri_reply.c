@@ -160,7 +160,7 @@ int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
       }
       memcpy(uri_curr->uri, vptr, len);
       uri_curr->uri[len] = 0;
-      uri_curr->ttl = (int)rr_ttl;
+      uri_curr->ttl      = (int)rr_ttl;
     }
 
     /* Don't lose memory in the next iteration */
