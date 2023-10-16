@@ -45,8 +45,8 @@ ares_status_t ares_expand_string_ex(const unsigned char *encoded,
                                     const unsigned char *abuf, size_t alen,
                                     unsigned char **s, size_t *enclen)
 {
-  unsigned char *q;
   size_t         len;
+  unsigned char *buf;
 
   if (encoded == abuf + alen) {
     return ARES_EBADSTR;
@@ -59,16 +59,15 @@ ares_status_t ares_expand_string_ex(const unsigned char *encoded,
 
   encoded++;
 
-  *s = ares_malloc(len + 1);
-  if (*s == NULL) {
+  buf = ares_malloc(len + 1);
+  if (buf == NULL) {
     return ARES_ENOMEM;
   }
-  q = *s;
-  ares_strcpy((char *)q, (char *)encoded, len + 1);
-  q[len] = '\0';
 
-  *s = q;
+  memcpy(buf, encoded, len);
+  buf[len] = 0;
 
+  *s      = buf;
   *enclen = len + 1;
 
   return ARES_SUCCESS;
