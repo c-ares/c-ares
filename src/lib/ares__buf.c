@@ -111,7 +111,7 @@ static void ares__buf_reclaim(ares__buf_t *buf)
     return;
   }
 
-  if (buf->tag_offset != SIZE_MAX) {
+  if (buf->tag_offset != SIZE_MAX && buf->tag_offset < buf->offset) {
     prefix_size = buf->tag_offset;
   } else {
     prefix_size = buf->offset;
@@ -212,6 +212,11 @@ ares_status_t ares__buf_append(ares__buf_t *buf, const unsigned char *data,
   return ARES_SUCCESS;
 }
 
+ares_status_t ares__buf_append_byte(ares__buf_t *buf, unsigned char byte)
+{
+  return ares__buf_append(buf, &byte, 1);
+}
+
 unsigned char *ares__buf_append_start(ares__buf_t *buf, size_t *len)
 {
   ares_status_t status;
@@ -225,7 +230,8 @@ unsigned char *ares__buf_append_start(ares__buf_t *buf, size_t *len)
     return NULL;
   }
 
-  *len = buf->alloc_buf_len - buf->data_len;
+  /* -1 for possible null terminator for ares__buf_finish_str() */
+  *len = buf->alloc_buf_len - buf->data_len - 1;
   return buf->alloc_buf + buf->data_len;
 }
 
@@ -246,11 +252,17 @@ unsigned char *ares__buf_finish_bin(ares__buf_t *buf, size_t *len)
   }
 
   ares__buf_reclaim(buf);
+  if (buf->alloc_buf == NULL) {
+    /* We don't want to return NULL except on failure, may be zero-length */
+    if (ares__buf_ensure_space(buf, 1) != ARES_SUCCESS)
+      return NULL;
+  }
   ptr  = buf->alloc_buf;
   *len = buf->data_len;
   ares_free(buf);
   return ptr;
 }
+
 
 char *ares__buf_finish_str(ares__buf_t *buf, size_t *len)
 {
@@ -272,6 +284,7 @@ char *ares__buf_finish_str(ares__buf_t *buf, size_t *len)
 
   return ptr;
 }
+
 
 void ares__buf_tag(ares__buf_t *buf)
 {
@@ -369,6 +382,154 @@ ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
   memcpy(bytes, ptr, len);
   return ares__buf_consume(buf, len);
 }
+
+ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
+                                             ares__buf_t *dest,
+                                             size_t len)
+{
+  size_t               remaining_len;
+  const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
+  ares_status_t        status;
+
+  if (buf == NULL || dest == NULL || len == 0 || remaining_len < len) {
+    return ARES_EBADRESP;
+  }
+
+  status = ares__buf_append(dest, ptr, len);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  return ares__buf_consume(buf, len);
+}
+
+/* Reserved characters for names that need to be escaped */
+static ares_bool_t is_reservedch(int ch)
+{
+  switch (ch) {
+    case '"':
+    case '.':
+    case ';':
+    case '\\':
+    case '(':
+    case ')':
+    case '@':
+    case '$':
+      return ARES_TRUE;
+    default:
+      break;
+  }
+
+  return ARES_FALSE;
+}
+
+static ares_bool_t ares__isprint(int ch)
+{
+  if (ch >= 0x20 && ch <= 0x7E) {
+    return ARES_TRUE;
+  }
+  return ARES_FALSE;
+}
+
+/* Character set allowed by hostnames.  This is to include the normal
+ * domain name character set plus:
+ *  - underscores which are used in SRV records.
+ *  - Forward slashes such as are used for classless in-addr.arpa
+ *    delegation (CNAMEs)
+ *  - Asterisks may be used for wildcard domains in CNAMEs as seen in the
+ *    real world.
+ * While RFC 2181 section 11 does state not to do validation,
+ * that applies to servers, not clients.  Vulnerabilities have been
+ * reported when this validation is not performed.  Security is more
+ * important than edge-case compatibility (which is probably invalid
+ * anyhow). */
+static ares_bool_t is_hostnamech(int ch)
+{
+  /* [A-Za-z0-9-*._/]
+   * Don't use isalnum() as it is locale-specific
+   */
+  if (ch >= 'A' && ch <= 'Z') {
+    return ARES_TRUE;
+  }
+  if (ch >= 'a' && ch <= 'z') {
+    return ARES_TRUE;
+  }
+  if (ch >= '0' && ch <= '9') {
+    return ARES_TRUE;
+  }
+  if (ch == '-' || ch == '.' || ch == '_' || ch == '/' || ch == '*') {
+    return ARES_TRUE;
+  }
+
+  return ARES_FALSE;
+}
+
+static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
+                                                      ares__buf_t *dest,
+                                                      size_t len,
+                                                      ares_bool_t is_hostname)
+{
+  size_t               remaining_len;
+  const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
+  ares_status_t        status;
+  size_t               i;
+
+  if (buf == NULL || len == 0 || remaining_len < len) {
+    return ARES_EBADRESP;
+  }
+
+  /* Special case root label, do nothing */
+  if (len == 1 && ptr[0] == 0) {
+    return ares__buf_consume(buf, len);
+  }
+
+  for (i=0; i<len; i++) {
+    unsigned char c = ptr[i];
+
+    /* Hostnames have a very specific allowed character set.  Anything outside
+     * of that (non-printable and reserved included) are disallowed */
+    if (is_hostname && !is_hostnamech(c)) {
+      status = ARES_EBADRESP;
+      goto fail;
+    }
+
+    /* NOTE: dest may be NULL if the user is trying to skip the name.  validation
+     *       still occurs */
+    if (dest) {
+      /* Non-printable characters need to be output as \DDD */
+      if (!ares__isprint(c)) {
+        unsigned char escape[4];
+
+        escape[0] = '\\';
+        escape[1] = '0' + (c / 100);
+        escape[2] = '0' + ((c % 100) / 10);
+        escape[3] = '0' + (c % 10);
+
+        status = ares__buf_append(dest, escape, sizeof(escape));
+        if (status != ARES_SUCCESS)
+          goto fail;
+
+        continue;
+      }
+
+      /* Reserved characters need to be escaped, otherwise normal */
+      if (is_reservedch(c)) {
+        status = ares__buf_append_byte(dest, '\\');
+        if (status != ARES_SUCCESS)
+          goto fail;
+      }
+
+      status = ares__buf_append_byte(dest, c);
+      if (status != ARES_SUCCESS)
+        return status;
+    }
+  }
+
+  return ares__buf_consume(buf, len);
+
+fail:
+  return status;
+}
+
 
 size_t ares__buf_consume_whitespace(ares__buf_t *buf, int include_linefeed)
 {
@@ -497,3 +658,178 @@ const unsigned char *ares__buf_peek(const ares__buf_t *buf, size_t *len)
 {
   return ares__buf_fetch(buf, len);
 }
+
+
+size_t ares__buf_get_position(const ares__buf_t *buf)
+{
+  if (buf == NULL)
+    return 0;
+  return buf->offset;
+}
+
+ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx)
+{
+  if (buf == NULL)
+    return ARES_EFORMERR;
+
+  if (idx > buf->data_len)
+    return ARES_EFORMERR;
+
+  buf->offset = idx;
+  return ARES_SUCCESS;
+}
+
+#define ARES_DNS_HEADER_SIZE 12
+#define ARES_NAME_MAX_REDIRECTS 50
+ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
+                                       ares_bool_t is_hostname)
+{
+  size_t        save_offset   = 0;
+  unsigned char c;
+  ares_status_t status;
+  ares__buf_t  *namebuf       = NULL;
+  size_t        num_redirects = 0;
+
+  if (buf == NULL)
+    return ARES_EFORMERR;
+
+  if (name != NULL) {
+    namebuf = ares__buf_create();
+    if (namebuf == NULL) {
+      status = ARES_ENOMEM;
+      goto fail;
+    }
+  }
+
+  /* We must have at least skipped over a dns header, otherwise this is clearly
+   * misuse.  However, the ares test suite doesn't seem to test this properly.
+   * Ugh. */
+#if 0
+  if (ares__buf_get_position(buf) < ARES_DNS_HEADER_SIZE) {
+    status = ARES_EFORMERR;
+    goto fail;
+  }
+#endif
+
+  /* The compression scheme allows a domain name in a message to be
+   * represented as either:
+   *
+   * - a sequence of labels ending in a zero octet
+   * - a pointer
+   * - a sequence of labels ending with a pointer
+   */
+  while (1) {
+    status = ares__buf_fetch_bytes(buf, &c, 1);
+    if (status != ARES_SUCCESS)
+      goto fail;
+
+    /* Pointer/Redirect */
+    if ((c & 0xc0) == 0xc0) {
+      /* The pointer takes the form of a two octet sequence:
+       *
+       *   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+       *   | 1  1|                OFFSET                   |
+       *   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+       *
+       * The first two bits are ones.  This allows a pointer to be distinguished
+       * from a label, since the label must begin with two zero bits because
+       * labels are restricted to 63 octets or less.  (The 10 and 01 combinations
+       * are reserved for future use.)  The OFFSET field specifies an offset from
+       * the start of the message (i.e., the first octet of the ID field in the
+       * domain header).  A zero offset specifies the first byte of the ID field,
+       * etc.
+       */
+      unsigned short offset = (unsigned short)((c & 0x3F) << 8);
+
+      num_redirects++;
+      if (num_redirects > ARES_NAME_MAX_REDIRECTS) {
+        status = ARES_EBADNAME;
+        goto fail;
+      }
+
+      /* Fetch second byte of the redirect length */
+      status = ares__buf_fetch_bytes(buf, &c, 1);
+      if (status != ARES_SUCCESS) {
+        goto fail;
+      }
+
+      offset |= c;
+
+      /* According to RFC 1035 4.1.4:
+       *    In this scheme, an entire domain name or a list of labels at
+       *    the end of a domain name is replaced with a pointer to a prior
+       *    occurance of the same name.
+       * Note the word "prior", meaning it can't go backwards.  Yet c-ares
+       * has tests that go forwards.  This should still be "safe" with this
+       * parser, but seems to be against the spec.
+       */
+#if 0
+      /* All references must be backwards */
+      if (offset >= ares__buf_get_position(buf)) {
+        status = ARES_EBADNAME;
+        goto fail;
+      }
+#endif
+
+      /* First time we make a jump, save the current position */
+      if (save_offset == 0) {
+        save_offset = ares__buf_get_position(buf);
+      }
+
+      status = ares__buf_set_position(buf, offset);
+      if (status != ARES_SUCCESS) {
+        status = ARES_EBADNAME;
+        goto fail;
+      }
+
+      continue;
+    } else if ((c & 0xc0) != 0) {
+      /* 10 and 01 are reserved */
+      status = ARES_EBADNAME;
+      goto fail;
+    } else if (c == 0) {
+      /* termination via zero octet*/
+      break;
+    }
+
+    /* New label */
+
+    /* Labels are separated by periods */
+    if (ares__buf_len(namebuf) != 0) {
+      if (name != NULL) {
+        status = ares__buf_append_byte(namebuf, '.');
+        if (status != ARES_SUCCESS)
+          goto fail;
+      }
+    }
+
+    status = ares__buf_fetch_dnsname_into_buf(buf, namebuf, c, is_hostname);
+    if (status != ARES_SUCCESS)
+      goto fail;
+  }
+
+  /* Restore offset read after first redirect/pointer as where DNS message
+   * continues */
+  if (save_offset) {
+    ares__buf_set_position(buf, save_offset);
+  }
+
+  if (name != NULL) {
+    *name = ares__buf_finish_str(namebuf, NULL);
+    if (*name == NULL) {
+      status = ARES_ENOMEM;
+      goto fail;
+    }
+  }
+
+  return ARES_SUCCESS;
+
+fail:
+  /* We want badname response if we couldn't parse */
+  if (status == ARES_EBADRESP)
+    status = ARES_EBADNAME;
+
+  ares__buf_destroy(namebuf);
+  return status;
+}
+

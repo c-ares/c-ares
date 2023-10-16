@@ -106,7 +106,7 @@ void           ares__buf_append_finish(ares__buf_t *buf, size_t len);
  *
  * \param[in]  buf    Initialized buffer object. Can not be a "const" buffer.
  * \param[out] len    Length of data returned
- * \return pointer to unprocessed data or NULL on error.
+ * \return pointer to unprocessed data (may be zero length) or NULL on error.
  */
 unsigned char *ares__buf_finish_bin(ares__buf_t *buf, size_t *len);
 
@@ -245,6 +245,16 @@ size_t        ares__buf_len(const ares__buf_t *buf);
  */
 const unsigned char *ares__buf_peek(const ares__buf_t *buf, size_t *len);
 
+ares_status_t ares__buf_append_byte(ares__buf_t *buf, unsigned char byte);
+
+ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx);
+size_t ares__buf_get_position(const ares__buf_t *buf);
+
+ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
+                                       ares_bool_t is_hostname);
+ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
+                                             ares__buf_t *dest,
+                                             size_t len);
 
 /*! @} */
 

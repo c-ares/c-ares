@@ -74,6 +74,7 @@ typedef enum {
   ARES_SECTION_ADDITIONAL = 3  /*!< Additional information section */
 } ares_section_t;
 
+/*! Data types used */
 typedef enum {
   ARES_DATATYPE_U16 = 1,
   ARES_DATATYPE_U32 = 2,
@@ -81,9 +82,12 @@ typedef enum {
   ARES_DATATYPE_BIN = 4
 } ares_datatype_t;
 
+/*! Keys used for all RR Types */
 typedef enum {
   ARES_RR_CAA_TAG   = 1,
-  ARES_RR_CAA_VALUE = 2,
+  ARES_RR_CAA_VALUE,
+  ARES_RR_RAW_TYPE,
+  ARES_RR_RAW_VALUE,
 } ares_dns_rr_key_t;
 
 
