@@ -31,7 +31,6 @@
 
 #include "ares.h"
 #include "ares_ipv6.h"
-#include "ares_nowarn.h"
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
@@ -81,7 +80,7 @@ static int ares_inet_net_pton_ipv4(const char *src, unsigned char *dst,
       if (ISUPPER(ch)) {
         ch = tolower(ch);
       }
-      n = aresx_sztosi(strchr(xdigits, ch) - xdigits);
+      n = (int)(strchr(xdigits, ch) - xdigits);
       if (dirty == 0) {
         tmp = n;
       } else {
@@ -106,7 +105,7 @@ static int ares_inet_net_pton_ipv4(const char *src, unsigned char *dst,
     for (;;) {
       tmp = 0;
       do {
-        n    = aresx_sztosi(strchr(digits, ch) - digits);
+        n    = (int)(strchr(digits, ch) - digits);
         tmp *= 10;
         tmp += n;
         if (tmp > 255) {
@@ -138,7 +137,7 @@ static int ares_inet_net_pton_ipv4(const char *src, unsigned char *dst,
     ch   = *src++; /* Skip over the /. */
     bits = 0;
     do {
-      n     = aresx_sztosi(strchr(digits, ch) - digits);
+      n     = (int)(strchr(digits, ch) - digits);
       bits *= 10;
       bits += n;
       if (bits > 32) {
@@ -174,7 +173,7 @@ static int ares_inet_net_pton_ipv4(const char *src, unsigned char *dst,
     }
     /* If imputed mask is narrower than specified octets, widen. */
     if (bits < ((dst - odst) * 8)) {
-      bits = aresx_sztosi(dst - odst) * 8;
+      bits = (int)(dst - odst) * 8;
     }
     /*
      * If there are no additional bits specified for a class D

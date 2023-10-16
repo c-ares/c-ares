@@ -36,7 +36,6 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_library_init.c			\
   ares_mkquery.c			\
   ares_create_query.c			\
-  ares_nowarn.c				\
   ares_options.c			\
   ares_parse_a_reply.c			\
   ares_parse_aaaa_reply.c		\
@@ -78,7 +77,6 @@ HHEADERS = ares__htable.h		\
   ares_inet_net_pton.h			\
   ares_iphlpapi.h			\
   ares_ipv6.h				\
-  ares_nowarn.h				\
   ares_platform.h			\
   ares_private.h			\
   ares_strcasecmp.h			\

@@ -27,7 +27,6 @@
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
-#include "ares_nowarn.h"
 #include <stdlib.h>
 
 #if !defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_GETRANDOM) && \

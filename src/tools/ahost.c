@@ -41,7 +41,6 @@
 #include "ares_dns.h"
 #include "ares_getopt.h"
 #include "ares_ipv6.h"
-#include "ares_nowarn.h"
 
 #ifndef HAVE_STRDUP
 #  include "ares_strdup.h"

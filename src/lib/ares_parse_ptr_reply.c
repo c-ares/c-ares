@@ -42,7 +42,6 @@
 
 #include "ares.h"
 #include "ares_dns.h"
-#include "ares_nowarn.h"
 #include "ares_private.h"
 
 int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
@@ -224,8 +223,8 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
       hostent->h_aliases[i] = aliases[i];
     }
     hostent->h_aliases[aliascnt] = NULL;
-    hostent->h_addrtype          = aresx_sitoss(family);
-    hostent->h_length            = aresx_sitoss(addrlen);
+    hostent->h_addrtype          = family;
+    hostent->h_length            = addrlen;
     if (addr && addrlen) {
       memcpy(hostent->h_addr_list[0], addr, (size_t)addrlen);
     }

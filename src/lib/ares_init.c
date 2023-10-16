@@ -63,7 +63,6 @@
 
 #include "ares.h"
 #include "ares_inet_net_pton.h"
-#include "ares_nowarn.h"
 #include "ares_platform.h"
 #include "ares_private.h"
 
@@ -381,8 +380,8 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   options->timeout            = (int)channel->timeout;
   options->tries              = (int)channel->tries;
   options->ndots              = (int)channel->ndots;
-  options->udp_port           = ntohs(aresx_sitous(channel->udp_port));
-  options->tcp_port           = ntohs(aresx_sitous(channel->tcp_port));
+  options->udp_port           = ntohs(channel->udp_port);
+  options->tcp_port           = ntohs(channel->tcp_port);
   options->sock_state_cb      = channel->sock_state_cb;
   options->sock_state_cb_data = channel->sock_state_cb_data;
 

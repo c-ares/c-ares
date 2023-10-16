@@ -47,7 +47,6 @@
 #include "ares_inet_net_pton.h"
 #include "bitncmp.h"
 #include "ares_platform.h"
-#include "ares_nowarn.h"
 #include "ares_private.h"
 
 static void   sort_addresses(struct hostent        *host,
