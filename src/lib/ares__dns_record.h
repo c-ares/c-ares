@@ -67,11 +67,38 @@ typedef enum  {
   ARES_CLASS_ANY     = 255 /*<! Any class (requests only) */
 } ares_class_t;
 
+/*! DNS RR Section type */
+typedef enum {
+  ARES_SECTION_ANSWER     = 1, /*!< Answer section */
+  ARES_SECTION_AUTHORITY  = 2, /*!< Authority section */
+  ARES_SECTION_ADDITIONAL = 3  /*!< Additional information section */
+} ares_section_t;
+
+typedef enum {
+  ARES_DATATYPE_U16 = 1,
+  ARES_DATATYPE_U32 = 2,
+  ARES_DATATYPE_STR = 3,
+  ARES_DATATYPE_BIN = 4
+} ares_datatype_t;
+
+typedef enum {
+  ARES_RR_CAA_TAG   = 1,
+  ARES_RR_CAA_VALUE = 2,
+} ares_dns_rr_key_t;
+
+
+
 /*! Opaque data type representing a DNS RR (Resource Record) */
 struct ares_dns_rr;
 
 /*! Typedef for opaque data type representing a DNS RR (Resource Record) */
 typedef struct ares_dns_rr ares_dns_rr_t;
+
+/*! Opaque data type representing a DNS Query Data QD Packet */
+struct ares_dns_qd;
+
+/*! Typedef for opaque data type representing a DNS Query Data QD Packet */
+typedef struct ares_dns_qd ares_dns_qd_t;
 
 /*! Opaque data type representing a DNS Packet */
 struct ares_dns_record;
@@ -80,15 +107,59 @@ struct ares_dns_record;
 typedef struct ares_dns_record ares_dns_record_t;
 
 
+ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
+                                     unsigned short id, unsigned short qr,
+                                     unsigned short opcode, unsigned short aa,
+                                     unsigned short tc, unsigned short rd,
+                                     unsigned short ra, unsigned short rcode);
+
+void ares_dns_record_destroy(ares_dns_record_t *dnsrec);
+ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
+                                        ares_rec_type_t qtype,
+                                        ares_class_t qclass);
+size_t ares_dns_record_query_cnt(ares_dns_record_t *dnsrec);
+ares_dns_qd_t *ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx);
+size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec, ares_section_t sect);
+ares_dns_rr_t *ares_dns_record_rr_add(ares_dns_record_t *dnsrec,
+                                      ares_section_t sect, char *name,
+                                      ares_rec_type_t type, ares_class_t rclass,
+                                      unsigned int ttl);
+ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
+                                      ares_section_t sect,
+                                      size_t idx);
+
+const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_rec_type_t type,
+                                              size_t *cnt);
+
+ares_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
+
+ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  const char *val);
+ares_status_t ares_dns_rr_set_u16(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  unsigned short val);
+ares_status_t ares_dns_rr_set_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  unsigned int val);
+ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  const unsigned char *val, size_t len);
+
+
+const char *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
+unsigned short ares_dns_rr_get_u16(ares_dns_rr_t *dns_rr,
+                                   ares_dns_rr_key_t key);
+unsigned int ares_dns_rr_get_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
+const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
+                                         ares_dns_rr_key_t key, size_t *len);
+
+
 
 /* ---- PRIVATE BELOW ----- */
 
 
-typedef struct {
+struct ares_dns_qd {
   char           *name;
   ares_rec_type_t qtype;
   ares_class_t    qclass;
-} ares__dns_qd_t;
+};
 
 typedef struct {
   char *cname;
