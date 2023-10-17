@@ -774,7 +774,7 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
         *      the need for a redirect count.
         */
 #if 0
-      if (offset >= ares__buf_get_position(buf)) {
+      if (offset >= ares__buf_get_position(buf)-2) {
         status = ARES_EBADNAME;
         goto fail;
       }
