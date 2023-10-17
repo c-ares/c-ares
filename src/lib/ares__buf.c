@@ -477,7 +477,9 @@ static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
     return ARES_EBADRESP;
   }
 
-  /* Special case root label, do nothing */
+  /* XXX: Test Case LibraryTest.ParseRootName appears to require this special
+   *      exception.  I can't locate anywhere in RFC1035 that this is legitimate
+   */
   if (len == 1 && ptr[0] == 0) {
     return ares__buf_consume(buf, len);
   }
@@ -701,9 +703,11 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
     }
   }
 
-  /* We must have at least skipped over a dns header, otherwise this is clearly
-   * misuse.  However, the ares test suite doesn't seem to test this properly.
-   * Ugh. */
+  /* XXX: LibraryTest.ExpandName and LibraryTest.ExpandNameFailure are not
+   *      complete DNS messages but rather non-valid minimized snippets to try
+   *      to test the old parser, so we have to turn off this sanity check
+   *      it appears until these test cases are rewritten
+   */
 #if 0
   if (ares__buf_get_position(buf) < ARES_DNS_HEADER_SIZE) {
     status = ARES_EFORMERR;
@@ -733,11 +737,11 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
        *
        * The first two bits are ones.  This allows a pointer to be distinguished
        * from a label, since the label must begin with two zero bits because
-       * labels are restricted to 63 octets or less.  (The 10 and 01 combinations
-       * are reserved for future use.)  The OFFSET field specifies an offset from
-       * the start of the message (i.e., the first octet of the ID field in the
-       * domain header).  A zero offset specifies the first byte of the ID field,
-       * etc.
+       * labels are restricted to 63 octets or less.  (The 10 and 01
+       * combinations are reserved for future use.)  The OFFSET field specifies
+       * an offset from the start of the message (i.e., the first octet of the
+       * ID field in the domain header).  A zero offset specifies the first byte
+       * of the ID field, etc.
        */
       unsigned short offset = (unsigned short)((c & 0x3F) << 8);
 
@@ -759,12 +763,17 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
        *    In this scheme, an entire domain name or a list of labels at
        *    the end of a domain name is replaced with a pointer to a prior
        *    occurance of the same name.
-       * Note the word "prior", meaning it can't go backwards.  Yet c-ares
-       * has tests that go forwards.  This should still be "safe" with this
-       * parser, but seems to be against the spec.
+       * Note the word "prior", meaning it must go backwards.
        */
+
+       /* XXX: LibraryTest.ParseFullyCompressedName2 has tests that
+        *      "go forward", need to determine if this test case should be fixed
+        *      or if there are legitimate queries that need this functionality.
+        *      This should still be "safe" with this parser, but seems to be
+        *      against the spec.  Mandating "go backward" would also prevent
+        *      the need for a redirect count.
+        */
 #if 0
-      /* All references must be backwards */
       if (offset >= ares__buf_get_position(buf)) {
         status = ARES_EBADNAME;
         goto fail;
