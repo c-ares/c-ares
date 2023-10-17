@@ -138,3 +138,147 @@ fail:
     memset(header, 0, sizeof(*header));
   return status;
 }
+
+static ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode)
+{
+  switch (opcode) {
+    case ARES_OPCODE_QUERY:
+    case ARES_OPCODE_IQUERY:
+    case ARES_OPCODE_STATUS:
+    case ARES_OPCODE_NOTIFY:
+    case ARES_OPCODE_UPDATE:
+      return ARES_TRUE;
+  }
+  return ARES_FALSE;
+}
+
+static ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode)
+{
+  switch (rcode) {
+    case ARES_RCODE_NOERROR:
+    case ARES_RCODE_FORMAT_ERROR:
+    case ARES_RCODE_SERVER_FAILURE:
+    case ARES_RCODE_NAME_ERROR:
+    case ARES_RCODE_NOT_IMPLEMENTED:
+    case ARES_RCODE_REFUSED:
+      return ARES_TRUE;
+  }
+  return ARES_FALSE;
+}
+
+static ares_bool_t ares_dns_flags_arevalid(unsigned short flags)
+{
+  unsigned short allflags = ARES_FLAG_QR|ARES_FLAG_AA|ARES_FLAG_TC|
+                            ARES_FLAG_RD|ARES_FLAG_RA;
+
+  if (flags & ~(allflags))
+    return ARES_FALSE;
+
+  return ARES_TRUE;
+}
+
+
+ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
+                                     unsigned short id, unsigned short flags,
+                                     ares_dns_opcode_t opcode,
+                                     ares_dns_rcode_t rcode)
+{
+  if (dnsrec == NULL)
+    return ARES_EFORMERR;
+
+  *dnsrec = NULL;
+
+  if (!ares_dns_opcode_isvalid(opcode) || !ares_dns_rcode_isvalid(rcode) ||
+      !ares_dns_flags_arevalid(flags)) {
+    return ARES_EFORMERR;
+  }
+
+  *dnsrec = ares_malloc(sizeof(**dnsrec));
+  if (*dnsrec == NULL)
+    return ARES_ENOMEM;
+
+  memset(*dnsrec, 0, sizeof(**dnsrec));
+
+  (*dnsrec)->id     = id;
+  (*dnsrec)->flags  = flags;
+  (*dnsrec)->opcode = opcode;
+  (*dnsrec)->rcode  = rcode;
+  return ARES_SUCCESS;
+}
+
+static ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
+                                             ares_bool_t is_query)
+{
+  switch (type) {
+    case ARES_REC_TYPE_A:
+    case ARES_REC_TYPE_NS:
+    case ARES_REC_TYPE_CNAME:
+    case ARES_REC_TYPE_SOA:
+    case ARES_REC_TYPE_PTR:
+    case ARES_REC_TYPE_HINFO:
+    case ARES_REC_TYPE_MX:
+    case ARES_REC_TYPE_TXT:
+    case ARES_REC_TYPE_AAAA:
+    case ARES_REC_TYPE_SRV:
+    case ARES_REC_TYPE_NAPTR:
+    case ARES_REC_TYPE_OPT:
+    case ARES_REC_TYPE_TLSA:
+    case ARES_REC_TYPE_SVBC:
+    case ARES_REC_TYPE_HTTPS:
+    case ARES_REC_TYPE_ANY:
+    case ARES_REC_TYPE_URI:
+    case ARES_REC_TYPE_CAA:
+      return ARES_TRUE;
+    default:
+      break;
+  }
+  return is_query?ARES_FALSE:ARES_TRUE;
+}
+
+static ares_bool_t ares_dns_rec_type_isvalid(ares_dns_class_t qclass,
+                                             ares_bool_t is_query)
+{
+  switch (qclass) {
+    case ARES_CLASS_IN:
+    case ARES_CLASS_CHAOS:
+    case ARES_CLASS_HESOID:
+      return ARES_TRUE;
+    case ARES_CLASS_ANY:
+      return is_query?ARES_TRUE:ARES_FALSE;
+  }
+  return ARES_FALSE;
+}
+
+ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
+                                        ares_dns_rec_type_t qtype,
+                                        ares_dns_class_t qclass)
+{
+  ares__dns_qd_t *temp = NULL;
+  size_t          idx;
+
+  if (dnsrec == NULL || name == NULL ||
+      !ares_dns_rec_type_isvalid(qtype, ARES_TRUE) ||
+      !ares_dns_class_isvalid(qclass, ARES_TRUE)) {
+    return ARES_EFORMERR;
+  }
+
+  temp = ares_realloc(dnsrec->qd, sizeof(*temp) * (dnsrec->qdcount + 1));
+  if (temp == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  dnsrec->qd = temp;
+  idx        = dnsrec->qdcount;
+  memset(&dnsrec->qd[idx], 0, sizeof(*dnsrec->qd));
+
+  dnsrec->qd[idx].name   = ares_strdup(name);
+  if (dnsrec->qd[idx].name == NULL) {
+    /* No need to clean up anything */
+    return ARES_ENOMEM;
+  }
+
+  dnsrec->qd[idx].qtype  = qtype;
+  dnsrec->qd[idx].qclass = qclass;
+  dnsrec->qdcount++;
+}
+

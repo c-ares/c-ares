@@ -31,7 +31,7 @@
 
 /*! DNS Record types handled by c-ares.  Some record types may only be valid
  *  on requests (e.g. ARES_REC_TYPE_ANY), and some may only be valid on
- *  responses (e.g. ARES_REC_TYPE_OPT) */
+ *  responses */
 typedef enum {
   ARES_REC_TYPE_A        = 1,     /*!< Host address. */
   ARES_REC_TYPE_NS       = 2,     /*!< Authoritative server. */
@@ -56,7 +56,7 @@ typedef enum {
   ARES_REC_TYPE_RAW_RR   = 65536  /*!< Used as an indicator that the RR record
                                    *   is not parsed, but provided in wire
                                    *   format */
-} ares_rec_type_t;
+} ares_dns_rec_type_t;
 
 
 /*! DNS Classes for requests and responses.  */
@@ -65,14 +65,54 @@ typedef enum  {
   ARES_CLASS_CHAOS   = 3,  /*<! CHAOS */
   ARES_CLASS_HESOID  = 4,  /*<! Hesoid [Dyer 87] */
   ARES_CLASS_ANY     = 255 /*<! Any class (requests only) */
-} ares_class_t;
+} ares_dns_class_t;
 
 /*! DNS RR Section type */
 typedef enum {
   ARES_SECTION_ANSWER     = 1, /*!< Answer section */
   ARES_SECTION_AUTHORITY  = 2, /*!< Authority section */
   ARES_SECTION_ADDITIONAL = 3  /*!< Additional information section */
-} ares_section_t;
+} ares_dns_section_t;
+
+/*! DNS Header opcodes */
+typedef enum {
+  ARES_OPCODE_QUERY  = 0, /* Standard query */
+  ARES_OPCODE_IQUERY = 1, /* Inverse query */
+  ARES_OPCODE_STATUS = 2, /* Name server status query */
+  ARES_OPCODE_NOTIFY = 4, /* Zone change notification (RFC 1996) */
+  ARES_OPCODE_UPDATE = 5, /* Zone update message (RFC2136) */
+} ares_dns_opcode_t;
+
+/*! DNS Header flags */
+typedef enum {
+  ARES_FLAG_QR = 1 << 0, /*! QR. If set, is a response */
+  ARES_FLAG_AA = 1 << 1, /*! Authoritative Answer. If set, is authoritative */
+  ARES_FLAG_TC = 1 << 2, /*! Truncation. If set, is truncated response */
+  ARES_FLAG_RD = 1 << 3, /*! Recursion Desired. If set, recursion is desired */
+  ARES_FLAG_RA = 1 << 4, /*! Recursion Available. If set, server supports
+                          *  recursion */
+} ares_dns_flags_t;
+
+/*! DNS Response Codes from server */
+typedef enum {
+  ARES_RCODE_NOERROR         = 0, /*!< Success */
+  ARES_RCODE_FORMAT_ERROR    = 1, /*!< Format error. The name server was unable
+                                   *   to interpret the query. */
+  ARES_RCODE_SERVER_FAILURE  = 2, /*!< Server Failure. The name server was
+                                   *   unable to process this query due to a
+                                   *   problem with the nameserver */
+  ARES_RCODE_NAME_ERROR      = 3, /*!< Name Error.  Meaningful only for
+                                   *   responses from an authoritative name
+                                   *   server, this code signifies that the
+                                   *   domain name referenced in the query does
+                                   *   not exist. */
+  ARES_RCODE_NOT_IMPLEMENTED = 4, /*!< Not implemented.  The name server does
+                                   *   not support the requested kind of
+                                   *   query */
+  ARES_RCODE_REFUSED         = 5  /*!< Refused. The name server refuses to
+                                   *   perform the speciied operation for
+                                   *   policy reasons. */
+} ares_dns_rcode_t;
 
 /*! Data types used */
 typedef enum {
@@ -80,7 +120,7 @@ typedef enum {
   ARES_DATATYPE_U32 = 2,
   ARES_DATATYPE_STR = 3,
   ARES_DATATYPE_BIN = 4
-} ares_datatype_t;
+} ares_dns_datatype_t;
 
 /*! Keys used for all RR Types */
 typedef enum {
@@ -112,24 +152,24 @@ typedef struct ares_dns_record ares_dns_record_t;
 
 
 ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
-                                     unsigned short id, unsigned short qr,
-                                     unsigned short opcode, unsigned short aa,
-                                     unsigned short tc, unsigned short rd,
-                                     unsigned short ra, unsigned short rcode);
+                                     unsigned short id, unsigned short flags,
+                                     ares_dns_opcode_t opcode,
+                                     ares_dns_rcode_t rcode);
 
 void ares_dns_record_destroy(ares_dns_record_t *dnsrec);
 ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
-                                        ares_rec_type_t qtype,
-                                        ares_class_t qclass);
+                                        ares_dns_rec_type_t qtype,
+                                        ares_dns_class_t qclass);
 size_t ares_dns_record_query_cnt(ares_dns_record_t *dnsrec);
 ares_dns_qd_t *ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx);
 size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec, ares_section_t sect);
 ares_dns_rr_t *ares_dns_record_rr_add(ares_dns_record_t *dnsrec,
-                                      ares_section_t sect, char *name,
-                                      ares_rec_type_t type, ares_class_t rclass,
+                                      ares_dns_section_t sect, char *name,
+                                      ares_dns_rec_type_t type,
+                                      ares_dns_class_t rclass,
                                       unsigned int ttl);
 ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
-                                      ares_section_t sect,
+                                      ares_dns_section_t sect,
                                       size_t idx);
 
 const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_rec_type_t type,
@@ -160,9 +200,9 @@ const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
 
 
 struct ares_dns_qd {
-  char           *name;
-  ares_rec_type_t qtype;
-  ares_class_t    qclass;
+  char               *name;
+  ares_dns_rec_type_t qtype;
+  ares_dns_class_t    qclass;
 };
 
 typedef struct {
@@ -244,10 +284,10 @@ typedef struct {
 
 /*! DNS RR data structure */
 struct ares_dns_rr {
-  char           *name;
-  ares_rec_type_t type;
-  ares_class_t    rclass;
-  unsigned int    ttl;
+  char               *name;
+  ares_dns_rec_type_t type;
+  ares_dns_class_t    rclass;
+  unsigned int        ttl;
 
   union {
     ares__dns_cname_t  cname;
@@ -269,15 +309,10 @@ struct ares_dns_rr {
 
 /*! DNS data structure */
 struct ares_dns_record {
-  unsigned short  id;
-  unsigned short  qr     : 1;
-  unsigned short  opcode : 4;
-  unsigned short  aa     : 1;
-  unsigned short  tc     : 1;
-  unsigned short  rd     : 1;
-  unsigned short  ra     : 1;
-  unsigned short  z      : 3;
-  unsigned short  rcode  : 4;
+  unsigned short    id;     /*!< DNS query id */
+  unsigned short    flags;  /*!< One or more ares_dns_flags_t */
+  ares_dns_opcode_t opcode; /*!< DNS Opcode */
+  ares_dns_rcode_t  rcode;  /*!< DNS RCODE */
 
   ares__dns_qd_t *qd;
   unsigned short  qdcount;
