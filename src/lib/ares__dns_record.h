@@ -162,20 +162,22 @@ ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
                                         ares_dns_class_t qclass);
 size_t ares_dns_record_query_cnt(ares_dns_record_t *dnsrec);
 ares_dns_qd_t *ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx);
-size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec, ares_section_t sect);
-ares_dns_rr_t *ares_dns_record_rr_add(ares_dns_record_t *dnsrec,
-                                      ares_dns_section_t sect, char *name,
-                                      ares_dns_rec_type_t type,
-                                      ares_dns_class_t rclass,
-                                      unsigned int ttl);
+size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec,
+                              ares_dns_section_t sect);
+ares_status_t ares_dns_record_rr_add(ares_dns_rr_t **rr_out,
+                                     ares_dns_record_t *dnsrec,
+                                     ares_dns_section_t sect, char *name,
+                                     ares_dns_rec_type_t type,
+                                     ares_dns_class_t rclass,
+                                     unsigned int ttl);
 ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
                                       ares_dns_section_t sect,
                                       size_t idx);
 
-const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_rec_type_t type,
+const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
                                               size_t *cnt);
 
-ares_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
+ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
 
 ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const char *val);
@@ -314,17 +316,17 @@ struct ares_dns_record {
   ares_dns_opcode_t opcode; /*!< DNS Opcode */
   ares_dns_rcode_t  rcode;  /*!< DNS RCODE */
 
-  ares__dns_qd_t *qd;
-  unsigned short  qdcount;
+  ares_dns_qd_t *qd;
+  size_t         qdcount;
 
-  ares_dns_rr_t  *an;
-  unsigned short  ancount;
+  ares_dns_rr_t *an;
+  size_t         ancount;
 
-  ares_dns_rr_t  *ns;
-  unsigned short  nscount;
+  ares_dns_rr_t *ns;
+  size_t         nscount;
 
-  ares_dns_rr_t  *ar;
-  unsigned short  arcount;
+  ares_dns_rr_t *ar;
+  size_t         arcount;
 };
 
 

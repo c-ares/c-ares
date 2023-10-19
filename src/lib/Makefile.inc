@@ -3,18 +3,19 @@
 
 CSOURCES = ares__addrinfo2hostent.c	\
   ares__addrinfo_localhost.c		\
+  ares__buf.c				\
   ares__close_sockets.c			\
+  ares__dns_record.c		\
   ares__get_hostent.c			\
   ares__htable.c			\
   ares__htable_asvp.c			\
   ares__htable_stvp.c			\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
-  ares__buf.c				\
+  ares__read_line.c			\
   ares__readaddrinfo.c			\
   ares__slist.c			\
   ares__sortaddrinfo.c			\
-  ares__read_line.c			\
   ares__timeval.c			\
   ares_android.c			\
   ares_cancel.c				\
@@ -65,11 +66,12 @@ CSOURCES = ares__addrinfo2hostent.c	\
   inet_ntop.c				\
   windows_port.c
 
-HHEADERS = ares__htable.h		\
+HHEADERS = ares__buf.h	\
+  ares__dns_record.h	\
+  ares__htable.h		\
   ares__htable_asvp.h			\
   ares__htable_stvp.h			\
   ares__llist.h				\
-  ares__buf.h				\
   ares__slist.h				\
   ares_android.h			\
   ares_data.h				\
