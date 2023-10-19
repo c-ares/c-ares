@@ -199,7 +199,10 @@ ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
                                         ares_dns_rec_type_t qtype,
                                         ares_dns_class_t qclass);
 size_t ares_dns_record_query_cnt(ares_dns_record_t *dnsrec);
-ares_dns_qd_t *ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx);
+ares_status_t ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx,
+                                        const char ** name,
+                                        ares_dns_rec_type_t *qtype,
+                                        ares_dns_class_t *qclass);
 size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec,
                               ares_dns_section_t sect);
 ares_status_t ares_dns_record_rr_add(ares_dns_rr_t **rr_out,

@@ -491,6 +491,26 @@ ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
 }
 
 
+ares_status_t ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx,
+                                        const char ** name,
+                                        ares_dns_rec_type_t *qtype,
+                                        ares_dns_class_t *qclass)
+{
+  if (dnsrec == NULL || idx >= dnsrec->qdcount)
+    return ARES_EFORMERR;
+
+  if (name != NULL)
+    *name = dnsrec->qd[idx].name;
+
+  if (qtype != NULL)
+    *qtype = dnsrec->qd[idx].qtype;
+
+  if (qclass != NULL)
+    *qclass = dnsrec->qd[idx].qclass;
+
+  return ARES_SUCCESS;
+}
+
 size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec,
                               ares_dns_section_t sect)
 {
@@ -607,5 +627,115 @@ ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
   }
 
   return &rr_ptr[idx];
+}
+
+static const ares_dns_rr_key_t rr_a_keys[]      = { ARES_RR_A_ADDR };
+static const ares_dns_rr_key_t rr_ns_keys[]     = { ARES_RR_NS_NSDNAME };
+static const ares_dns_rr_key_t rr_cname_keys[]  = { ARES_RR_CNAME_CNAME };
+static const ares_dns_rr_key_t rr_soa_keys[]    = { ARES_RR_SOA_MNAME,
+  ARES_RR_SOA_RNAME, ARES_RR_SOA_SERIAL, ARES_RR_SOA_REFRESH, ARES_RR_SOA_RETRY,
+  ARES_RR_SOA_EXPIRE, ARES_RR_SOA_MINIMUM
+};
+static const ares_dns_rr_key_t rr_ptr_keys[]    = { ARES_RR_PTR_DNAME };
+static const ares_dns_rr_key_t rr_hinfo_keys[]  = { ARES_RR_HINFO_CPU,
+  ARES_RR_HINFO_OS
+};
+static const ares_dns_rr_key_t rr_mx_keys[]     = { ARES_RR_MX_PREFERENCE,
+  ARES_RR_MX_EXCHANGE
+};
+static const ares_dns_rr_key_t rr_txt_keys[]    = { ARES_RR_TXT_DATA };
+static const ares_dns_rr_key_t rr_aaaa_keys[]   = { ARES_RR_AAAA_ADDR };
+static const ares_dns_rr_key_t rr_srv_keys[]    = { ARES_RR_SRV_PRIORITY,
+  ARES_RR_SRV_WEIGHT, ARES_RR_SRV_PORT, ARES_RR_SRV_TARGET
+};
+static const ares_dns_rr_key_t rr_naptr_keys[]  = { ARES_RR_NAPTR_ORDER,
+  ARES_RR_NAPTR_PREFERENCE, ARES_RR_NAPTR_FLAGS, ARES_RR_NAPTR_SERVICES,
+  ARES_RR_NAPTR_REGEXP, ARES_RR_NAPTR_REPLACEMENT
+};
+static const ares_dns_rr_key_t rr_opt_keys[]    = { ARES_RR_OPT_UDP_SIZE,
+  ARES_RR_OPT_EXT_RCODE, ARES_RR_OPT_VERSION, ARES_RR_OPT_FLAGS
+};
+static const ares_dns_rr_key_t rr_uri_keys[]    = { ARES_RR_URI_PRIORITY,
+  ARES_RR_URI_WEIGHT, ARES_RR_URI_TARGET
+};
+static const ares_dns_rr_key_t rr_caa_keys[]    = { ARES_RR_CAA_CRITICAL,
+  ARES_RR_CAA_TAG, ARES_RR_CAA_VALUE
+};
+static const ares_dns_rr_key_t rr_raw_rr_keys[] = { ARES_RR_RAW_RR_TYPE,
+  ARES_RR_RAW_RR_DATA
+};
+
+
+const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
+                                              size_t *cnt)
+{
+  if (cnt == NULL)
+    return NULL;
+
+  *cnt = 0;
+
+  switch (type) {
+    case ARES_REC_TYPE_A:
+      *cnt = sizeof(rr_a_keys) / sizeof(*rr_a_keys);
+      return rr_a_keys;
+    case ARES_REC_TYPE_NS:
+      *cnt = sizeof(rr_ns_keys) / sizeof(*rr_ns_keys);
+      return rr_ns_keys;
+    case ARES_REC_TYPE_CNAME:
+      *cnt = sizeof(rr_cname_keys) / sizeof(*rr_cname_keys);
+      return rr_cname_keys;
+    case ARES_REC_TYPE_SOA:
+      *cnt = sizeof(rr_soa_keys) / sizeof(*rr_soa_keys);
+      return rr_soa_keys;
+    case ARES_REC_TYPE_PTR:
+      *cnt = sizeof(rr_ptr_keys) / sizeof(*rr_ptr_keys);
+      return rr_ptr_keys;
+    case ARES_REC_TYPE_HINFO:
+      *cnt = sizeof(rr_hinfo_keys) / sizeof(*rr_hinfo_keys);
+      return rr_hinfo_keys;
+    case ARES_REC_TYPE_MX:
+      *cnt = sizeof(rr_mx_keys) / sizeof(*rr_mx_keys);
+      return rr_mx_keys;
+    case ARES_REC_TYPE_TXT:
+      *cnt = sizeof(rr_txt_keys) / sizeof(*rr_txt_keys);
+      return rr_txt_keys;
+    case ARES_REC_TYPE_AAAA:
+      *cnt = sizeof(rr_aaaa_keys) / sizeof(*rr_aaaa_keys);
+      return rr_aaaa_keys;
+    case ARES_REC_TYPE_SRV:
+      *cnt = sizeof(rr_srv_keys) / sizeof(*rr_srv_keys);
+      return rr_srv_keys;
+    case ARES_REC_TYPE_NAPTR:
+      *cnt = sizeof(rr_naptr_keys) / sizeof(*rr_naptr_keys);
+      return rr_naptr_keys;
+    case ARES_REC_TYPE_OPT:
+      *cnt = sizeof(rr_opt_keys) / sizeof(*rr_opt_keys);
+      return rr_opt_keys;
+#if 0
+    case ARES_REC_TYPE_TLSA:
+      *cnt = sizeof(rr_tlsa_keys) / sizeof(*rr_tlsa_keys);
+      return rr_tlsa_keys;
+    case ARES_REC_TYPE_SVBC:
+      *cnt = sizeof(rr_svbc_keys) / sizeof(*rr_svbc_keys);
+      return rr_svbc_keys;
+    case ARES_REC_TYPE_HTTPS:
+      *cnt = sizeof(rr_https_keys) / sizeof(*rr_https_keys);
+      return rr_https_keys;
+#endif
+    case ARES_REC_TYPE_ANY:
+      /* Not real */
+      break;
+    case ARES_REC_TYPE_URI:
+      *cnt = sizeof(rr_uri_keys) / sizeof(*rr_uri_keys);
+      return rr_uri_keys;
+    case ARES_REC_TYPE_CAA:
+      *cnt = sizeof(rr_caa_keys) / sizeof(*rr_caa_keys);
+      return rr_caa_keys;
+    case ARES_REC_TYPE_RAW_RR:
+      *cnt = sizeof(rr_raw_rr_keys) / sizeof(*rr_raw_rr_keys);
+      return rr_raw_rr_keys;
+  }
+
+  return NULL;
 }
 
