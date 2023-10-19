@@ -757,7 +757,7 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
         goto fail;
       }
 
-      offset |= c;
+      offset |= (unsigned short)c;
 
       /* According to RFC 1035 4.1.4:
        *    In this scheme, an entire domain name or a list of labels at
