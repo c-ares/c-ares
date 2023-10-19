@@ -170,6 +170,11 @@ typedef enum {
   ARES_RR_RAW_RR_DATA       = (ARES_REC_TYPE_RAW_RR * 100) + 2,
 } ares_dns_rr_key_t;
 
+const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type);
+const char *ares_dns_class_tostr(ares_dns_class_t qclass);
+const char *ares_dns_opcode_tostr(ares_dns_opcode_t opcode);
+const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key);
+
 /*! Opaque data type representing a DNS RR (Resource Record) */
 struct ares_dns_rr;
 
@@ -219,6 +224,7 @@ const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
                                               size_t *cnt);
 
 ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
+ares_dns_rec_type_t ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
 
 ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const char *val);

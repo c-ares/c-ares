@@ -387,6 +387,221 @@ static ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect)
 }
 
 
+ares_dns_rec_type_t ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key)
+{
+  /* NOTE: due to the way we've numerated the keys, we can simply divide by
+   *       100 to get the type rather than having to do a huge switch
+   *       statement.  That said, we do then validate the type returned is
+   *       valid in case something completely bogus is passed in */
+  ares_dns_rec_type_t type = key / 100;
+  if (!ares_dns_rec_type_isvalid(type, ARES_TRUE) &&
+      !ares_dns_rec_type_isvalid(type, ARES_FALSE)) {
+    return 0;
+  }
+  return type;
+}
+
+const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
+{
+  switch (type) {
+    case ARES_REC_TYPE_A:
+      return "A";
+    case ARES_REC_TYPE_NS:
+      return "NS";
+    case ARES_REC_TYPE_CNAME:
+      return "CNAME";
+    case ARES_REC_TYPE_SOA:
+      return "SOA";
+    case ARES_REC_TYPE_PTR:
+      return "PTR";
+    case ARES_REC_TYPE_HINFO:
+      return "HINFO";
+    case ARES_REC_TYPE_MX:
+      return "MX";
+    case ARES_REC_TYPE_TXT:
+      return "TXT";
+    case ARES_REC_TYPE_AAAA:
+      return "AAAA";
+    case ARES_REC_TYPE_SRV:
+      return "SRV";
+    case ARES_REC_TYPE_NAPTR:
+      return "NAPTR";
+    case ARES_REC_TYPE_OPT:
+      return "OPT";
+    case ARES_REC_TYPE_TLSA:
+      return "TLSA";
+    case ARES_REC_TYPE_SVBC:
+      return "SVBC";
+    case ARES_REC_TYPE_HTTPS:
+      return "HTTPS";
+    case ARES_REC_TYPE_ANY:
+      return "ANY";
+    case ARES_REC_TYPE_URI:
+      return "URI";
+    case ARES_REC_TYPE_CAA:
+      return "CAA";
+    case ARES_REC_TYPE_RAW_RR:
+      return "RAWRR";
+  }
+  return "UNKNOWN";
+}
+
+const char *ares_dns_class_tostr(ares_dns_class_t qclass)
+{
+  switch (qclass) {
+    case ARES_CLASS_IN:
+      return "IN";
+    case ARES_CLASS_CHAOS:
+      return "CH";
+    case ARES_CLASS_HESOID:
+      return "HS";
+    case ARES_CLASS_ANY:
+      return "ANY";
+  }
+  return "UNKNOWN";
+}
+
+const char *ares_dns_opcode_tostr(ares_dns_opcode_t opcode)
+{
+  switch(opcode) {
+    case ARES_OPCODE_QUERY:
+      return "QUERY";
+    case ARES_OPCODE_IQUERY:
+      return "IQUERY";
+    case ARES_OPCODE_STATUS:
+      return "STATUS";
+    case ARES_OPCODE_NOTIFY:
+      return "NOTIFY";
+    case ARES_OPCODE_UPDATE:
+      return "UPDATE";
+  }
+  return "UNKNOWN";
+}
+
+const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key)
+{
+  switch (key) {
+    case ARES_RR_A_ADDR:
+      return "ADDR";
+
+    case ARES_RR_NS_NSDNAME:
+      return "NSDNAME";
+
+    case ARES_RR_CNAME_CNAME:
+      return "CNAME";
+
+    case ARES_RR_SOA_MNAME:
+      return "MNAME";
+
+    case ARES_RR_SOA_RNAME:
+      return "RNAME";
+
+    case ARES_RR_SOA_SERIAL:
+      return "SERIAL";
+
+    case ARES_RR_SOA_REFRESH:
+      return "REFRESH";
+
+    case ARES_RR_SOA_RETRY:
+      return "RETRY";
+
+    case ARES_RR_SOA_EXPIRE:
+      return "EXPIRE";
+
+    case ARES_RR_SOA_MINIMUM:
+      return "MINIMUM";
+
+    case ARES_RR_PTR_DNAME:
+      return "DNAME";
+
+    case ARES_RR_AAAA_ADDR:
+      return "ADDR";
+
+    case ARES_RR_HINFO_CPU:
+      return "CPU";
+
+    case ARES_RR_HINFO_OS:
+      return "OS";
+
+    case ARES_RR_MX_PREFERENCE:
+      return "PREFERENCE";
+
+    case ARES_RR_MX_EXCHANGE:
+      return "EXCHANGE";
+
+    case ARES_RR_TXT_DATA:
+      return "DATA";
+
+    case ARES_RR_SRV_PRIORITY:
+      return "PRIORITY";
+
+    case ARES_RR_SRV_WEIGHT:
+      return "WEIGHT";
+
+    case ARES_RR_SRV_PORT:
+      return "PORT";
+
+    case ARES_RR_SRV_TARGET:
+      return "TARGET";
+
+    case ARES_RR_NAPTR_ORDER:
+      return "ORDER";
+
+    case ARES_RR_NAPTR_PREFERENCE:
+      return "PREFERENCE";
+
+    case ARES_RR_NAPTR_FLAGS:
+      return "FLAGS";
+
+    case ARES_RR_NAPTR_SERVICES:
+      return "SERVICES";
+
+    case ARES_RR_NAPTR_REGEXP:
+      return "REGEXP";
+
+    case ARES_RR_NAPTR_REPLACEMENT:
+      return "REPLACEMENT";
+
+    case ARES_RR_OPT_UDP_SIZE:
+      return "UDP_SIZE";
+
+    case ARES_RR_OPT_EXT_RCODE:
+      return "EXT_RCODE";
+
+    case ARES_RR_OPT_VERSION:
+      return "VERSION";
+
+    case ARES_RR_OPT_FLAGS:
+      return "FLAGS";
+
+    case ARES_RR_URI_PRIORITY:
+      return "PRIORITY";
+
+    case ARES_RR_URI_WEIGHT:
+      return "WEIGHT";
+
+    case ARES_RR_URI_TARGET:
+      return "TARGET";
+
+    case ARES_RR_CAA_CRITICAL:
+      return "CRITICAL";
+
+    case ARES_RR_CAA_TAG:
+      return "TAG";
+
+    case ARES_RR_CAA_VALUE:
+      return "VALUE";
+
+    case ARES_RR_RAW_RR_TYPE:
+      return "TYPE";
+
+    case ARES_RR_RAW_RR_DATA:
+      return "DATA";
+  }
+
+  return "UNKNOWN";
+}
+
 ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
 {
   switch (key) {
