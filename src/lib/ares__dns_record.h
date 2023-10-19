@@ -116,21 +116,59 @@ typedef enum {
 
 /*! Data types used */
 typedef enum {
-  ARES_DATATYPE_U16 = 1,
-  ARES_DATATYPE_U32 = 2,
-  ARES_DATATYPE_STR = 3,
-  ARES_DATATYPE_BIN = 4
+  ARES_DATATYPE_INADDR  = 1,
+  ARES_DATATYPE_INADDR6 = 2,
+  ARES_DATATYPE_U8      = 3,
+  ARES_DATATYPE_U16     = 4,
+  ARES_DATATYPE_U32     = 5,
+  ARES_DATATYPE_STR     = 6,
+  ARES_DATATYPE_BIN     = 7
 } ares_dns_datatype_t;
 
-/*! Keys used for all RR Types */
+/*! Keys used for all RR Types.  We take the record type and multiply by 100
+ *  to ensure we have a proper offset between keys so we can keep these sorted
+ */
 typedef enum {
-  ARES_RR_CAA_TAG   = 1,
-  ARES_RR_CAA_VALUE,
-  ARES_RR_RAW_TYPE,
-  ARES_RR_RAW_VALUE,
+  ARES_RR_A_ADDR            = (ARES_REC_TYPE_A      * 100) + 1,
+  ARES_RR_NS_NSDNAME        = (ARES_REC_TYPE_NS     * 100) + 1,
+  ARES_RR_CNAME_CNAME       = (ARES_REC_TYPE_CNAME  * 100) + 1,
+  ARES_RR_SOA_MNAME         = (ARES_REC_TYPE_SOA    * 100) + 1,
+  ARES_RR_SOA_RNAME         = (ARES_REC_TYPE_SOA    * 100) + 2,
+  ARES_RR_SOA_SERIAL        = (ARES_REC_TYPE_SOA    * 100) + 3,
+  ARES_RR_SOA_REFRESH       = (ARES_REC_TYPE_SOA    * 100) + 4,
+  ARES_RR_SOA_RETRY         = (ARES_REC_TYPE_SOA    * 100) + 5,
+  ARES_RR_SOA_EXPIRE        = (ARES_REC_TYPE_SOA    * 100) + 6,
+  ARES_RR_SOA_MINIMUM       = (ARES_REC_TYPE_SOA    * 100) + 7,
+  ARES_RR_PTR_DNAME         = (ARES_REC_TYPE_PTR    * 100) + 1,
+  ARES_RR_HINFO_CPU         = (ARES_REC_TYPE_HINFO  * 100) + 1,
+  ARES_RR_HINFO_OS          = (ARES_REC_TYPE_HINFO  * 100) + 2,
+  ARES_RR_MX_PREFERENCE     = (ARES_REC_TYPE_MX     * 100) + 1,
+  ARES_RR_MX_EXCHANGE       = (ARES_REC_TYPE_MX     * 100) + 2,
+  ARES_RR_TXT_DATA          = (ARES_REC_TYPE_TXT    * 100) + 1,
+  ARES_RR_AAAA_ADDR         = (ARES_REC_TYPE_AAAA   * 100) + 1,
+  ARES_RR_SRV_PRIORITY      = (ARES_REC_TYPE_SRV    * 100) + 2,
+  ARES_RR_SRV_WEIGHT        = (ARES_REC_TYPE_SRV    * 100) + 3,
+  ARES_RR_SRV_PORT          = (ARES_REC_TYPE_SRV    * 100) + 4,
+  ARES_RR_SRV_TARGET        = (ARES_REC_TYPE_SRV    * 100) + 5,
+  ARES_RR_NAPTR_ORDER       = (ARES_REC_TYPE_NAPTR  * 100) + 1,
+  ARES_RR_NAPTR_PREFERENCE  = (ARES_REC_TYPE_NAPTR  * 100) + 2,
+  ARES_RR_NAPTR_FLAGS       = (ARES_REC_TYPE_NAPTR  * 100) + 3,
+  ARES_RR_NAPTR_SERVICES    = (ARES_REC_TYPE_NAPTR  * 100) + 4,
+  ARES_RR_NAPTR_REGEXP      = (ARES_REC_TYPE_NAPTR  * 100) + 5,
+  ARES_RR_NAPTR_REPLACEMENT = (ARES_REC_TYPE_NAPTR  * 100) + 6,
+  ARES_RR_OPT_UDP_SIZE      = (ARES_REC_TYPE_OPT    * 100) + 1,
+  ARES_RR_OPT_EXT_RCODE     = (ARES_REC_TYPE_OPT    * 100) + 2,
+  ARES_RR_OPT_VERSION       = (ARES_REC_TYPE_OPT    * 100) + 3,
+  ARES_RR_OPT_FLAGS         = (ARES_REC_TYPE_OPT    * 100) + 4,
+  ARES_RR_URI_PRIORITY      = (ARES_REC_TYPE_URI    * 100) + 1,
+  ARES_RR_URI_WEIGHT        = (ARES_REC_TYPE_URI    * 100) + 2,
+  ARES_RR_URI_TARGET        = (ARES_REC_TYPE_URI    * 100) + 3,
+  ARES_RR_CAA_CRITICAL      = (ARES_REC_TYPE_CAA    * 100) + 1,
+  ARES_RR_CAA_TAG           = (ARES_REC_TYPE_CAA    * 100) + 2,
+  ARES_RR_CAA_VALUE         = (ARES_REC_TYPE_CAA    * 100) + 3,
+  ARES_RR_RAW_RR_TYPE       = (ARES_REC_TYPE_RAW_RR * 100) + 1,
+  ARES_RR_RAW_RR_DATA       = (ARES_REC_TYPE_RAW_RR * 100) + 2,
 } ares_dns_rr_key_t;
-
-
 
 /*! Opaque data type representing a DNS RR (Resource Record) */
 struct ares_dns_rr;
@@ -181,6 +219,8 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
 
 ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const char *val);
+ares_status_t ares_dns_rr_set_u8(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                 unsigned char val);
 ares_status_t ares_dns_rr_set_u16(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   unsigned short val);
 ares_status_t ares_dns_rr_set_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
@@ -190,6 +230,8 @@ ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
 
 
 const char *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
+unsigned char ares_dns_rr_get_u8(ares_dns_rr_t *dns_rr,
+                                 ares_dns_rr_key_t key);
 unsigned short ares_dns_rr_get_u16(ares_dns_rr_t *dns_rr,
                                    ares_dns_rr_key_t key);
 unsigned int ares_dns_rr_get_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
@@ -208,26 +250,16 @@ struct ares_dns_qd {
 };
 
 typedef struct {
-  char *cname;
-} ares__dns_cname_t;
-
-typedef struct {
-  char *cpu;
-  char *os;
-} ares__dns_hinfo_t;
-
-typedef struct {
-  unsigned short preference;
-  char          *exchange;
-} ares__dns_mx_t;
+  struct in_addr address;
+} ares__dns_a_t;
 
 typedef struct {
   char *nsdname;
 } ares__dns_ns_t;
 
 typedef struct {
-  char *ptrdname;
-} ares__dns_ptr_t;
+  char *cname;
+} ares__dns_cname_t;
 
 typedef struct {
   char        *mname;
@@ -240,8 +272,22 @@ typedef struct {
 } ares__dns_soa_t;
 
 typedef struct {
-  struct in_addr address;
-} ares__dns_a_t;
+  char *ptrdname;
+} ares__dns_ptr_t;
+
+typedef struct {
+  char *cpu;
+  char *os;
+} ares__dns_hinfo_t;
+
+typedef struct {
+  unsigned short preference;
+  char          *exchange;
+} ares__dns_mx_t;
+
+typedef struct {
+  char *data;
+} ares__dns_txt_t;
 
 typedef struct {
   struct ares_in6_addr address;
@@ -255,6 +301,26 @@ typedef struct {
 } ares__dns_srv_t;
 
 typedef struct {
+  unsigned short  order;
+  unsigned short  preference;
+  char           *flags;
+  char           *services;
+  char           *regexp;
+  char           *replacement;
+} ares__dns_naptr_t;
+
+typedef struct {
+  unsigned short udp_size; /*!< taken from class */
+  unsigned char  extenended_rcode; /*!< Taken from first 8 bits of ttl */
+  unsigned char  version;  /*!< taken from bits 8-16 of ttl */
+  unsigned short flags;    /*!< Flags, remaining 16 bits, though only 1
+                            *   currently defined */
+  /* Remaining data can be multiple:
+   *   16bit attribute/code, 16bit length, data
+   * not currently supported */
+} ares__dns_opt_t;
+
+typedef struct {
   unsigned short priority;
   unsigned short weight;
   char          *target;
@@ -266,14 +332,6 @@ typedef struct {
   unsigned char *value;
 } ares__dns_caa_t;
 
-typedef struct {
-  unsigned short  order;
-  unsigned short  preference;
-  char           *flags;
-  char           *services;
-  char           *regexp;
-  char           *replacement;
-} ares__dns_naptr_t;
 
 /*! Raw, unparsed RR data */
 typedef struct {
@@ -292,18 +350,20 @@ struct ares_dns_rr {
   unsigned int        ttl;
 
   union {
+    ares__dns_a_t      a;
+    ares__dns_ns_t     ns;
     ares__dns_cname_t  cname;
+    ares__dns_soa_t    soa;
+    ares__dns_ptr_t    ptr;
     ares__dns_hinfo_t  hinfo;
     ares__dns_mx_t     mx;
-    ares__dns_ns_t     ns;
-    ares__dns_ptr_t    ptr;
-    ares__dns_soa_t    soa;
-    ares__dns_a_t      a;
+    ares__dns_txt_t    txt;
     ares__dns_aaaa_t   aaaa;
     ares__dns_srv_t    srv;
+    ares__dns_naptr_t  naptr;
+    ares__dns_opt_t    opt;
     ares__dns_uri_t    uri;
     ares__dns_caa_t    caa;
-    ares__dns_naptr_t  naptr;
     ares__dns_raw_rr_t raw_rr;
   } r;
 };

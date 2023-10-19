@@ -209,6 +209,128 @@ ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
   return ARES_SUCCESS;
 }
 
+static void ares__dns_rr_free(ares_dns_rr_t *rr)
+{
+  switch (rr->type) {
+    case ARES_REC_TYPE_A:
+    case ARES_REC_TYPE_AAAA:
+    case ARES_REC_TYPE_ANY:
+      /* Nothing to free */
+      break;
+
+    case ARES_REC_TYPE_NS:
+      ares_free(rr->r.ns.nsdname);
+      break;
+
+    case ARES_REC_TYPE_CNAME:
+      ares_free(rr->r.cname.cname);
+      break;
+
+    case ARES_REC_TYPE_SOA:
+      ares_free(rr->r.soa.mname);
+      ares_free(rr->r.soa.rname);
+      break;
+
+    case ARES_REC_TYPE_PTR:
+      ares_free(rr->r.ptr.ptrdname);
+      break;
+
+    case ARES_REC_TYPE_HINFO:
+      ares_free(rr->r.hinfo.cpu);
+      ares_free(rr->r.hinfo.os);
+      break;
+
+    case ARES_REC_TYPE_MX:
+      ares_free(rr->r.mx.exchange);
+      break;
+
+    case ARES_REC_TYPE_TXT:
+      ares_free(rr->r.txt.data);
+      break;
+
+    case ARES_REC_TYPE_SRV:
+      ares_free(rr->r.srv.target);
+      break;
+
+    case ARES_REC_TYPE_NAPTR:
+      ares_free(rr->r.naptr.flags);
+      ares_free(rr->r.naptr.services);
+      ares_free(rr->r.naptr.regexp);
+      ares_free(rr->r.naptr.replacement);
+      break;
+
+    case ARES_REC_TYPE_OPT:
+      /* Once we support the attribute/values, we need to free here */
+      break;
+
+    case ARES_REC_TYPE_TLSA:
+      /* Once this record type is supported, need to free here
+       * ares_free(rr->r.tlsa.);
+       */
+      break;
+
+    case ARES_REC_TYPE_SVBC:
+      /* Once this record type is supported, need to free here
+       * ares_free(rr->r.svbc.);
+       */
+      break;
+
+    case ARES_REC_TYPE_HTTPS:
+      /* Once this record type is supported, need to free here
+       * ares_free(rr->r.https.);
+       */
+      break;
+
+    case ARES_REC_TYPE_URI:
+      ares_free(rr->r.uri.target);
+      break;
+
+    case ARES_REC_TYPE_CAA:
+      ares_free(rr->r.caa.tag);
+      ares_free(rr->r.caa.value);
+      break;
+
+    case ARES_REC_TYPE_RAW_RR:
+      ares_free(rr->r.raw_rr.rdata);
+      break;
+  }
+}
+
+void ares_dns_record_destroy(ares_dns_record_t *dnsrec)
+{
+  size_t i;
+
+  if (dnsrec == NULL)
+    return;
+
+  /* Free questions */
+  for (i=0; i<dnsrec->qdcount; i++) {
+    ares_free(dnsrec->qd[i].name);
+  }
+  ares_free(dnsrec->qd);
+
+  /* Free answers */
+  for (i=0; i<dnsrec->ancount; i++) {
+    ares__dns_rr_free(&dnsrec->an[i]);
+  }
+  ares_free(dnsrec->an);
+
+  /* Free authority */
+  for (i=0; i<dnsrec->nscount; i++) {
+    ares__dns_rr_free(&dnsrec->ns[i]);
+  }
+  ares_free(dnsrec->ns);
+
+  /* Free additional */
+  for (i=0; i<dnsrec->arcount; i++) {
+    ares__dns_rr_free(&dnsrec->ar[i]);
+  }
+  ares_free(dnsrec->ar);
+
+  ares_free(dnsrec);
+}
+
+
 static ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
                                              ares_bool_t is_query)
 {
@@ -263,6 +385,68 @@ static ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect)
   }
   return ARES_FALSE;
 }
+
+
+ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
+{
+  switch (key) {
+    case ARES_RR_A_ADDR:
+      return ARES_DATATYPE_INADDR;
+
+    case ARES_RR_AAAA_ADDR:
+      return ARES_DATATYPE_INADDR6;
+
+    case ARES_RR_NS_NSDNAME:
+    case ARES_RR_CNAME_CNAME:
+    case ARES_RR_SOA_MNAME:
+    case ARES_RR_SOA_RNAME:
+    case ARES_RR_PTR_DNAME:
+    case ARES_RR_HINFO_CPU:
+    case ARES_RR_HINFO_OS:
+    case ARES_RR_MX_EXCHANGE:
+    case ARES_RR_TXT_DATA:
+    case ARES_RR_SRV_TARGET:
+    case ARES_RR_NAPTR_FLAGS:
+    case ARES_RR_NAPTR_SERVICES:
+    case ARES_RR_NAPTR_REGEXP:
+    case ARES_RR_NAPTR_REPLACEMENT:
+    case ARES_RR_URI_TARGET:
+    case ARES_RR_CAA_TAG:
+    case ARES_RR_CAA_VALUE:
+      return ARES_DATATYPE_STR;
+
+    case ARES_RR_SOA_SERIAL:
+    case ARES_RR_SOA_REFRESH:
+    case ARES_RR_SOA_RETRY:
+    case ARES_RR_SOA_EXPIRE:
+    case ARES_RR_SOA_MINIMUM:
+      return ARES_DATATYPE_U32;
+
+    case ARES_RR_MX_PREFERENCE:
+    case ARES_RR_SRV_PRIORITY:
+    case ARES_RR_SRV_WEIGHT:
+    case ARES_RR_SRV_PORT:
+    case ARES_RR_NAPTR_ORDER:
+    case ARES_RR_NAPTR_PREFERENCE:
+    case ARES_RR_OPT_UDP_SIZE:
+    case ARES_RR_OPT_FLAGS:
+    case ARES_RR_URI_PRIORITY:
+    case ARES_RR_URI_WEIGHT:
+    case ARES_RR_RAW_RR_TYPE:
+      return ARES_DATATYPE_U16;
+
+    case ARES_RR_OPT_EXT_RCODE:
+    case ARES_RR_OPT_VERSION:
+    case ARES_RR_CAA_CRITICAL:
+      return ARES_DATATYPE_U8;
+
+    case ARES_RR_RAW_RR_DATA:
+      return ARES_DATATYPE_BIN;
+  }
+
+  return 0;
+}
+
 
 size_t ares_dns_record_query_cnt(ares_dns_record_t *dnsrec)
 {
