@@ -690,21 +690,151 @@ const char *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key)
 
   str = ares_dns_rr_data_ptr(dns_rr, key, NULL);
   if (str == NULL) {
-    return 0;
+    return NULL;
   }
 
   return *str;
 }
 
-#if 0
-ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
-                                  const char *val);
+
 ares_status_t ares_dns_rr_set_u8(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
-                                 unsigned char val);
+                                 unsigned char val)
+{
+  unsigned char *u8;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_U8) {
+    return ARES_EFORMERR;
+  }
+
+  u8 = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (u8 == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *u8 = val;
+  return ARES_SUCCESS;
+}
+
+
 ares_status_t ares_dns_rr_set_u16(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
-                                  unsigned short val);
+                                  unsigned short val)
+{
+  unsigned short *u16;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_U16) {
+    return ARES_EFORMERR;
+  }
+
+  u16 = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (u16 == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *u16 = val;
+  return ARES_SUCCESS;
+}
+
 ares_status_t ares_dns_rr_set_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
-                                  unsigned int val);
+                                  unsigned int val)
+{
+  unsigned int *u32;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_U32) {
+    return ARES_EFORMERR;
+  }
+
+  u32 = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (u32 == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *u32 = val;
+  return ARES_SUCCESS;
+}
+
+
+ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t *dns_rr,
+                                      ares_dns_rr_key_t key,
+                                      unsigned char *val, size_t len)
+{
+  unsigned char **bin;
+  size_t         *bin_len;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN) {
+    return ARES_EFORMERR;
+  }
+
+  bin = ares_dns_rr_data_ptr(dns_rr, key, &bin_len);
+  if (bin == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (*bin) {
+    ares_free(*bin);
+  }
+  *bin = val;
+  *bin_len = len;
+
+  return ARES_SUCCESS;
+}
+
 ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
-                                  const unsigned char *val, size_t len);
-#endif
+                                      const unsigned char *val, size_t len)
+{
+  ares_status_t  status;
+  unsigned char *temp = ares_malloc(len);
+
+  if (temp == NULL)
+    return ARES_ENOMEM;
+
+  memcpy(temp, val, len);
+
+  status = ares_dns_rr_set_bin_own(dns_rr, key, temp, len);
+  if (status != ARES_SUCCESS)
+    ares_free(temp);
+
+  return status;
+}
+
+ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t *dns_rr,
+                                      ares_dns_rr_key_t key, char *val)
+{
+  char **str;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR) {
+    return ARES_EFORMERR;
+  }
+
+  str = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (str == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (*str) {
+    ares_free(*str);
+  }
+  *str = val;
+
+  return ARES_SUCCESS;
+}
+
+
+ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  const char *val)
+{
+  ares_status_t status;
+  char         *temp = NULL;
+
+  if (val != NULL) {
+    temp = ares_strdup(val);
+    if (temp == NULL) {
+      return ARES_ENOMEM;
+    }
+  }
+
+  status = ares_dns_rr_set_str_own(dns_rr, key, temp);
+  if (status != ARES_SUCCESS)
+    ares_free(temp);
+
+  return status;
+}

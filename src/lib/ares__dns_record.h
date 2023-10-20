@@ -258,7 +258,11 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
 ares_bool_t ares_dns_class_isvalid(ares_dns_class_t qclass,
                                    ares_bool_t is_query);
 ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect);
-
+ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t *dns_rr,
+                                      ares_dns_rr_key_t key, char *val);
+ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t *dns_rr,
+                                      ares_dns_rr_key_t key,
+                                      unsigned char *val, size_t len);
 
 struct ares_dns_qd {
   char               *name;
