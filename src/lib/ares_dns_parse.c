@@ -362,6 +362,23 @@ ares_status_t ares_dns_parse(ares__buf_t *buf, unsigned int flags,
     return ARES_EFORMERR;
   }
 
+  /* All communications inside of the domain protocol are carried in a single
+   * format called a message.  The top level format of message is divided
+   * into 5 sections (some of which are empty in certain cases) shown below:
+   *
+   * +---------------------+
+   * |        Header       |
+   * +---------------------+
+   * |       Question      | the question for the name server
+   * +---------------------+
+   * |        Answer       | RRs answering the question
+   * +---------------------+
+   * |      Authority      | RRs pointing toward an authority
+   * +---------------------+
+   * |      Additional     | RRs holding additional information
+   * +---------------------+
+   */
+
   /* Parse header */
   status = ares_dns_parse_header(buf, flags, dnsrec, &qdcount, &ancount,
                                  &nscount, &arcount);
