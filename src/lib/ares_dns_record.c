@@ -586,6 +586,44 @@ const char *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key)
   return *str;
 }
 
+ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                   struct in_addr *addr)
+{
+  struct in_addr *a;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_INADDR || addr == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  a = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (a == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  memcpy(a, addr, sizeof(*addr));
+  return ARES_SUCCESS;
+}
+
+
+ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t *dns_rr,
+                                    ares_dns_rr_key_t key,
+                                    struct ares_in6_addr *addr)
+{
+  struct ares_in6_addr *a;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_INADDR6 || addr == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  a = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (a == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  memcpy(a, addr, sizeof(*addr));
+  return ARES_SUCCESS;
+}
+
 
 ares_status_t ares_dns_rr_set_u8(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                  unsigned char val)

@@ -156,6 +156,20 @@ fail:
   return status;
 }
 
+static ares_status_t ares_dns_parse_rr_a(ares__buf_t *buf,
+                                         ares_dns_rr_t *rr)
+{
+  struct in_addr addr;
+  ares_status_t  status;
+
+
+  status = ares__buf_fetch_bytes(buf, (unsigned char *)&addr, sizeof(addr));
+  if (status != ARES_SUCCESS)
+    return status;
+
+  return ares_dns_rr_set_addr(rr, ARES_RR_A_ADDR, &addr);
+}
+
 static ares_status_t ares_dns_parse_rr_raw_rr(ares__buf_t *buf,
                                               ares_dns_rr_t *rr,
                                               unsigned short raw_type)
@@ -173,8 +187,17 @@ static ares_status_t ares_dns_parse_rr_raw_rr(ares__buf_t *buf,
 
 
   /* Can't fail */
-  ares_dns_rr_set_u16(rr, ARES_RR_RAW_RR_TYPE, raw_type);
-  ares_dns_rr_set_bin_own(rr, ARES_RR_RAW_RR_DATA, bytes, len);
+  status = ares_dns_rr_set_u16(rr, ARES_RR_RAW_RR_TYPE, raw_type);
+  if (status != ARES_SUCCESS) {
+    ares_free(bytes);
+    return status;
+  }
+
+  status = ares_dns_rr_set_bin_own(rr, ARES_RR_RAW_RR_DATA, bytes, len);
+  if (status != ARES_SUCCESS) {
+    ares_free(bytes);
+    return status;
+  }
   return ARES_SUCCESS;
 }
 
@@ -185,6 +208,8 @@ static ares_status_t ares_dns_parse_rr_data(ares__buf_t        *buf,
                                             unsigned short      raw_type)
 {
   switch (type) {
+  case ARES_REC_TYPE_A:
+      return ares_dns_parse_rr_a(buf, rr);
     case ARES_REC_TYPE_RAW_RR:
       return ares_dns_parse_rr_raw_rr(buf, rr, raw_type);
   }

@@ -228,6 +228,11 @@ const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
 ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
 ares_dns_rec_type_t ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
 
+ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                   struct in_addr *addr);
+ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t *dns_rr,
+                                    ares_dns_rr_key_t key,
+                                    struct ares_in6_addr *addr);
 ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const char *val);
 ares_status_t ares_dns_rr_set_u8(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
