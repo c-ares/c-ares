@@ -194,7 +194,7 @@ static void ares__dns_rr_free(ares_dns_rr_t *rr)
       break;
 
     case ARES_REC_TYPE_PTR:
-      ares_free(rr->r.ptr.ptrdname);
+      ares_free(rr->r.ptr.dname);
       break;
 
     case ARES_REC_TYPE_HINFO:
@@ -253,7 +253,7 @@ static void ares__dns_rr_free(ares_dns_rr_t *rr)
       break;
 
     case ARES_REC_TYPE_RAW_RR:
-      ares_free(rr->r.raw_rr.rdata);
+      ares_free(rr->r.raw_rr.data);
       break;
   }
 }
@@ -473,5 +473,238 @@ ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
   return &rr_ptr[idx];
 }
 
+static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr,
+                                 ares_dns_rr_key_t key, size_t **lenptr)
+{
+  if (dns_rr == NULL || dns_rr->type != ares_dns_rr_key_to_rec_type(key)) {
+    return NULL;
+  }
+
+  switch (key) {
+    case ARES_RR_A_ADDR:
+      return &dns_rr->r.a.addr;
+
+    case ARES_RR_NS_NSDNAME:
+      return &dns_rr->r.ns.nsdname;
+
+    case ARES_RR_CNAME_CNAME:
+      return &dns_rr->r.cname.cname;
+
+    case ARES_RR_SOA_MNAME:
+      return &dns_rr->r.soa.mname;
+
+    case ARES_RR_SOA_RNAME:
+      return &dns_rr->r.soa.rname;
+
+    case ARES_RR_SOA_SERIAL:
+      return &dns_rr->r.soa.serial;
+
+    case ARES_RR_SOA_REFRESH:
+      return &dns_rr->r.soa.refresh;
+
+    case ARES_RR_SOA_RETRY:
+      return &dns_rr->r.soa.retry;
+
+    case ARES_RR_SOA_EXPIRE:
+      return &dns_rr->r.soa.expire;
+
+    case ARES_RR_SOA_MINIMUM:
+      return &dns_rr->r.soa.minimum;
+
+    case ARES_RR_PTR_DNAME:
+      return &dns_rr->r.ptr.dname;
+
+    case ARES_RR_AAAA_ADDR:
+      return &dns_rr->r.aaaa.addr;
+
+    case ARES_RR_HINFO_CPU:
+      return &dns_rr->r.hinfo.cpu;
+
+    case ARES_RR_HINFO_OS:
+      return &dns_rr->r.hinfo.os;
+
+    case ARES_RR_MX_PREFERENCE:
+      return &dns_rr->r.mx.preference;
+
+    case ARES_RR_MX_EXCHANGE:
+      return &dns_rr->r.mx.exchange;
+
+    case ARES_RR_TXT_DATA:
+      return &dns_rr->r.txt.data;
+
+    case ARES_RR_SRV_PRIORITY:
+      return &dns_rr->r.srv.priority;
+
+    case ARES_RR_SRV_WEIGHT:
+      return &dns_rr->r.srv.weight;
+
+    case ARES_RR_SRV_PORT:
+      return &dns_rr->r.srv.port;
+
+    case ARES_RR_SRV_TARGET:
+      return &dns_rr->r.srv.target;
+
+    case ARES_RR_NAPTR_ORDER:
+      return &dns_rr->r.naptr.order;
+
+    case ARES_RR_NAPTR_PREFERENCE:
+      return &dns_rr->r.naptr.preference;
+
+    case ARES_RR_NAPTR_FLAGS:
+      return &dns_rr->r.naptr.flags;
+
+    case ARES_RR_NAPTR_SERVICES:
+      return &dns_rr->r.naptr.services;
+
+    case ARES_RR_NAPTR_REGEXP:
+      return &dns_rr->r.naptr.regexp;
+
+    case ARES_RR_NAPTR_REPLACEMENT:
+      return &dns_rr->r.naptr.replacement;
+
+    case ARES_RR_OPT_UDP_SIZE:
+      return &dns_rr->r.opt.udp_size;
+
+    case ARES_RR_OPT_EXT_RCODE:
+      return &dns_rr->r.opt.ext_rcode;
+
+    case ARES_RR_OPT_VERSION:
+      return &dns_rr->r.opt.version;
+
+    case ARES_RR_OPT_FLAGS:
+      return &dns_rr->r.opt.flags;
+
+    case ARES_RR_URI_PRIORITY:
+      return &dns_rr->r.uri.priority;
+
+    case ARES_RR_URI_WEIGHT:
+      return &dns_rr->r.uri.weight;
+
+    case ARES_RR_URI_TARGET:
+      return &dns_rr->r.uri.target;
+
+    case ARES_RR_CAA_CRITICAL:
+      return &dns_rr->r.caa.critical;
+
+    case ARES_RR_CAA_TAG:
+      return &dns_rr->r.caa.tag;
+
+    case ARES_RR_CAA_VALUE:
+      return &dns_rr->r.caa.value;
+
+    case ARES_RR_RAW_RR_TYPE:
+      return &dns_rr->r.raw_rr.type;
+
+    case ARES_RR_RAW_RR_DATA:
+      if (lenptr == NULL)
+        return NULL;
+      *lenptr = &dns_rr->r.raw_rr.length;
+      return &dns_rr->r.raw_rr.data;
+  }
+
+  return NULL;
+}
+
+unsigned char ares_dns_rr_get_u8(ares_dns_rr_t *dns_rr,
+                                 ares_dns_rr_key_t key)
+{
+  unsigned char *u8;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_U8) {
+    return 0;
+  }
+
+  u8 = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (u8 == NULL) {
+    return 0;
+  }
+
+  return *u8;
+}
 
 
+unsigned short ares_dns_rr_get_u16(ares_dns_rr_t *dns_rr,
+                                   ares_dns_rr_key_t key)
+{
+ unsigned short *u16;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_U16) {
+    return 0;
+  }
+
+  u16 = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (u16 == NULL) {
+    return 0;
+  }
+
+  return *u16;
+}
+
+
+unsigned int ares_dns_rr_get_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key)
+{
+  unsigned int *u32;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_U32) {
+    return 0;
+  }
+
+  u32 = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (u32 == NULL) {
+    return 0;
+  }
+
+  return *u32;
+}
+
+const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
+                                         ares_dns_rr_key_t key, size_t *len)
+{
+  unsigned char **bin     = NULL;
+  size_t         *bin_len = NULL;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN) {
+    return NULL;
+  }
+
+  bin = ares_dns_rr_data_ptr(dns_rr, key, &bin_len);
+  if (bin == NULL) {
+    return 0;
+  }
+
+  if (len == NULL)
+    return NULL;
+
+  *len = *bin_len;
+
+  return *bin;
+}
+
+const char *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key)
+{
+  char **str;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR) {
+    return NULL;
+  }
+
+  str = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (str == NULL) {
+    return 0;
+  }
+
+  return *str;
+}
+
+#if 0
+ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  const char *val);
+ares_status_t ares_dns_rr_set_u8(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                 unsigned char val);
+ares_status_t ares_dns_rr_set_u16(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  unsigned short val);
+ares_status_t ares_dns_rr_set_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  unsigned int val);
+ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  const unsigned char *val, size_t len);
+#endif

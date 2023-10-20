@@ -267,7 +267,7 @@ struct ares_dns_qd {
 };
 
 typedef struct {
-  struct in_addr address;
+  struct in_addr addr;
 } ares__dns_a_t;
 
 typedef struct {
@@ -289,7 +289,7 @@ typedef struct {
 } ares__dns_soa_t;
 
 typedef struct {
-  char *ptrdname;
+  char *dname;
 } ares__dns_ptr_t;
 
 typedef struct {
@@ -307,7 +307,7 @@ typedef struct {
 } ares__dns_txt_t;
 
 typedef struct {
-  struct ares_in6_addr address;
+  struct ares_in6_addr addr;
 } ares__dns_aaaa_t;
 
 typedef struct {
@@ -327,11 +327,11 @@ typedef struct {
 } ares__dns_naptr_t;
 
 typedef struct {
-  unsigned short udp_size; /*!< taken from class */
-  unsigned char  extenended_rcode; /*!< Taken from first 8 bits of ttl */
-  unsigned char  version;  /*!< taken from bits 8-16 of ttl */
-  unsigned short flags;    /*!< Flags, remaining 16 bits, though only 1
-                            *   currently defined */
+  unsigned short udp_size;  /*!< taken from class */
+  unsigned char  ext_rcode; /*!< Taken from first 8 bits of ttl */
+  unsigned char  version;   /*!< taken from bits 8-16 of ttl */
+  unsigned short flags;     /*!< Flags, remaining 16 bits, though only 1
+                             *   currently defined */
   /* Remaining data can be multiple:
    *   16bit attribute/code, 16bit length, data
    * not currently supported */
@@ -354,8 +354,8 @@ typedef struct {
 typedef struct {
   unsigned short  type;     /*!< Not ares_rec_type_t because it likely isn't one
                              *   of those values since it wasn't parsed */
-  unsigned char  *rdata;    /*!< Raw RR data */
-  unsigned short  rdlength; /*!< Length of raw RR data */
+  unsigned char  *data;     /*!< Raw RR data */
+  size_t          length;   /*!< Length of raw RR data */
 } ares__dns_raw_rr_t;
 
 
