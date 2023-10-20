@@ -250,6 +250,14 @@ const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
 
 
 /* ---- PRIVATE BELOW ----- */
+ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);
+ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode);
+ares_bool_t ares_dns_flags_arevalid(unsigned short flags);
+ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
+                                      ares_bool_t is_query);
+ares_bool_t ares_dns_class_isvalid(ares_dns_class_t qclass,
+                                   ares_bool_t is_query);
+ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect);
 
 
 struct ares_dns_qd {
