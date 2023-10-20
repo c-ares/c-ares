@@ -26,7 +26,7 @@
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
-#include "ares__dns_record.h"
+#include "ares_dns_record.h"
 #include <limits.h>
 #ifdef HAVE_STDINT_H
 #  include <stdint.h>
@@ -224,7 +224,7 @@ static void ares__dns_rr_free(ares_dns_rr_t *rr)
     case ARES_REC_TYPE_OPT:
       /* Once we support the attribute/values, we need to free here */
       break;
-
+#if 0
     case ARES_REC_TYPE_TLSA:
       /* Once this record type is supported, need to free here
        * ares_free(rr->r.tlsa.);
@@ -242,7 +242,7 @@ static void ares__dns_rr_free(ares_dns_rr_t *rr)
        * ares_free(rr->r.https.);
        */
       break;
-
+#endif
     case ARES_REC_TYPE_URI:
       ares_free(rr->r.uri.target);
       break;

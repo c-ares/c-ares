@@ -23,8 +23,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#ifndef __ARES__DNS_RECORD_H
-#define __ARES__DNS_RECORD_H
+#ifndef __ARES_DNS_RECORD_H
+#define __ARES_DNS_RECORD_H
 
 
 /* ----- LIKELY MAKE THESE PUBLIC ----- */
@@ -45,11 +45,13 @@ typedef enum {
   ARES_REC_TYPE_SRV      = 33,    /*!< Server Selection. */
   ARES_REC_TYPE_NAPTR    = 35,    /*!< Naming Authority Pointer */
   ARES_REC_TYPE_OPT      = 41,    /*!< EDNS0 option (meta-RR) */
+#if 0
   ARES_REC_TYPE_TLSA     = 52,    /*!< DNS-Based Authentication of Named
                                    *   Entities (DANE) Transport Layer Security
                                    *   (TLS) Protocol: TLSA */
   ARES_REC_TYPE_SVBC     = 64,    /*!< General Purpose Service Binding */
   ARES_REC_TYPE_HTTPS    = 65,    /*!< Service Binding type for use with HTTP */
+#endif
   ARES_REC_TYPE_ANY      = 255,   /*!< Wildcard match.  Not response RR. */
   ARES_REC_TYPE_URI      = 256,   /*!< Uniform Resource Identifier (RFC7553) */
   ARES_REC_TYPE_CAA      = 257,   /*!< Certification Authority Authorization. */
@@ -411,4 +413,4 @@ struct ares_dns_record {
 };
 
 
-#endif /* __ARES__DNS_RECORD_H */
+#endif /* __ARES_DNS_RECORD_H */

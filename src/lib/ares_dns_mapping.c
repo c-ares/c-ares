@@ -26,7 +26,7 @@
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
-#include "ares__dns_record.h"
+#include "ares_dns_record.h"
 
 ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode)
 {
@@ -84,9 +84,11 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_SRV:
     case ARES_REC_TYPE_NAPTR:
     case ARES_REC_TYPE_OPT:
+#if 0
     case ARES_REC_TYPE_TLSA:
     case ARES_REC_TYPE_SVBC:
     case ARES_REC_TYPE_HTTPS:
+#endif
     case ARES_REC_TYPE_ANY:
     case ARES_REC_TYPE_URI:
     case ARES_REC_TYPE_CAA:
@@ -165,12 +167,14 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
       return "NAPTR";
     case ARES_REC_TYPE_OPT:
       return "OPT";
+ #if 0
     case ARES_REC_TYPE_TLSA:
       return "TLSA";
     case ARES_REC_TYPE_SVBC:
       return "SVBC";
     case ARES_REC_TYPE_HTTPS:
       return "HTTPS";
+#endif
     case ARES_REC_TYPE_ANY:
       return "ANY";
     case ARES_REC_TYPE_URI:
