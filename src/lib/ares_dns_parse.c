@@ -147,11 +147,11 @@ static ares_status_t ares_dns_parse_header(ares__buf_t *buf,
 
 fail:
   ares_dns_record_destroy(*dnsrec);
-  *dnsrec = NULL;
-  qdcount = 0;
-  ancount = 0;
-  nscount = 0;
-  arcount = 0;
+  *dnsrec  = NULL;
+  *qdcount = 0;
+  *ancount = 0;
+  *nscount = 0;
+  *arcount = 0;
 
   return status;
 }
