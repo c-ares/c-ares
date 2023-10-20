@@ -60,6 +60,9 @@ ares__buf_t             *ares__buf_create(void);
  */
 ares__buf_t *ares__buf_create_const(const unsigned char *data, size_t data_len);
 
+ares_bool_t ares__buf_const_replace(ares__buf_t *buf, const unsigned char *data,
+                                    size_t data_len);
+
 /*! Destroy an initialized buffer object.
  *
  *  \param[in] buf  Initialized buf object
@@ -178,6 +181,9 @@ ares_status_t        ares__buf_consume(ares__buf_t *buf, size_t len);
  */
 ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16);
 
+ares_status_t ares__buf_fetch_be32(ares__buf_t *buf, unsigned int *u32);
+
+
 /*! Fetch the requested number of bytes into the provided buffer
  *
  *  \param[in]  buf     Initialized buffer object
@@ -187,6 +193,9 @@ ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16);
  */
 ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
                                     size_t len);
+
+ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
+                                        unsigned char **bytes);
 
 /*! Consume whitespace characters (0x09, 0x0B, 0x0C, 0x0D, 0x20, and optionally
  *  0x0A).

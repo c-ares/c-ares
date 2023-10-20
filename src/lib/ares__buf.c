@@ -98,6 +98,18 @@ static ares_bool_t ares__buf_is_const(const ares__buf_t *buf)
   return ARES_FALSE;
 }
 
+ares_bool_t ares__buf_const_replace(ares__buf_t *buf, const unsigned char *data,
+                                    size_t data_len)
+{
+  if (buf == NULL || !ares__buf_is_const(buf))
+    return ARES_FALSE;
+
+  memset(buf, 0, sizeof(*buf));
+  buf->data     = data;
+  buf->data_len = data_len;
+  return ARES_TRUE;
+}
+
 static void ares__buf_reclaim(ares__buf_t *buf)
 {
   size_t prefix_size;
@@ -369,6 +381,23 @@ ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16)
   return ares__buf_consume(buf, sizeof(*u16));
 }
 
+ares_status_t ares__buf_fetch_be32(ares__buf_t *buf, unsigned int *u32)
+{
+  size_t               remaining_len;
+  const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
+
+  if (buf == NULL || u32 == NULL || remaining_len < sizeof(*u32)) {
+    return ARES_EBADRESP;
+  }
+
+  *u32 = (unsigned int)((unsigned int)(ptr[0]) << 24 |
+                        (unsigned int)(ptr[1]) << 16 |
+                        (unsigned int)(ptr[2]) << 8  |
+                        (unsigned int)(ptr[3]));
+
+  return ares__buf_consume(buf, sizeof(*u32));
+}
+
 ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
                                     size_t len)
 {
@@ -380,6 +409,24 @@ ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
   }
 
   memcpy(bytes, ptr, len);
+  return ares__buf_consume(buf, len);
+}
+
+ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
+                                        unsigned char **bytes)
+{
+  size_t               remaining_len;
+  const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
+
+  if (buf == NULL || bytes == NULL || len == 0 || remaining_len < len) {
+    return ARES_EBADRESP;
+  }
+
+  *bytes = ares_malloc(len);
+  if (*bytes == NULL)
+    return ARES_ENOMEM;
+
+  memcpy(*bytes, ptr, len);
   return ares__buf_consume(buf, len);
 }
 
