@@ -430,6 +430,26 @@ ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
   return ares__buf_consume(buf, len);
 }
 
+ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len,
+                                      char **str)
+{
+  size_t               remaining_len;
+  const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
+
+  if (buf == NULL || str == NULL || len == 0 || remaining_len < len) {
+    return ARES_EBADRESP;
+  }
+
+  *str = ares_malloc(len+1);
+  if (*str == NULL)
+    return ARES_ENOMEM;
+
+  memcpy(*str, ptr, len);
+  (*str)[len] = 0;
+
+  return ares__buf_consume(buf, len);
+}
+
 ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
                                              ares__buf_t *dest,
                                              size_t len)

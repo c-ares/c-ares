@@ -343,6 +343,137 @@ static ares_status_t ares_dns_parse_rr_srv(ares__buf_t *buf,
   return ARES_SUCCESS;
 }
 
+static ares_status_t ares_dns_parse_rr_naptr(ares__buf_t *buf,
+                                             ares_dns_rr_t *rr)
+{
+  char          *name = NULL;
+  ares_status_t  status;
+  unsigned short u16;
+
+  /* ORDER */
+  status = ares__buf_fetch_be16(buf, &u16);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_u16(rr, ARES_RR_NAPTR_ORDER, u16);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* PREFERENCE */
+  status = ares__buf_fetch_be16(buf, &u16);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_u16(rr, ARES_RR_NAPTR_PREFERENCE, u16);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* FLAGS */
+  status = ares__buf_parse_dns_str(buf, &name, ARES_FALSE);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  status = ares_dns_rr_set_str_own(rr, ARES_RR_NAPTR_FLAGS, name);
+  if (status != ARES_SUCCESS) {
+    ares_free(name);
+    return status;
+  }
+  name   = NULL;
+
+  /* SERVICES */
+  status = ares__buf_parse_dns_str(buf, &name, ARES_FALSE);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  status = ares_dns_rr_set_str_own(rr, ARES_RR_NAPTR_SERVICES, name);
+  if (status != ARES_SUCCESS) {
+    ares_free(name);
+    return status;
+  }
+  name   = NULL;
+
+  /* REGEXP */
+  status = ares__buf_parse_dns_str(buf, &name, ARES_FALSE);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  status = ares_dns_rr_set_str_own(rr, ARES_RR_SRV_TARGET, name);
+  if (status != ARES_SUCCESS) {
+    ares_free(name);
+    return status;
+  }
+  name   = NULL;
+
+  /* REPLACEMENT */
+  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  status = ares_dns_rr_set_str_own(rr, ARES_RR_SRV_TARGET, name);
+  if (status != ARES_SUCCESS) {
+    ares_free(name);
+    return status;
+  }
+  name   = NULL;
+
+  return ARES_SUCCESS;
+}
+
+static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf,
+                                           ares_dns_rr_t *rr)
+{
+  char          *name = NULL;
+  ares_status_t  status;
+  unsigned short u16;
+
+  /* PRIORITY */
+  status = ares__buf_fetch_be16(buf, &u16);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_u16(rr, ARES_RR_URI_PRIORITY, u16);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* WEIGHT */
+  status = ares__buf_fetch_be16(buf, &u16);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_u16(rr, ARES_RR_URI_WEIGHT, u16);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* TARGET -- not in string format, rest of buffer, required to be
+   * non-zero length */
+
+  if (ares__buf_len(buf) == 0) {
+    status = ARES_EBADRESP;
+    return status;
+  }
+
+  status = ares__buf_fetch_str_dup(buf, ares__buf_len(buf), &name);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  status = ares_dns_rr_set_str_own(rr, ARES_RR_URI_TARGET, name);
+  if (status != ARES_SUCCESS) {
+    ares_free(name);
+    return status;
+  }
+  name   = NULL;
+
+  return ARES_SUCCESS;
+}
+
 static ares_status_t ares_dns_parse_rr_raw_rr(ares__buf_t *buf,
                                               ares_dns_rr_t *rr,
                                               unsigned short raw_type)
@@ -524,6 +655,12 @@ static ares_status_t ares_dns_parse_rr_data(ares__buf_t        *buf,
       return ares_dns_parse_rr_aaaa(buf, rr);
     case ARES_REC_TYPE_SRV:
       return ares_dns_parse_rr_srv(buf, rr);
+    case ARES_REC_TYPE_NAPTR:
+      return ares_dns_parse_rr_naptr(buf, rr);
+    case ARES_REC_TYPE_ANY:
+      return ARES_EBADRESP;
+    case ARES_REC_TYPE_URI:
+      return ares_dns_parse_rr_uri(buf, rr);
     case ARES_REC_TYPE_RAW_RR:
       return ares_dns_parse_rr_raw_rr(buf, rr, raw_type);
   }
