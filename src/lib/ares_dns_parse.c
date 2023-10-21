@@ -857,12 +857,14 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
    * /                                               /
    * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
    */
+printf("%s(): here\n", __FUNCTION__);
 
   /* Name */
   status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
   if (status != ARES_SUCCESS) {
     goto done;
   }
+printf("%s(): name = %s\n", __FUNCTION__, name);
 
   /* Type */
   status = ares__buf_fetch_be16(buf, &u16);
@@ -870,23 +872,30 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
     goto done;
   type     = u16;
   raw_type = u16; /* Only used for raw rr data */
+printf("%s(): type = %s (%u)\n", __FUNCTION__, ares_dns_rec_type_tostr(type), raw_type);
 
   /* Class */
   status = ares__buf_fetch_be16(buf, &u16);
   if (status != ARES_SUCCESS)
     goto done;
   qclass = u16;
+printf("%s(): class = %s (%u)\n", __FUNCTION__, ares_dns_class_tostr(qclass), u16);
+
 
   /* TTL */
   status = ares__buf_fetch_be32(buf, &ttl);
   if (status != ARES_SUCCESS)
     goto done;
+printf("%s(): ttl = %u\n", __FUNCTION__, ttl);
+
 
   /* Length */
   status = ares__buf_fetch_be16(buf, &u16);
   if (status != ARES_SUCCESS)
     goto done;
   rdlength = u16;
+printf("%s(): length = %zu\n", __FUNCTION__, rdlength);
+
 
   if (!ares_dns_rec_type_isvalid(type, ARES_FALSE)) {
     type = ARES_REC_TYPE_RAW_RR;
@@ -897,6 +906,7 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
     status = ARES_EBADRESP;
     goto done;
   }
+printf("%s(): data length ok\n", __FUNCTION__);
 
   ares__buf_const_replace(constbuf, ares__buf_peek(buf, &mylen), rdlength);
 
@@ -911,12 +921,16 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
   if (status != ARES_SUCCESS) {
     goto done;
   }
+printf("%s(): rr added\n", __FUNCTION__);
 
   /* Fill in the data for the rr */
   status = ares_dns_parse_rr_data(constbuf, rr, type, raw_type,
                                   (unsigned short)qclass, ttl);
   if (status != ARES_SUCCESS)
     goto done;
+
+printf("%s(): rdata parsed\n", __FUNCTION__);
+
 
 done:
   ares_free(name);
@@ -955,7 +969,7 @@ ares_status_t ares_dns_parse(ares__buf_t *buf, unsigned int flags,
    * |      Additional     | RRs holding additional information
    * +---------------------+
    */
-
+printf("%s(): parsing header\n", __FUNCTION__);
   /* Parse header */
   status = ares_dns_parse_header(buf, flags, dnsrec, &qdcount, &ancount,
                                  &nscount, &arcount);
@@ -963,8 +977,12 @@ ares_status_t ares_dns_parse(ares__buf_t *buf, unsigned int flags,
     goto fail;
   }
 
+printf("%s(): parsing %u questions\n", __FUNCTION__, qdcount);
+
   /* Parse questions */
   for (i=0; i<qdcount; i++) {
+printf("%s(): parsing questions %u\n", __FUNCTION__, i);
+
     status = ares_dns_parse_qd(buf, *dnsrec);
     if (status != ARES_SUCCESS)
       goto fail;
@@ -978,34 +996,50 @@ ares_status_t ares_dns_parse(ares__buf_t *buf, unsigned int flags,
     goto fail;
   }
 
+printf("%s(): parsing %u answers\n", __FUNCTION__, ancount);
+
   /* Parse Answers */
   for (i=0; i<ancount; i++) {
+printf("%s(): parsing answer %u\n", __FUNCTION__, i);
+
     status = ares_dns_parse_rr(buf, flags, ARES_SECTION_ANSWER, *dnsrec,
                                constbuf);
     if (status != ARES_SUCCESS)
       goto fail;
   }
 
+printf("%s(): parsing %u authorities\n", __FUNCTION__, nscount);
+
   /* Parse Authority */
   for (i=0; i<nscount; i++) {
+printf("%s(): parsing authority %u\n", __FUNCTION__, i);
+
     status = ares_dns_parse_rr(buf, flags, ARES_SECTION_AUTHORITY, *dnsrec,
                                constbuf);
     if (status != ARES_SUCCESS)
       goto fail;
   }
 
+printf("%s(): parsing %u additional\n", __FUNCTION__, arcount);
+
+
   /* Parse Additional */
   for (i=0; i<arcount; i++) {
+printf("%s(): parsing additional %u\n", __FUNCTION__, i);
+
     status = ares_dns_parse_rr(buf, flags, ARES_SECTION_ADDITIONAL, *dnsrec,
                                constbuf);
     if (status != ARES_SUCCESS)
       goto fail;
   }
+printf("%s(): success\n", __FUNCTION__);
 
   ares__buf_destroy(constbuf);
   return ARES_SUCCESS;
 
 fail:
+printf("%s(): fail code %d\n", __FUNCTION__, (int)status);
+
   ares__buf_destroy(constbuf);
   ares_dns_record_destroy(*dnsrec);
   *dnsrec = NULL;

@@ -277,10 +277,12 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t **rr_out,
   ares_dns_rr_t   *temp   = NULL;
   size_t           idx;
 
+printf("%s(): dnsrec = %p, name =%s, rr_out = %p, sect = %u, type = %s, class = %s, ttl = %u\n",
+  __FUNCTION__, dnsrec, name, rr_out, (unsigned int)sect, ares_dns_rec_type_tostr(type), ares_dns_class_tostr(rclass), ttl);
 
-  if (dnsrec == NULL || name == NULL || rr == NULL ||
-      !ares_dns_section_isvalid(sect)              ||
-      !ares_dns_rec_type_isvalid(type, ARES_FALSE) ||
+  if (dnsrec == NULL || name == NULL || rr_out == NULL ||
+      !ares_dns_section_isvalid(sect)                  ||
+      !ares_dns_rec_type_isvalid(type, ARES_FALSE)     ||
       !ares_dns_class_isvalid(rclass, ARES_FALSE)) {
     return ARES_EFORMERR;
   }
