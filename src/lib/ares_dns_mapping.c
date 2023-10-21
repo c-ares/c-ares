@@ -368,7 +368,6 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_NAPTR_REPLACEMENT:
     case ARES_RR_URI_TARGET:
     case ARES_RR_CAA_TAG:
-    case ARES_RR_CAA_VALUE:
       return ARES_DATATYPE_STR;
 
     case ARES_RR_SOA_SERIAL:
@@ -396,6 +395,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_CAA_CRITICAL:
       return ARES_DATATYPE_U8;
 
+    case ARES_RR_CAA_VALUE:
     case ARES_RR_RAW_RR_DATA:
       return ARES_DATATYPE_BIN;
   }

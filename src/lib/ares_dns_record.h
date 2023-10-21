@@ -357,8 +357,9 @@ typedef struct {
 
 typedef struct {
   unsigned char  critical;
-  unsigned char *tag;
+  char          *tag;
   unsigned char *value;
+  size_t         value_len;
 } ares__dns_caa_t;
 
 

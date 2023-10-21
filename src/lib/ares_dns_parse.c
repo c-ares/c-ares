@@ -423,6 +423,43 @@ static ares_status_t ares_dns_parse_rr_naptr(ares__buf_t *buf,
   return ARES_SUCCESS;
 }
 
+
+static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf,
+                                           ares_dns_rr_t *rr,
+                                           unsigned short raw_class,
+                                           unsigned int raw_ttl)
+{
+  ares_status_t status;
+
+  status = ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, raw_class);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_EXT_RCODE,
+                              (unsigned char)(raw_ttl >> 24) & 0xFF);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION,
+                              (unsigned char)(raw_ttl >> 16) & 0xFF);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_u16(rr, ARES_RR_OPT_FLAGS,
+                               (unsigned short)(raw_ttl & 0xFFFF));
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* XXX: Support additional message here */
+  (void)buf;
+  return ARES_SUCCESS;
+}
+
+
 static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf,
                                            ares_dns_rr_t *rr)
 {
@@ -470,6 +507,60 @@ static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf,
     return status;
   }
   name   = NULL;
+
+  return ARES_SUCCESS;
+}
+
+static ares_status_t ares_dns_parse_rr_caa(ares__buf_t *buf,
+                                           ares_dns_rr_t *rr)
+{
+  char          *name = NULL;
+  unsigned char *data = NULL;
+  size_t         data_len = 0;
+  ares_status_t  status;
+  unsigned char  critical;
+
+  /* CRITICAL */
+  status = ares__buf_fetch_bytes(buf, &critical, 1);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_u8(rr, ARES_RR_CAA_CRITICAL, critical);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Tag */
+  status = ares__buf_parse_dns_str(buf, &name, ARES_FALSE);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  status = ares_dns_rr_set_str_own(rr, ARES_RR_CAA_TAG, name);
+  if (status != ARES_SUCCESS) {
+    ares_free(name);
+    return status;
+  }
+  name   = NULL;
+
+  /* Value - binary! */
+
+  if (ares__buf_len(buf) == 0) {
+    status = ARES_EBADRESP;
+    return status;
+  }
+
+  data_len = ares__buf_len(buf);
+  status   = ares__buf_fetch_bytes_dup(buf, data_len, &data);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  status = ares_dns_rr_set_bin_own(rr, ARES_RR_CAA_VALUE, data, data_len);
+  if (status != ARES_SUCCESS) {
+    ares_free(data);
+    return status;
+  }
+  data   = NULL;
 
   return ARES_SUCCESS;
 }
@@ -632,7 +723,9 @@ fail:
 static ares_status_t ares_dns_parse_rr_data(ares__buf_t        *buf,
                                             ares_dns_rr_t      *rr,
                                             ares_dns_rec_type_t type,
-                                            unsigned short      raw_type)
+                                            unsigned short      raw_type,
+                                            unsigned short      raw_class,
+                                            unsigned int        raw_ttl)
 {
   switch (type) {
     case ARES_REC_TYPE_A:
@@ -659,8 +752,12 @@ static ares_status_t ares_dns_parse_rr_data(ares__buf_t        *buf,
       return ares_dns_parse_rr_naptr(buf, rr);
     case ARES_REC_TYPE_ANY:
       return ARES_EBADRESP;
+    case ARES_REC_TYPE_OPT:
+      return ares_dns_parse_rr_opt(buf, rr, raw_class, raw_ttl);
     case ARES_REC_TYPE_URI:
       return ares_dns_parse_rr_uri(buf, rr);
+    case ARES_REC_TYPE_CAA:
+      return ares_dns_parse_rr_caa(buf, rr);
     case ARES_REC_TYPE_RAW_RR:
       return ares_dns_parse_rr_raw_rr(buf, rr, raw_type);
   }
@@ -808,12 +905,16 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
     goto done;
 
   /* Add the base rr */
-  status = ares_dns_record_rr_add(&rr, dnsrec, sect, name, type, qclass, ttl);
-  if (status != ARES_SUCCESS)
+  status = ares_dns_record_rr_add(&rr, dnsrec, sect, name, type,
+    type == ARES_REC_TYPE_OPT?ARES_CLASS_IN:qclass,
+    type == ARES_REC_TYPE_OPT?0:ttl);
+  if (status != ARES_SUCCESS) {
     goto done;
+  }
 
   /* Fill in the data for the rr */
-  status = ares_dns_parse_rr_data(constbuf, rr, type, raw_type);
+  status = ares_dns_parse_rr_data(constbuf, rr, type, raw_type,
+                                  (unsigned short)qclass, ttl);
   if (status != ARES_SUCCESS)
     goto done;
 
