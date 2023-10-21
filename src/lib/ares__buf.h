@@ -264,7 +264,8 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
 ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
                                              ares__buf_t *dest,
                                              size_t len);
-
+ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, char **name,
+                                      ares_bool_t allow_multiple);
 /*! @} */
 
 #endif /* __ARES__BUF_H */

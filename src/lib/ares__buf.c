@@ -889,3 +889,51 @@ fail:
   return status;
 }
 
+
+ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, char **name,
+                                      ares_bool_t allow_multiple)
+{
+  unsigned char len;
+  ares_status_t status;
+  ares__buf_t  *strbuf = NULL;
+
+  if (buf == NULL)
+    return ARES_EFORMERR;
+
+  strbuf = ares__buf_create();
+  if (strbuf == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  do {
+    status = ares__buf_fetch_bytes(buf, &len, 1);
+    /* Just no string, not technically a failure */
+    if (status != ARES_SUCCESS) {
+      status = ARES_SUCCESS;
+      break;
+    }
+
+    /* XXX: Maybe we should scan to make sure it is printable? */
+    if (name != NULL) {
+      status = ares__buf_fetch_bytes_into_buf(buf, strbuf, len);
+    } else {
+      status = ares__buf_consume(buf, len);
+    }
+
+    if (status != ARES_SUCCESS) {
+      break;
+    }
+  } while(allow_multiple);
+
+
+  if (status != ARES_SUCCESS) {
+    ares__buf_destroy(strbuf);
+  } else {
+    if (name != NULL) {
+      *name = ares__buf_finish_str(strbuf, NULL);
+    }
+  }
+
+  return status;
+}
+
