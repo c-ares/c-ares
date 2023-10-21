@@ -62,7 +62,7 @@
 #include "ares.h"
 #include "ares_dns.h"
 #include "ares_private.h"
-
+#include "ares_dns_record.h"
 
 static ares_bool_t try_again(int errnum);
 static void        write_tcp_data(ares_channel channel, fd_set *write_fds,
@@ -1211,80 +1211,61 @@ static ares_status_t open_socket(ares_channel         channel,
 static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
                                   const unsigned char *abuf, size_t alen)
 {
-  struct {
-    const unsigned char *p;
-    size_t               qdcount;
-    char                *name;
-    size_t               namelen;
-    int                  type;
-    int                  dnsclass;
-  } q, a;
+  ares__buf_t       *q    = ares__buf_create_const(qbuf, qlen);
+  ares__buf_t       *a    = ares__buf_create_const(abuf, alen);
+  ares_dns_record_t *qrec = NULL;
+  ares_dns_record_t *arec = NULL;
+  size_t             i;
 
-  size_t i, j;
-
-  if (qlen < HFIXEDSZ || alen < HFIXEDSZ) {
-    return ARES_FALSE;
+  ares_bool_t  rv = ARES_FALSE;
+  if (q == NULL || a == NULL) {
+    goto done;
   }
 
-  /* Extract qdcount from the request and reply buffers and compare them. */
-  q.qdcount = DNS_HEADER_QDCOUNT(qbuf);
-  a.qdcount = DNS_HEADER_QDCOUNT(abuf);
-  if (q.qdcount != a.qdcount) {
-    return ARES_FALSE;
+  if (ares_dns_parse(q, 0, &qrec) != ARES_SUCCESS) {
+    goto done;
   }
 
-  /* For each question in qbuf, find it in abuf. */
-  q.p = qbuf + HFIXEDSZ;
-  for (i = 0; i < q.qdcount; i++) {
-    /* Decode the question in the query. */
-    if (ares__expand_name_for_response(q.p, qbuf, qlen, &q.name, &q.namelen,
-                                       ARES_FALSE) != ARES_SUCCESS) {
-      return ARES_FALSE;
-    }
-    q.p += q.namelen;
-    if (q.p + QFIXEDSZ > qbuf + qlen) {
-      ares_free(q.name);
-      return ARES_FALSE;
-    }
-    q.type      = DNS_QUESTION_TYPE(q.p);
-    q.dnsclass  = DNS_QUESTION_CLASS(q.p);
-    q.p        += QFIXEDSZ;
+  if (ares_dns_parse(a, 0, &arec) != ARES_SUCCESS) {
+    goto done;
+  }
 
-    /* Search for this question in the answer. */
-    a.p = abuf + HFIXEDSZ;
-    for (j = 0; j < a.qdcount; j++) {
-      /* Decode the question in the answer. */
-      if (ares__expand_name_for_response(a.p, abuf, alen, &a.name, &a.namelen,
-                                         ARES_FALSE) != ARES_SUCCESS) {
-        ares_free(q.name);
-        return ARES_FALSE;
-      }
-      a.p += a.namelen;
-      if (a.p + QFIXEDSZ > abuf + alen) {
-        ares_free(q.name);
-        ares_free(a.name);
-        return ARES_FALSE;
-      }
-      a.type      = DNS_QUESTION_TYPE(a.p);
-      a.dnsclass  = DNS_QUESTION_CLASS(a.p);
-      a.p        += QFIXEDSZ;
+  if (ares_dns_record_query_cnt(qrec) != ares_dns_record_query_cnt(arec)) {
+    goto done;
+  }
 
-      /* Compare the decoded questions. */
-      if (strcasecmp(q.name, a.name) == 0 && q.type == a.type &&
-          q.dnsclass == a.dnsclass) {
-        ares_free(a.name);
-        break;
-      }
-      ares_free(a.name);
+  for (i=0; i<ares_dns_record_query_cnt(qrec); i++) {
+    const char         *qname = NULL;
+    const char         *aname = NULL;
+    ares_dns_rec_type_t qtype;
+    ares_dns_rec_type_t atype;
+    ares_dns_class_t    qclass;
+    ares_dns_class_t    aclass;
+
+    if (ares_dns_record_query_get(qrec, i, &qname, &qtype, &qclass) !=
+        ARES_SUCCESS || qname == NULL) {
+      goto done;
     }
 
-    ares_free(q.name);
-    if (j == a.qdcount) {
-      return ARES_FALSE;
+    if (ares_dns_record_query_get(arec, i, &aname, &atype, &aclass) !=
+        ARES_SUCCESS || aname == NULL) {
+      goto done;
+    }
+    if (strcasecmp(qname, aname) != 0 || qtype != atype || qclass != aclass) {
+      goto done;
     }
   }
-  return ARES_TRUE;
+
+  rv = ARES_TRUE;
+
+done:
+  ares__buf_destroy(q);
+  ares__buf_destroy(a);
+  ares_dns_record_destroy(qrec);
+  ares_dns_record_destroy(arec);
+  return rv;
 }
+
 
 static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa)
 {
