@@ -214,6 +214,11 @@ ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
                                      ares_dns_opcode_t opcode,
                                      ares_dns_rcode_t rcode);
 
+unsigned short ares_dns_record_get_id(ares_dns_record_t *dnsrec);
+unsigned short ares_dns_record_get_flags(ares_dns_record_t *dnsrec);
+ares_dns_opcode_t ares_dns_record_get_opcode(ares_dns_record_t *dnsrec);
+ares_dns_rcode_t ares_dns_record_get_rcode(ares_dns_record_t *dnsrec);
+
 void ares_dns_record_destroy(ares_dns_record_t *dnsrec);
 ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
                                         ares_dns_rec_type_t qtype,

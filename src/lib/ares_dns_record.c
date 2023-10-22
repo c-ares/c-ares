@@ -61,6 +61,34 @@ ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
   return ARES_SUCCESS;
 }
 
+unsigned short ares_dns_record_get_id(ares_dns_record_t *dnsrec)
+{
+  if (dnsrec == NULL)
+    return 0;
+  return dnsrec->id;
+}
+
+unsigned short ares_dns_record_get_flags(ares_dns_record_t *dnsrec)
+{
+  if (dnsrec == NULL)
+    return 0;
+  return dnsrec->flags;
+}
+
+ares_dns_opcode_t ares_dns_record_get_opcode(ares_dns_record_t *dnsrec)
+{
+  if (dnsrec == NULL)
+    return 0;
+  return dnsrec->opcode;
+}
+
+ares_dns_rcode_t ares_dns_record_get_rcode(ares_dns_record_t *dnsrec)
+{
+  if (dnsrec == NULL)
+    return 0;
+  return dnsrec->rcode;
+}
+
 static void ares__dns_rr_free(ares_dns_rr_t *rr)
 {
   switch (rr->type) {
