@@ -63,10 +63,11 @@ typedef enum {
 
 /*! DNS Classes for requests and responses.  */
 typedef enum  {
-  ARES_CLASS_IN      = 1,  /*<! Internet */
-  ARES_CLASS_CHAOS   = 3,  /*<! CHAOS */
-  ARES_CLASS_HESOID  = 4,  /*<! Hesoid [Dyer 87] */
-  ARES_CLASS_ANY     = 255 /*<! Any class (requests only) */
+  ARES_CLASS_IN      = 1,   /*!< Internet */
+  ARES_CLASS_CHAOS   = 3,   /*!< CHAOS */
+  ARES_CLASS_HESOID  = 4,   /*!< Hesoid [Dyer 87] */
+  ARES_CLASS_NONE    = 254, /*!< RFC 2136 */
+  ARES_CLASS_ANY     = 255  /*!< Any class (requests only) */
 } ares_dns_class_t;
 
 /*! DNS RR Section type */
@@ -111,9 +112,21 @@ typedef enum {
   ARES_RCODE_NOT_IMPLEMENTED = 4, /*!< Not implemented.  The name server does
                                    *   not support the requested kind of
                                    *   query */
-  ARES_RCODE_REFUSED         = 5  /*!< Refused. The name server refuses to
+  ARES_RCODE_REFUSED         = 5, /*!< Refused. The name server refuses to
                                    *   perform the speciied operation for
                                    *   policy reasons. */
+  ARES_RCODE_YXDOMAIN        = 6, /*!< RFC 2136. Some name that ought not to
+                                   *   exist, does exist. */
+  ARES_RCODE_YXRRSET         = 7, /*!< RFC 2136. Some RRset that ought to not
+                                   *   exist, does exist. */
+  ARES_RCODE_NXRRSET         = 8, /*!< RFC 2136. Some RRset that ought to exist,
+                                   *   does not exist. */
+  ARES_RCODE_NOTAUTH         = 9, /*!< RFC 2136. The server is not authoritative
+                                   *   for the zone named in the Zone section.
+                                   */
+  ARES_RCODE_NOTZONE         = 10,/*!< RFC 2136. A name used in the Prerequisite
+                                   *   or Update Section is not within the zone
+                                   *   denoted by the Zone Section. */
 } ares_dns_rcode_t;
 
 /*! Data types used */

@@ -50,6 +50,11 @@ ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode)
     case ARES_RCODE_NAME_ERROR:
     case ARES_RCODE_NOT_IMPLEMENTED:
     case ARES_RCODE_REFUSED:
+    case ARES_RCODE_YXDOMAIN:
+    case ARES_RCODE_YXRRSET:
+    case ARES_RCODE_NXRRSET:
+    case ARES_RCODE_NOTAUTH:
+    case ARES_RCODE_NOTZONE:
       return ARES_TRUE;
   }
   return ARES_FALSE;
@@ -93,10 +98,12 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_URI:
     case ARES_REC_TYPE_CAA:
       return ARES_TRUE;
+    case ARES_REC_TYPE_RAW_RR:
+      return is_query?ARES_FALSE:ARES_TRUE;
     default:
       break;
   }
-  return is_query?ARES_FALSE:ARES_TRUE;
+  return is_query?ARES_TRUE:ARES_FALSE;
 }
 
 ares_bool_t ares_dns_class_isvalid(ares_dns_class_t qclass,
@@ -106,6 +113,7 @@ ares_bool_t ares_dns_class_isvalid(ares_dns_class_t qclass,
     case ARES_CLASS_IN:
     case ARES_CLASS_CHAOS:
     case ARES_CLASS_HESOID:
+    case ARES_CLASS_NONE:
       return ARES_TRUE;
     case ARES_CLASS_ANY:
       return is_query?ARES_TRUE:ARES_FALSE;
@@ -133,8 +141,7 @@ ares_dns_rec_type_t ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key)
    *       statement.  That said, we do then validate the type returned is
    *       valid in case something completely bogus is passed in */
   ares_dns_rec_type_t type = key / 100;
-  if (!ares_dns_rec_type_isvalid(type, ARES_TRUE) &&
-      !ares_dns_rec_type_isvalid(type, ARES_FALSE)) {
+  if (!ares_dns_rec_type_isvalid(type, ARES_FALSE)) {
     return 0;
   }
   return type;
@@ -198,6 +205,8 @@ const char *ares_dns_class_tostr(ares_dns_class_t qclass)
       return "HS";
     case ARES_CLASS_ANY:
       return "ANY";
+    case ARES_CLASS_NONE:
+      return "NONE";
   }
   return "UNKNOWN";
 }

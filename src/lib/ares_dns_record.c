@@ -277,9 +277,6 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t **rr_out,
   ares_dns_rr_t   *temp   = NULL;
   size_t           idx;
 
-printf("%s(): dnsrec = %p, name =%s, rr_out = %p, sect = %u, type = %s, class = %s, ttl = %u\n",
-  __FUNCTION__, dnsrec, name, rr_out, (unsigned int)sect, ares_dns_rec_type_tostr(type), ares_dns_class_tostr(rclass), ttl);
-
   if (dnsrec == NULL || name == NULL || rr_out == NULL ||
       !ares_dns_section_isvalid(sect)                  ||
       !ares_dns_rec_type_isvalid(type, ARES_FALSE)     ||
@@ -482,6 +479,9 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr,
       return &dns_rr->r.caa.tag;
 
     case ARES_RR_CAA_VALUE:
+      if (lenptr == NULL)
+        return NULL;
+      *lenptr = &dns_rr->r.caa.value_len;
       return &dns_rr->r.caa.value;
 
     case ARES_RR_RAW_RR_TYPE:
@@ -688,7 +688,7 @@ ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t *dns_rr,
                                       unsigned char *val, size_t len)
 {
   unsigned char **bin;
-  size_t         *bin_len;
+  size_t         *bin_len = NULL;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN) {
     return ARES_EFORMERR;
@@ -702,7 +702,7 @@ ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t *dns_rr,
   if (*bin) {
     ares_free(*bin);
   }
-  *bin = val;
+  *bin     = val;
   *bin_len = len;
 
   return ARES_SUCCESS;

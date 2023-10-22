@@ -910,26 +910,29 @@ fail:
 }
 
 
-ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, char **name,
+ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
+                                      char **name,
                                       ares_bool_t allow_multiple)
 {
   unsigned char len;
   ares_status_t status;
-  ares__buf_t  *strbuf = NULL;
+  ares__buf_t  *strbuf   = NULL;
+  size_t        orig_len = ares__buf_len(buf);
 
   if (buf == NULL)
     return ARES_EFORMERR;
+
+  if (remaining_len == 0)
+    return ARES_EBADRESP;
 
   strbuf = ares__buf_create();
   if (strbuf == NULL) {
     return ARES_ENOMEM;
   }
 
-  do {
+  while (orig_len - ares__buf_len(buf) < remaining_len) {
     status = ares__buf_fetch_bytes(buf, &len, 1);
-    /* Just no string, not technically a failure */
     if (status != ARES_SUCCESS) {
-      status = ARES_SUCCESS;
       break;
     }
 
@@ -943,7 +946,12 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, char **name,
     if (status != ARES_SUCCESS) {
       break;
     }
-  } while(allow_multiple);
+
+
+    if (!allow_multiple) {
+      break;
+    }
+  }
 
 
   if (status != ARES_SUCCESS) {
