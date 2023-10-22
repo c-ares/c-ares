@@ -366,7 +366,7 @@ ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
 const char *ares_dns_rr_get_name(ares_dns_rr_t *rr)
 {
   if (rr == NULL)
-    return rr;
+    return NULL;
   return rr->name;
 }
 

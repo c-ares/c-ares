@@ -47,23 +47,20 @@
 #include "ares.h"
 #include "ares_dns.h"
 #include "ares_private.h"
+#include "ares_dns_record.h"
 
 int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
                         struct hostent **host)
 {
-  size_t               qdcount, ancount;
-  ares_status_t        status;
-  size_t               i;
-  int                  rr_type, rr_class;
-  size_t               rr_len;
-  size_t               nameservers_num;
-  size_t               alen;
-  size_t               len;
-  const unsigned char *aptr;
-  char                *hostname, *rr_name, *rr_data, **nameservers;
-  struct hostent      *hostent;
+  ares_status_t          status;
+  size_t                 alen;
+  size_t                 nscount   = 0;
+  struct hostent        *hostent   = NULL;
+  const char            *hostname  = NULL;
+  ares_dns_record_t     *dnsrec    = NULL;
+  size_t                 i;
+  size_t                 ancount;
 
-  /* Set *host to NULL for all failure cases. */
   *host = NULL;
 
   if (alen_int < 0) {
@@ -72,123 +69,97 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
 
   alen = (size_t)alen_int;
 
-  /* Give up if abuf doesn't have room for a header. */
-  if (alen < HFIXEDSZ) {
-    return ARES_EBADRESP;
-  }
-
-  /* Fetch the question and answer count from the header. */
-  qdcount = DNS_HEADER_QDCOUNT(abuf);
-  ancount = DNS_HEADER_ANCOUNT(abuf);
-  if (qdcount != 1) {
-    return ARES_EBADRESP;
-  }
-
-  /* Expand the name from the question, and skip past the question. */
-  aptr   = abuf + HFIXEDSZ;
-  status = ares__expand_name_for_response(aptr, abuf, alen, &hostname, &len,
-                                          ARES_FALSE);
+  status = ares_dns_parse(abuf, alen, 0, &dnsrec);
   if (status != ARES_SUCCESS) {
-    return (int)status;
-  }
-  if (aptr + len + QFIXEDSZ > abuf + alen) {
-    ares_free(hostname);
-    return ARES_EBADRESP;
-  }
-  aptr += len + QFIXEDSZ;
-
-  /* Allocate nameservers array; ancount gives an upper bound */
-  nameservers = ares_malloc((ancount + 1) * sizeof(char *));
-  if (!nameservers) {
-    ares_free(hostname);
-    return ARES_ENOMEM;
-  }
-  nameservers_num = 0;
-
-  /* Examine each answer resource record (RR) in turn. */
-  for (i = 0; i < ancount; i++) {
-    /* Decode the RR up to the data field. */
-    status = ares__expand_name_for_response(aptr, abuf, alen, &rr_name, &len,
-                                            ARES_FALSE);
-    if (status != ARES_SUCCESS) {
-      break;
-    }
-    aptr += len;
-    if (aptr + RRFIXEDSZ > abuf + alen) {
-      status = ARES_EBADRESP;
-      ares_free(rr_name);
-      break;
-    }
-    rr_type   = DNS_RR_TYPE(aptr);
-    rr_class  = DNS_RR_CLASS(aptr);
-    rr_len    = DNS_RR_LEN(aptr);
-    aptr     += RRFIXEDSZ;
-    if (aptr + rr_len > abuf + alen) {
-      ares_free(rr_name);
-      status = ARES_EBADRESP;
-      break;
-    }
-
-    if (rr_class == C_IN && rr_type == T_NS) {
-      /* Decode the RR data and add it to the nameservers list */
-      status = ares__expand_name_for_response(aptr, abuf, alen, &rr_data, &len,
-                                              ARES_TRUE);
-      if (status != ARES_SUCCESS) {
-        ares_free(rr_name);
-        break;
-      }
-
-      len                          = ares_strlen(rr_data) + 1;
-      nameservers[nameservers_num] = ares_malloc(len);
-
-      if (nameservers[nameservers_num] == NULL) {
-        ares_free(rr_name);
-        ares_free(rr_data);
-        status = ARES_ENOMEM;
-        break;
-      }
-      ares_strcpy(nameservers[nameservers_num], rr_data, len);
-      ares_free(rr_data);
-
-      nameservers_num++;
-    }
-
-    ares_free(rr_name);
-
-    aptr += rr_len;
-    if (aptr > abuf + alen) { /* LCOV_EXCL_START: already checked above */
-      status = ARES_EBADRESP;
-      break;
-    } /* LCOV_EXCL_STOP */
+    goto done;
   }
 
-  if (status == ARES_SUCCESS && nameservers_num == 0) {
+  ancount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER);
+  if (ancount == 0) {
     status = ARES_ENODATA;
+    goto done;
   }
-  if (status == ARES_SUCCESS) {
-    /* We got our answer.  Allocate memory to build the host entry. */
-    nameservers[nameservers_num] = NULL;
-    hostent                      = ares_malloc(sizeof(struct hostent));
-    if (hostent) {
-      hostent->h_addr_list = ares_malloc(1 * sizeof(char *));
-      if (hostent->h_addr_list) {
-        /* Fill in the hostent and return successfully. */
-        hostent->h_name         = hostname;
-        hostent->h_aliases      = nameservers;
-        hostent->h_addrtype     = AF_INET;
-        hostent->h_length       = sizeof(struct in_addr);
-        hostent->h_addr_list[0] = NULL;
-        *host                   = hostent;
-        return ARES_SUCCESS;
-      }
-      ares_free(hostent);
-    }
+
+  /* Response structure */
+  hostent = ares_malloc(sizeof(*hostent));
+  if (hostent == NULL) {
     status = ARES_ENOMEM;
+    goto done;
   }
-  for (i = 0; i < nameservers_num; i++) {
-    ares_free(nameservers[i]);
+
+  memset(hostent, 0, sizeof(*hostent));
+
+  hostent->h_addr_list = ares_malloc(sizeof(*hostent->h_addr_list));
+  if (hostent->h_addr_list == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
   }
-  ares_free(nameservers);
-  ares_free(hostname);
+  hostent->h_addr_list[0] = NULL;
+  hostent->h_addrtype     = AF_INET;
+  hostent->h_length       = sizeof(struct in_addr);
+
+  /* Fill in hostname */
+  status = ares_dns_record_query_get(dnsrec, 0, &hostname, NULL, NULL);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+  hostent->h_name = ares_strdup(hostname);
+  if (hostent->h_name == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  /* Preallocate the maximum number + 1 */
+  hostent->h_aliases = ares_malloc((ancount + 1) * sizeof(*hostent->h_aliases));
+  if (hostent->h_aliases == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+  memset(hostent->h_aliases, 0, (ancount + 1) * sizeof(*hostent->h_aliases));
+
+  for (i=0; i<ancount; i++) {
+    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
+
+    if (rr == NULL) {
+      /* Shouldn't be possible */
+      status = ARES_EBADRESP;
+      goto done;
+    }
+
+    if (ares_dns_rr_get_class(rr) != ARES_CLASS_IN ||
+        ares_dns_rr_get_type(rr) != ARES_REC_TYPE_NS) {
+      continue;
+    }
+
+    hostname = ares_dns_rr_get_str(rr, ARES_RR_NS_NSDNAME);
+    if (hostname == NULL) {
+      status = ARES_EBADRESP;
+      goto done;
+    }
+
+    hostent->h_aliases[nscount] = ares_strdup(hostname);
+    if (hostent->h_aliases[nscount] == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+    nscount++;
+  }
+
+  if (nscount == 0) {
+    status = ARES_ENODATA;
+  } else {
+    status = ARES_SUCCESS;
+  }
+
+done:
+  if (status != ARES_SUCCESS) {
+    ares_free_hostent(hostent);
+    /* Compatibility */
+    if (status == ARES_EBADNAME)
+      status = ARES_EBADRESP;
+  } else {
+    *host = hostent;
+  }
+  ares_dns_record_destroy(dnsrec);
   return (int)status;
 }

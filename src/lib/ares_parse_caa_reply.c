@@ -96,8 +96,10 @@ int ares_parse_caa_reply(const unsigned char *abuf, int alen_int,
     goto done;
   }
 
-  if (ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER) == 0)
-    return ARES_ENODATA;
+  if (ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER) == 0) {
+    status = ARES_ENODATA;
+    goto done;
+  }
 
   for (i=0; i<ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
     const unsigned char *ptr;
