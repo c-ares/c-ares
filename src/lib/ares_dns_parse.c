@@ -446,7 +446,7 @@ static ares_status_t ares_dns_parse_rr_naptr(ares__buf_t *buf,
   if (status != ARES_SUCCESS)
     return status;
 
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_SRV_TARGET, name);
+  status = ares_dns_rr_set_str_own(rr, ARES_RR_NAPTR_REGEXP, name);
   if (status != ARES_SUCCESS) {
     ares_free(name);
     return status;
@@ -458,7 +458,7 @@ static ares_status_t ares_dns_parse_rr_naptr(ares__buf_t *buf,
   if (status != ARES_SUCCESS)
     return status;
 
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_SRV_TARGET, name);
+  status = ares_dns_rr_set_str_own(rr, ARES_RR_NAPTR_REPLACEMENT, name);
   if (status != ARES_SUCCESS) {
     ares_free(name);
     return status;

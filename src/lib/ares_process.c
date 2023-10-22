@@ -62,7 +62,6 @@
 #include "ares.h"
 #include "ares_dns.h"
 #include "ares_private.h"
-#include "ares_dns_record.h"
 
 static ares_bool_t try_again(int errnum);
 static void        write_tcp_data(ares_channel channel, fd_set *write_fds,
