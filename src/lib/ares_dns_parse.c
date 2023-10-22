@@ -1030,6 +1030,19 @@ ares_status_t ares_dns_parse_buf(ares__buf_t *buf, unsigned int flags,
     goto fail;
   }
 
+  /* Must have questions */
+  if (qdcount == 0) {
+    status = ARES_EBADRESP;
+    goto fail;
+  }
+
+  /* XXX: this should be controlled by a flag in case we want to allow
+   *      multiple questions.  I think mDNS allows this */
+  if (qdcount > 1) {
+    status = ARES_EBADRESP;
+    goto fail;
+  }
+
   /* Parse questions */
   for (i=0; i<qdcount; i++) {
     status = ares_dns_parse_qd(buf, *dnsrec);

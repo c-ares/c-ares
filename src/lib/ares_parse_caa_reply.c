@@ -144,6 +144,8 @@ int ares_parse_caa_reply(const unsigned char *abuf, int alen_int,
       status = ARES_ENOMEM;
       break;
     }
+    /* RFC6844 says this can only be ascii, so not sure why we're recording a
+     * length */
     caa_curr->plength  = ares_strlen((const char *)caa_curr->property);
 
     ptr = ares_dns_rr_get_bin(rr, ARES_RR_CAA_VALUE, &ptr_len);
