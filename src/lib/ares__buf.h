@@ -269,6 +269,9 @@ ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len,
 ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
                                       char **name,
                                       ares_bool_t allow_multiple);
+ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
+                                         unsigned char **bin, size_t *bin_len,
+                                         ares_bool_t allow_multiple);
 /*! @} */
 
 #endif /* __ARES__BUF_H */

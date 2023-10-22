@@ -369,7 +369,6 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_HINFO_CPU:
     case ARES_RR_HINFO_OS:
     case ARES_RR_MX_EXCHANGE:
-    case ARES_RR_TXT_DATA:
     case ARES_RR_SRV_TARGET:
     case ARES_RR_NAPTR_FLAGS:
     case ARES_RR_NAPTR_SERVICES:
@@ -405,6 +404,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
       return ARES_DATATYPE_U8;
 
     case ARES_RR_CAA_VALUE:
+    case ARES_RR_TXT_DATA:
     case ARES_RR_RAW_RR_DATA:
       return ARES_DATATYPE_BIN;
   }

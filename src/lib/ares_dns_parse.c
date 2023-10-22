@@ -289,15 +289,16 @@ static ares_status_t ares_dns_parse_rr_mx(ares__buf_t *buf,
 static ares_status_t ares_dns_parse_rr_txt(ares__buf_t *buf,
                                            ares_dns_rr_t *rr, size_t rdlength)
 {
-  char          *txt      = NULL;
+  unsigned char *txt      = NULL;
+  size_t         txtlen;
   ares_status_t  status;
 
-  status = ares__buf_parse_dns_str(buf, rdlength, &txt, ARES_TRUE);
+  status = ares__buf_parse_dns_binstr(buf, rdlength, &txt, &txtlen, ARES_TRUE);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_TXT_DATA, txt);
+  status = ares_dns_rr_set_bin_own(rr, ARES_RR_TXT_DATA, txt, txtlen);
   if (status != ARES_SUCCESS) {
     ares_free(txt);
     return status;

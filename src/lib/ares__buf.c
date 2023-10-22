@@ -910,13 +910,13 @@ fail:
 }
 
 
-ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
-                                      char **name,
-                                      ares_bool_t allow_multiple)
+ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
+                                         unsigned char **bin, size_t *bin_len,
+                                         ares_bool_t allow_multiple)
 {
   unsigned char len;
   ares_status_t status;
-  ares__buf_t  *strbuf   = NULL;
+  ares__buf_t  *binbuf   = NULL;
   size_t        orig_len = ares__buf_len(buf);
 
   if (buf == NULL)
@@ -925,8 +925,8 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
   if (remaining_len == 0)
     return ARES_EBADRESP;
 
-  strbuf = ares__buf_create();
-  if (strbuf == NULL) {
+  binbuf = ares__buf_create();
+  if (binbuf == NULL) {
     return ARES_ENOMEM;
   }
 
@@ -937,8 +937,8 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
     }
 
     /* XXX: Maybe we should scan to make sure it is printable? */
-    if (name != NULL) {
-      status = ares__buf_fetch_bytes_into_buf(buf, strbuf, len);
+    if (bin != NULL) {
+      status = ares__buf_fetch_bytes_into_buf(buf, binbuf, len);
     } else {
       status = ares__buf_consume(buf, len);
     }
@@ -947,7 +947,6 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
       break;
     }
 
-
     if (!allow_multiple) {
       break;
     }
@@ -955,13 +954,24 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
 
 
   if (status != ARES_SUCCESS) {
-    ares__buf_destroy(strbuf);
+    ares__buf_destroy(binbuf);
   } else {
-    if (name != NULL) {
-      *name = ares__buf_finish_str(strbuf, NULL);
+    if (bin != NULL) {
+      size_t mylen;
+      *bin = (unsigned char *)ares__buf_finish_str(binbuf, &mylen);
+      *bin_len = mylen;
     }
   }
 
   return status;
 }
 
+
+ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
+                                      char **str,
+                                      ares_bool_t allow_multiple)
+{
+  size_t len;
+  return ares__buf_parse_dns_binstr(buf, remaining_len, (unsigned char **)str,
+                                    &len, allow_multiple);
+}

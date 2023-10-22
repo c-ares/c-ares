@@ -343,7 +343,8 @@ typedef struct {
 } ares__dns_mx_t;
 
 typedef struct {
-  char *data;
+  char  *data;
+  size_t data_len;
 } ares__dns_txt_t;
 
 typedef struct {

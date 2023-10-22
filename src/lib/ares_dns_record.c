@@ -477,6 +477,9 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr,
       return &dns_rr->r.mx.exchange;
 
     case ARES_RR_TXT_DATA:
+      if (lenptr == NULL)
+        return NULL;
+      *lenptr = &dns_rr->r.txt.data_len;
       return &dns_rr->r.txt.data;
 
     case ARES_RR_SRV_PRIORITY:
