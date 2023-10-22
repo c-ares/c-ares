@@ -362,6 +362,36 @@ ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
   return &rr_ptr[idx];
 }
 
+
+const char *ares_dns_rr_get_name(ares_dns_rr_t *rr)
+{
+  if (rr == NULL)
+    return rr;
+  return rr->name;
+}
+
+ares_dns_rec_type_t ares_dns_rr_get_type(ares_dns_rr_t *rr)
+{
+  if (rr == NULL)
+    return 0;
+  return rr->type;
+}
+
+
+ares_dns_class_t ares_dns_rr_get_class(ares_dns_rr_t *rr)
+{
+  if (rr == NULL)
+    return 0;
+  return rr->rclass;
+}
+
+unsigned int ares_dns_rr_get_ttl(ares_dns_rr_t *rr)
+{
+  if (rr == NULL)
+    return 0;
+  return rr->ttl;
+}
+
 static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr,
                                  ares_dns_rr_key_t key, size_t **lenptr)
 {

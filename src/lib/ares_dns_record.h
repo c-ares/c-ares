@@ -235,8 +235,15 @@ ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
                                       ares_dns_section_t sect,
                                       size_t idx);
 
+
+
 const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
                                               size_t *cnt);
+
+const char *ares_dns_rr_get_name(ares_dns_rr_t *rr);
+ares_dns_rec_type_t ares_dns_rr_get_type(ares_dns_rr_t *rr);
+ares_dns_class_t  ares_dns_rr_get_class(ares_dns_rr_t *rr);
+unsigned int ares_dns_rr_get_ttl(ares_dns_rr_t *rr);
 
 ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
 ares_dns_rec_type_t ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
