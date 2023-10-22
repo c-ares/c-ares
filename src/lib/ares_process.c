@@ -1211,22 +1211,16 @@ static ares_status_t open_socket(ares_channel         channel,
 static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
                                   const unsigned char *abuf, size_t alen)
 {
-  ares__buf_t       *q    = ares__buf_create_const(qbuf, qlen);
-  ares__buf_t       *a    = ares__buf_create_const(abuf, alen);
   ares_dns_record_t *qrec = NULL;
   ares_dns_record_t *arec = NULL;
   size_t             i;
+  ares_bool_t        rv   = ARES_FALSE;
 
-  ares_bool_t  rv = ARES_FALSE;
-  if (q == NULL || a == NULL) {
+  if (ares_dns_parse(qbuf, qlen, 0, &qrec) != ARES_SUCCESS) {
     goto done;
   }
 
-  if (ares_dns_parse(q, 0, &qrec) != ARES_SUCCESS) {
-    goto done;
-  }
-
-  if (ares_dns_parse(a, 0, &arec) != ARES_SUCCESS) {
+  if (ares_dns_parse(abuf, alen, 0, &arec) != ARES_SUCCESS) {
     goto done;
   }
 
@@ -1259,8 +1253,6 @@ static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
   rv = ARES_TRUE;
 
 done:
-  ares__buf_destroy(q);
-  ares__buf_destroy(a);
   ares_dns_record_destroy(qrec);
   ares_dns_record_destroy(arec);
   return rv;

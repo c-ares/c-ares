@@ -267,8 +267,11 @@ unsigned int ares_dns_rr_get_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
 const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
                                          ares_dns_rr_key_t key, size_t *len);
 
-ares_status_t ares_dns_parse(ares__buf_t *buf, unsigned int flags,
-                             ares_dns_record_t **dnsrec);
+ares_status_t ares_dns_parse_buf(ares__buf_t *buf, unsigned int flags,
+                                 ares_dns_record_t **dnsrec);
+
+ares_status_t ares_dns_parse(const unsigned char *buf, size_t buf_len,
+                             unsigned int flags, ares_dns_record_t **dnsrec);
 
 /* ---- PRIVATE BELOW ----- */
 ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);

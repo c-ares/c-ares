@@ -992,8 +992,8 @@ done:
 }
 
 
-ares_status_t ares_dns_parse(ares__buf_t *buf, unsigned int flags,
-                             ares_dns_record_t **dnsrec)
+ares_status_t ares_dns_parse_buf(ares__buf_t *buf, unsigned int flags,
+                                 ares_dns_record_t **dnsrec)
 {
   ares_status_t  status;
   unsigned short qdcount;
@@ -1063,5 +1063,25 @@ ares_status_t ares_dns_parse(ares__buf_t *buf, unsigned int flags,
 fail:
   ares_dns_record_destroy(*dnsrec);
   *dnsrec = NULL;
+  return status;
+}
+
+ares_status_t ares_dns_parse(const unsigned char *buf, size_t buf_len,
+                             unsigned int flags, ares_dns_record_t **dnsrec)
+{
+  ares__buf_t  *parser = NULL;
+  ares_status_t status;
+
+   if (buf == NULL || buf_len == 0 || dnsrec == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  parser = ares__buf_create_const(buf, buf_len);
+  if (parser == NULL)
+    return ARES_ENOMEM;
+
+  status = ares_dns_parse_buf(parser, flags, dnsrec);
+  ares__buf_destroy(parser);
+
   return status;
 }
