@@ -33,10 +33,12 @@
 #endif
 
 static ares_status_t ares_dns_parse_rr_a(ares__buf_t *buf,
-                                         ares_dns_rr_t *rr)
+                                         ares_dns_rr_t *rr, size_t rdlength)
 {
   struct in_addr addr;
   ares_status_t  status;
+
+  (void)rdlength; /* Not needed */
 
   status = ares__buf_fetch_bytes(buf, (unsigned char *)&addr, sizeof(addr));
   if (status != ARES_SUCCESS)
@@ -46,10 +48,12 @@ static ares_status_t ares_dns_parse_rr_a(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_ns(ares__buf_t *buf,
-                                          ares_dns_rr_t *rr)
+                                          ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   ares_status_t  status;
+
+  (void)rdlength; /* Not needed */
 
   status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
   if (status != ARES_SUCCESS)
@@ -66,10 +70,12 @@ static ares_status_t ares_dns_parse_rr_ns(ares__buf_t *buf,
 
 
 static ares_status_t ares_dns_parse_rr_cname(ares__buf_t *buf,
-                                             ares_dns_rr_t *rr)
+                                             ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   ares_status_t  status;
+
+  (void)rdlength; /* Not needed */
 
   status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
   if (status != ARES_SUCCESS)
@@ -85,11 +91,13 @@ static ares_status_t ares_dns_parse_rr_cname(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_soa(ares__buf_t *buf,
-                                           ares_dns_rr_t *rr)
+                                           ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   ares_status_t  status;
   unsigned int   u32;
+
+  (void)rdlength; /* Not needed */
 
   /* MNAME */
   status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
@@ -174,10 +182,12 @@ static ares_status_t ares_dns_parse_rr_soa(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_ptr(ares__buf_t *buf,
-                                           ares_dns_rr_t *rr)
+                                           ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   ares_status_t  status;
+
+  (void)rdlength; /* Not needed */
 
   status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
   if (status != ARES_SUCCESS)
@@ -193,10 +203,12 @@ static ares_status_t ares_dns_parse_rr_ptr(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_hinfo(ares__buf_t *buf,
-                                           ares_dns_rr_t *rr)
+                                           ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   ares_status_t  status;
+
+  (void)rdlength; /* Not needed */
 
   /* CPU */
   status = ares__buf_parse_dns_str(buf, &name, ARES_FALSE);
@@ -224,19 +236,21 @@ static ares_status_t ares_dns_parse_rr_hinfo(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_mx(ares__buf_t *buf,
-                                          ares_dns_rr_t *rr)
+                                          ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   ares_status_t  status;
-  unsigned int   u16;
+  unsigned short u16;
+
+  (void)rdlength; /* Not needed */
 
   /* PREFERENCE */
-  status = ares__buf_fetch_be32(buf, &u16);
+  status = ares__buf_fetch_be16(buf, &u16);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  status = ares_dns_rr_set_u32(rr, ARES_RR_MX_PREFERENCE, u16);
+  status = ares_dns_rr_set_u16(rr, ARES_RR_MX_PREFERENCE, u16);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -257,14 +271,18 @@ static ares_status_t ares_dns_parse_rr_mx(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_txt(ares__buf_t *buf,
-                                           ares_dns_rr_t *rr)
+                                           ares_dns_rr_t *rr, size_t rdlength)
 {
-  char          *txt = NULL;
+  char          *txt      = NULL;
   ares_status_t  status;
+  size_t         orig_len = ares__buf_len(buf);
 
-  status = ares__buf_parse_dns_str(buf, &txt, ARES_TRUE);
-  if (status != ARES_SUCCESS)
-    return status;
+  while ((orig_len - ares__buf_len(buf)) < rdlength) {
+    /* XXX: This needs to go into a buf */
+    status = ares__buf_parse_dns_str(buf, &txt, ARES_TRUE);
+    if (status != ARES_SUCCESS)
+      return status;
+  }
 
   status = ares_dns_rr_set_str_own(rr, ARES_RR_TXT_DATA, txt);
   if (status != ARES_SUCCESS) {
@@ -276,10 +294,12 @@ static ares_status_t ares_dns_parse_rr_txt(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_aaaa(ares__buf_t *buf,
-                                            ares_dns_rr_t *rr)
+                                            ares_dns_rr_t *rr, size_t rdlength)
 {
   struct ares_in6_addr addr;
   ares_status_t        status;
+
+  (void)rdlength; /* Not needed */
 
   status = ares__buf_fetch_bytes(buf, (unsigned char *)&addr, sizeof(addr));
   if (status != ARES_SUCCESS)
@@ -289,11 +309,13 @@ static ares_status_t ares_dns_parse_rr_aaaa(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_srv(ares__buf_t *buf,
-                                           ares_dns_rr_t *rr)
+                                           ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   ares_status_t  status;
   unsigned short u16;
+
+  (void)rdlength; /* Not needed */
 
   /* PRIORITY */
   status = ares__buf_fetch_be16(buf, &u16);
@@ -344,11 +366,13 @@ static ares_status_t ares_dns_parse_rr_srv(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_naptr(ares__buf_t *buf,
-                                             ares_dns_rr_t *rr)
+                                             ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   ares_status_t  status;
   unsigned short u16;
+
+  (void)rdlength; /* Not needed */
 
   /* ORDER */
   status = ares__buf_fetch_be16(buf, &u16);
@@ -426,10 +450,13 @@ static ares_status_t ares_dns_parse_rr_naptr(ares__buf_t *buf,
 
 static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf,
                                            ares_dns_rr_t *rr,
+                                           size_t rdlength,
                                            unsigned short raw_class,
                                            unsigned int raw_ttl)
 {
   ares_status_t status;
+
+  (void)rdlength; /* Not needed */
 
   status = ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, raw_class);
   if (status != ARES_SUCCESS) {
@@ -461,11 +488,13 @@ static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf,
 
 
 static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf,
-                                           ares_dns_rr_t *rr)
+                                           ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   ares_status_t  status;
   unsigned short u16;
+  size_t         orig_len = ares__buf_len(buf);
+  size_t         processed_len;
 
   /* PRIORITY */
   status = ares__buf_fetch_be16(buf, &u16);
@@ -491,13 +520,14 @@ static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf,
 
   /* TARGET -- not in string format, rest of buffer, required to be
    * non-zero length */
-
-  if (ares__buf_len(buf) == 0) {
+  if (orig_len - ares__buf_len(buf) >= rdlength) {
     status = ARES_EBADRESP;
     return status;
   }
 
-  status = ares__buf_fetch_str_dup(buf, ares__buf_len(buf), &name);
+  processed_len = orig_len - ares__buf_len(buf);
+
+  status = ares__buf_fetch_str_dup(buf, rdlength - processed_len, &name);
   if (status != ARES_SUCCESS)
     return status;
 
@@ -512,13 +542,15 @@ static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf,
 }
 
 static ares_status_t ares_dns_parse_rr_caa(ares__buf_t *buf,
-                                           ares_dns_rr_t *rr)
+                                           ares_dns_rr_t *rr, size_t rdlength)
 {
   char          *name = NULL;
   unsigned char *data = NULL;
   size_t         data_len = 0;
   ares_status_t  status;
   unsigned char  critical;
+  size_t         orig_len = ares__buf_len(buf);
+  size_t         processed_len;
 
   /* CRITICAL */
   status = ares__buf_fetch_bytes(buf, &critical, 1);
@@ -543,14 +575,14 @@ static ares_status_t ares_dns_parse_rr_caa(ares__buf_t *buf,
   }
   name   = NULL;
 
-  /* Value - binary! */
-
-  if (ares__buf_len(buf) == 0) {
+  processed_len = orig_len - ares__buf_len(buf);
+  if (processed_len >= rdlength) {
     status = ARES_EBADRESP;
     return status;
   }
 
-  data_len = ares__buf_len(buf);
+  /* Value - binary! */
+  data_len = rdlength - processed_len;
   status   = ares__buf_fetch_bytes_dup(buf, data_len, &data);
   if (status != ARES_SUCCESS)
     return status;
@@ -567,16 +599,16 @@ static ares_status_t ares_dns_parse_rr_caa(ares__buf_t *buf,
 
 static ares_status_t ares_dns_parse_rr_raw_rr(ares__buf_t *buf,
                                               ares_dns_rr_t *rr,
+                                              size_t rdlength,
                                               unsigned short raw_type)
 {
-  size_t         len   = ares__buf_len(buf);
   ares_status_t  status;
   unsigned char *bytes = NULL;
 
-  if (len == 0)
+  if (rdlength == 0)
     return ARES_SUCCESS;
 
-  status = ares__buf_fetch_bytes_dup(buf, len, &bytes);
+  status = ares__buf_fetch_bytes_dup(buf, rdlength, &bytes);
   if (status != ARES_SUCCESS)
     return status;
 
@@ -588,7 +620,7 @@ static ares_status_t ares_dns_parse_rr_raw_rr(ares__buf_t *buf,
     return status;
   }
 
-  status = ares_dns_rr_set_bin_own(rr, ARES_RR_RAW_RR_DATA, bytes, len);
+  status = ares_dns_rr_set_bin_own(rr, ARES_RR_RAW_RR_DATA, bytes, rdlength);
   if (status != ARES_SUCCESS) {
     ares_free(bytes);
     return status;
@@ -721,6 +753,7 @@ fail:
 
 
 static ares_status_t ares_dns_parse_rr_data(ares__buf_t        *buf,
+                                            size_t              rdlength,
                                             ares_dns_rr_t      *rr,
                                             ares_dns_rec_type_t type,
                                             unsigned short      raw_type,
@@ -729,37 +762,37 @@ static ares_status_t ares_dns_parse_rr_data(ares__buf_t        *buf,
 {
   switch (type) {
     case ARES_REC_TYPE_A:
-      return ares_dns_parse_rr_a(buf, rr);
+      return ares_dns_parse_rr_a(buf, rr, rdlength);
     case ARES_REC_TYPE_NS:
-      return ares_dns_parse_rr_ns(buf, rr);
+      return ares_dns_parse_rr_ns(buf, rr, rdlength);
     case ARES_REC_TYPE_CNAME:
-      return ares_dns_parse_rr_cname(buf, rr);
+      return ares_dns_parse_rr_cname(buf, rr, rdlength);
     case ARES_REC_TYPE_SOA:
-      return ares_dns_parse_rr_soa(buf, rr);
+      return ares_dns_parse_rr_soa(buf, rr, rdlength);
      case ARES_REC_TYPE_PTR:
-      return ares_dns_parse_rr_ptr(buf, rr);
+      return ares_dns_parse_rr_ptr(buf, rr, rdlength);
     case ARES_REC_TYPE_HINFO:
-      return ares_dns_parse_rr_hinfo(buf, rr);
+      return ares_dns_parse_rr_hinfo(buf, rr, rdlength);
     case ARES_REC_TYPE_MX:
-      return ares_dns_parse_rr_mx(buf, rr);
+      return ares_dns_parse_rr_mx(buf, rr, rdlength);
     case ARES_REC_TYPE_TXT:
-      return ares_dns_parse_rr_txt(buf, rr);
+      return ares_dns_parse_rr_txt(buf, rr, rdlength);
     case ARES_REC_TYPE_AAAA:
-      return ares_dns_parse_rr_aaaa(buf, rr);
+      return ares_dns_parse_rr_aaaa(buf, rr, rdlength);
     case ARES_REC_TYPE_SRV:
-      return ares_dns_parse_rr_srv(buf, rr);
+      return ares_dns_parse_rr_srv(buf, rr, rdlength);
     case ARES_REC_TYPE_NAPTR:
-      return ares_dns_parse_rr_naptr(buf, rr);
+      return ares_dns_parse_rr_naptr(buf, rr, rdlength);
     case ARES_REC_TYPE_ANY:
       return ARES_EBADRESP;
     case ARES_REC_TYPE_OPT:
-      return ares_dns_parse_rr_opt(buf, rr, raw_class, raw_ttl);
+      return ares_dns_parse_rr_opt(buf, rr, rdlength, raw_class, raw_ttl);
     case ARES_REC_TYPE_URI:
-      return ares_dns_parse_rr_uri(buf, rr);
+      return ares_dns_parse_rr_uri(buf, rr, rdlength);
     case ARES_REC_TYPE_CAA:
-      return ares_dns_parse_rr_caa(buf, rr);
+      return ares_dns_parse_rr_caa(buf, rr, rdlength);
     case ARES_REC_TYPE_RAW_RR:
-      return ares_dns_parse_rr_raw_rr(buf, rr, raw_type);
+      return ares_dns_parse_rr_raw_rr(buf, rr, rdlength, raw_type);
   }
   return ARES_EFORMERR;
 }
@@ -819,8 +852,7 @@ done:
 
 static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
                                        ares_dns_section_t sect,
-                                       ares_dns_record_t *dnsrec,
-                                       ares__buf_t *constbuf)
+                                       ares_dns_record_t *dnsrec)
 {
   char               *name = NULL;
   unsigned short      u16;
@@ -830,8 +862,9 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
   ares_dns_class_t    qclass;
   unsigned int        ttl;
   size_t              rdlength;
-  size_t              mylen;
   ares_dns_rr_t      *rr = NULL;
+  size_t              remaining_len = 0;
+  size_t              processed_len = 0;
 
   (void)flags; /* currently unused */
 
@@ -908,12 +941,6 @@ printf("%s(): length = %zu\n", __FUNCTION__, rdlength);
   }
 printf("%s(): data length ok\n", __FUNCTION__);
 
-  ares__buf_const_replace(constbuf, ares__buf_peek(buf, &mylen), rdlength);
-
-  status = ares__buf_consume(buf, rdlength);
-  if (status != ARES_SUCCESS)
-    goto done;
-
   /* Add the base rr */
   status = ares_dns_record_rr_add(&rr, dnsrec, sect, name, type,
     type == ARES_REC_TYPE_OPT?ARES_CLASS_IN:qclass,
@@ -923,11 +950,34 @@ printf("%s(): data length ok\n", __FUNCTION__);
   }
 printf("%s(): rr added\n", __FUNCTION__);
 
+  /* Record the current remaining length in the buffer so we can tell how
+   * much was processed */
+  remaining_len = ares__buf_len(buf);
+
   /* Fill in the data for the rr */
-  status = ares_dns_parse_rr_data(constbuf, rr, type, raw_type,
+  status = ares_dns_parse_rr_data(buf, rdlength, rr, type, raw_type,
                                   (unsigned short)qclass, ttl);
   if (status != ARES_SUCCESS)
     goto done;
+
+printf("%s(): rr parsed\n", __FUNCTION__);
+
+  /* Determine how many bytes were processed */
+  processed_len = remaining_len - ares__buf_len(buf);
+
+  /* If too many bytes were processed, error! */
+  if (processed_len > rdlength) {
+printf("%s(): rr parser processed too much data\n", __FUNCTION__);
+
+    status = ARES_EBADRESP;
+    goto done;
+  }
+
+  /* If too few bytes were processed, consume the unprocessed data for this
+   * record as the parser may not have wanted/needed to use it */
+  if (processed_len < rdlength) {
+    ares__buf_consume(buf, rdlength - processed_len);
+  }
 
 printf("%s(): rdata parsed\n", __FUNCTION__);
 
@@ -947,7 +997,6 @@ ares_status_t ares_dns_parse(ares__buf_t *buf, unsigned int flags,
   unsigned short nscount;
   unsigned short arcount;
   unsigned short i;
-  ares__buf_t   *constbuf = NULL;
 
   if (buf == NULL || dnsrec == NULL) {
     return ARES_EFORMERR;
@@ -988,22 +1037,13 @@ printf("%s(): parsing questions %u\n", __FUNCTION__, i);
       goto fail;
   }
 
-  /* Create dummy buffer, going to use it for future parser helpers to prevent
-   * constant alloc/free */
-  constbuf = ares__buf_create_const((const unsigned char *)"", 1);
-  if (constbuf == NULL) {
-    status = ARES_ENOMEM;
-    goto fail;
-  }
-
 printf("%s(): parsing %u answers\n", __FUNCTION__, ancount);
 
   /* Parse Answers */
   for (i=0; i<ancount; i++) {
 printf("%s(): parsing answer %u\n", __FUNCTION__, i);
 
-    status = ares_dns_parse_rr(buf, flags, ARES_SECTION_ANSWER, *dnsrec,
-                               constbuf);
+    status = ares_dns_parse_rr(buf, flags, ARES_SECTION_ANSWER, *dnsrec);
     if (status != ARES_SUCCESS)
       goto fail;
   }
@@ -1014,8 +1054,7 @@ printf("%s(): parsing %u authorities\n", __FUNCTION__, nscount);
   for (i=0; i<nscount; i++) {
 printf("%s(): parsing authority %u\n", __FUNCTION__, i);
 
-    status = ares_dns_parse_rr(buf, flags, ARES_SECTION_AUTHORITY, *dnsrec,
-                               constbuf);
+    status = ares_dns_parse_rr(buf, flags, ARES_SECTION_AUTHORITY, *dnsrec);
     if (status != ARES_SUCCESS)
       goto fail;
   }
@@ -1027,20 +1066,17 @@ printf("%s(): parsing %u additional\n", __FUNCTION__, arcount);
   for (i=0; i<arcount; i++) {
 printf("%s(): parsing additional %u\n", __FUNCTION__, i);
 
-    status = ares_dns_parse_rr(buf, flags, ARES_SECTION_ADDITIONAL, *dnsrec,
-                               constbuf);
+    status = ares_dns_parse_rr(buf, flags, ARES_SECTION_ADDITIONAL, *dnsrec);
     if (status != ARES_SUCCESS)
       goto fail;
   }
 printf("%s(): success\n", __FUNCTION__);
 
-  ares__buf_destroy(constbuf);
   return ARES_SUCCESS;
 
 fail:
 printf("%s(): fail code %d\n", __FUNCTION__, (int)status);
 
-  ares__buf_destroy(constbuf);
   ares_dns_record_destroy(*dnsrec);
   *dnsrec = NULL;
   return status;
