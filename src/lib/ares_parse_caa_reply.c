@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) The c-ares project and its contributors
+ * Copyright (c) 2023 Brad House
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,30 +24,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-/* =============================================================================
- * NOTE:  The below copyright is preserved from the original author.  In
- *        October 2023, there were attempts made to contact the author in order
- *        gain approval for relicensing to the modern MIT license from the
- *        below 1989 variant, but all contact information for the author is
- *        no longer valid.
- *
- * Copyright (c) 2020 <danny.sonnenschein@platynum.ch>
- *
- * Permission to use, copy, modify, and distribute this
- * software and its documentation for any purpose and without
- * fee is hereby granted, provided that the above copyright
- * notice appear in all copies and that both that copyright
- * notice and this permission notice appear in supporting
- * documentation, and that the name of M.I.T. not be used in
- * advertising or publicity pertaining to distribution of the
- * software without specific, written prior permission.
- * M.I.T. makes no representations about the suitability of
- * this software for any purpose.  It is provided "as is"
- * without express or implied warranty.
- *
- * =============================================================================
- */
-
 #include "ares_setup.h"
 
 #ifdef HAVE_NETINET_IN_H
@@ -60,17 +36,9 @@
 #  include <arpa/inet.h>
 #endif
 
-#include "ares_nameser.h"
-
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
-
 #include "ares.h"
-#include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
-#include "ares_dns_record.h"
 
 int ares_parse_caa_reply(const unsigned char *abuf, int alen_int,
                          struct ares_caa_reply **caa_out)

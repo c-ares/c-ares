@@ -1,7 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 1998 Massachusetts Institute of Technology
- * Copyright (c) 2009 Jakub Hrozek
+ * Copyright (c) 2023 Brad House
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,24 +25,9 @@
  */
 
 #include "ares_setup.h"
-
-#ifdef HAVE_NETINET_IN_H
-#  include <netinet/in.h>
-#endif
-#ifdef HAVE_NETDB_H
-#  include <netdb.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#  include <arpa/inet.h>
-#endif
-
-#include "ares_nameser.h"
-
 #include "ares.h"
-#include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
-#include "ares_dns_record.h"
 
 int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
                          struct ares_uri_reply **uri_out)
@@ -88,7 +72,7 @@ int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
       continue;
     }
 
-    /* Allocate storage for this URIanswer appending it to the list */
+    /* Allocate storage for this URI answer appending it to the list */
     uri_curr = ares_malloc_data(ARES_DATATYPE_URI_REPLY);
     if (uri_curr == NULL) {
       status = ARES_ENOMEM;

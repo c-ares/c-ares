@@ -120,6 +120,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__htable_stvp.h"
 #include "ares__htable_asvp.h"
 #include "ares__buf.h"
+#include "ares_dns_record.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
