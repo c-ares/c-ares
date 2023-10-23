@@ -773,7 +773,7 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
    * - a sequence of labels ending with a pointer
    */
   while (1) {
-    /* Keep track of the minimum label starting position to prevent backwards
+    /* Keep track of the minimum label starting position to prevent forward
      * jumping */
     if (label_start > ares__buf_get_position(buf)) {
       label_start = ares__buf_get_position(buf);
@@ -815,7 +815,7 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
        *    the end of a domain name is replaced with a pointer to a prior
        *    occurance of the same name.
        * Note the word "prior", meaning it must go backwards.  This was
-       * confirmed via the ISC BIND code that it also prevents backwards
+       * confirmed via the ISC BIND code that it also prevents forward
        * pointers.
        */
       if (offset >= label_start) {
@@ -862,8 +862,8 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
     }
   }
 
-  /* Restore offset read after first redirect/pointer as where DNS message
-   * continues */
+  /* Restore offset read after first redirect/pointer as this is where the DNS
+   * message continues */
   if (save_offset) {
     ares__buf_set_position(buf, save_offset);
   }
