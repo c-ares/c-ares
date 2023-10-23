@@ -91,6 +91,8 @@ ares_dns_rcode_t ares_dns_record_get_rcode(ares_dns_record_t *dnsrec)
 
 static void ares__dns_rr_free(ares_dns_rr_t *rr)
 {
+  ares_free(rr->name);
+
   switch (rr->type) {
     case ARES_REC_TYPE_A:
     case ARES_REC_TYPE_AAAA:

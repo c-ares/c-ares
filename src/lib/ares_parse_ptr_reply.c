@@ -97,7 +97,7 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
       status = ARES_ENOMEM;
       goto done;
     }
-    memcpy(hostent->h_addr_list[0], addr, addrlen);
+    memcpy(hostent->h_addr_list[0], addr, (size_t)addrlen);
   }
   hostent->h_addrtype     = family;
   hostent->h_length       = addrlen;
