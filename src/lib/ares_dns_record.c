@@ -652,7 +652,7 @@ const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
   unsigned char **bin     = NULL;
   size_t         *bin_len = NULL;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN) {
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN || len == NULL) {
     return NULL;
   }
 
@@ -661,7 +661,8 @@ const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
     return 0;
   }
 
-  if (len == NULL)
+  /* Shouldn't be possible */
+  if (bin_len == NULL)
     return NULL;
 
   *len = *bin_len;

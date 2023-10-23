@@ -806,7 +806,7 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
        * ID field in the domain header).  A zero offset specifies the first byte
        * of the ID field, etc.
        */
-      unsigned short offset = (unsigned short)((c & 0x3F) << 8);
+      size_t offset = (size_t)((c & 0x3F) << 8);
 
       /* Fetch second byte of the redirect length */
       status = ares__buf_fetch_bytes(buf, &c, 1);
@@ -814,7 +814,7 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
         goto fail;
       }
 
-      offset |= (unsigned short)c;
+      offset |= ((size_t)c);
 
       /* According to RFC 1035 4.1.4:
        *    In this scheme, an entire domain name or a list of labels at
@@ -939,9 +939,9 @@ ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
     ares__buf_destroy(binbuf);
   } else {
     if (bin != NULL) {
-      size_t mylen;
-      *bin = (unsigned char *)ares__buf_finish_str(binbuf, &mylen);
-      *bin_len = mylen;
+      size_t mylen = 0;
+      *bin         = (unsigned char *)ares__buf_finish_str(binbuf, &mylen);
+      *bin_len     = mylen;
     }
   }
 
