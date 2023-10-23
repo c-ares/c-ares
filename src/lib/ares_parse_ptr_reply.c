@@ -40,15 +40,15 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
                          const void *addr, int addrlen, int family,
                          struct hostent **host)
 {
-  ares_status_t          status;
-  size_t                 alen;
-  size_t                 ptrcount  = 0;
-  struct hostent        *hostent   = NULL;
-  const char            *hostname  = NULL;
-  const char            *ptrname   = NULL;
-  ares_dns_record_t     *dnsrec    = NULL;
-  size_t                 i;
-  size_t                 ancount;
+  ares_status_t      status;
+  size_t             alen;
+  size_t             ptrcount = 0;
+  struct hostent    *hostent  = NULL;
+  const char        *hostname = NULL;
+  const char        *ptrname  = NULL;
+  ares_dns_record_t *dnsrec   = NULL;
+  size_t             i;
+  size_t             ancount;
 
   *host = NULL;
 
@@ -99,8 +99,8 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
     }
     memcpy(hostent->h_addr_list[0], addr, (size_t)addrlen);
   }
-  hostent->h_addrtype     = family;
-  hostent->h_length       = addrlen;
+  hostent->h_addrtype = family;
+  hostent->h_length   = addrlen;
 
   /* Preallocate the maximum number + 1 */
   hostent->h_aliases = ares_malloc((ancount + 1) * sizeof(*hostent->h_aliases));
@@ -112,10 +112,9 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
 
 
   /* Cycle through answers */
-  for (i=0; i<ancount; i++) {
+  for (i = 0; i < ancount; i++) {
     const char    *rname = NULL;
-    ares_dns_rr_t *rr    = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER,
-                                                  i);
+    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (rr == NULL) {
       /* Shouldn't be possible */
@@ -179,19 +178,19 @@ done:
   if (status != ARES_SUCCESS) {
     ares_free_hostent(hostent);
     /* Compatibility */
-    if (status == ARES_EBADNAME)
+    if (status == ARES_EBADNAME) {
       status = ARES_EBADRESP;
+    }
   } else {
     /* Fill in hostname */
     hostent->h_name = ares_strdup(hostname);
     if (hostent->h_name == NULL) {
       status = ARES_ENOMEM;
       goto done;
-     }
+    }
 
     *host = hostent;
   }
   ares_dns_record_destroy(dnsrec);
   return (int)status;
 }
-

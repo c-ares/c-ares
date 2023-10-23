@@ -37,7 +37,7 @@ int ares_parse_caa_reply(const unsigned char *abuf, int alen_int,
   struct ares_caa_reply *caa_head = NULL;
   struct ares_caa_reply *caa_last = NULL;
   struct ares_caa_reply *caa_curr;
-  ares_dns_record_t     *dnsrec   = NULL;
+  ares_dns_record_t     *dnsrec = NULL;
   size_t                 i;
 
   *caa_out = NULL;
@@ -58,11 +58,10 @@ int ares_parse_caa_reply(const unsigned char *abuf, int alen_int,
     goto done;
   }
 
-  for (i=0; i<ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
+  for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
     const unsigned char *ptr;
     size_t               ptr_len;
-    ares_dns_rr_t       *rr = ares_dns_record_rr_get(dnsrec,
-                                                     ARES_SECTION_ANSWER, i);
+    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
     if (rr == NULL) {
       /* Shouldn't be possible */
       status = ARES_EBADRESP;
@@ -96,16 +95,15 @@ int ares_parse_caa_reply(const unsigned char *abuf, int alen_int,
     caa_last = caa_curr;
 
     caa_curr->critical = ares_dns_rr_get_u8(rr, ARES_RR_CAA_CRITICAL);
-    caa_curr->property = (unsigned char *)ares_strdup(
-                           ares_dns_rr_get_str(rr, ARES_RR_CAA_TAG)
-                         );
+    caa_curr->property =
+      (unsigned char *)ares_strdup(ares_dns_rr_get_str(rr, ARES_RR_CAA_TAG));
     if (caa_curr->property == NULL) {
       status = ARES_ENOMEM;
       break;
     }
     /* RFC6844 says this can only be ascii, so not sure why we're recording a
      * length */
-    caa_curr->plength  = ares_strlen((const char *)caa_curr->property);
+    caa_curr->plength = ares_strlen((const char *)caa_curr->property);
 
     ptr = ares_dns_rr_get_bin(rr, ARES_RR_CAA_VALUE, &ptr_len);
     if (ptr == NULL) {
@@ -121,7 +119,7 @@ int ares_parse_caa_reply(const unsigned char *abuf, int alen_int,
     }
     memcpy(caa_curr->value, ptr, ptr_len);
     caa_curr->value[ptr_len] = 0;
-    caa_curr->length         =  ptr_len;
+    caa_curr->length         = ptr_len;
   }
 
 done:

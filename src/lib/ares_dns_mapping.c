@@ -62,19 +62,18 @@ ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode)
 
 ares_bool_t ares_dns_flags_arevalid(unsigned short flags)
 {
-  unsigned short allflags = ARES_FLAG_QR|ARES_FLAG_AA|ARES_FLAG_TC|
-                            ARES_FLAG_RD|ARES_FLAG_RA;
+  unsigned short allflags =
+    ARES_FLAG_QR | ARES_FLAG_AA | ARES_FLAG_TC | ARES_FLAG_RD | ARES_FLAG_RA;
 
-  if (flags & ~(allflags))
+  if (flags & ~(allflags)) {
     return ARES_FALSE;
+  }
 
   return ARES_TRUE;
 }
 
-
-
 ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
-                                      ares_bool_t is_query)
+                                      ares_bool_t         is_query)
 {
   switch (type) {
     case ARES_REC_TYPE_A:
@@ -99,15 +98,15 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_CAA:
       return ARES_TRUE;
     case ARES_REC_TYPE_RAW_RR:
-      return is_query?ARES_FALSE:ARES_TRUE;
+      return is_query ? ARES_FALSE : ARES_TRUE;
     default:
       break;
   }
-  return is_query?ARES_TRUE:ARES_FALSE;
+  return is_query ? ARES_TRUE : ARES_FALSE;
 }
 
 ares_bool_t ares_dns_class_isvalid(ares_dns_class_t qclass,
-                                   ares_bool_t is_query)
+                                   ares_bool_t      is_query)
 {
   switch (qclass) {
     case ARES_CLASS_IN:
@@ -116,11 +115,10 @@ ares_bool_t ares_dns_class_isvalid(ares_dns_class_t qclass,
     case ARES_CLASS_NONE:
       return ARES_TRUE;
     case ARES_CLASS_ANY:
-      return is_query?ARES_TRUE:ARES_FALSE;
+      return is_query ? ARES_TRUE : ARES_FALSE;
   }
   return ARES_FALSE;
 }
-
 
 ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect)
 {
@@ -132,7 +130,6 @@ ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect)
   }
   return ARES_FALSE;
 }
-
 
 ares_dns_rec_type_t ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key)
 {
@@ -174,7 +171,7 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
       return "NAPTR";
     case ARES_REC_TYPE_OPT:
       return "OPT";
- #if 0
+#if 0
     case ARES_REC_TYPE_TLSA:
       return "TLSA";
     case ARES_REC_TYPE_SVBC:
@@ -213,7 +210,7 @@ const char *ares_dns_class_tostr(ares_dns_class_t qclass)
 
 const char *ares_dns_opcode_tostr(ares_dns_opcode_t opcode)
 {
-  switch(opcode) {
+  switch (opcode) {
     case ARES_OPCODE_QUERY:
       return "QUERY";
     case ARES_OPCODE_IQUERY:
@@ -412,48 +409,47 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
   return 0;
 }
 
-static const ares_dns_rr_key_t rr_a_keys[]      = { ARES_RR_A_ADDR };
-static const ares_dns_rr_key_t rr_ns_keys[]     = { ARES_RR_NS_NSDNAME };
-static const ares_dns_rr_key_t rr_cname_keys[]  = { ARES_RR_CNAME_CNAME };
-static const ares_dns_rr_key_t rr_soa_keys[]    = { ARES_RR_SOA_MNAME,
-  ARES_RR_SOA_RNAME, ARES_RR_SOA_SERIAL, ARES_RR_SOA_REFRESH, ARES_RR_SOA_RETRY,
-  ARES_RR_SOA_EXPIRE, ARES_RR_SOA_MINIMUM
+static const ares_dns_rr_key_t rr_a_keys[]     = { ARES_RR_A_ADDR };
+static const ares_dns_rr_key_t rr_ns_keys[]    = { ARES_RR_NS_NSDNAME };
+static const ares_dns_rr_key_t rr_cname_keys[] = { ARES_RR_CNAME_CNAME };
+static const ares_dns_rr_key_t rr_soa_keys[]   = {
+  ARES_RR_SOA_MNAME,   ARES_RR_SOA_RNAME, ARES_RR_SOA_SERIAL,
+  ARES_RR_SOA_REFRESH, ARES_RR_SOA_RETRY, ARES_RR_SOA_EXPIRE,
+  ARES_RR_SOA_MINIMUM
 };
-static const ares_dns_rr_key_t rr_ptr_keys[]    = { ARES_RR_PTR_DNAME };
-static const ares_dns_rr_key_t rr_hinfo_keys[]  = { ARES_RR_HINFO_CPU,
-  ARES_RR_HINFO_OS
+static const ares_dns_rr_key_t rr_ptr_keys[]   = { ARES_RR_PTR_DNAME };
+static const ares_dns_rr_key_t rr_hinfo_keys[] = { ARES_RR_HINFO_CPU,
+                                                   ARES_RR_HINFO_OS };
+static const ares_dns_rr_key_t rr_mx_keys[]    = { ARES_RR_MX_PREFERENCE,
+                                                   ARES_RR_MX_EXCHANGE };
+static const ares_dns_rr_key_t rr_txt_keys[]   = { ARES_RR_TXT_DATA };
+static const ares_dns_rr_key_t rr_aaaa_keys[]  = { ARES_RR_AAAA_ADDR };
+static const ares_dns_rr_key_t rr_srv_keys[]   = {
+  ARES_RR_SRV_PRIORITY, ARES_RR_SRV_WEIGHT, ARES_RR_SRV_PORT, ARES_RR_SRV_TARGET
 };
-static const ares_dns_rr_key_t rr_mx_keys[]     = { ARES_RR_MX_PREFERENCE,
-  ARES_RR_MX_EXCHANGE
-};
-static const ares_dns_rr_key_t rr_txt_keys[]    = { ARES_RR_TXT_DATA };
-static const ares_dns_rr_key_t rr_aaaa_keys[]   = { ARES_RR_AAAA_ADDR };
-static const ares_dns_rr_key_t rr_srv_keys[]    = { ARES_RR_SRV_PRIORITY,
-  ARES_RR_SRV_WEIGHT, ARES_RR_SRV_PORT, ARES_RR_SRV_TARGET
-};
-static const ares_dns_rr_key_t rr_naptr_keys[]  = { ARES_RR_NAPTR_ORDER,
-  ARES_RR_NAPTR_PREFERENCE, ARES_RR_NAPTR_FLAGS, ARES_RR_NAPTR_SERVICES,
-  ARES_RR_NAPTR_REGEXP, ARES_RR_NAPTR_REPLACEMENT
+static const ares_dns_rr_key_t rr_naptr_keys[] = {
+  ARES_RR_NAPTR_ORDER,    ARES_RR_NAPTR_PREFERENCE, ARES_RR_NAPTR_FLAGS,
+  ARES_RR_NAPTR_SERVICES, ARES_RR_NAPTR_REGEXP,     ARES_RR_NAPTR_REPLACEMENT
 };
 static const ares_dns_rr_key_t rr_opt_keys[]    = { ARES_RR_OPT_UDP_SIZE,
-  ARES_RR_OPT_EXT_RCODE, ARES_RR_OPT_VERSION, ARES_RR_OPT_FLAGS
-};
+                                                    ARES_RR_OPT_EXT_RCODE,
+                                                    ARES_RR_OPT_VERSION,
+                                                    ARES_RR_OPT_FLAGS };
 static const ares_dns_rr_key_t rr_uri_keys[]    = { ARES_RR_URI_PRIORITY,
-  ARES_RR_URI_WEIGHT, ARES_RR_URI_TARGET
-};
+                                                    ARES_RR_URI_WEIGHT,
+                                                    ARES_RR_URI_TARGET };
 static const ares_dns_rr_key_t rr_caa_keys[]    = { ARES_RR_CAA_CRITICAL,
-  ARES_RR_CAA_TAG, ARES_RR_CAA_VALUE
-};
+                                                    ARES_RR_CAA_TAG,
+                                                    ARES_RR_CAA_VALUE };
 static const ares_dns_rr_key_t rr_raw_rr_keys[] = { ARES_RR_RAW_RR_TYPE,
-  ARES_RR_RAW_RR_DATA
-};
+                                                    ARES_RR_RAW_RR_DATA };
 
-
-const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
-                                              size_t *cnt)
+const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
+                                                    size_t             *cnt)
 {
-  if (cnt == NULL)
+  if (cnt == NULL) {
     return NULL;
+  }
 
   *cnt = 0;
 
@@ -521,4 +517,3 @@ const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
 
   return NULL;
 }
-

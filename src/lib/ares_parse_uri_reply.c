@@ -37,7 +37,7 @@ int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
   struct ares_uri_reply *uri_head = NULL;
   struct ares_uri_reply *uri_last = NULL;
   struct ares_uri_reply *uri_curr;
-  ares_dns_record_t     *dnsrec   = NULL;
+  ares_dns_record_t     *dnsrec = NULL;
   size_t                 i;
 
   *uri_out = NULL;
@@ -58,7 +58,7 @@ int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
     goto done;
   }
 
-  for (i=0; i<ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
+  for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
     ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (rr == NULL) {
@@ -88,12 +88,10 @@ int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
     uri_last = uri_curr;
 
 
-    uri_curr->priority  = ares_dns_rr_get_u16(rr, ARES_RR_URI_PRIORITY);
-    uri_curr->weight    = ares_dns_rr_get_u16(rr, ARES_RR_URI_WEIGHT);
-    uri_curr->uri       = ares_strdup(
-                            ares_dns_rr_get_str(rr, ARES_RR_URI_TARGET)
-                          );
-    uri_curr->ttl       = (int)ares_dns_rr_get_ttl(rr);
+    uri_curr->priority = ares_dns_rr_get_u16(rr, ARES_RR_URI_PRIORITY);
+    uri_curr->weight   = ares_dns_rr_get_u16(rr, ARES_RR_URI_WEIGHT);
+    uri_curr->uri = ares_strdup(ares_dns_rr_get_str(rr, ARES_RR_URI_TARGET));
+    uri_curr->ttl = (int)ares_dns_rr_get_ttl(rr);
 
     if (uri_curr->uri == NULL) {
       status = ARES_ENOMEM;

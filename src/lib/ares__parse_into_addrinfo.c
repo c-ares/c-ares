@@ -52,16 +52,16 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf, size_t alen,
                                         unsigned short port,
                                         struct ares_addrinfo *ai)
 {
-  ares_status_t                status;
-  ares_dns_record_t           *dnsrec    = NULL;
-  size_t                       i;
-  size_t                       ancount;
-  const char                  *hostname  = NULL;
-  ares_bool_t                  got_a     = ARES_FALSE;
-  ares_bool_t                  got_aaaa  = ARES_FALSE;
-  ares_bool_t                  got_cname = ARES_FALSE;
-  struct ares_addrinfo_cname  *cnames    = NULL;
-  struct ares_addrinfo_node   *nodes     = NULL;
+  ares_status_t               status;
+  ares_dns_record_t          *dnsrec = NULL;
+  size_t                      i;
+  size_t                      ancount;
+  const char                 *hostname  = NULL;
+  ares_bool_t                 got_a     = ARES_FALSE;
+  ares_bool_t                 got_aaaa  = ARES_FALSE;
+  ares_bool_t                 got_cname = ARES_FALSE;
+  struct ares_addrinfo_cname *cnames    = NULL;
+  struct ares_addrinfo_node  *nodes     = NULL;
 
   status = ares_dns_parse(abuf, alen, 0, &dnsrec);
   if (status != ARES_SUCCESS) {
@@ -80,11 +80,10 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf, size_t alen,
     goto done;
   }
 
-  for (i=0; i<ancount; i++) {
+  for (i = 0; i < ancount; i++) {
     const char         *rname = NULL;
     ares_dns_rec_type_t rtype;
-    ares_dns_rr_t      *rr    = ares_dns_record_rr_get(dnsrec,
-                                                       ARES_SECTION_ANSWER, i);
+    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (ares_dns_rr_get_class(rr) != ARES_CLASS_IN) {
       continue;
@@ -118,22 +117,24 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf, size_t alen,
         status = ARES_ENOMEM;
         goto done;
       }
-      cname->name  = ares_strdup(hostname);
+      cname->name = ares_strdup(hostname);
       if (cname->name == NULL) {
         status = ARES_ENOMEM;
         goto done;
       }
     } else if (rtype == ARES_REC_TYPE_A) {
-      got_a  = ARES_TRUE;
-      status = ares_append_ai_node(AF_INET, port, ares_dns_rr_get_ttl(rr),
-        ares_dns_rr_get_addr(rr, ARES_RR_A_ADDR), &nodes);
+      got_a = ARES_TRUE;
+      status =
+        ares_append_ai_node(AF_INET, port, ares_dns_rr_get_ttl(rr),
+                            ares_dns_rr_get_addr(rr, ARES_RR_A_ADDR), &nodes);
       if (status != ARES_SUCCESS) {
         goto done;
       }
     } else if (rtype == ARES_REC_TYPE_AAAA) {
       got_aaaa = ARES_TRUE;
       status   = ares_append_ai_node(AF_INET6, port, ares_dns_rr_get_ttl(rr),
-        ares_dns_rr_get_addr6(rr, ARES_RR_AAAA_ADDR), &nodes);
+                                     ares_dns_rr_get_addr6(rr, ARES_RR_AAAA_ADDR),
+                                     &nodes);
       if (status != ARES_SUCCESS) {
         goto done;
       }
@@ -175,8 +176,9 @@ done:
   ares_dns_record_destroy(dnsrec);
 
   /* compatibiltiy */
-  if (status == ARES_EBADNAME)
+  if (status == ARES_EBADNAME) {
     status = ARES_EBADRESP;
+  }
 
   return status;
 }

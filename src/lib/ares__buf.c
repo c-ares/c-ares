@@ -254,15 +254,15 @@ unsigned char *ares__buf_finish_bin(ares__buf_t *buf, size_t *len)
   ares__buf_reclaim(buf);
   if (buf->alloc_buf == NULL) {
     /* We don't want to return NULL except on failure, may be zero-length */
-    if (ares__buf_ensure_space(buf, 1) != ARES_SUCCESS)
+    if (ares__buf_ensure_space(buf, 1) != ARES_SUCCESS) {
       return NULL;
+    }
   }
   ptr  = buf->alloc_buf;
   *len = buf->data_len;
   ares_free(buf);
   return ptr;
 }
-
 
 char *ares__buf_finish_str(ares__buf_t *buf, size_t *len)
 {
@@ -284,7 +284,6 @@ char *ares__buf_finish_str(ares__buf_t *buf, size_t *len)
 
   return ptr;
 }
-
 
 void ares__buf_tag(ares__buf_t *buf)
 {
@@ -378,10 +377,9 @@ ares_status_t ares__buf_fetch_be32(ares__buf_t *buf, unsigned int *u32)
     return ARES_EBADRESP;
   }
 
-  *u32 = (unsigned int)((unsigned int)(ptr[0]) << 24 |
-                        (unsigned int)(ptr[1]) << 16 |
-                        (unsigned int)(ptr[2]) << 8  |
-                        (unsigned int)(ptr[3]));
+  *u32 =
+    (unsigned int)((unsigned int)(ptr[0]) << 24 | (unsigned int)(ptr[1]) << 16 |
+                   (unsigned int)(ptr[2]) << 8 | (unsigned int)(ptr[3]));
 
   return ares__buf_consume(buf, sizeof(*u32));
 }
@@ -411,15 +409,15 @@ ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
   }
 
   *bytes = ares_malloc(len);
-  if (*bytes == NULL)
+  if (*bytes == NULL) {
     return ARES_ENOMEM;
+  }
 
   memcpy(*bytes, ptr, len);
   return ares__buf_consume(buf, len);
 }
 
-ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len,
-                                      char **str)
+ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len, char **str)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
@@ -428,9 +426,10 @@ ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len,
     return ARES_EBADRESP;
   }
 
-  *str = ares_malloc(len+1);
-  if (*str == NULL)
+  *str = ares_malloc(len + 1);
+  if (*str == NULL) {
     return ARES_ENOMEM;
+  }
 
   memcpy(*str, ptr, len);
   (*str)[len] = 0;
@@ -439,8 +438,7 @@ ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len,
 }
 
 ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
-                                             ares__buf_t *dest,
-                                             size_t len)
+                                             ares__buf_t *dest, size_t len)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
@@ -451,8 +449,9 @@ ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
   }
 
   status = ares__buf_append(dest, ptr, len);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   return ares__buf_consume(buf, len);
 }
@@ -520,8 +519,8 @@ static ares_bool_t is_hostnamech(int ch)
 
 static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
                                                       ares__buf_t *dest,
-                                                      size_t len,
-                                                      ares_bool_t is_hostname)
+                                                      size_t       len,
+                                                      ares_bool_t  is_hostname)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
@@ -532,7 +531,7 @@ static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
     return ARES_EBADRESP;
   }
 
-  for (i=0; i<len; i++) {
+  for (i = 0; i < len; i++) {
     unsigned char c = ptr[i];
 
     /* Hostnames have a very specific allowed character set.  Anything outside
@@ -542,7 +541,7 @@ static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
       goto fail;
     }
 
-    /* NOTE: dest may be NULL if the user is trying to skip the name.  validation
+    /* NOTE: dest may be NULL if the user is trying to skip the name. validation
      *       still occurs */
     if (dest) {
       /* Non-printable characters need to be output as \DDD */
@@ -555,8 +554,9 @@ static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
         escape[3] = '0' + (c % 10);
 
         status = ares__buf_append(dest, escape, sizeof(escape));
-        if (status != ARES_SUCCESS)
+        if (status != ARES_SUCCESS) {
           goto fail;
+        }
 
         continue;
       }
@@ -564,13 +564,15 @@ static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
       /* Reserved characters need to be escaped, otherwise normal */
       if (is_reservedch(c)) {
         status = ares__buf_append_byte(dest, '\\');
-        if (status != ARES_SUCCESS)
+        if (status != ARES_SUCCESS) {
           goto fail;
+        }
       }
 
       status = ares__buf_append_byte(dest, c);
-      if (status != ARES_SUCCESS)
+      if (status != ARES_SUCCESS) {
         return status;
+      }
     }
   }
 
@@ -579,7 +581,6 @@ static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
 fail:
   return status;
 }
-
 
 size_t ares__buf_consume_whitespace(ares__buf_t *buf, int include_linefeed)
 {
@@ -709,38 +710,42 @@ const unsigned char *ares__buf_peek(const ares__buf_t *buf, size_t *len)
   return ares__buf_fetch(buf, len);
 }
 
-
 size_t ares__buf_get_position(const ares__buf_t *buf)
 {
-  if (buf == NULL)
+  if (buf == NULL) {
     return 0;
+  }
   return buf->offset;
 }
 
 ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx)
 {
-  if (buf == NULL)
+  if (buf == NULL) {
     return ARES_EFORMERR;
+  }
 
-  if (idx > buf->data_len)
+  if (idx > buf->data_len) {
     return ARES_EFORMERR;
+  }
 
   buf->offset = idx;
   return ARES_SUCCESS;
 }
 
 #define ARES_DNS_HEADER_SIZE 12
+
 ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
                                        ares_bool_t is_hostname)
 {
-  size_t        save_offset   = 0;
+  size_t        save_offset = 0;
   unsigned char c;
   ares_status_t status;
-  ares__buf_t  *namebuf       = NULL;
-  size_t        label_start   = ares__buf_get_position(buf);
+  ares__buf_t  *namebuf     = NULL;
+  size_t        label_start = ares__buf_get_position(buf);
 
-  if (buf == NULL)
+  if (buf == NULL) {
     return ARES_EFORMERR;
+  }
 
   if (name != NULL) {
     namebuf = ares__buf_create();
@@ -771,12 +776,14 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
   while (1) {
     /* Keep track of the minimum label starting position to prevent backwards
      * jumping */
-    if (label_start > ares__buf_get_position(buf))
+    if (label_start > ares__buf_get_position(buf)) {
       label_start = ares__buf_get_position(buf);
+    }
 
     status = ares__buf_fetch_bytes(buf, &c, 1);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto fail;
+    }
 
     /* Pointer/Redirect */
     if ((c & 0xc0) == 0xc0) {
@@ -844,14 +851,16 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
     if (ares__buf_len(namebuf) != 0) {
       if (name != NULL) {
         status = ares__buf_append_byte(namebuf, '.');
-        if (status != ARES_SUCCESS)
+        if (status != ARES_SUCCESS) {
           goto fail;
+        }
       }
     }
 
     status = ares__buf_fetch_dnsname_into_buf(buf, namebuf, c, is_hostname);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto fail;
+    }
   }
 
   /* Restore offset read after first redirect/pointer as where DNS message
@@ -872,13 +881,13 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
 
 fail:
   /* We want badname response if we couldn't parse */
-  if (status == ARES_EBADRESP)
+  if (status == ARES_EBADRESP) {
     status = ARES_EBADNAME;
+  }
 
   ares__buf_destroy(namebuf);
   return status;
 }
-
 
 ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
                                          unsigned char **bin, size_t *bin_len,
@@ -889,11 +898,13 @@ ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
   ares__buf_t  *binbuf   = NULL;
   size_t        orig_len = ares__buf_len(buf);
 
-  if (buf == NULL)
+  if (buf == NULL) {
     return ARES_EFORMERR;
+  }
 
-  if (remaining_len == 0)
+  if (remaining_len == 0) {
     return ARES_EBADRESP;
+  }
 
   binbuf = ares__buf_create();
   if (binbuf == NULL) {
@@ -931,18 +942,16 @@ ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
       /* NOTE: we use ares__buf_finish_str() here as we guarantee NULL
        *       Termination even though we are technically returning binary data.
        */
-      *bin         = (unsigned char *)ares__buf_finish_str(binbuf, &mylen);
-      *bin_len     = mylen;
+      *bin     = (unsigned char *)ares__buf_finish_str(binbuf, &mylen);
+      *bin_len = mylen;
     }
   }
 
   return status;
 }
 
-
 ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
-                                      char **str,
-                                      ares_bool_t allow_multiple)
+                                      char **str, ares_bool_t allow_multiple)
 {
   size_t len;
   return ares__buf_parse_dns_binstr(buf, remaining_len, (unsigned char **)str,

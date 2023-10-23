@@ -32,12 +32,12 @@
 static int ares__parse_txt_reply(const unsigned char *abuf, size_t alen,
                                  ares_bool_t ex, void **txt_out)
 {
-  ares_status_t          status;
-  struct ares_txt_ext   *txt_head = NULL;
-  struct ares_txt_ext   *txt_last = NULL;
-  struct ares_txt_ext   *txt_curr;
-  ares_dns_record_t     *dnsrec   = NULL;
-  size_t                 i;
+  ares_status_t        status;
+  struct ares_txt_ext *txt_head = NULL;
+  struct ares_txt_ext *txt_last = NULL;
+  struct ares_txt_ext *txt_curr;
+  ares_dns_record_t   *dnsrec = NULL;
+  size_t               i;
 
   *txt_out = NULL;
 
@@ -51,9 +51,8 @@ static int ares__parse_txt_reply(const unsigned char *abuf, size_t alen,
     goto done;
   }
 
-  for (i=0; i<ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
-    ares_dns_rr_t       *rr = ares_dns_record_rr_get(dnsrec,
-                                                     ARES_SECTION_ANSWER, i);
+  for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
+    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
     const unsigned char *ptr;
     size_t               ptr_len;
 
@@ -71,8 +70,8 @@ static int ares__parse_txt_reply(const unsigned char *abuf, size_t alen,
     }
 
     /* Allocate storage for this TXT answer appending it to the list */
-    txt_curr = ares_malloc_data(ex ? ARES_DATATYPE_TXT_EXT
-                                   : ARES_DATATYPE_TXT_REPLY);
+    txt_curr =
+      ares_malloc_data(ex ? ARES_DATATYPE_TXT_EXT : ARES_DATATYPE_TXT_REPLY);
     if (txt_curr == NULL) {
       status = ARES_ENOMEM;
       goto done;

@@ -36,7 +36,6 @@
 #include "ares.h"
 #include "ares_private.h" /* for the memdebug */
 
-
 ares_status_t ares__expand_name_validated(const unsigned char *encoded,
                                           const unsigned char *abuf,
                                           size_t alen, char **s, size_t *enclen,
@@ -46,31 +45,37 @@ ares_status_t ares__expand_name_validated(const unsigned char *encoded,
   ares__buf_t  *buf = NULL;
   size_t        start_len;
 
-  if (encoded == NULL || abuf == NULL || alen == 0 || enclen == NULL)
+  if (encoded == NULL || abuf == NULL || alen == 0 || enclen == NULL) {
     return ARES_EBADNAME; /* EFORMERR would be better */
+  }
 
-  if (encoded < abuf || encoded >= abuf + alen)
+  if (encoded < abuf || encoded >= abuf + alen) {
     return ARES_EBADNAME; /* EFORMERR would be better */
+  }
 
   *enclen = 0;
 
   /* NOTE: we allow 's' to be NULL to skip it */
-  if (s)
+  if (s) {
     *s = NULL;
+  }
 
   buf = ares__buf_create_const(abuf, alen);
 
-  if (buf == NULL)
+  if (buf == NULL) {
     return ARES_ENOMEM;
+  }
 
   status = ares__buf_set_position(buf, (size_t)(encoded - abuf));
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     goto done;
+  }
 
   start_len = ares__buf_len(buf);
   status    = ares__buf_parse_dns_name(buf, s, is_hostname);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     goto done;
+  }
 
   *enclen = start_len - ares__buf_len(buf);
 
@@ -78,7 +83,6 @@ done:
   ares__buf_destroy(buf);
   return status;
 }
-
 
 int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
                      int alen, char **s, long *enclen)
@@ -96,7 +100,6 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
   *enclen = (long)enclen_temp;
   return (int)status;
 }
-
 
 /* Like ares_expand_name_validated  but returns EBADRESP in case of invalid
  * input. */

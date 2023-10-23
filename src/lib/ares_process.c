@@ -651,8 +651,7 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
   if (!(channel->flags & ARES_FLAG_NOCHECKRESP)) {
     ares_dns_rcode_t rcode = ares_dns_record_get_rcode(dnsrec);
     if (rcode == ARES_RCODE_SERVER_FAILURE ||
-        rcode == ARES_RCODE_NOT_IMPLEMENTED ||
-        rcode == ARES_RCODE_REFUSED) {
+        rcode == ARES_RCODE_NOT_IMPLEMENTED || rcode == ARES_RCODE_REFUSED) {
       switch (rcode) {
         case ARES_RCODE_SERVER_FAILURE:
           query->error_status = ARES_ESERVFAIL;
@@ -1218,7 +1217,7 @@ static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
 {
   ares_dns_record_t *qrec = NULL;
   size_t             i;
-  ares_bool_t        rv   = ARES_FALSE;
+  ares_bool_t        rv = ARES_FALSE;
 
   if (ares_dns_parse(qbuf, qlen, 0, &qrec) != ARES_SUCCESS) {
     goto done;
@@ -1228,7 +1227,7 @@ static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
     goto done;
   }
 
-  for (i=0; i<ares_dns_record_query_cnt(qrec); i++) {
+  for (i = 0; i < ares_dns_record_query_cnt(qrec); i++) {
     const char         *qname = NULL;
     const char         *aname = NULL;
     ares_dns_rec_type_t qtype;
@@ -1237,12 +1236,14 @@ static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
     ares_dns_class_t    aclass;
 
     if (ares_dns_record_query_get(qrec, i, &qname, &qtype, &qclass) !=
-        ARES_SUCCESS || qname == NULL) {
+          ARES_SUCCESS ||
+        qname == NULL) {
       goto done;
     }
 
     if (ares_dns_record_query_get(arec, i, &aname, &atype, &aclass) !=
-        ARES_SUCCESS || aname == NULL) {
+          ARES_SUCCESS ||
+        aname == NULL) {
       goto done;
     }
     if (strcasecmp(qname, aname) != 0 || qtype != atype || qclass != aclass) {
@@ -1256,7 +1257,6 @@ done:
   ares_dns_record_destroy(qrec);
   return rv;
 }
-
 
 static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa)
 {
@@ -1290,12 +1290,13 @@ static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa)
 static ares_bool_t has_opt_rr(ares_dns_record_t *arec)
 {
   size_t i;
-  for (i=0; i<ares_dns_record_rr_cnt(arec, ARES_SECTION_ADDITIONAL); i++) {
-    ares_dns_rr_t *rr = ares_dns_record_rr_get(arec, ARES_SECTION_ADDITIONAL,
-                                               i);
+  for (i = 0; i < ares_dns_record_rr_cnt(arec, ARES_SECTION_ADDITIONAL); i++) {
+    ares_dns_rr_t *rr =
+      ares_dns_record_rr_get(arec, ARES_SECTION_ADDITIONAL, i);
 
-    if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT)
+    if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
       return ARES_TRUE;
+    }
   }
   return ARES_FALSE;
 }

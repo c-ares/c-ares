@@ -34,8 +34,8 @@ int ares_parse_soa_reply(const unsigned char *abuf, int alen_int,
 {
   ares_status_t          status;
   size_t                 alen;
-  struct ares_soa_reply *soa = NULL;
-  ares_dns_record_t     *dnsrec   = NULL;
+  struct ares_soa_reply *soa    = NULL;
+  ares_dns_record_t     *dnsrec = NULL;
   size_t                 i;
 
   *soa_out = NULL;
@@ -56,7 +56,7 @@ int ares_parse_soa_reply(const unsigned char *abuf, int alen_int,
     goto done;
   }
 
-  for (i=0; i<ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
+  for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
     ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (rr == NULL) {
@@ -77,12 +77,12 @@ int ares_parse_soa_reply(const unsigned char *abuf, int alen_int,
       goto done;
     }
 
-    soa->serial     = ares_dns_rr_get_u32(rr, ARES_RR_SOA_SERIAL);
-    soa->refresh    = ares_dns_rr_get_u32(rr, ARES_RR_SOA_REFRESH);
-    soa->retry      = ares_dns_rr_get_u32(rr, ARES_RR_SOA_RETRY);
-    soa->expire     = ares_dns_rr_get_u32(rr, ARES_RR_SOA_EXPIRE);
-    soa->minttl     = ares_dns_rr_get_u32(rr, ARES_RR_SOA_MINIMUM);
-    soa->nsname     = ares_strdup(ares_dns_rr_get_str(rr, ARES_RR_SOA_MNAME));
+    soa->serial  = ares_dns_rr_get_u32(rr, ARES_RR_SOA_SERIAL);
+    soa->refresh = ares_dns_rr_get_u32(rr, ARES_RR_SOA_REFRESH);
+    soa->retry   = ares_dns_rr_get_u32(rr, ARES_RR_SOA_RETRY);
+    soa->expire  = ares_dns_rr_get_u32(rr, ARES_RR_SOA_EXPIRE);
+    soa->minttl  = ares_dns_rr_get_u32(rr, ARES_RR_SOA_MINIMUM);
+    soa->nsname  = ares_strdup(ares_dns_rr_get_str(rr, ARES_RR_SOA_MNAME));
     if (soa->nsname == NULL) {
       status = ARES_ENOMEM;
       goto done;
@@ -104,8 +104,9 @@ done:
   if (status != ARES_SUCCESS) {
     ares_free_data(soa);
     /* Compatibility */
-    if (status == ARES_EBADNAME)
+    if (status == ARES_EBADNAME) {
       status = ARES_EBADRESP;
+    }
   } else {
     /* everything looks fine, return the data */
     *soa_out = soa;
@@ -113,4 +114,3 @@ done:
   ares_dns_record_destroy(dnsrec);
   return (int)status;
 }
-

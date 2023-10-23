@@ -88,7 +88,7 @@ ares_status_t  ares__buf_append(ares__buf_t *buf, const unsigned char *data,
  *  \param[in] byte     Single byte to append to buffer object.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_append_byte(ares__buf_t *buf, unsigned char byte);
+ares_status_t  ares__buf_append_byte(ares__buf_t *buf, unsigned char byte);
 
 
 /*! Start a dynamic append operation that returns a buffer suitable for
@@ -232,8 +232,7 @@ ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
-                                             ares__buf_t *dest,
-                                             size_t len);
+                                             ares__buf_t *dest, size_t len);
 
 /*! Fetch the requested number of bytes and return a new buffer that must be
  *  ares_free()'d by the caller.  The returned buffer is a null terminated
@@ -244,8 +243,7 @@ ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
  *  \param[out] str     Pointer passed by reference. Will be allocated.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len,
-                                      char **str);
+ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len, char **str);
 
 /*! Consume whitespace characters (0x09, 0x0B, 0x0C, 0x0D, 0x20, and optionally
  *  0x0A).
@@ -325,7 +323,7 @@ const unsigned char *ares__buf_peek(const ares__buf_t *buf, size_t *len);
  *
  *  \param[in]  buf    Initialized buffer object
  */
-void ares__buf_reclaim(ares__buf_t *buf);
+void                 ares__buf_reclaim(ares__buf_t *buf);
 
 /*! Set the current offset within the internal buffer.
  *
@@ -341,7 +339,7 @@ void ares__buf_reclaim(ares__buf_t *buf);
  *  \param[in] idx  Index to set position
  *  \return ARES_SUCCESS if valid index
  */
-ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx);
+ares_status_t        ares__buf_set_position(ares__buf_t *buf, size_t idx);
 
 /*! Get the current offset within the internal buffer.
  *
@@ -355,7 +353,7 @@ ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx);
  *  \param[in] buf Initialized buffer object
  *  \return index of current position
  */
-size_t ares__buf_get_position(const ares__buf_t *buf);
+size_t               ares__buf_get_position(const ares__buf_t *buf);
 
 
 /*! Parse a compressed DNS name as defined in RFC1035 starting at the current
@@ -372,8 +370,8 @@ size_t ares__buf_get_position(const ares__buf_t *buf);
  *                         a valid hostname or will return error.
  *  \return ARES_SUCCESS on success
  */
-ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
-                                       ares_bool_t is_hostname);
+ares_status_t        ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
+                                              ares_bool_t is_hostname);
 
 /*! Parse a character-string as defined in RFC1035, as a null-terminated
  *  string.
@@ -391,8 +389,7 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
  *  \return ARES_SUCCESS on success
  */
 ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
-                                      char **name,
-                                      ares_bool_t allow_multiple);
+                                      char **name, ares_bool_t allow_multiple);
 
 /*! Parse a character-string as defined in RFC1035, as binary, however for
  *  convenience this does guarantee a NULL terminator (that is not included)

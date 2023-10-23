@@ -26,7 +26,6 @@
 #ifndef __ARES_DNS_RECORD_H
 #define __ARES_DNS_RECORD_H
 
-
 /* ----- LIKELY MAKE THESE PUBLIC ----- */
 
 /*! \addtogroup ares_dns_record DNS Record Handling
@@ -40,18 +39,18 @@
  *  on requests (e.g. ARES_REC_TYPE_ANY), and some may only be valid on
  *  responses */
 typedef enum {
-  ARES_REC_TYPE_A        = 1,     /*!< Host address. */
-  ARES_REC_TYPE_NS       = 2,     /*!< Authoritative server. */
-  ARES_REC_TYPE_CNAME    = 5,     /*!< Canonical name. */
-  ARES_REC_TYPE_SOA      = 6,     /*!< Start of authority zone. */
-  ARES_REC_TYPE_PTR      = 12,    /*!< Domain name pointer. */
-  ARES_REC_TYPE_HINFO    = 13,    /*!< Host information. */
-  ARES_REC_TYPE_MX       = 15,    /*!< Mail routing information. */
-  ARES_REC_TYPE_TXT      = 16,    /*!< Text strings. */
-  ARES_REC_TYPE_AAAA     = 28,    /*!< Ip6 Address. */
-  ARES_REC_TYPE_SRV      = 33,    /*!< Server Selection. */
-  ARES_REC_TYPE_NAPTR    = 35,    /*!< Naming Authority Pointer */
-  ARES_REC_TYPE_OPT      = 41,    /*!< EDNS0 option (meta-RR) */
+  ARES_REC_TYPE_A     = 1,  /*!< Host address. */
+  ARES_REC_TYPE_NS    = 2,  /*!< Authoritative server. */
+  ARES_REC_TYPE_CNAME = 5,  /*!< Canonical name. */
+  ARES_REC_TYPE_SOA   = 6,  /*!< Start of authority zone. */
+  ARES_REC_TYPE_PTR   = 12, /*!< Domain name pointer. */
+  ARES_REC_TYPE_HINFO = 13, /*!< Host information. */
+  ARES_REC_TYPE_MX    = 15, /*!< Mail routing information. */
+  ARES_REC_TYPE_TXT   = 16, /*!< Text strings. */
+  ARES_REC_TYPE_AAAA  = 28, /*!< Ip6 Address. */
+  ARES_REC_TYPE_SRV   = 33, /*!< Server Selection. */
+  ARES_REC_TYPE_NAPTR = 35, /*!< Naming Authority Pointer */
+  ARES_REC_TYPE_OPT   = 41, /*!< EDNS0 option (meta-RR) */
 #if 0
   ARES_REC_TYPE_TLSA     = 52,    /*!< DNS-Based Authentication of Named
                                    *   Entities (DANE) Transport Layer Security
@@ -59,22 +58,21 @@ typedef enum {
   ARES_REC_TYPE_SVBC     = 64,    /*!< General Purpose Service Binding */
   ARES_REC_TYPE_HTTPS    = 65,    /*!< Service Binding type for use with HTTP */
 #endif
-  ARES_REC_TYPE_ANY      = 255,   /*!< Wildcard match.  Not response RR. */
-  ARES_REC_TYPE_URI      = 256,   /*!< Uniform Resource Identifier (RFC7553) */
-  ARES_REC_TYPE_CAA      = 257,   /*!< Certification Authority Authorization. */
-  ARES_REC_TYPE_RAW_RR   = 65536  /*!< Used as an indicator that the RR record
-                                   *   is not parsed, but provided in wire
-                                   *   format */
+  ARES_REC_TYPE_ANY    = 255,  /*!< Wildcard match.  Not response RR. */
+  ARES_REC_TYPE_URI    = 256,  /*!< Uniform Resource Identifier (RFC7553) */
+  ARES_REC_TYPE_CAA    = 257,  /*!< Certification Authority Authorization. */
+  ARES_REC_TYPE_RAW_RR = 65536 /*!< Used as an indicator that the RR record
+                                *   is not parsed, but provided in wire
+                                *   format */
 } ares_dns_rec_type_t;
 
-
 /*! DNS Classes for requests and responses.  */
-typedef enum  {
-  ARES_CLASS_IN      = 1,   /*!< Internet */
-  ARES_CLASS_CHAOS   = 3,   /*!< CHAOS */
-  ARES_CLASS_HESOID  = 4,   /*!< Hesoid [Dyer 87] */
-  ARES_CLASS_NONE    = 254, /*!< RFC 2136 */
-  ARES_CLASS_ANY     = 255  /*!< Any class (requests only) */
+typedef enum {
+  ARES_CLASS_IN     = 1,   /*!< Internet */
+  ARES_CLASS_CHAOS  = 3,   /*!< CHAOS */
+  ARES_CLASS_HESOID = 4,   /*!< Hesoid [Dyer 87] */
+  ARES_CLASS_NONE   = 254, /*!< RFC 2136 */
+  ARES_CLASS_ANY    = 255  /*!< Any class (requests only) */
 } ares_dns_class_t;
 
 /*! DNS RR Section type */
@@ -105,13 +103,13 @@ typedef enum {
 
 /*! DNS Response Codes from server */
 typedef enum {
-  ARES_RCODE_NOERROR         = 0, /*!< Success */
-  ARES_RCODE_FORMAT_ERROR    = 1, /*!< Format error. The name server was unable
+  ARES_RCODE_NOERROR      = 0,    /*!< Success */
+  ARES_RCODE_FORMAT_ERROR = 1,    /*!< Format error. The name server was unable
                                    *   to interpret the query. */
-  ARES_RCODE_SERVER_FAILURE  = 2, /*!< Server Failure. The name server was
+  ARES_RCODE_SERVER_FAILURE = 2,  /*!< Server Failure. The name server was
                                    *   unable to process this query due to a
                                    *   problem with the nameserver */
-  ARES_RCODE_NAME_ERROR      = 3, /*!< Name Error.  Meaningful only for
+  ARES_RCODE_NAME_ERROR = 3,      /*!< Name Error.  Meaningful only for
                                    *   responses from an authoritative name
                                    *   server, this code signifies that the
                                    *   domain name referenced in the query does
@@ -119,19 +117,19 @@ typedef enum {
   ARES_RCODE_NOT_IMPLEMENTED = 4, /*!< Not implemented.  The name server does
                                    *   not support the requested kind of
                                    *   query */
-  ARES_RCODE_REFUSED         = 5, /*!< Refused. The name server refuses to
+  ARES_RCODE_REFUSED = 5,         /*!< Refused. The name server refuses to
                                    *   perform the speciied operation for
                                    *   policy reasons. */
-  ARES_RCODE_YXDOMAIN        = 6, /*!< RFC 2136. Some name that ought not to
+  ARES_RCODE_YXDOMAIN = 6,        /*!< RFC 2136. Some name that ought not to
                                    *   exist, does exist. */
-  ARES_RCODE_YXRRSET         = 7, /*!< RFC 2136. Some RRset that ought to not
+  ARES_RCODE_YXRRSET = 7,         /*!< RFC 2136. Some RRset that ought to not
                                    *   exist, does exist. */
-  ARES_RCODE_NXRRSET         = 8, /*!< RFC 2136. Some RRset that ought to exist,
+  ARES_RCODE_NXRRSET = 8,         /*!< RFC 2136. Some RRset that ought to exist,
                                    *   does not exist. */
-  ARES_RCODE_NOTAUTH         = 9, /*!< RFC 2136. The server is not authoritative
+  ARES_RCODE_NOTAUTH = 9,         /*!< RFC 2136. The server is not authoritative
                                    *   for the zone named in the Zone section.
                                    */
-  ARES_RCODE_NOTZONE         = 10,/*!< RFC 2136. A name used in the Prerequisite
+  ARES_RCODE_NOTZONE = 10,        /*!< RFC 2136. A name used in the Prerequisite
                                    *   or Update Section is not within the zone
                                    *   denoted by the Zone Section. */
 } ares_dns_rcode_t;
@@ -151,43 +149,43 @@ typedef enum {
  *  to ensure we have a proper offset between keys so we can keep these sorted
  */
 typedef enum {
-  ARES_RR_A_ADDR            = (ARES_REC_TYPE_A      * 100) + 1,
-  ARES_RR_NS_NSDNAME        = (ARES_REC_TYPE_NS     * 100) + 1,
-  ARES_RR_CNAME_CNAME       = (ARES_REC_TYPE_CNAME  * 100) + 1,
-  ARES_RR_SOA_MNAME         = (ARES_REC_TYPE_SOA    * 100) + 1,
-  ARES_RR_SOA_RNAME         = (ARES_REC_TYPE_SOA    * 100) + 2,
-  ARES_RR_SOA_SERIAL        = (ARES_REC_TYPE_SOA    * 100) + 3,
-  ARES_RR_SOA_REFRESH       = (ARES_REC_TYPE_SOA    * 100) + 4,
-  ARES_RR_SOA_RETRY         = (ARES_REC_TYPE_SOA    * 100) + 5,
-  ARES_RR_SOA_EXPIRE        = (ARES_REC_TYPE_SOA    * 100) + 6,
-  ARES_RR_SOA_MINIMUM       = (ARES_REC_TYPE_SOA    * 100) + 7,
-  ARES_RR_PTR_DNAME         = (ARES_REC_TYPE_PTR    * 100) + 1,
-  ARES_RR_HINFO_CPU         = (ARES_REC_TYPE_HINFO  * 100) + 1,
-  ARES_RR_HINFO_OS          = (ARES_REC_TYPE_HINFO  * 100) + 2,
-  ARES_RR_MX_PREFERENCE     = (ARES_REC_TYPE_MX     * 100) + 1,
-  ARES_RR_MX_EXCHANGE       = (ARES_REC_TYPE_MX     * 100) + 2,
-  ARES_RR_TXT_DATA          = (ARES_REC_TYPE_TXT    * 100) + 1,
-  ARES_RR_AAAA_ADDR         = (ARES_REC_TYPE_AAAA   * 100) + 1,
-  ARES_RR_SRV_PRIORITY      = (ARES_REC_TYPE_SRV    * 100) + 2,
-  ARES_RR_SRV_WEIGHT        = (ARES_REC_TYPE_SRV    * 100) + 3,
-  ARES_RR_SRV_PORT          = (ARES_REC_TYPE_SRV    * 100) + 4,
-  ARES_RR_SRV_TARGET        = (ARES_REC_TYPE_SRV    * 100) + 5,
-  ARES_RR_NAPTR_ORDER       = (ARES_REC_TYPE_NAPTR  * 100) + 1,
-  ARES_RR_NAPTR_PREFERENCE  = (ARES_REC_TYPE_NAPTR  * 100) + 2,
-  ARES_RR_NAPTR_FLAGS       = (ARES_REC_TYPE_NAPTR  * 100) + 3,
-  ARES_RR_NAPTR_SERVICES    = (ARES_REC_TYPE_NAPTR  * 100) + 4,
-  ARES_RR_NAPTR_REGEXP      = (ARES_REC_TYPE_NAPTR  * 100) + 5,
-  ARES_RR_NAPTR_REPLACEMENT = (ARES_REC_TYPE_NAPTR  * 100) + 6,
-  ARES_RR_OPT_UDP_SIZE      = (ARES_REC_TYPE_OPT    * 100) + 1,
-  ARES_RR_OPT_EXT_RCODE     = (ARES_REC_TYPE_OPT    * 100) + 2,
-  ARES_RR_OPT_VERSION       = (ARES_REC_TYPE_OPT    * 100) + 3,
-  ARES_RR_OPT_FLAGS         = (ARES_REC_TYPE_OPT    * 100) + 4,
-  ARES_RR_URI_PRIORITY      = (ARES_REC_TYPE_URI    * 100) + 1,
-  ARES_RR_URI_WEIGHT        = (ARES_REC_TYPE_URI    * 100) + 2,
-  ARES_RR_URI_TARGET        = (ARES_REC_TYPE_URI    * 100) + 3,
-  ARES_RR_CAA_CRITICAL      = (ARES_REC_TYPE_CAA    * 100) + 1,
-  ARES_RR_CAA_TAG           = (ARES_REC_TYPE_CAA    * 100) + 2,
-  ARES_RR_CAA_VALUE         = (ARES_REC_TYPE_CAA    * 100) + 3,
+  ARES_RR_A_ADDR            = (ARES_REC_TYPE_A * 100) + 1,
+  ARES_RR_NS_NSDNAME        = (ARES_REC_TYPE_NS * 100) + 1,
+  ARES_RR_CNAME_CNAME       = (ARES_REC_TYPE_CNAME * 100) + 1,
+  ARES_RR_SOA_MNAME         = (ARES_REC_TYPE_SOA * 100) + 1,
+  ARES_RR_SOA_RNAME         = (ARES_REC_TYPE_SOA * 100) + 2,
+  ARES_RR_SOA_SERIAL        = (ARES_REC_TYPE_SOA * 100) + 3,
+  ARES_RR_SOA_REFRESH       = (ARES_REC_TYPE_SOA * 100) + 4,
+  ARES_RR_SOA_RETRY         = (ARES_REC_TYPE_SOA * 100) + 5,
+  ARES_RR_SOA_EXPIRE        = (ARES_REC_TYPE_SOA * 100) + 6,
+  ARES_RR_SOA_MINIMUM       = (ARES_REC_TYPE_SOA * 100) + 7,
+  ARES_RR_PTR_DNAME         = (ARES_REC_TYPE_PTR * 100) + 1,
+  ARES_RR_HINFO_CPU         = (ARES_REC_TYPE_HINFO * 100) + 1,
+  ARES_RR_HINFO_OS          = (ARES_REC_TYPE_HINFO * 100) + 2,
+  ARES_RR_MX_PREFERENCE     = (ARES_REC_TYPE_MX * 100) + 1,
+  ARES_RR_MX_EXCHANGE       = (ARES_REC_TYPE_MX * 100) + 2,
+  ARES_RR_TXT_DATA          = (ARES_REC_TYPE_TXT * 100) + 1,
+  ARES_RR_AAAA_ADDR         = (ARES_REC_TYPE_AAAA * 100) + 1,
+  ARES_RR_SRV_PRIORITY      = (ARES_REC_TYPE_SRV * 100) + 2,
+  ARES_RR_SRV_WEIGHT        = (ARES_REC_TYPE_SRV * 100) + 3,
+  ARES_RR_SRV_PORT          = (ARES_REC_TYPE_SRV * 100) + 4,
+  ARES_RR_SRV_TARGET        = (ARES_REC_TYPE_SRV * 100) + 5,
+  ARES_RR_NAPTR_ORDER       = (ARES_REC_TYPE_NAPTR * 100) + 1,
+  ARES_RR_NAPTR_PREFERENCE  = (ARES_REC_TYPE_NAPTR * 100) + 2,
+  ARES_RR_NAPTR_FLAGS       = (ARES_REC_TYPE_NAPTR * 100) + 3,
+  ARES_RR_NAPTR_SERVICES    = (ARES_REC_TYPE_NAPTR * 100) + 4,
+  ARES_RR_NAPTR_REGEXP      = (ARES_REC_TYPE_NAPTR * 100) + 5,
+  ARES_RR_NAPTR_REPLACEMENT = (ARES_REC_TYPE_NAPTR * 100) + 6,
+  ARES_RR_OPT_UDP_SIZE      = (ARES_REC_TYPE_OPT * 100) + 1,
+  ARES_RR_OPT_EXT_RCODE     = (ARES_REC_TYPE_OPT * 100) + 2,
+  ARES_RR_OPT_VERSION       = (ARES_REC_TYPE_OPT * 100) + 3,
+  ARES_RR_OPT_FLAGS         = (ARES_REC_TYPE_OPT * 100) + 4,
+  ARES_RR_URI_PRIORITY      = (ARES_REC_TYPE_URI * 100) + 1,
+  ARES_RR_URI_WEIGHT        = (ARES_REC_TYPE_URI * 100) + 2,
+  ARES_RR_URI_TARGET        = (ARES_REC_TYPE_URI * 100) + 3,
+  ARES_RR_CAA_CRITICAL      = (ARES_REC_TYPE_CAA * 100) + 1,
+  ARES_RR_CAA_TAG           = (ARES_REC_TYPE_CAA * 100) + 2,
+  ARES_RR_CAA_VALUE         = (ARES_REC_TYPE_CAA * 100) + 3,
   ARES_RR_RAW_RR_TYPE       = (ARES_REC_TYPE_RAW_RR * 100) + 1,
   ARES_RR_RAW_RR_DATA       = (ARES_REC_TYPE_RAW_RR * 100) + 2,
 } ares_dns_rr_key_t;
@@ -251,30 +249,30 @@ typedef struct ares_dns_record ares_dns_record_t;
  *  \param[in]  rcode   DNS RCode
  *  \return ARES_SUCCESS on success
  */
-ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
-                                     unsigned short id, unsigned short flags,
-                                     ares_dns_opcode_t opcode,
-                                     ares_dns_rcode_t rcode);
+ares_status_t     ares_dns_record_create(ares_dns_record_t **dnsrec,
+                                         unsigned short id, unsigned short flags,
+                                         ares_dns_opcode_t opcode,
+                                         ares_dns_rcode_t  rcode);
 
 /*! Destroy a DNS record object
  *
  *  \param[in] dnsrec  Initialized record object
  */
-void ares_dns_record_destroy(ares_dns_record_t *dnsrec);
+void              ares_dns_record_destroy(ares_dns_record_t *dnsrec);
 
 /*! Get the DNS Query ID
  *
  *  \param[in] dnsrec  Initialized record object
  *  \return DNS query id
  */
-unsigned short ares_dns_record_get_id(ares_dns_record_t *dnsrec);
+unsigned short    ares_dns_record_get_id(ares_dns_record_t *dnsrec);
 
 /*! Get the DNS Record Flags
  *
  *  \param[in] dnsrec  Initialized record object
  *  \return One or more \ares_dns_flags_t
  */
-unsigned short ares_dns_record_get_flags(ares_dns_record_t *dnsrec);
+unsigned short    ares_dns_record_get_flags(ares_dns_record_t *dnsrec);
 
 /*! Get the DNS Record OpCode
  *
@@ -288,7 +286,7 @@ ares_dns_opcode_t ares_dns_record_get_opcode(ares_dns_record_t *dnsrec);
  *  \param[in] dnsrec  Initialized record object
  *  \return rcode
  */
-ares_dns_rcode_t ares_dns_record_get_rcode(ares_dns_record_t *dnsrec);
+ares_dns_rcode_t  ares_dns_record_get_rcode(ares_dns_record_t *dnsrec);
 
 /*! Add a query to the DNS Record.  Typically a record will have only 1
  *  query. Most DNS servers will reject queries with more than 1 question.
@@ -299,16 +297,16 @@ ares_dns_rcode_t ares_dns_record_get_rcode(ares_dns_record_t *dnsrec);
  * \param[in] qclass  Class of query (typically ARES_CLASS_IN)
  * \return ARES_SUCCESS on success
  */
-ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
-                                        ares_dns_rec_type_t qtype,
-                                        ares_dns_class_t qclass);
+ares_status_t  ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
+                                         ares_dns_rec_type_t qtype,
+                                         ares_dns_class_t    qclass);
 
 /*! Get the count of queries in the DNS Record
  *
  * \param[in] dnsrec  Initialized record object
  * \return count of queries
  */
-size_t ares_dns_record_query_cnt(ares_dns_record_t *dnsrec);
+size_t         ares_dns_record_query_cnt(ares_dns_record_t *dnsrec);
 
 /*! Get the data about the query at the provided index.
  *
@@ -319,10 +317,10 @@ size_t ares_dns_record_query_cnt(ares_dns_record_t *dnsrec);
  * \param[out] qclass  Optional.  Returns class, may pass NULL.
  * \return ARES_SUCCESS on success
  */
-ares_status_t ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx,
-                                        const char ** name,
-                                        ares_dns_rec_type_t *qtype,
-                                        ares_dns_class_t *qclass);
+ares_status_t  ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx,
+                                         const char         **name,
+                                         ares_dns_rec_type_t *qtype,
+                                         ares_dns_class_t    *qclass);
 
 /*! Get the count of Resource Records in the provided section
  *
@@ -330,8 +328,8 @@ ares_status_t ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx,
  * \param[in] sect    Section.  ARES_SECTION_ANSWER is most used.
  * \return count of resource records.
  */
-size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec,
-                              ares_dns_section_t sect);
+size_t         ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec,
+                                      ares_dns_section_t sect);
 
 
 /*! Add a Resource Record to the DNS Record.
@@ -347,12 +345,11 @@ size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec,
  *  \param[in]  ttl      TTL
  *  \return ARES_SUCCESS on success
  */
-ares_status_t ares_dns_record_rr_add(ares_dns_rr_t **rr_out,
-                                     ares_dns_record_t *dnsrec,
-                                     ares_dns_section_t sect, char *name,
-                                     ares_dns_rec_type_t type,
-                                     ares_dns_class_t rclass,
-                                     unsigned int ttl);
+ares_status_t  ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
+                                      ares_dns_record_t *dnsrec,
+                                      ares_dns_section_t sect, char *name,
+                                      ares_dns_rec_type_t type,
+                                      ares_dns_class_t rclass, unsigned int ttl);
 
 /*! Fetch a resource record based on the section and index.
  *
@@ -362,8 +359,7 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t **rr_out,
  *  \param NULL on misuse, otherwise a pointer to the resource record
  */
 ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
-                                      ares_dns_section_t sect,
-                                      size_t idx);
+                                      ares_dns_section_t sect, size_t idx);
 
 
 /*! Retrieve a list of Resource Record keys that can be set or retrieved for
@@ -374,49 +370,49 @@ ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
  *  \return array of keys associated with Resource Record
  */
 const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
-                                              size_t *cnt);
+                                              size_t             *cnt);
 
 /*! Retrieve the datatype associated with a Resource Record key.
  *
  *  \param[in] key   Resource Record Key
  *  \return datatype
  */
-ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
+ares_dns_datatype_t      ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
 
 /*! Retrieve the DNS Resource Record type associated with a Resource Record key.
  *
  *  \param[in] key   Resource Record Key
  *  \return DNS Resource Record Type
  */
-ares_dns_rec_type_t ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
+ares_dns_rec_type_t      ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
 
 /*! Retrieve the resource record Name/Hostname
  *
  *  \param[in] rr  Pointer to resource record
  *  \return Name
  */
-const char *ares_dns_rr_get_name(ares_dns_rr_t *rr);
+const char              *ares_dns_rr_get_name(ares_dns_rr_t *rr);
 
 /*! Retrieve the resource record type
  *
  *  \param[in] rr  Pointer to resource record
  *  \return type
  */
-ares_dns_rec_type_t ares_dns_rr_get_type(ares_dns_rr_t *rr);
+ares_dns_rec_type_t      ares_dns_rr_get_type(ares_dns_rr_t *rr);
 
 /*! Retrieve the resource record class
  *
  *  \param[in] rr  Pointer to resource record
  *  \return class
  */
-ares_dns_class_t  ares_dns_rr_get_class(ares_dns_rr_t *rr);
+ares_dns_class_t         ares_dns_rr_get_class(ares_dns_rr_t *rr);
 
 /*! Retrieve the resource record TTL
  *
  *  \param[in] rr  Pointer to resource record
  *  \return TTL
  */
-unsigned int ares_dns_rr_get_ttl(ares_dns_rr_t *rr);
+unsigned int             ares_dns_rr_get_ttl(ares_dns_rr_t *rr);
 
 /*! Set ipv4 address data type for specified resource record and key.  Can
  *  only be used on keys with datatype ARES_DATATYPE_INADDR
@@ -437,8 +433,8 @@ ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
  *  \param[in] addr   Pointer to ipv6 address to use.
  *  \return ARES_SUCCESS on success
  */
-ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t *dns_rr,
-                                    ares_dns_rr_key_t key,
+ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t        *dns_rr,
+                                    ares_dns_rr_key_t     key,
                                     struct ares_in6_addr *addr);
 
 /*! Set string data for specified resource record and key.  Can
@@ -505,8 +501,8 @@ ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
  *  \param[in] key    DNS Resource Record Key
  *  \return pointer to ipv4 address or NULL on error
  */
-const struct in_addr *ares_dns_rr_get_addr(ares_dns_rr_t *dns_rr,
-                                           ares_dns_rr_key_t key);
+const struct in_addr       *ares_dns_rr_get_addr(ares_dns_rr_t    *dns_rr,
+                                                 ares_dns_rr_key_t key);
 
 /*! Retrieve a pointer to the ipv6 address.  Can only be used on keys with
  *  datatype ARES_DATATYPE_INADDR6.
@@ -515,7 +511,7 @@ const struct in_addr *ares_dns_rr_get_addr(ares_dns_rr_t *dns_rr,
  *  \param[in] key    DNS Resource Record Key
  *  \return pointer to ipv6 address or NULL on error
  */
-const struct ares_in6_addr *ares_dns_rr_get_addr6(ares_dns_rr_t *dns_rr,
+const struct ares_in6_addr *ares_dns_rr_get_addr6(ares_dns_rr_t    *dns_rr,
                                                   ares_dns_rr_key_t key);
 
 /*! Retrieve a pointer to the string.  Can only be used on keys with
@@ -525,7 +521,7 @@ const struct ares_in6_addr *ares_dns_rr_get_addr6(ares_dns_rr_t *dns_rr,
  *  \param[in] key    DNS Resource Record Key
  *  \return pointer string or NULL on error
  */
-const char *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
+const char   *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
 
 /*! Retrieve an 8bit unsigned integer.  Can only be used on keys with
  *  datatype ARES_DATATYPE_U8.
@@ -534,8 +530,7 @@ const char *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
  *  \param[in] key    DNS Resource Record Key
  *  \return 8bit unsigned integer
  */
-unsigned char ares_dns_rr_get_u8(ares_dns_rr_t *dns_rr,
-                                 ares_dns_rr_key_t key);
+unsigned char ares_dns_rr_get_u8(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
 
 /*! Retrieve an 16bit unsigned integer.  Can only be used on keys with
  *  datatype ARES_DATATYPE_U16.
@@ -544,7 +539,7 @@ unsigned char ares_dns_rr_get_u8(ares_dns_rr_t *dns_rr,
  *  \param[in] key    DNS Resource Record Key
  *  \return 16bit unsigned integer
  */
-unsigned short ares_dns_rr_get_u16(ares_dns_rr_t *dns_rr,
+unsigned short ares_dns_rr_get_u16(ares_dns_rr_t    *dns_rr,
                                    ares_dns_rr_key_t key);
 
 /*! Retrieve an 32bit unsigned integer.  Can only be used on keys with
@@ -564,7 +559,7 @@ unsigned int ares_dns_rr_get_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
  *  \param[out] len    Length of binary data returned
  *  \return pointer binary data or NULL on error
  */
-const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
+const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t    *dns_rr,
                                          ares_dns_rr_key_t key, size_t *len);
 
 
@@ -577,26 +572,26 @@ const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
  *                       that must be ares_dns_record_destroy()'d by caller.
  *  \return ARES_SUCCESS on success
  */
-ares_status_t ares_dns_parse(const unsigned char *buf, size_t buf_len,
-                             unsigned int flags, ares_dns_record_t **dnsrec);
+ares_status_t        ares_dns_parse(const unsigned char *buf, size_t buf_len,
+                                    unsigned int flags, ares_dns_record_t **dnsrec);
 
 
 /*! @} */
 
 /* ---- PRIVATE BELOW ----- */
-ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);
-ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode);
-ares_bool_t ares_dns_flags_arevalid(unsigned short flags);
-ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
-                                      ares_bool_t is_query);
-ares_bool_t ares_dns_class_isvalid(ares_dns_class_t qclass,
-                                   ares_bool_t is_query);
-ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect);
-ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t *dns_rr,
-                                      ares_dns_rr_key_t key, char *val);
-ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t *dns_rr,
-                                      ares_dns_rr_key_t key,
-                                      unsigned char *val, size_t len);
+ares_bool_t          ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);
+ares_bool_t          ares_dns_rcode_isvalid(ares_dns_rcode_t rcode);
+ares_bool_t          ares_dns_flags_arevalid(unsigned short flags);
+ares_bool_t          ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
+                                               ares_bool_t         is_query);
+ares_bool_t          ares_dns_class_isvalid(ares_dns_class_t qclass,
+                                            ares_bool_t      is_query);
+ares_bool_t          ares_dns_section_isvalid(ares_dns_section_t sect);
+ares_status_t        ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
+                                             ares_dns_rr_key_t key, char *val);
+ares_status_t        ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
+                                             ares_dns_rr_key_t key, unsigned char *val,
+                                             size_t len);
 
 struct ares_dns_qd {
   char               *name;
@@ -657,12 +652,12 @@ typedef struct {
 } ares__dns_srv_t;
 
 typedef struct {
-  unsigned short  order;
-  unsigned short  preference;
-  char           *flags;
-  char           *services;
-  char           *regexp;
-  char           *replacement;
+  unsigned short order;
+  unsigned short preference;
+  char          *flags;
+  char          *services;
+  char          *regexp;
+  char          *replacement;
 } ares__dns_naptr_t;
 
 typedef struct {
@@ -689,15 +684,13 @@ typedef struct {
   size_t         value_len;
 } ares__dns_caa_t;
 
-
 /*! Raw, unparsed RR data */
 typedef struct {
-  unsigned short  type;     /*!< Not ares_rec_type_t because it likely isn't one
-                             *   of those values since it wasn't parsed */
-  unsigned char  *data;     /*!< Raw RR data */
-  size_t          length;   /*!< Length of raw RR data */
+  unsigned short type;   /*!< Not ares_rec_type_t because it likely isn't one
+                          *   of those values since it wasn't parsed */
+  unsigned char *data;   /*!< Raw RR data */
+  size_t         length; /*!< Length of raw RR data */
 } ares__dns_raw_rr_t;
-
 
 /*! DNS RR data structure */
 struct ares_dns_rr {
@@ -725,7 +718,6 @@ struct ares_dns_rr {
   } r;
 };
 
-
 /*! DNS data structure */
 struct ares_dns_record {
   unsigned short    id;     /*!< DNS query id */
@@ -733,17 +725,17 @@ struct ares_dns_record {
   ares_dns_opcode_t opcode; /*!< DNS Opcode */
   ares_dns_rcode_t  rcode;  /*!< DNS RCODE */
 
-  ares_dns_qd_t *qd;
-  size_t         qdcount;
+  ares_dns_qd_t    *qd;
+  size_t            qdcount;
 
-  ares_dns_rr_t *an;
-  size_t         ancount;
+  ares_dns_rr_t    *an;
+  size_t            ancount;
 
-  ares_dns_rr_t *ns;
-  size_t         nscount;
+  ares_dns_rr_t    *ns;
+  size_t            nscount;
 
-  ares_dns_rr_t *ar;
-  size_t         arcount;
+  ares_dns_rr_t    *ar;
+  size_t            arcount;
 };
 
 

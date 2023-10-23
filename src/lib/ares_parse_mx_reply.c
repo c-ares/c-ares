@@ -37,7 +37,7 @@ int ares_parse_mx_reply(const unsigned char *abuf, int alen_int,
   struct ares_mx_reply *mx_head = NULL;
   struct ares_mx_reply *mx_last = NULL;
   struct ares_mx_reply *mx_curr;
-  ares_dns_record_t    *dnsrec   = NULL;
+  ares_dns_record_t    *dnsrec = NULL;
   size_t                i;
 
   *mx_out = NULL;
@@ -58,7 +58,7 @@ int ares_parse_mx_reply(const unsigned char *abuf, int alen_int,
     goto done;
   }
 
-  for (i=0; i<ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
+  for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
     ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (rr == NULL) {
@@ -88,9 +88,7 @@ int ares_parse_mx_reply(const unsigned char *abuf, int alen_int,
     mx_last = mx_curr;
 
     mx_curr->priority = ares_dns_rr_get_u16(rr, ARES_RR_MX_PREFERENCE);
-    mx_curr->host     = ares_strdup(
-      ares_dns_rr_get_str(rr, ARES_RR_MX_EXCHANGE)
-    );
+    mx_curr->host = ares_strdup(ares_dns_rr_get_str(rr, ARES_RR_MX_EXCHANGE));
 
     if (mx_curr->host == NULL) {
       status = ARES_ENOMEM;

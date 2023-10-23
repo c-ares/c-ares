@@ -42,14 +42,14 @@
 int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
                         struct hostent **host)
 {
-  ares_status_t          status;
-  size_t                 alen;
-  size_t                 nscount   = 0;
-  struct hostent        *hostent   = NULL;
-  const char            *hostname  = NULL;
-  ares_dns_record_t     *dnsrec    = NULL;
-  size_t                 i;
-  size_t                 ancount;
+  ares_status_t      status;
+  size_t             alen;
+  size_t             nscount  = 0;
+  struct hostent    *hostent  = NULL;
+  const char        *hostname = NULL;
+  ares_dns_record_t *dnsrec   = NULL;
+  size_t             i;
+  size_t             ancount;
 
   *host = NULL;
 
@@ -107,7 +107,7 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
   }
   memset(hostent->h_aliases, 0, (ancount + 1) * sizeof(*hostent->h_aliases));
 
-  for (i=0; i<ancount; i++) {
+  for (i = 0; i < ancount; i++) {
     ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (rr == NULL) {
@@ -145,8 +145,9 @@ done:
   if (status != ARES_SUCCESS) {
     ares_free_hostent(hostent);
     /* Compatibility */
-    if (status == ARES_EBADNAME)
+    if (status == ARES_EBADNAME) {
       status = ARES_EBADRESP;
+    }
   } else {
     *host = hostent;
   }
