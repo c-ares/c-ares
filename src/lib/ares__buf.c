@@ -47,12 +47,11 @@ struct ares__buf {
 
 ares__buf_t *ares__buf_create(void)
 {
-  ares__buf_t *buf = ares_malloc(sizeof(*buf));
+  ares__buf_t *buf = ares_malloc_zero(sizeof(*buf));
   if (buf == NULL) {
     return NULL;
   }
 
-  memset(buf, 0, sizeof(*buf));
   buf->tag_offset = SIZE_MAX;
   return buf;
 }

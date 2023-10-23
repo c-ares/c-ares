@@ -109,12 +109,10 @@ ares__htable_t *ares__htable_create(ares__htable_hashfunc_t    hash_func,
     goto fail;
   }
 
-  htable = ares_malloc(sizeof(*htable));
+  htable = ares_malloc_zero(sizeof(*htable));
   if (htable == NULL) {
     goto fail;
   }
-
-  memset(htable, 0, sizeof(*htable));
 
   htable->hash        = hash_func;
   htable->bucket_key  = bucket_key;
@@ -122,13 +120,12 @@ ares__htable_t *ares__htable_create(ares__htable_hashfunc_t    hash_func,
   htable->key_eq      = key_eq;
   htable->seed        = ares__htable_generate_seed(htable);
   htable->size        = ARES__HTABLE_MIN_BUCKETS;
-  htable->buckets     = ares_malloc(sizeof(*htable->buckets) * htable->size);
+  htable->buckets     = ares_malloc_zero(sizeof(*htable->buckets) *
+                                         htable->size);
 
   if (htable->buckets == NULL) {
     goto fail;
   }
-
-  memset(htable->buckets, 0, sizeof(*htable->buckets) * htable->size);
 
   return htable;
 
@@ -176,12 +173,10 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
    * there is a memory allocation failure.  So we will actually use more
    * memory doing it this way, but at least we might be able to gracefully
    * recover */
-  buckets = ares_malloc(sizeof(*buckets) * htable->size);
+  buckets = ares_malloc_zero(sizeof(*buckets) * htable->size);
   if (buckets == NULL) {
     goto fail;
   }
-
-  memset(buckets, 0, sizeof(*buckets) * htable->size);
 
   for (i = 0; i < old_size; i++) {
     ares__llist_node_t *node;

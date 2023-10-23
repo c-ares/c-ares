@@ -49,12 +49,10 @@ ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
     return ARES_EFORMERR;
   }
 
-  *dnsrec = ares_malloc(sizeof(**dnsrec));
+  *dnsrec = ares_malloc_zero(sizeof(**dnsrec));
   if (*dnsrec == NULL) {
     return ARES_ENOMEM;
   }
-
-  memset(*dnsrec, 0, sizeof(**dnsrec));
 
   (*dnsrec)->id     = id;
   (*dnsrec)->flags  = flags;
@@ -240,14 +238,14 @@ ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
     return ARES_EFORMERR;
   }
 
-  temp = ares_realloc(dnsrec->qd, sizeof(*temp) * (dnsrec->qdcount + 1));
+  temp = ares_realloc_zero(dnsrec->qd, sizeof(*temp) * dnsrec->qdcount,
+                           sizeof(*temp) * (dnsrec->qdcount + 1));
   if (temp == NULL) {
     return ARES_ENOMEM;
   }
 
   dnsrec->qd = temp;
   idx        = dnsrec->qdcount;
-  memset(&dnsrec->qd[idx], 0, sizeof(*dnsrec->qd));
 
   dnsrec->qd[idx].name = ares_strdup(name);
   if (dnsrec->qd[idx].name == NULL) {
@@ -340,7 +338,8 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
       break;
   }
 
-  temp = ares_realloc(*rr_ptr, sizeof(*temp) * (*rr_len + 1));
+  temp = ares_realloc_zero(*rr_ptr, sizeof(*temp) * (*rr_len),
+                           sizeof(*temp) * (*rr_len + 1));
   if (temp == NULL) {
     return ARES_ENOMEM;
   }
@@ -348,8 +347,6 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
   *rr_ptr = temp;
   idx     = *rr_len;
   rr      = &(*rr_ptr)[idx];
-
-  memset(rr, 0, sizeof(*rr));
 
   rr->name = ares_strdup(name);
   if (rr->name == NULL) {

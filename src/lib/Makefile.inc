@@ -37,6 +37,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_getsock.c			\
   ares_init.c				\
   ares_library_init.c			\
+  ares_math.c			\
   ares_mkquery.c			\
   ares_create_query.c			\
   ares_options.c			\
