@@ -592,6 +592,9 @@ ares_status_t        ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
 ares_status_t        ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
                                              ares_dns_rr_key_t key, unsigned char *val,
                                              size_t len);
+ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
+                                          ares_dns_section_t sect,
+                                          size_t cnt);
 
 struct ares_dns_qd {
   char               *name;
@@ -727,15 +730,19 @@ struct ares_dns_record {
 
   ares_dns_qd_t    *qd;
   size_t            qdcount;
+  size_t            qdalloc;
 
   ares_dns_rr_t    *an;
   size_t            ancount;
+  size_t            analloc;
 
   ares_dns_rr_t    *ns;
   size_t            nscount;
+  size_t            nsalloc;
 
   ares_dns_rr_t    *ar;
   size_t            arcount;
+  size_t            aralloc;
 };
 
 

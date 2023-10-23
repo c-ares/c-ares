@@ -770,6 +770,30 @@ static ares_status_t ares_dns_parse_header(ares__buf_t *buf, unsigned int flags,
     goto fail;
   }
 
+  if (*ancount > 0) {
+    status = ares_dns_record_rr_prealloc(*dnsrec, ARES_SECTION_ANSWER,
+                                         *ancount);
+    if (status != ARES_SUCCESS) {
+      goto fail;
+    }
+  }
+
+  if (*nscount > 0) {
+    status = ares_dns_record_rr_prealloc(*dnsrec, ARES_SECTION_AUTHORITY,
+                                         *nscount);
+    if (status != ARES_SUCCESS) {
+      goto fail;
+    }
+  }
+
+  if (*arcount > 0) {
+    status = ares_dns_record_rr_prealloc(*dnsrec, ARES_SECTION_ADDITIONAL,
+                                         *arcount);
+    if (status != ARES_SUCCESS) {
+      goto fail;
+    }
+  }
+
   return ARES_SUCCESS;
 
 fail:

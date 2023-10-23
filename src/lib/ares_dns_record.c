@@ -238,13 +238,20 @@ ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
     return ARES_EFORMERR;
   }
 
-  temp = ares_realloc_zero(dnsrec->qd, sizeof(*temp) * dnsrec->qdcount,
-                           sizeof(*temp) * (dnsrec->qdcount + 1));
-  if (temp == NULL) {
-    return ARES_ENOMEM;
+  if (dnsrec->qdcount >= dnsrec->qdalloc) {
+    size_t alloc_cnt = ares__round_up_pow2(dnsrec->qdcount + 1);
+
+    temp = ares_realloc_zero(dnsrec->qd,
+                             sizeof(*temp) * (dnsrec->qdalloc),
+                             sizeof(*temp) * (alloc_cnt));
+    if (temp == NULL) {
+      return ARES_ENOMEM;
+    }
+
+    dnsrec->qdalloc = alloc_cnt;
+    dnsrec->qd      = temp;
   }
 
-  dnsrec->qd = temp;
   idx        = dnsrec->qdcount;
 
   dnsrec->qd[idx].name = ares_strdup(name);
@@ -302,16 +309,63 @@ size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec,
   return 0;
 }
 
+ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
+                                          ares_dns_section_t sect,
+                                          size_t cnt)
+{
+  ares_dns_rr_t **rr_ptr   = NULL;
+  size_t         *rr_alloc = NULL;
+  ares_dns_rr_t  *temp     = NULL;
+
+  if (dnsrec == NULL || cnt == 0 || !ares_dns_section_isvalid(sect)) {
+    return ARES_EFORMERR;
+  }
+
+  switch (sect) {
+    case ARES_SECTION_ANSWER:
+      rr_ptr   = &dnsrec->an;
+      rr_alloc = &dnsrec->analloc;
+      break;
+    case ARES_SECTION_AUTHORITY:
+      rr_ptr   = &dnsrec->ns;
+      rr_alloc = &dnsrec->nsalloc;
+      break;
+    case ARES_SECTION_ADDITIONAL:
+      rr_ptr   = &dnsrec->ar;
+      rr_alloc = &dnsrec->aralloc;
+      break;
+  }
+
+  /* Round up cnt to a power of 2 */
+  cnt = ares__round_up_pow2(cnt);
+
+  /* Already have that */
+  if (cnt <= *rr_alloc)
+    return ARES_SUCCESS;
+
+
+  temp = ares_realloc_zero(*rr_ptr,
+                           sizeof(*temp) * (*rr_alloc),
+                           sizeof(*temp) * (cnt));
+  if (temp == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  *rr_alloc = cnt;
+  *rr_ptr   = temp;
+  return ARES_SUCCESS;
+}
+
 ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
                                      ares_dns_record_t *dnsrec,
                                      ares_dns_section_t sect, char *name,
                                      ares_dns_rec_type_t type,
                                      ares_dns_class_t rclass, unsigned int ttl)
 {
-  ares_dns_rr_t **rr_ptr = NULL;
-  ares_dns_rr_t  *rr     = NULL;
-  size_t         *rr_len = NULL;
-  ares_dns_rr_t  *temp   = NULL;
+  ares_dns_rr_t **rr_ptr   = NULL;
+  ares_dns_rr_t  *rr       = NULL;
+  size_t         *rr_len   = NULL;
+  ares_status_t   status;
   size_t          idx;
 
   if (dnsrec == NULL || name == NULL || rr_out == NULL ||
@@ -325,26 +379,23 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
 
   switch (sect) {
     case ARES_SECTION_ANSWER:
-      rr_ptr = &dnsrec->an;
-      rr_len = &dnsrec->ancount;
+      rr_ptr   = &dnsrec->an;
+      rr_len   = &dnsrec->ancount;
       break;
     case ARES_SECTION_AUTHORITY:
-      rr_ptr = &dnsrec->ns;
-      rr_len = &dnsrec->nscount;
+      rr_ptr   = &dnsrec->ns;
+      rr_len   = &dnsrec->nscount;
       break;
     case ARES_SECTION_ADDITIONAL:
-      rr_ptr = &dnsrec->ar;
-      rr_len = &dnsrec->arcount;
+      rr_ptr   = &dnsrec->ar;
+      rr_len   = &dnsrec->arcount;
       break;
   }
 
-  temp = ares_realloc_zero(*rr_ptr, sizeof(*temp) * (*rr_len),
-                           sizeof(*temp) * (*rr_len + 1));
-  if (temp == NULL) {
-    return ARES_ENOMEM;
-  }
+  status = ares_dns_record_rr_prealloc(dnsrec, sect, *rr_len + 1);
+  if (status != ARES_SUCCESS)
+    return status;
 
-  *rr_ptr = temp;
   idx     = *rr_len;
   rr      = &(*rr_ptr)[idx];
 
