@@ -98,19 +98,7 @@ static ares_bool_t ares__buf_is_const(const ares__buf_t *buf)
   return ARES_FALSE;
 }
 
-ares_bool_t ares__buf_const_replace(ares__buf_t *buf, const unsigned char *data,
-                                    size_t data_len)
-{
-  if (buf == NULL || !ares__buf_is_const(buf))
-    return ARES_FALSE;
-
-  memset(buf, 0, sizeof(*buf));
-  buf->data     = data;
-  buf->data_len = data_len;
-  return ARES_TRUE;
-}
-
-static void ares__buf_reclaim(ares__buf_t *buf)
+void ares__buf_reclaim(ares__buf_t *buf)
 {
   size_t prefix_size;
   size_t data_size;
@@ -940,6 +928,9 @@ ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
   } else {
     if (bin != NULL) {
       size_t mylen = 0;
+      /* NOTE: we use ares__buf_finish_str() here as we guarantee NULL
+       *       Termination even though we are technically returning binary data.
+       */
       *bin         = (unsigned char *)ares__buf_finish_str(binbuf, &mylen);
       *bin_len     = mylen;
     }
