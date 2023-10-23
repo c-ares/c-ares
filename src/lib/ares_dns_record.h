@@ -79,21 +79,21 @@ typedef enum {
 
 /*! DNS Header opcodes */
 typedef enum {
-  ARES_OPCODE_QUERY  = 0, /* Standard query */
-  ARES_OPCODE_IQUERY = 1, /* Inverse query */
-  ARES_OPCODE_STATUS = 2, /* Name server status query */
-  ARES_OPCODE_NOTIFY = 4, /* Zone change notification (RFC 1996) */
-  ARES_OPCODE_UPDATE = 5, /* Zone update message (RFC2136) */
+  ARES_OPCODE_QUERY  = 0, /*!< Standard query */
+  ARES_OPCODE_IQUERY = 1, /*!< Inverse query */
+  ARES_OPCODE_STATUS = 2, /*!< Name server status query */
+  ARES_OPCODE_NOTIFY = 4, /*!< Zone change notification (RFC 1996) */
+  ARES_OPCODE_UPDATE = 5, /*!< Zone update message (RFC2136) */
 } ares_dns_opcode_t;
 
 /*! DNS Header flags */
 typedef enum {
-  ARES_FLAG_QR = 1 << 0, /*! QR. If set, is a response */
-  ARES_FLAG_AA = 1 << 1, /*! Authoritative Answer. If set, is authoritative */
-  ARES_FLAG_TC = 1 << 2, /*! Truncation. If set, is truncated response */
-  ARES_FLAG_RD = 1 << 3, /*! Recursion Desired. If set, recursion is desired */
-  ARES_FLAG_RA = 1 << 4, /*! Recursion Available. If set, server supports
-                          *  recursion */
+  ARES_FLAG_QR = 1 << 0, /*!< QR. If set, is a response */
+  ARES_FLAG_AA = 1 << 1, /*!< Authoritative Answer. If set, is authoritative */
+  ARES_FLAG_TC = 1 << 2, /*!< Truncation. If set, is truncated response */
+  ARES_FLAG_RD = 1 << 3, /*!< Recursion Desired. If set, recursion is desired */
+  ARES_FLAG_RA = 1 << 4, /*!< Recursion Available. If set, server supports
+                          *   recursion */
 } ares_dns_flags_t;
 
 /*! DNS Response Codes from server */
@@ -131,13 +131,13 @@ typedef enum {
 
 /*! Data types used */
 typedef enum {
-  ARES_DATATYPE_INADDR  = 1,
-  ARES_DATATYPE_INADDR6 = 2,
-  ARES_DATATYPE_U8      = 3,
-  ARES_DATATYPE_U16     = 4,
-  ARES_DATATYPE_U32     = 5,
-  ARES_DATATYPE_STR     = 6,
-  ARES_DATATYPE_BIN     = 7
+  ARES_DATATYPE_INADDR  = 1, /*!< struct in_addr * type */
+  ARES_DATATYPE_INADDR6 = 2, /*!< struct ares_in6_addr * type */
+  ARES_DATATYPE_U8      = 3, /*!< 8bit unsigned integer */
+  ARES_DATATYPE_U16     = 4, /*!< 16bit unsigned integer */
+  ARES_DATATYPE_U32     = 5, /*!< 32bit unsigned integer */
+  ARES_DATATYPE_STR     = 6, /*!< Null-terminated string */
+  ARES_DATATYPE_BIN     = 7  /*!< Binary data */
 } ares_dns_datatype_t;
 
 /*! Keys used for all RR Types.  We take the record type and multiply by 100
