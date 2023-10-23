@@ -793,7 +793,7 @@ ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t *dns_rr,
   }
 
   bin = ares_dns_rr_data_ptr(dns_rr, key, &bin_len);
-  if (bin == NULL) {
+  if (bin == NULL || bin_len == NULL) {
     return ARES_EFORMERR;
   }
 
