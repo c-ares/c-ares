@@ -1,7 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 1998 Massachusetts Institute of Technology
- * Copyright (c) 2009 Jakub Hrozek
+ * Copyright (c) 2023 Brad House
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,14 +36,7 @@
 #  include <arpa/inet.h>
 #endif
 
-#include "ares_nameser.h"
-
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
-
 #include "ares.h"
-#include "ares_dns.h"
 #include "ares_data.h"
 #include "ares_private.h"
 
