@@ -994,8 +994,8 @@ done:
 }
 
 
-ares_status_t ares_dns_parse_buf(ares__buf_t *buf, unsigned int flags,
-                                 ares_dns_record_t **dnsrec)
+static ares_status_t ares_dns_parse_buf(ares__buf_t *buf, unsigned int flags,
+                                        ares_dns_record_t **dnsrec)
 {
   ares_status_t  status;
   unsigned short qdcount;

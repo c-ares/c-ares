@@ -29,6 +29,13 @@
 
 /* ----- LIKELY MAKE THESE PUBLIC ----- */
 
+/*! \addtogroup ares_dns_record DNS Record Handling
+ *
+ * This is a set of functions to create and manipulate DNS records.
+ *
+ * @{
+ */
+
 /*! DNS Record types handled by c-ares.  Some record types may only be valid
  *  on requests (e.g. ARES_REC_TYPE_ANY), and some may only be valid on
  *  responses */
@@ -185,10 +192,34 @@ typedef enum {
   ARES_RR_RAW_RR_DATA       = (ARES_REC_TYPE_RAW_RR * 100) + 2,
 } ares_dns_rr_key_t;
 
+/*! String representation of DNS Record Type
+ *
+ *  \param[in] type  DNS Record Type
+ *  \return string
+ */
 const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type);
+
+/*! String representation of DNS Class
+ *
+ *  \param[in] qclass  DNS Class
+ *  \return string
+ */
 const char *ares_dns_class_tostr(ares_dns_class_t qclass);
+
+/*! String representation of DNS OpCode
+ *
+ *  \param[in] opcode  DNS OpCode
+ *  \return string
+ */
 const char *ares_dns_opcode_tostr(ares_dns_opcode_t opcode);
+
+/*! String representation of DNS Resource Record Parameter
+ *
+ *  \param[in] key  DNS Resource Record parameter
+ *  \return string
+ */
 const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key);
+
 
 /*! Opaque data type representing a DNS RR (Resource Record) */
 struct ares_dns_rr;
@@ -209,85 +240,348 @@ struct ares_dns_record;
 typedef struct ares_dns_record ares_dns_record_t;
 
 
+/*! Create a new DNS record object
+ *
+ *  \param[out] dnsrec  Pointer passed by reference for a newly allocated
+ *                      record object.  Must be ares_dns_record_destroy()'d by
+ *                      caller.
+ *  \param[in]  id      DNS Query ID
+ *  \param[in]  flags   DNS Flags from \ares_dns_flags_t
+ *  \param[in]  opcode  DNS OpCode (typically ARES_OPCODE_QUERY)
+ *  \param[in]  rcode   DNS RCode
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
                                      unsigned short id, unsigned short flags,
                                      ares_dns_opcode_t opcode,
                                      ares_dns_rcode_t rcode);
 
+/*! Destroy a DNS record object
+ *
+ *  \param[in] dnsrec  Initialized record object
+ */
+void ares_dns_record_destroy(ares_dns_record_t *dnsrec);
+
+/*! Get the DNS Query ID
+ *
+ *  \param[in] dnsrec  Initialized record object
+ *  \return DNS query id
+ */
 unsigned short ares_dns_record_get_id(ares_dns_record_t *dnsrec);
+
+/*! Get the DNS Record Flags
+ *
+ *  \param[in] dnsrec  Initialized record object
+ *  \return One or more \ares_dns_flags_t
+ */
 unsigned short ares_dns_record_get_flags(ares_dns_record_t *dnsrec);
+
+/*! Get the DNS Record OpCode
+ *
+ *  \param[in] dnsrec  Initialized record object
+ *  \return opcode
+ */
 ares_dns_opcode_t ares_dns_record_get_opcode(ares_dns_record_t *dnsrec);
+
+/*! Get the DNS Record RCode
+ *
+ *  \param[in] dnsrec  Initialized record object
+ *  \return rcode
+ */
 ares_dns_rcode_t ares_dns_record_get_rcode(ares_dns_record_t *dnsrec);
 
-void ares_dns_record_destroy(ares_dns_record_t *dnsrec);
+/*! Add a query to the DNS Record.  Typically a record will have only 1
+ *  query. Most DNS servers will reject queries with more than 1 question.
+ *
+ * \param[in] dnsrec  Initialized record object
+ * \param[in] name    Name/Hostname of request
+ * \param[in] qtype   Type of query
+ * \param[in] qclass  Class of query (typically ARES_CLASS_IN)
+ * \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
                                         ares_dns_rec_type_t qtype,
                                         ares_dns_class_t qclass);
+
+/*! Get the count of queries in the DNS Record
+ *
+ * \param[in] dnsrec  Initialized record object
+ * \return count of queries
+ */
 size_t ares_dns_record_query_cnt(ares_dns_record_t *dnsrec);
+
+/*! Get the data about the query at the provided index.
+ *
+ * \param[in]  dnsrec  Initialized record object
+ * \param[in]  idx     Index of query
+ * \param[out] name    Optional.  Returns name, may pass NULL if not desired.
+ * \param[out] qtype   Optional.  Returns record type, may pass NULL.
+ * \param[out] qclass  Optional.  Returns class, may pass NULL.
+ * \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx,
                                         const char ** name,
                                         ares_dns_rec_type_t *qtype,
                                         ares_dns_class_t *qclass);
+
+/*! Get the count of Resource Records in the provided section
+ *
+ * \param[in] dnsrec  Initialized record object
+ * \param[in] sect    Section.  ARES_SECTION_ANSWER is most used.
+ * \return count of resource records.
+ */
 size_t ares_dns_record_rr_cnt(ares_dns_record_t *dnsrec,
                               ares_dns_section_t sect);
+
+
+/*! Add a Resource Record to the DNS Record.
+ *
+ *  \param[out] rr_out   Pointer to created resource record.  This pointer
+ *                       is owned by the DNS record itself, this is just made
+ *                       available to facilitate adding RR-specific fields.
+ *  \param[in]  dnsrec   Initialized record object
+ *  \param[in]  sect     Section to add resource record to
+ *  \param[in]  name     Resource Record name/hostname
+ *  \param[in]  type     Record Type
+ *  \param[in]  rclass   Class
+ *  \param[in]  ttl      TTL
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_record_rr_add(ares_dns_rr_t **rr_out,
                                      ares_dns_record_t *dnsrec,
                                      ares_dns_section_t sect, char *name,
                                      ares_dns_rec_type_t type,
                                      ares_dns_class_t rclass,
                                      unsigned int ttl);
+
+/*! Fetch a resource record based on the section and index.
+ *
+ *  \param[in]  dnsrec   Initialized record object
+ *  \param[in]  sect     Section for resource record
+ *  \param[in]  idx      Index of resource record in section
+ *  \param NULL on misuse, otherwise a pointer to the resource record
+ */
 ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
                                       ares_dns_section_t sect,
                                       size_t idx);
 
 
-
+/*! Retrieve a list of Resource Record keys that can be set or retrieved for
+ *  the Resource record type.
+ *
+ *  \param[in]  type  Record Type
+ *  \param[out] cnt   Number of keys returned
+ *  \return array of keys associated with Resource Record
+ */
 const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
                                               size_t *cnt);
 
-const char *ares_dns_rr_get_name(ares_dns_rr_t *rr);
-ares_dns_rec_type_t ares_dns_rr_get_type(ares_dns_rr_t *rr);
-ares_dns_class_t  ares_dns_rr_get_class(ares_dns_rr_t *rr);
-unsigned int ares_dns_rr_get_ttl(ares_dns_rr_t *rr);
-
+/*! Retrieve the datatype associated with a Resource Record key.
+ *
+ *  \param[in] key   Resource Record Key
+ *  \return datatype
+ */
 ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
+
+/*! Retrieve the DNS Resource Record type associated with a Resource Record key.
+ *
+ *  \param[in] key   Resource Record Key
+ *  \return DNS Resource Record Type
+ */
 ares_dns_rec_type_t ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
 
+/*! Retrieve the resource record Name/Hostname
+ *
+ *  \param[in] rr  Pointer to resource record
+ *  \return Name
+ */
+const char *ares_dns_rr_get_name(ares_dns_rr_t *rr);
+
+/*! Retrieve the resource record type
+ *
+ *  \param[in] rr  Pointer to resource record
+ *  \return type
+ */
+ares_dns_rec_type_t ares_dns_rr_get_type(ares_dns_rr_t *rr);
+
+/*! Retrieve the resource record class
+ *
+ *  \param[in] rr  Pointer to resource record
+ *  \return class
+ */
+ares_dns_class_t  ares_dns_rr_get_class(ares_dns_rr_t *rr);
+
+/*! Retrieve the resource record TTL
+ *
+ *  \param[in] rr  Pointer to resource record
+ *  \return TTL
+ */
+unsigned int ares_dns_rr_get_ttl(ares_dns_rr_t *rr);
+
+/*! Set ipv4 address data type for specified resource record and key.  Can
+ *  only be used on keys with datatype ARES_DATATYPE_INADDR
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \param[in] addr   Pointer to ipv4 address to use.
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                    struct in_addr *addr);
+
+/*! Set ipv6 address data type for specified resource record and key.  Can
+ *  only be used on keys with datatype ARES_DATATYPE_INADDR6
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \param[in] addr   Pointer to ipv6 address to use.
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t *dns_rr,
                                     ares_dns_rr_key_t key,
                                     struct ares_in6_addr *addr);
+
+/*! Set string data for specified resource record and key.  Can
+ *  only be used on keys with datatype ARES_DATATYPE_STR
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \param[in] val    Pointer to string to set.
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const char *val);
+
+/*! Set 8bit unsigned integer for specified resource record and key.  Can
+ *  only be used on keys with datatype ARES_DATATYPE_U8
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \param[in] val    8bit unsigned integer
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_rr_set_u8(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                  unsigned char val);
+
+/*! Set 16bit unsigned integer for specified resource record and key.  Can
+ *  only be used on keys with datatype ARES_DATATYPE_U16
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \param[in] val    16bit unsigned integer
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_rr_set_u16(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   unsigned short val);
+
+/*! Set 32bit unsigned integer for specified resource record and key.  Can
+ *  only be used on keys with datatype ARES_DATATYPE_U32
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \param[in] val    32bit unsigned integer
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_rr_set_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   unsigned int val);
+
+/*! Set binary data for specified resource record and key.  Can
+ *  only be used on keys with datatype ARES_DATATYPE_BIN
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \param[in] val    Pointer to binary data.
+ *  \param[in] len    Length of binary data
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const unsigned char *val, size_t len);
 
 
-struct in_addr *ares_dns_rr_get_addr(ares_dns_rr_t *dns_rr,
-                                     ares_dns_rr_key_t key);
-struct ares_in6_addr *ares_dns_rr_get_addr6(ares_dns_rr_t *dns_rr,
-                                            ares_dns_rr_key_t key);
+/*! Retrieve a pointer to the ipv4 address.  Can only be used on keys with
+ *  datatype ARES_DATATYPE_INADDR.
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \return pointer to ipv4 address or NULL on error
+ */
+const struct in_addr *ares_dns_rr_get_addr(ares_dns_rr_t *dns_rr,
+                                           ares_dns_rr_key_t key);
+
+/*! Retrieve a pointer to the ipv6 address.  Can only be used on keys with
+ *  datatype ARES_DATATYPE_INADDR6.
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \return pointer to ipv6 address or NULL on error
+ */
+const struct ares_in6_addr *ares_dns_rr_get_addr6(ares_dns_rr_t *dns_rr,
+                                                  ares_dns_rr_key_t key);
+
+/*! Retrieve a pointer to the string.  Can only be used on keys with
+ *  datatype ARES_DATATYPE_STR.
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \return pointer string or NULL on error
+ */
 const char *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
+
+/*! Retrieve an 8bit unsigned integer.  Can only be used on keys with
+ *  datatype ARES_DATATYPE_U8.
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \return 8bit unsigned integer
+ */
 unsigned char ares_dns_rr_get_u8(ares_dns_rr_t *dns_rr,
                                  ares_dns_rr_key_t key);
+
+/*! Retrieve an 16bit unsigned integer.  Can only be used on keys with
+ *  datatype ARES_DATATYPE_U16.
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \return 16bit unsigned integer
+ */
 unsigned short ares_dns_rr_get_u16(ares_dns_rr_t *dns_rr,
                                    ares_dns_rr_key_t key);
+
+/*! Retrieve an 32bit unsigned integer.  Can only be used on keys with
+ *  datatype ARES_DATATYPE_U32.
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \return 32bit unsigned integer
+ */
 unsigned int ares_dns_rr_get_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
+
+/*! Retrieve a pointer to the binary data.  Can only be used on keys with
+ *  datatype ARES_DATATYPE_BIN.
+ *
+ *  \param[in]  dns_rr Pointer to resource record
+ *  \param[in]  key    DNS Resource Record Key
+ *  \param[out] len    Length of binary data returned
+ *  \return pointer binary data or NULL on error
+ */
 const unsigned char *ares_dns_rr_get_bin(ares_dns_rr_t *dns_rr,
                                          ares_dns_rr_key_t key, size_t *len);
 
-ares_status_t ares_dns_parse_buf(ares__buf_t *buf, unsigned int flags,
-                                 ares_dns_record_t **dnsrec);
 
+/*! Parse a complete DNS message.
+ *
+ *  \param[in]  buf      pointer to bytes to be parsed
+ *  \param[in]  buf_len  Length of buf provided
+ *  \param[in]  flags    Flags dictating how the message should be parsed. TBD.
+ *  \param[out] dnsrec   Pointer passed by reference for a new DNS record object
+ *                       that must be ares_dns_record_destroy()'d by caller.
+ *  \return ARES_SUCCESS on success
+ */
 ares_status_t ares_dns_parse(const unsigned char *buf, size_t buf_len,
                              unsigned int flags, ares_dns_record_t **dnsrec);
+
+
+/*! @} */
 
 /* ---- PRIVATE BELOW ----- */
 ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);

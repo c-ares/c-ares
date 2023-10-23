@@ -560,7 +560,7 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr,
   return NULL;
 }
 
-struct in_addr *ares_dns_rr_get_addr(ares_dns_rr_t *dns_rr,
+const struct in_addr *ares_dns_rr_get_addr(ares_dns_rr_t *dns_rr,
                                      ares_dns_rr_key_t key)
 {
   struct in_addr *addr;
@@ -577,7 +577,7 @@ struct in_addr *ares_dns_rr_get_addr(ares_dns_rr_t *dns_rr,
   return addr;
 }
 
-struct ares_in6_addr *ares_dns_rr_get_addr6(ares_dns_rr_t *dns_rr,
+const struct ares_in6_addr *ares_dns_rr_get_addr6(ares_dns_rr_t *dns_rr,
                                             ares_dns_rr_key_t key)
 {
   struct ares_in6_addr *addr;

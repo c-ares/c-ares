@@ -33,6 +33,10 @@
  * validation and return a success/fail result.  There are also various helpers
  * for writing data to the buffer which dynamically grows.
  *
+ * All operations that fetch or consume data from the buffer will move forward
+ * the internal pointer, thus marking the data as processed which may no longer
+ * be accessible after certain operations (such as append).
+ *
  * The helpers for this object are meant to be added as needed.  If you can't
  * find it, write it!
  *
