@@ -24,17 +24,6 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ares_setup.h"
-
-#ifdef HAVE_NETINET_IN_H
-#  include <netinet/in.h>
-#endif
-#ifdef HAVE_NETDB_H
-#  include <netdb.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#  include <arpa/inet.h>
-#endif
-
 #include "ares.h"
 #include "ares_data.h"
 #include "ares_private.h"
