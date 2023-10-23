@@ -496,6 +496,10 @@ std::vector<byte> EncodeString(const std::string& name) {
   std::string label;
   // TODO: cope with escapes
   while (std::getline(ss, label, '.')) {
+    /* Label length of 0 indicates the end, and we always push an end
+     * terminator, so don't do it twice */
+    if (label.length() == 0)
+      break;
     data.push_back(label.length());
     data.insert(data.end(), label.begin(), label.end());
   }

@@ -558,6 +558,40 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr,
   return NULL;
 }
 
+struct in_addr *ares_dns_rr_get_addr(ares_dns_rr_t *dns_rr,
+                                     ares_dns_rr_key_t key)
+{
+  struct in_addr *addr;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_INADDR) {
+    return NULL;
+  }
+
+  addr = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (addr == NULL) {
+    return NULL;
+  }
+
+  return addr;
+}
+
+struct ares_in6_addr *ares_dns_rr_get_addr6(ares_dns_rr_t *dns_rr,
+                                            ares_dns_rr_key_t key)
+{
+  struct ares_in6_addr *addr;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_INADDR6) {
+    return NULL;
+  }
+
+  addr = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (addr == NULL) {
+    return NULL;
+  }
+
+  return addr;
+}
+
 unsigned char ares_dns_rr_get_u8(ares_dns_rr_t *dns_rr,
                                  ares_dns_rr_key_t key)
 {

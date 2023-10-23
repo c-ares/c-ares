@@ -270,6 +270,10 @@ ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const unsigned char *val, size_t len);
 
 
+struct in_addr *ares_dns_rr_get_addr(ares_dns_rr_t *dns_rr,
+                                     ares_dns_rr_key_t key);
+struct ares_in6_addr *ares_dns_rr_get_addr6(ares_dns_rr_t *dns_rr,
+                                            ares_dns_rr_key_t key);
 const char *ares_dns_rr_get_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
 unsigned char ares_dns_rr_get_u8(ares_dns_rr_t *dns_rr,
                                  ares_dns_rr_key_t key);

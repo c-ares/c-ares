@@ -863,8 +863,10 @@ static ares_status_t ares_dns_parse_qd(ares__buf_t *buf,
 
   /* Add question */
   status = ares_dns_record_query_add(dnsrec, name, type, qclass);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
+printf("%s(): query add failed name=%s, type=%u, class=%u\n", __FUNCTION__, name, (unsigned int)type, (unsigned int)qclass);
     goto done;
+  }
 
 done:
   ares_free(name);

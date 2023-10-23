@@ -544,13 +544,6 @@ static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
     return ARES_EBADRESP;
   }
 
-  /* XXX: Test Case LibraryTest.ParseRootName appears to require this special
-   *      exception.  I can't locate anywhere in RFC1035 that this is legitimate
-   */
-  if (len == 1 && ptr[0] == 0) {
-    return ares__buf_consume(buf, len);
-  }
-
   for (i=0; i<len; i++) {
     unsigned char c = ptr[i];
 
@@ -749,7 +742,6 @@ ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx)
 }
 
 #define ARES_DNS_HEADER_SIZE 12
-#define ARES_NAME_MAX_REDIRECTS 50
 ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
                                        ares_bool_t is_hostname)
 {
@@ -757,7 +749,7 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
   unsigned char c;
   ares_status_t status;
   ares__buf_t  *namebuf       = NULL;
-  size_t        num_redirects = 0;
+  size_t        label_start   = ares__buf_get_position(buf);
 
   if (buf == NULL)
     return ARES_EFORMERR;
@@ -781,7 +773,6 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
     goto fail;
   }
 #endif
-
   /* The compression scheme allows a domain name in a message to be
    * represented as either:
    *
@@ -790,6 +781,11 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
    * - a sequence of labels ending with a pointer
    */
   while (1) {
+    /* Keep track of the minimum label starting position to prevent backwards
+     * jumping */
+    if (label_start > ares__buf_get_position(buf))
+      label_start = ares__buf_get_position(buf);
+
     status = ares__buf_fetch_bytes(buf, &c, 1);
     if (status != ARES_SUCCESS)
       goto fail;
@@ -812,12 +808,6 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
        */
       unsigned short offset = (unsigned short)((c & 0x3F) << 8);
 
-      num_redirects++;
-      if (num_redirects > ARES_NAME_MAX_REDIRECTS) {
-        status = ARES_EBADNAME;
-        goto fail;
-      }
-
       /* Fetch second byte of the redirect length */
       status = ares__buf_fetch_bytes(buf, &c, 1);
       if (status != ARES_SUCCESS) {
@@ -830,22 +820,14 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
        *    In this scheme, an entire domain name or a list of labels at
        *    the end of a domain name is replaced with a pointer to a prior
        *    occurance of the same name.
-       * Note the word "prior", meaning it must go backwards.
+       * Note the word "prior", meaning it must go backwards.  This was
+       * confirmed via the ISC BIND code that it also prevents backwards
+       * pointers.
        */
-
-       /* XXX: LibraryTest.ParseFullyCompressedName2 has tests that
-        *      "go forward", need to determine if this test case should be fixed
-        *      or if there are legitimate queries that need this functionality.
-        *      This should still be "safe" with this parser, but seems to be
-        *      against the spec.  Mandating "go backward" would also prevent
-        *      the need for a redirect count.
-        */
-#if 0
-      if (offset >= ares__buf_get_position(buf)-2) {
+      if (offset >= label_start) {
         status = ARES_EBADNAME;
         goto fail;
       }
-#endif
 
       /* First time we make a jump, save the current position */
       if (save_offset == 0) {
