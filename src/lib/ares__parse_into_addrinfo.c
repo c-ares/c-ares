@@ -172,6 +172,7 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf, size_t alen,
 done:
   ares__freeaddrinfo_cnames(cnames);
   ares__freeaddrinfo_nodes(nodes);
+  ares_dns_record_destroy(dnsrec);
 
   /* compatibiltiy */
   if (status == ARES_EBADNAME)
