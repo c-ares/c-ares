@@ -77,8 +77,8 @@ ares_status_t ares_expand_string_ex(const unsigned char *encoded,
   }
 
   start_len = ares__buf_len(buf);
-  status    = ares__buf_parse_dns_binstr(buf, ares__buf_len(buf), s, &len,
-              ARES_FALSE);
+  status =
+    ares__buf_parse_dns_binstr(buf, ares__buf_len(buf), s, &len, ARES_FALSE);
   /* hrm, no way to pass back 'len' with the prototype */
   if (status != ARES_SUCCESS) {
     goto done;
@@ -88,11 +88,11 @@ ares_status_t ares_expand_string_ex(const unsigned char *encoded,
 
 done:
   ares__buf_destroy(buf);
-  if (status == ARES_EBADNAME || status == ARES_EBADRESP)
+  if (status == ARES_EBADNAME || status == ARES_EBADRESP) {
     status = ARES_EBADSTR;
+  }
   return status;
 }
-
 
 int ares_expand_string(const unsigned char *encoded, const unsigned char *abuf,
                        int alen, unsigned char **s, long *enclen)

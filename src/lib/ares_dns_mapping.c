@@ -62,9 +62,9 @@ ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode)
 
 ares_bool_t ares_dns_flags_arevalid(unsigned short flags)
 {
-  unsigned short allflags =
-    ARES_FLAG_QR | ARES_FLAG_AA | ARES_FLAG_TC | ARES_FLAG_RD | ARES_FLAG_RA |
-    ARES_FLAG_AD | ARES_FLAG_CD;
+  unsigned short allflags = ARES_FLAG_QR | ARES_FLAG_AA | ARES_FLAG_TC |
+                            ARES_FLAG_RD | ARES_FLAG_RA | ARES_FLAG_AD |
+                            ARES_FLAG_CD;
 
   if (flags & ~(allflags)) {
     return ARES_FALSE;

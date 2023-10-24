@@ -179,9 +179,9 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
   /* If the number of levels is greater than we currently support in the slist,
    * increase the count */
   if (list->levels < node->levels) {
-    void  *ptr = ares_realloc_zero(list->head,
-                                   sizeof(*list->head) * list->levels,
-                                   sizeof(*list->head) * node->levels);
+    void *ptr =
+      ares_realloc_zero(list->head, sizeof(*list->head) * list->levels,
+                        sizeof(*list->head) * node->levels);
     if (ptr == NULL) {
       goto fail;
     }

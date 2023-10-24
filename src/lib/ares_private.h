@@ -349,8 +349,8 @@ ares_bool_t   ares__is_onion_domain(const char *name);
 extern void  *(*ares_malloc)(size_t size);
 extern void  *(*ares_realloc)(void *ptr, size_t size);
 extern void   (*ares_free)(void *ptr);
-void *ares_malloc_zero(size_t size);
-void *ares_realloc_zero(void *ptr, size_t orig_size, size_t new_size);
+void         *ares_malloc_zero(size_t size);
+void         *ares_realloc_zero(void *ptr, size_t orig_size, size_t new_size);
 
 /* return true if now is exactly check time or later */
 ares_bool_t   ares__timedout(struct timeval *now, struct timeval *check);
@@ -452,7 +452,7 @@ int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
     unsigned char swapByte = *(a);     \
     *(a)                   = *(b);     \
     *(b)                   = swapByte; \
-  } while(0)
+  } while (0)
 
 #define SOCK_STATE_CALLBACK(c, s, r, w)                           \
   do {                                                            \

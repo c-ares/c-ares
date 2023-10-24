@@ -46,7 +46,6 @@ size_t ares__round_up_pow2(size_t n)
   return n;
 }
 
-
 size_t ares__log2(size_t n)
 {
   static const unsigned char tab32[32] = { 0,  1,  28, 2,  29, 14, 24, 3,

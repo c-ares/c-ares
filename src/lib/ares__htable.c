@@ -120,8 +120,7 @@ ares__htable_t *ares__htable_create(ares__htable_hashfunc_t    hash_func,
   htable->key_eq      = key_eq;
   htable->seed        = ares__htable_generate_seed(htable);
   htable->size        = ARES__HTABLE_MIN_BUCKETS;
-  htable->buckets     = ares_malloc_zero(sizeof(*htable->buckets) *
-                                         htable->size);
+  htable->buckets = ares_malloc_zero(sizeof(*htable->buckets) * htable->size);
 
   if (htable->buckets == NULL) {
     goto fail;
