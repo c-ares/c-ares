@@ -42,6 +42,118 @@ static size_t ares_dns_rr_remaining_len(ares__buf_t *buf, size_t orig_len,
   return rdlength - used_len;
 }
 
+static ares_status_t ares_dns_parse_and_set_dns_name(ares__buf_t *buf,
+                                                     ares_bool_t is_hostname,
+                                                     ares_dns_rr_t *rr,
+                                                     ares_dns_rr_key_t key)
+{
+  ares_status_t status;
+  char         *name = NULL;
+
+  status = ares__buf_parse_dns_name(buf, &name, is_hostname);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_str_own(rr, key, name);
+  if (status != ARES_SUCCESS) {
+    ares_free(name);
+    return status;
+  }
+  return ARES_SUCCESS;
+}
+
+static ares_status_t ares_dns_parse_and_set_dns_str(ares__buf_t *buf,
+                                                    size_t max_len,
+                                                    ares_bool_t allow_multiple,
+                                                    ares_dns_rr_t *rr,
+                                                    ares_dns_rr_key_t key)
+{
+  ares_status_t status;
+  char         *str = NULL;
+
+  status = ares__buf_parse_dns_str(buf, max_len, &str, allow_multiple);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_str_own(rr, key, str);
+  if (status != ARES_SUCCESS) {
+    ares_free(str);
+    return status;
+  }
+  return ARES_SUCCESS;
+}
+
+static ares_status_t ares_dns_parse_and_set_dns_binstr(ares__buf_t *buf,
+                                                       size_t max_len,
+                                                       ares_bool_t allow_multiple,
+                                                       ares_dns_rr_t *rr,
+                                                       ares_dns_rr_key_t key)
+{
+  ares_status_t  status;
+  unsigned char *bin     = NULL;
+  size_t         bin_len = 0;
+
+  status = ares__buf_parse_dns_binstr(buf, max_len, &bin, &bin_len,
+                                      allow_multiple);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_bin_own(rr, key, bin, bin_len);
+  if (status != ARES_SUCCESS) {
+    ares_free(bin);
+    return status;
+  }
+  return ARES_SUCCESS;
+}
+
+static ares_status_t ares_dns_parse_and_set_be32(ares__buf_t *buf,
+                                                 ares_dns_rr_t *rr,
+                                                 ares_dns_rr_key_t key)
+{
+  ares_status_t status;
+  unsigned int  u32;
+
+  status = ares__buf_fetch_be32(buf, &u32);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  return ares_dns_rr_set_u32(rr, key, u32);
+}
+
+static ares_status_t ares_dns_parse_and_set_be16(ares__buf_t *buf,
+                                                 ares_dns_rr_t *rr,
+                                                 ares_dns_rr_key_t key)
+{
+  ares_status_t  status;
+  unsigned short u16;
+
+  status = ares__buf_fetch_be16(buf, &u16);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  return ares_dns_rr_set_u16(rr, key, u16);
+}
+
+static ares_status_t ares_dns_parse_and_set_u8(ares__buf_t *buf,
+                                               ares_dns_rr_t *rr,
+                                               ares_dns_rr_key_t key)
+{
+  ares_status_t  status;
+  unsigned char  u8;
+
+  status = ares__buf_fetch_bytes(buf, &u8, 1);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  return ares_dns_rr_set_u8(rr, key, u8);
+}
+
 static ares_status_t ares_dns_parse_rr_a(ares__buf_t *buf, ares_dns_rr_t *rr,
                                          size_t rdlength)
 {
@@ -61,255 +173,124 @@ static ares_status_t ares_dns_parse_rr_a(ares__buf_t *buf, ares_dns_rr_t *rr,
 static ares_status_t ares_dns_parse_rr_ns(ares__buf_t *buf, ares_dns_rr_t *rr,
                                           size_t rdlength)
 {
-  char         *name = NULL;
-  ares_status_t status;
-
   (void)rdlength; /* Not needed */
 
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_NS_NSDNAME, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-
-  return ARES_SUCCESS;
+  return ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                         ARES_RR_NS_NSDNAME);
 }
 
 static ares_status_t ares_dns_parse_rr_cname(ares__buf_t   *buf,
                                              ares_dns_rr_t *rr, size_t rdlength)
 {
-  char         *name = NULL;
-  ares_status_t status;
-
   (void)rdlength; /* Not needed */
 
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_CNAME_CNAME, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-
-  return ARES_SUCCESS;
+  return ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                         ARES_RR_CNAME_CNAME);
 }
 
 static ares_status_t ares_dns_parse_rr_soa(ares__buf_t *buf, ares_dns_rr_t *rr,
                                            size_t rdlength)
 {
-  char         *name = NULL;
   ares_status_t status;
-  unsigned int  u32;
 
   (void)rdlength; /* Not needed */
 
   /* MNAME */
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
+  status = ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                           ARES_RR_SOA_MNAME);
   if (status != ARES_SUCCESS) {
     return status;
   }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_SOA_MNAME, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
 
   /* RNAME */
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
+  status = ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                           ARES_RR_SOA_RNAME);
   if (status != ARES_SUCCESS) {
     return status;
   }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_SOA_RNAME, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
 
   /* SERIAL */
-  status = ares__buf_fetch_be32(buf, &u32);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u32(rr, ARES_RR_SOA_SERIAL, u32);
+  status = ares_dns_parse_and_set_be32(buf, rr, ARES_RR_SOA_SERIAL);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* REFRESH */
-  status = ares__buf_fetch_be32(buf, &u32);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u32(rr, ARES_RR_SOA_REFRESH, u32);
+  status = ares_dns_parse_and_set_be32(buf, rr, ARES_RR_SOA_REFRESH);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* RETRY */
-  status = ares__buf_fetch_be32(buf, &u32);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u32(rr, ARES_RR_SOA_RETRY, u32);
+   status = ares_dns_parse_and_set_be32(buf, rr, ARES_RR_SOA_RETRY);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* EXPIRE */
-  status = ares__buf_fetch_be32(buf, &u32);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u32(rr, ARES_RR_SOA_EXPIRE, u32);
+  status = ares_dns_parse_and_set_be32(buf, rr, ARES_RR_SOA_EXPIRE);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* MINIMUM */
-  status = ares__buf_fetch_be32(buf, &u32);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u32(rr, ARES_RR_SOA_MINIMUM, u32);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  return ARES_SUCCESS;
+  return ares_dns_parse_and_set_be32(buf, rr, ARES_RR_SOA_MINIMUM);
 }
 
 static ares_status_t ares_dns_parse_rr_ptr(ares__buf_t *buf, ares_dns_rr_t *rr,
                                            size_t rdlength)
 {
-  char         *name = NULL;
-  ares_status_t status;
-
   (void)rdlength; /* Not needed */
 
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_PTR_DNAME, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-
-  return ARES_SUCCESS;
+  return ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                         ARES_RR_PTR_DNAME);
 }
 
 static ares_status_t ares_dns_parse_rr_hinfo(ares__buf_t   *buf,
                                              ares_dns_rr_t *rr, size_t rdlength)
 {
-  char         *name = NULL;
   ares_status_t status;
   size_t        orig_len = ares__buf_len(buf);
 
   (void)rdlength; /* Not needed */
 
   /* CPU */
-  status = ares__buf_parse_dns_str(
-    buf, ares_dns_rr_remaining_len(buf, orig_len, rdlength), &name, ARES_FALSE);
+  status = ares_dns_parse_and_set_dns_str(buf,
+    ares_dns_rr_remaining_len(buf, orig_len, rdlength), ARES_FALSE, rr,
+    ARES_RR_HINFO_CPU);
   if (status != ARES_SUCCESS) {
     return status;
   }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_HINFO_CPU, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
 
   /* OS */
-  status = ares__buf_parse_dns_str(
-    buf, ares_dns_rr_remaining_len(buf, orig_len, rdlength), &name, ARES_FALSE);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_HINFO_OS, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  return ARES_SUCCESS;
+  return ares_dns_parse_and_set_dns_str(buf,
+    ares_dns_rr_remaining_len(buf, orig_len, rdlength), ARES_FALSE, rr,
+    ARES_RR_HINFO_OS);
 }
 
 static ares_status_t ares_dns_parse_rr_mx(ares__buf_t *buf, ares_dns_rr_t *rr,
                                           size_t rdlength)
 {
-  char          *name = NULL;
   ares_status_t  status;
-  unsigned short u16;
 
   (void)rdlength; /* Not needed */
 
   /* PREFERENCE */
-  status = ares__buf_fetch_be16(buf, &u16);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u16(rr, ARES_RR_MX_PREFERENCE, u16);
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_MX_PREFERENCE);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* EXCHANGE */
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_MX_EXCHANGE, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
-
-  return ARES_SUCCESS;
+  return ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                         ARES_RR_MX_EXCHANGE);
 }
 
 static ares_status_t ares_dns_parse_rr_txt(ares__buf_t *buf, ares_dns_rr_t *rr,
                                            size_t rdlength)
 {
-  unsigned char *txt = NULL;
-  size_t         txtlen;
-  ares_status_t  status;
-
-  status = ares__buf_parse_dns_binstr(buf, rdlength, &txt, &txtlen, ARES_TRUE);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_bin_own(rr, ARES_RR_TXT_DATA, txt, txtlen);
-  if (status != ARES_SUCCESS) {
-    ares_free(txt);
-    return status;
-  }
-
-  return ARES_SUCCESS;
+  return ares_dns_parse_and_set_dns_binstr(buf, rdlength, ARES_TRUE, rr,
+                                           ARES_RR_TXT_DATA);
 }
 
 static ares_status_t ares_dns_parse_rr_aaaa(ares__buf_t *buf, ares_dns_rr_t *rr,
@@ -331,147 +312,78 @@ static ares_status_t ares_dns_parse_rr_aaaa(ares__buf_t *buf, ares_dns_rr_t *rr,
 static ares_status_t ares_dns_parse_rr_srv(ares__buf_t *buf, ares_dns_rr_t *rr,
                                            size_t rdlength)
 {
-  char          *name = NULL;
   ares_status_t  status;
-  unsigned short u16;
 
   (void)rdlength; /* Not needed */
 
   /* PRIORITY */
-  status = ares__buf_fetch_be16(buf, &u16);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u16(rr, ARES_RR_SRV_PRIORITY, u16);
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_SRV_PRIORITY);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* WEIGHT */
-  status = ares__buf_fetch_be16(buf, &u16);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u16(rr, ARES_RR_SRV_WEIGHT, u16);
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_SRV_WEIGHT);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* PORT */
-  status = ares__buf_fetch_be16(buf, &u16);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u16(rr, ARES_RR_SRV_PORT, u16);
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_SRV_PORT);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* TARGET */
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_SRV_TARGET, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
-
-  return ARES_SUCCESS;
+  return ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                         ARES_RR_SRV_TARGET);
 }
 
 static ares_status_t ares_dns_parse_rr_naptr(ares__buf_t   *buf,
                                              ares_dns_rr_t *rr, size_t rdlength)
 {
-  char          *name = NULL;
   ares_status_t  status;
-  unsigned short u16;
   size_t         orig_len = ares__buf_len(buf);
 
   /* ORDER */
-  status = ares__buf_fetch_be16(buf, &u16);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u16(rr, ARES_RR_NAPTR_ORDER, u16);
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_NAPTR_ORDER);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* PREFERENCE */
-  status = ares__buf_fetch_be16(buf, &u16);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u16(rr, ARES_RR_NAPTR_PREFERENCE, u16);
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_NAPTR_PREFERENCE);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* FLAGS */
-  status = ares__buf_parse_dns_str(
-    buf, ares_dns_rr_remaining_len(buf, orig_len, rdlength), &name, ARES_FALSE);
+  status = ares_dns_parse_and_set_dns_str(buf,
+    ares_dns_rr_remaining_len(buf, orig_len, rdlength), ARES_FALSE, rr,
+    ARES_RR_NAPTR_FLAGS);
   if (status != ARES_SUCCESS) {
     return status;
   }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_NAPTR_FLAGS, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
 
   /* SERVICES */
-  status = ares__buf_parse_dns_str(
-    buf, ares_dns_rr_remaining_len(buf, orig_len, rdlength), &name, ARES_FALSE);
+  status = ares_dns_parse_and_set_dns_str(buf,
+    ares_dns_rr_remaining_len(buf, orig_len, rdlength), ARES_FALSE, rr,
+    ARES_RR_NAPTR_SERVICES);
   if (status != ARES_SUCCESS) {
     return status;
   }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_NAPTR_SERVICES, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
 
   /* REGEXP */
-  status = ares__buf_parse_dns_str(
-    buf, ares_dns_rr_remaining_len(buf, orig_len, rdlength), &name, ARES_FALSE);
+  status = ares_dns_parse_and_set_dns_str(buf,
+    ares_dns_rr_remaining_len(buf, orig_len, rdlength), ARES_FALSE, rr,
+    ARES_RR_NAPTR_REGEXP);
   if (status != ARES_SUCCESS) {
     return status;
   }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_NAPTR_REGEXP, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
 
   /* REPLACEMENT */
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_NAPTR_REPLACEMENT, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
-
-  return ARES_SUCCESS;
+  return ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                         ARES_RR_NAPTR_REPLACEMENT);
 }
 
 static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf, ares_dns_rr_t *rr,
@@ -516,28 +428,17 @@ static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf, ares_dns_rr_t *rr,
 {
   char          *name = NULL;
   ares_status_t  status;
-  unsigned short u16;
   size_t         orig_len = ares__buf_len(buf);
   size_t         remaining_len;
 
   /* PRIORITY */
-  status = ares__buf_fetch_be16(buf, &u16);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u16(rr, ARES_RR_URI_PRIORITY, u16);
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_URI_PRIORITY);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* WEIGHT */
-  status = ares__buf_fetch_be16(buf, &u16);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u16(rr, ARES_RR_URI_WEIGHT, u16);
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_URI_WEIGHT);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -550,6 +451,7 @@ static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf, ares_dns_rr_t *rr,
     return status;
   }
 
+  /* NOTE: Not in DNS string format */
   status = ares__buf_fetch_str_dup(buf, remaining_len, &name);
   if (status != ARES_SUCCESS) {
     return status;
@@ -568,39 +470,26 @@ static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf, ares_dns_rr_t *rr,
 static ares_status_t ares_dns_parse_rr_caa(ares__buf_t *buf, ares_dns_rr_t *rr,
                                            size_t rdlength)
 {
-  char          *name     = NULL;
   unsigned char *data     = NULL;
   size_t         data_len = 0;
   ares_status_t  status;
-  unsigned char  critical;
   size_t         orig_len = ares__buf_len(buf);
 
   /* CRITICAL */
-  status = ares__buf_fetch_bytes(buf, &critical, 1);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  status = ares_dns_rr_set_u8(rr, ARES_RR_CAA_CRITICAL, critical);
+  status = ares_dns_parse_and_set_u8(buf, rr, ARES_RR_CAA_CRITICAL);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* Tag */
-  status = ares__buf_parse_dns_str(
-    buf, ares_dns_rr_remaining_len(buf, orig_len, rdlength), &name, ARES_FALSE);
+  status = ares_dns_parse_and_set_dns_str(buf,
+    ares_dns_rr_remaining_len(buf, orig_len, rdlength), ARES_FALSE, rr,
+    ARES_RR_CAA_TAG);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  status = ares_dns_rr_set_str_own(rr, ARES_RR_CAA_TAG, name);
-  if (status != ARES_SUCCESS) {
-    ares_free(name);
-    return status;
-  }
-  name = NULL;
-
-  /* Value - binary! */
+  /* Value - binary! (remaining buffer */
   data_len = ares_dns_rr_remaining_len(buf, orig_len, rdlength);
   if (data_len == 0) {
     status = ARES_EBADRESP;
