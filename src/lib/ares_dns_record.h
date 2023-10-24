@@ -47,10 +47,10 @@ typedef enum {
   ARES_REC_TYPE_HINFO = 13, /*!< Host information. */
   ARES_REC_TYPE_MX    = 15, /*!< Mail routing information. */
   ARES_REC_TYPE_TXT   = 16, /*!< Text strings. */
-  ARES_REC_TYPE_AAAA  = 28, /*!< Ip6 Address. */
-  ARES_REC_TYPE_SRV   = 33, /*!< Server Selection. */
-  ARES_REC_TYPE_NAPTR = 35, /*!< Naming Authority Pointer */
-  ARES_REC_TYPE_OPT   = 41, /*!< EDNS0 option (meta-RR) */
+  ARES_REC_TYPE_AAAA  = 28, /*!< RFC 3596. Ip6 Address. */
+  ARES_REC_TYPE_SRV   = 33, /*!< RFC 2782. Server Selection. */
+  ARES_REC_TYPE_NAPTR = 35, /*!< RFC 3403. Naming Authority Pointer */
+  ARES_REC_TYPE_OPT   = 41, /*!< RFC 6891. EDNS0 option (meta-RR) */
 #if 0
   ARES_REC_TYPE_TLSA     = 52,    /*!< DNS-Based Authentication of Named
                                    *   Entities (DANE) Transport Layer Security
@@ -58,9 +58,10 @@ typedef enum {
   ARES_REC_TYPE_SVBC     = 64,    /*!< General Purpose Service Binding */
   ARES_REC_TYPE_HTTPS    = 65,    /*!< Service Binding type for use with HTTP */
 #endif
-  ARES_REC_TYPE_ANY    = 255,  /*!< Wildcard match.  Not response RR. */
-  ARES_REC_TYPE_URI    = 256,  /*!< Uniform Resource Identifier (RFC7553) */
-  ARES_REC_TYPE_CAA    = 257,  /*!< Certification Authority Authorization. */
+  ARES_REC_TYPE_ANY = 255,     /*!< Wildcard match.  Not response RR. */
+  ARES_REC_TYPE_URI = 256,     /*!< RFC 7553. Uniform Resource Identifier */
+  ARES_REC_TYPE_CAA = 257,     /*!< RFC 6844. Certification Authority
+                                *   Authorization. */
   ARES_REC_TYPE_RAW_RR = 65536 /*!< Used as an indicator that the RR record
                                 *   is not parsed, but provided in wire
                                 *   format */
@@ -85,7 +86,7 @@ typedef enum {
 /*! DNS Header opcodes */
 typedef enum {
   ARES_OPCODE_QUERY  = 0, /*!< Standard query */
-  ARES_OPCODE_IQUERY = 1, /*!< Inverse query */
+  ARES_OPCODE_IQUERY = 1, /*!< Inverse query. Obsolete. */
   ARES_OPCODE_STATUS = 2, /*!< Name server status query */
   ARES_OPCODE_NOTIFY = 4, /*!< Zone change notification (RFC 1996) */
   ARES_OPCODE_UPDATE = 5, /*!< Zone update message (RFC2136) */
