@@ -99,6 +99,12 @@ typedef enum {
   ARES_FLAG_RD = 1 << 3, /*!< Recursion Desired. If set, recursion is desired */
   ARES_FLAG_RA = 1 << 4, /*!< Recursion Available. If set, server supports
                           *   recursion */
+  ARES_FLAG_AD = 1 << 5, /*!< RFC 2065. Authentic Data bit indicates in a
+                          * response that the data included has been verified by
+                          * the server providing it */
+  ARES_FLAG_CD = 1 << 6, /*!< RFC 2065. Checking Disabled bit indicates in a
+                          * query that non-verified data is acceptable to the
+                          * resolver sending the query. */
 } ares_dns_flags_t;
 
 /*! DNS Response Codes from server */

@@ -678,13 +678,14 @@ static ares_status_t ares_dns_parse_header(ares__buf_t *buf, unsigned int flags,
   *dnsrec = NULL;
 
   /*
-   *  RFC 1035 4.1.1. Header section format
+   *  RFC 1035 4.1.1. Header section format.
+   *  and Updated by RFC 2065 to add AD and CD bits.
    *                                  1  1  1  1  1  1
    *    0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
    *  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
    *  |                      ID                       |
    *  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   *  |QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
+   *  |QR|   Opcode  |AA|TC|RD|RA| Z|AD|CD|   RCODE   |
    *  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
    *  |                    QDCOUNT                    |
    *  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -737,6 +738,16 @@ static ares_status_t ares_dns_parse_header(ares__buf_t *buf, unsigned int flags,
   }
 
   /* Z -- unused */
+
+  /* AD */
+  if (u16 & 0x20) {
+    dns_flags |= ARES_FLAG_AD;
+  }
+
+  /* CD */
+  if (u16 & 0x10) {
+    dns_flags |= ARES_FLAG_CD;
+  }
 
   /* RCODE */
   rcode = u16 & 0xf;
