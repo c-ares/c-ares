@@ -60,8 +60,8 @@ size_t ares__log2(size_t n)
   };
 
   if (sizeof(size_t) == 4) {
-    return tab32[(size_t)(n * 0x077CB531) >> 27];
+    return tab32[(n * 0x077CB531) >> 27];
   }
 
-  return tab64[((size_t)(n * 0x07EDD5E59A4E28C2)) >> 58];
+  return tab64[(n * 0x07EDD5E59A4E28C2) >> 58];
 }

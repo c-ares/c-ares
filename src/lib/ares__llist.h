@@ -148,7 +148,7 @@ void               *ares__llist_node_val(ares__llist_node_t *node);
  *  \param[in] list  Initialized list object
  *  \return count
  */
-size_t              ares__llist_len(ares__llist_t *list);
+size_t              ares__llist_len(const ares__llist_t *list);
 
 /*! Obtain list object from referenced node
  *

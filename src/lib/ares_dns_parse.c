@@ -32,7 +32,7 @@
 #  include <stdint.h>
 #endif
 
-static size_t ares_dns_rr_remaining_len(ares__buf_t *buf, size_t orig_len,
+static size_t ares_dns_rr_remaining_len(const ares__buf_t *buf, size_t orig_len,
                                         size_t rdlength)
 {
   size_t used_len = orig_len - ares__buf_len(buf);

@@ -50,8 +50,8 @@
 #include <string.h>
 #include "ares_getopt.h"
 
-int opterr        = 1; /* if error message should be printed */
-int optind        = 1; /* index into parent argv vector */
+int        opterr = 1; /* if error message should be printed */
+int        optind = 1; /* index into parent argv vector */
 int        optopt = 0; /* character checked for validity */
 static int optreset;   /* reset getopt */
 char      *optarg;     /* argument associated with option */

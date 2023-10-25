@@ -183,7 +183,7 @@ ares_bool_t ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key)
   return ares__htable_remove(htable->hash, &key);
 }
 
-size_t ares__htable_stvp_num_keys(ares__htable_stvp_t *htable)
+size_t ares__htable_stvp_num_keys(const ares__htable_stvp_t *htable)
 {
   if (htable == NULL) {
     return 0;

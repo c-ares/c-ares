@@ -251,11 +251,11 @@ unsigned char *ares__buf_finish_bin(ares__buf_t *buf, size_t *len)
   }
 
   ares__buf_reclaim(buf);
-  if (buf->alloc_buf == NULL) {
-    /* We don't want to return NULL except on failure, may be zero-length */
-    if (ares__buf_ensure_space(buf, 1) != ARES_SUCCESS) {
-      return NULL;
-    }
+
+  /* We don't want to return NULL except on failure, may be zero-length */
+  if (buf->alloc_buf == NULL &&
+      ares__buf_ensure_space(buf, 1) != ARES_SUCCESS) {
+    return NULL;
   }
   ptr  = buf->alloc_buf;
   *len = buf->data_len;
@@ -376,9 +376,8 @@ ares_status_t ares__buf_fetch_be32(ares__buf_t *buf, unsigned int *u32)
     return ARES_EBADRESP;
   }
 
-  *u32 =
-    (unsigned int)((unsigned int)(ptr[0]) << 24 | (unsigned int)(ptr[1]) << 16 |
-                   (unsigned int)(ptr[2]) << 8 | (unsigned int)(ptr[3]));
+  *u32 = ((unsigned int)(ptr[0]) << 24 | (unsigned int)(ptr[1]) << 16 |
+          (unsigned int)(ptr[2]) << 8 | (unsigned int)(ptr[3]));
 
   return ares__buf_consume(buf, sizeof(*u32));
 }
@@ -541,37 +540,39 @@ static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
     }
 
     /* NOTE: dest may be NULL if the user is trying to skip the name. validation
-     *       still occurs */
-    if (dest) {
-      /* Non-printable characters need to be output as \DDD */
-      if (!ares__isprint(c)) {
-        unsigned char escape[4];
+     *       still occurs above. */
+    if (dest == NULL) {
+      continue;
+    }
 
-        escape[0] = '\\';
-        escape[1] = '0' + (c / 100);
-        escape[2] = '0' + ((c % 100) / 10);
-        escape[3] = '0' + (c % 10);
+    /* Non-printable characters need to be output as \DDD */
+    if (!ares__isprint(c)) {
+      unsigned char escape[4];
 
-        status = ares__buf_append(dest, escape, sizeof(escape));
-        if (status != ARES_SUCCESS) {
-          goto fail;
-        }
+      escape[0] = '\\';
+      escape[1] = '0' + (c / 100);
+      escape[2] = '0' + ((c % 100) / 10);
+      escape[3] = '0' + (c % 10);
 
-        continue;
-      }
-
-      /* Reserved characters need to be escaped, otherwise normal */
-      if (is_reservedch(c)) {
-        status = ares__buf_append_byte(dest, '\\');
-        if (status != ARES_SUCCESS) {
-          goto fail;
-        }
-      }
-
-      status = ares__buf_append_byte(dest, c);
+      status = ares__buf_append(dest, escape, sizeof(escape));
       if (status != ARES_SUCCESS) {
-        return status;
+        goto fail;
       }
+
+      continue;
+    }
+
+    /* Reserved characters need to be escaped, otherwise normal */
+    if (is_reservedch(c)) {
+      status = ares__buf_append_byte(dest, '\\');
+      if (status != ARES_SUCCESS) {
+        goto fail;
+      }
+    }
+
+    status = ares__buf_append_byte(dest, c);
+    if (status != ARES_SUCCESS) {
+      return status;
     }
   }
 
@@ -658,26 +659,23 @@ size_t ares__buf_consume_line(ares__buf_t *buf, int include_linefeed)
   }
 
   for (i = 0; i < remaining_len; i++) {
-    switch (ptr[i]) {
-      case '\n':
-        if (include_linefeed) {
-          i++;
-        }
-        goto done;
-      default:
-        break;
+    if (ptr[i] == '\n') {
+      goto done;
     }
   }
 
 done:
+  if (include_linefeed && i > 0 && i < remaining_len && ptr[i] == '\n') {
+    i++;
+  }
   if (i > 0) {
     ares__buf_consume(buf, i);
   }
   return i;
 }
 
-ares_status_t ares__buf_begins_with(ares__buf_t *buf, const unsigned char *data,
-                                    size_t data_len)
+ares_status_t ares__buf_begins_with(const ares__buf_t   *buf,
+                                    const unsigned char *data, size_t data_len)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);
@@ -847,12 +845,10 @@ ares_status_t ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
     /* New label */
 
     /* Labels are separated by periods */
-    if (ares__buf_len(namebuf) != 0) {
-      if (name != NULL) {
-        status = ares__buf_append_byte(namebuf, '.');
-        if (status != ARES_SUCCESS) {
-          goto fail;
-        }
+    if (ares__buf_len(namebuf) != 0 && name != NULL) {
+      status = ares__buf_append_byte(namebuf, '.');
+      if (status != ARES_SUCCESS) {
+        goto fail;
       }
     }
 

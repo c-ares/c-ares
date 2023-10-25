@@ -106,28 +106,28 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val);
  *  \param[in] list  Initialized SkipList Object
  *  \return SkipList Node Object or NULL if none
  */
-ares__slist_node_t *ares__slist_node_first(ares__slist_t *list);
+ares__slist_node_t *ares__slist_node_first(const ares__slist_t *list);
 
 /*! Fetch last node in SkipList
  *
  *  \param[in] list  Initialized SkipList Object
  *  \return SkipList Node Object or NULL if none
  */
-ares__slist_node_t *ares__slist_node_last(ares__slist_t *list);
+ares__slist_node_t *ares__slist_node_last(const ares__slist_t *list);
 
 /*! Fetch next node in SkipList
  *
  *  \param[in] node  SkipList Node Object
  *  \return SkipList Node Object or NULL if none
  */
-ares__slist_node_t *ares__slist_node_next(ares__slist_node_t *node);
+ares__slist_node_t *ares__slist_node_next(const ares__slist_node_t *node);
 
 /*! Fetch previous node in SkipList
  *
  *  \param[in] node  SkipList Node Object
  *  \return SkipList Node Object or NULL if none
  */
-ares__slist_node_t *ares__slist_node_prev(ares__slist_node_t *node);
+ares__slist_node_t *ares__slist_node_prev(const ares__slist_node_t *node);
 
 /*! Fetch SkipList Node Object by Value
  *
@@ -135,7 +135,8 @@ ares__slist_node_t *ares__slist_node_prev(ares__slist_node_t *node);
  *  \param[in] val   Object to use for comparison
  *  \return SkipList Node Object or NULL if not found
  */
-ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val);
+ares__slist_node_t *ares__slist_node_find(const ares__slist_t *list,
+                                          const void          *val);
 
 
 /*! Fetch Node Value
@@ -150,7 +151,7 @@ void               *ares__slist_node_val(ares__slist_node_t *node);
  *  \param[in] list  Initialized SkipList Object
  *  \return number of entries
  */
-size_t              ares__slist_len(ares__slist_t *list);
+size_t              ares__slist_len(const ares__slist_t *list);
 
 /*! Fetch SkipList Object from SkipList Node
  *

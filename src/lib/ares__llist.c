@@ -207,7 +207,7 @@ void *ares__llist_node_val(ares__llist_node_t *node)
   return node->data;
 }
 
-size_t ares__llist_len(ares__llist_t *list)
+size_t ares__llist_len(const ares__llist_t *list)
 {
   if (list == NULL) {
     return 0;

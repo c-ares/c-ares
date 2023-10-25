@@ -185,7 +185,7 @@ ares_bool_t ares__htable_asvp_remove(ares__htable_asvp_t *htable,
   return ares__htable_remove(htable->hash, &key);
 }
 
-size_t ares__htable_asvp_num_keys(ares__htable_asvp_t *htable)
+size_t ares__htable_asvp_num_keys(const ares__htable_asvp_t *htable)
 {
   if (htable == NULL) {
     return 0;
