@@ -51,7 +51,10 @@ char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
   const char *p;
   char      **table;
   void       *tmp;
-  size_t      i, j, k, count;
+  size_t      i;
+  size_t      j;
+  size_t      k;
+  size_t      count;
 
   if (in == NULL || delms == NULL || num_elm == NULL) {
     return NULL;

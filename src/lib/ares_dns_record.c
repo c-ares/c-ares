@@ -756,7 +756,7 @@ ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
     return ARES_EFORMERR;
   }
 
-  memcpy(a, addr, sizeof(*addr));
+  memcpy(a, addr, sizeof(*a));
   return ARES_SUCCESS;
 }
 
@@ -775,7 +775,7 @@ ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t        *dns_rr,
     return ARES_EFORMERR;
   }
 
-  memcpy(a, addr, sizeof(*addr));
+  memcpy(a, addr, sizeof(*a));
   return ARES_SUCCESS;
 }
 

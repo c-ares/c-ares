@@ -345,7 +345,8 @@ int ares_dup(ares_channel *dest, ares_channel src)
 int ares_save_options(ares_channel channel, struct ares_options *options,
                       int *optmask)
 {
-  size_t i, j;
+  size_t i;
+  size_t j;
   size_t ipv4_nservers = 0;
 
   /* Zero everything out */
@@ -623,7 +624,8 @@ static ares_status_t init_by_options(ares_channel               channel,
 
 static ares_status_t init_by_environment(ares_channel channel)
 {
-  const char   *localdomain, *res_options;
+  const char   *localdomain;
+  const char   *res_options;
   ares_status_t status;
 
   localdomain = getenv("LOCALDOMAIN");
@@ -871,7 +873,9 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
 static ares_bool_t get_DNS_Windows(char **outptr)
 {
   IP_ADAPTER_DNS_SERVER_ADDRESS *ipaDNSAddr;
-  IP_ADAPTER_ADDRESSES          *ipaa, *newipaa, *ipaaEntry;
+  IP_ADAPTER_ADDRESSES          *ipaa;
+  IP_ADAPTER_ADDRESSES          *newipaa;
+  IP_ADAPTER_ADDRESSES          *ipaaEntry;
   ULONG                          ReqBufsz  = IPAA_INITIAL_BUF_SZ;
   ULONG                          Bufsz     = IPAA_INITIAL_BUF_SZ;
   ULONG                          AddrFlags = 0;
@@ -1074,7 +1078,8 @@ done:
  */
 static ares_bool_t get_SuffixList_Windows(char **outptr)
 {
-  HKEY  hKey, hKeyEnum;
+  HKEY  hKey;
+  HKEY  hKeyEnum;
   char  keyName[256];
   DWORD keyNameBuffSize;
   DWORD keyIdx = 0;
@@ -1197,7 +1202,8 @@ static ares_status_t init_by_resolv_conf(ares_channel channel)
 #elif defined(__MVS__)
 
   struct __res_state  *res = 0;
-  size_t               count4, count6;
+  size_t               count4;
+  size_t               count6;
   __STATEEXTIPV6      *v6;
   struct server_state *pserver;
   if (0 == res) {
@@ -1833,7 +1839,8 @@ static ares_status_t config_lookup(ares_channel channel, const char *str,
                                    const char *bindch, const char *altbindch,
                                    const char *filech)
 {
-  char                   lookups[3], *l;
+  char                   lookups[3];
+  char                  *l;
   const char *vqualifier p;
   ares_bool_t            found;
 
@@ -2055,7 +2062,8 @@ static ares_status_t config_nameserver(struct server_state **servers,
 {
   struct ares_addr     host;
   struct server_state *newserv;
-  const char          *p, *txtaddr;
+  const char          *p;
+  const char          *txtaddr;
   /* On Windows, there may be more than one nameserver specified in the same
    * registry key, so we parse input as a space or comma seperated list.
    */
@@ -2123,7 +2131,8 @@ static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
   /* Add sortlist entries. */
   while (*str && *str != ';') {
     int    bits;
-    char   ipbuf[17], ipbufpfx[32];
+    char   ipbuf[17];
+    char   ipbufpfx[32];
     size_t len;
 
     /* Find just the IP */
@@ -2239,7 +2248,9 @@ static ares_status_t set_search(ares_channel channel, const char *str)
 
 static ares_status_t set_options(ares_channel channel, const char *str)
 {
-  const char *p, *q, *val;
+  const char *p;
+  const char *q;
+  const char *val;
 
   p = str;
   while (*p) {

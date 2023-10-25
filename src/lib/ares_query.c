@@ -67,7 +67,8 @@ ares_status_t ares_query_qid(ares_channel channel, const char *name,
 {
   struct qquery *qquery;
   unsigned char *qbuf;
-  int            qlen, rd;
+  int            qlen;
+  int            rd;
   ares_status_t  status;
   unsigned short id = generate_unique_id(channel);
 

@@ -47,15 +47,22 @@ ares_status_t ares__readaddrinfo(FILE *fp, const char *name,
                                  const struct ares_addrinfo_hints *hints,
                                  struct ares_addrinfo             *ai)
 {
-  char                       *line = NULL, *p, *q;
-  char                       *txtaddr, *txthost, *txtalias;
+  char                       *line = NULL;
+  char                       *p;
+  char                       *q;
+  char                       *txtaddr;
+  char                       *txthost;
+  char                       *txtalias;
   char                       *aliases[MAX_ALIASES];
-  size_t                      i, alias_count;
+  size_t                      i;
+  size_t                      alias_count;
   ares_status_t               status = ARES_SUCCESS;
   size_t                      linesize;
-  struct ares_addrinfo_cname *cname = NULL, *cnames = NULL;
+  struct ares_addrinfo_cname *cname = NULL;
+  struct ares_addrinfo_cname *cnames = NULL;
   struct ares_addrinfo_node  *nodes = NULL;
-  ares_bool_t                 match_with_alias, match_with_canonical;
+  ares_bool_t                 match_with_alias;
+  ares_bool_t                 match_with_canonical;
   ares_bool_t                 want_cname =
     (hints->ai_flags & ARES_AI_CANONNAME) ? ARES_TRUE : ARES_FALSE;
 

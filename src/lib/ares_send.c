@@ -41,7 +41,8 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
                            size_t qlen, ares_callback callback, void *arg)
 {
   struct query  *query;
-  size_t         i, packetsz;
+  size_t         i;
+  size_t         packetsz;
   struct timeval now;
 
   /* Verify that the query is at least long enough to hold the header. */

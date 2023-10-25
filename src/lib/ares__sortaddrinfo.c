@@ -235,12 +235,22 @@ static int rfc6724_compare(const void *ptr1, const void *ptr2)
 {
   const struct addrinfo_sort_elem *a1 = (const struct addrinfo_sort_elem *)ptr1;
   const struct addrinfo_sort_elem *a2 = (const struct addrinfo_sort_elem *)ptr2;
-  int                              scope_src1, scope_dst1, scope_match1;
-  int                              scope_src2, scope_dst2, scope_match2;
-  int                              label_src1, label_dst1, label_match1;
-  int                              label_src2, label_dst2, label_match2;
-  int                              precedence1, precedence2;
-  size_t                           prefixlen1, prefixlen2;
+  int                              scope_src1;
+  int                              scope_dst1;
+  int                              scope_match1;
+  int                              scope_src2;
+  int                              scope_dst2;
+  int                              scope_match2;
+  int                              label_src1;
+  int                              label_dst1;
+  int                              label_match1;
+  int                              label_src2;
+  int                              label_dst2;
+  int                              label_match2;
+  int                              precedence1;
+  int                              precedence2;
+  size_t                           prefixlen1;
+  size_t                           prefixlen2;
 
   /* Rule 1: Avoid unusable destinations. */
   if (a1->has_src_addr != a2->has_src_addr) {
@@ -387,7 +397,8 @@ ares_status_t ares__sortaddrinfo(ares_channel               channel,
                                  struct ares_addrinfo_node *list_sentinel)
 {
   struct ares_addrinfo_node *cur;
-  size_t                     nelem = 0, i;
+  size_t                     nelem = 0;
+  size_t                     i;
   int                        has_src_addr;
   struct addrinfo_sort_elem *elems;
 
