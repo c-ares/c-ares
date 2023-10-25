@@ -170,8 +170,16 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
 
   if (ptrcount == 0) {
     status = ARES_ENODATA;
+    goto done;
   } else {
     status = ARES_SUCCESS;
+  }
+
+  /* Fill in hostname */
+  hostent->h_name = ares_strdup(hostname);
+  if (hostent->h_name == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
   }
 
 done:
@@ -182,13 +190,6 @@ done:
       status = ARES_EBADRESP;
     }
   } else {
-    /* Fill in hostname */
-    hostent->h_name = ares_strdup(hostname);
-    if (hostent->h_name == NULL) {
-      status = ARES_ENOMEM;
-      goto done;
-    }
-
     *host = hostent;
   }
   ares_dns_record_destroy(dnsrec);

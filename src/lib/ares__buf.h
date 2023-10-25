@@ -281,8 +281,8 @@ size_t ares__buf_consume_line(ares__buf_t *buf, int include_linefeed);
  *  \param[in] data_len     Length of data to compare.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_begins_with(ares__buf_t *buf, const unsigned char *data,
-                                    size_t data_len);
+ares_status_t        ares__buf_begins_with(const ares__buf_t   *buf,
+                                           const unsigned char *data, size_t data_len);
 
 
 /*! Size of unprocessed remaining data length
@@ -290,7 +290,7 @@ ares_status_t ares__buf_begins_with(ares__buf_t *buf, const unsigned char *data,
  *  \param[in] buf Initialized buffer object
  *  \return length remaining
  */
-size_t        ares__buf_len(const ares__buf_t *buf);
+size_t               ares__buf_len(const ares__buf_t *buf);
 
 /*! Retrieve a pointer to the currently unprocessed data.  Generally this isn't
  *  recommended to be used in practice.  The returned pointer may be invalidated

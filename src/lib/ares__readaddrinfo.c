@@ -58,9 +58,9 @@ ares_status_t ares__readaddrinfo(FILE *fp, const char *name,
   size_t                      alias_count;
   ares_status_t               status = ARES_SUCCESS;
   size_t                      linesize;
-  struct ares_addrinfo_cname *cname = NULL;
+  struct ares_addrinfo_cname *cname  = NULL;
   struct ares_addrinfo_cname *cnames = NULL;
-  struct ares_addrinfo_node  *nodes = NULL;
+  struct ares_addrinfo_node  *nodes  = NULL;
   ares_bool_t                 match_with_alias;
   ares_bool_t                 match_with_canonical;
   ares_bool_t                 want_cname =

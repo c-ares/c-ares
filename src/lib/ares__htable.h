@@ -108,7 +108,7 @@ ares__htable_t *ares__htable_create(ares__htable_hashfunc_t    hash_func,
  *  \param[in] htable  Initialized hashtable.
  *  \return count of keys
  */
-size_t          ares__htable_num_keys(ares__htable_t *htable);
+size_t          ares__htable_num_keys(const ares__htable_t *htable);
 
 /*! Insert bucket into hashtable
  *

@@ -242,16 +242,16 @@ static int ares_inet_pton6(const char *src, unsigned char *dst)
 {
   static const char xdigits_l[] = "0123456789abcdef";
   static const char xdigits_u[] = "0123456789ABCDEF";
-  unsigned char tmp[NS_IN6ADDRSZ];
-  unsigned char *tp;
-  unsigned char *endp;
-  unsigned char *colonp;
-  const char   *xdigits;
-  const char   *curtok;
-  int           ch;
-  int           saw_xdigit;
-  int           count_xdigit;
-  unsigned int  val;
+  unsigned char     tmp[NS_IN6ADDRSZ];
+  unsigned char    *tp;
+  unsigned char    *endp;
+  unsigned char    *colonp;
+  const char       *xdigits;
+  const char       *curtok;
+  int               ch;
+  int               saw_xdigit;
+  int               count_xdigit;
+  unsigned int      val;
 
   memset((tp = tmp), '\0', NS_IN6ADDRSZ);
   endp   = tp + NS_IN6ADDRSZ;

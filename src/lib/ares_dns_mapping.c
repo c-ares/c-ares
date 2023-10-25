@@ -66,7 +66,7 @@ ares_bool_t ares_dns_flags_arevalid(unsigned short flags)
                             ARES_FLAG_RD | ARES_FLAG_RA | ARES_FLAG_AD |
                             ARES_FLAG_CD;
 
-  if (flags & ~(allflags)) {
+  if (flags & ~allflags) {
     return ARES_FALSE;
   }
 

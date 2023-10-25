@@ -190,16 +190,16 @@ static size_t ares_strcpy(char *dest, const char *src, size_t dest_size)
 
 int main(int argc, char **argv)
 {
-  ares_channel channel;
-  int          c;
-  int          i;
-  int          optmask = ARES_OPT_FLAGS;
-  int          dnsclass = C_IN;
-  int          type = T_A;
-  int          status;
-  int          nfds;
-  int          count;
-  int          use_ptr_helper = 0;
+  ares_channel           channel;
+  int                    c;
+  int                    i;
+  int                    optmask  = ARES_OPT_FLAGS;
+  int                    dnsclass = C_IN;
+  int                    type     = T_A;
+  int                    status;
+  int                    nfds;
+  int                    count;
+  int                    use_ptr_helper = 0;
   struct ares_options    options;
   struct hostent        *hostent;
   fd_set                 read_fds;

@@ -109,7 +109,7 @@ ares_bool_t ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key);
  *  \param[in] htable  Initialized hash table
  *  \return count
  */
-size_t      ares__htable_stvp_num_keys(ares__htable_stvp_t *htable);
+size_t      ares__htable_stvp_num_keys(const ares__htable_stvp_t *htable);
 
 /*! @} */
 

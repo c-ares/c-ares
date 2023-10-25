@@ -140,7 +140,7 @@ fail:
  * efficient */
 #define HASH_IDX(h, key) h->hash(key, h->seed) & (h->size - 1)
 
-static ares__llist_node_t *ares__htable_find(ares__htable_t *htable,
+static ares__llist_node_t *ares__htable_find(const ares__htable_t *htable,
                                              unsigned int idx, const void *key)
 {
   ares__llist_node_t *node = NULL;
@@ -186,9 +186,9 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 
       if (buckets[idx] == NULL) {
         buckets[idx] = ares__llist_create(htable->bucket_free);
-        if (buckets[idx] == NULL) {
-          goto fail;
-        }
+      }
+      if (buckets[idx] == NULL) {
+        goto fail;
       }
 
       if (ares__llist_insert_first(buckets[idx], val) == NULL) {
@@ -292,7 +292,7 @@ ares_bool_t ares__htable_remove(ares__htable_t *htable, const void *key)
   return ARES_TRUE;
 }
 
-size_t ares__htable_num_keys(ares__htable_t *htable)
+size_t ares__htable_num_keys(const ares__htable_t *htable)
 {
   if (htable == NULL) {
     return 0;
