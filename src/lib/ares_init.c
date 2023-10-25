@@ -2128,6 +2128,9 @@ static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
   struct apattern pat;
   const char     *q;
 
+  *sortlist = NULL;
+  *nsort    = 0;
+
   /* Add sortlist entries. */
   while (*str && *str != ';') {
     int    bits;
@@ -2143,6 +2146,8 @@ static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
 
     len = (size_t)(q - str);
     if (len >= sizeof(ipbuf) - 1) {
+      ares_free(*sortlist);
+      *sortlist = NULL;
       return ARES_EBADSTR;
     }
     memcpy(ipbuf, str, len);
@@ -2155,6 +2160,8 @@ static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
         q++;
       }
       if (q - str >= 32) {
+        ares_free(*sortlist);
+        *sortlist = NULL;
         return ARES_EBADSTR;
       }
       memcpy(ipbufpfx, str, (size_t)(q - str));
@@ -2192,6 +2199,8 @@ static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
       if (ipbufpfx[0]) {
         len = (size_t)(q - str);
         if (len >= sizeof(ipbuf) - 1) {
+          ares_free(*sortlist);
+          *sortlist = NULL;
           return ARES_EBADSTR;
         }
         memcpy(ipbuf, str, len);

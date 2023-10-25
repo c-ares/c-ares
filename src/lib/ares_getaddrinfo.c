@@ -432,15 +432,19 @@ static ares_status_t file_lookup(struct host_query *hquery)
   ares_status_t status;
   char         *path_hosts = NULL;
 
-  if (hquery->hints.ai_flags & ARES_AI_ENVHOSTS) {
-    path_hosts = ares_strdup(getenv("CARES_HOSTS"));
+  if (hquery->channel->hosts_path) {
+    path_hosts = ares_strdup(hquery->channel->hosts_path);
     if (!path_hosts) {
       return ARES_ENOMEM;
     }
   }
 
-  if (hquery->channel->hosts_path) {
-    path_hosts = ares_strdup(hquery->channel->hosts_path);
+  if (hquery->hints.ai_flags & ARES_AI_ENVHOSTS) {
+    if (path_hosts) {
+      ares_free(path_hosts);
+    }
+
+    path_hosts = ares_strdup(getenv("CARES_HOSTS"));
     if (!path_hosts) {
       return ARES_ENOMEM;
     }
