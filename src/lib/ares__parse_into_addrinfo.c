@@ -81,9 +81,10 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf, size_t alen,
   }
 
   for (i = 0; i < ancount; i++) {
-    const char         *rname = NULL;
-    ares_dns_rec_type_t rtype;
-    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
+    const char          *rname = NULL;
+    ares_dns_rec_type_t  rtype;
+    const ares_dns_rr_t *rr =
+      ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (ares_dns_rr_get_class(rr) != ARES_CLASS_IN) {
       continue;
@@ -143,11 +144,10 @@ ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf, size_t alen,
     }
   }
 
-  if (!got_a && !got_aaaa) {
-    if (!got_cname || (got_cname && cname_only_is_enodata)) {
-      status = ARES_ENODATA;
-      goto done;
-    }
+  if (!got_a && !got_aaaa &&
+      (!got_cname || (got_cname && cname_only_is_enodata))) {
+    status = ARES_ENODATA;
+    goto done;
   }
 
   /* save the hostname as ai->name */

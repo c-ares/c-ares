@@ -225,7 +225,8 @@ size_t ares_dns_record_query_cnt(const ares_dns_record_t *dnsrec)
   return dnsrec->qdcount;
 }
 
-ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
+ares_status_t ares_dns_record_query_add(ares_dns_record_t  *dnsrec,
+                                        const char         *name,
                                         ares_dns_rec_type_t qtype,
                                         ares_dns_class_t    qclass)
 {
@@ -265,8 +266,8 @@ ares_status_t ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx,
-                                        const char         **name,
+ares_status_t ares_dns_record_query_get(const ares_dns_record_t *dnsrec,
+                                        size_t idx, const char **name,
                                         ares_dns_rec_type_t *qtype,
                                         ares_dns_class_t    *qclass)
 {
@@ -355,7 +356,7 @@ ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
 
 ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
                                      ares_dns_record_t *dnsrec,
-                                     ares_dns_section_t sect, char *name,
+                                     ares_dns_section_t sect, const char *name,
                                      ares_dns_rec_type_t type,
                                      ares_dns_class_t rclass, unsigned int ttl)
 {
@@ -755,7 +756,7 @@ const char *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
 }
 
 ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
-                                   struct in_addr *addr)
+                                   const struct in_addr *addr)
 {
   struct in_addr *a;
 
@@ -772,9 +773,9 @@ ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t        *dns_rr,
-                                    ares_dns_rr_key_t     key,
-                                    struct ares_in6_addr *addr)
+ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t              *dns_rr,
+                                    ares_dns_rr_key_t           key,
+                                    const struct ares_in6_addr *addr)
 {
   struct ares_in6_addr *a;
 

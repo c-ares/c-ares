@@ -165,14 +165,14 @@ ares__slist_t      *ares__slist_node_parent(ares__slist_node_t *node);
  *  \param[in] list  Initialized SkipList Object
  *  \return user defined node value or NULL if none
  */
-void               *ares__slist_first_val(ares__slist_t *list);
+void               *ares__slist_first_val(const ares__slist_t *list);
 
 /*! Fetch last Node Value in SkipList
  *
  *  \param[in] list  Initialized SkipList Object
  *  \return user defined node value or NULL if none
  */
-void               *ares__slist_last_val(ares__slist_t *list);
+void               *ares__slist_last_val(const ares__slist_t *list);
 
 /*! Take back ownership of Node Value in SkipList, remove from SkipList.
  *

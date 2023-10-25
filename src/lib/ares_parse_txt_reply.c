@@ -52,7 +52,8 @@ static int ares__parse_txt_reply(const unsigned char *abuf, size_t alen,
   }
 
   for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
-    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
+    const ares_dns_rr_t *rr =
+      ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
     const unsigned char *ptr;
     size_t               ptr_len;
 

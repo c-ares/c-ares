@@ -125,7 +125,7 @@ ares_bool_t     ares__htable_insert(ares__htable_t *htable, void *bucket);
  *  \param[in] key     Pointer to key to use for comparison.
  *  \return matching bucket, or NULL if not found.
  */
-void           *ares__htable_get(ares__htable_t *htable, const void *key);
+void           *ares__htable_get(const ares__htable_t *htable, const void *key);
 
 /*! Remove bucket from hashtable by key
  *

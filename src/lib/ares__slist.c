@@ -368,12 +368,12 @@ ares__slist_t *ares__slist_node_parent(ares__slist_node_t *node)
   return node->parent;
 }
 
-void *ares__slist_first_val(ares__slist_t *list)
+void *ares__slist_first_val(const ares__slist_t *list)
 {
   return ares__slist_node_val(ares__slist_node_first(list));
 }
 
-void *ares__slist_last_val(ares__slist_t *list)
+void *ares__slist_last_val(const ares__slist_t *list)
 {
   return ares__slist_node_val(ares__slist_node_last(list));
 }

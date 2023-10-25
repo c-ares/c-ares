@@ -532,12 +532,10 @@ static void next_lookup(struct host_query *hquery, ares_status_t status)
     case 'b':
       /* RFC6761 section 6.3 #3 says "Name resolution APIs SHOULD NOT send
        * queries for localhost names to their configured caching DNS
-       * server(s)." */
-      if (!is_localhost(hquery->name)) {
-        /* DNS lookup */
-        if (next_dns_lookup(hquery)) {
-          break;
-        }
+       * server(s)."
+       * Otherwise, DNS lookup. */
+      if (!is_localhost(hquery->name) && next_dns_lookup(hquery)) {
+        break;
       }
 
       hquery->remaining_lookups++;
@@ -813,9 +811,9 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
 
 static ares_bool_t as_is_first(const struct host_query *hquery)
 {
-  char  *p;
-  size_t ndots = 0;
-  size_t nname = ares_strlen(hquery->name);
+  const char *p;
+  size_t      ndots = 0;
+  size_t      nname = ares_strlen(hquery->name);
   for (p = hquery->name; p && *p; p++) {
     if (*p == '.') {
       ndots++;
@@ -825,7 +823,7 @@ static ares_bool_t as_is_first(const struct host_query *hquery)
     /* prevent ARES_EBADNAME for valid FQDN, where ndots < channel->ndots  */
     return ARES_TRUE;
   }
-  return ndots >= (size_t)hquery->channel->ndots ? ARES_TRUE : ARES_FALSE;
+  return ndots >= hquery->channel->ndots ? ARES_TRUE : ARES_FALSE;
 }
 
 static ares_bool_t as_is_only(const struct host_query *hquery)

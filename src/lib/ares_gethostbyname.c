@@ -49,9 +49,9 @@
 #include "ares_platform.h"
 #include "ares_private.h"
 
-static void   sort_addresses(struct hostent        *host,
+static void   sort_addresses(const struct hostent  *host,
                              const struct apattern *sortlist, size_t nsort);
-static void   sort6_addresses(struct hostent        *host,
+static void   sort6_addresses(const struct hostent  *host,
                               const struct apattern *sortlist, size_t nsort);
 static size_t get_address_index(const struct in_addr  *addr,
                                 const struct apattern *sortlist, size_t nsort);
@@ -124,7 +124,7 @@ void ares_gethostbyname(ares_channel channel, const char *name, int family,
                    ghbn_arg);
 }
 
-static void sort_addresses(struct hostent        *host,
+static void sort_addresses(const struct hostent  *host,
                            const struct apattern *sortlist, size_t nsort)
 {
   struct in_addr a1;
@@ -181,7 +181,7 @@ static size_t get_address_index(const struct in_addr  *addr,
   return i;
 }
 
-static void sort6_addresses(struct hostent        *host,
+static void sort6_addresses(const struct hostent  *host,
                             const struct apattern *sortlist, size_t nsort)
 {
   struct ares_in6_addr a1;

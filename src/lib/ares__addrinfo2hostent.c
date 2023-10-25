@@ -111,16 +111,16 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
   memset(aliases, 0, (naliases + 1) * sizeof(char *));
 
   if (naliases) {
-    next_cname = ai->cnames;
-    while (next_cname) {
-      if (next_cname->alias) {
-        aliases[alias] = ares_strdup(next_cname->alias);
-        if (!aliases[alias]) {
-          goto enomem;
-        }
-        alias++;
+    for (next_cname = ai->cnames; next_cname != NULL;
+         next_cname = next_cname->next) {
+      if (next_cname->alias == NULL) {
+        continue;
       }
-      next_cname = next_cname->next;
+      aliases[alias] = ares_strdup(next_cname->alias);
+      if (!aliases[alias]) {
+        goto enomem;
+      }
+      alias++;
     }
   }
 
@@ -162,24 +162,24 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
 
     i    = 0;
     next = ai->nodes;
-    while (next) {
-      if (next->ai_family == family) {
-        (*host)->h_addr_list[i] = addrs + (i * (size_t)(*host)->h_length);
-        if (family == AF_INET6) {
-          memcpy((*host)->h_addr_list[i],
-                 &(CARES_INADDR_CAST(struct sockaddr_in6 *, next->ai_addr)
-                     ->sin6_addr),
-                 (size_t)(*host)->h_length);
-        }
-        if (family == AF_INET) {
-          memcpy(
-            (*host)->h_addr_list[i],
-            &(CARES_INADDR_CAST(struct sockaddr_in *, next->ai_addr)->sin_addr),
-            (size_t)(*host)->h_length);
-        }
-        ++i;
+    for (next = ai->nodes; next != NULL; next = next->ai_next) {
+      if (next->ai_family != family) {
+        continue;
       }
-      next = next->ai_next;
+      (*host)->h_addr_list[i] = addrs + (i * (size_t)(*host)->h_length);
+      if (family == AF_INET6) {
+        memcpy(
+          (*host)->h_addr_list[i],
+          &(CARES_INADDR_CAST(struct sockaddr_in6 *, next->ai_addr)->sin6_addr),
+          (size_t)(*host)->h_length);
+      }
+      if (family == AF_INET) {
+        memcpy(
+          (*host)->h_addr_list[i],
+          &(CARES_INADDR_CAST(struct sockaddr_in *, next->ai_addr)->sin_addr),
+          (size_t)(*host)->h_length);
+      }
+      ++i;
     }
 
     if (i == 0) {
@@ -241,36 +241,38 @@ ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
     next_cname = next_cname->next;
   }
 
-  next = ai->nodes;
-  while (next) {
-    if (next->ai_family == family) {
-      if (*naddrttls < req_naddrttls) {
-        if (family == AF_INET6) {
-          if (next->ai_ttl > cname_ttl) {
-            addr6ttls[*naddrttls].ttl = cname_ttl;
-          } else {
-            addr6ttls[*naddrttls].ttl = next->ai_ttl;
-          }
-
-          memcpy(&addr6ttls[*naddrttls].ip6addr,
-                 &(CARES_INADDR_CAST(struct sockaddr_in6 *, next->ai_addr)
-                     ->sin6_addr),
-                 sizeof(struct ares_in6_addr));
-        } else {
-          if (next->ai_ttl > cname_ttl) {
-            addrttls[*naddrttls].ttl = cname_ttl;
-          } else {
-            addrttls[*naddrttls].ttl = next->ai_ttl;
-          }
-          memcpy(
-            &addrttls[*naddrttls].ipaddr,
-            &(CARES_INADDR_CAST(struct sockaddr_in *, next->ai_addr)->sin_addr),
-            sizeof(struct in_addr));
-        }
-        (*naddrttls)++;
-      }
+  for (next = ai->nodes; next != NULL; next = next->ai_next) {
+    if (next->ai_family != family) {
+      continue;
     }
-    next = next->ai_next;
+
+    if (*naddrttls >= req_naddrttls) {
+      break;
+    }
+
+    if (family == AF_INET6) {
+      if (next->ai_ttl > cname_ttl) {
+        addr6ttls[*naddrttls].ttl = cname_ttl;
+      } else {
+        addr6ttls[*naddrttls].ttl = next->ai_ttl;
+      }
+
+      memcpy(
+        &addr6ttls[*naddrttls].ip6addr,
+        &(CARES_INADDR_CAST(struct sockaddr_in6 *, next->ai_addr)->sin6_addr),
+        sizeof(struct ares_in6_addr));
+    } else {
+      if (next->ai_ttl > cname_ttl) {
+        addrttls[*naddrttls].ttl = cname_ttl;
+      } else {
+        addrttls[*naddrttls].ttl = next->ai_ttl;
+      }
+      memcpy(
+        &addrttls[*naddrttls].ipaddr,
+        &(CARES_INADDR_CAST(struct sockaddr_in *, next->ai_addr)->sin_addr),
+        sizeof(struct in_addr));
+    }
+    (*naddrttls)++;
   }
 
   return ARES_SUCCESS;

@@ -47,8 +47,8 @@ ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host)
   char            *p;
   char            *q;
   char           **alias;
-  char            *txtaddr;
-  char            *txthost;
+  const char      *txtaddr;
+  const char      *txthost;
   char            *txtalias;
   ares_status_t    status;
   size_t           addrlen;
@@ -161,19 +161,17 @@ ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host)
     addrlen            = 0;
     addr.family        = AF_UNSPEC;
     addr.addrV4.s_addr = INADDR_NONE;
-    if ((family == AF_INET) || (family == AF_UNSPEC)) {
-      if (ares_inet_pton(AF_INET, txtaddr, &addr.addrV4) > 0) {
-        /* Actual network address family and length. */
-        addr.family = AF_INET;
-        addrlen     = sizeof(addr.addrV4);
-      }
+    if ((family == AF_INET || family == AF_UNSPEC) &&
+        ares_inet_pton(AF_INET, txtaddr, &addr.addrV4) > 0) {
+      /* Actual network address family and length. */
+      addr.family = AF_INET;
+      addrlen     = sizeof(addr.addrV4);
     }
-    if ((family == AF_INET6) || ((family == AF_UNSPEC) && (!addrlen))) {
-      if (ares_inet_pton(AF_INET6, txtaddr, &addr.addrV6) > 0) {
-        /* Actual network address family and length. */
-        addr.family = AF_INET6;
-        addrlen     = sizeof(addr.addrV6);
-      }
+    if ((family == AF_INET6 || (family == AF_UNSPEC && !addrlen)) &&
+        ares_inet_pton(AF_INET6, txtaddr, &addr.addrV6) > 0) {
+      /* Actual network address family and length. */
+      addr.family = AF_INET6;
+      addrlen     = sizeof(addr.addrV6);
     }
     if (!addrlen) {
       /* Ignore line if invalid address string for the requested family. */
@@ -268,7 +266,7 @@ ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host)
     /* Memory allocation failure; clean up. */
     if (hostent) {
       if (hostent->h_name) {
-        ares_free((char *)hostent->h_name);
+        ares_free(hostent->h_name);
       }
       if (hostent->h_aliases) {
         for (alias = hostent->h_aliases; *alias; alias++) {

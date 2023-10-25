@@ -46,7 +46,7 @@ int ares_fds(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
 
     for (node = ares__llist_node_first(server->connections); node != NULL;
          node = ares__llist_node_next(node)) {
-      struct server_connection *conn = ares__llist_node_val(node);
+      const struct server_connection *conn = ares__llist_node_val(node);
 
       /* We only need to register interest in UDP sockets if we have
        * outstanding queries.

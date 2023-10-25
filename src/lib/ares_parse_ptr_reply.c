@@ -113,8 +113,9 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
 
   /* Cycle through answers */
   for (i = 0; i < ancount; i++) {
-    const char    *rname = NULL;
-    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
+    const char          *rname = NULL;
+    const ares_dns_rr_t *rr =
+      ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (rr == NULL) {
       /* Shouldn't be possible */
