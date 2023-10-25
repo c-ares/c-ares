@@ -244,7 +244,8 @@ ares_status_t ares__single_domain(ares_channel channel, const char *name,
   char         *line = NULL;
   ares_status_t status;
   size_t        linesize;
-  const char   *p, *q;
+  const char   *p;
+  const char   *q;
   int           error;
 
   /* If the name contains a trailing dot, then the single query is the name

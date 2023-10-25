@@ -66,9 +66,14 @@ int         main(int argc, char **argv)
   struct ares_options  options;
   int                  optmask = 0;
   ares_channel         channel;
-  int                  status, nfds, c, addr_family = AF_INET;
-  fd_set               read_fds, write_fds;
-  struct timeval      *tvp, tv;
+  int                  status;
+  int                  nfds;
+  int                  c;
+  int                  addr_family = AF_INET;
+  fd_set               read_fds;
+  fd_set               write_fds;
+  struct timeval      *tvp;
+  struct timeval       tv;
   struct in_addr       addr4;
   struct ares_in6_addr addr6;
 

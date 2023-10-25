@@ -333,7 +333,8 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int flags,
                            char *buf, size_t buflen)
 {
 #  ifdef HAVE_IF_INDEXTONAME
-  int is_ll, is_mcll;
+  int is_ll;
+  int is_mcll;
 #  endif
   char   tmpbuf[IF_NAMESIZE + 2];
   size_t bufl;
@@ -386,8 +387,11 @@ static void append_scopeid(struct sockaddr_in6 *addr6, unsigned int flags,
 /* Determines if s1 ends with the string in s2 (case-insensitive) */
 STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2)
 {
-  const char *c1, *c2, *c1_begin;
-  int         lo1, lo2;
+  const char *c1;
+  const char *c2;
+  const char *c1_begin;
+  int         lo1;
+  int         lo2;
   size_t      s1_len = ares_strlen(s1);
   size_t      s2_len = ares_strlen(s2);
 

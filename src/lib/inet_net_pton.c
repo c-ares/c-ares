@@ -64,7 +64,11 @@ static int ares_inet_net_pton_ipv4(const char *src, unsigned char *dst,
 {
   static const char    xdigits[] = "0123456789abcdef";
   static const char    digits[]  = "0123456789";
-  int                  n, ch, tmp = 0, dirty, bits;
+  int                  n;
+  int                  ch;
+  int                  tmp = 0;
+  int                  dirty;
+  int                  bits;
   const unsigned char *odst = dst;
 
   ch = *src++;
@@ -236,11 +240,17 @@ static int getbits(const char *src, size_t *bitsp)
 
 static int ares_inet_pton6(const char *src, unsigned char *dst)
 {
-  static const char xdigits_l[] = "0123456789abcdef",
-                    xdigits_u[] = "0123456789ABCDEF";
-  unsigned char tmp[NS_IN6ADDRSZ], *tp, *endp, *colonp;
-  const char   *xdigits, *curtok;
-  int           ch, saw_xdigit, count_xdigit;
+  static const char xdigits_l[] = "0123456789abcdef";
+  static const char xdigits_u[] = "0123456789ABCDEF";
+  unsigned char tmp[NS_IN6ADDRSZ];
+  unsigned char *tp;
+  unsigned char *endp;
+  unsigned char *colonp;
+  const char   *xdigits;
+  const char   *curtok;
+  int           ch;
+  int           saw_xdigit;
+  int           count_xdigit;
   unsigned int  val;
 
   memset((tp = tmp), '\0', NS_IN6ADDRSZ);

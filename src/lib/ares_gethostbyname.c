@@ -127,9 +127,12 @@ void ares_gethostbyname(ares_channel channel, const char *name, int family,
 static void sort_addresses(struct hostent        *host,
                            const struct apattern *sortlist, size_t nsort)
 {
-  struct in_addr a1, a2;
-  int            i1, i2;
-  size_t         ind1, ind2;
+  struct in_addr a1;
+  struct in_addr a2;
+  int            i1;
+  int            i2;
+  size_t         ind1;
+  size_t         ind2;
 
   /* This is a simple insertion sort, not optimized at all.  i1 walks
    * through the address list, with the loop invariant that everything
@@ -181,9 +184,12 @@ static size_t get_address_index(const struct in_addr  *addr,
 static void sort6_addresses(struct hostent        *host,
                             const struct apattern *sortlist, size_t nsort)
 {
-  struct ares_in6_addr a1, a2;
-  int                  i1, i2;
-  size_t               ind1, ind2;
+  struct ares_in6_addr a1;
+  struct ares_in6_addr a2;
+  int                  i1;
+  int                  i2;
+  size_t               ind1;
+  size_t               ind2;
 
   /* This is a simple insertion sort, not optimized at all.  i1 walks
    * through the address list, with the loop invariant that everything

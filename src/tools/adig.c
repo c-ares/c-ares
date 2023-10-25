@@ -191,14 +191,23 @@ static size_t ares_strcpy(char *dest, const char *src, size_t dest_size)
 int main(int argc, char **argv)
 {
   ares_channel channel;
-  int          c, i, optmask = ARES_OPT_FLAGS, dnsclass = C_IN, type = T_A;
-  int          status, nfds, count;
+  int          c;
+  int          i;
+  int          optmask = ARES_OPT_FLAGS;
+  int          dnsclass = C_IN;
+  int          type = T_A;
+  int          status;
+  int          nfds;
+  int          count;
   int          use_ptr_helper = 0;
   struct ares_options    options;
   struct hostent        *hostent;
-  fd_set                 read_fds, write_fds;
-  struct timeval        *tvp, tv;
-  struct ares_addr_node *srvr, *servers = NULL;
+  fd_set                 read_fds;
+  fd_set                 write_fds;
+  struct timeval        *tvp;
+  struct timeval         tv;
+  struct ares_addr_node *srvr;
+  struct ares_addr_node *servers = NULL;
 
 #ifdef USE_WINSOCK
   WORD    wVersionRequested = MAKEWORD(USE_WINSOCK, USE_WINSOCK);
@@ -419,8 +428,19 @@ static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
                      int alen)
 {
   char                *name = (char *)arg;
-  int                  id, qr, opcode, aa, tc, rd, ra, rcode;
-  unsigned int         qdcount, ancount, nscount, arcount, i;
+  int                  id;
+  int                  qr;
+  int                  opcode;
+  int                  aa;
+  int                  tc;
+  int                  rd;
+  int                  ra;
+  int                  rcode;
+  unsigned int         qdcount;
+  unsigned int         ancount;
+  unsigned int         nscount;
+  unsigned int         arcount;
+  unsigned int         i;
   const unsigned char *aptr;
 
   (void)timeouts;
@@ -509,7 +529,9 @@ static const unsigned char *display_question(const unsigned char *aptr,
                                              int                  alen)
 {
   char *name;
-  int   type, dnsclass, status;
+  int   type;
+  int   dnsclass;
+  int   status;
   long  len;
 
   /* Parse the question name. */
@@ -548,9 +570,12 @@ static const unsigned char *display_rr(const unsigned char *aptr,
                                        const unsigned char *abuf, int alen)
 {
   const unsigned char *p;
-  int                  type, dnsclass;
+  int                  type;
+  int                  dnsclass;
   unsigned int         ttl;
-  int                  dlen, status, i;
+  int                  dlen;
+  int                  status;
+  int                  i;
   long                 len;
   int                  vlen;
   char                 addr[46];
@@ -915,7 +940,9 @@ static int convert_query(char **name_p, int use_bitstring)
     char                *c     = new_name;
     const unsigned char *ip    = (const unsigned char *)&addr.addr6;
     int                  max_i = (int)sizeof(addr.addr6) - 1;
-    int                  i, hi, lo;
+    int                  i;
+    int                  hi;
+    int                  lo;
 
     /* Use the more compact RFC-2673 notation?
      * Currently doesn't work or unsupported by the DNS-servers I've tested

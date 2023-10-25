@@ -43,10 +43,17 @@
 
 ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host)
 {
-  char            *line = NULL, *p, *q, **alias;
-  char            *txtaddr, *txthost, *txtalias;
+  char            *line = NULL;
+  char            *p;
+  char            *q;
+  char           **alias;
+  char            *txtaddr;
+  char            *txthost;
+  char            *txtalias;
   ares_status_t    status;
-  size_t           addrlen, linesize, naliases;
+  size_t           addrlen;
+  size_t           linesize;
+  size_t           naliases;
   struct ares_addr addr;
   struct hostent  *hostent = NULL;
 

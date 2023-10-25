@@ -36,7 +36,8 @@
  */
 int ares__bitncmp(const void *l, const void *r, size_t n)
 {
-  size_t       lb, rb;
+  size_t       lb;
+  size_t       rb;
   ares_ssize_t x;
   size_t       b;
 
