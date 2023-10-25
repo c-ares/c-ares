@@ -63,7 +63,6 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-
 static ares_bool_t try_again(int errnum);
 static void        write_tcp_data(ares_channel channel, fd_set *write_fds,
                                   ares_socket_t write_fd, struct timeval *now);
@@ -82,9 +81,9 @@ static ares_status_t open_socket(ares_channel         channel,
                                  struct server_state *server,
                                  ares_bool_t          is_tcp);
 static ares_bool_t   same_questions(const unsigned char *qbuf, size_t qlen,
-                                    const unsigned char *abuf, size_t alen);
+                                    ares_dns_record_t *arec);
 static ares_bool_t   same_address(struct sockaddr *sa, struct ares_addr *aa);
-static ares_bool_t   has_opt_rr(const unsigned char *abuf, size_t alen);
+static ares_bool_t   has_opt_rr(ares_dns_record_t *arec);
 static void          end_query(ares_channel channel, struct query *query,
                                ares_status_t status, const unsigned char *abuf,
                                size_t alen);
@@ -565,38 +564,34 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
                            size_t alen, struct server_connection *conn,
                            ares_bool_t tcp, struct timeval *now)
 {
-  int                  tc, rcode;
   size_t               packetsz;
-  unsigned short       id;
   struct query        *query;
   /* Cache these as once ares__send_query() gets called, it may end up
    * invalidating the connection all-together */
   struct server_state *server = conn->server;
   ares_socket_t        fd     = conn->fd;
+  ares_dns_record_t   *dnsrec = NULL;
+  ares_status_t        status;
 
-  /* If there's no room in the answer for a header, we can't do much
-   * with it. */
-  if (alen < HFIXEDSZ) {
-    return;
+  /* Parse the response */
+  status = ares_dns_parse(abuf, alen, 0, &dnsrec);
+  if (status != ARES_SUCCESS) {
+    goto cleanup;
   }
-
-  /* Grab the query ID, truncate bit, and response code from the packet. */
-  id    = DNS_HEADER_QID(abuf); /* Converts to host byte order */
-  tc    = DNS_HEADER_TC(abuf);
-  rcode = DNS_HEADER_RCODE(abuf);
 
   /* Find the query corresponding to this packet. The queries are
    * hashed/bucketed by query id, so this lookup should be quick.
    */
-  query = ares__htable_stvp_get_direct(channel->queries_by_qid, id);
+  query = ares__htable_stvp_get_direct(channel->queries_by_qid,
+                                       ares_dns_record_get_id(dnsrec));
   if (!query) {
-    return;
+    goto cleanup;
   }
 
   /* Both the query id and the questions must be the same. We will drop any
    * replies that aren't for the same query as this is considered invalid. */
-  if (!same_questions(query->qbuf, query->qlen, abuf, alen)) {
-    return;
+  if (!same_questions(query->qbuf, query->qlen, dnsrec)) {
+    goto cleanup;
   }
 
   /* At this point we know we've received an answer for this query, so we should
@@ -612,7 +607,8 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
    * query without EDNS enabled. */
   if (channel->flags & ARES_FLAG_EDNS) {
     packetsz = (size_t)channel->ednspsz;
-    if (rcode == FORMERR && !has_opt_rr(abuf, alen)) {
+    if (ares_dns_record_get_rcode(dnsrec) == ARES_RCODE_FORMAT_ERROR &&
+        !has_opt_rr(dnsrec)) {
       size_t qlen       = (query->tcplen - 2) - EDNSFIXEDSZ;
       channel->flags   ^= ARES_FLAG_EDNS;
       query->tcplen    -= EDNSFIXEDSZ;
@@ -624,7 +620,7 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
       query->qbuf   = query->tcpbuf + 2;
       ares__send_query(channel, query, now);
       ares__check_cleanup_conn(channel, fd);
-      return;
+      goto cleanup;
     }
   }
 
@@ -632,13 +628,14 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
    * don't accept the packet, and switch the query to TCP if we hadn't
    * done so already.
    */
-  if ((tc || alen > packetsz) && !tcp && !(channel->flags & ARES_FLAG_IGNTC)) {
+  if ((ares_dns_record_get_flags(dnsrec) & ARES_FLAG_TC || alen > packetsz) &&
+      !tcp && !(channel->flags & ARES_FLAG_IGNTC)) {
     if (!query->using_tcp) {
       query->using_tcp = ARES_TRUE;
       ares__send_query(channel, query, now);
     }
     ares__check_cleanup_conn(channel, fd);
-    return;
+    goto cleanup;
   }
 
   /* Limit alen to PACKETSZ if we aren't using TCP (only relevant if we
@@ -652,16 +649,20 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
    * with SERVFAIL, NOTIMP, or REFUSED response codes.
    */
   if (!(channel->flags & ARES_FLAG_NOCHECKRESP)) {
-    if (rcode == SERVFAIL || rcode == NOTIMP || rcode == REFUSED) {
+    ares_dns_rcode_t rcode = ares_dns_record_get_rcode(dnsrec);
+    if (rcode == ARES_RCODE_SERVER_FAILURE ||
+        rcode == ARES_RCODE_NOT_IMPLEMENTED || rcode == ARES_RCODE_REFUSED) {
       switch (rcode) {
-        case SERVFAIL:
+        case ARES_RCODE_SERVER_FAILURE:
           query->error_status = ARES_ESERVFAIL;
           break;
-        case NOTIMP:
+        case ARES_RCODE_NOT_IMPLEMENTED:
           query->error_status = ARES_ENOTIMP;
           break;
-        case REFUSED:
+        case ARES_RCODE_REFUSED:
           query->error_status = ARES_EREFUSED;
+          break;
+        default:
           break;
       }
       skip_server(channel, query, server);
@@ -669,13 +670,16 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
         next_server(channel, query, now);
       }
       ares__check_cleanup_conn(channel, fd);
-      return;
+      goto cleanup;
     }
   }
 
   end_query(channel, query, ARES_SUCCESS, abuf, alen);
 
   ares__check_cleanup_conn(channel, fd);
+
+cleanup:
+  ares_dns_record_destroy(dnsrec);
 }
 
 static void handle_error(struct server_connection *conn, struct timeval *now)
@@ -1209,81 +1213,49 @@ static ares_status_t open_socket(ares_channel         channel,
 }
 
 static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
-                                  const unsigned char *abuf, size_t alen)
+                                  ares_dns_record_t *arec)
 {
-  struct {
-    const unsigned char *p;
-    size_t               qdcount;
-    char                *name;
-    size_t               namelen;
-    int                  type;
-    int                  dnsclass;
-  } q, a;
+  ares_dns_record_t *qrec = NULL;
+  size_t             i;
+  ares_bool_t        rv = ARES_FALSE;
 
-  size_t i, j;
-
-  if (qlen < HFIXEDSZ || alen < HFIXEDSZ) {
-    return ARES_FALSE;
+  if (ares_dns_parse(qbuf, qlen, 0, &qrec) != ARES_SUCCESS) {
+    goto done;
   }
 
-  /* Extract qdcount from the request and reply buffers and compare them. */
-  q.qdcount = DNS_HEADER_QDCOUNT(qbuf);
-  a.qdcount = DNS_HEADER_QDCOUNT(abuf);
-  if (q.qdcount != a.qdcount) {
-    return ARES_FALSE;
+  if (ares_dns_record_query_cnt(qrec) != ares_dns_record_query_cnt(arec)) {
+    goto done;
   }
 
-  /* For each question in qbuf, find it in abuf. */
-  q.p = qbuf + HFIXEDSZ;
-  for (i = 0; i < q.qdcount; i++) {
-    /* Decode the question in the query. */
-    if (ares__expand_name_for_response(q.p, qbuf, qlen, &q.name, &q.namelen,
-                                       ARES_FALSE) != ARES_SUCCESS) {
-      return ARES_FALSE;
-    }
-    q.p += q.namelen;
-    if (q.p + QFIXEDSZ > qbuf + qlen) {
-      ares_free(q.name);
-      return ARES_FALSE;
-    }
-    q.type      = DNS_QUESTION_TYPE(q.p);
-    q.dnsclass  = DNS_QUESTION_CLASS(q.p);
-    q.p        += QFIXEDSZ;
+  for (i = 0; i < ares_dns_record_query_cnt(qrec); i++) {
+    const char         *qname = NULL;
+    const char         *aname = NULL;
+    ares_dns_rec_type_t qtype;
+    ares_dns_rec_type_t atype;
+    ares_dns_class_t    qclass;
+    ares_dns_class_t    aclass;
 
-    /* Search for this question in the answer. */
-    a.p = abuf + HFIXEDSZ;
-    for (j = 0; j < a.qdcount; j++) {
-      /* Decode the question in the answer. */
-      if (ares__expand_name_for_response(a.p, abuf, alen, &a.name, &a.namelen,
-                                         ARES_FALSE) != ARES_SUCCESS) {
-        ares_free(q.name);
-        return ARES_FALSE;
-      }
-      a.p += a.namelen;
-      if (a.p + QFIXEDSZ > abuf + alen) {
-        ares_free(q.name);
-        ares_free(a.name);
-        return ARES_FALSE;
-      }
-      a.type      = DNS_QUESTION_TYPE(a.p);
-      a.dnsclass  = DNS_QUESTION_CLASS(a.p);
-      a.p        += QFIXEDSZ;
-
-      /* Compare the decoded questions. */
-      if (strcasecmp(q.name, a.name) == 0 && q.type == a.type &&
-          q.dnsclass == a.dnsclass) {
-        ares_free(a.name);
-        break;
-      }
-      ares_free(a.name);
+    if (ares_dns_record_query_get(qrec, i, &qname, &qtype, &qclass) !=
+          ARES_SUCCESS ||
+        qname == NULL) {
+      goto done;
     }
 
-    ares_free(q.name);
-    if (j == a.qdcount) {
-      return ARES_FALSE;
+    if (ares_dns_record_query_get(arec, i, &aname, &atype, &aclass) !=
+          ARES_SUCCESS ||
+        aname == NULL) {
+      goto done;
+    }
+    if (strcasecmp(qname, aname) != 0 || qtype != atype || qclass != aclass) {
+      goto done;
     }
   }
-  return ARES_TRUE;
+
+  rv = ARES_TRUE;
+
+done:
+  ares_dns_record_destroy(qrec);
+  return rv;
 }
 
 static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa)
@@ -1315,91 +1287,17 @@ static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa)
 }
 
 /* search for an OPT RR in the response */
-static ares_bool_t has_opt_rr(const unsigned char *abuf, size_t alen)
+static ares_bool_t has_opt_rr(ares_dns_record_t *arec)
 {
-  size_t               qdcount, ancount, nscount, arcount, i;
-  const unsigned char *aptr;
-  ares_status_t        status;
+  size_t i;
+  for (i = 0; i < ares_dns_record_rr_cnt(arec, ARES_SECTION_ADDITIONAL); i++) {
+    ares_dns_rr_t *rr =
+      ares_dns_record_rr_get(arec, ARES_SECTION_ADDITIONAL, i);
 
-  if (alen < HFIXEDSZ) {
-    return ARES_FALSE;
-  }
-
-  /* Parse the answer header. */
-  qdcount = DNS_HEADER_QDCOUNT(abuf);
-  ancount = DNS_HEADER_ANCOUNT(abuf);
-  nscount = DNS_HEADER_NSCOUNT(abuf);
-  arcount = DNS_HEADER_ARCOUNT(abuf);
-
-  aptr = abuf + HFIXEDSZ;
-
-  /* skip the questions */
-  for (i = 0; i < qdcount; i++) {
-    char  *name;
-    size_t len;
-    status =
-      ares__expand_name_for_response(aptr, abuf, alen, &name, &len, ARES_FALSE);
-    if (status != ARES_SUCCESS) {
-      return ARES_FALSE;
-    }
-    ares_free_string(name);
-    if (aptr + len + QFIXEDSZ > abuf + alen) {
-      return ARES_FALSE;
-    }
-    aptr += len + QFIXEDSZ;
-  }
-
-  /* skip the ancount and nscount */
-  for (i = 0; i < ancount + nscount; i++) {
-    char  *name;
-    size_t len;
-    size_t dlen;
-    status =
-      ares__expand_name_for_response(aptr, abuf, alen, &name, &len, ARES_FALSE);
-    if (status != ARES_SUCCESS) {
-      return ARES_FALSE;
-    }
-    ares_free_string(name);
-    if (aptr + len + RRFIXEDSZ > abuf + alen) {
-      return ARES_FALSE;
-    }
-    aptr += len;
-    dlen  = DNS_RR_LEN(aptr);
-    aptr += RRFIXEDSZ;
-    if (aptr + dlen > abuf + alen) {
-      return ARES_FALSE;
-    }
-    aptr += dlen;
-  }
-
-  /* search for rr type (41) - opt */
-  for (i = 0; i < arcount; i++) {
-    char  *name;
-    size_t len;
-    size_t dlen;
-    status =
-      ares__expand_name_for_response(aptr, abuf, alen, &name, &len, ARES_FALSE);
-    if (status != ARES_SUCCESS) {
-      return ARES_FALSE;
-    }
-    ares_free_string(name);
-    if (aptr + len + RRFIXEDSZ > abuf + alen) {
-      return ARES_FALSE;
-    }
-    aptr += len;
-
-    if (DNS_RR_TYPE(aptr) == T_OPT) {
+    if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
       return ARES_TRUE;
     }
-
-    dlen  = DNS_RR_LEN(aptr);
-    aptr += RRFIXEDSZ;
-    if (aptr + dlen > abuf + alen) {
-      return ARES_FALSE;
-    }
-    aptr += dlen;
   }
-
   return ARES_FALSE;
 }
 

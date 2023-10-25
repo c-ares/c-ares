@@ -74,7 +74,31 @@ void *(*ares_malloc)(size_t size)             = default_malloc;
 void *(*ares_realloc)(void *ptr, size_t size) = default_realloc;
 void  (*ares_free)(void *ptr)                 = default_free;
 
-int   ares_library_init(int flags)
+void *ares_malloc_zero(size_t size)
+{
+  void *ptr = ares_malloc(size);
+  if (ptr != NULL) {
+    memset(ptr, 0, size);
+  }
+
+  return ptr;
+}
+
+void *ares_realloc_zero(void *ptr, size_t orig_size, size_t new_size)
+{
+  void *p = ares_realloc(ptr, new_size);
+  if (p == NULL) {
+    return NULL;
+  }
+
+  if (new_size > orig_size) {
+    memset((unsigned char *)p + orig_size, 0, new_size - orig_size);
+  }
+
+  return p;
+}
+
+int ares_library_init(int flags)
 {
   if (ares_initialized) {
     ares_initialized++;

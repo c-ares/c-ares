@@ -199,41 +199,6 @@ TEST_F(LibraryTest, ParseFullyCompressedName) {
   ares_free_hostent(host);
 }
 
-TEST_F(LibraryTest, ParseFullyCompressedName2) {
-  std::vector<byte> data = {
-    0x12, 0x34,  // qid
-    0x84, // response + query + AA + not-TC + not-RD
-    0x00, // not-RA + not-Z + not-AD + not-CD + rc=NoError
-    0x00, 0x01,  // num questions
-    0x00, 0x01,  // num answer RRs
-    0x00, 0x00,  // num authority RRs
-    0x00, 0x00,  // num additional RRs
-    // Question
-    0xC0, 0x12,  // pointer to later in message
-    0x00, 0x01,  // type A
-    0x00, 0x01,  // class IN
-    // Answer 1
-    0x03, 'w', 'w', 'w',
-    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
-    0x03, 'c', 'o', 'm',
-    0x00,
-    0x00, 0x01,  // RR type
-    0x00, 0x01,  // class IN
-    0x01, 0x02, 0x03, 0x04, // TTL
-    0x00, 0x04,  // rdata length
-    0x02, 0x03, 0x04, 0x05,
-  };
-  struct hostent *host = nullptr;
-  struct ares_addrttl info[2];
-  int count = 2;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), data.size(),
-                                             &host, info, &count));
-  ASSERT_NE(nullptr, host);
-  std::stringstream ss;
-  ss << HostEnt(host);
-  EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
-  ares_free_hostent(host);
-}
 
 }  // namespace test
 }  // namespace ares

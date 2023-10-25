@@ -120,6 +120,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__htable_stvp.h"
 #include "ares__htable_asvp.h"
 #include "ares__buf.h"
+#include "ares_dns_record.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -348,6 +349,8 @@ ares_bool_t   ares__is_onion_domain(const char *name);
 extern void  *(*ares_malloc)(size_t size);
 extern void  *(*ares_realloc)(void *ptr, size_t size);
 extern void   (*ares_free)(void *ptr);
+void         *ares_malloc_zero(size_t size);
+void         *ares_realloc_zero(void *ptr, size_t orig_size, size_t new_size);
 
 /* return true if now is exactly check time or later */
 ares_bool_t   ares__timedout(struct timeval *now, struct timeval *check);
@@ -445,15 +448,21 @@ int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
                                    const struct sockaddr *addr, ares_socklen_t addrlen);
 
 #define ARES_SWAP_BYTE(a, b)           \
-  {                                    \
+  do {                                 \
     unsigned char swapByte = *(a);     \
     *(a)                   = *(b);     \
     *(b)                   = swapByte; \
-  }
+  } while (0)
 
-#define SOCK_STATE_CALLBACK(c, s, r, w)                         \
-  if ((c)->sock_state_cb) {                                     \
-    (c)->sock_state_cb((c)->sock_state_cb_data, (s), (r), (w)); \
-  }
+#define SOCK_STATE_CALLBACK(c, s, r, w)                           \
+  do {                                                            \
+    if ((c)->sock_state_cb) {                                     \
+      (c)->sock_state_cb((c)->sock_state_cb_data, (s), (r), (w)); \
+    }                                                             \
+  } while (0)
+
+
+size_t ares__round_up_pow2(size_t n);
+size_t ares__log2(size_t n);
 
 #endif /* __ARES_PRIVATE_H */

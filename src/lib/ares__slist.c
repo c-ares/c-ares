@@ -64,26 +64,22 @@ ares__slist_t *ares__slist_create(ares_rand_state         *rand_state,
     return NULL;
   }
 
-  list = ares_malloc(sizeof(*list));
+  list = ares_malloc_zero(sizeof(*list));
 
   if (list == NULL) {
     return NULL;
   }
-
-  memset(list, 0, sizeof(*list));
 
   list->rand_state = rand_state;
   list->cmp        = cmp;
   list->destruct   = destruct;
 
   list->levels = ARES__SLIST_START_LEVELS;
-  list->head   = ares_malloc(sizeof(*list->head) * list->levels);
+  list->head   = ares_malloc_zero(sizeof(*list->head) * list->levels);
   if (list->head == NULL) {
     ares_free(list);
     return NULL;
   }
-
-  memset(list->head, 0, sizeof(*list->head) * list->levels);
 
   return list;
 }
@@ -117,44 +113,6 @@ void ares__slist_replace_destructor(ares__slist_t           *list,
   }
 
   list->destruct = destruct;
-}
-
-/* Uses public domain code snipets from
- * http://graphics.stanford.edu/~seander/bithacks.html */
-
-static size_t ares__round_up_pow2(size_t n)
-{
-  n--;
-  n |= n >> 1;
-  n |= n >> 2;
-  n |= n >> 4;
-  n |= n >> 8;
-  n |= n >> 16;
-  if (sizeof(size_t) > 4) {
-    n |= n >> 32;
-  }
-  n++;
-  return n;
-}
-
-static size_t ares__log2(size_t n)
-{
-  static const unsigned char tab32[32] = { 0,  1,  28, 2,  29, 14, 24, 3,
-                                           30, 22, 20, 15, 25, 17, 4,  8,
-                                           31, 27, 13, 23, 21, 19, 16, 7,
-                                           26, 12, 18, 6,  11, 5,  10, 9 };
-  static const unsigned char tab64[64] = {
-    63, 0,  58, 1,  59, 47, 53, 2,  60, 39, 48, 27, 54, 33, 42, 3,
-    61, 51, 37, 40, 49, 18, 28, 20, 55, 30, 34, 11, 43, 14, 22, 4,
-    62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21,
-    56, 45, 25, 31, 35, 16, 9,  12, 44, 24, 15, 8,  23, 7,  6,  5
-  };
-
-  if (sizeof(size_t) == 4) {
-    return tab32[(size_t)(n * 0x077CB531) >> 27];
-  }
-
-  return tab64[((size_t)(n * 0x07EDD5E59A4E28C2)) >> 58];
 }
 
 static size_t ares__slist_max_level(ares__slist_t *list)
@@ -195,13 +153,12 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
     return NULL;
   }
 
-  node = ares_malloc(sizeof(*node));
+  node = ares_malloc_zero(sizeof(*node));
 
   if (node == NULL) {
     goto fail;
   }
 
-  memset(node, 0, sizeof(*node));
   node->data   = val;
   node->parent = list;
 
@@ -209,31 +166,26 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
   node->levels = ares__slist_calc_level(list);
 
   /* Allocate array of next and prev nodes for linking each level */
-  node->next = ares_malloc(sizeof(*node->next) * node->levels);
+  node->next = ares_malloc_zero(sizeof(*node->next) * node->levels);
   if (node->next == NULL) {
     goto fail;
   }
 
-  memset(node->next, 0, sizeof(*node->next) * node->levels);
-
-  node->prev = ares_malloc(sizeof(*node->prev) * node->levels);
+  node->prev = ares_malloc_zero(sizeof(*node->prev) * node->levels);
   if (node->prev == NULL) {
     goto fail;
   }
 
-  memset(node->prev, 0, sizeof(*node->prev) * node->levels);
-
   /* If the number of levels is greater than we currently support in the slist,
    * increase the count */
   if (list->levels < node->levels) {
-    size_t zero_len = sizeof(*list->head) * (node->levels - list->levels);
-    size_t offset   = sizeof(*list->head) * list->levels;
-    void  *ptr = ares_realloc(list->head, sizeof(*list->head) * node->levels);
+    void *ptr =
+      ares_realloc_zero(list->head, sizeof(*list->head) * list->levels,
+                        sizeof(*list->head) * node->levels);
     if (ptr == NULL) {
       goto fail;
     }
 
-    memset((unsigned char *)ptr + offset, 0, zero_len);
     list->head   = ptr;
     list->levels = node->levels;
   }

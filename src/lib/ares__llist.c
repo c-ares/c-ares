@@ -44,13 +44,11 @@ struct ares__llist_node {
 
 ares__llist_t *ares__llist_create(ares__llist_destructor_t destruct)
 {
-  ares__llist_t *list = ares_malloc(sizeof(*list));
+  ares__llist_t *list = ares_malloc_zero(sizeof(*list));
 
   if (list == NULL) {
     return NULL;
   }
-
-  memset(list, 0, sizeof(*list));
 
   list->destruct = destruct;
 
@@ -84,13 +82,12 @@ static ares__llist_node_t *ares__llist_insert_at(ares__llist_t            *list,
     return NULL;
   }
 
-  node = ares_malloc(sizeof(*node));
+  node = ares_malloc_zero(sizeof(*node));
 
   if (node == NULL) {
     return NULL;
   }
 
-  memset(node, 0, sizeof(*node));
   node->data   = val;
   node->parent = list;
 

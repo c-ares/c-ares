@@ -533,7 +533,7 @@ TEST_F(LibraryTest, ExpandString) {
   EXPECT_EQ(ARES_EBADSTR,
             ares_expand_string(s1.data() + 4, s1.data(), s1.size(),
                                (unsigned char**)&result, &len));
-  SetAllocSizeFail(3 + 1);
+  SetAllocFail(1);
   EXPECT_EQ(ARES_ENOMEM,
             ares_expand_string(s1.data(), s1.data(), s1.size(),
                                (unsigned char**)&result, &len));
