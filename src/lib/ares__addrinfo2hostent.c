@@ -161,7 +161,6 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
     }
 
     i    = 0;
-    next = ai->nodes;
     for (next = ai->nodes; next != NULL; next = next->ai_next) {
       if (next->ai_family != family) {
         continue;
