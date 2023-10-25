@@ -64,7 +64,8 @@ static void          addr_callback(void *arg, int status, int timeouts,
                                    unsigned char *abuf, int alen);
 static void          end_aquery(struct addr_query *aquery, ares_status_t status,
                                 struct hostent *host);
-static ares_status_t file_lookup(struct ares_addr *addr, struct hostent **host);
+static ares_status_t file_lookup(const struct ares_addr *addr,
+                                 struct hostent        **host);
 static void          ptr_rr_name(char *name, size_t name_size,
                                  const struct ares_addr *addr);
 
@@ -129,6 +130,8 @@ static void next_lookup(struct addr_query *aquery)
           return;
         }
         break;
+      default:
+        break;
     }
   }
   end_aquery(aquery, ARES_ENOTFOUND, NULL);
@@ -170,7 +173,8 @@ static void end_aquery(struct addr_query *aquery, ares_status_t status,
   ares_free(aquery);
 }
 
-static ares_status_t file_lookup(struct ares_addr *addr, struct hostent **host)
+static ares_status_t file_lookup(const struct ares_addr *addr,
+                                 struct hostent        **host)
 {
   FILE         *fp;
   ares_status_t status;
@@ -232,15 +236,13 @@ static ares_status_t file_lookup(struct ares_addr *addr, struct hostent **host)
       ares_free_hostent(*host);
       continue;
     }
-    if (addr->family == AF_INET) {
-      if (memcmp((*host)->h_addr, &addr->addrV4, sizeof(addr->addrV4)) == 0) {
-        break;
-      }
-    } else if (addr->family == AF_INET6) {
-      if (memcmp((*host)->h_addr, addr->addrV6._S6_un._S6_u8,
-                 sizeof(addr->addrV6)) == 0) {
-        break;
-      }
+    if (addr->family == AF_INET &&
+        memcmp((*host)->h_addr, &addr->addrV4, sizeof(addr->addrV4)) == 0) {
+      break;
+    } else if (addr->family == AF_INET6 &&
+               memcmp((*host)->h_addr, addr->addrV6._S6_un._S6_u8,
+                      sizeof(addr->addrV6)) == 0) {
+      break;
     }
     ares_free_hostent(*host);
   }
@@ -265,7 +267,7 @@ static void ptr_rr_name(char *name, size_t name_size,
     unsigned long a4    = laddr & 0xFFUL;
     snprintf(name, name_size, "%lu.%lu.%lu.%lu.in-addr.arpa", a4, a3, a2, a1);
   } else {
-    unsigned char *bytes = (unsigned char *)&addr->addrV6;
+    const unsigned char *bytes = (const unsigned char *)&addr->addrV6;
     /* There are too many arguments to do this in one line using
      * minimally C89-compliant compilers */
     snprintf(name, name_size,

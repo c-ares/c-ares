@@ -58,7 +58,8 @@ int ares_parse_naptr_reply(const unsigned char *abuf, int alen_int,
   }
 
   for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER); i++) {
-    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
+    const ares_dns_rr_t *rr =
+      ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (rr == NULL) {
       /* Shouldn't be possible */

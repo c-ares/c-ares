@@ -85,7 +85,7 @@ ares_bool_t ares__htable_asvp_insert(ares__htable_asvp_t *htable,
  *  \param[out] val     Optional.  Pointer to store value.
  *  \return ARES_TRUE on success, ARES_FALSE on failure
  */
-ares_bool_t ares__htable_asvp_get(ares__htable_asvp_t *htable,
+ares_bool_t ares__htable_asvp_get(const ares__htable_asvp_t *htable,
                                   ares_socket_t key, void **val);
 
 /*! Retrieve value from hashtable directly as return value.  Caveat to this
@@ -96,8 +96,8 @@ ares_bool_t ares__htable_asvp_get(ares__htable_asvp_t *htable,
  *  \param[in] key     key to use to search
  *  \return value associated with key in hashtable or NULL
  */
-void       *ares__htable_asvp_get_direct(ares__htable_asvp_t *htable,
-                                         ares_socket_t        key);
+void       *ares__htable_asvp_get_direct(const ares__htable_asvp_t *htable,
+                                         ares_socket_t              key);
 
 /*! Remove a value from the hashtable by key
  *

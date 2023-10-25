@@ -51,7 +51,7 @@ int ares_getsock(ares_channel channel, ares_socket_t *socks,
 
     for (node = ares__llist_node_first(server->connections); node != NULL;
          node = ares__llist_node_next(node)) {
-      struct server_connection *conn = ares__llist_node_val(node);
+      const struct server_connection *conn = ares__llist_node_val(node);
 
       if (sockindex >= (size_t)numsocks || sockindex >= ARES_GETSOCK_MAXNUM) {
         break;

@@ -143,7 +143,7 @@ fail:
   return ARES_FALSE;
 }
 
-ares_bool_t ares__htable_asvp_get(ares__htable_asvp_t *htable,
+ares_bool_t ares__htable_asvp_get(const ares__htable_asvp_t *htable,
                                   ares_socket_t key, void **val)
 {
   ares__htable_asvp_bucket_t *bucket = NULL;
@@ -167,8 +167,8 @@ ares_bool_t ares__htable_asvp_get(ares__htable_asvp_t *htable,
   return ARES_TRUE;
 }
 
-void *ares__htable_asvp_get_direct(ares__htable_asvp_t *htable,
-                                   ares_socket_t        key)
+void *ares__htable_asvp_get_direct(const ares__htable_asvp_t *htable,
+                                   ares_socket_t              key)
 {
   void *val = NULL;
   ares__htable_asvp_get(htable, key, &val);

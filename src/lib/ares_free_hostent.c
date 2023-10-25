@@ -42,7 +42,7 @@ void ares_free_hostent(struct hostent *host)
     return;
   }
 
-  ares_free((char *)(host->h_name));
+  ares_free(host->h_name);
   for (p = host->h_aliases; p && *p; p++) {
     ares_free(*p);
   }

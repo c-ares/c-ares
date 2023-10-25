@@ -108,7 +108,8 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
   memset(hostent->h_aliases, 0, (ancount + 1) * sizeof(*hostent->h_aliases));
 
   for (i = 0; i < ancount; i++) {
-    ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
+    const ares_dns_rr_t *rr =
+      ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, i);
 
     if (rr == NULL) {
       /* Shouldn't be possible */

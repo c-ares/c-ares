@@ -50,8 +50,8 @@ ares_status_t ares__readaddrinfo(FILE *fp, const char *name,
   char                       *line = NULL;
   char                       *p;
   char                       *q;
-  char                       *txtaddr;
-  char                       *txthost;
+  const char                 *txtaddr;
+  const char                 *txthost;
   char                       *txtalias;
   char                       *aliases[MAX_ALIASES];
   size_t                      i;

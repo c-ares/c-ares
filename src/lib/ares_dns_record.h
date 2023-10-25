@@ -304,16 +304,17 @@ ares_dns_rcode_t  ares_dns_record_get_rcode(const ares_dns_record_t *dnsrec);
  * \param[in] qclass  Class of query (typically ARES_CLASS_IN)
  * \return ARES_SUCCESS on success
  */
-ares_status_t  ares_dns_record_query_add(ares_dns_record_t *dnsrec, char *name,
-                                         ares_dns_rec_type_t qtype,
-                                         ares_dns_class_t    qclass);
+ares_status_t     ares_dns_record_query_add(ares_dns_record_t  *dnsrec,
+                                            const char         *name,
+                                            ares_dns_rec_type_t qtype,
+                                            ares_dns_class_t    qclass);
 
 /*! Get the count of queries in the DNS Record
  *
  * \param[in] dnsrec  Initialized record object
  * \return count of queries
  */
-size_t         ares_dns_record_query_cnt(const ares_dns_record_t *dnsrec);
+size_t            ares_dns_record_query_cnt(const ares_dns_record_t *dnsrec);
 
 /*! Get the data about the query at the provided index.
  *
@@ -324,10 +325,10 @@ size_t         ares_dns_record_query_cnt(const ares_dns_record_t *dnsrec);
  * \param[out] qclass  Optional.  Returns class, may pass NULL.
  * \return ARES_SUCCESS on success
  */
-ares_status_t  ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx,
-                                         const char         **name,
-                                         ares_dns_rec_type_t *qtype,
-                                         ares_dns_class_t    *qclass);
+ares_status_t     ares_dns_record_query_get(const ares_dns_record_t *dnsrec,
+                                            size_t idx, const char **name,
+                                            ares_dns_rec_type_t *qtype,
+                                            ares_dns_class_t    *qclass);
 
 /*! Get the count of Resource Records in the provided section
  *
@@ -335,8 +336,8 @@ ares_status_t  ares_dns_record_query_get(ares_dns_record_t *dnsrec, size_t idx,
  * \param[in] sect    Section.  ARES_SECTION_ANSWER is most used.
  * \return count of resource records.
  */
-size_t         ares_dns_record_rr_cnt(const ares_dns_record_t *dnsrec,
-                                      ares_dns_section_t       sect);
+size_t            ares_dns_record_rr_cnt(const ares_dns_record_t *dnsrec,
+                                         ares_dns_section_t       sect);
 
 
 /*! Add a Resource Record to the DNS Record.
@@ -352,11 +353,11 @@ size_t         ares_dns_record_rr_cnt(const ares_dns_record_t *dnsrec,
  *  \param[in]  ttl      TTL
  *  \return ARES_SUCCESS on success
  */
-ares_status_t  ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
-                                      ares_dns_record_t *dnsrec,
-                                      ares_dns_section_t sect, char *name,
-                                      ares_dns_rec_type_t type,
-                                      ares_dns_class_t rclass, unsigned int ttl);
+ares_status_t     ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
+                                         ares_dns_record_t *dnsrec,
+                                         ares_dns_section_t sect, const char *name,
+                                         ares_dns_rec_type_t type,
+                                         ares_dns_class_t rclass, unsigned int ttl);
 
 /*! Fetch a resource record based on the section and index.
  *
@@ -365,8 +366,8 @@ ares_status_t  ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
  *  \param[in]  idx      Index of resource record in section
  *  \param NULL on misuse, otherwise a pointer to the resource record
  */
-ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
-                                      ares_dns_section_t sect, size_t idx);
+ares_dns_rr_t    *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
+                                         ares_dns_section_t sect, size_t idx);
 
 
 /*! Retrieve a list of Resource Record keys that can be set or retrieved for
@@ -430,7 +431,7 @@ unsigned int             ares_dns_rr_get_ttl(const ares_dns_rr_t *rr);
  *  \return ARES_SUCCESS on success
  */
 ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
-                                   struct in_addr *addr);
+                                   const struct in_addr *addr);
 
 /*! Set ipv6 address data type for specified resource record and key.  Can
  *  only be used on keys with datatype ARES_DATATYPE_INADDR6
@@ -440,9 +441,9 @@ ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
  *  \param[in] addr   Pointer to ipv6 address to use.
  *  \return ARES_SUCCESS on success
  */
-ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t        *dns_rr,
-                                    ares_dns_rr_key_t     key,
-                                    struct ares_in6_addr *addr);
+ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t              *dns_rr,
+                                    ares_dns_rr_key_t           key,
+                                    const struct ares_in6_addr *addr);
 
 /*! Set string data for specified resource record and key.  Can
  *  only be used on keys with datatype ARES_DATATYPE_STR
