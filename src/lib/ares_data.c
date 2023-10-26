@@ -71,99 +71,51 @@ void ares_free_data(void *dataptr)
 
     switch (ptr->type) {
       case ARES_DATATYPE_MX_REPLY:
-
-        if (ptr->data.mx_reply.next) {
-          next_data = ptr->data.mx_reply.next;
-        }
-        if (ptr->data.mx_reply.host) {
-          ares_free(ptr->data.mx_reply.host);
-        }
+        next_data = ptr->data.mx_reply.next;
+        ares_free(ptr->data.mx_reply.host);
         break;
 
       case ARES_DATATYPE_SRV_REPLY:
-
-        if (ptr->data.srv_reply.next) {
-          next_data = ptr->data.srv_reply.next;
-        }
-        if (ptr->data.srv_reply.host) {
-          ares_free(ptr->data.srv_reply.host);
-        }
+        next_data = ptr->data.srv_reply.next;
+        ares_free(ptr->data.srv_reply.host);
         break;
 
       case ARES_DATATYPE_URI_REPLY:
-
-        if (ptr->data.uri_reply.next) {
-          next_data = ptr->data.uri_reply.next;
-        }
-        if (ptr->data.uri_reply.uri) {
-          ares_free(ptr->data.uri_reply.uri);
-        }
+        next_data = ptr->data.uri_reply.next;
+        ares_free(ptr->data.uri_reply.uri);
         break;
 
       case ARES_DATATYPE_TXT_REPLY:
       case ARES_DATATYPE_TXT_EXT:
-
-        if (ptr->data.txt_reply.next) {
-          next_data = ptr->data.txt_reply.next;
-        }
-        if (ptr->data.txt_reply.txt) {
-          ares_free(ptr->data.txt_reply.txt);
-        }
+        next_data = ptr->data.txt_reply.next;
+        ares_free(ptr->data.txt_reply.txt);
         break;
 
       case ARES_DATATYPE_ADDR_NODE:
-
-        if (ptr->data.addr_node.next) {
-          next_data = ptr->data.addr_node.next;
-        }
+        next_data = ptr->data.addr_node.next;
         break;
 
       case ARES_DATATYPE_ADDR_PORT_NODE:
-
-        if (ptr->data.addr_port_node.next) {
-          next_data = ptr->data.addr_port_node.next;
-        }
+        next_data = ptr->data.addr_port_node.next;
         break;
 
       case ARES_DATATYPE_NAPTR_REPLY:
-
-        if (ptr->data.naptr_reply.next) {
-          next_data = ptr->data.naptr_reply.next;
-        }
-        if (ptr->data.naptr_reply.flags) {
-          ares_free(ptr->data.naptr_reply.flags);
-        }
-        if (ptr->data.naptr_reply.service) {
-          ares_free(ptr->data.naptr_reply.service);
-        }
-        if (ptr->data.naptr_reply.regexp) {
-          ares_free(ptr->data.naptr_reply.regexp);
-        }
-        if (ptr->data.naptr_reply.replacement) {
-          ares_free(ptr->data.naptr_reply.replacement);
-        }
+        next_data = ptr->data.naptr_reply.next;
+        ares_free(ptr->data.naptr_reply.flags);
+        ares_free(ptr->data.naptr_reply.service);
+        ares_free(ptr->data.naptr_reply.regexp);
+        ares_free(ptr->data.naptr_reply.replacement);
         break;
 
       case ARES_DATATYPE_SOA_REPLY:
-        if (ptr->data.soa_reply.nsname) {
-          ares_free(ptr->data.soa_reply.nsname);
-        }
-        if (ptr->data.soa_reply.hostmaster) {
-          ares_free(ptr->data.soa_reply.hostmaster);
-        }
+        ares_free(ptr->data.soa_reply.nsname);
+        ares_free(ptr->data.soa_reply.hostmaster);
         break;
 
       case ARES_DATATYPE_CAA_REPLY:
-
-        if (ptr->data.caa_reply.next) {
-          next_data = ptr->data.caa_reply.next;
-        }
-        if (ptr->data.caa_reply.property) {
-          ares_free(ptr->data.caa_reply.property);
-        }
-        if (ptr->data.caa_reply.value) {
-          ares_free(ptr->data.caa_reply.value);
-        }
+        next_data = ptr->data.caa_reply.next;
+        ares_free(ptr->data.caa_reply.property);
+        ares_free(ptr->data.caa_reply.value);
         break;
 
       default:
@@ -190,86 +142,22 @@ void *ares_malloc_data(ares_datatype type)
 {
   struct ares_data *ptr;
 
-  ptr = ares_malloc(sizeof(struct ares_data));
+  ptr = ares_malloc_zero(sizeof(*ptr));
   if (!ptr) {
     return NULL;
   }
 
   switch (type) {
     case ARES_DATATYPE_MX_REPLY:
-      ptr->data.mx_reply.next     = NULL;
-      ptr->data.mx_reply.host     = NULL;
-      ptr->data.mx_reply.priority = 0;
-      break;
-
     case ARES_DATATYPE_SRV_REPLY:
-      ptr->data.srv_reply.next     = NULL;
-      ptr->data.srv_reply.host     = NULL;
-      ptr->data.srv_reply.priority = 0;
-      ptr->data.srv_reply.weight   = 0;
-      ptr->data.srv_reply.port     = 0;
-      break;
-
     case ARES_DATATYPE_URI_REPLY:
-      ptr->data.uri_reply.next     = NULL;
-      ptr->data.uri_reply.priority = 0;
-      ptr->data.uri_reply.weight   = 0;
-      ptr->data.uri_reply.uri      = NULL;
-      ptr->data.uri_reply.ttl      = 0;
-      break;
-
     case ARES_DATATYPE_TXT_EXT:
-      ptr->data.txt_ext.record_start = 0;
-      /* FALLTHROUGH */
-
     case ARES_DATATYPE_TXT_REPLY:
-      ptr->data.txt_reply.next   = NULL;
-      ptr->data.txt_reply.txt    = NULL;
-      ptr->data.txt_reply.length = 0;
-      break;
-
     case ARES_DATATYPE_CAA_REPLY:
-      ptr->data.caa_reply.next     = NULL;
-      ptr->data.caa_reply.plength  = 0;
-      ptr->data.caa_reply.property = NULL;
-      ptr->data.caa_reply.length   = 0;
-      ptr->data.caa_reply.value    = NULL;
-      break;
-
     case ARES_DATATYPE_ADDR_NODE:
-      ptr->data.addr_node.next   = NULL;
-      ptr->data.addr_node.family = 0;
-      memset(&ptr->data.addr_node.addrV6, 0,
-             sizeof(ptr->data.addr_node.addrV6));
-      break;
-
     case ARES_DATATYPE_ADDR_PORT_NODE:
-      ptr->data.addr_port_node.next     = NULL;
-      ptr->data.addr_port_node.family   = 0;
-      ptr->data.addr_port_node.udp_port = 0;
-      ptr->data.addr_port_node.tcp_port = 0;
-      memset(&ptr->data.addr_port_node.addrV6, 0,
-             sizeof(ptr->data.addr_port_node.addrV6));
-      break;
-
     case ARES_DATATYPE_NAPTR_REPLY:
-      ptr->data.naptr_reply.next        = NULL;
-      ptr->data.naptr_reply.flags       = NULL;
-      ptr->data.naptr_reply.service     = NULL;
-      ptr->data.naptr_reply.regexp      = NULL;
-      ptr->data.naptr_reply.replacement = NULL;
-      ptr->data.naptr_reply.order       = 0;
-      ptr->data.naptr_reply.preference  = 0;
-      break;
-
     case ARES_DATATYPE_SOA_REPLY:
-      ptr->data.soa_reply.nsname     = NULL;
-      ptr->data.soa_reply.hostmaster = NULL;
-      ptr->data.soa_reply.serial     = 0;
-      ptr->data.soa_reply.refresh    = 0;
-      ptr->data.soa_reply.retry      = 0;
-      ptr->data.soa_reply.expire     = 0;
-      ptr->data.soa_reply.minttl     = 0;
       break;
 
     default:
