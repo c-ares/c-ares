@@ -160,7 +160,7 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
       goto enomem;
     }
 
-    i    = 0;
+    i = 0;
     for (next = ai->nodes; next != NULL; next = next->ai_next) {
       if (next->ai_family != family) {
         continue;
