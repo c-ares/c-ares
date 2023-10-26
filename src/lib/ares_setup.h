@@ -138,8 +138,9 @@
  * undefine USE_WINSOCK.
  */
 
-#undef USE_WINSOCK
-
+#ifdef USE_WINSOCK
+#  undef USE_WINSOCK
+#endif
 #ifdef HAVE_WINSOCK2_H
 #  define USE_WINSOCK 2
 #else
@@ -203,13 +204,27 @@
  *  --enable-debug) so we undef them again here.
  */
 
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef VERSION
-#undef PACKAGE
+#ifdef PACKAGE_STRING
+#  undef PACKAGE_STRING
+#endif
+#ifdef PACKAGE_TARNAME
+#  undef PACKAGE_TARNAME
+#endif
+#ifdef PACKAGE_VERSION
+#  undef PACKAGE_VERSION
+#endif
+#ifdef PACKAGE_BUGREPORT
+#  undef PACKAGE_BUGREPORT
+#endif
+#ifdef PACKAGE_NAME
+#  undef PACKAGE_NAME
+#endif
+#ifdef VERSION
+#  undef VERSION
+#endif
+#ifdef PACKAGE
+#  undef PACKAGE
+#endif
 
 /* IPv6 compatibility */
 #if !defined(HAVE_AF_INET6)
