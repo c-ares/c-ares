@@ -638,13 +638,6 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
     goto cleanup;
   }
 
-  /* Limit alen to PACKETSZ if we aren't using TCP (only relevant if we
-   * are ignoring truncation.
-   */
-  if (alen > packetsz && !tcp) {
-    alen = packetsz;
-  }
-
   /* If we aren't passing through all error packets, discard packets
    * with SERVFAIL, NOTIMP, or REFUSED response codes.
    */
