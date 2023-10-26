@@ -156,91 +156,84 @@ typedef enum {
  *  to ensure we have a proper offset between keys so we can keep these sorted
  */
 typedef enum {
-  ARES_RR_A_ADDR =
-    (ARES_REC_TYPE_A * 100) + 1,  /*!< A Record. Address. Datatype: INADDR */
-  ARES_RR_NS_NSDNAME =
-    (ARES_REC_TYPE_NS * 100) + 1, /*!< NS Record. Name. Datatype: String */
-  ARES_RR_CNAME_CNAME = (ARES_REC_TYPE_CNAME * 100) +
-                        1,        /*!< CNAME Record. CName. Datatype: String */
-  ARES_RR_SOA_MNAME =
-    (ARES_REC_TYPE_SOA * 100) +
-    1, /*!< SOA Record. MNAME, Primary Source of Data. Datatype: String */
-  ARES_RR_SOA_RNAME =
-    (ARES_REC_TYPE_SOA * 100) + 2, /*!< SOA Record. RNAME, Mailbox of person
-                                      responsible. Datatype: String */
-  ARES_RR_SOA_SERIAL = (ARES_REC_TYPE_SOA * 100) +
-                       3, /*!< SOA Record. Serial, version. Datatype: u32 */
-  ARES_RR_SOA_REFRESH =
-    (ARES_REC_TYPE_SOA * 100) +
-    4, /*!< SOA Record. Refresh, zone refersh interval. Datatype: u32 */
-  ARES_RR_SOA_RETRY =
-    (ARES_REC_TYPE_SOA * 100) +
-    5, /*!< SOA Record. Retry, failed refresh retry interval. Datatype: u32 */
-  ARES_RR_SOA_EXPIRE =
-    (ARES_REC_TYPE_SOA * 100) +
-    6, /*!< SOA Record. Expire, upper limit on authority. Datatype: u32 */
-  ARES_RR_SOA_MINIMUM = (ARES_REC_TYPE_SOA * 100) +
-                        7, /*!< SOA Record. Minimum, RR TTL. Datatype: u32 */
-  ARES_RR_PTR_DNAME =
-    (ARES_REC_TYPE_PTR * 100) +
-    1, /*!< PTR Record. DNAME, pointer domain. Datatype: string */
-  ARES_RR_HINFO_CPU =
-    (ARES_REC_TYPE_HINFO * 100) + 1, /*!< HINFO Record. CPU. Datatype: string */
-  ARES_RR_HINFO_OS =
-    (ARES_REC_TYPE_HINFO * 100) + 2, /*!< HINFO Record. OS. Datatype: string */
-  ARES_RR_MX_PREFERENCE =
-    (ARES_REC_TYPE_MX * 100) + 1, /*!< MX Record. Preference. Datatype: u16 */
-  ARES_RR_MX_EXCHANGE = (ARES_REC_TYPE_MX * 100) +
-                        2, /*!< MX Record. Exchange, domain. Datatype: string */
-  ARES_RR_TXT_DATA =
-    (ARES_REC_TYPE_TXT * 100) + 1, /*!< TXT Record. Data. Datatype: binary */
-  ARES_RR_AAAA_ADDR = (ARES_REC_TYPE_AAAA * 100) +
-                      1, /*!< AAAA Record. Address. Datatype: INADDR6 */
-  ARES_RR_SRV_PRIORITY =
-    (ARES_REC_TYPE_SRV * 100) + 2, /*!< SRV Record. Priority. Datatype: u16 */
-  ARES_RR_SRV_WEIGHT =
-    (ARES_REC_TYPE_SRV * 100) + 3, /*!< SRV Record. Weight. Datatype: u16 */
-  ARES_RR_SRV_PORT =
-    (ARES_REC_TYPE_SRV * 100) + 4, /*!< SRV Record. Port. Datatype: u16 */
-  ARES_RR_SRV_TARGET = (ARES_REC_TYPE_SRV * 100) +
-                       5, /*!< SRV Record. Target domain. Datatype: string */
-  ARES_RR_NAPTR_ORDER =
-    (ARES_REC_TYPE_NAPTR * 100) + 1, /*!< NAPTR Record. Order. Datatype: u16 */
-  ARES_RR_NAPTR_PREFERENCE = (ARES_REC_TYPE_NAPTR * 100) +
-                             2, /*!< NAPTR Record. Preference. Datatype: u16 */
-  ARES_RR_NAPTR_FLAGS = (ARES_REC_TYPE_NAPTR * 100) +
-                        3,      /*!< NAPTR Record. Flags. Datatype: string */
-  ARES_RR_NAPTR_SERVICES = (ARES_REC_TYPE_NAPTR * 100) +
-                           4,   /*!< NAPTR Record. Services. Datatype: string */
-  ARES_RR_NAPTR_REGEXP = (ARES_REC_TYPE_NAPTR * 100) +
-                         5,     /*!< NAPTR Record. Regexp. Datatype: string */
-  ARES_RR_NAPTR_REPLACEMENT =
-    (ARES_REC_TYPE_NAPTR * 100) +
-    6, /*!< NAPTR Record. Replacement. Datatype: string */
-  ARES_RR_OPT_UDP_SIZE =
-    (ARES_REC_TYPE_OPT * 100) + 1, /*!< OPT Record. UDP Size. Datatype: u16 */
-  ARES_RR_OPT_EXT_RCODE = (ARES_REC_TYPE_OPT * 100) +
-                          2, /*!< OPT Record. Extended RCode. Datatype: u8 */
-  ARES_RR_OPT_VERSION =
-    (ARES_REC_TYPE_OPT * 100) + 3, /*!< OPT Record. Version. Datatype: u8 */
-  ARES_RR_OPT_FLAGS =
-    (ARES_REC_TYPE_OPT * 100) + 4, /*!< OPT Record. Flags. Datatype: u16 */
-  ARES_RR_URI_PRIORITY =
-    (ARES_REC_TYPE_URI * 100) + 1, /*!< URI Record. Priority. Datatype: u16 */
-  ARES_RR_URI_WEIGHT =
-    (ARES_REC_TYPE_URI * 100) + 2, /*!< URI Record. Weight. Datatype: u16 */
-  ARES_RR_URI_TARGET = (ARES_REC_TYPE_URI * 100) +
-                       3,   /*!< URI Record. Target domain. Datatype: string */
-  ARES_RR_CAA_CRITICAL = (ARES_REC_TYPE_CAA * 100) +
-                         1, /*!< CAA Record. Critical flag. Datatype: u8 */
-  ARES_RR_CAA_TAG = (ARES_REC_TYPE_CAA * 100) +
-                    2,      /*!< CAA Record. Tag/Property. Datatype: string */
-  ARES_RR_CAA_VALUE =
-    (ARES_REC_TYPE_CAA * 100) + 3, /*!< CAA Record. Value. Datatype: binary */
-  ARES_RR_RAW_RR_TYPE =
-    (ARES_REC_TYPE_RAW_RR * 100) + 1, /*!< RAW Record. RR Type. Datatype: u16 */
-  ARES_RR_RAW_RR_DATA = (ARES_REC_TYPE_RAW_RR * 100) +
-                        2, /*!< RAW Record. RR Data. Datatype: binary */
+  /*! A Record. Address. Datatype: INADDR */
+  ARES_RR_A_ADDR = (ARES_REC_TYPE_A * 100) + 1,
+  /*! NS Record. Name. Datatype: String */
+  ARES_RR_NS_NSDNAME = (ARES_REC_TYPE_NS * 100) + 1,
+  /*! CNAME Record. CName. Datatype: String */
+  ARES_RR_CNAME_CNAME = (ARES_REC_TYPE_CNAME * 100) + 1,
+  /*! SOA Record. MNAME, Primary Source of Data. Datatype: String */
+  ARES_RR_SOA_MNAME = (ARES_REC_TYPE_SOA * 100) + 1,
+  /*! SOA Record. RNAME, Mailbox of person responsible. Datatype: String */
+  ARES_RR_SOA_RNAME = (ARES_REC_TYPE_SOA * 100) + 2,
+  /*! SOA Record. Serial, version. Datatype: u32 */
+  ARES_RR_SOA_SERIAL = (ARES_REC_TYPE_SOA * 100) + 3,
+  /*! SOA Record. Refresh, zone refersh interval. Datatype: u32 */
+  ARES_RR_SOA_REFRESH = (ARES_REC_TYPE_SOA * 100) + 4,
+  /*! SOA Record. Retry, failed refresh retry interval. Datatype: u32 */
+  ARES_RR_SOA_RETRY = (ARES_REC_TYPE_SOA * 100) + 5,
+  /*! SOA Record. Expire, upper limit on authority. Datatype: u32 */
+  ARES_RR_SOA_EXPIRE = (ARES_REC_TYPE_SOA * 100) + 6,
+  /*! SOA Record. Minimum, RR TTL. Datatype: u32 */
+  ARES_RR_SOA_MINIMUM = (ARES_REC_TYPE_SOA * 100) + 7,
+  /*! PTR Record. DNAME, pointer domain. Datatype: string */
+  ARES_RR_PTR_DNAME = (ARES_REC_TYPE_PTR * 100) + 1,
+  /*! HINFO Record. CPU. Datatype: string */
+  ARES_RR_HINFO_CPU = (ARES_REC_TYPE_HINFO * 100) + 1,
+  /*! HINFO Record. OS. Datatype: string */
+  ARES_RR_HINFO_OS = (ARES_REC_TYPE_HINFO * 100) + 2,
+  /*! MX Record. Preference. Datatype: u16 */
+  ARES_RR_MX_PREFERENCE = (ARES_REC_TYPE_MX * 100) + 1,
+  /*! MX Record. Exchange, domain. Datatype: string */
+  ARES_RR_MX_EXCHANGE = (ARES_REC_TYPE_MX * 100) + 2,
+  /*! TXT Record. Data. Datatype: binary */
+  ARES_RR_TXT_DATA = (ARES_REC_TYPE_TXT * 100) + 1,
+  /*! AAAA Record. Address. Datatype: INADDR6 */
+  ARES_RR_AAAA_ADDR = (ARES_REC_TYPE_AAAA * 100) + 1,
+  /*! SRV Record. Priority. Datatype: u16 */
+  ARES_RR_SRV_PRIORITY = (ARES_REC_TYPE_SRV * 100) + 2,
+  /*! SRV Record. Weight. Datatype: u16 */
+  ARES_RR_SRV_WEIGHT = (ARES_REC_TYPE_SRV * 100) + 3,
+  /*! SRV Record. Port. Datatype: u16 */
+  ARES_RR_SRV_PORT = (ARES_REC_TYPE_SRV * 100) + 4,
+  /*! SRV Record. Target domain. Datatype: string */
+  ARES_RR_SRV_TARGET = (ARES_REC_TYPE_SRV * 100) + 5,
+  /*! NAPTR Record. Order. Datatype: u16 */
+  ARES_RR_NAPTR_ORDER = (ARES_REC_TYPE_NAPTR * 100) + 1,
+  /*! NAPTR Record. Preference. Datatype: u16 */
+  ARES_RR_NAPTR_PREFERENCE = (ARES_REC_TYPE_NAPTR * 100) + 2,
+  /*! NAPTR Record. Flags. Datatype: string */
+  ARES_RR_NAPTR_FLAGS = (ARES_REC_TYPE_NAPTR * 100) + 3,
+  /*! NAPTR Record. Services. Datatype: string */
+  ARES_RR_NAPTR_SERVICES = (ARES_REC_TYPE_NAPTR * 100) + 4,
+  /*! NAPTR Record. Regexp. Datatype: string */
+  ARES_RR_NAPTR_REGEXP = (ARES_REC_TYPE_NAPTR * 100) + 5,
+  /*! NAPTR Record. Replacement. Datatype: string */
+  ARES_RR_NAPTR_REPLACEMENT = (ARES_REC_TYPE_NAPTR * 100) + 6,
+  /*! OPT Record. UDP Size. Datatype: u16 */
+  ARES_RR_OPT_UDP_SIZE = (ARES_REC_TYPE_OPT * 100) + 1,
+  /*! OPT Record. Extended RCode. Datatype: u8 */
+  ARES_RR_OPT_EXT_RCODE = (ARES_REC_TYPE_OPT * 100) + 2,
+  /*! OPT Record. Version. Datatype: u8 */
+  ARES_RR_OPT_VERSION = (ARES_REC_TYPE_OPT * 100) + 3,
+  /*! OPT Record. Flags. Datatype: u16 */
+  ARES_RR_OPT_FLAGS = (ARES_REC_TYPE_OPT * 100) + 4,
+  /*! URI Record. Priority. Datatype: u16 */
+  ARES_RR_URI_PRIORITY = (ARES_REC_TYPE_URI * 100) + 1,
+  /*! URI Record. Weight. Datatype: u16 */
+  ARES_RR_URI_WEIGHT = (ARES_REC_TYPE_URI * 100) + 2,
+  /*! URI Record. Target domain. Datatype: string */
+  ARES_RR_URI_TARGET = (ARES_REC_TYPE_URI * 100) + 3,
+  /*! CAA Record. Critical flag. Datatype: u8 */
+  ARES_RR_CAA_CRITICAL = (ARES_REC_TYPE_CAA * 100) + 1,
+  /*! CAA Record. Tag/Property. Datatype: string */
+  ARES_RR_CAA_TAG = (ARES_REC_TYPE_CAA * 100) + 2,
+  /*! CAA Record. Value. Datatype: binary */
+  ARES_RR_CAA_VALUE = (ARES_REC_TYPE_CAA * 100) + 3,
+  /*! RAW Record. RR Type. Datatype: u16 */
+  ARES_RR_RAW_RR_TYPE = (ARES_REC_TYPE_RAW_RR * 100) + 1,
+  /*! RAW Record. RR Data. Datatype: binary */
+  ARES_RR_RAW_RR_DATA = (ARES_REC_TYPE_RAW_RR * 100) + 2,
 } ares_dns_rr_key_t;
 
 /*! String representation of DNS Record Type
