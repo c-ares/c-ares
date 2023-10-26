@@ -14,7 +14,7 @@ Copyright: The c-ares project and its contributors.
 License: MIT
 
 # dotfiles
-Files: .gitignore m4/.gitignore test/.gitignore
+Files: .gitignore .gitattributes m4/.gitignore test/.gitignore
 Copyright: The c-ares project and its contributors.
 License: MIT
 
