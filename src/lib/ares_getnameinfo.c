@@ -48,6 +48,10 @@
 #  include <net/if.h>
 #endif
 
+#ifdef WIN32
+#  include <iphlpapi.h>
+#endif
+
 #include "ares.h"
 #include "ares_ipv6.h"
 #include "ares_private.h"
