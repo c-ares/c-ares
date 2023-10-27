@@ -53,8 +53,8 @@ void ares__htable_strvp_destroy(ares__htable_strvp_t *htable)
 static unsigned int hash_func(const void *key, unsigned int seed)
 {
   const char *arg = key;
-  return ares__htable_hash_FNV1a((const unsigned char *)arg, ares_strlen(arg),
-                                 seed);
+  return ares__htable_hash_FNV1a_casecmp((const unsigned char *)arg,
+                                         ares_strlen(arg), seed);
 }
 
 static const void *bucket_key(const void *bucket)
