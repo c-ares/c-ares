@@ -14,6 +14,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__read_line.c			\
   ares__readaddrinfo.c			\
   ares__slist.c				\
+  ares__socket.c			\
   ares__sortaddrinfo.c			\
   ares__timeval.c			\
   ares_android.c			\

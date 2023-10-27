@@ -395,6 +395,9 @@ ares_status_t  ares_expand_string_ex(const unsigned char *encoded,
                                      const unsigned char *abuf, size_t alen,
                                      unsigned char **s, size_t *enclen);
 ares_status_t  ares__init_servers_state(ares_channel channel);
+ares_status_t  ares__init_by_options(ares_channel               channel,
+                                     const struct ares_options *options,
+                                     int                        optmask);
 void           ares__destroy_servers_state(ares_channel channel);
 ares_status_t  ares__single_domain(ares_channel channel, const char *name,
                                    char **s);
@@ -440,12 +443,23 @@ ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
 ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
                                        const struct ares_addrinfo_hints *hints,
                                        struct ares_addrinfo             *ai);
-
+ares_status_t ares__open_connection(ares_channel         channel,
+                                    struct server_state *server,
+                                    ares_bool_t          is_tcp);
 ares_socket_t ares__open_socket(ares_channel channel, int af, int type,
                                 int protocol);
+ares_ssize_t  ares__socket_write(ares_channel channel, ares_socket_t s,
+                                 const void *data, size_t len);
+ares_ssize_t ares__socket_recvfrom(ares_channel channel, ares_socket_t s,
+                                   void *data, size_t data_len, int flags,
+                                   struct sockaddr *from,
+                                   ares_socklen_t  *from_len);
+ares_ssize_t ares__socket_recv(ares_channel channel, ares_socket_t s,
+                               void *data, size_t data_len);
 void          ares__close_socket(ares_channel, ares_socket_t);
 int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
-                                   const struct sockaddr *addr, ares_socklen_t addrlen);
+                                   const struct sockaddr *addr,
+                                   ares_socklen_t addrlen);
 
 #define ARES_SWAP_BYTE(a, b)           \
   do {                                 \
@@ -461,6 +475,9 @@ int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
     }                                                             \
   } while (0)
 
+#define ARES_CONFIG_CHECK(x)                                          \
+  (x->lookups && x->nservers > 0 && x->ndots > 0 && x->timeout > 0 && \
+   x->tries > 0)
 
 size_t ares__round_up_pow2(size_t n);
 size_t ares__log2(size_t n);
