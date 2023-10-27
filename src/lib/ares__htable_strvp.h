@@ -23,14 +23,14 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#ifndef __ARES__HTABLE_STVP_H
-#define __ARES__HTABLE_STVP_H
+#ifndef __ARES__HTABLE_STRVP_H
+#define __ARES__HTABLE_STRVP_H
 
-/*! \addtogroup ares__htable_stvp HashTable with size_t Key and void pointer
+/*! \addtogroup ares__htable_strvp HashTable with string Key and void pointer
  * Value
  *
  * This data structure wraps the base ares__htable data structure in order to
- * split the key and value data types as size_t and void pointer, respectively.
+ * split the key and value data types as string and void pointer, respectively.
  *
  * Average time complexity:
  *  - Insert: O(1)
@@ -40,31 +40,31 @@
  * @{
  */
 
-struct ares__htable_stvp;
+struct ares__htable_strvp;
 
 /*! Opaque data type for size_t key, void pointer hash table implementation */
-typedef struct ares__htable_stvp ares__htable_stvp_t;
+typedef struct ares__htable_strvp ares__htable_strvp_t;
 
 /*! Callback to free value stored in hashtable
  *
  *  \param[in] val  user-supplied value
  */
-typedef void                     (*ares__htable_stvp_val_free_t)(void *val);
+typedef void                     (*ares__htable_strvp_val_free_t)(void *val);
 
 /*! Destroy hashtable
  *
  *  \param[in] htable  Initialized hashtable
  */
-void ares__htable_stvp_destroy(ares__htable_stvp_t *htable);
+void ares__htable_strvp_destroy(ares__htable_strvp_t *htable);
 
-/*! Create size_t key, void pointer value hash table
+/*! Create string, void pointer value hash table
  *
  *  \param[in] val_free  Optional. Call back to free user-supplied value.  If
  *                       NULL it is expected the caller will clean up any user
  *                       supplied values.
  */
-ares__htable_stvp_t           *
-  ares__htable_stvp_create(ares__htable_stvp_val_free_t val_free);
+ares__htable_strvp_t           *
+  ares__htable_strvp_create(ares__htable_strvp_val_free_t val_free);
 
 /*! Insert key/value into hash table
  *
@@ -73,8 +73,8 @@ ares__htable_stvp_t           *
  *  \param[in] val    value to store (takes ownership). May be NULL.
  *  \return ARES_TRUE on success, ARES_FALSE on failure or out of memory
  */
-ares_bool_t ares__htable_stvp_insert(ares__htable_stvp_t *htable, size_t key,
-                                     void *val);
+ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
+                                      const char *key, void *val);
 
 /*! Retrieve value from hashtable based on key
  *
@@ -83,19 +83,19 @@ ares_bool_t ares__htable_stvp_insert(ares__htable_stvp_t *htable, size_t key,
  *  \param[out] val     Optional.  Pointer to store value.
  *  \return ARES_TRUE on success, ARES_FALSE on failure
  */
-ares_bool_t ares__htable_stvp_get(const ares__htable_stvp_t *htable, size_t key,
-                                  void **val);
+ares_bool_t ares__htable_strvp_get(const ares__htable_strvp_t *htable,
+                                   const char *key, void **val);
 
 /*! Retrieve value from hashtable directly as return value.  Caveat to this
- *  function over ares__htable_stvp_get() is that if a NULL value is stored
+ *  function over ares__htable_strvp_get() is that if a NULL value is stored
  *  you cannot determine if the key is not found or the value is NULL.
  *
  *  \param[in] htable  Initialized hash table
  *  \param[in] key     key to use to search
  *  \return value associated with key in hashtable or NULL
  */
-void       *ares__htable_stvp_get_direct(const ares__htable_stvp_t *htable,
-                                         size_t                     key);
+void       *ares__htable_strvp_get_direct(const ares__htable_strvp_t *htable,
+                                          const char                 *key);
 
 /*! Remove a value from the hashtable by key
  *
@@ -103,14 +103,15 @@ void       *ares__htable_stvp_get_direct(const ares__htable_stvp_t *htable,
  *  \param[in] key     key to use to search
  *  \return ARES_TRUE if found, ARES_FALSE if not
  */
-ares_bool_t ares__htable_stvp_remove(ares__htable_stvp_t *htable, size_t key);
+ares_bool_t ares__htable_strvp_remove(ares__htable_strvp_t *htable,
+                                      const char *key);
 
 /*! Retrieve the number of keys stored in the hash table
  *
  *  \param[in] htable  Initialized hash table
  *  \return count
  */
-size_t      ares__htable_stvp_num_keys(const ares__htable_stvp_t *htable);
+size_t      ares__htable_strvp_num_keys(const ares__htable_strvp_t *htable);
 
 /*! @} */
 

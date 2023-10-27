@@ -176,6 +176,40 @@ ares_status_t  ares__buf_tag_clear(ares__buf_t *buf);
  */
 const unsigned char *ares__buf_tag_fetch(const ares__buf_t *buf, size_t *len);
 
+/*! Get the length of the current tag offset to the current position.
+ *
+ *  \param[in]  buf    Initialized buffer object
+ *  \return length
+ */
+size_t ares__buf_tag_length(const ares__buf_t *buf);
+
+/*! Fetch the bytes starting from the tagged position up to the _current_
+ *  position using the provided buffer.  It will not unset the tagged position.
+ *
+ *  \param[in]     buf    Initialized buffer object
+ *  \param[in,out] bytes  Buffer to hold data
+ *  \param[in,out] len    On input, buffer size, on output, bytes place in
+ *                        buffer.
+ *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size
+ */
+ares_status_t ares__buf_tag_fetch_bytes(const ares__buf_t *buf,
+                                        unsigned char *bytes, size_t *len);
+
+/*! Fetch the bytes starting from the tagged position up to the _current_
+ *  position as a NULL-terminated string using the provided buffer.  The data
+ *  is validated to be ASCII-printable data.  It will not unset the tagged
+ *  poition.
+ *
+ *  \param[in]     buf    Initialized buffer object
+ *  \param[in,out] str    Buffer to hold data
+ *  \param[in]     len    On input, buffer size, on output, bytes place in
+ *                        buffer.
+ *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size,
+ *          ARES_EBADSTR if not printable ASCII
+ */
+ares_status_t ares__buf_tag_fetch_string(const ares__buf_t *buf, char *str,
+                                         size_t len);
+
 /*! Consume the given number of bytes without reading them.
  *
  *  \param[in] buf    Initialized buffer object
@@ -249,10 +283,12 @@ ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len, char **str);
  *  0x0A).
  *
  *  \param[in]  buf               Initialized buffer object
- *  \param[in]  include_linefeed  1 to include consuming 0x0A, 0 otherwise.
+ *  \param[in]  include_linefeed  ARES_TRUE to include consuming 0x0A,
+ *                                ARES_FALSE otherwise.
  *  \return number of whitespace characters consumed
  */
-size_t ares__buf_consume_whitespace(ares__buf_t *buf, int include_linefeed);
+size_t ares__buf_consume_whitespace(ares__buf_t *buf,
+                                    ares_bool_t include_linefeed);
 
 
 /*! Consume any non-whitespace character (anything other than 0x09, 0x0B, 0x0C,
@@ -267,10 +303,11 @@ size_t ares__buf_consume_nonwhitespace(ares__buf_t *buf);
  *  the end of line character (0x0A) itself.
  *
  *  \param[in]  buf               Initialized buffer object
- *  \param[in]  include_linefeed  1 to include consuming 0x0A, 0 otherwise.
+ *  \param[in]  include_linefeed  ARES_TRUE to include consuming 0x0A,
+ *                                ARES_FALSE otherwise.
  *  \return number of characters consumed
  */
-size_t ares__buf_consume_line(ares__buf_t *buf, int include_linefeed);
+size_t ares__buf_consume_line(ares__buf_t *buf, ares_bool_t include_linefeed);
 
 
 /*! Check the unprocessed buffer to see if it begins with the sequence of

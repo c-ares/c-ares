@@ -570,7 +570,7 @@ static void terminate_retries(struct host_query *hquery, unsigned short qid)
     return;
   }
 
-  query = ares__htable_stvp_get_direct(channel->queries_by_qid, term_qid);
+  query = ares__htable_szvp_get_direct(channel->queries_by_qid, term_qid);
   if (query == NULL) {
     return;
   }

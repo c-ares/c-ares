@@ -56,7 +56,7 @@ static unsigned short generate_unique_id(ares_channel channel)
 
   do {
     id = ares__generate_new_id(channel->rand_state);
-  } while (ares__htable_stvp_get(channel->queries_by_qid, id, NULL));
+  } while (ares__htable_szvp_get(channel->queries_by_qid, id, NULL));
 
   return (unsigned short)id;
 }
