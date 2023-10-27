@@ -73,7 +73,7 @@ int ares_parse_srv_reply(const unsigned char *abuf, int alen_int,
       continue;
     }
 
-    /* Allocate storage for this URI answer appending it to the list */
+    /* Allocate storage for this SRV answer appending it to the list */
     srv_curr = ares_malloc_data(ARES_DATATYPE_SRV_REPLY);
     if (srv_curr == NULL) {
       status = ARES_ENOMEM;
