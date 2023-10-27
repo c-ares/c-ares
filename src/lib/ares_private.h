@@ -117,7 +117,7 @@ typedef struct ares_rand_state ares_rand_state;
 
 #include "ares__llist.h"
 #include "ares__slist.h"
-#include "ares__htable_stvp.h"
+#include "ares__htable_szvp.h"
 #include "ares__htable_asvp.h"
 #include "ares__buf.h"
 #include "ares_dns_record.h"
@@ -309,7 +309,7 @@ struct ares_channeldata {
   /* All active queries in a single list */
   ares__llist_t       *all_queries;
   /* Queries bucketed by qid, for quickly dispatching DNS responses: */
-  ares__htable_stvp_t *queries_by_qid;
+  ares__htable_szvp_t *queries_by_qid;
 
   /* Queries bucketed by timeout, for quickly handling timeouts: */
   ares__slist_t       *queries_by_timeout;

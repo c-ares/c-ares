@@ -8,7 +8,8 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__get_hostent.c			\
   ares__htable.c			\
   ares__htable_asvp.c			\
-  ares__htable_stvp.c			\
+  ares__htable_strvp.c			\
+  ares__htable_szvp.c			\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
   ares__read_line.c			\
@@ -73,7 +74,8 @@ CSOURCES = ares__addrinfo2hostent.c	\
 HHEADERS = ares__buf.h			\
   ares__htable.h			\
   ares__htable_asvp.h			\
-  ares__htable_stvp.h			\
+  ares__htable_strvp.h			\
+  ares__htable_szvp.h			\
   ares__llist.h				\
   ares__slist.h				\
   ares_android.h			\

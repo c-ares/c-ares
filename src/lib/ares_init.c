@@ -162,7 +162,7 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
     goto done;
   }
 
-  channel->queries_by_qid = ares__htable_stvp_create(NULL);
+  channel->queries_by_qid = ares__htable_szvp_create(NULL);
   if (channel->queries_by_qid == NULL) {
     status = ARES_ENOMEM;
     goto done;
@@ -251,7 +251,7 @@ done:
       ares__destroy_rand_state(channel->rand_state);
     }
 
-    ares__htable_stvp_destroy(channel->queries_by_qid);
+    ares__htable_szvp_destroy(channel->queries_by_qid);
     ares__llist_destroy(channel->all_queries);
     ares__slist_destroy(channel->queries_by_timeout);
     ares__htable_asvp_destroy(channel->connnode_by_socket);

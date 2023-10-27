@@ -535,7 +535,7 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
   /* Find the query corresponding to this packet. The queries are
    * hashed/bucketed by query id, so this lookup should be quick.
    */
-  query = ares__htable_stvp_get_direct(channel->queries_by_qid,
+  query = ares__htable_szvp_get_direct(channel->queries_by_qid,
                                        ares_dns_record_get_id(dnsrec));
   if (!query) {
     goto cleanup;
@@ -952,7 +952,7 @@ static ares_bool_t has_opt_rr(ares_dns_record_t *arec)
 static void ares_detach_query(struct query *query)
 {
   /* Remove the query from all the lists in which it is linked */
-  ares__htable_stvp_remove(query->channel->queries_by_qid, query->qid);
+  ares__htable_szvp_remove(query->channel->queries_by_qid, query->qid);
   ares__slist_node_destroy(query->node_queries_by_timeout);
   ares__llist_node_destroy(query->node_queries_to_conn);
   ares__llist_node_destroy(query->node_all_queries);

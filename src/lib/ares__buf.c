@@ -45,6 +45,69 @@ struct ares__buf {
                                        *   SIZE_MAX if not set. */
 };
 
+
+/* Reserved characters for names that need to be escaped */
+static ares_bool_t is_reservedch(int ch)
+{
+  switch (ch) {
+    case '"':
+    case '.':
+    case ';':
+    case '\\':
+    case '(':
+    case ')':
+    case '@':
+    case '$':
+      return ARES_TRUE;
+    default:
+      break;
+  }
+
+  return ARES_FALSE;
+}
+
+static ares_bool_t ares__isprint(int ch)
+{
+  if (ch >= 0x20 && ch <= 0x7E) {
+    return ARES_TRUE;
+  }
+  return ARES_FALSE;
+}
+
+/* Character set allowed by hostnames.  This is to include the normal
+ * domain name character set plus:
+ *  - underscores which are used in SRV records.
+ *  - Forward slashes such as are used for classless in-addr.arpa
+ *    delegation (CNAMEs)
+ *  - Asterisks may be used for wildcard domains in CNAMEs as seen in the
+ *    real world.
+ * While RFC 2181 section 11 does state not to do validation,
+ * that applies to servers, not clients.  Vulnerabilities have been
+ * reported when this validation is not performed.  Security is more
+ * important than edge-case compatibility (which is probably invalid
+ * anyhow). */
+static ares_bool_t is_hostnamech(int ch)
+{
+  /* [A-Za-z0-9-*._/]
+   * Don't use isalnum() as it is locale-specific
+   */
+  if (ch >= 'A' && ch <= 'Z') {
+    return ARES_TRUE;
+  }
+  if (ch >= 'a' && ch <= 'z') {
+    return ARES_TRUE;
+  }
+  if (ch >= '0' && ch <= '9') {
+    return ARES_TRUE;
+  }
+  if (ch == '-' || ch == '.' || ch == '_' || ch == '/' || ch == '*') {
+    return ARES_TRUE;
+  }
+
+  return ARES_FALSE;
+}
+
+
 ares__buf_t *ares__buf_create(void)
 {
   ares__buf_t *buf = ares_malloc_zero(sizeof(*buf));
@@ -324,6 +387,62 @@ const unsigned char *ares__buf_tag_fetch(const ares__buf_t *buf, size_t *len)
   return buf->data + buf->tag_offset;
 }
 
+size_t ares__buf_tag_length(const ares__buf_t *buf)
+{
+  if (buf == NULL || buf->tag_offset == SIZE_MAX)
+    return 0;
+  return buf->offset - buf->tag_offset;
+}
+
+ares_status_t ares__buf_tag_fetch_bytes(const ares__buf_t *buf,
+                                        unsigned char *bytes, size_t *len)
+{
+  size_t               ptr_len = 0;
+  const unsigned char *ptr     = ares__buf_tag_fetch(buf, &ptr_len);
+
+  if (ptr == NULL || bytes == NULL || len == NULL)
+    return ARES_EFORMERR;
+
+  if (*len < ptr_len)
+    return ARES_EFORMERR;
+
+  *len = ptr_len;
+
+  if (ptr_len > 0) {
+    memcpy(bytes, ptr, ptr_len);
+  }
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares__buf_tag_fetch_string(const ares__buf_t *buf, char *str,
+                                         size_t len)
+{
+  size_t        out_len;
+  ares_status_t status;
+  size_t        i;
+
+  if (str == NULL || len == 0)
+    return ARES_EFORMERR;
+
+  /* Space for NULL terminator */
+  out_len = len - 1;
+
+  status = ares__buf_tag_fetch_bytes(buf, (unsigned char *)str, &out_len);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  /* NULL terminate */
+  str[out_len] = 0;
+
+  /* Validate string is printable */
+  for (i=0; i<out_len; i++) {
+    if (!ares__isprint(str[i]))
+      return ARES_EBADSTR;
+  }
+
+  return ARES_SUCCESS;
+}
+
 static const unsigned char *ares__buf_fetch(const ares__buf_t *buf, size_t *len)
 {
   if (len != NULL) {
@@ -454,66 +573,6 @@ ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
   return ares__buf_consume(buf, len);
 }
 
-/* Reserved characters for names that need to be escaped */
-static ares_bool_t is_reservedch(int ch)
-{
-  switch (ch) {
-    case '"':
-    case '.':
-    case ';':
-    case '\\':
-    case '(':
-    case ')':
-    case '@':
-    case '$':
-      return ARES_TRUE;
-    default:
-      break;
-  }
-
-  return ARES_FALSE;
-}
-
-static ares_bool_t ares__isprint(int ch)
-{
-  if (ch >= 0x20 && ch <= 0x7E) {
-    return ARES_TRUE;
-  }
-  return ARES_FALSE;
-}
-
-/* Character set allowed by hostnames.  This is to include the normal
- * domain name character set plus:
- *  - underscores which are used in SRV records.
- *  - Forward slashes such as are used for classless in-addr.arpa
- *    delegation (CNAMEs)
- *  - Asterisks may be used for wildcard domains in CNAMEs as seen in the
- *    real world.
- * While RFC 2181 section 11 does state not to do validation,
- * that applies to servers, not clients.  Vulnerabilities have been
- * reported when this validation is not performed.  Security is more
- * important than edge-case compatibility (which is probably invalid
- * anyhow). */
-static ares_bool_t is_hostnamech(int ch)
-{
-  /* [A-Za-z0-9-*._/]
-   * Don't use isalnum() as it is locale-specific
-   */
-  if (ch >= 'A' && ch <= 'Z') {
-    return ARES_TRUE;
-  }
-  if (ch >= 'a' && ch <= 'z') {
-    return ARES_TRUE;
-  }
-  if (ch >= '0' && ch <= '9') {
-    return ARES_TRUE;
-  }
-  if (ch == '-' || ch == '.' || ch == '_' || ch == '/' || ch == '*') {
-    return ARES_TRUE;
-  }
-
-  return ARES_FALSE;
-}
 
 static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
                                                       ares__buf_t *dest,
@@ -582,7 +641,8 @@ fail:
   return status;
 }
 
-size_t ares__buf_consume_whitespace(ares__buf_t *buf, int include_linefeed)
+size_t ares__buf_consume_whitespace(ares__buf_t *buf,
+                                    ares_bool_t include_linefeed)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);
@@ -648,7 +708,7 @@ done:
   return i;
 }
 
-size_t ares__buf_consume_line(ares__buf_t *buf, int include_linefeed)
+size_t ares__buf_consume_line(ares__buf_t *buf, ares_bool_t include_linefeed)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);

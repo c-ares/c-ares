@@ -134,7 +134,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
   /* Keep track of queries bucketed by qid, so we can process DNS
    * responses quickly.
    */
-  if (!ares__htable_stvp_insert(channel->queries_by_qid, query->qid, query)) {
+  if (!ares__htable_szvp_insert(channel->queries_by_qid, query->qid, query)) {
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     ares__free_query(query);
     return ARES_ENOMEM;
