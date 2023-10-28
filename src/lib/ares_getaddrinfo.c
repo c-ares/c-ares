@@ -431,7 +431,7 @@ static ares_status_t file_lookup(struct host_query *hquery)
   int           error;
   ares_status_t status;
   char         *path_hosts = NULL;
-  const ares_hosts_file_entry_t *entry = NULL;
+  const ares_hosts_entry_t *entry = NULL;
 
   /* Placeholder to test new routines */
   status = ares__hosts_search_host(hquery->channel,

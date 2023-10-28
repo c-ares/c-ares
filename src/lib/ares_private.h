@@ -470,16 +470,16 @@ int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
 ares_bool_t ares__is_hostnamech(int ch);
 
 
-struct ares_hosts_file_entry;
-typedef struct ares_hosts_file_entry ares_hosts_file_entry_t;
+struct ares_hosts_entry;
+typedef struct ares_hosts_entry ares_hosts_entry_t;
 
 void ares__hosts_file_destroy(ares_hosts_file_t *hf);
 ares_status_t ares__hosts_search_ipaddr(ares_channel channel,
                                         ares_bool_t use_env, const char *ipaddr,
-                                        const ares_hosts_file_entry_t **entry);
+                                        const ares_hosts_entry_t **entry);
 ares_status_t ares__hosts_search_host(ares_channel channel,
                                       ares_bool_t use_env, const char *host,
-                                      const ares_hosts_file_entry_t **entry);
+                                      const ares_hosts_entry_t **entry);
 
 
 #define ARES_SWAP_BYTE(a, b)           \
