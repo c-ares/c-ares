@@ -725,9 +725,10 @@ size_t ares__buf_consume_line(ares__buf_t *buf, ares_bool_t include_linefeed)
   }
 
 done:
-  if (include_linefeed && i > 0 && i < remaining_len && ptr[i] == '\n') {
+  if (include_linefeed && i < remaining_len && ptr[i] == '\n') {
     i++;
   }
+
   if (i > 0) {
     ares__buf_consume(buf, i);
   }

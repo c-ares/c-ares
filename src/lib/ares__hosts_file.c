@@ -149,6 +149,7 @@ static ares_bool_t ares__normalize_ipaddr(const char *ipaddr, char *out,
   if (!ares_inet_ntop(family, addr, out, (ares_socklen_t)out_len)) {
     return ARES_FALSE;
   }
+
   return ARES_TRUE;
 }
 
@@ -167,7 +168,7 @@ static void ares__hosts_file_entry_destroy_cb(void *entry)
   ares__hosts_file_entry_destroy(entry);
 }
 
-static void ares__hosts_file_destroy(ares_hosts_file_t *hf)
+void ares__hosts_file_destroy(ares_hosts_file_t *hf)
 {
   if (hf == NULL)
     return;
@@ -197,6 +198,7 @@ static ares_hosts_file_t *ares__hosts_file_create(ares_bool_t is_env)
   }
 
   hf->is_env = is_env;
+  return hf;
 
 fail:
   ares__hosts_file_destroy(hf);
@@ -247,7 +249,7 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t *hosts,
        node = ares__llist_node_next(node)) {
     const char *val = ares__llist_node_val(node);
 
-    /* First match wins, if its already there, skip */
+    /* TODO: merge multiple ips for same hostname */
     if (ares__htable_strvp_get(hosts->hosthash, val, NULL))
       continue;
 
@@ -357,8 +359,9 @@ static ares_status_t ares__parse_hosts(const char *filename, ares_bool_t is_env,
     /* Consume any leading whitespace */
     ares__buf_consume_whitespace(buf, ARES_FALSE);
 
-    if (ares__buf_len(buf) == 0)
+    if (ares__buf_len(buf) == 0) {
       break;
+    }
 
     /* See if it is a comment, if so, consume remaining line */
     if (ares__buf_begins_with(buf, &comment, 1)) {

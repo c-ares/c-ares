@@ -129,6 +129,8 @@ void ares_destroy(ares_channel channel)
     ares__destroy_rand_state(channel->rand_state);
   }
 
+  ares__hosts_file_destroy(channel->hf);
+
   ares_free(channel);
 }
 

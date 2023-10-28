@@ -473,6 +473,7 @@ ares_bool_t ares__is_hostnamech(int ch);
 struct ares_hosts_file_entry;
 typedef struct ares_hosts_file_entry ares_hosts_file_entry_t;
 
+void ares__hosts_file_destroy(ares_hosts_file_t *hf);
 ares_status_t ares__hosts_search_ipaddr(ares_channel channel,
                                         ares_bool_t use_env, const char *ipaddr,
                                         const ares_hosts_file_entry_t **entry);
