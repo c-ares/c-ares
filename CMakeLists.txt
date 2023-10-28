@@ -309,6 +309,7 @@ CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_SELECT_H   sys/select.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_SOCKET_H   sys/socket.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_SOCKIO_H	sys/sockio.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_TIME_H     sys/time.h)
+CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_STAT_H     sys/stat.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_UIO_H      sys/uio.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_TIME_H         time.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_FCNTL_H        fcntl.h)
@@ -419,7 +420,7 @@ CHECK_SYMBOL_EXISTS (strncmpi        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNCMP
 CHECK_SYMBOL_EXISTS (strnicmp        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNICMP)
 CHECK_SYMBOL_EXISTS (writev          "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_WRITEV)
 CHECK_SYMBOL_EXISTS (arc4random_buf  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_ARC4RANDOM_BUF)
-
+CHECK_SYMBOL_EXISTS (stat            "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STAT)
 
 # On Android, the system headers may define __system_property_get(), but excluded
 # from libc.  We need to perform a link test instead of a header/symbol test.

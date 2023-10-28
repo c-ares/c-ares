@@ -86,7 +86,7 @@ static ares_bool_t ares__isprint(int ch)
  * reported when this validation is not performed.  Security is more
  * important than edge-case compatibility (which is probably invalid
  * anyhow). */
-static ares_bool_t is_hostnamech(int ch)
+ares_bool_t ares__is_hostnamech(int ch)
 {
   /* [A-Za-z0-9-*._/]
    * Don't use isalnum() as it is locale-specific
@@ -593,7 +593,7 @@ static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
 
     /* Hostnames have a very specific allowed character set.  Anything outside
      * of that (non-printable and reserved included) are disallowed */
-    if (is_hostname && !is_hostnamech(c)) {
+    if (is_hostname && !ares__is_hostnamech(c)) {
       status = ARES_EBADRESP;
       goto fail;
     }

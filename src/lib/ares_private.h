@@ -117,6 +117,7 @@ typedef struct ares_rand_state ares_rand_state;
 
 #include "ares__llist.h"
 #include "ares__slist.h"
+#include "ares__htable_strvp.h"
 #include "ares__htable_szvp.h"
 #include "ares__htable_asvp.h"
 #include "ares__buf.h"
@@ -460,6 +461,7 @@ void          ares__close_socket(ares_channel, ares_socket_t);
 int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
                                    const struct sockaddr *addr,
                                    ares_socklen_t addrlen);
+ares_bool_t ares__is_hostnamech(int ch);
 
 #define ARES_SWAP_BYTE(a, b)           \
   do {                                 \

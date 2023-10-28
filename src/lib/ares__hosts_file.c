@@ -1,12 +1,49 @@
+/* MIT License
+ *
+ * Copyright (c) 2023 Brad House
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#include "ares_setup.h"
+#include "ares.h"
+#include "ares_private.h"
+#ifdef HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
+#  include <sys/stat.h>
+#endif
+#include <time.h>
+
 struct ares_hosts_file;
 typedef struct ares_hosts_file ares_hosts_file_t;
 
 struct ares_hosts_file {
+  time_t                ts;
   /*! iphash is the owner of the 'entry' object as there is only ever a single
    *  match to the object. */
-  ares__hash_strvp_t *iphash;
+  ares__htable_strvp_t *iphash;
   /*! hosthash does not own the entry so won't free on destruction */
-  ares__hash_strvp_t *hosthash;
+  ares__htable_strvp_t *hosthash;
 };
 
 typedef struct {
@@ -26,9 +63,9 @@ static ares_status_t ares__read_file_into_buf(const char *filename, ares__buf_t 
   if (filename == NULL || buf == NULL)
     return ARES_EFORMERR;
 
-  fp = fopen(file, "rb");
+  fp = fopen(filename, "rb");
   if (fp == NULL) {
-    error = ERRNO;
+    int error = ERRNO;
     switch (error) {
       case ENOENT:
       case ESRCH:
@@ -48,8 +85,8 @@ static ares_status_t ares__read_file_into_buf(const char *filename, ares__buf_t 
     status = ARES_EFILE;
     goto done;
   }
-  len = ftell(fp);
-  if (fseek(fp, 0, SEEK_START) != 0) {
+  len = (size_t)ftell(fp);
+  if (fseek(fp, 0, SEEK_SET) != 0) {
     status = ARES_EFILE;
     goto done;
   }
@@ -83,8 +120,9 @@ done:
 
 static ares_bool_t ares__is_hostname(const char *str)
 {
-  for (i=0; hostname[i] != 0; i++) {
-    if (!ares__is_hostnamech(hostname[i]))
+  size_t i;
+  for (i=0; str[i] != 0; i++) {
+    if (!ares__is_hostnamech(str[i]))
       return ARES_FALSE;
   }
   return ARES_TRUE;
@@ -97,18 +135,22 @@ static ares_bool_t ares__normalize_ipaddr(const char *ipaddr, char *out,
   struct in_addr       addr4;
   struct ares_in6_addr addr6;
   int                  family = AF_UNSPEC;
+  const void          *addr;
 
   if (ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
     family = AF_INET;
-  } else if (ares_net_pton(AF_INET6, ipaddr, &addr6) > 0) {
+    addr   = &addr4;
+  } else if (ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
     family = AF_INET6;
+    addr   = &addr6;
   } else {
     return ARES_FALSE;
   }
 
-  if (!ares_inet_ntop(family, family == AF_INET?&addr4:&addr6, out, out_len)) {
+  if (!ares_inet_ntop(family, addr, out, (ares_socklen_t)out_len)) {
     return ARES_FALSE;
   }
+  return ARES_TRUE;
 }
 
 static void ares__hosts_file_entry_destroy(ares_hosts_file_entry_t *entry)
@@ -123,7 +165,7 @@ static void ares__hosts_file_entry_destroy(ares_hosts_file_entry_t *entry)
 
 static void ares__hosts_file_entry_destroy_cb(void *entry)
 {
-  return ares__host_file_entry_destroy(entry);
+  ares__hosts_file_entry_destroy(entry);
 }
 
 static void ares__hosts_file_destroy(ares_hosts_file_t *hf)
@@ -143,12 +185,14 @@ static ares_hosts_file_t *ares__hosts_file_create(void)
     goto fail;
   }
 
-  hf->iphash = ares__strvp_create(ares__hosts_file_entry_destroy_cb);
+  hf->ts = time(NULL);
+
+  hf->iphash = ares__htable_strvp_create(ares__hosts_file_entry_destroy_cb);
   if (hf->iphash == NULL) {
     goto fail;
   }
 
-  hf->hosthash = ares__strvp_create(NULL);
+  hf->hosthash = ares__htable_strvp_create(NULL);
   if (hf->hosthash == NULL) {
     goto fail;
   }
@@ -158,6 +202,21 @@ fail:
   return NULL;
 }
 
+static ares_status_t ares__hosts_file_merge_entry(
+  ares_hosts_file_entry_t *existing, ares_hosts_file_entry_t *entry)
+{
+  ares__llist_node_t *node;
+  while ((node = ares__llist_node_first(entry->hosts)) != NULL) {
+    char         *hostname = ares__llist_node_claim(node);
+
+    if (ares__llist_insert_last(existing->hosts, hostname) == NULL) {
+      ares_free(hostname);
+      return ARES_ENOMEM;
+    }
+  }
+  ares__hosts_file_entry_destroy(entry);
+  return ARES_SUCCESS;
+}
 
 /*! entry is invalidated upon calling this function, always, even on error */
 static ares_status_t ares__hosts_file_add(ares_hosts_file_t *hosts,
@@ -177,10 +236,9 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t *hosts,
     /* entry was invalidated above by merging */
     entry = existing;
   } else {
-    status = ares__htable_strvp_insert(hosts->iphash, entry->ipaddr, entry);
-    if (status != ARES_SUCCESS) {
+    if (!ares__htable_strvp_insert(hosts->iphash, entry->ipaddr, entry)) {
       ares__hosts_file_entry_destroy(entry);
-      return status;
+      return ARES_ENOMEM;
     }
   }
 
@@ -189,12 +247,11 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t *hosts,
     const char *val = ares__llist_node_val(node);
 
     /* First match wins, if its already there, skip */
-    if (ares__htable_strvp_get(hosts->hosthash, val))
+    if (ares__htable_strvp_get(hosts->hosthash, val, NULL))
       continue;
 
-    status = ares__htable_strvp_insert(hosts->hosthash, val, entry);
-    if (status != ARES_SUCCESS) {
-      return status;
+    if (!ares__htable_strvp_insert(hosts->hosthash, val, entry)) {
+      return ARES_ENOMEM;
     }
   }
 
@@ -210,8 +267,10 @@ static ares_status_t ares__parse_hosts_hostnames(ares__buf_t *buf,
 
   /* Parse hostnames and aliases */
   while (ares__buf_len(buf)) {
-    char   hostname[256];
-    char  *temp;
+    char          hostname[256];
+    char         *temp;
+    ares_status_t status;
+    unsigned char comment = '#';
 
     ares__buf_consume_whitespace(buf, ARES_FALSE);
 
@@ -219,7 +278,7 @@ static ares_status_t ares__parse_hosts_hostnames(ares__buf_t *buf,
       break;
 
     /* See if it is a comment, if so stop processing */
-    if (ares__buf_begins_with(buf, "#", 1)) {
+    if (ares__buf_begins_with(buf, &comment, 1)) {
       break;
     }
 
@@ -262,11 +321,14 @@ static ares_status_t ares__parse_hosts_hostnames(ares__buf_t *buf,
 }
 
 
-static ares_status_t ares__parse_hosts(const char *filename)
+static ares_status_t ares__parse_hosts(const char *filename,
+                                       ares_hosts_file_t **out)
 {
   ares__buf_t       *buf     = NULL;
   ares_status_t      status  = ARES_EBADRESP;
   ares_hosts_file_t *hf      = NULL;
+
+  *out = NULL;
 
   buf     = ares__buf_create();
   if (buf == NULL) {
@@ -287,6 +349,7 @@ static ares_status_t ares__parse_hosts(const char *filename)
   while (ares__buf_len(buf)) {
     char                     addr[INET6_ADDRSTRLEN];
     ares_hosts_file_entry_t *entry = NULL;
+    unsigned char            comment = '#';
 
     /* -- Start of new line here -- */
 
@@ -297,7 +360,7 @@ static ares_status_t ares__parse_hosts(const char *filename)
       break;
 
     /* See if it is a comment, if so, consume remaining line */
-    if (ares__buf_begins_with(buf, "#", 1)) {
+    if (ares__buf_begins_with(buf, &comment, 1)) {
       ares__buf_consume_line(buf, ARES_TRUE);
       continue;
     }
@@ -353,10 +416,39 @@ static ares_status_t ares__parse_hosts(const char *filename)
   }
 
 done:
-  fclose(fp);
   ares__buf_destroy(buf);
   if (status != ARES_SUCCESS) {
     ares__hosts_file_destroy(hf);
+  } else {
+    *out = hf;
   }
   return status;
 }
+
+
+static ares_bool_t ares__hosts_expired(const char *filename, const ares_hosts_file_t *hf)
+{
+  time_t mod_ts = 0;
+
+#ifdef HAVE_STAT
+  struct stat st;
+  if (stat(filename, &st) == 0) {
+    mod_ts = st.st_mtime;
+  }
+#elif WIN32
+  struct _stat st;
+  if (_stat(filename, &st) == 0) {
+    mod_ts = st.st_mtime;
+  }
+#endif
+
+  /* Expire every 60s if we can't get a time */
+  if (mod_ts == 0) {
+    mod_ts = time(NULL) - 60;
+  }
+  if (hf->ts <= mod_ts)
+    return ARES_TRUE;
+
+  return ARES_FALSE;
+}
+
