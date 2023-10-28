@@ -64,7 +64,8 @@ static void          addr_callback(void *arg, int status, int timeouts,
                                    unsigned char *abuf, int alen);
 static void          end_aquery(struct addr_query *aquery, ares_status_t status,
                                 struct hostent *host);
-static ares_status_t file_lookup(const struct ares_addr *addr,
+static ares_status_t file_lookup(ares_channel            channel,
+                                 const struct ares_addr *addr,
                                  struct hostent        **host);
 static void          ptr_rr_name(char *name, size_t name_size,
                                  const struct ares_addr *addr);
@@ -120,7 +121,7 @@ static void next_lookup(struct addr_query *aquery)
         ares_query(aquery->channel, name, C_IN, T_PTR, addr_callback, aquery);
         return;
       case 'f':
-        status = file_lookup(&aquery->addr, &host);
+        status = file_lookup(aquery->channel, &aquery->addr, &host);
 
         /* this status check below previously checked for !ARES_ENOTFOUND,
            but we should not assume that this single error code is the one
@@ -173,87 +174,37 @@ static void end_aquery(struct addr_query *aquery, ares_status_t status,
   ares_free(aquery);
 }
 
-static ares_status_t file_lookup(const struct ares_addr *addr,
+static ares_status_t file_lookup(ares_channel            channel,
+                                 const struct ares_addr *addr,
                                  struct hostent        **host)
 {
-  FILE         *fp;
-  ares_status_t status;
-  int           error;
+  char                      ipaddr[INET6_ADDRSTRLEN];
+  const void               *ptr = NULL;
+  const ares_hosts_entry_t *entry;
+  ares_status_t             status;
 
-#ifdef WIN32
-  char         PATH_HOSTS[MAX_PATH];
-  win_platform platform;
+  if (addr->family == AF_INET) {
+    ptr = &addr->addrV4;
+  } else if (addr->family == AF_INET6) {
+    ptr = &addr->addrV6;
+  }
 
-  PATH_HOSTS[0] = '\0';
+  if (ptr == NULL)
+    return ARES_ENOTFOUND;
 
-  platform = ares__getplatform();
-
-  if (platform == WIN_NT) {
-    char tmp[MAX_PATH];
-    HKEY hkeyHosts;
-
-    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
-                      &hkeyHosts) == ERROR_SUCCESS) {
-      DWORD dwLength = MAX_PATH;
-      RegQueryValueExA(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
-                       &dwLength);
-      ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
-      RegCloseKey(hkeyHosts);
-    }
-  } else if (platform == WIN_9X) {
-    GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
-  } else {
+  if (!ares_inet_ntop(addr->family, ptr, ipaddr, sizeof(ipaddr))) {
     return ARES_ENOTFOUND;
   }
 
-  strcat(PATH_HOSTS, WIN_PATH_HOSTS);
+  status = ares__hosts_search_ipaddr(channel, ARES_FALSE, ipaddr, &entry);
+  if (status != ARES_SUCCESS)
+    return status;
 
-#elif defined(WATT32)
-  const char *PATH_HOSTS = _w32_GetHostsFile();
+  status = ares__hosts_entry_to_hostent(entry, addr->family, host);
+  if (status != ARES_SUCCESS)
+    return status;
 
-  if (!PATH_HOSTS) {
-    return ARES_ENOTFOUND;
-  }
-#endif
-
-  fp = fopen(PATH_HOSTS, "r");
-  if (!fp) {
-    error = ERRNO;
-    switch (error) {
-      case ENOENT:
-      case ESRCH:
-        return ARES_ENOTFOUND;
-      default:
-        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                       strerror(error)));
-        DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_HOSTS));
-        *host = NULL;
-        return ARES_EFILE;
-    }
-  }
-  while ((status = ares__get_hostent(fp, addr->family, host)) == ARES_SUCCESS) {
-    if (addr->family != (*host)->h_addrtype) {
-      ares_free_hostent(*host);
-      continue;
-    }
-    if (addr->family == AF_INET &&
-        memcmp((*host)->h_addr, &addr->addrV4, sizeof(addr->addrV4)) == 0) {
-      break;
-    } else if (addr->family == AF_INET6 &&
-               memcmp((*host)->h_addr, addr->addrV6._S6_un._S6_u8,
-                      sizeof(addr->addrV6)) == 0) {
-      break;
-    }
-    ares_free_hostent(*host);
-  }
-  fclose(fp);
-  if (status == ARES_EOF) {
-    status = ARES_ENOTFOUND;
-  }
-  if (status != ARES_SUCCESS) {
-    *host = NULL;
-  }
-  return status;
+  return ARES_SUCCESS;
 }
 
 static void ptr_rr_name(char *name, size_t name_size,

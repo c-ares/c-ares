@@ -362,7 +362,7 @@ static ares_hosts_file_match_t ares__hosts_file_match(ares_hosts_file_t *hf,
 static ares_status_t ares__hosts_file_add(ares_hosts_file_t *hosts,
                                           ares_hosts_entry_t *entry)
 {
-  ares_hosts_entry_t *match = NULL;
+  ares_hosts_entry_t      *match  = NULL;
   ares_status_t            status = ARES_SUCCESS;
   ares__llist_node_t      *node;
   ares_hosts_file_match_t  matchtype;
@@ -481,7 +481,7 @@ static ares_status_t ares__parse_hosts(const char *filename, ares_bool_t is_env,
   ares__buf_t             *buf     = NULL;
   ares_status_t            status  = ARES_EBADRESP;
   ares_hosts_file_t       *hf      = NULL;
-  ares_hosts_entry_t *entry   = NULL;
+  ares_hosts_entry_t      *entry   = NULL;
 
 
   *out = NULL;
@@ -783,34 +783,74 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
 
   (*hostent)->h_addrtype = family;
 
-#if 0
-    /* Copy network address. */
-    hostent->h_addr_list = ares_malloc(2 * sizeof(char *));
-    if (!hostent->h_addr_list) {
-      break;
-    }
-    hostent->h_addr_list[1] = NULL;
-    hostent->h_addr_list[0] = ares_malloc(addrlen);
-    if (!hostent->h_addr_list[0]) {
-      break;
-    }
-    if (addr.family == AF_INET) {
-      memcpy(hostent->h_addr_list[0], &addr.addrV4, sizeof(addr.addrV4));
-    } else {
-      memcpy(hostent->h_addr_list[0], &addr.addrV6, sizeof(addr.addrV6));
+  /* Copy IP addresses that match the address family */
+  idx = 0;
+  for (node = ares__llist_node_first(entry->ips); node != NULL;
+       node = ares__llist_node_next(node)) {
+    struct in_addr       addr4;
+    struct ares_in6_addr addr6;
+    const void          *ptr     = NULL;
+    size_t               ptr_len = 0;
+    const char          *ipaddr  = ares__llist_node_val(node);
+    char               **temp    = NULL;
+
+    if (family == AF_INET && ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
+      ptr     = &addr4;
+      ptr_len = sizeof(addr4);
+    } else if (family == AF_INET6 &&
+               ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
+      ptr     = &addr6;
+      ptr_len = sizeof(addr6);
+    } else if (family == AF_UNSPEC) {
+      if (ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
+        family  = AF_INET;
+        ptr     = &addr4;
+        ptr_len = sizeof(addr4);
+      } else if (ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
+        family  = AF_INET6;
+        ptr     = &addr6;
+        ptr_len = sizeof(addr6);
+      }
     }
 
-    /* Copy actual network address family and length. */
-    hostent->h_addrtype = addr.family;
-    hostent->h_length   = (int)addrlen;
-#endif
+    if (ptr == NULL)
+      continue;
 
+    temp = ares_realloc_zero((*hostent)->h_addr_list,
+      (idx + 1) * sizeof(*(*hostent)->h_addr_list),
+      (idx + 2) * sizeof(*(*hostent)->h_addr_list));
+    if (temp == NULL) {
+      status = ARES_ENOMEM;
+      goto fail;
+    }
+
+    (*hostent)->h_addr_list = temp;
+
+    (*hostent)->h_addr_list[idx] = ares_malloc(ptr_len);
+    if ((*hostent)->h_addr_list[idx] == NULL) {
+      status = ARES_ENOMEM;
+      goto fail;
+    }
+
+    memcpy((*hostent)->h_addr_list[idx], ptr, ptr_len);
+    idx++;
+    (*hostent)->h_length = (int)ptr_len;
+  }
+
+  /* entry didn't match address class */
+  if (idx == 0) {
+    status = ARES_ENOTFOUND;
+    goto fail;
+  }
+
+  /* Copy main hostname */
   (*hostent)->h_name = ares_strdup(ares__llist_first_val(entry->hosts));
   if ((*hostent)->h_name == NULL) {
     status = ARES_ENOMEM;
     goto fail;
   }
 
+  /* Copy aliases */
   naliases = ares__llist_len(entry->hosts) - 1;
   (*hostent)->h_aliases = ares_malloc_zero((naliases + 1) *
                                            sizeof((*hostent)->h_aliases));

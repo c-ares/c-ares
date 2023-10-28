@@ -230,120 +230,37 @@ static size_t get6_address_index(const struct ares_in6_addr *addr,
   return i;
 }
 
-static ares_status_t file_lookup(const char *name, int family,
-                                 struct hostent **host);
 
 /* I really have no idea why this is exposed as a public function, but since
  * it is, we can't kill this legacy function. */
 int ares_gethostbyname_file(ares_channel channel, const char *name, int family,
                             struct hostent **host)
 {
-  ares_status_t status;
+
+  const ares_hosts_entry_t *entry;
+  ares_status_t             status;
 
   /* We only take the channel to ensure that ares_init() been called. */
   if (channel == NULL) {
     /* Anything will do, really.  This seems fine, and is consistent with
        other error cases. */
     *host = NULL;
-    return ARES_ENOTFOUND;
+    return (int)ARES_ENOTFOUND;
   }
-
-  /* Just chain to the internal implementation we use here; it's exactly
-   * what we want.
-   */
-  status = file_lookup(name, family, host);
-  if (status != ARES_SUCCESS) {
-    /* We guarantee a NULL hostent on failure. */
-    *host = NULL;
-  }
-  return (int)status;
-}
-
-static ares_status_t file_lookup(const char *name, int family,
-                                 struct hostent **host)
-{
-  FILE         *fp;
-  char        **alias;
-  ares_status_t status;
-  int           error;
-
-#ifdef WIN32
-  char         PATH_HOSTS[MAX_PATH];
-  win_platform platform;
-
-  PATH_HOSTS[0] = '\0';
-
-  platform = ares__getplatform();
-
-  if (platform == WIN_NT) {
-    char tmp[MAX_PATH];
-    HKEY hkeyHosts;
-
-    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
-                      &hkeyHosts) == ERROR_SUCCESS) {
-      DWORD dwLength = MAX_PATH;
-      RegQueryValueExA(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
-                       &dwLength);
-      ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
-      RegCloseKey(hkeyHosts);
-    }
-  } else if (platform == WIN_9X) {
-    GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
-  } else {
-    return ARES_ENOTFOUND;
-  }
-
-  strcat(PATH_HOSTS, WIN_PATH_HOSTS);
-
-#elif defined(WATT32)
-  const char *PATH_HOSTS = _w32_GetHostsFile();
-
-  if (!PATH_HOSTS) {
-    return ARES_ENOTFOUND;
-  }
-#endif
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
   if (ares__is_onion_domain(name)) {
     return ARES_ENOTFOUND;
   }
 
+  status = ares__hosts_search_host(channel, ARES_FALSE, name, &entry);
+  if (status != ARES_SUCCESS)
+    return (int)status;
 
-  fp = fopen(PATH_HOSTS, "r");
-  if (!fp) {
-    error = ERRNO;
-    switch (error) {
-      case ENOENT:
-      case ESRCH:
-        return ARES_ENOTFOUND;
-      default:
-        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                       strerror(error)));
-        DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_HOSTS));
-        *host = NULL;
-        return ARES_EFILE;
-    }
-  }
-  while ((status = ares__get_hostent(fp, family, host)) == ARES_SUCCESS) {
-    if (strcasecmp((*host)->h_name, name) == 0) {
-      break;
-    }
-    for (alias = (*host)->h_aliases; *alias; alias++) {
-      if (strcasecmp(*alias, name) == 0) {
-        break;
-      }
-    }
-    if (*alias) {
-      break;
-    }
-    ares_free_hostent(*host);
-  }
-  fclose(fp);
-  if (status == ARES_EOF) {
-    status = ARES_ENOTFOUND;
-  }
-  if (status != ARES_SUCCESS) {
-    *host = NULL;
-  }
-  return status;
+  status = ares__hosts_entry_to_hostent(entry, family, host);
+  if (status != ARES_SUCCESS)
+    return (int)status;
+
+  return (int)ARES_SUCCESS;
 }
+

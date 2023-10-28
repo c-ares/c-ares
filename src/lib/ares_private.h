@@ -379,7 +379,6 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
 void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
 void          ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd);
-ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host);
 ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize);
 void          ares__free_query(struct query *query);
 
@@ -480,7 +479,9 @@ ares_status_t ares__hosts_search_ipaddr(ares_channel channel,
 ares_status_t ares__hosts_search_host(ares_channel channel,
                                       ares_bool_t use_env, const char *host,
                                       const ares_hosts_entry_t **entry);
-
+ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
+                                           int family,
+                                           struct hostent **hostent);
 
 #define ARES_SWAP_BYTE(a, b)           \
   do {                                 \
