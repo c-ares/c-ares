@@ -410,10 +410,6 @@ ares_status_t  ares__single_domain(ares_channel channel, const char *name,
 ares_status_t  ares__cat_domain(const char *name, const char *domain, char **s);
 ares_status_t  ares__sortaddrinfo(ares_channel               channel,
                                   struct ares_addrinfo_node *ai_node);
-ares_status_t  ares__readaddrinfo(FILE *fp, const char *name,
-                                  unsigned short                    port,
-                                  const struct ares_addrinfo_hints *hints,
-                                  struct ares_addrinfo             *ai);
 
 void           ares__freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node);
 
