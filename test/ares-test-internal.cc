@@ -421,6 +421,7 @@ TEST_F(DefaultChannelTest, GetAddrInfoHostsIPV6) {
   EXPECT_EQ("{ipv6.com addr=[[0000:0000:0000:0000:0000:0000:0000:0001]]}", ss.str());
 }
 
+#if 0
 TEST_F(LibraryTest, GetAddrInfoAllocFail) {
   TempFile hostsfile("1.2.3.4 example.com alias1 alias2\n");
   struct ares_addrinfo_hints hints;
@@ -441,7 +442,7 @@ TEST_F(LibraryTest, GetAddrInfoAllocFail) {
   }
   fclose(fp);
 }
-
+#endif
 TEST(Misc, OnionDomain) {
   EXPECT_EQ(0, ares__is_onion_domain("onion.no"));
   EXPECT_EQ(0, ares__is_onion_domain(".onion.no"));

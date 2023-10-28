@@ -161,7 +161,7 @@ ares_bool_t ares__htable_strvp_get(const ares__htable_strvp_t *htable,
     return ARES_FALSE;
   }
 
-  bucket = ares__htable_get(htable->hash, &key);
+  bucket = ares__htable_get(htable->hash, key);
   if (bucket == NULL) {
     return ARES_FALSE;
   }

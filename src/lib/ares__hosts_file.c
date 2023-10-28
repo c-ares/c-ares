@@ -760,8 +760,9 @@ ares_status_t ares__hosts_search_host(ares_channel channel,
     return ARES_ENOTFOUND;
 
   *entry = ares__htable_strvp_get_direct(channel->hf->hosthash, host);
-  if (*entry == NULL)
+  if (*entry == NULL) {
     return ARES_ENOTFOUND;
+  }
 
   return ARES_SUCCESS;
 }
@@ -933,8 +934,9 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
       }
     }
 
-    if (ptr == NULL)
+    if (ptr == NULL) {
       continue;
+    }
 
     status = ares_append_ai_node(nfamily, port, 0, ptr, &ainodes);
     if (status != ARES_SUCCESS) {
@@ -983,6 +985,7 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
       status = ARES_ENOMEM;
       goto done;
     }
+
     cname->name = ares_strdup(primaryhost);
     if (cname->name == NULL) {
       status = ARES_ENOMEM;
