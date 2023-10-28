@@ -268,6 +268,9 @@ struct apattern {
   unsigned short type;
 };
 
+struct ares_hosts_file;
+typedef struct ares_hosts_file ares_hosts_file_t;
+
 struct ares_channeldata {
   /* Configuration data */
   unsigned int         flags;
@@ -341,6 +344,9 @@ struct ares_channeldata {
 
   /* Maximum UDP queries per connection allowed */
   size_t                              udp_max_queries;
+
+  /* Cache of local hosts file */
+  ares_hosts_file_t                  *hf;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
@@ -462,6 +468,18 @@ int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
                                    const struct sockaddr *addr,
                                    ares_socklen_t addrlen);
 ares_bool_t ares__is_hostnamech(int ch);
+
+
+struct ares_hosts_file_entry;
+typedef struct ares_hosts_file_entry ares_hosts_file_entry_t;
+
+ares_status_t ares__hosts_search_ipaddr(ares_channel channel,
+                                        ares_bool_t use_env, const char *ipaddr,
+                                        const ares_hosts_file_entry_t **entry);
+ares_status_t ares__hosts_search_host(ares_channel channel,
+                                      ares_bool_t use_env, const char *host,
+                                      const ares_hosts_file_entry_t **entry);
+
 
 #define ARES_SWAP_BYTE(a, b)           \
   do {                                 \

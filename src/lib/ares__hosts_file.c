@@ -34,11 +34,10 @@
 #endif
 #include <time.h>
 
-struct ares_hosts_file;
-typedef struct ares_hosts_file ares_hosts_file_t;
 
 struct ares_hosts_file {
   time_t                ts;
+  ares_bool_t           is_env;
   /*! iphash is the owner of the 'entry' object as there is only ever a single
    *  match to the object. */
   ares__htable_strvp_t *iphash;
@@ -46,10 +45,10 @@ struct ares_hosts_file {
   ares__htable_strvp_t *hosthash;
 };
 
-typedef struct {
+struct  ares_hosts_file_entry {
   char          *ipaddr;
   ares__llist_t *hosts;
-} ares_hosts_file_entry_t;
+};
 
 
 static ares_status_t ares__read_file_into_buf(const char *filename, ares__buf_t *buf)
@@ -178,7 +177,7 @@ static void ares__hosts_file_destroy(ares_hosts_file_t *hf)
   ares_free(hf);
 }
 
-static ares_hosts_file_t *ares__hosts_file_create(void)
+static ares_hosts_file_t *ares__hosts_file_create(ares_bool_t is_env)
 {
   ares_hosts_file_t *hf = ares_malloc_zero(sizeof(*hf));
   if (hf == NULL) {
@@ -196,6 +195,8 @@ static ares_hosts_file_t *ares__hosts_file_create(void)
   if (hf->hosthash == NULL) {
     goto fail;
   }
+
+  hf->is_env = is_env;
 
 fail:
   ares__hosts_file_destroy(hf);
@@ -321,7 +322,7 @@ static ares_status_t ares__parse_hosts_hostnames(ares__buf_t *buf,
 }
 
 
-static ares_status_t ares__parse_hosts(const char *filename,
+static ares_status_t ares__parse_hosts(const char *filename, ares_bool_t is_env,
                                        ares_hosts_file_t **out)
 {
   ares__buf_t       *buf     = NULL;
@@ -340,7 +341,7 @@ static ares_status_t ares__parse_hosts(const char *filename,
   if (status != ARES_SUCCESS)
     goto done;
 
-  hf = ares__hosts_file_create();
+  hf = ares__hosts_file_create(is_env);
   if (hf == NULL) {
     status = ARES_ENOMEM;
     goto done;
@@ -426,7 +427,8 @@ done:
 }
 
 
-static ares_bool_t ares__hosts_expired(const char *filename, const ares_hosts_file_t *hf)
+static ares_bool_t ares__hosts_expired(const char *filename,
+                                       const ares_hosts_file_t *hf)
 {
   time_t mod_ts = 0;
 
@@ -446,9 +448,152 @@ static ares_bool_t ares__hosts_expired(const char *filename, const ares_hosts_fi
   if (mod_ts == 0) {
     mod_ts = time(NULL) - 60;
   }
-  if (hf->ts <= mod_ts)
+  if (hf == NULL || hf->ts <= mod_ts || hf->is_env)
     return ARES_TRUE;
 
   return ARES_FALSE;
 }
 
+
+static ares_status_t ares__hosts_path(ares_channel channel, ares_bool_t use_env,
+                                      char **path)
+{
+  char         *path_hosts = NULL;
+
+  *path = NULL;
+
+  if (channel->hosts_path) {
+    path_hosts = ares_strdup(channel->hosts_path);
+    if (!path_hosts) {
+      return ARES_ENOMEM;
+    }
+  }
+
+  if (use_env) {
+    if (path_hosts) {
+      ares_free(path_hosts);
+    }
+
+    path_hosts = ares_strdup(getenv("CARES_HOSTS"));
+    if (!path_hosts) {
+      return ARES_ENOMEM;
+    }
+  }
+
+  if (!path_hosts) {
+#ifdef WIN32
+    char         PATH_HOSTS[MAX_PATH];
+    win_platform platform;
+
+    PATH_HOSTS[0] = '\0';
+
+    platform = ares__getplatform();
+
+    if (platform == WIN_NT) {
+      char tmp[MAX_PATH];
+      HKEY hkeyHosts;
+
+      if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
+                        &hkeyHosts) == ERROR_SUCCESS) {
+        DWORD dwLength = MAX_PATH;
+        RegQueryValueExA(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
+                         &dwLength);
+        ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
+        RegCloseKey(hkeyHosts);
+      }
+    } else if (platform == WIN_9X) {
+      GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
+    } else {
+      return ARES_ENOTFOUND;
+    }
+
+    strcat(PATH_HOSTS, WIN_PATH_HOSTS);
+#elif defined(WATT32)
+    const char *PATH_HOSTS = _w32_GetHostsFile();
+
+    if (!PATH_HOSTS) {
+      return ARES_ENOTFOUND;
+    }
+#endif
+    path_hosts = ares_strdup(PATH_HOSTS);
+    if (!path_hosts) {
+      return ARES_ENOMEM;
+    }
+  }
+
+  *path = path_hosts;
+  return ARES_SUCCESS;
+}
+
+
+static ares_status_t ares__hosts_update(ares_channel channel,
+                                        ares_bool_t use_env)
+{
+  ares_status_t status;
+  char *filename = NULL;
+
+  status = ares__hosts_path(channel, use_env, &filename);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  if (!ares__hosts_expired(filename, channel->hf)) {
+    ares_free(filename);
+    return ARES_SUCCESS;
+  }
+
+  ares__hosts_file_destroy(channel->hf);
+  channel->hf = NULL;
+
+  status = ares__parse_hosts(filename, use_env, &channel->hf);
+  ares_free(filename);
+  return status;
+}
+
+ares_status_t ares__hosts_search_ipaddr(ares_channel channel,
+                                        ares_bool_t use_env, const char *ipaddr,
+                                        const ares_hosts_file_entry_t **entry)
+{
+  ares_status_t status;
+  char          addr[INET6_ADDRSTRLEN];
+
+  *entry = NULL;
+
+  status = ares__hosts_update(channel, use_env);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  if (channel->hf == NULL)
+    return ARES_ENOTFOUND;
+
+  if (!ares__normalize_ipaddr(ipaddr, addr, sizeof(addr))) {
+    return ARES_EBADNAME;
+  }
+
+  *entry = ares__htable_strvp_get_direct(channel->hf->iphash, addr);
+  if (*entry == NULL)
+    return ARES_ENOTFOUND;
+
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares__hosts_search_host(ares_channel channel,
+                                      ares_bool_t use_env, const char *host,
+                                      const ares_hosts_file_entry_t **entry)
+{
+  ares_status_t status;
+
+  *entry = NULL;
+
+  status = ares__hosts_update(channel, use_env);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  if (channel->hf == NULL)
+    return ARES_ENOTFOUND;
+
+  *entry = ares__htable_strvp_get_direct(channel->hf->hosthash, host);
+  if (*entry == NULL)
+    return ARES_ENOTFOUND;
+
+  return ARES_SUCCESS;
+}
