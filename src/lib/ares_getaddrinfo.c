@@ -427,105 +427,41 @@ static ares_bool_t is_localhost(const char *name)
 
 static ares_status_t file_lookup(struct host_query *hquery)
 {
-  FILE         *fp;
-  int           error;
-  ares_status_t status;
-  char         *path_hosts = NULL;
-  const ares_hosts_entry_t *entry = NULL;
+  const ares_hosts_entry_t *entry;
+  ares_status_t             status;
 
-  /* Placeholder to test new routines */
+  /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
+  if (ares__is_onion_domain(hquery->name)) {
+    return ARES_ENOTFOUND;
+  }
+
   status = ares__hosts_search_host(hquery->channel,
     (hquery->hints.ai_flags & ARES_AI_ENVHOSTS)?ARES_TRUE:ARES_FALSE,
     hquery->name, &entry);
-  /* ----- */
 
-  if (hquery->channel->hosts_path) {
-    path_hosts = ares_strdup(hquery->channel->hosts_path);
-    if (!path_hosts) {
-      return ARES_ENOMEM;
-    }
+  if (status != ARES_SUCCESS) {
+    goto done;
   }
 
-  if (hquery->hints.ai_flags & ARES_AI_ENVHOSTS) {
-    if (path_hosts) {
-      ares_free(path_hosts);
-    }
+  status = ares__hosts_entry_to_addrinfo(entry, hquery->name,
+    hquery->hints.ai_family,
+    hquery->port,
+    (hquery->hints.ai_flags & ARES_AI_CANONNAME)?ARES_TRUE:ARES_FALSE,
+    hquery->ai);
 
-    path_hosts = ares_strdup(getenv("CARES_HOSTS"));
-    if (!path_hosts) {
-      return ARES_ENOMEM;
-    }
+  if (status != ARES_SUCCESS) {
+    goto done;
   }
 
-  if (!path_hosts) {
-#ifdef WIN32
-    char         PATH_HOSTS[MAX_PATH];
-    win_platform platform;
 
-    PATH_HOSTS[0] = '\0';
-
-    platform = ares__getplatform();
-
-    if (platform == WIN_NT) {
-      char tmp[MAX_PATH];
-      HKEY hkeyHosts;
-
-      if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
-                        &hkeyHosts) == ERROR_SUCCESS) {
-        DWORD dwLength = MAX_PATH;
-        RegQueryValueExA(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
-                         &dwLength);
-        ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
-        RegCloseKey(hkeyHosts);
-      }
-    } else if (platform == WIN_9X) {
-      GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
-    } else {
-      return ARES_ENOTFOUND;
-    }
-
-    strcat(PATH_HOSTS, WIN_PATH_HOSTS);
-#elif defined(WATT32)
-    const char *PATH_HOSTS = _w32_GetHostsFile();
-
-    if (!PATH_HOSTS) {
-      return ARES_ENOTFOUND;
-    }
-#endif
-    path_hosts = ares_strdup(PATH_HOSTS);
-    if (!path_hosts) {
-      return ARES_ENOMEM;
-    }
-  }
-
-  fp = fopen(path_hosts, "r");
-  if (!fp) {
-    error = ERRNO;
-    switch (error) {
-      case ENOENT:
-      case ESRCH:
-        status = ARES_ENOTFOUND;
-        break;
-      default:
-        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                       strerror(error)));
-        DEBUGF(fprintf(stderr, "Error opening file: %s\n", path_hosts));
-        status = ARES_EFILE;
-        break;
-    }
-  } else {
-    status = ares__readaddrinfo(fp, hquery->name, hquery->port, &hquery->hints,
-                                hquery->ai);
-    fclose(fp);
-  }
-  ares_free(path_hosts);
-
+done:
   /* RFC6761 section 6.3 #3 states that "Name resolution APIs and libraries
    * SHOULD recognize localhost names as special and SHOULD always return the
    * IP loopback address for address queries".
    * We will also ignore ALL errors when trying to resolve localhost, such
    * as permissions errors reading /etc/hosts or a malformed /etc/hosts */
-  if (status != ARES_SUCCESS && is_localhost(hquery->name)) {
+  if (status != ARES_SUCCESS && status != ARES_ENOMEM &&
+      is_localhost(hquery->name)) {
     return ares__addrinfo_localhost(hquery->name, hquery->port, &hquery->hints,
                                     hquery->ai);
   }

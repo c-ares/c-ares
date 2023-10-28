@@ -340,64 +340,6 @@ TEST_F(LibraryTest, ReadLineNoBuf) {
   ares_free(buf);
 }
 
-TEST(Misc, GetHostent) {
-  TempFile hostsfile("1.2.3.4 example.com  \n"
-                     "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
-                     "#comment\n"
-                     "4.5.6.7\n"
-                     "1.3.5.7  \n"
-                     "::1    ipv6.com");
-  struct hostent *host = nullptr;
-  FILE *fp = fopen(hostsfile.filename(), "r");
-  ASSERT_NE(nullptr, fp);
-  EXPECT_EQ(ARES_EBADFAMILY, ares__get_hostent(fp, AF_INET+AF_INET6, &host));
-  rewind(fp);
-
-  EXPECT_EQ(ARES_SUCCESS, ares__get_hostent(fp, AF_INET, &host));
-  ASSERT_NE(nullptr, host);
-  std::stringstream ss1;
-  ss1 << HostEnt(host);
-  EXPECT_EQ("{'example.com' aliases=[] addrs=[1.2.3.4]}", ss1.str());
-  ares_free_hostent(host);
-  host = nullptr;
-
-  EXPECT_EQ(ARES_SUCCESS, ares__get_hostent(fp, AF_INET, &host));
-  ASSERT_NE(nullptr, host);
-  std::stringstream ss2;
-  ss2 << HostEnt(host);
-  EXPECT_EQ("{'google.com' aliases=[www.google.com, www2.google.com] addrs=[2.3.4.5]}", ss2.str());
-  ares_free_hostent(host);
-  host = nullptr;
-
-  EXPECT_EQ(ARES_EOF, ares__get_hostent(fp, AF_INET, &host));
-
-  rewind(fp);
-  EXPECT_EQ(ARES_SUCCESS, ares__get_hostent(fp, AF_INET6, &host));
-  ASSERT_NE(nullptr, host);
-  std::stringstream ss3;
-  ss3 << HostEnt(host);
-  EXPECT_EQ("{'ipv6.com' aliases=[] addrs=[0000:0000:0000:0000:0000:0000:0000:0001]}", ss3.str());
-  ares_free_hostent(host);
-  host = nullptr;
-  EXPECT_EQ(ARES_EOF, ares__get_hostent(fp, AF_INET6, &host));
-  fclose(fp);
-}
-
-TEST_F(LibraryTest, GetHostentAllocFail) {
-  TempFile hostsfile("1.2.3.4 example.com alias1 alias2\n");
-  struct hostent *host = nullptr;
-  FILE *fp = fopen(hostsfile.filename(), "r");
-  ASSERT_NE(nullptr, fp);
-
-  for (int ii = 1; ii <= 8; ii++) {
-    rewind(fp);
-    ClearFails();
-    SetAllocFail(ii);
-    host = nullptr;
-    EXPECT_EQ(ARES_ENOMEM, ares__get_hostent(fp, AF_INET, &host)) << ii;
-  }
-  fclose(fp);
-}
 
 TEST_F(DefaultChannelTest, GetAddrInfoHostsPositive) {
   TempFile hostsfile("1.2.3.4 example.com  \n"

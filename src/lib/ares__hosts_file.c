@@ -880,3 +880,128 @@ fail:
   *hostent = NULL;
   return status;
 }
+
+ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
+                                            const char *name,
+                                            int family,
+                                            unsigned short port,
+                                            ares_bool_t want_cnames,
+                                            struct ares_addrinfo *ai)
+{
+  ares_status_t               status;
+  struct ares_addrinfo_cname *cname    = NULL;
+  struct ares_addrinfo_cname *cnames   = NULL;
+  struct ares_addrinfo_node  *ainodes  = NULL;
+  ares__llist_node_t         *node;
+  const char                 *primaryhost;
+
+  switch (family) {
+    case AF_INET:
+    case AF_INET6:
+    case AF_UNSPEC:
+      break;
+    default:
+      return ARES_EBADFAMILY;
+  }
+
+  ai->name = ares_strdup(name);
+  if (ai->name == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  for (node = ares__llist_node_first(entry->ips); node != NULL;
+       node = ares__llist_node_next(node)) {
+    struct in_addr       addr4;
+    struct ares_in6_addr addr6;
+    const void          *ptr     = NULL;
+    const char          *ipaddr  = ares__llist_node_val(node);
+    int                  nfamily = family;
+
+    if (nfamily == AF_INET && ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
+      ptr     = &addr4;
+    } else if (nfamily == AF_INET6 &&
+               ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
+      ptr     = &addr6;
+    } else if (nfamily == AF_UNSPEC) {
+      if (ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
+        nfamily  = AF_INET;
+        ptr      = &addr4;
+      } else if (ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
+        nfamily  = AF_INET6;
+        ptr      = &addr6;
+      }
+    }
+
+    if (ptr == NULL)
+      continue;
+
+    status = ares_append_ai_node(nfamily, port, 0, ptr, &ainodes);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
+
+  if (!want_cnames) {
+    status = ARES_SUCCESS;
+    goto done;
+  }
+
+  node        = ares__llist_node_first(entry->hosts);
+  primaryhost = ares__llist_node_val(node);
+  /* Skip to next node to start with aliases */
+  node        = ares__llist_node_next(node);
+
+  while (node != NULL) {
+    const char *host  = ares__llist_node_val(node);
+
+    cname = ares__append_addrinfo_cname(&cnames);
+    if (cname == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+
+    cname->alias = ares_strdup(host);
+    if (cname->alias == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+
+    cname->name = ares_strdup(primaryhost);
+    if (cname->name == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+
+    node = ares__llist_node_next(node);
+  }
+
+  /* No entries, add only primary */
+  if (cnames == NULL) {
+    cname = ares__append_addrinfo_cname(&cnames);
+    if (cname == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+    cname->name = ares_strdup(primaryhost);
+    if (cname->name == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+  }
+
+  status = ARES_SUCCESS;
+
+done:
+  if (status != ARES_SUCCESS) {
+    ares__freeaddrinfo_cnames(cnames);
+    ares__freeaddrinfo_nodes(ainodes);
+    ares_free(ai->name);
+    ai->name = NULL;
+  } else {
+    ares__addrinfo_cat_cnames(&ai->cnames, cnames);
+    ares__addrinfo_cat_nodes(&ai->nodes, ainodes);
+  }
+
+  return status;
+}

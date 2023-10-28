@@ -482,6 +482,12 @@ ares_status_t ares__hosts_search_host(ares_channel channel,
 ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
                                            int family,
                                            struct hostent **hostent);
+ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
+                                            const char *name,
+                                            int family,
+                                            unsigned short port,
+                                            ares_bool_t want_cnames,
+                                            struct ares_addrinfo *ai);
 
 #define ARES_SWAP_BYTE(a, b)           \
   do {                                 \
