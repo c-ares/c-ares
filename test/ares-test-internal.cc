@@ -426,7 +426,6 @@ TEST_F(FileChannelTest, GetAddrInfoAllocFail) {
   TempFile hostsfile("1.2.3.4 example.com alias1 alias2\n");
   EnvValue with_env("CARES_HOSTS", hostsfile.filename());
   struct ares_addrinfo_hints hints;
-  unsigned short port = 80;
 
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
