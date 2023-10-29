@@ -265,6 +265,26 @@ cares_includes_sys_uio="\
 ])
 
 
+dnl CARES_INCLUDES_SYS_STAT
+dnl -------------------------------------------------
+dnl Set up variable with list of headers that must be
+dnl included when sys/stat.h is to be included.
+
+AC_DEFUN([CARES_INCLUDES_SYS_STAT], [
+cares_includes_sys_stat="\
+/* includes start */
+#ifdef HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
+#  include <sys/stat.h>
+#endif
+/* includes end */"
+  AC_CHECK_HEADERS(
+    sys/types.h sys/stat.h,
+    [], [], [$cares_includes_sys_stat])
+])
+
 dnl CARES_INCLUDES_UNISTD
 dnl -------------------------------------------------
 dnl Set up variable with list of headers that must be
