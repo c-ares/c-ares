@@ -605,11 +605,13 @@ static ares_bool_t ares__hosts_expired(const char *filename,
   if (stat(filename, &st) == 0) {
     mod_ts = st.st_mtime;
   }
-#elif WIN32
+#elif defined(_WIN32)
   struct _stat st;
   if (_stat(filename, &st) == 0) {
     mod_ts = st.st_mtime;
   }
+#else
+  (void)filename;
 #endif
 
   /* Expire every 60s if we can't get a time */
