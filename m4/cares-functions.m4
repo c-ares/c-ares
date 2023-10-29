@@ -3921,6 +3921,7 @@ AC_DEFUN([CARES_CHECK_FUNC_STAT], [
     AC_MSG_CHECKING([if stat is compilable])
     AC_COMPILE_IFELSE([
       AC_LANG_PROGRAM([[
+        $cares_includes_sys_types
         $cares_includes_sys_stat
       ]],[[
         if(0 != stat(NULL, NULL))
