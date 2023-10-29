@@ -95,30 +95,6 @@ static const struct ares_addrinfo_hints default_hints = {
   0,         /* ai_protocol */
 };
 
-static const struct ares_addrinfo_cname empty_addrinfo_cname = {
-  INT_MAX, /* ttl */
-  NULL,    /* alias */
-  NULL,    /* name */
-  NULL,    /* next */
-};
-
-static const struct ares_addrinfo_node empty_addrinfo_node = {
-  0,    /* ai_ttl */
-  0,    /* ai_flags */
-  0,    /* ai_family */
-  0,    /* ai_socktype */
-  0,    /* ai_protocol */
-  0,    /* ai_addrlen */
-  NULL, /* ai_addr */
-  NULL  /* ai_next */
-};
-
-static const struct ares_addrinfo empty_addrinfo = {
-  NULL, /* cnames */
-  NULL, /* nodes */
-  NULL  /* name */
-};
-
 /* forward declarations */
 static void        host_callback(void *arg, int status, int timeouts,
                                  unsigned char *abuf, int alen);
@@ -126,23 +102,15 @@ static ares_bool_t as_is_first(const struct host_query *hquery);
 static ares_bool_t as_is_only(const struct host_query *hquery);
 static ares_bool_t next_dns_lookup(struct host_query *hquery);
 
-static struct ares_addrinfo_cname *ares__malloc_addrinfo_cname(void)
-{
-  struct ares_addrinfo_cname *cname =
-    ares_malloc(sizeof(struct ares_addrinfo_cname));
-  if (!cname) {
-    return NULL;
-  }
-
-  *cname = empty_addrinfo_cname;
-  return cname;
-}
-
 struct ares_addrinfo_cname *
   ares__append_addrinfo_cname(struct ares_addrinfo_cname **head)
 {
-  struct ares_addrinfo_cname *tail = ares__malloc_addrinfo_cname();
+  struct ares_addrinfo_cname *tail = ares_malloc_zero(sizeof(*tail));
   struct ares_addrinfo_cname *last = *head;
+
+  if (tail == NULL)
+    return NULL;
+
   if (!last) {
     *head = tail;
     return tail;
@@ -172,34 +140,16 @@ void ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
   last->next = tail;
 }
 
-static struct ares_addrinfo *ares__malloc_addrinfo(void)
-{
-  struct ares_addrinfo *ai = ares_malloc(sizeof(struct ares_addrinfo));
-  if (!ai) {
-    return NULL;
-  }
-
-  *ai = empty_addrinfo;
-  return ai;
-}
-
-static struct ares_addrinfo_node *ares__malloc_addrinfo_node(void)
-{
-  struct ares_addrinfo_node *node = ares_malloc(sizeof(*node));
-  if (!node) {
-    return NULL;
-  }
-
-  *node = empty_addrinfo_node;
-  return node;
-}
-
 /* Allocate new addrinfo and append to the tail. */
 struct ares_addrinfo_node *
   ares__append_addrinfo_node(struct ares_addrinfo_node **head)
 {
-  struct ares_addrinfo_node *tail = ares__malloc_addrinfo_node();
+  struct ares_addrinfo_node *tail = ares_malloc_zero(sizeof(*tail));
   struct ares_addrinfo_node *last = *head;
+
+  if (tail == NULL)
+    return NULL;
+
   if (!last) {
     *head = tail;
     return tail;
@@ -643,7 +593,7 @@ void ares_getaddrinfo(ares_channel channel, const char *name,
     }
   }
 
-  ai = ares__malloc_addrinfo();
+  ai = ares_malloc_zero(sizeof(*ai));
   if (!ai) {
     ares_free(alias_name);
     callback(arg, ARES_ENOMEM, 0, NULL);
