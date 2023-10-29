@@ -82,7 +82,9 @@
 
 struct ares_hosts_file {
   time_t                ts;
-  ares_bool_t           is_env;
+  /*! cache the filename so we know if the filename changes it automatically
+   *  invalidates the cache */
+  char                 *filename;
   /*! iphash is the owner of the 'entry' object as there is only ever a single
    *  match to the object. */
   ares__htable_strvp_t *iphash;
@@ -227,12 +229,13 @@ void ares__hosts_file_destroy(ares_hosts_file_t *hf)
   if (hf == NULL)
     return;
 
+  ares_free(hf->filename);
   ares__htable_strvp_destroy(hf->hosthash);
   ares__htable_strvp_destroy(hf->iphash);
   ares_free(hf);
 }
 
-static ares_hosts_file_t *ares__hosts_file_create(ares_bool_t is_env)
+static ares_hosts_file_t *ares__hosts_file_create(const char *filename)
 {
   ares_hosts_file_t *hf = ares_malloc_zero(sizeof(*hf));
   if (hf == NULL) {
@@ -240,6 +243,11 @@ static ares_hosts_file_t *ares__hosts_file_create(ares_bool_t is_env)
   }
 
   hf->ts = time(NULL);
+
+  hf->filename = ares_strdup(filename);
+  if (hf->filename == NULL) {
+    goto fail;
+  }
 
   hf->iphash = ares__htable_strvp_create(ares__hosts_entry_destroy_cb);
   if (hf->iphash == NULL) {
@@ -251,7 +259,6 @@ static ares_hosts_file_t *ares__hosts_file_create(ares_bool_t is_env)
     goto fail;
   }
 
-  hf->is_env = is_env;
   return hf;
 
 fail:
@@ -475,7 +482,7 @@ static ares_status_t ares__parse_hosts_hostnames(ares__buf_t *buf,
 }
 
 
-static ares_status_t ares__parse_hosts(const char *filename, ares_bool_t is_env,
+static ares_status_t ares__parse_hosts(const char *filename,
                                        ares_hosts_file_t **out)
 {
   ares__buf_t             *buf     = NULL;
@@ -496,7 +503,7 @@ static ares_status_t ares__parse_hosts(const char *filename, ares_bool_t is_env,
   if (status != ARES_SUCCESS)
     goto done;
 
-  hf = ares__hosts_file_create(is_env);
+  hf = ares__hosts_file_create(filename);
   if (hf == NULL) {
     status = ARES_ENOMEM;
     goto done;
@@ -618,7 +625,12 @@ static ares_bool_t ares__hosts_expired(const char *filename,
   if (mod_ts == 0) {
     mod_ts = time(NULL) - 60;
   }
-  if (hf == NULL || hf->ts <= mod_ts || hf->is_env)
+
+  /* If filenames are different, its expired */
+  if (strcasecmp(hf->filename, filename) != 0)
+    return ARES_TRUE;
+
+  if (hf == NULL || hf->ts <= mod_ts)
     return ARES_TRUE;
 
   return ARES_FALSE;
@@ -714,7 +726,7 @@ static ares_status_t ares__hosts_update(ares_channel channel,
   ares__hosts_file_destroy(channel->hf);
   channel->hf = NULL;
 
-  status = ares__parse_hosts(filename, use_env, &channel->hf);
+  status = ares__parse_hosts(filename, &channel->hf);
   ares_free(filename);
   return status;
 }
