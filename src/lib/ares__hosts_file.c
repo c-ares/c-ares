@@ -621,6 +621,9 @@ static ares_bool_t ares__hosts_expired(const char *filename,
   (void)filename;
 #endif
 
+  if (hf == NULL)
+    return ARES_TRUE;
+
   /* Expire every 60s if we can't get a time */
   if (mod_ts == 0) {
     mod_ts = time(NULL) - 60;
@@ -630,7 +633,7 @@ static ares_bool_t ares__hosts_expired(const char *filename,
   if (strcasecmp(hf->filename, filename) != 0)
     return ARES_TRUE;
 
-  if (hf == NULL || hf->ts <= mod_ts)
+  if (hf->ts <= mod_ts)
     return ARES_TRUE;
 
   return ARES_FALSE;
