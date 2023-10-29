@@ -3887,7 +3887,7 @@ AC_DEFUN([CARES_CHECK_FUNC_STAT], [
   if test "$tst_links_stat" = "yes"; then
     AC_MSG_CHECKING([if stat is prototyped])
     AC_EGREP_CPP([stat],[
-      $cares_includes_sys_uio
+      $cares_includes_sys_stat
     ],[
       AC_MSG_RESULT([yes])
       tst_proto_stat="yes"
@@ -3901,9 +3901,9 @@ AC_DEFUN([CARES_CHECK_FUNC_STAT], [
     AC_MSG_CHECKING([if stat is compilable])
     AC_COMPILE_IFELSE([
       AC_LANG_PROGRAM([[
-        $cares_includes_sys_uio
+        $cares_includes_sys_stat
       ]],[[
-        if(0 != stat(0, 0, 0))
+        if(0 != stat(NULL, NULL))
           return 1;
       ]])
     ],[
