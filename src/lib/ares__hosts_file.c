@@ -644,6 +644,8 @@ static ares_status_t ares__parse_hosts(const char *filename,
     ares__buf_consume_line(buf, ARES_TRUE);
   }
 
+  status = ARES_SUCCESS;
+
 done:
   ares__hosts_entry_destroy(entry);
   ares__buf_destroy(buf);
