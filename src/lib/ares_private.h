@@ -180,7 +180,10 @@ struct server_connection {
 };
 
 struct server_state {
-  size_t                    idx; /* index for server in ares_channel */
+  size_t                    idx; /* index for server in system configuration */
+  size_t                    consec_failures; /* Consecutive query failure count
+                                              * can be hard errors or timeouts
+                                              */
   struct ares_addr          addr;
 
   ares__llist_t            *connections;
@@ -192,12 +195,6 @@ struct server_state {
 
   /* TCP output queue */
   ares__buf_t              *tcp_send;
-
-  /* Which incarnation of this connection is this? We don't want to
-   * retransmit requests into the very same socket, but if the server
-   * closes on us and we re-open the connection, then we do want to
-   * re-send. */
-  size_t                    tcp_connection_generation;
 
   /* Link back to owning channel */
   ares_channel              channel;
@@ -234,18 +231,11 @@ struct query {
   /* Query status */
   size_t try_count; /* Number of times we tried this query already. */
   size_t server;    /* Server this query has last been sent to. */
-  struct query_server_info *server_info; /* per-server state */
   ares_bool_t               using_tcp;
   ares_status_t             error_status;
   size_t      timeouts;   /* number of timeouts we saw for this request */
   ares_bool_t no_retries; /* do not perform any additional retries, this is set
                            * when a query is to be canceled */
-};
-
-/* Per-server state for a query */
-struct query_server_info {
-  ares_bool_t skip_server; /* should we skip server, due to errors, etc? */
-  size_t tcp_connection_generation; /* into which TCP connection did we send? */
 };
 
 /* An IP address pattern; matches an IP address X if X & mask == addr */
@@ -297,18 +287,12 @@ struct ares_channeldata {
   unsigned int         local_ip4;
   unsigned char        local_ip6[16];
 
-  /* Server addresses and communications state */
-  struct server_state *servers;
-  size_t               nservers;
+  /* Server addresses and communications state. Sorted by least consecutive
+   * failures, followed by the configuration order if failures are equal. */
+  ares__slist_t       *servers;
 
   /* random state to use when generating new ids */
   ares_rand_state     *rand_state;
-
-  /* Generation number to use for the next TCP socket open/close */
-  size_t               tcp_connection_generation;
-
-  /* Last server we sent a query to. */
-  size_t               last_server;
 
   /* All active queries in a single list */
   ares__llist_t       *all_queries;
@@ -502,8 +486,8 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
   } while (0)
 
 #define ARES_CONFIG_CHECK(x)                                          \
-  (x->lookups && x->nservers > 0 && x->ndots > 0 && x->timeout > 0 && \
-   x->tries > 0)
+  (x->lookups && ares__slist_len(x->servers) > 0 && x->ndots > 0 &&   \
+   x->timeout > 0 && x->tries > 0)
 
 size_t ares__round_up_pow2(size_t n);
 size_t ares__log2(size_t n);

@@ -380,7 +380,6 @@ ares_status_t ares__open_connection(ares_channel         channel,
   SOCK_STATE_CALLBACK(channel, s, 1, 0);
 
   if (is_tcp) {
-    server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->tcp_conn                  = conn;
   }
 

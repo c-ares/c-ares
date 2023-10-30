@@ -136,19 +136,18 @@ void ares_destroy(ares_channel channel)
 
 void ares__destroy_servers_state(ares_channel channel)
 {
-  struct server_state *server;
-  size_t               i;
+  ares__slist_node_t  *node;
 
-  if (channel->servers) {
-    for (i = 0; i < channel->nservers; i++) {
-      server = &channel->servers[i];
-      ares__close_sockets(server);
-      ares__llist_destroy(server->connections);
-      ares__buf_destroy(server->tcp_parser);
-      ares__buf_destroy(server->tcp_send);
-    }
-    ares_free(channel->servers);
-    channel->servers = NULL;
+  while ((node = ares__slist_node_first(channel->servers)) != NULL) {
+    struct server_state *server = ares__slist_node_claim(node);
+#warning might split this into a server destroy that will need to unlink existing queries
+    ares__close_sockets(server);
+    ares__llist_destroy(server->connections);
+    ares__buf_destroy(server->tcp_parser);
+    ares__buf_destroy(server->tcp_send);
+    ares_free(send);
   }
-  channel->nservers = 0;
+
+  ares__slist_destroy(channel->servers);
+  channel->servers = NULL;
 }

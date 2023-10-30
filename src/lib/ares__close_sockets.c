@@ -40,10 +40,8 @@ void ares__close_connection(struct server_connection *conn)
     /* Reset any existing input and output buffer. */
     ares__buf_consume(server->tcp_parser, ares__buf_len(server->tcp_parser));
     ares__buf_consume(server->tcp_send, ares__buf_len(server->tcp_send));
-    server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->tcp_conn                  = NULL;
   }
-
 
   SOCK_STATE_CALLBACK(channel, conn->fd, 0, 0);
   ares__close_socket(channel, conn->fd);

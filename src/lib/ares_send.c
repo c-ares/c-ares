@@ -50,7 +50,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
     callback(arg, ARES_EBADQUERY, 0, NULL, 0);
     return ARES_EBADQUERY;
   }
-  if (channel->nservers < 1) {
+  if (ares__slist_len(channel->servers) == 0) {
     callback(arg, ARES_ESERVFAIL, 0, NULL, 0);
     return ARES_ESERVFAIL;
   }
@@ -64,14 +64,6 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
   query->channel = channel;
   query->tcpbuf  = ares_malloc(qlen + 2);
   if (!query->tcpbuf) {
-    ares_free(query);
-    callback(arg, ARES_ENOMEM, 0, NULL, 0);
-    return ARES_ENOMEM;
-  }
-  query->server_info =
-    ares_malloc((size_t)channel->nservers * sizeof(query->server_info[0]));
-  if (!query->server_info) {
-    ares_free(query->tcpbuf);
     ares_free(query);
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     return ARES_ENOMEM;
@@ -101,15 +93,11 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
 
   /* Choose the server to send the query to. If rotation is enabled, keep track
    * of the next server we want to use. */
-  query->server = channel->last_server;
-  if (channel->rotate == 1) {
-    channel->last_server =
-      (channel->last_server + 1) % (size_t)channel->nservers;
-  }
-
-  for (i = 0; i < (size_t)channel->nservers; i++) {
-    query->server_info[i].skip_server               = ARES_FALSE;
-    query->server_info[i].tcp_connection_generation = 0;
+  if (channel->rotate) {
+#warning reimplement me, probably use rand % nservers and fetch the index in the list (obviously need to do an O(n) search for that)
+  } else {
+    /* Pull first */
+    query->server = ares__slist_first_val(channel->server);
   }
 
   packetsz = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : PACKETSZ;

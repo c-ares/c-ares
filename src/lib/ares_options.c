@@ -42,13 +42,16 @@ int ares_get_servers(ares_channel channel, struct ares_addr_node **servers)
   struct ares_addr_node *srvr_last = NULL;
   struct ares_addr_node *srvr_curr;
   ares_status_t          status = ARES_SUCCESS;
-  size_t                 i;
+  ares__slist_node_t    *node;
 
   if (!channel) {
     return ARES_ENODATA;
   }
 
-  for (i = 0; i < channel->nservers; i++) {
+  for (node = ares__slist_node_first(channel->servers); node != NULL;
+       node = ares__slist_node_next(node)) {
+    struct server_state *server = ares__slist_node_val(node);
+
     /* Allocate storage for this server node appending it to the list */
     srvr_curr = ares_malloc_data(ARES_DATATYPE_ADDR_NODE);
     if (!srvr_curr) {
@@ -63,12 +66,12 @@ int ares_get_servers(ares_channel channel, struct ares_addr_node **servers)
     srvr_last = srvr_curr;
 
     /* Fill this server node data */
-    srvr_curr->family = channel->servers[i].addr.family;
+    srvr_curr->family = server->addr.family;
     if (srvr_curr->family == AF_INET) {
-      memcpy(&srvr_curr->addrV4, &channel->servers[i].addr.addrV4,
+      memcpy(&srvr_curr->addrV4, &server->addr.addrV4,
              sizeof(srvr_curr->addrV4));
     } else {
-      memcpy(&srvr_curr->addrV6, &channel->servers[i].addr.addrV6,
+      memcpy(&srvr_curr->addrV6, &server->addr.addrV6,
              sizeof(srvr_curr->addrV6));
     }
   }
@@ -92,13 +95,16 @@ int ares_get_servers_ports(ares_channel                 channel,
   struct ares_addr_port_node *srvr_last = NULL;
   struct ares_addr_port_node *srvr_curr;
   ares_status_t               status = ARES_SUCCESS;
-  size_t                      i;
+  ares__slist_node_t         *slist;
 
   if (!channel) {
     return ARES_ENODATA;
   }
 
-  for (i = 0; i < channel->nservers; i++) {
+  for (node = ares__slist_node_first(channel->servers); node != NULL;
+       node = ares__slist_node_next(node)) {
+    struct server_state *server = ares__slist_node_val(node);
+
     /* Allocate storage for this server node appending it to the list */
     srvr_curr = ares_malloc_data(ARES_DATATYPE_ADDR_PORT_NODE);
     if (!srvr_curr) {

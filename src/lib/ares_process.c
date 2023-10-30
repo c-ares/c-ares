@@ -164,22 +164,22 @@ static ares_bool_t try_again(int errnum)
 static void write_tcp_data(ares_channel channel, fd_set *write_fds,
                            ares_socket_t write_fd, struct timeval *now)
 {
-  struct server_state *server;
-  size_t               i;
+  ares__slist_node_t  *node;
 
   if (!write_fds && (write_fd == ARES_SOCKET_BAD)) {
     /* no possible action */
     return;
   }
 
-  for (i = 0; i < channel->nservers; i++) {
+  for (node = ares__slist_node_first(channel->servers); node != NULL;
+       node = ares__slist_node_next(channel->servers)) {
+    struct server_state *server = ares__slist_node_val(node);
     const unsigned char *data;
     size_t               data_len;
     ares_ssize_t         count;
 
     /* Make sure server has data to send and is selected in write_fds or
        write_fd. */
-    server = &channel->servers[i];
     if (ares__buf_len(server->tcp_send) == 0 || server->tcp_conn == NULL) {
       continue;
     }
@@ -317,9 +317,9 @@ static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
 
 static ares_socket_t *channel_socket_list(ares_channel channel, size_t *num)
 {
-  size_t         alloc_cnt = 1 << 4;
-  size_t         i;
-  ares_socket_t *out = ares_malloc(alloc_cnt * sizeof(*out));
+  size_t              alloc_cnt = 1 << 4;
+  ares_socket_t      *out = ares_malloc(alloc_cnt * sizeof(*out));
+  ares__slist_node_t *snode;
 
   *num = 0;
 
@@ -327,9 +327,12 @@ static ares_socket_t *channel_socket_list(ares_channel channel, size_t *num)
     return NULL;
   }
 
-  for (i = 0; i < channel->nservers; i++) {
-    ares__llist_node_t *node;
-    for (node = ares__llist_node_first(channel->servers[i].connections);
+  for (snode = ares__slist_node_first(channel->servers); snode != NULL;
+       snode = ares__slist_node_next(snode)) {
+    struct server_state *server = ares__slist_node_val(snode);
+    ares__llist_node_t  *node;
+
+    for (node = ares__llist_node_first(server->connections);
          node != NULL; node = ares__llist_node_next(node)) {
       const struct server_connection *conn = ares__llist_node_val(node);
 
@@ -668,46 +671,25 @@ static void skip_server(ares_channel channel, struct query *query,
    * server timed out our TCP connection just as we were sending another
    * request).
    */
-  if (channel->nservers > 1) {
-    query->server_info[server->idx].skip_server = ARES_TRUE;
-  }
+#warning see if this is where we need to track the server as being bad all together
+
 }
 
 static ares_status_t next_server(ares_channel channel, struct query *query,
                                  struct timeval *now)
 {
   ares_status_t status;
-  /* We need to try each server channel->tries times. We have channel->nservers
-   * servers to try. In total, we need to do channel->nservers * channel->tries
-   * attempts. Use query->try to remember how many times we already attempted
-   * this query. Use modular arithmetic to find the next server to try.
+  /* We need to try each server channel->tries times.
+   * Use query->try to remember how many times we already attempted this query.
    * A query can be requested be terminated at the next interval by setting
    * query->no_retries */
-  while (++(query->try_count) < (channel->nservers * channel->tries) &&
+  while (++(query->try_count) < (ares__slist_len(channel->servers) * channel->tries) &&
          !query->no_retries) {
-    const struct server_state *server;
-
+#warning make sure prior to calling next_server that if there was an error it was recorded.
     /* Move on to the next server. */
-    query->server = (query->server + 1) % channel->nservers;
-    server        = &channel->servers[query->server];
+    query->server = ares__slist_first_val(channel->servers);
 
-    /* We don't want to use this server if (1) we've decided to skip this
-     * server because of earlier errors we encountered, or (2) we already
-     * sent this query over this exact connection.
-     */
-    if (!query->server_info[query->server].skip_server &&
-        !(query->using_tcp &&
-          (query->server_info[query->server].tcp_connection_generation ==
-           server->tcp_connection_generation))) {
-      return ares__send_query(channel, query, now);
-    }
-
-    /* You might think that with TCP we only need one try. However, even
-     * when using TCP, servers can time-out our connection just as we're
-     * sending a request, or close our connection because they die, or never
-     * send us a reply because they get wedged or tickle a bug that drops
-     * our request.
-     */
+    return ares__send_query(channel, query, now);
   }
 
   /* If we are here, all attempts to perform query failed. */
@@ -765,8 +747,6 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
       SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
     }
 
-    query->server_info[query->server].tcp_connection_generation =
-      server->tcp_connection_generation;
   } else {
     ares__llist_node_t *node = ares__llist_node_first(server->connections);
 
@@ -820,7 +800,7 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
   timeplus = channel->timeout;
   {
     /* How many times do we want to double it?  Presume sane values here. */
-    const size_t shift = query->try_count / channel->nservers;
+    const size_t shift = query->try_count / ares__slist_len(channel->servers);
 
     /* Is there enough room to shift timeplus left that many times?
      *
