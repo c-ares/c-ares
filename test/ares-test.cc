@@ -187,6 +187,10 @@ void DefaultChannelTest::Process() {
   ProcessWork(channel_, NoExtraFDs, nullptr);
 }
 
+void FileChannelTest::Process() {
+  ProcessWork(channel_, NoExtraFDs, nullptr);
+}
+
 void DefaultChannelModeTest::Process() {
   ProcessWork(channel_, NoExtraFDs, nullptr);
 }
@@ -725,7 +729,8 @@ void AddrInfoCallback(void *data, int status, int timeouts,
   result->done_ = true;
   result->status_ = status;
   result->timeouts_= timeouts;
-  result->ai_ = AddrInfo(ai);
+  if (ai)
+    result->ai_ = AddrInfo(ai);
   if (verbose) std::cerr << "AddrInfoCallback(" << *result << ")" << std::endl;
 }
 

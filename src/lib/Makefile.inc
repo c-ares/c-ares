@@ -5,7 +5,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__addrinfo_localhost.c		\
   ares__buf.c				\
   ares__close_sockets.c			\
-  ares__get_hostent.c			\
+  ares__hosts_file.c		\
   ares__htable.c			\
   ares__htable_asvp.c			\
   ares__htable_strvp.c			\
@@ -13,7 +13,6 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
   ares__read_line.c			\
-  ares__readaddrinfo.c			\
   ares__slist.c				\
   ares__socket.c			\
   ares__sortaddrinfo.c			\

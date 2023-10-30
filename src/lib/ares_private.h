@@ -117,6 +117,7 @@ typedef struct ares_rand_state ares_rand_state;
 
 #include "ares__llist.h"
 #include "ares__slist.h"
+#include "ares__htable_strvp.h"
 #include "ares__htable_szvp.h"
 #include "ares__htable_asvp.h"
 #include "ares__buf.h"
@@ -267,6 +268,9 @@ struct apattern {
   unsigned short type;
 };
 
+struct ares_hosts_file;
+typedef struct ares_hosts_file ares_hosts_file_t;
+
 struct ares_channeldata {
   /* Configuration data */
   unsigned int         flags;
@@ -340,6 +344,9 @@ struct ares_channeldata {
 
   /* Maximum UDP queries per connection allowed */
   size_t                              udp_max_queries;
+
+  /* Cache of local hosts file */
+  ares_hosts_file_t                  *hf;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
@@ -372,7 +379,6 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
 void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
 void          ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd);
-ares_status_t ares__get_hostent(FILE *fp, int family, struct hostent **host);
 ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize);
 void          ares__free_query(struct query *query);
 
@@ -404,10 +410,6 @@ ares_status_t  ares__single_domain(ares_channel channel, const char *name,
 ares_status_t  ares__cat_domain(const char *name, const char *domain, char **s);
 ares_status_t  ares__sortaddrinfo(ares_channel               channel,
                                   struct ares_addrinfo_node *ai_node);
-ares_status_t  ares__readaddrinfo(FILE *fp, const char *name,
-                                  unsigned short                    port,
-                                  const struct ares_addrinfo_hints *hints,
-                                  struct ares_addrinfo             *ai);
 
 void           ares__freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node);
 
@@ -460,6 +462,28 @@ void          ares__close_socket(ares_channel, ares_socket_t);
 int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
                                    const struct sockaddr *addr,
                                    ares_socklen_t addrlen);
+ares_bool_t ares__is_hostnamech(int ch);
+
+
+struct ares_hosts_entry;
+typedef struct ares_hosts_entry ares_hosts_entry_t;
+
+void ares__hosts_file_destroy(ares_hosts_file_t *hf);
+ares_status_t ares__hosts_search_ipaddr(ares_channel channel,
+                                        ares_bool_t use_env, const char *ipaddr,
+                                        const ares_hosts_entry_t **entry);
+ares_status_t ares__hosts_search_host(ares_channel channel,
+                                      ares_bool_t use_env, const char *host,
+                                      const ares_hosts_entry_t **entry);
+ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
+                                           int family,
+                                           struct hostent **hostent);
+ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
+                                            const char *name,
+                                            int family,
+                                            unsigned short port,
+                                            ares_bool_t want_cnames,
+                                            struct ares_addrinfo *ai);
 
 #define ARES_SWAP_BYTE(a, b)           \
   do {                                 \

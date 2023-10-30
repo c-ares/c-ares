@@ -64,6 +64,7 @@ void ares_freeaddrinfo(struct ares_addrinfo *ai)
   }
   ares__freeaddrinfo_cnames(ai->cnames);
   ares__freeaddrinfo_nodes(ai->nodes);
+
   ares_free(ai->name);
   ares_free(ai);
 }

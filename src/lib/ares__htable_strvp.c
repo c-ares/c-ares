@@ -129,6 +129,9 @@ ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
 
   bucket->parent = htable;
   bucket->key    = ares_strdup(key);
+  if (bucket->key == NULL) {
+    goto fail;
+  }
   bucket->val    = val;
 
   if (!ares__htable_insert(htable->hash, bucket)) {
@@ -139,6 +142,7 @@ ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
 
 fail:
   if (bucket) {
+    ares_free(bucket->key);
     ares_free(bucket);
   }
   return ARES_FALSE;
@@ -157,7 +161,7 @@ ares_bool_t ares__htable_strvp_get(const ares__htable_strvp_t *htable,
     return ARES_FALSE;
   }
 
-  bucket = ares__htable_get(htable->hash, &key);
+  bucket = ares__htable_get(htable->hash, key);
   if (bucket == NULL) {
     return ARES_FALSE;
   }
