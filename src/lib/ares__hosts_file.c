@@ -866,6 +866,7 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
     char               **temp    = NULL;
 
     memset(&addr, 0, sizeof(addr));
+
     addr.family = family;
     ptr = ares__parse_ipaddr(ipaddr, &addr, &ptr_len);
     if (ptr == NULL)
@@ -873,6 +874,10 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
 
     /* If family == AF_UNSPEC, then we want to inherit this for future
      * conversions as we can only support a single address class */
+    if (family == AF_UNSPEC) {
+      family                 = addr.family;
+      (*hostent)->h_addrtype = addr.family;
+    }
 
     temp = ares_realloc_zero((*hostent)->h_addr_list,
       (idx + 1) * sizeof(*(*hostent)->h_addr_list),

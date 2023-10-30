@@ -231,6 +231,37 @@ static size_t get6_address_index(const struct ares_in6_addr *addr,
 }
 
 
+static ares_status_t ares__hostent_localhost(const char *name, int family,
+                                             struct hostent **host_out)
+{
+  ares_status_t               status;
+  struct ares_addrinfo       *ai = NULL;
+  struct ares_addrinfo_hints  hints;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = family;
+
+  ai = ares_malloc_zero(sizeof(*ai));
+  if (ai == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  status = ares__addrinfo_localhost(name, 0, &hints, ai);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares__addrinfo2hostent(ai, family, host_out);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+done:
+  ares_freeaddrinfo(ai);
+  return status;
+}
+
 /* I really have no idea why this is exposed as a public function, but since
  * it is, we can't kill this legacy function. */
 int ares_gethostbyname_file(ares_channel channel, const char *name, int family,
@@ -241,11 +272,12 @@ int ares_gethostbyname_file(ares_channel channel, const char *name, int family,
   ares_status_t             status;
 
   /* We only take the channel to ensure that ares_init() been called. */
-  if (channel == NULL) {
+  if (channel == NULL || name == NULL || host == NULL) {
     /* Anything will do, really.  This seems fine, and is consistent with
        other error cases. */
-    *host = NULL;
-    return (int)ARES_ENOTFOUND;
+    if (host != NULL)
+      *host = NULL;
+    return ARES_ENOTFOUND;
   }
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
@@ -254,13 +286,26 @@ int ares_gethostbyname_file(ares_channel channel, const char *name, int family,
   }
 
   status = ares__hosts_search_host(channel, ARES_FALSE, name, &entry);
-  if (status != ARES_SUCCESS)
-    return (int)status;
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
 
   status = ares__hosts_entry_to_hostent(entry, family, host);
-  if (status != ARES_SUCCESS)
-    return (int)status;
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
 
-  return (int)ARES_SUCCESS;
+done:
+  /* RFC6761 section 6.3 #3 states that "Name resolution APIs and libraries
+   * SHOULD recognize localhost names as special and SHOULD always return the
+   * IP loopback address for address queries".
+   * We will also ignore ALL errors when trying to resolve localhost, such
+   * as permissions errors reading /etc/hosts or a malformed /etc/hosts */
+  if (status != ARES_SUCCESS && status != ARES_ENOMEM &&
+      ares__is_localhost(name)) {
+    return (int)ares__hostent_localhost(name, family, host);
+  }
+
+  return (int)status;
 }
 

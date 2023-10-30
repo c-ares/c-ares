@@ -413,6 +413,7 @@ ares_status_t  ares__sortaddrinfo(ares_channel               channel,
                                   struct ares_addrinfo_node *ai_node);
 
 void           ares__freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node);
+ares_bool_t    ares__is_localhost(const char *name);
 
 struct ares_addrinfo_node    *
   ares__append_addrinfo_node(struct ares_addrinfo_node **ai_node);

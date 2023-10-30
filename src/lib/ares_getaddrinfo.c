@@ -349,7 +349,7 @@ static void end_hquery(struct host_query *hquery, ares_status_t status)
   ares_free(hquery);
 }
 
-static ares_bool_t is_localhost(const char *name)
+ares_bool_t ares__is_localhost(const char *name)
 {
   /* RFC6761 6.3 says : The domain "localhost." and any names falling within
    * ".localhost." */
@@ -411,7 +411,7 @@ done:
    * We will also ignore ALL errors when trying to resolve localhost, such
    * as permissions errors reading /etc/hosts or a malformed /etc/hosts */
   if (status != ARES_SUCCESS && status != ARES_ENOMEM &&
-      is_localhost(hquery->name)) {
+      ares__is_localhost(hquery->name)) {
     return ares__addrinfo_localhost(hquery->name, hquery->port, &hquery->hints,
                                     hquery->ai);
   }
@@ -427,7 +427,7 @@ static void next_lookup(struct host_query *hquery, ares_status_t status)
        * queries for localhost names to their configured caching DNS
        * server(s)."
        * Otherwise, DNS lookup. */
-      if (!is_localhost(hquery->name) && next_dns_lookup(hquery)) {
+      if (!ares__is_localhost(hquery->name) && next_dns_lookup(hquery)) {
         break;
       }
 
