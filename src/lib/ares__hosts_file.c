@@ -162,7 +162,8 @@ static ares_status_t ares__read_file_into_buf(const char *filename, ares__buf_t 
   status = ARES_SUCCESS;
 
 done:
-  fclose(fp);
+  if (fp != NULL)
+    fclose(fp);
   return status;
 }
 
@@ -177,25 +178,57 @@ static ares_bool_t ares__is_hostname(const char *str)
 }
 
 
+static const void *ares__parse_ipaddr(const char *ipaddr,
+                                      struct ares_addr *addr,
+                                      size_t *out_len)
+{
+  const void *ptr     = NULL;
+  size_t      ptr_len = 0;
+
+  if (ipaddr == NULL || addr == NULL || out_len == NULL)
+    return NULL;
+
+  *out_len = 0;
+
+  if (addr->family == AF_INET &&
+      ares_inet_pton(AF_INET, ipaddr, &addr->addr.addr4) > 0) {
+    ptr     = &addr->addr.addr4;
+    ptr_len = sizeof(addr->addr.addr4);
+  } else if (addr->family == AF_INET6 &&
+             ares_inet_pton(AF_INET6, ipaddr, &addr->addr.addr6) > 0) {
+    ptr     = &addr->addr.addr6;
+    ptr_len = sizeof(addr->addr.addr6);
+  } else if (addr->family == AF_UNSPEC) {
+    if (ares_inet_pton(AF_INET, ipaddr, &addr->addr.addr4) > 0) {
+      addr->family  = AF_INET;
+      ptr     = &addr->addr.addr4;
+      ptr_len = sizeof(addr->addr.addr4);
+    } else if (ares_inet_pton(AF_INET6, ipaddr, &addr->addr.addr6) > 0) {
+      addr->family  = AF_INET6;
+      ptr     = &addr->addr.addr6;
+      ptr_len = sizeof(addr->addr.addr6);
+    }
+  }
+
+  *out_len = ptr_len;
+  return ptr;
+}
+
 static ares_bool_t ares__normalize_ipaddr(const char *ipaddr, char *out,
                                           size_t out_len)
 {
-  struct in_addr       addr4;
-  struct ares_in6_addr addr6;
-  int                  family = AF_UNSPEC;
+  struct ares_addr     data;
   const void          *addr;
+  size_t               addr_len = 0;
 
-  if (ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
-    family = AF_INET;
-    addr   = &addr4;
-  } else if (ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
-    family = AF_INET6;
-    addr   = &addr6;
-  } else {
+  memset(&data, 0, sizeof(data));
+  data.family = AF_UNSPEC;
+
+  addr = ares__parse_ipaddr(ipaddr, &data, &addr_len);
+  if (addr == NULL)
     return ARES_FALSE;
-  }
 
-  if (!ares_inet_ntop(family, addr, out, (ares_socklen_t)out_len)) {
+  if (!ares_inet_ntop(data.family, addr, out, (ares_socklen_t)out_len)) {
     return ARES_FALSE;
   }
 
@@ -340,8 +373,9 @@ typedef enum {
   ARES_MATCH_HOST   = 2
 } ares_hosts_file_match_t;
 
-static ares_hosts_file_match_t ares__hosts_file_match(ares_hosts_file_t *hf,
-  ares_hosts_entry_t *entry, ares_hosts_entry_t **match)
+static ares_hosts_file_match_t ares__hosts_file_match(
+  const ares_hosts_file_t *hf, ares_hosts_entry_t *entry,
+  ares_hosts_entry_t **match)
 {
   ares__llist_node_t *node;
   *match = NULL;
@@ -482,6 +516,57 @@ static ares_status_t ares__parse_hosts_hostnames(ares__buf_t *buf,
 }
 
 
+static ares_status_t ares__parse_hosts_ipaddr(ares__buf_t *buf,
+                                              ares_hosts_entry_t **entry_out)
+{
+  char                addr[INET6_ADDRSTRLEN];
+  char               *temp;
+  ares_hosts_entry_t *entry   = NULL;
+  ares_status_t       status;
+
+  *entry_out = NULL;
+
+  ares__buf_tag(buf);
+  ares__buf_consume_nonwhitespace(buf);
+  status = ares__buf_tag_fetch_string(buf, addr, sizeof(addr));
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Validate and normalize the ip address format */
+  if (!ares__normalize_ipaddr(addr, addr, sizeof(addr))) {
+    return ARES_EBADSTR;
+  }
+
+  entry = ares_malloc_zero(sizeof(*entry));
+  if (entry == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  entry->ips = ares__llist_create(ares_free);
+  if (entry->ips == NULL) {
+    ares__hosts_entry_destroy(entry);
+    return ARES_ENOMEM;
+  }
+
+  temp = ares_strdup(addr);
+  if (temp == NULL) {
+    ares__hosts_entry_destroy(entry);
+    return ARES_ENOMEM;
+  }
+
+  if (ares__llist_insert_first(entry->ips, temp) == NULL) {
+    ares_free(temp);
+    ares__hosts_entry_destroy(entry);
+    return ARES_ENOMEM;
+  }
+
+  *entry_out = entry;
+
+  return ARES_SUCCESS;
+}
+
+
 static ares_status_t ares__parse_hosts(const char *filename,
                                        ares_hosts_file_t **out)
 {
@@ -489,7 +574,6 @@ static ares_status_t ares__parse_hosts(const char *filename,
   ares_status_t            status  = ARES_EBADRESP;
   ares_hosts_file_t       *hf      = NULL;
   ares_hosts_entry_t      *entry   = NULL;
-
 
   *out = NULL;
 
@@ -510,9 +594,7 @@ static ares_status_t ares__parse_hosts(const char *filename,
   }
 
   while (ares__buf_len(buf)) {
-    char                     addr[INET6_ADDRSTRLEN];
-    char                    *temp  = NULL;
-    unsigned char            comment = '#';
+    unsigned char comment = '#';
 
     /* -- Start of new line here -- */
 
@@ -530,45 +612,16 @@ static ares_status_t ares__parse_hosts(const char *filename,
     }
 
     /* Pull off ip address */
-    ares__buf_tag(buf);
-    ares__buf_consume_nonwhitespace(buf);
-    status = ares__buf_tag_fetch_string(buf, addr, sizeof(addr));
+    status = ares__parse_hosts_ipaddr(buf, &entry);
+    if (status == ARES_ENOMEM)
+      goto done;
     if (status != ARES_SUCCESS) {
       /* Bad line, consume and go onto next */
       ares__buf_consume_line(buf, ARES_TRUE);
       continue;
     }
 
-    /* Validate and normalize the ip address format */
-    if (!ares__normalize_ipaddr(addr, addr, sizeof(addr))) {
-      /* Bad line, consume and go onto next */
-      ares__buf_consume_line(buf, ARES_TRUE);
-      continue;
-    }
-
-    entry = ares_malloc_zero(sizeof(*entry));
-    if (entry == NULL) {
-      status = ARES_ENOMEM;
-      goto done;
-    }
-
-    entry->ips = ares__llist_create(ares_free);
-    if (entry->ips == NULL) {
-      status = ARES_ENOMEM;
-      goto done;
-    }
-
-    temp = ares_strdup(addr);
-    if (temp == NULL) {
-      status = ARES_ENOMEM;
-      goto done;
-    }
-    if (ares__llist_insert_first(entry->ips, temp) == NULL) {
-      ares_free(temp);
-      status = ARES_ENOMEM;
-      goto done;
-    }
-
+    /* Parse of the hostnames */
     status = ares__parse_hosts_hostnames(buf, entry);
     if (status == ARES_ENOMEM) {
       goto done;
@@ -580,6 +633,7 @@ static ares_status_t ares__parse_hosts(const char *filename,
       continue;
     }
 
+    /* Append the successful entry to the hosts file */
     status = ares__hosts_file_add(hf, entry);
     entry  = NULL; /* is always invalidated by this function, even on error */
     if (status != ARES_SUCCESS) {
@@ -805,34 +859,20 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
   idx = 0;
   for (node = ares__llist_node_first(entry->ips); node != NULL;
        node = ares__llist_node_next(node)) {
-    struct in_addr       addr4;
-    struct ares_in6_addr addr6;
+    struct ares_addr     addr;
     const void          *ptr     = NULL;
     size_t               ptr_len = 0;
     const char          *ipaddr  = ares__llist_node_val(node);
     char               **temp    = NULL;
 
-    if (family == AF_INET && ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
-      ptr     = &addr4;
-      ptr_len = sizeof(addr4);
-    } else if (family == AF_INET6 &&
-               ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
-      ptr     = &addr6;
-      ptr_len = sizeof(addr6);
-    } else if (family == AF_UNSPEC) {
-      if (ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
-        family  = AF_INET;
-        ptr     = &addr4;
-        ptr_len = sizeof(addr4);
-      } else if (ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
-        family  = AF_INET6;
-        ptr     = &addr6;
-        ptr_len = sizeof(addr6);
-      }
-    }
-
+    memset(&addr, 0, sizeof(addr));
+    addr.family = family;
+    ptr = ares__parse_ipaddr(ipaddr, &addr, &ptr_len);
     if (ptr == NULL)
       continue;
+
+    /* If family == AF_UNSPEC, then we want to inherit this for future
+     * conversions as we can only support a single address class */
 
     temp = ares_realloc_zero((*hostent)->h_addr_list,
       (idx + 1) * sizeof(*(*hostent)->h_addr_list),
@@ -899,72 +939,14 @@ fail:
   return status;
 }
 
-ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
-                                            const char *name,
-                                            int family,
-                                            unsigned short port,
-                                            ares_bool_t want_cnames,
-                                            struct ares_addrinfo *ai)
+static ares_status_t ares__hosts_ai_append_cnames(
+  const ares_hosts_entry_t *entry, struct ares_addrinfo_cname **cnames_out)
 {
-  ares_status_t               status;
   struct ares_addrinfo_cname *cname    = NULL;
   struct ares_addrinfo_cname *cnames   = NULL;
-  struct ares_addrinfo_node  *ainodes  = NULL;
-  ares__llist_node_t         *node;
   const char                 *primaryhost;
-
-  switch (family) {
-    case AF_INET:
-    case AF_INET6:
-    case AF_UNSPEC:
-      break;
-    default:
-      return ARES_EBADFAMILY;
-  }
-
-  ai->name = ares_strdup(name);
-  if (ai->name == NULL) {
-    status = ARES_ENOMEM;
-    goto done;
-  }
-
-  for (node = ares__llist_node_first(entry->ips); node != NULL;
-       node = ares__llist_node_next(node)) {
-    struct in_addr       addr4;
-    struct ares_in6_addr addr6;
-    const void          *ptr     = NULL;
-    const char          *ipaddr  = ares__llist_node_val(node);
-    int                  nfamily = family;
-
-    if (nfamily == AF_INET && ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
-      ptr     = &addr4;
-    } else if (nfamily == AF_INET6 &&
-               ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
-      ptr     = &addr6;
-    } else if (nfamily == AF_UNSPEC) {
-      if (ares_inet_pton(AF_INET, ipaddr, &addr4) > 0) {
-        nfamily  = AF_INET;
-        ptr      = &addr4;
-      } else if (ares_inet_pton(AF_INET6, ipaddr, &addr6) > 0) {
-        nfamily  = AF_INET6;
-        ptr      = &addr6;
-      }
-    }
-
-    if (ptr == NULL) {
-      continue;
-    }
-
-    status = ares_append_ai_node(nfamily, port, 0, ptr, &ainodes);
-    if (status != ARES_SUCCESS) {
-      goto done;
-    }
-  }
-
-  if (!want_cnames) {
-    status = ARES_SUCCESS;
-    goto done;
-  }
+  ares__llist_node_t         *node;
+  ares_status_t               status;
 
   node        = ares__llist_node_first(entry->hosts);
   primaryhost = ares__llist_node_val(node);
@@ -1009,6 +991,72 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
       goto done;
     }
   }
+  status = ARES_SUCCESS;
+
+done:
+  if (status != ARES_SUCCESS) {
+    ares__freeaddrinfo_cnames(cnames);
+    return status;
+  }
+
+  *cnames_out = cnames;
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
+                                            const char *name,
+                                            int family,
+                                            unsigned short port,
+                                            ares_bool_t want_cnames,
+                                            struct ares_addrinfo *ai)
+{
+  ares_status_t               status;
+  struct ares_addrinfo_cname *cnames   = NULL;
+  struct ares_addrinfo_node  *ainodes  = NULL;
+  ares__llist_node_t         *node;
+
+  switch (family) {
+    case AF_INET:
+    case AF_INET6:
+    case AF_UNSPEC:
+      break;
+    default:
+      return ARES_EBADFAMILY;
+  }
+
+  ai->name = ares_strdup(name);
+  if (ai->name == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  for (node = ares__llist_node_first(entry->ips); node != NULL;
+       node = ares__llist_node_next(node)) {
+    struct ares_addr     addr;
+    const void          *ptr     = NULL;
+    size_t               ptr_len = 0;
+    const char          *ipaddr  = ares__llist_node_val(node);
+
+    memset(&addr, 0, sizeof(addr));
+    addr.family = family;
+    ptr = ares__parse_ipaddr(ipaddr, &addr, &ptr_len);
+
+    if (ptr == NULL) {
+      continue;
+    }
+
+    status = ares_append_ai_node(addr.family, port, 0, ptr, &ainodes);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
+
+  if (want_cnames) {
+    status = ares__hosts_ai_append_cnames(entry, &cnames);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
 
   status = ARES_SUCCESS;
 
@@ -1018,10 +1066,10 @@ done:
     ares__freeaddrinfo_nodes(ainodes);
     ares_free(ai->name);
     ai->name = NULL;
-  } else {
-    ares__addrinfo_cat_cnames(&ai->cnames, cnames);
-    ares__addrinfo_cat_nodes(&ai->nodes, ainodes);
+    return status;
   }
+  ares__addrinfo_cat_cnames(&ai->cnames, cnames);
+  ares__addrinfo_cat_nodes(&ai->nodes, ainodes);
 
   return status;
 }

@@ -58,12 +58,13 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
                            ares_bool_t tcp, struct timeval *now);
 static void handle_error(struct server_connection *conn, struct timeval *now);
 static void skip_server(ares_channel channel, struct query *query,
-                        struct server_state *server);
+                        const struct server_state *server);
 static ares_status_t next_server(ares_channel channel, struct query *query,
                                  struct timeval *now);
 static ares_bool_t   same_questions(const unsigned char *qbuf, size_t qlen,
-                                    ares_dns_record_t *arec);
-static ares_bool_t   same_address(struct sockaddr *sa, struct ares_addr *aa);
+                                    const ares_dns_record_t *arec);
+static ares_bool_t   same_address(const struct sockaddr *sa,
+                                  const struct ares_addr *aa);
 static ares_bool_t   has_opt_rr(ares_dns_record_t *arec);
 static void          end_query(ares_channel channel, struct query *query,
                                ares_status_t status, const unsigned char *abuf,
@@ -71,7 +72,7 @@ static void          end_query(ares_channel channel, struct query *query,
 
 
 /* return true if now is exactly check time or later */
-ares_bool_t          ares__timedout(struct timeval *now, struct timeval *check)
+ares_bool_t ares__timedout(const struct timeval *now, const struct timeval *check)
 {
   time_t secs = (now->tv_sec - check->tv_sec);
 
@@ -143,16 +144,17 @@ static ares_bool_t try_again(int errnum)
 #if !defined EWOULDBLOCK && !defined EAGAIN
 #  error "Neither EWOULDBLOCK nor EAGAIN defined"
 #endif
-  switch (errnum) {
+
 #ifdef EWOULDBLOCK
-    case EWOULDBLOCK:
-      return ARES_TRUE;
+  if (errnum == EWOULDBLOCK)
+    return ARES_TRUE;
 #endif
+
 #if defined EAGAIN && EAGAIN != EWOULDBLOCK
-    case EAGAIN:
-      return ARES_TRUE;
+  if (errnum == EAGAIN)
+    return ARES_TRUE;
 #endif
-  }
+
   return ARES_FALSE;
 }
 
@@ -329,7 +331,7 @@ static ares_socket_t *channel_socket_list(ares_channel channel, size_t *num)
     ares__llist_node_t *node;
     for (node = ares__llist_node_first(channel->servers[i].connections);
          node != NULL; node = ares__llist_node_next(node)) {
-      struct server_connection *conn = ares__llist_node_val(node);
+      const struct server_connection *conn = ares__llist_node_val(node);
 
       if (conn->fd == ARES_SOCKET_BAD) {
         continue;
@@ -559,7 +561,7 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
    * protocol extension is not understood by the responder. We must retry the
    * query without EDNS enabled. */
   if (channel->flags & ARES_FLAG_EDNS) {
-    packetsz = (size_t)channel->ednspsz;
+    packetsz = channel->ednspsz;
     if (ares_dns_record_get_rcode(dnsrec) == ARES_RCODE_FORMAT_ERROR &&
         !has_opt_rr(dnsrec)) {
       size_t qlen       = (query->tcplen - 2) - EDNSFIXEDSZ;
@@ -656,7 +658,7 @@ static void handle_error(struct server_connection *conn, struct timeval *now)
 }
 
 static void skip_server(ares_channel channel, struct query *query,
-                        struct server_state *server)
+                        const struct server_state *server)
 {
   /* The given server gave us problems with this query, so if we have the
    * luxury of using other servers, then let's skip the potentially broken
@@ -681,12 +683,12 @@ static ares_status_t next_server(ares_channel channel, struct query *query,
    * this query. Use modular arithmetic to find the next server to try.
    * A query can be requested be terminated at the next interval by setting
    * query->no_retries */
-  while (++(query->try_count) < ((size_t)channel->nservers * channel->tries) &&
+  while (++(query->try_count) < (channel->nservers * channel->tries) &&
          !query->no_retries) {
-    struct server_state *server;
+    const struct server_state *server;
 
     /* Move on to the next server. */
-    query->server = (query->server + 1) % (size_t)channel->nservers;
+    query->server = (query->server + 1) % channel->nservers;
     server        = &channel->servers[query->server];
 
     /* We don't want to use this server if (1) we've decided to skip this
@@ -776,7 +778,7 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
       if (conn->is_tcp) {
         node = NULL;
       } else if (channel->udp_max_queries > 0 &&
-                 conn->total_queries >= (size_t)channel->udp_max_queries) {
+                 conn->total_queries >= channel->udp_max_queries) {
         node = NULL;
       }
     }
@@ -818,7 +820,7 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
   timeplus = channel->timeout;
   {
     /* How many times do we want to double it?  Presume sane values here. */
-    const size_t shift = query->try_count / (size_t)channel->nservers;
+    const size_t shift = query->try_count / channel->nservers;
 
     /* Is there enough room to shift timeplus left that many times?
      *
@@ -861,7 +863,7 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
 
 
 static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
-                                  ares_dns_record_t *arec)
+                                  const ares_dns_record_t *arec)
 {
   ares_dns_record_t *qrec = NULL;
   size_t             i;
@@ -906,10 +908,11 @@ done:
   return rv;
 }
 
-static ares_bool_t same_address(struct sockaddr *sa, struct ares_addr *aa)
+static ares_bool_t same_address(const struct sockaddr *sa,
+                                const struct ares_addr *aa)
 {
-  void *addr1;
-  void *addr2;
+  const void *addr1;
+  const void *addr2;
 
   if (sa->sa_family == aa->family) {
     switch (aa->family) {
@@ -939,7 +942,7 @@ static ares_bool_t has_opt_rr(ares_dns_record_t *arec)
 {
   size_t i;
   for (i = 0; i < ares_dns_record_rr_cnt(arec, ARES_SECTION_ADDITIONAL); i++) {
-    ares_dns_rr_t *rr =
+    const ares_dns_rr_t *rr =
       ares_dns_record_rr_get(arec, ARES_SECTION_ADDITIONAL, i);
 
     if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {

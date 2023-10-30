@@ -360,7 +360,8 @@ void         *ares_malloc_zero(size_t size);
 void         *ares_realloc_zero(void *ptr, size_t orig_size, size_t new_size);
 
 /* return true if now is exactly check time or later */
-ares_bool_t   ares__timedout(struct timeval *now, struct timeval *check);
+ares_bool_t   ares__timedout(const struct timeval *now,
+                             const struct timeval *check);
 
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
 ares_status_t ares__send_query(ares_channel channel, struct query *query,
