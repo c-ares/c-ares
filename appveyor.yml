@@ -26,6 +26,7 @@ environment:
       BUILDTOOL: MSYS2-CMAKE
       MSYSTEM: MINGW64
       CHERE_INVOKING: YES
+      image: Visual Studio 2022
 
     # MSVC 2015, 32-bit x86 (cmake)
     - COMPILER: MSVC
