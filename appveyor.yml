@@ -40,14 +40,14 @@ environment:
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
 
     # MinGW, 32-bit x86 (cmake)
-#    - COMPILER: MINGW
-#      BUILDTOOL: CMAKE
-#      PATH: C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin;%PATH%
+    - COMPILER: MINGW
+      BUILDTOOL: CMAKE
+      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
 
     # MinGW, 32-bit x86 (cmake static only)
-#    - COMPILER: MINGW
-#      BUILDTOOL: CMAKESTATIC
-#      PATH: C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin;%PATH%
+    - COMPILER: MINGW
+      BUILDTOOL: CMAKESTATIC
+      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
 
     # MSVC 2015, 32-bit x86 (nmake)
     - COMPILER: MSVC
@@ -62,9 +62,9 @@ environment:
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
 
     # MinGW, 32-bit x86 (makefiles)
-#    - COMPILER: MINGW
-#      BUILDTOOL: MAKE
-#      PATH: C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin;%PATH%
+    - COMPILER: MINGW
+      BUILDTOOL: MAKE
+      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
 
 install:
   - if "%COMPILER%" == "MINGW" rename "C:\Program Files\Git\usr\bin\sh.exe" "sh2.exe"
@@ -77,9 +77,9 @@ before_build:
   - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-check mingw-w64-x86_64-ninja"
 
 build_script:
-  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "mkdir C:\projects\build-cares"
-  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cd C:\projects\build-cares"
-  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% %APPVEYOR_BUILD_FOLDER%"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "mkdir C:/projects/build-cares"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cd C:/projects/build-cares"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% %APPVEYOR_BUILD_FOLDER%"
   - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "ninja -v install"
   - if "%BUILDTOOL%" == "NMAKE" copy .\include\ares_build.h.dist .\include\ares_build.h
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc
@@ -96,10 +96,10 @@ build_script:
 
 test_script:
   # We can't use powershell for tests due to treating stderr as an error
-  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cd C:\projects\build-cares\bin"
-  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc ".\adig.exe www.google.com"
-  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc ".\ahost.exe www.google.com"
-  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc ".\arestest.exe -4 -v"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cd C:/projects/build-cares/bin"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./adig.exe www.google.com"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./ahost.exe www.google.com"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./arestest.exe -4 -v"
   - if "%BUILDTOOL%" == "NMAKE" cd test
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc vtest
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
