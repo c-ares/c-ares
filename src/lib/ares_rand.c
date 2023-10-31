@@ -273,7 +273,7 @@ static void ares__rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
     switch (state->type) {
       case ARES_RAND_OS:
 #ifdef _WIN32
-        RtlGenRandom(buf, len);
+        RtlGenRandom(buf, (ULONG)len);
         return;
 #elif defined(HAVE_ARC4RANDOM_BUF)
         arc4random_buf(buf, len);
