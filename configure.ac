@@ -570,6 +570,7 @@ AC_CHECK_HEADERS(
        sys/param.h \
        sys/uio.h \
        assert.h \
+       iphlpapi.h \
        netdb.h \
        netinet/in.h \
        netinet/tcp.h \

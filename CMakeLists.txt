@@ -219,6 +219,7 @@ CHECK_INCLUDE_FILES (sys/uio.h             HAVE_SYS_UIO_H)
 CHECK_INCLUDE_FILES (time.h                HAVE_TIME_H)
 CHECK_INCLUDE_FILES (dlfcn.h               HAVE_DLFCN_H)
 CHECK_INCLUDE_FILES (unistd.h              HAVE_UNISTD_H)
+CHECK_INCLUDE_FILES (iphlpapi.h            HAVE_IPHLPAPI_H)
 
 # On OpenBSD, you must include sys/types.h before netinet/tcp.h
 IF (HAVE_SYS_TYPES_H)
@@ -316,6 +317,7 @@ CARES_EXTRAINCLUDE_IFSET (HAVE_FCNTL_H        fcntl.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_UNISTD_H       unistd.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_WINSOCK2_H     winsock2.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_WS2TCPIP_H     ws2tcpip.h)
+CARES_EXTRAINCLUDE_IFSET (HAVE_IPHLPAPI_H     iphlpapi.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_WINDOWS_H      windows.h)
 
 # Check Types

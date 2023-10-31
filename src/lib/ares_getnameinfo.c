@@ -47,6 +47,9 @@
 #ifdef HAVE_NET_IF_H
 #  include <net/if.h>
 #endif
+#ifdef HAVE_IPHLPAPI_H
+#  include <iphlpapi.h>
+#endif
 
 #include "ares.h"
 #include "ares_ipv6.h"
