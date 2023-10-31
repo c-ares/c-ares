@@ -21,6 +21,12 @@ configuration:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
   matrix:
+    # MinGW via MSYS2 (latest version)
+    - COMPILER: MINGW
+      BUILDTOOL: MSYS2-CMAKE
+      MSYSTEM: MINGW64
+      CHERE_INVOKING: YES
+
     # MSVC 2015, 32-bit x86 (cmake)
     - COMPILER: MSVC
       BUILDTOOL: CMAKE
@@ -67,8 +73,14 @@ before_build:
   # Setup build environment for the selected compiler (not all compilers need to do anything here).
   #  -- Visual Studio --
   - if "%COMPILER%" == "MSVC" call "%MSVC_SETUP_PATH%" %MSVC_SETUP_ARG%
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syuu"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-check mingw-w64-x86_64-ninja"
 
 build_script:
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "mkdir C:\projects\build-cares"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cd C:\projects\build-cares"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% %APPVEYOR_BUILD_FOLDER%"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "ninja -v install"
   - if "%BUILDTOOL%" == "NMAKE" copy .\include\ares_build.h.dist .\include\ares_build.h
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc
   - if "%BUILDTOOL%" == "CMAKE" mkdir C:\projects\build-cares
@@ -84,6 +96,10 @@ build_script:
 
 test_script:
   # We can't use powershell for tests due to treating stderr as an error
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cd C:\projects\build-cares\bin"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc ".\adig.exe www.google.com"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc ".\ahost.exe www.google.com"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc ".\arestest.exe -4 -v"
   - if "%BUILDTOOL%" == "NMAKE" cd test
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc vtest
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
