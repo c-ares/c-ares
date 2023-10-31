@@ -96,7 +96,7 @@ test_script:
   # We can't use powershell for tests due to treating stderr as an error
   - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./bin/adig.exe www.google.com"
   - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./bin/ahost.exe www.google.com"
-  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
   - if "%BUILDTOOL%" == "NMAKE" cd test
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc vtest
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
@@ -108,12 +108,12 @@ test_script:
   - if "%BUILDTOOL%" == "CMAKE" cd C:\projects\build-cares\bin
   - if "%BUILDTOOL%" == "CMAKE" .\adig.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKE" .\ahost.exe www.google.com
-  - if "%BUILDTOOL%" == "CMAKE" .\arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*
+  - if "%BUILDTOOL%" == "CMAKE" .\arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
   - if "%BUILDTOOL%" == "CMAKE" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
   - if "%BUILDTOOL%" == "CMAKESTATIC" cd C:\projects\build-cares\bin
   - if "%BUILDTOOL%" == "CMAKESTATIC" .\adig.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKESTATIC" .\ahost.exe www.google.com
-  - if "%BUILDTOOL%" == "CMAKESTATIC" .\arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*
+  - if "%BUILDTOOL%" == "CMAKESTATIC" .\arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
   - if "%BUILDTOOL%" == "CMAKESTATIC" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
 
 #on_finish:

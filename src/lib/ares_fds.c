@@ -64,5 +64,5 @@ int ares_fds(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
     }
   }
 
-  return nfds;
+  return (int)nfds;
 }
