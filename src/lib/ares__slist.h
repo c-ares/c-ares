@@ -181,6 +181,15 @@ void               *ares__slist_last_val(const ares__slist_t *list);
  */
 void               *ares__slist_node_claim(ares__slist_node_t *node);
 
+/*! The internals of the node have changed, thus its position in the sorted
+ *  list is no longer valid.  This function will remove it and readd it to the
+ *  proper position without needing to perform any memory allocations and
+ *  thus cannot fail.
+ *
+ *  \param[in] node  SkipList Node Object
+ */
+void                ares__slist_node_reinsert(ares__slist_node_t *node);
+
 /*! Remove Node from SkipList, calling destructor for Node Value.
  *
  *  \param[in] node  SkipList Node Object

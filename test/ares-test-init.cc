@@ -114,6 +114,7 @@ TEST_F(LibraryTest, OptionsChannelInit) {
 
   ares_channel channel2 = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_dup(&channel2, channel));
+  EXPECT_NE(nullptr, channel2);
 
   struct ares_options opts2 = {0};
   int optmask2 = 0;

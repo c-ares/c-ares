@@ -203,8 +203,6 @@ struct query {
   struct timeval                  timeout;
   ares_channel                    channel;
 
-  struct server_state            *server;
-
   /*
    * Node object for each list entry the query belongs to in order to
    * make removal operations O(1).
@@ -494,8 +492,8 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
     }                                                             \
   } while (0)
 
-#define ARES_CONFIG_CHECK(x)                                          \
-  (x->lookups && ares__slist_len(x->servers) > 0 && x->ndots > 0 &&   \
+#define ARES_CONFIG_CHECK(x)                                               \
+  (x && x->lookups && ares__slist_len(x->servers) > 0 && x->ndots > 0 &&   \
    x->timeout > 0 && x->tries > 0)
 
 size_t ares__round_up_pow2(size_t n);

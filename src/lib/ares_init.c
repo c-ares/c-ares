@@ -122,6 +122,29 @@ static int ares_query_timeout_cmp_cb(const void *arg1, const void *arg2)
   return 0;
 }
 
+static int server_sort_cb(const void *data1, const void *data2)
+{
+  const struct server_state *s1 = data1;
+  const struct server_state *s2 = data2;
+
+  if (s1->consec_failures < s2->consec_failures)
+    return -1;
+  if (s1->consec_failures > s2->consec_failures)
+    return 1;
+  if (s1->idx < s2->idx)
+    return -1;
+  if (s1->idx > s2->idx)
+    return 1;
+  return 0;
+}
+
+static void server_destroy_cb(void *data)
+{
+  if (data == NULL)
+    return;
+  ares__destroy_server(data);
+}
+
 int ares_init_options(ares_channel *channelptr, struct ares_options *options,
                       int optmask)
 {
@@ -141,12 +164,19 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   memset(channel, 0, sizeof(*channel));
 
   /* Generate random key */
-
   channel->rand_state = ares__init_rand_state();
   if (channel->rand_state == NULL) {
     status = ARES_ENOMEM;
     DEBUGF(fprintf(stderr, "Error: init_id_key failed: %s\n",
                    ares_strerror(status)));
+    goto done;
+  }
+
+  /* Initialize Server List */
+  channel->servers = ares__slist_create(channel->rand_state, server_sort_cb,
+                                        server_destroy_cb);
+  if (channel->servers == NULL) {
+    status = ARES_ENOMEM;
     goto done;
   }
 
@@ -188,11 +218,13 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
      */
     goto done;
   }
+
   status = init_by_environment(channel);
   if (status != ARES_SUCCESS) {
     DEBUGF(fprintf(stderr, "Error: init_by_environment failed: %s\n",
                    ares_strerror(status)));
   }
+
   if (status == ARES_SUCCESS) {
     status = init_by_resolv_conf(channel);
     if (status != ARES_SUCCESS) {
@@ -216,41 +248,10 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
 #warning handle trimming to one server
   }
 
-  status = ares__init_servers_state(channel);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
 
 done:
   if (status != ARES_SUCCESS) {
-    /* Something failed; clean up memory we may have allocated. */
-    if (channel->servers) {
-      ares_free(channel->servers);
-    }
-    if (channel->ndomains > 0) {
-      ares__strsplit_free(channel->domains, channel->ndomains);
-    }
-    if (channel->sortlist) {
-      ares_free(channel->sortlist);
-    }
-    if (channel->lookups) {
-      ares_free(channel->lookups);
-    }
-    if (channel->resolvconf_path) {
-      ares_free(channel->resolvconf_path);
-    }
-    if (channel->hosts_path) {
-      ares_free(channel->hosts_path);
-    }
-    if (channel->rand_state) {
-      ares__destroy_rand_state(channel->rand_state);
-    }
-
-    ares__htable_szvp_destroy(channel->queries_by_qid);
-    ares__llist_destroy(channel->all_queries);
-    ares__slist_destroy(channel->queries_by_timeout);
-    ares__htable_asvp_destroy(channel->connnode_by_socket);
-    ares_free(channel);
+    ares_destroy(channel);
     return (int)status;
   }
 
@@ -272,7 +273,7 @@ int ares_dup(ares_channel *dest, ares_channel src)
   /* First get the options supported by the old ares_save_options() function,
      which is most of them */
   rc = (ares_status_t)ares_save_options(src, &opts, &optmask);
-  if (rc) {
+  if (rc != ARES_SUCCESS) {
     ares_destroy_options(&opts);
     return (int)rc;
   }
@@ -283,7 +284,7 @@ int ares_dup(ares_channel *dest, ares_channel src)
   /* destroy the options copy to not leak any memory */
   ares_destroy_options(&opts);
 
-  if (rc) {
+  if (rc != ARES_SUCCESS) {
     return (int)rc;
   }
 
@@ -307,6 +308,7 @@ int ares_dup(ares_channel *dest, ares_channel src)
     *dest = NULL;
     return (int)rc;
   }
+
   rc = (ares_status_t)ares_set_servers_ports(*dest, servers);
   ares_free_data(servers);
   if (rc != ARES_SUCCESS) {
@@ -316,7 +318,6 @@ int ares_dup(ares_channel *dest, ares_channel src)
   }
 
   (*dest)->user_specified_servers = src->user_specified_servers;
-
   return ARES_SUCCESS; /* everything went fine */
 }
 

@@ -41,7 +41,6 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
                            size_t qlen, ares_callback callback, void *arg)
 {
   struct query  *query;
-  size_t         i;
   size_t         packetsz;
   struct timeval now;
 
@@ -90,16 +89,6 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
 
   /* Initialize query status. */
   query->try_count = 0;
-
-  /* Choose the server to send the query to. If rotation is enabled, keep track
-   * of the next server we want to use. */
-  if (channel->rotate) {
-#warning reimplement me, probably use rand % nservers and fetch the index in the list (obviously need to do an O(n) search for that)
-  } else {
-#warning can this become a dangling pointer?  maybe ares__send_query should do this part of the logic.
-    /* Pull first */
-    query->server = ares__slist_first_val(channel->servers);
-  }
 
   packetsz = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : PACKETSZ;
   query->using_tcp = (channel->flags & ARES_FLAG_USEVC) || qlen > packetsz;

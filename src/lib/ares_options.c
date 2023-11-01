@@ -529,12 +529,14 @@ ares_status_t ares__servers_update(ares_channel channel,
     ares__slist_node_t   *snode;
 
     /* Don't add duplicate servers! */
-    if (ares__server_isdup(channel, node))
+    if (ares__server_isdup(channel, node)) {
       continue;
+    }
 
     snode = ares__server_find(channel, sconfig);
     if (snode != NULL) {
       struct server_state *server = ares__slist_node_val(snode);
+
       if (server->idx != idx) {
         server->idx = idx;
         /* Index changed, reinsert node, doesn't require any memory
@@ -585,6 +587,7 @@ static ares__llist_t *ares_addr_node_to_server_config_llist(
     if (sconfig == NULL)
       goto fail;
 
+    sconfig->addr.family = node->family;
     if (node->family == AF_INET) {
       memcpy(&sconfig->addr.addr.addr4, &node->addr.addr4,
            sizeof(sconfig->addr.addr.addr4));
@@ -631,6 +634,7 @@ static ares__llist_t *ares_addr_port_node_to_server_config_llist(
     if (sconfig == NULL)
       goto fail;
 
+    sconfig->addr.family = node->family;
     if (node->family == AF_INET) {
       memcpy(&sconfig->addr.addr.addr4, &node->addr.addr4,
            sizeof(sconfig->addr.addr.addr4));
@@ -679,7 +683,13 @@ static ares__llist_t *ares_in_addr_to_server_config_llist(
     sconfig->addr.family = AF_INET;
     memcpy(&sconfig->addr.addr.addr4, &servers[i],
            sizeof(sconfig->addr.addr.addr4));
+
+    if (ares__llist_insert_last(s, sconfig) == NULL) {
+      goto fail;
+    }
   }
+
+  return s;
 
 fail:
   ares__llist_destroy(s);
