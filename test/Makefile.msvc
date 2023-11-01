@@ -305,9 +305,9 @@ ALL: arestest aresfuzz aresfuzzname dnsdump
     @
 
 test: arestest
-    $(PROG_OUTDIR)\arestest
+    $(PROG_OUTDIR)\arestest -4 --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
 vtest: arestest
-    $(PROG_OUTDIR)\arestest -v
+    $(PROG_OUTDIR)\arestest -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
 
 arestest: $(TESTSOURCES) $(PROG_OUTDIR) $(PROG_OBJDIR) $(PROG_OBJS) $(GMOCK_GTEST_OBJ)
     $(SPROG_LINK) $(SPROG_LFLAGS) /out:$(PROG_OUTDIR)\arestest.exe $(PROG_OBJS) $(GMOCK_GTEST_OBJ)

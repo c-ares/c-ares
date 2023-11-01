@@ -260,7 +260,7 @@ ares_status_t ares__open_connection(ares_channel         channel,
     case AF_INET:
       sa    = (void *)&saddr.sa4;
       salen = sizeof(saddr.sa4);
-      memset(sa, 0, salen);
+      memset(sa, 0, (size_t)salen);
       saddr.sa4.sin_family = AF_INET;
       saddr.sa4.sin_port   = port;
       memcpy(&saddr.sa4.sin_addr, &server->addr.addrV4,
@@ -269,7 +269,7 @@ ares_status_t ares__open_connection(ares_channel         channel,
     case AF_INET6:
       sa    = (void *)&saddr.sa6;
       salen = sizeof(saddr.sa6);
-      memset(sa, 0, salen);
+      memset(sa, 0, (size_t)salen);
       saddr.sa6.sin6_family = AF_INET6;
       saddr.sa6.sin6_port   = port;
       memcpy(&saddr.sa6.sin6_addr, &server->addr.addrV6,

@@ -137,7 +137,7 @@ static ares_status_t
 
   *nodes = NULL;
 
-  if (GetUnicastIpAddressTable(aftype, &table) != NO_ERROR) {
+  if (GetUnicastIpAddressTable((ADDRESS_FAMILY)aftype, &table) != NO_ERROR) {
     return ARES_ENOTFOUND;
   }
 

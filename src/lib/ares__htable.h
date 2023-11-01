@@ -45,7 +45,7 @@
  * @{
  */
 
-struct ares__htable_t;
+struct ares__htable;
 
 /*! Opaque data type for generic hash table implementation */
 typedef struct ares__htable ares__htable_t;

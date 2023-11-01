@@ -47,6 +47,9 @@
 #ifdef HAVE_NET_IF_H
 #  include <net/if.h>
 #endif
+#ifdef HAVE_IPHLPAPI_H
+#  include <iphlpapi.h>
+#endif
 
 #include "ares.h"
 #include "ares_ipv6.h"
@@ -339,7 +342,6 @@ static void append_scopeid(const struct sockaddr_in6 *addr6, unsigned int flags,
 #  endif
   char   tmpbuf[IF_NAMESIZE + 2];
   size_t bufl;
-  int    is_scope_long = sizeof(addr6->sin6_scope_id) > sizeof(unsigned int);
 
   tmpbuf[0] = '%';
 
@@ -347,30 +349,17 @@ static void append_scopeid(const struct sockaddr_in6 *addr6, unsigned int flags,
   is_ll   = IN6_IS_ADDR_LINKLOCAL(&addr6->sin6_addr);
   is_mcll = IN6_IS_ADDR_MC_LINKLOCAL(&addr6->sin6_addr);
   if ((flags & ARES_NI_NUMERICSCOPE) || (!is_ll && !is_mcll)) {
-    if (is_scope_long) {
-      snprintf(&tmpbuf[1], sizeof(tmpbuf) - 1, "%lu",
-               (unsigned long)addr6->sin6_scope_id);
-    } else {
-      snprintf(&tmpbuf[1], sizeof(tmpbuf) - 1, "%u", addr6->sin6_scope_id);
-    }
-  } else {
-    if (if_indextoname(addr6->sin6_scope_id, &tmpbuf[1]) == NULL) {
-      if (is_scope_long) {
-        snprintf(&tmpbuf[1], sizeof(tmpbuf) - 1, "%lu",
-                 (unsigned long)addr6->sin6_scope_id);
-      } else {
-        snprintf(&tmpbuf[1], sizeof(tmpbuf) - 1, "%u", addr6->sin6_scope_id);
-      }
-    }
-  }
-#  else
-  if (is_scope_long) {
     snprintf(&tmpbuf[1], sizeof(tmpbuf) - 1, "%lu",
              (unsigned long)addr6->sin6_scope_id);
   } else {
-    snprintf(&tmpbuf[1], sizeof(tmpbuf) - 1, "%u",
-             (unsigned int)addr6->sin6_scope_id);
+    if (if_indextoname(addr6->sin6_scope_id, &tmpbuf[1]) == NULL) {
+      snprintf(&tmpbuf[1], sizeof(tmpbuf) - 1, "%lu",
+               (unsigned long)addr6->sin6_scope_id);
+    }
   }
+#  else
+  snprintf(&tmpbuf[1], sizeof(tmpbuf) - 1, "%lu",
+             (unsigned long)addr6->sin6_scope_id);
   (void)flags;
 #  endif
   tmpbuf[IF_NAMESIZE + 1] = '\0';

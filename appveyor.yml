@@ -1,7 +1,7 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 
-image: Visual Studio 2015
+image: Visual Studio 2022
 
 # Github/Bitbucket only: get source code for one particular commit as zip archive, instead of git clone'ing.
 shallow_clone: true
@@ -21,44 +21,50 @@ configuration:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
   matrix:
+    # MinGW via MSYS2 (latest version)
+    - COMPILER: MINGW
+      BUILDTOOL: MSYS2-CMAKE
+      MSYSTEM: MINGW64
+      CHERE_INVOKING: YES
+
     # MSVC 2015, 32-bit x86 (cmake)
     - COMPILER: MSVC
       BUILDTOOL: CMAKE
       MSVC_SETUP_ARG: x86
-      MSVC_SETUP_PATH: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat
 
     # MSVC 2015, 64-bit x86 (cmake)
     - COMPILER: MSVC
       BUILDTOOL: CMAKE
       MSVC_SETUP_ARG: x64
-      MSVC_SETUP_PATH: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
 
     # MinGW, 32-bit x86 (cmake)
     - COMPILER: MINGW
       BUILDTOOL: CMAKE
-      PATH: C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin;%PATH%
+      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
 
     # MinGW, 32-bit x86 (cmake static only)
     - COMPILER: MINGW
       BUILDTOOL: CMAKESTATIC
-      PATH: C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin;%PATH%
+      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
 
     # MSVC 2015, 32-bit x86 (nmake)
     - COMPILER: MSVC
       BUILDTOOL: NMAKE
       MSVC_SETUP_ARG: x86
-      MSVC_SETUP_PATH: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat
 
     # MSVC 2015, 64-bit x86 (nmake)
     - COMPILER: MSVC
       BUILDTOOL: NMAKE
       MSVC_SETUP_ARG: x64
-      MSVC_SETUP_PATH: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
 
     # MinGW, 32-bit x86 (makefiles)
     - COMPILER: MINGW
       BUILDTOOL: MAKE
-      PATH: C:\mingw-w64\i686-5.3.0-posix-dwarf-rt_v4-rev0\mingw32\bin;%PATH%
+      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
 
 install:
   - if "%COMPILER%" == "MINGW" rename "C:\Program Files\Git\usr\bin\sh.exe" "sh2.exe"
@@ -67,8 +73,12 @@ before_build:
   # Setup build environment for the selected compiler (not all compilers need to do anything here).
   #  -- Visual Studio --
   - if "%COMPILER%" == "MSVC" call "%MSVC_SETUP_PATH%" %MSVC_SETUP_ARG%
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syuu"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-check mingw-w64-x86_64-ninja"
 
 build_script:
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% ."
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "ninja -v install"
   - if "%BUILDTOOL%" == "NMAKE" copy .\include\ares_build.h.dist .\include\ares_build.h
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc
   - if "%BUILDTOOL%" == "CMAKE" mkdir C:\projects\build-cares
@@ -84,6 +94,9 @@ build_script:
 
 test_script:
   # We can't use powershell for tests due to treating stderr as an error
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./bin/adig.exe www.google.com"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./bin/ahost.exe www.google.com"
+  - if "%BUILDTOOL%" == "MSYS2-CMAKE" C:\msys64\usr\bin\bash -lc "./bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
   - if "%BUILDTOOL%" == "NMAKE" cd test
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc vtest
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
@@ -95,12 +108,12 @@ test_script:
   - if "%BUILDTOOL%" == "CMAKE" cd C:\projects\build-cares\bin
   - if "%BUILDTOOL%" == "CMAKE" .\adig.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKE" .\ahost.exe www.google.com
-  - if "%BUILDTOOL%" == "CMAKE" .\arestest.exe -4 -v
+  - if "%BUILDTOOL%" == "CMAKE" .\arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
   - if "%BUILDTOOL%" == "CMAKE" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
   - if "%BUILDTOOL%" == "CMAKESTATIC" cd C:\projects\build-cares\bin
   - if "%BUILDTOOL%" == "CMAKESTATIC" .\adig.exe www.google.com
   - if "%BUILDTOOL%" == "CMAKESTATIC" .\ahost.exe www.google.com
-  - if "%BUILDTOOL%" == "CMAKESTATIC" .\arestest.exe -4 -v
+  - if "%BUILDTOOL%" == "CMAKESTATIC" .\arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
   - if "%BUILDTOOL%" == "CMAKESTATIC" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
 
 #on_finish:

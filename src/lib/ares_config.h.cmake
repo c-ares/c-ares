@@ -179,6 +179,9 @@
 /* Define to 1 if you have the `resolve' library (-lresolve). */
 #cmakedefine HAVE_LIBRESOLV
 
+/* Define to 1 if you have iphlpapi.h */
+#cmakedefine HAVE_IPHLPAPI_H
+
 /* Define to 1 if you have the <limits.h> header file. */
 #cmakedefine HAVE_LIMITS_H
 
