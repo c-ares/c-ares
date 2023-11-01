@@ -40,7 +40,7 @@ typedef struct {
   struct ares_addr addr;
   unsigned short   tcp_port;
   unsigned short   udp_port;
-} ares_server_config_t;
+} ares_sconfig_t;
 
 static ares_bool_t ares__addr_match(const struct ares_addr *addr1,
                                     const struct ares_addr *addr2)
@@ -69,8 +69,278 @@ static ares_bool_t ares__addr_match(const struct ares_addr *addr1,
   return ARES_FALSE;
 }
 
+
+/* Validate that the ip address matches the subnet (network base and network
+ * mask) specified. Addresses are specified in standard Network Byte Order as
+ * 16 bytes, and the netmask is 0 to 128 (bits).
+ */
+static ares_bool_t ares_ipv6_subnet_matches(const unsigned char  netbase[16],
+                                            unsigned char        netmask,
+                                            const unsigned char *ipaddr)
+{
+  unsigned char mask[16] = { 0 };
+  unsigned char i;
+
+  /* Misuse */
+  if (netmask > 128) {
+    return ARES_FALSE;
+  }
+
+  /* Quickly set whole bytes */
+  memset(mask, 0xFF, netmask / 8);
+
+  /* Set remaining bits */
+  if (netmask % 8) {
+    mask[netmask / 8] = (unsigned char)(0xff << (8 - (netmask % 8)));
+  }
+
+  for (i = 0; i < 16; i++) {
+    if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i])) {
+      return ARES_FALSE;
+    }
+  }
+
+  return ARES_TRUE;
+}
+
+static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
+{
+  /* A list of blacklisted IPv6 subnets. */
+  const struct {
+    const unsigned char netbase[16];
+    unsigned char       netmask;
+  } blacklist_v6[] = {
+  /* fec0::/10 was deprecated by [RFC3879] in September 2004. Formerly a
+  * Site-Local scoped address prefix.  These are never valid DNS servers,
+  * but are known to be returned at least sometimes on Windows and Android.
+  */
+    {{ 0xfe, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00 },
+     10}
+  };
+
+  size_t i;
+
+  if (addr->family != AF_INET6)
+    return ARES_FALSE;
+
+  /* See if ipaddr matches any of the entries in the blacklist. */
+  for (i = 0; i < sizeof(blacklist_v6) / sizeof(*blacklist_v6); i++) {
+    if (ares_ipv6_subnet_matches(blacklist_v6[i].netbase, blacklist_v6[i].netmask,
+                                 (const unsigned char *)&addr->addr.addr6)) {
+      return ARES_TRUE;
+    }
+  }
+  return ARES_FALSE;
+}
+
+/* Parse address and port in these formats, either ipv4 or ipv6 addresses
+ * are allowed:
+ *   ipaddr
+ *   [ipaddr]
+ *   [ipaddr]:port
+ *
+ * If a port is not specified, will set port to 0.
+ *
+ * Will fail if an IPv6 nameserver as detected by
+ * ares_ipv6_server_blacklisted()
+ *
+ * Returns an error code on failure, else ARES_SUCCESS
+ */
+static ares_status_t parse_dnsaddrport(const char *str, size_t len,
+                                       struct ares_addr *host,
+                                       unsigned short   *port)
+{
+  char        ipaddr[INET6_ADDRSTRLEN] = "";
+  char        ipport[6]                = "";
+  size_t      mylen;
+  const char *addr_start = NULL;
+  const char *addr_end   = NULL;
+  const char *port_start = NULL;
+  const char *port_end   = NULL;
+
+  /* Must start with [, hex digit or : */
+  if (len == 0 || (*str != '[' && !isxdigit(*str) && *str != ':')) {
+    return ARES_EBADSTR;
+  }
+
+  /* If it starts with a bracket, must end with a bracket */
+  if (*str == '[') {
+    const char *ptr;
+    addr_start = str + 1;
+    ptr        = memchr(addr_start, ']', len - 1);
+    if (ptr == NULL) {
+      return ARES_EBADSTR;
+    }
+    addr_end = ptr - 1;
+
+    /* Try to pull off port */
+    if ((size_t)(ptr - str) < len) {
+      ptr++;
+      if (*ptr != ':') {
+        return ARES_EBADSTR;
+      }
+
+      /* Missing port number */
+      if ((size_t)(ptr - str) == len) {
+        return ARES_EBADSTR;
+      }
+
+      port_start = ptr + 1;
+      port_end   = str + (len - 1);
+    }
+  } else {
+    addr_start = str;
+    addr_end   = str + (len - 1);
+  }
+
+  mylen = (size_t)(addr_end - addr_start) + 1;
+  /* Larger than buffer with null term */
+  if (mylen + 1 > sizeof(ipaddr)) {
+    return ARES_EBADSTR;
+  }
+
+  memset(ipaddr, 0, sizeof(ipaddr));
+  memcpy(ipaddr, addr_start, mylen);
+
+  if (port_start) {
+    mylen = (size_t)(port_end - port_start) + 1;
+    /* Larger than buffer with null term */
+    if (mylen + 1 > sizeof(ipport)) {
+      return ARES_EBADSTR;
+    }
+    memset(ipport, 0, sizeof(ipport));
+    memcpy(ipport, port_start, mylen);
+  } else {
+    snprintf(ipport, sizeof(ipport), "0");
+  }
+
+  /* Convert textual address to binary format. */
+  if (ares_inet_pton(AF_INET, ipaddr, &host->addr.addr4) == 1) {
+    host->family = AF_INET;
+  } else if (ares_inet_pton(AF_INET6, ipaddr, &host->addr.addr6) == 1) {
+    host->family = AF_INET6;
+  } else {
+    return ARES_EBADSTR;
+  }
+
+  *port = (unsigned short)atoi(ipport);
+  return ARES_SUCCESS;
+}
+
+
+ares_status_t ares__sconfig_append(ares__llist_t **sconfig,
+                                   const struct ares_addr *addr,
+                                   unsigned short udp_port,
+                                   unsigned short tcp_port)
+{
+  ares_sconfig_t *s;
+  ares_status_t   status;
+
+  if (sconfig == NULL || addr == NULL)
+    return ARES_EFORMERR;
+
+  /* Silently skip blacklisted IPv6 servers. */
+  if (ares_server_blacklisted(addr))
+    return ARES_SUCCESS;
+
+  s = ares_malloc_zero(sizeof(*s));
+  if (s == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  if (*sconfig == NULL) {
+    *sconfig = ares__llist_create(ares_free);
+    if (*sconfig == NULL) {
+      status = ARES_ENOMEM;
+      goto fail;
+    }
+  }
+
+  memcpy(&s->addr, addr, sizeof(s->addr));
+  s->udp_port = udp_port;
+  s->tcp_port = tcp_port;
+
+  if (ares__llist_insert_last(*sconfig, s) == NULL) {
+    status = ARES_ENOMEM;
+    goto fail;
+  }
+
+  return ARES_SUCCESS;
+
+fail:
+  ares_free(s);
+
+  return status;
+}
+
+
+/* Add the IPv4 or IPv6 nameservers in str (separated by commas or spaces) to
+ * the servers list, updating servers and nservers as required.
+ *
+ * If a nameserver is encapsulated in [ ] it may optionally include a port
+ * suffix, e.g.:
+ *    [127.0.0.1]:59591
+ *
+ * The extended format is required to support OpenBSD's resolv.conf format:
+ *   https://man.openbsd.org/OpenBSD-5.1/resolv.conf.5
+ * As well as MacOS libresolv that may include a non-default port number.
+ *
+ * This will silently ignore blacklisted IPv6 nameservers as detected by
+ * ares_ipv6_server_blacklisted().
+ *
+ * Returns an error code on failure, else ARES_SUCCESS.
+ */
+ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
+                                           const char *str)
+{
+  struct ares_addr     host;
+  const char          *p;
+  const char          *txtaddr;
+  ares_status_t        status;
+
+  /* On Windows, there may be more than one nameserver specified in the same
+   * registry key, so we parse input as a space or comma seperated list.
+   */
+  for (p = str; p;) {
+    unsigned short port;
+
+    /* Skip whitespace and commas. */
+    while (*p && (ISSPACE(*p) || (*p == ','))) {
+      p++;
+    }
+    if (!*p) {
+      /* No more input, done. */
+      break;
+    }
+
+    /* Pointer to start of IPv4 or IPv6 address part. */
+    txtaddr = p;
+
+    /* Advance past this address. */
+    while (*p && !ISSPACE(*p) && (*p != ',')) {
+      p++;
+    }
+
+    if (parse_dnsaddrport(txtaddr, (size_t)(p - txtaddr), &host, &port) !=
+        ARES_SUCCESS) {
+      continue;
+    }
+
+    status = ares__sconfig_append(sconfig, &host, port, port);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
+  return ARES_SUCCESS;
+}
+
+
+
+
 static unsigned short ares__sconfig_get_port(ares_channel channel,
-                                             const ares_server_config_t *s,
+                                             const ares_sconfig_t *s,
                                              ares_bool_t is_tcp)
 {
   unsigned short port = is_tcp?s->tcp_port:s->udp_port;
@@ -87,7 +357,7 @@ static unsigned short ares__sconfig_get_port(ares_channel channel,
 }
 
 static ares__slist_node_t *ares__server_find(ares_channel channel,
-                                             const ares_server_config_t *s)
+                                             const ares_sconfig_t *s)
 {
   ares__slist_node_t *node;
 
@@ -114,12 +384,12 @@ static ares_bool_t ares__server_isdup(ares_channel channel,
 {
   /* Scan backwards to see if this is a duplicate */
   ares__llist_node_t   *prev;
-  ares_server_config_t *server = ares__llist_node_val(s);
+  ares_sconfig_t *server = ares__llist_node_val(s);
 
   for (prev = ares__llist_node_prev(s); prev != NULL;
        prev = ares__llist_node_prev(prev)) {
 
-    ares_server_config_t *p = ares__llist_node_val(prev);
+    ares_sconfig_t *p = ares__llist_node_val(prev);
 
     if (!ares__addr_match(&server->addr, &p->addr))
       continue;
@@ -139,7 +409,7 @@ static ares_bool_t ares__server_isdup(ares_channel channel,
 }
 
 static ares_status_t ares__server_create(ares_channel channel,
-                                         const ares_server_config_t *sconfig,
+                                         const ares_sconfig_t *sconfig,
                                          size_t idx)
 {
   ares_status_t        status;
@@ -204,7 +474,7 @@ static ares_bool_t ares__server_in_newconfig(struct server_state *server,
   for (node = ares__llist_node_first(srvlist); node != NULL;
        node = ares__llist_node_next(node)) {
 
-    ares_server_config_t *s = ares__llist_node_val(node);
+    ares_sconfig_t *s = ares__llist_node_val(node);
 
     if (!ares__addr_match(&server->addr, &s->addr))
       continue;
@@ -255,7 +525,7 @@ ares_status_t ares__servers_update(ares_channel channel,
   for (node = ares__llist_node_first(server_list); node != NULL;
        node = ares__llist_node_next(node)) {
 
-    ares_server_config_t *sconfig = ares__llist_node_val(node);
+    ares_sconfig_t *sconfig = ares__llist_node_val(node);
     ares__slist_node_t   *snode;
 
     /* Don't add duplicate servers! */
@@ -305,7 +575,7 @@ static ares__llist_t *ares_addr_node_to_server_config_llist(
     return NULL;
 
   for (node = servers; node != NULL; node = node->next) {
-    ares_server_config_t *sconfig;
+    ares_sconfig_t *sconfig;
 
     /* Invalid entry */
     if (node->family != AF_INET && node->family != AF_INET6)
@@ -351,7 +621,7 @@ static ares__llist_t *ares_addr_port_node_to_server_config_llist(
     return NULL;
 
   for (node = servers; node != NULL; node = node->next) {
-    ares_server_config_t *sconfig;
+    ares_sconfig_t *sconfig;
 
     /* Invalid entry */
     if (node->family != AF_INET && node->family != AF_INET6)
@@ -400,7 +670,7 @@ static ares__llist_t *ares_in_addr_to_server_config_llist(
     return NULL;
 
   for (i=0; i<nservers; i++) {
-    ares_server_config_t *sconfig;
+    ares_sconfig_t *sconfig;
 
     sconfig = ares_malloc_zero(sizeof(*sconfig));
     if (sconfig == NULL)

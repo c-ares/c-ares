@@ -650,7 +650,6 @@ static void handle_error(struct server_connection *conn, struct timeval *now)
   while ((node = ares__llist_node_first(list_copy)) != NULL) {
     struct query *query = ares__llist_node_val(node);
 
-    assert(query->server == server->idx);
     skip_server(channel, query, server);
     /* next_server will remove the current node from the list */
     next_server(channel, query, now);

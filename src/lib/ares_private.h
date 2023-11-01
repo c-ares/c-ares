@@ -452,6 +452,13 @@ void ares__destroy_server(struct server_state *server);
 ares_status_t ares__servers_update(ares_channel channel,
                                    ares__llist_t *server_list,
                                    ares_bool_t user_specified);
+ares_status_t ares__sconfig_append(ares__llist_t **sconfig,
+                                   const struct ares_addr *addr,
+                                   unsigned short udp_port,
+                                   unsigned short tcp_port);
+ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
+                                           const char *str);
+
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
