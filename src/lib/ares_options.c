@@ -36,6 +36,386 @@
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
+typedef struct {
+  struct ares_addr addr;
+  unsigned short   tcp_port;
+  unsigned short   udp_port;
+} ares_server_config_t;
+
+static ares_bool_t ares__addr_match(const struct ares_addr *addr1,
+                                    const struct ares_addr *addr2)
+{
+  if (addr1 == NULL && addr2 == NULL)
+    return ARES_TRUE;
+
+  if (addr1 == NULL || addr2 == NULL)
+    return ARES_FALSE;
+
+  if (addr1->family != addr2->family)
+    return ARES_FALSE;
+
+  if (addr1->family == AF_INET &&
+      memcmp(&addr1->addr.addr4, &addr2->addr.addr4, sizeof(addr1->addr.addr4))
+      == 0) {
+    return ARES_TRUE;
+  }
+
+  if (addr1->family == AF_INET6 &&
+      memcmp(&addr1->addr.addr6, &addr2->addr.addr6, sizeof(addr1->addr.addr6))
+      == 0) {
+    return ARES_TRUE;
+  }
+
+  return ARES_FALSE;
+}
+
+static unsigned short ares__sconfig_get_port(ares_channel channel,
+                                             const ares_server_config_t *s,
+                                             ares_bool_t is_tcp)
+{
+  unsigned short port = is_tcp?s->tcp_port:s->udp_port;
+
+  if (port == 0) {
+    port = is_tcp?channel->tcp_port:channel->udp_port;
+  }
+
+  if (port == 0) {
+    port = 53;
+  }
+
+  return port;
+}
+
+static ares__slist_node_t *ares__server_find(ares_channel channel,
+                                             const ares_server_config_t *s)
+{
+  ares__slist_node_t *node;
+
+  for (node = ares__slist_node_first(channel->servers); node != NULL;
+       node = ares__slist_node_next(node)) {
+    struct server_state *server = ares__slist_node_val(node);
+
+    if (!ares__addr_match(&server->addr, &s->addr))
+      continue;
+
+    if (server->tcp_port != ares__sconfig_get_port(channel, s, ARES_TRUE))
+      continue;
+
+    if (server->udp_port != ares__sconfig_get_port(channel, s, ARES_FALSE))
+      continue;
+
+    return node;
+  }
+  return NULL;
+}
+
+static ares_bool_t ares__server_isdup(ares_channel channel,
+                                      ares__llist_node_t *s)
+{
+  /* Scan backwards to see if this is a duplicate */
+  ares__llist_node_t   *prev;
+  ares_server_config_t *server = ares__llist_node_val(s);
+
+  for (prev = ares__llist_node_prev(s); prev != NULL;
+       prev = ares__llist_node_prev(prev)) {
+
+    ares_server_config_t *p = ares__llist_node_val(prev);
+
+    if (!ares__addr_match(&server->addr, &p->addr))
+      continue;
+
+    if (ares__sconfig_get_port(channel, server, ARES_TRUE) !=
+        ares__sconfig_get_port(channel, p, ARES_TRUE))
+      continue;
+
+    if (ares__sconfig_get_port(channel, server, ARES_FALSE) !=
+        ares__sconfig_get_port(channel, p, ARES_FALSE))
+      continue;
+
+    return ARES_TRUE;
+  }
+
+  return ARES_FALSE;
+}
+
+static ares_status_t ares__server_create(ares_channel channel,
+                                         const ares_server_config_t *sconfig,
+                                         size_t idx)
+{
+  ares_status_t        status;
+  struct server_state *server = ares_malloc_zero(sizeof(*server));
+
+  if (server == NULL)
+    return ARES_ENOMEM;
+
+  server->idx         = idx;
+  server->channel     = channel;
+  server->udp_port    = ares__sconfig_get_port(channel, sconfig, ARES_FALSE);
+  server->tcp_port    = ares__sconfig_get_port(channel, sconfig, ARES_TRUE);
+  server->addr.family = sconfig->addr.family;
+
+  if (sconfig->addr.family == AF_INET) {
+    memcpy(&server->addr.addr.addr4, &sconfig->addr.addr.addr4,
+           sizeof(server->addr.addr.addr4));
+  } else if (sconfig->addr.family == AF_INET6) {
+    memcpy(&server->addr.addr.addr6, &sconfig->addr.addr.addr6,
+           sizeof(server->addr.addr.addr6));
+  }
+
+  server->tcp_parser = ares__buf_create();
+  if (server->tcp_parser == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  server->tcp_send = ares__buf_create();
+  if (server->tcp_send == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  server->connections = ares__llist_create(NULL);
+  if (server->connections == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  if (ares__slist_insert(channel->servers, server) == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  status = ARES_SUCCESS;
+
+done:
+  if (status != ARES_SUCCESS) {
+    ares__destroy_server(server);
+  }
+
+  return status;
+}
+
+static ares_bool_t ares__server_in_newconfig(struct server_state *server,
+                                             ares__llist_t *srvlist)
+{
+  ares__llist_node_t *node;
+  ares_channel        channel = server->channel;
+
+  for (node = ares__llist_node_first(srvlist); node != NULL;
+       node = ares__llist_node_next(node)) {
+
+    ares_server_config_t *s = ares__llist_node_val(node);
+
+    if (!ares__addr_match(&server->addr, &s->addr))
+      continue;
+
+    if (server->tcp_port != ares__sconfig_get_port(channel, s, ARES_TRUE))
+      continue;
+
+    if (server->udp_port != ares__sconfig_get_port(channel, s, ARES_FALSE))
+      continue;
+
+    return ARES_TRUE;
+  }
+
+  return ARES_FALSE;
+}
+
+static void ares__servers_remove_stale(ares_channel channel,
+                                       ares__llist_t *srvlist)
+{
+  ares__slist_node_t *snode = ares__slist_node_first(channel->servers);
+
+  while (snode != NULL) {
+    ares__slist_node_t  *snext  = ares__slist_node_next(snode);
+    struct server_state *server = ares__slist_node_val(snode);
+    if (!ares__server_in_newconfig(server, srvlist)) {
+      /* This will clean up all server state via the destruction callback and
+       * move any queries to new servers */
+      ares__slist_node_destroy(snode);
+    }
+    snode = snext;
+  }
+}
+
+ares_status_t ares__servers_update(ares_channel channel,
+                                   ares__llist_t *server_list,
+                                   ares_bool_t user_specified)
+{
+  ares__llist_node_t *node;
+  size_t              idx = 0;
+  ares_status_t       status;
+
+  if (channel == NULL || server_list == NULL ||
+      ares__llist_len(server_list) == 0) {
+    return ARES_EFORMERR;
+  }
+
+  /* Add new entries */
+  for (node = ares__llist_node_first(server_list); node != NULL;
+       node = ares__llist_node_next(node)) {
+
+    ares_server_config_t *sconfig = ares__llist_node_val(node);
+    ares__slist_node_t   *snode;
+
+    /* Don't add duplicate servers! */
+    if (ares__server_isdup(channel, node))
+      continue;
+
+    snode = ares__server_find(channel, sconfig);
+    if (snode != NULL) {
+      struct server_state *server = ares__slist_node_val(snode);
+      if (server->idx != idx) {
+        server->idx = idx;
+        /* Index changed, reinsert node, doesn't require any memory
+         * allocations so can't fail. */
+        ares__slist_node_reinsert(snode);
+      }
+    } else {
+      status = ares__server_create(channel, sconfig, idx);
+      if (status != ARES_SUCCESS)
+        goto done;
+    }
+
+    idx++;
+  }
+
+  /* Remove any servers that don't exist in the current configuration */
+  ares__servers_remove_stale(channel, server_list);
+
+  channel->user_specified_servers = user_specified;
+  status = ARES_SUCCESS;
+
+done:
+  return status;
+}
+
+
+static ares__llist_t *ares_addr_node_to_server_config_llist(
+  const struct ares_addr_node *servers)
+{
+  const struct ares_addr_node *node;
+  ares__llist_t               *s;
+
+  if (servers == NULL)
+    return NULL;
+
+  s = ares__llist_create(ares_free);
+  if (s == NULL)
+    return NULL;
+
+  for (node = servers; node != NULL; node = node->next) {
+    ares_server_config_t *sconfig;
+
+    /* Invalid entry */
+    if (node->family != AF_INET && node->family != AF_INET6)
+      continue;
+
+    sconfig = ares_malloc_zero(sizeof(*sconfig));
+    if (sconfig == NULL)
+      goto fail;
+
+    if (node->family == AF_INET) {
+      memcpy(&sconfig->addr.addr.addr4, &node->addr.addr4,
+           sizeof(sconfig->addr.addr.addr4));
+    } else if (sconfig->addr.family == AF_INET6) {
+      memcpy(&sconfig->addr.addr.addr6, &node->addr.addr6,
+           sizeof(sconfig->addr.addr.addr6));
+    }
+
+    if (ares__llist_insert_last(s, sconfig) == NULL) {
+      ares_free(sconfig);
+      goto fail;
+    }
+
+  }
+
+  return s;
+
+fail:
+  ares__llist_destroy(s);
+  return NULL;
+}
+
+static ares__llist_t *ares_addr_port_node_to_server_config_llist(
+  const struct ares_addr_port_node *servers)
+{
+  const struct ares_addr_port_node *node;
+  ares__llist_t                    *s;
+
+  if (servers == NULL)
+    return NULL;
+
+  s = ares__llist_create(ares_free);
+  if (s == NULL)
+    return NULL;
+
+  for (node = servers; node != NULL; node = node->next) {
+    ares_server_config_t *sconfig;
+
+    /* Invalid entry */
+    if (node->family != AF_INET && node->family != AF_INET6)
+      continue;
+
+    sconfig = ares_malloc_zero(sizeof(*sconfig));
+    if (sconfig == NULL)
+      goto fail;
+
+    if (node->family == AF_INET) {
+      memcpy(&sconfig->addr.addr.addr4, &node->addr.addr4,
+           sizeof(sconfig->addr.addr.addr4));
+    } else if (sconfig->addr.family == AF_INET6) {
+      memcpy(&sconfig->addr.addr.addr6, &node->addr.addr6,
+           sizeof(sconfig->addr.addr.addr6));
+    }
+
+    sconfig->tcp_port = (unsigned short)node->tcp_port;
+    sconfig->udp_port = (unsigned short)node->udp_port;
+
+    if (ares__llist_insert_last(s, sconfig) == NULL) {
+      ares_free(sconfig);
+      goto fail;
+    }
+  }
+
+  return s;
+
+fail:
+  ares__llist_destroy(s);
+  return NULL;
+}
+
+
+static ares__llist_t *ares_in_addr_to_server_config_llist(
+  const struct in_addr *servers, size_t nservers)
+{
+  size_t         i;
+  ares__llist_t *s;
+
+  if (servers == NULL || nservers == 0)
+    return NULL;
+
+  s = ares__llist_create(ares_free);
+  if (s == NULL)
+    return NULL;
+
+  for (i=0; i<nservers; i++) {
+    ares_server_config_t *sconfig;
+
+    sconfig = ares_malloc_zero(sizeof(*sconfig));
+    if (sconfig == NULL)
+      goto fail;
+
+    sconfig->addr.family = AF_INET;
+    memcpy(&sconfig->addr.addr.addr4, &servers[i],
+           sizeof(sconfig->addr.addr.addr4));
+  }
+
+fail:
+  ares__llist_destroy(s);
+  return NULL;
+}
+
 int ares_get_servers(ares_channel channel, struct ares_addr_node **servers)
 {
   struct ares_addr_node *srvr_head = NULL;
@@ -68,11 +448,11 @@ int ares_get_servers(ares_channel channel, struct ares_addr_node **servers)
     /* Fill this server node data */
     srvr_curr->family = server->addr.family;
     if (srvr_curr->family == AF_INET) {
-      memcpy(&srvr_curr->addrV4, &server->addr.addrV4,
-             sizeof(srvr_curr->addrV4));
+      memcpy(&srvr_curr->addr.addr4, &server->addr.addr.addr4,
+             sizeof(srvr_curr->addr.addr4));
     } else {
-      memcpy(&srvr_curr->addrV6, &server->addr.addrV6,
-             sizeof(srvr_curr->addrV6));
+      memcpy(&srvr_curr->addr.addr6, &server->addr.addr.addr6,
+             sizeof(srvr_curr->addr.addr6));
     }
   }
 
@@ -95,7 +475,7 @@ int ares_get_servers_ports(ares_channel                 channel,
   struct ares_addr_port_node *srvr_last = NULL;
   struct ares_addr_port_node *srvr_curr;
   ares_status_t               status = ARES_SUCCESS;
-  ares__slist_node_t         *slist;
+  ares__slist_node_t         *node;
 
   if (!channel) {
     return ARES_ENODATA;
@@ -119,17 +499,16 @@ int ares_get_servers_ports(ares_channel                 channel,
     srvr_last = srvr_curr;
 
     /* Fill this server node data */
-    srvr_curr->family = channel->servers[i].addr.family;
-    srvr_curr->udp_port =
-      ntohs((unsigned short)channel->servers[i].addr.udp_port);
-    srvr_curr->tcp_port =
-      ntohs((unsigned short)channel->servers[i].addr.tcp_port);
+    srvr_curr->family   = server->addr.family;
+    srvr_curr->udp_port = server->udp_port;
+    srvr_curr->tcp_port = server->tcp_port;
+
     if (srvr_curr->family == AF_INET) {
-      memcpy(&srvr_curr->addrV4, &channel->servers[i].addr.addrV4,
-             sizeof(srvr_curr->addrV4));
+      memcpy(&srvr_curr->addr.addr4, &server->addr.addr.addr4,
+             sizeof(srvr_curr->addr.addr4));
     } else {
-      memcpy(&srvr_curr->addrV6, &channel->servers[i].addr.addrV6,
-             sizeof(srvr_curr->addrV6));
+      memcpy(&srvr_curr->addr.addr6, &server->addr.addr.addr6,
+             sizeof(srvr_curr->addr.addr6));
     }
   }
 
@@ -145,110 +524,51 @@ int ares_get_servers_ports(ares_channel                 channel,
   return (int)status;
 }
 
+
 int ares_set_servers(ares_channel channel, struct ares_addr_node *servers)
 {
-  struct ares_addr_node *srvr;
-  size_t                 num_srvrs = 0;
-  size_t                 i;
+  ares__llist_t *slist;
+  ares_status_t  status;
 
-  if (ares_library_initialized() != ARES_SUCCESS) {
-    return ARES_ENOTINITIALIZED; /* LCOV_EXCL_LINE: n/a on non-WinSock */
-  }
-
-  if (!channel) {
+  if (channel == NULL || servers == NULL) {
     return ARES_ENODATA;
   }
 
-  if (ares__llist_len(channel->all_queries) != 0) {
-    return ARES_ENOTIMP;
+  slist = ares_addr_node_to_server_config_llist(servers);
+  if (slist == NULL) {
+    return ARES_ENOMEM;
   }
 
-  ares__destroy_servers_state(channel);
+  status = ares__servers_update(channel, slist, ARES_TRUE);
 
-  for (srvr = servers; srvr; srvr = srvr->next) {
-    num_srvrs++;
-  }
+  ares__llist_destroy(slist);
 
-  if (num_srvrs > 0) {
-    /* Allocate storage for servers state */
-    channel->servers = ares_malloc(num_srvrs * sizeof(*channel->servers));
-    if (!channel->servers) {
-      return ARES_ENOMEM;
-    }
-    memset(channel->servers, 0, num_srvrs * sizeof(*channel->servers));
-    channel->nservers = num_srvrs;
-    /* Fill servers state address data */
-    for (i = 0, srvr = servers; srvr; i++, srvr = srvr->next) {
-      channel->servers[i].addr.family   = srvr->family;
-      channel->servers[i].addr.udp_port = 0;
-      channel->servers[i].addr.tcp_port = 0;
-      if (srvr->family == AF_INET) {
-        memcpy(&channel->servers[i].addr.addrV4, &srvr->addrV4,
-               sizeof(srvr->addrV4));
-      } else {
-        memcpy(&channel->servers[i].addr.addrV6, &srvr->addrV6,
-               sizeof(srvr->addrV6));
-      }
-    }
-    /* Initialize servers state remaining data */
-    ares__init_servers_state(channel);
-  }
-
-  return ARES_SUCCESS;
+  return (int)status;
 }
+
 
 int ares_set_servers_ports(ares_channel                channel,
                            struct ares_addr_port_node *servers)
 {
-  struct ares_addr_port_node *srvr;
-  size_t                      num_srvrs = 0;
-  size_t                      i;
+  ares__llist_t *slist;
+  ares_status_t  status;
 
-  if (ares_library_initialized() != ARES_SUCCESS) {
-    return ARES_ENOTINITIALIZED; /* LCOV_EXCL_LINE: n/a on non-WinSock */
-  }
-
-  if (!channel) {
+  if (channel == NULL || servers == NULL) {
     return ARES_ENODATA;
   }
 
-  if (ares__llist_len(channel->all_queries) != 0) {
-    return ARES_ENOTIMP;
+  slist = ares_addr_port_node_to_server_config_llist(servers);
+  if (slist == NULL) {
+    return ARES_ENOMEM;
   }
 
-  ares__destroy_servers_state(channel);
+  status = ares__servers_update(channel, slist, ARES_TRUE);
 
-  for (srvr = servers; srvr; srvr = srvr->next) {
-    num_srvrs++;
-  }
+  ares__llist_destroy(slist);
 
-  if (num_srvrs > 0) {
-    /* Allocate storage for servers state */
-    channel->servers = ares_malloc(num_srvrs * sizeof(*channel->servers));
-    if (!channel->servers) {
-      return ARES_ENOMEM;
-    }
-    memset(channel->servers, 0, num_srvrs * sizeof(*channel->servers));
-    channel->nservers = num_srvrs;
-    /* Fill servers state address data */
-    for (i = 0, srvr = servers; srvr; i++, srvr = srvr->next) {
-      channel->servers[i].addr.family   = srvr->family;
-      channel->servers[i].addr.udp_port = htons((unsigned short)srvr->udp_port);
-      channel->servers[i].addr.tcp_port = htons((unsigned short)srvr->tcp_port);
-      if (srvr->family == AF_INET) {
-        memcpy(&channel->servers[i].addr.addrV4, &srvr->addrV4,
-               sizeof(srvr->addrV4));
-      } else {
-        memcpy(&channel->servers[i].addr.addrV6, &srvr->addrV6,
-               sizeof(srvr->addrV6));
-      }
-    }
-    /* Initialize servers state remaining data */
-    ares__init_servers_state(channel);
-  }
-
-  return ARES_SUCCESS;
+  return (int)status;
 }
+
 
 /* Incomming string format: host[:port][,host[:port]]... */
 /* IPv6 addresses with ports require square brackets [fe80::1%lo0]:53 */
@@ -402,21 +722,47 @@ out:
 
 int ares_set_servers_csv(ares_channel channel, const char *_csv)
 {
-  return (int)set_servers_csv(channel, _csv, FALSE);
+  return (int)set_servers_csv(channel, _csv, ARES_FALSE);
 }
 
 int ares_set_servers_ports_csv(ares_channel channel, const char *_csv)
 {
-  return (int)set_servers_csv(channel, _csv, TRUE);
+  return (int)set_servers_csv(channel, _csv, ARES_TRUE);
 }
+
+static struct in_addr *ares_save_opt_servers(ares_channel channel,
+                                             int *nservers)
+{
+  ares__slist_node_t *snode;
+  struct in_addr     *out = ares_malloc_zero(ares__slist_len(channel->servers) *
+                                             sizeof(*out));
+
+  *nservers = 0;
+
+  if (out == NULL)
+    return NULL;
+
+  for (snode = ares__slist_node_first(channel->servers); snode != NULL;
+       snode = ares__slist_node_next(snode)) {
+
+    struct server_state *server = ares__slist_node_val(snode);
+
+    if (server->addr.family != AF_INET)
+      continue;
+
+    memcpy(&out[*nservers], &server->addr.addr.addr4, sizeof(*out));
+    (*nservers)++;
+  }
+
+  return out;
+}
+
 
 /* Save options from initialized channel */
 int ares_save_options(ares_channel channel, struct ares_options *options,
                       int *optmask)
 {
   size_t i;
-  size_t j;
-  size_t ipv4_nservers = 0;
 
   /* Zero everything out */
   memset(options, 0, sizeof(struct ares_options));
@@ -455,32 +801,12 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   options->sock_state_cb      = channel->sock_state_cb;
   options->sock_state_cb_data = channel->sock_state_cb_data;
 
-  /* Copy IPv4 servers that use the default port */
-  if (channel->nservers) {
-    for (i = 0; i < channel->nservers; i++) {
-      if ((channel->servers[i].addr.family == AF_INET) &&
-          (channel->servers[i].addr.udp_port == 0) &&
-          (channel->servers[i].addr.tcp_port == 0)) {
-        ipv4_nservers++;
-      }
-    }
-    if (ipv4_nservers) {
-      options->servers = ares_malloc(ipv4_nservers * sizeof(struct in_addr));
-      if (!options->servers) {
-        return ARES_ENOMEM;
-      }
-
-      for (i = j = 0; i < channel->nservers; i++) {
-        if ((channel->servers[i].addr.family == AF_INET) &&
-            (channel->servers[i].addr.udp_port == 0) &&
-            (channel->servers[i].addr.tcp_port == 0)) {
-          memcpy(&options->servers[j++], &channel->servers[i].addr.addrV4,
-                 sizeof(channel->servers[i].addr.addrV4));
-        }
-      }
+  if (channel->optmask & ARES_OPT_SERVERS) {
+    options->servers = ares_save_opt_servers(channel, &options->nservers);
+    if (options->servers == NULL) {
+      return ARES_ENOMEM;
     }
   }
-  options->nservers = (int)ipv4_nservers;
 
   /* copy domains */
   if (channel->ndomains) {
@@ -543,6 +869,25 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   return ARES_SUCCESS;
 }
 
+
+static ares_status_t ares__init_options_servers(ares_channel channel,
+                                                const struct in_addr *servers,
+                                                size_t nservers)
+{
+  ares__llist_t *slist;
+  ares_status_t  status;
+
+  slist = ares_in_addr_to_server_config_llist(servers, nservers);
+  if (slist == NULL)
+    return ARES_ENOMEM;
+
+  status = ares__servers_update(channel, slist, ARES_TRUE);
+
+  ares__llist_destroy(slist);
+
+  return status;
+}
+
 ares_status_t ares__init_by_options(ares_channel               channel,
                                     const struct ares_options *options,
                                     int                        optmask)
@@ -600,28 +945,6 @@ ares_status_t ares__init_by_options(ares_channel               channel,
 
   if (optmask & ARES_OPT_EDNSPSZ) {
     channel->ednspsz = (size_t)options->ednspsz;
-  }
-
-  /* Copy the IPv4 servers, if given. */
-  if (optmask & ARES_OPT_SERVERS) {
-    /* Avoid zero size allocations at any cost */
-    if (options->nservers > 0) {
-      channel->servers =
-        ares_malloc((size_t)options->nservers * sizeof(*channel->servers));
-      if (!channel->servers) {
-        return ARES_ENOMEM;
-      }
-      memset(channel->servers, 0,
-             (size_t)options->nservers * sizeof(*channel->servers));
-      for (i = 0; i < (size_t)options->nservers; i++) {
-        channel->servers[i].addr.family   = AF_INET;
-        channel->servers[i].addr.udp_port = 0;
-        channel->servers[i].addr.tcp_port = 0;
-        memcpy(&channel->servers[i].addr.addrV4, &options->servers[i],
-               sizeof(channel->servers[i].addr.addrV4));
-      }
-    }
-    channel->nservers = (size_t)options->nservers;
   }
 
   /* Copy the domains, if given.  Keep channel->ndomains consistent so
@@ -684,6 +1007,15 @@ ares_status_t ares__init_by_options(ares_channel               channel,
 
   if (optmask & ARES_OPT_UDP_MAX_QUERIES) {
     channel->udp_max_queries = (size_t)options->udp_max_queries;
+  }
+
+  /* Initialize the ipv4 servers if provided */
+  if (optmask & ARES_OPT_SERVERS && options->nservers > 0) {
+    ares_status_t status;
+    status = ares__init_options_servers(channel, options->servers,
+                                        (size_t)options->nservers);
+    if (status != ARES_SUCCESS)
+      return status;
   }
 
   channel->optmask = (unsigned int)optmask;

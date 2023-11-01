@@ -96,8 +96,9 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
   if (channel->rotate) {
 #warning reimplement me, probably use rand % nservers and fetch the index in the list (obviously need to do an O(n) search for that)
   } else {
+#warning can this become a dangling pointer?  maybe ares__send_query should do this part of the logic.
     /* Pull first */
-    query->server = ares__slist_first_val(channel->server);
+    query->server = ares__slist_first_val(channel->servers);
   }
 
   packetsz = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : PACKETSZ;

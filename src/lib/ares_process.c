@@ -172,7 +172,7 @@ static void write_tcp_data(ares_channel channel, fd_set *write_fds,
   }
 
   for (node = ares__slist_node_first(channel->servers); node != NULL;
-       node = ares__slist_node_next(channel->servers)) {
+       node = ares__slist_node_next(node)) {
     struct server_state *server = ares__slist_node_val(node);
     const unsigned char *data;
     size_t               data_len;
@@ -617,9 +617,8 @@ static void process_answer(ares_channel channel, const unsigned char *abuf,
           break;
       }
       skip_server(channel, query, server);
-      if (query->server == server->idx) { /* Is this ever not true? */
-        next_server(channel, query, now);
-      }
+      next_server(channel, query, now);
+
       ares__check_cleanup_conn(channel, fd);
       goto cleanup;
     }
@@ -706,7 +705,7 @@ ares_status_t ares__send_query(ares_channel channel, struct query *query,
   size_t                    timeplus;
   ares_status_t             status;
 
-  server = &channel->servers[query->server];
+  server = query->server;
   if (query->using_tcp) {
     size_t prior_len = 0;
     /* Make sure the TCP socket for this server is set up and queue
@@ -897,16 +896,16 @@ static ares_bool_t same_address(const struct sockaddr *sa,
   if (sa->sa_family == aa->family) {
     switch (aa->family) {
       case AF_INET:
-        addr1 = &aa->addrV4;
+        addr1 = &aa->addr.addr4;
         addr2 = &(CARES_INADDR_CAST(struct sockaddr_in *, sa))->sin_addr;
-        if (memcmp(addr1, addr2, sizeof(aa->addrV4)) == 0) {
+        if (memcmp(addr1, addr2, sizeof(aa->addr.addr4)) == 0) {
           return ARES_TRUE; /* match */
         }
         break;
       case AF_INET6:
-        addr1 = &aa->addrV6;
+        addr1 = &aa->addr.addr6;
         addr2 = &(CARES_INADDR_CAST(struct sockaddr_in6 *, sa))->sin6_addr;
-        if (memcmp(addr1, addr2, sizeof(aa->addrV6)) == 0) {
+        if (memcmp(addr1, addr2, sizeof(aa->addr.addr6)) == 0) {
           return ARES_TRUE; /* match */
         }
         break;
@@ -942,6 +941,7 @@ static void ares_detach_query(struct query *query)
   query->node_queries_by_timeout = NULL;
   query->node_queries_to_conn    = NULL;
   query->node_all_queries        = NULL;
+  query->server                  = NULL;
 }
 
 static void end_query(ares_channel channel, struct query *query,
@@ -968,7 +968,6 @@ void ares__free_query(struct query *query)
   query->arg      = NULL;
   /* Deallocate the memory associated with the query */
   ares_free(query->tcpbuf);
-  ares_free(query->server_info);
   ares_free(query);
 }
 

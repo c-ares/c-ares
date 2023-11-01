@@ -134,6 +134,20 @@ void ares_destroy(ares_channel channel)
   ares_free(channel);
 }
 
+
+void ares__destroy_server(struct server_state *server)
+{
+  if (server == NULL)
+    return;
+
+#warning need to make sure this moves any queries to different servers
+  ares__close_sockets(server);
+  ares__llist_destroy(server->connections);
+  ares__buf_destroy(server->tcp_parser);
+  ares__buf_destroy(server->tcp_send);
+  ares_free(server);
+}
+
 void ares__destroy_servers_state(ares_channel channel)
 {
   ares__slist_node_t  *node;
@@ -141,11 +155,7 @@ void ares__destroy_servers_state(ares_channel channel)
   while ((node = ares__slist_node_first(channel->servers)) != NULL) {
     struct server_state *server = ares__slist_node_claim(node);
 #warning might split this into a server destroy that will need to unlink existing queries
-    ares__close_sockets(server);
-    ares__llist_destroy(server->connections);
-    ares__buf_destroy(server->tcp_parser);
-    ares__buf_destroy(server->tcp_send);
-    ares_free(send);
+    ares__destroy_server(server);
   }
 
   ares__slist_destroy(channel->servers);

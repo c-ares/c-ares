@@ -80,8 +80,8 @@ void ares_gethostbyaddr(ares_channel channel, const void *addr, int addrlen,
     return;
   }
 
-  if ((family == AF_INET && addrlen != sizeof(aquery->addr.addrV4)) ||
-      (family == AF_INET6 && addrlen != sizeof(aquery->addr.addrV6))) {
+  if ((family == AF_INET && addrlen != sizeof(aquery->addr.addr.addr4)) ||
+      (family == AF_INET6 && addrlen != sizeof(aquery->addr.addr.addr6))) {
     callback(arg, ARES_ENOTIMP, 0, NULL);
     return;
   }
@@ -93,9 +93,9 @@ void ares_gethostbyaddr(ares_channel channel, const void *addr, int addrlen,
   }
   aquery->channel = channel;
   if (family == AF_INET) {
-    memcpy(&aquery->addr.addrV4, addr, sizeof(aquery->addr.addrV4));
+    memcpy(&aquery->addr.addr.addr4, addr, sizeof(aquery->addr.addr.addr4));
   } else {
-    memcpy(&aquery->addr.addrV6, addr, sizeof(aquery->addr.addrV6));
+    memcpy(&aquery->addr.addr.addr6, addr, sizeof(aquery->addr.addr.addr6));
   }
   aquery->addr.family       = family;
   aquery->callback          = callback;
@@ -148,12 +148,12 @@ static void addr_callback(void *arg, int status, int timeouts,
   aquery->timeouts += (size_t)timeouts;
   if (status == ARES_SUCCESS) {
     if (aquery->addr.family == AF_INET) {
-      addrlen = sizeof(aquery->addr.addrV4);
-      status  = ares_parse_ptr_reply(abuf, alen, &aquery->addr.addrV4,
+      addrlen = sizeof(aquery->addr.addr.addr4);
+      status  = ares_parse_ptr_reply(abuf, alen, &aquery->addr.addr.addr4,
                                      (int)addrlen, AF_INET, &host);
     } else {
-      addrlen = sizeof(aquery->addr.addrV6);
-      status  = ares_parse_ptr_reply(abuf, alen, &aquery->addr.addrV6,
+      addrlen = sizeof(aquery->addr.addr.addr6);
+      status  = ares_parse_ptr_reply(abuf, alen, &aquery->addr.addr.addr6,
                                      (int)addrlen, AF_INET6, &host);
     }
     end_aquery(aquery, (ares_status_t)status, host);
@@ -184,9 +184,9 @@ static ares_status_t file_lookup(ares_channel            channel,
   ares_status_t             status;
 
   if (addr->family == AF_INET) {
-    ptr = &addr->addrV4;
+    ptr = &addr->addr.addr4;
   } else if (addr->family == AF_INET6) {
-    ptr = &addr->addrV6;
+    ptr = &addr->addr.addr6;
   }
 
   if (ptr == NULL)
@@ -211,14 +211,14 @@ static void ptr_rr_name(char *name, size_t name_size,
                         const struct ares_addr *addr)
 {
   if (addr->family == AF_INET) {
-    unsigned long laddr = ntohl(addr->addrV4.s_addr);
+    unsigned long laddr = ntohl(addr->addr.addr4.s_addr);
     unsigned long a1    = (laddr >> 24UL) & 0xFFUL;
     unsigned long a2    = (laddr >> 16UL) & 0xFFUL;
     unsigned long a3    = (laddr >> 8UL) & 0xFFUL;
     unsigned long a4    = laddr & 0xFFUL;
     snprintf(name, name_size, "%lu.%lu.%lu.%lu.in-addr.arpa", a4, a3, a2, a1);
   } else {
-    const unsigned char *bytes = (const unsigned char *)&addr->addrV6;
+    const unsigned char *bytes = (const unsigned char *)&addr->addr.addr6;
     /* There are too many arguments to do this in one line using
      * minimally C89-compliant compilers */
     snprintf(name, name_size,

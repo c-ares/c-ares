@@ -2193,37 +2193,3 @@ int ares_set_sortlist(ares_channel channel, const char *sortstr)
   return (int)status;
 }
 
-ares_status_t ares__init_servers_state(ares_channel channel)
-{
-  struct server_state *server;
-  size_t               i;
-
-  for (i = 0; i < channel->nservers; i++) {
-    server = &channel->servers[i];
-
-    /* NOTE: Can't use memset() here because the server addresses have been
-     *       filled in already */
-    server->tcp_parser = ares__buf_create();
-    if (server->tcp_parser == NULL) {
-      return ARES_ENOMEM;
-    }
-
-    server->tcp_send = ares__buf_create();
-    if (server->tcp_send == NULL) {
-      ares__buf_destroy(server->tcp_parser);
-      return ARES_ENOMEM;
-    }
-
-    server->idx         = (size_t)i;
-    server->connections = ares__llist_create(NULL);
-    if (server->connections == NULL) {
-      ares__buf_destroy(server->tcp_parser);
-      ares__buf_destroy(server->tcp_send);
-      return ARES_ENOMEM;
-    }
-
-    server->tcp_connection_generation = ++channel->tcp_connection_generation;
-    server->channel                   = channel;
-  }
-  return ARES_SUCCESS;
-}

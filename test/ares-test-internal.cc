@@ -605,12 +605,12 @@ TEST_F(DefaultChannelTest, SingleDomain) {
 #endif
 
 TEST_F(DefaultChannelTest, SaveInvalidChannel) {
-  int saved = channel_->nservers;
-  channel_->nservers = 0;
+  ares__slist_t *saved = channel_->servers;
+  channel_->servers = NULL;
   struct ares_options opts;
   int optmask = 0;
   EXPECT_EQ(ARES_ENODATA, ares_save_options(channel_, &opts, &optmask));
-  channel_->nservers = saved;
+  channel_->servers = saved;
 }
 
 // Need to put this in own function due to nested lambda bug

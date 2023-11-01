@@ -168,11 +168,11 @@ static size_t get_address_index(const struct in_addr  *addr,
     }
     if (sortlist[i].type == PATTERN_MASK) {
       if ((addr->s_addr & sortlist[i].mask.addr4.s_addr) ==
-          sortlist[i].addrV4.s_addr) {
+          sortlist[i].addr.addr4.s_addr) {
         break;
       }
     } else {
-      if (!ares__bitncmp(&addr->s_addr, &sortlist[i].addrV4.s_addr,
+      if (!ares__bitncmp(&addr->s_addr, &sortlist[i].addr.addr4.s_addr,
                          sortlist[i].mask.bits)) {
         break;
       }
@@ -223,7 +223,7 @@ static size_t get6_address_index(const struct ares_in6_addr *addr,
     if (sortlist[i].family != AF_INET6) {
       continue;
     }
-    if (!ares__bitncmp(addr, &sortlist[i].addrV6, sortlist[i].mask.bits)) {
+    if (!ares__bitncmp(addr, &sortlist[i].addr.addr6, sortlist[i].mask.bits)) {
       break;
     }
   }

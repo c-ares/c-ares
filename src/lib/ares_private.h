@@ -157,13 +157,7 @@ struct ares_addr {
     struct in_addr       addr4;
     struct ares_in6_addr addr6;
   } addr;
-
-  unsigned short udp_port; /* stored in network order */
-  unsigned short tcp_port; /* stored in network order */
 };
-
-#define addrV4 addr.addr4
-#define addrV6 addr.addr6
 
 struct query;
 
@@ -185,6 +179,8 @@ struct server_state {
                                               * can be hard errors or timeouts
                                               */
   struct ares_addr          addr;
+  unsigned short            udp_port;
+  unsigned short            tcp_port;
 
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
@@ -206,6 +202,8 @@ struct query {
   unsigned short                  qid; /* host byte order */
   struct timeval                  timeout;
   ares_channel                    channel;
+
+  struct server_state            *server;
 
   /*
    * Node object for each list entry the query belongs to in order to
@@ -230,7 +228,6 @@ struct query {
 
   /* Query status */
   size_t try_count; /* Number of times we tried this query already. */
-  size_t server;    /* Server this query has last been sent to. */
   ares_bool_t               using_tcp;
   ares_status_t             error_status;
   size_t      timeouts;   /* number of timeouts we saw for this request */
@@ -290,6 +287,7 @@ struct ares_channeldata {
   /* Server addresses and communications state. Sorted by least consecutive
    * failures, followed by the configuration order if failures are equal. */
   ares__slist_t       *servers;
+  ares_bool_t          user_specified_servers;
 
   /* random state to use when generating new ids */
   ares_rand_state     *rand_state;
@@ -449,7 +447,11 @@ int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
                                    const struct sockaddr *addr,
                                    ares_socklen_t addrlen);
 ares_bool_t ares__is_hostnamech(int ch);
+void ares__destroy_server(struct server_state *server);
 
+ares_status_t ares__servers_update(ares_channel channel,
+                                   ares__llist_t *server_list,
+                                   ares_bool_t user_specified);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
