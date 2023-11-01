@@ -77,7 +77,6 @@ static void server_increment_failures(struct server_state *server)
   ares_channel        channel = server->channel;
   node = ares__slist_node_find(channel->servers, server);
   if (node == NULL) {
-    printf("%s(): critical, could not find %p\n", __FUNCTION__, server);
     return;
   }
   server->consec_failures++;
@@ -91,7 +90,6 @@ static void server_set_good(struct server_state *server)
   ares_channel        channel = server->channel;
   node = ares__slist_node_find(channel->servers, server);
   if (node == NULL) {
-    printf("%s(): critical, could not find %p\n", __FUNCTION__, server);
     return;
   }
   if (server->consec_failures) {
@@ -1017,6 +1015,7 @@ void ares__free_query(struct query *query)
   query->arg      = NULL;
   /* Deallocate the memory associated with the query */
   ares_free(query->tcpbuf);
+
   ares_free(query);
 }
 

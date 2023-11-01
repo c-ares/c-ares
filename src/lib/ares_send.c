@@ -60,6 +60,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
     return ARES_ENOMEM;
   }
   memset(query, 0, sizeof(*query));
+
   query->channel = channel;
   query->tcpbuf  = ares_malloc(qlen + 2);
   if (!query->tcpbuf) {
@@ -120,6 +121,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
 
   /* Perform the first query action. */
   now = ares__tvnow();
+
   return ares__send_query(channel, query, &now);
 }
 

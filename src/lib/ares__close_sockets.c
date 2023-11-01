@@ -31,10 +31,31 @@
 #include "ares_private.h"
 #include <assert.h>
 
+static void ares__requeue_queries(struct server_connection *conn)
+{
+  struct query       *query;
+  struct timeval      now   = ares__tvnow();
+
+  while ((query = ares__llist_first_val(conn->queries_to_conn)) != NULL) {
+    ares__send_query(query->channel, query, &now);
+  }
+}
+
 void ares__close_connection(struct server_connection *conn)
 {
   struct server_state *server  = conn->server;
   ares_channel         channel = server->channel;
+
+  /* Unlink */
+  ares__llist_node_claim(
+    ares__htable_asvp_get_direct(channel->connnode_by_socket, conn->fd));
+  ares__htable_asvp_remove(channel->connnode_by_socket, conn->fd);
+
+  /* Requeue queries to other connections */
+  ares__requeue_queries(conn);
+
+  /* This will requeue any active queries to different connections */
+  ares__llist_destroy(conn->queries_to_conn);
 
   if (conn->is_tcp) {
     /* Reset any existing input and output buffer. */
@@ -45,14 +66,7 @@ void ares__close_connection(struct server_connection *conn)
 
   SOCK_STATE_CALLBACK(channel, conn->fd, 0, 0);
   ares__close_socket(channel, conn->fd);
-  ares__llist_node_claim(
-    ares__htable_asvp_get_direct(channel->connnode_by_socket, conn->fd));
-  ares__htable_asvp_remove(channel->connnode_by_socket, conn->fd);
 
-#ifndef NDEBUG
-  assert(ares__llist_len(conn->queries_to_conn) == 0);
-#endif
-  ares__llist_destroy(conn->queries_to_conn);
   ares_free(conn);
 }
 
