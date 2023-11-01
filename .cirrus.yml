@@ -15,7 +15,6 @@ task:
         MAKE: "make"
         BUILD_ASAN: "yes"
         BUILD_UBSAN: "yes"
-        BUILD_LSAN: "yes"
         BUILD_VALGRIND: "yes"
         BUILD_COVERAGE: "yes"
         BUILD_ANALYZE: "yes"
@@ -29,7 +28,6 @@ task:
         MAKE: "make"
         BUILD_ASAN: "yes"
         BUILD_UBSAN: "yes"
-        BUILD_LSAN: "yes"
         BUILD_ANALYZE: "yes"
       arm_container:
         image: debian:latest
@@ -67,6 +65,7 @@ task:
       env:
         BUILD_TYPE: "autotools"
     - name: "ASAN"
+      # ASAN on Linux automatically includes Leak Sanitizer
       # FreeBSD just hangs trying to run tests, think it may be trying to run leak sanitizer
       only_if: $BUILD_ASAN == 'yes'
       env:
@@ -86,16 +85,6 @@ task:
         CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
         CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
         LDFLAGS: "-fsanitize=undefined -lpthread"
-    - name: "LSAN"
-      # lsan only works on debian x86/x64
-      only_if: $BUILD_LSAN == 'yes'
-      env:
-        BUILD_TYPE: "lsan"
-        CC: "clang"
-        CONFIG_OPTS: "--enable-debug"
-        CFLAGS: "-fsanitize=leak"
-        CXXFLAGS: "-fsanitize=leak"
-        LDFLAGS: "-fsanitize=leak -lpthread"
     - name: "ANALYZE"
       only_if: $BUILD_ANALYZE == 'yes'
       env:
