@@ -115,7 +115,6 @@ void ares__destroy_server(struct server_state *server)
   if (server == NULL)
     return;
 
-#warning need to make sure this moves any queries to different servers
   ares__close_sockets(server);
   ares__llist_destroy(server->connections);
   ares__buf_destroy(server->tcp_parser);
@@ -129,7 +128,6 @@ void ares__destroy_servers_state(ares_channel channel)
 
   while ((node = ares__slist_node_first(channel->servers)) != NULL) {
     struct server_state *server = ares__slist_node_claim(node);
-#warning might split this into a server destroy that will need to unlink existing queries
     ares__destroy_server(server);
   }
 

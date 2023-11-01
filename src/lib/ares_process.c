@@ -729,10 +729,12 @@ static struct server_state *ares__random_server(ares_channel channel)
   cnt = 0;
   for (node = ares__slist_node_first(channel->servers); node != NULL;
        node = ares__slist_node_next(node)) {
-    if (cnt != idx)
-      continue;
 
-    return ares__slist_node_val(node);
+    if (cnt == idx) {
+      return ares__slist_node_val(node);
+    }
+
+    cnt++;
   }
 
   return NULL;
