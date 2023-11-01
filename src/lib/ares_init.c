@@ -243,12 +243,6 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
                    ares_strerror(status)));
   }
 
-  /* Trim to one server if ARES_FLAG_PRIMARY is set. */
-  if (channel->flags & ARES_FLAG_PRIMARY) {
-#warning handle trimming to one server
-  }
-
-
 done:
   if (status != ARES_SUCCESS) {
     ares_destroy(channel);

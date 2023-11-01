@@ -508,6 +508,15 @@ static void ares__servers_remove_stale(ares_channel channel,
   }
 }
 
+
+static void ares__servers_trim_single(ares_channel channel)
+{
+  while (ares__slist_len(channel->servers) > 1) {
+    ares__slist_node_destroy(ares__slist_node_last(channel->servers));
+  }
+}
+
+
 ares_status_t ares__servers_update(ares_channel channel,
                                    ares__llist_t *server_list,
                                    ares_bool_t user_specified)
@@ -554,6 +563,11 @@ ares_status_t ares__servers_update(ares_channel channel,
 
   /* Remove any servers that don't exist in the current configuration */
   ares__servers_remove_stale(channel, server_list);
+
+  /* Trim to one server if ARES_FLAG_PRIMARY is set. */
+  if (channel->flags & ARES_FLAG_PRIMARY) {
+    ares__servers_trim_single(channel);
+  }
 
   channel->user_specified_servers = user_specified;
   status = ARES_SUCCESS;

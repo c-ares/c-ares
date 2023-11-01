@@ -45,9 +45,7 @@ TEST_F(DefaultChannelTest, GetServersFailures) {
 }
 
 TEST_F(DefaultChannelTest, SetServers) {
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, nullptr));
-  std::vector<std::string> empty;
-  EXPECT_EQ(empty, GetNameServers(channel_));
+  EXPECT_EQ(ARES_ENODATA, ares_set_servers(channel_, nullptr));
 
   struct ares_addr_node server1;
   struct ares_addr_node server2;
@@ -60,14 +58,12 @@ TEST_F(DefaultChannelTest, SetServers) {
   EXPECT_EQ(ARES_ENODATA, ares_set_servers(nullptr, &server1));
 
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, &server1));
-  std::vector<std::string> expected = {"1.2.3.4", "2.3.4.5"};
+  std::vector<std::string> expected = {"1.2.3.4:53", "2.3.4.5:53"};
   EXPECT_EQ(expected, GetNameServers(channel_));
 }
 
 TEST_F(DefaultChannelTest, SetServersPorts) {
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, nullptr));
-  std::vector<std::string> empty;
-  EXPECT_EQ(empty, GetNameServers(channel_));
+  EXPECT_EQ(ARES_ENODATA, ares_set_servers_ports(channel_, nullptr));
 
   struct ares_addr_port_node server1;
   struct ares_addr_port_node server2;
@@ -84,7 +80,7 @@ TEST_F(DefaultChannelTest, SetServersPorts) {
   EXPECT_EQ(ARES_ENODATA, ares_set_servers_ports(nullptr, &server1));
 
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, &server1));
-  std::vector<std::string> expected = {"1.2.3.4:111", "2.3.4.5"};
+  std::vector<std::string> expected = {"1.2.3.4:111", "2.3.4.5:53"};
   EXPECT_EQ(expected, GetNameServers(channel_));
 }
 
@@ -97,12 +93,12 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
 
   EXPECT_EQ(ARES_SUCCESS,
             ares_set_servers_csv(channel_, "1.2.3.4,0102:0304:0506:0708:0910:1112:1314:1516,2.3.4.5"));
-  std::vector<std::string> expected = {"1.2.3.4", "0102:0304:0506:0708:0910:1112:1314:1516", "2.3.4.5"};
+  std::vector<std::string> expected = {"1.2.3.4:53", "[0102:0304:0506:0708:0910:1112:1314:1516]:53", "2.3.4.5:53"};
   EXPECT_EQ(expected, GetNameServers(channel_));
 
   // Same, with spaces
   EXPECT_EQ(ARES_EBADSTR,
-            ares_set_servers_csv(channel_, "1.2.3.4 , 0102:0304:0506:0708:0910:1112:1314:1516, 2.3.4.5"));
+            ares_set_servers_csv(channel_, "1.2.3.4 , [0102:0304:0506:0708:0910:1112:1314:1516]:53, 2.3.4.5"));
 
   // Same, with ports
   EXPECT_EQ(ARES_SUCCESS,
@@ -125,11 +121,6 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
     EXPECT_EQ(ARES_ENOMEM,
               ares_set_servers_csv(channel_, "1.2.3.4,0102:0304:0506:0708:0910:1112:1314:1516,2.3.4.5"));
   }
-
-  // Blank servers
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel_, ""));
-  std::vector<std::string> none;
-  EXPECT_EQ(none, GetNameServers(channel_));
 
   EXPECT_EQ(ARES_EBADSTR, ares_set_servers_csv(channel_, "2.3.4.5,1.2.3.4:,3.4.5.6"));
   EXPECT_EQ(ARES_EBADSTR, ares_set_servers_csv(channel_, "2.3.4.5,1.2.3.4:Z,3.4.5.6"));
