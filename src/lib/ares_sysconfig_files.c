@@ -437,7 +437,7 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
 
   localdomain = getenv("LOCALDOMAIN");
   if (localdomain) {
-    char *temp = ares_strdup(temp);
+    char *temp = ares_strdup(localdomain);
     if (temp == NULL)
       return ARES_ENOMEM;
     status = config_domain(sysconfig, temp);
