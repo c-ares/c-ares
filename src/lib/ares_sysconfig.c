@@ -1213,42 +1213,42 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
   memset(&res, 0, sizeof(res));
   result = res_ninit(&res);
   if (result == 0 && (res.options & RES_INIT)) {
+    union res_sockaddr_union addr[MAXNS];
+    int                      nscount = res_getservers(&res, addr, MAXNS);
+    size_t                   i;
+
     status = ARES_EOF;
 
-    if (!channel->user_specified_servers) {
-      union res_sockaddr_union addr[MAXNS];
-      int                      nscount = res_getservers(&res, addr, MAXNS);
-      int                      i;
-      for (i = 0; i < nscount; ++i) {
-        char           ipaddr[INET6_ADDRSTRLEN] = "";
-        char           ipaddr_port[INET6_ADDRSTRLEN + 8]; /* [%s]:NNNNN */
-        unsigned short port = 0;
-        ares_status_t  config_status;
-        sa_family_t    family = addr[i].sin.sin_family;
-        if (family == AF_INET) {
-          ares_inet_ntop(family, &addr[i].sin.sin_addr, ipaddr, sizeof(ipaddr));
-          port = ntohs(addr[i].sin.sin_port);
-        } else if (family == AF_INET6) {
-          ares_inet_ntop(family, &addr[i].sin6.sin6_addr, ipaddr,
-                         sizeof(ipaddr));
-          port = ntohs(addr[i].sin6.sin6_port);
-        } else {
-          continue;
-        }
+    for (i = 0; i < (size_t)nscount; ++i) {
+      char           ipaddr[INET6_ADDRSTRLEN] = "";
+      char           ipaddr_port[INET6_ADDRSTRLEN + 8]; /* [%s]:NNNNN */
+      unsigned short port = 0;
+      ares_status_t  config_status;
+      sa_family_t    family = addr[i].sin.sin_family;
+      if (family == AF_INET) {
+        ares_inet_ntop(family, &addr[i].sin.sin_addr, ipaddr, sizeof(ipaddr));
+        port = ntohs(addr[i].sin.sin_port);
+      } else if (family == AF_INET6) {
+        ares_inet_ntop(family, &addr[i].sin6.sin6_addr, ipaddr,
+                       sizeof(ipaddr));
+        port = ntohs(addr[i].sin6.sin6_port);
+      } else {
+        continue;
+      }
 
-        if (port) {
-          snprintf(ipaddr_port, sizeof(ipaddr_port), "[%s]:%u", ipaddr, port);
-        } else {
-          snprintf(ipaddr_port, sizeof(ipaddr_port), "%s", ipaddr);
-        }
+      if (port) {
+        snprintf(ipaddr_port, sizeof(ipaddr_port), "[%s]:%u", ipaddr, port);
+      } else {
+        snprintf(ipaddr_port, sizeof(ipaddr_port), "%s", ipaddr);
+      }
 
-        config_status = ares__sconfig_append_fromstr(&sconfig, ipaddr_port);
-        if (config_status != ARES_SUCCESS) {
-          status = config_status;
-          break;
-        }
+      config_status = ares__sconfig_append_fromstr(&sconfig, ipaddr_port);
+      if (config_status != ARES_SUCCESS) {
+        status = config_status;
+        break;
       }
     }
+
     if (channel->ndomains == 0) {
       size_t entries = 0;
       while ((entries < MAXDNSRCH) && res.dnsrch[entries]) {
@@ -1259,7 +1259,6 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
         if (!channel->domains) {
           status = ARES_ENOMEM;
         } else {
-          size_t i;
           channel->ndomains = entries;
           for (i = 0; i < channel->ndomains; ++i) {
             channel->domains[i] = ares_strdup(res.dnsrch[i]);
@@ -1329,8 +1328,7 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
           status = config_lookup(channel, p, "bind", NULL, "file");
         } else if ((p = try_config(line, "search", ';')) && update_domains) {
           status = set_search(channel, p);
-        } else if ((p = try_config(line, "nameserver", ';')) &&
-                   !channel->user_specified_servers) {
+        } else if ((p = try_config(line, "nameserver", ';'))) {
           status = ares__sconfig_append_fromstr(&sconfig, p);
         } else if ((p = try_config(line, "sortlist", ';')) &&
                    !(channel->optmask & ARES_OPT_SORTLIST)) {
@@ -1466,7 +1464,11 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
 
   /* If we got any name server entries, set them */
   if (sconfig) {
-    status = ares__servers_update(channel, sconfig, ARES_FALSE);
+    if (!channel->user_specified_servers) {
+      status = ares__servers_update(channel, sconfig, ARES_FALSE);
+    } else {
+      status = ARES_SUCCESS;
+    }
 
     ares__llist_destroy(sconfig);
     if (status != ARES_SUCCESS) {
