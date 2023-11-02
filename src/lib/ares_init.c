@@ -70,15 +70,6 @@
 #  undef WIN32 /* Redefined in MingW/MSVC headers */
 #endif
 
-static ares_status_t init_by_defaults(ares_channel channel);
-
-static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
-                                     const char *str);
-static ares_bool_t   sortlist_alloc(struct apattern **sortlist, size_t *nsort,
-                                    struct apattern *pat);
-static int  ip_addr(const char *s, ares_ssize_t len, struct in_addr *addr);
-static void natural_mask(struct apattern *pat);
-
 
 int ares_init(ares_channel *channelptr)
 {
@@ -128,6 +119,160 @@ static void server_destroy_cb(void *data)
   if (data == NULL)
     return;
   ares__destroy_server(data);
+}
+
+static ares_status_t init_by_defaults(ares_channel channel)
+{
+  char         *hostname = NULL;
+  ares_status_t rc       = ARES_SUCCESS;
+#ifdef HAVE_GETHOSTNAME
+  char *dot;
+#endif
+
+  if (channel->timeout == 0) {
+    channel->timeout = DEFAULT_TIMEOUT;
+  }
+
+  if (channel->tries == 0) {
+    channel->tries = DEFAULT_TRIES;
+  }
+
+  if (channel->ndots == 0) {
+    channel->ndots = 1;
+  }
+
+  if (channel->ednspsz == 0) {
+    channel->ednspsz = EDNSPACKETSZ;
+  }
+
+  if (ares__slist_len(channel->servers) == 0) {
+    struct ares_addr addr;
+    ares__llist_t   *sconfig = NULL;
+
+    addr.family            = AF_INET;
+    addr.addr.addr4.s_addr = htonl(INADDR_LOOPBACK);
+
+    rc = ares__sconfig_append(&sconfig, &addr, 0, 0);
+    if (rc != ARES_SUCCESS)
+      return rc;
+
+    rc = ares__servers_update(channel, sconfig, ARES_FALSE);
+    ares__llist_destroy(sconfig);
+
+    if (rc != ARES_SUCCESS)
+      return rc;
+  }
+
+#if defined(USE_WINSOCK)
+#  define toolong(x) (x == -1) && (SOCKERRNO == WSAEFAULT)
+#elif defined(ENAMETOOLONG)
+#  define toolong(x) \
+    (x == -1) && ((SOCKERRNO == ENAMETOOLONG) || (SOCKERRNO == EINVAL))
+#else
+#  define toolong(x) (x == -1) && (SOCKERRNO == EINVAL)
+#endif
+
+  if (channel->ndomains == 0) {
+    /* Derive a default domain search list from the kernel hostname,
+     * or set it to empty if the hostname isn't helpful.
+     */
+#ifndef HAVE_GETHOSTNAME
+    channel->ndomains = 0; /* default to none */
+#else
+    GETHOSTNAME_TYPE_ARG2 lenv = 64;
+    size_t                len  = 64;
+    int                   res;
+    channel->ndomains = 0; /* default to none */
+
+    hostname = ares_malloc(len);
+    if (!hostname) {
+      rc = ARES_ENOMEM;
+      goto error;
+    }
+
+    do {
+      res = gethostname(hostname, lenv);
+
+      if (toolong(res)) {
+        char *p;
+        len  *= 2;
+        lenv *= 2;
+        p     = ares_realloc(hostname, len);
+        if (!p) {
+          rc = ARES_ENOMEM;
+          goto error;
+        }
+        hostname = p;
+        continue;
+      } else if (res) {
+        /* Lets not treat a gethostname failure as critical, since we
+         * are ok if gethostname doesn't even exist */
+        *hostname = '\0';
+        break;
+      }
+
+    } while (res != 0);
+
+    dot = strchr(hostname, '.');
+    if (dot) {
+      /* a dot was found */
+      channel->domains = ares_malloc(sizeof(char *));
+      if (!channel->domains) {
+        rc = ARES_ENOMEM;
+        goto error;
+      }
+      channel->domains[0] = ares_strdup(dot + 1);
+      if (!channel->domains[0]) {
+        rc = ARES_ENOMEM;
+        goto error;
+      }
+      channel->ndomains = 1;
+    }
+#endif
+  }
+
+  if (channel->nsort == 0) {
+    channel->sortlist = NULL;
+  }
+
+  if (!channel->lookups) {
+    channel->lookups = ares_strdup("fb");
+    if (!channel->lookups) {
+      rc = ARES_ENOMEM;
+    }
+  }
+
+error:
+  if (rc) {
+    if (channel->domains && channel->domains[0]) {
+      ares_free(channel->domains[0]);
+    }
+    if (channel->domains) {
+      ares_free(channel->domains);
+      channel->domains = NULL;
+    }
+
+    if (channel->lookups) {
+      ares_free(channel->lookups);
+      channel->lookups = NULL;
+    }
+
+    if (channel->resolvconf_path) {
+      ares_free(channel->resolvconf_path);
+      channel->resolvconf_path = NULL;
+    }
+
+    if (channel->hosts_path) {
+      ares_free(channel->hosts_path);
+      channel->hosts_path = NULL;
+    }
+  }
+
+  if (hostname) {
+    ares_free(hostname);
+  }
+
+  return rc;
 }
 
 int ares_init_options(ares_channel *channelptr, struct ares_options *options,
@@ -301,321 +446,6 @@ int ares_dup(ares_channel *dest, ares_channel src)
 }
 
 
-static ares_status_t init_by_defaults(ares_channel channel)
-{
-  char         *hostname = NULL;
-  ares_status_t rc       = ARES_SUCCESS;
-#ifdef HAVE_GETHOSTNAME
-  char *dot;
-#endif
-
-  if (channel->timeout == 0) {
-    channel->timeout = DEFAULT_TIMEOUT;
-  }
-
-  if (channel->tries == 0) {
-    channel->tries = DEFAULT_TRIES;
-  }
-
-  if (channel->ndots == 0) {
-    channel->ndots = 1;
-  }
-
-  if (channel->ednspsz == 0) {
-    channel->ednspsz = EDNSPACKETSZ;
-  }
-
-  if (ares__slist_len(channel->servers) == 0) {
-    struct ares_addr addr;
-    ares__llist_t   *sconfig = NULL;
-
-    addr.family            = AF_INET;
-    addr.addr.addr4.s_addr = htonl(INADDR_LOOPBACK);
-
-    rc = ares__sconfig_append(&sconfig, &addr, 0, 0);
-    if (rc != ARES_SUCCESS)
-      return rc;
-
-    rc = ares__servers_update(channel, sconfig, ARES_FALSE);
-    ares__llist_destroy(sconfig);
-
-    if (rc != ARES_SUCCESS)
-      return rc;
-  }
-
-#if defined(USE_WINSOCK)
-#  define toolong(x) (x == -1) && (SOCKERRNO == WSAEFAULT)
-#elif defined(ENAMETOOLONG)
-#  define toolong(x) \
-    (x == -1) && ((SOCKERRNO == ENAMETOOLONG) || (SOCKERRNO == EINVAL))
-#else
-#  define toolong(x) (x == -1) && (SOCKERRNO == EINVAL)
-#endif
-
-  if (channel->ndomains == 0) {
-    /* Derive a default domain search list from the kernel hostname,
-     * or set it to empty if the hostname isn't helpful.
-     */
-#ifndef HAVE_GETHOSTNAME
-    channel->ndomains = 0; /* default to none */
-#else
-    GETHOSTNAME_TYPE_ARG2 lenv = 64;
-    size_t                len  = 64;
-    int                   res;
-    channel->ndomains = 0; /* default to none */
-
-    hostname = ares_malloc(len);
-    if (!hostname) {
-      rc = ARES_ENOMEM;
-      goto error;
-    }
-
-    do {
-      res = gethostname(hostname, lenv);
-
-      if (toolong(res)) {
-        char *p;
-        len  *= 2;
-        lenv *= 2;
-        p     = ares_realloc(hostname, len);
-        if (!p) {
-          rc = ARES_ENOMEM;
-          goto error;
-        }
-        hostname = p;
-        continue;
-      } else if (res) {
-        /* Lets not treat a gethostname failure as critical, since we
-         * are ok if gethostname doesn't even exist */
-        *hostname = '\0';
-        break;
-      }
-
-    } while (res != 0);
-
-    dot = strchr(hostname, '.');
-    if (dot) {
-      /* a dot was found */
-      channel->domains = ares_malloc(sizeof(char *));
-      if (!channel->domains) {
-        rc = ARES_ENOMEM;
-        goto error;
-      }
-      channel->domains[0] = ares_strdup(dot + 1);
-      if (!channel->domains[0]) {
-        rc = ARES_ENOMEM;
-        goto error;
-      }
-      channel->ndomains = 1;
-    }
-#endif
-  }
-
-  if (channel->nsort == 0) {
-    channel->sortlist = NULL;
-  }
-
-  if (!channel->lookups) {
-    channel->lookups = ares_strdup("fb");
-    if (!channel->lookups) {
-      rc = ARES_ENOMEM;
-    }
-  }
-
-error:
-  if (rc) {
-    if (channel->domains && channel->domains[0]) {
-      ares_free(channel->domains[0]);
-    }
-    if (channel->domains) {
-      ares_free(channel->domains);
-      channel->domains = NULL;
-    }
-
-    if (channel->lookups) {
-      ares_free(channel->lookups);
-      channel->lookups = NULL;
-    }
-
-    if (channel->resolvconf_path) {
-      ares_free(channel->resolvconf_path);
-      channel->resolvconf_path = NULL;
-    }
-
-    if (channel->hosts_path) {
-      ares_free(channel->hosts_path);
-      channel->hosts_path = NULL;
-    }
-  }
-
-  if (hostname) {
-    ares_free(hostname);
-  }
-
-  return rc;
-}
-
-static ares_status_t config_sortlist(struct apattern **sortlist, size_t *nsort,
-                                     const char *str)
-{
-  struct apattern pat;
-  const char     *q;
-
-  *sortlist = NULL;
-  *nsort    = 0;
-
-  /* Add sortlist entries. */
-  while (*str && *str != ';') {
-    int    bits;
-    char   ipbuf[17];
-    char   ipbufpfx[32];
-    size_t len;
-
-    /* Find just the IP */
-    q = str;
-    while (*q && *q != '/' && *q != ';' && !ISSPACE(*q)) {
-      q++;
-    }
-
-    len = (size_t)(q - str);
-    if (len >= sizeof(ipbuf) - 1) {
-      ares_free(*sortlist);
-      *sortlist = NULL;
-      return ARES_EBADSTR;
-    }
-    memcpy(ipbuf, str, len);
-    ipbuf[len] = '\0';
-
-    /* Find the prefix */
-    if (*q == '/') {
-      const char *str2 = q + 1;
-      while (*q && *q != ';' && !ISSPACE(*q)) {
-        q++;
-      }
-      if (q - str >= 32) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_EBADSTR;
-      }
-      memcpy(ipbufpfx, str, (size_t)(q - str));
-      ipbufpfx[q - str] = '\0';
-      str               = str2;
-    } else {
-      ipbufpfx[0] = '\0';
-    }
-    /* Lets see if it is CIDR */
-    /* First we'll try IPv6 */
-    if ((bits = ares_inet_net_pton(AF_INET6, ipbufpfx[0] ? ipbufpfx : ipbuf,
-                                   &pat.addr.addr6, sizeof(pat.addr.addr6))) > 0) {
-      pat.type      = PATTERN_CIDR;
-      pat.mask.bits = (unsigned short)bits;
-      pat.family    = AF_INET6;
-      if (!sortlist_alloc(sortlist, nsort, &pat)) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_ENOMEM;
-      }
-    } else if (ipbufpfx[0] &&
-               (bits = ares_inet_net_pton(AF_INET, ipbufpfx, &pat.addr.addr4,
-                                          sizeof(pat.addr.addr4))) > 0) {
-      pat.type      = PATTERN_CIDR;
-      pat.mask.bits = (unsigned short)bits;
-      pat.family    = AF_INET;
-      if (!sortlist_alloc(sortlist, nsort, &pat)) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_ENOMEM;
-      }
-    }
-    /* See if it is just a regular IP */
-    else if (ip_addr(ipbuf, q - str, &pat.addr.addr4) == 0) {
-      if (ipbufpfx[0]) {
-        len = (size_t)(q - str);
-        if (len >= sizeof(ipbuf) - 1) {
-          ares_free(*sortlist);
-          *sortlist = NULL;
-          return ARES_EBADSTR;
-        }
-        memcpy(ipbuf, str, len);
-        ipbuf[len] = '\0';
-
-        if (ip_addr(ipbuf, q - str, &pat.mask.addr4) != 0) {
-          natural_mask(&pat);
-        }
-      } else {
-        natural_mask(&pat);
-      }
-      pat.family = AF_INET;
-      pat.type   = PATTERN_MASK;
-      if (!sortlist_alloc(sortlist, nsort, &pat)) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_ENOMEM;
-      }
-    } else {
-      while (*q && *q != ';' && !ISSPACE(*q)) {
-        q++;
-      }
-    }
-    str = q;
-    while (ISSPACE(*str)) {
-      str++;
-    }
-  }
-
-  return ARES_SUCCESS;
-}
-
-
-static int ip_addr(const char *ipbuf, ares_ssize_t len, struct in_addr *addr)
-{
-  /* Four octets and three periods yields at most 15 characters. */
-  if (len > 15) {
-    return -1;
-  }
-
-  if (ares_inet_pton(AF_INET, ipbuf, addr) < 1) {
-    return -1;
-  }
-
-  return 0;
-}
-
-static void natural_mask(struct apattern *pat)
-{
-  struct in_addr addr;
-
-  /* Store a host-byte-order copy of pat in a struct in_addr.  Icky,
-   * but portable.
-   */
-  addr.s_addr = ntohl(pat->addr.addr4.s_addr);
-
-  /* This is out of date in the CIDR world, but some people might
-   * still rely on it.
-   */
-  if (IN_CLASSA(addr.s_addr)) {
-    pat->mask.addr4.s_addr = htonl(IN_CLASSA_NET);
-  } else if (IN_CLASSB(addr.s_addr)) {
-    pat->mask.addr4.s_addr = htonl(IN_CLASSB_NET);
-  } else {
-    pat->mask.addr4.s_addr = htonl(IN_CLASSC_NET);
-  }
-}
-
-static ares_bool_t sortlist_alloc(struct apattern **sortlist, size_t *nsort,
-                                  struct apattern *pat)
-{
-  struct apattern *newsort;
-  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
-  if (!newsort) {
-    return ARES_FALSE;
-  }
-  newsort[*nsort] = *pat;
-  *sortlist       = newsort;
-  (*nsort)++;
-  return ARES_TRUE;
-}
-
 void ares_set_local_ip4(ares_channel channel, unsigned int local_ip)
 {
   channel->local_ip4 = local_ip;
@@ -646,7 +476,7 @@ int ares_set_sortlist(ares_channel channel, const char *sortstr)
     return ARES_ENODATA;
   }
 
-  status = config_sortlist(&sortlist, &nsort, sortstr);
+  status = ares__config_sortlist(&sortlist, &nsort, sortstr);
   if (status == ARES_SUCCESS && sortlist) {
     if (channel->sortlist) {
       ares_free(channel->sortlist);

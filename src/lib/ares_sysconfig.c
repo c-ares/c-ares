@@ -70,6 +70,188 @@
 #  undef WIN32 /* Redefined in MingW/MSVC headers */
 #endif
 
+static ares_status_t set_search(ares_channel channel, const char *str)
+{
+  size_t cnt;
+
+  if (channel->ndomains > 0) {
+    /* LCOV_EXCL_START: all callers check ndomains == -1 */
+    /* if we already have some domains present, free them first */
+    ares__strsplit_free(channel->domains, (size_t)channel->ndomains);
+    channel->domains  = NULL;
+    channel->ndomains = 0;
+  } /* LCOV_EXCL_STOP */
+
+  channel->domains  = ares__strsplit(str, ", ", &cnt);
+  channel->ndomains = cnt;
+  if (channel->domains == NULL || channel->ndomains == 0) {
+    channel->domains  = NULL;
+    channel->ndomains = 0;
+  }
+
+  return ARES_SUCCESS;
+}
+
+static int ip_addr(const char *ipbuf, ares_ssize_t len, struct in_addr *addr)
+{
+  /* Four octets and three periods yields at most 15 characters. */
+  if (len > 15) {
+    return -1;
+  }
+
+  if (ares_inet_pton(AF_INET, ipbuf, addr) < 1) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static void natural_mask(struct apattern *pat)
+{
+  struct in_addr addr;
+
+  /* Store a host-byte-order copy of pat in a struct in_addr.  Icky,
+   * but portable.
+   */
+  addr.s_addr = ntohl(pat->addr.addr4.s_addr);
+
+  /* This is out of date in the CIDR world, but some people might
+   * still rely on it.
+   */
+  if (IN_CLASSA(addr.s_addr)) {
+    pat->mask.addr4.s_addr = htonl(IN_CLASSA_NET);
+  } else if (IN_CLASSB(addr.s_addr)) {
+    pat->mask.addr4.s_addr = htonl(IN_CLASSB_NET);
+  } else {
+    pat->mask.addr4.s_addr = htonl(IN_CLASSC_NET);
+  }
+}
+
+static ares_bool_t sortlist_alloc(struct apattern **sortlist, size_t *nsort,
+                                  struct apattern *pat)
+{
+  struct apattern *newsort;
+  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
+  if (!newsort) {
+    return ARES_FALSE;
+  }
+  newsort[*nsort] = *pat;
+  *sortlist       = newsort;
+  (*nsort)++;
+  return ARES_TRUE;
+}
+
+ares_status_t ares__config_sortlist(struct apattern **sortlist, size_t *nsort,
+                                    const char *str)
+{
+  struct apattern pat;
+  const char     *q;
+
+  *sortlist = NULL;
+  *nsort    = 0;
+
+  /* Add sortlist entries. */
+  while (*str && *str != ';') {
+    int    bits;
+    char   ipbuf[17];
+    char   ipbufpfx[32];
+    size_t len;
+
+    /* Find just the IP */
+    q = str;
+    while (*q && *q != '/' && *q != ';' && !ISSPACE(*q)) {
+      q++;
+    }
+
+    len = (size_t)(q - str);
+    if (len >= sizeof(ipbuf) - 1) {
+      ares_free(*sortlist);
+      *sortlist = NULL;
+      return ARES_EBADSTR;
+    }
+    memcpy(ipbuf, str, len);
+    ipbuf[len] = '\0';
+
+    /* Find the prefix */
+    if (*q == '/') {
+      const char *str2 = q + 1;
+      while (*q && *q != ';' && !ISSPACE(*q)) {
+        q++;
+      }
+      if (q - str >= 32) {
+        ares_free(*sortlist);
+        *sortlist = NULL;
+        return ARES_EBADSTR;
+      }
+      memcpy(ipbufpfx, str, (size_t)(q - str));
+      ipbufpfx[q - str] = '\0';
+      str               = str2;
+    } else {
+      ipbufpfx[0] = '\0';
+    }
+    /* Lets see if it is CIDR */
+    /* First we'll try IPv6 */
+    if ((bits = ares_inet_net_pton(AF_INET6, ipbufpfx[0] ? ipbufpfx : ipbuf,
+                                   &pat.addr.addr6, sizeof(pat.addr.addr6))) > 0) {
+      pat.type      = PATTERN_CIDR;
+      pat.mask.bits = (unsigned short)bits;
+      pat.family    = AF_INET6;
+      if (!sortlist_alloc(sortlist, nsort, &pat)) {
+        ares_free(*sortlist);
+        *sortlist = NULL;
+        return ARES_ENOMEM;
+      }
+    } else if (ipbufpfx[0] &&
+               (bits = ares_inet_net_pton(AF_INET, ipbufpfx, &pat.addr.addr4,
+                                          sizeof(pat.addr.addr4))) > 0) {
+      pat.type      = PATTERN_CIDR;
+      pat.mask.bits = (unsigned short)bits;
+      pat.family    = AF_INET;
+      if (!sortlist_alloc(sortlist, nsort, &pat)) {
+        ares_free(*sortlist);
+        *sortlist = NULL;
+        return ARES_ENOMEM;
+      }
+    }
+    /* See if it is just a regular IP */
+    else if (ip_addr(ipbuf, q - str, &pat.addr.addr4) == 0) {
+      if (ipbufpfx[0]) {
+        len = (size_t)(q - str);
+        if (len >= sizeof(ipbuf) - 1) {
+          ares_free(*sortlist);
+          *sortlist = NULL;
+          return ARES_EBADSTR;
+        }
+        memcpy(ipbuf, str, len);
+        ipbuf[len] = '\0';
+
+        if (ip_addr(ipbuf, q - str, &pat.mask.addr4) != 0) {
+          natural_mask(&pat);
+        }
+      } else {
+        natural_mask(&pat);
+      }
+      pat.family = AF_INET;
+      pat.type   = PATTERN_MASK;
+      if (!sortlist_alloc(sortlist, nsort, &pat)) {
+        ares_free(*sortlist);
+        *sortlist = NULL;
+        return ARES_ENOMEM;
+      }
+    } else {
+      while (*q && *q != ';' && !ISSPACE(*q)) {
+        q++;
+      }
+    }
+    str = q;
+    while (ISSPACE(*str)) {
+      str++;
+    }
+  }
+
+  return ARES_SUCCESS;
+}
+
 #if !defined(WIN32) && !defined(WATT32) && !defined(ANDROID) && \
   !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
 static ares_status_t config_domain(ares_channel channel, char *str)
@@ -138,28 +320,6 @@ static ares_status_t config_lookup(ares_channel channel, const char *str,
   return (channel->lookups) ? ARES_SUCCESS : ARES_ENOMEM;
 }
 #endif /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ & !CARES_USE_LIBRESOLV */
-
-static ares_status_t set_search(ares_channel channel, const char *str)
-{
-  size_t cnt;
-
-  if (channel->ndomains > 0) {
-    /* LCOV_EXCL_START: all callers check ndomains == -1 */
-    /* if we already have some domains present, free them first */
-    ares__strsplit_free(channel->domains, (size_t)channel->ndomains);
-    channel->domains  = NULL;
-    channel->ndomains = 0;
-  } /* LCOV_EXCL_STOP */
-
-  channel->domains  = ares__strsplit(str, ", ", &cnt);
-  channel->ndomains = cnt;
-  if (channel->domains == NULL || channel->ndomains == 0) {
-    channel->domains  = NULL;
-    channel->ndomains = 0;
-  }
-
-  return ARES_SUCCESS;
-}
 
 static const char *try_option(const char *p, const char *q, const char *opt)
 {

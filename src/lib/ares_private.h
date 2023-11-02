@@ -388,7 +388,8 @@ ares_status_t  ares__init_by_options(ares_channel               channel,
                                      int                        optmask);
 ares_status_t  ares__init_by_environment(ares_channel channel);
 ares_status_t  ares__init_by_resolv_conf(ares_channel channel);
-
+ares_status_t  ares__config_sortlist(struct apattern **sortlist, size_t *nsort,
+                                     const char *str);
 
 void           ares__destroy_servers_state(ares_channel channel);
 ares_status_t  ares__single_domain(ares_channel channel, const char *name,
