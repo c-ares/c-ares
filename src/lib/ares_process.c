@@ -80,6 +80,7 @@ static void server_increment_failures(struct server_state *server)
     return;
   }
   server->consec_failures++;
+
   ares__slist_node_reinsert(node);
 }
 
@@ -88,14 +89,17 @@ static void server_set_good(struct server_state *server)
 {
   ares__slist_node_t *node;
   ares_channel        channel = server->channel;
+
+  if (!server->consec_failures)
+    return;
+
   node = ares__slist_node_find(channel->servers, server);
   if (node == NULL) {
     return;
   }
-  if (server->consec_failures) {
-    server->consec_failures = 0;
-    ares__slist_node_reinsert(node);
-  }
+
+  server->consec_failures = 0;
+  ares__slist_node_reinsert(node);
 }
 
 /* return true if now is exactly check time or later */

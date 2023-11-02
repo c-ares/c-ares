@@ -798,7 +798,7 @@ TEST_F(DefaultChannelTest, LiveSetServersPorts) {
   // Change while pending will requeue any requests to new servers
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_ports(channel_, &server1));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, &server1));
   ares_cancel(channel_);
 }
 
