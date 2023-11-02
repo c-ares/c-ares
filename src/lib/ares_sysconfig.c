@@ -75,7 +75,6 @@ static ares_status_t set_search(ares_channel channel, const char *str)
   size_t cnt;
 
   if (channel->ndomains > 0) {
-    /* LCOV_EXCL_START: all callers check ndomains == -1 */
     /* if we already have some domains present, free them first */
     ares__strsplit_free(channel->domains, (size_t)channel->ndomains);
     channel->domains  = NULL;
@@ -87,6 +86,13 @@ static ares_status_t set_search(ares_channel channel, const char *str)
   if (channel->domains == NULL || channel->ndomains == 0) {
     channel->domains  = NULL;
     channel->ndomains = 0;
+  } else {
+    /* Set the mask as if it was passed in ares_init_options */
+    /* TODO: Why?  My guess is this is because ares_dup() isn't otherwise
+     *       handling this?  This is a system config though, doesn't make
+     *       sense.  It would also lead to issues if we need to know what was
+     *       system-set vs user-set */
+    channel->optmask |= ARES_OPT_DOMAINS;
   }
 
   return ARES_SUCCESS;
