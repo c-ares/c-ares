@@ -199,6 +199,16 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
     }
   }
 
+ if (channel->optmask & ARES_OPT_SOCK_SNDBUF &&
+     channel->socket_send_buffer_size > 0) {
+    options->socket_send_buffer_size = channel->socket_send_buffer_size;
+  }
+
+  if (channel->optmask & ARES_OPT_SOCK_RCVBUF &&
+      channel->socket_receive_buffer_size > 0) {
+    options->socket_receive_buffer_size = channel->socket_receive_buffer_size;
+  }
+
   if (channel->optmask & ARES_OPT_UDP_MAX_QUERIES) {
     options->udp_max_queries  = (int)channel->udp_max_queries;
   }
@@ -281,7 +291,7 @@ ares_status_t ares__init_by_options(ares_channel               channel,
   }
 
   if (optmask & ARES_OPT_SOCK_RCVBUF &&
-      channel->socket_receive_buffer_size > 0) {
+      options->socket_receive_buffer_size > 0) {
     channel->socket_receive_buffer_size = options->socket_receive_buffer_size;
   }
 
