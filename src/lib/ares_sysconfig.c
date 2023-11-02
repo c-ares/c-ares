@@ -907,9 +907,8 @@ static void ares_sysconfig_free(ares_sysconfig_t *sysconfig)
   for (i=0; i<sysconfig->ndomains; i++) {
     ares_free(sysconfig->domains[i]);
   }
-  ares_free(sysconfig->sortlist);
-  ares_free(sysconfig->lookups);
   ares_free(sysconfig->domains);
+  ares_free(sysconfig->lookups);
   memset(sysconfig, 0, sizeof(*sysconfig));
 }
 
@@ -942,8 +941,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel channel,
   }
 
   if (sysconfig->lookups && !(channel->optmask & ARES_OPT_LOOKUPS)) {
-    if (channel->lookups)
-      ares_free(channel->lookups);
+    ares_free(channel->lookups);
     channel->lookups = ares_strdup(sysconfig->lookups);
     if (channel->lookups == NULL) {
       return ARES_ENOMEM;
