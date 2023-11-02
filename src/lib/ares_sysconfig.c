@@ -1334,7 +1334,7 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
           status = ares__sconfig_append_fromstr(&sconfig, p);
         } else if ((p = try_config(line, "sortlist", ';')) &&
                    !(channel->optmask & ARES_OPT_SORTLIST)) {
-          status = config_sortlist(&sortlist, &nsort, p);
+          status = ares__config_sortlist(&sortlist, &nsort, p);
         } else if ((p = try_config(line, "options", ';'))) {
           status = set_options(channel, p);
         } else {
