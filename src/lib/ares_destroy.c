@@ -32,22 +32,6 @@
 #include "ares.h"
 #include "ares_private.h"
 
-void ares_destroy_options(struct ares_options *options)
-{
-  int i;
-
-  ares_free(options->servers);
-
-  for (i = 0; i < options->ndomains; i++) {
-    ares_free(options->domains[i]);
-  }
-
-  ares_free(options->domains);
-  ares_free(options->sortlist);
-  ares_free(options->lookups);
-  ares_free(options->resolvconf_path);
-  ares_free(options->hosts_path);
-}
 
 void ares_destroy(ares_channel channel)
 {

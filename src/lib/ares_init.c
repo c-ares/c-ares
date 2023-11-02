@@ -483,6 +483,9 @@ int ares_set_sortlist(ares_channel channel, const char *sortstr)
     }
     channel->sortlist = sortlist;
     channel->nsort    = nsort;
+
+    /* Save sortlist as if it was passed in as an option */
+    channel->optmask |= ARES_OPT_SORTLIST;
   }
   return (int)status;
 }

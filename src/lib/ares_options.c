@@ -36,6 +36,22 @@
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
+void ares_destroy_options(struct ares_options *options)
+{
+  int i;
+
+  ares_free(options->servers);
+
+  for (i = 0; options->domains && i < options->ndomains; i++) {
+    ares_free(options->domains[i]);
+  }
+
+  ares_free(options->domains);
+  ares_free(options->sortlist);
+  ares_free(options->lookups);
+  ares_free(options->resolvconf_path);
+  ares_free(options->hosts_path);
+}
 
 static struct in_addr *ares_save_opt_servers(ares_channel channel,
                                              int *nservers)
@@ -71,42 +87,56 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
 {
   size_t i;
 
-  /* Zero everything out */
-  memset(options, 0, sizeof(struct ares_options));
+  /* NOTE: We can't zero the whole thing out, this is because the size of the
+   *       struct ares_options changes over time, so if someone compiled
+   *       with an older version, their struct size might be smaller and
+   *       we might overwrite their memory! So using the optmask is critical
+   *       here, as they could have only set options they knew about.
+   *
+   *       Unfortunately ares_destroy_options() doesn't take an optmask, so
+   *       there are a few pointers we *must* zero out otherwise we won't
+   *       know if they were allocated or not
+   */
+  options->servers         = NULL;
+  options->domains         = NULL;
+  options->sortlist        = NULL;
+  options->lookups         = NULL;
+  options->resolvconf_path = NULL;
+  options->hosts_path      = NULL;
 
   if (!ARES_CONFIG_CHECK(channel)) {
     return ARES_ENODATA;
   }
 
-  /* Traditionally the optmask wasn't saved in the channel struct so it was
-     recreated here. ROTATE is the first option that has no struct field of
-     its own in the public config struct */
-  (*optmask)  = (ARES_OPT_FLAGS | ARES_OPT_TRIES | ARES_OPT_NDOTS |
-                ARES_OPT_UDP_PORT | ARES_OPT_TCP_PORT | ARES_OPT_SOCK_STATE_CB |
-                ARES_OPT_SERVERS | ARES_OPT_DOMAINS | ARES_OPT_LOOKUPS |
-                ARES_OPT_SORTLIST | ARES_OPT_TIMEOUTMS);
-  (*optmask) |= (channel->rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE);
-
-  if (channel->resolvconf_path) {
-    (*optmask) |= ARES_OPT_RESOLVCONF;
+  if (channel->optmask & ARES_OPT_FLAGS) {
+    options->flags = (int)channel->flags;
   }
 
-  if (channel->hosts_path) {
-    (*optmask) |= ARES_OPT_HOSTS_FILE;
+  /* We convert ARES_OPT_TIMEOUT to ARES_OPT_TIMEOUTMS in
+   * ares__init_by_options() */
+  if (channel->optmask & ARES_OPT_TIMEOUTMS) {
+    options->timeout = (int)channel->timeout;
   }
 
-  /* Copy easy stuff */
-  options->flags = (int)channel->flags;
+  if (channel->optmask & ARES_OPT_TRIES) {
+    options->tries = (int)channel->tries;
+  }
 
-  /* We return full millisecond resolution but that's only because we don't
-     set the ARES_OPT_TIMEOUT anymore, only the new ARES_OPT_TIMEOUTMS */
-  options->timeout            = (int)channel->timeout;
-  options->tries              = (int)channel->tries;
-  options->ndots              = (int)channel->ndots;
-  options->udp_port           = ntohs(channel->udp_port);
-  options->tcp_port           = ntohs(channel->tcp_port);
-  options->sock_state_cb      = channel->sock_state_cb;
-  options->sock_state_cb_data = channel->sock_state_cb_data;
+  if (channel->optmask & ARES_OPT_NDOTS) {
+    options->ndots = (int)channel->ndots;
+  }
+
+  if (channel->optmask & ARES_OPT_UDP_PORT) {
+    options->udp_port = ntohs(channel->udp_port);
+  }
+  if (channel->optmask & ARES_OPT_TCP_PORT) {
+    options->tcp_port = ntohs(channel->tcp_port);
+  }
+
+  if (channel->optmask & ARES_OPT_SOCK_STATE_CB) {
+    options->sock_state_cb      = channel->sock_state_cb;
+    options->sock_state_cb_data = channel->sock_state_cb_data;
+  }
 
   if (channel->optmask & ARES_OPT_SERVERS) {
     options->servers = ares_save_opt_servers(channel, &options->nservers);
@@ -115,63 +145,65 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
     }
   }
 
-  /* copy domains */
-  if (channel->ndomains) {
-    options->domains = ares_malloc(channel->ndomains * sizeof(char *));
-    if (!options->domains) {
-      return ARES_ENOMEM;
-    }
-
-    for (i = 0; i < channel->ndomains; i++) {
-      options->domains[i] = ares_strdup(channel->domains[i]);
-      if (!options->domains[i]) {
-        options->ndomains = (int)i;
+  if (channel->optmask & ARES_OPT_DOMAINS) {
+    options->domains = NULL;
+    if (channel->ndomains) {
+      options->domains = ares_malloc(channel->ndomains * sizeof(char *));
+      if (!options->domains) {
         return ARES_ENOMEM;
       }
-    }
-  }
-  options->ndomains = (int)channel->ndomains;
 
-  /* copy lookups */
-  if (channel->lookups) {
+      for (i = 0; i < channel->ndomains; i++) {
+        options->domains[i] = ares_strdup(channel->domains[i]);
+        if (!options->domains[i]) {
+          options->ndomains = (int)i;
+          return ARES_ENOMEM;
+        }
+      }
+    }
+    options->ndomains = (int)channel->ndomains;
+  }
+
+  if (channel->optmask & ARES_OPT_LOOKUPS) {
     options->lookups = ares_strdup(channel->lookups);
     if (!options->lookups && channel->lookups) {
       return ARES_ENOMEM;
     }
   }
 
-  /* copy sortlist */
-  if (channel->nsort) {
-    options->sortlist = ares_malloc(channel->nsort * sizeof(struct apattern));
-    if (!options->sortlist) {
-      return ARES_ENOMEM;
+  if (channel->optmask & ARES_OPT_SORTLIST) {
+    options->sortlist = NULL;
+    if (channel->nsort) {
+      options->sortlist = ares_malloc(channel->nsort * sizeof(struct apattern));
+      if (!options->sortlist) {
+        return ARES_ENOMEM;
+      }
+      for (i = 0; i < channel->nsort; i++) {
+        options->sortlist[i] = channel->sortlist[i];
+      }
     }
-    for (i = 0; i < channel->nsort; i++) {
-      options->sortlist[i] = channel->sortlist[i];
-    }
+    options->nsort = (int)channel->nsort;
   }
-  options->nsort = (int)channel->nsort;
 
-  /* copy path for resolv.conf file */
-  if (channel->resolvconf_path) {
+  if (channel->optmask & ARES_OPT_RESOLVCONF) {
     options->resolvconf_path = ares_strdup(channel->resolvconf_path);
     if (!options->resolvconf_path) {
       return ARES_ENOMEM;
     }
   }
 
-  /* copy path for hosts file */
-  if (channel->hosts_path) {
+  if (channel->optmask & ARES_OPT_HOSTS_FILE) {
     options->hosts_path = ares_strdup(channel->hosts_path);
     if (!options->hosts_path) {
       return ARES_ENOMEM;
     }
   }
 
-  if (channel->udp_max_queries > 0) {
-    (*optmask)               |= ARES_OPT_UDP_MAX_QUERIES;
+  if (channel->optmask & ARES_OPT_UDP_MAX_QUERIES) {
     options->udp_max_queries  = (int)channel->udp_max_queries;
   }
+
+  *optmask = (int)channel->optmask;
 
   return ARES_SUCCESS;
 }
@@ -209,6 +241,9 @@ ares_status_t ares__init_by_options(ares_channel               channel,
   if (optmask & ARES_OPT_TIMEOUTMS) {
     channel->timeout = (unsigned int)options->timeout;
   } else if (optmask & ARES_OPT_TIMEOUT) {
+    /* Convert to milliseconds */
+    optmask |= ARES_OPT_TIMEOUTMS;
+    optmask &= ~(ARES_OPT_TIMEOUT);
     channel->timeout = (unsigned int)options->timeout * 1000;
   }
 
