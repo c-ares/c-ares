@@ -139,9 +139,10 @@ static void processfds(ares_channel channel, fd_set *read_fds,
 {
   struct timeval now = ares__tvnow();
 
-  write_tcp_data(channel, write_fds, write_fd);
   read_packets(channel, read_fds, read_fd, &now);
   process_timeouts(channel, &now);
+  /* Write last as the other 2 operations might have triggered writes */
+  write_tcp_data(channel, write_fds, write_fd);
 }
 
 /* Something interesting happened on the wire, or there was a timeout.
