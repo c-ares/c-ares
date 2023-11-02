@@ -502,6 +502,9 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
       }
     }
     fclose(fp);
+
+    if (status != ARES_EOF)
+      goto done;
   } else {
     error = ERRNO;
     switch (error) {
@@ -513,8 +516,8 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
         DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
                        strerror(error)));
         DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_RESOLV_CONF));
-        return ARES_EFILE;
-        break;
+        status = ARES_EFILE;
+        goto done;
     }
   }
 
@@ -529,6 +532,8 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
       }
     }
     fclose(fp);
+    if (status != ARES_EOF)
+      goto done;
   } else {
     error = ERRNO;
     switch (error) {
@@ -558,6 +563,8 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
       }
     }
     fclose(fp);
+    if (status != ARES_EOF)
+      goto done;
   } else {
     error = ERRNO;
     switch (error) {
@@ -587,6 +594,8 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
       }
     }
     fclose(fp);
+    if (status != ARES_EOF)
+      goto done;
   } else {
     error = ERRNO;
     switch (error) {
@@ -603,6 +612,7 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
     /* ignore error */
   }
 
+done:
   ares_free(line);
 
   return ARES_SUCCESS;
