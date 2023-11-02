@@ -745,6 +745,7 @@ TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
     HostResult result;
     ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
     Process();
+
     EXPECT_TRUE(result.done_);
     EXPECT_NE(0, count);
   }
@@ -756,7 +757,9 @@ TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
 
     HostResult result;
     ares_gethostbyname(copy, "www.google.com.", AF_INET, HostCallback, &result);
+
     ProcessWork(copy, NoExtraFDs, nullptr);
+
     EXPECT_TRUE(result.done_);
     ares_destroy(copy);
     EXPECT_NE(0, count);

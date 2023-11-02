@@ -145,11 +145,10 @@ TEST_P(MockUDPChannelTestAI, TruncationRetry) {
   EXPECT_THAT(result.ai_, IncludesV4Address("1.2.3.4"));
 }
 
-// TCP only to prevent retries
 TEST_P(MockTCPChannelTestAI, MalformedResponse) {
   std::vector<byte> one = {0x01};
-  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillOnce(SetReplyData(&server_, one));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReplyData(&server_, one));
 
   AddrInfoResult result;
   struct ares_addrinfo_hints hints = {};
@@ -184,8 +183,8 @@ TEST_P(MockTCPChannelTestAI, ServFailResponse) {
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
   rsp.set_rcode(SERVFAIL);
-  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillOnce(SetReply(&server_, &rsp));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
 
   AddrInfoResult result;
   struct ares_addrinfo_hints hints = {};
@@ -202,8 +201,8 @@ TEST_P(MockTCPChannelTestAI, NotImplResponse) {
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
   rsp.set_rcode(NOTIMP);
-  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillOnce(SetReply(&server_, &rsp));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
 
   AddrInfoResult result;
   struct ares_addrinfo_hints hints = {};
@@ -220,8 +219,8 @@ TEST_P(MockTCPChannelTestAI, RefusedResponse) {
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
   rsp.set_rcode(REFUSED);
-  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillOnce(SetReply(&server_, &rsp));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
 
   AddrInfoResult result;
   struct ares_addrinfo_hints hints = {};

@@ -300,11 +300,10 @@ TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
   }
 }
 
-
 TEST_P(MockTCPChannelTest, MalformedResponse) {
-  std::vector<byte> one = {0x01};
-  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillOnce(SetReplyData(&server_, one));
+  std::vector<byte> one = {0x00};
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReplyData(&server_, one));
 
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
@@ -332,8 +331,8 @@ TEST_P(MockTCPChannelTest, ServFailResponse) {
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
   rsp.set_rcode(SERVFAIL);
-  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillOnce(SetReply(&server_, &rsp));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();
@@ -346,8 +345,8 @@ TEST_P(MockTCPChannelTest, NotImplResponse) {
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
   rsp.set_rcode(NOTIMP);
-  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillOnce(SetReply(&server_, &rsp));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();
@@ -360,8 +359,8 @@ TEST_P(MockTCPChannelTest, RefusedResponse) {
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
   rsp.set_rcode(REFUSED);
-  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillOnce(SetReply(&server_, &rsp));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();

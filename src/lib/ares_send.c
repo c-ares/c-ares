@@ -94,7 +94,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
   packetsz = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : PACKETSZ;
   query->using_tcp = (channel->flags & ARES_FLAG_USEVC) || qlen > packetsz;
 
-  query->error_status = ARES_ECONNREFUSED;
+  query->error_status = ARES_SUCCESS;
   query->timeouts     = 0;
 
   /* Initialize our list nodes. */
@@ -122,7 +122,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
   /* Perform the first query action. */
   now = ares__tvnow();
 
-  return ares__send_query(channel, query, &now);
+  return ares__send_query(query, &now);
 }
 
 void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,

@@ -211,8 +211,8 @@ struct query {
   ares__llist_node_t             *node_queries_to_conn;
   ares__llist_node_t             *node_all_queries;
 
-  /* connection handle for validation purposes */
-  const struct server_connection *conn;
+  /* connection handle query is associated with */
+  struct server_connection *conn;
 
   /* Query buf with length at beginning, for TCP transmission */
   unsigned char                  *tcpbuf;
@@ -344,8 +344,8 @@ ares_bool_t   ares__timedout(const struct timeval *now,
                              const struct timeval *check);
 
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
-ares_status_t ares__send_query(ares_channel channel, struct query *query,
-                               struct timeval *now);
+ares_status_t ares__send_query(struct query *query, struct timeval *now);
+ares_status_t ares__requeue_query(struct query *query, struct timeval *now);
 
 /* Identical to ares_query, but returns a normal ares return code like
  * ARES_SUCCESS, and can be passed the qid by reference which will be
@@ -359,7 +359,8 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
                            size_t qlen, ares_callback callback, void *arg);
 void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
-void          ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd);
+void          ares__check_cleanup_conn(ares_channel channel,
+                                       struct server_connection *conn);
 ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize);
 void          ares__free_query(struct query *query);
 

@@ -58,27 +58,21 @@ void ares_cancel(ares_channel channel)
     node = ares__llist_node_first(list_copy);
     while (node != NULL) {
       struct query *query;
-      ares_socket_t fd = ARES_SOCKET_BAD;
+      struct server_connection *conn;
 
       /* Cache next since this node is being deleted */
       next = ares__llist_node_next(node);
 
       query                   = ares__llist_node_claim(node);
+      conn                    = query->conn;
       query->node_all_queries = NULL;
-
-      /* Cache file descriptor for connection so we can clean it up possibly */
-      if (query->conn) {
-        fd = query->conn->fd;
-      }
 
       /* NOTE: its possible this may enqueue new queries */
       query->callback(query->arg, ARES_ECANCELLED, 0, NULL, 0);
       ares__free_query(query);
 
       /* See if the connection should be cleaned up */
-      if (fd != ARES_SOCKET_BAD) {
-        ares__check_cleanup_conn(channel, fd);
-      }
+      ares__check_cleanup_conn(channel, conn);
 
       node = next;
     }
