@@ -363,7 +363,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerChannelInit,
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
   std::vector<std::string> actual = GetNameServers(channel);
-  std::vector<std::string> expected = {"1.2.3.4"};
+  std::vector<std::string> expected = {"1.2.3.4:53"};
   EXPECT_EQ(expected, actual);
 
   struct ares_options opts;
@@ -644,8 +644,8 @@ CONTAINED_TEST_F(LibraryTest, ContainerBlacklistedIpv6,
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
   std::vector<std::string> actual = GetNameServers(channel);
   std::vector<std::string> expected = {
-    "254.192.1.1",
-    "ffc0:0000:0000:0000:0000:0000:0000:c001"
+    "254.192.1.1:53",
+    "[ffc0:0000:0000:0000:0000:0000:0000:c001]:53"
   };
   EXPECT_EQ(expected, actual);
 
@@ -669,7 +669,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerMultiResolvInit,
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
   std::vector<std::string> actual = GetNameServers(channel);
-  std::vector<std::string> expected = {"0001:0000:0000:0000:0000:0000:0000:0002"};
+  std::vector<std::string> expected = {"[0001:0000:0000:0000:0000:0000:0000:0002]:53"};
   EXPECT_EQ(expected, actual);
 
   struct ares_options opts;
@@ -708,7 +708,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerEmptyInit,
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
   std::vector<std::string> actual = GetNameServers(channel);
-  std::vector<std::string> expected = {"127.0.0.1"};
+  std::vector<std::string> expected = {"127.0.0.1:53"};
   EXPECT_EQ(expected, actual);
 
   struct ares_options opts;
