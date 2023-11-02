@@ -70,417 +70,6 @@
 #  undef WIN32 /* Redefined in MingW/MSVC headers */
 #endif
 
-static ares_status_t set_search(ares_channel channel, const char *str)
-{
-  size_t cnt;
-
-  if (channel->ndomains > 0) {
-    /* if we already have some domains present, free them first */
-    ares__strsplit_free(channel->domains, (size_t)channel->ndomains);
-    channel->domains  = NULL;
-    channel->ndomains = 0;
-  } /* LCOV_EXCL_STOP */
-
-  channel->domains  = ares__strsplit(str, ", ", &cnt);
-  channel->ndomains = cnt;
-  if (channel->domains == NULL || channel->ndomains == 0) {
-    channel->domains  = NULL;
-    channel->ndomains = 0;
-  }
-
-  return ARES_SUCCESS;
-}
-
-static int ip_addr(const char *ipbuf, ares_ssize_t len, struct in_addr *addr)
-{
-  /* Four octets and three periods yields at most 15 characters. */
-  if (len > 15) {
-    return -1;
-  }
-
-  if (ares_inet_pton(AF_INET, ipbuf, addr) < 1) {
-    return -1;
-  }
-
-  return 0;
-}
-
-static void natural_mask(struct apattern *pat)
-{
-  struct in_addr addr;
-
-  /* Store a host-byte-order copy of pat in a struct in_addr.  Icky,
-   * but portable.
-   */
-  addr.s_addr = ntohl(pat->addr.addr4.s_addr);
-
-  /* This is out of date in the CIDR world, but some people might
-   * still rely on it.
-   */
-  if (IN_CLASSA(addr.s_addr)) {
-    pat->mask.addr4.s_addr = htonl(IN_CLASSA_NET);
-  } else if (IN_CLASSB(addr.s_addr)) {
-    pat->mask.addr4.s_addr = htonl(IN_CLASSB_NET);
-  } else {
-    pat->mask.addr4.s_addr = htonl(IN_CLASSC_NET);
-  }
-}
-
-static ares_bool_t sortlist_alloc(struct apattern **sortlist, size_t *nsort,
-                                  struct apattern *pat)
-{
-  struct apattern *newsort;
-  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
-  if (!newsort) {
-    return ARES_FALSE;
-  }
-  newsort[*nsort] = *pat;
-  *sortlist       = newsort;
-  (*nsort)++;
-  return ARES_TRUE;
-}
-
-ares_status_t ares__config_sortlist(struct apattern **sortlist, size_t *nsort,
-                                    const char *str)
-{
-  struct apattern pat;
-  const char     *q;
-
-  *sortlist = NULL;
-  *nsort    = 0;
-
-  /* Add sortlist entries. */
-  while (*str && *str != ';') {
-    int    bits;
-    char   ipbuf[17];
-    char   ipbufpfx[32];
-    size_t len;
-
-    /* Find just the IP */
-    q = str;
-    while (*q && *q != '/' && *q != ';' && !ISSPACE(*q)) {
-      q++;
-    }
-
-    len = (size_t)(q - str);
-    if (len >= sizeof(ipbuf) - 1) {
-      ares_free(*sortlist);
-      *sortlist = NULL;
-      return ARES_EBADSTR;
-    }
-    memcpy(ipbuf, str, len);
-    ipbuf[len] = '\0';
-
-    /* Find the prefix */
-    if (*q == '/') {
-      const char *str2 = q + 1;
-      while (*q && *q != ';' && !ISSPACE(*q)) {
-        q++;
-      }
-      if (q - str >= 32) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_EBADSTR;
-      }
-      memcpy(ipbufpfx, str, (size_t)(q - str));
-      ipbufpfx[q - str] = '\0';
-      str               = str2;
-    } else {
-      ipbufpfx[0] = '\0';
-    }
-    /* Lets see if it is CIDR */
-    /* First we'll try IPv6 */
-    if ((bits = ares_inet_net_pton(AF_INET6, ipbufpfx[0] ? ipbufpfx : ipbuf,
-                                   &pat.addr.addr6, sizeof(pat.addr.addr6))) > 0) {
-      pat.type      = PATTERN_CIDR;
-      pat.mask.bits = (unsigned short)bits;
-      pat.family    = AF_INET6;
-      if (!sortlist_alloc(sortlist, nsort, &pat)) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_ENOMEM;
-      }
-    } else if (ipbufpfx[0] &&
-               (bits = ares_inet_net_pton(AF_INET, ipbufpfx, &pat.addr.addr4,
-                                          sizeof(pat.addr.addr4))) > 0) {
-      pat.type      = PATTERN_CIDR;
-      pat.mask.bits = (unsigned short)bits;
-      pat.family    = AF_INET;
-      if (!sortlist_alloc(sortlist, nsort, &pat)) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_ENOMEM;
-      }
-    }
-    /* See if it is just a regular IP */
-    else if (ip_addr(ipbuf, q - str, &pat.addr.addr4) == 0) {
-      if (ipbufpfx[0]) {
-        len = (size_t)(q - str);
-        if (len >= sizeof(ipbuf) - 1) {
-          ares_free(*sortlist);
-          *sortlist = NULL;
-          return ARES_EBADSTR;
-        }
-        memcpy(ipbuf, str, len);
-        ipbuf[len] = '\0';
-
-        if (ip_addr(ipbuf, q - str, &pat.mask.addr4) != 0) {
-          natural_mask(&pat);
-        }
-      } else {
-        natural_mask(&pat);
-      }
-      pat.family = AF_INET;
-      pat.type   = PATTERN_MASK;
-      if (!sortlist_alloc(sortlist, nsort, &pat)) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_ENOMEM;
-      }
-    } else {
-      while (*q && *q != ';' && !ISSPACE(*q)) {
-        q++;
-      }
-    }
-    str = q;
-    while (ISSPACE(*str)) {
-      str++;
-    }
-  }
-
-  return ARES_SUCCESS;
-}
-
-#if !defined(WIN32) && !defined(WATT32) && !defined(ANDROID) && \
-  !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
-static ares_status_t config_domain(ares_channel channel, char *str)
-{
-  char *q;
-
-  /* Set a single search domain. */
-  q = str;
-  while (*q && !ISSPACE(*q)) {
-    q++;
-  }
-  *q = '\0';
-  return set_search(channel, str);
-}
-
-#  if defined(__INTEL_COMPILER) && (__INTEL_COMPILER == 910) && \
-    defined(__OPTIMIZE__) && defined(__unix__) && defined(__i386__)
-/* workaround icc 9.1 optimizer issue */
-#    define vqualifier volatile
-#  else
-#    define vqualifier
-#  endif
-
-static ares_status_t config_lookup(ares_channel channel, const char *str,
-                                   const char *bindch, const char *altbindch,
-                                   const char *filech)
-{
-  char                   lookups[3];
-  char                  *l;
-  const char *vqualifier p;
-  ares_bool_t            found;
-
-  if (altbindch == NULL) {
-    altbindch = bindch;
-  }
-
-  /* Set the lookup order.  Only the first letter of each work
-   * is relevant, and it has to be "b" for DNS or "f" for the
-   * host file.  Ignore everything else.
-   */
-  l     = lookups;
-  p     = str;
-  found = ARES_FALSE;
-  while (*p) {
-    if ((*p == *bindch || *p == *altbindch || *p == *filech) &&
-        l < lookups + 2) {
-      if (*p == *bindch || *p == *altbindch) {
-        *l++ = 'b';
-      } else {
-        *l++ = 'f';
-      }
-      found = ARES_TRUE;
-    }
-    while (*p && !ISSPACE(*p) && (*p != ',')) {
-      p++;
-    }
-    while (*p && (ISSPACE(*p) || (*p == ','))) {
-      p++;
-    }
-  }
-  if (!found) {
-    return ARES_ENOTINITIALIZED;
-  }
-  *l               = '\0';
-  channel->lookups = ares_strdup(lookups);
-  return (channel->lookups) ? ARES_SUCCESS : ARES_ENOMEM;
-}
-#endif /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ & !CARES_USE_LIBRESOLV */
-
-static const char *try_option(const char *p, const char *q, const char *opt)
-{
-  size_t len = ares_strlen(opt);
-  return ((size_t)(q - p) >= len && !strncmp(p, opt, len)) ? &p[len] : NULL;
-}
-
-static ares_status_t set_options(ares_channel channel, const char *str)
-{
-  const char *p;
-  const char *q;
-  const char *val;
-
-  p = str;
-  while (*p) {
-    q = p;
-    while (*q && !ISSPACE(*q)) {
-      q++;
-    }
-    val = try_option(p, q, "ndots:");
-    if (val && channel->ndots == 0) {
-      channel->ndots = strtoul(val, NULL, 10);
-    }
-
-    val = try_option(p, q, "retrans:");
-    if (val && channel->timeout == 0) {
-      channel->timeout = strtoul(val, NULL, 10);
-    }
-
-    val = try_option(p, q, "retry:");
-    if (val && channel->tries == 0) {
-      channel->tries = strtoul(val, NULL, 10);
-    }
-
-    val = try_option(p, q, "rotate");
-    if (val && !(channel->optmask & (ARES_OPT_ROTATE | ARES_OPT_NOROTATE))) {
-      channel->rotate = ARES_TRUE;
-    }
-
-    p = q;
-    while (ISSPACE(*p)) {
-      p++;
-    }
-  }
-
-  return ARES_SUCCESS;
-}
-
-
-
-#if !defined(WIN32) && !defined(WATT32) && !defined(ANDROID) && \
-  !defined(__ANDROID__) && !defined(CARES_USE_LIBRESOLV)
-static char *try_config(char *s, const char *opt, char scc)
-{
-  size_t len;
-  char  *p;
-  char  *q;
-
-  if (!s || !opt) {
-    /* no line or no option */
-    return NULL; /* LCOV_EXCL_LINE */
-  }
-
-  /* Hash '#' character is always used as primary comment char, additionally
-     a not-NUL secondary comment char will be considered when specified. */
-
-  /* trim line comment */
-  p = s;
-  if (scc) {
-    while (*p && (*p != '#') && (*p != scc)) {
-      p++;
-    }
-  } else {
-    while (*p && (*p != '#')) {
-      p++;
-    }
-  }
-  *p = '\0';
-
-  /* trim trailing whitespace */
-  q = p - 1;
-  while ((q >= s) && ISSPACE(*q)) {
-    q--;
-  }
-  *++q = '\0';
-
-  /* skip leading whitespace */
-  p = s;
-  while (*p && ISSPACE(*p)) {
-    p++;
-  }
-
-  if (!*p) {
-    /* empty line */
-    return NULL;
-  }
-
-  if ((len = ares_strlen(opt)) == 0) {
-    /* empty option */
-    return NULL; /* LCOV_EXCL_LINE */
-  }
-
-  if (strncmp(p, opt, len) != 0) {
-    /* line and option do not match */
-    return NULL;
-  }
-
-  /* skip over given option name */
-  p += len;
-
-  if (!*p) {
-    /* no option value */
-    return NULL; /* LCOV_EXCL_LINE */
-  }
-
-  if ((opt[len - 1] != ':') && (opt[len - 1] != '=') && !ISSPACE(*p)) {
-    /* whitespace between option name and value is mandatory
-       for given option names which do not end with ':' or '=' */
-    return NULL;
-  }
-
-  /* skip over whitespace */
-  while (*p && ISSPACE(*p)) {
-    p++;
-  }
-
-  if (!*p) {
-    /* no option value */
-    return NULL;
-  }
-
-  /* return pointer to option value */
-  return p;
-}
-#endif /* !WIN32 & !WATT32 & !ANDROID & !__ANDROID__ */
-
-
-ares_status_t ares__init_by_environment(ares_channel channel)
-{
-  const char   *localdomain;
-  const char   *res_options;
-  ares_status_t status;
-
-  localdomain = getenv("LOCALDOMAIN");
-  if (localdomain && channel->ndomains == 0) {
-    status = set_search(channel, localdomain);
-    if (status != ARES_SUCCESS) {
-      return status;
-    }
-  }
-
-  res_options = getenv("RES_OPTIONS");
-  if (res_options) {
-    status = set_options(channel, res_options);
-    if (status != ARES_SUCCESS) {
-      return status; /* LCOV_EXCL_LINE: set_options() never fails */
-    }
-  }
-
-  return ARES_SUCCESS;
-}
-
 
 #ifdef WIN32
 /*
@@ -997,45 +586,43 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
   return *outptr != NULL ? ARES_TRUE : ARES_FALSE;
 }
 
-#endif
 
-ares_status_t ares__init_by_resolv_conf(ares_channel channel)
+static ares_status_t ares__init_sysconfig_windows(ares_sysconfig_t *sysconfig)
 {
-#if !defined(ANDROID) && !defined(__ANDROID__) && !defined(WATT32) && \
-  !defined(CARES_USE_LIBRESOLV)
-  char *line = NULL;
-#endif
-  ares_status_t        status   = ARES_EOF;
-  size_t               nsort    = 0;
-  ares__llist_t       *sconfig  = NULL;
-  struct apattern     *sortlist = NULL;
-
-#ifdef WIN32
+  char         *line   = NULL;
+  ares_status_t status = ARES_SUCCESS;
 
   if (get_DNS_Windows(&line)) {
-    status = ares__sconfig_append_fromstr(&sconfig, line);
+    status = ares__sconfig_append_fromstr(&sysconfig->sconfig, line);
     ares_free(line);
+    if (status != ARES_SUCCESS)
+      goto done;
   }
 
-  if (channel->ndomains == 0 && get_SuffixList_Windows(&line)) {
-    status = set_search(channel, line);
-    ares_free(line);
+  if (get_SuffixList_Windows(&line)) {
+    sysconfig->domains  = ares__strsplit(line, ", ", &sysconfig->ndomains);
+    if (sysconfig->domains == NULL) {
+      status = ARES_EFILE;
+    }
+    if (status != ARES_SUCCESS)
+      goto done;
   }
 
-  if (status == ARES_SUCCESS) {
-    status = ARES_EOF;
-  } else {
-    /* Catch the case when all the above checks fail (which happens when there
-       is no network card or the cable is unplugged) */
-    status = ARES_EFILE;
-  }
-#elif defined(__MVS__)
+done:
+  return status;
+}
+#endif
 
+#if defined(__MVS__)
+static ares_status_t ares__init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
+{
   struct __res_state  *res = 0;
   size_t               count4;
   size_t               count6;
+  int                  i;
   __STATEEXTIPV6      *v6;
   arse__llist_t       *sconfig = NULL;
+  ares_status_t        status;
 
   if (0 == res) {
     int rc = res_init();
@@ -1059,22 +646,22 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
     count6 = 0;
   }
 
-
-  for (int i = 0; i < count4; i++) {
+  for (i = 0; i < count4; i++) {
     struct sockaddr_in *addr_in = &(res->nsaddr_list[i]);
     struct ares_addr    addr;
 
     addr.addr.addr4.s_addr = addr_in->sin_addr.s_addr;
     addr.family            = AF_INET;
 
-    status = ares__sconfig_append(&sconfig, &addr, htons(addr_in->sin_port),
-      htons(addr_in->sin_port));
+    status = ares__sconfig_append(&sysconfig->sconfig, &addr,
+                                  htons(addr_in->sin_port),
+                                  htons(addr_in->sin_port));
 
     if (status != ARES_SUCCESS)
       return status;
   }
 
-  for (int i = 0; i < count6; i++) {
+  for (i = 0; i < count6; i++) {
     struct sockaddr_in6 *addr_in = &(v6->__stat_nsaddr_list[i]);
     struct ares_addr     addr;
 
@@ -1082,24 +669,31 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
     memcpy(&(addr.addr.addr6), &(addr_in->sin6_addr),
            sizeof(addr_in->sin6_addr));
 
-    status = ares__sconfig_append(&sconfig, &addr, htons(addr_in->sin_port),
-      htons(addr_in->sin_port));
+    status = ares__sconfig_append(&sysconfig->sconfig, &addr,
+                                  htons(addr_in->sin_port),
+                                  htons(addr_in->sin_port));
 
     if (status != ARES_SUCCESS)
       return status;
   }
 
-  status = ARES_EOF;
+  return ARES_SUCCESS;
+}
+#endif
 
-#elif defined(__riscos__)
+#if defined(__riscos__)
+static ares_status_t ares__init_sysconfig_riscos(ares_sysconfig_t *sysconfig)
+{
+  char         *line;
+  ares_status_t status = ARES_SUCCESS;
 
   /* Under RISC OS, name servers are listed in the
      system variable Inet$Resolvers, space separated. */
-
   line   = getenv("Inet$Resolvers");
-  status = ARES_EOF;
   if (line) {
-    char *resolvers = ares_strdup(line), *pos, *space;
+    char *resolvers = ares_strdup(line);
+    char *pos;
+    char *space;
 
     if (!resolvers) {
       return ARES_ENOMEM;
@@ -1111,29 +705,27 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
       if (space) {
         *space = '\0';
       }
-      status = ares__sconfig_append_fromstr(&sconfig, pos);
+      status = ares__sconfig_append_fromstr(&sysconfig->sconfig, pos);
       if (status != ARES_SUCCESS) {
         break;
       }
       pos = space + 1;
     } while (space);
 
-    if (status == ARES_SUCCESS) {
-      status = ARES_EOF;
-    }
-
     ares_free(resolvers);
   }
 
-#elif defined(WATT32)
-  size_t i;
+  return status;
+}
+#endif
+
+#if defined(WATT32)
+static ares_status_t ares__init_sysconfig_watt32(ares_sysconfig_t *sysconfig)
+{
+  size_t        i;
+  ares_status_t status;
 
   sock_init();
-  for (i = 0; def_nameservers[i]; i++)
-    ;
-  if (i == 0) {
-    return ARES_SUCCESS; /* use localhost DNS server */
-  }
 
   for (i = 0; def_nameservers[i]; i++) {
     struct ares_addr addr;
@@ -1141,19 +733,23 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
     addr.family = AF_INET;
     addr.addr.addr4.s_addr = htonl(def_nameservers[i]);
 
-    status = ares__sconfig_append(&sconfig, &addr, 0, 0);
+    status = ares__sconfig_append(&sysconfig->sconfig, &addr, 0, 0);
 
     if (status != ARES_SUCCESS)
       return status;
   }
 
-  status = ARES_EOF;
+  return ARES_SUCCESS;
+}
+#endif
 
-#elif defined(ANDROID) || defined(__ANDROID__)
-  size_t i;
-  char **dns_servers;
-  char  *domains;
-  size_t num_servers;
+#if defined(ANDROID) || defined(__ANDROID__)
+static ares_status_t ares__init_sysconfig_android(ares_sysconfig_t *sysconfig)
+  size_t        i;
+  char        **dns_servers;
+  char         *domains;
+  size_t        num_servers;
+  ares_status_t status = ARES_EFILE;
 
   /* Use the Android connectivity manager to get a list
    * of DNS servers. As of Android 8 (Oreo) net.dns#
@@ -1164,22 +760,20 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
   dns_servers = ares_get_android_server_list(MAX_DNS_PROPERTIES, &num_servers);
   if (dns_servers != NULL) {
     for (i = 0; i < num_servers; i++) {
-      status = ares__sconfig_append_fromstr(&sconfig, dns_servers[i]);
+      status = ares__sconfig_append_fromstr(&sysconfig->sconfig, dns_servers[i]);
       if (status != ARES_SUCCESS) {
-        break;
+        return status;
       }
-      status = ARES_EOF;
     }
     for (i = 0; i < num_servers; i++) {
       ares_free(dns_servers[i]);
     }
     ares_free(dns_servers);
   }
-  if (channel->ndomains == 0) {
-    domains = ares_get_android_search_domains_list();
-    set_search(channel, domains);
-    ares_free(domains);
-  }
+
+  domains = ares_get_android_search_domains_list();
+  sysconfig->domains  = ares__strsplit(domains, ", ", &sysconfig->ndomains);
+  ares_free(domains);
 
 #  ifdef HAVE___SYSTEM_PROPERTY_GET
   /* Old way using the system property still in place as
@@ -1189,299 +783,241 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
    *
    * We'll only run this if we don't have any dns servers
    * because this will get the same ones (if it works). */
-  if (status != ARES_EOF) {
+  if (sysconfig->sconfig == NULL) {
     char propname[PROP_NAME_MAX];
     char propvalue[PROP_VALUE_MAX] = "";
     for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
       snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
       if (__system_property_get(propname, propvalue) < 1) {
-        status = ARES_EOF;
         break;
       }
-      status = ares__sconfig_append_fromstr(&sconfig, propvalue);
+      status = ares__sconfig_append_fromstr(&sysconfig->sconfig, propvalue);
       if (status != ARES_SUCCESS) {
-        break;
+        return status;
       }
-      status = ARES_EOF;
     }
   }
 #  endif /* HAVE___SYSTEM_PROPERTY_GET */
-#elif defined(CARES_USE_LIBRESOLV)
-  struct __res_state res;
-  int                result;
-  memset(&res, 0, sizeof(res));
-  result = res_ninit(&res);
-  if (result == 0 && (res.options & RES_INIT)) {
-    union res_sockaddr_union addr[MAXNS];
-    int                      nscount = res_getservers(&res, addr, MAXNS);
-    size_t                   i;
 
-    status = ARES_EOF;
-
-    for (i = 0; i < (size_t)nscount; ++i) {
-      char           ipaddr[INET6_ADDRSTRLEN] = "";
-      char           ipaddr_port[INET6_ADDRSTRLEN + 8]; /* [%s]:NNNNN */
-      unsigned short port = 0;
-      ares_status_t  config_status;
-      sa_family_t    family = addr[i].sin.sin_family;
-      if (family == AF_INET) {
-        ares_inet_ntop(family, &addr[i].sin.sin_addr, ipaddr, sizeof(ipaddr));
-        port = ntohs(addr[i].sin.sin_port);
-      } else if (family == AF_INET6) {
-        ares_inet_ntop(family, &addr[i].sin6.sin6_addr, ipaddr,
-                       sizeof(ipaddr));
-        port = ntohs(addr[i].sin6.sin6_port);
-      } else {
-        continue;
-      }
-
-      if (port) {
-        snprintf(ipaddr_port, sizeof(ipaddr_port), "[%s]:%u", ipaddr, port);
-      } else {
-        snprintf(ipaddr_port, sizeof(ipaddr_port), "%s", ipaddr);
-      }
-
-      config_status = ares__sconfig_append_fromstr(&sconfig, ipaddr_port);
-      if (config_status != ARES_SUCCESS) {
-        status = config_status;
-        break;
-      }
-    }
-
-    if (channel->ndomains == 0) {
-      size_t entries = 0;
-      while ((entries < MAXDNSRCH) && res.dnsrch[entries]) {
-        entries++;
-      }
-      if (entries) {
-        channel->domains = ares_malloc(entries * sizeof(char *));
-        if (!channel->domains) {
-          status = ARES_ENOMEM;
-        } else {
-          channel->ndomains = entries;
-          for (i = 0; i < channel->ndomains; ++i) {
-            channel->domains[i] = ares_strdup(res.dnsrch[i]);
-            if (!channel->domains[i]) {
-              status = ARES_ENOMEM;
-            }
-          }
-        }
-      }
-    }
-    if (channel->ndots == 0 && res.ndots > 0) {
-      channel->ndots = (size_t)res.ndots;
-    }
-
-    if (channel->tries == 0 && res.retry > 0) {
-      channel->tries = (size_t)res.retry;
-    }
-
-    if (!(channel->optmask & (ARES_OPT_ROTATE | ARES_OPT_NOROTATE))) {
-      channel->rotate = (res.options & RES_ROTATE) ? ARES_TRUE : ARES_FALSE;
-    }
-
-    if (channel->timeout == 0) {
-      if (res.retrans > 0) {
-        channel->timeout = (unsigned int)res.retrans * 1000;
-      }
-#  ifdef __APPLE__
-      if (res.retry >= 0) {
-        channel->timeout /= ((unsigned int)res.retry + 1) *
-                            (unsigned int)(res.nscount > 0 ? res.nscount : 1);
-      }
-#  endif
-    }
-
-    res_ndestroy(&res);
-  }
-#else
-  {
-    char       *p;
-    FILE       *fp;
-    size_t      linesize;
-    int         error;
-    int         update_domains;
-    const char *resolvconf_path;
-
-    /* Don't read resolv.conf and friends if we don't have to */
-    if (ARES_CONFIG_CHECK(channel)) {
-      return ARES_SUCCESS;
-    }
-
-    /* Only update search domains if they're not already specified */
-    update_domains = (channel->ndomains == 0);
-
-    /* Support path for resolvconf filename set by ares_init_options */
-    if (channel->resolvconf_path) {
-      resolvconf_path = channel->resolvconf_path;
-    } else {
-      resolvconf_path = PATH_RESOLV_CONF;
-    }
-
-    fp = fopen(resolvconf_path, "r");
-    if (fp) {
-      while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS) {
-        if ((p = try_config(line, "domain", ';')) && update_domains) {
-          status = config_domain(channel, p);
-        } else if ((p = try_config(line, "lookup", ';')) && !channel->lookups) {
-          status = config_lookup(channel, p, "bind", NULL, "file");
-        } else if ((p = try_config(line, "search", ';')) && update_domains) {
-          status = set_search(channel, p);
-        } else if ((p = try_config(line, "nameserver", ';'))) {
-          status = ares__sconfig_append_fromstr(&sconfig, p);
-        } else if ((p = try_config(line, "sortlist", ';')) &&
-                   !(channel->optmask & ARES_OPT_SORTLIST)) {
-          status = ares__config_sortlist(&sortlist, &nsort, p);
-        } else if ((p = try_config(line, "options", ';'))) {
-          status = set_options(channel, p);
-        } else {
-          status = ARES_SUCCESS;
-        }
-        if (status != ARES_SUCCESS) {
-          break;
-        }
-      }
-      fclose(fp);
-    } else {
-      error = ERRNO;
-      switch (error) {
-        case ENOENT:
-        case ESRCH:
-          status = ARES_EOF;
-          break;
-        default:
-          DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                         strerror(error)));
-          DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_RESOLV_CONF));
-          status = ARES_EFILE;
-      }
-    }
-
-    if ((status == ARES_EOF) && (!channel->lookups)) {
-      /* Many systems (Solaris, Linux, BSD's) use nsswitch.conf */
-      fp = fopen("/etc/nsswitch.conf", "r");
-      if (fp) {
-        while ((status = ares__read_line(fp, &line, &linesize)) ==
-               ARES_SUCCESS) {
-          if ((p = try_config(line, "hosts:", '\0')) && !channel->lookups) {
-            (void)config_lookup(channel, p, "dns", "resolve", "files");
-          }
-        }
-        fclose(fp);
-      } else {
-        error = ERRNO;
-        switch (error) {
-          case ENOENT:
-          case ESRCH:
-            break;
-          default:
-            DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                           strerror(error)));
-            DEBUGF(fprintf(stderr, "Error opening file: %s\n",
-                           "/etc/nsswitch.conf"));
-        }
-
-        /* ignore error, maybe we will get luck in next if clause */
-        status = ARES_EOF;
-      }
-    }
-
-    if ((status == ARES_EOF) && (!channel->lookups)) {
-      /* Linux / GNU libc 2.x and possibly others have host.conf */
-      fp = fopen("/etc/host.conf", "r");
-      if (fp) {
-        while ((status = ares__read_line(fp, &line, &linesize)) ==
-               ARES_SUCCESS) {
-          if ((p = try_config(line, "order", '\0')) && !channel->lookups) {
-            /* ignore errors */
-            (void)config_lookup(channel, p, "bind", NULL, "hosts");
-          }
-        }
-        fclose(fp);
-      } else {
-        error = ERRNO;
-        switch (error) {
-          case ENOENT:
-          case ESRCH:
-            break;
-          default:
-            DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                           strerror(error)));
-            DEBUGF(
-              fprintf(stderr, "Error opening file: %s\n", "/etc/host.conf"));
-        }
-
-        /* ignore error, maybe we will get luck in next if clause */
-        status = ARES_EOF;
-      }
-    }
-
-    if ((status == ARES_EOF) && (!channel->lookups)) {
-      /* Tru64 uses /etc/svc.conf */
-      fp = fopen("/etc/svc.conf", "r");
-      if (fp) {
-        while ((status = ares__read_line(fp, &line, &linesize)) ==
-               ARES_SUCCESS) {
-          if ((p = try_config(line, "hosts=", '\0')) && !channel->lookups) {
-            /* ignore errors */
-            (void)config_lookup(channel, p, "bind", NULL, "local");
-          }
-        }
-        fclose(fp);
-      } else {
-        error = ERRNO;
-        switch (error) {
-          case ENOENT:
-          case ESRCH:
-            break;
-          default:
-            DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                           strerror(error)));
-            DEBUGF(
-              fprintf(stderr, "Error opening file: %s\n", "/etc/svc.conf"));
-        }
-
-        /* ignore error, default value will be chosen for `channel->lookups` */
-        status = ARES_EOF;
-      }
-    }
-
-    if (line) {
-      ares_free(line);
-    }
-  }
-
+  return status;
+}
 #endif
 
-  /* Handle errors. */
-  if (status != ARES_EOF && status != ARES_SUCCESS) {
-    ares__llist_destroy(sconfig);
-    ares_free(sortlist);
+#if defined(CARES_USE_LIBRESOLV)
+static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
+{
+  struct __res_state       res;
+  ares_status_t            status = ARES_SUCCESS;
+  union res_sockaddr_union addr[MAXNS];
+  int                      nscount;
+  size_t                   i;
+  size_t                   entries = 0;
 
-    return status;
+  memset(&res, 0, sizeof(res));
+
+  if (res_ninit(&res) != 0 || !(res.options & RES_INIT)) {
+    return ARES_EFILE;
   }
 
-  /* If we got any name server entries, set them */
-  if (sconfig) {
-    /* Don't overwrite user-specified servers */
-    if (!(channel->optmask & ARES_OPT_SERVERS)) {
-      status = ares__servers_update(channel, sconfig, ARES_FALSE);
+  nscount = res_getservers(&res, addr, MAXNS);
+
+  for (i = 0; i < (size_t)nscount; ++i) {
+    char           ipaddr[INET6_ADDRSTRLEN] = "";
+    char           ipaddr_port[INET6_ADDRSTRLEN + 8]; /* [%s]:NNNNN */
+    unsigned short port = 0;
+
+    sa_family_t    family = addr[i].sin.sin_family;
+    if (family == AF_INET) {
+      ares_inet_ntop(family, &addr[i].sin.sin_addr, ipaddr, sizeof(ipaddr));
+      port = ntohs(addr[i].sin.sin_port);
+    } else if (family == AF_INET6) {
+      ares_inet_ntop(family, &addr[i].sin6.sin6_addr, ipaddr,
+                     sizeof(ipaddr));
+      port = ntohs(addr[i].sin6.sin6_port);
     } else {
-      status = ARES_SUCCESS;
+      continue;
     }
 
-    ares__llist_destroy(sconfig);
-    if (status != ARES_SUCCESS) {
-      ares_free(sortlist);
+    if (port) {
+      snprintf(ipaddr_port, sizeof(ipaddr_port), "[%s]:%u", ipaddr, port);
+    } else {
+      snprintf(ipaddr_port, sizeof(ipaddr_port), "%s", ipaddr);
     }
-    return status;
+
+    status = ares__sconfig_append_fromstr(&sysconfig->sconfig, ipaddr_port);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
   }
 
-  /* If we got any sortlist entries, fill them in. */
-  if (sortlist) {
-    channel->sortlist = sortlist;
-    channel->nsort    = nsort;
+  while ((entries < MAXDNSRCH) && res.dnsrch[entries]) {
+    entries++;
+  }
+
+  if (entries) {
+    sysconfig->domains = ares_malloc_zero(entries * sizeof(char *));
+    if (sysconfig->domains == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    } else {
+      sysconfig->ndomains = entries;
+      for (i = 0; i < sysconfig->ndomains; i++) {
+        sysconfig->domains[i] = ares_strdup(res.dnsrch[i]);
+        if (sysconfig->domains[i] == NULL) {
+          status = ARES_ENOMEM;
+          goto done;
+        }
+      }
+    }
+  }
+
+  if (res.ndots > 0) {
+    sysconfig->ndots = (size_t)res.ndots;
+  }
+  if (res.retry > 0) {
+    sysconfig->tries = (size_t)res.retry;
+  }
+  if (res.options & RES_ROTATE) {
+    sysconfig->rotate = ARES_TRUE;
+  }
+
+  if (res.retrans > 0) {
+    if (res.retrans > 0) {
+      sysconfig->timeout_ms = (unsigned int)res.retrans * 1000;
+    }
+#  ifdef __APPLE__
+    if (res.retry >= 0) {
+      sysconfig->timeout_ms /= ((unsigned int)res.retry + 1) *
+                               (unsigned int)(res.nscount > 0 ? res.nscount : 1);
+    }
+#  endif
+  }
+
+done:
+  res_ndestroy(&res);
+  return status;
+}
+#endif
+
+static void ares_sysconfig_free(ares_sysconfig_t *sysconfig)
+{
+  size_t i;
+  ares__llist_destroy(sysconfig->sconfig);
+  ares_free(sysconfig->sortlist);
+  for (i=0; i<sysconfig->ndomains; i++) {
+    ares_free(sysconfig->domains[i]);
+  }
+  ares_free(sysconfig->sortlist);
+  ares_free(sysconfig->lookups);
+  ares_free(sysconfig->domains);
+  memset(sysconfig, 0, sizeof(*sysconfig));
+}
+
+static ares_status_t ares_sysconfig_apply(ares_channel channel,
+                                          const ares_sysconfig_t *sysconfig)
+{
+  ares_status_t status;
+
+  if (sysconfig->sconfig && !(channel->optmask & ARES_OPT_SERVERS)) {
+    status = ares__servers_update(channel, sysconfig->sconfig, ARES_FALSE);
+    if (status != ARES_SUCCESS)
+      return status;
+  }
+
+  if (sysconfig->domains && !(channel->optmask & ARES_OPT_DOMAINS)) {
+    size_t i;
+
+    ares_free(channel->domains);
+    channel->domains = ares_malloc_zero(sizeof(*channel->domains) *
+                                        sysconfig->ndomains);
+    if (channel->domains == NULL)
+      return ARES_ENOMEM;
+
+    channel->ndomains = sysconfig->ndomains;
+    for (i=0; i<channel->ndomains; i++) {
+      channel->domains[i] = ares_strdup(sysconfig->domains[i]);
+      if (channel->domains[i] == NULL)
+        return ARES_ENOMEM;
+    }
+  }
+
+  if (sysconfig->lookups && !(channel->optmask & ARES_OPT_LOOKUPS)) {
+    if (channel->lookups)
+      ares_free(channel->lookups);
+    channel->lookups = ares_strdup(sysconfig->lookups);
+    if (channel->lookups == NULL) {
+      return ARES_ENOMEM;
+    }
+  }
+
+  if (sysconfig->sortlist && !(channel->optmask & ARES_OPT_SORTLIST)) {
+    ares_free(channel->sortlist);
+    channel->sortlist = ares_malloc(sizeof(channel->sortlist) *
+                                    sysconfig->nsortlist);
+    if (channel->sortlist == NULL) {
+      return ARES_ENOMEM;
+    }
+    memcpy(channel->sortlist, sysconfig->sortlist, sizeof(channel->sortlist) *
+           sysconfig->nsortlist);
+    channel->nsort = sysconfig->nsortlist;
+  }
+
+  if (sysconfig->ndots && !(channel->optmask & ARES_OPT_NDOTS)) {
+    channel->ndots = sysconfig->ndots;
+  }
+
+  if (sysconfig->tries && !(channel->optmask & ARES_OPT_TRIES)) {
+    channel->tries = sysconfig->tries;
+  }
+
+  if (sysconfig->timeout_ms && !(channel->optmask & ARES_OPT_TIMEOUTMS)) {
+    channel->timeout = sysconfig->timeout_ms;
+  }
+
+  if (!(channel->optmask & (ARES_OPT_ROTATE|ARES_OPT_NOROTATE))) {
+    channel->rotate = sysconfig->rotate;
   }
 
   return ARES_SUCCESS;
+}
+
+ares_status_t ares__init_by_sysconfig(ares_channel channel)
+{
+  ares_status_t    status;
+  ares_sysconfig_t sysconfig;
+
+  memset(&sysconfig, 0, sizeof(sysconfig));
+
+  status = ares__init_by_environment(&sysconfig);
+  if (status != ARES_SUCCESS)
+    goto done;
+
+#ifdef _WIN32
+  status = ares__init_sysconfig_windows(&sysconfig);
+#elif defined(__MVS__)
+  status = ares__init_sysconfig_mvs(&sysconfig);
+#elif defined(__riscos__)
+  status = ares__init_sysconfig_riscos(&sysconfig);
+#elif defined(WATT32)
+  status = ares__init_sysconfig_watt32(&sysconfig);
+#elif defined(ANDROID) || defined(__ANDROID__)
+  status = ares__init_sysconfig_android(&sysconfig);
+#elif defined(CARES_USE_LIBRESOLV)
+  status = ares__init_sysconfig_libresolv(&sysconfig);
+#else
+  status = ares__init_sysconfig_files(channel, &sysconfig);
+#endif
+
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares_sysconfig_apply(channel, &sysconfig);
+  if (status != ARES_SUCCESS)
+    goto done;
+
+done:
+  ares_sysconfig_free(&sysconfig);
+
+  return status;
 }

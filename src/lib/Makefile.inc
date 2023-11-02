@@ -64,6 +64,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_strerror.c			\
   ares_strsplit.c			\
   ares_sysconfig.c		\
+  ares_sysconfig_files.c	\
   ares_timeout.c			\
   ares_update_servers.c	\
   ares_version.c			\

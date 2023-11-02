@@ -385,10 +385,27 @@ ares_status_t  ares__init_servers_state(ares_channel channel);
 ares_status_t  ares__init_by_options(ares_channel               channel,
                                      const struct ares_options *options,
                                      int                        optmask);
-ares_status_t  ares__init_by_environment(ares_channel channel);
-ares_status_t  ares__init_by_resolv_conf(ares_channel channel);
-ares_status_t  ares__config_sortlist(struct apattern **sortlist, size_t *nsort,
-                                     const char *str);
+ares_status_t  ares__init_by_sysconfig(ares_channel channel);
+
+
+typedef struct {
+  ares__llist_t       *sconfig;
+  struct apattern     *sortlist;
+  size_t               nsortlist;
+  char               **domains;
+  size_t               ndomains;
+  char                *lookups;
+  size_t               ndots;
+  size_t               tries;
+  ares_bool_t          rotate;
+  size_t               timeout_ms;
+} ares_sysconfig_t;
+ares_status_t  ares__init_by_environment(ares_sysconfig_t *sysconfig);
+
+ares_status_t  ares__init_sysconfig_files(ares_channel channel,
+                                          ares_sysconfig_t *sysconfig);
+ares_status_t  ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
+                                    const char *str);
 
 void           ares__destroy_servers_state(ares_channel channel);
 ares_status_t  ares__single_domain(ares_channel channel, const char *name,

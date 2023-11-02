@@ -349,16 +349,10 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
     goto done;
   }
 
-  status = ares__init_by_environment(channel);
-  if (status != ARES_SUCCESS) {
-    DEBUGF(fprintf(stderr, "Error: init_by_environment failed: %s\n",
-                   ares_strerror(status)));
-  }
-
   if (status == ARES_SUCCESS) {
-    status = ares__init_by_resolv_conf(channel);
+    status = ares__init_by_sysconfig(channel);
     if (status != ARES_SUCCESS) {
-      DEBUGF(fprintf(stderr, "Error: init_by_resolv_conf failed: %s\n",
+      DEBUGF(fprintf(stderr, "Error: init_by_sysconfig failed: %s\n",
                      ares_strerror(status)));
     }
   }
@@ -486,7 +480,7 @@ int ares_set_sortlist(ares_channel channel, const char *sortstr)
     return ARES_ENODATA;
   }
 
-  status = ares__config_sortlist(&sortlist, &nsort, sortstr);
+  status = ares__parse_sortlist(&sortlist, &nsort, sortstr);
   if (status == ARES_SUCCESS && sortlist) {
     if (channel->sortlist) {
       ares_free(channel->sortlist);
