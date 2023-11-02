@@ -285,7 +285,6 @@ struct ares_channeldata {
   /* Server addresses and communications state. Sorted by least consecutive
    * failures, followed by the configuration order if failures are equal. */
   ares__slist_t       *servers;
-  ares_bool_t          user_specified_servers;
 
   /* random state to use when generating new ids */
   ares_rand_state     *rand_state;

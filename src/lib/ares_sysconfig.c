@@ -86,13 +86,6 @@ static ares_status_t set_search(ares_channel channel, const char *str)
   if (channel->domains == NULL || channel->ndomains == 0) {
     channel->domains  = NULL;
     channel->ndomains = 0;
-  } else {
-    /* Set the mask as if it was passed in ares_init_options */
-    /* TODO: Why?  My guess is this is because ares_dup() isn't otherwise
-     *       handling this?  This is a system config though, doesn't make
-     *       sense.  It would also lead to issues if we need to know what was
-     *       system-set vs user-set */
-    channel->optmask |= ARES_OPT_DOMAINS;
   }
 
   return ARES_SUCCESS;
@@ -1470,7 +1463,8 @@ ares_status_t ares__init_by_resolv_conf(ares_channel channel)
 
   /* If we got any name server entries, set them */
   if (sconfig) {
-    if (!channel->user_specified_servers) {
+    /* Don't overwrite user-specified servers */
+    if (!(channel->optmask & ARES_OPT_SERVERS)) {
       status = ares__servers_update(channel, sconfig, ARES_FALSE);
     } else {
       status = ARES_SUCCESS;

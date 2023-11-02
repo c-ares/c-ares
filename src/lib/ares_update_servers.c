@@ -569,7 +569,6 @@ ares_status_t ares__servers_update(ares_channel channel,
     ares__servers_trim_single(channel);
   }
 
-  channel->user_specified_servers = user_specified;
   if (user_specified) {
     /* Save servers as if they were passed in as an option */
     channel->optmask |= ARES_OPT_SERVERS;

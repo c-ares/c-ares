@@ -412,7 +412,8 @@ int ares_dup(ares_channel *dest, ares_channel src)
     return (int)rc;
   }
 
-  /* Now clone the options that ares_save_options() doesn't support. */
+  /* Now clone the options that ares_save_options() doesn't support, but are
+   * user-provided */
   (*dest)->sock_create_cb      = src->sock_create_cb;
   (*dest)->sock_create_cb_data = src->sock_create_cb_data;
   (*dest)->sock_config_cb      = src->sock_config_cb;
@@ -426,22 +427,31 @@ int ares_dup(ares_channel *dest, ares_channel src)
   memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
 
 
-  rc = (ares_status_t)ares_get_servers_ports(src, &servers);
-  if (rc != ARES_SUCCESS) {
-    ares_destroy(*dest);
-    *dest = NULL;
-    return (int)rc;
+  /* Servers are a bit unique as ares_init_options() only allows ipv4 servers
+   * and not a port per server, but there are other user specified ways, that
+   * too will toggle the optmask ARES_OPT_SERVERS to let us know.  If that's
+   * the case, pull them in.
+   *
+   * We don't want to clone system-configuration servers though.
+   */
+
+  if (optmask & ARES_OPT_SERVERS) {
+    rc = (ares_status_t)ares_get_servers_ports(src, &servers);
+    if (rc != ARES_SUCCESS) {
+      ares_destroy(*dest);
+      *dest = NULL;
+      return (int)rc;
+    }
+
+    rc = (ares_status_t)ares_set_servers_ports(*dest, servers);
+    ares_free_data(servers);
+    if (rc != ARES_SUCCESS) {
+      ares_destroy(*dest);
+      *dest = NULL;
+      return (int)rc;
+    }
   }
 
-  rc = (ares_status_t)ares_set_servers_ports(*dest, servers);
-  ares_free_data(servers);
-  if (rc != ARES_SUCCESS) {
-    ares_destroy(*dest);
-    *dest = NULL;
-    return (int)rc;
-  }
-
-  (*dest)->user_specified_servers = src->user_specified_servers;
   return ARES_SUCCESS; /* everything went fine */
 }
 
