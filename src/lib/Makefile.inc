@@ -63,7 +63,9 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_str.c				\
   ares_strerror.c			\
   ares_strsplit.c			\
+  ares_sysconfig.c		\
   ares_timeout.c			\
+  ares_update_servers.c	\
   ares_version.c			\
   bitncmp.c				\
   inet_net_pton.c			\

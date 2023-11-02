@@ -386,6 +386,10 @@ ares_status_t  ares__init_servers_state(ares_channel channel);
 ares_status_t  ares__init_by_options(ares_channel               channel,
                                      const struct ares_options *options,
                                      int                        optmask);
+ares_status_t  ares__init_by_environment(ares_channel channel);
+ares_status_t  ares__init_by_resolv_conf(ares_channel channel);
+
+
 void           ares__destroy_servers_state(ares_channel channel);
 ares_status_t  ares__single_domain(ares_channel channel, const char *name,
                                    char **s);
@@ -457,7 +461,8 @@ ares_status_t ares__sconfig_append(ares__llist_t **sconfig,
                                    unsigned short tcp_port);
 ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
                                            const char *str);
-
+ares__llist_t *ares_in_addr_to_server_config_llist(
+  const struct in_addr *servers, size_t nservers);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
