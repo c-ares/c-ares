@@ -17,6 +17,10 @@
  */
 #include "ares-test.h"
 
+extern "C" {
+  #include "ares_private.h"
+}
+
 // library initialization is only needed for windows builds
 #ifdef WIN32
 #define EXPECTED_NONINIT ARES_ENOTINITIALIZED
@@ -366,13 +370,9 @@ CONTAINED_TEST_F(LibraryTest, ContainerChannelInit,
   std::vector<std::string> expected = {"1.2.3.4:53"};
   EXPECT_EQ(expected, actual);
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(2, opts.ndomains);
-  EXPECT_EQ(std::string("first.com"), std::string(opts.domains[0]));
-  EXPECT_EQ(std::string("second.com"), std::string(opts.domains[1]));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(2, channel->ndomains);
+  EXPECT_EQ(std::string("first.com"), std::string(channel->domains[0]));
+  EXPECT_EQ(std::string("second.com"), std::string(channel->domains[1]));
 
   HostResult result;
   ares_gethostbyname(channel, "ahostname.com", AF_INET, HostCallback, &result);
@@ -396,11 +396,9 @@ CONTAINED_TEST_F(LibraryTest, ContainerSortlistOptionInit,
   // Explicitly specifying an empty sortlist in the options should override the
   // environment.
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(0, opts.nsort);
-  EXPECT_EQ(nullptr, opts.sortlist);
-  EXPECT_EQ(ARES_OPT_SORTLIST, (optmask & ARES_OPT_SORTLIST));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(0, channel->nsort);
+  EXPECT_EQ(nullptr, channel->sortlist);
+  EXPECT_EQ(ARES_OPT_SORTLIST, (channel->optmask & ARES_OPT_SORTLIST));
 
   ares_destroy(channel);
   return HasFailure();
@@ -417,12 +415,8 @@ CONTAINED_TEST_F(LibraryTest, ContainerFullResolvInit,
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(std::string("b"), std::string(opts.lookups));
-  EXPECT_EQ(5, opts.ndots);
-  ares_destroy_options(&opts);
+  EXPECT_EQ(std::string("b"), std::string(channel->lookups));
+  EXPECT_EQ(5, channel->ndots);
 
   ares_destroy(channel);
   return HasFailure();
@@ -493,11 +487,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerHostConfInit,
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(std::string("bf"), std::string(opts.lookups));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(std::string("bf"), std::string(channel->lookups));
 
   ares_destroy(channel);
   return HasFailure();
@@ -512,11 +502,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerSvcConfInit,
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(std::string("b"), std::string(opts.lookups));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(std::string("b"), std::string(channel->lookups));
 
   ares_destroy(channel);
   return HasFailure();
@@ -530,11 +516,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerMalformedResolvConfLookup,
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(std::string("fb"), std::string(opts.lookups));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(std::string("fb"), std::string(channel->lookups));
 
   ares_destroy(channel);
   return HasFailure();
@@ -567,11 +549,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerNsswitchConfNotReadable,
   MakeUnreadable hide("/etc/nsswitch.conf");
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(std::string("fb"), std::string(opts.lookups));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(std::string("fb"), std::string(channel->lookups));
 
   ares_destroy(channel);
   return HasFailure();
@@ -604,11 +582,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerRotateInit,
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(ARES_OPT_ROTATE, (optmask & ARES_OPT_ROTATE));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(ARES_TRUE, channel->rotate);
 
   ares_destroy(channel);
   return HasFailure();
@@ -620,7 +594,6 @@ CONTAINED_TEST_F(LibraryTest, ContainerRotateOverride,
   struct ares_options opts = {0};
   int optmask = ARES_OPT_NOROTATE;
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
-
   optmask = 0;
   ares_save_options(channel, &opts, &optmask);
   EXPECT_EQ(ARES_OPT_NOROTATE, (optmask & ARES_OPT_NOROTATE));
@@ -649,12 +622,8 @@ CONTAINED_TEST_F(LibraryTest, ContainerBlacklistedIpv6,
   };
   EXPECT_EQ(expected, actual);
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(1, opts.ndomains);
-  EXPECT_EQ(std::string("first.com"), std::string(opts.domains[0]));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(1, channel->ndomains);
+  EXPECT_EQ(std::string("first.com"), std::string(channel->domains[0]));
 
   ares_destroy(channel);
   return HasFailure();
@@ -672,12 +641,8 @@ CONTAINED_TEST_F(LibraryTest, ContainerMultiResolvInit,
   std::vector<std::string> expected = {"[0001:0000:0000:0000:0000:0000:0000:0002]:53"};
   EXPECT_EQ(expected, actual);
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(1, opts.ndomains);
-  EXPECT_EQ(std::string("first.com"), std::string(opts.domains[0]));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(1, channel->ndomains);
+  EXPECT_EQ(std::string("first.com"), std::string(channel->domains[0]));
 
   ares_destroy(channel);
   return HasFailure();
@@ -692,11 +657,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerSystemdResolvInit,
   ares_channel channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(std::string("bf"), std::string(opts.lookups));
-  ares_destroy_options(&opts);
+  EXPECT_EQ(std::string("bf"), std::string(channel->lookups));
 
   ares_destroy(channel);
   return HasFailure();
@@ -711,14 +672,9 @@ CONTAINED_TEST_F(LibraryTest, ContainerEmptyInit,
   std::vector<std::string> expected = {"127.0.0.1:53"};
   EXPECT_EQ(expected, actual);
 
-  struct ares_options opts;
-  int optmask = 0;
-  ares_save_options(channel, &opts, &optmask);
-  EXPECT_EQ(1, opts.ndomains);
-  EXPECT_EQ(std::string("domain.org"), std::string(opts.domains[0]));
-  EXPECT_EQ(std::string("fb"), std::string(opts.lookups));
-  ares_destroy_options(&opts);
-
+  EXPECT_EQ(1, channel->ndomains);
+  EXPECT_EQ(std::string("domain.org"), std::string(channel->domains[0]));
+  EXPECT_EQ(std::string("fb"), std::string(channel->lookups));
 
   ares_destroy(channel);
   return HasFailure();
