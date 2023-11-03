@@ -122,6 +122,10 @@ ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
   struct apattern pat;
   const char     *q;
 
+  if (*sortlist != NULL) {
+    ares_free(*sortlist);
+  }
+
   *sortlist = NULL;
   *nsort    = 0;
 
@@ -230,7 +234,7 @@ ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
 
 static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
 {
- if (sysconfig->ndomains > 0) {
+ if (sysconfig->domains && sysconfig->ndomains > 0) {
     /* if we already have some domains present, free them first */
     ares__strsplit_free(sysconfig->domains, (size_t)sysconfig->ndomains);
     sysconfig->domains  = NULL;
@@ -238,6 +242,9 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
   }
 
   sysconfig->domains = ares__strsplit(str, ", ", &sysconfig->ndomains);
+  if (sysconfig->domains == NULL)
+    return ARES_ENOMEM;
+
   return ARES_SUCCESS;
 }
 
@@ -297,6 +304,8 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig, const char *str,
     return ARES_ENOTINITIALIZED;
   }
   *l               = '\0';
+
+  ares_free(sysconfig->lookups);
   sysconfig->lookups = ares_strdup(lookups);
   if (sysconfig->lookups == NULL) {
     return ARES_ENOMEM;
@@ -470,8 +479,8 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
 {
   char         *p;
   FILE         *fp;
-  char         *line = NULL;
-  size_t        linesize;
+  char         *line     = NULL;
+  size_t        linesize = 0;
   int           error;
   const char   *resolvconf_path;
   ares_status_t status = ARES_SUCCESS;
@@ -502,9 +511,8 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
         status = ARES_SUCCESS;
       }
       if (status != ARES_SUCCESS) {
-        ares_free(line);
         fclose(fp);
-        return status;
+        goto done;
       }
     }
     fclose(fp);
@@ -516,7 +524,6 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
     switch (error) {
       case ENOENT:
       case ESRCH:
-        status = ARES_SUCCESS;
         break;
       default:
         DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
@@ -618,8 +625,10 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
     /* ignore error */
   }
 
+  status = ARES_SUCCESS;
+
 done:
   ares_free(line);
 
-  return ARES_SUCCESS;
+  return status;
 }

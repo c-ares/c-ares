@@ -926,7 +926,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel channel,
   if (sysconfig->domains && !(channel->optmask & ARES_OPT_DOMAINS)) {
     size_t i;
 
-    ares_free(channel->domains);
+    ares__strsplit_free(channel->domains, channel->ndomains);
     channel->domains = ares_malloc_zero(sizeof(*channel->domains) *
                                         sysconfig->ndomains);
     if (channel->domains == NULL)
