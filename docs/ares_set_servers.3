@@ -59,6 +59,10 @@ This function is capable of handling IPv4 and IPv6 name server
 addresses simultaneously, rendering \fBares_init_options(3)\fP with
 optmask \fBARES_OPT_SERVERS\fP functionally obsolete except for
 IPv4-only name server usage.
+.PP
+As of v1.22.0 this function can
+be called on an active channel with running queries, previously it would return
+ARES_ENOTIMP.
 
 .SH RETURN VALUES
 .B ares_set_servers(3)
@@ -77,9 +81,6 @@ was invalid.
 .TP 15
 .B ARES_ENOTINITIALIZED
 c-ares library initialization not yet performed.
-.TP 15
-.B ARES_ENOTIMP
-Changing name servers configuration while queries are outstanding is not implemented.
 .SH SEE ALSO
 .BR ares_set_servers_csv (3),
 .BR ares_get_servers (3),
