@@ -901,13 +901,9 @@ done:
 
 static void ares_sysconfig_free(ares_sysconfig_t *sysconfig)
 {
-  size_t i;
   ares__llist_destroy(sysconfig->sconfig);
+  ares__strsplit_free(sysconfig->domains, sysconfig->ndomains);
   ares_free(sysconfig->sortlist);
-  for (i=0; i<sysconfig->ndomains; i++) {
-    ares_free(sysconfig->domains[i]);
-  }
-  ares_free(sysconfig->domains);
   ares_free(sysconfig->lookups);
   memset(sysconfig, 0, sizeof(*sysconfig));
 }

@@ -236,7 +236,7 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
 {
  if (sysconfig->domains && sysconfig->ndomains > 0) {
     /* if we already have some domains present, free them first */
-    ares__strsplit_free(sysconfig->domains, (size_t)sysconfig->ndomains);
+    ares__strsplit_free(sysconfig->domains, sysconfig->ndomains);
     sysconfig->domains  = NULL;
     sysconfig->ndomains = 0;
   }
@@ -324,6 +324,9 @@ static ares_status_t set_options(ares_sysconfig_t *sysconfig, const char *str)
   const char *p;
   const char *q;
   const char *val;
+
+  if (str == NULL)
+    return ARES_SUCCESS;
 
   p = str;
   while (*p) {
