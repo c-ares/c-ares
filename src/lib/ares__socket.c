@@ -245,16 +245,9 @@ ares_status_t ares__open_connection(ares_channel         channel,
     struct sockaddr_in6 sa6;
   } saddr;
   struct sockaddr          *sa;
-  unsigned short            port;
   struct server_connection *conn;
   ares__llist_node_t       *node;
   int                       type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
-
-  if (is_tcp) {
-    port = server->addr.tcp_port ? server->addr.tcp_port : channel->tcp_port;
-  } else {
-    port = server->addr.udp_port ? server->addr.udp_port : channel->udp_port;
-  }
 
   switch (server->addr.family) {
     case AF_INET:
@@ -262,18 +255,18 @@ ares_status_t ares__open_connection(ares_channel         channel,
       salen = sizeof(saddr.sa4);
       memset(sa, 0, (size_t)salen);
       saddr.sa4.sin_family = AF_INET;
-      saddr.sa4.sin_port   = port;
-      memcpy(&saddr.sa4.sin_addr, &server->addr.addrV4,
-             sizeof(server->addr.addrV4));
+      saddr.sa4.sin_port   = htons(is_tcp?server->tcp_port:server->udp_port);
+      memcpy(&saddr.sa4.sin_addr, &server->addr.addr.addr4,
+             sizeof(saddr.sa4.sin_addr));
       break;
     case AF_INET6:
       sa    = (void *)&saddr.sa6;
       salen = sizeof(saddr.sa6);
       memset(sa, 0, (size_t)salen);
       saddr.sa6.sin6_family = AF_INET6;
-      saddr.sa6.sin6_port   = port;
-      memcpy(&saddr.sa6.sin6_addr, &server->addr.addrV6,
-             sizeof(server->addr.addrV6));
+      saddr.sa6.sin6_port   = htons(is_tcp?server->tcp_port:server->udp_port);
+      memcpy(&saddr.sa6.sin6_addr, &server->addr.addr.addr6,
+             sizeof(saddr.sa6.sin6_addr));
       break;
     default:
       return ARES_EBADFAMILY; /* LCOV_EXCL_LINE */
@@ -380,7 +373,6 @@ ares_status_t ares__open_connection(ares_channel         channel,
   SOCK_STATE_CALLBACK(channel, s, 1, 0);
 
   if (is_tcp) {
-    server->tcp_connection_generation = ++channel->tcp_connection_generation;
     server->tcp_conn                  = conn;
   }
 

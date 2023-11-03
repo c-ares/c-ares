@@ -79,7 +79,7 @@
 #  define INTERFACES_KEY       "Interfaces"
 #  define DOMAIN_KEY           "Domain"
 #  define DHCPDOMAIN_KEY       "DhcpDomain"
-
+#  define PATH_RESOLV_CONF     NULL
 #elif defined(WATT32)
 
 #  define PATH_RESOLV_CONF "/dev/ENV/etc/resolv.conf"
@@ -92,6 +92,7 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 
 #elif defined(__riscos__)
 
+#  define PATH_RESOLV_CONF NULL
 #  define PATH_HOSTS "InetDBase:Hosts"
 
 #elif defined(__HAIKU__)
@@ -157,13 +158,7 @@ struct ares_addr {
     struct in_addr       addr4;
     struct ares_in6_addr addr6;
   } addr;
-
-  unsigned short udp_port; /* stored in network order */
-  unsigned short tcp_port; /* stored in network order */
 };
-
-#define addrV4 addr.addr4
-#define addrV6 addr.addr6
 
 struct query;
 
@@ -180,8 +175,13 @@ struct server_connection {
 };
 
 struct server_state {
-  size_t                    idx; /* index for server in ares_channel */
+  size_t                    idx; /* index for server in system configuration */
+  size_t                    consec_failures; /* Consecutive query failure count
+                                              * can be hard errors or timeouts
+                                              */
   struct ares_addr          addr;
+  unsigned short            udp_port;
+  unsigned short            tcp_port;
 
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
@@ -192,12 +192,6 @@ struct server_state {
 
   /* TCP output queue */
   ares__buf_t              *tcp_send;
-
-  /* Which incarnation of this connection is this? We don't want to
-   * retransmit requests into the very same socket, but if the server
-   * closes on us and we re-open the connection, then we do want to
-   * re-send. */
-  size_t                    tcp_connection_generation;
 
   /* Link back to owning channel */
   ares_channel              channel;
@@ -218,8 +212,8 @@ struct query {
   ares__llist_node_t             *node_queries_to_conn;
   ares__llist_node_t             *node_all_queries;
 
-  /* connection handle for validation purposes */
-  const struct server_connection *conn;
+  /* connection handle query is associated with */
+  struct server_connection *conn;
 
   /* Query buf with length at beginning, for TCP transmission */
   unsigned char                  *tcpbuf;
@@ -233,19 +227,11 @@ struct query {
 
   /* Query status */
   size_t try_count; /* Number of times we tried this query already. */
-  size_t server;    /* Server this query has last been sent to. */
-  struct query_server_info *server_info; /* per-server state */
   ares_bool_t               using_tcp;
   ares_status_t             error_status;
   size_t      timeouts;   /* number of timeouts we saw for this request */
   ares_bool_t no_retries; /* do not perform any additional retries, this is set
                            * when a query is to be canceled */
-};
-
-/* Per-server state for a query */
-struct query_server_info {
-  ares_bool_t skip_server; /* should we skip server, due to errors, etc? */
-  size_t tcp_connection_generation; /* into which TCP connection did we send? */
 };
 
 /* An IP address pattern; matches an IP address X if X & mask == addr */
@@ -297,18 +283,12 @@ struct ares_channeldata {
   unsigned int         local_ip4;
   unsigned char        local_ip6[16];
 
-  /* Server addresses and communications state */
-  struct server_state *servers;
-  size_t               nservers;
+  /* Server addresses and communications state. Sorted by least consecutive
+   * failures, followed by the configuration order if failures are equal. */
+  ares__slist_t       *servers;
 
   /* random state to use when generating new ids */
   ares_rand_state     *rand_state;
-
-  /* Generation number to use for the next TCP socket open/close */
-  size_t               tcp_connection_generation;
-
-  /* Last server we sent a query to. */
-  size_t               last_server;
 
   /* All active queries in a single list */
   ares__llist_t       *all_queries;
@@ -364,8 +344,8 @@ ares_bool_t   ares__timedout(const struct timeval *now,
                              const struct timeval *check);
 
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
-ares_status_t ares__send_query(ares_channel channel, struct query *query,
-                               struct timeval *now);
+ares_status_t ares__send_query(struct query *query, struct timeval *now);
+ares_status_t ares__requeue_query(struct query *query, struct timeval *now);
 
 /* Identical to ares_query, but returns a normal ares return code like
  * ARES_SUCCESS, and can be passed the qid by reference which will be
@@ -379,7 +359,8 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
                            size_t qlen, ares_callback callback, void *arg);
 void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
-void          ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd);
+void          ares__check_cleanup_conn(ares_channel channel,
+                                       struct server_connection *conn);
 ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize);
 void          ares__free_query(struct query *query);
 
@@ -405,6 +386,28 @@ ares_status_t  ares__init_servers_state(ares_channel channel);
 ares_status_t  ares__init_by_options(ares_channel               channel,
                                      const struct ares_options *options,
                                      int                        optmask);
+ares_status_t  ares__init_by_sysconfig(ares_channel channel);
+
+
+typedef struct {
+  ares__llist_t       *sconfig;
+  struct apattern     *sortlist;
+  size_t               nsortlist;
+  char               **domains;
+  size_t               ndomains;
+  char                *lookups;
+  size_t               ndots;
+  size_t               tries;
+  ares_bool_t          rotate;
+  size_t               timeout_ms;
+} ares_sysconfig_t;
+ares_status_t  ares__init_by_environment(ares_sysconfig_t *sysconfig);
+
+ares_status_t  ares__init_sysconfig_files(ares_channel channel,
+                                          ares_sysconfig_t *sysconfig);
+ares_status_t  ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
+                                    const char *str);
+
 void           ares__destroy_servers_state(ares_channel channel);
 ares_status_t  ares__single_domain(ares_channel channel, const char *name,
                                    char **s);
@@ -465,7 +468,19 @@ int           ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
                                    const struct sockaddr *addr,
                                    ares_socklen_t addrlen);
 ares_bool_t ares__is_hostnamech(int ch);
+void ares__destroy_server(struct server_state *server);
 
+ares_status_t ares__servers_update(ares_channel channel,
+                                   ares__llist_t *server_list,
+                                   ares_bool_t user_specified);
+ares_status_t ares__sconfig_append(ares__llist_t **sconfig,
+                                   const struct ares_addr *addr,
+                                   unsigned short udp_port,
+                                   unsigned short tcp_port);
+ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
+                                           const char *str);
+ares__llist_t *ares_in_addr_to_server_config_llist(
+  const struct in_addr *servers, size_t nservers);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
@@ -501,9 +516,9 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
     }                                                             \
   } while (0)
 
-#define ARES_CONFIG_CHECK(x)                                          \
-  (x->lookups && x->nservers > 0 && x->ndots > 0 && x->timeout > 0 && \
-   x->tries > 0)
+#define ARES_CONFIG_CHECK(x)                                               \
+  (x && x->lookups && ares__slist_len(x->servers) > 0 && x->ndots > 0 &&   \
+   x->timeout > 0 && x->tries > 0)
 
 size_t ares__round_up_pow2(size_t n);
 size_t ares__log2(size_t n);

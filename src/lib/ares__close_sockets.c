@@ -31,30 +31,41 @@
 #include "ares_private.h"
 #include <assert.h>
 
+static void ares__requeue_queries(struct server_connection *conn)
+{
+  struct query       *query;
+  struct timeval      now   = ares__tvnow();
+
+  while ((query = ares__llist_first_val(conn->queries_to_conn)) != NULL) {
+    ares__requeue_query(query, &now);
+  }
+}
+
 void ares__close_connection(struct server_connection *conn)
 {
   struct server_state *server  = conn->server;
   ares_channel         channel = server->channel;
 
-  if (conn->is_tcp) {
-    /* Reset any existing input and output buffer. */
-    ares__buf_consume(server->tcp_parser, ares__buf_len(server->tcp_parser));
-    ares__buf_consume(server->tcp_send, ares__buf_len(server->tcp_send));
-    server->tcp_connection_generation = ++channel->tcp_connection_generation;
-    server->tcp_conn                  = NULL;
-  }
-
-
-  SOCK_STATE_CALLBACK(channel, conn->fd, 0, 0);
-  ares__close_socket(channel, conn->fd);
+  /* Unlink */
   ares__llist_node_claim(
     ares__htable_asvp_get_direct(channel->connnode_by_socket, conn->fd));
   ares__htable_asvp_remove(channel->connnode_by_socket, conn->fd);
 
-#ifndef NDEBUG
-  assert(ares__llist_len(conn->queries_to_conn) == 0);
-#endif
+  if (conn->is_tcp) {
+    /* Reset any existing input and output buffer. */
+    ares__buf_consume(server->tcp_parser, ares__buf_len(server->tcp_parser));
+    ares__buf_consume(server->tcp_send, ares__buf_len(server->tcp_send));
+    server->tcp_conn                  = NULL;
+  }
+
+  /* Requeue queries to other connections */
+  ares__requeue_queries(conn);
+
   ares__llist_destroy(conn->queries_to_conn);
+
+  SOCK_STATE_CALLBACK(channel, conn->fd, 0, 0);
+  ares__close_socket(channel, conn->fd);
+
   ares_free(conn);
 }
 
@@ -68,18 +79,13 @@ void ares__close_sockets(struct server_state *server)
   }
 }
 
-void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd)
+void ares__check_cleanup_conn(ares_channel channel,
+                              struct server_connection *conn)
 {
-  ares__llist_node_t       *node;
-  struct server_connection *conn;
-  ares_bool_t               do_cleanup = ARES_FALSE;
+  ares_bool_t do_cleanup = ARES_FALSE;
 
-  node = ares__htable_asvp_get_direct(channel->connnode_by_socket, fd);
-  if (node == NULL) {
+  if (channel == NULL || conn == NULL)
     return;
-  }
-
-  conn = ares__llist_node_val(node);
 
   if (ares__llist_len(conn->queries_to_conn)) {
     return;
@@ -96,7 +102,8 @@ void ares__check_cleanup_conn(ares_channel channel, ares_socket_t fd)
     do_cleanup = ARES_TRUE;
   }
 
-  if (do_cleanup) {
-    ares__close_connection(conn);
-  }
+  if (!do_cleanup)
+    return;
+
+  ares__close_connection(conn);
 }

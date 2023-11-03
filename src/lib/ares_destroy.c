@@ -32,39 +32,13 @@
 #include "ares.h"
 #include "ares_private.h"
 
-void ares_destroy_options(struct ares_options *options)
-{
-  int i;
-
-  if (options->servers) {
-    ares_free(options->servers);
-  }
-  for (i = 0; i < options->ndomains; i++) {
-    ares_free(options->domains[i]);
-  }
-  if (options->domains) {
-    ares_free(options->domains);
-  }
-  if (options->sortlist) {
-    ares_free(options->sortlist);
-  }
-  if (options->lookups) {
-    ares_free(options->lookups);
-  }
-  if (options->resolvconf_path) {
-    ares_free(options->resolvconf_path);
-  }
-  if (options->hosts_path) {
-    ares_free(options->hosts_path);
-  }
-}
 
 void ares_destroy(ares_channel channel)
 {
   size_t              i;
   ares__llist_node_t *node = NULL;
 
-  if (!channel) {
+  if (channel == NULL) {
     return;
   }
 
@@ -80,7 +54,6 @@ void ares_destroy(ares_channel channel)
 
     node = next;
   }
-
 
 #ifndef NDEBUG
   /* Freeing the query should remove it from all the lists in which it sits,
@@ -109,46 +82,39 @@ void ares_destroy(ares_channel channel)
   ares__htable_szvp_destroy(channel->queries_by_qid);
   ares__htable_asvp_destroy(channel->connnode_by_socket);
 
-  if (channel->sortlist) {
-    ares_free(channel->sortlist);
-  }
-
-  if (channel->lookups) {
-    ares_free(channel->lookups);
-  }
-
-  if (channel->resolvconf_path) {
-    ares_free(channel->resolvconf_path);
-  }
-
-  if (channel->hosts_path) {
-    ares_free(channel->hosts_path);
-  }
-
-  if (channel->rand_state) {
-    ares__destroy_rand_state(channel->rand_state);
-  }
+  ares_free(channel->sortlist);
+  ares_free(channel->lookups);
+  ares_free(channel->resolvconf_path);
+  ares_free(channel->hosts_path);
+  ares__destroy_rand_state(channel->rand_state);
 
   ares__hosts_file_destroy(channel->hf);
 
   ares_free(channel);
 }
 
+
+void ares__destroy_server(struct server_state *server)
+{
+  if (server == NULL)
+    return;
+
+  ares__close_sockets(server);
+  ares__llist_destroy(server->connections);
+  ares__buf_destroy(server->tcp_parser);
+  ares__buf_destroy(server->tcp_send);
+  ares_free(server);
+}
+
 void ares__destroy_servers_state(ares_channel channel)
 {
-  struct server_state *server;
-  size_t               i;
+  ares__slist_node_t  *node;
 
-  if (channel->servers) {
-    for (i = 0; i < channel->nservers; i++) {
-      server = &channel->servers[i];
-      ares__close_sockets(server);
-      ares__llist_destroy(server->connections);
-      ares__buf_destroy(server->tcp_parser);
-      ares__buf_destroy(server->tcp_send);
-    }
-    ares_free(channel->servers);
-    channel->servers = NULL;
+  while ((node = ares__slist_node_first(channel->servers)) != NULL) {
+    struct server_state *server = ares__slist_node_claim(node);
+    ares__destroy_server(server);
   }
-  channel->nservers = 0;
+
+  ares__slist_destroy(channel->servers);
+  channel->servers = NULL;
 }

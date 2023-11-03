@@ -41,7 +41,6 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
                            size_t qlen, ares_callback callback, void *arg)
 {
   struct query  *query;
-  size_t         i;
   size_t         packetsz;
   struct timeval now;
 
@@ -50,7 +49,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
     callback(arg, ARES_EBADQUERY, 0, NULL, 0);
     return ARES_EBADQUERY;
   }
-  if (channel->nservers < 1) {
+  if (ares__slist_len(channel->servers) == 0) {
     callback(arg, ARES_ESERVFAIL, 0, NULL, 0);
     return ARES_ESERVFAIL;
   }
@@ -61,17 +60,10 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
     return ARES_ENOMEM;
   }
   memset(query, 0, sizeof(*query));
+
   query->channel = channel;
   query->tcpbuf  = ares_malloc(qlen + 2);
   if (!query->tcpbuf) {
-    ares_free(query);
-    callback(arg, ARES_ENOMEM, 0, NULL, 0);
-    return ARES_ENOMEM;
-  }
-  query->server_info =
-    ares_malloc((size_t)channel->nservers * sizeof(query->server_info[0]));
-  if (!query->server_info) {
-    ares_free(query->tcpbuf);
     ares_free(query);
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     return ARES_ENOMEM;
@@ -99,23 +91,10 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
   /* Initialize query status. */
   query->try_count = 0;
 
-  /* Choose the server to send the query to. If rotation is enabled, keep track
-   * of the next server we want to use. */
-  query->server = channel->last_server;
-  if (channel->rotate == 1) {
-    channel->last_server =
-      (channel->last_server + 1) % (size_t)channel->nservers;
-  }
-
-  for (i = 0; i < (size_t)channel->nservers; i++) {
-    query->server_info[i].skip_server               = ARES_FALSE;
-    query->server_info[i].tcp_connection_generation = 0;
-  }
-
   packetsz = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : PACKETSZ;
   query->using_tcp = (channel->flags & ARES_FLAG_USEVC) || qlen > packetsz;
 
-  query->error_status = ARES_ECONNREFUSED;
+  query->error_status = ARES_SUCCESS;
   query->timeouts     = 0;
 
   /* Initialize our list nodes. */
@@ -142,7 +121,8 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
 
   /* Perform the first query action. */
   now = ares__tvnow();
-  return ares__send_query(channel, query, &now);
+
+  return ares__send_query(query, &now);
 }
 
 void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,

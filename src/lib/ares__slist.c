@@ -143,53 +143,10 @@ static size_t ares__slist_calc_level(ares__slist_t *list)
   return level;
 }
 
-ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
+static void ares__slist_node_push(ares__slist_t *list, ares__slist_node_t *node)
 {
-  ares__slist_node_t *node = NULL;
-  ares__slist_node_t *left = NULL;
   size_t              i;
-
-  if (list == NULL || val == NULL) {
-    return NULL;
-  }
-
-  node = ares_malloc_zero(sizeof(*node));
-
-  if (node == NULL) {
-    goto fail;
-  }
-
-  node->data   = val;
-  node->parent = list;
-
-  /* Randomly determine the number of levels we want to use */
-  node->levels = ares__slist_calc_level(list);
-
-  /* Allocate array of next and prev nodes for linking each level */
-  node->next = ares_malloc_zero(sizeof(*node->next) * node->levels);
-  if (node->next == NULL) {
-    goto fail;
-  }
-
-  node->prev = ares_malloc_zero(sizeof(*node->prev) * node->levels);
-  if (node->prev == NULL) {
-    goto fail;
-  }
-
-  /* If the number of levels is greater than we currently support in the slist,
-   * increase the count */
-  if (list->levels < node->levels) {
-    void *ptr =
-      ares_realloc_zero(list->head, sizeof(*list->head) * list->levels,
-                        sizeof(*list->head) * node->levels);
-    if (ptr == NULL) {
-      goto fail;
-    }
-
-    list->head   = ptr;
-    list->levels = node->levels;
-  }
-
+  ares__slist_node_t *left = NULL;
 
   /* Scan from highest level in the slist, even if we're not using that number
    * of levels for this entry as this is what makes it O(log n) */
@@ -236,6 +193,54 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
       }
     }
   }
+}
+
+ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
+{
+  ares__slist_node_t *node = NULL;
+
+  if (list == NULL || val == NULL) {
+    return NULL;
+  }
+
+  node = ares_malloc_zero(sizeof(*node));
+
+  if (node == NULL) {
+    goto fail;
+  }
+
+  node->data   = val;
+  node->parent = list;
+
+  /* Randomly determine the number of levels we want to use */
+  node->levels = ares__slist_calc_level(list);
+
+  /* Allocate array of next and prev nodes for linking each level */
+  node->next = ares_malloc_zero(sizeof(*node->next) * node->levels);
+  if (node->next == NULL) {
+    goto fail;
+  }
+
+  node->prev = ares_malloc_zero(sizeof(*node->prev) * node->levels);
+  if (node->prev == NULL) {
+    goto fail;
+  }
+
+  /* If the number of levels is greater than we currently support in the slist,
+   * increase the count */
+  if (list->levels < node->levels) {
+    void *ptr =
+      ares_realloc_zero(list->head, sizeof(*list->head) * list->levels,
+                        sizeof(*list->head) * node->levels);
+    if (ptr == NULL) {
+      goto fail;
+    }
+
+    list->head   = ptr;
+    list->levels = node->levels;
+  }
+
+  ares__slist_node_push(list, node);
 
   list->cnt++;
 
@@ -249,6 +254,70 @@ fail:
   }
   return NULL;
 }
+
+static void ares__slist_node_pop(ares__slist_node_t *node)
+{
+  ares__slist_t *list = node->parent;
+  size_t         i;
+
+  /* relink each node at each level */
+  for (i = node->levels; i-- > 0;) {
+    if (node->next[i] == NULL) {
+      if (i == 0) {
+        list->tail = node->prev[0];
+      }
+    } else {
+      node->next[i]->prev[i] = node->prev[i];
+    }
+
+    if (node->prev[i] == NULL) {
+      list->head[i] = node->next[i];
+    } else {
+      node->prev[i]->next[i] = node->next[i];
+    }
+  }
+
+  memset(node->next, 0, sizeof(*node->next) * node->levels);
+  memset(node->prev, 0, sizeof(*node->prev) * node->levels);
+}
+
+void *ares__slist_node_claim(ares__slist_node_t *node)
+{
+  ares__slist_t *list;
+  void          *val;
+
+  if (node == NULL) {
+    return NULL;
+  }
+
+  list = node->parent;
+  val  = node->data;
+
+  ares__slist_node_pop(node);
+
+  ares_free(node->next);
+  ares_free(node->prev);
+  ares_free(node);
+
+  list->cnt--;
+
+  return val;
+}
+
+
+void ares__slist_node_reinsert(ares__slist_node_t *node)
+{
+  ares__slist_t *list;
+
+  if (node == NULL)
+    return;
+
+  list = node->parent;
+
+  ares__slist_node_pop(node);
+  ares__slist_node_push(list, node);
+}
+
 
 ares__slist_node_t *ares__slist_node_find(const ares__slist_t *list,
                                           const void          *val)
@@ -376,45 +445,6 @@ void *ares__slist_first_val(const ares__slist_t *list)
 void *ares__slist_last_val(const ares__slist_t *list)
 {
   return ares__slist_node_val(ares__slist_node_last(list));
-}
-
-void *ares__slist_node_claim(ares__slist_node_t *node)
-{
-  void          *val;
-  ares__slist_t *list;
-  size_t         i;
-
-  if (node == NULL) {
-    return NULL;
-  }
-
-  list = node->parent;
-  val  = node->data;
-
-  /* relink each node at each level */
-  for (i = node->levels; i-- > 0;) {
-    if (node->next[i] == NULL) {
-      if (i == 0) {
-        list->tail = node->prev[0];
-      }
-    } else {
-      node->next[i]->prev[i] = node->prev[i];
-    }
-
-    if (node->prev[i] == NULL) {
-      list->head[i] = node->next[i];
-    } else {
-      node->prev[i]->next[i] = node->next[i];
-    }
-  }
-
-  ares_free(node->next);
-  ares_free(node->prev);
-  ares_free(node);
-
-  list->cnt--;
-
-  return val;
 }
 
 void ares__slist_node_destroy(ares__slist_node_t *node)

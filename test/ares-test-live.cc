@@ -745,6 +745,7 @@ TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
     HostResult result;
     ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
     Process();
+
     EXPECT_TRUE(result.done_);
     EXPECT_NE(0, count);
   }
@@ -756,7 +757,9 @@ TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
 
     HostResult result;
     ares_gethostbyname(copy, "www.google.com.", AF_INET, HostCallback, &result);
+
     ProcessWork(copy, NoExtraFDs, nullptr);
+
     EXPECT_TRUE(result.done_);
     ares_destroy(copy);
     EXPECT_NE(0, count);
@@ -774,10 +777,9 @@ TEST_F(DefaultChannelTest, LiveSetServers) {
   server2.family = AF_INET;
   server2.addr.addr4.s_addr = htonl(0x02030405);
 
-  // Change not allowed while request is pending
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers(channel_, &server1));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, &server1));
   ares_cancel(channel_);
 }
 
@@ -796,19 +798,19 @@ TEST_F(DefaultChannelTest, LiveSetServersPorts) {
   server2.tcp_port = 0;;
   EXPECT_EQ(ARES_ENODATA, ares_set_servers_ports(nullptr, &server1));
 
-  // Change not allowed while request is pending
+  // Change while pending will requeue any requests to new servers
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_ports(channel_, &server1));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, &server1));
   ares_cancel(channel_);
 }
 
 TEST_F(DefaultChannelTest, LiveSetServersCSV) {
-  // Change not allowed while request is pending
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_csv(channel_, "1.2.3.4,2.3.4.5"));
-  EXPECT_EQ(ARES_ENOTIMP, ares_set_servers_ports_csv(channel_, "1.2.3.4:56,2.3.4.5:67"));
+  // Change while pending will requeue any requests to new servers
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel_, "1.2.3.4,2.3.4.5"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports_csv(channel_, "1.2.3.4:56,2.3.4.5:67"));
   ares_cancel(channel_);
 }
 
