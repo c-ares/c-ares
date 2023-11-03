@@ -478,7 +478,7 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
                                          ares_sysconfig_t *sysconfig)
 {
   char         *p;
-  FILE         *fp;
+  FILE         *fp       = NULL;
   char         *line     = NULL;
   size_t        linesize = 0;
   int           error;
