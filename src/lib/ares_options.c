@@ -209,6 +209,10 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
     options->socket_receive_buffer_size = channel->socket_receive_buffer_size;
   }
 
+  if (channel->optmask & ARES_OPT_EDNSPSZ) {
+    options->ednspsz = (int)channel->ednspsz;
+  }
+
   if (channel->optmask & ARES_OPT_UDP_MAX_QUERIES) {
     options->udp_max_queries  = (int)channel->udp_max_queries;
   }
