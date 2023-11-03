@@ -251,7 +251,7 @@ ares_status_t ares__init_by_options(ares_channel               channel,
     return ARES_ENODATA;
 
   if (options == NULL) {
-    if (optmask == 0) {
+    if (optmask != 0) {
       return ARES_ENODATA;
     }
     return ARES_SUCCESS;

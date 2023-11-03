@@ -358,7 +358,7 @@ TEST(Init, NoLibraryInit) {
 
 NameContentList filelist = {
   {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
-                /*       "sortlist 1.2.3.4/16 2.3.4.5\n" */
+                       "sortlist 1.2.3.4/16 2.3.4.5\n"
                        "search first.com second.com\n"},
   {"/etc/hosts", "3.4.5.6 ahostname.com\n"},
   {"/etc/nsswitch.conf", "hosts: files\n"}};
