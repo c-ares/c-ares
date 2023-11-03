@@ -66,7 +66,6 @@
 #include "ares_platform.h"
 #include "ares_private.h"
 
-
 static int ip_addr(const char *ipbuf, ares_ssize_t len, struct in_addr *addr)
 {
   /* Four octets and three periods yields at most 15 characters. */
@@ -117,7 +116,7 @@ static ares_bool_t sortlist_alloc(struct apattern **sortlist, size_t *nsort,
 }
 
 ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
-                                    const char *str)
+                                   const char *str)
 {
   struct apattern pat;
   const char     *q;
@@ -171,7 +170,8 @@ ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
     /* Lets see if it is CIDR */
     /* First we'll try IPv6 */
     if ((bits = ares_inet_net_pton(AF_INET6, ipbufpfx[0] ? ipbufpfx : ipbuf,
-                                   &pat.addr.addr6, sizeof(pat.addr.addr6))) > 0) {
+                                   &pat.addr.addr6, sizeof(pat.addr.addr6))) >
+        0) {
       pat.type      = PATTERN_CIDR;
       pat.mask.bits = (unsigned short)bits;
       pat.family    = AF_INET6;
@@ -231,10 +231,9 @@ ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
   return ARES_SUCCESS;
 }
 
-
 static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
 {
- if (sysconfig->domains && sysconfig->ndomains > 0) {
+  if (sysconfig->domains && sysconfig->ndomains > 0) {
     /* if we already have some domains present, free them first */
     ares__strsplit_free(sysconfig->domains, sysconfig->ndomains);
     sysconfig->domains  = NULL;
@@ -242,15 +241,16 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
   }
 
   sysconfig->domains = ares__strsplit(str, ", ", &sysconfig->ndomains);
-  if (sysconfig->domains == NULL)
+  if (sysconfig->domains == NULL) {
     return ARES_ENOMEM;
+  }
 
   return ARES_SUCCESS;
 }
 
 static ares_status_t config_domain(ares_sysconfig_t *sysconfig, char *str)
 {
-  char  *q;
+  char *q;
 
   /* Set a single search domain. */
   q = str;
@@ -262,15 +262,14 @@ static ares_status_t config_domain(ares_sysconfig_t *sysconfig, char *str)
   return config_search(sysconfig, str);
 }
 
-
 static ares_status_t config_lookup(ares_sysconfig_t *sysconfig, const char *str,
                                    const char *bindch, const char *altbindch,
                                    const char *filech)
 {
-  char                   lookups[3];
-  char                  *l;
-  const char            *p;
-  ares_bool_t            found;
+  char        lookups[3];
+  char       *l;
+  const char *p;
+  ares_bool_t found;
 
   if (altbindch == NULL) {
     altbindch = bindch;
@@ -303,7 +302,7 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig, const char *str,
   if (!found) {
     return ARES_ENOTINITIALIZED;
   }
-  *l               = '\0';
+  *l = '\0';
 
   ares_free(sysconfig->lookups);
   sysconfig->lookups = ares_strdup(lookups);
@@ -325,8 +324,9 @@ static ares_status_t set_options(ares_sysconfig_t *sysconfig, const char *str)
   const char *q;
   const char *val;
 
-  if (str == NULL)
+  if (str == NULL) {
     return ARES_SUCCESS;
+  }
 
   p = str;
   while (*p) {
@@ -335,7 +335,7 @@ static ares_status_t set_options(ares_sysconfig_t *sysconfig, const char *str)
       q++;
     }
     val = try_option(p, q, "ndots:");
-    if (val ) {
+    if (val) {
       sysconfig->ndots = strtoul(val, NULL, 10);
     }
 
@@ -446,7 +446,6 @@ static char *try_config(char *s, const char *opt, char scc)
   return p;
 }
 
-
 ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
 {
   const char   *localdomain;
@@ -456,8 +455,9 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
   localdomain = getenv("LOCALDOMAIN");
   if (localdomain) {
     char *temp = ares_strdup(localdomain);
-    if (temp == NULL)
+    if (temp == NULL) {
       return ARES_ENOMEM;
+    }
     status = config_domain(sysconfig, temp);
     ares_free(temp);
     if (status != ARES_SUCCESS) {
@@ -476,8 +476,7 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
   return ARES_SUCCESS;
 }
 
-
-ares_status_t ares__init_sysconfig_files(ares_channel channel,
+ares_status_t ares__init_sysconfig_files(ares_channel      channel,
                                          ares_sysconfig_t *sysconfig)
 {
   char         *p;
@@ -502,12 +501,13 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
         status = config_domain(sysconfig, p);
       } else if ((p = try_config(line, "lookup", ';'))) {
         status = config_lookup(sysconfig, p, "bind", NULL, "file");
-      } else if ((p = try_config(line, "search", ';')) ) {
+      } else if ((p = try_config(line, "search", ';'))) {
         status = config_search(sysconfig, p);
       } else if ((p = try_config(line, "nameserver", ';'))) {
         status = ares__sconfig_append_fromstr(&sysconfig->sconfig, p);
       } else if ((p = try_config(line, "sortlist", ';'))) {
-        status = ares__parse_sortlist(&sysconfig->sortlist, &sysconfig->nsortlist, p);
+        status =
+          ares__parse_sortlist(&sysconfig->sortlist, &sysconfig->nsortlist, p);
       } else if ((p = try_config(line, "options", ';'))) {
         status = set_options(sysconfig, p);
       } else {
@@ -520,8 +520,9 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
     }
     fclose(fp);
 
-    if (status != ARES_EOF)
+    if (status != ARES_EOF) {
       goto done;
+    }
   } else {
     error = ERRNO;
     switch (error) {
@@ -541,46 +542,15 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
   /* Many systems (Solaris, Linux, BSD's) use nsswitch.conf */
   fp = fopen("/etc/nsswitch.conf", "r");
   if (fp) {
-    while ((status = ares__read_line(fp, &line, &linesize)) ==
-           ARES_SUCCESS) {
+    while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS) {
       if ((p = try_config(line, "hosts:", '\0'))) {
         (void)config_lookup(sysconfig, p, "dns", "resolve", "files");
       }
     }
     fclose(fp);
-    if (status != ARES_EOF)
+    if (status != ARES_EOF) {
       goto done;
-  } else {
-    error = ERRNO;
-    switch (error) {
-      case ENOENT:
-      case ESRCH:
-        break;
-      default:
-        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                       strerror(error)));
-        DEBUGF(fprintf(stderr, "Error opening file: %s\n",
-                       "/etc/nsswitch.conf"));
-        break;
     }
-    /* ignore error, maybe we will get luck in next if clause */
-  }
-
-
-
-  /* Linux / GNU libc 2.x and possibly others have host.conf */
-  fp = fopen("/etc/host.conf", "r");
-  if (fp) {
-    while ((status = ares__read_line(fp, &line, &linesize)) ==
-           ARES_SUCCESS) {
-      if ((p = try_config(line, "order", '\0'))) {
-        /* ignore errors */
-        (void)config_lookup(sysconfig, p, "bind", NULL, "hosts");
-      }
-    }
-    fclose(fp);
-    if (status != ARES_EOF)
-      goto done;
   } else {
     error = ERRNO;
     switch (error) {
@@ -591,7 +561,36 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
         DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
                        strerror(error)));
         DEBUGF(
-          fprintf(stderr, "Error opening file: %s\n", "/etc/host.conf"));
+          fprintf(stderr, "Error opening file: %s\n", "/etc/nsswitch.conf"));
+        break;
+    }
+    /* ignore error, maybe we will get luck in next if clause */
+  }
+
+
+  /* Linux / GNU libc 2.x and possibly others have host.conf */
+  fp = fopen("/etc/host.conf", "r");
+  if (fp) {
+    while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS) {
+      if ((p = try_config(line, "order", '\0'))) {
+        /* ignore errors */
+        (void)config_lookup(sysconfig, p, "bind", NULL, "hosts");
+      }
+    }
+    fclose(fp);
+    if (status != ARES_EOF) {
+      goto done;
+    }
+  } else {
+    error = ERRNO;
+    switch (error) {
+      case ENOENT:
+      case ESRCH:
+        break;
+      default:
+        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
+                       strerror(error)));
+        DEBUGF(fprintf(stderr, "Error opening file: %s\n", "/etc/host.conf"));
         break;
     }
 
@@ -602,16 +601,16 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
   /* Tru64 uses /etc/svc.conf */
   fp = fopen("/etc/svc.conf", "r");
   if (fp) {
-    while ((status = ares__read_line(fp, &line, &linesize)) ==
-           ARES_SUCCESS) {
+    while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS) {
       if ((p = try_config(line, "hosts=", '\0'))) {
         /* ignore errors */
         (void)config_lookup(sysconfig, p, "bind", NULL, "local");
       }
     }
     fclose(fp);
-    if (status != ARES_EOF)
+    if (status != ARES_EOF) {
       goto done;
+    }
   } else {
     error = ERRNO;
     switch (error) {
@@ -621,8 +620,7 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
       default:
         DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
                        strerror(error)));
-        DEBUGF(
-          fprintf(stderr, "Error opening file: %s\n", "/etc/svc.conf"));
+        DEBUGF(fprintf(stderr, "Error opening file: %s\n", "/etc/svc.conf"));
         break;
     }
     /* ignore error */

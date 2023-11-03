@@ -304,20 +304,19 @@ void *ares__slist_node_claim(ares__slist_node_t *node)
   return val;
 }
 
-
 void ares__slist_node_reinsert(ares__slist_node_t *node)
 {
   ares__slist_t *list;
 
-  if (node == NULL)
+  if (node == NULL) {
     return;
+  }
 
   list = node->parent;
 
   ares__slist_node_pop(node);
   ares__slist_node_push(list, node);
 }
-
 
 ares__slist_node_t *ares__slist_node_find(const ares__slist_t *list,
                                           const void          *val)

@@ -32,13 +32,13 @@
 int ares_getsock(ares_channel channel, ares_socket_t *socks,
                  int numsocks) /* size of the 'socks' array */
 {
-  ares__slist_node_t  *snode;
-  size_t               sockindex = 0;
-  unsigned int         bitmap    = 0;
-  unsigned int         setbits   = 0xffffffff;
+  ares__slist_node_t *snode;
+  size_t              sockindex = 0;
+  unsigned int        bitmap    = 0;
+  unsigned int        setbits   = 0xffffffff;
 
   /* Are there any active queries? */
-  size_t               active_queries = ares__llist_len(channel->all_queries);
+  size_t              active_queries = ares__llist_len(channel->all_queries);
 
   if (numsocks <= 0) {
     return 0;

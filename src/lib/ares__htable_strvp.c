@@ -113,8 +113,7 @@ fail:
 }
 
 ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
-                                      const char *key,
-                                      void *val)
+                                      const char *key, void *val)
 {
   ares__htable_strvp_bucket_t *bucket = NULL;
 
@@ -132,7 +131,7 @@ ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
   if (bucket->key == NULL) {
     goto fail;
   }
-  bucket->val    = val;
+  bucket->val = val;
 
   if (!ares__htable_insert(htable->hash, bucket)) {
     goto fail;
@@ -181,7 +180,7 @@ void *ares__htable_strvp_get_direct(const ares__htable_strvp_t *htable,
 }
 
 ares_bool_t ares__htable_strvp_remove(ares__htable_strvp_t *htable,
-                                      const char *key)
+                                      const char           *key)
 {
   if (htable == NULL) {
     return ARES_FALSE;

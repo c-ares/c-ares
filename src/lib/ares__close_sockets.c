@@ -33,8 +33,8 @@
 
 static void ares__requeue_queries(struct server_connection *conn)
 {
-  struct query       *query;
-  struct timeval      now   = ares__tvnow();
+  struct query  *query;
+  struct timeval now = ares__tvnow();
 
   while ((query = ares__llist_first_val(conn->queries_to_conn)) != NULL) {
     ares__requeue_query(query, &now);
@@ -55,7 +55,7 @@ void ares__close_connection(struct server_connection *conn)
     /* Reset any existing input and output buffer. */
     ares__buf_consume(server->tcp_parser, ares__buf_len(server->tcp_parser));
     ares__buf_consume(server->tcp_send, ares__buf_len(server->tcp_send));
-    server->tcp_conn                  = NULL;
+    server->tcp_conn = NULL;
   }
 
   /* Requeue queries to other connections */
@@ -79,13 +79,14 @@ void ares__close_sockets(struct server_state *server)
   }
 }
 
-void ares__check_cleanup_conn(ares_channel channel,
+void ares__check_cleanup_conn(ares_channel              channel,
                               struct server_connection *conn)
 {
   ares_bool_t do_cleanup = ARES_FALSE;
 
-  if (channel == NULL || conn == NULL)
+  if (channel == NULL || conn == NULL) {
     return;
+  }
 
   if (ares__llist_len(conn->queries_to_conn)) {
     return;
@@ -102,8 +103,9 @@ void ares__check_cleanup_conn(ares_channel channel,
     do_cleanup = ARES_TRUE;
   }
 
-  if (!do_cleanup)
+  if (!do_cleanup) {
     return;
+  }
 
   ares__close_connection(conn);
 }

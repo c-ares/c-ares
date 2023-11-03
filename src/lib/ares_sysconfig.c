@@ -586,7 +586,6 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
   return *outptr != NULL ? ARES_TRUE : ARES_FALSE;
 }
 
-
 static ares_status_t ares__init_sysconfig_windows(ares_sysconfig_t *sysconfig)
 {
   char         *line   = NULL;
@@ -595,17 +594,19 @@ static ares_status_t ares__init_sysconfig_windows(ares_sysconfig_t *sysconfig)
   if (get_DNS_Windows(&line)) {
     status = ares__sconfig_append_fromstr(&sysconfig->sconfig, line);
     ares_free(line);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto done;
+    }
   }
 
   if (get_SuffixList_Windows(&line)) {
-    sysconfig->domains  = ares__strsplit(line, ", ", &sysconfig->ndomains);
+    sysconfig->domains = ares__strsplit(line, ", ", &sysconfig->ndomains);
     if (sysconfig->domains == NULL) {
       status = ARES_EFILE;
     }
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto done;
+    }
   }
 
 done:
@@ -616,13 +617,13 @@ done:
 #if defined(__MVS__)
 static ares_status_t ares__init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
 {
-  struct __res_state  *res = 0;
-  size_t               count4;
-  size_t               count6;
-  int                  i;
-  __STATEEXTIPV6      *v6;
-  arse__llist_t       *sconfig = NULL;
-  ares_status_t        status;
+  struct __res_state *res = 0;
+  size_t              count4;
+  size_t              count6;
+  int                 i;
+  __STATEEXTIPV6     *v6;
+  arse__llist_t      *sconfig = NULL;
+  ares_status_t       status;
 
   if (0 == res) {
     int rc = res_init();
@@ -653,12 +654,13 @@ static ares_status_t ares__init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
     addr.addr.addr4.s_addr = addr_in->sin_addr.s_addr;
     addr.family            = AF_INET;
 
-    status = ares__sconfig_append(&sysconfig->sconfig, &addr,
-                                  htons(addr_in->sin_port),
-                                  htons(addr_in->sin_port));
+    status =
+      ares__sconfig_append(&sysconfig->sconfig, &addr, htons(addr_in->sin_port),
+                           htons(addr_in->sin_port));
 
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       return status;
+    }
   }
 
   for (i = 0; i < count6; i++) {
@@ -669,12 +671,13 @@ static ares_status_t ares__init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
     memcpy(&(addr.addr.addr6), &(addr_in->sin6_addr),
            sizeof(addr_in->sin6_addr));
 
-    status = ares__sconfig_append(&sysconfig->sconfig, &addr,
-                                  htons(addr_in->sin_port),
-                                  htons(addr_in->sin_port));
+    status =
+      ares__sconfig_append(&sysconfig->sconfig, &addr, htons(addr_in->sin_port),
+                           htons(addr_in->sin_port));
 
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       return status;
+    }
   }
 
   return ARES_SUCCESS;
@@ -689,7 +692,7 @@ static ares_status_t ares__init_sysconfig_riscos(ares_sysconfig_t *sysconfig)
 
   /* Under RISC OS, name servers are listed in the
      system variable Inet$Resolvers, space separated. */
-  line   = getenv("Inet$Resolvers");
+  line = getenv("Inet$Resolvers");
   if (line) {
     char *resolvers = ares_strdup(line);
     char *pos;
@@ -730,13 +733,14 @@ static ares_status_t ares__init_sysconfig_watt32(ares_sysconfig_t *sysconfig)
   for (i = 0; def_nameservers[i]; i++) {
     struct ares_addr addr;
 
-    addr.family = AF_INET;
+    addr.family            = AF_INET;
     addr.addr.addr4.s_addr = htonl(def_nameservers[i]);
 
     status = ares__sconfig_append(&sysconfig->sconfig, &addr, 0, 0);
 
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       return status;
+    }
   }
 
   return ARES_SUCCESS;
@@ -744,62 +748,62 @@ static ares_status_t ares__init_sysconfig_watt32(ares_sysconfig_t *sysconfig)
 #endif
 
 #if defined(ANDROID) || defined(__ANDROID__)
-static ares_status_t ares__init_sysconfig_android(ares_sysconfig_t *sysconfig)
-  size_t        i;
-  char        **dns_servers;
-  char         *domains;
-  size_t        num_servers;
-  ares_status_t status = ARES_EFILE;
+static ares_status_t
+       ares__init_sysconfig_android(ares_sysconfig_t *sysconfig) size_t i;
+char **dns_servers;
+char  *domains;
+size_t num_servers;
+ares_status_t status = ARES_EFILE;
 
-  /* Use the Android connectivity manager to get a list
-   * of DNS servers. As of Android 8 (Oreo) net.dns#
-   * system properties are no longer available. Google claims this
-   * improves privacy. Apps now need the ACCESS_NETWORK_STATE
-   * permission and must use the ConnectivityManager which
-   * is Java only. */
-  dns_servers = ares_get_android_server_list(MAX_DNS_PROPERTIES, &num_servers);
-  if (dns_servers != NULL) {
-    for (i = 0; i < num_servers; i++) {
-      status = ares__sconfig_append_fromstr(&sysconfig->sconfig, dns_servers[i]);
-      if (status != ARES_SUCCESS) {
-        return status;
-      }
+/* Use the Android connectivity manager to get a list
+ * of DNS servers. As of Android 8 (Oreo) net.dns#
+ * system properties are no longer available. Google claims this
+ * improves privacy. Apps now need the ACCESS_NETWORK_STATE
+ * permission and must use the ConnectivityManager which
+ * is Java only. */
+dns_servers = ares_get_android_server_list(MAX_DNS_PROPERTIES, &num_servers);
+if (dns_servers != NULL) {
+  for (i = 0; i < num_servers; i++) {
+    status = ares__sconfig_append_fromstr(&sysconfig->sconfig, dns_servers[i]);
+    if (status != ARES_SUCCESS) {
+      return status;
     }
-    for (i = 0; i < num_servers; i++) {
-      ares_free(dns_servers[i]);
-    }
-    ares_free(dns_servers);
   }
+  for (i = 0; i < num_servers; i++) {
+    ares_free(dns_servers[i]);
+  }
+  ares_free(dns_servers);
+}
 
-  domains = ares_get_android_search_domains_list();
-  sysconfig->domains  = ares__strsplit(domains, ", ", &sysconfig->ndomains);
-  ares_free(domains);
+domains            = ares_get_android_search_domains_list();
+sysconfig->domains = ares__strsplit(domains, ", ", &sysconfig->ndomains);
+ares_free(domains);
 
 #  ifdef HAVE___SYSTEM_PROPERTY_GET
-  /* Old way using the system property still in place as
-   * a fallback. Older android versions can still use this.
-   * it's possible for older apps not not have added the new
-   * permission and we want to try to avoid breaking those.
-   *
-   * We'll only run this if we don't have any dns servers
-   * because this will get the same ones (if it works). */
-  if (sysconfig->sconfig == NULL) {
-    char propname[PROP_NAME_MAX];
-    char propvalue[PROP_VALUE_MAX] = "";
-    for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
-      snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
-      if (__system_property_get(propname, propvalue) < 1) {
-        break;
-      }
-      status = ares__sconfig_append_fromstr(&sysconfig->sconfig, propvalue);
-      if (status != ARES_SUCCESS) {
-        return status;
-      }
+/* Old way using the system property still in place as
+ * a fallback. Older android versions can still use this.
+ * it's possible for older apps not not have added the new
+ * permission and we want to try to avoid breaking those.
+ *
+ * We'll only run this if we don't have any dns servers
+ * because this will get the same ones (if it works). */
+if (sysconfig->sconfig == NULL) {
+  char propname[PROP_NAME_MAX];
+  char propvalue[PROP_VALUE_MAX] = "";
+  for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
+    snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
+    if (__system_property_get(propname, propvalue) < 1) {
+      break;
+    }
+    status = ares__sconfig_append_fromstr(&sysconfig->sconfig, propvalue);
+    if (status != ARES_SUCCESS) {
+      return status;
     }
   }
+}
 #  endif /* HAVE___SYSTEM_PROPERTY_GET */
 
-  return status;
+return status;
 }
 #endif
 
@@ -831,8 +835,7 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
       ares_inet_ntop(family, &addr[i].sin.sin_addr, ipaddr, sizeof(ipaddr));
       port = ntohs(addr[i].sin.sin_port);
     } else if (family == AF_INET6) {
-      ares_inet_ntop(family, &addr[i].sin6.sin6_addr, ipaddr,
-                     sizeof(ipaddr));
+      ares_inet_ntop(family, &addr[i].sin6.sin6_addr, ipaddr, sizeof(ipaddr));
       port = ntohs(addr[i].sin6.sin6_port);
     } else {
       continue;
@@ -887,8 +890,9 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
     }
 #  ifdef __APPLE__
     if (res.retry >= 0) {
-      sysconfig->timeout_ms /= ((unsigned int)res.retry + 1) *
-                               (unsigned int)(res.nscount > 0 ? res.nscount : 1);
+      sysconfig->timeout_ms /=
+        ((unsigned int)res.retry + 1) *
+        (unsigned int)(res.nscount > 0 ? res.nscount : 1);
     }
 #  endif
   }
@@ -908,31 +912,34 @@ static void ares_sysconfig_free(ares_sysconfig_t *sysconfig)
   memset(sysconfig, 0, sizeof(*sysconfig));
 }
 
-static ares_status_t ares_sysconfig_apply(ares_channel channel,
+static ares_status_t ares_sysconfig_apply(ares_channel            channel,
                                           const ares_sysconfig_t *sysconfig)
 {
   ares_status_t status;
 
   if (sysconfig->sconfig && !(channel->optmask & ARES_OPT_SERVERS)) {
     status = ares__servers_update(channel, sysconfig->sconfig, ARES_FALSE);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       return status;
+    }
   }
 
   if (sysconfig->domains && !(channel->optmask & ARES_OPT_DOMAINS)) {
     size_t i;
 
     ares__strsplit_free(channel->domains, channel->ndomains);
-    channel->domains = ares_malloc_zero(sizeof(*channel->domains) *
-                                        sysconfig->ndomains);
-    if (channel->domains == NULL)
+    channel->domains =
+      ares_malloc_zero(sizeof(*channel->domains) * sysconfig->ndomains);
+    if (channel->domains == NULL) {
       return ARES_ENOMEM;
+    }
 
     channel->ndomains = sysconfig->ndomains;
-    for (i=0; i<channel->ndomains; i++) {
+    for (i = 0; i < channel->ndomains; i++) {
       channel->domains[i] = ares_strdup(sysconfig->domains[i]);
-      if (channel->domains[i] == NULL)
+      if (channel->domains[i] == NULL) {
         return ARES_ENOMEM;
+      }
     }
   }
 
@@ -946,13 +953,13 @@ static ares_status_t ares_sysconfig_apply(ares_channel channel,
 
   if (sysconfig->sortlist && !(channel->optmask & ARES_OPT_SORTLIST)) {
     ares_free(channel->sortlist);
-    channel->sortlist = ares_malloc(sizeof(*channel->sortlist) *
-                                    sysconfig->nsortlist);
+    channel->sortlist =
+      ares_malloc(sizeof(*channel->sortlist) * sysconfig->nsortlist);
     if (channel->sortlist == NULL) {
       return ARES_ENOMEM;
     }
-    memcpy(channel->sortlist, sysconfig->sortlist, sizeof(*channel->sortlist) *
-           sysconfig->nsortlist);
+    memcpy(channel->sortlist, sysconfig->sortlist,
+           sizeof(*channel->sortlist) * sysconfig->nsortlist);
     channel->nsort = sysconfig->nsortlist;
   }
 
@@ -968,7 +975,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel channel,
     channel->timeout = sysconfig->timeout_ms;
   }
 
-  if (!(channel->optmask & (ARES_OPT_ROTATE|ARES_OPT_NOROTATE))) {
+  if (!(channel->optmask & (ARES_OPT_ROTATE | ARES_OPT_NOROTATE))) {
     channel->rotate = sysconfig->rotate;
   }
 
@@ -983,8 +990,9 @@ ares_status_t ares__init_by_sysconfig(ares_channel channel)
   memset(&sysconfig, 0, sizeof(sysconfig));
 
   status = ares__init_by_environment(&sysconfig);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     goto done;
+  }
 
 #ifdef _WIN32
   status = ares__init_sysconfig_windows(&sysconfig);
@@ -1007,8 +1015,9 @@ ares_status_t ares__init_by_sysconfig(ares_channel channel)
   }
 
   status = ares_sysconfig_apply(channel, &sysconfig);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     goto done;
+  }
 
 done:
   ares_sysconfig_free(&sysconfig);

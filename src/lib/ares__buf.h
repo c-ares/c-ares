@@ -181,7 +181,7 @@ const unsigned char *ares__buf_tag_fetch(const ares__buf_t *buf, size_t *len);
  *  \param[in]  buf    Initialized buffer object
  *  \return length
  */
-size_t ares__buf_tag_length(const ares__buf_t *buf);
+size_t               ares__buf_tag_length(const ares__buf_t *buf);
 
 /*! Fetch the bytes starting from the tagged position up to the _current_
  *  position using the provided buffer.  It will not unset the tagged position.
@@ -192,8 +192,8 @@ size_t ares__buf_tag_length(const ares__buf_t *buf);
  *                        buffer.
  *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size
  */
-ares_status_t ares__buf_tag_fetch_bytes(const ares__buf_t *buf,
-                                        unsigned char *bytes, size_t *len);
+ares_status_t        ares__buf_tag_fetch_bytes(const ares__buf_t *buf,
+                                               unsigned char *bytes, size_t *len);
 
 /*! Fetch the bytes starting from the tagged position up to the _current_
  *  position as a NULL-terminated string using the provided buffer.  The data
@@ -216,7 +216,7 @@ ares_status_t ares__buf_tag_fetch_string(const ares__buf_t *buf, char *str,
  *  \param[in] len    Length to consume
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t        ares__buf_consume(ares__buf_t *buf, size_t len);
+ares_status_t ares__buf_consume(ares__buf_t *buf, size_t len);
 
 /*! Fetch a 16bit Big Endian number from the buffer.
  *
@@ -287,8 +287,8 @@ ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len, char **str);
  *                                ARES_FALSE otherwise.
  *  \return number of whitespace characters consumed
  */
-size_t ares__buf_consume_whitespace(ares__buf_t *buf,
-                                    ares_bool_t include_linefeed);
+size_t        ares__buf_consume_whitespace(ares__buf_t *buf,
+                                           ares_bool_t  include_linefeed);
 
 
 /*! Consume any non-whitespace character (anything other than 0x09, 0x0B, 0x0C,
@@ -297,7 +297,7 @@ size_t ares__buf_consume_whitespace(ares__buf_t *buf,
  *  \param[in]  buf               Initialized buffer object
  *  \return number of characters consumed
  */
-size_t ares__buf_consume_nonwhitespace(ares__buf_t *buf);
+size_t        ares__buf_consume_nonwhitespace(ares__buf_t *buf);
 
 /*! Consume from the current position until the end of the line, and optionally
  *  the end of line character (0x0A) itself.

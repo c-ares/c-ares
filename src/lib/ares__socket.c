@@ -24,7 +24,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
- #include "ares_setup.h"
+#include "ares_setup.h"
 
 #ifdef HAVE_SYS_UIO_H
 #  include <sys/uio.h>
@@ -254,7 +254,7 @@ ares_status_t ares__open_connection(ares_channel         channel,
       salen = sizeof(saddr.sa4);
       memset(sa, 0, (size_t)salen);
       saddr.sa4.sin_family = AF_INET;
-      saddr.sa4.sin_port   = htons(is_tcp?server->tcp_port:server->udp_port);
+      saddr.sa4.sin_port = htons(is_tcp ? server->tcp_port : server->udp_port);
       memcpy(&saddr.sa4.sin_addr, &server->addr.addr.addr4,
              sizeof(saddr.sa4.sin_addr));
       break;
@@ -263,7 +263,7 @@ ares_status_t ares__open_connection(ares_channel         channel,
       salen = sizeof(saddr.sa6);
       memset(sa, 0, (size_t)salen);
       saddr.sa6.sin6_family = AF_INET6;
-      saddr.sa6.sin6_port   = htons(is_tcp?server->tcp_port:server->udp_port);
+      saddr.sa6.sin6_port = htons(is_tcp ? server->tcp_port : server->udp_port);
       memcpy(&saddr.sa6.sin6_addr, &server->addr.addr.addr6,
              sizeof(saddr.sa6.sin6_addr));
       break;
@@ -371,7 +371,7 @@ ares_status_t ares__open_connection(ares_channel         channel,
   SOCK_STATE_CALLBACK(channel, s, 1, 0);
 
   if (is_tcp) {
-    server->tcp_conn                  = conn;
+    server->tcp_conn = conn;
   }
 
   return ARES_SUCCESS;
@@ -450,4 +450,3 @@ void ares_set_socket_functions(ares_channel                        channel,
   channel->sock_funcs        = funcs;
   channel->sock_func_cb_data = data;
 }
-

@@ -359,7 +359,7 @@ static void append_scopeid(const struct sockaddr_in6 *addr6, unsigned int flags,
   }
 #  else
   snprintf(&tmpbuf[1], sizeof(tmpbuf) - 1, "%lu",
-             (unsigned long)addr6->sin6_scope_id);
+           (unsigned long)addr6->sin6_scope_id);
   (void)flags;
 #  endif
   tmpbuf[IF_NAMESIZE + 1] = '\0';

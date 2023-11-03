@@ -45,7 +45,6 @@ struct ares__buf {
                                        *   SIZE_MAX if not set. */
 };
 
-
 /* Reserved characters for names that need to be escaped */
 static ares_bool_t is_reservedch(int ch)
 {
@@ -106,7 +105,6 @@ ares_bool_t ares__is_hostnamech(int ch)
 
   return ARES_FALSE;
 }
-
 
 ares__buf_t *ares__buf_create(void)
 {
@@ -389,8 +387,9 @@ const unsigned char *ares__buf_tag_fetch(const ares__buf_t *buf, size_t *len)
 
 size_t ares__buf_tag_length(const ares__buf_t *buf)
 {
-  if (buf == NULL || buf->tag_offset == SIZE_MAX)
+  if (buf == NULL || buf->tag_offset == SIZE_MAX) {
     return 0;
+  }
   return buf->offset - buf->tag_offset;
 }
 
@@ -400,11 +399,13 @@ ares_status_t ares__buf_tag_fetch_bytes(const ares__buf_t *buf,
   size_t               ptr_len = 0;
   const unsigned char *ptr     = ares__buf_tag_fetch(buf, &ptr_len);
 
-  if (ptr == NULL || bytes == NULL || len == NULL)
+  if (ptr == NULL || bytes == NULL || len == NULL) {
     return ARES_EFORMERR;
+  }
 
-  if (*len < ptr_len)
+  if (*len < ptr_len) {
     return ARES_EFORMERR;
+  }
 
   *len = ptr_len;
 
@@ -421,23 +422,26 @@ ares_status_t ares__buf_tag_fetch_string(const ares__buf_t *buf, char *str,
   ares_status_t status;
   size_t        i;
 
-  if (str == NULL || len == 0)
+  if (str == NULL || len == 0) {
     return ARES_EFORMERR;
+  }
 
   /* Space for NULL terminator */
   out_len = len - 1;
 
   status = ares__buf_tag_fetch_bytes(buf, (unsigned char *)str, &out_len);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   /* NULL terminate */
   str[out_len] = 0;
 
   /* Validate string is printable */
-  for (i=0; i<out_len; i++) {
-    if (!ares__isprint(str[i]))
+  for (i = 0; i < out_len; i++) {
+    if (!ares__isprint(str[i])) {
       return ARES_EBADSTR;
+    }
   }
 
   return ARES_SUCCESS;
@@ -573,7 +577,6 @@ ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
   return ares__buf_consume(buf, len);
 }
 
-
 static ares_status_t ares__buf_fetch_dnsname_into_buf(ares__buf_t *buf,
                                                       ares__buf_t *dest,
                                                       size_t       len,
@@ -642,7 +645,7 @@ fail:
 }
 
 size_t ares__buf_consume_whitespace(ares__buf_t *buf,
-                                    ares_bool_t include_linefeed)
+                                    ares_bool_t  include_linefeed)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);

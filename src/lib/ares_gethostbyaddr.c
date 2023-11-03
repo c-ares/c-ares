@@ -189,20 +189,23 @@ static ares_status_t file_lookup(ares_channel            channel,
     ptr = &addr->addr.addr6;
   }
 
-  if (ptr == NULL)
+  if (ptr == NULL) {
     return ARES_ENOTFOUND;
+  }
 
   if (!ares_inet_ntop(addr->family, ptr, ipaddr, sizeof(ipaddr))) {
     return ARES_ENOTFOUND;
   }
 
   status = ares__hosts_search_ipaddr(channel, ARES_FALSE, ipaddr, &entry);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   status = ares__hosts_entry_to_hostent(entry, addr->family, host);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   return ARES_SUCCESS;
 }

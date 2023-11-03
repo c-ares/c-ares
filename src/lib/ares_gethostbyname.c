@@ -230,13 +230,12 @@ static size_t get6_address_index(const struct ares_in6_addr *addr,
   return i;
 }
 
-
 static ares_status_t ares__hostent_localhost(const char *name, int family,
                                              struct hostent **host_out)
 {
-  ares_status_t               status;
-  struct ares_addrinfo       *ai = NULL;
-  struct ares_addrinfo_hints  hints;
+  ares_status_t              status;
+  struct ares_addrinfo      *ai = NULL;
+  struct ares_addrinfo_hints hints;
 
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = family;
@@ -267,7 +266,6 @@ done:
 int ares_gethostbyname_file(ares_channel channel, const char *name, int family,
                             struct hostent **host)
 {
-
   const ares_hosts_entry_t *entry;
   ares_status_t             status;
 
@@ -275,8 +273,9 @@ int ares_gethostbyname_file(ares_channel channel, const char *name, int family,
   if (channel == NULL || name == NULL || host == NULL) {
     /* Anything will do, really.  This seems fine, and is consistent with
        other error cases. */
-    if (host != NULL)
+    if (host != NULL) {
       *host = NULL;
+    }
     return ARES_ENOTFOUND;
   }
 
@@ -308,4 +307,3 @@ done:
 
   return (int)status;
 }
-

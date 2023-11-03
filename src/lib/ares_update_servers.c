@@ -45,31 +45,31 @@ typedef struct {
 static ares_bool_t ares__addr_match(const struct ares_addr *addr1,
                                     const struct ares_addr *addr2)
 {
-  if (addr1 == NULL && addr2 == NULL)
+  if (addr1 == NULL && addr2 == NULL) {
     return ARES_TRUE;
+  }
 
-  if (addr1 == NULL || addr2 == NULL)
+  if (addr1 == NULL || addr2 == NULL) {
     return ARES_FALSE;
+  }
 
-  if (addr1->family != addr2->family)
+  if (addr1->family != addr2->family) {
     return ARES_FALSE;
+  }
 
-  if (addr1->family == AF_INET &&
-      memcmp(&addr1->addr.addr4, &addr2->addr.addr4, sizeof(addr1->addr.addr4))
-      == 0) {
+  if (addr1->family == AF_INET && memcmp(&addr1->addr.addr4, &addr2->addr.addr4,
+                                         sizeof(addr1->addr.addr4)) == 0) {
     return ARES_TRUE;
   }
 
   if (addr1->family == AF_INET6 &&
       memcmp(&addr1->addr.addr6._S6_un._S6_u8, &addr2->addr.addr6._S6_un._S6_u8,
-             sizeof(addr1->addr.addr6._S6_un._S6_u8))
-      == 0) {
+             sizeof(addr1->addr.addr6._S6_un._S6_u8)) == 0) {
     return ARES_TRUE;
   }
 
   return ARES_FALSE;
 }
-
 
 /* Validate that the ip address matches the subnet (network base and network
  * mask) specified. Addresses are specified in standard Network Byte Order as
@@ -122,12 +122,14 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
 
   size_t i;
 
-  if (addr->family != AF_INET6)
+  if (addr->family != AF_INET6) {
     return ARES_FALSE;
+  }
 
   /* See if ipaddr matches any of the entries in the blacklist. */
   for (i = 0; i < sizeof(blacklist_v6) / sizeof(*blacklist_v6); i++) {
-    if (ares_ipv6_subnet_matches(blacklist_v6[i].netbase, blacklist_v6[i].netmask,
+    if (ares_ipv6_subnet_matches(blacklist_v6[i].netbase,
+                                 blacklist_v6[i].netmask,
                                  (const unsigned char *)&addr->addr.addr6)) {
       return ARES_TRUE;
     }
@@ -229,21 +231,22 @@ static ares_status_t parse_dnsaddrport(const char *str, size_t len,
   return ARES_SUCCESS;
 }
 
-
-ares_status_t ares__sconfig_append(ares__llist_t **sconfig,
+ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    const struct ares_addr *addr,
-                                   unsigned short udp_port,
-                                   unsigned short tcp_port)
+                                   unsigned short          udp_port,
+                                   unsigned short          tcp_port)
 {
   ares_sconfig_t *s;
   ares_status_t   status;
 
-  if (sconfig == NULL || addr == NULL)
+  if (sconfig == NULL || addr == NULL) {
     return ARES_EFORMERR;
+  }
 
   /* Silently skip blacklisted IPv6 servers. */
-  if (ares_server_blacklisted(addr))
+  if (ares_server_blacklisted(addr)) {
     return ARES_SUCCESS;
+  }
 
   s = ares_malloc_zero(sizeof(*s));
   if (s == NULL) {
@@ -275,7 +278,6 @@ fail:
   return status;
 }
 
-
 /* Add the IPv4 or IPv6 nameservers in str (separated by commas or spaces) to
  * the servers list, updating servers and nservers as required.
  *
@@ -293,12 +295,12 @@ fail:
  * Returns an error code on failure, else ARES_SUCCESS.
  */
 ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
-                                           const char *str)
+                                           const char     *str)
 {
-  struct ares_addr     host;
-  const char          *p;
-  const char          *txtaddr;
-  ares_status_t        status;
+  struct ares_addr host;
+  const char      *p;
+  const char      *txtaddr;
+  ares_status_t    status;
 
   /* On Windows, there may be more than one nameserver specified in the same
    * registry key, so we parse input as a space or comma seperated list.
@@ -337,17 +339,14 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
   return ARES_SUCCESS;
 }
 
-
-
-
-static unsigned short ares__sconfig_get_port(ares_channel channel,
+static unsigned short ares__sconfig_get_port(ares_channel          channel,
                                              const ares_sconfig_t *s,
-                                             ares_bool_t is_tcp)
+                                             ares_bool_t           is_tcp)
 {
-  unsigned short port = is_tcp?s->tcp_port:s->udp_port;
+  unsigned short port = is_tcp ? s->tcp_port : s->udp_port;
 
   if (port == 0) {
-    port = is_tcp?channel->tcp_port:channel->udp_port;
+    port = is_tcp ? channel->tcp_port : channel->udp_port;
   }
 
   if (port == 0) {
@@ -357,7 +356,7 @@ static unsigned short ares__sconfig_get_port(ares_channel channel,
   return port;
 }
 
-static ares__slist_node_t *ares__server_find(ares_channel channel,
+static ares__slist_node_t *ares__server_find(ares_channel          channel,
                                              const ares_sconfig_t *s)
 {
   ares__slist_node_t *node;
@@ -366,21 +365,24 @@ static ares__slist_node_t *ares__server_find(ares_channel channel,
        node = ares__slist_node_next(node)) {
     const struct server_state *server = ares__slist_node_val(node);
 
-    if (!ares__addr_match(&server->addr, &s->addr))
+    if (!ares__addr_match(&server->addr, &s->addr)) {
       continue;
+    }
 
-    if (server->tcp_port != ares__sconfig_get_port(channel, s, ARES_TRUE))
+    if (server->tcp_port != ares__sconfig_get_port(channel, s, ARES_TRUE)) {
       continue;
+    }
 
-    if (server->udp_port != ares__sconfig_get_port(channel, s, ARES_FALSE))
+    if (server->udp_port != ares__sconfig_get_port(channel, s, ARES_FALSE)) {
       continue;
+    }
 
     return node;
   }
   return NULL;
 }
 
-static ares_bool_t ares__server_isdup(ares_channel channel,
+static ares_bool_t ares__server_isdup(ares_channel        channel,
                                       ares__llist_node_t *s)
 {
   /* Scan backwards to see if this is a duplicate */
@@ -389,19 +391,21 @@ static ares_bool_t ares__server_isdup(ares_channel channel,
 
   for (prev = ares__llist_node_prev(s); prev != NULL;
        prev = ares__llist_node_prev(prev)) {
-
     const ares_sconfig_t *p = ares__llist_node_val(prev);
 
-    if (!ares__addr_match(&server->addr, &p->addr))
+    if (!ares__addr_match(&server->addr, &p->addr)) {
       continue;
+    }
 
     if (ares__sconfig_get_port(channel, server, ARES_TRUE) !=
-        ares__sconfig_get_port(channel, p, ARES_TRUE))
+        ares__sconfig_get_port(channel, p, ARES_TRUE)) {
       continue;
+    }
 
     if (ares__sconfig_get_port(channel, server, ARES_FALSE) !=
-        ares__sconfig_get_port(channel, p, ARES_FALSE))
+        ares__sconfig_get_port(channel, p, ARES_FALSE)) {
       continue;
+    }
 
     return ARES_TRUE;
   }
@@ -409,15 +413,16 @@ static ares_bool_t ares__server_isdup(ares_channel channel,
   return ARES_FALSE;
 }
 
-static ares_status_t ares__server_create(ares_channel channel,
+static ares_status_t ares__server_create(ares_channel          channel,
                                          const ares_sconfig_t *sconfig,
-                                         size_t idx)
+                                         size_t                idx)
 {
   ares_status_t        status;
   struct server_state *server = ares_malloc_zero(sizeof(*server));
 
-  if (server == NULL)
+  if (server == NULL) {
     return ARES_ENOMEM;
+  }
 
   server->idx         = idx;
   server->channel     = channel;
@@ -467,24 +472,26 @@ done:
 }
 
 static ares_bool_t ares__server_in_newconfig(struct server_state *server,
-                                             ares__llist_t *srvlist)
+                                             ares__llist_t       *srvlist)
 {
   ares__llist_node_t *node;
   ares_channel        channel = server->channel;
 
   for (node = ares__llist_node_first(srvlist); node != NULL;
        node = ares__llist_node_next(node)) {
-
     const ares_sconfig_t *s = ares__llist_node_val(node);
 
-    if (!ares__addr_match(&server->addr, &s->addr))
+    if (!ares__addr_match(&server->addr, &s->addr)) {
       continue;
+    }
 
-    if (server->tcp_port != ares__sconfig_get_port(channel, s, ARES_TRUE))
+    if (server->tcp_port != ares__sconfig_get_port(channel, s, ARES_TRUE)) {
       continue;
+    }
 
-    if (server->udp_port != ares__sconfig_get_port(channel, s, ARES_FALSE))
+    if (server->udp_port != ares__sconfig_get_port(channel, s, ARES_FALSE)) {
       continue;
+    }
 
     return ARES_TRUE;
   }
@@ -492,7 +499,7 @@ static ares_bool_t ares__server_in_newconfig(struct server_state *server,
   return ARES_FALSE;
 }
 
-static void ares__servers_remove_stale(ares_channel channel,
+static void ares__servers_remove_stale(ares_channel   channel,
                                        ares__llist_t *srvlist)
 {
   ares__slist_node_t *snode = ares__slist_node_first(channel->servers);
@@ -509,7 +516,6 @@ static void ares__servers_remove_stale(ares_channel channel,
   }
 }
 
-
 static void ares__servers_trim_single(ares_channel channel)
 {
   while (ares__slist_len(channel->servers) > 1) {
@@ -517,10 +523,9 @@ static void ares__servers_trim_single(ares_channel channel)
   }
 }
 
-
-ares_status_t ares__servers_update(ares_channel channel,
+ares_status_t ares__servers_update(ares_channel   channel,
                                    ares__llist_t *server_list,
-                                   ares_bool_t user_specified)
+                                   ares_bool_t    user_specified)
 {
   ares__llist_node_t *node;
   size_t              idx = 0;
@@ -534,7 +539,6 @@ ares_status_t ares__servers_update(ares_channel channel,
   /* Add new entries */
   for (node = ares__llist_node_first(server_list); node != NULL;
        node = ares__llist_node_next(node)) {
-
     const ares_sconfig_t *sconfig = ares__llist_node_val(node);
     ares__slist_node_t   *snode;
 
@@ -555,8 +559,9 @@ ares_status_t ares__servers_update(ares_channel channel,
       }
     } else {
       status = ares__server_create(channel, sconfig, idx);
-      if (status != ARES_SUCCESS)
+      if (status != ARES_SUCCESS) {
         goto done;
+      }
     }
 
     idx++;
@@ -580,45 +585,47 @@ done:
   return status;
 }
 
-
-static ares__llist_t *ares_addr_node_to_server_config_llist(
-  const struct ares_addr_node *servers)
+static ares__llist_t *
+  ares_addr_node_to_server_config_llist(const struct ares_addr_node *servers)
 {
   const struct ares_addr_node *node;
   ares__llist_t               *s;
 
-  if (servers == NULL)
+  if (servers == NULL) {
     return NULL;
+  }
 
   s = ares__llist_create(ares_free);
-  if (s == NULL)
+  if (s == NULL) {
     return NULL;
+  }
 
   for (node = servers; node != NULL; node = node->next) {
     ares_sconfig_t *sconfig;
 
     /* Invalid entry */
-    if (node->family != AF_INET && node->family != AF_INET6)
+    if (node->family != AF_INET && node->family != AF_INET6) {
       continue;
+    }
 
     sconfig = ares_malloc_zero(sizeof(*sconfig));
-    if (sconfig == NULL)
+    if (sconfig == NULL) {
       goto fail;
+    }
 
     sconfig->addr.family = node->family;
     if (node->family == AF_INET) {
       memcpy(&sconfig->addr.addr.addr4, &node->addr.addr4,
-           sizeof(sconfig->addr.addr.addr4));
+             sizeof(sconfig->addr.addr.addr4));
     } else if (sconfig->addr.family == AF_INET6) {
       memcpy(&sconfig->addr.addr.addr6, &node->addr.addr6,
-           sizeof(sconfig->addr.addr.addr6));
+             sizeof(sconfig->addr.addr.addr6));
     }
 
     if (ares__llist_insert_last(s, sconfig) == NULL) {
       ares_free(sconfig);
       goto fail;
     }
-
   }
 
   return s;
@@ -634,31 +641,35 @@ static ares__llist_t *ares_addr_port_node_to_server_config_llist(
   const struct ares_addr_port_node *node;
   ares__llist_t                    *s;
 
-  if (servers == NULL)
+  if (servers == NULL) {
     return NULL;
+  }
 
   s = ares__llist_create(ares_free);
-  if (s == NULL)
+  if (s == NULL) {
     return NULL;
+  }
 
   for (node = servers; node != NULL; node = node->next) {
     ares_sconfig_t *sconfig;
 
     /* Invalid entry */
-    if (node->family != AF_INET && node->family != AF_INET6)
+    if (node->family != AF_INET && node->family != AF_INET6) {
       continue;
+    }
 
     sconfig = ares_malloc_zero(sizeof(*sconfig));
-    if (sconfig == NULL)
+    if (sconfig == NULL) {
       goto fail;
+    }
 
     sconfig->addr.family = node->family;
     if (node->family == AF_INET) {
       memcpy(&sconfig->addr.addr.addr4, &node->addr.addr4,
-           sizeof(sconfig->addr.addr.addr4));
+             sizeof(sconfig->addr.addr.addr4));
     } else if (sconfig->addr.family == AF_INET6) {
       memcpy(&sconfig->addr.addr.addr6, &node->addr.addr6,
-           sizeof(sconfig->addr.addr.addr6));
+             sizeof(sconfig->addr.addr.addr6));
     }
 
     sconfig->tcp_port = (unsigned short)node->tcp_port;
@@ -677,26 +688,29 @@ fail:
   return NULL;
 }
 
-
-ares__llist_t *ares_in_addr_to_server_config_llist(
-  const struct in_addr *servers, size_t nservers)
+ares__llist_t *
+  ares_in_addr_to_server_config_llist(const struct in_addr *servers,
+                                      size_t                nservers)
 {
   size_t         i;
   ares__llist_t *s;
 
-  if (servers == NULL || nservers == 0)
+  if (servers == NULL || nservers == 0) {
     return NULL;
+  }
 
   s = ares__llist_create(ares_free);
-  if (s == NULL)
+  if (s == NULL) {
     return NULL;
+  }
 
-  for (i=0; i<nservers; i++) {
+  for (i = 0; i < nservers; i++) {
     ares_sconfig_t *sconfig;
 
     sconfig = ares_malloc_zero(sizeof(*sconfig));
-    if (sconfig == NULL)
+    if (sconfig == NULL) {
       goto fail;
+    }
 
     sconfig->addr.family = AF_INET;
     memcpy(&sconfig->addr.addr.addr4, &servers[i],
@@ -818,7 +832,6 @@ int ares_get_servers_ports(ares_channel                 channel,
   return (int)status;
 }
 
-
 int ares_set_servers(ares_channel channel, struct ares_addr_node *servers)
 {
   ares__llist_t *slist;
@@ -839,7 +852,6 @@ int ares_set_servers(ares_channel channel, struct ares_addr_node *servers)
 
   return (int)status;
 }
-
 
 int ares_set_servers_ports(ares_channel                channel,
                            struct ares_addr_port_node *servers)
@@ -862,7 +874,6 @@ int ares_set_servers_ports(ares_channel                channel,
 
   return (int)status;
 }
-
 
 /* Incomming string format: host[:port][,host[:port]]... */
 /* IPv6 addresses with ports require square brackets [fe80::1]:53 */

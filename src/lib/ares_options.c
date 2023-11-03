@@ -54,24 +54,25 @@ void ares_destroy_options(struct ares_options *options)
 }
 
 static struct in_addr *ares_save_opt_servers(ares_channel channel,
-                                             int *nservers)
+                                             int         *nservers)
 {
   ares__slist_node_t *snode;
-  struct in_addr     *out = ares_malloc_zero(ares__slist_len(channel->servers) *
-                                             sizeof(*out));
+  struct in_addr     *out =
+    ares_malloc_zero(ares__slist_len(channel->servers) * sizeof(*out));
 
   *nservers = 0;
 
-  if (out == NULL)
+  if (out == NULL) {
     return NULL;
+  }
 
   for (snode = ares__slist_node_first(channel->servers); snode != NULL;
        snode = ares__slist_node_next(snode)) {
-
     const struct server_state *server = ares__slist_node_val(snode);
 
-    if (server->addr.family != AF_INET)
+    if (server->addr.family != AF_INET) {
       continue;
+    }
 
     memcpy(&out[*nservers], &server->addr.addr.addr4, sizeof(*out));
     (*nservers)++;
@@ -79,7 +80,6 @@ static struct in_addr *ares_save_opt_servers(ares_channel channel,
 
   return out;
 }
-
 
 /* Save options from initialized channel */
 int ares_save_options(ares_channel channel, struct ares_options *options,
@@ -199,8 +199,8 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
     }
   }
 
- if (channel->optmask & ARES_OPT_SOCK_SNDBUF &&
-     channel->socket_send_buffer_size > 0) {
+  if (channel->optmask & ARES_OPT_SOCK_SNDBUF &&
+      channel->socket_send_buffer_size > 0) {
     options->socket_send_buffer_size = channel->socket_send_buffer_size;
   }
 
@@ -214,7 +214,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   }
 
   if (channel->optmask & ARES_OPT_UDP_MAX_QUERIES) {
-    options->udp_max_queries  = (int)channel->udp_max_queries;
+    options->udp_max_queries = (int)channel->udp_max_queries;
   }
 
   *optmask = (int)channel->optmask;
@@ -222,17 +222,17 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   return ARES_SUCCESS;
 }
 
-
-static ares_status_t ares__init_options_servers(ares_channel channel,
+static ares_status_t ares__init_options_servers(ares_channel          channel,
                                                 const struct in_addr *servers,
-                                                size_t nservers)
+                                                size_t                nservers)
 {
   ares__llist_t *slist;
   ares_status_t  status;
 
   slist = ares_in_addr_to_server_config_llist(servers, nservers);
-  if (slist == NULL)
+  if (slist == NULL) {
     return ARES_ENOMEM;
+  }
 
   status = ares__servers_update(channel, slist, ARES_TRUE);
 
@@ -247,8 +247,9 @@ ares_status_t ares__init_by_options(ares_channel               channel,
 {
   size_t i;
 
-  if (channel == NULL)
+  if (channel == NULL) {
     return ARES_ENODATA;
+  }
 
   if (options == NULL) {
     if (optmask != 0) {
@@ -266,9 +267,9 @@ ares_status_t ares__init_by_options(ares_channel               channel,
     channel->timeout = (unsigned int)options->timeout;
   } else if (optmask & ARES_OPT_TIMEOUT) {
     /* Convert to milliseconds */
-    optmask |= ARES_OPT_TIMEOUTMS;
-    optmask &= ~(ARES_OPT_TIMEOUT);
-    channel->timeout = (unsigned int)options->timeout * 1000;
+    optmask          |= ARES_OPT_TIMEOUTMS;
+    optmask          &= ~(ARES_OPT_TIMEOUT);
+    channel->timeout  = (unsigned int)options->timeout * 1000;
   }
 
   if (optmask & ARES_OPT_TRIES) {
@@ -377,8 +378,9 @@ ares_status_t ares__init_by_options(ares_channel               channel,
     ares_status_t status;
     status = ares__init_options_servers(channel, options->servers,
                                         (size_t)options->nservers);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       return status;
+    }
   }
 
   channel->optmask = (unsigned int)optmask;

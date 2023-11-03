@@ -103,21 +103,26 @@ static int server_sort_cb(const void *data1, const void *data2)
   const struct server_state *s1 = data1;
   const struct server_state *s2 = data2;
 
-  if (s1->consec_failures < s2->consec_failures)
+  if (s1->consec_failures < s2->consec_failures) {
     return -1;
-  if (s1->consec_failures > s2->consec_failures)
+  }
+  if (s1->consec_failures > s2->consec_failures) {
     return 1;
-  if (s1->idx < s2->idx)
+  }
+  if (s1->idx < s2->idx) {
     return -1;
-  if (s1->idx > s2->idx)
+  }
+  if (s1->idx > s2->idx) {
     return 1;
+  }
   return 0;
 }
 
 static void server_destroy_cb(void *data)
 {
-  if (data == NULL)
+  if (data == NULL) {
     return;
+  }
   ares__destroy_server(data);
 }
 
@@ -126,7 +131,7 @@ static ares_status_t init_by_defaults(ares_channel channel)
   char         *hostname = NULL;
   ares_status_t rc       = ARES_SUCCESS;
 #ifdef HAVE_GETHOSTNAME
-  const char   *dot;
+  const char *dot;
 #endif
 
   if (channel->timeout == 0) {
@@ -153,14 +158,16 @@ static ares_status_t init_by_defaults(ares_channel channel)
     addr.addr.addr4.s_addr = htonl(INADDR_LOOPBACK);
 
     rc = ares__sconfig_append(&sconfig, &addr, 0, 0);
-    if (rc != ARES_SUCCESS)
+    if (rc != ARES_SUCCESS) {
       return rc;
+    }
 
     rc = ares__servers_update(channel, sconfig, ARES_FALSE);
     ares__llist_destroy(sconfig);
 
-    if (rc != ARES_SUCCESS)
+    if (rc != ARES_SUCCESS) {
       return rc;
+    }
   }
 
 #if defined(USE_WINSOCK)
@@ -303,8 +310,8 @@ int ares_init_options(ares_channel *channelptr, struct ares_options *options,
   }
 
   /* Initialize Server List */
-  channel->servers = ares__slist_create(channel->rand_state, server_sort_cb,
-                                        server_destroy_cb);
+  channel->servers =
+    ares__slist_create(channel->rand_state, server_sort_cb, server_destroy_cb);
   if (channel->servers == NULL) {
     status = ARES_ENOMEM;
     goto done;
@@ -449,7 +456,6 @@ int ares_dup(ares_channel *dest, ares_channel src)
   return ARES_SUCCESS; /* everything went fine */
 }
 
-
 void ares_set_local_ip4(ares_channel channel, unsigned int local_ip)
 {
   channel->local_ip4 = local_ip;
@@ -468,7 +474,6 @@ void ares_set_local_dev(ares_channel channel, const char *local_dev_name)
               sizeof(channel->local_dev_name));
   channel->local_dev_name[sizeof(channel->local_dev_name) - 1] = 0;
 }
-
 
 int ares_set_sortlist(ares_channel channel, const char *sortstr)
 {
@@ -493,4 +498,3 @@ int ares_set_sortlist(ares_channel channel, const char *sortstr)
   }
   return (int)status;
 }
-

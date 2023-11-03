@@ -49,7 +49,7 @@ typedef struct ares__htable_strvp ares__htable_strvp_t;
  *
  *  \param[in] val  user-supplied value
  */
-typedef void                     (*ares__htable_strvp_val_free_t)(void *val);
+typedef void                      (*ares__htable_strvp_val_free_t)(void *val);
 
 /*! Destroy hashtable
  *
@@ -104,7 +104,7 @@ void       *ares__htable_strvp_get_direct(const ares__htable_strvp_t *htable,
  *  \return ARES_TRUE if found, ARES_FALSE if not
  */
 ares_bool_t ares__htable_strvp_remove(ares__htable_strvp_t *htable,
-                                      const char *key);
+                                      const char           *key);
 
 /*! Retrieve the number of keys stored in the hash table
  *

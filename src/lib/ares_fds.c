@@ -32,11 +32,11 @@
 
 int ares_fds(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
 {
-  ares_socket_t        nfds;
-  ares__slist_node_t  *snode;
+  ares_socket_t       nfds;
+  ares__slist_node_t *snode;
 
   /* Are there any active queries? */
-  size_t               active_queries = ares__llist_len(channel->all_queries);
+  size_t              active_queries = ares__llist_len(channel->all_queries);
 
   nfds = 0;
   for (snode = ares__slist_node_first(channel->servers); snode != NULL;

@@ -57,7 +57,7 @@ void ares_cancel(ares_channel channel)
 
     node = ares__llist_node_first(list_copy);
     while (node != NULL) {
-      struct query *query;
+      struct query             *query;
       struct server_connection *conn;
 
       /* Cache next since this node is being deleted */

@@ -108,8 +108,9 @@ struct ares_addrinfo_cname *
   struct ares_addrinfo_cname *tail = ares_malloc_zero(sizeof(*tail));
   struct ares_addrinfo_cname *last = *head;
 
-  if (tail == NULL)
+  if (tail == NULL) {
     return NULL;
+  }
 
   if (!last) {
     *head = tail;
@@ -147,8 +148,9 @@ struct ares_addrinfo_node *
   struct ares_addrinfo_node *tail = ares_malloc_zero(sizeof(*tail));
   struct ares_addrinfo_node *last = *head;
 
-  if (tail == NULL)
+  if (tail == NULL) {
     return NULL;
+  }
 
   if (!last) {
     *head = tail;
@@ -385,18 +387,18 @@ static ares_status_t file_lookup(struct host_query *hquery)
     return ARES_ENOTFOUND;
   }
 
-  status = ares__hosts_search_host(hquery->channel,
-    (hquery->hints.ai_flags & ARES_AI_ENVHOSTS)?ARES_TRUE:ARES_FALSE,
+  status = ares__hosts_search_host(
+    hquery->channel,
+    (hquery->hints.ai_flags & ARES_AI_ENVHOSTS) ? ARES_TRUE : ARES_FALSE,
     hquery->name, &entry);
 
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  status = ares__hosts_entry_to_addrinfo(entry, hquery->name,
-    hquery->hints.ai_family,
-    hquery->port,
-    (hquery->hints.ai_flags & ARES_AI_CANONNAME)?ARES_TRUE:ARES_FALSE,
+  status = ares__hosts_entry_to_addrinfo(
+    entry, hquery->name, hquery->hints.ai_family, hquery->port,
+    (hquery->hints.ai_flags & ARES_AI_CANONNAME) ? ARES_TRUE : ARES_FALSE,
     hquery->ai);
 
   if (status != ARES_SUCCESS) {
@@ -451,7 +453,8 @@ static void next_lookup(struct host_query *hquery, ares_status_t status)
   }
 }
 
-static void terminate_retries(const struct host_query *hquery, unsigned short qid)
+static void terminate_retries(const struct host_query *hquery,
+                              unsigned short           qid)
 {
   unsigned short term_qid =
     (qid == hquery->qid_a) ? hquery->qid_aaaa : hquery->qid_a;
