@@ -227,6 +227,20 @@ ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
   return ARES_SUCCESS;
 }
 
+
+static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
+{
+ if (sysconfig->ndomains > 0) {
+    /* if we already have some domains present, free them first */
+    ares__strsplit_free(sysconfig->domains, (size_t)sysconfig->ndomains);
+    sysconfig->domains  = NULL;
+    sysconfig->ndomains = 0;
+  }
+
+  sysconfig->domains = ares__strsplit(str, ", ", &sysconfig->ndomains);
+  return ARES_SUCCESS;
+}
+
 static ares_status_t config_domain(ares_sysconfig_t *sysconfig, char *str)
 {
   char  *q;
@@ -238,15 +252,7 @@ static ares_status_t config_domain(ares_sysconfig_t *sysconfig, char *str)
   }
   *q = '\0';
 
-  if (sysconfig->ndomains > 0) {
-    /* if we already have some domains present, free them first */
-    ares__strsplit_free(sysconfig->domains, (size_t)sysconfig->ndomains);
-    sysconfig->domains  = NULL;
-    sysconfig->ndomains = 0;
-  }
-
-  sysconfig->domains  = ares__strsplit(str, ", ", &sysconfig->ndomains);
-  return ARES_SUCCESS;
+  return config_search(sysconfig, str);
 }
 
 
@@ -485,7 +491,7 @@ ares_status_t ares__init_sysconfig_files(ares_channel channel,
       } else if ((p = try_config(line, "lookup", ';'))) {
         status = config_lookup(sysconfig, p, "bind", NULL, "file");
       } else if ((p = try_config(line, "search", ';')) ) {
-        status = config_domain(sysconfig, p);
+        status = config_search(sysconfig, p);
       } else if ((p = try_config(line, "nameserver", ';'))) {
         status = ares__sconfig_append_fromstr(&sysconfig->sconfig, p);
       } else if ((p = try_config(line, "sortlist", ';'))) {
