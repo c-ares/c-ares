@@ -365,14 +365,20 @@ NameContentList filelist = {
 CONTAINED_TEST_F(LibraryTest, ContainerChannelInit,
                  "myhostname", "mydomainname.org", filelist) {
   ares_channel channel = nullptr;
+printf("%s(): before ares_init\n", __FUNCTION__); fflush(stdout);
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+printf("%s(): before GetNameServers\n", __FUNCTION__); fflush(stdout);
   std::vector<std::string> actual = GetNameServers(channel);
   std::vector<std::string> expected = {"1.2.3.4:53"};
   EXPECT_EQ(expected, actual);
-
+printf("%s(): before get domain count\n", __FUNCTION__); fflush(stdout);
   EXPECT_EQ(2, channel->ndomains);
+printf("%s(): before get domain[0]\n", __FUNCTION__); fflush(stdout);
   EXPECT_EQ(std::string("first.com"), std::string(channel->domains[0]));
+printf("%s(): before get domain[1]\n", __FUNCTION__); fflush(stdout);
+
   EXPECT_EQ(std::string("second.com"), std::string(channel->domains[1]));
+printf("%s(): before get query\n", __FUNCTION__); fflush(stdout);
 
   HostResult result;
   ares_gethostbyname(channel, "ahostname.com", AF_INET, HostCallback, &result);
@@ -381,6 +387,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerChannelInit,
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'ahostname.com' aliases=[] addrs=[3.4.5.6]}", ss.str());
+printf("%s(): before destroy\n", __FUNCTION__); fflush(stdout);
 
   ares_destroy(channel);
   return HasFailure();
