@@ -451,7 +451,7 @@ static void next_lookup(struct host_query *hquery, ares_status_t status)
   }
 }
 
-static void terminate_retries(struct host_query *hquery, unsigned short qid)
+static void terminate_retries(const struct host_query *hquery, unsigned short qid)
 {
   unsigned short term_qid =
     (qid == hquery->qid_a) ? hquery->qid_aaaa : hquery->qid_a;

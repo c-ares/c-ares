@@ -58,7 +58,7 @@ static unsigned short generate_unique_id(ares_channel channel)
     id = ares__generate_new_id(channel->rand_state);
   } while (ares__htable_szvp_get(channel->queries_by_qid, id, NULL));
 
-  return (unsigned short)id;
+  return id;
 }
 
 ares_status_t ares_query_qid(ares_channel channel, const char *name,
@@ -145,6 +145,8 @@ static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
         break;
       case REFUSED:
         status = ARES_EREFUSED;
+        break;
+      default:
         break;
     }
     qquery->callback(qquery->arg, status, timeouts, abuf, alen);

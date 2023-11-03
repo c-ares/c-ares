@@ -103,7 +103,7 @@ static void natural_mask(struct apattern *pat)
 }
 
 static ares_bool_t sortlist_alloc(struct apattern **sortlist, size_t *nsort,
-                                  struct apattern *pat)
+                                  const struct apattern *pat)
 {
   struct apattern *newsort;
   newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));

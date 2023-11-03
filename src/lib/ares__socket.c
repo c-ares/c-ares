@@ -197,12 +197,11 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
   }
 
 #ifdef SO_BINDTODEVICE
-  if (channel->local_dev_name[0]) {
-    if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, channel->local_dev_name,
-                   sizeof(channel->local_dev_name))) {
-      /* Only root can do this, and usually not fatal if it doesn't work, so */
-      /* just continue on. */
-    }
+  if (channel->local_dev_name[0] &&
+      setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, channel->local_dev_name,
+                 sizeof(channel->local_dev_name))) {
+    /* Only root can do this, and usually not fatal if it doesn't work, so */
+    /* just continue on. */
   }
 #endif
 
@@ -293,12 +292,11 @@ ares_status_t ares__open_connection(ares_channel         channel,
      * so batching isn't very interesting.
      */
     opt = 1;
-    if (!channel->sock_funcs || !channel->sock_funcs->asocket) {
-      if (setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (void *)&opt, sizeof(opt)) ==
+    if ((!channel->sock_funcs || !channel->sock_funcs->asocket) &&
+        setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (void *)&opt, sizeof(opt)) ==
           -1) {
-        ares__close_socket(channel, s);
-        return ARES_ECONNREFUSED;
-      }
+      ares__close_socket(channel, s);
+      return ARES_ECONNREFUSED;
     }
   }
 #endif
@@ -423,7 +421,7 @@ ares_ssize_t ares__socket_write(ares_channel channel, ares_socket_t s,
 {
   if (channel->sock_funcs && channel->sock_funcs->asendv) {
     struct iovec vec;
-    vec.iov_base = (void *)data;
+    vec.iov_base = (void *)((size_t)data); /* Cast off const */
     vec.iov_len  = len;
     return channel->sock_funcs->asendv(s, &vec, 1, channel->sock_func_cb_data);
   }

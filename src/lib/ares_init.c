@@ -126,7 +126,7 @@ static ares_status_t init_by_defaults(ares_channel channel)
   char         *hostname = NULL;
   ares_status_t rc       = ARES_SUCCESS;
 #ifdef HAVE_GETHOSTNAME
-  char *dot;
+  const char   *dot;
 #endif
 
   if (channel->timeout == 0) {

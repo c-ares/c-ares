@@ -68,7 +68,7 @@ static struct in_addr *ares_save_opt_servers(ares_channel channel,
   for (snode = ares__slist_node_first(channel->servers); snode != NULL;
        snode = ares__slist_node_next(snode)) {
 
-    struct server_state *server = ares__slist_node_val(snode);
+    const struct server_state *server = ares__slist_node_val(snode);
 
     if (server->addr.family != AF_INET)
       continue;
@@ -316,20 +316,17 @@ ares_status_t ares__init_by_options(ares_channel               channel,
   /* Copy the domains, if given.  Keep channel->ndomains consistent so
    * we can clean up in case of error.
    */
-  if (optmask & ARES_OPT_DOMAINS) {
-    /* Avoid zero size allocations at any cost */
-    if (options->ndomains > 0) {
-      channel->domains =
-        ares_malloc_zero((size_t)options->ndomains * sizeof(char *));
-      if (!channel->domains) {
+  if (optmask & ARES_OPT_DOMAINS && options->ndomains > 0) {
+    channel->domains =
+      ares_malloc_zero((size_t)options->ndomains * sizeof(char *));
+    if (!channel->domains) {
+      return ARES_ENOMEM;
+    }
+    channel->ndomains = (size_t)options->ndomains;
+    for (i = 0; i < (size_t)options->ndomains; i++) {
+      channel->domains[i] = ares_strdup(options->domains[i]);
+      if (!channel->domains[i]) {
         return ARES_ENOMEM;
-      }
-      channel->ndomains = (size_t)options->ndomains;
-      for (i = 0; i < (size_t)options->ndomains; i++) {
-        channel->domains[i] = ares_strdup(options->domains[i]);
-        if (!channel->domains[i]) {
-          return ARES_ENOMEM;
-        }
       }
     }
   }

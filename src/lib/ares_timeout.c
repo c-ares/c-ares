@@ -35,7 +35,7 @@
 #include "ares_private.h"
 
 /* return time offset between now and (future) check, in milliseconds */
-static long timeoffset(struct timeval *now, struct timeval *check)
+static long timeoffset(const struct timeval *now, const struct timeval *check)
 {
   return (check->tv_sec - now->tv_sec) * 1000 +
          (check->tv_usec - now->tv_usec) / 1000;

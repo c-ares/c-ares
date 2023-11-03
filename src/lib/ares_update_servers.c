@@ -61,7 +61,8 @@ static ares_bool_t ares__addr_match(const struct ares_addr *addr1,
   }
 
   if (addr1->family == AF_INET6 &&
-      memcmp(&addr1->addr.addr6, &addr2->addr.addr6, sizeof(addr1->addr.addr6))
+      memcmp(&addr1->addr.addr6._S6_un._S6_u8, &addr2->addr.addr6._S6_un._S6_u8,
+             sizeof(addr1->addr.addr6._S6_un._S6_u8))
       == 0) {
     return ARES_TRUE;
   }
@@ -363,7 +364,7 @@ static ares__slist_node_t *ares__server_find(ares_channel channel,
 
   for (node = ares__slist_node_first(channel->servers); node != NULL;
        node = ares__slist_node_next(node)) {
-    struct server_state *server = ares__slist_node_val(node);
+    const struct server_state *server = ares__slist_node_val(node);
 
     if (!ares__addr_match(&server->addr, &s->addr))
       continue;
@@ -384,12 +385,12 @@ static ares_bool_t ares__server_isdup(ares_channel channel,
 {
   /* Scan backwards to see if this is a duplicate */
   ares__llist_node_t   *prev;
-  ares_sconfig_t *server = ares__llist_node_val(s);
+  const ares_sconfig_t *server = ares__llist_node_val(s);
 
   for (prev = ares__llist_node_prev(s); prev != NULL;
        prev = ares__llist_node_prev(prev)) {
 
-    ares_sconfig_t *p = ares__llist_node_val(prev);
+    const ares_sconfig_t *p = ares__llist_node_val(prev);
 
     if (!ares__addr_match(&server->addr, &p->addr))
       continue;
@@ -474,7 +475,7 @@ static ares_bool_t ares__server_in_newconfig(struct server_state *server,
   for (node = ares__llist_node_first(srvlist); node != NULL;
        node = ares__llist_node_next(node)) {
 
-    ares_sconfig_t *s = ares__llist_node_val(node);
+    const ares_sconfig_t *s = ares__llist_node_val(node);
 
     if (!ares__addr_match(&server->addr, &s->addr))
       continue;
@@ -534,7 +535,7 @@ ares_status_t ares__servers_update(ares_channel channel,
   for (node = ares__llist_node_first(server_list); node != NULL;
        node = ares__llist_node_next(node)) {
 
-    ares_sconfig_t *sconfig = ares__llist_node_val(node);
+    const ares_sconfig_t *sconfig = ares__llist_node_val(node);
     ares__slist_node_t   *snode;
 
     /* Don't add duplicate servers! */
@@ -727,7 +728,7 @@ int ares_get_servers(ares_channel channel, struct ares_addr_node **servers)
 
   for (node = ares__slist_node_first(channel->servers); node != NULL;
        node = ares__slist_node_next(node)) {
-    struct server_state *server = ares__slist_node_val(node);
+    const struct server_state *server = ares__slist_node_val(node);
 
     /* Allocate storage for this server node appending it to the list */
     srvr_curr = ares_malloc_data(ARES_DATATYPE_ADDR_NODE);
@@ -754,10 +755,8 @@ int ares_get_servers(ares_channel channel, struct ares_addr_node **servers)
   }
 
   if (status != ARES_SUCCESS) {
-    if (srvr_head) {
-      ares_free_data(srvr_head);
-      srvr_head = NULL;
-    }
+    ares_free_data(srvr_head);
+    srvr_head = NULL;
   }
 
   *servers = srvr_head;
@@ -780,7 +779,7 @@ int ares_get_servers_ports(ares_channel                 channel,
 
   for (node = ares__slist_node_first(channel->servers); node != NULL;
        node = ares__slist_node_next(node)) {
-    struct server_state *server = ares__slist_node_val(node);
+    const struct server_state *server = ares__slist_node_val(node);
 
     /* Allocate storage for this server node appending it to the list */
     srvr_curr = ares_malloc_data(ARES_DATATYPE_ADDR_PORT_NODE);
@@ -810,10 +809,8 @@ int ares_get_servers_ports(ares_channel                 channel,
   }
 
   if (status != ARES_SUCCESS) {
-    if (srvr_head) {
-      ares_free_data(srvr_head);
-      srvr_head = NULL;
-    }
+    ares_free_data(srvr_head);
+    srvr_head = NULL;
   }
 
   *servers = srvr_head;
@@ -875,7 +872,7 @@ static ares_status_t set_servers_csv(ares_channel channel, const char *_csv,
   size_t                      i;
   char                       *csv = NULL;
   char                       *ptr;
-  char                       *start_host;
+  const char                 *start_host;
   int                         cc      = 0;
   ares_status_t               status  = ARES_SUCCESS;
   struct ares_addr_port_node *servers = NULL;

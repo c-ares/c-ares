@@ -90,11 +90,11 @@ void ares_getnameinfo(ares_channel channel, const struct sockaddr *sa,
                       ares_socklen_t salen, int flags_int,
                       ares_nameinfo_callback callback, void *arg)
 {
-  const struct sockaddr_in *addr  = NULL;
-  struct sockaddr_in6      *addr6 = NULL;
-  struct nameinfo_query    *niquery;
-  unsigned short            port  = 0;
-  unsigned int              flags = (unsigned int)flags_int;
+  const struct sockaddr_in  *addr  = NULL;
+  const struct sockaddr_in6 *addr6 = NULL;
+  struct nameinfo_query     *niquery;
+  unsigned short             port  = 0;
+  unsigned int               flags = (unsigned int)flags_int;
 
   /* Validate socket address family and length */
   if ((sa->sa_family == AF_INET) && (salen == sizeof(struct sockaddr_in))) {

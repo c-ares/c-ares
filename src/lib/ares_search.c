@@ -119,7 +119,7 @@ void ares_search(ares_channel channel, const char *name, int dnsclass, int type,
    * then we try the name as-is first.  Otherwise, we try the name
    * as-is last.
    */
-  if (ndots >= (size_t)channel->ndots) {
+  if (ndots >= channel->ndots) {
     /* Try the name as-is first. */
     squery->next_domain  = 0;
     squery->trying_as_is = ARES_TRUE;
@@ -171,7 +171,7 @@ static void search_callback(void *arg, int status, int timeouts,
       squery->ever_got_nodata = ARES_TRUE;
     }
 
-    if (squery->next_domain < (size_t)channel->ndomains) {
+    if (squery->next_domain < channel->ndomains) {
       ares_status_t mystatus;
       /* Try the next domain. */
       mystatus = ares__cat_domain(squery->name,
