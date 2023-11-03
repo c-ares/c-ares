@@ -247,6 +247,16 @@ ares_status_t ares__init_by_options(ares_channel               channel,
 {
   size_t i;
 
+  if (channel == NULL)
+    return ARES_ENODATA;
+
+  if (options == NULL) {
+    if (optmask == 0) {
+      return ARES_ENODATA;
+    }
+    return ARES_SUCCESS;
+  }
+
   /* Easy stuff. */
   if (optmask & ARES_OPT_FLAGS) {
     channel->flags = (unsigned int)options->flags;
@@ -277,15 +287,15 @@ ares_status_t ares__init_by_options(ares_channel               channel,
     channel->rotate = ARES_FALSE;
   }
 
-  if ((optmask & ARES_OPT_UDP_PORT) && channel->udp_port == 0) {
+  if (optmask & ARES_OPT_UDP_PORT) {
     channel->udp_port = htons(options->udp_port);
   }
 
-  if ((optmask & ARES_OPT_TCP_PORT) && channel->tcp_port == 0) {
+  if (optmask & ARES_OPT_TCP_PORT) {
     channel->tcp_port = htons(options->tcp_port);
   }
 
-  if ((optmask & ARES_OPT_SOCK_STATE_CB) && channel->sock_state_cb == NULL) {
+  if (optmask & ARES_OPT_SOCK_STATE_CB) {
     channel->sock_state_cb      = options->sock_state_cb;
     channel->sock_state_cb_data = options->sock_state_cb_data;
   }
@@ -310,10 +320,11 @@ ares_status_t ares__init_by_options(ares_channel               channel,
     /* Avoid zero size allocations at any cost */
     if (options->ndomains > 0) {
       channel->domains =
-        ares_malloc((size_t)options->ndomains * sizeof(char *));
+        ares_malloc_zero((size_t)options->ndomains * sizeof(char *));
       if (!channel->domains) {
         return ARES_ENOMEM;
       }
+      channel->ndomains = (size_t)options->ndomains;
       for (i = 0; i < (size_t)options->ndomains; i++) {
         channel->domains[i] = ares_strdup(options->domains[i]);
         if (!channel->domains[i]) {
@@ -321,11 +332,10 @@ ares_status_t ares__init_by_options(ares_channel               channel,
         }
       }
     }
-    channel->ndomains = (size_t)options->ndomains;
   }
 
   /* Set lookups, if given. */
-  if ((optmask & ARES_OPT_LOOKUPS) && !channel->lookups) {
+  if (optmask & ARES_OPT_LOOKUPS) {
     channel->lookups = ares_strdup(options->lookups);
     if (!channel->lookups) {
       return ARES_ENOMEM;
@@ -346,7 +356,7 @@ ares_status_t ares__init_by_options(ares_channel               channel,
   }
 
   /* Set path for resolv.conf file, if given. */
-  if ((optmask & ARES_OPT_RESOLVCONF) && !channel->resolvconf_path) {
+  if (optmask & ARES_OPT_RESOLVCONF) {
     channel->resolvconf_path = ares_strdup(options->resolvconf_path);
     if (!channel->resolvconf_path && options->resolvconf_path) {
       return ARES_ENOMEM;
@@ -354,7 +364,7 @@ ares_status_t ares__init_by_options(ares_channel               channel,
   }
 
   /* Set path for hosts file, if given. */
-  if ((optmask & ARES_OPT_HOSTS_FILE) && !channel->hosts_path) {
+  if (optmask & ARES_OPT_HOSTS_FILE) {
     channel->hosts_path = ares_strdup(options->hosts_path);
     if (!channel->hosts_path && options->hosts_path) {
       return ARES_ENOMEM;
