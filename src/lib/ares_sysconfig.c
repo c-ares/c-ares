@@ -946,12 +946,12 @@ static ares_status_t ares_sysconfig_apply(ares_channel channel,
 
   if (sysconfig->sortlist && !(channel->optmask & ARES_OPT_SORTLIST)) {
     ares_free(channel->sortlist);
-    channel->sortlist = ares_malloc(sizeof(channel->sortlist) *
+    channel->sortlist = ares_malloc(sizeof(*channel->sortlist) *
                                     sysconfig->nsortlist);
     if (channel->sortlist == NULL) {
       return ARES_ENOMEM;
     }
-    memcpy(channel->sortlist, sysconfig->sortlist, sizeof(channel->sortlist) *
+    memcpy(channel->sortlist, sysconfig->sortlist, sizeof(*channel->sortlist) *
            sysconfig->nsortlist);
     channel->nsort = sysconfig->nsortlist;
   }
