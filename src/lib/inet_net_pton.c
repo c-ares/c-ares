@@ -194,15 +194,15 @@ static int ares_inet_net_pton_ipv4(const char *src, unsigned char *dst,
     }
     *dst++ = '\0';
   }
-  return (bits);
+  return bits;
 
 enoent:
   SET_ERRNO(ENOENT);
-  return (-1);
+  return -1;
 
 emsgsize:
   SET_ERRNO(EMSGSIZE);
-  return (-1);
+  return -1;
 }
 
 static int getbits(const char *src, size_t *bitsp)
@@ -220,22 +220,22 @@ static int getbits(const char *src, size_t *bitsp)
     pch = strchr(digits, ch);
     if (pch != NULL) {
       if (n++ != 0 && val == 0) { /* no leading zeros */
-        return (0);
+        return 0;
       }
       val *= 10;
       val += (size_t)(pch - digits);
       if (val > 128) { /* range */
-        return (0);
+        return 0;
       }
       continue;
     }
-    return (0);
+    return 0;
   }
   if (n == 0) {
-    return (0);
+    return 0;
   }
   *bitsp = val;
-  return (1);
+  return 1;
 }
 
 static int ares_inet_pton6(const char *src, unsigned char *dst)
@@ -342,11 +342,11 @@ static int ares_inet_pton6(const char *src, unsigned char *dst)
   }
 
   memcpy(dst, tmp, NS_IN6ADDRSZ);
-  return (1);
+  return 1;
 
 enoent:
   SET_ERRNO(ENOENT);
-  return (-1);
+  return -1;
 }
 
 static int ares_inet_net_pton_ipv6(const char *src, unsigned char *dst,
@@ -361,7 +361,7 @@ static int ares_inet_net_pton_ipv6(const char *src, unsigned char *dst,
 
   if (ares_strlen(src) >= sizeof buf) {
     SET_ERRNO(EMSGSIZE);
-    return (-1);
+    return -1;
   }
   ares_strcpy(buf, src, sizeof buf);
 
@@ -372,7 +372,7 @@ static int ares_inet_net_pton_ipv6(const char *src, unsigned char *dst,
 
   ret = ares_inet_pton6(buf, (unsigned char *)&in6);
   if (ret != 1) {
-    return (-1);
+    return -1;
   }
 
   if (sep == NULL) {
@@ -380,14 +380,14 @@ static int ares_inet_net_pton_ipv6(const char *src, unsigned char *dst,
   } else {
     if (!getbits(sep, &bits)) {
       SET_ERRNO(ENOENT);
-      return (-1);
+      return -1;
     }
   }
 
   bytes = (bits + 7) / 8;
   if (bytes > size) {
     SET_ERRNO(EMSGSIZE);
-    return (-1);
+    return -1;
   }
   memcpy(dst, &in6, bytes);
   return (int)bits;
@@ -415,12 +415,12 @@ int ares_inet_net_pton(int af, const char *src, void *dst, size_t size)
 {
   switch (af) {
     case AF_INET:
-      return (ares_inet_net_pton_ipv4(src, dst, size));
+      return ares_inet_net_pton_ipv4(src, dst, size);
     case AF_INET6:
-      return (ares_inet_net_pton_ipv6(src, dst, size));
+      return ares_inet_net_pton_ipv6(src, dst, size);
     default:
       SET_ERRNO(EAFNOSUPPORT);
-      return (-1);
+      return -1;
   }
 }
 
@@ -441,5 +441,5 @@ int ares_inet_pton(int af, const char *src, void *dst)
   if (result == -1 && ERRNO == ENOENT) {
     return 0;
   }
-  return (result > -1 ? 1 : -1);
+  return (result > -1)? 1 : -1;
 }
