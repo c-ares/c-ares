@@ -12,7 +12,7 @@ typedef int (*ares_sock_config_callback)(ares_socket_t \fIsocket_fd\fP,
                                          int \fItype\fP,
                                          void *\fIuserdata\fP)
 
-void ares_set_socket_configure_callback(ares_channel \fIchannel\fP,
+void ares_set_socket_configure_callback(ares_channel_t *\fIchannel\fP,
                                         ares_sock_config_callback \fIcallback\fP,
                                         void *\fIuserdata\fP)
 .fi

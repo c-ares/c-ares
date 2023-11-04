@@ -17,15 +17,15 @@
 .\"
 .TH ARES_SET_SERVERS 3 "5 March 2010"
 .SH NAME
-ares_set_servers, ares_set_servers_ports \- Initialize an ares_channel name servers configuration
+ares_set_servers, ares_set_servers_ports \- Initialize an ares_channel_t *name servers configuration
 .SH SYNOPSIS
 .nf
 #include <ares.h>
 
-int ares_set_servers(ares_channel \fIchannel\fP,
+int ares_set_servers(ares_channel_t *\fIchannel\fP,
                      struct ares_addr_node *\fIservers\fP)
 
-int ares_set_servers_ports(ares_channel \fIchannel\fP,
+int ares_set_servers_ports(ares_channel_t *\fIchannel\fP,
                            struct ares_addr_port_node *\fIservers\fP)
 .fi
 .SH DESCRIPTION

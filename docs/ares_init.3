@@ -23,7 +23,7 @@ ares_init \- Initialize a resolver channel
 .nf
 #include <ares.h>
 
-int ares_init(ares_channel *\fIchannelptr\fP)
+int ares_init(ares_channel_t **\fIchannelptr\fP)
 .fi
 .SH DESCRIPTION
 The \fBares_init(3)\fP function initializes a communications channel for name

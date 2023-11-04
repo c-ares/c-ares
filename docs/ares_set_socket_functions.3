@@ -16,7 +16,7 @@ struct ares_socket_functions {
     ares_ssize_t (*\fIasendv\fP)(ares_socket_t, const struct iovec *, int, void *);
 };
 
-void ares_set_socket_functions(ares_channel \fIchannel\fP,
+void ares_set_socket_functions(ares_channel_t *\fIchannel\fP,
                                const struct ares_socket_functions * \fIfunctions\fP,
                                void *\fIuser_data\fP);
 .fi
