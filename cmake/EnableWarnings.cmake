@@ -123,15 +123,6 @@ if (MSVC)
 		/we4013 # Treat "function undefined, assuming extern returning int" warning as an error. https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4013
 	)
 
-	# Disable some warnings to reduce noise level on visual studio.
-	if (NOT WIN32_STRICT_WARNINGS)
-		list(APPEND _flags
-#			/wd4018 # Disable signed/unsigned mismatch warnings. https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4018
-#			/wd4068 # Disable unknown pragma warning. https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-1-c4068
-#			/wd4244 # Disable integer type conversion warnings. https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-levels-3-and-4-c4244
-#			/wd4267 # Disable warnings about converting size_t to a smaller type. https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4267
-		)
-	endif ()
 	list(APPEND _flags_C   ${_flags})
 	list(APPEND _flags_CXX ${_flags})
 
