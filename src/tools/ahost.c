@@ -65,7 +65,7 @@ int         main(int argc, char **argv)
 {
   struct ares_options  options;
   int                  optmask = 0;
-  ares_channel         channel;
+  ares_channel_t      *channel;
   int                  status;
   int                  nfds;
   int                  c;

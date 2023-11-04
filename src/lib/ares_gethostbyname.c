@@ -61,7 +61,7 @@ static size_t get6_address_index(const struct ares_in6_addr *addr,
 struct host_query {
   ares_host_callback callback;
   void              *arg;
-  ares_channel       channel;
+  ares_channel_t    *channel;
 };
 
 static void ares_gethostbyname_callback(void *arg, int status, int timeouts,
@@ -100,7 +100,7 @@ static void ares_gethostbyname_callback(void *arg, int status, int timeouts,
   ares_free_hostent(hostent);
 }
 
-void ares_gethostbyname(ares_channel channel, const char *name, int family,
+void ares_gethostbyname(ares_channel_t *channel, const char *name, int family,
                         ares_host_callback callback, void *arg)
 {
   const struct ares_addrinfo_hints hints = { ARES_AI_CANONNAME, family, 0, 0 };
@@ -263,8 +263,8 @@ done:
 
 /* I really have no idea why this is exposed as a public function, but since
  * it is, we can't kill this legacy function. */
-int ares_gethostbyname_file(ares_channel channel, const char *name, int family,
-                            struct hostent **host)
+int ares_gethostbyname_file(ares_channel_t *channel, const char *name,
+                            int family, struct hostent **host)
 {
   const ares_hosts_entry_t *entry;
   ares_status_t             status;

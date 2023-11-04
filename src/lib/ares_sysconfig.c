@@ -914,7 +914,7 @@ static void ares_sysconfig_free(ares_sysconfig_t *sysconfig)
   memset(sysconfig, 0, sizeof(*sysconfig));
 }
 
-static ares_status_t ares_sysconfig_apply(ares_channel            channel,
+static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
                                           const ares_sysconfig_t *sysconfig)
 {
   ares_status_t status;
@@ -984,7 +984,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel            channel,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__init_by_sysconfig(ares_channel channel)
+ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
 {
   ares_status_t    status;
   ares_sysconfig_t sysconfig;

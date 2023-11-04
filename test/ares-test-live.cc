@@ -688,7 +688,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, GetSock) {
 }
 
 TEST_F(LibraryTest, GetTCPSock) {
-  ares_channel channel;
+  ares_channel_t *channel;
   struct ares_options opts = {0};
   opts.tcp_port = 53;
   opts.flags = ARES_FLAG_USEVC;
@@ -752,7 +752,7 @@ TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
 
   {
     count = 0;
-    ares_channel copy;
+    ares_channel_t *copy;
     EXPECT_EQ(ARES_SUCCESS, ares_dup(&copy, channel_));
 
     HostResult result;

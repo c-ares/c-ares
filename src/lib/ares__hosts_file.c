@@ -716,8 +716,8 @@ static ares_bool_t ares__hosts_expired(const char              *filename,
   return ARES_FALSE;
 }
 
-static ares_status_t ares__hosts_path(ares_channel channel, ares_bool_t use_env,
-                                      char **path)
+static ares_status_t ares__hosts_path(ares_channel_t *channel,
+                                      ares_bool_t use_env, char **path)
 {
   char *path_hosts = NULL;
 
@@ -786,8 +786,8 @@ static ares_status_t ares__hosts_path(ares_channel channel, ares_bool_t use_env,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares__hosts_update(ares_channel channel,
-                                        ares_bool_t  use_env)
+static ares_status_t ares__hosts_update(ares_channel_t *channel,
+                                        ares_bool_t     use_env)
 {
   ares_status_t status;
   char         *filename = NULL;
@@ -810,7 +810,7 @@ static ares_status_t ares__hosts_update(ares_channel channel,
   return status;
 }
 
-ares_status_t ares__hosts_search_ipaddr(ares_channel channel,
+ares_status_t ares__hosts_search_ipaddr(ares_channel_t *channel,
                                         ares_bool_t use_env, const char *ipaddr,
                                         const ares_hosts_entry_t **entry)
 {
@@ -840,8 +840,8 @@ ares_status_t ares__hosts_search_ipaddr(ares_channel channel,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__hosts_search_host(ares_channel channel, ares_bool_t use_env,
-                                      const char                *host,
+ares_status_t ares__hosts_search_host(ares_channel_t *channel,
+                                      ares_bool_t use_env, const char *host,
                                       const ares_hosts_entry_t **entry)
 {
   ares_status_t status;

@@ -32,7 +32,7 @@
 #include "ares.h"
 #include "ares_private.h"
 
-void ares_destroy(ares_channel channel)
+void ares_destroy(ares_channel_t *channel)
 {
   size_t              i;
   ares__llist_node_t *node = NULL;
@@ -105,7 +105,7 @@ void ares__destroy_server(struct server_state *server)
   ares_free(server);
 }
 
-void ares__destroy_servers_state(ares_channel channel)
+void ares__destroy_servers_state(ares_channel_t *channel)
 {
   ares__slist_node_t *node;
 
