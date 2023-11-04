@@ -748,62 +748,64 @@ static ares_status_t ares__init_sysconfig_watt32(ares_sysconfig_t *sysconfig)
 #endif
 
 #if defined(ANDROID) || defined(__ANDROID__)
-static ares_status_t
-       ares__init_sysconfig_android(ares_sysconfig_t *sysconfig) size_t i;
-char **dns_servers;
-char  *domains;
-size_t num_servers;
-ares_status_t status = ARES_EFILE;
+static ares_status_t ares__init_sysconfig_android(ares_sysconfig_t *sysconfig)
+{
+  size_t        i;
+  char        **dns_servers;
+  char         *domains;
+  size_t        num_servers;
+  ares_status_t status = ARES_EFILE;
 
-/* Use the Android connectivity manager to get a list
- * of DNS servers. As of Android 8 (Oreo) net.dns#
- * system properties are no longer available. Google claims this
- * improves privacy. Apps now need the ACCESS_NETWORK_STATE
- * permission and must use the ConnectivityManager which
- * is Java only. */
-dns_servers = ares_get_android_server_list(MAX_DNS_PROPERTIES, &num_servers);
-if (dns_servers != NULL) {
-  for (i = 0; i < num_servers; i++) {
-    status = ares__sconfig_append_fromstr(&sysconfig->sconfig, dns_servers[i]);
-    if (status != ARES_SUCCESS) {
-      return status;
+  /* Use the Android connectivity manager to get a list
+   * of DNS servers. As of Android 8 (Oreo) net.dns#
+   * system properties are no longer available. Google claims this
+   * improves privacy. Apps now need the ACCESS_NETWORK_STATE
+   * permission and must use the ConnectivityManager which
+   * is Java only. */
+  dns_servers = ares_get_android_server_list(MAX_DNS_PROPERTIES, &num_servers);
+  if (dns_servers != NULL) {
+    for (i = 0; i < num_servers; i++) {
+      status =
+        ares__sconfig_append_fromstr(&sysconfig->sconfig, dns_servers[i]);
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
     }
+    for (i = 0; i < num_servers; i++) {
+      ares_free(dns_servers[i]);
+    }
+    ares_free(dns_servers);
   }
-  for (i = 0; i < num_servers; i++) {
-    ares_free(dns_servers[i]);
-  }
-  ares_free(dns_servers);
-}
 
-domains            = ares_get_android_search_domains_list();
-sysconfig->domains = ares__strsplit(domains, ", ", &sysconfig->ndomains);
-ares_free(domains);
+  domains            = ares_get_android_search_domains_list();
+  sysconfig->domains = ares__strsplit(domains, ", ", &sysconfig->ndomains);
+  ares_free(domains);
 
 #  ifdef HAVE___SYSTEM_PROPERTY_GET
-/* Old way using the system property still in place as
- * a fallback. Older android versions can still use this.
- * it's possible for older apps not not have added the new
- * permission and we want to try to avoid breaking those.
- *
- * We'll only run this if we don't have any dns servers
- * because this will get the same ones (if it works). */
-if (sysconfig->sconfig == NULL) {
-  char propname[PROP_NAME_MAX];
-  char propvalue[PROP_VALUE_MAX] = "";
-  for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
-    snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
-    if (__system_property_get(propname, propvalue) < 1) {
-      break;
-    }
-    status = ares__sconfig_append_fromstr(&sysconfig->sconfig, propvalue);
-    if (status != ARES_SUCCESS) {
-      return status;
+  /* Old way using the system property still in place as
+   * a fallback. Older android versions can still use this.
+   * it's possible for older apps not not have added the new
+   * permission and we want to try to avoid breaking those.
+   *
+   * We'll only run this if we don't have any dns servers
+   * because this will get the same ones (if it works). */
+  if (sysconfig->sconfig == NULL) {
+    char propname[PROP_NAME_MAX];
+    char propvalue[PROP_VALUE_MAX] = "";
+    for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
+      snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
+      if (__system_property_get(propname, propvalue) < 1) {
+        break;
+      }
+      status = ares__sconfig_append_fromstr(&sysconfig->sconfig, propvalue);
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
     }
   }
-}
 #  endif /* HAVE___SYSTEM_PROPERTY_GET */
 
-return status;
+  return status;
 }
 #endif
 

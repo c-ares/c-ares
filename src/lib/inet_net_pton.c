@@ -441,5 +441,5 @@ int ares_inet_pton(int af, const char *src, void *dst)
   if (result == -1 && ERRNO == ENOENT) {
     return 0;
   }
-  return (result > -1)? 1 : -1;
+  return (result > -1) ? 1 : -1;
 }
