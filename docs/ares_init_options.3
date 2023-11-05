@@ -185,7 +185,7 @@ The receive buffer size to set for the socket.
 .br
 The message size to be advertized in EDNS; only takes effect if the
 .B ARES_FLAG_EDNS
-flag is set.
+flag is set.  Defaults to 1280, the recommended size.
 .TP 18
 .B ARES_OPT_RESOLVCONF
 .B char *\fIresolvconf_path\fP;
@@ -270,7 +270,8 @@ in the request.  Primarily useful for writing clients which might be
 used to test or debug name servers.
 .TP 23
 .B ARES_FLAG_EDNS
-Include an EDNS pseudo-resource record (RFC 2671) in generated requests.
+Include an EDNS pseudo-resource record (RFC 2671) in generated requests.  As of
+v1.22, this is on by default if flags are otherwise not set.
 .SH RETURN VALUES
 \fBares_init_options(3)\fP can return any of the following values:
 .TP 14
