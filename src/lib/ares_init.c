@@ -135,9 +135,8 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
 #endif
 
   /* Enable EDNS by default */
-  if (channel->optmask == 0) {
+  if (!(channel->optmask & ARES_OPT_FLAGS)) {
     channel->flags = ARES_FLAG_EDNS;
-
   }
   if (channel->ednspsz == 0) {
     channel->ednspsz = EDNSPACKETSZ;
