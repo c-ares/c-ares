@@ -32,6 +32,210 @@
 #  include <stdint.h>
 #endif
 
+typedef struct {
+  char  *name;
+  size_t name_len;
+  size_t idx;
+} ares_nameoffset_t;
+
+static void ares__nameoffset_free(void *arg)
+{
+  ares_nameoffset_t *off = arg;
+  if (off == NULL)
+    return;
+  ares_free(off->name);
+  ares_free(off);
+}
+
+static ares_status_t ares__nameoffset_create(ares__llist_t **list,
+                                             const char *name, size_t idx)
+{
+  ares_status_t      status;
+  ares_nameoffset_t *off    = NULL;
+
+  if (list == NULL || name == NULL || ares_strlen(name) == 0 ||
+      ares_strlen(name) > 255) {
+    return ARES_EFORMERR;
+  }
+
+  if (*list == NULL) {
+    *list = ares__llist_create(ares__nameoffset_free);
+  }
+  if (*list == NULL) {
+    status = ARES_ENOMEM;
+    goto fail;
+  }
+
+  off = ares_malloc_zero(sizeof(*off));
+  if (off == NULL)
+    return ARES_ENOMEM;
+
+  off->name     = ares_strdup(name);
+  off->name_len = ares_strlen(off->name);
+  off->idx      = idx;
+
+  if (ares__llist_insert_last(*list, off) == NULL) {
+    status = ARES_ENOMEM;
+    goto fail;
+  }
+
+  status = ARES_SUCCESS;
+
+fail:
+  ares__nameoffset_free(off);
+  return status;
+}
+
+static const ares_nameoffset_t *ares__nameoffset_find(ares__llist_t *list,
+                                                      const char *name)
+{
+  size_t                    name_len = ares_strlen(name);
+  ares__llist_node_t       *node;
+  const ares_nameoffset_t  *longest_match = NULL;
+
+  if (list == NULL || name == NULL || name_len == 0)
+    return NULL;
+
+  for (node = ares__llist_node_first(list); node != NULL;
+       node = ares__llist_node_next(node)) {
+    const ares_nameoffset_t *val  = ares__llist_node_val(node);
+    size_t                   prefix_len;
+
+    /* Can't be a match if the stored name is longer */
+    if (val->name_len > name_len) {
+      continue;
+    }
+
+    /* Can't be the longest match if our existing longest match is longer */
+    if (longest_match != NULL && longest_match->name_len > val->name_len) {
+      continue;
+    }
+
+    prefix_len = name_len - val->name_len;
+
+    if (strcasecmp(val->name, name+prefix_len) != 0) {
+      continue;
+    }
+
+    /* We need to make sure if `val->name` is "example.com" that name is
+     * is separated by a label, e.g. "myexample.com" is not ok, however
+     * "my.example.com" is, so we look for the preceding "." */
+    if (prefix_len != 0 && name[prefix_len - 1] != '.') {
+      continue;
+    }
+
+    longest_match = val;
+  }
+
+  return longest_match;
+}
+
+static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
+                                         const char *name)
+{
+  const ares_nameoffset_t *off        = NULL;
+  size_t                   name_len   = ares_strlen(name);
+  size_t                   pos        = ares__buf_get_position(buf);
+  char                     name_copy[256];
+  char                   **labels     = NULL;
+  size_t                   num_labels = 0;
+  ares_status_t            status;
+
+  if (buf == NULL || name == NULL)
+    return ARES_EFORMERR;
+
+  if (name_len > sizeof(name_copy) - 1)
+    return ARES_EBADNAME;
+
+  name_len = ares_strcpy(name_copy, name, sizeof(name_copy));
+
+  /* Remove trailing period */
+  if (name_len > 0 && name_copy[name_len-1] == '.') {
+    name_copy[name_len - 1] = 0;
+    name_len--;
+  }
+
+  /* XXX: validate name format!
+   *  1) must not start with a '.'
+   *  2) only printable characters
+   *  3) if a hostname only hostname characters
+   *  4) each label must be between 1 and 63 characters (inclusive)
+   *  4) since we stripped trailing '.' should not have a trailing '.'
+   */
+  if (*name == '.')
+    return ARES_EBADNAME;
+
+  /* Find longest match */
+  if (list != NULL) {
+    off = ares__nameoffset_find(*list, name_copy);
+    if (off != NULL) {
+      if (off->name_len != name_len) {
+        /* truncate */
+        name_len -= (off->name_len + 1);
+        name_copy[name_len - 1] = 0;
+      }
+    }
+  }
+
+  /* Output labels */
+  if (off == NULL || off->name_len != name_len) {
+    size_t i;
+
+    labels = ares__strsplit(name_copy, ".", &num_labels);
+    if (labels == NULL || num_labels == 0) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+
+    for (i=0; i<num_labels; i++) {
+      size_t len = ares_strlen(labels[i]);
+
+      status = ares__buf_append_byte(buf, (unsigned char)(len & 0xFF));
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+
+      status = ares__buf_append(buf, (unsigned char *)labels[i], len);
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
+
+    /* If we are NOT jumping to another label, output terminator */
+    if (off == NULL) {
+      status = ares__buf_append_byte(buf, 0);
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
+  }
+
+  /* Output name compression offset jump */
+  if (off != NULL) {
+    unsigned short u16 = 0xC000 | (off->idx & 0x3FFF);
+    status = ares__buf_append_be16(buf, u16);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
+
+  /* Store pointer for future jumps as long as its not an exact match for
+   * a prior entry */
+  if (list != NULL && off != NULL && off->name_len != name_len) {
+    status = ares__nameoffset_create(list, name_copy, pos);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
+
+  status = ARES_SUCCESS;
+
+done:
+  ares__strsplit_free(labels, num_labels);
+  return status;
+}
+
+
 static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
                                            ares__buf_t             *buf)
 {
@@ -123,23 +327,71 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
 }
 
 static ares_status_t ares_dns_write_questions(const ares_dns_record_t *dnsrec,
+                                              ares__llist_t          **namelist,
                                               ares__buf_t             *buf)
 {
+  size_t i;
 
+  for (i=0; i<ares_dns_record_query_cnt(dnsrec); i++) {
+    ares_status_t       status;
+    const char         *name   = NULL;
+    ares_dns_rec_type_t qtype;
+    ares_dns_class_t    qclass;
+
+    status = ares_dns_record_query_get(dnsrec, i, &name, &qtype, &qclass);
+    if (status != ARES_SUCCESS)
+      return status;
+
+    /* Name */
+    status = ares_dns_write_name(buf, namelist, name);
+    if (status != ARES_SUCCESS)
+      return status;
+
+    /* Type */
+    status = ares__buf_append_be16(buf, (unsigned short)qtype);
+    if (status != ARES_SUCCESS)
+      return status;
+
+    /* Class */
+    status = ares__buf_append_be16(buf, (unsigned short)qclass);
+    if (status != ARES_SUCCESS)
+      return status;
+  }
+
+  return ARES_SUCCESS;
 }
 
 static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
+                                       ares__llist_t          **namelist,
                                        ares_dns_section_t       section,
                                        ares__buf_t             *buf)
 {
+  size_t i;
 
+  for (i=0; i<ares_dns_record_rr_cnt(dnsrec, section); i++) {
+    /* Name */
+
+    /* Type */
+
+    /* Class */
+
+    /* TTL */
+
+    /* Length */
+
+    /* Data */
+  }
+
+  return ARES_SUCCESS;
 }
+
 
 ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
                              unsigned char **buf, size_t *buf_len)
 {
-  ares__buf_t  *b = NULL;
-  ares_status_t status;
+  ares__buf_t   *b        = NULL;
+  ares_status_t  status;
+  ares__llist_t *namelist = NULL;
 
   if (buf == NULL || buf_len == NULL || dnsrec == NULL) {
     return ARES_EFORMERR;
@@ -157,23 +409,25 @@ ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
   if (status != ARES_SUCCESS)
     goto done;
 
-  status = ares_dns_write_questions(dnsrec, b);
+  status = ares_dns_write_questions(dnsrec, &namelist, b);
   if (status != ARES_SUCCESS)
     goto done;
 
-  status = ares_dns_write_rr(dnsrec, ARES_SECTION_ANSWER, b);
+  status = ares_dns_write_rr(dnsrec, &namelist, ARES_SECTION_ANSWER, b);
   if (status != ARES_SUCCESS)
     goto done;
 
-  status = ares_dns_write_rr(dnsrec, ARES_SECTION_AUTHORITY, b);
+  status = ares_dns_write_rr(dnsrec, &namelist, ARES_SECTION_AUTHORITY, b);
   if (status != ARES_SUCCESS)
     goto done;
 
-  status = ares_dns_write_rr(dnsrec, ARES_SECTION_ADDITIONAL, b);
+  status = ares_dns_write_rr(dnsrec, &namelist, ARES_SECTION_ADDITIONAL, b);
   if (status != ARES_SUCCESS)
     goto done;
 
 done:
+  ares__llist_destroy(namelist);
+
   if (status != ARES_SUCCESS) {
     ares__buf_destroy(b);
     return status;
