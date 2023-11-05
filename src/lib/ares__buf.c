@@ -277,6 +277,22 @@ ares_status_t ares__buf_append_byte(ares__buf_t *buf, unsigned char byte)
   return ares__buf_append(buf, &byte, 1);
 }
 
+
+ares_status_t ares__buf_append_be16(ares__buf_t *buf, unsigned short u16)
+{
+  ares_status_t status;
+
+  status = ares__buf_append_byte(buf, (u16 >> 8) & 0xff);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  status = ares__buf_append_byte(buf, u16 & 0xff);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  return ARES_SUCCESS;
+}
+
 unsigned char *ares__buf_append_start(ares__buf_t *buf, size_t *len)
 {
   ares_status_t status;

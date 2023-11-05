@@ -90,6 +90,14 @@ ares_status_t  ares__buf_append(ares__buf_t *buf, const unsigned char *data,
  */
 ares_status_t  ares__buf_append_byte(ares__buf_t *buf, unsigned char byte);
 
+/*! Append a 16bit Big Endian number to the buffer.
+ *
+ *  \param[in]  buf     Initialized buffer object
+ *  \param[out] u16     16bit integer
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+ares_status_t ares__buf_append_be16(ares__buf_t *buf, unsigned short u16);
+
 
 /*! Start a dynamic append operation that returns a buffer suitable for
  *  writing.  A desired minimum length is passed in, and the actual allocated
