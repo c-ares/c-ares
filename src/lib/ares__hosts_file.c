@@ -716,7 +716,7 @@ static ares_bool_t ares__hosts_expired(const char              *filename,
   return ARES_FALSE;
 }
 
-static ares_status_t ares__hosts_path(ares_channel_t *channel,
+static ares_status_t ares__hosts_path(const ares_channel_t *channel,
                                       ares_bool_t use_env, char **path)
 {
   char *path_hosts = NULL;

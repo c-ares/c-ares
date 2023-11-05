@@ -44,7 +44,7 @@ static long timeoffset(const struct timeval *now, const struct timeval *check)
 struct timeval *ares_timeout(ares_channel_t *channel, struct timeval *maxtv,
                              struct timeval *tvbuf)
 {
-  struct query       *query;
+  const struct query *query;
   ares__slist_node_t *node;
   struct timeval      now;
   long                offset;

@@ -235,8 +235,8 @@ ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
  * the string we should query, in an allocated buffer.  If not, set *s
  * to NULL.
  */
-ares_status_t ares__single_domain(ares_channel_t *channel, const char *name,
-                                  char **s)
+ares_status_t ares__single_domain(const ares_channel_t *channel,
+                                  const char *name, char **s)
 {
   size_t        len = ares_strlen(name);
   const char   *hostaliases;

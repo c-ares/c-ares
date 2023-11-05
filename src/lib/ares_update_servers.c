@@ -339,7 +339,7 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
   return ARES_SUCCESS;
 }
 
-static unsigned short ares__sconfig_get_port(ares_channel_t       *channel,
+static unsigned short ares__sconfig_get_port(const ares_channel_t *channel,
                                              const ares_sconfig_t *s,
                                              ares_bool_t           is_tcp)
 {

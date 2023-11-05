@@ -476,8 +476,8 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__init_sysconfig_files(ares_channel_t   *channel,
-                                         ares_sysconfig_t *sysconfig)
+ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
+                                         ares_sysconfig_t     *sysconfig)
 {
   char         *p;
   FILE         *fp       = NULL;

@@ -318,8 +318,8 @@ void ares__slist_node_reinsert(ares__slist_node_t *node)
   ares__slist_node_push(list, node);
 }
 
-ares__slist_node_t *ares__slist_node_find(const ares__slist_t *list,
-                                          const void          *val)
+ares__slist_node_t *ares__slist_node_find(ares__slist_t *list,
+                                          const void    *val)
 {
   size_t              i;
   ares__slist_node_t *node = NULL;
@@ -378,7 +378,7 @@ ares__slist_node_t *ares__slist_node_find(const ares__slist_t *list,
   return node;
 }
 
-ares__slist_node_t *ares__slist_node_first(const ares__slist_t *list)
+ares__slist_node_t *ares__slist_node_first(ares__slist_t *list)
 {
   if (list == NULL) {
     return NULL;
@@ -387,7 +387,7 @@ ares__slist_node_t *ares__slist_node_first(const ares__slist_t *list)
   return list->head[0];
 }
 
-ares__slist_node_t *ares__slist_node_last(const ares__slist_t *list)
+ares__slist_node_t *ares__slist_node_last(ares__slist_t *list)
 {
   if (list == NULL) {
     return NULL;
@@ -395,7 +395,7 @@ ares__slist_node_t *ares__slist_node_last(const ares__slist_t *list)
   return list->tail;
 }
 
-ares__slist_node_t *ares__slist_node_next(const ares__slist_node_t *node)
+ares__slist_node_t *ares__slist_node_next(ares__slist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -403,7 +403,7 @@ ares__slist_node_t *ares__slist_node_next(const ares__slist_node_t *node)
   return node->next[0];
 }
 
-ares__slist_node_t *ares__slist_node_prev(const ares__slist_node_t *node)
+ares__slist_node_t *ares__slist_node_prev(ares__slist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -436,12 +436,12 @@ ares__slist_t *ares__slist_node_parent(ares__slist_node_t *node)
   return node->parent;
 }
 
-void *ares__slist_first_val(const ares__slist_t *list)
+void *ares__slist_first_val(ares__slist_t *list)
 {
   return ares__slist_node_val(ares__slist_node_first(list));
 }
 
-void *ares__slist_last_val(const ares__slist_t *list)
+void *ares__slist_last_val(ares__slist_t *list)
 {
   return ares__slist_node_val(ares__slist_node_last(list));
 }

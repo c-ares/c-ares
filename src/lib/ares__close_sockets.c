@@ -79,7 +79,7 @@ void ares__close_sockets(struct server_state *server)
   }
 }
 
-void ares__check_cleanup_conn(ares_channel_t           *channel,
+void ares__check_cleanup_conn(const ares_channel_t     *channel,
                               struct server_connection *conn)
 {
   ares_bool_t do_cleanup = ARES_FALSE;

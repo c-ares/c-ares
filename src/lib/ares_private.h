@@ -359,7 +359,7 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
                            size_t qlen, ares_callback callback, void *arg);
 void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
-void          ares__check_cleanup_conn(ares_channel_t           *channel,
+void          ares__check_cleanup_conn(const ares_channel_t     *channel,
                                        struct server_connection *conn);
 ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize);
 void          ares__free_query(struct query *query);
@@ -403,14 +403,14 @@ typedef struct {
 
 ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig);
 
-ares_status_t ares__init_sysconfig_files(ares_channel_t   *channel,
-                                         ares_sysconfig_t *sysconfig);
+ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
+                                         ares_sysconfig_t     *sysconfig);
 ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
                                    const char *str);
 
 void          ares__destroy_servers_state(ares_channel_t *channel);
-ares_status_t ares__single_domain(ares_channel_t *channel, const char *name,
-                                  char **s);
+ares_status_t ares__single_domain(const ares_channel_t *channel,
+                                  const char *name, char **s);
 ares_status_t ares__cat_domain(const char *name, const char *domain, char **s);
 ares_status_t ares__sortaddrinfo(ares_channel_t            *channel,
                                  struct ares_addrinfo_node *ai_node);

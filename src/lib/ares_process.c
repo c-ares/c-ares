@@ -65,14 +65,14 @@ static ares_bool_t   same_questions(const unsigned char *qbuf, size_t qlen,
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
 static ares_bool_t   has_opt_rr(ares_dns_record_t *arec);
-static void          end_query(ares_channel_t *channel, struct query *query,
-                               ares_status_t status, const unsigned char *abuf,
-                               size_t alen);
+static void          end_query(const ares_channel_t *channel,
+                               struct query *query, ares_status_t status,
+                               const unsigned char *abuf, size_t alen);
 
 static void          server_increment_failures(struct server_state *server)
 {
-  ares__slist_node_t *node;
-  ares_channel_t     *channel = server->channel;
+  ares__slist_node_t   *node;
+  const ares_channel_t *channel = server->channel;
 
   node = ares__slist_node_find(channel->servers, server);
   if (node == NULL) {
@@ -84,8 +84,8 @@ static void          server_increment_failures(struct server_state *server)
 
 static void server_set_good(struct server_state *server)
 {
-  ares__slist_node_t *node;
-  ares_channel_t     *channel = server->channel;
+  ares__slist_node_t   *node;
+  const ares_channel_t *channel = server->channel;
 
   if (!server->consec_failures) {
     return;
@@ -356,7 +356,8 @@ static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
   return 1;
 }
 
-static ares_socket_t *channel_socket_list(ares_channel_t *channel, size_t *num)
+static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
+                                          size_t *num)
 {
   size_t              alloc_cnt = 1 << 4;
   ares_socket_t      *out       = ares_malloc(alloc_cnt * sizeof(*out));
@@ -1031,7 +1032,7 @@ static void ares_detach_query(struct query *query)
   query->node_all_queries        = NULL;
 }
 
-static void end_query(ares_channel_t *channel, struct query *query,
+static void end_query(const ares_channel_t *channel, struct query *query,
                       ares_status_t status, const unsigned char *abuf,
                       size_t alen)
 {
