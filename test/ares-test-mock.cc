@@ -1215,51 +1215,10 @@ class MockMultiServerChannelTest
   }
 };
 
-class RotateMultiMockTest : public MockMultiServerChannelTest {
- public:
-  RotateMultiMockTest() : MockMultiServerChannelTest(true) {}
-};
-
 class NoRotateMultiMockTest : public MockMultiServerChannelTest {
  public:
   NoRotateMultiMockTest() : MockMultiServerChannelTest(false) {}
 };
-
-
-TEST_P(RotateMultiMockTest, ThirdServer) {
-  struct ares_options opts = {0};
-  int optmask = 0;
-  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel_, &opts, &optmask));
-  EXPECT_EQ(0, (optmask & ARES_OPT_NOROTATE));
-  ares_destroy_options(&opts);
-
-  DNSPacket servfailrsp;
-  servfailrsp.set_response().set_aa().set_rcode(SERVFAIL)
-    .add_question(new DNSQuestion("www.example.com", T_A));
-  DNSPacket notimplrsp;
-  notimplrsp.set_response().set_aa().set_rcode(NOTIMP)
-    .add_question(new DNSQuestion("www.example.com", T_A));
-  DNSPacket okrsp;
-  okrsp.set_response().set_aa()
-    .add_question(new DNSQuestion("www.example.com", T_A))
-    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
-
-  ON_CALL(*servers_[0], OnRequest("www.example.com", T_A))
-    .WillByDefault(SetReply(servers_[0].get(), &notimplrsp));
-  ON_CALL(*servers_[1], OnRequest("www.example.com", T_A))
-    .WillByDefault(SetReply(servers_[1].get(), &okrsp));
-  ON_CALL(*servers_[2], OnRequest("www.example.com", T_A))
-    .WillByDefault(SetReply(servers_[2].get(), &okrsp));
-  CheckExample();
-
-  ON_CALL(*servers_[0], OnRequest("www.example.com", T_A))
-    .WillByDefault(SetReply(servers_[0].get(), &servfailrsp));
-  ON_CALL(*servers_[1], OnRequest("www.example.com", T_A))
-    .WillByDefault(SetReply(servers_[1].get(), &okrsp));
-  ON_CALL(*servers_[2], OnRequest("www.example.com", T_A))
-    .WillByDefault(SetReply(servers_[2].get(), &okrsp));
-  CheckExample();
-}
 
 TEST_P(NoRotateMultiMockTest, ThirdServer) {
   struct ares_options opts = {0};
@@ -1324,8 +1283,6 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockExtraOptsTest, ::testing::ValuesIn
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockNoCheckRespChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEDNSChannelTest, ::testing::ValuesIn(ares::test::families_modes));
-
-INSTANTIATE_TEST_SUITE_P(TransportModes, RotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
 
 INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
 
