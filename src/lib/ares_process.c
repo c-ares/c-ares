@@ -48,12 +48,12 @@
 #include "ares_dns.h"
 
 static ares_bool_t try_again(int errnum);
-static void        write_tcp_data(ares_channel channel, fd_set *write_fds,
+static void        write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
                                   ares_socket_t write_fd);
-static void        read_packets(ares_channel channel, fd_set *read_fds,
+static void        read_packets(ares_channel_t *channel, fd_set *read_fds,
                                 ares_socket_t read_fd, struct timeval *now);
-static void        process_timeouts(ares_channel channel, struct timeval *now);
-static ares_status_t process_answer(ares_channel         channel,
+static void process_timeouts(ares_channel_t *channel, struct timeval *now);
+static ares_status_t process_answer(ares_channel_t      *channel,
                                     const unsigned char *abuf, size_t alen,
                                     struct server_connection *conn,
                                     ares_bool_t tcp, struct timeval *now);
@@ -65,14 +65,14 @@ static ares_bool_t   same_questions(const unsigned char *qbuf, size_t qlen,
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
 static ares_bool_t   has_opt_rr(ares_dns_record_t *arec);
-static void          end_query(ares_channel channel, struct query *query,
+static void          end_query(ares_channel_t *channel, struct query *query,
                                ares_status_t status, const unsigned char *abuf,
                                size_t alen);
 
 static void          server_increment_failures(struct server_state *server)
 {
   ares__slist_node_t *node;
-  ares_channel        channel = server->channel;
+  ares_channel_t     *channel = server->channel;
 
   node = ares__slist_node_find(channel->servers, server);
   if (node == NULL) {
@@ -85,7 +85,7 @@ static void          server_increment_failures(struct server_state *server)
 static void server_set_good(struct server_state *server)
 {
   ares__slist_node_t *node;
-  ares_channel        channel = server->channel;
+  ares_channel_t     *channel = server->channel;
 
   if (!server->consec_failures) {
     return;
@@ -132,7 +132,7 @@ static void timeadd(struct timeval *now, size_t millisecs)
 /*
  * generic process function
  */
-static void processfds(ares_channel channel, fd_set *read_fds,
+static void processfds(ares_channel_t *channel, fd_set *read_fds,
                        ares_socket_t read_fd, fd_set *write_fds,
                        ares_socket_t write_fd)
 {
@@ -147,7 +147,7 @@ static void processfds(ares_channel channel, fd_set *read_fds,
 /* Something interesting happened on the wire, or there was a timeout.
  * See what's up and respond accordingly.
  */
-void ares_process(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
+void ares_process(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
 {
   processfds(channel, read_fds, ARES_SOCKET_BAD, write_fds, ARES_SOCKET_BAD);
 }
@@ -155,10 +155,10 @@ void ares_process(ares_channel channel, fd_set *read_fds, fd_set *write_fds)
 /* Something interesting happened on the wire, or there was a timeout.
  * See what's up and respond accordingly.
  */
-void ares_process_fd(ares_channel  channel,
-                     ares_socket_t read_fd, /* use ARES_SOCKET_BAD or valid
-                                               file descriptors */
-                     ares_socket_t write_fd)
+void ares_process_fd(ares_channel_t *channel,
+                     ares_socket_t   read_fd, /* use ARES_SOCKET_BAD or valid
+                                                 file descriptors */
+                     ares_socket_t   write_fd)
 {
   processfds(channel, NULL, read_fd, NULL, write_fd);
 }
@@ -194,7 +194,7 @@ static ares_bool_t try_again(int errnum)
 /* If any TCP sockets select true for writing, write out queued data
  * we have for them.
  */
-static void write_tcp_data(ares_channel channel, fd_set *write_fds,
+static void write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
                            ares_socket_t write_fd)
 {
   ares__slist_node_t *node;
@@ -259,8 +259,8 @@ static void write_tcp_data(ares_channel channel, fd_set *write_fds,
  * allocate a buffer if we finish reading the length word, and process
  * a packet if we finish reading one.
  */
-static void read_tcp_data(ares_channel channel, struct server_connection *conn,
-                          struct timeval *now)
+static void read_tcp_data(ares_channel_t           *channel,
+                          struct server_connection *conn, struct timeval *now)
 {
   ares_ssize_t         count;
   struct server_state *server = conn->server;
@@ -356,7 +356,7 @@ static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
   return 1;
 }
 
-static ares_socket_t *channel_socket_list(ares_channel channel, size_t *num)
+static ares_socket_t *channel_socket_list(ares_channel_t *channel, size_t *num)
 {
   size_t              alloc_cnt = 1 << 4;
   ares_socket_t      *out       = ares_malloc(alloc_cnt * sizeof(*out));
@@ -396,7 +396,7 @@ fail:
 }
 
 /* If any UDP sockets select true for reading, process them. */
-static void read_udp_packets_fd(ares_channel              channel,
+static void read_udp_packets_fd(ares_channel_t           *channel,
                                 struct server_connection *conn,
                                 struct timeval           *now)
 {
@@ -461,7 +461,7 @@ static void read_udp_packets_fd(ares_channel              channel,
   ares__check_cleanup_conn(channel, conn);
 }
 
-static void read_packets(ares_channel channel, fd_set *read_fds,
+static void read_packets(ares_channel_t *channel, fd_set *read_fds,
                          ares_socket_t read_fd, struct timeval *now)
 {
   size_t                    i;
@@ -529,7 +529,7 @@ static void read_packets(ares_channel channel, fd_set *read_fds,
 }
 
 /* If any queries have timed out, note the timeout and move them on. */
-static void process_timeouts(ares_channel channel, struct timeval *now)
+static void process_timeouts(ares_channel_t *channel, struct timeval *now)
 {
   ares__slist_node_t *node =
     ares__slist_node_first(channel->queries_by_timeout);
@@ -558,7 +558,7 @@ static void process_timeouts(ares_channel channel, struct timeval *now)
 /* Handle an answer from a server. This must NEVER cleanup the
  * server connection! Return something other than ARES_SUCCESS to cause
  * the connection to be terminated after this call. */
-static ares_status_t process_answer(ares_channel         channel,
+static ares_status_t process_answer(ares_channel_t      *channel,
                                     const unsigned char *abuf, size_t alen,
                                     struct server_connection *conn,
                                     ares_bool_t tcp, struct timeval *now)
@@ -697,8 +697,8 @@ static void handle_conn_error(struct server_connection *conn,
 
 ares_status_t ares__requeue_query(struct query *query, struct timeval *now)
 {
-  ares_channel channel   = query->channel;
-  size_t       max_tries = ares__slist_len(channel->servers) * channel->tries;
+  ares_channel_t *channel = query->channel;
+  size_t max_tries        = ares__slist_len(channel->servers) * channel->tries;
 
   query->try_count++;
 
@@ -718,7 +718,7 @@ ares_status_t ares__requeue_query(struct query *query, struct timeval *now)
 /* Pick a random server from the list, we first get a random number in the
  * range of the number of servers, then scan until we find that server in
  * the list */
-static struct server_state *ares__random_server(ares_channel channel)
+static struct server_state *ares__random_server(ares_channel_t *channel)
 {
   unsigned char       c;
   size_t              cnt;
@@ -745,7 +745,7 @@ static struct server_state *ares__random_server(ares_channel channel)
 
 ares_status_t ares__send_query(struct query *query, struct timeval *now)
 {
-  ares_channel              channel = query->channel;
+  ares_channel_t           *channel = query->channel;
   struct server_state      *server;
   struct server_connection *conn;
   size_t                    timeplus;
@@ -1031,7 +1031,7 @@ static void ares_detach_query(struct query *query)
   query->node_all_queries        = NULL;
 }
 
-static void end_query(ares_channel channel, struct query *query,
+static void end_query(ares_channel_t *channel, struct query *query,
                       ares_status_t status, const unsigned char *abuf,
                       size_t alen)
 {

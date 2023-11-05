@@ -35,7 +35,7 @@
  * on the given channel. It does NOT kill the channel, use ares_destroy() for
  * that.
  */
-void ares_cancel(ares_channel channel)
+void ares_cancel(ares_channel_t *channel)
 {
   if (ares__llist_len(channel->all_queries) > 0) {
     ares__llist_node_t *node = NULL;

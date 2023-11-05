@@ -71,7 +71,7 @@
 #endif
 
 
-int ares_init(ares_channel *channelptr)
+int ares_init(ares_channel_t **channelptr)
 {
   return ares_init_options(channelptr, NULL, 0);
 }
@@ -126,7 +126,7 @@ static void server_destroy_cb(void *data)
   ares__destroy_server(data);
 }
 
-static ares_status_t init_by_defaults(ares_channel channel)
+static ares_status_t init_by_defaults(ares_channel_t *channel)
 {
   char         *hostname = NULL;
   ares_status_t rc       = ARES_SUCCESS;
@@ -282,11 +282,11 @@ error:
   return rc;
 }
 
-int ares_init_options(ares_channel *channelptr, struct ares_options *options,
+int ares_init_options(ares_channel_t **channelptr, struct ares_options *options,
                       int optmask)
 {
-  ares_channel  channel;
-  ares_status_t status = ARES_SUCCESS;
+  ares_channel_t *channel;
+  ares_status_t   status = ARES_SUCCESS;
 
   if (ares_library_initialized() != ARES_SUCCESS) {
     return ARES_ENOTINITIALIZED; /* LCOV_EXCL_LINE: n/a on non-WinSock */
@@ -386,7 +386,7 @@ done:
 
 /* ares_dup() duplicates a channel handle with all its options and returns a
    new channel handle */
-int ares_dup(ares_channel *dest, ares_channel src)
+int ares_dup(ares_channel_t **dest, ares_channel_t *src)
 {
   struct ares_options         opts;
   struct ares_addr_port_node *servers;
@@ -456,26 +456,26 @@ int ares_dup(ares_channel *dest, ares_channel src)
   return ARES_SUCCESS; /* everything went fine */
 }
 
-void ares_set_local_ip4(ares_channel channel, unsigned int local_ip)
+void ares_set_local_ip4(ares_channel_t *channel, unsigned int local_ip)
 {
   channel->local_ip4 = local_ip;
 }
 
 /* local_ip6 should be 16 bytes in length */
-void ares_set_local_ip6(ares_channel channel, const unsigned char *local_ip6)
+void ares_set_local_ip6(ares_channel_t *channel, const unsigned char *local_ip6)
 {
   memcpy(&channel->local_ip6, local_ip6, sizeof(channel->local_ip6));
 }
 
 /* local_dev_name should be null terminated. */
-void ares_set_local_dev(ares_channel channel, const char *local_dev_name)
+void ares_set_local_dev(ares_channel_t *channel, const char *local_dev_name)
 {
   ares_strcpy(channel->local_dev_name, local_dev_name,
               sizeof(channel->local_dev_name));
   channel->local_dev_name[sizeof(channel->local_dev_name) - 1] = 0;
 }
 
-int ares_set_sortlist(ares_channel channel, const char *sortstr)
+int ares_set_sortlist(ares_channel_t *channel, const char *sortstr)
 {
   size_t           nsort    = 0;
   struct apattern *sortlist = NULL;

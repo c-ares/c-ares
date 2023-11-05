@@ -71,7 +71,7 @@ public:
   void Process();
 
 protected:
-  ares_channel channel_;
+  ares_channel_t *channel_;
 };
 
 }  // namespace test

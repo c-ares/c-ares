@@ -26,7 +26,7 @@ typedef void (*ares_addrinfo_callback)(void *\fIarg\fP, int \fIstatus\fP,
                                        int \fItimeouts\fP,
                                        struct ares_addrinfo *\fIresult\fP)
 
-void ares_getaddrinfo(ares_channel \fIchannel\fP, const char *\fIname\fP,
+void ares_getaddrinfo(ares_channel_t *\fIchannel\fP, const char *\fIname\fP,
                       const char* \fIservice\fP,
                       const struct ares_addrinfo_hints *\fIhints\fP,
                       ares_addrinfo_callback \fIcallback\fP, void *\fIarg\fP)

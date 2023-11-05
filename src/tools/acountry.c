@@ -105,7 +105,7 @@ static int         verbose    = 0;
   }                  \
   WHILE_FALSE
 
-static void wait_ares(ares_channel channel);
+static void wait_ares(ares_channel_t *channel);
 static void callback(void *arg, int status, int timeouts, struct hostent *host);
 static void callback2(void *arg, int status, int timeouts,
                       struct hostent *host);
@@ -123,8 +123,8 @@ static void Abort(const char *fmt, ...)
 
 int main(int argc, char **argv)
 {
-  ares_channel channel;
-  int          ch, status;
+  ares_channel_t *channel;
+  int             ch, status;
 
 #if defined(WIN32) && !defined(WATT32)
   WORD    wVersionRequested = MAKEWORD(USE_WINSOCK, USE_WINSOCK);
@@ -213,7 +213,7 @@ int main(int argc, char **argv)
 /*
  * Wait for the queries to complete.
  */
-static void wait_ares(ares_channel channel)
+static void wait_ares(ares_channel_t *channel)
 {
   for (;;) {
     struct timeval *tvp, tv;

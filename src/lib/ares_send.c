@@ -37,7 +37,7 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
+ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
                            size_t qlen, ares_callback callback, void *arg)
 {
   struct query  *query;
@@ -125,7 +125,7 @@ ares_status_t ares_send_ex(ares_channel channel, const unsigned char *qbuf,
   return ares__send_query(query, &now);
 }
 
-void ares_send(ares_channel channel, const unsigned char *qbuf, int qlen,
+void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
                ares_callback callback, void *arg)
 {
   ares_send_ex(channel, qbuf, (size_t)qlen, callback, arg);

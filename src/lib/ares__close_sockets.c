@@ -44,7 +44,7 @@ static void ares__requeue_queries(struct server_connection *conn)
 void ares__close_connection(struct server_connection *conn)
 {
   struct server_state *server  = conn->server;
-  ares_channel         channel = server->channel;
+  ares_channel_t      *channel = server->channel;
 
   /* Unlink */
   ares__llist_node_claim(
@@ -79,7 +79,7 @@ void ares__close_sockets(struct server_state *server)
   }
 }
 
-void ares__check_cleanup_conn(ares_channel              channel,
+void ares__check_cleanup_conn(ares_channel_t           *channel,
                               struct server_connection *conn)
 {
   ares_bool_t do_cleanup = ARES_FALSE;

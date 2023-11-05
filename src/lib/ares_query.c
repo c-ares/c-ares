@@ -50,7 +50,7 @@ static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
    performed per id generation. In practice this search should happen only
    once per newly generated id
 */
-static unsigned short generate_unique_id(ares_channel channel)
+static unsigned short generate_unique_id(ares_channel_t *channel)
 {
   unsigned short id;
 
@@ -61,7 +61,7 @@ static unsigned short generate_unique_id(ares_channel channel)
   return id;
 }
 
-ares_status_t ares_query_qid(ares_channel channel, const char *name,
+ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
                              int dnsclass, int type, ares_callback callback,
                              void *arg, unsigned short *qid)
 {
@@ -106,8 +106,8 @@ ares_status_t ares_query_qid(ares_channel channel, const char *name,
   return status;
 }
 
-void ares_query(ares_channel channel, const char *name, int dnsclass, int type,
-                ares_callback callback, void *arg)
+void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
+                int type, ares_callback callback, void *arg)
 {
   ares_query_qid(channel, name, dnsclass, type, callback, arg, NULL);
 }

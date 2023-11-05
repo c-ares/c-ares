@@ -26,7 +26,7 @@ typedef void (*ares_host_callback)(void *\fIarg\fP, int \fIstatus\fP,
                                    int \fItimeouts\fP,
                                    struct hostent *\fIhostent\fP)
 
-void ares_gethostbyname(ares_channel \fIchannel\fP, const char *\fIname\fP,
+void ares_gethostbyname(ares_channel_t *\fIchannel\fP, const char *\fIname\fP,
                         int \fIfamily\fP, ares_host_callback \fIcallback\fP,
                         void *\fIarg\fP)
 .fi

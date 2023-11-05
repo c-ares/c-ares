@@ -339,7 +339,7 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
   return ARES_SUCCESS;
 }
 
-static unsigned short ares__sconfig_get_port(ares_channel          channel,
+static unsigned short ares__sconfig_get_port(ares_channel_t       *channel,
                                              const ares_sconfig_t *s,
                                              ares_bool_t           is_tcp)
 {
@@ -356,7 +356,7 @@ static unsigned short ares__sconfig_get_port(ares_channel          channel,
   return port;
 }
 
-static ares__slist_node_t *ares__server_find(ares_channel          channel,
+static ares__slist_node_t *ares__server_find(ares_channel_t       *channel,
                                              const ares_sconfig_t *s)
 {
   ares__slist_node_t *node;
@@ -382,7 +382,7 @@ static ares__slist_node_t *ares__server_find(ares_channel          channel,
   return NULL;
 }
 
-static ares_bool_t ares__server_isdup(ares_channel        channel,
+static ares_bool_t ares__server_isdup(ares_channel_t     *channel,
                                       ares__llist_node_t *s)
 {
   /* Scan backwards to see if this is a duplicate */
@@ -413,7 +413,7 @@ static ares_bool_t ares__server_isdup(ares_channel        channel,
   return ARES_FALSE;
 }
 
-static ares_status_t ares__server_create(ares_channel          channel,
+static ares_status_t ares__server_create(ares_channel_t       *channel,
                                          const ares_sconfig_t *sconfig,
                                          size_t                idx)
 {
@@ -475,7 +475,7 @@ static ares_bool_t ares__server_in_newconfig(struct server_state *server,
                                              ares__llist_t       *srvlist)
 {
   ares__llist_node_t *node;
-  ares_channel        channel = server->channel;
+  ares_channel_t     *channel = server->channel;
 
   for (node = ares__llist_node_first(srvlist); node != NULL;
        node = ares__llist_node_next(node)) {
@@ -499,8 +499,8 @@ static ares_bool_t ares__server_in_newconfig(struct server_state *server,
   return ARES_FALSE;
 }
 
-static void ares__servers_remove_stale(ares_channel   channel,
-                                       ares__llist_t *srvlist)
+static void ares__servers_remove_stale(ares_channel_t *channel,
+                                       ares__llist_t  *srvlist)
 {
   ares__slist_node_t *snode = ares__slist_node_first(channel->servers);
 
@@ -516,16 +516,16 @@ static void ares__servers_remove_stale(ares_channel   channel,
   }
 }
 
-static void ares__servers_trim_single(ares_channel channel)
+static void ares__servers_trim_single(ares_channel_t *channel)
 {
   while (ares__slist_len(channel->servers) > 1) {
     ares__slist_node_destroy(ares__slist_node_last(channel->servers));
   }
 }
 
-ares_status_t ares__servers_update(ares_channel   channel,
-                                   ares__llist_t *server_list,
-                                   ares_bool_t    user_specified)
+ares_status_t ares__servers_update(ares_channel_t *channel,
+                                   ares__llist_t  *server_list,
+                                   ares_bool_t     user_specified)
 {
   ares__llist_node_t *node;
   size_t              idx = 0;
@@ -728,7 +728,7 @@ fail:
   return NULL;
 }
 
-int ares_get_servers(ares_channel channel, struct ares_addr_node **servers)
+int ares_get_servers(ares_channel_t *channel, struct ares_addr_node **servers)
 {
   struct ares_addr_node *srvr_head = NULL;
   struct ares_addr_node *srvr_last = NULL;
@@ -778,7 +778,7 @@ int ares_get_servers(ares_channel channel, struct ares_addr_node **servers)
   return (int)status;
 }
 
-int ares_get_servers_ports(ares_channel                 channel,
+int ares_get_servers_ports(ares_channel_t              *channel,
                            struct ares_addr_port_node **servers)
 {
   struct ares_addr_port_node *srvr_head = NULL;
@@ -832,7 +832,7 @@ int ares_get_servers_ports(ares_channel                 channel,
   return (int)status;
 }
 
-int ares_set_servers(ares_channel channel, struct ares_addr_node *servers)
+int ares_set_servers(ares_channel_t *channel, struct ares_addr_node *servers)
 {
   ares__llist_t *slist;
   ares_status_t  status;
@@ -853,7 +853,7 @@ int ares_set_servers(ares_channel channel, struct ares_addr_node *servers)
   return (int)status;
 }
 
-int ares_set_servers_ports(ares_channel                channel,
+int ares_set_servers_ports(ares_channel_t             *channel,
                            struct ares_addr_port_node *servers)
 {
   ares__llist_t *slist;
@@ -877,7 +877,7 @@ int ares_set_servers_ports(ares_channel                channel,
 
 /* Incomming string format: host[:port][,host[:port]]... */
 /* IPv6 addresses with ports require square brackets [fe80::1]:53 */
-static ares_status_t set_servers_csv(ares_channel channel, const char *_csv,
+static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv,
                                      int use_port)
 {
   size_t                      i;
@@ -1025,12 +1025,12 @@ out:
   return status;
 }
 
-int ares_set_servers_csv(ares_channel channel, const char *_csv)
+int ares_set_servers_csv(ares_channel_t *channel, const char *_csv)
 {
   return (int)set_servers_csv(channel, _csv, ARES_FALSE);
 }
 
-int ares_set_servers_ports_csv(ares_channel channel, const char *_csv)
+int ares_set_servers_ports_csv(ares_channel_t *channel, const char *_csv)
 {
   return (int)set_servers_csv(channel, _csv, ARES_TRUE);
 }

@@ -190,7 +190,7 @@ static size_t ares_strcpy(char *dest, const char *src, size_t dest_size)
 
 int main(int argc, char **argv)
 {
-  ares_channel           channel;
+  ares_channel_t        *channel;
   int                    c;
   int                    i;
   int                    optmask  = ARES_OPT_FLAGS;

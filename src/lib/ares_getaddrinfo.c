@@ -69,7 +69,7 @@
 #endif
 
 struct host_query {
-  ares_channel               channel;
+  ares_channel_t            *channel;
   char                      *name;
   unsigned short             port; /* in host order */
   ares_addrinfo_callback     callback;
@@ -458,8 +458,8 @@ static void terminate_retries(const struct host_query *hquery,
 {
   unsigned short term_qid =
     (qid == hquery->qid_a) ? hquery->qid_aaaa : hquery->qid_a;
-  ares_channel  channel = hquery->channel;
-  struct query *query   = NULL;
+  ares_channel_t *channel = hquery->channel;
+  struct query   *query   = NULL;
 
   /* No other outstanding queries, nothing to do */
   if (!hquery->remaining) {
@@ -527,7 +527,7 @@ static void host_callback(void *arg, int status, int timeouts,
   /* at this point we keep on waiting for the next query to finish */
 }
 
-void ares_getaddrinfo(ares_channel channel, const char *name,
+void ares_getaddrinfo(ares_channel_t *channel, const char *name,
                       const char                       *service,
                       const struct ares_addrinfo_hints *hints,
                       ares_addrinfo_callback callback, void *arg)

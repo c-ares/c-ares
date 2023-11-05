@@ -53,8 +53,8 @@ void ares_destroy_options(struct ares_options *options)
   ares_free(options->hosts_path);
 }
 
-static struct in_addr *ares_save_opt_servers(ares_channel channel,
-                                             int         *nservers)
+static struct in_addr *ares_save_opt_servers(ares_channel_t *channel,
+                                             int            *nservers)
 {
   ares__slist_node_t *snode;
   struct in_addr     *out =
@@ -82,7 +82,7 @@ static struct in_addr *ares_save_opt_servers(ares_channel channel,
 }
 
 /* Save options from initialized channel */
-int ares_save_options(ares_channel channel, struct ares_options *options,
+int ares_save_options(ares_channel_t *channel, struct ares_options *options,
                       int *optmask)
 {
   size_t i;
@@ -222,7 +222,7 @@ int ares_save_options(ares_channel channel, struct ares_options *options,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares__init_options_servers(ares_channel          channel,
+static ares_status_t ares__init_options_servers(ares_channel_t       *channel,
                                                 const struct in_addr *servers,
                                                 size_t                nservers)
 {
@@ -241,7 +241,7 @@ static ares_status_t ares__init_options_servers(ares_channel          channel,
   return status;
 }
 
-ares_status_t ares__init_by_options(ares_channel               channel,
+ares_status_t ares__init_by_options(ares_channel_t            *channel,
                                     const struct ares_options *options,
                                     int                        optmask)
 {

@@ -59,7 +59,7 @@
 #include "ares.h"
 #include "ares_private.h"
 
-ares_ssize_t ares__socket_recvfrom(ares_channel channel, ares_socket_t s,
+ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                    void *data, size_t data_len, int flags,
                                    struct sockaddr *from,
                                    ares_socklen_t  *from_len)
@@ -76,7 +76,7 @@ ares_ssize_t ares__socket_recvfrom(ares_channel channel, ares_socket_t s,
 #endif
 }
 
-ares_ssize_t ares__socket_recv(ares_channel channel, ares_socket_t s,
+ares_ssize_t ares__socket_recv(ares_channel_t *channel, ares_socket_t s,
                                void *data, size_t data_len)
 {
   if (channel->sock_funcs && channel->sock_funcs->arecvfrom) {
@@ -159,7 +159,8 @@ static void set_ipv6_v6only(ares_socket_t sockfd, int on)
 #  define set_ipv6_v6only(s, v)
 #endif
 
-static int configure_socket(ares_socket_t s, int family, ares_channel channel)
+static int configure_socket(ares_socket_t s, int family,
+                            ares_channel_t *channel)
 {
   union {
     struct sockaddr     sa;
@@ -231,7 +232,7 @@ static int configure_socket(ares_socket_t s, int family, ares_channel channel)
   return 0;
 }
 
-ares_status_t ares__open_connection(ares_channel         channel,
+ares_status_t ares__open_connection(ares_channel_t      *channel,
                                     struct server_state *server,
                                     ares_bool_t          is_tcp)
 {
@@ -377,7 +378,7 @@ ares_status_t ares__open_connection(ares_channel         channel,
   return ARES_SUCCESS;
 }
 
-ares_socket_t ares__open_socket(ares_channel channel, int af, int type,
+ares_socket_t ares__open_socket(ares_channel_t *channel, int af, int type,
                                 int protocol)
 {
   if (channel->sock_funcs && channel->sock_funcs->asocket) {
@@ -388,7 +389,7 @@ ares_socket_t ares__open_socket(ares_channel channel, int af, int type,
   return socket(af, type, protocol);
 }
 
-int ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
+int ares__connect_socket(ares_channel_t *channel, ares_socket_t sockfd,
                          const struct sockaddr *addr, ares_socklen_t addrlen)
 {
   if (channel->sock_funcs && channel->sock_funcs->aconnect) {
@@ -399,7 +400,7 @@ int ares__connect_socket(ares_channel channel, ares_socket_t sockfd,
   return connect(sockfd, addr, addrlen);
 }
 
-void ares__close_socket(ares_channel channel, ares_socket_t s)
+void ares__close_socket(ares_channel_t *channel, ares_socket_t s)
 {
   if (channel->sock_funcs && channel->sock_funcs->aclose) {
     channel->sock_funcs->aclose(s, channel->sock_func_cb_data);
@@ -416,7 +417,7 @@ struct iovec {
 };
 #endif
 
-ares_ssize_t ares__socket_write(ares_channel channel, ares_socket_t s,
+ares_ssize_t ares__socket_write(ares_channel_t *channel, ares_socket_t s,
                                 const void *data, size_t len)
 {
   if (channel->sock_funcs && channel->sock_funcs->asendv) {
@@ -428,14 +429,14 @@ ares_ssize_t ares__socket_write(ares_channel channel, ares_socket_t s,
   return swrite(s, data, len);
 }
 
-void ares_set_socket_callback(ares_channel              channel,
+void ares_set_socket_callback(ares_channel_t           *channel,
                               ares_sock_create_callback cb, void *data)
 {
   channel->sock_create_cb      = cb;
   channel->sock_create_cb_data = data;
 }
 
-void ares_set_socket_configure_callback(ares_channel              channel,
+void ares_set_socket_configure_callback(ares_channel_t           *channel,
                                         ares_sock_config_callback cb,
                                         void                     *data)
 {
@@ -443,7 +444,7 @@ void ares_set_socket_configure_callback(ares_channel              channel,
   channel->sock_config_cb_data = data;
 }
 
-void ares_set_socket_functions(ares_channel                        channel,
+void ares_set_socket_functions(ares_channel_t                     *channel,
                                const struct ares_socket_functions *funcs,
                                void                               *data)
 {
