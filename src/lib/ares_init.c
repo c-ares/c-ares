@@ -134,6 +134,15 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
   const char *dot;
 #endif
 
+  /* Enable EDNS by default */
+  if (channel->optmask == 0) {
+    channel->flags = ARES_FLAG_EDNS;
+
+  }
+  if (channel->ednspsz == 0) {
+    channel->ednspsz = EDNSPACKETSZ;
+  }
+
   if (channel->timeout == 0) {
     channel->timeout = DEFAULT_TIMEOUT;
   }
@@ -144,10 +153,6 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
 
   if (channel->ndots == 0) {
     channel->ndots = 1;
-  }
-
-  if (channel->ednspsz == 0) {
-    channel->ednspsz = EDNSPACKETSZ;
   }
 
   if (ares__slist_len(channel->servers) == 0) {
