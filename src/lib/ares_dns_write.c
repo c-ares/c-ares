@@ -226,7 +226,8 @@ static ares_status_t ares_parse_dns_name(ares_dns_label_t **labels_out,
 
     /* Can't append any more bytes */
     if (label->len == sizeof(label->label)) {
-      return ARES_EBADNAME;
+      status = ARES_EBADNAME;
+      goto done;
     }
 
     /* Escape */
