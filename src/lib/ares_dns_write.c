@@ -362,6 +362,109 @@ static ares_status_t ares_dns_write_questions(const ares_dns_record_t *dnsrec,
   return ARES_SUCCESS;
 }
 
+static ares_status_t ares_dns_write_rr_name(ares__buf_t *buf,
+                                            const ares_dns_rr_t *rr,
+                                            ares__llist_t **namelist,
+                                            ares_bool_t validate_hostname,
+                                            ares_dns_rr_key_t key)
+{
+  const char *name;
+
+  name = ares_dns_rr_get_str(rr, key);
+  if (name == NULL)
+    return ARES_EFORMERR;
+
+  return ares_dns_write_name(buf, namelist, validate_hostname, name);
+}
+
+static ares_status_t ares_dns_write_rr_str(ares__buf_t *buf,
+                                           const ares_dns_rr_t *rr,
+                                           ares_dns_rr_key_t key)
+{
+  const char   *str;
+  size_t        len;
+  ares_status_t status;
+
+  str = ares_dns_rr_get_str(rr, key);
+  if (str == NULL || (len = ares_strlen(str)) > 255)
+    return ARES_EFORMERR;
+
+  /* Write 1 byte length */
+  status = ares__buf_append_byte(buf, (unsigned char)(len & 0xFF));
+  if (status != ARES_SUCCESS)
+    return status;
+
+  if (len == 0)
+    return ARES_SUCCESS;
+
+  /* Write string */
+  return ares__buf_append(buf, (unsigned char *)str, len);
+}
+
+static ares_status_t ares_dns_write_rr_strs(ares__buf_t *buf,
+                                            const ares_dns_rr_t *rr,
+                                            ares_dns_rr_key_t key)
+{
+  const char   *str;
+  const char   *ptr;
+  ares_status_t status;
+
+  str = ares_dns_rr_get_str(rr, key);
+  if (str == NULL)
+    return ARES_EFORMERR;
+
+  /* split into possible multiple 255-byte or less length strings */
+  ptr = str;
+  do {
+    size_t ptr_len = ares_strlen(ptr);
+    if (ptr_len > 255)
+      ptr_len = 255;
+
+    /* Length */
+    status = ares__buf_append_byte(buf, (unsigned char)(ptr_len & 0xFF));
+    if (status != ARES_SUCCESS)
+      return status;
+
+    /* String */
+    if (ptr_len) {
+      status = ares__buf_append(buf, (unsigned char *)ptr, ptr_len);
+      if (status != ARES_SUCCESS)
+        return status;
+    }
+
+    ptr += ptr_len;
+  } while (*ptr != 0);
+
+  return ARES_SUCCESS;
+}
+
+static ares_status_t ares_dns_write_rr_be32(ares__buf_t *buf,
+                                            const ares_dns_rr_t *rr,
+                                            ares_dns_rr_key_t key)
+{
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_U32)
+    return ARES_EFORMERR;
+  return ares__buf_append_be32(buf, ares_dns_rr_get_u32(rr, key));
+}
+
+static ares_status_t ares_dns_write_rr_be16(ares__buf_t *buf,
+                                            const ares_dns_rr_t *rr,
+                                            ares_dns_rr_key_t key)
+{
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_U16)
+    return ARES_EFORMERR;
+  return ares__buf_append_be16(buf, ares_dns_rr_get_u16(rr, key));
+}
+
+static ares_status_t ares_dns_write_rr_u8(ares__buf_t *buf,
+                                          const ares_dns_rr_t *rr,
+                                          ares_dns_rr_key_t key)
+{
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_U8)
+    return ARES_EFORMERR;
+  return ares__buf_append_byte(buf, ares_dns_rr_get_u8(rr, key));
+}
+
 static ares_status_t ares_dns_write_rr_a(ares__buf_t *buf,
                                          const ares_dns_rr_t *rr,
                                          ares__llist_t **namelist)
@@ -380,40 +483,66 @@ static ares_status_t ares_dns_write_rr_ns(ares__buf_t *buf,
                                           const ares_dns_rr_t *rr,
                                           ares__llist_t **namelist)
 {
-  const char *name;
-
-  name = ares_dns_rr_get_str(rr, ARES_RR_NS_NSDNAME);
-  if (name == NULL)
-    return ARES_EFORMERR;
-
-  return ares_dns_write_name(buf, namelist, ARES_FALSE, name);
+  return ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+                                ARES_RR_NS_NSDNAME);
 }
 
 static ares_status_t ares_dns_write_rr_cname(ares__buf_t *buf,
                                              const ares_dns_rr_t *rr,
                                              ares__llist_t **namelist)
 {
-  const char *name;
-
-  name = ares_dns_rr_get_str(rr, ARES_RR_CNAME_CNAME);
-  if (name == NULL)
-    return ARES_EFORMERR;
-
-  return ares_dns_write_name(buf, namelist, ARES_FALSE, name);
+  return ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+                                ARES_RR_CNAME_CNAME);
 }
 
 static ares_status_t ares_dns_write_rr_soa(ares__buf_t *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t **namelist)
 {
+  ares_status_t status;
 
+  /* MNAME */
+  status = ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+                                  ARES_RR_SOA_MNAME);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  /* RNAME */
+  status = ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+                                  ARES_RR_SOA_RNAME);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  /* SERIAL */
+  status = ares_dns_write_rr_be32(buf, rr, ARES_RR_SOA_SERIAL);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  /* REFRESH */
+  status = ares_dns_write_rr_be32(buf, rr, ARES_RR_SOA_REFRESH);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  /* RETRY */
+  status = ares_dns_write_rr_be32(buf, rr, ARES_RR_SOA_RETRY);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  /* EXPIRE */
+  status = ares_dns_write_rr_be32(buf, rr, ARES_RR_SOA_EXPIRE);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  /* MINIMUM */
+  return ares_dns_write_rr_be32(buf, rr, ARES_RR_SOA_MINIMUM);
 }
 
 static ares_status_t ares_dns_write_rr_ptr(ares__buf_t *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t **namelist)
 {
-
+  return ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+                                ARES_RR_PTR_DNAME);
 }
 
 
@@ -421,27 +550,56 @@ static ares_status_t ares_dns_write_rr_hinfo(ares__buf_t *buf,
                                              const ares_dns_rr_t *rr,
                                              ares__llist_t **namelist)
 {
+  ares_status_t status;
 
+  (void)namelist;
+
+  /* CPU */
+  status = ares_dns_write_rr_str(buf, rr, ARES_RR_HINFO_CPU);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* OS */
+  return ares_dns_write_rr_str(buf, rr, ARES_RR_HINFO_OS);
 }
 
 static ares_status_t ares_dns_write_rr_mx(ares__buf_t *buf,
                                           const ares_dns_rr_t *rr,
                                           ares__llist_t **namelist)
 {
+  ares_status_t status;
 
+  /* PREFERENCE */
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_MX_PREFERENCE);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  /* EXCHANGE */
+  return ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+                                ARES_RR_MX_EXCHANGE);
 }
 
 static ares_status_t ares_dns_write_rr_txt(ares__buf_t *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t **namelist)
 {
-
+  (void)namelist;
+  return ares_dns_write_rr_strs(buf, rr, ARES_RR_TXT_DATA);
 }
 
 static ares_status_t ares_dns_write_rr_aaaa(ares__buf_t *buf,
                                             const ares_dns_rr_t *rr,
                                             ares__llist_t **namelist)
 {
+  const struct ares_in6_addr *addr;
+  (void)namelist;
+
+  addr = ares_dns_rr_get_addr6(rr, ARES_RR_AAAA_ADDR);
+  if (addr == NULL)
+    return ARES_EFORMERR;
+
+  return ares__buf_append(buf, (unsigned char *)&addr, sizeof(*addr));
 
 }
 
@@ -449,14 +607,70 @@ static ares_status_t ares_dns_write_rr_srv(ares__buf_t *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t **namelist)
 {
+  ares_status_t status;
 
+  /* PRIORITY */
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_SRV_PRIORITY);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* WEIGHT */
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_SRV_WEIGHT);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* PORT */
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_SRV_PORT);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* TARGET */
+  return ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+                                ARES_RR_SRV_TARGET);
 }
 
 static ares_status_t ares_dns_write_rr_naptr(ares__buf_t *buf,
                                              const ares_dns_rr_t *rr,
                                              ares__llist_t **namelist)
 {
+  ares_status_t status;
 
+  /* ORDER */
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_NAPTR_ORDER);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* PREFERENCE */
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_NAPTR_PREFERENCE);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* FLAGS */
+  status = ares_dns_write_rr_str(buf, rr, ARES_RR_NAPTR_FLAGS);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* SERVICES */
+  status = ares_dns_write_rr_str(buf, rr, ARES_RR_NAPTR_SERVICES);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* REGEXP */
+  status = ares_dns_write_rr_str(buf, rr, ARES_RR_NAPTR_REGEXP);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* REPLACEMENT */
+  return ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+                                ARES_RR_NAPTR_REPLACEMENT);
 }
 
 static ares_status_t ares_dns_write_rr_opt(ares__buf_t *buf,
@@ -470,21 +684,106 @@ static ares_status_t ares_dns_write_rr_uri(ares__buf_t *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t **namelist)
 {
+  ares_status_t status;
+  const char   *target;
 
+  (void)namelist;
+
+  /* PRIORITY */
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_URI_PRIORITY);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* WEIGHT */
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_URI_WEIGHT);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* TARGET -- not in DNS string format, rest of buffer, required to be
+   * non-zero length */
+  target = ares_dns_rr_get_str(rr, ARES_RR_URI_TARGET);
+  if (target == NULL || ares_strlen(target) == 0)
+    return ARES_EFORMERR;
+
+  return ares__buf_append(buf, (unsigned char *)target, ares_strlen(target));
 }
 
 static ares_status_t ares_dns_write_rr_caa(ares__buf_t *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t **namelist)
 {
+  const unsigned char *data     = NULL;
+  size_t               data_len = 0;
+  ares_status_t        status;
 
+  (void)namelist;
+
+  /* CRITICAL */
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_CAA_CRITICAL);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Tag */
+  status = ares_dns_write_rr_str(buf, rr, ARES_RR_CAA_TAG);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Value - binary! (remaining buffer */
+  data = ares_dns_rr_get_bin(rr, ARES_RR_CAA_VALUE, &data_len);
+  if (data == NULL || data_len == 0) {
+    return ARES_EFORMERR;
+  }
+
+  return ares__buf_append(buf, data, data_len);
 }
 
 static ares_status_t ares_dns_write_rr_raw_rr(ares__buf_t *buf,
                                               const ares_dns_rr_t *rr,
                                               ares__llist_t **namelist)
 {
+  size_t               len      = ares__buf_len(buf);
+  ares_status_t        status;
+  const unsigned char *data     = NULL;
+  size_t               data_len = 0;
 
+  (void)namelist;
+
+  /* We need to go back and overwrite the type that was emitted by the parent
+   * function */
+  status = ares__buf_set_length(buf,
+    len
+    - 2 /* RDLENGTH */
+    - 4 /* TTL */
+    - 2 /* CLASS */
+    - 2 /* TYPE */);
+  if (status != ARES_SUCCESS)
+    return status;
+
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_RAW_RR_TYPE);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Now go back to real end */
+  status = ares__buf_set_length(buf, len);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Output raw data */
+  data = ares_dns_rr_get_bin(rr, ARES_RR_RAW_RR_DATA, &data_len);
+  if (data == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (data_len == 0)
+    return ARES_SUCCESS;
+
+  return ares__buf_append(buf, data, data_len);
 }
 
 static ares_status_t ares_dns_write_rr(ares_dns_record_t       *dnsrec,
