@@ -139,6 +139,7 @@ typedef struct {
 } ares_dns_label_t;
 
 static ares_status_t ares_parse_dns_name_escape(const char *ptr, size_t ptr_len,
+                                                ares_bool_t validate_hostname,
                                                 unsigned char *out,
                                                 size_t *consumed_chars)
 {
@@ -159,13 +160,18 @@ static ares_status_t ares_parse_dns_name_escape(const char *ptr, size_t ptr_len,
     if (!isdigit(ptr[2]) || !isdigit(ptr[3])) {
       return ARES_EBADNAME;
     }
+
     num[0] = ptr[1];
     num[1] = ptr[2];
     num[2] = ptr[3];
     num[3] = 0;
     i = atoi(num);
+
     /* Out of range */
     if (i > 255)
+      return ARES_EBADNAME;
+
+    if (validate_hostname && !ares__is_hostnamech((unsigned char) i))
       return ARES_EBADNAME;
 
     *out            = (unsigned char)i;
@@ -174,6 +180,9 @@ static ares_status_t ares_parse_dns_name_escape(const char *ptr, size_t ptr_len,
   }
 
   /* We can just output the character */
+  if (validate_hostname && !ares__is_hostnamech(ptr[1]))
+    return ARES_EBADNAME;
+
   *out            = (unsigned char)ptr[1];
   *consumed_chars = 1;
   return ARES_SUCCESS;
@@ -234,7 +243,7 @@ static ares_status_t ares_parse_dns_name(ares_dns_label_t **labels_out,
     if (name[i] == '\\') {
       size_t consumed_chars = 0;
       status = ares_parse_dns_name_escape(name + i, remaining_len,
-        &label->label[label->len++], &consumed_chars);
+        validate_hostname, &label->label[label->len++], &consumed_chars);
       if (status != ARES_SUCCESS) {
         goto done;
       }
@@ -243,6 +252,10 @@ static ares_status_t ares_parse_dns_name(ares_dns_label_t **labels_out,
     }
 
     /* Output direct character */
+    if (validate_hostname && !ares__is_hostnamech(name[i])) {
+      status = ARES_EBADNAME;
+      goto done;
+    }
     label->label[label->len++] = (unsigned char)name[i];
   }
 
@@ -346,7 +359,8 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
 
   /* Output name compression offset jump */
   if (off != NULL) {
-    unsigned short u16 = 0xC000 | (off->idx & 0x3FFF);
+    unsigned short u16 = (unsigned short)0xC000 |
+                         (unsigned short)(off->idx & 0x3FFF);
     status             = ares__buf_append_be16(buf, u16);
     if (status != ARES_SUCCESS) {
       goto done;
@@ -390,7 +404,7 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   }
 
   /* OPCODE */
-  u16 |= dnsrec->opcode << 11;
+  u16 |= (unsigned short)dnsrec->opcode << 11;
 
   /* AA */
   if (dnsrec->flags & ARES_FLAG_AA) {
@@ -425,7 +439,7 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   }
 
   /* RCODE */
-  u16 |= dnsrec->rcode;
+  u16 |= (unsigned short)dnsrec->rcode;
 
   status = ares__buf_append_be16(buf, u16);
   if (status != ARES_SUCCESS) {
