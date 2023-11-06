@@ -253,19 +253,19 @@ static ares_status_t ares__buf_ensure_space(ares__buf_t *buf,
   return ARES_SUCCESS;
 }
 
-
 ares_status_t ares__buf_set_length(ares__buf_t *buf, size_t len)
 {
-  if (buf == NULL || ares__buf_is_const(buf))
+  if (buf == NULL || ares__buf_is_const(buf)) {
     return ARES_EFORMERR;
+  }
 
-  if (len >= buf->alloc_buf_len - buf->offset)
+  if (len >= buf->alloc_buf_len - buf->offset) {
     return ARES_EFORMERR;
+  }
 
   buf->data_len = len;
   return ARES_SUCCESS;
 }
-
 
 ares_status_t ares__buf_append(ares__buf_t *buf, const unsigned char *data,
                                size_t data_len)
@@ -291,18 +291,19 @@ ares_status_t ares__buf_append_byte(ares__buf_t *buf, unsigned char byte)
   return ares__buf_append(buf, &byte, 1);
 }
 
-
 ares_status_t ares__buf_append_be16(ares__buf_t *buf, unsigned short u16)
 {
   ares_status_t status;
 
   status = ares__buf_append_byte(buf, (u16 >> 8) & 0xff);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   status = ares__buf_append_byte(buf, u16 & 0xff);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   return ARES_SUCCESS;
 }
@@ -312,20 +313,24 @@ ares_status_t ares__buf_append_be32(ares__buf_t *buf, unsigned int u32)
   ares_status_t status;
 
   status = ares__buf_append_byte(buf, (u32 >> 24) & 0xff);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   status = ares__buf_append_byte(buf, (u32 >> 16) & 0xff);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   status = ares__buf_append_byte(buf, (u32 >> 8) & 0xff);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   status = ares__buf_append_byte(buf, u32 & 0xff);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
 
   return ARES_SUCCESS;
 }
