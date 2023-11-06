@@ -98,6 +98,29 @@ ares_status_t  ares__buf_append_byte(ares__buf_t *buf, unsigned char byte);
  */
 ares_status_t ares__buf_append_be16(ares__buf_t *buf, unsigned short u16);
 
+/*! Append a 32bit Big Endian number to the buffer.
+ *
+ *  \param[in]  buf     Initialized buffer object
+ *  \param[out] u32     32bit integer
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+ares_status_t ares__buf_append_be32(ares__buf_t *buf, unsigned int u32);
+
+/*! Sets the current buffer length.  This *may* be used if there is a need to
+ *  override a prior position in the buffer, such as if there is a length
+ *  prefix that isn't easily predictable, and you must go back and overwrite
+ *  that position.
+ *
+ *  Only valid on non-const buffers.  Length provided must not exceed current
+ *  allocated buffer size, but otherwise there are very few protections on
+ *  this function.  Use cautiously.
+ *
+ *  \param[in]  buf  Initialized buffer object
+ *  \param[in]  len  Length to set
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+ares_status_t ares__buf_set_length(ares__buf_t *buf, size_t len);
+
 
 /*! Start a dynamic append operation that returns a buffer suitable for
  *  writing.  A desired minimum length is passed in, and the actual allocated

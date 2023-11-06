@@ -131,6 +131,7 @@ static const ares_nameoffset_t *ares__nameoffset_find(ares__llist_t *list,
 }
 
 static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
+                                         ares_bool_t validate_hostname,
                                          const char *name)
 {
   const ares_nameoffset_t *off        = NULL;
@@ -343,7 +344,7 @@ static ares_status_t ares_dns_write_questions(const ares_dns_record_t *dnsrec,
       return status;
 
     /* Name */
-    status = ares_dns_write_name(buf, namelist, name);
+    status = ares_dns_write_name(buf, namelist, ARES_TRUE, name);
     if (status != ARES_SUCCESS)
       return status;
 
@@ -365,21 +366,40 @@ static ares_status_t ares_dns_write_rr_a(ares__buf_t *buf,
                                          const ares_dns_rr_t *rr,
                                          ares__llist_t **namelist)
 {
+  const struct in_addr *addr;
+  (void)namelist;
 
+  addr = ares_dns_rr_get_addr(rr, ARES_RR_A_ADDR);
+  if (addr == NULL)
+    return ARES_EFORMERR;
+
+  return ares__buf_append(buf, (unsigned char *)&addr, sizeof(*addr));
 }
 
 static ares_status_t ares_dns_write_rr_ns(ares__buf_t *buf,
                                           const ares_dns_rr_t *rr,
                                           ares__llist_t **namelist)
 {
+  const char *name;
 
+  name = ares_dns_rr_get_str(rr, ARES_RR_NS_NSDNAME);
+  if (name == NULL)
+    return ARES_EFORMERR;
+
+  return ares_dns_write_name(buf, namelist, ARES_FALSE, name);
 }
 
 static ares_status_t ares_dns_write_rr_cname(ares__buf_t *buf,
                                              const ares_dns_rr_t *rr,
                                              ares__llist_t **namelist)
 {
+  const char *name;
 
+  name = ares_dns_rr_get_str(rr, ARES_RR_CNAME_CNAME);
+  if (name == NULL)
+    return ARES_EFORMERR;
+
+  return ares_dns_write_name(buf, namelist, ARES_FALSE, name);
 }
 
 static ares_status_t ares_dns_write_rr_soa(ares__buf_t *buf,
@@ -467,7 +487,7 @@ static ares_status_t ares_dns_write_rr_raw_rr(ares__buf_t *buf,
 
 }
 
-static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
+static ares_status_t ares_dns_write_rr(ares_dns_record_t       *dnsrec,
                                        ares__llist_t          **namelist,
                                        ares_dns_section_t       section,
                                        ares__buf_t             *buf)
@@ -479,8 +499,10 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
     ares_dns_rec_type_t type;
     ares_bool_t         allow_compress;
     ares__llist_t     **namelistptr = NULL;
-    size_t              pos;
+    size_t              pos_len;
     ares_status_t       status;
+    size_t              rdlength;
+    size_t              end_length;
 
     rr = ares_dns_record_rr_get(dnsrec, section, i);
     if (rr == NULL) {
@@ -494,17 +516,19 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
     }
 
     /* Name */
-    status = ares_dns_write_name(buf, namelist, ares_dns_rr_get_name(rr));
+    status = ares_dns_write_name(buf, namelist, ARES_TRUE,
+                                 ares_dns_rr_get_name(rr));
     if (status != ARES_SUCCESS)
       return status;
 
     /* Type */
-    status = ares__buf_append_be16(buf, type);
+    status = ares__buf_append_be16(buf, (unsigned short)type);
     if (status != ARES_SUCCESS)
       return status;
 
     /* Class */
-    status = ares__buf_append_be16(buf, ares_dns_rr_get_class(rr));
+    status = ares__buf_append_be16(buf,
+                                   (unsigned short)ares_dns_rr_get_class(rr));
     if (status != ARES_SUCCESS)
       return status;
 
@@ -514,8 +538,10 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
       return status;
 
     /* Length */
-    pos    = ares__buf_len(buf); /* Save to write real length later */
-    status = ares__buf_append_be16(buf, 0);
+    pos_len = ares__buf_len(buf); /* Save to write real length later */
+    status  = ares__buf_append_be16(buf, 0);
+    if (status != ARES_SUCCESS)
+      return status;
 
     /* Data */
     switch (type) {
@@ -572,7 +598,22 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
     if (status != ARES_SUCCESS)
       return status;
 
-    /* TODO: back off write pointer, write real length, go back to write ptr */
+    /* Back off write pointer, write real length, then go back to proper
+     * position */
+    end_length = ares__buf_len(buf);
+    rdlength   = end_length - pos_len - 2;
+
+    status   = ares__buf_set_length(buf, pos_len);
+    if (status != ARES_SUCCESS)
+      return status;
+
+    status  = ares__buf_append_be16(buf, (unsigned short)(rdlength & 0xFFFF));
+    if (status != ARES_SUCCESS)
+      return status;
+
+    status   = ares__buf_set_length(buf, end_length);
+    if (status != ARES_SUCCESS)
+      return status;
   }
 
   return ARES_SUCCESS;
