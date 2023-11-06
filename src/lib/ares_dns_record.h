@@ -625,7 +625,16 @@ const unsigned char        *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
 ares_status_t ares_dns_parse(const unsigned char *buf, size_t buf_len,
                              unsigned int flags, ares_dns_record_t **dnsrec);
 
-
+/*! Write a complete DNS message
+ *
+ *  \param[in]  dnsrec   Pointer to initialized and filled DNS record object.
+ *  \param[out] buf      Pointer passed by reference to be filled in with with
+ *                       DNS message.  Must be ares_free()'d by caller.
+ *  \param[out] buf_len  Length of returned buffer containing DNS message.
+ *  \return ARES_SUCCESS on success
+ */
+ares_status_t ares_dns_write(ares_dns_record_t *dnsrec, unsigned char **buf,
+                             size_t *buf_len);
 /*! @} */
 
 /* ---- PRIVATE BELOW ----- */

@@ -704,6 +704,45 @@ static ares_status_t ares_dns_write_rr_opt(ares__buf_t         *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t      **namelist)
 {
+  size_t               len = ares__buf_len(buf);
+  ares_status_t        status;
+  unsigned int         ttl      = 0;
+
+  (void)namelist;
+
+  /* We need to go back and overwrite the class and ttl that were emitted as
+   * the OPT record overloads them for its own use (yes, very strange!) */
+  status = ares__buf_set_length(buf, len - 2 /* RDLENGTH */
+                                         - 4 /* TTL */
+                                         - 2 /* CLASS */);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Class -> UDP Size */
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_OPT_UDP_SIZE);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* TTL -> rcode (u8) << 24 | version (u8) << 16 | flags (u16) */
+  ttl |= (unsigned int)ares_dns_rr_get_u8(rr, ARES_RR_OPT_EXT_RCODE) << 24;
+  ttl |= (unsigned int)ares_dns_rr_get_u8(rr, ARES_RR_OPT_VERSION) << 16;
+  ttl |= (unsigned int)ares_dns_rr_get_u16(rr, ARES_RR_OPT_FLAGS);
+
+  status = ares__buf_append_be32(buf, ttl);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Now go back to real end */
+  status = ares__buf_set_length(buf, len);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* TODO: handle additional opt messages here */
+  return ARES_SUCCESS;
 }
 
 static ares_status_t ares_dns_write_rr_uri(ares__buf_t         *buf,
