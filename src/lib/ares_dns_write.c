@@ -300,7 +300,7 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
                                          const char *name)
 {
   const ares_nameoffset_t *off      = NULL;
-  size_t                   name_len = ares_strlen(name);
+  size_t                   name_len;
   size_t                   pos      = ares__buf_get_position(buf);
   ares_dns_label_t        *labels   = NULL;
   char                     name_copy[512];
