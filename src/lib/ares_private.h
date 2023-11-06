@@ -79,7 +79,7 @@
 #  define INTERFACES_KEY       "Interfaces"
 #  define DOMAIN_KEY           "Domain"
 #  define DHCPDOMAIN_KEY       "DhcpDomain"
-#  define PATH_RESOLV_CONF     NULL
+#  define PATH_RESOLV_CONF     ""
 #elif defined(WATT32)
 
 #  define PATH_RESOLV_CONF "/dev/ENV/etc/resolv.conf"
@@ -92,7 +92,7 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 
 #elif defined(__riscos__)
 
-#  define PATH_RESOLV_CONF NULL
+#  define PATH_RESOLV_CONF ""
 #  define PATH_HOSTS       "InetDBase:Hosts"
 
 #elif defined(__HAIKU__)
