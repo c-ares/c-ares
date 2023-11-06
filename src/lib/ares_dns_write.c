@@ -133,6 +133,154 @@ static const ares_nameoffset_t *ares__nameoffset_find(ares__llist_t *list,
   return longest_match;
 }
 
+typedef struct {
+  unsigned char label[63];
+  size_t        len;
+} ares_dns_label_t;
+
+static ares_status_t ares_parse_dns_name_escape(const char *ptr, size_t ptr_len,
+                                                unsigned char *out,
+                                                size_t *consumed_chars)
+{
+  /* Must have at least 1 more character */
+  if (ptr_len < 2) {
+    return ARES_EBADNAME;
+  }
+
+  /* If next character is a digit, must have 3 */
+  if (isdigit(ptr[1])) {
+    int  i;
+    char num[4];
+
+    if (ptr_len < 4)
+      return ARES_EBADNAME;
+
+    /* Must all be digits */
+    if (!isdigit(ptr[2]) || !isdigit(ptr[3])) {
+      return ARES_EBADNAME;
+    }
+    num[0] = ptr[1];
+    num[1] = ptr[2];
+    num[2] = ptr[3];
+    num[3] = 0;
+    i = atoi(num);
+    /* Out of range */
+    if (i > 255)
+      return ARES_EBADNAME;
+
+    *out            = (unsigned char)i;
+    *consumed_chars = 3;
+    return ARES_SUCCESS;
+  }
+
+  /* We can just output the character */
+  *out            = (unsigned char)ptr[1];
+  *consumed_chars = 1;
+  return ARES_SUCCESS;
+}
+
+static ares_status_t ares_parse_dns_name(ares_dns_label_t **labels_out,
+                                         size_t *num_labels_out,
+                                         ares_bool_t validate_hostname,
+                                         const char *name)
+{
+  ares_status_t     status;
+  ares_dns_label_t *labels     = NULL;
+  ares_dns_label_t *label;
+  size_t            num_labels = 0;
+  size_t            len;
+  size_t            i;
+  size_t            total_len  = 0;
+
+  if (name == NULL || labels_out == NULL || num_labels_out == NULL)
+    return ARES_EFORMERR;
+
+  len = ares_strlen(name);
+
+  /* Start with 1 label */
+  num_labels = 1;
+  labels     = ares_malloc_zero(sizeof(*labels) * num_labels);
+  if (labels == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  label = &labels[num_labels - 1];
+  for (i=0; i<len; i++) {
+    size_t remaining_len = len - i;
+
+    /* New label */
+    if (name[i] == '.') {
+      void *temp;
+
+      temp = ares_realloc_zero(labels, sizeof(*labels) * num_labels,
+                               sizeof(*labels) * (num_labels+1));
+      if (temp == NULL) {
+        status = ARES_ENOMEM;
+        goto done;
+      }
+      labels = temp;
+      label  = &labels[num_labels++];
+      continue;
+    }
+
+    /* Can't append any more bytes */
+    if (label->len == sizeof(label->label)) {
+      return ARES_EBADNAME;
+    }
+
+    /* Escape */
+    if (name[i] == '\\') {
+      size_t consumed_chars = 0;
+      status = ares_parse_dns_name_escape(name + i, remaining_len,
+        &label->label[label->len++], &consumed_chars);
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+      i += consumed_chars;
+      continue;
+    }
+
+    /* Output direct character */
+    label->label[label->len++] = (unsigned char)name[i];
+  }
+
+  /* Remove trailing blank label */
+  if (labels[num_labels-1].len == 0)
+    num_labels--;
+
+  /* If someone passed in "." there could have been 2 blank labels, check for
+   * that */
+  if (num_labels == 1 && labels[0].len == 0) {
+    num_labels--;
+  }
+
+  /* Scan to make sure there are no blank labels */
+  for (i=0; i<num_labels; i++) {
+    if (labels[i].len == 0) {
+      status = ARES_EBADNAME;
+      goto done;
+    }
+    total_len += labels[i].len;
+  }
+
+  /* Can't exceed maximum (unescaped) length */
+  if (num_labels && total_len + num_labels - 1 > 255) {
+    status = ARES_EBADNAME;
+    goto done;
+  }
+
+  *labels_out     = labels;
+  *num_labels_out = num_labels;
+  status = ARES_SUCCESS;
+
+done:
+  if (status != ARES_SUCCESS)
+    ares_free(labels);
+  return status;
+}
+
+
 static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
                                          ares_bool_t validate_hostname,
                                          const char *name)
@@ -140,8 +288,8 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
   const ares_nameoffset_t *off      = NULL;
   size_t                   name_len = ares_strlen(name);
   size_t                   pos      = ares__buf_get_position(buf);
-  char                     name_copy[256];
-  char                   **labels     = NULL;
+  ares_dns_label_t        *labels   = NULL;
+  char                     name_copy[512];
   size_t                   num_labels = 0;
   ares_status_t            status;
 
@@ -149,34 +297,9 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
     return ARES_EFORMERR;
   }
 
-  if (name_len > sizeof(name_copy) - 1) {
-    return ARES_EBADNAME;
-  }
-
+  /* NOTE: due to possible escaping, name_copy buffer is > 256 to allow for
+   *       this */
   name_len = ares_strcpy(name_copy, name, sizeof(name_copy));
-
-  /* Remove trailing period */
-  if (name_len > 0 && name_copy[name_len - 1] == '.') {
-    name_copy[name_len - 1] = 0;
-    name_len--;
-  }
-
-  /* XXX: validate name format!
-   *  1) must not start with a '.'
-   *  2) only printable characters
-   *  3) if a hostname only hostname characters
-   *  4) each label must be between 1 and 63 characters (inclusive)
-   *  4) since we stripped trailing '.' should not have a trailing '.'
-   *  5) A real '.' can be escaped by a '\' and therefore means a '\' must be
-   *     escaped by a slash.  This is to support the SOA RNAME format mostly,
-   *     think of   tech.support@example.com   in the RNAME, this would be
-   *     encoded as   tech\.support.example.com, otherwise if it was encoded
-   *     as  tech.support.example.com, it would be interpreted as
-   *     tech@support.example.com.
-   */
-  if (*name_copy == '.') {
-    return ARES_EBADNAME;
-  }
 
   /* Find longest match */
   if (list != NULL) {
@@ -192,25 +315,22 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
   if (off == NULL || off->name_len != name_len) {
     size_t i;
 
-    if (name_len > 0) {
-      labels = ares__strsplit(name_copy, ".", &num_labels);
-      if (labels == NULL || num_labels == 0) {
-        status = ARES_ENOMEM;
+    status = ares_parse_dns_name(&labels, &num_labels, validate_hostname,
+                                 name_copy);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    for (i = 0; i < num_labels; i++) {
+      status = ares__buf_append_byte(buf,
+        (unsigned char)(labels[i].len & 0xFF));
+      if (status != ARES_SUCCESS) {
         goto done;
       }
 
-      for (i = 0; i < num_labels; i++) {
-        size_t len = ares_strlen(labels[i]);
-
-        status = ares__buf_append_byte(buf, (unsigned char)(len & 0xFF));
-        if (status != ARES_SUCCESS) {
-          goto done;
-        }
-
-        status = ares__buf_append(buf, (unsigned char *)labels[i], len);
-        if (status != ARES_SUCCESS) {
-          goto done;
-        }
+      status = ares__buf_append(buf, labels[i].label, labels[i].len);
+      if (status != ARES_SUCCESS) {
+        goto done;
       }
     }
 
@@ -235,7 +355,7 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
   /* Store pointer for future jumps as long as its not an exact match for
    * a prior entry */
   if (list != NULL && off != NULL && off->name_len != name_len && name_len > 0) {
-    status = ares__nameoffset_create(list, name_copy, pos);
+    status = ares__nameoffset_create(list, name /* not truncated copy! */, pos);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -244,7 +364,7 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
   status = ARES_SUCCESS;
 
 done:
-  ares__strsplit_free(labels, num_labels);
+  ares_free(labels);
   return status;
 }
 
