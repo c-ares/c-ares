@@ -295,12 +295,12 @@ ares_status_t ares__buf_append_be16(ares__buf_t *buf, unsigned short u16)
 {
   ares_status_t status;
 
-  status = ares__buf_append_byte(buf, (u16 >> 8) & 0xff);
+  status = ares__buf_append_byte(buf, (unsigned char )((u16 >> 8) & 0xff));
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  status = ares__buf_append_byte(buf, u16 & 0xff);
+  status = ares__buf_append_byte(buf, (unsigned char)(u16 & 0xff));
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -312,22 +312,22 @@ ares_status_t ares__buf_append_be32(ares__buf_t *buf, unsigned int u32)
 {
   ares_status_t status;
 
-  status = ares__buf_append_byte(buf, (u32 >> 24) & 0xff);
+  status = ares__buf_append_byte(buf, ((unsigned char)(u32 >> 24) & 0xff));
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  status = ares__buf_append_byte(buf, (u32 >> 16) & 0xff);
+  status = ares__buf_append_byte(buf, ((unsigned char)(u32 >> 16) & 0xff));
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  status = ares__buf_append_byte(buf, (u32 >> 8) & 0xff);
+  status = ares__buf_append_byte(buf, ((unsigned char)(u32 >> 8) & 0xff));
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  status = ares__buf_append_byte(buf, u32 & 0xff);
+  status = ares__buf_append_byte(buf, ((unsigned char)u32 & 0xff));
   if (status != ARES_SUCCESS) {
     return status;
   }
