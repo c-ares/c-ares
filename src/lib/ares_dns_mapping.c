@@ -106,6 +106,27 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
   return is_query ? ARES_TRUE : ARES_FALSE;
 }
 
+ares_bool_t ares_dns_rec_type_allow_name_compression(ares_dns_rec_type_t type)
+{
+  /* Only record types defined in RFC1035 allow name compression within the
+   * RDATA.  Otherwise nameservers that don't understand an RR may not be
+   * able to pass along the RR in a proper manner */
+  switch (type) {
+    case ARES_REC_TYPE_A:
+    case ARES_REC_TYPE_NS:
+    case ARES_REC_TYPE_CNAME:
+    case ARES_REC_TYPE_SOA:
+    case ARES_REC_TYPE_PTR:
+    case ARES_REC_TYPE_HINFO:
+    case ARES_REC_TYPE_MX:
+    case ARES_REC_TYPE_TXT:
+      return ARES_TRUE;
+    default:
+      break;
+  }
+  return ARES_FALSE;
+}
+
 ares_bool_t ares_dns_class_isvalid(ares_dns_class_t qclass,
                                    ares_bool_t      is_query)
 {
