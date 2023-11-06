@@ -504,7 +504,7 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_NE(ARES_SUCCESS, ares__buf_begins_with(NULL, NULL, 0));
   EXPECT_EQ(0, ares__buf_get_position(NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_set_position(NULL, 0));
-  EXPECT_NE(ARES_SUCCESS, ares__buf_parse_dns_name(NULL, NULL, ARES_FALSE));
+  EXPECT_NE(ARES_SUCCESS, ares__dns_name_parse(NULL, NULL, ARES_FALSE));
   EXPECT_NE(ARES_SUCCESS, ares__buf_parse_dns_binstr(NULL, 0, NULL, NULL, ARES_FALSE));
 }
 
