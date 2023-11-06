@@ -423,24 +423,6 @@ ares_status_t        ares__buf_set_position(ares__buf_t *buf, size_t idx);
  */
 size_t               ares__buf_get_position(const ares__buf_t *buf);
 
-
-/*! Parse a compressed DNS name as defined in RFC1035 starting at the current
- *  offset within the buffer.
- *
- *  It is assumed that either a const buffer is being used, or before
- *  the message processing was started that ares__buf_reclaim() was called.
- *
- *  \param[in]  buf        Initialized buffer object
- *  \param[out] name       Pointer passed by reference to be filled in with
- *                         allocated string of the parsed name that must be
- *                         ares_free()'d by the caller.
- *  \param[in] is_hostname if ARES_TRUE, will validate the character set for
- *                         a valid hostname or will return error.
- *  \return ARES_SUCCESS on success
- */
-ares_status_t        ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
-                                              ares_bool_t is_hostname);
-
 /*! Parse a character-string as defined in RFC1035, as a null-terminated
  *  string.
  *
