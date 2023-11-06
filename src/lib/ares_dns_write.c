@@ -167,6 +167,12 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
    *  3) if a hostname only hostname characters
    *  4) each label must be between 1 and 63 characters (inclusive)
    *  4) since we stripped trailing '.' should not have a trailing '.'
+   *  5) A real '.' can be escaped by a '\' and therefore means a '\' must be
+   *     escaped by a slash.  This is to support the SOA RNAME format mostly,
+   *     think of   tech.support@example.com   in the RNAME, this would be
+   *     encoded as   tech\.support.example.com, otherwise if it was encoded
+   *     as  tech.support.example.com, it would be interpreted as
+   *     tech@support.example.com.
    */
   if (*name_copy == '.') {
     return ARES_EBADNAME;
@@ -175,12 +181,10 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
   /* Find longest match */
   if (list != NULL) {
     off = ares__nameoffset_find(*list, name_copy);
-    if (off != NULL) {
-      if (off->name_len != name_len) {
-        /* truncate */
-        name_len                -= (off->name_len + 1);
-        name_copy[name_len - 1]  = 0;
-      }
+    if (off != NULL && off->name_len != name_len) {
+      /* truncate */
+      name_len                -= (off->name_len + 1);
+      name_copy[name_len - 1]  = 0;
     }
   }
 
@@ -188,23 +192,25 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
   if (off == NULL || off->name_len != name_len) {
     size_t i;
 
-    labels = ares__strsplit(name_copy, ".", &num_labels);
-    if (labels == NULL || num_labels == 0) {
-      status = ARES_ENOMEM;
-      goto done;
-    }
-
-    for (i = 0; i < num_labels; i++) {
-      size_t len = ares_strlen(labels[i]);
-
-      status = ares__buf_append_byte(buf, (unsigned char)(len & 0xFF));
-      if (status != ARES_SUCCESS) {
+    if (name_len > 0) {
+      labels = ares__strsplit(name_copy, ".", &num_labels);
+      if (labels == NULL || num_labels == 0) {
+        status = ARES_ENOMEM;
         goto done;
       }
 
-      status = ares__buf_append(buf, (unsigned char *)labels[i], len);
-      if (status != ARES_SUCCESS) {
-        goto done;
+      for (i = 0; i < num_labels; i++) {
+        size_t len = ares_strlen(labels[i]);
+
+        status = ares__buf_append_byte(buf, (unsigned char)(len & 0xFF));
+        if (status != ARES_SUCCESS) {
+          goto done;
+        }
+
+        status = ares__buf_append(buf, (unsigned char *)labels[i], len);
+        if (status != ARES_SUCCESS) {
+          goto done;
+        }
       }
     }
 
@@ -228,7 +234,7 @@ static ares_status_t ares_dns_write_name(ares__buf_t *buf, ares__llist_t **list,
 
   /* Store pointer for future jumps as long as its not an exact match for
    * a prior entry */
-  if (list != NULL && off != NULL && off->name_len != name_len) {
+  if (list != NULL && off != NULL && off->name_len != name_len && name_len > 0) {
     status = ares__nameoffset_create(list, name_copy, pos);
     if (status != ARES_SUCCESS) {
       goto done;
