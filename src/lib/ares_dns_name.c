@@ -76,7 +76,7 @@ static ares_status_t ares__nameoffset_create(ares__llist_t **list,
     goto fail;
   }
 
-  status = ARES_SUCCESS;
+  return ARES_SUCCESS;
 
 fail:
   ares__nameoffset_free(off);
@@ -361,7 +361,7 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
 {
   const ares_nameoffset_t *off = NULL;
   size_t                   name_len;
-  size_t                   pos = ares__buf_get_position(buf);
+  size_t                   pos = ares__buf_len(buf);
   ares_dns_labels_t        labels;
   char                     name_copy[512];
   ares_status_t            status;
@@ -381,8 +381,8 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
     off = ares__nameoffset_find(*list, name_copy);
     if (off != NULL && off->name_len != name_len) {
       /* truncate */
-      name_len                -= (off->name_len + 1);
-      name_copy[name_len - 1]  = 0;
+      name_len            -= (off->name_len + 1);
+      name_copy[name_len]  = 0;
     }
   }
 
@@ -431,7 +431,7 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
 
   /* Store pointer for future jumps as long as its not an exact match for
    * a prior entry */
-  if (list != NULL && off != NULL && off->name_len != name_len &&
+  if (list != NULL && (off == NULL || off->name_len != name_len) &&
       name_len > 0) {
     status = ares__nameoffset_create(list, name /* not truncated copy! */, pos);
     if (status != ARES_SUCCESS) {

@@ -145,6 +145,16 @@ unsigned char *ares__buf_append_start(ares__buf_t *buf, size_t *len);
  */
 void           ares__buf_append_finish(ares__buf_t *buf, size_t len);
 
+/*! Write the data provided to the buffer in a hexdump format.
+ *
+ *  \param[in] buf      Initialized buffer object.
+ *  \param[in] data     Data to hex dump
+ *  \param[in] data_len Length of data to hexdump
+ *  \return ARES_SUCCESS on success.
+ */
+ares_status_t ares__buf_hexdump(ares__buf_t *buf, const unsigned char *data,
+                                size_t len);
+
 /*! Clean up ares__buf_t and return allocated pointer to unprocessed data.  It
  *  is the responsibility of the  caller to ares_free() the returned buffer.
  *  The passed in buf parameter is invalidated by this call.

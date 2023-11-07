@@ -470,7 +470,6 @@ TEST_F(LibraryTest, DNSRecord) {
   struct ares_in6_addr addr6;
   unsigned char       *msg    = NULL;
   size_t               msglen = 0;
-
   size_t               qdcount = 0;
   size_t               ancount = 0;
   size_t               nscount = 0;
@@ -651,6 +650,11 @@ TEST_F(LibraryTest, DNSRecord) {
 
   /* Write */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+
+  ares__buf_t *hexdump = ares__buf_create();
+  EXPECT_EQ(ARES_SUCCESS, ares__buf_hexdump(hexdump, msg, msglen));
+  char *hexdata = ares__buf_finish_str(hexdump, NULL);
+  //printf("HEXDUMP\n%s", hexdata);
   ares_dns_record_destroy(dnsrec); dnsrec = NULL;
 
   /* Parse */
