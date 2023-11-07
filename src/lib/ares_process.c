@@ -568,7 +568,7 @@ static ares_status_t rewrite_without_edns(ares_dns_record_t *qdnsrec,
   /* Find and remove the OPT RR record */
   for (i = 0; i < ares_dns_record_rr_cnt(qdnsrec, ARES_SECTION_ADDITIONAL);
        i++) {
-    ares_dns_rr_t *rr;
+    const ares_dns_rr_t *rr;
     rr = ares_dns_record_rr_get(qdnsrec, ARES_SECTION_ADDITIONAL, i);
     if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
       ares_dns_record_rr_del(qdnsrec, ARES_SECTION_ADDITIONAL, i);
@@ -786,7 +786,7 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
 }
 
 static ares_status_t ares__append_tcpbuf(struct server_state *server,
-                                         struct query        *query)
+                                         const struct query  *query)
 {
   ares_status_t status;
 

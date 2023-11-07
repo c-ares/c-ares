@@ -175,7 +175,7 @@ static ares__buf_t *ares_dns_labels_add(ares_dns_labels_t *labels)
   return labels->label[labels->num - 1];
 }
 
-static ares__buf_t *ares_dns_labels_get_last(ares_dns_labels_t *labels)
+static const ares__buf_t *ares_dns_labels_get_last(const ares_dns_labels_t *labels)
 {
   if (labels == NULL || labels->num == 0) {
     return NULL;
@@ -271,7 +271,7 @@ static ares_status_t ares_split_dns_name(ares_dns_labels_t *labels,
 
   if (*name != '\0') {
     status =
-      ares__buf_append(namebuf, (unsigned char *)name, ares_strlen(name));
+      ares__buf_append(namebuf, (const unsigned char *)name, ares_strlen(name));
     if (status != ARES_SUCCESS) {
       goto done;
     }
