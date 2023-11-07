@@ -50,15 +50,17 @@ int ares_create_query(const char *name, int dnsclass, int type,
     goto done;
   }
 
-  status = ares_dns_record_create(&dnsrec, id, rd?ARES_FLAG_RD:0,
+  status = ares_dns_record_create(&dnsrec, id, rd ? ARES_FLAG_RD : 0,
                                   ARES_OPCODE_QUERY, ARES_RCODE_NOERROR);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     goto done;
+  }
 
   status = ares_dns_record_query_add(dnsrec, name, (ares_dns_rec_type_t)type,
                                      (ares_dns_class_t)dnsclass);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     goto done;
+  }
 
   /* max_udp_size > 0 indicates EDNS, so send OPT RR as an additional record */
   if (max_udp_size > 0) {
@@ -66,8 +68,9 @@ int ares_create_query(const char *name, int dnsclass, int type,
 
     status = ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "",
                                     ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto done;
+    }
 
     if (max_udp_size > 65535) {
       status = ARES_EFORMERR;
@@ -76,25 +79,30 @@ int ares_create_query(const char *name, int dnsclass, int type,
 
     status = ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE,
                                  (unsigned short)max_udp_size);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto done;
+    }
 
     status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_EXT_RCODE, 0);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto done;
+    }
 
     status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto done;
+    }
 
     status = ares_dns_rr_set_u16(rr, ARES_RR_OPT_FLAGS, 0);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto done;
+    }
   }
 
   status = ares_dns_write(dnsrec, bufp, &len);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     goto done;
+  }
 
   *buflenp = (int)len;
 

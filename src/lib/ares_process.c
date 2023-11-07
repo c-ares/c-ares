@@ -65,11 +65,11 @@ static ares_bool_t   same_questions(const ares_dns_record_t *qrec,
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
 static ares_bool_t   has_opt_rr(ares_dns_record_t *arec);
-static void          end_query(const ares_channel_t *channel,
-                               struct query *query, ares_status_t status,
-                               const unsigned char *abuf, size_t alen);
+static void end_query(const ares_channel_t *channel, struct query *query,
+                      ares_status_t status, const unsigned char *abuf,
+                      size_t alen);
 
-static void          server_increment_failures(struct server_state *server)
+static void server_increment_failures(struct server_state *server)
 {
   ares__slist_node_t   *node;
   const ares_channel_t *channel = server->channel;
@@ -357,7 +357,7 @@ static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
 }
 
 static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
-                                          size_t *num)
+                                          size_t               *num)
 {
   size_t              alloc_cnt = 1 << 4;
   ares_socket_t      *out       = ares_malloc(alloc_cnt * sizeof(*out));
@@ -557,16 +557,17 @@ static void process_timeouts(ares_channel_t *channel, struct timeval *now)
 }
 
 static ares_status_t rewrite_without_edns(ares_dns_record_t *qdnsrec,
-                                          struct query *query)
+                                          struct query      *query)
 {
-  ares_status_t      status;
-  size_t             i;
-  ares_bool_t        found_opt_rr = ARES_FALSE;
-  unsigned char     *msg    = NULL;
-  size_t             msglen = 0;
+  ares_status_t  status;
+  size_t         i;
+  ares_bool_t    found_opt_rr = ARES_FALSE;
+  unsigned char *msg          = NULL;
+  size_t         msglen       = 0;
 
   /* Find and remove the OPT RR record */
-  for (i=0; i<ares_dns_record_rr_cnt(qdnsrec, ARES_SECTION_ADDITIONAL); i++) {
+  for (i = 0; i < ares_dns_record_rr_cnt(qdnsrec, ARES_SECTION_ADDITIONAL);
+       i++) {
     ares_dns_rr_t *rr;
     rr = ares_dns_record_rr_get(qdnsrec, ARES_SECTION_ADDITIONAL, i);
     if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
@@ -785,13 +786,14 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
 }
 
 static ares_status_t ares__append_tcpbuf(struct server_state *server,
-                                         struct query *query)
+                                         struct query        *query)
 {
   ares_status_t status;
 
   status = ares__buf_append_be16(server->tcp_send, (unsigned short)query->qlen);
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     return status;
+  }
   return ares__buf_append(server->tcp_send, query->qbuf, query->qlen);
 }
 
@@ -984,8 +986,8 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
 static ares_bool_t same_questions(const ares_dns_record_t *qrec,
                                   const ares_dns_record_t *arec)
 {
-  size_t             i;
-  ares_bool_t        rv = ARES_FALSE;
+  size_t      i;
+  ares_bool_t rv = ARES_FALSE;
 
 
   if (ares_dns_record_query_cnt(qrec) != ares_dns_record_query_cnt(arec)) {
