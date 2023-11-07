@@ -545,6 +545,43 @@ static ares_status_t ares_dns_write_rr_opt(ares__buf_t         *buf,
   return ARES_SUCCESS;
 }
 
+static ares_status_t ares_dns_write_rr_tlsa(ares__buf_t         *buf,
+                                            const ares_dns_rr_t *rr,
+                                            ares__llist_t      **namelist)
+{
+  ares_status_t        status;
+  const unsigned char *data;
+  size_t               len = 0;
+
+  (void)namelist;
+
+  /* CERT_USAGE */
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_TLSA_CERT_USAGE);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* SELECTOR */
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_TLSA_SELECTOR);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* MATCH */
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_TLSA_MATCH);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* DATA -- binary, rest of buffer, required to be non-zero length */
+  data = ares_dns_rr_get_bin(rr, ARES_RR_TLSA_DATA, &len);
+  if (data == NULL || len == 0) {
+    return ARES_EFORMERR;
+  }
+
+  return ares__buf_append(buf, data, len);
+}
+
 static ares_status_t ares_dns_write_rr_uri(ares__buf_t         *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t      **namelist)
@@ -754,6 +791,9 @@ static ares_status_t ares_dns_write_rr(ares_dns_record_t *dnsrec,
         break;
       case ARES_REC_TYPE_OPT:
         status = ares_dns_write_rr_opt(buf, rr, namelistptr);
+        break;
+      case ARES_REC_TYPE_TLSA:
+        status = ares_dns_write_rr_tlsa(buf, rr, namelistptr);
         break;
       case ARES_REC_TYPE_URI:
         status = ares_dns_write_rr_uri(buf, rr, namelistptr);

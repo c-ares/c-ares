@@ -148,13 +148,12 @@ static void ares__dns_rr_free(ares_dns_rr_t *rr)
     case ARES_REC_TYPE_OPT:
       /* Once we support the attribute/values, we need to free here */
       break;
-#if 0
+
     case ARES_REC_TYPE_TLSA:
-      /* Once this record type is supported, need to free here
-       * ares_free(rr->r.tlsa.);
-       */
+      ares_free(rr->r.tlsa.data);
       break;
 
+#if 0
     case ARES_REC_TYPE_SVBC:
       /* Once this record type is supported, need to free here
        * ares_free(rr->r.svbc.);
@@ -624,6 +623,22 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
 
     case ARES_RR_OPT_FLAGS:
       return &dns_rr->r.opt.flags;
+
+    case ARES_RR_TLSA_CERT_USAGE:
+      return &dns_rr->r.tlsa.cert_usage;
+
+    case ARES_RR_TLSA_SELECTOR:
+      return &dns_rr->r.tlsa.selector;
+
+    case ARES_RR_TLSA_MATCH:
+      return &dns_rr->r.tlsa.match;
+
+    case ARES_RR_TLSA_DATA:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.tlsa.data_len;
+      return &dns_rr->r.tlsa.data;
 
     case ARES_RR_URI_PRIORITY:
       return &dns_rr->r.uri.priority;

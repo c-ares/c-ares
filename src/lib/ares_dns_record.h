@@ -51,10 +51,11 @@ typedef enum {
   ARES_REC_TYPE_SRV   = 33, /*!< RFC 2782. Server Selection. */
   ARES_REC_TYPE_NAPTR = 35, /*!< RFC 3403. Naming Authority Pointer */
   ARES_REC_TYPE_OPT   = 41, /*!< RFC 6891. EDNS0 option (meta-RR) */
+
+  ARES_REC_TYPE_TLSA  = 52, /*!< RFC 6698. DNS-Based Authentication of Named
+                             *   Entities (DANE) Transport Layer Security
+                             *   (TLS) Protocol: TLSA */
 #if 0
-  ARES_REC_TYPE_TLSA     = 52,    /*!< DNS-Based Authentication of Named
-                                   *   Entities (DANE) Transport Layer Security
-                                   *   (TLS) Protocol: TLSA */
   ARES_REC_TYPE_SVBC     = 64,    /*!< General Purpose Service Binding */
   ARES_REC_TYPE_HTTPS    = 65,    /*!< Service Binding type for use with HTTP */
 #endif
@@ -218,6 +219,14 @@ typedef enum {
   ARES_RR_OPT_VERSION = (ARES_REC_TYPE_OPT * 100) + 3,
   /*! OPT Record. Flags. Datatype: u16 */
   ARES_RR_OPT_FLAGS = (ARES_REC_TYPE_OPT * 100) + 4,
+  /*! TLSA Record. Certificate Usage. Datatype: u8 */
+  ARES_RR_TLSA_CERT_USAGE = (ARES_REC_TYPE_TLSA * 100) + 1,
+  /*! TLSA Record. Selector. Datatype: u8 */
+  ARES_RR_TLSA_SELECTOR = (ARES_REC_TYPE_TLSA * 100) + 2,
+  /*! TLSA Record. Matching Type. Datatype: u8 */
+  ARES_RR_TLSA_MATCH = (ARES_REC_TYPE_TLSA * 100) + 3,
+  /*! TLSA Record. Certificate Association Data. Datatype: bin */
+  ARES_RR_TLSA_DATA = (ARES_REC_TYPE_TLSA * 100) + 4,
   /*! URI Record. Priority. Datatype: u16 */
   ARES_RR_URI_PRIORITY = (ARES_REC_TYPE_URI * 100) + 1,
   /*! URI Record. Weight. Datatype: u16 */
@@ -235,6 +244,37 @@ typedef enum {
   /*! RAW Record. RR Data. Datatype: binary */
   ARES_RR_RAW_RR_DATA = (ARES_REC_TYPE_RAW_RR * 100) + 2,
 } ares_dns_rr_key_t;
+
+/*! TLSA Record ARES_RR_TLSA_CERT_USAGE known values */
+typedef enum {
+  /*! Certificate Usage 0. CA Constraint. */
+  ARES_TLSA_USAGE_CA          = 0,
+  /*! Certificate Usage 1. Service Certificate Constraint. */
+  ARES_TLSA_USAGE_SERVICE     = 1,
+  /*! Certificate Usage 2. Trust Anchor Assertation. */
+  ARES_TLSA_USAGE_TRUSTANCHOR = 2,
+  /*! Certificate Usage 3. Domain-issued certificate. */
+  ARES_TLSA_USAGE_DOMAIN      = 3
+} ares_tlsa_usage_t;
+
+/*! TLSA Record ARES_RR_TLSA_SELECTOR known values */
+typedef enum {
+  /*! Full Certificate */
+  ARES_TLSA_SELECTOR_FULL = 0,
+  /*! DER-encoded SubjectPublicKeyInfo */
+  ARES_TLSA_SELECTOR_SUBJPUBKEYINFO = 1
+} ares_tlsa_selector_t;
+
+/*! TLSA Record ARES_RR_TLSA_MATCH known values */
+typedef enum {
+  /*! Exact match */
+  ARES_TLSA_MATCH_EXACT  = 0,
+  /*! Sha256 match */
+  ARES_TLSA_MATCH_SHA256 = 1,
+  /*! Sha512 match */
+  ARES_TLSA_MATCH_SHA512 = 2
+} ares_tlsa_match_t;
+
 
 /*! String representation of DNS Record Type
  *
@@ -744,6 +784,14 @@ typedef struct {
 } ares__dns_opt_t;
 
 typedef struct {
+  unsigned char  cert_usage;
+  unsigned char  selector;
+  unsigned char  match;
+  unsigned char *data;
+  size_t         data_len;
+} ares__dns_tlsa_t;
+
+typedef struct {
   unsigned short priority;
   unsigned short weight;
   char          *target;
@@ -784,6 +832,7 @@ struct ares_dns_rr {
     ares__dns_srv_t    srv;
     ares__dns_naptr_t  naptr;
     ares__dns_opt_t    opt;
+    ares__dns_tlsa_t   tlsa;
     ares__dns_uri_t    uri;
     ares__dns_caa_t    caa;
     ares__dns_raw_rr_t raw_rr;
