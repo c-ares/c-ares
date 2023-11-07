@@ -215,13 +215,10 @@ struct query {
   /* connection handle query is associated with */
   struct server_connection *conn;
 
-  /* Query buf with length at beginning, for TCP transmission */
-  unsigned char            *tcpbuf;
-  size_t                    tcplen;
-
-  /* Arguments passed to ares_send() (qbuf points into tcpbuf) */
-  const unsigned char      *qbuf;
+  /* Arguments passed to ares_send() */
+  unsigned char            *qbuf;
   size_t                    qlen;
+
   ares_callback             callback;
   void                     *arg;
 
@@ -500,6 +497,46 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
                                             unsigned short        port,
                                             ares_bool_t           want_cnames,
                                             struct ares_addrinfo *ai);
+ares_bool_t ares__isprint(int ch);
+
+
+/*! Parse a compressed DNS name as defined in RFC1035 starting at the current
+ *  offset within the buffer.
+ *
+ *  It is assumed that either a const buffer is being used, or before
+ *  the message processing was started that ares__buf_reclaim() was called.
+ *
+ *  \param[in]  buf        Initialized buffer object
+ *  \param[out] name       Pointer passed by reference to be filled in with
+ *                         allocated string of the parsed name that must be
+ *                         ares_free()'d by the caller.
+ *  \param[in] is_hostname if ARES_TRUE, will validate the character set for
+ *                         a valid hostname or will return error.
+ *  \return ARES_SUCCESS on success
+ */
+ares_status_t        ares__dns_name_parse(ares__buf_t *buf, char **name,
+                                          ares_bool_t is_hostname);
+
+/*! Write the DNS name to the buffer in the DNS domain-name syntax as a
+ *  series of labels.  The maximum domain name length is 255 characters with
+ *  each label being a maximum of 63 characters.  If the validate_hostname
+ *  flag is set, it will strictly validate the character set.
+ *
+ *  \param[in,out]  buf   Initialized buffer object to write name to
+ *  \param[in,out]  list  Pointer passed by reference to maintain a list of
+ *                        domain name to indexes used for name compression.
+ *                        Pass NULL (not by reference) if name compression isn't
+ *                        desired.  Otherwise the list will be automatically
+ *                        created upon first entry.
+ *  \param[in]      validate_hostname Validate the hostname character set.
+ *  \param[in]      name              Name to write out, it may have escape
+ *                                    sequences.
+ *  \return ARES_SUCCESS on success, most likely ARES_EBADNAME if the name is
+ *          bad.
+ */
+ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
+                                   ares_bool_t validate_hostname,
+                                   const char *name);
 
 #define ARES_SWAP_BYTE(a, b)           \
   do {                                 \

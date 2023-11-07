@@ -403,11 +403,21 @@ ares_status_t     ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
  *  \param[in]  dnsrec   Initialized record object
  *  \param[in]  sect     Section for resource record
  *  \param[in]  idx      Index of resource record in section
- *  \param NULL on misuse, otherwise a pointer to the resource record
+ *  \return NULL on misuse, otherwise a pointer to the resource record
  */
 ares_dns_rr_t    *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
                                          ares_dns_section_t sect, size_t idx);
 
+
+/*! Remove the resource record based on the section and index
+ *
+ *  \param[in]  dnsrec   Initialized record object
+ *  \param[in]  sect     Section for resource record
+ *  \param[in]  idx      Index of resource record in section
+ *  \return ARES_SUCCESS on success, otherwise an error code.
+ */
+ares_status_t     ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
+                                         ares_dns_section_t sect, size_t idx);
 
 /*! Retrieve a list of Resource Record keys that can be set or retrieved for
  *  the Resource record type.
@@ -625,18 +635,28 @@ const unsigned char        *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
 ares_status_t ares_dns_parse(const unsigned char *buf, size_t buf_len,
                              unsigned int flags, ares_dns_record_t **dnsrec);
 
-
+/*! Write a complete DNS message
+ *
+ *  \param[in]  dnsrec   Pointer to initialized and filled DNS record object.
+ *  \param[out] buf      Pointer passed by reference to be filled in with with
+ *                       DNS message.  Must be ares_free()'d by caller.
+ *  \param[out] buf_len  Length of returned buffer containing DNS message.
+ *  \return ARES_SUCCESS on success
+ */
+ares_status_t ares_dns_write(ares_dns_record_t *dnsrec, unsigned char **buf,
+                             size_t *buf_len);
 /*! @} */
 
 /* ---- PRIVATE BELOW ----- */
-ares_bool_t   ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);
-ares_bool_t   ares_dns_rcode_isvalid(ares_dns_rcode_t rcode);
-ares_bool_t   ares_dns_flags_arevalid(unsigned short flags);
-ares_bool_t   ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
-                                        ares_bool_t         is_query);
-ares_bool_t   ares_dns_class_isvalid(ares_dns_class_t qclass,
-                                     ares_bool_t      is_query);
-ares_bool_t   ares_dns_section_isvalid(ares_dns_section_t sect);
+ares_bool_t ares_dns_rec_type_allow_name_compression(ares_dns_rec_type_t type);
+ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);
+ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode);
+ares_bool_t ares_dns_flags_arevalid(unsigned short flags);
+ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
+                                      ares_bool_t         is_query);
+ares_bool_t ares_dns_class_isvalid(ares_dns_class_t qclass,
+                                   ares_bool_t      is_query);
+ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect);
 ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
                                       ares_dns_rr_key_t key, char *val);
 ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,

@@ -188,15 +188,17 @@ TEST_F(LibraryTest, Mkquery) {
 TEST_F(LibraryTest, CreateQuery) {
   byte* p;
   int len;
+  // This is hard to really test with escaping since DNS names don't allow
+  // bad characters.  So we'll escape good characters.
   EXPECT_EQ(ARES_SUCCESS,
-            ares_create_query("exam\\@le.com", C_IN, T_A, 0x1234, 0,
+            ares_create_query("ex\\097m\\ple.com", C_IN, T_A, 0x1234, 0,
                               &p, &len, 0));
   std::vector<byte> data(p, p + len);
   ares_free_string(p);
 
   std::string actual = PacketToString(data);
   DNSPacket pkt;
-  pkt.set_qid(0x1234).add_question(new DNSQuestion("exam@le.com", T_A));
+  pkt.set_qid(0x1234).add_question(new DNSQuestion("example.com", T_A));
   std::string expected = PacketToString(pkt.data());
   EXPECT_EQ(expected, actual);
 }

@@ -50,7 +50,7 @@ static ares_status_t ares_dns_parse_and_set_dns_name(ares__buf_t   *buf,
   ares_status_t status;
   char         *name = NULL;
 
-  status = ares__buf_parse_dns_name(buf, &name, is_hostname);
+  status = ares__dns_name_parse(buf, &name, is_hostname);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -773,7 +773,7 @@ static ares_status_t ares_dns_parse_qd(ares__buf_t       *buf,
    */
 
   /* Name */
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
+  status = ares__dns_name_parse(buf, &name, ARES_FALSE);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -845,7 +845,7 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
    */
 
   /* Name */
-  status = ares__buf_parse_dns_name(buf, &name, ARES_FALSE);
+  status = ares__dns_name_parse(buf, &name, ARES_FALSE);
   if (status != ARES_SUCCESS) {
     goto done;
   }

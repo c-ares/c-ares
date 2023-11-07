@@ -414,6 +414,48 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
   return ARES_SUCCESS;
 }
 
+ares_status_t ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
+                                     ares_dns_section_t sect, size_t idx)
+{
+  ares_dns_rr_t *rr_ptr = NULL;
+  size_t        *rr_len = NULL;
+  size_t         cnt_after;
+
+  if (dnsrec == NULL || !ares_dns_section_isvalid(sect)) {
+    return ARES_EFORMERR;
+  }
+
+  switch (sect) {
+    case ARES_SECTION_ANSWER:
+      rr_ptr = dnsrec->an;
+      rr_len = &dnsrec->ancount;
+      break;
+    case ARES_SECTION_AUTHORITY:
+      rr_ptr = dnsrec->ns;
+      rr_len = &dnsrec->nscount;
+      break;
+    case ARES_SECTION_ADDITIONAL:
+      rr_ptr = dnsrec->ar;
+      rr_len = &dnsrec->arcount;
+      break;
+  }
+
+  if (idx >= *rr_len) {
+    return ARES_EFORMERR;
+  }
+
+  ares__dns_rr_free(&rr_ptr[idx]);
+
+  cnt_after = *rr_len - idx - 1;
+
+  if (cnt_after) {
+    memmove(&rr_ptr[idx], &rr_ptr[idx + 1], sizeof(*rr_ptr) * cnt_after);
+  }
+
+  (*rr_len)--;
+  return ARES_SUCCESS;
+}
+
 ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
                                       ares_dns_section_t sect, size_t idx)
 {

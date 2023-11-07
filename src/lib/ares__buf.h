@@ -90,6 +90,37 @@ ares_status_t  ares__buf_append(ares__buf_t *buf, const unsigned char *data,
  */
 ares_status_t  ares__buf_append_byte(ares__buf_t *buf, unsigned char byte);
 
+/*! Append a 16bit Big Endian number to the buffer.
+ *
+ *  \param[in]  buf     Initialized buffer object
+ *  \param[out] u16     16bit integer
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+ares_status_t  ares__buf_append_be16(ares__buf_t *buf, unsigned short u16);
+
+/*! Append a 32bit Big Endian number to the buffer.
+ *
+ *  \param[in]  buf     Initialized buffer object
+ *  \param[out] u32     32bit integer
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+ares_status_t  ares__buf_append_be32(ares__buf_t *buf, unsigned int u32);
+
+/*! Sets the current buffer length.  This *may* be used if there is a need to
+ *  override a prior position in the buffer, such as if there is a length
+ *  prefix that isn't easily predictable, and you must go back and overwrite
+ *  that position.
+ *
+ *  Only valid on non-const buffers.  Length provided must not exceed current
+ *  allocated buffer size, but otherwise there are very few protections on
+ *  this function.  Use cautiously.
+ *
+ *  \param[in]  buf  Initialized buffer object
+ *  \param[in]  len  Length to set
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+ares_status_t  ares__buf_set_length(ares__buf_t *buf, size_t len);
+
 
 /*! Start a dynamic append operation that returns a buffer suitable for
  *  writing.  A desired minimum length is passed in, and the actual allocated
@@ -391,24 +422,6 @@ ares_status_t        ares__buf_set_position(ares__buf_t *buf, size_t idx);
  *  \return index of current position
  */
 size_t               ares__buf_get_position(const ares__buf_t *buf);
-
-
-/*! Parse a compressed DNS name as defined in RFC1035 starting at the current
- *  offset within the buffer.
- *
- *  It is assumed that either a const buffer is being used, or before
- *  the message processing was started that ares__buf_reclaim() was called.
- *
- *  \param[in]  buf        Initialized buffer object
- *  \param[out] name       Pointer passed by reference to be filled in with
- *                         allocated string of the parsed name that must be
- *                         ares_free()'d by the caller.
- *  \param[in] is_hostname if ARES_TRUE, will validate the character set for
- *                         a valid hostname or will return error.
- *  \return ARES_SUCCESS on success
- */
-ares_status_t        ares__buf_parse_dns_name(ares__buf_t *buf, char **name,
-                                              ares_bool_t is_hostname);
 
 /*! Parse a character-string as defined in RFC1035, as a null-terminated
  *  string.
