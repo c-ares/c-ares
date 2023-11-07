@@ -89,8 +89,8 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_SRV:
     case ARES_REC_TYPE_NAPTR:
     case ARES_REC_TYPE_OPT:
-#if 0
     case ARES_REC_TYPE_TLSA:
+#if 0
     case ARES_REC_TYPE_SVBC:
     case ARES_REC_TYPE_HTTPS:
 #endif
@@ -193,9 +193,9 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
       return "NAPTR";
     case ARES_REC_TYPE_OPT:
       return "OPT";
-#if 0
     case ARES_REC_TYPE_TLSA:
       return "TLSA";
+#if 0
     case ARES_REC_TYPE_SVBC:
       return "SVBC";
     case ARES_REC_TYPE_HTTPS:
@@ -343,6 +343,18 @@ const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key)
     case ARES_RR_OPT_FLAGS:
       return "FLAGS";
 
+    case ARES_RR_TLSA_CERT_USAGE:
+      return "CERT_USAGE";
+
+    case ARES_RR_TLSA_SELECTOR:
+      return "SELECTOR";
+
+    case ARES_RR_TLSA_MATCH:
+      return "MATCH";
+
+    case ARES_RR_TLSA_DATA:
+      return "DATA";
+
     case ARES_RR_URI_PRIORITY:
       return "PRIORITY";
 
@@ -419,9 +431,13 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
 
     case ARES_RR_OPT_EXT_RCODE:
     case ARES_RR_OPT_VERSION:
+    case ARES_RR_TLSA_CERT_USAGE:
+    case ARES_RR_TLSA_SELECTOR:
+    case ARES_RR_TLSA_MATCH:
     case ARES_RR_CAA_CRITICAL:
       return ARES_DATATYPE_U8;
 
+    case ARES_RR_TLSA_DATA:
     case ARES_RR_CAA_VALUE:
     case ARES_RR_TXT_DATA:
     case ARES_RR_RAW_RR_DATA:
@@ -457,6 +473,10 @@ static const ares_dns_rr_key_t rr_opt_keys[]    = { ARES_RR_OPT_UDP_SIZE,
                                                     ARES_RR_OPT_EXT_RCODE,
                                                     ARES_RR_OPT_VERSION,
                                                     ARES_RR_OPT_FLAGS };
+static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
+                                                    ARES_RR_TLSA_SELECTOR,
+                                                    ARES_RR_TLSA_MATCH,
+                                                    ARES_RR_TLSA_DATA };
 static const ares_dns_rr_key_t rr_uri_keys[]    = { ARES_RR_URI_PRIORITY,
                                                     ARES_RR_URI_WEIGHT,
                                                     ARES_RR_URI_TARGET };
@@ -512,10 +532,10 @@ const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_OPT:
       *cnt = sizeof(rr_opt_keys) / sizeof(*rr_opt_keys);
       return rr_opt_keys;
-#if 0
     case ARES_REC_TYPE_TLSA:
       *cnt = sizeof(rr_tlsa_keys) / sizeof(*rr_tlsa_keys);
       return rr_tlsa_keys;
+#if 0
     case ARES_REC_TYPE_SVBC:
       *cnt = sizeof(rr_svbc_keys) / sizeof(*rr_svbc_keys);
       return rr_svbc_keys;
