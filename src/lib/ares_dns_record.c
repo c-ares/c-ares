@@ -417,9 +417,9 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
 ares_status_t ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
                                      ares_dns_section_t sect, size_t idx)
 {
-  ares_dns_rr_t  *rr_ptr = NULL;
-  size_t         *rr_len = NULL;
-  size_t          cnt_after;
+  ares_dns_rr_t *rr_ptr = NULL;
+  size_t        *rr_len = NULL;
+  size_t         cnt_after;
 
   if (dnsrec == NULL || !ares_dns_section_isvalid(sect)) {
     return ARES_EFORMERR;
@@ -449,7 +449,7 @@ ares_status_t ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
   cnt_after = *rr_len - idx - 1;
 
   if (cnt_after) {
-    memmove(&rr_ptr[idx], &rr_ptr[idx+1], sizeof(*rr_ptr) * cnt_after);
+    memmove(&rr_ptr[idx], &rr_ptr[idx + 1], sizeof(*rr_ptr) * cnt_after);
   }
 
   (*rr_len)--;

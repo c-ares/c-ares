@@ -495,17 +495,17 @@ static ares_status_t ares_dns_write_rr_opt(ares__buf_t         *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t      **namelist)
 {
-  size_t               len = ares__buf_len(buf);
-  ares_status_t        status;
-  unsigned int         ttl      = 0;
+  size_t        len = ares__buf_len(buf);
+  ares_status_t status;
+  unsigned int  ttl = 0;
 
   (void)namelist;
 
   /* We need to go back and overwrite the class and ttl that were emitted as
    * the OPT record overloads them for its own use (yes, very strange!) */
   status = ares__buf_set_length(buf, len - 2 /* RDLENGTH */
-                                         - 4 /* TTL */
-                                         - 2 /* CLASS */);
+                                       - 4   /* TTL */
+                                       - 2 /* CLASS */);
   if (status != ARES_SUCCESS) {
     return status;
   }

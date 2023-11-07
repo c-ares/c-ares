@@ -136,7 +136,7 @@ typedef struct {
 static ares_status_t ares_parse_dns_name_escape(const char *ptr, size_t ptr_len,
                                                 ares_bool_t validate_hostname,
                                                 unsigned char *out,
-                                                size_t *consumed_chars)
+                                                size_t        *consumed_chars)
 {
   /* Must have at least 1 more character */
   if (ptr_len < 2) {
@@ -148,8 +148,9 @@ static ares_status_t ares_parse_dns_name_escape(const char *ptr, size_t ptr_len,
     int  i;
     char num[4];
 
-    if (ptr_len < 4)
+    if (ptr_len < 4) {
       return ARES_EBADNAME;
+    }
 
     /* Must all be digits */
     if (!isdigit(ptr[2]) || !isdigit(ptr[3])) {
@@ -160,14 +161,16 @@ static ares_status_t ares_parse_dns_name_escape(const char *ptr, size_t ptr_len,
     num[1] = ptr[2];
     num[2] = ptr[3];
     num[3] = 0;
-    i = atoi(num);
+    i      = atoi(num);
 
     /* Out of range */
-    if (i > 255)
+    if (i > 255) {
       return ARES_EBADNAME;
+    }
 
-    if (validate_hostname && !ares__is_hostnamech((unsigned char) i))
+    if (validate_hostname && !ares__is_hostnamech((unsigned char)i)) {
       return ARES_EBADNAME;
+    }
 
     *out            = (unsigned char)i;
     *consumed_chars = 3;
@@ -175,8 +178,9 @@ static ares_status_t ares_parse_dns_name_escape(const char *ptr, size_t ptr_len,
   }
 
   /* We can just output the character */
-  if (validate_hostname && !ares__is_hostnamech(ptr[1]))
+  if (validate_hostname && !ares__is_hostnamech(ptr[1])) {
     return ARES_EBADNAME;
+  }
 
   *out            = (unsigned char)ptr[1];
   *consumed_chars = 1;
@@ -184,20 +188,21 @@ static ares_status_t ares_parse_dns_name_escape(const char *ptr, size_t ptr_len,
 }
 
 static ares_status_t ares_split_dns_name(ares_dns_label_t **labels_out,
-                                         size_t *num_labels_out,
-                                         ares_bool_t validate_hostname,
-                                         const char *name)
+                                         size_t            *num_labels_out,
+                                         ares_bool_t        validate_hostname,
+                                         const char        *name)
 {
   ares_status_t     status;
-  ares_dns_label_t *labels     = NULL;
+  ares_dns_label_t *labels = NULL;
   ares_dns_label_t *label;
   size_t            num_labels = 0;
   size_t            len;
   size_t            i;
-  size_t            total_len  = 0;
+  size_t            total_len = 0;
 
-  if (name == NULL || labels_out == NULL || num_labels_out == NULL)
+  if (name == NULL || labels_out == NULL || num_labels_out == NULL) {
     return ARES_EFORMERR;
+  }
 
   len = ares_strlen(name);
 
@@ -210,7 +215,7 @@ static ares_status_t ares_split_dns_name(ares_dns_label_t **labels_out,
   }
 
   label = &labels[num_labels - 1];
-  for (i=0; i<len; i++) {
+  for (i = 0; i < len; i++) {
     size_t remaining_len = len - i;
 
     /* New label */
@@ -218,7 +223,7 @@ static ares_status_t ares_split_dns_name(ares_dns_label_t **labels_out,
       void *temp;
 
       temp = ares_realloc_zero(labels, sizeof(*labels) * num_labels,
-                               sizeof(*labels) * (num_labels+1));
+                               sizeof(*labels) * (num_labels + 1));
       if (temp == NULL) {
         status = ARES_ENOMEM;
         goto done;
@@ -237,8 +242,9 @@ static ares_status_t ares_split_dns_name(ares_dns_label_t **labels_out,
     /* Escape */
     if (name[i] == '\\') {
       size_t consumed_chars = 0;
-      status = ares_parse_dns_name_escape(name + i, remaining_len,
-        validate_hostname, &label->label[label->len++], &consumed_chars);
+      status                = ares_parse_dns_name_escape(
+        name + i, remaining_len, validate_hostname, &label->label[label->len++],
+        &consumed_chars);
       if (status != ARES_SUCCESS) {
         goto done;
       }
@@ -255,8 +261,9 @@ static ares_status_t ares_split_dns_name(ares_dns_label_t **labels_out,
   }
 
   /* Remove trailing blank label */
-  if (labels[num_labels-1].len == 0)
+  if (labels[num_labels - 1].len == 0) {
     num_labels--;
+  }
 
   /* If someone passed in "." there could have been 2 blank labels, check for
    * that */
@@ -265,7 +272,7 @@ static ares_status_t ares_split_dns_name(ares_dns_label_t **labels_out,
   }
 
   /* Scan to make sure there are no blank labels */
-  for (i=0; i<num_labels; i++) {
+  for (i = 0; i < num_labels; i++) {
     if (labels[i].len == 0) {
       status = ARES_EBADNAME;
       goto done;
@@ -281,23 +288,23 @@ static ares_status_t ares_split_dns_name(ares_dns_label_t **labels_out,
 
   *labels_out     = labels;
   *num_labels_out = num_labels;
-  status = ARES_SUCCESS;
+  status          = ARES_SUCCESS;
 
 done:
-  if (status != ARES_SUCCESS)
+  if (status != ARES_SUCCESS) {
     ares_free(labels);
+  }
   return status;
 }
-
 
 ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
                                    ares_bool_t validate_hostname,
                                    const char *name)
 {
-  const ares_nameoffset_t *off      = NULL;
+  const ares_nameoffset_t *off = NULL;
   size_t                   name_len;
-  size_t                   pos      = ares__buf_get_position(buf);
-  ares_dns_label_t        *labels   = NULL;
+  size_t                   pos    = ares__buf_get_position(buf);
+  ares_dns_label_t        *labels = NULL;
   char                     name_copy[512];
   size_t                   num_labels = 0;
   ares_status_t            status;
@@ -324,15 +331,15 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
   if (off == NULL || off->name_len != name_len) {
     size_t i;
 
-    status = ares_split_dns_name(&labels, &num_labels, validate_hostname,
-                                 name_copy);
+    status =
+      ares_split_dns_name(&labels, &num_labels, validate_hostname, name_copy);
     if (status != ARES_SUCCESS) {
       goto done;
     }
 
     for (i = 0; i < num_labels; i++) {
-      status = ares__buf_append_byte(buf,
-        (unsigned char)(labels[i].len & 0xFF));
+      status =
+        ares__buf_append_byte(buf, (unsigned char)(labels[i].len & 0xFF));
       if (status != ARES_SUCCESS) {
         goto done;
       }
@@ -354,9 +361,9 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
 
   /* Output name compression offset jump */
   if (off != NULL) {
-    unsigned short u16 = (unsigned short)0xC000 |
-                         (unsigned short)(off->idx & 0x3FFF);
-    status             = ares__buf_append_be16(buf, u16);
+    unsigned short u16 =
+      (unsigned short)0xC000 | (unsigned short)(off->idx & 0x3FFF);
+    status = ares__buf_append_be16(buf, u16);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -364,7 +371,8 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
 
   /* Store pointer for future jumps as long as its not an exact match for
    * a prior entry */
-  if (list != NULL && off != NULL && off->name_len != name_len && name_len > 0) {
+  if (list != NULL && off != NULL && off->name_len != name_len &&
+      name_len > 0) {
     status = ares__nameoffset_create(list, name /* not truncated copy! */, pos);
     if (status != ARES_SUCCESS) {
       goto done;
@@ -377,7 +385,6 @@ done:
   ares_free(labels);
   return status;
 }
-
 
 /* Reserved characters for names that need to be escaped */
 static ares_bool_t is_reservedch(int ch)
@@ -399,11 +406,9 @@ static ares_bool_t is_reservedch(int ch)
   return ARES_FALSE;
 }
 
-
 static ares_status_t ares__fetch_dnsname_into_buf(ares__buf_t *buf,
-                                                  ares__buf_t *dest,
-                                                  size_t       len,
-                                                  ares_bool_t  is_hostname)
+                                                  ares__buf_t *dest, size_t len,
+                                                  ares_bool_t is_hostname)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares__buf_peek(buf, &remaining_len);
@@ -608,4 +613,3 @@ fail:
   ares__buf_destroy(namebuf);
   return status;
 }
-

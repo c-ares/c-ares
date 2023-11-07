@@ -275,7 +275,7 @@ ares_status_t ares__buf_append_be16(ares__buf_t *buf, unsigned short u16)
 {
   ares_status_t status;
 
-  status = ares__buf_append_byte(buf, (unsigned char )((u16 >> 8) & 0xff));
+  status = ares__buf_append_byte(buf, (unsigned char)((u16 >> 8) & 0xff));
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -614,7 +614,6 @@ ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
 
   return ares__buf_consume(buf, len);
 }
-
 
 size_t ares__buf_consume_whitespace(ares__buf_t *buf,
                                     ares_bool_t  include_linefeed)
