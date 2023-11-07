@@ -562,7 +562,6 @@ static ares_status_t rewrite_without_edns(struct query *query)
   ares_status_t      status;
   size_t             i;
   ares_bool_t        found_opt_rr = ARES_FALSE;
-  ares__buf_t       *buf    = NULL;
   unsigned char     *msg    = NULL;
   size_t             msglen = 0;
 
@@ -594,35 +593,12 @@ static ares_status_t rewrite_without_edns(struct query *query)
     goto done;
   }
 
-  buf = ares__buf_create();
-  if (buf == NULL) {
-    status = ARES_ENOMEM;
-    goto done;
-  }
-
-  /* TCP Length (probably need to get rid of this concept) */
-  status = ares__buf_append_be16(buf, (unsigned short)msglen);
-  if (status != ARES_SUCCESS) {
-    status = ARES_ENOMEM;
-    goto done;
-  }
-
-  status = ares__buf_append(buf, msg, msglen);
-  if (status != ARES_SUCCESS) {
-    status = ARES_ENOMEM;
-    goto done;
-  }
-
-  ares_free(query->tcpbuf);
-  query->tcpbuf   = ares__buf_finish_bin(buf, &query->tcplen);
-  buf             = NULL;
-  query->qbuf     = query->tcpbuf + 2;
-  query->qlen     = query->tcplen - 2;
+  ares_free(query->qbuf);
+  query->qbuf = msg;
+  query->qlen = msglen;
 
 done:
   ares_dns_record_destroy(dnsrec);
-  ares_free(msg);
-  ares__buf_destroy(buf);
   return status;
 }
 
@@ -811,6 +787,17 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
   return NULL;
 }
 
+static ares_status_t ares__append_tcpbuf(struct server_state *server,
+                                         struct query *query)
+{
+  ares_status_t status;
+
+  status = ares__buf_append_be16(server->tcp_send, (unsigned short)query->qlen);
+  if (status != ARES_SUCCESS)
+    return status;
+  return ares__buf_append(server->tcp_send, query->qbuf, query->qlen);
+}
+
 ares_status_t ares__send_query(struct query *query, struct timeval *now)
 {
   ares_channel_t           *channel = query->channel;
@@ -862,7 +849,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
 
     prior_len = ares__buf_len(server->tcp_send);
 
-    status = ares__buf_append(server->tcp_send, query->tcpbuf, query->tcplen);
+    status = ares__append_tcpbuf(server, query);
     if (status != ARES_SUCCESS) {
       end_query(channel, query, status, NULL, 0);
 
@@ -1120,7 +1107,7 @@ void ares__free_query(struct query *query)
   query->callback = NULL;
   query->arg      = NULL;
   /* Deallocate the memory associated with the query */
-  ares_free(query->tcpbuf);
+  ares_free(query->qbuf);
 
   ares_free(query);
 }

@@ -215,13 +215,10 @@ struct query {
   /* connection handle query is associated with */
   struct server_connection *conn;
 
-  /* Query buf with length at beginning, for TCP transmission */
-  unsigned char            *tcpbuf;
-  size_t                    tcplen;
-
-  /* Arguments passed to ares_send() (qbuf points into tcpbuf) */
-  const unsigned char      *qbuf;
+  /* Arguments passed to ares_send() */
+  unsigned char            *qbuf;
   size_t                    qlen;
+
   ares_callback             callback;
   void                     *arg;
 

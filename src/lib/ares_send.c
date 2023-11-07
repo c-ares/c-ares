@@ -62,8 +62,8 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
   memset(query, 0, sizeof(*query));
 
   query->channel = channel;
-  query->tcpbuf  = ares_malloc(qlen + 2);
-  if (!query->tcpbuf) {
+  query->qbuf    = ares_malloc(qlen);
+  if (!query->qbuf) {
     ares_free(query);
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     return ARES_ENOMEM;
@@ -74,17 +74,10 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
   query->timeout.tv_sec  = 0;
   query->timeout.tv_usec = 0;
 
-  /* Form the TCP query buffer by prepending qlen (as two
-   * network-order bytes) to qbuf.
-   */
-  query->tcpbuf[0] = (unsigned char)((qlen >> 8) & 0xff);
-  query->tcpbuf[1] = (unsigned char)(qlen & 0xff);
-  memcpy(query->tcpbuf + 2, qbuf, qlen);
-  query->tcplen = qlen + 2;
+  memcpy(query->qbuf, qbuf, qlen);
+  query->qlen     = qlen;
 
   /* Fill in query arguments. */
-  query->qbuf     = query->tcpbuf + 2;
-  query->qlen     = qlen;
   query->callback = callback;
   query->arg      = arg;
 
