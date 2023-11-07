@@ -463,6 +463,211 @@ TEST(Misc, OnionDomain) {
   EXPECT_EQ(1, ares__is_onion_domain("YES.ONION."));
 }
 
+TEST_F(LibraryTest, DNSRecord) {
+  ares_dns_record_t   *dnsrec = NULL;
+  ares_dns_rr_t       *rr     = NULL;
+  struct in_addr       addr;
+  struct ares_in6_addr addr6;
+  unsigned char       *msg    = NULL;
+  size_t               msglen = 0;
+
+  size_t               qdcount = 0;
+  size_t               ancount = 0;
+  size_t               nscount = 0;
+  size_t               arcount = 0;
+
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_create(&dnsrec, 0x1234,
+      ARES_FLAG_QR|ARES_FLAG_AA|ARES_FLAG_RD|ARES_FLAG_RA,
+      ARES_OPCODE_QUERY, ARES_RCODE_NOERROR));
+
+  /* == Question == */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_query_add(dnsrec, "example.com",
+      ARES_REC_TYPE_ANY,
+      ARES_CLASS_IN));
+
+  /* == Answer == */
+  /* A */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+      ARES_REC_TYPE_A, ARES_CLASS_IN, 300));
+  EXPECT_LT(0, ares_inet_net_pton(AF_INET, "1.1.1.1", &addr, sizeof(addr)));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_addr(rr, ARES_RR_A_ADDR, &addr));
+  /* AAAA */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+      ARES_REC_TYPE_AAAA, ARES_CLASS_IN, 300));
+  EXPECT_LT(0, ares_inet_net_pton(AF_INET6, "2600::4", &addr6, sizeof(addr6)));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_addr6(rr, ARES_RR_AAAA_ADDR, &addr6));
+  /* MX */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+      ARES_REC_TYPE_MX, ARES_CLASS_IN, 3600));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_MX_PREFERENCE, 10));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_MX_EXCHANGE, "mail.example.com"));
+  /* CNAME */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+      ARES_REC_TYPE_CNAME, ARES_CLASS_IN, 3600));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_CNAME_CNAME, "b.example.com"));
+  /* TXT */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+      ARES_REC_TYPE_TXT, ARES_CLASS_IN, 3600));
+  const char txt[] = "blah=here blah=there anywhere";
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_TXT_DATA, (unsigned char *)txt,
+      sizeof(txt)));
+
+  /* == Authority == */
+  /* NS */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_AUTHORITY, "example.com",
+      ARES_REC_TYPE_NS, ARES_CLASS_IN, 38400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_NS_NSDNAME, "ns1.example.com"));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_AUTHORITY, "example.com",
+      ARES_REC_TYPE_NS, ARES_CLASS_IN, 38400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_NS_NSDNAME, "ns2.example.com"));
+  /* SOA */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_AUTHORITY, "example.com",
+      ARES_REC_TYPE_SOA, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_SOA_MNAME, "ns1.example.com"));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_SOA_RNAME, "tech\\.support.example.com"));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_SOA_SERIAL, 2023110701));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_SOA_REFRESH, 28800));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_SOA_RETRY, 7200));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_SOA_EXPIRE, 604800));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_SOA_MINIMUM, 86400));
+
+  /* == Additional */
+  /* OPT */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "",
+      ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, 1280));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_OPT_EXT_RCODE, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_OPT_FLAGS, 0));
+  /* PTR -- doesn't make sense, but ok */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "example.com",
+      ARES_REC_TYPE_PTR, ARES_CLASS_IN, 300));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_PTR_DNAME, "b.example.com"));
+  /* HINFO */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "example.com",
+      ARES_REC_TYPE_HINFO, ARES_CLASS_IN, 300));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_HINFO_CPU, "Virtual"));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_HINFO_OS, "Linux"));
+  /* SRV */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "_ldap.example.com", ARES_REC_TYPE_SRV, ARES_CLASS_IN, 300));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_SRV_PRIORITY, 100));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_SRV_WEIGHT, 1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_SRV_PORT, 389));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_SRV_TARGET, "ldap.example.com"));
+  /* URI */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "_ftp._tcp.example.com", ARES_REC_TYPE_URI, ARES_CLASS_IN, 3600));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_URI_PRIORITY, 10));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_URI_WEIGHT, 1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_URI_TARGET, "ftp://ftp.example.com/public"));
+  /* CAA */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_CAA, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_CAA_CRITICAL, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_CAA_TAG, "issue"));
+  unsigned char caa[] = "letsencrypt.org";
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_CAA_VALUE, caa, sizeof(caa)));
+  /* NAPTR */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_NAPTR, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_NAPTR_ORDER, 100));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_NAPTR_PREFERENCE, 10));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_NAPTR_FLAGS, "S"));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_NAPTR_SERVICES, "SIP+D2U"));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_NAPTR_REGEXP,
+      "!^.*$!sip:customer-service@example.com!"));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_NAPTR_REPLACEMENT,
+      "_sip._udp.example.com."));
+  /* RAW_RR */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "",
+      ARES_REC_TYPE_RAW_RR, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_RAW_RR_TYPE, 65432));
+  unsigned char data[] = { 0x00 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_RAW_RR_DATA, data, sizeof(data)));
+
+  qdcount = ares_dns_record_query_cnt(dnsrec);
+  ancount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER);
+  nscount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY);
+  arcount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL);
+
+  /* Write */
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+  ares_dns_record_destroy(dnsrec); dnsrec = NULL;
+
+  /* Parse */
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, 0, &dnsrec));
+  ares_free(msg); msg = NULL;
+
+  /* Re-write */
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+
+  EXPECT_EQ(qdcount, ares_dns_record_query_cnt(dnsrec));
+  EXPECT_EQ(ancount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER));
+  EXPECT_EQ(nscount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
+  EXPECT_EQ(arcount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
+  ares_dns_record_destroy(dnsrec);
+  ares_free(msg);
+}
+
 TEST_F(LibraryTest, CatDomain) {
   char *s;
 
