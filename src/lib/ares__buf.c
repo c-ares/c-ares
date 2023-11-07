@@ -902,5 +902,5 @@ ares_status_t ares__buf_hexdump(ares__buf_t *buf, const unsigned char *data,
     ares__buf_append_byte(buf, '\n');
   }
 
-  return status;
+  return ARES_SUCCESS;
 }
