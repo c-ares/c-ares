@@ -655,6 +655,7 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS, ares__buf_hexdump(hexdump, msg, msglen));
   char *hexdata = ares__buf_finish_str(hexdump, NULL);
   //printf("HEXDUMP\n%s", hexdata);
+  ares_free(hexdata);
   ares_dns_record_destroy(dnsrec); dnsrec = NULL;
 
   /* Parse */
