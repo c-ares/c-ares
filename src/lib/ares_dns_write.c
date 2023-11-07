@@ -54,7 +54,7 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   }
 
   /* OPCODE */
-  u16 |= (unsigned short)dnsrec->opcode << 11;
+  u16 |= ((unsigned short)dnsrec->opcode) << 11;
 
   /* AA */
   if (dnsrec->flags & ARES_FLAG_AA) {
