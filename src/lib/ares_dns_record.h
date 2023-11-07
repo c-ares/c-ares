@@ -403,11 +403,21 @@ ares_status_t     ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
  *  \param[in]  dnsrec   Initialized record object
  *  \param[in]  sect     Section for resource record
  *  \param[in]  idx      Index of resource record in section
- *  \param NULL on misuse, otherwise a pointer to the resource record
+ *  \return NULL on misuse, otherwise a pointer to the resource record
  */
 ares_dns_rr_t    *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
                                          ares_dns_section_t sect, size_t idx);
 
+
+/*! Remove the resource record based on the section and index
+ *
+ *  \param[in]  dnsrec   Initialized record object
+ *  \param[in]  sect     Section for resource record
+ *  \param[in]  idx      Index of resource record in section
+ *  \return ARES_SUCCESS on success, otherwise an error code.
+ */
+ares_status_t     ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
+                                         ares_dns_section_t sect, size_t idx);
 
 /*! Retrieve a list of Resource Record keys that can be set or retrieved for
  *  the Resource record type.

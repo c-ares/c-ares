@@ -556,6 +556,76 @@ static void process_timeouts(ares_channel_t *channel, struct timeval *now)
   }
 }
 
+static ares_status_t rewrite_without_edns(struct query *query)
+{
+  ares_dns_record_t *dnsrec = NULL;
+  ares_status_t      status;
+  size_t             i;
+  ares_bool_t        found_opt_rr = ARES_FALSE;
+  ares__buf_t       *buf    = NULL;
+  unsigned char     *msg    = NULL;
+  size_t             msglen = 0;
+
+  /* Parse existing query */
+  status = ares_dns_parse(query->qbuf, query->qlen, 0, &dnsrec);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* Find and remove the OPT RR record */
+  for (i=0; i<ares_dns_record_rr_cnt(dnsrec,ARES_SECTION_ADDITIONAL); i++) {
+    ares_dns_rr_t *rr;
+    rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, i);
+    if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
+      ares_dns_record_rr_del(dnsrec, ARES_SECTION_ADDITIONAL, i);
+      found_opt_rr = ARES_TRUE;
+      break;
+    }
+  }
+
+  if (!found_opt_rr) {
+    status = ARES_EFORMERR;
+    goto done;
+  }
+
+  /* Rewrite the DNS message */
+  status = ares_dns_write(dnsrec, &msg, &msglen);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  buf = ares__buf_create();
+  if (buf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  /* TCP Length (probably need to get rid of this concept) */
+  status = ares__buf_append_be16(buf, (unsigned short)msglen);
+  if (status != ARES_SUCCESS) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  status = ares__buf_append(buf, msg, msglen);
+  if (status != ARES_SUCCESS) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  ares_free(query->tcpbuf);
+  query->tcpbuf   = ares__buf_finish_bin(buf, &query->tcplen);
+  buf             = NULL;
+  query->qbuf     = query->tcpbuf + 2;
+  query->qlen     = query->tcplen - 2;
+
+done:
+  ares_dns_record_destroy(dnsrec);
+  ares_free(msg);
+  ares__buf_destroy(buf);
+  return status;
+}
+
 /* Handle an answer from a server. This must NEVER cleanup the
  * server connection! Return something other than ARES_SUCCESS to cause
  * the connection to be terminated after this call. */
@@ -614,15 +684,10 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     packetsz = channel->ednspsz;
     if (ares_dns_record_get_rcode(dnsrec) == ARES_RCODE_FORMAT_ERROR &&
         !has_opt_rr(dnsrec)) {
-      size_t qlen       = (query->tcplen - 2) - EDNSFIXEDSZ;
-      channel->flags   ^= ARES_FLAG_EDNS;
-      query->tcplen    -= EDNSFIXEDSZ;
-      query->qlen      -= EDNSFIXEDSZ;
-      query->tcpbuf[0]  = (unsigned char)((qlen >> 8) & 0xff);
-      query->tcpbuf[1]  = (unsigned char)(qlen & 0xff);
-      DNS_HEADER_SET_ARCOUNT(query->tcpbuf + 2, 0);
-      query->tcpbuf = ares_realloc(query->tcpbuf, query->tcplen);
-      query->qbuf   = query->tcpbuf + 2;
+      status = rewrite_without_edns(query);
+      if (status != ARES_SUCCESS)
+        goto cleanup;
+
       ares__send_query(query, now);
       status = ARES_SUCCESS;
       goto cleanup;

@@ -189,9 +189,9 @@ TEST_F(LibraryTest, CreateQuery) {
   byte* p;
   int len;
   // This is hard to really test with escaping since DNS names don't allow
-  // bad characters.
+  // bad characters.  So we'll escape good characters.
   EXPECT_EQ(ARES_SUCCESS,
-            ares_create_query("exam\\ple.com", C_IN, T_A, 0x1234, 0,
+            ares_create_query("ex\\097m\\ple.com", C_IN, T_A, 0x1234, 0,
                               &p, &len, 0));
   std::vector<byte> data(p, p + len);
   ares_free_string(p);
