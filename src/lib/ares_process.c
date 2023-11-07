@@ -656,7 +656,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    * protocol extension is not understood by the responder. We must retry the
    * query without EDNS enabled. */
   if (ares_dns_record_get_rcode(rdnsrec) == ARES_RCODE_FORMAT_ERROR &&
-    has_opt_rr(qdnsrec) && !has_opt_rr(rdnsrec)) {
+      has_opt_rr(qdnsrec) && !has_opt_rr(rdnsrec)) {
     status = rewrite_without_edns(qdnsrec, query);
     if (status != ARES_SUCCESS) {
       end_query(channel, query, status, NULL, 0);
