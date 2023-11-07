@@ -60,7 +60,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
 static void          handle_conn_error(struct server_connection *conn,
                                        ares_bool_t               critical_failure);
 
-static ares_bool_t   same_questions(const unsigned char *qbuf, size_t qlen,
+static ares_bool_t   same_questions(const ares_dns_record_t *qrec,
                                     const ares_dns_record_t *arec);
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
@@ -556,27 +556,21 @@ static void process_timeouts(ares_channel_t *channel, struct timeval *now)
   }
 }
 
-static ares_status_t rewrite_without_edns(struct query *query)
+static ares_status_t rewrite_without_edns(ares_dns_record_t *qdnsrec,
+                                          struct query *query)
 {
-  ares_dns_record_t *dnsrec = NULL;
   ares_status_t      status;
   size_t             i;
   ares_bool_t        found_opt_rr = ARES_FALSE;
   unsigned char     *msg    = NULL;
   size_t             msglen = 0;
 
-  /* Parse existing query */
-  status = ares_dns_parse(query->qbuf, query->qlen, 0, &dnsrec);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
   /* Find and remove the OPT RR record */
-  for (i=0; i<ares_dns_record_rr_cnt(dnsrec,ARES_SECTION_ADDITIONAL); i++) {
+  for (i=0; i<ares_dns_record_rr_cnt(qdnsrec, ARES_SECTION_ADDITIONAL); i++) {
     ares_dns_rr_t *rr;
-    rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, i);
+    rr = ares_dns_record_rr_get(qdnsrec, ARES_SECTION_ADDITIONAL, i);
     if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
-      ares_dns_record_rr_del(dnsrec, ARES_SECTION_ADDITIONAL, i);
+      ares_dns_record_rr_del(qdnsrec, ARES_SECTION_ADDITIONAL, i);
       found_opt_rr = ARES_TRUE;
       break;
     }
@@ -588,7 +582,7 @@ static ares_status_t rewrite_without_edns(struct query *query)
   }
 
   /* Rewrite the DNS message */
-  status = ares_dns_write(dnsrec, &msg, &msglen);
+  status = ares_dns_write(qdnsrec, &msg, &msglen);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -598,7 +592,6 @@ static ares_status_t rewrite_without_edns(struct query *query)
   query->qlen = msglen;
 
 done:
-  ares_dns_record_destroy(dnsrec);
   return status;
 }
 
@@ -610,16 +603,16 @@ static ares_status_t process_answer(ares_channel_t      *channel,
                                     struct server_connection *conn,
                                     ares_bool_t tcp, struct timeval *now)
 {
-  size_t               packetsz;
   struct query        *query;
   /* Cache these as once ares__send_query() gets called, it may end up
    * invalidating the connection all-together */
-  struct server_state *server = conn->server;
-  ares_dns_record_t   *dnsrec = NULL;
+  struct server_state *server  = conn->server;
+  ares_dns_record_t   *rdnsrec = NULL;
+  ares_dns_record_t   *qdnsrec = NULL;
   ares_status_t        status;
 
   /* Parse the response */
-  status = ares_dns_parse(abuf, alen, 0, &dnsrec);
+  status = ares_dns_parse(abuf, alen, 0, &rdnsrec);
   if (status != ARES_SUCCESS) {
     /* Malformations are never accepted */
     status = ARES_EBADRESP;
@@ -630,16 +623,23 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    * hashed/bucketed by query id, so this lookup should be quick.
    */
   query = ares__htable_szvp_get_direct(channel->queries_by_qid,
-                                       ares_dns_record_get_id(dnsrec));
+                                       ares_dns_record_get_id(rdnsrec));
   if (!query) {
     /* We may have stopped listening for this query, that's ok */
     status = ARES_SUCCESS;
     goto cleanup;
   }
 
+  /* Parse the question we sent as we use it to compare */
+  status = ares_dns_parse(query->qbuf, query->qlen, 0, &qdnsrec);
+  if (status != ARES_SUCCESS) {
+    end_query(channel, query, status, NULL, 0);
+    goto cleanup;
+  }
+
   /* Both the query id and the questions must be the same. We will drop any
    * replies that aren't for the same query as this is considered invalid. */
-  if (!same_questions(query->qbuf, query->qlen, dnsrec)) {
+  if (!same_questions(qdnsrec, rdnsrec)) {
     /* Possible qid conflict due to delayed response, that's ok */
     status = ARES_SUCCESS;
     goto cleanup;
@@ -652,32 +652,28 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   ares__llist_node_destroy(query->node_queries_to_conn);
   query->node_queries_to_conn = NULL;
 
-  packetsz = PACKETSZ;
   /* If we use EDNS and server answers with FORMERR without an OPT RR, the
    * protocol extension is not understood by the responder. We must retry the
    * query without EDNS enabled. */
-  if (channel->flags & ARES_FLAG_EDNS) {
-    packetsz = channel->ednspsz;
-    if (ares_dns_record_get_rcode(dnsrec) == ARES_RCODE_FORMAT_ERROR &&
-        !has_opt_rr(dnsrec)) {
-      status = rewrite_without_edns(query);
-      if (status != ARES_SUCCESS) {
-        end_query(channel, query, status, NULL, 0);
-        goto cleanup;
-      }
-
-      ares__send_query(query, now);
-      status = ARES_SUCCESS;
+  if (ares_dns_record_get_rcode(rdnsrec) == ARES_RCODE_FORMAT_ERROR &&
+    has_opt_rr(qdnsrec) && !has_opt_rr(rdnsrec)) {
+    status = rewrite_without_edns(qdnsrec, query);
+    if (status != ARES_SUCCESS) {
+      end_query(channel, query, status, NULL, 0);
       goto cleanup;
     }
+
+    ares__send_query(query, now);
+    status = ARES_SUCCESS;
+    goto cleanup;
   }
 
   /* If we got a truncated UDP packet and are not ignoring truncation,
    * don't accept the packet, and switch the query to TCP if we hadn't
    * done so already.
    */
-  if ((ares_dns_record_get_flags(dnsrec) & ARES_FLAG_TC || alen > packetsz) &&
-      !tcp && !(channel->flags & ARES_FLAG_IGNTC)) {
+  if (ares_dns_record_get_flags(rdnsrec) & ARES_FLAG_TC && !tcp &&
+      !(channel->flags & ARES_FLAG_IGNTC)) {
     if (!query->using_tcp) {
       query->using_tcp = ARES_TRUE;
       ares__send_query(query, now);
@@ -690,7 +686,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    * with SERVFAIL, NOTIMP, or REFUSED response codes.
    */
   if (!(channel->flags & ARES_FLAG_NOCHECKRESP)) {
-    ares_dns_rcode_t rcode = ares_dns_record_get_rcode(dnsrec);
+    ares_dns_rcode_t rcode = ares_dns_record_get_rcode(rdnsrec);
     if (rcode == ARES_RCODE_SERVER_FAILURE ||
         rcode == ARES_RCODE_NOT_IMPLEMENTED || rcode == ARES_RCODE_REFUSED) {
       switch (rcode) {
@@ -722,7 +718,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   status = ARES_SUCCESS;
 
 cleanup:
-  ares_dns_record_destroy(dnsrec);
+  ares_dns_record_destroy(rdnsrec);
+  ares_dns_record_destroy(qdnsrec);
   return status;
 }
 
@@ -984,16 +981,12 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
   return ARES_SUCCESS;
 }
 
-static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
+static ares_bool_t same_questions(const ares_dns_record_t *qrec,
                                   const ares_dns_record_t *arec)
 {
-  ares_dns_record_t *qrec = NULL;
   size_t             i;
   ares_bool_t        rv = ARES_FALSE;
 
-  if (ares_dns_parse(qbuf, qlen, 0, &qrec) != ARES_SUCCESS) {
-    goto done;
-  }
 
   if (ares_dns_record_query_cnt(qrec) != ares_dns_record_query_cnt(arec)) {
     goto done;
@@ -1026,7 +1019,6 @@ static ares_bool_t same_questions(const unsigned char *qbuf, size_t qlen,
   rv = ARES_TRUE;
 
 done:
-  ares_dns_record_destroy(qrec);
   return rv;
 }
 
