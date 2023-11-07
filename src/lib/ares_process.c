@@ -685,8 +685,10 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     if (ares_dns_record_get_rcode(dnsrec) == ARES_RCODE_FORMAT_ERROR &&
         !has_opt_rr(dnsrec)) {
       status = rewrite_without_edns(query);
-      if (status != ARES_SUCCESS)
+      if (status != ARES_SUCCESS) {
+        end_query(channel, query, status, NULL, 0);
         goto cleanup;
+      }
 
       ares__send_query(query, now);
       status = ARES_SUCCESS;
