@@ -37,6 +37,8 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
                                            ares__buf_t             *buf)
 {
   unsigned short u16;
+  unsigned short opcode;
+
   ares_status_t  status;
 
   /* ID */
@@ -54,7 +56,9 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   }
 
   /* OPCODE */
-  u16 |= (unsigned short)(((unsigned short)dnsrec->opcode & 0xF) << 11);
+  opcode   = (unsigned short)(dnsrec->opcode & 0xF);
+  opcode <<= 11;
+  u16     |= opcode;
 
   /* AA */
   if (dnsrec->flags & ARES_FLAG_AA) {
@@ -89,7 +93,7 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   }
 
   /* RCODE */
-  u16 |= (unsigned short)dnsrec->rcode;
+  u16 |= (unsigned short)(dnsrec->rcode & 0xF);
 
   status = ares__buf_append_be16(buf, u16);
   if (status != ARES_SUCCESS) {
