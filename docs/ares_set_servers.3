@@ -24,10 +24,10 @@ for an ares channel.
 #include <ares.h>
 
 int ares_set_servers(ares_channel_t *\fIchannel\fP,
-                     struct ares_addr_node *\fIservers\fP)
+                     const struct ares_addr_node *\fIservers\fP)
 
 int ares_set_servers_ports(ares_channel_t *\fIchannel\fP,
-                           struct ares_addr_port_node *\fIservers\fP)
+                           const struct ares_addr_port_node *\fIservers\fP)
 .fi
 .SH DESCRIPTION
 The \fBares_set_servers(3)\fP function initializes name servers configuration

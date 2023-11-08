@@ -832,7 +832,8 @@ int ares_get_servers_ports(ares_channel_t              *channel,
   return (int)status;
 }
 
-int ares_set_servers(ares_channel_t *channel, struct ares_addr_node *servers)
+int ares_set_servers(ares_channel_t              *channel,
+                     const struct ares_addr_node *servers)
 {
   ares__llist_t *slist;
   ares_status_t  status;
@@ -853,8 +854,8 @@ int ares_set_servers(ares_channel_t *channel, struct ares_addr_node *servers)
   return (int)status;
 }
 
-int ares_set_servers_ports(ares_channel_t             *channel,
-                           struct ares_addr_port_node *servers)
+int ares_set_servers_ports(ares_channel_t                   *channel,
+                           const struct ares_addr_port_node *servers)
 {
   ares__llist_t *slist;
   ares_status_t  status;

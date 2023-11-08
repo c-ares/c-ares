@@ -360,7 +360,8 @@ CARES_EXTERN const char *ares_version(int *version);
 CARES_EXTERN int         ares_init(ares_channel_t **channelptr);
 
 CARES_EXTERN int         ares_init_options(ares_channel_t     **channelptr,
-                                           struct ares_options *options, int optmask);
+                                           const struct ares_options *options,
+                                           int optmask);
 
 CARES_EXTERN int         ares_save_options(ares_channel_t      *channel,
                                            struct ares_options *options, int *optmask);
@@ -702,10 +703,10 @@ struct ares_addr_port_node {
   int tcp_port;
 };
 
-CARES_EXTERN int         ares_set_servers(ares_channel_t        *channel,
-                                          struct ares_addr_node *servers);
+CARES_EXTERN int         ares_set_servers(ares_channel_t *channel,
+                                          const struct ares_addr_node *servers);
 CARES_EXTERN int         ares_set_servers_ports(ares_channel_t             *channel,
-                                                struct ares_addr_port_node *servers);
+                                                const struct ares_addr_port_node *servers);
 
 /* Incomming string format: host[:port][,host[:port]]... */
 CARES_EXTERN int         ares_set_servers_csv(ares_channel_t *channel,

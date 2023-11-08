@@ -286,8 +286,8 @@ error:
   return rc;
 }
 
-int ares_init_options(ares_channel_t **channelptr, struct ares_options *options,
-                      int optmask)
+int ares_init_options(ares_channel_t **channelptr,
+                      const struct ares_options *options, int optmask)
 {
   ares_channel_t *channel;
   ares_status_t   status = ARES_SUCCESS;
