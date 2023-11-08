@@ -67,10 +67,10 @@ extern std::vector<std::pair<int, bool>>       families_modes;
 
 // Process all pending work on ares-owned file descriptors, plus
 // optionally the given set-of-FDs + work function.
-void                                           ProcessWork(ares_channel_t *                  channel,
-                                                           std::function<std::set<int>()> get_extrafds,
-                                                           std::function<void(int)>       process_extra);
-std::set<int>                                  NoExtraFDs();
+void          ProcessWork(ares_channel_t                *channel,
+                          std::function<std::set<int>()> get_extrafds,
+                          std::function<void(int)>       process_extra);
+std::set<int> NoExtraFDs();
 
 // Test fixture that ensures library initialization, and allows
 // memory allocations to be failed.
@@ -278,7 +278,7 @@ protected:
   NiceMockServers        servers_;
   // Convenience reference to first server.
   NiceMockServer        &server_;
-  ares_channel_t *          channel_;
+  ares_channel_t        *channel_;
 };
 
 class MockChannelTest

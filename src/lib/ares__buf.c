@@ -836,13 +836,14 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
 static ares_status_t ares__buf_append_num_hex(ares__buf_t *buf, size_t num,
                                               size_t len)
 {
-  size_t i;
+  size_t                     i;
   static const unsigned char hexbytes[] = "0123456789ABCDEF";
-  for (i=len; i>0; i--) {
+  for (i = len; i > 0; i--) {
     ares_status_t status;
-    status = ares__buf_append_byte(buf, hexbytes[(num >> ((i-1) * 4)) & 0xF]);
-    if (status != ARES_SUCCESS)
+    status = ares__buf_append_byte(buf, hexbytes[(num >> ((i - 1) * 4)) & 0xF]);
+    if (status != ARES_SUCCESS) {
       return status;
+    }
   }
   return ARES_SUCCESS;
 }
@@ -858,45 +859,52 @@ ares_status_t ares__buf_hexdump(ares__buf_t *buf, const unsigned char *data,
   size_t        i;
   ares_status_t status;
   /* Each line is 16 bytes */
-  for (i=0; i<len; i += 16) {
+  for (i = 0; i < len; i += 16) {
     size_t j;
 
     /* Address */
     status = ares__buf_append_num_hex(buf, i, 6);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       return status;
+    }
 
     /* | */
     status = ares__buf_append_str(buf, " | ");
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       return status;
+    }
 
-    for (j=i; j<i+16; j++) {
+    for (j = i; j < i + 16; j++) {
       if (j >= len) {
         status = ares__buf_append_str(buf, "  ");
       } else {
         status = ares__buf_append_num_hex(buf, data[j], 2);
       }
-      if (status != ARES_SUCCESS)
+      if (status != ARES_SUCCESS) {
         return status;
+      }
 
       status = ares__buf_append_byte(buf, ' ');
-      if (status != ARES_SUCCESS)
+      if (status != ARES_SUCCESS) {
         return status;
+      }
     }
 
     /* | */
     status = ares__buf_append_str(buf, " | ");
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       return status;
+    }
 
-    for (j=i; j<i+16; j++) {
+    for (j = i; j < i + 16; j++) {
       if (j >= len) {
         break;
       }
-      status = ares__buf_append_byte(buf, ares__isprint(data[j])?data[j]:'.');
-      if (status != ARES_SUCCESS)
+      status =
+        ares__buf_append_byte(buf, ares__isprint(data[j]) ? data[j] : '.');
+      if (status != ARES_SUCCESS) {
         return status;
+      }
     }
 
     ares__buf_append_byte(buf, '\n');

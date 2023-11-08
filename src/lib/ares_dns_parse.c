@@ -422,7 +422,6 @@ static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf, ares_dns_rr_t *rr,
   return ARES_SUCCESS;
 }
 
-
 static ares_status_t ares_dns_parse_rr_tlsa(ares__buf_t *buf, ares_dns_rr_t *rr,
                                             size_t rdlength)
 {
@@ -464,7 +463,6 @@ static ares_status_t ares_dns_parse_rr_tlsa(ares__buf_t *buf, ares_dns_rr_t *rr,
 
   return ARES_SUCCESS;
 }
-
 
 static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf, ares_dns_rr_t *rr,
                                            size_t rdlength)

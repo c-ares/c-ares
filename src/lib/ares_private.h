@@ -497,7 +497,7 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
                                             unsigned short        port,
                                             ares_bool_t           want_cnames,
                                             struct ares_addrinfo *ai);
-ares_bool_t ares__isprint(int ch);
+ares_bool_t   ares__isprint(int ch);
 
 
 /*! Parse a compressed DNS name as defined in RFC1035 starting at the current
@@ -514,8 +514,8 @@ ares_bool_t ares__isprint(int ch);
  *                         a valid hostname or will return error.
  *  \return ARES_SUCCESS on success
  */
-ares_status_t        ares__dns_name_parse(ares__buf_t *buf, char **name,
-                                          ares_bool_t is_hostname);
+ares_status_t ares__dns_name_parse(ares__buf_t *buf, char **name,
+                                   ares_bool_t is_hostname);
 
 /*! Write the DNS name to the buffer in the DNS domain-name syntax as a
  *  series of labels.  The maximum domain name length is 255 characters with

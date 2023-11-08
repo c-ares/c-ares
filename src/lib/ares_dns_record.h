@@ -52,7 +52,7 @@ typedef enum {
   ARES_REC_TYPE_NAPTR = 35, /*!< RFC 3403. Naming Authority Pointer */
   ARES_REC_TYPE_OPT   = 41, /*!< RFC 6891. EDNS0 option (meta-RR) */
 
-  ARES_REC_TYPE_TLSA  = 52, /*!< RFC 6698. DNS-Based Authentication of Named
+  ARES_REC_TYPE_TLSA = 52,  /*!< RFC 6698. DNS-Based Authentication of Named
                              *   Entities (DANE) Transport Layer Security
                              *   (TLS) Protocol: TLSA */
 #if 0
@@ -248,13 +248,13 @@ typedef enum {
 /*! TLSA Record ARES_RR_TLSA_CERT_USAGE known values */
 typedef enum {
   /*! Certificate Usage 0. CA Constraint. */
-  ARES_TLSA_USAGE_CA          = 0,
+  ARES_TLSA_USAGE_CA = 0,
   /*! Certificate Usage 1. Service Certificate Constraint. */
-  ARES_TLSA_USAGE_SERVICE     = 1,
+  ARES_TLSA_USAGE_SERVICE = 1,
   /*! Certificate Usage 2. Trust Anchor Assertation. */
   ARES_TLSA_USAGE_TRUSTANCHOR = 2,
   /*! Certificate Usage 3. Domain-issued certificate. */
-  ARES_TLSA_USAGE_DOMAIN      = 3
+  ARES_TLSA_USAGE_DOMAIN = 3
 } ares_tlsa_usage_t;
 
 /*! TLSA Record ARES_RR_TLSA_SELECTOR known values */
@@ -268,13 +268,12 @@ typedef enum {
 /*! TLSA Record ARES_RR_TLSA_MATCH known values */
 typedef enum {
   /*! Exact match */
-  ARES_TLSA_MATCH_EXACT  = 0,
+  ARES_TLSA_MATCH_EXACT = 0,
   /*! Sha256 match */
   ARES_TLSA_MATCH_SHA256 = 1,
   /*! Sha512 match */
   ARES_TLSA_MATCH_SHA512 = 2
 } ares_tlsa_match_t;
-
 
 /*! String representation of DNS Record Type
  *

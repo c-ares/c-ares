@@ -135,8 +135,7 @@ ares__slist_node_t *ares__slist_node_prev(ares__slist_node_t *node);
  *  \param[in] val   Object to use for comparison
  *  \return SkipList Node Object or NULL if not found
  */
-ares__slist_node_t *ares__slist_node_find(ares__slist_t *list,
-                                          const void    *val);
+ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val);
 
 
 /*! Fetch Node Value

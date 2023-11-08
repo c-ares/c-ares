@@ -175,7 +175,8 @@ static ares__buf_t *ares_dns_labels_add(ares_dns_labels_t *labels)
   return labels->label[labels->num - 1];
 }
 
-static const ares__buf_t *ares_dns_labels_get_last(const ares_dns_labels_t *labels)
+static const ares__buf_t *
+  ares_dns_labels_get_last(const ares_dns_labels_t *labels)
 {
   if (labels == NULL || labels->num == 0) {
     return NULL;

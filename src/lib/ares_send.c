@@ -75,7 +75,7 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
   query->timeout.tv_usec = 0;
 
   memcpy(query->qbuf, qbuf, qlen);
-  query->qlen     = qlen;
+  query->qlen = qlen;
 
   /* Fill in query arguments. */
   query->callback = callback;

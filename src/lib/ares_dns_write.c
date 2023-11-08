@@ -94,8 +94,8 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   }
 
   /* RCODE */
-  rcode = (unsigned short)(dnsrec->rcode & 0xF);
-  u16  |= rcode;
+  rcode  = (unsigned short)(dnsrec->rcode & 0xF);
+  u16   |= rcode;
 
   status = ares__buf_append_be16(buf, u16);
   if (status != ARES_SUCCESS) {
@@ -215,11 +215,11 @@ static ares_status_t ares_dns_write_rr_binstrs(ares__buf_t         *buf,
                                                const ares_dns_rr_t *rr,
                                                ares_dns_rr_key_t    key)
 {
-  const unsigned char  *bin;
-  const unsigned char  *ptr;
-  size_t                bin_len;
-  size_t                ptr_len;
-  ares_status_t         status;
+  const unsigned char *bin;
+  const unsigned char *ptr;
+  size_t               bin_len;
+  size_t               ptr_len;
+  ares_status_t        status;
 
   bin = ares_dns_rr_get_bin(rr, key, &bin_len);
   if (bin == NULL) {
