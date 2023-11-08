@@ -41,7 +41,8 @@ static long timeoffset(const struct timeval *now, const struct timeval *check)
          (check->tv_usec - now->tv_usec) / 1000;
 }
 
-struct timeval *ares_timeout(ares_channel_t *channel, struct timeval *maxtv,
+struct timeval *ares_timeout(const ares_channel_t *channel,
+                             struct timeval *maxtv,
                              struct timeval *tvbuf)
 {
   const struct query *query;

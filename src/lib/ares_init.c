@@ -286,8 +286,8 @@ error:
   return rc;
 }
 
-int ares_init_options(ares_channel_t **channelptr, struct ares_options *options,
-                      int optmask)
+int ares_init_options(ares_channel_t **channelptr,
+                      const struct ares_options *options, int optmask)
 {
   ares_channel_t *channel;
   ares_status_t   status = ARES_SUCCESS;
@@ -390,7 +390,7 @@ done:
 
 /* ares_dup() duplicates a channel handle with all its options and returns a
    new channel handle */
-int ares_dup(ares_channel_t **dest, ares_channel_t *src)
+int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
 {
   struct ares_options         opts;
   struct ares_addr_port_node *servers;
