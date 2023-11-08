@@ -22,9 +22,9 @@ ares_fds \- return file descriptors to select on
 .nf
 #include <ares.h>
 
-int ares_fds(ares_channel_t *\fIchannel\fP,
+int ares_fds(const ares_channel_t *\fIchannel\fP,
              fd_set *\fIread_fds\fP,
-	     fd_set *\fIwrite_fds\fP)
+             fd_set *\fIwrite_fds\fP)
 .fi
 .SH DESCRIPTION
 The \fBares_fds(3)\fP function retrieves the set of file descriptors which the
