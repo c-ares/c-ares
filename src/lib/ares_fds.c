@@ -48,16 +48,17 @@ int ares_fds(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
          node = ares__llist_node_next(node)) {
       const struct server_connection *conn = ares__llist_node_val(node);
 
-      /* We only need to register interest in UDP sockets if we have
-       * outstanding queries.
-       */
-      if (active_queries || conn->is_tcp) {
-        FD_SET(conn->fd, read_fds);
-        if (conn->fd >= nfds) {
-          nfds = conn->fd + 1;
-        }
+      if (!active_queries && !conn->is_tcp)
+        continue;
+
+      /* Always wait on read */
+      FD_SET(conn->fd, read_fds);
+
+      if (conn->fd >= nfds) {
+        nfds = conn->fd + 1;
       }
 
+      /* TCP only wait on write if we have buffered data */
       if (conn->is_tcp && ares__buf_len(server->tcp_send)) {
         FD_SET(conn->fd, write_fds);
       }

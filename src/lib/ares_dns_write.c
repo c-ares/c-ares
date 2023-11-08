@@ -242,7 +242,7 @@ static ares_status_t ares_dns_write_rr_binstrs(ares__buf_t         *buf,
 
     /* String */
     if (len) {
-      status = ares__buf_append(buf, (const unsigned char *)ptr, len);
+      status = ares__buf_append(buf, ptr, len);
       if (status != ARES_SUCCESS) {
         return status;
       }

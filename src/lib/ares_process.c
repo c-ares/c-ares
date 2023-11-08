@@ -675,10 +675,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    */
   if (ares_dns_record_get_flags(rdnsrec) & ARES_FLAG_TC && !tcp &&
       !(channel->flags & ARES_FLAG_IGNTC)) {
-    if (!query->using_tcp) {
-      query->using_tcp = ARES_TRUE;
-      ares__send_query(query, now);
-    }
+    query->using_tcp = ARES_TRUE;
+    ares__send_query(query, now);
     status = ARES_SUCCESS; /* Switched to TCP is ok */
     goto cleanup;
   }
@@ -739,8 +737,9 @@ static void handle_conn_error(struct server_connection *conn,
 
 ares_status_t ares__requeue_query(struct query *query, struct timeval *now)
 {
-  ares_channel_t *channel = query->channel;
-  size_t max_tries        = ares__slist_len(channel->servers) * channel->tries;
+  const ares_channel_t *channel   = query->channel;
+  size_t                max_tries = ares__slist_len(channel->servers) *
+                                    channel->tries;
 
   query->try_count++;
 
@@ -796,6 +795,39 @@ static ares_status_t ares__append_tcpbuf(struct server_state *server,
   }
   return ares__buf_append(server->tcp_send, query->qbuf, query->qlen);
 }
+
+
+static size_t ares__retry_penalty(struct query *query)
+{
+  const ares_channel_t *channel  = query->channel;
+  size_t                timeplus = channel->timeout;
+  size_t                shift;
+
+  /* For each trip through the entire server list, double the channel's
+   * assigned timeout, avoiding overflow.  If channel->timeout is negative,
+   * leave it as-is, even though that should be impossible here.
+   */
+
+  /* How many times do we want to double it?  Presume sane values here. */
+  shift = query->try_count / ares__slist_len(channel->servers);
+
+  /* Is there enough room to shift timeplus left that many times?
+   *
+   * To find out, confirm that all of the bits we'll shift away are zero.
+   * Stop considering a shift if we get to the point where we could shift
+   * a 1 into the sign bit (i.e. when shift is within two of the bit
+   * count).
+   *
+   * This has the side benefit of leaving negative numbers unchanged.
+   */
+  if (shift <= (sizeof(int) * CHAR_BIT - 1) &&
+      (timeplus >> (sizeof(int) * CHAR_BIT - 1 - shift)) == 0) {
+    timeplus <<= shift;
+  }
+
+  return timeplus;
+}
+
 
 ares_status_t ares__send_query(struct query *query, struct timeval *now)
 {
@@ -920,29 +952,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
     }
   }
 
-  /* For each trip through the entire server list, double the channel's
-   * assigned timeout, avoiding overflow.  If channel->timeout is negative,
-   * leave it as-is, even though that should be impossible here.
-   */
-  timeplus = channel->timeout;
-  {
-    /* How many times do we want to double it?  Presume sane values here. */
-    const size_t shift = query->try_count / ares__slist_len(channel->servers);
-
-    /* Is there enough room to shift timeplus left that many times?
-     *
-     * To find out, confirm that all of the bits we'll shift away are zero.
-     * Stop considering a shift if we get to the point where we could shift
-     * a 1 into the sign bit (i.e. when shift is within two of the bit
-     * count).
-     *
-     * This has the side benefit of leaving negative numbers unchanged.
-     */
-    if (shift <= (sizeof(int) * CHAR_BIT - 1) &&
-        (timeplus >> (sizeof(int) * CHAR_BIT - 1 - shift)) == 0) {
-      timeplus <<= shift;
-    }
-  }
+  timeplus = ares__retry_penalty(query);
 
   /* Keep track of queries bucketed by timeout, so we can process
    * timeout events quickly.

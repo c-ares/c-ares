@@ -382,8 +382,8 @@ static ares__slist_node_t *ares__server_find(ares_channel_t       *channel,
   return NULL;
 }
 
-static ares_bool_t ares__server_isdup(ares_channel_t     *channel,
-                                      ares__llist_node_t *s)
+static ares_bool_t ares__server_isdup(const ares_channel_t *channel,
+                                      ares__llist_node_t   *s)
 {
   /* Scan backwards to see if this is a duplicate */
   ares__llist_node_t   *prev;
@@ -471,11 +471,11 @@ done:
   return status;
 }
 
-static ares_bool_t ares__server_in_newconfig(struct server_state *server,
-                                             ares__llist_t       *srvlist)
+static ares_bool_t ares__server_in_newconfig(const struct server_state *server,
+                                             ares__llist_t             *srvlist)
 {
-  ares__llist_node_t *node;
-  ares_channel_t     *channel = server->channel;
+  ares__llist_node_t   *node;
+  const ares_channel_t *channel = server->channel;
 
   for (node = ares__llist_node_first(srvlist); node != NULL;
        node = ares__llist_node_next(node)) {
