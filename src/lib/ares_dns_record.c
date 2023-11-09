@@ -1161,8 +1161,8 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t *dns_rr,
     }
 
     temp = ares_realloc_zero((*options)->optval,
-                             (*options)->alloc * sizeof((*options)->optval),
-                             alloc_size * sizeof((*options)->optval));
+                             (*options)->alloc * sizeof(*(*options)->optval),
+                             alloc_size * sizeof(*(*options)->optval));
     if (temp == NULL) {
       return ARES_ENOMEM;
     }
