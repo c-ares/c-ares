@@ -93,6 +93,20 @@ ares_dns_rcode_t ares_dns_record_get_rcode(const ares_dns_record_t *dnsrec)
   return dnsrec->rcode;
 }
 
+static void ares__dns_options_free(ares__dns_options_t *options)
+{
+  size_t i;
+
+  if (options == NULL)
+    return;
+
+  for (i=0; i<options->cnt; i++) {
+    ares_free(options->optval[i].val);
+  }
+  ares_free(options->optval);
+  ares_free(options);
+}
+
 static void ares__dns_rr_free(ares_dns_rr_t *rr)
 {
   ares_free(rr->name);
@@ -146,7 +160,7 @@ static void ares__dns_rr_free(ares_dns_rr_t *rr)
       break;
 
     case ARES_REC_TYPE_OPT:
-      /* Once we support the attribute/values, we need to free here */
+      ares__dns_options_free(rr->r.opt.options);
       break;
 
     case ARES_REC_TYPE_TLSA:
@@ -624,6 +638,9 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
     case ARES_RR_OPT_FLAGS:
       return &dns_rr->r.opt.flags;
 
+    case ARES_RR_OPT_OPTIONS:
+      return &dns_rr->r.opt.options;
+
     case ARES_RR_TLSA_CERT_USAGE:
       return &dns_rr->r.tlsa.cert_usage;
 
@@ -776,7 +793,8 @@ const unsigned char *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
   unsigned char * const *bin     = NULL;
   size_t const          *bin_len = NULL;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN || len == NULL) {
+  if ((ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN &&
+       ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP) || len == NULL) {
     return NULL;
   }
 
@@ -810,6 +828,100 @@ const char *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
   }
 
   return *str;
+}
+
+size_t ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
+                               ares_dns_rr_key_t key)
+{
+  const ares__dns_options_t *opts;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
+    return 0;
+  }
+
+  opts = ares_dns_rr_data_ptr_const(dns_rr, key, NULL);
+  if (opts == NULL) {
+    return 0;
+  }
+
+  return opts->cnt;
+}
+
+unsigned short ares_dns_rr_get_opt(const ares_dns_rr_t *dns_rr,
+                                   ares_dns_rr_key_t key,
+                                   size_t idx,
+                                   const unsigned char **val,
+                                   size_t *val_len)
+{
+  const ares__dns_options_t *opts;
+
+  if (val)
+    *val = NULL;
+  if (val_len)
+    *val_len = 0;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
+    return 65535;
+  }
+
+  opts = ares_dns_rr_data_ptr_const(dns_rr, key, NULL);
+  if (opts == NULL) {
+    return 65535;
+  }
+
+  if (idx >= opts->cnt) {
+    return 65535;
+  }
+
+  if (val) {
+    *val = opts->optval[idx].val;
+  }
+  if (val_len) {
+    *val_len = opts->optval[idx].val_len;
+  }
+
+  return opts->optval[idx].opt;
+}
+
+ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t *dns_rr,
+                                     ares_dns_rr_key_t key,
+                                     unsigned short opt,
+                                     const unsigned char **val,
+                                     size_t *val_len)
+{
+  const ares__dns_options_t *opts;
+  size_t                     i;
+
+  if (val)
+    *val = NULL;
+  if (val_len)
+    *val_len = 0;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
+    return ARES_FALSE;
+  }
+
+  opts = ares_dns_rr_data_ptr_const(dns_rr, key, NULL);
+  if (opts == NULL) {
+    return ARES_FALSE;
+  }
+
+  for (i=0; i<opts->cnt; i++) {
+    if (opts->optval[i].opt == opt) {
+      break;
+    }
+  }
+
+  if (i >= opts->cnt)
+    return ARES_FALSE;
+
+  if (val) {
+    *val = opts->optval[i].val;
+  }
+  if (val_len) {
+    *val_len = opts->optval[i].val_len;
+  }
+  return ARES_TRUE;
 }
 
 ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
@@ -910,7 +1022,8 @@ ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
   unsigned char **bin;
   size_t         *bin_len = NULL;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN) {
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN &&
+      ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP) {
     return ARES_EFORMERR;
   }
 
@@ -931,14 +1044,21 @@ ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
 ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const unsigned char *val, size_t len)
 {
-  ares_status_t  status;
-  unsigned char *temp = ares_malloc(len);
+  ares_status_t       status;
+  ares_dns_datatype_t datatype = ares_dns_rr_key_datatype(key);
+  size_t              alloclen = (datatype == ARES_DATATYPE_BINP)?len+1:len;
+  unsigned char      *temp     = ares_malloc(alloclen);
 
   if (temp == NULL) {
     return ARES_ENOMEM;
   }
 
   memcpy(temp, val, len);
+
+  /* NULL-term BINP */
+  if (datatype == ARES_DATATYPE_BINP) {
+    temp[len] = 0;
+  }
 
   status = ares_dns_rr_set_bin_own(dns_rr, key, temp, len);
   if (status != ARES_SUCCESS) {
@@ -984,6 +1104,102 @@ ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   }
 
   status = ares_dns_rr_set_str_own(dns_rr, key, temp);
+  if (status != ARES_SUCCESS) {
+    ares_free(temp);
+  }
+
+  return status;
+}
+
+
+ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t *dns_rr,
+                                      ares_dns_rr_key_t key,
+                                      unsigned short opt,
+                                      unsigned char *val,
+                                      size_t val_len)
+{
+  ares__dns_options_t **options;
+  size_t                idx;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
+    return ARES_EFORMERR;
+  }
+
+  options = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (options == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (*options == NULL) {
+    *options = ares_malloc_zero(sizeof(**options));
+  }
+  if (*options == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  for (idx=0; idx<(*options)->cnt; idx++) {
+    if ((*options)->optval[idx].opt == opt)
+      break;
+  }
+
+  /* Duplicate entry, replace */
+  if (idx != (*options)->cnt) {
+    goto done;
+  }
+
+  idx = (*options)->cnt;
+
+  /* Expand by powers of 2 */
+  if (idx >= (*options)->alloc) {
+    size_t alloc_size = (*options)->alloc;
+    void  *temp;
+
+    if (alloc_size == 0) {
+      alloc_size = 1;
+    } else {
+      alloc_size <<= 1;
+    }
+
+    temp = ares_realloc_zero((*options)->optval,
+                             (*options)->alloc * sizeof(*(*options)->optval),
+                             alloc_size * sizeof(*(*options)->optval));
+    if (temp == NULL) {
+      return ARES_ENOMEM;
+    }
+
+    (*options)->optval = temp;
+    (*options)->alloc  = alloc_size;
+  }
+
+  (*options)->cnt++;
+
+done:
+  ares_free((*options)->optval[idx].val);
+  (*options)->optval[idx].val     = val;
+  (*options)->optval[idx].val_len = val_len;
+
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t *dns_rr,
+                                  ares_dns_rr_key_t key,
+                                  unsigned short opt,
+                                  const unsigned char *val,
+                                  size_t val_len)
+{
+  unsigned char *temp = NULL;
+  ares_status_t  status;
+
+  if (val != NULL) {
+    temp = ares_malloc(val_len + 1);
+    if (temp == NULL) {
+      return ARES_ENOMEM;
+    }
+    memcpy(temp, val, val_len);
+    temp[val_len] = 0;
+  }
+
+  status = ares_dns_rr_set_opt_own(dns_rr, key, opt, temp, val_len);
   if (status != ARES_SUCCESS) {
     ares_free(temp);
   }

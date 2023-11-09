@@ -391,8 +391,7 @@ static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf, ares_dns_rr_t *rr,
                                            unsigned int   raw_ttl)
 {
   ares_status_t status;
-
-  (void)rdlength;
+  size_t        orig_len = ares__buf_len(buf);
 
   status = ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, raw_class);
   if (status != ARES_SUCCESS) {
@@ -417,8 +416,37 @@ static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf, ares_dns_rr_t *rr,
     return status;
   }
 
-  /* XXX: Support additional message here */
-  (void)buf;
+  /* Parse options */
+  while (ares_dns_rr_remaining_len(buf, orig_len, rdlength)) {
+    unsigned short opt = 0;
+    unsigned short len = 0;
+    unsigned char *val = NULL;
+
+    /* Fetch be16 option */
+    status = ares__buf_fetch_be16(buf, &opt);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    /* Fetch be16 length */
+    status = ares__buf_fetch_be16(buf, &len);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    if (len) {
+      status = ares__buf_fetch_bytes_dup(buf, len, ARES_TRUE, &val);
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
+    }
+
+    status = ares_dns_rr_set_opt_own(rr, ARES_RR_OPT_OPTIONS, opt, val, len);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
   return ARES_SUCCESS;
 }
 
@@ -450,7 +478,7 @@ static ares_status_t ares_dns_parse_rr_tlsa(ares__buf_t *buf, ares_dns_rr_t *rr,
     return ARES_EBADRESP;
   }
 
-  status = ares__buf_fetch_bytes_dup(buf, len, &data);
+  status = ares__buf_fetch_bytes_dup(buf, len, ARES_FALSE, &data);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -536,7 +564,7 @@ static ares_status_t ares_dns_parse_rr_caa(ares__buf_t *buf, ares_dns_rr_t *rr,
     status = ARES_EBADRESP;
     return status;
   }
-  status = ares__buf_fetch_bytes_dup(buf, data_len, &data);
+  status = ares__buf_fetch_bytes_dup(buf, data_len, ARES_TRUE, &data);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -563,7 +591,7 @@ static ares_status_t ares_dns_parse_rr_raw_rr(ares__buf_t   *buf,
     return ARES_SUCCESS;
   }
 
-  status = ares__buf_fetch_bytes_dup(buf, rdlength, &bytes);
+  status = ares__buf_fetch_bytes_dup(buf, rdlength, ARES_FALSE, &bytes);
   if (status != ARES_SUCCESS) {
     return status;
   }
