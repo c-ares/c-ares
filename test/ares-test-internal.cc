@@ -613,6 +613,34 @@ TEST_F(LibraryTest, DNSRecord) {
     0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_bin(rr, ARES_RR_TLSA_DATA, tlsa, sizeof(tlsa)));
+  /* SVCB */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "_1234._bar.example.com", ARES_REC_TYPE_SVCB, ARES_CLASS_IN, 300));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_SVCB_PRIORITY, 1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_SVCB_TARGET, "svc1.example.net"));
+  const unsigned char svcb_ipv6hint[] = "2001:db8::1";
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_opt(rr, ARES_RR_SVCB_PARAMS, ARES_SVCB_PARAM_IPV6HINT,
+      svcb_ipv6hint, sizeof(svcb_ipv6hint)-1));
+  const unsigned char svcb_port[] = "1234";
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_opt(rr, ARES_RR_SVCB_PARAMS, ARES_SVCB_PARAM_IPV6HINT,
+      svcb_port, sizeof(svcb_port)-1));
+  /* HTTPS */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_HTTPS, ARES_CLASS_IN, 300));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_HTTPS_PRIORITY, 1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_HTTPS_TARGET, ""));
+  const unsigned char https_alpn[] = "h3";
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_opt(rr, ARES_RR_HTTPS_PARAMS, ARES_SVCB_PARAM_ALPN,
+      https_alpn, sizeof(https_alpn)-1));
   /* URI */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
