@@ -568,6 +568,9 @@ TEST_F(LibraryTest, DNSRecord) {
     ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_u16(rr, ARES_RR_OPT_FLAGS, 0));
+  unsigned char optval[] = { 'c', '-', 'a', 'r', 'e', 's' };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_opt(rr, ARES_RR_OPT_OPTIONS, 3 /* NSID */, optval, sizeof(optval)));
   /* PTR -- doesn't make sense, but ok */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "example.com",

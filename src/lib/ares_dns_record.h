@@ -225,6 +225,8 @@ typedef enum {
   ARES_RR_OPT_VERSION = (ARES_REC_TYPE_OPT * 100) + 3,
   /*! OPT Record. Flags. Datatype: U16 */
   ARES_RR_OPT_FLAGS = (ARES_REC_TYPE_OPT * 100) + 4,
+  /*! OPT Record. Options. Datatype: OPT */
+  ARES_RR_OPT_OPTIONS = (ARES_REC_TYPE_OPT * 100) + 5,
   /*! TLSA Record. Certificate Usage. Datatype: U8 */
   ARES_RR_TLSA_CERT_USAGE = (ARES_REC_TYPE_TLSA * 100) + 1,
   /*! TLSA Record. Selector. Datatype: U8 */
@@ -595,6 +597,18 @@ ares_status_t ares_dns_rr_set_u32(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
 ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const unsigned char *val, size_t len);
 
+/*! Set the option for the RR
+ *
+ *  \param[in]  dns_rr   Pointer to resource record
+ *  \param[in]  key      DNS Resource Record Key
+ *  \param[in]  opt      Option record key id.
+ *  \param[out] val      Optional. Value to associate with option.
+ *  \param[out] val_len  Length of value passed.
+ *  \return ARES_SUCCESS on success
+ */
+ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                  unsigned short opt, const unsigned char *val,
+                                  size_t val_len);
 
 /*! Retrieve a pointer to the ipv4 address.  Can only be used on keys with
  *  datatype ARES_DATATYPE_INADDR.
@@ -669,16 +683,48 @@ const unsigned char        *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
                                                 ares_dns_rr_key_t key,
                                                 size_t *len);
 
-
+/*! Retrieve the number of options stored for the RR.
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \return count, or 0 if none.
+ */
 size_t ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
                                ares_dns_rr_key_t key);
+
+/*! Retrieve the option for the RR by index.
+ *
+ *  \param[in]  dns_rr  Pointer to resource record
+ *  \param[in]  key     DNS Resource Record Key
+ *  \param[in]  idx     Index of option record
+ *  \param[out] val     Optional. Pointer passed by reference to hold value.
+ *                      Options may not have values.
+ *  \param[out] val_len Optional. Pointer passed by reference to hold value
+ *                      length.
+ *  \return option key/id on success, 65535 on misuse.
+ */
 unsigned short ares_dns_rr_get_opt(const ares_dns_rr_t *dns_rr,
                                    ares_dns_rr_key_t key,
+                                   size_t idx,
                                    const unsigned char **val,
                                    size_t *val_len);
-ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
-                                  unsigned short opt, const unsigned char *val,
-                                  size_t val_len);
+
+/*! Retrieve the option for the RR by the option key/id.
+ *
+ *  \param[in]  dns_rr  Pointer to resource record
+ *  \param[in]  key     DNS Resource Record Key
+ *  \param[in]  opt     Option record key id (this is not the index).
+ *  \param[out] val     Optional. Pointer passed by reference to hold value.
+ *                      Options may not have values.
+ *  \param[out] val_len Optional. Pointer passed by reference to hold value
+ *                      length.
+ *  \return ARES_TRUE on success, ARES_FALSE on misuse.
+ */
+ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t *dns_rr,
+                                     ares_dns_rr_key_t key,
+                                     unsigned short opt,
+                                     const unsigned char **val,
+                                     size_t *val_len);
 
 /*! Parse a complete DNS message.
  *
@@ -719,6 +765,11 @@ ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
 ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
                                       ares_dns_rr_key_t key, unsigned char *val,
                                       size_t len);
+ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t *dns_rr,
+                                      ares_dns_rr_key_t key,
+                                      unsigned short opt,
+                                      unsigned char *val,
+                                      size_t val_len);
 ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
                                           ares_dns_section_t sect, size_t cnt);
 
@@ -790,14 +841,25 @@ typedef struct {
 } ares__dns_naptr_t;
 
 typedef struct {
-  unsigned short udp_size;  /*!< taken from class */
-  unsigned char  ext_rcode; /*!< Taken from first 8 bits of ttl */
-  unsigned char  version;   /*!< taken from bits 8-16 of ttl */
-  unsigned short flags;     /*!< Flags, remaining 16 bits, though only 1
-                             *   currently defined */
-  /* Remaining data can be multiple:
-   *   16bit attribute/code, 16bit length, data
-   * not currently supported */
+  unsigned short opt;
+  unsigned char *val;
+  size_t         val_len;
+} ares__dns_optval_t;
+
+typedef struct {
+  ares__dns_optval_t  *optval; /*!< Attribute/value pairs */
+  size_t               cnt;    /*!< Count of Attribute/Value pairs */
+  size_t               alloc;  /*!< Allocated count of attribute/value
+                                *   pairs */
+} ares__dns_options_t;
+
+typedef struct {
+  unsigned short       udp_size;  /*!< taken from class */
+  unsigned char        ext_rcode; /*!< Taken from first 8 bits of ttl */
+  unsigned char        version;   /*!< taken from bits 8-16 of ttl */
+  unsigned short       flags;     /*!< Flags, remaining 16 bits, though only
+                                   *   1 currently defined */
+  ares__dns_options_t *options;   /*!< Attribute/Value pairs */
 } ares__dns_opt_t;
 
 typedef struct {

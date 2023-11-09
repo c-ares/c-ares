@@ -343,6 +343,9 @@ const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key)
     case ARES_RR_OPT_FLAGS:
       return "FLAGS";
 
+    case ARES_RR_OPT_OPTIONS:
+      return "OPTIONS";
+
     case ARES_RR_TLSA_CERT_USAGE:
       return "CERT_USAGE";
 
@@ -444,6 +447,9 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_TLSA_DATA:
     case ARES_RR_RAW_RR_DATA:
       return ARES_DATATYPE_BIN;
+
+    case ARES_RR_OPT_OPTIONS:
+      return ARES_DATATYPE_OPT;
   }
 
   return 0;
@@ -474,7 +480,8 @@ static const ares_dns_rr_key_t rr_naptr_keys[] = {
 static const ares_dns_rr_key_t rr_opt_keys[]    = { ARES_RR_OPT_UDP_SIZE,
                                                     ARES_RR_OPT_EXT_RCODE,
                                                     ARES_RR_OPT_VERSION,
-                                                    ARES_RR_OPT_FLAGS };
+                                                    ARES_RR_OPT_FLAGS,
+                                                    ARES_RR_OPT_OPTIONS };
 static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
                                                     ARES_RR_TLSA_SELECTOR,
                                                     ARES_RR_TLSA_MATCH,

@@ -507,6 +507,7 @@ static ares_status_t ares_dns_write_rr_opt(ares__buf_t         *buf,
   size_t        len = ares__buf_len(buf);
   ares_status_t status;
   unsigned int  ttl = 0;
+  size_t        i;
 
   (void)namelist;
 
@@ -541,7 +542,35 @@ static ares_status_t ares_dns_write_rr_opt(ares__buf_t         *buf,
     return status;
   }
 
-  /* TODO: handle additional opt messages here */
+  /* Append Options */
+  for (i=0; i<ares_dns_rr_get_opt_cnt(rr, ARES_RR_OPT_OPTIONS); i++) {
+    unsigned short       opt;
+    size_t               val_len;
+    const unsigned char *val;
+
+    opt = ares_dns_rr_get_opt(rr, ARES_RR_OPT_OPTIONS, i, &val, &val_len);
+
+    /* BE16 option */
+    status = ares__buf_append_be16(buf, opt);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    /* BE16 length */
+    status = ares__buf_append_be16(buf, (unsigned short)(val_len & 0xFFFF));
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    /* Value */
+    if (val && val_len) {
+      status = ares__buf_append(buf, val, val_len);
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
+    }
+  }
+
   return ARES_SUCCESS;
 }
 
