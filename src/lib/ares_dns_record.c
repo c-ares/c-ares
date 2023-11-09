@@ -776,7 +776,8 @@ const unsigned char *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
   unsigned char * const *bin     = NULL;
   size_t const          *bin_len = NULL;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN || len == NULL) {
+  if ((ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN &&
+       ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP) || len == NULL) {
     return NULL;
   }
 
@@ -910,7 +911,8 @@ ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
   unsigned char **bin;
   size_t         *bin_len = NULL;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN) {
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN &&
+      ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP) {
     return ARES_EFORMERR;
   }
 
@@ -931,14 +933,21 @@ ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
 ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   const unsigned char *val, size_t len)
 {
-  ares_status_t  status;
-  unsigned char *temp = ares_malloc(len);
+  ares_status_t       status;
+  ares_dns_datatype_t datatype = ares_dns_rr_key_datatype(key);
+  size_t              alloclen = (datatype == ARES_DATATYPE_BINP)?len+1:len;
+  unsigned char      *temp     = ares_malloc(alloclen);
 
   if (temp == NULL) {
     return ARES_ENOMEM;
   }
 
   memcpy(temp, val, len);
+
+  /* NULL-term BINP */
+  if (datatype == ARES_DATATYPE_BINP) {
+    temp[len] = 0;
+  }
 
   status = ares_dns_rr_set_bin_own(dns_rr, key, temp, len);
   if (status != ARES_SUCCESS) {

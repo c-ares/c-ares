@@ -722,7 +722,7 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ(0, ares__buf_tag_length(NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_tag_fetch_bytes(NULL, NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_tag_fetch_string(NULL, NULL, 0));
-  EXPECT_NE(ARES_SUCCESS, ares__buf_fetch_bytes_dup(NULL, 0, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares__buf_fetch_bytes_dup(NULL, 0, ARES_FALSE, NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_fetch_str_dup(NULL, 0, NULL));
   EXPECT_EQ(0, ares__buf_consume_whitespace(NULL, ARES_FALSE));
   EXPECT_EQ(0, ares__buf_consume_nonwhitespace(NULL));

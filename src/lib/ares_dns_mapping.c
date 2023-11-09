@@ -437,9 +437,11 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_CAA_CRITICAL:
       return ARES_DATATYPE_U8;
 
-    case ARES_RR_TLSA_DATA:
     case ARES_RR_CAA_VALUE:
     case ARES_RR_TXT_DATA:
+      return ARES_DATATYPE_BINP;
+
+    case ARES_RR_TLSA_DATA:
     case ARES_RR_RAW_RR_DATA:
       return ARES_DATATYPE_BIN;
   }

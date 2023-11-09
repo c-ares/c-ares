@@ -450,7 +450,7 @@ static ares_status_t ares_dns_parse_rr_tlsa(ares__buf_t *buf, ares_dns_rr_t *rr,
     return ARES_EBADRESP;
   }
 
-  status = ares__buf_fetch_bytes_dup(buf, len, &data);
+  status = ares__buf_fetch_bytes_dup(buf, len, ARES_FALSE, &data);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -536,7 +536,7 @@ static ares_status_t ares_dns_parse_rr_caa(ares__buf_t *buf, ares_dns_rr_t *rr,
     status = ARES_EBADRESP;
     return status;
   }
-  status = ares__buf_fetch_bytes_dup(buf, data_len, &data);
+  status = ares__buf_fetch_bytes_dup(buf, data_len, ARES_TRUE, &data);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -563,7 +563,7 @@ static ares_status_t ares_dns_parse_rr_raw_rr(ares__buf_t   *buf,
     return ARES_SUCCESS;
   }
 
-  status = ares__buf_fetch_bytes_dup(buf, rdlength, &bytes);
+  status = ares__buf_fetch_bytes_dup(buf, rdlength, ARES_FALSE, &bytes);
   if (status != ARES_SUCCESS) {
     return status;
   }

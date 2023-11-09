@@ -290,12 +290,16 @@ ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
 /*! Fetch the requested number of bytes and return a new buffer that must be
  *  ares_free()'d by the caller.
  *
- *  \param[in]  buf     Initialized buffer object
- *  \param[in]  len     Requested number of bytes (must be > 0)
- *  \param[out] bytes   Pointer passed by reference. Will be allocated.
+ *  \param[in]  buf       Initialized buffer object
+ *  \param[in]  len       Requested number of bytes (must be > 0)
+ *  \param[in]  null_term Even though this is considered binary data, the user
+ *                        knows it may be a vald string, so add a null
+ *                        terminator.
+ *  \param[out] bytes     Pointer passed by reference. Will be allocated.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
+                                        ares_bool_t null_term,
                                         unsigned char **bytes);
 
 /*! Fetch the requested number of bytes and place them into the provided
@@ -452,8 +456,8 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
                                       char **name, ares_bool_t allow_multiple);
 
 /*! Parse a character-string as defined in RFC1035, as binary, however for
- *  convenience this does guarantee a NULL terminator (that is not included)
- *  in the returned length.
+ *  convenience this does guarantee a NULL terminator (that is not included
+ *  in the returned length).
  *
  *  \param[in]  buf            initialized buffer object
  *  \param[in]  remaining_len  maximum length that should be used for parsing

@@ -558,6 +558,7 @@ ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
 }
 
 ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
+                                        ares_bool_t null_term,
                                         unsigned char **bytes)
 {
   size_t               remaining_len;
@@ -567,12 +568,15 @@ ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
     return ARES_EBADRESP;
   }
 
-  *bytes = ares_malloc(len);
+  *bytes = ares_malloc(null_term?len+1:len);
   if (*bytes == NULL) {
     return ARES_ENOMEM;
   }
 
   memcpy(*bytes, ptr, len);
+  if (null_term) {
+    (*bytes)[len] = 0;
+  }
   return ares__buf_consume(buf, len);
 }
 
