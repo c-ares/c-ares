@@ -90,10 +90,8 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_NAPTR:
     case ARES_REC_TYPE_OPT:
     case ARES_REC_TYPE_TLSA:
-#if 0
-    case ARES_REC_TYPE_SVBC:
+    case ARES_REC_TYPE_SVCB:
     case ARES_REC_TYPE_HTTPS:
-#endif
     case ARES_REC_TYPE_ANY:
     case ARES_REC_TYPE_URI:
     case ARES_REC_TYPE_CAA:
@@ -195,12 +193,10 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
       return "OPT";
     case ARES_REC_TYPE_TLSA:
       return "TLSA";
-#if 0
-    case ARES_REC_TYPE_SVBC:
-      return "SVBC";
+    case ARES_REC_TYPE_SVCB:
+      return "SVCB";
     case ARES_REC_TYPE_HTTPS:
       return "HTTPS";
-#endif
     case ARES_REC_TYPE_ANY:
       return "ANY";
     case ARES_REC_TYPE_URI:
@@ -358,6 +354,24 @@ const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key)
     case ARES_RR_TLSA_DATA:
       return "DATA";
 
+    case ARES_RR_SVCB_PRIORITY:
+      return "PRIORITY";
+
+    case ARES_RR_SVCB_TARGET:
+      return "TARGET";
+
+    case ARES_RR_SVCB_PARAMS:
+      return "PARAMS";
+
+    case ARES_RR_HTTPS_PRIORITY:
+      return "PRIORITY";
+
+    case ARES_RR_HTTPS_TARGET:
+      return "TARGET";
+
+    case ARES_RR_HTTPS_PARAMS:
+      return "PARAMS";
+
     case ARES_RR_URI_PRIORITY:
       return "PRIORITY";
 
@@ -404,6 +418,8 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_HINFO_OS:
     case ARES_RR_MX_EXCHANGE:
     case ARES_RR_SRV_TARGET:
+    case ARES_RR_SVCB_TARGET:
+    case ARES_RR_HTTPS_TARGET:
     case ARES_RR_NAPTR_FLAGS:
     case ARES_RR_NAPTR_SERVICES:
     case ARES_RR_NAPTR_REGEXP:
@@ -427,6 +443,8 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_NAPTR_PREFERENCE:
     case ARES_RR_OPT_UDP_SIZE:
     case ARES_RR_OPT_FLAGS:
+    case ARES_RR_SVCB_PRIORITY:
+    case ARES_RR_HTTPS_PRIORITY:
     case ARES_RR_URI_PRIORITY:
     case ARES_RR_URI_WEIGHT:
     case ARES_RR_RAW_RR_TYPE:
@@ -449,6 +467,8 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
       return ARES_DATATYPE_BIN;
 
     case ARES_RR_OPT_OPTIONS:
+    case ARES_RR_SVCB_PARAMS:
+    case ARES_RR_HTTPS_PARAMS:
       return ARES_DATATYPE_OPT;
   }
 
@@ -486,6 +506,12 @@ static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
                                                     ARES_RR_TLSA_SELECTOR,
                                                     ARES_RR_TLSA_MATCH,
                                                     ARES_RR_TLSA_DATA };
+static const ares_dns_rr_key_t rr_svcb_keys[]   = { ARES_RR_SVCB_PRIORITY,
+                                                    ARES_RR_SVCB_TARGET,
+                                                    ARES_RR_SVCB_PARAMS };
+static const ares_dns_rr_key_t rr_https_keys[]  = { ARES_RR_HTTPS_PRIORITY,
+                                                    ARES_RR_HTTPS_TARGET,
+                                                    ARES_RR_HTTPS_PARAMS };
 static const ares_dns_rr_key_t rr_uri_keys[]    = { ARES_RR_URI_PRIORITY,
                                                     ARES_RR_URI_WEIGHT,
                                                     ARES_RR_URI_TARGET };
@@ -544,14 +570,12 @@ const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_TLSA:
       *cnt = sizeof(rr_tlsa_keys) / sizeof(*rr_tlsa_keys);
       return rr_tlsa_keys;
-#if 0
-    case ARES_REC_TYPE_SVBC:
-      *cnt = sizeof(rr_svbc_keys) / sizeof(*rr_svbc_keys);
-      return rr_svbc_keys;
+    case ARES_REC_TYPE_SVCB:
+      *cnt = sizeof(rr_svcb_keys) / sizeof(*rr_svcb_keys);
+      return rr_svcb_keys;
     case ARES_REC_TYPE_HTTPS:
       *cnt = sizeof(rr_https_keys) / sizeof(*rr_https_keys);
       return rr_https_keys;
-#endif
     case ARES_REC_TYPE_ANY:
       /* Not real */
       break;

@@ -492,6 +492,109 @@ static ares_status_t ares_dns_parse_rr_tlsa(ares__buf_t *buf, ares_dns_rr_t *rr,
   return ARES_SUCCESS;
 }
 
+static ares_status_t ares_dns_parse_rr_svcb(ares__buf_t *buf, ares_dns_rr_t *rr,
+                                           size_t         rdlength)
+{
+  ares_status_t status;
+  size_t        orig_len = ares__buf_len(buf);
+
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_SVCB_PRIORITY);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                           ARES_RR_SVCB_TARGET);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Parse params */
+  while (ares_dns_rr_remaining_len(buf, orig_len, rdlength)) {
+    unsigned short opt = 0;
+    unsigned short len = 0;
+    unsigned char *val = NULL;
+
+    /* Fetch be16 option */
+    status = ares__buf_fetch_be16(buf, &opt);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    /* Fetch be16 length */
+    status = ares__buf_fetch_be16(buf, &len);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    if (len) {
+      status = ares__buf_fetch_bytes_dup(buf, len, ARES_TRUE, &val);
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
+    }
+
+    status = ares_dns_rr_set_opt_own(rr, ARES_RR_SVCB_PARAMS, opt, val, len);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
+  return ARES_SUCCESS;
+}
+
+static ares_status_t ares_dns_parse_rr_https(ares__buf_t   *buf,
+                                             ares_dns_rr_t *rr,
+                                             size_t         rdlength)
+{
+  ares_status_t status;
+  size_t        orig_len = ares__buf_len(buf);
+
+  status = ares_dns_parse_and_set_be16(buf, rr, ARES_RR_HTTPS_PRIORITY);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
+                                           ARES_RR_HTTPS_TARGET);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Parse params */
+  while (ares_dns_rr_remaining_len(buf, orig_len, rdlength)) {
+    unsigned short opt = 0;
+    unsigned short len = 0;
+    unsigned char *val = NULL;
+
+    /* Fetch be16 option */
+    status = ares__buf_fetch_be16(buf, &opt);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    /* Fetch be16 length */
+    status = ares__buf_fetch_be16(buf, &len);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    if (len) {
+      status = ares__buf_fetch_bytes_dup(buf, len, ARES_TRUE, &val);
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
+    }
+
+    status = ares_dns_rr_set_opt_own(rr, ARES_RR_HTTPS_PARAMS, opt, val, len);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
+  return ARES_SUCCESS;
+}
+
 static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf, ares_dns_rr_t *rr,
                                            size_t rdlength)
 {
@@ -810,6 +913,10 @@ static ares_status_t
       return ares_dns_parse_rr_opt(buf, rr, rdlength, raw_class, raw_ttl);
     case ARES_REC_TYPE_TLSA:
       return ares_dns_parse_rr_tlsa(buf, rr, rdlength);
+    case ARES_REC_TYPE_SVCB:
+      return ares_dns_parse_rr_svcb(buf, rr, rdlength);
+    case ARES_REC_TYPE_HTTPS:
+      return ares_dns_parse_rr_https(buf, rr, rdlength);
     case ARES_REC_TYPE_URI:
       return ares_dns_parse_rr_uri(buf, rr, rdlength);
     case ARES_REC_TYPE_CAA:

@@ -52,13 +52,12 @@ typedef enum {
   ARES_REC_TYPE_NAPTR = 35, /*!< RFC 3403. Naming Authority Pointer */
   ARES_REC_TYPE_OPT   = 41, /*!< RFC 6891. EDNS0 option (meta-RR) */
 
-  ARES_REC_TYPE_TLSA = 52,  /*!< RFC 6698. DNS-Based Authentication of Named
-                             *   Entities (DANE) Transport Layer Security
-                             *   (TLS) Protocol: TLSA */
-#if 0
-  ARES_REC_TYPE_SVBC     = 64,    /*!< General Purpose Service Binding */
-  ARES_REC_TYPE_HTTPS    = 65,    /*!< Service Binding type for use with HTTP */
-#endif
+  ARES_REC_TYPE_TLSA  = 52,  /*!< RFC 6698. DNS-Based Authentication of Named
+                              *   Entities (DANE) Transport Layer Security
+                              *   (TLS) Protocol: TLSA */
+  ARES_REC_TYPE_SVCB  = 64,    /*!< RFC 9460. General Purpose Service Binding */
+  ARES_REC_TYPE_HTTPS = 65,    /*!< RFC 9460. Service Binding type for use with
+                                *   HTTPS */
   ARES_REC_TYPE_ANY = 255,     /*!< Wildcard match.  Not response RR. */
   ARES_REC_TYPE_URI = 256,     /*!< RFC 7553. Uniform Resource Identifier */
   ARES_REC_TYPE_CAA = 257,     /*!< RFC 6844. Certification Authority
@@ -235,6 +234,18 @@ typedef enum {
   ARES_RR_TLSA_MATCH = (ARES_REC_TYPE_TLSA * 100) + 3,
   /*! TLSA Record. Certificate Association Data. Datatype: BIN */
   ARES_RR_TLSA_DATA = (ARES_REC_TYPE_TLSA * 100) + 4,
+  /*! SVCB Record. SvcPriority. Datatype: U16 */
+  ARES_RR_SVCB_PRIORITY = (ARES_REC_TYPE_SVCB * 100) + 1,
+  /*! SVCB Record. TargetName. Datatype: STR */
+  ARES_RR_SVCB_TARGET = (ARES_REC_TYPE_SVCB * 100) + 2,
+  /*! SVCB Record. SvcParams. Datatype: OPT */
+  ARES_RR_SVCB_PARAMS = (ARES_REC_TYPE_SVCB * 100) + 3,
+  /*! HTTPS Record. SvcPriority. Datatype: U16 */
+  ARES_RR_HTTPS_PRIORITY = (ARES_REC_TYPE_HTTPS * 100) + 1,
+  /*! HTTPS Record. TargetName. Datatype: STR */
+  ARES_RR_HTTPS_TARGET = (ARES_REC_TYPE_HTTPS * 100) + 2,
+  /*! HTTPS Record. SvcParams. Datatype: OPT */
+  ARES_RR_HTTPS_PARAMS = (ARES_REC_TYPE_HTTPS * 100) + 3,
   /*! URI Record. Priority. Datatype: U16 */
   ARES_RR_URI_PRIORITY = (ARES_REC_TYPE_URI * 100) + 1,
   /*! URI Record. Weight. Datatype: U16 */
@@ -873,6 +884,12 @@ typedef struct {
 } ares__dns_tlsa_t;
 
 typedef struct {
+  unsigned short       priority;
+  char                *target;
+  ares__dns_options_t *params;
+} ares__dns_svcb_t;
+
+typedef struct {
   unsigned short priority;
   unsigned short weight;
   char          *target;
@@ -914,6 +931,8 @@ struct ares_dns_rr {
     ares__dns_naptr_t  naptr;
     ares__dns_opt_t    opt;
     ares__dns_tlsa_t   tlsa;
+    ares__dns_svcb_t   svcb;
+    ares__dns_svcb_t   https; /*!< https is a type of svcb, so this is right */
     ares__dns_uri_t    uri;
     ares__dns_caa_t    caa;
     ares__dns_raw_rr_t raw_rr;

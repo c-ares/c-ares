@@ -167,19 +167,16 @@ static void ares__dns_rr_free(ares_dns_rr_t *rr)
       ares_free(rr->r.tlsa.data);
       break;
 
-#if 0
-    case ARES_REC_TYPE_SVBC:
-      /* Once this record type is supported, need to free here
-       * ares_free(rr->r.svbc.);
-       */
+    case ARES_REC_TYPE_SVCB:
+      ares_free(rr->r.svcb.target);
+      ares__dns_options_free(rr->r.svcb.params);
       break;
 
     case ARES_REC_TYPE_HTTPS:
-      /* Once this record type is supported, need to free here
-       * ares_free(rr->r.https.);
-       */
+      ares_free(rr->r.https.target);
+      ares__dns_options_free(rr->r.https.params);
       break;
-#endif
+
     case ARES_REC_TYPE_URI:
       ares_free(rr->r.uri.target);
       break;
@@ -656,6 +653,24 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
       }
       *lenptr = &dns_rr->r.tlsa.data_len;
       return &dns_rr->r.tlsa.data;
+
+    case ARES_RR_SVCB_PRIORITY:
+      return &dns_rr->r.svcb.priority;
+
+    case ARES_RR_SVCB_TARGET:
+      return &dns_rr->r.svcb.target;
+
+    case ARES_RR_SVCB_PARAMS:
+      return &dns_rr->r.svcb.params;
+
+    case ARES_RR_HTTPS_PRIORITY:
+      return &dns_rr->r.https.priority;
+
+    case ARES_RR_HTTPS_TARGET:
+      return &dns_rr->r.https.target;
+
+    case ARES_RR_HTTPS_PARAMS:
+      return &dns_rr->r.https.params;
 
     case ARES_RR_URI_PRIORITY:
       return &dns_rr->r.uri.priority;
