@@ -698,7 +698,8 @@ size_t ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
  *  \param[in]  key     DNS Resource Record Key
  *  \param[in]  idx     Index of option record
  *  \param[out] val     Optional. Pointer passed by reference to hold value.
- *                      Options may not have values.
+ *                      Options may not have values.  Value if returned is
+ *                      likely printable and guaranteed to be NULL terminated.
  *  \param[out] val_len Optional. Pointer passed by reference to hold value
  *                      length.
  *  \return option key/id on success, 65535 on misuse.
@@ -715,7 +716,8 @@ unsigned short ares_dns_rr_get_opt(const ares_dns_rr_t *dns_rr,
  *  \param[in]  key     DNS Resource Record Key
  *  \param[in]  opt     Option record key id (this is not the index).
  *  \param[out] val     Optional. Pointer passed by reference to hold value.
- *                      Options may not have values.
+ *                      Options may not have values. Value if returned is
+ *                      likely printable and guaranteed to be NULL terminated.
  *  \param[out] val_len Optional. Pointer passed by reference to hold value
  *                      length.
  *  \return ARES_TRUE on success, ARES_FALSE on misuse.
