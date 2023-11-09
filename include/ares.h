@@ -730,4 +730,7 @@ CARES_EXTERN int         ares_inet_pton(int af, const char *src, void *dst);
 }
 #endif
 
+/* DNS record parser, writer, and helpers */
+#include "ares_dns_record.h"
+
 #endif /* ARES__H */

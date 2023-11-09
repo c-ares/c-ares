@@ -26,7 +26,6 @@
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
-#include "ares_dns_record.h"
 #include <limits.h>
 #ifdef HAVE_STDINT_H
 #  include <stdint.h>
