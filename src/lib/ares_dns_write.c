@@ -543,7 +543,7 @@ static ares_status_t ares_dns_write_rr_opt(ares__buf_t         *buf,
   }
 
   /* Append Options */
-  for (i=0; i<ares_dns_rr_get_opt_cnt(rr, ARES_RR_OPT_OPTIONS); i++) {
+  for (i = 0; i < ares_dns_rr_get_opt_cnt(rr, ARES_RR_OPT_OPTIONS); i++) {
     unsigned short       opt;
     size_t               val_len;
     const unsigned char *val;
@@ -625,14 +625,14 @@ static ares_status_t ares_dns_write_rr_svcb(ares__buf_t         *buf,
   }
 
   /* TARGET */
-  status = ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
-                                  ARES_RR_SVCB_TARGET);
+  status =
+    ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE, ARES_RR_SVCB_TARGET);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* Append Params */
-  for (i=0; i<ares_dns_rr_get_opt_cnt(rr, ARES_RR_SVCB_PARAMS); i++) {
+  for (i = 0; i < ares_dns_rr_get_opt_cnt(rr, ARES_RR_SVCB_PARAMS); i++) {
     unsigned short       opt;
     size_t               val_len;
     const unsigned char *val;
@@ -676,14 +676,14 @@ static ares_status_t ares_dns_write_rr_https(ares__buf_t         *buf,
   }
 
   /* TARGET */
-  status = ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
-                                  ARES_RR_HTTPS_TARGET);
+  status =
+    ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE, ARES_RR_HTTPS_TARGET);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* Append Params */
-  for (i=0; i<ares_dns_rr_get_opt_cnt(rr, ARES_RR_HTTPS_PARAMS); i++) {
+  for (i = 0; i < ares_dns_rr_get_opt_cnt(rr, ARES_RR_HTTPS_PARAMS); i++) {
     unsigned short       opt;
     size_t               val_len;
     const unsigned char *val;

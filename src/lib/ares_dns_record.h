@@ -39,22 +39,22 @@
  *  on requests (e.g. ARES_REC_TYPE_ANY), and some may only be valid on
  *  responses */
 typedef enum {
-  ARES_REC_TYPE_A     = 1,  /*!< Host address. */
-  ARES_REC_TYPE_NS    = 2,  /*!< Authoritative server. */
-  ARES_REC_TYPE_CNAME = 5,  /*!< Canonical name. */
-  ARES_REC_TYPE_SOA   = 6,  /*!< Start of authority zone. */
-  ARES_REC_TYPE_PTR   = 12, /*!< Domain name pointer. */
-  ARES_REC_TYPE_HINFO = 13, /*!< Host information. */
-  ARES_REC_TYPE_MX    = 15, /*!< Mail routing information. */
-  ARES_REC_TYPE_TXT   = 16, /*!< Text strings. */
-  ARES_REC_TYPE_AAAA  = 28, /*!< RFC 3596. Ip6 Address. */
-  ARES_REC_TYPE_SRV   = 33, /*!< RFC 2782. Server Selection. */
-  ARES_REC_TYPE_NAPTR = 35, /*!< RFC 3403. Naming Authority Pointer */
-  ARES_REC_TYPE_OPT   = 41, /*!< RFC 6891. EDNS0 option (meta-RR) */
+  ARES_REC_TYPE_A     = 1,     /*!< Host address. */
+  ARES_REC_TYPE_NS    = 2,     /*!< Authoritative server. */
+  ARES_REC_TYPE_CNAME = 5,     /*!< Canonical name. */
+  ARES_REC_TYPE_SOA   = 6,     /*!< Start of authority zone. */
+  ARES_REC_TYPE_PTR   = 12,    /*!< Domain name pointer. */
+  ARES_REC_TYPE_HINFO = 13,    /*!< Host information. */
+  ARES_REC_TYPE_MX    = 15,    /*!< Mail routing information. */
+  ARES_REC_TYPE_TXT   = 16,    /*!< Text strings. */
+  ARES_REC_TYPE_AAAA  = 28,    /*!< RFC 3596. Ip6 Address. */
+  ARES_REC_TYPE_SRV   = 33,    /*!< RFC 2782. Server Selection. */
+  ARES_REC_TYPE_NAPTR = 35,    /*!< RFC 3403. Naming Authority Pointer */
+  ARES_REC_TYPE_OPT   = 41,    /*!< RFC 6891. EDNS0 option (meta-RR) */
 
-  ARES_REC_TYPE_TLSA  = 52,  /*!< RFC 6698. DNS-Based Authentication of Named
-                              *   Entities (DANE) Transport Layer Security
-                              *   (TLS) Protocol: TLSA */
+  ARES_REC_TYPE_TLSA = 52,     /*!< RFC 6698. DNS-Based Authentication of Named
+                                *   Entities (DANE) Transport Layer Security
+                                *   (TLS) Protocol: TLSA */
   ARES_REC_TYPE_SVCB  = 64,    /*!< RFC 9460. General Purpose Service Binding */
   ARES_REC_TYPE_HTTPS = 65,    /*!< RFC 9460. Service Binding type for use with
                                 *   HTTPS */
@@ -154,7 +154,7 @@ typedef enum {
                               *   printable. Guaranteed to have a NULL
                               *   terminator for convenience (not included in
                               *   length) */
-  ARES_DATATYPE_OPT     = 9, /*!< Array of options.  16bit identifier, BINP
+  ARES_DATATYPE_OPT = 9,     /*!< Array of options.  16bit identifier, BINP
                               *   data. */
 } ares_dns_datatype_t;
 
@@ -297,19 +297,19 @@ typedef enum {
 /*! SVCB (and HTTPS) known parameters */
 typedef enum {
   /*! Mandatory keys in this RR (RFC 9460 Section 8) */
-  ARES_SVCB_PARAM_MANDATORY       = 0,
+  ARES_SVCB_PARAM_MANDATORY = 0,
   /*! Additional supported protocols (RFC 9460 Section 7.1) */
-  ARES_SVCB_PARAM_ALPN            = 1,
+  ARES_SVCB_PARAM_ALPN = 1,
   /*! No support for default protocol (RFC 9460 Section 7.1) */
   ARES_SVCB_PARAM_NO_DEFAULT_ALPN = 2,
   /*! Port for alternative endpoint (RFC 9460 Section 7.2) */
-  ARES_SVCB_PARAM_PORT            = 3,
+  ARES_SVCB_PARAM_PORT = 3,
   /*! IPv4 address hints (RFC 9460 Section 7.3) */
-  ARES_SVCB_PARAM_IPV4HINT        = 4,
+  ARES_SVCB_PARAM_IPV4HINT = 4,
   /*! RESERVED (held for Encrypted ClientHello) */
-  ARES_SVCB_PARAM_ECH             = 5,
+  ARES_SVCB_PARAM_ECH = 5,
   /*! IPv6 address hints (RFC 9460 Section 7.3) */
-  ARES_SVCB_PARAM_IPV6HINT        = 6
+  ARES_SVCB_PARAM_IPV6HINT = 6
 } ares_svcb_param_t;
 
 /*! String representation of DNS Record Type
@@ -709,8 +709,7 @@ unsigned int                ares_dns_rr_get_u32(const ares_dns_rr_t *dns_rr,
  *  \return pointer binary data or NULL on error
  */
 const unsigned char        *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
-                                                ares_dns_rr_key_t key,
-                                                size_t *len);
+                                                ares_dns_rr_key_t key, size_t *len);
 
 /*! Retrieve the number of options stored for the RR.
  *
@@ -718,8 +717,8 @@ const unsigned char        *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
  *  \param[in] key    DNS Resource Record Key
  *  \return count, or 0 if none.
  */
-size_t ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
-                               ares_dns_rr_key_t key);
+size_t                      ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
+                                                    ares_dns_rr_key_t    key);
 
 /*! Retrieve the option for the RR by index.
  *
@@ -733,11 +732,9 @@ size_t ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
  *                      length.
  *  \return option key/id on success, 65535 on misuse.
  */
-unsigned short ares_dns_rr_get_opt(const ares_dns_rr_t *dns_rr,
-                                   ares_dns_rr_key_t key,
-                                   size_t idx,
-                                   const unsigned char **val,
-                                   size_t *val_len);
+unsigned short              ares_dns_rr_get_opt(const ares_dns_rr_t *dns_rr,
+                                                ares_dns_rr_key_t key, size_t idx,
+                                                const unsigned char **val, size_t *val_len);
 
 /*! Retrieve the option for the RR by the option key/id.
  *
@@ -751,11 +748,10 @@ unsigned short ares_dns_rr_get_opt(const ares_dns_rr_t *dns_rr,
  *                      length.
  *  \return ARES_TRUE on success, ARES_FALSE on misuse.
  */
-ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t *dns_rr,
-                                     ares_dns_rr_key_t key,
-                                     unsigned short opt,
-                                     const unsigned char **val,
-                                     size_t *val_len);
+ares_bool_t   ares_dns_rr_get_opt_byid(const ares_dns_rr_t *dns_rr,
+                                       ares_dns_rr_key_t key, unsigned short opt,
+                                       const unsigned char **val,
+                                       size_t               *val_len);
 
 /*! Parse a complete DNS message.
  *
@@ -796,11 +792,9 @@ ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
 ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
                                       ares_dns_rr_key_t key, unsigned char *val,
                                       size_t len);
-ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t *dns_rr,
-                                      ares_dns_rr_key_t key,
-                                      unsigned short opt,
-                                      unsigned char *val,
-                                      size_t val_len);
+ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
+                                      ares_dns_rr_key_t key, unsigned short opt,
+                                      unsigned char *val, size_t val_len);
 ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
                                           ares_dns_section_t sect, size_t cnt);
 
@@ -878,10 +872,10 @@ typedef struct {
 } ares__dns_optval_t;
 
 typedef struct {
-  ares__dns_optval_t  *optval; /*!< Attribute/value pairs */
-  size_t               cnt;    /*!< Count of Attribute/Value pairs */
-  size_t               alloc;  /*!< Allocated count of attribute/value
-                                *   pairs */
+  ares__dns_optval_t *optval; /*!< Attribute/value pairs */
+  size_t              cnt;    /*!< Count of Attribute/Value pairs */
+  size_t              alloc;  /*!< Allocated count of attribute/value
+                               *   pairs */
 } ares__dns_options_t;
 
 typedef struct {

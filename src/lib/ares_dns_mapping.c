@@ -497,11 +497,10 @@ static const ares_dns_rr_key_t rr_naptr_keys[] = {
   ARES_RR_NAPTR_ORDER,    ARES_RR_NAPTR_PREFERENCE, ARES_RR_NAPTR_FLAGS,
   ARES_RR_NAPTR_SERVICES, ARES_RR_NAPTR_REGEXP,     ARES_RR_NAPTR_REPLACEMENT
 };
-static const ares_dns_rr_key_t rr_opt_keys[]    = { ARES_RR_OPT_UDP_SIZE,
-                                                    ARES_RR_OPT_EXT_RCODE,
-                                                    ARES_RR_OPT_VERSION,
-                                                    ARES_RR_OPT_FLAGS,
-                                                    ARES_RR_OPT_OPTIONS };
+static const ares_dns_rr_key_t rr_opt_keys[] = {
+  ARES_RR_OPT_UDP_SIZE, ARES_RR_OPT_EXT_RCODE, ARES_RR_OPT_VERSION,
+  ARES_RR_OPT_FLAGS, ARES_RR_OPT_OPTIONS
+};
 static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
                                                     ARES_RR_TLSA_SELECTOR,
                                                     ARES_RR_TLSA_MATCH,

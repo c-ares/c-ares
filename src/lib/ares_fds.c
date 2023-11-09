@@ -48,8 +48,9 @@ int ares_fds(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
          node = ares__llist_node_next(node)) {
       const struct server_connection *conn = ares__llist_node_val(node);
 
-      if (!active_queries && !conn->is_tcp)
+      if (!active_queries && !conn->is_tcp) {
         continue;
+      }
 
       /* Always wait on read */
       FD_SET(conn->fd, read_fds);

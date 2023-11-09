@@ -493,7 +493,7 @@ static ares_status_t ares_dns_parse_rr_tlsa(ares__buf_t *buf, ares_dns_rr_t *rr,
 }
 
 static ares_status_t ares_dns_parse_rr_svcb(ares__buf_t *buf, ares_dns_rr_t *rr,
-                                           size_t         rdlength)
+                                            size_t rdlength)
 {
   ares_status_t status;
   size_t        orig_len = ares__buf_len(buf);
@@ -503,8 +503,8 @@ static ares_status_t ares_dns_parse_rr_svcb(ares__buf_t *buf, ares_dns_rr_t *rr,
     return status;
   }
 
-  status = ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
-                                           ARES_RR_SVCB_TARGET);
+  status =
+    ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr, ARES_RR_SVCB_TARGET);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -544,8 +544,7 @@ static ares_status_t ares_dns_parse_rr_svcb(ares__buf_t *buf, ares_dns_rr_t *rr,
 }
 
 static ares_status_t ares_dns_parse_rr_https(ares__buf_t   *buf,
-                                             ares_dns_rr_t *rr,
-                                             size_t         rdlength)
+                                             ares_dns_rr_t *rr, size_t rdlength)
 {
   ares_status_t status;
   size_t        orig_len = ares__buf_len(buf);
@@ -555,8 +554,8 @@ static ares_status_t ares_dns_parse_rr_https(ares__buf_t   *buf,
     return status;
   }
 
-  status = ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr,
-                                           ARES_RR_HTTPS_TARGET);
+  status =
+    ares_dns_parse_and_set_dns_name(buf, ARES_FALSE, rr, ARES_RR_HTTPS_TARGET);
   if (status != ARES_SUCCESS) {
     return status;
   }

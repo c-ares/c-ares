@@ -299,7 +299,7 @@ ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
-                                        ares_bool_t null_term,
+                                        ares_bool_t     null_term,
                                         unsigned char **bytes);
 
 /*! Fetch the requested number of bytes and place them into the provided

@@ -737,9 +737,8 @@ static void handle_conn_error(struct server_connection *conn,
 
 ares_status_t ares__requeue_query(struct query *query, struct timeval *now)
 {
-  const ares_channel_t *channel   = query->channel;
-  size_t                max_tries = ares__slist_len(channel->servers) *
-                                    channel->tries;
+  const ares_channel_t *channel = query->channel;
+  size_t max_tries = ares__slist_len(channel->servers) * channel->tries;
 
   query->try_count++;
 
@@ -796,7 +795,6 @@ static ares_status_t ares__append_tcpbuf(struct server_state *server,
   return ares__buf_append(server->tcp_send, query->qbuf, query->qlen);
 }
 
-
 static size_t ares__retry_penalty(struct query *query)
 {
   const ares_channel_t *channel  = query->channel;
@@ -827,7 +825,6 @@ static size_t ares__retry_penalty(struct query *query)
 
   return timeplus;
 }
-
 
 ares_status_t ares__send_query(struct query *query, struct timeval *now)
 {
