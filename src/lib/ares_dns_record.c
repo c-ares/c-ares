@@ -850,25 +850,25 @@ const char *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
 size_t ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
                                ares_dns_rr_key_t    key)
 {
-  const ares__dns_options_t *opts;
+  ares__dns_options_t * const *opts;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
     return 0;
   }
 
   opts = ares_dns_rr_data_ptr_const(dns_rr, key, NULL);
-  if (opts == NULL) {
+  if (opts == NULL || *opts == NULL) {
     return 0;
   }
 
-  return opts->cnt;
+  return (*opts)->cnt;
 }
 
 unsigned short ares_dns_rr_get_opt(const ares_dns_rr_t *dns_rr,
                                    ares_dns_rr_key_t key, size_t idx,
                                    const unsigned char **val, size_t *val_len)
 {
-  const ares__dns_options_t *opts;
+  ares__dns_options_t * const *opts;
 
   if (val) {
     *val = NULL;
@@ -882,30 +882,30 @@ unsigned short ares_dns_rr_get_opt(const ares_dns_rr_t *dns_rr,
   }
 
   opts = ares_dns_rr_data_ptr_const(dns_rr, key, NULL);
-  if (opts == NULL) {
+  if (opts == NULL || *opts == NULL) {
     return 65535;
   }
 
-  if (idx >= opts->cnt) {
+  if (idx >= (*opts)->cnt) {
     return 65535;
   }
 
   if (val) {
-    *val = opts->optval[idx].val;
+    *val = (*opts)->optval[idx].val;
   }
   if (val_len) {
-    *val_len = opts->optval[idx].val_len;
+    *val_len = (*opts)->optval[idx].val_len;
   }
 
-  return opts->optval[idx].opt;
+  return (*opts)->optval[idx].opt;
 }
 
 ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t *dns_rr,
                                      ares_dns_rr_key_t key, unsigned short opt,
                                      const unsigned char **val, size_t *val_len)
 {
-  const ares__dns_options_t *opts;
-  size_t                     i;
+  ares__dns_options_t * const *opts;
+  size_t                       i;
 
   if (val) {
     *val = NULL;
@@ -919,25 +919,25 @@ ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t *dns_rr,
   }
 
   opts = ares_dns_rr_data_ptr_const(dns_rr, key, NULL);
-  if (opts == NULL) {
+  if (opts == NULL || *opts == NULL) {
     return ARES_FALSE;
   }
 
-  for (i = 0; i < opts->cnt; i++) {
-    if (opts->optval[i].opt == opt) {
+  for (i = 0; i < (*opts)->cnt; i++) {
+    if ((*opts)->optval[i].opt == opt) {
       break;
     }
   }
 
-  if (i >= opts->cnt) {
+  if (i >= (*opts)->cnt) {
     return ARES_FALSE;
   }
 
   if (val) {
-    *val = opts->optval[i].val;
+    *val = (*opts)->optval[i].val;
   }
   if (val_len) {
-    *val_len = opts->optval[i].val_len;
+    *val_len = (*opts)->optval[i].val_len;
   }
   return ARES_TRUE;
 }
