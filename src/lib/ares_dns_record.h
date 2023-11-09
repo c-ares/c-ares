@@ -294,6 +294,24 @@ typedef enum {
   ARES_TLSA_MATCH_SHA512 = 2
 } ares_tlsa_match_t;
 
+/*! SVCB (and HTTPS) known parameters */
+typedef enum {
+  /*! Mandatory keys in this RR (RFC 9460 Section 8) */
+  ARES_SVCB_PARAM_MANDATORY       = 0,
+  /*! Additional supported protocols (RFC 9460 Section 7.1) */
+  ARES_SVCB_PARAM_ALPN            = 1,
+  /*! No support for default protocol (RFC 9460 Section 7.1) */
+  ARES_SVCB_PARAM_NO_DEFAULT_ALPN = 2,
+  /*! Port for alternative endpoint (RFC 9460 Section 7.2) */
+  ARES_SVCB_PARAM_PORT            = 3,
+  /*! IPv4 address hints (RFC 9460 Section 7.3) */
+  ARES_SVCB_PARAM_IPV4HINT        = 4,
+  /*! RESERVED (held for Encrypted ClientHello) */
+  ARES_SVCB_PARAM_ECH             = 5,
+  /*! IPv6 address hints (RFC 9460 Section 7.3) */
+  ARES_SVCB_PARAM_IPV6HINT        = 6
+} ares_svcb_param_t;
+
 /*! String representation of DNS Record Type
  *
  *  \param[in] type  DNS Record Type
