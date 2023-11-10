@@ -82,7 +82,6 @@ typedef struct {
   int                 optmask;
   ares_dns_class_t    qclass;
   ares_dns_rec_type_t qtype;
-  unsigned int        use_ptr_helper;
   int                 args_processed;
   char               *servers;
   char                error[256];
@@ -124,34 +123,30 @@ static void print_help(void)
 {
   printf("adig version %s\n\n", ares_version(NULL));
   printf(
-    "usage: adig [-h] [-d] [-f flag] [[-s server] ...] [-T|U port] [-c class] "
-    "[-t type] [-x|-xx] name ...\n\n"
-    "  h : Display this help and exit.\n"
-    "  d : Print some extra debugging output.\n\n"
-    "  f flag   : Add a behavior control flag. Possible values are\n"
-    "              igntc - ignore to query in TCP to get truncated UDP "
-    "answer,\n"
-    "              noaliases - don't honor the HOSTALIASES environment "
-    "variable,\n"
-    "              norecurse - don't query upstream servers recursively,\n"
-    "              primary - use the first server,\n"
-    "              stayopen - don't close the communication sockets, and\n"
-    "              usevc - use TCP only.\n"
-    "  s server : Connect to the specified DNS server, instead of the system's "
-    "default one(s).\n"
-    "              Servers are tried in round-robin, if the previous one "
-    "failed.\n"
-    "  T port   : Connect to the specified TCP port of DNS server.\n"
-    "  U port   : Connect to the specified UDP port of DNS server.\n"
-    "  c class  : Set the query class. Possible values for class are ANY, "
-    "CHAOS, HS and IN (default)\n"
-    "  t type   : Query records of the specified type.\n"
-    "              Possible values for type are A (default), AAAA, ANY, "
-    "CNAME,\n"
-    "              HINFO, MX, NAPTR, NS, PTR, SOA, SRV, TXT, TLSA, URI, CAA,\n"
-    "              SVCB, HTTPS\n\n"
-    " -x  : For a '-t PTR a.b.c.d' lookup, query for "
-    "'d.c.b.a.in-addr.arpa.'\n");
+    "usage: adig [-h] [-d] [-f flag] [[-s server] ...] [-T|U port] [-c class]\n"
+    "            [-t type] name ...\n\n"
+    "  -h : Display this help and exit.\n"
+    "  -d : Print some extra debugging output.\n"
+    "  -f flag   : Add a behavior control flag. Possible values are\n"
+    "              igntc     - ignore to query in TCP to get truncated UDP\n"
+    "                          answer\n"
+    "              noaliases - don't honor the HOSTALIASES environment\n"
+    "                          variable\n"
+    "              norecurse - don't query upstream servers recursively\n"
+    "              primary   - use the first server\n"
+    "              stayopen  - don't close the communication sockets\n"
+    "              usevc     - use TCP only\n"
+    "  -s server : Connect to the specified DNS server, instead of the\n"
+    "              system's default one(s). Servers are tried in round-robin,\n"
+    "              if the previous one failed.\n"
+    "  -T port   : Connect to the specified TCP port of DNS server.\n"
+    "  -U port   : Connect to the specified UDP port of DNS server.\n"
+    "  -c class  : Set the query class. Possible values for class are:\n"
+    "              ANY, CHAOS, HS and IN (default)\n"
+    "  -t type   : Query records of the specified type. Possible values for\n"
+    "              type are:\n"
+    "              A (default), AAAA, ANY, CNAME, HINFO, MX, NAPTR, NS, PTR,\n"
+    "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
 }
 
 static ares_bool_t read_cmdline(int argc, char **argv, adig_config_t *config)
@@ -159,7 +154,7 @@ static ares_bool_t read_cmdline(int argc, char **argv, adig_config_t *config)
   int c;
   int f;
 
-  while ((c = ares_getopt(argc, argv, "dh?f:s:c:t:T:U:x")) != -1) {
+  while ((c = ares_getopt(argc, argv, "dh?f:s:c:t:T:U:")) != -1) {
     switch (c) {
       case 'd':
 #ifdef WATT32
@@ -228,10 +223,6 @@ static ares_bool_t read_cmdline(int argc, char **argv, adig_config_t *config)
         }
         config->options.udp_port  = (unsigned short)strtol(optarg, NULL, 0);
         config->optmask          |= ARES_OPT_UDP_PORT;
-        break;
-
-      case 'x':
-        config->use_ptr_helper++;
         break;
     }
   }
