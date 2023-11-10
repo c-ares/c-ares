@@ -823,6 +823,40 @@ static size_t ares__retry_penalty(struct query *query)
     timeplus <<= shift;
   }
 
+  if (channel->jitter > 0) {
+    unsigned short r;
+    float delta_multiplier;
+    size_t delta;
+    int sign = 1;
+
+    ares__rand_bytes(channel->rand_state, (unsigned char *)&r, sizeof(r));
+
+    if (r >= (USHRT_MAX >> 1)) {
+      r -= (USHRT_MAX >> 1);
+      sign = -1;
+    }
+
+    delta_multiplier = ((float)r / (USHRT_MAX >> 1)) * (float)channel->jitter / 1000.0f;
+    if (delta_multiplier > 1.0f) {
+      delta = timeplus;
+    } else {
+      delta = (size_t)((float)timeplus * delta_multiplier);
+      if (timeplus < delta)
+        delta = timeplus;
+      if (sign > 0 && SIZE_MAX - timeplus < delta)
+        delta = SIZE_MAX - timeplus;
+    }
+
+    if (sign > 0) {
+      timeplus += delta;
+    } else {
+      timeplus -= delta;
+    }
+  }
+
+  if (channel->maxtimeout && timeplus > channel->maxtimeout)
+    timeplus = channel->maxtimeout;
+
   return timeplus;
 }
 

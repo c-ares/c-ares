@@ -126,6 +126,14 @@ int ares_save_options(ares_channel_t *channel, struct ares_options *options,
     options->ndots = (int)channel->ndots;
   }
 
+  if (channel->maxtimeout & ARES_OPT_MAXTIMEOUTMS) {
+    options->maxtimeout = (int)channel->maxtimeout;
+  }
+
+  if (channel->jitter & ARES_OPT_JITTER) {
+    options->jitter = (int)channel->jitter;
+  }
+
   if (channel->optmask & ARES_OPT_UDP_PORT) {
     options->udp_port = ntohs(channel->udp_port);
   }
@@ -278,6 +286,14 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
 
   if (optmask & ARES_OPT_NDOTS) {
     channel->ndots = (size_t)options->ndots;
+  }
+
+  if (optmask & ARES_OPT_MAXTIMEOUTMS) {
+    channel->maxtimeout = (size_t)options->maxtimeout;
+  }
+
+  if (optmask & ARES_OPT_JITTER) {
+    channel->jitter = (size_t)options->jitter;
   }
 
   if (optmask & ARES_OPT_ROTATE) {
