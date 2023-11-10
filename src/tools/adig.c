@@ -199,6 +199,9 @@ static ares_bool_t read_cmdline(int argc, const char **argv, adig_config_t *conf
                    "missing servers");
           return ARES_FALSE;
         }
+        if (config->servers) {
+          free(config->servers);
+        }
         config->servers = strdup(state.optarg);
         break;
 
