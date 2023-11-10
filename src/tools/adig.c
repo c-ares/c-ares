@@ -465,7 +465,7 @@ static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
   print_section(dnsrec, ARES_SECTION_ADDITIONAL);
   print_section(dnsrec, ARES_SECTION_AUTHORITY);
 
-  printf(";; MSG SIZE  rcvd: %d\n", alen);
+  printf(";; MSG SIZE  rcvd: %d\n\n", alen);
   ares_dns_record_destroy(dnsrec);
 }
 
