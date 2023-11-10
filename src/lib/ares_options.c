@@ -126,11 +126,11 @@ int ares_save_options(ares_channel_t *channel, struct ares_options *options,
     options->ndots = (int)channel->ndots;
   }
 
-  if (channel->maxtimeout & ARES_OPT_MAXTIMEOUTMS) {
+  if (channel->optmask & ARES_OPT_MAXTIMEOUTMS) {
     options->maxtimeout = (int)channel->maxtimeout;
   }
 
-  if (channel->jitter & ARES_OPT_JITTER) {
+  if (channel->optmask & ARES_OPT_JITTER) {
     options->jitter = (int)channel->jitter;
   }
 
