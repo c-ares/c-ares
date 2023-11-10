@@ -92,8 +92,8 @@ int         main(int argc, char **argv)
     return 1;
   }
 
-  ares_getopt_init(&state);
-  while ((c = ares_getopt(&state, argc, (const char * const *)argv, "dt:h?s:")) != -1) {
+  ares_getopt_init(&state, argc, (const char **)argv);
+  while ((c = ares_getopt(&state, "dt:h?s:")) != -1) {
     switch (c) {
       case 'd':
 #ifdef WATT32

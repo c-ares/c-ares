@@ -157,16 +157,16 @@ static void print_help(void)
     "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
 }
 
-static ares_bool_t read_cmdline(int argc, const char * const *argv, adig_config_t *config)
+static ares_bool_t read_cmdline(int argc, const char **argv, adig_config_t *config)
 {
   ares_getopt_state_t state;
-  ares_getopt_init(&state);
+  ares_getopt_init(&state, argc, argv);
 
   while (1) {
     int c;
     int f;
 
-    c = ares_getopt(&state, argc, argv, "dh?f:s:c:t:T:U:");
+    c = ares_getopt(&state, "dh?f:s:c:t:T:U:");
     if (c == -1)
       break;
 
@@ -832,7 +832,7 @@ int main(int argc, char **argv)
   memset(&config, 0, sizeof(config));
   config.qclass = ARES_CLASS_IN;
   config.qtype  = ARES_REC_TYPE_A;
-  if (!read_cmdline(argc, (const char * const *)argv, &config)) {
+  if (!read_cmdline(argc, (const char **)argv, &config)) {
     printf("%s\n", config.error);
     print_help();
     rv = 1;

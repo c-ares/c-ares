@@ -34,14 +34,16 @@
 
 
 typedef struct {
-  const char *optarg; /* argument associated with option */
-  int         optind; /* index into parent argv vector */
-  int         opterr; /* if error message should be printed */
-  int         optopt; /* character checked for validity */
-  const char *place;
+  const char  *optarg; /* argument associated with option */
+  int          optind; /* index into parent argv vector */
+  int          opterr; /* if error message should be printed */
+  int          optopt; /* character checked for validity */
+  const char  *place;
+  int          argc;
+  const char **argv;
 } ares_getopt_state_t;
 
-void ares_getopt_init(ares_getopt_state_t *state);
-int ares_getopt(ares_getopt_state_t *state, int nargc, const char * const *nargv, const char *ostr);
+void ares_getopt_init(ares_getopt_state_t *state, int argc, const char **argv);
+int ares_getopt(ares_getopt_state_t *state, const char *ostr);
 
 #endif /* ARES_GETOPT_H */

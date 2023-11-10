@@ -54,24 +54,26 @@
 #define BADARG (int)':'
 #define EMSG   (char *)""
 
-void ares_getopt_init(ares_getopt_state_t *state)
+void ares_getopt_init(ares_getopt_state_t *state, int nargc, const char **nargv)
 {
   memset(state, 0, sizeof(*state));
   state->opterr = 1;
   state->optind = 1;
-  state->place       = EMSG;
+  state->place  = EMSG;
+  state->argc   = nargc;
+  state->argv   = nargv;
 }
 
 /*
  * ares_getopt --
  *    Parse argc/argv argument vector.
  */
-int ares_getopt(ares_getopt_state_t *state, int nargc, const char * const * nargv, const char *ostr)
+int ares_getopt(ares_getopt_state_t *state, const char *ostr)
 {
   char *oli;          /* option letter list index */
 
   if (!*state->place) { /* update scanning pointer */
-    if (state->optind >= nargc || *(state->place = nargv[state->optind]) != '-') {
+    if (state->optind >= state->argc || *(state->place = state->argv[state->optind]) != '-') {
       state->place = EMSG;
       return (EOF);
     }
@@ -106,7 +108,7 @@ int ares_getopt(ares_getopt_state_t *state, int nargc, const char * const * narg
   } else {                          /* need an argument */
     if (*state->place) {                   /* no white space */
       state->optarg = state->place;
-    } else if (nargc <= ++state->optind) { /* no arg */
+    } else if (state->argc <= ++state->optind) { /* no arg */
       state->place = EMSG;
       if (*ostr == ':') {
         return (BADARG);
@@ -117,7 +119,7 @@ int ares_getopt(ares_getopt_state_t *state, int nargc, const char * const * narg
       }
       return (BADCH);
     } else { /* white space */
-      state->optarg = nargv[state->optind];
+      state->optarg = state->argv[state->optind];
     }
     state->place = EMSG;
     ++state->optind;
