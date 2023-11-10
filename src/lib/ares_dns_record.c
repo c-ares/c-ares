@@ -834,7 +834,8 @@ const char *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
 {
   char * const *str;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR) {
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR &&
+      ares_dns_rr_key_datatype(key) != ARES_DATATYPE_NAME) {
     return NULL;
   }
 
@@ -1090,7 +1091,8 @@ ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
 {
   char **str;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR) {
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR &&
+      ares_dns_rr_key_datatype(key) != ARES_DATATYPE_NAME) {
     return ARES_EFORMERR;
   }
 

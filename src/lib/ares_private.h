@@ -353,7 +353,8 @@ ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
 /* Identical to ares_send() except returns normal ares return codes like
  * ARES_SUCCESS */
 ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
-                           size_t qlen, ares_callback callback, void *arg);
+                           size_t qlen, ares_callback callback, void *arg,
+                           unsigned short *qid);
 void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
 void          ares__check_cleanup_conn(const ares_channel_t     *channel,

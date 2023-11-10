@@ -413,17 +413,19 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_SOA_MNAME:
     case ARES_RR_SOA_RNAME:
     case ARES_RR_PTR_DNAME:
-    case ARES_RR_HINFO_CPU:
-    case ARES_RR_HINFO_OS:
     case ARES_RR_MX_EXCHANGE:
     case ARES_RR_SRV_TARGET:
     case ARES_RR_SVCB_TARGET:
     case ARES_RR_HTTPS_TARGET:
+    case ARES_RR_NAPTR_REPLACEMENT:
+    case ARES_RR_URI_TARGET:
+      return ARES_DATATYPE_NAME;
+
+    case ARES_RR_HINFO_CPU:
+    case ARES_RR_HINFO_OS:
     case ARES_RR_NAPTR_FLAGS:
     case ARES_RR_NAPTR_SERVICES:
     case ARES_RR_NAPTR_REGEXP:
-    case ARES_RR_NAPTR_REPLACEMENT:
-    case ARES_RR_URI_TARGET:
     case ARES_RR_CAA_TAG:
       return ARES_DATATYPE_STR;
 
@@ -589,4 +591,88 @@ const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
   }
 
   return NULL;
+}
+
+
+ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass, const char *str)
+{
+  size_t i;
+  static const struct {
+    const char *name;
+    ares_dns_class_t qclass;
+  } list[] = {
+    { "IN",  ARES_CLASS_IN },
+    { "CH", ARES_CLASS_CHAOS },
+    { "HS", ARES_CLASS_HESOID },
+    { "NONE", ARES_CLASS_NONE },
+    { "ANY", ARES_CLASS_ANY },
+    { NULL, 0 }
+  };
+
+  if (qclass == NULL || str == NULL)
+    return ARES_FALSE;
+
+  for (i=0; list[i].name != NULL; i++) {
+    if (strcasecmp(list[i].name, str) == 0) {
+      *qclass = list[i].qclass;
+      return ARES_TRUE;
+    }
+  }
+  return ARES_FALSE;
+}
+
+
+ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype, const char *str)
+{
+  size_t i;
+  static const struct {
+    const char *name;
+    ares_dns_rec_type_t type;
+  } list[] = {
+    { "A",  ARES_REC_TYPE_A },
+    { "NS", ARES_REC_TYPE_NS },
+    { "CNAME", ARES_REC_TYPE_CNAME },
+    { "SOA", ARES_REC_TYPE_SOA },
+    { "PTR", ARES_REC_TYPE_PTR },
+    { "HINFO", ARES_REC_TYPE_HINFO },
+    { "MX", ARES_REC_TYPE_MX },
+    { "TXT", ARES_REC_TYPE_TXT },
+    { "AAAA", ARES_REC_TYPE_AAAA },
+    { "SRV", ARES_REC_TYPE_SRV },
+    { "NAPTR", ARES_REC_TYPE_NAPTR },
+    { "OPT", ARES_REC_TYPE_OPT },
+    { "TLSA", ARES_REC_TYPE_TLSA },
+    { "SVCB", ARES_REC_TYPE_SVCB },
+    { "HTTPS", ARES_REC_TYPE_HTTPS },
+    { "ANY", ARES_REC_TYPE_ANY },
+    { "URI", ARES_REC_TYPE_URI },
+    { "CAA", ARES_REC_TYPE_CAA },
+    { "RAW_RR", ARES_REC_TYPE_RAW_RR },
+    { NULL, 0 }
+  };
+
+  if (qtype == NULL || str == NULL)
+    return ARES_FALSE;
+
+  for (i=0; list[i].name != NULL; i++) {
+    if (strcasecmp(list[i].name, str) == 0) {
+      *qtype = list[i].type;
+      return ARES_TRUE;
+    }
+  }
+  return ARES_FALSE;
+}
+
+
+const char *ares_dns_section_tostr(ares_dns_section_t section)
+{
+  switch (section) {
+    case ARES_SECTION_ANSWER:
+      return "ANSWER";
+    case ARES_SECTION_AUTHORITY:
+      return "AUTHORITY";
+    case ARES_SECTION_ADDITIONAL:
+      return "ADDITIONAL";
+  }
+  return "UNKNOWN";
 }

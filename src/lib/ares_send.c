@@ -37,12 +37,27 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
+
+static unsigned short generate_unique_qid(ares_channel_t *channel)
+{
+  unsigned short id;
+
+  do {
+    id = ares__generate_new_id(channel->rand_state);
+  } while (ares__htable_szvp_get(channel->queries_by_qid, id, NULL));
+
+  return id;
+}
+
 ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
-                           size_t qlen, ares_callback callback, void *arg)
+                           size_t qlen, ares_callback callback, void *arg,
+                           unsigned short *qid)
 {
   struct query  *query;
   size_t         packetsz;
   struct timeval now;
+  ares_status_t  status;
+  unsigned short id = generate_unique_qid(channel);
 
   /* Verify that the query is at least long enough to hold the header. */
   if (qlen < HFIXEDSZ || qlen >= (1 << 16)) {
@@ -69,12 +84,14 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
     return ARES_ENOMEM;
   }
 
-  /* Compute the query ID.  Start with no timeout. */
-  query->qid             = DNS_HEADER_QID(qbuf);
+  query->qid             = id;
   query->timeout.tv_sec  = 0;
   query->timeout.tv_usec = 0;
 
-  memcpy(query->qbuf, qbuf, qlen);
+  /* Ignore first 2 bytes, assign our own query id */
+  query->qbuf[0] = (unsigned char)((id >> 8) & 0xFF);
+  query->qbuf[1] = (unsigned char)(id & 0xFF);
+  memcpy(query->qbuf + 2, qbuf + 2, qlen - 2);
   query->qlen = qlen;
 
   /* Fill in query arguments. */
@@ -115,11 +132,15 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
   /* Perform the first query action. */
   now = ares__tvnow();
 
-  return ares__send_query(query, &now);
+  status = ares__send_query(query, &now);
+  if (status == ARES_SUCCESS && qid) {
+    *qid = id;
+  }
+  return status;
 }
 
 void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
                ares_callback callback, void *arg)
 {
-  ares_send_ex(channel, qbuf, (size_t)qlen, callback, arg);
+  ares_send_ex(channel, qbuf, (size_t)qlen, callback, arg, NULL);
 }

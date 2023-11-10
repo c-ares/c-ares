@@ -152,13 +152,14 @@ typedef enum {
   ARES_DATATYPE_U8      = 3, /*!< 8bit unsigned integer */
   ARES_DATATYPE_U16     = 4, /*!< 16bit unsigned integer */
   ARES_DATATYPE_U32     = 5, /*!< 32bit unsigned integer */
-  ARES_DATATYPE_STR     = 6, /*!< Null-terminated string */
-  ARES_DATATYPE_BIN     = 7, /*!< Binary data */
-  ARES_DATATYPE_BINP    = 8, /*!< Officially defined as binary data, but likely
+  ARES_DATATYPE_NAME    = 6, /*!< Null-terminated string of a domain name */
+  ARES_DATATYPE_STR     = 7, /*!< Null-terminated string */
+  ARES_DATATYPE_BIN     = 8, /*!< Binary data */
+  ARES_DATATYPE_BINP    = 9, /*!< Officially defined as binary data, but likely
                               *   printable. Guaranteed to have a NULL
                               *   terminator for convenience (not included in
                               *   length) */
-  ARES_DATATYPE_OPT = 9,     /*!< Array of options.  16bit identifier, BINP
+  ARES_DATATYPE_OPT = 10,    /*!< Array of options.  16bit identifier, BINP
                               *   data. */
 } ares_dns_datatype_t;
 
@@ -168,13 +169,13 @@ typedef enum {
 typedef enum {
   /*! A Record. Address. Datatype: INADDR */
   ARES_RR_A_ADDR = (ARES_REC_TYPE_A * 100) + 1,
-  /*! NS Record. Name. Datatype: STR */
+  /*! NS Record. Name. Datatype: NAME */
   ARES_RR_NS_NSDNAME = (ARES_REC_TYPE_NS * 100) + 1,
-  /*! CNAME Record. CName. Datatype: STR */
+  /*! CNAME Record. CName. Datatype: NAME */
   ARES_RR_CNAME_CNAME = (ARES_REC_TYPE_CNAME * 100) + 1,
-  /*! SOA Record. MNAME, Primary Source of Data. Datatype: STR */
+  /*! SOA Record. MNAME, Primary Source of Data. Datatype: NAME */
   ARES_RR_SOA_MNAME = (ARES_REC_TYPE_SOA * 100) + 1,
-  /*! SOA Record. RNAME, Mailbox of person responsible. Datatype: STR */
+  /*! SOA Record. RNAME, Mailbox of person responsible. Datatype: NAME */
   ARES_RR_SOA_RNAME = (ARES_REC_TYPE_SOA * 100) + 2,
   /*! SOA Record. Serial, version. Datatype: U32 */
   ARES_RR_SOA_SERIAL = (ARES_REC_TYPE_SOA * 100) + 3,
@@ -186,7 +187,7 @@ typedef enum {
   ARES_RR_SOA_EXPIRE = (ARES_REC_TYPE_SOA * 100) + 6,
   /*! SOA Record. Minimum, RR TTL. Datatype: U32 */
   ARES_RR_SOA_MINIMUM = (ARES_REC_TYPE_SOA * 100) + 7,
-  /*! PTR Record. DNAME, pointer domain. Datatype: STR */
+  /*! PTR Record. DNAME, pointer domain. Datatype: NAME */
   ARES_RR_PTR_DNAME = (ARES_REC_TYPE_PTR * 100) + 1,
   /*! HINFO Record. CPU. Datatype: STR */
   ARES_RR_HINFO_CPU = (ARES_REC_TYPE_HINFO * 100) + 1,
@@ -194,7 +195,7 @@ typedef enum {
   ARES_RR_HINFO_OS = (ARES_REC_TYPE_HINFO * 100) + 2,
   /*! MX Record. Preference. Datatype: U16 */
   ARES_RR_MX_PREFERENCE = (ARES_REC_TYPE_MX * 100) + 1,
-  /*! MX Record. Exchange, domain. Datatype: STR */
+  /*! MX Record. Exchange, domain. Datatype: NAME */
   ARES_RR_MX_EXCHANGE = (ARES_REC_TYPE_MX * 100) + 2,
   /*! TXT Record. Data. Datatype: BINP */
   ARES_RR_TXT_DATA = (ARES_REC_TYPE_TXT * 100) + 1,
@@ -206,7 +207,7 @@ typedef enum {
   ARES_RR_SRV_WEIGHT = (ARES_REC_TYPE_SRV * 100) + 3,
   /*! SRV Record. Port. Datatype: U16 */
   ARES_RR_SRV_PORT = (ARES_REC_TYPE_SRV * 100) + 4,
-  /*! SRV Record. Target domain. Datatype: STR */
+  /*! SRV Record. Target domain. Datatype: NAME */
   ARES_RR_SRV_TARGET = (ARES_REC_TYPE_SRV * 100) + 5,
   /*! NAPTR Record. Order. Datatype: U16 */
   ARES_RR_NAPTR_ORDER = (ARES_REC_TYPE_NAPTR * 100) + 1,
@@ -218,7 +219,7 @@ typedef enum {
   ARES_RR_NAPTR_SERVICES = (ARES_REC_TYPE_NAPTR * 100) + 4,
   /*! NAPTR Record. Regexp. Datatype: STR */
   ARES_RR_NAPTR_REGEXP = (ARES_REC_TYPE_NAPTR * 100) + 5,
-  /*! NAPTR Record. Replacement. Datatype: STR */
+  /*! NAPTR Record. Replacement. Datatype: NAME */
   ARES_RR_NAPTR_REPLACEMENT = (ARES_REC_TYPE_NAPTR * 100) + 6,
   /*! OPT Record. UDP Size. Datatype: U16 */
   ARES_RR_OPT_UDP_SIZE = (ARES_REC_TYPE_OPT * 100) + 1,
@@ -240,13 +241,13 @@ typedef enum {
   ARES_RR_TLSA_DATA = (ARES_REC_TYPE_TLSA * 100) + 4,
   /*! SVCB Record. SvcPriority. Datatype: U16 */
   ARES_RR_SVCB_PRIORITY = (ARES_REC_TYPE_SVCB * 100) + 1,
-  /*! SVCB Record. TargetName. Datatype: STR */
+  /*! SVCB Record. TargetName. Datatype: NAME */
   ARES_RR_SVCB_TARGET = (ARES_REC_TYPE_SVCB * 100) + 2,
   /*! SVCB Record. SvcParams. Datatype: OPT */
   ARES_RR_SVCB_PARAMS = (ARES_REC_TYPE_SVCB * 100) + 3,
   /*! HTTPS Record. SvcPriority. Datatype: U16 */
   ARES_RR_HTTPS_PRIORITY = (ARES_REC_TYPE_HTTPS * 100) + 1,
-  /*! HTTPS Record. TargetName. Datatype: STR */
+  /*! HTTPS Record. TargetName. Datatype: NAME */
   ARES_RR_HTTPS_TARGET = (ARES_REC_TYPE_HTTPS * 100) + 2,
   /*! HTTPS Record. SvcParams. Datatype: OPT */
   ARES_RR_HTTPS_PARAMS = (ARES_REC_TYPE_HTTPS * 100) + 3,
@@ -254,7 +255,7 @@ typedef enum {
   ARES_RR_URI_PRIORITY = (ARES_REC_TYPE_URI * 100) + 1,
   /*! URI Record. Weight. Datatype: U16 */
   ARES_RR_URI_WEIGHT = (ARES_REC_TYPE_URI * 100) + 2,
-  /*! URI Record. Target domain. Datatype: STR */
+  /*! URI Record. Target domain. Datatype: NAME */
   ARES_RR_URI_TARGET = (ARES_REC_TYPE_URI * 100) + 3,
   /*! CAA Record. Critical flag. Datatype: U8 */
   ARES_RR_CAA_CRITICAL = (ARES_REC_TYPE_CAA * 100) + 1,
@@ -344,6 +345,31 @@ CARES_EXTERN const char *ares_dns_opcode_tostr(ares_dns_opcode_t opcode);
  */
 CARES_EXTERN const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key);
 
+/*! String representation of DNS Resource Record section
+ *
+ * \param[in] section  Section
+ * \return string
+ */
+CARES_EXTERN const char *ares_dns_section_tostr(ares_dns_section_t section);
+
+/*! Convert DNS class name as string to ares_dns_class_t
+ *
+ *  \param[out] qclass  Pointer passed by reference to write class
+ *  \param[in]  str     String to convert
+ *  \return ARES_TRUE on success
+ */
+CARES_EXTERN ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass,
+                                                const char *str);
+
+/*! Convert DNS record type as string to ares_dns_rec_type_t
+ *
+ *  \param[out] qclass  Pointer passed by reference to write record type
+ *  \param[in]  str     String to convert
+ *  \return ARES_TRUE on success
+ */
+CARES_EXTERN ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
+                                                   const char *str);
+
 
 /*! Opaque data type representing a DNS RR (Resource Record) */
 struct ares_dns_rr;
@@ -369,7 +395,8 @@ typedef struct ares_dns_record ares_dns_record_t;
  *  \param[out] dnsrec  Pointer passed by reference for a newly allocated
  *                      record object.  Must be ares_dns_record_destroy()'d by
  *                      caller.
- *  \param[in]  id      DNS Query ID
+ *  \param[in]  id      DNS Query ID.  If structuring a new query to be sent
+ *                      with ares_send(), this value should be zero.
  *  \param[in]  flags   DNS Flags from \ares_dns_flags_t
  *  \param[in]  opcode  DNS OpCode (typically ARES_OPCODE_QUERY)
  *  \param[in]  rcode   DNS RCode
@@ -583,7 +610,7 @@ CARES_EXTERN ares_status_t
                         const struct ares_in6_addr *addr);
 
 /*! Set string data for specified resource record and key.  Can
- *  only be used on keys with datatype ARES_DATATYPE_STR
+ *  only be used on keys with datatype ARES_DATATYPE_STR or ARES_DATATYPE_NAME.
  *
  *  \param[in] dns_rr Pointer to resource record
  *  \param[in] key    DNS Resource Record Key
@@ -680,7 +707,7 @@ CARES_EXTERN const struct ares_in6_addr *
   ares_dns_rr_get_addr6(const ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
 
 /*! Retrieve a pointer to the string.  Can only be used on keys with
- *  datatype ARES_DATATYPE_STR.
+ *  datatype ARES_DATATYPE_STR and ARES_DATATYPE_NAME.
  *
  *  \param[in] dns_rr Pointer to resource record
  *  \param[in] key    DNS Resource Record Key

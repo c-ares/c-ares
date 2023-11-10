@@ -45,21 +45,6 @@ struct qquery {
 static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
                       int alen);
 
-/* a unique query id is generated using an rc4 key. Since the id may already
-   be used by a running query (as infrequent as it may be), a lookup is
-   performed per id generation. In practice this search should happen only
-   once per newly generated id
-*/
-static unsigned short generate_unique_id(ares_channel_t *channel)
-{
-  unsigned short id;
-
-  do {
-    id = ares__generate_new_id(channel->rand_state);
-  } while (ares__htable_szvp_get(channel->queries_by_qid, id, NULL));
-
-  return id;
-}
 
 ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
                              int dnsclass, int type, ares_callback callback,
@@ -70,12 +55,11 @@ ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
   int            qlen;
   int            rd;
   ares_status_t  status;
-  unsigned short id = generate_unique_id(channel);
 
   /* Compose the query. */
   rd     = !(channel->flags & ARES_FLAG_NORECURSE);
   status = (ares_status_t)ares_create_query(
-    name, dnsclass, type, id, rd, &qbuf, &qlen,
+    name, dnsclass, type, 0, rd, &qbuf, &qlen,
     (channel->flags & ARES_FLAG_EDNS) ? (int)channel->ednspsz : 0);
   if (status != ARES_SUCCESS) {
     if (qbuf != NULL) {
@@ -96,12 +80,8 @@ ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
   qquery->arg      = arg;
 
   /* Send it off.  qcallback will be called when we get an answer. */
-  status = ares_send_ex(channel, qbuf, (size_t)qlen, qcallback, qquery);
+  status = ares_send_ex(channel, qbuf, (size_t)qlen, qcallback, qquery, qid);
   ares_free_string(qbuf);
-
-  if (status == ARES_SUCCESS && qid) {
-    *qid = id;
-  }
 
   return status;
 }
