@@ -159,7 +159,7 @@ typedef enum {
                               *   printable. Guaranteed to have a NULL
                               *   terminator for convenience (not included in
                               *   length) */
-  ARES_DATATYPE_OPT = 10,    /*!< Array of options.  16bit identifier, BINP
+  ARES_DATATYPE_OPT = 10,    /*!< Array of options.  16bit identifier, BIN
                               *   data. */
 } ares_dns_datatype_t;
 
@@ -856,7 +856,8 @@ CARES_EXTERN size_t ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
  *  \param[in]  idx     Index of option record
  *  \param[out] val     Optional. Pointer passed by reference to hold value.
  *                      Options may not have values.  Value if returned is
- *                      likely printable and guaranteed to be NULL terminated.
+ *                      guaranteed to be NULL terminated, however in most
+ *                      cases it is not printable.
  *  \param[out] val_len Optional. Pointer passed by reference to hold value
  *                      length.
  *  \return option key/id on success, 65535 on misuse.
@@ -872,7 +873,8 @@ CARES_EXTERN unsigned short
  *  \param[in]  opt     Option record key id (this is not the index).
  *  \param[out] val     Optional. Pointer passed by reference to hold value.
  *                      Options may not have values. Value if returned is
- *                      likely printable and guaranteed to be NULL terminated.
+ *                      guaranteed to be NULL terminated, however in most cases
+ *                      it is not printable.
  *  \param[out] val_len Optional. Pointer passed by reference to hold value
  *                      length.
  *  \return ARES_TRUE on success, ARES_FALSE on misuse.
