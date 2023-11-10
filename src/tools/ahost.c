@@ -106,11 +106,11 @@ int         main(int argc, char **argv)
         options.domains[options.ndomains - 1] = strdup(optarg);
         break;
       case 't':
-        if (!strcasecmp(optarg, "a")) {
+        if (!strcasecmp(ares_optarg, "a")) {
           addr_family = AF_INET;
-        } else if (!strcasecmp(optarg, "aaaa")) {
+        } else if (!strcasecmp(ares_optarg, "aaaa")) {
           addr_family = AF_INET6;
-        } else if (!strcasecmp(optarg, "u")) {
+        } else if (!strcasecmp(ares_optarg, "u")) {
           addr_family = AF_UNSPEC;
         } else {
           usage();
@@ -128,8 +128,8 @@ int         main(int argc, char **argv)
     }
   }
 
-  argc -= optind;
-  argv += optind;
+  argc -= ares_optind;
+  argv += ares_optind;
   if (argc < 1) {
     usage();
   }

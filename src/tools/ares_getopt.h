@@ -35,28 +35,6 @@
 
 int ares_getopt(int nargc, char * const nargv[], const char *ostr);
 
-#ifdef optarg
-#  undef optarg
-#endif
-#ifdef optind
-#  undef optind
-#endif
-#ifdef opterr
-#  undef opterr
-#endif
-#ifdef optopt
-#  undef optopt
-#endif
-#ifdef optreset
-#  undef optreset
-#endif
-
-#define optarg   ares_optarg
-#define optind   ares_optind
-#define opterr   ares_opterr
-#define optopt   ares_optopt
-#define optreset ares_optreset
-
 extern char *ares_optarg;
 extern int   ares_optind;
 extern int   ares_opterr;

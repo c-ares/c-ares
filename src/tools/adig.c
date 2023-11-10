@@ -182,10 +182,10 @@ static ares_bool_t read_cmdline(int argc, char * const argv[], adig_config_t *co
         return ARES_TRUE;
 
       case 'f':
-        f = lookup_flag(configflags, nconfigflags, optarg);
+        f = lookup_flag(configflags, nconfigflags, ares_optarg);
         if (f == 0) {
           snprintf(config->error, sizeof(config->error), "flag %s unknown",
-                   optarg);
+                   ares_optarg);
         }
 
         config->options.flags |= f;
@@ -193,56 +193,56 @@ static ares_bool_t read_cmdline(int argc, char * const argv[], adig_config_t *co
         break;
 
       case 's':
-        if (optarg == NULL) {
+        if (ares_optarg == NULL) {
           snprintf(config->error, sizeof(config->error), "%s",
                    "missing servers");
           return ARES_FALSE;
         }
-        config->servers = strdup(optarg);
+        config->servers = strdup(ares_optarg);
         break;
 
       case 'c':
-        if (!ares_dns_class_fromstr(&config->qclass, optarg)) {
+        if (!ares_dns_class_fromstr(&config->qclass, ares_optarg)) {
           snprintf(config->error, sizeof(config->error), "unrecognied class %s",
-                   optarg);
+                   ares_optarg);
           return ARES_FALSE;
         }
         break;
 
       case 't':
-        if (!ares_dns_rec_type_fromstr(&config->qtype, optarg)) {
+        if (!ares_dns_rec_type_fromstr(&config->qtype, ares_optarg)) {
           snprintf(config->error, sizeof(config->error), "unrecognied type %s",
-                   optarg);
+                   ares_optarg);
           return ARES_FALSE;
         }
         break;
 
       case 'T':
         /* Set the TCP port number. */
-        if (!isdigit(*optarg)) {
+        if (!isdigit(*ares_optarg)) {
           snprintf(config->error, sizeof(config->error), "invalid port number");
           return ARES_FALSE;
         }
-        config->options.tcp_port  = (unsigned short)strtol(optarg, NULL, 0);
+        config->options.tcp_port  = (unsigned short)strtol(ares_optarg, NULL, 0);
         config->options.flags    |= ARES_FLAG_USEVC;
         config->optmask          |= ARES_OPT_TCP_PORT;
         break;
 
       case 'U':
         /* Set the UDP port number. */
-        if (!isdigit(*optarg)) {
+        if (!isdigit(*ares_optarg)) {
           snprintf(config->error, sizeof(config->error), "invalid port number");
           return ARES_FALSE;
         }
-        config->options.udp_port  = (unsigned short)strtol(optarg, NULL, 0);
+        config->options.udp_port  = (unsigned short)strtol(ares_optarg, NULL, 0);
         config->optmask          |= ARES_OPT_UDP_PORT;
         break;
     }
   }
 
-  config->args_processed = optind;
+  config->args_processed = ares_optind;
 
-  argc -= optind;
+  argc -= ares_optind;
   if (argc == 0) {
     snprintf(config->error, sizeof(config->error), "missing query name");
     return ARES_FALSE;
