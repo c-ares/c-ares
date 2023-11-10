@@ -395,21 +395,47 @@ static void print_opt_addr6(const unsigned char *val, size_t val_len)
 
 static void print_opt_u8(const unsigned char *val, size_t val_len)
 {
-
+  size_t i;
+  for (i=0; i<val_len; i++) {
+    if (i != 0)
+      printf(",");
+    printf("%u", (unsigned int)val[i]);
+  }
 }
 
 static void print_opt_u16(const unsigned char *val, size_t val_len)
 {
-
+  size_t i;
+  if (val_len < 2 || val_len % 2 != 0) {
+    printf("INVALID!");
+    return;
+  }
+  for (i=0; i<val_len; i+=2) {
+    unsigned short u16 = (unsigned short)val[i] << 8 | (unsigned short)val[i+1];
+    if (i != 0)
+      printf(",");
+    printf("%u", (unsigned int)u16);
+  }
 }
 
 static void print_opt_u32(const unsigned char *val, size_t val_len)
 {
-
+  size_t i;
+  if (val_len < 4 || val_len % 4 != 0) {
+    printf("INVALID!");
+    return;
+  }
+  for (i=0; i<val_len; i+=4) {
+    unsigned int u32 = (unsigned int)val[i] << 24 | (unsigned int)val[i+1] << 16 | (unsigned int)val[i+2] << 8 | (unsigned int)val[i+3];
+    if (i != 0)
+      printf(",");
+    printf("%u", u32);
+  }
 }
 
 static void print_opt_str(const unsigned char *val, size_t val_len)
 {
+  (void)val_len;
   printf("\"%s\"", (const char *)val);
 }
 
@@ -423,10 +449,26 @@ static void print_opt_bin(const unsigned char *val, size_t val_len)
 
 }
 
+static ares_bool_t adig_isprint(int ch)
+{
+  if (ch >= 0x20 && ch <= 0x7E) {
+    return ARES_TRUE;
+  }
+  return ARES_FALSE;
+}
+
 static void print_opt_binp(const unsigned char *val, size_t val_len)
 {
-  /* XXX: handle escaping */
-  printf("\"%s\"", (const char *)val);
+  size_t i;
+  printf("\"");
+  for (i=0; i<val_len; i++) {
+    if (adig_isprint(val[i])) {
+      printf("%c", val[i]);
+    } else {
+      printf("\\%03d", val[i]);
+    }
+  }
+  printf("\"");
 }
 
 static void print_opts(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
