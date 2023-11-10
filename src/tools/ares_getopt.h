@@ -33,12 +33,12 @@
  */
 
 
-int ares_getopt(int nargc, char * const nargv[], const char *ostr);
+int ares_getopt(int nargc, const char * const *nargv, const char *ostr);
 
-extern char *ares_optarg;
-extern int   ares_optind;
-extern int   ares_opterr;
-extern int   ares_optopt;
-extern int   ares_optreset;
+extern const char *ares_optarg;
+extern int         ares_optind;
+extern int         ares_opterr;
+extern int         ares_optopt;
+extern int         ares_optreset;
 
 #endif /* ARES_GETOPT_H */

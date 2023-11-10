@@ -50,11 +50,11 @@
 #include <string.h>
 #include "ares_getopt.h"
 
-int        ares_opterr = 1; /* if error message should be printed */
-int        ares_optind = 1; /* index into parent argv vector */
-int        ares_optopt = 0; /* character checked for validity */
-int        ares_optreset;   /* reset getopt */
-char      *ares_optarg;     /* argument associated with option */
+int         ares_opterr = 1; /* if error message should be printed */
+int         ares_optind = 1; /* index into parent argv vector */
+int         ares_optopt = 0; /* character checked for validity */
+int         ares_optreset;   /* reset getopt */
+const char *ares_optarg;     /* argument associated with option */
 
 #define BADCH  (int)'?'
 #define BADARG (int)':'
@@ -64,10 +64,10 @@ char      *ares_optarg;     /* argument associated with option */
  * ares_getopt --
  *    Parse argc/argv argument vector.
  */
-int ares_getopt(int nargc, char * const nargv[], const char *ostr)
+int ares_getopt(int nargc, const char * const * nargv, const char *ostr)
 {
-  static char *place = EMSG; /* option letter processing */
-  char        *oli;          /* option letter list index */
+  static const char *place = EMSG; /* option letter processing */
+  char              *oli;          /* option letter list index */
 
   if (ares_optreset || !*place) { /* update scanning pointer */
     ares_optreset = 0;

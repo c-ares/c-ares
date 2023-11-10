@@ -157,7 +157,7 @@ static void print_help(void)
     "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
 }
 
-static ares_bool_t read_cmdline(int argc, char * const argv[], adig_config_t *config)
+static ares_bool_t read_cmdline(int argc, const char * const *argv, adig_config_t *config)
 {
   ares_optreset = 1;
 
@@ -832,7 +832,7 @@ int main(int argc, char **argv)
   memset(&config, 0, sizeof(config));
   config.qclass = ARES_CLASS_IN;
   config.qtype  = ARES_REC_TYPE_A;
-  if (!read_cmdline(argc, argv, &config)) {
+  if (!read_cmdline(argc, (const char * const *)argv, &config)) {
     printf("%s\n", config.error);
     print_help();
     rv = 1;

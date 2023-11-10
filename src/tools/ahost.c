@@ -91,7 +91,7 @@ int         main(int argc, char **argv)
     return 1;
   }
 
-  while ((c = ares_getopt(argc, argv, "dt:h?s:")) != -1) {
+  while ((c = ares_getopt(argc, (const char * const *)argv, "dt:h?s:")) != -1) {
     switch (c) {
       case 'd':
 #ifdef WATT32
