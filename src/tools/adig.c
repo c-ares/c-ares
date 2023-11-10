@@ -78,6 +78,7 @@ static const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode)
 /* ----- */
 
 typedef struct {
+  ares_bool_t         is_help;
   struct ares_options options;
   int                 optmask;
   ares_dns_class_t    qclass;
@@ -117,6 +118,12 @@ static int          lookup_flag(const nv_t *nv, size_t num_nv, const char *name)
   }
 
   return 0;
+}
+
+static void free_config(adig_config_t *config)
+{
+  free(config->servers);
+  memset(config, 0, sizeof(*config));
 }
 
 static void print_help(void)
@@ -164,9 +171,8 @@ static ares_bool_t read_cmdline(int argc, char **argv, adig_config_t *config)
 
       case 'h':
       case '?':
-        print_help();
-        exit(0);
-        break;
+        config->is_help = ARES_TRUE;
+        return ARES_TRUE;
 
       case 'f':
         f = lookup_flag(configflags, nconfigflags, optarg);
@@ -230,7 +236,6 @@ static ares_bool_t read_cmdline(int argc, char **argv, adig_config_t *config)
   config->args_processed = optind;
 
   argc -= optind;
-  argv += optind;
   if (argc == 0) {
     snprintf(config->error, sizeof(config->error), "missing query name");
     return ARES_FALSE;
@@ -367,8 +372,11 @@ static void print_opt_u16_list(const unsigned char *val, size_t val_len)
   }
   for (i = 0; i < val_len; i += 2) {
     unsigned short u16  = 0;
-    u16                |= (unsigned short)(val[i] << 8);
-    u16                |= (unsigned short)(val[i + 1]);
+    unsigned short c;
+    c = (unsigned short)val[i];
+    u16                |= c << 8;
+    c = (unsigned short)val[i+1];
+    u16                |= c;
     if (i != 0) {
       printf(",");
     }
@@ -799,6 +807,7 @@ int main(int argc, char **argv)
   ares_status_t   status;
   adig_config_t   config;
   int             i;
+  int             rv      = 0;
 
 #ifdef USE_WINSOCK
   WORD    wVersionRequested = MAKEWORD(USE_WINSOCK, USE_WINSOCK);
@@ -818,14 +827,21 @@ int main(int argc, char **argv)
   if (!read_cmdline(argc, argv, &config)) {
     printf("%s\n", config.error);
     print_help();
-    return 1;
+    rv = 1;
+    goto done;
+  }
+
+  if (config.is_help) {
+    print_help();
+    goto done;
   }
 
   status =
     (ares_status_t)ares_init_options(&channel, &config.options, config.optmask);
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "ares_init_options: %s\n", ares_strerror((int)status));
-    return 1;
+    rv = 1;
+    goto done;
   }
 
   if (config.servers) {
@@ -833,7 +849,8 @@ int main(int argc, char **argv)
     if (status != ARES_SUCCESS) {
       fprintf(stderr, "ares_set_servers_ports_csv: %s\n",
               ares_strerror((int)status));
-      return 1;
+      rv = 1;
+      goto done;
     }
   }
 
@@ -843,7 +860,8 @@ int main(int argc, char **argv)
     if (status != ARES_SUCCESS) {
       fprintf(stderr, "Failed to create query for %s: %s\n", argv[i],
               ares_strerror((int)status));
-      return 1;
+      rv = 1;
+      goto done;
     }
   }
 
@@ -853,7 +871,6 @@ int main(int argc, char **argv)
     printf(" %s", argv[i]);
   }
   printf("\n");
-
 
   while (1) {
     fd_set          read_fds;
@@ -884,17 +901,20 @@ int main(int argc, char **argv)
 #endif
       if (err != EAGAIN && err != EINTR) {
         fprintf(stderr, "select fail: %d", err);
-        return 1;
+        rv = 1;
+        goto done;
       }
     }
     ares_process(channel, &read_fds, &write_fds);
   }
 
+done:
+  free_config(&config);
   ares_destroy(channel);
   ares_library_cleanup();
 
 #ifdef USE_WINSOCK
   WSACleanup();
 #endif
-  return 0;
+  return rv;
 }
