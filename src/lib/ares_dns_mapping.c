@@ -593,26 +593,27 @@ const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
   return NULL;
 }
 
-
 ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass, const char *str)
 {
   size_t i;
+
   static const struct {
-    const char *name;
+    const char      *name;
     ares_dns_class_t qclass;
   } list[] = {
-    { "IN",  ARES_CLASS_IN },
-    { "CH", ARES_CLASS_CHAOS },
-    { "HS", ARES_CLASS_HESOID },
-    { "NONE", ARES_CLASS_NONE },
-    { "ANY", ARES_CLASS_ANY },
-    { NULL, 0 }
+    {"IN",    ARES_CLASS_IN    },
+    { "CH",   ARES_CLASS_CHAOS },
+    { "HS",   ARES_CLASS_HESOID},
+    { "NONE", ARES_CLASS_NONE  },
+    { "ANY",  ARES_CLASS_ANY   },
+    { NULL,   0                }
   };
 
-  if (qclass == NULL || str == NULL)
+  if (qclass == NULL || str == NULL) {
     return ARES_FALSE;
+  }
 
-  for (i=0; list[i].name != NULL; i++) {
+  for (i = 0; list[i].name != NULL; i++) {
     if (strcasecmp(list[i].name, str) == 0) {
       *qclass = list[i].qclass;
       return ARES_TRUE;
@@ -621,40 +622,42 @@ ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass, const char *str)
   return ARES_FALSE;
 }
 
-
-ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype, const char *str)
+ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
+                                      const char          *str)
 {
   size_t i;
+
   static const struct {
-    const char *name;
+    const char         *name;
     ares_dns_rec_type_t type;
   } list[] = {
-    { "A",  ARES_REC_TYPE_A },
-    { "NS", ARES_REC_TYPE_NS },
-    { "CNAME", ARES_REC_TYPE_CNAME },
-    { "SOA", ARES_REC_TYPE_SOA },
-    { "PTR", ARES_REC_TYPE_PTR },
-    { "HINFO", ARES_REC_TYPE_HINFO },
-    { "MX", ARES_REC_TYPE_MX },
-    { "TXT", ARES_REC_TYPE_TXT },
-    { "AAAA", ARES_REC_TYPE_AAAA },
-    { "SRV", ARES_REC_TYPE_SRV },
-    { "NAPTR", ARES_REC_TYPE_NAPTR },
-    { "OPT", ARES_REC_TYPE_OPT },
-    { "TLSA", ARES_REC_TYPE_TLSA },
-    { "SVCB", ARES_REC_TYPE_SVCB },
-    { "HTTPS", ARES_REC_TYPE_HTTPS },
-    { "ANY", ARES_REC_TYPE_ANY },
-    { "URI", ARES_REC_TYPE_URI },
-    { "CAA", ARES_REC_TYPE_CAA },
-    { "RAW_RR", ARES_REC_TYPE_RAW_RR },
-    { NULL, 0 }
+    {"A",       ARES_REC_TYPE_A     },
+    { "NS",     ARES_REC_TYPE_NS    },
+    { "CNAME",  ARES_REC_TYPE_CNAME },
+    { "SOA",    ARES_REC_TYPE_SOA   },
+    { "PTR",    ARES_REC_TYPE_PTR   },
+    { "HINFO",  ARES_REC_TYPE_HINFO },
+    { "MX",     ARES_REC_TYPE_MX    },
+    { "TXT",    ARES_REC_TYPE_TXT   },
+    { "AAAA",   ARES_REC_TYPE_AAAA  },
+    { "SRV",    ARES_REC_TYPE_SRV   },
+    { "NAPTR",  ARES_REC_TYPE_NAPTR },
+    { "OPT",    ARES_REC_TYPE_OPT   },
+    { "TLSA",   ARES_REC_TYPE_TLSA  },
+    { "SVCB",   ARES_REC_TYPE_SVCB  },
+    { "HTTPS",  ARES_REC_TYPE_HTTPS },
+    { "ANY",    ARES_REC_TYPE_ANY   },
+    { "URI",    ARES_REC_TYPE_URI   },
+    { "CAA",    ARES_REC_TYPE_CAA   },
+    { "RAW_RR", ARES_REC_TYPE_RAW_RR},
+    { NULL,     0                   }
   };
 
-  if (qtype == NULL || str == NULL)
+  if (qtype == NULL || str == NULL) {
     return ARES_FALSE;
+  }
 
-  for (i=0; list[i].name != NULL; i++) {
+  for (i = 0; list[i].name != NULL; i++) {
     if (strcasecmp(list[i].name, str) == 0) {
       *qtype = list[i].type;
       return ARES_TRUE;
@@ -662,7 +665,6 @@ ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype, const char *st
   }
   return ARES_FALSE;
 }
-
 
 const char *ares_dns_section_tostr(ares_dns_section_t section)
 {
@@ -677,10 +679,9 @@ const char *ares_dns_section_tostr(ares_dns_section_t section)
   return "UNKNOWN";
 }
 
-
 static ares_dns_opt_datatype_t ares_dns_opt_get_type_opt(unsigned short opt)
 {
- ares_opt_param_t param = (ares_opt_param_t)opt;
+  ares_opt_param_t param = (ares_opt_param_t)opt;
   switch (param) {
     case ARES_OPT_PARAM_LLQ:
       /* Really it is u16 version, u16 opcode, u16 error, u64 id, u32 lease */
@@ -743,7 +744,8 @@ static ares_dns_opt_datatype_t ares_dns_opt_get_type_svcb(unsigned short opt)
   return ARES_OPT_DATATYPE_BIN;
 }
 
-ares_dns_opt_datatype_t ares_dns_opt_get_datatype(ares_dns_rr_key_t key, unsigned short opt)
+ares_dns_opt_datatype_t ares_dns_opt_get_datatype(ares_dns_rr_key_t key,
+                                                  unsigned short    opt)
 {
   switch (key) {
     case ARES_RR_OPT_OPTIONS:
@@ -817,7 +819,7 @@ static const char *ares_dns_opt_get_name_svcb(unsigned short opt)
 
 const char *ares_dns_opt_get_name(ares_dns_rr_key_t key, unsigned short opt)
 {
- switch (key) {
+  switch (key) {
     case ARES_RR_OPT_OPTIONS:
       return ares_dns_opt_get_name_opt(opt);
     case ARES_RR_SVCB_PARAMS:
