@@ -24,11 +24,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "ares_setup.h"
 
-#include "ares.h"
-#include "ares_getopt.h"
-#include "ares_dns.h"
-#include "ares_nameser.h"
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
 #endif
@@ -38,15 +35,36 @@
 #ifdef HAVE_NETDB_H
 #  include <netdb.h>
 #endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <sys/select.h>
-#include <errno.h>
+
+#include "ares_nameser.h"
+
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
 #endif
+
+#include "ares.h"
+#include "ares_dns.h"
+#include "ares_getopt.h"
+
+#ifndef HAVE_STRDUP
+#  include "ares_strdup.h"
+#  define strdup(ptr) ares_strdup(ptr)
+#endif
+
+#ifndef HAVE_STRCASECMP
+#  include "ares_strcasecmp.h"
+#  define strcasecmp(p1, p2) ares_strcasecmp(p1, p2)
+#endif
+
+#ifndef HAVE_STRNCASECMP
+#  include "ares_strcasecmp.h"
+#  define strncasecmp(p1, p2, n) ares_strncasecmp(p1, p2, n)
+#endif
+
+#ifdef WATT32
+#  undef WIN32 /* Redefined in MingW headers */
+#endif
+
 
 /* ---- IMPLEMENT THESE IN c-ares */
 
