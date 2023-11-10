@@ -676,3 +676,155 @@ const char *ares_dns_section_tostr(ares_dns_section_t section)
   }
   return "UNKNOWN";
 }
+
+
+static ares_dns_opt_datatype_t ares_dns_opt_get_type_opt(unsigned short opt)
+{
+ ares_opt_param_t param = (ares_opt_param_t)opt;
+  switch (param) {
+    case ARES_OPT_PARAM_LLQ:
+      /* Really it is u16 version, u16 opcode, u16 error, u64 id, u32 lease */
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_UL:
+      return ARES_OPT_DATATYPE_U32;
+    case ARES_OPT_PARAM_NSID:
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_DAU:
+      return ARES_OPT_DATATYPE_U8_LIST;
+    case ARES_OPT_PARAM_DHU:
+      return ARES_OPT_DATATYPE_U8_LIST;
+    case ARES_OPT_PARAM_N3U:
+      return ARES_OPT_DATATYPE_U8_LIST;
+    case ARES_OPT_PARAM_EDNS_CLIENT_SUBNET:
+      /* Really it is a u16 address family, u8 source prefix length,
+       * u8 scope prefix length, address */
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_EDNS_EXPIRE:
+      return ARES_OPT_DATATYPE_U32;
+    case ARES_OPT_PARAM_COOKIE:
+      /* 8 bytes for client, 16-40 bytes for server */
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_EDNS_TCP_KEEPALIVE:
+      /* Timeout in 100ms intervals */
+      return ARES_OPT_DATATYPE_U16;
+    case ARES_OPT_PARAM_PADDING:
+      /* Arbitrary padding */
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_CHAIN:
+      return ARES_OPT_DATATYPE_NAME;
+    case ARES_OPT_PARAM_EDNS_KEY_TAG:
+      return ARES_OPT_DATATYPE_U16_LIST;
+    case ARES_OPT_PARAM_EXTENDED_DNS_ERROR:
+      /* Really 16bit code followed by textual message */
+      return ARES_OPT_DATATYPE_BIN;
+  }
+  return ARES_OPT_DATATYPE_BIN;
+}
+
+static ares_dns_opt_datatype_t ares_dns_opt_get_type_svcb(unsigned short opt)
+{
+  ares_svcb_param_t param = (ares_svcb_param_t)opt;
+  switch (param) {
+    case ARES_SVCB_PARAM_NO_DEFAULT_ALPN:
+      return ARES_OPT_DATATYPE_NONE;
+    case ARES_SVCB_PARAM_ECH:
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_SVCB_PARAM_MANDATORY:
+      return ARES_OPT_DATATYPE_U16_LIST;
+    case ARES_SVCB_PARAM_ALPN:
+      return ARES_OPT_DATATYPE_STR_LIST;
+    case ARES_SVCB_PARAM_PORT:
+      return ARES_OPT_DATATYPE_U16;
+    case ARES_SVCB_PARAM_IPV4HINT:
+      return ARES_OPT_DATATYPE_INADDR4_LIST;
+    case ARES_SVCB_PARAM_IPV6HINT:
+      return ARES_OPT_DATATYPE_INADDR6_LIST;
+  }
+  return ARES_OPT_DATATYPE_BIN;
+}
+
+ares_dns_opt_datatype_t ares_dns_opt_get_datatype(ares_dns_rr_key_t key, unsigned short opt)
+{
+  switch (key) {
+    case ARES_RR_OPT_OPTIONS:
+      return ares_dns_opt_get_type_opt(opt);
+    case ARES_RR_SVCB_PARAMS:
+    case ARES_RR_HTTPS_PARAMS:
+      return ares_dns_opt_get_type_svcb(opt);
+    default:
+      break;
+  }
+  return ARES_OPT_DATATYPE_BIN;
+}
+
+static const char *ares_dns_opt_get_name_opt(unsigned short opt)
+{
+  ares_opt_param_t param = (ares_opt_param_t)opt;
+  switch (param) {
+    case ARES_OPT_PARAM_LLQ:
+      return "LLQ";
+    case ARES_OPT_PARAM_UL:
+      return "UL";
+    case ARES_OPT_PARAM_NSID:
+      return "NSID";
+    case ARES_OPT_PARAM_DAU:
+      return "DAU";
+    case ARES_OPT_PARAM_DHU:
+      return "DHU";
+    case ARES_OPT_PARAM_N3U:
+      return "N3U";
+    case ARES_OPT_PARAM_EDNS_CLIENT_SUBNET:
+      return "edns-client-subnet";
+    case ARES_OPT_PARAM_EDNS_EXPIRE:
+      return "edns-expire";
+    case ARES_OPT_PARAM_COOKIE:
+      return "COOKIE";
+    case ARES_OPT_PARAM_EDNS_TCP_KEEPALIVE:
+      return "edns-tcp-keepalive";
+    case ARES_OPT_PARAM_PADDING:
+      return "Padding";
+    case ARES_OPT_PARAM_CHAIN:
+      return "CHAIN";
+    case ARES_OPT_PARAM_EDNS_KEY_TAG:
+      return "edns-key-tag";
+    case ARES_OPT_PARAM_EXTENDED_DNS_ERROR:
+      return "extended-dns-error";
+  }
+  return NULL;
+}
+
+static const char *ares_dns_opt_get_name_svcb(unsigned short opt)
+{
+  ares_svcb_param_t param = (ares_svcb_param_t)opt;
+  switch (param) {
+    case ARES_SVCB_PARAM_NO_DEFAULT_ALPN:
+      return "no-default-alpn";
+    case ARES_SVCB_PARAM_ECH:
+      return "ech";
+    case ARES_SVCB_PARAM_MANDATORY:
+      return "mandatory";
+    case ARES_SVCB_PARAM_ALPN:
+      return "alpn";
+    case ARES_SVCB_PARAM_PORT:
+      return "port";
+    case ARES_SVCB_PARAM_IPV4HINT:
+      return "ipv4hint";
+    case ARES_SVCB_PARAM_IPV6HINT:
+      return "ipv6hint";
+  }
+  return NULL;
+}
+
+const char *ares_dns_opt_get_name(ares_dns_rr_key_t key, unsigned short opt)
+{
+ switch (key) {
+    case ARES_RR_OPT_OPTIONS:
+      return ares_dns_opt_get_name_opt(opt);
+    case ARES_RR_SVCB_PARAMS:
+    case ARES_RR_HTTPS_PARAMS:
+      return ares_dns_opt_get_name_svcb(opt);
+    default:
+      break;
+  }
+  return NULL;
+}

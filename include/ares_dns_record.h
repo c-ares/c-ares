@@ -349,6 +349,34 @@ typedef enum {
   ARES_OPT_PARAM_EXTENDED_DNS_ERROR = 15,
 } ares_opt_param_t;
 
+/*! Data type for option records for keys like ARES_RR_OPT_OPTIONS and
+ *  ARES_RR_HTTPS_PARAMS returned by ares_dns_opt_get_datatype() */
+typedef enum {
+  /*! No value allowed for this option */
+  ARES_OPT_DATATYPE_NONE         = 1,
+  /*! List of strings, each prefixed with a single octet representing the length */
+  ARES_OPT_DATATYPE_STR_LIST     = 2,
+  /*! List of 8bit integers, concatenated */
+  ARES_OPT_DATATYPE_U8_LIST      = 3,
+  /*! 16bit integer in network byte order */
+  ARES_OPT_DATATYPE_U16          = 4,
+  /*! list of 16bit integer in network byte order, concatenated. */
+  ARES_OPT_DATATYPE_U16_LIST     = 5,
+  /*! 32bit integer in network byte order */
+  ARES_OPT_DATATYPE_U32          = 6,
+  /*! list 32bit integer in network byte order, concatenated */
+  ARES_OPT_DATATYPE_U32_LIST     = 7,
+  /*! List of ipv4 addresses in network byte order, concatenated */
+  ARES_OPT_DATATYPE_INADDR4_LIST = 8,
+  /*! List of ipv6 addresses in network byte order, concatenated */
+  ARES_OPT_DATATYPE_INADDR6_LIST = 9,
+  /*! Binary Data */
+  ARES_OPT_DATATYPE_BIN          = 10,
+  /*! DNS Domain Name Format */
+  ARES_OPT_DATATYPE_NAME         = 11
+} ares_dns_opt_datatype_t;
+
+
 /*! String representation of DNS Record Type
  *
  *  \param[in] type  DNS Record Type
@@ -401,6 +429,25 @@ CARES_EXTERN ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass,
  */
 CARES_EXTERN ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
                                                    const char *str);
+
+/*! The options/parameters extensions to some RRs can be somewhat opaque, this
+ *  is a helper to return the best match for a datatype for interpreting the
+ *  option record.
+ *
+ *  \param[in] key  Key associated with options/parameters
+ *  \param[in] opt  Option Key/Parameter
+ *  \return Datatype
+ */
+CARES_EXTERN ares_dns_opt_datatype_t ares_dns_opt_get_datatype(ares_dns_rr_key_t key, unsigned short opt);
+
+/*! The options/parameters extensions to some RRs can be somewhat opaque, this
+ *  is a helper to return the name if the option is known.
+ *
+ *  \param[in] key  Key associated with options/parameters
+ *  \param[in] opt  Option Key/Parameter
+ *  \return name, or NULL if not known.
+ */
+CARES_EXTERN const char *ares_dns_opt_get_name(ares_dns_rr_key_t key, unsigned short opt);
 
 
 /*! Opaque data type representing a DNS RR (Resource Record) */
