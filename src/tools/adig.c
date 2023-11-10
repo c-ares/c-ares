@@ -49,9 +49,64 @@
 #endif
 
 /* ---- IMPLEMENT THESE IN c-ares */
+typedef enum {
+  /*! No value allowed for this option */
+  ARES_OPT_DATATYPE_NONE         = 1,
+  /*! List of strings, each prefixed with a single octet representing the length */
+  ARES_OPT_DATATYPE_STR_LIST     = 2,
+  /*! List of 8bit integers, concatenated */
+  ARES_OPT_DATATYPE_U8_LIST      = 3,
+  /*! 16bit integer in network byte order */
+  ARES_OPT_DATATYPE_U16          = 4,
+  /*! list of 16bit integer in network byte order, concatenated. */
+  ARES_OPT_DATATYPE_U16_LIST     = 5,
+  /*! 32bit integer in network byte order */
+  ARES_OPT_DATATYPE_U32          = 6,
+  /*! list 32bit integer in network byte order, concatenated */
+  ARES_OPT_DATATYPE_U32_LIST     = 7,
+  /*! List of ipv4 addresses in network byte order, concatenated */
+  ARES_OPT_DATATYPE_INADDR4_LIST = 8,
+  /*! List of ipv6 addresses in network byte order, concatenated */
+  ARES_OPT_DATATYPE_INADDR6_LIST = 9,
+  /*! Binary Data */
+  ARES_OPT_DATATYPE_BIN          = 10,
+  /*! DNS Domain Name Format */
+  ARES_OPT_DATATYPE_NAME         = 11
+} ares_dns_opt_datatype_t;
 
 static const char *ares_dns_opt_get_name_opt(unsigned short opt)
 {
+  ares_opt_param_t param = (ares_opt_param_t)opt;
+  switch (param) {
+    case ARES_OPT_PARAM_LLQ:
+      return "LLQ";
+    case ARES_OPT_PARAM_UL:
+      return "UL";
+    case ARES_OPT_PARAM_NSID:
+      return "NSID";
+    case ARES_OPT_PARAM_DAU:
+      return "DAU";
+    case ARES_OPT_PARAM_DHU:
+      return "DHU";
+    case ARES_OPT_PARAM_N3U:
+      return "N3U";
+    case ARES_OPT_PARAM_EDNS_CLIENT_SUBNET:
+      return "edns-client-subnet";
+    case ARES_OPT_PARAM_EDNS_EXPIRE:
+      return "edns-expire";
+    case ARES_OPT_PARAM_COOKIE:
+      return "COOKIE";
+    case ARES_OPT_PARAM_EDNS_TCP_KEEPALIVE:
+      return "edns-tcp-keepalive";
+    case ARES_OPT_PARAM_PADDING:
+      return "Padding";
+    case ARES_OPT_PARAM_CHAIN:
+      return "CHAIN";
+    case ARES_OPT_PARAM_EDNS_KEY_TAG:
+      return "edns-key-tag";
+    case ARES_OPT_PARAM_EXTENDED_DNS_ERROR:
+      return "extended-dns-error";
+  }
   return NULL;
 }
 
@@ -92,32 +147,72 @@ static const char *ares_dns_opt_get_name(ares_dns_rr_key_t key, unsigned short o
 }
 
 
-static ares_dns_datatype_t ares_dns_opt_get_type_opt(unsigned short opt)
+static ares_dns_opt_datatype_t ares_dns_opt_get_type_opt(unsigned short opt)
 {
-  return ARES_DATATYPE_BIN;
+ ares_opt_param_t param = (ares_opt_param_t)opt;
+  switch (param) {
+    case ARES_OPT_PARAM_LLQ:
+      /* Really it is u16 version, u16 opcode, u16 error, u64 id, u32 lease */
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_UL:
+      return ARES_OPT_DATATYPE_U32;
+    case ARES_OPT_PARAM_NSID:
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_DAU:
+      return ARES_OPT_DATATYPE_U8_LIST;
+    case ARES_OPT_PARAM_DHU:
+      return ARES_OPT_DATATYPE_U8_LIST;
+    case ARES_OPT_PARAM_N3U:
+      return ARES_OPT_DATATYPE_U8_LIST;
+    case ARES_OPT_PARAM_EDNS_CLIENT_SUBNET:
+      /* Really it is a u16 address family, u8 source prefix length,
+       * u8 scope prefix length, address */
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_EDNS_EXPIRE:
+      return ARES_OPT_DATATYPE_U32;
+    case ARES_OPT_PARAM_COOKIE:
+      /* 8 bytes for client, 16-40 bytes for server */
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_EDNS_TCP_KEEPALIVE:
+      /* Timeout in 100ms intervals */
+      return ARES_OPT_DATATYPE_U16;
+    case ARES_OPT_PARAM_PADDING:
+      /* Arbitrary padding */
+      return ARES_OPT_DATATYPE_BIN;
+    case ARES_OPT_PARAM_CHAIN:
+      return ARES_OPT_DATATYPE_NAME;
+    case ARES_OPT_PARAM_EDNS_KEY_TAG:
+      return ARES_OPT_DATATYPE_U16_LIST;
+    case ARES_OPT_PARAM_EXTENDED_DNS_ERROR:
+      /* Really 16bit code followed by textual message */
+      return ARES_OPT_DATATYPE_BIN;
+  }
+  return ARES_OPT_DATATYPE_BIN;
 }
 
-static ares_dns_datatype_t ares_dns_opt_get_type_svcb(unsigned short opt)
+static ares_dns_opt_datatype_t ares_dns_opt_get_type_svcb(unsigned short opt)
 {
   ares_svcb_param_t param = (ares_svcb_param_t)opt;
   switch (param) {
     case ARES_SVCB_PARAM_NO_DEFAULT_ALPN:
+      return ARES_OPT_DATATYPE_NONE;
     case ARES_SVCB_PARAM_ECH:
+      return ARES_OPT_DATATYPE_BIN;
     case ARES_SVCB_PARAM_MANDATORY:
-      return ARES_DATATYPE_BIN;
+      return ARES_OPT_DATATYPE_U16_LIST;
     case ARES_SVCB_PARAM_ALPN:
-      return ARES_DATATYPE_STR;
+      return ARES_OPT_DATATYPE_STR_LIST;
     case ARES_SVCB_PARAM_PORT:
-      return ARES_DATATYPE_U16;
+      return ARES_OPT_DATATYPE_U16;
     case ARES_SVCB_PARAM_IPV4HINT:
-      return ARES_DATATYPE_INADDR;
+      return ARES_OPT_DATATYPE_INADDR4_LIST;
     case ARES_SVCB_PARAM_IPV6HINT:
-      return ARES_DATATYPE_INADDR6;
+      return ARES_OPT_DATATYPE_INADDR6_LIST;
   }
-  return ARES_DATATYPE_BIN;
+  return ARES_OPT_DATATYPE_BIN;
 }
 
-static ares_dns_datatype_t ares_dns_opt_get_type(ares_dns_rr_key_t key, unsigned short opt)
+static ares_dns_opt_datatype_t ares_dns_opt_get_type(ares_dns_rr_key_t key, unsigned short opt)
 {
   switch (key) {
     case ARES_RR_OPT_OPTIONS:
@@ -128,7 +223,7 @@ static ares_dns_datatype_t ares_dns_opt_get_type(ares_dns_rr_key_t key, unsigned
     default:
       break;
   }
-  return ARES_DATATYPE_BIN;
+  return ARES_OPT_DATATYPE_BIN;
 }
 static const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode)
 {
@@ -359,8 +454,15 @@ static void print_question(const ares_dns_record_t *dnsrec)
   printf("\n");
 }
 
+static void print_opt_none(const unsigned char *val, size_t val_len)
+{
+  (void)val;
+  if (val_len != 0) {
+    printf("INVALID!");
+  }
+}
 
-static void print_opt_addr(const unsigned char *val, size_t val_len)
+static void print_opt_addr_list(const unsigned char *val, size_t val_len)
 {
   size_t i;
   if (val_len % 4 != 0) {
@@ -376,7 +478,7 @@ static void print_opt_addr(const unsigned char *val, size_t val_len)
   }
 }
 
-static void print_opt_addr6(const unsigned char *val, size_t val_len)
+static void print_opt_addr6_list(const unsigned char *val, size_t val_len)
 {
   size_t i;
   if (val_len % 16 != 0) {
@@ -393,9 +495,10 @@ static void print_opt_addr6(const unsigned char *val, size_t val_len)
   }
 }
 
-static void print_opt_u8(const unsigned char *val, size_t val_len)
+static void print_opt_u8_list(const unsigned char *val, size_t val_len)
 {
   size_t i;
+
   for (i=0; i<val_len; i++) {
     if (i != 0)
       printf(",");
@@ -403,7 +506,7 @@ static void print_opt_u8(const unsigned char *val, size_t val_len)
   }
 }
 
-static void print_opt_u16(const unsigned char *val, size_t val_len)
+static void print_opt_u16_list(const unsigned char *val, size_t val_len)
 {
   size_t i;
   if (val_len < 2 || val_len % 2 != 0) {
@@ -411,14 +514,16 @@ static void print_opt_u16(const unsigned char *val, size_t val_len)
     return;
   }
   for (i=0; i<val_len; i+=2) {
-    unsigned short u16 = (unsigned short)val[i] << 8 | (unsigned short)val[i+1];
+    unsigned short u16 = 0;
+    u16 |= (unsigned short)(val[i] << 8);
+    u16 |= (unsigned short)(val[i+1]);
     if (i != 0)
       printf(",");
     printf("%u", (unsigned int)u16);
   }
 }
 
-static void print_opt_u32(const unsigned char *val, size_t val_len)
+static void print_opt_u32_list(const unsigned char *val, size_t val_len)
 {
   size_t i;
   if (val_len < 4 || val_len % 4 != 0) {
@@ -426,17 +531,57 @@ static void print_opt_u32(const unsigned char *val, size_t val_len)
     return;
   }
   for (i=0; i<val_len; i+=4) {
-    unsigned int u32 = (unsigned int)val[i] << 24 | (unsigned int)val[i+1] << 16 | (unsigned int)val[i+2] << 8 | (unsigned int)val[i+3];
+    unsigned int u32 = 0;
+
+    u32 |= (unsigned int)(val[i] << 24);
+    u32 |= (unsigned int)(val[i+1] << 16);
+    u32 |= (unsigned int)(val[i+2] << 8);
+    u32 |= (unsigned int)(val[i+3]);
     if (i != 0)
       printf(",");
     printf("%u", u32);
   }
 }
 
-static void print_opt_str(const unsigned char *val, size_t val_len)
+static void print_opt_str_list(const unsigned char *val, size_t val_len)
 {
-  (void)val_len;
-  printf("\"%s\"", (const char *)val);
+  size_t cnt = 0;
+
+  printf("\"");
+  while (val_len) {
+    long           read_len = 0;
+    unsigned char *str      = NULL;
+    ares_status_t  status;
+
+    if (cnt)
+      printf(",");
+
+    status = (ares_status_t)ares_expand_string(val, val, (int)val_len, &str, &read_len);
+    if (status != ARES_SUCCESS) {
+      printf("INVALID");
+      break;
+    }
+    printf("%s", str);
+    ares_free_string(str);
+    val_len -= (size_t)read_len;
+    val     += read_len;
+    cnt++;
+  }
+  printf("\"");
+}
+
+static void print_opt_name(const unsigned char *val, size_t val_len)
+{
+  char *str      = NULL;
+  long  read_len = 0;
+
+  if (ares_expand_name(val, val, (int)val_len, &str, &read_len) != ARES_SUCCESS) {
+    printf("INVALID!");
+    return;
+  }
+
+  printf("%s.", str);
+  ares_free_string(str);
 }
 
 static void print_opt_bin(const unsigned char *val, size_t val_len)
@@ -497,31 +642,34 @@ static void print_opts(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
     printf("=");
 
     switch (ares_dns_opt_get_type(key, opt)) {
-      case ARES_DATATYPE_INADDR:
-        print_opt_addr(val, val_len);
+      case ARES_OPT_DATATYPE_NONE:
+        print_opt_none(val, val_len);
         break;
-      case ARES_DATATYPE_INADDR6:
-        print_opt_addr6(val, val_len);
+      case ARES_OPT_DATATYPE_U8_LIST:
+        print_opt_u8_list(val, val_len);
         break;
-      case ARES_DATATYPE_U8:
-        print_opt_u8(val, val_len);
+      case ARES_OPT_DATATYPE_INADDR4_LIST:
+        print_opt_addr_list(val, val_len);
         break;
-      case ARES_DATATYPE_U16:
-        print_opt_u16(val, val_len);
+      case ARES_OPT_DATATYPE_INADDR6_LIST:
+        print_opt_addr6_list(val, val_len);
         break;
-      case ARES_DATATYPE_U32:
-        print_opt_u32(val, val_len);
+      case ARES_OPT_DATATYPE_U16:
+      case ARES_OPT_DATATYPE_U16_LIST:
+        print_opt_u16_list(val, val_len);
         break;
-      case ARES_DATATYPE_NAME:
-      case ARES_DATATYPE_STR:
-        print_opt_str(val, val_len);
+      case ARES_OPT_DATATYPE_U32:
+      case ARES_OPT_DATATYPE_U32_LIST:
+        print_opt_u32_list(val, val_len);
         break;
-      case ARES_DATATYPE_BIN:
-      case ARES_DATATYPE_OPT:
+      case ARES_OPT_DATATYPE_STR_LIST:
+        print_opt_str_list(val, val_len);
+        break;
+      case ARES_OPT_DATATYPE_BIN:
         print_opt_bin(val, val_len);
         break;
-      case ARES_DATATYPE_BINP:
-        print_opt_binp(val, val_len);
+      case ARES_OPT_DATATYPE_NAME:
+        print_opt_name(val, val_len);
         break;
     }
   }
@@ -651,15 +799,16 @@ static void print_rr(const ares_dns_rr_t *rr)
   printf("\n");
 }
 
-static ares_bool_t has_opt(ares_dns_record_t *dnsrec, ares_dns_section_t section)
+static const ares_dns_rr_t *has_opt(ares_dns_record_t *dnsrec,
+                                    ares_dns_section_t section)
 {
   size_t i;
   for (i=0; i < ares_dns_record_rr_cnt(dnsrec, section); i++) {
     const ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, section, i);
     if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT)
-      return ARES_TRUE;
+      return rr;
   }
-  return ARES_FALSE;
+  return NULL;
 }
 
 static void print_section(ares_dns_record_t *dnsrec, ares_dns_section_t section)
@@ -667,7 +816,7 @@ static void print_section(ares_dns_record_t *dnsrec, ares_dns_section_t section)
   size_t i;
 
   if (ares_dns_record_rr_cnt(dnsrec, section) == 0 ||
-      (ares_dns_record_rr_cnt(dnsrec, section) == 1 && has_opt(dnsrec, section))
+      (ares_dns_record_rr_cnt(dnsrec, section) == 1 && has_opt(dnsrec, section) != NULL)
      ) {
     return;
   }
@@ -679,6 +828,21 @@ static void print_section(ares_dns_record_t *dnsrec, ares_dns_section_t section)
       continue;
     print_rr(rr);
   }
+  printf("\n");
+}
+
+static void print_opt_psuedosection(ares_dns_record_t *dnsrec)
+{
+  const ares_dns_rr_t *rr = has_opt(dnsrec, ARES_SECTION_ADDITIONAL);
+  if (rr == NULL)
+    return;
+
+  printf(";; OPT PSEUDOSECTION:\n");
+  printf("; EDNS: version: %u, flags: %u; udp: %u\t",
+    (unsigned int)ares_dns_rr_get_u8(rr, ARES_RR_OPT_VERSION),
+    (unsigned int)ares_dns_rr_get_u16(rr, ARES_RR_OPT_FLAGS),
+    (unsigned int)ares_dns_rr_get_u16(rr, ARES_RR_OPT_UDP_SIZE));
+
   printf("\n");
 }
 
@@ -705,6 +869,7 @@ static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
   }
 
   print_header(dnsrec);
+  print_opt_psuedosection(dnsrec);
   print_question(dnsrec);
   print_section(dnsrec, ARES_SECTION_ANSWER);
   print_section(dnsrec, ARES_SECTION_ADDITIONAL);
@@ -813,7 +978,7 @@ int main(int argc, char **argv)
   }
 
   /* Debug */
-  printf("; <<>> c-ares DiG %s <<>>", ares_version(NULL));
+  printf("\n; <<>> c-ares DiG %s <<>>", ares_version(NULL));
   for (i = config.args_processed; i < argc; i++) {
     printf(" %s", argv[i]);
   }

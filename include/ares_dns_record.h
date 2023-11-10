@@ -299,7 +299,7 @@ typedef enum {
   ARES_TLSA_MATCH_SHA512 = 2
 } ares_tlsa_match_t;
 
-/*! SVCB (and HTTPS) known parameters */
+/*! SVCB (and HTTPS) RR known parameters */
 typedef enum {
   /*! Mandatory keys in this RR (RFC 9460 Section 8) */
   ARES_SVCB_PARAM_MANDATORY = 0,
@@ -316,6 +316,38 @@ typedef enum {
   /*! IPv6 address hints (RFC 9460 Section 7.3) */
   ARES_SVCB_PARAM_IPV6HINT = 6
 } ares_svcb_param_t;
+
+/*! OPT RR known parameters */
+typedef enum {
+  /*! RFC 8764. Apple's DNS Long-Lived Queries Protocol */
+  ARES_OPT_PARAM_LLQ = 1,
+  /*! http://files.dns-sd.org/draft-sekar-dns-ul.txt: Update Lease */
+  ARES_OPT_PARAM_UL = 2,
+  /*! RFC 5001. Name Server Identification */
+  ARES_OPT_PARAM_NSID = 3,
+  /*! RFC 6975. DNSSEC Algorithm Understood */
+  ARES_OPT_PARAM_DAU = 5,
+  /*! RFC 6975. DS Hash Understood */
+  ARES_OPT_PARAM_DHU = 6,
+  /*! RFC 6975. NSEC3 Hash Understood */
+  ARES_OPT_PARAM_N3U = 7,
+  /*! RFC 7871. Client Subnet */
+  ARES_OPT_PARAM_EDNS_CLIENT_SUBNET = 8,
+  /*! RFC 7314. Expire Timer */
+  ARES_OPT_PARAM_EDNS_EXPIRE = 9,
+  /*! RFC 7873. Client and Server Cookies */
+  ARES_OPT_PARAM_COOKIE = 10,
+  /*! RFC 7828. TCP Keepalive timeout */
+  ARES_OPT_PARAM_EDNS_TCP_KEEPALIVE = 11,
+  /*! RFC 7830. Padding */
+  ARES_OPT_PARAM_PADDING = 12,
+  /*! RFC 7901. Chain query requests */
+  ARES_OPT_PARAM_CHAIN = 13,
+  /*! RFC 8145. Signaling Trust Anchor Knowledge in DNSSEC */
+  ARES_OPT_PARAM_EDNS_KEY_TAG = 14,
+  /*! RFC 8914. Extended ERROR code and message */
+  ARES_OPT_PARAM_EXTENDED_DNS_ERROR = 15,
+} ares_opt_param_t;
 
 /*! String representation of DNS Record Type
  *
