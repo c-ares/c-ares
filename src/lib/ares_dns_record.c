@@ -1192,6 +1192,7 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
 
 done:
   ares_free((*options)->optval[idx].val);
+  (*options)->optval[idx].opt     = opt;
   (*options)->optval[idx].val     = val;
   (*options)->optval[idx].val_len = val_len;
 

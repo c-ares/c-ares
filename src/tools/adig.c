@@ -50,7 +50,86 @@
 
 /* ---- IMPLEMENT THESE IN c-ares */
 
+static const char *ares_dns_opt_get_name_opt(unsigned short opt)
+{
+  return NULL;
+}
 
+static const char *ares_dns_opt_get_name_svcb(unsigned short opt)
+{
+  ares_svcb_param_t param = (ares_svcb_param_t)opt;
+  switch (param) {
+    case ARES_SVCB_PARAM_NO_DEFAULT_ALPN:
+      return "no-default-alpn";
+    case ARES_SVCB_PARAM_ECH:
+      return "ech";
+    case ARES_SVCB_PARAM_MANDATORY:
+      return "mandatory";
+    case ARES_SVCB_PARAM_ALPN:
+      return "alpn";
+    case ARES_SVCB_PARAM_PORT:
+      return "port";
+    case ARES_SVCB_PARAM_IPV4HINT:
+      return "ipv4hint";
+    case ARES_SVCB_PARAM_IPV6HINT:
+      return "ipv6hint";
+  }
+  return NULL;
+}
+
+static const char *ares_dns_opt_get_name(ares_dns_rr_key_t key, unsigned short opt)
+{
+ switch (key) {
+    case ARES_RR_OPT_OPTIONS:
+      return ares_dns_opt_get_name_opt(opt);
+    case ARES_RR_SVCB_PARAMS:
+    case ARES_RR_HTTPS_PARAMS:
+      return ares_dns_opt_get_name_svcb(opt);
+    default:
+      break;
+  }
+  return NULL;
+}
+
+
+static ares_dns_datatype_t ares_dns_opt_get_type_opt(unsigned short opt)
+{
+  return ARES_DATATYPE_BIN;
+}
+
+static ares_dns_datatype_t ares_dns_opt_get_type_svcb(unsigned short opt)
+{
+  ares_svcb_param_t param = (ares_svcb_param_t)opt;
+  switch (param) {
+    case ARES_SVCB_PARAM_NO_DEFAULT_ALPN:
+    case ARES_SVCB_PARAM_ECH:
+    case ARES_SVCB_PARAM_MANDATORY:
+      return ARES_DATATYPE_BIN;
+    case ARES_SVCB_PARAM_ALPN:
+      return ARES_DATATYPE_STR;
+    case ARES_SVCB_PARAM_PORT:
+      return ARES_DATATYPE_U16;
+    case ARES_SVCB_PARAM_IPV4HINT:
+      return ARES_DATATYPE_INADDR;
+    case ARES_SVCB_PARAM_IPV6HINT:
+      return ARES_DATATYPE_INADDR6;
+  }
+  return ARES_DATATYPE_BIN;
+}
+
+static ares_dns_datatype_t ares_dns_opt_get_type(ares_dns_rr_key_t key, unsigned short opt)
+{
+  switch (key) {
+    case ARES_RR_OPT_OPTIONS:
+      return ares_dns_opt_get_type_opt(opt);
+    case ARES_RR_SVCB_PARAMS:
+    case ARES_RR_HTTPS_PARAMS:
+      return ares_dns_opt_get_type_svcb(opt);
+    default:
+      break;
+  }
+  return ARES_DATATYPE_BIN;
+}
 static const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode)
 {
   (void)rcode;
@@ -280,6 +359,132 @@ static void print_question(const ares_dns_record_t *dnsrec)
   printf("\n");
 }
 
+
+static void print_opt_addr(const unsigned char *val, size_t val_len)
+{
+  size_t i;
+  if (val_len % 4 != 0) {
+    printf("INVALID!");
+    return;
+  }
+  for (i=0; i<val_len; i+=4) {
+    char buf[256] = "";
+    ares_inet_ntop(AF_INET, val + i, buf, sizeof(buf));
+    if (i != 0)
+      printf(",");
+    printf("%s", buf);
+  }
+}
+
+static void print_opt_addr6(const unsigned char *val, size_t val_len)
+{
+  size_t i;
+  if (val_len % 16 != 0) {
+    printf("INVALID!");
+    return;
+  }
+  for (i=0; i<val_len; i+=16) {
+    char buf[256] = "";
+
+    ares_inet_ntop(AF_INET6, val + i, buf, sizeof(buf));
+    if (i != 0)
+      printf(",");
+    printf("%s", buf);
+  }
+}
+
+static void print_opt_u8(const unsigned char *val, size_t val_len)
+{
+
+}
+
+static void print_opt_u16(const unsigned char *val, size_t val_len)
+{
+
+}
+
+static void print_opt_u32(const unsigned char *val, size_t val_len)
+{
+
+}
+
+static void print_opt_str(const unsigned char *val, size_t val_len)
+{
+  printf("\"%s\"", (const char *)val);
+}
+
+static void print_opt_bin(const unsigned char *val, size_t val_len)
+{
+  size_t               i;
+
+  for (i=0; i<val_len; i++) {
+    printf("%02x", (unsigned int)val[i]);
+  }
+
+}
+
+static void print_opt_binp(const unsigned char *val, size_t val_len)
+{
+  /* XXX: handle escaping */
+  printf("\"%s\"", (const char *)val);
+}
+
+static void print_opts(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
+{
+  size_t i;
+
+  for (i=0; i<ares_dns_rr_get_opt_cnt(rr, key); i++) {
+    size_t               val_len = 0;
+    const unsigned char *val     = NULL;
+    unsigned short       opt;
+    const char          *name;
+
+    if (i != 0)
+      printf(" ");
+
+    opt  = ares_dns_rr_get_opt(rr, key, i, &val, &val_len);
+    name = ares_dns_opt_get_name(key, opt);
+    if (name == NULL) {
+      printf("key%u", (unsigned int)opt);
+    } else {
+      printf("%s", name);
+    }
+    if (val_len == 0)
+      return;
+
+    printf("=");
+
+    switch (ares_dns_opt_get_type(key, opt)) {
+      case ARES_DATATYPE_INADDR:
+        print_opt_addr(val, val_len);
+        break;
+      case ARES_DATATYPE_INADDR6:
+        print_opt_addr6(val, val_len);
+        break;
+      case ARES_DATATYPE_U8:
+        print_opt_u8(val, val_len);
+        break;
+      case ARES_DATATYPE_U16:
+        print_opt_u16(val, val_len);
+        break;
+      case ARES_DATATYPE_U32:
+        print_opt_u32(val, val_len);
+        break;
+      case ARES_DATATYPE_NAME:
+      case ARES_DATATYPE_STR:
+        print_opt_str(val, val_len);
+        break;
+      case ARES_DATATYPE_BIN:
+      case ARES_DATATYPE_OPT:
+        print_opt_bin(val, val_len);
+        break;
+      case ARES_DATATYPE_BINP:
+        print_opt_binp(val, val_len);
+        break;
+    }
+  }
+}
+
 static void print_addr(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
 {
   const struct in_addr *addr     = ares_dns_rr_get_addr(rr, key);
@@ -332,20 +537,17 @@ static void print_bin(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
 {
   size_t               len  = 0;
   const unsigned char *binp = ares_dns_rr_get_bin(rr, key, &len);
-  size_t               i;
-
-  for (i=0; i<len; i++) {
-    printf("%02x", (unsigned int)binp[i]);
-  }
+  print_opt_bin(binp, len);
 }
 
 static void print_binp(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
 {
   size_t               len;
   const unsigned char *binp = ares_dns_rr_get_bin(rr, key, &len);
-  /* XXX: handle escaping */
-  printf("\"%s\"", (const char *)binp);
+
+  print_opt_binp(binp, len);
 }
+
 
 static void print_rr(const ares_dns_rr_t *rr)
 {
@@ -399,6 +601,7 @@ static void print_rr(const ares_dns_rr_t *rr)
         print_binp(rr, keys[i]);
         break;
       case ARES_DATATYPE_OPT:
+        print_opts(rr, keys[i]);
         break;
     }
   }
