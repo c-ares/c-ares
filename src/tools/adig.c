@@ -159,7 +159,7 @@ static void print_help(void)
 
 static ares_bool_t read_cmdline(int argc, char * const argv[], adig_config_t *config)
 {
-  optreset = 1;
+  ares_optreset = 1;
 
   while (1) {
     int c;
