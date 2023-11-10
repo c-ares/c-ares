@@ -50,11 +50,11 @@
 #include <string.h>
 #include "ares_getopt.h"
 
-int        opterr = 1; /* if error message should be printed */
-int        optind = 1; /* index into parent argv vector */
-int        optopt = 0; /* character checked for validity */
-static int optreset;   /* reset getopt */
-char      *optarg;     /* argument associated with option */
+int        ares_opterr = 1; /* if error message should be printed */
+int        ares_optind = 1; /* index into parent argv vector */
+int        ares_optopt = 0; /* character checked for validity */
+int        ares_optreset;   /* reset getopt */
+char      *ares_optarg;     /* argument associated with option */
 
 #define BADCH  (int)'?'
 #define BADARG (int)':'

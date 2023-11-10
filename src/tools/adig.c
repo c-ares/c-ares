@@ -44,7 +44,6 @@
 
 #include "ares.h"
 #include "ares_dns.h"
-#include "ares_getopt.h"
 
 #ifndef HAVE_STRDUP
 #  include "ares_strdup.h"
@@ -60,6 +59,8 @@
 #  include "ares_strcasecmp.h"
 #  define strncasecmp(p1, p2, n) ares_strncasecmp(p1, p2, n)
 #endif
+
+#include "ares_getopt.h"
 
 #ifdef WATT32
 #  undef WIN32 /* Redefined in MingW headers */
@@ -156,12 +157,18 @@ static void print_help(void)
     "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
 }
 
-static ares_bool_t read_cmdline(int argc, char **argv, adig_config_t *config)
+static ares_bool_t read_cmdline(int argc, char * const argv[], adig_config_t *config)
 {
-  int c;
-  int f;
+  optreset = 1;
 
-  while ((c = ares_getopt(argc, argv, "dh?f:s:c:t:T:U:")) != -1) {
+  while (1) {
+    int c;
+    int f;
+
+    c = ares_getopt(argc, argv, "dh?f:s:c:t:T:U:");
+    if (c == -1)
+      break;
+
     switch (c) {
       case 'd':
 #ifdef WATT32
@@ -373,9 +380,10 @@ static void print_opt_u16_list(const unsigned char *val, size_t val_len)
   for (i = 0; i < val_len; i += 2) {
     unsigned short u16  = 0;
     unsigned short c;
-    c = (unsigned short)val[i];
-    u16                |= c << 8;
-    c = (unsigned short)val[i+1];
+    /* Jumping over backwards to try to avoid odd compiler warnings */
+    c                   = (unsigned short)val[i];
+    u16                |= (unsigned short)((c << 8) & 0xFFFF);
+    c                   = (unsigned short)val[i+1];
     u16                |= c;
     if (i != 0) {
       printf(",");
