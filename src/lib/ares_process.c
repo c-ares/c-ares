@@ -37,7 +37,7 @@
 #ifdef NETWARE
 #  include <sys/filio.h>
 #endif
-#ifdef HAVE_SYS_STDINT_H
+#ifdef HAVE_STDINT_H
 #  include <stdint.h>
 #endif
 
