@@ -33,12 +33,15 @@
  */
 
 
-int ares_getopt(int nargc, const char * const *nargv, const char *ostr);
+typedef struct {
+  const char *optarg; /* argument associated with option */
+  int         optind; /* index into parent argv vector */
+  int         opterr; /* if error message should be printed */
+  int         optopt; /* character checked for validity */
+  const char *place;
+} ares_getopt_state_t;
 
-extern const char *ares_optarg;
-extern int         ares_optind;
-extern int         ares_opterr;
-extern int         ares_optopt;
-extern int         ares_optreset;
+void ares_getopt_init(ares_getopt_state_t *state);
+int ares_getopt(ares_getopt_state_t *state, int nargc, const char * const *nargv, const char *ostr);
 
 #endif /* ARES_GETOPT_H */

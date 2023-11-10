@@ -159,13 +159,14 @@ static void print_help(void)
 
 static ares_bool_t read_cmdline(int argc, const char * const *argv, adig_config_t *config)
 {
-  ares_optreset = 1;
+  ares_getopt_state_t state;
+  ares_getopt_init(&state);
 
   while (1) {
     int c;
     int f;
 
-    c = ares_getopt(argc, argv, "dh?f:s:c:t:T:U:");
+    c = ares_getopt(&state, argc, argv, "dh?f:s:c:t:T:U:");
     if (c == -1)
       break;
 
@@ -182,10 +183,10 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv, adig_config_
         return ARES_TRUE;
 
       case 'f':
-        f = lookup_flag(configflags, nconfigflags, ares_optarg);
+        f = lookup_flag(configflags, nconfigflags, state.optarg);
         if (f == 0) {
           snprintf(config->error, sizeof(config->error), "flag %s unknown",
-                   ares_optarg);
+                   state.optarg);
         }
 
         config->options.flags |= f;
@@ -193,57 +194,56 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv, adig_config_
         break;
 
       case 's':
-        if (ares_optarg == NULL) {
+        if (state.optarg == NULL) {
           snprintf(config->error, sizeof(config->error), "%s",
                    "missing servers");
           return ARES_FALSE;
         }
-        config->servers = strdup(ares_optarg);
+        config->servers = strdup(state.optarg);
         break;
 
       case 'c':
-        if (!ares_dns_class_fromstr(&config->qclass, ares_optarg)) {
+        if (!ares_dns_class_fromstr(&config->qclass, state.optarg)) {
           snprintf(config->error, sizeof(config->error), "unrecognied class %s",
-                   ares_optarg);
+                   state.optarg);
           return ARES_FALSE;
         }
         break;
 
       case 't':
-        if (!ares_dns_rec_type_fromstr(&config->qtype, ares_optarg)) {
+        if (!ares_dns_rec_type_fromstr(&config->qtype, state.optarg)) {
           snprintf(config->error, sizeof(config->error), "unrecognied type %s",
-                   ares_optarg);
+                   state.optarg);
           return ARES_FALSE;
         }
         break;
 
       case 'T':
         /* Set the TCP port number. */
-        if (!isdigit(*ares_optarg)) {
+        if (!isdigit(*state.optarg)) {
           snprintf(config->error, sizeof(config->error), "invalid port number");
           return ARES_FALSE;
         }
-        config->options.tcp_port  = (unsigned short)strtol(ares_optarg, NULL, 0);
+        config->options.tcp_port  = (unsigned short)strtol(state.optarg, NULL, 0);
         config->options.flags    |= ARES_FLAG_USEVC;
         config->optmask          |= ARES_OPT_TCP_PORT;
         break;
 
       case 'U':
         /* Set the UDP port number. */
-        if (!isdigit(*ares_optarg)) {
+        if (!isdigit(*state.optarg)) {
           snprintf(config->error, sizeof(config->error), "invalid port number");
           return ARES_FALSE;
         }
-        config->options.udp_port  = (unsigned short)strtol(ares_optarg, NULL, 0);
+        config->options.udp_port  = (unsigned short)strtol(state.optarg, NULL, 0);
         config->optmask          |= ARES_OPT_UDP_PORT;
         break;
     }
   }
 
-  config->args_processed = ares_optind;
+  config->args_processed = state.optind;
 
-  argc -= ares_optind;
-  if (argc == 0) {
+  if (config->args_processed >= argc) {
     snprintf(config->error, sizeof(config->error), "missing query name");
     return ARES_FALSE;
   }
