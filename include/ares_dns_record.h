@@ -115,17 +115,17 @@ typedef enum {
 /*! DNS Response Codes from server */
 typedef enum {
   ARES_RCODE_NOERROR      = 0,    /*!< Success */
-  ARES_RCODE_FORMAT_ERROR = 1,    /*!< Format error. The name server was unable
+  ARES_RCODE_FORMERR = 1,    /*!< Format error. The name server was unable
                                    *   to interpret the query. */
-  ARES_RCODE_SERVER_FAILURE = 2,  /*!< Server Failure. The name server was
+  ARES_RCODE_SERVFAIL = 2,  /*!< Server Failure. The name server was
                                    *   unable to process this query due to a
                                    *   problem with the nameserver */
-  ARES_RCODE_NAME_ERROR = 3,      /*!< Name Error.  Meaningful only for
+  ARES_RCODE_NXDOMAIN = 3,      /*!< Name Error.  Meaningful only for
                                    *   responses from an authoritative name
                                    *   server, this code signifies that the
                                    *   domain name referenced in the query does
                                    *   not exist. */
-  ARES_RCODE_NOT_IMPLEMENTED = 4, /*!< Not implemented.  The name server does
+  ARES_RCODE_NOTIMP = 4, /*!< Not implemented.  The name server does
                                    *   not support the requested kind of
                                    *   query */
   ARES_RCODE_REFUSED = 5,         /*!< Refused. The name server refuses to
@@ -143,6 +143,15 @@ typedef enum {
   ARES_RCODE_NOTZONE = 10,        /*!< RFC 2136. A name used in the Prerequisite
                                    *   or Update Section is not within the zone
                                    *   denoted by the Zone Section. */
+  ARES_RCODE_DSOTYPEI = 11,       /*!< RFC 8409. DSO-TYPE Not implemented */
+  ARES_RCODE_BADSIG   = 16,       /*!< RFC 8945. TSIG Signature Failure */
+  ARES_RCODE_BADKEY   = 17,       /*!< RFC 8945. Key not recognized. */
+  ARES_RCODE_BADTIME  = 18,       /*!< RFC 8945. Signature out of time window. */
+  ARES_RCODE_BADMODE  = 19,       /*!< RFC 2930. Bad TKEY Mode */
+  ARES_RCODE_BADNAME  = 20,       /*!< RFC 2930. Duplicate Key Name */
+  ARES_RCODE_BADALG   = 21,       /*!< RFC 2930. Algorithm not supported */
+  ARES_RCODE_BADTRUNC = 22,       /*!< RFC 8945. Bad Truncation */
+  ARES_RCODE_BADCOOKIE = 23,      /*!< RVC 7973. Bad/missing Server Cookie */
 } ares_dns_rcode_t;
 
 /*! Data types used */
@@ -152,13 +161,14 @@ typedef enum {
   ARES_DATATYPE_U8      = 3, /*!< 8bit unsigned integer */
   ARES_DATATYPE_U16     = 4, /*!< 16bit unsigned integer */
   ARES_DATATYPE_U32     = 5, /*!< 32bit unsigned integer */
-  ARES_DATATYPE_STR     = 6, /*!< Null-terminated string */
-  ARES_DATATYPE_BIN     = 7, /*!< Binary data */
-  ARES_DATATYPE_BINP    = 8, /*!< Officially defined as binary data, but likely
+  ARES_DATATYPE_NAME    = 6, /*!< Null-terminated string of a domain name */
+  ARES_DATATYPE_STR     = 7, /*!< Null-terminated string */
+  ARES_DATATYPE_BIN     = 8, /*!< Binary data */
+  ARES_DATATYPE_BINP    = 9, /*!< Officially defined as binary data, but likely
                               *   printable. Guaranteed to have a NULL
                               *   terminator for convenience (not included in
                               *   length) */
-  ARES_DATATYPE_OPT = 9,     /*!< Array of options.  16bit identifier, BINP
+  ARES_DATATYPE_OPT = 10,    /*!< Array of options.  16bit identifier, BIN
                               *   data. */
 } ares_dns_datatype_t;
 
@@ -168,13 +178,13 @@ typedef enum {
 typedef enum {
   /*! A Record. Address. Datatype: INADDR */
   ARES_RR_A_ADDR = (ARES_REC_TYPE_A * 100) + 1,
-  /*! NS Record. Name. Datatype: STR */
+  /*! NS Record. Name. Datatype: NAME */
   ARES_RR_NS_NSDNAME = (ARES_REC_TYPE_NS * 100) + 1,
-  /*! CNAME Record. CName. Datatype: STR */
+  /*! CNAME Record. CName. Datatype: NAME */
   ARES_RR_CNAME_CNAME = (ARES_REC_TYPE_CNAME * 100) + 1,
-  /*! SOA Record. MNAME, Primary Source of Data. Datatype: STR */
+  /*! SOA Record. MNAME, Primary Source of Data. Datatype: NAME */
   ARES_RR_SOA_MNAME = (ARES_REC_TYPE_SOA * 100) + 1,
-  /*! SOA Record. RNAME, Mailbox of person responsible. Datatype: STR */
+  /*! SOA Record. RNAME, Mailbox of person responsible. Datatype: NAME */
   ARES_RR_SOA_RNAME = (ARES_REC_TYPE_SOA * 100) + 2,
   /*! SOA Record. Serial, version. Datatype: U32 */
   ARES_RR_SOA_SERIAL = (ARES_REC_TYPE_SOA * 100) + 3,
@@ -186,7 +196,7 @@ typedef enum {
   ARES_RR_SOA_EXPIRE = (ARES_REC_TYPE_SOA * 100) + 6,
   /*! SOA Record. Minimum, RR TTL. Datatype: U32 */
   ARES_RR_SOA_MINIMUM = (ARES_REC_TYPE_SOA * 100) + 7,
-  /*! PTR Record. DNAME, pointer domain. Datatype: STR */
+  /*! PTR Record. DNAME, pointer domain. Datatype: NAME */
   ARES_RR_PTR_DNAME = (ARES_REC_TYPE_PTR * 100) + 1,
   /*! HINFO Record. CPU. Datatype: STR */
   ARES_RR_HINFO_CPU = (ARES_REC_TYPE_HINFO * 100) + 1,
@@ -194,7 +204,7 @@ typedef enum {
   ARES_RR_HINFO_OS = (ARES_REC_TYPE_HINFO * 100) + 2,
   /*! MX Record. Preference. Datatype: U16 */
   ARES_RR_MX_PREFERENCE = (ARES_REC_TYPE_MX * 100) + 1,
-  /*! MX Record. Exchange, domain. Datatype: STR */
+  /*! MX Record. Exchange, domain. Datatype: NAME */
   ARES_RR_MX_EXCHANGE = (ARES_REC_TYPE_MX * 100) + 2,
   /*! TXT Record. Data. Datatype: BINP */
   ARES_RR_TXT_DATA = (ARES_REC_TYPE_TXT * 100) + 1,
@@ -206,7 +216,7 @@ typedef enum {
   ARES_RR_SRV_WEIGHT = (ARES_REC_TYPE_SRV * 100) + 3,
   /*! SRV Record. Port. Datatype: U16 */
   ARES_RR_SRV_PORT = (ARES_REC_TYPE_SRV * 100) + 4,
-  /*! SRV Record. Target domain. Datatype: STR */
+  /*! SRV Record. Target domain. Datatype: NAME */
   ARES_RR_SRV_TARGET = (ARES_REC_TYPE_SRV * 100) + 5,
   /*! NAPTR Record. Order. Datatype: U16 */
   ARES_RR_NAPTR_ORDER = (ARES_REC_TYPE_NAPTR * 100) + 1,
@@ -218,7 +228,7 @@ typedef enum {
   ARES_RR_NAPTR_SERVICES = (ARES_REC_TYPE_NAPTR * 100) + 4,
   /*! NAPTR Record. Regexp. Datatype: STR */
   ARES_RR_NAPTR_REGEXP = (ARES_REC_TYPE_NAPTR * 100) + 5,
-  /*! NAPTR Record. Replacement. Datatype: STR */
+  /*! NAPTR Record. Replacement. Datatype: NAME */
   ARES_RR_NAPTR_REPLACEMENT = (ARES_REC_TYPE_NAPTR * 100) + 6,
   /*! OPT Record. UDP Size. Datatype: U16 */
   ARES_RR_OPT_UDP_SIZE = (ARES_REC_TYPE_OPT * 100) + 1,
@@ -240,13 +250,13 @@ typedef enum {
   ARES_RR_TLSA_DATA = (ARES_REC_TYPE_TLSA * 100) + 4,
   /*! SVCB Record. SvcPriority. Datatype: U16 */
   ARES_RR_SVCB_PRIORITY = (ARES_REC_TYPE_SVCB * 100) + 1,
-  /*! SVCB Record. TargetName. Datatype: STR */
+  /*! SVCB Record. TargetName. Datatype: NAME */
   ARES_RR_SVCB_TARGET = (ARES_REC_TYPE_SVCB * 100) + 2,
   /*! SVCB Record. SvcParams. Datatype: OPT */
   ARES_RR_SVCB_PARAMS = (ARES_REC_TYPE_SVCB * 100) + 3,
   /*! HTTPS Record. SvcPriority. Datatype: U16 */
   ARES_RR_HTTPS_PRIORITY = (ARES_REC_TYPE_HTTPS * 100) + 1,
-  /*! HTTPS Record. TargetName. Datatype: STR */
+  /*! HTTPS Record. TargetName. Datatype: NAME */
   ARES_RR_HTTPS_TARGET = (ARES_REC_TYPE_HTTPS * 100) + 2,
   /*! HTTPS Record. SvcParams. Datatype: OPT */
   ARES_RR_HTTPS_PARAMS = (ARES_REC_TYPE_HTTPS * 100) + 3,
@@ -254,7 +264,7 @@ typedef enum {
   ARES_RR_URI_PRIORITY = (ARES_REC_TYPE_URI * 100) + 1,
   /*! URI Record. Weight. Datatype: U16 */
   ARES_RR_URI_WEIGHT = (ARES_REC_TYPE_URI * 100) + 2,
-  /*! URI Record. Target domain. Datatype: STR */
+  /*! URI Record. Target domain. Datatype: NAME */
   ARES_RR_URI_TARGET = (ARES_REC_TYPE_URI * 100) + 3,
   /*! CAA Record. Critical flag. Datatype: U8 */
   ARES_RR_CAA_CRITICAL = (ARES_REC_TYPE_CAA * 100) + 1,
@@ -298,7 +308,7 @@ typedef enum {
   ARES_TLSA_MATCH_SHA512 = 2
 } ares_tlsa_match_t;
 
-/*! SVCB (and HTTPS) known parameters */
+/*! SVCB (and HTTPS) RR known parameters */
 typedef enum {
   /*! Mandatory keys in this RR (RFC 9460 Section 8) */
   ARES_SVCB_PARAM_MANDATORY = 0,
@@ -315,6 +325,66 @@ typedef enum {
   /*! IPv6 address hints (RFC 9460 Section 7.3) */
   ARES_SVCB_PARAM_IPV6HINT = 6
 } ares_svcb_param_t;
+
+/*! OPT RR known parameters */
+typedef enum {
+  /*! RFC 8764. Apple's DNS Long-Lived Queries Protocol */
+  ARES_OPT_PARAM_LLQ = 1,
+  /*! http://files.dns-sd.org/draft-sekar-dns-ul.txt: Update Lease */
+  ARES_OPT_PARAM_UL = 2,
+  /*! RFC 5001. Name Server Identification */
+  ARES_OPT_PARAM_NSID = 3,
+  /*! RFC 6975. DNSSEC Algorithm Understood */
+  ARES_OPT_PARAM_DAU = 5,
+  /*! RFC 6975. DS Hash Understood */
+  ARES_OPT_PARAM_DHU = 6,
+  /*! RFC 6975. NSEC3 Hash Understood */
+  ARES_OPT_PARAM_N3U = 7,
+  /*! RFC 7871. Client Subnet */
+  ARES_OPT_PARAM_EDNS_CLIENT_SUBNET = 8,
+  /*! RFC 7314. Expire Timer */
+  ARES_OPT_PARAM_EDNS_EXPIRE = 9,
+  /*! RFC 7873. Client and Server Cookies */
+  ARES_OPT_PARAM_COOKIE = 10,
+  /*! RFC 7828. TCP Keepalive timeout */
+  ARES_OPT_PARAM_EDNS_TCP_KEEPALIVE = 11,
+  /*! RFC 7830. Padding */
+  ARES_OPT_PARAM_PADDING = 12,
+  /*! RFC 7901. Chain query requests */
+  ARES_OPT_PARAM_CHAIN = 13,
+  /*! RFC 8145. Signaling Trust Anchor Knowledge in DNSSEC */
+  ARES_OPT_PARAM_EDNS_KEY_TAG = 14,
+  /*! RFC 8914. Extended ERROR code and message */
+  ARES_OPT_PARAM_EXTENDED_DNS_ERROR = 15,
+} ares_opt_param_t;
+
+/*! Data type for option records for keys like ARES_RR_OPT_OPTIONS and
+ *  ARES_RR_HTTPS_PARAMS returned by ares_dns_opt_get_datatype() */
+typedef enum {
+  /*! No value allowed for this option */
+  ARES_OPT_DATATYPE_NONE = 1,
+  /*! List of strings, each prefixed with a single octet representing the length
+   */
+  ARES_OPT_DATATYPE_STR_LIST = 2,
+  /*! List of 8bit integers, concatenated */
+  ARES_OPT_DATATYPE_U8_LIST = 3,
+  /*! 16bit integer in network byte order */
+  ARES_OPT_DATATYPE_U16 = 4,
+  /*! list of 16bit integer in network byte order, concatenated. */
+  ARES_OPT_DATATYPE_U16_LIST = 5,
+  /*! 32bit integer in network byte order */
+  ARES_OPT_DATATYPE_U32 = 6,
+  /*! list 32bit integer in network byte order, concatenated */
+  ARES_OPT_DATATYPE_U32_LIST = 7,
+  /*! List of ipv4 addresses in network byte order, concatenated */
+  ARES_OPT_DATATYPE_INADDR4_LIST = 8,
+  /*! List of ipv6 addresses in network byte order, concatenated */
+  ARES_OPT_DATATYPE_INADDR6_LIST = 9,
+  /*! Binary Data */
+  ARES_OPT_DATATYPE_BIN = 10,
+  /*! DNS Domain Name Format */
+  ARES_OPT_DATATYPE_NAME = 11
+} ares_dns_opt_datatype_t;
 
 /*! String representation of DNS Record Type
  *
@@ -344,6 +414,81 @@ CARES_EXTERN const char *ares_dns_opcode_tostr(ares_dns_opcode_t opcode);
  */
 CARES_EXTERN const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key);
 
+/*! String representation of DNS Resource Record section
+ *
+ * \param[in] section  Section
+ * \return string
+ */
+CARES_EXTERN const char *ares_dns_section_tostr(ares_dns_section_t section);
+
+/*! Convert DNS class name as string to ares_dns_class_t
+ *
+ *  \param[out] qclass  Pointer passed by reference to write class
+ *  \param[in]  str     String to convert
+ *  \return ARES_TRUE on success
+ */
+CARES_EXTERN ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass,
+                                                const char       *str);
+
+/*! Convert DNS record type as string to ares_dns_rec_type_t
+ *
+ *  \param[out] qclass  Pointer passed by reference to write record type
+ *  \param[in]  str     String to convert
+ *  \return ARES_TRUE on success
+ */
+CARES_EXTERN ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
+                                                   const char          *str);
+
+
+/*! Convert DNS response code as string to from ares_dns_rcode_t
+ *
+ *  \param[in] rcode  Response code to convert
+ *  \return ARES_TRUE on success
+ */
+CARES_EXTERN const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode);
+
+/*! Convert any valid ip address (ipv4 or ipv6) into struct ares_addr and
+ *  return the starting pointer of the network byte order address and the
+ *  length of the address (4 or 16).
+ *
+ *  \param[in]     ipaddr  ASCII string form of the ip address
+ *  \param[in,out] addr    Must set "family" member to one of AF_UNSPEC,
+ *                         AF_INET, AF_INET6 on input.
+ *  \param[out]    ptr_len Length of binary form address
+ *  \return Pointer to start of binary address or NULL on error.
+ */
+CARES_EXTERN const void *ares_dns_pton(const char *ipaddr,
+                                       struct ares_addr *addr, size_t *out_len);
+
+/*! Convert an ip address into the PTR format for in-addr.arpa or in6.arpa
+ *
+ *  \param[in]  addr  properly filled address structure
+ *  \return  String representing PTR, use ares_free_string() to free
+ */
+CARES_EXTERN char *ares_dns_addr_to_ptr(const struct ares_addr *addr);
+
+
+/*! The options/parameters extensions to some RRs can be somewhat opaque, this
+ *  is a helper to return the best match for a datatype for interpreting the
+ *  option record.
+ *
+ *  \param[in] key  Key associated with options/parameters
+ *  \param[in] opt  Option Key/Parameter
+ *  \return Datatype
+ */
+CARES_EXTERN ares_dns_opt_datatype_t
+  ares_dns_opt_get_datatype(ares_dns_rr_key_t key, unsigned short opt);
+
+/*! The options/parameters extensions to some RRs can be somewhat opaque, this
+ *  is a helper to return the name if the option is known.
+ *
+ *  \param[in] key  Key associated with options/parameters
+ *  \param[in] opt  Option Key/Parameter
+ *  \return name, or NULL if not known.
+ */
+CARES_EXTERN const char *ares_dns_opt_get_name(ares_dns_rr_key_t key,
+                                               unsigned short    opt);
+
 
 /*! Opaque data type representing a DNS RR (Resource Record) */
 struct ares_dns_rr;
@@ -369,7 +514,8 @@ typedef struct ares_dns_record ares_dns_record_t;
  *  \param[out] dnsrec  Pointer passed by reference for a newly allocated
  *                      record object.  Must be ares_dns_record_destroy()'d by
  *                      caller.
- *  \param[in]  id      DNS Query ID
+ *  \param[in]  id      DNS Query ID.  If structuring a new query to be sent
+ *                      with ares_send(), this value should be zero.
  *  \param[in]  flags   DNS Flags from \ares_dns_flags_t
  *  \param[in]  opcode  DNS OpCode (typically ARES_OPCODE_QUERY)
  *  \param[in]  rcode   DNS RCode
@@ -583,7 +729,7 @@ CARES_EXTERN ares_status_t
                         const struct ares_in6_addr *addr);
 
 /*! Set string data for specified resource record and key.  Can
- *  only be used on keys with datatype ARES_DATATYPE_STR
+ *  only be used on keys with datatype ARES_DATATYPE_STR or ARES_DATATYPE_NAME.
  *
  *  \param[in] dns_rr Pointer to resource record
  *  \param[in] key    DNS Resource Record Key
@@ -680,7 +826,7 @@ CARES_EXTERN const struct ares_in6_addr *
   ares_dns_rr_get_addr6(const ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key);
 
 /*! Retrieve a pointer to the string.  Can only be used on keys with
- *  datatype ARES_DATATYPE_STR.
+ *  datatype ARES_DATATYPE_STR and ARES_DATATYPE_NAME.
  *
  *  \param[in] dns_rr Pointer to resource record
  *  \param[in] key    DNS Resource Record Key
@@ -748,7 +894,8 @@ CARES_EXTERN size_t ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
  *  \param[in]  idx     Index of option record
  *  \param[out] val     Optional. Pointer passed by reference to hold value.
  *                      Options may not have values.  Value if returned is
- *                      likely printable and guaranteed to be NULL terminated.
+ *                      guaranteed to be NULL terminated, however in most
+ *                      cases it is not printable.
  *  \param[out] val_len Optional. Pointer passed by reference to hold value
  *                      length.
  *  \return option key/id on success, 65535 on misuse.
@@ -764,7 +911,8 @@ CARES_EXTERN unsigned short
  *  \param[in]  opt     Option record key id (this is not the index).
  *  \param[out] val     Optional. Pointer passed by reference to hold value.
  *                      Options may not have values. Value if returned is
- *                      likely printable and guaranteed to be NULL terminated.
+ *                      guaranteed to be NULL terminated, however in most cases
+ *                      it is not printable.
  *  \param[out] val_len Optional. Pointer passed by reference to hold value
  *                      length.
  *  \return ARES_TRUE on success, ARES_FALSE on misuse.

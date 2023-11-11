@@ -506,6 +506,16 @@ struct ares_in6_addr {
   } _S6_un;
 };
 
+struct ares_addr {
+  int family;
+
+  union {
+    struct in_addr       addr4;
+    struct ares_in6_addr addr6;
+  } addr;
+};
+
+
 struct ares_addrttl {
   struct in_addr ipaddr;
   int            ttl;

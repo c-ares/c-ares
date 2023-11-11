@@ -65,3 +65,48 @@ size_t ares__log2(size_t n)
 
   return tab64[(n * 0x07EDD5E59A4E28C2) >> 58];
 }
+
+/* x^y */
+size_t ares__pow(size_t x, size_t y)
+{
+  size_t res = 1;
+
+  while (y > 0) {
+    /* If y is odd, multiply x with result */
+    if (y & 1) {
+      res = res * x;
+    }
+
+    /* y must be even now */
+    y = y >> 1; /* y /= 2; */
+    x = x * x;  /* x^2 */
+  }
+
+  return res;
+}
+
+size_t ares__count_digits(size_t n)
+{
+  size_t digits;
+
+  for (digits = 0; n > 0; digits++) {
+    n /= 10;
+  }
+  if (digits == 0)
+    digits = 1;
+
+  return digits;
+}
+
+size_t ares__count_hexdigits(size_t n)
+{
+  size_t digits;
+
+  for (digits = 0; n > 0; digits++) {
+    n /= 16;
+  }
+  if (digits == 0)
+    digits = 1;
+
+  return digits;
+}

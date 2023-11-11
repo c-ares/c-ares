@@ -76,6 +76,7 @@ int         main(int argc, char **argv)
   struct timeval       tv;
   struct in_addr       addr4;
   struct ares_in6_addr addr6;
+  ares_getopt_state_t  state;
 
 #ifdef USE_WINSOCK
   WORD    wVersionRequested = MAKEWORD(USE_WINSOCK, USE_WINSOCK);
@@ -91,7 +92,8 @@ int         main(int argc, char **argv)
     return 1;
   }
 
-  while ((c = ares_getopt(argc, argv, "dt:h?s:")) != -1) {
+  ares_getopt_init(&state, argc, (const char **)argv);
+  while ((c = ares_getopt(&state, "dt:h?s:")) != -1) {
     switch (c) {
       case 'd':
 #ifdef WATT32
@@ -103,14 +105,14 @@ int         main(int argc, char **argv)
         options.ndomains++;
         options.domains = (char **)realloc(
           options.domains, (size_t)options.ndomains * sizeof(char *));
-        options.domains[options.ndomains - 1] = strdup(optarg);
+        options.domains[options.ndomains - 1] = strdup(state.optarg);
         break;
       case 't':
-        if (!strcasecmp(optarg, "a")) {
+        if (!strcasecmp(state.optarg, "a")) {
           addr_family = AF_INET;
-        } else if (!strcasecmp(optarg, "aaaa")) {
+        } else if (!strcasecmp(state.optarg, "aaaa")) {
           addr_family = AF_INET6;
-        } else if (!strcasecmp(optarg, "u")) {
+        } else if (!strcasecmp(state.optarg, "u")) {
           addr_family = AF_UNSPEC;
         } else {
           usage();
@@ -128,8 +130,8 @@ int         main(int argc, char **argv)
     }
   }
 
-  argc -= optind;
-  argv += optind;
+  argc -= state.optind;
+  argv += state.optind;
   if (argc < 1) {
     usage();
   }

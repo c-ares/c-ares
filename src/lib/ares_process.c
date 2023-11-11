@@ -656,7 +656,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   /* If we use EDNS and server answers with FORMERR without an OPT RR, the
    * protocol extension is not understood by the responder. We must retry the
    * query without EDNS enabled. */
-  if (ares_dns_record_get_rcode(rdnsrec) == ARES_RCODE_FORMAT_ERROR &&
+  if (ares_dns_record_get_rcode(rdnsrec) == ARES_RCODE_FORMERR &&
       has_opt_rr(qdnsrec) && !has_opt_rr(rdnsrec)) {
     status = rewrite_without_edns(qdnsrec, query);
     if (status != ARES_SUCCESS) {
@@ -686,13 +686,13 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    */
   if (!(channel->flags & ARES_FLAG_NOCHECKRESP)) {
     ares_dns_rcode_t rcode = ares_dns_record_get_rcode(rdnsrec);
-    if (rcode == ARES_RCODE_SERVER_FAILURE ||
-        rcode == ARES_RCODE_NOT_IMPLEMENTED || rcode == ARES_RCODE_REFUSED) {
+    if (rcode == ARES_RCODE_SERVFAIL ||
+        rcode == ARES_RCODE_NOTIMP || rcode == ARES_RCODE_REFUSED) {
       switch (rcode) {
-        case ARES_RCODE_SERVER_FAILURE:
+        case ARES_RCODE_SERVFAIL:
           query->error_status = ARES_ESERVFAIL;
           break;
-        case ARES_RCODE_NOT_IMPLEMENTED:
+        case ARES_RCODE_NOTIMP:
           query->error_status = ARES_ENOTIMP;
           break;
         case ARES_RCODE_REFUSED:

@@ -834,7 +834,8 @@ const char *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
 {
   char * const *str;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR) {
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR &&
+      ares_dns_rr_key_datatype(key) != ARES_DATATYPE_NAME) {
     return NULL;
   }
 
@@ -1090,7 +1091,8 @@ ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
 {
   char **str;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR) {
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_STR &&
+      ares_dns_rr_key_datatype(key) != ARES_DATATYPE_NAME) {
     return ARES_EFORMERR;
   }
 
@@ -1190,6 +1192,7 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
 
 done:
   ares_free((*options)->optval[idx].val);
+  (*options)->optval[idx].opt     = opt;
   (*options)->optval[idx].val     = val;
   (*options)->optval[idx].val_len = val_len;
 
@@ -1218,4 +1221,69 @@ ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   }
 
   return status;
+}
+
+char *ares_dns_addr_to_ptr(const struct ares_addr *addr)
+{
+  ares__buf_t               *buf     = NULL;
+  const unsigned char       *ptr     = NULL;
+  size_t                     ptr_len = 0;
+  size_t                     i;
+  ares_status_t              status;
+  static const unsigned char hexbytes[] = "0123456789abcdef";
+
+  if (addr->family != AF_INET && addr->family != AF_INET6)
+    goto fail;
+
+  buf = ares__buf_create();
+  if (buf == NULL)
+    goto fail;
+
+  if (addr->family == AF_INET) {
+    ptr     = (const unsigned char *)&addr->addr.addr4;
+    ptr_len = 4;
+  } else {
+    ptr     = (const unsigned char *)&addr->addr.addr6;
+    ptr_len = 16;
+  }
+
+  for (i=ptr_len; i>0; i--) {
+    if (addr->family == AF_INET) {
+      status = ares__buf_append_num_dec(buf, (size_t)ptr[i-1], 0);
+    } else {
+      unsigned char c;
+
+      c = ptr[i-1] & 0xF;
+      status = ares__buf_append_byte(buf, hexbytes[c]);
+      if (status != ARES_SUCCESS)
+        goto fail;
+
+      status = ares__buf_append_byte(buf, '.');
+      if (status != ARES_SUCCESS)
+        goto fail;
+
+      c = (ptr[i-1] >> 4) & 0xF;
+      status = ares__buf_append_byte(buf, hexbytes[c]);
+    }
+    if (status != ARES_SUCCESS)
+      goto fail;
+
+    status = ares__buf_append_byte(buf, '.');
+    if (status != ARES_SUCCESS)
+      goto fail;
+  }
+
+  if (addr->family == AF_INET) {
+    status = ares__buf_append(buf, (const unsigned char *)"in-addr.arpa", 12);
+  } else {
+    status = ares__buf_append(buf, (const unsigned char *)"ip6.arpa", 8);
+  }
+  if (status != ARES_SUCCESS)
+    goto fail;
+
+  return ares__buf_finish_str(buf, NULL);
+
+fail:
+  ares__buf_destroy(buf);
+  return NULL;
 }

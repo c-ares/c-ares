@@ -179,8 +179,8 @@ static ares_bool_t ares__is_hostname(const char *str)
   return ARES_TRUE;
 }
 
-static const void *ares__parse_ipaddr(const char       *ipaddr,
-                                      struct ares_addr *addr, size_t *out_len)
+const void *ares_dns_pton(const char *ipaddr, struct ares_addr *addr,
+                          size_t *out_len)
 {
   const void *ptr     = NULL;
   size_t      ptr_len = 0;
@@ -225,7 +225,7 @@ static ares_bool_t ares__normalize_ipaddr(const char *ipaddr, char *out,
   memset(&data, 0, sizeof(data));
   data.family = AF_UNSPEC;
 
-  addr = ares__parse_ipaddr(ipaddr, &data, &addr_len);
+  addr = ares_dns_pton(ipaddr, &data, &addr_len);
   if (addr == NULL) {
     return ARES_FALSE;
   }
@@ -894,7 +894,7 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
     memset(&addr, 0, sizeof(addr));
 
     addr.family = family;
-    ptr         = ares__parse_ipaddr(ipaddr, &addr, &ptr_len);
+    ptr         = ares_dns_pton(ipaddr, &addr, &ptr_len);
     if (ptr == NULL) {
       continue;
     }
@@ -1071,7 +1071,7 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
 
     memset(&addr, 0, sizeof(addr));
     addr.family = family;
-    ptr         = ares__parse_ipaddr(ipaddr, &addr, &ptr_len);
+    ptr         = ares_dns_pton(ipaddr, &addr, &ptr_len);
 
     if (ptr == NULL) {
       continue;

@@ -621,14 +621,19 @@ TEST_F(LibraryTest, DNSRecord) {
     ares_dns_rr_set_u16(rr, ARES_RR_SVCB_PRIORITY, 1));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_str(rr, ARES_RR_SVCB_TARGET, "svc1.example.net"));
-  const unsigned char svcb_ipv6hint[] = "2001:db8::1";
+  /* IPV6 hint is a list of IPV6 addresses in network byte order, concatenated */
+  struct ares_addr svcb_addr;
+  svcb_addr.family = AF_UNSPEC;
+  size_t               svcb_ipv6hint_len = 0;
+  const unsigned char *svcb_ipv6hint = (const unsigned char *)ares_dns_pton("2001:db8::1", &svcb_addr, &svcb_ipv6hint_len);
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_opt(rr, ARES_RR_SVCB_PARAMS, ARES_SVCB_PARAM_IPV6HINT,
-      svcb_ipv6hint, sizeof(svcb_ipv6hint)-1));
-  const unsigned char svcb_port[] = "1234";
+      svcb_ipv6hint, svcb_ipv6hint_len));
+  /* Port is 16bit big endian format */
+  unsigned short svcb_port = htons(1234);
   EXPECT_EQ(ARES_SUCCESS,
-    ares_dns_rr_set_opt(rr, ARES_RR_SVCB_PARAMS, ARES_SVCB_PARAM_IPV6HINT,
-      svcb_port, sizeof(svcb_port)-1));
+    ares_dns_rr_set_opt(rr, ARES_RR_SVCB_PARAMS, ARES_SVCB_PARAM_PORT,
+      (const unsigned char *)&svcb_port, sizeof(svcb_port)));
   /* HTTPS */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
@@ -637,10 +642,12 @@ TEST_F(LibraryTest, DNSRecord) {
     ares_dns_rr_set_u16(rr, ARES_RR_HTTPS_PRIORITY, 1));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_str(rr, ARES_RR_HTTPS_TARGET, ""));
-  const unsigned char https_alpn[] = "h3";
+
+  /* In DNS string format which is 1 octet length indicator followed by string */
+  const unsigned char https_alpn[] = { 0x02, 'h', '3' };
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_opt(rr, ARES_RR_HTTPS_PARAMS, ARES_SVCB_PARAM_ALPN,
-      https_alpn, sizeof(https_alpn)-1));
+      https_alpn, sizeof(https_alpn)));
   /* URI */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
