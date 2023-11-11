@@ -151,14 +151,6 @@ typedef struct ares_rand_state ares_rand_state;
 
 /********* EDNS defines section ******/
 
-struct ares_addr {
-  int family;
-
-  union {
-    struct in_addr       addr4;
-    struct ares_in6_addr addr6;
-  } addr;
-};
 
 struct query;
 
@@ -559,5 +551,9 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
 
 size_t ares__round_up_pow2(size_t n);
 size_t ares__log2(size_t n);
+size_t ares__pow(size_t x, size_t y);
+size_t ares__count_digits(size_t n);
+size_t ares__count_hexdigits(size_t n);
+
 
 #endif /* __ARES_PRIVATE_H */

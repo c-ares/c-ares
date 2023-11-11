@@ -447,6 +447,27 @@ CARES_EXTERN ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
  */
 CARES_EXTERN const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode);
 
+/*! Convert any valid ip address (ipv4 or ipv6) into struct ares_addr and
+ *  return the starting pointer of the network byte order address and the
+ *  length of the address (4 or 16).
+ *
+ *  \param[in]     ipaddr  ASCII string form of the ip address
+ *  \param[in,out] addr    Must set "family" member to one of AF_UNSPEC,
+ *                         AF_INET, AF_INET6 on input.
+ *  \param[out]    ptr_len Length of binary form address
+ *  \return Pointer to start of binary address or NULL on error.
+ */
+CARES_EXTERN const void *ares_dns_pton(const char *ipaddr,
+                                       struct ares_addr *addr, size_t *out_len);
+
+/*! Convert an ip address into the PTR format for in-addr.arpa or in6.arpa
+ *
+ *  \param[in]  addr  properly filled address structure
+ *  \return  String representing PTR, use ares_free_string() to free
+ */
+CARES_EXTERN char *ares_dns_addr_to_ptr(const struct ares_addr *addr);
+
+
 /*! The options/parameters extensions to some RRs can be somewhat opaque, this
  *  is a helper to return the best match for a datatype for interpreting the
  *  option record.

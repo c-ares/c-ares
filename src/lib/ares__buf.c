@@ -837,11 +837,40 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
                                     &len, allow_multiple);
 }
 
-static ares_status_t ares__buf_append_num_hex(ares__buf_t *buf, size_t num,
-                                              size_t len)
+
+ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num, size_t len)
+{
+  size_t i;
+  size_t mod;
+
+  if (len == 0) {
+    len = ares__count_digits(num);
+  }
+
+  mod = ares__pow(10, len);
+
+  for (i=len; i>0; i--) {
+    size_t        digit = (num % mod);
+    ares_status_t status;
+
+    mod   /= 10;
+    digit /= mod;
+    status = ares__buf_append_byte(buf, '0' + (unsigned char)(digit & 0xFF));
+    if (status != ARES_SUCCESS)
+      return status;
+  }
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares__buf_append_num_hex(ares__buf_t *buf, size_t num, size_t len)
 {
   size_t                     i;
   static const unsigned char hexbytes[] = "0123456789ABCDEF";
+
+  if (len == 0) {
+    len = ares__count_hexdigits(num);
+  }
+
   for (i = len; i > 0; i--) {
     ares_status_t status;
     status = ares__buf_append_byte(buf, hexbytes[(num >> ((i - 1) * 4)) & 0xF]);

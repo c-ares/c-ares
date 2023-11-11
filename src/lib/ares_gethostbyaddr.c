@@ -67,8 +67,6 @@ static void          end_aquery(struct addr_query *aquery, ares_status_t status,
 static ares_status_t file_lookup(ares_channel_t         *channel,
                                  const struct ares_addr *addr,
                                  struct hostent        **host);
-static void          ptr_rr_name(char *name, size_t name_size,
-                                 const struct ares_addr *addr);
 
 void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
                         int family, ares_host_callback callback, void *arg)
@@ -109,16 +107,21 @@ void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
 static void next_lookup(struct addr_query *aquery)
 {
   const char     *p;
-  char            name[128];
   ares_status_t   status;
   struct hostent *host;
+  char           *name;
 
   for (p = aquery->remaining_lookups; *p; p++) {
     switch (*p) {
       case 'b':
-        ptr_rr_name(name, sizeof(name), &aquery->addr);
+        name = ares_dns_addr_to_ptr(&aquery->addr);
+        if (name == NULL) {
+          end_aquery(aquery, ARES_ENOMEM, NULL);
+          return;
+        }
         aquery->remaining_lookups = p + 1;
         ares_query(aquery->channel, name, C_IN, T_PTR, addr_callback, aquery);
+        ares_free(name);
         return;
       case 'f':
         status = file_lookup(aquery->channel, &aquery->addr, &host);
@@ -210,31 +213,3 @@ static ares_status_t file_lookup(ares_channel_t         *channel,
   return ARES_SUCCESS;
 }
 
-static void ptr_rr_name(char *name, size_t name_size,
-                        const struct ares_addr *addr)
-{
-  if (addr->family == AF_INET) {
-    unsigned long laddr = ntohl(addr->addr.addr4.s_addr);
-    unsigned long a1    = (laddr >> 24UL) & 0xFFUL;
-    unsigned long a2    = (laddr >> 16UL) & 0xFFUL;
-    unsigned long a3    = (laddr >> 8UL) & 0xFFUL;
-    unsigned long a4    = laddr & 0xFFUL;
-    snprintf(name, name_size, "%lu.%lu.%lu.%lu.in-addr.arpa", a4, a3, a2, a1);
-  } else {
-    const unsigned char *bytes = (const unsigned char *)&addr->addr.addr6;
-    /* There are too many arguments to do this in one line using
-     * minimally C89-compliant compilers */
-    snprintf(name, name_size,
-             "%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.",
-             bytes[15] & 0xf, bytes[15] >> 4, bytes[14] & 0xf, bytes[14] >> 4,
-             bytes[13] & 0xf, bytes[13] >> 4, bytes[12] & 0xf, bytes[12] >> 4,
-             bytes[11] & 0xf, bytes[11] >> 4, bytes[10] & 0xf, bytes[10] >> 4,
-             bytes[9] & 0xf, bytes[9] >> 4, bytes[8] & 0xf, bytes[8] >> 4);
-    snprintf(name + ares_strlen(name), name_size - ares_strlen(name),
-             "%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.ip6.arpa",
-             bytes[7] & 0xf, bytes[7] >> 4, bytes[6] & 0xf, bytes[6] >> 4,
-             bytes[5] & 0xf, bytes[5] >> 4, bytes[4] & 0xf, bytes[4] >> 4,
-             bytes[3] & 0xf, bytes[3] >> 4, bytes[2] & 0xf, bytes[2] >> 4,
-             bytes[1] & 0xf, bytes[1] >> 4, bytes[0] & 0xf, bytes[0] >> 4);
-  }
-}

@@ -755,12 +755,13 @@ static ares_status_t enqueue_query(ares_channel_t      *channel,
                                    const adig_config_t *config,
                                    const char          *name)
 {
-  ares_dns_record_t *dnsrec = NULL;
-  ares_dns_rr_t     *rr     = NULL;
+  ares_dns_record_t *dnsrec   = NULL;
+  ares_dns_rr_t     *rr       = NULL;
   ares_status_t      status;
-  unsigned char     *buf     = NULL;
-  size_t             buf_len = 0;
-  unsigned short     flags   = 0;
+  unsigned char     *buf      = NULL;
+  size_t             buf_len  = 0;
+  unsigned short     flags    = 0;
+  char              *nametemp = NULL;
 
   if (!(config->options.flags & ARES_FLAG_NORECURSE)) {
     flags |= ARES_FLAG_RD;
@@ -772,7 +773,18 @@ static ares_status_t enqueue_query(ares_channel_t      *channel,
     goto done;
   }
 
-  /* XXX: if PTR, convert address to inarpa */
+  /* If it is a PTR record, convert from ip address into in-arpa form
+   * automatically */
+  if (config->qtype == ARES_REC_TYPE_PTR) {
+    struct ares_addr addr;
+    size_t           len;
+    addr.family = AF_UNSPEC;
+
+    if (ares_dns_pton(name, &addr, &len) != NULL) {
+      nametemp = ares_dns_addr_to_ptr(&addr);
+      name     = nametemp;
+    }
+  }
 
   status =
     ares_dns_record_query_add(dnsrec, name, config->qtype, config->qclass);
@@ -797,6 +809,7 @@ static ares_status_t enqueue_query(ares_channel_t      *channel,
   ares_free_string(buf);
 
 done:
+  ares_free_string(nametemp);
   ares_dns_record_destroy(dnsrec);
   return status;
 }
