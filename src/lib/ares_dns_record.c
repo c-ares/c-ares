@@ -1225,11 +1225,12 @@ ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
 
 char *ares_dns_addr_to_ptr(const struct ares_addr *addr)
 {
-  ares__buf_t         *buf     = NULL;
-  const unsigned char *ptr     = NULL;
-  size_t               ptr_len = 0;
-  size_t               i;
-  ares_status_t        status;
+  ares__buf_t               *buf     = NULL;
+  const unsigned char       *ptr     = NULL;
+  size_t                     ptr_len = 0;
+  size_t                     i;
+  ares_status_t              status;
+  static const unsigned char hexbytes[] = "0123456789abcdef";
 
   if (addr->family != AF_INET && addr->family != AF_INET6)
     goto fail;
@@ -1250,7 +1251,19 @@ char *ares_dns_addr_to_ptr(const struct ares_addr *addr)
     if (addr->family == AF_INET) {
       status = ares__buf_append_num_dec(buf, (size_t)ptr[i-1], 0);
     } else {
-      status = ares__buf_append_num_hex(buf, (size_t)ptr[i-1], 0);
+      unsigned char c;
+
+      c = ptr[i-1] & 0xF;
+      status = ares__buf_append_byte(buf, hexbytes[c]);
+      if (status != ARES_SUCCESS)
+        goto fail;
+
+      status = ares__buf_append_byte(buf, '.');
+      if (status != ARES_SUCCESS)
+        goto fail;
+
+      c = (ptr[i-1] >> 4) & 0xF;
+      status = ares__buf_append_byte(buf, hexbytes[c]);
     }
     if (status != ARES_SUCCESS)
       goto fail;
@@ -1263,7 +1276,7 @@ char *ares_dns_addr_to_ptr(const struct ares_addr *addr)
   if (addr->family == AF_INET) {
     status = ares__buf_append(buf, (const unsigned char *)"in-addr.arpa", 12);
   } else {
-    status = ares__buf_append(buf, (const unsigned char *)"in6.arpa", 8);
+    status = ares__buf_append(buf, (const unsigned char *)"ip6.arpa", 8);
   }
   if (status != ARES_SUCCESS)
     goto fail;

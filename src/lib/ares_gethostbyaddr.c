@@ -104,6 +104,7 @@ void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
   next_lookup(aquery);
 }
 
+
 static void next_lookup(struct addr_query *aquery)
 {
   const char     *p;
