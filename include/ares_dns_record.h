@@ -115,17 +115,17 @@ typedef enum {
 /*! DNS Response Codes from server */
 typedef enum {
   ARES_RCODE_NOERROR      = 0,    /*!< Success */
-  ARES_RCODE_FORMAT_ERROR = 1,    /*!< Format error. The name server was unable
+  ARES_RCODE_FORMERR = 1,    /*!< Format error. The name server was unable
                                    *   to interpret the query. */
-  ARES_RCODE_SERVER_FAILURE = 2,  /*!< Server Failure. The name server was
+  ARES_RCODE_SERVFAIL = 2,  /*!< Server Failure. The name server was
                                    *   unable to process this query due to a
                                    *   problem with the nameserver */
-  ARES_RCODE_NAME_ERROR = 3,      /*!< Name Error.  Meaningful only for
+  ARES_RCODE_NXDOMAIN = 3,      /*!< Name Error.  Meaningful only for
                                    *   responses from an authoritative name
                                    *   server, this code signifies that the
                                    *   domain name referenced in the query does
                                    *   not exist. */
-  ARES_RCODE_NOT_IMPLEMENTED = 4, /*!< Not implemented.  The name server does
+  ARES_RCODE_NOTIMP = 4, /*!< Not implemented.  The name server does
                                    *   not support the requested kind of
                                    *   query */
   ARES_RCODE_REFUSED = 5,         /*!< Refused. The name server refuses to
@@ -143,6 +143,15 @@ typedef enum {
   ARES_RCODE_NOTZONE = 10,        /*!< RFC 2136. A name used in the Prerequisite
                                    *   or Update Section is not within the zone
                                    *   denoted by the Zone Section. */
+  ARES_RCODE_DSOTYPEI = 11,       /*!< RFC 8409. DSO-TYPE Not implemented */
+  ARES_RCODE_BADSIG   = 16,       /*!< RFC 8945. TSIG Signature Failure */
+  ARES_RCODE_BADKEY   = 17,       /*!< RFC 8945. Key not recognized. */
+  ARES_RCODE_BADTIME  = 18,       /*!< RFC 8945. Signature out of time window. */
+  ARES_RCODE_BADMODE  = 19,       /*!< RFC 2930. Bad TKEY Mode */
+  ARES_RCODE_BADNAME  = 20,       /*!< RFC 2930. Duplicate Key Name */
+  ARES_RCODE_BADALG   = 21,       /*!< RFC 2930. Algorithm not supported */
+  ARES_RCODE_BADTRUNC = 22,       /*!< RFC 8945. Bad Truncation */
+  ARES_RCODE_BADCOOKIE = 23,      /*!< RVC 7973. Bad/missing Server Cookie */
 } ares_dns_rcode_t;
 
 /*! Data types used */
@@ -429,6 +438,14 @@ CARES_EXTERN ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass,
  */
 CARES_EXTERN ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
                                                    const char          *str);
+
+
+/*! Convert DNS response code as string to from ares_dns_rcode_t
+ *
+ *  \param[in] rcode  Response code to convert
+ *  \return ARES_TRUE on success
+ */
+CARES_EXTERN const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode);
 
 /*! The options/parameters extensions to some RRs can be somewhat opaque, this
  *  is a helper to return the best match for a datatype for interpreting the

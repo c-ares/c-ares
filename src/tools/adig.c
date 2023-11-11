@@ -67,17 +67,6 @@
 #endif
 
 
-/* ---- IMPLEMENT THESE IN c-ares */
-
-
-static const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode)
-{
-  (void)rcode;
-  return "RCODE";
-}
-
-/* ----- */
-
 typedef struct {
   ares_bool_t         is_help;
   struct ares_options options;

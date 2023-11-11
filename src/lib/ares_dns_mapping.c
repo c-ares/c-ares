@@ -44,16 +44,25 @@ ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode)
 {
   switch (rcode) {
     case ARES_RCODE_NOERROR:
-    case ARES_RCODE_FORMAT_ERROR:
-    case ARES_RCODE_SERVER_FAILURE:
-    case ARES_RCODE_NAME_ERROR:
-    case ARES_RCODE_NOT_IMPLEMENTED:
+    case ARES_RCODE_FORMERR:
+    case ARES_RCODE_SERVFAIL:
+    case ARES_RCODE_NXDOMAIN:
+    case ARES_RCODE_NOTIMP:
     case ARES_RCODE_REFUSED:
     case ARES_RCODE_YXDOMAIN:
     case ARES_RCODE_YXRRSET:
     case ARES_RCODE_NXRRSET:
     case ARES_RCODE_NOTAUTH:
     case ARES_RCODE_NOTZONE:
+    case ARES_RCODE_DSOTYPEI:
+    case ARES_RCODE_BADSIG:
+    case ARES_RCODE_BADKEY:
+    case ARES_RCODE_BADTIME:
+    case ARES_RCODE_BADMODE:
+    case ARES_RCODE_BADNAME:
+    case ARES_RCODE_BADALG:
+    case ARES_RCODE_BADTRUNC:
+    case ARES_RCODE_BADCOOKIE:
       return ARES_TRUE;
   }
   return ARES_FALSE;
@@ -829,4 +838,52 @@ const char *ares_dns_opt_get_name(ares_dns_rr_key_t key, unsigned short opt)
       break;
   }
   return NULL;
+}
+
+const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode)
+{
+  switch (rcode) {
+    case ARES_RCODE_NOERROR:
+      return "NOERROR";
+    case ARES_RCODE_FORMERR:
+      return "FORMERR";
+    case ARES_RCODE_SERVFAIL:
+      return "SERVFAIL";
+    case ARES_RCODE_NXDOMAIN:
+      return "NXDOMAIN";
+    case ARES_RCODE_NOTIMP:
+      return "NOTIMP";
+    case ARES_RCODE_REFUSED:
+      return "REFUSED";
+    case ARES_RCODE_YXDOMAIN:
+      return "YXDOMAIN";
+    case ARES_RCODE_YXRRSET:
+      return "YXRRSET";
+    case ARES_RCODE_NXRRSET:
+      return "NXRRSET";
+    case ARES_RCODE_NOTAUTH:
+      return "NOTAUTH";
+    case ARES_RCODE_NOTZONE:
+      return "NOTZONE";
+    case ARES_RCODE_DSOTYPEI:
+      return "DSOTYPEI";
+    case ARES_RCODE_BADSIG:
+      return "BADSIG";
+    case ARES_RCODE_BADKEY:
+      return "BADKEY";
+    case ARES_RCODE_BADTIME:
+      return "BADTIME";
+    case ARES_RCODE_BADMODE:
+      return "BADMODE";
+    case ARES_RCODE_BADNAME:
+      return "BADNAME";
+    case ARES_RCODE_BADALG:
+      return "BADALG";
+    case ARES_RCODE_BADTRUNC:
+      return "BADTRUNC";
+    case ARES_RCODE_BADCOOKIE:
+      return "BADCOOKIE";
+  }
+
+  return "UNKNOWN";
 }
