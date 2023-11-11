@@ -796,15 +796,16 @@ ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
       break;
     }
 
-    /* XXX: Maybe we should scan to make sure it is printable? */
-    if (bin != NULL) {
-      status = ares__buf_fetch_bytes_into_buf(buf, binbuf, len);
-    } else {
-      status = ares__buf_consume(buf, len);
-    }
-
-    if (status != ARES_SUCCESS) {
-      break;
+    if (len) {
+      /* XXX: Maybe we should scan to make sure it is printable? */
+      if (bin != NULL) {
+        status = ares__buf_fetch_bytes_into_buf(buf, binbuf, len);
+      } else {
+        status = ares__buf_consume(buf, len);
+      }
+      if (status != ARES_SUCCESS) {
+        break;
+      }
     }
 
     if (!allow_multiple) {

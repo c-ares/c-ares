@@ -261,9 +261,11 @@ static ares_status_t ares_dns_parse_rr_hinfo(ares__buf_t   *buf,
   }
 
   /* OS */
-  return ares_dns_parse_and_set_dns_str(
+  status = ares_dns_parse_and_set_dns_str(
     buf, ares_dns_rr_remaining_len(buf, orig_len, rdlength), ARES_FALSE, rr,
     ARES_RR_HINFO_OS);
+
+  return status;
 }
 
 static ares_status_t ares_dns_parse_rr_mx(ares__buf_t *buf, ares_dns_rr_t *rr,
@@ -1084,7 +1086,6 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
   if (status != ARES_SUCCESS) {
     goto done;
   }
-
 
   /* Determine how many bytes were processed */
   processed_len = remaining_len - ares__buf_len(buf);
