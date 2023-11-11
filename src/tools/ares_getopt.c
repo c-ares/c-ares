@@ -40,11 +40,6 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-/* #if !defined(lint)
- * static char sccsid[] = "@(#)getopt.c 8.2 (Berkeley) 4/2/94";
- * #endif
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,7 +65,7 @@ void ares_getopt_init(ares_getopt_state_t *state, int nargc, const char **nargv)
  */
 int ares_getopt(ares_getopt_state_t *state, const char *ostr)
 {
-  char *oli;          /* option letter list index */
+  const char *oli;          /* option letter list index */
 
   if (!*state->place) { /* update scanning pointer */
     if (state->optind >= state->argc || *(state->place = state->argv[state->optind]) != '-') {
@@ -83,13 +78,13 @@ int ares_getopt(ares_getopt_state_t *state, const char *ostr)
       return (EOF);
     }
   } /* option letter okay? */
-  if ((state->optopt = (int)*state->place++) == (int)':' ||
+  if ((state->optopt = (int)*state->place++) == ':' ||
       (oli = strchr(ostr, state->optopt)) == NULL) {
     /*
      * if the user didn't specify '-' as an option,
      * assume it means EOF.
      */
-    if (state->optopt == (int)'-') {
+    if (state->optopt == '-') {
       return (EOF);
     }
     if (!*state->place) {

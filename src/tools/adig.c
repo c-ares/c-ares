@@ -149,15 +149,12 @@ static void print_help(void)
 static ares_bool_t read_cmdline(int argc, const char **argv, adig_config_t *config)
 {
   ares_getopt_state_t state;
+  int                 c;
+
   ares_getopt_init(&state, argc, argv);
 
-  while (1) {
-    int c;
+  while ((c = ares_getopt(&state, "dh?f:s:c:t:T:U:")) != -1) {
     int f;
-
-    c = ares_getopt(&state, "dh?f:s:c:t:T:U:");
-    if (c == -1)
-      break;
 
     switch (c) {
       case 'd':
@@ -230,16 +227,18 @@ static ares_bool_t read_cmdline(int argc, const char **argv, adig_config_t *conf
         config->options.udp_port  = (unsigned short)strtol(state.optarg, NULL, 0);
         config->optmask          |= ARES_OPT_UDP_PORT;
         break;
+
+      default:
+        snprintf(config->error, sizeof(config->error), "unrecognized option %c", c);
+        return ARES_FALSE;
     }
   }
 
   config->args_processed = state.optind;
-
   if (config->args_processed >= argc) {
     snprintf(config->error, sizeof(config->error), "missing query name");
     return ARES_FALSE;
   }
-
   return ARES_TRUE;
 }
 
@@ -292,7 +291,10 @@ static void print_question(const ares_dns_record_t *dnsrec)
     ares_dns_rec_type_t qtype;
     ares_dns_class_t    qclass;
     size_t              len;
-    ares_dns_record_query_get(dnsrec, i, &name, &qtype, &qclass);
+    if (ares_dns_record_query_get(dnsrec, i, &name, &qtype, &qclass) != ARES_SUCCESS)
+      return;
+    if (name == NULL)
+      return;
     len = strlen(name);
     printf(";%s.\t", name);
     if (len + 1 < 24) {
@@ -607,11 +609,16 @@ static void print_binp(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
 static void print_rr(const ares_dns_rr_t *rr)
 {
   const char              *name     = ares_dns_rr_get_name(rr);
-  size_t                   len      = strlen(name);
+  size_t                   len      = 0;
   size_t                   keys_cnt = 0;
   ares_dns_rec_type_t      rtype    = ares_dns_rr_get_type(rr);
   const ares_dns_rr_key_t *keys     = ares_dns_rr_get_keys(rtype, &keys_cnt);
   size_t                   i;
+
+  if (name == NULL)
+    return;
+
+  len = strlen(name);
 
   printf("%s.\t", name);
   if (len < 24) {
