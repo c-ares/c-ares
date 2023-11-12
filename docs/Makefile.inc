@@ -42,6 +42,7 @@ MANPAGES = ares_cancel.3		\
   ares_parse_uri_reply.3		\
   ares_process.3			\
   ares_query.3				\
+  ares_reinit.3				\
   ares_save_options.3			\
   ares_search.3				\
   ares_send.3				\

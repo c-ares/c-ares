@@ -370,6 +370,8 @@ CARES_EXTERN void        ares_destroy_options(struct ares_options *options);
 
 CARES_EXTERN int         ares_dup(ares_channel_t **dest, ares_channel_t *src);
 
+CARES_EXTERN ares_status_t ares_reinit(ares_channel_t *channel);
+
 CARES_EXTERN void        ares_destroy(ares_channel_t *channel);
 
 CARES_EXTERN void        ares_cancel(ares_channel_t *channel);
