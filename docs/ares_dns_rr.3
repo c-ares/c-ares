@@ -1,0 +1,179 @@
+.\"
+.\" SPDX-License-Identifier: MIT
+.\"
+.TH ARES_DNS_RR 3 "12 November 2023"
+.SH NAME
+DNS Resource record creating, reading, and writing functions.
+.SH SYNOPSIS
+.nf
+#include <ares.h>
+
+size_t ares_dns_record_rr_cnt(const ares_dns_record_t *dnsrec,
+                              ares_dns_section_t       sect);
+
+ares_status_t ares_dns_record_rr_add(ares_dns_rr_t     **rr_out,
+                                     ares_dns_record_t  *dnsrec,
+                                     ares_dns_section_t  sect,
+                                     const char         *name,
+                                     ares_dns_rec_type_t type,
+                                     ares_dns_class_t    rclass,
+                                     unsigned int        ttl);
+
+ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
+                                      ares_dns_section_t sect,
+                                      size_t             idx);
+
+ares_status_t ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
+                                     ares_dns_section_t sect,
+                                     size_t             idx);
+
+const char *ares_dns_rr_get_name(const ares_dns_rr_t *rr);
+
+ares_dns_rec_type_t ares_dns_rr_get_type(const ares_dns_rr_t *rr);
+
+ares_dns_class_t ares_dns_rr_get_class(const ares_dns_rr_t *rr);
+
+unsigned int ares_dns_rr_get_ttl(const ares_dns_rr_t *rr);
+
+ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t        *dns_rr,
+                                   ares_dns_rr_key_t     key,
+                                   const struct in_addr *addr);
+
+ares_status_t ares_dns_rr_set_addr6(ares_dns_rr_t              *dns_rr,
+                                    ares_dns_rr_key_t           key,
+                                    const struct ares_in6_addr *addr);
+
+ares_status_t ares_dns_rr_set_str(ares_dns_rr_t    *dns_rr,
+                                  ares_dns_rr_key_t key,
+                                  const char       *val);
+
+ares_status_t ares_dns_rr_set_u8(ares_dns_rr_t    *dns_rr,
+                                 ares_dns_rr_key_t key,
+                                 unsigned char     val);
+
+ares_status_t ares_dns_rr_set_u16(ares_dns_rr_t    *dns_rr,
+                                  ares_dns_rr_key_t key,
+                                  unsigned short    val);
+
+ares_status_t ares_dns_rr_set_u32(ares_dns_rr_t    *dns_rr,
+                                  ares_dns_rr_key_t key,
+                                  unsigned int      val);
+
+ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t       *dns_rr,
+                                  ares_dns_rr_key_t    key,
+                                  const unsigned char *val,
+                                  size_t               len);
+
+ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t       *dns_rr,
+                                  ares_dns_rr_key_t    key,
+                                  unsigned short       opt,
+                                  const unsigned char *val,
+                                  size_t               val_len);
+
+const struct in_addr *ares_dns_rr_get_addr(const ares_dns_rr_t *dns_rr,
+                                           ares_dns_rr_key_t key);
+
+const struct ares_in6_addr *ares_dns_rr_get_addr6(const ares_dns_rr_t *dns_rr,
+                                                  ares_dns_rr_key_t key);
+
+const char *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
+                                ares_dns_rr_key_t    key);
+
+unsigned char ares_dns_rr_get_u8(const ares_dns_rr_t *dns_rr,
+                                 ares_dns_rr_key_t    key);
+
+unsigned short ares_dns_rr_get_u16(const ares_dns_rr_t *dns_rr,
+                                   ares_dns_rr_key_t    key);
+
+unsigned int ares_dns_rr_get_u32(const ares_dns_rr_t *dns_rr,
+                                 ares_dns_rr_key_t    key);
+
+const unsigned char *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
+                                         ares_dns_rr_key_t key,
+                                         size_t *len);
+
+size_t ares_dns_rr_get_opt_cnt(const ares_dns_rr_t *dns_rr,
+                               ares_dns_rr_key_t    key);
+
+unsigned short ares_dns_rr_get_opt(const ares_dns_rr_t  *dns_rr,
+                                   ares_dns_rr_key_t     key,
+                                   size_t                idx,
+                                   const unsigned char **val,
+                                   size_t               *val_len);
+
+ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t  *dns_rr,
+                                     ares_dns_rr_key_t     key,
+                                     unsigned short        opt,
+                                     const unsigned char **val,
+                                     size_t *val_len);
+
+.fi
+.SH ENUMERATIONS
+
+.B ares_dns_section_t -
+DNS RR section types:
+.RS 4
+.B ARES_SECTION_ANSWER
+- Answer section
+.br
+.B ARES_SECTION_AUTHORITY
+- Authority section
+.br
+.B ARES_SECTION_ADDITIONAL
+- Additional Information section
+.br
+.RE
+
+.B ares_dns_datatype_t -
+.RS 4
+.RE
+
+.B ares_dns_opt_datatype_t -
+.RS 4
+.RE
+
+.B ares_dns_rr_key_t -
+.RS 4
+.RE
+
+.B ares_tlsa_usage_t -
+.RS 4
+.RE
+
+.B ares_tlsa_selector_t -
+.RS 4
+.RE
+
+.B ares_tlsa_match_t -
+.RS 4
+.RE
+
+.B ares_svcb_param_t -
+.RS 4
+.RE
+
+.B ares_opt_param_t -
+.RS 4
+.RE
+
+
+.SH DESCRIPTION
+The \fIxxx(3)\fP function outputs a human readable DNS record
+type from its numeric form passed in
+.IR type .
+
+.SH RETURN VALUES
+\fIxxx(3)\fP, all return a human printable ASCII string, or
+NULL on error.
+
+\fIares_dns_rr_get_keys(3)\fP returns an array of keys or NULL on failure.
+
+
+.SH AVAILABILITY
+These functions were first introduced in c-ares version 1.22.0.
+.SH SEE ALSO
+.BR ares_dns_mapping (3),
+.BR ares_dns_record (3),
+.BR ares_free_string (3)
+.SH AUTHOR
+Copyright (C) 2023 The c-ares project and its members.
