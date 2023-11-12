@@ -39,6 +39,46 @@ ares_dns_opt_datatype_t ares_dns_opt_get_datatype(ares_dns_rr_key_t key,
 const char *ares_dns_opt_get_name(ares_dns_rr_key_t key, unsigned short opt);
 
 .fi
+.SH ENUMERATIONS
+.B ares_dns_opt_datatype_t - Data types associated with \fIARES_DATATYPE_OPT\fP
+parameters if known as returned by \fIares_dns_opt_get_datatype(3)\fP.
+.RS 4
+.B ARES_OPT_DATATYPE_NONE
+- No value allowed for this parameter
+.br
+.B ARES_OPT_DATATYPE_STR_LIST
+- List of strings, each prefixed with a single octet representing the length as
+defined by RFC 1035. Can use \fIares_expand_string(3)\fP until buffer is consumed.
+.br
+.B ARES_OPT_DATATYPE_U8_LIST
+- List of 8bit unsigned integers, concatenated
+.br
+.B ARES_OPT_DATATYPE_U16
+- 16bit unsigned integer in network byte order
+.br
+.B ARES_OPT_DATATYPE_U16_LIST
+- list of 16bit unsigned integers in network byte order, concatenated.
+.br
+.B ARES_OPT_DATATYPE_U32
+- 32bit unsigned integer in network byte order
+.br
+.B ARES_OPT_DATATYPE_U32_LIST
+- list of 16bit unsigned integers in network byte order, concatenated.
+.br
+.B ARES_OPT_DATATYPE_INADDR4_LIST
+- List of ipv4 addresses in network byte order, concatenated
+.br
+.B ARES_OPT_DATATYPE_INADDR6_LIST
+- List of ipv6 addresses in network byte order, concatenated
+.br
+.B ARES_OPT_DATATYPE_BIN
+- Binary Data
+.br
+.B ARES_OPT_DATATYPE_NAME
+- DNS Domain Name binary format as defined in RFC1035, can use \fIares_expand_name(3)\fP
+.br
+.RE
+
 .SH DESCRIPTION
 The \fIares_dns_rec_type_tostr(3)\fP function outputs a human readable DNS record
 type from its numeric form passed in

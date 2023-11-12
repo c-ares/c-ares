@@ -125,12 +125,41 @@ DNS RR section types:
 .RE
 
 .B ares_dns_datatype_t -
+Data types associated with \fIares_dns_rr_key_t\fP
 .RS 4
+.B ARES_DATATYPE_INADDR
+- IPv4 address as \fIstruct in_addr *\fB
+.br
+.B ARES_DATATYPE_INADDR6
+- IPv6 address as \fIstruct ares_in6_addr *\fB
+.br
+.B ARES_DATATYPE_U8
+- 8bit unsigned integer
+.br
+.B ARES_DATATYPE_U16
+- 16bit unsigned integer
+.br
+.B ARES_DATATYPE_U32
+- 32bit unsigned integer
+.br
+.B ARES_DATATYPE_NAME
+- Null-terminated string of a domain name (series of labels)
+.br
+.B ARES_DATATYPE_STR
+- Null-terminated string
+.br
+.B ARES_DATATYPE_BIN
+- Binary Data
+.br
+.B ARES_DATATYPE_BINP
+- Officially defined as binary data, but likely printable. Guaranteed to have
+a NULL terminator for convenience (not included in length)
+.br
+.B ARES_DATATYPE_OPT
+- Array of options.  16bit identifier, Binary data.
+.br
 .RE
 
-.B ares_dns_opt_datatype_t -
-.RS 4
-.RE
 
 .B ares_dns_rr_key_t -
 .RS 4
