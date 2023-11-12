@@ -386,13 +386,13 @@ done:
   return ARES_SUCCESS;
 }
 
-
 ares_status_t ares_reinit(ares_channel_t *channel)
 {
   ares_status_t status;
 
-  if (channel == NULL)
+  if (channel == NULL) {
     return ARES_EFORMERR;
+  }
 
   status = ares__init_by_sysconfig(channel);
   if (status != ARES_SUCCESS) {
@@ -401,7 +401,6 @@ ares_status_t ares_reinit(ares_channel_t *channel)
   }
   return status;
 }
-
 
 /* ares_dup() duplicates a channel handle with all its options and returns a
    new channel handle */

@@ -75,16 +75,16 @@ struct host_query {
   ares_addrinfo_callback     callback;
   void                      *arg;
   struct ares_addrinfo_hints hints;
-  int         sent_family; /* this family is what was is being used */
-  size_t      timeouts;    /* number of timeouts we saw for this request */
-  char       *lookups; /* Duplicate memory from channel because of ares_reinit() */
-  const char *remaining_lookups;  /* types of lookup we need to perform ("fb" by
-                                     default, file and dns respectively) */
+  int    sent_family; /* this family is what was is being used */
+  size_t timeouts;    /* number of timeouts we saw for this request */
+  char  *lookups; /* Duplicate memory from channel because of ares_reinit() */
+  const char *remaining_lookups; /* types of lookup we need to perform ("fb" by
+                                    default, file and dns respectively) */
   char      **domains; /* duplicate from channel for ares_reinit() safety */
   size_t      ndomains;
-  struct ares_addrinfo *ai;       /* store results between lookups */
-  unsigned short        qid_a;    /* qid for A request */
-  unsigned short        qid_aaaa; /* qid for AAAA request */
+  struct ares_addrinfo *ai;          /* store results between lookups */
+  unsigned short        qid_a;       /* qid for A request */
+  unsigned short        qid_aaaa;    /* qid for AAAA request */
   size_t                remaining;   /* number of DNS answers waiting for */
   ares_ssize_t          next_domain; /* next search domain to try */
   size_t
@@ -641,7 +641,8 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
 
   if (channel->ndomains) {
     /* Duplicate for ares_reinit() safety */
-    hquery->domains = ares__strsplit_duplicate(channel->domains, channel->ndomains);
+    hquery->domains =
+      ares__strsplit_duplicate(channel->domains, channel->ndomains);
     if (hquery->domains == NULL) {
       ares_free(hquery->domains);
       ares_free(hquery->name);
@@ -691,8 +692,8 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
 
   if (!s && (size_t)hquery->next_domain < hquery->ndomains &&
       !as_is_only(hquery)) {
-    status = ares__cat_domain(
-      hquery->name, hquery->domains[hquery->next_domain++], &s);
+    status = ares__cat_domain(hquery->name,
+                              hquery->domains[hquery->next_domain++], &s);
     if (status == ARES_SUCCESS) {
       is_s_allocated = ARES_TRUE;
     }

@@ -929,7 +929,8 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
   if (sysconfig->domains && !(channel->optmask & ARES_OPT_DOMAINS)) {
     /* Make sure we duplicate first then replace so even if there is
      * ARES_ENOMEM, the channel stays in a good state */
-    char **temp = ares__strsplit_duplicate(sysconfig->domains, sysconfig->ndomains);
+    char **temp =
+      ares__strsplit_duplicate(sysconfig->domains, sysconfig->ndomains);
     if (temp == NULL) {
       return ARES_ENOMEM;
     }
@@ -950,11 +951,13 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
   }
 
   if (sysconfig->sortlist && !(channel->optmask & ARES_OPT_SORTLIST)) {
-    struct apattern *temp = ares_malloc(sizeof(*channel->sortlist) * sysconfig->nsortlist);
+    struct apattern *temp =
+      ares_malloc(sizeof(*channel->sortlist) * sysconfig->nsortlist);
     if (temp == NULL) {
       return ARES_ENOMEM;
     }
-    memcpy(temp, sysconfig->sortlist, sizeof(*channel->sortlist) * sysconfig->nsortlist);
+    memcpy(temp, sysconfig->sortlist,
+           sizeof(*channel->sortlist) * sysconfig->nsortlist);
 
     ares_free(channel->sortlist);
     channel->sortlist = temp;

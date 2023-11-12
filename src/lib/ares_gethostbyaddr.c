@@ -54,9 +54,9 @@ struct addr_query {
   struct ares_addr   addr;
   ares_host_callback callback;
   void              *arg;
-  char              *lookups; /* duplicate memory from channel for ares_reinit() */
-  const char        *remaining_lookups;
-  size_t             timeouts;
+  char       *lookups; /* duplicate memory from channel for ares_reinit() */
+  const char *remaining_lookups;
+  size_t      timeouts;
 };
 
 static void          next_lookup(struct addr_query *aquery);
@@ -109,7 +109,6 @@ void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
 
   next_lookup(aquery);
 }
-
 
 static void next_lookup(struct addr_query *aquery)
 {
@@ -219,4 +218,3 @@ static ares_status_t file_lookup(ares_channel_t         *channel,
 
   return ARES_SUCCESS;
 }
-

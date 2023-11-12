@@ -104,14 +104,15 @@ void        ares_search(ares_channel_t *channel, const char *name, int dnsclass,
 
   /* Duplicate domains for safety during ares_reinit() */
   if (channel->ndomains) {
-    squery->domains = ares__strsplit_duplicate(channel->domains, channel->ndomains);
+    squery->domains =
+      ares__strsplit_duplicate(channel->domains, channel->ndomains);
     if (squery->domains == NULL) {
       ares_free(squery->name);
       ares_free(squery);
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
       return;
     }
-    squery->ndomains        = channel->ndomains;
+    squery->ndomains = channel->ndomains;
   }
 
   squery->dnsclass        = dnsclass;
