@@ -4,6 +4,7 @@ MANPAGES = ares_cancel.3		\
   ares_create_query.3			\
   ares_destroy.3			\
   ares_destroy_options.3		\
+  ares_dns_mapping.3			\
   ares_dup.3				\
   ares_expand_name.3			\
   ares_expand_string.3			\

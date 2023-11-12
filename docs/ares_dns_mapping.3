@@ -1,0 +1,134 @@
+.\"
+.\" SPDX-License-Identifier: MIT
+.\"
+.TH ARES_DNS_MAPPINGS 3 "12 November 2023"
+.SH NAME
+Helper functions for converting dns record identifiers to and from their
+respective types, as well identifying datatypes for various records.
+.SH SYNOPSIS
+.nf
+#include <ares.h>
+
+const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type);
+
+const char *ares_dns_class_tostr(ares_dns_class_t qclass);
+
+const char *ares_dns_opcode_tostr(ares_dns_opcode_t opcode);
+
+const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key);
+
+const char *ares_dns_section_tostr(ares_dns_section_t section);
+
+const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode);
+
+ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass, const char *str);
+
+ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
+                                      const char *str);
+
+const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
+                                              size_t *cnt);
+
+ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
+
+ares_dns_rec_type_t ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
+
+ares_dns_opt_datatype_t ares_dns_opt_get_datatype(ares_dns_rr_key_t key,
+                                                  unsigned short opt);
+
+const char *ares_dns_opt_get_name(ares_dns_rr_key_t key, unsigned short opt);
+
+.fi
+.SH DESCRIPTION
+The \fIares_dns_rec_type_tostr(3)\fP function outputs a human readable DNS record
+type from its numeric form passed in
+.IR type .
+
+The \fIares_dns_class_tostr(3)\fP function outputs a human readable DNS class
+from its numeric form passed in
+.IR qclass .
+
+The \fIares_dns_opcode_tostr(3)\fP function outputs a human readable DNS opcode
+from its numeric form in
+.IR opcode .
+
+The \fIares_dns_rr_key_tostr(3)\fP function outputs a human readable DNS Resource
+Record parameter name from its numeric form in
+.IR key .
+
+The \fIares_dns_section_tostr(3)\fP function outputs a human readable DNS
+message section from its numeric form in
+.IR section .
+
+The \fIares_dns_rcode_tostr(3)\fP function outputs a human readable DNS
+response code from its numeric form in
+.IR rcode .
+
+The \fIares_dns_class_fromstr(3)\fP function outputs the DNS class in numeric
+from from its string representation in
+.IR str .
+The result is stored into the variable pointed to by
+.IR qclass .
+
+The \fIares_dns_rec_type_fromstr(3)\fP function outputs the DNS record type in
+numeric from from its string representation in
+.IR str .
+The result is stored into the variable pointed to by
+.IR qtype .
+
+The \fIares_dns_rr_get_keys(3)\fP function retrieves a list of parameters that
+may be set or retrieved for the provided
+.IR type .
+The count of returned keys is stored into the variable pointed to by
+.IR cnt .
+
+The \fIares_dns_rr_key_datatype(3)\fP function retrieves the associated datatype
+for an RR parameter specified by
+.IR key .
+
+The \fIares_dns_rr_key_to_rec_type(3)\fP function dereferences the provided RR
+parameter specified by
+.IR key
+to the DNS Record Type it belongs.
+
+The \fIares_dns_opt_get_datatype(3)\fP function is used in association with
+\fIares_dns_rr_set_opt(3)\fP and \fIares_dns_rr_get_opt(3)\fP to retrieve the
+datatype of an option record contained within an RR as specified in
+.IR key
+if it is known.  The raw option record identifier is provided by
+.IR opt .
+
+The \fIares_dns_opt_get_name(3)\fP function is used in association with
+\fIares_dns_rr_set_opt(3)\fP and \fIares_dns_rr_get_opt(3)\fP to retrieve human
+readable parameter name of an option record contained within an RR as specified
+in
+.IR key
+if it is known.  The raw option record identifier is provided by
+.IR opt .
+
+.SH RETURN VALUES
+\fIares_dns_rec_type_tostr(3)\fP, \fIares_dns_class_tostr(3)\fP,
+\fIares_dns_opcode_tostr(3)\fP, \fIares_dns_rr_key_tostr(3)\fP,
+\fIares_dns_section_tostr(3)\fP, \fIares_dns_rcode_tostr(3)\fP, and
+\fIares_dns_opt_get_name(3)\fP all return a human printable ASCII string, or
+NULL on error.
+
+\fIares_dns_class_fromstr(3)\fP and \fIares_dns_rec_type_fromstr(3)\fP return
+.B ARES_TRUE
+on successful conversion, otherwise
+.B ARES_FALSE.
+
+\fIares_dns_rr_get_keys(3)\fP returns an array of keys or NULL on failure.
+
+\fIares_dns_rr_key_datatype(3)\fP, \fIares_dns_rr_key_to_rec_type(3)\fP, and
+\fIares_dns_opt_get_datatype(3)\fP return their respective integer values, or
+0 on failure.
+
+.SH AVAILABILITY
+This function was first introduced in c-ares version 1.22.0.
+.SH SEE ALSO
+.BR ares_dns_record (3),
+.BR ares_dns_rr (3),
+.BR ares_free_string (3)
+.SH AUTHOR
+Copyright (C) 2023 The c-ares project and its members.
