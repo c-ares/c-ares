@@ -46,6 +46,29 @@ void ares__strsplit_free(char **elms, size_t num_elm)
   ares_free(elms);
 }
 
+char **ares__strsplit_duplicate(char **elms, size_t num_elm)
+{
+  size_t i;
+  char **out;
+
+  if (elms == NULL || num_elm == 0)
+    return NULL;
+
+  out = ares_malloc_zero(sizeof(*elms) * num_elm);
+  if (out == NULL)
+    return NULL;
+
+  for (i=0; i<num_elm; i++) {
+    out[i] = ares_strdup(elms[i]);
+    if (out[i] == NULL) {
+      ares__strsplit_free(out, num_elm);
+      return NULL;
+    }
+  }
+
+  return out;
+}
+
 char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
 {
   const char *p;

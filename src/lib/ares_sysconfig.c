@@ -927,42 +927,41 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
   }
 
   if (sysconfig->domains && !(channel->optmask & ARES_OPT_DOMAINS)) {
-    size_t i;
-
-    ares__strsplit_free(channel->domains, channel->ndomains);
-    channel->domains =
-      ares_malloc_zero(sizeof(*channel->domains) * sysconfig->ndomains);
-    if (channel->domains == NULL) {
+    /* Make sure we duplicate first then replace so even if there is
+     * ARES_ENOMEM, the channel stays in a good state */
+    char **temp =
+      ares__strsplit_duplicate(sysconfig->domains, sysconfig->ndomains);
+    if (temp == NULL) {
       return ARES_ENOMEM;
     }
 
+    ares__strsplit_free(channel->domains, channel->ndomains);
+    channel->domains  = temp;
     channel->ndomains = sysconfig->ndomains;
-    for (i = 0; i < channel->ndomains; i++) {
-      channel->domains[i] = ares_strdup(sysconfig->domains[i]);
-      if (channel->domains[i] == NULL) {
-        return ARES_ENOMEM;
-      }
-    }
   }
 
   if (sysconfig->lookups && !(channel->optmask & ARES_OPT_LOOKUPS)) {
-    ares_free(channel->lookups);
-    channel->lookups = ares_strdup(sysconfig->lookups);
-    if (channel->lookups == NULL) {
+    char *temp = ares_strdup(sysconfig->lookups);
+    if (temp == NULL) {
       return ARES_ENOMEM;
     }
+
+    ares_free(channel->lookups);
+    channel->lookups = temp;
   }
 
   if (sysconfig->sortlist && !(channel->optmask & ARES_OPT_SORTLIST)) {
-    ares_free(channel->sortlist);
-    channel->sortlist =
+    struct apattern *temp =
       ares_malloc(sizeof(*channel->sortlist) * sysconfig->nsortlist);
-    if (channel->sortlist == NULL) {
+    if (temp == NULL) {
       return ARES_ENOMEM;
     }
-    memcpy(channel->sortlist, sysconfig->sortlist,
+    memcpy(temp, sysconfig->sortlist,
            sizeof(*channel->sortlist) * sysconfig->nsortlist);
-    channel->nsort = sysconfig->nsortlist;
+
+    ares_free(channel->sortlist);
+    channel->sortlist = temp;
+    channel->nsort    = sysconfig->nsortlist;
   }
 
   if (sysconfig->ndots && !(channel->optmask & ARES_OPT_NDOTS)) {

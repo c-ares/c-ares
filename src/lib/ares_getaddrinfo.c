@@ -75,13 +75,16 @@ struct host_query {
   ares_addrinfo_callback     callback;
   void                      *arg;
   struct ares_addrinfo_hints hints;
-  int         sent_family; /* this family is what was is being used */
-  size_t      timeouts;    /* number of timeouts we saw for this request */
-  const char *remaining_lookups;  /* types of lookup we need to perform ("fb" by
-                                     default, file and dns respectively) */
-  struct ares_addrinfo *ai;       /* store results between lookups */
-  unsigned short        qid_a;    /* qid for A request */
-  unsigned short        qid_aaaa; /* qid for AAAA request */
+  int    sent_family; /* this family is what was is being used */
+  size_t timeouts;    /* number of timeouts we saw for this request */
+  char  *lookups; /* Duplicate memory from channel because of ares_reinit() */
+  const char *remaining_lookups; /* types of lookup we need to perform ("fb" by
+                                    default, file and dns respectively) */
+  char      **domains; /* duplicate from channel for ares_reinit() safety */
+  size_t      ndomains;
+  struct ares_addrinfo *ai;          /* store results between lookups */
+  unsigned short        qid_a;       /* qid for A request */
+  unsigned short        qid_aaaa;    /* qid for AAAA request */
   size_t                remaining;   /* number of DNS answers waiting for */
   ares_ssize_t          next_domain; /* next search domain to try */
   size_t
@@ -347,6 +350,8 @@ static void end_hquery(struct host_query *hquery, ares_status_t status)
   }
 
   hquery->callback(hquery->arg, (int)status, (int)hquery->timeouts, hquery->ai);
+  ares__strsplit_free(hquery->domains, hquery->ndomains);
+  ares_free(hquery->lookups);
   ares_free(hquery->name);
   ares_free(hquery);
 }
@@ -609,7 +614,7 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
   }
 
   /* Allocate and fill in the host query structure. */
-  hquery = ares_malloc(sizeof(*hquery));
+  hquery = ares_malloc_zero(sizeof(*hquery));
   if (!hquery) {
     ares_free(alias_name);
     ares_freeaddrinfo(ai);
@@ -625,6 +630,29 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
     callback(arg, ARES_ENOMEM, 0, NULL);
     return;
   }
+  hquery->lookups = ares_strdup(channel->lookups);
+  if (!hquery->lookups) {
+    ares_free(hquery->name);
+    ares_free(hquery);
+    ares_freeaddrinfo(ai);
+    callback(arg, ARES_ENOMEM, 0, NULL);
+    return;
+  }
+
+  if (channel->ndomains) {
+    /* Duplicate for ares_reinit() safety */
+    hquery->domains =
+      ares__strsplit_duplicate(channel->domains, channel->ndomains);
+    if (hquery->domains == NULL) {
+      ares_free(hquery->lookups);
+      ares_free(hquery->name);
+      ares_free(hquery);
+      ares_freeaddrinfo(ai);
+      callback(arg, ARES_ENOMEM, 0, NULL);
+      return;
+    }
+    hquery->ndomains = channel->ndomains;
+  }
 
   hquery->port              = port;
   hquery->channel           = channel;
@@ -632,7 +660,7 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
   hquery->sent_family       = -1; /* nothing is sent yet */
   hquery->callback          = callback;
   hquery->arg               = arg;
-  hquery->remaining_lookups = channel->lookups;
+  hquery->remaining_lookups = hquery->lookups;
   hquery->ai                = ai;
   hquery->next_domain       = -1;
 
@@ -655,17 +683,17 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
   }
 
   /* if as_is_first is false, try hquery->name at last */
-  if (!s && (size_t)hquery->next_domain == hquery->channel->ndomains) {
+  if (!s && (size_t)hquery->next_domain == hquery->ndomains) {
     if (!as_is_first(hquery)) {
       s = hquery->name;
     }
     hquery->next_domain++;
   }
 
-  if (!s && (size_t)hquery->next_domain < hquery->channel->ndomains &&
+  if (!s && (size_t)hquery->next_domain < hquery->ndomains &&
       !as_is_only(hquery)) {
-    status = ares__cat_domain(
-      hquery->name, hquery->channel->domains[hquery->next_domain++], &s);
+    status = ares__cat_domain(hquery->name,
+                              hquery->domains[hquery->next_domain++], &s);
     if (status == ARES_SUCCESS) {
       is_s_allocated = ARES_TRUE;
     }

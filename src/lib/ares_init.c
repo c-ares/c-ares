@@ -296,13 +296,11 @@ int ares_init_options(ares_channel_t           **channelptr,
     return ARES_ENOTINITIALIZED; /* LCOV_EXCL_LINE: n/a on non-WinSock */
   }
 
-  channel = ares_malloc(sizeof(*channel));
+  channel = ares_malloc_zero(sizeof(*channel));
   if (!channel) {
     *channelptr = NULL;
     return ARES_ENOMEM;
   }
-
-  memset(channel, 0, sizeof(*channel));
 
   /* Generate random key */
   channel->rand_state = ares__init_rand_state();
@@ -386,6 +384,22 @@ done:
 
   *channelptr = channel;
   return ARES_SUCCESS;
+}
+
+ares_status_t ares_reinit(ares_channel_t *channel)
+{
+  ares_status_t status;
+
+  if (channel == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  status = ares__init_by_sysconfig(channel);
+  if (status != ARES_SUCCESS) {
+    DEBUGF(fprintf(stderr, "Error: init_by_sysconfig failed: %s\n",
+                   ares_strerror(status)));
+  }
+  return status;
 }
 
 /* ares_dup() duplicates a channel handle with all its options and returns a

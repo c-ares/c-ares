@@ -219,6 +219,24 @@ TEST_P(MockChannelTest, SockConfigureFailCallback) {
   EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
 }
 
+TEST_P(MockChannelTest, ReInit) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  EXPECT_EQ(ARES_SUCCESS, ares_reinit(channel_));
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
 #define MAXUDPQUERIES_TOTAL 32
 #define MAXUDPQUERIES_LIMIT 8
 

@@ -54,9 +54,9 @@ struct addr_query {
   struct ares_addr   addr;
   ares_host_callback callback;
   void              *arg;
-
-  const char        *remaining_lookups;
-  size_t             timeouts;
+  char       *lookups; /* duplicate memory from channel for ares_reinit() */
+  const char *remaining_lookups;
+  size_t      timeouts;
 };
 
 static void          next_lookup(struct addr_query *aquery);
@@ -89,6 +89,12 @@ void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
     callback(arg, ARES_ENOMEM, 0, NULL);
     return;
   }
+  aquery->lookups = ares_strdup(channel->lookups);
+  if (aquery->lookups == NULL) {
+    ares_free(aquery);
+    callback(arg, ARES_ENOMEM, 0, NULL);
+    return;
+  }
   aquery->channel = channel;
   if (family == AF_INET) {
     memcpy(&aquery->addr.addr.addr4, addr, sizeof(aquery->addr.addr.addr4));
@@ -98,12 +104,11 @@ void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
   aquery->addr.family       = family;
   aquery->callback          = callback;
   aquery->arg               = arg;
-  aquery->remaining_lookups = channel->lookups;
+  aquery->remaining_lookups = aquery->lookups;
   aquery->timeouts          = 0;
 
   next_lookup(aquery);
 }
-
 
 static void next_lookup(struct addr_query *aquery)
 {
@@ -175,6 +180,7 @@ static void end_aquery(struct addr_query *aquery, ares_status_t status,
   if (host) {
     ares_free_hostent(host);
   }
+  ares_free(aquery->lookups);
   ares_free(aquery);
 }
 
@@ -213,4 +219,3 @@ static ares_status_t file_lookup(ares_channel_t         *channel,
 
   return ARES_SUCCESS;
 }
-
