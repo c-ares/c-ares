@@ -77,6 +77,7 @@ struct host_query {
   struct ares_addrinfo_hints hints;
   int         sent_family; /* this family is what was is being used */
   size_t      timeouts;    /* number of timeouts we saw for this request */
+  char       *lookups; /* Duplicate memory from channel because of ares_reinit() */
   const char *remaining_lookups;  /* types of lookup we need to perform ("fb" by
                                      default, file and dns respectively) */
   struct ares_addrinfo *ai;       /* store results between lookups */
@@ -347,6 +348,7 @@ static void end_hquery(struct host_query *hquery, ares_status_t status)
   }
 
   hquery->callback(hquery->arg, (int)status, (int)hquery->timeouts, hquery->ai);
+  ares_free(hquery->lookups);
   ares_free(hquery->name);
   ares_free(hquery);
 }
@@ -625,6 +627,14 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
     callback(arg, ARES_ENOMEM, 0, NULL);
     return;
   }
+  hquery->lookups = ares_strdup(channel->lookups);
+  if (!hquery->lookups) {
+    ares_free(hquery->name);
+    ares_free(hquery);
+    ares_freeaddrinfo(ai);
+    callback(arg, ARES_ENOMEM, 0, NULL);
+    return;
+  }
 
   hquery->port              = port;
   hquery->channel           = channel;
@@ -632,7 +642,7 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
   hquery->sent_family       = -1; /* nothing is sent yet */
   hquery->callback          = callback;
   hquery->arg               = arg;
-  hquery->remaining_lookups = channel->lookups;
+  hquery->remaining_lookups = hquery->lookups;
   hquery->ai                = ai;
   hquery->next_domain       = -1;
 
