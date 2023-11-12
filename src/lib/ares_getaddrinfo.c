@@ -644,7 +644,7 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
     hquery->domains =
       ares__strsplit_duplicate(channel->domains, channel->ndomains);
     if (hquery->domains == NULL) {
-      ares_free(hquery->domains);
+      ares_free(hquery->lookups);
       ares_free(hquery->name);
       ares_free(hquery);
       ares_freeaddrinfo(ai);

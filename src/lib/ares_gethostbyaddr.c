@@ -180,6 +180,7 @@ static void end_aquery(struct addr_query *aquery, ares_status_t status,
   if (host) {
     ares_free_hostent(host);
   }
+  ares_free(aquery->lookups);
   ares_free(aquery);
 }
 
