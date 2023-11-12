@@ -160,9 +160,156 @@ a NULL terminator for convenience (not included in length)
 .br
 .RE
 
-
 .B ares_dns_rr_key_t -
+Keys used for handling RR record parameters.
 .RS 4
+.B ARES_RR_A_ADDR
+- A Record. Address. Datatype: \fIARES_DATATYPE_INADDR\fP
+.br
+.B ARES_RR_NS_NSDNAME
+- NS Record. Name. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_CNAME_CNAME
+- CNAME Record. CName. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_SOA_MNAME
+- SOA Record. MNAME, Primary Source of Data. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_SOA_RNAME
+- SOA Record. RNAME, Mailbox of person responsible. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_SOA_SERIAL
+- SOA Record. Serial, version. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_SOA_REFRESH
+- SOA Record. Refresh, zone refersh interval. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_SOA_RETRY
+- SOA Record. Retry, failed refresh retry interval. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_SOA_EXPIRE
+- SOA Record. Expire, upper limit on authority. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_SOA_MINIMUM
+- SOA Record. Minimum, RR TTL. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_PTR_DNAME
+-  PTR Record. DNAME, pointer domain. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_HINFO_CPU
+- HINFO Record. CPU. Datatype: \fIARES_DATATYPE_STR\fP
+.br
+.B ARES_RR_HINFO_OS
+- HINFO Record. OS. Datatype: \fIARES_DATATYPE_STR\fP
+.br
+.B ARES_RR_MX_PREFERENCE
+- MX Record. Preference. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_MX_EXCHANGE
+- MX Record. Exchange, domain. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_TXT_DATA
+- TXT Record. Data. Datatype: \fIARES_DATATYPE_BINP\fP
+.br
+.B ARES_RR_AAAA_ADDR
+- AAAA Record. Address. Datatype: \fIARES_DATATYPE_INADDR6\fP
+.br
+.B ARES_RR_SRV_PRIORITY
+- SRV Record. Priority. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_SRV_WEIGHT
+- SRV Record. Weight. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_SRV_PORT
+- SRV Record. Port. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_SRV_TARGET
+- SRV Record. Target domain. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_NAPTR_ORDER
+- NAPTR Record. Order. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_NAPTR_PREFERENCE
+- NAPTR Record. Preference. Datatype: \fIARES_DATATYPE_U16\fp
+.br
+.B ARES_RR_NAPTR_FLAGS
+- NAPTR Record. Flags. Datatype: \fIARES_DATATYPE_STR\fP
+.br
+.B ARES_RR_NAPTR_SERVICES
+- NAPTR Record. Services. Datatype: \fIARES_DATATYPE_STR\fP
+.br
+.B ARES_RR_NAPTR_REGEXP
+- NAPTR Record. Regexp. Datatype: \fIARES_DATATYPE_STR\fP
+.br
+.B ARES_RR_NAPTR_REPLACEMENT
+- NAPTR Record. Replacement. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_OPT_UDP_SIZE
+- OPT Record. UDP Size. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_OPT_VERSION
+- OPT Record. Version. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_OPT_FLAGS
+- OPT Record. Flags. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_OPT_OPTIONS
+- OPT Record. Options. See \fIares_opt_param_t\fP. Datatype: \fIARES_DATATYPE_OPT\fP
+.br
+.B ARES_RR_TLSA_CERT_USAGE
+- TLSA Record. Certificate Usage. See \fIares_tlsa_usage_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_TLSA_SELECTOR
+- TLSA Record. Selector. See \fIares_tlsa_selector_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_TLSA_MATCH
+- TLSA Record. Matching Type. See \fIares_tlsa_match_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_TLSA_DATA
+- TLSA Record. Certificate Association Data. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_SVCB_PRIORITY
+- SVCB Record. SvcPriority. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_SVCB_TARGET
+- SVCB Record. TargetName. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_SVCB_PARAMS
+- SVCB Record. SvcParams. See \fIares_svcb_param_t\fP. Datatype: \fIARES_DATATYPE_OPT\fP
+.br
+.B ARES_RR_HTTPS_PRIORITY
+- HTTPS Record. SvcPriority. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_HTTPS_TARGET
+- HTTPS Record. TargetName. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_HTTPS_PARAMS
+- HTTPS Record. SvcParams. See \fIares_svcb_param_t\fP. Datatype: \fIARES_DATATYPE_OPT\fP
+.br
+.B ARES_RR_URI_PRIORITY
+- URI Record. Priority. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_URI_WEIGHT
+- URI Record. Weight. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_URI_TARGET
+- URI Record. Target domain. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_CAA_CRITICAL
+- CAA Record. Critical flag. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_CAA_TAG
+- CAA Record. Tag/Property. Datatype: \fIARES_DATATYPE_STR\fP
+.br
+.B ARES_RR_CAA_VALUE
+- CAA Record. Value. Datatype: \fIARES_DATATYPE_BINP\fP
+.br
+.B ARES_RR_RAW_RR_TYPE
+- RAW Record. RR Type. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_RAW_RR_DATA
+- RAW Record. RR Data. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
 .RE
 
 .B ares_tlsa_usage_t -
