@@ -152,6 +152,7 @@ static ares_bool_t read_cmdline(int argc, const char **argv, adig_config_t *conf
   int                 c;
 
   ares_getopt_init(&state, argc, argv);
+  state.opterr = 0;
 
   while ((c = ares_getopt(&state, "dh?f:s:c:t:T:U:")) != -1) {
     int f;
@@ -164,7 +165,6 @@ static ares_bool_t read_cmdline(int argc, const char **argv, adig_config_t *conf
         break;
 
       case 'h':
-      case '?':
         config->is_help = ARES_TRUE;
         return ARES_TRUE;
 
@@ -228,8 +228,13 @@ static ares_bool_t read_cmdline(int argc, const char **argv, adig_config_t *conf
         config->optmask          |= ARES_OPT_UDP_PORT;
         break;
 
+      case ':':
+        snprintf(config->error, sizeof(config->error), "%c requires an argument", state.optopt);
+        return ARES_FALSE;
+
+      case '?':
       default:
-        snprintf(config->error, sizeof(config->error), "unrecognized option %c", c);
+        snprintf(config->error, sizeof(config->error), "unrecognized option: %c", state.optopt);
         return ARES_FALSE;
     }
   }
@@ -821,6 +826,45 @@ done:
   return status;
 }
 
+static int event_loop(ares_channel_t *channel)
+{
+  while (1) {
+    fd_set          read_fds;
+    fd_set          write_fds;
+    int             nfds;
+    struct timeval  tv;
+    struct timeval *tvp;
+    int             count;
+
+    FD_ZERO(&read_fds);
+    FD_ZERO(&write_fds);
+    memset(&tv, 0, sizeof(tv));
+
+    nfds = ares_fds(channel, &read_fds, &write_fds);
+    if (nfds == 0) {
+      break;
+    }
+    tvp = ares_timeout(channel, NULL, &tv);
+    if (tvp == NULL) {
+      break;
+    }
+    count = select(nfds, &read_fds, &write_fds, NULL, tvp);
+    if (count < 0) {
+#ifdef USE_WINSOCK
+      int err = WSAGetLastError();
+#else
+      int err = errno;
+#endif
+      if (err != EAGAIN && err != EINTR) {
+        fprintf(stderr, "select fail: %d", err);
+        return 1;
+      }
+    }
+    ares_process(channel, &read_fds, &write_fds);
+  }
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   ares_channel_t *channel = NULL;
@@ -845,7 +889,7 @@ int main(int argc, char **argv)
   config.qclass = ARES_CLASS_IN;
   config.qtype  = ARES_REC_TYPE_A;
   if (!read_cmdline(argc, (const char **)argv, &config)) {
-    printf("%s\n", config.error);
+    printf("\n** ERROR: %s\n\n", config.error);
     print_help();
     rv = 1;
     goto done;
@@ -892,41 +936,8 @@ int main(int argc, char **argv)
   }
   printf("\n");
 
-  while (1) {
-    fd_set          read_fds;
-    fd_set          write_fds;
-    int             nfds;
-    struct timeval  tv;
-    struct timeval *tvp;
-    int             count;
-
-    FD_ZERO(&read_fds);
-    FD_ZERO(&write_fds);
-    memset(&tv, 0, sizeof(tv));
-
-    nfds = ares_fds(channel, &read_fds, &write_fds);
-    if (nfds == 0) {
-      break;
-    }
-    tvp = ares_timeout(channel, NULL, &tv);
-    if (tvp == NULL) {
-      break;
-    }
-    count = select(nfds, &read_fds, &write_fds, NULL, tvp);
-    if (count < 0) {
-#ifdef USE_WINSOCK
-      int err = WSAGetLastError();
-#else
-      int err = errno;
-#endif
-      if (err != EAGAIN && err != EINTR) {
-        fprintf(stderr, "select fail: %d", err);
-        rv = 1;
-        goto done;
-      }
-    }
-    ares_process(channel, &read_fds, &write_fds);
-  }
+  /* Process events */
+  rv = event_loop(channel);
 
 done:
   free_config(&config);
