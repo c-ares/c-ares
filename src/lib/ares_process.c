@@ -826,39 +826,25 @@ static size_t ares__retry_penalty(struct query *query)
     timeplus <<= shift;
   }
 
-  if (channel->jitter > 0) {
-    unsigned short r;
-    float delta_multiplier;
-    size_t delta;
-    int sign = 1;
-
-    ares__rand_bytes(channel->rand_state, (unsigned char *)&r, sizeof(r));
-
-    if (r >= (USHRT_MAX >> 1)) {
-      r -= (USHRT_MAX >> 1);
-      sign = -1;
-    }
-
-    delta_multiplier = ((float)r / (USHRT_MAX >> 1)) * (float)channel->jitter / 1000.0f;
-    if (delta_multiplier > 1.0f) {
-      delta = timeplus;
-    } else {
-      delta = (size_t)((float)timeplus * delta_multiplier);
-      if (timeplus < delta)
-        delta = timeplus;
-      if (sign > 0 && SIZE_MAX - timeplus < delta)
-        delta = SIZE_MAX - timeplus;
-    }
-
-    if (sign > 0) {
-      timeplus += delta;
-    } else {
-      timeplus -= delta;
-    }
-  }
-
   if (channel->maxtimeout && timeplus > channel->maxtimeout)
     timeplus = channel->maxtimeout;
+
+  /* Add some jitter to the retry penalty.
+   *
+   * Jitter is needed in situation when resolve requests are performed
+   * simultaneously from multiple hosts and DNS server throttle these requests.
+   * Adding randomness allows to avoid synchronisation of retries.
+   *
+   * Value of timeplus adjusted randomly to the range [0.5 * timeplus, timeplus].
+   */
+  if (timeplus > 0) {
+    unsigned short r;
+    float delta_multiplier;
+
+    ares__rand_bytes(channel->rand_state, (unsigned char *)&r, sizeof(r));
+    delta_multiplier = ((float)r / USHRT_MAX) * 0.5;
+    timeplus -= (size_t)((float)timeplus * delta_multiplier);
+  }
 
   return timeplus;
 }

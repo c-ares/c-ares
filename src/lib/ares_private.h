@@ -261,7 +261,6 @@ struct ares_channeldata {
   size_t               tries;
   size_t               ndots;
   size_t               maxtimeout; /* in milliseconds */
-  size_t               jitter; /* in 0.001 */
   ares_bool_t          rotate;
   unsigned short       udp_port;                   /* stored in network order */
   unsigned short       tcp_port;                   /* stored in network order */
@@ -286,7 +285,7 @@ struct ares_channeldata {
    * failures, followed by the configuration order if failures are equal. */
   ares__slist_t       *servers;
 
-  /* random state to use when generating new ids and generating retry penalties with jitter */
+  /* random state to use when generating new ids and generating retry penalties */
   ares_rand_state     *rand_state;
 
   /* All active queries in a single list */

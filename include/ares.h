@@ -195,7 +195,6 @@ typedef enum {
 #define ARES_OPT_HOSTS_FILE      (1 << 18)
 #define ARES_OPT_UDP_MAX_QUERIES (1 << 19)
 #define ARES_OPT_MAXTIMEOUTMS    (1 << 20)
-#define ARES_OPT_JITTER          (1 << 21)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN        (1 << 0)
@@ -290,7 +289,6 @@ struct ares_options {
   int            tries;
   int            ndots;
   int            maxtimeout; /* in milliseconds */
-  int            jitter; /* in 0.001 */
   unsigned short udp_port;
   unsigned short tcp_port;
   int            socket_send_buffer_size;
