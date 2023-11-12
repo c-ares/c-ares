@@ -192,7 +192,12 @@ static ares_status_t ares_dns_write_rr_str(ares__buf_t         *buf,
   ares_status_t status;
 
   str = ares_dns_rr_get_str(rr, key);
-  if (str == NULL || (len = ares_strlen(str)) > 255) {
+  if (str == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  len = ares_strlen(str);
+  if (len > 255) {
     return ARES_EFORMERR;
   }
 

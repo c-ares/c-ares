@@ -505,8 +505,8 @@ static void ares__servers_remove_stale(ares_channel_t *channel,
   ares__slist_node_t *snode = ares__slist_node_first(channel->servers);
 
   while (snode != NULL) {
-    ares__slist_node_t  *snext  = ares__slist_node_next(snode);
-    struct server_state *server = ares__slist_node_val(snode);
+    ares__slist_node_t        *snext  = ares__slist_node_next(snode);
+    const struct server_state *server = ares__slist_node_val(snode);
     if (!ares__server_in_newconfig(server, srvlist)) {
       /* This will clean up all server state via the destruction callback and
        * move any queries to new servers */
