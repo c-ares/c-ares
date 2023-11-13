@@ -62,12 +62,9 @@ static ares_status_t ares_dns_parse_and_set_dns_name(ares__buf_t   *buf,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_dns_parse_and_set_dns_str(ares__buf_t *buf,
-                                                    size_t       max_len,
-                                                    ares_bool_t  allow_multiple,
-                                                    ares_dns_rr_t    *rr,
-                                                    ares_dns_rr_key_t key,
-                                                    ares_bool_t blank_allowed)
+static ares_status_t ares_dns_parse_and_set_dns_str(
+  ares__buf_t *buf, size_t max_len, ares_bool_t allow_multiple,
+  ares_dns_rr_t *rr, ares_dns_rr_key_t key, ares_bool_t blank_allowed)
 {
   ares_status_t status;
   char         *str = NULL;

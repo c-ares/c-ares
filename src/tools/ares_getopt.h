@@ -44,6 +44,6 @@ typedef struct {
 } ares_getopt_state_t;
 
 void ares_getopt_init(ares_getopt_state_t *state, int argc, const char **argv);
-int ares_getopt(ares_getopt_state_t *state, const char *ostr);
+int  ares_getopt(ares_getopt_state_t *state, const char *ostr);
 
 #endif /* ARES_GETOPT_H */

@@ -37,7 +37,6 @@
 #include "ares_dns.h"
 #include "ares_private.h"
 
-
 static unsigned short generate_unique_qid(ares_channel_t *channel)
 {
   unsigned short id;

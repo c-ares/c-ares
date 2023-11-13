@@ -45,7 +45,6 @@ struct qquery {
 static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
                       int alen);
 
-
 ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
                              int dnsclass, int type, ares_callback callback,
                              void *arg, unsigned short *qid)

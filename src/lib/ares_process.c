@@ -688,8 +688,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    */
   if (!(channel->flags & ARES_FLAG_NOCHECKRESP)) {
     ares_dns_rcode_t rcode = ares_dns_record_get_rcode(rdnsrec);
-    if (rcode == ARES_RCODE_SERVFAIL ||
-        rcode == ARES_RCODE_NOTIMP || rcode == ARES_RCODE_REFUSED) {
+    if (rcode == ARES_RCODE_SERVFAIL || rcode == ARES_RCODE_NOTIMP ||
+        rcode == ARES_RCODE_REFUSED) {
       switch (rcode) {
         case ARES_RCODE_SERVFAIL:
           query->error_status = ARES_ESERVFAIL;
@@ -811,8 +811,9 @@ static size_t ares__calc_query_timeout(struct query *query)
     timeplus <<= rounds;
   }
 
-  if (channel->maxtimeout && timeplus > channel->maxtimeout)
+  if (channel->maxtimeout && timeplus > channel->maxtimeout) {
     timeplus = channel->maxtimeout;
+  }
 
   /* Add some jitter to the retry timeout.
    *
@@ -820,21 +821,23 @@ static size_t ares__calc_query_timeout(struct query *query)
    * simultaneously from multiple hosts and DNS server throttle these requests.
    * Adding randomness allows to avoid synchronisation of retries.
    *
-   * Value of timeplus adjusted randomly to the range [0.5 * timeplus, timeplus].
+   * Value of timeplus adjusted randomly to the range [0.5 * timeplus,
+   * timeplus].
    */
   if (rounds > 0) {
     unsigned short r;
-    float delta_multiplier;
+    float          delta_multiplier;
 
     ares__rand_bytes(channel->rand_state, (unsigned char *)&r, sizeof(r));
-    delta_multiplier = ((float)r / USHRT_MAX) * 0.5f;
-    timeplus -= (size_t)((float)timeplus * delta_multiplier);
+    delta_multiplier  = ((float)r / USHRT_MAX) * 0.5f;
+    timeplus         -= (size_t)((float)timeplus * delta_multiplier);
   }
 
   /* We want explicitly guarantee that timeplus is greater or equal to timeout
    * specified in channel options. */
-  if (timeplus < channel->timeout)
+  if (timeplus < channel->timeout) {
     timeplus = channel->timeout;
+  }
 
   return timeplus;
 }

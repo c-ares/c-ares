@@ -99,7 +99,7 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   } else {
     rcode = (unsigned short)(dnsrec->rcode & 0xF);
   }
-  u16   |= rcode;
+  u16 |= rcode;
 
   status = ares__buf_append_be16(buf, u16);
   if (status != ARES_SUCCESS) {

@@ -114,44 +114,44 @@ typedef enum {
 
 /*! DNS Response Codes from server */
 typedef enum {
-  ARES_RCODE_NOERROR      = 0,    /*!< Success */
+  ARES_RCODE_NOERROR = 0,    /*!< Success */
   ARES_RCODE_FORMERR = 1,    /*!< Format error. The name server was unable
-                                   *   to interpret the query. */
-  ARES_RCODE_SERVFAIL = 2,  /*!< Server Failure. The name server was
-                                   *   unable to process this query due to a
-                                   *   problem with the nameserver */
-  ARES_RCODE_NXDOMAIN = 3,      /*!< Name Error.  Meaningful only for
-                                   *   responses from an authoritative name
-                                   *   server, this code signifies that the
-                                   *   domain name referenced in the query does
-                                   *   not exist. */
-  ARES_RCODE_NOTIMP = 4, /*!< Not implemented.  The name server does
-                                   *   not support the requested kind of
-                                   *   query */
-  ARES_RCODE_REFUSED = 5,         /*!< Refused. The name server refuses to
-                                   *   perform the speciied operation for
-                                   *   policy reasons. */
-  ARES_RCODE_YXDOMAIN = 6,        /*!< RFC 2136. Some name that ought not to
-                                   *   exist, does exist. */
-  ARES_RCODE_YXRRSET = 7,         /*!< RFC 2136. Some RRset that ought to not
-                                   *   exist, does exist. */
-  ARES_RCODE_NXRRSET = 8,         /*!< RFC 2136. Some RRset that ought to exist,
-                                   *   does not exist. */
-  ARES_RCODE_NOTAUTH = 9,         /*!< RFC 2136. The server is not authoritative
-                                   *   for the zone named in the Zone section.
-                                   */
-  ARES_RCODE_NOTZONE = 10,        /*!< RFC 2136. A name used in the Prerequisite
-                                   *   or Update Section is not within the zone
-                                   *   denoted by the Zone Section. */
-  ARES_RCODE_DSOTYPEI = 11,       /*!< RFC 8409. DSO-TYPE Not implemented */
-  ARES_RCODE_BADSIG   = 16,       /*!< RFC 8945. TSIG Signature Failure */
-  ARES_RCODE_BADKEY   = 17,       /*!< RFC 8945. Key not recognized. */
-  ARES_RCODE_BADTIME  = 18,       /*!< RFC 8945. Signature out of time window. */
-  ARES_RCODE_BADMODE  = 19,       /*!< RFC 2930. Bad TKEY Mode */
-  ARES_RCODE_BADNAME  = 20,       /*!< RFC 2930. Duplicate Key Name */
-  ARES_RCODE_BADALG   = 21,       /*!< RFC 2930. Algorithm not supported */
-  ARES_RCODE_BADTRUNC = 22,       /*!< RFC 8945. Bad Truncation */
-  ARES_RCODE_BADCOOKIE = 23,      /*!< RVC 7973. Bad/missing Server Cookie */
+                              *   to interpret the query. */
+  ARES_RCODE_SERVFAIL = 2,   /*!< Server Failure. The name server was
+                              *   unable to process this query due to a
+                              *   problem with the nameserver */
+  ARES_RCODE_NXDOMAIN = 3,   /*!< Name Error.  Meaningful only for
+                              *   responses from an authoritative name
+                              *   server, this code signifies that the
+                              *   domain name referenced in the query does
+                              *   not exist. */
+  ARES_RCODE_NOTIMP = 4,     /*!< Not implemented.  The name server does
+                              *   not support the requested kind of
+                              *   query */
+  ARES_RCODE_REFUSED = 5,    /*!< Refused. The name server refuses to
+                              *   perform the speciied operation for
+                              *   policy reasons. */
+  ARES_RCODE_YXDOMAIN = 6,   /*!< RFC 2136. Some name that ought not to
+                              *   exist, does exist. */
+  ARES_RCODE_YXRRSET = 7,    /*!< RFC 2136. Some RRset that ought to not
+                              *   exist, does exist. */
+  ARES_RCODE_NXRRSET = 8,    /*!< RFC 2136. Some RRset that ought to exist,
+                              *   does not exist. */
+  ARES_RCODE_NOTAUTH = 9,    /*!< RFC 2136. The server is not authoritative
+                              *   for the zone named in the Zone section.
+                              */
+  ARES_RCODE_NOTZONE = 10,   /*!< RFC 2136. A name used in the Prerequisite
+                              *   or Update Section is not within the zone
+                              *   denoted by the Zone Section. */
+  ARES_RCODE_DSOTYPEI  = 11, /*!< RFC 8409. DSO-TYPE Not implemented */
+  ARES_RCODE_BADSIG    = 16, /*!< RFC 8945. TSIG Signature Failure */
+  ARES_RCODE_BADKEY    = 17, /*!< RFC 8945. Key not recognized. */
+  ARES_RCODE_BADTIME   = 18, /*!< RFC 8945. Signature out of time window. */
+  ARES_RCODE_BADMODE   = 19, /*!< RFC 2930. Bad TKEY Mode */
+  ARES_RCODE_BADNAME   = 20, /*!< RFC 2930. Duplicate Key Name */
+  ARES_RCODE_BADALG    = 21, /*!< RFC 2930. Algorithm not supported */
+  ARES_RCODE_BADTRUNC  = 22, /*!< RFC 8945. Bad Truncation */
+  ARES_RCODE_BADCOOKIE = 23, /*!< RVC 7973. Bad/missing Server Cookie */
 } ares_dns_rcode_t;
 
 /*! Data types used */
@@ -455,7 +455,7 @@ CARES_EXTERN const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode);
  *  \param[out]    ptr_len Length of binary form address
  *  \return Pointer to start of binary address or NULL on error.
  */
-CARES_EXTERN const void *ares_dns_pton(const char *ipaddr,
+CARES_EXTERN const void *ares_dns_pton(const char       *ipaddr,
                                        struct ares_addr *addr, size_t *out_len);
 
 /*! Convert an ip address into the PTR format for in-addr.arpa or in6.arpa
@@ -463,7 +463,7 @@ CARES_EXTERN const void *ares_dns_pton(const char *ipaddr,
  *  \param[in]  addr  properly filled address structure
  *  \return  String representing PTR, use ares_free_string() to free
  */
-CARES_EXTERN char *ares_dns_addr_to_ptr(const struct ares_addr *addr);
+CARES_EXTERN char       *ares_dns_addr_to_ptr(const struct ares_addr *addr);
 
 
 /*! The options/parameters extensions to some RRs can be somewhat opaque, this
@@ -512,7 +512,7 @@ CARES_EXTERN ares_dns_datatype_t
  *  \return DNS Resource Record Type
  */
 CARES_EXTERN ares_dns_rec_type_t
-                         ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
+  ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
 
 /*! Opaque data type representing a DNS RR (Resource Record) */
 struct ares_dns_rr;
@@ -680,7 +680,7 @@ CARES_EXTERN ares_status_t  ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
  *  \param[in] rr  Pointer to resource record
  *  \return Name
  */
-CARES_EXTERN const char *ares_dns_rr_get_name(const ares_dns_rr_t *rr);
+CARES_EXTERN const char    *ares_dns_rr_get_name(const ares_dns_rr_t *rr);
 
 /*! Retrieve the resource record type
  *

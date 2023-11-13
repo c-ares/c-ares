@@ -51,14 +51,16 @@ char **ares__strsplit_duplicate(char **elms, size_t num_elm)
   size_t i;
   char **out;
 
-  if (elms == NULL || num_elm == 0)
+  if (elms == NULL || num_elm == 0) {
     return NULL;
+  }
 
   out = ares_malloc_zero(sizeof(*elms) * num_elm);
-  if (out == NULL)
+  if (out == NULL) {
     return NULL;
+  }
 
-  for (i=0; i<num_elm; i++) {
+  for (i = 0; i < num_elm; i++) {
     out[i] = ares_strdup(elms[i]);
     if (out[i] == NULL) {
       ares__strsplit_free(out, num_elm);

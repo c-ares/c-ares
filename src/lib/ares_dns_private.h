@@ -45,7 +45,7 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
                                       unsigned char *val, size_t val_len);
 ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
                                           ares_dns_section_t sect, size_t cnt);
-ares_bool_t ares_dns_has_opt_rr(const ares_dns_record_t *rec);
+ares_bool_t   ares_dns_has_opt_rr(const ares_dns_record_t *rec);
 
 struct ares_dns_qd {
   char               *name;
@@ -128,11 +128,11 @@ typedef struct {
 } ares__dns_options_t;
 
 typedef struct {
-  unsigned short       udp_size;  /*!< taken from class */
-  unsigned char        version;   /*!< taken from bits 8-16 of ttl */
-  unsigned short       flags;     /*!< Flags, remaining 16 bits, though only
-                                   *   1 currently defined */
-  ares__dns_options_t *options;   /*!< Attribute/Value pairs */
+  unsigned short       udp_size; /*!< taken from class */
+  unsigned char        version;  /*!< taken from bits 8-16 of ttl */
+  unsigned short       flags;    /*!< Flags, remaining 16 bits, though only
+                                  *   1 currently defined */
+  ares__dns_options_t *options;  /*!< Attribute/Value pairs */
 } ares__dns_opt_t;
 
 typedef struct {
@@ -202,10 +202,10 @@ struct ares_dns_rr {
 
 /*! DNS data structure */
 struct ares_dns_record {
-  unsigned short    id;     /*!< DNS query id */
-  unsigned short    flags;  /*!< One or more ares_dns_flags_t */
-  ares_dns_opcode_t opcode; /*!< DNS Opcode */
-  ares_dns_rcode_t  rcode;  /*!< DNS RCODE */
+  unsigned short    id;        /*!< DNS query id */
+  unsigned short    flags;     /*!< One or more ares_dns_flags_t */
+  ares_dns_opcode_t opcode;    /*!< DNS Opcode */
+  ares_dns_rcode_t  rcode;     /*!< DNS RCODE */
   unsigned short    raw_rcode; /*!< Raw rcode, used to ultimately form real
                                 *   rcode after reading OPT record if it
                                 *   exists */

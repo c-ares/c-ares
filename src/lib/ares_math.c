@@ -92,8 +92,9 @@ size_t ares__count_digits(size_t n)
   for (digits = 0; n > 0; digits++) {
     n /= 10;
   }
-  if (digits == 0)
+  if (digits == 0) {
     digits = 1;
+  }
 
   return digits;
 }
@@ -105,8 +106,9 @@ size_t ares__count_hexdigits(size_t n)
   for (digits = 0; n > 0; digits++) {
     n /= 16;
   }
-  if (digits == 0)
+  if (digits == 0) {
     digits = 1;
+  }
 
   return digits;
 }

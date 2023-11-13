@@ -838,7 +838,6 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
                                     &len, allow_multiple);
 }
 
-
 ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num, size_t len)
 {
   size_t i;
@@ -850,15 +849,16 @@ ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num, size_t len)
 
   mod = ares__pow(10, len);
 
-  for (i=len; i>0; i--) {
+  for (i = len; i > 0; i--) {
     size_t        digit = (num % mod);
     ares_status_t status;
 
-    mod   /= 10;
-    digit /= mod;
-    status = ares__buf_append_byte(buf, '0' + (unsigned char)(digit & 0xFF));
-    if (status != ARES_SUCCESS)
+    mod    /= 10;
+    digit  /= mod;
+    status  = ares__buf_append_byte(buf, '0' + (unsigned char)(digit & 0xFF));
+    if (status != ARES_SUCCESS) {
       return status;
+    }
   }
   return ARES_SUCCESS;
 }
@@ -887,10 +887,9 @@ static ares_status_t ares__buf_append_str(ares__buf_t *buf, const char *str)
   return ares__buf_append(buf, (const unsigned char *)str, ares_strlen(str));
 }
 
-static ares_status_t ares__buf_hexdump_line(ares__buf_t *buf,
-                                            size_t idx,
+static ares_status_t ares__buf_hexdump_line(ares__buf_t *buf, size_t idx,
                                             const unsigned char *data,
-                                            size_t len)
+                                            size_t               len)
 {
   size_t        i;
   ares_status_t status;
@@ -933,8 +932,7 @@ static ares_status_t ares__buf_hexdump_line(ares__buf_t *buf,
     if (i >= len) {
       break;
     }
-    status =
-      ares__buf_append_byte(buf, ares__isprint(data[i]) ? data[i] : '.');
+    status = ares__buf_append_byte(buf, ares__isprint(data[i]) ? data[i] : '.');
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -946,14 +944,15 @@ static ares_status_t ares__buf_hexdump_line(ares__buf_t *buf,
 ares_status_t ares__buf_hexdump(ares__buf_t *buf, const unsigned char *data,
                                 size_t len)
 {
-  size_t        i;
+  size_t i;
 
   /* Each line is 16 bytes */
   for (i = 0; i < len; i += 16) {
     ares_status_t status;
     status = ares__buf_hexdump_line(buf, i, data + i, len - i);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       return status;
+    }
   }
 
   return ARES_SUCCESS;

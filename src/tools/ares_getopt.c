@@ -65,7 +65,7 @@ void ares_getopt_init(ares_getopt_state_t *state, int nargc, const char **nargv)
  */
 int ares_getopt(ares_getopt_state_t *state, const char *ostr)
 {
-  const char *oli;          /* option letter list index */
+  const char *oli; /* option letter list index */
 
   /* update scanning pointer */
   if (!*state->place) {
@@ -101,7 +101,8 @@ int ares_getopt(ares_getopt_state_t *state, const char *ostr)
       ++state->optind;
     }
     if (state->opterr) {
-      (void)fprintf(stderr, "%s: illegal option -- %c\n", __FILE__, state->optopt);
+      (void)fprintf(stderr, "%s: illegal option -- %c\n", __FILE__,
+                    state->optopt);
     }
     return BADCH;
   }
@@ -114,7 +115,7 @@ int ares_getopt(ares_getopt_state_t *state, const char *ostr)
     }
   } else {
     /* need an argument */
-    if (*state->place) {                   /* no white space */
+    if (*state->place) {                         /* no white space */
       state->optarg = state->place;
     } else if (state->argc <= ++state->optind) { /* no arg */
       state->place = EMSG;

@@ -113,8 +113,8 @@ ares_status_t  ares__buf_append_be32(ares__buf_t *buf, unsigned int u32);
  *  \param[in] len  Length to output, use 0 for no padding
  *  \return ARES_SUCCESS on succeess
  */
-ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num,
-                                       size_t len);
+ares_status_t  ares__buf_append_num_dec(ares__buf_t *buf, size_t num,
+                                        size_t len);
 
 /*! Append a number in ASCII hexidecimal form.
  *
@@ -123,8 +123,8 @@ ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num,
  *  \param[in] len  Length to output, use 0 for no padding
  *  \return ARES_SUCCESS on succeess
  */
-ares_status_t ares__buf_append_num_hex(ares__buf_t *buf, size_t num,
-                                       size_t len);
+ares_status_t  ares__buf_append_num_hex(ares__buf_t *buf, size_t num,
+                                        size_t len);
 
 /*! Sets the current buffer length.  This *may* be used if there is a need to
  *  override a prior position in the buffer, such as if there is a length

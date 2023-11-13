@@ -353,52 +353,52 @@ CARES_EXTERN int  ares_library_init_android(jobject connectivity_manager);
 CARES_EXTERN int  ares_library_android_initialized(void);
 #endif
 
-CARES_EXTERN int         ares_library_initialized(void);
+CARES_EXTERN int           ares_library_initialized(void);
 
-CARES_EXTERN void        ares_library_cleanup(void);
+CARES_EXTERN void          ares_library_cleanup(void);
 
-CARES_EXTERN const char *ares_version(int *version);
+CARES_EXTERN const char   *ares_version(int *version);
 
-CARES_EXTERN int         ares_init(ares_channel_t **channelptr);
+CARES_EXTERN int           ares_init(ares_channel_t **channelptr);
 
-CARES_EXTERN int         ares_init_options(ares_channel_t           **channelptr,
-                                           const struct ares_options *options,
-                                           int                        optmask);
+CARES_EXTERN int           ares_init_options(ares_channel_t           **channelptr,
+                                             const struct ares_options *options,
+                                             int                        optmask);
 
-CARES_EXTERN int         ares_save_options(ares_channel_t      *channel,
-                                           struct ares_options *options, int *optmask);
+CARES_EXTERN int           ares_save_options(ares_channel_t      *channel,
+                                             struct ares_options *options, int *optmask);
 
-CARES_EXTERN void        ares_destroy_options(struct ares_options *options);
+CARES_EXTERN void          ares_destroy_options(struct ares_options *options);
 
-CARES_EXTERN int         ares_dup(ares_channel_t **dest, ares_channel_t *src);
+CARES_EXTERN int           ares_dup(ares_channel_t **dest, ares_channel_t *src);
 
 CARES_EXTERN ares_status_t ares_reinit(ares_channel_t *channel);
 
-CARES_EXTERN void        ares_destroy(ares_channel_t *channel);
+CARES_EXTERN void          ares_destroy(ares_channel_t *channel);
 
-CARES_EXTERN void        ares_cancel(ares_channel_t *channel);
+CARES_EXTERN void          ares_cancel(ares_channel_t *channel);
 
 /* These next 3 configure local binding for the out-going socket
  * connection.  Use these to specify source IP and/or network device
  * on multi-homed systems.
  */
-CARES_EXTERN void        ares_set_local_ip4(ares_channel_t *channel,
-                                            unsigned int    local_ip);
+CARES_EXTERN void          ares_set_local_ip4(ares_channel_t *channel,
+                                              unsigned int    local_ip);
 
 /* local_ip6 should be 16 bytes in length */
-CARES_EXTERN void        ares_set_local_ip6(ares_channel_t      *channel,
-                                            const unsigned char *local_ip6);
+CARES_EXTERN void          ares_set_local_ip6(ares_channel_t      *channel,
+                                              const unsigned char *local_ip6);
 
 /* local_dev_name should be null terminated. */
-CARES_EXTERN void        ares_set_local_dev(ares_channel_t *channel,
-                                            const char     *local_dev_name);
+CARES_EXTERN void          ares_set_local_dev(ares_channel_t *channel,
+                                              const char     *local_dev_name);
 
-CARES_EXTERN void        ares_set_socket_callback(ares_channel_t           *channel,
-                                                  ares_sock_create_callback callback,
-                                                  void                     *user_data);
+CARES_EXTERN void          ares_set_socket_callback(ares_channel_t           *channel,
+                                                    ares_sock_create_callback callback,
+                                                    void                     *user_data);
 
-CARES_EXTERN void        ares_set_socket_configure_callback(
-         ares_channel_t *channel, ares_sock_config_callback callback, void *user_data);
+CARES_EXTERN void          ares_set_socket_configure_callback(
+           ares_channel_t *channel, ares_sock_config_callback callback, void *user_data);
 
 CARES_EXTERN int  ares_set_sortlist(ares_channel_t *channel,
                                     const char     *sortstr);
@@ -518,7 +518,6 @@ struct ares_addr {
     struct ares_in6_addr addr6;
   } addr;
 };
-
 
 struct ares_addrttl {
   struct in_addr ipaddr;
