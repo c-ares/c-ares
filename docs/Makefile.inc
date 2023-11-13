@@ -4,9 +4,23 @@ MANPAGES = ares_cancel.3		\
   ares_create_query.3			\
   ares_destroy.3			\
   ares_destroy_options.3		\
+  ares_dns_class_fromstr.3		\
+  ares_dns_class_tostr.3		\
+  ares_dns_datatype_t.3			\
   ares_dns_mapping.3			\
+  ares_dns_opcode_tostr.3		\
+  ares_dns_opt_datatype_t.3		\
+  ares_dns_opt_get_datatype.3		\
+  ares_dns_opt_get_name.3		\
+  ares_dns_rcode_tostr.3		\
   ares_dns_record.3			\
+  ares_dns_rec_type_fromstr.3		\
   ares_dns_rr.3				\
+  ares_dns_rr_get_keys.3		\
+  ares_dns_rr_key_datatype.3		\
+  ares_dns_rr_key_to_rec_type.3		\
+  ares_dns_rr_key_tostr.3		\
+  ares_dns_section_tostr.3		\
   ares_dup.3				\
   ares_expand_name.3			\
   ares_expand_string.3			\
@@ -32,6 +46,7 @@ MANPAGES = ares_cancel.3		\
   ares_library_init_android.3		\
   ares_library_initialized.3		\
   ares_mkquery.3			\
+  ares_opt_param_t.3			\
   ares_parse_a_reply.3			\
   ares_parse_aaaa_reply.3		\
   ares_parse_caa_reply.3		\
@@ -61,5 +76,6 @@ MANPAGES = ares_cancel.3		\
   ares_set_socket_functions.3		\
   ares_set_sortlist.3			\
   ares_strerror.3			\
+  ares_svcb_param_t.3			\
   ares_timeout.3			\
   ares_version.3
