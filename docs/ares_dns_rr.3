@@ -320,16 +320,296 @@ TLSA Record \fIARES_RR_TLSA_MATCH\fP known values:
 
 
 .SH DESCRIPTION
-The \fIxxx(3)\fP function outputs a human readable DNS record
-type from its numeric form passed in
-.IR type .
+
+The \fIares_dns_record_rr_cnt(3)\fP function returns the number of resource
+records in the DNS record provided by the
+.IR dnsrec
+parameter for the section provided in the
+.IR sect
+parameter.
+
+The \fIares_dns_record_rr_add(3)\fP function adds a new resource record entry
+the the DNS record provided by the
+.IR dnsrec
+parameter.  The resulting resource record is stored into the variable pointed to by
+.IR rr_out.
+The DNS section the resource record belongs to is specified by the
+.IR sect
+parameter.  The domain name associated with the resource record is specified by the
+.IR name
+parameter, which can not be NULL but may be an empty string, or ".".  The resource
+record type is specified in the
+.IR type
+parameter, along withe the DNS record class in the
+.IR rclass
+parameter, and the Time To Live (TTL) in the
+.IR ttl
+parameter.
+
+
+The \fIares_dns_record_rr_get(3)\fP function is used to retrieve the resource
+record pointer from the DNS record provided in the
+.IR dnsrec
+parameter, for the resource record section provided in the
+.IR sect
+parameter, for the specified index in the
+.IR idx
+parameter.  The index must be less than \fIares_dns_record_rr_cnt(3)\fP.
+
+
+The \fIares_dns_record_rr_del(3)\fP is used to delete a resource record from
+the DNS record specified in the
+.IR dnsrec
+parameter.  Its primary use is to remove a \fIARES_REC_TYPE_OPT\fP record when
+needing to retry a query without EDNS support.  The DNS RR section is specified
+via the
+.IR sect
+parameter, and the index to remove is specified in the
+.IR idx
+parameter.  The index must be less than \fIares_dns_record_rr_cnt(3)\fP.
+
+
+The \fIares_dns_rr_get_name(3)\fP function is used to retrieve the resource
+record domain name from the Resource Record pointer provided in the
+.IR rr
+parameter.
+
+The \fIares_dns_rr_get_type(3)\fP function is used to retrieve the resource
+record type from the Resource Record pointer provided in the
+.IR rr
+parameter.
+
+The \fIares_dns_rr_get_class(3)\fP function is used to retrieve the resource
+record class from the Resource Record pointer provided in the
+.IR rr
+parameter.
+
+The \fIares_dns_rr_get_ttl(3)\fP function is used to retrieve the resource
+record class Time to Live (TTL) from the Resource Record pointer provided in the
+.IR rr
+parameter.
+
+The \fIares_dns_rr_set_addr(3)\fP function is used to set an IPv4 address for the
+associated resource record key/parameter when the datatype is \fIARES_DATATYPE_INADDR\fP.
+The resource record to be modified is provided in the
+.IR dns_rr
+parameter, the key/parameter is provided in the
+.IR key
+parameter, and the value is provided in the
+.IR addr
+parameter.
+
+The \fIares_dns_rr_set_addr6(3)\fP function is used to set an IPv6 address for the
+associated resource record key/parameter when the datatype is \fIARES_DATATYPE_INADDR6\fP.
+The resource record to be modified is provided in the
+.IR dns_rr
+parameter, the key/parameter is provided in the
+.IR key
+parameter, and the value is provided in the
+.IR addr
+parameter.
+
+The \fIares_dns_rr_set_str(3)\fP function is used to set a string for the
+associated resource record key/parameter when the datatype is \fIARES_DATATYPE_STR\fP
+or \fIARES_DATATYPE_NAME\fP.  Most strings are limited to 255 bytes,
+however some records, such as a TXT record may allow longer as they are output
+as multiple strings. The resource record to be modified is
+provided in the
+.IR dns_rr
+parameter, the key/parameter is provided in the
+.IR key
+parameter, and the value is provided in the
+.IR val
+parameter.
+
+The \fIares_dns_rr_set_u8(3)\fP function is used to set an 8bit unsigned value for the
+associated resource record key/parameter when the datatype is \fIARES_DATATYPE_U8\fP.
+The resource record to be modified is provided in the
+.IR dns_rr
+parameter, the key/parameter is provided in the
+.IR key
+parameter, and the value is provided in the
+.IR val
+parameter.
+
+The \fIares_dns_rr_set_u16(3)\fP function is used to set an 16bit unsigned value for the
+associated resource record key/parameter when the datatype is \fIARES_DATATYPE_U16\fP.
+The resource record to be modified is provided in the
+.IR dns_rr
+parameter, the key/parameter is provided in the
+.IR key
+parameter, and the value is provided in the
+.IR val
+parameter.
+
+The \fIares_dns_rr_set_u32(3)\fP function is used to set an 32bit unsigned value for the
+associated resource record key/parameter when the datatype is \fIARES_DATATYPE_U32\fP.
+The resource record to be modified is provided in the
+.IR dns_rr
+parameter, the key/parameter is provided in the
+.IR key
+parameter, and the value is provided in the
+.IR val
+parameter.
+
+The \fIares_dns_rr_set_bin(3)\fP function is used to set an binary value for the
+associated resource record key/parameter when the datatype is \fIARES_DATATYPE_BIN\fP
+or \fIARES_DATATYPE_BINP\fP.
+The resource record to be modified is provided in the
+.IR dns_rr
+parameter, the key/parameter is provided in the
+.IR key
+parameter, and the value is provided in the
+.IR val
+parameter. And the associated value length is provided in the
+.IR len
+parameter.
+
+The \fIares_dns_rr_set_opt(3)\fP function is used to set option/parameter keys and
+values for the resource record when the datatype if \fIARES_DATATYPE_OPT\fP.  The
+resource record to be modified is provided in the
+.IR dns_rr
+parameter.  They key/parameter is provided in the
+.IR key
+parameter.  The option/parameter value specific to the resource record is provided
+in the
+.IR opt
+parameter, and this is left to the user to determine the appropriate value to
+use.  Some known values may be provided by \fIares_svcb_param_t\fP and \fIares_opt_param_t\fP
+enumerations.  The value for the option is always provided in binary form in
+.IR val
+with length provided in
+.IR val_len.
+
+The \fIares_dns_rr_get_addr(3)\fP function is used to retrieve the IPv4 address
+from the resource record when the datatype is \fIARES_DATATYPE_INADDR\fP.  The
+resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key
+parameter.
+
+The \fIares_dns_rr_get_addr6(3)\fP function is used to retrieve the IPv6 address
+from the resource record when the datatype is \fIARES_DATATYPE_INADDR6\fP.  The
+resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key
+parameter.
+
+The \fIares_dns_rr_get_str(3)\fP function is used to retrieve a string
+from the resource record when the datatype is \fIARES_DATATYPE_STR\fP or
+\fIARES_DATATYPE_NAME\fP.  The resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key
+parameter.
+
+The \fIares_dns_rr_get_u8(3)\fP function is used to retrieve an 8bit integer
+from the resource record when the datatype is \fIARES_DATATYPE_U8\fP.
+The resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key
+parameter.
+
+The \fIares_dns_rr_get_u16(3)\fP function is used to retrieve a 16bit integer
+from the resource record when the datatype is \fIARES_DATATYPE_U16\fP.
+The resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key
+parameter.
+
+The \fIares_dns_rr_get_u32(3)\fP function is used to retrieve a 32bit integer
+from the resource record when the datatype is \fIARES_DATATYPE_U32\fP.
+The resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key
+parameter.
+
+The \fIares_dns_rr_get_bin(3)\fP function is used to retrieve binary data
+from the resource record when the datatype is \fIARES_DATATYPE_BIN\fP or
+\fIARES_DATATYPE_BINP\fP.
+The resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key
+parameter, and length is stored into the variable pointed to by
+.IR len.
+
+The \fIares_dns_rr_get_opt_cnt(3)\fP function is used to retrieve the count
+of options/parameters associated with the resource record when the datatype
+is \fIARES_DATATYPE_OPT\fP.
+The resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key.
+
+The \fIares_dns_rr_get_opt(3)\fP function is used to retrieve binary option data
+from the resource record when the datatype is \fIARES_DATATYPE_OPT\fP for the
+specified index.
+The resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key
+parameter, the index to retrieve the option data from is provided in the
+.IR idx
+parameter.  The value is stored into the variable pointed to by
+.IR val
+and length is stored into the variable pointed to by
+.IR val_len.
+
+The \fIares_dns_rr_get_opt_byid(3)\fP function is used to retrieve binary option data
+from the resource record when the datatype is \fIARES_DATATYPE_OPT\fP for the
+specified option identifier, if it exists.
+The resource record is provided in the
+.IR dns_rr
+parameter and the key/parameter to retrieve is provided in the
+.IR key
+parameter, the identifier to retrieve the option data from is provided in the
+.IR opt
+parameter.  The value is stored into the variable pointed to by
+.IR val
+and length is stored into the variable pointed to by
+.IR val_len.
+
 
 .SH RETURN VALUES
-\fIxxx(3)\fP, all return a human printable ASCII string, or
-NULL on error.
 
-\fIares_dns_rr_get_keys(3)\fP returns an array of keys or NULL on failure.
+\fIares_dns_record_rr_cnt(3)\fP and \fIares_dns_rr_get_opt_cnt(3)\fP return the
+respective counts.
 
+\fIares_dns_record_rr_add(3)\fP, \fIares_dns_record_rr_del(3)\fP,
+\fIares_dns_rr_set_addr(3)\fP, \fIares_dns_rr_set_addr6(3)\fP,
+\fIares_dns_rr_set_str(3)\fP, \fIares_dns_rr_set_u8(3)\fP,
+\fIares_dns_rr_set_u16(3)\fP, \fIares_dns_rr_set_u32(3)\fP,
+\fIares_dns_rr_set_bin(3)\fP, and \fIares_dns_rr_set_opt(3)\fP all
+return an \fIares_status_t\fP error code.
+.B ARES_SUCCESS
+is returned on success,
+.B ARES_ENOMEM
+is returned on out of memory,
+.B ARES_EFORMERR
+is returned on misuse.
+
+
+\fIares_dns_rr_get_name(3)\fP, \fIares_dns_rr_get_type(3)\fP,
+\fIares_dns_rr_get_class(3)\fP, \fIares_dns_rr_get_ttl(3)\fP,
+\fIares_dns_rr_get_addr(3)\fP, \fIares_dns_rr_get_addr6(3)\fP,
+\fIares_dns_rr_get_str(3)\fP, \fIares_dns_rr_get_u8(3)\fP,
+\fIares_dns_rr_get_u16(3)\fP, \fIares_dns_rr_get_u32(3)\fP,
+\fIares_dns_rr_get_bin(3)\fP, \fIares_dns_rr_get_opt(3)\fP all return their
+prescribed datatype values and in general can't fail except for misuse cases,
+in which a 0 (or NULL) may be returned, however 0 can also be a valid return
+value for most of these functions.
+
+\fIares_dns_record_rr_get(3)\fP will return the requested resource record
+pointer or NULL on failure (misuse).
+
+\fIares_dns_rr_get_opt_by_id(3)\fP will return ARES_TRUE if the option was
+found, otherwise ARES_FALSE if not found (or misuse).
 
 .SH AVAILABILITY
 These functions were first introduced in c-ares version 1.22.0.
