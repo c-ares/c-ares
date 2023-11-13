@@ -193,7 +193,7 @@ static ares_bool_t read_cmdline(int argc, const char **argv, adig_config_t *conf
 
       case 'c':
         if (!ares_dns_class_fromstr(&config->qclass, state.optarg)) {
-          snprintf(config->error, sizeof(config->error), "unrecognied class %s",
+          snprintf(config->error, sizeof(config->error), "unrecognized class %s",
                    state.optarg);
           return ARES_FALSE;
         }
@@ -201,7 +201,7 @@ static ares_bool_t read_cmdline(int argc, const char **argv, adig_config_t *conf
 
       case 't':
         if (!ares_dns_rec_type_fromstr(&config->qtype, state.optarg)) {
-          snprintf(config->error, sizeof(config->error), "unrecognied type %s",
+          snprintf(config->error, sizeof(config->error), "unrecognized type %s",
                    state.optarg);
           return ARES_FALSE;
         }
