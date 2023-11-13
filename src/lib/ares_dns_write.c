@@ -93,7 +93,12 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   }
 
   /* RCODE */
-  rcode  = (unsigned short)(dnsrec->rcode & 0xF);
+  if (dnsrec->rcode > 15 && !ares_dns_has_opt_rr(dnsrec)) {
+    /* Must have OPT RR in order to write extended error codes */
+    rcode = ARES_RCODE_SERVFAIL;
+  } else {
+    rcode = (unsigned short)(dnsrec->rcode & 0xF);
+  }
   u16   |= rcode;
 
   status = ares__buf_append_be16(buf, u16);
@@ -508,10 +513,11 @@ static ares_status_t ares_dns_write_rr_opt(ares__buf_t         *buf,
                                            const ares_dns_rr_t *rr,
                                            ares__llist_t      **namelist)
 {
-  size_t        len = ares__buf_len(buf);
-  ares_status_t status;
-  unsigned int  ttl = 0;
-  size_t        i;
+  size_t         len = ares__buf_len(buf);
+  ares_status_t  status;
+  unsigned int   ttl = 0;
+  size_t         i;
+  unsigned short rcode = (unsigned short)((rr->parent->rcode >> 4) & 0xFF);
 
   (void)namelist;
 
@@ -531,7 +537,7 @@ static ares_status_t ares_dns_write_rr_opt(ares__buf_t         *buf,
   }
 
   /* TTL -> rcode (u8) << 24 | version (u8) << 16 | flags (u16) */
-  ttl |= (unsigned int)ares_dns_rr_get_u8(rr, ARES_RR_OPT_EXT_RCODE) << 24;
+  ttl |= (unsigned int)rcode << 24;
   ttl |= (unsigned int)ares_dns_rr_get_u8(rr, ARES_RR_OPT_VERSION) << 16;
   ttl |= (unsigned int)ares_dns_rr_get_u16(rr, ARES_RR_OPT_FLAGS);
 

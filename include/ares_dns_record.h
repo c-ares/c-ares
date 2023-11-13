@@ -232,8 +232,6 @@ typedef enum {
   ARES_RR_NAPTR_REPLACEMENT = (ARES_REC_TYPE_NAPTR * 100) + 6,
   /*! OPT Record. UDP Size. Datatype: U16 */
   ARES_RR_OPT_UDP_SIZE = (ARES_REC_TYPE_OPT * 100) + 1,
-  /*! OPT Record. Extended RCode. Datatype: U8 */
-  ARES_RR_OPT_EXT_RCODE = (ARES_REC_TYPE_OPT * 100) + 2,
   /*! OPT Record. Version. Datatype: U8 */
   ARES_RR_OPT_VERSION = (ARES_REC_TYPE_OPT * 100) + 3,
   /*! OPT Record. Flags. Datatype: U16 */

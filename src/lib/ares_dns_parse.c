@@ -405,11 +405,9 @@ static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf, ares_dns_rr_t *rr,
     return status;
   }
 
-  status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_EXT_RCODE,
-                              (unsigned char)(raw_ttl >> 24) & 0xFF);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
+  /* First 8 bits of TTL are an extended RCODE, and they go in the higher order
+   * after the original 4-bit rcode */
+  rr->parent->raw_rcode |= (unsigned short)((raw_ttl >> 20) & 0xFF0);
 
   status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION,
                               (unsigned char)(raw_ttl >> 16) & 0xFF);
@@ -733,7 +731,7 @@ static ares_status_t ares_dns_parse_header(ares__buf_t *buf, unsigned int flags,
   unsigned short    id;
   unsigned short    dns_flags = 0;
   ares_dns_opcode_t opcode;
-  ares_dns_rcode_t  rcode;
+  unsigned short    rcode;
 
   (void)flags; /* currently unsed */
 
@@ -843,10 +841,13 @@ static ares_status_t ares_dns_parse_header(ares__buf_t *buf, unsigned int flags,
     goto fail;
   }
 
-  status = ares_dns_record_create(dnsrec, id, dns_flags, opcode, rcode);
+  status = ares_dns_record_create(dnsrec, id, dns_flags, opcode,
+                                  ARES_RCODE_NOERROR /* Temporary */);
   if (status != ARES_SUCCESS) {
     goto fail;
   }
+
+  (*dnsrec)->raw_rcode = rcode;
 
   if (*ancount > 0) {
     status =
@@ -1195,6 +1196,13 @@ static ares_status_t ares_dns_parse_buf(ares__buf_t *buf, unsigned int flags,
     if (status != ARES_SUCCESS) {
       goto fail;
     }
+  }
+
+  /* Finalize rcode now that if we have OPT it is processed */
+  if (!ares_dns_rcode_isvalid((*dnsrec)->raw_rcode)) {
+    (*dnsrec)->rcode = ARES_RCODE_SERVFAIL;
+  } else {
+    (*dnsrec)->rcode = (ares_dns_rcode_t)(*dnsrec)->raw_rcode;
   }
 
   return ARES_SUCCESS;

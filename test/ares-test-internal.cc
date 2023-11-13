@@ -563,8 +563,6 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, 1280));
   EXPECT_EQ(ARES_SUCCESS,
-    ares_dns_rr_set_u8(rr, ARES_RR_OPT_EXT_RCODE, 0));
-  EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_u16(rr, ARES_RR_OPT_FLAGS, 0));

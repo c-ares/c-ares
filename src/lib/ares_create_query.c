@@ -83,11 +83,6 @@ int ares_create_query(const char *name, int dnsclass, int type,
       goto done;
     }
 
-    status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_EXT_RCODE, 0);
-    if (status != ARES_SUCCESS) {
-      goto done;
-    }
-
     status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0);
     if (status != ARES_SUCCESS) {
       goto done;

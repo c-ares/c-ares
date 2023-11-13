@@ -67,7 +67,6 @@ static ares_bool_t   same_questions(const ares_dns_record_t *qrec,
                                     const ares_dns_record_t *arec);
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
-static ares_bool_t   has_opt_rr(ares_dns_record_t *arec);
 static void end_query(const ares_channel_t *channel, struct query *query,
                       ares_status_t status, const unsigned char *abuf,
                       size_t alen);
@@ -660,7 +659,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    * protocol extension is not understood by the responder. We must retry the
    * query without EDNS enabled. */
   if (ares_dns_record_get_rcode(rdnsrec) == ARES_RCODE_FORMERR &&
-      has_opt_rr(qdnsrec) && !has_opt_rr(rdnsrec)) {
+      ares_dns_has_opt_rr(qdnsrec) && !ares_dns_has_opt_rr(rdnsrec)) {
     status = rewrite_without_edns(qdnsrec, query);
     if (status != ARES_SUCCESS) {
       end_query(channel, query, status, NULL, 0);
@@ -1072,21 +1071,6 @@ static ares_bool_t same_address(const struct sockaddr  *sa,
     }
   }
   return ARES_FALSE; /* different */
-}
-
-/* search for an OPT RR in the response */
-static ares_bool_t has_opt_rr(ares_dns_record_t *arec)
-{
-  size_t i;
-  for (i = 0; i < ares_dns_record_rr_cnt(arec, ARES_SECTION_ADDITIONAL); i++) {
-    const ares_dns_rr_t *rr =
-      ares_dns_record_rr_get(arec, ARES_SECTION_ADDITIONAL, i);
-
-    if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
-      return ARES_TRUE;
-    }
-  }
-  return ARES_FALSE;
 }
 
 static void ares_detach_query(struct query *query)
