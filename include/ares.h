@@ -288,7 +288,6 @@ struct ares_options {
   int            timeout; /* in seconds or milliseconds, depending on options */
   int            tries;
   int            ndots;
-  int            maxtimeout; /* in milliseconds */
   unsigned short udp_port;
   unsigned short tcp_port;
   int            socket_send_buffer_size;
@@ -306,6 +305,7 @@ struct ares_options {
   char              *resolvconf_path;
   char              *hosts_path;
   int                udp_max_queries;
+  int                maxtimeout; /* in milliseconds */
 };
 
 struct hostent;

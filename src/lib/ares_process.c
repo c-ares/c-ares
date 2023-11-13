@@ -802,28 +802,14 @@ static size_t ares__calc_query_timeout(struct query *query)
 {
   const ares_channel_t *channel  = query->channel;
   size_t                timeplus = channel->timeout;
-  size_t                shift;
+  size_t                rounds;
 
-  /* For each trip through the entire server list, double the channel's
-   * assigned timeout, avoiding overflow.  If channel->timeout is negative,
-   * leave it as-is, even though that should be impossible here.
-   */
+  /* For each trip through the entire server list, we want to double the
+   * retry from the last retry */
+  rounds = (query->try_count / ares__slist_len(channel->servers));
 
-  /* How many times do we want to double it?  Presume sane values here. */
-  shift = query->try_count / ares__slist_len(channel->servers);
-
-  /* Is there enough room to shift timeplus left that many times?
-   *
-   * To find out, confirm that all of the bits we'll shift away are zero.
-   * Stop considering a shift if we get to the point where we could shift
-   * a 1 into the sign bit (i.e. when shift is within two of the bit
-   * count).
-   *
-   * This has the side benefit of leaving negative numbers unchanged.
-   */
-  if (shift <= (sizeof(int) * CHAR_BIT - 1) &&
-      (timeplus >> (sizeof(int) * CHAR_BIT - 1 - shift)) == 0) {
-    timeplus <<= shift;
+  if (rounds > 0) {
+    timeplus <<= rounds;
   }
 
   if (channel->maxtimeout && timeplus > channel->maxtimeout)
@@ -837,20 +823,19 @@ static size_t ares__calc_query_timeout(struct query *query)
    *
    * Value of timeplus adjusted randomly to the range [0.5 * timeplus, timeplus].
    */
-  if (query->try_count > 0) {
+  if (rounds > 0) {
     unsigned short r;
     float delta_multiplier;
 
     ares__rand_bytes(channel->rand_state, (unsigned char *)&r, sizeof(r));
     delta_multiplier = ((float)r / USHRT_MAX) * 0.5f;
     timeplus -= (size_t)((float)timeplus * delta_multiplier);
-
-    // With shift that doubles each iteration and constant 0.5 above this situation
-    // is impossible, but we want explicitly guarantee that timeplus
-    // is greater or equal to timeout specified in channel options.
-    if (timeplus < channel->timeout)
-      timeplus = channel->timeout;
   }
+
+  /* We want explicitly guarantee that timeplus is greater or equal to timeout
+   * specified in channel options. */
+  if (timeplus < channel->timeout)
+    timeplus = channel->timeout;
 
   return timeplus;
 }
