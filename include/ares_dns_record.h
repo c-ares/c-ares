@@ -490,6 +490,32 @@ CARES_EXTERN const char *ares_dns_opt_get_name(ares_dns_rr_key_t key,
                                                unsigned short    opt);
 
 
+/*! Retrieve a list of Resource Record keys that can be set or retrieved for
+ *  the Resource record type.
+ *
+ *  \param[in]  type  Record Type
+ *  \param[out] cnt   Number of keys returned
+ *  \return array of keys associated with Resource Record
+ */
+CARES_EXTERN const ares_dns_rr_key_t *
+  ares_dns_rr_get_keys(ares_dns_rec_type_t type, size_t *cnt);
+
+/*! Retrieve the datatype associated with a Resource Record key.
+ *
+ *  \param[in] key   Resource Record Key
+ *  \return datatype
+ */
+CARES_EXTERN ares_dns_datatype_t
+  ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
+
+/*! Retrieve the DNS Resource Record type associated with a Resource Record key.
+ *
+ *  \param[in] key   Resource Record Key
+ *  \return DNS Resource Record Type
+ */
+CARES_EXTERN ares_dns_rec_type_t
+                         ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
+
 /*! Opaque data type representing a DNS RR (Resource Record) */
 struct ares_dns_rr;
 
@@ -650,31 +676,6 @@ CARES_EXTERN ares_status_t  ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
                                                    ares_dns_section_t sect,
                                                    size_t             idx);
 
-/*! Retrieve a list of Resource Record keys that can be set or retrieved for
- *  the Resource record type.
- *
- *  \param[in]  type  Record Type
- *  \param[out] cnt   Number of keys returned
- *  \return array of keys associated with Resource Record
- */
-CARES_EXTERN const ares_dns_rr_key_t *
-  ares_dns_rr_get_keys(ares_dns_rec_type_t type, size_t *cnt);
-
-/*! Retrieve the datatype associated with a Resource Record key.
- *
- *  \param[in] key   Resource Record Key
- *  \return datatype
- */
-CARES_EXTERN ares_dns_datatype_t
-  ares_dns_rr_key_datatype(ares_dns_rr_key_t key);
-
-/*! Retrieve the DNS Resource Record type associated with a Resource Record key.
- *
- *  \param[in] key   Resource Record Key
- *  \return DNS Resource Record Type
- */
-CARES_EXTERN ares_dns_rec_type_t
-                         ares_dns_rr_key_to_rec_type(ares_dns_rr_key_t key);
 
 /*! Retrieve the resource record Name/Hostname
  *
