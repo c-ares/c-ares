@@ -28,6 +28,7 @@ struct ares_options {
   int timeout; /* in seconds or milliseconds, depending on options */
   int tries;
   int ndots;
+  int maxtimeout; /* in milliseconds */
   unsigned short udp_port;
   unsigned short tcp_port;
   int socket_send_buffer_size;
@@ -101,6 +102,11 @@ The number of dots which must be present in a domain name for it to be
 queried for "as is" prior to querying for it with the default domain
 extensions appended.  The default value is 1 unless set otherwise by
 resolv.conf or the RES_OPTIONS environment variable.
+.TP 18
+.B ARES_OPT_MAXTIMEOUTMS
+.B int \fImaxtimeout\fP;
+.br
+The upper bound for timeout between sequential retry attempts.
 .TP 18
 .B ARES_OPT_UDP_PORT
 .B unsigned short \fIudp_port\fP;
