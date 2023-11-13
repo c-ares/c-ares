@@ -125,7 +125,7 @@ DNS RR section types:
 .RE
 
 .B ares_dns_datatype_t -
-Data types associated with \fIares_dns_rr_key_t\fP
+Data types associated with \fIares_dns_rr_key_t\fP:
 .RS 4
 .B ARES_DATATYPE_INADDR
 - IPv4 address as \fIstruct in_addr *\fB
@@ -161,7 +161,7 @@ a NULL terminator for convenience (not included in length)
 .RE
 
 .B ares_dns_rr_key_t -
-Keys used for handling RR record parameters.
+Keys used for handling RR record parameters:
 .RS 4
 .B ARES_RR_A_ADDR
 - A Record. Address. Datatype: \fIARES_DATATYPE_INADDR\fP
@@ -313,23 +313,45 @@ Keys used for handling RR record parameters.
 .RE
 
 .B ares_tlsa_usage_t -
+TLSA Record \fIARES_RR_TLSA_CERT_USAGE\fP known values
 .RS 4
+.B ARES_TLSA_USAGE_CA
+- Certificate Usage 0. CA Constraint
+.br
+.B ARES_TLSA_USAGE_SERVICE
+- Certificate Usage 1. Service Certificate Constraint
+.br
+.B ARES_TLSA_USAGE_TRUSTANCHOR
+- Certificate Usage 2. Trust Anchor Assertation
+.br
+.B ARES_TLSA_USAGE_DOMAIN
+- Certificate Usage 3. Domain-issued certificate
+.br
 .RE
 
 .B ares_tlsa_selector_t -
+TLSA Record \fIARES_RR_TLSA_SELECTOR\fP known values:
 .RS 4
+.B ARES_TLSA_SELECTOR_FULL
+- Full Certificate
+.br
+.B ARES_TLSA_SELECTOR_SUBJPUBKEYINFO
+- DER-encoded SubjectPublicKeyInfo
+.br
 .RE
 
 .B ares_tlsa_match_t -
+TLSA Record \fIARES_RR_TLSA_MATCH\fP known values:
 .RS 4
-.RE
-
-.B ares_svcb_param_t -
-.RS 4
-.RE
-
-.B ares_opt_param_t -
-.RS 4
+.B ARES_TLSA_MATCH_EXACT
+- Exact match
+.br
+.B ARES_TLSA_MATCH_SHA256
+- Sha256 match
+.br
+.B ARES_TLSA_MATCH_SHA512
+- Sha512 match
+.br
 .RE
 
 
