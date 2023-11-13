@@ -131,7 +131,7 @@ DNS Classes for requests and responses:
 .RE
 
 .B ares_dns_opcode_t -
-DNS Header Opcodes
+DNS Header Opcodes:
 .RS 4
 .B ARES_OPCODE_QUERY
 - Standard query
@@ -151,7 +151,7 @@ DNS Header Opcodes
 .RE
 
 .B ares_dns_flags_t -
-DNS Header Flags
+DNS Header Flags:
 .RS 4
 .B ARES_FLAG_QR
 - QR. If set, is a response
@@ -179,7 +179,7 @@ is acceptable to the resolver sending the query
 .RE
 
 .B ares_dns_rcode_t -
-DNS Response codes from server
+DNS Response codes from server:
 .RS 4
 .B ARES_RCODE_NOERROR
 - Success
@@ -249,15 +249,120 @@ zone denoted by the Zone Section.
 
 
 .SH DESCRIPTION
-The \fIxxx(3)\fP function outputs a human readable DNS record
-type from its numeric form passed in
-.IR type .
+
+The \fIares_dns_record_destroy(3)\fP function destroys the memory associated
+with the dns record created by either \fIares_dns_record_create(3)\fP or
+\fIares_dns_parse(3)\fP passed in via
+.IR dnsrec .
+
+The \fIares_dns_parse(3)\fP function parses the buffer provided in
+.IR buf
+with length provided in
+.IR buf_len.
+The
+.IR flags
+parameter can be one or more \fIares_dns_parse_flags_t\fP, or zero if no
+flags are needed.  The resulting dns record data structure is stored into the
+variable pointed to by
+.IR dnsrec
+and must be destroyed using \fIares_dns_record_destroy(3)\fP.
+
+The \fIares_dns_write(3)\fP function takes a populated DNS record structure in
+.IR dnsrec
+and writes a wire-format DNS message into the variable pointed to by
+.IR buf
+and writes the length of the buffer into the variable pointed to by
+.IR buf_len.
+The buffer must be destroyed using \fIares_free_string(3)\fP.
+
+The \fIares_dns_record_create(3)\fP function creates an empty DNS record structure
+in the variable pointed to by
+.IR dnsrec.
+The
+.IR id
+parameter is the DNS message id, however if passing to \fIares_send(3)\fP this
+identifier will be overwritten, so should typically be 0. The
+.IR flags
+parameter is one or more \fIares_dns_flags_t\fP.  The opcode is passed in the
+.IR opcode
+parameter and should typically be \fIARES_OPCODE_QUERY\fP.  The response code
+is meant mostly for responses and is passed in the
+.IR rcode
+parameter and is typically \fPARES_RCODE_NOERROR\fP.
+
+
+The \fIares_dns_record_get_id(3)\fP function is used to retrieve the DNS
+message id from the DNS record provided in the
+.IR dnsrec
+parameter.
+
+The \fIares_dns_record_get_flags(3)\fP function is used to retrieve the DNS
+message flags from the DNS record provided in the
+.IR dnsrec
+parameter.
+
+The \fIares_dns_record_get_opcode(3)\fP function is used to retrieve the DNS
+message flags from the DNS record provided in the
+.IR dnsrec
+parameter.
+
+The \fIares_dns_record_get_rcode(3)\fP function is used to retrieve the DNS
+message response code from the DNS record provided in the
+.IR dnsrec
+parameter.
+
+
+The \fIares_dns_record_query_add(3)\fP function is used to add a question to
+the DNS record provided in the
+.IR dnsrec
+parameter.  The domain name specified for the question is provided in the
+.IR name
+parameter, along with the question type in the
+.IR qtype
+parameter and the question class (typically \fIARES_CLASS_IN\fP) in the
+.IR qclass
+parameter.
+
+The \fIares_dns_record_query_cnt(3)\fP function is used to retrieve the number
+of DNS questions in the DNS record provided in the
+.IR dnsrec
+parameter.
+
+The \fIares_dns_record_query_get(3)\fP function is used to retrieve the details
+of a single DNS question in the provided
+.IR dnsrec
+parameter.  The index provided in the
+.IR idx
+parameter must be less than the value returned from \fIares_dns_record_query_cnt(3)\fP.
+The DNS question name will be returned in the variable pointed to by the
+.IR name
+parameter, this may be provided as NULL if the name is not needed.
+The DNS question type will be returned in the variable pointed to by the
+.IR qtype
+parameter, this may be provided as NULL if the type is not needed.
+The DNS question class will be returned in the variable pointed to by the
+.IR qclass
+parameter, this may be provided as NULL if the class is not needed.
+
 
 .SH RETURN VALUES
-\fIxxx(3)\fP, all return a human printable ASCII string, or
-NULL on error.
 
-\fIares_dns_rr_get_keys(3)\fP returns an array of keys or NULL on failure.
+\fIares_dns_parse(3)\fP, \fIares_dns_write(3)\fP, \fIares_dns_record_create(3)\fP,
+\fIares_dns_record_query_add(3)\fP, and \fIares_dns_record_query_get(3)\fP all
+return an \fIares_status_t\fP error code.
+.B ARES_SUCCESS
+is returned on success,
+.B ARES_ENOMEM
+is returned on out of memory,
+.B ARES_EFORMERR
+is returned on misuse.
+
+\fIares_dns_record_get_id(3)\fP, \fIares_dns_record_get_flags(3)\fP,
+\fIares_dns_record_get_opcode(3)\fP, \fIares_dns_record_get_rcode(3)\fP, and
+\fIares_dns_record_query_cnt(3)\fP all returned their prescribed datatype
+values and in general can't fail except for misuse cases, in which a 0 may
+be returned, however 0 can also be a valid return value for most of these
+functions.
 
 
 .SH AVAILABILITY
