@@ -236,7 +236,6 @@ static ares_bool_t read_cmdline(int argc, const char **argv,
                  "%c requires an argument", state.optopt);
         return ARES_FALSE;
 
-      case '?':
       default:
         snprintf(config->error, sizeof(config->error),
                  "unrecognized option: %c", state.optopt);

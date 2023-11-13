@@ -797,7 +797,7 @@ static ares_status_t ares__append_tcpbuf(struct server_state *server,
   return ares__buf_append(server->tcp_send, query->qbuf, query->qlen);
 }
 
-static size_t ares__calc_query_timeout(struct query *query)
+static size_t ares__calc_query_timeout(const struct query *query)
 {
   const ares_channel_t *channel  = query->channel;
   size_t                timeplus = channel->timeout;
