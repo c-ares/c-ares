@@ -798,7 +798,7 @@ static ares_status_t ares__append_tcpbuf(struct server_state *server,
   return ares__buf_append(server->tcp_send, query->qbuf, query->qlen);
 }
 
-static size_t ares__retry_penalty(struct query *query)
+static size_t ares__calc_query_timeout(struct query *query)
 {
   const ares_channel_t *channel  = query->channel;
   size_t                timeplus = channel->timeout;
@@ -829,7 +829,7 @@ static size_t ares__retry_penalty(struct query *query)
   if (channel->maxtimeout && timeplus > channel->maxtimeout)
     timeplus = channel->maxtimeout;
 
-  /* Add some jitter to the retry penalty.
+  /* Add some jitter to the retry timeout.
    *
    * Jitter is needed in situation when resolve requests are performed
    * simultaneously from multiple hosts and DNS server throttle these requests.
@@ -837,13 +837,19 @@ static size_t ares__retry_penalty(struct query *query)
    *
    * Value of timeplus adjusted randomly to the range [0.5 * timeplus, timeplus].
    */
-  if (timeplus > 0) {
+  if (query->try_count > 0) {
     unsigned short r;
     float delta_multiplier;
 
     ares__rand_bytes(channel->rand_state, (unsigned char *)&r, sizeof(r));
-    delta_multiplier = ((float)r / USHRT_MAX) * 0.5;
+    delta_multiplier = ((float)r / USHRT_MAX) * 0.5f;
     timeplus -= (size_t)((float)timeplus * delta_multiplier);
+
+    // With shift that doubles each iteration and constant 0.5 above this situation
+    // is impossible, but we want explicitly guarantee that timeplus
+    // is greater or equal to timeout specified in channel options.
+    if (timeplus < channel->timeout)
+      timeplus = channel->timeout;
   }
 
   return timeplus;
@@ -972,7 +978,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
     }
   }
 
-  timeplus = ares__retry_penalty(query);
+  timeplus = ares__calc_query_timeout(query);
 
   /* Keep track of queries bucketed by timeout, so we can process
    * timeout events quickly.
