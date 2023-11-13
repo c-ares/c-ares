@@ -28,13 +28,41 @@ MANPAGES = ares_cancel.3		\
   ares_dns_record_query_add.3		\
   ares_dns_record_query_cnt.3		\
   ares_dns_record_query_get.3		\
+  ares_dns_record_rr_add.3		\
+  ares_dns_record_rr_cnt.3		\
+  ares_dns_record_rr_del.3		\
+  ares_dns_record_rr_get.3		\
   ares_dns_rec_type_fromstr.3		\
   ares_dns_rec_type_t.3			\
   ares_dns_rr.3				\
+  ares_dns_rr_get_addr.3		\
+  ares_dns_rr_get_addr6.3		\
+  ares_dns_rr_get_bin.3			\
+  ares_dns_rr_get_class.3		\
   ares_dns_rr_get_keys.3		\
+  ares_dns_rr_get_name.3		\
+  ares_dns_rr_get_opt.3			\
+  ares_dns_rr_get_opt_byid.3		\
+  ares_dns_rr_get_opt_cnt.3		\
+  ares_dns_rr_get_str.3			\
+  ares_dns_rr_get_type.3		\
+  ares_dns_rr_get_ttl.3			\
+  ares_dns_rr_get_u16.3			\
+  ares_dns_rr_get_u32.3			\
+  ares_dns_rr_get_u8.3			\
   ares_dns_rr_key_datatype.3		\
+  ares_dns_rr_key_t.3			\
   ares_dns_rr_key_to_rec_type.3		\
   ares_dns_rr_key_tostr.3		\
+  ares_dns_rr_set_addr.3		\
+  ares_dns_rr_set_addr6.3		\
+  ares_dns_rr_set_bin.3			\
+  ares_dns_rr_set_opt.3			\
+  ares_dns_rr_set_str.3			\
+  ares_dns_rr_set_u16.3			\
+  ares_dns_rr_set_u32.3			\
+  ares_dns_rr_set_u8.3			\
+  ares_dns_section_t.3			\
   ares_dns_section_tostr.3		\
   ares_dns_write.3			\
   ares_dup.3				\
@@ -94,4 +122,7 @@ MANPAGES = ares_cancel.3		\
   ares_strerror.3			\
   ares_svcb_param_t.3			\
   ares_timeout.3			\
+  ares_tlsa_match_t.3			\
+  ares_tlsa_selector_t.3		\
+  ares_tlsa_usage_t.3			\
   ares_version.3
