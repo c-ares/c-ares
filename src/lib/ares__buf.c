@@ -523,13 +523,20 @@ ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
+  unsigned short       high_u16;
+  unsigned short       low_u16;
 
   if (buf == NULL || u16 == NULL || remaining_len < sizeof(*u16)) {
     return ARES_EBADRESP;
   }
 
-  *u16 =
-    (unsigned short)((unsigned short)(ptr[0]) << 8 | (unsigned short)ptr[1]);
+  /* Bend over backwards to prevent analysis warnings */
+  high_u16 = ptr[0];
+  low_u16  = ptr[1];
+
+  *u16  = 0;
+  *u16 |= ((high_u16 << 8) & 0xFF00);
+  *u16 |= (low_u16 & 0xFF);
 
   return ares__buf_consume(buf, sizeof(*u16));
 }

@@ -280,7 +280,7 @@ static ares_status_t ares_split_dns_name(ares_dns_labels_t *labels,
 
   /* Start with 1 label */
   label = ares_dns_labels_add(labels);
-  if (labels == NULL) {
+  if (label == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
