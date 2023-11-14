@@ -405,8 +405,8 @@ static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf, ares_dns_rr_t *rr,
 
   /* First 8 bits of TTL are an extended RCODE, and they go in the higher order
    * after the original 4-bit rcode */
-  rcode_high             = (unsigned short)(raw_ttl >> 20);
-  rr->parent->raw_rcode |= (unsigned short)(rcode_high & 0xFF0);
+  rcode_high             = (unsigned short)((raw_ttl >> 20) & 0x0FF0);
+  rr->parent->raw_rcode |= rcode_high;
 
   status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION,
                               (unsigned char)(raw_ttl >> 16) & 0xFF);
