@@ -3,7 +3,7 @@ c-ares version 1.22.0
 This is a feature release with some significant internal changes.
 
 Features:
- o ares_reinit() is now implemented to re-ready any system configuration and
+ o ares_reinit() is now implemented to re-read any system configuration and
    immediately apply to an existing ares channel [2]
  o The adig command line program has been rewritten and its format now more
    closely matches that of BIND's dig utility [3]
