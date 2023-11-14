@@ -901,7 +901,7 @@ ares_status_t ares__buf_append_num_hex(ares__buf_t *buf, size_t num, size_t len)
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares__buf_append_str(ares__buf_t *buf, const char *str)
+ares_status_t ares__buf_append_str(ares__buf_t *buf, const char *str)
 {
   return ares__buf_append(buf, (const unsigned char *)str, ares_strlen(str));
 }

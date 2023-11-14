@@ -90,6 +90,14 @@ ares_status_t  ares__buf_append(ares__buf_t *buf, const unsigned char *data,
  */
 ares_status_t  ares__buf_append_byte(ares__buf_t *buf, unsigned char byte);
 
+/*! Append a null-terminated string to the dynamic buffer object
+ *
+ *  \param[in] buf      Initialized buffer object
+ *  \param[in] str      String to append to buffer object.
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+ares_status_t ares__buf_append_str(ares__buf_t *buf, const char *str);
+
 /*! Append a 16bit Big Endian number to the buffer.
  *
  *  \param[in]  buf     Initialized buffer object
