@@ -766,11 +766,16 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
   size_t              cnt;
   size_t              idx;
   ares__slist_node_t *node;
+  size_t              num_servers = ares__slist_len(channel->servers);
+
+  /* Silence coverity, not possible */
+  if (num_servers == 0)
+    num_servers = 1;
 
   ares__rand_bytes(channel->rand_state, &c, 1);
 
   cnt = c;
-  idx = cnt % ares__slist_len(channel->servers);
+  idx = cnt % num_servers;
 
   cnt = 0;
   for (node = ares__slist_node_first(channel->servers); node != NULL;
@@ -799,13 +804,18 @@ static ares_status_t ares__append_tcpbuf(struct server_state *server,
 
 static size_t ares__calc_query_timeout(const struct query *query)
 {
-  const ares_channel_t *channel  = query->channel;
-  size_t                timeplus = channel->timeout;
+  const ares_channel_t *channel     = query->channel;
+  size_t                timeplus    = channel->timeout;
   size_t                rounds;
+  size_t                num_servers = ares__slist_len(channel->servers);
+
+  /* Silence coverity, not possible */
+  if (num_servers == 0)
+    num_servers = 1;
 
   /* For each trip through the entire server list, we want to double the
    * retry from the last retry */
-  rounds = (query->try_count / ares__slist_len(channel->servers));
+  rounds = (query->try_count / num_servers);
 
   if (rounds > 0) {
     timeplus <<= rounds;

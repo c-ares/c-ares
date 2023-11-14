@@ -151,6 +151,12 @@ void ares__buf_reclaim(ares__buf_t *buf)
     return;
   }
 
+  /* Silence coverity.  All lengths are zero so would bail out later but
+   * coverity doesn't know this */
+  if (buf->alloc_buf == NULL) {
+    return;
+  }
+
   if (buf->tag_offset != SIZE_MAX && buf->tag_offset < buf->offset) {
     prefix_size = buf->tag_offset;
   } else {
@@ -854,6 +860,12 @@ ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num, size_t len)
     ares_status_t status;
 
     mod    /= 10;
+
+    /* Silence coverity.  Shouldn't be possible since we calculate it above */
+    if (mod == 0) {
+      return ARES_EFORMERR;
+    }
+
     digit  /= mod;
     status  = ares__buf_append_byte(buf, '0' + (unsigned char)(digit & 0xFF));
     if (status != ARES_SUCCESS) {

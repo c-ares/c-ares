@@ -101,10 +101,11 @@ struct ares_hosts_entry {
 static ares_status_t ares__read_file_into_buf(const char  *filename,
                                               ares__buf_t *buf)
 {
-  FILE          *fp      = NULL;
-  unsigned char *ptr     = NULL;
-  size_t         len     = 0;
-  size_t         ptr_len = 0;
+  FILE          *fp        = NULL;
+  unsigned char *ptr       = NULL;
+  size_t         len       = 0;
+  size_t         ptr_len   = 0;
+  long           ftell_len = 0;
   ares_status_t  status;
 
   if (filename == NULL || buf == NULL) {
@@ -133,7 +134,14 @@ static ares_status_t ares__read_file_into_buf(const char  *filename,
     status = ARES_EFILE;
     goto done;
   }
-  len = (size_t)ftell(fp);
+
+  ftell_len = ftell(fp);
+  if (ftell_len < 0) {
+    status = ARES_EFILE;
+    goto done;
+  }
+  len = (size_t)ftell_len;
+
   if (fseek(fp, 0, SEEK_SET) != 0) {
     status = ARES_EFILE;
     goto done;
@@ -943,7 +951,7 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
   /* Copy aliases */
   naliases = ares__llist_len(entry->hosts) - 1;
   (*hostent)->h_aliases =
-    ares_malloc_zero((naliases + 1) * sizeof((*hostent)->h_aliases));
+    ares_malloc_zero((naliases + 1) * sizeof(*(*hostent)->h_aliases));
   if ((*hostent)->h_aliases == NULL) {
     status = ARES_ENOMEM;
     goto fail;

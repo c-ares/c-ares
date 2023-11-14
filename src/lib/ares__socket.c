@@ -402,6 +402,9 @@ int ares__connect_socket(ares_channel_t *channel, ares_socket_t sockfd,
 
 void ares__close_socket(ares_channel_t *channel, ares_socket_t s)
 {
+  if (s == ARES_SOCKET_BAD)
+    return;
+
   if (channel->sock_funcs && channel->sock_funcs->aclose) {
     channel->sock_funcs->aclose(s, channel->sock_func_cb_data);
   } else {

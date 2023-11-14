@@ -53,13 +53,14 @@ struct ares__htable {
 static unsigned int ares__htable_generate_seed(ares__htable_t *htable)
 {
   unsigned int seed = 0;
+  time_t       t    = time(NULL);
 
   /* Mix stack address, heap address, and time to generate a random seed, it
    * doesn't have to be super secure, just quick.  Likelihood of a hash
    * collision attack is very low with a small amount of effort */
   seed |= (unsigned int)((size_t)htable & 0xFFFFFFFF);
   seed |= (unsigned int)((size_t)&seed & 0xFFFFFFFF);
-  seed |= (unsigned int)time(NULL) & 0xFFFFFFFF;
+  seed |= (unsigned int)(t & 0xFFFFFFFF);
   return seed;
 }
 

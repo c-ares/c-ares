@@ -52,6 +52,11 @@ int ares_fds(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
         continue;
       }
 
+      /* Silence coverity, shouldn't be possible */
+      if (conn->fd == ARES_SOCKET_BAD) {
+        continue;
+      }
+
       /* Always wait on read */
       FD_SET(conn->fd, read_fds);
 
