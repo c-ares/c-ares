@@ -33,7 +33,7 @@ jobs:
         run: |
           export PATH=`pwd`/cov-analysis-linux64/bin:$PATH
           cd build
-          cd cov-buildcov-build --dir cov-int ninja
+          cov-build --dir cov-int ninja
       - name: Submit the result to Coverity Scan
         run: |
           cd build
