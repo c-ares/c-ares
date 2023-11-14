@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: "0 10 * * 1" # Mondays at 00:10 UTC
   push:
-    branches: [ main, coverity_scan ]
+    branches: [ coverity_scan ]
   workflow_dispatch:
 jobs:
   build:
