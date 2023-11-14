@@ -24,7 +24,7 @@ jobs:
           coverity_policy_view: 'Outstanding Issues'
           ### Uncomment below configuration if Synopsys Bridge diagnostic files needs to be uploaded
           # include_diagnostics: true  
-          
+
       - name: Coverity PR Scan
         if: ${{ github.event_name == 'pull_request' }}
         uses: synopsys-sig/synopsys-action@v1.5.0
