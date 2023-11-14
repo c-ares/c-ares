@@ -3,7 +3,17 @@
 .\"
 .TH ARES_DNS_RR 3 "12 November 2023"
 .SH NAME
-DNS Resource record creating, reading, and writing functions.
+ares_dns_record_rr_add, ares_dns_record_rr_cnt, ares_dns_record_rr_del,
+ares_dns_record_rr_get, ares_dns_rr_get_addr, ares_dns_rr_get_addr6,
+ares_dns_rr_get_bin, ares_dns_rr_get_class, ares_dns_rr_get_name,
+ares_dns_rr_get_opt, ares_dns_rr_get_opt_byid, ares_dns_rr_get_opt_cnt,
+ares_dns_rr_get_str, ares_dns_rr_get_ttl, ares_dns_rr_get_type,
+ares_dns_rr_get_u16, ares_dns_rr_get_u32, ares_dns_rr_get_u8, ares_dns_rr_key_t,
+ares_dns_rr_set_addr, ares_dns_rr_set_addr6, ares_dns_rr_set_bin,
+ares_dns_rr_set_opt, ares_dns_rr_set_str, ares_dns_rr_set_u16,
+ares_dns_rr_set_u32, ares_dns_rr_set_u8, ares_dns_section_t, ares_tlsa_match_t,
+ares_tlsa_selector_t, ares_tlsa_usage_t \-
+DNS Resource Record creating, reading, and writing functions.
 .SH SYNOPSIS
 .nf
 #include <ares.h>
@@ -194,7 +204,7 @@ Keys used for handling RR record parameters:
 - NAPTR Record. Order. Datatype: \fIARES_DATATYPE_U16\fP
 .br
 .B ARES_RR_NAPTR_PREFERENCE
-- NAPTR Record. Preference. Datatype: \fIARES_DATATYPE_U16\fp
+- NAPTR Record. Preference. Datatype: \fIARES_DATATYPE_U16\fP
 .br
 .B ARES_RR_NAPTR_FLAGS
 - NAPTR Record. Flags. Datatype: \fIARES_DATATYPE_STR\fP
@@ -286,7 +296,7 @@ TLSA Record \fIARES_RR_TLSA_CERT_USAGE\fP known values
 - Certificate Usage 1. Service Certificate Constraint
 .br
 .B ARES_TLSA_USAGE_TRUSTANCHOR
-- Certificate Usage 2. Trust Anchor Assertation
+- Certificate Usage 2. Trust Anchor Assertion
 .br
 .B ARES_TLSA_USAGE_DOMAIN
 - Certificate Usage 3. Domain-issued certificate
@@ -340,7 +350,7 @@ parameter.  The domain name associated with the resource record is specified by 
 parameter, which can not be NULL but may be an empty string, or ".".  The resource
 record type is specified in the
 .IR type
-parameter, along withe the DNS record class in the
+parameter, along with the DNS record class in the
 .IR rclass
 parameter, and the Time To Live (TTL) in the
 .IR ttl
