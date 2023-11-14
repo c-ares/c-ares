@@ -394,8 +394,9 @@ static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf, ares_dns_rr_t *rr,
                                            unsigned short raw_class,
                                            unsigned int   raw_ttl)
 {
-  ares_status_t status;
-  size_t        orig_len = ares__buf_len(buf);
+  ares_status_t  status;
+  size_t         orig_len = ares__buf_len(buf);
+  unsigned short rcode_high;
 
   status = ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, raw_class);
   if (status != ARES_SUCCESS) {
@@ -404,7 +405,8 @@ static ares_status_t ares_dns_parse_rr_opt(ares__buf_t *buf, ares_dns_rr_t *rr,
 
   /* First 8 bits of TTL are an extended RCODE, and they go in the higher order
    * after the original 4-bit rcode */
-  rr->parent->raw_rcode |= (unsigned short)((raw_ttl >> 20) & 0xFF0);
+  rcode_high             = (unsigned short)(raw_ttl >> 20);
+  rr->parent->raw_rcode |= (unsigned short)(rcode_high & 0xFF0);
 
   status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION,
                               (unsigned char)(raw_ttl >> 16) & 0xFF);

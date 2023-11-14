@@ -535,8 +535,8 @@ ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16)
   low_u16  = ptr[1];
 
   *u16  = 0;
-  *u16 |= ((high_u16 << 8) & 0xFF00);
-  *u16 |= (low_u16 & 0xFF);
+  *u16 |= (unsigned short)((high_u16 << 8) & 0xFF00);
+  *u16 |= (unsigned short)(low_u16 & 0xFF);
 
   return ares__buf_consume(buf, sizeof(*u16));
 }
