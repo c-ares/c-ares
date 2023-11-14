@@ -2,25 +2,51 @@
 # SPDX-License-Identifier: MIT
 name: coverity
 on:
+  schedule:
+    - cron: "0 10 * * 1" # Mondays at 00:10 UTC
   push:
     branches: [ main, coverity_scan ]
   workflow_dispatch:
 jobs:
   build:
-    runs-on: [ ubuntu-latest ]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
         uses: actions/checkout@v3
-
-      - name: Coverity Full Scan
-        if: ${{ github.event_name != 'pull_request' }}
-        uses: synopsys-sig/synopsys-action@v1.5.0
         with:
-          coverity_url: ${{ secrets.COVERITY_URL }}
-          coverity_user: ${{ secrets.COVERITY_USER }}
-          coverity_passphrase: ${{ secrets.COVERITY_PASSPHRASE }}
-          coverity_project_name: ${{ github.event.repository.name }}
-          coverity_stream_name: ${{ github.event.repository.name }}-${{ github.ref_name }}
-          coverity_policy_view: 'Outstanding Issues'
-          ### Uncomment below configuration if Synopsys Bridge diagnostic files needs to be uploaded
-          # include_diagnostics: true  
+          fetch-depth: 0
+      - name: apt dependencies
+        run: sudo apt-get install cmake ninja-build
+      - name: Download Coverity Build Tool
+        run: |
+          wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=$TOKEN&project=c-ares" -O cov-analysis-linux64.tar.gz
+          mkdir cov-analysis-linux64
+          tar xzf cov-analysis-linux64.tar.gz --strip 1 -C cov-analysis-linux64
+        env:
+          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+      - name: CMake
+        run: |
+          mkdir build
+          cd build
+          cmake -DCARES_BUILD_TESTS=ON -G Ninja ..
+      - name: Build with cov-build
+        run: |
+          export PATH=`pwd`/cov-analysis-linux64/bin:$PATH
+          cd build
+          cd cov-buildcov-build --dir cov-int ninja
+      - name: Submit the result to Coverity Scan
+        run: |
+          cd build
+          tar czvf c-ares.tgz cov-int
+          curl \
+            --form project=c-ares \
+            --form token=$TOKEN \
+            --form email=$EMAIL \
+            --form file=@c-ares.tgz \
+            --form version=main \
+            --form description="c-ares" \
+            https://scan.coverity.com/builds?project=c-ares
+        env:
+          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
+
