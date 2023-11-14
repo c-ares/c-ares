@@ -154,7 +154,8 @@ typedef enum {
   ARES_ECANCELLED = 24, /* introduced in 1.7.0 */
 
   /* More ares_getaddrinfo error codes */
-  ARES_ESERVICE = 25 /* introduced in 1.?.0 */
+  ARES_ESERVICE = 25 /* ares_getaddrinfo() was passed a text service name that
+                      * is not recognized. introduced in 1.16.0 */
 } ares_status_t;
 
 typedef enum {
