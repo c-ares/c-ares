@@ -1,39 +1,52 @@
-c-ares version 1.21.0
+c-ares version 1.22.0
 
-This is a bugfix and cleanup release with some significant internal changes.
+This is a feature release with some significant internal changes.
+
+Features:
+ o ares_reinit() is now implemented to re-read any system configuration and
+   immediately apply to an existing ares channel [2]
+ o The adig command line program has been rewritten and its format now more
+   closely matches that of BIND's dig utility [3]
+ o The new DNS message parser and writer functions have now been made public [4]
+ o RFC9460 HTTPS and SVCB records are now supported [5]
+ o RFC6698 TLSA records are now supported [6]
+ o The server list is now internally dynamic and can be changed without
+   impacting existing queries [10]
+ o Hosts file processing is now cached until the file is detected to be changed
+   to speed up repetitive lookups of large hosts files [11]
 
 Changes:
- o Provide better man page cross-links. [1]
- o Introduce ares_status_t as an enum rather than using #define list and
-   integer data type for internal functions. [2]
- o Introduce ares_bool_t datatype rather than using an integer with 0/1 so
-   it is clear based on the function prototype what it returns. [5]
- o Increase compiler warning levels by default. [6]
- o Use size_t and other more proper datatypes internally (rather than int). [7]
- o Many developers have used different code styles over the years, standardize
-   on one and use clang-format to enforce the style. [8]
- o CMake can now control symbol visibility [9]
- o Replace multiple DNS hand-made parsers with new memory-safe DNS message
-   parser. [10]
+ o Internally all DNS messages are now written using the new DNS writing
+   functions [7]
+ o EDNS is now enabled by default [8]
+ o Internal cleanups in function prototypes [9]
 
 Bug Fixes:
- o Tools: STAYOPEN flag could make tools not terminate. [3]
- o Socket callbacks were passed SOCK_STREAM instead of SOCK_DGRAM on udp. [4]
+ o Randomize retry penalties to prevent thundering herd issues when dns
+   servers throttle requests [1]
+ o Fix Windows build error for missing if_indextoname() [10]
 
 Thanks go to these friendly people for their efforts and contributions:
   Brad House (@bradh352)
   Daniel Stenberg (@bagder)
-  Gregor Jasny (@gjasny)
-(3 contributors)
+  Ignat (@Kontakter)
+  Jonas Kvinge (@jonaski)
+(4 contributors)
 
 References to bug reports and discussions on issues:
- [1] = https://github.com/c-ares/c-ares/pull/565
- [2] = https://github.com/c-ares/c-ares/pull/567
- [3] = https://github.com/c-ares/c-ares/pull/569
- [4] = https://github.com/c-ares/c-ares/commit/a070d78
- [5] = https://github.com/c-ares/c-ares/pull/570
- [6] = https://github.com/c-ares/c-ares/pull/568
- [7] = https://github.com/c-ares/c-ares/pull/573
- [8] = https://github.com/c-ares/c-ares/pull/579
- [9] = https://github.com/c-ares/c-ares/pull/574
- [10] = https://github.com/c-ares/c-ares/pull/581
+ [1] = https://github.com/c-ares/c-ares/pull/606
+ [2] = https://github.com/c-ares/c-ares/pull/614
+ [3] = https://github.com/c-ares/c-ares/pull/607
+ [4] = https://github.com/c-ares/c-ares/pull/604
+ [5] = https://github.com/c-ares/c-ares/pull/603
+ [6] = https://github.com/c-ares/c-ares/pull/600
+ [7] = https://github.com/c-ares/c-ares/pull/598
+ [8] = https://github.com/c-ares/c-ares/pull/596
+ [9] = https://github.com/c-ares/c-ares/pull/595
+ [10] = https://github.com/c-ares/c-ares/pull/594
+ [11] = https://github.com/c-ares/c-ares/pull/591
+
+
+
+
+
