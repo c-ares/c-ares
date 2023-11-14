@@ -283,7 +283,7 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
  * Locates DNS info using GetAdaptersAddresses() function from the Internet
  * Protocol Helper (IP Helper) API. When located, this returns a pointer
  * in *outptr to a newly allocated memory area holding a null-terminated
- * string with a space or comma seperated list of DNS IP addresses.
+ * string with a space or comma separated list of DNS IP addresses.
  *
  * Returns 0 and nullifies *outptr upon inability to return DNSes string.
  *

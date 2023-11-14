@@ -303,7 +303,7 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
   ares_status_t    status;
 
   /* On Windows, there may be more than one nameserver specified in the same
-   * registry key, so we parse input as a space or comma seperated list.
+   * registry key, so we parse input as a space or comma separated list.
    */
   for (p = str; p;) {
     unsigned short port;
