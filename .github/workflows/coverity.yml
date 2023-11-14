@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCARES_BUILD_TESTS=ON -G Ninja ..
+          cmake -DCARES_BUILD_TESTS=OFF -G Ninja ..
       - name: Build with cov-build
         run: |
           export PATH=`pwd`/cov-analysis-linux64/bin:$PATH
