@@ -18,8 +18,7 @@ jobs:
           fetch-depth: 0
       - name: configure
         run: |
-          dir
-          & buildconf.bat
+          copy /Y include\ares_build.h.dist include\ares_build.h
       - name: Build c-ares
         run: |
           wmake -u -f Makefile.Watcom
