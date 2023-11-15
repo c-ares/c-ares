@@ -282,7 +282,7 @@ typedef enum {
   ARES_TLSA_USAGE_CA = 0,
   /*! Certificate Usage 1. Service Certificate Constraint. */
   ARES_TLSA_USAGE_SERVICE = 1,
-  /*! Certificate Usage 2. Trust Anchor Assertation. */
+  /*! Certificate Usage 2. Trust Anchor Assertion. */
   ARES_TLSA_USAGE_TRUSTANCHOR = 2,
   /*! Certificate Usage 3. Domain-issued certificate. */
   ARES_TLSA_USAGE_DOMAIN = 3
