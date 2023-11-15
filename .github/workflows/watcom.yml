@@ -1,0 +1,26 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: watcom
+on:
+  push:
+    branches:
+      - main
+   pull_request:
+     types: [opened, synchronize, reopened]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: open-watcom/setup-watcom@v0
+      - name: Checkout Source
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Build c-ares
+        run: |
+          wmake -u -f Makefile.Watcom
+      - name: distclean
+        run: |
+          wmake -u -f Makefile.Watcom clean
+
