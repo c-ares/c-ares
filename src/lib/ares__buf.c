@@ -523,20 +523,16 @@ ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
-  unsigned short       high_u16;
-  unsigned short       low_u16;
+  unsigned int         u32;
 
   if (buf == NULL || u16 == NULL || remaining_len < sizeof(*u16)) {
     return ARES_EBADRESP;
   }
 
-  /* Bend over backwards to prevent analysis warnings */
-  high_u16 = ptr[0];
-  low_u16  = ptr[1];
-
-  *u16  = 0;
-  *u16 |= (unsigned short)((high_u16 << 8) & 0xFF00);
-  *u16 |= (unsigned short)(low_u16 & 0xFF);
+  /* Do math in an unsigned int in order to prevent warnings due to automatic
+   * conversion by the compiler from short to int during shifts */
+  u32  = ((unsigned int)(ptr[0]) << 8 | (unsigned int)ptr[1]);
+  *u16 = (unsigned short)(u32 & 0xFFFF);
 
   return ares__buf_consume(buf, sizeof(*u16));
 }
