@@ -19,7 +19,7 @@ jobs:
       - name: configure
         run: |
           dir
-          buildconf.bat
+          & buildconf.bat
       - name: Build c-ares
         run: |
           wmake -u -f Makefile.Watcom
