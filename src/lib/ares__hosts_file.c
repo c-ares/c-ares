@@ -313,81 +313,51 @@ fail:
   return NULL;
 }
 
-static ares_bool_t ares__hosts_entry_ipaddr_exists(ares_hosts_entry_t *entry,
-                                                   const char         *ipaddr)
+typedef enum {
+  ARES_MATCH_NONE   = 0,
+  ARES_MATCH_IPADDR = 1,
+  ARES_MATCH_HOST   = 2
+} ares_hosts_file_match_t;
+
+static ares_status_t ares__hosts_file_merge_entry(ares_hosts_file_t  *hf,
+                                                  ares_hosts_entry_t *existing,
+                                                  ares_hosts_entry_t *entry,
+                                                  ares_hosts_file_match_t matchtype)
 {
   ares__llist_node_t *node;
 
-  for (node = ares__llist_node_first(entry->ips); node != NULL;
-       node = ares__llist_node_next(node)) {
-    const char *myaddr = ares__llist_node_val(node);
-    if (strcmp(myaddr, ipaddr) == 0) {
-      return ARES_TRUE;
-    }
-  }
+  /* If we matched on IP address, we know there can only be 1, so there's no
+   * reason to do anything */
+  if (matchtype != ARES_MATCH_IPADDR) {
+    while ((node = ares__llist_node_first(entry->ips)) != NULL) {
+      const char *ipaddr = ares__llist_node_val(node);
 
-  return ARES_FALSE;
-}
+      if (ares__htable_strvp_get_direct(hf->iphash, ipaddr) != NULL) {
+        ares__llist_node_destroy(node);
+        continue;
+      }
 
-static ares_bool_t ares__hosts_entry_host_exists(ares_hosts_entry_t *entry,
-                                                 const char         *host)
-{
-  ares__llist_node_t *node;
-
-  for (node = ares__llist_node_first(entry->ips); node != NULL;
-       node = ares__llist_node_next(node)) {
-    const char *myhost = ares__llist_node_val(node);
-    if (strcasecmp(myhost, host) == 0) {
-      return ARES_TRUE;
-    }
-  }
-
-  return ARES_FALSE;
-}
-
-static ares_status_t ares__hosts_file_merge_entry(ares_hosts_entry_t *existing,
-                                                  ares_hosts_entry_t *entry)
-{
-  ares__llist_node_t *node;
-
-  while ((node = ares__llist_node_first(entry->ips)) != NULL) {
-    char *ipaddr = ares__llist_node_claim(node);
-
-    if (ares__hosts_entry_ipaddr_exists(existing, ipaddr)) {
-      ares_free(ipaddr);
-      continue;
-    }
-
-    if (ares__llist_insert_last(existing->ips, ipaddr) == NULL) {
-      ares_free(ipaddr);
-      return ARES_ENOMEM;
+      ares__llist_node_move_parent_last(node, existing->ips);
     }
   }
 
 
   while ((node = ares__llist_node_first(entry->hosts)) != NULL) {
-    char *hostname = ares__llist_node_claim(node);
+    const char *hostname = ares__llist_node_val(node);
 
-    if (ares__hosts_entry_host_exists(existing, hostname)) {
-      ares_free(hostname);
+    if (ares__htable_strvp_get_direct(hf->hosthash, hostname) != NULL) {
+      ares__llist_node_destroy(node);
       continue;
     }
 
-    if (ares__llist_insert_last(existing->hosts, hostname) == NULL) {
-      ares_free(hostname);
-      return ARES_ENOMEM;
-    }
+    ares__llist_node_move_parent_last(node, existing->hosts);
   }
 
   ares__hosts_entry_destroy(entry);
   return ARES_SUCCESS;
 }
 
-typedef enum {
-  ARES_MATCH_NONE   = 0,
-  ARES_MATCH_IPADDR = 1,
-  ARES_MATCH_HOST   = 2
-} ares_hosts_file_match_t;
+
 
 static ares_hosts_file_match_t
   ares__hosts_file_match(const ares_hosts_file_t *hf, ares_hosts_entry_t *entry,
@@ -435,7 +405,7 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
   matchtype = ares__hosts_file_match(hosts, entry, &match);
 
   if (matchtype != ARES_MATCH_NONE) {
-    status = ares__hosts_file_merge_entry(match, entry);
+    status = ares__hosts_file_merge_entry(hosts, match, entry, matchtype);
     if (status != ARES_SUCCESS) {
       ares__hosts_entry_destroy(entry);
       return status;
@@ -479,6 +449,22 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
   }
 
   return ARES_SUCCESS;
+}
+
+static ares_bool_t ares__hosts_entry_isdup(ares_hosts_entry_t *entry,
+                                           const char         *host)
+{
+  ares__llist_node_t *node;
+
+  for (node = ares__llist_node_first(entry->ips); node != NULL;
+       node = ares__llist_node_next(node)) {
+    const char *myhost = ares__llist_node_val(node);
+    if (strcasecmp(myhost, host) == 0) {
+      return ARES_TRUE;
+    }
+  }
+
+  return ARES_FALSE;
 }
 
 static ares_status_t ares__parse_hosts_hostnames(ares__buf_t        *buf,
@@ -531,7 +517,7 @@ static ares_status_t ares__parse_hosts_hostnames(ares__buf_t        *buf,
     }
 
     /* Don't add a duplicate to the same entry */
-    if (ares__hosts_entry_host_exists(entry, hostname)) {
+    if (ares__hosts_entry_isdup(entry, hostname)) {
       continue;
     }
 

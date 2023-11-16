@@ -198,6 +198,23 @@ void ares__llist_node_destroy(ares__llist_node_t *node);
  */
 void ares__llist_destroy(ares__llist_t *list);
 
+/*! Detach node from the current list and re-attach it to the new list as the
+ *  last entry.
+ *
+ * \param[in] node   node to move
+ * \param[in] parent new list
+ */
+void ares__llist_node_move_parent_last(ares__llist_node_t *node,
+                                       ares__llist_t *new_parent);
+
+/*! Detach node from the current list and re-attach it to the new list as the
+ *  first entry.
+ *
+ * \param[in] node   node to move
+ * \param[in] parent new list
+ */
+void ares__llist_node_move_parent_first(ares__llist_node_t *node,
+                                        ares__llist_t *new_parent);
 /*! @} */
 
 #endif /* __ARES__LLIST_H */

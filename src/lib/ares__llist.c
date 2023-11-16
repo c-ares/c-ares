@@ -71,24 +71,14 @@ typedef enum {
   ARES__LLIST_INSERT_BEFORE
 } ares__llist_insert_type_t;
 
-static ares__llist_node_t *ares__llist_insert_at(ares__llist_t            *list,
-                                                 ares__llist_insert_type_t type,
-                                                 ares__llist_node_t       *at,
-                                                 void                     *val)
+static void ares__llist_attach_at(ares__llist_t            *list,
+                                  ares__llist_insert_type_t type,
+                                  ares__llist_node_t       *at,
+                                  ares__llist_node_t       *node)
 {
-  ares__llist_node_t *node = NULL;
+  if (list == NULL || node == NULL)
+    return;
 
-  if (list == NULL || val == NULL) {
-    return NULL;
-  }
-
-  node = ares_malloc_zero(sizeof(*node));
-
-  if (node == NULL) {
-    return NULL;
-  }
-
-  node->data   = val;
   node->parent = list;
 
   if (type == ARES__LLIST_INSERT_BEFORE && (at == list->head || at == NULL)) {
@@ -126,6 +116,27 @@ static ares__llist_node_t *ares__llist_insert_at(ares__llist_t            *list,
   }
 
   list->cnt++;
+}
+
+static ares__llist_node_t *ares__llist_insert_at(ares__llist_t            *list,
+                                                 ares__llist_insert_type_t type,
+                                                 ares__llist_node_t       *at,
+                                                 void                     *val)
+{
+  ares__llist_node_t *node = NULL;
+
+  if (list == NULL || val == NULL) {
+    return NULL;
+  }
+
+  node = ares_malloc_zero(sizeof(*node));
+
+  if (node == NULL) {
+    return NULL;
+  }
+
+  node->data = val;
+  ares__llist_attach_at(list, type, at, node);
 
   return node;
 }
@@ -233,17 +244,14 @@ void *ares__llist_last_val(ares__llist_t *list)
   return ares__llist_node_val(ares__llist_node_last(list));
 }
 
-void *ares__llist_node_claim(ares__llist_node_t *node)
+static void ares__llist_node_detach(ares__llist_node_t *node)
 {
-  void          *val;
   ares__llist_t *list;
 
-  if (node == NULL) {
-    return NULL;
-  }
+  if (node == NULL)
+    return;
 
   list = node->parent;
-  val  = node->data;
 
   if (node->prev) {
     node->prev->next = node->next;
@@ -260,9 +268,22 @@ void *ares__llist_node_claim(ares__llist_node_t *node)
   if (node == list->tail) {
     list->tail = node->prev;
   }
-  ares_free(node);
 
+  node->parent = NULL;
   list->cnt--;
+}
+
+void *ares__llist_node_claim(ares__llist_node_t *node)
+{
+  void          *val;
+
+  if (node == NULL) {
+    return NULL;
+  }
+
+  val  = node->data;
+  ares__llist_node_detach(node);
+  ares_free(node);
 
   return val;
 }
@@ -312,4 +333,24 @@ void ares__llist_destroy(ares__llist_t *list)
     ares__llist_node_destroy(node);
   }
   ares_free(list);
+}
+
+void ares__llist_node_move_parent_last(ares__llist_node_t *node,
+                                       ares__llist_t *new_parent)
+{
+  if (node == NULL || new_parent == NULL)
+    return;
+
+  ares__llist_node_detach(node);
+  ares__llist_attach_at(new_parent, ARES__LLIST_INSERT_TAIL, NULL, node);
+}
+
+void ares__llist_node_move_parent_first(ares__llist_node_t *node,
+                                        ares__llist_t *new_parent)
+{
+  if (node == NULL || new_parent == NULL)
+    return;
+
+  ares__llist_node_detach(node);
+  ares__llist_attach_at(new_parent, ARES__LLIST_INSERT_HEAD, NULL, node);
 }

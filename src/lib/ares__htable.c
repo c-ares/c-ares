@@ -66,7 +66,7 @@ static unsigned int ares__htable_generate_seed(ares__htable_t *htable)
 
 static void ares__htable_buckets_destroy(ares__llist_t **buckets,
                                          unsigned int    size,
-                                         unsigned char   destroy_vals)
+                                         ares_bool_t     destroy_vals)
 {
   unsigned int i;
 
@@ -94,7 +94,7 @@ void ares__htable_destroy(ares__htable_t *htable)
   if (htable == NULL) {
     return;
   }
-  ares__htable_buckets_destroy(htable->buckets, htable->size, 1);
+  ares__htable_buckets_destroy(htable->buckets, htable->size, ARES_TRUE);
   ares_free(htable);
 }
 
@@ -180,10 +180,39 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 
   for (i = 0; i < old_size; i++) {
     ares__llist_node_t *node;
-    for (node = ares__llist_node_first(htable->buckets[i]); node != NULL;
-         node = ares__llist_node_next(node)) {
+
+    /* Nothing in this bucket */
+    if (htable->buckets[i] == NULL)
+      continue;
+
+    /* Fast past optimization (most likely case), there is likely only a single
+     * entry in both the source and destination, check for this to confirm and
+     * if so, just move the bucket over */
+    if (ares__llist_len(htable->buckets[i]) == 1) {
+      void  *val = ares__llist_first_val(htable->buckets[i]);
+      size_t idx = HASH_IDX(htable, htable->bucket_key(val));
+
+      if (buckets[idx] == NULL) {
+        /* Swap! */
+        buckets[idx]       = htable->buckets[i];
+        htable->buckets[i] = NULL;
+        continue;
+      }
+    }
+
+    /* Slow path, collisions */
+    while ((node = ares__llist_node_first(htable->buckets[i])) != NULL) {
       void  *val = ares__llist_node_val(node);
       size_t idx = HASH_IDX(htable, htable->bucket_key(val));
+
+      /* Try fast path again as maybe we popped one collision off and the
+       * next we can reuse the llist parent */
+      if (buckets[idx] == NULL && ares__llist_len(htable->buckets[i]) == 1) {
+        /* Swap! */
+        buckets[idx]       = htable->buckets[i];
+        htable->buckets[i] = NULL;
+        break;
+      }
 
       if (buckets[idx] == NULL) {
         buckets[idx] = ares__llist_create(htable->bucket_free);
@@ -192,19 +221,17 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
         goto fail;
       }
 
-      if (ares__llist_insert_first(buckets[idx], val) == NULL) {
-        goto fail;
-      }
+      ares__llist_node_move_parent_first(node, buckets[idx]);
     }
   }
 
   /* Swap out buckets */
-  ares__htable_buckets_destroy(htable->buckets, old_size, 0);
+  ares__htable_buckets_destroy(htable->buckets, old_size, ARES_FALSE);
   htable->buckets = buckets;
   return ARES_TRUE;
 
 fail:
-  ares__htable_buckets_destroy(buckets, htable->size, 0);
+  ares__htable_buckets_destroy(buckets, htable->size, ARES_FALSE);
   htable->size = old_size;
 
   return ARES_FALSE;
