@@ -422,9 +422,15 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
                                           ares_hosts_entry_t *entry)
 {
   ares_hosts_entry_t     *match  = NULL;
-  ares_status_t           status = ARES_SUCCESS;
+  ares_status_t           status       = ARES_SUCCESS;
   ares__llist_node_t     *node;
   ares_hosts_file_match_t matchtype;
+  size_t                  num_hostnames;
+
+  /* Record the number of hostnames in this entry file.  If we merge into an
+   * existing record, these will be *appended* to the entry, so we'll count
+   * backwards when adding to the hosts hashtable */
+  num_hostnames = ares__llist_len(entry->hosts);
 
   matchtype = ares__hosts_file_match(hosts, entry, &match);
 
@@ -450,9 +456,16 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
     }
   }
 
-  for (node = ares__llist_node_first(entry->hosts); node != NULL;
-       node = ares__llist_node_next(node)) {
+  /* Go backwards, on a merge, hostnames are appended.  Breakout once we've
+   * consumed all the hosts that we appended */
+  for (node = ares__llist_node_last(entry->hosts); node != NULL;
+       node = ares__llist_node_prev(node)) {
     const char *val = ares__llist_node_val(node);
+
+    if (num_hostnames == 0)
+      break;
+
+    num_hostnames--;
 
     /* first hostname match wins.  If we detect a duplicate hostname for another
      * ip it will automatically be added to the same entry */
@@ -950,6 +963,12 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
 
   /* Copy aliases */
   naliases = ares__llist_len(entry->hosts) - 1;
+
+  /* Cap at 100, some people use https://github.com/StevenBlack/hosts and we
+   * don't need 200k+ aliases */
+  if (naliases > 100)
+    naliases = 100;
+
   (*hostent)->h_aliases =
     ares_malloc_zero((naliases + 1) * sizeof(*(*hostent)->h_aliases));
   if ((*hostent)->h_aliases == NULL) {
@@ -968,6 +987,10 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
       goto fail;
     }
     idx++;
+
+    /* Break out if artificially capped */
+    if (idx == naliases)
+      break;
     node = ares__llist_node_next(node);
   }
 
@@ -988,6 +1011,7 @@ static ares_status_t
   const char                 *primaryhost;
   ares__llist_node_t         *node;
   ares_status_t               status;
+  size_t                      cnt = 0;
 
   node        = ares__llist_node_first(entry->hosts);
   primaryhost = ares__llist_node_val(node);
@@ -996,6 +1020,12 @@ static ares_status_t
 
   while (node != NULL) {
     const char *host = ares__llist_node_val(node);
+
+    /* Cap at 100 entries. , some people use https://github.com/StevenBlack/hosts
+     * and we don't need 200k+ aliases */
+    cnt++;
+    if (cnt > 100)
+      break;
 
     cname = ares__append_addrinfo_cname(&cnames);
     if (cname == NULL) {
