@@ -558,4 +558,12 @@ size_t ares__count_digits(size_t n);
 size_t ares__count_hexdigits(size_t n);
 
 
+#  ifdef _MSC_VER
+typedef __int64          ares_int64_t;
+typedef unsigned __int64 ares_uint64_t;
+#  else
+typedef long long          ares_int64_t;
+typedef unsigned long long ares_uint64_t;
+#  endif
+
 #endif /* __ARES_PRIVATE_H */

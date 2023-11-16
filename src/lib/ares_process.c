@@ -106,7 +106,7 @@ static void server_set_good(struct server_state *server)
 ares_bool_t ares__timedout(const struct timeval *now,
                            const struct timeval *check)
 {
-  time_t secs = (now->tv_sec - check->tv_sec);
+  ares_int64_t secs = ((ares_int64_t)now->tv_sec - (ares_int64_t)check->tv_sec);
 
   if (secs > 0) {
     return ARES_TRUE; /* yes, timed out */
@@ -116,7 +116,8 @@ ares_bool_t ares__timedout(const struct timeval *now,
   }
 
   /* if the full seconds were identical, check the sub second parts */
-  return (now->tv_usec - check->tv_usec) >= 0 ? ARES_TRUE : ARES_FALSE;
+  return ((ares_int64_t)now->tv_usec - (ares_int64_t)check->tv_usec) >= 0 ?
+    ARES_TRUE : ARES_FALSE;
 }
 
 /* add the specific number of milliseconds to the time in the first argument */
