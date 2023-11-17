@@ -79,7 +79,7 @@ static ares_bool_t key_eq(const void *key1, const void *key2)
   const char *k1 = key1;
   const char *k2 = key2;
 
-  if (strcmp(k1, k2) == 0) {
+  if (strcasecmp(k1, k2) == 0) {
     return ARES_TRUE;
   }
 
