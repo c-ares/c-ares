@@ -1,52 +1,22 @@
-c-ares version 1.22.0
+c-ares version 1.22.1
 
-This is a feature release with some significant internal changes.
-
-Features:
- o ares_reinit() is now implemented to re-read any system configuration and
-   immediately apply to an existing ares channel [2]
- o The adig command line program has been rewritten and its format now more
-   closely matches that of BIND's dig utility [3]
- o The new DNS message parser and writer functions have now been made public [4]
- o RFC9460 HTTPS and SVCB records are now supported [5]
- o RFC6698 TLSA records are now supported [6]
- o The server list is now internally dynamic and can be changed without
-   impacting existing queries [10]
- o Hosts file processing is now cached until the file is detected to be changed
-   to speed up repetitive lookups of large hosts files [11]
-
-Changes:
- o Internally all DNS messages are now written using the new DNS writing
-   functions [7]
- o EDNS is now enabled by default [8]
- o Internal cleanups in function prototypes [9]
+This is a bugfix release.
 
 Bug Fixes:
- o Randomize retry penalties to prevent thundering herd issues when dns
-   servers throttle requests [1]
- o Fix Windows build error for missing if_indextoname() [10]
+ o Fix /etc/hosts processing performance with all entries using same IP
+   address. Large hosts files using the same IP address for all entries
+   could use exponential time. [1]
+ o Fix typos in manpages [2]
+ o Fix OpenWatcom building [3]
 
 Thanks go to these friendly people for their efforts and contributions:
   Brad House (@bradh352)
   Daniel Stenberg (@bagder)
-  Ignat (@Kontakter)
-  Jonas Kvinge (@jonaski)
+  Douglas R. Reno (@renodr)
+  Gregor Jasny (@gjasny)
 (4 contributors)
 
 References to bug reports and discussions on issues:
- [1] = https://github.com/c-ares/c-ares/pull/606
- [2] = https://github.com/c-ares/c-ares/pull/614
- [3] = https://github.com/c-ares/c-ares/pull/607
- [4] = https://github.com/c-ares/c-ares/pull/604
- [5] = https://github.com/c-ares/c-ares/pull/603
- [6] = https://github.com/c-ares/c-ares/pull/600
- [7] = https://github.com/c-ares/c-ares/pull/598
- [8] = https://github.com/c-ares/c-ares/pull/596
- [9] = https://github.com/c-ares/c-ares/pull/595
- [10] = https://github.com/c-ares/c-ares/pull/594
- [11] = https://github.com/c-ares/c-ares/pull/591
-
-
-
-
-
+ [1] = https://github.com/c-ares/c-ares/commit/a36317
+ [2] = https://github.com/c-ares/c-ares/pull/619
+ [3] = https://github.com/c-ares/c-ares/pull/623
