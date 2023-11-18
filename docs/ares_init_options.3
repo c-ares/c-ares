@@ -18,7 +18,7 @@
 .\"
 .TH ARES_INIT 3 "5 March 2010"
 .SH NAME
-ares_init_options \- Initialize a resolver channel
+ares_init_options, ares_init \- Initialize a resolver channel
 .SH SYNOPSIS
 .nf
 #include <ares.h>
@@ -46,13 +46,22 @@ struct ares_options {
   char *hosts_path;
   int udp_max_queries;
   int maxtimeout; /* in milliseconds */
+  unsigned int qcache_max_ttl; /* in seconds */
 };
 
 int ares_init_options(ares_channel_t **\fIchannelptr\fP,
                       const struct ares_options *\fIoptions\fP,
-                      int \fIoptmask\fP)
+                      int \fIoptmask\fP);
+
+int ares_init(ares_channel_t **\fIchannelptr\fP);
+
 .fi
 .SH DESCRIPTION
+The \fBares_init(3)\fP function is equivalent to calling
+\fBares_init_channel(NULL, 0)\fP.  It is recommended to use
+\fBares_init_options(3)\fP instead and to set or make configurable the
+appropriate options for your application.
+
 The \fBares_init_options(3)\fP function initializes a communications channel
 for name service lookups.  If it returns successfully,
 \fBares_init_options(3)\fP will set the variable pointed to by
@@ -66,8 +75,50 @@ by \fIoptions\fP are set, as follows:
 .B ARES_OPT_FLAGS
 .B int \fIflags\fP;
 .br
-Flags controlling the behavior of the resolver.  See below for a
-description of possible flag values.
+Flags controlling the behavior of the resolver:
+.RS 4
+.TP 23
+.B ARES_FLAG_USEVC
+Always use TCP queries (the "virtual circuit") instead of UDP
+queries.  Normally, TCP is only used if a UDP query yields a truncated
+result.
+.TP 23
+.B ARES_FLAG_PRIMARY
+Only query the first server in the list of servers to query.
+.TP 23
+.B ARES_FLAG_IGNTC
+If a truncated response to a UDP query is received, do not fall back
+to TCP; simply continue on with the truncated response.
+.TP 23
+.B ARES_FLAG_NORECURSE
+Do not set the "recursion desired" bit on outgoing queries, so that the name
+server being contacted will not try to fetch the answer from other servers if
+it doesn't know the answer locally. Be aware that ares will not do the
+recursion for you.  Recursion must be handled by the application calling ares
+if \fIARES_FLAG_NORECURSE\fP is set.
+.TP 23
+.B ARES_FLAG_STAYOPEN
+Do not close communications sockets when the number of active queries
+drops to zero.
+.TP 23
+.B ARES_FLAG_NOSEARCH
+Do not use the default search domains; only query hostnames as-is or
+as aliases.
+.TP 23
+.B ARES_FLAG_NOALIASES
+Do not honor the HOSTALIASES environment variable, which normally
+specifies a file of hostname translations.
+.TP 23
+.B ARES_FLAG_NOCHECKRESP
+Do not discard responses with the SERVFAIL, NOTIMP, or REFUSED
+response code or responses whose questions don't match the questions
+in the request.  Primarily useful for writing clients which might be
+used to test or debug name servers.
+.TP 23
+.B ARES_FLAG_EDNS
+Include an EDNS pseudo-resource record (RFC 2671) in generated requests.  As of
+v1.22, this is on by default if flags are otherwise not set.
+.RE
 .TP 18
 .B ARES_OPT_TIMEOUT
 .B int \fItimeout\fP;
@@ -222,6 +273,18 @@ The maximum number of udp queries that can be sent on a single ephemeral port
 to a given DNS server before a new ephemeral port is assigned.  Any value of 0
 or less will be considered unlimited, and is the default.
 .br
+.TP 18
+.B ARES_OPT_QUERY_CACHE
+.B unsigned int \fIqcache_max_ttl\fP;
+.br
+Enable the built-in query cache.  Will cache queries based on the returned TTL
+in the DNS message.  Only fully successful and NXDOMAIN query results will be
+cached.  Fill in the \fIqcache_max_ttl\fP with the maximum number of seconds
+a query result may be cached which will override a larger TTL in the response
+message. This must be a non-zero value otherwise the cache will be disabled.
+Choose a reasonable value for your application such as 300 (5 minutes) or
+3600 (1 hour).
+.br
 .PP
 The \fIoptmask\fP parameter also includes options without a corresponding
 field in the
@@ -236,50 +299,7 @@ for each resolution.
 Do not perform round-robin nameserver selection; always use the list of
 nameservers in the same order.
 .PP
-The
-.I flags
-field should be the bitwise or of some subset of the following values:
-.TP 23
-.B ARES_FLAG_USEVC
-Always use TCP queries (the "virtual circuit") instead of UDP
-queries.  Normally, TCP is only used if a UDP query yields a truncated
-result.
-.TP 23
-.B ARES_FLAG_PRIMARY
-Only query the first server in the list of servers to query.
-.TP 23
-.B ARES_FLAG_IGNTC
-If a truncated response to a UDP query is received, do not fall back
-to TCP; simply continue on with the truncated response.
-.TP 23
-.B ARES_FLAG_NORECURSE
-Do not set the "recursion desired" bit on outgoing queries, so that the name
-server being contacted will not try to fetch the answer from other servers if
-it doesn't know the answer locally. Be aware that ares will not do the
-recursion for you.  Recursion must be handled by the application calling ares
-if \fIARES_FLAG_NORECURSE\fP is set.
-.TP 23
-.B ARES_FLAG_STAYOPEN
-Do not close communications sockets when the number of active queries
-drops to zero.
-.TP 23
-.B ARES_FLAG_NOSEARCH
-Do not use the default search domains; only query hostnames as-is or
-as aliases.
-.TP 23
-.B ARES_FLAG_NOALIASES
-Do not honor the HOSTALIASES environment variable, which normally
-specifies a file of hostname translations.
-.TP 23
-.B ARES_FLAG_NOCHECKRESP
-Do not discard responses with the SERVFAIL, NOTIMP, or REFUSED
-response code or responses whose questions don't match the questions
-in the request.  Primarily useful for writing clients which might be
-used to test or debug name servers.
-.TP 23
-.B ARES_FLAG_EDNS
-Include an EDNS pseudo-resource record (RFC 2671) in generated requests.  As of
-v1.22, this is on by default if flags are otherwise not set.
+
 .SH RETURN VALUES
 \fBares_init_options(3)\fP can return any of the following values:
 .TP 14
