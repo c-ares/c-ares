@@ -301,7 +301,8 @@ nameservers in the same order.
 .PP
 
 .SH RETURN VALUES
-\fBares_init_options(3)\fP can return any of the following values:
+\fBares_init_options(3)\fP and \fBares_init(3)\fP can return any of the
+following values:
 .TP 14
 .B ARES_SUCCESS
 Initialization succeeded.
@@ -320,15 +321,14 @@ When initializing from
 (or, alternatively when specified by the
 .I resolvconf_path
 path location)
-\fBares_init_options(3)\fP reads the \fIdomain\fP and \fIsearch\fP directives
-to allow lookups of short names relative to the domains specified. The
-\fIdomain\fP and \fIsearch\fP directives override one another. If more than
-one instance of either \fIdomain\fP or \fIsearch\fP directives is specified,
-the last occurrence wins. For more information, please see the
+\fBares_init_options(3)\fP and \fBares_init(3)\fP reads the \fIdomain\fP and
+\fIsearch\fP directives to allow lookups of short names relative to the domains
+specified. The \fIdomain\fP and \fIsearch\fP directives override one another.
+If more than one instance of either \fIdomain\fP or \fIsearch\fP directives is
+specified, the last occurrence wins. For more information, please see the
 .BR resolv.conf (5)
 manual page.
 .SH SEE ALSO
-.BR ares_init (3),
 .BR ares_reinit (3),
 .BR ares_destroy (3),
 .BR ares_dup (3),
