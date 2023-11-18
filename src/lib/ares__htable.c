@@ -41,6 +41,7 @@ struct ares__htable {
   unsigned int               seed;
   unsigned int               size;
   size_t                     num_keys;
+  size_t                     num_collisions;
   /* NOTE: if we converted buckets into ares__slist_t we could guarantee on
    *       hash collisions we would have O(log n) worst case insert and search
    *       performance.  (We'd also need to make key_eq into a key_cmp to
@@ -158,9 +159,12 @@ static ares__llist_node_t *ares__htable_find(const ares__htable_t *htable,
 
 static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 {
-  ares__llist_t **buckets  = NULL;
-  unsigned int    old_size = htable->size;
+  ares__llist_t **buckets            = NULL;
+  unsigned int    old_size           = htable->size;
   size_t          i;
+  ares__llist_t **prealloc_llist     = NULL;
+  size_t          prealloc_llist_len = 0;
+  ares_bool_t     rv                 = ARES_FALSE;
 
   /* Not a failure, just won't expand */
   if (old_size == ARES__HTABLE_MAX_BUCKETS) {
@@ -169,15 +173,33 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 
   htable->size <<= 1;
 
-  /* We must do this in 2 passes as we want it to be non-destructive in case
-   * there is a memory allocation failure.  So we will actually use more
-   * memory doing it this way, but at least we might be able to gracefully
-   * recover */
+  /* We must pre-allocate all memory we'll need before moving entries to the
+   * new hash array.  Otherwise if there's a memory allocation failure in the
+   * middle, we wouldn't be able to recover. */
   buckets = ares_malloc_zero(sizeof(*buckets) * htable->size);
   if (buckets == NULL) {
-    goto fail;
+    goto done;
   }
 
+  /* The maximum number of new llists we'll need is the number of collisions
+   * that were recorded */
+  prealloc_llist_len = htable->num_collisions;
+  if (prealloc_llist_len) {
+    prealloc_llist = ares_malloc_zero(sizeof(*prealloc_llist) *
+                                      prealloc_llist_len);
+    if (prealloc_llist == NULL) {
+      goto done;
+    }
+  }
+  for (i=0; i<prealloc_llist_len; i++) {
+    prealloc_llist[i] = ares__llist_create(htable->bucket_free);
+    if (prealloc_llist[i] == NULL) {
+      goto done;
+    }
+  }
+
+  /* Iterate across all buckets and move the entries to the new buckets */
+  htable->num_collisions = 0;
   for (i = 0; i < old_size; i++) {
     ares__llist_node_t *node;
 
@@ -185,7 +207,7 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
     if (htable->buckets[i] == NULL)
       continue;
 
-    /* Fast past optimization (most likely case), there is likely only a single
+    /* Fast path optimization (most likely case), there is likely only a single
      * entry in both the source and destination, check for this to confirm and
      * if so, just move the bucket over */
     if (ares__llist_len(htable->buckets[i]) == 1) {
@@ -214,27 +236,38 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
         break;
       }
 
+      /* Grab one off our preallocated list */
       if (buckets[idx] == NULL) {
-        buckets[idx] = ares__llist_create(htable->bucket_free);
-      }
-      if (buckets[idx] == NULL) {
-        goto fail;
+        buckets[idx] = prealloc_llist[prealloc_llist_len-1];
+        prealloc_llist_len--;
+      } else {
+        /* Collision occurred since the bucket wasn't empty */
+        htable->num_collisions++;
       }
 
       ares__llist_node_move_parent_first(node, buckets[idx]);
     }
   }
 
-  /* Swap out buckets */
-  ares__htable_buckets_destroy(htable->buckets, old_size, ARES_FALSE);
+  /* We have guaranteed all the buckets have either been moved or destroyed,
+   * so we just call ares_free() on the array and swap out the pointer */
+  ares_free(htable->buckets);
   htable->buckets = buckets;
-  return ARES_TRUE;
+  buckets         = NULL;
+  rv              = ARES_TRUE;
 
-fail:
-  ares__htable_buckets_destroy(buckets, htable->size, ARES_FALSE);
-  htable->size = old_size;
+done:
+  ares_free(buckets);
+  /* destroy any unused preallocated buckets */
+  ares__htable_buckets_destroy(prealloc_llist, (unsigned int)prealloc_llist_len,
+                               ARES_FALSE);
 
-  return ARES_FALSE;
+  /* On failure, we need to restore the htable size */
+  if (rv != ARES_TRUE) {
+    htable->size = old_size;
+  }
+
+  return rv;
 }
 
 ares_bool_t ares__htable_insert(ares__htable_t *htable, void *bucket)
@@ -282,6 +315,11 @@ ares_bool_t ares__htable_insert(ares__htable_t *htable, void *bucket)
     return ARES_FALSE;
   }
 
+  /* Track collisions for rehash stablility */
+  if (ares__llist_len(htable->buckets[idx]) > 1) {
+    htable->num_collisions++;
+  }
+
   htable->num_keys++;
 
   return ARES_TRUE;
@@ -316,6 +354,12 @@ ares_bool_t ares__htable_remove(ares__htable_t *htable, const void *key)
   }
 
   htable->num_keys--;
+
+  /* Reduce collisions */
+  if (ares__llist_len(ares__llist_node_parent(node)) > 1) {
+    htable->num_collisions--;
+  }
+
   ares__llist_node_destroy(node);
   return ARES_TRUE;
 }
