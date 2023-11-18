@@ -247,6 +247,12 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 
       ares__llist_node_move_parent_first(node, buckets[idx]);
     }
+
+    /* Abandoned bucket, destroy */
+    if (htable->buckets[i] != NULL) {
+      ares__llist_destroy(htable->buckets[i]);
+      htable->buckets[i] = NULL;
+    }
   }
 
   /* We have guaranteed all the buckets have either been moved or destroyed,
