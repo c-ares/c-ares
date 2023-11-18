@@ -57,6 +57,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_parse_uri_reply.c		\
   ares_platform.c			\
   ares_process.c			\
+  ares_qcache.c			\
   ares_query.c				\
   ares_rand.c				\
   ares_search.c				\
