@@ -196,6 +196,7 @@ typedef enum {
 #define ARES_OPT_HOSTS_FILE      (1 << 18)
 #define ARES_OPT_UDP_MAX_QUERIES (1 << 19)
 #define ARES_OPT_MAXTIMEOUTMS    (1 << 20)
+#define ARES_OPT_QUERY_CACHE     (1 << 21)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN        (1 << 0)
@@ -307,6 +308,7 @@ struct ares_options {
   char              *hosts_path;
   int                udp_max_queries;
   int                maxtimeout; /* in milliseconds */
+  unsigned int       qcache_max_ttl; /* Maximum TTL for query cache, 0=disabled */
 };
 
 struct hostent;

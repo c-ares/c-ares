@@ -27,16 +27,6 @@
 #include "ares.h"
 #include "ares_private.h"
 
-struct ares__qcache;
-
-typedef struct ares__qcache ares__qcache_t;
-
-void ares__qcache_destroy(ares__qcache_t *cache);
-ares_status_t ares__qcache_create(ares_rand_state *rand_state,
-                                  unsigned int     max_ttl,
-                                  ares__qcache_t **cache_out);
-void ares__qcache_flush(ares__qcache_t *cache);
-
 struct ares__qcache {
   ares__htable_strvp_t *cache;
   ares__slist_t        *expire;
@@ -127,7 +117,7 @@ fail:
 }
 
 
-static void ares__qcache_expire(ares__qcache_t *cache, time_t now)
+static void ares__qcache_expire(ares__qcache_t *cache, struct timeval *now)
 {
   ares__slist_node_t *node;
 
@@ -136,7 +126,7 @@ static void ares__qcache_expire(ares__qcache_t *cache, time_t now)
 
   while ((node = ares__slist_node_first(cache->expire)) != NULL) {
     ares__qcache_entry_t *entry = ares__slist_node_val(node);
-    if (entry->expire_ts > now)
+    if (entry->expire_ts > now->tv_sec)
       break;
 
     ares__htable_strvp_remove(cache->cache, entry->key);
@@ -146,7 +136,9 @@ static void ares__qcache_expire(ares__qcache_t *cache, time_t now)
 
 void ares__qcache_flush(ares__qcache_t *cache)
 {
-  ares__qcache_expire(cache, 0);
+  struct timeval now;
+  memset(&now, 0, sizeof(now));
+  ares__qcache_expire(cache, &now);
 }
 
 void ares__qcache_destroy(ares__qcache_t *cache)
@@ -249,14 +241,25 @@ static unsigned int ares__qcache_calc_minttl(ares_dns_record_t *dnsrec)
 static unsigned int ares__qcache_soa_minimum(ares_dns_record_t *dnsrec)
 {
   size_t i;
+
+  /* RFC 2308 Section 5 says its the minimum of MINIMUM and the TTL of the
+   * record. */
   for (i=0; i<ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY); i++) {
     const ares_dns_rr_t *rr   =
       ares_dns_record_rr_get(dnsrec, ARES_SECTION_AUTHORITY, i);
     ares_dns_rec_type_t  type = ares_dns_rr_get_type(rr);
+    unsigned int         ttl;
+    unsigned int         minimum;
+
     if (type != ARES_REC_TYPE_SOA)
       continue;
 
-    return ares_dns_rr_get_u32(rr, ARES_RR_SOA_MINIMUM);
+    minimum = ares_dns_rr_get_u32(rr, ARES_RR_SOA_MINIMUM);
+    ttl     = ares_dns_rr_get_ttl(rr);
+
+    if (ttl > minimum)
+      return minimum;
+    return ttl;
   }
 
   return 0;
@@ -265,11 +268,12 @@ static unsigned int ares__qcache_soa_minimum(ares_dns_record_t *dnsrec)
 /* On success, takes ownership of dnsrec */
 static ares_status_t ares__qcache_insert(ares__qcache_t    *qcache,
                                          ares_dns_record_t *dnsrec,
-                                         time_t             now)
+                                         struct timeval    *now)
 {
   ares__qcache_entry_t *entry;
   unsigned int          ttl;
   ares_dns_rcode_t      rcode = ares_dns_record_get_rcode(dnsrec);
+  ares_dns_flags_t      flags = ares_dns_record_get_flags(dnsrec);
 
   if (qcache == NULL || dnsrec == NULL) {
     return ARES_EFORMERR;
@@ -277,6 +281,11 @@ static ares_status_t ares__qcache_insert(ares__qcache_t    *qcache,
 
   /* Only save NOERROR or NXDOMAIN */
   if (rcode != ARES_RCODE_NOERROR && rcode != ARES_RCODE_NXDOMAIN) {
+    return ARES_ENOTIMP;
+  }
+
+  /* Don't save truncated queries */
+  if (flags & ARES_FLAG_TC) {
     return ARES_ENOTIMP;
   }
 
@@ -306,8 +315,8 @@ static ares_status_t ares__qcache_insert(ares__qcache_t    *qcache,
   if (entry->key == NULL) {
     goto fail;
   }
-  entry->expire_ts = now + ttl;
-  entry->insert_ts = now;
+  entry->expire_ts = now->tv_sec + ttl;
+  entry->insert_ts = now->tv_sec;
 
   if (!ares__htable_strvp_insert(qcache->cache, entry->key, entry)) {
     goto fail;
@@ -330,7 +339,8 @@ fail:
 
 
 static ares_status_t ares__qcache_fetch(ares__qcache_t *qcache,
-                                        ares_dns_record_t *dnsrec, time_t now,
+                                        ares_dns_record_t *dnsrec,
+                                        struct timeval *now,
                                         unsigned char **buf, size_t *buf_len)
 {
   char                 *key = NULL;
@@ -356,11 +366,41 @@ static ares_status_t ares__qcache_fetch(ares__qcache_t *qcache,
   }
 
   ares_dns_record_write_ttl_decrement(entry->dnsrec,
-    (unsigned int)(now - entry->insert_ts));
+    (unsigned int)(now->tv_sec - entry->insert_ts));
 
   status = ares_dns_write(entry->dnsrec, buf, buf_len);
 
 done:
   ares_free(key);
+  return status;
+}
+
+
+ares_status_t ares_qcache_insert(ares_channel_t    *channel,
+                                 struct timeval    *now,
+                                 ares_dns_record_t *dnsrec)
+{
+  return ares__qcache_insert(channel->qcache, dnsrec, now);
+}
+
+ares_status_t ares_qcache_fetch(ares_channel_t *channel, struct timeval *now,
+                                const unsigned char *qbuf, size_t qlen,
+                                unsigned char **abuf, size_t *alen)
+{
+  ares_status_t      status;
+  ares_dns_record_t *dnsrec = NULL;
+
+  if (channel->qcache == NULL)
+    return ARES_ENOTFOUND;
+
+  status = ares_dns_parse(qbuf, qlen, 0, &dnsrec);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares__qcache_fetch(channel->qcache, dnsrec, now, abuf, alen);
+
+done:
+  ares_dns_record_destroy(dnsrec);
   return status;
 }

@@ -717,6 +717,12 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   server_set_good(server);
   end_query(channel, query, ARES_SUCCESS, abuf, alen);
 
+  /* If cache insertion was successful, it took ownership.  We ignore
+   * other cache insertion failures. */
+  if (ares_qcache_insert(channel, now, rdnsrec) == ARES_SUCCESS) {
+    rdnsrec = NULL;
+  }
+
   status = ARES_SUCCESS;
 
 cleanup:

@@ -579,6 +579,10 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
     /* Save servers as if they were passed in as an option */
     channel->optmask |= ARES_OPT_SERVERS;
   }
+
+  /* Clear any cached query results */
+  ares__qcache_flush(channel->qcache);
+
   status = ARES_SUCCESS;
 
 done:

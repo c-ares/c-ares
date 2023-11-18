@@ -89,6 +89,8 @@ void ares_destroy(ares_channel_t *channel)
 
   ares__hosts_file_destroy(channel->hf);
 
+  ares__qcache_destroy(channel->qcache);
+
   ares_free(channel);
 }
 
