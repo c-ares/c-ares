@@ -287,6 +287,58 @@ TEST_P(MockUDPMaxQueriesTest, GetHostByNameParallelLookups) {
   }
 }
 
+class CacheQueriesTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
+ public:
+  CacheQueriesTest()
+    : MockChannelOptsTest(1, GetParam(), false,
+                          FillOptions(&opts_),
+                          ARES_OPT_QUERY_CACHE) {}
+  static struct ares_options* FillOptions(struct ares_options * opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->qcache_max_ttl = 3600;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+TEST_P(CacheQueriesTest, GetHostByNameCache) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  // Get notified of new sockets so we can validate how many are created
+  int rc = ARES_SUCCESS;
+  ares_set_socket_callback(channel_, SocketConnectCallback, &rc);
+  sock_cb_count = 0;
+
+  HostResult result1;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result1);
+  Process();
+
+  std::stringstream ss1;
+  EXPECT_TRUE(result1.done_);
+  ss1 << result1.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss1.str());
+
+  /* Run again, should return cached result */
+  HostResult result2;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result2);
+  Process();
+
+  std::stringstream ss2;
+  EXPECT_TRUE(result2.done_);
+  ss2 << result2.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss2.str());
+
+  EXPECT_EQ(1, sock_cb_count);
+}
+
 #define TCPPARALLELLOOKUPS 32
 TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
   DNSPacket rsp;
@@ -1293,6 +1345,8 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(a
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families));
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPMaxQueriesTest, ::testing::ValuesIn(ares::test::families));
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, CacheQueriesTest, ::testing::ValuesIn(ares::test::families));
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPChannelTest, ::testing::ValuesIn(ares::test::families));
 
