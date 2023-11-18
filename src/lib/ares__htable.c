@@ -238,6 +238,10 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 
       /* Grab one off our preallocated list */
       if (buckets[idx] == NULL) {
+        /* Silence static analysis, this isn't possible but it doesn't know */
+        if (prealloc_llist == NULL || prealloc_llist_len == 0) {
+          goto done;
+        }
         buckets[idx] = prealloc_llist[prealloc_llist_len-1];
         prealloc_llist_len--;
       } else {
