@@ -27,8 +27,6 @@
 #include "ares.h"
 #include "ares_private.h"
 
-
-
 struct ares__qcache;
 
 typedef struct ares__qcache ares__qcache_t;
@@ -37,6 +35,7 @@ void ares__qcache_destroy(ares__qcache_t *cache);
 ares_status_t ares__qcache_create(ares_rand_state *rand_state,
                                   unsigned int     max_ttl,
                                   ares__qcache_t **cache_out);
+void ares__qcache_flush(ares__qcache_t *cache);
 
 struct ares__qcache {
   ares__htable_strvp_t *cache;
@@ -145,7 +144,7 @@ static void ares__qcache_expire(ares__qcache_t *cache, time_t now)
   }
 }
 
-static void ares__qcache_flush(ares__qcache_t *cache)
+void ares__qcache_flush(ares__qcache_t *cache)
 {
   ares__qcache_expire(cache, 0);
 }
@@ -356,7 +355,8 @@ static ares_status_t ares__qcache_fetch(ares__qcache_t *qcache,
     goto done;
   }
 
-  ares_dns_record_write_ttl_decrement(entry->dnsrec, now - entry->insert_ts);
+  ares_dns_record_write_ttl_decrement(entry->dnsrec,
+    (unsigned int)(now - entry->insert_ts));
 
   status = ares_dns_write(entry->dnsrec, buf, buf_len);
 
