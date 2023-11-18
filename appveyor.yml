@@ -24,7 +24,7 @@ environment:
     # MSVC 2022, UWP (cmake)
     - COMPILER: MSVC
       BUILDTOOL: CMAKE
-      MSVC_SETUP_ARG: x64 store 10.0
+      MSVC_SETUP_ARG: x64 uwp
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
       CMAKE_EXTRA_OPTIONS: -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0
 
