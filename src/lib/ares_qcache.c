@@ -173,6 +173,7 @@ static void ares__qcache_entry_destroy_cb(void *arg)
 
   ares_free(entry->key);
   ares_dns_record_destroy(entry->dnsrec);
+  ares_free(entry);
 }
 
 ares_status_t ares__qcache_create(ares_rand_state *rand_state,
