@@ -47,7 +47,7 @@
 #ifdef HAVE_NET_IF_H
 #  include <net/if.h>
 #endif
-#ifdef HAVE_IPHLPAPI_H
+#if defined(USE_WINSOCK) && defined(HAVE_IPHLPAPI_H)
 #  include <iphlpapi.h>
 #endif
 

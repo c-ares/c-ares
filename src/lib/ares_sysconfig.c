@@ -58,7 +58,12 @@
 #endif
 
 #if defined(USE_WINSOCK)
-#  include <iphlpapi.h>
+#  if defined(HAVE_IPHLPAPI_H)
+#    include <iphlpapi.h>
+#  endif
+#  if defined(HAVE_NETIOAPI_H)
+#    include <netioapi.h>
+#  endif
 #endif
 
 #include "ares.h"

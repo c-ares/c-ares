@@ -57,7 +57,7 @@
 #  include <resolv.h>
 #endif
 
-#if defined(USE_WINSOCK)
+#if defined(USE_WINSOCK) && defined(HAVE_IPHLPAPI_H)
 #  include <iphlpapi.h>
 #endif
 
