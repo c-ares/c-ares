@@ -45,7 +45,21 @@ TEST_F(DefaultChannelTest, GetServersFailures) {
 }
 
 TEST_F(DefaultChannelTest, SetServers) {
-  EXPECT_EQ(ARES_ENODATA, ares_set_servers(channel_, nullptr));
+  /* NOTE: This test is because we have actual external users doing test case
+   *       simulation and removing all servers to generate various error
+   *       conditions in their own code.  It would make more sense to return
+   *       ARES_ENODATA, but due to historical users, we can't break them.
+   *       See: https://github.com/nodejs/node/pull/50800
+   */
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, nullptr));
+  std::vector<std::string> expected_empty = { };
+  EXPECT_EQ(expected_empty, GetNameServers(channel_));
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ESERVFAIL, result.status_);
+
 
   struct ares_addr_node server1;
   struct ares_addr_node server2;
@@ -63,7 +77,15 @@ TEST_F(DefaultChannelTest, SetServers) {
 }
 
 TEST_F(DefaultChannelTest, SetServersPorts) {
-  EXPECT_EQ(ARES_ENODATA, ares_set_servers_ports(channel_, nullptr));
+  /* NOTE: This test is because we have actual external users doing test case
+   *       simulation and removing all servers to generate various error
+   *       conditions in their own code.  It would make more sense to return
+   *       ARES_ENODATA, but due to historical users, we can't break them.
+   *       See: https://github.com/nodejs/node/pull/50800
+   */
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, nullptr));
+  std::vector<std::string> expected_empty = { };
+  EXPECT_EQ(expected_empty, GetNameServers(channel_));
 
   struct ares_addr_port_node server1;
   struct ares_addr_port_node server2;
@@ -90,6 +112,21 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
   EXPECT_EQ(ARES_ENODATA, ares_set_servers_csv(nullptr, "256.1.2.3"));
   EXPECT_EQ(ARES_ENODATA, ares_set_servers_csv(nullptr, "1.2.3.4.5"));
   EXPECT_EQ(ARES_ENODATA, ares_set_servers_csv(nullptr, "1:2:3:4:5"));
+
+  /* NOTE: This test is because we have actual external users doing test case
+   *       simulation and removing all servers to generate various error
+   *       conditions in their own code.  It would make more sense to return
+   *       ARES_ENODATA, but due to historical users, we can't break them.
+   *       See: https://github.com/nodejs/node/pull/50800
+   */
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel_, NULL));
+  std::vector<std::string> expected_empty = { };
+  EXPECT_EQ(expected_empty, GetNameServers(channel_));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel_, ""));
+  EXPECT_EQ(expected_empty, GetNameServers(channel_));
+
+
+
 
   EXPECT_EQ(ARES_SUCCESS,
             ares_set_servers_csv(channel_, "1.2.3.4,0102:0304:0506:0708:0910:1112:1314:1516,2.3.4.5"));

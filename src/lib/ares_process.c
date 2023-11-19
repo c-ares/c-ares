@@ -777,7 +777,7 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
 
   /* Silence coverity, not possible */
   if (num_servers == 0)
-    num_servers = 1;
+    return NULL;
 
   ares__rand_bytes(channel->rand_state, &c, 1);
 
@@ -816,9 +816,8 @@ static size_t ares__calc_query_timeout(const struct query *query)
   size_t                rounds;
   size_t                num_servers = ares__slist_len(channel->servers);
 
-  /* Silence coverity, not possible */
   if (num_servers == 0)
-    num_servers = 1;
+    return 0;
 
   /* For each trip through the entire server list, we want to double the
    * retry from the last retry */
@@ -876,6 +875,11 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
   } else {
     /* Pull first */
     server = ares__slist_first_val(channel->servers);
+  }
+
+  if (server == NULL) {
+    end_query(channel, query, ARES_ESERVFAIL /* ? */, NULL, 0);
+    return ARES_ECONNREFUSED;
   }
 
   if (query->using_tcp) {

@@ -477,9 +477,10 @@ ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    unsigned short          tcp_port);
 ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
                                            const char     *str);
-ares__llist_t *
+ares_status_t
   ares_in_addr_to_server_config_llist(const struct in_addr *servers,
-                                      size_t                nservers);
+                                      size_t                nservers,
+                                      ares__llist_t       **llist);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;

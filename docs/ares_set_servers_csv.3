@@ -30,7 +30,13 @@ int ares_set_servers_ports_csv(ares_channel_t *\fIchannel\fP, const char* \fIser
 The \fBares_set_servers_csv\fP and \fBares_set_servers_ports_csv\fPfunctions set
 the list of DNS servers that ARES will query.  As of v1.22.0 this function can
 be called on an active channel with running queries, previously it would return
-ARES_ENOTIMP. The format of the servers option is:
+ARES_ENOTIMP.
+
+Though not recommended, passing NULL for servers will clear all configured
+servers and make an inoperable channel, this may be advantageous for test
+simulation but unlikely to be useful in production.
+
+The format of the servers option is:
 
 host[:port][,host[:port]]...
 
