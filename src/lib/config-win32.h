@@ -88,7 +88,7 @@
 #define HAVE_IPHLPAPI_H 1
 
 /* Define if you have <netioapi.h> header file */
-#ifndef (__WATCOMC__)
+#ifndef __WATCOMC__
 #  define HAVE_NETIOAPI_H 1
 #endif
 
