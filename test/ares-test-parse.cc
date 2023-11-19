@@ -34,7 +34,7 @@ TEST_F(LibraryTest, ParseRootName) {
   struct hostent *host = nullptr;
   struct ares_addrttl info[2];
   int count = 2;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), (int)data.size(),
                                              &host, info, &count));
   EXPECT_EQ(1, count);
   std::stringstream ss;
@@ -68,7 +68,7 @@ TEST_F(LibraryTest, ParseIndirectRootName) {
   struct hostent *host = nullptr;
   struct ares_addrttl info[2];
   int count = 2;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), (int)data.size(),
                                              &host, info, &count));
   EXPECT_EQ(1, count);
   std::stringstream ss;
@@ -154,7 +154,7 @@ TEST_F(LibraryTest, ParsePartialCompressedName) {
   struct hostent *host = nullptr;
   struct ares_addrttl info[2];
   int count = 2;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), (int)data.size(),
                                              &host, info, &count));
   ASSERT_NE(nullptr, host);
   std::stringstream ss;
@@ -190,7 +190,7 @@ TEST_F(LibraryTest, ParseFullyCompressedName) {
   struct hostent *host = nullptr;
   struct ares_addrttl info[2];
   int count = 2;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), (int)data.size(),
                                              &host, info, &count));
   ASSERT_NE(nullptr, host);
   std::stringstream ss;

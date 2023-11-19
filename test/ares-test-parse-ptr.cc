@@ -33,7 +33,7 @@ TEST_F(LibraryTest, ParsePtrReplyOK) {
   std::vector<byte> data = pkt.data();
 
   struct hostent *host = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                addrv4, sizeof(addrv4), AF_INET, &host));
   ASSERT_NE(nullptr, host);
   std::stringstream ss;
@@ -52,7 +52,7 @@ TEST_F(LibraryTest, ParsePtrReplyCname) {
   std::vector<byte> data = pkt.data();
 
   struct hostent *host = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                addrv4, sizeof(addrv4), AF_INET, &host));
   ASSERT_NE(nullptr, host);
   std::stringstream ss;
@@ -86,7 +86,7 @@ TEST_F(LibraryTest, ParsePtrReplyMalformedCname) {
   std::vector<byte> data = pkt.data();
 
   struct hostent *host = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                 addrv4, sizeof(addrv4), AF_INET, &host));
   ASSERT_EQ(nullptr, host);
 }
@@ -109,7 +109,7 @@ TEST_F(LibraryTest, ParseManyPtrReply) {
   std::vector<byte> data = pkt.data();
 
   struct hostent *host = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                addrv4, sizeof(addrv4), AF_INET, &host));
   ASSERT_NE(nullptr, host);
   ares_free_hostent(host);
@@ -130,7 +130,7 @@ TEST_F(LibraryTest, ParsePtrReplyAdditional) {
   std::vector<byte> data = pkt.data();
 
   struct hostent *host = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                addrv4, sizeof(addrv4), AF_INET, &host));
   ASSERT_NE(nullptr, host);
   std::stringstream ss;
@@ -151,7 +151,7 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   // No question.
   pkt.questions_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                 addrv4, sizeof(addrv4), AF_INET, &host));
   pkt.add_question(new DNSQuestion("64.48.32.16.in-addr.arpa", T_PTR));
 
@@ -159,7 +159,7 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("99.48.32.16.in-addr.arpa", T_PTR));
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_ENODATA, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                addrv4, sizeof(addrv4), AF_INET, &host));
   EXPECT_EQ(nullptr, host);
   pkt.questions_.clear();
@@ -168,7 +168,7 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   // Two questions.
   pkt.add_question(new DNSQuestion("64.48.32.16.in-addr.arpa", T_PTR));
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                 addrv4, sizeof(addrv4), AF_INET, &host));
   EXPECT_EQ(nullptr, host);
   pkt.questions_.clear();
@@ -178,7 +178,7 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   pkt.answers_.clear();
   pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_ENODATA, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                addrv4, sizeof(addrv4), AF_INET, &host));
   EXPECT_EQ(nullptr, host);
   pkt.answers_.clear();
@@ -187,7 +187,7 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   // No answer.
   pkt.answers_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_ptr_reply(data.data(), data.size(),
+  EXPECT_EQ(ARES_ENODATA, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                addrv4, sizeof(addrv4), AF_INET, &host));
   EXPECT_EQ(nullptr, host);
   pkt.add_answer(new DNSPtrRR("64.48.32.16.in-addr.arpa", 100, "other.com"));
@@ -195,7 +195,7 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   // Truncated packets.
   data = pkt.data();
   for (size_t len = 1; len < data.size(); len++) {
-    EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), len,
+    EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), (int)len,
                                                   addrv4, sizeof(addrv4), AF_INET, &host));
     EXPECT_EQ(nullptr, host);
   }
@@ -204,7 +204,7 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   pkt.add_answer(new DNSCnameRR("64.48.32.16.in-addr.arpa", 50, "64.48.32.8.in-addr.arpa"));
   data = pkt.data();
   for (size_t len = 1; len < data.size(); len++) {
-    EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), len,
+    EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), (int)len,
                                                   addrv4, sizeof(addrv4), AF_INET, &host));
     EXPECT_EQ(nullptr, host);
   }
@@ -225,7 +225,7 @@ TEST_F(LibraryTest, ParsePtrReplyAllocFailSome) {
   for (int ii = 1; ii <= 18; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    EXPECT_EQ(ARES_ENOMEM, ares_parse_ptr_reply(data.data(), data.size(),
+    EXPECT_EQ(ARES_ENOMEM, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                 addrv4, sizeof(addrv4), AF_INET, &host)) << ii;
   }
 }
@@ -251,7 +251,7 @@ TEST_F(LibraryTest, ParsePtrReplyAllocFailMany) {
   for (int ii = 1; ii <= 63; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    int rc = ares_parse_ptr_reply(data.data(), data.size(),
+    int rc = ares_parse_ptr_reply(data.data(), (int)data.size(),
                                   addrv4, sizeof(addrv4), AF_INET, &host);
     if (rc != ARES_ENOMEM) {
       EXPECT_EQ(ARES_SUCCESS, rc);

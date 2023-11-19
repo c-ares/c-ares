@@ -93,8 +93,8 @@ void ProcessWork(ares_channel_t *channel,
       return;
 
     // Add in the extra FDs if present.
-    std::set<int> extrafds = get_extrafds();
-    for (int extrafd : extrafds) {
+    std::set<ares_socket_t> extrafds = get_extrafds();
+    for (ares_socket_t extrafd : extrafds) {
       FD_SET(extrafd, &readers);
       if (extrafd >= nfds) {
         nfds = extrafd + 1;
@@ -116,7 +116,7 @@ void ProcessWork(ares_channel_t *channel,
     ares_process(channel, &readers, &writers);
 
     // Let the provided callback process any activity on the extra FD.
-    for (int extrafd : extrafds) {
+    for (ares_socket_t extrafd : extrafds) {
       if (FD_ISSET(extrafd, &readers)) {
         process_extra(extrafd);
       }
@@ -179,8 +179,8 @@ void LibraryTest::afree(void *ptr) {
   free(ptr);
 }
 
-std::set<int> NoExtraFDs() {
-  return std::set<int>();
+std::set<ares_socket_t> NoExtraFDs() {
+  return std::set<ares_socket_t>();
 }
 
 void DefaultChannelTest::Process() {
@@ -201,7 +201,7 @@ MockServer::MockServer(int family, int port)
   tcp_data_ = NULL;
   tcp_data_len_ = 0;
   tcpfd_ = socket(family, SOCK_STREAM, 0);
-  EXPECT_NE(-1, tcpfd_);
+  EXPECT_NE(ARES_SOCKET_BAD, tcpfd_);
   int optval = 1;
   setsockopt(tcpfd_, SOL_SOCKET, SO_REUSEADDR,
              BYTE_CAST &optval , sizeof(int));
@@ -211,7 +211,7 @@ MockServer::MockServer(int family, int port)
 
   // Create a UDP socket to receive data on.
   udpfd_ = socket(family, SOCK_DGRAM, 0);
-  EXPECT_NE(-1, udpfd_);
+  EXPECT_NE(ARES_SOCKET_BAD, udpfd_);
 
   // Bind the sockets to the given port.
   if (family == AF_INET) {
@@ -280,7 +280,7 @@ MockServer::MockServer(int family, int port)
 }
 
 MockServer::~MockServer() {
-  for (int fd : connfds_) {
+  for (ares_socket_t fd : connfds_) {
     sclose(fd);
   }
   sclose(tcpfd_);
@@ -288,7 +288,7 @@ MockServer::~MockServer() {
   free(tcp_data_);
 }
 
-void MockServer::ProcessPacket(int fd, struct sockaddr_storage *addr, socklen_t addrlen,
+void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, socklen_t addrlen,
                                byte *data, int len) {
 
   // Assume the packet is a well-formed DNS request and extract the request
@@ -350,7 +350,7 @@ void MockServer::ProcessPacket(int fd, struct sockaddr_storage *addr, socklen_t 
 
 }
 
-void MockServer::ProcessFD(int fd) {
+void MockServer::ProcessFD(ares_socket_t fd) {
   if (fd != tcpfd_ && fd != udpfd_ && connfds_.find(fd) == connfds_.end()) {
     // Not one of our FDs.
     return;
@@ -407,14 +407,14 @@ void MockServer::ProcessFD(int fd) {
 
 }
 
-std::set<int> MockServer::fds() const {
-  std::set<int> result = connfds_;
+std::set<ares_socket_t> MockServer::fds() const {
+  std::set<ares_socket_t> result = connfds_;
   result.insert(tcpfd_);
   result.insert(udpfd_);
   return result;
 }
 
-void MockServer::ProcessRequest(int fd, struct sockaddr_storage* addr, int addrlen,
+void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr, int addrlen,
                                 int qid, const std::string& name, int rrtype) {
   // Before processing, let gMock know the request is happening.
   OnRequest(name, rrtype);
@@ -559,16 +559,16 @@ MockChannelOptsTest::~MockChannelOptsTest() {
   channel_ = nullptr;
 }
 
-std::set<int> MockChannelOptsTest::fds() const {
-  std::set<int> fds;
+std::set<ares_socket_t> MockChannelOptsTest::fds() const {
+  std::set<ares_socket_t> fds;
   for (const auto& server : servers_) {
-    std::set<int> serverfds = server->fds();
+    std::set<ares_socket_t> serverfds = server->fds();
     fds.insert(serverfds.begin(), serverfds.end());
   }
   return fds;
 }
 
-void MockChannelOptsTest::ProcessFD(int fd) {
+void MockChannelOptsTest::ProcessFD(ares_socket_t fd) {
   for (auto& server : servers_) {
     server->ProcessFD(fd);
   }

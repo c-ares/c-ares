@@ -34,7 +34,7 @@ TEST_F(LibraryTest, ParseSoaReplyOK) {
   std::vector<byte> data = pkt.data();
 
   struct ares_soa_reply* soa = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_soa_reply(data.data(), data.size(), &soa));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_soa_reply(data.data(), (int)data.size(), &soa));
   ASSERT_NE(nullptr, soa);
   EXPECT_EQ("soa1.example.com", std::string(soa->nsname));
   EXPECT_EQ("fred.example.com", std::string(soa->hostmaster));
@@ -59,7 +59,7 @@ TEST_F(LibraryTest, ParseSoaReplyErrors) {
   // No question.
   pkt.questions_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), data.size(), &soa));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), (int)data.size(), &soa));
   pkt.add_question(new DNSQuestion("example.com", T_SOA));
 
 #ifdef DISABLED
@@ -67,7 +67,7 @@ TEST_F(LibraryTest, ParseSoaReplyErrors) {
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("Axample.com", T_SOA));
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), data.size(), &soa));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), (int)data.size(), &soa));
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_SOA));
 #endif
@@ -75,7 +75,7 @@ TEST_F(LibraryTest, ParseSoaReplyErrors) {
   // Two questions
   pkt.add_question(new DNSQuestion("example.com", T_SOA));
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), data.size(), &soa));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), (int)data.size(), &soa));
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_SOA));
 
@@ -83,7 +83,7 @@ TEST_F(LibraryTest, ParseSoaReplyErrors) {
   pkt.answers_.clear();
   pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), data.size(), &soa));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), (int)data.size(), &soa));
   pkt.answers_.clear();
   pkt.add_answer(new DNSSoaRR("example.com", 100,
                              "soa1.example.com", "fred.example.com",
@@ -92,7 +92,7 @@ TEST_F(LibraryTest, ParseSoaReplyErrors) {
   // No answer.
   pkt.answers_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), data.size(), &soa));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), (int)data.size(), &soa));
   pkt.add_answer(new DNSSoaRR("example.com", 100,
                              "soa1.example.com", "fred.example.com",
                              1, 2, 3, 4, 5));
@@ -100,7 +100,7 @@ TEST_F(LibraryTest, ParseSoaReplyErrors) {
   // Truncated packets.
   data = pkt.data();
   for (size_t len = 1; len < data.size(); len++) {
-    EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), len, &soa));
+    EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), (int)len, &soa));
   }
 }
 
@@ -117,7 +117,7 @@ TEST_F(LibraryTest, ParseSoaReplyAllocFail) {
   for (int ii = 1; ii <= 5; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    EXPECT_EQ(ARES_ENOMEM, ares_parse_soa_reply(data.data(), data.size(), &soa)) << ii;
+    EXPECT_EQ(ARES_ENOMEM, ares_parse_soa_reply(data.data(), (int)data.size(), &soa)) << ii;
   }
 }
 

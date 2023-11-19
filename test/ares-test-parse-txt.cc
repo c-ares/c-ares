@@ -36,7 +36,7 @@ TEST_F(LibraryTest, ParseTxtReplyOK) {
   std::vector<byte> data = pkt.data();
 
   struct ares_txt_reply* txt = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_txt_reply(data.data(), (int)data.size(), &txt));
   ASSERT_NE(nullptr, txt);
   EXPECT_EQ(std::vector<byte>(expected1.data(), expected1.data() + expected1.size()),
             std::vector<byte>(txt->txt, txt->txt + txt->length));
@@ -63,7 +63,7 @@ TEST_F(LibraryTest, ParseTxtExtReplyOK) {
   std::vector<byte> data = pkt.data();
 
   struct ares_txt_ext* txt = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_txt_reply_ext(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_txt_reply_ext(data.data(), (int)data.size(), &txt));
   ASSERT_NE(nullptr, txt);
   EXPECT_EQ(std::vector<byte>(expected1.data(), expected1.data() + expected1.size()),
             std::vector<byte>(txt->txt, txt->txt + txt->length));
@@ -107,7 +107,7 @@ TEST_F(LibraryTest, ParseTxtMalformedReply1) {
   };
 
   struct ares_txt_reply* txt = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), (int)data.size(), &txt));
   ASSERT_EQ(nullptr, txt);
 }
 
@@ -135,7 +135,7 @@ TEST_F(LibraryTest, ParseTxtMalformedReply2) {
   };
 
   struct ares_txt_reply* txt = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), (int)data.size(), &txt));
   ASSERT_EQ(nullptr, txt);
 }
 
@@ -166,7 +166,7 @@ TEST_F(LibraryTest, ParseTxtMalformedReply3) {
   };
 
   struct ares_txt_reply* txt = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), (int)data.size(), &txt));
   ASSERT_EQ(nullptr, txt);
 }
 
@@ -188,7 +188,7 @@ TEST_F(LibraryTest, ParseTxtMalformedReply4) {
   };
 
   struct ares_txt_reply* txt = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), (int)data.size(), &txt));
   ASSERT_EQ(nullptr, txt);
 }
 
@@ -209,7 +209,7 @@ TEST_F(LibraryTest, ParseTxtReplyErrors) {
   pkt.questions_.clear();
   data = pkt.data();
   txt = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), (int)data.size(), &txt));
   EXPECT_EQ(nullptr, txt);
   pkt.add_question(new DNSQuestion("example.com", T_MX));
 
@@ -218,7 +218,7 @@ TEST_F(LibraryTest, ParseTxtReplyErrors) {
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("Axample.com", T_TXT));
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_ENODATA, ares_parse_txt_reply(data.data(), (int)data.size(), &txt));
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_TXT));
 #endif
@@ -227,7 +227,7 @@ TEST_F(LibraryTest, ParseTxtReplyErrors) {
   pkt.add_question(new DNSQuestion("example.com", T_MX));
   data = pkt.data();
   txt = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), (int)data.size(), &txt));
   EXPECT_EQ(nullptr, txt);
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_MX));
@@ -236,14 +236,14 @@ TEST_F(LibraryTest, ParseTxtReplyErrors) {
   pkt.answers_.clear();
   data = pkt.data();
   txt = nullptr;
-  EXPECT_EQ(ARES_ENODATA, ares_parse_txt_reply(data.data(), data.size(), &txt));
+  EXPECT_EQ(ARES_ENODATA, ares_parse_txt_reply(data.data(), (int)data.size(), &txt));
   EXPECT_EQ(nullptr, txt);
   pkt.add_answer(new DNSTxtRR("example.com", 100, {expected1}));
 
   // Truncated packets.
   for (size_t len = 1; len < data.size(); len++) {
     txt = nullptr;
-    EXPECT_NE(ARES_SUCCESS, ares_parse_txt_reply(data.data(), len, &txt));
+    EXPECT_NE(ARES_SUCCESS, ares_parse_txt_reply(data.data(), (int)len, &txt));
     EXPECT_EQ(nullptr, txt);
   }
 }
@@ -265,7 +265,7 @@ TEST_F(LibraryTest, ParseTxtReplyAllocFail) {
   for (int ii = 1; ii <= 13; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    EXPECT_EQ(ARES_ENOMEM, ares_parse_txt_reply(data.data(), data.size(), &txt)) << ii;
+    EXPECT_EQ(ARES_ENOMEM, ares_parse_txt_reply(data.data(), (int)data.size(), &txt)) << ii;
   }
 }
 

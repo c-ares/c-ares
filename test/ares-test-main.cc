@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
       gtest_argv.push_back(argv[ii]);
     }
   }
-  int gtest_argc = gtest_argv.size();
+  int gtest_argc = (int)gtest_argv.size();
   gtest_argv.push_back(nullptr);
   ::testing::InitGoogleTest(&gtest_argc, gtest_argv.data());
 

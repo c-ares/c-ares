@@ -33,7 +33,7 @@ TEST_F(LibraryTest, ParseMxReplyOK) {
   std::vector<byte> data = pkt.data();
 
   struct ares_mx_reply* mx = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_mx_reply(data.data(), data.size(), &mx));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_mx_reply(data.data(), (int)data.size(), &mx));
   ASSERT_NE(nullptr, mx);
   EXPECT_EQ("mx1.example.com", std::string(mx->host));
   EXPECT_EQ(100, mx->priority);
@@ -74,7 +74,7 @@ TEST_F(LibraryTest, ParseMxReplyMalformed) {
   };
 
   struct ares_mx_reply* mx = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), data.size(), &mx));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), (int)data.size(), &mx));
   ASSERT_EQ(nullptr, mx);
 }
 
@@ -90,7 +90,7 @@ TEST_F(LibraryTest, ParseMxReplyErrors) {
   // No question.
   pkt.questions_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), data.size(), &mx));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), (int)data.size(), &mx));
   EXPECT_EQ(nullptr, mx);
   pkt.add_question(new DNSQuestion("example.com", T_MX));
 
@@ -99,7 +99,7 @@ TEST_F(LibraryTest, ParseMxReplyErrors) {
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("Axample.com", T_MX));
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), data.size(), &mx));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), (int)data.size(), &mx));
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_MX));
 #endif
@@ -107,7 +107,7 @@ TEST_F(LibraryTest, ParseMxReplyErrors) {
   // Two questions.
   pkt.add_question(new DNSQuestion("example.com", T_MX));
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), data.size(), &mx));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), (int)data.size(), &mx));
   EXPECT_EQ(nullptr, mx);
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_MX));
@@ -117,7 +117,7 @@ TEST_F(LibraryTest, ParseMxReplyErrors) {
   pkt.answers_.clear();
   pkt.add_answer(new DNSSrvRR("example.abc.def.com", 180, 0, 10, 8160, "example.abc.def.com"));
   data = pkt.data();
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_mx_reply(data.data(), data.size(), &mx));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_mx_reply(data.data(), (int)data.size(), &mx));
   EXPECT_EQ(nullptr, mx);
   pkt.answers_.clear();
   pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
@@ -125,14 +125,14 @@ TEST_F(LibraryTest, ParseMxReplyErrors) {
   // No answer.
   pkt.answers_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_mx_reply(data.data(), data.size(), &mx));
+  EXPECT_EQ(ARES_ENODATA, ares_parse_mx_reply(data.data(), (int)data.size(), &mx));
   EXPECT_EQ(nullptr, mx);
   pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
 
   // Truncated packets.
   data = pkt.data();
   for (size_t len = 1; len < data.size(); len++) {
-    int rc = ares_parse_mx_reply(data.data(), len, &mx);
+    int rc = ares_parse_mx_reply(data.data(), (int)len, &mx);
     EXPECT_EQ(nullptr, mx);
     EXPECT_TRUE(rc == ARES_EBADRESP || rc == ARES_EBADNAME);
   }
@@ -150,7 +150,7 @@ TEST_F(LibraryTest, ParseMxReplyAllocFail) {
   for (int ii = 1; ii <= 5; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    EXPECT_EQ(ARES_ENOMEM, ares_parse_mx_reply(data.data(), data.size(), &mx)) << ii;
+    EXPECT_EQ(ARES_ENOMEM, ares_parse_mx_reply(data.data(), (int)data.size(), &mx)) << ii;
   }
 }
 

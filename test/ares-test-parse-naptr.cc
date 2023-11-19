@@ -35,7 +35,7 @@ TEST_F(LibraryTest, ParseNaptrReplyOK) {
   std::vector<byte> data = pkt.data();
 
   struct ares_naptr_reply* naptr = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_naptr_reply(data.data(), data.size(), &naptr));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_naptr_reply(data.data(), (int)data.size(), &naptr));
   ASSERT_NE(nullptr, naptr);
   EXPECT_EQ("SP", std::string((char*)naptr->flags));
   EXPECT_EQ("service", std::string((char*)naptr->service));
@@ -69,7 +69,7 @@ TEST_F(LibraryTest, ParseNaptrReplyErrors) {
   // No question.
   pkt.questions_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_naptr_reply(data.data(), data.size(), &naptr));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_naptr_reply(data.data(), (int)data.size(), &naptr));
   pkt.add_question(new DNSQuestion("example.com", T_NAPTR));
 
 #ifdef DISABLED
@@ -77,7 +77,7 @@ TEST_F(LibraryTest, ParseNaptrReplyErrors) {
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("Axample.com", T_NAPTR));
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_naptr_reply(data.data(), data.size(), &naptr));
+  EXPECT_EQ(ARES_ENODATA, ares_parse_naptr_reply(data.data(), (int)data.size(), &naptr));
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_NAPTR));
 #endif
@@ -85,7 +85,7 @@ TEST_F(LibraryTest, ParseNaptrReplyErrors) {
   // Two questions
   pkt.add_question(new DNSQuestion("example.com", T_NAPTR));
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_naptr_reply(data.data(), data.size(), &naptr));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_naptr_reply(data.data(), (int)data.size(), &naptr));
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_NAPTR));
 
@@ -93,7 +93,7 @@ TEST_F(LibraryTest, ParseNaptrReplyErrors) {
   pkt.answers_.clear();
   pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
   data = pkt.data();
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_naptr_reply(data.data(), data.size(), &naptr));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_naptr_reply(data.data(), (int)data.size(), &naptr));
   EXPECT_EQ(nullptr, naptr);
   pkt.answers_.clear();
   pkt.add_answer(new DNSNaptrRR("example.com", 100,
@@ -102,14 +102,14 @@ TEST_F(LibraryTest, ParseNaptrReplyErrors) {
   // No answer.
   pkt.answers_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_naptr_reply(data.data(), data.size(), &naptr));
+  EXPECT_EQ(ARES_ENODATA, ares_parse_naptr_reply(data.data(), (int)data.size(), &naptr));
   pkt.add_answer(new DNSNaptrRR("example.com", 100,
                                10, 20, "SP", "service", "regexp", "replace"));
 
   // Truncated packets.
   data = pkt.data();
   for (size_t len = 1; len < data.size(); len++) {
-    int rc = ares_parse_naptr_reply(data.data(), len, &naptr);
+    int rc = ares_parse_naptr_reply(data.data(), (int)len, &naptr);
     EXPECT_TRUE(rc == ARES_EBADRESP || rc == ARES_EBADNAME);
   }
 }
@@ -140,7 +140,7 @@ TEST_F(LibraryTest, ParseNaptrReplyTooShort) {
     0x00,  // Too short: expect 2 x int16 and 3 x name (min 1 byte each)
   };
   struct ares_naptr_reply* naptr = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_naptr_reply(data.data(), data.size(), &naptr));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_naptr_reply(data.data(), (int)data.size(), &naptr));
 }
 
 TEST_F(LibraryTest, ParseNaptrReplyAllocFail) {
@@ -157,7 +157,7 @@ TEST_F(LibraryTest, ParseNaptrReplyAllocFail) {
   for (int ii = 1; ii <= 13; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    EXPECT_EQ(ARES_ENOMEM, ares_parse_naptr_reply(data.data(), data.size(), &naptr));
+    EXPECT_EQ(ARES_ENOMEM, ares_parse_naptr_reply(data.data(), (int)data.size(), &naptr));
   }
 }
 

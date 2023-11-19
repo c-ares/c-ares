@@ -33,7 +33,7 @@ TEST_F(LibraryTest, ParseUriReplyOK) {
   std::vector<byte> data = pkt.data();
 
   struct ares_uri_reply* uri = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), data.size(), &uri));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), (int)data.size(), &uri));
   ASSERT_NE(nullptr, uri);
 
   EXPECT_EQ("uri.example.com", std::string(uri->uri));
@@ -67,7 +67,7 @@ TEST_F(LibraryTest, ParseUriReplySingle) {
   std::vector<byte> data = pkt.data();
 
   struct ares_uri_reply* uri = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), data.size(), &uri));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), (int)data.size(), &uri));
   ASSERT_NE(nullptr, uri);
 
   EXPECT_EQ("example.abc.def.com", std::string(uri->uri));
@@ -106,7 +106,7 @@ TEST_F(LibraryTest, ParseUriReplyMalformed) {
   };
 
   struct ares_uri_reply* uri = nullptr;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_uri_reply(data.data(), data.size(), &uri));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_uri_reply(data.data(), (int)data.size(), &uri));
   ASSERT_EQ(nullptr, uri);
 }
 
@@ -129,7 +129,7 @@ TEST_F(LibraryTest, ParseUriReplyMultiple) {
   std::vector<byte> data = pkt.data();
 
   struct ares_uri_reply* uri0 = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), data.size(), &uri0));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), (int)data.size(), &uri0));
   ASSERT_NE(nullptr, uri0);
   struct ares_uri_reply* uri = uri0;
 
@@ -172,7 +172,7 @@ TEST_F(LibraryTest, ParseUriReplyCname) {
   std::vector<byte> data = pkt.data();
 
   struct ares_uri_reply* uri = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), data.size(), &uri));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), (int)data.size(), &uri));
   ASSERT_NE(nullptr, uri);
 
   EXPECT_EQ("uri.abc.def.com", std::string(uri->uri));
@@ -204,7 +204,7 @@ TEST_F(LibraryTest, ParseUriReplyCnameMultiple) {
   std::vector<byte> data = pkt.data();
 
   struct ares_uri_reply* uri0 = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), data.size(), &uri0));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), (int)data.size(), &uri0));
   ASSERT_NE(nullptr, uri0);
   struct ares_uri_reply* uri = uri0;
 
@@ -242,7 +242,7 @@ TEST_F(LibraryTest, ParseUriReplyErrors) {
   // No question.
   pkt.questions_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_uri_reply(data.data(), data.size(), &uri));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_uri_reply(data.data(), (int)data.size(), &uri));
   pkt.add_question(new DNSQuestion("example.abc.def.com", T_URI));
 
 #ifdef DISABLED
@@ -250,7 +250,7 @@ TEST_F(LibraryTest, ParseUriReplyErrors) {
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("Axample.com", T_URI));
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_uri_reply(data.data(), data.size(), &uri));
+  EXPECT_EQ(ARES_ENODATA, ares_parse_uri_reply(data.data(), (int)data.size(), &uri));
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_URI));
 #endif
@@ -258,7 +258,7 @@ TEST_F(LibraryTest, ParseUriReplyErrors) {
   // Two questions.
   pkt.add_question(new DNSQuestion("example.abc.def.com", T_URI));
   data = pkt.data();
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_uri_reply(data.data(), data.size(), &uri));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_uri_reply(data.data(), (int)data.size(), &uri));
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("64.48.32.16.in-addr.arpa", T_PTR));
 
@@ -266,7 +266,7 @@ TEST_F(LibraryTest, ParseUriReplyErrors) {
   pkt.answers_.clear();
   pkt.add_answer(new DNSMxRR("example.com", 100, 100, "mx1.example.com"));
   data = pkt.data();
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), data.size(), &uri));
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_uri_reply(data.data(), (int)data.size(), &uri));
   EXPECT_EQ(nullptr, uri);
   pkt.answers_.clear();
   pkt.add_answer(new DNSUriRR("example.abc.def.com", 180, 0, 10, "example.abc.def.com"));
@@ -274,13 +274,13 @@ TEST_F(LibraryTest, ParseUriReplyErrors) {
   // No answer.
   pkt.answers_.clear();
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_uri_reply(data.data(), data.size(), &uri));
+  EXPECT_EQ(ARES_ENODATA, ares_parse_uri_reply(data.data(), (int)data.size(), &uri));
   pkt.add_answer(new DNSUriRR("example.abc.def.com", 180, 0, 10, "example.abc.def.com"));
 
   // Truncated packets.
   data = pkt.data();
   for (size_t len = 1; len < data.size(); len++) {
-    int rc = ares_parse_uri_reply(data.data(), len, &uri);
+    int rc = ares_parse_uri_reply(data.data(), (int)len, &uri);
     EXPECT_TRUE(rc == ARES_EBADRESP || rc == ARES_EBADNAME);
   }
 }
@@ -297,7 +297,7 @@ TEST_F(LibraryTest, ParseUriReplyAllocFail) {
   for (int ii = 1; ii <= 5; ii++) {
     ClearFails();
     SetAllocFail(ii);
-    EXPECT_EQ(ARES_ENOMEM, ares_parse_uri_reply(data.data(), data.size(), &uri)) << ii;
+    EXPECT_EQ(ARES_ENOMEM, ares_parse_uri_reply(data.data(), (int)data.size(), &uri)) << ii;
   }
 }
 
