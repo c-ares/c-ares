@@ -1,10 +1,5 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(CMAKE_CXX_EXTENSIONS FALSE)
-
-enable_language(CXX)
 
 # Get rid of: warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
 IF (MSVC)
@@ -24,8 +19,6 @@ target_include_directories(caresinternal
              "${CARES_TOPLEVEL_DIR}/include"
              "${CMAKE_INSTALL_INCLUDEDIR}"
 )
-
-
 
 IF (CARES_STATIC)
   target_link_libraries(caresinternal INTERFACE ${PROJECT_NAME}::cares_static)

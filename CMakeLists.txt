@@ -14,8 +14,6 @@ INCLUDE (CheckLibraryExists)
 
 PROJECT (c-ares LANGUAGES C VERSION "1.22.1" )
 
-INCLUDE (EnableWarnings)
-
 # Set this version before release
 SET (CARES_VERSION "${PROJECT_VERSION}")
 
@@ -46,12 +44,22 @@ OPTION (CARES_SYMBOL_HIDING "Hide private symbols in shared libraries"          
 SET    (CARES_RANDOM_FILE "/dev/urandom" CACHE STRING "Suitable File / Device Path for entropy, such as /dev/urandom")
 
 
+# Tests require a C++ compiler
+IF (CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS)
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+	set(CMAKE_CXX_EXTENSIONS FALSE)
+	enable_language(CXX)
+ENDIF ()
+
 # Tests require static to be enabled on Windows to be able to access otherwise hidden symbols
-IF (CARES_BUILD_TESTS AND (NOT CARES_STATIC) AND WIN32)
+IF ((CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS) AND (NOT CARES_STATIC) AND WIN32)
 	SET (CARES_STATIC ON)
 	SET (CARES_STATIC_PIC ON)
 	MESSAGE (WARNING "Static building was requested be disabled, but reenabled to support tests")
 ENDIF ()
+
+INCLUDE (EnableWarnings)
 
 # allow linking against the static runtime library in msvc
 IF (MSVC)
