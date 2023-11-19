@@ -79,8 +79,8 @@ unsigned long long LibraryTest::fails_ = 0;
 std::map<size_t, int> LibraryTest::size_fails_;
 
 void ProcessWork(ares_channel_t *channel,
-                 std::function<std::set<int>()> get_extrafds,
-                 std::function<void(int)> process_extra) {
+                 std::function<std::set<ares_socket_t>()> get_extrafds,
+                 std::function<void(ares_socket_t)> process_extra) {
   int nfds, count;
   fd_set readers, writers;
   struct timeval tv;
@@ -97,7 +97,7 @@ void ProcessWork(ares_channel_t *channel,
     for (ares_socket_t extrafd : extrafds) {
       FD_SET(extrafd, &readers);
       if (extrafd >= nfds) {
-        nfds = extrafd + 1;
+        nfds = (int)extrafd + 1;
       }
     }
 
@@ -356,7 +356,7 @@ void MockServer::ProcessFD(ares_socket_t fd) {
     return;
   }
   if (fd == tcpfd_) {
-    int connfd = accept(tcpfd_, NULL, NULL);
+    ares_socket_t connfd = accept(tcpfd_, NULL, NULL);
     if (connfd < 0) {
       std::cerr << "Error accepting connection on fd " << fd << std::endl;
     } else {
@@ -392,7 +392,7 @@ void MockServer::ProcessFD(ares_socket_t fd) {
       if (tcp_data_len_ - 2 < tcplen)
         break;
 
-      ProcessPacket(fd, &addr, addrlen, tcp_data_ + 2, tcplen);
+      ProcessPacket(fd, &addr, addrlen, tcp_data_ + 2, (int)tcplen);
 
       /* strip off processed data if connection not terminated */
       if (tcp_data_ != NULL) {
@@ -440,7 +440,7 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
 
   // Prefix with 2-byte length if TCP.
   if (fd != udpfd_) {
-    int len = reply.size();
+    int len = (int)reply.size();
     std::vector<byte> vlen = {(byte)((len & 0xFF00) >> 8), (byte)(len & 0xFF)};
     reply.insert(reply.begin(), vlen.begin(), vlen.end());
     // Also, don't bother with the destination address.

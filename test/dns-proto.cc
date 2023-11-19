@@ -525,7 +525,7 @@ std::vector<byte> DNSRR::data() const {
 std::vector<byte> DNSSingleNameRR::data() const {
   std::vector<byte> data = DNSRR::data();
   std::vector<byte> encname = EncodeString(other_);
-  size_t len = encname.size();
+  int len = (int)encname.size();
   PushInt16(&data, len);
   data.insert(data.end(), encname.begin(), encname.end());
   return data;
@@ -533,9 +533,9 @@ std::vector<byte> DNSSingleNameRR::data() const {
 
 std::vector<byte> DNSTxtRR::data() const {
   std::vector<byte> data = DNSRR::data();
-  size_t len = 0;
+  int len = 0;
   for (const std::string& txt : txt_) {
-    len += (1 + txt.size());
+    len += (1 + (int)txt.size());
   }
   PushInt16(&data, len);
   for (const std::string& txt : txt_) {
@@ -548,7 +548,7 @@ std::vector<byte> DNSTxtRR::data() const {
 std::vector<byte> DNSMxRR::data() const {
   std::vector<byte> data = DNSRR::data();
   std::vector<byte> encname = EncodeString(other_);
-  size_t len = 2 + encname.size();
+  int len = 2 + (int)encname.size();
   PushInt16(&data, len);
   PushInt16(&data, pref_);
   data.insert(data.end(), encname.begin(), encname.end());
@@ -558,7 +558,7 @@ std::vector<byte> DNSMxRR::data() const {
 std::vector<byte> DNSSrvRR::data() const {
   std::vector<byte> data = DNSRR::data();
   std::vector<byte> encname = EncodeString(target_);
-  size_t len = 6 + encname.size();
+  int len = 6 + (int)encname.size();
   PushInt16(&data, len);
   PushInt16(&data, prio_);
   PushInt16(&data, weight_);
@@ -569,7 +569,7 @@ std::vector<byte> DNSSrvRR::data() const {
 
 std::vector<byte> DNSUriRR::data() const {
   std::vector<byte> data = DNSRR::data();
-  size_t len = 4 + target_.size();
+  int len = 4 + (int)target_.size();
   PushInt16(&data, len);
   PushInt16(&data, prio_);
   PushInt16(&data, weight_);
@@ -579,7 +579,7 @@ std::vector<byte> DNSUriRR::data() const {
 
 std::vector<byte> DNSAddressRR::data() const {
   std::vector<byte> data = DNSRR::data();
-  size_t len = addr_.size();
+  int len = (int)addr_.size();
   PushInt16(&data, len);
   data.insert(data.end(), addr_.begin(), addr_.end());
   return data;
@@ -589,7 +589,7 @@ std::vector<byte> DNSSoaRR::data() const {
   std::vector<byte> data = DNSRR::data();
   std::vector<byte> encname1 = EncodeString(nsname_);
   std::vector<byte> encname2 = EncodeString(rname_);
-  size_t len = encname1.size() + encname2.size() + 5*4;
+  int len = (int)encname1.size() + (int)encname2.size() + 5*4;
   PushInt16(&data, len);
   data.insert(data.end(), encname1.begin(), encname1.end());
   data.insert(data.end(), encname2.begin(), encname2.end());
@@ -603,14 +603,14 @@ std::vector<byte> DNSSoaRR::data() const {
 
 std::vector<byte> DNSOptRR::data() const {
   std::vector<byte> data = DNSRR::data();
-  size_t len = 0;
+  int len = 0;
   for (const DNSOption& opt : opts_) {
-    len += (4 + opt.data_.size());
+    len += (4 + (int)opt.data_.size());
   }
   PushInt16(&data, len);
   for (const DNSOption& opt : opts_) {
     PushInt16(&data, opt.code_);
-    PushInt16(&data, opt.data_.size());
+    PushInt16(&data, (int)opt.data_.size());
     data.insert(data.end(), opt.data_.begin(), opt.data_.end());
   }
   return data;
@@ -619,7 +619,7 @@ std::vector<byte> DNSOptRR::data() const {
 std::vector<byte> DNSNaptrRR::data() const {
   std::vector<byte> data = DNSRR::data();
   std::vector<byte> encname = EncodeString(replacement_);
-  size_t len = (4 + 1 + flags_.size() + 1 + service_.size() + 1 + regexp_.size() + encname.size());
+  int len = (4 + 1 + (int)flags_.size() + 1 + (int)service_.size() + 1 + (int)regexp_.size() + (int)encname.size());
   PushInt16(&data, len);
   PushInt16(&data, order_);
   PushInt16(&data, pref_);
@@ -651,13 +651,13 @@ std::vector<byte> DNSPacket::data() const {
   b |= (rcode_ & 0x0f);
   data.push_back(b);
 
-  size_t count = questions_.size();
+  int count = (int)questions_.size();
   PushInt16(&data, count);
-  count = answers_.size();
+  count = (int)answers_.size();
   PushInt16(&data, count);
-  count = auths_.size();
+  count = (int)auths_.size();
   PushInt16(&data, count);
-  count = adds_.size();
+  count = (int)adds_.size();
   PushInt16(&data, count);
 
   for (const std::unique_ptr<DNSQuestion>& question : questions_) {

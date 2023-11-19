@@ -69,7 +69,7 @@ struct DNSMalformedCnameRR : public DNSCnameRR {
     std::vector<byte> data = DNSRR::data();
     std::vector<byte> encname = EncodeString(other_);
     encname[0] = encname[0] + 63;  // invalid label length
-    int len = encname.size();
+    int len = (int)encname.size();
     PushInt16(&data, len);
     data.insert(data.end(), encname.begin(), encname.end());
     return data;

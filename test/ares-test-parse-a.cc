@@ -121,7 +121,7 @@ TEST_F(LibraryTest, ParseMalformedAReply) {
   // Invalid RR-len.
   std::vector<byte> invalid_rrlen(data);
   invalid_rrlen[51] = 180;
-  EXPECT_EQ(ARES_EBADRESP, ares_parse_a_reply(invalid_rrlen.data(), invalid_rrlen.size(),
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_a_reply(invalid_rrlen.data(), (int)invalid_rrlen.size(),
                                               &host, info, &count));
 
   // Truncate mid-question.
