@@ -23,7 +23,7 @@ environment:
   matrix:
     # MSVC 2022, UWP (cmake)
     - COMPILER: MSVC
-      BUILDTOOL: CMAKE
+      BUILDTOOL: CMAKEUWP
       TESTTYPE: NONE
       MSVC_SETUP_ARG: x64 store 10.0.22621.0
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
@@ -102,6 +102,11 @@ build_script:
   - if "%BUILDTOOL%" == "CMAKE" cd C:\projects\build-cares
   - if "%BUILDTOOL%" == "CMAKE" cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% %APPVEYOR_BUILD_FOLDER%
   - if "%BUILDTOOL%" == "CMAKE" ninja -v install
+  - if "%BUILDTOOL%" == "CMAKEUWP" echo %APPVEYOR_BUILD_FOLDER%
+  - if "%BUILDTOOL%" == "CMAKEUWP" cd
+  - if "%BUILDTOOL%" == "CMAKEUWP" cmake -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% -A x64 -Bbuild
+  - if "%BUILDTOOL%" == "CMAKEUWP" cmake --build build --target 'c-ares'
+  - if "%BUILDTOOL%" == "CMAKEUWP" cmake --install build --target 'c-ares'
   - if "%BUILDTOOL%" == "MAKE" copy .\include\ares_build.h.dist .\include\ares_build.h
   - if "%BUILDTOOL%" == "MAKE" mingw32-make.exe -f Makefile.m32 demos
 
