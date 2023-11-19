@@ -35,7 +35,9 @@ add_library(gmock STATIC
 )
 target_include_directories(gmock PUBLIC SYSTEM ${GMOCK_DIR})
 target_link_libraries(gmock PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-
+IF (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+  SET_TARGET_PROPERTIES(gmock PROPERTIES VS_WINRT_COMPONENT TRUE)
+ENDIF ()
 # test targets
 
 transform_makefile_inc("Makefile.inc" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")
@@ -46,6 +48,9 @@ configure_file(${CARES_TOPLEVEL_DIR}/src/lib/ares_config.h.cmake config.h)
 add_executable(arestest ${TESTSOURCES} ${TESTHEADERS})
 target_include_directories(arestest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(arestest PRIVATE caresinternal gmock)
+IF (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+  SET_TARGET_PROPERTIES(arestest PROPERTIES VS_WINRT_COMPONENT TRUE)
+ENDIF ()
 
 IF (CARES_BUILD_CONTAINER_TESTS)
   target_compile_definitions(arestest PRIVATE HAVE_USER_NAMESPACE HAVE_UTS_NAMESPACE)
@@ -53,12 +58,21 @@ ENDIF ()
 
 add_executable(aresfuzz ${FUZZSOURCES})
 target_link_libraries(aresfuzz PRIVATE caresinternal)
+IF (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+  SET_TARGET_PROPERTIES(aresfuzz PROPERTIES VS_WINRT_COMPONENT TRUE)
+ENDIF ()
 
 add_executable(aresfuzzname ${FUZZNAMESOURCES})
 target_link_libraries(aresfuzzname PRIVATE caresinternal)
+IF (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+  SET_TARGET_PROPERTIES(aresfuzzname PROPERTIES VS_WINRT_COMPONENT TRUE)
+ENDIF ()
 
 add_executable(dnsdump ${DUMPSOURCES})
 target_link_libraries(dnsdump PRIVATE caresinternal)
+IF (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+  SET_TARGET_PROPERTIES(dnsdump PROPERTIES VS_WINRT_COMPONENT TRUE)
+ENDIF ()
 
 # register tests
 
