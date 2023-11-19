@@ -35,7 +35,6 @@ add_library(gmock STATIC
 )
 target_include_directories(gmock PUBLIC SYSTEM ${GMOCK_DIR})
 target_link_libraries(gmock PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-
 # test targets
 
 transform_makefile_inc("Makefile.inc" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")

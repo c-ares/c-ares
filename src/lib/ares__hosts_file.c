@@ -750,31 +750,18 @@ static ares_status_t ares__hosts_path(const ares_channel_t *channel,
 
   if (!path_hosts) {
 #ifdef WIN32
-    char         PATH_HOSTS[MAX_PATH];
-    win_platform platform;
-
-    PATH_HOSTS[0] = '\0';
-
-    platform = ares__getplatform();
-
-    if (platform == WIN_NT) {
-      char tmp[MAX_PATH];
-      HKEY hkeyHosts;
-
-      if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
-                        &hkeyHosts) == ERROR_SUCCESS) {
-        DWORD dwLength = MAX_PATH;
-        RegQueryValueExA(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
-                         &dwLength);
-        ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
-        RegCloseKey(hkeyHosts);
-      }
-    } else if (platform == WIN_9X) {
-      GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
-    } else {
+    char  PATH_HOSTS[MAX_PATH] = "";
+    char  tmp[MAX_PATH];
+    HKEY  hkeyHosts;
+    DWORD dwLength             = sizeof(tmp);
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
+                      &hkeyHosts) != ERROR_SUCCESS) {
       return ARES_ENOTFOUND;
     }
-
+    RegQueryValueExA(hkeyHosts, DATABASEPATH, NULL, NULL, (LPBYTE)tmp,
+                     &dwLength);
+    ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
+    RegCloseKey(hkeyHosts);
     strcat(PATH_HOSTS, WIN_PATH_HOSTS);
 #elif defined(WATT32)
     const char *PATH_HOSTS = _w32_GetHostsFile();
