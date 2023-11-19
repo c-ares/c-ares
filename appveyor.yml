@@ -24,10 +24,11 @@ environment:
     # MSVC 2022, UWP (cmake)
     - COMPILER: MSVC
       BUILDTOOL: CMAKE
-      TESTTYPE: NONE
+      TESTTYPE: CMAKE
       MSVC_SETUP_ARG: x64 store 10.0.22621.0
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
       CMAKE_EXTRA_OPTIONS: -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64
+      TESTDIRSUFFIX: Release\
 
     # MinGW via MSYS2 (latest version)
     - COMPILER: MINGW
@@ -102,10 +103,8 @@ build_script:
   - if "%BUILDTOOL%" == "NMAKE" copy .\include\ares_build.h.dist .\include\ares_build.h
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc
   - if "%BUILDTOOL%" == "CMAKE" cmake -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% -Bbuild
-  - if "%BUILDTOOL%" == "CMAKE" dir
-  - if "%BUILDTOOL%" == "CMAKE" dir build
-  - if "%BUILDTOOL%" == "CMAKE" cmake --build build
-  - if "%BUILDTOOL%" == "CMAKE" cmake --install build
+  - if "%BUILDTOOL%" == "CMAKE" cmake --build build --config Release
+  - if "%BUILDTOOL%" == "CMAKE" cmake --install build --config Release
   - if "%BUILDTOOL%" == "MAKE" copy .\include\ares_build.h.dist .\include\ares_build.h
   - if "%BUILDTOOL%" == "MAKE" mingw32-make.exe -f Makefile.m32 demos
 
@@ -122,7 +121,7 @@ test_script:
   - if "%TESTTYPE%" == "MAKE" mingw32-make.exe -f Makefile.m32
   - if "%TESTTYPE%" == "MAKE" mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
   - if "%TESTTYPE%" == "MAKE" .\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
-  - if "%TESTTYPE%" == "CMAKE" cd build\bin
+  - if "%TESTTYPE%" == "CMAKE" cd build\bin\%TESTDIRSUFFIX%
   - if "%TESTTYPE%" == "CMAKE" .\adig.exe www.google.com
   - if "%TESTTYPE%" == "CMAKE" .\ahost.exe www.google.com
   - if "%TESTTYPE%" == "CMAKE" .\arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
