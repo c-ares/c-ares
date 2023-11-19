@@ -35,9 +35,6 @@ add_library(gmock STATIC
 )
 target_include_directories(gmock PUBLIC SYSTEM ${GMOCK_DIR})
 target_link_libraries(gmock PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-IF (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
-  SET_TARGET_PROPERTIES(gmock PROPERTIES VS_WINRT_COMPONENT TRUE)
-ENDIF ()
 # test targets
 
 transform_makefile_inc("Makefile.inc" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")
@@ -49,7 +46,7 @@ add_executable(arestest ${TESTSOURCES} ${TESTHEADERS})
 target_include_directories(arestest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(arestest PRIVATE caresinternal gmock)
 IF (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
-  SET_TARGET_PROPERTIES(arestest PROPERTIES VS_WINRT_COMPONENT TRUE)
+  SET_TARGET_PROPERTIES(gmock PROPERTIES VS_WINRT_COMPONENT TRUE)
 ENDIF ()
 
 IF (CARES_BUILD_CONTAINER_TESTS)
