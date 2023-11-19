@@ -76,8 +76,9 @@ static void ares__llist_attach_at(ares__llist_t            *list,
                                   ares__llist_node_t       *at,
                                   ares__llist_node_t       *node)
 {
-  if (list == NULL || node == NULL)
+  if (list == NULL || node == NULL) {
     return;
+  }
 
   node->parent = list;
 
@@ -248,8 +249,9 @@ static void ares__llist_node_detach(ares__llist_node_t *node)
 {
   ares__llist_t *list;
 
-  if (node == NULL)
+  if (node == NULL) {
     return;
+  }
 
   list = node->parent;
 
@@ -275,13 +277,13 @@ static void ares__llist_node_detach(ares__llist_node_t *node)
 
 void *ares__llist_node_claim(ares__llist_node_t *node)
 {
-  void          *val;
+  void *val;
 
   if (node == NULL) {
     return NULL;
   }
 
-  val  = node->data;
+  val = node->data;
   ares__llist_node_detach(node);
   ares_free(node);
 
@@ -336,20 +338,22 @@ void ares__llist_destroy(ares__llist_t *list)
 }
 
 void ares__llist_node_move_parent_last(ares__llist_node_t *node,
-                                       ares__llist_t *new_parent)
+                                       ares__llist_t      *new_parent)
 {
-  if (node == NULL || new_parent == NULL)
+  if (node == NULL || new_parent == NULL) {
     return;
+  }
 
   ares__llist_node_detach(node);
   ares__llist_attach_at(new_parent, ARES__LLIST_INSERT_TAIL, NULL, node);
 }
 
 void ares__llist_node_move_parent_first(ares__llist_node_t *node,
-                                        ares__llist_t *new_parent)
+                                        ares__llist_t      *new_parent)
 {
-  if (node == NULL || new_parent == NULL)
+  if (node == NULL || new_parent == NULL) {
     return;
+  }
 
   ares__llist_node_detach(node);
   ares__llist_attach_at(new_parent, ARES__LLIST_INSERT_HEAD, NULL, node);

@@ -159,8 +159,8 @@ static ares__llist_node_t *ares__htable_find(const ares__htable_t *htable,
 
 static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 {
-  ares__llist_t **buckets            = NULL;
-  unsigned int    old_size           = htable->size;
+  ares__llist_t **buckets  = NULL;
+  unsigned int    old_size = htable->size;
   size_t          i;
   ares__llist_t **prealloc_llist     = NULL;
   size_t          prealloc_llist_len = 0;
@@ -185,13 +185,13 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
    * that were recorded */
   prealloc_llist_len = htable->num_collisions;
   if (prealloc_llist_len) {
-    prealloc_llist = ares_malloc_zero(sizeof(*prealloc_llist) *
-                                      prealloc_llist_len);
+    prealloc_llist =
+      ares_malloc_zero(sizeof(*prealloc_llist) * prealloc_llist_len);
     if (prealloc_llist == NULL) {
       goto done;
     }
   }
-  for (i=0; i<prealloc_llist_len; i++) {
+  for (i = 0; i < prealloc_llist_len; i++) {
     prealloc_llist[i] = ares__llist_create(htable->bucket_free);
     if (prealloc_llist[i] == NULL) {
       goto done;
@@ -204,8 +204,9 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
     ares__llist_node_t *node;
 
     /* Nothing in this bucket */
-    if (htable->buckets[i] == NULL)
+    if (htable->buckets[i] == NULL) {
       continue;
+    }
 
     /* Fast path optimization (most likely case), there is likely only a single
      * entry in both the source and destination, check for this to confirm and
@@ -242,7 +243,7 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
         if (prealloc_llist == NULL || prealloc_llist_len == 0) {
           goto done;
         }
-        buckets[idx] = prealloc_llist[prealloc_llist_len-1];
+        buckets[idx] = prealloc_llist[prealloc_llist_len - 1];
         prealloc_llist_len--;
       } else {
         /* Collision occurred since the bucket wasn't empty */

@@ -56,7 +56,7 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
   size_t         packetsz;
   struct timeval now = ares__tvnow();
   ares_status_t  status;
-  unsigned short id = generate_unique_qid(channel);
+  unsigned short id   = generate_unique_qid(channel);
   unsigned char *abuf = NULL;
   size_t         alen = 0;
 

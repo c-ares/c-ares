@@ -881,7 +881,7 @@ static ares_status_t ares_dns_write_rr(ares_dns_record_t *dnsrec,
     }
 
     /* TTL */
-    ttl    = ares_dns_rr_get_ttl(rr);
+    ttl = ares_dns_rr_get_ttl(rr);
     if (rr->parent->ttl_decrement > ttl) {
       ttl = 0;
     } else {
@@ -1044,11 +1044,11 @@ done:
   return status;
 }
 
-
 void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
-                                         unsigned int ttl_decrement)
+                                         unsigned int       ttl_decrement)
 {
-  if (dnsrec == NULL)
+  if (dnsrec == NULL) {
     return;
+  }
   dnsrec->ttl_decrement = ttl_decrement;
 }

@@ -477,10 +477,9 @@ ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    unsigned short          tcp_port);
 ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
                                            const char     *str);
-ares_status_t
-  ares_in_addr_to_server_config_llist(const struct in_addr *servers,
-                                      size_t                nservers,
-                                      ares__llist_t       **llist);
+ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
+                                                  size_t          nservers,
+                                                  ares__llist_t **llist);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
@@ -559,30 +558,29 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
   (x && x->lookups && ares__slist_len(x->servers) > 0 && x->ndots > 0 && \
    x->timeout > 0 && x->tries > 0)
 
-size_t ares__round_up_pow2(size_t n);
-size_t ares__log2(size_t n);
-size_t ares__pow(size_t x, size_t y);
-size_t ares__count_digits(size_t n);
-size_t ares__count_hexdigits(size_t n);
-void ares__qcache_destroy(ares__qcache_t *cache);
+size_t        ares__round_up_pow2(size_t n);
+size_t        ares__log2(size_t n);
+size_t        ares__pow(size_t x, size_t y);
+size_t        ares__count_digits(size_t n);
+size_t        ares__count_hexdigits(size_t n);
+void          ares__qcache_destroy(ares__qcache_t *cache);
 ares_status_t ares__qcache_create(ares_rand_state *rand_state,
                                   unsigned int     max_ttl,
                                   ares__qcache_t **cache_out);
-void ares__qcache_flush(ares__qcache_t *cache);
-ares_status_t ares_qcache_insert(ares_channel_t    *channel,
-                                 struct timeval    *now,
+void          ares__qcache_flush(ares__qcache_t *cache);
+ares_status_t ares_qcache_insert(ares_channel_t *channel, struct timeval *now,
                                  struct query      *query,
                                  ares_dns_record_t *dnsrec);
 ares_status_t ares_qcache_fetch(ares_channel_t *channel, struct timeval *now,
                                 const unsigned char *qbuf, size_t qlen,
                                 unsigned char **abuf, size_t *alen);
 
-#  ifdef _MSC_VER
+#ifdef _MSC_VER
 typedef __int64          ares_int64_t;
 typedef unsigned __int64 ares_uint64_t;
-#  else
+#else
 typedef long long          ares_int64_t;
 typedef unsigned long long ares_uint64_t;
-#  endif
+#endif
 
 #endif /* __ARES_PRIVATE_H */

@@ -862,7 +862,7 @@ ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num, size_t len)
     size_t        digit = (num % mod);
     ares_status_t status;
 
-    mod    /= 10;
+    mod /= 10;
 
     /* Silence coverity.  Shouldn't be possible since we calculate it above */
     if (mod == 0) {

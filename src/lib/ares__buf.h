@@ -96,7 +96,7 @@ ares_status_t  ares__buf_append_byte(ares__buf_t *buf, unsigned char byte);
  *  \param[in] str      String to append to buffer object.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_append_str(ares__buf_t *buf, const char *str);
+ares_status_t  ares__buf_append_str(ares__buf_t *buf, const char *str);
 
 /*! Append a 16bit Big Endian number to the buffer.
  *

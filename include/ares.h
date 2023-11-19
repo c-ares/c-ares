@@ -308,7 +308,7 @@ struct ares_options {
   char              *hosts_path;
   int                udp_max_queries;
   int                maxtimeout; /* in milliseconds */
-  unsigned int       qcache_max_ttl; /* Maximum TTL for query cache, 0=disabled */
+  unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
 };
 
 struct hostent;

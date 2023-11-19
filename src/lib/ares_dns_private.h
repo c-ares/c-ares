@@ -46,8 +46,8 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
 ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
                                           ares_dns_section_t sect, size_t cnt);
 ares_bool_t   ares_dns_has_opt_rr(const ares_dns_record_t *rec);
-void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
-                                         unsigned int ttl_decrement);
+void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
+                                                  unsigned int       ttl_decrement);
 
 struct ares_dns_qd {
   char               *name;
@@ -204,13 +204,13 @@ struct ares_dns_rr {
 
 /*! DNS data structure */
 struct ares_dns_record {
-  unsigned short    id;        /*!< DNS query id */
-  unsigned short    flags;     /*!< One or more ares_dns_flags_t */
-  ares_dns_opcode_t opcode;    /*!< DNS Opcode */
-  ares_dns_rcode_t  rcode;     /*!< DNS RCODE */
-  unsigned short    raw_rcode; /*!< Raw rcode, used to ultimately form real
-                                *   rcode after reading OPT record if it
-                                *   exists */
+  unsigned short    id;            /*!< DNS query id */
+  unsigned short    flags;         /*!< One or more ares_dns_flags_t */
+  ares_dns_opcode_t opcode;        /*!< DNS Opcode */
+  ares_dns_rcode_t  rcode;         /*!< DNS RCODE */
+  unsigned short    raw_rcode;     /*!< Raw rcode, used to ultimately form real
+                                    *   rcode after reading OPT record if it
+                                    *   exists */
   unsigned int      ttl_decrement; /*!< Special case to apply to writing out
                                     *   this record, where it will decrement
                                     *   the ttl of any resource records by

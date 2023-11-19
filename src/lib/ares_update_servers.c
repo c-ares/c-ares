@@ -643,8 +643,7 @@ fail:
 }
 
 static ares_status_t ares_addr_port_node_to_server_config_llist(
-  const struct ares_addr_port_node *servers,
-  ares__llist_t **llist)
+  const struct ares_addr_port_node *servers, ares__llist_t **llist)
 {
   const struct ares_addr_port_node *node;
   ares__llist_t                    *s;
@@ -695,10 +694,9 @@ fail:
   return ARES_ENOMEM;
 }
 
-ares_status_t
-  ares_in_addr_to_server_config_llist(const struct in_addr *servers,
-                                      size_t                nservers,
-                                      ares__llist_t       **llist)
+ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
+                                                  size_t          nservers,
+                                                  ares__llist_t **llist)
 {
   size_t         i;
   ares__llist_t *s;

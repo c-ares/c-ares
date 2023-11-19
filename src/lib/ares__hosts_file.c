@@ -319,10 +319,9 @@ typedef enum {
   ARES_MATCH_HOST   = 2
 } ares_hosts_file_match_t;
 
-static ares_status_t ares__hosts_file_merge_entry(ares_hosts_file_t  *hf,
-                                                  ares_hosts_entry_t *existing,
-                                                  ares_hosts_entry_t *entry,
-                                                  ares_hosts_file_match_t matchtype)
+static ares_status_t ares__hosts_file_merge_entry(
+  ares_hosts_file_t *hf, ares_hosts_entry_t *existing,
+  ares_hosts_entry_t *entry, ares_hosts_file_match_t matchtype)
 {
   ares__llist_node_t *node;
 
@@ -357,8 +356,6 @@ static ares_status_t ares__hosts_file_merge_entry(ares_hosts_file_t  *hf,
   return ARES_SUCCESS;
 }
 
-
-
 static ares_hosts_file_match_t
   ares__hosts_file_match(const ares_hosts_file_t *hf, ares_hosts_entry_t *entry,
                          ares_hosts_entry_t **match)
@@ -392,7 +389,7 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
                                           ares_hosts_entry_t *entry)
 {
   ares_hosts_entry_t     *match  = NULL;
-  ares_status_t           status       = ARES_SUCCESS;
+  ares_status_t           status = ARES_SUCCESS;
   ares__llist_node_t     *node;
   ares_hosts_file_match_t matchtype;
   size_t                  num_hostnames;
@@ -432,8 +429,9 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
        node = ares__llist_node_prev(node)) {
     const char *val = ares__llist_node_val(node);
 
-    if (num_hostnames == 0)
+    if (num_hostnames == 0) {
       break;
+    }
 
     num_hostnames--;
 
@@ -753,7 +751,7 @@ static ares_status_t ares__hosts_path(const ares_channel_t *channel,
     char  PATH_HOSTS[MAX_PATH] = "";
     char  tmp[MAX_PATH];
     HKEY  hkeyHosts;
-    DWORD dwLength             = sizeof(tmp);
+    DWORD dwLength = sizeof(tmp);
     if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ,
                       &hkeyHosts) != ERROR_SUCCESS) {
       return ARES_ENOTFOUND;
@@ -939,8 +937,9 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
 
   /* Cap at 100, some people use https://github.com/StevenBlack/hosts and we
    * don't need 200k+ aliases */
-  if (naliases > 100)
+  if (naliases > 100) {
     naliases = 100;
+  }
 
   (*hostent)->h_aliases =
     ares_malloc_zero((naliases + 1) * sizeof(*(*hostent)->h_aliases));
@@ -962,8 +961,9 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
     idx++;
 
     /* Break out if artificially capped */
-    if (idx == naliases)
+    if (idx == naliases) {
       break;
+    }
     node = ares__llist_node_next(node);
   }
 
@@ -994,11 +994,12 @@ static ares_status_t
   while (node != NULL) {
     const char *host = ares__llist_node_val(node);
 
-    /* Cap at 100 entries. , some people use https://github.com/StevenBlack/hosts
-     * and we don't need 200k+ aliases */
+    /* Cap at 100 entries. , some people use
+     * https://github.com/StevenBlack/hosts and we don't need 200k+ aliases */
     cnt++;
-    if (cnt > 100)
+    if (cnt > 100) {
       break;
+    }
 
     cname = ares__append_addrinfo_cname(&cnames);
     if (cname == NULL) {

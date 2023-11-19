@@ -53,8 +53,6 @@ typedef struct ares_rand_rc4 {
   size_t        j;
 } ares_rand_rc4;
 
-
-
 static unsigned int ares_u32_from_ptr(void *addr)
 {
   if (sizeof(void *) == 8) {

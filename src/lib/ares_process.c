@@ -116,8 +116,9 @@ ares_bool_t ares__timedout(const struct timeval *now,
   }
 
   /* if the full seconds were identical, check the sub second parts */
-  return ((ares_int64_t)now->tv_usec - (ares_int64_t)check->tv_usec) >= 0 ?
-    ARES_TRUE : ARES_FALSE;
+  return ((ares_int64_t)now->tv_usec - (ares_int64_t)check->tv_usec) >= 0
+           ? ARES_TRUE
+           : ARES_FALSE;
 }
 
 /* add the specific number of milliseconds to the time in the first argument */
@@ -776,8 +777,9 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
   size_t              num_servers = ares__slist_len(channel->servers);
 
   /* Silence coverity, not possible */
-  if (num_servers == 0)
+  if (num_servers == 0) {
     return NULL;
+  }
 
   ares__rand_bytes(channel->rand_state, &c, 1);
 
@@ -811,13 +813,14 @@ static ares_status_t ares__append_tcpbuf(struct server_state *server,
 
 static size_t ares__calc_query_timeout(const struct query *query)
 {
-  const ares_channel_t *channel     = query->channel;
-  size_t                timeplus    = channel->timeout;
+  const ares_channel_t *channel  = query->channel;
+  size_t                timeplus = channel->timeout;
   size_t                rounds;
   size_t                num_servers = ares__slist_len(channel->servers);
 
-  if (num_servers == 0)
+  if (num_servers == 0) {
     return 0;
+  }
 
   /* For each trip through the entire server list, we want to double the
    * retry from the last retry */

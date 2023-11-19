@@ -98,7 +98,7 @@
 /* If we are building with OpenWatcom, we need to specify that we have
  * <stdint.h>. */
 #if defined(__WATCOMC__)
-#define HAVE_STDINT_H
+#  define HAVE_STDINT_H
 #endif
 
 /* ---------------------------------------------------------------- */
