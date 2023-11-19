@@ -59,6 +59,9 @@
 
 #if defined(USE_WINSOCK)
 #  include <iphlpapi.h>
+#  if !defined(__WATCOMC__)
+#    include <netioapi.h>
+#  endif
 #endif
 
 #include "ares.h"

@@ -769,8 +769,10 @@ static ares_status_t ares__hosts_path(const ares_channel_t *channel,
         ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
         RegCloseKey(hkeyHosts);
       }
+#  if WINAPI_FAMILY != WINAPI_FAMILY_APP
     } else if (platform == WIN_9X) {
       GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
+#  endif
     } else {
       return ARES_ENOTFOUND;
     }

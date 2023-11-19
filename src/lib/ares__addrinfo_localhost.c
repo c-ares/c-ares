@@ -40,6 +40,9 @@
 #if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
 #  include <ws2ipdef.h>
 #  include <iphlpapi.h>
+#  if !defined(__WATCOMC__)
+#    include <netioapi.h>
+#  endif
 #endif
 
 #include "ares.h"
