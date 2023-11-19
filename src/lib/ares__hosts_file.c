@@ -762,7 +762,7 @@ static ares_status_t ares__hosts_path(const ares_channel_t *channel,
                      &dwLength);
     ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
     RegCloseKey(hkeyHosts);
-
+    strcat(PATH_HOSTS, WIN_PATH_HOSTS);
 #elif defined(WATT32)
     const char *PATH_HOSTS = _w32_GetHostsFile();
 
