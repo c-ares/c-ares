@@ -54,9 +54,11 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
 {
   struct query  *query;
   size_t         packetsz;
-  struct timeval now;
+  struct timeval now = ares__tvnow();
   ares_status_t  status;
   unsigned short id = generate_unique_qid(channel);
+  unsigned char *abuf = NULL;
+  size_t         alen = 0;
 
   /* Verify that the query is at least long enough to hold the header. */
   if (qlen < HFIXEDSZ || qlen >= (1 << 16)) {
@@ -67,6 +69,17 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
     callback(arg, ARES_ESERVFAIL, 0, NULL, 0);
     return ARES_ESERVFAIL;
   }
+
+  /* Check query cache */
+  status = ares_qcache_fetch(channel, &now, qbuf, qlen, &abuf, &alen);
+  if (status != ARES_ENOTFOUND) {
+    /* ARES_SUCCESS means we retrieved the cache, anything else is a critical
+     * failure, all result in termination */
+    callback(arg, (int)status, 0, abuf, (int)alen);
+    ares_free(abuf);
+    return status;
+  }
+
   /* Allocate space for query and allocated fields. */
   query = ares_malloc(sizeof(struct query));
   if (!query) {
@@ -129,7 +142,6 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
   }
 
   /* Perform the first query action. */
-  now = ares__tvnow();
 
   status = ares__send_query(query, &now);
   if (status == ARES_SUCCESS && qid) {

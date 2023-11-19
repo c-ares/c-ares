@@ -358,6 +358,14 @@ int ares_init_options(ares_channel_t           **channelptr,
     goto done;
   }
 
+  if (channel->qcache_max_ttl > 0) {
+    status = ares__qcache_create(channel->rand_state, channel->qcache_max_ttl,
+                                 &channel->qcache);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
+
   if (status == ARES_SUCCESS) {
     status = ares__init_by_sysconfig(channel);
     if (status != ARES_SUCCESS) {
@@ -399,6 +407,12 @@ ares_status_t ares_reinit(ares_channel_t *channel)
     DEBUGF(fprintf(stderr, "Error: init_by_sysconfig failed: %s\n",
                    ares_strerror(status)));
   }
+
+  /* Flush cached queries on reinit */
+  if (channel->qcache) {
+    ares__qcache_flush(channel->qcache);
+  }
+
   return status;
 }
 

@@ -243,6 +243,9 @@ struct apattern {
   unsigned short type;
 };
 
+struct ares__qcache;
+typedef struct ares__qcache ares__qcache_t;
+
 struct ares_hosts_file;
 typedef struct ares_hosts_file ares_hosts_file_t;
 
@@ -264,6 +267,7 @@ struct ares_channeldata {
   size_t               nsort;
   char                *lookups;
   size_t               ednspsz;
+  unsigned int         qcache_max_ttl;
   unsigned int         optmask;
 
   /* For binding to local devices and/or IP addresses.  Leave
@@ -318,6 +322,9 @@ struct ares_channeldata {
 
   /* Cache of local hosts file */
   ares_hosts_file_t                  *hf;
+
+  /* Query Cache */
+  ares__qcache_t                     *qcache;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
@@ -556,7 +563,18 @@ size_t ares__log2(size_t n);
 size_t ares__pow(size_t x, size_t y);
 size_t ares__count_digits(size_t n);
 size_t ares__count_hexdigits(size_t n);
-
+void ares__qcache_destroy(ares__qcache_t *cache);
+ares_status_t ares__qcache_create(ares_rand_state *rand_state,
+                                  unsigned int     max_ttl,
+                                  ares__qcache_t **cache_out);
+void ares__qcache_flush(ares__qcache_t *cache);
+ares_status_t ares_qcache_insert(ares_channel_t    *channel,
+                                 struct timeval    *now,
+                                 struct query      *query,
+                                 ares_dns_record_t *dnsrec);
+ares_status_t ares_qcache_fetch(ares_channel_t *channel, struct timeval *now,
+                                const unsigned char *qbuf, size_t qlen,
+                                unsigned char **abuf, size_t *alen);
 
 #  ifdef _MSC_VER
 typedef __int64          ares_int64_t;

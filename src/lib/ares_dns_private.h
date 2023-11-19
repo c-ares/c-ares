@@ -46,6 +46,8 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
 ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
                                           ares_dns_section_t sect, size_t cnt);
 ares_bool_t   ares_dns_has_opt_rr(const ares_dns_record_t *rec);
+void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
+                                         unsigned int ttl_decrement);
 
 struct ares_dns_qd {
   char               *name;
@@ -209,6 +211,10 @@ struct ares_dns_record {
   unsigned short    raw_rcode; /*!< Raw rcode, used to ultimately form real
                                 *   rcode after reading OPT record if it
                                 *   exists */
+  unsigned int      ttl_decrement; /*!< Special case to apply to writing out
+                                    *   this record, where it will decrement
+                                    *   the ttl of any resource records by
+                                    *   this amount.  Used for cache */
 
   ares_dns_qd_t    *qd;
   size_t            qdcount;

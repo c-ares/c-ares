@@ -112,7 +112,11 @@ class DefaultChannelTest : public LibraryTest {
 public:
   DefaultChannelTest() : channel_(nullptr)
   {
-    EXPECT_EQ(ARES_SUCCESS, ares_init(&channel_));
+    /* Enable query cache for live tests */
+    struct ares_options opts = { 0 };
+    opts.qcache_max_ttl      = 300;
+    int optmask              = ARES_OPT_QUERY_CACHE;
+    EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
     EXPECT_NE(nullptr, channel_);
   }
 

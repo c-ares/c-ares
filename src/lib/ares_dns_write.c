@@ -847,6 +847,7 @@ static ares_status_t ares_dns_write_rr(ares_dns_record_t *dnsrec,
     ares_status_t        status;
     size_t               rdlength;
     size_t               end_length;
+    unsigned int         ttl;
 
     rr = ares_dns_record_rr_get(dnsrec, section, i);
     if (rr == NULL) {
@@ -880,7 +881,13 @@ static ares_status_t ares_dns_write_rr(ares_dns_record_t *dnsrec,
     }
 
     /* TTL */
-    status = ares__buf_append_be32(buf, ares_dns_rr_get_ttl(rr));
+    ttl    = ares_dns_rr_get_ttl(rr);
+    if (rr->parent->ttl_decrement > ttl) {
+      ttl = 0;
+    } else {
+      ttl -= rr->parent->ttl_decrement;
+    }
+    status = ares__buf_append_be32(buf, ttl);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -1035,4 +1042,13 @@ done:
 
   *buf = ares__buf_finish_bin(b, buf_len);
   return status;
+}
+
+
+void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
+                                         unsigned int ttl_decrement)
+{
+  if (dnsrec == NULL)
+    return;
+  dnsrec->ttl_decrement = ttl_decrement;
 }
