@@ -182,6 +182,9 @@
 /* Define to 1 if you have iphlpapi.h */
 #cmakedefine HAVE_IPHLPAPI_H
 
+/* Define to 1 if you have netioapi.h */
+#cmakedefine HAVE_NETIOAPI_H
+
 /* Define to 1 if you have the <limits.h> header file. */
 #cmakedefine HAVE_LIMITS_H
 
