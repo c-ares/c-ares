@@ -23,7 +23,7 @@ environment:
   matrix:
     # MSVC 2022, UWP (cmake)
     - COMPILER: MSVC
-      BUILDTOOL: CMAKEUWP
+      BUILDTOOL: CMAKE
       TESTTYPE: NONE
       MSVC_SETUP_ARG: x64 store 10.0.22621.0
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
