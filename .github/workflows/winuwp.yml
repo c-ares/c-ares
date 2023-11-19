@@ -19,5 +19,5 @@ jobs:
     - name: Build
       shell: pwsh
       run: |
-        cmake -Bbuild 'DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' -A x64
+        cmake -Bbuild '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' -A x64
         cmake --build build --target 'c-ares'
