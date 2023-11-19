@@ -1,0 +1,23 @@
+name: winuwp
+
+on: push
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - uses: ilammy/msvc-dev-cmd@v1.12.0
+      with: 
+        arch: x64
+        uwp: 'true'
+
+    - name: Build
+      shell: pwsh
+      run: |
+        cmake -Bbuild 'DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' -A x64
+        cmake --build build --target 'c-ares'
