@@ -568,10 +568,12 @@ ares_status_t ares__qcache_create(ares_rand_state *rand_state,
                                   unsigned int     max_ttl,
                                   ares__qcache_t **cache_out);
 void          ares__qcache_flush(ares__qcache_t *cache);
-ares_status_t ares_qcache_insert(ares_channel_t *channel, struct timeval *now,
-                                 struct query      *query,
+ares_status_t ares_qcache_insert(ares_channel_t *channel,
+                                 const struct timeval *now,
+                                 const struct query *query,
                                  ares_dns_record_t *dnsrec);
-ares_status_t ares_qcache_fetch(ares_channel_t *channel, struct timeval *now,
+ares_status_t ares_qcache_fetch(ares_channel_t *channel,
+                                const struct timeval *now,
                                 const unsigned char *qbuf, size_t qlen,
                                 unsigned char **abuf, size_t *alen);
 

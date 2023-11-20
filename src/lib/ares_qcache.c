@@ -127,7 +127,8 @@ fail:
   return NULL;
 }
 
-static void ares__qcache_expire(ares__qcache_t *cache, struct timeval *now)
+static void ares__qcache_expire(ares__qcache_t *cache,
+                                const struct timeval *now)
 {
   ares__slist_node_t *node;
 
@@ -136,7 +137,7 @@ static void ares__qcache_expire(ares__qcache_t *cache, struct timeval *now)
   }
 
   while ((node = ares__slist_node_first(cache->expire)) != NULL) {
-    ares__qcache_entry_t *entry = ares__slist_node_val(node);
+    const ares__qcache_entry_t *entry = ares__slist_node_val(node);
     if (entry->expire_ts > now->tv_sec) {
       break;
     }
@@ -309,7 +310,7 @@ done:
 static ares_status_t ares__qcache_insert(ares__qcache_t      *qcache,
                                          ares_dns_record_t   *dnsrec,
                                          const unsigned char *qbuf, size_t qlen,
-                                         struct timeval *now)
+                                         const struct timeval *now)
 {
   ares__qcache_entry_t *entry;
   unsigned int          ttl;
@@ -383,9 +384,9 @@ fail:
   return ARES_ENOMEM;
 }
 
-static ares_status_t ares__qcache_fetch(ares__qcache_t    *qcache,
-                                        ares_dns_record_t *dnsrec,
-                                        struct timeval    *now,
+static ares_status_t ares__qcache_fetch(ares__qcache_t          *qcache,
+                                        const ares_dns_record_t *dnsrec,
+                                        const struct timeval    *now,
                                         unsigned char **buf, size_t *buf_len)
 {
   char                 *key = NULL;
@@ -420,14 +421,17 @@ done:
   return status;
 }
 
-ares_status_t ares_qcache_insert(ares_channel_t *channel, struct timeval *now,
-                                 struct query *query, ares_dns_record_t *dnsrec)
+ares_status_t ares_qcache_insert(ares_channel_t *channel,
+                                 const struct timeval *now,
+                                 const struct query *query,
+                                 ares_dns_record_t *dnsrec)
 {
   return ares__qcache_insert(channel->qcache, dnsrec, query->qbuf, query->qlen,
                              now);
 }
 
-ares_status_t ares_qcache_fetch(ares_channel_t *channel, struct timeval *now,
+ares_status_t ares_qcache_fetch(ares_channel_t *channel,
+                                const struct timeval *now,
                                 const unsigned char *qbuf, size_t qlen,
                                 unsigned char **abuf, size_t *alen)
 {

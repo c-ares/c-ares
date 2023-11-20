@@ -212,8 +212,8 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
      * entry in both the source and destination, check for this to confirm and
      * if so, just move the bucket over */
     if (ares__llist_len(htable->buckets[i]) == 1) {
-      void  *val = ares__llist_first_val(htable->buckets[i]);
-      size_t idx = HASH_IDX(htable, htable->bucket_key(val));
+      const void *val = ares__llist_first_val(htable->buckets[i]);
+      size_t      idx = HASH_IDX(htable, htable->bucket_key(val));
 
       if (buckets[idx] == NULL) {
         /* Swap! */
@@ -225,8 +225,8 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 
     /* Slow path, collisions */
     while ((node = ares__llist_node_first(htable->buckets[i])) != NULL) {
-      void  *val = ares__llist_node_val(node);
-      size_t idx = HASH_IDX(htable, htable->bucket_key(val));
+      const void  *val = ares__llist_node_val(node);
+      size_t       idx = HASH_IDX(htable, htable->bucket_key(val));
 
       /* Try fast path again as maybe we popped one collision off and the
        * next we can reuse the llist parent */

@@ -320,7 +320,7 @@ typedef enum {
 } ares_hosts_file_match_t;
 
 static ares_status_t ares__hosts_file_merge_entry(
-  ares_hosts_file_t *hf, ares_hosts_entry_t *existing,
+  const ares_hosts_file_t *hf, ares_hosts_entry_t *existing,
   ares_hosts_entry_t *entry, ares_hosts_file_match_t matchtype)
 {
   ares__llist_node_t *node;
