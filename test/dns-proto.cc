@@ -479,14 +479,14 @@ std::string RRToString(const std::vector<byte>& packet,
 }
 
 void PushInt32(std::vector<byte>* data, int value) {
-  data->push_back((byte)((unsigned int)value & 0xff000000) >> 24);
-  data->push_back((byte)((unsigned int)value & 0x00ff0000) >> 16);
-  data->push_back((byte)((unsigned int)value & 0x0000ff00) >> 8);
-  data->push_back((byte)value & 0x000000ff);
+  data->push_back((byte)(((unsigned int)value & 0xff000000) >> 24));
+  data->push_back((byte)(((unsigned int)value & 0x00ff0000) >> 16));
+  data->push_back((byte)(((unsigned int)value & 0x0000ff00) >> 8));
+  data->push_back((byte)(value & 0x000000ff));
 }
 
 void PushInt16(std::vector<byte>* data, int value) {
-  data->push_back((byte)(value & 0xff00) >> 8);
+  data->push_back((byte)((value & 0xff00) >> 8));
   data->push_back((byte)value & 0x00ff);
 }
 
