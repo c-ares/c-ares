@@ -479,15 +479,15 @@ std::string RRToString(const std::vector<byte>& packet,
 }
 
 void PushInt32(std::vector<byte>* data, int value) {
-  data->push_back((value & 0xff000000) >> 24);
-  data->push_back((value & 0x00ff0000) >> 16);
-  data->push_back((value & 0x0000ff00) >> 8);
-  data->push_back(value & 0x000000ff);
+  data->push_back((byte)((unsigned int)value & 0xff000000) >> 24);
+  data->push_back((byte)((unsigned int)value & 0x00ff0000) >> 16);
+  data->push_back((byte)((unsigned int)value & 0x0000ff00) >> 8);
+  data->push_back((byte)value & 0x000000ff);
 }
 
 void PushInt16(std::vector<byte>* data, int value) {
-  data->push_back((value & 0xff00) >> 8);
-  data->push_back(value & 0x00ff);
+  data->push_back((byte)(value & 0xff00) >> 8);
+  data->push_back((byte)value & 0x00ff);
 }
 
 std::vector<byte> EncodeString(const std::string& name) {
@@ -500,7 +500,7 @@ std::vector<byte> EncodeString(const std::string& name) {
      * terminator, so don't do it twice */
     if (label.length() == 0)
       break;
-    data.push_back(label.length());
+    data.push_back((byte)label.length());
     data.insert(data.end(), label.begin(), label.end());
   }
   data.push_back(0);
@@ -539,7 +539,7 @@ std::vector<byte> DNSTxtRR::data() const {
   }
   PushInt16(&data, len);
   for (const std::string& txt : txt_) {
-    data.push_back(txt.size());
+    data.push_back((byte)txt.size());
     data.insert(data.end(), txt.begin(), txt.end());
   }
   return data;
@@ -623,11 +623,11 @@ std::vector<byte> DNSNaptrRR::data() const {
   PushInt16(&data, len);
   PushInt16(&data, order_);
   PushInt16(&data, pref_);
-  data.push_back(flags_.size());
+  data.push_back((byte)flags_.size());
   data.insert(data.end(), flags_.begin(), flags_.end());
-  data.push_back(service_.size());
+  data.push_back((byte)service_.size());
   data.insert(data.end(), service_.begin(), service_.end());
-  data.push_back(regexp_.size());
+  data.push_back((byte)regexp_.size());
   data.insert(data.end(), regexp_.begin(), regexp_.end());
   data.insert(data.end(), encname.begin(), encname.end());
   return data;

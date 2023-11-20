@@ -74,8 +74,9 @@ TEST(LibraryInit, BasicChannelInit) {
 }
 
 TEST_F(LibraryTest, OptionsChannelInit) {
-  struct ares_options opts = {0};
+  struct ares_options opts;
   int optmask = 0;
+  memset(&opts, 0, sizeof(opts));
   opts.flags = ARES_FLAG_USEVC | ARES_FLAG_PRIMARY;
   optmask |= ARES_OPT_FLAGS;
   opts.timeout = 2000;
@@ -97,12 +98,12 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   opts.ednspsz = 1280;
   optmask |= ARES_OPT_EDNSPSZ;
   opts.nservers = 2;
-  opts.servers = (struct in_addr *)malloc(opts.nservers * sizeof(struct in_addr));
+  opts.servers = (struct in_addr *)malloc((size_t)opts.nservers * sizeof(struct in_addr));
   opts.servers[0].s_addr = htonl(0x01020304);
   opts.servers[1].s_addr = htonl(0x02030405);
   optmask |= ARES_OPT_SERVERS;
   opts.ndomains = 2;
-  opts.domains = (char **)malloc(opts.ndomains * sizeof(char *));
+  opts.domains = (char **)malloc((size_t)opts.ndomains * sizeof(char *));
   opts.domains[0] = strdup("example.com");
   opts.domains[1] = strdup("example2.com");
   optmask |= ARES_OPT_DOMAINS;
@@ -122,8 +123,9 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   EXPECT_EQ(ARES_SUCCESS, ares_dup(&channel2, channel));
   EXPECT_NE(nullptr, channel2);
 
-  struct ares_options opts2 = {0};
+  struct ares_options opts2;
   int optmask2 = 0;
+  memset(&opts2, 0, sizeof(opts2));
   EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel2, &opts2, &optmask2));
 
   // Note that not all opts-settable fields are saved (e.g.
@@ -167,8 +169,9 @@ TEST_F(LibraryTest, ChannelAllocFail) {
 }
 
 TEST_F(LibraryTest, OptionsChannelAllocFail) {
-  struct ares_options opts = {0};
+  struct ares_options opts;
   int optmask = 0;
+  memset(&opts, 0, sizeof(opts));
   opts.flags = ARES_FLAG_USEVC;
   optmask |= ARES_OPT_FLAGS;
   opts.timeout = 2;
@@ -188,12 +191,12 @@ TEST_F(LibraryTest, OptionsChannelAllocFail) {
   opts.ednspsz = 1280;
   optmask |= ARES_OPT_EDNSPSZ;
   opts.nservers = 2;
-  opts.servers = (struct in_addr *)malloc(opts.nservers * sizeof(struct in_addr));
+  opts.servers = (struct in_addr *)malloc((size_t)opts.nservers * sizeof(struct in_addr));
   opts.servers[0].s_addr = htonl(0x01020304);
   opts.servers[1].s_addr = htonl(0x02030405);
   optmask |= ARES_OPT_SERVERS;
   opts.ndomains = 2;
-  opts.domains = (char **)malloc(opts.ndomains * sizeof(char *));
+  opts.domains = (char **)malloc((size_t)opts.ndomains * sizeof(char *));
   opts.domains[0] = strdup("example.com");
   opts.domains[1] = strdup("example2.com");
   optmask |= ARES_OPT_DOMAINS;

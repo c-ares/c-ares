@@ -39,7 +39,7 @@ static void ShowFile(const char* filename) {
   std::vector<unsigned char> contents;
   while (true) {
     unsigned char buffer[1024];
-    int len = read(fd, buffer, sizeof(buffer));
+    ares_ssize_t len = read(fd, buffer, sizeof(buffer));
     if (len <= 0) break;
     contents.insert(contents.end(), buffer, buffer + len);
   }

@@ -1291,8 +1291,9 @@ class NoRotateMultiMockTest : public MockMultiServerChannelTest {
 };
 
 TEST_P(NoRotateMultiMockTest, ThirdServer) {
-  struct ares_options opts = {0};
+  struct ares_options opts;
   int optmask = 0;
+  memset(&opts, 0, sizeof(opts));
   EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel_, &opts, &optmask));
   EXPECT_EQ(ARES_OPT_NOROTATE, (optmask & ARES_OPT_NOROTATE));
   ares_destroy_options(&opts);

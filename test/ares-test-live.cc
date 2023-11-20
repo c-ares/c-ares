@@ -679,7 +679,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, GetSock) {
         sock_cnt++;
     }
   }
-  EXPECT_NE(0, sock_cnt);
+  EXPECT_NE((size_t)0, sock_cnt);
 
   bitmask = ares_getsock(channel_, nullptr, 0);
   EXPECT_EQ(0, bitmask);
@@ -689,7 +689,8 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, GetSock) {
 
 TEST_F(LibraryTest, GetTCPSock) {
   ares_channel_t *channel;
-  struct ares_options opts = {0};
+  struct ares_options opts;
+  memset(&opts, 0, sizeof(opts));
   opts.tcp_port = 53;
   opts.flags = ARES_FLAG_USEVC;
   int optmask = ARES_OPT_TCP_PORT | ARES_OPT_FLAGS;
@@ -716,7 +717,7 @@ TEST_F(LibraryTest, GetTCPSock) {
         sock_cnt++;
     }
   }
-  EXPECT_NE(0, sock_cnt);
+  EXPECT_NE((size_t)0, sock_cnt);
 
   bitmask = ares_getsock(channel, nullptr, 0);
   EXPECT_EQ(0, bitmask);
@@ -747,7 +748,7 @@ TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
     Process();
 
     EXPECT_TRUE(result.done_);
-    EXPECT_NE(0, count);
+    EXPECT_NE((size_t)0, count);
   }
 
   {
@@ -762,7 +763,7 @@ TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
 
     EXPECT_TRUE(result.done_);
     ares_destroy(copy);
-    EXPECT_NE(0, count);
+    EXPECT_NE((size_t)0, count);
   }
 
 }

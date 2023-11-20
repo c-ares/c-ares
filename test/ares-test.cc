@@ -288,7 +288,7 @@ MockServer::~MockServer() {
   free(tcp_data_);
 }
 
-void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, socklen_t addrlen,
+void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, ares_socklen_t addrlen,
                                byte *data, int len) {
 
   // Assume the packet is a well-formed DNS request and extract the request
@@ -381,14 +381,14 @@ void MockServer::ProcessFD(ares_socket_t fd) {
       tcp_data_len_ = 0;
       return;
     }
-    tcp_data_ = (unsigned char *)realloc(tcp_data_, tcp_data_len_ + len);
-    memcpy(tcp_data_ + tcp_data_len_, buffer, len);
-    tcp_data_len_ += len;
+    tcp_data_ = (unsigned char *)realloc(tcp_data_, tcp_data_len_ + (size_t)len);
+    memcpy(tcp_data_ + tcp_data_len_, buffer, (size_t)len);
+    tcp_data_len_ += (size_t)len;
 
     /* TCP might aggregate the various requests into a single packet, so we
      * need to split */
     while (tcp_data_len_ > 2) {
-      size_t tcplen = (tcp_data_[0] << 8) + tcp_data_[1];
+      size_t tcplen = ((size_t)tcp_data_[0] << 8) + (size_t)tcp_data_[1];
       if (tcp_data_len_ - 2 < tcplen)
         break;
 
@@ -414,7 +414,7 @@ std::set<ares_socket_t> MockServer::fds() const {
   return result;
 }
 
-void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr, int addrlen,
+void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr, ares_socklen_t addrlen,
                                 int qid, const std::string& name, int rrtype) {
   // Before processing, let gMock know the request is happening.
   OnRequest(name, rrtype);
@@ -483,9 +483,9 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
   }
 
   // Point the library at the first mock server by default (overridden below).
-  opts.udp_port = server_.udpport();
+  opts.udp_port = (unsigned short)server_.udpport();
   optmask |= ARES_OPT_UDP_PORT;
-  opts.tcp_port = server_.tcpport();
+  opts.tcp_port = (unsigned short)server_.tcpport();
   optmask |= ARES_OPT_TCP_PORT;
 
   // If not already overridden, set short-ish timeouts.

@@ -372,7 +372,7 @@ TEST_F(LibraryTest, ExpandName) {
   long enclen;
   std::vector<byte> data1 = {1, 'a', 2, 'b', 'c', 3, 'd', 'e', 'f', 0};
   EXPECT_EQ("a.bc.def", ExpandName(data1, 0, &enclen));
-  EXPECT_EQ(data1.size(), enclen);
+  EXPECT_EQ(data1.size(), (size_t)enclen);
 
   std::vector<byte> data2 = {0};
   EXPECT_EQ("", ExpandName(data2, 0, &enclen));

@@ -283,7 +283,7 @@ TEST(Misc, Bitncmp) {
   EXPECT_LT(0, ares__bitncmp(b, a, sizeof(a)*8));
   EXPECT_EQ(0, ares__bitncmp(a, a, sizeof(a)*8));
 
-  for (int ii = 1; ii < (3*8+5); ii++) {
+  for (size_t ii = 1; ii < (3*8+5); ii++) {
     EXPECT_EQ(0, ares__bitncmp(a, b, ii));
     EXPECT_EQ(0, ares__bitncmp(b, a, ii));
     EXPECT_LT(0, ares__bitncmp(a, c, ii));
@@ -861,16 +861,16 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_NE(ARES_SUCCESS, ares__buf_tag_rollback(NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_tag_clear(NULL));
   EXPECT_EQ(NULL, ares__buf_tag_fetch(NULL, NULL));
-  EXPECT_EQ(0, ares__buf_tag_length(NULL));
+  EXPECT_EQ((size_t)0, ares__buf_tag_length(NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_tag_fetch_bytes(NULL, NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_tag_fetch_string(NULL, NULL, 0));
   EXPECT_NE(ARES_SUCCESS, ares__buf_fetch_bytes_dup(NULL, 0, ARES_FALSE, NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_fetch_str_dup(NULL, 0, NULL));
-  EXPECT_EQ(0, ares__buf_consume_whitespace(NULL, ARES_FALSE));
-  EXPECT_EQ(0, ares__buf_consume_nonwhitespace(NULL));
-  EXPECT_EQ(0, ares__buf_consume_line(NULL, ARES_FALSE));
+  EXPECT_EQ((size_t)0, ares__buf_consume_whitespace(NULL, ARES_FALSE));
+  EXPECT_EQ((size_t)0, ares__buf_consume_nonwhitespace(NULL));
+  EXPECT_EQ((size_t)0, ares__buf_consume_line(NULL, ARES_FALSE));
   EXPECT_NE(ARES_SUCCESS, ares__buf_begins_with(NULL, NULL, 0));
-  EXPECT_EQ(0, ares__buf_get_position(NULL));
+  EXPECT_EQ((size_t)0, ares__buf_get_position(NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_set_position(NULL, 0));
   EXPECT_NE(ARES_SUCCESS, ares__dns_name_parse(NULL, NULL, ARES_FALSE));
   EXPECT_NE(ARES_SUCCESS, ares__buf_parse_dns_binstr(NULL, 0, NULL, NULL, ARES_FALSE));
@@ -881,28 +881,28 @@ TEST_F(LibraryTest, HtableMisuse) {
   EXPECT_EQ(ARES_FALSE, ares__htable_insert(NULL, NULL));
   EXPECT_EQ(NULL, ares__htable_get(NULL, NULL));
   EXPECT_EQ(ARES_FALSE, ares__htable_remove(NULL, NULL));
-  EXPECT_EQ(0, ares__htable_num_keys(NULL));
+  EXPECT_EQ((size_t)0, ares__htable_num_keys(NULL));
 }
 
 TEST_F(LibraryTest, HtableAsvpMisuse) {
   EXPECT_EQ(ARES_FALSE, ares__htable_asvp_insert(NULL, ARES_SOCKET_BAD, NULL));
   EXPECT_EQ(ARES_FALSE, ares__htable_asvp_get(NULL, ARES_SOCKET_BAD, NULL));
   EXPECT_EQ(ARES_FALSE, ares__htable_asvp_remove(NULL, ARES_SOCKET_BAD));
-  EXPECT_EQ(0, ares__htable_asvp_num_keys(NULL));
+  EXPECT_EQ((size_t)0, ares__htable_asvp_num_keys(NULL));
 }
 
 TEST_F(LibraryTest, HtableStrvpMisuse) {
   EXPECT_EQ(ARES_FALSE, ares__htable_strvp_insert(NULL, NULL, NULL));
   EXPECT_EQ(ARES_FALSE, ares__htable_strvp_get(NULL, NULL, NULL));
   EXPECT_EQ(ARES_FALSE, ares__htable_strvp_remove(NULL, NULL));
-  EXPECT_EQ(0, ares__htable_strvp_num_keys(NULL));
+  EXPECT_EQ((size_t)0, ares__htable_strvp_num_keys(NULL));
 }
 
 TEST_F(LibraryTest, HtableSzvpMisuse) {
   EXPECT_EQ(ARES_FALSE, ares__htable_szvp_insert(NULL, 0, NULL));
   EXPECT_EQ(ARES_FALSE, ares__htable_szvp_get(NULL, 0, NULL));
   EXPECT_EQ(ARES_FALSE, ares__htable_szvp_remove(NULL, 0));
-  EXPECT_EQ(0, ares__htable_szvp_num_keys(NULL));
+  EXPECT_EQ((size_t)0, ares__htable_szvp_num_keys(NULL));
 }
 
 TEST_F(LibraryTest, LlistMisuse) {
@@ -912,7 +912,7 @@ TEST_F(LibraryTest, LlistMisuse) {
   EXPECT_EQ(NULL, ares__llist_node_last(NULL));
   EXPECT_EQ(NULL, ares__llist_node_next(NULL));
   EXPECT_EQ(NULL, ares__llist_node_prev(NULL));
-  EXPECT_EQ(0, ares__llist_len(NULL));
+  EXPECT_EQ((size_t)0, ares__llist_len(NULL));
   EXPECT_EQ(NULL, ares__llist_node_parent(NULL));
   EXPECT_EQ(NULL, ares__llist_node_claim(NULL));
   ares__llist_node_replace(NULL, NULL);
@@ -928,7 +928,7 @@ TEST_F(LibraryTest, SlistMisuse) {
   EXPECT_EQ(NULL, ares__slist_node_next(NULL));
   EXPECT_EQ(NULL, ares__slist_node_prev(NULL));
   EXPECT_EQ(NULL, ares__slist_node_val(NULL));
-  EXPECT_EQ(0, ares__slist_len(NULL));
+  EXPECT_EQ((size_t)0, ares__slist_len(NULL));
   EXPECT_EQ(NULL, ares__slist_node_parent(NULL));
   EXPECT_EQ(NULL, ares__slist_first_val(NULL));
   EXPECT_EQ(NULL, ares__slist_last_val(NULL));

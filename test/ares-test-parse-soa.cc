@@ -38,11 +38,11 @@ TEST_F(LibraryTest, ParseSoaReplyOK) {
   ASSERT_NE(nullptr, soa);
   EXPECT_EQ("soa1.example.com", std::string(soa->nsname));
   EXPECT_EQ("fred.example.com", std::string(soa->hostmaster));
-  EXPECT_EQ(1, soa->serial);
-  EXPECT_EQ(2, soa->refresh);
-  EXPECT_EQ(3, soa->retry);
-  EXPECT_EQ(4, soa->expire);
-  EXPECT_EQ(5, soa->minttl);
+  EXPECT_EQ((unsigned int)1, soa->serial);
+  EXPECT_EQ((unsigned int)2, soa->refresh);
+  EXPECT_EQ((unsigned int)3, soa->retry);
+  EXPECT_EQ((unsigned int)4, soa->expire);
+  EXPECT_EQ((unsigned int)5, soa->minttl);
   ares_free_data(soa);
 }
 

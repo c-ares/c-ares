@@ -113,7 +113,8 @@ public:
   DefaultChannelTest() : channel_(nullptr)
   {
     /* Enable query cache for live tests */
-    struct ares_options opts = { 0 };
+    struct ares_options opts;
+    memset(&opts, 0, sizeof(opts));
     opts.qcache_max_ttl      = 300;
     int optmask              = ARES_OPT_QUERY_CACHE;
     EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
@@ -138,7 +139,8 @@ class FileChannelTest : public LibraryTest {
 public:
   FileChannelTest() : channel_(nullptr)
   {
-    struct ares_options opts = { 0 };
+    struct ares_options opts;
+    memset(&opts, 0, sizeof(opts));
     opts.lookups             = strdup("f");
     int optmask              = ARES_OPT_LOOKUPS;
     EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
@@ -166,7 +168,8 @@ class DefaultChannelModeTest
 public:
   DefaultChannelModeTest() : channel_(nullptr)
   {
-    struct ares_options opts = { 0 };
+    struct ares_options opts;
+    memset(&opts, 0, sizeof(opts));
     opts.lookups             = strdup(GetParam().c_str());
     int optmask              = ARES_OPT_LOOKUPS;
     EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
@@ -243,9 +246,9 @@ public:
   }
 
 private:
-  void ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr, int addrlen,
+  void ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr, ares_socklen_t addrlen,
                       int qid, const std::string &name, int rrtype);
-  void ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, socklen_t addrlen,
+  void ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, ares_socklen_t addrlen,
                      byte *data, int len);
   int  udpport_;
   int  tcpport_;
