@@ -339,13 +339,26 @@ static ares_status_t set_options(ares_sysconfig_t *sysconfig, const char *str)
       sysconfig->ndots = strtoul(val, NULL, 10);
     }
 
+    // Outdated option.
     val = try_option(p, q, "retrans:");
     if (val) {
       sysconfig->timeout_ms = strtoul(val, NULL, 10);
     }
 
+    val = try_option(p, q, "timeout:");
+    if (val) {
+      sysconfig->timeout_ms = strtoul(val, NULL, 10) * 1000;
+    }
+
+    // Outdated option.
     val = try_option(p, q, "retry:");
     if (val) {
+      sysconfig->tries = strtoul(val, NULL, 10);
+    }
+
+    val = try_option(p, q, "attempts:");
+    if (val) {
+      fprintf(stderr, "ATTEMPTS: %d", (int)strtoul(val, NULL, 10));
       sysconfig->tries = strtoul(val, NULL, 10);
     }
 
