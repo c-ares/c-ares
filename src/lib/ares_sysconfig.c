@@ -995,11 +995,6 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
 
   memset(&sysconfig, 0, sizeof(sysconfig));
 
-  status = ares__init_by_environment(&sysconfig);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
 #ifdef _WIN32
   status = ares__init_sysconfig_windows(&sysconfig);
 #elif defined(__MVS__)
@@ -1016,6 +1011,12 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
   status = ares__init_sysconfig_files(channel, &sysconfig);
 #endif
 
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* Environment is supposed to override sysconfig */
+  status = ares__init_by_environment(&sysconfig);
   if (status != ARES_SUCCESS) {
     goto done;
   }

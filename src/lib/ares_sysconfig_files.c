@@ -358,7 +358,6 @@ static ares_status_t set_options(ares_sysconfig_t *sysconfig, const char *str)
 
     val = try_option(p, q, "attempts:");
     if (val) {
-      fprintf(stderr, "ATTEMPTS: %d", (int)strtoul(val, NULL, 10));
       sysconfig->tries = strtoul(val, NULL, 10);
     }
 
