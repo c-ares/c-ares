@@ -275,6 +275,25 @@ TEST_F(LibraryTest, EnvInit) {
   ares_destroy(channel);
 }
 
+TEST_F(LibraryTest, EnvInitModernOptions) {
+  ares_channel_t *channel = nullptr;
+  EnvValue v1("LOCALDOMAIN", "this.is.local");
+  EnvValue v2("RES_OPTIONS", "options debug retrans:2 ndots:3 attempts:4 timeout:5 rotate");
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  channel->optmask |= ARES_OPT_TRIES;
+  channel->optmask |= ARES_OPT_TIMEOUTMS;
+
+  struct ares_options opts;
+  memset(&opts, 0, sizeof(opts));
+  int optmask = 0;
+  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel, &opts, &optmask));
+  EXPECT_EQ(5000, opts.timeout);
+  EXPECT_EQ(4, opts.tries);
+
+  ares_destroy(channel);
+}
+
 TEST_F(LibraryTest, EnvInitAllocFail) {
   ares_channel_t *channel;
   EnvValue v1("LOCALDOMAIN", "this.is.local");
