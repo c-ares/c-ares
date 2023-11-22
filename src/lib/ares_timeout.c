@@ -34,12 +34,24 @@
 #include "ares.h"
 #include "ares_private.h"
 
-/* return time offset between now and (future) check, in milliseconds */
-static ares_int64_t timeoffset(const struct timeval *now,
-                               const struct timeval *check)
+static void remaining_time(struct timeval *remaining, const struct timeval *now,
+                           const struct timeval *tout)
 {
-  return ((ares_int64_t)check->tv_sec - (ares_int64_t)now->tv_sec) * 1000 +
-         ((ares_int64_t)check->tv_usec - (ares_int64_t)now->tv_usec) / 1000;
+  memset(remaining, 0, sizeof(*remaining));
+
+  /* Expired! */
+  if (tout->tv_sec < now->tv_sec ||
+      (tout->tv_sec == now->tv_sec && tout->tv_usec < now->tv_usec)) {
+    return;
+  }
+
+  remaining->tv_sec = tout->tv_sec - now->tv_sec;
+  if (tout->tv_usec < now->tv_usec) {
+    remaining->tv_sec -= 1;
+    remaining->tv_usec = (tout->tv_usec + 1000000) - now->tv_usec;
+  } else {
+    remaining->tv_usec = tout->tv_usec - now->tv_usec;
+  }
 }
 
 struct timeval *ares_timeout(ares_channel_t *channel, struct timeval *maxtv,
@@ -48,7 +60,6 @@ struct timeval *ares_timeout(ares_channel_t *channel, struct timeval *maxtv,
   const struct query *query;
   ares__slist_node_t *node;
   struct timeval      now;
-  ares_int64_t        offset;
 
   /* The minimum timeout of all queries is always the first entry in
    * channel->queries_by_timeout */
@@ -62,16 +73,7 @@ struct timeval *ares_timeout(ares_channel_t *channel, struct timeval *maxtv,
 
   now = ares__tvnow();
 
-  offset = timeoffset(&now, &query->timeout);
-  if (offset < 0) {
-    offset = 0;
-  }
-  if (offset > INT_MAX) {
-    offset = INT_MAX;
-  }
-
-  tvbuf->tv_sec  = (time_t)(offset / 1000);
-  tvbuf->tv_usec = (int)((offset % 1000) * 1000);
+  remaining_time(tvbuf, &now, &query->timeout);
 
   if (maxtv == NULL) {
     return tvbuf;
