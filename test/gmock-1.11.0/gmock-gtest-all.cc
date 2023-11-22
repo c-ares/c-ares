@@ -1670,7 +1670,7 @@ const char kStackTraceMarker[] = "\nStack trace:\n";
 // is specified on the command line.
 bool g_help_flag = false;
 
-// Utilty function to Open File for Writing
+// Utility function to Open File for Writing
 static FILE* OpenFileForWriting(const std::string& output_file) {
   FILE* fileout = nullptr;
   FilePath output_file_path(output_file);
@@ -1914,7 +1914,7 @@ void AssertHelper::operator=(const Message& message) const {
 namespace {
 
 // When TEST_P is found without a matching INSTANTIATE_TEST_SUITE_P
-// to creates test cases for it, a syntetic test case is
+// to creates test cases for it, a synthetic test case is
 // inserted to report ether an error or a log message.
 //
 // This configuration bit will likely be removed at some point.
@@ -9029,8 +9029,8 @@ DeathTest::TestRole WindowsDeathTest::AssumeRole() {
   GTEST_DEATH_TEST_CHECK_(
       ::CreateProcessA(
           executable_path, const_cast<char*>(command_line.c_str()),
-          nullptr,  // Retuned process handle is not inheritable.
-          nullptr,  // Retuned thread handle is not inheritable.
+          nullptr,  // Returned process handle is not inheritable.
+          nullptr,  // Returned thread handle is not inheritable.
           TRUE,  // Child inherits all inheritable handles (for write_handle_).
           0x0,   // Default creation flags.
           nullptr,  // Inherit the parent's environment.
@@ -12850,7 +12850,7 @@ GTEST_API_ void Log(LogSeverity severity, const std::string& message,
     // Prints a GMOCK WARNING marker to make the warnings easily searchable.
     std::cout << "\nGMOCK WARNING:";
   }
-  // Pre-pends a new-line to message if it doesn't start with one.
+  // Prepends a new-line to message if it doesn't start with one.
   if (message.empty() || message[0] != '\n') {
     std::cout << "\n";
   }

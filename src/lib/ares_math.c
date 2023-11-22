@@ -27,7 +27,7 @@
 #include "ares.h"
 #include "ares_private.h"
 
-/* Uses public domain code snipets from
+/* Uses public domain code snippets from
  * http://graphics.stanford.edu/~seander/bithacks.html */
 
 size_t ares__round_up_pow2(size_t n)

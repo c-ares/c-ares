@@ -129,7 +129,7 @@ typedef enum {
                               *   not support the requested kind of
                               *   query */
   ARES_RCODE_REFUSED = 5,    /*!< Refused. The name server refuses to
-                              *   perform the speciied operation for
+                              *   perform the specified operation for
                               *   policy reasons. */
   ARES_RCODE_YXDOMAIN = 6,   /*!< RFC 2136. Some name that ought not to
                               *   exist, does exist. */

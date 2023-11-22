@@ -119,17 +119,17 @@ ares_status_t  ares__buf_append_be32(ares__buf_t *buf, unsigned int u32);
  *  \param[in] buf  Initialized buffer object
  *  \param[in] num  Number to print
  *  \param[in] len  Length to output, use 0 for no padding
- *  \return ARES_SUCCESS on succeess
+ *  \return ARES_SUCCESS on success
  */
 ares_status_t  ares__buf_append_num_dec(ares__buf_t *buf, size_t num,
                                         size_t len);
 
-/*! Append a number in ASCII hexidecimal form.
+/*! Append a number in ASCII hexadecimal form.
  *
  *  \param[in] buf  Initialized buffer object
  *  \param[in] num  Number to print
  *  \param[in] len  Length to output, use 0 for no padding
- *  \return ARES_SUCCESS on succeess
+ *  \return ARES_SUCCESS on success
  */
 ares_status_t  ares__buf_append_num_hex(ares__buf_t *buf, size_t num,
                                         size_t len);

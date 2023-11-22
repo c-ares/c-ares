@@ -1246,7 +1246,7 @@ inline void FlushInfoLog() { fflush(nullptr); }
 //
 // GTEST_CHECK_ is an all-mode assert. It aborts the program if the condition
 // is not satisfied.
-//  Synopsys:
+//  Synopsis:
 //    GTEST_CHECK_(boolean_condition);
 //     or
 //    GTEST_CHECK_(boolean_condition) << "Additional message";
@@ -1301,7 +1301,7 @@ struct ConstRef<T&> { typedef T& type; };
 // const Foo*).  When you use ImplicitCast_, the compiler checks that
 // the cast is safe.  Such explicit ImplicitCast_s are necessary in
 // surprisingly many situations where C++ demands an exact type match
-// instead of an argument type convertable to a target type.
+// instead of an argument type convertible to a target type.
 //
 // The syntax for using ImplicitCast_ is the same as for static_cast:
 //
@@ -3890,11 +3890,11 @@ inline SetUpTearDownSuiteFuncType GetNotDefaultOrNull(
 
 template <typename T>
 //  Note that SuiteApiResolver inherits from T because
-//  SetUpTestSuite()/TearDownTestSuite() could be protected. Ths way
+//  SetUpTestSuite()/TearDownTestSuite() could be protected. This way
 //  SuiteApiResolver can access them.
 struct SuiteApiResolver : T {
   // testing::Test is only forward declared at this point. So we make it a
-  // dependend class for the compiler to be OK with it.
+  // dependent class for the compiler to be OK with it.
   using Test =
       typename std::conditional<sizeof(T) != 0, ::testing::Test, void>::type;
 
@@ -8681,7 +8681,7 @@ class ParameterizedTestSuiteRegistry {
 };
 
 // Keep track of what type-parameterized test suite are defined and
-// where as well as which are intatiated. This allows susequently
+// where as well as which are intatiated. This allows subsequently
 // identifying suits that are defined but never used.
 class TypeParameterizedTestSuiteRegistry {
  public:
@@ -8692,7 +8692,7 @@ class TypeParameterizedTestSuiteRegistry {
   // Add an instantiation of a suit.
   void RegisterInstantiation(const char* test_suite_name);
 
-  // For each suit repored as defined but not reported as instantiation,
+  // For each suit reported as defined but not reported as instantiation,
   // emit a test that reports that fact (configurably, as an error).
   void CheckForInstantiations();
 

@@ -881,7 +881,7 @@ int ares_set_servers_ports(ares_channel_t                   *channel,
   return (int)status;
 }
 
-/* Incomming string format: host[:port][,host[:port]]... */
+/* Incoming string format: host[:port][,host[:port]]... */
 /* IPv6 addresses with ports require square brackets [fe80::1]:53 */
 static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv,
                                      int use_port)

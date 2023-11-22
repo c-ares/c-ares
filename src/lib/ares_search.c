@@ -240,7 +240,7 @@ ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
   (*s)[nlen] = '.';
   if (strcmp(domain, ".") == 0) {
     /* Avoid appending the root domain to the separator, which would set *s to
-       an ill-formed value (ending in two consequtive dots). */
+       an ill-formed value (ending in two consecutive dots). */
     dlen = 0;
   }
   memcpy(*s + nlen + 1, domain, dlen);

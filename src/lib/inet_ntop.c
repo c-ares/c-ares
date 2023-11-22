@@ -49,7 +49,7 @@ static const char *inet_ntop6(const unsigned char *src, char *dst, size_t size);
  *     pointer to presentation format address (`dst'), or NULL (see errno).
  * note:
  *     On Windows we store the error in the thread errno, not
- *     in the winsock error code. This is to avoid loosing the
+ *     in the winsock error code. This is to avoid losing the
  *     actual last winsock error. So use macro ERRNO to fetch the
  *     errno this function sets when returning NULL, not SOCKERRNO.
  * author:
