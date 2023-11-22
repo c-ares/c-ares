@@ -34,8 +34,6 @@
 #include "ares.h"
 #include "ares_private.h"
 
-
-/* return time offset between now and (future) check, in milliseconds */
 static void remaining_time(struct timeval *remaining, const struct timeval *now,
                            const struct timeval *tout)
 {
