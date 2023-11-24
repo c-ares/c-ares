@@ -1,0 +1,33 @@
+# Copyright (C) The c-ares project and its contributors
+#
+# SPDX-License-Identifier: MIT
+
+name: Codespell
+
+on:
+  push:
+    branches:
+    - main
+    paths:
+    - 'src/**'
+    - 'include/**'
+  pull_request:
+    branches:
+    - main
+    - 'src/**'
+    - 'include/**'
+
+jobs:
+  codespell:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: install
+        run: |
+          sudo apt-get update
+          sudo apt-get install codespell
+
+      - name: spellcheck
+        run: codespell -I .github/scripts/codespell-ignore.txt include src
