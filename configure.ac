@@ -951,7 +951,7 @@ AC_C_BIGENDIAN(
     [AC_DEFINE(ARES_BIG_ENDIAN, 1,
       [define this if ares is built for a big endian system])],
     ,
-    [AC_MSG_WARN([couldn't figure out endianess, assuming little endian!])]
+    [AC_MSG_WARN([couldn't figure out endianness, assuming little endian!])]
 )
 
 dnl Check for user-specified random device

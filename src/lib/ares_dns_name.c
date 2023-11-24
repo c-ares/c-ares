@@ -602,7 +602,7 @@ ares_status_t ares__dns_name_parse(ares__buf_t *buf, char **name,
       /* According to RFC 1035 4.1.4:
        *    In this scheme, an entire domain name or a list of labels at
        *    the end of a domain name is replaced with a pointer to a prior
-       *    occurance of the same name.
+       *    occurrence of the same name.
        * Note the word "prior", meaning it must go backwards.  This was
        * confirmed via the ISC BIND code that it also prevents forward
        * pointers.

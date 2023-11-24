@@ -53,9 +53,9 @@ const struct ares_in6_addr ares_in6addr_any = { { { 0, 0, 0, 0, 0, 0, 0, 0, 0,
  *      0b11110000 in its fourth octet.
  * note:
  *      On Windows we store the error in the thread errno, not
- *      in the winsock error code. This is to avoid loosing the
+ *      in the winsock error code. This is to avoid losing the
  *      actual last winsock error. So use macro ERRNO to fetch the
- *      errno this funtion sets when returning (-1), not SOCKERRNO.
+ *      errno this function sets when returning (-1), not SOCKERRNO.
  * author:
  *      Paul Vixie (ISC), June 1996
  */
@@ -405,9 +405,9 @@ static int ares_inet_net_pton_ipv6(const char *src, unsigned char *dst,
  *      not a valid network specification.
  * note:
  *      On Windows we store the error in the thread errno, not
- *      in the winsock error code. This is to avoid loosing the
+ *      in the winsock error code. This is to avoid losing the
  *      actual last winsock error. So use macro ERRNO to fetch the
- *      errno this funtion sets when returning (-1), not SOCKERRNO.
+ *      errno this function sets when returning (-1), not SOCKERRNO.
  * author:
  *      Paul Vixie (ISC), June 1996
  */

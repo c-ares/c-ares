@@ -732,7 +732,7 @@ static ares_status_t ares_dns_parse_header(ares__buf_t *buf, unsigned int flags,
   ares_dns_opcode_t opcode;
   unsigned short    rcode;
 
-  (void)flags; /* currently unsed */
+  (void)flags; /* currently unused */
 
   if (buf == NULL || dnsrec == NULL || qdcount == NULL || ancount == NULL ||
       nscount == NULL || arcount == NULL) {

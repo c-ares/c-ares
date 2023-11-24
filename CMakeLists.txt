@@ -56,7 +56,7 @@ ENDIF ()
 IF ((CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS) AND (NOT CARES_STATIC) AND WIN32)
 	SET (CARES_STATIC ON)
 	SET (CARES_STATIC_PIC ON)
-	MESSAGE (WARNING "Static building was requested be disabled, but reenabled to support tests")
+	MESSAGE (WARNING "Static building was requested be disabled, but re-enabled to support tests")
 ENDIF ()
 
 INCLUDE (EnableWarnings)

@@ -326,7 +326,7 @@ ares_bool_t ares__htable_insert(ares__htable_t *htable, void *bucket)
     return ARES_FALSE;
   }
 
-  /* Track collisions for rehash stablility */
+  /* Track collisions for rehash stability */
   if (ares__llist_len(htable->buckets[idx]) > 1) {
     htable->num_collisions++;
   }

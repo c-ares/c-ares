@@ -725,7 +725,7 @@ CARES_EXTERN int
                          ares_set_servers_ports(ares_channel_t                   *channel,
                                                 const struct ares_addr_port_node *servers);
 
-/* Incomming string format: host[:port][,host[:port]]... */
+/* Incoming string format: host[:port][,host[:port]]... */
 CARES_EXTERN int         ares_set_servers_csv(ares_channel_t *channel,
                                               const char     *servers);
 CARES_EXTERN int         ares_set_servers_ports_csv(ares_channel_t *channel,

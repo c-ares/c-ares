@@ -528,7 +528,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFound) {
   memset(&sockaddr, 0, sizeof(sockaddr));
   sockaddr.sin_family = AF_INET;
   sockaddr.sin_port = htons(4);  // Port 4 unassigned at IANA
-  // RFC5737 says 192.0.2.0 should not be used publically.
+  // RFC5737 says 192.0.2.0 should not be used publicly.
   sockaddr.sin_addr.s_addr = htonl(0xC0000200);
   ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
                    ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP,
@@ -546,7 +546,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV4NotFoundFail) {
   memset(&sockaddr, 0, sizeof(sockaddr));
   sockaddr.sin_family = AF_INET;
   sockaddr.sin_port = htons(53);
-  // RFC5737 says 192.0.2.0 should not be used publically.
+  // RFC5737 says 192.0.2.0 should not be used publicly.
   sockaddr.sin_addr.s_addr = htonl(0xC0000200);
   ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
                    ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP|ARES_NI_NAMEREQD,

@@ -175,7 +175,7 @@ done:
   ares__freeaddrinfo_nodes(nodes);
   ares_dns_record_destroy(dnsrec);
 
-  /* compatibiltiy */
+  /* compatibility */
   if (status == ARES_EBADNAME) {
     status = ARES_EBADRESP;
   }

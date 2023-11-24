@@ -31,7 +31,7 @@
 #ifdef HAVE_GETSERVBYNAME_R
 #  if !defined(GETSERVBYNAME_R_ARGS) || (GETSERVBYNAME_R_ARGS < 4) || \
     (GETSERVBYNAME_R_ARGS > 6)
-#    error "you MUST specifiy a valid number of arguments for getservbyname_r"
+#    error "you MUST specify a valid number of arguments for getservbyname_r"
 #  endif
 #endif
 
@@ -238,7 +238,7 @@ static unsigned short lookup_service(const char *service, int flags)
   return 0;
 }
 
-/* If the name looks like an IP address or an error occured,
+/* If the name looks like an IP address or an error occurred,
  * fake up a host entry, end the query immediately, and return true.
  * Otherwise return false.
  */

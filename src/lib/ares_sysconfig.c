@@ -120,7 +120,7 @@ static ares_bool_t get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
     return ARES_FALSE;
   }
 
-  /* Null terminate buffer allways */
+  /* Null terminate buffer always */
   *(*outptr + size) = '\0';
 
   return ARES_TRUE;
@@ -342,7 +342,7 @@ static ares_bool_t get_DNS_Windows(char **outptr)
     return ARES_FALSE;
   }
 
-  /* Usually this call suceeds with initial buffer size */
+  /* Usually this call succeeds with initial buffer size */
   res = GetAdaptersAddresses(AF_UNSPEC, AddrFlags, NULL, ipaa, &ReqBufsz);
   if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS)) {
     goto done;
