@@ -1,0 +1,13 @@
+# Copyright (C) The c-ares project and its contributors
+#
+# SPDX-License-Identifier: MIT
+aci
+sais
+aas
+acter
+msdos
+statics
+firey
+bre
+ba
+fo
