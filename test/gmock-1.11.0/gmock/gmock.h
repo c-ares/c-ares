@@ -8096,7 +8096,7 @@ PolymorphicMatcher<internal::ExceptionMatcherImpl<Err>> ThrowsMessage(
 #define EXPECT_THAT(value, matcher) EXPECT_PRED_FORMAT1(\
     ::testing::internal::MakePredicateFormatterFromMatcher(matcher), value)
 
-// MATCHER* macros itself are listed below.
+// MATCHER* macroses itself are listed below.
 #define MATCHER(name, description)                                             \
   class name##Matcher                                                          \
       : public ::testing::internal::MatcherBaseImpl<name##Matcher> {           \
@@ -9108,7 +9108,7 @@ class GTEST_API_ ExpectationBase {
   mutable Mutex mutex_;  // Protects action_count_checked_.
 };  // class ExpectationBase
 
-// Implements an expectation for the given function type.
+// Impements an expectation for the given function type.
 template <typename F>
 class TypedExpectation : public ExpectationBase {
  public:
@@ -9728,7 +9728,7 @@ class FunctionMocker<R(Args...)> final : public UntypedFunctionMockerBase {
 
   // Performs the default action of this mock function on the given
   // arguments and returns the result. Asserts (or throws if
-  // exceptions are enabled) with a helpful call description if there
+  // exceptions are enabled) with a helpful call descrption if there
   // is no valid return value. This method doesn't depend on the
   // mutable state of this object, and thus can be called concurrently
   // without locking.
