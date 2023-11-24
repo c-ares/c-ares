@@ -91,6 +91,8 @@ void ares_destroy(ares_channel_t *channel)
 
   ares__qcache_destroy(channel->qcache);
 
+  ares__channel_threading_destroy(channel);
+
   ares_free(channel);
 }
 

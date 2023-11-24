@@ -249,6 +249,9 @@ typedef struct ares__qcache ares__qcache_t;
 struct ares_hosts_file;
 typedef struct ares_hosts_file ares_hosts_file_t;
 
+struct ares__thread_mutex;
+typedef struct ares__thread_mutex ares__thread_mutex_t;
+
 struct ares_channeldata {
   /* Configuration data */
   unsigned int         flags;
@@ -276,6 +279,9 @@ struct ares_channeldata {
   char                 local_dev_name[32];
   unsigned int         local_ip4;
   unsigned char        local_ip6[16];
+
+  /* Thread safety lock */
+  ares__thread_mutex_t *lock;
 
   /* Server addresses and communications state. Sorted by least consecutive
    * failures, followed by the configuration order if failures are equal. */
@@ -576,6 +582,11 @@ ares_status_t ares_qcache_fetch(ares_channel_t *channel,
                                 const struct timeval *now,
                                 const unsigned char *qbuf, size_t qlen,
                                 unsigned char **abuf, size_t *alen);
+
+ares_status_t ares__channel_threading_init(ares_channel_t *channel);
+void ares__channel_threading_destroy(ares_channel_t *channel);
+void ares__channel_lock(ares_channel_t *channel);
+void ares__channel_unlock(ares_channel_t *channel);
 
 #ifdef _MSC_VER
 typedef __int64          ares_int64_t;

@@ -302,6 +302,11 @@ int ares_init_options(ares_channel_t           **channelptr,
     return ARES_ENOMEM;
   }
 
+  status = ares__channel_threading_init(channel);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
   /* Generate random key */
   channel->rand_state = ares__init_rand_state();
   if (channel->rand_state == NULL) {
