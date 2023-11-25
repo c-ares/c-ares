@@ -978,20 +978,22 @@ AC_ARG_ENABLE(cares-threads,
   [ CARES_THREADS=yes ])
 
 dnl windows always supports threads, only check non-windows systems.
-if test "x${ac_cv_native_windows}" != "xyes" ; then
+if test "${CARES_THREADS}" = "yes" -a "x${ac_cv_native_windows}" != "xyes" ; then
   AX_PTHREAD([ ], [
     AC_MSG_WARN([threads requested but not supported])
     CARES_THREADS=no
   ])
 
   if test "${CARES_THREADS}" = "yes" ; then
+    AC_CHECK_HEADERS([pthread.h pthread_np.h])
     LIBS="$PTHREAD_LIBS $LIBS"
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     CC="$PTHREAD_CC"
     CXX="$PTHREAD_CXX"
-
-    AC_CHECK_HEADERS([pthread.h pthread_np.h])
   fi
+fi
+
+if test "${CARES_THREADS}" = "yes" ; then
   AC_DEFINE([CARES_THREADS], [ 1 ], [Threading enabled])
 fi
 
