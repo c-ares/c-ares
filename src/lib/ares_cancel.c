@@ -37,6 +37,11 @@
  */
 void ares_cancel(ares_channel_t *channel)
 {
+  if (channel == NULL)
+    return;
+
+  ares__channel_lock(channel);
+
   if (ares__llist_len(channel->all_queries) > 0) {
     ares__llist_node_t *node = NULL;
     ares__llist_node_t *next = NULL;
@@ -52,7 +57,7 @@ void ares_cancel(ares_channel_t *channel)
      * can't report to caller */
     if (channel->all_queries == NULL) {
       channel->all_queries = list_copy;
-      return;
+      goto done;
     }
 
     node = ares__llist_node_first(list_copy);
@@ -79,4 +84,6 @@ void ares_cancel(ares_channel_t *channel)
 
     ares__llist_destroy(list_copy);
   }
+done:
+  ares__channel_unlock(channel);
 }

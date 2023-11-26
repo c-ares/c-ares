@@ -120,6 +120,8 @@ void ares_gethostbyname(ares_channel_t *channel, const char *name, int family,
   ghbn_arg->arg      = arg;
   ghbn_arg->channel  = channel;
 
+  /* NOTE: ares_getaddrinfo() locks the channel, we don't use the channel
+   *       outside so no need to lock */
   ares_getaddrinfo(channel, name, NULL, &hints, ares_gethostbyname_callback,
                    ghbn_arg);
 }
@@ -263,8 +265,10 @@ done:
 
 /* I really have no idea why this is exposed as a public function, but since
  * it is, we can't kill this legacy function. */
-int ares_gethostbyname_file(ares_channel_t *channel, const char *name,
-                            int family, struct hostent **host)
+static ares_status_t ares_gethostbyname_file_int(ares_channel_t *channel,
+                                                 const char *name,
+                                                 int family,
+                                                 struct hostent **host)
 {
   const ares_hosts_entry_t *entry;
   ares_status_t             status;
@@ -302,8 +306,22 @@ done:
    * as permissions errors reading /etc/hosts or a malformed /etc/hosts */
   if (status != ARES_SUCCESS && status != ARES_ENOMEM &&
       ares__is_localhost(name)) {
-    return (int)ares__hostent_localhost(name, family, host);
+    return ares__hostent_localhost(name, family, host);
   }
 
+  return status;
+}
+
+int ares_gethostbyname_file(ares_channel_t *channel, const char *name,
+                            int family, struct hostent **host)
+{
+  ares_status_t status;
+  if (channel == NULL) {
+    return ARES_ENOTFOUND;
+  }
+
+  ares__channel_lock(channel);
+  status = ares_gethostbyname_file_int(channel, name, family, host);
+  ares__channel_unlock(channel);
   return (int)status;
 }
