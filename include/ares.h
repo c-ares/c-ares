@@ -741,6 +741,11 @@ CARES_EXTERN const char *ares_inet_ntop(int af, const void *src, char *dst,
 
 CARES_EXTERN int         ares_inet_pton(int af, const char *src, void *dst);
 
+/*! Whether or not the c-ares library was built with threadsafety
+ *
+ *  \return ARES_TRUE if built with threadsafety, ARES_FALSE if not
+ */
+CARES_EXTERN ares_status_t ares_threadsafety(void);
 
 #ifdef __cplusplus
 }

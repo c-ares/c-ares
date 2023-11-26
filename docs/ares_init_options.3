@@ -57,6 +57,19 @@ for name service lookups.  If it returns successfully,
 caller should invoke \fIares_destroy(3)\fP on the handle when the channel is
 no longer needed.
 
+It is recommended for an application to have at most one ares channel and use
+this for all DNS queries for the life of the application.  When system
+configuration changes, \fIares_reinit(3)\fP can be called to reload the
+configuration if necessary.  The recommended concurrent query limit is about
+32k queries, but remembering that when specifying AF_UNSPEC for
+\fBares_getaddrinfo(3)\fP or \fBares_gethostbyname(3)\fP, they may spawn
+2 queries internally.  The reason for the limit is c-ares does not allow
+duplicate DNS query ids (which have a maximum of 64k) to be oustanding at a
+given time, and it must randomly search for an available id thus 32k will limit
+the number of searches.  This limitation should not be a concern for most
+implementations and c-ares may implement queuing in future releases to lift this
+limitation.
+
 The \fIoptmask\fP parameter generally specifies which fields in the structure pointed to
 by \fIoptions\fP are set, as follows:
 .TP 18
@@ -323,7 +336,8 @@ manual page.
 .BR ares_library_init (3),
 .BR ares_save_options (3),
 .BR ares_set_servers (3),
-.BR ares_set_sortlist (3)
+.BR ares_set_sortlist (3),
+.BR ares_threadsafety (3)
 .SH AUTHOR
 Greg Hudson, MIT Information Systems
 .br
