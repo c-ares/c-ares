@@ -34,10 +34,7 @@ AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_11([noext],[mandatory])
 LT_INIT
 AC_SUBST(LIBTOOL_DEPS)
-AX_PTHREAD([ ], [
-    AC_MSG_WARN([threads requested but not supported])
-    CARES_THREADS=no
-  ])
+AX_PTHREAD([ CARES_THREADS=yes ], [ CARES_THREADS=no ])
 
 if test "${CARES_THREADS}" = "yes" ; then
 	LIBS="$PTHREAD_LIBS $LIBS"
