@@ -469,6 +469,8 @@ IF (CARES_THREADS)
 			CARES_EXTRAINCLUDE_IFSET (HAVE_PTHREAD_H                       pthread.h)
 			CARES_EXTRAINCLUDE_IFSET (HAVE_PTHREAD_NP_H                    pthread_np.h)
 			CHECK_SYMBOL_EXISTS (pthread_init  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_PTHREAD_INIT)
+			# Make sure libcares.pc.cmake knows about thread libraries on static builds
+			LIST (APPEND CARES_DEPENDENT_LIBS ${CMAKE_THREAD_LIBS_INIT})
 		ELSE ()
 			MESSAGE (WARNING "Threading support not found, disabling...")
 			SET (CARES_THREADS OFF)
