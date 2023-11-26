@@ -997,8 +997,6 @@ if test "${CARES_THREADS}" = "yes" ; then
   AC_DEFINE([CARES_THREADS], [ 1 ], [Threading enabled])
 fi
 
-
-
 CARES_CONFIGURE_SYMBOL_HIDING
 
 CARES_PRIVATE_LIBS="$LIBS"
