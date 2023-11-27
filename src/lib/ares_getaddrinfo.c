@@ -743,7 +743,7 @@ static ares_bool_t as_is_first(const struct host_query *hquery)
       ndots++;
     }
   }
-  if (hquery->name != NULL && nname && hquery->name[nname - 1] == '.') {
+  if (as_is_only(hquery)) {
     /* prevent ARES_EBADNAME for valid FQDN, where ndots < channel->ndots  */
     return ARES_TRUE;
   }
