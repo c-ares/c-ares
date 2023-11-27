@@ -749,13 +749,12 @@ static ares_bool_t as_is_first(const struct host_query *hquery)
 {
   const char *p;
   size_t      ndots = 0;
-  size_t      nname = ares_strlen(hquery->name);
   for (p = hquery->name; p && *p; p++) {
     if (*p == '.') {
       ndots++;
     }
   }
-  if (hquery->name != NULL && nname && hquery->name[nname - 1] == '.') {
+  if (as_is_only(hquery)) {
     /* prevent ARES_EBADNAME for valid FQDN, where ndots < channel->ndots  */
     return ARES_TRUE;
   }
@@ -765,6 +764,9 @@ static ares_bool_t as_is_first(const struct host_query *hquery)
 static ares_bool_t as_is_only(const struct host_query *hquery)
 {
   size_t nname = ares_strlen(hquery->name);
+  if(hquery->channel->flags & ARES_FLAG_NOSEARCH) {
+    return ARES_TRUE;
+  }
   if (hquery->name != NULL && nname && hquery->name[nname - 1] == '.') {
     return ARES_TRUE;
   }

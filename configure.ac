@@ -476,6 +476,7 @@ AS_IF([test "x$host_vendor" = "xapple"], [
   AC_COMPILE_IFELSE([
     AC_LANG_PROGRAM([[
 #include <stdio.h>
+#include <AvailabilityMacros.h>
 #include <TargetConditionals.h>
     ]], [[
 #if TARGET_OS_IPHONE == 0 || __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
@@ -497,6 +498,7 @@ AS_IF([test "x$host_vendor" = "xapple"], [
   AC_COMPILE_IFELSE([
     AC_LANG_PROGRAM([[
 #include <stdio.h>
+#include <AvailabilityMacros.h>
 #include <TargetConditionals.h>
     ]], [[
 #ifndef MAC_OS_X_VERSION_10_12
