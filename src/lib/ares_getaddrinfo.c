@@ -752,6 +752,9 @@ static ares_bool_t as_is_first(const struct host_query *hquery)
 
 static ares_bool_t as_is_only(const struct host_query *hquery)
 {
+  if(hquery->channel->flags & ARES_FLAG_NOSEARCH) {
+    return ARES_TRUE;
+  }
   size_t nname = ares_strlen(hquery->name);
   if (hquery->name != NULL && nname && hquery->name[nname - 1] == '.') {
     return ARES_TRUE;
