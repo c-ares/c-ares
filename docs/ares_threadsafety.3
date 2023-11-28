@@ -14,6 +14,12 @@ ares_bool_t ares_threadsafety(void);
 The \fBares_threadsafety(3)\fP function returns if the library was built with
 thread safety enabled or not.
 
+As of c-ares 1.23.0, this simply means that every public function which
+references an \fIares_channel_t\fP object will lock the channel on entry and
+release the lock on exit of the function.  This will simply prevent concurrent
+thread access to the channel, thus ensuring no corruption can occur.  Future
+versions will likely implement more threading-specific features.
+
 .SH RETURN VALUES
 \fIares_threadsafety(3)\fP can return any of the following values:
 .TP 14
