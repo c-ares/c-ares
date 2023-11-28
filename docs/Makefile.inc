@@ -121,6 +121,7 @@ MANPAGES = ares_cancel.3		\
   ares_set_sortlist.3			\
   ares_strerror.3			\
   ares_svcb_param_t.3			\
+  ares_threadsafety.3			\
   ares_timeout.3			\
   ares_tlsa_match_t.3			\
   ares_tlsa_selector_t.3		\
