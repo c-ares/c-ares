@@ -16,7 +16,7 @@ thread safety enabled or not.
 
 As of c-ares 1.23.0, this simply means that every public function which
 references an \fIares_channel_t\fP object will lock the channel on entry and
-release the lock on exit of the function.  This will simply prevent concurrent
+release the lock on exit of the function.  This will prevent concurrent
 thread access to the channel, thus ensuring no corruption can occur.  Future
 versions will likely implement more threading-specific features.
 
