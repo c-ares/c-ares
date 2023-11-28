@@ -131,10 +131,10 @@ int ares_save_options(ares_channel_t *channel, struct ares_options *options,
   }
 
   if (channel->optmask & ARES_OPT_UDP_PORT) {
-    options->udp_port = ntohs(channel->udp_port);
+    options->udp_port = channel->udp_port;
   }
   if (channel->optmask & ARES_OPT_TCP_PORT) {
-    options->tcp_port = ntohs(channel->tcp_port);
+    options->tcp_port = channel->tcp_port;
   }
 
   if (channel->optmask & ARES_OPT_SOCK_STATE_CB) {
@@ -301,11 +301,11 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
   }
 
   if (optmask & ARES_OPT_UDP_PORT) {
-    channel->udp_port = htons(options->udp_port);
+    channel->udp_port = options->udp_port;
   }
 
   if (optmask & ARES_OPT_TCP_PORT) {
-    channel->tcp_port = htons(options->tcp_port);
+    channel->tcp_port = options->tcp_port;
   }
 
   if (optmask & ARES_OPT_SOCK_STATE_CB) {

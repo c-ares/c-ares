@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
       ares::test::verbose = true;
     } else if ((strcmp(argv[ii], "-p") == 0) && (ii + 1 < argc)) {
       ii++;
-      ares::test::mock_port = atoi(argv[ii]);
+      ares::test::mock_port = (unsigned short)atoi(argv[ii]);
     } else if (strcmp(argv[ii], "-4") == 0) {
       ares::test::families = ares::test::ipv4_family;
       ares::test::families_modes = ares::test::ipv4_family_both_modes;

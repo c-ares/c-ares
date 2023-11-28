@@ -52,7 +52,7 @@ typedef unsigned char byte;
 namespace test {
 
 extern bool                                    verbose;
-extern int                                     mock_port;
+extern unsigned short                          mock_port;
 extern const std::vector<int>                  both_families;
 extern const std::vector<int>                  ipv4_family;
 extern const std::vector<int>                  ipv6_family;
@@ -193,7 +193,7 @@ protected:
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
 public:
-  MockServer(int family, int port);
+  MockServer(int family, unsigned short port);
   ~MockServer();
 
   // Mock method indicating the processing of a particular <name, RRtype>
@@ -235,12 +235,12 @@ public:
   void          ProcessFD(ares_socket_t fd);
 
   // Ports the server is responding to
-  int           udpport() const
+  unsigned short udpport() const
   {
     return udpport_;
   }
 
-  int tcpport() const
+  unsigned short tcpport() const
   {
     return tcpport_;
   }
@@ -250,8 +250,8 @@ private:
                       int qid, const std::string &name, int rrtype);
   void ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, ares_socklen_t addrlen,
                      byte *data, int len);
-  int  udpport_;
-  int  tcpport_;
+  unsigned short udpport_;
+  unsigned short tcpport_;
   ares_socket_t  udpfd_;
   ares_socket_t  tcpfd_;
   std::set<ares_socket_t> connfds_;
@@ -280,7 +280,7 @@ protected:
   std::set<ares_socket_t>                              fds() const;
   void                                                 ProcessFD(ares_socket_t fd);
 
-  static NiceMockServers BuildServers(int count, int family, int base_port);
+  static NiceMockServers BuildServers(int count, int family, unsigned short base_port);
 
   NiceMockServers        servers_;
   // Convenience reference to first server.

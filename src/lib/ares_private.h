@@ -172,8 +172,8 @@ struct server_state {
                                               * can be hard errors or timeouts
                                               */
   struct ares_addr          addr;
-  unsigned short            udp_port;
-  unsigned short            tcp_port;
+  unsigned short            udp_port; /* host byte order */
+  unsigned short            tcp_port; /* host byte order */
 
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;

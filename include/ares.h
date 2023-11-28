@@ -290,8 +290,8 @@ struct ares_options {
   int            timeout; /* in seconds or milliseconds, depending on options */
   int            tries;
   int            ndots;
-  unsigned short udp_port;
-  unsigned short tcp_port;
+  unsigned short udp_port; /* host byte order */
+  unsigned short tcp_port; /* host byte order */
   int            socket_send_buffer_size;
   int            socket_receive_buffer_size;
   struct in_addr    *servers;

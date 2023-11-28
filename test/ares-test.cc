@@ -49,8 +49,8 @@ namespace ares {
 namespace test {
 
 bool verbose = false;
-static constexpr int dynamic_port = 0;
-int mock_port = dynamic_port;
+static constexpr unsigned short dynamic_port = 0;
+unsigned short mock_port = dynamic_port;
 
 const std::vector<int> both_families = {AF_INET, AF_INET6};
 const std::vector<int> ipv4_family = {AF_INET};
@@ -195,7 +195,7 @@ void DefaultChannelModeTest::Process() {
   ProcessWork(channel_, NoExtraFDs, nullptr);
 }
 
-MockServer::MockServer(int family, int port)
+MockServer::MockServer(int family, unsigned short port)
   : udpport_(port), tcpport_(port), qid_(-1) {
   // Create a TCP socket to receive data on.
   tcp_data_ = NULL;
@@ -456,11 +456,11 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
 }
 
 // static
-MockChannelOptsTest::NiceMockServers MockChannelOptsTest::BuildServers(int count, int family, int base_port) {
+MockChannelOptsTest::NiceMockServers MockChannelOptsTest::BuildServers(int count, int family, unsigned short base_port) {
   NiceMockServers servers;
   assert(count > 0);
-  for (int ii = 0; ii < count; ii++) {
-    int port = base_port == dynamic_port ? dynamic_port : base_port + ii;
+  for (unsigned short ii = 0; ii < count; ii++) {
+    unsigned short port = base_port == dynamic_port ? dynamic_port : base_port + ii;
     std::unique_ptr<NiceMockServer> server(new NiceMockServer(family, port));
     servers.push_back(std::move(server));
   }
@@ -483,9 +483,9 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
   }
 
   // Point the library at the first mock server by default (overridden below).
-  opts.udp_port = (unsigned short)server_.udpport();
+  opts.udp_port = server_.udpport();
   optmask |= ARES_OPT_UDP_PORT;
-  opts.tcp_port = (unsigned short)server_.tcpport();
+  opts.tcp_port = server_.tcpport();
   optmask |= ARES_OPT_TCP_PORT;
 
   // If not already overridden, set short-ish timeouts.
