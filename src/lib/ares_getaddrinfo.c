@@ -532,10 +532,10 @@ static void host_callback(void *arg, int status, int timeouts,
   /* at this point we keep on waiting for the next query to finish */
 }
 
-void ares_getaddrinfo(ares_channel_t *channel, const char *name,
-                      const char                       *service,
-                      const struct ares_addrinfo_hints *hints,
-                      ares_addrinfo_callback callback, void *arg)
+static void ares_getaddrinfo_int(ares_channel_t *channel, const char *name,
+                                 const char                       *service,
+                                 const struct ares_addrinfo_hints *hints,
+                                 ares_addrinfo_callback callback, void *arg)
 {
   struct host_query    *hquery;
   unsigned short        port = 0;
@@ -666,6 +666,18 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
 
   /* Start performing lookups according to channel->lookups. */
   next_lookup(hquery, ARES_ECONNREFUSED /* initial error code */);
+}
+
+void ares_getaddrinfo(ares_channel_t *channel, const char *name,
+                      const char                       *service,
+                      const struct ares_addrinfo_hints *hints,
+                      ares_addrinfo_callback callback, void *arg)
+{
+  if (channel == NULL)
+    return;
+  ares__channel_lock(channel);
+  ares_getaddrinfo_int(channel, name, service, hints, callback, arg);
+  ares__channel_unlock(channel);
 }
 
 static ares_bool_t next_dns_lookup(struct host_query *hquery)

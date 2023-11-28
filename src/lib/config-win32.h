@@ -230,6 +230,9 @@
 #  undef HAVE_WS2TCPIP_H
 #endif
 
+/* Threading support enabled */
+#define CARES_THREADS 1
+
 /* ---------------------------------------------------------------- */
 /*                       TYPEDEF REPLACEMENTS                       */
 /* ---------------------------------------------------------------- */

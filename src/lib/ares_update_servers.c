@@ -535,6 +535,8 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
     return ARES_EFORMERR;
   }
 
+  ares__channel_lock(channel);
+
   /* NOTE: a NULL or zero entry server list is considered valid due to
    *       real-world people needing support for this for their test harnesses
    */
@@ -589,6 +591,7 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
   status = ARES_SUCCESS;
 
 done:
+  ares__channel_unlock(channel);
   return status;
 }
 
@@ -741,9 +744,11 @@ int ares_get_servers(ares_channel_t *channel, struct ares_addr_node **servers)
   ares_status_t          status = ARES_SUCCESS;
   ares__slist_node_t    *node;
 
-  if (!channel) {
+  if (channel == NULL) {
     return ARES_ENODATA;
   }
+
+  ares__channel_lock(channel);
 
   for (node = ares__slist_node_first(channel->servers); node != NULL;
        node = ares__slist_node_next(node)) {
@@ -780,6 +785,8 @@ int ares_get_servers(ares_channel_t *channel, struct ares_addr_node **servers)
 
   *servers = srvr_head;
 
+  ares__channel_unlock(channel);
+
   return (int)status;
 }
 
@@ -792,9 +799,11 @@ int ares_get_servers_ports(ares_channel_t              *channel,
   ares_status_t               status = ARES_SUCCESS;
   ares__slist_node_t         *node;
 
-  if (!channel) {
+  if (channel == NULL) {
     return ARES_ENODATA;
   }
+
+  ares__channel_lock(channel);
 
   for (node = ares__slist_node_first(channel->servers); node != NULL;
        node = ares__slist_node_next(node)) {
@@ -834,6 +843,7 @@ int ares_get_servers_ports(ares_channel_t              *channel,
 
   *servers = srvr_head;
 
+  ares__channel_unlock(channel);
   return (int)status;
 }
 
@@ -852,6 +862,7 @@ int ares_set_servers(ares_channel_t              *channel,
     return (int)status;
   }
 
+  /* NOTE: lock is in ares__servers_update() */
   status = ares__servers_update(channel, slist, ARES_TRUE);
 
   ares__llist_destroy(slist);
@@ -874,6 +885,7 @@ int ares_set_servers_ports(ares_channel_t                   *channel,
     return (int)status;
   }
 
+  /* NOTE: lock is in ares__servers_update() */
   status = ares__servers_update(channel, slist, ARES_TRUE);
 
   ares__llist_destroy(slist);
@@ -902,6 +914,8 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv,
   if (!channel) {
     return ARES_ENODATA;
   }
+
+  /* NOTE: lock is in ares__servers_update() */
 
   i = ares_strlen(_csv);
   if (i == 0) {
@@ -1034,10 +1048,12 @@ out:
 
 int ares_set_servers_csv(ares_channel_t *channel, const char *_csv)
 {
+  /* NOTE: lock is in ares__servers_update() */
   return (int)set_servers_csv(channel, _csv, ARES_FALSE);
 }
 
 int ares_set_servers_ports_csv(ares_channel_t *channel, const char *_csv)
 {
+  /* NOTE: lock is in ares__servers_update() */
   return (int)set_servers_csv(channel, _csv, ARES_TRUE);
 }

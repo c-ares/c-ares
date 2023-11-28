@@ -140,12 +140,20 @@ static void processfds(ares_channel_t *channel, fd_set *read_fds,
                        ares_socket_t read_fd, fd_set *write_fds,
                        ares_socket_t write_fd)
 {
-  struct timeval now = ares__tvnow();
+  struct timeval now;
 
+  if (channel == NULL)
+    return;
+
+  ares__channel_lock(channel);
+
+  now = ares__tvnow();
   read_packets(channel, read_fds, read_fd, &now);
   process_timeouts(channel, &now);
   /* Write last as the other 2 operations might have triggered writes */
   write_tcp_data(channel, write_fds, write_fd);
+
+  ares__channel_unlock(channel);
 }
 
 /* Something interesting happened on the wire, or there was a timeout.

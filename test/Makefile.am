@@ -59,12 +59,12 @@ arestest_LDADD = libgmock.la $(ARES_BLD_DIR)/src/lib/libcares.la $(PTHREAD_LIBS)
 include $(top_srcdir)/aminclude_static.am
 
 aresfuzz_SOURCES = $(FUZZSOURCES)
-aresfuzz_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la $(CODE_COVERAGE_LIBS)
+aresfuzz_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS)
 
 aresfuzzname_SOURCES = $(FUZZNAMESOURCES)
-aresfuzzname_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la $(CODE_COVERAGE_LIBS)
+aresfuzzname_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS)
 
 dnsdump_SOURCES = $(DUMPSOURCES)
-dnsdump_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la $(CODE_COVERAGE_LIBS)
+dnsdump_LDADD = $(ARES_BLD_DIR)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS)
 
 test: check

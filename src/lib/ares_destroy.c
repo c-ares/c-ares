@@ -41,6 +41,9 @@ void ares_destroy(ares_channel_t *channel)
     return;
   }
 
+  /* Lock because callbacks will be triggered */
+  ares__channel_lock(channel);
+
   /* Destroy all queries */
   node = ares__llist_node_first(channel->all_queries);
   while (node != NULL) {
@@ -69,6 +72,9 @@ void ares_destroy(ares_channel_t *channel)
   assert(ares__htable_asvp_num_keys(channel->connnode_by_socket) == 0);
 #endif
 
+  /* No more callbacks will be triggered after this point, unlock */
+  ares__channel_unlock(channel);
+
   if (channel->domains) {
     for (i = 0; i < channel->ndomains; i++) {
       ares_free(channel->domains[i]);
@@ -90,6 +96,8 @@ void ares_destroy(ares_channel_t *channel)
   ares__hosts_file_destroy(channel->hf);
 
   ares__qcache_destroy(channel->qcache);
+
+  ares__channel_threading_destroy(channel);
 
   ares_free(channel);
 }

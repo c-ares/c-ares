@@ -38,11 +38,15 @@ int ares_getsock(ares_channel_t *channel, ares_socket_t *socks,
   unsigned int        setbits   = 0xffffffff;
 
   /* Are there any active queries? */
-  size_t              active_queries = ares__llist_len(channel->all_queries);
+  size_t              active_queries;
 
-  if (numsocks <= 0) {
+  if (channel == NULL || numsocks <= 0) {
     return 0;
   }
+
+  ares__channel_lock(channel);
+
+  active_queries = ares__llist_len(channel->all_queries);
 
   for (snode = ares__slist_node_first(channel->servers); snode != NULL;
        snode = ares__slist_node_next(snode)) {
@@ -78,5 +82,7 @@ int ares_getsock(ares_channel_t *channel, ares_socket_t *socks,
       sockindex++;
     }
   }
+
+  ares__channel_unlock(channel);
   return (int)bitmap;
 }
