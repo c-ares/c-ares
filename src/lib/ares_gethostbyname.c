@@ -266,8 +266,7 @@ done:
 /* I really have no idea why this is exposed as a public function, but since
  * it is, we can't kill this legacy function. */
 static ares_status_t ares_gethostbyname_file_int(ares_channel_t *channel,
-                                                 const char *name,
-                                                 int family,
+                                                 const char *name, int family,
                                                  struct hostent **host)
 {
   const ares_hosts_entry_t *entry;

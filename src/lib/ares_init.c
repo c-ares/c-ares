@@ -507,8 +507,9 @@ done:
 
 void ares_set_local_ip4(ares_channel_t *channel, unsigned int local_ip)
 {
-  if (channel == NULL)
+  if (channel == NULL) {
     return;
+  }
   ares__channel_lock(channel);
   channel->local_ip4 = local_ip;
   ares__channel_unlock(channel);
@@ -517,8 +518,9 @@ void ares_set_local_ip4(ares_channel_t *channel, unsigned int local_ip)
 /* local_ip6 should be 16 bytes in length */
 void ares_set_local_ip6(ares_channel_t *channel, const unsigned char *local_ip6)
 {
-  if (channel == NULL)
+  if (channel == NULL) {
     return;
+  }
   ares__channel_lock(channel);
   memcpy(&channel->local_ip6, local_ip6, sizeof(channel->local_ip6));
   ares__channel_unlock(channel);
@@ -527,8 +529,9 @@ void ares_set_local_ip6(ares_channel_t *channel, const unsigned char *local_ip6)
 /* local_dev_name should be null terminated. */
 void ares_set_local_dev(ares_channel_t *channel, const char *local_dev_name)
 {
-  if (channel == NULL)
+  if (channel == NULL) {
     return;
+  }
 
   ares__channel_lock(channel);
   ares_strcpy(channel->local_dev_name, local_dev_name,

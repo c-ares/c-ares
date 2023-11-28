@@ -47,8 +47,8 @@ static void remaining_time(struct timeval *remaining, const struct timeval *now,
 
   remaining->tv_sec = tout->tv_sec - now->tv_sec;
   if (tout->tv_usec < now->tv_usec) {
-    remaining->tv_sec -= 1;
-    remaining->tv_usec = (tout->tv_usec + 1000000) - now->tv_usec;
+    remaining->tv_sec  -= 1;
+    remaining->tv_usec  = (tout->tv_usec + 1000000) - now->tv_usec;
   } else {
     remaining->tv_usec = tout->tv_usec - now->tv_usec;
   }

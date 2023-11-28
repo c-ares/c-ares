@@ -37,8 +37,9 @@ int ares_fds(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
   /* Are there any active queries? */
   size_t              active_queries;
 
-  if (channel == NULL || read_fds == NULL || write_fds == NULL)
+  if (channel == NULL || read_fds == NULL || write_fds == NULL) {
     return 0;
+  }
 
   ares__channel_lock(channel);
 

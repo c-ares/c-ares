@@ -127,7 +127,7 @@ fail:
   return NULL;
 }
 
-static void ares__qcache_expire(ares__qcache_t *cache,
+static void ares__qcache_expire(ares__qcache_t       *cache,
                                 const struct timeval *now)
 {
   ares__slist_node_t *node;
@@ -421,16 +421,16 @@ done:
   return status;
 }
 
-ares_status_t ares_qcache_insert(ares_channel_t *channel,
+ares_status_t ares_qcache_insert(ares_channel_t       *channel,
                                  const struct timeval *now,
-                                 const struct query *query,
-                                 ares_dns_record_t *dnsrec)
+                                 const struct query   *query,
+                                 ares_dns_record_t    *dnsrec)
 {
   return ares__qcache_insert(channel->qcache, dnsrec, query->qbuf, query->qlen,
                              now);
 }
 
-ares_status_t ares_qcache_fetch(ares_channel_t *channel,
+ares_status_t ares_qcache_fetch(ares_channel_t       *channel,
                                 const struct timeval *now,
                                 const unsigned char *qbuf, size_t qlen,
                                 unsigned char **abuf, size_t *alen)

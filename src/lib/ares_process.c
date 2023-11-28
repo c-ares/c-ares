@@ -142,8 +142,9 @@ static void processfds(ares_channel_t *channel, fd_set *read_fds,
 {
   struct timeval now;
 
-  if (channel == NULL)
+  if (channel == NULL) {
     return;
+  }
 
   ares__channel_lock(channel);
 

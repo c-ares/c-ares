@@ -673,8 +673,9 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
                       const struct ares_addrinfo_hints *hints,
                       ares_addrinfo_callback callback, void *arg)
 {
-  if (channel == NULL)
+  if (channel == NULL) {
     return;
+  }
   ares__channel_lock(channel);
   ares_getaddrinfo_int(channel, name, service, hints, callback, arg);
   ares__channel_unlock(channel);
@@ -764,7 +765,7 @@ static ares_bool_t as_is_first(const struct host_query *hquery)
 static ares_bool_t as_is_only(const struct host_query *hquery)
 {
   size_t nname = ares_strlen(hquery->name);
-  if(hquery->channel->flags & ARES_FLAG_NOSEARCH) {
+  if (hquery->channel->flags & ARES_FLAG_NOSEARCH) {
     return ARES_TRUE;
   }
   if (hquery->name != NULL && nname && hquery->name[nname - 1] == '.') {

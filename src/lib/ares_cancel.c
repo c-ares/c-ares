@@ -37,8 +37,9 @@
  */
 void ares_cancel(ares_channel_t *channel)
 {
-  if (channel == NULL)
+  if (channel == NULL) {
     return;
+  }
 
   ares__channel_lock(channel);
 

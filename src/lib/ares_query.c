@@ -88,8 +88,9 @@ ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
 void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
                 int type, ares_callback callback, void *arg)
 {
-  if (channel == NULL)
+  if (channel == NULL) {
     return;
+  }
   ares__channel_lock(channel);
   ares_query_qid(channel, name, dnsclass, type, callback, arg, NULL);
   ares__channel_unlock(channel);

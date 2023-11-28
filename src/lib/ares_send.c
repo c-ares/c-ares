@@ -153,8 +153,9 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
 void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
                ares_callback callback, void *arg)
 {
-  if (channel == NULL)
+  if (channel == NULL) {
     return;
+  }
 
   ares__channel_lock(channel);
 

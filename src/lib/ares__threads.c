@@ -37,8 +37,9 @@ struct ares__thread_mutex {
 static ares__thread_mutex_t *ares__thread_mutex_create(void)
 {
   ares__thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
-  if (mut == NULL)
+  if (mut == NULL) {
     return NULL;
+  }
 
   InitializeCriticalSection(&mut->mutex);
   return mut;
@@ -46,28 +47,31 @@ static ares__thread_mutex_t *ares__thread_mutex_create(void)
 
 static void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
 {
-  if (mut == NULL)
+  if (mut == NULL) {
     return;
+  }
   DeleteCriticalSection(&mut->mutex);
   ares_free(mut);
 }
 
 static void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
 {
-  if (mut == NULL)
+  if (mut == NULL) {
     return;
+  }
   EnterCriticalSection(&mut->mutex);
 }
 
 static void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
 {
-  if (mut == NULL)
+  if (mut == NULL) {
     return;
+  }
   LeaveCriticalSection(&mut->mutex);
 }
 
 #  else
-#  include <pthread.h>
+#    include <pthread.h>
 
 struct ares__thread_mutex {
   pthread_mutex_t mutex;
@@ -77,8 +81,9 @@ static ares__thread_mutex_t *ares__thread_mutex_create(void)
 {
   pthread_mutexattr_t   attr;
   ares__thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
-  if (mut == NULL)
+  if (mut == NULL) {
     return NULL;
+  }
 
   if (pthread_mutexattr_init(&attr) != 0) {
     ares_free(mut);
@@ -104,32 +109,36 @@ fail:
 
 static void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
 {
-  if (mut == NULL)
+  if (mut == NULL) {
     return;
+  }
   pthread_mutex_destroy(&mut->mutex);
   ares_free(mut);
 }
 
 static void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
 {
-  if (mut == NULL)
+  if (mut == NULL) {
     return;
+  }
   pthread_mutex_lock(&mut->mutex);
 }
 
 static void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
 {
-  if (mut == NULL)
+  if (mut == NULL) {
     return;
+  }
   pthread_mutex_unlock(&mut->mutex);
 }
-#endif
+#  endif
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel)
 {
   channel->lock = ares__thread_mutex_create();
-  if (channel->lock == NULL)
+  if (channel->lock == NULL) {
     return ARES_ENOMEM;
+  }
   return ARES_SUCCESS;
 }
 

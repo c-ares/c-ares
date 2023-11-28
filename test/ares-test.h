@@ -67,9 +67,9 @@ extern std::vector<std::pair<int, bool>>       families_modes;
 
 // Process all pending work on ares-owned file descriptors, plus
 // optionally the given set-of-FDs + work function.
-void          ProcessWork(ares_channel_t                          *channel,
-                          std::function<std::set<ares_socket_t>()> get_extrafds,
-                          std::function<void(ares_socket_t)>       process_extra);
+void                    ProcessWork(ares_channel_t                          *channel,
+                                    std::function<std::set<ares_socket_t>()> get_extrafds,
+                                    std::function<void(ares_socket_t)>       process_extra);
 std::set<ares_socket_t> NoExtraFDs();
 
 // Test fixture that ensures library initialization, and allows
@@ -115,8 +115,8 @@ public:
     /* Enable query cache for live tests */
     struct ares_options opts;
     memset(&opts, 0, sizeof(opts));
-    opts.qcache_max_ttl      = 300;
-    int optmask              = ARES_OPT_QUERY_CACHE;
+    opts.qcache_max_ttl = 300;
+    int optmask         = ARES_OPT_QUERY_CACHE;
     EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
     EXPECT_NE(nullptr, channel_);
   }
@@ -141,8 +141,8 @@ public:
   {
     struct ares_options opts;
     memset(&opts, 0, sizeof(opts));
-    opts.lookups             = strdup("f");
-    int optmask              = ARES_OPT_LOOKUPS;
+    opts.lookups = strdup("f");
+    int optmask  = ARES_OPT_LOOKUPS;
     EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
     EXPECT_NE(nullptr, channel_);
     free(opts.lookups);
@@ -170,8 +170,8 @@ public:
   {
     struct ares_options opts;
     memset(&opts, 0, sizeof(opts));
-    opts.lookups             = strdup(GetParam().c_str());
-    int optmask              = ARES_OPT_LOOKUPS;
+    opts.lookups = strdup(GetParam().c_str());
+    int optmask  = ARES_OPT_LOOKUPS;
     EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
     EXPECT_NE(nullptr, channel_);
     free(opts.lookups);
@@ -232,10 +232,10 @@ public:
   std::set<ares_socket_t> fds() const;
 
   // Process activity on a file descriptor.
-  void          ProcessFD(ares_socket_t fd);
+  void                    ProcessFD(ares_socket_t fd);
 
   // Ports the server is responding to
-  unsigned short udpport() const
+  unsigned short          udpport() const
   {
     return udpport_;
   }
@@ -246,19 +246,20 @@ public:
   }
 
 private:
-  void ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr, ares_socklen_t addrlen,
-                      int qid, const std::string &name, int rrtype);
-  void ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, ares_socklen_t addrlen,
-                     byte *data, int len);
+  void           ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr,
+                                ares_socklen_t addrlen, int qid, const std::string &name,
+                                int rrtype);
+  void           ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr,
+                               ares_socklen_t addrlen, byte *data, int len);
   unsigned short udpport_;
   unsigned short tcpport_;
   ares_socket_t  udpfd_;
   ares_socket_t  tcpfd_;
   std::set<ares_socket_t> connfds_;
-  std::vector<byte> reply_;
-  int               qid_;
-  unsigned char    *tcp_data_;
-  size_t            tcp_data_len_;
+  std::vector<byte>       reply_;
+  int                     qid_;
+  unsigned char          *tcp_data_;
+  size_t                  tcp_data_len_;
 };
 
 // Test fixture that uses a mock DNS server.
@@ -278,9 +279,10 @@ protected:
   typedef std::vector<std::unique_ptr<NiceMockServer>> NiceMockServers;
 
   std::set<ares_socket_t>                              fds() const;
-  void                                                 ProcessFD(ares_socket_t fd);
+  void                   ProcessFD(ares_socket_t fd);
 
-  static NiceMockServers BuildServers(int count, int family, unsigned short base_port);
+  static NiceMockServers BuildServers(int count, int family,
+                                      unsigned short base_port);
 
   NiceMockServers        servers_;
   // Convenience reference to first server.

@@ -225,8 +225,8 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
 
     /* Slow path, collisions */
     while ((node = ares__llist_node_first(htable->buckets[i])) != NULL) {
-      const void  *val = ares__llist_node_val(node);
-      size_t       idx = HASH_IDX(htable, htable->bucket_key(val));
+      const void *val = ares__llist_node_val(node);
+      size_t      idx = HASH_IDX(htable, htable->bucket_key(val));
 
       /* Try fast path again as maybe we popped one collision off and the
        * next we can reuse the llist parent */
