@@ -745,7 +745,7 @@ CARES_EXTERN int         ares_inet_pton(int af, const char *src, void *dst);
  *
  *  \return ARES_TRUE if built with threadsafety, ARES_FALSE if not
  */
-CARES_EXTERN ares_status_t ares_threadsafety(void);
+CARES_EXTERN ares_bool_t ares_threadsafety(void);
 
 #ifdef __cplusplus
 }

@@ -149,7 +149,7 @@ void ares__channel_unlock(ares_channel_t *channel)
   ares__thread_mutex_unlock(channel->lock);
 }
 
-ares_status_t ares_threadsafety(void)
+ares_bool_t ares_threadsafety(void)
 {
   return ARES_TRUE;
 }
@@ -177,7 +177,7 @@ void ares__channel_unlock(ares_channel_t *channel)
   (void)channel;
 }
 
-ares_status_t ares_threadsafety(void)
+ares_bool_t ares_threadsafety(void)
 {
   return ARES_FALSE;
 }
