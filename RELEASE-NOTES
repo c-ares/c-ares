@@ -21,7 +21,7 @@ Bug Fixes:
  o Environment variables passed to c-ares are meant to be an override for
    system configuration. Regression introduced in 1.22.0. [5]
  o Spelling fixes as detected by codespell. [7]
- o The timeout returned by ares_timeout() was truncate to milliseconds but
+ o The timeout returned by ares_timeout() was truncated to milliseconds but
    validated to microseconds which could cause a user to attempt to process
    timeouts prior to the timeout actually expiring. [8]
  o CMake was not honoring CXXFLAGS passed in via the environment which could
