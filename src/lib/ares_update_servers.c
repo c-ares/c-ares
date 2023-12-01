@@ -150,12 +150,14 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
  *
  * Returns an error code on failure, else ARES_SUCCESS
  */
-static ares_status_t parse_dnsaddrport(const char *str, size_t len,
+static ares_status_t parse_dnsaddrport(ares__buf_t      *buf,
                                        struct ares_addr *host,
                                        unsigned short   *port)
 {
   char        ipaddr[INET6_ADDRSTRLEN] = "";
   char        ipport[6]                = "";
+  size_t      len;
+  const char *str        = (const char *)ares__buf_peek(buf, &len);
   size_t      mylen;
   const char *addr_start = NULL;
   const char *addr_end   = NULL;
@@ -297,35 +299,33 @@ fail:
 ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
                                            const char     *str)
 {
-  struct ares_addr host;
-  const char      *p;
-  const char      *txtaddr;
-  ares_status_t    status;
+  ares_status_t       status = ARES_SUCCESS;
+  ares__buf_t        *buf    = NULL;
+  ares__llist_t      *list   = NULL;
+  ares__llist_node_t *node;
 
   /* On Windows, there may be more than one nameserver specified in the same
    * registry key, so we parse input as a space or comma separated list.
    */
-  for (p = str; p;) {
-    unsigned short port;
+  buf = ares__buf_create_const((const unsigned char *)str, ares_strlen(str));
+  if (buf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
 
-    /* Skip whitespace and commas. */
-    while (*p && (ISSPACE(*p) || (*p == ','))) {
-      p++;
-    }
-    if (!*p) {
-      /* No more input, done. */
-      break;
-    }
+  status = ares__buf_split(buf, (const unsigned char *)" ,", 2,
+                           ARES_BUF_SPLIT_NONE, &list);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
 
-    /* Pointer to start of IPv4 or IPv6 address part. */
-    txtaddr = p;
+  for (node = ares__llist_node_first(list); node != NULL;
+       node = ares__llist_node_next(node)) {
+    ares__buf_t         *entry = ares__llist_node_val(node);
+    struct ares_addr     host;
+    unsigned short       port;
 
-    /* Advance past this address. */
-    while (*p && !ISSPACE(*p) && (*p != ',')) {
-      p++;
-    }
-
-    if (parse_dnsaddrport(txtaddr, (size_t)(p - txtaddr), &host, &port) !=
+    if (parse_dnsaddrport(entry, &host, &port) !=
         ARES_SUCCESS) {
       continue;
     }
@@ -336,7 +336,10 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
     }
   }
 
-  return ARES_SUCCESS;
+done:
+  ares__llist_destroy(list);
+  ares__buf_destroy(buf);
+  return status;
 }
 
 static unsigned short ares__sconfig_get_port(const ares_channel_t *channel,
