@@ -155,9 +155,8 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
  * Returns an error code on failure, else ARES_SUCCESS
  */
 
-static ares_status_t parse_dnsaddrport(ares__buf_t      *buf,
-                                       struct ares_addr *host,
-                                       unsigned short   *port)
+static ares_status_t parse_dnsaddrport(ares__buf_t *buf, struct ares_addr *host,
+                                       unsigned short *port)
 {
   ares_status_t status;
   char          ipaddr[INET6_ADDRSTRLEN] = "";
@@ -177,7 +176,8 @@ static ares_status_t parse_dnsaddrport(ares__buf_t      *buf,
     ares__buf_tag(buf);
 
     /* Consume until ] */
-    if (ares__buf_consume_until_charset(buf, (const unsigned char *)"]", 1, ARES_TRUE) == 0) {
+    if (ares__buf_consume_until_charset(buf, (const unsigned char *)"]", 1,
+                                        ARES_TRUE) == 0) {
       return ARES_EBADSTR;
     }
 
@@ -195,19 +195,22 @@ static ares_status_t parse_dnsaddrport(ares__buf_t      *buf,
      * otherwise treat as ipv6 */
     ares__buf_tag(buf);
 
-    offset = ares__buf_consume_until_charset(buf, (const unsigned char *)".", 1, ARES_TRUE);
+    offset = ares__buf_consume_until_charset(buf, (const unsigned char *)".", 1,
+                                             ARES_TRUE);
     ares__buf_tag_rollback(buf);
     ares__buf_tag(buf);
 
     if (offset > 0 && offset < 4) {
       /* IPv4 */
-      if (ares__buf_consume_charset(buf, (const unsigned char *)"0123456789.", 11) == 0) {
+      if (ares__buf_consume_charset(buf, (const unsigned char *)"0123456789.",
+                                    11) == 0) {
         return ARES_EBADSTR;
       }
     } else {
       /* IPv6 */
       const unsigned char ipv6_charset[] = "ABCDEFabcdef0123456789.:";
-      if (ares__buf_consume_charset(buf, ipv6_charset, sizeof(ipv6_charset)) == 0) {
+      if (ares__buf_consume_charset(buf, ipv6_charset, sizeof(ipv6_charset)) ==
+          0) {
         return ARES_EBADSTR;
       }
     }
@@ -234,7 +237,8 @@ static ares_status_t parse_dnsaddrport(ares__buf_t      *buf,
     ares__buf_tag(buf);
 
     /* Read numbers */
-    if (ares__buf_consume_charset(buf, (const unsigned char *)"0123456789", 10) == 0) {
+    if (ares__buf_consume_charset(buf, (const unsigned char *)"0123456789",
+                                  10) == 0) {
       return ARES_EBADSTR;
     }
 
@@ -346,9 +350,9 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
 
   for (node = ares__llist_node_first(list); node != NULL;
        node = ares__llist_node_next(node)) {
-    ares__buf_t         *entry = ares__llist_node_val(node);
-    struct ares_addr     host;
-    unsigned short       port;
+    ares__buf_t     *entry = ares__llist_node_val(node);
+    struct ares_addr host;
+    unsigned short   port;
 
     status = parse_dnsaddrport(entry, &host, &port);
     if (status != ARES_SUCCESS) {

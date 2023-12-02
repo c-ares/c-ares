@@ -713,7 +713,8 @@ static ares_status_t ares__init_sysconfig_riscos(ares_sysconfig_t *sysconfig)
       if (space) {
         *space = '\0';
       }
-      status = ares__sconfig_append_fromstr(&sysconfig->sconfig, pos, ARES_TRUE);
+      status =
+        ares__sconfig_append_fromstr(&sysconfig->sconfig, pos, ARES_TRUE);
       if (status != ARES_SUCCESS) {
         break;
       }
@@ -770,8 +771,8 @@ static ares_status_t ares__init_sysconfig_android(ares_sysconfig_t *sysconfig)
   dns_servers = ares_get_android_server_list(MAX_DNS_PROPERTIES, &num_servers);
   if (dns_servers != NULL) {
     for (i = 0; i < num_servers; i++) {
-      status =
-        ares__sconfig_append_fromstr(&sysconfig->sconfig, dns_servers[i], ARES_TRUE);
+      status = ares__sconfig_append_fromstr(&sysconfig->sconfig, dns_servers[i],
+                                            ARES_TRUE);
       if (status != ARES_SUCCESS) {
         return status;
       }
@@ -802,7 +803,8 @@ static ares_status_t ares__init_sysconfig_android(ares_sysconfig_t *sysconfig)
       if (__system_property_get(propname, propvalue) < 1) {
         break;
       }
-      status = ares__sconfig_append_fromstr(&sysconfig->sconfig, propvalue, ARES_TRUE);
+      status =
+        ares__sconfig_append_fromstr(&sysconfig->sconfig, propvalue, ARES_TRUE);
       if (status != ARES_SUCCESS) {
         return status;
       }
@@ -854,7 +856,8 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
       snprintf(ipaddr_port, sizeof(ipaddr_port), "%s", ipaddr);
     }
 
-    status = ares__sconfig_append_fromstr(&sysconfig->sconfig, ipaddr_port, ARES_TRUE);
+    status =
+      ares__sconfig_append_fromstr(&sysconfig->sconfig, ipaddr_port, ARES_TRUE);
     if (status != ARES_SUCCESS) {
       goto done;
     }

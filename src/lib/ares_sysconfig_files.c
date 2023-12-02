@@ -516,7 +516,8 @@ ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
       } else if ((p = try_config(line, "search", ';'))) {
         status = config_search(sysconfig, p);
       } else if ((p = try_config(line, "nameserver", ';'))) {
-        status = ares__sconfig_append_fromstr(&sysconfig->sconfig, p, ARES_TRUE);
+        status =
+          ares__sconfig_append_fromstr(&sysconfig->sconfig, p, ARES_TRUE);
       } else if ((p = try_config(line, "sortlist", ';'))) {
         status =
           ares__parse_sortlist(&sysconfig->sortlist, &sysconfig->nsortlist, p);

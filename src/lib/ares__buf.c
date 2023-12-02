@@ -722,15 +722,14 @@ done:
   return i;
 }
 
-size_t ares__buf_consume_until_charset(ares__buf_t *buf,
-                                       const unsigned char *charset,
-                                       size_t len,
+size_t ares__buf_consume_until_charset(ares__buf_t         *buf,
+                                       const unsigned char *charset, size_t len,
                                        ares_bool_t require_charset)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);
   size_t               i;
-  ares_bool_t          found         = ARES_FALSE;
+  ares_bool_t          found = ARES_FALSE;
 
   if (ptr == NULL || charset == NULL || len == 0) {
     return 0;
@@ -747,8 +746,9 @@ size_t ares__buf_consume_until_charset(ares__buf_t *buf,
   }
 
 done:
-  if (require_charset && !found)
+  if (require_charset && !found) {
     return 0;
+  }
 
   if (i > 0) {
     ares__buf_consume(buf, i);
@@ -756,9 +756,7 @@ done:
   return i;
 }
 
-
-size_t ares__buf_consume_charset(ares__buf_t *buf,
-                                 const unsigned char *charset,
+size_t ares__buf_consume_charset(ares__buf_t *buf, const unsigned char *charset,
                                  size_t len)
 {
   size_t               remaining_len = 0;
@@ -770,15 +768,16 @@ size_t ares__buf_consume_charset(ares__buf_t *buf,
   }
 
   for (i = 0; i < remaining_len; i++) {
-    size_t      j;
+    size_t j;
     for (j = 0; j < len; j++) {
       if (ptr[i] == charset[j]) {
         break;
       }
     }
     /* Not found */
-    if (j == len)
+    if (j == len) {
       break;
+    }
   }
 
   if (i > 0) {
@@ -786,7 +785,6 @@ size_t ares__buf_consume_charset(ares__buf_t *buf,
   }
   return i;
 }
-
 
 static void ares__buf_destroy_cb(void *arg)
 {
@@ -823,7 +821,7 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
     }
 
     if (len != 0 || flags & ARES_BUF_SPLIT_ALLOW_BLANK) {
-      const unsigned char *ptr  = ares__buf_tag_fetch(buf, &len);
+      const unsigned char *ptr = ares__buf_tag_fetch(buf, &len);
       ares__buf_t         *data;
 
       /* Since we don't allow const buffers of 0 length, and user wants 0-length
@@ -863,7 +861,6 @@ done:
 
   return status;
 }
-
 
 ares_bool_t ares__buf_begins_with(const ares__buf_t   *buf,
                                   const unsigned char *data, size_t data_len)

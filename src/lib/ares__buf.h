@@ -384,10 +384,9 @@ size_t        ares__buf_consume_nonwhitespace(ares__buf_t *buf);
  *                                0 if not found.
  *  \return number of characters consumed
  */
-size_t ares__buf_consume_until_charset(ares__buf_t *buf,
-                                       const unsigned char *charset,
-                                       size_t len,
-                                       ares_bool_t require_charset);
+size_t        ares__buf_consume_until_charset(ares__buf_t         *buf,
+                                              const unsigned char *charset, size_t len,
+                                              ares_bool_t require_charset);
 
 
 /*! Consume while the characters match the characters in the provided set.
@@ -397,8 +396,7 @@ size_t ares__buf_consume_until_charset(ares__buf_t *buf,
  *  \param[in] len                length of character set
  *  \return number of characters consumed
  */
-size_t ares__buf_consume_charset(ares__buf_t *buf,
-                                 const unsigned char *charset,
+size_t ares__buf_consume_charset(ares__buf_t *buf, const unsigned char *charset,
                                  size_t len);
 
 
@@ -412,10 +410,9 @@ size_t ares__buf_consume_charset(ares__buf_t *buf,
  */
 size_t ares__buf_consume_line(ares__buf_t *buf, ares_bool_t include_linefeed);
 
-
 typedef enum {
   /*! No flags */
-  ARES_BUF_SPLIT_NONE                = 0,
+  ARES_BUF_SPLIT_NONE = 0,
   /*! The delimiter will be the first character in the buffer, except the
    *  first buffer since the start doesn't have a delimiter
    */
@@ -423,7 +420,7 @@ typedef enum {
   /*! Allow blank sections, by default blank sections are not emitted.  If using
    *  ARES_BUF_SPLIT_DONT_CONSUME_DELIMS, the delimiter is not counted as part
    *  of the section */
-  ARES_BUF_SPLIT_ALLOW_BLANK         = 1 << 1
+  ARES_BUF_SPLIT_ALLOW_BLANK = 1 << 1
 } ares__buf_split_t;
 
 /*! Split the provided buffer into multiple sub-buffers stored in the variable
@@ -454,8 +451,8 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
  *  \param[in] data_len     Length of data to compare.
  *  \return ARES_TRUE on match, ARES_FALSE otherwise.
  */
-ares_bool_t  ares__buf_begins_with(const ares__buf_t   *buf,
-                                   const unsigned char *data, size_t data_len);
+ares_bool_t   ares__buf_begins_with(const ares__buf_t   *buf,
+                                    const unsigned char *data, size_t data_len);
 
 
 /*! Size of unprocessed remaining data length
@@ -463,7 +460,7 @@ ares_bool_t  ares__buf_begins_with(const ares__buf_t   *buf,
  *  \param[in] buf Initialized buffer object
  *  \return length remaining
  */
-size_t               ares__buf_len(const ares__buf_t *buf);
+size_t        ares__buf_len(const ares__buf_t *buf);
 
 /*! Retrieve a pointer to the currently unprocessed data.  Generally this isn't
  *  recommended to be used in practice.  The returned pointer may be invalidated
