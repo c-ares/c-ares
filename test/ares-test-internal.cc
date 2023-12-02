@@ -869,7 +869,7 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ((size_t)0, ares__buf_consume_whitespace(NULL, ARES_FALSE));
   EXPECT_EQ((size_t)0, ares__buf_consume_nonwhitespace(NULL));
   EXPECT_EQ((size_t)0, ares__buf_consume_line(NULL, ARES_FALSE));
-  EXPECT_NE(ARES_SUCCESS, ares__buf_begins_with(NULL, NULL, 0));
+  EXPECT_EQ(ARES_FALSE, ares__buf_begins_with(NULL, NULL, 0));
   EXPECT_EQ((size_t)0, ares__buf_get_position(NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_set_position(NULL, 0));
   EXPECT_NE(ARES_SUCCESS, ares__dns_name_parse(NULL, NULL, ARES_FALSE));

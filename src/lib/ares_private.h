@@ -482,7 +482,8 @@ ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    unsigned short          udp_port,
                                    unsigned short          tcp_port);
 ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
-                                           const char     *str);
+                                           const char     *str,
+                                           ares_bool_t     ignore_invalid);
 ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
                                                   size_t          nservers,
                                                   ares__llist_t **llist);

@@ -372,6 +372,36 @@ size_t        ares__buf_consume_whitespace(ares__buf_t *buf,
  */
 size_t        ares__buf_consume_nonwhitespace(ares__buf_t *buf);
 
+
+/*! Consume until a character in the character set provided is reached
+ *
+ *  \param[in] buf                Initialized buffer object
+ *  \param[in] charset            character set
+ *  \param[in] len                length of character set
+ *  \param[in] require_charset    require we find a character from the charset.
+ *                                if ARES_FALSE it will simply consume the
+ *                                rest of the buffer.  If ARES_TRUE will return
+ *                                0 if not found.
+ *  \return number of characters consumed
+ */
+size_t ares__buf_consume_until_charset(ares__buf_t *buf,
+                                       const unsigned char *charset,
+                                       size_t len,
+                                       ares_bool_t require_charset);
+
+
+/*! Consume while the characters match the characters in the provided set.
+ *
+ *  \param[in] buf                Initialized buffer object
+ *  \param[in] charset            character set
+ *  \param[in] len                length of character set
+ *  \return number of characters consumed
+ */
+size_t ares__buf_consume_charset(ares__buf_t *buf,
+                                 const unsigned char *charset,
+                                 size_t len);
+
+
 /*! Consume from the current position until the end of the line, and optionally
  *  the end of line character (0x0A) itself.
  *
@@ -383,16 +413,49 @@ size_t        ares__buf_consume_nonwhitespace(ares__buf_t *buf);
 size_t ares__buf_consume_line(ares__buf_t *buf, ares_bool_t include_linefeed);
 
 
+typedef enum {
+  /*! No flags */
+  ARES_BUF_SPLIT_NONE                = 0,
+  /*! The delimiter will be the first character in the buffer, except the
+   *  first buffer since the start doesn't have a delimiter
+   */
+  ARES_BUF_SPLIT_DONT_CONSUME_DELIMS = 1 << 0,
+  /*! Allow blank sections, by default blank sections are not emitted.  If using
+   *  ARES_BUF_SPLIT_DONT_CONSUME_DELIMS, the delimiter is not counted as part
+   *  of the section */
+  ARES_BUF_SPLIT_ALLOW_BLANK         = 1 << 1
+} ares__buf_split_t;
+
+/*! Split the provided buffer into multiple sub-buffers stored in the variable
+ *  pointed to by the linked list.  The sub buffers are const buffers pointing
+ *  into the buf provided.
+ *
+ *  \param[in]  buf               Initialized buffer object
+ *  \param[in]  delims            Possible delimiters
+ *  \param[in]  delims_len        Length of possible delimiters
+ *  \param[in]  flags             One more more flags
+ *  \param[out] list              Result. Depending on flags, this may be a
+ *                                valid list with no elements.  Use
+ *                                ares__llist_destroy() to free the memory which
+ *                                will also free the contained ares__buf_t
+ *                                objects.
+ *  \return ARES_SUCCESS on success, or error like ARES_ENOMEM.
+ */
+ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
+                              size_t delims_len, ares__buf_split_t flags,
+                              ares__llist_t **list);
+
+
 /*! Check the unprocessed buffer to see if it begins with the sequence of
  *  characters provided.
  *
  *  \param[in] buf          Initialized buffer object
  *  \param[in] data         Bytes of data to compare.
  *  \param[in] data_len     Length of data to compare.
- *  \return ARES_SUCCESS or one of the c-ares error codes
+ *  \return ARES_TRUE on match, ARES_FALSE otherwise.
  */
-ares_status_t        ares__buf_begins_with(const ares__buf_t   *buf,
-                                           const unsigned char *data, size_t data_len);
+ares_bool_t  ares__buf_begins_with(const ares__buf_t   *buf,
+                                   const unsigned char *data, size_t data_len);
 
 
 /*! Size of unprocessed remaining data length

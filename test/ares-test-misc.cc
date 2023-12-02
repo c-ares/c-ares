@@ -134,13 +134,11 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
   EXPECT_EQ(expected, GetNameServers(channel_));
 
   // Same, with spaces
-  EXPECT_EQ(ARES_EBADSTR,
+  EXPECT_EQ(ARES_SUCCESS,
             ares_set_servers_csv(channel_, "1.2.3.4 , [0102:0304:0506:0708:0910:1112:1314:1516]:53, 2.3.4.5"));
+  EXPECT_EQ(expected, GetNameServers(channel_));
 
   // Same, with ports
-  EXPECT_EQ(ARES_SUCCESS,
-            ares_set_servers_csv(channel_, "1.2.3.4:54,[0102:0304:0506:0708:0910:1112:1314:1516]:80,2.3.4.5:55"));
-  EXPECT_EQ(expected, GetNameServers(channel_));
   EXPECT_EQ(ARES_SUCCESS,
             ares_set_servers_ports_csv(channel_, "1.2.3.4:54,[0102:0304:0506:0708:0910:1112:1314:1516]:80,2.3.4.5:55"));
   std::vector<std::string> expected2 = {"1.2.3.4:54", "[0102:0304:0506:0708:0910:1112:1314:1516]:80", "2.3.4.5:55"};

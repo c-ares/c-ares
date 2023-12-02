@@ -722,25 +722,168 @@ done:
   return i;
 }
 
-ares_status_t ares__buf_begins_with(const ares__buf_t   *buf,
-                                    const unsigned char *data, size_t data_len)
+size_t ares__buf_consume_until_charset(ares__buf_t *buf,
+                                       const unsigned char *charset,
+                                       size_t len,
+                                       ares_bool_t require_charset)
+{
+  size_t               remaining_len = 0;
+  const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);
+  size_t               i;
+  ares_bool_t          found         = ARES_FALSE;
+
+  if (ptr == NULL || charset == NULL || len == 0) {
+    return 0;
+  }
+
+  for (i = 0; i < remaining_len; i++) {
+    size_t j;
+    for (j = 0; j < len; j++) {
+      if (ptr[i] == charset[j]) {
+        found = ARES_TRUE;
+        goto done;
+      }
+    }
+  }
+
+done:
+  if (require_charset && !found)
+    return 0;
+
+  if (i > 0) {
+    ares__buf_consume(buf, i);
+  }
+  return i;
+}
+
+
+size_t ares__buf_consume_charset(ares__buf_t *buf,
+                                 const unsigned char *charset,
+                                 size_t len)
+{
+  size_t               remaining_len = 0;
+  const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);
+  size_t               i;
+
+  if (ptr == NULL || charset == NULL || len == 0) {
+    return 0;
+  }
+
+  for (i = 0; i < remaining_len; i++) {
+    size_t      j;
+    for (j = 0; j < len; j++) {
+      if (ptr[i] == charset[j]) {
+        break;
+      }
+    }
+    /* Not found */
+    if (j == len)
+      break;
+  }
+
+  if (i > 0) {
+    ares__buf_consume(buf, i);
+  }
+  return i;
+}
+
+
+static void ares__buf_destroy_cb(void *arg)
+{
+  ares__buf_destroy(arg);
+}
+
+ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
+                              size_t delims_len, ares__buf_split_t flags,
+                              ares__llist_t **list)
+{
+  ares_status_t status = ARES_SUCCESS;
+  ares_bool_t   first  = ARES_TRUE;
+
+  if (buf == NULL || delims == NULL || delims_len == 0 || list == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *list = ares__llist_create(ares__buf_destroy_cb);
+  if (*list == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  while (ares__buf_len(buf)) {
+    size_t len;
+
+    ares__buf_tag(buf);
+
+    len = ares__buf_consume_until_charset(buf, delims, delims_len, ARES_FALSE);
+
+    /* Don't treat a delimiter as part of the length */
+    if (!first && len && flags & ARES_BUF_SPLIT_DONT_CONSUME_DELIMS) {
+      len--;
+    }
+
+    if (len != 0 || flags & ARES_BUF_SPLIT_ALLOW_BLANK) {
+      const unsigned char *ptr  = ares__buf_tag_fetch(buf, &len);
+      ares__buf_t         *data;
+
+      /* Since we don't allow const buffers of 0 length, and user wants 0-length
+       * buffers, swap what we do here */
+      if (len) {
+        data = ares__buf_create_const(ptr, len);
+      } else {
+        data = ares__buf_create();
+      }
+
+      if (data == NULL) {
+        status = ARES_ENOMEM;
+        goto done;
+      }
+
+      if (ares__llist_insert_last(*list, data) == NULL) {
+        ares__buf_destroy(data);
+        status = ARES_ENOMEM;
+        goto done;
+      }
+    }
+
+    if (!(flags & ARES_BUF_SPLIT_DONT_CONSUME_DELIMS) &&
+        ares__buf_len(buf) != 0) {
+      /* Consume delimiter */
+      ares__buf_consume(buf, 1);
+    }
+
+    first = ARES_FALSE;
+  }
+
+done:
+  if (status != ARES_SUCCESS) {
+    ares__llist_destroy(*list);
+    *list = NULL;
+  }
+
+  return status;
+}
+
+
+ares_bool_t ares__buf_begins_with(const ares__buf_t   *buf,
+                                  const unsigned char *data, size_t data_len)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);
 
   if (ptr == NULL || data == NULL || data_len == 0) {
-    return ARES_EFORMERR;
+    return ARES_FALSE;
   }
 
   if (data_len > remaining_len) {
-    return ARES_EBADRESP;
+    return ARES_FALSE;
   }
 
-  if (memcmp(ptr, data, data_len) == 0) {
-    return ARES_EBADRESP;
+  if (memcmp(ptr, data, data_len) != 0) {
+    return ARES_FALSE;
   }
 
-  return ARES_SUCCESS;
+  return ARES_TRUE;
 }
 
 size_t ares__buf_len(const ares__buf_t *buf)
