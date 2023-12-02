@@ -170,7 +170,7 @@ static ares_status_t parse_dnsaddrport(ares__buf_t      *buf,
 
   /* pop off IP address.  If it is in [ ] then it can be ipv4 or ipv6.  If
    * not, ipv4 only */
-  if (ares__buf_begins_with(buf, (const unsigned char *)"[", 1) == ARES_SUCCESS) {
+  if (ares__buf_begins_with(buf, (const unsigned char *)"[", 1)) {
     /* Consume [ */
     ares__buf_consume(buf, 1);
 
@@ -225,7 +225,7 @@ static ares_status_t parse_dnsaddrport(ares__buf_t      *buf,
   }
 
   /* Pull off port */
-  if (ares__buf_begins_with(buf, (const unsigned char *)":", 1) == ARES_SUCCESS) {
+  if (ares__buf_begins_with(buf, (const unsigned char *)":", 1)) {
     char portstr[6];
 
     /* Consume : */

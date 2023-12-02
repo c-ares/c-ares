@@ -452,10 +452,10 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
  *  \param[in] buf          Initialized buffer object
  *  \param[in] data         Bytes of data to compare.
  *  \param[in] data_len     Length of data to compare.
- *  \return ARES_SUCCESS or one of the c-ares error codes
+ *  \return ARES_TRUE on match, ARES_FALSE otherwise.
  */
-ares_status_t        ares__buf_begins_with(const ares__buf_t   *buf,
-                                           const unsigned char *data, size_t data_len);
+ares_bool_t  ares__buf_begins_with(const ares__buf_t   *buf,
+                                   const unsigned char *data, size_t data_len);
 
 
 /*! Size of unprocessed remaining data length

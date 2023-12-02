@@ -865,25 +865,25 @@ done:
 }
 
 
-ares_status_t ares__buf_begins_with(const ares__buf_t   *buf,
-                                    const unsigned char *data, size_t data_len)
+ares_bool_t ares__buf_begins_with(const ares__buf_t   *buf,
+                                  const unsigned char *data, size_t data_len)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares__buf_fetch(buf, &remaining_len);
 
   if (ptr == NULL || data == NULL || data_len == 0) {
-    return ARES_EFORMERR;
+    return ARES_FALSE;
   }
 
   if (data_len > remaining_len) {
-    return ARES_EBADRESP;
+    return ARES_FALSE;
   }
 
   if (memcmp(ptr, data, data_len) != 0) {
-    return ARES_EBADRESP;
+    return ARES_FALSE;
   }
 
-  return ARES_SUCCESS;
+  return ARES_TRUE;
 }
 
 size_t ares__buf_len(const ares__buf_t *buf)
