@@ -378,11 +378,29 @@ size_t        ares__buf_consume_nonwhitespace(ares__buf_t *buf);
  *  \param[in] buf                Initialized buffer object
  *  \param[in] charset            character set
  *  \param[in] len                length of character set
+ *  \param[in] require_charset    require we find a character from the charset.
+ *                                if ARES_FALSE it will simply consume the
+ *                                rest of the buffer.  If ARES_TRUE will return
+ *                                0 if not found.
  *  \return number of characters consumed
  */
 size_t ares__buf_consume_until_charset(ares__buf_t *buf,
                                        const unsigned char *charset,
-                                       size_t len);
+                                       size_t len,
+                                       ares_bool_t require_charset);
+
+
+/*! Consume while the characters match the characters in the provided set.
+ *
+ *  \param[in] buf                Initialized buffer object
+ *  \param[in] charset            character set
+ *  \param[in] len                length of character set
+ *  \return number of characters consumed
+ */
+size_t ares__buf_consume_charset(ares__buf_t *buf,
+                                 const unsigned char *charset,
+                                 size_t len);
+
 
 /*! Consume from the current position until the end of the line, and optionally
  *  the end of line character (0x0A) itself.
