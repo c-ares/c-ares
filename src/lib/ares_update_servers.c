@@ -947,6 +947,7 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
 
   status = ares__sconfig_append_fromstr(&slist, _csv, ARES_FALSE);
   if (status != ARES_SUCCESS) {
+    ares__llist_destroy(slist);
     return status;
   }
 
