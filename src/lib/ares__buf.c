@@ -502,14 +502,15 @@ static const unsigned char *ares__buf_fetch(const ares__buf_t *buf, size_t *len)
   }
 
   *len = buf->data_len - buf->offset;
+  if (*len == 0)
+    return NULL;
+
   return buf->data + buf->offset;
 }
 
 ares_status_t ares__buf_consume(ares__buf_t *buf, size_t len)
 {
-  size_t remaining_len;
-
-  ares__buf_fetch(buf, &remaining_len);
+  size_t remaining_len = ares__buf_len(buf);
 
   if (remaining_len < len) {
     return ARES_EBADRESP;
@@ -885,9 +886,10 @@ ares_bool_t ares__buf_begins_with(const ares__buf_t   *buf,
 
 size_t ares__buf_len(const ares__buf_t *buf)
 {
-  size_t len = 0;
-  ares__buf_fetch(buf, &len);
-  return len;
+  if (buf == NULL)
+    return 0;
+
+  return buf->data_len - buf->offset;
 }
 
 const unsigned char *ares__buf_peek(const ares__buf_t *buf, size_t *len)
