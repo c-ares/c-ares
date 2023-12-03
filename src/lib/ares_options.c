@@ -272,24 +272,46 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
   }
 
   if (optmask & ARES_OPT_TIMEOUTMS) {
-    channel->timeout = (unsigned int)options->timeout;
+    /* Apparently some integrations were passing -1 to tell c-ares to use
+     * the default instead of just omitting the optmask */
+    if (options->timeout <= 0) {
+      optmask &= ~(ARES_OPT_TIMEOUTMS);
+    } else {
+      channel->timeout = (unsigned int)options->timeout;
+    }
   } else if (optmask & ARES_OPT_TIMEOUT) {
-    /* Convert to milliseconds */
-    optmask          |= ARES_OPT_TIMEOUTMS;
-    optmask          &= ~(ARES_OPT_TIMEOUT);
-    channel->timeout  = (unsigned int)options->timeout * 1000;
+    optmask &= ~(ARES_OPT_TIMEOUT);
+    /* Apparently some integrations were passing -1 to tell c-ares to use
+     * the default instead of just omitting the optmask */
+    if (options->timeout > 0) {
+      /* Convert to milliseconds */
+      optmask          |= ARES_OPT_TIMEOUTMS;
+      channel->timeout  = (unsigned int)options->timeout * 1000;
+    }
   }
 
   if (optmask & ARES_OPT_TRIES) {
-    channel->tries = (size_t)options->tries;
+    if (options->tries <= 0) {
+      optmask &= ~(ARES_OPT_TRIES);
+    } else {
+      channel->tries = (size_t)options->tries;
+    }
   }
 
   if (optmask & ARES_OPT_NDOTS) {
-    channel->ndots = (size_t)options->ndots;
+    if (options->ndots <= 0) {
+      optmask &= ~(ARES_OPT_NDOTS);
+    } else {
+      channel->ndots = (size_t)options->ndots;
+    }
   }
 
   if (optmask & ARES_OPT_MAXTIMEOUTMS) {
-    channel->maxtimeout = (size_t)options->maxtimeout;
+    if (options->maxtimeout <= 0) {
+      optmask &= ~(ARES_OPT_MAXTIMEOUTMS);
+    } else {
+      channel->maxtimeout = (size_t)options->maxtimeout;
+    }
   }
 
   if (optmask & ARES_OPT_ROTATE) {
@@ -313,17 +335,28 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
     channel->sock_state_cb_data = options->sock_state_cb_data;
   }
 
-  if (optmask & ARES_OPT_SOCK_SNDBUF && options->socket_send_buffer_size > 0) {
-    channel->socket_send_buffer_size = options->socket_send_buffer_size;
+  if (optmask & ARES_OPT_SOCK_SNDBUF) {
+    if (options->socket_send_buffer_size <= 0) {
+      optmask &= ~(ARES_OPT_SOCK_SNDBUF);
+    } else {
+      channel->socket_send_buffer_size = options->socket_send_buffer_size;
+    }
   }
 
-  if (optmask & ARES_OPT_SOCK_RCVBUF &&
-      options->socket_receive_buffer_size > 0) {
-    channel->socket_receive_buffer_size = options->socket_receive_buffer_size;
+  if (optmask & ARES_OPT_SOCK_RCVBUF) {
+    if (options->socket_receive_buffer_size <= 0) {
+      optmask &= ~(ARES_OPT_SOCK_RCVBUF);
+    } else {
+      channel->socket_receive_buffer_size = options->socket_receive_buffer_size;
+    }
   }
 
   if (optmask & ARES_OPT_EDNSPSZ) {
-    channel->ednspsz = (size_t)options->ednspsz;
+    if (options->ednspsz <= 0) {
+      optmask &= ~(ARES_OPT_EDNSPSZ);
+    } else {
+      channel->ednspsz = (size_t)options->ednspsz;
+    }
   }
 
   /* Copy the domains, if given.  Keep channel->ndomains consistent so
@@ -346,9 +379,13 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
 
   /* Set lookups, if given. */
   if (optmask & ARES_OPT_LOOKUPS) {
-    channel->lookups = ares_strdup(options->lookups);
-    if (!channel->lookups) {
-      return ARES_ENOMEM;
+    if (options->lookups == NULL) {
+      optmask &= ~(ARES_OPT_LOOKUPS);
+    } else {
+      channel->lookups = ares_strdup(options->lookups);
+      if (!channel->lookups) {
+        return ARES_ENOMEM;
+      }
     }
   }
 
@@ -367,35 +404,55 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
 
   /* Set path for resolv.conf file, if given. */
   if (optmask & ARES_OPT_RESOLVCONF) {
-    channel->resolvconf_path = ares_strdup(options->resolvconf_path);
-    if (!channel->resolvconf_path && options->resolvconf_path) {
-      return ARES_ENOMEM;
+    if (options->resolvconf_path == NULL) {
+      optmask &= ~(ARES_OPT_RESOLVCONF);
+    } else {
+      channel->resolvconf_path = ares_strdup(options->resolvconf_path);
+      if (channel->resolvconf_path == NULL) {
+        return ARES_ENOMEM;
+      }
     }
   }
 
   /* Set path for hosts file, if given. */
   if (optmask & ARES_OPT_HOSTS_FILE) {
-    channel->hosts_path = ares_strdup(options->hosts_path);
-    if (!channel->hosts_path && options->hosts_path) {
-      return ARES_ENOMEM;
+    if (options->hosts_path == NULL) {
+      optmask &= ~(ARES_OPT_HOSTS_FILE);
+    } else {
+      channel->hosts_path = ares_strdup(options->hosts_path);
+      if (channel->hosts_path == NULL) {
+        return ARES_ENOMEM;
+      }
     }
   }
 
   if (optmask & ARES_OPT_UDP_MAX_QUERIES) {
-    channel->udp_max_queries = (size_t)options->udp_max_queries;
+    if (options->udp_max_queries <= 0) {
+      optmask &= ~(ARES_OPT_UDP_MAX_QUERIES);
+    } else {
+      channel->udp_max_queries = (size_t)options->udp_max_queries;
+    }
   }
 
   if (optmask & ARES_OPT_QUERY_CACHE) {
-    channel->qcache_max_ttl = options->qcache_max_ttl;
+    if (options->qcache_max_ttl <= 0) {
+      optmask &= ~(ARES_OPT_QUERY_CACHE);
+    } else {
+      channel->qcache_max_ttl = options->qcache_max_ttl;
+    }
   }
 
   /* Initialize the ipv4 servers if provided */
-  if (optmask & ARES_OPT_SERVERS && options->nservers > 0) {
-    ares_status_t status;
-    status = ares__init_options_servers(channel, options->servers,
-                                        (size_t)options->nservers);
-    if (status != ARES_SUCCESS) {
-      return status;
+  if (optmask & ARES_OPT_SERVERS) {
+    if (options->nservers <= 0) {
+      optmask &= ~(ARES_OPT_SERVERS);
+    } else {
+      ares_status_t status;
+      status = ares__init_options_servers(channel, options->servers,
+                                          (size_t)options->nservers);
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
     }
   }
 
