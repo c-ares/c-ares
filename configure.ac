@@ -131,15 +131,15 @@ AX_CXX_COMPILE_STDCXX_11([noext],[optional])
 
 XC_AUTOMAKE
 
+dnl make sure we use system extensions like _GNU_SOURCE or _XOPEN_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
+
 dnl This defines _ALL_SOURCE for AIX
 CARES_CHECK_AIX_ALL_SOURCE
 
 dnl Our configure and build reentrant settings
 CARES_CONFIGURE_THREAD_SAFE
 CARES_CONFIGURE_REENTRANT
-
-dnl make sure we use system extensions like _GNU_SOURCE or _XOPEN_SOURCE
-AC_USE_SYSTEM_EXTENSIONS
 
 dnl check for how to do large files
 AC_SYS_LARGEFILE
