@@ -102,7 +102,7 @@ ares_bool_t ares_str_isnum(const char *str)
     return ARES_FALSE;
 
   for (i=0; str[i] != 0; i++) {
-    if (str[i] < '0' && str[i] > '9')
+    if (str[i] < '0' || str[i] > '9')
       return ARES_FALSE;
   }
   return ARES_TRUE;
