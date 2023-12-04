@@ -52,24 +52,444 @@
 #  endif
 #endif
 
-/*! Flags for interface ip addresses. */
-typedef enum {
-  ARES_IFACE_IP_V4        = 1 << 0, /*!< IPv4 address */
-  ARES_IFACE_IP_V6        = 1 << 1, /*!< IPv6 address */
-  ARES_IFACE_IP_LOOPBACK  = 1 << 2, /*!< Loopback adapter */
-  ARES_IFACE_IP_OFFLINE   = 1 << 3, /*!< Adapter offline */
-  ARES_IFACE_IP_LINKLOCAL = 1 << 4, /*!< Link-local ip address */
-  /*! Default, enumerate all ips for online interfaces, including loopback */
-  ARES_IFACE_IP_DEFAULT   = (ARES_IFACE_IP_V4|ARES_IFACE_IP_V6|
-                             ARES_IFACE_IP_LOOPBACK|ARES_IFACE_IP_LINKLOCAL)
-} ares__iface_ip_flags_t;
+
+static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
+                                               const char *name);
 
 typedef struct {
   char                  *name;
-  char                  *friendly_name;
   struct ares_addr       addr;
   unsigned char          netmask;
-  int                    ll_scope;
+  unsigned int           ll_scope;
   ares__iface_ip_flags_t flags;
 } ares__iface_ip_t;
+
+struct ares__iface_ips {
+  ares__iface_ip_t      *ips;
+  size_t                 cnt;
+  size_t                 alloc_size;
+  ares__iface_ip_flags_t enum_flags;
+};
+
+static ares__iface_ips_t *ares__iface_ips_alloc(ares__iface_ip_flags_t flags)
+{
+  ares__iface_ips_t *ips = ares_malloc_zero(sizeof(*ips));
+  if (ips == NULL)
+    return NULL;
+
+  /* Prealloc 4 entries */
+  ips->alloc_size = 4;
+  ips->ips        = ares_malloc_zero(ips->alloc_size * sizeof(*ips->ips));
+  if (ips->ips == NULL) {
+    ares_free(ips);
+    return NULL;
+  }
+  ips->enum_flags = flags;
+  return ips;
+}
+
+static void ares__iface_ip_destroy(ares__iface_ip_t *ip)
+{
+  if (ip == NULL)
+    return;
+  ares_free(ip->name);
+  memset(ip, 0, sizeof(*ip));
+}
+
+void ares__iface_ips_destroy(ares__iface_ips_t *ips)
+{
+  size_t i;
+
+  if (ips == NULL)
+    return;
+
+  for (i=0; i<ips->cnt; i++) {
+    ares__iface_ip_destroy(&ips->ips[i]);
+  }
+  ares_free(ips->ips);
+  ares_free(ips);
+}
+
+ares_status_t ares__iface_ips(ares__iface_ips_t **ips, ares__iface_ip_flags_t flags, const char *name)
+{
+  ares_status_t status;
+
+  if (ips == NULL)
+    return ARES_EFORMERR;
+
+  *ips = ares__iface_ips_alloc(flags);
+  if (*ips == NULL)
+    return ARES_ENOMEM;
+
+  status = ares__iface_ips_enumerate(*ips, name);
+  if (status != ARES_SUCCESS) {
+    ares__iface_ips_destroy(*ips);
+    *ips = NULL;
+    return status;
+  }
+
+  return ARES_SUCCESS;
+}
+
+
+static ares_bool_t ares__is_link_local(const struct ares_addr *addr)
+{
+  struct ares_addr    subnet;
+  const unsigned char subnetaddr[16] = {
+    0xfe, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00
+  };
+
+  /* fe80::/10 */
+  subnet.family = AF_INET;
+  memcpy(&subnet.addr.addr6, subnetaddr, 16);
+
+  return ares__subnet_match(addr, &subnet, 10);
+}
+
+static ares_status_t ares__iface_ips_add(ares__iface_ips_t *ips,
+                                         ares__iface_ip_flags_t flags,
+                                         const char *name,
+                                         const struct ares_addr *addr,
+                                         unsigned char netmask,
+                                         unsigned int ll_scope)
+{
+  size_t idx;
+
+  if (ips == NULL || name == NULL || addr == NULL)
+    return ARES_EFORMERR;
+
+  /* Don't want loopback */
+  if (flags & ARES_IFACE_IP_LOOPBACK &&
+      !(ips->enum_flags & ARES_IFACE_IP_LOOPBACK)) {
+    return ARES_SUCCESS;
+  }
+
+  /* Don't want offline */
+  if (flags & ARES_IFACE_IP_OFFLINE &&
+      !(ips->enum_flags & ARES_IFACE_IP_OFFLINE)) {
+    return ARES_SUCCESS;
+  }
+
+  /* Check for link-local */
+  if (ares__is_link_local(addr)) {
+    flags |= ARES_IFACE_IP_LINKLOCAL;
+  }
+  if (flags & ARES_IFACE_IP_LINKLOCAL &&
+      !(ips->enum_flags & ARES_IFACE_IP_LINKLOCAL)) {
+    return ARES_SUCCESS;
+  }
+
+  /* Set address flag based on address provided */
+  if (addr->family == AF_INET)
+    flags |= ARES_IFACE_IP_V4;
+
+  if (addr->family == AF_INET6)
+    flags |= ARES_IFACE_IP_V6;
+
+  /* If they specified either v4 or v6 validate flags otherwise assume they
+   * want to enumerate both */
+  if (ips->enum_flags & (ARES_IFACE_IP_V4|ARES_IFACE_IP_V6)) {
+    if (flags & ARES_IFACE_IP_V4 &&
+        !(ips->enum_flags & ARES_IFACE_IP_V4)) {
+      return ARES_SUCCESS;
+    }
+    if (flags & ARES_IFACE_IP_V6 &&
+        !(ips->enum_flags & ARES_IFACE_IP_V6)) {
+      return ARES_SUCCESS;
+    }
+  }
+
+  /* Allocate more ips */
+  if (ips->cnt+1 > ips->alloc_size) {
+    void *temp;
+    size_t alloc_size;
+
+    alloc_size = ares__round_up_pow2(ips->alloc_size + 1);
+    temp       = ares_realloc_zero(ips->ips, ips->alloc_size * sizeof(ips->ips), alloc_size * sizeof(ips->ips));
+    if (temp == NULL) {
+      return ARES_ENOMEM;
+    }
+    ips->ips        = temp;
+    ips->alloc_size = alloc_size;
+  }
+
+  /* Add */
+  idx = ips->cnt++;
+
+  ips->ips[idx].flags    = flags;
+  ips->ips[idx].netmask  = netmask;
+  ips->ips[idx].ll_scope = ll_scope;
+  memcpy(&ips->ips[idx].addr, addr, sizeof(*addr));
+  ips->ips[idx].name     = ares_strdup(name);
+  if (ips->ips[idx].name == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  return ARES_SUCCESS;
+}
+
+size_t ares__iface_ips_cnt(const ares__iface_ips_t *ips)
+{
+  if (ips == NULL)
+    return 0;
+  return ips->cnt;
+}
+
+const char *ares__iface_ips_get_name(const ares__iface_ips_t *ips, size_t idx)
+{
+  if (ips == NULL || idx >= ips->cnt)
+    return NULL;
+  return ips->ips[idx].name;
+}
+
+const struct ares_addr *ares__iface_ips_get_addr(const ares__iface_ips_t *ips, size_t idx)
+{
+  if (ips == NULL || idx >= ips->cnt)
+    return NULL;
+  return &ips->ips[idx].addr;
+}
+
+ares__iface_ip_flags_t ares__iface_ips_get_flags(const ares__iface_ips_t *ips, size_t idx)
+{
+  if (ips == NULL || idx >= ips->cnt)
+    return 0;
+  return ips->ips[idx].flags;
+}
+
+unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips, size_t idx)
+{
+  if (ips == NULL || idx >= ips->cnt)
+    return 0;
+  return ips->ips[idx].netmask;
+}
+
+unsigned int ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips, size_t idx)
+{
+  if (ips == NULL || idx >= ips->cnt)
+    return 0;
+  return ips->ips[idx].ll_scope;
+}
+
+
+#ifdef USE_WINSOCK
+char *wcharp_to_charp(const wchar_t *in)
+{
+  char *out;
+  int   len;
+
+  len = WideCharToMultiByte(CP_UTF8, 0, in, -1, NULL, 0, NULL, NULL);
+  if (len == -1)
+    return NULL;
+
+  out = ares_malloc_zero((size_t)len+1);
+
+  if (WideCharToMultiByte(CP_UTF8, 0, in, -1, out, len, NULL, NULL) == -1) {
+    ares_free(out);
+    return NULL;
+  }
+
+  return out;
+}
+
+static ares_bool_t name_match(const char *name, const char *adapter_name,
+                              int ll_scope)
+{
+  if (name == NULL || *name == 0)
+    return ARES_TRUE;
+
+  if (strcasecmp(name, adapter_name) == 0)
+    return ARES_TRUE;
+
+  if (ares_str_isnum(name) && atoi(name) == ll_scope)
+    return ARES_TRUE;
+
+  return ARES_FALSE;
+}
+
+static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
+                                               const char *name)
+{
+  ULONG                 myflags   = GAA_FLAG_INCLUDE_PREFIX /*|GAA_FLAG_INCLUDE_ALL_INTERFACES */;
+  ULONG                 outBufLen = 0;
+  DWORD                 retval;
+  M_bool                rv        = M_FALSE;
+  IP_ADAPTER_ADDRESSES *addresses = NULL;
+  IP_ADAPTER_ADDRESSES *address   = NULL;
+  ares_status_t         status    = ARES_SUCCESS;
+
+  /* Get necessary buffer size */
+  GetAdaptersAddresses(AF_UNSPEC, myflags, NULL, NULL, &outBufLen);
+  if (outBufLen == 0) {
+    status = ARES_EFILE;
+    goto done;
+  }
+
+  addresses = M_malloc_zero(outBufLen);
+  if (addresses == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  retval = GetAdaptersAddresses(AF_UNSPEC, myflags, NULL, addresses, &outBufLen);
+  if (retval != ERROR_SUCCESS) {
+    status = ARES_EFILE;
+    goto done;
+  }
+
+  for (address = addresses; address != NULL; address = address->Next) {
+    IP_ADAPTER_UNICAST_ADDRESS *ipaddr   = NULL;
+    ares__iface_ip_flags_t      addrflag = 0;
+
+    if (address->OperStatus != IfOperStatusUp) {
+      addrflag |= ARES_IFACE_IP_OFFLINE;
+    }
+
+    if (address->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
+      addrflag |= ARES_IFACE_IP_LOOPBACK;
+    }
+
+    for (ipaddr = address->FirstUnicastAddress; ipaddr != NULL;
+         ipaddr = ipaddr->Next) {
+      struct ares_addr addr;
+      char            *adapter_name;
+
+      if (ipaddr->Address.lpSockaddr->sa_family == AF_INET) {
+        struct sockaddr_in *sockaddr_in =
+          (struct sockaddr_in *)((void *)ipaddr->Address.lpSockaddr);
+        addr.family = AF_INET;
+        memcpy(&addr.addr.addr4, &sockaddr_in->sin_addr, sizeof(addr.addr4));
+      } else if (ipaddr->Address.lpSockaddr->sa_family == AF_INET6) {
+        struct sockaddr_in6 *sockaddr_in6 =
+          (struct sockaddr_in6 *)((void *)ipaddr->Address.lpSockaddr);
+        addr.family = AF_INET6;
+        memcpy(&addr.addr.addr6, &sockaddr_in6->sin6_addr, sizeof(addr.addr6));
+      } else {
+        /* Unknown */
+        continue;
+      }
+
+      adapter_name = wcharp_to_charp(address->AdapterName);
+      if (adapter_name == NULL) {
+        status = ARES_ENOMEM;
+        goto done;
+      }
+
+      /* Sometimes windows may use numerics to indicate a DNS server's adapter,
+       * which corresponds to the index rather than the name.  Check and
+       * validate both. */
+      if (!name_match(name, adapter_name, ipaddr->Ipv6IfIndex)) {
+        ares_free(adapter_name);
+        continue;
+      }
+
+      status = ares__iface_ips_add(ips, addrflag, adapter_name, &addr,
+                                   ipaddr->OnLinkPrefixLength /* netmask */,
+                                   (unsigned int)ipaddr->Ipv6IfIndex /* ll_scope */);
+      ares_free(adapter_name);
+
+      if (status != ARES_SUCCESS)
+        goto done;
+    }
+  }
+
+done:
+  ares_free(addresses);
+  return rv;
+}
+
+#elif defined(HAVE_GETIFADDRS)
+
+static unsigned char count_addr_bits(const unsigned char *addr, size_t addr_len)
+{
+  size_t        i;
+  unsigned char count = 0;
+
+  for (i=0; i<addr_len; i++) {
+    count += ares__count_bits_u8(addr[i]);
+  }
+  return count;
+}
+
+
+static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
+                                               const char *name)
+{
+  struct ifaddrs *ifap   = NULL;
+  struct ifaddrs *ifa    = NULL;
+  ares_status_t   status = ARES_SUCCESS;
+
+  if (getifaddrs(&ifap) != 0) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
+    ares__iface_ip_flags_t  addrflag = 0;
+    struct ares_addr        addr;
+    unsigned char           netmask  = 0;
+    unsigned int            ll_scope = 0;
+
+    if (ifa->ifa_addr == NULL)
+      continue;
+
+    if (!(ifa->ifa_flags & IFF_UP)) {
+      addrflag |= ARES_IFACE_IP_OFFLINE;
+    }
+
+    if (ifa->ifa_flags & IFF_LOOPBACK) {
+      addrflag |= ARES_IFACE_IP_LOOPBACK;
+    }
+
+    if (ifa->ifa_addr->sa_family == AF_INET) {
+      struct sockaddr_in *sockaddr_in = (struct sockaddr_in *)((void *)ifa->ifa_addr);
+      addr.family = AF_INET;
+      memcpy(&addr.addr.addr4, &sockaddr_in->sin_addr, sizeof(addr.addr.addr4));
+      /* netmask */
+      sockaddr_in = (struct sockaddr_in *)((void *)ifa->ifa_netmask);
+      netmask     = count_addr_bits((const void *)&sockaddr_in->sin_addr, 4);
+    } else if (ifa->ifa_addr->sa_family == AF_INET6) {
+      struct sockaddr_in6 *sockaddr_in6 = (struct sockaddr_in6 *)((void *)ifa->ifa_addr);
+      addr.family = AF_INET6;
+      memcpy(&addr.addr.addr6, &sockaddr_in6->sin6_addr, sizeof(addr.addr.addr6));
+      /* netmask */
+      sockaddr_in6 = (struct sockaddr_in6 *)((void *)ifa->ifa_netmask);
+      netmask      = count_addr_bits((const void *)&sockaddr_in6->sin6_addr, 16);
+#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+      ll_scope     = sockaddr_in6->sin6_scope_id;
+#endif
+    } else {
+      /* unknown */
+      continue;
+    }
+
+    /* Name mismatch */
+    if (strcasecmp(ifa->ifa_name, name) != 0) {
+      continue;
+    }
+
+    status = ares__iface_ips_add(ips, addrflag, ifa->ifa_name, &addr,
+                                 netmask, ll_scope);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
+
+done:
+  freeifaddrs(ifap);
+  return status;
+}
+
+#else
+
+static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
+                                               ares__iface_ip_flags_t flags,
+                                               const char *name)
+{
+  (void)ips;
+  (void)flags;
+  return ARES_ENOTIMP;
+}
+
+#endif
 

@@ -123,6 +123,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__htable_asvp.h"
 #include "ares__buf.h"
 #include "ares_dns_private.h"
+#include "ares__iface_ips.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -565,11 +566,16 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
   (x && x->lookups && ares__slist_len(x->servers) > 0 && x->ndots > 0 && \
    x->timeout > 0 && x->tries > 0)
 
+ares_bool_t ares__subnet_match(const struct ares_addr *addr,
+                               const struct ares_addr *subnet,
+                               unsigned char netmask);
+
 size_t        ares__round_up_pow2(size_t n);
 size_t        ares__log2(size_t n);
 size_t        ares__pow(size_t x, size_t y);
 size_t        ares__count_digits(size_t n);
 size_t        ares__count_hexdigits(size_t n);
+unsigned char ares__count_bits_u8(unsigned char x);
 void          ares__qcache_destroy(ares__qcache_t *cache);
 ares_status_t ares__qcache_create(ares_rand_state *rand_state,
                                   unsigned int     max_ttl,

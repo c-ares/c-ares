@@ -71,38 +71,57 @@ static ares_bool_t ares__addr_match(const struct ares_addr *addr1,
   return ARES_FALSE;
 }
 
-/* Validate that the ip address matches the subnet (network base and network
- * mask) specified. Addresses are specified in standard Network Byte Order as
- * 16 bytes, and the netmask is 0 to 128 (bits).
- */
-static ares_bool_t ares_ipv6_subnet_matches(const unsigned char  netbase[16],
-                                            unsigned char        netmask,
-                                            const unsigned char *ipaddr)
-{
-  unsigned char mask[16] = { 0 };
-  unsigned char i;
 
-  /* Misuse */
-  if (netmask > 128) {
+ares_bool_t ares__subnet_match(const struct ares_addr *addr,
+                               const struct ares_addr *subnet,
+                               unsigned char netmask)
+{
+  const unsigned char *addr_ptr;
+  const unsigned char *subnet_ptr;
+  size_t               len;
+  size_t               i;
+
+  if (addr == NULL || subnet == NULL)
+    return ARES_FALSE;
+
+  if (addr->family != subnet->family)
+    return ARES_FALSE;
+
+  if (addr->family == AF_INET) {
+    addr_ptr   = (const unsigned char *)&addr->addr.addr4;
+    subnet_ptr = (const unsigned char *)&subnet->addr.addr4;
+    len      = 4;
+
+    if (netmask > 32)
+      return ARES_FALSE;
+  } else if (addr->family == AF_INET6) {
+    addr_ptr   = (const unsigned char *)&addr->addr.addr6;
+    subnet_ptr = (const unsigned char *)&subnet->addr.addr6;
+    len        = 16;
+
+    if (netmask > 128)
+      return ARES_FALSE;
+  } else {
     return ARES_FALSE;
   }
 
-  /* Quickly set whole bytes */
-  memset(mask, 0xFF, netmask / 8);
+  for (i=0; i<len && netmask > 0; i++) {
+    unsigned char mask = 0xff;
+    if (netmask < 8) {
+      mask <<= (8 - netmask);
+      netmask = 0;
+    } else {
+      netmask -= 8;
+    }
 
-  /* Set remaining bits */
-  if (netmask % 8 && netmask < 128 /* Silence coverity */) {
-    mask[netmask / 8] = (unsigned char)(0xff << (8 - (netmask % 8)));
-  }
-
-  for (i = 0; i < 16; i++) {
-    if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i])) {
+    if ((addr_ptr[i] & mask) != (subnet_ptr[i] & mask)) {
       return ARES_FALSE;
     }
   }
 
   return ARES_TRUE;
 }
+
 
 static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
 {
@@ -128,9 +147,10 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
 
   /* See if ipaddr matches any of the entries in the blacklist. */
   for (i = 0; i < sizeof(blacklist_v6) / sizeof(*blacklist_v6); i++) {
-    if (ares_ipv6_subnet_matches(blacklist_v6[i].netbase,
-                                 blacklist_v6[i].netmask,
-                                 (const unsigned char *)&addr->addr.addr6)) {
+    struct ares_addr subnet;
+    subnet.family = AF_INET6;
+    memcpy(&subnet.addr.addr6, blacklist_v6[i].netbase, 16);
+    if (ares__subnet_match(addr, &subnet, blacklist_v6[i].netmask)) {
       return ARES_TRUE;
     }
   }

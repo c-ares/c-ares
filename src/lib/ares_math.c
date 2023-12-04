@@ -132,3 +132,16 @@ size_t ares__count_hexdigits(size_t n)
 
   return digits;
 }
+
+unsigned char ares__count_bits_u8(unsigned char x)
+{
+  /* Implementation obtained from: http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetTable */
+#define B2(n) n,     n+1,     n+1,     n+2
+#define B4(n) B2(n), B2(n+1), B2(n+1), B2(n+2)
+#define B6(n) B4(n), B4(n+1), B4(n+1), B4(n+2)
+  static const unsigned char lookup[256] = {
+    B6(0), B6(1), B6(1), B6(2)
+  };
+  return lookup[x];
+}
+
