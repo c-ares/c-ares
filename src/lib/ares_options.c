@@ -435,7 +435,8 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
   }
 
   if (optmask & ARES_OPT_QUERY_CACHE) {
-    if (options->qcache_max_ttl <= 0) {
+    /* qcache_max_ttl is unsigned unlike the others */
+    if (options->qcache_max_ttl == 0) {
       optmask &= ~(ARES_OPT_QUERY_CACHE);
     } else {
       channel->qcache_max_ttl = options->qcache_max_ttl;
