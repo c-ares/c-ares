@@ -332,6 +332,9 @@
 /* Define to 1 if you have the <time.h> header file. */
 #cmakedefine HAVE_TIME_H
 
+/* Define to 1 if you have the <ifaddrs.h> header file. */
+#cmakedefine HAVE_IFADDRS_H
+
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
@@ -361,6 +364,9 @@
 
 /* Define if have arc4random_buf() */
 #cmakedefine HAVE_ARC4RANDOM_BUF
+
+/* Define if have getifaddrs() */
+#cmakedefine HAVE_GETIFADDRS
 
 /* Define if have stat() */
 #cmakedefine HAVE_STAT

@@ -3877,6 +3877,93 @@ AC_DEFUN([CARES_CHECK_FUNC_WRITEV], [
   fi
 ])
 
+dnl CARES_CHECK_FUNC_GETIFADDRS
+dnl -------------------------------------------------
+dnl Verify if getifaddrs is available, prototyped, and
+dnl can be compiled. If all of these are true, and
+dnl usage has not been previously disallowed with
+dnl shell variable cares_disallow_getifaddrs, then
+dnl HAVE_GETIFADDRS will be defined.
+
+AC_DEFUN([CARES_CHECK_FUNC_GETIFADDRS], [
+  #
+  tst_links_getifaddrs="unknown"
+  tst_proto_getifaddrs="unknown"
+  tst_compi_getifaddrs="unknown"
+  tst_allow_getifaddrs="unknown"
+  #
+  AC_MSG_CHECKING([if getifaddrs can be linked])
+  AC_LINK_IFELSE([
+    AC_LANG_FUNC_LINK_TRY([getifaddrs])
+  ],[
+    AC_MSG_RESULT([yes])
+    tst_links_getifaddrs="yes"
+  ],[
+    AC_MSG_RESULT([no])
+    tst_links_getifaddrs="no"
+  ])
+  #
+  if test "$tst_links_getifaddrs" = "yes"; then
+    AC_MSG_CHECKING([if getifaddrs is prototyped])
+    AC_EGREP_CPP([getifaddrs],[
+      #include <ifaddrs.h>
+    ],[
+      AC_MSG_RESULT([yes])
+      tst_proto_getifaddrs="yes"
+    ],[
+      AC_MSG_RESULT([no])
+      tst_proto_getifaddrs="no"
+    ])
+  fi
+  #
+  if test "$tst_proto_getifaddrs" = "yes"; then
+    AC_MSG_CHECKING([if getifaddrs is compilable])
+    AC_COMPILE_IFELSE([
+      AC_LANG_PROGRAM([[
+        #include <stdio.h>
+        #include <sys/types.h>
+        #include <sys/socket.h>
+        #include <ifaddrs.h>
+      ]],[[
+        if(0 != getifaddrs(NULL))
+          return 1;
+      ]])
+    ],[
+      AC_MSG_RESULT([yes])
+      tst_compi_getifaddrs="yes"
+    ],[
+      AC_MSG_RESULT([no])
+      tst_compi_getifaddrs="no"
+    ])
+  fi
+  #
+  if test "$tst_compi_getifaddrs" = "yes"; then
+    AC_MSG_CHECKING([if getifaddrs usage allowed])
+    if test "x$cares_disallow_getifaddrs" != "xyes"; then
+      AC_MSG_RESULT([yes])
+      tst_allow_getifaddrs="yes"
+    else
+      AC_MSG_RESULT([no])
+      tst_allow_getifaddrs="no"
+    fi
+  fi
+  #
+  AC_MSG_CHECKING([if getifaddrs might be used])
+  if test "$tst_links_getifaddrs" = "yes" &&
+     test "$tst_proto_getifaddrs" = "yes" &&
+     test "$tst_compi_getifaddrs" = "yes" &&
+     test "$tst_allow_getifaddrs" = "yes"; then
+    AC_MSG_RESULT([yes])
+    AC_DEFINE_UNQUOTED(HAVE_GETIFADDRS, 1,
+      [Define to 1 if you have the getifaddrs function.])
+    ac_cv_func_getifaddrs="yes"
+  else
+    AC_MSG_RESULT([no])
+    ac_cv_func_getifaddrs="no"
+  fi
+])
+
+
 dnl CARES_CHECK_FUNC_STAT
 dnl -------------------------------------------------
 dnl Verify if stat is available, prototyped, and
