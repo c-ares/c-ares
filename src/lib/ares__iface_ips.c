@@ -440,7 +440,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
   ares_status_t   status = ARES_SUCCESS;
 
   if (getifaddrs(&ifap) != 0) {
-    status = ARES_ENOMEM;
+    status = ARES_EFILE;
     goto done;
   }
 
