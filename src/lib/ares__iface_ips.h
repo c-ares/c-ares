@@ -28,11 +28,11 @@
 
 /*! Flags for interface ip addresses. */
 typedef enum {
-  ARES_IFACE_IP_V4        = 1 << 0, /*!< IPv4 address. During enumeration if
+  ARES_IFACE_IP_V4 = 1 << 0,        /*!< IPv4 address. During enumeration if
                                      *   this flag is set ARES_IFACE_IP_V6
                                      *   is not, will only enumerate v4
                                      *   addresses. */
-  ARES_IFACE_IP_V6        = 1 << 1, /*!< IPv6 address. During enumeration if
+  ARES_IFACE_IP_V6 = 1 << 1,        /*!< IPv6 address. During enumeration if
                                      *   this flag is set ARES_IFACE_IP_V4
                                      *   is not, will only enumerate v6
                                      *   addresses. */
@@ -40,8 +40,8 @@ typedef enum {
   ARES_IFACE_IP_OFFLINE   = 1 << 3, /*!< Adapter offline */
   ARES_IFACE_IP_LINKLOCAL = 1 << 4, /*!< Link-local ip address */
   /*! Default, enumerate all ips for online interfaces, including loopback */
-  ARES_IFACE_IP_DEFAULT   = (ARES_IFACE_IP_V4|ARES_IFACE_IP_V6|
-                             ARES_IFACE_IP_LOOPBACK|ARES_IFACE_IP_LINKLOCAL)
+  ARES_IFACE_IP_DEFAULT = (ARES_IFACE_IP_V4 | ARES_IFACE_IP_V6 |
+                           ARES_IFACE_IP_LOOPBACK | ARES_IFACE_IP_LINKLOCAL)
 } ares__iface_ip_flags_t;
 
 struct ares__iface_ips;
@@ -50,30 +50,31 @@ struct ares__iface_ips;
 typedef struct ares__iface_ips ares__iface_ips_t;
 
 /*! Destroy ip address enumeration created by ares__iface_ips().
- * 
+ *
  *  \param[in]  ips   Initialized IP address enumeration structure
  */
-void ares__iface_ips_destroy(ares__iface_ips_t *ips);
+void                           ares__iface_ips_destroy(ares__iface_ips_t *ips);
 
 /*! Enumerate ip addresses on interfaces
- * 
+ *
  *  \param[out]  ips   Returns initialized ip address structure
  *  \param[in]   flags Flags for enumeration
  *  \param[in]   name  Interface name to enumerate, or NULL to enumerate all
  *  \return ARES_ENOMEM on out of memory, ARES_ENOTIMP if not supported on
  *          the system, ARES_SUCCESS on success
  */
-ares_status_t ares__iface_ips(ares__iface_ips_t **ips, ares__iface_ip_flags_t flags, const char *name);
+ares_status_t                  ares__iface_ips(ares__iface_ips_t    **ips,
+                                               ares__iface_ip_flags_t flags, const char *name);
 
 /*! Count of ips enumerated
- * 
+ *
  * \param[in]  ips   Initialized IP address enumeration structure
  * \return count
  */
-size_t ares__iface_ips_cnt(const ares__iface_ips_t *ips);
+size_t      ares__iface_ips_cnt(const ares__iface_ips_t *ips);
 
 /*! Retrieve interface name
- * 
+ *
  * \param[in]  ips   Initialized IP address enumeration structure
  * \param[in]  idx   Index of entry to pull
  * \return interface name
@@ -81,35 +82,39 @@ size_t ares__iface_ips_cnt(const ares__iface_ips_t *ips);
 const char *ares__iface_ips_get_name(const ares__iface_ips_t *ips, size_t idx);
 
 /*! Retrieve interface address
- * 
+ *
  * \param[in]  ips   Initialized IP address enumeration structure
  * \param[in]  idx   Index of entry to pull
  * \return interface address
  */
-const struct ares_addr *ares__iface_ips_get_addr(const ares__iface_ips_t *ips, size_t idx);
+const struct ares_addr *ares__iface_ips_get_addr(const ares__iface_ips_t *ips,
+                                                 size_t                   idx);
 
 /*! Retrieve interface address flags
- * 
+ *
  * \param[in]  ips   Initialized IP address enumeration structure
  * \param[in]  idx   Index of entry to pull
  * \return interface address flags
  */
-ares__iface_ip_flags_t ares__iface_ips_get_flags(const ares__iface_ips_t *ips, size_t idx);
+ares__iface_ip_flags_t  ares__iface_ips_get_flags(const ares__iface_ips_t *ips,
+                                                  size_t                   idx);
 
 /*! Retrieve interface address netmask
- * 
+ *
  * \param[in]  ips   Initialized IP address enumeration structure
  * \param[in]  idx   Index of entry to pull
  * \return interface address netmask
  */
-unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips, size_t idx);
+unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips,
+                                          size_t                   idx);
 
 /*! Retrieve interface ipv6 link local scope
- * 
+ *
  * \param[in]  ips   Initialized IP address enumeration structure
  * \param[in]  idx   Index of entry to pull
  * \return interface ipv6 link local scope
  */
-unsigned int ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips, size_t idx);
+unsigned int  ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
+                                           size_t                   idx);
 
 #endif
