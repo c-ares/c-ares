@@ -30,7 +30,7 @@
 /* Uses public domain code snippets from
  * http://graphics.stanford.edu/~seander/bithacks.html */
 
-size_t ares__round_up_pow2(size_t n)
+static unsigned int ares__round_up_pow2_u32(unsigned int n)
 {
   /* NOTE: if already a power of 2, will return itself, not the next */
   n--;
@@ -39,11 +39,31 @@ size_t ares__round_up_pow2(size_t n)
   n |= n >> 4;
   n |= n >> 8;
   n |= n >> 16;
-  if (sizeof(size_t) > 4) {
-    n |= n >> 32;
-  }
   n++;
   return n;
+}
+
+static ares_int64_t ares__round_up_pow2_u64(ares_int64_t n)
+{
+  /* NOTE: if already a power of 2, will return itself, not the next */
+  n--;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  n |= n >> 32;
+  n++;
+  return n;
+}
+
+size_t ares__round_up_pow2(size_t n)
+{
+  if (sizeof(size_t) > 4) {
+    return (size_t)ares__round_up_pow2_u64((ares_int64_t)n);
+  }
+
+  return (size_t)ares__round_up_pow2_u32((unsigned int)n);
 }
 
 size_t ares__log2(size_t n)
