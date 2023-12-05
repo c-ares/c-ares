@@ -137,7 +137,7 @@ ares_status_t ares__iface_ips(ares__iface_ips_t    **ips,
   return ARES_SUCCESS;
 }
 
-static ares_bool_t ares__is_link_local(const struct ares_addr *addr)
+ares_bool_t ares__addr_is_linklocal(const struct ares_addr *addr)
 {
   struct ares_addr    subnet;
   const unsigned char subnetaddr[16] = { 0xfe, 0x80, 0x00, 0x00, 0x00, 0x00,
@@ -145,7 +145,7 @@ static ares_bool_t ares__is_link_local(const struct ares_addr *addr)
                                          0x00, 0x00, 0x00, 0x00 };
 
   /* fe80::/10 */
-  subnet.family = AF_INET;
+  subnet.family = AF_INET6;
   memcpy(&subnet.addr.addr6, subnetaddr, 16);
 
   return ares__subnet_match(addr, &subnet, 10);
@@ -175,7 +175,7 @@ static ares_status_t
   }
 
   /* Check for link-local */
-  if (ares__is_link_local(addr)) {
+  if (ares__addr_is_linklocal(addr)) {
     flags |= ARES_IFACE_IP_LINKLOCAL;
   }
   if (flags & ARES_IFACE_IP_LINKLOCAL &&

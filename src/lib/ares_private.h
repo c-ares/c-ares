@@ -168,14 +168,18 @@ struct server_connection {
 };
 
 struct server_state {
+  /* Configuration */
   size_t                    idx; /* index for server in system configuration */
-  size_t                    consec_failures; /* Consecutive query failure count
-                                              * can be hard errors or timeouts
-                                              */
   struct ares_addr          addr;
   unsigned short            udp_port;        /* host byte order */
   unsigned short            tcp_port;        /* host byte order */
+  char                      ll_iface[64];    /* IPv6 Link Local Interface */
+  struct ares_addr          ll_addr;         /* IPv6 Link Local Address */
+  unsigned int              ll_scope;        /* IPv6 Link Local Scope */
 
+  size_t                    consec_failures; /* Consecutive query failure count
+                                              * can be hard errors or timeouts
+                                              */
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
 
@@ -570,6 +574,7 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
 ares_bool_t ares__subnet_match(const struct ares_addr *addr,
                                const struct ares_addr *subnet,
                                unsigned char netmask);
+ares_bool_t ares__addr_is_linklocal(const struct ares_addr *addr);
 
 size_t        ares__round_up_pow2(size_t n);
 size_t        ares__log2(size_t n);
