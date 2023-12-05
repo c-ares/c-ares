@@ -159,14 +159,15 @@ static void set_ipv6_v6only(ares_socket_t sockfd, int on)
 #  define set_ipv6_v6only(s, v)
 #endif
 
-static int configure_socket(ares_socket_t s, int family,
-                            ares_channel_t *channel)
+static int configure_socket(ares_socket_t s, struct server_state *server)
 {
   union {
     struct sockaddr     sa;
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
   } local;
+  ares_socklen_t  bindlen = 0;
+  ares_channel_t *channel = server->channel;
 
   /* do not set options for user-managed sockets */
   if (channel->sock_funcs && channel->sock_funcs->asocket) {
@@ -206,26 +207,35 @@ static int configure_socket(ares_socket_t s, int family,
   }
 #endif
 
-  if (family == AF_INET) {
-    if (channel->local_ip4) {
-      memset(&local.sa4, 0, sizeof(local.sa4));
-      local.sa4.sin_family      = AF_INET;
-      local.sa4.sin_addr.s_addr = htonl(channel->local_ip4);
-      if (bind(s, &local.sa, sizeof(local.sa4)) < 0) {
-        return -1;
-      }
-    }
-  } else if (family == AF_INET6) {
-    if (memcmp(channel->local_ip6, ares_in6addr_any._S6_un._S6_u8,
+  if (server->addr.family == AF_INET && channel->local_ip4) {
+    memset(&local.sa4, 0, sizeof(local.sa4));
+    local.sa4.sin_family      = AF_INET;
+    local.sa4.sin_addr.s_addr = htonl(channel->local_ip4);
+    bindlen                   = sizeof(local.sa4);
+  } else if (server->addr.family == AF_INET6 && ares_strlen(server->ll_iface)) {
+    memset(&local.sa6, 0, sizeof(local.sa6));
+    local.sa6.sin6_family = AF_INET6;
+#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+    local.sa6.sin6_scope_id = server->ll_scope;
+#endif
+    memcpy(&local.sa6.sin6_addr, &server->ll_addr.addr.addr6,
+           sizeof(local.sa6.sin6_addr));
+    bindlen               = sizeof(local.sa6);
+  } else if (server->addr.family == AF_INET6 &&
+             memcmp(channel->local_ip6, ares_in6addr_any._S6_un._S6_u8,
                sizeof(channel->local_ip6)) != 0) {
-      memset(&local.sa6, 0, sizeof(local.sa6));
-      local.sa6.sin6_family = AF_INET6;
-      memcpy(&local.sa6.sin6_addr, channel->local_ip6,
-             sizeof(channel->local_ip6));
-      if (bind(s, &local.sa, sizeof(local.sa6)) < 0) {
-        return -1;
-      }
-    }
+    memset(&local.sa6, 0, sizeof(local.sa6));
+    local.sa6.sin6_family = AF_INET6;
+    memcpy(&local.sa6.sin6_addr, channel->local_ip6,
+           sizeof(channel->local_ip6));
+    bindlen               = sizeof(local.sa6);
+  }
+
+  if (bindlen && bind(s, &local.sa, bindlen) < 0) {
+    return -1;
+  }
+
+  if (server->addr.family == AF_INET6) {
     set_ipv6_v6only(s, 0);
   }
 
@@ -279,7 +289,7 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
   }
 
   /* Configure it. */
-  if (configure_socket(s, server->addr.family, channel) < 0) {
+  if (configure_socket(s, server) < 0) {
     ares__close_socket(channel, s);
     return ARES_ECONNREFUSED;
   }
