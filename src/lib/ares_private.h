@@ -481,7 +481,8 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
 ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    const struct ares_addr *addr,
                                    unsigned short          udp_port,
-                                   unsigned short          tcp_port);
+                                   unsigned short          tcp_port,
+                                   const char             *ll_iface);
 ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
                                            const char     *str,
                                            ares_bool_t     ignore_invalid);

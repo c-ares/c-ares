@@ -40,6 +40,10 @@ typedef struct {
   struct ares_addr addr;
   unsigned short   tcp_port;
   unsigned short   udp_port;
+
+  char             ll_iface[64];
+  struct ares_addr ll_addr;
+  unsigned int     ll_scope;
 } ares_sconfig_t;
 
 static ares_bool_t ares__addr_match(const struct ares_addr *addr1,
@@ -164,8 +168,9 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
  *   [ipaddr]
  *   [ipaddr]:port
  *
- * TODO: in the future we need to add % and # syntax modifications to support
- *       the link-local interface name and domain, respectively.
+ * Modifiers: %iface
+ *
+ * TODO: #domain modifier
  *
  * If a port is not specified, will set port to 0.
  *
@@ -175,14 +180,14 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
  * Returns an error code on failure, else ARES_SUCCESS
  */
 
-static ares_status_t parse_dnsaddrport(ares__buf_t *buf, struct ares_addr *host,
-                                       unsigned short *port)
+static ares_status_t parse_nameserver(ares__buf_t *buf,
+                                      ares_sconfig_t *sconfig)
 {
   ares_status_t status;
   char          ipaddr[INET6_ADDRSTRLEN] = "";
   size_t        addrlen;
 
-  *port = 0;
+  memset(sconfig, 0, sizeof(*sconfig));
 
   /* Consume any leading whitespace */
   ares__buf_consume_whitespace(buf, ARES_TRUE);
@@ -242,8 +247,8 @@ static ares_status_t parse_dnsaddrport(ares__buf_t *buf, struct ares_addr *host,
   }
 
   /* Convert ip address from string to network byte order */
-  host->family = AF_UNSPEC;
-  if (ares_dns_pton(ipaddr, host, &addrlen) == NULL) {
+  sconfig->addr.family = AF_UNSPEC;
+  if (ares_dns_pton(ipaddr, &sconfig->addr, &addrlen) == NULL) {
     return ARES_EBADSTR;
   }
 
@@ -267,7 +272,31 @@ static ares_status_t parse_dnsaddrport(ares__buf_t *buf, struct ares_addr *host,
       return status;
     }
 
-    *port = (unsigned short)atoi(portstr);
+    sconfig->udp_port = (unsigned short)atoi(portstr);
+    sconfig->tcp_port = sconfig->udp_port;
+  }
+
+  /* Pull off interface modifier */
+  if (ares__buf_begins_with(buf, (const unsigned char *)"%", 1)) {
+    const unsigned char iface_charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                          "abcdefghijklmnopqrstuvwxyz"
+                                          "0123456789.-_\\:";
+
+    /* Consume % */
+    ares__buf_consume(buf, 1);
+
+    ares__buf_tag(buf);
+
+    if (ares__buf_consume_charset(buf, iface_charset, sizeof(iface_charset))
+        == 0) {
+      return ARES_EBADSTR;
+    }
+
+    status = ares__buf_tag_fetch_string(buf, sconfig->ll_iface,
+                                        sizeof(sconfig->ll_iface));
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
   }
 
   /* Consume any trailing whitespace so we can bail out if there is something
@@ -284,7 +313,8 @@ static ares_status_t parse_dnsaddrport(ares__buf_t *buf, struct ares_addr *host,
 ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    const struct ares_addr *addr,
                                    unsigned short          udp_port,
-                                   unsigned short          tcp_port)
+                                   unsigned short          tcp_port,
+                                   const char             *ll_iface)
 {
   ares_sconfig_t *s;
   ares_status_t   status;
@@ -314,6 +344,10 @@ ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
   memcpy(&s->addr, addr, sizeof(s->addr));
   s->udp_port = udp_port;
   s->tcp_port = tcp_port;
+
+  if (ares_strlen(ll_iface)) {
+    ares_strcpy(s->ll_iface, ll_iface, sizeof(s->ll_iface));
+  }
 
   if (ares__llist_insert_last(*sconfig, s) == NULL) {
     status = ARES_ENOMEM;
@@ -371,10 +405,9 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
   for (node = ares__llist_node_first(list); node != NULL;
        node = ares__llist_node_next(node)) {
     ares__buf_t     *entry = ares__llist_node_val(node);
-    struct ares_addr host;
-    unsigned short   port;
+    ares_sconfig_t   s;
 
-    status = parse_dnsaddrport(entry, &host, &port);
+    status = parse_nameserver(entry, &s);
     if (status != ARES_SUCCESS) {
       if (ignore_invalid) {
         continue;
@@ -383,7 +416,8 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
       }
     }
 
-    status = ares__sconfig_append(sconfig, &host, port, port);
+    status = ares__sconfig_append(sconfig, &s.addr, s.udp_port,
+                                  s.tcp_port, s.ll_iface);
     if (status != ARES_SUCCESS) {
       goto done;
     }

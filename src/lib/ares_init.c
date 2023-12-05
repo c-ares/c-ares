@@ -161,7 +161,7 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     addr.family            = AF_INET;
     addr.addr.addr4.s_addr = htonl(INADDR_LOOPBACK);
 
-    rc = ares__sconfig_append(&sconfig, &addr, 0, 0);
+    rc = ares__sconfig_append(&sconfig, &addr, 0, 0, NULL);
     if (rc != ARES_SUCCESS) {
       return rc;
     }

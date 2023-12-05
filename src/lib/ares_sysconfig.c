@@ -661,7 +661,7 @@ static ares_status_t ares__init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
 
     status =
       ares__sconfig_append(&sysconfig->sconfig, &addr, htons(addr_in->sin_port),
-                           htons(addr_in->sin_port));
+                           htons(addr_in->sin_port), NULL);
 
     if (status != ARES_SUCCESS) {
       return status;
@@ -678,7 +678,7 @@ static ares_status_t ares__init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
 
     status =
       ares__sconfig_append(&sysconfig->sconfig, &addr, htons(addr_in->sin_port),
-                           htons(addr_in->sin_port));
+                           htons(addr_in->sin_port), NULL);
 
     if (status != ARES_SUCCESS) {
       return status;
@@ -742,7 +742,7 @@ static ares_status_t ares__init_sysconfig_watt32(ares_sysconfig_t *sysconfig)
     addr.family            = AF_INET;
     addr.addr.addr4.s_addr = htonl(def_nameservers[i]);
 
-    status = ares__sconfig_append(&sysconfig->sconfig, &addr, 0, 0);
+    status = ares__sconfig_append(&sysconfig->sconfig, &addr, 0, 0, NULL);
 
     if (status != ARES_SUCCESS) {
       return status;
