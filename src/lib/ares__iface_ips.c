@@ -287,7 +287,7 @@ unsigned int ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
 
 
 #ifdef USE_WINSOCK
-char *wcharp_to_charp(const wchar_t *in)
+static char *wcharp_to_charp(const wchar_t *in)
 {
   char *out;
   int   len;
@@ -342,7 +342,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
     goto done;
   }
 
-  addresses = M_malloc_zero(outBufLen);
+  addresses = ares_malloc_zero(outBufLen);
   if (addresses == NULL) {
     status = ARES_ENOMEM;
     goto done;
@@ -370,42 +370,33 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
     for (ipaddr = address->FirstUnicastAddress; ipaddr != NULL;
          ipaddr = ipaddr->Next) {
       struct ares_addr addr;
-      char            *adapter_name;
 
       if (ipaddr->Address.lpSockaddr->sa_family == AF_INET) {
         struct sockaddr_in *sockaddr_in =
           (struct sockaddr_in *)((void *)ipaddr->Address.lpSockaddr);
         addr.family = AF_INET;
-        memcpy(&addr.addr.addr4, &sockaddr_in->sin_addr, sizeof(addr.addr4));
+        memcpy(&addr.addr.addr4, &sockaddr_in->sin_addr, sizeof(addr.addr.addr4));
       } else if (ipaddr->Address.lpSockaddr->sa_family == AF_INET6) {
         struct sockaddr_in6 *sockaddr_in6 =
           (struct sockaddr_in6 *)((void *)ipaddr->Address.lpSockaddr);
         addr.family = AF_INET6;
-        memcpy(&addr.addr.addr6, &sockaddr_in6->sin6_addr, sizeof(addr.addr6));
+        memcpy(&addr.addr.addr6, &sockaddr_in6->sin6_addr, sizeof(addr.addr.addr6));
       } else {
         /* Unknown */
         continue;
       }
 
-      adapter_name = wcharp_to_charp(address->AdapterName);
-      if (adapter_name == NULL) {
-        status = ARES_ENOMEM;
-        goto done;
-      }
-
       /* Sometimes windows may use numerics to indicate a DNS server's adapter,
        * which corresponds to the index rather than the name.  Check and
        * validate both. */
-      if (!name_match(name, adapter_name, ipaddr->Ipv6IfIndex)) {
-        ares_free(adapter_name);
+      if (!name_match(name, address->AdapterName, address->Ipv6IfIndex)) {
         continue;
       }
 
       status =
-        ares__iface_ips_add(ips, addrflag, adapter_name, &addr,
+        ares__iface_ips_add(ips, addrflag, address->AdapterName, &addr,
                             ipaddr->OnLinkPrefixLength /* netmask */,
-                            (unsigned int)ipaddr->Ipv6IfIndex /* ll_scope */);
-      ares_free(adapter_name);
+                            (unsigned int)address->Ipv6IfIndex /* ll_scope */);
 
       if (status != ARES_SUCCESS) {
         goto done;
