@@ -308,7 +308,7 @@ static char *wcharp_to_charp(const wchar_t *in)
 }
 
 static ares_bool_t name_match(const char *name, const char *adapter_name,
-                              int ll_scope)
+                              unsigned int ll_scope)
 {
   if (name == NULL || *name == 0) {
     return ARES_TRUE;
@@ -318,7 +318,7 @@ static ares_bool_t name_match(const char *name, const char *adapter_name,
     return ARES_TRUE;
   }
 
-  if (ares_str_isnum(name) && atoi(name) == ll_scope) {
+  if (ares_str_isnum(name) && (unsigned int)atoi(name) == ll_scope) {
     return ARES_TRUE;
   }
 
@@ -396,7 +396,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
       status =
         ares__iface_ips_add(ips, addrflag, address->AdapterName, &addr,
                             ipaddr->OnLinkPrefixLength /* netmask */,
-                            (unsigned int)address->Ipv6IfIndex /* ll_scope */);
+                            address->Ipv6IfIndex /* ll_scope */);
 
       if (status != ARES_SUCCESS) {
         goto done;

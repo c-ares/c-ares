@@ -114,7 +114,7 @@ unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips,
  * \param[in]  idx   Index of entry to pull
  * \return interface ipv6 link local scope
  */
-unsigned int  ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
-                                           size_t                   idx);
+unsigned int ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
+                                          size_t                   idx);
 
 #endif
