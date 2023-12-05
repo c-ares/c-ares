@@ -331,7 +331,6 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
   ULONG myflags = GAA_FLAG_INCLUDE_PREFIX /*|GAA_FLAG_INCLUDE_ALL_INTERFACES */;
   ULONG outBufLen = 0;
   DWORD retval;
-  M_bool                rv        = M_FALSE;
   IP_ADAPTER_ADDRESSES *addresses = NULL;
   IP_ADAPTER_ADDRESSES *address   = NULL;
   ares_status_t         status    = ARES_SUCCESS;
@@ -416,7 +415,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
 
 done:
   ares_free(addresses);
-  return rv;
+  return status;
 }
 
 #elif defined(HAVE_GETIFADDRS)
