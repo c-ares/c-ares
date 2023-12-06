@@ -368,6 +368,10 @@
 #  define HAVE_IF_NAMETOINDEX 1
 /* Define if you have if_indextoname() */
 #  define HAVE_IF_INDEXTONAME 1
+/* Define to 1 if you have the `ConvertInterfaceIndexToLuid' function. */
+#  define HAVE_CONVERTINTERFACEINDEXTOLUID 1
+/* Define to 1 if you have the `ConvertInterfaceLuidToNameA' function. */
+#  define HAVE_CONVERTINTERFACELUIDTONAMEA 1
 #endif
 
 /* ---------------------------------------------------------------- */

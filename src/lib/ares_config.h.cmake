@@ -145,6 +145,12 @@
 /* Define to 1 if you have the `if_nametoindex' function. */
 #cmakedefine HAVE_IF_NAMETOINDEX
 
+/* Define to 1 if you have the `ConvertInterfaceIndexToLuid' function. */
+#cmakedefine HAVE_CONVERTINTERFACEINDEXTOLUID
+
+/* Define to 1 if you have the `ConvertInterfaceLuidToNameA' function. */
+#cmakedefine HAVE_CONVERTINTERFACELUIDTONAMEA
+
 /* Define to 1 if you have a IPv6 capable working inet_net_pton function. */
 #cmakedefine HAVE_INET_NET_PTON
 

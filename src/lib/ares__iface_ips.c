@@ -357,15 +357,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
     ares__iface_ip_flags_t      addrflag = 0;
     char                        ifname[64] = "";
 
-    if (address->OperStatus != IfOperStatusUp) {
-      addrflag |= ARES_IFACE_IP_OFFLINE;
-    }
-
-    if (address->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
-      addrflag |= ARES_IFACE_IP_LOOPBACK;
-    }
-
-#if 0
+#if defined(HAVE_CONVERTINTERFACEINDEXTOLUID) && defined(HAVE_CONVERTINTERFACELUIDTONAMEA)
     /* Retrieve name from interface index.
      * address->AdapterName appears to be a GUID/UUID of some sort, not a name.
      * address->FriendlyName is user-changeable.
@@ -378,6 +370,14 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
 #else
     ares_strcpy(ifname, address->AdapterName, sizeof(ifname));
 #endif
+
+    if (address->OperStatus != IfOperStatusUp) {
+      addrflag |= ARES_IFACE_IP_OFFLINE;
+    }
+
+    if (address->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
+      addrflag |= ARES_IFACE_IP_LOOPBACK;
+    }
 
     for (ipaddr = address->FirstUnicastAddress; ipaddr != NULL;
          ipaddr = ipaddr->Next) {
