@@ -171,7 +171,7 @@ typedef struct {
   /* Room enough for the string form of any IPv4 or IPv6 address that
    * ares_inet_ntop() will create.  Based on the existing c-ares practice.
    */
-  char   text[INET6_ADDRSTRLEN + 8]; /* [%s]:NNNNN */
+  char   text[INET6_ADDRSTRLEN + 8 + 64]; /* [%s]:NNNNN%iface */
 } Address;
 
 /* Sort Address values \a left and \a right by metric, returning the usual
@@ -416,6 +416,9 @@ static ares_bool_t get_DNS_Windows(char **outptr)
                  ntohs(namesrvr.sa4->sin_port));
         ++addressesIndex;
       } else if (namesrvr.sa->sa_family == AF_INET6) {
+        unsigned int ll_scope = 0;
+        struct ares_addr addr;
+
         if (memcmp(&namesrvr.sa6->sin6_addr, &ares_in6addr_any,
                    sizeof(namesrvr.sa6->sin6_addr)) == 0) {
           continue;
@@ -433,6 +436,14 @@ static ares_bool_t get_DNS_Windows(char **outptr)
           addressesSize = newSize;
         }
 
+        /* See if its link-local */
+        memset(&addr, 0, sizeof(addr));
+        addr.family = AF_INET6;
+        memcpy(&addr.addr.addr6, &namesrvr.sa6->sin6_addr, 16);
+        if (ares__addr_is_linklocal(&addr)) {
+          ll_scope = ipaaEntry->Ipv6IfIndex;
+        }
+
         addresses[addressesIndex].metric =
           getBestRouteMetric(&ipaaEntry->Luid, (SOCKADDR_INET *)(namesrvr.sa),
                              ipaaEntry->Ipv6Metric);
@@ -444,9 +455,16 @@ static ares_bool_t get_DNS_Windows(char **outptr)
                             sizeof(ipaddr))) {
           continue;
         }
-        snprintf(addresses[addressesIndex].text,
-                 sizeof(addresses[addressesIndex].text), "[%s]:%u", ipaddr,
-                 ntohs(namesrvr.sa6->sin6_port));
+
+        if (ll_scope) {
+          snprintf(addresses[addressesIndex].text,
+                   sizeof(addresses[addressesIndex].text), "[%s]:%u%%%u", ipaddr,
+                   ntohs(namesrvr.sa6->sin6_port), ll_scope);
+        } else {
+          snprintf(addresses[addressesIndex].text,
+                   sizeof(addresses[addressesIndex].text), "[%s]:%u", ipaddr,
+                   ntohs(namesrvr.sa6->sin6_port));
+        }
         ++addressesIndex;
       } else {
         /* Skip non-IPv4/IPv6 addresses completely. */
