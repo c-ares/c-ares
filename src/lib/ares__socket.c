@@ -216,7 +216,7 @@ static int configure_socket(ares_socket_t s, struct server_state *server)
   } else if (server->addr.family == AF_INET6 && server->ll_scope == 0 &&
              memcmp(channel->local_ip6, ares_in6addr_any._S6_un._S6_u8,
                     sizeof(channel->local_ip6)) != 0) {
-    /* Only if not link-local */
+    /* Only if not link-local and an ip other than "::" is specified */
     memset(&local.sa6, 0, sizeof(local.sa6));
     local.sa6.sin6_family = AF_INET6;
     memcpy(&local.sa6.sin6_addr, channel->local_ip6,
