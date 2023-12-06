@@ -137,19 +137,6 @@ ares_status_t ares__iface_ips(ares__iface_ips_t    **ips,
   return ARES_SUCCESS;
 }
 
-ares_bool_t ares__addr_is_linklocal(const struct ares_addr *addr)
-{
-  struct ares_addr    subnet;
-  const unsigned char subnetaddr[16] = { 0xfe, 0x80, 0x00, 0x00, 0x00, 0x00,
-                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                         0x00, 0x00, 0x00, 0x00 };
-
-  /* fe80::/10 */
-  subnet.family = AF_INET6;
-  memcpy(&subnet.addr.addr6, subnetaddr, 16);
-
-  return ares__subnet_match(addr, &subnet, 10);
-}
 
 static ares_status_t
   ares__iface_ips_add(ares__iface_ips_t *ips, ares__iface_ip_flags_t flags,

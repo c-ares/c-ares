@@ -174,7 +174,6 @@ struct server_state {
   unsigned short            udp_port;        /* host byte order */
   unsigned short            tcp_port;        /* host byte order */
   char                      ll_iface[64];    /* IPv6 Link Local Interface */
-  struct ares_addr          ll_addr;         /* IPv6 Link Local Address */
   unsigned int              ll_scope;        /* IPv6 Link Local Scope */
 
   size_t                    consec_failures; /* Consecutive query failure count

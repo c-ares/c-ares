@@ -30,19 +30,31 @@
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
+#ifdef HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#  include <sys/socket.h>
+#endif
+#ifdef HAVE_NET_IF_H
+#  include <net/if.h>
+#endif
 
 #include "ares.h"
 #include "ares_data.h"
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
+#ifndef IFNAMSIZ
+#  define IFNAMSIZ 64
+#endif
+
 typedef struct {
   struct ares_addr addr;
   unsigned short   tcp_port;
   unsigned short   udp_port;
 
-  char             ll_iface[64];
-  struct ares_addr ll_addr;
+  char             ll_iface[IFNAMSIZ];
   unsigned int     ll_scope;
 } ares_sconfig_t;
 
@@ -131,6 +143,20 @@ ares_bool_t ares__subnet_match(const struct ares_addr *addr,
   return ARES_TRUE;
 }
 
+
+ares_bool_t ares__addr_is_linklocal(const struct ares_addr *addr)
+{
+  struct ares_addr    subnet;
+  const unsigned char subnetaddr[16] = { 0xfe, 0x80, 0x00, 0x00, 0x00, 0x00,
+                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                         0x00, 0x00, 0x00, 0x00 };
+
+  /* fe80::/10 */
+  subnet.family = AF_INET6;
+  memcpy(&subnet.addr.addr6, subnetaddr, 16);
+
+  return ares__subnet_match(addr, &subnet, 10);
+}
 
 static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
 {
@@ -314,44 +340,42 @@ static ares_status_t parse_nameserver(ares__buf_t *buf,
   return ARES_SUCCESS;
 }
 
-/* Enumerate IPs on the interface to locate the ipv6 link local address and
- * scope. */
+
 static ares_status_t ares__sconfig_linklocal(ares_sconfig_t *s,
                                              const char *ll_iface)
 {
-  ares_status_t      status;
-  ares__iface_ips_t *ips = NULL;
-  size_t             i;
+  unsigned int ll_scope = 0;
 
-  status = ares__iface_ips(&ips, ARES_IFACE_IP_LINKLOCAL, ll_iface);
-  if (status != ARES_SUCCESS) {
-    DEBUGF(fprintf(stderr, "Error enumerating interfaces: %s\n",
-           ares_strerror(status)));
-    goto done;
+#ifdef HAVE_IF_INDEXTONAME
+  if (ares_str_isnum(ll_iface)) {
+      char ifname[IFNAMSIZ] = "";
+      ll_scope = (unsigned int)atoi(ll_iface);
+      if (if_indextoname(ll_scope, ifname) == NULL) {
+         DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
+                ll_iface));
+         return ARES_ENOTFOUND;
+      }
+      ares_strcpy(s->ll_iface, ll_iface, sizeof(s->ll_iface));
+      s->ll_scope = ll_scope;
+      return ARES_SUCCESS;
   }
+#endif
 
-  for (i=0; i<ares__iface_ips_cnt(ips); i++) {
-    const struct ares_addr *addr;
-    if ((ares__iface_ips_get_flags(ips, i) &
-         (ARES_IFACE_IP_LINKLOCAL|ARES_IFACE_IP_V6)) !=
-        (ARES_IFACE_IP_LINKLOCAL|ARES_IFACE_IP_V6)) {
-      continue;
-    }
-
-    ares_strcpy(s->ll_iface, ll_iface, sizeof(s->ll_iface));
-    s->ll_scope = ares__iface_ips_get_ll_scope(ips, i);
-    addr        = ares__iface_ips_get_addr(ips, i);
-    memcpy(&s->ll_addr, addr, sizeof(s->ll_addr));
-    goto done;
+#ifdef HAVE_IF_NAMETOINDEX
+  ll_scope = if_nametoindex(ll_iface);
+  if (ll_scope == 0) {
+    DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
+          ll_iface));
+    return ARES_ENOTFOUND;
   }
-
-  DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
+  ares_strcpy(s->ll_iface, ll_iface, sizeof(s->ll_iface));
+  s->ll_scope = ll_scope;
+  return ARES_SUCCESS;
+#else
+  DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local lookup not supported\n",
          ll_iface));
-  status = ARES_ENOTFOUND;
-
-done:
-  ares__iface_ips_destroy(ips);
-  return status;
+  return ARES_ENOTIMP;
+#endif
 }
 
 
@@ -584,7 +608,6 @@ static ares_status_t ares__server_create(ares_channel_t       *channel,
   /* Copy over link-local settings */
   if (ares_strlen(sconfig->ll_iface)) {
     ares_strcpy(server->ll_iface, sconfig->ll_iface, sizeof(server->ll_iface));
-    memcpy(&server->ll_addr, &sconfig->ll_addr, sizeof(server->ll_addr));
     server->ll_scope = sconfig->ll_scope;
   }
 
@@ -710,7 +733,6 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
        * changed, maybe ...  */
       if (ares_strlen(sconfig->ll_iface)) {
         ares_strcpy(server->ll_iface, sconfig->ll_iface, sizeof(server->ll_iface));
-        memcpy(&server->ll_addr, &sconfig->ll_addr, sizeof(server->ll_addr));
         server->ll_scope = sconfig->ll_scope;
       }
 

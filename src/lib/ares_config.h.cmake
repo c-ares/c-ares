@@ -142,6 +142,9 @@
 /* Define to 1 if you have the `if_indextoname' function. */
 #cmakedefine HAVE_IF_INDEXTONAME
 
+/* Define to 1 if you have the `if_nametoindex' function. */
+#cmakedefine HAVE_IF_NAMETOINDEX
+
 /* Define to 1 if you have a IPv6 capable working inet_net_pton function. */
 #cmakedefine HAVE_INET_NET_PTON
 

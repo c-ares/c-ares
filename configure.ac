@@ -923,7 +923,8 @@ AC_CHECK_MEMBER(struct addrinfo.ai_flags,
 
 AC_CHECK_FUNCS([bitncmp \
   gettimeofday \
-  if_indextoname
+  if_indextoname \
+  if_nametoindex
 ],[
 ],[
   func="$ac_func"
