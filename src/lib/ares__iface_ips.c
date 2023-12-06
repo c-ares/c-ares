@@ -352,6 +352,8 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
   for (address = addresses; address != NULL; address = address->Next) {
     IP_ADAPTER_UNICAST_ADDRESS *ipaddr   = NULL;
     ares__iface_ip_flags_t      addrflag = 0;
+    NET_LUID                    luid;
+    char                        ifname[NDIS_IF_MAX_STRING_SIZE+1] = "";
 
     if (address->OperStatus != IfOperStatusUp) {
       addrflag |= ARES_IFACE_IP_OFFLINE;
@@ -360,6 +362,12 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
     if (address->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
       addrflag |= ARES_IFACE_IP_LOOPBACK;
     }
+
+    /* Retrieve name from interface index.
+     * address->AdapterName appears to be a GUID/UUID of some sort, not a name.
+     * address->FriendlyName is user-changeable */
+    ConvertInterfaceIndexToLuid(address->IfIndex, &luid);
+    ConvertInterfaceLuidToNameA(&luid, ifname, sizeof(ifname));
 
     for (ipaddr = address->FirstUnicastAddress; ipaddr != NULL;
          ipaddr = ipaddr->Next) {
@@ -385,11 +393,11 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
       /* Sometimes windows may use numerics to indicate a DNS server's adapter,
        * which corresponds to the index rather than the name.  Check and
        * validate both. */
-      if (!name_match(name, address->AdapterName, address->Ipv6IfIndex)) {
+      if (!name_match(name, ifname, address->Ipv6IfIndex)) {
         continue;
       }
 
-      status = ares__iface_ips_add(ips, addrflag, address->AdapterName, &addr,
+      status = ares__iface_ips_add(ips, addrflag, ifname, &addr,
                                    ipaddr->OnLinkPrefixLength /* netmask */,
                                    address->Ipv6IfIndex /* ll_scope */);
 
