@@ -363,7 +363,7 @@
 #  define HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID 1
 #endif
 
-#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600) && !defined(__WATCOMC__)
 /* Define if you have if_nametoindex() */
 #  define HAVE_IF_NAMETOINDEX 1
 /* Define if you have if_indextoname() */
