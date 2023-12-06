@@ -40,6 +40,15 @@
 #  include <net/if.h>
 #endif
 
+#if defined(USE_WINSOCK)
+#  if defined(HAVE_IPHLPAPI_H)
+#    include <iphlpapi.h>
+#  endif
+#  if defined(HAVE_NETIOAPI_H)
+#    include <netioapi.h>
+#  endif
+#endif
+
 #include "ares.h"
 #include "ares_data.h"
 #include "ares_inet_net_pton.h"
