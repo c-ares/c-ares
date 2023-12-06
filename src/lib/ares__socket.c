@@ -212,7 +212,7 @@ static int configure_socket(ares_socket_t s, struct server_state *server)
     local.sa4.sin_family      = AF_INET;
     local.sa4.sin_addr.s_addr = htonl(channel->local_ip4);
     bindlen                   = sizeof(local.sa4);
-  } else if (server->addr.family == AF_INET6 && ares_strlen(server->ll_scope)) {
+  } else if (server->addr.family == AF_INET6 && server->ll_scope > 0) {
     memset(&local.sa6, 0, sizeof(local.sa6));
     local.sa6.sin6_family   = AF_INET6;
 #ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
