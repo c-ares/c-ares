@@ -30,28 +30,36 @@
 #ifdef USE_WINSOCK
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
-#  include <iphlpapi.h>
-#elif defined(HAVE_GETIFADDRS)
-#  ifdef HAVE_SYS_TYPES_H
-#    include <sys/types.h>
+#  if defined(HAVE_IPHLPAPI_H)
+#    include <iphlpapi.h>
 #  endif
-#  ifdef HAVE_SYS_SOCKET_H
-#    include <sys/socket.h>
-#  endif
-#  ifdef HAVE_NET_IF_H
-#    include <net/if.h>
-#  endif
-#  ifdef HAVE_IFADDRS_H
-#    include <ifaddrs.h>
-#  endif
-#  ifdef HAVE_SYS_IOCTL_H
-#    include <sys/ioctl.h>
-#  endif
-#  ifdef HAVE_NETINET_IN_H
-#    include <netinet/in.h>
+#  if defined(HAVE_NETIOAPI_H)
+#    include <netioapi.h>
 #  endif
 #endif
 
+#ifdef HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#  include <sys/socket.h>
+#endif
+#ifdef HAVE_NET_IF_H
+#  include <net/if.h>
+#endif
+#ifdef HAVE_IFADDRS_H
+#  include <ifaddrs.h>
+#endif
+#ifdef HAVE_SYS_IOCTL_H
+#  include <sys/ioctl.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#  include <netinet/in.h>
+#endif
+
+#ifndef IFNAMSIZ
+#  define IFNAMSIZ 64
+#endif
 
 static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
                                                const char        *name);
@@ -493,3 +501,72 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t     *ips,
 }
 
 #endif
+
+
+unsigned int ares__if_nametoindex(const char *name)
+{
+#ifdef HAVE_IF_NAMETOINDEX
+  return if_nametoindex(name);
+#else
+  ares_status_t      status;
+  ares__iface_ips_t *ips = NULL;
+  size_t             i;
+  unsigned int       index = 0;
+
+  status = ares__iface_ips(&ips, ARES_IFACE_IP_V6|ARES_IFACE_IP_LINKLOCAL, name);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  for (i=0; i<ares__iface_ips_cnt(ips); i++) {
+    if (ares__iface_ips_get_flags(ips, i) & ARES_IFACE_IP_LINKLOCAL) {
+      index = ares__iface_ips_get_ll_scope(ips, i);
+      goto done;
+    }
+  }
+
+done:
+  ares__iface_ips_destroy(ips);
+  return index;
+#endif
+}
+
+
+const char *ares__if_indextoname(unsigned int index, char *name, size_t name_len)
+{
+#ifdef HAVE_IF_INDEXTONAME
+  if (name_len < IFNAMSIZ)
+    return NULL;
+  return if_indextoname(index, name);
+#else
+  ares_status_t      status;
+  ares__iface_ips_t *ips = NULL;
+  size_t             i;
+  const char        *ptr = NULL;
+
+  if (name_len < IFNAMSIZ)
+    goto done;
+
+  if (index == 0)
+    goto done;
+
+  status = ares__iface_ips(&ips, ARES_IFACE_IP_V6|ARES_IFACE_IP_LINKLOCAL, NULL);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  for (i=0; i<ares__iface_ips_cnt(ips); i++) {
+    if (ares__iface_ips_get_flags(ips, i) & ARES_IFACE_IP_LINKLOCAL &&
+        ares__iface_ips_get_ll_scope(ips, i) == index) {
+      ares_strcpy(name, ares__iface_ips_get_name(ips, i), name_len);
+      ptr = name;
+      goto done;
+    }
+  }
+
+done:
+  ares__iface_ips_destroy(ips);
+  return ptr;
+#endif
+}
+

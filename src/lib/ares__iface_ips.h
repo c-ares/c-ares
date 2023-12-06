@@ -117,4 +117,23 @@ unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips,
 unsigned int ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
                                           size_t                   idx);
 
+
+/*! Retrieve the interface index (aka link local scope) from the interface
+ *  name.
+ *
+ * \param[in] name  Interface name
+ * \return 0 on failure, index otherwise
+ */
+unsigned int ares__if_nametoindex(const char *name);
+
+/*! Retrieves the interface name from the index (aka link local scope)
+ *
+ * \param[in] index  Interface index (> 0)
+ * \param[in] name   Buffer to hold name
+ * \param[in] name_len Length of provided buffer, must be at least IFNAMSIZ
+ * \return NULL on failure, or pointer to name on success
+ */
+const char *ares__if_indextoname(unsigned int index, char *name,
+                                 size_t name_len);
+
 #endif

@@ -355,23 +355,20 @@ static ares_status_t ares__sconfig_linklocal(ares_sconfig_t *s,
 {
   unsigned int ll_scope = 0;
 
-#ifdef HAVE_IF_INDEXTONAME
   if (ares_str_isnum(ll_iface)) {
       char ifname[IFNAMSIZ] = "";
       ll_scope = (unsigned int)atoi(ll_iface);
-      if (if_indextoname(ll_scope, ifname) == NULL) {
+      if (ares__if_indextoname(ll_scope, ifname, sizeof(ifname)) == NULL) {
          DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
                 ll_iface));
          return ARES_ENOTFOUND;
       }
-      ares_strcpy(s->ll_iface, ll_iface, sizeof(s->ll_iface));
+      ares_strcpy(s->ll_iface, ifname, sizeof(s->ll_iface));
       s->ll_scope = ll_scope;
       return ARES_SUCCESS;
   }
-#endif
 
-#ifdef HAVE_IF_NAMETOINDEX
-  ll_scope = if_nametoindex(ll_iface);
+  ll_scope = ares__if_nametoindex(ll_iface);
   if (ll_scope == 0) {
     DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
           ll_iface));
@@ -380,11 +377,6 @@ static ares_status_t ares__sconfig_linklocal(ares_sconfig_t *s,
   ares_strcpy(s->ll_iface, ll_iface, sizeof(s->ll_iface));
   s->ll_scope = ll_scope;
   return ARES_SUCCESS;
-#else
-  DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local lookup not supported\n",
-         ll_iface));
-  return ARES_ENOTIMP;
-#endif
 }
 
 
