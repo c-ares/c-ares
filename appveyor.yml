@@ -1,7 +1,7 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 
-image: Visual Studio 2022
+image: Previous Visual Studio 2022
 
 # Github/Bitbucket only: get source code for one particular commit as zip archive, instead of git clone'ing.
 shallow_clone: true
