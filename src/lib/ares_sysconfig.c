@@ -825,6 +825,7 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
   int                      nscount;
   size_t                   i;
   size_t                   entries = 0;
+  ares__buf_t             *ipbuf   = NULL;
 
   memset(&res, 0, sizeof(res));
 
@@ -836,8 +837,9 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
 
   for (i = 0; i < (size_t)nscount; ++i) {
     char           ipaddr[INET6_ADDRSTRLEN] = "";
-    char           ipaddr_port[INET6_ADDRSTRLEN + 8]; /* [%s]:NNNNN */
-    unsigned short port = 0;
+    char          *ipstr    = NULL;
+    unsigned short port     = 0;
+    unsigned int   ll_scope = 0;
 
     sa_family_t    family = addr[i].sin.sin_family;
     if (family == AF_INET) {
@@ -845,19 +847,68 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
       port = ntohs(addr[i].sin.sin_port);
     } else if (family == AF_INET6) {
       ares_inet_ntop(family, &addr[i].sin6.sin6_addr, ipaddr, sizeof(ipaddr));
-      port = ntohs(addr[i].sin6.sin6_port);
+      port     = ntohs(addr[i].sin6.sin6_port);
+      ll_scope = addr[i].sin6.sin6_scope_id;
     } else {
       continue;
     }
 
+
+    /* [ip]:port%iface */
+    ipbuf = ares__buf_create();
+    if (ipbuf == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+
+    status = ares__buf_append_str(ipbuf, "[");
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    status = ares__buf_append_str(ipbuf, ipaddr);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    status = ares__buf_append_str(ipbuf, "]");
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
     if (port) {
-      snprintf(ipaddr_port, sizeof(ipaddr_port), "[%s]:%u", ipaddr, port);
-    } else {
-      snprintf(ipaddr_port, sizeof(ipaddr_port), "%s", ipaddr);
+      status = ares__buf_append_str(ipbuf, ":");
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+      status = ares__buf_append_num_dec(ipbuf, port, 0);
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
+
+    if (ll_scope) {
+      status = ares__buf_append_str(ipbuf, "%");
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+      status = ares__buf_append_num_dec(ipbuf, ll_scope, 0);
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
+
+    ipstr = ares__buf_finish_str(ipbuf, NULL);
+    ipbuf = NULL;
+    if (ipstr == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
     }
 
     status =
-      ares__sconfig_append_fromstr(&sysconfig->sconfig, ipaddr_port, ARES_TRUE);
+      ares__sconfig_append_fromstr(&sysconfig->sconfig, ipstr, ARES_TRUE);
+
+    ares_free(ipstr);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -908,6 +959,7 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
   }
 
 done:
+  ares__buf_destroy(ipbuf);
   res_ndestroy(&res);
   return status;
 }
