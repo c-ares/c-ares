@@ -642,7 +642,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerBlacklistedIpv6,
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
   std::string actual = GetNameServers(channel);
   std::string expected = "254.192.1.1:53,"
-                         "[ffc0:0000:0000:0000:0000:0000:0000:c001]:53";
+                         "[ffc0::c001]:53";
   EXPECT_EQ(expected, actual);
 
   EXPECT_EQ(1, channel->ndomains);
