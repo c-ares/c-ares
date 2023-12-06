@@ -316,7 +316,7 @@ static ares_status_t parse_nameserver(ares__buf_t *buf, ares_sconfig_t *sconfig)
   if (ares__buf_begins_with(buf, (const unsigned char *)"%", 1)) {
     const unsigned char iface_charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                           "abcdefghijklmnopqrstuvwxyz"
-                                          "0123456789.-_\\:";
+                                          "0123456789.-_\\:{}";
     /* Consume % */
     ares__buf_consume(buf, 1);
 
