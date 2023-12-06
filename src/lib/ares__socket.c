@@ -213,16 +213,10 @@ static int configure_socket(ares_socket_t s, struct server_state *server)
     local.sa4.sin_family      = AF_INET;
     local.sa4.sin_addr.s_addr = htonl(channel->local_ip4);
     bindlen                   = sizeof(local.sa4);
-  } else if (server->addr.family == AF_INET6 && server->ll_scope > 0) {
-    memset(&local.sa6, 0, sizeof(local.sa6));
-    local.sa6.sin6_family = AF_INET6;
-#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
-    local.sa6.sin6_scope_id = server->ll_scope;
-#endif
-    bindlen = sizeof(local.sa6);
-  } else if (server->addr.family == AF_INET6 &&
+  } else if (server->addr.family == AF_INET6 && server->ll_scope == 0 &&
              memcmp(channel->local_ip6, ares_in6addr_any._S6_un._S6_u8,
                     sizeof(channel->local_ip6)) != 0) {
+    /* Only if not link-local */
     memset(&local.sa6, 0, sizeof(local.sa6));
     local.sa6.sin6_family = AF_INET6;
     memcpy(&local.sa6.sin6_addr, channel->local_ip6,
@@ -276,6 +270,9 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
       saddr.sa6.sin6_port = htons(is_tcp ? server->tcp_port : server->udp_port);
       memcpy(&saddr.sa6.sin6_addr, &server->addr.addr.addr6,
              sizeof(saddr.sa6.sin6_addr));
+#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+      saddr.sa6.sin6_scope_id = server->ll_scope;
+#endif
       break;
     default:
       return ARES_EBADFAMILY; /* LCOV_EXCL_LINE */
