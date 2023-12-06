@@ -166,6 +166,7 @@ static int configure_socket(ares_socket_t s, struct server_state *server)
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
   } local;
+
   ares_socklen_t  bindlen = 0;
   ares_channel_t *channel = server->channel;
 
@@ -214,19 +215,19 @@ static int configure_socket(ares_socket_t s, struct server_state *server)
     bindlen                   = sizeof(local.sa4);
   } else if (server->addr.family == AF_INET6 && server->ll_scope > 0) {
     memset(&local.sa6, 0, sizeof(local.sa6));
-    local.sa6.sin6_family   = AF_INET6;
+    local.sa6.sin6_family = AF_INET6;
 #ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
     local.sa6.sin6_scope_id = server->ll_scope;
 #endif
-    bindlen               = sizeof(local.sa6);
+    bindlen = sizeof(local.sa6);
   } else if (server->addr.family == AF_INET6 &&
              memcmp(channel->local_ip6, ares_in6addr_any._S6_un._S6_u8,
-               sizeof(channel->local_ip6)) != 0) {
+                    sizeof(channel->local_ip6)) != 0) {
     memset(&local.sa6, 0, sizeof(local.sa6));
     local.sa6.sin6_family = AF_INET6;
     memcpy(&local.sa6.sin6_addr, channel->local_ip6,
            sizeof(channel->local_ip6));
-    bindlen               = sizeof(local.sa6);
+    bindlen = sizeof(local.sa6);
   }
 
   if (bindlen && bind(s, &local.sa, bindlen) < 0) {

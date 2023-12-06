@@ -145,7 +145,6 @@ ares_status_t ares__iface_ips(ares__iface_ips_t    **ips,
   return ARES_SUCCESS;
 }
 
-
 static ares_status_t
   ares__iface_ips_add(ares__iface_ips_t *ips, ares__iface_ip_flags_t flags,
                       const char *name, const struct ares_addr *addr,
@@ -370,12 +369,14 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
         struct sockaddr_in *sockaddr_in =
           (struct sockaddr_in *)((void *)ipaddr->Address.lpSockaddr);
         addr.family = AF_INET;
-        memcpy(&addr.addr.addr4, &sockaddr_in->sin_addr, sizeof(addr.addr.addr4));
+        memcpy(&addr.addr.addr4, &sockaddr_in->sin_addr,
+               sizeof(addr.addr.addr4));
       } else if (ipaddr->Address.lpSockaddr->sa_family == AF_INET6) {
         struct sockaddr_in6 *sockaddr_in6 =
           (struct sockaddr_in6 *)((void *)ipaddr->Address.lpSockaddr);
         addr.family = AF_INET6;
-        memcpy(&addr.addr.addr6, &sockaddr_in6->sin6_addr, sizeof(addr.addr.addr6));
+        memcpy(&addr.addr.addr6, &sockaddr_in6->sin6_addr,
+               sizeof(addr.addr.addr6));
       } else {
         /* Unknown */
         continue;
@@ -388,10 +389,9 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
         continue;
       }
 
-      status =
-        ares__iface_ips_add(ips, addrflag, address->AdapterName, &addr,
-                            ipaddr->OnLinkPrefixLength /* netmask */,
-                            address->Ipv6IfIndex /* ll_scope */);
+      status = ares__iface_ips_add(ips, addrflag, address->AdapterName, &addr,
+                                   ipaddr->OnLinkPrefixLength /* netmask */,
+                                   address->Ipv6IfIndex /* ll_scope */);
 
       if (status != ARES_SUCCESS) {
         goto done;
@@ -513,12 +513,13 @@ unsigned int ares__if_nametoindex(const char *name)
   size_t             i;
   unsigned int       index = 0;
 
-  status = ares__iface_ips(&ips, ARES_IFACE_IP_V6|ARES_IFACE_IP_LINKLOCAL, name);
+  status =
+    ares__iface_ips(&ips, ARES_IFACE_IP_V6 | ARES_IFACE_IP_LINKLOCAL, name);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  for (i=0; i<ares__iface_ips_cnt(ips); i++) {
+  for (i = 0; i < ares__iface_ips_cnt(ips); i++) {
     if (ares__iface_ips_get_flags(ips, i) & ARES_IFACE_IP_LINKLOCAL) {
       index = ares__iface_ips_get_ll_scope(ips, i);
       goto done;
@@ -531,12 +532,13 @@ done:
 #endif
 }
 
-
-const char *ares__if_indextoname(unsigned int index, char *name, size_t name_len)
+const char *ares__if_indextoname(unsigned int index, char *name,
+                                 size_t name_len)
 {
 #ifdef HAVE_IF_INDEXTONAME
-  if (name_len < IFNAMSIZ)
+  if (name_len < IFNAMSIZ) {
     return NULL;
+  }
   return if_indextoname(index, name);
 #else
   ares_status_t      status;
@@ -544,18 +546,21 @@ const char *ares__if_indextoname(unsigned int index, char *name, size_t name_len
   size_t             i;
   const char        *ptr = NULL;
 
-  if (name_len < IFNAMSIZ)
+  if (name_len < IFNAMSIZ) {
     goto done;
+  }
 
-  if (index == 0)
+  if (index == 0) {
     goto done;
+  }
 
-  status = ares__iface_ips(&ips, ARES_IFACE_IP_V6|ARES_IFACE_IP_LINKLOCAL, NULL);
+  status =
+    ares__iface_ips(&ips, ARES_IFACE_IP_V6 | ARES_IFACE_IP_LINKLOCAL, NULL);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  for (i=0; i<ares__iface_ips_cnt(ips); i++) {
+  for (i = 0; i < ares__iface_ips_cnt(ips); i++) {
     if (ares__iface_ips_get_flags(ips, i) & ARES_IFACE_IP_LINKLOCAL &&
         ares__iface_ips_get_ll_scope(ips, i) == index) {
       ares_strcpy(name, ares__iface_ips_get_name(ips, i), name_len);
@@ -569,4 +574,3 @@ done:
   return ptr;
 #endif
 }
-

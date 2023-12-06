@@ -570,10 +570,10 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
   (x && x->lookups && ares__slist_len(x->servers) > 0 && x->ndots > 0 && \
    x->timeout > 0 && x->tries > 0)
 
-ares_bool_t ares__subnet_match(const struct ares_addr *addr,
-                               const struct ares_addr *subnet,
-                               unsigned char netmask);
-ares_bool_t ares__addr_is_linklocal(const struct ares_addr *addr);
+ares_bool_t   ares__subnet_match(const struct ares_addr *addr,
+                                 const struct ares_addr *subnet,
+                                 unsigned char           netmask);
+ares_bool_t   ares__addr_is_linklocal(const struct ares_addr *addr);
 
 size_t        ares__round_up_pow2(size_t n);
 size_t        ares__log2(size_t n);
