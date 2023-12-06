@@ -355,7 +355,6 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
   for (address = addresses; address != NULL; address = address->Next) {
     IP_ADAPTER_UNICAST_ADDRESS *ipaddr   = NULL;
     ares__iface_ip_flags_t      addrflag = 0;
-    NET_LUID                    luid;
     char                        ifname[64] = "";
 
     if (address->OperStatus != IfOperStatusUp) {
@@ -373,10 +372,11 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
      * That said, this doesn't appear to help us out on systems that don't
      * have if_nametoindex() or if_indextoname() as they don't have these
      * functions either! */
+    NET_LUID luid;
     ConvertInterfaceIndexToLuid(address->IfIndex, &luid);
     ConvertInterfaceLuidToNameA(&luid, ifname, sizeof(ifname));
 #else
-    ares_strcpy(ifname, address->AdapaterName, sizeof(ifname));
+    ares_strcpy(ifname, address->AdapterName, sizeof(ifname));
 #endif
 
     for (ipaddr = address->FirstUnicastAddress; ipaddr != NULL;
