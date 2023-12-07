@@ -17,7 +17,7 @@ skip_commits:
 
 # List of build configurations to test.
 configuration:
-  - RelWithDebInfo
+  - DEBUG
 
 # Note: You can set extra cmake args for a particular matrix entry with CMAKE_EXTRA_OPTIONS. For example:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
@@ -28,7 +28,7 @@ environment:
       BUILDTOOL: MSYS2
       TESTTYPE: MSYS2
       MSYSTEM: CLANG64
-      CMAKE_EXTRA_OPTIONS: -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+      CMAKE_EXTRA_OPTIONS: -GNinja -DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -DCMAKE_C_FLAGS=-fsanitize=address,undefined
       CHERE_INVOKING: YES
 
     # MinGW gcc via MSYS2 (latest version)
@@ -36,6 +36,7 @@ environment:
       BUILDTOOL: MSYS2
       TESTTYPE: MSYS2
       MSYSTEM: MINGW64
+      CMAKE_EXTRA_OPTIONS: -GNinja
       CHERE_INVOKING: YES
 
     # MSVC 2022, UWP (cmake)
@@ -102,7 +103,8 @@ before_build:
   - if "%BUILDTOOL%" == "MSYS2" if "%MSYSTEM%" == "CLANG64" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-analyzer mingw-w64-clang-x86_64-cmake mingw-w64-clang-x86_64-ninja"
 
 build_script:
-  - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% ."
+  - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "echo configuration=%configuration cmake_extra_options=%CMAKE_EXTRA_OPTIONS%"
+  - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "cmake -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% ."
   - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "ninja -v install"
   - if "%BUILDTOOL%" == "NMAKE" copy .\include\ares_build.h.dist .\include\ares_build.h
   - if "%BUILDTOOL%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc
