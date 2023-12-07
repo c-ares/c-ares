@@ -1140,6 +1140,7 @@ char *ares_get_servers_csv(ares_channel_t *channel)
       }
     }
 
+    /* ipv4addr or [ipv6addr] */
     if (server->addr.family == AF_INET6) {
       status = ares__buf_append_byte(buf, '[');
       if (status != ARES_SUCCESS) {
@@ -1161,6 +1162,7 @@ char *ares_get_servers_csv(ares_channel_t *channel)
       }
     }
 
+    /* :port */
     status = ares__buf_append_byte(buf, ':');
     if (status != ARES_SUCCESS) {
       goto done;
@@ -1171,8 +1173,9 @@ char *ares_get_servers_csv(ares_channel_t *channel)
       goto done;
     }
 
+    /* %iface */
     if (ares_strlen(server->ll_iface)) {
-      status = ares__buf_append_byte(buf, ':');
+      status = ares__buf_append_byte(buf, '%');
       if (status != ARES_SUCCESS) {
         goto done;
       }
