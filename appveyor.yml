@@ -23,6 +23,21 @@ configuration:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
   matrix:
+    # MinGW clang ASAN/UBSAN via MSYS2
+    - COMPILER: MINGW
+      BUILDTOOL: MSYS2
+      TESTTYPE: MSYS2
+      MSYSTEM: CLANG64
+      CMAKE_EXTRA_OPTIONS: -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+      CHERE_INVOKING: YES
+
+    # MinGW gcc via MSYS2 (latest version)
+    - COMPILER: MINGW
+      BUILDTOOL: MSYS2
+      TESTTYPE: MSYS2
+      MSYSTEM: MINGW64
+      CHERE_INVOKING: YES
+
     # MSVC 2022, UWP (cmake)
     - COMPILER: MSVC
       BUILDTOOL: CMAKE
@@ -31,13 +46,6 @@ environment:
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
       CMAKE_EXTRA_OPTIONS: -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64
       TESTDIRSUFFIX: Release\
-
-    # MinGW via MSYS2 (latest version)
-    - COMPILER: MINGW
-      BUILDTOOL: MSYS2
-      TESTTYPE: MSYS2
-      MSYSTEM: MINGW64
-      CHERE_INVOKING: YES
 
     # MSVC 2022, 32-bit x86 (cmake)
     - COMPILER: MSVC
@@ -53,13 +61,6 @@ environment:
       TESTTYPE: CMAKE
       MSVC_SETUP_ARG: x64
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
-      CMAKE_EXTRA_OPTIONS: -GNinja
-
-    # MinGW, 32-bit x86 (cmake)
-    - COMPILER: MINGW
-      BUILDTOOL: CMAKE
-      TESTTYPE: CMAKE
-      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
       CMAKE_EXTRA_OPTIONS: -GNinja
 
     # MinGW, 32-bit x86 (cmake static only)
@@ -97,7 +98,8 @@ before_build:
   #  -- Visual Studio --
   - if "%COMPILER%" == "MSVC" call "%MSVC_SETUP_PATH%" %MSVC_SETUP_ARG%
   - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syuu"
-  - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-check mingw-w64-x86_64-ninja"
+  - if "%BUILDTOOL%" == "MSYS2" if "%MSYSTEM%" == "MINGW64" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja"
+  - if "%BUILDTOOL%" == "MSYS2" if "%MSYSTEM%" == "CLANG64" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-analyzer mingw-w64-clang-x86_64-cmake mingw-w64-clang-x86_64-ninja"
 
 build_script:
   - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "cmake -GNinja -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% ."

@@ -733,7 +733,7 @@ TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
   auto my_functions = VirtualizeIO::default_functions;
   size_t count = 0;
 
-  my_functions.asocket = [](int af, int type, int protocol, void * p) {
+  my_functions.asocket = [](int af, int type, int protocol, void * p) -> ares_socket_t {
     EXPECT_NE(nullptr, p);
     (*reinterpret_cast<size_t *>(p))++;
     return ::socket(af, type, protocol);
