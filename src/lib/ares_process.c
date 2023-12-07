@@ -562,6 +562,7 @@ static void process_timeouts(ares_channel_t *channel, struct timeval *now)
     query->timeouts++;
 
     conn = query->conn;
+    server_increment_failures(conn->server);
     ares__requeue_query(query, now);
     ares__check_cleanup_conn(channel, conn);
 

@@ -1341,6 +1341,30 @@ TEST_P(NoRotateMultiMockTest, ThirdServer) {
   CheckExample();
 }
 
+TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
+  std::vector<byte> nothing;
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  ON_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillByDefault(SetReplyData(servers_[0].get(), nothing));
+  ON_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillByDefault(SetReplyData(servers_[1].get(), nothing));
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[2].get(), &okrsp));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(2, result.timeouts_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families));
