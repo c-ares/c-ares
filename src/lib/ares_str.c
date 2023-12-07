@@ -93,3 +93,19 @@ size_t ares_strcpy(char *dest, const char *src, size_t dest_size)
   dest[len] = 0;
   return len;
 }
+
+ares_bool_t ares_str_isnum(const char *str)
+{
+  size_t i;
+
+  if (str == NULL || *str == 0) {
+    return ARES_FALSE;
+  }
+
+  for (i = 0; str[i] != 0; i++) {
+    if (str[i] < '0' || str[i] > '9') {
+      return ARES_FALSE;
+    }
+  }
+  return ARES_TRUE;
+}

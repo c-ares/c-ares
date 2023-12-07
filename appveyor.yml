@@ -1,7 +1,7 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 
-image: Visual Studio 2022
+image: Previous Visual Studio 2022
 
 # Github/Bitbucket only: get source code for one particular commit as zip archive, instead of git clone'ing.
 shallow_clone: true
@@ -27,7 +27,7 @@ environment:
     - COMPILER: MSVC
       BUILDTOOL: CMAKE
       TESTTYPE: NONE
-      MSVC_SETUP_ARG: x64 store 10.0.22621.0
+      MSVC_SETUP_ARG: x64 store
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
       CMAKE_EXTRA_OPTIONS: -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64
       TESTDIRSUFFIX: Release\

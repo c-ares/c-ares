@@ -25,11 +25,9 @@ namespace ares {
 namespace test {
 
 TEST_F(DefaultChannelTest, GetServers) {
-  std::vector<std::string> servers = GetNameServers(channel_);
+  std::string servers = GetNameServers(channel_);
   if (verbose) {
-    for (const std::string& server : servers) {
-      std::cerr << "Nameserver: " << server << std::endl;
-    }
+    std::cerr << "Nameserver: " << servers << std::endl;
   }
 }
 
@@ -52,7 +50,7 @@ TEST_F(DefaultChannelTest, SetServers) {
    *       See: https://github.com/nodejs/node/pull/50800
    */
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, nullptr));
-  std::vector<std::string> expected_empty = { };
+  std::string expected_empty = "";
   EXPECT_EQ(expected_empty, GetNameServers(channel_));
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
@@ -72,7 +70,7 @@ TEST_F(DefaultChannelTest, SetServers) {
   EXPECT_EQ(ARES_ENODATA, ares_set_servers(nullptr, &server1));
 
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers(channel_, &server1));
-  std::vector<std::string> expected = {"1.2.3.4:53", "2.3.4.5:53"};
+  std::string expected = "1.2.3.4:53,2.3.4.5:53";
   EXPECT_EQ(expected, GetNameServers(channel_));
 }
 
@@ -84,7 +82,7 @@ TEST_F(DefaultChannelTest, SetServersPorts) {
    *       See: https://github.com/nodejs/node/pull/50800
    */
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, nullptr));
-  std::vector<std::string> expected_empty = { };
+  std::string expected_empty = "";
   EXPECT_EQ(expected_empty, GetNameServers(channel_));
 
   struct ares_addr_port_node server1;
@@ -102,7 +100,7 @@ TEST_F(DefaultChannelTest, SetServersPorts) {
   EXPECT_EQ(ARES_ENODATA, ares_set_servers_ports(nullptr, &server1));
 
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers_ports(channel_, &server1));
-  std::vector<std::string> expected = {"1.2.3.4:111", "2.3.4.5:53"};
+  std::string expected = "1.2.3.4:111,2.3.4.5:53";
   EXPECT_EQ(expected, GetNameServers(channel_));
 }
 
@@ -120,17 +118,15 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
    *       See: https://github.com/nodejs/node/pull/50800
    */
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel_, NULL));
-  std::vector<std::string> expected_empty = { };
+  std::string expected_empty = "";
   EXPECT_EQ(expected_empty, GetNameServers(channel_));
   EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel_, ""));
   EXPECT_EQ(expected_empty, GetNameServers(channel_));
 
 
-
-
   EXPECT_EQ(ARES_SUCCESS,
             ares_set_servers_csv(channel_, "1.2.3.4,0102:0304:0506:0708:0910:1112:1314:1516,2.3.4.5"));
-  std::vector<std::string> expected = {"1.2.3.4:53", "[0102:0304:0506:0708:0910:1112:1314:1516]:53", "2.3.4.5:53"};
+  std::string expected = "1.2.3.4:53,[102:304:506:708:910:1112:1314:1516]:53,2.3.4.5:53";
   EXPECT_EQ(expected, GetNameServers(channel_));
 
   // Same, with spaces
@@ -138,10 +134,15 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
             ares_set_servers_csv(channel_, "1.2.3.4 , [0102:0304:0506:0708:0910:1112:1314:1516]:53, 2.3.4.5"));
   EXPECT_EQ(expected, GetNameServers(channel_));
 
+  // Ignore invalid link-local interface, keep rest.
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_set_servers_csv(channel_, "1.2.3.4 , [0102:0304:0506:0708:0910:1112:1314:1516]:53, [fe80::1]:53%iface0, 2.3.4.5"));
+  EXPECT_EQ(expected, GetNameServers(channel_));
+
   // Same, with ports
   EXPECT_EQ(ARES_SUCCESS,
             ares_set_servers_ports_csv(channel_, "1.2.3.4:54,[0102:0304:0506:0708:0910:1112:1314:1516]:80,2.3.4.5:55"));
-  std::vector<std::string> expected2 = {"1.2.3.4:54", "[0102:0304:0506:0708:0910:1112:1314:1516]:80", "2.3.4.5:55"};
+  std::string expected2 = {"1.2.3.4:54,[102:304:506:708:910:1112:1314:1516]:80,2.3.4.5:55"};
   EXPECT_EQ(expected2, GetNameServers(channel_));
 
   // Should survive duplication

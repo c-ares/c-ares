@@ -30,16 +30,41 @@
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
+#ifdef HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#  include <sys/socket.h>
+#endif
+#ifdef HAVE_NET_IF_H
+#  include <net/if.h>
+#endif
+
+#if defined(USE_WINSOCK)
+#  if defined(HAVE_IPHLPAPI_H)
+#    include <iphlpapi.h>
+#  endif
+#  if defined(HAVE_NETIOAPI_H)
+#    include <netioapi.h>
+#  endif
+#endif
 
 #include "ares.h"
 #include "ares_data.h"
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
+#ifndef IFNAMSIZ
+#  define IFNAMSIZ 64
+#endif
+
 typedef struct {
   struct ares_addr addr;
   unsigned short   tcp_port;
   unsigned short   udp_port;
+
+  char             ll_iface[IFNAMSIZ];
+  unsigned int     ll_scope;
 } ares_sconfig_t;
 
 static ares_bool_t ares__addr_match(const struct ares_addr *addr1,
@@ -71,37 +96,72 @@ static ares_bool_t ares__addr_match(const struct ares_addr *addr1,
   return ARES_FALSE;
 }
 
-/* Validate that the ip address matches the subnet (network base and network
- * mask) specified. Addresses are specified in standard Network Byte Order as
- * 16 bytes, and the netmask is 0 to 128 (bits).
- */
-static ares_bool_t ares_ipv6_subnet_matches(const unsigned char  netbase[16],
-                                            unsigned char        netmask,
-                                            const unsigned char *ipaddr)
+ares_bool_t ares__subnet_match(const struct ares_addr *addr,
+                               const struct ares_addr *subnet,
+                               unsigned char           netmask)
 {
-  unsigned char mask[16] = { 0 };
-  unsigned char i;
+  const unsigned char *addr_ptr;
+  const unsigned char *subnet_ptr;
+  size_t               len;
+  size_t               i;
 
-  /* Misuse */
-  if (netmask > 128) {
+  if (addr == NULL || subnet == NULL) {
     return ARES_FALSE;
   }
 
-  /* Quickly set whole bytes */
-  memset(mask, 0xFF, netmask / 8);
-
-  /* Set remaining bits */
-  if (netmask % 8 && netmask < 128 /* Silence coverity */) {
-    mask[netmask / 8] = (unsigned char)(0xff << (8 - (netmask % 8)));
+  if (addr->family != subnet->family) {
+    return ARES_FALSE;
   }
 
-  for (i = 0; i < 16; i++) {
-    if ((netbase[i] & mask[i]) != (ipaddr[i] & mask[i])) {
+  if (addr->family == AF_INET) {
+    addr_ptr   = (const unsigned char *)&addr->addr.addr4;
+    subnet_ptr = (const unsigned char *)&subnet->addr.addr4;
+    len        = 4;
+
+    if (netmask > 32) {
+      return ARES_FALSE;
+    }
+  } else if (addr->family == AF_INET6) {
+    addr_ptr   = (const unsigned char *)&addr->addr.addr6;
+    subnet_ptr = (const unsigned char *)&subnet->addr.addr6;
+    len        = 16;
+
+    if (netmask > 128) {
+      return ARES_FALSE;
+    }
+  } else {
+    return ARES_FALSE;
+  }
+
+  for (i = 0; i < len && netmask > 0; i++) {
+    unsigned char mask = 0xff;
+    if (netmask < 8) {
+      mask    <<= (8 - netmask);
+      netmask   = 0;
+    } else {
+      netmask -= 8;
+    }
+
+    if ((addr_ptr[i] & mask) != (subnet_ptr[i] & mask)) {
       return ARES_FALSE;
     }
   }
 
   return ARES_TRUE;
+}
+
+ares_bool_t ares__addr_is_linklocal(const struct ares_addr *addr)
+{
+  struct ares_addr    subnet;
+  const unsigned char subnetaddr[16] = { 0xfe, 0x80, 0x00, 0x00, 0x00, 0x00,
+                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                         0x00, 0x00, 0x00, 0x00 };
+
+  /* fe80::/10 */
+  subnet.family = AF_INET6;
+  memcpy(&subnet.addr.addr6, subnetaddr, 16);
+
+  return ares__subnet_match(addr, &subnet, 10);
 }
 
 static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
@@ -128,9 +188,10 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
 
   /* See if ipaddr matches any of the entries in the blacklist. */
   for (i = 0; i < sizeof(blacklist_v6) / sizeof(*blacklist_v6); i++) {
-    if (ares_ipv6_subnet_matches(blacklist_v6[i].netbase,
-                                 blacklist_v6[i].netmask,
-                                 (const unsigned char *)&addr->addr.addr6)) {
+    struct ares_addr subnet;
+    subnet.family = AF_INET6;
+    memcpy(&subnet.addr.addr6, blacklist_v6[i].netbase, 16);
+    if (ares__subnet_match(addr, &subnet, blacklist_v6[i].netmask)) {
       return ARES_TRUE;
     }
   }
@@ -144,8 +205,9 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
  *   [ipaddr]
  *   [ipaddr]:port
  *
- * TODO: in the future we need to add % and # syntax modifications to support
- *       the link-local interface name and domain, respectively.
+ * Modifiers: %iface
+ *
+ * TODO: #domain modifier
  *
  * If a port is not specified, will set port to 0.
  *
@@ -155,14 +217,13 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
  * Returns an error code on failure, else ARES_SUCCESS
  */
 
-static ares_status_t parse_dnsaddrport(ares__buf_t *buf, struct ares_addr *host,
-                                       unsigned short *port)
+static ares_status_t parse_nameserver(ares__buf_t *buf, ares_sconfig_t *sconfig)
 {
   ares_status_t status;
   char          ipaddr[INET6_ADDRSTRLEN] = "";
   size_t        addrlen;
 
-  *port = 0;
+  memset(sconfig, 0, sizeof(*sconfig));
 
   /* Consume any leading whitespace */
   ares__buf_consume_whitespace(buf, ARES_TRUE);
@@ -222,8 +283,8 @@ static ares_status_t parse_dnsaddrport(ares__buf_t *buf, struct ares_addr *host,
   }
 
   /* Convert ip address from string to network byte order */
-  host->family = AF_UNSPEC;
-  if (ares_dns_pton(ipaddr, host, &addrlen) == NULL) {
+  sconfig->addr.family = AF_UNSPEC;
+  if (ares_dns_pton(ipaddr, &sconfig->addr, &addrlen) == NULL) {
     return ARES_EBADSTR;
   }
 
@@ -247,7 +308,30 @@ static ares_status_t parse_dnsaddrport(ares__buf_t *buf, struct ares_addr *host,
       return status;
     }
 
-    *port = (unsigned short)atoi(portstr);
+    sconfig->udp_port = (unsigned short)atoi(portstr);
+    sconfig->tcp_port = sconfig->udp_port;
+  }
+
+  /* Pull off interface modifier */
+  if (ares__buf_begins_with(buf, (const unsigned char *)"%", 1)) {
+    const unsigned char iface_charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                          "abcdefghijklmnopqrstuvwxyz"
+                                          "0123456789.-_\\:{}";
+    /* Consume % */
+    ares__buf_consume(buf, 1);
+
+    ares__buf_tag(buf);
+
+    if (ares__buf_consume_charset(buf, iface_charset, sizeof(iface_charset)) ==
+        0) {
+      return ARES_EBADSTR;
+    }
+
+    status = ares__buf_tag_fetch_string(buf, sconfig->ll_iface,
+                                        sizeof(sconfig->ll_iface));
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
   }
 
   /* Consume any trailing whitespace so we can bail out if there is something
@@ -261,10 +345,40 @@ static ares_status_t parse_dnsaddrport(ares__buf_t *buf, struct ares_addr *host,
   return ARES_SUCCESS;
 }
 
+static ares_status_t ares__sconfig_linklocal(ares_sconfig_t *s,
+                                             const char     *ll_iface)
+{
+  unsigned int ll_scope = 0;
+
+  if (ares_str_isnum(ll_iface)) {
+    char ifname[IFNAMSIZ] = "";
+    ll_scope              = (unsigned int)atoi(ll_iface);
+    if (ares__if_indextoname(ll_scope, ifname, sizeof(ifname)) == NULL) {
+      DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
+                     ll_iface));
+      return ARES_ENOTFOUND;
+    }
+    ares_strcpy(s->ll_iface, ifname, sizeof(s->ll_iface));
+    s->ll_scope = ll_scope;
+    return ARES_SUCCESS;
+  }
+
+  ll_scope = ares__if_nametoindex(ll_iface);
+  if (ll_scope == 0) {
+    DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
+                   ll_iface));
+    return ARES_ENOTFOUND;
+  }
+  ares_strcpy(s->ll_iface, ll_iface, sizeof(s->ll_iface));
+  s->ll_scope = ll_scope;
+  return ARES_SUCCESS;
+}
+
 ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    const struct ares_addr *addr,
                                    unsigned short          udp_port,
-                                   unsigned short          tcp_port)
+                                   unsigned short          tcp_port,
+                                   const char             *ll_iface)
 {
   ares_sconfig_t *s;
   ares_status_t   status;
@@ -294,6 +408,16 @@ ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
   memcpy(&s->addr, addr, sizeof(s->addr));
   s->udp_port = udp_port;
   s->tcp_port = tcp_port;
+
+  /* Handle link-local enumeration */
+  if (ares_strlen(ll_iface) && ares__addr_is_linklocal(&s->addr)) {
+    status = ares__sconfig_linklocal(s, ll_iface);
+    /* Silently ignore this entry */
+    if (status != ARES_SUCCESS) {
+      status = ARES_SUCCESS;
+      goto fail;
+    }
+  }
 
   if (ares__llist_insert_last(*sconfig, s) == NULL) {
     status = ARES_ENOMEM;
@@ -350,11 +474,10 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
 
   for (node = ares__llist_node_first(list); node != NULL;
        node = ares__llist_node_next(node)) {
-    ares__buf_t     *entry = ares__llist_node_val(node);
-    struct ares_addr host;
-    unsigned short   port;
+    ares__buf_t   *entry = ares__llist_node_val(node);
+    ares_sconfig_t s;
 
-    status = parse_dnsaddrport(entry, &host, &port);
+    status = parse_nameserver(entry, &s);
     if (status != ARES_SUCCESS) {
       if (ignore_invalid) {
         continue;
@@ -363,7 +486,8 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
       }
     }
 
-    status = ares__sconfig_append(sconfig, &host, port, port);
+    status = ares__sconfig_append(sconfig, &s.addr, s.udp_port, s.tcp_port,
+                                  s.ll_iface);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -474,6 +598,12 @@ static ares_status_t ares__server_create(ares_channel_t       *channel,
   } else if (sconfig->addr.family == AF_INET6) {
     memcpy(&server->addr.addr.addr6, &sconfig->addr.addr.addr6,
            sizeof(server->addr.addr.addr6));
+  }
+
+  /* Copy over link-local settings */
+  if (ares_strlen(sconfig->ll_iface)) {
+    ares_strcpy(server->ll_iface, sconfig->ll_iface, sizeof(server->ll_iface));
+    server->ll_scope = sconfig->ll_scope;
   }
 
   server->tcp_parser = ares__buf_create();
@@ -593,6 +723,14 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
     snode = ares__server_find(channel, sconfig);
     if (snode != NULL) {
       struct server_state *server = ares__slist_node_val(snode);
+
+      /* Copy over link-local settings.  Its possible some of this data has
+       * changed, maybe ...  */
+      if (ares_strlen(sconfig->ll_iface)) {
+        ares_strcpy(server->ll_iface, sconfig->ll_iface,
+                    sizeof(server->ll_iface));
+        server->ll_scope = sconfig->ll_scope;
+      }
 
       if (server->idx != idx) {
         server->idx = idx;
@@ -974,4 +1112,86 @@ int ares_set_servers_ports_csv(ares_channel_t *channel, const char *_csv)
 {
   /* NOTE: lock is in ares__servers_update() */
   return (int)set_servers_csv(channel, _csv);
+}
+
+char *ares_get_servers_csv(ares_channel_t *channel)
+{
+  ares__buf_t        *buf = NULL;
+  char               *out = NULL;
+  ares__slist_node_t *node;
+
+  ares__channel_lock(channel);
+
+  buf = ares__buf_create();
+  if (buf == NULL) {
+    goto done;
+  }
+
+  for (node = ares__slist_node_first(channel->servers); node != NULL;
+       node = ares__slist_node_next(node)) {
+    ares_status_t              status;
+    const struct server_state *server = ares__slist_node_val(node);
+    char                       addr[64];
+
+    if (ares__buf_len(buf)) {
+      status = ares__buf_append_byte(buf, ',');
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
+
+    /* ipv4addr or [ipv6addr] */
+    if (server->addr.family == AF_INET6) {
+      status = ares__buf_append_byte(buf, '[');
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
+
+    ares_inet_ntop(server->addr.family, &server->addr.addr, addr, sizeof(addr));
+
+    status = ares__buf_append_str(buf, addr);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    if (server->addr.family == AF_INET6) {
+      status = ares__buf_append_byte(buf, ']');
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
+
+    /* :port */
+    status = ares__buf_append_byte(buf, ':');
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    status = ares__buf_append_num_dec(buf, server->udp_port, 0);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    /* %iface */
+    if (ares_strlen(server->ll_iface)) {
+      status = ares__buf_append_byte(buf, '%');
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+
+      status = ares__buf_append_str(buf, server->ll_iface);
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
+  }
+
+  out = ares__buf_finish_str(buf, NULL);
+  buf = NULL;
+
+done:
+  ares__channel_unlock(channel);
+  ares__buf_destroy(buf);
+  return out;
 }

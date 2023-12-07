@@ -142,6 +142,15 @@
 /* Define to 1 if you have the `if_indextoname' function. */
 #cmakedefine HAVE_IF_INDEXTONAME
 
+/* Define to 1 if you have the `if_nametoindex' function. */
+#cmakedefine HAVE_IF_NAMETOINDEX
+
+/* Define to 1 if you have the `ConvertInterfaceIndexToLuid' function. */
+#cmakedefine HAVE_CONVERTINTERFACEINDEXTOLUID
+
+/* Define to 1 if you have the `ConvertInterfaceLuidToNameA' function. */
+#cmakedefine HAVE_CONVERTINTERFACELUIDTONAMEA
+
 /* Define to 1 if you have a IPv6 capable working inet_net_pton function. */
 #cmakedefine HAVE_INET_NET_PTON
 
@@ -332,6 +341,9 @@
 /* Define to 1 if you have the <time.h> header file. */
 #cmakedefine HAVE_TIME_H
 
+/* Define to 1 if you have the <ifaddrs.h> header file. */
+#cmakedefine HAVE_IFADDRS_H
+
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
@@ -361,6 +373,9 @@
 
 /* Define if have arc4random_buf() */
 #cmakedefine HAVE_ARC4RANDOM_BUF
+
+/* Define if have getifaddrs() */
+#cmakedefine HAVE_GETIFADDRS
 
 /* Define if have stat() */
 #cmakedefine HAVE_STAT

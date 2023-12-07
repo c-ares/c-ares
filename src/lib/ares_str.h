@@ -28,10 +28,11 @@
 #define HEADER_CARES_STRDUP_H
 
 #include "ares_setup.h"
+#include "ares.h"
 
-char  *ares_strdup(const char *s1);
+char       *ares_strdup(const char *s1);
 
-size_t ares_strlen(const char *str);
+size_t      ares_strlen(const char *str);
 
 /*! Copy string from source to destination with destination buffer size
  *  provided.  The destination is guaranteed to be null terminated, if the
@@ -43,7 +44,8 @@ size_t ares_strlen(const char *str);
  *  \param[in]  dest_size  Size of destination buffer
  *  \return String length.  Will be at most dest_size-1
  */
-size_t ares_strcpy(char *dest, const char *src, size_t dest_size);
+size_t      ares_strcpy(char *dest, const char *src, size_t dest_size);
 
+ares_bool_t ares_str_isnum(const char *str);
 
 #endif /* HEADER_CARES_STRDUP_H */

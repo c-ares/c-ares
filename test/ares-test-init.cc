@@ -391,8 +391,8 @@ CONTAINED_TEST_F(LibraryTest, ContainerChannelInit,
                  "myhostname", "mydomainname.org", filelist) {
   ares_channel_t *channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
-  std::vector<std::string> actual = GetNameServers(channel);
-  std::vector<std::string> expected = {"1.2.3.4:53"};
+  std::string actual = GetNameServers(channel);
+  std::string expected = "1.2.3.4:53";
   EXPECT_EQ(expected, actual);
   EXPECT_EQ(2, channel->ndomains);
   EXPECT_EQ(std::string("first.com"), std::string(channel->domains[0]));
@@ -640,11 +640,9 @@ CONTAINED_TEST_F(LibraryTest, ContainerBlacklistedIpv6,
                  "myhostname", "mydomainname.org", blacklistedIpv6) {
   ares_channel_t *channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
-  std::vector<std::string> actual = GetNameServers(channel);
-  std::vector<std::string> expected = {
-    "254.192.1.1:53",
-    "[ffc0:0000:0000:0000:0000:0000:0000:c001]:53"
-  };
+  std::string actual = GetNameServers(channel);
+  std::string expected = "254.192.1.1:53,"
+                         "[ffc0::c001]:53";
   EXPECT_EQ(expected, actual);
 
   EXPECT_EQ(1, channel->ndomains);
@@ -662,8 +660,8 @@ CONTAINED_TEST_F(LibraryTest, ContainerMultiResolvInit,
                  "myhostname", "mydomainname.org", multiresolv) {
   ares_channel_t *channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
-  std::vector<std::string> actual = GetNameServers(channel);
-  std::vector<std::string> expected = {"[0001:0000:0000:0000:0000:0000:0000:0002]:53"};
+  std::string actual = GetNameServers(channel);
+  std::string expected = "[1::2]:53";
   EXPECT_EQ(expected, actual);
 
   EXPECT_EQ(1, channel->ndomains);
@@ -693,8 +691,8 @@ CONTAINED_TEST_F(LibraryTest, ContainerEmptyInit,
                  "host.domain.org", "domain.org", empty) {
   ares_channel_t *channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
-  std::vector<std::string> actual = GetNameServers(channel);
-  std::vector<std::string> expected = {"127.0.0.1:53"};
+  std::string actual = GetNameServers(channel);
+  std::string expected = "127.0.0.1:53";
   EXPECT_EQ(expected, actual);
 
   EXPECT_EQ(1, channel->ndomains);

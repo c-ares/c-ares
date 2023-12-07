@@ -544,10 +544,7 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
   }
   if (verbose) {
     std::cerr << "Configured library with servers:";
-    std::vector<std::string> servers = GetNameServers(channel_);
-    for (const auto& server : servers) {
-      std::cerr << " " << server;
-    }
+    std::cerr << GetNameServers(channel_);
     std::cerr << std::endl;
   }
 }
@@ -779,38 +776,14 @@ void NameInfoCallback(void *data, int status, int timeouts,
   if (verbose) std::cerr << "NameInfoCallback(" << *result << ")" << std::endl;
 }
 
-std::vector<std::string> GetNameServers(ares_channel_t *channel) {
-  struct ares_addr_port_node* servers = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_get_servers_ports(channel, &servers));
-  struct ares_addr_port_node* server = servers;
-  std::vector<std::string> results;
-  while (server) {
-    std::stringstream ss;
-    switch (server->family) {
-    case AF_INET:
-      ss << AddressToString((char*)&server->addr.addr4, 4);
-      break;
-    case AF_INET6:
-      if (server->udp_port != 0) {
-        ss << '[';
-      }
-      ss << AddressToString((char*)&server->addr.addr6, 16);
-      if (server->udp_port != 0) {
-        ss << ']';
-      }
-      break;
-    default:
-      results.push_back("<unknown family>");
-      break;
-    }
-    if (server->udp_port != 0) {
-      ss << ":" << server->udp_port;
-    }
-    results.push_back(ss.str());
-    server = server->next;
-  }
-  if (servers) ares_free_data(servers);
-  return results;
+std::string GetNameServers(ares_channel_t *channel) {
+  char *csv = ares_get_servers_csv(channel);
+  EXPECT_NE((char *)NULL, csv);
+
+  std::string servers(csv);
+
+  ares_free_string(csv);
+  return servers;
 }
 
 TransientDir::TransientDir(const std::string& dirname) : dirname_(dirname) {

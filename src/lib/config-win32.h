@@ -363,6 +363,17 @@
 #  define HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID 1
 #endif
 
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600) && !defined(__WATCOMC__)
+/* Define if you have if_nametoindex() */
+#  define HAVE_IF_NAMETOINDEX 1
+/* Define if you have if_indextoname() */
+#  define HAVE_IF_INDEXTONAME 1
+/* Define to 1 if you have the `ConvertInterfaceIndexToLuid' function. */
+#  define HAVE_CONVERTINTERFACEINDEXTOLUID 1
+/* Define to 1 if you have the `ConvertInterfaceLuidToNameA' function. */
+#  define HAVE_CONVERTINTERFACELUIDTONAMEA 1
+#endif
+
 /* ---------------------------------------------------------------- */
 /*                              Win CE                              */
 /* ---------------------------------------------------------------- */

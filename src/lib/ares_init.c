@@ -161,7 +161,7 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     addr.family            = AF_INET;
     addr.addr.addr4.s_addr = htonl(INADDR_LOOPBACK);
 
-    rc = ares__sconfig_append(&sconfig, &addr, 0, 0);
+    rc = ares__sconfig_append(&sconfig, &addr, 0, 0, NULL);
     if (rc != ARES_SUCCESS) {
       return rc;
     }
@@ -430,7 +430,6 @@ ares_status_t ares_reinit(ares_channel_t *channel)
 int ares_dup(ares_channel_t **dest, ares_channel_t *src)
 {
   struct ares_options         opts;
-  struct ares_addr_port_node *servers;
   ares_status_t               rc;
   int                         optmask;
 
@@ -480,18 +479,21 @@ int ares_dup(ares_channel_t **dest, ares_channel_t *src)
    * the case, pull them in.
    *
    * We don't want to clone system-configuration servers though.
+   *
+   * We must use the "csv" format to get things like link-local address support
    */
 
   if (optmask & ARES_OPT_SERVERS) {
-    rc = (ares_status_t)ares_get_servers_ports(src, &servers);
-    if (rc != ARES_SUCCESS) {
+    char *csv = ares_get_servers_csv(src);
+    if (csv == NULL) {
       ares_destroy(*dest);
       *dest = NULL;
+      rc = ARES_ENOMEM;
       goto done;
     }
 
-    rc = (ares_status_t)ares_set_servers_ports(*dest, servers);
-    ares_free_data(servers);
+    rc = (ares_status_t)ares_set_servers_ports_csv(*dest, csv);
+    ares_free_string(csv);
     if (rc != ARES_SUCCESS) {
       ares_destroy(*dest);
       *dest = NULL;

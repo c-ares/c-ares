@@ -74,6 +74,7 @@ MANPAGES = ares_cancel.3		\
   ares_free_string.3			\
   ares_freeaddrinfo.3			\
   ares_get_servers.3			\
+  ares_get_servers_csv.3		\
   ares_get_servers_ports.3		\
   ares_getaddrinfo.3			\
   ares_gethostbyaddr.3			\

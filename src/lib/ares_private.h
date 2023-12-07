@@ -123,6 +123,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__htable_asvp.h"
 #include "ares__buf.h"
 #include "ares_dns_private.h"
+#include "ares__iface_ips.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -167,14 +168,17 @@ struct server_connection {
 };
 
 struct server_state {
+  /* Configuration */
   size_t                    idx; /* index for server in system configuration */
-  size_t                    consec_failures; /* Consecutive query failure count
-                                              * can be hard errors or timeouts
-                                              */
   struct ares_addr          addr;
   unsigned short            udp_port;        /* host byte order */
   unsigned short            tcp_port;        /* host byte order */
+  char                      ll_iface[64];    /* IPv6 Link Local Interface */
+  unsigned int              ll_scope;        /* IPv6 Link Local Scope */
 
+  size_t                    consec_failures; /* Consecutive query failure count
+                                              * can be hard errors or timeouts
+                                              */
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
 
@@ -480,7 +484,8 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
 ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    const struct ares_addr *addr,
                                    unsigned short          udp_port,
-                                   unsigned short          tcp_port);
+                                   unsigned short          tcp_port,
+                                   const char             *ll_iface);
 ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
                                            const char     *str,
                                            ares_bool_t     ignore_invalid);
@@ -565,11 +570,17 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
   (x && x->lookups && ares__slist_len(x->servers) > 0 && x->ndots > 0 && \
    x->timeout > 0 && x->tries > 0)
 
+ares_bool_t   ares__subnet_match(const struct ares_addr *addr,
+                                 const struct ares_addr *subnet,
+                                 unsigned char           netmask);
+ares_bool_t   ares__addr_is_linklocal(const struct ares_addr *addr);
+
 size_t        ares__round_up_pow2(size_t n);
 size_t        ares__log2(size_t n);
 size_t        ares__pow(size_t x, size_t y);
 size_t        ares__count_digits(size_t n);
 size_t        ares__count_hexdigits(size_t n);
+unsigned char ares__count_bits_u8(unsigned char x);
 void          ares__qcache_destroy(ares__qcache_t *cache);
 ares_status_t ares__qcache_create(ares_rand_state *rand_state,
                                   unsigned int     max_ttl,

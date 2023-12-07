@@ -444,7 +444,7 @@ void AddrInfoCallback(void *data, int status, int timeouts,
                       struct ares_addrinfo *res);
 
 // Retrieve the name servers used by a channel.
-std::vector<std::string> GetNameServers(ares_channel_t *channel);
+std::string GetNameServers(ares_channel_t *channel);
 
 // RAII class to temporarily create a directory of a given name.
 class TransientDir {
