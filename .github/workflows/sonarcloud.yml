@@ -19,6 +19,10 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Install sonar-scanner and build-wrapper
         uses: SonarSource/sonarcloud-github-c-cpp@v2
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libgmock-dev
+          version: 1.0
       - name: Run build-wrapper
         run: |
           mkdir build
