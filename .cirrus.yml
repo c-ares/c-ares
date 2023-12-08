@@ -19,7 +19,7 @@ task:
         BUILD_COVERAGE: "yes"
         BUILD_ANALYZE: "yes"
       container:
-        image: debian:11
+        image: debian:latest
     - name: "Debian arm64"
       env:
         DIST: "DEBIAN-ARM"
@@ -38,7 +38,7 @@ task:
         MAKE: "gmake"
         BUILD_ANALYZE: "yes"
       freebsd_instance:
-        image_family: freebsd-13-1
+        image_family: freebsd-13-2
     - name: "MacOS"
       env:
         DIST: "MACOS"
