@@ -118,7 +118,7 @@ static const char *inet_ntop6(const unsigned char *src, char *dst, size_t size)
   } best, cur;
 
   unsigned int words[NS_IN6ADDRSZ / NS_INT16SZ];
-  unsigned int i;
+  int i;
 
   /*
    * Preprocess:
@@ -127,7 +127,7 @@ static const char *inet_ntop6(const unsigned char *src, char *dst, size_t size)
    */
   memset(words, '\0', sizeof(words));
   for (i = 0; i < NS_IN6ADDRSZ; i++) {
-    words[i / 2] |= (src[i] << ((1 - (i % 2)) << 3));
+    words[i / 2] |= (unsigned int)(src[i] << ((1 - (i % 2)) << 3));
   }
   best.base = -1;
   best.len  = 0;
