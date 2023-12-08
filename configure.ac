@@ -1034,7 +1034,7 @@ AC_MSG_CHECKING([whether to build tests])
 AC_ARG_ENABLE(tests,
 	AS_HELP_STRING([--enable-tests], [build test suite]),
 	[ build_tests="$enableval" ],
-	[ if test "x$HAVE_CXX11" = "x1" && test "x$cross_compiling" = "xno" ; then
+	[ if test "x$HAVE_CXX14" = "x1" && test "x$cross_compiling" = "xno" ; then
 	    build_tests="yes"
 	  else
 	    build_tests="no"
@@ -1043,8 +1043,8 @@ AC_ARG_ENABLE(tests,
 )
 
 if test "x$build_tests" = "xyes" ; then
-	if test "x$HAVE_CXX11" = "0" ; then
-		AC_MSG_ERROR([*** Building tests requires a CXX11 compiler])
+	if test "x$HAVE_CXX14" = "0" ; then
+		AC_MSG_ERROR([*** Building tests requires a CXX14 compiler])
 	fi
 	if test "x$cross_compiling" = "xyes" ; then
 		AC_MSG_ERROR([*** Tests not supported when cross compiling])
