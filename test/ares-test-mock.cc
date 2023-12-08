@@ -1349,19 +1349,21 @@ TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
     .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
 
   /* Server #1 works fine on first attempt, then acts like its offline on
-   * second */
+   * second, then backonline on the third. */
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &okrsp))
-    .WillOnce(SetReplyData(servers_[0].get(), nothing));
+    .WillOnce(SetReplyData(servers_[0].get(), nothing))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
 
   /* Server #2 always acts like its offline */
   ON_CALL(*servers_[1], OnRequest("www.example.com", T_A))
     .WillByDefault(SetReplyData(servers_[1].get(), nothing));
 
-  /* Server #3 works fine on first and second request */
+  /* Server #3 works fine on first and second request, then no reply on 3rd */
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &okrsp))
-    .WillOnce(SetReply(servers_[2].get(), &okrsp));
+    .WillOnce(SetReply(servers_[2].get(), &okrsp))
+    .WillOnce(SetReplyData(servers_[2].get(), nothing));
 
   HostResult result;
 
@@ -1386,7 +1388,7 @@ TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
   ss2 << result.host_;
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss2.str());
 
-  /* 2. On the third request, the active server should be #3, so should respond
+  /* 3. On the third request, the active server should be #3, so should respond
    *    immediately with no timeouts */
   ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
   Process();
@@ -1395,6 +1397,16 @@ TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
   std::stringstream ss3;
   ss3 << result.host_;
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss3.str());
+
+  /* 4. On the fourth request, the active server should be #3, but will timeout,
+   *    and the first server should then respond */
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(1, result.timeouts_);
+  std::stringstream ss4;
+  ss4 << result.host_;
+  EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss4.str());
 }
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
