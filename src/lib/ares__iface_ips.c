@@ -282,7 +282,7 @@ unsigned int ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
 
 #ifdef USE_WINSOCK
 
-#if 0
+#  if 0
 static char *wcharp_to_charp(const wchar_t *in)
 {
   char *out;
@@ -302,7 +302,7 @@ static char *wcharp_to_charp(const wchar_t *in)
 
   return out;
 }
-#endif
+#  endif
 
 static ares_bool_t name_match(const char *name, const char *adapter_name,
                               unsigned int ll_scope)
@@ -353,11 +353,12 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
   }
 
   for (address = addresses; address != NULL; address = address->Next) {
-    IP_ADAPTER_UNICAST_ADDRESS *ipaddr   = NULL;
-    ares__iface_ip_flags_t      addrflag = 0;
+    IP_ADAPTER_UNICAST_ADDRESS *ipaddr     = NULL;
+    ares__iface_ip_flags_t      addrflag   = 0;
     char                        ifname[64] = "";
 
-#if defined(HAVE_CONVERTINTERFACEINDEXTOLUID) && defined(HAVE_CONVERTINTERFACELUIDTONAMEA)
+#  if defined(HAVE_CONVERTINTERFACEINDEXTOLUID) && \
+    defined(HAVE_CONVERTINTERFACELUIDTONAMEA)
     /* Retrieve name from interface index.
      * address->AdapterName appears to be a GUID/UUID of some sort, not a name.
      * address->FriendlyName is user-changeable.
@@ -367,9 +368,9 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
     NET_LUID luid;
     ConvertInterfaceIndexToLuid(address->IfIndex, &luid);
     ConvertInterfaceLuidToNameA(&luid, ifname, sizeof(ifname));
-#else
+#  else
     ares_strcpy(ifname, address->AdapterName, sizeof(ifname));
-#endif
+#  endif
 
     if (address->OperStatus != IfOperStatusUp) {
       addrflag |= ARES_IFACE_IP_OFFLINE;

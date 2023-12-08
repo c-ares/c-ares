@@ -595,10 +595,10 @@ typedef unsigned long long ares_uint64_t;
 
 #ifdef _WIN32
 #  define HOSTENT_ADDRTYPE_TYPE short
-#  define HOSTENT_LENGTH_TYPE short
+#  define HOSTENT_LENGTH_TYPE   short
 #else
 #  define HOSTENT_ADDRTYPE_TYPE int
-#  define HOSTENT_LENGTH_TYPE int
+#  define HOSTENT_LENGTH_TYPE   int
 #endif
 
 #endif /* __ARES_PRIVATE_H */

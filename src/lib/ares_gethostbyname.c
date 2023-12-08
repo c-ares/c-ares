@@ -177,7 +177,6 @@ static size_t get_address_index(const struct in_addr  *addr,
     if (ares__subnet_match(&aaddr, &sortlist[i].addr, sortlist[i].mask)) {
       break;
     }
-
   }
 
   return i;
@@ -219,7 +218,7 @@ static void sort6_addresses(const struct hostent  *host,
 static size_t get6_address_index(const struct ares_in6_addr *addr,
                                  const struct apattern *sortlist, size_t nsort)
 {
-  size_t i;
+  size_t           i;
   struct ares_addr aaddr;
 
   memset(&aaddr, 0, sizeof(aaddr));

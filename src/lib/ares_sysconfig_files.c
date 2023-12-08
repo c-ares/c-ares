@@ -66,7 +66,6 @@
 #include "ares_platform.h"
 #include "ares_private.h"
 
-
 static unsigned char ip_natural_mask(const struct ares_addr *addr)
 {
   const unsigned char *ptr = NULL;
@@ -81,15 +80,18 @@ static unsigned char ip_natural_mask(const struct ares_addr *addr)
    * For IPv6, we'll use /64.
    */
 
-  if (addr->family == AF_INET6)
+  if (addr->family == AF_INET6) {
     return 64;
+  }
 
   ptr = (const unsigned char *)&addr->addr.addr4;
-  if (*ptr < 128)
+  if (*ptr < 128) {
     return 8;
+  }
 
-  if (*ptr < 192)
+  if (*ptr < 192) {
     return 16;
+  }
 
   return 24;
 }
@@ -115,7 +117,7 @@ static ares_bool_t sortlist_append(struct apattern **sortlist, size_t *nsort,
 static ares_status_t parse_sort(ares__buf_t *buf, struct apattern *pat)
 {
   ares_status_t       status;
-  const unsigned char ip_charset[] = "ABCDEFabcdef0123456789.:";
+  const unsigned char ip_charset[]             = "ABCDEFabcdef0123456789.:";
   char                ipaddr[INET6_ADDRSTRLEN] = "";
   size_t              addrlen;
 
@@ -132,8 +134,7 @@ static ares_status_t parse_sort(ares__buf_t *buf, struct apattern *pat)
   ares__buf_tag(buf);
 
   /* Consume ip address */
-  if (ares__buf_consume_charset(buf, ip_charset, sizeof(ip_charset)) ==
-      0) {
+  if (ares__buf_consume_charset(buf, ip_charset, sizeof(ip_charset)) == 0) {
     return ARES_EBADSTR;
   }
 
@@ -162,7 +163,7 @@ static ares_status_t parse_sort(ares__buf_t *buf, struct apattern *pat)
 
     /* Consume mask */
     if (ares__buf_consume_charset(buf, ipv4_charset, sizeof(ipv4_charset)) ==
-      0) {
+        0) {
       return ARES_EBADSTR;
     }
 
@@ -192,9 +193,11 @@ static ares_status_t parse_sort(ares__buf_t *buf, struct apattern *pat)
       if (ares_dns_pton(maskstr, &maskaddr, &addrlen) == NULL) {
         return ARES_EBADSTR;
       }
-      ptr = (const unsigned char *)&maskaddr.addr.addr4;
-      pat->mask = ares__count_bits_u8(ptr[0]) + ares__count_bits_u8(ptr[1]) +
-                  ares__count_bits_u8(ptr[2]) + ares__count_bits_u8(ptr[3]);
+      ptr       = (const unsigned char *)&maskaddr.addr.addr4;
+      pat->mask = (unsigned char)(ares__count_bits_u8(ptr[0]) +
+                                  ares__count_bits_u8(ptr[1]) +
+                                  ares__count_bits_u8(ptr[2]) +
+                                  ares__count_bits_u8(ptr[3]));
     }
   } else {
     pat->mask = ip_natural_mask(&pat->addr);
@@ -254,8 +257,9 @@ ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
       goto done;
     }
 
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       continue;
+    }
 
     if (!sortlist_append(sortlist, nsort, &pat)) {
       status = ARES_ENOMEM;
@@ -277,7 +281,6 @@ done:
 
   return status;
 }
-
 
 static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
 {

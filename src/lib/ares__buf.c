@@ -502,8 +502,9 @@ static const unsigned char *ares__buf_fetch(const ares__buf_t *buf, size_t *len)
   }
 
   *len = buf->data_len - buf->offset;
-  if (*len == 0)
+  if (*len == 0) {
     return NULL;
+  }
 
   return buf->data + buf->offset;
 }
@@ -886,8 +887,9 @@ ares_bool_t ares__buf_begins_with(const ares__buf_t   *buf,
 
 size_t ares__buf_len(const ares__buf_t *buf)
 {
-  if (buf == NULL)
+  if (buf == NULL) {
     return 0;
+  }
 
   return buf->data_len - buf->offset;
 }

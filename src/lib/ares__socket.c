@@ -70,8 +70,8 @@ ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
   }
 
 #ifdef HAVE_RECVFROM
-  return (ares_ssize_t)recvfrom(s, data, (RECVFROM_TYPE_ARG3)data_len,
-                                flags, from, from_len);
+  return (ares_ssize_t)recvfrom(s, data, (RECVFROM_TYPE_ARG3)data_len, flags,
+                                from, from_len);
 #else
   return sread(s, data, data_len);
 #endif

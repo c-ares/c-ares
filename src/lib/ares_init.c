@@ -429,9 +429,9 @@ ares_status_t ares_reinit(ares_channel_t *channel)
    new channel handle */
 int ares_dup(ares_channel_t **dest, ares_channel_t *src)
 {
-  struct ares_options         opts;
-  ares_status_t               rc;
-  int                         optmask;
+  struct ares_options opts;
+  ares_status_t       rc;
+  int                 optmask;
 
   if (dest == NULL || src == NULL) {
     return ARES_EFORMERR;
@@ -488,7 +488,7 @@ int ares_dup(ares_channel_t **dest, ares_channel_t *src)
     if (csv == NULL) {
       ares_destroy(*dest);
       *dest = NULL;
-      rc = ARES_ENOMEM;
+      rc    = ARES_ENOMEM;
       goto done;
     }
 
