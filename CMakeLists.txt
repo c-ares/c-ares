@@ -496,7 +496,7 @@ ENDIF ()
 # defaults.  This should be much quicker and nearly as accurate ... and even
 # if not, it probably won't matter in the least.
 
-IF (HAVE_SSIZE_T AND HAVE_SOCKLEN_T)
+IF (HAVE_SSIZE_T AND HAVE_SOCKLEN_T AND NOT WIN32)
 	# If we have ssize_t and socklen_t, the API is usually sane and uses ssize_t and size_t for lengths
 	SET (RECVFROM_TYPE_RETV ssize_t)
 	SET (RECVFROM_TYPE_ARG3 size_t)

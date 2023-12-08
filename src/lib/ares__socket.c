@@ -70,7 +70,8 @@ ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
   }
 
 #ifdef HAVE_RECVFROM
-  return recvfrom(s, data, data_len, flags, from, from_len);
+  return (ares_ssize_t)recvfrom(s, data, (RECVFROM_TYPE_ARG3)data_len,
+                                flags, from, from_len);
 #else
   return sread(s, data, data_len);
 #endif
@@ -84,6 +85,7 @@ ares_ssize_t ares__socket_recv(ares_channel_t *channel, ares_socket_t s,
                                           channel->sock_func_cb_data);
   }
 
+  /* sread() is a wrapper for read() or recv() depending on the system */
   return sread(s, data, data_len);
 }
 
@@ -124,7 +126,7 @@ static int setsocknonblock(ares_socket_t sockfd, /* operate on this */
   /* Windows */
   unsigned long flags = nonblock ? 1UL : 0UL;
 #  endif
-  return ioctlsocket(sockfd, FIONBIO, &flags);
+  return ioctlsocket(sockfd, (long)FIONBIO, &flags);
 
 #elif defined(HAVE_IOCTLSOCKET_CAMEL_FIONBIO)
 

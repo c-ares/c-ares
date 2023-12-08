@@ -1003,7 +1003,7 @@ static int configure_socket(ares_socket_t s) {
   /* Windows */
   unsigned long flags = 1UL;
 #endif
-  return ioctlsocket(s, FIONBIO, &flags);
+  return ioctlsocket(s, (long)FIONBIO, &flags);
 #elif defined(HAVE_IOCTLSOCKET_CAMEL_FIONBIO)
   /* Amiga */
   long flags = 1L;

@@ -99,8 +99,8 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
     }
     memcpy(hostent->h_addr_list[0], addr, (size_t)addrlen);
   }
-  hostent->h_addrtype = family;
-  hostent->h_length   = addrlen;
+  hostent->h_addrtype = (HOSTENT_ADDRTYPE_TYPE)family;
+  hostent->h_length   = (HOSTENT_LENGTH_TYPE)addrlen;
 
   /* Preallocate the maximum number + 1 */
   hostent->h_aliases = ares_malloc((ancount + 1) * sizeof(*hostent->h_aliases));
