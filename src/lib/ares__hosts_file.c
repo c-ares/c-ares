@@ -871,7 +871,7 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
     goto fail;
   }
 
-  (*hostent)->h_addrtype = family;
+  (*hostent)->h_addrtype = (HOSTENT_ADDRTYPE_TYPE)family;
 
   /* Copy IP addresses that match the address family */
   idx = 0;
@@ -895,7 +895,7 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
      * conversions as we can only support a single address class */
     if (family == AF_UNSPEC) {
       family                 = addr.family;
-      (*hostent)->h_addrtype = addr.family;
+      (*hostent)->h_addrtype = (HOSTENT_ADDRTYPE_TYPE)addr.family;
     }
 
     temp = ares_realloc_zero((*hostent)->h_addr_list,
@@ -916,7 +916,7 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
 
     memcpy((*hostent)->h_addr_list[idx], ptr, ptr_len);
     idx++;
-    (*hostent)->h_length = (int)ptr_len;
+    (*hostent)->h_length = (HOSTENT_LENGTH_TYPE)ptr_len;
   }
 
   /* entry didn't match address class */

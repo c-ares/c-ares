@@ -144,7 +144,7 @@ ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
     }
   }
 
-  (*host)->h_addrtype = family;
+  (*host)->h_addrtype = (HOSTENT_ADDRTYPE_TYPE)family;
 
   if (family == AF_INET) {
     (*host)->h_length = sizeof(struct in_addr);
