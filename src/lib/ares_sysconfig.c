@@ -309,7 +309,7 @@ static ares_bool_t get_DNS_Windows(char **outptr)
   ULONG                          Bufsz     = IPAA_INITIAL_BUF_SZ;
   ULONG                          AddrFlags = 0;
   int                            trying    = IPAA_MAX_TRIES;
-  int                            res;
+  ULONG                          res;
 
   /* The capacity of addresses, in elements. */
   size_t                         addressesSize;
