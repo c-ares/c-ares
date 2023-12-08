@@ -369,11 +369,11 @@ void MockServer::ProcessFD(ares_socket_t fd) {
   struct sockaddr_storage addr;
   socklen_t addrlen = sizeof(addr);
   byte buffer[2048];
-  int len = recvfrom(fd, BYTE_CAST buffer, sizeof(buffer), 0,
+  ares_ssize_t len = (ares_ssize_t)recvfrom(fd, BYTE_CAST buffer, sizeof(buffer), 0,
                      (struct sockaddr *)&addr, &addrlen);
 
   if (fd != udpfd_) {
-    if (len == 0) {
+    if (len <= 0) {
       connfds_.erase(std::find(connfds_.begin(), connfds_.end(), fd));
       sclose(fd);
       free(tcp_data_);
@@ -402,7 +402,7 @@ void MockServer::ProcessFD(ares_socket_t fd) {
     }
   } else {
     /* UDP is always a single packet */
-    ProcessPacket(fd, &addr, addrlen, buffer, len);
+    ProcessPacket(fd, &addr, addrlen, buffer, (int)len);
   }
 
 }
@@ -448,9 +448,9 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
     addrlen = 0;
   }
 
-  int rc = sendto(fd, BYTE_CAST reply.data(), reply.size(), 0,
+  ares_ssize_t rc = (ares_ssize_t)sendto(fd, BYTE_CAST reply.data(), reply.size(), 0,
                   (struct sockaddr *)addr, addrlen);
-  if (rc < static_cast<int>(reply.size())) {
+  if (rc < static_cast<ares_ssize_t>(reply.size())) {
     std::cerr << "Failed to send full reply, rc=" << rc << std::endl;
   }
 }
@@ -697,12 +697,12 @@ std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
     unsigned short port = 0;
     os << "addr=[";
     if(next->ai_family == AF_INET) {
-      sockaddr_in* sin = (sockaddr_in*)next->ai_addr;
+      sockaddr_in* sin = (sockaddr_in *)((void *)next->ai_addr);
       port = ntohs(sin->sin_port);
       os << AddressToString(&sin->sin_addr, 4);
     }
     else if (next->ai_family == AF_INET6) {
-      sockaddr_in6* sin = (sockaddr_in6*)next->ai_addr;
+      sockaddr_in6* sin = (sockaddr_in6*)((void *)next->ai_addr);
       port = ntohs(sin->sin6_port);
       os << "[" << AddressToString(&sin->sin6_addr, 16) << "]";
     }
@@ -804,8 +804,8 @@ TransientFile::TransientFile(const std::string& filename,
     std::cerr << "Error: failed to create '" << filename << "'" << std::endl;
     return;
   }
-  int rc = fwrite(contents.data(), 1, contents.size(), f);
-  if (rc != (int)contents.size()) {
+  size_t rc = (size_t)fwrite(contents.data(), 1, contents.size(), f);
+  if (rc != contents.size()) {
     std::cerr << "Error: failed to write contents of '" << filename << "'" << std::endl;
   }
   fclose(f);
