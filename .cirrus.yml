@@ -116,7 +116,7 @@ task:
       case "${DIST}" in
         DEBIAN*)
           apt-get update && \
-          apt-get install -y cmake ninja-build autoconf automake libtool g++ pip libgmock-dev
+          apt-get install -y cmake ninja-build autoconf automake libtool g++ pip libgmock-dev pkg-config
           case "${BUILD_TYPE}" in
             asan|lsan|ubsan)
               apt-get install -y clang
