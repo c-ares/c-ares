@@ -567,8 +567,14 @@ ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
         status =
           ares__sconfig_append_fromstr(&sysconfig->sconfig, p, ARES_TRUE);
       } else if ((p = try_config(line, "sortlist", ';'))) {
+        /* Ignore all failures except ENOMEM.  If the sysadmin set a bad
+         * sortlist, just ignore the sortlist, don't cause an inoperable
+         * channel */
         status =
           ares__parse_sortlist(&sysconfig->sortlist, &sysconfig->nsortlist, p);
+        if (status != ARES_ENOMEM) {
+          status = ARES_SUCCESS;
+        }
       } else if ((p = try_config(line, "options", ';'))) {
         status = set_options(sysconfig, p);
       } else {
