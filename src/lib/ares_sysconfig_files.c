@@ -66,60 +66,162 @@
 #include "ares_platform.h"
 #include "ares_private.h"
 
-static int ip_addr(const char *ipbuf, ares_ssize_t len, struct in_addr *addr)
+
+static unsigned char ip_natural_mask(const struct ares_addr *addr)
 {
-  /* Four octets and three periods yields at most 15 characters. */
-  if (len > 15) {
-    return -1;
-  }
+  const unsigned char *ptr = NULL;
+  /* This is an odd one.  If a raw ipv4 address is specified, then we take
+   * what is called a natural mask, which means we look at the first octet
+   * of the ip address and for values 0-127 we assume it is a class A (/8),
+   * for values 128-191 we assume it is a class B (/16), and for 192-223
+   * we assume it is a class C (/24).  223-239 is Class D which and 240-255 is
+   * Class E, however, there is no pre-defined mask for this, so we'll use
+   * /24 as well as that's what the old code did.
+   *
+   * For IPv6, we'll use /64.
+   */
 
-  if (ares_inet_pton(AF_INET, ipbuf, addr) < 1) {
-    return -1;
-  }
+  if (addr->family == AF_INET6)
+    return 64;
 
-  return 0;
+  ptr = (const unsigned char *)&addr->addr.addr4;
+  if (*ptr < 128)
+    return 8;
+
+  if (*ptr < 192)
+    return 16;
+
+  return 24;
 }
 
-static void natural_mask(struct apattern *pat)
-{
-  struct in_addr addr;
-
-  /* Store a host-byte-order copy of pat in a struct in_addr.  Icky,
-   * but portable.
-   */
-  addr.s_addr = ntohl(pat->addr.addr4.s_addr);
-
-  /* This is out of date in the CIDR world, but some people might
-   * still rely on it.
-   */
-  if (IN_CLASSA(addr.s_addr)) {
-    pat->mask.addr4.s_addr = htonl(IN_CLASSA_NET);
-  } else if (IN_CLASSB(addr.s_addr)) {
-    pat->mask.addr4.s_addr = htonl(IN_CLASSB_NET);
-  } else {
-    pat->mask.addr4.s_addr = htonl(IN_CLASSC_NET);
-  }
-}
-
-static ares_bool_t sortlist_alloc(struct apattern **sortlist, size_t *nsort,
-                                  const struct apattern *pat)
+static ares_bool_t sortlist_append(struct apattern **sortlist, size_t *nsort,
+                                   const struct apattern *pat)
 {
   struct apattern *newsort;
-  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(struct apattern));
-  if (!newsort) {
+
+  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(*newsort));
+  if (newsort == NULL) {
     return ARES_FALSE;
   }
-  newsort[*nsort] = *pat;
-  *sortlist       = newsort;
+
+  *sortlist = newsort;
+
+  memcpy(&(*sortlist)[*nsort], pat, sizeof(**sortlist));
   (*nsort)++;
+
   return ARES_TRUE;
+}
+
+static ares_status_t parse_sort(ares__buf_t *buf, struct apattern *pat)
+{
+  ares_status_t       status;
+  const unsigned char ip_charset[] = "ABCDEFabcdef0123456789.:";
+  char                ipaddr[INET6_ADDRSTRLEN] = "";
+  size_t              addrlen;
+
+  memset(pat, 0, sizeof(*pat));
+
+  /* Consume any leading whitespace */
+  ares__buf_consume_whitespace(buf, ARES_TRUE);
+
+  /* If no length, just ignore, return ENOTFOUND as an indicator */
+  if (ares__buf_len(buf) == 0) {
+    return ARES_ENOTFOUND;
+  }
+
+  ares__buf_tag(buf);
+
+  /* Consume ip address */
+  if (ares__buf_consume_charset(buf, ip_charset, sizeof(ip_charset)) ==
+      0) {
+    return ARES_EBADSTR;
+  }
+
+  /* Fetch ip address */
+  status = ares__buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr));
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Parse it to make sure its valid */
+  pat->addr.family = AF_UNSPEC;
+  if (ares_dns_pton(ipaddr, &pat->addr, &addrlen) == NULL) {
+    return ARES_EBADSTR;
+  }
+
+  /* See if there is a subnet mask */
+  if (ares__buf_begins_with(buf, (const unsigned char *)"/", 1)) {
+    char                maskstr[16];
+    const unsigned char ipv4_charset[] = "0123456789.";
+
+
+    /* Consume / */
+    ares__buf_consume(buf, 1);
+
+    ares__buf_tag(buf);
+
+    /* Consume mask */
+    if (ares__buf_consume_charset(buf, ipv4_charset, sizeof(ipv4_charset)) ==
+      0) {
+      return ARES_EBADSTR;
+    }
+
+    /* Fetch mask */
+    status = ares__buf_tag_fetch_string(buf, maskstr, sizeof(maskstr));
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    if (ares_str_isnum(maskstr)) {
+      /* Numeric mask */
+      int mask = atoi(maskstr);
+      if (mask < 0 || mask > 128) {
+        return ARES_EBADSTR;
+      }
+      if (pat->addr.family == AF_INET && mask > 32) {
+        return ARES_EBADSTR;
+      }
+      pat->mask = (unsigned char)mask;
+    } else {
+      /* Ipv4 subnet style mask */
+      struct ares_addr     maskaddr;
+      const unsigned char *ptr;
+
+      memset(&maskaddr, 0, sizeof(maskaddr));
+      maskaddr.family = AF_INET;
+      if (ares_dns_pton(maskstr, &maskaddr, &addrlen) == NULL) {
+        return ARES_EBADSTR;
+      }
+      ptr = (const unsigned char *)&maskaddr.addr.addr4;
+      pat->mask = ares__count_bits_u8(ptr[0]) + ares__count_bits_u8(ptr[1]) +
+                  ares__count_bits_u8(ptr[2]) + ares__count_bits_u8(ptr[3]);
+    }
+  } else {
+    pat->mask = ip_natural_mask(&pat->addr);
+  }
+
+  /* Consume any trailing whitespace */
+  ares__buf_consume_whitespace(buf, ARES_TRUE);
+
+  /* If we have any trailing bytes other than whitespace, its a parse failure */
+  if (ares__buf_len(buf) != 0) {
+    return ARES_EBADSTR;
+  }
+
+  return ARES_SUCCESS;
 }
 
 ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
                                    const char *str)
 {
-  struct apattern pat;
-  const char     *q;
+  ares__buf_t        *buf    = NULL;
+  ares__llist_t      *list   = NULL;
+  ares_status_t       status = ARES_SUCCESS;
+  ares__llist_node_t *node   = NULL;
+
+  if (sortlist == NULL || nsort == NULL || str == NULL) {
+    return ARES_EFORMERR;
+  }
 
   if (*sortlist != NULL) {
     ares_free(*sortlist);
@@ -128,108 +230,54 @@ ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
   *sortlist = NULL;
   *nsort    = 0;
 
-  /* Add sortlist entries. */
-  while (*str && *str != ';') {
-    int    bits;
-    char   ipbuf[17];
-    char   ipbufpfx[32];
-    size_t len;
+  buf = ares__buf_create_const((const unsigned char *)str, ares_strlen(str));
+  if (buf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
 
-    /* Find just the IP */
-    q = str;
-    while (*q && *q != '/' && *q != ';' && !ISSPACE(*q)) {
-      q++;
+  /* Split on space or semicolon */
+  status = ares__buf_split(buf, (const unsigned char *)" ;", 2,
+                           ARES_BUF_SPLIT_NONE, &list);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  for (node = ares__llist_node_first(list); node != NULL;
+       node = ares__llist_node_next(node)) {
+    ares__buf_t    *entry = ares__llist_node_val(node);
+
+    struct apattern pat;
+
+    status = parse_sort(entry, &pat);
+    if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
+      goto done;
     }
 
-    len = (size_t)(q - str);
-    if (len >= sizeof(ipbuf) - 1) {
-      ares_free(*sortlist);
-      *sortlist = NULL;
-      return ARES_EBADSTR;
-    }
-    memcpy(ipbuf, str, len);
-    ipbuf[len] = '\0';
+    if (status != ARES_SUCCESS)
+      continue;
 
-    /* Find the prefix */
-    if (*q == '/') {
-      const char *str2 = q + 1;
-      while (*q && *q != ';' && !ISSPACE(*q)) {
-        q++;
-      }
-      if (q - str >= 32) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_EBADSTR;
-      }
-      memcpy(ipbufpfx, str, (size_t)(q - str));
-      ipbufpfx[q - str] = '\0';
-      str               = str2;
-    } else {
-      ipbufpfx[0] = '\0';
-    }
-    /* Lets see if it is CIDR */
-    /* First we'll try IPv6 */
-    if ((bits = ares_inet_net_pton(AF_INET6, ipbufpfx[0] ? ipbufpfx : ipbuf,
-                                   &pat.addr.addr6, sizeof(pat.addr.addr6))) >
-        0) {
-      pat.type      = PATTERN_CIDR;
-      pat.mask.bits = (unsigned short)bits;
-      pat.family    = AF_INET6;
-      if (!sortlist_alloc(sortlist, nsort, &pat)) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_ENOMEM;
-      }
-    } else if (ipbufpfx[0] &&
-               (bits = ares_inet_net_pton(AF_INET, ipbufpfx, &pat.addr.addr4,
-                                          sizeof(pat.addr.addr4))) > 0) {
-      pat.type      = PATTERN_CIDR;
-      pat.mask.bits = (unsigned short)bits;
-      pat.family    = AF_INET;
-      if (!sortlist_alloc(sortlist, nsort, &pat)) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_ENOMEM;
-      }
-    }
-    /* See if it is just a regular IP */
-    else if (ip_addr(ipbuf, q - str, &pat.addr.addr4) == 0) {
-      if (ipbufpfx[0]) {
-        len = (size_t)(q - str);
-        if (len >= sizeof(ipbuf) - 1) {
-          ares_free(*sortlist);
-          *sortlist = NULL;
-          return ARES_EBADSTR;
-        }
-        memcpy(ipbuf, str, len);
-        ipbuf[len] = '\0';
-
-        if (ip_addr(ipbuf, q - str, &pat.mask.addr4) != 0) {
-          natural_mask(&pat);
-        }
-      } else {
-        natural_mask(&pat);
-      }
-      pat.family = AF_INET;
-      pat.type   = PATTERN_MASK;
-      if (!sortlist_alloc(sortlist, nsort, &pat)) {
-        ares_free(*sortlist);
-        *sortlist = NULL;
-        return ARES_ENOMEM;
-      }
-    } else {
-      while (*q && *q != ';' && !ISSPACE(*q)) {
-        q++;
-      }
-    }
-    str = q;
-    while (ISSPACE(*str)) {
-      str++;
+    if (!sortlist_append(sortlist, nsort, &pat)) {
+      status = ARES_ENOMEM;
+      goto done;
     }
   }
 
-  return ARES_SUCCESS;
+  status = ARES_SUCCESS;
+
+done:
+  ares__buf_destroy(buf);
+  ares__llist_destroy(list);
+
+  if (status != ARES_SUCCESS) {
+    ares_free(*sortlist);
+    *sortlist = NULL;
+    *nsort    = 0;
+  }
+
+  return status;
 }
+
 
 static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
 {

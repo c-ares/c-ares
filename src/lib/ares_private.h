@@ -227,24 +227,9 @@ struct query {
                            * when a query is to be canceled */
 };
 
-/* An IP address pattern; matches an IP address X if X & mask == addr */
-#define PATTERN_MASK 0x1
-#define PATTERN_CIDR 0x2
-
 struct apattern {
-  union {
-    struct in_addr       addr4;
-    struct ares_in6_addr addr6;
-  } addr;
-
-  union {
-    struct in_addr       addr4;
-    struct ares_in6_addr addr6;
-    unsigned short       bits;
-  } mask;
-
-  int            family;
-  unsigned short type;
+  struct ares_addr addr;
+  unsigned char    mask;
 };
 
 struct ares__qcache;

@@ -326,13 +326,15 @@ TEST_F(DefaultChannelTest, SetSortlistFailures) {
   EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "111.111.111.111/255.255.255.240*"));
   EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "1 0123456789012345"));
   EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "1 /01234567890123456789012345678901"));
-  EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "xyzzy ; lwk"));
-  EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "xyzzy ; 0x123"));
+  EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "xyzzy ; lwk"));
+  EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "xyzzy ; 0x123"));
 }
 
 TEST_F(DefaultChannelTest, SetSortlistVariants) {
   EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "1.2.3.4"));
   EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "1.2.3.4 ; 2.3.4.5"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "1.2.3.4/26;1234::5678/126;4.5.6.7;5678::1234"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, " 1.2.3.4/26 1234::5678/126   4.5.6.7 5678::1234  "));
   EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "129.1.1.1"));
   EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "192.1.1.1"));
   EXPECT_EQ(ARES_SUCCESS, ares_set_sortlist(channel_, "224.1.1.1"));

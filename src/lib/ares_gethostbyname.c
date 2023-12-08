@@ -162,24 +162,24 @@ static void sort_addresses(const struct hostent  *host,
 static size_t get_address_index(const struct in_addr  *addr,
                                 const struct apattern *sortlist, size_t nsort)
 {
-  size_t i;
+  size_t           i;
+  struct ares_addr aaddr;
+
+  memset(&aaddr, 0, sizeof(aaddr));
+  aaddr.family = AF_INET;
+  memcpy(&aaddr.addr.addr4, addr, 4);
 
   for (i = 0; i < nsort; i++) {
-    if (sortlist[i].family != AF_INET) {
+    if (sortlist[i].addr.family != AF_INET) {
       continue;
     }
-    if (sortlist[i].type == PATTERN_MASK) {
-      if ((addr->s_addr & sortlist[i].mask.addr4.s_addr) ==
-          sortlist[i].addr.addr4.s_addr) {
-        break;
-      }
-    } else {
-      if (!ares__bitncmp(&addr->s_addr, &sortlist[i].addr.addr4.s_addr,
-                         sortlist[i].mask.bits)) {
-        break;
-      }
+
+    if (ares__subnet_match(&aaddr, &sortlist[i].addr, sortlist[i].mask)) {
+      break;
     }
+
   }
+
   return i;
 }
 
@@ -220,12 +220,18 @@ static size_t get6_address_index(const struct ares_in6_addr *addr,
                                  const struct apattern *sortlist, size_t nsort)
 {
   size_t i;
+  struct ares_addr aaddr;
+
+  memset(&aaddr, 0, sizeof(aaddr));
+  aaddr.family = AF_INET6;
+  memcpy(&aaddr.addr.addr6, addr, 16);
 
   for (i = 0; i < nsort; i++) {
-    if (sortlist[i].family != AF_INET6) {
+    if (sortlist[i].addr.family != AF_INET6) {
       continue;
     }
-    if (!ares__bitncmp(addr, &sortlist[i].addr.addr6, sortlist[i].mask.bits)) {
+
+    if (ares__subnet_match(&aaddr, &sortlist[i].addr, sortlist[i].mask)) {
       break;
     }
   }
