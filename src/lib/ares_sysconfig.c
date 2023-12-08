@@ -401,7 +401,8 @@ static ares_bool_t get_DNS_Windows(char **outptr)
         }
 
         addresses[addressesIndex].metric =
-          getBestRouteMetric(&ipaaEntry->Luid, (SOCKADDR_INET *)(namesrvr.sa),
+          getBestRouteMetric(&ipaaEntry->Luid,
+                             (SOCKADDR_INET *)((void *)(namesrvr.sa)),
                              ipaaEntry->Ipv4Metric);
 
         /* Record insertion index to make qsort stable */
@@ -445,7 +446,8 @@ static ares_bool_t get_DNS_Windows(char **outptr)
         }
 
         addresses[addressesIndex].metric =
-          getBestRouteMetric(&ipaaEntry->Luid, (SOCKADDR_INET *)(namesrvr.sa),
+          getBestRouteMetric(&ipaaEntry->Luid,
+                             (SOCKADDR_INET *)((void *)(namesrvr.sa)),
                              ipaaEntry->Ipv6Metric);
 
         /* Record insertion index to make qsort stable */
