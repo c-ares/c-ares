@@ -135,7 +135,7 @@ task:
           ;;
         FREEBSD)
           # pkg upgrade -y && \
-          pkg install -y cmake ninja googletest
+          pkg install -y cmake ninja googletest pkg-config
           case "${BUILD_TYPE}" in
             asan|analyze|ubsan|lsan)
               pkg install -y llvm autoconf automake libtool gmake
