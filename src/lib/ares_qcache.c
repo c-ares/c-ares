@@ -353,7 +353,7 @@ static ares_status_t ares__qcache_insert(ares__qcache_t      *qcache,
   }
 
   entry->dnsrec    = dnsrec;
-  entry->expire_ts = (time_t)(now->tv_sec + (time_t)ttl);
+  entry->expire_ts = now->tv_sec + (time_t)ttl;
   entry->insert_ts = now->tv_sec;
 
   /* We can't guarantee the server responded with the same flags as the
