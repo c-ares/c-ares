@@ -118,7 +118,7 @@ static const char *inet_ntop6(const unsigned char *src, char *dst, size_t size)
   } best, cur;
 
   unsigned int words[NS_IN6ADDRSZ / NS_INT16SZ];
-  int          i;
+  unsigned int i;
 
   /*
    * Preprocess:

@@ -96,7 +96,7 @@ void ProcessWork(ares_channel_t *channel,
     std::set<ares_socket_t> extrafds = get_extrafds();
     for (ares_socket_t extrafd : extrafds) {
       FD_SET(extrafd, &readers);
-      if (extrafd >= nfds) {
+      if (extrafd >= (ares_socket_t)nfds) {
         nfds = (int)extrafd + 1;
       }
     }
