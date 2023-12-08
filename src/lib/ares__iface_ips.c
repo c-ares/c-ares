@@ -384,14 +384,14 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
       struct ares_addr addr;
 
       if (ipaddr->Address.lpSockaddr->sa_family == AF_INET) {
-        struct sockaddr_in *sockaddr_in =
-          (struct sockaddr_in *)((void *)ipaddr->Address.lpSockaddr);
+        const struct sockaddr_in *sockaddr_in =
+          (const struct sockaddr_in *)((void *)ipaddr->Address.lpSockaddr);
         addr.family = AF_INET;
         memcpy(&addr.addr.addr4, &sockaddr_in->sin_addr,
                sizeof(addr.addr.addr4));
       } else if (ipaddr->Address.lpSockaddr->sa_family == AF_INET6) {
-        struct sockaddr_in6 *sockaddr_in6 =
-          (struct sockaddr_in6 *)((void *)ipaddr->Address.lpSockaddr);
+        const struct sockaddr_in6 *sockaddr_in6 =
+          (const struct sockaddr_in6 *)((void *)ipaddr->Address.lpSockaddr);
         addr.family = AF_INET6;
         memcpy(&addr.addr.addr6, &sockaddr_in6->sin6_addr,
                sizeof(addr.addr.addr6));
@@ -466,16 +466,16 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
     }
 
     if (ifa->ifa_addr->sa_family == AF_INET) {
-      struct sockaddr_in *sockaddr_in =
-        (struct sockaddr_in *)((void *)ifa->ifa_addr);
+      const struct sockaddr_in *sockaddr_in =
+        (const struct sockaddr_in *)((void *)ifa->ifa_addr);
       addr.family = AF_INET;
       memcpy(&addr.addr.addr4, &sockaddr_in->sin_addr, sizeof(addr.addr.addr4));
       /* netmask */
       sockaddr_in = (struct sockaddr_in *)((void *)ifa->ifa_netmask);
       netmask     = count_addr_bits((const void *)&sockaddr_in->sin_addr, 4);
     } else if (ifa->ifa_addr->sa_family == AF_INET6) {
-      struct sockaddr_in6 *sockaddr_in6 =
-        (struct sockaddr_in6 *)((void *)ifa->ifa_addr);
+      const struct sockaddr_in6 *sockaddr_in6 =
+        (const struct sockaddr_in6 *)((void *)ifa->ifa_addr);
       addr.family = AF_INET6;
       memcpy(&addr.addr.addr6, &sockaddr_in6->sin6_addr,
              sizeof(addr.addr.addr6));
