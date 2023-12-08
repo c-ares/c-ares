@@ -54,16 +54,12 @@
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
-#ifndef IFNAMSIZ
-#  define IFNAMSIZ 64
-#endif
-
 typedef struct {
   struct ares_addr addr;
   unsigned short   tcp_port;
   unsigned short   udp_port;
 
-  char             ll_iface[IFNAMSIZ];
+  char             ll_iface[IF_NAMESIZE];
   unsigned int     ll_scope;
 } ares_sconfig_t;
 
@@ -351,8 +347,8 @@ static ares_status_t ares__sconfig_linklocal(ares_sconfig_t *s,
   unsigned int ll_scope = 0;
 
   if (ares_str_isnum(ll_iface)) {
-    char ifname[IFNAMSIZ] = "";
-    ll_scope              = (unsigned int)atoi(ll_iface);
+    char ifname[IF_NAMESIZE] = "";
+    ll_scope                 = (unsigned int)atoi(ll_iface);
     if (ares__if_indextoname(ll_scope, ifname, sizeof(ifname)) == NULL) {
       DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
                      ll_iface));

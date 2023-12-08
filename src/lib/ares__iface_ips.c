@@ -24,8 +24,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ares_setup.h"
-#include "ares.h"
-#include "ares_private.h"
+
 
 #ifdef USE_WINSOCK
 #  include <winsock2.h>
@@ -57,9 +56,8 @@
 #  include <netinet/in.h>
 #endif
 
-#ifndef IFNAMSIZ
-#  define IFNAMSIZ 64
-#endif
+#include "ares.h"
+#include "ares_private.h"
 
 static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
                                                const char        *name);
@@ -555,7 +553,7 @@ const char *ares__if_indextoname(unsigned int index, char *name,
                                  size_t name_len)
 {
 #ifdef HAVE_IF_INDEXTONAME
-  if (name_len < IFNAMSIZ) {
+  if (name_len < IF_NAMESIZE) {
     return NULL;
   }
   return if_indextoname(index, name);
@@ -565,7 +563,7 @@ const char *ares__if_indextoname(unsigned int index, char *name,
   size_t             i;
   const char        *ptr = NULL;
 
-  if (name_len < IFNAMSIZ) {
+  if (name_len < IF_NAMESIZE) {
     goto done;
   }
 
