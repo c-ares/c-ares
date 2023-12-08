@@ -25,13 +25,11 @@ ARES_SRC_DIR = $(top_srcdir)/..
 AUTOMAKE_OPTIONS = foreign subdir-objects nostdinc 1.9.6
 ACLOCAL_AMFLAGS = -I ../m4 --install
 
-# Note use of -isystem to force use of local gMock/gTest even if there's an installed version.
 CPPFLAGS += -I$(ARES_BLD_DIR)/include \
             -I$(ARES_BLD_DIR)/src/lib \
             -I$(ARES_SRC_DIR)/include \
             -I$(ARES_SRC_DIR)/src/lib \
-            -I$(top_builddir)         \
-            -isystem $(srcdir)/gmock-1.11.0
+            -I$(top_builddir)
 CXXFLAGS += -Wall $(PTHREAD_CFLAGS)
 
 # Makefile.inc provides the various *SOURCES and *HEADERS defines
