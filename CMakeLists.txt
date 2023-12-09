@@ -45,9 +45,9 @@ OPTION (CARES_THREADS       "Build with thread-safety support"                  
 SET    (CARES_RANDOM_FILE "/dev/urandom" CACHE STRING "Suitable File / Device Path for entropy, such as /dev/urandom")
 
 
-# Tests require a C++ compiler
+# Tests require a C++14 compiler
 IF (CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS)
-	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD 14)
 	set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 	set(CMAKE_CXX_EXTENSIONS FALSE)
 	enable_language(CXX)

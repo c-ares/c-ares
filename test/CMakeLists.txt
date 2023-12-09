@@ -7,6 +7,7 @@ IF (MSVC)
 ENDIF ()
 
 find_package(Threads)
+find_package(GTest REQUIRED)
 
 # create target to access and use internal cares library
 add_library(caresinternal INTERFACE)
@@ -26,17 +27,6 @@ ELSE ()
   target_link_libraries(caresinternal INTERFACE ${PROJECT_NAME}::cares)
 ENDIF ()
 
-# Google Test and Mock
-set(GMOCK_DIR gmock-1.11.0)
-add_library(gmock STATIC
-  ${GMOCK_DIR}/gmock-gtest-all.cc
-  ${GMOCK_DIR}/gmock/gmock.h
-  ${GMOCK_DIR}/gtest/gtest.h
-)
-target_include_directories(gmock PUBLIC SYSTEM ${GMOCK_DIR})
-target_link_libraries(gmock PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-# test targets
-
 transform_makefile_inc("Makefile.inc" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")
 include(${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake)
 
@@ -44,7 +34,7 @@ configure_file(${CARES_TOPLEVEL_DIR}/src/lib/ares_config.h.cmake config.h)
 
 add_executable(arestest ${TESTSOURCES} ${TESTHEADERS})
 target_include_directories(arestest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(arestest PRIVATE caresinternal gmock)
+target_link_libraries(arestest PRIVATE caresinternal GTest::gmock)
 
 IF (CARES_BUILD_CONTAINER_TESTS)
   target_compile_definitions(arestest PRIVATE HAVE_USER_NAMESPACE HAVE_UTS_NAMESPACE)

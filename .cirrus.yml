@@ -19,7 +19,7 @@ task:
         BUILD_COVERAGE: "yes"
         BUILD_ANALYZE: "yes"
       container:
-        image: debian:11
+        image: debian:latest
     - name: "Debian arm64"
       env:
         DIST: "DEBIAN-ARM"
@@ -38,7 +38,7 @@ task:
         MAKE: "gmake"
         BUILD_ANALYZE: "yes"
       freebsd_instance:
-        image_family: freebsd-13-1
+        image_family: freebsd-13-2
     - name: "MacOS"
       env:
         DIST: "MACOS"
@@ -116,7 +116,7 @@ task:
       case "${DIST}" in
         DEBIAN*)
           apt-get update && \
-          apt-get install -y cmake ninja-build autoconf automake libtool g++ pip
+          apt-get install -y cmake ninja-build autoconf automake libtool g++ pip libgmock-dev pkg-config
           case "${BUILD_TYPE}" in
             asan|lsan|ubsan)
               apt-get install -y clang
@@ -129,13 +129,13 @@ task:
               ;;
             coverage)
               apt-get install -y lcov git
-              pip3 install --user cpp-coveralls
+              pip3 install --break-system-packages --user cpp-coveralls
               ;;
           esac
           ;;
         FREEBSD)
           # pkg upgrade -y && \
-          pkg install -y cmake ninja
+          pkg install -y cmake ninja googletest pkgconf
           case "${BUILD_TYPE}" in
             asan|analyze|ubsan|lsan)
               pkg install -y llvm autoconf automake libtool gmake
@@ -147,7 +147,7 @@ task:
           ;;
         MACOS|iOS)
           brew update && \
-          brew install ninja cmake
+          brew install ninja cmake googletest
           case "${BUILD_TYPE}" in
             asan|ubsan|lsan|analyze)
               brew install llvm autoconf automake libtool make
