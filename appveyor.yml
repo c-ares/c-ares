@@ -117,7 +117,7 @@ before_build:
   - if "%BUILDTOOL%" == "MSYS2" if "%MSYSTEM%" == "CLANG64" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-analyzer mingw-w64-clang-x86_64-cmake mingw-w64-clang-x86_64-ninja mingw-w64-clang-x86_64-gtest"
   - if "%BUILD_GOOGLETEST%" == "yes" git clone --depth=1 https://github.com/google/googletest googletest
   - if "%BUILD_GOOGLETEST%" == "yes" cd googletest
-  - if "%BUILD_GOOGLETEST%" == "yes" cmake -DCMAKE_INSTALL_PREFIX=C:\projects\googletest -Bbuild
+  - if "%BUILD_GOOGLETEST%" == "yes" cmake -DCMAKE_INSTALL_PREFIX=C:\projects\googletest -GNinja -Bbuild
   - if "%BUILD_GOOGLETEST%" == "yes" cmake --build build --config Release
   - if "%BUILD_GOOGLETEST%" == "yes" cmake --install build --config Release
   - if "%BUILD_GOOGLETEST%" == "yes" cd ..
