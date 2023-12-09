@@ -23,6 +23,21 @@ configuration:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
   matrix:
+    # MSVC 2022, 64-bit x86 (nmake)
+    - COMPILER: MSVC
+      BUILDTOOL: NMAKE
+      TESTTYPE: NMAKE
+      MSVC_SETUP_ARG: x64
+      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
+      BUILD_GOOGLETEST: yes
+
+    # MinGW, 32-bit x86 (makefiles)
+    - COMPILER: MINGW
+      BUILDTOOL: MAKE
+      TESTTYPE: MAKE
+      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
+      BUILD_GOOGLETEST: yes
+
     # MSVC 2022, 32-bit x86 (cmake)
     - COMPILER: MSVC
       BUILDTOOL: CMAKE
@@ -63,21 +78,6 @@ environment:
       TESTTYPE: NMAKE
       MSVC_SETUP_ARG: x86
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat
-      BUILD_GOOGLETEST: yes
-
-    # MSVC 2022, 64-bit x86 (nmake)
-    - COMPILER: MSVC
-      BUILDTOOL: NMAKE
-      TESTTYPE: NMAKE
-      MSVC_SETUP_ARG: x64
-      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
-      BUILD_GOOGLETEST: yes
-
-    # MinGW, 32-bit x86 (makefiles)
-    - COMPILER: MINGW
-      BUILDTOOL: MAKE
-      TESTTYPE: MAKE
-      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
       BUILD_GOOGLETEST: yes
 
     # MinGW clang UBSAN via MSYS2
@@ -139,7 +139,7 @@ test_script:
   - if "%TESTTYPE%" == "MSYS2" C:\msys64\usr\bin\bash -lc "./bin/ahost.exe www.google.com"
   - if "%TESTTYPE%" == "MSYS2" C:\msys64\usr\bin\bash -lc "./bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
   - if "%TESTTYPE%" == "NMAKE" cd test
-  - if "%TESTTYPE%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc vtest
+  - if "%TESTTYPE%" == "NMAKE" nmake GTEST_ROOT=C:\projects\googletest /NOLOGO /f .\Makefile.msvc vtest
   - if "%TESTTYPE%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
   - if "%TESTTYPE%" == "NMAKE" .\msvc\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
   - if "%TESTTYPE%" == "MAKE" cd test
