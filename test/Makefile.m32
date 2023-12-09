@@ -35,7 +35,7 @@ DNSDUMPOBJS := $(patsubst %.cc,%.o,$(strip $(DUMPSOURCES)))
 all: arestest.exe aresfuzz.exe aresfuzzname.exe dnsdump.exe
 
 arestest.exe: $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR)/src/lib -lcares $(LDLIBS) $(GTEST_ROOT)/lib/libgmock.a
+	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR)/src/lib -lcares $(LDLIBS) -L$(GTEST_ROOT)/lib -lgmock -lgtest
 
 aresfuzz.exe: $(FUZZOBJS)
 	$(LD) $(LDFLAGS) -o $@ $^  -L$(ARES_BLD_DIR)/src/lib -lcares $(LDLIBS)
