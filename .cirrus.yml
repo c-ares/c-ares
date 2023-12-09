@@ -129,7 +129,7 @@ task:
               ;;
             coverage)
               apt-get install -y lcov git
-              pip3 install --user cpp-coveralls
+              pip3 install --break-system-packages --user cpp-coveralls
               ;;
           esac
           ;;
