@@ -120,6 +120,7 @@ before_build:
   - if "%BUILD_GOOGLETEST%" == "yes" cmake -DCMAKE_INSTALL_PREFIX=C:\projects\googletest -Bbuild
   - if "%BUILD_GOOGLETEST%" == "yes" cmake --build build --config Release
   - if "%BUILD_GOOGLETEST%" == "yes" cmake --install build --config Release
+  - if "%BUILD_GOOGLETEST%" == "yes" cd ..
 
 build_script:
   - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "%ANALYZE_PREFIX% cmake -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% ."
