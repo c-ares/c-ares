@@ -20,7 +20,7 @@ ARES_SRC_DIR = ..
 ARES_BLD_DIR = ..
 ARESLIB = $(ARES_BLD_DIR)/src/lib/libcares.a
 CPPFLAGS = -I$(ARES_SRC_DIR)/include -I$(ARES_SRC_DIR)/src/lib -I$(GTEST_ROOT)/include -DCARES_STATICLIB
-CXXFLAGS = -Wall $(PTHREAD_CFLAGS) -std=gnu++11
+CXXFLAGS = -Wall $(PTHREAD_CFLAGS) -std=gnu++14
 LDFLAGS =
 LDLIBS = -lws2_32 -liphlpapi
 

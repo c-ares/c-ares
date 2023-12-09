@@ -23,14 +23,6 @@ configuration:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
   matrix:
-    # MSVC 2022, 64-bit x86 (nmake)
-    - COMPILER: MSVC
-      BUILDTOOL: NMAKE
-      TESTTYPE: NMAKE
-      MSVC_SETUP_ARG: x64
-      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
-      BUILD_GOOGLETEST: yes
-
     # MinGW, 32-bit x86 (makefiles)
     - COMPILER: MINGW
       BUILDTOOL: MAKE
@@ -56,6 +48,22 @@ environment:
       CMAKE_EXTRA_OPTIONS: -GNinja -DGTEST_ROOT=C:\projects\googletest -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL
       BUILD_GOOGLETEST: yes
 
+    # MinGW gcc via MSYS2 (latest version)
+    - COMPILER: MINGW
+      BUILDTOOL: MSYS2
+      TESTTYPE: MSYS2
+      MSYSTEM: MINGW64
+      CMAKE_EXTRA_OPTIONS: -GNinja
+      CHERE_INVOKING: YES
+
+    # MinGW clang UBSAN via MSYS2
+    - COMPILER: MINGW
+      BUILDTOOL: MSYS2
+      TESTTYPE: MSYS2
+      MSYSTEM: CLANG64
+      CMAKE_EXTRA_OPTIONS: -GNinja -DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined
+      CHERE_INVOKING: YES
+
     # MinGW clang ASAN via MSYS2 -- doesn't work due to some issue with clang itself
     #- COMPILER: MINGW
     #  BUILDTOOL: MSYS2
@@ -64,12 +72,12 @@ environment:
     #  CMAKE_EXTRA_OPTIONS: -GNinja -DCMAKE_CXX_FLAGS=-fsanitize=address -DCMAKE_C_FLAGS=-fsanitize=address -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address
     #  CHERE_INVOKING: YES
 
-    # MinGW, 32-bit x86 (cmake static only)
-    - COMPILER: MINGW
-      BUILDTOOL: CMAKE
-      TESTTYPE: CMAKE
-      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
-      CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DGTEST_ROOT=C:\projects\googletest
+    # MSVC 2022, 64-bit x86 (nmake)
+    - COMPILER: MSVC
+      BUILDTOOL: NMAKE
+      TESTTYPE: NMAKE
+      MSVC_SETUP_ARG: x64
+      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
       BUILD_GOOGLETEST: yes
 
     # MSVC 2022, 32-bit x86 (nmake)
@@ -80,21 +88,15 @@ environment:
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat
       BUILD_GOOGLETEST: yes
 
-    # MinGW clang UBSAN via MSYS2
-    - COMPILER: MINGW
-      BUILDTOOL: MSYS2
-      TESTTYPE: MSYS2
-      MSYSTEM: CLANG64
-      CMAKE_EXTRA_OPTIONS: -GNinja -DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined
-      CHERE_INVOKING: YES
 
-    # MinGW gcc via MSYS2 (latest version)
+
+    # MinGW, 32-bit x86 (cmake static only)
     - COMPILER: MINGW
-      BUILDTOOL: MSYS2
-      TESTTYPE: MSYS2
-      MSYSTEM: MINGW64
-      CMAKE_EXTRA_OPTIONS: -GNinja
-      CHERE_INVOKING: YES
+      BUILDTOOL: CMAKE
+      TESTTYPE: CMAKE
+      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
+      CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DGTEST_ROOT=C:\projects\googletest
+      BUILD_GOOGLETEST: yes
 
     # MSVC 2022, UWP (cmake)
     - COMPILER: MSVC
@@ -118,7 +120,7 @@ before_build:
   - if "%BUILD_GOOGLETEST%" == "yes" git clone --depth=1 https://github.com/google/googletest googletest
   - if "%BUILD_GOOGLETEST%" == "yes" cd googletest
   - if "%BUILD_GOOGLETEST%" == "yes" cmake -DCMAKE_INSTALL_PREFIX=C:\projects\googletest -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -GNinja -Bbuild
-  - if "%BUILD_GOOGLETEST%" == "yes" cmake --build build --config Debug -- -v
+  - if "%BUILD_GOOGLETEST%" == "yes" cmake --build build --config Debug
   - if "%BUILD_GOOGLETEST%" == "yes" cmake --install build --config Debug
   - if "%BUILD_GOOGLETEST%" == "yes" cd ..
 
@@ -143,7 +145,7 @@ test_script:
   - if "%TESTTYPE%" == "NMAKE" nmake GTEST_ROOT=C:\projects\googletest /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
   - if "%TESTTYPE%" == "NMAKE" .\msvc\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
   - if "%TESTTYPE%" == "MAKE" cd test
-  - if "%TESTTYPE%" == "MAKE" mingw32-make.exe GTEST_ROOT=C:\projects\googletest -f Makefile.m32
+  - if "%TESTTYPE%" == "MAKE" mingw32-make.exe GTEST_ROOT=C:\projects\googletest -f Makefile.m32 vtest
   - if "%TESTTYPE%" == "MAKE" mingw32-make.exe GTEST_ROOT=C:\projects\googletest -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
   - if "%TESTTYPE%" == "MAKE" .\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
   - if "%TESTTYPE%" == "CMAKE" cd build\bin\%TESTDIRSUFFIX%
