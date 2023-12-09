@@ -143,8 +143,8 @@ test_script:
   - if "%TESTTYPE%" == "NMAKE" nmake GTEST_ROOT=C:\projects\googletest /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
   - if "%TESTTYPE%" == "NMAKE" .\msvc\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
   - if "%TESTTYPE%" == "MAKE" cd test
-  - if "%TESTTYPE%" == "MAKE" mingw32-make.exe -f Makefile.m32
-  - if "%TESTTYPE%" == "MAKE" mingw32-make.exe -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
+  - if "%TESTTYPE%" == "MAKE" mingw32-make.exe GTEST_ROOT=C:\projects\googletest -f Makefile.m32
+  - if "%TESTTYPE%" == "MAKE" mingw32-make.exe GTEST_ROOT=C:\projects\googletest -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
   - if "%TESTTYPE%" == "MAKE" .\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
   - if "%TESTTYPE%" == "CMAKE" cd build\bin\%TESTDIRSUFFIX%
   - if "%TESTTYPE%" == "CMAKE" .\adig.exe www.google.com
