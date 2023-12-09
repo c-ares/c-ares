@@ -115,10 +115,10 @@ before_build:
   - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syuu"
   - if "%BUILDTOOL%" == "MSYS2" if "%MSYSTEM%" == "MINGW64" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-gtest"
   - if "%BUILDTOOL%" == "MSYS2" if "%MSYSTEM%" == "CLANG64" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu git mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-analyzer mingw-w64-clang-x86_64-cmake mingw-w64-clang-x86_64-ninja mingw-w64-clang-x86_64-gtest"
-  - if "%BUILD_GOOGLETEST" == "yes" git clone --depth=1 https://github.com/google/googletest googletest
-  - if "%BUILD_GOOGLETEST" == "yes" cd googletest
-  - if "%BUILD_GOOGLETEST" == "yes" cmake -DCMAKE_INSTALL_PREFIX=C:\projects\googletest -Bbuild
-  - if "%BUILD_GOOGLETEST" == "yes" cmake --install build --config Release
+  - if "%BUILD_GOOGLETEST%" == "yes" git clone --depth=1 https://github.com/google/googletest googletest
+  - if "%BUILD_GOOGLETEST%" == "yes" cd googletest
+  - if "%BUILD_GOOGLETEST%" == "yes" cmake -DCMAKE_INSTALL_PREFIX=C:\projects\googletest -Bbuild
+  - if "%BUILD_GOOGLETEST%" == "yes" cmake --install build --config Release
 
 build_script:
   - if "%BUILDTOOL%" == "MSYS2" C:\msys64\usr\bin\bash -lc "%ANALYZE_PREFIX% cmake -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% ."
