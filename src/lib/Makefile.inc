@@ -90,7 +90,6 @@ HHEADERS = ares__buf.h			\
   ares_dns_private.h			\
   ares_getenv.h				\
   ares_inet_net_pton.h			\
-  ares_iphlpapi.h			\
   ares_ipv6.h				\
   ares_platform.h			\
   ares_private.h			\
