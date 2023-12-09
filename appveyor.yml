@@ -140,7 +140,7 @@ test_script:
   - if "%TESTTYPE%" == "MSYS2" C:\msys64\usr\bin\bash -lc "./bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
   - if "%TESTTYPE%" == "NMAKE" cd test
   - if "%TESTTYPE%" == "NMAKE" nmake GTEST_ROOT=C:\projects\googletest /NOLOGO /f .\Makefile.msvc vtest
-  - if "%TESTTYPE%" == "NMAKE" nmake /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
+  - if "%TESTTYPE%" == "NMAKE" nmake GTEST_ROOT=C:\projects\googletest /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
   - if "%TESTTYPE%" == "NMAKE" .\msvc\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
   - if "%TESTTYPE%" == "MAKE" cd test
   - if "%TESTTYPE%" == "MAKE" mingw32-make.exe -f Makefile.m32
