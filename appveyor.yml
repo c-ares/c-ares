@@ -23,13 +23,6 @@ configuration:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
   matrix:
-    # MinGW, 32-bit x86 (makefiles)
-    - COMPILER: MINGW
-      BUILDTOOL: MAKE
-      TESTTYPE: MAKE
-      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
-      BUILD_GOOGLETEST: yes
-
     # MSVC 2022, 32-bit x86 (cmake)
     - COMPILER: MSVC
       BUILDTOOL: CMAKE
@@ -88,7 +81,12 @@ environment:
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat
       BUILD_GOOGLETEST: yes
 
-
+    # MinGW, 32-bit x86 (makefiles)
+    - COMPILER: MINGW
+      BUILDTOOL: MAKE
+      TESTTYPE: MAKE
+      PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
+      BUILD_GOOGLETEST: yes
 
     # MinGW, 32-bit x86 (cmake static only)
     - COMPILER: MINGW

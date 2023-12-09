@@ -54,9 +54,9 @@ $(OBJS): $(TESTHEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
 test: arestest.exe
-	./arestest.exe
+	./arestest.exe --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
 vtest: arestest.exe
-	./arestest.exe -v
+	./arestest.exe -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
 
 clean:
 	$(RM) $(OBJS) arestest.exe aresfuzz.exe aresfuzzname.exe dnsdump.exe
