@@ -73,7 +73,6 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_timeout.c			\
   ares_update_servers.c	\
   ares_version.c			\
-  bitncmp.c				\
   inet_net_pton.c			\
   inet_ntop.c				\
   windows_port.c
@@ -98,7 +97,6 @@ HHEADERS = ares__buf.h			\
   ares_strcasecmp.h			\
   ares_str.h				\
   ares_strsplit.h			\
-  bitncmp.h				\
   ares_setup.h				\
   setup_once.h
 

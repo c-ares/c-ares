@@ -57,7 +57,6 @@
 #endif
 
 #include "ares.h"
-#include "bitncmp.h"
 #include "ares_private.h"
 #include "ares_dns.h"
 
