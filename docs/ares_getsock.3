@@ -55,6 +55,9 @@ extract the information appropriately:
 This function was added in c-ares 1.3.1 and deprecated in c-ares 1.20.0 due to
 the implementation of \fBARES_OPT_MAX_UDP_QUERIES\fP which makes it likely to
 exceed 16 open file descriptors.
+
+It is recommended to use socket state callbacks (\fBARES_OPT_SOCK_STATE_CB\fP)
+registered via \fBares_init_options(3)\fP.
 .SH SEE ALSO
 .BR ares_timeout (3),
 .BR ares_fds (3),
