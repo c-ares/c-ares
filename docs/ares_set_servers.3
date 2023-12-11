@@ -18,7 +18,7 @@
 .TH ARES_SET_SERVERS 3 "5 March 2010"
 .SH NAME
 ares_set_servers, ares_set_servers_ports \- Initialize name server configuration
-for an ares channel.
+for an ares channel. (deprecated)
 .SH SYNOPSIS
 .nf
 #include <ares.h>
@@ -90,7 +90,7 @@ c-ares library initialization not yet performed.
 .BR ares_init_options (3),
 .BR ares_dup (3)
 
-.SH NOTE
+.SH NOTES
 Deprecated functions as of c-ares 1.24.0 due to inability to set all available
 server options.  Use \fBares_set_servers_csv(3)\fP.
 
