@@ -709,6 +709,92 @@ TEST_P(MockChannelTestAI, FamilyV4ServiceName) {
   EXPECT_EQ("{addr=[1.1.1.1:80], addr=[2.2.2.2:80]}", ss.str());
 }
 
+TEST_P(MockUDPChannelSingleRetryServerTestAI, ServerNoResponseFailover) {
+  struct ares_addrinfo_hints hints = {};
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_flags = ARES_AI_NUMERICSERV | ARES_AI_NOSORT;
+
+  {
+    AddrInfoResult result = {};
+    PutServerUp(0);
+    PutServerDown(1);
+    PutServerUp(2);
+    ares_getaddrinfo(channel_, "example.com", nullptr, &hints, AddrInfoCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    EXPECT_EQ(0, result.timeouts_);
+    std::stringstream ss1;
+    ss1 << result.ai_;
+    EXPECT_EQ(TwoAddrsString(), ss1.str());
+  }
+
+  {
+    AddrInfoResult result = {};
+    PutServerDown(0);
+    PutServerUp(1);
+    PutServerDown(2);
+    ares_getaddrinfo(channel_, "example.com", nullptr, &hints, AddrInfoCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss2;
+    ss2 << result.ai_;
+    EXPECT_EQ(TwoAddrsString(), ss2.str());
+  }
+
+  {
+    AddrInfoResult result = {};
+    PutServerUp(0);
+    PutServerDown(1);
+    PutServerUp(2);
+    ares_getaddrinfo(channel_, "example.com", nullptr, &hints, AddrInfoCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss3;
+    ss3 << result.ai_;
+    EXPECT_EQ(TwoAddrsString(), ss3.str());
+  }
+
+  {
+    AddrInfoResult result = {};
+    PutServerDown(0);
+    PutServerDown(1);
+    PutServerUp(2);
+    ares_getaddrinfo(channel_, "example.com", nullptr, &hints, AddrInfoCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss4;
+    ss4 << result.ai_;
+    EXPECT_EQ(TwoAddrsString(), ss4.str());
+  }
+
+  {
+    AddrInfoResult result = {};
+    PutServerDown(0);
+    PutServerDown(1);
+    PutServerDown(2);
+    ares_getaddrinfo(channel_, "example.com", nullptr, &hints, AddrInfoCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    EXPECT_EQ("{nullptr}", (std::stringstream() << result.ai_).str());
+  }
+
+  {
+    AddrInfoResult result = {};
+    PutServerDown(0);
+    PutServerDown(1);
+    PutServerUp(2);
+    ares_getaddrinfo(channel_, "example.com", nullptr, &hints, AddrInfoCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss5;
+    ss5 << result.ai_;
+    EXPECT_EQ(TwoAddrsString(), ss5.str());
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockUDPChannelSingleRetryServerTestAI,
+                       ::testing::ValuesIn(ares::test::families_modes));
+
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockChannelTestAI,
                        ::testing::ValuesIn(ares::test::families_modes));
 

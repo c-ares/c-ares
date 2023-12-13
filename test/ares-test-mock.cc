@@ -1409,6 +1409,95 @@ TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss4.str());
 }
 
+class MultiServerChannelSingleRetryTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+  MultiServerChannelSingleRetryTest()
+    : MockChannelOptsTest(3, GetParam().first, GetParam().second, FillOptions(),
+        ARES_OPT_FLAGS | ARES_OPT_TIMEOUTMS |
+        ARES_OPT_TRIES | ARES_OPT_DOMAINS |
+        ARES_OPT_LOOKUPS | ARES_OPT_SOCK_STATE_CB) {}
+
+  static struct ares_options* FillOptions() {
+    static struct ares_options opts;
+    memset(&opts, 0, sizeof(struct ares_options));
+    opts.tries = 1;
+    opts.flags = ARES_FLAG_STAYOPEN |  // do not close idle sockets
+                 ARES_FLAG_NOALIASES;  // ignore HOSTALIASES from env
+    opts.lookups = const_cast<char*>("b");  // network lookups only
+    return &opts;
+  }
+};
+
+TEST_P(MultiServerChannelSingleRetryTest, ServerNoResponseFailover) {
+  std::vector<byte> nothing;
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  /* Server #1 works fine on first attempt, then acts like its offline on
+   * second, then backonline on the third. */
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp))
+    .WillOnce(SetReplyData(servers_[0].get(), nothing))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+
+  /* Server #2 always acts like its offline */
+  ON_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillByDefault(SetReplyData(servers_[1].get(), nothing));
+
+  /* Server #3 works fine on first and second request, then no reply on 3rd */
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[2].get(), &okrsp))
+    .WillOnce(SetReply(servers_[2].get(), &okrsp))
+    .WillOnce(SetReplyData(servers_[2].get(), nothing));
+
+  HostResult result;
+
+  /* 1. First server returns a response on the first request immediately, normal
+   *    operation on channel. */
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(0, result.timeouts_);
+  std::stringstream ss1;
+  ss1 << result.host_;
+  EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss1.str());
+
+  /* 2. On the second request, simulate the first and second servers not
+   *    returning a response at all, but the 3rd server works, so should have
+   *    2 timeouts. */
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(2, result.timeouts_);
+  std::stringstream ss2;
+  ss2 << result.host_;
+  EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss2.str());
+
+  /* 3. On the third request, the active server should be #3, so should respond
+   *    immediately with no timeouts */
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(0, result.timeouts_);
+  std::stringstream ss3;
+  ss3 << result.host_;
+  EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss3.str());
+
+  /* 4. On the fourth request, the active server should be #3, but will timeout,
+   *    and the first server should then respond */
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(1, result.timeouts_);
+  std::stringstream ss4;
+  ss4 << result.host_;
+  EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss4.str());
+}
+
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families));
@@ -1426,6 +1515,8 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockNoCheckRespChannelTest, ::testing:
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEDNSChannelTest, ::testing::ValuesIn(ares::test::families_modes));
 
 INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes));
+
+INSTANTIATE_TEST_SUITE_P(TransportModes, MultiServerChannelSingleRetryTest, ::testing::ValuesIn(ares::test::families_modes));
 
 }  // namespace test
 }  // namespace ares
