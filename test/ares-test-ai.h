@@ -87,9 +87,6 @@ public:
       .WillByDefault(SetReply(servers_[index].get(), &okrspv6));
   }
 
-  const char* TwoAddrsString() {
-    return "{addr=[2.3.4.5], addr=[[2121:0000:0000:0000:0000:0000:0000:0303]]}";
-  }
 private:
   DNSPacket okrsp;
   DNSPacket okrspv6;

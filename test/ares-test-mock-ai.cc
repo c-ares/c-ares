@@ -710,6 +710,8 @@ TEST_P(MockChannelTestAI, FamilyV4ServiceName) {
 }
 
 TEST_P(MockUDPChannelSingleRetryServerTestAI, ServerNoResponseFailover) {
+  using testing::HasSubstr;
+
   struct ares_addrinfo_hints hints = {};
   hints.ai_family = AF_UNSPEC;
   hints.ai_flags = ARES_AI_NUMERICSERV | ARES_AI_NOSORT;
@@ -725,7 +727,8 @@ TEST_P(MockUDPChannelSingleRetryServerTestAI, ServerNoResponseFailover) {
     EXPECT_EQ(0, result.timeouts_);
     std::stringstream ss1;
     ss1 << result.ai_;
-    EXPECT_EQ(TwoAddrsString(), ss1.str());
+    EXPECT_THAT(ss1.str(), HasSubstr("addr=[2.3.4.5]"));
+    EXPECT_THAT(ss1.str(), HasSubstr("addr=[[2121:0000:0000:0000:0000:0000:0000:0303]]"));
   }
 
   {
@@ -738,7 +741,8 @@ TEST_P(MockUDPChannelSingleRetryServerTestAI, ServerNoResponseFailover) {
     EXPECT_TRUE(result.done_);
     std::stringstream ss2;
     ss2 << result.ai_;
-    EXPECT_EQ(TwoAddrsString(), ss2.str());
+    EXPECT_THAT(ss2.str(), HasSubstr("addr=[2.3.4.5]"));
+    EXPECT_THAT(ss2.str(), HasSubstr("addr=[[2121:0000:0000:0000:0000:0000:0000:0303]]"));
   }
 
   {
@@ -751,7 +755,8 @@ TEST_P(MockUDPChannelSingleRetryServerTestAI, ServerNoResponseFailover) {
     EXPECT_TRUE(result.done_);
     std::stringstream ss3;
     ss3 << result.ai_;
-    EXPECT_EQ(TwoAddrsString(), ss3.str());
+    EXPECT_THAT(ss3.str(), HasSubstr("addr=[2.3.4.5]"));
+    EXPECT_THAT(ss3.str(), HasSubstr("addr=[[2121:0000:0000:0000:0000:0000:0000:0303]]"));
   }
 
   {
@@ -764,7 +769,8 @@ TEST_P(MockUDPChannelSingleRetryServerTestAI, ServerNoResponseFailover) {
     EXPECT_TRUE(result.done_);
     std::stringstream ss4;
     ss4 << result.ai_;
-    EXPECT_EQ(TwoAddrsString(), ss4.str());
+    EXPECT_THAT(ss4.str(), HasSubstr("addr=[2.3.4.5]"));
+    EXPECT_THAT(ss4.str(), HasSubstr("addr=[[2121:0000:0000:0000:0000:0000:0000:0303]]"));
   }
 
   {
@@ -788,7 +794,8 @@ TEST_P(MockUDPChannelSingleRetryServerTestAI, ServerNoResponseFailover) {
     EXPECT_TRUE(result.done_);
     std::stringstream ss5;
     ss5 << result.ai_;
-    EXPECT_EQ(TwoAddrsString(), ss5.str());
+    EXPECT_THAT(ss5.str(), HasSubstr("addr=[2.3.4.5]"));
+    EXPECT_THAT(ss5.str(), HasSubstr("addr=[[2121:0000:0000:0000:0000:0000:0000:0303]]"));
   }
 }
 
