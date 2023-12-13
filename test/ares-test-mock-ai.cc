@@ -781,7 +781,9 @@ TEST_P(MockUDPChannelSingleRetryServerTestAI, ServerNoResponseFailover) {
     ares_getaddrinfo(channel_, "example.com", nullptr, &hints, AddrInfoCallback, &result);
     Process();
     EXPECT_TRUE(result.done_);
-    EXPECT_EQ("{nullptr}", (std::stringstream() << result.ai_).str());
+    std::stringstream ss;
+    ss << result.ai_;
+    EXPECT_EQ("{nullptr}", ss.str());
   }
 
   {
