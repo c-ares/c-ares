@@ -24,6 +24,8 @@ Bug Fixes:
  o Some projects that depend on c-ares expect invalid parameter option values
    passed into ares_init_options() to simply be ignored.  This behavior has
    been restored. [7]
+ o On linux getrandom() can fail if the kernel doesn't support the syscall,
+   fall back to another random source. [8]
 
 Thanks go to these friendly people for their efforts and contributions:
   Brad House (@bradh352)
@@ -38,5 +40,6 @@ References to bug reports and discussions on issues:
  [5] = https://github.com/c-ares/c-ares/pull/653
  [6] = https://github.com/c-ares/c-ares/pull/655
  [7] = https://github.com/c-ares/c-ares/commit/c982bf4
+ [8] = https://github.com/c-ares/c-ares/pull/661
 
 
