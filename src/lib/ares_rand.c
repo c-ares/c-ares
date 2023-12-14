@@ -29,23 +29,15 @@
 #include "ares_private.h"
 #include <stdlib.h>
 
-#if !defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_GETRANDOM) && \
-  !defined(_WIN32)
-#  define ARES_NEEDS_RC4 1
-#endif
 
 typedef enum {
-  ARES_RAND_OS   = 1, /* OS-provided such as RtlGenRandom or arc4random */
-  ARES_RAND_FILE = 2, /* OS file-backed random number generator */
-#ifdef ARES_NEEDS_RC4
-  ARES_RAND_RC4 = 3   /* Internal RC4 based PRNG */
-#endif
+  ARES_RAND_OS   = 1 << 0, /* OS-provided such as RtlGenRandom or arc4random */
+  ARES_RAND_FILE = 1 << 1, /* OS file-backed random number generator */
+  ARES_RAND_RC4  = 1 << 2, /* Internal RC4 based PRNG */
 } ares_rand_backend;
 
-/* Don't build RC4 code if it goes unused as it will generate dead code
- * warnings */
-#ifdef ARES_NEEDS_RC4
-#  define ARES_RC4_KEY_LEN 32 /* 256 bits */
+
+#define ARES_RC4_KEY_LEN 32 /* 256 bits */
 
 typedef struct ares_rand_rc4 {
   unsigned char S[256];
@@ -143,17 +135,14 @@ static void ares_rc4_prng(ares_rand_rc4 *rc4_state, unsigned char *buf,
   rc4_state->j = j;
 }
 
-#endif /* ARES_NEEDS_RC4 */
-
 
 struct ares_rand_state {
   ares_rand_backend type;
+  ares_rand_backend bad_backends;
 
   union {
-    FILE *rand_file;
-#ifdef ARES_NEEDS_RC4
+    FILE         *rand_file;
     ares_rand_rc4 rc4;
-#endif
   } state;
 
   /* Since except for RC4, random data will likely result in a syscall, lets
@@ -180,35 +169,39 @@ BOOLEAN WINAPI SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
 
 static ares_bool_t ares__init_rand_engine(ares_rand_state *state)
 {
-  memset(state, 0, sizeof(*state));
+  state->cache_remaining = 0;
 
 #if defined(HAVE_ARC4RANDOM_BUF) || defined(HAVE_GETRANDOM) || defined(_WIN32)
-  state->type = ARES_RAND_OS;
-  return ARES_TRUE;
-#elif defined(CARES_RANDOM_FILE)
-  state->type            = ARES_RAND_FILE;
-  state->state.rand_file = fopen(CARES_RANDOM_FILE, "rb");
-  if (state->state.rand_file) {
-    setvbuf(state->state.rand_file, NULL, _IONBF, 0);
+  if (!(state->bad_backends & ARES_RAND_OS)) {
+    state->type = ARES_RAND_OS;
     return ARES_TRUE;
+  }
+#endif
+
+#if defined(CARES_RANDOM_FILE)
+  if (!(state->bad_backends & ARES_RAND_FILE)) {
+    state->type            = ARES_RAND_FILE;
+    state->state.rand_file = fopen(CARES_RANDOM_FILE, "rb");
+    if (state->state.rand_file) {
+      setvbuf(state->state.rand_file, NULL, _IONBF, 0);
+      return ARES_TRUE;
+    }
   }
   /* Fall-Thru on failure to RC4 */
 #endif
 
-#ifdef ARES_NEEDS_RC4
   state->type = ARES_RAND_RC4;
   ares_rc4_init(&state->state.rc4);
 
   /* Currently cannot fail */
   return ARES_TRUE;
-#endif
 }
 
 ares_rand_state *ares__init_rand_state(void)
 {
   ares_rand_state *state = NULL;
 
-  state = ares_malloc(sizeof(*state));
+  state = ares_malloc_zero(sizeof(*state));
   if (!state) {
     return NULL;
   }
@@ -233,10 +226,8 @@ static void ares__clear_rand_state(ares_rand_state *state)
     case ARES_RAND_FILE:
       fclose(state->state.rand_file);
       break;
-#ifdef ARES_NEEDS_RC4
     case ARES_RAND_RC4:
       break;
-#endif
   }
 }
 
@@ -278,6 +269,11 @@ static void ares__rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
            */
           ssize_t rv = getrandom(buf + bytes_read, n > 256 ? 256 : n, 0);
           if (rv <= 0) {
+            /* We need to fall back to another backend */
+            if (errno == ENOSYS) {
+              state->bad_backends |= ARES_RAND_OS;
+              break;
+            }
             continue; /* Just retry. */
           }
 
@@ -307,11 +303,9 @@ static void ares__rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
         }
         break;
 
-#ifdef ARES_NEEDS_RC4
       case ARES_RAND_RC4:
         ares_rc4_prng(&state->state.rc4, buf, len);
         return;
-#endif
     }
 
     /* If we didn't return before we got here, that means we had a critical rand
