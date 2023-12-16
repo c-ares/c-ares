@@ -442,6 +442,34 @@ TEST_P(MockChannelTestAI, FamilyV6) {
   EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
 }
 
+// Test case for Issue #662
+TEST_P(MockChannelTestAI, PartialQueryCancel) {
+  std::vector<byte> nothing;
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_A))
+    .add_answer(new DNSARR("example.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+
+  ON_CALL(server_, OnRequest("example.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  ON_CALL(server_, OnRequest("example.com", T_AAAA))
+    .WillByDefault(SetReplyData(&server_, nothing));
+
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {};
+  hints.ai_family = AF_UNSPEC;
+  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
+                   AddrInfoCallback, &result);
+
+  // After 100ms, issues ares_cancel(), this should be enough time for the A
+  // record reply, but before the timeout on the AAAA record.
+  Process(100);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ECANCELLED, result.status_);
+}
+
 TEST_P(MockChannelTestAI, FamilyV4) {
   DNSPacket rsp4;
   rsp4.set_response().set_aa()

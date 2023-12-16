@@ -375,6 +375,9 @@ void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len);
 
 unsigned short ares__generate_new_id(ares_rand_state *state);
 struct timeval ares__tvnow(void);
+void ares__timeval_remaining(struct timeval *remaining,
+                             const struct timeval *now,
+                             const struct timeval *tout);
 ares_status_t  ares__expand_name_validated(const unsigned char *encoded,
                                            const unsigned char *abuf,
                                            size_t alen, char **s, size_t *enclen,

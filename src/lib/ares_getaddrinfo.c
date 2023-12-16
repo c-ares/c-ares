@@ -502,7 +502,12 @@ static void host_callback(void *arg, int status, int timeouts,
   }
 
   if (!hquery->remaining) {
-    if (addinfostatus != ARES_SUCCESS && addinfostatus != ARES_ENODATA) {
+    if (status == ARES_EDESTRUCTION || status == ARES_ECANCELLED) {
+      /* must make sure we don't do next_lookup() on destroy or cancel,
+       * and return the appropriate status.  We won't return a partial
+       * result in this case. */
+      end_hquery(hquery, (ares_status_t)status);
+    } else if (addinfostatus != ARES_SUCCESS && addinfostatus != ARES_ENODATA) {
       /* error in parsing result e.g. no memory */
       if (addinfostatus == ARES_EBADRESP && hquery->ai->nodes) {
         /* We got a bad response from server, but at least one query
@@ -514,9 +519,6 @@ static void host_callback(void *arg, int status, int timeouts,
     } else if (hquery->ai->nodes) {
       /* at least one query ended with ARES_SUCCESS */
       end_hquery(hquery, ARES_SUCCESS);
-    } else if (status == ARES_EDESTRUCTION || status == ARES_ECANCELLED) {
-      /* must make sure we don't do next_lookup() on destroy or cancel */
-      end_hquery(hquery, (ares_status_t)status);
     } else if (status == ARES_ENOTFOUND || status == ARES_ENODATA ||
                addinfostatus == ARES_ENODATA) {
       if (status == ARES_ENODATA || addinfostatus == ARES_ENODATA) {
