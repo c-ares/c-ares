@@ -34,8 +34,9 @@
 #include "ares.h"
 #include "ares_private.h"
 
-static void remaining_time(struct timeval *remaining, const struct timeval *now,
-                           const struct timeval *tout)
+void ares__timeval_remaining(struct timeval *remaining,
+                             const struct timeval *now,
+                             const struct timeval *tout)
 {
   memset(remaining, 0, sizeof(*remaining));
 
@@ -73,7 +74,7 @@ struct timeval *ares_timeout(ares_channel_t *channel, struct timeval *maxtv,
 
   now = ares__tvnow();
 
-  remaining_time(tvbuf, &now, &query->timeout);
+  ares__timeval_remaining(tvbuf, &now, &query->timeout);
 
   if (maxtv == NULL) {
     return tvbuf;
