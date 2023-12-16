@@ -26,6 +26,11 @@ Bug Fixes:
    been restored. [7]
  o On linux getrandom() can fail if the kernel doesn't support the syscall,
    fall back to another random source. [8]
+ o ares_cancel() when performing ares_gethostbyname() or ares_getaddrinfo()
+   with AF_UNSPEC, if called after one address class was returned but before
+   the other address class, it would return ARES_SUCCESS rather than
+   ARES_ECANCELLED. [9]
+
 
 Thanks go to these friendly people for their efforts and contributions:
   Brad House (@bradh352)
@@ -41,5 +46,6 @@ References to bug reports and discussions on issues:
  [6] = https://github.com/c-ares/c-ares/pull/655
  [7] = https://github.com/c-ares/c-ares/commit/c982bf4
  [8] = https://github.com/c-ares/c-ares/pull/661
+ [9] = https://github.com/c-ares/c-ares/pull/663
 
 
