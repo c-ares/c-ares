@@ -21,6 +21,19 @@ task:
         TEST_SYMBOL_VISIBILITY: "yes"
       container:
         image: debian:latest
+    - name: "Alpine amd64"
+      env:
+        DIST: "ALPINE"
+        LC_ALL: "C"
+        SCAN_BUILD: "scan-build"
+        MAKE: "make"
+        BUILD_ASAN: "yes"
+        BUILD_UBSAN: "yes"
+        BUILD_VALGRIND: "yes"
+        BUILD_ANALYZE: "yes"
+        TEST_SYMBOL_VISIBILITY: "yes"
+      container:
+        image: alpine:latest
     - name: "Debian arm64"
       env:
         DIST: "DEBIAN-ARM"
@@ -122,6 +135,23 @@ task:
   install_script:
     - |
       case "${DIST}" in
+        ALPINE)
+          apk add cmake ninja-build gtest-dev autoconf autoconf-archive libtool pkgconf
+          case "${BUILD_TYPE}" in
+            asan|lsan|ubsan)
+              apk add clang17
+              ;;
+            analyze)
+              apk add clang17 clang17-analyzer
+              ;;
+            valgrind)
+              apk add gcc g++ valgrind
+              ;;
+            *)
+              apk add gcc g++
+              ;;
+          esac
+          ;;
         DEBIAN*)
           apt-get update && \
           apt-get install -y cmake ninja-build autoconf automake libtool g++ pip libgmock-dev pkg-config
