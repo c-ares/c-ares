@@ -340,7 +340,7 @@ ACTION_P2(CancelChannel, mockserver, channel)
 }
 
 // gMock action to disconnect all connections.
-ACTION_P2(Disconnect, mockserver)
+ACTION_P(Disconnect, mockserver)
 {
   mockserver->Disconnect();
 }
