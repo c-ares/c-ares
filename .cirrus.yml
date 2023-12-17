@@ -35,6 +35,13 @@ task:
         TEST_SYMBOL_VISIBILITY: "yes"
       container:
         image: alpine:latest
+    - name: "Ubuntu OLD amd64"
+      env:
+        DIST: "UBUNTU"
+        LC_ALL: "C"
+        MAKE: "make"
+      container:
+        image: ubuntu:20.04
     - name: "Debian arm64"
       env:
         DIST: "DEBIAN-ARM"
@@ -155,7 +162,7 @@ task:
               ;;
           esac
           ;;
-        DEBIAN*)
+        UBUNTU|DEBIAN*)
           apt-get update && \
           apt-get install -y cmake ninja-build autoconf automake libtool g++ pip libgmock-dev pkg-config
           case "${BUILD_TYPE}" in
