@@ -33,6 +33,6 @@ else
     if [ "$DIST" = "iOS" ] ; then
         CMAKE_FLAGS="${CMAKE_FLAGS} -DCMAKE_OSX_SYSROOT=${SYSROOT}"
     fi
-    cmake ${CMAKE_FLAGS} ..
+    cmake ${CMAKE_FLAGS}  ${CMAKE_EXTRA_FLAGS} ..
     make
 fi
