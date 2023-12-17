@@ -49,7 +49,7 @@ Notes for c-ares hackers
 
 * If you intend to distribute an already compiled c-ares library you **MUST**
   also distribute along with it the generated `ares_build.h` which has been
-  used to compile it. Otherwise the library will be of no use for the users of
+  used to compile it. Otherwise, the library will be of no use for the users of
   the library that you have built. It is **your** responsibility to provide this
   file. No one at the c-ares project can know how you have built the library.
 

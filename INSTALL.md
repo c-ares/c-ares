@@ -32,7 +32,7 @@ the same for both Git and official release tarballs.
 AutoTools Build
 ===============
 
-### General Information, works on most Unix Platforms (Linux, FreeBSD, etc)
+### General Information, works on most Unix Platforms (Linux, FreeBSD, etc.)
 
 A normal Unix installation is made in three or four steps (after you've
 unpacked the source archive):
@@ -57,7 +57,7 @@ you need to specify that already when running configure:
 
 If you happen to have write permission in that directory, you can do `make
 install` without being root. An example of this would be to make a local
-install in your own home directory:
+installation in your own home directory:
 
     ./configure --prefix=$HOME
     make
@@ -183,7 +183,7 @@ Method using a configure cross-compile (tested with Android NDK r7b):
 
         ./tools/make-standalone-toolchain.sh
 
-    which creates a usual cross-compile toolchain. Lets assume that you put
+    which creates a usual cross-compile toolchain. Let's assume that you put
     this toolchain below `/opt` then invoke configure with something
     like:
 
@@ -213,7 +213,7 @@ CMake builds
 ============
 
 Current releases of c-ares introduce a CMake v3+ build system that has been
-tested on most platforms including Windows, Linux, FreeBSD, MacOS, AIX and
+tested on most platforms including Windows, Linux, FreeBSD, macOS, AIX and
 Solaris.
 
 In the most basic form, building with CMake might look like:
