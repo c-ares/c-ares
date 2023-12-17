@@ -28,11 +28,9 @@ if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     $SCAN_WRAP make
 else
     # Use cmake for everything else
-    mkdir cmakebld
-    cd cmakebld
     if [ "$DIST" = "iOS" ] ; then
         CMAKE_FLAGS="${CMAKE_FLAGS} -DCMAKE_OSX_SYSROOT=${SYSROOT}"
     fi
-    $SCAN_WRAP cmake ${CMAKE_FLAGS} ${CMAKE_TEST_FLAGS} ..
-    $SCAN_WRAP make
+    $SCAN_WRAP cmake ${CMAKE_FLAGS} ${CMAKE_TEST_FLAGS} -Bcmakebld .
+    $SCAN_WRAP cmake --build cmakebld
 fi
