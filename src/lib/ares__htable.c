@@ -46,7 +46,7 @@ struct ares__htable {
    *       hash collisions we would have O(log n) worst case insert and search
    *       performance.  (We'd also need to make key_eq into a key_cmp to
    *       support sort).  That said, risk with a random hash seed is near zero,
-   *       and ares__slist_t is heavier weight so I think using ares__llist_t is
+   *       and ares__slist_t is heavier weight, so I think using ares__llist_t
    *       is an overall win. */
   ares__llist_t            **buckets;
 };

@@ -235,7 +235,7 @@ TEST_F(LibraryTest, FreeCorruptData) {
   void* p = &(data->data);
 
   // Invalid type
-  data->type = (ares_datatype)99;
+  data->type = (ares_datatype)ARES_DATATYPE_LAST;
   data->mark = ARES_DATATYPE_MARK;
   ares_free_data(p);
 
