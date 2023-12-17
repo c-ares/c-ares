@@ -95,7 +95,7 @@ task:
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=address"
         CXXFLAGS: "-fsanitize=address"
-        LDFLAGS: "-fsanitize=address -lpthread"
+        LDFLAGS: "-fsanitize=address"
     - name: "UBSAN"
       # FreeBSD just hangs trying to run tests, think it may be trying to run leak sanitizer
       only_if: $BUILD_UBSAN == 'yes'
@@ -105,7 +105,7 @@ task:
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
         CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
-        LDFLAGS: "-fsanitize=undefined -lpthread"
+        LDFLAGS: "-fsanitize=undefined"
     - name: "ANALYZE"
       only_if: $BUILD_ANALYZE == 'yes'
       env:
