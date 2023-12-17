@@ -15,7 +15,7 @@ if [ "$DIST" = "iOS" ] ; then
    SYSROOT="${XCODE_PATH}/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/"
 fi
 
-if [ "$BUILD_TYPE" != "cmake" -a "$BUILD_TYPE" != "valgrind" ]; then
+if [ "$BUILD_TYPE" == "autotools" -o "$BUILD_TYPE" == "coverage" ]; then
     autoreconf -fi
     mkdir atoolsbld
     cd atoolsbld
@@ -27,12 +27,12 @@ if [ "$BUILD_TYPE" != "cmake" -a "$BUILD_TYPE" != "valgrind" ]; then
     $SCAN_WRAP ../configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS
     $SCAN_WRAP make
 else
-    # Use cmake for valgrind to prevent libtool script wrapping of tests that interfere with valgrind
+    # Use cmake for everything else
     mkdir cmakebld
     cd cmakebld
     if [ "$DIST" = "iOS" ] ; then
         CMAKE_FLAGS="${CMAKE_FLAGS} -DCMAKE_OSX_SYSROOT=${SYSROOT}"
     fi
-    $SCAN_WRAP cmake ${CMAKE_FLAGS} ..
+    $SCAN_WRAP cmake ${CMAKE_FLAGS} ${CMAKE_TEST_FLAGS} ..
     $SCAN_WRAP make
 fi
