@@ -233,12 +233,17 @@ Options
 Options to CMake are passed on the command line using "-D${OPTION}=${VALUE}".
 The values defined are all boolean and take values like On, Off, True, False.
 
-* CARES_STATIC - Build the static library (off by default)
-* CARES_SHARED - Build the shared library (on by default)
-* CARES_INSTALL - Hook in installation, useful to disable if chain building
-* CARES_STATIC_PIC - Build the static library as position-independent (off by
-   default)
-
+| Option Name                 | Description                                                           | Default Value  |
+|-----------------------------|-----------------------------------------------------------------------|----------------|
+| CARES_STATIC                | Build the static library                                              | Off            |
+| CARES_SHARED                | Build the shared library                                              | On             |
+| CARES_INSTALL               | Hook in installation, useful to disable if chain building             | On             |
+| CARES_STATIC_PIC            | Build the static library as position-independent                      | Off            |
+| CARES_BUILD_TESTS           | Build and run tests                                                   | Off            |
+| CARES_BUILD_CONTAINER_TESTS | Build and run container tests (implies CARES_BUILD_TESTS, Linux only) | Off            |
+| CARES_BUILD_TOOLS           | Build tools                                                           | On             |
+| CARES_SYMBOL_HIDING         | Hide private symbols in shared libraries                              | Off            |
+| CARES_THREADS               | Build with thread-safety support                                      | On             |
 
 Ninja
 -----
