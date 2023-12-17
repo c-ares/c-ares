@@ -376,8 +376,8 @@ void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, 
               << ")" << std::endl;
     return;
   }
-  byte* question = data + 12;
-  int qlen = len - 12;
+  byte* question = data + NS_HFIXEDSZ;
+  int qlen = len - NS_HFIXEDSZ;
 
   char *name = nullptr;
   long enclen;
