@@ -136,7 +136,7 @@ task:
     - |
       case "${DIST}" in
         ALPINE)
-          apk add cmake ninja-build gtest-dev autoconf autoconf-archive libtool pkgconf
+          apk add cmake Samurai gtest-dev autoconf autoconf-archive libtool pkgconf make
           case "${BUILD_TYPE}" in
             asan|lsan|ubsan)
               apk add clang17
