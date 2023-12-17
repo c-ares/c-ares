@@ -22,12 +22,12 @@ fi
 PWD=`pwd`
 TESTDIR="${PWD}/test"
 
-if [ "$BUILD_TYPE" = "cmake" -o "$BUILD_TYPE" = "valgrind" ] ; then
-    TOOLSBIN="${PWD}/cmakebld/bin"
-    TESTSBIN="${PWD}/cmakebld/bin"
-else
+if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     TOOLSBIN="${PWD}/atoolsbld/src/tools"
     TESTSBIN="${PWD}/atoolsbld/test"
+else
+    TOOLSBIN="${PWD}/cmakebld/bin"
+    TESTSBIN="${PWD}/cmakebld/bin"
 fi
 
 $TEST_WRAP "${TOOLSBIN}/adig" www.google.com
