@@ -826,7 +826,7 @@ TEST_P(MockChannelTest, V4WorksV6Timeout) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-
+#ifndef CARES_SYMBOL_HIDING
 // Test case for Issue #662
 TEST_P(MockChannelTest, PartialQueryCancel) {
   std::vector<byte> nothing;
@@ -849,7 +849,7 @@ TEST_P(MockChannelTest, PartialQueryCancel) {
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ECANCELLED, result.status_);
 }
-
+#endif
 
 TEST_P(MockChannelTest, UnspecifiedFamilyV6) {
   DNSPacket rsp6;
