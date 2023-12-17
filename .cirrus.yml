@@ -18,6 +18,7 @@ task:
         BUILD_VALGRIND: "yes"
         BUILD_COVERAGE: "yes"
         BUILD_ANALYZE: "yes"
+        TEST_SYMBOL_VISIBILITY: "yes"
       container:
         image: debian:11
     - name: "Debian arm64"
@@ -37,6 +38,7 @@ task:
         SCAN_BUILD: "scan-build"
         MAKE: "gmake"
         BUILD_ANALYZE: "yes"
+        TEST_SYMBOL_VISIBILITY: "yes"
       freebsd_instance:
         image_family: freebsd-13-1
     - name: "MacOS"
@@ -46,6 +48,7 @@ task:
         MAKE: "make"
         BUILD_ASAN: "yes"
         BUILD_ANALYZE: "yes"
+        TEST_SYMBOL_VISIBILITY: "yes"
       macos_instance:
         image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
     - name: "iOS"
@@ -61,6 +64,11 @@ task:
     - name: "CMAKE"
       env:
         BUILD_TYPE: "cmake"
+    - name: "CMAKE HIDE SYMBOLS"
+      only_if: $TEST_SYMBOL_VISIBILITY == 'yes'
+      env:
+        BUILD_TYPE: "cmake"
+        CMAKE_EXTRA_FLAGS: "-DCARES_SYMBOL_HIDING=ON"
     - name: "AUTOTOOLS"
       env:
         BUILD_TYPE: "autotools"
