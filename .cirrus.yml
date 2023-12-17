@@ -68,7 +68,7 @@ task:
       only_if: $TEST_SYMBOL_VISIBILITY == 'yes'
       env:
         BUILD_TYPE: "cmake"
-        CMAKE_EXTRA_FLAGS: "-DCARES_SYMBOL_HIDING=ON"
+        CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=OFF -DCARES_BUILD_TESTS=ON -DCARES_SYMBOL_HIDING=ON"
     - name: "AUTOTOOLS"
       env:
         BUILD_TYPE: "autotools"
