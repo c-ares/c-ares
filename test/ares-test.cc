@@ -105,6 +105,8 @@ void ProcessWork(ares_channel_t *channel,
                  unsigned int cancel_ms) {
   int nfds, count;
   fd_set readers, writers;
+
+#ifndef CARES_SYMBOL_HIDING
   struct timeval tv_begin  = ares__tvnow();
   struct timeval tv_cancel = tv_begin;
 
@@ -113,10 +115,18 @@ void ProcessWork(ares_channel_t *channel,
     tv_cancel.tv_sec  += (cancel_ms / 1000);
     tv_cancel.tv_usec += ((cancel_ms % 1000) * 1000);
   }
+#else
+  if (cancel_ms) {
+    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
+    return;
+  }
+#endif
 
   while (true) {
+#ifndef CARES_SYMBOL_HIDING
     struct timeval  tv_now = ares__tvnow();
     struct timeval  tv_remaining;
+#endif
     struct timeval  tv;
     struct timeval *tv_select;
 
@@ -142,6 +152,7 @@ void ProcessWork(ares_channel_t *channel,
     if (tv_select == NULL)
       return;
 
+#ifndef CARES_SYMBOL_HIDING
     if (cancel_ms) {
       unsigned int remaining_ms;
       ares__timeval_remaining(&tv_remaining,
@@ -157,6 +168,7 @@ void ProcessWork(ares_channel_t *channel,
         tv_select = ares_timeout(channel, &tv_remaining, &tv);
       }
     }
+#endif
 
     count = select(nfds, &readers, &writers, nullptr, tv_select);
     if (count < 0) {
