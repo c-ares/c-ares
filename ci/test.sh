@@ -22,7 +22,7 @@ fi
 PWD=`pwd`
 TESTDIR="${PWD}/test"
 
-if [ "$BUILD_TYPE" == "autotools" -o "$BUILD_TYPE" == "coverage" ]; then
+if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     TOOLSBIN="${PWD}/atoolsbld/src/tools"
     TESTSBIN="${PWD}/atoolsbld/test"
 else

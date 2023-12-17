@@ -15,7 +15,7 @@ if [ "$DIST" = "iOS" ] ; then
    SYSROOT="${XCODE_PATH}/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/"
 fi
 
-if [ "$BUILD_TYPE" == "autotools" -o "$BUILD_TYPE" == "coverage" ]; then
+if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     autoreconf -fi
     mkdir atoolsbld
     cd atoolsbld
