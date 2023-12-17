@@ -386,7 +386,11 @@ void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, 
     std::cerr << "Failed to retrieve name" << std::endl;
     return;
   }
-  qlen -= enclen;
+  if (enclen > qlen) {
+    std::cerr << "(error, encoded name len " << enclen << "bigger than remaining data " << qlen << " bytes)" << std::endl;
+    return;
+  }
+  qlen -= (int)enclen;
   question += enclen;
   std::string namestr(name);
   ares_free_string(name);

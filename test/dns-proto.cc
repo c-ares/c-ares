@@ -270,7 +270,7 @@ std::string QuestionToString(const std::vector<byte>& packet,
     ss << "(error, encoded name len " << enclen << "bigger than remaining data " << *len << " bytes)";
     return ss.str();
   }
-  *len -= enclen;
+  *len -= (int)enclen;
   *data += enclen;
   ss << "'" << name << "' ";
   ares_free_string(name);
@@ -306,7 +306,7 @@ std::string RRToString(const std::vector<byte>& packet,
     ss << "(error, encoded name len " << enclen << "bigger than remaining data " << *len << " bytes)";
     return ss.str();
   }
-  *len -= enclen;
+  *len -= (int)enclen;
   *data += enclen;
   ss << "'" << name << "' ";
   ares_free_string(name);
