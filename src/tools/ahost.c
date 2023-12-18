@@ -254,6 +254,8 @@ static void ai_callback(void *arg, int status, int timeouts,
       struct sockaddr_in6 *in_addr =
         (struct sockaddr_in6 *)((void *)node->ai_addr);
       ptr = &in_addr->sin6_addr;
+    } else {
+      continue;
     }
     ares_inet_ntop(node->ai_family, ptr, addr_buf, sizeof(addr_buf));
     printf("%-32s\t%s\n", result->name, addr_buf);
