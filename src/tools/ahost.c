@@ -150,6 +150,7 @@ int         main(int argc, char **argv)
 
   status = ares_init_options(&channel, &options, optmask);
   if (status != ARES_SUCCESS) {
+    free(servers);
     fprintf(stderr, "ares_init: %s\n", ares_strerror(status));
     return 1;
   }
@@ -158,6 +159,7 @@ int         main(int argc, char **argv)
     status = ares_set_servers_csv(channel, servers);
     if (status != ARES_SUCCESS) {
       fprintf(stderr, "ares_set_serveres_csv: %s\n", ares_strerror(status));
+      free(servers);
       usage();
       return 1;
     }
