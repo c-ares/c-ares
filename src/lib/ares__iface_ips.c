@@ -510,11 +510,10 @@ done:
 #else
 
 static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t     *ips,
-                                               ares__iface_ip_flags_t flags,
                                                const char            *name)
 {
   (void)ips;
-  (void)flags;
+  (void)name;
   return ARES_ENOTIMP;
 }
 
