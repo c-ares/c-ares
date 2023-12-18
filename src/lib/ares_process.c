@@ -747,12 +747,15 @@ static void handle_conn_error(struct server_connection *conn,
 {
   struct server_state *server = conn->server;
 
-  /* This will requeue any connections automatically */
-  ares__close_connection(conn);
-
+  /* Increment failures first before requeue so it is unlikely to requeue
+   * to the same server */
   if (critical_failure) {
     server_increment_failures(server);
   }
+
+  /* This will requeue any connections automatically */
+  ares__close_connection(conn);
+
 }
 
 ares_status_t ares__requeue_query(struct query *query, struct timeval *now)
