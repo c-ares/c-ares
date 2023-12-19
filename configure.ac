@@ -18,10 +18,9 @@
 # SPDX-License-Identifier: MIT
 #
 #############################################################
-AC_PREREQ([2.60])
+AC_PREREQ([2.71])
 
-AC_INIT([c-ares], [1.24.0],
-  [c-ares mailing list: http://lists.haxx.se/listinfo/c-ares])
+AC_INIT([c-ares],[1.24.0],[c-ares mailing list: http://lists.haxx.se/listinfo/c-ares])
 
 CARES_VERSION_INFO="12:0:10"
 dnl This flag accepts an argument of the form current[:revision[:age]]. So,
@@ -56,19 +55,25 @@ AC_SUBST([CARES_VERSION_INFO])
 AC_CONFIG_SRCDIR([src/lib/ares_ipv6.h])
 AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h])
 AC_CONFIG_MACRO_DIR([m4])
+
+CARES_CHECK_OPTION_DEBUG
+CARES_CHECK_OPTION_OPTIMIZE
+CARES_CHECK_OPTION_WARNINGS
+XC_CHECK_PATH_SEPARATOR
+XC_CHECK_PROG_CC
+CARES_CHECK_OPTION_WERROR
+CARES_CHECK_OPTION_SYMBOL_HIDING
+CARES_CHECK_OPTION_EXPOSE_STATICS
+
+dnl make sure we use system extensions like _GNU_SOURCE or _XOPEN_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
+
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AX_REQUIRE_DEFINED([AX_CXX_COMPILE_STDCXX_14])
 
-CARES_CHECK_OPTION_DEBUG
-CARES_CHECK_OPTION_OPTIMIZE
-CARES_CHECK_OPTION_WARNINGS
-CARES_CHECK_OPTION_WERROR
-CARES_CHECK_OPTION_SYMBOL_HIDING
-CARES_CHECK_OPTION_EXPOSE_STATICS
 
-XC_CHECK_PATH_SEPARATOR
 
 dnl SED is mandatory for configure process and libtool.
 dnl Set it now, allowing it to be changed later.
@@ -117,7 +122,6 @@ AC_SUBST([AR])
 
 AX_CODE_COVERAGE
 
-
 dnl
 dnl Detect the canonical host and target build environment
 dnl
@@ -126,13 +130,9 @@ AC_CANONICAL_HOST
 dnl Get system canonical name
 AC_DEFINE_UNQUOTED(OS, "${host}", [cpu-machine-OS])
 
-XC_CHECK_PROG_CC
 AX_CXX_COMPILE_STDCXX_14([noext],[optional])
 
 XC_AUTOMAKE
-
-dnl make sure we use system extensions like _GNU_SOURCE or _XOPEN_SOURCE
-AC_USE_SYSTEM_EXTENSIONS
 
 dnl This defines _ALL_SOURCE for AIX
 CARES_CHECK_AIX_ALL_SOURCE
@@ -556,11 +556,7 @@ dnl **********************************************************************
 dnl Back to "normal" configuring
 dnl **********************************************************************
 
-dnl Checks for header files.
-AC_HEADER_STDC
-
 AC_PROG_EGREP
-
 
 CURL_CHECK_HEADER_MALLOC
 CURL_CHECK_HEADER_MEMORY
@@ -638,19 +634,6 @@ CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_COMPAT_H])
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_SIZE_T
-m4_warn([obsolete],
-[Update your code to rely only on HAVE_SYS_TIME_H,
-then remove this warning and the obsolete code below it.
-All current systems provide time.h; it need not be checked for.
-Not all systems provide sys/time.h, but those that do, all allow
-you to include it and time.h simultaneously.])dnl
-AC_CHECK_HEADERS_ONCE([sys/time.h])
-# Obsolete code to be removed.
-if test $ac_cv_header_sys_time_h = yes; then
-  AC_DEFINE([TIME_WITH_SYS_TIME],[1],[Define to 1 if you can safely include both <sys/time.h>
-	     and <time.h>.  This macro is obsolete.])
-fi
-# End of obsolete code.
 
 CURL_CHECK_STRUCT_TIMEVAL
 
@@ -704,20 +687,6 @@ TYPE_IN_ADDR_T
 TYPE_SOCKADDR_STORAGE
 
 TYPE_SIG_ATOMIC_T
-
-m4_warn([obsolete],
-[your code may safely assume C89 semantics that RETSIGTYPE is void.
-Remove this warning and the `AC_CACHE_CHECK' when you adjust the code.])dnl
-AC_CACHE_CHECK([return type of signal handlers],[ac_cv_type_signal],[AC_COMPILE_IFELSE(
-[AC_LANG_PROGRAM([#include <sys/types.h>
-#include <signal.h>
-],
-		 [return *(signal (0, 0)) (0) == 1;])],
-		   [ac_cv_type_signal=int],
-		   [ac_cv_type_signal=void])])
-AC_DEFINE_UNQUOTED([RETSIGTYPE],[$ac_cv_type_signal],[Define as the return type of signal handlers
-		    (`int' or `void').])
-
 
 CURL_CHECK_FUNC_RECV
 CURL_CHECK_FUNC_RECVFROM
@@ -922,8 +891,7 @@ AC_CHECK_MEMBER(struct addrinfo.ai_flags,
 )
 
 
-AC_CHECK_FUNCS([bitncmp \
-  gettimeofday \
+AC_CHECK_FUNCS([gettimeofday \
   if_indextoname \
   if_nametoindex \
   ConvertInterfaceIndexToLuid \
@@ -984,7 +952,7 @@ CARES_CHECK_NONBLOCKING_SOCKET
 
 dnl ------------ THREADING --------------
 AC_ARG_ENABLE(cares-threads,
-  AC_HELP_STRING([--disable-cares-threads], [Disable building of thread safety support]),
+  AS_HELP_STRING([--disable-cares-threads],[Disable building of thread safety support]),
   [ CARES_THREADS=${enableval} ],
   [ CARES_THREADS=yes ])
 

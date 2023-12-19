@@ -434,9 +434,6 @@
 /* Define to the function return type for recv. */
 #define RECV_TYPE_RETV @RECV_TYPE_RETV@
 
-/* Define as the return type of signal handlers (`int' or `void'). */
-#define RETSIGTYPE @RETSIGTYPE@
-
 /* Define to the type qualifier of arg 2 for send. */
 #define SEND_QUAL_ARG2 @SEND_QUAL_ARG2@
 
@@ -454,9 +451,6 @@
 
 /* Define to the function return type for send. */
 #define SEND_TYPE_RETV @SEND_TYPE_RETV@
-
-/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
-#cmakedefine TIME_WITH_SYS_TIME
 
 /* Define to disable non-blocking sockets. */
 #undef USE_BLOCKING_SOCKETS
