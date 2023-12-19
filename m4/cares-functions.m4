@@ -1108,7 +1108,7 @@ AC_DEFUN([CARES_CHECK_FUNC_GETADDRINFO], [
         $cares_includes_sys_socket
         $cares_includes_netdb
         ], [silent])
-      if test "$curl_cv_have_def_h_errno" = "yes"; then
+      if test "$cares_cv_have_def_h_errno" = "yes"; then
         tst_h_errno_macro="yes"
       else
         tst_h_errno_macro="no"

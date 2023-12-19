@@ -76,7 +76,7 @@ AC_DEFUN([CARES_CHECK_COMPILER_CLANG], [
   AC_BEFORE([$0],[CARES_CHECK_COMPILER_GNU_C])dnl
   AC_MSG_CHECKING([if compiler is clang])
   CURL_CHECK_DEF([__clang__], [], [silent])
-  if test "$curl_cv_have_def___clang__" = "yes"; then
+  if test "$cares_cv_have_def___clang__" = "yes"; then
     AC_MSG_RESULT([yes])
     compiler_id="CLANG"
     clangver=`$CC -dumpversion`
@@ -110,8 +110,8 @@ AC_DEFUN([CARES_CHECK_COMPILER_DEC_C], [
   AC_MSG_CHECKING([if compiler is DEC/Compaq/HP C])
   CURL_CHECK_DEF([__DECC], [], [silent])
   CURL_CHECK_DEF([__DECC_VER], [], [silent])
-  if test "$curl_cv_have_def___DECC" = "yes" &&
-    test "$curl_cv_have_def___DECC_VER" = "yes"; then
+  if test "$cares_cv_have_def___DECC" = "yes" &&
+    test "$cares_cv_have_def___DECC_VER" = "yes"; then
     AC_MSG_RESULT([yes])
     compiler_id="DEC_C"
     flags_dbg_all="-g -g0 -g1 -g2 -g3"
@@ -135,7 +135,7 @@ AC_DEFUN([CARES_CHECK_COMPILER_GNU_C], [
   AC_REQUIRE([CARES_CHECK_COMPILER_CLANG])dnl
   AC_MSG_CHECKING([if compiler is GNU C])
   CURL_CHECK_DEF([__GNUC__], [], [silent])
-  if test "$curl_cv_have_def___GNUC__" = "yes" &&
+  if test "$cares_cv_have_def___GNUC__" = "yes" &&
     test "$compiler_id" = "unknown"; then
     AC_MSG_RESULT([yes])
     compiler_id="GNU_C"
@@ -170,7 +170,7 @@ dnl Verify if compiler being used is HP-UX C.
 AC_DEFUN([CARES_CHECK_COMPILER_HPUX_C], [
   AC_MSG_CHECKING([if compiler is HP-UX C])
   CURL_CHECK_DEF([__HP_cc], [], [silent])
-  if test "$curl_cv_have_def___HP_cc" = "yes"; then
+  if test "$cares_cv_have_def___HP_cc" = "yes"; then
     AC_MSG_RESULT([yes])
     compiler_id="HP_UX_C"
     flags_dbg_all="-g -s"
@@ -192,7 +192,7 @@ dnl Verify if compiler being used is IBM C.
 AC_DEFUN([CARES_CHECK_COMPILER_IBM_C], [
   AC_MSG_CHECKING([if compiler is IBM C])
   CURL_CHECK_DEF([__IBMC__], [], [silent])
-  if test "$curl_cv_have_def___IBMC__" = "yes"; then
+  if test "$cares_cv_have_def___IBMC__" = "yes"; then
     AC_MSG_RESULT([yes])
     compiler_id="IBM_C"
     flags_dbg_all="-g -g0 -g1 -g2 -g3"
@@ -223,11 +223,11 @@ AC_DEFUN([CARES_CHECK_COMPILER_INTEL_C], [
   AC_BEFORE([$0],[CARES_CHECK_COMPILER_GNU_C])dnl
   AC_MSG_CHECKING([if compiler is Intel C])
   CURL_CHECK_DEF([__INTEL_COMPILER], [], [silent])
-  if test "$curl_cv_have_def___INTEL_COMPILER" = "yes"; then
+  if test "$cares_cv_have_def___INTEL_COMPILER" = "yes"; then
     AC_MSG_RESULT([yes])
-    compiler_num="$curl_cv_def___INTEL_COMPILER"
+    compiler_num="$cares_cv_def___INTEL_COMPILER"
     CURL_CHECK_DEF([__unix__], [], [silent])
-    if test "$curl_cv_have_def___unix__" = "yes"; then
+    if test "$cares_cv_have_def___unix__" = "yes"; then
       compiler_id="INTEL_UNIX_C"
       flags_dbg_all="-g -g0"
       flags_dbg_yes="-g"
@@ -264,7 +264,7 @@ dnl Verify if compiler being used is LCC.
 AC_DEFUN([CARES_CHECK_COMPILER_LCC], [
   AC_MSG_CHECKING([if compiler is LCC])
   CURL_CHECK_DEF([__LCC__], [], [silent])
-  if test "$curl_cv_have_def___LCC__" = "yes"; then
+  if test "$cares_cv_have_def___LCC__" = "yes"; then
     AC_MSG_RESULT([yes])
     compiler_id="LCC"
     flags_dbg_all="-g"
@@ -288,8 +288,8 @@ AC_DEFUN([CARES_CHECK_COMPILER_SGI_MIPS_C], [
   AC_MSG_CHECKING([if compiler is SGI MIPS C])
   CURL_CHECK_DEF([__GNUC__], [], [silent])
   CURL_CHECK_DEF([__sgi], [], [silent])
-  if test "$curl_cv_have_def___GNUC__" = "no" &&
-    test "$curl_cv_have_def___sgi" = "yes" &&
+  if test "$cares_cv_have_def___GNUC__" = "no" &&
+    test "$cares_cv_have_def___sgi" = "yes" &&
     test "$compiler_id" = "unknown"; then
     AC_MSG_RESULT([yes])
     compiler_id="SGI_MIPS_C"
@@ -315,9 +315,9 @@ AC_DEFUN([CARES_CHECK_COMPILER_SGI_MIPSPRO_C], [
   CURL_CHECK_DEF([__GNUC__], [], [silent])
   CURL_CHECK_DEF([_COMPILER_VERSION], [], [silent])
   CURL_CHECK_DEF([_SGI_COMPILER_VERSION], [], [silent])
-  if test "$curl_cv_have_def___GNUC__" = "no" &&
-    (test "$curl_cv_have_def__SGI_COMPILER_VERSION" = "yes" ||
-     test "$curl_cv_have_def__COMPILER_VERSION" = "yes"); then
+  if test "$cares_cv_have_def___GNUC__" = "no" &&
+    (test "$cares_cv_have_def__SGI_COMPILER_VERSION" = "yes" ||
+     test "$cares_cv_have_def__COMPILER_VERSION" = "yes"); then
     AC_MSG_RESULT([yes])
     compiler_id="SGI_MIPSPRO_C"
     flags_dbg_all="-g -g0 -g1 -g2 -g3"
@@ -339,7 +339,7 @@ dnl Verify if compiler being used is SunPro C.
 AC_DEFUN([CARES_CHECK_COMPILER_SUNPRO_C], [
   AC_MSG_CHECKING([if compiler is SunPro C])
   CURL_CHECK_DEF([__SUNPRO_C], [], [silent])
-  if test "$curl_cv_have_def___SUNPRO_C" = "yes"; then
+  if test "$cares_cv_have_def___SUNPRO_C" = "yes"; then
     AC_MSG_RESULT([yes])
     compiler_id="SUNPRO_C"
     flags_dbg_all="-g -s"
@@ -361,7 +361,7 @@ dnl Verify if compiler being used is Tiny C.
 AC_DEFUN([CARES_CHECK_COMPILER_TINY_C], [
   AC_MSG_CHECKING([if compiler is Tiny C])
   CURL_CHECK_DEF([__TINYC__], [], [silent])
-  if test "$curl_cv_have_def___TINYC__" = "yes"; then
+  if test "$cares_cv_have_def___TINYC__" = "yes"; then
     AC_MSG_RESULT([yes])
     compiler_id="TINY_C"
     flags_dbg_all="-g -b"
@@ -383,10 +383,10 @@ dnl Verify if compiler being used is Watcom C.
 AC_DEFUN([CARES_CHECK_COMPILER_WATCOM_C], [
   AC_MSG_CHECKING([if compiler is Watcom C])
   CURL_CHECK_DEF([__WATCOMC__], [], [silent])
-  if test "$curl_cv_have_def___WATCOMC__" = "yes"; then
+  if test "$cares_cv_have_def___WATCOMC__" = "yes"; then
     AC_MSG_RESULT([yes])
     CURL_CHECK_DEF([__UNIX__], [], [silent])
-    if test "$curl_cv_have_def___UNIX__" = "yes"; then
+    if test "$cares_cv_have_def___UNIX__" = "yes"; then
       compiler_id="WATCOM_UNIX_C"
       flags_dbg_all="-g1 -g1+ -g2 -g3"
       flags_dbg_yes="-g2"
@@ -939,7 +939,7 @@ AC_DEFUN([CARES_SET_COMPILER_WARNING_OPTS], [
           dnl Only gcc 4.5 or later
           if test "$compiler_num" -ge "405"; then
             dnl Only windows targets
-            if test "$curl_cv_have_def__WIN32" = "yes"; then
+            if test "$cares_cv_have_def__WIN32" = "yes"; then
               tmp_CFLAGS="$tmp_CFLAGS -Wno-pedantic-ms-format"
             fi
           fi

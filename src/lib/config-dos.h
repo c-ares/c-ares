@@ -35,9 +35,6 @@
 
 #define NEED_MALLOC_H 1
 
-#define RETSIGTYPE         void
-#define TIME_WITH_SYS_TIME 1
-
 /* Qualifiers for send(), recv(), recvfrom() and getnameinfo(). */
 
 #define SEND_TYPE_ARG1 int
