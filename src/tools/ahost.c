@@ -249,12 +249,12 @@ static void ai_callback(void *arg, int status, int timeouts,
     char        addr_buf[64] = "";
     const void *ptr          = NULL;
     if (node->ai_family == AF_INET) {
-      struct sockaddr_in *in_addr =
-        (struct sockaddr_in *)((void *)node->ai_addr);
+      const struct sockaddr_in *in_addr =
+        (const struct sockaddr_in *)((void *)node->ai_addr);
       ptr = &in_addr->sin_addr;
     } else if (node->ai_family == AF_INET6) {
-      struct sockaddr_in6 *in_addr =
-        (struct sockaddr_in6 *)((void *)node->ai_addr);
+      const struct sockaddr_in6 *in_addr =
+        (const struct sockaddr_in6 *)((void *)node->ai_addr);
       ptr = &in_addr->sin6_addr;
     } else {
       continue;
