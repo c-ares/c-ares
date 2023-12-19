@@ -1879,6 +1879,13 @@ AC_DEFUN([CARES_CHECK_STRUCT], [
                    )
     ], ac_struct="yes", ac_struct="no"
   )
+  if test "$ac_struct" = "yes" ; then
+    AC_MSG_RESULT(yes)
+    $3
+  else
+    AC_MSG_RESULT(no)
+    $4
+  fi
 ])
 
 dnl This macro determines if the specified constant exists in the specified file
