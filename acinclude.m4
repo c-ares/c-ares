@@ -1873,17 +1873,12 @@ dnl CARES_CHECK_STRUCT(headers, struct name, if found, [if not found])
 
 AC_DEFUN([CARES_CHECK_STRUCT], [
   AC_MSG_CHECKING([for struct $2])
-  AC_TRY_COMPILE([$1],
-    [
-      struct $2 struct_instance;
-    ], ac_struct="yes", ac_found="no")
-  if test "$ac_struct" = "yes" ; then
-    AC_MSG_RESULT(yes)
-    $3
-  else
-    AC_MSG_RESULT(no)
-    $4
-  fi
+  AC_COMPILE_IFELSE([
+    AC_LANG_PROGRAM([$1],
+                    [struct $2 struct_instance;]
+                   )
+    ], ac_struct="yes", ac_struct="no"
+  )
 ])
 
 dnl This macro determines if the specified constant exists in the specified file
