@@ -144,7 +144,7 @@ ares_bool_t ares__memeq_ci(const unsigned char *ptr, const unsigned char *val,
                            size_t len)
 {
   size_t i;
-  for (i=0; i<len; i++) {
+  for (i = 0; i < len; i++) {
     if (ares__tolower_lookup[ptr[i]] != ares__tolower_lookup[val[i]]) {
       return ARES_FALSE;
     }

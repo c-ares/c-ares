@@ -71,16 +71,15 @@ char **ares__strsplit_duplicate(char **elms, size_t num_elm)
   return out;
 }
 
-
 char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
 {
   ares_status_t       status;
   ares__buf_t        *buf   = NULL;
   ares__llist_t      *llist = NULL;
   ares__llist_node_t *node;
-  char              **out   = NULL;
-  size_t              cnt   = 0;
-  size_t              idx   = 0;
+  char              **out = NULL;
+  size_t              cnt = 0;
+  size_t              idx = 0;
 
   if (in == NULL || delms == NULL || num_elm == NULL) {
     return NULL;
@@ -93,11 +92,9 @@ char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
     return NULL;
   }
 
-  status = ares__buf_split(buf, (const unsigned char *)delms,
-                           ares_strlen(delms),
-                           ARES_BUF_SPLIT_NO_DUPLICATES|
-                           ARES_BUF_SPLIT_CASE_INSENSITIVE,
-                           &llist);
+  status = ares__buf_split(
+    buf, (const unsigned char *)delms, ares_strlen(delms),
+    ARES_BUF_SPLIT_NO_DUPLICATES | ARES_BUF_SPLIT_CASE_INSENSITIVE, &llist);
   if (status != ARES_SUCCESS) {
     goto done;
   }

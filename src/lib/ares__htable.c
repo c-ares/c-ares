@@ -399,7 +399,6 @@ unsigned int ares__htable_hash_FNV1a(const unsigned char *key, size_t key_len,
   return hv;
 }
 
-
 /* Case insensitive version, meant for ASCII strings */
 unsigned int ares__htable_hash_FNV1a_casecmp(const unsigned char *key,
                                              size_t key_len, unsigned int seed)

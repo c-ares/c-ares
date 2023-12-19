@@ -423,7 +423,7 @@ typedef enum {
   ARES_BUF_SPLIT_ALLOW_BLANK = 1 << 1,
   /*! Remove duplicate entries */
   ARES_BUF_SPLIT_NO_DUPLICATES = 1 << 2,
-  /*! Perform case-insenstive matching when comparing values */
+  /*! Perform case-insensitive matching when comparing values */
   ARES_BUF_SPLIT_CASE_INSENSITIVE = 1 << 3
 } ares__buf_split_t;
 

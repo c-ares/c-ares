@@ -793,29 +793,32 @@ static void ares__buf_destroy_cb(void *arg)
   ares__buf_destroy(arg);
 }
 
-static ares_bool_t ares__buf_split_isduplicate(ares__llist_t *list,
+static ares_bool_t ares__buf_split_isduplicate(ares__llist_t       *list,
                                                const unsigned char *val,
-                                               size_t len,
-                                               ares__buf_split_t flags)
+                                               size_t               len,
+                                               ares__buf_split_t    flags)
 {
   ares__llist_node_t *node;
 
   for (node = ares__llist_node_first(list); node != NULL;
        node = ares__llist_node_next(node)) {
-    ares__buf_t          *buf  = ares__llist_node_val(node);
-    size_t                plen = 0;
-    const unsigned char  *ptr  = ares__buf_peek(buf, &plen);
+    ares__buf_t         *buf  = ares__llist_node_val(node);
+    size_t               plen = 0;
+    const unsigned char *ptr  = ares__buf_peek(buf, &plen);
 
     /* Can't be duplicate if lengths mismatch */
-    if (plen != len)
+    if (plen != len) {
       continue;
+    }
 
     if (flags & ARES_BUF_SPLIT_CASE_INSENSITIVE) {
-      if (ares__memeq_ci(ptr, val, len))
+      if (ares__memeq_ci(ptr, val, len)) {
         return ARES_TRUE;
+      }
     } else {
-      if (memcmp(ptr, val, len) == 0)
+      if (memcmp(ptr, val, len) == 0) {
         return ARES_TRUE;
+      }
     }
   }
   return ARES_FALSE;
@@ -856,7 +859,6 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
 
       if (!(flags & ARES_BUF_SPLIT_NO_DUPLICATES) ||
           !ares__buf_split_isduplicate(*list, ptr, len, flags)) {
-
         /* Since we don't allow const buffers of 0 length, and user wants
          * 0-length buffers, swap what we do here */
         if (len) {
