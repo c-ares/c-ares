@@ -755,7 +755,6 @@ static void handle_conn_error(struct server_connection *conn,
 
   /* This will requeue any connections automatically */
   ares__close_connection(conn);
-
 }
 
 ares_status_t ares__requeue_query(struct query *query, struct timeval *now)

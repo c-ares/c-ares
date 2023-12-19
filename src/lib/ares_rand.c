@@ -39,7 +39,6 @@ typedef enum {
   ARES_RAND_RC4  = 1 << 2, /* Internal RC4 based PRNG */
 } ares_rand_backend;
 
-
 #define ARES_RC4_KEY_LEN 32 /* 256 bits */
 
 typedef struct ares_rand_rc4 {
@@ -137,7 +136,6 @@ static void ares_rc4_prng(ares_rand_rc4 *rc4_state, unsigned char *buf,
   rc4_state->i = i;
   rc4_state->j = j;
 }
-
 
 struct ares_rand_state {
   ares_rand_backend type;

@@ -34,7 +34,7 @@
 #include "ares.h"
 #include "ares_private.h"
 
-void ares__timeval_remaining(struct timeval *remaining,
+void ares__timeval_remaining(struct timeval       *remaining,
                              const struct timeval *now,
                              const struct timeval *tout)
 {

@@ -254,7 +254,8 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
   ares__llist_node_t       *node;
   int                       type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
 #ifdef __OpenBSD__
-  if((is_tcp && server->tcp_port == 53) || (!is_tcp && server->udp_port == 53)) {
+  if ((is_tcp && server->tcp_port == 53) ||
+      (!is_tcp && server->udp_port == 53)) {
     type |= SOCK_DNS;
   }
 #endif
