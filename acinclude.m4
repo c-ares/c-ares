@@ -11,8 +11,8 @@ dnl result in a set of double-quoted strings the returned expansion will
 dnl actually be a single double-quoted string concatenating all them.
 
 AC_DEFUN([CURL_CHECK_DEF], [
-  AS_VAR_PUSHDEF([ac_HaveDef], [curl_cv_have_def_$1])dnl
-  AS_VAR_PUSHDEF([ac_Def], [curl_cv_def_$1])dnl
+  AS_VAR_PUSHDEF([ac_HaveDef], [cares_cv_have_def_$1])dnl
+  AS_VAR_PUSHDEF([ac_Def], [cares_cv_def_$1])dnl
   if test -z "$SED"; then
     AC_MSG_ERROR([SED not set. Cannot continue without SED being set.])
   fi
@@ -58,7 +58,7 @@ dnl default includes even if no INCLUDES argument is given. This macro
 dnl will run silently when invoked with three arguments.
 
 AC_DEFUN([CURL_CHECK_DEF_CC], [
-  AS_VAR_PUSHDEF([ac_HaveDef], [curl_cv_have_def_$1])dnl
+  AS_VAR_PUSHDEF([ac_HaveDef], [cares_cv_have_def_$1])dnl
   ifelse($3,,[AC_MSG_CHECKING([for compiler definition of $1])])
   AC_COMPILE_IFELSE([
     AC_LANG_SOURCE(
@@ -360,12 +360,12 @@ AC_DEFUN([CURL_CHECK_HEADER_MALLOC], [
         free(q);
       ]])
     ],[
-      curl_cv_need_header_malloc_h="no"
+      cares_cv_need_header_malloc_h="no"
     ],[
-      curl_cv_need_header_malloc_h="yes"
+      cares_cv_need_header_malloc_h="yes"
     ])
     #
-    case "$curl_cv_need_header_malloc_h" in
+    case "$cares_cv_need_header_malloc_h" in
       yes)
         AC_DEFINE_UNQUOTED(NEED_MALLOC_H, 1,
           [Define to 1 if you need the malloc.h header file even with stdlib.h])
@@ -412,12 +412,12 @@ AC_DEFUN([CURL_CHECK_HEADER_MEMORY], [
         free(q);
       ]])
     ],[
-      curl_cv_need_header_memory_h="no"
+      cares_cv_need_header_memory_h="no"
     ],[
-      curl_cv_need_header_memory_h="yes"
+      cares_cv_need_header_memory_h="yes"
     ])
     #
-    case "$curl_cv_need_header_memory_h" in
+    case "$cares_cv_need_header_memory_h" in
       yes)
         AC_DEFINE_UNQUOTED(NEED_MEMORY_H, 1,
           [Define to 1 if you need the memory.h header file even with stdlib.h])
@@ -447,13 +447,13 @@ AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
     AC_LANG_FUNC_LINK_TRY([getnameinfo])
   ],[
     AC_MSG_RESULT([yes])
-    curl_cv_getnameinfo="yes"
+    cares_cv_getnameinfo="yes"
   ],[
     AC_MSG_RESULT([no])
-    curl_cv_getnameinfo="no"
+    cares_cv_getnameinfo="no"
   ])
   #
-  if test "$curl_cv_getnameinfo" != "yes"; then
+  if test "$cares_cv_getnameinfo" != "yes"; then
     AC_MSG_CHECKING([deeper for getnameinfo])
     AC_LINK_IFELSE([
       AC_LANG_PROGRAM([[
@@ -462,14 +462,14 @@ AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
       ]])
     ],[
       AC_MSG_RESULT([yes])
-      curl_cv_getnameinfo="yes"
+      cares_cv_getnameinfo="yes"
     ],[
       AC_MSG_RESULT([but still no])
-      curl_cv_getnameinfo="no"
+      cares_cv_getnameinfo="no"
     ])
   fi
   #
-  if test "$curl_cv_getnameinfo" != "yes"; then
+  if test "$cares_cv_getnameinfo" != "yes"; then
     AC_MSG_CHECKING([deeper and deeper for getnameinfo])
     AC_LINK_IFELSE([
       AC_LANG_PROGRAM([[
@@ -501,22 +501,22 @@ AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
       ]])
     ],[
       AC_MSG_RESULT([yes])
-      curl_cv_getnameinfo="yes"
+      cares_cv_getnameinfo="yes"
     ],[
       AC_MSG_RESULT([but still no])
-      curl_cv_getnameinfo="no"
+      cares_cv_getnameinfo="no"
     ])
   fi
   #
-  if test "$curl_cv_getnameinfo" = "yes"; then
+  if test "$cares_cv_getnameinfo" = "yes"; then
     AC_CACHE_CHECK([types of arguments for getnameinfo],
-      [curl_cv_func_getnameinfo_args], [
-      curl_cv_func_getnameinfo_args="unknown"
+      [cares_cv_func_getnameinfo_args], [
+      cares_cv_func_getnameinfo_args="unknown"
       for gni_arg1 in 'struct sockaddr *' 'const struct sockaddr *' 'void *'; do
         for gni_arg2 in 'socklen_t' 'size_t' 'int'; do
           for gni_arg46 in 'size_t' 'int' 'socklen_t' 'unsigned int' 'DWORD'; do
             for gni_arg7 in 'int' 'unsigned int'; do
-              if test "$curl_cv_func_getnameinfo_args" = "unknown"; then
+              if test "$cares_cv_func_getnameinfo_args" = "unknown"; then
                 AC_COMPILE_IFELSE([
                   AC_LANG_PROGRAM([[
 #undef inline
@@ -560,7 +560,7 @@ AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
                     int res = getnameinfo(0, salen, 0, hostlen, 0, servlen, flags);
                   ]])
                 ],[
-                  curl_cv_func_getnameinfo_args="$gni_arg1,$gni_arg2,$gni_arg46,$gni_arg7"
+                  cares_cv_func_getnameinfo_args="$gni_arg1,$gni_arg2,$gni_arg46,$gni_arg7"
                 ])
               fi
             done
@@ -568,12 +568,12 @@ AC_DEFUN([CURL_CHECK_FUNC_GETNAMEINFO], [
         done
       done
     ]) # AC-CACHE-CHECK
-    if test "$curl_cv_func_getnameinfo_args" = "unknown"; then
+    if test "$cares_cv_func_getnameinfo_args" = "unknown"; then
       AC_MSG_WARN([Cannot find proper types to use for getnameinfo args])
       AC_MSG_WARN([HAVE_GETNAMEINFO will not be defined])
     else
       gni_prev_IFS=$IFS; IFS=','
-      set dummy `echo "$curl_cv_func_getnameinfo_args" | sed 's/\*/\*/g'`
+      set dummy `echo "$cares_cv_func_getnameinfo_args" | sed 's/\*/\*/g'`
       IFS=$gni_prev_IFS
       shift
       #
@@ -810,22 +810,22 @@ AC_DEFUN([CURL_CHECK_FUNC_RECV], [
     ]])
   ],[
     AC_MSG_RESULT([yes])
-    curl_cv_recv="yes"
+    cares_cv_recv="yes"
   ],[
     AC_MSG_RESULT([no])
-    curl_cv_recv="no"
+    cares_cv_recv="no"
   ])
   #
-  if test "$curl_cv_recv" = "yes"; then
+  if test "$cares_cv_recv" = "yes"; then
     AC_CACHE_CHECK([types of args and return type for recv],
-      [curl_cv_func_recv_args], [
-      curl_cv_func_recv_args="unknown"
+      [cares_cv_func_recv_args], [
+      cares_cv_func_recv_args="unknown"
       for recv_retv in 'int' 'ssize_t'; do
         for recv_arg1 in 'int' 'ssize_t' 'SOCKET'; do
           for recv_arg2 in 'char *' 'void *'; do
             for recv_arg3 in 'size_t' 'int' 'socklen_t' 'unsigned int'; do
               for recv_arg4 in 'int' 'unsigned int'; do
-                if test "$curl_cv_func_recv_args" = "unknown"; then
+                if test "$cares_cv_func_recv_args" = "unknown"; then
                   AC_COMPILE_IFELSE([
                     AC_LANG_PROGRAM([[
 #undef inline
@@ -861,7 +861,7 @@ AC_DEFUN([CURL_CHECK_FUNC_RECV], [
                       $recv_retv res = recv(s, buf, len, flags);
                     ]])
                   ],[
-                    curl_cv_func_recv_args="$recv_arg1,$recv_arg2,$recv_arg3,$recv_arg4,$recv_retv"
+                    cares_cv_func_recv_args="$recv_arg1,$recv_arg2,$recv_arg3,$recv_arg4,$recv_retv"
                   ])
                 fi
               done
@@ -870,11 +870,11 @@ AC_DEFUN([CURL_CHECK_FUNC_RECV], [
         done
       done
     ]) # AC-CACHE-CHECK
-    if test "$curl_cv_func_recv_args" = "unknown"; then
+    if test "$cares_cv_func_recv_args" = "unknown"; then
       AC_MSG_ERROR([Cannot find proper types to use for recv args])
     else
       recv_prev_IFS=$IFS; IFS=','
-      set dummy `echo "$curl_cv_func_recv_args" | sed 's/\*/\*/g'`
+      set dummy `echo "$cares_cv_func_recv_args" | sed 's/\*/\*/g'`
       IFS=$recv_prev_IFS
       shift
       #
@@ -944,22 +944,22 @@ AC_DEFUN([CURL_CHECK_FUNC_SEND], [
     ]])
   ],[
     AC_MSG_RESULT([yes])
-    curl_cv_send="yes"
+    cares_cv_send="yes"
   ],[
     AC_MSG_RESULT([no])
-    curl_cv_send="no"
+    cares_cv_send="no"
   ])
   #
-  if test "$curl_cv_send" = "yes"; then
+  if test "$cares_cv_send" = "yes"; then
     AC_CACHE_CHECK([types of args and return type for send],
-      [curl_cv_func_send_args], [
-      curl_cv_func_send_args="unknown"
+      [cares_cv_func_send_args], [
+      cares_cv_func_send_args="unknown"
       for send_retv in 'int' 'ssize_t'; do
         for send_arg1 in 'int' 'ssize_t' 'SOCKET'; do
           for send_arg2 in 'char *' 'void *' 'const char *' 'const void *'; do
             for send_arg3 in 'size_t' 'int' 'socklen_t' 'unsigned int'; do
               for send_arg4 in 'int' 'unsigned int'; do
-                if test "$curl_cv_func_send_args" = "unknown"; then
+                if test "$cares_cv_func_send_args" = "unknown"; then
                   AC_COMPILE_IFELSE([
                     AC_LANG_PROGRAM([[
 #undef inline
@@ -994,7 +994,7 @@ AC_DEFUN([CURL_CHECK_FUNC_SEND], [
                       $send_retv res = send(s, 0, len, flags);
                     ]])
                   ],[
-                    curl_cv_func_send_args="$send_arg1,$send_arg2,$send_arg3,$send_arg4,$send_retv"
+                    cares_cv_func_send_args="$send_arg1,$send_arg2,$send_arg3,$send_arg4,$send_retv"
                   ])
                 fi
               done
@@ -1003,11 +1003,11 @@ AC_DEFUN([CURL_CHECK_FUNC_SEND], [
         done
       done
     ]) # AC-CACHE-CHECK
-    if test "$curl_cv_func_send_args" = "unknown"; then
+    if test "$cares_cv_func_send_args" = "unknown"; then
       AC_MSG_ERROR([Cannot find proper types to use for send args])
     else
       send_prev_IFS=$IFS; IFS=','
-      set dummy `echo "$curl_cv_func_send_args" | sed 's/\*/\*/g'`
+      set dummy `echo "$cares_cv_func_send_args" | sed 's/\*/\*/g'`
       IFS=$send_prev_IFS
       shift
       #
@@ -1112,16 +1112,16 @@ AC_DEFUN([CURL_CHECK_FUNC_RECVFROM], [
     ]])
   ],[
     AC_MSG_RESULT([yes])
-    curl_cv_recvfrom="yes"
+    cares_cv_recvfrom="yes"
   ],[
     AC_MSG_RESULT([no])
-    curl_cv_recvfrom="no"
+    cares_cv_recvfrom="no"
   ])
   #
-  if test "$curl_cv_recvfrom" = "yes"; then
+  if test "$cares_cv_recvfrom" = "yes"; then
     AC_CACHE_CHECK([types of args and return type for recvfrom],
-      [curl_cv_func_recvfrom_args], [
-      curl_cv_func_recvfrom_args="unknown"
+      [cares_cv_func_recvfrom_args], [
+      cares_cv_func_recvfrom_args="unknown"
       for recvfrom_retv in 'int' 'ssize_t'; do
         for recvfrom_arg1 in 'int' 'ssize_t' 'SOCKET'; do
           for recvfrom_arg2 in 'char *' 'void *'; do
@@ -1129,7 +1129,7 @@ AC_DEFUN([CURL_CHECK_FUNC_RECVFROM], [
               for recvfrom_arg4 in 'int' 'unsigned int'; do
                 for recvfrom_arg5 in 'struct sockaddr *' 'void *' 'const struct sockaddr *'; do
                   for recvfrom_arg6 in 'socklen_t *' 'int *' 'unsigned int *' 'size_t *' 'void *'; do
-                    if test "$curl_cv_func_recvfrom_args" = "unknown"; then
+                    if test "$cares_cv_func_recvfrom_args" = "unknown"; then
                       AC_COMPILE_IFELSE([
                         AC_LANG_PROGRAM([[
 #undef inline
@@ -1170,7 +1170,7 @@ AC_DEFUN([CURL_CHECK_FUNC_RECVFROM], [
                           res = recvfrom(s, buf, len, flags, addr, addrlen);
                         ]])
                       ],[
-                        curl_cv_func_recvfrom_args="$recvfrom_arg1,$recvfrom_arg2,$recvfrom_arg3,$recvfrom_arg4,$recvfrom_arg5,$recvfrom_arg6,$recvfrom_retv"
+                        cares_cv_func_recvfrom_args="$recvfrom_arg1,$recvfrom_arg2,$recvfrom_arg3,$recvfrom_arg4,$recvfrom_arg5,$recvfrom_arg6,$recvfrom_retv"
                       ])
                     fi
                   done
@@ -1186,11 +1186,11 @@ AC_DEFUN([CURL_CHECK_FUNC_RECVFROM], [
       [Define to 1 if you have the recvfrom function.])
     ac_cv_func_recvfrom="yes"
     # Nearly last minute change for this release ends here
-    if test "$curl_cv_func_recvfrom_args" = "unknown"; then
+    if test "$cares_cv_func_recvfrom_args" = "unknown"; then
       AC_MSG_WARN([Cannot find proper types to use for recvfrom args])
     else
       recvfrom_prev_IFS=$IFS; IFS=','
-      set dummy `echo "$curl_cv_func_recvfrom_args" | sed 's/\*/\*/g'`
+      set dummy `echo "$cares_cv_func_recvfrom_args" | sed 's/\*/\*/g'`
       IFS=$recvfrom_prev_IFS
       shift
       #
@@ -1435,10 +1435,10 @@ AC_DEFUN([TYPE_IN_ADDR_T], [
   AC_CHECK_TYPE([in_addr_t], ,[
     dnl in_addr_t not available
     AC_CACHE_CHECK([for in_addr_t equivalent],
-      [curl_cv_in_addr_t_equiv], [
-      curl_cv_in_addr_t_equiv="unknown"
+      [cares_cv_in_addr_t_equiv], [
+      cares_cv_in_addr_t_equiv="unknown"
       for t in "unsigned long" int size_t unsigned long; do
-        if test "$curl_cv_in_addr_t_equiv" = "unknown"; then
+        if test "$cares_cv_in_addr_t_equiv" = "unknown"; then
           AC_LINK_IFELSE([
             AC_LANG_PROGRAM([[
 #undef inline
@@ -1472,17 +1472,17 @@ AC_DEFUN([TYPE_IN_ADDR_T], [
               $t data = inet_addr ("1.2.3.4");
             ]])
           ],[
-            curl_cv_in_addr_t_equiv="$t"
+            cares_cv_in_addr_t_equiv="$t"
           ])
         fi
       done
     ])
-    case "$curl_cv_in_addr_t_equiv" in
+    case "$cares_cv_in_addr_t_equiv" in
       unknown)
         AC_MSG_ERROR([Cannot find a type to use in place of in_addr_t])
         ;;
       *)
-        AC_DEFINE_UNQUOTED(in_addr_t, $curl_cv_in_addr_t_equiv,
+        AC_DEFINE_UNQUOTED(in_addr_t, $cares_cv_in_addr_t_equiv,
           [Type to use in place of in_addr_t when system does not provide it.])
         ;;
     esac
@@ -1568,15 +1568,15 @@ AC_DEFUN([CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC], [
     #
     AC_MSG_CHECKING([for clock_gettime in libraries])
     #
-    curl_cv_save_LIBS="$LIBS"
-    curl_cv_gclk_LIBS="unknown"
+    cares_cv_save_LIBS="$LIBS"
+    cares_cv_gclk_LIBS="unknown"
     #
     for x_xlibs in '' '-lrt' '-lposix4' ; do
-      if test "$curl_cv_gclk_LIBS" = "unknown"; then
+      if test "$cares_cv_gclk_LIBS" = "unknown"; then
         if test -z "$x_xlibs"; then
-          LIBS="$curl_cv_save_LIBS"
+          LIBS="$cares_cv_save_LIBS"
         else
-          LIBS="$x_xlibs $curl_cv_save_LIBS"
+          LIBS="$x_xlibs $cares_cv_save_LIBS"
         fi
         AC_LINK_IFELSE([
           AC_LANG_PROGRAM([[
@@ -1598,14 +1598,14 @@ AC_DEFUN([CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC], [
             (void)clock_gettime(CLOCK_MONOTONIC, &ts);
           ]])
         ],[
-          curl_cv_gclk_LIBS="$x_xlibs"
+          cares_cv_gclk_LIBS="$x_xlibs"
         ])
       fi
     done
     #
-    LIBS="$curl_cv_save_LIBS"
+    LIBS="$cares_cv_save_LIBS"
     #
-    case X-"$curl_cv_gclk_LIBS" in
+    case X-"$cares_cv_gclk_LIBS" in
       X-unknown)
         AC_MSG_RESULT([cannot find clock_gettime])
         AC_MSG_WARN([HAVE_CLOCK_GETTIME_MONOTONIC will not be defined])
@@ -1616,12 +1616,12 @@ AC_DEFUN([CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC], [
         ac_cv_func_clock_gettime="yes"
         ;;
       *)
-        if test -z "$curl_cv_save_LIBS"; then
-          LIBS="$curl_cv_gclk_LIBS"
+        if test -z "$cares_cv_save_LIBS"; then
+          LIBS="$cares_cv_gclk_LIBS"
         else
-          LIBS="$curl_cv_gclk_LIBS $curl_cv_save_LIBS"
+          LIBS="$cares_cv_gclk_LIBS $cares_cv_save_LIBS"
         fi
-        AC_MSG_RESULT([$curl_cv_gclk_LIBS])
+        AC_MSG_RESULT([$cares_cv_gclk_LIBS])
         ac_cv_func_clock_gettime="yes"
         ;;
     esac
@@ -1661,7 +1661,7 @@ AC_DEFUN([CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC], [
         AC_MSG_RESULT([no])
         AC_MSG_WARN([HAVE_CLOCK_GETTIME_MONOTONIC will not be defined])
         ac_cv_func_clock_gettime="no"
-        LIBS="$curl_cv_save_LIBS"
+        LIBS="$cares_cv_save_LIBS"
       ])
     fi
     #

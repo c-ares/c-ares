@@ -74,7 +74,6 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AX_REQUIRE_DEFINED([AX_CXX_COMPILE_STDCXX_14])
 
 
-
 dnl SED is mandatory for configure process and libtool.
 dnl Set it now, allowing it to be changed later.
 AC_PATH_PROG([SED], [sed], [not_found],
