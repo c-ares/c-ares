@@ -18,7 +18,7 @@
 # SPDX-License-Identifier: MIT
 #
 #############################################################
-AC_PREREQ([2.71])
+AC_PREREQ([2.69])
 
 AC_INIT([c-ares], [1.24.0],
   [c-ares mailing list: http://lists.haxx.se/listinfo/c-ares])

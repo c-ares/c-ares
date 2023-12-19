@@ -18,7 +18,7 @@
 # SPDX-License-Identifier: MIT
 #
 #############################################################
-AC_PREREQ(2.71)
+AC_PREREQ(2.69)
 AC_INIT([c-ares-test],[-],[-])
 AC_CONFIG_SRCDIR([ares-test.cc])
 AC_CONFIG_MACRO_DIR([../m4])
