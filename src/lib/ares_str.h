@@ -48,4 +48,8 @@ size_t      ares_strcpy(char *dest, const char *src, size_t dest_size);
 
 ares_bool_t ares_str_isnum(const char *str);
 
+unsigned char ares__tolower(unsigned char c);
+ares_bool_t ares__memeq_ci(const unsigned char *ptr, const unsigned char *val,
+                           size_t len);
+
 #endif /* HEADER_CARES_STRDUP_H */

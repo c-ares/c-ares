@@ -420,7 +420,11 @@ typedef enum {
   /*! Allow blank sections, by default blank sections are not emitted.  If using
    *  ARES_BUF_SPLIT_DONT_CONSUME_DELIMS, the delimiter is not counted as part
    *  of the section */
-  ARES_BUF_SPLIT_ALLOW_BLANK = 1 << 1
+  ARES_BUF_SPLIT_ALLOW_BLANK = 1 << 1,
+  /*! Remove duplicate entries */
+  ARES_BUF_SPLIT_NO_DUPLICATES = 1 << 2,
+  /*! Perform case-insenstive matching when comparing values */
+  ARES_BUF_SPLIT_CASE_INSENSITIVE = 1 << 3
 } ares__buf_split_t;
 
 /*! Split the provided buffer into multiple sub-buffers stored in the variable

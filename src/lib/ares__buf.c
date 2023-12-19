@@ -793,6 +793,34 @@ static void ares__buf_destroy_cb(void *arg)
   ares__buf_destroy(arg);
 }
 
+static ares_bool_t ares__buf_split_isduplicate(ares__llist_t *list,
+                                               const unsigned char *val,
+                                               size_t len,
+                                               ares__buf_split_t flags)
+{
+  ares__llist_node_t *node;
+
+  for (node = ares__llist_node_first(list); node != NULL;
+       node = ares__llist_node_next(node)) {
+    ares__buf_t          *buf  = ares__llist_node_val(node);
+    size_t                plen = 0;
+    const unsigned char  *ptr  = ares__buf_peek(buf, &plen);
+
+    /* Can't be duplicate if lengths mismatch */
+    if (plen != len)
+      continue;
+
+    if (flags & ARES_BUF_SPLIT_CASE_INSENSITIVE) {
+      if (ares__memeq_ci(ptr, val, len))
+        return ARES_TRUE;
+    } else {
+      if (memcmp(ptr, val, len) == 0)
+        return ARES_TRUE;
+    }
+  }
+  return ARES_FALSE;
+}
+
 ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
                               size_t delims_len, ares__buf_split_t flags,
                               ares__llist_t **list)
@@ -826,23 +854,27 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
       const unsigned char *ptr = ares__buf_tag_fetch(buf, &len);
       ares__buf_t         *data;
 
-      /* Since we don't allow const buffers of 0 length, and user wants 0-length
-       * buffers, swap what we do here */
-      if (len) {
-        data = ares__buf_create_const(ptr, len);
-      } else {
-        data = ares__buf_create();
-      }
+      if (!(flags & ARES_BUF_SPLIT_NO_DUPLICATES) ||
+          !ares__buf_split_isduplicate(*list, ptr, len, flags)) {
 
-      if (data == NULL) {
-        status = ARES_ENOMEM;
-        goto done;
-      }
+        /* Since we don't allow const buffers of 0 length, and user wants
+         * 0-length buffers, swap what we do here */
+        if (len) {
+          data = ares__buf_create_const(ptr, len);
+        } else {
+          data = ares__buf_create();
+        }
 
-      if (ares__llist_insert_last(*list, data) == NULL) {
-        ares__buf_destroy(data);
-        status = ARES_ENOMEM;
-        goto done;
+        if (data == NULL) {
+          status = ARES_ENOMEM;
+          goto done;
+        }
+
+        if (ares__llist_insert_last(*list, data) == NULL) {
+          ares__buf_destroy(data);
+          status = ARES_ENOMEM;
+          goto done;
+        }
       }
     }
 

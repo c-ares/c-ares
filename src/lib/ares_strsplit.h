@@ -35,7 +35,7 @@
  *             Each character in the string is a delimiter so
  *             there can be multiple delimiters to split on.
  *             E.g. ", " will split on all comma's and spaces.
- *             Duplicate entries are removed.
+ *             Duplicate (case-insensitive) entries are removed.
  * param num_elm Return parameter of the number of elements
  *               in the result array.
  *

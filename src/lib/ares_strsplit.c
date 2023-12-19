@@ -71,15 +71,16 @@ char **ares__strsplit_duplicate(char **elms, size_t num_elm)
   return out;
 }
 
+
 char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
 {
-  const char *p;
-  char      **table;
-  void       *tmp;
-  size_t      i;
-  size_t      j;
-  size_t      k;
-  size_t      count;
+  ares_status_t       status;
+  ares__buf_t        *buf   = NULL;
+  ares__llist_t      *llist = NULL;
+  ares__llist_node_t *node;
+  char              **out   = NULL;
+  size_t              cnt   = 0;
+  size_t              idx   = 0;
 
   if (in == NULL || delms == NULL || num_elm == NULL) {
     return NULL;
@@ -87,56 +88,56 @@ char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
 
   *num_elm = 0;
 
-  /* count non-empty delimited substrings */
-  count = 0;
-  p     = in;
-  do {
-    i = strcspn(p, delms);
-    if (i != 0) {
-      /* string is non-empty */
-      count++;
-      p += i;
-    }
-  } while (*p++ != 0);
-
-  if (count == 0) {
-    return NULL;
-  }
-  table = ares_malloc(count * sizeof(*table));
-  if (table == NULL) {
+  buf = ares__buf_create_const((const unsigned char *)in, ares_strlen(in));
+  if (buf == NULL) {
     return NULL;
   }
 
-  j = 0; /* current table entry */
-  /* re-calculate indices and allocate new strings for table */
-  for (p = in; j < count; p += i + 1) {
-    i = strcspn(p, delms);
-    if (i != 0) {
-      for (k = 0; k < j; k++) {
-        if (strncasecmp(table[k], p, i) == 0 && table[k][i] == 0) {
-          break;
-        }
-      }
-      if (k == j) {
-        /* copy unique strings only */
-        table[j] = ares_malloc(i + 1);
-        if (table[j] == NULL) {
-          ares__strsplit_free(table, j);
-          return NULL;
-        }
-        ares_strcpy(table[j], p, i + 1);
-        j++;
-      } else {
-        count--;
-      }
+  status = ares__buf_split(buf, (const unsigned char *)delms,
+                           ares_strlen(delms),
+                           ARES_BUF_SPLIT_NO_DUPLICATES|
+                           ARES_BUF_SPLIT_CASE_INSENSITIVE,
+                           &llist);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  cnt = ares__llist_len(llist);
+  if (cnt == 0) {
+    status = ARES_EFORMERR;
+    goto done;
+  }
+
+
+  out = ares_malloc_zero(cnt * sizeof(*out));
+  if (out == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  for (node = ares__llist_node_first(llist); node != NULL;
+       node = ares__llist_node_next(node)) {
+    ares__buf_t *val  = ares__llist_node_val(node);
+    char        *temp = NULL;
+
+    status = ares__buf_fetch_str_dup(val, ares__buf_len(val), &temp);
+    if (status != ARES_SUCCESS) {
+      goto done;
     }
+
+    out[idx++] = temp;
   }
 
-  tmp = ares_realloc(table, count * sizeof(*table));
-  if (tmp != NULL) {
-    table = tmp;
+  *num_elm = cnt;
+  status   = ARES_SUCCESS;
+
+done:
+  ares__llist_destroy(llist);
+  ares__buf_destroy(buf);
+  if (status != ARES_SUCCESS) {
+    ares__strsplit_free(out, cnt);
+    out = NULL;
   }
 
-  *num_elm = count;
-  return table;
+  return out;
 }
