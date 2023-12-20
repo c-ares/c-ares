@@ -124,6 +124,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__buf.h"
 #include "ares_dns_private.h"
 #include "ares__iface_ips.h"
+#include "ares__threads.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"
@@ -237,9 +238,6 @@ typedef struct ares__qcache ares__qcache_t;
 
 struct ares_hosts_file;
 typedef struct ares_hosts_file ares_hosts_file_t;
-
-struct ares__thread_mutex;
-typedef struct ares__thread_mutex ares__thread_mutex_t;
 
 struct ares_channeldata {
   /* Configuration data */

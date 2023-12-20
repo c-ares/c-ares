@@ -34,7 +34,7 @@ struct ares__thread_mutex {
   CRITICAL_SECTION mutex;
 };
 
-static ares__thread_mutex_t *ares__thread_mutex_create(void)
+ares__thread_mutex_t *ares__thread_mutex_create(void)
 {
   ares__thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
   if (mut == NULL) {
@@ -45,7 +45,7 @@ static ares__thread_mutex_t *ares__thread_mutex_create(void)
   return mut;
 }
 
-static void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
+void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -54,7 +54,7 @@ static void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
   ares_free(mut);
 }
 
-static void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
+void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -62,7 +62,7 @@ static void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
   EnterCriticalSection(&mut->mutex);
 }
 
-static void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
+void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -70,14 +70,14 @@ static void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
   LeaveCriticalSection(&mut->mutex);
 }
 
-#  else
+#  else /* !WIN32 == PTHREAD */
 #    include <pthread.h>
 
 struct ares__thread_mutex {
   pthread_mutex_t mutex;
 };
 
-static ares__thread_mutex_t *ares__thread_mutex_create(void)
+ares__thread_mutex_t *ares__thread_mutex_create(void)
 {
   pthread_mutexattr_t   attr;
   ares__thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
@@ -107,7 +107,7 @@ fail:
   return NULL;
 }
 
-static void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
+void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -116,7 +116,7 @@ static void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
   ares_free(mut);
 }
 
-static void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
+void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -124,7 +124,7 @@ static void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
   pthread_mutex_lock(&mut->mutex);
 }
 
-static void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
+void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -133,8 +133,46 @@ static void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
 }
 #  endif
 
+ares_bool_t ares_threadsafety(void)
+{
+  return ARES_TRUE;
+}
+
+#else /* !CARES_THREADS */
+
+/* NoOp */
+ares__thread_mutex_t *ares__thread_mutex_create(void)
+{
+  return NULL;
+}
+
+void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
+{
+  (void)mut;
+}
+
+void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
+{
+  (void)mut;
+}
+
+void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
+{
+  (void)mut;
+}
+
+ares_bool_t ares_threadsafety(void)
+{
+  return ARES_FALSE;
+}
+#endif
+
+
 ares_status_t ares__channel_threading_init(ares_channel_t *channel)
 {
+  if (!ares_threadsafety())
+    return ARES_ENOTIMP;
+
   channel->lock = ares__thread_mutex_create();
   if (channel->lock == NULL) {
     return ARES_ENOMEM;
@@ -158,36 +196,3 @@ void ares__channel_unlock(ares_channel_t *channel)
   ares__thread_mutex_unlock(channel->lock);
 }
 
-ares_bool_t ares_threadsafety(void)
-{
-  return ARES_TRUE;
-}
-
-#else
-/* NoOp */
-ares_status_t ares__channel_threading_init(ares_channel_t *channel)
-{
-  (void)channel;
-  return ARES_SUCCESS;
-}
-
-void ares__channel_threading_destroy(ares_channel_t *channel)
-{
-  (void)channel;
-}
-
-void ares__channel_lock(ares_channel_t *channel)
-{
-  (void)channel;
-}
-
-void ares__channel_unlock(ares_channel_t *channel)
-{
-  (void)channel;
-}
-
-ares_bool_t ares_threadsafety(void)
-{
-  return ARES_FALSE;
-}
-#endif

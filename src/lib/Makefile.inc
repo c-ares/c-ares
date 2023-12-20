@@ -85,6 +85,7 @@ HHEADERS = ares__buf.h			\
   ares__iface_ips.h			\
   ares__llist.h				\
   ares__slist.h				\
+  ares__threads.h			\
   ares_android.h			\
   ares_data.h				\
   ares_dns_private.h			\
