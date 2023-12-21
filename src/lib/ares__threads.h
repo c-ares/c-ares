@@ -40,7 +40,7 @@ typedef struct ares__thread ares__thread_t;
 
 typedef void *(*ares__thread_func_t)(void *arg);
 ares_status_t ares__thread_create(ares__thread_t **thread,
-                                  ares__thread_func_t *func, void *arg);
+                                  ares__thread_func_t func, void *arg);
 ares_status_t ares__thread_join(ares__thread_t *thread, void **rv);
 
 #endif
