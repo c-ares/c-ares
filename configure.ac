@@ -86,10 +86,8 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AX_CODE_COVERAGE
 
-
 dnl Get system canonical name
 AC_DEFINE_UNQUOTED(OS, "${host}", [cpu-machine-OS])
-
 
 dnl This defines _ALL_SOURCE for AIX
 CARES_CHECK_AIX_ALL_SOURCE
@@ -134,6 +132,21 @@ case $host_os in
     AC_MSG_RESULT([no])
     ;;
 esac
+
+AC_MSG_CHECKING([whether we need CARES_STATICLIB definition])
+case $host_os in
+  cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
+    if test "x$enable_shared" = "no" ; then
+      AX_APPEND_FLAGS([-DCARES_STATICLIB], [CPPFLAGS])
+      AC_MSG_RESULT([yes])
+    else
+      AC_MSG_RESULT([no])
+    ;;
+  *)
+    AC_MSG_RESULT([no])
+    ;;
+esac
+
 
 dnl **********************************************************************
 dnl platform/compiler/architecture specific checks/flags

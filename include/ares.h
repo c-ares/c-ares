@@ -98,10 +98,14 @@ extern "C" {
 */
 
 #if defined(_WIN32) || defined(__CYGWIN__) || defined(__SYMBIAN32__)
-#  ifdef CARES_BUILDING_LIBRARY
-#    define CARES_EXTERN __declspec(dllexport)
+#  ifdef CARES_STATICLIB
+#    define CARES_EXTERN
 #  else
-#    define CARES_EXTERN __declspec(dllimport)
+#    ifdef CARES_BUILDING_LIBRARY
+#      define CARES_EXTERN __declspec(dllexport)
+#    else
+#      define CARES_EXTERN __declspec(dllimport)
+#    endif
 #  endif
 #else
 #  if defined(__GNUC__) && __GNUC__ >= 4
