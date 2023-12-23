@@ -89,14 +89,6 @@ IF (CARES_SYMBOL_HIDING)
 		MESSAGE (FATAL_ERROR "Hiding symbols requires CMake 3.12")
 	ENDIF ()
 	CMAKE_POLICY (SET CMP0063 NEW)
-	SET (CARES_SYMBOL_SCOPE_EXTERN [=[__attribute__ ((visibility("default")))]=])
-	CHECK_C_SOURCE_COMPILES ("
-		${CARES_SYMBOL_SCOPE_EXTERN} int somefunc() { return 0; }
-		int main() { return somefunc(); }
-	" HAVE_VISIBILITY_ATTRIBUTE)
-	IF (NOT HAVE_VISIBILITY_ATTRIBUTE)
-		MESSAGE (FATAL_ERROR "C compiler does not accept visibility attribute")
-	ENDIF ()
 ENDIF ()
 
 # Keep build organized.
@@ -736,7 +728,6 @@ IF (CARES_INSTALL)
 
 	# pkgconfig support
 	IF (NOT CARES_SHARED)
-		SET (CPPFLAG_CARES_STATICLIB "-DCARES_STATICLIB")
 		FOREACH (LIB ${CARES_DEPENDENT_LIBS})
 			SET (CARES_PRIVATE_LIBS "${CARES_PRIVATE_LIBS} -l${LIB}")
 		ENDFOREACH ()

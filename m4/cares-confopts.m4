@@ -336,8 +336,6 @@ AC_DEFUN([CARES_CONFIGURE_SYMBOL_HIDING], [
     test "$supports_symbol_hiding" = "yes"; then
     doing_symbol_hiding="yes"
     CFLAG_CARES_SYMBOL_HIDING="$symbol_hiding_CFLAGS"
-    AC_DEFINE_UNQUOTED(CARES_SYMBOL_SCOPE_EXTERN, $symbol_hiding_EXTERN,
-      [Definition to make a library symbol externally visible.])
     AC_MSG_RESULT([yes])
   else
     AC_MSG_RESULT([no])

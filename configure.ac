@@ -135,25 +135,9 @@ case $host_os in
     ;;
 esac
 
-#
-# Due to libtool and automake machinery limitations of not allowing
-# specifying separate CPPFLAGS or CFLAGS when compiling objects for
-# inclusion of these in shared or static libraries, we are forced to
-# build using separate configure runs for shared and static libraries
-# on systems where different CPPFLAGS or CFLAGS are mandatory in order
-# to compile objects for each kind of library. Notice that relying on
-# the '-DPIC' CFLAG that libtool provides is not valid given that the
-# user might for example choose to build static libraries with PIC.
-#
-if test "x$enable_static" = 'xyes' -a "x$enable_shared" = "xno"; then
-  AX_APPEND_FLAG([-DCARES_STATICLIB], [CPPFLAGS])
-fi
-
 dnl **********************************************************************
 dnl platform/compiler/architecture specific checks/flags
 dnl **********************************************************************
-
-
 
 if test "$want_warnings" = "yes"; then
   AX_APPEND_COMPILE_FLAGS([-Wall \
