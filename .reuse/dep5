@@ -19,7 +19,7 @@ Copyright: The c-ares project and its contributors.
 License: MIT
 
 # Imported m4 files
-Files: m4/ax_pthread.m4
+Files: m4/ax_pthread.m4 m4/ax_compiler_vendor.m4
 Copyright: see file
 License: GPL-3.0-or-later WITH Autoconf-exception-3.0
 
