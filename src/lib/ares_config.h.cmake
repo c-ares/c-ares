@@ -70,9 +70,6 @@
 /* Define to 1 if you have the `bitncmp' function. */
 #cmakedefine HAVE_BITNCMP
 
-/* Define to 1 if bool is an available type. */
-#cmakedefine HAVE_BOOL_T
-
 /* Define to 1 if you have the clock_gettime function and monotonic timer. */
 #cmakedefine HAVE_CLOCK_GETTIME_MONOTONIC
 
@@ -244,12 +241,6 @@
 
 /* Define to 1 if you have the <signal.h> header file. */
 #cmakedefine HAVE_SIGNAL_H
-
-/* Define to 1 if sig_atomic_t is an available typedef. */
-#cmakedefine HAVE_SIG_ATOMIC_T
-
-/* Define to 1 if sig_atomic_t is already defined as volatile. */
-#cmakedefine HAVE_SIG_ATOMIC_T_VOLATILE
 
 /* Define to 1 if your struct sockaddr_in6 has sin6_scope_id. */
 #cmakedefine HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID

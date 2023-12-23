@@ -75,54 +75,14 @@ CARES_CHECK_OPTION_WARNINGS
 CARES_CHECK_OPTION_WERROR
 CARES_CHECK_OPTION_SYMBOL_HIDING
 CARES_CHECK_OPTION_EXPOSE_STATICS
+CARES_CHECK_COMPILER
+CARES_SET_COMPILER_BASIC_OPTS
+CARES_SET_COMPILER_DEBUG_OPTS
+CARES_SET_COMPILER_OPTIMIZE_OPTS
+CARES_SET_COMPILER_WARNING_OPTS
 
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-
-dnl SED is mandatory for configure process and libtool.
-dnl Set it now, allowing it to be changed later.
-AC_PATH_PROG([SED], [sed], [not_found],
-  [$PATH:/usr/bin:/usr/local/bin])
-if test -z "$SED" || test "$SED" = "not_found"; then
-  AC_MSG_ERROR([sed not found in PATH. Cannot continue without sed.])
-fi
-AC_SUBST([SED])
-
-dnl GREP is mandatory for configure process and libtool.
-dnl Set it now, allowing it to be changed later.
-AC_PATH_PROG([GREP], [grep], [not_found],
-  [$PATH:/usr/bin:/usr/local/bin])
-if test -z "$GREP" || test "$GREP" = "not_found"; then
-  AC_MSG_ERROR([grep not found in PATH. Cannot continue without grep.])
-fi
-AC_SUBST([GREP])
-
-dnl EGREP is mandatory for configure process and libtool.
-dnl Set it now, allowing it to be changed later.
-if echo a | ($GREP -E '(a|b)') >/dev/null 2>&1; then
-  AC_MSG_CHECKING([for egrep])
-  EGREP="$GREP -E"
-  AC_MSG_RESULT([$EGREP])
-else
-  AC_PATH_PROG([EGREP], [egrep], [not_found],
-    [$PATH:/usr/bin:/usr/local/bin])
-fi
-if test -z "$EGREP" || test "$EGREP" = "not_found"; then
-  AC_MSG_ERROR([egrep not found in PATH. Cannot continue without egrep.])
-fi
-AC_SUBST([EGREP])
-
-dnl AR is mandatory for configure process and libtool.
-dnl This is target dependent, so check it as a tool.
-if test -z "$AR"; then
-  dnl allow it to be overridden
-  AC_PATH_TOOL([AR], [ar], [not_found],
-    [$PATH:/usr/bin:/usr/local/bin])
-  if test -z "$AR" || test "$AR" = "not_found"; then
-    AC_MSG_ERROR([ar not found in PATH. Cannot continue without ar.])
-  fi
-fi
-AC_SUBST([AR])
 
 AX_CODE_COVERAGE
 
@@ -146,8 +106,6 @@ case $host_os in
     AC_DEFINE(ETC_INET, 1, [if a /etc/inet dir is being used])
     ;;
 esac
-
-dnl XC_LIBTOOL
 
 #
 # Automake conditionals based on libtool related checks
@@ -195,11 +153,7 @@ dnl **********************************************************************
 dnl platform/compiler/architecture specific checks/flags
 dnl **********************************************************************
 
-CARES_CHECK_COMPILER
-CARES_SET_COMPILER_BASIC_OPTS
-CARES_SET_COMPILER_DEBUG_OPTS
-CARES_SET_COMPILER_OPTIMIZE_OPTS
-CARES_SET_COMPILER_WARNING_OPTS
+
 
 if test "$want_warnings" = "yes"; then
   AX_APPEND_COMPILE_FLAGS([-Wall \
@@ -663,19 +617,6 @@ AC_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SSIZE_T], ${CARES_TYPEOF_ARES_SSIZE_T},
   [the signed version of size_t])
 
 
-# check for bool type
-AC_CHECK_TYPE([bool],[
-  AC_DEFINE(HAVE_BOOL_T, 1,
-    [Define to 1 if bool is an available type.])
-], ,[
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_STDBOOL_H
-#include <stdbool.h>
-#endif
-])
-
 CARES_INCLUDES_WS2TCPIP
 CARES_INCLUDES_SYS_SOCKET
 
@@ -696,13 +637,6 @@ AC_CHECK_TYPE(SOCKET, [], [])
 TYPE_IN_ADDR_T
 
 TYPE_SOCKADDR_STORAGE
-
-TYPE_SIG_ATOMIC_T
-
-dnl CURL_CHECK_FUNC_RECV
-dnl CURL_CHECK_FUNC_RECVFROM
-dnl CURL_CHECK_FUNC_SEND
-dnl CURL_CHECK_FUNC_GETNAMEINFO
 
 dnl ###############################################################################
 dnl recv, recvfrom, send, getnameinfo, gethostname
