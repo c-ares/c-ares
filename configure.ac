@@ -55,25 +55,29 @@ AC_SUBST([CARES_VERSION_INFO])
 
 AC_CONFIG_SRCDIR([src/lib/ares_ipv6.h])
 AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h])
+AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
+AC_USE_SYSTEM_EXTENSIONS
+AX_CXX_COMPILE_STDCXX_14([noext],[optional])
+AM_INIT_AUTOMAKE([foreign subdir-objects 1.9.6])
+AC_DISABLE_STATIC
+AC_ENABLE_SHARED
+LT_INIT([win32-dll,shared,disable-static,pic,disable-fast-install,aix-soname=svr4])
+AC_LANG([C])
+AC_PROG_CC
+AM_PROG_CC_C_O
+AC_PROG_INSTALL
+AC_CANONICAL_HOST
 
 CARES_CHECK_OPTION_DEBUG
 CARES_CHECK_OPTION_OPTIMIZE
 CARES_CHECK_OPTION_WARNINGS
-XC_CHECK_PATH_SEPARATOR
-XC_CHECK_PROG_CC
 CARES_CHECK_OPTION_WERROR
 CARES_CHECK_OPTION_SYMBOL_HIDING
 CARES_CHECK_OPTION_EXPOSE_STATICS
 
-dnl make sure we use system extensions like _GNU_SOURCE or _XOPEN_SOURCE
-AC_USE_SYSTEM_EXTENSIONS
-
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-
-AX_REQUIRE_DEFINED([AX_CXX_COMPILE_STDCXX_14])
-
 
 dnl SED is mandatory for configure process and libtool.
 dnl Set it now, allowing it to be changed later.
@@ -122,17 +126,10 @@ AC_SUBST([AR])
 
 AX_CODE_COVERAGE
 
-dnl
-dnl Detect the canonical host and target build environment
-dnl
 
-AC_CANONICAL_HOST
 dnl Get system canonical name
 AC_DEFINE_UNQUOTED(OS, "${host}", [cpu-machine-OS])
 
-AX_CXX_COMPILE_STDCXX_14([noext],[optional])
-
-XC_AUTOMAKE
 
 dnl This defines _ALL_SOURCE for AIX
 CARES_CHECK_AIX_ALL_SOURCE
@@ -150,19 +147,35 @@ case $host_os in
     ;;
 esac
 
-XC_LIBTOOL
-
+dnl XC_LIBTOOL
 
 #
 # Automake conditionals based on libtool related checks
 #
 
-AM_CONDITIONAL([CARES_LT_SHLIB_USE_VERSION_INFO],
-  [test "x$xc_lt_shlib_use_version_info" = 'xyes'])
-AM_CONDITIONAL([CARES_LT_SHLIB_USE_NO_UNDEFINED],
-  [test "x$xc_lt_shlib_use_no_undefined" = 'xyes'])
-AM_CONDITIONAL([CARES_LT_SHLIB_USE_MIMPURE_TEXT],
-  [test "x$xc_lt_shlib_use_mimpure_text" = 'xyes'])
+AC_MSG_CHECKING([whether to build shared libraries with -mimpure-text])
+case $host_os in
+  solaris2*)
+    if test "x$GCC" = 'xyes'; then
+      AX_APPEND_LINK_FLAGS([-mimpure-text])
+      AC_MSG_RESULT([yes])
+    fi
+    ;;
+  *)
+    AC_MSG_RESULT([no])
+    ;;
+esac
+
+AC_MSG_CHECKING([whether to build shared libraries with -no-undefined])
+case $host_os in
+  cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
+    AX_APPEND_LINK_FLAGS([-no-undefined])
+    AC_MSG_RESULT([yes])
+    ;;
+  *)
+    AC_MSG_RESULT([no])
+    ;;
+esac
 
 #
 # Due to libtool and automake machinery limitations of not allowing
@@ -174,26 +187,9 @@ AM_CONDITIONAL([CARES_LT_SHLIB_USE_MIMPURE_TEXT],
 # the '-DPIC' CFLAG that libtool provides is not valid given that the
 # user might for example choose to build static libraries with PIC.
 #
-
-#
-# Make our Makefile.am files use the staticlib CPPFLAG only when strictly
-# targeting a static library and not building its shared counterpart.
-#
-
-AM_CONDITIONAL([USE_CPPFLAG_CARES_STATICLIB],
-  [test "x$xc_lt_build_static_only" = 'xyes'])
-
-#
-# Make staticlib CPPFLAG variable and its definition visible in output
-# files unconditionally, providing an empty definition unless strictly
-# targeting a static library and not building its shared counterpart.
-#
-
-CPPFLAG_CARES_STATICLIB=
-if test "x$xc_lt_build_static_only" = 'xyes'; then
-  CPPFLAG_CARES_STATICLIB='-DCARES_STATICLIB'
+if test "x$enable_static" = 'xyes' -a "x$enable_shared" = "xno"; then
+  AX_APPEND_FLAG([-DCARES_STATICLIB], [CPPFLAGS])
 fi
-AC_SUBST([CPPFLAG_CARES_STATICLIB])
 
 dnl **********************************************************************
 dnl platform/compiler/architecture specific checks/flags
@@ -1003,23 +999,6 @@ AC_CHECK_FUNCS([gettimeofday \
   if_nametoindex \
   ConvertInterfaceIndexToLuid \
   ConvertInterfaceLuidToNameA
-],[
-],[
-  func="$ac_func"
-  AC_MSG_CHECKING([deeper for $func])
-  AC_LINK_IFELSE([
-    AC_LANG_PROGRAM([[
-    ]],[[
-      $func ();
-    ]])
-  ],[
-    AC_MSG_RESULT([yes])
-    eval "ac_cv_func_$func=yes"
-    AC_DEFINE_UNQUOTED(XC_SH_TR_CPP([HAVE_$func]), [1],
-      [Define to 1 if you have the $func function.])
-  ],[
-    AC_MSG_RESULT([but still no])
-  ])
 ])
 
 dnl Android. Some variants like arm64 may no longer have __system_property_get
@@ -1127,7 +1106,7 @@ squeeze LIBS
 
 squeeze CARES_PRIVATE_LIBS
 
-XC_CHECK_BUILD_FLAGS
+dnl XC_CHECK_BUILD_FLAGS
 
 AC_MSG_CHECKING([whether to build tests])
 AC_ARG_ENABLE(tests,
@@ -1169,4 +1148,3 @@ AC_CONFIG_FILES([Makefile           \
                  libcares.pc ])
 
 AC_OUTPUT
-XC_AMEND_DISTCLEAN(['.'])

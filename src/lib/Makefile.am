@@ -27,30 +27,10 @@ DISTCLEANFILES = ares_config.h
 
 DIST_SUBDIRS =
 
-AM_LDFLAGS =
-
-libcares_la_LDFLAGS_EXTRA =
-
-if CARES_LT_SHLIB_USE_VERSION_INFO
-libcares_la_LDFLAGS_EXTRA += -version-info @CARES_VERSION_INFO@
-endif
-
-if CARES_LT_SHLIB_USE_NO_UNDEFINED
-libcares_la_LDFLAGS_EXTRA += -no-undefined
-endif
-
-if CARES_LT_SHLIB_USE_MIMPURE_TEXT
-libcares_la_LDFLAGS_EXTRA += -mimpure-text
-endif
-
-libcares_la_LDFLAGS = $(AM_LDFLAGS) $(libcares_la_LDFLAGS_EXTRA)
+libcares_la_LDFLAGS = -version-info @CARES_VERSION_INFO@
 
 # Add -Werror if defined
 CFLAGS += @CARES_CFLAG_EXTRAS@
-
-if USE_CPPFLAG_CARES_STATICLIB
-AM_CPPFLAGS += $(CPPFLAG_CARES_STATICLIB)
-endif
 
 libcares_la_CFLAGS_EXTRA =
 
