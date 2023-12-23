@@ -680,7 +680,22 @@ AC_CHECK_TYPE([bool],[
 #endif
 ])
 
-CARES_CONFIGURE_ARES_SOCKLEN_T
+CARES_INCLUDES_WS2TCPIP
+CARES_INCLUDES_SYS_SOCKET
+
+AC_CHECK_TYPE(socklen_t,
+  [
+    AC_DEFINE(HAVE_SOCKLEN_T, [], [socklen_t])
+    CARES_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SOCKLEN_T], [socklen_t])
+  ],
+  [
+    CARES_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SOCKLEN_T], [int])
+  ], [
+    #include <sys/types.h>
+    #include <sys/socket.h>
+  ] )
+
+AC_CHECK_TYPE(SOCKET, [], [])
 
 TYPE_IN_ADDR_T
 
@@ -688,9 +703,101 @@ TYPE_SOCKADDR_STORAGE
 
 TYPE_SIG_ATOMIC_T
 
-CURL_CHECK_FUNC_RECV
-CURL_CHECK_FUNC_RECVFROM
-CURL_CHECK_FUNC_SEND
+dnl CURL_CHECK_FUNC_RECV
+dnl CURL_CHECK_FUNC_RECVFROM
+dnl CURL_CHECK_FUNC_SEND
+dnl CURL_CHECK_FUNC_GETNAMEINFO
+
+dnl ###############################################################################
+dnl recv, recvfrom, send, getnameinfo, gethostname
+dnl ARGUMENTS AND RETURN VALUES
+
+AC_CHECK_FUNCS([recv recvfrom send getnameinfo gethostname])
+
+if test "x$ac_cv_type_ssize_t" = "xyes" -a "x$ac_cv_type_socklen_t" = "xyes" -a "x$ac_cv_native_windows" != "xyes" ; then
+  recvfrom_type_retv="ssize_t"
+  recvfrom_type_arg3="size_t"
+else
+  recvfrom_type_retv="int"
+  recvfrom_type_arg3="int"
+fi
+
+if test "x$ac_cv_type_SOCKET" = "xyes" ; then
+  dnl If the SOCKET type is defined, it uses socket ... should be windows only
+  recvfrom_type_arg1="SOCKET"
+else
+  recvfrom_type_arg1="int"
+fi
+
+if test "x$ac_cv_type_socklen_t" = "xyes" ; then
+  recvfrom_type_arg6="socklen_t *"
+  getnameinfo_type_arg2="socklen_t"
+  getnameinfo_type_arg46="socklen_t"
+else
+  recvfrom_type_arg6="int *"
+  getnameinfo_type_arg2="int"
+  getnameinfo_type_arg46="int"
+fi
+
+if test "x$ac_cv_native_windows" = "xyes" ; then
+  recv_type_arg2="char *"
+else
+  recv_type_arg2="void *"
+fi
+
+dnl Functions are typically consistent so the equivalent fields map ... equivalently
+recv_type_retv=${recvfrom_type_retv}
+send_type_retv=${recvfrom_type_retv}
+recv_type_arg1=${recvfrom_type_arg1}
+recvfrom_type_arg2=${recv_type_arg2}
+send_type_arg1=${recvfrom_type_arg1}
+recv_type_arg3=${recvfrom_type_arg3}
+send_type_arg3=${recvfrom_type_arg3}
+gethostname_type_arg2=${recvfrom_type_arg3}
+
+dnl These should always be "sane" values to use always
+recvfrom_qual_arg5=
+recvfrom_type_arg4=int
+recvfrom_type_arg5="struct sockaddr *"
+recv_type_arg4=int
+getnameinfo_type_arg1="struct sockaddr *"
+getnameinfo_type_arg7=int
+send_type_arg2="void *"
+send_type_arg4=int
+
+AC_DEFINE_UNQUOTED([RECVFROM_TYPE_RETV],     [ ${recvfrom_type_retv} ],     [ recvfrom() return value ])
+AC_DEFINE_UNQUOTED([RECVFROM_TYPE_ARG1],     [ ${recvfrom_type_arg1} ],     [ recvfrom() arg1 type ])
+AC_DEFINE_UNQUOTED([RECVFROM_TYPE_ARG2],     [ ${recvfrom_type_arg2} ],     [ recvfrom() arg2 type ])
+AC_DEFINE_UNQUOTED([RECVFROM_TYPE_ARG3],     [ ${recvfrom_type_arg3} ],     [ recvfrom() arg3 type ])
+AC_DEFINE_UNQUOTED([RECVFROM_TYPE_ARG4],     [ ${recvfrom_type_arg4} ],     [ recvfrom() arg4 type ])
+AC_DEFINE_UNQUOTED([RECVFROM_TYPE_ARG5],     [ ${recvfrom_type_arg5} ],     [ recvfrom() arg5 type ])
+AC_DEFINE_UNQUOTED([RECVFROM_QUAL_ARG5],     [ ${recvfrom_qual_arg5}],      [ recvfrom() arg5 qualifier])
+
+AC_DEFINE_UNQUOTED([RECV_TYPE_RETV],         [ ${recv_type_retv} ],         [ recv() return value ])
+AC_DEFINE_UNQUOTED([RECV_TYPE_ARG1],         [ ${recv_type_arg1} ],         [ recv() arg1 type ])
+AC_DEFINE_UNQUOTED([RECV_TYPE_ARG2],         [ ${recv_type_arg2} ],         [ recv() arg2 type ])
+AC_DEFINE_UNQUOTED([RECV_TYPE_ARG3],         [ ${recv_type_arg3} ],         [ recv() arg3 type ])
+AC_DEFINE_UNQUOTED([RECV_TYPE_ARG4],         [ ${recv_type_arg4} ],         [ recv() arg4 type ])
+
+AC_DEFINE_UNQUOTED([SEND_TYPE_RETV],         [ ${send_type_retv} ],         [ send() return value ])
+AC_DEFINE_UNQUOTED([SEND_TYPE_ARG1],         [ ${send_type_arg1} ],         [ send() arg1 type ])
+AC_DEFINE_UNQUOTED([SEND_TYPE_ARG2],         [ ${send_type_arg2} ],         [ send() arg2 type ])
+AC_DEFINE_UNQUOTED([SEND_QUAL_ARG2],         [ ],                           [ send() arg2 qualifier ])
+AC_DEFINE_UNQUOTED([SEND_TYPE_ARG3],         [ ${send_type_arg3} ],         [ send() arg3 type ])
+AC_DEFINE_UNQUOTED([SEND_TYPE_ARG4],         [ ${send_type_arg4} ],         [ send() arg4 type ])
+
+AC_DEFINE_UNQUOTED([GETNAMEINFO_TYPE_ARG1],  [ ${getnameinfo_type_arg1} ],  [ getnameinfo() arg1 type ])
+AC_DEFINE_UNQUOTED([GETNAMEINFO_TYPE_ARG2],  [ ${getnameinfo_type_arg2} ],  [ getnameinfo() arg2 type ])
+AC_DEFINE_UNQUOTED([GETNAMEINFO_TYPE_ARG7],  [ ${getnameinfo_type_arg7} ],  [ getnameinfo() arg7 type ])
+AC_DEFINE_UNQUOTED([GETNAMEINFO_TYPE_ARG46], [ ${getnameinfo_type_arg46} ], [ getnameinfo() arg4 and 6 type ])
+
+AC_DEFINE_UNQUOTED([GETHOSTNAME_TYPE_ARG2],  [ ${gethostname_type_arg2} ],  [ gethostname() arg2 type ])
+
+
+
+dnl ###############################################################################
+
+
 CURL_CHECK_MSG_NOSIGNAL
 
 CARES_CHECK_FUNC_CLOSESOCKET
@@ -921,9 +1028,32 @@ AC_CHECK_FUNC([__system_property_get], [
     AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET], [1], [Define if __system_property_get exists.])
 ])
 
-dnl Check if the getnameinfo function is available
-dnl and get the types of five of its arguments.
-CURL_CHECK_FUNC_GETNAMEINFO
+dnl ares_build.h.in specific defines
+if test "x$ac_cv_header_sys_types_h" = "xyes" ; then
+  CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_TYPES_H],[1])
+fi
+if test "x$ac_cv_header_sys_random_h" = "xyes" ; then
+  CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_RANDOM_H],[1])
+fi
+if test "x$ac_cv_header_sys_socket_h" = "xyes" ; then
+  CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_SOCKET_H],[1])
+fi
+if test "x$ac_cv_header_ws2tcpip_h" = "xyes" ; then
+  CARES_DEFINE_UNQUOTED([CARES_HAVE_WS2TCPIP_H],[1])
+fi
+if test "x$ac_cv_header_winsock2_h" = "xyes" ; then
+  CARES_DEFINE_UNQUOTED([CARES_HAVE_WINSOCK2_H],[1])
+fi
+if test "x$ac_cv_header_windows_h" = "xyes" ; then
+  CARES_DEFINE_UNQUOTED([CARES_HAVE_WINDOWS_H],[1])
+fi
+if test "x$ac_cv_header_arpa_nameser_h" = "xyes" ; then
+  CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_H],[1])
+fi
+if test "x$ac_cv_header_arpa_nameser_compa_h" = "xyes" ; then
+  CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_COMPA_H],[1])
+fi
+
 
 
 AC_C_BIGENDIAN(
