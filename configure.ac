@@ -133,19 +133,19 @@ case $host_os in
     ;;
 esac
 
-AC_MSG_CHECKING([whether we need CARES_STATICLIB definition])
-case $host_os in
-  cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
-    if test "x$enable_shared" = "no" ; then
-      AX_APPEND_FLAGS([-DCARES_STATICLIB], [CPPFLAGS])
+dnl Only windows requires CARES_STATICLIB definition
+if test "x$enable_shared" = "xno" -a "x$enable_static" = "xyes" ; then
+  AC_MSG_CHECKING([whether we need CARES_STATICLIB definition])
+  case $host_os in
+    cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
+      AX_APPEND_FLAG([-DCARES_STATICLIB], [CPPFLAGS])
       AC_MSG_RESULT([yes])
-    else
+      ;;
+    *)
       AC_MSG_RESULT([no])
-    ;;
-  *)
-    AC_MSG_RESULT([no])
-    ;;
-esac
+      ;;
+  esac
+fi
 
 
 dnl **********************************************************************
