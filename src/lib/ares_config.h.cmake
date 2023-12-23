@@ -7,12 +7,6 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* define this if ares is built for a big endian system */
-#undef ARES_BIG_ENDIAN
-
-/* when building as static part of libcurl */
-#undef BUILDING_LIBCURL
-
 /* Defined for build that exposes internal static functions for testing. */
 #undef CARES_EXPOSE_STATICS
 
@@ -64,9 +58,6 @@
 /* Define to 1 if you have the <assert.h> header file. */
 #cmakedefine HAVE_ASSERT_H
 
-/* Define to 1 if you have the `bitncmp' function. */
-#cmakedefine HAVE_BITNCMP
-
 /* Define to 1 if you have the clock_gettime function and monotonic timer. */
 #cmakedefine HAVE_CLOCK_GETTIME_MONOTONIC
 
@@ -108,12 +99,6 @@
 
 /* Define to 1 if you have the getenv function. */
 #cmakedefine HAVE_GETENV
-
-/* Define to 1 if you have the gethostbyaddr function. */
-#cmakedefine HAVE_GETHOSTBYADDR
-
-/* Define to 1 if you have the gethostbyname function. */
-#cmakedefine HAVE_GETHOSTBYNAME
 
 /* Define to 1 if you have the gethostname function. */
 #cmakedefine HAVE_GETHOSTNAME

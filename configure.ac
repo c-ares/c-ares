@@ -66,37 +66,26 @@ LT_INIT([win32-dll,shared,disable-static,pic,disable-fast-install,aix-soname=svr
 AC_LANG([C])
 AC_PROG_CC
 AM_PROG_CC_C_O
+AC_PROG_EGREP
 AC_PROG_INSTALL
 AC_CANONICAL_HOST
+AX_COMPILER_VENDOR
+CARES_SHFUNC_SQUEEZE
 
-CARES_CHECK_OPTION_DEBUG
-CARES_CHECK_OPTION_OPTIMIZE
-CARES_CHECK_OPTION_WARNINGS
-CARES_CHECK_OPTION_WERROR
+AC_ARG_ENABLE(warnings,
+  AS_HELP_STRING([--disable-warnings],[Disable strict compiler warnings]),
+  [ enable_warnings=${enableval} ],
+  [ enable_warnings=yes ])
+
+
 CARES_CHECK_OPTION_SYMBOL_HIDING
 CARES_CHECK_OPTION_EXPOSE_STATICS
-CARES_CHECK_COMPILER
-CARES_SET_COMPILER_BASIC_OPTS
-CARES_SET_COMPILER_DEBUG_OPTS
-CARES_SET_COMPILER_OPTIMIZE_OPTS
-CARES_SET_COMPILER_WARNING_OPTS
+
 
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AX_CODE_COVERAGE
-
-dnl Get system canonical name
-AC_DEFINE_UNQUOTED(OS, "${host}", [cpu-machine-OS])
-
-dnl This defines _ALL_SOURCE for AIX
-CARES_CHECK_AIX_ALL_SOURCE
-
-dnl Our configure and build reentrant settings
-CARES_CONFIGURE_THREAD_SAFE
-CARES_CONFIGURE_REENTRANT
-
-dnl check for how to do large files
 AC_SYS_LARGEFILE
 
 case $host_os in
@@ -104,10 +93,6 @@ case $host_os in
     AC_DEFINE(ETC_INET, 1, [if a /etc/inet dir is being used])
     ;;
 esac
-
-#
-# Automake conditionals based on libtool related checks
-#
 
 AC_MSG_CHECKING([whether to build shared libraries with -mimpure-text])
 case $host_os in
@@ -147,12 +132,7 @@ if test "x$enable_shared" = "xno" -a "x$enable_static" = "xyes" ; then
   esac
 fi
 
-
-dnl **********************************************************************
-dnl platform/compiler/architecture specific checks/flags
-dnl **********************************************************************
-
-if test "$want_warnings" = "yes"; then
+if test "$enable_warnings" = "yes"; then
   AX_APPEND_COMPILE_FLAGS([-Wall \
     -Wextra \
     -Wcast-align \
@@ -191,21 +171,10 @@ if test "$want_warnings" = "yes"; then
   ], [CFLAGS], [-Werror])
 fi
 
-if test "$compiler_id" = "INTEL_UNIX_C"; then
-  #
-  if test "$compiler_num" -ge "1000"; then
-    dnl icc 10.X or later
-    CFLAGS="$CFLAGS -shared-intel"
-  elif test "$compiler_num" -ge "900"; then
-    dnl icc 9.X specific
-    CFLAGS="$CFLAGS -i-dynamic"
-  fi
-  #
+if test "$ax_cv_c_compiler_vendor" = "intel"; then
+  CFLAGS="$CFLAGS -shared-intel"
 fi
 
-CARES_CHECK_COMPILER_HALT_ON_ERROR
-CARES_CHECK_COMPILER_ARRAY_SIZE_NEGATIVE
-CARES_CHECK_COMPILER_PROTOTYPE_MISMATCH
 CARES_CHECK_COMPILER_SYMBOL_HIDING
 
 dnl **********************************************************************
@@ -241,148 +210,8 @@ dnl **********************************************************************
 
 CARES_CHECK_LIB_XNET
 
-dnl gethostbyname without lib or in the nsl lib?
-AC_CHECK_FUNC(gethostbyname,
-              [HAVE_GETHOSTBYNAME="1"
-              ],
-              [ AC_CHECK_LIB(nsl, gethostbyname,
-                             [HAVE_GETHOSTBYNAME="1"
-                             LIBS="$LIBS -lnsl"
-                             ])
-              ])
-
-if test "$HAVE_GETHOSTBYNAME" != "1"
-then
-  dnl gethostbyname in the socket lib?
-  AC_CHECK_LIB(socket, gethostbyname,
-               [HAVE_GETHOSTBYNAME="1"
-               LIBS="$LIBS -lsocket"
-               ])
-fi
-
-dnl At least one system has been identified to require BOTH nsl and socket
-dnl libs at the same time to link properly.
-if test "$HAVE_GETHOSTBYNAME" != "1"
-then
-  AC_MSG_CHECKING([for gethostbyname with both nsl and socket libs])
-  my_ac_save_LIBS=$LIBS
-  LIBS="-lnsl -lsocket $LIBS"
-  AC_LINK_IFELSE([
-    AC_LANG_PROGRAM([[
-    ]],[[
-      gethostbyname();
-    ]])
-  ],[
-    AC_MSG_RESULT([yes])
-    HAVE_GETHOSTBYNAME="1"
-  ],[
-    AC_MSG_RESULT([no])
-    LIBS=$my_ac_save_LIBS
-  ])
-fi
-
-if test "$HAVE_GETHOSTBYNAME" != "1"
-then
-  dnl This is for winsock systems
-  if test "$ac_cv_header_windows_h" = "yes"; then
-    if test "$ac_cv_header_winsock_h" = "yes"; then
-      case $host in
-        *-*-mingw32ce*)
-          winsock_LIB="-lwinsock"
-          ;;
-        *)
-          winsock_LIB="-lwsock32"
-          ;;
-      esac
-    fi
-    if test "$ac_cv_header_winsock2_h" = "yes"; then
-      winsock_LIB="-lws2_32"
-    fi
-    if test ! -z "$winsock_LIB"; then
-      my_ac_save_LIBS=$LIBS
-      LIBS="$winsock_LIB $LIBS"
-      AC_MSG_CHECKING([for gethostbyname in $winsock_LIB])
-      AC_LINK_IFELSE([
-        AC_LANG_PROGRAM([[
-#ifdef HAVE_WINDOWS_H
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#else
-#ifdef HAVE_WINSOCK_H
-#include <winsock.h>
-#endif
-#endif
-#endif
-        ]],[[
-          gethostbyname("www.dummysite.com");
-        ]])
-      ],[
-        AC_MSG_RESULT([yes])
-        HAVE_GETHOSTBYNAME="1"
-      ],[
-        AC_MSG_RESULT([no])
-        winsock_LIB=""
-        LIBS=$my_ac_save_LIBS
-      ])
-    fi
-  fi
-fi
-
-if test "$HAVE_GETHOSTBYNAME" != "1"
-then
-  dnl This is for Minix 3.1
-  AC_MSG_CHECKING([for gethostbyname for Minix 3])
-  AC_LINK_IFELSE([
-    AC_LANG_PROGRAM([[
-/* Older Minix versions may need <net/gen/netdb.h> here instead */
-#include <netdb.h>
-    ]],[[
-      gethostbyname("www.dummysite.com");
-    ]])
-  ],[
-    AC_MSG_RESULT([yes])
-    HAVE_GETHOSTBYNAME="1"
-  ],[
-    AC_MSG_RESULT([no])
-  ])
-fi
-
-if test "$HAVE_GETHOSTBYNAME" != "1"
-then
-  dnl This is for eCos with a stubbed DNS implementation
-  AC_MSG_CHECKING([for gethostbyname for eCos])
-  AC_LINK_IFELSE([
-    AC_LANG_PROGRAM([[
-#include <stdio.h>
-#include <netdb.h>
-    ]],[[
-      gethostbyname("www.dummysite.com");
-    ]])
-  ],[
-    AC_MSG_RESULT([yes])
-    HAVE_GETHOSTBYNAME="1"
-  ],[
-    AC_MSG_RESULT([no])
-  ])
-fi
-
-if test "$HAVE_GETHOSTBYNAME" != "1"
-then
-  dnl gethostbyname in the net lib - for BeOS
-  AC_CHECK_LIB(net, gethostbyname,
-               [HAVE_GETHOSTBYNAME="1"
-               LIBS="$LIBS -lnet"
-               ])
-fi
-
-
-if test "$HAVE_GETHOSTBYNAME" != "1"; then
-  AC_MSG_ERROR([couldn't find libraries for gethostbyname()])
-fi
+dnl see if libnsl or libsocket are required
+AC_SEARCH_LIBS([getservbyport], [nsl socket resolv])
 
 dnl resolv lib for Apple (MacOS and iOS)
 AS_IF([test "x$host_vendor" = "xapple"], [
@@ -493,18 +322,6 @@ AS_HELP_STRING([--enable-libgcc],[use libgcc when linking]),
        AC_MSG_RESULT(no)
 )
 
-
-dnl Let's hope this split URL remains working:
-dnl http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixprggd/ \
-dnl genprogc/thread_quick_ref.htm
-
-
-dnl **********************************************************************
-dnl Back to "normal" configuring
-dnl **********************************************************************
-
-AC_PROG_EGREP
-
 CURL_CHECK_HEADER_MALLOC
 CURL_CHECK_HEADER_MEMORY
 
@@ -579,7 +396,6 @@ CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_COMPAT_H])
 )
 
 dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
 AC_TYPE_SIZE_T
 
 CURL_CHECK_STRUCT_TIMEVAL
@@ -964,15 +780,6 @@ if test "x$ac_cv_header_arpa_nameser_compa_h" = "xyes" ; then
   CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_COMPA_H],[1])
 fi
 
-
-
-AC_C_BIGENDIAN(
-    [AC_DEFINE(ARES_BIG_ENDIAN, 1,
-      [define this if ares is built for a big endian system])],
-    ,
-    [AC_MSG_WARN([couldn't figure out endianness, assuming little endian!])]
-)
-
 dnl Check for user-specified random device
 AC_ARG_WITH(random,
 AS_HELP_STRING([--with-random=FILE],
@@ -985,9 +792,6 @@ if test -n "$CARES_RANDOM_FILE" && test X"$CARES_RANDOM_FILE" != Xno ; then
         AC_DEFINE_UNQUOTED(CARES_RANDOM_FILE, "$CARES_RANDOM_FILE",
         [a suitable file/device to read random data from])
 fi
-
-CARES_CHECK_OPTION_NONBLOCKING
-CARES_CHECK_NONBLOCKING_SOCKET
 
 
 dnl ------------ THREADING --------------
