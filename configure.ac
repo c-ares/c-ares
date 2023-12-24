@@ -556,6 +556,61 @@ AC_CHECK_FUNCS([
 ])
 
 
+if test "$ac_cv_func_getservbyport_r" = "yes" ; then
+  AC_MSG_CHECKING([number of arguments for getservbyport_r()])
+  getservbyport_r_args=6
+  case $host_os in
+    solaris*)
+      getservbyport_r_args=5
+    ;;
+    aix*|openbsd*)
+      getservbyport_r_args=4
+    ;;
+  esac
+  AC_MSG_RESULT([$getservbyport_r_args])
+  AC_DEFINE([GETSERVBYPORT_R_ARGS], [ $getservbyport_r_args ], [ number of arguments for getservbyport_r() ])
+fi
+
+if test "$ac_cv_func_getservbyname_r" = "yes" ; then
+  AC_MSG_CHECKING([number of arguments for getservbyname_r()])
+  getservbyname_r_args=6
+  case $host_os in
+    solaris*)
+      getservbyname_r_args=5
+    ;;
+    aix*|openbsd*)
+      getservbyname_r_args=4
+    ;;
+  esac
+  AC_DEFINE([GETSERVBYNAME_R_ARGS], [ $getservbyname_r_args ], [ number of arguments for getservbyname_r() ])
+  AC_MSG_RESULT([$getservbyname_r_args])
+fi
+
+AC_MSG_CHECKING([whether to build shared libraries with -mimpure-text])
+case $host_os in
+  solaris2*)
+    if test "x$GCC" = 'xyes'; then
+      AX_APPEND_LINK_FLAGS([-mimpure-text])
+      AC_MSG_RESULT([yes])
+    fi
+    ;;
+  *)
+    AC_MSG_RESULT([no])
+    ;;
+esac
+
+AC_MSG_CHECKING([whether to build shared libraries with -no-undefined])
+case $host_os in
+  cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
+    AX_APPEND_LINK_FLAGS([-no-undefined])
+    AC_MSG_RESULT([yes])
+    ;;
+  *)
+    AC_MSG_RESULT([no])
+    ;;
+esac
+
+
 AC_CHECK_DECL(AF_INET6, [AC_DEFINE([HAVE_AF_INET6],1,[Define to 1 if you have AF_INET6])], [], $cares_all_includes)
 AC_CHECK_DECL(PF_INET6, [AC_DEFINE([HAVE_PF_INET6],1,[Define to 1 if you have PF_INET6])], [], $cares_all_includes)
 AC_CHECK_TYPES(struct in6_addr, [], [], $cares_all_includes)
@@ -570,16 +625,16 @@ AC_CHECK_DECL(O_NONBLOCK, [], [], $cares_all_includes)
 AC_CHECK_DECL(SO_NONBLOCK, [], [], $cares_all_includes)
 
 if test "$ac_cv_have_decl_FIONBIO" = "yes" -a "$ac_cv_func_ioctl" = "yes" ; then
-  AC_DEFINE([HAVE_IOCTL_FIONBIO], [ ], [ ioctl() with FIONBIO support ])
+  AC_DEFINE([HAVE_IOCTL_FIONBIO], [ 1 ], [ ioctl() with FIONBIO support ])
 fi
 if test "$ac_cv_have_decl_FIONBIO" = "yes" -a "$ac_cv_func_ioctlsocket" = "yes" ; then
-  AC_DEFINE([HAVE_IOCTLSOCKET_FIONBIO], [ ], [ ioctlsocket() with FIONBIO support ])
+  AC_DEFINE([HAVE_IOCTLSOCKET_FIONBIO], [ 1 ], [ ioctlsocket() with FIONBIO support ])
 fi
 if test "$ac_cv_have_decl_SO_NONBLOCK" = "yes" -a "$ac_cv_func_setsockopt" = "yes" ; then
-  AC_DEFINE([HAVE_SETSOCKOPT_SO_NONBLOCK], [ ], [ setsockopt() with SO_NONBLOCK support ])
+  AC_DEFINE([HAVE_SETSOCKOPT_SO_NONBLOCK], [ 1 ], [ setsockopt() with SO_NONBLOCK support ])
 fi
 if test "$ac_cv_have_decl_O_NONBLOCK" = "yes" -a "$ac_cv_func_fcntl" = "yes" ; then
-  AC_DEFINE([HAVE_FCNTL_O_NONBLOCK], [ ], [ fcntl() with O_NONBLOCK support ])
+  AC_DEFINE([HAVE_FCNTL_O_NONBLOCK], [ 1 ], [ fcntl() with O_NONBLOCK support ])
 fi
 
 
