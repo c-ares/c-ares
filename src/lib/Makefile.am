@@ -28,6 +28,9 @@ DISTCLEANFILES = ares_config.h
 DIST_SUBDIRS =
 
 libcares_la_LDFLAGS = -version-info @CARES_VERSION_INFO@
+if CARES_USE_NO_UNDEFINED
+libcares_la_LDFLAGS += -no-undefined
+endif
 
 libcares_la_CFLAGS_EXTRA =
 

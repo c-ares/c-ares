@@ -87,13 +87,17 @@ case $host_os in
 esac
 
 dnl -no-undefined linker flag for windows
+cares_use_no_undefined=no
 case $host_os in
   cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
+    cares_use_no_undefined=yes
     AX_APPEND_FLAG([-no-undefined], [LDFLAGS])
     ;;
   *)
     ;;
 esac
+AM_CONDITIONAL([CARES_USE_NO_UNDEFINED], [test "$cares_use_no_undefined" = 'yes'])
+
 
 AC_MSG_CHECKING([whether this is windows])
 ac_cv_native_windows=no
