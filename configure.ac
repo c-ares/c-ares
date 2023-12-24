@@ -527,30 +527,30 @@ dnl ############################################################################
 
 
 AC_CHECK_FUNCS(connect \
-  closesocket \
-  CloseSocket \
-  fcntl \
-  getenv \
-  gethostname \
-  getrandom \
-  getservbyport_r \
-  inet_net_pton \
-  inet_ntop \
-  inet_pton \
-  ioctl \
-  IoctlSocket \
-  ioctlsocket \
-  setsockopt \
-  socket \
-  strcasecmp \
-  strdup \
-  stricmp \
-  strncasecmp \
-  strncmpi \
-  strnicmp \
-  writev \
-  arc4random_buf \
-  stat \
+  closesocket          \
+  CloseSocket          \
+  fcntl                \
+  getenv               \
+  gethostname          \
+  getrandom            \
+  getservbyport_r      \
+  inet_net_pton        \
+  inet_ntop            \
+  inet_pton            \
+  ioctl                \
+  IoctlSocket          \
+  ioctlsocket          \
+  setsockopt           \
+  socket               \
+  strcasecmp           \
+  strdup               \
+  stricmp              \
+  strncasecmp          \
+  strncmpi             \
+  strnicmp             \
+  writev               \
+  arc4random_buf       \
+  stat                 \
   getifaddrs)
 
 
