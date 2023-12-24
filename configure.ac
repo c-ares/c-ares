@@ -36,7 +36,7 @@ dnl
 AC_SUBST([CARES_VERSION_INFO])
 
 AC_CONFIG_SRCDIR([src/lib/ares_ipv6.h])
-AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h test/config.h])
+AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
