@@ -526,10 +526,9 @@ AC_DEFINE_UNQUOTED([GETHOSTNAME_TYPE_ARG2],  [ ${gethostname_type_arg2} ],  [ ge
 dnl ###############################################################################
 
 
-AC_CHECK_FUNCS([
+AC_CHECK_FUNCS(connect \
   closesocket \
   CloseSocket \
-  connect \
   fcntl \
   getenv \
   gethostname \
@@ -552,8 +551,7 @@ AC_CHECK_FUNCS([
   writev
   arc4random_buf \
   stat \
-  getifaddrs
-])
+  getifaddrs)
 
 
 if test "$ac_cv_func_getservbyport_r" = "yes" ; then
