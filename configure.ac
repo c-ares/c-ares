@@ -75,27 +75,23 @@ case $host_os in
     ;;
 esac
 
-AC_MSG_CHECKING([whether to build shared libraries with -mimpure-text])
+dnl solaris needed flag
 case $host_os in
   solaris2*)
     if test "x$GCC" = 'xyes'; then
       AX_APPEND_LINK_FLAGS([-mimpure-text])
-      AC_MSG_RESULT([yes])
     fi
     ;;
   *)
-    AC_MSG_RESULT([no])
     ;;
 esac
 
-AC_MSG_CHECKING([whether to build shared libraries with -Wl,-no-undefined])
+dnl -no-undefined linker flag for windows
 case $host_os in
   cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
-    AX_APPEND_LINK_FLAGS([-Wl,-no-undefined])
-    AC_MSG_RESULT([yes])
+    AX_APPEND_FLAG([-no-undefined], [LDFLAGS])
     ;;
   *)
-    AC_MSG_RESULT([no])
     ;;
 esac
 
