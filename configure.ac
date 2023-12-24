@@ -568,7 +568,7 @@ if test "$ac_cv_func_getservbyport_r" = "yes" ; then
     ;;
   esac
   AC_MSG_RESULT([$getservbyport_r_args])
-  AC_DEFINE([GETSERVBYPORT_R_ARGS], [ $getservbyport_r_args ], [ number of arguments for getservbyport_r() ])
+  AC_DEFINE_UNQUOTED([GETSERVBYPORT_R_ARGS], [ $getservbyport_r_args ], [ number of arguments for getservbyport_r() ])
 fi
 
 if test "$ac_cv_func_getservbyname_r" = "yes" ; then
@@ -582,7 +582,7 @@ if test "$ac_cv_func_getservbyname_r" = "yes" ; then
       getservbyname_r_args=4
     ;;
   esac
-  AC_DEFINE([GETSERVBYNAME_R_ARGS], [ $getservbyname_r_args ], [ number of arguments for getservbyname_r() ])
+  AC_DEFINE_UNQUOTED([GETSERVBYNAME_R_ARGS], [ $getservbyname_r_args ], [ number of arguments for getservbyname_r() ])
   AC_MSG_RESULT([$getservbyname_r_args])
 fi
 
