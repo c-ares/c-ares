@@ -343,7 +343,7 @@
 
 /* Define if you have sockaddr_in6 with scopeid. */
 #ifdef HAVE_WS2TCPIP_H
-#  define HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID 1
+#  define HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID 1
 #endif
 
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600) && !defined(__WATCOMC__)
