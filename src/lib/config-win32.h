@@ -231,14 +231,6 @@
 /*                       TYPEDEF REPLACEMENTS                       */
 /* ---------------------------------------------------------------- */
 
-/* Define if in_addr_t is not an available 'typedefed' type. */
-#define in_addr_t unsigned long
-
-#ifdef __cplusplus
-/* Compiling headers in C++ mode means bool is available */
-#  define HAVE_BOOL_T
-#endif
-
 /* ---------------------------------------------------------------- */
 /*                            TYPE SIZES                            */
 /* ---------------------------------------------------------------- */

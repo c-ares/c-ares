@@ -481,7 +481,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
       /* netmask */
       sockaddr_in6 = (struct sockaddr_in6 *)((void *)ifa->ifa_netmask);
       netmask = count_addr_bits((const void *)&sockaddr_in6->sin6_addr, 16);
-#  ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+#  ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
       ll_scope = sockaddr_in6->sin6_scope_id;
 #  endif
     } else {

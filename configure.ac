@@ -259,12 +259,8 @@ return 0;
   ])
 ])
 
-CARES_CHECK_LIBS_CONNECT
 CARES_CHECK_LIB_XNET
-CURL_CHECK_STRUCT_TIMEVAL
 AC_TYPE_SIZE_T
-TYPE_IN_ADDR_T
-TYPE_SOCKADDR_STORAGE
 CURL_CHECK_MSG_NOSIGNAL
 
 dnl **********************************************************************
@@ -564,7 +560,9 @@ AC_CHECK_DECL(AF_INET6, [AC_DEFINE([HAVE_AF_INET6],1,[Define to 1 if you have AF
 AC_CHECK_DECL(PF_INET6, [AC_DEFINE([HAVE_PF_INET6],1,[Define to 1 if you have PF_INET6])], [], $cares_all_includes)
 AC_CHECK_TYPES(struct in6_addr, [], [], $cares_all_includes)
 AC_CHECK_TYPES(struct sockaddr_in6, [], [], $cares_all_includes)
+AC_CHECK_TYPES(struct sockaddr_storage, [], [], $cares_all_includes)
 AC_CHECK_TYPES(struct addrinfo, [], [], $cares_all_includes)
+AC_CHECK_TYPES(struct timeval, [], [], $cares_all_includes)
 AC_CHECK_MEMBERS(struct sockaddr_in6.sin6_scope_id, [], [], $cares_all_includes)
 AC_CHECK_MEMBERS(struct addrinfo.ai_flags, [], [], $cares_all_includes)
 AC_CHECK_DECL(FIONBIO, [], [], $cares_all_includes)

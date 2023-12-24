@@ -24,6 +24,8 @@ if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
         export CXXFLAGS="${CXXFLAGS} -isysroot ${SYSROOT}"
         export LDFLAGS="${LDFLAGS} -isysroot ${SYSROOT}"
     fi
+    export CFLAGS="${CFLAGS} -O0 -g"
+    export CXXFLAGS="${CXXFLAGS} -O0 -g"
     $SCAN_WRAP ../configure --disable-symbol-hiding --enable-expose-statics --enable-maintainer-mode --enable-debug $CONFIG_OPTS
     $SCAN_WRAP make
 else

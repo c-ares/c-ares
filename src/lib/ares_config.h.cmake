@@ -219,7 +219,7 @@
 #cmakedefine HAVE_SIGNAL_H
 
 /* Define to 1 if your struct sockaddr_in6 has sin6_scope_id. */
-#cmakedefine HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+#cmakedefine HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
 
 /* Define to 1 if you have the socket function. */
 #cmakedefine HAVE_SOCKET
@@ -424,9 +424,6 @@
 
 /* Define to avoid automatic inclusion of winsock.h */
 #undef WIN32_LEAN_AND_MEAN
-
-/* Type to use in place of in_addr_t when system does not provide it. */
-#undef in_addr_t
 
 /* Define to 1 if you have the pthread.h header file. */
 #cmakedefine HAVE_PTHREAD_H

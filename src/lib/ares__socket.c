@@ -278,7 +278,7 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
       saddr.sa6.sin6_port = htons(is_tcp ? server->tcp_port : server->udp_port);
       memcpy(&saddr.sa6.sin6_addr, &server->addr.addr.addr6,
              sizeof(saddr.sa6.sin6_addr));
-#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
       saddr.sa6.sin6_scope_id = server->ll_scope;
 #endif
       break;
