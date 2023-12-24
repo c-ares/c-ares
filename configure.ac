@@ -548,7 +548,7 @@ AC_CHECK_FUNCS(connect \
   strncasecmp \
   strncmpi \
   strnicmp \
-  writev
+  writev \
   arc4random_buf \
   stat \
   getifaddrs)
