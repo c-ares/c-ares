@@ -1,23 +1,5 @@
-#############################################################
-#
-# Copyright (C) the Massachusetts Institute of Technology.
-# Copyright (C) Daniel Stenberg
-#
-# Permission to use, copy, modify, and distribute this
-# software and its documentation for any purpose and without
-# fee is hereby granted, provided that the above copyright
-# notice appear in all copies and that both that copyright
-# notice and this permission notice appear in supporting
-# documentation, and that the name of M.I.T. not be used in
-# advertising or publicity pertaining to distribution of the
-# software without specific, written prior permission.
-# M.I.T. makes no representations about the suitability of
-# this software for any purpose.  It is provided "as is"
-# without express or implied warranty.
-#
-# SPDX-License-Identifier: MIT
-#
-#############################################################
+dnl Copyright (C) The c-ares project and its contributors
+dnl SPDX-License-Identifier: MIT
 AC_PREREQ([2.69])
 
 AC_INIT([c-ares], [1.24.0],
@@ -77,10 +59,7 @@ AC_ARG_ENABLE(warnings,
   [ enable_warnings=${enableval} ],
   [ enable_warnings=yes ])
 
-
 CARES_CHECK_OPTION_SYMBOL_HIDING
-CARES_CHECK_OPTION_EXPOSE_STATICS
-
 
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -118,18 +97,31 @@ case $host_os in
     ;;
 esac
 
+AC_MSG_CHECKING([whether this is windows])
+ac_cv_native_windows=no
+case $host_os in
+  mingw*)
+    ac_cv_native_windows=yes
+    ;;
+esac
+if test "$ax_cv_c_compiler_vendor" = "microsoft" ; then
+  ac_cv_native_windows=yes
+fi
+if test "$ac_cv_native_windows" = "yes" ; then
+  CPPFLAGS="$CPPFLAGS -D_WIN32_WINNT=0x0602 -DWIN32_LEAN_AND_MEAN"
+fi
+AC_MSG_RESULT($ac_cv_native_windows)
+
+
 dnl Only windows requires CARES_STATICLIB definition
 if test "x$enable_shared" = "xno" -a "x$enable_static" = "xyes" ; then
   AC_MSG_CHECKING([whether we need CARES_STATICLIB definition])
-  case $host_os in
-    cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
-      AX_APPEND_FLAG([-DCARES_STATICLIB], [CPPFLAGS])
-      AC_MSG_RESULT([yes])
-      ;;
-    *)
-      AC_MSG_RESULT([no])
-      ;;
-  esac
+  if test "$ac_cv_native_windows" = "yes " ; then
+    AX_APPEND_FLAG([-DCARES_STATICLIB], [CPPFLAGS])
+    AC_MSG_RESULT([yes])
+  else
+    AC_MSG_RESULT([no])
+  fi
 fi
 
 if test "$enable_warnings" = "yes"; then
@@ -177,38 +169,26 @@ fi
 
 CARES_CHECK_COMPILER_SYMBOL_HIDING
 
-dnl **********************************************************************
-dnl Compilation based checks should not be done before this point.
-dnl **********************************************************************
 
-dnl **********************************************************************
-dnl Make sure that our checks for headers windows.h winsock.h winsock2.h
-dnl and ws2tcpip.h take precedence over any other further checks which
-dnl could be done later using AC_CHECK_HEADER or AC_CHECK_HEADERS for
-dnl this specific header files. And do them before its results are used.
-dnl **********************************************************************
+if test "$ac_cv_native_windows" = "yes" ; then
+  AC_CHECK_HEADERS(
+    windows.h  \
+    winsock2.h \
+    ws2tcpip.h \
+    iphlpapi.h \
+    netioapi.h,
+    [], [], [-])
 
-CURL_CHECK_HEADER_WINDOWS
-CURL_CHECK_NATIVE_WINDOWS
-case X-"$ac_cv_native_windows" in
-  X-yes)
-    CURL_CHECK_HEADER_WINSOCK
-    CURL_CHECK_HEADER_WINSOCK2
-    CURL_CHECK_HEADER_WS2TCPIP
-    CPPFLAGS="$CPPFLAGS -D_WIN32_WINNT=0x0602"
-    ;;
-  *)
-    ac_cv_header_winsock_h="no"
-    ac_cv_header_winsock2_h="no"
-    ac_cv_header_ws2tcpip_h="no"
-    ;;
-esac
+  dnl Windows builds require linking to iphlpapi
+  if test "$ac_cv_header_winsock2_h" = "yes"; then
+    LIBS="$LIBS -liphlpapi"
+  fi
+fi
 
 dnl **********************************************************************
 dnl Checks for libraries.
 dnl **********************************************************************
 
-CARES_CHECK_LIB_XNET
 
 dnl see if libnsl or libsocket are required
 AC_SEARCH_LIBS([getservbyport], [nsl socket resolv])
@@ -231,23 +211,6 @@ AS_IF([test "x$host_vendor" = "xibm" -a "x$host_os" = "xopenedition" ], [
   ])
 ])
 
-dnl resolve lib?
-AC_CHECK_FUNC(strcasecmp, , [ AC_CHECK_LIB(resolve, strcasecmp) ])
-
-if test "$ac_cv_lib_resolve_strcasecmp" = "$ac_cv_func_strcasecmp"; then
-  AC_CHECK_LIB(resolve, strcasecmp,
-              [LIBS="-lresolve $LIBS"],
-               ,
-               -lnsl)
-fi
-ac_cv_func_strcasecmp="no"
-
-dnl Windows builds require linking to iphlpapi
-if test "$ac_cv_header_winsock2_h" = "yes"; then
-  LIBS="$LIBS -liphlpapi"
-fi
-
-CARES_CHECK_LIBS_CONNECT
 
 dnl iOS 10?
 AS_IF([test "x$host_vendor" = "xapple"], [
@@ -296,6 +259,14 @@ return 0;
   ])
 ])
 
+CARES_CHECK_LIBS_CONNECT
+CARES_CHECK_LIB_XNET
+CURL_CHECK_STRUCT_TIMEVAL
+AC_TYPE_SIZE_T
+TYPE_IN_ADDR_T
+TYPE_SOCKADDR_STORAGE
+CURL_CHECK_MSG_NOSIGNAL
+
 dnl **********************************************************************
 dnl In case that function clock_gettime with monotonic timer is available,
 dnl check for additional required libraries.
@@ -313,20 +284,20 @@ AC_ARG_ENABLE(libgcc,
 AS_HELP_STRING([--enable-libgcc],[use libgcc when linking]),
 [ case "$enableval" in
   yes)
-        LIBS="$LIBS -lgcc"
-       AC_MSG_RESULT(yes)
-       ;;
-  *)   AC_MSG_RESULT(no)
-       ;;
+    LIBS="$LIBS -lgcc"
+    AC_MSG_RESULT(yes)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
   esac ],
        AC_MSG_RESULT(no)
 )
 
-CURL_CHECK_HEADER_MALLOC
-CURL_CHECK_HEADER_MEMORY
-
 dnl check for a few basic system headers we need
 AC_CHECK_HEADERS(
+       malloc.h \
+       memory.h \
        sys/types.h \
        sys/time.h \
        sys/select.h \
@@ -381,57 +352,77 @@ dnl *Sigh* these are needed in order for net/if.h to get properly detected.
 ]
 )
 
-dnl Test and set CARES_HAVE_ARPA_NAMESER_H / CARES_HAVE_ARPA_NAMESER_COMPAT_H
-AC_CHECK_DECL([HAVE_ARPA_NAMESER_H],
-[
-CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_H])
-],
-[]
-)
-AC_CHECK_DECL([HAVE_ARPA_NAMESER_COMPAT_H],
-[
-CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_COMPAT_H])
-],
-[]
-)
 
-dnl Checks for typedefs, structures, and compiler characteristics.
-AC_TYPE_SIZE_T
+cares_all_includes="
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef HAVE_SYS_UIO_H
+#  include <sys/uio.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#  include <netinet/in.h>
+#endif
+#ifdef HAVE_TCP_H
+#  include <tcp.h>
+#endif
+#ifdef HAVE_SYS_IOCTL_H
+#  include <sys/ioctl.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#  include <unistd.h>
+#endif
+#ifdef HAVE_STRINGS_H
+#  include <strings.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#  include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_PARAM_H
+#  include <sys/param.h>
+#endif
+#ifdef HAVE_NET_IF_H
+#  include <net/if.h>
+#endif
+#ifdef HAVE_IFADDRS_H
+#  include <ifaddrs.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#  include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_TCP_H
+#  include <netinet/tcp.h>
+#endif
+#ifdef HAVE_NETDB_H
+#  include <netdb.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#  include <arpa/inet.h>
+#endif
+#ifdef HAVE_RESOLV_H
+#  include <resolv.h>
+#endif
+#ifdef HAVE_IPHLPAPI_H
+#  include <iphlpapi.h>
+#endif
+#ifdef HAVE_NETIOAPI_H
+#  include <netioapi.h>
+#endif
+#ifdef HAVE_WINSOCK2_H
+#  include <winsock2.h>
+#endif
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
+"
 
-CURL_CHECK_STRUCT_TIMEVAL
-
-AC_CHECK_TYPE(long long,
-   [AC_DEFINE(HAVE_LONGLONG, 1,
-     [Define to 1 if the compiler supports the 'long long' data type.])]
-   longlong="yes"
-)
-
-if test "xyes" = "x$longlong"; then
-  AC_MSG_CHECKING([if numberLL works])
-  AC_COMPILE_IFELSE([
-    AC_LANG_PROGRAM([[
-    ]],[[
-      long long val = 1000LL;
-    ]])
-  ],[
-    AC_MSG_RESULT([yes])
-    AC_DEFINE(HAVE_LL, 1, [if your compiler supports LL])
-  ],[
-    AC_MSG_RESULT([no])
-  ])
-fi
-
-
-# check for ssize_t
-AC_CHECK_TYPE(ssize_t, [ CARES_TYPEOF_ARES_SSIZE_T=ssize_t ],
-  [ CARES_TYPEOF_ARES_SSIZE_T=int ])
-
-AC_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SSIZE_T], ${CARES_TYPEOF_ARES_SSIZE_T},
-  [the signed version of size_t])
-
-
-CARES_INCLUDES_WS2TCPIP
-CARES_INCLUDES_SYS_SOCKET
+AC_CHECK_DECL([HAVE_ARPA_NAMESER_H],[CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_H])], [])
+AC_CHECK_DECL([HAVE_ARPA_NAMESER_COMPAT_H],[CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_COMPAT_H])],[])
+AC_CHECK_TYPE(long long, [AC_DEFINE(HAVE_LONGLONG, 1, [Define to 1 if the compiler supports the 'long long' data type.])])
+AC_CHECK_TYPE(ssize_t, [ CARES_TYPEOF_ARES_SSIZE_T=ssize_t ], [ CARES_TYPEOF_ARES_SSIZE_T=int ])
+AC_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SSIZE_T], ${CARES_TYPEOF_ARES_SSIZE_T}, [the signed version of size_t])
 
 AC_CHECK_TYPE(socklen_t,
   [
@@ -445,11 +436,9 @@ AC_CHECK_TYPE(socklen_t,
     #include <sys/socket.h>
   ] )
 
-AC_CHECK_TYPE(SOCKET, [], [])
+AC_CHECK_TYPE(SOCKET, [], [], $cares_all_includes)
 
-TYPE_IN_ADDR_T
 
-TYPE_SOCKADDR_STORAGE
 
 dnl ###############################################################################
 dnl recv, recvfrom, send, getnameinfo, gethostname
@@ -541,204 +530,59 @@ AC_DEFINE_UNQUOTED([GETHOSTNAME_TYPE_ARG2],  [ ${gethostname_type_arg2} ],  [ ge
 dnl ###############################################################################
 
 
-CURL_CHECK_MSG_NOSIGNAL
-
-CARES_CHECK_FUNC_CLOSESOCKET
-CARES_CHECK_FUNC_CLOSESOCKET_CAMEL
-CARES_CHECK_FUNC_CONNECT
-CARES_CHECK_FUNC_FCNTL
-CARES_CHECK_FUNC_FREEADDRINFO
-CARES_CHECK_FUNC_GETADDRINFO
-CARES_CHECK_FUNC_GETENV
-CARES_CHECK_FUNC_GETHOSTBYADDR
-CARES_CHECK_FUNC_GETHOSTBYNAME
-CARES_CHECK_FUNC_GETHOSTNAME
-CARES_CHECK_FUNC_GETRANDOM
-CARES_CHECK_FUNC_GETSERVBYPORT_R
-CARES_CHECK_FUNC_INET_NET_PTON
-CARES_CHECK_FUNC_INET_NTOP
-CARES_CHECK_FUNC_INET_PTON
-CARES_CHECK_FUNC_IOCTL
-CARES_CHECK_FUNC_IOCTLSOCKET
-CARES_CHECK_FUNC_IOCTLSOCKET_CAMEL
-CARES_CHECK_FUNC_SETSOCKOPT
-CARES_CHECK_FUNC_SOCKET
-CARES_CHECK_FUNC_STRCASECMP
-CARES_CHECK_FUNC_STRCMPI
-CARES_CHECK_FUNC_STRDUP
-CARES_CHECK_FUNC_STRICMP
-CARES_CHECK_FUNC_STRNCASECMP
-CARES_CHECK_FUNC_STRNCMPI
-CARES_CHECK_FUNC_STRNICMP
-CARES_CHECK_FUNC_WRITEV
-CARES_CHECK_FUNC_ARC4RANDOM_BUF
-CARES_CHECK_FUNC_STAT
-CARES_CHECK_FUNC_GETIFADDRS
-
-dnl check for AF_INET6
-CARES_CHECK_CONSTANT(
-  [
-#undef inline
-#ifdef HAVE_WINDOWS_H
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#endif
-#else
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#endif
-  ], [PF_INET6],
-     AC_DEFINE_UNQUOTED(HAVE_PF_INET6,1,[Define to 1 if you have PF_INET6.])
-)
-
-dnl check for PF_INET6
-CARES_CHECK_CONSTANT(
-  [
-#undef inline
-#ifdef HAVE_WINDOWS_H
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#endif
-#else
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#endif
-  ], [AF_INET6],
-     AC_DEFINE_UNQUOTED(HAVE_AF_INET6,1,[Define to 1 if you have AF_INET6.])
-)
+AC_CHECK_FUNCS([
+  closesocket \
+  CloseSocket \
+  connect \
+  fcntl \
+  getenv \
+  gethostname \
+  getrandom \
+  getservbyport_r \
+  inet_net_pton \
+  inet_ntop \
+  inet_pton \
+  ioctl \
+  IoctlSocket \
+  ioctlsocket \
+  setsockopt \
+  socket \
+  strcasecmp \
+  strdup \
+  stricmp \
+  strncasecmp \
+  strncmpi \
+  strnicmp \
+  writev
+  arc4random_buf \
+  stat \
+  getifaddrs
+])
 
 
-dnl check for the in6_addr structure
-CARES_CHECK_STRUCT(
-  [
-#undef inline
-#ifdef HAVE_WINDOWS_H
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#ifdef HAVE_WS2TCPIP_H
-#include <ws2tcpip.h>
-#endif
-#endif
-#else
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#endif
-  ], [in6_addr],
-     AC_DEFINE_UNQUOTED(HAVE_STRUCT_IN6_ADDR,1,[Define to 1 if you have struct in6_addr.])
-)
+AC_CHECK_DECL(AF_INET6, [AC_DEFINE([HAVE_AF_INET6],1,[Define to 1 if you have AF_INET6])], [], $cares_all_includes)
+AC_CHECK_DECL(PF_INET6, [AC_DEFINE([HAVE_PF_INET6],1,[Define to 1 if you have PF_INET6])], [], $cares_all_includes)
+AC_CHECK_TYPES(struct in6_addr, [], [], $cares_all_includes)
+AC_CHECK_TYPES(struct sockaddr_in6, [], [], $cares_all_includes)
+AC_CHECK_TYPES(struct addrinfo, [], [], $cares_all_includes)
+AC_CHECK_MEMBERS(struct sockaddr_in6.sin6_scope_id, [], [], $cares_all_includes)
+AC_CHECK_MEMBERS(struct addrinfo.ai_flags, [], [], $cares_all_includes)
+AC_CHECK_DECL(FIONBIO, [], [], $cares_all_includes)
+AC_CHECK_DECL(O_NONBLOCK, [], [], $cares_all_includes)
+AC_CHECK_DECL(SO_NONBLOCK, [], [], $cares_all_includes)
 
-dnl check for the sockaddr_in6 structure
-CARES_CHECK_STRUCT(
-  [
-#undef inline
-#ifdef HAVE_WINDOWS_H
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#ifdef HAVE_WS2TCPIP_H
-#include <ws2tcpip.h>
-#endif
-#endif
-#else
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#endif
-  ], [sockaddr_in6],
-     AC_DEFINE_UNQUOTED(HAVE_STRUCT_SOCKADDR_IN6,1,
-       [Define to 1 if you have struct sockaddr_in6.]) ac_have_sockaddr_in6=yes
-)
-
-AC_CHECK_MEMBER(struct sockaddr_in6.sin6_scope_id,
-    AC_DEFINE_UNQUOTED(HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID,1,
-      [Define to 1 if your struct sockaddr_in6 has sin6_scope_id.])
-   , ,
-  [
-#undef inline
-#ifdef HAVE_WINDOWS_H
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#ifdef HAVE_WS2TCPIP_H
-#include <ws2tcpip.h>
-#endif
-#endif
-#else
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#endif
-  ])
-
-dnl check for the addrinfo structure
-AC_CHECK_MEMBER(struct addrinfo.ai_flags,
-     AC_DEFINE_UNQUOTED(HAVE_STRUCT_ADDRINFO,1,
-       [Define to 1 if you have struct addrinfo.]),,
-  [
-#undef inline
-#ifdef HAVE_WINDOWS_H
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#ifdef HAVE_WS2TCPIP_H
-#include <ws2tcpip.h>
-#endif
-#endif
-#else
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-#endif
-  ]
-)
+if test "$ac_cv_have_decl_FIONBIO" = "yes" -a "$ac_cv_func_ioctl" = "yes" ; then
+  AC_DEFINE([HAVE_IOCTL_FIONBIO], [ ], [ ioctl() with FIONBIO support ])
+fi
+if test "$ac_cv_have_decl_FIONBIO" = "yes" -a "$ac_cv_func_ioctlsocket" = "yes" ; then
+  AC_DEFINE([HAVE_IOCTLSOCKET_FIONBIO], [ ], [ ioctlsocket() with FIONBIO support ])
+fi
+if test "$ac_cv_have_decl_SO_NONBLOCK" = "yes" -a "$ac_cv_func_setsockopt" = "yes" ; then
+  AC_DEFINE([HAVE_SETSOCKOPT_SO_NONBLOCK], [ ], [ setsockopt() with SO_NONBLOCK support ])
+fi
+if test "$ac_cv_have_decl_O_NONBLOCK" = "yes" -a "$ac_cv_func_fcntl" = "yes" ; then
+  AC_DEFINE([HAVE_FCNTL_O_NONBLOCK], [ ], [ fcntl() with O_NONBLOCK support ])
+fi
 
 
 AC_CHECK_FUNCS([gettimeofday \
@@ -750,9 +594,7 @@ AC_CHECK_FUNCS([gettimeofday \
 
 dnl Android. Some variants like arm64 may no longer have __system_property_get
 dnl in libc, but they are defined in the headers.  Perform a link check.
-AC_CHECK_FUNC([__system_property_get], [
-    AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET], [1], [Define if __system_property_get exists.])
-])
+AC_CHECK_FUNCS([__system_property_get])
 
 dnl ares_build.h.in specific defines
 if test "x$ac_cv_header_sys_types_h" = "xyes" ; then
@@ -825,12 +667,6 @@ CARES_CONFIGURE_SYMBOL_HIDING
 CARES_PRIVATE_LIBS="$LIBS"
 AC_SUBST(CARES_PRIVATE_LIBS)
 
-CARES_CFLAG_EXTRAS=""
-if test X"$want_werror" = Xyes; then
-  CARES_CFLAG_EXTRAS="-Werror"
-fi
-AC_SUBST(CARES_CFLAG_EXTRAS)
-
 dnl squeeze whitespace out of some variables
 
 squeeze CFLAGS
@@ -838,10 +674,8 @@ squeeze CPPFLAGS
 squeeze DEFS
 squeeze LDFLAGS
 squeeze LIBS
-
 squeeze CARES_PRIVATE_LIBS
 
-dnl XC_CHECK_BUILD_FLAGS
 
 AC_MSG_CHECKING([whether to build tests])
 AC_ARG_ENABLE(tests,

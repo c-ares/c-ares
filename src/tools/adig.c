@@ -46,7 +46,6 @@
 #include "ares_dns.h"
 
 #ifndef HAVE_STRDUP
-#  include "ares_strdup.h"
 #  define strdup(ptr) ares_strdup(ptr)
 #endif
 

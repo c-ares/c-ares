@@ -29,9 +29,6 @@ DIST_SUBDIRS =
 
 libcares_la_LDFLAGS = -version-info @CARES_VERSION_INFO@
 
-# Add -Werror if defined
-CFLAGS += @CARES_CFLAG_EXTRAS@
-
 libcares_la_CFLAGS_EXTRA =
 
 libcares_la_CPPFLAGS_EXTRA = -DCARES_BUILDING_LIBRARY

@@ -7,9 +7,6 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Defined for build that exposes internal static functions for testing. */
-#undef CARES_EXPOSE_STATICS
-
 /* Defined for build with symbol hiding. */
 #cmakedefine CARES_SYMBOL_HIDING
 
@@ -175,9 +172,6 @@
 
 /* Define to 1 if you have the <limits.h> header file. */
 #cmakedefine HAVE_LIMITS_H
-
-/* if your compiler supports LL */
-#cmakedefine HAVE_LL
 
 /* Define to 1 if the compiler supports the 'long long' data type. */
 #cmakedefine HAVE_LONGLONG
