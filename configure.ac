@@ -36,7 +36,7 @@ dnl
 AC_SUBST([CARES_VERSION_INFO])
 
 AC_CONFIG_SRCDIR([src/lib/ares_ipv6.h])
-AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h])
+AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h test/config.h])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
@@ -65,6 +65,8 @@ AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AX_CODE_COVERAGE
+AX_CHECK_USER_NAMESPACE
+AX_CHECK_UTS_NAMESPACE
 AC_SYS_LARGEFILE
 
 case $host_os in
@@ -756,10 +758,21 @@ AC_MSG_RESULT([$build_tests])
 
 
 BUILD_SUBDIRS="include src docs"
+
 if test "x$build_tests" = "xyes" ; then
-  AC_CONFIG_SUBDIRS([test])
+  AX_CXX_COMPILE_STDCXX_14([noext],[mandatory])
+
+  if test "$ac_cv_native_windows" != "yes" ; then
+    AX_PTHREAD([ CARES_TEST_PTHREADS="yes" ], [ AC_MSG_ERROR([threading required for tests]) ])
+  fi
+
+  PKG_CHECK_MODULES([GMOCK], [gmock], [], [ AC_MSG_ERROR([gmock required for tests])])
+
+  ADDITIONAL_CONFIG_FILES="test/Makefile"
   BUILD_SUBDIRS="${BUILD_SUBDIRS} test"
 fi
+
+AM_CONDITIONAL(BUILD_TESTS, test "x$build_tests" = "xyes")
 
 AC_SUBST(BUILD_SUBDIRS)
 
@@ -770,5 +783,7 @@ AC_CONFIG_FILES([Makefile           \
                  src/tools/Makefile \
                  docs/Makefile      \
                  libcares.pc ])
+AM_COND_IF([BUILD_TESTS],
+           [AC_CONFIG_FILES([test/Makefile])])
 
 AC_OUTPUT
