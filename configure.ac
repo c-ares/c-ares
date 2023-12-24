@@ -415,6 +415,9 @@ cares_all_includes="
 #ifdef HAVE_WS2IPDEF_H
 #  include <ws2ipdef.h>
 #endif
+#ifdef HAVE_WS2TCPIP_H
+#  include <ws2tcpip.h>
+#endif
 #ifdef HAVE_WINDOWS_H
 #  include <windows.h>
 #endif
@@ -733,13 +736,14 @@ squeeze LDFLAGS
 squeeze LIBS
 squeeze CARES_PRIVATE_LIBS
 
+BUILD_SUBDIRS="include src docs"
 
 AC_MSG_CHECKING([whether to build tests])
 AC_ARG_ENABLE(tests,
 	AS_HELP_STRING([--enable-tests], [build test suite]),
 	[ build_tests="$enableval" ],
 	[ if test "x$HAVE_CXX14" = "x1" && test "x$cross_compiling" = "xno" ; then
-	    build_tests="yes"
+	    build_tests="maybe"
 	  else
 	    build_tests="no"
 	  fi
@@ -756,17 +760,26 @@ if test "x$build_tests" = "xyes" ; then
 fi
 AC_MSG_RESULT([$build_tests])
 
+if test "x$build_tests" != "xno" ; then
+  PKG_CHECK_MODULES([GMOCK], [gmock], [ have_gmock=yes ], [ have_gmock=no ])
+  if test "x$have_gmock" = "xno" ; then
+    if "x$build_tests" = "xmaybe" ; then
+      AC_MSG_WARN([gmock could not be found, not building tests])
+      build_tests=no
+    else
+      AC_MSG_ERROR([tests require gmock])
+    fi
+  fi
+fi
 
-BUILD_SUBDIRS="include src docs"
+if test "x$build_tests" != "xno" ; then
+  build_tests=yes
 
-if test "x$build_tests" = "xyes" ; then
   AX_CXX_COMPILE_STDCXX_14([noext],[mandatory])
 
   if test "$ac_cv_native_windows" != "yes" ; then
     AX_PTHREAD([ CARES_TEST_PTHREADS="yes" ], [ AC_MSG_ERROR([threading required for tests]) ])
   fi
-
-  PKG_CHECK_MODULES([GMOCK], [gmock], [], [ AC_MSG_ERROR([gmock required for tests])])
 
   ADDITIONAL_CONFIG_FILES="test/Makefile"
   BUILD_SUBDIRS="${BUILD_SUBDIRS} test"
