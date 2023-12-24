@@ -176,12 +176,13 @@ if test "$ac_cv_native_windows" = "yes" ; then
     winsock2.h \
     ws2tcpip.h \
     iphlpapi.h \
-    netioapi.h,
+    netioapi.h \
+    ws2ipdef.h,
     [], [], [-])
 
   dnl Windows builds require linking to iphlpapi
   if test "$ac_cv_header_winsock2_h" = "yes"; then
-    LIBS="$LIBS -liphlpapi"
+    LIBS="$LIBS -lws2_32 -liphlpapi"
   fi
 fi
 
@@ -408,6 +409,9 @@ cares_all_includes="
 #endif
 #ifdef HAVE_WINSOCK2_H
 #  include <winsock2.h>
+#endif
+#ifdef HAVE_WS2IPDEF_H
+#  include <ws2ipdef.h>
 #endif
 #ifdef HAVE_WINDOWS_H
 #  include <windows.h>
