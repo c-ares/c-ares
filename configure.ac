@@ -589,31 +589,6 @@ if test "$ac_cv_func_getservbyname_r" = "yes" ; then
   AC_MSG_RESULT([$getservbyname_r_args])
 fi
 
-AC_MSG_CHECKING([whether to build shared libraries with -mimpure-text])
-case $host_os in
-  solaris2*)
-    if test "x$GCC" = 'xyes'; then
-      AX_APPEND_LINK_FLAGS([-mimpure-text])
-      AC_MSG_RESULT([yes])
-    fi
-    ;;
-  *)
-    AC_MSG_RESULT([no])
-    ;;
-esac
-
-AC_MSG_CHECKING([whether to build shared libraries with -no-undefined])
-case $host_os in
-  cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
-    AX_APPEND_LINK_FLAGS([-no-undefined])
-    AC_MSG_RESULT([yes])
-    ;;
-  *)
-    AC_MSG_RESULT([no])
-    ;;
-esac
-
-
 AC_CHECK_DECL(AF_INET6, [AC_DEFINE([HAVE_AF_INET6],1,[Define to 1 if you have AF_INET6])], [], $cares_all_includes)
 AC_CHECK_DECL(PF_INET6, [AC_DEFINE([HAVE_PF_INET6],1,[Define to 1 if you have PF_INET6])], [], $cares_all_includes)
 AC_CHECK_TYPES(struct in6_addr, [], [], $cares_all_includes)
