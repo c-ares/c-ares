@@ -88,10 +88,10 @@ case $host_os in
     ;;
 esac
 
-AC_MSG_CHECKING([whether to build shared libraries with -no-undefined])
+AC_MSG_CHECKING([whether to build shared libraries with -Wl,-no-undefined])
 case $host_os in
   cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
-    AX_APPEND_LINK_FLAGS([-no-undefined])
+    AX_APPEND_LINK_FLAGS([-Wl,-no-undefined])
     AC_MSG_RESULT([yes])
     ;;
   *)
