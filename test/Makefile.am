@@ -18,7 +18,7 @@ include Makefile.inc
 TESTS = arestest fuzzcheck.sh
 
 noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump
-EXTRA_DIST = fuzzcheck.sh CMakeLists.txt Makefile.m32 Makefile.msvc README.md buildconf $(srcdir)/fuzzinput/* $(srcdir)/fuzznames/*
+EXTRA_DIST = fuzzcheck.sh CMakeLists.txt Makefile.m32 Makefile.msvc README.md $(srcdir)/fuzzinput/* $(srcdir)/fuzznames/*
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 
 # Not interested in coverage of test code, but linking the test binary needs the coverage option
