@@ -86,7 +86,7 @@ case $host_os in
     ;;
 esac
 
-dnl -no-undefined linker flag for windows
+dnl -no-undefined libtool (not linker) flag for windows
 cares_use_no_undefined=no
 case $host_os in
   cygwin* | mingw* | pw32* | cegcc* | os2* | aix*)
