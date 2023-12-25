@@ -153,7 +153,7 @@ AC_MSG_RESULT($ac_cv_native_windows)
 dnl Only windows requires CARES_STATICLIB definition
 if test "x$enable_shared" = "xno" -a "x$enable_static" = "xyes" ; then
   AC_MSG_CHECKING([whether we need CARES_STATICLIB definition])
-  if test "$ac_cv_native_windows" = "yes " ; then
+  if test "$ac_cv_native_windows" = "yes" ; then
     AX_APPEND_FLAG([-DCARES_STATICLIB], [CPPFLAGS])
     AC_MSG_RESULT([yes])
   else
