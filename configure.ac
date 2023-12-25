@@ -52,7 +52,6 @@ AC_PROG_EGREP
 AC_PROG_INSTALL
 AC_CANONICAL_HOST
 AX_COMPILER_VENDOR
-CARES_SHFUNC_SQUEEZE
 
 AC_ARG_ENABLE(warnings,
   AS_HELP_STRING([--disable-warnings],[Disable strict compiler warnings]),
@@ -90,6 +89,22 @@ AC_ARG_ENABLE(tests,
     fi
   ]
 )
+
+AC_ARG_ENABLE(cares-threads,
+  AS_HELP_STRING([--disable-cares-threads], [Disable building of thread safety support]),
+  [ CARES_THREADS=${enableval} ],
+  [ CARES_THREADS=yes ])
+
+AC_ARG_WITH(random,
+  AS_HELP_STRING([--with-random=FILE],
+                 [read randomness from FILE (default=/dev/urandom)]),
+  [ CARES_RANDOM_FILE="$withval" ],
+  [ CARES_RANDOM_FILE="/dev/urandom" ]
+)
+if test -n "$CARES_RANDOM_FILE" && test X"$CARES_RANDOM_FILE" != Xno ; then
+  AC_SUBST(CARES_RANDOM_FILE)
+  AC_DEFINE_UNQUOTED(CARES_RANDOM_FILE, "$CARES_RANDOM_FILE", [a suitable file/device to read random data from])
+fi
 
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -503,12 +518,9 @@ AC_CHECK_TYPE(socklen_t,
     AC_DEFINE(HAVE_SOCKLEN_T, [], [socklen_t])
     CARES_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SOCKLEN_T], [socklen_t])
   ],
-  [
-    CARES_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SOCKLEN_T], [int])
-  ], [
-    #include <sys/types.h>
-    #include <sys/socket.h>
-  ] )
+  [ CARES_DEFINE_UNQUOTED([CARES_TYPEOF_ARES_SOCKLEN_T], [int]) ],
+  $cares_all_includes
+ )
 
 AC_CHECK_TYPE(SOCKET, [], [], $cares_all_includes)
 
@@ -629,7 +641,13 @@ AC_CHECK_FUNCS(connect \
   writev               \
   arc4random_buf       \
   stat                 \
-  getifaddrs)
+  gettimeofday         \
+  if_indextoname       \
+  if_nametoindex       \
+  ConvertInterfaceIndexToLuid \
+  ConvertInterfaceLuidToNameA \
+  getifaddrs           \
+  __system_property_get)
 
 
 if test "$ac_cv_func_getservbyport_r" = "yes" ; then
@@ -688,18 +706,6 @@ if test "$ac_cv_have_decl_O_NONBLOCK" = "yes" -a "$ac_cv_func_fcntl" = "yes" ; t
   AC_DEFINE([HAVE_FCNTL_O_NONBLOCK], [ 1 ], [ fcntl() with O_NONBLOCK support ])
 fi
 
-
-AC_CHECK_FUNCS([gettimeofday \
-  if_indextoname \
-  if_nametoindex \
-  ConvertInterfaceIndexToLuid \
-  ConvertInterfaceLuidToNameA
-])
-
-dnl Android. Some variants like arm64 may no longer have __system_property_get
-dnl in libc, but they are defined in the headers.  Perform a link check.
-AC_CHECK_FUNCS([__system_property_get])
-
 dnl ares_build.h.in specific defines
 if test "x$ac_cv_header_sys_types_h" = "xyes" ; then
   CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_TYPES_H],[1])
@@ -726,25 +732,8 @@ if test "x$ac_cv_header_arpa_nameser_compa_h" = "xyes" ; then
   CARES_DEFINE_UNQUOTED([CARES_HAVE_ARPA_NAMESER_COMPA_H],[1])
 fi
 
-dnl Check for user-specified random device
-AC_ARG_WITH(random,
-AS_HELP_STRING([--with-random=FILE],
-               [read randomness from FILE (default=/dev/urandom)]),
-    [ CARES_RANDOM_FILE="$withval" ],
-    [ CARES_RANDOM_FILE="/dev/urandom" ]
-)
-if test -n "$CARES_RANDOM_FILE" && test X"$CARES_RANDOM_FILE" != Xno ; then
-        AC_SUBST(CARES_RANDOM_FILE)
-        AC_DEFINE_UNQUOTED(CARES_RANDOM_FILE, "$CARES_RANDOM_FILE",
-        [a suitable file/device to read random data from])
-fi
-
 
 dnl ------------ THREADING --------------
-AC_ARG_ENABLE(cares-threads,
-  AS_HELP_STRING([--disable-cares-threads],[Disable building of thread safety support]),
-  [ CARES_THREADS=${enableval} ],
-  [ CARES_THREADS=yes ])
 
 dnl windows always supports threads, only check non-windows systems.
 if test "${CARES_THREADS}" = "yes" -a "x${ac_cv_native_windows}" != "xyes" ; then
@@ -768,15 +757,6 @@ fi
 
 CARES_PRIVATE_LIBS="$LIBS"
 AC_SUBST(CARES_PRIVATE_LIBS)
-
-dnl squeeze whitespace out of some variables
-
-squeeze CFLAGS
-squeeze CPPFLAGS
-squeeze DEFS
-squeeze LDFLAGS
-squeeze LIBS
-squeeze CARES_PRIVATE_LIBS
 
 BUILD_SUBDIRS="include src docs"
 
