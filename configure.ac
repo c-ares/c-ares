@@ -59,7 +59,37 @@ AC_ARG_ENABLE(warnings,
   [ enable_warnings=${enableval} ],
   [ enable_warnings=yes ])
 
-CARES_CHECK_OPTION_SYMBOL_HIDING
+AC_ARG_ENABLE(symbol-hiding,
+  AS_HELP_STRING([--disable-symbol-hiding], [Disable symbol hiding. Enabled by default if the compiler supports it.]),
+  [
+    symbol_hiding="$enableval"
+    if test "$symbol_hiding" = "no" -a "x$enable_shared" = "xyes" ; then
+      case $host_os in
+        cygwin* | mingw* | pw32* | cegcc*)
+          AC_MSG_ERROR([Cannot disable symbol hiding on windows])
+        ;;
+      esac
+    fi
+  ],
+  [
+    if test "x$enable_shared" = "xyes" ; then
+      symbol_hiding="maybe"
+    else
+      symbol_hiding="no"
+    fi
+  ]
+)
+
+AC_ARG_ENABLE(tests,
+  AS_HELP_STRING([--disable-tests], [disable building of test suite. Built by default if GoogleTest is found.]),
+  [ build_tests="$enableval" ],
+  [ if test "x$HAVE_CXX14" = "x1" && test "x$cross_compiling" = "xno" ; then
+      build_tests="maybe"
+    else
+      build_tests="no"
+    fi
+  ]
+)
 
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -98,15 +128,21 @@ esac
 AM_CONDITIONAL([CARES_USE_NO_UNDEFINED], [test "$cares_use_no_undefined" = 'yes'])
 
 
-AC_MSG_CHECKING([whether this is windows])
+AC_MSG_CHECKING([whether this is native windows])
 ac_cv_native_windows=no
+ac_cv_windows=no
 case $host_os in
   mingw*)
     ac_cv_native_windows=yes
+    ac_cv_windows=yes
+    ;;
+  cygwin*)
+    ac_cv_windows=yes
     ;;
 esac
 if test "$ax_cv_c_compiler_vendor" = "microsoft" ; then
   ac_cv_native_windows=yes
+  ac_cv_windows=yes
 fi
 if test "$ac_cv_native_windows" = "yes" ; then
   CPPFLAGS="$CPPFLAGS -D_WIN32_WINNT=0x0602 -DWIN32_LEAN_AND_MEAN"
@@ -124,6 +160,43 @@ if test "x$enable_shared" = "xno" -a "x$enable_static" = "xyes" ; then
     AC_MSG_RESULT([no])
   fi
 fi
+
+dnl Test for symbol hiding
+CARES_SYMBOL_HIDING_CFLAG=""
+if test "$symbol_hiding" != "no" ; then
+  compiler_supports_symbol_hiding="no"
+  if test "$ac_cv_windows" = "yes" ; then
+    compiler_supports_symbol_hiding="yes"
+  else
+    case "$ax_cv_c_compiler_vendor" in
+      clang|gnu|intel)
+        AX_APPEND_COMPILE_FLAGS([-fvisibility=hidden], [CARES_SYMBOL_HIDING_CFLAG])
+        if test "x$CARES_SYMBOL_HIDING_CFLAG" != "x" ; then
+          compiler_supports_symbol_hiding="yes"
+        fi
+        ;;
+      sun)
+        AX_APPEND_COMPILE_FLAGS([-xldscope=hidden], [CARES_SYMBOL_HIDING_CFLAG])
+        if test "x$CARES_SYMBOL_HIDING_CFLAG" != "x" ; then
+          compiler_supports_symbol_hiding="yes"
+        fi
+        ;;
+    esac
+  fi
+  if test "$compiler_supports_symbol_hiding" = "no" ; then
+    if test "$symbol_hiding" = "yes" ; then
+      AC_MSG_ERROR([Compiler does not support symbol hiding])
+    else
+      symbol_hiding="no"
+    fi
+  else
+    AC_DEFINE([CARES_SYMBOL_HIDING], [ 1 ], [Set to 1 if non-pubilc shared library symbols are hidden])
+    symbol_hiding="yes"
+  fi
+fi
+AM_CONDITIONAL(CARES_SYMBOL_HIDING, test "x$symbol_hiding" = "xyes")
+AC_SUBST(CARES_SYMBOL_HIDING_CFLAG)
+
 
 if test "$enable_warnings" = "yes"; then
   AX_APPEND_COMPILE_FLAGS([-Wall \
@@ -167,9 +240,6 @@ fi
 if test "$ax_cv_c_compiler_vendor" = "intel"; then
   CFLAGS="$CFLAGS -shared-intel"
 fi
-
-CARES_CHECK_COMPILER_SYMBOL_HIDING
-
 
 if test "$ac_cv_native_windows" = "yes" ; then
   AC_CHECK_HEADERS(
@@ -696,8 +766,6 @@ if test "${CARES_THREADS}" = "yes" ; then
   AC_DEFINE([CARES_THREADS], [ 1 ], [Threading enabled])
 fi
 
-CARES_CONFIGURE_SYMBOL_HIDING
-
 CARES_PRIVATE_LIBS="$LIBS"
 AC_SUBST(CARES_PRIVATE_LIBS)
 
@@ -712,25 +780,15 @@ squeeze CARES_PRIVATE_LIBS
 
 BUILD_SUBDIRS="include src docs"
 
-AC_MSG_CHECKING([whether to build tests])
-AC_ARG_ENABLE(tests,
-	AS_HELP_STRING([--enable-tests], [build test suite]),
-	[ build_tests="$enableval" ],
-	[ if test "x$HAVE_CXX14" = "x1" && test "x$cross_compiling" = "xno" ; then
-	    build_tests="maybe"
-	  else
-	    build_tests="no"
-	  fi
-	]
-)
 
+AC_MSG_CHECKING([whether to build tests])
 if test "x$build_tests" = "xyes" ; then
-	if test "x$HAVE_CXX14" = "0" ; then
-		AC_MSG_ERROR([*** Building tests requires a CXX14 compiler])
-	fi
-	if test "x$cross_compiling" = "xyes" ; then
-		AC_MSG_ERROR([*** Tests not supported when cross compiling])
-	fi
+  if test "x$HAVE_CXX14" = "0" ; then
+    AC_MSG_ERROR([*** Building tests requires a CXX14 compiler])
+  fi
+  if test "x$cross_compiling" = "xyes" ; then
+    AC_MSG_ERROR([*** Tests not supported when cross compiling])
+  fi
 fi
 AC_MSG_RESULT([$build_tests])
 
