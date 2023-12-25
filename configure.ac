@@ -276,9 +276,22 @@ dnl **********************************************************************
 dnl Checks for libraries.
 dnl **********************************************************************
 
-
 dnl see if libnsl or libsocket are required
 AC_SEARCH_LIBS([getservbyport], [nsl socket resolv])
+
+AC_MSG_CHECKING([if libxnet is required])
+need_xnet=no
+case $host_os in
+  hpux*)
+    XNET_LIBS=""
+    AX_APPEND_LINK_FLAGS([-lxnet], [XNET_LIBS])
+    if test "x$XNET_LIBS" != "x" ; then
+      LIBS="$LIBS $XNET_LIBS"
+      need_xnet=yes
+    fi
+    ;;
+esac
+AC_MSG_RESULT($need_xnet)
 
 dnl resolv lib for Apple (MacOS and iOS)
 AS_IF([test "x$host_vendor" = "xapple"], [
@@ -346,9 +359,7 @@ return 0;
   ])
 ])
 
-CARES_CHECK_LIB_XNET
 AC_TYPE_SIZE_T
-CURL_CHECK_MSG_NOSIGNAL
 
 dnl **********************************************************************
 dnl In case that function clock_gettime with monotonic timer is available,
@@ -692,6 +703,7 @@ AC_CHECK_MEMBERS(struct addrinfo.ai_flags, [], [], $cares_all_includes)
 AC_CHECK_DECL(FIONBIO, [], [], $cares_all_includes)
 AC_CHECK_DECL(O_NONBLOCK, [], [], $cares_all_includes)
 AC_CHECK_DECL(SO_NONBLOCK, [], [], $cares_all_includes)
+AC_CHECK_DECL(MSG_NOSIGNAL, [], [], $cares_all_includes)
 
 if test "$ac_cv_have_decl_FIONBIO" = "yes" -a "$ac_cv_func_ioctl" = "yes" ; then
   AC_DEFINE([HAVE_IOCTL_FIONBIO], [ 1 ], [ ioctl() with FIONBIO support ])
