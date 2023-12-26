@@ -109,6 +109,26 @@ fi
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+
+dnl CARES_DEFINE_UNQUOTED (VARIABLE, [VALUE])
+dnl -------------------------------------------------
+dnl Like AC_DEFINE_UNQUOTED this macro will define a C preprocessor
+dnl symbol that can be further used in custom template configuration
+dnl files. This macro, unlike AC_DEFINE_UNQUOTED, does not use a third
+dnl argument for the description. Symbol definitions done with this
+dnl macro are intended to be exclusively used in handcrafted *.h.in
+dnl template files. Contrary to what AC_DEFINE_UNQUOTED does, this one
+dnl prevents autoheader generation and insertion of symbol template
+dnl stub and definition into the first configuration header file. Do
+dnl not use this macro as a replacement for AC_DEFINE_UNQUOTED, each
+dnl one serves different functional needs.
+
+AC_DEFUN([CARES_DEFINE_UNQUOTED], [
+cat >>confdefs.h <<_EOF
+[@%:@define] $1 ifelse($#, 2, [$2], 1)
+_EOF
+])
+
 AX_CODE_COVERAGE
 AX_CHECK_USER_NAMESPACE
 AX_CHECK_UTS_NAMESPACE
@@ -358,20 +378,6 @@ return 0;
     AC_MSG_RESULT([no])
   ])
 ])
-
-AC_TYPE_SIZE_T
-
-dnl **********************************************************************
-dnl In case that function clock_gettime with monotonic timer is available,
-dnl check for additional required libraries.
-dnl **********************************************************************
-dnl Xcode 8 bug: iOS when targeting less than 10, or macOS when targeting less than 10.12 will
-dnl say clock_gettime exists, it is a weak symbol that only exists in iOS 10 or macOS 10.12 and will
-dnl cause a crash at runtime when running on older versions.  Skip finding CLOCK_MONOTONIC on older
-dnl Apple OS's.
-if test "x$host_vendor" != "xapple" || test "x$ac_cv_ios_10" = "xyes" || test "x$ac_cv_macos_10_12" = "xyes"; then
-  CURL_CHECK_LIBS_CLOCK_GETTIME_MONOTONIC
-fi
 
 AC_MSG_CHECKING([whether to use libgcc])
 AC_ARG_ENABLE(libgcc,
@@ -626,6 +632,8 @@ AC_DEFINE_UNQUOTED([GETHOSTNAME_TYPE_ARG2],  [ ${gethostname_type_arg2} ],  [ ge
 
 dnl ###############################################################################
 
+dnl clock_gettime might require an external library
+AC_SEARCH_LIBS([clock_gettime], [rt posix4])
 
 AC_CHECK_FUNCS(connect \
   closesocket          \
@@ -653,6 +661,7 @@ AC_CHECK_FUNCS(connect \
   arc4random_buf       \
   stat                 \
   gettimeofday         \
+  clock_gettime        \
   if_indextoname       \
   if_nametoindex       \
   ConvertInterfaceIndexToLuid \
@@ -691,6 +700,7 @@ if test "$ac_cv_func_getservbyname_r" = "yes" ; then
   AC_MSG_RESULT([$getservbyname_r_args])
 fi
 
+AC_TYPE_SIZE_T
 AC_CHECK_DECL(AF_INET6, [AC_DEFINE([HAVE_AF_INET6],1,[Define to 1 if you have AF_INET6])], [], $cares_all_includes)
 AC_CHECK_DECL(PF_INET6, [AC_DEFINE([HAVE_PF_INET6],1,[Define to 1 if you have PF_INET6])], [], $cares_all_includes)
 AC_CHECK_TYPES(struct in6_addr, [], [], $cares_all_includes)
@@ -704,6 +714,11 @@ AC_CHECK_DECL(FIONBIO, [], [], $cares_all_includes)
 AC_CHECK_DECL(O_NONBLOCK, [], [], $cares_all_includes)
 AC_CHECK_DECL(SO_NONBLOCK, [], [], $cares_all_includes)
 AC_CHECK_DECL(MSG_NOSIGNAL, [], [], $cares_all_includes)
+AC_CHECK_DECL(CLOCK_MONOTONIC, [], [], $cares_all_includes)
+
+if test "$ac_cv_have_decl_CLOCK_MONOTONIC" = "yes" -a "$ac_cv_func_clock_gettime" = "yes" ; then
+  AC_DEFINE([HAVE_CLOCK_GETTIME_MONOTONIC], [ 1 ], [ clock_gettime() with CLOCK_MONOTONIC support ])
+fi
 
 if test "$ac_cv_have_decl_FIONBIO" = "yes" -a "$ac_cv_func_ioctl" = "yes" ; then
   AC_DEFINE([HAVE_IOCTL_FIONBIO], [ 1 ], [ ioctl() with FIONBIO support ])
