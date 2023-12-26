@@ -802,7 +802,7 @@ AC_MSG_RESULT([$build_tests])
 if test "x$build_tests" != "xno" ; then
   PKG_CHECK_MODULES([GMOCK], [gmock], [ have_gmock=yes ], [ have_gmock=no ])
   if test "x$have_gmock" = "xno" ; then
-    if "x$build_tests" = "xmaybe" ; then
+    if test "x$build_tests" = "xmaybe" ; then
       AC_MSG_WARN([gmock could not be found, not building tests])
       build_tests=no
     else
