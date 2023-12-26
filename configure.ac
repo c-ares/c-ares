@@ -415,6 +415,7 @@ AC_CHECK_HEADERS(
        netinet/tcp.h \
        net/if.h \
        ifaddrs.h \
+       fcntl.h \
        errno.h \
        socket.h \
        strings.h \
