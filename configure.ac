@@ -402,6 +402,7 @@ AC_CHECK_HEADERS(
        sys/time.h \
        sys/select.h \
        sys/socket.h \
+       sys/filio.h \
        sys/ioctl.h \
        sys/param.h \
        sys/uio.h \
@@ -464,6 +465,9 @@ cares_all_includes="
 #endif
 #ifdef HAVE_TCP_H
 #  include <tcp.h>
+#endif
+#ifdef HAVE_SYS_FILIO_H
+#  include <sys/filio.h>
 #endif
 #ifdef HAVE_SYS_IOCTL_H
 #  include <sys/ioctl.h>
