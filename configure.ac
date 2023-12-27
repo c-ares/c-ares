@@ -828,7 +828,6 @@ if test "x$build_tests" != "xno" ; then
     AX_PTHREAD([ CARES_TEST_PTHREADS="yes" ], [ AC_MSG_ERROR([threading required for tests]) ])
   fi
 
-  ADDITIONAL_CONFIG_FILES="test/Makefile"
   BUILD_SUBDIRS="${BUILD_SUBDIRS} test"
 fi
 
