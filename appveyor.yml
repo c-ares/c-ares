@@ -120,6 +120,8 @@ environment:
       CONFTOOL: CMAKE
       SYSTEM: CONSOLE
       SKIP_TESTS: no
+      TOOLSDIR: ./build/bin
+      TESTDIR: ./build/bin
       PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
       CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest
       BUILD_GOOGLETEST: yes
