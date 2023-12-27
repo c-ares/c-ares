@@ -164,7 +164,7 @@ build_script:
 test_script:
   # We can't use powershell for tests due to treating stderr as an error
   - if "%SYSTEM%" == "MSYS2"                              C:\msys64\usr\bin\bash -lc "%TOOLSDIR%/adig.exe www.google.com"
-  - if "%SYSTEM%" == "MSYS2"                              C:\msys64\usr\bin\bash -lc "%TOOLSIR%/ahost.exe www.google.com"
+  - if "%SYSTEM%" == "MSYS2"                              C:\msys64\usr\bin\bash -lc "%TOOLSDIR%/ahost.exe www.google.com"
   - if "%SYSTEM%" == "MSYS2"                              C:\msys64\usr\bin\bash -lc "%TESTDIR%/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "NMAKE" if "%SKIP_TESTS%" != "yes" cd test
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "NMAKE" if "%SKIP_TESTS%" != "yes" nmake GTEST_ROOT=C:\projects\googletest /NOLOGO /f .\Makefile.msvc vtest
