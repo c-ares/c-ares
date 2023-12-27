@@ -29,6 +29,7 @@ environment:
       SKIP_TESTS: no
       SYSTEM: MSYS2
       MSYSTEM: MINGW64
+      TOOLSDIR: ./src/tools
       TESTDIR: ./test
       CHERE_INVOKING: YES
 
@@ -58,6 +59,7 @@ environment:
       SYSTEM: MSYS2
       SKIP_TESTS: no
       MSYSTEM: MINGW64
+      TOOLSDIR: ./cmakebld/bin
       TESTDIR: ./cmakebld/bin
       CMAKE_EXTRA_OPTIONS: -GNinja
       CHERE_INVOKING: YES
@@ -68,6 +70,7 @@ environment:
       SKIP_TESTS: no
       SYSTEM: MSYS2
       MSYSTEM: CLANG64
+      TOOLSDIR: ./cmakebld/bin
       TESTDIR: ./cmakebld/bin
       CMAKE_EXTRA_OPTIONS: -GNinja -DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined
       CHERE_INVOKING: YES
