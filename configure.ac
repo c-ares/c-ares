@@ -277,6 +277,12 @@ if test "$ax_cv_c_compiler_vendor" = "intel"; then
 fi
 
 if test "$ac_cv_native_windows" = "yes" ; then
+  dnl we use [ - ] in the 4th argument to tell AC_CHECK_HEADERS to simply
+  dnl check for existence of the headers, not usability.  This is because
+  dnl on windows, header order matters, and you need to include headers *after*
+  dnl other headers, AC_CHECK_HEADERS only allows you to specify headers that
+  dnl must be included *before* the header being checked.
+
   AC_CHECK_HEADERS(
     windows.h  \
     winsock2.h \
