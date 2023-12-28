@@ -97,20 +97,27 @@ extern "C" {
 ** c-ares external API function linkage decorations.
 */
 
-#ifdef CARES_STATICLIB
-#  define CARES_EXTERN
-#elif defined(WIN32) || defined(_WIN32) || defined(__SYMBIAN32__)
-#  if defined(CARES_BUILDING_LIBRARY)
-#    define CARES_EXTERN __declspec(dllexport)
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(__SYMBIAN32__)
+#  ifdef CARES_STATICLIB
+#    define CARES_EXTERN
 #  else
-#    define CARES_EXTERN __declspec(dllimport)
+#    ifdef CARES_BUILDING_LIBRARY
+#      define CARES_EXTERN __declspec(dllexport)
+#    else
+#      define CARES_EXTERN __declspec(dllimport)
+#    endif
 #  endif
-#elif defined(CARES_BUILDING_LIBRARY) && defined(CARES_SYMBOL_HIDING)
-#  define CARES_EXTERN CARES_SYMBOL_SCOPE_EXTERN
 #else
-#  define CARES_EXTERN
+#  if defined(__GNUC__) && __GNUC__ >= 4
+#    define CARES_EXTERN __attribute__ ((visibility ("default")))
+#  elif defined(__INTEL_COMPILER) && __INTEL_COMPILER >= 900
+#    define CARES_EXTERN __attribute__ ((visibility ("default")))
+#  elif defined(__SUNPRO_C)
+#    define CARES_EXTERN _global
+#  else
+#    define CARES_EXTERN
+#  endif
 #endif
-
 
 typedef enum {
   ARES_SUCCESS = 0,

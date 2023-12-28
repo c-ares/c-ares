@@ -32,7 +32,9 @@
 #include <unistd.h>
 #endif
 #include <fcntl.h>
-
+#ifdef HAVE_SYS_IOCTL_H
+#  include <sys/ioctl.h>
+#endif
 extern "C" {
 // Remove command-line defines of package variables for the test project...
 #undef PACKAGE_NAME
@@ -916,42 +918,6 @@ TEST_F(LibraryTest, SlistMisuse) {
   EXPECT_EQ(NULL, ares__slist_first_val(NULL));
   EXPECT_EQ(NULL, ares__slist_last_val(NULL));
   EXPECT_EQ(NULL, ares__slist_node_claim(NULL));
-}
-#endif
-
-#ifdef CARES_EXPOSE_STATICS
-// These tests access internal static functions from the library, which
-// are only exposed when CARES_EXPOSE_STATICS has been configured. As such
-// they are tightly couple to the internal library implementation details.
-extern "C" char *ares_striendstr(const char*, const char*);
-TEST_F(LibraryTest, Striendstr) {
-  EXPECT_EQ(nullptr, ares_striendstr("abc", "12345"));
-  EXPECT_NE(nullptr, ares_striendstr("abc12345", "12345"));
-  EXPECT_NE(nullptr, ares_striendstr("abcxyzzy", "XYZZY"));
-  EXPECT_NE(nullptr, ares_striendstr("xyzzy", "XYZZY"));
-  EXPECT_EQ(nullptr, ares_striendstr("xyxzy", "XYZZY"));
-  EXPECT_NE(nullptr, ares_striendstr("", ""));
-  const char *str = "plugh";
-  EXPECT_NE(nullptr, ares_striendstr(str, str));
-}
-
-TEST_F(DefaultChannelTest, SingleDomain) {
-  TempFile aliases("www www.google.com\n");
-  EnvValue with_env("HOSTALIASES", aliases.filename());
-
-  SetAllocSizeFail(128);
-  char *ptr = nullptr;
-  EXPECT_EQ(ARES_ENOMEM, ares__single_domain(channel_, "www", &ptr));
-
-  channel_->flags |= ARES_FLAG_NOSEARCH|ARES_FLAG_NOALIASES;
-  EXPECT_EQ(ARES_SUCCESS, ares__single_domain(channel_, "www", &ptr));
-  EXPECT_EQ("www", std::string(ptr));
-  ares_free(ptr);
-  ptr = nullptr;
-
-  SetAllocFail(1);
-  EXPECT_EQ(ARES_ENOMEM, ares__single_domain(channel_, "www", &ptr));
-  EXPECT_EQ(nullptr, ptr);
 }
 #endif
 

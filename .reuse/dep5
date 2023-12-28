@@ -19,11 +19,11 @@ Copyright: The c-ares project and its contributors.
 License: MIT
 
 # Imported m4 files
-Files: m4/ax_pthread.m4
+Files: m4/ax_pthread.m4 m4/ax_compiler_vendor.m4
 Copyright: see file
 License: GPL-3.0-or-later WITH Autoconf-exception-3.0
 
-Files: m4/ax_cxx_compile_stdcxx.m4 m4/ax_cxx_compile_stdcxx_14.m4 me/ax_require_defined.m4 m4/ax_check_gnu_make.m4 m4/ax_file_escapes.m4 m4/ax_require_defined.m4 m4/ax_ac_append_to_file.m4 m4/ax_ac_print_to_file.m4 m4/ax_add_am_macro_static.m4 m4/ax_file_escapes.m4 m4/ax_am_macros_static.m4 m4/ax_append_flag.m4 m4/ax_append_compile_flags.m4 m4/ax_check_compile_flag.m4
+Files: m4/ax_cxx_compile_stdcxx.m4 m4/ax_cxx_compile_stdcxx_14.m4 me/ax_require_defined.m4 m4/ax_check_gnu_make.m4 m4/ax_file_escapes.m4 m4/ax_require_defined.m4 m4/ax_ac_append_to_file.m4 m4/ax_ac_print_to_file.m4 m4/ax_add_am_macro_static.m4 m4/ax_file_escapes.m4 m4/ax_am_macros_static.m4 m4/ax_append_flag.m4 m4/ax_append_compile_flags.m4 m4/ax_check_compile_flag.m4 m4/ax_append_link_flags.m4 m4/ax_check_link_flag.m4
 Copyright: see files
 License: FSFAP
 
