@@ -260,22 +260,18 @@
 #  define _CRT_NONSTDC_NO_DEPRECATE 1
 #endif
 
-/* Set the Target to Vista. However, any symbols required above Win2000
- * should be loaded via LoadLibrary() */
+/* Set the Target to Win8 */
 #if defined(_MSC_VER) && (_MSC_VER >= 1500)
-#  define VS2008_MIN_TARGET 0x0600
+#  define MSVC_MIN_TARGET 0x0602
 #endif
 
-/* VS2008 default target settings and minimum build target check. */
+/* MSVC default target settings */
 #if defined(_MSC_VER) && (_MSC_VER >= 1500)
 #  ifndef _WIN32_WINNT
-#    define _WIN32_WINNT VS2008_MIN_TARGET
+#    define _WIN32_WINNT MSVC_MIN_TARGET
 #  endif
 #  ifndef WINVER
-#    define WINVER VS2008_MIN_TARGET
-#  endif
-#  if (_WIN32_WINNT < VS2008_MIN_TARGET) || (WINVER < VS2008_MIN_TARGET)
-#    error VS2008 does not support Windows build targets prior to Windows 2000
+#    define WINVER MSVC_MIN_TARGET
 #  endif
 #endif
 
@@ -283,10 +279,10 @@
    target is Windows Vista. */
 #if defined(__POCC__) && (__POCC__ >= 500)
 #  ifndef _WIN32_WINNT
-#    define _WIN32_WINNT 0x0600
+#    define _WIN32_WINNT 0x0602
 #  endif
 #  ifndef WINVER
-#    define WINVER 0x0600
+#    define WINVER 0x0602
 #  endif
 #endif
 
