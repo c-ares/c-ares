@@ -50,13 +50,6 @@
 #  define INADDR_NONE 0xffffffff
 #endif
 
-#ifdef CARES_EXPOSE_STATICS
-/* Make some internal functions visible for testing */
-#  define STATIC_TESTABLE
-#else
-#  define STATIC_TESTABLE static
-#endif
-
 /* By using a double cast, we can get rid of the bogus warning of
  * warning: cast from 'const struct sockaddr *' to 'const struct sockaddr_in6 *'
  * increases required alignment from 1 to 4 [-Wcast-align]

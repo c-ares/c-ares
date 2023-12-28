@@ -69,7 +69,7 @@ struct nameinfo_query {
   size_t       timeouts;
 };
 
-#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
 #  define IPBUFSIZ \
     (sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255") + IF_NAMESIZE)
 #else
@@ -80,11 +80,11 @@ static void  nameinfo_callback(void *arg, int status, int timeouts,
                                struct hostent *host);
 static char *lookup_service(unsigned short port, unsigned int flags, char *buf,
                             size_t buflen);
-#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
 static void append_scopeid(const struct sockaddr_in6 *addr6,
                            unsigned int scopeid, char *buf, size_t buflen);
 #endif
-STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2);
+static char *ares_striendstr(const char *s1, const char *s2);
 
 static void           ares_getnameinfo_int(ares_channel_t        *channel,
                                            const struct sockaddr *sa,
@@ -145,7 +145,7 @@ static void           ares_getnameinfo_int(ares_channel_t        *channel,
       if (salen == sizeof(struct sockaddr_in6)) {
         ares_inet_ntop(AF_INET6, &addr6->sin6_addr, ipbuf, IPBUFSIZ);
         /* If the system supports scope IDs, use it */
-#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
         append_scopeid(addr6, flags, ipbuf, sizeof(ipbuf));
 #endif
       } else {
@@ -247,7 +247,7 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
       ares_inet_ntop(AF_INET, &niquery->addr.addr4.sin_addr, ipbuf, IPBUFSIZ);
     } else {
       ares_inet_ntop(AF_INET6, &niquery->addr.addr6.sin6_addr, ipbuf, IPBUFSIZ);
-#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
       append_scopeid(&niquery->addr.addr6, niquery->flags, ipbuf,
                      sizeof(ipbuf));
 #endif
@@ -346,7 +346,7 @@ static char *lookup_service(unsigned short port, unsigned int flags, char *buf,
   return NULL;
 }
 
-#ifdef HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
 static void append_scopeid(const struct sockaddr_in6 *addr6, unsigned int flags,
                            char *buf, size_t buflen)
 {
@@ -387,7 +387,7 @@ static void append_scopeid(const struct sockaddr_in6 *addr6, unsigned int flags,
 #endif
 
 /* Determines if s1 ends with the string in s2 (case-insensitive) */
-STATIC_TESTABLE char *ares_striendstr(const char *s1, const char *s2)
+static char *ares_striendstr(const char *s1, const char *s2)
 {
   const char *c1;
   const char *c2;

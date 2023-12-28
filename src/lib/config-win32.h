@@ -105,9 +105,6 @@
 /*                        OTHER HEADER INFO                         */
 /* ---------------------------------------------------------------- */
 
-/* Define if sig_atomic_t is an available typedef. */
-#define HAVE_SIG_ATOMIC_T 1
-
 /* Define if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
@@ -234,14 +231,6 @@
 /*                       TYPEDEF REPLACEMENTS                       */
 /* ---------------------------------------------------------------- */
 
-/* Define if in_addr_t is not an available 'typedefed' type. */
-#define in_addr_t unsigned long
-
-#ifdef __cplusplus
-/* Compiling headers in C++ mode means bool is available */
-#  define HAVE_BOOL_T
-#endif
-
 /* ---------------------------------------------------------------- */
 /*                            TYPE SIZES                            */
 /* ---------------------------------------------------------------- */
@@ -354,7 +343,7 @@
 
 /* Define if you have sockaddr_in6 with scopeid. */
 #ifdef HAVE_WS2TCPIP_H
-#  define HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID 1
+#  define HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID 1
 #endif
 
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600) && !defined(__WATCOMC__)

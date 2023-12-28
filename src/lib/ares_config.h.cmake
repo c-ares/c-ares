@@ -7,20 +7,8 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* define this if ares is built for a big endian system */
-#undef ARES_BIG_ENDIAN
-
-/* when building as static part of libcurl */
-#undef BUILDING_LIBCURL
-
-/* Defined for build that exposes internal static functions for testing. */
-#undef CARES_EXPOSE_STATICS
-
 /* Defined for build with symbol hiding. */
 #cmakedefine CARES_SYMBOL_HIDING
-
-/* Definition to make a library symbol externally visible. */
-#define CARES_SYMBOL_SCOPE_EXTERN @CARES_SYMBOL_SCOPE_EXTERN@
 
 /* Use resolver library to configure cares */
 #cmakedefine CARES_USE_LIBRESOLV
@@ -67,12 +55,6 @@
 /* Define to 1 if you have the <assert.h> header file. */
 #cmakedefine HAVE_ASSERT_H
 
-/* Define to 1 if you have the `bitncmp' function. */
-#cmakedefine HAVE_BITNCMP
-
-/* Define to 1 if bool is an available type. */
-#cmakedefine HAVE_BOOL_T
-
 /* Define to 1 if you have the clock_gettime function and monotonic timer. */
 #cmakedefine HAVE_CLOCK_GETTIME_MONOTONIC
 
@@ -114,12 +96,6 @@
 
 /* Define to 1 if you have the getenv function. */
 #cmakedefine HAVE_GETENV
-
-/* Define to 1 if you have the gethostbyaddr function. */
-#cmakedefine HAVE_GETHOSTBYADDR
-
-/* Define to 1 if you have the gethostbyname function. */
-#cmakedefine HAVE_GETHOSTBYNAME
 
 /* Define to 1 if you have the gethostname function. */
 #cmakedefine HAVE_GETHOSTNAME
@@ -197,9 +173,6 @@
 /* Define to 1 if you have the <limits.h> header file. */
 #cmakedefine HAVE_LIMITS_H
 
-/* if your compiler supports LL */
-#cmakedefine HAVE_LL
-
 /* Define to 1 if the compiler supports the 'long long' data type. */
 #cmakedefine HAVE_LONGLONG
 
@@ -245,14 +218,8 @@
 /* Define to 1 if you have the <signal.h> header file. */
 #cmakedefine HAVE_SIGNAL_H
 
-/* Define to 1 if sig_atomic_t is an available typedef. */
-#cmakedefine HAVE_SIG_ATOMIC_T
-
-/* Define to 1 if sig_atomic_t is already defined as volatile. */
-#cmakedefine HAVE_SIG_ATOMIC_T_VOLATILE
-
 /* Define to 1 if your struct sockaddr_in6 has sin6_scope_id. */
-#cmakedefine HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID
+#cmakedefine HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
 
 /* Define to 1 if you have the socket function. */
 #cmakedefine HAVE_SOCKET
@@ -457,9 +424,6 @@
 
 /* Define to avoid automatic inclusion of winsock.h */
 #undef WIN32_LEAN_AND_MEAN
-
-/* Type to use in place of in_addr_t when system does not provide it. */
-#undef in_addr_t
 
 /* Define to 1 if you have the pthread.h header file. */
 #cmakedefine HAVE_PTHREAD_H
