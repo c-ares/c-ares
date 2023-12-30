@@ -802,17 +802,24 @@ AC_SUBST(CARES_PRIVATE_LIBS)
 BUILD_SUBDIRS="include src docs"
 
 
-AC_MSG_CHECKING([whether to build tests])
-if test "x$build_tests" = "xyes" ; then
-  if test "x$HAVE_CXX14" = "0" ; then
+dnl ******** TESTS *******
+
+if test "x$build_tests" != "xno" -a "x$HAVE_CXX14" = "0" ; then
+  if test "x$build_tests" = "xmaybe" ; then
+    AC_MSG_WARN([cannot build tests without a CXX14 compiler])
+    build_tests=no
+  else
     AC_MSG_ERROR([*** Building tests requires a CXX14 compiler])
   fi
-  if test "x$cross_compiling" = "xyes" ; then
+fi
+if test "x$build_tests" != "xno" -a "x$cross_compiling" = "xyes" ; then
+  if test "x$build_tests" = "xmaybe" ; then
+    AC_MSG_WARN([cannot build tests when cross compiling])
+    build_tests=no
+  else
     AC_MSG_ERROR([*** Tests not supported when cross compiling])
   fi
 fi
-AC_MSG_RESULT([$build_tests])
-
 if test "x$build_tests" != "xno" ; then
   PKG_CHECK_MODULES([GMOCK], [gmock], [ have_gmock=yes ], [ have_gmock=no ])
   if test "x$have_gmock" = "xno" ; then
@@ -824,18 +831,19 @@ if test "x$build_tests" != "xno" ; then
     fi
   fi
 fi
-
 if test "x$build_tests" != "xno" ; then
   build_tests=yes
 
   AX_CXX_COMPILE_STDCXX_14([noext],[mandatory])
-
   if test "$ac_cv_native_windows" != "yes" ; then
     AX_PTHREAD([ CARES_TEST_PTHREADS="yes" ], [ AC_MSG_ERROR([threading required for tests]) ])
   fi
 
   BUILD_SUBDIRS="${BUILD_SUBDIRS} test"
 fi
+AC_MSG_CHECKING([whether to build tests])
+AC_MSG_RESULT([$build_tests])
+
 
 AM_CONDITIONAL(BUILD_TESTS, test "x$build_tests" = "xyes")
 
