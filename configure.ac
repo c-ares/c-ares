@@ -42,9 +42,8 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
 AX_CXX_COMPILE_STDCXX_14([noext],[optional])
 AM_INIT_AUTOMAKE([foreign subdir-objects 1.9.6])
-AC_DISABLE_STATIC
 AC_ENABLE_SHARED
-LT_INIT([win32-dll,shared,disable-static,pic,disable-fast-install,aix-soname=svr4])
+LT_INIT([win32-dll,shared,pic,disable-fast-install,aix-soname=svr4])
 AC_LANG([C])
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -183,6 +182,12 @@ if test "$ac_cv_native_windows" = "yes" ; then
   CPPFLAGS="$CPPFLAGS -D_WIN32_WINNT=0x0602 -DWIN32_LEAN_AND_MEAN"
 fi
 AC_MSG_RESULT($ac_cv_native_windows)
+
+dnl Disable static builds by default on Windows unless overwritten since Windows
+dnl can't simultaneously build shared and static with autotools.
+if test "x$ac_cv_windows" = "xyes" ; then
+  AC_DISABLE_STATIC
+fi
 
 
 dnl Only windows requires CARES_STATICLIB definition
