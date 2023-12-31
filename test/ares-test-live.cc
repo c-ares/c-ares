@@ -29,11 +29,14 @@
 namespace ares {
 namespace test {
 
-// Use the address of Google's public DNS servers as example addresses that are
-// likely to be accessible everywhere/everywhen.
-unsigned char gdns_addr4[4] = {0x08, 0x08, 0x08, 0x08};
-unsigned char gdns_addr6[16] = {0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0x00, 0x00,
-                                      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0x88};
+// Use the address of CloudFlare's public DNS servers as example addresses that are
+// likely to be accessible everywhere/everywhen.  We used to use google but they
+// stopped returning reverse dns answers in Dec 2023
+unsigned char cflare_addr4[4]  = { 0x01, 0x01, 0x01, 0x01 };
+unsigned char cflare_addr6[16] = {
+  0x26, 0x06, 0x47, 0x00, 0x47, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x11
+};
 
 MATCHER_P(IncludesAtLeastNumAddresses, n, "") {
   if(!arg)
@@ -121,7 +124,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByNameV6) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByAddrV4) {
   HostResult result;
-  ares_gethostbyaddr(channel_, gdns_addr4, sizeof(gdns_addr4), AF_INET, HostCallback, &result);
+  ares_gethostbyaddr(channel_, cflare_addr4, sizeof(cflare_addr4), AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_SUCCESS, result.status_);
@@ -131,7 +134,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByAddrV4) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetHostByAddrV6) {
   HostResult result;
-  ares_gethostbyaddr(channel_, gdns_addr6, sizeof(gdns_addr6), AF_INET6, HostCallback, &result);
+  ares_gethostbyaddr(channel_, cflare_addr6, sizeof(cflare_addr6), AF_INET6, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_SUCCESS, result.status_);
@@ -443,7 +446,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV6Both) {
   memset(&sockaddr, 0, sizeof(sockaddr));
   sockaddr.sin6_family = AF_INET6;
   sockaddr.sin6_port = htons(53);
-  memcpy(sockaddr.sin6_addr.s6_addr, gdns_addr6, 16);
+  memcpy(sockaddr.sin6_addr.s6_addr, cflare_addr6, 16);
   ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
                    ARES_NI_TCP|ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_NOFQDN,
                    NameInfoCallback, &result);
@@ -459,7 +462,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV6Neither) {
   memset(&sockaddr, 0, sizeof(sockaddr));
   sockaddr.sin6_family = AF_INET6;
   sockaddr.sin6_port = htons(53);
-  memcpy(sockaddr.sin6_addr.s6_addr, gdns_addr6, 16);
+  memcpy(sockaddr.sin6_addr.s6_addr, cflare_addr6, 16);
   ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
                    ARES_NI_TCP|ARES_NI_NOFQDN,  // Neither specified => assume lookup host.
                    NameInfoCallback, &result);
@@ -492,15 +495,15 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV6Numeric) {
   memset(&sockaddr, 0, sizeof(sockaddr));
   sockaddr.sin6_family = AF_INET6;
   sockaddr.sin6_port = htons(53);
-  memcpy(sockaddr.sin6_addr.s6_addr, gdns_addr6, 16);
+  memcpy(sockaddr.sin6_addr.s6_addr, cflare_addr6, 16);
   ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
                    ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_DCCP|ARES_NI_NUMERICHOST,
                    NameInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_SUCCESS, result.status_);
-  EXPECT_EQ("2001:4860:4860::8888%0", result.node_);
-  if (verbose) std::cerr << "[2001:4860:4860::8888]:53 => " << result.node_ << "/" << result.service_ << std::endl;
+  EXPECT_EQ("2606:4700:4700::1111%0", result.node_);
+  if (verbose) std::cerr << "[2606:4700:4700::1111]:53 => " << result.node_ << "/" << result.service_ << std::endl;
 }
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoV6LinkLocal) {
@@ -582,7 +585,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInvalidFamily) {
   memset(&sockaddr, 0, sizeof(sockaddr));
   sockaddr.sin6_family = AF_INET6 + AF_INET;
   sockaddr.sin6_port = htons(53);
-  memcpy(sockaddr.sin6_addr.s6_addr, gdns_addr6, 16);
+  memcpy(sockaddr.sin6_addr.s6_addr, cflare_addr6, 16);
   ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
                    ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP,
                    NameInfoCallback, &result);
@@ -597,7 +600,7 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInvalidFlags) {
   memset(&sockaddr, 0, sizeof(sockaddr));
   sockaddr.sin6_family = AF_INET6;
   sockaddr.sin6_port = htons(53);
-  memcpy(sockaddr.sin6_addr.s6_addr, gdns_addr6, 16);
+  memcpy(sockaddr.sin6_addr.s6_addr, cflare_addr6, 16);
   // Ask for both a name-required, and a numeric host.
   ares_getnameinfo(channel_, (const struct sockaddr*)&sockaddr, sizeof(sockaddr),
                    ARES_NI_LOOKUPHOST|ARES_NI_LOOKUPSERVICE|ARES_NI_UDP|ARES_NI_NUMERICHOST|ARES_NI_NAMEREQD,
