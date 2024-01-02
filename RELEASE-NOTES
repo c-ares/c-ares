@@ -1,51 +1,47 @@
-c-ares version 1.24.0
+c-ares version 1.25.0
 
-This is a feature and bugfix release.
-
-Features:
- o Add support for IPv6 link-local DNS servers.  Nameserver formats can now
-   accept the %iface suffix, and a new ares_get_servers_csv() function was
-   added to return servers that can contain the link-local interface name. [3]
+This is a maintenance release.
 
 Changes:
- o Unbundle GoogleTest for test cases.  Package maintainers will now need to
-   require GoogleTest (GMock) as a build dependency if building tests. New
-   GoogleTest versions require C++14 or later. [6]
- o Replace nameserver parsing code to use new memory-safe functions. [1]
- o Replace the sortlist parser with new memory-safe functions. [5]
- o Various warning fixes and dead code removal.
+ o AutoTools: rewrite build system to be lighter weight and fix issues in some
+   semi-modern systems. It is likely this has broken building on some less
+   common and legacy OSs, please report issues. [1]
+ o Rewrite ares_strsplit() as a wrapper for ares__buf_split() for memory
+   safety reasons. [4]
+ o The ahost utility now uses ares_getaddrinfo() and returns both IPv4 and
+   IPv6 addresses by default. [6]
+ o OpenBSD: Add SOCK_DNS flag when creating socket. [12]
 
 Bug Fixes:
- o Old Linux versions require POSIX_C_SOURCE or _GNU_SOURCE to compile with
-   thread safety support. [2]
- o A non-responsive DNS server that caused timeouts wouldn't increment the
-   failure count, this would lead to other servers not being tried.
-   Regression introduced in 1.22.0. [4]
- o Some projects that depend on c-ares expect invalid parameter option values
-   passed into ares_init_options() to simply be ignored.  This behavior has
-   been restored. [7]
- o On linux getrandom() can fail if the kernel doesn't support the syscall,
-   fall back to another random source. [8]
- o ares_cancel() when performing ares_gethostbyname() or ares_getaddrinfo()
-   with AF_UNSPEC, if called after one address class was returned but before
-   the other address class, it would return ARES_SUCCESS rather than
-   ARES_ECANCELLED. [9]
-
+ o Tests: Live reverse lookups for Google's public DNS servers no longer
+   return results, replace with CloudFlare pubic DNS servers. [2]
+ o MacOS legacy SDKs require sys/socket.h before net/if.h [3]
+ o Connection failures should increment the server failure count first or a
+   retry might be enqueued to the same server. [5]
+ o On systems that don't implement the ability to enumerate network interfaces
+   the stubs used the wrong prototype. [7]
+ o Fix minor warnings and documentation typos. [8]
+ o Fix support for older GoogleTest versions. [9]
+ o getrandom() may require sys/random.h on some systems. [10]
+ o Fix building tests with symbol hiding enabled. [11]
 
 Thanks go to these friendly people for their efforts and contributions:
   Brad House (@bradh352)
   Daniel Stenberg (@bagder)
-(2 contributors)
+  Gregor Jasny (@gjasny)
+  Martin Chang (@marty1885)
+(4 contributors)
 
 References to bug reports and discussions on issues:
- [1] = https://github.com/c-ares/c-ares/pull/643
- [2] = https://github.com/c-ares/c-ares/issues/644
- [3] = https://github.com/c-ares/c-ares/pull/646
- [4] = https://github.com/c-ares/c-ares/pull/650
- [5] = https://github.com/c-ares/c-ares/pull/653
- [6] = https://github.com/c-ares/c-ares/pull/655
- [7] = https://github.com/c-ares/c-ares/commit/c982bf4
- [8] = https://github.com/c-ares/c-ares/pull/661
- [9] = https://github.com/c-ares/c-ares/pull/663
-
-
+ [1] = https://github.com/c-ares/c-ares/pull/674
+ [2] = https://github.com/c-ares/c-ares/commit/1231aa7
+ [3] = https://github.com/c-ares/c-ares/pull/673
+ [4] = https://github.com/c-ares/c-ares/commit/88c444d
+ [5] = https://github.com/c-ares/c-ares/commit/05181a6
+ [6] = https://github.com/c-ares/c-ares/pull/669
+ [7] = https://github.com/c-ares/c-ares/commit/eebfe0c
+ [8] = https://github.com/c-ares/c-ares/pull/666
+ [9] = https://github.com/c-ares/c-ares/commit/d186f11
+ [10] = https://github.com/c-ares/c-ares/issues/665
+ [11] = https://github.com/c-ares/c-ares/issues/664
+ [12] = https://github.com/c-ares/c-ares/pull/659
