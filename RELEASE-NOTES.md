@@ -20,10 +20,10 @@ Bugfixes:
 * getrandom() may require sys/random.h on some systems. [Issue #665](https://github.com/c-ares/c-ares/issues/665)
 * Fix building tests with symbol hiding enabled. [Issue #664](https://github.com/c-ares/c-ares/issues/664)
 
-Thanks go to these friendly people for their efforts and contributions:
+Thanks go to these friendly people for their efforts and contributions for this release:
 
 * Brad House (@bradh352)
 * Daniel Stenberg (@bagder)
 * Gregor Jasny (@gjasny)
 * Martin Chang (@marty1885)
-(4 contributors)
+
