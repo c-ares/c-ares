@@ -655,10 +655,6 @@ IF (HAVE_ARPA_NAMESER_COMPAT_H)
 	SET (CARES_HAVE_ARPA_NAMESER_COMPAT_H 1)
 ENDIF()
 
-# Record toplevel CMakeLists.txt path
-set(CARES_TOPLEVEL_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-
-
 # TRANSFORM_MAKEFILE_INC
 #
 # This function consumes the "Makefile.inc" autotools file, and converts it into
