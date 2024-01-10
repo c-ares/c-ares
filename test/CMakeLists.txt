@@ -18,8 +18,7 @@ target_include_directories(caresinternal
              "${PROJECT_BINARY_DIR}/src/lib"
              "${PROJECT_SOURCE_DIR}"
              "${PROJECT_SOURCE_DIR}/src/lib"
-             "${CARES_TOPLEVEL_DIR}/include"
-             "${CMAKE_INSTALL_INCLUDEDIR}"
+             "${PROJECT_SOURCE_DIR}/include"
 )
 
 IF (CARES_STATIC)
