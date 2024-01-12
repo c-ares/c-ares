@@ -28,6 +28,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_dns_parse.c			\
   ares_dns_record.c			\
   ares_dns_write.c			\
+  ares_event_thread.c			\
   ares_expand_name.c			\
   ares_expand_string.c			\
   ares_fds.c				\
