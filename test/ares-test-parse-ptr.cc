@@ -163,13 +163,20 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
                                                 addrv4, sizeof(addrv4), AF_INET, &host));
   pkt.add_question(new DNSQuestion("64.48.32.16.in-addr.arpa", T_PTR));
 
-  // Question != answer
+  // Question != answer, ok after #683
+  host = nullptr;
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("99.48.32.16.in-addr.arpa", T_PTR));
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_ptr_reply(data.data(), (int)data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_ptr_reply(data.data(), (int)data.size(),
                                                addrv4, sizeof(addrv4), AF_INET, &host));
-  EXPECT_EQ(nullptr, host);
+  ASSERT_NE(nullptr, host);
+  std::stringstream ss;
+  ss << HostEnt(host);
+  EXPECT_EQ("{'other.com' aliases=[other.com] addrs=[16.32.48.64]}", ss.str());
+  ares_free_hostent(host);
+
+  host = nullptr;
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("64.48.32.16.in-addr.arpa", T_PTR));
 
