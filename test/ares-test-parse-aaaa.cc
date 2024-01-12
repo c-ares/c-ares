@@ -139,13 +139,19 @@ TEST_F(LibraryTest, ParseAaaaReplyErrors) {
   EXPECT_EQ(nullptr, host);
   pkt.add_question(new DNSQuestion("example.com", T_AAAA));
 
-  // Question != answer
+  // Question != answer, this is ok as of Issue #683
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("Axample.com", T_AAAA));
   data = pkt.data();
-  EXPECT_EQ(ARES_ENODATA, ares_parse_aaaa_reply(data.data(), (int)data.size(),
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_aaaa_reply(data.data(), (int)data.size(),
                                                 &host, info, &count));
-  EXPECT_EQ(nullptr, host);
+  ASSERT_NE(nullptr, host);
+  std::stringstream ss;
+  ss << HostEnt(host);
+  EXPECT_EQ("{'Axample.com' aliases=[] addrs=[0101:0101:0202:0202:0303:0303:0404:0404]}", ss.str());
+
+
+  host = nullptr;
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_AAAA));
 
