@@ -756,9 +756,6 @@ dnl ares_build.h.in specific defines
 if test "x$ac_cv_header_sys_types_h" = "xyes" ; then
   CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_TYPES_H],[1])
 fi
-if test "x$ac_cv_header_sys_random_h" = "xyes" ; then
-  CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_RANDOM_H],[1])
-fi
 if test "x$ac_cv_header_sys_socket_h" = "xyes" ; then
   CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_SOCKET_H],[1])
 fi
