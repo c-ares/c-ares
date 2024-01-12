@@ -182,6 +182,9 @@
 /* Define to 1 if you have the memory.h header file. */
 #cmakedefine HAVE_MEMORY_H
 
+/* Define to 1 if you have the AvailabilityMacros.h header file. */
+#cmakedefine HAVE_AVAILABILITYMACROS_H
+
 /* Define to 1 if you have the MSG_NOSIGNAL flag. */
 #cmakedefine HAVE_MSG_NOSIGNAL
 

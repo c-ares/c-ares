@@ -409,6 +409,7 @@ dnl check for a few basic system headers we need
 AC_CHECK_HEADERS(
        malloc.h \
        memory.h \
+       AvailabilityMacros.h \
        sys/types.h \
        sys/time.h \
        sys/select.h \
@@ -469,6 +470,9 @@ dnl *Sigh* these are needed in order for net/if.h to get properly detected.
 cares_all_includes="
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_AVAILABILITYMACROS_H
+#  include <AvailabilityMacros.h>
+#endif
 #ifdef HAVE_SYS_UIO_H
 #  include <sys/uio.h>
 #endif
@@ -755,9 +759,6 @@ fi
 dnl ares_build.h.in specific defines
 if test "x$ac_cv_header_sys_types_h" = "xyes" ; then
   CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_TYPES_H],[1])
-fi
-if test "x$ac_cv_header_sys_random_h" = "xyes" ; then
-  CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_RANDOM_H],[1])
 fi
 if test "x$ac_cv_header_sys_socket_h" = "xyes" ; then
   CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_SOCKET_H],[1])
