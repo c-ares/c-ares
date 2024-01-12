@@ -174,7 +174,7 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   std::stringstream ss;
   ss << HostEnt(host);
   EXPECT_EQ("{'other.com' aliases=[other.com] addrs=[16.32.48.64]}", ss.str());
-
+  ares_free_hostent(host);
 
   host = nullptr;
   pkt.questions_.clear();

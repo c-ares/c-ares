@@ -322,7 +322,8 @@ TEST_F(LibraryTest, ParseAReplyErrors) {
   std::stringstream ss;
   ss << HostEnt(host);
   EXPECT_EQ("{'Axample.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
-
+  ares_free_hostent(host);
+  host = nullptr;
 
   pkt.questions_.clear();
   pkt.add_question(new DNSQuestion("example.com", T_A));
@@ -346,7 +347,6 @@ TEST_F(LibraryTest, ParseAReplyErrors) {
 #endif
 
   // Two questions
-  host = nullptr;
   pkt.add_question(new DNSQuestion("example.com", T_A));
   data = pkt.data();
   EXPECT_EQ(ARES_EBADRESP, ares_parse_a_reply(data.data(), (int)data.size(),
