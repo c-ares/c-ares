@@ -409,6 +409,7 @@ dnl check for a few basic system headers we need
 AC_CHECK_HEADERS(
        malloc.h \
        memory.h \
+       AvailabilityMacros.h \
        sys/types.h \
        sys/time.h \
        sys/select.h \
@@ -469,6 +470,9 @@ dnl *Sigh* these are needed in order for net/if.h to get properly detected.
 cares_all_includes="
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_AVAILABILITYMACROS_H
+#  include <AvailabilityMacros.h>
+#endif
 #ifdef HAVE_SYS_UIO_H
 #  include <sys/uio.h>
 #endif
