@@ -30,9 +30,6 @@
 struct ares_event_thread;
 typedef struct ares_event_thread ares_event_thread_t;
 
-struct ares_event_sys;
-typedef struct ares_event_sys ares_event_sys_t;
-
 typedef enum {
   ARES_EVENT_FLAG_NONE       = 0,
   ARES_EVENT_FLAG_READ       = 1 << 0,
@@ -49,6 +46,8 @@ void ares_event_thread_destroy(ares_event_thread_t *e);
 ares_event_thread_t *ares_event_thread_init(ares_channel_t *channel);
 
 typedef struct {
+  /*! Registered event thread this event is bound to */
+  ares_event_thread_t    *e;
   /*! Flags to monitor. OTHER is only allowed if the socket is ARES_SOCKET_BAD.
    */
   ares_event_flags_t      flags;
@@ -67,22 +66,45 @@ typedef struct {
   ares_event_free_data_t  free_data_cb;
 } ares_event_t;
 
+typedef struct {
+  const char   *name;
+  ares_bool_t (*init)(ares_event_thread_t *e);
+  void        (*destroy)(ares_event_thread_t *e);
+  void        (*event_add)(ares_event_thread_t *e, ares_event_t *event);
+  void        (*event_del)(ares_event_thread_t *e, ares_event_t *event);
+  void        (*event_mod)(ares_event_thread_t *e, ares_event_t *event,
+                           ares_event_flags_t new_flags);
+  size_t      (*wait)(ares_event_thread_t *e, unsigned long timeout_ms);
+} ares_event_sys_t;
+
+
 struct ares_event_thread {
-  ares__thread_t       *thread;
-  ares__thread_mutex_t *mutex;
-  ares_channel_t       *channel;
-  ares_bool_t           isup;
-  ares__llist_t        *ev_updates;
-  ares_event_sys_t     *ev_sys;
+  /*! Whether the event thread should be online or not.  Checked on every wake
+   *  event before sleeping. */
+  ares_bool_t             isup;
+  /*! Handle to the thread for joining during shutdown */
+  ares__thread_t         *thread;
+  /*! Lock to protect the data contained within the event thread itself */
+  ares__thread_mutex_t   *mutex;
+  /*! Reference to the ares channel, for being able to call things like
+   *  ares_timeout() and ares_process_fd(). */
+  ares_channel_t         *channel;
+  /*! Not-yet-processed event handle updates.  These will get enqueued by a
+   *  thread other than the event thread itself. The event thread will then
+   *  be woken then process these updates itself */
+  ares__llist_t          *ev_updates;
+  /*! Registered event handles. */
+  ares__htable_asvp_t    *ev_handles;
+  /*! Pointer to the event handle which is used to signal and wake the event
+   *  thread itself.  This is needed to be able to do things like update the
+   *  file descriptors being waited on and to wake the event subsystem during
+   *  shutdown */
+  ares_event_t           *ev_signal;
+  /* Event subsystem callbacks */
+  const ares_event_sys_t *ev_sys;
+  /* Event subsystem private data */
+  void                   *ev_sys_data;
 };
-
-
-static ares_event_sys_t *ares_event_sys_init(void);
-static void ares_event_sys_update(ares_event_sys_t *sys, ares__llist_t *ev_updates);
-/* Returns number of events processed */
-static size_t ares_event_sys_wait(ares_event_thread_t *e, unsigned long timeout_ms);
-static void ares_event_sys_wake(ares_event_sys_t *sys);
-static void ares_event_sys_destroy(ares_event_sys_t *sys);
 
 
 static void ares_event_destroy_cb(void *arg)
@@ -90,6 +112,13 @@ static void ares_event_destroy_cb(void *arg)
   ares_event_t *event = arg;
   if (event == NULL)
     return;
+
+  /* Unregister from the event thread if it was registered with one */
+  if (event->e) {
+    ares_event_thread_t *e = event->e;
+    e->ev_sys->event_del(e, event);
+    event->e = NULL;
+  }
 
   if (event->free_data_cb && event->data) {
     event->free_data_cb(event->data);
@@ -103,7 +132,7 @@ static void ares_event_destroy_cb(void *arg)
 #else /* poll() */
 #  include <poll.h>
 
-
+#if 0
 #include <unistd.h>
 #include <fcntl.h>
 typedef struct {
@@ -194,72 +223,43 @@ ares_bool_t ares_pipeevent_issignalled(ares_pipeevent_t *p)
 
   return ARES_FALSE;
 }
+#endif
 
-struct ares_event_sys {
-  ares__htable_asvp_t *fds; /*!< ares_event_t * members */
-};
 
-static void ares_event_sys_destroy(ares_event_sys_t *sys)
+static ares_bool_t ares_evsys_poll_init(ares_event_thread_t *e)
 {
-  if (sys == NULL)
-    return;
-
-  ares__htable_asvp_destroy(sys->fds);
-  ares_free(sys);
+  (void)e;
+  return ARES_TRUE;
 }
 
-static ares_event_sys_t *ares_event_sys_init(void)
+static void ares_evsys_poll_destroy(ares_event_thread_t *e)
 {
-  ares_event_sys_t *sys = ares_malloc_zero(sizeof(*sys));
-  if (sys == NULL)
-    return NULL;
-
-  sys->fds = ares__htable_asvp_create(ares_event_destroy_cb);
-  if (sys->fds == NULL) {
-    ares_free(sys);
-    return NULL;
-  }
-
-  return sys;
+  (void)e;
 }
 
-static void ares_event_sys_update(ares_event_sys_t *sys, ares__llist_t *ev_updates)
+static void ares_evsys_poll_event_add(ares_event_thread_t *e, ares_event_t *event)
 {
-  ares__llist_node_t *node;
-
-  if (sys == NULL || ev_updates == NULL)
-    return;
-
-  /* Iterate across all updates and apply to internal list, removing from update
-   * list */
-  while ((node = ares__llist_node_first(ev_updates)) != NULL) {
-    ares_event_t *newev = ares__llist_node_val(node);
-    ares_event_t *oldev = ares__htable_asvp_get_direct(sys->fds, newev->fd);
-
-    /* Adding new */
-    if (oldev == NULL) {
-      ares__htable_asvp_insert(sys->fds, newev->fd, newev);
-      continue;
-    }
-
-    /* Removal request */
-    if (newev->flags == ARES_EVENT_FLAG_NONE) {
-      ares__htable_asvp_remove(sys->fds, newev->fd);
-      ares_free(newev);
-      continue;
-    }
-
-    /* Modify request -- no changes allowed */
-    oldev->flags = newev->flags;
-    ares_free(newev);
-  }
+  (void)e;
+  (void)event;
 }
 
-static size_t ares_event_sys_wait(ares_event_thread_t *e, unsigned long timeout_ms)
+static void ares_evsys_poll_event_del(ares_event_thread_t *e, ares_event_t *event)
+{
+  (void)e;
+  (void)event;
+}
+
+static void ares_evsys_poll_event_mod(ares_event_thread_t *e, ares_event_t *event, ares_event_flags_t new_flags)
+{
+  (void)e;
+  (void)event;
+  (void)new_flags;
+}
+
+static size_t ares_evsys_poll_wait(ares_event_thread_t *e, unsigned long timeout_ms)
 {
   size_t            num_fds = 0;
-  ares_event_sys_t *sys     = e->ev_sys;
-  ares_socket_t    *fdlist  = ares__htable_asvp_keys(sys->fds, &num_fds);
+  ares_socket_t    *fdlist  = ares__htable_asvp_keys(e->ev_handles, &num_fds);
   struct pollfd    *pollfd  = NULL;
   int               rv;
   size_t            cnt     = 0;
@@ -268,7 +268,7 @@ static size_t ares_event_sys_wait(ares_event_thread_t *e, unsigned long timeout_
   if (num_fds) {
     pollfd = ares_malloc_zero(sizeof(*pollfd) * num_fds);
     for (i=0; i<num_fds; i++) {
-      ares_event_t *ev = ares__htable_asvp_get_direct(sys->fds, fdlist[i]);
+      ares_event_t *ev = ares__htable_asvp_get_direct(e->ev_handles, fdlist[i]);
       pollfd[i].fd     = ev->fd;
       if (ev->flags & ARES_EVENT_FLAG_READ)
         pollfd[i].events |= POLLIN;
@@ -291,7 +291,7 @@ static size_t ares_event_sys_wait(ares_event_thread_t *e, unsigned long timeout_
 
     cnt++;
 
-    ev = ares__htable_asvp_get_direct(sys->fds, pollfd[i].fd);
+    ev = ares__htable_asvp_get_direct(e->ev_handles, pollfd[i].fd);
     if (ev == NULL || ev->cb == NULL)
       continue;
 
@@ -309,10 +309,17 @@ done:
   return cnt;
 }
 
-static void ares_event_sys_wake(ares_event_sys_t *sys)
-{
-  /* XXX: TODO */
-}
+
+static const ares_event_sys_t ares_evsys_poll = {
+  "poll",
+  ares_evsys_poll_init,      /* NoOp */
+  ares_evsys_poll_destroy,   /* NoOp */
+  ares_evsys_poll_event_add, /* NoOp */
+  ares_evsys_poll_event_del, /* NoOp */
+  ares_evsys_poll_event_mod, /* NoOp */
+  ares_evsys_poll_wait
+};
+
 #endif
 
 
@@ -380,7 +387,10 @@ static ares_status_t ares_event_update(ares_event_thread_t *e,
 }
 
 
-
+static void ares_event_wake(ares_event_thread_t *e)
+{
+  /* TODO: Implement me */
+}
 
 static void ares_event_thread_process_fd(ares_event_thread_t *e,
                                          ares_socket_t fd, void *data,
@@ -413,11 +423,44 @@ static void ares_event_thread_sockstate_cb(void *data, ares_socket_t socket_fd,
                     NULL, NULL);
 
   /* Wake the event thread so it properly enqueues any updates */
-  ares_event_sys_wake(e->ev_sys);
+  ares_event_wake(e);
 
   ares__thread_mutex_unlock(e->mutex);
 }
 
+
+static void ares_event_process_updates(ares_event_thread_t *e)
+{
+  ares__llist_node_t *node;
+
+  /* Iterate across all updates and apply to internal list, removing from update
+   * list */
+  while ((node = ares__llist_node_first(e->ev_updates)) != NULL) {
+    ares_event_t *newev = ares__llist_node_val(node);
+    ares_event_t *oldev = ares__htable_asvp_get_direct(e->ev_handles, newev->fd);
+
+    /* Adding new */
+    if (oldev == NULL) {
+      newev->e = e;
+      e->ev_sys->event_add(e, newev);
+      ares__htable_asvp_insert(e->ev_handles, newev->fd, newev);
+      continue;
+    }
+
+    /* Removal request */
+    if (newev->flags == ARES_EVENT_FLAG_NONE) {
+      /* the callback for the removal will call e->ev_sys->event_del(e, event) */
+      ares__htable_asvp_remove(e->ev_handles, newev->fd);
+      ares_free(newev);
+      continue;
+    }
+
+    /* Modify request -- only flags cn be changed */
+    e->ev_sys->event_mod(e, oldev, newev->flags);
+    oldev->flags = newev->flags;
+    ares_free(newev);
+  }
+}
 
 static void *ares_event_thread(void *arg)
 {
@@ -435,11 +478,11 @@ static void *ares_event_thread(void *arg)
       timeout_ms = (unsigned long)(tvout->tv_sec * 1000) + (tvout->tv_usec / 1000) + 1;
     }
 
-    ares_event_sys_update(e->ev_sys, e->ev_updates);
+    ares_event_process_updates(e);
 
     /* Don't hold a mutex while waiting on events */
     ares__thread_mutex_unlock(e->mutex);
-    if (ares_event_sys_wait(e, timeout_ms) == 0) {
+    if (e->ev_sys->wait(e, timeout_ms) == 0) {
       /* Each iteration should do timeout checking even if nothing was triggered */
       ares_process_fd(e->channel, ARES_SOCKET_BAD, ARES_SOCKET_BAD);
     }
@@ -458,7 +501,7 @@ void ares_event_thread_destroy(ares_event_thread_t *e)
   ares__thread_mutex_lock(e->mutex);
   if (e->isup) {
     e->isup = ARES_FALSE;
-    ares_event_sys_wake(e->ev_sys);
+    ares_event_wake(e);
   }
   ares__thread_mutex_unlock(e->mutex);
 
@@ -471,9 +514,11 @@ void ares_event_thread_destroy(ares_event_thread_t *e)
   ares__llist_destroy(e->ev_updates);
   e->ev_updates = NULL;
 
-  if (e->ev_sys) {
-    ares_event_sys_destroy(e->ev_sys);
-    e->ev_sys = NULL;
+  ares__htable_asvp_destroy(e->ev_handles);
+  e->ev_handles = NULL;
+
+  if (e->ev_sys->destroy) {
+    e->ev_sys->destroy(e);
   }
 
   ares__thread_mutex_destroy(e->mutex);
@@ -502,10 +547,17 @@ ares_event_thread_t *ares_event_thread_init(ares_channel_t *channel)
     return NULL;
   }
 
+  e->ev_handles = ares__htable_asvp_create(ares_event_destroy_cb);
+  if (e->ev_handles == NULL) {
+    ares_event_thread_destroy(e);
+    return NULL;
+  }
+
   e->channel = channel;
   e->isup    = ARES_TRUE;
-  e->ev_sys  = ares_event_sys_init();
-  if (e->ev_sys == NULL) {
+  e->ev_sys  = &ares_evsys_poll;
+
+  if (!e->ev_sys->init(e)) {
     ares_event_thread_destroy(e);
     return NULL;
   }
