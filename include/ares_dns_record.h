@@ -430,7 +430,7 @@ CARES_EXTERN ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass,
 
 /*! Convert DNS record type as string to ares_dns_rec_type_t
  *
- *  \param[out] qclass  Pointer passed by reference to write record type
+ *  \param[out] qtype   Pointer passed by reference to write record type
  *  \param[in]  str     String to convert
  *  \return ARES_TRUE on success
  */
