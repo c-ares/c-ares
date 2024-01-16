@@ -103,6 +103,98 @@ static void ares_event_destroy_cb(void *arg)
 #else /* poll() */
 #  include <poll.h>
 
+
+#include <unistd.h>
+#include <fcntl.h>
+typedef struct {
+  int filedes[2];
+} ares_pipeevent_t;
+
+void ares_pipeevent_destroy(ares_pipeevent_t *p)
+{
+  if (p->filedes[0] != -1)
+    close(p->filedes[0]);
+  if (p->filedes[1] != -1)
+    close(p->filedes[1]);
+
+  ares_free(p);
+}
+
+ares_pipeevent_t *ares_pipeevent_create(void)
+{
+  ares_pipeevent_t *p = ares_malloc_zero(sizeof(*p));
+  if (p == NULL)
+    return NULL;
+
+  p->filedes[0] = -1;
+  p->filedes[1] = -1;
+
+#ifdef HAVE_PIPE2
+  if (pipe2(p->filedes, O_NONBLOCK|O_CLOEXEC) != 0) {
+    ares_pipeevent_destroy(p);
+    return NULL;
+  }
+#else
+  if (pipe(p->filedes) != 0) {
+    ares_pipeevent_destroy(p);
+    return NULL;
+  }
+
+#  ifdef O_NONBLOCK
+  {
+    int val;
+    val = fcntl(p->filedes[0], F_GETFL, 0);
+    if (val >= 0) {
+      val |= O_NONBLOCK;
+    }
+    fcntl(p->filedes[0], F_SETFL, val);
+
+    val = fcntl(p->filedes[1], F_GETFL, 0);
+    if (val >= 0) {
+      val |= O_NONBLOCK;
+    }
+    fcntl(p->filedes[1], F_SETFL, val);
+  }
+#  endif
+
+
+#  ifdef O_CLOEXEC
+  fcntl(p->filedes[0], F_SETFD, O_CLOEXEC);
+  fcntl(p->filedes[1], F_SETFD, O_CLOEXEC);
+#  endif
+#endif
+
+#ifdef F_SETNOSIGPIPE
+  fcntl(p->filedes[0], F_SETNOSIGPIPE, 1);
+  fcntl(p->filedes[1], F_SETNOSIGPIPE, 1);
+#endif
+
+  return p;
+}
+
+
+void ares_pipeevent_signal(ares_pipeevent_t *p)
+{
+  if (p == NULL)
+    return;
+  write(p->filedes[1], "1", 1);
+}
+
+ares_bool_t ares_pipeevent_issignalled(ares_pipeevent_t *p)
+{
+  ssize_t       rv;
+  unsigned char buf[1];
+
+  if (p == NULL)
+    return ARES_FALSE;
+
+  rv = read(p->filedes[0], buf, sizeof(buf));
+  if (rv == 1)
+    return ARES_TRUE;
+
+  return ARES_FALSE;
+}
+
 struct ares_event_sys {
   ares__htable_asvp_t *fds; /*!< ares_event_t * members */
 };
