@@ -33,7 +33,6 @@ ares__thread_mutex_t *ares__thread_mutex_create(void);
 void ares__thread_mutex_destroy(ares__thread_mutex_t *mut);
 void ares__thread_mutex_lock(ares__thread_mutex_t *mut);
 void ares__thread_mutex_unlock(ares__thread_mutex_t *mut);
-void ares__thread_mutex_unlock(ares__thread_mutex_t *mut);
 
 struct ares__thread;
 typedef struct ares__thread ares__thread_t;
