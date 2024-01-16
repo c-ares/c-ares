@@ -433,6 +433,7 @@ AC_CHECK_HEADERS(
        strings.h \
        stdbool.h \
        time.h \
+       poll.h \
        limits.h \
        arpa/nameser.h \
        arpa/nameser_compat.h \
@@ -520,6 +521,9 @@ cares_all_includes="
 #endif
 #ifdef HAVE_FCNTL_H
 #  include <fcntl.h>
+#endif
+#ifdef HAVE_POLL_H
+#  include <poll.h>
 #endif
 #ifdef HAVE_NET_IF_H
 #  include <net/if.h>
@@ -629,6 +633,10 @@ AC_CHECK_DECL(clock_gettime,   [AC_DEFINE([HAVE_CLOCK_GETTIME],     1, [Define t
 AC_CHECK_DECL(if_indextoname,  [AC_DEFINE([HAVE_IF_INDEXTONAME],    1, [Define to 1 if you have `if_indextoname`] )], [], $cares_all_includes)
 AC_CHECK_DECL(if_nametoindex,  [AC_DEFINE([HAVE_IF_NAMETOINDEX],    1, [Define to 1 if you have `if_nametoindex`] )], [], $cares_all_includes)
 AC_CHECK_DECL(getifaddrs,      [AC_DEFINE([HAVE_GETIFADDRS],        1, [Define to 1 if you have `getifaddrs`]     )], [], $cares_all_includes)
+AC_CHECK_DECL(poll,            [AC_DEFINE([HAVE_POLL],              1, [Define to 1 if you have `poll`]           )], [], $cares_all_includes)
+AC_CHECK_DECL(pipe,            [AC_DEFINE([HAVE_PIPE],              1, [Define to 1 if you have `pipe`]           )], [], $cares_all_includes)
+AC_CHECK_DECL(pipe2,           [AC_DEFINE([HAVE_PIPE2],             1, [Define to 1 if you have `pipe2`]          )], [], $cares_all_includes)
+
 AC_CHECK_DECL(ConvertInterfaceIndexToLuid, [AC_DEFINE([HAVE_CONVERTINTERFACEINDEXTOLUID], 1, [Define to 1 if you have `ConvertInterfaceIndexToLuid`])], [], $cares_all_includes)
 AC_CHECK_DECL(ConvertInterfaceLuidToNameA, [AC_DEFINE([HAVE_CONVERTINTERFACELUIDTONAMEA], 1, [Define to 1 if you have `ConvertInterfaceLuidToNameA`])], [], $cares_all_includes)
 AC_CHECK_DECL(__system_property_get,       [AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET],       1, [Define to 1 if you have `__system_property_get`]      )], [], $cares_all_includes)

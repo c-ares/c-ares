@@ -26,9 +26,22 @@
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
+#ifdef HAVE_POLL_H
+#  include <poll.h>
+#endif
+#ifdef HAVE_UNISTDD_H
+#  include <unistd.h>
+#endif
+#ifdef HAVE_FCNTL_H
+#  include <fcntl.h>
+#endif
+
 
 struct ares_event_thread;
 typedef struct ares_event_thread ares_event_thread_t;
+
+struct ares_event;
+typedef struct ares_event ares_event_t;
 
 typedef enum {
   ARES_EVENT_FLAG_NONE       = 0,
@@ -42,10 +55,13 @@ typedef void (*ares_event_cb_t)(ares_event_thread_t *e, ares_socket_t fd,
 
 typedef void (*ares_event_free_data_t)(void *data);
 
+typedef void (*ares_event_signal_cb_t)(const ares_event_t *event);
+
 void ares_event_thread_destroy(ares_event_thread_t *e);
 ares_event_thread_t *ares_event_thread_init(ares_channel_t *channel);
 
-typedef struct {
+
+struct ares_event {
   /*! Registered event thread this event is bound to */
   ares_event_thread_t    *e;
   /*! Flags to monitor. OTHER is only allowed if the socket is ARES_SOCKET_BAD.
@@ -64,7 +80,10 @@ typedef struct {
    *  shutdown), this function will be called to clean up the user-supplied
    *  data. Optional, May be NULL. */
   ares_event_free_data_t  free_data_cb;
-} ares_event_t;
+  /*! Callback to call to trigger an event. */
+  ares_event_signal_cb_t  signal_cb;
+};
+
 
 typedef struct {
   const char   *name;
@@ -127,19 +146,100 @@ static void ares_event_destroy_cb(void *arg)
   ares_free(event);
 }
 
-#if defined(_WIN32)
+/*! Queue an update for the event handle.  Will search by the fd passed if
+ *  not ARES_SOCKET_BAD to find a match and perform an update or delete
+ *  (depending on flags).  Otherwise will add.  Do not use the event handle
+ *  returned if its not guaranteed to be an add operation.
+ *
+ *  \param[out] event        Event handle. Optional, can be NULL.  This handle
+ *                           will be invalidate quickly if the result of the
+ *                           operation is not an ADD.
+ *  \param[in]  e            pointer to event thread handle
+ *  \param[in]  flags        flags for the event handle.  Use ARES_EVENT_FLAG_NONE
+ *                           if removing a socket from queue (not valid if socket
+ *                           is ARES_SOCKET_BAD).  Non-socket events cannot be
+ *                           removed, and must have ARES_EVENT_FLAG_OTHER set.
+ *  \param[in]  cb           Callback to call when event is triggered. Required.
+ *                           Not allowed to be changed, ignored on modification.
+ *  \param[in]  fd           File descriptor/socket to monitor.  May be
+ *                           ARES_SOCKET_BAD if not monitoring file descriptor.
+ *  \param[in]  data         Optional. Caller-supplied data to be passed to
+ *                           callback. Only allowed on initial add, cannot be
+ *                           modified later, ignored on modification.
+ *  \param[in]  free_data_cb Optional. Callback to clean up caller-supplied
+ *                           data. Only allowed on initial add, cannot be
+ *                           modified later, ignored on modification.
+ *  \param[in]  signal_cb    Optional. Callback to call to trigger an event.
+ *
+ *  \return ARES_SUCCESS on success
+ */
+static ares_status_t ares_event_update(ares_event_t       **event,
+                                       ares_event_thread_t *e,
+                                       ares_event_flags_t  flags,
+                                       ares_event_cb_t     cb,
+                                       ares_socket_t       fd,
+                                       void               *data,
+                                       ares_event_free_data_t free_data_cb,
+                                       ares_event_signal_cb_t signal_cb)
+{
+  ares_event_t *ev = NULL;
 
-#else /* poll() */
-#  include <poll.h>
+  if (e == NULL || cb == NULL) {
+    return ARES_EFORMERR;
+  }
 
-#if 0
-#include <unistd.h>
-#include <fcntl.h>
+  if (event != NULL)
+    *event = NULL;
+
+  /* Validate flags */
+  if (fd == ARES_SOCKET_BAD) {
+    if (flags & (ARES_EVENT_FLAG_READ|ARES_EVENT_FLAG_WRITE))
+      return ARES_EFORMERR;
+    if (!(flags & ARES_EVENT_FLAG_OTHER))
+      return ARES_EFORMERR;
+  } else {
+    if (flags & ARES_EVENT_FLAG_OTHER)
+      return ARES_EFORMERR;
+  }
+
+  /* That's all the validation we can really do */
+  ev = ares_malloc_zero(sizeof(*ev));
+  if (ev == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  ev->flags        = flags;
+  ev->cb           = cb;
+  ev->fd           = fd;
+  ev->data         = data;
+  ev->free_data_cb = free_data_cb;
+  ev->signal_cb    = signal_cb;
+
+  if (ares__llist_insert_last(e->ev_updates, ev) == NULL) {
+    ares_free(ev);
+    return ARES_ENOMEM;
+  }
+
+  *event = ev;
+
+  return ARES_SUCCESS;
+}
+
+
+static void ares_event_signal(const ares_event_t *event)
+{
+  if (event == NULL || event->signal_cb == NULL)
+    return;
+  event->signal_cb(event);
+}
+
+
+#ifdef HAVE_PIPE
 typedef struct {
   int filedes[2];
 } ares_pipeevent_t;
 
-void ares_pipeevent_destroy(ares_pipeevent_t *p)
+static void ares_pipeevent_destroy(ares_pipeevent_t *p)
 {
   if (p->filedes[0] != -1)
     close(p->filedes[0]);
@@ -149,7 +249,12 @@ void ares_pipeevent_destroy(ares_pipeevent_t *p)
   ares_free(p);
 }
 
-ares_pipeevent_t *ares_pipeevent_create(void)
+static void ares_pipeevent_destroy_cb(void *arg)
+{
+  ares_pipeevent_destroy(arg);
+}
+
+static ares_pipeevent_t *ares_pipeevent_init(void)
 {
   ares_pipeevent_t *p = ares_malloc_zero(sizeof(*p));
   if (p == NULL)
@@ -158,18 +263,18 @@ ares_pipeevent_t *ares_pipeevent_create(void)
   p->filedes[0] = -1;
   p->filedes[1] = -1;
 
-#ifdef HAVE_PIPE2
+#  ifdef HAVE_PIPE2
   if (pipe2(p->filedes, O_NONBLOCK|O_CLOEXEC) != 0) {
     ares_pipeevent_destroy(p);
     return NULL;
   }
-#else
+#  else
   if (pipe(p->filedes) != 0) {
     ares_pipeevent_destroy(p);
     return NULL;
   }
 
-#  ifdef O_NONBLOCK
+#    ifdef O_NONBLOCK
   {
     int val;
     val = fcntl(p->filedes[0], F_GETFL, 0);
@@ -184,51 +289,90 @@ ares_pipeevent_t *ares_pipeevent_create(void)
     }
     fcntl(p->filedes[1], F_SETFL, val);
   }
-#  endif
+#    endif
 
-
-#  ifdef O_CLOEXEC
+#    ifdef O_CLOEXEC
   fcntl(p->filedes[0], F_SETFD, O_CLOEXEC);
   fcntl(p->filedes[1], F_SETFD, O_CLOEXEC);
-#  endif
+#    endif
 #endif
 
-#ifdef F_SETNOSIGPIPE
+#  ifdef F_SETNOSIGPIPE
   fcntl(p->filedes[0], F_SETNOSIGPIPE, 1);
   fcntl(p->filedes[1], F_SETNOSIGPIPE, 1);
-#endif
+#  endif
 
   return p;
 }
 
 
-void ares_pipeevent_signal(ares_pipeevent_t *p)
+static void ares_pipeevent_signal(const ares_event_t *e)
 {
-  if (p == NULL)
+  ares_pipeevent_t *p;
+
+  if (e == NULL || e->data == NULL)
     return;
+
+  p = e->data;
   write(p->filedes[1], "1", 1);
 }
 
-ares_bool_t ares_pipeevent_issignalled(ares_pipeevent_t *p)
+static void ares_pipeevent_cb(ares_event_thread_t *e, ares_socket_t fd,
+                              void *data, ares_event_flags_t flags)
 {
-  ssize_t       rv;
-  unsigned char buf[1];
+  unsigned char     buf[32];
+  ares_pipeevent_t *p = NULL;
 
-  if (p == NULL)
-    return ARES_FALSE;
+  (void)e;
+  (void)fd;
+  (void)flags;
 
-  rv = read(p->filedes[0], buf, sizeof(buf));
-  if (rv == 1)
-    return ARES_TRUE;
+  if (data == NULL)
+    return;
 
-  return ARES_FALSE;
+  p = data;
+
+  while (read(p->filedes[0], buf, sizeof(buf)) == sizeof(buf)) {
+    /* Do nothing */
+  }
+
 }
+
+
+static ares_event_t *ares_pipeevent_create(ares_event_thread_t *e)
+{
+  ares_event_t     *event = NULL;
+  ares_pipeevent_t *p     = NULL;
+  ares_status_t     status;
+
+  p = ares_pipeevent_init();
+  if (p == NULL)
+    return NULL;
+
+  status = ares_event_update(&event, e, ARES_EVENT_FLAG_READ,
+                             ares_pipeevent_cb,
+                             p->filedes[0],
+                             p,
+                             ares_pipeevent_destroy_cb,
+                             ares_pipeevent_signal);
+  if (status != ARES_SUCCESS) {
+    ares_pipeevent_destroy(p);
+    return NULL;
+  }
+
+  return event;
+}
+
 #endif
 
 
+#if defined(HAVE_POLL)
+
 static ares_bool_t ares_evsys_poll_init(ares_event_thread_t *e)
 {
-  (void)e;
+  e->ev_signal = ares_pipeevent_create(e);
+  if (e->ev_signal == NULL)
+    return ARES_FALSE;
   return ARES_TRUE;
 }
 
@@ -312,7 +456,7 @@ done:
 
 static const ares_event_sys_t ares_evsys_poll = {
   "poll",
-  ares_evsys_poll_init,      /* NoOp */
+  ares_evsys_poll_init,
   ares_evsys_poll_destroy,   /* NoOp */
   ares_evsys_poll_event_add, /* NoOp */
   ares_evsys_poll_event_del, /* NoOp */
@@ -323,73 +467,11 @@ static const ares_event_sys_t ares_evsys_poll = {
 #endif
 
 
-
-/*! Queue an update for the event handle.
- *
- *  \param[in] e            pointer to event thread handle
- *  \param[in] flags        flags for the event handle.  Use ARES_EVENT_FLAG_NONE
- *                          if removing a socket from queue (not valid if socket
- *                          is ARES_SOCKET_BAD).  Non-socket events cannot be
- *                          removed, and must have ARES_EVENT_FLAG_OTHER set.
- *  \param[in] cb           Callback to call when event is triggered. Required.
- *                          Not allowed to be changed, ignored on modification.
- *  \param[in] fd           File descriptor/socket to monitor.  May be
- *                          ARES_SOCKET_BAD if not monitoring file descriptor.
- *  \param[in] data         Optional. Caller-supplied data to be passed to
- *                          callback. Only allowed on initial add, cannot be
- *                          modified later, ignored on modification.
- *  \param[in] free_data_cb Optional. Callback to clean up caller-supplied
- *                          data. Only allowed on initial add, cannot be
- *                          modified later, ignored on modification.
- *  \return ARES_SUCCESS on success
- */
-static ares_status_t ares_event_update(ares_event_thread_t *e,
-                                       ares_event_flags_t flags,
-                                       ares_event_cb_t cb, ares_socket_t fd,
-                                       void *data,
-                                       ares_event_free_data_t free_data_cb)
+static void ares_event_thread_wake(ares_event_thread_t *e)
 {
-  ares_event_t *event = NULL;
-
-  if (e == NULL || cb == NULL) {
-    return ARES_EFORMERR;
-  }
-
-  /* Validate flags */
-  if (fd == ARES_SOCKET_BAD) {
-    if (flags & (ARES_EVENT_FLAG_READ|ARES_EVENT_FLAG_WRITE))
-      return ARES_EFORMERR;
-    if (!(flags & ARES_EVENT_FLAG_OTHER))
-      return ARES_EFORMERR;
-  } else {
-    if (flags & ARES_EVENT_FLAG_OTHER)
-      return ARES_EFORMERR;
-  }
-
-  /* That's all the validation we can really do */
-  event = ares_malloc_zero(sizeof(*event));
-  if (event == NULL) {
-    return ARES_ENOMEM;
-  }
-
-  event->flags        = flags;
-  event->cb           = cb;
-  event->fd           = fd;
-  event->data         = data;
-  event->free_data_cb = free_data_cb;
-
-  if (ares__llist_insert_last(e->ev_updates, event) == NULL) {
-    ares_free(event);
-    return ARES_ENOMEM;
-  }
-
-  return ARES_SUCCESS;
-}
-
-
-static void ares_event_wake(ares_event_thread_t *e)
-{
-  /* TODO: Implement me */
+  if (e == NULL)
+    return;
+  ares_event_signal(e->ev_signal);
 }
 
 static void ares_event_thread_process_fd(ares_event_thread_t *e,
@@ -419,11 +501,11 @@ static void ares_event_thread_sockstate_cb(void *data, ares_socket_t socket_fd,
   /* Update channel fd */
   ares__thread_mutex_lock(e->mutex);
 
-  ares_event_update(e, flags, ares_event_thread_process_fd, socket_fd,
-                    NULL, NULL);
+  ares_event_update(NULL, e, flags, ares_event_thread_process_fd, socket_fd,
+                    NULL, NULL, NULL);
 
   /* Wake the event thread so it properly enqueues any updates */
-  ares_event_wake(e);
+  ares_event_thread_wake(e);
 
   ares__thread_mutex_unlock(e->mutex);
 }
@@ -501,7 +583,7 @@ void ares_event_thread_destroy(ares_event_thread_t *e)
   ares__thread_mutex_lock(e->mutex);
   if (e->isup) {
     e->isup = ARES_FALSE;
-    ares_event_wake(e);
+    ares_event_thread_wake(e);
   }
   ares__thread_mutex_unlock(e->mutex);
 

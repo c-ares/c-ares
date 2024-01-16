@@ -76,6 +76,18 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #cmakedefine HAVE_ERRNO_H
 
+/* Define to 1 if you have the <poll.h> header file. */
+#cmakedefine HAVE_POLL_H
+
+/* Define to 1 if you have the poll function. */
+#cmakedefine HAVE_POLL
+
+/* Define to 1 if you have the pipe function. */
+#cmakedefine HAVE_PIPE
+
+/* Define to 1 if you have the pipe2 function. */
+#cmakedefine HAVE_PIPE2
+
 /* Define to 1 if you have the fcntl function. */
 #cmakedefine HAVE_FCNTL
 
