@@ -72,6 +72,11 @@ void ares_destroy(ares_channel_t *channel)
   assert(ares__htable_asvp_num_keys(channel->connnode_by_socket) == 0);
 #endif
 
+  /* Shut down the event thread */
+  if (channel->optmask & ARES_OPT_EVENT_THREAD) {
+    ares_event_thread_destroy(channel);
+  }
+
   /* No more callbacks will be triggered after this point, unlock */
   ares__channel_unlock(channel);
 

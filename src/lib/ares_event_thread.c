@@ -37,9 +37,6 @@
 #endif
 
 
-struct ares_event_thread;
-typedef struct ares_event_thread ares_event_thread_t;
-
 struct ares_event;
 typedef struct ares_event ares_event_t;
 
@@ -56,9 +53,6 @@ typedef void (*ares_event_cb_t)(ares_event_thread_t *e, ares_socket_t fd,
 typedef void (*ares_event_free_data_t)(void *data);
 
 typedef void (*ares_event_signal_cb_t)(const ares_event_t *event);
-
-void ares_event_thread_destroy(ares_event_thread_t *e);
-ares_event_thread_t *ares_event_thread_init(ares_channel_t *channel);
 
 
 struct ares_event {
@@ -124,7 +118,6 @@ struct ares_event_thread {
   /* Event subsystem private data */
   void                   *ev_sys_data;
 };
-
 
 static void ares_event_destroy_cb(void *arg)
 {
@@ -207,7 +200,7 @@ static ares_status_t ares_event_update(ares_event_t       **event,
   if (ev == NULL) {
     return ARES_ENOMEM;
   }
-
+printf("%s(): fd %d, flags %X\n", __FUNCTION__, fd, flags);
   ev->flags        = flags;
   ev->cb           = cb;
   ev->fd           = fd;
@@ -220,7 +213,9 @@ static ares_status_t ares_event_update(ares_event_t       **event,
     return ARES_ENOMEM;
   }
 
-  *event = ev;
+  if (event != NULL) {
+    *event = ev;
+  }
 
   return ARES_SUCCESS;
 }
@@ -471,6 +466,7 @@ static void ares_event_thread_wake(ares_event_thread_t *e)
 {
   if (e == NULL)
     return;
+printf("%s()\n", __FUNCTION__);
   ares_event_signal(e->ev_signal);
 }
 
@@ -479,6 +475,7 @@ static void ares_event_thread_process_fd(ares_event_thread_t *e,
                                          ares_event_flags_t flags)
 {
   (void)data;
+printf("%s(): fd %d\n", __FUNCTION__, fd);
   ares_process_fd(e->channel, (flags & ARES_EVENT_FLAG_READ)?fd:ARES_SOCKET_BAD,
                   (flags & ARES_EVENT_FLAG_WRITE)?fd:ARES_SOCKET_BAD);
 }
@@ -489,7 +486,7 @@ static void ares_event_thread_sockstate_cb(void *data, ares_socket_t socket_fd,
 {
   ares_event_thread_t *e     = data;
   ares_event_flags_t   flags = ARES_EVENT_FLAG_NONE;
-
+printf("%s(): fd %d, readable: %d, writable: %d\n", __FUNCTION__, socket_fd, readable, writable);
   if (readable) {
     flags |= ARES_EVENT_FLAG_READ;
   }
@@ -518,11 +515,12 @@ static void ares_event_process_updates(ares_event_thread_t *e)
   /* Iterate across all updates and apply to internal list, removing from update
    * list */
   while ((node = ares__llist_node_first(e->ev_updates)) != NULL) {
-    ares_event_t *newev = ares__llist_node_val(node);
+    ares_event_t *newev = ares__llist_node_claim(node);
     ares_event_t *oldev = ares__htable_asvp_get_direct(e->ev_handles, newev->fd);
 
     /* Adding new */
     if (oldev == NULL) {
+printf("%s(): added fd %d\n", __FUNCTION__, newev->fd);
       newev->e = e;
       e->ev_sys->event_add(e, newev);
       ares__htable_asvp_insert(e->ev_handles, newev->fd, newev);
@@ -532,12 +530,14 @@ static void ares_event_process_updates(ares_event_thread_t *e)
     /* Removal request */
     if (newev->flags == ARES_EVENT_FLAG_NONE) {
       /* the callback for the removal will call e->ev_sys->event_del(e, event) */
+printf("%s(): removed fd %d\n", __FUNCTION__, newev->fd);
       ares__htable_asvp_remove(e->ev_handles, newev->fd);
       ares_free(newev);
       continue;
     }
 
     /* Modify request -- only flags cn be changed */
+printf("%s(): modified fd %d\n", __FUNCTION__, newev->fd);
     e->ev_sys->event_mod(e, oldev, newev->flags);
     oldev->flags = newev->flags;
     ares_free(newev);
@@ -547,13 +547,14 @@ static void ares_event_process_updates(ares_event_thread_t *e)
 static void *ares_event_thread(void *arg)
 {
   ares_event_thread_t *e = arg;
-
+printf("%s(): enter\n", __FUNCTION__);
   ares__thread_mutex_lock(e->mutex);
 
   while (e->isup) {
     struct timeval  tv;
     struct timeval *tvout;
     unsigned long   timeout_ms = 0; /* 0 = unlimited */
+    size_t          num_events;
 
     tvout = ares_timeout(e->channel, NULL, &tv);
     if (tvout != NULL) {
@@ -564,21 +565,28 @@ static void *ares_event_thread(void *arg)
 
     /* Don't hold a mutex while waiting on events */
     ares__thread_mutex_unlock(e->mutex);
-    if (e->ev_sys->wait(e, timeout_ms) == 0) {
+printf("%s(): wait %lums\n", __FUNCTION__, timeout_ms);
+    num_events = e->ev_sys->wait(e, timeout_ms);
+    if (num_events == 0) {
+printf("%s(): timeout\n", __FUNCTION__);
       /* Each iteration should do timeout checking even if nothing was triggered */
       ares_process_fd(e->channel, ARES_SOCKET_BAD, ARES_SOCKET_BAD);
+    } else {
+printf("%s(): %zu events\n", __FUNCTION__, num_events);
     }
 
     ares__thread_mutex_lock(e->mutex);
   }
 
   ares__thread_mutex_unlock(e->mutex);
+printf("%s(): exit\n", __FUNCTION__);
   return NULL;
 }
 
 
-void ares_event_thread_destroy(ares_event_thread_t *e)
+static void ares_event_thread_destroy_int(ares_event_thread_t *e)
 {
+printf("%s(): enter\n", __FUNCTION__);
   /* Wake thread and tell it to shutdown if it exists */
   ares__thread_mutex_lock(e->mutex);
   if (e->isup) {
@@ -607,50 +615,70 @@ void ares_event_thread_destroy(ares_event_thread_t *e)
   e->mutex = NULL;
 
   ares_free(e);
+printf("%s(): exit\n", __FUNCTION__);
+}
+
+void ares_event_thread_destroy(ares_channel_t *channel)
+{
+  ares_event_thread_t *e = channel->sock_state_cb_data;
+
+  if (e == NULL)
+    return;
+
+  ares_event_thread_destroy_int(e);
 }
 
 
-ares_event_thread_t *ares_event_thread_init(ares_channel_t *channel)
+ares_status_t ares_event_thread_init(ares_channel_t *channel)
 {
-  ares_event_thread_t *e = ares_malloc_zero(sizeof(*e));
+  ares_event_thread_t *e;
+
+printf("%s(): enter\n", __FUNCTION__);
+
+  e = ares_malloc_zero(sizeof(*e));
   if (e == NULL) {
-    return NULL;
+    return ARES_ENOMEM;
   }
 
   e->mutex = ares__thread_mutex_create();
   if (e->mutex == NULL) {
-    ares_event_thread_destroy(e);
-    return NULL;
+    ares_event_thread_destroy_int(e);
+    return ARES_ENOMEM;
   }
 
   e->ev_updates = ares__llist_create(NULL);
   if (e->ev_updates == NULL) {
-    ares_event_thread_destroy(e);
-    return NULL;
+    ares_event_thread_destroy_int(e);
+    return ARES_ENOMEM;
   }
 
   e->ev_handles = ares__htable_asvp_create(ares_event_destroy_cb);
   if (e->ev_handles == NULL) {
-    ares_event_thread_destroy(e);
-    return NULL;
+    ares_event_thread_destroy_int(e);
+    return ARES_ENOMEM;
   }
 
-  e->channel = channel;
-  e->isup    = ARES_TRUE;
-  e->ev_sys  = &ares_evsys_poll;
-
-  if (!e->ev_sys->init(e)) {
-    ares_event_thread_destroy(e);
-    return NULL;
-  }
-
-  if (ares__thread_create(&e->thread, ares_event_thread, e) != ARES_SUCCESS) {
-    ares_event_thread_destroy(e);
-    return NULL;
-  }
-
+  e->channel                  = channel;
+  e->isup                     = ARES_TRUE;
+  e->ev_sys                   = &ares_evsys_poll;
   channel->sock_state_cb      = ares_event_thread_sockstate_cb;
   channel->sock_state_cb_data = e;
 
-  return e;
+  if (!e->ev_sys->init(e)) {
+    ares_event_thread_destroy_int(e);
+    channel->sock_state_cb      = NULL;
+    channel->sock_state_cb_data = NULL;
+    return ARES_ESERVFAIL;
+  }
+
+  if (ares__thread_create(&e->thread, ares_event_thread, e) != ARES_SUCCESS) {
+    ares_event_thread_destroy_int(e);
+    channel->sock_state_cb      = NULL;
+    channel->sock_state_cb_data = NULL;
+    return ARES_ESERVFAIL;
+  }
+
+
+printf("%s(): success\n", __FUNCTION__);
+  return ARES_SUCCESS;
 }

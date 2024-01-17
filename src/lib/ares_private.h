@@ -579,6 +579,13 @@ void          ares__channel_threading_destroy(ares_channel_t *channel);
 void          ares__channel_lock(ares_channel_t *channel);
 void          ares__channel_unlock(ares_channel_t *channel);
 
+struct ares_event_thread;
+typedef struct ares_event_thread ares_event_thread_t;
+
+void ares_event_thread_destroy(ares_channel_t *channel);
+ares_status_t ares_event_thread_init(ares_channel_t *channel);
+
+
 #ifdef _MSC_VER
 typedef __int64          ares_int64_t;
 typedef unsigned __int64 ares_uint64_t;

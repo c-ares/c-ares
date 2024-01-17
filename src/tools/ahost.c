@@ -96,7 +96,7 @@ int         main(int argc, char **argv)
   }
 
   ares_getopt_init(&state, argc, (const char **)argv);
-  while ((c = ares_getopt(&state, "dt:h?D:s:")) != -1) {
+  while ((c = ares_getopt(&state, "dt:h?D:s:e")) != -1) {
     switch (c) {
       case 'd':
 #ifdef WATT32
@@ -131,6 +131,9 @@ int         main(int argc, char **argv)
           free(servers);
         }
         servers = strdup(state.optarg);
+        break;
+      case 'e':
+        optmask |= ARES_OPT_EVENT_THREAD;
         break;
       case 'h':
       case '?':
@@ -184,22 +187,30 @@ int         main(int argc, char **argv)
 
   /* Wait for all queries to complete. */
   for (;;) {
-    int res;
-    FD_ZERO(&read_fds);
-    FD_ZERO(&write_fds);
-    nfds = ares_fds(channel, &read_fds, &write_fds);
-    if (nfds == 0) {
-      break;
+    if (optmask & ARES_OPT_EVENT_THREAD) {
+      tvp = ares_timeout(channel, NULL, &tv);
+      if (tvp == NULL) {
+        break;
+      }
+      usleep(50000);
+    } else {
+      int res;
+      FD_ZERO(&read_fds);
+      FD_ZERO(&write_fds);
+      nfds = ares_fds(channel, &read_fds, &write_fds);
+      if (nfds == 0) {
+        break;
+      }
+      tvp = ares_timeout(channel, NULL, &tv);
+      if (tvp == NULL) {
+        break;
+      }
+      res = select(nfds, &read_fds, &write_fds, NULL, tvp);
+      if (-1 == res) {
+        break;
+      }
+      ares_process(channel, &read_fds, &write_fds);
     }
-    tvp = ares_timeout(channel, NULL, &tv);
-    if (tvp == NULL) {
-      break;
-    }
-    res = select(nfds, &read_fds, &write_fds, NULL, tvp);
-    if (-1 == res) {
-      break;
-    }
-    ares_process(channel, &read_fds, &write_fds);
   }
 
   ares_destroy(channel);
