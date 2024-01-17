@@ -54,12 +54,14 @@ static void ares_evsys_kqueue_destroy(ares_event_thread_t *e)
 {
   ares_evsys_kqueue_t *kq = NULL;
 
-  if (e == NULL)
+  if (e == NULL) {
     return;
+  }
 
   kq = e->ev_sys_data;
-  if (kq == NULL)
+  if (kq == NULL) {
     return;
+  }
 
   if (kq->kqueue_fd != -1) {
     close(kq->kqueue_fd);
@@ -87,13 +89,13 @@ static ares_bool_t ares_evsys_kqueue_init(ares_event_thread_t *e)
     return ARES_FALSE;
   }
 
-#ifdef FD_CLOEXEC
+#  ifdef FD_CLOEXEC
   fcntl(kq->kqueue_fd, F_SETFD, FD_CLOEXEC);
-#endif
+#  endif
 
   kq->nchanges_alloc = 8;
-  kq->changelist     = ares_malloc_zero(sizeof(*kq->changelist) *
-                                        kq->nchanges_alloc);
+  kq->changelist =
+    ares_malloc_zero(sizeof(*kq->changelist) * kq->nchanges_alloc);
   if (kq->changelist == NULL) {
     ares_evsys_kqueue_destroy(e);
     return ARES_FALSE;
@@ -108,12 +110,14 @@ static ares_bool_t ares_evsys_kqueue_init(ares_event_thread_t *e)
   return ARES_TRUE;
 }
 
-static void ares_evsys_kqueue_enqueue(ares_evsys_kqueue_t *kq, int fd, int16_t filter, uint16_t flags)
+static void ares_evsys_kqueue_enqueue(ares_evsys_kqueue_t *kq, int fd,
+                                      int16_t filter, uint16_t flags)
 {
   size_t idx;
 
-  if (kq == NULL)
+  if (kq == NULL) {
     return;
+  }
 
   idx = kq->nchanges;
 
@@ -128,24 +132,27 @@ static void ares_evsys_kqueue_enqueue(ares_evsys_kqueue_t *kq, int fd, int16_t f
   EV_SET(&kq->changelist[idx], fd, filter, flags, 0, 0, 0);
 }
 
-static void ares_evsys_kqueue_event_process(ares_event_thread_t *e, ares_event_t *event, ares_event_flags_t old_flags, ares_event_flags_t new_flags)
+static void ares_evsys_kqueue_event_process(ares_event_thread_t *e,
+                                            ares_event_t        *event,
+                                            ares_event_flags_t   old_flags,
+                                            ares_event_flags_t   new_flags)
 {
   ares_evsys_kqueue_t *kq;
 
-  if (e == NULL)
+  if (e == NULL) {
     return;
+  }
 
   kq = e->ev_sys_data;
-  if (kq == NULL)
+  if (kq == NULL) {
     return;
+  }
 
-  if (new_flags & ARES_EVENT_FLAG_READ &&
-      !(old_flags & ARES_EVENT_FLAG_READ)) {
+  if (new_flags & ARES_EVENT_FLAG_READ && !(old_flags & ARES_EVENT_FLAG_READ)) {
     ares_evsys_kqueue_enqueue(kq, event->fd, EVFILT_READ, EV_ADD | EV_ENABLE);
   }
 
-  if (!(new_flags & ARES_EVENT_FLAG_READ) &&
-      old_flags & ARES_EVENT_FLAG_READ) {
+  if (!(new_flags & ARES_EVENT_FLAG_READ) && old_flags & ARES_EVENT_FLAG_READ) {
     ares_evsys_kqueue_enqueue(kq, event->fd, EVFILT_READ, EV_DELETE);
   }
 
@@ -160,23 +167,27 @@ static void ares_evsys_kqueue_event_process(ares_event_thread_t *e, ares_event_t
   }
 }
 
-static void ares_evsys_kqueue_event_add(ares_event_thread_t *e, ares_event_t *event)
+static void ares_evsys_kqueue_event_add(ares_event_thread_t *e,
+                                        ares_event_t        *event)
 {
   ares_evsys_kqueue_event_process(e, event, 0, event->flags);
 }
 
-static void ares_evsys_kqueue_event_del(ares_event_thread_t *e, ares_event_t *event)
+static void ares_evsys_kqueue_event_del(ares_event_thread_t *e,
+                                        ares_event_t        *event)
 {
   ares_evsys_kqueue_event_process(e, event, event->flags, 0);
 }
 
-static void ares_evsys_kqueue_event_mod(ares_event_thread_t *e, ares_event_t *event, ares_event_flags_t new_flags)
+static void ares_evsys_kqueue_event_mod(ares_event_thread_t *e,
+                                        ares_event_t        *event,
+                                        ares_event_flags_t   new_flags)
 {
   ares_evsys_kqueue_event_process(e, event, event->flags, new_flags);
 }
 
-
-static size_t ares_evsys_kqueue_wait(ares_event_thread_t *e, unsigned long timeout_ms)
+static size_t ares_evsys_kqueue_wait(ares_event_thread_t *e,
+                                     unsigned long        timeout_ms)
 {
   struct kevent        events[8];
   size_t               nevents = sizeof(events) / sizeof(*events);
@@ -195,7 +206,8 @@ static size_t ares_evsys_kqueue_wait(ares_event_thread_t *e, unsigned long timeo
 
   memset(events, 0, sizeof(events));
 
-  rv = kevent(kq->kqueue_fd, kq->changelist, (int)kq->nchanges, events, (int)nevents, timeout);
+  rv = kevent(kq->kqueue_fd, kq->changelist, (int)kq->nchanges, events,
+              (int)nevents, timeout);
   if (rv < 0) {
     return 0;
   }
@@ -204,17 +216,20 @@ static size_t ares_evsys_kqueue_wait(ares_event_thread_t *e, unsigned long timeo
   kq->nchanges = 0;
   nevents      = (size_t)rv;
 
-  for (i=0; i<nevents; i++) {
+  for (i = 0; i < nevents; i++) {
     ares_event_t      *ev;
     ares_event_flags_t flags = 0;
 
-    ev = ares__htable_asvp_get_direct(e->ev_handles, (ares_socket_t)events[i].ident);
-    if (ev == NULL || ev->cb == NULL)
+    ev = ares__htable_asvp_get_direct(e->ev_handles,
+                                      (ares_socket_t)events[i].ident);
+    if (ev == NULL || ev->cb == NULL) {
       continue;
+    }
 
     cnt++;
 
-    if (events[i].filter == EVFILT_READ || events[i].flags & (EV_EOF|EV_ERROR)) {
+    if (events[i].filter == EVFILT_READ ||
+        events[i].flags & (EV_EOF | EV_ERROR)) {
       flags |= ARES_EVENT_FLAG_READ;
     } else {
       flags |= ARES_EVENT_FLAG_WRITE;
@@ -226,14 +241,11 @@ static size_t ares_evsys_kqueue_wait(ares_event_thread_t *e, unsigned long timeo
   return cnt;
 }
 
-
-const ares_event_sys_t ares_evsys_kqueue = {
-  "kqueue",
-  ares_evsys_kqueue_init,
-  ares_evsys_kqueue_destroy,
-  ares_evsys_kqueue_event_add,
-  ares_evsys_kqueue_event_del,
-  ares_evsys_kqueue_event_mod,
-  ares_evsys_kqueue_wait
-};
+const ares_event_sys_t ares_evsys_kqueue = { "kqueue",
+                                             ares_evsys_kqueue_init,
+                                             ares_evsys_kqueue_destroy,
+                                             ares_evsys_kqueue_event_add,
+                                             ares_evsys_kqueue_event_del,
+                                             ares_evsys_kqueue_event_mod,
+                                             ares_evsys_kqueue_wait };
 #endif

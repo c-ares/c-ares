@@ -74,9 +74,9 @@ struct ares__thread {
   HANDLE thread;
   DWORD  id;
 
-  void  *(func)(void *arg);
-  void  *arg;
-  void  *rv;
+  void *(func)(void *arg);
+  void *arg;
+  void *rv;
 };
 
 /* Wrap for pthread compatibility */
@@ -88,13 +88,14 @@ static DWORD WINAPI ares__thread_func(LPVOID lpParameter)
   return 0;
 }
 
-ares_status_t ares__thread_create(ares__thread_t **thread,
+ares_status_t ares__thread_create(ares__thread_t    **thread,
                                   ares__thread_func_t func, void *arg)
 {
   ares__thread_t *thr = NULL;
 
-  if (func == NULL || thread == NULL)
+  if (func == NULL || thread == NULL) {
     return ARES_EFORMERR;
+  }
 
   thr = ares_malloc_zero(sizeof(*thr));
   if (thr == NULL) {
@@ -113,15 +114,14 @@ ares_status_t ares__thread_create(ares__thread_t **thread,
   return ARES_SUCCESS;
 }
 
-
-
 ares_status_t ares__thread_join(ares__thread_t *thread, void **rv)
 {
-  void          *ret    = NULL;
-  ares_status_t  status = ARES_SUCCESS;
+  void         *ret    = NULL;
+  ares_status_t status = ARES_SUCCESS;
 
-  if (thread == NULL)
+  if (thread == NULL) {
     return ARES_EFORMERR;
+  }
 
   if (WaitForSingleObject(thread->thread, INFINITE) != WAIT_OBJECT_0) {
     status = ARES_ENOTFOUND;
@@ -203,13 +203,14 @@ struct ares__thread {
   pthread_t thread;
 };
 
-ares_status_t ares__thread_create(ares__thread_t **thread,
+ares_status_t ares__thread_create(ares__thread_t    **thread,
                                   ares__thread_func_t func, void *arg)
 {
   ares__thread_t *thr = NULL;
 
-  if (func == NULL || thread == NULL)
+  if (func == NULL || thread == NULL) {
     return ARES_EFORMERR;
+  }
 
   thr = ares_malloc_zero(sizeof(*thr));
   if (thr == NULL) {
@@ -226,11 +227,12 @@ ares_status_t ares__thread_create(ares__thread_t **thread,
 
 ares_status_t ares__thread_join(ares__thread_t *thread, void **rv)
 {
-  void          *ret    = NULL;
-  ares_status_t  status = ARES_SUCCESS;
+  void         *ret    = NULL;
+  ares_status_t status = ARES_SUCCESS;
 
-  if (thread == NULL)
+  if (thread == NULL) {
     return ARES_EFORMERR;
+  }
 
   if (pthread_join(thread->thread, &ret) != 0) {
     status = ARES_ENOTFOUND;
@@ -273,7 +275,7 @@ void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
   (void)mut;
 }
 
-ares_status_t ares__thread_create(ares__thread_t **thread,
+ares_status_t ares__thread_create(ares__thread_t    **thread,
                                   ares__thread_func_t func, void *arg)
 {
   (void)thread;
@@ -298,8 +300,9 @@ ares_bool_t ares_threadsafety(void)
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel)
 {
-  if (!ares_threadsafety())
+  if (!ares_threadsafety()) {
     return ARES_ENOTIMP;
+  }
 
   channel->lock = ares__thread_mutex_create();
   if (channel->lock == NULL) {
@@ -323,4 +326,3 @@ void ares__channel_unlock(ares_channel_t *channel)
 {
   ares__thread_mutex_unlock(channel->lock);
 }
-

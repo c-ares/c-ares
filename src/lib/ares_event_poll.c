@@ -36,8 +36,9 @@
 static ares_bool_t ares_evsys_poll_init(ares_event_thread_t *e)
 {
   e->ev_signal = ares_pipeevent_create(e);
-  if (e->ev_signal == NULL)
+  if (e->ev_signal == NULL) {
     return ARES_FALSE;
+  }
   return ARES_TRUE;
 }
 
@@ -46,69 +47,81 @@ static void ares_evsys_poll_destroy(ares_event_thread_t *e)
   (void)e;
 }
 
-static void ares_evsys_poll_event_add(ares_event_thread_t *e, ares_event_t *event)
+static void ares_evsys_poll_event_add(ares_event_thread_t *e,
+                                      ares_event_t        *event)
 {
   (void)e;
   (void)event;
 }
 
-static void ares_evsys_poll_event_del(ares_event_thread_t *e, ares_event_t *event)
+static void ares_evsys_poll_event_del(ares_event_thread_t *e,
+                                      ares_event_t        *event)
 {
   (void)e;
   (void)event;
 }
 
-static void ares_evsys_poll_event_mod(ares_event_thread_t *e, ares_event_t *event, ares_event_flags_t new_flags)
+static void ares_evsys_poll_event_mod(ares_event_thread_t *e,
+                                      ares_event_t        *event,
+                                      ares_event_flags_t   new_flags)
 {
   (void)e;
   (void)event;
   (void)new_flags;
 }
 
-static size_t ares_evsys_poll_wait(ares_event_thread_t *e, unsigned long timeout_ms)
+static size_t ares_evsys_poll_wait(ares_event_thread_t *e,
+                                   unsigned long        timeout_ms)
 {
-  size_t            num_fds = 0;
-  ares_socket_t    *fdlist  = ares__htable_asvp_keys(e->ev_handles, &num_fds);
-  struct pollfd    *pollfd  = NULL;
-  int               rv;
-  size_t            cnt     = 0;
-  size_t            i;
+  size_t         num_fds = 0;
+  ares_socket_t *fdlist  = ares__htable_asvp_keys(e->ev_handles, &num_fds);
+  struct pollfd *pollfd  = NULL;
+  int            rv;
+  size_t         cnt = 0;
+  size_t         i;
 
   if (num_fds) {
     pollfd = ares_malloc_zero(sizeof(*pollfd) * num_fds);
-    for (i=0; i<num_fds; i++) {
+    for (i = 0; i < num_fds; i++) {
       ares_event_t *ev = ares__htable_asvp_get_direct(e->ev_handles, fdlist[i]);
       pollfd[i].fd     = ev->fd;
-      if (ev->flags & ARES_EVENT_FLAG_READ)
+      if (ev->flags & ARES_EVENT_FLAG_READ) {
         pollfd[i].events |= POLLIN;
-      if (ev->flags & ARES_EVENT_FLAG_WRITE)
+      }
+      if (ev->flags & ARES_EVENT_FLAG_WRITE) {
         pollfd[i].events |= POLLOUT;
+      }
     }
   }
   ares_free(fdlist);
 
-  rv = poll(pollfd, (nfds_t)num_fds, (timeout_ms == 0)?-1:(int)timeout_ms);
-  if (rv <= 0)
+  rv = poll(pollfd, (nfds_t)num_fds, (timeout_ms == 0) ? -1 : (int)timeout_ms);
+  if (rv <= 0) {
     goto done;
+  }
 
-  for (i=0; i<num_fds; i++) {
+  for (i = 0; i < num_fds; i++) {
     ares_event_t      *ev;
     ares_event_flags_t flags = 0;
 
-    if (pollfd[i].revents == 0)
+    if (pollfd[i].revents == 0) {
       continue;
+    }
 
     cnt++;
 
     ev = ares__htable_asvp_get_direct(e->ev_handles, pollfd[i].fd);
-    if (ev == NULL || ev->cb == NULL)
+    if (ev == NULL || ev->cb == NULL) {
       continue;
+    }
 
-    if (pollfd[i].revents & (POLLERR|POLLHUP|POLLIN))
+    if (pollfd[i].revents & (POLLERR | POLLHUP | POLLIN)) {
       flags |= ARES_EVENT_FLAG_READ;
+    }
 
-    if (pollfd[i].revents & POLLOUT)
+    if (pollfd[i].revents & POLLOUT) {
       flags |= ARES_EVENT_FLAG_WRITE;
+    }
 
     ev->cb(e, pollfd[i].fd, ev->data, flags);
   }
@@ -118,15 +131,12 @@ done:
   return cnt;
 }
 
-
-const ares_event_sys_t ares_evsys_poll = {
-  "poll",
-  ares_evsys_poll_init,
-  ares_evsys_poll_destroy,   /* NoOp */
-  ares_evsys_poll_event_add, /* NoOp */
-  ares_evsys_poll_event_del, /* NoOp */
-  ares_evsys_poll_event_mod, /* NoOp */
-  ares_evsys_poll_wait
-};
+const ares_event_sys_t ares_evsys_poll = { "poll",
+                                           ares_evsys_poll_init,
+                                           ares_evsys_poll_destroy,   /* NoOp */
+                                           ares_evsys_poll_event_add, /* NoOp */
+                                           ares_evsys_poll_event_del, /* NoOp */
+                                           ares_evsys_poll_event_mod, /* NoOp */
+                                           ares_evsys_poll_wait };
 
 #endif

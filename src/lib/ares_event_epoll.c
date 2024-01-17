@@ -45,12 +45,14 @@ static void ares_evsys_epoll_destroy(ares_event_thread_t *e)
 {
   ares_evsys_epoll_t *ep = NULL;
 
-  if (e == NULL)
+  if (e == NULL) {
     return;
+  }
 
   ep = e->ev_sys_data;
-  if (ep == NULL)
+  if (ep == NULL) {
     return;
+  }
 
   if (ep->epoll_fd != -1) {
     close(ep->epoll_fd);
@@ -77,9 +79,9 @@ static ares_bool_t ares_evsys_epoll_init(ares_event_thread_t *e)
     return ARES_FALSE;
   }
 
-#ifdef FD_CLOEXEC
+#  ifdef FD_CLOEXEC
   fcntl(ep->epoll_fd, F_SETFD, FD_CLOEXEC);
-#endif
+#  endif
 
   e->ev_signal = ares_pipeevent_create(e);
   if (e->ev_signal == NULL) {
@@ -90,22 +92,26 @@ static ares_bool_t ares_evsys_epoll_init(ares_event_thread_t *e)
   return ARES_TRUE;
 }
 
-static void ares_evsys_epoll_event_add(ares_event_thread_t *e, ares_event_t *event)
+static void ares_evsys_epoll_event_add(ares_event_thread_t *e,
+                                       ares_event_t        *event)
 {
   ares_evsys_epoll_t *ep = e->ev_sys_data;
   struct epoll_event  epev;
 
   memset(&epev, 0, sizeof(epev));
   epev.data.fd = event->fd;
-  epev.events  = EPOLLRDHUP|EPOLLERR|EPOLLHUP;
-  if (event->flags & ARES_EVENT_FLAG_READ)
+  epev.events  = EPOLLRDHUP | EPOLLERR | EPOLLHUP;
+  if (event->flags & ARES_EVENT_FLAG_READ) {
     epev.events |= EPOLLIN;
-  if (event->flags & ARES_EVENT_FLAG_WRITE)
+  }
+  if (event->flags & ARES_EVENT_FLAG_WRITE) {
     epev.events |= EPOLLOUT;
+  }
   epoll_ctl(ep->epoll_fd, EPOLL_CTL_ADD, event->fd, &epev);
 }
 
-static void ares_evsys_epoll_event_del(ares_event_thread_t *e, ares_event_t *event)
+static void ares_evsys_epoll_event_del(ares_event_thread_t *e,
+                                       ares_event_t        *event)
 {
   ares_evsys_epoll_t *ep = e->ev_sys_data;
   struct epoll_event  epev;
@@ -115,52 +121,58 @@ static void ares_evsys_epoll_event_del(ares_event_thread_t *e, ares_event_t *eve
   epoll_ctl(ep->epoll_fd, EPOLL_CTL_DEL, event->fd, &epev);
 }
 
-static void ares_evsys_epoll_event_mod(ares_event_thread_t *e, ares_event_t *event, ares_event_flags_t new_flags)
+static void ares_evsys_epoll_event_mod(ares_event_thread_t *e,
+                                       ares_event_t        *event,
+                                       ares_event_flags_t   new_flags)
 {
   ares_evsys_epoll_t *ep = e->ev_sys_data;
   struct epoll_event  epev;
 
   memset(&epev, 0, sizeof(epev));
   epev.data.fd = event->fd;
-  epev.events  = EPOLLRDHUP|EPOLLERR|EPOLLHUP;
-  if (event->flags & ARES_EVENT_FLAG_READ)
+  epev.events  = EPOLLRDHUP | EPOLLERR | EPOLLHUP;
+  if (event->flags & ARES_EVENT_FLAG_READ) {
     epev.events |= EPOLLIN;
-  if (event->flags & ARES_EVENT_FLAG_WRITE)
+  }
+  if (event->flags & ARES_EVENT_FLAG_WRITE) {
     epev.events |= EPOLLOUT;
+  }
   epoll_ctl(ep->epoll_fd, EPOLL_CTL_MOD, event->fd, &epev);
 }
 
-
-static size_t ares_evsys_epoll_wait(ares_event_thread_t *e, unsigned long timeout_ms)
+static size_t ares_evsys_epoll_wait(ares_event_thread_t *e,
+                                    unsigned long        timeout_ms)
 {
-  struct epoll_event   events[8];
-  size_t               nevents = sizeof(events) / sizeof(*events);
-  ares_evsys_epoll_t  *ep      = e->ev_sys_data;
-  int                  rv;
-  size_t               i;
-  size_t               cnt     = 0;
+  struct epoll_event  events[8];
+  size_t              nevents = sizeof(events) / sizeof(*events);
+  ares_evsys_epoll_t *ep      = e->ev_sys_data;
+  int                 rv;
+  size_t              i;
+  size_t              cnt = 0;
 
   memset(events, 0, sizeof(events));
 
   rv = epoll_wait(ep->epoll_fd, events, (int)nevents,
-                  (timeout == 0)?-1:(int)timeout);
+                  (timeout == 0) ? -1 : (int)timeout);
   if (rv < 0) {
     return 0;
   }
 
-  nevents      = (size_t)rv;
+  nevents = (size_t)rv;
 
-  for (i=0; i<nevents; i++) {
+  for (i = 0; i < nevents; i++) {
     ares_event_t      *ev;
     ares_event_flags_t flags = 0;
 
-    ev = ares__htable_asvp_get_direct(e->ev_handles, (ares_socket_t)events[i].data.fd);
-    if (ev == NULL || ev->cb == NULL)
+    ev = ares__htable_asvp_get_direct(e->ev_handles,
+                                      (ares_socket_t)events[i].data.fd);
+    if (ev == NULL || ev->cb == NULL) {
       continue;
+    }
 
     cnt++;
 
-    if (events[i].events & (EPOLLIN|EPOLLRDHUP|EPOLLHUP|EPOLLERR)) {
+    if (events[i].events & (EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
       flags |= ARES_EVENT_FLAG_READ;
     }
     if (events[i].events & EPOLLOUT) {
@@ -173,14 +185,11 @@ static size_t ares_evsys_epoll_wait(ares_event_thread_t *e, unsigned long timeou
   return cnt;
 }
 
-
-const ares_event_sys_t ares_evsys_epoll = {
-  "epoll",
-  ares_evsys_epoll_init,
-  ares_evsys_epoll_destroy,
-  ares_evsys_epoll_event_add,
-  ares_evsys_epoll_event_del,
-  ares_evsys_epoll_event_mod,
-  ares_evsys_epoll_wait
-};
+const ares_event_sys_t ares_evsys_epoll = { "epoll",
+                                            ares_evsys_epoll_init,
+                                            ares_evsys_epoll_destroy,
+                                            ares_evsys_epoll_event_add,
+                                            ares_evsys_epoll_event_del,
+                                            ares_evsys_epoll_event_mod,
+                                            ares_evsys_epoll_wait };
 #endif

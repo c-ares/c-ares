@@ -32,10 +32,10 @@ struct ares_event;
 typedef struct ares_event ares_event_t;
 
 typedef enum {
-  ARES_EVENT_FLAG_NONE       = 0,
-  ARES_EVENT_FLAG_READ       = 1 << 0,
-  ARES_EVENT_FLAG_WRITE      = 1 << 1,
-  ARES_EVENT_FLAG_OTHER      = 1 << 2
+  ARES_EVENT_FLAG_NONE  = 0,
+  ARES_EVENT_FLAG_READ  = 1 << 0,
+  ARES_EVENT_FLAG_WRITE = 1 << 1,
+  ARES_EVENT_FLAG_OTHER = 1 << 2
 } ares_event_flags_t;
 
 typedef void (*ares_event_cb_t)(ares_event_thread_t *e, ares_socket_t fd,
@@ -47,39 +47,37 @@ typedef void (*ares_event_signal_cb_t)(const ares_event_t *event);
 
 struct ares_event {
   /*! Registered event thread this event is bound to */
-  ares_event_thread_t    *e;
+  ares_event_thread_t   *e;
   /*! Flags to monitor. OTHER is only allowed if the socket is ARES_SOCKET_BAD.
    */
-  ares_event_flags_t      flags;
+  ares_event_flags_t     flags;
   /*! Callback to be called when event is triggered */
-  ares_event_cb_t         cb;
+  ares_event_cb_t        cb;
   /*! Socket to monitor, allowed to be ARES_SOCKET_BAD if not monitoring a
    *  socket. */
-  ares_socket_t           fd;
+  ares_socket_t          fd;
   /*! Data associated with event handle that will be passed to the callback.
    *  Optional, may be NULL. */
   /*! Data to be passed to callback. Optional, may be NULL. */
-  void                   *data;
+  void                  *data;
   /*! When cleaning up the registered event (either when removed or during
    *  shutdown), this function will be called to clean up the user-supplied
    *  data. Optional, May be NULL. */
-  ares_event_free_data_t  free_data_cb;
+  ares_event_free_data_t free_data_cb;
   /*! Callback to call to trigger an event. */
-  ares_event_signal_cb_t  signal_cb;
+  ares_event_signal_cb_t signal_cb;
 };
 
-
 typedef struct {
-  const char   *name;
+  const char *name;
   ares_bool_t (*init)(ares_event_thread_t *e);
   void        (*destroy)(ares_event_thread_t *e);
   void        (*event_add)(ares_event_thread_t *e, ares_event_t *event);
   void        (*event_del)(ares_event_thread_t *e, ares_event_t *event);
   void        (*event_mod)(ares_event_thread_t *e, ares_event_t *event,
-                           ares_event_flags_t new_flags);
+                    ares_event_flags_t new_flags);
   size_t      (*wait)(ares_event_thread_t *e, unsigned long timeout_ms);
 } ares_event_sys_t;
-
 
 struct ares_event_thread {
   /*! Whether the event thread should be online or not.  Checked on every wake
@@ -109,23 +107,28 @@ struct ares_event_thread {
   void                   *ev_sys_data;
 };
 
-/*! Queue an update for the event handle.  Will search by the fd passed if
- *  not ARES_SOCKET_BAD to find a match and perform an update or delete
- *  (depending on flags).  Otherwise will add.  Do not use the event handle
- *  returned if its not guaranteed to be an add operation.
+/*! Queue an update for the event handle.
+ *
+ *  Will search by the fd passed if not ARES_SOCKET_BAD to find a match and
+ *  perform an update or delete (depending on flags).  Otherwise will add.
+ *  Do not use the event handle returned if its not guaranteed to be an add
+ *  operation.
  *
  *  \param[out] event        Event handle. Optional, can be NULL.  This handle
  *                           will be invalidate quickly if the result of the
  *                           operation is not an ADD.
  *  \param[in]  e            pointer to event thread handle
- *  \param[in]  flags        flags for the event handle.  Use ARES_EVENT_FLAG_NONE
- *                           if removing a socket from queue (not valid if socket
- *                           is ARES_SOCKET_BAD).  Non-socket events cannot be
- *                           removed, and must have ARES_EVENT_FLAG_OTHER set.
- *  \param[in]  cb           Callback to call when event is triggered. Required.
- *                           Not allowed to be changed, ignored on modification.
- *  \param[in]  fd           File descriptor/socket to monitor.  May be
- *                           ARES_SOCKET_BAD if not monitoring file descriptor.
+ *  \param[in]  flags        flags for the event handle.  Use
+ *                           ARES_EVENT_FLAG_NONE if removing a socket from
+ *                           queue (not valid if socket is ARES_SOCKET_BAD).
+ *                           Non-socket events cannot be removed, and must have
+ *                           ARES_EVENT_FLAG_OTHER set.
+ *  \param[in]  cb           Callback to call when
+ *                           event is triggered. Required. Not allowed to be
+ *                           changed, ignored on modification.
+ *  \param[in]  fd           File descriptor/socket to monitor. May
+ *                           be ARES_SOCKET_BAD if not monitoring file
+ *                           descriptor.
  *  \param[in]  data         Optional. Caller-supplied data to be passed to
  *                           callback. Only allowed on initial add, cannot be
  *                           modified later, ignored on modification.
@@ -133,15 +136,11 @@ struct ares_event_thread {
  *                           data. Only allowed on initial add, cannot be
  *                           modified later, ignored on modification.
  *  \param[in]  signal_cb    Optional. Callback to call to trigger an event.
- *
  *  \return ARES_SUCCESS on success
  */
-ares_status_t ares_event_update(ares_event_t       **event,
-                                ares_event_thread_t *e,
-                                ares_event_flags_t  flags,
-                                ares_event_cb_t     cb,
-                                ares_socket_t       fd,
-                                void               *data,
+ares_status_t ares_event_update(ares_event_t **event, ares_event_thread_t *e,
+                                ares_event_flags_t flags, ares_event_cb_t cb,
+                                ares_socket_t fd, void *data,
                                 ares_event_free_data_t free_data_cb,
                                 ares_event_signal_cb_t signal_cb);
 

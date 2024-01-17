@@ -41,10 +41,12 @@ typedef struct {
 
 static void ares_pipeevent_destroy(ares_pipeevent_t *p)
 {
-  if (p->filedes[0] != -1)
+  if (p->filedes[0] != -1) {
     close(p->filedes[0]);
-  if (p->filedes[1] != -1)
+  }
+  if (p->filedes[1] != -1) {
     close(p->filedes[1]);
+  }
 
   ares_free(p);
 }
@@ -57,14 +59,15 @@ static void ares_pipeevent_destroy_cb(void *arg)
 static ares_pipeevent_t *ares_pipeevent_init(void)
 {
   ares_pipeevent_t *p = ares_malloc_zero(sizeof(*p));
-  if (p == NULL)
+  if (p == NULL) {
     return NULL;
+  }
 
   p->filedes[0] = -1;
   p->filedes[1] = -1;
 
 #  ifdef HAVE_PIPE2
-  if (pipe2(p->filedes, O_NONBLOCK|O_CLOEXEC) != 0) {
+  if (pipe2(p->filedes, O_NONBLOCK | O_CLOEXEC) != 0) {
     ares_pipeevent_destroy(p);
     return NULL;
   }
@@ -95,7 +98,7 @@ static ares_pipeevent_t *ares_pipeevent_init(void)
   fcntl(p->filedes[0], F_SETFD, O_CLOEXEC);
   fcntl(p->filedes[1], F_SETFD, O_CLOEXEC);
 #    endif
-#endif
+#  endif
 
 #  ifdef F_SETNOSIGPIPE
   fcntl(p->filedes[0], F_SETNOSIGPIPE, 1);
@@ -105,13 +108,13 @@ static ares_pipeevent_t *ares_pipeevent_init(void)
   return p;
 }
 
-
 static void ares_pipeevent_signal(const ares_event_t *e)
 {
   ares_pipeevent_t *p;
 
-  if (e == NULL || e->data == NULL)
+  if (e == NULL || e->data == NULL) {
     return;
+  }
 
   p = e->data;
   write(p->filedes[1], "1", 1);
@@ -127,17 +130,16 @@ static void ares_pipeevent_cb(ares_event_thread_t *e, ares_socket_t fd,
   (void)fd;
   (void)flags;
 
-  if (data == NULL)
+  if (data == NULL) {
     return;
+  }
 
   p = data;
 
   while (read(p->filedes[0], buf, sizeof(buf)) == sizeof(buf)) {
     /* Do nothing */
   }
-
 }
-
 
 ares_event_t *ares_pipeevent_create(ares_event_thread_t *e)
 {
@@ -146,14 +148,12 @@ ares_event_t *ares_pipeevent_create(ares_event_thread_t *e)
   ares_status_t     status;
 
   p = ares_pipeevent_init();
-  if (p == NULL)
+  if (p == NULL) {
     return NULL;
+  }
 
-  status = ares_event_update(&event, e, ARES_EVENT_FLAG_READ,
-                             ares_pipeevent_cb,
-                             p->filedes[0],
-                             p,
-                             ares_pipeevent_destroy_cb,
+  status = ares_event_update(&event, e, ARES_EVENT_FLAG_READ, ares_pipeevent_cb,
+                             p->filedes[0], p, ares_pipeevent_destroy_cb,
                              ares_pipeevent_signal);
   if (status != ARES_SUCCESS) {
     ares_pipeevent_destroy(p);

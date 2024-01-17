@@ -29,7 +29,7 @@
 struct ares__thread_mutex;
 typedef struct ares__thread_mutex ares__thread_mutex_t;
 
-ares__thread_mutex_t *ares__thread_mutex_create(void);
+ares__thread_mutex_t             *ares__thread_mutex_create(void);
 void ares__thread_mutex_destroy(ares__thread_mutex_t *mut);
 void ares__thread_mutex_lock(ares__thread_mutex_t *mut);
 void ares__thread_mutex_unlock(ares__thread_mutex_t *mut);
@@ -37,9 +37,9 @@ void ares__thread_mutex_unlock(ares__thread_mutex_t *mut);
 struct ares__thread;
 typedef struct ares__thread ares__thread_t;
 
-typedef void *(*ares__thread_func_t)(void *arg);
-ares_status_t ares__thread_create(ares__thread_t **thread,
-                                  ares__thread_func_t func, void *arg);
+typedef void               *(*ares__thread_func_t)(void *arg);
+ares_status_t               ares__thread_create(ares__thread_t    **thread,
+                                                ares__thread_func_t func, void *arg);
 ares_status_t ares__thread_join(ares__thread_t *thread, void **rv);
 
 #endif
