@@ -419,6 +419,7 @@ AC_CHECK_HEADERS(
        sys/param.h \
        sys/uio.h \
        sys/random.h \
+       sys/event.h \
        assert.h \
        iphlpapi.h \
        netioapi.h \
@@ -512,6 +513,9 @@ cares_all_includes="
 #endif
 #ifdef HAVE_SYS_RANDOM_H
 #  include <sys/random.h>
+#endif
+#ifdef HAVE_SYS_EVENT_H
+#  include <sys/event.h>
 #endif
 #ifdef HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>
@@ -636,7 +640,7 @@ AC_CHECK_DECL(getifaddrs,      [AC_DEFINE([HAVE_GETIFADDRS],        1, [Define t
 AC_CHECK_DECL(poll,            [AC_DEFINE([HAVE_POLL],              1, [Define to 1 if you have `poll`]           )], [], $cares_all_includes)
 AC_CHECK_DECL(pipe,            [AC_DEFINE([HAVE_PIPE],              1, [Define to 1 if you have `pipe`]           )], [], $cares_all_includes)
 AC_CHECK_DECL(pipe2,           [AC_DEFINE([HAVE_PIPE2],             1, [Define to 1 if you have `pipe2`]          )], [], $cares_all_includes)
-
+AC_CHECK_DECL(kqueue,          [AC_DEFINE([HAVE_KQUEUE],            1, [Define to 1 if you have `kqueue`]         )], [], $cares_all_includes)
 AC_CHECK_DECL(ConvertInterfaceIndexToLuid, [AC_DEFINE([HAVE_CONVERTINTERFACEINDEXTOLUID], 1, [Define to 1 if you have `ConvertInterfaceIndexToLuid`])], [], $cares_all_includes)
 AC_CHECK_DECL(ConvertInterfaceLuidToNameA, [AC_DEFINE([HAVE_CONVERTINTERFACELUIDTONAMEA], 1, [Define to 1 if you have `ConvertInterfaceLuidToNameA`])], [], $cares_all_includes)
 AC_CHECK_DECL(__system_property_get,       [AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET],       1, [Define to 1 if you have `__system_property_get`]      )], [], $cares_all_includes)

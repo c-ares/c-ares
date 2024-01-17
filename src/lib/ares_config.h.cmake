@@ -88,6 +88,9 @@
 /* Define to 1 if you have the pipe2 function. */
 #cmakedefine HAVE_PIPE2
 
+/* Define to 1 if you have the kqueue function. */
+#cmakedefine HAVE_KQUEUE
+
 /* Define to 1 if you have the fcntl function. */
 #cmakedefine HAVE_FCNTL
 
@@ -304,6 +307,9 @@
 
 /* Define to 1 if you have the <sys/random.h> header file. */
 #cmakedefine HAVE_SYS_RANDOM_H
+
+/* Define to 1 if you have the <sys/event.h> header file. */
+#cmakedefine HAVE_SYS_EVENT_H
 
 /* Define to 1 if you have the <sys/select.h> header file. */
 #cmakedefine HAVE_SYS_SELECT_H

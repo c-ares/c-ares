@@ -224,6 +224,7 @@ CHECK_INCLUDE_FILES (sys/stat.h            HAVE_SYS_STAT_H)
 CHECK_INCLUDE_FILES (sys/time.h            HAVE_SYS_TIME_H)
 CHECK_INCLUDE_FILES (sys/uio.h             HAVE_SYS_UIO_H)
 CHECK_INCLUDE_FILES (sys/random.h          HAVE_SYS_RANDOM_H)
+CHECK_INCLUDE_FILES (sys/event.h           HAVE_SYS_EVENT_H)
 CHECK_INCLUDE_FILES (ifaddrs.h             HAVE_IFADDRS_H)
 CHECK_INCLUDE_FILES (time.h                HAVE_TIME_H)
 CHECK_INCLUDE_FILES (poll.h                HAVE_POLL_H)
@@ -325,6 +326,7 @@ CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_TIME_H     sys/time.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_STAT_H     sys/stat.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_UIO_H      sys/uio.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_RANDOM_H   sys/random.h)
+CARES_EXTRAINCLUDE_IFSET (HAVE_SYS_EVENT_H    sys/event.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_TIME_H         time.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_POLL_H         poll.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_FCNTL_H        fcntl.h)
@@ -436,6 +438,8 @@ CHECK_SYMBOL_EXISTS (getifaddrs      "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_GETIFAD
 CHECK_SYMBOL_EXISTS (poll            "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_POLL)
 CHECK_SYMBOL_EXISTS (pipe            "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_PIPE)
 CHECK_SYMBOL_EXISTS (pipe2           "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_PIPE2)
+CHECK_SYMBOL_EXISTS (kqueue          "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_KQUEUE)
+
 
 # On Android, the system headers may define __system_property_get(), but excluded
 # from libc.  We need to perform a link test instead of a header/symbol test.
