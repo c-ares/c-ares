@@ -37,6 +37,9 @@
 #ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>
 #endif
+#ifdef HAVE_FCNTL_H
+#  include <fcntl.h>
+#endif
 
 #ifdef HAVE_KQUEUE
 
@@ -83,6 +86,10 @@ static ares_bool_t ares_evsys_kqueue_init(ares_event_thread_t *e)
     ares_evsys_kqueue_destroy(e);
     return ARES_FALSE;
   }
+
+#ifdef FD_CLOEXEC
+  fcntl(kq->kqueue_fd, F_SETFD, FD_CLOEXEC);
+#endif
 
   kq->nchanges_alloc = 8;
   kq->changelist     = ares_malloc_zero(sizeof(*kq->changelist) *
