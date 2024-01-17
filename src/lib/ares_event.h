@@ -157,4 +157,8 @@ extern const ares_event_sys_t ares_evsys_poll;
 extern const ares_event_sys_t ares_evsys_kqueue;
 #endif
 
+#ifdef HAVE_EPOLL
+extern const ares_event_sys_t ares_evsys_epoll;
+#endif
+
 #endif
