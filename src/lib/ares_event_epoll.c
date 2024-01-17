@@ -73,7 +73,7 @@ static ares_bool_t ares_evsys_epoll_init(ares_event_thread_t *e)
 
   e->ev_sys_data = ep;
 
-  ep->epoll_fd = epoll_create();
+  ep->epoll_fd = epoll_create1(0);
   if (ep->epoll_fd == -1) {
     ares_evsys_epoll_destroy(e);
     return ARES_FALSE;
@@ -153,7 +153,7 @@ static size_t ares_evsys_epoll_wait(ares_event_thread_t *e,
   memset(events, 0, sizeof(events));
 
   rv = epoll_wait(ep->epoll_fd, events, (int)nevents,
-                  (timeout == 0) ? -1 : (int)timeout);
+                  (timeout_ms == 0) ? -1 : (int)timeout_ms);
   if (rv < 0) {
     return 0;
   }
