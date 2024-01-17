@@ -131,10 +131,10 @@ static void ares_evsys_epoll_event_mod(ares_event_thread_t *e,
   memset(&epev, 0, sizeof(epev));
   epev.data.fd = event->fd;
   epev.events  = EPOLLRDHUP | EPOLLERR | EPOLLHUP;
-  if (event->flags & ARES_EVENT_FLAG_READ) {
+  if (new_flags & ARES_EVENT_FLAG_READ) {
     epev.events |= EPOLLIN;
   }
-  if (event->flags & ARES_EVENT_FLAG_WRITE) {
+  if (new_flags & ARES_EVENT_FLAG_WRITE) {
     epev.events |= EPOLLOUT;
   }
   epoll_ctl(ep->epoll_fd, EPOLL_CTL_MOD, event->fd, &epev);
