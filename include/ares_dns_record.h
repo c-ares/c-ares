@@ -384,6 +384,13 @@ typedef enum {
   ARES_OPT_DATATYPE_NAME = 11
 } ares_dns_opt_datatype_t;
 
+/*! Data type for flags to ares_dns_parse() */
+typedef enum {
+  ARES_DNS_PARSE_ANSWER_RR_RAW = 1 << 0,  /*!< Parse RR(s) as RAW */
+  ARES_DNS_PARSE_AUTHORITY_RR_RAW = 1 << 1,  /*!< Parse RR(s) as RAW */
+  ARES_DNS_PARSE_ADDITIONAL_RR_RAW = 1 << 2,  /*!< Parse RR(s) as RAW */
+} ares_dns_parse_flags_t;
+
 /*! String representation of DNS Record Type
  *
  *  \param[in] type  DNS Record Type
@@ -926,7 +933,7 @@ CARES_EXTERN ares_bool_t   ares_dns_rr_get_opt_byid(const ares_dns_rr_t  *dns_rr
  *
  *  \param[in]  buf      pointer to bytes to be parsed
  *  \param[in]  buf_len  Length of buf provided
- *  \param[in]  flags    Flags dictating how the message should be parsed. TBD.
+ *  \param[in]  flags    Flags dictating how the message should be parsed.
  *  \param[out] dnsrec   Pointer passed by reference for a new DNS record object
  *                       that must be ares_dns_record_destroy()'d by caller.
  *  \return ARES_SUCCESS on success

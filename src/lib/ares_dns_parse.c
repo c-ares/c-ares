@@ -1004,8 +1004,6 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
   size_t              remaining_len = 0;
   size_t              processed_len = 0;
 
-  (void)flags; /* currently unused */
-
   /* All RRs have the same top level format shown below:
    *                                 1  1  1  1  1  1
    *   0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -1064,6 +1062,16 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
   rdlength = u16;
 
   if (!ares_dns_rec_type_isvalid(type, ARES_FALSE)) {
+    type = ARES_REC_TYPE_RAW_RR;
+  }
+
+  if (sect == ARES_SECTION_ANSWER && (flags & ARES_DNS_PARSE_ANSWER_RR_RAW)) {
+    type = ARES_REC_TYPE_RAW_RR;
+  }
+  if (sect == ARES_SECTION_AUTHORITY && (flags & ARES_DNS_PARSE_AUTHORITY_RR_RAW)) {
+    type = ARES_REC_TYPE_RAW_RR;
+  }
+  if (sect == ARES_SECTION_ADDITIONAL && (flags & ARES_DNS_PARSE_ADDITIONAL_RR_RAW)) {
     type = ARES_REC_TYPE_RAW_RR;
   }
 
