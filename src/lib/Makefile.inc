@@ -28,6 +28,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_dns_parse.c			\
   ares_dns_record.c			\
   ares_dns_write.c			\
+  ares_event_epoll.c			\
   ares_event_kqueue.c			\
   ares_event_poll.c			\
   ares_event_thread.c			\

@@ -208,7 +208,7 @@ printf("%s(): enter\n", __FUNCTION__);
 
     tvout = ares_timeout(e->channel, NULL, &tv);
     if (tvout != NULL) {
-      timeout_ms = (unsigned long)(tvout->tv_sec * 1000) + (tvout->tv_usec / 1000) + 1;
+      timeout_ms = (unsigned long)((tvout->tv_sec * 1000) + (tvout->tv_usec / 1000) + 1);
     }
 
     ares_event_process_updates(e);
@@ -312,6 +312,8 @@ printf("%s(): enter\n", __FUNCTION__);
   e->isup                     = ARES_TRUE;
 #if defined(HAVE_KQUEUE)
   e->ev_sys                   = &ares_evsys_kqueue;
+#elif defined(HAVE_EPOLL)
+  e->ev_sys                   = &ares_evsys_epoll;
 #elif defined(HAVE_POLL)
   e->ev_sys                   = &ares_evsys_poll;
 #endif

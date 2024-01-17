@@ -91,6 +91,9 @@
 /* Define to 1 if you have the kqueue function. */
 #cmakedefine HAVE_KQUEUE
 
+/* Define to 1 if you have the epoll{_create,ctl,wait} functions. */
+#cmakedefine HAVE_EPOLL
+
 /* Define to 1 if you have the fcntl function. */
 #cmakedefine HAVE_FCNTL
 
@@ -310,6 +313,9 @@
 
 /* Define to 1 if you have the <sys/event.h> header file. */
 #cmakedefine HAVE_SYS_EVENT_H
+
+/* Define to 1 if you have the <sys/epoll.h> header file. */
+#cmakedefine HAVE_SYS_EPOLL_H
 
 /* Define to 1 if you have the <sys/select.h> header file. */
 #cmakedefine HAVE_SYS_SELECT_H
