@@ -33,6 +33,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_event_poll.c			\
   ares_event_thread.c			\
   ares_event_wake_pipe.c		\
+  ares_event_win32.c			\
   ares_expand_name.c			\
   ares_expand_string.c			\
   ares_fds.c				\
