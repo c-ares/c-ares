@@ -191,7 +191,7 @@ if test "$ac_cv_native_windows" = "yes" ; then
 fi
 
 dnl Windows can only build shared or static, not both at the same time
-if test "x$enable_shared" = "xyes" -a "x$enable_static" = "xyes" ; then
+if test "$ac_cv_native_windows" = "yes" -a "x$enable_shared" = "xyes" -a "x$enable_static" = "xyes" ; then
   AC_MSG_ERROR([Windows cannot build both static and shared simultaneously, specify --disable-shared or --disable-static])
 fi
 
