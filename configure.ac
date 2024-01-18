@@ -76,8 +76,6 @@ dnl Disable static builds by default on Windows unless overwritten since Windows
 dnl can't simultaneously build shared and static with autotools.
 AS_IF([test "x$ac_cv_windows" = "xyes"], [AC_DISABLE_STATIC], [AC_ENABLE_STATIC])
 
-
-
 AC_ARG_ENABLE(warnings,
   AS_HELP_STRING([--disable-warnings],[Disable strict compiler warnings]),
   [ enable_warnings=${enableval} ],
@@ -193,8 +191,8 @@ if test "$ac_cv_native_windows" = "yes" ; then
 fi
 
 dnl Windows can only build shared or static, not both at the same time
-if test "x$enable_shared" = "xno" -a "x$enable_static" = "xyes" ; then
-  AC_MSG_ERROR([Windows cannot build both static and shared simultaneously])
+if test "x$enable_shared" = "xyes" -a "x$enable_static" = "xyes" ; then
+  AC_MSG_ERROR([Windows cannot build both static and shared simultaneously, specify --disable-shared or --disable-static])
 fi
 
 dnl Only windows requires CARES_STATICLIB definition
