@@ -42,8 +42,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
 AX_CXX_COMPILE_STDCXX_14([noext],[optional])
 AM_INIT_AUTOMAKE([foreign subdir-objects 1.9.6])
-AC_ENABLE_SHARED
-LT_INIT([win32-dll,shared,pic,disable-fast-install,aix-soname=svr4])
+LT_INIT([win32-dll,pic,disable-fast-install,aix-soname=svr4])
 AC_LANG([C])
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -51,6 +50,33 @@ AC_PROG_EGREP
 AC_PROG_INSTALL
 AC_CANONICAL_HOST
 AX_COMPILER_VENDOR
+
+AC_MSG_CHECKING([whether this is native windows])
+ac_cv_native_windows=no
+ac_cv_windows=no
+case $host_os in
+  mingw*)
+    ac_cv_native_windows=yes
+    ac_cv_windows=yes
+    ;;
+  cygwin*)
+    ac_cv_windows=yes
+    ;;
+esac
+if test "$ax_cv_c_compiler_vendor" = "microsoft" ; then
+  ac_cv_native_windows=yes
+  ac_cv_windows=yes
+fi
+AC_MSG_RESULT($ac_cv_native_windows)
+
+
+AC_ENABLE_SHARED
+
+dnl Disable static builds by default on Windows unless overwritten since Windows
+dnl can't simultaneously build shared and static with autotools.
+AS_IF([test "x$ac_cv_windows" = "xyes"], [AC_DISABLE_STATIC], [AC_ENABLE_STATIC])
+
+
 
 AC_ARG_ENABLE(warnings,
   AS_HELP_STRING([--disable-warnings],[Disable strict compiler warnings]),
@@ -162,31 +188,8 @@ esac
 AM_CONDITIONAL([CARES_USE_NO_UNDEFINED], [test "$cares_use_no_undefined" = 'yes'])
 
 
-AC_MSG_CHECKING([whether this is native windows])
-ac_cv_native_windows=no
-ac_cv_windows=no
-case $host_os in
-  mingw*)
-    ac_cv_native_windows=yes
-    ac_cv_windows=yes
-    ;;
-  cygwin*)
-    ac_cv_windows=yes
-    ;;
-esac
-if test "$ax_cv_c_compiler_vendor" = "microsoft" ; then
-  ac_cv_native_windows=yes
-  ac_cv_windows=yes
-fi
 if test "$ac_cv_native_windows" = "yes" ; then
   AM_CPPFLAGS="$AM_CPPFLAGS -D_WIN32_WINNT=0x0602 -DWIN32_LEAN_AND_MEAN"
-fi
-AC_MSG_RESULT($ac_cv_native_windows)
-
-dnl Disable static builds by default on Windows unless overwritten since Windows
-dnl can't simultaneously build shared and static with autotools.
-if test "x$ac_cv_windows" = "xyes" ; then
-  AC_DISABLE_STATIC
 fi
 
 dnl Windows can only build shared or static, not both at the same time
