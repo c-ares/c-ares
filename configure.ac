@@ -215,13 +215,13 @@ if test "$symbol_hiding" != "no" ; then
   else
     case "$ax_cv_c_compiler_vendor" in
       clang|gnu|intel)
-        AX_APPEND_COMPILE_FLAGS([-fvisibility=hidden], [CARES_SYMBOL_HIDING_CFLAG], [AM_CFLAGS])
+        AX_APPEND_COMPILE_FLAGS([-fvisibility=hidden], [CARES_SYMBOL_HIDING_CFLAG])
         if test "x$CARES_SYMBOL_HIDING_CFLAG" != "x" ; then
           compiler_supports_symbol_hiding="yes"
         fi
         ;;
       sun)
-        AX_APPEND_COMPILE_FLAGS([-xldscope=hidden], [CARES_SYMBOL_HIDING_CFLAG], [AM_CFLAGS])
+        AX_APPEND_COMPILE_FLAGS([-xldscope=hidden], [CARES_SYMBOL_HIDING_CFLAG])
         if test "x$CARES_SYMBOL_HIDING_CFLAG" != "x" ; then
           compiler_supports_symbol_hiding="yes"
         fi
