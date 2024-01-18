@@ -179,7 +179,7 @@ if test "$ax_cv_c_compiler_vendor" = "microsoft" ; then
   ac_cv_windows=yes
 fi
 if test "$ac_cv_native_windows" = "yes" ; then
-  CPPFLAGS="$CPPFLAGS -D_WIN32_WINNT=0x0602 -DWIN32_LEAN_AND_MEAN"
+  AM_CPPFLAGS="$AM_CPPFLAGS -D_WIN32_WINNT=0x0602 -DWIN32_LEAN_AND_MEAN"
 fi
 AC_MSG_RESULT($ac_cv_native_windows)
 
@@ -189,12 +189,16 @@ if test "x$ac_cv_windows" = "xyes" ; then
   AC_DISABLE_STATIC
 fi
 
+dnl Windows can only build shared or static, not both at the same time
+if test "x$enable_shared" = "xno" -a "x$enable_static" = "xyes" ; then
+  AC_MSG_ERROR([Windows cannot build both static and shared simultaneously])
+fi
 
 dnl Only windows requires CARES_STATICLIB definition
 if test "x$enable_shared" = "xno" -a "x$enable_static" = "xyes" ; then
   AC_MSG_CHECKING([whether we need CARES_STATICLIB definition])
   if test "$ac_cv_native_windows" = "yes" ; then
-    AX_APPEND_FLAG([-DCARES_STATICLIB], [CPPFLAGS])
+    AX_APPEND_FLAG([-DCARES_STATICLIB], [AM_CPPFLAGS])
     AC_MSG_RESULT([yes])
   else
     AC_MSG_RESULT([no])
@@ -210,13 +214,13 @@ if test "$symbol_hiding" != "no" ; then
   else
     case "$ax_cv_c_compiler_vendor" in
       clang|gnu|intel)
-        AX_APPEND_COMPILE_FLAGS([-fvisibility=hidden], [CARES_SYMBOL_HIDING_CFLAG])
+        AX_APPEND_COMPILE_FLAGS([-fvisibility=hidden], [CARES_SYMBOL_HIDING_CFLAG], [AM_CFLAGS])
         if test "x$CARES_SYMBOL_HIDING_CFLAG" != "x" ; then
           compiler_supports_symbol_hiding="yes"
         fi
         ;;
       sun)
-        AX_APPEND_COMPILE_FLAGS([-xldscope=hidden], [CARES_SYMBOL_HIDING_CFLAG])
+        AX_APPEND_COMPILE_FLAGS([-xldscope=hidden], [CARES_SYMBOL_HIDING_CFLAG], [AM_CFLAGS])
         if test "x$CARES_SYMBOL_HIDING_CFLAG" != "x" ; then
           compiler_supports_symbol_hiding="yes"
         fi
@@ -274,11 +278,11 @@ if test "$enable_warnings" = "yes"; then
     -Werror=implicit-int \
     -Werror=implicit-function-declaration \
     -Werror=partial-availability \
-  ], [CFLAGS], [-Werror])
+  ], [AM_CFLAGS], [-Werror])
 fi
 
 if test "$ax_cv_c_compiler_vendor" = "intel"; then
-  CFLAGS="$CFLAGS -shared-intel"
+  AX_APPEND_COMPILE_FLAGS([-shared-intel], [AM_CFLAGS])
 fi
 
 if test "$ac_cv_native_windows" = "yes" ; then
@@ -818,7 +822,7 @@ if test "${CARES_THREADS}" = "yes" -a "x${ac_cv_native_windows}" != "xyes" ; the
   if test "${CARES_THREADS}" = "yes" ; then
     AC_CHECK_HEADERS([pthread.h pthread_np.h])
     LIBS="$PTHREAD_LIBS $LIBS"
-    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+    AM_CFLAGS="$AM_CFLAGS $PTHREAD_CFLAGS"
     CC="$PTHREAD_CC"
     CXX="$PTHREAD_CXX"
   fi
@@ -876,9 +880,10 @@ fi
 AC_MSG_CHECKING([whether to build tests])
 AC_MSG_RESULT([$build_tests])
 
-
 AM_CONDITIONAL(BUILD_TESTS, test "x$build_tests" = "xyes")
 
+AC_SUBST(AM_CFLAGS)
+AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(BUILD_SUBDIRS)
 
 AC_CONFIG_FILES([Makefile           \
