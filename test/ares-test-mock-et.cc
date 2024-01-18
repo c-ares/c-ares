@@ -26,6 +26,8 @@
 #include "ares-test.h"
 #include "dns-proto.h"
 
+#ifdef CARES_THREADS
+
 #ifndef WIN32
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -40,7 +42,7 @@ using testing::DoAll;
 namespace ares {
 namespace test {
 
-TEST_P(MockChannelTest, Basic) {
+TEST_P(MockEventThreadTest, Basic) {
   std::vector<byte> reply = {
     0x00, 0x00,  // qid
     0x84, // response + query + AA + not-TC + not-RD
@@ -81,7 +83,7 @@ TEST_P(MockChannelTest, Basic) {
 }
 
 // UDP only so mock server doesn't get confused by concatenated requests
-TEST_P(MockUDPChannelTest, GetHostByNameParallelLookups) {
+TEST_P(MockUDPEventThreadTest, GetHostByNameParallelLookups) {
   DNSPacket rsp1;
   rsp1.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
@@ -117,7 +119,7 @@ TEST_P(MockUDPChannelTest, GetHostByNameParallelLookups) {
 }
 
 // UDP to TCP specific test
-TEST_P(MockUDPChannelTest, TruncationRetry) {
+TEST_P(MockUDPEventThreadTest, TruncationRetry) {
   DNSPacket rsptruncated;
   rsptruncated.set_response().set_aa().set_tc()
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -145,7 +147,7 @@ static int SocketConnectCallback(ares_socket_t fd, int type, void *data) {
   return rc;
 }
 
-TEST_P(MockChannelTest, SockCallback) {
+TEST_P(MockEventThreadTest, SockCallback) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
@@ -168,7 +170,7 @@ TEST_P(MockChannelTest, SockCallback) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_P(MockChannelTest, SockFailCallback) {
+TEST_P(MockEventThreadTest, SockFailCallback) {
   // Notification of new sockets gives an error.
   int rc = -1;
   ares_set_socket_callback(channel_, SocketConnectCallback, &rc);
@@ -182,52 +184,8 @@ TEST_P(MockChannelTest, SockFailCallback) {
   EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
 }
 
-static int sock_config_cb_count = 0;
-static int SocketConfigureCallback(ares_socket_t fd, int type, void *data) {
-  int rc = *(int*)data;
-  if (verbose) std::cerr << "SocketConfigureCallback(" << fd << ") invoked" << std::endl;
-  sock_config_cb_count++;
-  return rc;
-}
 
-TEST_P(MockChannelTest, SockConfigureCallback) {
-  DNSPacket rsp;
-  rsp.set_response().set_aa()
-    .add_question(new DNSQuestion("www.google.com", T_A))
-    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
-  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillOnce(SetReply(&server_, &rsp));
-
-  // Get notified of new sockets
-  int rc = ARES_SUCCESS;
-  ares_set_socket_configure_callback(channel_, SocketConfigureCallback, &rc);
-
-  HostResult result;
-  sock_config_cb_count = 0;
-  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  Process();
-  EXPECT_EQ(1, sock_config_cb_count);
-  EXPECT_TRUE(result.done_);
-  std::stringstream ss;
-  ss << result.host_;
-  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
-}
-
-TEST_P(MockChannelTest, SockConfigureFailCallback) {
-  // Notification of new sockets gives an error.
-  int rc = -1;
-  ares_set_socket_configure_callback(channel_, SocketConfigureCallback, &rc);
-
-  HostResult result;
-  sock_config_cb_count = 0;
-  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  Process();
-  EXPECT_LT(1, sock_config_cb_count);
-  EXPECT_TRUE(result.done_);
-  EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
-}
-
-TEST_P(MockChannelTest, ReInit) {
+TEST_P(MockEventThreadTest, ReInit) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
@@ -248,12 +206,12 @@ TEST_P(MockChannelTest, ReInit) {
 #define MAXUDPQUERIES_TOTAL 32
 #define MAXUDPQUERIES_LIMIT 8
 
-class MockUDPMaxQueriesTest
-    : public MockChannelOptsTest,
-      public ::testing::WithParamInterface<int> {
+class MockUDPEventThreadMaxQueriesTest
+    : public MockEventThreadOptsTest,
+      public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
  public:
-  MockUDPMaxQueriesTest()
-    : MockChannelOptsTest(1, GetParam(), false,
+  MockUDPEventThreadMaxQueriesTest()
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), false,
                           FillOptions(&opts_),
                           ARES_OPT_UDP_MAX_QUERIES) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
@@ -265,7 +223,7 @@ class MockUDPMaxQueriesTest
   struct ares_options opts_;
 };
 
-TEST_P(MockUDPMaxQueriesTest, GetHostByNameParallelLookups) {
+TEST_P(MockUDPEventThreadMaxQueriesTest, GetHostByNameParallelLookups) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
@@ -295,12 +253,12 @@ TEST_P(MockUDPMaxQueriesTest, GetHostByNameParallelLookups) {
   }
 }
 
-class CacheQueriesTest
-    : public MockChannelOptsTest,
-      public ::testing::WithParamInterface<int> {
+class CacheQueriesEventThreadTest
+    : public MockEventThreadOptsTest,
+      public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
  public:
-  CacheQueriesTest()
-    : MockChannelOptsTest(1, GetParam(), false,
+  CacheQueriesEventThreadTest()
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), false,
                           FillOptions(&opts_),
                           ARES_OPT_QUERY_CACHE) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
@@ -312,7 +270,7 @@ class CacheQueriesTest
   struct ares_options opts_;
 };
 
-TEST_P(CacheQueriesTest, GetHostByNameCache) {
+TEST_P(CacheQueriesEventThreadTest, GetHostByNameCache) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
@@ -348,7 +306,7 @@ TEST_P(CacheQueriesTest, GetHostByNameCache) {
 }
 
 #define TCPPARALLELLOOKUPS 32
-TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
+TEST_P(MockTCPEventThreadTest, GetHostByNameParallelLookups) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
@@ -378,7 +336,7 @@ TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
   }
 }
 
-TEST_P(MockTCPChannelTest, MalformedResponse) {
+TEST_P(MockTCPEventThreadTest, MalformedResponse) {
   std::vector<byte> one = {0x00};
   ON_CALL(server_, OnRequest("www.google.com", T_A))
     .WillByDefault(SetReplyData(&server_, one));
@@ -390,7 +348,7 @@ TEST_P(MockTCPChannelTest, MalformedResponse) {
   EXPECT_EQ(ARES_ETIMEOUT, result.status_);
 }
 
-TEST_P(MockTCPChannelTest, FormErrResponse) {
+TEST_P(MockTCPEventThreadTest, FormErrResponse) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -404,7 +362,7 @@ TEST_P(MockTCPChannelTest, FormErrResponse) {
   EXPECT_EQ(ARES_EFORMERR, result.status_);
 }
 
-TEST_P(MockTCPChannelTest, ServFailResponse) {
+TEST_P(MockTCPEventThreadTest, ServFailResponse) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -418,7 +376,7 @@ TEST_P(MockTCPChannelTest, ServFailResponse) {
   EXPECT_EQ(ARES_ESERVFAIL, result.status_);
 }
 
-TEST_P(MockTCPChannelTest, NotImplResponse) {
+TEST_P(MockTCPEventThreadTest, NotImplResponse) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -432,7 +390,7 @@ TEST_P(MockTCPChannelTest, NotImplResponse) {
   EXPECT_EQ(ARES_ENOTIMP, result.status_);
 }
 
-TEST_P(MockTCPChannelTest, RefusedResponse) {
+TEST_P(MockTCPEventThreadTest, RefusedResponse) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -446,7 +404,7 @@ TEST_P(MockTCPChannelTest, RefusedResponse) {
   EXPECT_EQ(ARES_EREFUSED, result.status_);
 }
 
-TEST_P(MockTCPChannelTest, YXDomainResponse) {
+TEST_P(MockTCPEventThreadTest, YXDomainResponse) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -460,12 +418,12 @@ TEST_P(MockTCPChannelTest, YXDomainResponse) {
   EXPECT_EQ(ARES_ENODATA, result.status_);
 }
 
-class MockExtraOptsTest
-    : public MockChannelOptsTest,
-      public ::testing::WithParamInterface< std::pair<int, bool> > {
+class MockExtraOptsEventThreadTest
+    : public MockEventThreadOptsTest,
+      public ::testing::WithParamInterface<std::tuple<ares_evsys_t, int, bool> > {
  public:
-  MockExtraOptsTest()
-    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
+  MockExtraOptsEventThreadTest()
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()),
                           FillOptions(&opts_),
                           ARES_OPT_SOCK_SNDBUF|ARES_OPT_SOCK_RCVBUF) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
@@ -479,7 +437,7 @@ class MockExtraOptsTest
   struct ares_options opts_;
 };
 
-TEST_P(MockExtraOptsTest, SimpleQuery) {
+TEST_P(MockExtraOptsEventThreadTest, SimpleQuery) {
   ares_set_local_ip4(channel_, 0x7F000001);
   byte addr6[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
@@ -502,12 +460,12 @@ TEST_P(MockExtraOptsTest, SimpleQuery) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-class MockFlagsChannelOptsTest
-    : public MockChannelOptsTest,
-      public ::testing::WithParamInterface< std::pair<int, bool> > {
+class MockFlagsEventThreadOptsTest
+    : public MockEventThreadOptsTest,
+      public ::testing::WithParamInterface< std::tuple<ares_evsys_t, int, bool> > {
  public:
-  MockFlagsChannelOptsTest(int flags)
-    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
+  MockFlagsEventThreadOptsTest(int flags)
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()),
                           FillOptions(&opts_, flags), ARES_OPT_FLAGS) {}
   static struct ares_options* FillOptions(struct ares_options * opts, int flags) {
     memset(opts, 0, sizeof(struct ares_options));
@@ -518,12 +476,12 @@ class MockFlagsChannelOptsTest
   struct ares_options opts_;
 };
 
-class MockNoCheckRespChannelTest : public MockFlagsChannelOptsTest {
+class MockNoCheckRespEventThreadTest : public MockFlagsEventThreadOptsTest {
  public:
-  MockNoCheckRespChannelTest() : MockFlagsChannelOptsTest(ARES_FLAG_NOCHECKRESP) {}
+  MockNoCheckRespEventThreadTest() : MockFlagsEventThreadOptsTest(ARES_FLAG_NOCHECKRESP) {}
 };
 
-TEST_P(MockNoCheckRespChannelTest, ServFailResponse) {
+TEST_P(MockNoCheckRespEventThreadTest, ServFailResponse) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -537,7 +495,7 @@ TEST_P(MockNoCheckRespChannelTest, ServFailResponse) {
   EXPECT_EQ(ARES_ESERVFAIL, result.status_);
 }
 
-TEST_P(MockNoCheckRespChannelTest, NotImplResponse) {
+TEST_P(MockNoCheckRespEventThreadTest, NotImplResponse) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -551,7 +509,7 @@ TEST_P(MockNoCheckRespChannelTest, NotImplResponse) {
   EXPECT_EQ(ARES_ENOTIMP, result.status_);
 }
 
-TEST_P(MockNoCheckRespChannelTest, RefusedResponse) {
+TEST_P(MockNoCheckRespEventThreadTest, RefusedResponse) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -565,12 +523,12 @@ TEST_P(MockNoCheckRespChannelTest, RefusedResponse) {
   EXPECT_EQ(ARES_EREFUSED, result.status_);
 }
 
-class MockEDNSChannelTest : public MockFlagsChannelOptsTest {
+class MockEDNSEventThreadTest : public MockFlagsEventThreadOptsTest {
  public:
-  MockEDNSChannelTest() : MockFlagsChannelOptsTest(ARES_FLAG_EDNS) {}
+  MockEDNSEventThreadTest() : MockFlagsEventThreadOptsTest(ARES_FLAG_EDNS) {}
 };
 
-TEST_P(MockEDNSChannelTest, RetryWithoutEDNS) {
+TEST_P(MockEDNSEventThreadTest, RetryWithoutEDNS) {
   DNSPacket rspfail;
   rspfail.set_response().set_aa().set_rcode(FORMERR)
     .add_question(new DNSQuestion("www.google.com", T_A));
@@ -590,7 +548,7 @@ TEST_P(MockEDNSChannelTest, RetryWithoutEDNS) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_P(MockChannelTest, SearchDomains) {
+TEST_P(MockEventThreadTest, SearchDomains) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(NXDOMAIN)
     .add_question(new DNSQuestion("www.first.com", T_A));
@@ -618,7 +576,7 @@ TEST_P(MockChannelTest, SearchDomains) {
 }
 
 // Relies on retries so is UDP-only
-TEST_P(MockUDPChannelTest, SearchDomainsWithResentReply) {
+TEST_P(MockUDPEventThreadTest, SearchDomainsWithResentReply) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(NXDOMAIN)
     .add_question(new DNSQuestion("www.first.com", T_A));
@@ -649,7 +607,7 @@ TEST_P(MockUDPChannelTest, SearchDomainsWithResentReply) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_P(MockChannelTest, SearchDomainsBare) {
+TEST_P(MockEventThreadTest, SearchDomainsBare) {
   DNSPacket nofirst;
   nofirst.set_response().set_aa().set_rcode(NXDOMAIN)
     .add_question(new DNSQuestion("www.first.com", T_A));
@@ -681,7 +639,7 @@ TEST_P(MockChannelTest, SearchDomainsBare) {
   EXPECT_EQ("{'www' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_P(MockChannelTest, SearchNoDataThenSuccess) {
+TEST_P(MockEventThreadTest, SearchNoDataThenSuccess) {
   // First two search domains recognize the name but have no A records.
   DNSPacket nofirst;
   nofirst.set_response().set_aa()
@@ -709,7 +667,7 @@ TEST_P(MockChannelTest, SearchNoDataThenSuccess) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_P(MockChannelTest, SearchNoDataThenNoDataBare) {
+TEST_P(MockEventThreadTest, SearchNoDataThenNoDataBare) {
   // First two search domains recognize the name but have no A records.
   DNSPacket nofirst;
   nofirst.set_response().set_aa()
@@ -739,7 +697,7 @@ TEST_P(MockChannelTest, SearchNoDataThenNoDataBare) {
   EXPECT_EQ(ARES_ENODATA, result.status_);
 }
 
-TEST_P(MockChannelTest, SearchNoDataThenFail) {
+TEST_P(MockEventThreadTest, SearchNoDataThenFail) {
   // First two search domains recognize the name but have no A records.
   DNSPacket nofirst;
   nofirst.set_response().set_aa()
@@ -769,16 +727,7 @@ TEST_P(MockChannelTest, SearchNoDataThenFail) {
   EXPECT_EQ(ARES_ENODATA, result.status_);
 }
 
-TEST_P(MockChannelTest, SearchAllocFailure) {
-  SearchResult result;
-  SetAllocFail(1);
-  ares_search(channel_, "fully.qualified.", C_IN, T_A, SearchCallback, &result);
-  /* Already done */
-  EXPECT_TRUE(result.done_);
-  EXPECT_EQ(ARES_ENOMEM, result.status_);
-}
-
-TEST_P(MockChannelTest, SearchHighNdots) {
+TEST_P(MockEventThreadTest, SearchHighNdots) {
   DNSPacket nobare;
   nobare.set_response().set_aa().set_rcode(NXDOMAIN)
     .add_question(new DNSQuestion("a.b.c.w.w.w", T_A));
@@ -803,7 +752,7 @@ TEST_P(MockChannelTest, SearchHighNdots) {
             ss.str());
 }
 
-TEST_P(MockChannelTest, V4WorksV6Timeout) {
+TEST_P(MockEventThreadTest, V4WorksV6Timeout) {
   std::vector<byte> nothing;
   DNSPacket reply;
   reply.set_response().set_aa()
@@ -826,9 +775,20 @@ TEST_P(MockChannelTest, V4WorksV6Timeout) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
+TEST_P(MockEventThreadTest, DestroyQuick) {
+  /* We are not looking for any particular result as its possible (but unlikely)
+   * it finished before the destroy completed. We really just want to make sure
+   * cleanup works in this case properly. */
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  ares_destroy(channel_);
+  channel_ = nullptr;
+  EXPECT_TRUE(result.done_);
+}
+
 #ifndef CARES_SYMBOL_HIDING
 // Test case for Issue #662
-TEST_P(MockChannelTest, PartialQueryCancel) {
+TEST_P(MockEventThreadTest, PartialQueryCancel) {
   std::vector<byte> nothing;
   DNSPacket reply;
   reply.set_response().set_aa()
@@ -851,7 +811,7 @@ TEST_P(MockChannelTest, PartialQueryCancel) {
 }
 #endif
 
-TEST_P(MockChannelTest, UnspecifiedFamilyV6) {
+TEST_P(MockEventThreadTest, UnspecifiedFamilyV6) {
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", T_AAAA))
@@ -877,7 +837,7 @@ TEST_P(MockChannelTest, UnspecifiedFamilyV6) {
   EXPECT_EQ("{'example.com' aliases=[] addrs=[2121:0000:0000:0000:0000:0000:0000:0303]}", ss.str());
 }
 
-TEST_P(MockChannelTest, UnspecifiedFamilyV4) {
+TEST_P(MockEventThreadTest, UnspecifiedFamilyV4) {
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", T_AAAA));
@@ -899,7 +859,7 @@ TEST_P(MockChannelTest, UnspecifiedFamilyV4) {
   EXPECT_EQ("{'example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_P(MockChannelTest, UnspecifiedFamilyNoData) {
+TEST_P(MockEventThreadTest, UnspecifiedFamilyNoData) {
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", T_AAAA))
@@ -921,7 +881,7 @@ TEST_P(MockChannelTest, UnspecifiedFamilyNoData) {
   EXPECT_EQ("{'' aliases=[] addrs=[]}", ss.str());
 }
 
-TEST_P(MockChannelTest, UnspecifiedFamilyCname6A4) {
+TEST_P(MockEventThreadTest, UnspecifiedFamilyCname6A4) {
   DNSPacket rsp6;
   rsp6.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", T_AAAA))
@@ -944,7 +904,7 @@ TEST_P(MockChannelTest, UnspecifiedFamilyCname6A4) {
   EXPECT_EQ("{'example.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_P(MockChannelTest, ExplicitIP) {
+TEST_P(MockEventThreadTest, ExplicitIP) {
   HostResult result;
   ares_gethostbyname(channel_, "1.2.3.4", AF_INET, HostCallback, &result);
   EXPECT_TRUE(result.done_);  // Immediate return
@@ -954,15 +914,7 @@ TEST_P(MockChannelTest, ExplicitIP) {
   EXPECT_EQ("{'1.2.3.4' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_P(MockChannelTest, ExplicitIPAllocFail) {
-  HostResult result;
-  SetAllocSizeFail(strlen("1.2.3.4") + 1);
-  ares_gethostbyname(channel_, "1.2.3.4", AF_INET, HostCallback, &result);
-  EXPECT_TRUE(result.done_);  // Immediate return
-  EXPECT_EQ(ARES_ENOMEM, result.status_);
-}
-
-TEST_P(MockChannelTest, SortListV4) {
+TEST_P(MockEventThreadTest, SortListV4) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", T_A))
@@ -1000,7 +952,7 @@ TEST_P(MockChannelTest, SortListV4) {
   ares_destroy_options(&options);
 }
 
-TEST_P(MockChannelTest, SortListV6) {
+TEST_P(MockEventThreadTest, SortListV6) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("example.com", T_AAAA))
@@ -1038,52 +990,7 @@ TEST_P(MockChannelTest, SortListV6) {
 }
 
 // Relies on retries so is UDP-only
-TEST_P(MockUDPChannelTest, SearchDomainsAllocFail) {
-  DNSPacket nofirst;
-  nofirst.set_response().set_aa().set_rcode(NXDOMAIN)
-    .add_question(new DNSQuestion("www.first.com", T_A));
-  ON_CALL(server_, OnRequest("www.first.com", T_A))
-    .WillByDefault(SetReply(&server_, &nofirst));
-  DNSPacket nosecond;
-  nosecond.set_response().set_aa().set_rcode(NXDOMAIN)
-    .add_question(new DNSQuestion("www.second.org", T_A));
-  ON_CALL(server_, OnRequest("www.second.org", T_A))
-    .WillByDefault(SetReply(&server_, &nosecond));
-  DNSPacket yesthird;
-  yesthird.set_response().set_aa()
-    .add_question(new DNSQuestion("www.third.gov", T_A))
-    .add_answer(new DNSARR("www.third.gov", 0x0200, {2, 3, 4, 5}));
-  ON_CALL(server_, OnRequest("www.third.gov", T_A))
-    .WillByDefault(SetReply(&server_, &yesthird));
-
-  // Fail a variety of different memory allocations, and confirm
-  // that the operation either fails with ENOMEM or succeeds
-  // with the expected result.
-  const int kCount = 34;
-  HostResult results[kCount];
-  for (int ii = 1; ii <= kCount; ii++) {
-    HostResult* result = &(results[ii - 1]);
-    ClearFails();
-    SetAllocFail(ii);
-    ares_gethostbyname(channel_, "www", AF_INET, HostCallback, result);
-    Process();
-    EXPECT_TRUE(result->done_);
-    if (result->status_ == ARES_SUCCESS) {
-      std::stringstream ss;
-      ss << result->host_;
-      EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str()) << " failed alloc #" << ii;
-      if (verbose) std::cerr << "Succeeded despite failure of alloc #" << ii << std::endl;
-    }
-  }
-
-  // Explicitly destroy the channel now, so that the HostResult objects
-  // are still valid (in case any pending work refers to them).
-  ares_destroy(channel_);
-  channel_ = nullptr;
-}
-
-// Relies on retries so is UDP-only
-TEST_P(MockUDPChannelTest, Resend) {
+TEST_P(MockUDPEventThreadTest, Resend) {
   std::vector<byte> nothing;
   DNSPacket reply;
   reply.set_response().set_aa()
@@ -1105,7 +1012,7 @@ TEST_P(MockUDPChannelTest, Resend) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_P(MockChannelTest, CancelImmediate) {
+TEST_P(MockEventThreadTest, CancelImmediate) {
   HostResult result;
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   ares_cancel(channel_);
@@ -1114,7 +1021,7 @@ TEST_P(MockChannelTest, CancelImmediate) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
-TEST_P(MockChannelTest, CancelImmediateGetHostByAddr) {
+TEST_P(MockEventThreadTest, CancelImmediateGetHostByAddr) {
   HostResult result;
   struct in_addr addr;
   addr.s_addr = htonl(0x08080808);
@@ -1127,7 +1034,7 @@ TEST_P(MockChannelTest, CancelImmediateGetHostByAddr) {
 }
 
 // Relies on retries so is UDP-only
-TEST_P(MockUDPChannelTest, CancelLater) {
+TEST_P(MockUDPEventThreadTest, CancelLater) {
   std::vector<byte> nothing;
 
   // On second request, cancel the channel.
@@ -1143,7 +1050,7 @@ TEST_P(MockUDPChannelTest, CancelLater) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
-TEST_P(MockChannelTest, DisconnectFirstAttempt) {
+TEST_P(MockEventThreadTest, DisconnectFirstAttempt) {
   DNSPacket reply;
   reply.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
@@ -1158,36 +1065,14 @@ TEST_P(MockChannelTest, DisconnectFirstAttempt) {
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
-  std::stringstream ss;
-  ss << result.host_;
-  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
+  if (result.done_) {
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
+  }
 }
 
-TEST_P(MockChannelTest, GetHostByNameDestroyAbsolute) {
-  HostResult result;
-  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-
-  ares_destroy(channel_);
-  channel_ = nullptr;
-
-  EXPECT_TRUE(result.done_);  // Synchronous
-  EXPECT_EQ(ARES_EDESTRUCTION, result.status_);
-  EXPECT_EQ(0, result.timeouts_);
-}
-
-TEST_P(MockChannelTest, GetHostByNameDestroyRelative) {
-  HostResult result;
-  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
-
-  ares_destroy(channel_);
-  channel_ = nullptr;
-
-  EXPECT_TRUE(result.done_);  // Synchronous
-  EXPECT_EQ(ARES_EDESTRUCTION, result.status_);
-  EXPECT_EQ(0, result.timeouts_);
-}
-
-TEST_P(MockChannelTest, GetHostByNameCNAMENoData) {
+TEST_P(MockEventThreadTest, GetHostByNameCNAMENoData) {
   DNSPacket response;
   response.set_response().set_aa()
     .add_question(new DNSQuestion("cname.first.com", T_A))
@@ -1202,21 +1087,8 @@ TEST_P(MockChannelTest, GetHostByNameCNAMENoData) {
   EXPECT_EQ(ARES_ENODATA, result.status_);
 }
 
-TEST_P(MockChannelTest, GetHostByAddrDestroy) {
-  unsigned char gdns_addr4[4] = {0x08, 0x08, 0x08, 0x08};
-  HostResult result;
-  ares_gethostbyaddr(channel_, gdns_addr4, sizeof(gdns_addr4), AF_INET, HostCallback, &result);
-
-  ares_destroy(channel_);
-  channel_ = nullptr;
-
-  EXPECT_TRUE(result.done_);  // Synchronous
-  EXPECT_EQ(ARES_EDESTRUCTION, result.status_);
-  EXPECT_EQ(0, result.timeouts_);
-}
-
 #ifndef WIN32
-TEST_P(MockChannelTest, HostAlias) {
+TEST_P(MockEventThreadTest, HostAlias) {
   DNSPacket reply;
   reply.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
@@ -1236,7 +1108,7 @@ TEST_P(MockChannelTest, HostAlias) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
-TEST_P(MockChannelTest, HostAliasMissing) {
+TEST_P(MockEventThreadTest, HostAliasMissing) {
   DNSPacket yesfirst;
   yesfirst.set_response().set_aa()
     .add_question(new DNSQuestion("www.first.com", T_A))
@@ -1255,7 +1127,7 @@ TEST_P(MockChannelTest, HostAliasMissing) {
   EXPECT_EQ("{'www.first.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_P(MockChannelTest, HostAliasMissingFile) {
+TEST_P(MockEventThreadTest, HostAliasMissingFile) {
   DNSPacket yesfirst;
   yesfirst.set_response().set_aa()
     .add_question(new DNSQuestion("www.first.com", T_A))
@@ -1273,7 +1145,7 @@ TEST_P(MockChannelTest, HostAliasMissingFile) {
   EXPECT_EQ("{'www.first.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
-TEST_P(MockChannelTest, HostAliasUnreadable) {
+TEST_P(MockEventThreadTest, HostAliasUnreadable) {
   TempFile aliases("www www.google.com\n");
   EXPECT_EQ(chmod(aliases.filename(), 0), 0);
 
@@ -1301,12 +1173,12 @@ TEST_P(MockChannelTest, HostAliasUnreadable) {
 }
 #endif
 
-class MockMultiServerChannelTest
-  : public MockChannelOptsTest,
-    public ::testing::WithParamInterface< std::pair<int, bool> > {
+class MockMultiServerEventThreadTest
+  : public MockEventThreadOptsTest,
+    public ::testing::WithParamInterface< std::tuple<ares_evsys_t, int, bool> > {
  public:
-  MockMultiServerChannelTest(bool rotate)
-    : MockChannelOptsTest(3, GetParam().first, GetParam().second, nullptr, rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE) {}
+  MockMultiServerEventThreadTest(bool rotate)
+    : MockEventThreadOptsTest(3, std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()), nullptr, rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE) {}
   void CheckExample() {
     HostResult result;
     ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
@@ -1318,12 +1190,12 @@ class MockMultiServerChannelTest
   }
 };
 
-class NoRotateMultiMockTest : public MockMultiServerChannelTest {
+class NoRotateMultiMockEventThreadTest : public MockMultiServerEventThreadTest {
  public:
-  NoRotateMultiMockTest() : MockMultiServerChannelTest(false) {}
+  NoRotateMultiMockEventThreadTest() : MockMultiServerEventThreadTest(false) {}
 };
 
-TEST_P(NoRotateMultiMockTest, ThirdServer) {
+TEST_P(NoRotateMultiMockEventThreadTest, ThirdServer) {
   struct ares_options opts;
   int optmask = 0;
   memset(&opts, 0, sizeof(opts));
@@ -1374,7 +1246,7 @@ TEST_P(NoRotateMultiMockTest, ThirdServer) {
   CheckExample();
 }
 
-TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
+TEST_P(NoRotateMultiMockEventThreadTest, ServerNoResponseFailover) {
   std::vector<byte> nothing;
   DNSPacket okrsp;
   okrsp.set_response().set_aa()
@@ -1442,41 +1314,83 @@ TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss4.str());
 }
 
-std::string PrintFamilyMode(const testing::TestParamInfo<std::pair<int, bool>> &info)
+
+static const char *evsys_tostr(ares_evsys_t evsys)
+{
+  switch (evsys) {
+    case ARES_EVSYS_WIN32:
+      return "WIN32";
+    case ARES_EVSYS_EPOLL:
+      return "EPOLL";
+    case ARES_EVSYS_KQUEUE:
+      return "KQUEUE";
+    case ARES_EVSYS_POLL:
+      return "POLL";
+    case ARES_EVSYS_SELECT:
+      return "SELECT";
+    case ARES_EVSYS_DEFAULT:
+      return "DEFAULT";
+  }
+  return "UNKNOWN";
+}
+
+const char *af_tostr(int af)
+{
+  switch (af) {
+    case AF_INET:
+      return "ipv4";
+    case AF_INET6:
+      return "ipv6";
+  }
+  return "ipunknown";
+}
+
+const char *mode_tostr(bool mode)
+{
+  return mode?"ForceTCP":"DefaultUDP";
+}
+
+static std::string PrintEvsysFamilyMode(const testing::TestParamInfo<std::tuple<ares_evsys_t, int, bool>> &info)
 {
   std::string name;
 
-  name += af_tostr(std::get<0>(info.param));
+  name += evsys_tostr(std::get<0>(info.param));
   name += "_";
-  name += mode_tostr(std::get<1>(info.param));
+  name += af_tostr(std::get<1>(info.param));
+  name += "_";
+  name += mode_tostr(std::get<2>(info.param));
   return name;
 }
 
-std::string PrintFamily(const testing::TestParamInfo<int> &info)
+static std::string PrintEvsysFamily(const testing::TestParamInfo<std::tuple<ares_evsys_t, int>> &info)
 {
   std::string name;
 
-  name += af_tostr(info.param);
+  name += evsys_tostr(std::get<0>(info.param));
+  name += "_";
+  name += af_tostr(std::get<1>(info.param));
   return name;
 }
 
-INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families_modes), ares::test::PrintEvsysFamilyMode);
 
-INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
 
-INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPMaxQueriesTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPEventThreadMaxQueriesTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
 
-INSTANTIATE_TEST_SUITE_P(AddressFamilies, CacheQueriesTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, CacheQueriesEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
 
-INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPChannelTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
 
-INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockExtraOptsTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockExtraOptsEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families_modes), ares::test::PrintEvsysFamilyMode);
 
-INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockNoCheckRespChannelTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockNoCheckRespEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families_modes), ares::test::PrintEvsysFamilyMode);
 
-INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEDNSChannelTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEDNSEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families_modes), ares::test::PrintEvsysFamilyMode);
 
-INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families_modes), ares::test::PrintEvsysFamilyMode);
 
 }  // namespace test
 }  // namespace ares
+
+#endif /* CARES_THREADS */

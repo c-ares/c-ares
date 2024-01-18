@@ -4,7 +4,7 @@
 .\"
 .TH ARES_FDS 3 "23 July 1998"
 .SH NAME
-ares_fds \- return file descriptors to select on. Deprecated.
+ares_fds \- return file descriptors to select on (deprecated)
 .SH SYNOPSIS
 .nf
 #include <ares.h>
@@ -19,7 +19,8 @@ See the \fBNOTES\fP section on issues with this function and alternatives.
 The \fBares_fds(3)\fP function retrieves the set of file descriptors which the
 calling application should \fBselect(2)\fP on for reading and writing for the
 processing of name service queries pending on the name service channel
-identified by \fIchannel\fP.
+identified by \fIchannel\fP.  Should not be used with \fBARES_OPT_EVENT_THREAD\fP
+is passed to \fIares_init_options(3)\fP.
 
 File descriptors will be set in the file descriptor sets pointed to by
 \fIread_fds\fP and \fIwrite_fds\fP as appropriate.  File descriptors already
@@ -45,11 +46,13 @@ c-ares does not attempt to detect this condition to prevent crashes due to both
 implementation-defined behavior in the OS as well as integrator-controllable
 tunables which may impact the limits.
 
-It is recommended to use socket state callbacks (\fBARES_OPT_SOCK_STATE_CB\fP)
-registered via \fBares_init_options(3)\fP, and use more modern methods to
-check for socket readable/writable state such as \fBpoll(2)\fP, \fBepoll(2)\fP,
-or \fBkqueue(2)\fP.
+It is recommended to use \fBARES_OPT_EVENT_THREAD\fP passed to
+\fIares_init_options(3)\fP, or socket state callbacks
+(\fBARES_OPT_SOCK_STATE_CB\fP) registered via \fIares_init_options(3)\fP and use
+more modern methods to check for socket readable/writable state such as
+\fIpoll(2)\fP, \fIepoll(2)\fP, or \fIkqueue(2)\fP.
 .SH SEE ALSO
+.BR ares_init_options (3),
 .BR ares_timeout (3),
 .BR ares_process (3)
 .SH AUTHOR

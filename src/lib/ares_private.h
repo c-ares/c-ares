@@ -251,6 +251,7 @@ struct ares_channeldata {
   char                 *lookups;
   size_t                ednspsz;
   unsigned int          qcache_max_ttl;
+  ares_evsys_t          evsys;
   unsigned int          optmask;
 
   /* For binding to local devices and/or IP addresses.  Leave

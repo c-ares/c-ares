@@ -38,7 +38,7 @@ static void ares_event_destroy_cb(void *arg)
   /* Unregister from the event thread if it was registered with one */
   if (event->e) {
     ares_event_thread_t *e = event->e;
-    e->ev_sys->event_del(e, event);
+    e->ev_sys->event_del(event);
     event->e = NULL;
   }
 
@@ -47,6 +47,32 @@ static void ares_event_destroy_cb(void *arg)
   }
 
   ares_free(event);
+}
+
+/* See if a pending update already exists. We don't want to enqueue multiple
+ * updates for the same event handle. Right now this is O(n) based on number
+ * of updates already enqueued.  In the future, it might make sense to make
+ * this O(1) with a hashtable. */
+static ares_event_t *ares_event_update_find(ares_event_thread_t *e,
+                                            ares_socket_t fd, void *data)
+{
+  ares__llist_node_t *node;
+
+  for (node = ares__llist_node_first(e->ev_updates); node != NULL;
+       node = ares__llist_node_next(node)) {
+    ares_event_t *ev = ares__llist_node_val(node);
+
+    if (fd != ARES_SOCKET_BAD && fd == ev->fd) {
+      return ev;
+    }
+
+    if (fd == ARES_SOCKET_BAD && ev->fd == ARES_SOCKET_BAD &&
+        data == ev->data) {
+      return ev;
+    }
+  }
+
+  return NULL;
 }
 
 ares_status_t ares_event_update(ares_event_t **event, ares_event_thread_t *e,
@@ -80,21 +106,35 @@ ares_status_t ares_event_update(ares_event_t **event, ares_event_thread_t *e,
   }
 
   /* That's all the validation we can really do */
-  ev = ares_malloc_zero(sizeof(*ev));
-  if (ev == NULL) {
-    return ARES_ENOMEM;
-  }
-  printf("%s(): fd %d, flags %X\n", __FUNCTION__, fd, flags);
-  ev->flags        = flags;
-  ev->cb           = cb;
-  ev->fd           = fd;
-  ev->data         = data;
-  ev->free_data_cb = free_data_cb;
-  ev->signal_cb    = signal_cb;
 
-  if (ares__llist_insert_last(e->ev_updates, ev) == NULL) {
-    ares_free(ev);
-    return ARES_ENOMEM;
+  /* See if we have a queued update already */
+  ev = ares_event_update_find(e, fd, data);
+  if (ev == NULL) {
+    /* Allocate a new one */
+    ev = ares_malloc_zero(sizeof(*ev));
+    if (ev == NULL) {
+      return ARES_ENOMEM;
+    }
+
+    if (ares__llist_insert_last(e->ev_updates, ev) == NULL) {
+      ares_free(ev);
+      return ARES_ENOMEM;
+    }
+  }
+
+  ev->flags = flags;
+  ev->fd    = fd;
+  if (ev->cb == NULL) {
+    ev->cb = cb;
+  }
+  if (ev->data == NULL) {
+    ev->data = data;
+  }
+  if (ev->free_data_cb == NULL) {
+    ev->free_data_cb = free_data_cb;
+  }
+  if (ev->signal_cb == NULL) {
+    ev->signal_cb = signal_cb;
   }
 
   if (event != NULL) {
@@ -117,7 +157,7 @@ static void ares_event_thread_wake(ares_event_thread_t *e)
   if (e == NULL) {
     return;
   }
-  printf("%s()\n", __FUNCTION__);
+
   ares_event_signal(e->ev_signal);
 }
 
@@ -126,7 +166,7 @@ static void ares_event_thread_process_fd(ares_event_thread_t *e,
                                          ares_event_flags_t flags)
 {
   (void)data;
-  printf("%s(): fd %d\n", __FUNCTION__, fd);
+
   ares_process_fd(e->channel,
                   (flags & ARES_EVENT_FLAG_READ) ? fd : ARES_SOCKET_BAD,
                   (flags & ARES_EVENT_FLAG_WRITE) ? fd : ARES_SOCKET_BAD);
@@ -137,8 +177,7 @@ static void ares_event_thread_sockstate_cb(void *data, ares_socket_t socket_fd,
 {
   ares_event_thread_t *e     = data;
   ares_event_flags_t   flags = ARES_EVENT_FLAG_NONE;
-  printf("%s(): fd %d, readable: %d, writable: %d\n", __FUNCTION__, socket_fd,
-         readable, writable);
+
   if (readable) {
     flags |= ARES_EVENT_FLAG_READ;
   }
@@ -172,10 +211,17 @@ static void ares_event_process_updates(ares_event_thread_t *e)
 
     /* Adding new */
     if (oldev == NULL) {
-      printf("%s(): added fd %d\n", __FUNCTION__, newev->fd);
       newev->e = e;
-      e->ev_sys->event_add(e, newev);
-      ares__htable_asvp_insert(e->ev_handles, newev->fd, newev);
+      /* Don't try to add a new event if all flags are cleared, that's basically
+       * someone trying to delete something already deleted.  Also if it fails
+       * to add, cleanup. */
+      if (newev->flags == ARES_EVENT_FLAG_NONE ||
+          !e->ev_sys->event_add(newev)) {
+        newev->e = NULL;
+        ares_event_destroy_cb(newev);
+      } else {
+        ares__htable_asvp_insert(e->ev_handles, newev->fd, newev);
+      }
       continue;
     }
 
@@ -183,15 +229,13 @@ static void ares_event_process_updates(ares_event_thread_t *e)
     if (newev->flags == ARES_EVENT_FLAG_NONE) {
       /* the callback for the removal will call e->ev_sys->event_del(e, event)
        */
-      printf("%s(): removed fd %d\n", __FUNCTION__, newev->fd);
       ares__htable_asvp_remove(e->ev_handles, newev->fd);
       ares_free(newev);
       continue;
     }
 
-    /* Modify request -- only flags cn be changed */
-    printf("%s(): modified fd %d\n", __FUNCTION__, newev->fd);
-    e->ev_sys->event_mod(e, oldev, newev->flags);
+    /* Modify request -- only flags can be changed */
+    e->ev_sys->event_mod(oldev, newev->flags);
     oldev->flags = newev->flags;
     ares_free(newev);
   }
@@ -200,14 +244,12 @@ static void ares_event_process_updates(ares_event_thread_t *e)
 static void *ares_event_thread(void *arg)
 {
   ares_event_thread_t *e = arg;
-  printf("%s(): enter\n", __FUNCTION__);
   ares__thread_mutex_lock(e->mutex);
 
   while (e->isup) {
     struct timeval  tv;
     struct timeval *tvout;
     unsigned long   timeout_ms = 0; /* 0 = unlimited */
-    size_t          num_events;
 
     tvout = ares_timeout(e->channel, NULL, &tv);
     if (tvout != NULL) {
@@ -219,28 +261,25 @@ static void *ares_event_thread(void *arg)
 
     /* Don't hold a mutex while waiting on events */
     ares__thread_mutex_unlock(e->mutex);
-    printf("%s(): wait %lums\n", __FUNCTION__, timeout_ms);
-    num_events = e->ev_sys->wait(e, timeout_ms);
-    if (num_events == 0) {
-      printf("%s(): timeout\n", __FUNCTION__);
-      /* Each iteration should do timeout checking even if nothing was triggered
-       */
+    e->ev_sys->wait(e, timeout_ms);
+
+    /* Each iteration should do timeout processing */
+    if (e->isup) {
       ares_process_fd(e->channel, ARES_SOCKET_BAD, ARES_SOCKET_BAD);
-    } else {
-      printf("%s(): %zu events\n", __FUNCTION__, num_events);
     }
 
+    /* Relock before we loop again */
     ares__thread_mutex_lock(e->mutex);
   }
 
   ares__thread_mutex_unlock(e->mutex);
-  printf("%s(): exit\n", __FUNCTION__);
   return NULL;
 }
 
 static void ares_event_thread_destroy_int(ares_event_thread_t *e)
 {
-  printf("%s(): enter\n", __FUNCTION__);
+  ares__llist_node_t *node;
+
   /* Wake thread and tell it to shutdown if it exists */
   ares__thread_mutex_lock(e->mutex);
   if (e->isup) {
@@ -255,6 +294,10 @@ static void ares_event_thread_destroy_int(ares_event_thread_t *e)
     e->thread = NULL;
   }
 
+  /* Manually free any updates that weren't processed */
+  while ((node = ares__llist_node_first(e->ev_updates)) != NULL) {
+    ares_event_destroy_cb(ares__llist_node_claim(node));
+  }
   ares__llist_destroy(e->ev_updates);
   e->ev_updates = NULL;
 
@@ -269,7 +312,6 @@ static void ares_event_thread_destroy_int(ares_event_thread_t *e)
   e->mutex = NULL;
 
   ares_free(e);
-  printf("%s(): exit\n", __FUNCTION__);
 }
 
 void ares_event_thread_destroy(ares_channel_t *channel)
@@ -283,11 +325,67 @@ void ares_event_thread_destroy(ares_channel_t *channel)
   ares_event_thread_destroy_int(e);
 }
 
+static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
+{
+  switch (evsys) {
+    case ARES_EVSYS_WIN32:
+#if defined(_WIN32)
+      return &ares_evsys_win32;
+#else
+      return NULL;
+#endif
+
+    case ARES_EVSYS_EPOLL:
+#if defined(HAVE_EPOLL)
+      return &ares_evsys_epoll;
+#else
+      return NULL;
+#endif
+
+    case ARES_EVSYS_KQUEUE:
+#if defined(HAVE_KQUEUE)
+      return &ares_evsys_kqueue;
+#else
+      return NULL;
+#endif
+
+    case ARES_EVSYS_POLL:
+#if defined(HAVE_POLL)
+      return &ares_evsys_poll;
+#else
+      return NULL;
+#endif
+
+    case ARES_EVSYS_SELECT:
+#if defined(HAVE_PIPE)
+      return &ares_evsys_select;
+#else
+      return NULL;
+#endif
+
+    case ARES_EVSYS_DEFAULT:
+    default:
+#if defined(_WIN32)
+      return &ares_evsys_win32;
+#elif defined(HAVE_KQUEUE)
+      return &ares_evsys_kqueue;
+#elif defined(HAVE_EPOLL)
+      return &ares_evsys_epoll;
+#elif defined(HAVE_POLL)
+      return &ares_evsys_poll;
+#elif defined(HAVE_PIPE)
+      return &ares_evsys_select;
+#else
+      break;
+#endif
+  }
+
+  return NULL;
+}
+
 ares_status_t ares_event_thread_init(ares_channel_t *channel)
 {
   ares_event_thread_t *e;
-
-  printf("%s(): enter\n", __FUNCTION__);
 
   e = ares_malloc_zero(sizeof(*e));
   if (e == NULL) {
@@ -314,13 +412,12 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
 
   e->channel = channel;
   e->isup    = ARES_TRUE;
-#if defined(HAVE_KQUEUE)
-  e->ev_sys = &ares_evsys_kqueue;
-#elif defined(HAVE_EPOLL)
-  e->ev_sys = &ares_evsys_epoll;
-#elif defined(HAVE_POLL)
-  e->ev_sys = &ares_evsys_poll;
-#endif
+  e->ev_sys  = ares_event_fetch_sys(channel->evsys);
+  if (e->ev_sys == NULL) {
+    ares_event_thread_destroy_int(e);
+    return ARES_ENOTIMP;
+  }
+
   channel->sock_state_cb      = ares_event_thread_sockstate_cb;
   channel->sock_state_cb_data = e;
 
@@ -331,6 +428,14 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
     return ARES_ESERVFAIL;
   }
 
+  /* Before starting the thread, process any possible events the initialization
+   * might have enqueued as we may actually depend on these being valid
+   * immediately upon return, which may mean before the thread is fully spawned
+   * and processed the list itself. We don't want any sort of race conditions
+   * (like the event system wake handle itself). */
+  ares_event_process_updates(e);
+
+  /* Start thread */
   if (ares__thread_create(&e->thread, ares_event_thread, e) != ARES_SUCCESS) {
     ares_event_thread_destroy_int(e);
     channel->sock_state_cb      = NULL;
@@ -338,7 +443,5 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
     return ARES_ESERVFAIL;
   }
 
-
-  printf("%s(): success\n", __FUNCTION__);
   return ARES_SUCCESS;
 }

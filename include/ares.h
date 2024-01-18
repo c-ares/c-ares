@@ -170,6 +170,22 @@ typedef enum {
   ARES_TRUE  = 1
 } ares_bool_t;
 
+/*! Values for ARES_OPT_EVENT_THREAD */
+typedef enum {
+  /*! Default (best choice) event system */
+  ARES_EVSYS_DEFAULT = 0,
+  /*! Win32 IOCP/AFD_POLL event system */
+  ARES_EVSYS_WIN32   = 1,
+  /*! Linux epoll */
+  ARES_EVSYS_EPOLL   = 2,
+  /*! BSD/MacOS kqueue */
+  ARES_EVSYS_KQUEUE  = 3,
+  /*! POSIX poll() */
+  ARES_EVSYS_POLL    = 4,
+  /*! last fallback on Unix-like systems, select() */
+  ARES_EVSYS_SELECT  = 5
+} ares_evsys_t;
+
 /* Flag values */
 #define ARES_FLAG_USEVC       (1 << 0)
 #define ARES_FLAG_PRIMARY     (1 << 1)
@@ -317,6 +333,7 @@ struct ares_options {
   int                udp_max_queries;
   int                maxtimeout; /* in milliseconds */
   unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
+  ares_evsys_t       evsys;
 };
 
 struct hostent;

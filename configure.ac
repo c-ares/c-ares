@@ -299,7 +299,11 @@ if test "$ac_cv_native_windows" = "yes" ; then
     ws2tcpip.h \
     iphlpapi.h \
     netioapi.h \
-    ws2ipdef.h,
+    ws2ipdef.h \
+    winternl.h \
+    ntdef.h    \
+    ntstatus.h \
+    mswsock.h,
     [], [], [-])
 
   dnl Windows builds require linking to iphlpapi

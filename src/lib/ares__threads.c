@@ -74,9 +74,9 @@ struct ares__thread {
   HANDLE thread;
   DWORD  id;
 
-  void (*func)(void *arg);
-  void  *arg;
-  void  *rv;
+  void *(*func)(void *arg);
+  void   *arg;
+  void   *rv;
 };
 
 /* Wrap for pthread compatibility */

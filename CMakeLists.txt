@@ -246,8 +246,14 @@ CHECK_INCLUDE_FILES ("winsock2.h;windows.h"            HAVE_WINSOCK2_H)
 CHECK_INCLUDE_FILES ("winsock2.h;ws2tcpip.h;windows.h" HAVE_WS2TCPIP_H)
 CHECK_INCLUDE_FILES ("winsock2.h;iphlpapi.h;windows.h" HAVE_IPHLPAPI_H)
 CHECK_INCLUDE_FILES ("winsock2.h;netioapi.h;windows.h" HAVE_NETIOAPI_H)
+CHECK_INCLUDE_FILES ("winsock2.h;mswsock.h;windows.h"  HAVE_MSWSOCK_H)
 CHECK_INCLUDE_FILES ("winsock.h;windows.h"             HAVE_WINSOCK_H)
 CHECK_INCLUDE_FILES (windows.h                         HAVE_WINDOWS_H)
+CHECK_INCLUDE_FILES ("windows.h;winternl.h"            HAVE_WINTERNL_H)
+CHECK_INCLUDE_FILES ("windows.h;ntdef.h"               HAVE_NTDEF_H)
+CHECK_INCLUDE_FILES ("windows.h;ntdef.h;ntstatus.h"    HAVE_NTSTATUS_H)
+
+
 ENDIF ()
 
 # Set system-specific compiler flags

@@ -92,11 +92,11 @@ static ares_bool_t ares_evsys_epoll_init(ares_event_thread_t *e)
   return ARES_TRUE;
 }
 
-static void ares_evsys_epoll_event_add(ares_event_thread_t *e,
-                                       ares_event_t        *event)
+static ares_bool_t ares_evsys_epoll_event_add(ares_event_t *event)
 {
-  ares_evsys_epoll_t *ep = e->ev_sys_data;
-  struct epoll_event  epev;
+  ares_event_thread_t *e  = event->e;
+  ares_evsys_epoll_t  *ep = e->ev_sys_data;
+  struct epoll_event   epev;
 
   memset(&epev, 0, sizeof(epev));
   epev.data.fd = event->fd;
@@ -107,26 +107,29 @@ static void ares_evsys_epoll_event_add(ares_event_thread_t *e,
   if (event->flags & ARES_EVENT_FLAG_WRITE) {
     epev.events |= EPOLLOUT;
   }
-  epoll_ctl(ep->epoll_fd, EPOLL_CTL_ADD, event->fd, &epev);
+  if (epoll_ctl(ep->epoll_fd, EPOLL_CTL_ADD, event->fd, &epev) != 0) {
+    return ARES_FALSE;
+  }
+  return ARES_TRUE;
 }
 
-static void ares_evsys_epoll_event_del(ares_event_thread_t *e,
-                                       ares_event_t        *event)
+static void ares_evsys_epoll_event_del(ares_event_t *event)
 {
-  ares_evsys_epoll_t *ep = e->ev_sys_data;
-  struct epoll_event  epev;
+  ares_event_thread_t *e  = event->e;
+  ares_evsys_epoll_t  *ep = e->ev_sys_data;
+  struct epoll_event   epev;
 
   memset(&epev, 0, sizeof(epev));
   epev.data.fd = event->fd;
   epoll_ctl(ep->epoll_fd, EPOLL_CTL_DEL, event->fd, &epev);
 }
 
-static void ares_evsys_epoll_event_mod(ares_event_thread_t *e,
-                                       ares_event_t        *event,
-                                       ares_event_flags_t   new_flags)
+static void ares_evsys_epoll_event_mod(ares_event_t      *event,
+                                       ares_event_flags_t new_flags)
 {
-  ares_evsys_epoll_t *ep = e->ev_sys_data;
-  struct epoll_event  epev;
+  ares_event_thread_t *e  = event->e;
+  ares_evsys_epoll_t  *ep = e->ev_sys_data;
+  struct epoll_event   epev;
 
   memset(&epev, 0, sizeof(epev));
   epev.data.fd = event->fd;

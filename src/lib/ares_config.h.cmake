@@ -353,6 +353,18 @@
 /* Define to 1 if you have the winsock.h header file. */
 #cmakedefine HAVE_WINSOCK_H
 
+/* Define to 1 if you have the mswsock.h header file. */
+#cmakedefine HAVE_MSWSOCK_H
+
+/* Define to 1 if you have the winternl.h header file. */
+#cmakedefine HAVE_WINTERNL_H
+
+/* Define to 1 if you have the ntstatus.h header file. */
+#cmakedefine HAVE_NTSTATUS_H
+
+/* Define to 1 if you have the ntdef.h header file. */
+#cmakedefine HAVE_NTDEF_H
+
 /* Define to 1 if you have the writev function. */
 #cmakedefine HAVE_WRITEV
 

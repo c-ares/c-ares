@@ -225,6 +225,10 @@ int ares_save_options(ares_channel_t *channel, struct ares_options *options,
     options->qcache_max_ttl = channel->qcache_max_ttl;
   }
 
+  if (channel->optmask & ARES_OPT_EVENT_THREAD) {
+    options->evsys = channel->evsys;
+  }
+
   *optmask = (int)channel->optmask;
 
   return ARES_SUCCESS;
@@ -275,6 +279,7 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
       return ARES_ENOTIMP;
     if (optmask & ARES_OPT_SOCK_STATE_CB)
       return ARES_EFORMERR;
+    channel->evsys = options->evsys;
   }
 
   if (optmask & ARES_OPT_FLAGS) {

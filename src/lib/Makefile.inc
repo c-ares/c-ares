@@ -31,6 +31,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_event_epoll.c			\
   ares_event_kqueue.c			\
   ares_event_poll.c			\
+  ares_event_select.c			\
   ares_event_thread.c			\
   ares_event_wake_pipe.c		\
   ares_event_win32.c			\
@@ -96,6 +97,7 @@ HHEADERS = ares__buf.h			\
   ares_data.h				\
   ares_dns_private.h			\
   ares_event.h				\
+  ares_event_win32.h			\
   ares_getenv.h				\
   ares_inet_net_pton.h			\
   ares_ipv6.h				\

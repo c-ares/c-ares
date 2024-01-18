@@ -47,25 +47,20 @@ static void ares_evsys_poll_destroy(ares_event_thread_t *e)
   (void)e;
 }
 
-static void ares_evsys_poll_event_add(ares_event_thread_t *e,
-                                      ares_event_t        *event)
+static ares_bool_t ares_evsys_poll_event_add(ares_event_t *event)
 {
-  (void)e;
+  (void)event;
+  return ARES_TRUE;
+}
+
+static void ares_evsys_poll_event_del(ares_event_t *event)
+{
   (void)event;
 }
 
-static void ares_evsys_poll_event_del(ares_event_thread_t *e,
-                                      ares_event_t        *event)
+static void ares_evsys_poll_event_mod(ares_event_t      *event,
+                                      ares_event_flags_t new_flags)
 {
-  (void)e;
-  (void)event;
-}
-
-static void ares_evsys_poll_event_mod(ares_event_thread_t *e,
-                                      ares_event_t        *event,
-                                      ares_event_flags_t   new_flags)
-{
-  (void)e;
   (void)event;
   (void)new_flags;
 }

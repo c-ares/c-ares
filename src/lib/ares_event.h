@@ -57,6 +57,7 @@ struct ares_event {
    *  socket. */
   ares_socket_t          fd;
   /*! Data associated with event handle that will be passed to the callback.
+   *  Typically OS/event subsystem specific data.
    *  Optional, may be NULL. */
   /*! Data to be passed to callback. Optional, may be NULL. */
   void                  *data;
@@ -72,10 +73,9 @@ typedef struct {
   const char *name;
   ares_bool_t (*init)(ares_event_thread_t *e);
   void        (*destroy)(ares_event_thread_t *e);
-  void        (*event_add)(ares_event_thread_t *e, ares_event_t *event);
-  void        (*event_del)(ares_event_thread_t *e, ares_event_t *event);
-  void        (*event_mod)(ares_event_thread_t *e, ares_event_t *event,
-                    ares_event_flags_t new_flags);
+  ares_bool_t (*event_add)(ares_event_t *event);
+  void        (*event_del)(ares_event_t *event);
+  void        (*event_mod)(ares_event_t *event, ares_event_flags_t new_flags);
   size_t      (*wait)(ares_event_thread_t *e, unsigned long timeout_ms);
 } ares_event_sys_t;
 
@@ -159,6 +159,16 @@ extern const ares_event_sys_t ares_evsys_kqueue;
 
 #ifdef HAVE_EPOLL
 extern const ares_event_sys_t ares_evsys_epoll;
+#endif
+
+#ifdef _WIN32
+extern const ares_event_sys_t ares_evsys_win32;
+#endif
+
+/* All systems have select(), but not all have a way to wake, so we require
+ * pipe() to wake the select() */
+#ifdef HAVE_PIPE
+extern const ares_event_sys_t ares_evsys_select;
 #endif
 
 #endif

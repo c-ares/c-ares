@@ -192,7 +192,11 @@ int         main(int argc, char **argv)
       if (tvp == NULL) {
         break;
       }
+#ifdef _WIN32
+      Sleep(50);
+#else
       usleep(50000);
+#endif
     } else {
       int res;
       FD_ZERO(&read_fds);
