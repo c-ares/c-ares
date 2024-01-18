@@ -74,9 +74,9 @@ struct ares__thread {
   HANDLE thread;
   DWORD  id;
 
-  void *(func)(void *arg);
-  void *arg;
-  void *rv;
+  void (*func)(void *arg);
+  void  *arg;
+  void  *rv;
 };
 
 /* Wrap for pthread compatibility */
@@ -116,7 +116,6 @@ ares_status_t ares__thread_create(ares__thread_t    **thread,
 
 ares_status_t ares__thread_join(ares__thread_t *thread, void **rv)
 {
-  void         *ret    = NULL;
   ares_status_t status = ARES_SUCCESS;
 
   if (thread == NULL) {
