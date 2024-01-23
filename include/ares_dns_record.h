@@ -386,9 +386,12 @@ typedef enum {
 
 /*! Data type for flags to ares_dns_parse() */
 typedef enum {
-  ARES_DNS_PARSE_ANSWER_RR_RAW = 1 << 0,  /*!< Parse RR(s) as RAW */
-  ARES_DNS_PARSE_AUTHORITY_RR_RAW = 1 << 1,  /*!< Parse RR(s) as RAW */
-  ARES_DNS_PARSE_ADDITIONAL_RR_RAW = 1 << 2,  /*!< Parse RR(s) as RAW */
+  ARES_DNS_PARSE_AN_BASE_RAW = 1 << 0,  /*!< Parse Answers from RFC 1035 that allow name compression as RAW */
+  ARES_DNS_PARSE_NS_BASE_RAW = 1 << 1,  /*!< Parse Authority from RFC 1035 that allow name compression as RAW */
+  ARES_DNS_PARSE_AR_BASE_RAW = 1 << 2,  /*!< Parse Additional from RFC 1035 that allow name compression as RAW */
+  ARES_DNS_PARSE_AN_EXT_RAW = 1 << 3,  /*!< Parse Answers from later RFCs (no name compression) RAW */
+  ARES_DNS_PARSE_NS_EXT_RAW = 1 << 4,  /*!< Parse Authority from later RFCs (no name compression) as RAW */
+  ARES_DNS_PARSE_AR_EXT_RAW = 1 << 5,  /*!< Parse Additional from later RFCs (no name compression) as RAW */
 } ares_dns_parse_flags_t;
 
 /*! String representation of DNS Record Type

@@ -1065,13 +1065,14 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
     type = ARES_REC_TYPE_RAW_RR;
   }
 
-  if (sect == ARES_SECTION_ANSWER && (flags & ARES_DNS_PARSE_ANSWER_RR_RAW)) {
+  ares_bool_t namecomp = ares_dns_rec_type_allow_name_compression(type);
+  if (sect == ARES_SECTION_ANSWER && (flags & (namecomp ? ARES_DNS_PARSE_AN_BASE_RAW : ARES_DNS_PARSE_AN_EXT_RAW))) {
     type = ARES_REC_TYPE_RAW_RR;
   }
-  if (sect == ARES_SECTION_AUTHORITY && (flags & ARES_DNS_PARSE_AUTHORITY_RR_RAW)) {
+  if (sect == ARES_SECTION_AUTHORITY && (flags & (namecomp ? ARES_DNS_PARSE_NS_BASE_RAW : ARES_DNS_PARSE_NS_EXT_RAW))) {
     type = ARES_REC_TYPE_RAW_RR;
   }
-  if (sect == ARES_SECTION_ADDITIONAL && (flags & ARES_DNS_PARSE_ADDITIONAL_RR_RAW)) {
+  if (sect == ARES_SECTION_ADDITIONAL && (flags & (namecomp ? ARES_DNS_PARSE_AR_BASE_RAW : ARES_DNS_PARSE_AR_EXT_RAW))) {
     type = ARES_REC_TYPE_RAW_RR;
   }
 

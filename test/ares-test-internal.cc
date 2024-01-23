@@ -846,6 +846,10 @@ TEST_F(LibraryTest, DNSParseFlags) {
   EXPECT_LT(0, ares_inet_net_pton(AF_INET, "1.1.1.1", &addr, sizeof(addr)));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_addr(rr, ARES_RR_A_ADDR, &addr));
+  /* TLSA */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "_443._tcp.example.com", ARES_REC_TYPE_TLSA, ARES_CLASS_IN, 86400));
 
   /* == Authority == */
   /* NS */
@@ -874,32 +878,55 @@ TEST_F(LibraryTest, DNSParseFlags) {
   /* Cleanup - before reuse */
   ares_dns_record_destroy(dnsrec);
 
-  /* Parse */
-  EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, ARES_DNS_PARSE_ANSWER_RR_RAW |
-    ARES_DNS_PARSE_AUTHORITY_RR_RAW | ARES_DNS_PARSE_ADDITIONAL_RR_RAW, &dnsrec));
-  ares_free(msg); msg = NULL;
+  /* Parse "base" type records (1035) */
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, ARES_DNS_PARSE_AN_BASE_RAW |
+    ARES_DNS_PARSE_NS_BASE_RAW | ARES_DNS_PARSE_AR_BASE_RAW, &dnsrec));
 
   EXPECT_EQ(qdcount, ares_dns_record_query_cnt(dnsrec));
-  EXPECT_EQ(ancount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER));
-  EXPECT_EQ(nscount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
-  EXPECT_EQ(arcount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
+  EXPECT_EQ(2, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER));
+  EXPECT_EQ(1, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
+  EXPECT_EQ(1, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
 
-  for (size_t r = 0; r < ancount; ++r) {
-    rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, r);
-    EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
-  }
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, 0);
+  EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
 
-  for (size_t r = 0; r < nscount; ++r) {
-    rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_AUTHORITY, r);
-    EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
-  }
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, 1);
+  EXPECT_EQ(ARES_REC_TYPE_TLSA_RR, ares_dns_rr_get_type(rr));
 
-  for (size_t r = 0; r < arcount; ++r) {
-    rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, r);
-    EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
-  }
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_AUTHORITY, 0);
+  EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
+
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 0);
+  EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
+
+  /* Cleanup - before reuse */
 
   ares_dns_record_destroy(dnsrec);
+
+  /* Parse later RFCs (no name compression) type records */
+
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, ARES_DNS_PARSE_AN_EXT_RAW |
+    ARES_DNS_PARSE_NS_EXT_RAW | ARES_DNS_PARSE_AR_EXT_RAW, &dnsrec));
+
+  EXPECT_EQ(qdcount, ares_dns_record_query_cnt(dnsrec));
+  EXPECT_EQ(2, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER));
+  EXPECT_EQ(1, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
+  EXPECT_EQ(1, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
+
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, 0);
+  EXPECT_EQ(ARES_REC_TYPE_A, ares_dns_rr_get_type(rr));
+
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, 1);
+  EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
+
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_AUTHORITY, 0);
+  EXPECT_EQ(ARES_REC_TYPE_NS, ares_dns_rr_get_type(rr));
+
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 0);
+  EXPECT_EQ(ARES_REC_TYPE_PTR, ares_dns_rr_get_type(rr));
+
+  ares_dns_record_destroy(dnsrec);
+  ares_free(msg); msg = NULL;
 }
 
 TEST_F(LibraryTest, CatDomain) {
