@@ -1003,8 +1003,7 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
   ares_dns_rr_t      *rr            = NULL;
   size_t              remaining_len = 0;
   size_t              processed_len = 0;
-
-  (void)flags; /* currently unused */
+  ares_bool_t         namecomp;
 
   /* All RRs have the same top level format shown below:
    *                                 1  1  1  1  1  1
@@ -1064,6 +1063,17 @@ static ares_status_t ares_dns_parse_rr(ares__buf_t *buf, unsigned int flags,
   rdlength = u16;
 
   if (!ares_dns_rec_type_isvalid(type, ARES_FALSE)) {
+    type = ARES_REC_TYPE_RAW_RR;
+  }
+
+  namecomp = ares_dns_rec_type_allow_name_compression(type);
+  if (sect == ARES_SECTION_ANSWER && (flags & (namecomp ? ARES_DNS_PARSE_AN_BASE_RAW : ARES_DNS_PARSE_AN_EXT_RAW))) {
+    type = ARES_REC_TYPE_RAW_RR;
+  }
+  if (sect == ARES_SECTION_AUTHORITY && (flags & (namecomp ? ARES_DNS_PARSE_NS_BASE_RAW : ARES_DNS_PARSE_NS_EXT_RAW))) {
+    type = ARES_REC_TYPE_RAW_RR;
+  }
+  if (sect == ARES_SECTION_ADDITIONAL && (flags & (namecomp ? ARES_DNS_PARSE_AR_BASE_RAW : ARES_DNS_PARSE_AR_EXT_RAW))) {
     type = ARES_REC_TYPE_RAW_RR;
   }
 
