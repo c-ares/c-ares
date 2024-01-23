@@ -871,6 +871,9 @@ TEST_F(LibraryTest, DNSParseFlags) {
   /* Write */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
 
+  /* Cleanup - before reuse */
+  ares_dns_record_destroy(dnsrec);
+
   /* Parse */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, ARES_DNS_PARSE_ANSWER_RR_RAW |
     ARES_DNS_PARSE_AUTHORITY_RR_RAW | ARES_DNS_PARSE_ADDITIONAL_RR_RAW, &dnsrec));
