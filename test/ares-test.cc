@@ -189,7 +189,7 @@ const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_ipv4_family = {
 #ifdef HAVE_POLL
   std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_POLL, AF_INET),
 #endif
-#ifdef HAVE_SELECT
+#ifdef HAVE_PIPE
   std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_SELECT, AF_INET),
 #endif
 };
@@ -207,7 +207,7 @@ const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_ipv6_family = {
 #ifdef HAVE_POLL
   std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_POLL, AF_INET6),
 #endif
-#ifdef HAVE_SELECT
+#ifdef HAVE_PIPE
   std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_SELECT, AF_INET6),
 #endif
 };
@@ -229,7 +229,7 @@ const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_both_families = {
   std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_POLL, AF_INET),
   std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_POLL, AF_INET6),
 #endif
-#ifdef HAVE_SELECT
+#ifdef HAVE_PIPE
   std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_SELECT, AF_INET),
   std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_SELECT, AF_INET6),
 #endif
