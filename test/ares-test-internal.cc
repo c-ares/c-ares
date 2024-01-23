@@ -822,10 +822,6 @@ TEST_F(LibraryTest, DNSParseFlags) {
   struct in_addr       addr;
   unsigned char       *msg    = NULL;
   size_t               msglen = 0;
-  size_t               qdcount = 0;
-  size_t               ancount = 0;
-  size_t               nscount = 0;
-  size_t               arcount = 0;
 
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_create(&dnsrec, 0x1234,
@@ -848,8 +844,20 @@ TEST_F(LibraryTest, DNSParseFlags) {
     ares_dns_rr_set_addr(rr, ARES_RR_A_ADDR, &addr));
   /* TLSA */
   EXPECT_EQ(ARES_SUCCESS,
-    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER,
       "_443._tcp.example.com", ARES_REC_TYPE_TLSA, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_TLSA_CERT_USAGE, ARES_TLSA_USAGE_CA));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_TLSA_SELECTOR, ARES_TLSA_SELECTOR_FULL));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_TLSA_MATCH, ARES_TLSA_MATCH_SHA256));
+  const unsigned char tlsa[] = {
+    0xd2, 0xab, 0xde, 0x24, 0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5,
+    0x4d, 0xf0, 0x34, 0xb9, 0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e,
+    0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_TLSA_DATA, tlsa, sizeof(tlsa)));
 
   /* == Authority == */
   /* NS */
@@ -867,11 +875,6 @@ TEST_F(LibraryTest, DNSParseFlags) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_str(rr, ARES_RR_PTR_DNAME, "b.example.com"));
 
-  qdcount = ares_dns_record_query_cnt(dnsrec);
-  ancount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER);
-  nscount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY);
-  arcount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL);
-
   /* Write */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
 
@@ -882,7 +885,7 @@ TEST_F(LibraryTest, DNSParseFlags) {
   EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, ARES_DNS_PARSE_AN_BASE_RAW |
     ARES_DNS_PARSE_NS_BASE_RAW | ARES_DNS_PARSE_AR_BASE_RAW, &dnsrec));
 
-  EXPECT_EQ(qdcount, ares_dns_record_query_cnt(dnsrec));
+  EXPECT_EQ(1, ares_dns_record_query_cnt(dnsrec));
   EXPECT_EQ(2, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER));
   EXPECT_EQ(1, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
   EXPECT_EQ(1, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
@@ -891,7 +894,7 @@ TEST_F(LibraryTest, DNSParseFlags) {
   EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
 
   rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ANSWER, 1);
-  EXPECT_EQ(ARES_REC_TYPE_TLSA_RR, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(ARES_REC_TYPE_TLSA, ares_dns_rr_get_type(rr));
 
   rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_AUTHORITY, 0);
   EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
@@ -908,7 +911,7 @@ TEST_F(LibraryTest, DNSParseFlags) {
   EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, ARES_DNS_PARSE_AN_EXT_RAW |
     ARES_DNS_PARSE_NS_EXT_RAW | ARES_DNS_PARSE_AR_EXT_RAW, &dnsrec));
 
-  EXPECT_EQ(qdcount, ares_dns_record_query_cnt(dnsrec));
+  EXPECT_EQ(1, ares_dns_record_query_cnt(dnsrec));
   EXPECT_EQ(2, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER));
   EXPECT_EQ(1, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
   EXPECT_EQ(1, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
