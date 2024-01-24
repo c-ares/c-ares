@@ -92,12 +92,161 @@ const std::vector<std::pair<int, bool>> ipv6_family_both_modes = {
   std::make_pair<int, bool>(AF_INET6, true)
 };
 
+
+const std::vector<std::tuple<ares_evsys_t, int, bool>> all_evsys_ipv4_family_both_modes = {
+#ifdef _WIN32
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_WIN32, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_WIN32, AF_INET, true),
+#endif
+#ifdef HAVE_KQUEUE
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_KQUEUE, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_KQUEUE, AF_INET, true),
+#endif
+#ifdef HAVE_EPOLL
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_EPOLL, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_EPOLL, AF_INET, true),
+#endif
+#ifdef HAVE_POLL
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_POLL, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_POLL, AF_INET, true),
+#endif
+#ifdef HAVE_PIPE
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_SELECT, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_SELECT, AF_INET, true),
+#endif
+};
+
+const std::vector<std::tuple<ares_evsys_t, int, bool>> all_evsys_ipv6_family_both_modes = {
+#ifdef _WIN32
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_WIN32, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_WIN32, AF_INET6, true),
+#endif
+#ifdef HAVE_KQUEUE
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_KQUEUE, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_KQUEUE, AF_INET6, true),
+#endif
+#ifdef HAVE_EPOLL
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_EPOLL, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_EPOLL, AF_INET6, true),
+#endif
+#ifdef HAVE_POLL
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_POLL, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_POLL, AF_INET6, true),
+#endif
+#ifdef HAVE_PIPE
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_SELECT, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_SELECT, AF_INET6, true),
+#endif
+};
+
+const std::vector<std::tuple<ares_evsys_t, int, bool>> all_evsys_both_families_both_modes = {
+#ifdef _WIN32
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_WIN32, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_WIN32, AF_INET, true),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_WIN32, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_WIN32, AF_INET6, true),
+#endif
+#ifdef HAVE_KQUEUE
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_KQUEUE, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_KQUEUE, AF_INET, true),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_KQUEUE, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_KQUEUE, AF_INET6, true),
+#endif
+#ifdef HAVE_EPOLL
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_EPOLL, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_EPOLL, AF_INET, true),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_EPOLL, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_EPOLL, AF_INET6, true),
+#endif
+#ifdef HAVE_POLL
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_POLL, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_POLL, AF_INET, true),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_POLL, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_POLL, AF_INET6, true),
+#endif
+#ifdef HAVE_PIPE
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_SELECT, AF_INET, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_SELECT, AF_INET, true),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_SELECT, AF_INET6, false),
+  std::make_tuple<ares_evsys_t, int, bool>(ARES_EVSYS_SELECT, AF_INET6, true),
+#endif
+};
+
+
+std::vector<std::tuple<ares_evsys_t, int, bool>> evsys_families_modes = all_evsys_both_families_both_modes;
+
+
+const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_ipv4_family = {
+#ifdef _WIN32
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_WIN32, AF_INET),
+#endif
+#ifdef HAVE_KQUEUE
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_KQUEUE, AF_INET),
+#endif
+#ifdef HAVE_EPOLL
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_EPOLL, AF_INET),
+#endif
+#ifdef HAVE_POLL
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_POLL, AF_INET),
+#endif
+#ifdef HAVE_PIPE
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_SELECT, AF_INET),
+#endif
+};
+
+const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_ipv6_family = {
+#ifdef _WIN32
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_WIN32, AF_INET6),
+#endif
+#ifdef HAVE_KQUEUE
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_KQUEUE, AF_INET6),
+#endif
+#ifdef HAVE_EPOLL
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_EPOLL, AF_INET6),
+#endif
+#ifdef HAVE_POLL
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_POLL, AF_INET6),
+#endif
+#ifdef HAVE_PIPE
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_SELECT, AF_INET6),
+#endif
+};
+
+const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_both_families = {
+#ifdef _WIN32
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_WIN32, AF_INET),
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_WIN32, AF_INET6),
+#endif
+#ifdef HAVE_KQUEUE
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_KQUEUE, AF_INET),
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_KQUEUE, AF_INET6),
+#endif
+#ifdef HAVE_EPOLL
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_EPOLL, AF_INET),
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_EPOLL, AF_INET6),
+#endif
+#ifdef HAVE_POLL
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_POLL, AF_INET),
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_POLL, AF_INET6),
+#endif
+#ifdef HAVE_PIPE
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_SELECT, AF_INET),
+  std::make_tuple<ares_evsys_t, int>(ARES_EVSYS_SELECT, AF_INET6),
+#endif
+};
+
+
+
+std::vector<std::tuple<ares_evsys_t, int>> evsys_families = all_evsys_both_families;
+
+
 // Which parameters to use in tests
 std::vector<int> families = both_families;
 std::vector<std::pair<int, bool>> families_modes = both_families_both_modes;
 
 unsigned long long LibraryTest::fails_ = 0;
 std::map<size_t, int> LibraryTest::size_fails_;
+std::mutex            LibraryTest::lock_;
 
 void ProcessWork(ares_channel_t *channel,
                  std::function<std::set<ares_socket_t>()> get_extrafds,
@@ -188,33 +337,132 @@ void ProcessWork(ares_channel_t *channel,
   }
 }
 
+void ProcessWorkEventThread(ares_channel_t *channel,
+                            std::function<std::set<ares_socket_t>()> get_extrafds,
+                            std::function<void(ares_socket_t)> process_extra,
+                            unsigned int cancel_ms) {
+  int nfds=0, count;
+  fd_set readers;
+  size_t retry_cnt = 1;
+
+#ifndef CARES_SYMBOL_HIDING
+  struct timeval tv_begin  = ares__tvnow();
+  struct timeval tv_cancel = tv_begin;
+
+  if (cancel_ms) {
+    if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
+    tv_cancel.tv_sec  += (cancel_ms / 1000);
+    tv_cancel.tv_usec += ((cancel_ms % 1000) * 1000);
+  }
+#else
+  if (cancel_ms) {
+    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
+    return;
+  }
+#endif
+
+  while (true) {
+#ifndef CARES_SYMBOL_HIDING
+    struct timeval  tv_now = ares__tvnow();
+    struct timeval  tv_remaining;
+#endif
+    struct timeval  tv;
+
+    /* c-ares is using its own event thread, so we only need to monitor the
+     * extrafds passed in */
+    FD_ZERO(&readers);
+    std::set<ares_socket_t> extrafds = get_extrafds();
+    for (ares_socket_t extrafd : extrafds) {
+      FD_SET(extrafd, &readers);
+      if (extrafd >= (ares_socket_t)nfds) {
+        nfds = (int)extrafd + 1;
+      }
+    }
+
+    /* If ares_timeout returns NULL, it means there are no requests in queue,
+     * so we can break out, but lets loop one additional time just incase we
+     * have some weird multithreading issue where a result hasn't yet been
+     * delivered.  This is really just an odd case, its not "normal" to try
+     * to determine if an event has been delivered by solely monitoring the
+     * channel, really we should know how many callbacks we expect and how
+     * many we get, but that's not easy to do in a test framework. */
+    if (ares_timeout(channel, NULL, &tv) == NULL) {
+      if (retry_cnt == 0)
+        return;
+      retry_cnt--;
+    } else {
+      retry_cnt = 1;
+    }
+
+#ifndef CARES_SYMBOL_HIDING
+    if (cancel_ms) {
+      unsigned int remaining_ms;
+      ares__timeval_remaining(&tv_remaining,
+                              &tv_now,
+                              &tv_cancel);
+      remaining_ms = (unsigned int)((tv_remaining.tv_sec * 1000) + (tv_remaining.tv_usec / 1000));
+      if (remaining_ms == 0) {
+        if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
+        ares_cancel(channel);
+        cancel_ms = 0; /* Disable issuing cancel again */
+      }
+    }
+#endif
+
+    /* We just always wait 50ms then recheck. Not doing any complex signalling. */
+    tv.tv_sec  = 0;
+    tv.tv_usec = 50000;
+
+    count = select(nfds, &readers, nullptr, nullptr, &tv);
+    if (count < 0) {
+      fprintf(stderr, "select() failed, errno %d\n", errno);
+      return;
+    }
+
+    // Let the provided callback process any activity on the extra FD.
+    for (ares_socket_t extrafd : extrafds) {
+      if (FD_ISSET(extrafd, &readers)) {
+        process_extra(extrafd);
+      }
+    }
+  }
+}
+
 // static
 void LibraryTest::SetAllocFail(int nth) {
+  lock_.lock();
   assert(nth > 0);
   assert(nth <= (int)(8 * sizeof(fails_)));
   fails_ |= (1LL << (nth - 1));
+  lock_.unlock();
 }
 
 // static
 void LibraryTest::SetAllocSizeFail(size_t size) {
+  lock_.lock();
   size_fails_[size]++;
+  lock_.unlock();
 }
 
 // static
 void LibraryTest::ClearFails() {
+  lock_.lock();
   fails_ = 0;
   size_fails_.clear();
+  lock_.unlock();
 }
 
 
 // static
 bool LibraryTest::ShouldAllocFail(size_t size) {
+  lock_.lock();
   bool fail = (fails_ & 0x01);
   fails_ >>= 1;
   if (size_fails_[size] > 0) {
     size_fails_[size]--;
     fail = true;
   }
+  lock_.unlock();
   return fail;
 }
 
@@ -644,6 +892,14 @@ void MockChannelOptsTest::Process(unsigned int cancel_ms) {
   ProcessWork(channel_,
               std::bind(&MockChannelOptsTest::fds, this),
               std::bind(&MockChannelOptsTest::ProcessFD, this, _1),
+              cancel_ms);
+}
+
+void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
+  using namespace std::placeholders;
+  ProcessWorkEventThread(channel_,
+              std::bind(&MockEventThreadOptsTest::fds, this),
+              std::bind(&MockEventThreadOptsTest::ProcessFD, this, _1),
               cancel_ms);
 }
 

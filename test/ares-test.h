@@ -49,6 +49,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -68,9 +69,20 @@ extern const std::vector<std::pair<int, bool>> both_families_both_modes;
 extern const std::vector<std::pair<int, bool>> ipv4_family_both_modes;
 extern const std::vector<std::pair<int, bool>> ipv6_family_both_modes;
 
+extern const std::vector<std::tuple<ares_evsys_t, int, bool>> all_evsys_ipv4_family_both_modes;
+extern const std::vector<std::tuple<ares_evsys_t, int, bool>> all_evsys_ipv6_family_both_modes;
+extern const std::vector<std::tuple<ares_evsys_t, int, bool>> all_evsys_both_families_both_modes;
+
+extern const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_ipv4_family;
+extern const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_ipv6_family;
+extern const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_both_families;
+
 // Which parameters to use in tests
-extern std::vector<int>                        families;
-extern std::vector<std::pair<int, bool>>       families_modes;
+extern std::vector<int>                                 families;
+extern std::vector<std::tuple<ares_evsys_t, int>>       evsys_families;
+extern std::vector<std::pair<int, bool>>                families_modes;
+extern std::vector<std::tuple<ares_evsys_t, int, bool>> evsys_families_modes;
+
 
 // Process all pending work on ares-owned file descriptors, plus
 // optionally the given set-of-FDs + work function.
@@ -78,7 +90,18 @@ void                    ProcessWork(ares_channel_t                          *cha
                                     std::function<std::set<ares_socket_t>()> get_extrafds,
                                     std::function<void(ares_socket_t)>       process_extra,
                                     unsigned int                             cancel_ms = 0);
+void ProcessWorkEventThread(ares_channel_t *channel,
+                            std::function<std::set<ares_socket_t>()> get_extrafds,
+                            std::function<void(ares_socket_t)> process_extra,
+                            unsigned int cancel_ms);
 std::set<ares_socket_t> NoExtraFDs();
+
+const char *af_tostr(int af);
+const char *mode_tostr(bool mode);
+std::string PrintFamilyMode(const testing::TestParamInfo<std::pair<int, bool>> &info);
+std::string PrintFamily(const testing::TestParamInfo<int> &info);
+
+
 
 // Test fixture that ensures library initialization, and allows
 // memory allocations to be failed.
@@ -113,6 +136,7 @@ private:
   static bool                  ShouldAllocFail(size_t size);
   static unsigned long long    fails_;
   static std::map<size_t, int> size_fails_;
+  static std::mutex            lock_;
 };
 
 // Test fixture that uses a default channel.
@@ -323,6 +347,59 @@ public:
   {
   }
 };
+
+
+class MockEventThreadOptsTest : public MockChannelOptsTest {
+public:
+  MockEventThreadOptsTest(int count, ares_evsys_t evsys, int family, bool force_tcp,
+                          struct ares_options *givenopts, int optmask)
+    : MockChannelOptsTest(count, family, force_tcp, FillOptionsET(&evopts_, givenopts, evsys), optmask | ARES_OPT_EVENT_THREAD)
+  {
+  }
+
+  void Process(unsigned int cancel_ms = 0);
+
+  static struct ares_options *FillOptionsET(struct ares_options *opts, struct ares_options *givenopts, ares_evsys_t evsys) {
+    if (givenopts) {
+      memcpy(opts, givenopts, sizeof(*opts));
+    } else {
+      memset(opts, 0, sizeof(*opts));
+    }
+    opts->evsys = evsys;
+    return opts;
+  }
+
+private:
+  struct ares_options evopts_;
+};
+
+class MockEventThreadTest
+  : public MockEventThreadOptsTest,
+    public ::testing::WithParamInterface<std::tuple<ares_evsys_t, int, bool>> {
+public:
+  MockEventThreadTest()
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()), nullptr, 0)
+  {
+  }
+};
+
+class MockUDPEventThreadTest : public MockEventThreadOptsTest,
+                           public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
+public:
+  MockUDPEventThreadTest() : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), false, nullptr, 0)
+  {
+  }
+};
+
+class MockTCPEventThreadTest : public MockEventThreadOptsTest,
+                               public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
+public:
+  MockTCPEventThreadTest() : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), true, nullptr, 0)
+  {
+  }
+};
+
+
 
 // gMock action to set the reply for a mock server.
 ACTION_P2(SetReplyData, mockserver, data)

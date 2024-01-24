@@ -748,28 +748,28 @@ TEST_P(MockChannelTestAI, FamilyV4ServiceName) {
 }
 
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockChannelTestAI,
-                       ::testing::ValuesIn(ares::test::families_modes));
+                       ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockUDPChannelTestAI,
-                        ::testing::ValuesIn(ares::test::families));
+                        ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockTCPChannelTestAI,
-                        ::testing::ValuesIn(ares::test::families));
+                        ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockExtraOptsTestAI,
-			::testing::ValuesIn(ares::test::families_modes));
+			::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockExtraOptsNDots5TestAI,
-      ::testing::ValuesIn(ares::test::families_modes));
+      ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockNoCheckRespChannelTestAI,
-			::testing::ValuesIn(ares::test::families_modes));
+			::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockEDNSChannelTestAI,
-			::testing::ValuesIn(ares::test::families_modes));
+			::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(TransportModesAI, NoRotateMultiMockTestAI,
-			::testing::ValuesIn(ares::test::families_modes));
+			::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 
 }  // namespace test

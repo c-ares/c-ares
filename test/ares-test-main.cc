@@ -39,9 +39,13 @@ int main(int argc, char* argv[]) {
     } else if (strcmp(argv[ii], "-4") == 0) {
       ares::test::families = ares::test::ipv4_family;
       ares::test::families_modes = ares::test::ipv4_family_both_modes;
+      ares::test::evsys_families = ares::test::all_evsys_ipv4_family;
+      ares::test::evsys_families_modes = ares::test::all_evsys_ipv4_family_both_modes;
     } else if (strcmp(argv[ii], "-6") == 0) {
       ares::test::families = ares::test::ipv6_family;
       ares::test::families_modes = ares::test::ipv6_family_both_modes;
+      ares::test::evsys_families = ares::test::all_evsys_ipv6_family;
+      ares::test::evsys_families_modes = ares::test::all_evsys_ipv6_family_both_modes;
     } else {
       gtest_argv.push_back(argv[ii]);
     }
