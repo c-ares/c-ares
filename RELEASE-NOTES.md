@@ -18,7 +18,7 @@ Changes:
 
 Bugfixes:
 
-* `adig`: Differentiate between internal and server errors
+* `adig`: Differentiate between internal and server errors.
   [e10b16a](https://github.com/c-ares/c-ares/commit/e10b16a)
 * Autotools allow make to override CFLAGS/CPPFLAGS/CXXFLAGS.
   [PR #695](https://github.com/c-ares/c-ares/pull/695)
