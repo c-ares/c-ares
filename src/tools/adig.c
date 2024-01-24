@@ -743,7 +743,13 @@ static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
   (void)arg;
   (void)timeouts;
 
-  printf(";; Got answer:");
+  /* We got a "Server status" */
+  if (status >= ARES_SUCCESS && status <= ARES_EREFUSED) {
+     printf(";; Got answer:");
+  } else {
+     printf(";;");
+  }
+
   if (status != ARES_SUCCESS) {
     printf(" %s", ares_strerror(status));
   }
