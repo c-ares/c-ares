@@ -1442,6 +1442,22 @@ TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss4.str());
 }
 
+const char *af_tostr(int af)
+{
+  switch (af) {
+    case AF_INET:
+      return "ipv4";
+    case AF_INET6:
+      return "ipv6";
+  }
+  return "ipunknown";
+}
+
+const char *mode_tostr(bool mode)
+{
+  return mode?"ForceTCP":"DefaultUDP";
+}
+
 std::string PrintFamilyMode(const testing::TestParamInfo<std::pair<int, bool>> &info)
 {
   std::string name;
