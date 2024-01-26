@@ -4,7 +4,7 @@ This is a feature and bugfix release.
 
 Features:
 
-* Event Thread support.  Integrators are no longer requried to monitor the
+* Event Thread support.  Integrators are no longer required to monitor the
   file descriptors registered by c-ares for events and call `ares_process()`
   when enabling the event thread feature via `ARES_OPT_EVENT_THREAD` passed
   to `ares_init_options()`. [PR #696](https://github.com/c-ares/c-ares/pull/696)
@@ -13,7 +13,7 @@ Features:
 
 Changes:
 
-* Mark `ares_fds()` as deprected.
+* Mark `ares_fds()` as deprecated.
   [PR #691](https://github.com/c-ares/c-ares/pull/691)
 
 Bugfixes:
