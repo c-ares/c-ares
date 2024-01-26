@@ -1138,6 +1138,11 @@ static ares_status_t ares_dns_parse_buf(ares__buf_t *buf, unsigned int flags,
     return ARES_EFORMERR;
   }
 
+  /* Maximum DNS packet size is 64k, even over TCP */
+  if (ares__buf_len(buf) > 0xFFFF) {
+    return ARES_EFORMERR;
+  }
+
   /* All communications inside of the domain protocol are carried in a single
    * format called a message.  The top level format of message is divided
    * into 5 sections (some of which are empty in certain cases) shown below:
