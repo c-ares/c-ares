@@ -299,8 +299,9 @@ ares_bool_t ares_threadsafety(void)
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel)
 {
+  /* Threading is optional! */
   if (!ares_threadsafety()) {
-    return ARES_ENOTIMP;
+    return ARES_SUCCESS;
   }
 
   channel->lock = ares__thread_mutex_create();
