@@ -1334,21 +1334,6 @@ static const char *evsys_tostr(ares_evsys_t evsys)
   return "UNKNOWN";
 }
 
-const char *af_tostr(int af)
-{
-  switch (af) {
-    case AF_INET:
-      return "ipv4";
-    case AF_INET6:
-      return "ipv6";
-  }
-  return "ipunknown";
-}
-
-const char *mode_tostr(bool mode)
-{
-  return mode?"ForceTCP":"DefaultUDP";
-}
 
 static std::string PrintEvsysFamilyMode(const testing::TestParamInfo<std::tuple<ares_evsys_t, int, bool>> &info)
 {

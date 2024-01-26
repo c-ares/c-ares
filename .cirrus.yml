@@ -86,6 +86,11 @@ task:
     - name: "CMAKE"
       env:
         BUILD_TYPE: "cmake"
+    - name: "CMAKE no threads"
+      only_if: $DIST == 'DEBIAN'
+      env:
+        BUILD_TYPE: "cmake"
+        CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_THREADS=OFF -G Ninja"
     - name: "CMAKE HIDE SYMBOLS"
       only_if: $TEST_SYMBOL_VISIBILITY == 'yes'
       env:
