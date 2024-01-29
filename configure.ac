@@ -200,7 +200,7 @@ if test "x$enable_shared" = "xno" -a "x$enable_static" = "xyes" ; then
   AC_MSG_CHECKING([whether we need CARES_STATICLIB definition])
   if test "$ac_cv_native_windows" = "yes" ; then
     AX_APPEND_FLAG([-DCARES_STATICLIB], [AM_CPPFLAGS])
-    PKGCONFIG_CFLAGS="-DCARES_STATLICLIB"
+    PKGCONFIG_CFLAGS="-DCARES_STATICLIB"
     AC_MSG_RESULT([yes])
   else
     AC_MSG_RESULT([no])
