@@ -138,9 +138,7 @@ typedef struct ares_rand_state ares_rand_state;
 #endif
 
 /********* EDNS defines section ******/
-#define EDNSPACKETSZ                                                  \
-  1280                   /* Reasonable UDP payload size, as suggested \
-                            in RFC2671 */
+#define EDNSPACKETSZ 1232 /* Reasonable UDP payload size, as agreed by operators https://www.dnsflagday.net/2020/#faq */
 #define MAXENDSSZ   4096 /* Maximum (local) limit for edns packet size */
 #define EDNSFIXEDSZ 11   /* Size of EDNS header */
 
