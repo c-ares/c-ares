@@ -119,6 +119,37 @@ extern "C" {
 #  endif
 #endif
 
+#ifdef __GNUC__
+#define CARES_GCC_VERSION (__GNUC__ * 10000 \
+                     + __GNUC_MINOR__ * 100 \
+                     + __GNUC_PATCHLEVEL__)
+#else
+#define CARES_GCC_VERSION 0
+#endif
+
+#ifndef __has_attribute
+    #define __has_attribute(x) 0
+#endif
+
+#ifdef CARES_ALLOW_DEPRECATED
+#define CARES_DEPRECATED
+#define CARES_DEPRECATED_FOR(f)
+#else
+#if CARES_GCC_VERSION >= 30200 || __has_attribute (__deprecated__)
+#define CARES_DEPRECATED __attribute__((__deprecated__))
+#else
+#define CARES_DEPRECATED 
+#endif
+
+#if CARES_GCC_VERSION >= 40500 || defined(__clang__)
+#define CARES_DEPRECATED_FOR(f) __attribute__((deprecated("Use " #f " instead")))
+#elif defined(_MSC_VER)
+#define CARES_DEPRECATED_FOR(f) __declspec(deprecated("Use " #f " instead"))
+#else
+#define CARES_DEPRECATED_FOR(f) CARES_DEPRECATED
+#endif
+#endif
+
 typedef enum {
   ARES_SUCCESS = 0,
 
@@ -390,7 +421,7 @@ CARES_EXTERN void          ares_library_cleanup(void);
 
 CARES_EXTERN const char   *ares_version(int *version);
 
-CARES_EXTERN int           ares_init(ares_channel_t **channelptr);
+CARES_EXTERN int           ares_init(ares_channel_t **channelptr) CARES_DEPRECATED_FOR(ares_init_options);
 
 CARES_EXTERN int           ares_init_options(ares_channel_t           **channelptr,
                                              const struct ares_options *options,
@@ -479,7 +510,7 @@ CARES_EXTERN void ares_search(ares_channel_t *channel, const char *name,
 
 CARES_EXTERN void ares_gethostbyname(ares_channel_t *channel, const char *name,
                                      int family, ares_host_callback callback,
-                                     void *arg);
+                                     void *arg) CARES_DEPRECATED_FOR(ares_getaddrinfo);
 
 CARES_EXTERN int  ares_gethostbyname_file(ares_channel_t *channel,
                                           const char *name, int family,
@@ -495,17 +526,17 @@ CARES_EXTERN void ares_getnameinfo(ares_channel_t        *channel,
                                    ares_nameinfo_callback callback, void *arg);
 
 CARES_EXTERN int  ares_fds(ares_channel_t *channel, fd_set *read_fds,
-                           fd_set *write_fds);
+                           fd_set *write_fds) CARES_DEPRECATED_FOR(ARES_OPT_EVENT_THREAD or ARES_OPT_SOCK_STATE_CB);
 
 CARES_EXTERN int  ares_getsock(ares_channel_t *channel, ares_socket_t *socks,
-                               int numsocks);
+                               int numsocks) CARES_DEPRECATED_FOR(ARES_OPT_EVENT_THREAD or ARES_OPT_SOCK_STATE_CB);
 
 CARES_EXTERN struct timeval *ares_timeout(ares_channel_t *channel,
                                           struct timeval *maxtv,
                                           struct timeval *tv);
 
 CARES_EXTERN void ares_process(ares_channel_t *channel, fd_set *read_fds,
-                               fd_set *write_fds);
+                               fd_set *write_fds) CARES_DEPRECATED_FOR(ares_process_fd);
 
 CARES_EXTERN void ares_process_fd(ares_channel_t *channel,
                                   ares_socket_t   read_fd,
@@ -518,7 +549,7 @@ CARES_EXTERN int  ares_create_query(const char *name, int dnsclass, int type,
 
 CARES_EXTERN int  ares_mkquery(const char *name, int dnsclass, int type,
                                unsigned short id, int rd, unsigned char **buf,
-                               int *buflen);
+                               int *buflen) CARES_DEPRECATED_FOR(ares_create_query);
 
 CARES_EXTERN int  ares_expand_name(const unsigned char *encoded,
                                    const unsigned char *abuf, int alen, char **s,
@@ -678,43 +709,43 @@ struct ares_addrinfo_hints {
 CARES_EXTERN int  ares_parse_a_reply(const unsigned char *abuf, int alen,
                                      struct hostent     **host,
                                      struct ares_addrttl *addrttls,
-                                     int                 *naddrttls);
+                                     int                 *naddrttls) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
                                         struct hostent      **host,
                                         struct ares_addr6ttl *addrttls,
-                                        int                  *naddrttls);
+                                        int                  *naddrttls) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_caa_reply(const unsigned char *abuf, int alen,
-                                       struct ares_caa_reply **caa_out);
+                                       struct ares_caa_reply **caa_out) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_ptr_reply(const unsigned char *abuf, int alen,
                                        const void *addr, int addrlen, int family,
-                                       struct hostent **host);
+                                       struct hostent **host) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_ns_reply(const unsigned char *abuf, int alen,
-                                      struct hostent **host);
+                                      struct hostent **host) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_srv_reply(const unsigned char *abuf, int alen,
-                                       struct ares_srv_reply **srv_out);
+                                       struct ares_srv_reply **srv_out) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_mx_reply(const unsigned char *abuf, int alen,
-                                      struct ares_mx_reply **mx_out);
+                                      struct ares_mx_reply **mx_out) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_txt_reply(const unsigned char *abuf, int alen,
-                                       struct ares_txt_reply **txt_out);
+                                       struct ares_txt_reply **txt_out) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_txt_reply_ext(const unsigned char *abuf, int alen,
-                                           struct ares_txt_ext **txt_out);
+                                           struct ares_txt_ext **txt_out) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_naptr_reply(const unsigned char *abuf, int alen,
-                                         struct ares_naptr_reply **naptr_out);
+                                         struct ares_naptr_reply **naptr_out) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_soa_reply(const unsigned char *abuf, int alen,
-                                       struct ares_soa_reply **soa_out);
+                                       struct ares_soa_reply **soa_out) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN int  ares_parse_uri_reply(const unsigned char *abuf, int alen,
-                                       struct ares_uri_reply **uri_out);
+                                       struct ares_uri_reply **uri_out) CARES_DEPRECATED_FOR(ares_dns_parse);
 
 CARES_EXTERN void ares_free_string(void *str);
 
@@ -748,10 +779,10 @@ struct ares_addr_port_node {
 };
 
 CARES_EXTERN int ares_set_servers(ares_channel_t              *channel,
-                                  const struct ares_addr_node *servers);
+                                  const struct ares_addr_node *servers) CARES_DEPRECATED_FOR(ares_set_servers_csv);
 CARES_EXTERN int
                            ares_set_servers_ports(ares_channel_t                   *channel,
-                                                  const struct ares_addr_port_node *servers);
+                                                  const struct ares_addr_port_node *servers) CARES_DEPRECATED_FOR(ares_set_servers_ports_csv);
 
 /* Incoming string format: host[:port][,host[:port]]... */
 CARES_EXTERN int           ares_set_servers_csv(ares_channel_t *channel,
@@ -761,9 +792,9 @@ CARES_EXTERN int           ares_set_servers_ports_csv(ares_channel_t *channel,
 CARES_EXTERN char         *ares_get_servers_csv(ares_channel_t *channel);
 
 CARES_EXTERN int           ares_get_servers(ares_channel_t         *channel,
-                                            struct ares_addr_node **servers);
+                                            struct ares_addr_node **servers) CARES_DEPRECATED_FOR(ares_get_servers_csv);
 CARES_EXTERN int           ares_get_servers_ports(ares_channel_t              *channel,
-                                                  struct ares_addr_port_node **servers);
+                                                  struct ares_addr_port_node **servers) CARES_DEPRECATED_FOR(ares_get_servers_ports_csv);
 
 CARES_EXTERN const char   *ares_inet_ntop(int af, const void *src, char *dst,
                                           ares_socklen_t size);
