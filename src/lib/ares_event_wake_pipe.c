@@ -117,7 +117,7 @@ static void ares_pipeevent_signal(const ares_event_t *e)
   }
 
   p = e->data;
-  write(p->filedes[1], "1", 1);
+  (void)write(p->filedes[1], "1", 1);
 }
 
 static void ares_pipeevent_cb(ares_event_thread_t *e, ares_socket_t fd,
