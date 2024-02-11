@@ -262,6 +262,9 @@ struct ares_channeldata {
   /* Thread safety lock */
   ares__thread_mutex_t *lock;
 
+  /* Conditional to wake waiters when queue is empty */
+  ares__thread_cond_t  *cond_empty;
+
   /* Server addresses and communications state. Sorted by least consecutive
    * failures, followed by the configuration order if failures are equal. */
   ares__slist_t        *servers;
@@ -529,6 +532,16 @@ ares_status_t ares__dns_name_parse(ares__buf_t *buf, char **name,
 ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
                                    ares_bool_t validate_hostname,
                                    const char *name);
+
+/*! Check if the queue is empty, if so, wake any waiters.  This is only
+ *  effective if built with threading support.
+ *
+ *  Must be holding a channel lock when calling this function.
+ *
+ *  \param[in]  channel Initialized ares channel object
+ */
+void ares_queue_notify_empty(ares_channel_t *channel);
+
 
 #define ARES_SWAP_BYTE(a, b)           \
   do {                                 \

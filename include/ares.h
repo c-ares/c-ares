@@ -773,6 +773,20 @@ CARES_EXTERN int         ares_inet_pton(int af, const char *src, void *dst);
  */
 CARES_EXTERN ares_bool_t ares_threadsafety(void);
 
+
+/*! Block until notified that there are no longer any queries in queue, or
+ *  the specified timeout has expired.
+ *
+ *  \param[in] channel    Initialized ares channel
+ *  \param[in] timeout_ms Number of milliseconds to wait for the queue to be
+ *                        empty. -1 for Infinite.
+ *  \return ARES_ENOTIMP if not built with threading support, ARES_ETIMEOUT
+ *          if requested timeout expires, ARES_SUCCESS when queue is empty.
+ */
+CARES_EXTERN ares_status_t ares_queue_wait_empty(ares_channel_t *channel,
+                                                 int timeout_ms);
+
+
 #ifdef __cplusplus
 }
 #endif

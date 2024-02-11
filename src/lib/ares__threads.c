@@ -123,8 +123,6 @@ ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
                                           ares__thread_mutex_t *mut,
                                           unsigned long         timeout_ms)
 {
-  struct timespec ts;
-
   if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
   }
@@ -505,6 +503,8 @@ ares_bool_t ares_threadsafety(void)
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel)
 {
+  ares_status_t status = ARES_SUCCESS;
+
   /* Threading is optional! */
   if (!ares_threadsafety()) {
     return ARES_SUCCESS;
@@ -512,9 +512,21 @@ ares_status_t ares__channel_threading_init(ares_channel_t *channel)
 
   channel->lock = ares__thread_mutex_create();
   if (channel->lock == NULL) {
-    return ARES_ENOMEM;
+    status = ARES_ENOMEM;
+    goto done;
   }
-  return ARES_SUCCESS;
+
+  channel->cond_empty = ares__thread_cond_create();
+  if (channel->cond_empty == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+done:
+  if (status != ARES_SUCCESS) {
+    ares__channel_threading_destroy(channel);
+  }
+  return status;
 }
 
 void ares__channel_threading_destroy(ares_channel_t *channel)
@@ -531,4 +543,63 @@ void ares__channel_lock(ares_channel_t *channel)
 void ares__channel_unlock(ares_channel_t *channel)
 {
   ares__thread_mutex_unlock(channel->lock);
+}
+
+/* Must not be holding a channel lock already, public function only */
+ares_status_t ares_queue_wait_empty(ares_channel_t *channel, int timeout_ms)
+{
+  ares_status_t  status = ARES_SUCCESS;
+  struct timeval tout;
+
+  if (!ares_threadsafety()) {
+    return ARES_ENOTIMP;
+  }
+
+  if (channel == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (timeout_ms >= 0) {
+    tout          = ares__tvnow();
+    tout.tv_sec  += timeout_ms / 1000;
+    tout.tv_usec += (timeout_ms % 1000) * 1000;
+  }
+
+  ares__thread_mutex_lock(channel->lock);
+  while (ares__llist_len(channel->all_queries)) {
+    if (timeout_ms < 0) {
+      ares__thread_cond_wait(channel->cond_empty, channel->lock);
+    } else {
+      struct timeval tv_remaining;
+      struct timeval tv_now = ares__tvnow();
+      unsigned long  tms;
+
+      ares__timeval_remaining(&tv_remaining, &tv_now, &tout);
+      tms = (unsigned long)((tv_remaining.tv_sec * 1000) +
+                            (tv_remaining.tv_usec / 1000));
+      if (tms == 0) {
+        status = ARES_ETIMEOUT;
+      } else {
+        status =
+          ares__thread_cond_timedwait(channel->cond_empty, channel->lock, tms);
+      }
+    }
+  }
+  ares__thread_mutex_unlock(channel->lock);
+  return status;
+}
+
+void ares_queue_notify_empty(ares_channel_t *channel)
+{
+  if (channel == NULL) {
+    return;
+  }
+
+  /* We are guaranteed to be holding a channel lock already */
+  if (ares__llist_len(channel->all_queries)) {
+    return;
+  }
+
+  /* Notify all waiters of the conditional */
+  ares__thread_cond_broadcast(channel->cond_empty);
 }
