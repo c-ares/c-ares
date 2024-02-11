@@ -86,55 +86,63 @@ ares__thread_cond_t *ares__thread_cond_create(void)
 
 void ares__thread_cond_destroy(ares__thread_cond_t *cond)
 {
-  if (cond == NULL)
+  if (cond == NULL) {
     return;
+  }
   ares_free(cond);
 }
 
 void ares__thread_cond_signal(ares__thread_cond_t *cond)
 {
-  if (cond == NULL)
+  if (cond == NULL) {
     return;
+  }
   WakeConditionVariable(&cond->cond);
 }
 
 void ares__thread_cond_broadcast(ares__thread_cond_t *cond)
 {
-  if (cond == NULL)
+  if (cond == NULL) {
     return;
+  }
   WakeAllConditionVariable(&cond->cond);
 }
 
-ares_status_t ares__thread_cond_wait(ares__thread_cond_t *cond, ares__thread_mutex_t *mut)
+ares_status_t ares__thread_cond_wait(ares__thread_cond_t  *cond,
+                                     ares__thread_mutex_t *mut)
 {
-  if (cond == NULL || mut == NULL)
+  if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
+  }
 
   SleepConditionVariableCS(&cond->cond, &mut->mutex, INFINITE);
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t *cond, ares__thread_mutex_t *mut, unsigned long timeout_ms)
+ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
+                                          ares__thread_mutex_t *mut,
+                                          unsigned long         timeout_ms)
 {
   struct timespec ts;
 
-  if (cond == NULL || mut == NULL)
+  if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
+  }
 
-  if (!SleepConditionVariableCS(&cond->cond, &mut->mutex, timeout_ms))
+  if (!SleepConditionVariableCS(&cond->cond, &mut->mutex, timeout_ms)) {
     return ARES_ETIMEOUT;
+  }
 
   return ARES_SUCCESS;
 }
-
 
 struct ares__thread {
   HANDLE thread;
   DWORD  id;
 
-  void *(*func)(void *arg);
-  void   *arg;
-  void   *rv;
+  void  *(*func)(void *arg);
+  void  *arg;
+  void  *rv;
 };
 
 /* Wrap for pthread compatibility */
@@ -197,15 +205,15 @@ ares_status_t ares__thread_join(ares__thread_t *thread, void **rv)
 #  else /* !WIN32 == PTHREAD */
 #    include <pthread.h>
 
-   /* for clock_gettime() */
-#  ifdef HAVE_TIME_H
-#    include <time.h>
-#  endif
+/* for clock_gettime() */
+#    ifdef HAVE_TIME_H
+#      include <time.h>
+#    endif
 
-   /* for gettimeofday() */
-#  ifdef HAVE_SYS_TIME_H
-#    include <sys/time.h>
-#  endif
+/* for gettimeofday() */
+#    ifdef HAVE_SYS_TIME_H
+#      include <sys/time.h>
+#    endif
 
 struct ares__thread_mutex {
   pthread_mutex_t mutex;
@@ -266,7 +274,6 @@ void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
   pthread_mutex_unlock(&mut->mutex);
 }
 
-
 struct ares__thread_cond {
   pthread_cond_t cond;
 };
@@ -283,30 +290,35 @@ ares__thread_cond_t *ares__thread_cond_create(void)
 
 void ares__thread_cond_destroy(ares__thread_cond_t *cond)
 {
-  if (cond == NULL)
+  if (cond == NULL) {
     return;
+  }
   pthread_cond_destroy(&cond->cond);
   ares_free(cond);
 }
 
 void ares__thread_cond_signal(ares__thread_cond_t *cond)
 {
-  if (cond == NULL)
+  if (cond == NULL) {
     return;
+  }
   pthread_cond_signal(&cond->cond);
 }
 
 void ares__thread_cond_broadcast(ares__thread_cond_t *cond)
 {
-  if (cond == NULL)
+  if (cond == NULL) {
     return;
+  }
   pthread_cond_broadcast(&cond->cond);
 }
 
-ares_status_t ares__thread_cond_wait(ares__thread_cond_t *cond, ares__thread_mutex_t *mut)
+ares_status_t ares__thread_cond_wait(ares__thread_cond_t  *cond,
+                                     ares__thread_mutex_t *mut)
 {
-  if (cond == NULL || mut == NULL)
+  if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
+  }
 
   pthread_cond_wait(&cond->cond, &mut->mutex);
   return ARES_SUCCESS;
@@ -314,16 +326,16 @@ ares_status_t ares__thread_cond_wait(ares__thread_cond_t *cond, ares__thread_mut
 
 static void ares__timespec_timeout(struct timespec *ts, unsigned long add_ms)
 {
-#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_REALTIME)
+#    if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_REALTIME)
   clock_gettime(CLOCK_REALTIME, ts);
-#elif defined(HAVE_GETTIMEOFDAY)
+#    elif defined(HAVE_GETTIMEOFDAY)
   struct timeval tv;
   gettimeofday(&tv, NULL);
   ts->tv_sec  = tv.tv_sec;
   ts->tv_nsec = tv.tv_usec * 1000;
-#else
-#  error cannot determine current system time
-#endif
+#    else
+#      error cannot determine current system time
+#    endif
 
   ts->tv_sec  += add_ms / 1000;
   ts->tv_nsec += (add_ms % 1000) * 1000000;
@@ -335,21 +347,24 @@ static void ares__timespec_timeout(struct timespec *ts, unsigned long add_ms)
   }
 }
 
-ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t *cond, ares__thread_mutex_t *mut, unsigned long timeout_ms)
+ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
+                                          ares__thread_mutex_t *mut,
+                                          unsigned long         timeout_ms)
 {
   struct timespec ts;
 
-  if (cond == NULL || mut == NULL)
+  if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
+  }
 
   ares__timespec_timeout(&ts, timeout_ms);
 
-  if (pthread_cond_timedwait(&cond->cond, &mut->mutex, &ts) != 0)
+  if (pthread_cond_timedwait(&cond->cond, &mut->mutex, &ts) != 0) {
     return ARES_ETIMEOUT;
+  }
 
   return ARES_SUCCESS;
 }
-
 
 struct ares__thread {
   pthread_t thread;
@@ -447,21 +462,23 @@ void ares__thread_cond_broadcast(ares__thread_cond_t *cond)
   (void)cond;
 }
 
-ares_status_t ares__thread_cond_wait(ares__thread_cond_t *cond, ares__thread_mutex_t *mut)
+ares_status_t ares__thread_cond_wait(ares__thread_cond_t  *cond,
+                                     ares__thread_mutex_t *mut)
 {
   (void)cond;
   (void)mut;
   return ARES_ENOTIMP;
 }
 
-ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t *cond, ares__thread_mutex_t *mut, unsigned long timeout_ms)
+ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
+                                          ares__thread_mutex_t *mut,
+                                          unsigned long         timeout_ms)
 {
   (void)cond;
   (void)mut;
   (void)timeout_ms;
   return ARES_ENOTIMP;
 }
-
 
 ares_status_t ares__thread_create(ares__thread_t    **thread,
                                   ares__thread_func_t func, void *arg)
