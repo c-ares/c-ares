@@ -52,7 +52,13 @@ static void ares_event_destroy_cb(void *arg)
 /* See if a pending update already exists. We don't want to enqueue multiple
  * updates for the same event handle. Right now this is O(n) based on number
  * of updates already enqueued.  In the future, it might make sense to make
- * this O(1) with a hashtable. */
+ * this O(1) with a hashtable.
+ * NOTE: in some cases a delete then re-add of the same fd, but really pointing
+ *       to a different destination can happen due to a quick close of a
+ *       connection then creation of a new one.  So we need to look at the
+ *       flags and ignore any delete events when finding a match since we
+ *       need to process the delete always, it can't be combined with other
+ *       updates. */
 static ares_event_t *ares_event_update_find(ares_event_thread_t *e,
                                             ares_socket_t fd, const void *data)
 {
@@ -62,12 +68,12 @@ static ares_event_t *ares_event_update_find(ares_event_thread_t *e,
        node = ares__llist_node_next(node)) {
     ares_event_t *ev = ares__llist_node_val(node);
 
-    if (fd != ARES_SOCKET_BAD && fd == ev->fd) {
+    if (fd != ARES_SOCKET_BAD && fd == ev->fd && ev->flags != 0) {
       return ev;
     }
 
     if (fd == ARES_SOCKET_BAD && ev->fd == ARES_SOCKET_BAD &&
-        data == ev->data) {
+        data == ev->data && ev->flags != 0) {
       return ev;
     }
   }
