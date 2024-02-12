@@ -533,6 +533,8 @@ void ares__channel_threading_destroy(ares_channel_t *channel)
 {
   ares__thread_mutex_destroy(channel->lock);
   channel->lock = NULL;
+  ares__thread_cond_destroy(channel->cond_empty);
+  channel->cond_empty = NULL;
 }
 
 void ares__channel_lock(ares_channel_t *channel)
