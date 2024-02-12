@@ -352,6 +352,7 @@ public:
                           struct ares_options *givenopts, int optmask)
     : MockChannelOptsTest(count, family, force_tcp, FillOptionsET(&evopts_, givenopts, evsys), optmask | ARES_OPT_EVENT_THREAD)
   {
+    cancel_ms_ = 0;
     isup = true;
     thread = std::thread(&MockEventThreadOptsTest::ProcessThread, this);
   }
