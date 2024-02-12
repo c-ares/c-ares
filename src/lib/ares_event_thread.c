@@ -120,6 +120,8 @@ ares_status_t ares_event_update(ares_event_t **event, ares_event_thread_t *e,
       ares_free(ev);
       return ARES_ENOMEM;
     }
+  } else {
+printf("%s(): fd %d already exists in update table, updating\n", __FUNCTION__, fd);
   }
 
   ev->flags = flags;
@@ -188,7 +190,7 @@ static void ares_event_thread_sockstate_cb(void *data, ares_socket_t socket_fd,
 
   /* Update channel fd */
   ares__thread_mutex_lock(e->mutex);
-
+printf("%s(): fd: %d, readable: %d, writable: %d\n", __FUNCTION__, socket_fd, readable, writable);
   ares_event_update(NULL, e, flags, ares_event_thread_process_fd, socket_fd,
                     NULL, NULL, NULL);
 
