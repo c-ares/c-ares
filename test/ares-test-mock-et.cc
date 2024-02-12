@@ -213,9 +213,10 @@ class MockUDPEventThreadMaxQueriesTest
   MockUDPEventThreadMaxQueriesTest()
     : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), false,
                           FillOptions(&opts_),
-                          ARES_OPT_UDP_MAX_QUERIES) {}
+                          ARES_OPT_UDP_MAX_QUERIES|ARES_OPT_FLAGS) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
     memset(opts, 0, sizeof(struct ares_options));
+    opts->flags = ARES_FLAG_STAYOPEN|ARES_FLAG_EDNS;
     opts->udp_max_queries = MAXUDPQUERIES_LIMIT;
     return opts;
   }
