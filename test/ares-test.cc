@@ -820,12 +820,10 @@ void MockChannelOptsTest::Process(unsigned int cancel_ms) {
 }
 
 void MockEventThreadOptsTest::ProcessThread() {
-  int nfds=0, count;
-  fd_set readers;
   std::set<ares_socket_t> fds;
-  bool has_cancel_ms = false;
 
 #ifndef CARES_SYMBOL_HIDING
+  bool has_cancel_ms = false;
   struct timeval tv_begin;
   struct timeval tv_cancel;
 #endif
@@ -833,6 +831,8 @@ void MockEventThreadOptsTest::ProcessThread() {
   mutex.lock();
 
   while (isup) {
+    int nfds = 0;
+    fd_set readers;
 #ifndef CARES_SYMBOL_HIDING
     struct timeval  tv_now = ares__tvnow();
     struct timeval  tv_remaining;
@@ -879,14 +879,12 @@ void MockEventThreadOptsTest::ProcessThread() {
     }
 #endif
 
-    /* We just always wait 50ms then recheck. Not doing any complex signalling. */
+    /* We just always wait 20ms then recheck. Not doing any complex signaling. */
     tv.tv_sec  = 0;
-    tv.tv_usec = 50000;
+    tv.tv_usec = 20000;
 
     mutex.unlock();
-    count = select(nfds, &readers, nullptr, nullptr, &tv);
-    mutex.lock();
-    if (count < 0) {
+    if (select(nfds, &readers, nullptr, nullptr, &tv) < 0) {
       fprintf(stderr, "select() failed, errno %d\n", errno);
       return;
     }
@@ -897,6 +895,7 @@ void MockEventThreadOptsTest::ProcessThread() {
         ProcessFD(fd);
       }
     }
+    mutex.lock();
   }
   mutex.unlock();
 
