@@ -293,6 +293,7 @@ static void read_tcp_data(ares_channel_t           *channel,
   /* Read from socket */
   count = ares__socket_recv(channel, conn->fd, ptr, ptr_len);
   if (count <= 0) {
+printf("%s(): read failed on fd %d\n", __FUNCTION__, conn->fd);
     ares__buf_append_finish(server->tcp_parser, 0);
     if (!(count == -1 && try_again(SOCKERRNO))) {
       handle_conn_error(conn, ARES_TRUE);
@@ -416,6 +417,7 @@ static void read_udp_packets_fd(ares_channel_t           *channel,
 {
   ares_ssize_t  read_len;
   unsigned char buf[MAXENDSSZ + 1];
+  size_t        loop_cnt = 0;
 
 #ifdef HAVE_RECVFROM
   ares_socklen_t fromlen;
@@ -440,6 +442,7 @@ static void read_udp_packets_fd(ares_channel_t           *channel,
       } else {
         fromlen = sizeof(from.sa6);
       }
+printf("%s(): attempting read on fd %d\n", __FUNCTION__, conn->fd);
       read_len = ares__socket_recvfrom(channel, conn->fd, (void *)buf,
                                        sizeof(buf), 0, &from.sa, &fromlen);
     }
@@ -448,11 +451,18 @@ static void read_udp_packets_fd(ares_channel_t           *channel,
       /* UDP is connectionless, so result code of 0 is a 0-length UDP
        * packet, and not an indication the connection is closed like on
        * tcp */
+printf("%s(): read 0-length packet\n", __FUNCTION__);
       continue;
     } else if (read_len < 0) {
       if (try_again(SOCKERRNO)) {
+if (loop_cnt == 0) {
+printf("%s(): read failed, try again\n", __FUNCTION__);
+} else {
+printf("%s(): nothing left to read\n", __FUNCTION__);
+}
         break;
       }
+printf("%s(): read failed with error\n", __FUNCTION__);
 
       handle_conn_error(conn, ARES_TRUE);
       return;
@@ -461,6 +471,8 @@ static void read_udp_packets_fd(ares_channel_t           *channel,
       /* The address the response comes from does not match the address we
        * sent the request to. Someone may be attempting to perform a cache
        * poisoning attack. */
+printf("%s(): same address failed\n", __FUNCTION__);
+
       continue;
 #endif
 
@@ -470,6 +482,7 @@ static void read_udp_packets_fd(ares_channel_t           *channel,
 
     /* Try to read again only if *we* set up the socket, otherwise it may be
      * a blocking socket and would cause recvfrom to hang. */
+    loop_cnt++;
   } while (read_len >= 0 && channel->sock_funcs == NULL);
 
   ares__check_cleanup_conn(channel, conn);
@@ -493,6 +506,7 @@ static void read_packets(ares_channel_t *channel, fd_set *read_fds,
   if (!read_fds) {
     node = ares__htable_asvp_get_direct(channel->connnode_by_socket, read_fd);
     if (node == NULL) {
+printf("%s(): read_fd %d not found\n", __FUNCTION__, read_fd);
       return;
     }
 
@@ -527,6 +541,8 @@ static void read_packets(ares_channel_t *channel, fd_set *read_fds,
     node =
       ares__htable_asvp_get_direct(channel->connnode_by_socket, socketlist[i]);
     if (node == NULL) {
+printf("%s(): read_fds %d not found\n", __FUNCTION__, socketlist[i]);
+
       return;
     }
 
@@ -629,6 +645,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   /* Parse the response */
   status = ares_dns_parse(abuf, alen, 0, &rdnsrec);
   if (status != ARES_SUCCESS) {
+printf("%s(): ares_dns_parse() failed\n", __FUNCTION__);
     /* Malformations are never accepted */
     status = ARES_EBADRESP;
     goto cleanup;
@@ -642,12 +659,15 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   if (!query) {
     /* We may have stopped listening for this query, that's ok */
     status = ARES_SUCCESS;
+printf("%s(): query not found\n", __FUNCTION__);
+
     goto cleanup;
   }
 
   /* Parse the question we sent as we use it to compare */
   status = ares_dns_parse(query->qbuf, query->qlen, 0, &qdnsrec);
   if (status != ARES_SUCCESS) {
+printf("%s(): ares_dns_parse() of original question failed\n", __FUNCTION__);
     end_query(channel, query, status, NULL, 0);
     goto cleanup;
   }
@@ -655,6 +675,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   /* Both the query id and the questions must be the same. We will drop any
    * replies that aren't for the same query as this is considered invalid. */
   if (!same_questions(qdnsrec, rdnsrec)) {
+printf("%s(): question mismatch\n", __FUNCTION__);
     /* Possible qid conflict due to delayed response, that's ok */
     status = ARES_SUCCESS;
     goto cleanup;
@@ -672,6 +693,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    * query without EDNS enabled. */
   if (ares_dns_record_get_rcode(rdnsrec) == ARES_RCODE_FORMERR &&
       ares_dns_has_opt_rr(qdnsrec) && !ares_dns_has_opt_rr(rdnsrec)) {
+printf("%s(): must resend without EDNS\n", __FUNCTION__);
     status = rewrite_without_edns(qdnsrec, query);
     if (status != ARES_SUCCESS) {
       end_query(channel, query, status, NULL, 0);
@@ -689,6 +711,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    */
   if (ares_dns_record_get_flags(rdnsrec) & ARES_FLAG_TC && !tcp &&
       !(channel->flags & ARES_FLAG_IGNTC)) {
+printf("%s(): switch to tcp\n", __FUNCTION__);
     query->using_tcp = ARES_TRUE;
     ares__send_query(query, now);
     status = ARES_SUCCESS; /* Switched to TCP is ok */
@@ -715,6 +738,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
         default:
           break;
       }
+printf("%s(): bad server rcode\n", __FUNCTION__);
+
       server_increment_failures(server);
       ares__requeue_query(query, now);
 
@@ -733,6 +758,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
 
   server_set_good(server);
   end_query(channel, query, ARES_SUCCESS, abuf, alen);
+printf("%s(): successful response parsed\n", __FUNCTION__);
 
   status = ARES_SUCCESS;
 
