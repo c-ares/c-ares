@@ -50,6 +50,7 @@
 #include <set>
 #include <string>
 #include <mutex>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -355,9 +356,14 @@ public:
                           struct ares_options *givenopts, int optmask)
     : MockChannelOptsTest(count, family, force_tcp, FillOptionsET(&evopts_, givenopts, evsys), optmask | ARES_OPT_EVENT_THREAD)
   {
+    isup = true;
+    thread = std::thread(&MockEventThreadOptsTest::ProcessThread, this);
   }
-
-  void Process(unsigned int cancel_ms = 0);
+  ~MockEventThreadOptsTest()
+  {
+    isup = false;
+    thread.join();
+  }
 
   static struct ares_options *FillOptionsET(struct ares_options *opts, struct ares_options *givenopts, ares_evsys_t evsys) {
     if (givenopts) {
@@ -369,8 +375,16 @@ public:
     return opts;
   }
 
+  void Process(unsigned int cancel_ms = 0) {
+    ares_queue_wait_empty(channel_, -1);
+  }
+
 private:
+  void ProcessThread();
   struct ares_options evopts_;
+  bool isup;
+  std::mutex mutex;
+  std::thread thread;
 };
 
 class MockEventThreadTest
@@ -381,6 +395,7 @@ public:
     : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()), nullptr, 0)
   {
   }
+
 };
 
 class MockUDPEventThreadTest : public MockEventThreadOptsTest,
