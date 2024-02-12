@@ -213,9 +213,10 @@ class MockUDPEventThreadMaxQueriesTest
   MockUDPEventThreadMaxQueriesTest()
     : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), false,
                           FillOptions(&opts_),
-                          ARES_OPT_UDP_MAX_QUERIES) {}
+                          ARES_OPT_UDP_MAX_QUERIES|ARES_OPT_FLAGS) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
     memset(opts, 0, sizeof(struct ares_options));
+    opts->flags = ARES_FLAG_STAYOPEN|ARES_FLAG_EDNS;
     opts->udp_max_queries = MAXUDPQUERIES_LIMIT;
     return opts;
   }
@@ -306,7 +307,25 @@ TEST_P(CacheQueriesEventThreadTest, GetHostByNameCache) {
 }
 
 #define TCPPARALLELLOOKUPS 32
-TEST_P(MockTCPEventThreadTest, GetHostByNameParallelLookups) {
+
+class MockTCPEventThreadStayOpenTest
+    : public MockEventThreadOptsTest,
+      public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
+ public:
+  MockTCPEventThreadStayOpenTest()
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), true /* tcp */,
+                          FillOptions(&opts_),
+                          ARES_OPT_FLAGS) {}
+  static struct ares_options* FillOptions(struct ares_options * opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->flags = ARES_FLAG_STAYOPEN|ARES_FLAG_EDNS;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+TEST_P(MockTCPEventThreadStayOpenTest, GetHostByNameParallelLookups) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
@@ -1366,6 +1385,8 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPEventThreadMaxQueriesTest, ::te
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, CacheQueriesEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPEventThreadStayOpenTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockExtraOptsEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families_modes), ares::test::PrintEvsysFamilyMode);
 

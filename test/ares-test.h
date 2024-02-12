@@ -50,6 +50,7 @@
 #include <set>
 #include <string>
 #include <mutex>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -90,10 +91,6 @@ void                    ProcessWork(ares_channel_t                          *cha
                                     std::function<std::set<ares_socket_t>()> get_extrafds,
                                     std::function<void(ares_socket_t)>       process_extra,
                                     unsigned int                             cancel_ms = 0);
-void ProcessWorkEventThread(ares_channel_t *channel,
-                            std::function<std::set<ares_socket_t>()> get_extrafds,
-                            std::function<void(ares_socket_t)> process_extra,
-                            unsigned int cancel_ms);
 std::set<ares_socket_t> NoExtraFDs();
 
 const char *af_tostr(int af);
@@ -355,9 +352,17 @@ public:
                           struct ares_options *givenopts, int optmask)
     : MockChannelOptsTest(count, family, force_tcp, FillOptionsET(&evopts_, givenopts, evsys), optmask | ARES_OPT_EVENT_THREAD)
   {
+    cancel_ms_ = 0;
+    isup = true;
+    thread = std::thread(&MockEventThreadOptsTest::ProcessThread, this);
   }
-
-  void Process(unsigned int cancel_ms = 0);
+  ~MockEventThreadOptsTest()
+  {
+    mutex.lock();
+    isup = false;
+    mutex.unlock();
+    thread.join();
+  }
 
   static struct ares_options *FillOptionsET(struct ares_options *opts, struct ares_options *givenopts, ares_evsys_t evsys) {
     if (givenopts) {
@@ -369,8 +374,20 @@ public:
     return opts;
   }
 
+  void Process(unsigned int cancel_ms = 0) {
+    mutex.lock();
+    cancel_ms_ = cancel_ms;
+    mutex.unlock();
+    ares_queue_wait_empty(channel_, -1);
+  }
+
 private:
+  void ProcessThread();
   struct ares_options evopts_;
+  unsigned int cancel_ms_;
+  bool isup;
+  std::mutex mutex;
+  std::thread thread;
 };
 
 class MockEventThreadTest
@@ -381,6 +398,7 @@ public:
     : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()), nullptr, 0)
   {
   }
+
 };
 
 class MockUDPEventThreadTest : public MockEventThreadOptsTest,

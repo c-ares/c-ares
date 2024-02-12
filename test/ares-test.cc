@@ -54,6 +54,7 @@ extern "C" {
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <functional>
 #include <sstream>
@@ -337,96 +338,6 @@ void ProcessWork(ares_channel_t *channel,
   }
 }
 
-void ProcessWorkEventThread(ares_channel_t *channel,
-                            std::function<std::set<ares_socket_t>()> get_extrafds,
-                            std::function<void(ares_socket_t)> process_extra,
-                            unsigned int cancel_ms) {
-  int nfds=0, count;
-  fd_set readers;
-  size_t retry_cnt = 1;
-
-#ifndef CARES_SYMBOL_HIDING
-  struct timeval tv_begin  = ares__tvnow();
-  struct timeval tv_cancel = tv_begin;
-
-  if (cancel_ms) {
-    if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
-    tv_cancel.tv_sec  += (cancel_ms / 1000);
-    tv_cancel.tv_usec += ((cancel_ms % 1000) * 1000);
-  }
-#else
-  if (cancel_ms) {
-    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
-    return;
-  }
-#endif
-
-  while (true) {
-#ifndef CARES_SYMBOL_HIDING
-    struct timeval  tv_now = ares__tvnow();
-    struct timeval  tv_remaining;
-#endif
-    struct timeval  tv;
-
-    /* c-ares is using its own event thread, so we only need to monitor the
-     * extrafds passed in */
-    FD_ZERO(&readers);
-    std::set<ares_socket_t> extrafds = get_extrafds();
-    for (ares_socket_t extrafd : extrafds) {
-      FD_SET(extrafd, &readers);
-      if (extrafd >= (ares_socket_t)nfds) {
-        nfds = (int)extrafd + 1;
-      }
-    }
-
-    /* If ares_timeout returns NULL, it means there are no requests in queue,
-     * so we can break out, but lets loop one additional time just incase we
-     * have some weird multithreading issue where a result hasn't yet been
-     * delivered.  This is really just an odd case, its not "normal" to try
-     * to determine if an event has been delivered by solely monitoring the
-     * channel, really we should know how many callbacks we expect and how
-     * many we get, but that's not easy to do in a test framework. */
-    if (ares_timeout(channel, NULL, &tv) == NULL) {
-      if (retry_cnt == 0)
-        return;
-      retry_cnt--;
-    } else {
-      retry_cnt = 1;
-    }
-
-#ifndef CARES_SYMBOL_HIDING
-    if (cancel_ms) {
-      unsigned int remaining_ms;
-      ares__timeval_remaining(&tv_remaining,
-                              &tv_now,
-                              &tv_cancel);
-      remaining_ms = (unsigned int)((tv_remaining.tv_sec * 1000) + (tv_remaining.tv_usec / 1000));
-      if (remaining_ms == 0) {
-        if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
-        ares_cancel(channel);
-        cancel_ms = 0; /* Disable issuing cancel again */
-      }
-    }
-#endif
-
-    /* We just always wait 50ms then recheck. Not doing any complex signalling. */
-    tv.tv_sec  = 0;
-    tv.tv_usec = 50000;
-
-    count = select(nfds, &readers, nullptr, nullptr, &tv);
-    if (count < 0) {
-      fprintf(stderr, "select() failed, errno %d\n", errno);
-      return;
-    }
-
-    // Let the provided callback process any activity on the extra FD.
-    for (ares_socket_t extrafd : extrafds) {
-      if (FD_ISSET(extrafd, &readers)) {
-        process_extra(extrafd);
-      }
-    }
-  }
-}
 
 // static
 void LibraryTest::SetAllocFail(int nth) {
@@ -600,6 +511,14 @@ MockServer::~MockServer() {
   free(tcp_data_);
 }
 
+static unsigned short getaddrport(struct sockaddr_storage *addr)
+{
+  if (addr->ss_family == AF_INET)
+    return ntohs(((struct sockaddr_in *)(void *)addr)->sin_port);
+
+  return ntohs(((struct sockaddr_in6 *)(void *)addr)->sin6_port);
+}
+
 void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, ares_socklen_t addrlen,
                                byte *data, int len) {
 
@@ -658,7 +577,8 @@ void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, 
   if (verbose) {
     std::vector<byte> req(data, data + len);
     std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << PacketToString(req)
-              << " on port " << (fd == udpfd_ ? udpport_ : tcpport_) << std::endl;
+              << " on port " << (fd == udpfd_ ? udpport_ : tcpport_)
+              << ":" << getaddrport(addr) << std::endl;
     std::cerr << "ProcessRequest(" << qid << ", '" << namestr
               << "', " << RRTypeToString(rrtype) << ")" << std::endl;
   }
@@ -730,6 +650,7 @@ std::set<ares_socket_t> MockServer::fds() const {
   return result;
 }
 
+
 void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr, ares_socklen_t addrlen,
                                 int qid, const std::string& name, int rrtype) {
   // Before processing, let gMock know the request is happening.
@@ -751,8 +672,11 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
     reply[0] = (byte)((qid >> 8) & 0xff);
     reply[1] = (byte)(qid & 0xff);
   }
-  if (verbose) std::cerr << "sending reply " << PacketToString(reply)
-                         << " on port " << ((fd == udpfd_) ? udpport_ : tcpport_) << std::endl;
+  if (verbose) {
+    std::cerr << "sending reply " << PacketToString(reply)
+              << " on port " << ((fd == udpfd_) ? udpport_ : tcpport_)
+              << ":" << getaddrport(addr) << std::endl;
+  }
 
   // Prefix with 2-byte length if TCP.
   if (fd != udpfd_) {
@@ -895,12 +819,86 @@ void MockChannelOptsTest::Process(unsigned int cancel_ms) {
               cancel_ms);
 }
 
-void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
-  using namespace std::placeholders;
-  ProcessWorkEventThread(channel_,
-              std::bind(&MockEventThreadOptsTest::fds, this),
-              std::bind(&MockEventThreadOptsTest::ProcessFD, this, _1),
-              cancel_ms);
+void MockEventThreadOptsTest::ProcessThread() {
+  std::set<ares_socket_t> fds;
+
+#ifndef CARES_SYMBOL_HIDING
+  bool has_cancel_ms = false;
+  struct timeval tv_begin;
+  struct timeval tv_cancel;
+#endif
+
+  mutex.lock();
+
+  while (isup) {
+    int nfds = 0;
+    fd_set readers;
+#ifndef CARES_SYMBOL_HIDING
+    struct timeval  tv_now = ares__tvnow();
+    struct timeval  tv_remaining;
+    if (cancel_ms_ && !has_cancel_ms) {
+      tv_begin  = ares__tvnow();
+      tv_cancel = tv_begin;
+      if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms_ << "ms" << std::endl;
+      tv_cancel.tv_sec  += (cancel_ms_ / 1000);
+      tv_cancel.tv_usec += ((cancel_ms_ % 1000) * 1000);
+      has_cancel_ms = true;
+    }
+#else
+    if (cancel_ms_) {
+      std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
+      return;
+    }
+#endif
+    struct timeval  tv;
+
+    /* c-ares is using its own event thread, so we only need to monitor the
+     * extrafds passed in */
+    FD_ZERO(&readers);
+    fds = MockEventThreadOptsTest::fds();
+    for (ares_socket_t fd : fds) {
+      FD_SET(fd, &readers);
+      if (fd >= (ares_socket_t)nfds) {
+        nfds = (int)fd + 1;
+      }
+    }
+
+#ifndef CARES_SYMBOL_HIDING
+    if (has_cancel_ms) {
+      unsigned int remaining_ms;
+      ares__timeval_remaining(&tv_remaining,
+                              &tv_now,
+                              &tv_cancel);
+      remaining_ms = (unsigned int)((tv_remaining.tv_sec * 1000) + (tv_remaining.tv_usec / 1000));
+      if (remaining_ms == 0) {
+        if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
+        ares_cancel(channel_);
+        cancel_ms_ = 0; /* Disable issuing cancel again */
+        has_cancel_ms = false;
+      }
+    }
+#endif
+
+    /* We just always wait 20ms then recheck. Not doing any complex signaling. */
+    tv.tv_sec  = 0;
+    tv.tv_usec = 20000;
+
+    mutex.unlock();
+    if (select(nfds, &readers, nullptr, nullptr, &tv) < 0) {
+      fprintf(stderr, "select() failed, errno %d\n", errno);
+      return;
+    }
+
+    // Let the provided callback process any activity on the extra FD.
+    for (ares_socket_t fd : fds) {
+      if (FD_ISSET(fd, &readers)) {
+        ProcessFD(fd);
+      }
+    }
+    mutex.lock();
+  }
+  mutex.unlock();
+
 }
 
 std::ostream& operator<<(std::ostream& os, const HostResult& result) {
