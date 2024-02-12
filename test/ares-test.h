@@ -361,7 +361,9 @@ public:
   }
   ~MockEventThreadOptsTest()
   {
+    mutex.lock();
     isup = false;
+    mutex.unlock();
     thread.join();
   }
 
@@ -376,12 +378,16 @@ public:
   }
 
   void Process(unsigned int cancel_ms = 0) {
+    mutex.lock();
+    cancel_ms_ = cancel_ms;
+    mutex.unlock();
     ares_queue_wait_empty(channel_, -1);
   }
 
 private:
   void ProcessThread();
   struct ares_options evopts_;
+  unsigned int cancel_ms_;
   bool isup;
   std::mutex mutex;
   std::thread thread;

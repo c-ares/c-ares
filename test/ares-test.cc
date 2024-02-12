@@ -808,29 +808,33 @@ void MockChannelOptsTest::Process(unsigned int cancel_ms) {
 void MockEventThreadOptsTest::ProcessThread() {
   int nfds=0, count;
   fd_set readers;
-  int cancel_ms = 0;
   std::set<ares_socket_t> fds;
+  bool has_cancel_ms = false;
 
 #ifndef CARES_SYMBOL_HIDING
-  struct timeval tv_begin  = ares__tvnow();
-  struct timeval tv_cancel = tv_begin;
-
-  if (cancel_ms) {
-    if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
-    tv_cancel.tv_sec  += (cancel_ms / 1000);
-    tv_cancel.tv_usec += ((cancel_ms % 1000) * 1000);
-  }
-#else
-  if (cancel_ms) {
-    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
-    return;
-  }
+  struct timeval tv_begin;
+  struct timeval tv_cancel;
 #endif
+
+  mutex.lock();
 
   while (isup) {
 #ifndef CARES_SYMBOL_HIDING
     struct timeval  tv_now = ares__tvnow();
     struct timeval  tv_remaining;
+    if (cancel_ms_ && !has_cancel_ms) {
+      tv_begin  = ares__tvnow();
+      tv_cancel = tv_begin;
+      if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms_ << "ms" << std::endl;
+      tv_cancel.tv_sec  += (cancel_ms_ / 1000);
+      tv_cancel.tv_usec += ((cancel_ms_ % 1000) * 1000);
+      has_cancel_ms = true;
+    }
+#else
+    if (cancel_ms_) {
+      std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
+      return;
+    }
 #endif
     struct timeval  tv;
 
@@ -846,7 +850,7 @@ void MockEventThreadOptsTest::ProcessThread() {
     }
 
 #ifndef CARES_SYMBOL_HIDING
-    if (cancel_ms) {
+    if (has_cancel_ms) {
       unsigned int remaining_ms;
       ares__timeval_remaining(&tv_remaining,
                               &tv_now,
@@ -855,7 +859,8 @@ void MockEventThreadOptsTest::ProcessThread() {
       if (remaining_ms == 0) {
         if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
         ares_cancel(channel_);
-        cancel_ms = 0; /* Disable issuing cancel again */
+        cancel_ms_ = 0; /* Disable issuing cancel again */
+        has_cancel_ms = false;
       }
     }
 #endif
@@ -864,7 +869,9 @@ void MockEventThreadOptsTest::ProcessThread() {
     tv.tv_sec  = 0;
     tv.tv_usec = 50000;
 
+    mutex.unlock();
     count = select(nfds, &readers, nullptr, nullptr, &tv);
+    mutex.lock();
     if (count < 0) {
       fprintf(stderr, "select() failed, errno %d\n", errno);
       return;
@@ -877,6 +884,7 @@ void MockEventThreadOptsTest::ProcessThread() {
       }
     }
   }
+  mutex.unlock();
 
 }
 
