@@ -54,6 +54,7 @@ extern "C" {
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <functional>
 #include <sstream>
@@ -510,6 +511,14 @@ MockServer::~MockServer() {
   free(tcp_data_);
 }
 
+static unsigned short getaddrport(struct sockaddr_storage *addr)
+{
+  if (addr->ss_family == AF_INET)
+    return ntohs(((struct sockaddr_in *)(void *)addr)->sin_port);
+
+  return ntohs(((struct sockaddr_in6 *)(void *)addr)->sin6_port);
+}
+
 void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, ares_socklen_t addrlen,
                                byte *data, int len) {
 
@@ -568,7 +577,8 @@ void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, 
   if (verbose) {
     std::vector<byte> req(data, data + len);
     std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << PacketToString(req)
-              << " on port " << (fd == udpfd_ ? udpport_ : tcpport_) << std::endl;
+              << " on port " << (fd == udpfd_ ? udpport_ : tcpport_)
+              << ":" << getaddrport(addr) << std::endl;
     std::cerr << "ProcessRequest(" << qid << ", '" << namestr
               << "', " << RRTypeToString(rrtype) << ")" << std::endl;
   }
@@ -640,6 +650,7 @@ std::set<ares_socket_t> MockServer::fds() const {
   return result;
 }
 
+
 void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr, ares_socklen_t addrlen,
                                 int qid, const std::string& name, int rrtype) {
   // Before processing, let gMock know the request is happening.
@@ -661,8 +672,11 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
     reply[0] = (byte)((qid >> 8) & 0xff);
     reply[1] = (byte)(qid & 0xff);
   }
-  if (verbose) std::cerr << "sending reply " << PacketToString(reply)
-                         << " on port " << ((fd == udpfd_) ? udpport_ : tcpport_) << std::endl;
+  if (verbose) {
+    std::cerr << "sending reply " << PacketToString(reply)
+              << " on port " << ((fd == udpfd_) ? udpport_ : tcpport_)
+              << ":" << getaddrport(addr) << std::endl;
+  }
 
   // Prefix with 2-byte length if TCP.
   if (fd != udpfd_) {

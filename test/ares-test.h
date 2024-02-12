@@ -91,10 +91,6 @@ void                    ProcessWork(ares_channel_t                          *cha
                                     std::function<std::set<ares_socket_t>()> get_extrafds,
                                     std::function<void(ares_socket_t)>       process_extra,
                                     unsigned int                             cancel_ms = 0);
-void ProcessWorkEventThread(ares_channel_t *channel,
-                            std::function<std::set<ares_socket_t>()> get_extrafds,
-                            std::function<void(ares_socket_t)> process_extra,
-                            unsigned int cancel_ms);
 std::set<ares_socket_t> NoExtraFDs();
 
 const char *af_tostr(int af);
