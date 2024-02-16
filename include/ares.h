@@ -787,6 +787,15 @@ CARES_EXTERN ares_status_t ares_queue_wait_empty(ares_channel_t *channel,
                                                  int timeout_ms);
 
 
+/*! Retrieve the total number of active queries pending answers from servers.
+ *  Some c-ares requests may spawn multiple queries, such as ares_getaddrinfo()
+ *  when using AF_UNSPEC, which will be reflected in this number.
+ *
+ *  \param[in] channel Initialized ares channel
+ *  \return Number of active queries to servers
+ */
+CARES_EXTERN size_t ares_queue_active_queries(ares_channel_t *channel);
+
 #ifdef __cplusplus
 }
 #endif

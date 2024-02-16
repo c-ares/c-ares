@@ -163,3 +163,21 @@ void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
 
   ares__channel_unlock(channel);
 }
+
+
+size_t ares_queue_active_queries(ares_channel_t *channel)
+{
+  size_t len;
+
+  if (channel == NULL) {
+    return 0;
+  }
+
+  ares__channel_lock(channel);
+
+  len = ares__llist_len(channel->all_queries);
+
+  ares__channel_unlock(channel);
+
+  return len;
+}
