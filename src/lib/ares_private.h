@@ -138,7 +138,9 @@ typedef struct ares_rand_state ares_rand_state;
 #endif
 
 /********* EDNS defines section ******/
-#define EDNSPACKETSZ 1232 /* Reasonable UDP payload size, as agreed by operators https://www.dnsflagday.net/2020/#faq */
+#define EDNSPACKETSZ                                          \
+  1232 /* Reasonable UDP payload size, as agreed by operators \
+          https://www.dnsflagday.net/2020/#faq */
 #define MAXENDSSZ   4096 /* Maximum (local) limit for edns packet size */
 #define EDNSFIXEDSZ 11   /* Size of EDNS header */
 
@@ -540,7 +542,7 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
  *
  *  \param[in]  channel Initialized ares channel object
  */
-void ares_queue_notify_empty(ares_channel_t *channel);
+void          ares_queue_notify_empty(ares_channel_t *channel);
 
 
 #define ARES_SWAP_BYTE(a, b)           \
@@ -594,7 +596,7 @@ void          ares__channel_unlock(ares_channel_t *channel);
 struct ares_event_thread;
 typedef struct ares_event_thread ares_event_thread_t;
 
-void ares_event_thread_destroy(ares_channel_t *channel);
+void          ares_event_thread_destroy(ares_channel_t *channel);
 ares_status_t ares_event_thread_init(ares_channel_t *channel);
 
 

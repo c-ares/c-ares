@@ -67,11 +67,11 @@ static ares_bool_t   same_questions(const ares_dns_record_t *qrec,
                                     const ares_dns_record_t *arec);
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
-static void end_query(ares_channel_t *channel, struct query *query,
-                      ares_status_t status, const unsigned char *abuf,
-                      size_t alen);
+static void          end_query(ares_channel_t *channel, struct query *query,
+                               ares_status_t status, const unsigned char *abuf,
+                               size_t alen);
 
-static void server_increment_failures(struct server_state *server)
+static void          server_increment_failures(struct server_state *server)
 {
   ares__slist_node_t   *node;
   const ares_channel_t *channel = server->channel;
@@ -761,7 +761,7 @@ static void handle_conn_error(struct server_connection *conn,
 ares_status_t ares__requeue_query(struct query *query, struct timeval *now)
 {
   ares_channel_t *channel = query->channel;
-  size_t max_tries = ares__slist_len(channel->servers) * channel->tries;
+  size_t max_tries        = ares__slist_len(channel->servers) * channel->tries;
 
   query->try_count++;
 
