@@ -539,6 +539,53 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
   return ARES_SUCCESS;
 }
 
+
+/* Configuration Files:
+ *  /etc/resolv.conf
+ *    - All Unix-like systems
+ *    - Comments start with ; or #
+ *    - Lines have a keyword followed by a value that is interpreted specific
+ *      to the keyword:
+ *    - Keywords:
+ *      - nameserver - IP address of nameserver with optional port (using a :
+ *        prefix). If using an ipv6 address and specifying a port, the ipv6
+ *        address must be encapsulated in brackets. For link-local ipv6
+ *        addressess, the interface can also be specified with a % prefix. e.g.:
+ *          "nameserver [fe80::1]:1234%iface"
+ *        This keyword may be specified multiple times.
+ *      - search - whitespace separated list of domains
+ *      - domain - obsolete, same as search except only a single domain
+ *      - sortlist - whitespace separated ip-address/netmask pairs
+ *      - options - options controlling resolver variables
+ *        - ndots:n - set ndots option
+ *        - timeout:n (retrans:n) - timeout per query attempt in seconds
+ *        - attempts:n (retry:n) - number of times resolver will send query
+ *        - rotate - round-robin selection of name servers
+ *        - use-vc - force tcp
+ *  /etc/nsswitch.conf
+ *    - Modern Linux, FreeBSD, HP-UX, Solaris
+ *    - Search order set via:
+ *      "hosts: files dns mdns4_minimal mdns4"
+ *      - files is /etc/hosts
+ *      - dns is dns
+ *      - mdns4_minimal does mdns only if ending in .local
+ *      - mdns4 does not limit to domains ending in .local
+ *  /etc/netsvc.conf
+ *    - AIX
+ *    - Search order set via:
+ *      "hosts = local , bind"
+ *      - bind is dns
+ *      - local is /etc/hosts
+ *  /etc/svc.conf
+ *    - Tru64
+ *    - Same format as /etc/netsvc.conf
+ *  /etc/host.conf
+ *    - Early FreeBSD, Early Linux
+ *    - Not worth supporting, format varied based on system, FreeBSD used
+ *      just a line per search order, Linux used "order " and a comma
+ *      delimited list of "bind" and "hosts"
+ */
+
 ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
                                          ares_sysconfig_t     *sysconfig)
 {
