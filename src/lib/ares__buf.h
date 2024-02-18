@@ -373,7 +373,8 @@ size_t        ares__buf_consume_whitespace(ares__buf_t *buf,
 size_t        ares__buf_consume_nonwhitespace(ares__buf_t *buf);
 
 
-/*! Consume until a character in the character set provided is reached
+/*! Consume until a character in the character set provided is reached.  Does
+ *  not include the character from the charset at the end.
  *
  *  \param[in] buf                Initialized buffer object
  *  \param[in] charset            character set
@@ -414,7 +415,9 @@ typedef enum {
   /*! No flags */
   ARES_BUF_SPLIT_NONE = 0,
   /*! The delimiter will be the first character in the buffer, except the
-   *  first buffer since the start doesn't have a delimiter
+   *  first buffer since the start doesn't have a delimiter.  This option is
+   *  incompatible with ARES_BUF_SPLIT_LTRIM since the delimiter is always
+   *  the first character.
    */
   ARES_BUF_SPLIT_DONT_CONSUME_DELIMS = 1 << 0,
   /*! Allow blank sections, by default blank sections are not emitted.  If using
@@ -424,7 +427,13 @@ typedef enum {
   /*! Remove duplicate entries */
   ARES_BUF_SPLIT_NO_DUPLICATES = 1 << 2,
   /*! Perform case-insensitive matching when comparing values */
-  ARES_BUF_SPLIT_CASE_INSENSITIVE = 1 << 3
+  ARES_BUF_SPLIT_CASE_INSENSITIVE = 1 << 3,
+  /*! Trim leading whitespace from buffer */
+  ARES_BUF_SPLIT_LTRIM = 1 << 4,
+  /*! Trim trailing whitespace from buffer */
+  ARES_BUF_SPLIT_RTRIM = 1 << 5,
+  /*! Trim leading and trailing whitespace from buffer */
+  ARES_BUF_SPLIT_TRIM = (ARES_BUF_SPLIT_LTRIM|ARES_BUF_SPLIT_RTRIM)
 } ares__buf_split_t;
 
 /*! Split the provided buffer into multiple sub-buffers stored in the variable

@@ -589,6 +589,24 @@ ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
   return ares__buf_consume(buf, len);
 }
 
+static ares_bool_t ares__is_whitespace(unsigned char c,
+                                       ares_bool_t include_linefeed)
+{
+  switch (c) {
+    case '\r':
+    case '\t':
+    case ' ':
+    case '\v':
+    case '\f':
+      return ARES_TRUE;
+    case '\n':
+      return include_linefeed;
+    default:
+      break;
+  }
+  return ARES_FALSE;
+}
+
 size_t ares__buf_consume_whitespace(ares__buf_t *buf,
                                     ares_bool_t  include_linefeed)
 {
@@ -601,24 +619,11 @@ size_t ares__buf_consume_whitespace(ares__buf_t *buf,
   }
 
   for (i = 0; i < remaining_len; i++) {
-    switch (ptr[i]) {
-      case '\r':
-      case '\t':
-      case ' ':
-      case '\v':
-      case '\f':
-        break;
-      case '\n':
-        if (!include_linefeed) {
-          goto done;
-        }
-        break;
-      default:
-        goto done;
+    if (!ares__is_whitespace(ptr[i], include_linefeed)) {
+      break;
     }
   }
 
-done:
   if (i > 0) {
     ares__buf_consume(buf, i);
   }
@@ -636,20 +641,11 @@ size_t ares__buf_consume_nonwhitespace(ares__buf_t *buf)
   }
 
   for (i = 0; i < remaining_len; i++) {
-    switch (ptr[i]) {
-      case '\r':
-      case '\t':
-      case ' ':
-      case '\v':
-      case '\f':
-      case '\n':
-        goto done;
-      default:
-        break;
+    if (ares__is_whitespace(ptr[i], ARES_TRUE)) {
+      break;
     }
   }
 
-done:
   if (i > 0) {
     ares__buf_consume(buf, i);
   }
@@ -801,19 +797,44 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
   }
 
   while (ares__buf_len(buf)) {
-    size_t len;
+    size_t               len;
+    const unsigned char *ptr;
 
-    ares__buf_tag(buf);
+    if (first) {
+      /* No delimiter yet, just tag the start */
+      ares__buf_tag(buf);
+    } else {
+      if (flags & ARES_BUF_SPLIT_DONT_CONSUME_DELIMS) {
+        /* tag then eat delimiter so its first byte in buffer */
+        ares__buf_tag(buf);
+        ares__buf_consume(buf, 1);
+      } else {
+        /* throw away delimiter */
+        ares__buf_consume(buf, 1);
+        ares__buf_tag(buf);
+      }
+    }
 
     len = ares__buf_consume_until_charset(buf, delims, delims_len, ARES_FALSE);
+    ptr = ares__buf_tag_fetch(buf, &len);
 
-    /* Don't treat a delimiter as part of the length */
-    if (!first && len && flags & ARES_BUF_SPLIT_DONT_CONSUME_DELIMS) {
-      len--;
+    if (flags & ARES_BUF_SPLIT_LTRIM) {
+      size_t i;
+      for (i=0; i<len; i++) {
+        if (!ares__is_whitespace(ptr[i], ARES_TRUE))
+          break;
+      }
+      ptr += i;
+      len -= i;
+    }
+
+    if (flags & ARES_BUF_SPLIT_RTRIM) {
+      while (len && ares__is_whitespace(ptr[len-1], ARES_TRUE)) {
+        len--;
+      }
     }
 
     if (len != 0 || flags & ARES_BUF_SPLIT_ALLOW_BLANK) {
-      const unsigned char *ptr = ares__buf_tag_fetch(buf, &len);
       ares__buf_t         *data;
 
       if (!(flags & ARES_BUF_SPLIT_NO_DUPLICATES) ||
@@ -837,12 +858,6 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
           goto done;
         }
       }
-    }
-
-    if (!(flags & ARES_BUF_SPLIT_DONT_CONSUME_DELIMS) &&
-        ares__buf_len(buf) != 0) {
-      /* Consume delimiter */
-      ares__buf_consume(buf, 1);
     }
 
     first = ARES_FALSE;
