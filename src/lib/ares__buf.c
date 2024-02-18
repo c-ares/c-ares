@@ -45,47 +45,6 @@ struct ares__buf {
                                        *   SIZE_MAX if not set. */
 };
 
-ares_bool_t ares__isprint(int ch)
-{
-  if (ch >= 0x20 && ch <= 0x7E) {
-    return ARES_TRUE;
-  }
-  return ARES_FALSE;
-}
-
-/* Character set allowed by hostnames.  This is to include the normal
- * domain name character set plus:
- *  - underscores which are used in SRV records.
- *  - Forward slashes such as are used for classless in-addr.arpa
- *    delegation (CNAMEs)
- *  - Asterisks may be used for wildcard domains in CNAMEs as seen in the
- *    real world.
- * While RFC 2181 section 11 does state not to do validation,
- * that applies to servers, not clients.  Vulnerabilities have been
- * reported when this validation is not performed.  Security is more
- * important than edge-case compatibility (which is probably invalid
- * anyhow). */
-ares_bool_t ares__is_hostnamech(int ch)
-{
-  /* [A-Za-z0-9-*._/]
-   * Don't use isalnum() as it is locale-specific
-   */
-  if (ch >= 'A' && ch <= 'Z') {
-    return ARES_TRUE;
-  }
-  if (ch >= 'a' && ch <= 'z') {
-    return ARES_TRUE;
-  }
-  if (ch >= '0' && ch <= '9') {
-    return ARES_TRUE;
-  }
-  if (ch == '-' || ch == '.' || ch == '_' || ch == '/' || ch == '*') {
-    return ARES_TRUE;
-  }
-
-  return ARES_FALSE;
-}
-
 ares__buf_t *ares__buf_create(void)
 {
   ares__buf_t *buf = ares_malloc_zero(sizeof(*buf));
@@ -1149,4 +1108,81 @@ ares_status_t ares__buf_hexdump(ares__buf_t *buf, const unsigned char *data,
   }
 
   return ARES_SUCCESS;
+}
+
+ares_status_t ares__buf_load_file(const char  *filename, ares__buf_t *buf)
+{
+  FILE          *fp        = NULL;
+  unsigned char *ptr       = NULL;
+  size_t         len       = 0;
+  size_t         ptr_len   = 0;
+  long           ftell_len = 0;
+  ares_status_t  status;
+
+  if (filename == NULL || buf == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  fp = fopen(filename, "rb");
+  if (fp == NULL) {
+    int error = ERRNO;
+    switch (error) {
+      case ENOENT:
+      case ESRCH:
+        status = ARES_ENOTFOUND;
+        goto done;
+      default:
+        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
+                       strerror(error)));
+        DEBUGF(fprintf(stderr, "Error opening file: %s\n", filename));
+        status = ARES_EFILE;
+        goto done;
+    }
+  }
+
+  /* Get length portably, fstat() is POSIX, not C */
+  if (fseek(fp, 0, SEEK_END) != 0) {
+    status = ARES_EFILE;
+    goto done;
+  }
+
+  ftell_len = ftell(fp);
+  if (ftell_len < 0) {
+    status = ARES_EFILE;
+    goto done;
+  }
+  len = (size_t)ftell_len;
+
+  if (fseek(fp, 0, SEEK_SET) != 0) {
+    status = ARES_EFILE;
+    goto done;
+  }
+
+  if (len == 0) {
+    status = ARES_SUCCESS;
+    goto done;
+  }
+
+  /* Read entire data into buffer */
+  ptr_len = len;
+  ptr     = ares__buf_append_start(buf, &ptr_len);
+  if (ptr == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  ptr_len = fread(ptr, 1, len, fp);
+  if (ptr_len != len) {
+    status = ARES_EFILE;
+    goto done;
+  }
+
+  ares__buf_append_finish(buf, len);
+  status = ARES_SUCCESS;
+
+done:
+  if (fp != NULL) {
+    fclose(fp);
+  }
+  return status;
 }

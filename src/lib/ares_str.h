@@ -24,8 +24,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#ifndef HEADER_CARES_STRDUP_H
-#define HEADER_CARES_STRDUP_H
+#ifndef __ARES_STR_H
+#define __ARES_STR_H
 
 #include "ares_setup.h"
 #include "ares.h"
@@ -52,4 +52,10 @@ unsigned char ares__tolower(unsigned char c);
 ares_bool_t   ares__memeq_ci(const unsigned char *ptr, const unsigned char *val,
                              size_t len);
 
-#endif /* HEADER_CARES_STRDUP_H */
+ares_bool_t   ares__isprint(int ch);
+ares_bool_t ares__is_hostnamech(int ch);
+
+ares_bool_t ares__is_hostname(const char *str);
+
+
+#endif /* __ARES_STR_H */

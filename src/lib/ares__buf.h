@@ -567,6 +567,18 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
 ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
                                          unsigned char **bin, size_t *bin_len,
                                          ares_bool_t allow_multiple);
+
+/*! Load data from specified file path into provided buffer.  The entire file
+ *  is loaded into memory.
+ *
+ *  \param[in]     filename complete path to file
+ *  \param[in,out] buf      Initialized (non-const) buffer object to load data
+ *                          into
+ *  \return ARES_ENOTFOUND if file not found, ARES_EFILE if issues reading
+ *          file, ARES_ENOMEM if out of memory, ARES_SUCCESS on success.
+ */
+ares_status_t ares__buf_load_file(const char *filename, ares__buf_t *buf);
+
 /*! @} */
 
 #endif /* __ARES__BUF_H */
