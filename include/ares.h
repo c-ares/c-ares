@@ -161,8 +161,12 @@ typedef enum {
   ARES_ECANCELLED = 24, /* introduced in 1.7.0 */
 
   /* More ares_getaddrinfo error codes */
-  ARES_ESERVICE = 25 /* ares_getaddrinfo() was passed a text service name that
-                      * is not recognized. introduced in 1.16.0 */
+  ARES_ESERVICE = 25, /* ares_getaddrinfo() was passed a text service name that
+                       * is not recognized. introduced in 1.16.0 */
+
+  /* init_by_defaults error codes */
+  ARES_EINITNOSERVER = 26 /* No servers were available when initializing
+                           * a channel */
 } ares_status_t;
 
 typedef enum {
@@ -196,6 +200,7 @@ typedef enum {
 #define ARES_FLAG_NOALIASES   (1 << 6)
 #define ARES_FLAG_NOCHECKRESP (1 << 7)
 #define ARES_FLAG_EDNS        (1 << 8)
+#define ARES_FLAG_NO_DFLT_SVR (1 << 9)
 
 /* Option mask values */
 #define ARES_OPT_FLAGS           (1 << 0)

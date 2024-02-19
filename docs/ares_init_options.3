@@ -120,6 +120,10 @@ used to test or debug name servers.
 .B ARES_FLAG_EDNS
 Include an EDNS pseudo-resource record (RFC 2671) in generated requests.  As of
 v1.22, this is on by default if flags are otherwise not set.
+.TP 23
+.B ARES_FLAG_NO_DFLT_SVR
+Do not attempt to add a default local named server if there are no other
+servers available.  Instead, fail initialization with \fIARES_EINITNOSERVER\fP.
 .RE
 .TP 18
 .B ARES_OPT_TIMEOUT
@@ -342,6 +346,9 @@ The process's available memory was exhausted.
 .TP 14
 .B ARES_ENOTINITIALIZED
 c-ares library initialization not yet performed.
+.TP 14
+.B ARES_EINITNOSERVER
+No nameservers were available to use.
 .SH NOTES
 When initializing from
 .B /etc/resolv.conf,
