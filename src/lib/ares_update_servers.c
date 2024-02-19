@@ -463,7 +463,7 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
   }
 
   status = ares__buf_split(buf, (const unsigned char *)" ,", 2,
-                           ARES_BUF_SPLIT_NONE, &list);
+                           ARES_BUF_SPLIT_NONE, 0, &list);
   if (status != ARES_SUCCESS) {
     goto done;
   }

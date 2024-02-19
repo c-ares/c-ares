@@ -781,7 +781,7 @@ static ares_bool_t ares__buf_split_isduplicate(ares__llist_t       *list,
 
 ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
                               size_t delims_len, ares__buf_split_t flags,
-                              ares__llist_t **list)
+                              size_t max_sections, ares__llist_t **list)
 {
   ares_status_t status = ARES_SUCCESS;
   ares_bool_t   first  = ARES_TRUE;
@@ -815,7 +815,12 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
       }
     }
 
-    len = ares__buf_consume_until_charset(buf, delims, delims_len, ARES_FALSE);
+    if (max_sections && ares__llist_len(*list) >= max_sections-1) {
+      ares__buf_consume(buf, ares__buf_len(buf));
+    } else {
+      ares__buf_consume_until_charset(buf, delims, delims_len, ARES_FALSE);
+    }
+
     ptr = ares__buf_tag_fetch(buf, &len);
 
     if (flags & ARES_BUF_SPLIT_LTRIM) {

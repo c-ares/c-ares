@@ -296,7 +296,7 @@ static ares_status_t ares__lookup_hostaliases(const char *name, char **alias)
    */
 
   status = ares__buf_split(buf, (const unsigned char *)"\n", 1,
-                           ARES_BUF_SPLIT_TRIM, &lines);
+                           ARES_BUF_SPLIT_TRIM, 0, &lines);
   if (status != ARES_SUCCESS) {
     goto done;
   }

@@ -444,6 +444,12 @@ typedef enum {
  *  \param[in]  delims            Possible delimiters
  *  \param[in]  delims_len        Length of possible delimiters
  *  \param[in]  flags             One more more flags
+ *  \param[in]  max_sections      Maximum number of sections.  Use 0 for
+ *                                unlimited. Useful for splitting key/value
+ *                                pairs where the delimiter may be a valid
+ *                                character in the value.  A value of 1 would
+ *                                have little usefulness and would effectively
+ *                                ignore the delimiter itself.
  *  \param[out] list              Result. Depending on flags, this may be a
  *                                valid list with no elements.  Use
  *                                ares__llist_destroy() to free the memory which
@@ -453,7 +459,7 @@ typedef enum {
  */
 ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
                               size_t delims_len, ares__buf_split_t flags,
-                              ares__llist_t **list);
+                              size_t max_sections, ares__llist_t **list);
 
 
 /*! Check the unprocessed buffer to see if it begins with the sequence of
