@@ -134,7 +134,7 @@ static ares_status_t parse_sort(ares__buf_t *buf, struct apattern *pat)
   ares__buf_tag(buf);
 
   /* Consume ip address */
-  if (ares__buf_consume_charset(buf, ip_charset, sizeof(ip_charset)) == 0) {
+  if (ares__buf_consume_charset(buf, ip_charset, sizeof(ip_charset)-1) == 0) {
     return ARES_EBADSTR;
   }
 
@@ -162,7 +162,7 @@ static ares_status_t parse_sort(ares__buf_t *buf, struct apattern *pat)
     ares__buf_tag(buf);
 
     /* Consume mask */
-    if (ares__buf_consume_charset(buf, ipv4_charset, sizeof(ipv4_charset)) ==
+    if (ares__buf_consume_charset(buf, ipv4_charset, sizeof(ipv4_charset)-1) ==
         0) {
       return ARES_EBADSTR;
     }
