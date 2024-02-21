@@ -721,7 +721,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerNoDfltSvrEmptyInit,
   struct ares_options opts = {0};
   int optmask = ARES_OPT_FLAGS;
   opts.flags = ARES_FLAG_NO_DFLT_SVR;
-  EXPECT_EQ(ARES_EINITNOSERVER, ares_init_options(&channel, &opts, optmask));
+  EXPECT_EQ(ARES_ENOSERVER, ares_init_options(&channel, &opts, optmask));
 
   EXPECT_EQ(nullptr, channel);
   return HasFailure();

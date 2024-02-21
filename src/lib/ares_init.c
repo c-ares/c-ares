@@ -161,7 +161,7 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
      * to (in which case return an error).
      */
     if (channel->flags & ARES_FLAG_NO_DFLT_SVR) {
-      rc = ARES_EINITNOSERVER;
+      rc = ARES_ENOSERVER;
       goto error;
     }
 

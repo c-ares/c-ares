@@ -64,7 +64,7 @@ TEST_F(DefaultChannelTest, SetServers) {
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
-  EXPECT_EQ(ARES_ESERVFAIL, result.status_);
+  EXPECT_EQ(ARES_ENOSERVER, result.status_);
 
 
   struct ares_addr_node server1;

@@ -893,8 +893,8 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
   }
 
   if (server == NULL) {
-    end_query(channel, query, ARES_ESERVFAIL /* ? */, NULL, 0);
-    return ARES_ECONNREFUSED;
+    end_query(channel, query, ARES_ENOSERVER /* ? */, NULL, 0);
+    return ARES_ENOSERVER;
   }
 
   if (query->using_tcp) {

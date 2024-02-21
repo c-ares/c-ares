@@ -85,8 +85,8 @@ const char *ares_strerror(int code)
       return "DNS query cancelled";
     case ARES_ESERVICE:
       return "Invalid service name or number";
-    case ARES_EINITNOSERVER:
-      return "No nameservers were available to use";
+    case ARES_ENOSERVER:
+      return "No DNS servers were configured";
   }
 
   return "unknown";

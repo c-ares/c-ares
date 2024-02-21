@@ -164,9 +164,7 @@ typedef enum {
   ARES_ESERVICE = 25, /* ares_getaddrinfo() was passed a text service name that
                        * is not recognized. introduced in 1.16.0 */
 
-  /* init_by_defaults error codes */
-  ARES_EINITNOSERVER = 26 /* No servers were available when initializing
-                           * a channel */
+  ARES_ENOSERVER = 26 /* No DNS servers were configured */
 } ares_status_t;
 
 typedef enum {
