@@ -574,15 +574,16 @@ void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, 
   }
   int rrtype = DNS_QUESTION_TYPE(question);
 
+  std::vector<byte> req(data, data + len);
+  std::string reqstr = PacketToString(req);
   if (verbose) {
-    std::vector<byte> req(data, data + len);
-    std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << PacketToString(req)
+    std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << reqstr
               << " on port " << (fd == udpfd_ ? udpport_ : tcpport_)
               << ":" << getaddrport(addr) << std::endl;
     std::cerr << "ProcessRequest(" << qid << ", '" << namestr
               << "', " << RRTypeToString(rrtype) << ")" << std::endl;
   }
-  ProcessRequest(fd, addr, addrlen, qid, namestr, rrtype);
+  ProcessRequest(fd, addr, addrlen, reqstr, qid, namestr, rrtype);
 
 }
 
@@ -651,10 +652,16 @@ std::set<ares_socket_t> MockServer::fds() const {
 }
 
 
-void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr, ares_socklen_t addrlen,
+void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
+                                ares_socklen_t addrlen, const std::string &reqstr,
                                 int qid, const std::string& name, int rrtype) {
   // Before processing, let gMock know the request is happening.
   OnRequest(name, rrtype);
+
+  // If we are expecting a specific request then check it matches here.
+  if (expected_request_.length() > 0) {
+    ASSERT_EQ(expected_request_, reqstr);
+  }
 
   if (reply_.size() == 0) {
     return;

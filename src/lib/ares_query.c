@@ -45,9 +45,10 @@ struct qquery {
 static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
                       int alen);
 
-ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
+ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
                              int dnsclass, int type, ares_callback callback,
-                             void *arg, unsigned short *qid)
+                             void *arg, unsigned short *qid,
+                             ares__dns_optval_t *optval)
 {
   struct qquery *qquery;
   unsigned char *qbuf;
@@ -57,9 +58,9 @@ ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
 
   /* Compose the query. */
   rd     = !(channel->flags & ARES_FLAG_NORECURSE);
-  status = (ares_status_t)ares_create_query(
+  status = (ares_status_t)ares_create_query_int(
     name, dnsclass, type, 0, rd, &qbuf, &qlen,
-    (channel->flags & ARES_FLAG_EDNS) ? (int)channel->ednspsz : 0);
+    (channel->flags & ARES_FLAG_EDNS) ? (int)channel->ednspsz : 0, optval);
   if (status != ARES_SUCCESS) {
     if (qbuf != NULL) {
       ares_free(qbuf);
@@ -92,7 +93,7 @@ void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
     return;
   }
   ares__channel_lock(channel);
-  ares_query_qid(channel, name, dnsclass, type, callback, arg, NULL);
+  ares_query_int(channel, name, dnsclass, type, callback, arg, NULL, NULL);
   ares__channel_unlock(channel);
 }
 

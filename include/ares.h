@@ -477,6 +477,12 @@ CARES_EXTERN void ares_search(ares_channel_t *channel, const char *name,
                               int dnsclass, int type, ares_callback callback,
                               void *arg);
 
+CARES_EXTERN void ares_search_optval(ares_channel_t *channel, const char *name,
+                                     int dnsclass, int type,
+                                     ares_callback callback, void *arg,
+                                     unsigned short opt, unsigned char *val,
+                                     size_t val_len);
+
 CARES_EXTERN void ares_gethostbyname(ares_channel_t *channel, const char *name,
                                      int family, ares_host_callback callback,
                                      void *arg);

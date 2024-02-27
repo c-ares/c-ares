@@ -28,9 +28,10 @@
 #include "ares.h"
 #include "ares_private.h"
 
-int ares_create_query(const char *name, int dnsclass, int type,
-                      unsigned short id, int rd, unsigned char **bufp,
-                      int *buflenp, int max_udp_size)
+int ares_create_query_int(const char *name, int dnsclass, int type,
+                          unsigned short id, int rd, unsigned char **bufp,
+                          int *buflenp, int max_udp_size,
+                          ares__dns_optval_t *optval)
 {
   ares_status_t      status;
   ares_dns_record_t *dnsrec = NULL;
@@ -92,6 +93,15 @@ int ares_create_query(const char *name, int dnsclass, int type,
     if (status != ARES_SUCCESS) {
       goto done;
     }
+
+    /* If specified then add OPT RR options to the additional record */
+    if (optval != NULL) {
+      status = ares_dns_rr_set_opt(rr, ARES_RR_OPT_OPTIONS, optval->opt,
+                                   optval->val, optval->val_len);
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
   }
 
   status = ares_dns_write(dnsrec, bufp, &len);
@@ -104,4 +114,12 @@ int ares_create_query(const char *name, int dnsclass, int type,
 done:
   ares_dns_record_destroy(dnsrec);
   return (int)status;
+}
+
+int ares_create_query(const char *name, int dnsclass, int type,
+                      unsigned short id, int rd, unsigned char **bufp,
+                      int *buflenp, int max_udp_size)
+{
+  return ares_create_query_int(name, dnsclass, type, id, rd, bufp, buflenp,
+                               max_udp_size, NULL);
 }

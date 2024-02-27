@@ -50,6 +50,7 @@ struct search_query {
   ares_bool_t     trying_as_is; /* current query is for name as-is */
   size_t          timeouts;     /* number of timeouts we saw for this request */
   ares_bool_t ever_got_nodata; /* did we ever get ARES_ENODATA along the way? */
+  ares__dns_optval_t *optval;
 };
 
 static void search_callback(void *arg, int status, int timeouts,
@@ -59,7 +60,7 @@ static void end_squery(struct search_query *squery, ares_status_t status,
 
 static void ares_search_int(ares_channel_t *channel, const char *name,
                             int dnsclass, int type, ares_callback callback,
-                            void *arg)
+                            void *arg, ares__dns_optval_t *optval)
 {
   struct search_query *squery;
   char                *s;
@@ -82,7 +83,7 @@ static void ares_search_int(ares_channel_t *channel, const char *name,
     return;
   }
   if (s) {
-    ares_query(channel, s, dnsclass, type, callback, arg);
+    ares_query_int(channel, s, dnsclass, type, callback, arg, NULL, optval);
     ares_free(s);
     return;
   }
@@ -124,6 +125,32 @@ static void ares_search_int(ares_channel_t *channel, const char *name,
   squery->timeouts        = 0;
   squery->ever_got_nodata = ARES_FALSE;
 
+  /* Copy the OPT RR options value into the search_query structure */
+  if (optval != NULL) {
+    /* Allocate memory for duplicating the OPT RR options value */
+    squery->optval = ares_malloc_zero(sizeof(ares__dns_optval_t));
+    if (squery->optval != NULL) {
+      squery->optval->opt      = optval->opt;
+      squery->optval->val_len  = optval->val_len;
+      squery->optval->val = ares_malloc(optval->val_len);
+      if (squery->optval->val != NULL) {
+        memcpy(squery->optval->val, optval->val, optval->val_len);
+      }
+    }
+
+    /* Handle any memory allocation failures */
+    if ((squery->optval == NULL) || (squery->optval->val == NULL)) {
+        if (squery->optval != NULL) {
+          ares_free(squery->optval);
+        }
+        ares__strsplit_free(squery->domains, squery->ndomains);
+        ares_free(squery->name);
+        ares_free(squery);
+        callback(arg, ARES_ENOMEM, 0, NULL, 0);
+        return;
+    }
+  }
+
   /* Count the number of dots in name. */
   ndots = 0;
   for (p = name; *p; p++) {
@@ -140,17 +167,26 @@ static void ares_search_int(ares_channel_t *channel, const char *name,
     /* Try the name as-is first. */
     squery->next_domain  = 0;
     squery->trying_as_is = ARES_TRUE;
-    ares_query(channel, name, dnsclass, type, search_callback, squery);
+    ares_query_int(channel, name, dnsclass, type, search_callback, squery,
+                   NULL, optval);
   } else {
     /* Try the name as-is last; start with the first search domain. */
     squery->next_domain  = 1;
     squery->trying_as_is = ARES_FALSE;
     status               = ares__cat_domain(name, squery->domains[0], &s);
     if (status == ARES_SUCCESS) {
-      ares_query(channel, s, dnsclass, type, search_callback, squery);
+      ares_query_int(channel, s, dnsclass, type, search_callback, squery,
+                     NULL, optval);
       ares_free(s);
     } else {
       /* failed, free the malloc()ed memory */
+      if (squery->optval != NULL) {
+        if (squery->optval->val != NULL) {
+          ares_free(squery->optval->val);
+        }
+        ares_free(squery->optval);
+      }
+      ares__strsplit_free(squery->domains, squery->ndomains);
       ares_free(squery->name);
       ares_free(squery);
       callback(arg, (int)status, 0, NULL, 0);
@@ -165,7 +201,21 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
     return;
   }
   ares__channel_lock(channel);
-  ares_search_int(channel, name, dnsclass, type, callback, arg);
+  ares_search_int(channel, name, dnsclass, type, callback, arg, NULL);
+  ares__channel_unlock(channel);
+}
+
+void ares_search_optval(ares_channel_t *channel, const char *name, int dnsclass,
+                        int type, ares_callback callback, void *arg,
+                        unsigned short opt, unsigned char *val, size_t val_len)
+{
+  ares__dns_optval_t optval = {opt, val, val_len};
+
+  if ((channel == NULL) || (val == NULL)) {
+    return;
+  }
+  ares__channel_lock(channel);
+  ares_search_int(channel, name, dnsclass, type, callback, arg, &optval);
   ares__channel_unlock(channel);
 }
 
@@ -209,15 +259,15 @@ static void search_callback(void *arg, int status, int timeouts,
       } else {
         squery->trying_as_is = ARES_FALSE;
         squery->next_domain++;
-        ares_query(channel, s, squery->dnsclass, squery->type, search_callback,
-                   squery);
+        ares_query_int(channel, s, squery->dnsclass, squery->type, search_callback,
+                       squery, NULL, squery->optval);
         ares_free(s);
       }
     } else if (squery->status_as_is == -1) {
       /* Try the name as-is at the end. */
       squery->trying_as_is = ARES_TRUE;
-      ares_query(channel, squery->name, squery->dnsclass, squery->type,
-                 search_callback, squery);
+      ares_query_int(channel, squery->name, squery->dnsclass, squery->type,
+                     search_callback, squery, NULL, squery->optval);
     } else {
       if (squery->status_as_is == ARES_ENOTFOUND && squery->ever_got_nodata) {
         end_squery(squery, ARES_ENODATA, NULL, 0);
@@ -233,6 +283,12 @@ static void end_squery(struct search_query *squery, ares_status_t status,
 {
   squery->callback(squery->arg, (int)status, (int)squery->timeouts, abuf,
                    (int)alen);
+  if (squery->optval != NULL) {
+    if (squery->optval->val != NULL) {
+      ares_free(squery->optval->val);
+    }
+    ares_free(squery->optval);
+  }
   ares__strsplit_free(squery->domains, squery->ndomains);
   ares_free(squery->name);
   ares_free(squery);
