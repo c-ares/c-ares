@@ -713,6 +713,37 @@ CONTAINED_TEST_F(LibraryTest, ContainerEmptyInit,
   return HasFailure();
 }
 
+// Test that init fails if the flag to not use a default local named server is
+// enabled and no other nameservers are available.
+CONTAINED_TEST_F(LibraryTest, ContainerNoDfltSvrEmptyInit,
+                 "myhostname", "mydomainname.org", empty) {
+  ares_channel_t *channel = nullptr;
+  struct ares_options opts = {0};
+  int optmask = ARES_OPT_FLAGS;
+  opts.flags = ARES_FLAG_NO_DFLT_SVR;
+  EXPECT_EQ(ARES_ENOSERVER, ares_init_options(&channel, &opts, optmask));
+
+  EXPECT_EQ(nullptr, channel);
+  return HasFailure();
+}
+// Test that init succeeds if the flag to not use a default local named server
+// is enabled but other nameservers are available.
+CONTAINED_TEST_F(LibraryTest, ContainerNoDfltSvrFullInit,
+                 "myhostname", "mydomainname.org", filelist) {
+  ares_channel_t *channel = nullptr;
+  struct ares_options opts = {0};
+  int optmask = ARES_OPT_FLAGS;
+  opts.flags = ARES_FLAG_NO_DFLT_SVR;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+
+  std::string actual = GetNameServers(channel);
+  std::string expected = "1.2.3.4:53";
+  EXPECT_EQ(expected, actual);
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 #endif
 
 }  // namespace test

@@ -66,8 +66,8 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
     return ARES_EBADQUERY;
   }
   if (ares__slist_len(channel->servers) == 0) {
-    callback(arg, ARES_ESERVFAIL, 0, NULL, 0);
-    return ARES_ESERVFAIL;
+    callback(arg, ARES_ENOSERVER, 0, NULL, 0);
+    return ARES_ENOSERVER;
   }
 
   /* Check query cache */
