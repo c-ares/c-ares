@@ -45,10 +45,9 @@ struct qquery {
 static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
                       int alen);
 
-ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
+ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
                              int dnsclass, int type, ares_callback callback,
-                             void *arg, unsigned short *qid,
-                             ares__dns_optval_t *optval)
+                             void *arg, unsigned short *qid)
 {
   struct qquery *qquery;
   unsigned char *qbuf;
@@ -58,9 +57,9 @@ ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
 
   /* Compose the query. */
   rd     = !(channel->flags & ARES_FLAG_NORECURSE);
-  status = (ares_status_t)ares_create_query_int(
+  status = (ares_status_t)ares_create_query(
     name, dnsclass, type, 0, rd, &qbuf, &qlen,
-    (channel->flags & ARES_FLAG_EDNS) ? (int)channel->ednspsz : 0, optval);
+    (channel->flags & ARES_FLAG_EDNS) ? (int)channel->ednspsz : 0);
   if (status != ARES_SUCCESS) {
     if (qbuf != NULL) {
       ares_free(qbuf);
@@ -93,7 +92,7 @@ void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
     return;
   }
   ares__channel_lock(channel);
-  ares_query_int(channel, name, dnsclass, type, callback, arg, NULL, NULL);
+  ares_query_qid(channel, name, dnsclass, type, callback, arg, NULL);
   ares__channel_unlock(channel);
 }
 
@@ -107,33 +106,12 @@ static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
   if (status != ARES_SUCCESS) {
     qquery->callback(qquery->arg, status, timeouts, abuf, alen);
   } else {
-    /* Pull the response code and answer count from the packet. */
+    /* Pull the response code and answer count from the packet and convert any
+     * errors.
+     */
     rcode   = DNS_HEADER_RCODE(abuf);
     ancount = DNS_HEADER_ANCOUNT(abuf);
-
-    /* Convert errors. */
-    switch (rcode) {
-      case NOERROR:
-        status = (ancount > 0) ? ARES_SUCCESS : ARES_ENODATA;
-        break;
-      case FORMERR:
-        status = ARES_EFORMERR;
-        break;
-      case SERVFAIL:
-        status = ARES_ESERVFAIL;
-        break;
-      case NXDOMAIN:
-        status = ARES_ENOTFOUND;
-        break;
-      case NOTIMP:
-        status = ARES_ENOTIMP;
-        break;
-      case REFUSED:
-        status = ARES_EREFUSED;
-        break;
-      default:
-        break;
-    }
+    status = ares_dns_query_rcode_tostatus((ares_dns_rcode_t)rcode, ancount);
     qquery->callback(qquery->arg, status, timeouts, abuf, alen);
   }
   ares_free(qquery);

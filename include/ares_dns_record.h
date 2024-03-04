@@ -961,6 +961,10 @@ CARES_EXTERN ares_status_t ares_dns_parse(const unsigned char *buf,
  */
 CARES_EXTERN ares_status_t ares_dns_write(ares_dns_record_t *dnsrec,
                                           unsigned char **buf, size_t *buf_len);
+
+CARES_EXTERN void ares_search_dnsrec(ares_channel_t *channel,
+                                     ares_dns_record_t *dnsrec,
+                                     ares_callback callback, void *arg);
 /*! @} */
 
 #ifdef __cplusplus

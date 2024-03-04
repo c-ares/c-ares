@@ -46,6 +46,13 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
 ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
                                           ares_dns_section_t sect, size_t cnt);
 ares_bool_t   ares_dns_has_opt_rr(const ares_dns_record_t *rec);
+/* TODO: Should these be exposed externally? */
+ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
+                                           const char *name, int dnsclass,
+                                           int type, unsigned short id, int rd,
+                                           int max_udp_size);
+ares_status_t ares_dns_query_rcode_tostatus(ares_dns_rcode_t rcode,
+                                            size_t ancount);
 void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
                                                   unsigned int       ttl_decrement);
 

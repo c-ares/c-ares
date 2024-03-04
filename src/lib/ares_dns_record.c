@@ -1314,3 +1314,79 @@ ares_bool_t ares_dns_has_opt_rr(const ares_dns_record_t *rec)
   }
   return ARES_FALSE;
 }
+
+/* Construct a DNS record for a name with given class and type. Used internally
+ * by ares_search() and ares_create_query().
+ */
+ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
+                                           const char *name, int dnsclass,
+                                           int type, unsigned short id, int rd,
+                                           int max_udp_size)
+{
+  ares_status_t status;
+  ares_dns_rr_t *rr = NULL;
+
+  if (dnsrec == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *dnsrec = NULL;
+
+  /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN */
+  if (ares__is_onion_domain(name)) {
+    status = ARES_ENOTFOUND;
+    goto done;
+  }
+
+  status = ares_dns_record_create(dnsrec, id, rd ? ARES_FLAG_RD : 0,
+                                  ARES_OPCODE_QUERY, ARES_RCODE_NOERROR);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares_dns_record_query_add(*dnsrec, name, (ares_dns_rec_type_t)type,
+                                     (ares_dns_class_t)dnsclass);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* max_udp_size > 0 indicates EDNS, so send OPT RR as an additional record */
+  if (max_udp_size > 0) {
+    /* max_udp_size must fit into a 16 bit unsigned integer field on the OPT
+     * RR, so check here that it fits
+     */
+    if (max_udp_size > 65535) {
+      status = ARES_EFORMERR;
+      goto done;
+    }
+
+    status = ares_dns_record_rr_add(&rr, *dnsrec, ARES_SECTION_ADDITIONAL, "",
+                                    ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    status = ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE,
+                                 (unsigned short)max_udp_size);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    status = ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    status = ares_dns_rr_set_u16(rr, ARES_RR_OPT_FLAGS, 0);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
+
+done:
+  if (status != ARES_SUCCESS) {
+    ares_dns_record_destroy(*dnsrec);
+    *dnsrec = NULL;
+  }
+  return status;
+}

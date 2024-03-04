@@ -803,7 +803,7 @@ TEST_P(MockChannelTest, SearchHighNdots) {
             ss.str());
 }
 
-// Test that performing an EDNS query with an OPT RR options value works. The
+// Test that performing an EDNS search with an OPT RR options value works. The
 // options value should be included on the request to the mock server.
 TEST_P(MockEDNSChannelTest, SearchOptValHighNdots) {
   /* Define the OPT RR options code and value to use */
@@ -843,10 +843,30 @@ TEST_P(MockEDNSChannelTest, SearchOptValHighNdots) {
   ON_CALL(server_, OnRequest("a.b.c.w.w.w.first.com", T_A))
     .WillByDefault(SetReplyExpRequest(&server_, &yesfirst_rep, yesfirst_req));
 
+  /* Construct the DNS record to search. */
+  ares_dns_record_t *dnsrec = NULL;
+  ares_dns_rr_t *rr = NULL;
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_create(&dnsrec, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+      ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_query_add(dnsrec, "a.b.c.w.w.w", (ares_dns_rec_type_t)T_A,
+      (ares_dns_class_t)C_IN));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "",
+      ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, 1232));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_u16(rr, ARES_RR_OPT_FLAGS, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_opt(rr, ARES_RR_OPT_OPTIONS, opt_opt, opt_val,
+      sizeof(opt_val)));
+
   /* Perform the search. Check that it succeeds with the expected response. */
   SearchResult result;
-  ares_search_optval(channel_, "a.b.c.w.w.w", C_IN, T_A, SearchCallback,
-                     &result, opt_opt, opt_val, sizeof(opt_val));
+  ares_search_dnsrec(channel_, dnsrec, SearchCallback, &result);
+  ares_dns_record_destroy(dnsrec);
   Process();
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_SUCCESS, result.status_);

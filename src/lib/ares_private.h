@@ -337,18 +337,10 @@ ares_status_t ares__requeue_query(struct query *query, struct timeval *now);
 
 /* Identical to ares_query, but returns a normal ares return code like
  * ARES_SUCCESS, and can be passed the qid by reference which will be
- * filled in on ARES_SUCCESS.  Also supports an options value to add to the OPT
- * RR on EDNS queries. */
-ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
+ * filled in on ARES_SUCCESS */
+ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
                              int dnsclass, int type, ares_callback callback,
-                             void *arg, unsigned short *qid,
-                             ares__dns_optval_t *optval);
-/* Identical to ares_create_query, but supports an options value to add to the
- * OPT RR on EDNS queries. */
-int ares_create_query_int(const char *name, int dnsclass, int type,
-                          unsigned short id, int rd, unsigned char **bufp,
-                          int *buflenp, int max_udp_size,
-                          ares__dns_optval_t *optval);
+                             void *arg, unsigned short *qid);
 /* Identical to ares_send() except returns normal ares return codes like
  * ARES_SUCCESS */
 ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
