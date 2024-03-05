@@ -40,7 +40,7 @@ task:
         BUILD_ANALYZE: "yes"
         TEST_SYMBOL_VISIBILITY: "yes"
       freebsd_instance:
-        image_family: freebsd-13-2
+        image_family: freebsd-13-3
     - name: "MacOS"
       env:
         DIST: "MACOS"
