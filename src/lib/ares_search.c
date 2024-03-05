@@ -275,7 +275,7 @@ static void search_callback(void *arg, int status, int timeouts,
    */
   rcode   = DNS_HEADER_RCODE(abuf);
   ancount = DNS_HEADER_ANCOUNT(abuf);
-  mystatus = ares_dns_query_rcode_tostatus((ares_dns_rcode_t)rcode, ancount);
+  mystatus = ares_dns_query_reply_tostatus((ares_dns_rcode_t)rcode, ancount);
   if ((mystatus != ARES_ENODATA) && (mystatus != ARES_ESERVFAIL) &&
       (mystatus != ARES_ENOTFOUND)) {
     end_squery(squery, (ares_status_t)mystatus, abuf, (size_t)alen);

@@ -51,8 +51,9 @@ ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
                                            const char *name, int dnsclass,
                                            int type, unsigned short id, int rd,
                                            int max_udp_size);
-ares_status_t ares_dns_query_rcode_tostatus(ares_dns_rcode_t rcode,
+ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
                                             size_t ancount);
+/* END TODO */
 void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
                                                   unsigned int       ttl_decrement);
 

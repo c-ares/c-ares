@@ -111,7 +111,7 @@ static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
      */
     rcode   = DNS_HEADER_RCODE(abuf);
     ancount = DNS_HEADER_ANCOUNT(abuf);
-    status = ares_dns_query_rcode_tostatus((ares_dns_rcode_t)rcode, ancount);
+    status = ares_dns_query_reply_tostatus((ares_dns_rcode_t)rcode, ancount);
     qquery->callback(qquery->arg, status, timeouts, abuf, alen);
   }
   ares_free(qquery);

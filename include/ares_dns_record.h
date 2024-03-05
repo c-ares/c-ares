@@ -962,6 +962,14 @@ CARES_EXTERN ares_status_t ares_dns_parse(const unsigned char *buf,
 CARES_EXTERN ares_status_t ares_dns_write(ares_dns_record_t *dnsrec,
                                           unsigned char **buf, size_t *buf_len);
 
+/*! Search for a complete DNS message
+ *
+ *  \param[in] channel  Pointer to channel on which queries will be sent.
+ *  \param[in] dnsrec   Pointer to initialized and filled DNS record object.
+ *  \param[in] callback Callback function invoked on completion or failure of
+ *                      the query sequence.
+ *  \param[in] arg      Additional argument passed to the callback function.
+ */
 CARES_EXTERN void ares_search_dnsrec(ares_channel_t *channel,
                                      ares_dns_record_t *dnsrec,
                                      ares_callback callback, void *arg);
