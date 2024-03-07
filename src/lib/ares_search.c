@@ -254,7 +254,8 @@ static void search_callback(void *arg, int status, int timeouts,
 {
   struct search_query *squery  = (struct search_query *)arg;
   ares_channel_t      *channel = squery->channel;
-  int                  rcode;
+  ares_dns_record_t   *dnsrep = NULL;
+  ares_dns_rcode_t     rcode;
   size_t               ancount;
   ares_dns_record_t   *dnsrec = NULL;
   const char          *name;
@@ -274,12 +275,18 @@ static void search_callback(void *arg, int status, int timeouts,
   /* Convert the rcode and ancount from the response into an ares_status_t
    * value. Stop searching unless we got a non-fatal error.
    */
-  rcode   = DNS_HEADER_RCODE(abuf);
-  ancount = DNS_HEADER_ANCOUNT(abuf);
-  mystatus = ares_dns_query_reply_tostatus((ares_dns_rcode_t)rcode, ancount);
+  mystatus = ares_dns_parse(abuf, (size_t)alen, 0, &dnsrep);
+  if (mystatus != ARES_SUCCESS) {
+    end_squery(squery, mystatus, abuf, (size_t)alen);
+    return;
+  }
+  rcode = ares_dns_record_get_rcode(dnsrep);
+  ancount = ares_dns_record_rr_cnt(dnsrep, ARES_SECTION_ANSWER);
+  mystatus = ares_dns_query_reply_tostatus(rcode, ancount);
+  ares_dns_record_destroy(dnsrep);
   if ((mystatus != ARES_ENODATA) && (mystatus != ARES_ESERVFAIL) &&
       (mystatus != ARES_ENOTFOUND)) {
-    end_squery(squery, (ares_status_t)mystatus, abuf, (size_t)alen);
+    end_squery(squery, mystatus, abuf, (size_t)alen);
   } else {
     /* Save the status if we were trying as-is. */
     if (squery->trying_as_is) {
