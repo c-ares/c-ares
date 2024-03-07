@@ -371,6 +371,31 @@ typedef int      (*ares_sock_config_callback)(ares_socket_t socket_fd, int type,
 typedef void     (*ares_addrinfo_callback)(void *arg, int status, int timeouts,
                                        struct ares_addrinfo *res);
 
+/*
+ * NOTE: before c-ares 1.7.0 we would most often use the system in6_addr
+ * struct below when ares itself was built, but many apps would use this
+ * private version since the header checked a HAVE_* define for it. Starting
+ * with 1.7.0 we always declare and use our own to stop relying on the
+ * system's one.
+ */
+struct ares_in6_addr {
+  union {
+    unsigned char _S6_u8[16];
+  } _S6_un;
+};
+
+struct ares_addr {
+  int family;
+
+  union {
+    struct in_addr       addr4;
+    struct ares_in6_addr addr6;
+  } addr;
+};
+
+/* DNS record parser, writer, and helpers */
+#include "ares_dns_record.h"
+
 CARES_EXTERN int ares_library_init(int flags);
 
 CARES_EXTERN int ares_library_init_mem(int flags, void *(*amalloc)(size_t size),
@@ -477,6 +502,18 @@ CARES_EXTERN void ares_search(ares_channel_t *channel, const char *name,
                               int dnsclass, int type, ares_callback callback,
                               void *arg);
 
+/*! Search for a complete DNS message
+ *
+ *  \param[in] channel  Pointer to channel on which queries will be sent.
+ *  \param[in] dnsrec   Pointer to initialized and filled DNS record object.
+ *  \param[in] callback Callback function invoked on completion or failure of
+ *                      the query sequence.
+ *  \param[in] arg      Additional argument passed to the callback function.
+ */
+CARES_EXTERN void ares_search_dnsrec(ares_channel_t *channel,
+                                     ares_dns_record_t *dnsrec,
+                                     ares_callback callback, void *arg);
+
 CARES_EXTERN void ares_gethostbyname(ares_channel_t *channel, const char *name,
                                      int family, ares_host_callback callback,
                                      void *arg);
@@ -527,28 +564,6 @@ CARES_EXTERN int  ares_expand_name(const unsigned char *encoded,
 CARES_EXTERN int  ares_expand_string(const unsigned char *encoded,
                                      const unsigned char *abuf, int alen,
                                      unsigned char **s, long *enclen);
-
-/*
- * NOTE: before c-ares 1.7.0 we would most often use the system in6_addr
- * struct below when ares itself was built, but many apps would use this
- * private version since the header checked a HAVE_* define for it. Starting
- * with 1.7.0 we always declare and use our own to stop relying on the
- * system's one.
- */
-struct ares_in6_addr {
-  union {
-    unsigned char _S6_u8[16];
-  } _S6_un;
-};
-
-struct ares_addr {
-  int family;
-
-  union {
-    struct in_addr       addr4;
-    struct ares_in6_addr addr6;
-  } addr;
-};
 
 struct ares_addrttl {
   struct in_addr ipaddr;
@@ -802,8 +817,5 @@ CARES_EXTERN size_t        ares_queue_active_queries(ares_channel_t *channel);
 #ifdef __cplusplus
 }
 #endif
-
-/* DNS record parser, writer, and helpers */
-#include "ares_dns_record.h"
 
 #endif /* ARES__H */

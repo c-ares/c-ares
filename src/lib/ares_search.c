@@ -117,7 +117,7 @@ static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
     }
 
     ares_send(channel, buf, (int)buflen, callback, arg);
-    ares_free_string(buf);
+    ares_free(buf);
     return;
   }
 
@@ -146,7 +146,7 @@ static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
     squery->domains =
       ares__strsplit_duplicate(channel->domains, channel->ndomains);
     if (squery->domains == NULL) {
-      ares_free_string(squery->buf);
+      ares_free(squery->buf);
       ares_free(squery);
       callback(arg, ARES_ENOMEM, 0, NULL, 0);
       return;
@@ -202,7 +202,7 @@ static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
     squery->next_domain  = 1;
     squery->trying_as_is = ARES_FALSE;
     ares_send(channel, buf, (int)buflen, callback, arg);
-    ares_free_string(buf);
+    ares_free(buf);
   }
 }
 
@@ -343,7 +343,7 @@ static void search_callback(void *arg, int status, int timeouts,
         squery->trying_as_is = ARES_FALSE;
         squery->next_domain++;
         ares_send(channel, buf, (int)buflen, search_callback, arg);
-        ares_free_string(buf);
+        ares_free(buf);
         ares_dns_record_destroy(dnsrec);
       }
     } else if (squery->status_as_is == -1) {
@@ -371,7 +371,7 @@ static void end_squery(struct search_query *squery, ares_status_t status,
   squery->callback(squery->arg, (int)status, (int)squery->timeouts, abuf,
                    (int)alen);
   ares__strsplit_free(squery->domains, squery->ndomains);
-  ares_free_string(squery->buf);
+  ares_free(squery->buf);
   ares_free(squery);
 }
 
