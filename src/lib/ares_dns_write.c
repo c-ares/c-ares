@@ -1061,7 +1061,7 @@ ares_status_t ares_dns_write_query_altname(ares_dns_record_t *dnsrec,
                                            char *altname, unsigned char **buf,
                                            size_t *buflen)
 {
-  char *qname;
+  char         *qname;
   ares_status_t status;
 
   if (ares_dns_record_query_cnt(dnsrec) != 1)

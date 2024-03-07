@@ -502,7 +502,7 @@ CARES_EXTERN void ares_search(ares_channel_t *channel, const char *name,
                               int dnsclass, int type, ares_callback callback,
                               void *arg);
 
-/*! Search for a complete DNS message
+/*! Search for a complete DNS message.
  *
  *  \param[in] channel  Pointer to channel on which queries will be sent.
  *  \param[in] dnsrec   Pointer to initialized and filled DNS record object.

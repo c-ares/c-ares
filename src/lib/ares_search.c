@@ -167,17 +167,14 @@ static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
     ares_send(channel, squery->buf, (int)squery->buflen, search_callback,
               squery);
   } else {
-    /* Try the name as-is last; start with the first search domain.
-     *
-     * Concatenate the name with the first search domain and query using that.
-     */
+    /* Try the name as-is last; start with the first search domain. */
+    squery->next_domain  = 1;
+    squery->trying_as_is = ARES_FALSE;
     status = ares__cat_domain(name, squery->domains[0], &s);
     if (status != ARES_SUCCESS) {
       end_squery(squery, status, NULL, 0);
       return;
     }
-    squery->next_domain  = 1;
-    squery->trying_as_is = ARES_FALSE;
     status = ares__write_and_send_query(channel, dnsrec, s, search_callback,
                                         squery);
     ares_free(s);
@@ -260,8 +257,9 @@ static void search_callback(void *arg, int status, int timeouts,
   }
   rcode = ares_dns_record_get_rcode(dnsrep);
   ancount = ares_dns_record_rr_cnt(dnsrep, ARES_SECTION_ANSWER);
-  mystatus = ares_dns_query_reply_tostatus(rcode, ancount);
   ares_dns_record_destroy(dnsrep);
+  mystatus = ares_dns_query_reply_tostatus(rcode, ancount);
+
   if ((mystatus != ARES_ENODATA) && (mystatus != ARES_ESERVFAIL) &&
       (mystatus != ARES_ENOTFOUND)) {
     end_squery(squery, mystatus, abuf, (size_t)alen);
@@ -332,8 +330,8 @@ static void search_callback(void *arg, int status, int timeouts,
 }
 
 /* Write and send a DNS record on a channel. The DNS record must represent a
- * query for a single name. An alternative name can be specified to use in
- * place of the name in the DNS record.
+ * query for a single name. An alternative name can be specified to temporarily
+ * overwrite the name on the DNS record before doing so.
  * This is used as a helper function in ares_search().
  */
 static ares_status_t ares__write_and_send_query(ares_channel_t *channel,

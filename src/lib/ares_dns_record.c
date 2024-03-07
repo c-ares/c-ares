@@ -1323,7 +1323,7 @@ ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
                                            int type, unsigned short id, int rd,
                                            int max_udp_size)
 {
-  ares_status_t status;
+  ares_status_t  status;
   ares_dns_rr_t *rr = NULL;
 
   if (dnsrec == NULL) {
