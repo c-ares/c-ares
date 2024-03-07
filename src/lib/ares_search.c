@@ -59,6 +59,11 @@ struct search_query {
 
 static void search_callback(void *arg, int status, int timeouts,
                             unsigned char *abuf, int alen);
+static ares_status_t ares__write_and_send_query(ares_channel_t *channel,
+                                                ares_dns_record_t *dnsrec,
+                                                char *altname,
+                                                ares_callback callback,
+                                                void *arg);
 static void end_squery(struct search_query *squery, ares_status_t status,
                        unsigned char *abuf, size_t alen);
 
@@ -68,9 +73,6 @@ static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
   struct search_query *squery;
   const char          *name;
   char                *s = NULL;
-  char                *qname;
-  unsigned char       *buf = NULL;
-  size_t               buflen;
   const char          *p;
   ares_status_t        status;
   size_t               ndots;
@@ -98,26 +100,12 @@ static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
     callback(arg, (int)status, 0, NULL, 0);
     return;
   } else if (s != NULL) {
-    /* We only have a single domain to search, so do it here. The domain to
-     * search may be different to the name passed in, so temporarily
-     * overwrite it before encoding the DNS record.
-     *
-     * TODO: Temporarily overwriting the name should be a helper function.
-     *       Modifying the ares_dns_record_t structure internals should not be
-     *       done here.
-     */
-    qname = dnsrec->qd[0].name;
-    dnsrec->qd[0].name = s;
-    status = ares_dns_write(dnsrec, &buf, &buflen);
-    dnsrec->qd[0].name = qname;
+    /* We only have a single domain to search, so do it here. */
+    status = ares__write_and_send_query(channel, dnsrec, s, callback, arg);
     ares_free(s);
     if (status != ARES_SUCCESS) {
       callback(arg, (int)status, 0, NULL, 0);
-      return;
     }
-
-    ares_send(channel, buf, (int)buflen, callback, arg);
-    ares_free(buf);
     return;
   }
 
@@ -181,28 +169,21 @@ static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
   } else {
     /* Try the name as-is last; start with the first search domain.
      *
-     * Concatenate the name with the first search domain and temporarily
-     * overwrite the original name before encoding the DNS record.
+     * Concatenate the name with the first search domain and query using that.
      */
     status = ares__cat_domain(name, squery->domains[0], &s);
     if (status != ARES_SUCCESS) {
       end_squery(squery, status, NULL, 0);
       return;
     }
-    qname = dnsrec->qd[0].name;
-    dnsrec->qd[0].name = s;
-    status = ares_dns_write(dnsrec, &buf, &buflen);
-    dnsrec->qd[0].name = qname;
+    squery->next_domain  = 1;
+    squery->trying_as_is = ARES_FALSE;
+    status = ares__write_and_send_query(channel, dnsrec, s, search_callback,
+                                        squery);
     ares_free(s);
     if (status != ARES_SUCCESS) {
       end_squery(squery, status, NULL, 0);
-      return;
     }
-
-    squery->next_domain  = 1;
-    squery->trying_as_is = ARES_FALSE;
-    ares_send(channel, buf, (int)buflen, callback, arg);
-    ares_free(buf);
   }
 }
 
@@ -260,9 +241,6 @@ static void search_callback(void *arg, int status, int timeouts,
   ares_dns_record_t   *dnsrec = NULL;
   const char          *name;
   char                *s = NULL;
-  char                *qname;
-  unsigned char       *buf = NULL;
-  size_t               buflen;
   ares_status_t        mystatus;
 
   squery->timeouts += (size_t)timeouts;
@@ -313,9 +291,7 @@ static void search_callback(void *arg, int status, int timeouts,
       if (mystatus != ARES_SUCCESS) {
         end_squery(squery, mystatus, NULL, 0);
       } else {
-        /* Concatenate the name with the search domain and temporarily
-         * overwrite the original name before re-encoding the DNS record.
-         */
+        /* Concatenate the name with the search domain and query using that. */
         if (ares_dns_record_query_cnt(dnsrec) != 1) {
           end_squery(squery, ARES_EBADQUERY, NULL, 0);
           ares_dns_record_destroy(dnsrec);
@@ -329,22 +305,15 @@ static void search_callback(void *arg, int status, int timeouts,
           ares_dns_record_destroy(dnsrec);
           return;
         }
-        qname = dnsrec->qd[0].name;
-        dnsrec->qd[0].name = s;
-        mystatus = ares_dns_write(dnsrec, &buf, &buflen);
-        dnsrec->qd[0].name = qname;
-        ares_free(s);
-        if (mystatus != ARES_SUCCESS) {
-          end_squery(squery, mystatus, NULL, 0);
-          ares_dns_record_destroy(dnsrec);
-          return;
-        }
-
         squery->trying_as_is = ARES_FALSE;
         squery->next_domain++;
-        ares_send(channel, buf, (int)buflen, search_callback, arg);
-        ares_free(buf);
+        mystatus = ares__write_and_send_query(channel, dnsrec, s,
+                                              search_callback, arg);
+        ares_free(s);
         ares_dns_record_destroy(dnsrec);
+        if (mystatus != ARES_SUCCESS) {
+          end_squery(squery, mystatus, NULL, 0);
+        }
       }
     } else if (squery->status_as_is == -1) {
       /* Try the name as-is at the end. */
@@ -361,6 +330,32 @@ static void search_callback(void *arg, int status, int timeouts,
     }
   }
 }
+
+/* Write and send a DNS record on a channel. The DNS record must represent a
+ * query for a single name. An alternative name can be specified to use in
+ * place of the name in the DNS record.
+ * This is used as a helper function in ares_search().
+ */
+static ares_status_t ares__write_and_send_query(ares_channel_t *channel,
+                                                ares_dns_record_t *dnsrec,
+                                                char *altname,
+                                                ares_callback callback,
+                                                void *arg)
+{
+  ares_status_t  status;
+  unsigned char *buf;
+  size_t         buflen;
+
+  status = ares_dns_write_query_altname(dnsrec, altname, &buf, &buflen);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  ares_send(channel, buf, (int)buflen, callback, arg);
+  ares_free(buf);
+  return ARES_SUCCESS;
+}
+
 
 /* End a search query by invoking the user callback and freeing the
  * search_query structure.

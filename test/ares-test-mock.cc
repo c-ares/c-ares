@@ -804,44 +804,68 @@ TEST_P(MockChannelTest, SearchHighNdots) {
 }
 
 // Test that performing an EDNS search with an OPT RR options value works. The
-// options value should be included on the request to the mock server.
-TEST_P(MockEDNSChannelTest, SearchOptValHighNdots) {
+// options value should be included on the requests to the mock server.
+TEST_P(MockEDNSChannelTest, SearchOptVal) {
   /* Define the OPT RR options code and value to use */
   unsigned short opt_opt = 3;
   unsigned char opt_val[] = { 'c', '-', 'a', 'r', 'e', 's' };
+
+  /* Set up the expected request and reply on the mock server for the first,
+   * second and third domains. The expected requests contain the OPT RR options
+   * value defined above.
+   */
+  std::string nofirst_req = "REQ QRY RD  Q:{'example.first.com' IN A} "
+    "ADD:{'' MAXUDP=1232 OPT RCODE2=0 "
+    "0003"  // opt_opt
+    "0006"  // length of opt_val
+    "632d61726573"  // opt_val in hex
+    "}";
+  DNSPacket nofirst_rep;
+  nofirst_rep.set_response().set_aa().set_rcode(NXDOMAIN)
+    .add_question(new DNSQuestion("example.first.com", T_A));
+  ON_CALL(server_, OnRequest("example.first.com", T_A))
+    .WillByDefault(SetReplyExpRequest(&server_, &nofirst_rep, nofirst_req));
+
+  std::string nosecond_req = "REQ QRY RD  Q:{'example.second.org' IN A} "
+    "ADD:{'' MAXUDP=1232 OPT RCODE2=0 "
+    "0003"  // opt_opt
+    "0006"  // length of opt_val
+    "632d61726573"  // opt_val in hex
+    "}";
+  DNSPacket nosecond_rep;
+  nosecond_rep.set_response().set_aa().set_rcode(NXDOMAIN)
+    .add_question(new DNSQuestion("example.second.org", T_A));
+  ON_CALL(server_, OnRequest("example.second.org", T_A))
+    .WillByDefault(SetReplyExpRequest(&server_, &nosecond_rep, nosecond_req));
+
+  std::string nothird_req = "REQ QRY RD  Q:{'example.third.gov' IN A} "
+    "ADD:{'' MAXUDP=1232 OPT RCODE2=0 "
+    "0003"  // opt_opt
+    "0006"  // length of opt_val
+    "632d61726573"  // opt_val in hex
+    "}";
+  DNSPacket nothird_rep;
+  nothird_rep.set_response().set_aa().set_rcode(NXDOMAIN)
+    .add_question(new DNSQuestion("example.third.gov", T_A));
+  ON_CALL(server_, OnRequest("example.third.gov", T_A))
+    .WillByDefault(SetReplyExpRequest(&server_, &nothird_rep, nothird_req));
 
   /* Set up the expected request and reply on the mock server for the bare
    * domain. The expected request contains the OPT RR options value defined
    * above.
    */
-  std::string nobare_req = "REQ QRY RD  Q:{'a.b.c.w.w.w' IN A} "
+  std::string yesbare_req = "REQ QRY RD  Q:{'example' IN A} "
     "ADD:{'' MAXUDP=1232 OPT RCODE2=0 "
     "0003"  // opt_opt
     "0006"  // length of opt_val
     "632d61726573"  // opt_val in hex
     "}";
-  DNSPacket nobare_rep;
-  nobare_rep.set_response().set_aa().set_rcode(NXDOMAIN)
-    .add_question(new DNSQuestion("a.b.c.w.w.w", T_A));
-  ON_CALL(server_, OnRequest("a.b.c.w.w.w", T_A))
-    .WillByDefault(SetReplyExpRequest(&server_, &nobare_rep, nobare_req));
-
-  /* Set up the expected request and reply on the mock server for the first
-   * domain. The expected request contains the OPT RR options value defined
-   * above.
-   */
-  std::string yesfirst_req = "REQ QRY RD  Q:{'a.b.c.w.w.w.first.com' IN A} "
-    "ADD:{'' MAXUDP=1232 OPT RCODE2=0 "
-    "0003"  // opt_opt
-    "0006"  // length of opt_val
-    "632d61726573"  // opt_val in hex
-    "}";
-  DNSPacket yesfirst_rep;
-  yesfirst_rep.set_response().set_aa()
-    .add_question(new DNSQuestion("a.b.c.w.w.w.first.com", T_A))
-    .add_answer(new DNSARR("a.b.c.w.w.w.first.com", 0x0200, {2, 3, 4, 5}));
-  ON_CALL(server_, OnRequest("a.b.c.w.w.w.first.com", T_A))
-    .WillByDefault(SetReplyExpRequest(&server_, &yesfirst_rep, yesfirst_req));
+  DNSPacket yesbare_rep;
+  yesbare_rep.set_response().set_aa()
+    .add_question(new DNSQuestion("example", T_A))
+    .add_answer(new DNSARR("example", 0x0200, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example", T_A))
+    .WillByDefault(SetReplyExpRequest(&server_, &yesbare_rep, yesbare_req));
 
   /* Construct the DNS record to search. */
   ares_dns_record_t *dnsrec = NULL;
@@ -850,7 +874,7 @@ TEST_P(MockEDNSChannelTest, SearchOptValHighNdots) {
     ares_dns_record_create(&dnsrec, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
       ARES_RCODE_NOERROR));
   EXPECT_EQ(ARES_SUCCESS,
-    ares_dns_record_query_add(dnsrec, "a.b.c.w.w.w", (ares_dns_rec_type_t)T_A,
+    ares_dns_record_query_add(dnsrec, "example", (ares_dns_rec_type_t)T_A,
       (ares_dns_class_t)C_IN));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "",
@@ -872,8 +896,8 @@ TEST_P(MockEDNSChannelTest, SearchOptValHighNdots) {
   EXPECT_EQ(ARES_SUCCESS, result.status_);
   std::stringstream ss;
   ss << PacketToString(result.data_);
-  EXPECT_EQ("RSP QRY AA NOERROR Q:{'a.b.c.w.w.w.first.com' IN A} "
-            "A:{'a.b.c.w.w.w.first.com' IN A TTL=512 2.3.4.5}",
+  EXPECT_EQ("RSP QRY AA NOERROR Q:{'example' IN A} "
+            "A:{'example' IN A TTL=512 2.3.4.5}",
             ss.str());
 }
 

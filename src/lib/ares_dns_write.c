@@ -1052,3 +1052,30 @@ void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
   }
   dnsrec->ttl_decrement = ttl_decrement;
 }
+
+/* Write a DNS record representing a query for a single name, but temporarily
+ * overwrite the name with an alternative name before doing so. This is used
+ * as a helper function in ares_search().
+ */
+ares_status_t ares_dns_write_query_altname(ares_dns_record_t *dnsrec,
+                                           char *altname, unsigned char **buf,
+                                           size_t *buflen)
+{
+  char *qname;
+  ares_status_t status;
+
+  if (ares_dns_record_query_cnt(dnsrec) != 1)
+  {
+    return ARES_EBADQUERY;
+  }
+
+  qname = dnsrec->qd[0].name;
+  if (altname != NULL)
+  {
+    dnsrec->qd[0].name = altname;
+  }
+  status = ares_dns_write(dnsrec, buf, buflen);
+  dnsrec->qd[0].name = qname;
+
+  return status;
+}
