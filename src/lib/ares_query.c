@@ -112,14 +112,14 @@ static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
      */
     status = (int)ares_dns_parse(abuf, (size_t)alen, 0, &dnsrep);
     if (status != ARES_SUCCESS) {
-      qquery->callback(qquery->arg, status, timeouts, abuf, (size_t)alen);
-      return;
+      qquery->callback(qquery->arg, status, timeouts, abuf, alen);
+    } else {
+      rcode = ares_dns_record_get_rcode(dnsrep);
+      ancount = ares_dns_record_rr_cnt(dnsrep, ARES_SECTION_ANSWER);
+      ares_dns_record_destroy(dnsrep);
+      status = (int)ares_dns_query_reply_tostatus(rcode, ancount);
+      qquery->callback(qquery->arg, status, timeouts, abuf, alen);
     }
-    rcode = ares_dns_record_get_rcode(dnsrep);
-    ancount = ares_dns_record_rr_cnt(dnsrep, ARES_SECTION_ANSWER);
-    ares_dns_record_destroy(dnsrep);
-    status = (int)ares_dns_query_reply_tostatus(rcode, ancount);
-    qquery->callback(qquery->arg, status, timeouts, abuf, alen);
   }
   ares_free(qquery);
 }

@@ -49,16 +49,16 @@ ares_bool_t   ares_dns_has_opt_rr(const ares_dns_record_t *rec);
 void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
                                                   unsigned int       ttl_decrement);
 
-/*! Create a DNS record structure for a query. The arguments are the same as
+/*! Create a DNS record object for a query. The arguments are the same as
  *  those for ares_create_query().
  *
- *  \param[out] dnsrec       DNS record to create.
- *  \param[in]  name         NUL-terminated name to query.
- *  \param[in]  dnsclass     Class of the query.
- *  \param[in]  type         Type of the query.
+ *  \param[out] dnsrec       DNS record object to create.
+ *  \param[in]  name         NUL-terminated name for the query.
+ *  \param[in]  dnsclass     Class for the query.
+ *  \param[in]  type         Type for the query.
  *  \param[in]  id           Identifier for the query.
  *  \param[in]  rd           Nonzero if recursion is desired.
- *  \param[in]  max_udp_size The maximum size of a UDP packet for EDNS.
+ *  \param[in]  max_udp_size Maximum size of a UDP packet for EDNS.
  *  \return ARES_SUCCESS on success, otherwise an error code.
  */
 ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
@@ -68,9 +68,9 @@ ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
 
 /*! Convert the RCODE and ANCOUNT from a DNS query reply into a status code.
  *
- *  \param[in] rcode   The RCODE from the DNS query reply.
- *  \param[in] ancount The ANCOUNT from the DNS query reply.
- *  \return The appropriate status code.
+ *  \param[in] rcode   The RCODE from the reply.
+ *  \param[in] ancount The ANCOUNT from the reply.
+ *  \return An appropriate status code.
  */
 ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
                                             size_t ancount);
@@ -79,10 +79,10 @@ ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
  *  An alternative name can be specified to temporarily overwrite the name
  *  in the query.
  *
- *  \param[in]  dnsrec  The DNS record to write.
- *  \param[in]  altname An alternative name to use in the query.
- *  \param[out] buf     The buffer to write the query into.
- *  \param[out] buflen  The length of the buffer.
+ *  \param[in]  dnsrec  DNS record object to write.
+ *  \param[in]  altname Alternative name to use in the query.
+ *  \param[out] buf     Buffer to write the query into.
+ *  \param[out] buflen  Length of the buffer.
  *  \return ARES_SUCCESS on success, otherwise an error code.
  */
 ares_status_t ares_dns_write_query_altname(ares_dns_record_t *dnsrec,

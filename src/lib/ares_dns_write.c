@@ -1064,14 +1064,12 @@ ares_status_t ares_dns_write_query_altname(ares_dns_record_t *dnsrec,
   char         *qname;
   ares_status_t status;
 
-  if (ares_dns_record_query_cnt(dnsrec) != 1)
-  {
+  if (ares_dns_record_query_cnt(dnsrec) != 1) {
     return ARES_EBADQUERY;
   }
 
   qname = dnsrec->qd[0].name;
-  if (altname != NULL)
-  {
+  if (altname != NULL) {
     dnsrec->qd[0].name = altname;
   }
   status = ares_dns_write(dnsrec, buf, buflen);
