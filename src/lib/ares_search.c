@@ -84,7 +84,11 @@ static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
     callback(arg, ARES_EBADQUERY, 0, NULL, 0);
     return;
   }
-  ares_dns_record_query_get(dnsrec, 0, &name, NULL, NULL);
+  status = ares_dns_record_query_get(dnsrec, 0, &name, NULL, NULL);
+  if (status != ARES_SUCCESS) {
+    callback(arg, (int)status, 0, NULL, 0);
+    return;
+  }
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
   if (ares__is_onion_domain(name)) {
@@ -168,16 +172,15 @@ static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
               squery);
   } else {
     /* Try the name as-is last; start with the first search domain. */
-    squery->next_domain  = 1;
-    squery->trying_as_is = ARES_FALSE;
     status = ares__cat_domain(name, squery->domains[0], &s);
-    if (status != ARES_SUCCESS) {
-      end_squery(squery, status, NULL, 0);
-      return;
+    if (status == ARES_SUCCESS) {
+      squery->next_domain  = 1;
+      squery->trying_as_is = ARES_FALSE;
+      status = ares__write_and_send_query(channel, dnsrec, s, search_callback,
+                                          squery);
+      ares_free(s);
     }
-    status = ares__write_and_send_query(channel, dnsrec, s, search_callback,
-                                        squery);
-    ares_free(s);
+    /* Handle any errors. */
     if (status != ARES_SUCCESS) {
       end_squery(squery, status, NULL, 0);
     }
@@ -291,23 +294,23 @@ static void search_callback(void *arg, int status, int timeouts,
       } else {
         /* Concatenate the name with the search domain and query using that. */
         if (ares_dns_record_query_cnt(dnsrec) != 1) {
-          end_squery(squery, ARES_EBADQUERY, NULL, 0);
-          ares_dns_record_destroy(dnsrec);
-          return;
+          mystatus = ARES_EBADQUERY;
+        } else {
+          mystatus = ares_dns_record_query_get(dnsrec, 0, &name, NULL, NULL);
+          if (mystatus == ARES_SUCCESS) {
+            mystatus = ares__cat_domain(name,
+                                        squery->domains[squery->next_domain],
+                                        &s);
+            if (mystatus == ARES_SUCCESS) {
+              squery->trying_as_is = ARES_FALSE;
+              squery->next_domain++;
+              mystatus = ares__write_and_send_query(channel, dnsrec, s,
+                                                    search_callback, arg);
+              ares_free(s);
+            }
+          }
         }
-        ares_dns_record_query_get(dnsrec, 0, &name, NULL, NULL);
-        mystatus = ares__cat_domain(name, squery->domains[squery->next_domain],
-                                    &s);
-        if (mystatus != ARES_SUCCESS) {
-          end_squery(squery, mystatus, NULL, 0);
-          ares_dns_record_destroy(dnsrec);
-          return;
-        }
-        squery->trying_as_is = ARES_FALSE;
-        squery->next_domain++;
-        mystatus = ares__write_and_send_query(channel, dnsrec, s,
-                                              search_callback, arg);
-        ares_free(s);
+        /* Clean up the DNS record object and handle any errors. */
         ares_dns_record_destroy(dnsrec);
         if (mystatus != ARES_SUCCESS) {
           end_squery(squery, mystatus, NULL, 0);
