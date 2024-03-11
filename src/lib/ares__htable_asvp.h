@@ -71,7 +71,7 @@ ares__htable_asvp_t              *
 /*! Retrieve an array of keys from the hashtable.
  *
  *  \param[in]  htable   Initialized hashtable
- *  \param[out] num_keys Count of returned keys
+ *  \param[out] num      Count of returned keys
  *  \return Array of keys in the hashtable. Must be free'd with ares_free().
  */
 ares_socket_t *ares__htable_asvp_keys(const ares__htable_asvp_t *htable,
