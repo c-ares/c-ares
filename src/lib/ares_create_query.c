@@ -35,6 +35,7 @@ int ares_create_query(const char *name, int dnsclass, int type,
   ares_status_t      status;
   ares_dns_record_t *dnsrec = NULL;
   size_t             len;
+  unsigned short     rd_flag = rd ? ARES_FLAG_RD : 0;
 
   if (name == NULL || bufp == NULL || buflenp == NULL) {
     status = ARES_EFORMERR;
@@ -44,8 +45,10 @@ int ares_create_query(const char *name, int dnsclass, int type,
   *bufp    = NULL;
   *buflenp = 0;
 
-  status = ares_dns_record_create_query(&dnsrec, name, dnsclass, type, id, rd,
-                                        max_udp_size);
+  status = ares_dns_record_create_query(&dnsrec, name,
+                                        (ares_dns_class_t)dnsclass,
+                                        (ares_dns_rec_type_t)type,
+                                        id, rd_flag, (size_t)max_udp_size);
   if (status != ARES_SUCCESS) {
     goto done;
   }

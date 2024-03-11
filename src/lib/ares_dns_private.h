@@ -57,14 +57,17 @@ void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
  *  \param[in]  dnsclass     Class for the query.
  *  \param[in]  type         Type for the query.
  *  \param[in]  id           Identifier for the query.
- *  \param[in]  rd           Nonzero if recursion is desired.
+ *  \param[in]  flags        Flags for the query.
  *  \param[in]  max_udp_size Maximum size of a UDP packet for EDNS.
  *  \return ARES_SUCCESS on success, otherwise an error code.
  */
 ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
-                                           const char *name, int dnsclass,
-                                           int type, unsigned short id, int rd,
-                                           int max_udp_size);
+                                           const char *name,
+                                           ares_dns_class_t dnsclass,
+                                           ares_dns_rec_type_t type,
+                                           unsigned short id,
+                                           unsigned short flags,
+                                           size_t max_udp_size);
 
 /*! Convert the RCODE and ANCOUNT from a DNS query reply into a status code.
  *

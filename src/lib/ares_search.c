@@ -195,17 +195,19 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
 {
   ares_status_t      status;
   ares_dns_record_t *dnsrec = NULL;
-  int                max_udp_size;
-  int                rd;
+  size_t             max_udp_size;
+  unsigned short     rd_flag;
 
   if ((channel == NULL) || (name == NULL)) {
     return;
   }
 
-  rd = !(channel->flags & ARES_FLAG_NORECURSE);
-  max_udp_size = (channel->flags & ARES_FLAG_EDNS) ? (int)channel->ednspsz : 0;
-  status = ares_dns_record_create_query(&dnsrec, name, dnsclass, type, 0, rd,
-                                        max_udp_size);
+  rd_flag = !(channel->flags & ARES_FLAG_NORECURSE) ? ARES_FLAG_RD: 0;
+  max_udp_size = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : 0;
+  status = ares_dns_record_create_query(&dnsrec, name,
+                                        (ares_dns_class_t)dnsclass,
+                                        (ares_dns_rec_type_t)type,
+                                        0, rd_flag, max_udp_size);
   if (status != ARES_SUCCESS) {
     callback(arg, (int)status, 0, NULL, 0);
     return;

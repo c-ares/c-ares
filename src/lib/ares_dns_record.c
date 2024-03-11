@@ -1319,9 +1319,12 @@ ares_bool_t ares_dns_has_opt_rr(const ares_dns_record_t *rec)
  * by ares_search() and ares_create_query().
  */
 ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
-                                           const char *name, int dnsclass,
-                                           int type, unsigned short id, int rd,
-                                           int max_udp_size)
+                                           const char *name,
+                                           ares_dns_class_t dnsclass,
+                                           ares_dns_rec_type_t type,
+                                           unsigned short id,
+                                           unsigned short flags,
+                                           size_t max_udp_size)
 {
   ares_status_t  status;
   ares_dns_rr_t *rr = NULL;
@@ -1338,14 +1341,13 @@ ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
     goto done;
   }
 
-  status = ares_dns_record_create(dnsrec, id, rd ? ARES_FLAG_RD : 0,
-                                  ARES_OPCODE_QUERY, ARES_RCODE_NOERROR);
+  status = ares_dns_record_create(dnsrec, id, flags, ARES_OPCODE_QUERY,
+                                  ARES_RCODE_NOERROR);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  status = ares_dns_record_query_add(*dnsrec, name, (ares_dns_rec_type_t)type,
-                                     (ares_dns_class_t)dnsclass);
+  status = ares_dns_record_query_add(*dnsrec, name, type, dnsclass);
   if (status != ARES_SUCCESS) {
     goto done;
   }
