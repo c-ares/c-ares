@@ -396,7 +396,7 @@ typedef enum {
   ARES_DNS_PARSE_AN_EXT_RAW  = 1 << 3,
   /*! Parse Authority from later RFCs (no name compression) as RAW */
   ARES_DNS_PARSE_NS_EXT_RAW  = 1 << 4,
-  /*< Parse Additional from later RFCs (no name compression) as RAW */
+  /*! Parse Additional from later RFCs (no name compression) as RAW */
   ARES_DNS_PARSE_AR_EXT_RAW  = 1 << 5
 } ares_dns_parse_flags_t;
 
@@ -468,7 +468,7 @@ CARES_EXTERN const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode);
  *  \param[in]     ipaddr  ASCII string form of the ip address
  *  \param[in,out] addr    Must set "family" member to one of AF_UNSPEC,
  *                         AF_INET, AF_INET6 on input.
- *  \param[out]    ptr_len Length of binary form address
+ *  \param[out]    out_len Length of binary form address
  *  \return Pointer to start of binary address or NULL on error.
  */
 CARES_EXTERN const void *ares_dns_pton(const char       *ipaddr,
