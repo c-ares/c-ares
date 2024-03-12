@@ -797,7 +797,7 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
   }
 
   while (ares__buf_len(buf)) {
-    size_t               len;
+    size_t               len = 0;
     const unsigned char *ptr;
 
     if (first) {
@@ -822,6 +822,12 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
     }
 
     ptr = ares__buf_tag_fetch(buf, &len);
+
+    /* Shouldn't be possible */
+    if (ptr == NULL) {
+      status = ARES_EFORMERR;
+      goto done;
+    }
 
     if (flags & ARES_BUF_SPLIT_LTRIM) {
       size_t i;
