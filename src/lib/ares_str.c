@@ -110,6 +110,52 @@ ares_bool_t ares_str_isnum(const char *str)
   return ARES_TRUE;
 }
 
+void ares__str_rtrim(char *str)
+{
+  size_t len;
+  size_t i;
+
+  if (str == NULL)
+    return;
+
+  len = ares_strlen(str);
+  for (i=len; i > 0; i--) {
+    if (!ares__isspace(str[i-1])) {
+      break;
+    }
+  }
+  str[i] = 0;
+}
+
+void ares__str_ltrim(char *str)
+{
+  size_t i;
+  size_t len;
+
+  if (str == NULL)
+    return;
+
+  for (i=0; str[i] != 0 && ares__isspace(str[i]); i++) {
+    /* Do nothing */
+  }
+
+  if (i == 0) {
+    return;
+  }
+
+  len = ares_strlen(str);
+  if (i != len) {
+    memmove(str, str+i, len-i);
+  }
+  str[len-i] = 0;
+}
+
+void ares__str_trim(char *str)
+{
+  ares__str_ltrim(str);
+  ares__str_rtrim(str);
+}
+
 /* tolower() is locale-specific.  Use a lookup table fast conversion that only
  * operates on ASCII */
 static const unsigned char ares__tolower_lookup[] = {
@@ -152,6 +198,21 @@ ares_bool_t ares__memeq_ci(const unsigned char *ptr, const unsigned char *val,
   return ARES_TRUE;
 }
 
+ares_bool_t ares__isspace(int ch)
+{
+  switch (ch) {
+    case '\r':
+    case '\t':
+    case ' ':
+    case '\v':
+    case '\f':
+    case '\n':
+      return ARES_TRUE;
+    default:
+      break;
+  }
+  return ARES_FALSE;
+}
 
 ares_bool_t ares__isprint(int ch)
 {

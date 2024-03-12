@@ -282,7 +282,8 @@ done:
   return status;
 }
 
-static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
+static ares_status_t config_search(ares_sysconfig_t *sysconfig,
+                                   const char *str, size_t max_domains)
 {
   if (sysconfig->domains && sysconfig->ndomains > 0) {
     /* if we already have some domains present, free them first */
@@ -296,21 +297,17 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str)
     return ARES_ENOMEM;
   }
 
-  return ARES_SUCCESS;
-}
-
-static ares_status_t config_domain(ares_sysconfig_t *sysconfig, char *str)
-{
-  char *q;
-
-  /* Set a single search domain. */
-  q = str;
-  while (*q && !ISSPACE(*q)) {
-    q++;
+  /* Truncate if necessary */
+  if (max_domains && sysconfig->ndomains > max_domains) {
+    size_t i;
+    for (i=max_domains; i<sysconfig->ndomains; i++) {
+      ares_free(sysconfig->domains[i]);
+      sysconfig->domains[i] = NULL;
+    }
+    sysconfig->ndomains = max_domains;
   }
-  *q = '\0';
 
-  return config_search(sysconfig, str);
+  return ARES_SUCCESS;
 }
 
 static ares_status_t config_lookup(ares_sysconfig_t *sysconfig, const char *str,
@@ -521,7 +518,7 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
     if (temp == NULL) {
       return ARES_ENOMEM;
     }
-    status = config_domain(sysconfig, temp);
+    status = config_search(sysconfig, temp, 1);
     ares_free(temp);
     if (status != ARES_SUCCESS) {
       return status;
@@ -586,16 +583,86 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
  *      delimited list of "bind" and "hosts"
  */
 
-ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
-                                         ares_sysconfig_t     *sysconfig)
+/* This function will only return ARES_SUCCESS or ARES_ENOMEM.  Any other
+ * conditions are ignored.  Users may mess up config files, but we want to
+ * process anything we can. */
+static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
+                                           ares__buf_t      *line)
 {
-  char         *p;
-  FILE         *fp       = NULL;
-  char         *line     = NULL;
-  size_t        linesize = 0;
-  int           error;
-  const char   *resolvconf_path;
-  ares_status_t status = ARES_SUCCESS;
+  char          option[32];
+  char          value[128];
+  ares_status_t status    = ARES_SUCCESS;
+
+  /* Ignore lines beginning with a comment */
+  if (ares__buf_begins_with(line, (const unsigned char *)"#", 1) ||
+      ares__buf_begins_with(line, (const unsigned char *)";", 1)) {
+    return ARES_SUCCESS;
+  }
+
+  ares__buf_tag(line);
+
+  /* Shouldn't be possible, but if it happens, ignore the line. */
+  if (ares__buf_consume_nonwhitespace(line) == 0) {
+    return ARES_SUCCESS;
+  }
+
+  status = ares__buf_tag_fetch_string(line, option, sizeof(option));
+  if (status != ARES_SUCCESS) {
+    return ARES_SUCCESS;
+  }
+
+  ares__buf_consume_whitespace(line, ARES_TRUE);
+  ares__buf_tag(line);
+  ares__buf_consume(line, ares__buf_len(line));
+
+  status = ares__buf_tag_fetch_string(line, value, sizeof(value));
+  if (status != ARES_SUCCESS) {
+    return ARES_SUCCESS;
+  }
+
+  ares__str_trim(value);
+  if (*value == 0) {
+    return ARES_SUCCESS;
+  }
+
+  /* At this point we have a string option and a string value, both trimmed
+   * of leading and trailing whitespace.  Lets try to evaluate them */
+  if (strcmp(option, "domain") == 0) {
+    /* Domain is legacy, don't overwrite an existing config set by search */
+    if (sysconfig->domains == NULL) {
+      status = config_search(sysconfig, value, 1);
+    }
+  } else if (strcmp(option, "lookup") == 0) {
+    status = config_lookup(sysconfig, value, "bind", NULL, "file");
+  } else if (strcmp(option, "search") == 0) {
+    status = config_search(sysconfig, value, 0);
+  } else if (strcmp(option,"nameserver") == 0) {
+    status = ares__sconfig_append_fromstr(&sysconfig->sconfig, value,
+                                          ARES_TRUE);
+  } else if (strcmp(option, "sortlist") == 0) {
+    /* Ignore all failures except ENOMEM.  If the sysadmin set a bad
+     * sortlist, just ignore the sortlist, don't cause an inoperable
+     * channel */
+    status =
+      ares__parse_sortlist(&sysconfig->sortlist, &sysconfig->nsortlist, value);
+    if (status != ARES_ENOMEM) {
+      status = ARES_SUCCESS;
+    }
+  } else if (strcmp(option, "options") == 0) {
+    status = set_options(sysconfig, value);
+  }
+
+  return status;
+}
+
+static ares_status_t parse_resolvconf(const ares_channel_t *channel,
+                                      ares_sysconfig_t     *sysconfig)
+{
+  const char         *resolvconf_path;
+  ares__buf_t        *buf    = NULL;
+  ares_status_t       status = ARES_SUCCESS;
+  ares__llist_node_t *node;
+  ares__llist_t      *lines  = NULL;
 
   /* Support path for resolvconf filename set by ares_init_options */
   if (channel->resolvconf_path) {
@@ -604,57 +671,52 @@ ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
     resolvconf_path = PATH_RESOLV_CONF;
   }
 
-  fp = fopen(resolvconf_path, "r");
-  if (fp) {
-    while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS) {
-      if ((p = try_config(line, "domain", ';'))) {
-        status = config_domain(sysconfig, p);
-      } else if ((p = try_config(line, "lookup", ';'))) {
-        status = config_lookup(sysconfig, p, "bind", NULL, "file");
-      } else if ((p = try_config(line, "search", ';'))) {
-        status = config_search(sysconfig, p);
-      } else if ((p = try_config(line, "nameserver", ';'))) {
-        status =
-          ares__sconfig_append_fromstr(&sysconfig->sconfig, p, ARES_TRUE);
-      } else if ((p = try_config(line, "sortlist", ';'))) {
-        /* Ignore all failures except ENOMEM.  If the sysadmin set a bad
-         * sortlist, just ignore the sortlist, don't cause an inoperable
-         * channel */
-        status =
-          ares__parse_sortlist(&sysconfig->sortlist, &sysconfig->nsortlist, p);
-        if (status != ARES_ENOMEM) {
-          status = ARES_SUCCESS;
-        }
-      } else if ((p = try_config(line, "options", ';'))) {
-        status = set_options(sysconfig, p);
-      } else {
-        status = ARES_SUCCESS;
-      }
-      if (status != ARES_SUCCESS) {
-        fclose(fp);
-        goto done;
-      }
-    }
-    fclose(fp);
-
-    if (status != ARES_EOF) {
-      goto done;
-    }
-  } else {
-    error = ERRNO;
-    switch (error) {
-      case ENOENT:
-      case ESRCH:
-        break;
-      default:
-        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                       strerror(error)));
-        DEBUGF(fprintf(stderr, "Error opening file: %s\n", PATH_RESOLV_CONF));
-        status = ARES_EFILE;
-        goto done;
-    }
+  buf = ares__buf_create();
+  if (buf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
   }
 
+  status = ares__buf_load_file(resolvconf_path, buf);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares__buf_split(buf, (const unsigned char *)"\n", 1,
+                           ARES_BUF_SPLIT_TRIM, 0, &lines);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  for (node = ares__llist_node_first(lines); node != NULL;
+       node = ares__llist_node_next(node)) {
+    ares__buf_t *line = ares__llist_node_val(node);
+
+    status = parse_resolvconf_line(sysconfig, line);
+    if (status != ARES_SUCCESS)
+      goto done;
+  }
+
+done:
+  ares__buf_destroy(buf);
+  ares__llist_destroy(lines);
+  return status;
+}
+
+ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
+                                         ares_sysconfig_t     *sysconfig)
+{
+  char         *p;
+  FILE         *fp       = NULL;
+  char         *line     = NULL;
+  size_t        linesize = 0;
+  int           error;
+  ares_status_t status = ARES_SUCCESS;
+
+  status = parse_resolvconf(channel, sysconfig);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
 
   /* Many systems (Solaris, Linux, BSD's) use nsswitch.conf */
   fp = fopen("/etc/nsswitch.conf", "r");
