@@ -655,6 +655,13 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
   return status;
 }
 
+/* Should only return:
+ *  ARES_ENOTFOUND - file not found
+ *  ARES_EFILE     - error reading file (perms)
+ *  ARES_ENOMEM    - out of memory
+ *  ARES_SUCCESS   - file processed, doesn't necessarily mean it was a good
+ *                   file, but we're not erroring out if we can't parse
+ *                   something (or anything at all) */
 static ares_status_t parse_resolvconf(const ares_channel_t *channel,
                                       ares_sysconfig_t     *sysconfig)
 {
@@ -714,7 +721,7 @@ ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
   ares_status_t status = ARES_SUCCESS;
 
   status = parse_resolvconf(channel, sysconfig);
-  if (status != ARES_SUCCESS) {
+  if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
   }
 
