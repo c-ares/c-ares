@@ -254,31 +254,6 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
   }
 
 error:
-  if (rc) {
-    if (channel->domains && channel->domains[0]) {
-      ares_free(channel->domains[0]);
-    }
-    if (channel->domains) {
-      ares_free(channel->domains);
-      channel->domains = NULL;
-    }
-
-    if (channel->lookups) {
-      ares_free(channel->lookups);
-      channel->lookups = NULL;
-    }
-
-    if (channel->resolvconf_path) {
-      ares_free(channel->resolvconf_path);
-      channel->resolvconf_path = NULL;
-    }
-
-    if (channel->hosts_path) {
-      ares_free(channel->hosts_path);
-      channel->hosts_path = NULL;
-    }
-  }
-
   if (hostname) {
     ares_free(hostname);
   }
