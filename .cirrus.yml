@@ -27,8 +27,14 @@ task:
         LC_ALL: "C"
         SCAN_BUILD: "scan-build"
         MAKE: "make"
-        BUILD_ASAN: "yes"
-        BUILD_UBSAN: "yes"
+# For whatever reason, ASAN and UBSAN are likely to result in compiler
+# termination on debian arm64.  I can't tell if this is really a crash
+# or something like the OOM killer:
+#    /usr/bin/c++ -DHAVE_CONFIG_H=1 -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 -I/tmp/cirrus-ci-build/cmakebld/test -I/tmp/cirrus-ci-build/cmakebld -I/tmp/cirrus-ci-build/cmakebld/src/lib -I/tmp/cirrus-ci-build -I/tmp/cirrus-ci-build/src/lib -I/tmp/cirrus-ci-build/include -fsanitize=address -Wall -Wextra -Wcast-align -Wformat-security -Wmissing-declarations -Wmissing-format-attribute -Wpacked-bitfield-compat -Wredundant-decls -Wvla -Wno-unused-parameter -Wconversion -Wfloat-equal -Wsign-conversion -fdiagnostics-color=always -g -fno-omit-frame-pointer -O0 -DGTEST_HAS_PTHREAD=1 -std=c++14 -MD -MT test/CMakeFiles/arestest.dir/ares-test-parse-a.cc.o -MF test/CMakeFiles/arestest.dir/ares-test-parse-a.cc.o.d -o test/CMakeFiles/arestest.dir/ares-test-parse-a.cc.o -c /tmp/cirrus-ci-build/test/ares-test-parse-a.cc
+#    c++: fatal error: Killed signal terminated program cc1plus
+# Skip for now on arm.
+        BUILD_ASAN: "no"
+        BUILD_UBSAN: "no"
         BUILD_ANALYZE: "yes"
       arm_container:
         image: debian:latest
