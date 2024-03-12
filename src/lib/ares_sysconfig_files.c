@@ -550,7 +550,7 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
  *      - nameserver - IP address of nameserver with optional port (using a :
  *        prefix). If using an ipv6 address and specifying a port, the ipv6
  *        address must be encapsulated in brackets. For link-local ipv6
- *        addressess, the interface can also be specified with a % prefix. e.g.:
+ *        addresses, the interface can also be specified with a % prefix. e.g.:
  *          "nameserver [fe80::1]:1234%iface"
  *        This keyword may be specified multiple times.
  *      - search - whitespace separated list of domains
