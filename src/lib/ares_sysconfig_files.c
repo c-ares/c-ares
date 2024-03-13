@@ -542,6 +542,7 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
   /* Ignore lines beginning with a comment */
   if (ares__buf_begins_with(line, (const unsigned char *)"#", 1) ||
       ares__buf_begins_with(line, (const unsigned char *)";", 1)) {
+printf("%s(): comment\n", __FUNCTION__);
     return ARES_SUCCESS;
   }
 
@@ -549,6 +550,7 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
 
   /* Shouldn't be possible, but if it happens, ignore the line. */
   if (ares__buf_consume_nonwhitespace(line) == 0) {
+printf("%s(): line starts with whitespace, not good\n", __FUNCTION__);
     return ARES_SUCCESS;
   }
 
@@ -556,6 +558,7 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
   if (status != ARES_SUCCESS) {
     return ARES_SUCCESS;
   }
+printf("%s(): fetched option %s\n", __FUNCTION__, option);
 
   ares__buf_consume_whitespace(line, ARES_TRUE);
 
@@ -563,12 +566,12 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
   if (status != ARES_SUCCESS) {
     return ARES_SUCCESS;
   }
+printf("%s(): option=%s, value=%s\n", __FUNCTION__, option, value);
 
   ares__str_trim(value);
   if (*value == 0) {
     return ARES_SUCCESS;
   }
-printf("%s(): option=%s, value=%s\n", __FUNCTION__, option, value);
   /* At this point we have a string option and a string value, both trimmed
    * of leading and trailing whitespace.  Lets try to evaluate them */
   if (strcmp(option, "domain") == 0) {
@@ -729,7 +732,7 @@ static ares_status_t process_config_lines(const char *filename,
   if (status != ARES_SUCCESS) {
     goto done;
   }
-
+printf("%s(): %zu lines in %s\n", __FUNCTION__, ares__llist_len(lines), filename);
   for (node = ares__llist_node_first(lines); node != NULL;
        node = ares__llist_node_next(node)) {
     ares__buf_t *line = ares__llist_node_val(node);
@@ -754,7 +757,7 @@ ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
 
   /* Resolv.conf */
   status = process_config_lines(
-    channel->resolvconf_path?channel->resolvconf_path:PATH_RESOLV_CONF,
+    (channel->resolvconf_path != NULL)?channel->resolvconf_path:PATH_RESOLV_CONF,
     sysconfig, parse_resolvconf_line);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
