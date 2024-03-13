@@ -291,7 +291,7 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig,
     sysconfig->domains  = NULL;
     sysconfig->ndomains = 0;
   }
-
+printf("%s(): %s\n", __FUNCTION__, str);
   sysconfig->domains = ares__strsplit(str, ", ", &sysconfig->ndomains);
   if (sysconfig->domains == NULL) {
     return ARES_ENOMEM;
@@ -369,6 +369,7 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
   }
 
   if (lookupstr_cnt) {
+printf("%s(): %s\n", __FUNCTION__, lookupstr);
     ares_free(sysconfig->lookups);
     sysconfig->lookups = ares_strdup(lookupstr);
     if (sysconfig->lookups == NULL) {
@@ -567,7 +568,7 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
   if (*value == 0) {
     return ARES_SUCCESS;
   }
-
+printf("%s(): option=%s, value=%s\n", __FUNCTION__, option, value);
   /* At this point we have a string option and a string value, both trimmed
    * of leading and trailing whitespace.  Lets try to evaluate them */
   if (strcmp(option, "domain") == 0) {
