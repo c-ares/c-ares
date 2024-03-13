@@ -66,7 +66,7 @@ ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
                                            ares_dns_class_t dnsclass,
                                            ares_dns_rec_type_t type,
                                            unsigned short id,
-                                           unsigned short flags,
+                                           ares_dns_flags_t flags,
                                            size_t max_udp_size);
 
 /*! Convert the RCODE and ANCOUNT from a DNS query reply into a status code.

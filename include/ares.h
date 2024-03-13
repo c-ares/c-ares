@@ -352,25 +352,6 @@ typedef struct ares_channeldata *ares_channel;
 /* Current main channel typedef */
 typedef struct ares_channeldata  ares_channel_t;
 
-
-typedef void     (*ares_callback)(void *arg, int status, int timeouts,
-                              unsigned char *abuf, int alen);
-
-typedef void     (*ares_host_callback)(void *arg, int status, int timeouts,
-                                   struct hostent *hostent);
-
-typedef void     (*ares_nameinfo_callback)(void *arg, int status, int timeouts,
-                                       char *node, char *service);
-
-typedef int      (*ares_sock_create_callback)(ares_socket_t socket_fd, int type,
-                                         void *data);
-
-typedef int      (*ares_sock_config_callback)(ares_socket_t socket_fd, int type,
-                                         void *data);
-
-typedef void     (*ares_addrinfo_callback)(void *arg, int status, int timeouts,
-                                       struct ares_addrinfo *res);
-
 /*
  * NOTE: before c-ares 1.7.0 we would most often use the system in6_addr
  * struct below when ares itself was built, but many apps would use this
@@ -395,6 +376,28 @@ struct ares_addr {
 
 /* DNS record parser, writer, and helpers */
 #include "ares_dns_record.h"
+
+typedef void     (*ares_callback)(void *arg, int status, int timeouts,
+                              unsigned char *abuf, int alen);
+
+typedef void     (*ares_callback_dnsrec)(void *arg, ares_status_t status,
+                                     size_t timeouts,
+                                     const ares_dns_record_t *dnsrec);
+
+typedef void     (*ares_host_callback)(void *arg, int status, int timeouts,
+                                   struct hostent *hostent);
+
+typedef void     (*ares_nameinfo_callback)(void *arg, int status, int timeouts,
+                                       char *node, char *service);
+
+typedef int      (*ares_sock_create_callback)(ares_socket_t socket_fd, int type,
+                                         void *data);
+
+typedef int      (*ares_sock_config_callback)(ares_socket_t socket_fd, int type,
+                                         void *data);
+
+typedef void     (*ares_addrinfo_callback)(void *arg, int status, int timeouts,
+                                       struct ares_addrinfo *res);
 
 CARES_EXTERN int ares_library_init(int flags);
 
@@ -512,7 +515,7 @@ CARES_EXTERN void ares_search(ares_channel_t *channel, const char *name,
  */
 CARES_EXTERN void ares_search_dnsrec(ares_channel_t *channel,
                                      ares_dns_record_t *dnsrec,
-                                     ares_callback callback, void *arg);
+                                     ares_callback_dnsrec callback, void *arg);
 
 CARES_EXTERN void ares_gethostbyname(ares_channel_t *channel, const char *name,
                                      int family, ares_host_callback callback,

@@ -831,7 +831,7 @@ static ares_status_t ares_dns_write_rr_raw_rr(ares__buf_t         *buf,
   return ares__buf_append(buf, data, data_len);
 }
 
-static ares_status_t ares_dns_write_rr(ares_dns_record_t *dnsrec,
+static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
                                        ares__llist_t    **namelist,
                                        ares_dns_section_t section,
                                        ares__buf_t       *buf)
@@ -849,7 +849,7 @@ static ares_status_t ares_dns_write_rr(ares_dns_record_t *dnsrec,
     size_t               end_length;
     unsigned int         ttl;
 
-    rr = ares_dns_record_rr_get(dnsrec, section, i);
+    rr = ares_dns_record_rr_get_const(dnsrec, section, i);
     if (rr == NULL) {
       return ARES_EFORMERR;
     }
@@ -988,7 +988,8 @@ static ares_status_t ares_dns_write_rr(ares_dns_record_t *dnsrec,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_dns_write(ares_dns_record_t *dnsrec, unsigned char **buf,
+ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
+                             unsigned char **buf,
                              size_t *buf_len)
 {
   ares__buf_t   *b = NULL;

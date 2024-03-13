@@ -499,7 +499,7 @@ ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
   return &rr_ptr[idx];
 }
 
-static const ares_dns_rr_t *
+const ares_dns_rr_t *
   ares_dns_record_rr_get_const(const ares_dns_record_t *dnsrec,
                                ares_dns_section_t sect, size_t idx)
 {
@@ -1323,7 +1323,7 @@ ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
                                            ares_dns_class_t dnsclass,
                                            ares_dns_rec_type_t type,
                                            unsigned short id,
-                                           unsigned short flags,
+                                           ares_dns_flags_t flags,
                                            size_t max_udp_size)
 {
   ares_status_t  status;
@@ -1341,8 +1341,8 @@ ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
     goto done;
   }
 
-  status = ares_dns_record_create(dnsrec, id, flags, ARES_OPCODE_QUERY,
-                                  ARES_RCODE_NOERROR);
+  status = ares_dns_record_create(dnsrec, id, (unsigned short)flags,
+                                  ARES_OPCODE_QUERY, ARES_RCODE_NOERROR);
   if (status != ARES_SUCCESS) {
     goto done;
   }

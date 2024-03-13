@@ -889,7 +889,7 @@ TEST_P(MockEDNSChannelTest, SearchOptVal) {
 
   /* Perform the search. Check that it succeeds with the expected response. */
   SearchResult result;
-  ares_search_dnsrec(channel_, dnsrec, SearchCallback, &result);
+  ares_search_dnsrec(channel_, dnsrec, SearchCallbackDnsRec, &result);
   ares_dns_record_destroy(dnsrec);
   Process();
   EXPECT_TRUE(result.done_);

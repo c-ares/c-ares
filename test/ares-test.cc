@@ -1083,6 +1083,22 @@ void SearchCallback(void *data, int status, int timeouts,
   if (verbose) std::cerr << "SearchCallback(" << *result << ")" << std::endl;
 }
 
+void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,
+                          const ares_dns_record_t *dnsrec) {
+  EXPECT_NE(nullptr, data);
+  SearchResult* result = reinterpret_cast<SearchResult*>(data);
+  unsigned char *abuf = NULL;
+  size_t alen = 0;
+  result->done_ = true;
+  result->status_ = status;
+  result->timeouts_ = timeouts;
+  if (dnsrec != NULL) {
+    ares_dns_write(dnsrec, &abuf, &alen);
+  }
+  result->data_.assign(abuf, abuf + alen);
+  if (verbose) std::cerr << "SearchCallbackDnsRec(" << *result << ")" << std::endl;
+}
+
 std::ostream& operator<<(std::ostream& os, const NameInfoResult& result) {
   os << '{';
   if (result.done_) {

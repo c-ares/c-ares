@@ -57,6 +57,11 @@ struct search_query {
   ares_bool_t     ever_got_nodata; /* did we ever get ARES_ENODATA along the way? */
 };
 
+struct dnsrec_convert_arg {
+  ares_callback_dnsrec callback;
+  void                *arg;
+};
+
 static void search_callback(void *arg, int status, int timeouts,
                             unsigned char *abuf, int alen);
 static ares_status_t ares__write_and_send_query(ares_channel_t *channel,
@@ -66,6 +71,8 @@ static ares_status_t ares__write_and_send_query(ares_channel_t *channel,
                                                 void *arg);
 static void end_squery(struct search_query *squery, ares_status_t status,
                        unsigned char *abuf, size_t alen);
+static void ares__dnsrec_convert_cb(void *arg, int status, int timeouts,
+                                    unsigned char *abuf, int alen);
 
 static void ares_search_int(ares_channel_t *channel, ares_dns_record_t *dnsrec,
                             ares_callback callback, void *arg)
@@ -196,7 +203,7 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
   ares_status_t      status;
   ares_dns_record_t *dnsrec = NULL;
   size_t             max_udp_size;
-  unsigned short     rd_flag;
+  ares_dns_flags_t   rd_flag;
 
   if ((channel == NULL) || (name == NULL)) {
     return;
@@ -222,13 +229,24 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
 
 /* Search for a DNS record. Wrapper around ares_search_int(). */
 void ares_search_dnsrec(ares_channel_t *channel, ares_dns_record_t *dnsrec,
-                        ares_callback callback, void *arg)
+                        ares_callback_dnsrec callback, void *arg)
 {
+  struct dnsrec_convert_arg *carg;
+
   if ((channel == NULL) || (dnsrec == NULL)) {
     return;
   }
+
+  carg = ares_malloc_zero(sizeof(*carg));
+  if (carg == NULL) {
+    callback(arg, ARES_ENOMEM, 0, NULL);
+    return;
+  }
+  carg->callback = callback;
+  carg->arg = arg;
+
   ares__channel_lock(channel);
-  ares_search_int(channel, dnsrec, callback, arg);
+  ares_search_int(channel, dnsrec, ares__dnsrec_convert_cb, carg);
   ares__channel_unlock(channel);
 }
 
@@ -480,4 +498,21 @@ ares_status_t ares__single_domain(const ares_channel_t *channel,
 
   *s = NULL;
   return ARES_SUCCESS;
+}
+
+static void ares__dnsrec_convert_cb(void *arg, int status, int timeouts,
+                                    unsigned char *abuf, int alen)
+{
+  struct dnsrec_convert_arg *carg = (struct dnsrec_convert_arg *)arg;
+  ares_dns_record_t *dnsrec = NULL;
+  ares_status_t mystatus;
+
+  mystatus = ares_dns_parse(abuf, (size_t)alen, 0, &dnsrec);
+  if (mystatus != ARES_SUCCESS) {
+    carg->callback(carg->arg, (ares_status_t)mystatus, (size_t)timeouts, NULL);
+  } else {
+    carg->callback(carg->arg, (ares_status_t)status, (size_t)timeouts, dnsrec);
+    ares_dns_record_destroy(dnsrec);
+  }
+  ares_free(carg);
 }
