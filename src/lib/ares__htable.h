@@ -86,7 +86,7 @@ typedef ares_bool_t         (*ares__htable_key_eq_t)(const void *key1,
 
 /*! Destroy the initialized hashtable
  *
- *  \param[in] initialized hashtable
+ *  \param[in] htable initialized hashtable
  */
 void                        ares__htable_destroy(ares__htable_t *htable);
 

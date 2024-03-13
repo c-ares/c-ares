@@ -177,7 +177,7 @@ void           ares__buf_append_finish(ares__buf_t *buf, size_t len);
  *
  *  \param[in] buf      Initialized buffer object.
  *  \param[in] data     Data to hex dump
- *  \param[in] data_len Length of data to hexdump
+ *  \param[in] len      Length of data to hexdump
  *  \return ARES_SUCCESS on success.
  */
 ares_status_t  ares__buf_hexdump(ares__buf_t *buf, const unsigned char *data,
@@ -536,7 +536,7 @@ size_t               ares__buf_get_position(const ares__buf_t *buf);
  *  \param[in]  remaining_len  maximum length that should be used for parsing
  *                             the string, this is often less than the remaining
  *                             buffer and is based on the RR record length.
- *  \param[out] str            Pointer passed by reference to be filled in with
+ *  \param[out] name           Pointer passed by reference to be filled in with
  *                             allocated string of the parsed that must be
  *                             ares_free()'d by the caller.
  *  \param[in]  allow_multiple ARES_TRUE if it should attempt to parse multiple
