@@ -566,15 +566,17 @@ printf("%s(): fetched option %s\n", __FUNCTION__, option);
   if (status != ARES_SUCCESS) {
     return ARES_SUCCESS;
   }
-printf("%s(): option=%s, value=%s\n", __FUNCTION__, option, value);
+printf("%s(): option='%s', value='%s'\n", __FUNCTION__, option, value);
 
   ares__str_trim(value);
 
-printf("%s(): after trim option=%s, value=%s\n", __FUNCTION__, option, value);
+printf("%s(): after trim option='%s', value='%s'\n", __FUNCTION__, option, value);
 
   if (*value == 0) {
+printf("%s(): blank value\n", __FUNCTION__);
     return ARES_SUCCESS;
   }
+
   /* At this point we have a string option and a string value, both trimmed
    * of leading and trailing whitespace.  Lets try to evaluate them */
   if (strcmp(option, "domain") == 0) {
@@ -586,8 +588,10 @@ printf("%s(): after trim option=%s, value=%s\n", __FUNCTION__, option, value);
     ares__buf_tag_clear(line);
     status = config_lookup(sysconfig, line, " \t");
   } else if (strcmp(option, "search") == 0) {
+printf("%s(): got search '%s'\n", __FUNCTION__, value);
     status = config_search(sysconfig, value, 0);
   } else if (strcmp(option,"nameserver") == 0) {
+printf("%s(): got nameserver: %s\n", __FUNCTION__, value);
     status = ares__sconfig_append_fromstr(&sysconfig->sconfig, value,
                                           ARES_TRUE);
   } else if (strcmp(option, "sortlist") == 0) {
