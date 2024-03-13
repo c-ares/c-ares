@@ -423,89 +423,6 @@ static ares_status_t set_options(ares_sysconfig_t *sysconfig, const char *str)
   return ARES_SUCCESS;
 }
 
-static char *try_config(char *s, const char *opt, char scc)
-{
-  size_t len;
-  char  *p;
-  char  *q;
-
-  if (!s || !opt) {
-    /* no line or no option */
-    return NULL; /* LCOV_EXCL_LINE */
-  }
-
-  /* Hash '#' character is always used as primary comment char, additionally
-     a not-NUL secondary comment char will be considered when specified. */
-
-  /* trim line comment */
-  p = s;
-  if (scc) {
-    while (*p && (*p != '#') && (*p != scc)) {
-      p++;
-    }
-  } else {
-    while (*p && (*p != '#')) {
-      p++;
-    }
-  }
-  *p = '\0';
-
-  /* trim trailing whitespace */
-  q = p - 1;
-  while ((q >= s) && ISSPACE(*q)) {
-    q--;
-  }
-  *++q = '\0';
-
-  /* skip leading whitespace */
-  p = s;
-  while (*p && ISSPACE(*p)) {
-    p++;
-  }
-
-  if (!*p) {
-    /* empty line */
-    return NULL;
-  }
-
-  if ((len = ares_strlen(opt)) == 0) {
-    /* empty option */
-    return NULL; /* LCOV_EXCL_LINE */
-  }
-
-  if (strncmp(p, opt, len) != 0) {
-    /* line and option do not match */
-    return NULL;
-  }
-
-  /* skip over given option name */
-  p += len;
-
-  if (!*p) {
-    /* no option value */
-    return NULL; /* LCOV_EXCL_LINE */
-  }
-
-  if ((opt[len - 1] != ':') && (opt[len - 1] != '=') && !ISSPACE(*p)) {
-    /* whitespace between option name and value is mandatory
-       for given option names which do not end with ':' or '=' */
-    return NULL;
-  }
-
-  /* skip over whitespace */
-  while (*p && ISSPACE(*p)) {
-    p++;
-  }
-
-  if (!*p) {
-    /* no option value */
-    return NULL;
-  }
-
-  /* return pointer to option value */
-  return p;
-}
-
 ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
 {
   const char   *localdomain;
@@ -583,6 +500,17 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
  *      delimited list of "bind" and "hosts"
  */
 
+static ares_status_t buf_fetch_string(ares__buf_t *buf, char *str,
+                                      size_t str_len)
+{
+  ares_status_t status;
+  ares__buf_tag(buf);
+  ares__buf_consume(buf, ares__buf_len(buf));
+
+  status = ares__buf_tag_fetch_string(buf, str, sizeof(str_len));
+  return status;
+}
+
 /* This function will only return ARES_SUCCESS or ARES_ENOMEM.  Any other
  * conditions are ignored.  Users may mess up config files, but we want to
  * process anything we can. */
@@ -612,10 +540,8 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
   }
 
   ares__buf_consume_whitespace(line, ARES_TRUE);
-  ares__buf_tag(line);
-  ares__buf_consume(line, ares__buf_len(line));
 
-  status = ares__buf_tag_fetch_string(line, value, sizeof(value));
+  status = buf_fetch_string(line, value, sizeof(value));
   if (status != ARES_SUCCESS) {
     return ARES_SUCCESS;
   }
@@ -655,6 +581,191 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
   return status;
 }
 
+/* This function will only return ARES_SUCCESS or ARES_ENOMEM.  Any other
+ * conditions are ignored.  Users may mess up config files, but we want to
+ * process anything we can. */
+static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
+                                         ares__buf_t      *line)
+{
+  char                option[32];
+  ares__buf_t        *buf;
+  ares_status_t       status    = ARES_SUCCESS;
+  ares__llist_t      *sects     = NULL;
+  ares__llist_t      *lookups   = NULL;
+  ares__llist_node_t *node;
+  char                lookupstr[32];
+  size_t              lookupstr_cnt = 0;
+
+  /* Ignore lines beginning with a comment */
+  if (ares__buf_begins_with(line, (const unsigned char *)"#", 1)) {
+    return ARES_SUCCESS;
+  }
+
+  /* database : values (space delimited) */
+  status = ares__buf_split(line, (const unsigned char *)":", 1,
+                           ARES_BUF_SPLIT_TRIM, 2, &sects);
+
+  if (status != ARES_SUCCESS || ares__llist_len(sects) != 2) {
+    goto done;
+  }
+
+  buf    = ares__llist_first_val(sects);
+  status = buf_fetch_string(buf, option, sizeof(option));
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* Only support "hosts:" */
+  if (strcmp(option, "hosts") != 0) {
+    goto done;
+  }
+
+  /* Values are space separated */
+  buf    = ares__llist_last_val(sects);
+  status = ares__buf_split(line, (const unsigned char *)" ", 1,
+                           ARES_BUF_SPLIT_TRIM, 0, &lookups);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  memset(lookupstr, 0, sizeof(lookupstr));
+
+  for (node = ares__llist_node_first(lookups); node != NULL;
+       node = ares__llist_node_next(node)) {
+    char         value[128];
+    char         ch;
+    ares__buf_t *valbuf = ares__llist_node_val(node);
+
+    status = buf_fetch_string(valbuf, value, sizeof(value));
+    if (status != ARES_SUCCESS) {
+      continue;
+    }
+
+    if (strcasecmp(value, "dns")) {
+      ch = 'b';
+    } else if (strcasecmp(value, "files")) {
+      ch = 'f';
+    } else {
+      continue;
+    }
+
+    /* Look for a duplicate and ignore */
+    if (memchr(lookupstr, ch, lookupstr_cnt) == NULL) {
+      lookupstr[lookupstr_cnt++] = ch;
+    }
+  }
+
+  if (lookupstr_cnt) {
+    ares_free(sysconfig->lookups);
+    sysconfig->lookups = ares_strdup(lookupstr);
+    if (sysconfig->lookups == NULL) {
+      return ARES_ENOMEM;
+    }
+  }
+
+done:
+  ares__llist_destroy(sects);
+  ares__llist_destroy(lookups);
+  if (status != ARES_ENOMEM) {
+    status = ARES_SUCCESS;
+  }
+  return status;
+}
+
+/* This function will only return ARES_SUCCESS or ARES_ENOMEM.  Any other
+ * conditions are ignored.  Users may mess up config files, but we want to
+ * process anything we can. */
+static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
+                                        ares__buf_t      *line)
+{
+  char                option[32];
+  ares__buf_t        *buf;
+  ares_status_t       status    = ARES_SUCCESS;
+  ares__llist_t      *sects     = NULL;
+  ares__llist_t      *lookups   = NULL;
+  ares__llist_node_t *node;
+  char                lookupstr[32];
+  size_t              lookupstr_cnt = 0;
+
+  /* Ignore lines beginning with a comment */
+  if (ares__buf_begins_with(line, (const unsigned char *)"#", 1)) {
+    return ARES_SUCCESS;
+  }
+
+  /* database = values (comma delimited)*/
+  status = ares__buf_split(line, (const unsigned char *)"=", 1,
+                           ARES_BUF_SPLIT_TRIM, 2, &sects);
+
+  if (status != ARES_SUCCESS || ares__llist_len(sects) != 2) {
+    goto done;
+  }
+
+  buf    = ares__llist_first_val(sects);
+  status = buf_fetch_string(buf, option, sizeof(option));
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* Only support "hosts=" */
+  if (strcmp(option, "hosts") != 0) {
+    goto done;
+  }
+
+  /* Values are space separated */
+  buf    = ares__llist_last_val(sects);
+  status = ares__buf_split(line, (const unsigned char *)",", 1,
+                           ARES_BUF_SPLIT_TRIM, 0, &lookups);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  memset(lookupstr, 0, sizeof(lookupstr));
+
+  for (node = ares__llist_node_first(lookups); node != NULL;
+       node = ares__llist_node_next(node)) {
+    char         value[128];
+    char         ch;
+    ares__buf_t *valbuf = ares__llist_node_val(node);
+
+    status = buf_fetch_string(valbuf, value, sizeof(value));
+    if (status != ARES_SUCCESS) {
+      continue;
+    }
+
+    if (strcasecmp(value, "bind")) {
+      ch = 'b';
+    } else if (strcasecmp(value, "local")) {
+      ch = 'f';
+    } else {
+      continue;
+    }
+
+    /* Look for a duplicate and ignore */
+    if (memchr(lookupstr, ch, lookupstr_cnt) == NULL) {
+      lookupstr[lookupstr_cnt++] = ch;
+    }
+  }
+
+  if (lookupstr_cnt) {
+    ares_free(sysconfig->lookups);
+    sysconfig->lookups = ares_strdup(lookupstr);
+    if (sysconfig->lookups == NULL) {
+      return ARES_ENOMEM;
+    }
+  }
+
+done:
+  ares__llist_destroy(sects);
+  ares__llist_destroy(lookups);
+  if (status != ARES_ENOMEM) {
+    status = ARES_SUCCESS;
+  }
+  return status;
+}
+
+typedef ares_status_t (*line_callback_t)(ares_sysconfig_t *sysconfig,
+                                       ares__buf_t *line);
+
 /* Should only return:
  *  ARES_ENOTFOUND - file not found
  *  ARES_EFILE     - error reading file (perms)
@@ -662,21 +773,14 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
  *  ARES_SUCCESS   - file processed, doesn't necessarily mean it was a good
  *                   file, but we're not erroring out if we can't parse
  *                   something (or anything at all) */
-static ares_status_t parse_resolvconf(const ares_channel_t *channel,
-                                      ares_sysconfig_t     *sysconfig)
+static ares_status_t process_config_lines(const char *filename,
+                                          ares_sysconfig_t *sysconfig,
+                                          line_callback_t cb)
 {
-  const char         *resolvconf_path;
-  ares__buf_t        *buf    = NULL;
   ares_status_t       status = ARES_SUCCESS;
   ares__llist_node_t *node;
-  ares__llist_t      *lines  = NULL;
-
-  /* Support path for resolvconf filename set by ares_init_options */
-  if (channel->resolvconf_path) {
-    resolvconf_path = channel->resolvconf_path;
-  } else {
-    resolvconf_path = PATH_RESOLV_CONF;
-  }
+  ares__llist_t      *lines = NULL;
+  ares__buf_t        *buf   = NULL;
 
   buf = ares__buf_create();
   if (buf == NULL) {
@@ -684,7 +788,7 @@ static ares_status_t parse_resolvconf(const ares_channel_t *channel,
     goto done;
   }
 
-  status = ares__buf_load_file(resolvconf_path, buf);
+  status = ares__buf_load_file(filename, buf);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -699,7 +803,7 @@ static ares_status_t parse_resolvconf(const ares_channel_t *channel,
        node = ares__llist_node_next(node)) {
     ares__buf_t *line = ares__llist_node_val(node);
 
-    status = parse_resolvconf_line(sysconfig, line);
+    status = cb(sysconfig, line);
     if (status != ARES_SUCCESS)
       goto done;
   }
@@ -707,115 +811,47 @@ static ares_status_t parse_resolvconf(const ares_channel_t *channel,
 done:
   ares__buf_destroy(buf);
   ares__llist_destroy(lines);
+
   return status;
 }
+
 
 ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
                                          ares_sysconfig_t     *sysconfig)
 {
-  char         *p;
-  FILE         *fp       = NULL;
-  char         *line     = NULL;
-  size_t        linesize = 0;
-  int           error;
   ares_status_t status = ARES_SUCCESS;
 
-  status = parse_resolvconf(channel, sysconfig);
+  /* Resolv.conf */
+  status = process_config_lines(
+    channel->resolvconf_path?channel->resolvconf_path:PATH_RESOLV_CONF,
+    sysconfig, parse_resolvconf_line);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
   }
 
-  /* Many systems (Solaris, Linux, BSD's) use nsswitch.conf */
-  fp = fopen("/etc/nsswitch.conf", "r");
-  if (fp) {
-    while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS) {
-      if ((p = try_config(line, "hosts:", '\0'))) {
-        (void)config_lookup(sysconfig, p, "dns", "resolve", "files");
-      }
-    }
-    fclose(fp);
-    if (status != ARES_EOF) {
-      goto done;
-    }
-  } else {
-    error = ERRNO;
-    switch (error) {
-      case ENOENT:
-      case ESRCH:
-        break;
-      default:
-        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                       strerror(error)));
-        DEBUGF(
-          fprintf(stderr, "Error opening file: %s\n", "/etc/nsswitch.conf"));
-        break;
-    }
-    /* ignore error, maybe we will get luck in next if clause */
+  /* Nsswitch.conf */
+  status = process_config_lines("/etc/nsswitch.conf", sysconfig,
+                                parse_nsswitch_line);
+  if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
+    goto done;
   }
 
-
-  /* Linux / GNU libc 2.x and possibly others have host.conf */
-  fp = fopen("/etc/host.conf", "r");
-  if (fp) {
-    while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS) {
-      if ((p = try_config(line, "order", '\0'))) {
-        /* ignore errors */
-        (void)config_lookup(sysconfig, p, "bind", NULL, "hosts");
-      }
-    }
-    fclose(fp);
-    if (status != ARES_EOF) {
-      goto done;
-    }
-  } else {
-    error = ERRNO;
-    switch (error) {
-      case ENOENT:
-      case ESRCH:
-        break;
-      default:
-        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                       strerror(error)));
-        DEBUGF(fprintf(stderr, "Error opening file: %s\n", "/etc/host.conf"));
-        break;
-    }
-
-    /* ignore error, maybe we will get luck in next if clause */
+  /* netsvc.conf */
+  status = process_config_lines("/etc/netsvc.conf", sysconfig,
+                                parse_svcconf_line);
+  if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
+    goto done;
   }
 
-
-  /* Tru64 uses /etc/svc.conf */
-  fp = fopen("/etc/svc.conf", "r");
-  if (fp) {
-    while ((status = ares__read_line(fp, &line, &linesize)) == ARES_SUCCESS) {
-      if ((p = try_config(line, "hosts=", '\0'))) {
-        /* ignore errors */
-        (void)config_lookup(sysconfig, p, "bind", NULL, "local");
-      }
-    }
-    fclose(fp);
-    if (status != ARES_EOF) {
-      goto done;
-    }
-  } else {
-    error = ERRNO;
-    switch (error) {
-      case ENOENT:
-      case ESRCH:
-        break;
-      default:
-        DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                       strerror(error)));
-        DEBUGF(fprintf(stderr, "Error opening file: %s\n", "/etc/svc.conf"));
-        break;
-    }
-    /* ignore error */
+  /* svc.conf */
+  status = process_config_lines("/etc/svc.conf", sysconfig,
+                                parse_svcconf_line);
+  if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
+    goto done;
   }
 
   status = ARES_SUCCESS;
 
 done:
-  ares_free(line);
-
   return status;
 }
