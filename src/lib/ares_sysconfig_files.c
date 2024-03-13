@@ -310,54 +310,80 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig,
   return ARES_SUCCESS;
 }
 
-static ares_status_t config_lookup(ares_sysconfig_t *sysconfig, const char *str,
-                                   const char *bindch, const char *altbindch,
-                                   const char *filech)
+
+static ares_status_t buf_fetch_string(ares__buf_t *buf, char *str,
+                                      size_t str_len)
 {
-  char        lookups[3];
-  char       *l;
-  const char *p;
-  ares_bool_t found;
+  ares_status_t status;
+  ares__buf_tag(buf);
+  ares__buf_consume(buf, ares__buf_len(buf));
 
-  if (altbindch == NULL) {
-    altbindch = bindch;
+  status = ares__buf_tag_fetch_string(buf, str, sizeof(str_len));
+  return status;
+}
+
+static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
+                                   ares__buf_t *buf,
+                                   const char *separators)
+{
+  ares_status_t       status;
+  char                lookupstr[32];
+  size_t              lookupstr_cnt  = 0;
+  ares__llist_t      *lookups        = NULL;
+  ares__llist_node_t *node;
+  size_t              separators_len = ares_strlen(separators);
+
+  status = ares__buf_split(buf, (const unsigned char *)separators,
+                           separators_len, ARES_BUF_SPLIT_TRIM, 0, &lookups);
+  if (status != ARES_SUCCESS) {
+    goto done;
   }
 
-  /* Set the lookup order.  Only the first letter of each work
-   * is relevant, and it has to be "b" for DNS or "f" for the
-   * host file.  Ignore everything else.
-   */
-  l     = lookups;
-  p     = str;
-  found = ARES_FALSE;
-  while (*p) {
-    if ((*p == *bindch || *p == *altbindch || *p == *filech) &&
-        l < lookups + 2) {
-      if (*p == *bindch || *p == *altbindch) {
-        *l++ = 'b';
-      } else {
-        *l++ = 'f';
-      }
-      found = ARES_TRUE;
-    }
-    while (*p && !ISSPACE(*p) && (*p != ',')) {
-      p++;
-    }
-    while (*p && (ISSPACE(*p) || (*p == ','))) {
-      p++;
-    }
-  }
-  if (!found) {
-    return ARES_ENOTINITIALIZED;
-  }
-  *l = '\0';
+  memset(lookupstr, 0, sizeof(lookupstr));
 
-  ares_free(sysconfig->lookups);
-  sysconfig->lookups = ares_strdup(lookups);
-  if (sysconfig->lookups == NULL) {
-    return ARES_ENOMEM;
+  for (node = ares__llist_node_first(lookups); node != NULL;
+       node = ares__llist_node_next(node)) {
+    char         value[128];
+    char         ch;
+    ares__buf_t *valbuf = ares__llist_node_val(node);
+
+    status = buf_fetch_string(valbuf, value, sizeof(value));
+    if (status != ARES_SUCCESS) {
+      continue;
+    }
+
+    if (strcasecmp(value, "dns") == 0|| strcasecmp(value, "bind") == 0 ||
+        strcasecmp(value, "resolv")) {
+      ch = 'b';
+    } else if (strcasecmp(value, "files") || strcasecmp(value, "file") ||
+               strcasecmp(value, "local")) {
+      ch = 'f';
+    } else {
+      continue;
+    }
+
+    /* Look for a duplicate and ignore */
+    if (memchr(lookupstr, ch, lookupstr_cnt) == NULL) {
+      lookupstr[lookupstr_cnt++] = ch;
+    }
   }
-  return ARES_SUCCESS;
+
+  if (lookupstr_cnt) {
+    ares_free(sysconfig->lookups);
+    sysconfig->lookups = ares_strdup(lookupstr);
+    if (sysconfig->lookups == NULL) {
+      return ARES_ENOMEM;
+    }
+  }
+
+  status = ARES_SUCCESS;
+
+done:
+  if (status != ARES_ENOMEM) {
+    status = ARES_SUCCESS;
+  }
+  ares__llist_destroy(lookups);
+  return status;
 }
 
 static const char *try_option(const char *p, const char *q, const char *opt)
@@ -469,13 +495,14 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
  *        This keyword may be specified multiple times.
  *      - search - whitespace separated list of domains
  *      - domain - obsolete, same as search except only a single domain
+ *      - lookup / hostresorder - local, bind, file, files
  *      - sortlist - whitespace separated ip-address/netmask pairs
  *      - options - options controlling resolver variables
  *        - ndots:n - set ndots option
  *        - timeout:n (retrans:n) - timeout per query attempt in seconds
  *        - attempts:n (retry:n) - number of times resolver will send query
  *        - rotate - round-robin selection of name servers
- *        - use-vc - force tcp
+ *        - use-vc / usevc - force tcp
  *  /etc/nsswitch.conf
  *    - Modern Linux, FreeBSD, HP-UX, Solaris
  *    - Search order set via:
@@ -500,16 +527,6 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
  *      delimited list of "bind" and "hosts"
  */
 
-static ares_status_t buf_fetch_string(ares__buf_t *buf, char *str,
-                                      size_t str_len)
-{
-  ares_status_t status;
-  ares__buf_tag(buf);
-  ares__buf_consume(buf, ares__buf_len(buf));
-
-  status = ares__buf_tag_fetch_string(buf, str, sizeof(str_len));
-  return status;
-}
 
 /* This function will only return ARES_SUCCESS or ARES_ENOMEM.  Any other
  * conditions are ignored.  Users may mess up config files, but we want to
@@ -518,7 +535,7 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
                                            ares__buf_t      *line)
 {
   char          option[32];
-  char          value[128];
+  char          value[512];
   ares_status_t status    = ARES_SUCCESS;
 
   /* Ignore lines beginning with a comment */
@@ -558,8 +575,9 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
     if (sysconfig->domains == NULL) {
       status = config_search(sysconfig, value, 1);
     }
-  } else if (strcmp(option, "lookup") == 0) {
-    status = config_lookup(sysconfig, value, "bind", NULL, "file");
+  } else if (strcmp(option, "lookup") == 0 || strcmp(option, "hostresorder")) {
+    ares__buf_tag_clear(line);
+    status = config_lookup(sysconfig, line, " \t");
   } else if (strcmp(option, "search") == 0) {
     status = config_search(sysconfig, value, 0);
   } else if (strcmp(option,"nameserver") == 0) {
@@ -591,10 +609,6 @@ static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
   ares__buf_t        *buf;
   ares_status_t       status    = ARES_SUCCESS;
   ares__llist_t      *sects     = NULL;
-  ares__llist_t      *lookups   = NULL;
-  ares__llist_node_t *node;
-  char                lookupstr[32];
-  size_t              lookupstr_cnt = 0;
 
   /* Ignore lines beginning with a comment */
   if (ares__buf_begins_with(line, (const unsigned char *)"#", 1)) {
@@ -622,50 +636,10 @@ static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
 
   /* Values are space separated */
   buf    = ares__llist_last_val(sects);
-  status = ares__buf_split(line, (const unsigned char *)" ", 1,
-                           ARES_BUF_SPLIT_TRIM, 0, &lookups);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
-  memset(lookupstr, 0, sizeof(lookupstr));
-
-  for (node = ares__llist_node_first(lookups); node != NULL;
-       node = ares__llist_node_next(node)) {
-    char         value[128];
-    char         ch;
-    ares__buf_t *valbuf = ares__llist_node_val(node);
-
-    status = buf_fetch_string(valbuf, value, sizeof(value));
-    if (status != ARES_SUCCESS) {
-      continue;
-    }
-
-    if (strcasecmp(value, "dns")) {
-      ch = 'b';
-    } else if (strcasecmp(value, "files")) {
-      ch = 'f';
-    } else {
-      continue;
-    }
-
-    /* Look for a duplicate and ignore */
-    if (memchr(lookupstr, ch, lookupstr_cnt) == NULL) {
-      lookupstr[lookupstr_cnt++] = ch;
-    }
-  }
-
-  if (lookupstr_cnt) {
-    ares_free(sysconfig->lookups);
-    sysconfig->lookups = ares_strdup(lookupstr);
-    if (sysconfig->lookups == NULL) {
-      return ARES_ENOMEM;
-    }
-  }
+  status = config_lookup(sysconfig, buf, " \t");
 
 done:
   ares__llist_destroy(sects);
-  ares__llist_destroy(lookups);
   if (status != ARES_ENOMEM) {
     status = ARES_SUCCESS;
   }
@@ -682,10 +656,6 @@ static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
   ares__buf_t        *buf;
   ares_status_t       status    = ARES_SUCCESS;
   ares__llist_t      *sects     = NULL;
-  ares__llist_t      *lookups   = NULL;
-  ares__llist_node_t *node;
-  char                lookupstr[32];
-  size_t              lookupstr_cnt = 0;
 
   /* Ignore lines beginning with a comment */
   if (ares__buf_begins_with(line, (const unsigned char *)"#", 1)) {
@@ -711,52 +681,12 @@ static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
     goto done;
   }
 
-  /* Values are space separated */
+  /* Values are comma separated */
   buf    = ares__llist_last_val(sects);
-  status = ares__buf_split(line, (const unsigned char *)",", 1,
-                           ARES_BUF_SPLIT_TRIM, 0, &lookups);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
-  memset(lookupstr, 0, sizeof(lookupstr));
-
-  for (node = ares__llist_node_first(lookups); node != NULL;
-       node = ares__llist_node_next(node)) {
-    char         value[128];
-    char         ch;
-    ares__buf_t *valbuf = ares__llist_node_val(node);
-
-    status = buf_fetch_string(valbuf, value, sizeof(value));
-    if (status != ARES_SUCCESS) {
-      continue;
-    }
-
-    if (strcasecmp(value, "bind")) {
-      ch = 'b';
-    } else if (strcasecmp(value, "local")) {
-      ch = 'f';
-    } else {
-      continue;
-    }
-
-    /* Look for a duplicate and ignore */
-    if (memchr(lookupstr, ch, lookupstr_cnt) == NULL) {
-      lookupstr[lookupstr_cnt++] = ch;
-    }
-  }
-
-  if (lookupstr_cnt) {
-    ares_free(sysconfig->lookups);
-    sysconfig->lookups = ares_strdup(lookupstr);
-    if (sysconfig->lookups == NULL) {
-      return ARES_ENOMEM;
-    }
-  }
+  status = config_lookup(sysconfig, buf, ",");
 
 done:
   ares__llist_destroy(sects);
-  ares__llist_destroy(lookups);
   if (status != ARES_ENOMEM) {
     status = ARES_SUCCESS;
   }
