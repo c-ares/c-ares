@@ -318,7 +318,7 @@ static ares_status_t buf_fetch_string(ares__buf_t *buf, char *str,
   ares__buf_tag(buf);
   ares__buf_consume(buf, ares__buf_len(buf));
 
-  status = ares__buf_tag_fetch_string(buf, str, sizeof(str_len));
+  status = ares__buf_tag_fetch_string(buf, str, str_len);
   return status;
 }
 
