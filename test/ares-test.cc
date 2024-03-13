@@ -1096,6 +1096,7 @@ void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,
     ares_dns_write(dnsrec, &abuf, &alen);
   }
   result->data_.assign(abuf, abuf + alen);
+  ares_free_string(abuf);
   if (verbose) std::cerr << "SearchCallbackDnsRec(" << *result << ")" << std::endl;
 }
 
