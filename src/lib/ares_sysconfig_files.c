@@ -569,6 +569,9 @@ printf("%s(): fetched option %s\n", __FUNCTION__, option);
 printf("%s(): option=%s, value=%s\n", __FUNCTION__, option, value);
 
   ares__str_trim(value);
+
+printf("%s(): after trim option=%s, value=%s\n", __FUNCTION__, option, value);
+
   if (*value == 0) {
     return ARES_SUCCESS;
   }
