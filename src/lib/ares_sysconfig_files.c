@@ -291,7 +291,7 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig,
     sysconfig->domains  = NULL;
     sysconfig->ndomains = 0;
   }
-printf("%s(): %s\n", __FUNCTION__, str);
+
   sysconfig->domains = ares__strsplit(str, ", ", &sysconfig->ndomains);
   if (sysconfig->domains == NULL) {
     return ARES_ENOMEM;
@@ -355,8 +355,9 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
     if (strcasecmp(value, "dns") == 0|| strcasecmp(value, "bind") == 0 ||
         strcasecmp(value, "resolv")) {
       ch = 'b';
-    } else if (strcasecmp(value, "files") || strcasecmp(value, "file") ||
-               strcasecmp(value, "local")) {
+    } else if (strcasecmp(value, "files") == 0 ||
+               strcasecmp(value, "file")  == 0 ||
+               strcasecmp(value, "local") == 0) {
       ch = 'f';
     } else {
       continue;
@@ -369,7 +370,6 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
   }
 
   if (lookupstr_cnt) {
-printf("%s(): %s\n", __FUNCTION__, lookupstr);
     ares_free(sysconfig->lookups);
     sysconfig->lookups = ares_strdup(lookupstr);
     if (sysconfig->lookups == NULL) {
@@ -542,7 +542,6 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
   /* Ignore lines beginning with a comment */
   if (ares__buf_begins_with(line, (const unsigned char *)"#", 1) ||
       ares__buf_begins_with(line, (const unsigned char *)";", 1)) {
-printf("%s(): comment\n", __FUNCTION__);
     return ARES_SUCCESS;
   }
 
@@ -550,7 +549,6 @@ printf("%s(): comment\n", __FUNCTION__);
 
   /* Shouldn't be possible, but if it happens, ignore the line. */
   if (ares__buf_consume_nonwhitespace(line) == 0) {
-printf("%s(): line starts with whitespace, not good\n", __FUNCTION__);
     return ARES_SUCCESS;
   }
 
@@ -558,7 +556,6 @@ printf("%s(): line starts with whitespace, not good\n", __FUNCTION__);
   if (status != ARES_SUCCESS) {
     return ARES_SUCCESS;
   }
-printf("%s(): fetched option %s\n", __FUNCTION__, option);
 
   ares__buf_consume_whitespace(line, ARES_TRUE);
 
@@ -566,14 +563,9 @@ printf("%s(): fetched option %s\n", __FUNCTION__, option);
   if (status != ARES_SUCCESS) {
     return ARES_SUCCESS;
   }
-printf("%s(): option='%s', value='%s'\n", __FUNCTION__, option, value);
 
   ares__str_trim(value);
-
-printf("%s(): after trim option='%s', value='%s'\n", __FUNCTION__, option, value);
-
   if (*value == 0) {
-printf("%s(): blank value\n", __FUNCTION__);
     return ARES_SUCCESS;
   }
 
@@ -588,10 +580,8 @@ printf("%s(): blank value\n", __FUNCTION__);
     ares__buf_tag_clear(line);
     status = config_lookup(sysconfig, line, " \t");
   } else if (strcmp(option, "search") == 0) {
-printf("%s(): got search '%s'\n", __FUNCTION__, value);
     status = config_search(sysconfig, value, 0);
   } else if (strcmp(option,"nameserver") == 0) {
-printf("%s(): got nameserver: %s\n", __FUNCTION__, value);
     status = ares__sconfig_append_fromstr(&sysconfig->sconfig, value,
                                           ARES_TRUE);
   } else if (strcmp(option, "sortlist") == 0) {
@@ -739,7 +729,7 @@ static ares_status_t process_config_lines(const char *filename,
   if (status != ARES_SUCCESS) {
     goto done;
   }
-printf("%s(): %zu lines in %s\n", __FUNCTION__, ares__llist_len(lines), filename);
+
   for (node = ares__llist_node_first(lines); node != NULL;
        node = ares__llist_node_next(node)) {
     ares__buf_t *line = ares__llist_node_val(node);
