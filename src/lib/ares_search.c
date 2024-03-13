@@ -57,6 +57,7 @@ struct search_query {
   ares_bool_t     ever_got_nodata; /* did we ever get ARES_ENODATA along the way? */
 };
 
+/* Callback argument structure passed to ares__dnsrec_convert_cb(). */
 struct dnsrec_convert_arg {
   ares_callback_dnsrec callback;
   void                *arg;
@@ -237,6 +238,11 @@ void ares_search_dnsrec(ares_channel_t *channel, ares_dns_record_t *dnsrec,
     return;
   }
 
+  /* For now, ares_search_int() uses the ares_callback prototype. We need to
+   * wrap the callback passed to this function in ares__dnsrec_convert_cb, to
+   * convert from ares_callback_dnsrec to ares_callback. Allocate the convert
+   * arg structure here.
+   */
   carg = ares_malloc_zero(sizeof(*carg));
   if (carg == NULL) {
     callback(arg, ARES_ENOMEM, 0, NULL);
@@ -500,19 +506,28 @@ ares_status_t ares__single_domain(const ares_channel_t *channel,
   return ARES_SUCCESS;
 }
 
+/* Callback function used to convert from the ares_callback prototype to the
+ * ares_callback_dnsrec prototype, by parsing the result and passing that to
+ * the inner callback.
+ */
 static void ares__dnsrec_convert_cb(void *arg, int status, int timeouts,
                                     unsigned char *abuf, int alen)
 {
   struct dnsrec_convert_arg *carg = (struct dnsrec_convert_arg *)arg;
-  ares_dns_record_t *dnsrec = NULL;
-  ares_status_t mystatus;
+  ares_dns_record_t         *dnsrec = NULL;
+  ares_status_t              mystatus;
 
-  mystatus = ares_dns_parse(abuf, (size_t)alen, 0, &dnsrec);
-  if (mystatus != ARES_SUCCESS) {
-    carg->callback(carg->arg, (ares_status_t)mystatus, (size_t)timeouts, NULL);
+  if (status != ARES_SUCCESS) {
+    carg->callback(carg->arg, (ares_status_t)status, (size_t)timeouts, NULL);
   } else {
-    carg->callback(carg->arg, (ares_status_t)status, (size_t)timeouts, dnsrec);
-    ares_dns_record_destroy(dnsrec);
+    /* Parse the result. */
+    mystatus = ares_dns_parse(abuf, (size_t)alen, 0, &dnsrec);
+    if (mystatus != ARES_SUCCESS) {
+      carg->callback(carg->arg, mystatus, (size_t)timeouts, NULL);
+    } else {
+      carg->callback(carg->arg, ARES_SUCCESS, (size_t)timeouts, dnsrec);
+      ares_dns_record_destroy(dnsrec);
+    }
   }
   ares_free(carg);
 }

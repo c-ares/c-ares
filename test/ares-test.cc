@@ -1090,8 +1090,8 @@ void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,
   unsigned char *abuf = NULL;
   size_t alen = 0;
   result->done_ = true;
-  result->status_ = status;
-  result->timeouts_ = timeouts;
+  result->status_ = (int)status;
+  result->timeouts_ = (int)timeouts;
   if (dnsrec != NULL) {
     ares_dns_write(dnsrec, &abuf, &alen);
   }
