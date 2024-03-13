@@ -584,7 +584,7 @@ printf("%s(): blank value\n", __FUNCTION__);
     if (sysconfig->domains == NULL) {
       status = config_search(sysconfig, value, 1);
     }
-  } else if (strcmp(option, "lookup") == 0 || strcmp(option, "hostresorder")) {
+  } else if (strcmp(option, "lookup") == 0 || strcmp(option, "hostresorder") == 0) {
     ares__buf_tag_clear(line);
     status = config_lookup(sysconfig, line, " \t");
   } else if (strcmp(option, "search") == 0) {
