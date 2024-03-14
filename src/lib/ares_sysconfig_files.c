@@ -591,7 +591,7 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
       status = config_search(sysconfig, value, 1);
     }
   } else if (strcmp(option, "lookup") == 0 || strcmp(option, "hostresorder") == 0) {
-    ares__buf_tag_clear(line);
+    ares__buf_tag_rollback(line);
     status = config_lookup(sysconfig, line, " \t");
   } else if (strcmp(option, "search") == 0) {
     status = config_search(sysconfig, value, 0);
