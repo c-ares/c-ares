@@ -356,9 +356,10 @@ printf("%s(): here\n", __FUNCTION__);
 
 printf("%s(): opt='%s'", __FUNCTION__, value);
 
-    if (strcasecmp(value, "dns")    == 0 ||
-        strcasecmp(value, "bind")   == 0 ||
-        strcasecmp(value, "resolv") == 0) {
+    if (strcasecmp(value, "dns")     == 0 ||
+        strcasecmp(value, "bind")    == 0 ||
+        strcasecmp(value, "resolv")  == 0 ||
+        strcasecmp(value, "resolve") == 0) {
       ch = 'b';
     } else if (strcasecmp(value, "files") == 0 ||
                strcasecmp(value, "file")  == 0 ||
