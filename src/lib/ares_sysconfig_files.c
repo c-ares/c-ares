@@ -352,8 +352,9 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
       continue;
     }
 
-    if (strcasecmp(value, "dns") == 0|| strcasecmp(value, "bind") == 0 ||
-        strcasecmp(value, "resolv")) {
+    if (strcasecmp(value, "dns")    == 0 ||
+        strcasecmp(value, "bind")   == 0 ||
+        strcasecmp(value, "resolv") == 0) {
       ch = 'b';
     } else if (strcasecmp(value, "files") == 0 ||
                strcasecmp(value, "file")  == 0 ||
