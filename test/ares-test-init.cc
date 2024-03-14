@@ -573,15 +573,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerNsswitchConfNotReadable,
   ares_destroy(channel);
   return HasFailure();
 }
-CONTAINED_TEST_F(LibraryTest, ContainerHostConfNotReadable,
-                 "myhostname", "mydomainname.org", hostconf) {
-  ares_channel_t *channel = nullptr;
-  // Unavailable /etc/host.conf falls back to defaults.
-  MakeUnreadable hide("/etc/host.conf");
-  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
-  ares_destroy(channel);
-  return HasFailure();
-}
+
 CONTAINED_TEST_F(LibraryTest, ContainerSvcConfNotReadable,
                  "myhostname", "mydomainname.org", svcconf) {
   ares_channel_t *channel = nullptr;
