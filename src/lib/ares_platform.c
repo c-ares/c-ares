@@ -101,7 +101,7 @@ struct pvt_servent {
 
 static struct pvt_servent IANAports[] = {
 #  ifdef USE_IANA_WELL_KNOWN_PORTS
-  {"tcpmux",           { NULL }, 1,     "tcp" },
+  { "tcpmux",          { NULL }, 1,     "tcp" },
   { "tcpmux",          { NULL }, 1,     "udp" },
   { "compressnet",     { NULL }, 2,     "tcp" },
   { "compressnet",     { NULL }, 2,     "udp" },

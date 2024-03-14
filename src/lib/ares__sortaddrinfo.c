@@ -91,6 +91,7 @@ struct addrinfo_sort_elem {
 static int get_scope(const struct sockaddr *addr)
 {
   if (addr->sa_family == AF_INET6) {
+#ifndef DISABLE_IPV6
     const struct sockaddr_in6 *addr6 =
       CARES_INADDR_CAST(const struct sockaddr_in6 *, addr);
     if (IN6_IS_ADDR_MULTICAST(&addr6->sin6_addr)) {
@@ -107,6 +108,9 @@ static int get_scope(const struct sockaddr *addr)
     } else {
       return ARES_IPV6_ADDR_SCOPE_GLOBAL;
     }
+#else
+    return ARES_IPV6_ADDR_SCOPE_NODELOCAL;
+#endif
   } else if (addr->sa_family == AF_INET) {
     const struct sockaddr_in *addr4 =
       CARES_INADDR_CAST(const struct sockaddr_in *, addr);
@@ -137,6 +141,7 @@ static int get_label(const struct sockaddr *addr)
   if (addr->sa_family == AF_INET) {
     return 4;
   } else if (addr->sa_family == AF_INET6) {
+#ifndef DISABLE_IPV6
     const struct sockaddr_in6 *addr6 =
       CARES_INADDR_CAST(const struct sockaddr_in6 *, addr);
     if (IN6_IS_ADDR_LOOPBACK(&addr6->sin6_addr)) {
@@ -159,6 +164,9 @@ static int get_label(const struct sockaddr *addr)
       /* All other IPv6 addresses, including global unicast addresses. */
       return 1;
     }
+#else
+    return 1;
+#endif
   } else {
     /*
      * This should never happen.
@@ -177,6 +185,7 @@ static int get_precedence(const struct sockaddr *addr)
   if (addr->sa_family == AF_INET) {
     return 35;
   } else if (addr->sa_family == AF_INET6) {
+#ifndef DISABLE_IPV6
     const struct sockaddr_in6 *addr6 =
       CARES_INADDR_CAST(const struct sockaddr_in6 *, addr);
     if (IN6_IS_ADDR_LOOPBACK(&addr6->sin6_addr)) {
@@ -197,6 +206,9 @@ static int get_precedence(const struct sockaddr *addr)
       /* All other IPv6 addresses, including global unicast addresses. */
       return 40;
     }
+#else
+    return 40;
+#endif
   } else {
     return 1;
   }

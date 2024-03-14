@@ -85,6 +85,7 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
     node->ai_ttl     = (int)ttl;
   }
 
+#ifndef DISABLE_IPV6
   if (aftype == AF_INET6) {
     struct sockaddr_in6 *sin6 = ares_malloc(sizeof(*sin6));
     if (!sin6) {
@@ -102,6 +103,7 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
     node->ai_addr    = (struct sockaddr *)sin6;
     node->ai_ttl     = (int)ttl;
   }
+#endif
 
   return ARES_SUCCESS;
 }
