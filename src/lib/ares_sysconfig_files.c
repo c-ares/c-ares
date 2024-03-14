@@ -333,6 +333,8 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
   ares__llist_node_t *node;
   size_t              separators_len = ares_strlen(separators);
 
+printf("%s(): here\n", __FUNCTION__);
+
   status = ares__buf_split(buf, (const unsigned char *)separators,
                            separators_len, ARES_BUF_SPLIT_TRIM, 0, &lookups);
   if (status != ARES_SUCCESS) {
@@ -352,6 +354,8 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
       continue;
     }
 
+printf("%s(): opt='%s'", __FUNCTION__, value);
+
     if (strcasecmp(value, "dns")    == 0 ||
         strcasecmp(value, "bind")   == 0 ||
         strcasecmp(value, "resolv") == 0) {
@@ -366,11 +370,13 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
 
     /* Look for a duplicate and ignore */
     if (memchr(lookupstr, ch, lookupstr_cnt) == NULL) {
+printf("%s(): set '%c'\n", __FUNCTION__, ch);
       lookupstr[lookupstr_cnt++] = ch;
     }
   }
 
   if (lookupstr_cnt) {
+printf("%s(): set %s\n", __FUNCTION__, lookupstr);
     ares_free(sysconfig->lookups);
     sysconfig->lookups = ares_strdup(lookupstr);
     if (sysconfig->lookups == NULL) {
