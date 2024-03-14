@@ -333,14 +333,19 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
   ares__llist_node_t *node;
   size_t              separators_len = ares_strlen(separators);
 
-printf("%s(): here\n", __FUNCTION__);
+{
+size_t len;
+const char *str = (const char *)ares__buf_peek(buf, &len);
+printf("%s(): here %.*s\n", __FUNCTION__, (int)len, str);
+}
 
   status = ares__buf_split(buf, (const unsigned char *)separators,
                            separators_len, ARES_BUF_SPLIT_TRIM, 0, &lookups);
   if (status != ARES_SUCCESS) {
+printf("%s(): split failed with %zu possible separators\n", __FUNCTION__, separators_len);
     goto done;
   }
-
+printf("%s(): %zu split\n", __FUNCTION__, ares__llist_len(lookups));
   memset(lookupstr, 0, sizeof(lookupstr));
 
   for (node = ares__llist_node_first(lookups); node != NULL;
@@ -351,6 +356,7 @@ printf("%s(): here\n", __FUNCTION__);
 
     status = buf_fetch_string(valbuf, value, sizeof(value));
     if (status != ARES_SUCCESS) {
+printf("%s(): fetching string failed\n", __FUNCTION__);
       continue;
     }
 

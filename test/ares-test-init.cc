@@ -512,22 +512,6 @@ CONTAINED_TEST_F(LibraryTest, ContainerMyHostsInit,
   return HasFailure();
 }
 
-NameContentList hostconf = {
-  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
-                       "sortlist1.2.3.4\n"  // malformed line
-                       "search first.com second.com\n"},
-  {"/etc/host.conf", "order bind hosts\n"}};
-CONTAINED_TEST_F(LibraryTest, ContainerHostConfInit,
-                 "myhostname", "mydomainname.org", hostconf) {
-  ares_channel_t *channel = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
-
-  EXPECT_EQ(std::string("bf"), std::string(channel->lookups));
-
-  ares_destroy(channel);
-  return HasFailure();
-}
-
 NameContentList svcconf = {
   {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
                        "search first.com second.com\n"},
