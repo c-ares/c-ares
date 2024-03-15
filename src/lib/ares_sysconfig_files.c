@@ -389,68 +389,98 @@ done:
   return status;
 }
 
-static const char *try_option(const char *p, const char *q, const char *opt)
+static ares_status_t process_option(ares_sysconfig_t *sysconfig,
+                                    ares__buf_t *option)
 {
-  size_t len = ares_strlen(opt);
-  return ((size_t)(q - p) >= len && !strncmp(p, opt, len)) ? &p[len] : NULL;
+  ares__llist_t *kv      = NULL;
+  char           key[32] = "";
+  char           val[32] = "";
+  unsigned int   valint  = 0;
+  ares_status_t  status;
+
+  /* Split on : */
+  status = ares__buf_split(option, (const unsigned char *)":", 1,
+                           ARES_BUF_SPLIT_TRIM, 1, &kv);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = buf_fetch_string(ares__llist_first_val(kv), key, sizeof(key));
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  if (ares__llist_len(kv) == 2) {
+    status = buf_fetch_string(ares__llist_first_val(kv), val, sizeof(val));
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+    valint = (unsigned int)strtoul(val, NULL, 10);
+  }
+
+  if (strcmp(key, "ndots") == 0) {
+    if (valint == 0) {
+      return ARES_EFORMERR;
+    }
+    sysconfig->ndots = valint;
+  } else if (strcmp(key, "retrans") == 0 || strcmp(key, "timeout") == 0) {
+    if (valint == 0) {
+      return ARES_EFORMERR;
+    }
+    sysconfig->timeout_ms = valint * 1000;
+  } else if (strcmp(key, "retry") == 0 || strcmp(key, "attempts") == 0) {
+    if (valint == 0) {
+      return ARES_EFORMERR;
+    }
+    sysconfig->tries = valint;
+  } else if (strcmp(key, "rotate") == 0) {
+    sysconfig->rotate = ARES_TRUE;
+  } else if (strcmp(key, "use-vc") == 0 || strcmp(key, "usevc") == 0) {
+    sysconfig->usevc = ARES_TRUE;
+  }
+
+done:
+  ares__llist_destroy(kv);
+  return status;
 }
 
 static ares_status_t set_options(ares_sysconfig_t *sysconfig, const char *str)
 {
-  const char *p;
-  const char *q;
-  const char *val;
+  ares__buf_t        *buf     = NULL;
+  ares__llist_t      *options = NULL;
+  ares_status_t       status;
+  ares__llist_node_t *node;
 
-  if (str == NULL) {
-    return ARES_SUCCESS;
+  buf = ares__buf_create_const((const unsigned char *)str, ares_strlen(str));
+  if (buf == NULL) {
+    return ARES_ENOMEM;
   }
 
-  p = str;
-  while (*p) {
-    q = p;
-    while (*q && !ISSPACE(*q)) {
-      q++;
-    }
-    val = try_option(p, q, "ndots:");
-    if (val) {
-      sysconfig->ndots = strtoul(val, NULL, 10);
-    }
+  status = ares__buf_split(buf, (const unsigned char *)" \t", 2,
+                           ARES_BUF_SPLIT_TRIM, 0, &options);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
 
-    // Outdated option.
-    val = try_option(p, q, "retrans:");
-    if (val) {
-      sysconfig->timeout_ms = strtoul(val, NULL, 10);
-    }
+  for (node = ares__llist_node_first(options); node != NULL;
+       node = ares__llist_node_next(node)) {
+    ares__buf_t *valbuf = ares__llist_node_val(node);
 
-    val = try_option(p, q, "timeout:");
-    if (val) {
-      sysconfig->timeout_ms = strtoul(val, NULL, 10) * 1000;
-    }
-
-    // Outdated option.
-    val = try_option(p, q, "retry:");
-    if (val) {
-      sysconfig->tries = strtoul(val, NULL, 10);
-    }
-
-    val = try_option(p, q, "attempts:");
-    if (val) {
-      sysconfig->tries = strtoul(val, NULL, 10);
-    }
-
-    val = try_option(p, q, "rotate");
-    if (val) {
-      sysconfig->rotate = ARES_TRUE;
-    }
-
-    p = q;
-    while (ISSPACE(*p)) {
-      p++;
+    status = process_option(sysconfig, valbuf);
+    /* Out of memory is the only fatal condition */
+    if (status == ARES_ENOMEM) {
+      goto done;
     }
   }
 
-  return ARES_SUCCESS;
+  status = ARES_SUCCESS;
+
+done:
+  ares__llist_destroy(options);
+  ares__buf_destroy(buf);
+  return status;
 }
+
 
 ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
 {

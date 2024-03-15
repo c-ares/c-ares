@@ -390,6 +390,7 @@ typedef struct {
   size_t           tries;
   ares_bool_t      rotate;
   size_t           timeout_ms;
+  ares_bool_t      usevc;
 } ares_sysconfig_t;
 
 ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig);
