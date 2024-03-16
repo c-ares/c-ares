@@ -402,7 +402,6 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
   status = ares__buf_split(option, (const unsigned char *)":", 1,
                            ARES_BUF_SPLIT_TRIM, 2, &kv);
   if (status != ARES_SUCCESS) {
-printf("%s(): split failed\n", __FUNCTION__);
     goto done;
   }
 
@@ -410,14 +409,12 @@ printf("%s(): split failed\n", __FUNCTION__);
   if (status != ARES_SUCCESS) {
     goto done;
   }
-printf("%s(): key='%s'\n", __FUNCTION__, key);
   if (ares__llist_len(kv) == 2) {
     status = buf_fetch_string(ares__llist_last_val(kv), val, sizeof(val));
     if (status != ARES_SUCCESS) {
       goto done;
     }
     valint = (unsigned int)strtoul(val, NULL, 10);
-printf("%s(): val='%s':%u\n", __FUNCTION__, val, valint);
   }
 
   if (strcmp(key, "ndots") == 0) {
@@ -452,7 +449,7 @@ static ares_status_t set_options(ares_sysconfig_t *sysconfig, const char *str)
   ares__llist_t      *options = NULL;
   ares_status_t       status;
   ares__llist_node_t *node;
-printf("%s(): options='%s'\n", __FUNCTION__, str);
+
   buf = ares__buf_create_const((const unsigned char *)str, ares_strlen(str));
   if (buf == NULL) {
     return ARES_ENOMEM;
@@ -467,11 +464,7 @@ printf("%s(): options='%s'\n", __FUNCTION__, str);
   for (node = ares__llist_node_first(options); node != NULL;
        node = ares__llist_node_next(node)) {
     ares__buf_t *valbuf = ares__llist_node_val(node);
-{
-size_t len;
-const unsigned char *ptr = ares__buf_peek(valbuf, &len);
-printf("%s(): option='%*.s'\n", __FUNCTION__, (int)len, (const char *)ptr);
-}
+
     status = process_option(sysconfig, valbuf);
     /* Out of memory is the only fatal condition */
     if (status == ARES_ENOMEM) {
