@@ -350,7 +350,6 @@ void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
 void          ares__check_cleanup_conn(const ares_channel_t     *channel,
                                        struct server_connection *conn);
-ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize);
 void          ares__free_query(struct query *query);
 
 ares_rand_state *ares__init_rand_state(void);
@@ -391,6 +390,7 @@ typedef struct {
   size_t           tries;
   ares_bool_t      rotate;
   size_t           timeout_ms;
+  ares_bool_t      usevc;
 } ares_sysconfig_t;
 
 ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig);
@@ -458,7 +458,6 @@ ares_ssize_t  ares__socket_recv(ares_channel_t *channel, ares_socket_t s,
 void          ares__close_socket(ares_channel, ares_socket_t);
 int         ares__connect_socket(ares_channel_t *channel, ares_socket_t sockfd,
                                  const struct sockaddr *addr, ares_socklen_t addrlen);
-ares_bool_t ares__is_hostnamech(int ch);
 void        ares__destroy_server(struct server_state *server);
 
 ares_status_t ares__servers_update(ares_channel_t *channel,
@@ -494,7 +493,6 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
                                             unsigned short        port,
                                             ares_bool_t           want_cnames,
                                             struct ares_addrinfo *ai);
-ares_bool_t   ares__isprint(int ch);
 
 
 /*! Parse a compressed DNS name as defined in RFC1035 starting at the current

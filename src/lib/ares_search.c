@@ -260,6 +260,101 @@ ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
   return ARES_SUCCESS;
 }
 
+static ares_status_t ares__lookup_hostaliases(const char *name, char **alias)
+{
+  ares_status_t       status      = ARES_SUCCESS;
+  const char         *hostaliases = getenv("HOSTALIASES");
+  ares__buf_t        *buf         = NULL;
+  ares__llist_t      *lines       = NULL;
+  ares__llist_node_t *node;
+
+  *alias = NULL;
+
+  if (hostaliases == NULL) {
+    status = ARES_ENOTFOUND;
+    goto done;
+  }
+
+  buf = ares__buf_create();
+  if (buf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  status = ares__buf_load_file(hostaliases, buf);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* The HOSTALIASES file is structured as one alias per line.  The first
+   * field in the line is the simple hostname with no periods, followed by
+   * whitespace, then the full domain name, e.g.:
+   *
+   * c-ares  www.c-ares.org
+   * curl    www.curl.se
+   */
+
+  status = ares__buf_split(buf, (const unsigned char *)"\n", 1,
+                           ARES_BUF_SPLIT_TRIM, 0, &lines);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  for (node = ares__llist_node_first(lines); node != NULL;
+       node = ares__llist_node_next(node)) {
+    ares__buf_t *line         = ares__llist_node_val(node);
+    char         hostname[64] = "";
+    char         fqdn[256]    = "";
+
+    /* Pull off hostname */
+    ares__buf_tag(line);
+    ares__buf_consume_nonwhitespace(line);
+    if (ares__buf_tag_fetch_string(line, hostname, sizeof(hostname)) !=
+        ARES_SUCCESS) {
+      continue;
+    }
+
+    /* Match hostname */
+    if (strcasecmp(hostname, name) != 0) {
+      continue;
+    }
+
+    /* consume whitespace */
+    ares__buf_consume_whitespace(line, ARES_TRUE);
+
+    /* pull off fqdn */
+    ares__buf_tag(line);
+    ares__buf_consume_nonwhitespace(line);
+    if (ares__buf_tag_fetch_string(line, fqdn, sizeof(fqdn)) != ARES_SUCCESS ||
+        ares_strlen(fqdn) == 0) {
+      continue;
+    }
+
+    /* Validate characterset */
+    if (!ares__is_hostname(fqdn)) {
+      continue;
+    }
+
+    *alias = ares_strdup(fqdn);
+    if (*alias == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+
+    /* Good! */
+    status = ARES_SUCCESS;
+    goto done;
+  }
+
+  status = ARES_ENOTFOUND;
+
+done:
+  ares__buf_destroy(buf);
+  ares__llist_destroy(lines);
+
+  return status;
+}
+
 /* Determine if this name only yields one query.  If it does, set *s to
  * the string we should query, in an allocated buffer.  If not, set *s
  * to NULL.
@@ -268,14 +363,9 @@ ares_status_t ares__single_domain(const ares_channel_t *channel,
                                   const char *name, char **s)
 {
   size_t        len = ares_strlen(name);
-  const char   *hostaliases;
-  FILE         *fp;
-  char         *line = NULL;
   ares_status_t status;
-  size_t        linesize;
-  const char   *p;
-  const char   *q;
-  int           error;
+
+  *s = NULL;
 
   /* If the name contains a trailing dot, then the single query is the name
    * sans the trailing dot.
@@ -286,54 +376,9 @@ ares_status_t ares__single_domain(const ares_channel_t *channel,
   }
 
   if (!(channel->flags & ARES_FLAG_NOALIASES) && !strchr(name, '.')) {
-    /* The name might be a host alias. */
-    hostaliases = getenv("HOSTALIASES");
-    if (hostaliases) {
-      fp = fopen(hostaliases, "r");
-      if (fp) {
-        while ((status = ares__read_line(fp, &line, &linesize)) ==
-               ARES_SUCCESS) {
-          if (strncasecmp(line, name, len) != 0 || !ISSPACE(line[len])) {
-            continue;
-          }
-          p = line + len;
-          while (ISSPACE(*p)) {
-            p++;
-          }
-          if (*p) {
-            q = p + 1;
-            while (*q && !ISSPACE(*q)) {
-              q++;
-            }
-            *s = ares_malloc((size_t)(q - p + 1));
-            if (*s) {
-              memcpy(*s, p, (size_t)(q - p));
-              (*s)[q - p] = 0;
-            }
-            ares_free(line);
-            fclose(fp);
-            return (*s) ? ARES_SUCCESS : ARES_ENOMEM;
-          }
-        }
-        ares_free(line);
-        fclose(fp);
-        if (status != ARES_SUCCESS && status != ARES_EOF) {
-          return status;
-        }
-      } else {
-        error = ERRNO;
-        switch (error) {
-          case ENOENT:
-          case ESRCH:
-            break;
-          default:
-            DEBUGF(fprintf(stderr, "fopen() failed with error: %d %s\n", error,
-                           strerror(error)));
-            DEBUGF(fprintf(stderr, "Error opening file: %s\n", hostaliases));
-            *s = NULL;
-            return ARES_EFILE;
-        }
-      }
+    status = ares__lookup_hostaliases(name, s);
+    if (status != ARES_ENOTFOUND) {
+      return status;
     }
   }
 

@@ -1059,6 +1059,10 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
     channel->rotate = sysconfig->rotate;
   }
 
+  if (sysconfig->usevc) {
+    channel->flags |= ARES_FLAG_USEVC;
+  }
+
   return ARES_SUCCESS;
 }
 
