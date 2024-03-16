@@ -400,7 +400,7 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
 
   /* Split on : */
   status = ares__buf_split(option, (const unsigned char *)":", 1,
-                           ARES_BUF_SPLIT_TRIM, 1, &kv);
+                           ARES_BUF_SPLIT_TRIM, 2, &kv);
   if (status != ARES_SUCCESS) {
     goto done;
   }
