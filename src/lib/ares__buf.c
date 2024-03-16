@@ -590,7 +590,7 @@ ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
 }
 
 static ares_bool_t ares__is_whitespace(unsigned char c,
-                                       ares_bool_t include_linefeed)
+                                       ares_bool_t   include_linefeed)
 {
   switch (c) {
     case '\r':
@@ -815,7 +815,7 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
       }
     }
 
-    if (max_sections && ares__llist_len(*list) >= max_sections-1) {
+    if (max_sections && ares__llist_len(*list) >= max_sections - 1) {
       ares__buf_consume(buf, ares__buf_len(buf));
     } else {
       ares__buf_consume_until_charset(buf, delims, delims_len, ARES_FALSE);
@@ -831,22 +831,23 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
 
     if (flags & ARES_BUF_SPLIT_LTRIM) {
       size_t i;
-      for (i=0; i<len; i++) {
-        if (!ares__is_whitespace(ptr[i], ARES_TRUE))
+      for (i = 0; i < len; i++) {
+        if (!ares__is_whitespace(ptr[i], ARES_TRUE)) {
           break;
+        }
       }
       ptr += i;
       len -= i;
     }
 
     if (flags & ARES_BUF_SPLIT_RTRIM) {
-      while (len && ares__is_whitespace(ptr[len-1], ARES_TRUE)) {
+      while (len && ares__is_whitespace(ptr[len - 1], ARES_TRUE)) {
         len--;
       }
     }
 
     if (len != 0 || flags & ARES_BUF_SPLIT_ALLOW_BLANK) {
-      ares__buf_t         *data;
+      ares__buf_t *data;
 
       if (!(flags & ARES_BUF_SPLIT_NO_DUPLICATES) ||
           !ares__buf_split_isduplicate(*list, ptr, len, flags)) {
@@ -1136,7 +1137,7 @@ ares_status_t ares__buf_hexdump(ares__buf_t *buf, const unsigned char *data,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__buf_load_file(const char  *filename, ares__buf_t *buf)
+ares_status_t ares__buf_load_file(const char *filename, ares__buf_t *buf)
 {
   FILE          *fp        = NULL;
   unsigned char *ptr       = NULL;

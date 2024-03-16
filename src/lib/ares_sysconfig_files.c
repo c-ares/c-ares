@@ -134,7 +134,7 @@ static ares_status_t parse_sort(ares__buf_t *buf, struct apattern *pat)
   ares__buf_tag(buf);
 
   /* Consume ip address */
-  if (ares__buf_consume_charset(buf, ip_charset, sizeof(ip_charset)-1) == 0) {
+  if (ares__buf_consume_charset(buf, ip_charset, sizeof(ip_charset) - 1) == 0) {
     return ARES_EBADSTR;
   }
 
@@ -162,8 +162,8 @@ static ares_status_t parse_sort(ares__buf_t *buf, struct apattern *pat)
     ares__buf_tag(buf);
 
     /* Consume mask */
-    if (ares__buf_consume_charset(buf, ipv4_charset, sizeof(ipv4_charset)-1) ==
-        0) {
+    if (ares__buf_consume_charset(buf, ipv4_charset,
+                                  sizeof(ipv4_charset) - 1) == 0) {
       return ARES_EBADSTR;
     }
 
@@ -282,8 +282,8 @@ done:
   return status;
 }
 
-static ares_status_t config_search(ares_sysconfig_t *sysconfig,
-                                   const char *str, size_t max_domains)
+static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str,
+                                   size_t max_domains)
 {
   if (sysconfig->domains && sysconfig->ndomains > 0) {
     /* if we already have some domains present, free them first */
@@ -300,7 +300,7 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig,
   /* Truncate if necessary */
   if (max_domains && sysconfig->ndomains > max_domains) {
     size_t i;
-    for (i=max_domains; i<sysconfig->ndomains; i++) {
+    for (i = max_domains; i < sysconfig->ndomains; i++) {
       ares_free(sysconfig->domains[i]);
       sysconfig->domains[i] = NULL;
     }
@@ -309,7 +309,6 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig,
 
   return ARES_SUCCESS;
 }
-
 
 static ares_status_t buf_fetch_string(ares__buf_t *buf, char *str,
                                       size_t str_len)
@@ -323,13 +322,12 @@ static ares_status_t buf_fetch_string(ares__buf_t *buf, char *str,
 }
 
 static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
-                                   ares__buf_t *buf,
-                                   const char *separators)
+                                   ares__buf_t *buf, const char *separators)
 {
   ares_status_t       status;
   char                lookupstr[32];
-  size_t              lookupstr_cnt  = 0;
-  ares__llist_t      *lookups        = NULL;
+  size_t              lookupstr_cnt = 0;
+  ares__llist_t      *lookups       = NULL;
   ares__llist_node_t *node;
   size_t              separators_len = ares_strlen(separators);
 
@@ -352,13 +350,11 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
       continue;
     }
 
-    if (strcasecmp(value, "dns")     == 0 ||
-        strcasecmp(value, "bind")    == 0 ||
-        strcasecmp(value, "resolv")  == 0 ||
-        strcasecmp(value, "resolve") == 0) {
+    if (strcasecmp(value, "dns") == 0 || strcasecmp(value, "bind") == 0 ||
+        strcasecmp(value, "resolv") == 0 || strcasecmp(value, "resolve") == 0) {
       ch = 'b';
     } else if (strcasecmp(value, "files") == 0 ||
-               strcasecmp(value, "file")  == 0 ||
+               strcasecmp(value, "file") == 0 ||
                strcasecmp(value, "local") == 0) {
       ch = 'f';
     } else {
@@ -390,7 +386,7 @@ done:
 }
 
 static ares_status_t process_option(ares_sysconfig_t *sysconfig,
-                                    ares__buf_t *option)
+                                    ares__buf_t      *option)
 {
   ares__llist_t *kv      = NULL;
   char           key[32] = "";
@@ -480,7 +476,6 @@ done:
   return status;
 }
 
-
 ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
 {
   const char   *localdomain;
@@ -510,7 +505,6 @@ ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig)
 
   return ARES_SUCCESS;
 }
-
 
 /* Configuration Files:
  *  /etc/resolv.conf
@@ -568,7 +562,7 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
 {
   char          option[32];
   char          value[512];
-  ares_status_t status    = ARES_SUCCESS;
+  ares_status_t status = ARES_SUCCESS;
 
   /* Ignore lines beginning with a comment */
   if (ares__buf_begins_with(line, (const unsigned char *)"#", 1) ||
@@ -607,14 +601,15 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
     if (sysconfig->domains == NULL) {
       status = config_search(sysconfig, value, 1);
     }
-  } else if (strcmp(option, "lookup") == 0 || strcmp(option, "hostresorder") == 0) {
+  } else if (strcmp(option, "lookup") == 0 ||
+             strcmp(option, "hostresorder") == 0) {
     ares__buf_tag_rollback(line);
     status = config_lookup(sysconfig, line, " \t");
   } else if (strcmp(option, "search") == 0) {
     status = config_search(sysconfig, value, 0);
-  } else if (strcmp(option,"nameserver") == 0) {
-    status = ares__sconfig_append_fromstr(&sysconfig->sconfig, value,
-                                          ARES_TRUE);
+  } else if (strcmp(option, "nameserver") == 0) {
+    status =
+      ares__sconfig_append_fromstr(&sysconfig->sconfig, value, ARES_TRUE);
   } else if (strcmp(option, "sortlist") == 0) {
     /* Ignore all failures except ENOMEM.  If the sysadmin set a bad
      * sortlist, just ignore the sortlist, don't cause an inoperable
@@ -637,10 +632,10 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
 static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
                                          ares__buf_t      *line)
 {
-  char                option[32];
-  ares__buf_t        *buf;
-  ares_status_t       status    = ARES_SUCCESS;
-  ares__llist_t      *sects     = NULL;
+  char           option[32];
+  ares__buf_t   *buf;
+  ares_status_t  status = ARES_SUCCESS;
+  ares__llist_t *sects  = NULL;
 
   /* Ignore lines beginning with a comment */
   if (ares__buf_begins_with(line, (const unsigned char *)"#", 1)) {
@@ -684,10 +679,10 @@ done:
 static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
                                         ares__buf_t      *line)
 {
-  char                option[32];
-  ares__buf_t        *buf;
-  ares_status_t       status    = ARES_SUCCESS;
-  ares__llist_t      *sects     = NULL;
+  char           option[32];
+  ares__buf_t   *buf;
+  ares_status_t  status = ARES_SUCCESS;
+  ares__llist_t *sects  = NULL;
 
   /* Ignore lines beginning with a comment */
   if (ares__buf_begins_with(line, (const unsigned char *)"#", 1)) {
@@ -726,7 +721,7 @@ done:
 }
 
 typedef ares_status_t (*line_callback_t)(ares_sysconfig_t *sysconfig,
-                                       ares__buf_t *line);
+                                         ares__buf_t      *line);
 
 /* Should only return:
  *  ARES_ENOTFOUND - file not found
@@ -735,9 +730,9 @@ typedef ares_status_t (*line_callback_t)(ares_sysconfig_t *sysconfig,
  *  ARES_SUCCESS   - file processed, doesn't necessarily mean it was a good
  *                   file, but we're not erroring out if we can't parse
  *                   something (or anything at all) */
-static ares_status_t process_config_lines(const char *filename,
+static ares_status_t process_config_lines(const char       *filename,
                                           ares_sysconfig_t *sysconfig,
-                                          line_callback_t cb)
+                                          line_callback_t   cb)
 {
   ares_status_t       status = ARES_SUCCESS;
   ares__llist_node_t *node;
@@ -766,8 +761,9 @@ static ares_status_t process_config_lines(const char *filename,
     ares__buf_t *line = ares__llist_node_val(node);
 
     status = cb(sysconfig, line);
-    if (status != ARES_SUCCESS)
+    if (status != ARES_SUCCESS) {
       goto done;
+    }
   }
 
 done:
@@ -777,37 +773,36 @@ done:
   return status;
 }
 
-
 ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
                                          ares_sysconfig_t     *sysconfig)
 {
   ares_status_t status = ARES_SUCCESS;
 
   /* Resolv.conf */
-  status = process_config_lines(
-    (channel->resolvconf_path != NULL)?channel->resolvconf_path:PATH_RESOLV_CONF,
-    sysconfig, parse_resolvconf_line);
+  status = process_config_lines((channel->resolvconf_path != NULL)
+                                  ? channel->resolvconf_path
+                                  : PATH_RESOLV_CONF,
+                                sysconfig, parse_resolvconf_line);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
   }
 
   /* Nsswitch.conf */
-  status = process_config_lines("/etc/nsswitch.conf", sysconfig,
-                                parse_nsswitch_line);
+  status =
+    process_config_lines("/etc/nsswitch.conf", sysconfig, parse_nsswitch_line);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
   }
 
   /* netsvc.conf */
-  status = process_config_lines("/etc/netsvc.conf", sysconfig,
-                                parse_svcconf_line);
+  status =
+    process_config_lines("/etc/netsvc.conf", sysconfig, parse_svcconf_line);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
   }
 
   /* svc.conf */
-  status = process_config_lines("/etc/svc.conf", sysconfig,
-                                parse_svcconf_line);
+  status = process_config_lines("/etc/svc.conf", sysconfig, parse_svcconf_line);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
   }

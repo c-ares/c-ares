@@ -433,7 +433,7 @@ typedef enum {
   /*! Trim trailing whitespace from buffer */
   ARES_BUF_SPLIT_RTRIM = 1 << 5,
   /*! Trim leading and trailing whitespace from buffer */
-  ARES_BUF_SPLIT_TRIM = (ARES_BUF_SPLIT_LTRIM|ARES_BUF_SPLIT_RTRIM)
+  ARES_BUF_SPLIT_TRIM = (ARES_BUF_SPLIT_LTRIM | ARES_BUF_SPLIT_RTRIM)
 } ares__buf_split_t;
 
 /*! Split the provided buffer into multiple sub-buffers stored in the variable

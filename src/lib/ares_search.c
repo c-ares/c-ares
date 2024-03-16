@@ -260,7 +260,6 @@ ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
   return ARES_SUCCESS;
 }
 
-
 static ares_status_t ares__lookup_hostaliases(const char *name, char **alias)
 {
   ares_status_t       status      = ARES_SUCCESS;
@@ -310,8 +309,8 @@ static ares_status_t ares__lookup_hostaliases(const char *name, char **alias)
     /* Pull off hostname */
     ares__buf_tag(line);
     ares__buf_consume_nonwhitespace(line);
-    if (ares__buf_tag_fetch_string(line, hostname, sizeof(hostname))
-        != ARES_SUCCESS) {
+    if (ares__buf_tag_fetch_string(line, hostname, sizeof(hostname)) !=
+        ARES_SUCCESS) {
       continue;
     }
 

@@ -115,12 +115,13 @@ void ares__str_rtrim(char *str)
   size_t len;
   size_t i;
 
-  if (str == NULL)
+  if (str == NULL) {
     return;
+  }
 
   len = ares_strlen(str);
-  for (i=len; i > 0; i--) {
-    if (!ares__isspace(str[i-1])) {
+  for (i = len; i > 0; i--) {
+    if (!ares__isspace(str[i - 1])) {
       break;
     }
   }
@@ -132,10 +133,11 @@ void ares__str_ltrim(char *str)
   size_t i;
   size_t len;
 
-  if (str == NULL)
+  if (str == NULL) {
     return;
+  }
 
-  for (i=0; str[i] != 0 && ares__isspace(str[i]); i++) {
+  for (i = 0; str[i] != 0 && ares__isspace(str[i]); i++) {
     /* Do nothing */
   }
 
@@ -145,9 +147,9 @@ void ares__str_ltrim(char *str)
 
   len = ares_strlen(str);
   if (i != len) {
-    memmove(str, str+i, len-i);
+    memmove(str, str + i, len - i);
   }
-  str[len-i] = 0;
+  str[len - i] = 0;
 }
 
 void ares__str_trim(char *str)
@@ -255,7 +257,6 @@ ares_bool_t ares__is_hostnamech(int ch)
   return ARES_FALSE;
 }
 
-
 ares_bool_t ares__is_hostname(const char *str)
 {
   size_t i;
@@ -266,5 +267,3 @@ ares_bool_t ares__is_hostname(const char *str)
   }
   return ARES_TRUE;
 }
-
-

@@ -48,19 +48,19 @@ size_t        ares_strcpy(char *dest, const char *src, size_t dest_size);
 
 ares_bool_t   ares_str_isnum(const char *str);
 
-void ares__str_ltrim(char *str);
-void ares__str_rtrim(char *str);
-void ares__str_trim(char *str);
+void          ares__str_ltrim(char *str);
+void          ares__str_rtrim(char *str);
+void          ares__str_trim(char *str);
 
 unsigned char ares__tolower(unsigned char c);
 ares_bool_t   ares__memeq_ci(const unsigned char *ptr, const unsigned char *val,
                              size_t len);
 
-ares_bool_t ares__isspace(int ch);
-ares_bool_t ares__isprint(int ch);
-ares_bool_t ares__is_hostnamech(int ch);
+ares_bool_t   ares__isspace(int ch);
+ares_bool_t   ares__isprint(int ch);
+ares_bool_t   ares__is_hostnamech(int ch);
 
-ares_bool_t ares__is_hostname(const char *str);
+ares_bool_t   ares__is_hostname(const char *str);
 
 
 #endif /* __ARES_STR_H */
