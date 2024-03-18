@@ -80,7 +80,8 @@ ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
 
 /*! Write a DNS record representing a query for a single name into a buffer.
  *  An alternative name can be specified to temporarily overwrite the name
- *  in the query.
+ *  in the query. Note that this only affects the name in the question section;
+ *  RRs are not affected.
  *
  *  \param[in]  dnsrec  DNS record object to write.
  *  \param[in]  altname Alternative name to use in the query.

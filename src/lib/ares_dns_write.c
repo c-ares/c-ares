@@ -1056,7 +1056,8 @@ void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
 
 /* Write a DNS record representing a query for a single name, but temporarily
  * overwrite the name with an alternative name before doing so. This is used
- * as a helper function in ares_search().
+ * as a helper function in ares_search(). Note that this only affects the name
+ * in the question section; RRs are not affected.
  */
 ares_status_t ares_dns_write_query_altname(ares_dns_record_t *dnsrec,
                                            char *altname, unsigned char **buf,

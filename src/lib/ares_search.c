@@ -360,7 +360,8 @@ static void search_callback(void *arg, int status, int timeouts,
 
 /* Write and send a DNS record on a channel. The DNS record must represent a
  * query for a single name. An alternative name can be specified to temporarily
- * overwrite the name on the DNS record before doing so.
+ * overwrite the name on the DNS record before doing so. Note that this only
+ * affects the name in the question section; RRs are not affected.
  * This is used as a helper function in ares_search().
  */
 static ares_status_t ares__write_and_send_query(ares_channel_t *channel,

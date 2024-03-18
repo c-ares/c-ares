@@ -156,8 +156,10 @@ The \fIares_search_dnsrec(3)\fP function behaves identically to
 \fIares_search(3)\fP, but takes an initialized and filled DNS record object to
 use for queries as the second argument
 .I dnsrec
-instead of a name, class and type.  This object is used as base for the queries
-and must itself represent a valid query for a single name.  Moreover, the
+instead of a name, class and type.  This object is used as the base for the
+queries and must itself represent a valid query for a single name.  Note that
+the search domains will only be appended to the name in the question section;
+RRs on the DNS record object will not be affected.  Moreover, the
 .I callback
 argument is of type \fIares_callback_dnsrec\fP.  This callback behaves
 identically to \fIares_callback\fP, but is invoked with a parsed DNS record
