@@ -177,7 +177,7 @@ static void ares_send_cb(void *arg, ares_status_t status, size_t timeouts,
   unsigned char      *abuf  = NULL;
   size_t              alen  = 0;
 
-  if (dnsrec) {
+  if (dnsrec != NULL) {
     status = ares_dns_write(dnsrec, &abuf, &alen);
   }
 
@@ -201,22 +201,21 @@ void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
   /* Verify that the query is at least long enough to hold the header. */
   if (qlen < HFIXEDSZ || qlen >= (1 << 16)) {
     callback(arg, ARES_EBADQUERY, 0, NULL, 0);
-    goto done;
+    return;
   }
-
-  ares__channel_lock(channel);
 
   status = ares_dns_parse(qbuf, (size_t)qlen, 0, &dnsrec);
   if (status != ARES_SUCCESS) {
     callback(arg, (int)status, 0, NULL, 0);
-    goto done;
+    return;
   }
 
   cbarg = ares_malloc_zero(sizeof(*cbarg));
   if (cbarg == NULL) {
     status = ARES_ENOMEM;
+    ares_dns_record_destroy(dnsrec);
     callback(arg, (int)status, 0, NULL, 0);
-    goto done;
+    return;
   }
 
   cbarg->cb  = callback;
@@ -224,8 +223,7 @@ void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
 
   ares_send_dnsrec(channel, dnsrec, ares_send_cb, cbarg, NULL);
 
-done:
-  ares__channel_unlock(channel);
+  ares_dns_record_destroy(dnsrec);
 }
 
 size_t ares_queue_active_queries(ares_channel_t *channel)
