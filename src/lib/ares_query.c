@@ -99,41 +99,27 @@ void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
 static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
                       int alen)
 {
-  struct qquery *qquery = (struct qquery *)arg;
-  size_t         ancount;
-  int            rcode;
+  struct qquery     *qquery = (struct qquery *)arg;
+  ares_dns_record_t *dnsrep = NULL;
+  size_t             ancount;
+  ares_dns_rcode_t   rcode;
 
   if (status != ARES_SUCCESS) {
     qquery->callback(qquery->arg, status, timeouts, abuf, alen);
   } else {
-    /* Pull the response code and answer count from the packet. */
-    rcode   = DNS_HEADER_RCODE(abuf);
-    ancount = DNS_HEADER_ANCOUNT(abuf);
-
-    /* Convert errors. */
-    switch (rcode) {
-      case NOERROR:
-        status = (ancount > 0) ? ARES_SUCCESS : ARES_ENODATA;
-        break;
-      case FORMERR:
-        status = ARES_EFORMERR;
-        break;
-      case SERVFAIL:
-        status = ARES_ESERVFAIL;
-        break;
-      case NXDOMAIN:
-        status = ARES_ENOTFOUND;
-        break;
-      case NOTIMP:
-        status = ARES_ENOTIMP;
-        break;
-      case REFUSED:
-        status = ARES_EREFUSED;
-        break;
-      default:
-        break;
+    /* Pull the response code and answer count from the packet and convert any
+     * errors.
+     */
+    status = (int)ares_dns_parse(abuf, (size_t)alen, 0, &dnsrep);
+    if (status != ARES_SUCCESS) {
+      qquery->callback(qquery->arg, status, timeouts, abuf, alen);
+    } else {
+      rcode = ares_dns_record_get_rcode(dnsrep);
+      ancount = ares_dns_record_rr_cnt(dnsrep, ARES_SECTION_ANSWER);
+      ares_dns_record_destroy(dnsrep);
+      status = (int)ares_dns_query_reply_tostatus(rcode, ancount);
+      qquery->callback(qquery->arg, status, timeouts, abuf, alen);
     }
-    qquery->callback(qquery->arg, status, timeouts, abuf, alen);
   }
   ares_free(qquery);
 }

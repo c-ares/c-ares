@@ -574,15 +574,16 @@ void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, 
   }
   int rrtype = DNS_QUESTION_TYPE(question);
 
+  std::vector<byte> req(data, data + len);
+  std::string reqstr = PacketToString(req);
   if (verbose) {
-    std::vector<byte> req(data, data + len);
-    std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << PacketToString(req)
+    std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << reqstr
               << " on port " << (fd == udpfd_ ? udpport_ : tcpport_)
               << ":" << getaddrport(addr) << std::endl;
     std::cerr << "ProcessRequest(" << qid << ", '" << namestr
               << "', " << RRTypeToString(rrtype) << ")" << std::endl;
   }
-  ProcessRequest(fd, addr, addrlen, qid, namestr, rrtype);
+  ProcessRequest(fd, addr, addrlen, reqstr, qid, namestr, rrtype);
 
 }
 
@@ -651,10 +652,16 @@ std::set<ares_socket_t> MockServer::fds() const {
 }
 
 
-void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr, ares_socklen_t addrlen,
+void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
+                                ares_socklen_t addrlen, const std::string &reqstr,
                                 int qid, const std::string& name, int rrtype) {
   // Before processing, let gMock know the request is happening.
   OnRequest(name, rrtype);
+
+  // If we are expecting a specific request then check it matches here.
+  if (expected_request_.length() > 0) {
+    ASSERT_EQ(expected_request_, reqstr);
+  }
 
   if (reply_.size() == 0) {
     return;
@@ -1074,6 +1081,23 @@ void SearchCallback(void *data, int status, int timeouts,
   result->timeouts_ = timeouts;
   result->data_.assign(abuf, abuf + alen);
   if (verbose) std::cerr << "SearchCallback(" << *result << ")" << std::endl;
+}
+
+void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,
+                          const ares_dns_record_t *dnsrec) {
+  EXPECT_NE(nullptr, data);
+  SearchResult* result = reinterpret_cast<SearchResult*>(data);
+  unsigned char *abuf = NULL;
+  size_t alen = 0;
+  result->done_ = true;
+  result->status_ = (int)status;
+  result->timeouts_ = (int)timeouts;
+  if (dnsrec != NULL) {
+    ares_dns_write(dnsrec, &abuf, &alen);
+  }
+  result->data_.assign(abuf, abuf + alen);
+  ares_free_string(abuf);
+  if (verbose) std::cerr << "SearchCallbackDnsRec(" << *result << ")" << std::endl;
 }
 
 std::ostream& operator<<(std::ostream& os, const NameInfoResult& result) {

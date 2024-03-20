@@ -667,16 +667,26 @@ CARES_EXTERN ares_status_t ares_dns_record_rr_add(
   const char *name, ares_dns_rec_type_t type, ares_dns_class_t rclass,
   unsigned int ttl);
 
-/*! Fetch a resource record based on the section and index.
+/*! Fetch a writable resource record based on the section and index.
  *
  *  \param[in]  dnsrec   Initialized record object
  *  \param[in]  sect     Section for resource record
  *  \param[in]  idx      Index of resource record in section
- *  \return NULL on misuse, otherwise a pointer to the resource record
+ *  \return NULL on misuse, otherwise a writable pointer to the resource record
  */
 CARES_EXTERN ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
                                                    ares_dns_section_t sect,
                                                    size_t             idx);
+
+/*! Fetch a non-writeable resource record based on the section and index.
+ *
+ *  \param[in]  dnsrec   Initialized record object
+ *  \param[in]  sect     Section for resource record
+ *  \param[in]  idx      Index of resource record in section
+ *  \return NULL on misuse, otherwise a const pointer to the resource record
+ */
+CARES_EXTERN const ares_dns_rr_t *ares_dns_record_rr_get_const(
+  const ares_dns_record_t *dnsrec, ares_dns_section_t sect, size_t idx);
 
 
 /*! Remove the resource record based on the section and index
@@ -959,7 +969,7 @@ CARES_EXTERN ares_status_t ares_dns_parse(const unsigned char *buf,
  *  \param[out] buf_len  Length of returned buffer containing DNS message.
  *  \return ARES_SUCCESS on success
  */
-CARES_EXTERN ares_status_t ares_dns_write(ares_dns_record_t *dnsrec,
+CARES_EXTERN ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
                                           unsigned char **buf, size_t *buf_len);
 /*! @} */
 

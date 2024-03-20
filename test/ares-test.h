@@ -243,6 +243,15 @@ public:
     SetReplyData(reply->data());
   }
 
+  // Set the reply to be sent next as well as the request (in string form) that
+  // the server should expect to receive; the query ID field in the reply will
+  // be overwritten with the value from the request.
+  void SetReplyExpRequest(const DNSPacket *reply, const std::string &request)
+  {
+    expected_request_ = request;
+    SetReply(reply);
+  }
+
   void SetReplyQID(int qid)
   {
     qid_ = qid;
@@ -278,8 +287,8 @@ public:
 
 private:
   void           ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr,
-                                ares_socklen_t addrlen, int qid, const std::string &name,
-                                int rrtype);
+                                ares_socklen_t addrlen, const std::string &reqstr,
+                                int qid, const std::string &name, int rrtype);
   void           ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr,
                                ares_socklen_t addrlen, byte *data, int len);
   unsigned short udpport_;
@@ -288,6 +297,7 @@ private:
   ares_socket_t  tcpfd_;
   std::set<ares_socket_t> connfds_;
   std::vector<byte>       reply_;
+  std::string             expected_request_;
   int                     qid_;
   unsigned char          *tcp_data_;
   size_t                  tcp_data_len_;
@@ -444,6 +454,13 @@ ACTION_P2(SetReply, mockserver, reply)
   mockserver->SetReply(reply);
 }
 
+// gMock action to set the reply for a mock server, as well as the request (in
+// string form) that the server should expect to receive.
+ACTION_P3(SetReplyExpRequest, mockserver, reply, request)
+{
+  mockserver->SetReplyExpRequest(reply, request);
+}
+
 ACTION_P2(SetReplyQID, mockserver, qid)
 {
   mockserver->SetReplyQID(qid);
@@ -555,6 +572,8 @@ void          HostCallback(void *data, int status, int timeouts,
                            struct hostent *hostent);
 void SearchCallback(void *data, int status, int timeouts, unsigned char *abuf,
                     int alen);
+void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,
+                          const ares_dns_record_t *dnsrec);
 void NameInfoCallback(void *data, int status, int timeouts, char *node,
                       char *service);
 void AddrInfoCallback(void *data, int status, int timeouts,

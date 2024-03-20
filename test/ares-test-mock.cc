@@ -803,6 +803,104 @@ TEST_P(MockChannelTest, SearchHighNdots) {
             ss.str());
 }
 
+// Test that performing an EDNS search with an OPT RR options value works. The
+// options value should be included on the requests to the mock server.
+TEST_P(MockEDNSChannelTest, SearchOptVal) {
+  /* Define the OPT RR options code and value to use. */
+  unsigned short opt_opt = 3;
+  unsigned char opt_val[] = { 'c', '-', 'a', 'r', 'e', 's' };
+
+  /* Set up the expected request and reply on the mock server for the first,
+   * second and third domains. The expected requests contain the OPT RR options
+   * value defined above.
+   */
+  std::string nofirst_req = "REQ QRY RD  Q:{'example.first.com' IN A} "
+    "ADD:{'' MAXUDP=1232 OPT RCODE2=0 "
+    "0003"  // opt_opt
+    "0006"  // length of opt_val
+    "632d61726573"  // opt_val in hex
+    "}";
+  DNSPacket nofirst_rep;
+  nofirst_rep.set_response().set_aa().set_rcode(NXDOMAIN)
+    .add_question(new DNSQuestion("example.first.com", T_A));
+  ON_CALL(server_, OnRequest("example.first.com", T_A))
+    .WillByDefault(SetReplyExpRequest(&server_, &nofirst_rep, nofirst_req));
+
+  std::string nosecond_req = "REQ QRY RD  Q:{'example.second.org' IN A} "
+    "ADD:{'' MAXUDP=1232 OPT RCODE2=0 "
+    "0003"  // opt_opt
+    "0006"  // length of opt_val
+    "632d61726573"  // opt_val in hex
+    "}";
+  DNSPacket nosecond_rep;
+  nosecond_rep.set_response().set_aa().set_rcode(NXDOMAIN)
+    .add_question(new DNSQuestion("example.second.org", T_A));
+  ON_CALL(server_, OnRequest("example.second.org", T_A))
+    .WillByDefault(SetReplyExpRequest(&server_, &nosecond_rep, nosecond_req));
+
+  std::string nothird_req = "REQ QRY RD  Q:{'example.third.gov' IN A} "
+    "ADD:{'' MAXUDP=1232 OPT RCODE2=0 "
+    "0003"  // opt_opt
+    "0006"  // length of opt_val
+    "632d61726573"  // opt_val in hex
+    "}";
+  DNSPacket nothird_rep;
+  nothird_rep.set_response().set_aa().set_rcode(NXDOMAIN)
+    .add_question(new DNSQuestion("example.third.gov", T_A));
+  ON_CALL(server_, OnRequest("example.third.gov", T_A))
+    .WillByDefault(SetReplyExpRequest(&server_, &nothird_rep, nothird_req));
+
+  /* Set up the expected request and reply on the mock server for the bare
+   * domain. The expected request contains the OPT RR options value defined
+   * above.
+   */
+  std::string yesbare_req = "REQ QRY RD  Q:{'example' IN A} "
+    "ADD:{'' MAXUDP=1232 OPT RCODE2=0 "
+    "0003"  // opt_opt
+    "0006"  // length of opt_val
+    "632d61726573"  // opt_val in hex
+    "}";
+  DNSPacket yesbare_rep;
+  yesbare_rep.set_response().set_aa()
+    .add_question(new DNSQuestion("example", T_A))
+    .add_answer(new DNSARR("example", 0x0200, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example", T_A))
+    .WillByDefault(SetReplyExpRequest(&server_, &yesbare_rep, yesbare_req));
+
+  /* Construct the DNS record to search. */
+  ares_dns_record_t *dnsrec = NULL;
+  ares_dns_rr_t *rr = NULL;
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_create(&dnsrec, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+      ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_query_add(dnsrec, "example", (ares_dns_rec_type_t)T_A,
+      (ares_dns_class_t)C_IN));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "",
+      ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, 1232));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_u16(rr, ARES_RR_OPT_FLAGS, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_opt(rr, ARES_RR_OPT_OPTIONS, opt_opt, opt_val,
+      sizeof(opt_val)));
+
+  /* Perform the search. Check that it succeeds with the expected response. */
+  SearchResult result;
+  ares_search_dnsrec(channel_, dnsrec, SearchCallbackDnsRec, &result);
+  ares_dns_record_destroy(dnsrec);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::stringstream ss;
+  ss << PacketToString(result.data_);
+  EXPECT_EQ("RSP QRY AA NOERROR Q:{'example' IN A} "
+            "A:{'example' IN A TTL=512 2.3.4.5}",
+            ss.str());
+}
+
 TEST_P(MockChannelTest, V4WorksV6Timeout) {
   std::vector<byte> nothing;
   DNSPacket reply;
@@ -1118,7 +1216,7 @@ TEST_P(MockChannelTest, CancelImmediateGetHostByAddr) {
   HostResult result;
   struct in_addr addr;
   addr.s_addr = htonl(0x08080808);
-  
+
   ares_gethostbyaddr(channel_, &addr, sizeof(addr), AF_INET, HostCallback, &result);
   ares_cancel(channel_);
   EXPECT_TRUE(result.done_);

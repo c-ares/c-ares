@@ -49,6 +49,49 @@ ares_bool_t   ares_dns_has_opt_rr(const ares_dns_record_t *rec);
 void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
                                                   unsigned int       ttl_decrement);
 
+/*! Create a DNS record object for a query. The arguments are the same as
+ *  those for ares_create_query().
+ *
+ *  \param[out] dnsrec       DNS record object to create.
+ *  \param[in]  name         NUL-terminated name for the query.
+ *  \param[in]  dnsclass     Class for the query.
+ *  \param[in]  type         Type for the query.
+ *  \param[in]  id           Identifier for the query.
+ *  \param[in]  flags        Flags for the query.
+ *  \param[in]  max_udp_size Maximum size of a UDP packet for EDNS.
+ *  \return ARES_SUCCESS on success, otherwise an error code.
+ */
+ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
+                                           const char *name,
+                                           ares_dns_class_t dnsclass,
+                                           ares_dns_rec_type_t type,
+                                           unsigned short id,
+                                           ares_dns_flags_t flags,
+                                           size_t max_udp_size);
+
+/*! Convert the RCODE and ANCOUNT from a DNS query reply into a status code.
+ *
+ *  \param[in] rcode   The RCODE from the reply.
+ *  \param[in] ancount The ANCOUNT from the reply.
+ *  \return An appropriate status code.
+ */
+ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
+                                            size_t ancount);
+
+/*! Write a DNS record representing a query for a single name into a buffer.
+ *  An alternative name can be specified to temporarily overwrite the name
+ *  in the query. Note that this only affects the name in the question section;
+ *  RRs are not affected.
+ *
+ *  \param[in]  dnsrec  DNS record object to write.
+ *  \param[in]  altname Alternative name to use in the query.
+ *  \param[out] buf     Buffer to write the query into.
+ *  \param[out] buflen  Length of the buffer.
+ *  \return ARES_SUCCESS on success, otherwise an error code.
+ */
+ares_status_t ares_dns_write_query_altname(ares_dns_record_t *dnsrec,
+                                           char *altname, unsigned char **buf,
+                                           size_t *buflen);
 struct ares_dns_qd {
   char               *name;
   ares_dns_rec_type_t qtype;

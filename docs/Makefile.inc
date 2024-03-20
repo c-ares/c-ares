@@ -32,6 +32,7 @@ MANPAGES = ares_cancel.3		\
   ares_dns_record_rr_cnt.3		\
   ares_dns_record_rr_del.3		\
   ares_dns_record_rr_get.3		\
+  ares_dns_record_rr_get_const.3	\
   ares_dns_rec_type_fromstr.3		\
   ares_dns_rec_type_t.3			\
   ares_dns_rr.3				\
@@ -111,6 +112,7 @@ MANPAGES = ares_cancel.3		\
   ares_reinit.3				\
   ares_save_options.3			\
   ares_search.3				\
+  ares_search_dnsrec.3			\
   ares_send.3				\
   ares_set_local_dev.3			\
   ares_set_local_ip4.3			\
