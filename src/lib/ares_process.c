@@ -621,10 +621,11 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   struct query        *query;
   /* Cache these as once ares__send_query() gets called, it may end up
    * invalidating the connection all-together */
-  struct server_state *server  = conn->server;
-  ares_dns_record_t   *rdnsrec = NULL;
-  ares_dns_record_t   *qdnsrec = NULL;
+  struct server_state *server    = conn->server;
+  ares_dns_record_t   *rdnsrec   = NULL;
+  ares_dns_record_t   *qdnsrec   = NULL;
   ares_status_t        status;
+  ares_bool_t          is_cached = ARES_FALSE;
 
   /* Parse the response */
   status = ares_dns_parse(abuf, alen, 0, &rdnsrec);
@@ -729,7 +730,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   /* If cache insertion was successful, it took ownership.  We ignore
    * other cache insertion failures. */
   if (ares_qcache_insert(channel, now, query, rdnsrec) == ARES_SUCCESS) {
-    rdnsrec = NULL;
+    is_cached = ARES_TRUE;
   }
 
   server_set_good(server);
@@ -738,7 +739,11 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   status = ARES_SUCCESS;
 
 cleanup:
-  ares_dns_record_destroy(rdnsrec);
+  /* Don't cleanup the cached pointer to the dns response */
+  if (!is_cached) {
+    ares_dns_record_destroy(rdnsrec);
+  }
+
   ares_dns_record_destroy(qdnsrec);
   return status;
 }
