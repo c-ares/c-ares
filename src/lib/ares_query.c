@@ -42,28 +42,63 @@ struct qquery {
   void         *arg;
 };
 
-static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
-                      int alen);
+static void qcallback(void *arg, ares_status_t status, size_t timeouts,
+                      const ares_dns_record_t *dnsrec)
+{
+  struct qquery     *qquery = (struct qquery *)arg;
+  size_t             ancount;
+  ares_dns_rcode_t   rcode;
+  unsigned char     *abuf   = NULL;
+  size_t             alen   = 0;
+
+  if (dnsrec != NULL) {
+    ares_status_t write_status;
+    write_status = ares_dns_write(dnsrec, &abuf, &alen);
+    if (status == ARES_SUCCESS) {
+      status = write_status;
+    }
+  }
+
+  if (status != ARES_SUCCESS) {
+    qquery->callback(qquery->arg, (int)status, (int)timeouts, abuf, (int)alen);
+  } else {
+    /* Pull the response code and answer count from the packet and convert any
+     * errors.
+     */
+    rcode = ares_dns_record_get_rcode(dnsrec);
+    ancount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER);
+    status = ares_dns_query_reply_tostatus(rcode, ancount);
+    qquery->callback(qquery->arg, (int)status, (int)timeouts, abuf, (int)alen);
+  }
+  ares_free(qquery);
+  ares_free(abuf);
+}
 
 ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
                              int dnsclass, int type, ares_callback callback,
                              void *arg, unsigned short *qid)
 {
-  struct qquery *qquery;
-  unsigned char *qbuf;
-  int            qlen;
-  int            rd;
-  ares_status_t  status;
+  struct qquery     *qquery = NULL;
+  ares_status_t      status;
+  ares_dns_record_t *dnsrec = NULL;
+  ares_dns_flags_t   flags = 0;
 
-  /* Compose the query. */
-  rd     = !(channel->flags & ARES_FLAG_NORECURSE);
-  status = (ares_status_t)ares_create_query(
-    name, dnsclass, type, 0, rd, &qbuf, &qlen,
-    (channel->flags & ARES_FLAG_EDNS) ? (int)channel->ednspsz : 0);
+  if (name == NULL) {
+    status = ARES_EFORMERR;
+    callback(arg, (int)status, 0, NULL, 0);
+    return status;
+  }
+
+  if (!(channel->flags & ARES_FLAG_NORECURSE)) {
+    flags |= ARES_FLAG_RD;
+  }
+
+  status = ares_dns_record_create_query(&dnsrec, name,
+                                        (ares_dns_class_t)dnsclass,
+                                        (ares_dns_rec_type_t)type,
+                                        0, flags,
+                                        (size_t)(channel->flags & ARES_FLAG_EDNS)?channel->ednspsz : 0);
   if (status != ARES_SUCCESS) {
-    if (qbuf != NULL) {
-      ares_free(qbuf);
-    }
     callback(arg, (int)status, 0, NULL, 0);
     return status;
   }
@@ -71,17 +106,17 @@ ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
   /* Allocate and fill in the query structure. */
   qquery = ares_malloc(sizeof(struct qquery));
   if (!qquery) {
-    ares_free_string(qbuf);
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     return ARES_ENOMEM;
   }
+
   qquery->callback = callback;
   qquery->arg      = arg;
 
   /* Send it off.  qcallback will be called when we get an answer. */
-  status = ares_send_ex(channel, qbuf, (size_t)qlen, qcallback, qquery, qid);
-  ares_free_string(qbuf);
+  status = ares_send_dnsrec(channel, dnsrec, qcallback, qquery, qid);
 
+  ares_dns_record_destroy(dnsrec);
   return status;
 }
 
@@ -96,30 +131,4 @@ void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
   ares__channel_unlock(channel);
 }
 
-static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf,
-                      int alen)
-{
-  struct qquery     *qquery = (struct qquery *)arg;
-  ares_dns_record_t *dnsrep = NULL;
-  size_t             ancount;
-  ares_dns_rcode_t   rcode;
 
-  if (status != ARES_SUCCESS) {
-    qquery->callback(qquery->arg, status, timeouts, abuf, alen);
-  } else {
-    /* Pull the response code and answer count from the packet and convert any
-     * errors.
-     */
-    status = (int)ares_dns_parse(abuf, (size_t)alen, 0, &dnsrep);
-    if (status != ARES_SUCCESS) {
-      qquery->callback(qquery->arg, status, timeouts, abuf, alen);
-    } else {
-      rcode = ares_dns_record_get_rcode(dnsrep);
-      ancount = ares_dns_record_rr_cnt(dnsrep, ARES_SECTION_ANSWER);
-      ares_dns_record_destroy(dnsrep);
-      status = (int)ares_dns_query_reply_tostatus(rcode, ancount);
-      qquery->callback(qquery->arg, status, timeouts, abuf, alen);
-    }
-  }
-  ares_free(qquery);
-}

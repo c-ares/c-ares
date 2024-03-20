@@ -387,11 +387,11 @@ fail:
 static ares_status_t ares__qcache_fetch(ares__qcache_t          *qcache,
                                         const ares_dns_record_t *dnsrec,
                                         const struct timeval    *now,
-                                        unsigned char **buf, size_t *buf_len)
+                                        const ares_dns_record_t **dnsrec_resp)
 {
   char                 *key = NULL;
   ares__qcache_entry_t *entry;
-  ares_status_t         status;
+  ares_status_t         status = ARES_SUCCESS;
 
   if (qcache == NULL || dnsrec == NULL) {
     return ARES_EFORMERR;
@@ -414,7 +414,7 @@ static ares_status_t ares__qcache_fetch(ares__qcache_t          *qcache,
   ares_dns_record_write_ttl_decrement(
     entry->dnsrec, (unsigned int)(now->tv_sec - entry->insert_ts));
 
-  status = ares_dns_write(entry->dnsrec, buf, buf_len);
+  *dnsrec_resp = entry->dnsrec;
 
 done:
   ares_free(key);
@@ -432,24 +432,12 @@ ares_status_t ares_qcache_insert(ares_channel_t       *channel,
 
 ares_status_t ares_qcache_fetch(ares_channel_t       *channel,
                                 const struct timeval *now,
-                                const unsigned char *qbuf, size_t qlen,
-                                unsigned char **abuf, size_t *alen)
+                                const ares_dns_record_t *dnsrec,
+                                const ares_dns_record_t **dnsrec_resp)
 {
-  ares_status_t      status;
-  ares_dns_record_t *dnsrec = NULL;
-
   if (channel->qcache == NULL) {
     return ARES_ENOTFOUND;
   }
 
-  status = ares_dns_parse(qbuf, qlen, 0, &dnsrec);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
-  status = ares__qcache_fetch(channel->qcache, dnsrec, now, abuf, alen);
-
-done:
-  ares_dns_record_destroy(dnsrec);
-  return status;
+  return ares__qcache_fetch(channel->qcache, dnsrec, now, dnsrec_resp);
 }

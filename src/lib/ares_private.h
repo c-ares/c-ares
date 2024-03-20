@@ -209,7 +209,7 @@ struct query {
   unsigned char            *qbuf;
   size_t                    qlen;
 
-  ares_callback             callback;
+  ares_callback_dnsrec      callback;
   void                     *arg;
 
   /* Query status */
@@ -342,10 +342,11 @@ ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
                              int dnsclass, int type, ares_callback callback,
                              void *arg, unsigned short *qid);
 /* Identical to ares_send() except returns normal ares return codes like
- * ARES_SUCCESS */
-ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
-                           size_t qlen, ares_callback callback, void *arg,
-                           unsigned short *qid);
+ * ARES_SUCCESS and uses ares_dns_record_t instead of binary buffers. */
+ares_status_t ares_send_dnsrec(ares_channel_t *channel,
+                               const ares_dns_record_t *dnsrec,
+                               ares_callback_dnsrec callback,
+                               void *arg, unsigned short *qid);
 void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
 void          ares__check_cleanup_conn(const ares_channel_t     *channel,
@@ -583,8 +584,8 @@ ares_status_t ares_qcache_insert(ares_channel_t       *channel,
                                  ares_dns_record_t    *dnsrec);
 ares_status_t ares_qcache_fetch(ares_channel_t       *channel,
                                 const struct timeval *now,
-                                const unsigned char *qbuf, size_t qlen,
-                                unsigned char **abuf, size_t *alen);
+                                const ares_dns_record_t *dnsrec,
+                                const ares_dns_record_t **dnsrec_resp);
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel);
 void          ares__channel_threading_destroy(ares_channel_t *channel);
