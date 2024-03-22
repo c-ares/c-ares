@@ -563,10 +563,8 @@ static void ares_getaddrinfo_int(ares_channel_t *channel, const char *name,
     return;
   }
 
-  /* perform HOSTALIAS resolution (technically this function does some other
-   * things we are going to ignore) */
-  status = ares__single_domain(channel, name, &alias_name);
-  if (status != ARES_SUCCESS) {
+  status = ares__lookup_hostaliases(channel, name, &alias_name);
+  if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     callback(arg, (int)status, 0, NULL);
     return;
   }

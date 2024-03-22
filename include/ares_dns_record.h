@@ -619,6 +619,19 @@ CARES_EXTERN ares_status_t ares_dns_record_query_add(ares_dns_record_t  *dnsrec,
                                                      ares_dns_rec_type_t qtype,
                                                      ares_dns_class_t qclass);
 
+/*! Replace the question name with a new name.  This may be used when performing
+ *  a search with aliases.
+ *
+ * \param[in] dnsrec  Initialized record object
+ * \param[in] idx     Index of question (typically 0)
+ * \param[in] name    Name to use as replacement.
+ * \return ARES_SUCCESS on success
+ */
+CARES_EXTERN ares_status_t
+  ares_dns_record_query_set_name(ares_dns_record_t  *dnsrec,
+                                 size_t              idx,
+                                 const char         *name);
+
 /*! Get the count of queries in the DNS Record
  *
  * \param[in] dnsrec  Initialized record object
@@ -971,6 +984,16 @@ CARES_EXTERN ares_status_t ares_dns_parse(const unsigned char *buf,
  */
 CARES_EXTERN ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
                                           unsigned char **buf, size_t *buf_len);
+
+
+/*! Duplicate a complete DNS message
+ *
+ *  \param[in] dnsrec Pointer to initialized and filled DNS record object.
+ *  \return duplicted DNS record object, or NULL on out of memory.
+ */
+CARES_EXTERN ares_dns_record_t *
+  ares_dns_record_duplicate(const ares_dns_record_t *dnsrec);
+
 /*! @} */
 
 #ifdef __cplusplus

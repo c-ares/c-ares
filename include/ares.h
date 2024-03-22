@@ -512,10 +512,14 @@ CARES_EXTERN void ares_search(ares_channel_t *channel, const char *name,
  *  \param[in] callback Callback function invoked on completion or failure of
  *                      the query sequence.
  *  \param[in] arg      Additional argument passed to the callback function.
+ *  \return One of the c-ares status codes.  In all cases, except
+ *          ARES_EFORMERR due to misuse, this error code will also be sent
+ *          to the provided callback.
  */
-CARES_EXTERN void ares_search_dnsrec(ares_channel_t *channel,
-                                     ares_dns_record_t *dnsrec,
-                                     ares_callback_dnsrec callback, void *arg);
+CARES_EXTERN ares_status_t ares_search_dnsrec(ares_channel_t *channel,
+                                              ares_dns_record_t *dnsrec,
+                                              ares_callback_dnsrec callback,
+                                              void *arg);
 
 CARES_EXTERN void ares_gethostbyname(ares_channel_t *channel, const char *name,
                                      int family, ares_host_callback callback,

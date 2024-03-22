@@ -402,8 +402,13 @@ ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
                                    const char *str);
 
 void          ares__destroy_servers_state(ares_channel_t *channel);
-ares_status_t ares__single_domain(const ares_channel_t *channel,
-                                  const char *name, char **s);
+
+/* Returns ARES_SUCCESS if alias found, alias is set.  Returns ARES_ENOTFOUND
+ * if not alias found.  Returns other errors on critical failure like
+ * ARES_ENOMEM */
+ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
+                                       const char *name, char **alias);
+
 ares_status_t ares__cat_domain(const char *name, const char *domain, char **s);
 ares_status_t ares__sortaddrinfo(ares_channel_t            *channel,
                                  struct ares_addrinfo_node *ai_node);
