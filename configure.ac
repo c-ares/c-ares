@@ -580,6 +580,7 @@ AC_CHECK_HEADERS(
        netioapi.h \
        netdb.h \
        netinet/in.h \
+       netinet6/in6.h \
        netinet/tcp.h \
        net/if.h \
        ifaddrs.h \
