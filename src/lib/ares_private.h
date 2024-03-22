@@ -335,6 +335,21 @@ ares_bool_t   ares__timedout(const struct timeval *now,
 ares_status_t ares__send_query(struct query *query, struct timeval *now);
 ares_status_t ares__requeue_query(struct query *query, struct timeval *now);
 
+/*! Retrieve a list of names to use for searching.  The first successful
+ *  query in the list wins.  This function also uses the HOSTSALIASES file
+ *  as well as uses channel configuration to determine the search order.
+ *
+ *  \param[in]  channel   initialized ares channel
+ *  \param[in]  name      initial name being searched
+ *  \param[out] names     array of names to attempt, use ares__strsplit_free()
+ *                        when no longer needed.
+ *  \param[out] names_len number of names in array
+ *  \return ARES_SUCCESS on success, otherwise one of the other error codes.
+ */
+ares_status_t ares__search_name_list(const ares_channel_t *channel,
+                                     const char *name,
+                                     char ***names, size_t *names_len);
+
 /* Identical to ares_query, but returns a normal ares return code like
  * ARES_SUCCESS, and can be passed the qid by reference which will be
  * filled in on ARES_SUCCESS */

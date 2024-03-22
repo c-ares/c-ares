@@ -44,17 +44,13 @@ struct search_query {
   /* Duplicate of DNS record passed to ares_search_dnsrec() */
   ares_dns_record_t     *dnsrec;
 
-  /* Original name passed to ares_search_dnsrec() */
-  char                  *name;
-
-  /* Duplicate of channel domains for ares_reinit() safety */
-  char                 **domains;
-  size_t                 ndomains;
+  /* Search order for names */
+  char                 **names;
+  size_t                 names_cnt;
 
   /* State tracking progress through the search query */
-  size_t          next_domain;     /* next search domain to try */
+  size_t          next_name_idx;   /* next name index being attempted */
   size_t          timeouts;        /* number of timeouts we saw for this request */
-  ares_bool_t     trying_as_is;    /* Trying as-is */
   ares_bool_t     ever_got_nodata; /* did we ever get ARES_ENODATA along the way? */
 };
 
@@ -62,9 +58,8 @@ static void squery_free(struct search_query *squery)
 {
   if (squery == NULL)
     return;
-  ares__strsplit_free(squery->domains, squery->ndomains);
+  ares__strsplit_free(squery->names, squery->names_cnt);
   ares_dns_record_destroy(squery->dnsrec);
-  ares_free(squery->name);
   ares_free(squery);
 }
 
@@ -89,32 +84,16 @@ static ares_status_t ares_search_next(ares_channel_t *channel,
 
   *skip_cleanup = ARES_FALSE;
 
-  if (squery->next_domain >= squery->ndomains) {
-    /* Misuse check */
-    if (squery->trying_as_is) {
-      return ARES_EFORMERR;
-    }
-    /* Try as-is */
-    squery->trying_as_is = ARES_TRUE;
-    status = ares_dns_record_query_set_name(squery->dnsrec, 0, squery->name);
-    if (status != ARES_SUCCESS) {
-      return status;
-    }
-  } else {
-    char *name = NULL;
+  /* Misuse check */
+  if (squery->next_name_idx >= squery->names_cnt) {
+    return ARES_EFORMERR;
+  }
 
-    /* Try the name as-is last; start with the first search domain. */
-    status = ares__cat_domain(squery->name,
-                              squery->domains[squery->next_domain++], &name);
-    if (status != ARES_SUCCESS) {
-      return status;
-    }
-
-    status = ares_dns_record_query_set_name(squery->dnsrec, 0, name);
-    if (status != ARES_SUCCESS) {
-      ares_free(name);
-      return status;
-    }
+  status =
+    ares_dns_record_query_set_name(squery->dnsrec, 0,
+                                   squery->names[squery->next_name_idx++]);
+  if (status != ARES_SUCCESS) {
+    return status;
   }
 
   status = ares_send_dnsrec(channel, squery->dnsrec, search_callback, squery,
@@ -164,7 +143,7 @@ static void search_callback(void *arg, ares_status_t status, size_t timeouts,
     squery->ever_got_nodata = ARES_TRUE;
   }
 
-  if (squery->next_domain < squery->ndomains || !squery->trying_as_is) {
+  if (squery->next_name_idx < squery->names_cnt) {
     mystatus = ares_search_next(channel, squery, &skip_cleanup);
     if (mystatus != ARES_SUCCESS && !skip_cleanup) {
       end_squery(squery, mystatus, NULL);
@@ -188,8 +167,6 @@ static ares_bool_t ares__search_eligible(const ares_channel_t *channel,
                                          const char *name)
 {
   size_t      len   = ares_strlen(name);
-  size_t      ndots = 0;
-  const char *p;
 
   /* Name ends in '.', cannot search */
   if (len && name[len-1] == '.') {
@@ -200,8 +177,55 @@ static ares_bool_t ares__search_eligible(const ares_channel_t *channel,
     return ARES_FALSE;
   }
 
-  if (channel->ndomains == 0) {
-    return ARES_FALSE;
+  return ARES_TRUE;
+}
+
+
+ares_status_t ares__search_name_list(const ares_channel_t *channel,
+                                     const char *name,
+                                     char ***names, size_t *names_len)
+{
+  ares_status_t status;
+  char        **list     = NULL;
+  size_t        list_len = 0;
+  char         *alias    = NULL;
+  size_t        ndots    = 0;
+  size_t        idx      = 0;
+  const char   *p;
+  size_t        i;
+
+  /* Perform HOSTALIASES resolution */
+  status = ares__lookup_hostaliases(channel, name, &alias);
+  if (status == ARES_SUCCESS) {
+    /* If hostalias succeeds, there is no searching, it is used as-is */
+    list_len = 1;
+    list     = ares_malloc_zero(sizeof(*list) * list_len);
+    if (list == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+    list[0]  = alias;
+    alias    = NULL;
+    goto done;
+  } else if (status != ARES_ENOTFOUND) {
+    goto done;
+  }
+
+  /* See if searching is eligible at all, if not, look up as-is only */
+  if (!ares__search_eligible(channel, name)) {
+    list_len = 1;
+    list     = ares_malloc_zero(sizeof(*list) * list_len);
+    if (list == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+    list[0]  = ares_strdup(name);
+    if (list[0] == NULL) {
+      status = ARES_ENOMEM;
+    } else {
+      status = ARES_SUCCESS;
+    }
+    goto done;
   }
 
   /* Count the number of dots in name */
@@ -212,14 +236,55 @@ static ares_bool_t ares__search_eligible(const ares_channel_t *channel,
     }
   }
 
-  /* As-is only if dots in the domain are >= config */
-  if (ndots >= channel->ndots) {
-    return ARES_FALSE;
+  /* Allocate an entry for each search domain, plus one for as-is */
+  list_len = channel->ndomains + 1;
+  list     = ares_malloc_zero(sizeof(*list) * list_len);
+  if (list == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
   }
 
-  return ARES_TRUE;
-}
+  /* Try as-is first */
+  if (ndots >= channel->ndomains) {
+    list[idx] = ares_strdup(name);
+    if (list[idx] == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+    idx++;
+  }
 
+  /* Append each search suffix to the name */
+  for (i=0; i<channel->ndomains; i++) {
+    status = ares__cat_domain(name, channel->domains[i], &list[idx]);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+    idx++;
+  }
+
+  /* Try as-is last */
+  if (ndots < channel->ndomains) {
+    list[idx] = ares_strdup(name);
+    if (list[idx] == NULL) {
+      status = ARES_ENOMEM;
+      goto done;
+    }
+    idx++;
+  }
+
+
+done:
+  if (status == ARES_SUCCESS) {
+    *names     = list;
+    *names_len = list_len;
+  } else {
+    ares__strsplit_free(list, list_len);
+  }
+
+  ares_free(alias);
+  return status;
+}
 
 static ares_status_t ares_search_int(ares_channel_t *channel,
                                      ares_dns_record_t *dnsrec,
@@ -267,39 +332,15 @@ static ares_status_t ares_search_int(ares_channel_t *channel,
     goto fail;
   }
 
-  /* Duplicate domains for safety during ares_reinit() */
-  squery->domains =
-    ares__strsplit_duplicate(channel->domains, channel->ndomains);
-  if (squery->domains == NULL) {
-    status = ARES_ENOMEM;
-    goto fail;
-  }
-  squery->ndomains        = channel->ndomains;
   squery->callback        = callback;
   squery->arg             = arg;
   squery->timeouts        = 0;
   squery->ever_got_nodata = ARES_FALSE;
 
-  /* Perform HOSTALIASES resolution */
-  status = ares__lookup_hostaliases(channel, name, &squery->name);
-  if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
+  status = ares__search_name_list(channel, name, &squery->names,
+                                  &squery->names_cnt);
+  if (status != ARES_SUCCESS) {
     goto fail;
-  }
-
-  if (squery->name != NULL) {
-    /* If a host alias is found, we try as-is only */
-    squery->next_domain = squery->ndomains;
-  } else {
-    squery->name = ares_strdup(name);
-    if (squery->name == NULL) {
-      status = ARES_ENOMEM;
-      goto fail;
-    }
-
-    if (!ares__search_eligible(channel, name)) {
-      /* Not eligible for search, try as-is only */
-      squery->next_domain = squery->ndomains;
-    }
   }
 
   status = ares_search_next(channel, squery, &skip_cleanup);
