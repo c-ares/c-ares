@@ -430,6 +430,7 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
                                         0, rd_flag, max_udp_size);
   if (status != ARES_SUCCESS) {
     callback(arg, (int)status, 0, NULL, 0);
+    ares_free(carg);
     return;
   }
 
