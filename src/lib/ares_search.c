@@ -485,7 +485,7 @@ ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
                                        const char *name, char **alias)
 {
   ares_status_t       status      = ARES_SUCCESS;
-  const char         *hostaliases = getenv("HOSTALIASES");
+  const char         *hostaliases = NULL;
   ares__buf_t        *buf         = NULL;
   ares__llist_t      *lines       = NULL;
   ares__llist_node_t *node;
@@ -505,7 +505,6 @@ ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
   if (strchr(name, '.') != NULL) {
     return ARES_ENOTFOUND;
   }
-
 
   hostaliases = getenv("HOSTALIASES");
   if (hostaliases == NULL) {
