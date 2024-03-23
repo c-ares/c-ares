@@ -296,6 +296,20 @@ ares_status_t ares_dns_record_query_set_name(ares_dns_record_t  *dnsrec,
   return ARES_SUCCESS;
 }
 
+ares_status_t ares_dns_record_query_set_type(ares_dns_record_t  *dnsrec,
+                                             size_t              idx,
+                                             ares_dns_rec_type_t qtype)
+{
+  if (dnsrec == NULL || idx >= dnsrec->qdcount ||
+      !ares_dns_rec_type_isvalid(qtype, ARES_TRUE)) {
+    return ARES_EFORMERR;
+  }
+
+  dnsrec->qd[idx].qtype = qtype;
+
+  return ARES_SUCCESS;
+}
+
 ares_status_t ares_dns_record_query_get(const ares_dns_record_t *dnsrec,
                                         size_t idx, const char **name,
                                         ares_dns_rec_type_t *qtype,

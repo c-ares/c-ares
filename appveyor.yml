@@ -1,7 +1,7 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 
-image: Visual Studio 2022
+image: Previous Visual Studio 2022
 
 # Github/Bitbucket only: get source code for one particular commit as zip archive, instead of git clone'ing.
 shallow_clone: true
@@ -23,15 +23,6 @@ configuration:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
   matrix:
-    # MSVC 2022, UWP (cmake)
-    - COMPILER: MSVC
-      CONFTOOL: CMAKE
-      SYSTEM: CONSOLE
-      SKIP_TESTS: yes
-      MSVC_SETUP_ARG: x64 store
-      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
-      CMAKE_EXTRA_OPTIONS: -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64
-
     # MSVC 2022, 32-bit x86 (cmake)
     - COMPILER: MSVC
       CONFTOOL: CMAKE
@@ -135,6 +126,18 @@ environment:
       CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest
       BUILD_GOOGLETEST: yes
 
+# Disabled until AppVeyor updates their Visual Studio with this patch:
+# https://developercommunity.visualstudio.com/t/clexe-compiler-error-C1007-when-compili/10486219
+#    # MSVC 2022, UWP (cmake)
+#    - COMPILER: MSVC
+#      CONFTOOL: CMAKE
+#      SYSTEM: CONSOLE
+#      SKIP_TESTS: yes
+#      MSVC_SETUP_ARG: x64 store
+#      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
+#      CMAKE_EXTRA_OPTIONS: -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64
+
+
 install:
   - if "%COMPILER%" == "MINGW" rename "C:\Program Files\Git\usr\bin\sh.exe" "sh2.exe"
 
@@ -184,9 +187,6 @@ test_script:
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\ahost.exe www.google.com
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
-
-on_failure:
-  - appveyor PushArtifact "build\CMakeFiles\CMakeConfigureLog.yaml"
 
 #on_finish:
 #  - cd C:\projects\build-cares\test

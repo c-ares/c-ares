@@ -448,7 +448,7 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
 void          ares__addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
                                         struct ares_addrinfo_cname  *tail);
 
-ares_status_t ares__parse_into_addrinfo(const unsigned char *abuf, size_t alen,
+ares_status_t ares__parse_into_addrinfo(const ares_dns_record_t *dnsrec,
                                         ares_bool_t    cname_only_is_enodata,
                                         unsigned short port,
                                         struct ares_addrinfo *ai);

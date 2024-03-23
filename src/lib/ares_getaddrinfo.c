@@ -103,8 +103,6 @@ static const struct ares_addrinfo_hints default_hints = {
 };
 
 /* forward declarations */
-static void        host_callback(void *arg, int status, int timeouts,
-                                 unsigned char *abuf, int alen);
 static ares_bool_t next_dns_lookup(struct host_query *hquery);
 
 struct ares_addrinfo_cname *
@@ -489,25 +487,23 @@ static void terminate_retries(const struct host_query *hquery,
   query->no_retries = ARES_TRUE;
 }
 
-static void host_callback(void *arg, int status, int timeouts,
-                          unsigned char *abuf, int alen)
+static void host_callback(void *arg, ares_status_t status, size_t timeouts,
+                          const ares_dns_record_t *dnsrec)
 {
   struct host_query *hquery         = (struct host_query *)arg;
   ares_status_t      addinfostatus  = ARES_SUCCESS;
-  unsigned short     qid            = 0;
   hquery->timeouts                 += (size_t)timeouts;
   hquery->remaining--;
 
   if (status == ARES_SUCCESS) {
-    if (alen < 0) {
+    if (dnsrec == NULL) {
       addinfostatus = ARES_EBADRESP;
     } else {
-      addinfostatus = ares__parse_into_addrinfo(abuf, (size_t)alen, ARES_TRUE,
+      addinfostatus = ares__parse_into_addrinfo(dnsrec, ARES_TRUE,
                                                 hquery->port, hquery->ai);
     }
-    if (addinfostatus == ARES_SUCCESS && alen >= HFIXEDSZ) {
-      qid = DNS_HEADER_QID(abuf); /* Converts to host byte order */
-      terminate_retries(hquery, qid);
+    if (addinfostatus == ARES_SUCCESS) {
+      terminate_retries(hquery, ares_dns_record_get_id(dnsrec));
     }
   }
 
@@ -679,20 +675,24 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
   switch (hquery->hints.ai_family) {
     case AF_INET:
       hquery->remaining += 1;
-      ares_query_qid(hquery->channel, name, C_IN, T_A, host_callback, hquery,
-                     &hquery->qid_a);
+      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN,
+                        ARES_REC_TYPE_A, host_callback, hquery,
+                        &hquery->qid_a);
       break;
     case AF_INET6:
       hquery->remaining += 1;
-      ares_query_qid(hquery->channel, name, C_IN, T_AAAA, host_callback, hquery,
-                     &hquery->qid_aaaa);
+      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN,
+                        ARES_REC_TYPE_AAAA, host_callback, hquery,
+                        &hquery->qid_aaaa);
       break;
     case AF_UNSPEC:
       hquery->remaining += 2;
-      ares_query_qid(hquery->channel, name, C_IN, T_A, host_callback, hquery,
-                     &hquery->qid_a);
-      ares_query_qid(hquery->channel, name, C_IN, T_AAAA, host_callback, hquery,
-                     &hquery->qid_aaaa);
+      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN,
+                        ARES_REC_TYPE_A, host_callback, hquery,
+                        &hquery->qid_a);
+      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN,
+                        ARES_REC_TYPE_AAAA, host_callback, hquery,
+                        &hquery->qid_aaaa);
       break;
     default:
       break;

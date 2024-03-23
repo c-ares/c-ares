@@ -632,6 +632,20 @@ CARES_EXTERN ares_status_t
                                  size_t              idx,
                                  const char         *name);
 
+
+/*! Replace the question type with a different type.  This may be used when
+ *  needing to query more than one address class (e.g. A and AAAA)
+ *
+ * \param[in] dnsrec  Initialized record object
+ * \param[in] idx     Index of question (typically 0)
+ * \param[in] qtype   Record Type to use as replacement.
+ * \return ARES_SUCCESS on success
+ */
+CARES_EXTERN ares_status_t
+  ares_dns_record_query_set_type(ares_dns_record_t  *dnsrec,
+                                 size_t              idx,
+                                 ares_dns_rec_type_t qtype);
+
 /*! Get the count of queries in the DNS Record
  *
  * \param[in] dnsrec  Initialized record object
