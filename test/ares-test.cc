@@ -735,9 +735,9 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
   opts.tcp_port = server_.tcpport();
   optmask |= ARES_OPT_TCP_PORT;
 
-  // If not already overridden, set short-ish timeouts.
   if (!(optmask & (ARES_OPT_TIMEOUTMS|ARES_OPT_TIMEOUT))) {
-    opts.timeout = 1500;
+    // Reduce timeouts significantly to shorten test times.
+    opts.timeout = 250;
     optmask |= ARES_OPT_TIMEOUTMS;
   }
   // If not already overridden, set 3 retries.
