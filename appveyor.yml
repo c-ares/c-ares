@@ -186,8 +186,7 @@ test_script:
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
 
 on_failure:
-  - dir
-  - dir build
+  - dir "build\CMakeFiles"
   - appveyor PushArtifact "build\CMakeFiles\CMakeError.log"
 
 #on_finish:
