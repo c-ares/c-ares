@@ -497,6 +497,22 @@ CARES_EXTERN void
 CARES_EXTERN void ares_send(ares_channel_t *channel, const unsigned char *qbuf,
                             int qlen, ares_callback callback, void *arg);
 
+/*! Send a DNS query as an ares_dns_record_t with a callback containing the
+ *  parsed DNS record.
+ *
+ *  \param[in]  channel  Pointer to channel on which queries will be sent.
+ *  \param[in]  dnsrec   DNS Record to send
+ *  \param[in]  callback Callback function invoked on completion or failure of
+ *                       the query sequence.
+ *  \param[in]  arg      Additional argument passed to the callback function.
+ *  \param[out] qid      Query ID
+ *  \return One of the c-ares status codes.
+ */
+CARES_EXTERN ares_status_t ares_send_dnsrec(ares_channel_t *channel,
+                                            const ares_dns_record_t *dnsrec,
+                                            ares_callback_dnsrec callback,
+                                            void *arg, unsigned short *qid);
+
 CARES_EXTERN void ares_query(ares_channel_t *channel, const char *name,
                              int dnsclass, int type, ares_callback callback,
                              void *arg);

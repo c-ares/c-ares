@@ -350,18 +350,6 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
                                      const char *name,
                                      char ***names, size_t *names_len);
 
-/* Identical to ares_query, but returns a normal ares return code like
- * ARES_SUCCESS, and can be passed the qid by reference which will be
- * filled in on ARES_SUCCESS */
-ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
-                             int dnsclass, int type, ares_callback callback,
-                             void *arg, unsigned short *qid);
-/* Identical to ares_send() except returns normal ares return codes like
- * ARES_SUCCESS and uses ares_dns_record_t instead of binary buffers. */
-ares_status_t ares_send_dnsrec(ares_channel_t *channel,
-                               const ares_dns_record_t *dnsrec,
-                               ares_callback_dnsrec callback,
-                               void *arg, unsigned short *qid);
 void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
 void          ares__check_cleanup_conn(const ares_channel_t     *channel,
