@@ -245,7 +245,7 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
   }
 
   /* Try as-is first */
-  if (ndots >= channel->ndomains) {
+  if (ndots >= channel->ndots) {
     list[idx] = ares_strdup(name);
     if (list[idx] == NULL) {
       status = ARES_ENOMEM;
@@ -264,7 +264,7 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
   }
 
   /* Try as-is last */
-  if (ndots < channel->ndomains) {
+  if (ndots < channel->ndots) {
     list[idx] = ares_strdup(name);
     if (list[idx] == NULL) {
       status = ARES_ENOMEM;
