@@ -363,7 +363,8 @@ parameter.  The index provided in the
 parameter must be less than the value returned from \fIares_dns_record_query_cnt(3)\fP.
 The DNS question name will be returned in the variable pointed to by the
 .IR name
-parameter, this may be provided as NULL if the name is not needed.
+parameter, this may be provided as NULL if the name is not needed.  This pointer
+will be invalided by any call to \fIares_dns_record_query_set_name(3)\fP.
 The DNS question type will be returned in the variable pointed to by the
 .IR qtype
 parameter, this may be provided as NULL if the type is not needed.

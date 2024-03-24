@@ -622,6 +622,9 @@ CARES_EXTERN ares_status_t ares_dns_record_query_add(ares_dns_record_t  *dnsrec,
 /*! Replace the question name with a new name.  This may be used when performing
  *  a search with aliases.
  *
+ *  Note that this will invalidate the name pointer returned from
+ *  ares_dns_record_query_get().
+ *
  * \param[in] dnsrec  Initialized record object
  * \param[in] idx     Index of question (typically 0)
  * \param[in] name    Name to use as replacement.
@@ -658,6 +661,8 @@ CARES_EXTERN size_t ares_dns_record_query_cnt(const ares_dns_record_t *dnsrec);
  * \param[in]  dnsrec  Initialized record object
  * \param[in]  idx     Index of query
  * \param[out] name    Optional.  Returns name, may pass NULL if not desired.
+ *                     This pointer will be invalided by any call to
+ *                     ares_dns_record_query_set_name().
  * \param[out] qtype   Optional.  Returns record type, may pass NULL.
  * \param[out] qclass  Optional.  Returns class, may pass NULL.
  * \return ARES_SUCCESS on success
