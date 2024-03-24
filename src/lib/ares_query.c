@@ -155,6 +155,7 @@ static void ares_query_cb(void *arg, ares_status_t status,
 
   qquery->callback(qquery->arg, (int)status, (int)timeouts, abuf, (int)alen);
 
+  ares_free(abuf);
   ares_free(qquery);
 }
 
