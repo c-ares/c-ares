@@ -114,6 +114,7 @@ MANPAGES = ares_cancel.3		\
   ares_search.3				\
   ares_search_dnsrec.3			\
   ares_send.3				\
+  ares_send_dnsrec.3			\
   ares_set_local_dev.3			\
   ares_set_local_ip4.3			\
   ares_set_local_ip6.3			\
