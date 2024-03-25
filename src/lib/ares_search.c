@@ -364,33 +364,39 @@ typedef struct  {
   void         *arg;
 } dnsrec_convert_arg_t;
 
-/* Callback function used to convert from the ares_callback_dnsrec prototype to
- * the ares_callback prototype, by writing the result and passing that to
- * the inner callback.
+/*! Function to create callback arg for converting from ares_callback_dnsrec
+ *  to ares_calback */
+void *ares__dnsrec_convert_arg(ares_callback callback, void *arg)
+{
+  dnsrec_convert_arg_t *carg = ares_malloc_zero(sizeof(*carg));
+  if (carg == NULL)
+    return NULL;
+  carg->callback = callback;
+  carg->arg      = arg;
+  return carg;
+}
+
+/*! Callback function used to convert from the ares_callback_dnsrec prototype to
+ *  the ares_callback prototype, by writing the result and passing that to
+ *  the inner callback.
  */
-static void ares__dnsrec_convert_cb(void *arg, ares_status_t status,
-                                    size_t timeouts,
-                                    const ares_dns_record_t *dnsrec)
+void ares__dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
+                             const ares_dns_record_t *dnsrec)
 {
   dnsrec_convert_arg_t *carg = arg;
+  unsigned char        *abuf = NULL;
+  size_t                alen = 0;
 
-  if (status != ARES_SUCCESS) {
-    carg->callback(carg->arg, (int)status, (int)timeouts, NULL, 0);
-  } else {
-    unsigned char *abuf = NULL;
-    size_t         alen = 0;
-    ares_status_t  mystatus;
-
-    /* Write the result. */
-    mystatus = ares_dns_write(dnsrec, &abuf, &alen);
+  if (dnsrec != NULL) {
+    ares_status_t mystatus = ares_dns_write(dnsrec, &abuf, &alen);
     if (mystatus != ARES_SUCCESS) {
-      carg->callback(carg->arg, (int)mystatus, (int)timeouts, NULL, 0);
-    } else {
-      carg->callback(carg->arg, ARES_SUCCESS, (int)timeouts, abuf, (int)alen);
+      status = mystatus;
     }
-
-    ares_free(abuf);
   }
+
+  carg->callback(carg->arg, (int)status, (int)timeouts, abuf, (int)alen);
+
+  ares_free(abuf);
   ares_free(carg);
 }
 
@@ -404,7 +410,7 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
   ares_dns_record_t    *dnsrec = NULL;
   size_t                max_udp_size;
   ares_dns_flags_t      rd_flag;
-  dnsrec_convert_arg_t *carg = NULL;
+  void                 *carg = NULL;
   if (channel == NULL || name == NULL) {
     return;
   }
@@ -414,13 +420,11 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
    * convert from ares_callback_dnsrec to ares_callback. Allocate the convert
    * arg structure here.
    */
-  carg = ares_malloc_zero(sizeof(*carg));
+  carg = ares__dnsrec_convert_arg(callback, arg);
   if (carg == NULL) {
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     return;
   }
-  carg->callback = callback;
-  carg->arg = arg;
 
   rd_flag = !(channel->flags & ARES_FLAG_NORECURSE) ? ARES_FLAG_RD: 0;
   max_udp_size = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : 0;

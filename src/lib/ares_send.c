@@ -164,35 +164,13 @@ ares_status_t ares_send_dnsrec(ares_channel_t *channel,
   return status;
 }
 
-typedef struct {
-  ares_callback cb;
-  void         *arg;
-} ares_send_cb_arg_t;
-
-
-static void ares_send_cb(void *arg, ares_status_t status, size_t timeouts,
-                         const ares_dns_record_t *dnsrec)
-{
-  ares_send_cb_arg_t *cbarg = arg;
-  unsigned char      *abuf  = NULL;
-  size_t              alen  = 0;
-
-  if (dnsrec != NULL) {
-    status = ares_dns_write(dnsrec, &abuf, &alen);
-  }
-
-  cbarg->cb(cbarg->arg, (int)status, (int)timeouts, abuf, (int)alen);
-  ares_free(abuf);
-  ares_free(arg);
-}
-
 
 void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
                ares_callback callback, void *arg)
 {
   ares_dns_record_t  *dnsrec = NULL;
   ares_status_t       status;
-  ares_send_cb_arg_t *cbarg  = NULL;
+  void               *carg   = NULL;
 
   if (channel == NULL) {
     return;
@@ -210,18 +188,15 @@ void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
     return;
   }
 
-  cbarg = ares_malloc_zero(sizeof(*cbarg));
-  if (cbarg == NULL) {
+  carg = ares__dnsrec_convert_arg(callback, arg);
+  if (carg == NULL) {
     status = ARES_ENOMEM;
     ares_dns_record_destroy(dnsrec);
     callback(arg, (int)status, 0, NULL, 0);
     return;
   }
 
-  cbarg->cb  = callback;
-  cbarg->arg = arg;
-
-  ares_send_dnsrec(channel, dnsrec, ares_send_cb, cbarg, NULL);
+  ares_send_dnsrec(channel, dnsrec, ares__dnsrec_convert_cb, carg, NULL);
 
   ares_dns_record_destroy(dnsrec);
 }

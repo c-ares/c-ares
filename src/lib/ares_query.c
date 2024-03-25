@@ -133,52 +133,25 @@ ares_status_t ares_query_dnsrec(ares_channel_t *channel, const char *name,
   return status;
 }
 
-typedef struct {
-  ares_callback callback;
-  void         *arg;
-} ares_query_arg_t;
-
-static void ares_query_cb(void *arg, ares_status_t status,
-                          size_t timeouts,
-                          const ares_dns_record_t *dnsrec)
-{
-  ares_query_arg_t *qquery = arg;
-  unsigned char    *abuf   = NULL;
-  size_t            alen   = 0;
-
-  if (dnsrec != NULL) {
-    ares_status_t mystatus = ares_dns_write(dnsrec, &abuf, &alen);
-    if (mystatus != ARES_SUCCESS) {
-      status = mystatus;
-    }
-  }
-
-  qquery->callback(qquery->arg, (int)status, (int)timeouts, abuf, (int)alen);
-
-  ares_free(abuf);
-  ares_free(qquery);
-}
 
 void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
                 int type, ares_callback callback, void *arg)
 {
-  ares_query_arg_t *qquery = NULL;
+  void *carg = NULL;
 
   if (channel == NULL) {
     return;
   }
 
-  /* Allocate and fill in the query structure. */
-  qquery = ares_malloc(sizeof(*qquery));
-  if (qquery == NULL) {
+  carg = ares__dnsrec_convert_arg(callback, arg);
+  if (carg == NULL) {
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     return;
   }
-  qquery->callback = callback;
-  qquery->arg      = arg;
 
   ares_query_dnsrec(channel, name, (ares_dns_class_t)dnsclass,
-                    (ares_dns_rec_type_t)type, ares_query_cb, qquery, NULL);
+                    (ares_dns_rec_type_t)type, ares__dnsrec_convert_cb, carg,
+                    NULL);
 }
 
 

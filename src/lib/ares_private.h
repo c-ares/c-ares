@@ -350,6 +350,17 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
                                      const char *name,
                                      char ***names, size_t *names_len);
 
+/*! Function to create callback arg for converting from ares_callback_dnsrec
+ *  to ares_calback */
+void *ares__dnsrec_convert_arg(ares_callback callback, void *arg);
+
+/*! Callback function used to convert from the ares_callback_dnsrec prototype to
+ *  the ares_callback prototype, by writing the result and passing that to
+ *  the inner callback.
+ */
+void ares__dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
+                             const ares_dns_record_t *dnsrec);
+
 void          ares__close_connection(struct server_connection *conn);
 void          ares__close_sockets(struct server_state *server);
 void          ares__check_cleanup_conn(const ares_channel_t     *channel,
