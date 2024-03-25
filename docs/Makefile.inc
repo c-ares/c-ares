@@ -109,6 +109,7 @@ MANPAGES = ares_cancel.3		\
   ares_parse_uri_reply.3		\
   ares_process.3			\
   ares_query.3				\
+  ares_query_dnsrec.3			\
   ares_queue.3				\
   ares_queue_active_queries.3		\
   ares_queue_wait_empty.3		\
