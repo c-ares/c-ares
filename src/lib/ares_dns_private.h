@@ -78,20 +78,6 @@ ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
 ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
                                             size_t ancount);
 
-/*! Write a DNS record representing a query for a single name into a buffer.
- *  An alternative name can be specified to temporarily overwrite the name
- *  in the query. Note that this only affects the name in the question section;
- *  RRs are not affected.
- *
- *  \param[in]  dnsrec  DNS record object to write.
- *  \param[in]  altname Alternative name to use in the query.
- *  \param[out] buf     Buffer to write the query into.
- *  \param[out] buflen  Length of the buffer.
- *  \return ARES_SUCCESS on success, otherwise an error code.
- */
-ares_status_t ares_dns_write_query_altname(ares_dns_record_t *dnsrec,
-                                           char *altname, unsigned char **buf,
-                                           size_t *buflen);
 struct ares_dns_qd {
   char               *name;
   ares_dns_rec_type_t qtype;

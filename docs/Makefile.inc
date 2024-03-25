@@ -20,12 +20,15 @@ MANPAGES = ares_cancel.3		\
   ares_dns_rcode_tostr.3		\
   ares_dns_record.3			\
   ares_dns_record_create.3		\
+  ares_dns_record_duplicate.3		\
   ares_dns_record_get_flags.3		\
   ares_dns_record_get_id.3		\
   ares_dns_record_get_opcode.3		\
   ares_dns_record_get_rcode.3		\
   ares_dns_record_destroy.3		\
   ares_dns_record_query_add.3		\
+  ares_dns_record_query_set_name.3	\
+  ares_dns_record_query_set_type.3	\
   ares_dns_record_query_cnt.3		\
   ares_dns_record_query_get.3		\
   ares_dns_record_rr_add.3		\
@@ -114,6 +117,7 @@ MANPAGES = ares_cancel.3		\
   ares_search.3				\
   ares_search_dnsrec.3			\
   ares_send.3				\
+  ares_send_dnsrec.3			\
   ares_set_local_dev.3			\
   ares_set_local_ip4.3			\
   ares_set_local_ip6.3			\
