@@ -20,6 +20,7 @@ MANPAGES = ares_cancel.3		\
   ares_dns_rcode_tostr.3		\
   ares_dns_record.3			\
   ares_dns_record_create.3		\
+  ares_dns_record_duplicate.3		\
   ares_dns_record_get_flags.3		\
   ares_dns_record_get_id.3		\
   ares_dns_record_get_opcode.3		\
