@@ -167,6 +167,11 @@ object
 .I dnsrec
 rather than a raw buffer with length.  Note that this object is read-only.
 
+The \fIares_search_dnsrec(3)\fP function returns an \fIares_status_t\fP response
+code.  This may be useful to know that the query was enqueued properly.  The
+response code does not reflect the result of the query, just the result of the
+enqueuing of the query.
+
 .SH SEE ALSO
 .BR ares_process (3),
 .BR ares_dns_record (3)

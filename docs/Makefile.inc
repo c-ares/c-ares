@@ -26,6 +26,8 @@ MANPAGES = ares_cancel.3		\
   ares_dns_record_get_rcode.3		\
   ares_dns_record_destroy.3		\
   ares_dns_record_query_add.3		\
+  ares_dns_record_query_set_name.3	\
+  ares_dns_record_query_set_type.3	\
   ares_dns_record_query_cnt.3		\
   ares_dns_record_query_get.3		\
   ares_dns_record_rr_add.3		\
