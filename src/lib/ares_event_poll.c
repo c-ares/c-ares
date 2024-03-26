@@ -99,7 +99,7 @@ static size_t ares_evsys_poll_wait(ares_event_thread_t *e,
     goto done;
   }
 
-  for (i = 0; i < num_fds; i++) {
+  for (i = 0; pollfd != NULL && i < num_fds; i++) {
     ares_event_t      *ev;
     ares_event_flags_t flags = 0;
 
