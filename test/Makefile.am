@@ -8,7 +8,7 @@ AM_CPPFLAGS += -I$(top_builddir)/include \
                -I$(top_srcdir)/src/lib   \
                -I$(top_srcdir)/test      \
                -I$(top_builddir)/test    \
-               -I$(top_builddir)
+               -I$(top_builddir) -DCARES_NO_DEPRECATED
 
 AM_CXXFLAGS :=
 AM_CXXFLAGS += $(PTHREAD_CFLAGS)

@@ -38,17 +38,22 @@ add_executable(arestest ${TESTSOURCES} ${TESTHEADERS})
 target_include_directories(arestest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(arestest PRIVATE caresinternal GTest::gmock)
 
+target_compile_definitions(arestest PRIVATE CARES_NO_DEPRECATED)
+
 IF (CARES_BUILD_CONTAINER_TESTS)
   target_compile_definitions(arestest PRIVATE HAVE_USER_NAMESPACE HAVE_UTS_NAMESPACE)
 ENDIF ()
 
 add_executable(aresfuzz ${FUZZSOURCES})
+target_compile_definitions(aresfuzz PRIVATE CARES_NO_DEPRECATED)
 target_link_libraries(aresfuzz PRIVATE caresinternal)
 
 add_executable(aresfuzzname ${FUZZNAMESOURCES})
+target_compile_definitions(aresfuzzname PRIVATE CARES_NO_DEPRECATED)
 target_link_libraries(aresfuzzname PRIVATE caresinternal)
 
 add_executable(dnsdump ${DUMPSOURCES})
+target_compile_definitions(dnsdump PRIVATE CARES_NO_DEPRECATED)
 target_link_libraries(dnsdump PRIVATE caresinternal)
 
 # register tests
