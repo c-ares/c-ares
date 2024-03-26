@@ -1080,7 +1080,7 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
 
   if (ares_strlen(_csv) == 0) {
     /* blank all servers */
-    return (ares_status_t)ares_set_servers_ports(channel, NULL);
+    return ares__servers_update(channel, NULL, ARES_TRUE);
   }
 
   status = ares__sconfig_append_fromstr(&slist, _csv, ARES_FALSE);

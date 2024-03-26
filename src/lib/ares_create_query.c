@@ -28,9 +28,10 @@
 #include "ares.h"
 #include "ares_private.h"
 
-int ares_create_query(const char *name, int dnsclass, int type,
-                      unsigned short id, int rd, unsigned char **bufp,
-                      int *buflenp, int max_udp_size)
+static int ares_create_query_int(const char *name, int dnsclass, int type,
+                                 unsigned short id, int rd,
+                                 unsigned char **bufp, int *buflenp,
+                                 int max_udp_size)
 {
   ares_status_t      status;
   ares_dns_record_t *dnsrec = NULL;
@@ -64,3 +65,18 @@ done:
   ares_dns_record_destroy(dnsrec);
   return (int)status;
 }
+
+int ares_create_query(const char *name, int dnsclass, int type,
+                      unsigned short id, int rd, unsigned char **bufp,
+                      int *buflenp, int max_udp_size)
+{
+  return ares_create_query_int(name, dnsclass, type, id, rd, bufp, buflenp,
+                               max_udp_size);
+}
+
+int ares_mkquery(const char *name, int dnsclass, int type, unsigned short id,
+                 int rd, unsigned char **buf, int *buflen)
+{
+  return ares_create_query_int(name, dnsclass, type, id, rd, buf, buflen, 0);
+}
+
