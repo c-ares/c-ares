@@ -86,7 +86,7 @@ typedef ares_bool_t         (*ares__htable_key_eq_t)(const void *key1,
 
 /*! Destroy the initialized hashtable
  *
- *  \param[in] initialized hashtable
+ *  \param[in] htable initialized hashtable
  */
 void                        ares__htable_destroy(ares__htable_t *htable);
 
@@ -120,7 +120,8 @@ size_t          ares__htable_num_keys(const ares__htable_t *htable);
  *          will be a dangling pointer.  It is expected wrappers will make
  *          such values safe by duplicating them.
  */
-const void **ares__htable_all_buckets(const ares__htable_t *htable, size_t *num);
+const void    **ares__htable_all_buckets(const ares__htable_t *htable,
+                                         size_t               *num);
 
 /*! Insert bucket into hashtable
  *

@@ -624,6 +624,7 @@ static ares_status_t ares__init_sysconfig_windows(ares_sysconfig_t *sysconfig)
 
   if (get_SuffixList_Windows(&line)) {
     sysconfig->domains = ares__strsplit(line, ", ", &sysconfig->ndomains);
+    ares_free(line);
     if (sysconfig->domains == NULL) {
       status = ARES_EFILE;
     }
@@ -1056,6 +1057,10 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
 
   if (!(channel->optmask & (ARES_OPT_ROTATE | ARES_OPT_NOROTATE))) {
     channel->rotate = sysconfig->rotate;
+  }
+
+  if (sysconfig->usevc) {
+    channel->flags |= ARES_FLAG_USEVC;
   }
 
   return ARES_SUCCESS;

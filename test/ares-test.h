@@ -29,7 +29,7 @@
 
 #include "ares_setup.h"
 #ifdef HAVE_CONFIG_H
-#include "ares_config.h"
+#  include "ares_config.h"
 #endif
 
 #include "dns-proto.h"
@@ -50,6 +50,7 @@
 #include <set>
 #include <string>
 #include <mutex>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -69,9 +70,12 @@ extern const std::vector<std::pair<int, bool>> both_families_both_modes;
 extern const std::vector<std::pair<int, bool>> ipv4_family_both_modes;
 extern const std::vector<std::pair<int, bool>> ipv6_family_both_modes;
 
-extern const std::vector<std::tuple<ares_evsys_t, int, bool>> all_evsys_ipv4_family_both_modes;
-extern const std::vector<std::tuple<ares_evsys_t, int, bool>> all_evsys_ipv6_family_both_modes;
-extern const std::vector<std::tuple<ares_evsys_t, int, bool>> all_evsys_both_families_both_modes;
+extern const std::vector<std::tuple<ares_evsys_t, int, bool>>
+  all_evsys_ipv4_family_both_modes;
+extern const std::vector<std::tuple<ares_evsys_t, int, bool>>
+  all_evsys_ipv6_family_both_modes;
+extern const std::vector<std::tuple<ares_evsys_t, int, bool>>
+  all_evsys_both_families_both_modes;
 
 extern const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_ipv4_family;
 extern const std::vector<std::tuple<ares_evsys_t, int>> all_evsys_ipv6_family;
@@ -90,18 +94,13 @@ void                    ProcessWork(ares_channel_t                          *cha
                                     std::function<std::set<ares_socket_t>()> get_extrafds,
                                     std::function<void(ares_socket_t)>       process_extra,
                                     unsigned int                             cancel_ms = 0);
-void ProcessWorkEventThread(ares_channel_t *channel,
-                            std::function<std::set<ares_socket_t>()> get_extrafds,
-                            std::function<void(ares_socket_t)> process_extra,
-                            unsigned int cancel_ms);
 std::set<ares_socket_t> NoExtraFDs();
 
-const char *af_tostr(int af);
-const char *mode_tostr(bool mode);
-std::string PrintFamilyMode(const testing::TestParamInfo<std::pair<int, bool>> &info);
+const char             *af_tostr(int af);
+const char             *mode_tostr(bool mode);
+std::string
+  PrintFamilyMode(const testing::TestParamInfo<std::pair<int, bool>> &info);
 std::string PrintFamily(const testing::TestParamInfo<int> &info);
-
-
 
 // Test fixture that ensures library initialization, and allows
 // memory allocations to be failed.
@@ -244,6 +243,15 @@ public:
     SetReplyData(reply->data());
   }
 
+  // Set the reply to be sent next as well as the request (in string form) that
+  // the server should expect to receive; the query ID field in the reply will
+  // be overwritten with the value from the request.
+  void SetReplyExpRequest(const DNSPacket *reply, const std::string &request)
+  {
+    expected_request_ = request;
+    SetReply(reply);
+  }
+
   void SetReplyQID(int qid)
   {
     qid_ = qid;
@@ -279,8 +287,8 @@ public:
 
 private:
   void           ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr,
-                                ares_socklen_t addrlen, int qid, const std::string &name,
-                                int rrtype);
+                                ares_socklen_t addrlen, const std::string &reqstr,
+                                int qid, const std::string &name, int rrtype);
   void           ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr,
                                ares_socklen_t addrlen, byte *data, int len);
   unsigned short udpport_;
@@ -289,6 +297,7 @@ private:
   ares_socket_t  tcpfd_;
   std::set<ares_socket_t> connfds_;
   std::vector<byte>       reply_;
+  std::string             expected_request_;
   int                     qid_;
   unsigned char          *tcp_data_;
   size_t                  tcp_data_len_;
@@ -348,18 +357,32 @@ public:
   }
 };
 
-
 class MockEventThreadOptsTest : public MockChannelOptsTest {
 public:
-  MockEventThreadOptsTest(int count, ares_evsys_t evsys, int family, bool force_tcp,
-                          struct ares_options *givenopts, int optmask)
-    : MockChannelOptsTest(count, family, force_tcp, FillOptionsET(&evopts_, givenopts, evsys), optmask | ARES_OPT_EVENT_THREAD)
+  MockEventThreadOptsTest(int count, ares_evsys_t evsys, int family,
+                          bool force_tcp, struct ares_options *givenopts,
+                          int optmask)
+    : MockChannelOptsTest(count, family, force_tcp,
+                          FillOptionsET(&evopts_, givenopts, evsys),
+                          optmask | ARES_OPT_EVENT_THREAD)
   {
+    cancel_ms_ = 0;
+    isup       = true;
+    thread     = std::thread(&MockEventThreadOptsTest::ProcessThread, this);
   }
 
-  void Process(unsigned int cancel_ms = 0);
+  ~MockEventThreadOptsTest()
+  {
+    mutex.lock();
+    isup = false;
+    mutex.unlock();
+    thread.join();
+  }
 
-  static struct ares_options *FillOptionsET(struct ares_options *opts, struct ares_options *givenopts, ares_evsys_t evsys) {
+  static struct ares_options *FillOptionsET(struct ares_options *opts,
+                                            struct ares_options *givenopts,
+                                            ares_evsys_t         evsys)
+  {
     if (givenopts) {
       memcpy(opts, givenopts, sizeof(*opts));
     } else {
@@ -369,8 +392,21 @@ public:
     return opts;
   }
 
+  void Process(unsigned int cancel_ms = 0)
+  {
+    mutex.lock();
+    cancel_ms_ = cancel_ms;
+    mutex.unlock();
+    ares_queue_wait_empty(channel_, -1);
+  }
+
 private:
+  void                ProcessThread();
   struct ares_options evopts_;
+  unsigned int        cancel_ms_;
+  bool                isup;
+  std::mutex          mutex;
+  std::thread         thread;
 };
 
 class MockEventThreadTest
@@ -378,28 +414,34 @@ class MockEventThreadTest
     public ::testing::WithParamInterface<std::tuple<ares_evsys_t, int, bool>> {
 public:
   MockEventThreadTest()
-    : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()), nullptr, 0)
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()),
+                              std::get<1>(GetParam()), std::get<2>(GetParam()),
+                              nullptr, 0)
   {
   }
 };
 
-class MockUDPEventThreadTest : public MockEventThreadOptsTest,
-                           public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
+class MockUDPEventThreadTest
+  : public MockEventThreadOptsTest,
+    public ::testing::WithParamInterface<std::tuple<ares_evsys_t, int>> {
 public:
-  MockUDPEventThreadTest() : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), false, nullptr, 0)
+  MockUDPEventThreadTest()
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()),
+                              std::get<1>(GetParam()), false, nullptr, 0)
   {
   }
 };
 
-class MockTCPEventThreadTest : public MockEventThreadOptsTest,
-                               public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
+class MockTCPEventThreadTest
+  : public MockEventThreadOptsTest,
+    public ::testing::WithParamInterface<std::tuple<ares_evsys_t, int>> {
 public:
-  MockTCPEventThreadTest() : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), true, nullptr, 0)
+  MockTCPEventThreadTest()
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()),
+                              std::get<1>(GetParam()), true, nullptr, 0)
   {
   }
 };
-
-
 
 // gMock action to set the reply for a mock server.
 ACTION_P2(SetReplyData, mockserver, data)
@@ -410,6 +452,13 @@ ACTION_P2(SetReplyData, mockserver, data)
 ACTION_P2(SetReply, mockserver, reply)
 {
   mockserver->SetReply(reply);
+}
+
+// gMock action to set the reply for a mock server, as well as the request (in
+// string form) that the server should expect to receive.
+ACTION_P3(SetReplyExpRequest, mockserver, reply, request)
+{
+  mockserver->SetReplyExpRequest(reply, request);
 }
 
 ACTION_P2(SetReplyQID, mockserver, qid)
@@ -523,6 +572,8 @@ void          HostCallback(void *data, int status, int timeouts,
                            struct hostent *hostent);
 void SearchCallback(void *data, int status, int timeouts, unsigned char *abuf,
                     int alen);
+void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,
+                          const ares_dns_record_t *dnsrec);
 void NameInfoCallback(void *data, int status, int timeouts, char *node,
                       char *service);
 void AddrInfoCallback(void *data, int status, int timeouts,

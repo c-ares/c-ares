@@ -512,22 +512,6 @@ CONTAINED_TEST_F(LibraryTest, ContainerMyHostsInit,
   return HasFailure();
 }
 
-NameContentList hostconf = {
-  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
-                       "sortlist1.2.3.4\n"  // malformed line
-                       "search first.com second.com\n"},
-  {"/etc/host.conf", "order bind hosts\n"}};
-CONTAINED_TEST_F(LibraryTest, ContainerHostConfInit,
-                 "myhostname", "mydomainname.org", hostconf) {
-  ares_channel_t *channel = nullptr;
-  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
-
-  EXPECT_EQ(std::string("bf"), std::string(channel->lookups));
-
-  ares_destroy(channel);
-  return HasFailure();
-}
-
 NameContentList svcconf = {
   {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
                        "search first.com second.com\n"},
@@ -589,15 +573,7 @@ CONTAINED_TEST_F(LibraryTest, ContainerNsswitchConfNotReadable,
   ares_destroy(channel);
   return HasFailure();
 }
-CONTAINED_TEST_F(LibraryTest, ContainerHostConfNotReadable,
-                 "myhostname", "mydomainname.org", hostconf) {
-  ares_channel_t *channel = nullptr;
-  // Unavailable /etc/host.conf falls back to defaults.
-  MakeUnreadable hide("/etc/host.conf");
-  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
-  ares_destroy(channel);
-  return HasFailure();
-}
+
 CONTAINED_TEST_F(LibraryTest, ContainerSvcConfNotReadable,
                  "myhostname", "mydomainname.org", svcconf) {
   ares_channel_t *channel = nullptr;
@@ -708,6 +684,37 @@ CONTAINED_TEST_F(LibraryTest, ContainerEmptyInit,
   EXPECT_EQ(1, channel->ndomains);
   EXPECT_EQ(std::string("domain.org"), std::string(channel->domains[0]));
   EXPECT_EQ(std::string("fb"), std::string(channel->lookups));
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+// Test that init fails if the flag to not use a default local named server is
+// enabled and no other nameservers are available.
+CONTAINED_TEST_F(LibraryTest, ContainerNoDfltSvrEmptyInit,
+                 "myhostname", "mydomainname.org", empty) {
+  ares_channel_t *channel = nullptr;
+  struct ares_options opts = {0};
+  int optmask = ARES_OPT_FLAGS;
+  opts.flags = ARES_FLAG_NO_DFLT_SVR;
+  EXPECT_EQ(ARES_ENOSERVER, ares_init_options(&channel, &opts, optmask));
+
+  EXPECT_EQ(nullptr, channel);
+  return HasFailure();
+}
+// Test that init succeeds if the flag to not use a default local named server
+// is enabled but other nameservers are available.
+CONTAINED_TEST_F(LibraryTest, ContainerNoDfltSvrFullInit,
+                 "myhostname", "mydomainname.org", filelist) {
+  ares_channel_t *channel = nullptr;
+  struct ares_options opts = {0};
+  int optmask = ARES_OPT_FLAGS;
+  opts.flags = ARES_FLAG_NO_DFLT_SVR;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+
+  std::string actual = GetNameServers(channel);
+  std::string expected = "1.2.3.4:53";
+  EXPECT_EQ(expected, actual);
 
   ares_destroy(channel);
   return HasFailure();

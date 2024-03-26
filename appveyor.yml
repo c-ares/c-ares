@@ -126,14 +126,17 @@ environment:
       CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest
       BUILD_GOOGLETEST: yes
 
-    # MSVC 2022, UWP (cmake)
-    - COMPILER: MSVC
-      CONFTOOL: CMAKE
-      SYSTEM: CONSOLE
-      SKIP_TESTS: yes
-      MSVC_SETUP_ARG: x64 store
-      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
-      CMAKE_EXTRA_OPTIONS: -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64
+# Disabled until AppVeyor updates their Visual Studio with this patch:
+# https://developercommunity.visualstudio.com/t/clexe-compiler-error-C1007-when-compili/10486219
+#    # MSVC 2022, UWP (cmake)
+#    - COMPILER: MSVC
+#      CONFTOOL: CMAKE
+#      SYSTEM: CONSOLE
+#      SKIP_TESTS: yes
+#      MSVC_SETUP_ARG: x64 store
+#      MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
+#      CMAKE_EXTRA_OPTIONS: -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64
+
 
 install:
   - if "%COMPILER%" == "MINGW" rename "C:\Program Files\Git\usr\bin\sh.exe" "sh2.exe"

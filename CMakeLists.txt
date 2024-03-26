@@ -12,7 +12,7 @@ INCLUDE (CheckCSourceCompiles)
 INCLUDE (CheckStructHasMember)
 INCLUDE (CheckLibraryExists)
 
-PROJECT (c-ares LANGUAGES C VERSION "1.26.0" )
+PROJECT (c-ares LANGUAGES C VERSION "1.27.0" )
 
 # Set this version before release
 SET (CARES_VERSION "${PROJECT_VERSION}")
@@ -30,7 +30,7 @@ INCLUDE (GNUInstallDirs) # include this *AFTER* PROJECT(), otherwise paths are w
 # For example, a version of 4:0:2 would generate output such as:
 #    libname.so   -> libname.so.2
 #    libname.so.2 -> libname.so.2.2.0
-SET (CARES_LIB_VERSIONINFO "13:0:11")
+SET (CARES_LIB_VERSIONINFO "14:0:12")
 
 
 OPTION (CARES_STATIC        "Build as a static library"                                             OFF)
@@ -91,11 +91,15 @@ IF (CARES_SYMBOL_HIDING)
 	CMAKE_POLICY (SET CMP0063 NEW)
 ENDIF ()
 
-# Keep build organized.
-SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}")
-SET (CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
-SET (CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
-SET (PACKAGE_DIRECTORY ${PROJECT_BINARY_DIR}/package)
+# Keep build organized, but only if it is the top-level project.
+# CMake 3.21 or later has PROJECT_IS_TOP_LEVEL, but we aren't yet depending on
+# that version.
+IF (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+	SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}")
+	SET (CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+	SET (CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+	SET (CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+ENDIF ()
 
 # Destinations for installing different kinds of targets (pass to install command).
 SET (TARGETS_INST_DEST
@@ -203,6 +207,7 @@ CHECK_INCLUDE_FILES (malloc.h              HAVE_MALLOC_H)
 CHECK_INCLUDE_FILES (memory.h              HAVE_MEMORY_H)
 CHECK_INCLUDE_FILES (netdb.h               HAVE_NETDB_H)
 CHECK_INCLUDE_FILES (netinet/in.h          HAVE_NETINET_IN_H)
+CHECK_INCLUDE_FILES (netinet6/in6.h        HAVE_NETINET6_IN6_H)
 # On old MacOS SDK versions, you must include sys/socket.h before net/if.h
 IF (HAVE_SYS_SOCKET_H)
   CHECK_INCLUDE_FILES ("sys/socket.h;net/if.h"  HAVE_NET_IF_H)
@@ -319,6 +324,7 @@ CARES_EXTRAINCLUDE_IFSET (HAVE_NETDB_H        netdb.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_NET_IF_H       net/if.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_IFADDRS_H      ifaddrs.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_NETINET_IN_H   netinet/in.h)
+CARES_EXTRAINCLUDE_IFSET (HAVE_NETINET6_IN6_H netinet6/in6.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_NETINET_TCP_H  netinet/tcp.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_SIGNAL_H       signal.h)
 CARES_EXTRAINCLUDE_IFSET (HAVE_STDLIB_H       stdlib.h)

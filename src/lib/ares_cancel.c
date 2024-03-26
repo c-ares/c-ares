@@ -74,7 +74,7 @@ void ares_cancel(ares_channel_t *channel)
       query->node_all_queries = NULL;
 
       /* NOTE: its possible this may enqueue new queries */
-      query->callback(query->arg, ARES_ECANCELLED, 0, NULL, 0);
+      query->callback(query->arg, ARES_ECANCELLED, 0, NULL);
       ares__free_query(query);
 
       /* See if the connection should be cleaned up */
@@ -85,6 +85,9 @@ void ares_cancel(ares_channel_t *channel)
 
     ares__llist_destroy(list_copy);
   }
+
+  ares_queue_notify_empty(channel);
+
 done:
   ares__channel_unlock(channel);
 }

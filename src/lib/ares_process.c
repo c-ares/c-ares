@@ -67,11 +67,11 @@ static ares_bool_t   same_questions(const ares_dns_record_t *qrec,
                                     const ares_dns_record_t *arec);
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
-static void end_query(const ares_channel_t *channel, struct query *query,
-                      ares_status_t status, const unsigned char *abuf,
-                      size_t alen);
+static void          end_query(ares_channel_t *channel, struct query *query,
+                               ares_status_t status,
+                               const ares_dns_record_t *dnsrec);
 
-static void server_increment_failures(struct server_state *server)
+static void          server_increment_failures(struct server_state *server)
 {
   ares__slist_node_t   *node;
   const ares_channel_t *channel = server->channel;
@@ -621,10 +621,11 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   struct query        *query;
   /* Cache these as once ares__send_query() gets called, it may end up
    * invalidating the connection all-together */
-  struct server_state *server  = conn->server;
-  ares_dns_record_t   *rdnsrec = NULL;
-  ares_dns_record_t   *qdnsrec = NULL;
+  struct server_state *server    = conn->server;
+  ares_dns_record_t   *rdnsrec   = NULL;
+  ares_dns_record_t   *qdnsrec   = NULL;
   ares_status_t        status;
+  ares_bool_t          is_cached = ARES_FALSE;
 
   /* Parse the response */
   status = ares_dns_parse(abuf, alen, 0, &rdnsrec);
@@ -648,7 +649,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   /* Parse the question we sent as we use it to compare */
   status = ares_dns_parse(query->qbuf, query->qlen, 0, &qdnsrec);
   if (status != ARES_SUCCESS) {
-    end_query(channel, query, status, NULL, 0);
+    end_query(channel, query, status, NULL);
     goto cleanup;
   }
 
@@ -674,7 +675,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
       ares_dns_has_opt_rr(qdnsrec) && !ares_dns_has_opt_rr(rdnsrec)) {
     status = rewrite_without_edns(qdnsrec, query);
     if (status != ARES_SUCCESS) {
-      end_query(channel, query, status, NULL, 0);
+      end_query(channel, query, status, NULL);
       goto cleanup;
     }
 
@@ -715,6 +716,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
         default:
           break;
       }
+
       server_increment_failures(server);
       ares__requeue_query(query, now);
 
@@ -728,16 +730,20 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   /* If cache insertion was successful, it took ownership.  We ignore
    * other cache insertion failures. */
   if (ares_qcache_insert(channel, now, query, rdnsrec) == ARES_SUCCESS) {
-    rdnsrec = NULL;
+    is_cached = ARES_TRUE;
   }
 
   server_set_good(server);
-  end_query(channel, query, ARES_SUCCESS, abuf, alen);
+  end_query(channel, query, ARES_SUCCESS, rdnsrec);
 
   status = ARES_SUCCESS;
 
 cleanup:
-  ares_dns_record_destroy(rdnsrec);
+  /* Don't cleanup the cached pointer to the dns response */
+  if (!is_cached) {
+    ares_dns_record_destroy(rdnsrec);
+  }
+
   ares_dns_record_destroy(qdnsrec);
   return status;
 }
@@ -759,8 +765,8 @@ static void handle_conn_error(struct server_connection *conn,
 
 ares_status_t ares__requeue_query(struct query *query, struct timeval *now)
 {
-  const ares_channel_t *channel = query->channel;
-  size_t max_tries = ares__slist_len(channel->servers) * channel->tries;
+  ares_channel_t *channel = query->channel;
+  size_t max_tries        = ares__slist_len(channel->servers) * channel->tries;
 
   query->try_count++;
 
@@ -773,7 +779,7 @@ ares_status_t ares__requeue_query(struct query *query, struct timeval *now)
     query->error_status = ARES_ETIMEOUT;
   }
 
-  end_query(channel, query, query->error_status, NULL, 0);
+  end_query(channel, query, query->error_status, NULL);
   return ARES_ETIMEOUT;
 }
 
@@ -892,8 +898,8 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
   }
 
   if (server == NULL) {
-    end_query(channel, query, ARES_ESERVFAIL /* ? */, NULL, 0);
-    return ARES_ECONNREFUSED;
+    end_query(channel, query, ARES_ENOSERVER /* ? */, NULL);
+    return ARES_ENOSERVER;
   }
 
   if (query->using_tcp) {
@@ -919,7 +925,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
-          end_query(channel, query, status, NULL, 0);
+          end_query(channel, query, status, NULL);
           return status;
       }
     }
@@ -930,7 +936,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
 
     status = ares__append_tcpbuf(server, query);
     if (status != ARES_SUCCESS) {
-      end_query(channel, query, status, NULL, 0);
+      end_query(channel, query, status, NULL);
 
       /* Only safe to kill connection if it was new, otherwise it should be
        * cleaned up by another process later */
@@ -978,7 +984,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
-          end_query(channel, query, status, NULL, 0);
+          end_query(channel, query, status, NULL);
           return status;
       }
       node = ares__llist_node_first(server->connections);
@@ -1010,7 +1016,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
   query->node_queries_by_timeout =
     ares__slist_insert(channel->queries_by_timeout, query);
   if (!query->node_queries_by_timeout) {
-    end_query(channel, query, ARES_ENOMEM, NULL, 0);
+    end_query(channel, query, ARES_ENOMEM, NULL);
     /* Only safe to kill connection if it was new, otherwise it should be
      * cleaned up by another process later */
     if (new_connection) {
@@ -1026,7 +1032,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
     ares__llist_insert_last(conn->queries_to_conn, query);
 
   if (query->node_queries_to_conn == NULL) {
-    end_query(channel, query, ARES_ENOMEM, NULL, 0);
+    end_query(channel, query, ARES_ENOMEM, NULL);
     /* Only safe to kill connection if it was new, otherwise it should be
      * cleaned up by another process later */
     if (new_connection) {
@@ -1122,18 +1128,19 @@ static void ares_detach_query(struct query *query)
   query->node_all_queries        = NULL;
 }
 
-static void end_query(const ares_channel_t *channel, struct query *query,
-                      ares_status_t status, const unsigned char *abuf,
-                      size_t alen)
+static void end_query(ares_channel_t *channel, struct query *query,
+                      ares_status_t status, const ares_dns_record_t *dnsrec)
 {
-  (void)channel;
-
   /* Invoke the callback. */
-  query->callback(query->arg, (int)status, (int)query->timeouts,
-                  /* due to prior design flaws, abuf isn't meant to be modified,
-                   * but bad prototypes, ugh.  Lets cast off constfor compat. */
-                  (unsigned char *)((void *)((size_t)abuf)), (int)alen);
+  query->callback(query->arg, status, query->timeouts, dnsrec);
   ares__free_query(query);
+
+  /* Check and notify if no other queries are enqueued on the channel.  This
+   * must come after the callback and freeing the query for 2 reasons.
+   *  1) The callback itself may enqueue a new query
+   *  2) Technically the current query isn't detached until it is free()'d.
+   */
+  ares_queue_notify_empty(channel);
 }
 
 void ares__free_query(struct query *query)

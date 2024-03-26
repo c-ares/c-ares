@@ -284,49 +284,6 @@ TEST_F(LibraryTest, MallocDataFail) {
   EXPECT_EQ(nullptr, ares_malloc_data(ARES_DATATYPE_MX_REPLY));
 }
 
-TEST_F(LibraryTest, ReadLine) {
-  TempFile temp("abcde\n0123456789\nXYZ\n012345678901234567890\n\n");
-  FILE *fp = fopen(temp.filename(), "r");
-  size_t bufsize = 4;
-  char *buf = (char *)ares_malloc(bufsize);
-
-  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
-  EXPECT_EQ("abcde", std::string(buf));
-  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
-  EXPECT_EQ("0123456789", std::string(buf));
-  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
-  EXPECT_EQ("XYZ", std::string(buf));
-  SetAllocFail(1);
-  EXPECT_EQ(ARES_ENOMEM, ares__read_line(fp, &buf, &bufsize));
-  EXPECT_EQ(nullptr, buf);
-
-  fclose(fp);
-  ares_free(buf);
-}
-
-TEST_F(LibraryTest, ReadLineNoBuf) {
-  TempFile temp("abcde\n0123456789\nXYZ\n012345678901234567890");
-  FILE *fp = fopen(temp.filename(), "r");
-  size_t bufsize = 0;
-  char *buf = nullptr;
-
-  SetAllocFail(1);
-  EXPECT_EQ(ARES_ENOMEM, ares__read_line(fp, &buf, &bufsize));
-
-  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
-  EXPECT_EQ("abcde", std::string(buf));
-  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
-  EXPECT_EQ("0123456789", std::string(buf));
-  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
-  EXPECT_EQ("XYZ", std::string(buf));
-  EXPECT_EQ(ARES_SUCCESS, ares__read_line(fp, &buf, &bufsize));
-  EXPECT_EQ("012345678901234567890", std::string(buf));
-
-  fclose(fp);
-  ares_free(buf);
-}
-
-
 TEST_F(FileChannelTest, GetAddrInfoHostsPositive) {
   TempFile hostsfile("1.2.3.4 example.com  \n"
                      "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"

@@ -133,6 +133,8 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
 #ifdef HAVE_GETHOSTNAME
   const char *dot;
 #endif
+  struct ares_addr addr;
+  ares__llist_t   *sconfig = NULL;
 
   /* Enable EDNS by default */
   if (!(channel->optmask & ARES_OPT_FLAGS)) {
@@ -155,22 +157,27 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
   }
 
   if (ares__slist_len(channel->servers) == 0) {
-    struct ares_addr addr;
-    ares__llist_t   *sconfig = NULL;
+    /* Add a default local named server to the channel unless configured not
+     * to (in which case return an error).
+     */
+    if (channel->flags & ARES_FLAG_NO_DFLT_SVR) {
+      rc = ARES_ENOSERVER;
+      goto error;
+    }
 
     addr.family            = AF_INET;
     addr.addr.addr4.s_addr = htonl(INADDR_LOOPBACK);
 
     rc = ares__sconfig_append(&sconfig, &addr, 0, 0, NULL);
     if (rc != ARES_SUCCESS) {
-      return rc;
+      goto error;
     }
 
     rc = ares__servers_update(channel, sconfig, ARES_FALSE);
     ares__llist_destroy(sconfig);
 
     if (rc != ARES_SUCCESS) {
-      return rc;
+      goto error;
     }
   }
 
@@ -254,31 +261,6 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
   }
 
 error:
-  if (rc) {
-    if (channel->domains && channel->domains[0]) {
-      ares_free(channel->domains[0]);
-    }
-    if (channel->domains) {
-      ares_free(channel->domains);
-      channel->domains = NULL;
-    }
-
-    if (channel->lookups) {
-      ares_free(channel->lookups);
-      channel->lookups = NULL;
-    }
-
-    if (channel->resolvconf_path) {
-      ares_free(channel->resolvconf_path);
-      channel->resolvconf_path = NULL;
-    }
-
-    if (channel->hosts_path) {
-      ares_free(channel->hosts_path);
-      channel->hosts_path = NULL;
-    }
-  }
-
   if (hostname) {
     ares_free(hostname);
   }
@@ -387,6 +369,7 @@ int ares_init_options(ares_channel_t           **channelptr,
   if (status != ARES_SUCCESS) {
     DEBUGF(fprintf(stderr, "Error: init_by_defaults failed: %s\n",
                    ares_strerror(status)));
+    goto done;
   }
 
   /* Initialize the event thread */

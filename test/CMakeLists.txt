@@ -9,6 +9,10 @@ ENDIF ()
 find_package(Threads)
 find_package(GTest REQUIRED)
 
+IF (NOT TARGET GTest::gmock)
+  Message(FATAL_ERROR "GoogleTest found but the GMock component was not found")
+ENDIF()
+
 # create target to access and use internal cares library
 add_library(caresinternal INTERFACE)
 target_compile_definitions(caresinternal INTERFACE HAVE_CONFIG_H=1)
