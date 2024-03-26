@@ -495,11 +495,11 @@ ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
   ares__llist_t      *lines       = NULL;
   ares__llist_node_t *node;
 
-  *alias = NULL;
-
   if (channel == NULL || name == NULL || alias == NULL) {
     return ARES_EFORMERR;
   }
+
+  *alias = NULL;
 
   /* Configuration says to not perform alias lookup */
   if (channel->flags & ARES_FLAG_NOALIASES) {

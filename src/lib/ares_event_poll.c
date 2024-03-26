@@ -75,7 +75,7 @@ static size_t ares_evsys_poll_wait(ares_event_thread_t *e,
   size_t         cnt = 0;
   size_t         i;
 
-  if (num_fds) {
+  if (fdlist != NULL && num_fds) {
     pollfd = ares_malloc_zero(sizeof(*pollfd) * num_fds);
     for (i = 0; i < num_fds; i++) {
       const ares_event_t *ev =
