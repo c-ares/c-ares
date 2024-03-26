@@ -260,6 +260,14 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     }
   }
 
+  /* Set default thresholds for server failure/recovery. */
+  if (channel->server_failure_threshold == 0) {
+    channel->server_failure_threshold = SERVER_FAILURE_THRESHOLD_DEFAULT;
+  }
+  if (channel->server_recovery_threshold == 0) {
+    channel->server_recovery_threshold = SERVER_RECOVERY_THRESHOLD_DEFAULT;
+  }
+
 error:
   if (hostname) {
     ares_free(hostname);

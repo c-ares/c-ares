@@ -224,6 +224,9 @@ typedef enum {
 #define ARES_OPT_MAXTIMEOUTMS    (1 << 20)
 #define ARES_OPT_QUERY_CACHE     (1 << 21)
 #define ARES_OPT_EVENT_THREAD    (1 << 22)
+#define ARES_OPT_SERVER_FAIL     (1 << 23)
+#define ARES_OPT_SERVER_RECOVER  (1 << 24)
+#define ARES_OPT_PRIORITY_SERVER (1 << 25)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN        (1 << 0)
@@ -337,6 +340,9 @@ struct ares_options {
   int                maxtimeout; /* in milliseconds */
   unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
   ares_evsys_t evsys;
+  int server_failure_threshold;
+  int server_recovery_threshold;
+  int priority_server_chance;
 };
 
 struct hostent;
@@ -399,6 +405,9 @@ typedef int      (*ares_sock_config_callback)(ares_socket_t socket_fd, int type,
 typedef void     (*ares_addrinfo_callback)(void *arg, int status, int timeouts,
                                        struct ares_addrinfo *res);
 
+typedef void     (*ares_server_state_callback)(char *server_ip,
+                                           ares_bool_t healthy, void *data);
+
 CARES_EXTERN int ares_library_init(int flags);
 
 CARES_EXTERN int ares_library_init_mem(int flags, void *(*amalloc)(size_t size),
@@ -458,6 +467,9 @@ CARES_EXTERN void          ares_set_socket_callback(ares_channel_t           *ch
 
 CARES_EXTERN void          ares_set_socket_configure_callback(
            ares_channel_t *channel, ares_sock_config_callback callback, void *user_data);
+
+CARES_EXTERN void          ares_set_server_state_callback(
+           ares_channel_t *channel, ares_server_state_callback callback, void *user_data);
 
 CARES_EXTERN int  ares_set_sortlist(ares_channel_t *channel,
                                     const char     *sortstr);

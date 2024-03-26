@@ -146,6 +146,11 @@ typedef struct ares_rand_state ares_rand_state;
 
 /********* EDNS defines section ******/
 
+/* Default thresholds for the number of consecutive queries before a server
+ * is classed as failed/recovered.
+ */
+#define SERVER_FAILURE_THRESHOLD_DEFAULT   3
+#define SERVER_RECOVERY_THRESHOLD_DEFAULT  1
 
 struct query;
 
@@ -170,9 +175,15 @@ struct server_state {
   char                      ll_iface[64];    /* IPv6 Link Local Interface */
   unsigned int              ll_scope;        /* IPv6 Link Local Scope */
 
-  size_t                    consec_failures; /* Consecutive query failure count
-                                              * can be hard errors or timeouts
-                                              */
+  size_t                    consec_failures;  /* Consecutive query failure
+                                               * count, can be hard errors or
+                                               * timeouts
+                                               */
+  size_t                    consec_successes; /* Consecutive query success
+                                               * count
+                                               */
+  ares_bool_t               is_healthy;       /* server health state */
+
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
 
@@ -315,6 +326,21 @@ struct ares_channeldata {
 
   /* Query Cache */
   ares__qcache_t                     *qcache;
+
+  /* Number of consecutive failures for a server to be classed as failed */
+  size_t                              server_failure_threshold;
+
+  /* Number of consecutive successes for a server to be classed as recovered */
+  size_t                              server_recovery_threshold;
+
+  /* Callback triggered when a server becomes failed/recovered */
+  ares_server_state_callback         server_state_cb;
+  void                              *server_state_cb_data;
+
+  /* Probability (1/N) by which we will select a higher priority server instead
+   * of the best server when selecting a server to send queries to.
+   */
+   size_t                            priority_server_chance;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */

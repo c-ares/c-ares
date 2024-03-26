@@ -229,6 +229,19 @@ int ares_save_options(ares_channel_t *channel, struct ares_options *options,
     options->evsys = channel->evsys;
   }
 
+  if (channel->optmask & ARES_OPT_SERVER_FAIL) {
+    options->server_failure_threshold =
+      (int)channel->server_failure_threshold;
+  }
+  if (channel->optmask & ARES_OPT_SERVER_RECOVER) {
+    options->server_recovery_threshold =
+      (int)channel->server_recovery_threshold;
+  }
+  if (channel->optmask & ARES_OPT_PRIORITY_SERVER) {
+    options->priority_server_chance =
+      (int)channel->priority_server_chance;
+  }
+
   *optmask = (int)channel->optmask;
 
   return ARES_SUCCESS;
@@ -471,6 +484,32 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
       if (status != ARES_SUCCESS) {
         return status;
       }
+    }
+  }
+
+  /* Set the thresholds for server failure/recovery if present. */
+  if (optmask & ARES_OPT_SERVER_FAIL) {
+    if (options->server_failure_threshold <= 0) {
+      optmask &= ~(ARES_OPT_SERVER_FAIL);
+    } else {
+      channel->server_failure_threshold =
+        (size_t)options->server_failure_threshold;
+    }
+  }
+  if (optmask & ARES_OPT_SERVER_RECOVER) {
+    if (options->server_recovery_threshold <= 0) {
+      optmask &= ~(ARES_OPT_SERVER_RECOVER);
+    } else {
+      channel->server_recovery_threshold =
+        (size_t)options->server_recovery_threshold;
+    }
+  }
+  if (optmask & ARES_OPT_PRIORITY_SERVER) {
+    if (options->priority_server_chance <= 0) {
+      optmask &= ~(ARES_OPT_PRIORITY_SERVER);
+    } else {
+      channel->priority_server_chance =
+        (size_t)options->priority_server_chance;
     }
   }
 
