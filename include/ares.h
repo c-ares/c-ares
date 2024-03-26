@@ -526,8 +526,9 @@ CARES_EXTERN void
                                             const struct ares_socket_functions *funcs,
                                             void                               *user_data);
 
-CARES_EXTERN void ares_send(ares_channel_t *channel, const unsigned char *qbuf,
-                            int qlen, ares_callback callback, void *arg);
+CARES_EXTERN CARES_DEPRECATED_FOR(ares_send_dnsrec)
+  void ares_send(ares_channel_t *channel, const unsigned char *qbuf,
+                 int qlen, ares_callback callback, void *arg);
 
 /*! Send a DNS query as an ares_dns_record_t with a callback containing the
  *  parsed DNS record.
@@ -545,9 +546,10 @@ CARES_EXTERN ares_status_t ares_send_dnsrec(ares_channel_t *channel,
                                             ares_callback_dnsrec callback,
                                             void *arg, unsigned short *qid);
 
-CARES_EXTERN void ares_query(ares_channel_t *channel, const char *name,
-                             int dnsclass, int type, ares_callback callback,
-                             void *arg);
+CARES_EXTERN CARES_DEPRECATED_FOR(ares_query_dnsrec)
+  void ares_query(ares_channel_t *channel, const char *name,
+                  int dnsclass, int type, ares_callback callback,
+                  void *arg);
 
 /*! Perform a DNS query with a callback containing the parsed DNS record.
  *
@@ -569,9 +571,10 @@ CARES_EXTERN ares_status_t ares_query_dnsrec(ares_channel_t      *channel,
                                              void                *arg,
                                              unsigned short      *qid);
 
-CARES_EXTERN void ares_search(ares_channel_t *channel, const char *name,
-                              int dnsclass, int type, ares_callback callback,
-                              void *arg);
+CARES_EXTERN CARES_DEPRECATED_FOR(ares_search_dnsrec)
+  void ares_search(ares_channel_t *channel, const char *name,
+                   int dnsclass, int type, ares_callback callback,
+                   void *arg);
 
 /*! Search for a complete DNS message.
  *
@@ -625,12 +628,13 @@ CARES_EXTERN void ares_process_fd(ares_channel_t *channel,
                                   ares_socket_t   read_fd,
                                   ares_socket_t   write_fd);
 
-CARES_EXTERN int  ares_create_query(const char *name, int dnsclass, int type,
-                                    unsigned short id, int rd,
-                                    unsigned char **buf, int *buflen,
-                                    int max_udp_size);
+CARES_EXTERN CARES_DEPRECATED_FOR(ares_dns_record_create)
+  int ares_create_query(const char *name, int dnsclass, int type,
+                        unsigned short id, int rd,
+                        unsigned char **buf, int *buflen,
+                        int max_udp_size);
 
-CARES_EXTERN CARES_DEPRECATED_FOR(ares_create_query)
+CARES_EXTERN CARES_DEPRECATED_FOR(ares_dns_record_create)
   int ares_mkquery(const char *name, int dnsclass, int type,
                    unsigned short id, int rd, unsigned char **buf,
                    int *buflen);
