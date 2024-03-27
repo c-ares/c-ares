@@ -588,7 +588,7 @@ CARES_EXTERN CARES_DEPRECATED_FOR(ares_search_dnsrec)
  *          to the provided callback.
  */
 CARES_EXTERN ares_status_t ares_search_dnsrec(ares_channel_t *channel,
-                                              ares_dns_record_t *dnsrec,
+                                              const ares_dns_record_t *dnsrec,
                                               ares_callback_dnsrec callback,
                                               void *arg);
 

@@ -447,7 +447,7 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
 
 /* Search for a DNS record. Wrapper around ares_search_int(). */
 ares_status_t ares_search_dnsrec(ares_channel_t *channel,
-                                 ares_dns_record_t *dnsrec,
+                                 const ares_dns_record_t *dnsrec,
                                  ares_callback_dnsrec callback, void *arg)
 {
   ares_status_t              status;
