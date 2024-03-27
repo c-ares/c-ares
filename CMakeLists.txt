@@ -113,11 +113,10 @@ SET (TARGETS_INST_DEST
 # CHECK_LIBRARY_EXISTS can't be used as it will return true if the function
 # is found in a different required/dependent library.
 MACRO (CARES_FUNCTION_IN_LIBRARY func lib var)
-
-	SET (_ORIG_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+	SET (_ORIG_FIL_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 	SET (CMAKE_REQUIRED_LIBRARIES )
 	CHECK_FUNCTION_EXISTS ("${func}" "_CARES_FUNC_IN_LIB_GLOBAL_${func}")
-	SET (CMAKE_REQUIRED_LIBRARIES "${_ORIG_CMAKE_REQUIRED_LIBRARIES}")
+	SET (CMAKE_REQUIRED_LIBRARIES "${_ORIG_FIL_CMAKE_REQUIRED_LIBRARIES}")
 
 	IF ("${_CARES_FUNC_IN_LIB_GLOBAL_${func}}")
 		SET (${var} FALSE)
@@ -304,7 +303,11 @@ ENDIF ()
 # headers, libraries, and definitions for the detection to work properly
 # CMAKE_REQUIRED_DEFINITIONS, CMAKE_REQUIRED_LIBRARIES, and
 # CMAKE_EXTRA_INCLUDE_FILES.  When we're done with the detection, we'll
-# unset them.
+# restore them to their original values (otherwise a parent project
+# that tries to set these won't be maintained, see Issue #729)
+SET (ORIG_CMAKE_REQUIRED_DEFINITIONS ${CMAKE_REQUIRED_DEEFINITIONS})
+SET (ORIG_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+SET (ORIG_CMAKE_EXTRA_INCLUDE_FILES ${CMAKE_EXTRA_INCLUDE_FILES})
 
 SET (CMAKE_REQUIRED_DEFINITIONS ${SYSFLAGS})
 LIST (APPEND CMAKE_REQUIRED_LIBRARIES ${CARES_DEPENDENT_LIBS})
@@ -460,10 +463,10 @@ CHECK_SYMBOL_EXISTS (epoll_create1   "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_EPOLL)
 # from libc.  We need to perform a link test instead of a header/symbol test.
 CHECK_FUNCTION_EXISTS (__system_property_get HAVE___SYSTEM_PROPERTY_GET)
 
-# Unset temporary data
-SET (CMAKE_EXTRA_INCLUDE_FILES)
-SET (CMAKE_REQUIRED_DEFINITIONS)
-SET (CMAKE_REQUIRED_LIBRARIES)
+# Restore original values (as per Issue #729)
+SET (CMAKE_REQUIRED_DEFINITIONS ${ORIG_CMAKE_REQUIRED_DEEFINITIONS})
+SET (CMAKE_REQUIRED_LIBRARIES ${ORIG_CMAKE_REQUIRED_LIBRARIES})
+SET (CMAKE_EXTRA_INCLUDE_FILES ${ORIG_CMAKE_EXTRA_INCLUDE_FILES})
 
 
 ################################################################################
