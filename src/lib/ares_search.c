@@ -116,7 +116,7 @@ static void search_callback(void *arg, ares_status_t status, size_t timeouts,
   ares_status_t        mystatus;
   ares_bool_t          skip_cleanup = ARES_FALSE;
 
-  squery->timeouts += (size_t)timeouts;
+  squery->timeouts += timeouts;
 
   if (status != ARES_SUCCESS) {
     end_squery(squery, status, dnsrec);
@@ -287,7 +287,7 @@ done:
 }
 
 static ares_status_t ares_search_int(ares_channel_t *channel,
-                                     ares_dns_record_t *dnsrec,
+                                     const ares_dns_record_t *dnsrec,
                                      ares_callback_dnsrec callback, void *arg)
 {
   struct search_query *squery          = NULL;

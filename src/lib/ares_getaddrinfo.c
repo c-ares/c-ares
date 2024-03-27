@@ -492,7 +492,7 @@ static void host_callback(void *arg, ares_status_t status, size_t timeouts,
 {
   struct host_query *hquery         = (struct host_query *)arg;
   ares_status_t      addinfostatus  = ARES_SUCCESS;
-  hquery->timeouts                 += (size_t)timeouts;
+  hquery->timeouts                 += timeouts;
   hquery->remaining--;
 
   if (status == ARES_SUCCESS) {
@@ -512,7 +512,7 @@ static void host_callback(void *arg, ares_status_t status, size_t timeouts,
       /* must make sure we don't do next_lookup() on destroy or cancel,
        * and return the appropriate status.  We won't return a partial
        * result in this case. */
-      end_hquery(hquery, (ares_status_t)status);
+      end_hquery(hquery, status);
     } else if (addinfostatus != ARES_SUCCESS && addinfostatus != ARES_ENODATA) {
       /* error in parsing result e.g. no memory */
       if (addinfostatus == ARES_EBADRESP && hquery->ai->nodes) {
@@ -531,9 +531,9 @@ static void host_callback(void *arg, ares_status_t status, size_t timeouts,
         hquery->nodata_cnt++;
       }
       next_lookup(hquery,
-                  hquery->nodata_cnt ? ARES_ENODATA : (ares_status_t)status);
+                  hquery->nodata_cnt ? ARES_ENODATA : status);
     } else {
-      end_hquery(hquery, (ares_status_t)status);
+      end_hquery(hquery, status);
     }
   }
 

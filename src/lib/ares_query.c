@@ -88,8 +88,8 @@ static ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
   }
 
   status = ares_dns_record_create_query(&dnsrec, name,
-                                        (ares_dns_class_t)dnsclass,
-                                        (ares_dns_rec_type_t)type,
+                                        dnsclass,
+                                        type,
                                         0, flags,
                                         (size_t)(channel->flags & ARES_FLAG_EDNS)?channel->ednspsz : 0);
   if (status != ARES_SUCCESS) {
