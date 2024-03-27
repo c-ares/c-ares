@@ -43,7 +43,7 @@ typedef struct {
 } ares_query_dnsrec_arg_t;
 
 static void ares_query_dnsrec_cb(void *arg, ares_status_t status,
-                                 size_t timeouts,
+                                 size_t                   timeouts,
                                  const ares_dns_record_t *dnsrec)
 {
   ares_query_dnsrec_arg_t *qquery = arg;
@@ -51,8 +51,8 @@ static void ares_query_dnsrec_cb(void *arg, ares_status_t status,
   if (status != ARES_SUCCESS) {
     qquery->callback(qquery->arg, status, timeouts, dnsrec);
   } else {
-    size_t             ancount;
-    ares_dns_rcode_t   rcode;
+    size_t           ancount;
+    ares_dns_rcode_t rcode;
     /* Pull the response code and answer count from the packet and convert any
      * errors.
      */
@@ -67,8 +67,8 @@ static void ares_query_dnsrec_cb(void *arg, ares_status_t status,
 static ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
                                     ares_dns_class_t     dnsclass,
                                     ares_dns_rec_type_t  type,
-                                    ares_callback_dnsrec callback,
-                                    void *arg, unsigned short *qid)
+                                    ares_callback_dnsrec callback, void *arg,
+                                    unsigned short *qid)
 {
   ares_status_t            status;
   ares_dns_record_t       *dnsrec = NULL;
@@ -87,11 +87,9 @@ static ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
     flags |= ARES_FLAG_RD;
   }
 
-  status = ares_dns_record_create_query(&dnsrec, name,
-                                        dnsclass,
-                                        type,
-                                        0, flags,
-                                        (size_t)(channel->flags & ARES_FLAG_EDNS)?channel->ednspsz : 0);
+  status = ares_dns_record_create_query(
+    &dnsrec, name, dnsclass, type, 0, flags,
+    (size_t)(channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : 0);
   if (status != ARES_SUCCESS) {
     callback(arg, status, 0, NULL);
     return status;
@@ -118,8 +116,8 @@ static ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
 ares_status_t ares_query_dnsrec(ares_channel_t *channel, const char *name,
                                 ares_dns_class_t     dnsclass,
                                 ares_dns_rec_type_t  type,
-                                ares_callback_dnsrec callback,
-                                void *arg, unsigned short *qid)
+                                ares_callback_dnsrec callback, void *arg,
+                                unsigned short *qid)
 {
   ares_status_t status;
 
@@ -132,7 +130,6 @@ ares_status_t ares_query_dnsrec(ares_channel_t *channel, const char *name,
   ares__channel_unlock(channel);
   return status;
 }
-
 
 void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
                 int type, ares_callback callback, void *arg)
@@ -153,5 +150,3 @@ void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
                     (ares_dns_rec_type_t)type, ares__dnsrec_convert_cb, carg,
                     NULL);
 }
-
-

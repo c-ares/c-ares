@@ -83,16 +83,16 @@ struct host_query {
   /* Search order for names */
   char      **names;
   size_t      names_cnt;
-  size_t      next_name_idx;   /* next name index being attempted */
+  size_t      next_name_idx;       /* next name index being attempted */
 
-  struct ares_addrinfo *ai;          /* store results between lookups */
-  unsigned short        qid_a;       /* qid for A request */
-  unsigned short        qid_aaaa;    /* qid for AAAA request */
+  struct ares_addrinfo *ai;        /* store results between lookups */
+  unsigned short        qid_a;     /* qid for A request */
+  unsigned short        qid_aaaa;  /* qid for AAAA request */
 
-  size_t remaining;   /* number of DNS answers waiting for */
+  size_t                remaining; /* number of DNS answers waiting for */
 
   /* Track nodata responses to possibly override final result */
-  size_t nodata_cnt;
+  size_t                nodata_cnt;
 };
 
 static const struct ares_addrinfo_hints default_hints = {
@@ -499,8 +499,8 @@ static void host_callback(void *arg, ares_status_t status, size_t timeouts,
     if (dnsrec == NULL) {
       addinfostatus = ARES_EBADRESP;
     } else {
-      addinfostatus = ares__parse_into_addrinfo(dnsrec, ARES_TRUE,
-                                                hquery->port, hquery->ai);
+      addinfostatus =
+        ares__parse_into_addrinfo(dnsrec, ARES_TRUE, hquery->port, hquery->ai);
     }
     if (addinfostatus == ARES_SUCCESS) {
       terminate_retries(hquery, ares_dns_record_get_id(dnsrec));
@@ -530,8 +530,7 @@ static void host_callback(void *arg, ares_status_t status, size_t timeouts,
       if (status == ARES_ENODATA || addinfostatus == ARES_ENODATA) {
         hquery->nodata_cnt++;
       }
-      next_lookup(hquery,
-                  hquery->nodata_cnt ? ARES_ENODATA : status);
+      next_lookup(hquery, hquery->nodata_cnt ? ARES_ENODATA : status);
     } else {
       end_hquery(hquery, status);
     }
@@ -612,27 +611,28 @@ static void ares_getaddrinfo_int(ares_channel_t *channel, const char *name,
     return;
   }
 
-  hquery->port              = port;
-  hquery->channel           = channel;
-  hquery->hints             = *hints;
-  hquery->sent_family       = -1; /* nothing is sent yet */
-  hquery->callback          = callback;
-  hquery->arg               = arg;
-  hquery->ai                = ai;
-  hquery->name              = ares_strdup(name);
+  hquery->port        = port;
+  hquery->channel     = channel;
+  hquery->hints       = *hints;
+  hquery->sent_family = -1; /* nothing is sent yet */
+  hquery->callback    = callback;
+  hquery->arg         = arg;
+  hquery->ai          = ai;
+  hquery->name        = ares_strdup(name);
   if (hquery->name == NULL) {
     hquery_free(hquery, ARES_TRUE);
     callback(arg, ARES_ENOMEM, 0, NULL);
     return;
   }
 
-  status = ares__search_name_list(channel, name, &hquery->names, &hquery->names_cnt);
+  status =
+    ares__search_name_list(channel, name, &hquery->names, &hquery->names_cnt);
   if (status != ARES_SUCCESS) {
     hquery_free(hquery, ARES_TRUE);
     callback(arg, (int)status, 0, NULL);
     return;
   }
-  hquery->next_name_idx     = 0;
+  hquery->next_name_idx = 0;
 
 
   hquery->lookups = ares_strdup(channel->lookups);
@@ -662,7 +662,7 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
 
 static ares_bool_t next_dns_lookup(struct host_query *hquery)
 {
-  const char   *name = NULL;
+  const char *name = NULL;
 
   if (hquery->next_name_idx >= hquery->names_cnt) {
     return ARES_FALSE;
@@ -675,9 +675,8 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
   switch (hquery->hints.ai_family) {
     case AF_INET:
       hquery->remaining += 1;
-      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN,
-                        ARES_REC_TYPE_A, host_callback, hquery,
-                        &hquery->qid_a);
+      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN, ARES_REC_TYPE_A,
+                        host_callback, hquery, &hquery->qid_a);
       break;
     case AF_INET6:
       hquery->remaining += 1;
@@ -687,9 +686,8 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
       break;
     case AF_UNSPEC:
       hquery->remaining += 2;
-      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN,
-                        ARES_REC_TYPE_A, host_callback, hquery,
-                        &hquery->qid_a);
+      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN, ARES_REC_TYPE_A,
+                        host_callback, hquery, &hquery->qid_a);
       ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN,
                         ARES_REC_TYPE_AAAA, host_callback, hquery,
                         &hquery->qid_aaaa);

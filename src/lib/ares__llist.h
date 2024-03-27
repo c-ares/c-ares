@@ -52,7 +52,7 @@ typedef struct ares__llist_node ares__llist_node_t;
  *
  *  \param[in] data  user supplied data
  */
-typedef void                    (*ares__llist_destructor_t)(void *data);
+typedef void (*ares__llist_destructor_t)(void *data);
 
 /*! Create a linked list object
  *

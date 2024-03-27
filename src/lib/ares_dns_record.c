@@ -276,16 +276,15 @@ ares_status_t ares_dns_record_query_add(ares_dns_record_t  *dnsrec,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_dns_record_query_set_name(ares_dns_record_t  *dnsrec,
-                                             size_t              idx,
-                                             const char         *name)
+ares_status_t ares_dns_record_query_set_name(ares_dns_record_t *dnsrec,
+                                             size_t idx, const char *name)
 {
   char *orig_name = NULL;
 
   if (dnsrec == NULL || idx >= dnsrec->qdcount || name == NULL) {
     return ARES_EFORMERR;
   }
-  orig_name = dnsrec->qd[idx].name;
+  orig_name            = dnsrec->qd[idx].name;
   dnsrec->qd[idx].name = ares_strdup(name);
   if (dnsrec->qd[idx].name == NULL) {
     dnsrec->qd[idx].name = orig_name;
@@ -1352,13 +1351,11 @@ ares_bool_t ares_dns_has_opt_rr(const ares_dns_record_t *rec)
 /* Construct a DNS record for a name with given class and type. Used internally
  * by ares_search() and ares_create_query().
  */
-ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
-                                           const char *name,
-                                           ares_dns_class_t dnsclass,
-                                           ares_dns_rec_type_t type,
-                                           unsigned short id,
-                                           ares_dns_flags_t flags,
-                                           size_t max_udp_size)
+ares_status_t
+  ares_dns_record_create_query(ares_dns_record_t **dnsrec, const char *name,
+                               ares_dns_class_t    dnsclass,
+                               ares_dns_rec_type_t type, unsigned short id,
+                               ares_dns_flags_t flags, size_t max_udp_size)
 {
   ares_status_t  status;
   ares_dns_rr_t *rr = NULL;
@@ -1434,8 +1431,9 @@ ares_dns_record_t *ares_dns_record_duplicate(const ares_dns_record_t *dnsrec)
   ares_dns_record_t *out      = NULL;
   ares_status_t      status;
 
-  if (dnsrec == NULL)
+  if (dnsrec == NULL) {
     return NULL;
+  }
 
   status = ares_dns_write(dnsrec, &data, &data_len);
   if (status != ARES_SUCCESS) {

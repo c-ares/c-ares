@@ -393,11 +393,11 @@ typedef enum {
   /*! Parse Additional from RFC 1035 that allow name compression as RAW */
   ARES_DNS_PARSE_AR_BASE_RAW = 1 << 2,
   /*! Parse Answers from later RFCs (no name compression) RAW */
-  ARES_DNS_PARSE_AN_EXT_RAW  = 1 << 3,
+  ARES_DNS_PARSE_AN_EXT_RAW = 1 << 3,
   /*! Parse Authority from later RFCs (no name compression) as RAW */
-  ARES_DNS_PARSE_NS_EXT_RAW  = 1 << 4,
+  ARES_DNS_PARSE_NS_EXT_RAW = 1 << 4,
   /*! Parse Additional from later RFCs (no name compression) as RAW */
-  ARES_DNS_PARSE_AR_EXT_RAW  = 1 << 5
+  ARES_DNS_PARSE_AR_EXT_RAW = 1 << 5
 } ares_dns_parse_flags_t;
 
 /*! String representation of DNS Record Type
@@ -630,10 +630,8 @@ CARES_EXTERN ares_status_t ares_dns_record_query_add(ares_dns_record_t  *dnsrec,
  * \param[in] name    Name to use as replacement.
  * \return ARES_SUCCESS on success
  */
-CARES_EXTERN ares_status_t
-  ares_dns_record_query_set_name(ares_dns_record_t  *dnsrec,
-                                 size_t              idx,
-                                 const char         *name);
+CARES_EXTERN ares_status_t ares_dns_record_query_set_name(
+  ares_dns_record_t *dnsrec, size_t idx, const char *name);
 
 
 /*! Replace the question type with a different type.  This may be used when
@@ -644,10 +642,8 @@ CARES_EXTERN ares_status_t
  * \param[in] qtype   Record Type to use as replacement.
  * \return ARES_SUCCESS on success
  */
-CARES_EXTERN ares_status_t
-  ares_dns_record_query_set_type(ares_dns_record_t  *dnsrec,
-                                 size_t              idx,
-                                 ares_dns_rec_type_t qtype);
+CARES_EXTERN ares_status_t ares_dns_record_query_set_type(
+  ares_dns_record_t *dnsrec, size_t idx, ares_dns_rec_type_t qtype);
 
 /*! Get the count of queries in the DNS Record
  *
@@ -717,8 +713,9 @@ CARES_EXTERN ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
  *  \param[in]  idx      Index of resource record in section
  *  \return NULL on misuse, otherwise a const pointer to the resource record
  */
-CARES_EXTERN const ares_dns_rr_t *ares_dns_record_rr_get_const(
-  const ares_dns_record_t *dnsrec, ares_dns_section_t sect, size_t idx);
+CARES_EXTERN const ares_dns_rr_t *
+  ares_dns_record_rr_get_const(const ares_dns_record_t *dnsrec,
+                               ares_dns_section_t sect, size_t idx);
 
 
 /*! Remove the resource record based on the section and index
@@ -728,9 +725,9 @@ CARES_EXTERN const ares_dns_rr_t *ares_dns_record_rr_get_const(
  *  \param[in]  idx      Index of resource record in section
  *  \return ARES_SUCCESS on success, otherwise an error code.
  */
-CARES_EXTERN ares_status_t  ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
-                                                   ares_dns_section_t sect,
-                                                   size_t             idx);
+CARES_EXTERN ares_status_t ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
+                                                  ares_dns_section_t sect,
+                                                  size_t             idx);
 
 
 /*! Retrieve the resource record Name/Hostname
@@ -738,7 +735,7 @@ CARES_EXTERN ares_status_t  ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
  *  \param[in] rr  Pointer to resource record
  *  \return Name
  */
-CARES_EXTERN const char    *ares_dns_rr_get_name(const ares_dns_rr_t *rr);
+CARES_EXTERN const char   *ares_dns_rr_get_name(const ares_dns_rr_t *rr);
 
 /*! Retrieve the resource record type
  *

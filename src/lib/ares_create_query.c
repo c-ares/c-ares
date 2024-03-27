@@ -46,10 +46,9 @@ static int ares_create_query_int(const char *name, int dnsclass, int type,
   *bufp    = NULL;
   *buflenp = 0;
 
-  status = ares_dns_record_create_query(&dnsrec, name,
-                                        (ares_dns_class_t)dnsclass,
-                                        (ares_dns_rec_type_t)type,
-                                        id, rd_flag, (size_t)max_udp_size);
+  status = ares_dns_record_create_query(
+    &dnsrec, name, (ares_dns_class_t)dnsclass, (ares_dns_rec_type_t)type, id,
+    rd_flag, (size_t)max_udp_size);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -79,4 +78,3 @@ int ares_mkquery(const char *name, int dnsclass, int type, unsigned short id,
 {
   return ares_create_query_int(name, dnsclass, type, id, rd, buf, buflen, 0);
 }
-

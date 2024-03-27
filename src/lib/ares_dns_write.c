@@ -832,9 +832,9 @@ static ares_status_t ares_dns_write_rr_raw_rr(ares__buf_t         *buf,
 }
 
 static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
-                                       ares__llist_t    **namelist,
-                                       ares_dns_section_t section,
-                                       ares__buf_t       *buf)
+                                       ares__llist_t          **namelist,
+                                       ares_dns_section_t       section,
+                                       ares__buf_t             *buf)
 {
   size_t i;
 
@@ -989,8 +989,7 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
 }
 
 ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
-                             unsigned char **buf,
-                             size_t *buf_len)
+                             unsigned char **buf, size_t *buf_len)
 {
   ares__buf_t   *b = NULL;
   ares_status_t  status;
@@ -1053,4 +1052,3 @@ void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
   }
   dnsrec->ttl_decrement = ttl_decrement;
 }
-

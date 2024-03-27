@@ -266,8 +266,8 @@ static ares_status_t parse_nameserver(ares__buf_t *buf, ares_sconfig_t *sconfig)
     } else {
       /* IPv6 */
       const unsigned char ipv6_charset[] = "ABCDEFabcdef0123456789.:";
-      if (ares__buf_consume_charset(buf, ipv6_charset, sizeof(ipv6_charset)-1)
-          == 0) {
+      if (ares__buf_consume_charset(buf, ipv6_charset,
+                                    sizeof(ipv6_charset) - 1) == 0) {
         return ARES_EBADSTR;
       }
     }
@@ -318,8 +318,8 @@ static ares_status_t parse_nameserver(ares__buf_t *buf, ares_sconfig_t *sconfig)
 
     ares__buf_tag(buf);
 
-    if (ares__buf_consume_charset(buf, iface_charset, sizeof(iface_charset)-1)
-        == 0) {
+    if (ares__buf_consume_charset(buf, iface_charset,
+                                  sizeof(iface_charset) - 1) == 0) {
       return ARES_EBADSTR;
     }
 

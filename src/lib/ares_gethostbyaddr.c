@@ -59,12 +59,11 @@ struct addr_query {
   size_t      timeouts;
 };
 
-static void          next_lookup(struct addr_query *aquery);
-static void          addr_callback(void *arg, ares_status_t status,
-                                   size_t timeouts,
-                                   const ares_dns_record_t *dnsrec);
-static void          end_aquery(struct addr_query *aquery, ares_status_t status,
-                                struct hostent *host);
+static void next_lookup(struct addr_query *aquery);
+static void addr_callback(void *arg, ares_status_t status, size_t timeouts,
+                          const ares_dns_record_t *dnsrec);
+static void end_aquery(struct addr_query *aquery, ares_status_t status,
+                       struct hostent *host);
 static ares_status_t file_lookup(ares_channel_t         *channel,
                                  const struct ares_addr *addr,
                                  struct hostent        **host);

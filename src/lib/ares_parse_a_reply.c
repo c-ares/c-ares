@@ -58,8 +58,8 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
   struct ares_addrinfo ai;
   char                *question_hostname = NULL;
   ares_status_t        status;
-  size_t               req_naddrttls     = 0;
-  ares_dns_record_t   *dnsrec            = NULL;
+  size_t               req_naddrttls = 0;
+  ares_dns_record_t   *dnsrec        = NULL;
 
   if (alen < 0) {
     return ARES_EBADRESP;
