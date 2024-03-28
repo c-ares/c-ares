@@ -468,6 +468,17 @@ void ares_set_socket_configure_callback(ares_channel_t           *channel,
   channel->sock_config_cb_data = data;
 }
 
+void ares_set_server_state_callback(ares_channel_t            *channel,
+                                    ares_server_state_callback cb,
+                                    void                      *data)
+{
+  if (channel == NULL) {
+    return;
+  }
+  channel->server_state_cb      = cb;
+  channel->server_state_cb_data = data;
+}
+
 void ares_set_socket_functions(ares_channel_t                     *channel,
                                const struct ares_socket_functions *funcs,
                                void                               *data)
