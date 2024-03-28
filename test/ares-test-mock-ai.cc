@@ -354,6 +354,53 @@ TEST_P(MockExtraOptsNDots5TestAI, SimpleQuery) {
   EXPECT_THAT(result.ai_, IncludesV4Address("123.45.67.8"));
 }
 
+class MockExtraOptsNDots0TestAI : public MockExtraOptsNDotsTestAI {
+ public:
+  MockExtraOptsNDots0TestAI() : MockExtraOptsNDotsTestAI(0) {}
+};
+
+TEST_P(MockExtraOptsNDots0TestAI, SimpleQuery) {
+  DNSPacket rsp_ndots0;
+  rsp_ndots0.set_response().set_aa()
+    .add_question(new DNSQuestion("ndots0", T_A))
+    .add_answer(new DNSARR("ndots0", 100, {1, 2, 3, 4}));
+  ON_CALL(server_, OnRequest("ndots0", T_A))
+    .WillByDefault(SetReply(&server_, &rsp_ndots0));
+
+  DNSPacket rsp_ndots0_first;
+  rsp_ndots0_first.set_response().set_aa()
+    .add_question(new DNSQuestion("ndots0.first.com", T_A))
+    .add_answer(new DNSARR("ndots0.first.com", 100, {99, 99, 99, 99}));
+  ON_CALL(server_, OnRequest("ndots0.first.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp_ndots0_first));
+
+  DNSPacket rsp_ndots0_second;
+  rsp_ndots0_second.set_response().set_aa()
+    .add_question(new DNSQuestion("ndots0.second.org", T_A))
+    .add_answer(new DNSARR("ndots0.second.org", 100, {98, 98, 98, 98}));
+  ON_CALL(server_, OnRequest("ndots0.second.org", T_A))
+    .WillByDefault(SetReply(&server_, &rsp_ndots0_second));
+
+  DNSPacket rsp_ndots0_third;
+  rsp_ndots0_third.set_response().set_aa()
+    .add_question(new DNSQuestion("ndots0.third.gov", T_A))
+    .add_answer(new DNSARR("ndots0.third.gov", 100, {97, 97, 97, 97}));
+  ON_CALL(server_, OnRequest("ndots0.third.gov", T_A))
+    .WillByDefault(SetReply(&server_, &rsp_ndots0_third));
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "ndots0", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{addr=[1.2.3.4]}", ss.str());
+}
+
 class MockFlagsChannelOptsTestAI
     : public MockChannelOptsTest,
       public ::testing::WithParamInterface< std::pair<int, bool> > {
@@ -760,6 +807,9 @@ INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockExtraOptsTestAI,
 			::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockExtraOptsNDots5TestAI,
+      ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+
+INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockExtraOptsNDots0TestAI,
       ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockNoCheckRespChannelTestAI,

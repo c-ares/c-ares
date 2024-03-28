@@ -414,9 +414,6 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
   }
 
   if (strcmp(key, "ndots") == 0) {
-    if (valint == 0) {
-      return ARES_EFORMERR;
-    }
     sysconfig->ndots = valint;
   } else if (strcmp(key, "retrans") == 0 || strcmp(key, "timeout") == 0) {
     if (valint == 0) {

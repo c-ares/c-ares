@@ -954,7 +954,7 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
     }
   }
 
-  if (res.ndots > 0) {
+  if (res.ndots >= 0) {
     sysconfig->ndots = (size_t)res.ndots;
   }
   if (res.retry > 0) {
