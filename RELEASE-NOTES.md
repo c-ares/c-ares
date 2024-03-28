@@ -28,7 +28,7 @@ Bugfixes:
 * Fix a potential memory leak in `ares_init()`. [Issue #724](https://github.com/c-ares/c-ares/issues/724)
 * Some platforms don't have the `isascii()` function.  Implement as a macro. [PR #721](https://github.com/c-ares/c-ares/pull/721)
 * CMake: Fix Chain building if CMAKE runtime paths not set
-* NDots configuration should allow a value of zero. [PR #733](https://github.com/c-ares/c-ares/pull/733)
+* NDots configuration should allow a value of zero. [PR #735](https://github.com/c-ares/c-ares/pull/735)
 
 Thanks go to these friendly people for their efforts and contributions for this release:
 
