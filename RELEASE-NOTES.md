@@ -1,3 +1,12 @@
+## c-ares version 1.28.1 - Mar 30 2024
+
+This release contains a fix for a single significant regression introduced
+in c-ares 1.28.0.
+
+* `ares_search()` and `ares_getaddrinfo()` resolution fails if no search domains
+  are specified. [Issue #737](https://github.com/c-ares/c-ares/issues/737)
+
+
 ## c-ares version 1.28.0 - Mar 29 2024
 
 This is a feature and bugfix release.
