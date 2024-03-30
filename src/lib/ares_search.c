@@ -243,6 +243,10 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
     goto done;
   }
 
+  /* Set status here, its possible there are no search domains at all, so
+   * status may be ARES_ENOTFOUND from ares__lookup_hostaliases(). */
+  status = ARES_SUCCESS;
+
   /* Try as-is first */
   if (ndots >= channel->ndots) {
     list[idx] = ares_strdup(name);
