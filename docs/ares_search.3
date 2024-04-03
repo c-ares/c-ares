@@ -15,7 +15,7 @@ typedef void (*ares_callback_dnsrec)(void *\fIarg\fP,
                                      const ares_dns_record_t *\fIdnsrec\fP);
 
 void ares_search_dnsrec(ares_channel_t *\fIchannel\fP,
-                        ares_dns_record_t *\fIdnsrec\fP,
+                        const ares_dns_record_t *\fIdnsrec\fP,
                         ares_callback_dnsrec \fIcallback\fP, void *\fIarg\fP);
 
 typedef void (*ares_callback)(void *\fIarg\fP, int \fIstatus\fP,

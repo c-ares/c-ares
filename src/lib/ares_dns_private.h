@@ -61,13 +61,11 @@ void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
  *  \param[in]  max_udp_size Maximum size of a UDP packet for EDNS.
  *  \return ARES_SUCCESS on success, otherwise an error code.
  */
-ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
-                                           const char *name,
-                                           ares_dns_class_t dnsclass,
-                                           ares_dns_rec_type_t type,
-                                           unsigned short id,
-                                           ares_dns_flags_t flags,
-                                           size_t max_udp_size);
+ares_status_t
+  ares_dns_record_create_query(ares_dns_record_t **dnsrec, const char *name,
+                               ares_dns_class_t    dnsclass,
+                               ares_dns_rec_type_t type, unsigned short id,
+                               ares_dns_flags_t flags, size_t max_udp_size);
 
 /*! Convert the RCODE and ANCOUNT from a DNS query reply into a status code.
  *
@@ -76,7 +74,7 @@ ares_status_t ares_dns_record_create_query(ares_dns_record_t **dnsrec,
  *  \return An appropriate status code.
  */
 ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
-                                            size_t ancount);
+                                            size_t           ancount);
 
 struct ares_dns_qd {
   char               *name;

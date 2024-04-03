@@ -38,16 +38,15 @@
 
 ares_status_t ares_parse_ptr_reply_dnsrec(const ares_dns_record_t *dnsrec,
                                           const void *addr, int addrlen,
-                                          int family,
-                                          struct hostent **host)
+                                          int family, struct hostent **host)
 {
-  ares_status_t      status;
-  size_t             ptrcount = 0;
-  struct hostent    *hostent  = NULL;
-  const char        *hostname = NULL;
-  const char        *ptrname  = NULL;
-  size_t             i;
-  size_t             ancount;
+  ares_status_t   status;
+  size_t          ptrcount = 0;
+  struct hostent *hostent  = NULL;
+  const char     *hostname = NULL;
+  const char     *ptrname  = NULL;
+  size_t          i;
+  size_t          ancount;
 
   *host = NULL;
 
@@ -186,13 +185,12 @@ done:
   return status;
 }
 
-
 int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
                          const void *addr, int addrlen, int family,
                          struct hostent **host)
 {
   size_t             alen;
-  ares_dns_record_t *dnsrec   = NULL;
+  ares_dns_record_t *dnsrec = NULL;
   ares_status_t      status;
 
   if (alen_int < 0) {

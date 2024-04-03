@@ -68,8 +68,7 @@ static ares_bool_t   same_questions(const ares_dns_record_t *qrec,
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
 static void          end_query(ares_channel_t *channel, struct query *query,
-                               ares_status_t status,
-                               const ares_dns_record_t *dnsrec);
+                               ares_status_t status, const ares_dns_record_t *dnsrec);
 
 /* Invoke the server state callback after a success or failure. */
 static void invoke_server_state_cb(const struct server_state *server,
@@ -659,9 +658,9 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   struct query        *query;
   /* Cache these as once ares__send_query() gets called, it may end up
    * invalidating the connection all-together */
-  struct server_state *server    = conn->server;
-  ares_dns_record_t   *rdnsrec   = NULL;
-  ares_dns_record_t   *qdnsrec   = NULL;
+  struct server_state *server  = conn->server;
+  ares_dns_record_t   *rdnsrec = NULL;
+  ares_dns_record_t   *qdnsrec = NULL;
   ares_status_t        status;
   ares_bool_t          is_cached = ARES_FALSE;
 

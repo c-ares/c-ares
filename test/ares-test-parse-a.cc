@@ -265,34 +265,6 @@ TEST_F(LibraryTest, ParseAReplyVariantCnameChain) {
   ares_free_hostent(host);
 }
 
-TEST_F(LibraryTest, DISABLED_ParseAReplyVariantCnameLast) {
-  DNSPacket pkt;
-  pkt.set_qid(6366).set_rd().set_ra()
-    .add_question(new DNSQuestion("query.example.com", T_A))
-    .add_answer(new DNSARR("redirect.query.example.com", 300, {129,97,123,221}))
-    .add_answer(new DNSARR("redirect.query.example.com", 300, {129,97,123,222}))
-    .add_answer(new DNSARR("redirect.query.example.com", 300, {129,97,123,223}))
-    .add_answer(new DNSARR("redirect.query.example.com", 300, {129,97,123,224}))
-    .add_answer(new DNSCnameRR("query.example.com", 60, "redirect.query.example.com"))
-    .add_additional(new DNSTxtRR("query.example.com", 60, {"text record"}));
-  struct hostent *host = nullptr;
-  struct ares_addrttl info[8];
-  int count = 8;
-  std::vector<byte> data = pkt.data();
-  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), (int)data.size(),
-                                             &host, info, &count));
-  EXPECT_EQ(4, count);
-  EXPECT_EQ("129.97.123.221", AddressToString(&(info[0].ipaddr), 4));
-  EXPECT_EQ("129.97.123.222", AddressToString(&(info[1].ipaddr), 4));
-  EXPECT_EQ("129.97.123.223", AddressToString(&(info[2].ipaddr), 4));
-  EXPECT_EQ("129.97.123.224", AddressToString(&(info[3].ipaddr), 4));
-  EXPECT_EQ(300, info[0].ttl);
-  EXPECT_EQ(300, info[1].ttl);
-  EXPECT_EQ(300, info[2].ttl);
-  EXPECT_EQ(300, info[3].ttl);
-  ares_free_hostent(host);
-}
-
 TEST_F(LibraryTest, ParseAReplyErrors) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()

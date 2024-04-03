@@ -98,7 +98,6 @@ struct ares_hosts_entry {
   ares__llist_t *hosts;
 };
 
-
 const void *ares_dns_pton(const char *ipaddr, struct ares_addr *addr,
                           size_t *out_len)
 {

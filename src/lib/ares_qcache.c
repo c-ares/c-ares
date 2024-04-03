@@ -119,7 +119,7 @@ static char *ares__qcache_calc_key(const ares_dns_record_t *dnsrec)
      * name lookup without performing a search.  Strip this since its not part
      * of a cached response. */
     name_len = ares_strlen(name);
-    if (name_len && name[name_len-1] == '.') {
+    if (name_len && name[name_len - 1] == '.') {
       name_len--;
     }
 
@@ -393,9 +393,9 @@ fail:
   return ARES_ENOMEM;
 }
 
-ares_status_t ares_qcache_fetch(ares_channel_t          *channel,
-                                const struct timeval    *now,
-                                const ares_dns_record_t *dnsrec,
+ares_status_t ares_qcache_fetch(ares_channel_t           *channel,
+                                const struct timeval     *now,
+                                const ares_dns_record_t  *dnsrec,
                                 const ares_dns_record_t **dnsrec_resp)
 {
   char                 *key = NULL;
@@ -442,4 +442,3 @@ ares_status_t ares_qcache_insert(ares_channel_t       *channel,
   return ares__qcache_insert(channel->qcache, dnsrec, query->qbuf, query->qlen,
                              now);
 }
-

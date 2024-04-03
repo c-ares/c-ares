@@ -888,7 +888,7 @@ const char *ares_dns_rcode_tostr(ares_dns_rcode_t rcode)
  * value. Used internally by ares_search() and ares_query().
  */
 ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
-                                            size_t ancount)
+                                            size_t           ancount)
 {
   ares_status_t status = ARES_SUCCESS;
 

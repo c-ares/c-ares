@@ -53,13 +53,6 @@ TEST(LibraryInit, UnexpectedCleanup) {
   EXPECT_EQ(EXPECTED_NONINIT, ares_library_initialized());
 }
 
-TEST(LibraryInit, DISABLED_InvalidParam) {
-  // TODO: police flags argument to ares_library_init()
-  EXPECT_EQ(ARES_EBADQUERY, ares_library_init(ARES_LIB_INIT_ALL << 2));
-  EXPECT_EQ(EXPECTED_NONINIT, ares_library_initialized());
-  ares_library_cleanup();
-}
-
 TEST(LibraryInit, Nested) {
   EXPECT_EQ(EXPECTED_NONINIT, ares_library_initialized());
   EXPECT_EQ(ARES_SUCCESS, ares_library_init(ARES_LIB_INIT_ALL));

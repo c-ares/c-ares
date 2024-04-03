@@ -51,7 +51,7 @@ typedef struct ares__htable_asvp ares__htable_asvp_t;
  *
  *  \param[in] val  user-supplied value
  */
-typedef void                     (*ares__htable_asvp_val_free_t)(void *val);
+typedef void (*ares__htable_asvp_val_free_t)(void *val);
 
 /*! Destroy hashtable
  *
