@@ -224,9 +224,7 @@ typedef enum {
 #define ARES_OPT_MAXTIMEOUTMS    (1 << 20)
 #define ARES_OPT_QUERY_CACHE     (1 << 21)
 #define ARES_OPT_EVENT_THREAD    (1 << 22)
-#define ARES_OPT_SERVER_FAIL     (1 << 23)
-#define ARES_OPT_SERVER_RECOVER  (1 << 24)
-#define ARES_OPT_PRIORITY_SERVER (1 << 25)
+#define ARES_OPT_SERVER_FAILOVER (1 << 23)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN        (1 << 0)
@@ -298,6 +296,32 @@ typedef void (*ares_sock_state_cb)(void *data, ares_socket_t socket_fd,
 
 struct apattern;
 
+/* Structure containing options controlling the behaviour when servers on a
+ * channel hit failures.
+ */
+struct ares_server_failover_options {
+  /* Probability (1/N) by which we will retry a failed server instead of the
+   * best server when selecting a server to send queries to.
+   * Set to 0 to disable this behaviour.
+   */
+  unsigned char retry_chance;
+
+  /* The minimum time in milliseconds to wait before retrying a failed server
+   * instead of the best server when selecting a server to send queries to.
+   * These retries use the probability above.
+   */
+  int           retry_delay;
+
+  /* The number of consecutive failures on a server at which it is considered
+   * fatally failed (i.e. not just a transient network issue).
+   * When all servers are fatally failed, we will always select a server
+   * randomly when sending queries.
+   * Moreover, connections to fatally failed servers will always be closed.
+   * Set to 0 to disable this behaviour.
+   */
+  int           fatal_fail_threshold;
+};
+
 /* NOTE about the ares_options struct to users and developers.
 
    This struct will remain looking like this. It will not be extended nor
@@ -340,9 +364,7 @@ struct ares_options {
   int                maxtimeout; /* in milliseconds */
   unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
   ares_evsys_t evsys;
-  int server_failure_threshold;
-  int server_recovery_threshold;
-  int priority_server_chance;
+  struct ares_server_failover_options server_failover_opts;
 };
 
 struct hostent;
@@ -406,7 +428,7 @@ typedef void     (*ares_addrinfo_callback)(void *arg, int status, int timeouts,
                                        struct ares_addrinfo *res);
 
 typedef void     (*ares_server_state_callback)(char *server_ip,
-                                           ares_bool_t healthy, void *data);
+                                           ares_bool_t success, void *data);
 
 CARES_EXTERN int ares_library_init(int flags);
 

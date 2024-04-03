@@ -229,17 +229,14 @@ int ares_save_options(ares_channel_t *channel, struct ares_options *options,
     options->evsys = channel->evsys;
   }
 
-  if (channel->optmask & ARES_OPT_SERVER_FAIL) {
-    options->server_failure_threshold =
-      (int)channel->server_failure_threshold;
-  }
-  if (channel->optmask & ARES_OPT_SERVER_RECOVER) {
-    options->server_recovery_threshold =
-      (int)channel->server_recovery_threshold;
-  }
-  if (channel->optmask & ARES_OPT_PRIORITY_SERVER) {
-    options->priority_server_chance =
-      (int)channel->priority_server_chance;
+  /* Set the server failover options */
+  if (channel->optmask & ARES_OPT_SERVER_FAILOVER) {
+    options->server_failover_opts.retry_chance =
+      channel->server_retry_chance;
+    options->server_failover_opts.retry_delay =
+      (int)channel->server_retry_delay;
+    options->server_failover_opts.fatal_fail_threshold =
+      (int)channel->server_fatal_fail_threshold;
   }
 
   *optmask = (int)channel->optmask;
@@ -487,30 +484,14 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
     }
   }
 
-  /* Set the thresholds for server failure/recovery if present. */
-  if (optmask & ARES_OPT_SERVER_FAIL) {
-    if (options->server_failure_threshold <= 0) {
-      optmask &= ~(ARES_OPT_SERVER_FAIL);
-    } else {
-      channel->server_failure_threshold =
-        (size_t)options->server_failure_threshold;
-    }
-  }
-  if (optmask & ARES_OPT_SERVER_RECOVER) {
-    if (options->server_recovery_threshold <= 0) {
-      optmask &= ~(ARES_OPT_SERVER_RECOVER);
-    } else {
-      channel->server_recovery_threshold =
-        (size_t)options->server_recovery_threshold;
-    }
-  }
-  if (optmask & ARES_OPT_PRIORITY_SERVER) {
-    if (options->priority_server_chance <= 0) {
-      optmask &= ~(ARES_OPT_PRIORITY_SERVER);
-    } else {
-      channel->priority_server_chance =
-        (size_t)options->priority_server_chance;
-    }
+  /* Set the server failover settings on the channel */
+  if (optmask & ARES_OPT_SERVER_FAILOVER) {
+    channel->server_retry_chance =
+      options->server_failover_opts.retry_chance;
+    channel->server_retry_delay =
+      (size_t)options->server_failover_opts.retry_delay;
+    channel->server_fatal_fail_threshold =
+      (size_t)options->server_failover_opts.fatal_fail_threshold;
   }
 
   channel->optmask = (unsigned int)optmask;

@@ -146,11 +146,6 @@ typedef struct ares_rand_state ares_rand_state;
 
 /********* EDNS defines section ******/
 
-/* Default thresholds for the number of consecutive queries before a server
- * is classed as failed/recovered.
- */
-#define SERVER_FAILURE_THRESHOLD_DEFAULT   3
-#define SERVER_RECOVERY_THRESHOLD_DEFAULT  1
 
 struct query;
 
@@ -175,15 +170,9 @@ struct server_state {
   char                      ll_iface[64];    /* IPv6 Link Local Interface */
   unsigned int              ll_scope;        /* IPv6 Link Local Scope */
 
-  size_t                    consec_failures;  /* Consecutive query failure
-                                               * count, can be hard errors or
-                                               * timeouts
-                                               */
-  size_t                    consec_successes; /* Consecutive query success
-                                               * count
-                                               */
-  ares_bool_t               is_healthy;       /* server health state */
-
+  size_t                    consec_failures; /* Consecutive query failure count
+                                              * can be hard errors or timeouts
+                                              */
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
 
@@ -327,20 +316,28 @@ struct ares_channeldata {
   /* Query Cache */
   ares__qcache_t                     *qcache;
 
-  /* Number of consecutive failures for a server to be classed as failed */
-  size_t                              server_failure_threshold;
+  /* Callback triggered when a server has a successful or failed response. */
+  ares_server_state_callback server_state_cb;
+  void                      *server_state_cb_data;
 
-  /* Number of consecutive successes for a server to be classed as recovered */
-  size_t                              server_recovery_threshold;
-
-  /* Callback triggered when a server becomes failed/recovered */
-  ares_server_state_callback         server_state_cb;
-  void                              *server_state_cb_data;
-
-  /* Probability (1/N) by which we will select a higher priority server instead
-   * of the best server when selecting a server to send queries to.
+  /* Probability (1/N) by which we will select a failed server instead of the
+   * best server when selecting a server to send queries to.
    */
-   size_t                            priority_server_chance;
+  unsigned char server_retry_chance;
+
+  /* The minimum time in milliseconds to wait before retrying a failed server
+   * instead of the best server when selecting a server to send queries to.
+   */
+  size_t         server_retry_delay;
+  struct timeval server_next_retry_time;
+
+  /* The number of consecutive failures on a server at which it is considered
+   * fatally failed (i.e. not just a transient network issue).
+   * When all servers are fatally failed, we will always select a server
+   * randomly when sending queries.
+   * Moreover, connections to fatally failed servers will always be reset.
+   */
+  size_t server_fatal_fail_threshold;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */

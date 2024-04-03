@@ -587,7 +587,6 @@ static ares_status_t ares__server_create(ares_channel_t       *channel,
   server->udp_port    = ares__sconfig_get_port(channel, sconfig, ARES_FALSE);
   server->tcp_port    = ares__sconfig_get_port(channel, sconfig, ARES_TRUE);
   server->addr.family = sconfig->addr.family;
-  server->is_healthy  = ARES_TRUE;
 
   if (sconfig->addr.family == AF_INET) {
     memcpy(&server->addr.addr.addr4, &sconfig->addr.addr.addr4,
@@ -1191,4 +1190,15 @@ done:
   ares__channel_unlock(channel);
   ares__buf_destroy(buf);
   return out;
+}
+
+void ares_set_server_state_callback(ares_channel_t            *channel,
+                                    ares_server_state_callback cb,
+                                    void                      *data)
+{
+  if (channel == NULL) {
+    return;
+  }
+  channel->server_state_cb      = cb;
+  channel->server_state_cb_data = data;
 }

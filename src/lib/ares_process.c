@@ -73,63 +73,49 @@ static void          end_query(ares_channel_t *channel, struct query *query,
 
 static void server_increment_failures(struct server_state *server)
 {
-  ares__slist_node_t *node;
-  ares_channel_t     *channel = server->channel;
-  char                server_ip[INET6_ADDRSTRLEN];
+  ares__slist_node_t   *node;
+  const ares_channel_t *channel = server->channel;
 
   node = ares__slist_node_find(channel->servers, server);
   if (node == NULL) {
     return;
   }
 
-  server->consec_successes = 0;
   server->consec_failures++;
   ares__slist_node_reinsert(node);
 
-  /* If the server has just become unhealthy, then invoke the server state
-   * callback.
-   */
-  if ((server->consec_failures >= channel->server_failure_threshold) &&
-      (server->is_healthy == ARES_TRUE)) {
-    server->is_healthy = ARES_FALSE;
-    if (channel->server_state_cb) {
-      ares_inet_ntop(server->addr.family, &server->addr.addr, server_ip,
-                     sizeof(server_ip));
-      channel->server_state_cb(server_ip, server->is_healthy,
-                               channel->server_state_cb_data);
-    }
+  /* Invoke the server state callback if present. */
+  if (channel->server_state_cb) {
+    char server_ip[INET6_ADDRSTRLEN];
+    ares_inet_ntop(server->addr.family, &server->addr.addr, server_ip,
+                   sizeof(server_ip));
+    channel->server_state_cb(server_ip, ARES_FALSE,
+                             channel->server_state_cb_data);
   }
 }
 
-static void server_increment_successes(struct server_state *server)
+static void server_set_good(struct server_state *server)
 {
-  ares__slist_node_t *node;
-  ares_channel_t     *channel = server->channel;
-  char                server_ip[INET6_ADDRSTRLEN];
+  ares__slist_node_t   *node;
+  const ares_channel_t *channel = server->channel;
 
   node = ares__slist_node_find(channel->servers, server);
   if (node == NULL) {
     return;
   }
 
-  server->consec_successes++;
   if (server->consec_failures > 0) {
     server->consec_failures = 0;
     ares__slist_node_reinsert(node);
   }
 
-  /* If the server has just become healthy, then invoke the server state
-   * callback.
-   */
-  if ((server->consec_successes >= channel->server_recovery_threshold) &&
-      (server->is_healthy == ARES_FALSE)) {
-    server->is_healthy = ARES_TRUE;
-    if (channel->server_state_cb) {
-      ares_inet_ntop(server->addr.family, &server->addr.addr, server_ip,
-                     sizeof(server_ip));
-      channel->server_state_cb(server_ip, server->is_healthy,
-                               channel->server_state_cb_data);
-    }
+  /* Invoke the server state callback if present. */
+  if (channel->server_state_cb) {
+    char server_ip[INET6_ADDRSTRLEN];
+    ares_inet_ntop(server->addr.family, &server->addr.addr, server_ip,
+                   sizeof(server_ip));
+    channel->server_state_cb(server_ip, ARES_TRUE,
+                             channel->server_state_cb_data);
   }
 }
 
@@ -764,7 +750,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     is_cached = ARES_TRUE;
   }
 
-  server_increment_successes(server);
+  server_set_good(server);
   end_query(channel, query, ARES_SUCCESS, rdnsrec);
 
   status = ARES_SUCCESS;
@@ -848,35 +834,30 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
   return NULL;
 }
 
-/* Pick a priority server from the list.
+/* Pick a server from the list with failover behaviour.
  *
  * We default to using the first server in the sorted list of servers. That is
  * the server with the lowest number of consecutive failures, and then the
  * highest priority server (by idx) if there is a draw.
  *
  * However, this by itself has two issues:
- * (1) If the highest priority server temporarily goes down and hits
- *     some failures, then that server will never be retried until all other
- *     servers hit the same number of failures. This may prevent the
- *     highest priority server from being retried for a long time.
- * (2) If all servers are unhealthy, then we will continue to select the
+ * (1) If a server temporarily goes down and hits some failures, then that
+ *     server will never be retried until all other servers hit the same number
+ *     of failures. This may prevent the server from being retried for a long
+ *     time.
+ * (2) If all servers are fatally failed, then we will continue to select the
  *     server with the lowest number of consecutive failures even though it may
  *     be more broken than other servers later in the list.
  *
- * For issue (1), if the first server in the sorted list is not the highest
- * priority server, then with some probability we select a higher priority
- * server at random instead.
+ * For issue (1), with some probability we select a failed server to retry
+ * instead.
  *
- * For issue (2), if all servers in the list are unhealthy (and not in the
- * process of recovering), then we fall back to selecting a random server.
+ * For issue (2), if all servers in the list are fatally failed, then we fall
+ * back to selecting a random server.
  */
-static struct server_state *ares__priority_server(ares_channel_t *channel)
+static struct server_state *ares__failover_server(ares_channel_t *channel)
 {
   struct server_state *server;
-  unsigned char        c;
-  size_t               idx;
-  ares__slist_node_t  *node;
-  struct server_state *node_val;
 
   /* Select the best choice of server, based on consecutive failures and
    * server idx.
@@ -888,27 +869,33 @@ static struct server_state *ares__priority_server(ares_channel_t *channel)
     return NULL;
   }
 
-  if (server->consec_failures >= channel->server_failure_threshold) {
-    /* All servers are unhealthy so fall back to a random server. */
+  if (channel->server_fatal_fail_threshold > 0 &&
+      server->consec_failures >= channel->server_fatal_fail_threshold) {
+    /* All servers are fatally failed so fall back to a random server. */
     return ares__random_server(channel);
   }
 
-  if (server->idx > 0) {
-    /* The best server is not the highest priority server. To avoid never
-     * retrying higher priority servers, with some probability we select a
-     * higher priority server at random instead.
-     */
+  if (channel->server_retry_chance > 0)
+  {
+    /* Generate a random byte to decide whether to retry a failed server. */
+    unsigned char c;
     ares__rand_bytes(channel->rand_state, &c, 1);
-    if ((size_t)c % channel->priority_server_chance == 0) {
-      /* Select a random higher priority server. */
-      ares__rand_bytes(channel->rand_state, &c, 1);
-      idx = (size_t)c;
-      idx = idx % server->idx;
+    if (c % channel->server_retry_chance == 0) {
+      /* Select a failed server to retry. */
+      ares__slist_node_t  *node;
+      struct server_state *node_val;
       for (node = ares__slist_node_first(channel->servers); node != NULL;
            node = ares__slist_node_next(node)) {
         node_val = ares__slist_node_val(node);
-        if ((node_val != NULL) && (node_val->idx == idx)) {
-          return node_val;
+        if (node_val != NULL && node_val->consec_failures > 0) {
+          /* Check that the next retry time for failed servers has passed. */
+          struct timeval now = ares__tvnow();
+          if (ares__timedout(&now, &channel->server_next_retry_time)) {
+            timeadd(&now, channel->server_retry_delay);
+            channel->server_next_retry_time = now;
+            return node_val;
+          }
+          break;
         }
       }
     }
@@ -994,9 +981,9 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
   if (channel->rotate) {
     /* Pull random server */
     server = ares__random_server(channel);
-  } else if (channel->optmask & ARES_OPT_PRIORITY_SERVER) {
-    /* Pull priority server */
-    server = ares__priority_server(channel);
+  } else if (channel->optmask & ARES_OPT_SERVER_FAILOVER) {
+    /* Pull server with failover behaviour */
+    server = ares__failover_server(channel);
   } else {
     /* Pull first */
     server = ares__slist_first_val(channel->servers);
