@@ -229,7 +229,7 @@ int ares_save_options(ares_channel_t *channel, struct ares_options *options,
     options->evsys = channel->evsys;
   }
 
-  /* Set the server failover options */
+  /* Set the server failover options. */
   if (channel->optmask & ARES_OPT_SERVER_FAILOVER) {
     options->server_failover_opts.retry_chance =
       channel->server_retry_chance;
@@ -484,7 +484,7 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
     }
   }
 
-  /* Set the server failover settings on the channel */
+  /* Set the server failover settings on the channel. */
   if (optmask & ARES_OPT_SERVER_FAILOVER) {
     channel->server_retry_chance =
       options->server_failover_opts.retry_chance;

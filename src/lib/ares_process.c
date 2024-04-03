@@ -895,18 +895,16 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
     return ares__random_server(channel);
   }
 
-  if (channel->server_retry_chance > 0)
-  {
+  if (channel->server_retry_chance > 0) {
     /* Generate a random byte to decide whether to retry a failed server. */
     unsigned char c;
     ares__rand_bytes(channel->rand_state, &c, 1);
     if (c % channel->server_retry_chance == 0) {
       /* Select a failed server to retry. */
       ares__slist_node_t  *node;
-      struct server_state *node_val;
       for (node = ares__slist_node_first(channel->servers); node != NULL;
            node = ares__slist_node_next(node)) {
-        node_val = ares__slist_node_val(node);
+        struct server_state *node_val = ares__slist_node_val(node);
         if (node_val != NULL && node_val->consec_failures > 0) {
           /* Check that the next retry time for failed servers has passed. If
            * not then break out and return the best server.
