@@ -235,8 +235,8 @@ int ares_save_options(ares_channel_t *channel, struct ares_options *options,
       channel->server_retry_chance;
     options->server_failover_opts.retry_delay =
       (int)channel->server_retry_delay;
-    options->server_failover_opts.fatal_fail_threshold =
-      (int)channel->server_fatal_fail_threshold;
+    options->server_failover_opts.serious_fail_limit =
+      (int)channel->server_serious_fail_limit;
   }
 
   *optmask = (int)channel->optmask;
@@ -490,8 +490,8 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
       options->server_failover_opts.retry_chance;
     channel->server_retry_delay =
       (size_t)options->server_failover_opts.retry_delay;
-    channel->server_fatal_fail_threshold =
-      (size_t)options->server_failover_opts.fatal_fail_threshold;
+    channel->server_serious_fail_limit =
+      (size_t)options->server_failover_opts.serious_fail_limit;
   }
 
   channel->optmask = (unsigned int)optmask;

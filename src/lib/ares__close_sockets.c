@@ -97,13 +97,13 @@ void ares__check_cleanup_conn(const ares_channel_t     *channel,
     do_cleanup = ARES_TRUE;
   }
 
-  /* If the associated server is fatally failed, close it out. Resetting the
-   * connection (and specifically the source port number) can help resolve
+  /* If the associated server has a serious failure, close it out. Resetting
+   * the connection (and specifically the source port number) can help resolve
    * situations where packets are being dropped.
    */
   if (channel->optmask & ARES_OPT_SERVER_FAILOVER &&
-      channel->server_fatal_fail_threshold > 0 &&
-      conn->server->consec_failures >= channel->server_fatal_fail_threshold) {
+      channel->server_serious_fail_limit > 0 &&
+      conn->server->consec_failures >= channel->server_serious_fail_limit) {
     do_cleanup = ARES_TRUE;
   }
 

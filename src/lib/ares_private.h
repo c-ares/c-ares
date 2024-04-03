@@ -320,24 +320,27 @@ struct ares_channeldata {
   ares_server_state_callback server_state_cb;
   void                      *server_state_cb_data;
 
-  /* Probability (1/N) by which we will select a failed server instead of the
+  /* Probability (1/N) by which we will retry a failed server instead of the
    * best server when selecting a server to send queries to.
+   * Set to 0 to disable this behavior.
    */
   unsigned char server_retry_chance;
 
   /* The minimum time in milliseconds to wait before retrying a failed server
    * instead of the best server when selecting a server to send queries to.
+   * These retries use the probability above.
    */
   size_t         server_retry_delay;
   struct timeval server_next_retry_time;
 
-  /* The number of consecutive failures on a server at which it is considered
-   * fatally failed (i.e. not just a transient network issue).
-   * When all servers are fatally failed, we will always select a server
-   * randomly when sending queries.
-   * Moreover, connections to fatally failed servers will always be reset.
+  /* The number of consecutive failures on a server at which point it is
+   * considered a serious failure (i.e. not just a transient network issue).
+   * When all servers have a serious failure, we will select a server randomly
+   * when sending queries.
+   * Moreover, connections to servers with a serious failure will be closed.
+   * Set to 0 to disable this behavior.
    */
-  size_t server_fatal_fail_threshold;
+  size_t server_serious_fail_limit;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */

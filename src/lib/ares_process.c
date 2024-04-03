@@ -834,7 +834,7 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
   return NULL;
 }
 
-/* Pick a server from the list with failover behaviour.
+/* Pick a server from the list with failover behavior.
  *
  * We default to using the first server in the sorted list of servers. That is
  * the server with the lowest number of consecutive failures, and then the
@@ -845,15 +845,15 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
  *     server will never be retried until all other servers hit the same number
  *     of failures. This may prevent the server from being retried for a long
  *     time.
- * (2) If all servers are fatally failed, then we will continue to select the
+ * (2) If all servers are failed, then we will continue to select the
  *     server with the lowest number of consecutive failures even though it may
  *     be more broken than other servers later in the list.
  *
  * For issue (1), with some probability we select a failed server to retry
  * instead.
  *
- * For issue (2), if all servers in the list are fatally failed, then we fall
- * back to selecting a random server.
+ * For issue (2), if all servers in the list have a serious failure, then we
+ * fall back to selecting a random server.
  */
 static struct server_state *ares__failover_server(ares_channel_t *channel)
 {
@@ -869,9 +869,9 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
     return NULL;
   }
 
-  if (channel->server_fatal_fail_threshold > 0 &&
-      server->consec_failures >= channel->server_fatal_fail_threshold) {
-    /* All servers are fatally failed so fall back to a random server. */
+  if (channel->server_serious_fail_limit > 0 &&
+      server->consec_failures >= channel->server_serious_fail_limit) {
+    /* All servers have a serious failure so fall back to a random server. */
     return ares__random_server(channel);
   }
 
@@ -888,7 +888,9 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
            node = ares__slist_node_next(node)) {
         node_val = ares__slist_node_val(node);
         if (node_val != NULL && node_val->consec_failures > 0) {
-          /* Check that the next retry time for failed servers has passed. */
+          /* Check that the next retry time for failed servers has passed. If
+           * not then break out and return the best server.
+           */
           struct timeval now = ares__tvnow();
           if (ares__timedout(&now, &channel->server_next_retry_time)) {
             timeadd(&now, channel->server_retry_delay);
@@ -982,7 +984,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
     /* Pull random server */
     server = ares__random_server(channel);
   } else if (channel->optmask & ARES_OPT_SERVER_FAILOVER) {
-    /* Pull server with failover behaviour */
+    /* Pull server with failover behavior */
     server = ares__failover_server(channel);
   } else {
     /* Pull first */
