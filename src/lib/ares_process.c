@@ -71,6 +71,41 @@ static void          end_query(ares_channel_t *channel, struct query *query,
                                ares_status_t status,
                                const ares_dns_record_t *dnsrec);
 
+/* Invoke the server state callback after a success or failure. */
+static void invoke_server_state_cb(const struct server_state *server,
+                                   ares_bool_t success)
+{
+  const ares_channel_t *channel = server->channel;
+  ares__buf_t          *buf = NULL;
+  ares_status_t         status;
+  char                 *server_string;
+
+  if (channel->server_state_cb == NULL) {
+    return;
+  }
+
+  buf = ares__buf_create();
+  if (buf == NULL) {
+    return;
+  }
+
+  status = ares_write_server(server, buf);
+  if (status != ARES_SUCCESS) {
+    ares__buf_destroy(buf);
+    return;
+  }
+
+  server_string = ares__buf_finish_str(buf, NULL);
+  buf = NULL;
+  if (server_string == NULL) {
+    return;
+  }
+
+  channel->server_state_cb(server_string, success,
+                           channel->server_state_cb_data);
+  ares_free(server_string);
+}
+
 static void server_increment_failures(struct server_state *server)
 {
   ares__slist_node_t   *node;
@@ -84,14 +119,7 @@ static void server_increment_failures(struct server_state *server)
   server->consec_failures++;
   ares__slist_node_reinsert(node);
 
-  /* Invoke the server state callback if present. */
-  if (channel->server_state_cb) {
-    char server_ip[INET6_ADDRSTRLEN];
-    ares_inet_ntop(server->addr.family, &server->addr.addr, server_ip,
-                   sizeof(server_ip));
-    channel->server_state_cb(server_ip, ARES_FALSE,
-                             channel->server_state_cb_data);
-  }
+  invoke_server_state_cb(server, ARES_FALSE);
 }
 
 static void server_set_good(struct server_state *server)
@@ -109,14 +137,7 @@ static void server_set_good(struct server_state *server)
     ares__slist_node_reinsert(node);
   }
 
-  /* Invoke the server state callback if present. */
-  if (channel->server_state_cb) {
-    char server_ip[INET6_ADDRSTRLEN];
-    ares_inet_ntop(server->addr.family, &server->addr.addr, server_ip,
-                   sizeof(server_ip));
-    channel->server_state_cb(server_ip, ARES_TRUE,
-                             channel->server_state_cb_data);
-  }
+  invoke_server_state_cb(server, ARES_TRUE);
 }
 
 /* return true if now is exactly check time or later */
