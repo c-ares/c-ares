@@ -957,22 +957,23 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
   if (res.ndots >= 0) {
     sysconfig->ndots = (size_t)res.ndots;
   }
+/* Apple does not allow configuration of retry, so this is a static dummy
+ * value, ignore */
+#  ifndef __APPLE__
   if (res.retry > 0) {
     sysconfig->tries = (size_t)res.retry;
   }
+#  endif
   if (res.options & RES_ROTATE) {
     sysconfig->rotate = ARES_TRUE;
   }
 
   if (res.retrans > 0) {
+/* Apple does not allow configuration of retrans, so this is a dummy value
+ * that is extremely high (5s) */
+#  ifndef __APPLE__
     if (res.retrans > 0) {
       sysconfig->timeout_ms = (unsigned int)res.retrans * 1000;
-    }
-#  ifdef __APPLE__
-    if (res.retry >= 0) {
-      sysconfig->timeout_ms /=
-        ((unsigned int)res.retry + 1) *
-        (unsigned int)(res.nscount > 0 ? res.nscount : 1);
     }
 #  endif
   }
