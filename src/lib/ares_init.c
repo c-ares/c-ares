@@ -256,6 +256,12 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     }
   }
 
+  /* Set default fields for server failover behavior. */
+  if (!(channel->optmask & ARES_OPT_SERVER_FAILOVER)) {
+    channel->server_retry_chance = DEFAULT_SERVER_RETRY_CHANCE;
+    channel->server_retry_delay  = DEFAULT_SERVER_RETRY_DELAY;
+  }
+
 error:
   if (hostname) {
     ares_free(hostname);
@@ -450,12 +456,14 @@ int ares_dup(ares_channel_t **dest, ares_channel_t *src)
 
   /* Now clone the options that ares_save_options() doesn't support, but are
    * user-provided */
-  (*dest)->sock_create_cb      = src->sock_create_cb;
-  (*dest)->sock_create_cb_data = src->sock_create_cb_data;
-  (*dest)->sock_config_cb      = src->sock_config_cb;
-  (*dest)->sock_config_cb_data = src->sock_config_cb_data;
-  (*dest)->sock_funcs          = src->sock_funcs;
-  (*dest)->sock_func_cb_data   = src->sock_func_cb_data;
+  (*dest)->sock_create_cb       = src->sock_create_cb;
+  (*dest)->sock_create_cb_data  = src->sock_create_cb_data;
+  (*dest)->sock_config_cb       = src->sock_config_cb;
+  (*dest)->sock_config_cb_data  = src->sock_config_cb_data;
+  (*dest)->sock_funcs           = src->sock_funcs;
+  (*dest)->sock_func_cb_data    = src->sock_func_cb_data;
+  (*dest)->server_state_cb      = src->server_state_cb;
+  (*dest)->server_state_cb_data = src->server_state_cb_data;
 
   ares_strcpy((*dest)->local_dev_name, src->local_dev_name,
               sizeof((*dest)->local_dev_name));

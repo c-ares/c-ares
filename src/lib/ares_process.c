@@ -88,7 +88,7 @@ static void invoke_server_state_cb(const struct server_state *server,
     return;
   }
 
-  status = ares_write_server(server, buf);
+  status = ares_get_server_addr(server, buf);
   if (status != ARES_SUCCESS) {
     ares__buf_destroy(buf);
     return;
@@ -857,7 +857,7 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
 /* Pick a server from the list with failover behavior.
  *
  * We default to using the first server in the sorted list of servers. That is
- * the server with the lowest number of consecutive failures, and then the
+ * the server with the lowest number of consecutive failures and then the
  * highest priority server (by idx) if there is a draw.
  *
  * However, this by itself has two issues:
@@ -872,57 +872,63 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
  * For issue (1), with some probability we select a failed server to retry
  * instead.
  *
- * For issue (2), if all servers in the list have a serious failure, then we
- * fall back to selecting a random server.
+ * For issue (2), if all servers in the list have a failure, then we fall back
+ * to selecting a random server.
  */
 static struct server_state *ares__failover_server(ares_channel_t *channel)
 {
-  struct server_state *server;
+  struct server_state *first_server;
+  struct server_state *last_server;
+  struct timeval       now;
+  unsigned char        c;
 
-  /* Select the best choice of server, based on consecutive failures and
-   * server idx.
-   */
-  server = ares__slist_first_val(channel->servers);
+  first_server = ares__slist_first_val(channel->servers);
+  last_server  = ares__slist_last_val(channel->servers);
 
   /* Defensive code against no servers being available on the channel. */
-  if (server == NULL) {
+  if (first_server == NULL) {
     return NULL;
   }
 
-  if (channel->server_serious_fail_limit > 0 &&
-      server->consec_failures >= channel->server_serious_fail_limit) {
-    /* All servers have a serious failure so fall back to a random server. */
+  /* If no servers have failures, then prefer the first server in the list. */
+  if (last_server != NULL && last_server->consec_failures == 0) {
+    return first_server;
+  }
+
+  /* If all servers have failures then there is not much reason to prefer one
+   * over another, so select randomly.
+   */
+  if (first_server->consec_failures >= SERVER_ALL_FAILED_THRESHOLD) {
     return ares__random_server(channel);
   }
 
-  if (channel->server_retry_chance > 0) {
-    /* Generate a random byte to decide whether to retry a failed server. */
-    unsigned char c;
-    ares__rand_bytes(channel->rand_state, &c, 1);
-    if (c % channel->server_retry_chance == 0) {
-      /* Select a failed server to retry. */
-      ares__slist_node_t  *node;
-      for (node = ares__slist_node_first(channel->servers); node != NULL;
-           node = ares__slist_node_next(node)) {
-        struct server_state *node_val = ares__slist_node_val(node);
-        if (node_val != NULL && node_val->consec_failures > 0) {
-          /* Check that the next retry time for failed servers has passed. If
-           * not then break out and return the best server.
-           */
-          struct timeval now = ares__tvnow();
-          if (ares__timedout(&now, &channel->server_next_retry_time)) {
-            timeadd(&now, channel->server_retry_delay);
-            channel->server_next_retry_time = now;
-            return node_val;
-          }
-          break;
-        }
+  /* If we are not configured with a server retry chance or the server retry
+   * delay has not yet passed then return the first server in the list.
+   */
+  now = ares__tvnow();
+  if (channel->server_retry_chance == 0 ||
+      !ares__timedout(&now, &channel->server_next_retry_time)) {
+    return first_server;
+  }
+
+  /* Generate a random byte to decide whether to retry a failed server. */
+  ares__rand_bytes(channel->rand_state, &c, 1);
+  if (c % channel->server_retry_chance == 0) {
+    /* Select a failed server to retry. */
+    ares__slist_node_t *node;
+    for (node = ares__slist_node_first(channel->servers); node != NULL;
+         node = ares__slist_node_next(node)) {
+      struct server_state *node_val = ares__slist_node_val(node);
+      if (node_val != NULL && node_val->consec_failures > 0) {
+        timeadd(&now, channel->server_retry_delay);
+        channel->server_next_retry_time = now;
+        return node_val;
       }
     }
   }
 
-  /* If we have not returned yet, then return the best server. */
-  return server;
+  /* If we have not returned yet, then return the first server. */
+  return first_server;
 }
 
 static ares_status_t ares__append_tcpbuf(struct server_state *server,
@@ -1001,12 +1007,9 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
   if (channel->rotate) {
     /* Pull random server */
     server = ares__random_server(channel);
-  } else if (channel->optmask & ARES_OPT_SERVER_FAILOVER) {
+  } else {
     /* Pull server with failover behavior */
     server = ares__failover_server(channel);
-  } else {
-    /* Pull first */
-    server = ares__slist_first_val(channel->servers);
   }
 
   if (server == NULL) {

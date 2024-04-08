@@ -327,30 +327,16 @@ typedef void (*ares_sock_state_cb)(void *data, ares_socket_t socket_fd,
 
 struct apattern;
 
-/* Structure containing options controlling the behavior when servers on a
- * channel hit failures.
+/* Options controlling server failover behavior.
+ * The retry chance is the probability (1/N) by which we will retry a failed
+ * server instead of the best server when selecting a server to send queries
+ * to.
+ * The retry delay is the minimum time in milliseconds to wait between doing
+ * such retries.
  */
 struct ares_server_failover_options {
-  /* Probability (1/N) by which we will retry a failed server instead of the
-   * best server when selecting a server to send queries to.
-   * Set to 0 to disable this behavior.
-   */
   unsigned char retry_chance;
-
-  /* The minimum time in milliseconds to wait before retrying a failed server
-   * instead of the best server when selecting a server to send queries to.
-   * These retries use the probability above.
-   */
   int           retry_delay;
-
-  /* The number of consecutive failures on a server at which point it is
-   * considered a serious failure (i.e. not just a transient network issue).
-   * When all servers have a serious failure, we will select a server randomly
-   * when sending queries.
-   * Moreover, connections to servers with a serious failure will be closed.
-   * Set to 0 to disable this behavior.
-   */
-  int           serious_fail_limit;
 };
 
 /* NOTE about the ares_options struct to users and developers.

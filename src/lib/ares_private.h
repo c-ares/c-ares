@@ -146,6 +146,16 @@ typedef struct ares_rand_state ares_rand_state;
 
 /********* EDNS defines section ******/
 
+/* Default values for server failover behavior. We retry failed servers with
+ * a 10% probability and a minimum delay of 5 seconds between retries.
+ */
+#define DEFAULT_SERVER_RETRY_CHANCE 10
+#define DEFAULT_SERVER_RETRY_DELAY  5000
+
+/* Threshold such that if all servers have hit this many consecutive failures
+ * then servers are selected randomly when sending queries.
+ */
+#define SERVER_ALL_FAILED_THRESHOLD 3
 
 struct query;
 
@@ -320,27 +330,17 @@ struct ares_channeldata {
   ares_server_state_callback server_state_cb;
   void                      *server_state_cb_data;
 
-  /* Probability (1/N) by which we will retry a failed server instead of the
-   * best server when selecting a server to send queries to.
-   * Set to 0 to disable this behavior.
+  /* Fields controlling server failover behavior.
+   * The retry chance is the probability (1/N) by which we will retry a failed
+   * server instead of the best server when selecting a server to send queries
+   * to.
+   * The retry delay is the minimum time in milliseconds to wait between doing
+   * such retries. The next retry time tracks the timestamp when this wait
+   * expires.
    */
-  unsigned char server_retry_chance;
-
-  /* The minimum time in milliseconds to wait before retrying a failed server
-   * instead of the best server when selecting a server to send queries to.
-   * These retries use the probability above.
-   */
+  unsigned char  server_retry_chance;
   size_t         server_retry_delay;
   struct timeval server_next_retry_time;
-
-  /* The number of consecutive failures on a server at which point it is
-   * considered a serious failure (i.e. not just a transient network issue).
-   * When all servers have a serious failure, we will select a server randomly
-   * when sending queries.
-   * Moreover, connections to servers with a serious failure will be closed.
-   * Set to 0 to disable this behavior.
-   */
-  size_t server_serious_fail_limit;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
@@ -523,8 +523,8 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
 ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
                                                   size_t          nservers,
                                                   ares__llist_t **llist);
-ares_status_t ares_write_server(const struct server_state *server,
-                                ares__buf_t *buf);
+ares_status_t ares_get_server_addr(const struct server_state *server,
+                                   ares__buf_t *buf);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;

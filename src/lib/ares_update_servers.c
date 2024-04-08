@@ -909,8 +909,8 @@ fail:
 }
 
 /* Write out the details of a server to a buffer. */
-ares_status_t ares_write_server(const struct server_state *server,
-                                ares__buf_t *buf)
+ares_status_t ares_get_server_addr(const struct server_state *server,
+                                   ares__buf_t *buf)
 {
   ares_status_t status;
   char          addr[INET6_ADDRSTRLEN];
@@ -1191,7 +1191,7 @@ char *ares_get_servers_csv(ares_channel_t *channel)
       }
     }
 
-    status = ares_write_server(server, buf);
+    status = ares_get_server_addr(server, buf);
     if (status != ARES_SUCCESS) {
       goto done;
     }
