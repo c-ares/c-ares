@@ -871,7 +871,7 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
 {
   struct server_state *first_server = ares__slist_first_val(channel->servers);
   struct server_state *last_server  = ares__slist_last_val(channel->servers);
-  unsigned char        c;
+  unsigned short       r;
 
   /* Defensive code against no servers being available on the channel. */
   if (first_server == NULL) {
@@ -890,9 +890,13 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
     return first_server;
   }
 
-  /* Generate a random byte to decide whether to retry a failed server. */
-  ares__rand_bytes(channel->rand_state, &c, 1);
-  if (c % channel->server_retry_chance == 0) {
+  /* Generate a random value to decide whether to retry a failed server. The
+   * probability to use is 1/channel->server_retry_chance, rounded up to a
+   * precision of 1/2^B where B is the number of bits in the random value.
+   * We use an unsigned short for the random value for increased precision.
+   */
+  ares__rand_bytes(channel->rand_state, (unsigned char *)&r, sizeof(r));
+  if (r % channel->server_retry_chance == 0) {
     /* Select a suitable failed server to retry. */
     struct timeval      now = ares__tvnow();
     ares__slist_node_t *node;

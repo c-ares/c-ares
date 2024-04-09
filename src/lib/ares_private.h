@@ -335,8 +335,8 @@ struct ares_channeldata {
    * The retry delay is the minimum time in milliseconds to wait between doing
    * such retries (applied per-server).
    */
-  unsigned char server_retry_chance;
-  size_t        server_retry_delay;
+  unsigned short server_retry_chance;
+  size_t         server_retry_delay;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
