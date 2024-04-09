@@ -152,11 +152,6 @@ typedef struct ares_rand_state ares_rand_state;
 #define DEFAULT_SERVER_RETRY_CHANCE 10
 #define DEFAULT_SERVER_RETRY_DELAY  5000
 
-/* Threshold such that if all servers have hit this many consecutive failures
- * then servers are selected randomly when sending queries.
- */
-#define SERVER_ALL_FAILED_THRESHOLD 3
-
 struct query;
 
 struct server_state;
@@ -185,6 +180,9 @@ struct server_state {
                                               */
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
+
+  /* The next time when we will retry this server if it has hit failures */
+  struct timeval            next_retry_time;
 
   /* TCP buffer since multiple responses can come back in one read, or partial
    * in a read */
@@ -335,12 +333,10 @@ struct ares_channeldata {
    * server instead of the best server when selecting a server to send queries
    * to.
    * The retry delay is the minimum time in milliseconds to wait between doing
-   * such retries. The next retry time tracks the timestamp when this wait
-   * expires.
+   * such retries (applied per-server).
    */
-  unsigned char  server_retry_chance;
-  size_t         server_retry_delay;
-  struct timeval server_next_retry_time;
+  unsigned char server_retry_chance;
+  size_t        server_retry_delay;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */

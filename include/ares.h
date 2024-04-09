@@ -332,7 +332,7 @@ struct apattern;
  * server instead of the best server when selecting a server to send queries
  * to.
  * The retry delay is the minimum time in milliseconds to wait between doing
- * such retries.
+ * such retries (applied per-server).
  */
 struct ares_server_failover_options {
   unsigned char retry_chance;
