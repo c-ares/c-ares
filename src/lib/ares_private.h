@@ -324,7 +324,7 @@ struct ares_channeldata {
   /* Query Cache */
   ares__qcache_t                     *qcache;
 
-  /* Callback triggered when a server has a successful or failed response. */
+  /* Callback triggered when a server has a successful or failed response */
   ares_server_state_callback server_state_cb;
   void                      *server_state_cb_data;
 

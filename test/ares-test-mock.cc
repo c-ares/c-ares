@@ -1613,7 +1613,7 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   CheckExample();
 
   // 4. If there are multiple failed servers, then servers which have not yet
-  //    met the retry delay will be skipped.
+  //    met the retry delay should be skipped.
   //
   // The sorted servers currently look like [0] (f0) [1] (f0) [2] (f2) and
   // server #2 has just been retried.
@@ -1628,7 +1628,7 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   // The sorted servers now look like [1] (f0) [0] (f1) [2] (f2). Server #0
   // has just failed whilst server #2 is halfway through the retry delay.
   // Sleep for another half the retry delay and check that server #2 is retried
-  // whilst server #1 is not.
+  // whilst server #0 is not.
   usleep(50000);
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
@@ -1690,7 +1690,6 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEDNSChannelTest, ::testing::Values
 INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(TransportModes, ServerFailoverOptsMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
-
 
 }  // namespace test
 }  // namespace ares
