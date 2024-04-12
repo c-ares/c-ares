@@ -1582,7 +1582,7 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
 
   // Sleep for the retry delay and send in another query. Server #0 should be
   // retried.
-  usleep(100000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &okrsp));
   CheckExample();
@@ -1605,7 +1605,7 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   // At this point the sorted servers look like [1] (f0) [2] (f1) [0] (f2).
   // Sleep for the retry delay and send in another query. Server #2 should be
   // retried first, and then server #0.
-  usleep(100000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
@@ -1618,7 +1618,7 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   // The sorted servers currently look like [0] (f0) [1] (f0) [2] (f2) and
   // server #2 has just been retried.
   // Sleep for half the retry delay and trigger a failure on server #0.
-  usleep(50000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
   EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
@@ -1629,7 +1629,7 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   // has just failed whilst server #2 is halfway through the retry delay.
   // Sleep for another half the retry delay and check that server #2 is retried
   // whilst server #0 is not.
-  usleep(50000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
   EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
