@@ -324,10 +324,6 @@ struct ares_channeldata {
   /* Query Cache */
   ares__qcache_t                     *qcache;
 
-  /* Callback triggered when a server has a successful or failed response */
-  ares_server_state_callback server_state_cb;
-  void                      *server_state_cb_data;
-
   /* Fields controlling server failover behavior.
    * The retry chance is the probability (1/N) by which we will retry a failed
    * server instead of the best server when selecting a server to send queries
@@ -519,8 +515,6 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
 ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
                                                   size_t          nservers,
                                                   ares__llist_t **llist);
-ares_status_t ares_get_server_addr(const struct server_state *server,
-                                   ares__buf_t *buf);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
