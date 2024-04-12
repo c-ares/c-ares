@@ -587,6 +587,8 @@ static ares_status_t ares__server_create(ares_channel_t       *channel,
   server->udp_port    = ares__sconfig_get_port(channel, sconfig, ARES_FALSE);
   server->tcp_port    = ares__sconfig_get_port(channel, sconfig, ARES_TRUE);
   server->addr.family = sconfig->addr.family;
+  server->next_retry_time.tv_sec = 0;
+  server->next_retry_time.tv_usec = 0;
 
   if (sconfig->addr.family == AF_INET) {
     memcpy(&server->addr.addr.addr4, &sconfig->addr.addr.addr4,

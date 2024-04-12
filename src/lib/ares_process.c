@@ -50,6 +50,7 @@
 #include "ares_nameser.h"
 #include "ares_dns.h"
 
+static void        timeadd(struct timeval *now, size_t millisecs);
 static ares_bool_t try_again(int errnum);
 static void        write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
                                   ares_socket_t write_fd);
@@ -109,6 +110,7 @@ static void server_increment_failures(struct server_state *server)
 {
   ares__slist_node_t   *node;
   const ares_channel_t *channel = server->channel;
+  struct timeval        next_retry_time;
 
   node = ares__slist_node_find(channel->servers, server);
   if (node == NULL) {
@@ -117,6 +119,10 @@ static void server_increment_failures(struct server_state *server)
 
   server->consec_failures++;
   ares__slist_node_reinsert(node);
+
+  next_retry_time = ares__tvnow();
+  timeadd(&next_retry_time, channel->server_retry_delay);
+  server->next_retry_time = next_retry_time;
 
   invoke_server_state_cb(server, ARES_FALSE);
 }
@@ -135,6 +141,9 @@ static void server_set_good(struct server_state *server)
     server->consec_failures = 0;
     ares__slist_node_reinsert(node);
   }
+
+  server->next_retry_time.tv_sec = 0;
+  server->next_retry_time.tv_usec = 0;
 
   invoke_server_state_cb(server, ARES_TRUE);
 }
@@ -905,8 +914,6 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
       struct server_state *node_val = ares__slist_node_val(node);
       if (node_val != NULL && node_val->consec_failures > 0 &&
           ares__timedout(&now, &node_val->next_retry_time)) {
-        timeadd(&now, channel->server_retry_delay);
-        node_val->next_retry_time = now;
         return node_val;
       }
     }

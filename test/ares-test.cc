@@ -745,6 +745,14 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
     opts.tries = 3;
     optmask |= ARES_OPT_TRIES;
   }
+  // If not already overridden, set server failover options. For reliable
+  // testing we set the retry chance to 100%, and the retry delay to a high
+  // value (1 hour) so that retries are never performed on a test.
+  if (!(optmask & ARES_OPT_SERVER_FAILOVER)) {
+    opts.server_failover_opts.retry_chance = 1;
+    opts.server_failover_opts.retry_delay = 60 * 60 * 1000;
+    optmask |= ARES_OPT_SERVER_FAILOVER;
+  }
   // If not already overridden, set search domains.
   const char *domains[3] = {"first.com", "second.org", "third.gov"};
   if (!(optmask & ARES_OPT_DOMAINS)) {

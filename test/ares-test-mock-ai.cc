@@ -702,8 +702,8 @@ class MockMultiServerChannelTestAI
   : public MockChannelOptsTest,
     public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
-  MockMultiServerChannelTestAI(bool rotate)
-    : MockChannelOptsTest(3, GetParam().first, GetParam().second, nullptr, rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE) {}
+  MockMultiServerChannelTestAI(ares_options *opts, int optmask)
+    : MockChannelOptsTest(3, GetParam().first, GetParam().second, opts, optmask) {}
   void CheckExample() {
     AddrInfoResult result;
     struct ares_addrinfo_hints hints = {};
@@ -720,7 +720,22 @@ class MockMultiServerChannelTestAI
 
 class NoRotateMultiMockTestAI : public MockMultiServerChannelTestAI {
  public:
-  NoRotateMultiMockTestAI() : MockMultiServerChannelTestAI(false) {}
+  NoRotateMultiMockTestAI() : MockMultiServerChannelTestAI(nullptr, ARES_OPT_NOROTATE) {}
+};
+
+class ServerFailoverOptsMockTestAI : public MockMultiServerChannelTestAI {
+ public:
+  ServerFailoverOptsMockTestAI()
+    : MockMultiServerChannelTestAI(FillOptions(&opts_),
+                                   ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+  static struct ares_options* FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->server_failover_opts.retry_chance = 1;
+    opts->server_failover_opts.retry_delay = 100;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
 };
 
 TEST_P(NoRotateMultiMockTestAI, ThirdServer) {
@@ -774,6 +789,88 @@ TEST_P(NoRotateMultiMockTestAI, ThirdServer) {
   CheckExample();
 }
 
+// Test case to trigger server failover behavior. We use a retry chance of
+// 100% and a retry delay of 100ms so that we can test behavior reliably.
+TEST_P(ServerFailoverOptsMockTestAI, ServerFailoverOpts) {
+  DNSPacket servfailrsp;
+  servfailrsp.set_response().set_aa().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("www.example.com", T_A));
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  // 1. If all servers are healthy, then the first server should be selected.
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  CheckExample();
+
+  // 2. Failed servers should be retried after the retry delay.
+  //
+  // Fail server #0 but leave server #1 as healthy.
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  CheckExample();
+
+  // Sleep for the retry delay and send in another query. Server #0 should be
+  // retried.
+  usleep(100000);
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  CheckExample();
+
+  // 3. If there are multiple failed servers, then the servers should be
+  //    retried in sorted order.
+  //
+  // Fail all servers for the first round of tries. On the second round server
+  // #1 responds successfully.
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
+  CheckExample();
+
+  // At this point the sorted servers look like [1] (f0) [2] (f1) [0] (f2).
+  // Sleep for the retry delay and send in another query. Server #2 should be
+  // retried first, and then server #0.
+  usleep(100000);
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  CheckExample();
+
+  // 4. If there are multiple failed servers, then servers which have not yet
+  //    met the retry delay will be skipped.
+  //
+  // The sorted servers currently look like [0] (f0) [1] (f0) [2] (f2) and
+  // server #2 has just been retried.
+  // Sleep for half the retry delay and trigger a failure on server #0.
+  usleep(50000);
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  CheckExample();
+
+  // The sorted servers now look like [1] (f0) [0] (f1) [2] (f2). Server #0
+  // has just failed whilst server #2 is halfway through the retry delay.
+  // Sleep for another half the retry delay and check that server #2 is retried
+  // whilst server #1 is not.
+  usleep(50000);
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  CheckExample();
+}
+
 TEST_P(MockChannelTestAI, FamilyV4ServiceName) {
   DNSPacket rsp4;
   rsp4.set_response().set_aa()
@@ -821,6 +918,8 @@ INSTANTIATE_TEST_SUITE_P(AddressFamiliesAI, MockEDNSChannelTestAI,
 INSTANTIATE_TEST_SUITE_P(TransportModesAI, NoRotateMultiMockTestAI,
 			::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
+INSTANTIATE_TEST_SUITE_P(TransportModesAI, ServerFailoverOptsMockTestAI,
+			::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 }  // namespace test
 }  // namespace ares
