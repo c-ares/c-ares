@@ -336,7 +336,7 @@ struct apattern;
  */
 struct ares_server_failover_options {
   unsigned short retry_chance;
-  int            retry_delay;
+  size_t         retry_delay;
 };
 
 /* NOTE about the ares_options struct to users and developers.

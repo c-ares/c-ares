@@ -234,7 +234,7 @@ int ares_save_options(ares_channel_t *channel, struct ares_options *options,
     options->server_failover_opts.retry_chance =
       channel->server_retry_chance;
     options->server_failover_opts.retry_delay =
-      (int)channel->server_retry_delay;
+      channel->server_retry_delay;
   }
 
   *optmask = (int)channel->optmask;
@@ -484,15 +484,10 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
 
   /* Set fields for server failover behavior */
   if (optmask & ARES_OPT_SERVER_FAILOVER) {
-    if (options->server_failover_opts.retry_chance == 0 ||
-        options->server_failover_opts.retry_delay < 0) {
-      optmask &= ~(ARES_OPT_SERVER_FAILOVER);
-    } else {
-      channel->server_retry_chance =
-        options->server_failover_opts.retry_chance;
-      channel->server_retry_delay =
-        (size_t)options->server_failover_opts.retry_delay;
-    }
+    channel->server_retry_chance =
+      options->server_failover_opts.retry_chance;
+    channel->server_retry_delay =
+      options->server_failover_opts.retry_delay;
   }
 
   channel->optmask = (unsigned int)optmask;
