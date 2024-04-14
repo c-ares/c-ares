@@ -146,6 +146,11 @@ typedef struct ares_rand_state ares_rand_state;
 
 /********* EDNS defines section ******/
 
+/* Default values for server failover behavior. We retry failed servers with
+ * a 10% probability and a minimum delay of 5 seconds between retries.
+ */
+#define DEFAULT_SERVER_RETRY_CHANCE 10
+#define DEFAULT_SERVER_RETRY_DELAY  5000
 
 struct query;
 
@@ -175,6 +180,9 @@ struct server_state {
                                               */
   ares__llist_t            *connections;
   struct server_connection *tcp_conn;
+
+  /* The next time when we will retry this server if it has hit failures */
+  struct timeval            next_retry_time;
 
   /* TCP buffer since multiple responses can come back in one read, or partial
    * in a read */
@@ -315,6 +323,16 @@ struct ares_channeldata {
 
   /* Query Cache */
   ares__qcache_t                     *qcache;
+
+  /* Fields controlling server failover behavior.
+   * The retry chance is the probability (1/N) by which we will retry a failed
+   * server instead of the best server when selecting a server to send queries
+   * to.
+   * The retry delay is the minimum time in milliseconds to wait between doing
+   * such retries (applied per-server).
+   */
+  unsigned short server_retry_chance;
+  size_t         server_retry_delay;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */

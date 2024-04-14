@@ -256,6 +256,12 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     }
   }
 
+  /* Set default fields for server failover behavior */
+  if (!(channel->optmask & ARES_OPT_SERVER_FAILOVER)) {
+    channel->server_retry_chance = DEFAULT_SERVER_RETRY_CHANCE;
+    channel->server_retry_delay  = DEFAULT_SERVER_RETRY_DELAY;
+  }
+
 error:
   if (hostname) {
     ares_free(hostname);

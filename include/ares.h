@@ -255,6 +255,7 @@ typedef enum {
 #define ARES_OPT_MAXTIMEOUTMS    (1 << 20)
 #define ARES_OPT_QUERY_CACHE     (1 << 21)
 #define ARES_OPT_EVENT_THREAD    (1 << 22)
+#define ARES_OPT_SERVER_FAILOVER (1 << 23)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN        (1 << 0)
@@ -326,6 +327,18 @@ typedef void (*ares_sock_state_cb)(void *data, ares_socket_t socket_fd,
 
 struct apattern;
 
+/* Options controlling server failover behavior.
+ * The retry chance is the probability (1/N) by which we will retry a failed
+ * server instead of the best server when selecting a server to send queries
+ * to.
+ * The retry delay is the minimum time in milliseconds to wait between doing
+ * such retries (applied per-server).
+ */
+struct ares_server_failover_options {
+  unsigned short retry_chance;
+  size_t         retry_delay;
+};
+
 /* NOTE about the ares_options struct to users and developers.
 
    This struct will remain looking like this. It will not be extended nor
@@ -368,6 +381,7 @@ struct ares_options {
   int                maxtimeout; /* in milliseconds */
   unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
   ares_evsys_t evsys;
+  struct ares_server_failover_options server_failover_opts;
 };
 
 struct hostent;
