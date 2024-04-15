@@ -585,6 +585,10 @@ ares_status_t ares_queue_wait_empty(ares_channel_t *channel, int timeout_ms)
         status =
           ares__thread_cond_timedwait(channel->cond_empty, channel->lock, tms);
       }
+
+      /* Either there was a timeout or we were signaled that the queue was
+       * empty.  Don't loop */
+      break;
     }
   }
   ares__thread_mutex_unlock(channel->lock);
