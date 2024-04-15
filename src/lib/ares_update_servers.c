@@ -910,6 +910,62 @@ fail:
   return ARES_ENOMEM;
 }
 
+/* Write out the details of a server to a buffer */
+ares_status_t ares_get_server_addr(const struct server_state *server,
+                                   ares__buf_t               *buf)
+{
+  ares_status_t status;
+  char          addr[INET6_ADDRSTRLEN];
+
+  /* ipv4addr or [ipv6addr] */
+  if (server->addr.family == AF_INET6) {
+    status = ares__buf_append_byte(buf, '[');
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
+  ares_inet_ntop(server->addr.family, &server->addr.addr, addr, sizeof(addr));
+
+  status = ares__buf_append_str(buf, addr);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  if (server->addr.family == AF_INET6) {
+    status = ares__buf_append_byte(buf, ']');
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
+  /* :port */
+  status = ares__buf_append_byte(buf, ':');
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares__buf_append_num_dec(buf, server->udp_port, 0);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* %iface */
+  if (ares_strlen(server->ll_iface)) {
+    status = ares__buf_append_byte(buf, '%');
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    status = ares__buf_append_str(buf, server->ll_iface);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
+  return ARES_SUCCESS;
+}
+
 int ares_get_servers(ares_channel_t *channel, struct ares_addr_node **servers)
 {
   struct ares_addr_node *srvr_head = NULL;
@@ -1129,7 +1185,6 @@ char *ares_get_servers_csv(ares_channel_t *channel)
        node = ares__slist_node_next(node)) {
     ares_status_t              status;
     const struct server_state *server = ares__slist_node_val(node);
-    char                       addr[64];
 
     if (ares__buf_len(buf)) {
       status = ares__buf_append_byte(buf, ',');
@@ -1138,50 +1193,9 @@ char *ares_get_servers_csv(ares_channel_t *channel)
       }
     }
 
-    /* ipv4addr or [ipv6addr] */
-    if (server->addr.family == AF_INET6) {
-      status = ares__buf_append_byte(buf, '[');
-      if (status != ARES_SUCCESS) {
-        goto done;
-      }
-    }
-
-    ares_inet_ntop(server->addr.family, &server->addr.addr, addr, sizeof(addr));
-
-    status = ares__buf_append_str(buf, addr);
+    status = ares_get_server_addr(server, buf);
     if (status != ARES_SUCCESS) {
       goto done;
-    }
-
-    if (server->addr.family == AF_INET6) {
-      status = ares__buf_append_byte(buf, ']');
-      if (status != ARES_SUCCESS) {
-        goto done;
-      }
-    }
-
-    /* :port */
-    status = ares__buf_append_byte(buf, ':');
-    if (status != ARES_SUCCESS) {
-      goto done;
-    }
-
-    status = ares__buf_append_num_dec(buf, server->udp_port, 0);
-    if (status != ARES_SUCCESS) {
-      goto done;
-    }
-
-    /* %iface */
-    if (ares_strlen(server->ll_iface)) {
-      status = ares__buf_append_byte(buf, '%');
-      if (status != ARES_SUCCESS) {
-        goto done;
-      }
-
-      status = ares__buf_append_str(buf, server->ll_iface);
-      if (status != ARES_SUCCESS) {
-        goto done;
-      }
     }
   }
 
@@ -1192,4 +1206,15 @@ done:
   ares__channel_unlock(channel);
   ares__buf_destroy(buf);
   return out;
+}
+
+void ares_set_server_state_callback(ares_channel_t            *channel,
+                                    ares_server_state_callback cb,
+                                    void                      *data)
+{
+  if (channel == NULL) {
+    return;
+  }
+  channel->server_state_cb      = cb;
+  channel->server_state_cb_data = data;
 }

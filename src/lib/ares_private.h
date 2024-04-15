@@ -333,6 +333,10 @@ struct ares_channeldata {
    */
   unsigned short server_retry_chance;
   size_t         server_retry_delay;
+
+  /* Callback triggered when a server has a successful or failed response */
+  ares_server_state_callback server_state_cb;
+  void                      *server_state_cb_data;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
@@ -515,6 +519,8 @@ ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
 ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
                                                   size_t          nservers,
                                                   ares__llist_t **llist);
+ares_status_t ares_get_server_addr(const struct server_state *server,
+                                   ares__buf_t               *buf);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;

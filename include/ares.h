@@ -444,6 +444,9 @@ typedef int (*ares_sock_config_callback)(ares_socket_t socket_fd, int type,
 typedef void (*ares_addrinfo_callback)(void *arg, int status, int timeouts,
                                        struct ares_addrinfo *res);
 
+typedef void (*ares_server_state_callback)(const char *server_string,
+                                           ares_bool_t success, void *data);
+
 CARES_EXTERN int ares_library_init(int flags);
 
 CARES_EXTERN int ares_library_init_mem(int flags, void *(*amalloc)(size_t size),
@@ -504,6 +507,9 @@ CARES_EXTERN void          ares_set_socket_callback(ares_channel_t           *ch
 
 CARES_EXTERN void          ares_set_socket_configure_callback(
            ares_channel_t *channel, ares_sock_config_callback callback, void *user_data);
+
+CARES_EXTERN void          ares_set_server_state_callback(
+           ares_channel_t *channel, ares_server_state_callback callback, void *user_data);
 
 CARES_EXTERN int  ares_set_sortlist(ares_channel_t *channel,
                                     const char     *sortstr);

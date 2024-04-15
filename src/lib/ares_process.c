@@ -71,6 +71,41 @@ static ares_bool_t   same_address(const struct sockaddr  *sa,
 static void          end_query(ares_channel_t *channel, struct query *query,
                                ares_status_t status, const ares_dns_record_t *dnsrec);
 
+/* Invoke the server state callback after a success or failure */
+static void invoke_server_state_cb(const struct server_state *server,
+                                   ares_bool_t                success)
+{
+  const ares_channel_t *channel = server->channel;
+  ares__buf_t          *buf;
+  ares_status_t         status;
+  char                 *server_string;
+
+  if (channel->server_state_cb == NULL) {
+    return;
+  }
+
+  buf = ares__buf_create();
+  if (buf == NULL) {
+    return;
+  }
+
+  status = ares_get_server_addr(server, buf);
+  if (status != ARES_SUCCESS) {
+    ares__buf_destroy(buf);
+    return;
+  }
+
+  server_string = ares__buf_finish_str(buf, NULL);
+  buf = NULL;
+  if (server_string == NULL) {
+    return;
+  }
+
+  channel->server_state_cb(server_string, success,
+                           channel->server_state_cb_data);
+  ares_free(server_string);
+}
+
 static void server_increment_failures(struct server_state *server)
 {
   ares__slist_node_t   *node;
@@ -88,6 +123,8 @@ static void server_increment_failures(struct server_state *server)
   next_retry_time = ares__tvnow();
   timeadd(&next_retry_time, channel->server_retry_delay);
   server->next_retry_time = next_retry_time;
+
+  invoke_server_state_cb(server, ARES_FALSE);
 }
 
 static void server_set_good(struct server_state *server)
@@ -107,6 +144,8 @@ static void server_set_good(struct server_state *server)
 
   server->next_retry_time.tv_sec = 0;
   server->next_retry_time.tv_usec = 0;
+
+  invoke_server_state_cb(server, ARES_TRUE);
 }
 
 /* return true if now is exactly check time or later */
