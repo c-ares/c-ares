@@ -227,6 +227,123 @@ TEST_P(MockChannelTest, SockConfigureFailCallback) {
   EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
 }
 
+// Define a server state callback for testing. The custom userdata should be
+// the expected server string that the callback is invoked with.
+static int server_state_cb_success_count = 0;
+static int server_state_cb_failure_count = 0;
+static void ServerStateCallback(const char *server_string,
+                                ares_bool_t success, int flags, void *data) {
+  // Increment overall success/failure counts appropriately.
+  if (verbose) std::cerr << "ServerStateCallback("
+                         << server_string << ", "
+                         << success       << ", "
+                         << flags         << ") invoked" << std::endl;
+  if (success == ARES_TRUE) server_state_cb_success_count++;
+  else server_state_cb_failure_count++;
+
+  // Check that the server string is as expected.
+  char *exp_server_string = *(char **)(data);
+  EXPECT_STREQ(exp_server_string, server_string);
+
+  // The callback should be invoked with either the UDP flag or the TCP flag,
+  // but not both.
+  ares_bool_t udp = (flags & ARES_SERV_STATE_UDP) ? ARES_TRUE: ARES_FALSE;
+  ares_bool_t tcp = (flags & ARES_SERV_STATE_TCP) ? ARES_TRUE: ARES_FALSE;
+  EXPECT_NE(udp, tcp);
+}
+
+TEST_P(MockChannelTest, ServStateCallbackSuccess) {
+  // Set up the server response. The server returns successfully with an answer
+  // to the query.
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  // Set up the server state callback. The channel used for this test has a
+  // single server configured.
+  char *exp_server_string = ares_get_servers_csv(channel_);
+  ares_set_server_state_callback(channel_, ServerStateCallback,
+                                 &exp_server_string);
+
+  // Perform the hostname lookup. Expect 1 successful query to the server.
+  HostResult result;
+  server_state_cb_success_count = 0;
+  server_state_cb_failure_count = 0;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback,
+                     &result);
+  Process();
+  EXPECT_EQ(1, server_state_cb_success_count);
+  EXPECT_EQ(0, server_state_cb_failure_count);
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
+TEST_P(MockChannelTest, ServStateCallbackFailure) {
+  // Set up the server response. The server always returns SERVFAIL.
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A));
+  rsp.set_rcode(SERVFAIL);
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  // Set up the server state callback. The channel used for this test has a
+  // single server configured.
+  char *exp_server_string = ares_get_servers_csv(channel_);
+  ares_set_server_state_callback(channel_, ServerStateCallback,
+                                 &exp_server_string);
+
+  // Perform the hostname lookup. Expect 3 failed queries to the server (due to
+  // retries).
+  HostResult result;
+  server_state_cb_success_count = 0;
+  server_state_cb_failure_count = 0;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback,
+                     &result);
+  Process();
+  EXPECT_EQ(0, server_state_cb_success_count);
+  EXPECT_EQ(3, server_state_cb_failure_count);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ESERVFAIL, result.status_);
+}
+
+TEST_P(MockChannelTest, ServStateCallbackRecover) {
+  // Set up the server response. The server initially times out, but then
+  // returns successfully (with NXDOMAIN) on the first retry.
+  std::vector<byte> nothing;
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A));
+  rsp.set_rcode(NXDOMAIN);
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReplyData(&server_, nothing))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  // Set up the server state callback. The channel used for this test has a
+  // single server configured.
+  char *exp_server_string = ares_get_servers_csv(channel_);
+  ares_set_server_state_callback(channel_, ServerStateCallback,
+                                 &exp_server_string);
+
+  // Perform the hostname lookup. Expect 1 failed query and 1 successful query
+  // to the server.
+  HostResult result;
+  server_state_cb_success_count = 0;
+  server_state_cb_failure_count = 0;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback,
+                     &result);
+  Process();
+  EXPECT_EQ(1, server_state_cb_success_count);
+  EXPECT_EQ(1, server_state_cb_failure_count);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTFOUND, result.status_);
+}
+
 TEST_P(MockChannelTest, ReInit) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
