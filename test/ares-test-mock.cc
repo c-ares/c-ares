@@ -281,6 +281,8 @@ TEST_P(MockChannelTest, ServStateCallbackSuccess) {
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+
+  ares_free_string(exp_server_string);
 }
 
 TEST_P(MockChannelTest, ServStateCallbackFailure) {
@@ -310,6 +312,8 @@ TEST_P(MockChannelTest, ServStateCallbackFailure) {
   EXPECT_EQ(3, server_state_cb_failure_count);
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ESERVFAIL, result.status_);
+
+  ares_free_string(exp_server_string);
 }
 
 TEST_P(MockChannelTest, ServStateCallbackRecover) {
@@ -342,6 +346,8 @@ TEST_P(MockChannelTest, ServStateCallbackRecover) {
   EXPECT_EQ(1, server_state_cb_failure_count);
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ENOTFOUND, result.status_);
+
+  ares_free_string(exp_server_string);
 }
 
 TEST_P(MockChannelTest, ReInit) {
