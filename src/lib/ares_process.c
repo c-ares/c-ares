@@ -73,7 +73,8 @@ static void          end_query(ares_channel_t *channel, struct query *query,
 
 /* Invoke the server state callback after a success or failure */
 static void invoke_server_state_cb(const struct server_state *server,
-                                   ares_bool_t                success)
+                                   ares_bool_t                success,
+                                   int                        flags)
 {
   const ares_channel_t *channel = server->channel;
   ares__buf_t          *buf;
@@ -101,12 +102,13 @@ static void invoke_server_state_cb(const struct server_state *server,
     return;
   }
 
-  channel->server_state_cb(server_string, success,
+  channel->server_state_cb(server_string, success, flags,
                            channel->server_state_cb_data);
   ares_free(server_string);
 }
 
-static void server_increment_failures(struct server_state *server)
+static void server_increment_failures(struct server_state *server,
+                                      ares_bool_t used_tcp)
 {
   ares__slist_node_t   *node;
   const ares_channel_t *channel = server->channel;
@@ -124,10 +126,12 @@ static void server_increment_failures(struct server_state *server)
   timeadd(&next_retry_time, channel->server_retry_delay);
   server->next_retry_time = next_retry_time;
 
-  invoke_server_state_cb(server, ARES_FALSE);
+  invoke_server_state_cb(server, ARES_FALSE, used_tcp == ARES_TRUE
+                                             ? ARES_SERV_STATE_TCP
+                                             : ARES_SERV_STATE_UDP);
 }
 
-static void server_set_good(struct server_state *server)
+static void server_set_good(struct server_state *server, ares_bool_t used_tcp)
 {
   ares__slist_node_t   *node;
   const ares_channel_t *channel = server->channel;
@@ -145,7 +149,9 @@ static void server_set_good(struct server_state *server)
   server->next_retry_time.tv_sec = 0;
   server->next_retry_time.tv_usec = 0;
 
-  invoke_server_state_cb(server, ARES_TRUE);
+  invoke_server_state_cb(server, ARES_TRUE, used_tcp == ARES_TRUE
+                                            ? ARES_SERV_STATE_TCP
+                                            : ARES_SERV_STATE_UDP);
 }
 
 /* return true if now is exactly check time or later */
@@ -608,7 +614,7 @@ static void process_timeouts(ares_channel_t *channel, struct timeval *now)
     query->timeouts++;
 
     conn = query->conn;
-    server_increment_failures(conn->server);
+    server_increment_failures(conn->server, query->using_tcp);
     ares__requeue_query(query, now);
     ares__check_cleanup_conn(channel, conn);
 
@@ -763,7 +769,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
           break;
       }
 
-      server_increment_failures(server);
+      server_increment_failures(server, query->using_tcp);
       ares__requeue_query(query, now);
 
       /* Should any of these cause a connection termination?
@@ -779,7 +785,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     is_cached = ARES_TRUE;
   }
 
-  server_set_good(server);
+  server_set_good(server, query->using_tcp);
   end_query(channel, query, ARES_SUCCESS, rdnsrec);
 
   status = ARES_SUCCESS;
@@ -802,7 +808,7 @@ static void handle_conn_error(struct server_connection *conn,
   /* Increment failures first before requeue so it is unlikely to requeue
    * to the same server */
   if (critical_failure) {
-    server_increment_failures(server);
+    server_increment_failures(server, conn->is_tcp);
   }
 
   /* This will requeue any connections automatically */
@@ -1026,7 +1032,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
          * error codes */
         case ARES_ECONNREFUSED:
         case ARES_EBADFAMILY:
-          server_increment_failures(server);
+          server_increment_failures(server, query->using_tcp);
           query->error_status = status;
           return ares__requeue_query(query, now);
 
@@ -1085,7 +1091,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
          * error codes */
         case ARES_ECONNREFUSED:
         case ARES_EBADFAMILY:
-          server_increment_failures(server);
+          server_increment_failures(server, query->using_tcp);
           query->error_status = status;
           return ares__requeue_query(query, now);
 
@@ -1100,7 +1106,7 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
     conn = ares__llist_node_val(node);
     if (ares__socket_write(channel, conn->fd, query->qbuf, query->qlen) == -1) {
       /* FIXME: Handle EAGAIN here since it likely can happen. */
-      server_increment_failures(server);
+      server_increment_failures(server, query->using_tcp);
       status = ares__requeue_query(query, now);
 
       /* Only safe to kill connection if it was new, otherwise it should be
