@@ -309,7 +309,7 @@ static void ares_event_thread_destroy_int(ares_event_thread_t *e)
   ares__htable_asvp_destroy(e->ev_handles);
   e->ev_handles = NULL;
 
-  if (e->ev_sys->destroy) {
+  if (e->ev_sys && e->ev_sys->destroy) {
     e->ev_sys->destroy(e);
   }
 
