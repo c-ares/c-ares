@@ -306,6 +306,9 @@ typedef enum {
 #define ARES_LIB_INIT_WIN32 (1 << 0)
 #define ARES_LIB_INIT_ALL   (ARES_LIB_INIT_WIN32)
 
+/* Server state callback flag values */
+#define ARES_SERV_STATE_UDP (1 << 0) /* Query used UDP */
+#define ARES_SERV_STATE_TCP (1 << 1) /* Query used TCP */
 
 /*
  * Typedef our socket type
@@ -444,6 +447,10 @@ typedef int (*ares_sock_config_callback)(ares_socket_t socket_fd, int type,
 typedef void (*ares_addrinfo_callback)(void *arg, int status, int timeouts,
                                        struct ares_addrinfo *res);
 
+typedef void (*ares_server_state_callback)(const char *server_string,
+                                           ares_bool_t success, int flags,
+                                           void *data);
+
 CARES_EXTERN int ares_library_init(int flags);
 
 CARES_EXTERN int ares_library_init_mem(int flags, void *(*amalloc)(size_t size),
@@ -504,6 +511,9 @@ CARES_EXTERN void          ares_set_socket_callback(ares_channel_t           *ch
 
 CARES_EXTERN void          ares_set_socket_configure_callback(
            ares_channel_t *channel, ares_sock_config_callback callback, void *user_data);
+
+CARES_EXTERN void          ares_set_server_state_callback(
+           ares_channel_t *channel, ares_server_state_callback callback, void *user_data);
 
 CARES_EXTERN int  ares_set_sortlist(ares_channel_t *channel,
                                     const char     *sortstr);
