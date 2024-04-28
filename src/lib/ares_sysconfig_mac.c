@@ -139,18 +139,18 @@ static void print_resolvers(const char *name, dns_resolver_t **resolvers, int nr
 }
 
 
-int ares_sysconfig_read(void)
+ares_status_t ares__init_sysconfig_macos(ares_sysconfig_t *sysconfig)
 {
   dnsinfo_t      *dnsinfo = dnsinfo_init();
   dns_config_t   *sc_dns  = NULL;
 
   if (dnsinfo == NULL) {
-    return 1;
+    return ARES_ESERVFAIL;
   }
 
   sc_dns = dnsinfo->dns_configuration_copy();
   if (sc_dns == NULL) {
-    return 1;
+    return ARES_ESERVFAIL;
   }
 
   print_resolvers("Resolver", sc_dns->resolver, sc_dns->n_resolver);
@@ -159,8 +159,8 @@ int ares_sysconfig_read(void)
 
   dnsinfo->dns_configuration_free(sc_dns);
   dnsinfo_destroy(dnsinfo);
-  return 0;
-
+  return ARES_SUCCESS;
 }
+
 
 #endif

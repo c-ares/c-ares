@@ -334,15 +334,6 @@ case $host_os in
 esac
 AC_MSG_RESULT($need_xnet)
 
-dnl resolv lib for Apple (MacOS and iOS)
-AS_IF([test "x$host_vendor" = "xapple"], [
-  AC_SEARCH_LIBS([res_servicename], [resolv], [
-    AC_DEFINE([CARES_USE_LIBRESOLV], [1], [Use resolver library to configure cares])
-  ], [
-    AC_MSG_ERROR([Unable to find libresolv which is required for iPhone targets])
-  ])
-])
-
 dnl resolv lib for z/OS
 AS_IF([test "x$host_vendor" = "xibm" -a "x$host_os" = "xopenedition" ], [
   AC_SEARCH_LIBS([res_init], [resolv], [

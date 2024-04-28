@@ -1084,6 +1084,8 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
   status = ares__init_sysconfig_watt32(&sysconfig);
 #elif defined(ANDROID) || defined(__ANDROID__)
   status = ares__init_sysconfig_android(&sysconfig);
+#elif defined(__APPLE__)
+  status = ares__init_sysconfig_macos(&sysconfig);
 #elif defined(CARES_USE_LIBRESOLV)
   status = ares__init_sysconfig_libresolv(&sysconfig);
 #else
