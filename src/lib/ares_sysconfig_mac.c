@@ -33,9 +33,11 @@
  * system configuration, but it too is not capable of retrieving the entirety
  * of the DNS configuration.
  *
- * Instead, that leaves some apple "internal" symbols from `configd` that we
- * need to access in order to get the entire configuration.  We can see that
- * we're not the only ones to do this as Google Chrome also does:
+ * Attempts to use the preferred public API of `SCDynamicStoreCreate()` and
+ * friends yielded incomplete DNS information.  Instead, that leaves some apple
+ * "internal" symbols from `configd` that we need to access in order to get the
+ * entire configuration.  We can see that we're not the only ones to do this as
+ * Google Chrome also does:
  * https://chromium.googlesource.com/chromium/src/+/HEAD/net/dns/dns_config_watcher_mac.cc
  * These internal functions are what `libresolv` and `scutil` use to retrieve
  * the dns configuration.  Since these symbols are not publicly available, we
