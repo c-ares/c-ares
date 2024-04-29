@@ -436,7 +436,8 @@ done:
   return status;
 }
 
-ares_status_t ares__sysconfig_set_options(ares_sysconfig_t *sysconfig, const char *str)
+ares_status_t ares__sysconfig_set_options(ares_sysconfig_t *sysconfig,
+                                          const char       *str)
 {
   ares__buf_t        *buf     = NULL;
   ares__llist_t      *options = NULL;

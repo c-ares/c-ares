@@ -40,23 +40,22 @@
  * from `libSystem` and import the `dnsinfo.h` private header extracted from:
  * https://opensource.apple.com/source/configd/configd-1109.140.1/dnsinfo/dnsinfo.h
  */
-#include "ares_setup.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <dlfcn.h>
-#include <arpa/inet.h>
-#include "thirdparty/apple/dnsinfo.h"
-#include <SystemConfiguration/SCNetworkConfiguration.h>
-#include "ares.h"
-#include "ares_private.h"
-
+#  include "ares_setup.h"
+#  include <stdio.h>
+#  include <stdlib.h>
+#  include <string.h>
+#  include <dlfcn.h>
+#  include <arpa/inet.h>
+#  include "thirdparty/apple/dnsinfo.h"
+#  include <SystemConfiguration/SCNetworkConfiguration.h>
+#  include "ares.h"
+#  include "ares_private.h"
 
 typedef struct {
-  void         *handle;
-  const char   *(*dns_configuration_notify_key)(void);
+  void *handle;
+  const char *(*dns_configuration_notify_key)(void);
   dns_config_t *(*dns_configuration_copy)(void);
-  void          (*dns_configuration_free)(dns_config_t *config);
+  void (*dns_configuration_free)(dns_config_t *config);
 } dnsinfo_t;
 
 static void dnsinfo_destroy(dnsinfo_t *dnsinfo)
@@ -84,7 +83,7 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
 
   *dnsinfo_out = NULL;
 
-  dnsinfo      = ares_malloc_zero(sizeof(*dnsinfo));
+  dnsinfo = ares_malloc_zero(sizeof(*dnsinfo));
 
   if (dnsinfo == NULL) {
     status = ARES_ENOMEM;
@@ -97,13 +96,16 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
     goto done;
   }
 
-  dnsinfo->dns_configuration_notify_key = dlsym(dnsinfo->handle, "dns_configuration_notify_key");
-  dnsinfo->dns_configuration_copy       = dlsym(dnsinfo->handle, "dns_configuration_copy");
-  dnsinfo->dns_configuration_free       = dlsym(dnsinfo->handle, "dns_configuration_free");
+  dnsinfo->dns_configuration_notify_key =
+    dlsym(dnsinfo->handle, "dns_configuration_notify_key");
+  dnsinfo->dns_configuration_copy =
+    dlsym(dnsinfo->handle, "dns_configuration_copy");
+  dnsinfo->dns_configuration_free =
+    dlsym(dnsinfo->handle, "dns_configuration_free");
 
   if (dnsinfo->dns_configuration_notify_key == NULL ||
-      dnsinfo->dns_configuration_copy       == NULL ||
-      dnsinfo->dns_configuration_free       == NULL) {
+      dnsinfo->dns_configuration_copy == NULL ||
+      dnsinfo->dns_configuration_free == NULL) {
     status = ARES_ESERVFAIL;
     goto done;
   }
@@ -119,10 +121,11 @@ done:
   return status;
 }
 
-static ares_bool_t search_is_duplicate(const ares_sysconfig_t *sysconfig, const char *name)
+static ares_bool_t search_is_duplicate(const ares_sysconfig_t *sysconfig,
+                                       const char             *name)
 {
   size_t i;
-  for (i=0; i<sysconfig->ndomains; i++) {
+  for (i = 0; i < sysconfig->ndomains; i++) {
     if (strcasecmp(sysconfig->domains[i], name) == 0) {
       return ARES_TRUE;
     }
@@ -130,10 +133,11 @@ static ares_bool_t search_is_duplicate(const ares_sysconfig_t *sysconfig, const 
   return ARES_FALSE;
 }
 
-static ares_status_t read_resolver(const dns_resolver_t *resolver, ares_sysconfig_t *sysconfig)
+static ares_status_t read_resolver(const dns_resolver_t *resolver,
+                                   ares_sysconfig_t     *sysconfig)
 {
   int            i;
-  unsigned short port = 0;
+  unsigned short port   = 0;
   ares_status_t  status = ARES_SUCCESS;
 
   /* XXX: resolver->domain is for domain-specific servers.  When we implement
@@ -146,7 +150,9 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver, ares_sysconfi
   /* Check to see if DNS server should be used, base this on if the server is
    * reachable or can be reachable automatically if we send traffic that
    * direction. */
-  if (!(resolver->reach_flags & (kSCNetworkFlagsReachable|kSCNetworkReachabilityFlagsConnectionOnTraffic))) {
+  if (!(resolver->reach_flags &
+        (kSCNetworkFlagsReachable |
+         kSCNetworkReachabilityFlagsConnectionOnTraffic))) {
     return ARES_SUCCESS;
   }
 
@@ -162,18 +168,21 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver, ares_sysconfi
 
   /* Append search list */
   if (resolver->n_search > 0) {
-    char **new_domains = ares_realloc_zero(sysconfig->domains, sysconfig->ndomains, sysconfig->ndomains + (size_t)resolver->n_search);
+    char **new_domains =
+      ares_realloc_zero(sysconfig->domains, sysconfig->ndomains,
+                        sysconfig->ndomains + (size_t)resolver->n_search);
     if (new_domains == NULL) {
       return ARES_ENOMEM;
     }
     sysconfig->domains = new_domains;
 
-    for (i=0; i<resolver->n_search; i++) {
+    for (i = 0; i < resolver->n_search; i++) {
       /* Skip duplicates */
       if (search_is_duplicate(sysconfig, resolver->search[i])) {
         continue;
       }
-      sysconfig->domains[sysconfig->ndomains] = ares_strdup(resolver->search[i]);
+      sysconfig->domains[sysconfig->ndomains] =
+        ares_strdup(resolver->search[i]);
       if (sysconfig->domains[sysconfig->ndomains] == NULL) {
         return ARES_ENOMEM;
       }
@@ -184,7 +193,7 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver, ares_sysconfi
   /* NOTE: we're going to skip importing the sort addresses for now.  Its
    *       likely not used, its not obvious how to even configure such a thing.
    */
-#if 0
+#  if 0
   for (i=0; i<resolver->n_sortaddr; i++) {
     char val[256];
     inet_ntop(AF_INET, &resolver->sortaddr[i]->address, val, sizeof(val));
@@ -192,7 +201,7 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver, ares_sysconfi
     inet_ntop(AF_INET, &resolver->sortaddr[i]->mask, val, sizeof(val));
     printf("%s\n", val);
   }
-#endif
+#  endif
 
   if (resolver->options != NULL) {
     status = ares__sysconfig_set_options(sysconfig, resolver->options);
@@ -208,10 +217,10 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver, ares_sysconfi
    *   - resolver->if_index we don't need, if_name is used instead.
    */
 
-  /* XXX: resolver->search_order appears like it might be relevant, we might need
-   *      to sort the resulting list by this metric if we find in the future
-   *      we need to.  That said, due to the automatic re-sorting we do, I'm
-   *      not sure it matters.  Here's an article on this search order stuff:
+  /* XXX: resolver->search_order appears like it might be relevant, we might
+   * need to sort the resulting list by this metric if we find in the future we
+   * need to.  That said, due to the automatic re-sorting we do, I'm not sure it
+   * matters.  Here's an article on this search order stuff:
    *      https://www.cnet.com/tech/computing/os-x-10-6-3-and-dns-server-priority-changes/
    */
 
@@ -220,15 +229,17 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver, ares_sysconfi
     unsigned short   addrport;
 
     if (resolver->nameserver[i]->sa_family == AF_INET) {
-      struct sockaddr_in *addr_in = (struct sockaddr_in *)(void *)resolver->nameserver[i];
-      addr.family                 = AF_INET;
+      struct sockaddr_in *addr_in =
+        (struct sockaddr_in *)(void *)resolver->nameserver[i];
+      addr.family = AF_INET;
       memcpy(&addr.addr.addr4, &(addr_in->sin_addr), sizeof(addr.addr.addr4));
-      addrport                    = addr_in->sin_port;
+      addrport = addr_in->sin_port;
     } else if (resolver->nameserver[i]->sa_family == AF_INET6) {
-      struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)(void *)resolver->nameserver[i];
-      addr.family                   = AF_INET6;
+      struct sockaddr_in6 *addr_in6 =
+        (struct sockaddr_in6 *)(void *)resolver->nameserver[i];
+      addr.family = AF_INET6;
       memcpy(&addr.addr.addr6, &(addr_in6->sin6_addr), sizeof(addr.addr.addr6));
-      addrport                      = addr_in6->sin6_port;
+      addrport = addr_in6->sin6_port;
     } else {
       continue;
     }
@@ -236,7 +247,8 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver, ares_sysconfi
     if (addrport == 0) {
       addrport = port;
     }
-    status = ares__sconfig_append(&sysconfig->sconfig, &addr, addrport, addrport, resolver->if_name);
+    status = ares__sconfig_append(&sysconfig->sconfig, &addr, addrport,
+                                  addrport, resolver->if_name);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -245,24 +257,24 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver, ares_sysconfi
   return status;
 }
 
-static ares_status_t read_resolvers(dns_resolver_t **resolvers, int nresolvers, ares_sysconfig_t *sysconfig)
+static ares_status_t read_resolvers(dns_resolver_t **resolvers, int nresolvers,
+                                    ares_sysconfig_t *sysconfig)
 {
   ares_status_t status = ARES_SUCCESS;
   int           i;
 
-  for (i=0; status == ARES_SUCCESS && i < nresolvers; i++) {
+  for (i = 0; status == ARES_SUCCESS && i < nresolvers; i++) {
     status = read_resolver(resolvers[i], sysconfig);
   }
 
   return status;
 }
 
-
 ares_status_t ares__init_sysconfig_macos(ares_sysconfig_t *sysconfig)
 {
-  dnsinfo_t      *dnsinfo = NULL;
-  dns_config_t   *sc_dns  = NULL;
-  ares_status_t   status  = ARES_SUCCESS;
+  dnsinfo_t    *dnsinfo = NULL;
+  dns_config_t *sc_dns  = NULL;
+  ares_status_t status  = ARES_SUCCESS;
 
   status = dnsinfo_init(&dnsinfo);
 
