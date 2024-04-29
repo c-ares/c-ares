@@ -240,13 +240,13 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
         (struct sockaddr_in *)(void *)resolver->nameserver[i];
       addr.family = AF_INET;
       memcpy(&addr.addr.addr4, &(addr_in->sin_addr), sizeof(addr.addr.addr4));
-      addrport = addr_in->sin_port;
+      addrport = ntohs(addr_in->sin_port);
     } else if (resolver->nameserver[i]->sa_family == AF_INET6) {
       struct sockaddr_in6 *addr_in6 =
         (struct sockaddr_in6 *)(void *)resolver->nameserver[i];
       addr.family = AF_INET6;
       memcpy(&addr.addr.addr6, &(addr_in6->sin6_addr), sizeof(addr.addr.addr6));
-      addrport = addr_in6->sin6_port;
+      addrport = ntohs(addr_in6->sin6_port);
     } else {
       continue;
     }
