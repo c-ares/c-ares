@@ -370,6 +370,7 @@ static ares_status_t ares__sconfig_linklocal(ares_sconfig_t *s,
   return ARES_SUCCESS;
 }
 
+
 ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    const struct ares_addr *addr,
                                    unsigned short          udp_port,
@@ -405,10 +406,16 @@ ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
   s->udp_port = udp_port;
   s->tcp_port = tcp_port;
 
-  /* Handle link-local enumeration */
-  if (ares_strlen(ll_iface) && ares__addr_is_linklocal(&s->addr)) {
+  /* Handle link-local enumeration. If an interface is specified on a
+   * non-link-local address, we'll simply end up ignoring that */
+  if (ares__addr_is_linklocal(&s->addr)) {
+    if (ares_strlen(ll_iface) == 0) {
+      /* Silently ignore this entry, we require an interface */
+      status = ARES_SUCCESS;
+      goto fail;
+    }
     status = ares__sconfig_linklocal(s, ll_iface);
-    /* Silently ignore this entry */
+    /* Silently ignore this entry, we can't validate the interface */
     if (status != ARES_SUCCESS) {
       status = ARES_SUCCESS;
       goto fail;
@@ -713,7 +720,7 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
     const ares_sconfig_t *sconfig = ares__llist_node_val(node);
     ares__slist_node_t   *snode;
 
-    /* Don't add duplicate servers! */
+    /* If a server has already appeared in the list of new servers, skip it. */
     if (ares__server_isdup(channel, node)) {
       continue;
     }

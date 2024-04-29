@@ -430,6 +430,8 @@ typedef struct {
   ares_bool_t      usevc;
 } ares_sysconfig_t;
 
+ares_status_t ares__sysconfig_set_options(ares_sysconfig_t *sysconfig, const char *str);
+
 ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig);
 
 ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
