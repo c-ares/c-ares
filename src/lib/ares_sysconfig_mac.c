@@ -174,8 +174,10 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
   /* Append search list */
   if (resolver->n_search > 0) {
     char **new_domains =
-      ares_realloc_zero(sysconfig->domains, sysconfig->ndomains,
-                        sysconfig->ndomains + (size_t)resolver->n_search);
+      ares_realloc_zero(sysconfig->domains,
+                        sizeof(*sysconfig->domains) * sysconfig->ndomains,
+                        sizeof(*sysconfig->domains) *
+                          (sysconfig->ndomains + (size_t)resolver->n_search));
     if (new_domains == NULL) {
       return ARES_ENOMEM;
     }
