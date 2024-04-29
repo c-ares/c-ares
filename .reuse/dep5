@@ -9,7 +9,7 @@ Copyright: The c-ares project and its contributors.
 License: MIT
 
 # Docs
-Files: AUTHORS CHANGES CHANGES.0 CONTRIBUTING.md GIT-INFO NEWS README.cares README.md README.msvc RELEASE-NOTES RELEASE-PROCEDURE.md SECURITY.md TODO INSTALL.md test/README.md test/gmock-1.11.0/README.md
+Files: AUTHORS CHANGES CHANGES.0 CONTRIBUTING.md GIT-INFO NEWS README.cares README.md README.msvc RELEASE-NOTES RELEASE-PROCEDURE.md SECURITY.md TODO INSTALL.md test/README.md test/gmock-1.11.0/README.md src/lib/thirdparty/apple/README.md
 Copyright: The c-ares project and its contributors.
 License: MIT
 
@@ -30,3 +30,7 @@ License: FSFAP
 Files: m4/ax_code_coverage.m4 m4/pkg.m4
 Copyright: see file
 License: LGPL-2.1-or-later
+
+Files: src/lib/thirdparty/apple/dnsinfo.h
+Copyright: see file
+License: APSL-2.0

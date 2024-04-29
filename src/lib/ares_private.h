@@ -331,12 +331,12 @@ struct ares_channeldata {
    * The retry delay is the minimum time in milliseconds to wait between doing
    * such retries (applied per-server).
    */
-  unsigned short server_retry_chance;
-  size_t         server_retry_delay;
+  unsigned short                      server_retry_chance;
+  size_t                              server_retry_delay;
 
   /* Callback triggered when a server has a successful or failed response */
-  ares_server_state_callback server_state_cb;
-  void                      *server_state_cb_data;
+  ares_server_state_callback          server_state_cb;
+  void                               *server_state_cb_data;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
@@ -430,10 +430,17 @@ typedef struct {
   ares_bool_t      usevc;
 } ares_sysconfig_t;
 
+ares_status_t ares__sysconfig_set_options(ares_sysconfig_t *sysconfig,
+                                          const char       *str);
+
 ares_status_t ares__init_by_environment(ares_sysconfig_t *sysconfig);
 
 ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
                                          ares_sysconfig_t     *sysconfig);
+#ifdef __APPLE__
+ares_status_t ares__init_sysconfig_macos(ares_sysconfig_t *sysconfig);
+#endif
+
 ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
                                    const char *str);
 
@@ -604,9 +611,9 @@ void          ares_queue_notify_empty(ares_channel_t *channel);
     }                                                             \
   } while (0)
 
-#define ARES_CONFIG_CHECK(x)                                             \
-  (x && x->lookups && ares__slist_len(x->servers) > 0 && \
-   x->timeout > 0 && x->tries > 0)
+#define ARES_CONFIG_CHECK(x)                                               \
+  (x && x->lookups && ares__slist_len(x->servers) > 0 && x->timeout > 0 && \
+   x->tries > 0)
 
 ares_bool_t   ares__subnet_match(const struct ares_addr *addr,
                                  const struct ares_addr *subnet,

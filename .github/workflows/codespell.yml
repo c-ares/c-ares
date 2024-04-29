@@ -30,4 +30,4 @@ jobs:
           sudo apt-get install codespell
 
       - name: spellcheck
-        run: codespell -I .github/scripts/codespell-ignore.txt include src
+        run: codespell -I .github/scripts/codespell-ignore.txt --skip="src/lib/thirdparty" include src
