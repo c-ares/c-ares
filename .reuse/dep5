@@ -30,3 +30,7 @@ License: FSFAP
 Files: m4/ax_code_coverage.m4 m4/pkg.m4
 Copyright: see file
 License: LGPL-2.1-or-later
+
+Files: src/lib/thirdparty/apple/dnsinfo.h
+Copyright: see file
+License: APSL-2.0

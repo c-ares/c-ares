@@ -34,10 +34,13 @@
  * of the DNS configuration.
  *
  * Instead, that leaves some apple "internal" symbols from `configd` that we
- * need to access in order to get the entire configuration.  This is what
- * `libresolv` and `scutil` use to retrieve the dns configuration.  Since these
- * symbols are not publicly available, we will dynamically load the symbols
- * from `libSystem` and import the `dnsinfo.h` private header extracted from:
+ * need to access in order to get the entire configuration.  We can see that
+ * we're not the only ones to do this as Google Chrome also does:
+ * https://chromium.googlesource.com/chromium/src/+/HEAD/net/dns/dns_config_watcher_mac.cc
+ * These internal functions are what `libresolv` and `scutil` use to retrieve
+ * the dns configuration.  Since these symbols are not publicly available, we
+ * will dynamically load the symbols from `libSystem` and import the `dnsinfo.h`
+ * private header extracted from:
  * https://opensource.apple.com/source/configd/configd-1109.140.1/dnsinfo/dnsinfo.h
  */
 #  include "ares_setup.h"
