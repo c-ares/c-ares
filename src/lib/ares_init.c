@@ -403,13 +403,16 @@ ares_status_t ares_reinit(ares_channel_t *channel)
     return ARES_EFORMERR;
   }
 
-  ares__channel_lock(channel);
+  /* ares__init_by_sysconfig() will lock when applying the config, but not
+   * when retrieving. */
 
   status = ares__init_by_sysconfig(channel);
   if (status != ARES_SUCCESS) {
     DEBUGF(fprintf(stderr, "Error: init_by_sysconfig failed: %s\n",
                    ares_strerror(status)));
   }
+
+  ares__channel_lock(channel);
 
   /* Flush cached queries on reinit */
   if (channel->qcache) {

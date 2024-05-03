@@ -1102,7 +1102,13 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
     goto done;
   }
 
+  /* Lock when applying the configuration to the channel.  Don't need to
+   * lock prior to this. */
+
+  ares__channel_lock(channel);
   status = ares_sysconfig_apply(channel, &sysconfig);
+  ares__channel_unlock(channel);
+
   if (status != ARES_SUCCESS) {
     goto done;
   }
