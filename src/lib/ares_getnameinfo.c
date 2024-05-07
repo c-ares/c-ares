@@ -143,7 +143,7 @@ static void  ares_getnameinfo_int(ares_channel_t        *channel,
         callback(arg, ARES_EBADFLAGS, 0, NULL, NULL);
         return;
       }
-      if (salen == sizeof(struct sockaddr_in6)) {
+      if (sa->sa_family == AF_INET6) {
         ares_inet_ntop(AF_INET6, &addr6->sin6_addr, ipbuf, IPBUFSIZ);
         /* If the system supports scope IDs, use it */
 #ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
@@ -159,9 +159,8 @@ static void  ares_getnameinfo_int(ares_channel_t        *channel,
       }
       callback(arg, ARES_SUCCESS, 0, ipbuf, service);
       return;
-    }
-    /* This is where a DNS lookup becomes necessary */
-    else {
+    } else {
+      /* This is where a DNS lookup becomes necessary */
       niquery = ares_malloc(sizeof(struct nameinfo_query));
       if (!niquery) {
         callback(arg, ARES_ENOMEM, 0, NULL, NULL);
