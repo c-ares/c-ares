@@ -1,0 +1,32 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: NetBSD
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        uses: cross-platform-actions/action@v0.24.0
+        env:
+          DIST: NETBSD
+          BUILD_TYPE: "cmake"
+          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+        with:
+          operating_system: netbsd
+          version: '10.0'
+          shell: 'bash'
+          environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS
+          run: |
+            sudo pkg_add cmake googletest pkgconf ninja-build
+            echo "BUILD_TYPE: $BUILD_TYPE"
+            echo "CMAKE_FLAGS: $CMAKE_FLAGS"
+            echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
+            ./ci/build.sh
+            ./ci/test.sh
+
