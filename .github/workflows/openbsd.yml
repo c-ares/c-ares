@@ -20,7 +20,7 @@ jobs:
           version: '7.5'
           shell: 'bash'
           run: |
-            pkg_add cmake gtest pkgconf
+            sudo pkg_add cmake gtest pkgconf
             ./ci/build.sh
             ./ci/test.sh
 
