@@ -24,10 +24,15 @@ jobs:
           shell: 'bash'
           environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS PKG_PATH
           run: |
-            pkg_add cmake googletest pkgconf ninja-build
+            echo "PATH: $PATH"
             echo "BUILD_TYPE: $BUILD_TYPE"
             echo "CMAKE_FLAGS: $CMAKE_FLAGS"
             echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
+            echo "/usr/pkg/sbin:"
+            ls -l /usr/pkg/sbin
+            echo "/usr/pkg/bin:"
+            ls -l /usr/pkg/bin
+            pkg_add cmake googletest pkgconf ninja-build
             ./ci/build.sh
             ./ci/test.sh
 
