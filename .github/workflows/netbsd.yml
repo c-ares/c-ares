@@ -17,13 +17,14 @@ jobs:
           BUILD_TYPE: "cmake"
           CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          PKG_PATH: https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/amd64/10.0/All/
         with:
           operating_system: netbsd
           version: '10.0'
           shell: 'bash'
-          environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS
+          environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS PKG_PATH
           run: |
-            sudo pkg_add cmake googletest pkgconf ninja-build
+            pkg_add cmake googletest pkgconf ninja-build
             echo "BUILD_TYPE: $BUILD_TYPE"
             echo "CMAKE_FLAGS: $CMAKE_FLAGS"
             echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
