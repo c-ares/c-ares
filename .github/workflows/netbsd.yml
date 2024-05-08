@@ -27,7 +27,8 @@ jobs:
             echo "BUILD_TYPE: $BUILD_TYPE"
             echo "CMAKE_FLAGS: $CMAKE_FLAGS"
             echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
-            sudo /usr/pkg/sbin/pkg_add cmake googletest pkgconf ninja-build
+            echo "PKG_PATH: $PKG_PATH"
+            sudo -E /usr/pkg/sbin/pkg_add cmake googletest pkgconf ninja-build
             ./ci/build.sh
             ./ci/test.sh
 
