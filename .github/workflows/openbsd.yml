@@ -19,6 +19,7 @@ jobs:
           operating_system: openbsd
           version: '7.5'
           shell: 'bash'
+          environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS
           run: |
             sudo pkg_add cmake gtest pkgconf ninja
             echo "BUILD_TYPE: $BUILD_TYPE"
