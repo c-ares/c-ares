@@ -20,7 +20,10 @@ jobs:
           version: '7.5'
           shell: 'bash'
           run: |
-            sudo pkg_add cmake gtest pkgconf
+            sudo pkg_add cmake gtest pkgconf ninja
+            echo "BUILD_TYPE: $BUILD_TYPE"
+            echo "CMAKE_FLAGS: $CMAKE_FLAGS"
+            echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
             ./ci/build.sh
             ./ci/test.sh
 
