@@ -230,4 +230,10 @@ done:
 
 #else
 
+ares_status_t ares_event_configchg_init(ares_event_thread_t *e)
+{
+  /* Not implemented yet, need to spawn thread */
+  return ARES_SUCCESS;
+}
+
 #endif

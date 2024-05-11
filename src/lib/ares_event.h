@@ -96,8 +96,10 @@ struct ares_event_thread {
    *  thread other than the event thread itself. The event thread will then
    *  be woken then process these updates itself */
   ares__llist_t          *ev_updates;
-  /*! Registered event handles. */
-  ares__htable_asvp_t    *ev_handles;
+  /*! Registered socket event handles */
+  ares__htable_asvp_t    *ev_sock_handles;
+  /*! Registered custom event handles. Typically used for external triggering. */
+  ares__htable_vpvp_t    *ev_cust_handles;
   /*! Pointer to the event handle which is used to signal and wake the event
    *  thread itself.  This is needed to be able to do things like update the
    *  file descriptors being waited on and to wake the event subsystem during
