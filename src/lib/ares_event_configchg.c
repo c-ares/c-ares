@@ -28,11 +28,9 @@
 #include "ares_private.h"
 #include "ares_event.h"
 
-static void ares_event_configchg_reload(ares_channel_t *channel)
+static void ares_event_configchg_reload(ares_event_thread_t *e)
 {
-  /* XXX: dispatch via thread so we don't block events */
-  printf("%s(): config change detected\n", __FUNCTION__);
-  ares_reinit(channel);
+  ares_reinit(e->channel);
 }
 
 #ifdef __LINUX__
@@ -103,7 +101,7 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
   /* Only process after all events are read.  No need to process more often as
    * we don't want to reload the config back to back */
   if (triggered) {
-    ares_event_configchg_reload(e->channel);
+    ares_event_configchg_reload(e);
   }
 }
 
@@ -199,7 +197,7 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
   /* Only process after all events are read.  No need to process more often as
    * we don't want to reload the config back to back */
   if (triggered) {
-    ares_event_configchg_reload(e->channel);
+    ares_event_configchg_reload(e);
   }
 }
 

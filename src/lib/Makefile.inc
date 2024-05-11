@@ -10,6 +10,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__htable_asvp.c			\
   ares__htable_strvp.c			\
   ares__htable_szvp.c			\
+  ares__htable_vpvp.c			\
   ares__iface_ips.c			\
   ares__llist.c				\
   ares__parse_into_addrinfo.c		\
