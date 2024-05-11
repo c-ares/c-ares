@@ -79,6 +79,8 @@ typedef struct {
   size_t (*wait)(ares_event_thread_t *e, unsigned long timeout_ms);
 } ares_event_sys_t;
 
+ares_status_t ares_event_configchg_init(ares_event_thread_t *e);
+
 struct ares_event_thread {
   /*! Whether the event thread should be online or not.  Checked on every wake
    *  event before sleeping. */
@@ -106,6 +108,7 @@ struct ares_event_thread {
   /* Event subsystem private data */
   void                   *ev_sys_data;
 };
+
 
 /*! Queue an update for the event handle.
  *

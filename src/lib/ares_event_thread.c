@@ -391,6 +391,7 @@ static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
 ares_status_t ares_event_thread_init(ares_channel_t *channel)
 {
   ares_event_thread_t *e;
+  ares_status_t        status;
 
   e = ares_malloc_zero(sizeof(*e));
   if (e == NULL) {
@@ -431,6 +432,15 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
     channel->sock_state_cb      = NULL;
     channel->sock_state_cb_data = NULL;
     return ARES_ESERVFAIL;
+  }
+
+  /* Initialize monitor for configuration changes */
+  status = ares_event_configchg_init(e);
+  if (status != ARES_SUCCESS) {
+    ares_event_thread_destroy_int(e);
+    channel->sock_state_cb      = NULL;
+    channel->sock_state_cb_data = NULL;
+    return status;
   }
 
   /* Before starting the thread, process any possible events the initialization
