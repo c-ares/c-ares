@@ -58,7 +58,6 @@
 
 typedef struct {
   void *handle;
-  const char *(*dns_configuration_notify_key)(void);
   dns_config_t *(*dns_configuration_copy)(void);
   void (*dns_configuration_free)(dns_config_t *config);
 } dnsinfo_t;
@@ -101,15 +100,12 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
     goto done;
   }
 
-  dnsinfo->dns_configuration_notify_key =
-    dlsym(dnsinfo->handle, "dns_configuration_notify_key");
   dnsinfo->dns_configuration_copy =
     dlsym(dnsinfo->handle, "dns_configuration_copy");
   dnsinfo->dns_configuration_free =
     dlsym(dnsinfo->handle, "dns_configuration_free");
 
-  if (dnsinfo->dns_configuration_notify_key == NULL ||
-      dnsinfo->dns_configuration_copy == NULL ||
+  if (dnsinfo->dns_configuration_copy == NULL ||
       dnsinfo->dns_configuration_free == NULL) {
     status = ARES_ESERVFAIL;
     goto done;

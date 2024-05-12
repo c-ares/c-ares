@@ -37,9 +37,17 @@ static void ares_event_configchg_reload(ares_event_thread_t *e)
 
 #  include <sys/inotify.h>
 
-typedef struct {
+struct ares_event_configchg {
   int inotify_fd;
-} ares_event_configchg_t;
+};
+
+void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
+{
+  (void)configchg;
+
+  /* Cleanup happens automatically */
+}
+
 
 static void ares_event_configchg_free(void *data)
 {
@@ -141,18 +149,157 @@ done:
 
 #elif defined(_WIN32)
 
+#  include <winsock2.h>
+#  include <iphlpapi.h>
+#  include <stdio.h>
+#  include <windows.h>
 
+struct ares_event_configchg {
+  ares__thread_t *thread;
+  HANDLE          terminate_event;
+  HANDLE          ifchg_hnd;
+  OVERLAPPED      ifchg_ol;
+  HANDLE          route_hnd;
+  OVERLAPPED      route_ol;
+};
+
+void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
+{
+  if (configchg->terminate_event) {
+    SetEvent(configchg->terminate_event);
+  }
+
+  if (configchg->thread) {
+    void *rv = NULL;
+    ares__thread_join(thread, &rv);
+    configchg->thread = NULL;
+  }
+
+
+  if (configchg->terminate_event != NULL) {
+    CloseHandle(configchg->terminate_event);
+    configchg->terminate_event = NULL;
+  }
+
+  if (configchg->ifchg_hnd != NULL) {
+    CancelIPChangeNotify(configchg->ifchg_hnd);
+    configchg->ifchg_hnd = NULL;
+  }
+
+  if (configchg->ifchg_ol.hEvent != NULL) {
+    DeleteEvent(configchg->ifchg_ol.hEvent);
+    configchg->ifchg_ol.hEvent = NULL;
+  }
+
+  if (configchg->route_hnd != NULL) {
+    CancelIPChangeNotify(configchg->route_hnd);
+    configchg->route_hnd = NULL;
+  }
+
+  if (configchg->route_ol.hEvent != NULL) {
+    DeleteEvent(configchg->route_ol.hEvent);
+    configchg->route_ol.hEvent = NULL;
+  }
+
+  ares_free(configchg);
+}
+
+static void *ares_event_configchg_thread(void *arg)
+{
+  ares_event_configchg_t *configchg  = arg;
+  HANDLE                  handles[3] = { configchg->terminate_event, configchg->ifchg_ol.hEvent, configchg->route_ol.hEvent };
+
+  while (1) {
+    ares_bool_t triggered = ARES_FALSE;
+    DWORD       ret       = WaitForMultipleObjects(3, handles, FALSE, INFINITE);
+    if (ret < WAIT_OBJECT_0) {
+      continue;
+    }
+
+    /* Query each handle individually */
+    if (WaitForSingleObject(configchg->terminate_event, 0) == WAIT_OBJECT_0) {
+      break;
+    }
+
+    if (WaitForSingleObject(configchg->ifchg_ol.hEvent, 0) == WAIT_OBJECT_O) {
+      triggered = ARES_TRUE;
+      ResetEvent(configchg->ifchg_ol.hEvent);
+    }
+
+    if (WaitForSingleObject(configchg->route_ol.hEvent, 0) == WAIT_OBJECT_O) {
+      triggered = ARES_TRUE;
+      ResetEvent(configchg->route_ol.hEvent);
+    }
+
+    if (triggered) {
+      ares_event_configchg_reload(configchg->e);
+    }
+  }
+
+  return NULL;
+}
+
+ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg, ares_event_thread_t *e)
+{
+  ares_status_t status = ARES_SUCCESS;
+
+  *configchg = ares_malloc_zero(sizeof(**configchg));
+  if (*configchg == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  (*configchg)->e = e;
+
+  (*configchg)->terminate_event = CreateEvent();
+  if ((*configchg)->terminate_event == NULL) {
+    status = ARES_ESERVFAIL;
+    goto done;
+  }
+
+  if (NotifyRouteChange(&(*configchg)->route_hnd, &(*configchg)->route_ol) != NO_ERROR) {
+    status = ARES_ESERVFAIL;
+    goto done;
+  }
+
+  if (NotifyIpInterfaceChange(&(*configchg)->ifchg_hnd, &(*configchg)->ifchg_ol) != NO_ERROR) {
+    status = ARES_ESERVFAIL;
+    goto done;
+  }
+
+  status = ares__thread_create(&(*configchg)->thread, ares_event_configchg_thread, *configchg);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+done:
+  if (status != ARES_SUCCESS) {
+    ares_event_configchg_destroy(*configchg);
+    *configchg = NULL;
+  }
+
+  return status;
+}
 
 #elif defined(__APPLE__)
 
 #  include <sys/types.h>
 #  include <unistd.h>
 #  include <notify.h>
+#  include <dlfcn.h>
 
-typedef struct {
+
+struct ares_event_configchg {
   int fd;
   int token;
-} ares_event_configchg_t;
+};
+
+void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
+{
+  (void)configchg;
+
+  /* Cleanup happens automatically */
+}
+
 
 static void ares_event_configchg_free(void *data)
 {
@@ -201,39 +348,73 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
   }
 }
 
-ares_status_t ares_event_configchg_init(ares_event_thread_t *e)
+ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg, ares_event_thread_t *e)
 {
-  ares_status_t           status = ARES_SUCCESS;
-  ares_event_configchg_t *configchg;
+  ares_status_t  status = ARES_SUCCESS;
+  void          *handle = NULL;
+  const char  *(*pdns_configuration_notify_key)(void) = NULL;
+  const char    *notify_key = NULL;
 
-  configchg = ares_malloc_zero(sizeof(*configchg));
-  if (configchg == NULL) {
+  *configchg = ares_malloc_zero(sizeof(**configchg));
+  if (*configchg == NULL) {
     return ARES_ENOMEM;
   }
 
-  if (notify_register_file_descriptor("com.apple.system.SystemConfiguration.dns_configuration",
-    &configchg->fd, 0, &configchg->token) != NOTIFY_STATUS_OK) {
+  /* Load symbol as it isn't normally public */
+  handle = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY | RTLD_NOLOAD);
+  if (handle == NULL) {
+    status = ARES_ESERVFAIL;
+    goto done;
+  }
+
+  pdns_configuration_notify_key =
+    dlsym(handle, "dns_configuration_notify_key");
+
+  if (pdns_configuration_notify_key == NULL) {
+    status = ARES_ESERVFAIL;
+    goto done;
+  }
+
+  notify_key = pdns_configuration_notify_key();
+  if (notify_key == NULL) {
+    status = ARES_ESERVFAIL;
+    goto done;
+  }
+
+  if (notify_register_file_descriptor(notify_key,
+    &(*configchg)->fd, 0, &(*configchg)->token) != NOTIFY_STATUS_OK) {
     status = ARES_ESERVFAIL;
     goto done;
   }
 
   status = ares_event_update(NULL, e, ARES_EVENT_FLAG_READ,
-                             ares_event_configchg_cb, configchg->fd, configchg,
-                             ares_event_configchg_free, NULL);
+                             ares_event_configchg_cb, (*configchg)->fd,
+                             *configchg, ares_event_configchg_free, NULL);
 
 done:
   if (status != ARES_SUCCESS) {
-    ares_event_configchg_free(configchg);
+    ares_event_configchg_free(*configchg);
+    *configchg = NULL;
   }
+
+  if (handle) {
+    dlclose(handle);
+  }
+
   return status;
 }
 
 #else
 
-ares_status_t ares_event_configchg_init(ares_event_thread_t *e)
+ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg, ares_event_thread_t *e)
 {
   /* Not implemented yet, need to spawn thread */
   return ARES_SUCCESS;
+}
+
+void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
+{
+  /* Todo */
 }
 
 #endif

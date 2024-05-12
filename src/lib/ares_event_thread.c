@@ -298,6 +298,10 @@ static void ares_event_thread_destroy_int(ares_event_thread_t *e)
 {
   ares__llist_node_t *node;
 
+  /* Disable configuration change monitoring */
+  ares_event_configchg_destroy(e->configchg);
+  e->configchg = NULL;
+
   /* Wake thread and tell it to shutdown if it exists */
   ares__thread_mutex_lock(e->mutex);
   if (e->isup) {
@@ -457,7 +461,7 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
   }
 
   /* Initialize monitor for configuration changes */
-  status = ares_event_configchg_init(e);
+  status = ares_event_configchg_init(&e->configchg, e);
   if (status != ARES_SUCCESS) {
     ares_event_thread_destroy_int(e);
     channel->sock_state_cb      = NULL;
