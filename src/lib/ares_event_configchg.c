@@ -157,89 +157,24 @@ done:
 #  include <windows.h>
 
 struct ares_event_configchg {
-  ares__thread_t *thread;
-  HANDLE          terminate_event;
-  HANDLE          ifchg_hnd;
-  OVERLAPPED      ifchg_ol;
-  HANDLE          route_hnd;
-  OVERLAPPED      route_ol;
+  HANDLE               ifchg_hnd;
+  ares_event_thread_t *e;
 };
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
-  if (configchg->terminate_event) {
-    SetEvent(configchg->terminate_event);
-  }
-
-  if (configchg->thread) {
-    void *rv = NULL;
-    ares__thread_join(thread, &rv);
-    configchg->thread = NULL;
-  }
-
-
-  if (configchg->terminate_event != NULL) {
-    CloseHandle(configchg->terminate_event);
-    configchg->terminate_event = NULL;
-  }
-
   if (configchg->ifchg_hnd != NULL) {
-    CancelIPChangeNotify(configchg->ifchg_hnd);
+    CancelMibChangeNotify2(configchg->ifchg_hnd);
     configchg->ifchg_hnd = NULL;
-  }
-
-  if (configchg->ifchg_ol.hEvent != NULL) {
-    DeleteEvent(configchg->ifchg_ol.hEvent);
-    configchg->ifchg_ol.hEvent = NULL;
-  }
-
-  if (configchg->route_hnd != NULL) {
-    CancelIPChangeNotify(configchg->route_hnd);
-    configchg->route_hnd = NULL;
-  }
-
-  if (configchg->route_ol.hEvent != NULL) {
-    DeleteEvent(configchg->route_ol.hEvent);
-    configchg->route_ol.hEvent = NULL;
   }
 
   ares_free(configchg);
 }
 
-static void *ares_event_configchg_thread(void *arg)
+static ares_event_configchg_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row, MIB_NOTIFICATION_TYPE NotificationType)
 {
-  ares_event_configchg_t *configchg = arg;
-  HANDLE handles[3] = { configchg->terminate_event, configchg->ifchg_ol.hEvent,
-                        configchg->route_ol.hEvent };
-
-  while (1) {
-    ares_bool_t triggered = ARES_FALSE;
-    DWORD       ret       = WaitForMultipleObjects(3, handles, FALSE, INFINITE);
-    if (ret < WAIT_OBJECT_0) {
-      continue;
-    }
-
-    /* Query each handle individually */
-    if (WaitForSingleObject(configchg->terminate_event, 0) == WAIT_OBJECT_0) {
-      break;
-    }
-
-    if (WaitForSingleObject(configchg->ifchg_ol.hEvent, 0) == WAIT_OBJECT_O) {
-      triggered = ARES_TRUE;
-      ResetEvent(configchg->ifchg_ol.hEvent);
-    }
-
-    if (WaitForSingleObject(configchg->route_ol.hEvent, 0) == WAIT_OBJECT_O) {
-      triggered = ARES_TRUE;
-      ResetEvent(configchg->route_ol.hEvent);
-    }
-
-    if (triggered) {
-      ares_event_configchg_reload(configchg->e);
-    }
-  }
-
-  return NULL;
+  ares_event_configchg_t *configchg = CallerContext;
+  ares_event_configchg_reload(configchg->e);
 }
 
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
@@ -254,27 +189,8 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
 
   (*configchg)->e = e;
 
-  (*configchg)->terminate_event = CreateEvent();
-  if ((*configchg)->terminate_event == NULL) {
+  if (NotifyIpInterfaceChange(AF_UNSPEC, ares_event_configchg_cb, *configchg, FALSE, &(*configchg)->ifchg_hnd) != NO_ERROR) {
     status = ARES_ESERVFAIL;
-    goto done;
-  }
-
-  if (NotifyRouteChange(&(*configchg)->route_hnd, &(*configchg)->route_ol) !=
-      NO_ERROR) {
-    status = ARES_ESERVFAIL;
-    goto done;
-  }
-
-  if (NotifyIpInterfaceChange(&(*configchg)->ifchg_hnd,
-                              &(*configchg)->ifchg_ol) != NO_ERROR) {
-    status = ARES_ESERVFAIL;
-    goto done;
-  }
-
-  status = ares__thread_create(&(*configchg)->thread,
-                               ares_event_configchg_thread, *configchg);
-  if (status != ARES_SUCCESS) {
     goto done;
   }
 
