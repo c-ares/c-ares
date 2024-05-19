@@ -1,8 +1,13 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 name: OpenBSD
-
-on: [push]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
