@@ -163,12 +163,16 @@ struct ares_event_configchg {
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
+#ifdef WATT32
+  /* Not supported */
+#else
   if (configchg->ifchg_hnd != NULL) {
     CancelMibChangeNotify2(configchg->ifchg_hnd);
     configchg->ifchg_hnd = NULL;
   }
 
   ares_free(configchg);
+#endif
 }
 
 static ares_event_configchg_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row, MIB_NOTIFICATION_TYPE NotificationType)
@@ -180,6 +184,9 @@ static ares_event_configchg_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row, MI
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
                                         ares_event_thread_t     *e)
 {
+#ifdef WATT32
+  return ARES_ENOTIMP;
+#else
   ares_status_t status = ARES_SUCCESS;
 
   *configchg = ares_malloc_zero(sizeof(**configchg));
@@ -201,6 +208,7 @@ done:
   }
 
   return status;
+#endif
 }
 
 #elif defined(__APPLE__)
@@ -329,6 +337,12 @@ done:
 }
 
 #elif defined(HAVE_STAT)
+#  ifdef HAVE_SYS_TYPES_H
+#    include <sys/types.h>
+#  endif
+#  ifdef HAVE_SYS_STAT_H
+#    include <sys/stat.h>
+#  endif
 
 typedef struct {
   size_t size;
