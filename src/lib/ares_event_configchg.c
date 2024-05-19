@@ -328,18 +328,187 @@ done:
   return status;
 }
 
+#elif defined(HAVE_STAT)
+
+typedef struct {
+  size_t st_size;
+  time_t st_mtime;
+} fileinfo_t;
+
+struct ares_event_configchg {
+  ares_bool_t           isup;
+  ares__thread_t       *thread;
+  ares__hash_strvp_t   *filestat;
+  ares__thread_mutex_t *lock;
+  ares__thread_cond_t  *wake;
+  const char           *resolvconf_path;
+  ares_event_thread_t  *e;
+};
+
+static ares_status_t config_change_check(ares__hash_strvp_t *filestat,
+                                         const char *resolvconf_path)
+{
+  size_t      i;
+  const char *configfiles[] = {
+    resolvconf_path,
+    "/etc/nsswitch.conf",
+    "/etc/netsvc.conf",
+    "/etc/svc.conf",
+    NULL
+  };
+  ares_bool_t changed = ARES_FALSE;
+
+  for (i=0; configfiles[i] != NULL; i++) {
+    fileinfo_t *fi = ares__htable_strvp_get_direct(filestat, configfiles[i]);
+    struct stat st;
+
+    if (stat(configfiles[i], &st) == 0) {
+      if (fi == NULL) {
+        fi = ares_malloc_zero(sizeof(*fi));
+        if (fi == NULL) {
+          return ARES_ENOMEM;
+        }
+        if (!ares__htable_strvp_insert(filestat, configfiles[i], fi)) {
+          ares_free(fi);
+          return ARES_ENOMEM;
+        }
+      }
+      if (fi->st_size != st.st_size || fi->st_mtime != st->st_mtime) {
+        changed = ARES_TRUE;
+      }
+      fi->st_size  = st.st_size;
+      fi->st_mtime = st.st_mtime;
+    } else if (fi != NULL) {
+      /* File no longer exists, remove */
+      ares__htable_strvp_remove(filestat, configfiles[i]);
+      changed = ARES_TRUE;
+    }
+  }
+
+  if (changed) {
+    return ARES_SUCCESS;
+  }
+  return ARES_ENOTFOUND;
+}
+
+static void *ares_event_configchg_thread(void *arg)
+{
+  ares_event_configchg_t *c = arg;
+
+  ares__thread_mutex_lock(c->lock);
+  while (c->isup) {
+    ares_status_t status;
+
+    if (ares__thread_cond_timedwait(c->wake, c->lock, 30000) != ARES_ETIMEOUT) {
+      continue;
+    }
+
+    /* make sure status didn't change even though we got a timeout */
+    if (!c->isup) {
+      break;
+    }
+
+    status = config_change_check(c->filestat, c->resolvconf_path);
+    if (status == ARES_SUCCESS) {
+      ares_event_configchg_reload(c->e);
+    }
+  }
+
+  ares__thread_mutex_unlock(c->lock);
+  return NULL;
+}
+
+ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
+                                        ares_event_thread_t     *e)
+{
+  ares_status_t           status = ARES_SUCCESS;
+  ares_event_configchg_t *c      = NULL;
+
+  c = ares_malloc_zero(sizeof(*c));
+  if (c == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  c->e        = e;
+
+  c->filestat = ares__htable_strvp_create(ares_free);
+  if (c->filestat == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  c->wake = ares__thread_cond_create();
+  if (c->wake == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  c->resolvconf_path = c->e->channel->resolvconf_path;
+  if (c->resolvconf_path == NULL) {
+    c->resolvconf_path = PATH_RESOLV_CONF;
+  }
+
+  status = config_change_check(c->filestat, c->resolvconf_path);
+  if (status == ARES_ENOMEM) {
+    goto done;
+  }
+
+  c->isup = ARES_TRUE;
+  status  = ares__thread_create(&c->thread, ares_event_configchg_thread, c);
+
+done:
+  if (status != ARES_SUCCESS) {
+    ares_event_configchg_destroy(c);
+  } else {
+    *configchg = c;
+  }
+  return status;
+}
+
+
+void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
+{
+  if (configchg == NULL) {
+    return;
+  }
+
+  if (configchg->lock) {
+    ares__thread_mutex_lock(configchg->lock);
+  }
+
+  configchg->isup = ARES_FALSE;
+  if (configchg->wake) {
+    ares__thread_cond_signal(configchg->wake);
+  }
+
+  if (configchg->lock) {
+    ares__thread_mutex_unlock(configchg->lock);
+  }
+
+  if (configchg->thread) {
+    void *rv = NULL;
+    ares__thread_join(configchg->thread, &rv);
+  }
+
+  ares__thread_mutex_destroy(configchg->lock);
+  ares__thread_cond_destroy(configchg->wake);
+  ares__htable_strvp_destroy(configchg->filestat);
+  ares_free(configchg);
+}
+
 #else
 
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
                                         ares_event_thread_t     *e)
 {
-  /* Not implemented yet, need to spawn thread */
-  return ARES_SUCCESS;
+  /* No ability */
+  return ARES_ENOTIMP;
 }
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
-  /* Todo */
+  /* No-op */
 }
 
 #endif
