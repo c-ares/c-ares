@@ -145,7 +145,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg, ares
   }
 
   status = ares_event_update(NULL, e, ARES_EVENT_FLAG_READ,
-                             ares_event_configchg_cb, configchg->inotify_fd,
+                             ares_event_configchg_cb, c->inotify_fd,
                              c, ares_event_configchg_free, NULL);
 
 done:
