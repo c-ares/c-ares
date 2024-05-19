@@ -163,7 +163,7 @@ struct ares_event_configchg {
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
-#ifdef WATT32
+#ifdef __WATCOMC__
   /* Not supported */
 #else
   if (configchg->ifchg_hnd != NULL) {
@@ -175,16 +175,18 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 #endif
 }
 
-static ares_event_configchg_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row, MIB_NOTIFICATION_TYPE NotificationType)
+#ifndef __WATCOMC__
+static void ares_event_configchg_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row, MIB_NOTIFICATION_TYPE NotificationType)
 {
   ares_event_configchg_t *configchg = CallerContext;
   ares_event_configchg_reload(configchg->e);
 }
+#endif
 
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
                                         ares_event_thread_t     *e)
 {
-#ifdef WATT32
+#ifdef __WATCOMC__
   return ARES_ENOTIMP;
 #else
   ares_status_t status = ARES_SUCCESS;
