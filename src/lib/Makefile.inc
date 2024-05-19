@@ -90,6 +90,7 @@ HHEADERS = ares__buf.h			\
   ares__htable_asvp.h			\
   ares__htable_strvp.h			\
   ares__htable_szvp.h			\
+  ares__htable_vpvp.h			\
   ares__iface_ips.h			\
   ares__llist.h				\
   ares__slist.h				\
