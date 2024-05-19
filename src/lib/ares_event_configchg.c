@@ -204,7 +204,11 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
 
   (*configchg)->e = e;
 
-  if (NotifyIpInterfaceChange(AF_UNSPEC, ares_event_configchg_cb, *configchg, FALSE, &(*configchg)->ifchg_hnd) != NO_ERROR) {
+  if (NotifyIpInterfaceChange(AF_UNSPEC,
+                              (PIPINTERFACE_CHANGE_CALLBACK)ares_event_configchg_cb,
+                              *configchg,
+                              FALSE,
+                              &(*configchg)->ifchg_hnd) != NO_ERROR) {
     status = ARES_ESERVFAIL;
     goto done;
   }
