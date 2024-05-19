@@ -446,6 +446,8 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
   ares_status_t           status = ARES_SUCCESS;
   ares_event_configchg_t *c      = NULL;
 
+  *configchg = NULL;
+
   c = ares_malloc_zero(sizeof(*c));
   if (c == NULL) {
     status = ARES_ENOMEM;
