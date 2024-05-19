@@ -331,21 +331,21 @@ done:
 #elif defined(HAVE_STAT)
 
 typedef struct {
-  size_t st_size;
-  time_t st_mtime;
+  size_t size;
+  time_t mtime;
 } fileinfo_t;
 
 struct ares_event_configchg {
-  ares_bool_t           isup;
-  ares__thread_t       *thread;
-  ares__hash_strvp_t   *filestat;
-  ares__thread_mutex_t *lock;
-  ares__thread_cond_t  *wake;
-  const char           *resolvconf_path;
-  ares_event_thread_t  *e;
+  ares_bool_t            isup;
+  ares__thread_t        *thread;
+  ares__htable_strvp_t  *filestat;
+  ares__thread_mutex_t  *lock;
+  ares__thread_cond_t   *wake;
+  const char            *resolvconf_path;
+  ares_event_thread_t   *e;
 };
 
-static ares_status_t config_change_check(ares__hash_strvp_t *filestat,
+static ares_status_t config_change_check(ares__htable_strvp_t *filestat,
                                          const char *resolvconf_path)
 {
   size_t      i;
@@ -373,11 +373,11 @@ static ares_status_t config_change_check(ares__hash_strvp_t *filestat,
           return ARES_ENOMEM;
         }
       }
-      if (fi->st_size != st.st_size || fi->st_mtime != st->st_mtime) {
+      if (fi->size != st.st_size || fi->mtime != st->st_mtime) {
         changed = ARES_TRUE;
       }
-      fi->st_size  = st.st_size;
-      fi->st_mtime = st.st_mtime;
+      fi->size  = st.st_size;
+      fi->mtime = st.st_mtime;
     } else if (fi != NULL) {
       /* File no longer exists, remove */
       ares__htable_strvp_remove(filestat, configfiles[i]);
