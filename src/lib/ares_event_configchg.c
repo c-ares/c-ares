@@ -33,7 +33,7 @@ static void ares_event_configchg_reload(ares_event_thread_t *e)
   ares_reinit(e->channel);
 }
 
-#ifdef __LINUX__
+#ifdef __linux__
 
 #  include <sys/inotify.h>
 
@@ -45,7 +45,8 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
   (void)configchg;
 
-  /* Cleanup happens automatically */
+  /* Cleanup happens automatically by the event system when it removes
+   * the file descriptor */
 }
 
 static void ares_event_configchg_free(void *data)
@@ -114,24 +115,29 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
   }
 }
 
-ares_status_t ares_event_configchg_init(ares_event_thread_t *e)
+ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg, ares_event_thread_t *e)
 {
   ares_status_t           status = ARES_SUCCESS;
-  ares_event_configchg_t *configchg;
+  ares_event_configchg_t *c;
 
-  configchg = ares_malloc_zero(sizeof(*configchg));
-  if (configchg == NULL) {
+  (void)e;
+
+  /* Not used by this implementation */
+  *configchg = NULL;
+
+  c = ares_malloc_zero(sizeof(*c));
+  if (c == NULL) {
     return ARES_ENOMEM;
   }
 
-  configchg->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
-  if (configchg->inotify_fd == -1) {
+  c->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+  if (c->inotify_fd == -1) {
     status = ARES_ESERVFAIL;
     goto done;
   }
 
   /* We need to monitor /etc/resolv.conf, /etc/nsswitch.conf */
-  if (inotify_add_watch(configchg->inotify_fd, "/etc",
+  if (inotify_add_watch(c->inotify_fd, "/etc",
                         IN_CREATE | IN_MODIFY | IN_MOVED_TO | IN_ONLYDIR) ==
       -1) {
     status = ARES_ESERVFAIL;
@@ -140,11 +146,11 @@ ares_status_t ares_event_configchg_init(ares_event_thread_t *e)
 
   status = ares_event_update(NULL, e, ARES_EVENT_FLAG_READ,
                              ares_event_configchg_cb, configchg->inotify_fd,
-                             configchg, ares_event_configchg_free, NULL);
+                             c, ares_event_configchg_free, NULL);
 
 done:
   if (status != ARES_SUCCESS) {
-    ares_event_configchg_free(configchg);
+    ares_event_configchg_free(c);
   }
   return status;
 }
