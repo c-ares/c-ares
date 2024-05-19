@@ -373,11 +373,11 @@ static ares_status_t config_change_check(ares__htable_strvp_t *filestat,
           return ARES_ENOMEM;
         }
       }
-      if (fi->size != st.st_size || fi->mtime != st->st_mtime) {
+      if (fi->size != st.st_size || fi->mtime != st.st_mtime) {
         changed = ARES_TRUE;
       }
-      fi->size  = st.st_size;
-      fi->mtime = st.st_mtime;
+      fi->size  = (size_t)st.st_size;
+      fi->mtime = (time_t)st.st_mtime;
     } else if (fi != NULL) {
       /* File no longer exists, remove */
       ares__htable_strvp_remove(filestat, configfiles[i]);
