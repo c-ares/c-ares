@@ -30,6 +30,7 @@
 
 static void ares_event_configchg_reload(ares_event_thread_t *e)
 {
+  printf("** REINIT **\n"); fflush(stdout);
   ares_reinit(e->channel);
 }
 
@@ -172,6 +173,9 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 #ifdef __WATCOMC__
   /* Not supported */
 #else
+  if (configchg == NULL)
+    return;
+
   if (configchg->ifchg_hnd != NULL) {
     CancelMibChangeNotify2(configchg->ifchg_hnd);
     configchg->ifchg_hnd = NULL;
@@ -185,6 +189,8 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 static void ares_event_configchg_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row, MIB_NOTIFICATION_TYPE NotificationType)
 {
   ares_event_configchg_t *configchg = CallerContext;
+  (void)Row;
+  (void)NotificationType;
   ares_event_configchg_reload(configchg->e);
 }
 #endif
