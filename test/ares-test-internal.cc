@@ -404,8 +404,8 @@ TEST(Misc, OnionDomain) {
   EXPECT_EQ(1, ares__is_onion_domain("YES.ONION"));
   EXPECT_EQ(1, ares__is_onion_domain("YES.ONION."));
 }
-#endif
 
+#endif
 
 TEST_F(LibraryTest, DNSRecord) {
   ares_dns_record_t   *dnsrec = NULL;
@@ -647,16 +647,19 @@ TEST_F(LibraryTest, DNSRecord) {
   /* Write */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
 
+#ifndef CARES_SYMBOL_HIDING
   ares__buf_t *hexdump = ares__buf_create();
   EXPECT_EQ(ARES_SUCCESS, ares__buf_hexdump(hexdump, msg, msglen));
   char *hexdata = ares__buf_finish_str(hexdump, NULL);
   //printf("HEXDUMP\n%s", hexdata);
   ares_free(hexdata);
+#endif
+
   ares_dns_record_destroy(dnsrec); dnsrec = NULL;
 
   /* Parse */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, 0, &dnsrec));
-  ares_free(msg); msg = NULL;
+  ares_free_string(msg); msg = NULL;
 
   /* Re-write */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
@@ -666,6 +669,7 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(nscount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
   EXPECT_EQ(arcount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
 
+#ifndef CARES_SYMBOL_HIDING
   /* Iterate and print */
   ares__buf_t *printmsg = ares__buf_create();
   ares__buf_append_str(printmsg, ";; ->>HEADER<<- opcode: ");
@@ -770,9 +774,10 @@ TEST_F(LibraryTest, DNSRecord) {
   char *printdata = ares__buf_finish_str(printmsg, NULL);
   //printf("%s", printdata);
   ares_free(printdata);
+#endif
 
   ares_dns_record_destroy(dnsrec);
-  ares_free(msg);
+  ares_free_string(msg);
 }
 
 TEST_F(LibraryTest, DNSParseFlags) {
