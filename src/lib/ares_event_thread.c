@@ -460,9 +460,10 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
     return ARES_ESERVFAIL;
   }
 
-  /* Initialize monitor for configuration changes */
+  /* Initialize monitor for configuration changes.  In some rare cases,
+   * ARES_ENOTIMP may occur (OpenWatcom), ignore this. */
   status = ares_event_configchg_init(&e->configchg, e);
-  if (status != ARES_SUCCESS) {
+  if (status != ARES_SUCCESS && status != ARES_ENOTIMP) {
     ares_event_thread_destroy_int(e);
     channel->sock_state_cb      = NULL;
     channel->sock_state_cb_data = NULL;
