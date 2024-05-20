@@ -435,14 +435,14 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
       ARES_REC_TYPE_A, ARES_CLASS_IN, 300));
-  EXPECT_LT(0, ares_inet_net_pton(AF_INET, "1.1.1.1", &addr, sizeof(addr)));
+  EXPECT_LT(0, ares_inet_pton(AF_INET, "1.1.1.1", &addr));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_addr(rr, ARES_RR_A_ADDR, &addr));
   /* AAAA */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
       ARES_REC_TYPE_AAAA, ARES_CLASS_IN, 300));
-  EXPECT_LT(0, ares_inet_net_pton(AF_INET6, "2600::4", &addr6, sizeof(addr6)));
+  EXPECT_LT(0, ares_inet_pton(AF_INET6, "2600::4", &addr6));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_addr6(rr, ARES_RR_AAAA_ADDR, &addr6));
   /* MX */
@@ -803,7 +803,7 @@ TEST_F(LibraryTest, DNSParseFlags) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
       ARES_REC_TYPE_A, ARES_CLASS_IN, 300));
-  EXPECT_LT(0, ares_inet_net_pton(AF_INET, "1.1.1.1", &addr, sizeof(addr)));
+  EXPECT_LT(0, ares_inet_pton(AF_INET, "1.1.1.1", &addr));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_addr(rr, ARES_RR_A_ADDR, &addr));
   /* TLSA */
@@ -893,7 +893,7 @@ TEST_F(LibraryTest, DNSParseFlags) {
   EXPECT_EQ(ARES_REC_TYPE_PTR, ares_dns_rr_get_type(rr));
 
   ares_dns_record_destroy(dnsrec);
-  ares_free(msg); msg = NULL;
+  ares_free_string(msg); msg = NULL;
 }
 
 #ifndef CARES_SYMBOL_HIDING
