@@ -45,6 +45,12 @@ struct ares__htable_vpvp;
 /*! Opaque data type for size_t key, void pointer hash table implementation */
 typedef struct ares__htable_vpvp ares__htable_vpvp_t;
 
+/*! Callback to free key stored in hashtable
+ *
+ *  \param[in] key  user-supplied key
+ */
+typedef void (*ares__htable_vpvp_key_free_t)(void *key);
+
 /*! Callback to free value stored in hashtable
  *
  *  \param[in] val  user-supplied value
@@ -59,12 +65,16 @@ void ares__htable_vpvp_destroy(ares__htable_vpvp_t *htable);
 
 /*! Create size_t key, void pointer value hash table
  *
+ *  \param[in] key_free  Optional. Call back to free user-supplied key.  If
+ *                       NULL it is expected the caller will clean up any user
+ *                       supplied keys.
  *  \param[in] val_free  Optional. Call back to free user-supplied value.  If
  *                       NULL it is expected the caller will clean up any user
  *                       supplied values.
  */
 ares__htable_vpvp_t           *
-  ares__htable_vpvp_create(ares__htable_vpvp_val_free_t val_free);
+  ares__htable_vpvp_create(ares__htable_vpvp_key_free_t key_free,
+    ares__htable_vpvp_val_free_t val_free);
 
 /*! Insert key/value into hash table
  *

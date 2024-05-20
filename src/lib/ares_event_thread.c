@@ -436,7 +436,7 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
     return ARES_ENOMEM;
   }
 
-  e->ev_cust_handles = ares__htable_vpvp_create(ares_event_destroy_cb);
+  e->ev_cust_handles = ares__htable_vpvp_create(NULL, ares_event_destroy_cb);
   if (e->ev_cust_handles == NULL) {
     ares_event_thread_destroy_int(e);
     return ARES_ENOMEM;

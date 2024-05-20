@@ -30,6 +30,7 @@
 #include "ares__htable_vpvp.h"
 
 struct ares__htable_vpvp {
+  ares__htable_vpvp_key_free_t free_key;
   ares__htable_vpvp_val_free_t free_val;
   ares__htable_t              *hash;
 };
@@ -66,6 +67,10 @@ static void bucket_free(void *bucket)
 {
   ares__htable_vpvp_bucket_t *arg = bucket;
 
+  if (arg->parent->free_key) {
+    arg->parent->free_key(arg->key);
+  }
+
   if (arg->parent->free_val) {
     arg->parent->free_val(arg->val);
   }
@@ -83,7 +88,8 @@ static ares_bool_t key_eq(const void *key1, const void *key2)
 }
 
 ares__htable_vpvp_t *
-  ares__htable_vpvp_create(ares__htable_vpvp_val_free_t val_free)
+  ares__htable_vpvp_create(ares__htable_vpvp_key_free_t key_free,
+    ares__htable_vpvp_val_free_t val_free)
 {
   ares__htable_vpvp_t *htable = ares_malloc(sizeof(*htable));
   if (htable == NULL) {
@@ -96,6 +102,7 @@ ares__htable_vpvp_t *
     goto fail;
   }
 
+  htable->free_key = key_free;
   htable->free_val = val_free;
 
   return htable;

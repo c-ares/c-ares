@@ -404,6 +404,8 @@ TEST(Misc, OnionDomain) {
   EXPECT_EQ(1, ares__is_onion_domain("YES.ONION"));
   EXPECT_EQ(1, ares__is_onion_domain("YES.ONION."));
 }
+#endif
+
 
 TEST_F(LibraryTest, DNSRecord) {
   ares_dns_record_t   *dnsrec = NULL;
@@ -889,6 +891,8 @@ TEST_F(LibraryTest, DNSParseFlags) {
   ares_free(msg); msg = NULL;
 }
 
+#ifndef CARES_SYMBOL_HIDING
+
 TEST_F(LibraryTest, CatDomain) {
   char *s;
 
@@ -963,6 +967,13 @@ TEST_F(LibraryTest, HtableSzvpMisuse) {
   EXPECT_EQ((size_t)0, ares__htable_szvp_num_keys(NULL));
 }
 
+TEST_F(LibraryTest, HtableVpvpMisuse) {
+  EXPECT_EQ(ARES_FALSE, ares__htable_vpvp_insert(NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares__htable_vpvp_get(NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares__htable_vpvp_remove(NULL, NULL));
+  EXPECT_EQ((size_t)0, ares__htable_vpvp_num_keys(NULL));
+}
+
 TEST_F(LibraryTest, LlistMisuse) {
   ares__llist_replace_destructor(NULL, NULL);
   EXPECT_EQ(NULL, ares__llist_insert_before(NULL, NULL));
@@ -991,6 +1002,51 @@ TEST_F(LibraryTest, SlistMisuse) {
   EXPECT_EQ(NULL, ares__slist_first_val(NULL));
   EXPECT_EQ(NULL, ares__slist_last_val(NULL));
   EXPECT_EQ(NULL, ares__slist_node_claim(NULL));
+}
+
+
+TEST_F(LibraryTest, HtableVpvp) {
+  ares__llist_t       *l = NULL;
+  ares__htable_vpvp_t *h = NULL;
+  ares__llist_node_t  *n = NULL;
+  size_t               i;
+
+#define VPVP_TABLE_SIZE 1000
+
+  l = ares__llist_create(NULL);
+  EXPECT_NE((void *)NULL, l);
+
+  h = ares__htable_vpvp_create(NULL, ares_free);
+  EXPECT_NE((void *)NULL, h);
+
+  for (i=0; i<VPVP_TABLE_SIZE; i++) {
+    void *p = ares_malloc_zero(4);
+    EXPECT_NE((void *)NULL, p);
+    EXPECT_NE((void *)NULL, ares__llist_insert_last(l, p));
+    EXPECT_TRUE(ares__htable_vpvp_insert(h, p, p));
+  }
+
+  EXPECT_EQ(VPVP_TABLE_SIZE, ares__llist_len(l));
+  EXPECT_EQ(VPVP_TABLE_SIZE, ares__htable_vpvp_num_keys(h));
+
+  n = ares__llist_node_first(l);
+  EXPECT_NE((void *)NULL, n);
+  while (n != NULL) {
+    ares__llist_node_t *next = ares__llist_node_next(n);
+    void               *p    = ares__llist_node_val(n);
+    EXPECT_NE((void *)NULL, p);
+    EXPECT_EQ(p, ares__htable_vpvp_get_direct(h, p));
+    EXPECT_TRUE(ares__htable_vpvp_get(h, p, NULL));
+    EXPECT_TRUE(ares__htable_vpvp_remove(h, p));
+    ares__llist_node_destroy(n);
+    n = next;
+  }
+
+  EXPECT_EQ(0, ares__llist_len(l));
+  EXPECT_EQ(0, ares__htable_vpvp_num_keys(h));
+
+  ares__llist_destroy(l);
+  ares__htable_vpvp_destroy(h);
 }
 #endif
 
