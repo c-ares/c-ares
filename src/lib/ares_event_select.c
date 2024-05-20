@@ -23,6 +23,12 @@
  *
  * SPDX-License-Identifier: MIT
  */
+
+/* Some systems might default to something low like 256 (NetBSD), lets define
+ * this to assist.  Really, no one should be using select, but lets be safe
+ * anyhow */
+#define FD_SETSIZE 4096
+
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
