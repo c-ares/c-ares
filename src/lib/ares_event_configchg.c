@@ -175,6 +175,10 @@ struct ares_event_configchg {
   ares_event_thread_t *e;
 };
 
+typedef VOID (*PINTERFACE_TIMESTAMP_CONFIG_CHANGE_CALLBACK)(PVOID CallerContext);
+VOID WINAPI CancelIfTimestampConfigChange(HANDLE NotificationHandle);
+DWORD WINAPI NotifyIfTimestampConfigChange(PVOID CallerContext, PINTERFACE_TIMESTAMP_CONFIG_CHANGE_CALLBACK Callback, HANDLE NotificationHandle);
+
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
 #ifdef __WATCOMC__
@@ -212,6 +216,8 @@ static void ares_event_configchg_ip_cb(PVOID CallerContext)
   ares_event_configchg_reload(configchg->e);
 }
 #endif
+
+
 
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
                                         ares_event_thread_t     *e)
