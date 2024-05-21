@@ -189,7 +189,7 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
   }
 
   if (configchg->ipchg_hnd != NULL) {
-    CancelMibChangeNotify2(configchg->ipchg_hnd);
+    CancelIfTimestampConfigChange(configchg->ipchg_hnd);
     configchg->ipchg_hnd = NULL;
   }
 
@@ -206,11 +206,9 @@ static void ares_event_configchg_if_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW
   ares_event_configchg_reload(configchg->e);
 }
 
-static void ares_event_configchg_ip_cb(PVOID CallerContext, PMIB_UNICASTIPADDRESS_ROW Row, MIB_NOTIFICATION_TYPE NotificationType)
+static void ares_event_configchg_ip_cb(PVOID CallerContext)
 {
   ares_event_configchg_t *configchg = CallerContext;
-  (void)Row;
-  (void)NotificationType;
   ares_event_configchg_reload(configchg->e);
 }
 #endif
@@ -239,11 +237,9 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
     goto done;
   }
 
-  if (NotifyUnicastIpAddressChange(AF_UNSPEC,
-                              (PUNICAST_IPADDRESS_CHANGE_CALLBACK)ares_event_configchg_ip_cb,
-                              *configchg,
-                              FALSE,
-                              &(*configchg)->ipchg_hnd) != NO_ERROR) {
+  if (NotifyIfTimestampConfigChange(*configchg,
+                                    (PINTERFACE_TIMESTAMP_CONFIG_CHANGE_CALLBACK)ares_event_configchg_ip_cb,
+                                    &(*configchg)->ipchg_hnd) != NO_ERROR) {
     status = ARES_ESERVFAIL;
     goto done;
   }
