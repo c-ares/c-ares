@@ -338,6 +338,13 @@ struct ares_channeldata {
   /* Callback triggered when a server has a successful or failed response */
   ares_server_state_callback          server_state_cb;
   void                               *server_state_cb_data;
+
+  /* TRUE if a reinit is pending.  Reinit spawns a thread to read the system
+   * configuration and then apply the configuration since configuration
+   * reading may block.  The thread handle is provided for waiting on thread
+   * exit. */
+  ares_bool_t                         reinit_pending;
+  ares__thread_t                     *reinit_thread;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */

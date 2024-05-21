@@ -136,7 +136,8 @@ struct ares_event_thread {
  *                           Non-socket events cannot be removed, and must have
  *                           ARES_EVENT_FLAG_OTHER set.
  *  \param[in]  cb           Callback to call when
- *                           event is triggered. Required. Not allowed to be
+ *                           event is triggered. Required if flags is not
+ *                           ARES_EVENT_FLAG_NONE. Not allowed to be
  *                           changed, ignored on modification.
  *  \param[in]  fd           File descriptor/socket to monitor. May
  *                           be ARES_SOCKET_BAD if not monitoring file

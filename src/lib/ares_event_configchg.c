@@ -39,15 +39,20 @@ static void ares_event_configchg_reload(ares_event_thread_t *e)
 #  include <sys/inotify.h>
 
 struct ares_event_configchg {
-  int inotify_fd;
+  int                  inotify_fd;
+  ares_event_thread_t *e;
 };
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
-  (void)configchg;
+  if (configchg == NULL)
+    return;
 
-  /* Cleanup happens automatically by the event system when it removes
-   * the file descriptor */
+  /* Tell event system to stop monitoring for changes.  This will cause the
+   * cleanup to be called */
+  ares_event_update(NULL, configchg->e, ARES_EVENT_FLAG_NONE,
+                    NULL, configchg->inotify_fd,
+                    NULL, NULL, NULL);
 }
 
 static void ares_event_configchg_free(void *data)
@@ -131,6 +136,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg, ares
     return ARES_ENOMEM;
   }
 
+  c->e          = e;
   c->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
   if (c->inotify_fd == -1) {
     status = ARES_ESERVFAIL;

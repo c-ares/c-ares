@@ -89,7 +89,12 @@ ares_status_t ares_event_update(ares_event_t **event, ares_event_thread_t *e,
 {
   ares_event_t *ev = NULL;
 
-  if (e == NULL || cb == NULL) {
+  if (e == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  /* Callback must be specified if not a removal event. */
+  if (flags != ARES_EVENT_FLAG_NONE && cb == NULL) {
     return ARES_EFORMERR;
   }
 
@@ -298,10 +303,6 @@ static void ares_event_thread_destroy_int(ares_event_thread_t *e)
 {
   ares__llist_node_t *node;
 
-  /* Disable configuration change monitoring */
-  ares_event_configchg_destroy(e->configchg);
-  e->configchg = NULL;
-
   /* Wake thread and tell it to shutdown if it exists */
   ares__thread_mutex_lock(e->mutex);
   if (e->isup) {
@@ -411,7 +412,6 @@ static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
 ares_status_t ares_event_thread_init(ares_channel_t *channel)
 {
   ares_event_thread_t *e;
-  ares_status_t        status;
 
   e = ares_malloc_zero(sizeof(*e));
   if (e == NULL) {
@@ -458,16 +458,6 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
     channel->sock_state_cb      = NULL;
     channel->sock_state_cb_data = NULL;
     return ARES_ESERVFAIL;
-  }
-
-  /* Initialize monitor for configuration changes.  In some rare cases,
-   * ARES_ENOTIMP may occur (OpenWatcom), ignore this. */
-  status = ares_event_configchg_init(&e->configchg, e);
-  if (status != ARES_SUCCESS && status != ARES_ENOTIMP) {
-    ares_event_thread_destroy_int(e);
-    channel->sock_state_cb      = NULL;
-    channel->sock_state_cb_data = NULL;
-    return status;
   }
 
   /* Before starting the thread, process any possible events the initialization
