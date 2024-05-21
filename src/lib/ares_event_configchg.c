@@ -171,13 +171,8 @@ done:
 
 struct ares_event_configchg {
   HANDLE               ifchg_hnd;
-  HANDLE               ipchg_hnd;
   ares_event_thread_t *e;
 };
-
-typedef VOID (*PINTERFACE_TIMESTAMP_CONFIG_CHANGE_CALLBACK)(PVOID CallerContext);
-VOID WINAPI CancelIfTimestampConfigChange(HANDLE NotificationHandle);
-DWORD WINAPI NotifyIfTimestampConfigChange(PVOID CallerContext, PINTERFACE_TIMESTAMP_CONFIG_CHANGE_CALLBACK Callback, HANDLE NotificationHandle);
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
@@ -192,31 +187,19 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
     configchg->ifchg_hnd = NULL;
   }
 
-  if (configchg->ipchg_hnd != NULL) {
-    CancelIfTimestampConfigChange(configchg->ipchg_hnd);
-    configchg->ipchg_hnd = NULL;
-  }
-
   ares_free(configchg);
 #endif
 }
 
 #ifndef __WATCOMC__
-static void ares_event_configchg_if_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row, MIB_NOTIFICATION_TYPE NotificationType)
+static void ares_event_configchg_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row, MIB_NOTIFICATION_TYPE NotificationType)
 {
   ares_event_configchg_t *configchg = CallerContext;
   (void)Row;
   (void)NotificationType;
   ares_event_configchg_reload(configchg->e);
 }
-
-static void ares_event_configchg_ip_cb(PVOID CallerContext)
-{
-  ares_event_configchg_t *configchg = CallerContext;
-  ares_event_configchg_reload(configchg->e);
-}
 #endif
-
 
 
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
@@ -234,18 +217,17 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
 
   (*configchg)->e = e;
 
+  /* NOTE: If a user goes into the control panel and changes the network
+   *       adapter DNS addresses manually, this will NOT trigger a notification.
+   *       We've also tried listening on NotifyUnicastIpAddressChange(), but
+   *       that didn't get triggered either.
+   */
+
   if (NotifyIpInterfaceChange(AF_UNSPEC,
-                              (PIPINTERFACE_CHANGE_CALLBACK)ares_event_configchg_if_cb,
+                              (PIPINTERFACE_CHANGE_CALLBACK)ares_event_configchg_cb,
                               *configchg,
                               FALSE,
                               &(*configchg)->ifchg_hnd) != NO_ERROR) {
-    status = ARES_ESERVFAIL;
-    goto done;
-  }
-
-  if (NotifyIfTimestampConfigChange(*configchg,
-                                    (PINTERFACE_TIMESTAMP_CONFIG_CHANGE_CALLBACK)ares_event_configchg_ip_cb,
-                                    &(*configchg)->ipchg_hnd) != NO_ERROR) {
     status = ARES_ESERVFAIL;
     goto done;
   }
