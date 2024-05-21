@@ -56,6 +56,10 @@ add_executable(dnsdump ${DUMPSOURCES})
 target_compile_definitions(dnsdump PRIVATE CARES_NO_DEPRECATED)
 target_link_libraries(dnsdump PRIVATE caresinternal)
 
+add_executable(ares_queryloop ${LOOPSOURCES})
+target_compile_definitions(ares_queryloop PRIVATE CARES_NO_DEPRECATED)
+target_link_libraries(ares_queryloop PRIVATE caresinternal)
+
 # register tests
 
 add_test(NAME arestest COMMAND $<TARGET_FILE:arestest>)

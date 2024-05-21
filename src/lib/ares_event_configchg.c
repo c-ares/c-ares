@@ -280,7 +280,7 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
   (void)flags;
 
   while (1) {
-    int     t;
+    int     t = 0;
     ssize_t len;
 
     len = read(configchg->fd, &t, sizeof(t));
@@ -288,6 +288,9 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
     if (len < (ssize_t)sizeof(t)) {
       break;
     }
+
+    /* Token is read in network byte order (yeah, docs don't mention this) */
+    t = (int)ntohl(t);
 
     if (t != configchg->token) {
       continue;
@@ -310,6 +313,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
   void         *handle                               = NULL;
   const char *(*pdns_configuration_notify_key)(void) = NULL;
   const char *notify_key                             = NULL;
+  int         flags;
 
   *configchg = ares_malloc_zero(sizeof(**configchg));
   if (*configchg == NULL) {
@@ -343,6 +347,11 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
     goto done;
   }
 
+  /* Set file descriptor to non-blocking */
+  flags = fcntl((*configchg)->fd, F_GETFL, 0);
+  fcntl((*configchg)->fd, F_SETFL, flags | O_NONBLOCK);
+
+  /* Register file descriptor with event subsystem */
   status = ares_event_update(NULL, e, ARES_EVENT_FLAG_READ,
                              ares_event_configchg_cb, (*configchg)->fd,
                              *configchg, ares_event_configchg_free, NULL);

@@ -424,12 +424,13 @@ static void *ares_reinit_thread(void *arg)
   ares__channel_lock(channel);
 
   /* Flush cached queries on reinit */
-  if (channel->qcache) {
+  if (status == ARES_SUCCESS && channel->qcache) {
     ares__qcache_flush(channel->qcache);
   }
 
   channel->reinit_pending = ARES_FALSE;
   ares__channel_unlock(channel);
+
   return NULL;
 }
 
