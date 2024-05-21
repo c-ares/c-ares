@@ -33,10 +33,8 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-#  ifdef USE_WINSOCK
-#    include <winsock2.h>
-#  endif
-#  include  <windows.h>
+#  include <winsock2.h>
+#  include <windows.h>
 #else
 #  include <unistd.h>
 #  include <netinet/in.h>
@@ -86,8 +84,8 @@ int main(int argc, char *argv[])
   size_t               count;
   ares_status_t        status;
 
-#ifdef USE_WINSOCK
-  WORD    wVersionRequested = MAKEWORD(USE_WINSOCK, USE_WINSOCK);
+#ifdef _WIN32
+  WORD    wVersionRequested = MAKEWORD(2, 2);
   WSADATA wsaData;
   WSAStartup(wVersionRequested, &wsaData);
 #endif
@@ -131,7 +129,7 @@ int main(int argc, char *argv[])
   ares_destroy(channel);
   ares_library_cleanup();
 
-#ifdef USE_WINSOCK
+#ifdef _WIN32
   WSACleanup();
 #endif
   return 0;
