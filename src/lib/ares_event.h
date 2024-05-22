@@ -82,9 +82,10 @@ typedef struct {
 struct ares_event_configchg;
 typedef struct ares_event_configchg ares_event_configchg_t;
 
-ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg, ares_event_thread_t *e);
+ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
+                                        ares_event_thread_t     *e);
 
-void ares_event_configchg_destroy(ares_event_configchg_t *configchg);
+void          ares_event_configchg_destroy(ares_event_configchg_t *configchg);
 
 struct ares_event_thread {
   /*! Whether the event thread should be online or not.  Checked on every wake
@@ -103,7 +104,8 @@ struct ares_event_thread {
   ares__llist_t          *ev_updates;
   /*! Registered socket event handles */
   ares__htable_asvp_t    *ev_sock_handles;
-  /*! Registered custom event handles. Typically used for external triggering. */
+  /*! Registered custom event handles. Typically used for external triggering.
+   */
   ares__htable_vpvp_t    *ev_cust_handles;
   /*! Pointer to the event handle which is used to signal and wake the event
    *  thread itself.  This is needed to be able to do things like update the
@@ -117,7 +119,6 @@ struct ares_event_thread {
   /* Event subsystem private data */
   void                   *ev_sys_data;
 };
-
 
 /*! Queue an update for the event handle.
  *

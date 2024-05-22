@@ -26,8 +26,8 @@
 #ifndef __ARES__HTABLE_VPVP_H
 #define __ARES__HTABLE_VPVP_H
 
-/*! \addtogroup ares__htable_vpvp HashTable with void pointer Key and void pointer
- * Value
+/*! \addtogroup ares__htable_vpvp HashTable with void pointer Key and void
+ * pointer Value
  *
  * This data structure wraps the base ares__htable data structure in order to
  * split the key and value data types as size_t and void pointer, respectively.
@@ -74,7 +74,7 @@ void ares__htable_vpvp_destroy(ares__htable_vpvp_t *htable);
  */
 ares__htable_vpvp_t           *
   ares__htable_vpvp_create(ares__htable_vpvp_key_free_t key_free,
-    ares__htable_vpvp_val_free_t val_free);
+                                     ares__htable_vpvp_val_free_t val_free);
 
 /*! Insert key/value into hash table
  *

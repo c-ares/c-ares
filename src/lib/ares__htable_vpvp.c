@@ -89,7 +89,7 @@ static ares_bool_t key_eq(const void *key1, const void *key2)
 
 ares__htable_vpvp_t *
   ares__htable_vpvp_create(ares__htable_vpvp_key_free_t key_free,
-    ares__htable_vpvp_val_free_t val_free)
+                           ares__htable_vpvp_val_free_t val_free)
 {
   ares__htable_vpvp_t *htable = ares_malloc(sizeof(*htable));
   if (htable == NULL) {
@@ -170,8 +170,7 @@ ares_bool_t ares__htable_vpvp_get(const ares__htable_vpvp_t *htable, void *key,
   return ARES_TRUE;
 }
 
-void *ares__htable_vpvp_get_direct(const ares__htable_vpvp_t *htable,
-                                   void                      *key)
+void *ares__htable_vpvp_get_direct(const ares__htable_vpvp_t *htable, void *key)
 {
   void *val = NULL;
   ares__htable_vpvp_get(htable, key, &val);

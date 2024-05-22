@@ -44,14 +44,14 @@ struct ares_event_configchg {
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
-  if (configchg == NULL)
+  if (configchg == NULL) {
     return;
+  }
 
   /* Tell event system to stop monitoring for changes.  This will cause the
    * cleanup to be called */
-  ares_event_update(NULL, configchg->e, ARES_EVENT_FLAG_NONE,
-                    NULL, configchg->inotify_fd,
-                    NULL, NULL, NULL);
+  ares_event_update(NULL, configchg->e, ARES_EVENT_FLAG_NONE, NULL,
+                    configchg->inotify_fd, NULL, NULL, NULL);
 }
 
 static void ares_event_configchg_free(void *data)
@@ -120,7 +120,8 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
   }
 }
 
-ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg, ares_event_thread_t *e)
+ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
+                                        ares_event_thread_t     *e)
 {
   ares_status_t           status = ARES_SUCCESS;
   ares_event_configchg_t *c;
@@ -150,9 +151,9 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg, ares
     goto done;
   }
 
-  status = ares_event_update(NULL, e, ARES_EVENT_FLAG_READ,
-                             ares_event_configchg_cb, c->inotify_fd,
-                             c, ares_event_configchg_free, NULL);
+  status =
+    ares_event_update(NULL, e, ARES_EVENT_FLAG_READ, ares_event_configchg_cb,
+                      c->inotify_fd, c, ares_event_configchg_free, NULL);
 
 done:
   if (status != ARES_SUCCESS) {
@@ -175,11 +176,12 @@ struct ares_event_configchg {
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
-#ifdef __WATCOMC__
+#  ifdef __WATCOMC__
   /* Not supported */
-#else
-  if (configchg == NULL)
+#  else
+  if (configchg == NULL) {
     return;
+  }
 
   if (configchg->ifchg_hnd != NULL) {
     CancelMibChangeNotify2(configchg->ifchg_hnd);
@@ -187,26 +189,28 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
   }
 
   ares_free(configchg);
-#endif
+#  endif
 }
 
-#ifndef __WATCOMC__
-static void ares_event_configchg_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row, MIB_NOTIFICATION_TYPE NotificationType)
+#  ifndef __WATCOMC__
+static void ares_event_configchg_cb(PVOID                 CallerContext,
+                                    PMIB_IPINTERFACE_ROW  Row,
+                                    MIB_NOTIFICATION_TYPE NotificationType)
 {
   ares_event_configchg_t *configchg = CallerContext;
   (void)Row;
   (void)NotificationType;
   ares_event_configchg_reload(configchg->e);
 }
-#endif
+#  endif
 
 
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
                                         ares_event_thread_t     *e)
 {
-#ifdef __WATCOMC__
+#  ifdef __WATCOMC__
   return ARES_ENOTIMP;
-#else
+#  else
   ares_status_t status = ARES_SUCCESS;
 
   *configchg = ares_malloc_zero(sizeof(**configchg));
@@ -222,11 +226,9 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
    *       that didn't get triggered either.
    */
 
-  if (NotifyIpInterfaceChange(AF_UNSPEC,
-                              (PIPINTERFACE_CHANGE_CALLBACK)ares_event_configchg_cb,
-                              *configchg,
-                              FALSE,
-                              &(*configchg)->ifchg_hnd) != NO_ERROR) {
+  if (NotifyIpInterfaceChange(
+        AF_UNSPEC, (PIPINTERFACE_CHANGE_CALLBACK)ares_event_configchg_cb,
+        *configchg, FALSE, &(*configchg)->ifchg_hnd) != NO_ERROR) {
     status = ARES_ESERVFAIL;
     goto done;
   }
@@ -238,7 +240,7 @@ done:
   }
 
   return status;
-#endif
+#  endif
 }
 
 #elif defined(__APPLE__)
@@ -389,29 +391,24 @@ typedef struct {
 } fileinfo_t;
 
 struct ares_event_configchg {
-  ares_bool_t            isup;
-  ares__thread_t        *thread;
-  ares__htable_strvp_t  *filestat;
-  ares__thread_mutex_t  *lock;
-  ares__thread_cond_t   *wake;
-  const char            *resolvconf_path;
-  ares_event_thread_t   *e;
+  ares_bool_t           isup;
+  ares__thread_t       *thread;
+  ares__htable_strvp_t *filestat;
+  ares__thread_mutex_t *lock;
+  ares__thread_cond_t  *wake;
+  const char           *resolvconf_path;
+  ares_event_thread_t  *e;
 };
 
 static ares_status_t config_change_check(ares__htable_strvp_t *filestat,
-                                         const char *resolvconf_path)
+                                         const char           *resolvconf_path)
 {
   size_t      i;
-  const char *configfiles[] = {
-    resolvconf_path,
-    "/etc/nsswitch.conf",
-    "/etc/netsvc.conf",
-    "/etc/svc.conf",
-    NULL
-  };
-  ares_bool_t changed = ARES_FALSE;
+  const char *configfiles[] = { resolvconf_path, "/etc/nsswitch.conf",
+                                "/etc/netsvc.conf", "/etc/svc.conf", NULL };
+  ares_bool_t changed       = ARES_FALSE;
 
-  for (i=0; configfiles[i] != NULL; i++) {
+  for (i = 0; configfiles[i] != NULL; i++) {
     fileinfo_t *fi = ares__htable_strvp_get_direct(filestat, configfiles[i]);
     struct stat st;
 
@@ -485,7 +482,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
     goto done;
   }
 
-  c->e        = e;
+  c->e = e;
 
   c->filestat = ares__htable_strvp_create(ares_free);
   if (c->filestat == NULL) {
@@ -520,7 +517,6 @@ done:
   }
   return status;
 }
-
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
