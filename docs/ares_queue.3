@@ -10,7 +10,7 @@ c-ares queue status
 .nf
 #include <ares.h>
 
-size_t ares_queue_active_queries(ares_channel_t *channel);
+size_t ares_queue_active_queries(const ares_channel_t *channel);
 
 ares_status_t ares_queue_wait_empty(ares_channel_t *channel,
                                     int timeout_ms);

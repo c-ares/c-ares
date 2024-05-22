@@ -167,13 +167,13 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
     const unsigned char netbase[16];
     unsigned char       netmask;
   } blacklist_v6[] = {
-  /* fec0::/10 was deprecated by [RFC3879] in September 2004. Formerly a
-  * Site-Local scoped address prefix.  These are never valid DNS servers,
-  * but are known to be returned at least sometimes on Windows and Android.
-  */
-    {{ 0xfe, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* fec0::/10 was deprecated by [RFC3879] in September 2004. Formerly a
+     * Site-Local scoped address prefix.  These are never valid DNS servers,
+     * but are known to be returned at least sometimes on Windows and Android.
+     */
+    { { 0xfe, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00 },
-     10}
+     10 }
   };
 
   size_t i;
@@ -369,7 +369,6 @@ static ares_status_t ares__sconfig_linklocal(ares_sconfig_t *s,
   s->ll_scope = ll_scope;
   return ARES_SUCCESS;
 }
-
 
 ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
                                    const struct ares_addr *addr,
@@ -594,7 +593,7 @@ static ares_status_t ares__server_create(ares_channel_t       *channel,
   server->udp_port    = ares__sconfig_get_port(channel, sconfig, ARES_FALSE);
   server->tcp_port    = ares__sconfig_get_port(channel, sconfig, ARES_TRUE);
   server->addr.family = sconfig->addr.family;
-  server->next_retry_time.tv_sec = 0;
+  server->next_retry_time.tv_sec  = 0;
   server->next_retry_time.tv_usec = 0;
 
   if (sconfig->addr.family == AF_INET) {
@@ -973,7 +972,8 @@ ares_status_t ares_get_server_addr(const struct server_state *server,
   return ARES_SUCCESS;
 }
 
-int ares_get_servers(ares_channel_t *channel, struct ares_addr_node **servers)
+int ares_get_servers(const ares_channel_t   *channel,
+                     struct ares_addr_node **servers)
 {
   struct ares_addr_node *srvr_head = NULL;
   struct ares_addr_node *srvr_last = NULL;
@@ -1027,7 +1027,7 @@ int ares_get_servers(ares_channel_t *channel, struct ares_addr_node **servers)
   return (int)status;
 }
 
-int ares_get_servers_ports(ares_channel_t              *channel,
+int ares_get_servers_ports(const ares_channel_t        *channel,
                            struct ares_addr_port_node **servers)
 {
   struct ares_addr_port_node *srvr_head = NULL;
@@ -1175,7 +1175,7 @@ int ares_set_servers_ports_csv(ares_channel_t *channel, const char *_csv)
   return (int)set_servers_csv(channel, _csv);
 }
 
-char *ares_get_servers_csv(ares_channel_t *channel)
+char *ares_get_servers_csv(const ares_channel_t *channel)
 {
   ares__buf_t        *buf = NULL;
   char               *out = NULL;
@@ -1216,8 +1216,7 @@ done:
 }
 
 void ares_set_server_state_callback(ares_channel_t            *channel,
-                                    ares_server_state_callback cb,
-                                    void                      *data)
+                                    ares_server_state_callback cb, void *data)
 {
   if (channel == NULL) {
     return;
