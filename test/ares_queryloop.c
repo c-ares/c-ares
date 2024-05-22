@@ -78,11 +78,11 @@ static void ai_callback(void *arg, int status, int timeouts,
 
 int main(int argc, char *argv[])
 {
-  struct ares_options  options;
-  int                  optmask = 0;
-  ares_channel_t      *channel;
-  size_t               count;
-  ares_status_t        status;
+  struct ares_options options;
+  int                 optmask = 0;
+  ares_channel_t     *channel;
+  size_t              count;
+  ares_status_t       status;
 
 #ifdef _WIN32
   WORD    wVersionRequested = MAKEWORD(2, 2);
@@ -102,8 +102,8 @@ int main(int argc, char *argv[])
   }
 
   memset(&options, 0, sizeof(options));
-  optmask      |= ARES_OPT_EVENT_THREAD;
-  options.evsys = ARES_EVSYS_DEFAULT;
+  optmask       |= ARES_OPT_EVENT_THREAD;
+  options.evsys  = ARES_EVSYS_DEFAULT;
 
   status = (ares_status_t)ares_init_options(&channel, &options, optmask);
   if (status != ARES_SUCCESS) {
@@ -113,12 +113,12 @@ int main(int argc, char *argv[])
 
   printf("Querying for %s every 1s, press CTRL-C to quit...\n", argv[1]);
 
-  for (count = 1; ; count++) {
-      struct ares_addrinfo_hints hints;
-      memset(&hints, 0, sizeof(hints));
-      hints.ai_family = AF_UNSPEC;
-      printf("Attempt %zu...\n", count);
-      ares_getaddrinfo(channel, argv[1], NULL, &hints, ai_callback, argv[1]);
+  for (count = 1;; count++) {
+    struct ares_addrinfo_hints hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    printf("Attempt %zu...\n", count);
+    ares_getaddrinfo(channel, argv[1], NULL, &hints, ai_callback, argv[1]);
 #ifdef _WIN32
     Sleep(1000);
 #else

@@ -389,7 +389,7 @@ int ares_init_options(ares_channel_t           **channelptr,
 
     /* Initialize monitor for configuration changes.  In some rare cases,
      * ARES_ENOTIMP may occur (OpenWatcom), ignore this. */
-    e = channel->sock_state_cb_data;
+    e      = channel->sock_state_cb_data;
     status = ares_event_configchg_init(&e->configchg, e);
     if (status != ARES_SUCCESS && status != ARES_ENOTIMP) {
       goto done;
@@ -433,7 +433,6 @@ static void *ares_reinit_thread(void *arg)
   return NULL;
 }
 
-
 ares_status_t ares_reinit(ares_channel_t *channel)
 {
   ares_status_t status = ARES_SUCCESS;
@@ -462,8 +461,8 @@ ares_status_t ares_reinit(ares_channel_t *channel)
     }
 
     /* Spawn a new thread */
-    status = ares__thread_create(&channel->reinit_thread, ares_reinit_thread,
-                                 channel);
+    status =
+      ares__thread_create(&channel->reinit_thread, ares_reinit_thread, channel);
     if (status != ARES_SUCCESS) {
       ares__channel_lock(channel);
       channel->reinit_pending = ARES_FALSE;
@@ -476,7 +475,6 @@ ares_status_t ares_reinit(ares_channel_t *channel)
 
   return status;
 }
-
 
 /* ares_dup() duplicates a channel handle with all its options and returns a
    new channel handle */

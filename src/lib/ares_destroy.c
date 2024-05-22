@@ -35,8 +35,8 @@
 
 void ares_destroy(ares_channel_t *channel)
 {
-  size_t               i;
-  ares__llist_node_t  *node = NULL;
+  size_t              i;
+  ares__llist_node_t *node = NULL;
 
   if (channel == NULL) {
     return;

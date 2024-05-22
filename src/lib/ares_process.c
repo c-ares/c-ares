@@ -72,9 +72,8 @@ static void          end_query(ares_channel_t *channel, struct query *query,
                                ares_status_t status, const ares_dns_record_t *dnsrec);
 
 /* Invoke the server state callback after a success or failure */
-static void invoke_server_state_cb(const struct server_state *server,
-                                   ares_bool_t                success,
-                                   int                        flags)
+static void          invoke_server_state_cb(const struct server_state *server,
+                                            ares_bool_t success, int flags)
 {
   const ares_channel_t *channel = server->channel;
   ares__buf_t          *buf;
@@ -97,7 +96,7 @@ static void invoke_server_state_cb(const struct server_state *server,
   }
 
   server_string = ares__buf_finish_str(buf, NULL);
-  buf = NULL;
+  buf           = NULL;
   if (server_string == NULL) {
     return;
   }
@@ -108,7 +107,7 @@ static void invoke_server_state_cb(const struct server_state *server,
 }
 
 static void server_increment_failures(struct server_state *server,
-                                      ares_bool_t used_tcp)
+                                      ares_bool_t          used_tcp)
 {
   ares__slist_node_t   *node;
   const ares_channel_t *channel = server->channel;
@@ -126,9 +125,9 @@ static void server_increment_failures(struct server_state *server,
   timeadd(&next_retry_time, channel->server_retry_delay);
   server->next_retry_time = next_retry_time;
 
-  invoke_server_state_cb(server, ARES_FALSE, used_tcp == ARES_TRUE
-                                             ? ARES_SERV_STATE_TCP
-                                             : ARES_SERV_STATE_UDP);
+  invoke_server_state_cb(server, ARES_FALSE,
+                         used_tcp == ARES_TRUE ? ARES_SERV_STATE_TCP
+                                               : ARES_SERV_STATE_UDP);
 }
 
 static void server_set_good(struct server_state *server, ares_bool_t used_tcp)
@@ -146,12 +145,12 @@ static void server_set_good(struct server_state *server, ares_bool_t used_tcp)
     ares__slist_node_reinsert(node);
   }
 
-  server->next_retry_time.tv_sec = 0;
+  server->next_retry_time.tv_sec  = 0;
   server->next_retry_time.tv_usec = 0;
 
-  invoke_server_state_cb(server, ARES_TRUE, used_tcp == ARES_TRUE
-                                            ? ARES_SERV_STATE_TCP
-                                            : ARES_SERV_STATE_UDP);
+  invoke_server_state_cb(server, ARES_TRUE,
+                         used_tcp == ARES_TRUE ? ARES_SERV_STATE_TCP
+                                               : ARES_SERV_STATE_UDP);
 }
 
 /* return true if now is exactly check time or later */
