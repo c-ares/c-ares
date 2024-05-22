@@ -102,7 +102,7 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
          ptr += sizeof(struct inotify_event) + event->len) {
       event = (const struct inotify_event *)ptr;
 
-      if (ares_strlen(event->name) == 0) {
+      if (event->len == 0 || ares_strlen(event->name) == 0) {
         continue;
       }
 
