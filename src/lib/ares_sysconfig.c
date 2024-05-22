@@ -1073,7 +1073,6 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
   ares_sysconfig_t sysconfig;
 
   memset(&sysconfig, 0, sizeof(sysconfig));
-  printf("** %s() **: enter\n", __FUNCTION__); fflush(stdout);
 
 #ifdef _WIN32
   status = ares__init_sysconfig_windows(&sysconfig);
@@ -1097,8 +1096,6 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
     goto done;
   }
 
-  printf("** %s() **: config loaded\n", __FUNCTION__); fflush(stdout);
-
   /* Environment is supposed to override sysconfig */
   status = ares__init_by_environment(&sysconfig);
   if (status != ARES_SUCCESS) {
@@ -1109,7 +1106,6 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
    * lock prior to this. */
 
   ares__channel_lock(channel);
-  printf("** %s() **: apply\n", __FUNCTION__); fflush(stdout);
 
   status = ares_sysconfig_apply(channel, &sysconfig);
   ares__channel_unlock(channel);
@@ -1119,8 +1115,6 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
   }
 
 done:
-  printf("** %s() **: exit\n", __FUNCTION__); fflush(stdout);
-
   ares_sysconfig_free(&sysconfig);
 
   return status;

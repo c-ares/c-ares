@@ -30,7 +30,6 @@
 
 static void ares_event_configchg_reload(ares_event_thread_t *e)
 {
-  printf("** REINIT **\n"); fflush(stdout);
   ares_reinit(e->channel);
 }
 

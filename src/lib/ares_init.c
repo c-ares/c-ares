@@ -414,8 +414,6 @@ static void *ares_reinit_thread(void *arg)
 
   /* ares__init_by_sysconfig() will lock when applying the config, but not
    * when retrieving. */
-  printf("** %s() **: enter\n", __FUNCTION__); fflush(stdout);
-
   status = ares__init_by_sysconfig(channel);
   if (status != ARES_SUCCESS) {
     DEBUGF(fprintf(stderr, "Error: init_by_sysconfig failed: %s\n",
@@ -431,7 +429,6 @@ static void *ares_reinit_thread(void *arg)
 
   channel->reinit_pending = ARES_FALSE;
   ares__channel_unlock(channel);
-  printf("** %s() **: exit\n", __FUNCTION__); fflush(stdout);
 
   return NULL;
 }
@@ -444,14 +441,12 @@ ares_status_t ares_reinit(ares_channel_t *channel)
   if (channel == NULL) {
     return ARES_EFORMERR;
   }
-  printf("** %s() **: enter\n", __FUNCTION__); fflush(stdout);
 
   ares__channel_lock(channel);
 
   /* If a reinit is already in process, lets not do it again */
   if (channel->reinit_pending) {
     ares__channel_unlock(channel);
-    printf("** %s() **: exit, already pending\n", __FUNCTION__); fflush(stdout);
     return ARES_SUCCESS;
   }
   channel->reinit_pending = ARES_TRUE;
@@ -467,7 +462,6 @@ ares_status_t ares_reinit(ares_channel_t *channel)
     }
 
     /* Spawn a new thread */
-    printf("** %s() **: spawning thread\n", __FUNCTION__); fflush(stdout);
     status = ares__thread_create(&channel->reinit_thread, ares_reinit_thread,
                                  channel);
     if (status != ARES_SUCCESS) {
