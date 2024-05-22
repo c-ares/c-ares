@@ -480,7 +480,7 @@ ares_status_t ares_reinit(ares_channel_t *channel)
 
 /* ares_dup() duplicates a channel handle with all its options and returns a
    new channel handle */
-int ares_dup(ares_channel_t **dest, ares_channel_t *src)
+int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
 {
   struct ares_options opts;
   ares_status_t       rc;

@@ -537,12 +537,12 @@ void ares__channel_threading_destroy(ares_channel_t *channel)
   channel->cond_empty = NULL;
 }
 
-void ares__channel_lock(ares_channel_t *channel)
+void ares__channel_lock(const ares_channel_t *channel)
 {
   ares__thread_mutex_lock(channel->lock);
 }
 
-void ares__channel_unlock(ares_channel_t *channel)
+void ares__channel_unlock(const ares_channel_t *channel)
 {
   ares__thread_mutex_unlock(channel->lock);
 }

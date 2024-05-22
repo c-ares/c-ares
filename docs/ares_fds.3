@@ -9,7 +9,7 @@ ares_fds \- return file descriptors to select on (deprecated)
 .nf
 #include <ares.h>
 
-int ares_fds(ares_channel_t *\fIchannel\fP,
+int ares_fds(const ares_channel_t *\fIchannel\fP,
              fd_set *\fIread_fds\fP,
              fd_set *\fIwrite_fds\fP)
 .fi
