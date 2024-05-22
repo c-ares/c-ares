@@ -405,6 +405,8 @@ TEST(Misc, OnionDomain) {
   EXPECT_EQ(1, ares__is_onion_domain("YES.ONION."));
 }
 
+#endif
+
 TEST_F(LibraryTest, DNSRecord) {
   ares_dns_record_t   *dnsrec = NULL;
   ares_dns_rr_t       *rr     = NULL;
@@ -433,14 +435,14 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
       ARES_REC_TYPE_A, ARES_CLASS_IN, 300));
-  EXPECT_LT(0, ares_inet_net_pton(AF_INET, "1.1.1.1", &addr, sizeof(addr)));
+  EXPECT_LT(0, ares_inet_pton(AF_INET, "1.1.1.1", &addr));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_addr(rr, ARES_RR_A_ADDR, &addr));
   /* AAAA */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
       ARES_REC_TYPE_AAAA, ARES_CLASS_IN, 300));
-  EXPECT_LT(0, ares_inet_net_pton(AF_INET6, "2600::4", &addr6, sizeof(addr6)));
+  EXPECT_LT(0, ares_inet_pton(AF_INET6, "2600::4", &addr6));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_addr6(rr, ARES_RR_AAAA_ADDR, &addr6));
   /* MX */
@@ -645,16 +647,19 @@ TEST_F(LibraryTest, DNSRecord) {
   /* Write */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
 
+#ifndef CARES_SYMBOL_HIDING
   ares__buf_t *hexdump = ares__buf_create();
   EXPECT_EQ(ARES_SUCCESS, ares__buf_hexdump(hexdump, msg, msglen));
   char *hexdata = ares__buf_finish_str(hexdump, NULL);
   //printf("HEXDUMP\n%s", hexdata);
   ares_free(hexdata);
+#endif
+
   ares_dns_record_destroy(dnsrec); dnsrec = NULL;
 
   /* Parse */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, 0, &dnsrec));
-  ares_free(msg); msg = NULL;
+  ares_free_string(msg); msg = NULL;
 
   /* Re-write */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
@@ -664,6 +669,7 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(nscount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
   EXPECT_EQ(arcount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
 
+#ifndef CARES_SYMBOL_HIDING
   /* Iterate and print */
   ares__buf_t *printmsg = ares__buf_create();
   ares__buf_append_str(printmsg, ";; ->>HEADER<<- opcode: ");
@@ -768,9 +774,10 @@ TEST_F(LibraryTest, DNSRecord) {
   char *printdata = ares__buf_finish_str(printmsg, NULL);
   //printf("%s", printdata);
   ares_free(printdata);
+#endif
 
   ares_dns_record_destroy(dnsrec);
-  ares_free(msg);
+  ares_free_string(msg);
 }
 
 TEST_F(LibraryTest, DNSParseFlags) {
@@ -796,7 +803,7 @@ TEST_F(LibraryTest, DNSParseFlags) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
       ARES_REC_TYPE_A, ARES_CLASS_IN, 300));
-  EXPECT_LT(0, ares_inet_net_pton(AF_INET, "1.1.1.1", &addr, sizeof(addr)));
+  EXPECT_LT(0, ares_inet_pton(AF_INET, "1.1.1.1", &addr));
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_addr(rr, ARES_RR_A_ADDR, &addr));
   /* TLSA */
@@ -886,8 +893,10 @@ TEST_F(LibraryTest, DNSParseFlags) {
   EXPECT_EQ(ARES_REC_TYPE_PTR, ares_dns_rr_get_type(rr));
 
   ares_dns_record_destroy(dnsrec);
-  ares_free(msg); msg = NULL;
+  ares_free_string(msg); msg = NULL;
 }
+
+#ifndef CARES_SYMBOL_HIDING
 
 TEST_F(LibraryTest, CatDomain) {
   char *s;
@@ -963,6 +972,13 @@ TEST_F(LibraryTest, HtableSzvpMisuse) {
   EXPECT_EQ((size_t)0, ares__htable_szvp_num_keys(NULL));
 }
 
+TEST_F(LibraryTest, HtableVpvpMisuse) {
+  EXPECT_EQ(ARES_FALSE, ares__htable_vpvp_insert(NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares__htable_vpvp_get(NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares__htable_vpvp_remove(NULL, NULL));
+  EXPECT_EQ((size_t)0, ares__htable_vpvp_num_keys(NULL));
+}
+
 TEST_F(LibraryTest, LlistMisuse) {
   ares__llist_replace_destructor(NULL, NULL);
   EXPECT_EQ(NULL, ares__llist_insert_before(NULL, NULL));
@@ -992,6 +1008,200 @@ TEST_F(LibraryTest, SlistMisuse) {
   EXPECT_EQ(NULL, ares__slist_last_val(NULL));
   EXPECT_EQ(NULL, ares__slist_node_claim(NULL));
 }
+
+
+TEST_F(LibraryTest, HtableVpvp) {
+  ares__llist_t       *l = NULL;
+  ares__htable_vpvp_t *h = NULL;
+  ares__llist_node_t  *n = NULL;
+  size_t               i;
+
+#define VPVP_TABLE_SIZE 1000
+
+  l = ares__llist_create(NULL);
+  EXPECT_NE((void *)NULL, l);
+
+  h = ares__htable_vpvp_create(NULL, ares_free);
+  EXPECT_NE((void *)NULL, h);
+
+  for (i=0; i<VPVP_TABLE_SIZE; i++) {
+    void *p = ares_malloc_zero(4);
+    EXPECT_NE((void *)NULL, p);
+    EXPECT_NE((void *)NULL, ares__llist_insert_last(l, p));
+    EXPECT_TRUE(ares__htable_vpvp_insert(h, p, p));
+  }
+
+  EXPECT_EQ(VPVP_TABLE_SIZE, ares__llist_len(l));
+  EXPECT_EQ(VPVP_TABLE_SIZE, ares__htable_vpvp_num_keys(h));
+
+  n = ares__llist_node_first(l);
+  EXPECT_NE((void *)NULL, n);
+  while (n != NULL) {
+    ares__llist_node_t *next = ares__llist_node_next(n);
+    void               *p    = ares__llist_node_val(n);
+    EXPECT_NE((void *)NULL, p);
+    EXPECT_EQ(p, ares__htable_vpvp_get_direct(h, p));
+    EXPECT_TRUE(ares__htable_vpvp_get(h, p, NULL));
+    EXPECT_TRUE(ares__htable_vpvp_remove(h, p));
+    ares__llist_node_destroy(n);
+    n = next;
+  }
+
+  EXPECT_EQ(0, ares__llist_len(l));
+  EXPECT_EQ(0, ares__htable_vpvp_num_keys(h));
+
+  ares__llist_destroy(l);
+  ares__htable_vpvp_destroy(h);
+}
+
+typedef struct {
+  ares_socket_t s;
+} test_htable_asvp_t;
+
+TEST_F(LibraryTest, HtableAsvp) {
+  ares__llist_t       *l = NULL;
+  ares__htable_asvp_t *h = NULL;
+  ares__llist_node_t  *n = NULL;
+  size_t               i;
+
+#define ASVP_TABLE_SIZE 1000
+
+  l = ares__llist_create(NULL);
+  EXPECT_NE((void *)NULL, l);
+
+  h = ares__htable_asvp_create(ares_free);
+  EXPECT_NE((void *)NULL, h);
+
+  for (i=0; i<ASVP_TABLE_SIZE; i++) {
+    test_htable_asvp_t *a = (test_htable_asvp_t *)ares_malloc_zero(sizeof(*a));
+    EXPECT_NE((void *)NULL, a);
+    a->s = (ares_socket_t)i+1;
+    EXPECT_NE((void *)NULL, ares__llist_insert_last(l, a));
+    EXPECT_TRUE(ares__htable_asvp_insert(h, a->s, a));
+  }
+
+  EXPECT_EQ(ASVP_TABLE_SIZE, ares__llist_len(l));
+  EXPECT_EQ(ASVP_TABLE_SIZE, ares__htable_asvp_num_keys(h));
+
+  n = ares__llist_node_first(l);
+  EXPECT_NE((void *)NULL, n);
+  while (n != NULL) {
+    ares__llist_node_t *next = ares__llist_node_next(n);
+    test_htable_asvp_t *a    = (test_htable_asvp_t *)ares__llist_node_val(n);
+    EXPECT_NE((void *)NULL, a);
+    EXPECT_EQ(a, ares__htable_asvp_get_direct(h, a->s));
+    EXPECT_TRUE(ares__htable_asvp_get(h, a->s, NULL));
+    EXPECT_TRUE(ares__htable_asvp_remove(h, a->s));
+    ares__llist_node_destroy(n);
+    n = next;
+  }
+
+  EXPECT_EQ(0, ares__llist_len(l));
+  EXPECT_EQ(0, ares__htable_asvp_num_keys(h));
+
+  ares__llist_destroy(l);
+  ares__htable_asvp_destroy(h);
+}
+
+
+typedef struct {
+  size_t s;
+} test_htable_szvp_t;
+
+TEST_F(LibraryTest, HtableSzvp) {
+  ares__llist_t       *l = NULL;
+  ares__htable_szvp_t *h = NULL;
+  ares__llist_node_t  *n = NULL;
+  size_t               i;
+
+#define SZVP_TABLE_SIZE 1000
+
+  l = ares__llist_create(NULL);
+  EXPECT_NE((void *)NULL, l);
+
+  h = ares__htable_szvp_create(ares_free);
+  EXPECT_NE((void *)NULL, h);
+
+  for (i=0; i<SZVP_TABLE_SIZE; i++) {
+    test_htable_szvp_t *s = (test_htable_szvp_t *)ares_malloc_zero(sizeof(*s));
+    EXPECT_NE((void *)NULL, s);
+    s->s = i+1;
+    EXPECT_NE((void *)NULL, ares__llist_insert_last(l, s));
+    EXPECT_TRUE(ares__htable_szvp_insert(h, s->s, s));
+  }
+
+  EXPECT_EQ(SZVP_TABLE_SIZE, ares__llist_len(l));
+  EXPECT_EQ(SZVP_TABLE_SIZE, ares__htable_szvp_num_keys(h));
+
+  n = ares__llist_node_first(l);
+  EXPECT_NE((void *)NULL, n);
+  while (n != NULL) {
+    ares__llist_node_t *next = ares__llist_node_next(n);
+    test_htable_szvp_t *s    = (test_htable_szvp_t *)ares__llist_node_val(n);
+    EXPECT_NE((void *)NULL, s);
+    EXPECT_EQ(s, ares__htable_szvp_get_direct(h, s->s));
+    EXPECT_TRUE(ares__htable_szvp_get(h, s->s, NULL));
+    EXPECT_TRUE(ares__htable_szvp_remove(h, s->s));
+    ares__llist_node_destroy(n);
+    n = next;
+  }
+
+  EXPECT_EQ(0, ares__llist_len(l));
+  EXPECT_EQ(0, ares__htable_szvp_num_keys(h));
+
+  ares__llist_destroy(l);
+  ares__htable_szvp_destroy(h);
+}
+
+typedef struct {
+  char s[32];
+} test_htable_strvp_t;
+
+TEST_F(LibraryTest, HtableStrvp) {
+  ares__llist_t        *l = NULL;
+  ares__htable_strvp_t *h = NULL;
+  ares__llist_node_t   *n = NULL;
+  size_t                i;
+
+#define STRVP_TABLE_SIZE 1000
+
+  l = ares__llist_create(NULL);
+  EXPECT_NE((void *)NULL, l);
+
+  h = ares__htable_strvp_create(ares_free);
+  EXPECT_NE((void *)NULL, h);
+
+  for (i=0; i<STRVP_TABLE_SIZE; i++) {
+    test_htable_strvp_t *s = (test_htable_strvp_t *)ares_malloc_zero(sizeof(*s));
+    EXPECT_NE((void *)NULL, s);
+    snprintf(s->s, sizeof(s->s), "%d", (int)i);
+    EXPECT_NE((void *)NULL, ares__llist_insert_last(l, s));
+    EXPECT_TRUE(ares__htable_strvp_insert(h, s->s, s));
+  }
+
+  EXPECT_EQ(STRVP_TABLE_SIZE, ares__llist_len(l));
+  EXPECT_EQ(STRVP_TABLE_SIZE, ares__htable_strvp_num_keys(h));
+
+  n = ares__llist_node_first(l);
+  EXPECT_NE((void *)NULL, n);
+  while (n != NULL) {
+    ares__llist_node_t *next = ares__llist_node_next(n);
+    test_htable_strvp_t *s   = (test_htable_strvp_t *)ares__llist_node_val(n);
+    EXPECT_NE((void *)NULL, s);
+    EXPECT_EQ(s, ares__htable_strvp_get_direct(h, s->s));
+    EXPECT_TRUE(ares__htable_strvp_get(h, s->s, NULL));
+    EXPECT_TRUE(ares__htable_strvp_remove(h, s->s));
+    ares__llist_node_destroy(n);
+    n = next;
+  }
+
+  EXPECT_EQ(0, ares__llist_len(l));
+  EXPECT_EQ(0, ares__htable_strvp_num_keys(h));
+
+  ares__llist_destroy(l);
+  ares__htable_strvp_destroy(h);
+}
+
 #endif
 
 TEST_F(DefaultChannelTest, SaveInvalidChannel) {

@@ -38,3 +38,5 @@ FUZZNAMESOURCES = ares-test-fuzz-name.c	\
 
 DUMPSOURCES = dns-proto.cc		\
   dns-dump.cc
+
+LOOPSOURCES = ares_queryloop.c

@@ -1106,6 +1106,7 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
    * lock prior to this. */
 
   ares__channel_lock(channel);
+
   status = ares_sysconfig_apply(channel, &sysconfig);
   ares__channel_unlock(channel);
 

@@ -114,6 +114,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__htable_strvp.h"
 #include "ares__htable_szvp.h"
 #include "ares__htable_asvp.h"
+#include "ares__htable_vpvp.h"
 #include "ares__buf.h"
 #include "ares_dns_private.h"
 #include "ares__iface_ips.h"
@@ -337,6 +338,13 @@ struct ares_channeldata {
   /* Callback triggered when a server has a successful or failed response */
   ares_server_state_callback          server_state_cb;
   void                               *server_state_cb_data;
+
+  /* TRUE if a reinit is pending.  Reinit spawns a thread to read the system
+   * configuration and then apply the configuration since configuration
+   * reading may block.  The thread handle is provided for waiting on thread
+   * exit. */
+  ares_bool_t                         reinit_pending;
+  ares__thread_t                     *reinit_thread;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
