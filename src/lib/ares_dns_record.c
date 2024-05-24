@@ -412,7 +412,7 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
   if (dnsrec == NULL || name == NULL || rr_out == NULL ||
       !ares_dns_section_isvalid(sect) ||
       !ares_dns_rec_type_isvalid(type, ARES_FALSE) ||
-      !ares_dns_class_isvalid(rclass, ARES_FALSE)) {
+      !ares_dns_class_isvalid(rclass, ARES_TRUE)) {
     return ARES_EFORMERR;
   }
 
