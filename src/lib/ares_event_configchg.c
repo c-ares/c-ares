@@ -33,7 +33,21 @@ static void ares_event_configchg_reload(ares_event_thread_t *e)
   ares_reinit(e->channel);
 }
 
-#ifdef __linux__
+#ifdef __ANDROID__
+
+ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
+                                        ares_event_thread_t     *e)
+{
+  /* No ability */
+  return ARES_ENOTIMP;
+}
+
+void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
+{
+  /* No-op */
+}
+
+#elif defined(__linux__)
 
 #  include <sys/inotify.h>
 
