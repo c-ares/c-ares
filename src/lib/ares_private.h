@@ -489,7 +489,6 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
                                             unsigned short        port,
                                             ares_bool_t           want_cnames,
                                             struct ares_addrinfo *ai);
-ares_bool_t   ares__isprint(int ch);
 
 
 /*! Parse a compressed DNS name as defined in RFC1035 starting at the current
