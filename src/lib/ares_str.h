@@ -28,6 +28,7 @@
 #define ARES_STR_H
 
 #include "ares_setup.h"
+#include "ares.h"
 
 char  *ares_strdup(const char *s1);
 
