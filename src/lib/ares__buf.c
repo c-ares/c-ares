@@ -45,14 +45,6 @@ struct ares__buf {
                                        *   SIZE_MAX if not set. */
 };
 
-ares_bool_t ares__isprint(int ch)
-{
-  if (ch >= 0x20 && ch <= 0x7E) {
-    return ARES_TRUE;
-  }
-  return ARES_FALSE;
-}
-
 /* Character set allowed by hostnames.  This is to include the normal
  * domain name character set plus:
  *  - underscores which are used in SRV records.
