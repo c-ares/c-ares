@@ -151,3 +151,26 @@ ares_bool_t ares__memeq_ci(const unsigned char *ptr, const unsigned char *val,
   }
   return ARES_TRUE;
 }
+
+ares_bool_t ares__isprint(int ch)
+{
+  if (ch >= 0x20 && ch <= 0x7E) {
+    return ARES_TRUE;
+  }
+  return ARES_FALSE;
+}
+
+ares_bool_t ares__str_isprint(const char *str, size_t len)
+{
+  size_t i;
+
+  if (str == NULL && len != 0)
+    return ARES_FALSE;
+
+  for (i = 0; i < len; i++) {
+    if (!ares__isprint(str[i])) {
+      return ARES_FALSE;
+    }
+  }
+  return ARES_TRUE;
+}
