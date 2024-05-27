@@ -632,6 +632,11 @@ static ares_status_t ares_dns_parse_rr_uri(ares__buf_t *buf, ares_dns_rr_t *rr,
     return status;
   }
 
+  if (!ares__str_isprint(name, remaining_len)) {
+    ares_free(name);
+    return ARES_EBADRESP;
+  }
+
   status = ares_dns_rr_set_str_own(rr, ARES_RR_URI_TARGET, name);
   if (status != ARES_SUCCESS) {
     ares_free(name);
