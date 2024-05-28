@@ -179,12 +179,16 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
     sysconfig->domains = new_domains;
 
     for (i = 0; i < resolver->n_search; i++) {
+      const char *search;
+      /* UBSAN: copy pointer using memcpy due to misalignment */
+      memcpy(&search, resolver->search + i, sizeof(search));
+
       /* Skip duplicates */
-      if (search_is_duplicate(sysconfig, resolver->search[i])) {
+      if (search_is_duplicate(sysconfig, search)) {
         continue;
       }
       sysconfig->domains[sysconfig->ndomains] =
-        ares_strdup(resolver->search[i]);
+        ares_strdup(search);
       if (sysconfig->domains[sysconfig->ndomains] == NULL) {
         return ARES_ENOMEM;
       }
