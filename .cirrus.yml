@@ -74,10 +74,11 @@ task:
         SCAN_BUILD: "/opt/homebrew/opt/llvm/bin/scan-build-py"
         MAKE: "make"
         BUILD_ASAN: "yes"
+        BUILD_UBSAN: "yes"
         BUILD_ANALYZE: "yes"
         TEST_SYMBOL_VISIBILITY: "yes"
       macos_instance:
-        image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
+        image: ghcr.io/cirruslabs/macos-sonoma-xcode:latest
     - name: "iOS"
       env:
         DIST: "iOS"
@@ -87,7 +88,7 @@ task:
         CFLAGS: "-arch armv7 -arch armv7s -arch arm64 -miphoneos-version-min=10.0"
         CONFIG_OPTS: "--host=arm-apple-darwin10 --disable-tests"
       macos_instance:
-        image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
+        image: ghcr.io/cirruslabs/macos-sonoma-xcode:latest
   matrix:
     - name: "CMAKE"
       env:
