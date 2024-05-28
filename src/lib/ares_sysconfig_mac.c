@@ -233,7 +233,10 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
   for (i = 0; i < resolver->n_nameserver; i++) {
     struct ares_addr       addr;
     unsigned short         addrport;
-    const struct sockaddr *sockaddr = resolver->nameserver[i];
+    const struct sockaddr *sockaddr;
+
+    /* UBSAN alignment workaround to fetch memory address */
+    memcpy(&sockaddr, resolver->nameserver + i, sizeof(sockaddr));
 
     if (sockaddr->sa_family == AF_INET) {
       /* NOTE: memcpy sockaddr_in due to alignment issues found by UBSAN due to
