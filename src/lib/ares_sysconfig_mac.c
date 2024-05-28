@@ -273,13 +273,19 @@ static ares_status_t read_resolvers(dns_resolver_t **resolvers, int nresolvers,
   int           i;
 
   for (i = 0; status == ARES_SUCCESS && i < nresolvers; i++) {
-    dns_resolver_t resolver;
+    const dns_resolver_t *resolver_ptr;
+    dns_resolver_t        resolver;
 
     /* UBSAN doesn't like that this is unaligned, lets use memcpy to get the
-     * content. */
-    memcpy(&resolver, resolvers[i], sizeof(resolver));
+     * address.  Equivalent to:
+     *   resolver = resolvers[i]
+     */
+    memcpy(&resolver_ptr, resolvers + i, sizeof(resolver_ptr));
 
-    status   = read_resolver(&resolver, sysconfig);
+    /* UBSAN. If the pointer is misaligned, try to use memcpy to get the data
+     * into a new structure that is hopefully aligned properly */
+    memcpy(&resolver, resolver_ptr, sizeof(resolver));
+    status = read_resolver(&resolver, sysconfig);
   }
 
   return status;
