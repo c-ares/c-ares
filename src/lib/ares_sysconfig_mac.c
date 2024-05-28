@@ -273,7 +273,10 @@ static ares_status_t read_resolvers(dns_resolver_t **resolvers, int nresolvers,
   int           i;
 
   for (i = 0; status == ARES_SUCCESS && i < nresolvers; i++) {
-    status = read_resolver(resolvers[i], sysconfig);
+    const dns_resolver_t *resolver;
+
+    resolver = resolvers[i];
+    status   = read_resolver(resolver, sysconfig);
   }
 
   return status;
