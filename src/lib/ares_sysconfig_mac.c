@@ -229,17 +229,18 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
   for (i = 0; i < resolver->n_nameserver; i++) {
     struct ares_addr addr;
     unsigned short   addrport;
+    struct sockaddr *nameserver = NULL;
+    const void      *ptr        = (void *)&resolver->nameserver[i];
+    memcpy(&nameserver, ptr, sizeof(void *));
 
-    if (resolver->nameserver[i]->sa_family == AF_INET) {
-      struct sockaddr_in *addr_in =
-        (struct sockaddr_in *)(void *)resolver->nameserver[i];
-      addr.family = AF_INET;
+    if (nameserver->sa_family == AF_INET) {
+      struct sockaddr_in *addr_in = (struct sockaddr_in *)(void *)nameserver;
+      addr.family                 = AF_INET;
       memcpy(&addr.addr.addr4, &(addr_in->sin_addr), sizeof(addr.addr.addr4));
       addrport = ntohs(addr_in->sin_port);
-    } else if (resolver->nameserver[i]->sa_family == AF_INET6) {
-      struct sockaddr_in6 *addr_in6 =
-        (struct sockaddr_in6 *)(void *)resolver->nameserver[i];
-      addr.family = AF_INET6;
+    } else if (nameserver->sa_family == AF_INET6) {
+      struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)(void *)nameserver;
+      addr.family                   = AF_INET6;
       memcpy(&addr.addr.addr6, &(addr_in6->sin6_addr), sizeof(addr.addr.addr6));
       addrport = ntohs(addr_in6->sin6_port);
     } else {
@@ -266,7 +267,10 @@ static ares_status_t read_resolvers(dns_resolver_t **resolvers, int nresolvers,
   int           i;
 
   for (i = 0; status == ARES_SUCCESS && i < nresolvers; i++) {
-    status = read_resolver(resolvers[i], sysconfig);
+    struct dns_resolver_t *resolver = NULL;
+    const void            *ptr      = (void *)&resolvers[i];
+    memcpy(&resolver, ptr, sizeof(void *));
+    status = read_resolver(resolver, sysconfig);
   }
 
   return status;
