@@ -227,21 +227,28 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
    */
 
   for (i = 0; i < resolver->n_nameserver; i++) {
-    struct ares_addr addr;
-    unsigned short   addrport;
+    struct ares_addr       addr;
+    unsigned short         addrport;
+    const struct sockaddr *sockaddr = resolver->nameserver[i];
 
-    if (resolver->nameserver[i]->sa_family == AF_INET) {
-      struct sockaddr_in *addr_in =
-        (struct sockaddr_in *)(void *)resolver->nameserver[i];
+    if (sockaddr->sa_family == AF_INET) {
+      /* NOTE: memcpy sockaddr_in due to alignment issues found by UBSAN due to
+       *       dnsinfo packing */
+      struct sockaddr_in addr_in;
+      memcpy(&addr_in, sockaddr, sizeof(addr_in));
+
       addr.family = AF_INET;
-      memcpy(&addr.addr.addr4, &(addr_in->sin_addr), sizeof(addr.addr.addr4));
-      addrport = ntohs(addr_in->sin_port);
-    } else if (resolver->nameserver[i]->sa_family == AF_INET6) {
-      struct sockaddr_in6 *addr_in6 =
-        (struct sockaddr_in6 *)(void *)resolver->nameserver[i];
+      memcpy(&addr.addr.addr4, &(addr_in.sin_addr), sizeof(addr.addr.addr4));
+      addrport = ntohs(addr_in.sin_port);
+    } else if (sockaddr->sa_family == AF_INET6) {
+      /* NOTE: memcpy sockaddr_in6 due to alignment issues found by UBSAN due to
+       *       dnsinfo packing */
+      struct sockaddr_in6 addr_in6;
+      memcpy(&addr_in6, sockaddr, sizeof(addr_in6));
+
       addr.family = AF_INET6;
-      memcpy(&addr.addr.addr6, &(addr_in6->sin6_addr), sizeof(addr.addr.addr6));
-      addrport = ntohs(addr_in6->sin6_port);
+      memcpy(&addr.addr.addr6, &(addr_in6.sin6_addr), sizeof(addr.addr.addr6));
+      addrport = ntohs(addr_in6.sin6_port);
     } else {
       continue;
     }
