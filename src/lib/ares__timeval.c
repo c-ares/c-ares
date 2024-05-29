@@ -32,11 +32,9 @@
 
 ares_timeval_t ares__tvnow(void)
 {
-  /* GetTickCount() is available on _all_ Windows versions from W95 up
-   * to nowadays. Returns milliseconds elapsed since last system boot,
-   * increases monotonically and wraps once 49.7 days have elapsed. */
+  /* GetTickCount64() is available on Windows Vista and higher */
   ares_timeval_t now;
-  DWORD          milliseconds = GetTickCount();
+  ULONGLONG      milliseconds = GetTickCount64();
 
   now.sec                     = (ares_int64_t)milliseconds / 1000;
   now.usec                    = (unsigned int)(milliseconds % 1000) * 1000;
