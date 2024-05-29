@@ -257,13 +257,13 @@ void ProcessWork(ares_channel_t *channel,
   fd_set readers, writers;
 
 #ifndef CARES_SYMBOL_HIDING
-  struct timeval tv_begin  = ares__tvnow();
-  struct timeval tv_cancel = tv_begin;
+  ares_timeval_t tv_begin  = ares__tvnow();
+  ares_timeval_t tv_cancel = tv_begin;
 
   if (cancel_ms) {
     if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
-    tv_cancel.tv_sec  += (cancel_ms / 1000);
-    tv_cancel.tv_usec += ((cancel_ms % 1000) * 1000);
+    tv_cancel.sec  += (cancel_ms / 1000);
+    tv_cancel.usec += ((cancel_ms % 1000) * 1000);
   }
 #else
   if (cancel_ms) {
@@ -274,8 +274,8 @@ void ProcessWork(ares_channel_t *channel,
 
   while (true) {
 #ifndef CARES_SYMBOL_HIDING
-    struct timeval  tv_now = ares__tvnow();
-    struct timeval  tv_remaining;
+    ares_timeval_t  tv_now = ares__tvnow();
+    ares_timeval_t  atv_remaining;
 #endif
     struct timeval  tv;
     struct timeval *tv_select;
@@ -305,15 +305,21 @@ void ProcessWork(ares_channel_t *channel,
 #ifndef CARES_SYMBOL_HIDING
     if (cancel_ms) {
       unsigned int remaining_ms;
-      ares__timeval_remaining(&tv_remaining,
+      ares__timeval_remaining(&atv_remaining,
                               &tv_now,
                               &tv_cancel);
-      remaining_ms = (unsigned int)((tv_remaining.tv_sec * 1000) + (tv_remaining.tv_usec / 1000));
+
+      remaining_ms = (unsigned int)((atv_remaining.sec * 1000) + (atv_remaining.usec / 1000));
       if (remaining_ms == 0) {
         if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
         ares_cancel(channel);
         cancel_ms = 0; /* Disable issuing cancel again */
       } else {
+        struct timeval tv_remaining;
+
+        tv_remaining.tv_sec = atv_remaining.sec;
+        tv_remaining.tv_usec = (int)atv_remaining.usec;
+
         /* Recalculate proper timeout since we also have a cancel to wait on */
         tv_select = ares_timeout(channel, &tv_remaining, &tv);
       }
@@ -831,8 +837,8 @@ void MockEventThreadOptsTest::ProcessThread() {
 
 #ifndef CARES_SYMBOL_HIDING
   bool has_cancel_ms = false;
-  struct timeval tv_begin;
-  struct timeval tv_cancel;
+  ares_timeval_t tv_begin;
+  ares_timeval_t tv_cancel;
 #endif
 
   mutex.lock();
@@ -841,14 +847,14 @@ void MockEventThreadOptsTest::ProcessThread() {
     int nfds = 0;
     fd_set readers;
 #ifndef CARES_SYMBOL_HIDING
-    struct timeval  tv_now = ares__tvnow();
-    struct timeval  tv_remaining;
+    ares_timeval_t tv_now = ares__tvnow();
+    ares_timeval_t atv_remaining;
     if (cancel_ms_ && !has_cancel_ms) {
       tv_begin  = ares__tvnow();
       tv_cancel = tv_begin;
       if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms_ << "ms" << std::endl;
-      tv_cancel.tv_sec  += (cancel_ms_ / 1000);
-      tv_cancel.tv_usec += ((cancel_ms_ % 1000) * 1000);
+      tv_cancel.sec  += (cancel_ms_ / 1000);
+      tv_cancel.usec += ((cancel_ms_ % 1000) * 1000);
       has_cancel_ms = true;
     }
 #else
@@ -873,10 +879,10 @@ void MockEventThreadOptsTest::ProcessThread() {
 #ifndef CARES_SYMBOL_HIDING
     if (has_cancel_ms) {
       unsigned int remaining_ms;
-      ares__timeval_remaining(&tv_remaining,
+      ares__timeval_remaining(&atv_remaining,
                               &tv_now,
                               &tv_cancel);
-      remaining_ms = (unsigned int)((tv_remaining.tv_sec * 1000) + (tv_remaining.tv_usec / 1000));
+      remaining_ms = (unsigned int)((atv_remaining.sec * 1000) + (atv_remaining.usec / 1000));
       if (remaining_ms == 0) {
         if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
         ares_cancel(channel_);
