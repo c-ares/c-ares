@@ -147,7 +147,9 @@ static void ares__qcache_expire(ares__qcache_t       *cache,
 
   while ((node = ares__slist_node_first(cache->expire)) != NULL) {
     const ares__qcache_entry_t *entry = ares__slist_node_val(node);
-    if (entry->expire_ts > now->sec) {
+
+    /* If now is NULL, we're flushing everything, so don't break */
+    if (now != NULL && entry->expire_ts > now->sec) {
       break;
     }
 
@@ -158,9 +160,7 @@ static void ares__qcache_expire(ares__qcache_t       *cache,
 
 void ares__qcache_flush(ares__qcache_t *cache)
 {
-  ares_timeval_t now;
-  memset(&now, 0, sizeof(now));
-  ares__qcache_expire(cache, &now);
+  ares__qcache_expire(cache, NULL /* flush all */);
 }
 
 void ares__qcache_destroy(ares__qcache_t *cache)
