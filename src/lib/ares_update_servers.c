@@ -499,9 +499,10 @@ static ares_bool_t ares__server_in_newconfig(const struct server_state *server,
   return ARES_FALSE;
 }
 
-static void ares__servers_remove_stale(ares_channel_t *channel,
-                                       ares__llist_t  *srvlist)
+static ares_bool_t ares__servers_remove_stale(ares_channel_t *channel,
+                                              ares__llist_t  *srvlist)
 {
+  ares_bool_t         stale_removed = ARES_FALSE;
   ares__slist_node_t *snode = ares__slist_node_first(channel->servers);
 
   while (snode != NULL) {
@@ -511,9 +512,11 @@ static void ares__servers_remove_stale(ares_channel_t *channel,
       /* This will clean up all server state via the destruction callback and
        * move any queries to new servers */
       ares__slist_node_destroy(snode);
+      stale_removed = ARES_TRUE;
     }
     snode = snext;
   }
+  return stale_removed;
 }
 
 static void ares__servers_trim_single(ares_channel_t *channel)
@@ -530,6 +533,7 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
   ares__llist_node_t *node;
   size_t              idx = 0;
   ares_status_t       status;
+  ares_bool_t         list_changed = ARES_FALSE;
 
   if (channel == NULL) {
     return ARES_EFORMERR;
@@ -567,13 +571,17 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
       if (status != ARES_SUCCESS) {
         goto done;
       }
+
+      list_changed = ARES_TRUE;
     }
 
     idx++;
   }
 
   /* Remove any servers that don't exist in the current configuration */
-  ares__servers_remove_stale(channel, server_list);
+  if (ares__servers_remove_stale(channel, server_list)) {
+    list_changed = ARES_TRUE;
+  }
 
   /* Trim to one server if ARES_FLAG_PRIMARY is set. */
   if (channel->flags & ARES_FLAG_PRIMARY) {
@@ -585,8 +593,10 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
     channel->optmask |= ARES_OPT_SERVERS;
   }
 
-  /* Clear any cached query results */
-  ares__qcache_flush(channel->qcache);
+  /* Clear any cached query results only if the server list changed */
+  if (list_changed) {
+    ares__qcache_flush(channel->qcache);
+  }
 
   status = ARES_SUCCESS;
 
