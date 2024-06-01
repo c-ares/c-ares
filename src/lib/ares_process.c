@@ -55,12 +55,14 @@ static ares_bool_t try_again(int errnum);
 static void        write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
                                   ares_socket_t write_fd);
 static void        read_packets(ares_channel_t *channel, fd_set *read_fds,
-                                ares_socket_t read_fd, ares_timeval_t *now);
-static void process_timeouts(ares_channel_t *channel, ares_timeval_t *now);
+                                ares_socket_t read_fd,
+                                const ares_timeval_t *now);
+static void process_timeouts(ares_channel_t *channel,
+                             const ares_timeval_t *now);
 static ares_status_t process_answer(ares_channel_t      *channel,
                                     const unsigned char *abuf, size_t alen,
                                     struct server_connection *conn,
-                                    ares_bool_t tcp, ares_timeval_t *now);
+                                    ares_bool_t tcp, const ares_timeval_t *now);
 static void          handle_conn_error(struct server_connection *conn,
                                        ares_bool_t               critical_failure);
 
@@ -69,7 +71,8 @@ static ares_bool_t   same_questions(const ares_dns_record_t *qrec,
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
 static void          end_query(ares_channel_t *channel, struct query *query,
-                               ares_status_t status, const ares_dns_record_t *dnsrec);
+                               ares_status_t status,
+                               const ares_dns_record_t *dnsrec);
 
 /* Invoke the server state callback after a success or failure */
 static void          invoke_server_state_cb(const struct server_state *server,
@@ -324,7 +327,8 @@ static void write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
  * a packet if we finish reading one.
  */
 static void read_tcp_data(ares_channel_t           *channel,
-                          struct server_connection *conn, ares_timeval_t *now)
+                          struct server_connection *conn,
+                          const ares_timeval_t     *now)
 {
   ares_ssize_t         count;
   struct server_state *server = conn->server;
@@ -463,7 +467,7 @@ fail:
 /* If any UDP sockets select true for reading, process them. */
 static void read_udp_packets_fd(ares_channel_t           *channel,
                                 struct server_connection *conn,
-                                ares_timeval_t           *now)
+                                const ares_timeval_t     *now)
 {
   ares_ssize_t  read_len;
   unsigned char buf[MAXENDSSZ + 1];
@@ -527,7 +531,7 @@ static void read_udp_packets_fd(ares_channel_t           *channel,
 }
 
 static void read_packets(ares_channel_t *channel, fd_set *read_fds,
-                         ares_socket_t read_fd, ares_timeval_t *now)
+                         ares_socket_t read_fd, const ares_timeval_t *now)
 {
   size_t                    i;
   ares_socket_t            *socketlist  = NULL;
@@ -594,7 +598,7 @@ static void read_packets(ares_channel_t *channel, fd_set *read_fds,
 }
 
 /* If any queries have timed out, note the timeout and move them on. */
-static void process_timeouts(ares_channel_t *channel, ares_timeval_t *now)
+static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
 {
   ares__slist_node_t *node =
     ares__slist_node_first(channel->queries_by_timeout);
@@ -667,7 +671,7 @@ done:
 static ares_status_t process_answer(ares_channel_t      *channel,
                                     const unsigned char *abuf, size_t alen,
                                     struct server_connection *conn,
-                                    ares_bool_t tcp, ares_timeval_t *now)
+                                    ares_bool_t tcp, const ares_timeval_t *now)
 {
   struct query        *query;
   /* Cache these as once ares__send_query() gets called, it may end up
@@ -883,9 +887,11 @@ static struct server_state *ares__random_server(ares_channel_t *channel)
  */
 static struct server_state *ares__failover_server(ares_channel_t *channel)
 {
-  struct server_state *first_server = ares__slist_first_val(channel->servers);
-  struct server_state *last_server  = ares__slist_last_val(channel->servers);
-  unsigned short       r;
+  struct server_state       *first_server =
+    ares__slist_first_val(channel->servers);
+  const struct server_state *last_server  =
+    ares__slist_last_val(channel->servers);
+  unsigned short             r;
 
   /* Defensive code against no servers being available on the channel. */
   if (first_server == NULL) {

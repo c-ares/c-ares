@@ -28,11 +28,6 @@
 #include "ares_private.h"
 #include "ares_event.h"
 
-static void ares_event_configchg_reload(ares_event_thread_t *e)
-{
-  ares_reinit(e->channel);
-}
-
 #ifdef __ANDROID__
 
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
@@ -86,7 +81,7 @@ static void ares_event_configchg_free(void *data)
 static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
                                     void *data, ares_event_flags_t flags)
 {
-  ares_event_configchg_t *configchg = data;
+  const ares_event_configchg_t *configchg = data;
 
   /* Some systems cannot read integer variables if they are not
    * properly aligned. On other systems, incorrect alignment may
@@ -130,7 +125,7 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
   /* Only process after all events are read.  No need to process more often as
    * we don't want to reload the config back to back */
   if (triggered) {
-    ares_event_configchg_reload(e);
+    ares_reinit(e->channel);
   }
 }
 
@@ -214,7 +209,7 @@ static void ares_event_configchg_cb(PVOID                 CallerContext,
   ares_event_configchg_t *configchg = CallerContext;
   (void)Row;
   (void)NotificationType;
-  ares_event_configchg_reload(configchg->e);
+  ares_reinit(configchg->e->channel);
 }
 #  endif
 
@@ -324,7 +319,7 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
   /* Only process after all events are read.  No need to process more often as
    * we don't want to reload the config back to back */
   if (triggered) {
-    ares_event_configchg_reload(e);
+    ares_reinit(e->channel);
   }
 }
 
@@ -474,7 +469,7 @@ static void *ares_event_configchg_thread(void *arg)
 
     status = config_change_check(c->filestat, c->resolvconf_path);
     if (status == ARES_SUCCESS) {
-      ares_event_configchg_reload(c->e);
+      ares_reinit(c->e->channel);
     }
   }
 
