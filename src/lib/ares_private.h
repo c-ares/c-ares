@@ -379,7 +379,8 @@ ares_bool_t   ares__timedout(const ares_timeval_t *now,
 
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
 ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now);
-ares_status_t ares__requeue_query(struct query *query, const ares_timeval_t *now);
+ares_status_t ares__requeue_query(struct query         *query,
+                                  const ares_timeval_t *now);
 
 /*! Retrieve a list of names to use for searching.  The first successful
  *  query in the list wins.  This function also uses the HOSTSALIASES file

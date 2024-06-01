@@ -88,7 +88,7 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
    * decrease performance. Hence, the buffer used for reading from
    * the inotify file descriptor should have the same alignment as
    * struct inotify_event. */
-  unsigned char           buf[4096]
+  unsigned char                 buf[4096]
     __attribute__((aligned(__alignof__(struct inotify_event))));
   const struct inotify_event *event;
   ssize_t                     len;

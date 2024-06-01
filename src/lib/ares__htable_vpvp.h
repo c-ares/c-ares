@@ -114,7 +114,7 @@ void       *ares__htable_vpvp_get_direct(const ares__htable_vpvp_t *htable,
  *  \return ARES_TRUE if found, ARES_FALSE if not
  */
 ares_bool_t ares__htable_vpvp_remove(ares__htable_vpvp_t *htable,
-                                     const void *key);
+                                     const void          *key);
 
 /*! Retrieve the number of keys stored in the hash table
  *

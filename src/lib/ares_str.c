@@ -261,8 +261,9 @@ ares_bool_t ares__is_hostname(const char *str)
 {
   size_t i;
 
-  if (str == NULL)
+  if (str == NULL) {
     return ARES_FALSE;
+  }
 
   for (i = 0; str[i] != 0; i++) {
     if (!ares__is_hostnamech(str[i])) {
@@ -276,8 +277,9 @@ ares_bool_t ares__str_isprint(const char *str, size_t len)
 {
   size_t i;
 
-  if (str == NULL && len != 0)
+  if (str == NULL && len != 0) {
     return ARES_FALSE;
+  }
 
   for (i = 0; i < len; i++) {
     if (!ares__isprint(str[i])) {

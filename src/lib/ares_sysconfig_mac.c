@@ -187,8 +187,7 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
       if (search_is_duplicate(sysconfig, search)) {
         continue;
       }
-      sysconfig->domains[sysconfig->ndomains] =
-        ares_strdup(search);
+      sysconfig->domains[sysconfig->ndomains] = ares_strdup(search);
       if (sysconfig->domains[sysconfig->ndomains] == NULL) {
         return ARES_ENOMEM;
       }

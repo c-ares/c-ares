@@ -65,7 +65,6 @@ static struct timeval ares_timeval_to_struct_timeval(const ares_timeval_t *atv)
   return tv;
 }
 
-
 static ares_timeval_t struct_timeval_to_ares_timeval(const struct timeval *tv)
 {
   ares_timeval_t atv;

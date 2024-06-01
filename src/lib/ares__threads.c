@@ -577,8 +577,8 @@ ares_status_t ares_queue_wait_empty(ares_channel_t *channel, int timeout_ms)
       unsigned long  tms;
 
       ares__timeval_remaining(&tv_remaining, &tv_now, &tout);
-      tms = (unsigned long)((tv_remaining.sec * 1000) +
-                            (tv_remaining.usec / 1000));
+      tms =
+        (unsigned long)((tv_remaining.sec * 1000) + (tv_remaining.usec / 1000));
       if (tms == 0) {
         status = ARES_ETIMEOUT;
       } else {

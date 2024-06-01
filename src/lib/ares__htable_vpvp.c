@@ -171,7 +171,7 @@ ares_bool_t ares__htable_vpvp_get(const ares__htable_vpvp_t *htable,
 }
 
 void *ares__htable_vpvp_get_direct(const ares__htable_vpvp_t *htable,
-                                   const void *key)
+                                   const void                *key)
 {
   void *val = NULL;
   ares__htable_vpvp_get(htable, key, &val);
@@ -179,7 +179,7 @@ void *ares__htable_vpvp_get_direct(const ares__htable_vpvp_t *htable,
 }
 
 ares_bool_t ares__htable_vpvp_remove(ares__htable_vpvp_t *htable,
-                                     const void *key)
+                                     const void          *key)
 {
   if (htable == NULL) {
     return ARES_FALSE;

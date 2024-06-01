@@ -36,8 +36,8 @@ ares_timeval_t ares__tvnow(void)
   ares_timeval_t now;
   ULONGLONG      milliseconds = GetTickCount64();
 
-  now.sec                     = (ares_int64_t)milliseconds / 1000;
-  now.usec                    = (unsigned int)(milliseconds % 1000) * 1000;
+  now.sec  = (ares_int64_t)milliseconds / 1000;
+  now.usec = (unsigned int)(milliseconds % 1000) * 1000;
   return now;
 }
 

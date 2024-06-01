@@ -675,7 +675,7 @@ static ares_bool_t ares__servers_remove_stale(ares_channel_t *channel,
                                               ares__llist_t  *srvlist)
 {
   ares_bool_t         stale_removed = ARES_FALSE;
-  ares__slist_node_t *snode = ares__slist_node_first(channel->servers);
+  ares__slist_node_t *snode         = ares__slist_node_first(channel->servers);
 
   while (snode != NULL) {
     ares__slist_node_t        *snext  = ares__slist_node_next(snode);
