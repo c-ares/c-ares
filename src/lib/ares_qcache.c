@@ -254,7 +254,10 @@ static unsigned int ares__qcache_calc_minttl(ares_dns_record_t *dnsrec)
         ares_dns_record_rr_get(dnsrec, (ares_dns_section_t)sect, i);
       ares_dns_rec_type_t type = ares_dns_rr_get_type(rr);
       unsigned int        ttl  = ares_dns_rr_get_ttl(rr);
-      if (type == ARES_REC_TYPE_OPT || type == ARES_REC_TYPE_SOA) {
+
+      /* TTL is meaningless on these record types */
+      if (type == ARES_REC_TYPE_OPT || type == ARES_REC_TYPE_SOA ||
+          type == ARES_REC_TYPE_SIG) {
         continue;
       }
 

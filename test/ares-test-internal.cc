@@ -467,6 +467,33 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_bin(rr, ARES_RR_TXT_DATA, (unsigned char *)txt,
       sizeof(txt)));
+  /* SIG */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+      ARES_REC_TYPE_SIG, ARES_CLASS_ANY, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_SIG_TYPE_COVERED, ARES_REC_TYPE_TXT));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_SIG_ALGORITHM, 1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_SIG_LABELS, 1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_SIG_ORIGINAL_TTL, 3200));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_SIG_EXPIRATION, (unsigned int)time(NULL)));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_SIG_INCEPTION, (unsigned int)time(NULL) - (86400 * 365)));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_SIG_KEY_TAG, 0x1234));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_SIG_SIGNERS_NAME, "signer.example.com"));
+  const unsigned char sig[] = {
+    0xd2, 0xab, 0xde, 0x24, 0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5,
+    0x4d, 0xf0, 0x34, 0xb9, 0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e,
+    0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_SIG_SIGNATURE, sig, sizeof(sig)));
+
 
   /* == Authority == */
   /* NS */
