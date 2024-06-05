@@ -141,15 +141,15 @@ const void **ares__htable_all_buckets(const ares__htable_t *htable, size_t *num)
   size_t       cnt = 0;
   size_t       i;
 
-  if (htable == NULL || num == NULL) { /* LCOV_EXCL_BR_LINE */
-    return NULL;
+  if (htable == NULL || num == NULL) {
+    return NULL; /* LCOV_EXCL_LINE */
   }
 
   *num = 0;
 
   out = ares_malloc_zero(sizeof(*out) * htable->num_keys);
-  if (out == NULL) { /* LCOV_EXCL_BR_LINE */
-    return NULL;
+  if (out == NULL) {
+    return NULL; /* LCOV_EXCL_LINE */
   }
 
   for (i = 0; i < htable->size; i++) {
@@ -196,8 +196,8 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
   ares_bool_t     rv                 = ARES_FALSE;
 
   /* Not a failure, just won't expand */
-  if (old_size == ARES__HTABLE_MAX_BUCKETS) { /* LCOV_EXCL_BR_LINE */
-    return ARES_TRUE;
+  if (old_size == ARES__HTABLE_MAX_BUCKETS) {
+    return ARES_TRUE; /* LCOV_EXCL_LINE */
   }
 
   htable->size <<= 1;
@@ -206,8 +206,8 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
    * new hash array.  Otherwise if there's a memory allocation failure in the
    * middle, we wouldn't be able to recover. */
   buckets = ares_malloc_zero(sizeof(*buckets) * htable->size);
-  if (buckets == NULL) { /* LCOV_EXCL_BR_LINE */
-    goto done;
+  if (buckets == NULL) {
+    goto done;  /* LCOV_EXCL_LINE */
   }
 
   /* The maximum number of new llists we'll need is the number of collisions
@@ -216,8 +216,8 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
   if (prealloc_llist_len) {
     prealloc_llist =
       ares_malloc_zero(sizeof(*prealloc_llist) * prealloc_llist_len);
-    if (prealloc_llist == NULL) { /* LCOV_EXCL_BR_LINE */
-      goto done;
+    if (prealloc_llist == NULL) {
+      goto done; /* LCOV_EXCL_LINE */
     }
   }
   for (i = 0; i < prealloc_llist_len; i++) {
@@ -269,8 +269,8 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
       /* Grab one off our preallocated list */
       if (buckets[idx] == NULL) {
         /* Silence static analysis, this isn't possible but it doesn't know */
-        if (prealloc_llist == NULL || prealloc_llist_len == 0) { /* LCOV_EXCL_BR_LINE */
-          goto done;
+        if (prealloc_llist == NULL || prealloc_llist_len == 0) {
+          goto done;  /* LCOV_EXCL_LINE */
         }
         buckets[idx] = prealloc_llist[prealloc_llist_len - 1];
         prealloc_llist_len--;
@@ -303,8 +303,8 @@ done:
                                ARES_FALSE);
 
   /* On failure, we need to restore the htable size */
-  if (rv != ARES_TRUE) { /* LCOV_EXCL_BR_LINE */
-    htable->size = old_size;
+  if (rv != ARES_TRUE) {
+    htable->size = old_size;  /* LCOV_EXCL_LINE */
   }
 
   return rv;
@@ -335,8 +335,8 @@ ares_bool_t ares__htable_insert(ares__htable_t *htable, void *bucket)
    * increased beyond our threshold */
   if (htable->num_keys + 1 >
       (htable->size * ARES__HTABLE_EXPAND_PERCENT) / 100) {
-    if (!ares__htable_expand(htable)) { /* LCOV_EXCL_BR_LINE */
-      return ARES_FALSE;
+    if (!ares__htable_expand(htable)) {
+      return ARES_FALSE;  /* LCOV_EXCL_LINE */
     }
     /* If we expanded, need to calculate a new index */
     idx = HASH_IDX(htable, key);
