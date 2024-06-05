@@ -20,7 +20,7 @@ your system, regardless of which system you use.  We recommend using
 the c-ares library in all network applications even if the initial goal of
 asynchronous resolution is not necessary to your application.
 
-c-ares will build with any C89 compiler, is [MIT licensed](LICENSE.md),
+c-ares will build with any C89 compiler and is [MIT licensed](LICENSE.md),
 which makes it suitable for both free and commercial software. c-ares runs on
 Linux, FreeBSD, OpenBSD, MacOS, Solaris, AIX, Windows, Android, iOS and many
 more operating systems.
