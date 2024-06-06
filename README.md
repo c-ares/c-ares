@@ -35,12 +35,6 @@ While c-ares has been around for over 20 years, it has been actively maintained
 both in regards to the latest DNS RFCs as well as updated to follow the latest
 best practices in regards to C coding standards.
 
-This is c-ares, an asynchronous resolver library.  It is intended for
-applications which need to perform DNS queries without blocking, or need to
-perform multiple DNS queries in parallel.  The primary examples of such
-applications are servers which communicate with multiple clients and programs
-with graphical user interfaces.
-
 ## Code
 
 The full source code and revision history is available in our
