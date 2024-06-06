@@ -76,3 +76,26 @@ to sign releases):
 gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2 # Daniel Stenberg
 gpg --keyserver hkps://keys.openpgp.org --recv-keys DA7D64E4C82C6294CB73A20E22E3D13B5411B7CA     # Brad House
 ```
+
+### Verifying signatures
+
+For each release `c-ares-X.Y.Z.tar.gz` there is a corresponding
+`c-ares-X.Y.Z.tar.gz.asc` file which contains the detached signature for the
+release.
+
+After fetching all of the possible valid signing keys and loading into your
+keychain as per the prior section, you can simply run the command below on
+the downloaded package and detached signature:
+
+```bash
+% gpg -v --verify c-ares-1.29.0.tar.gz.asc c-ares-1.29.0.tar.gz
+gpg: enabled compatibility flags:
+gpg: Signature made Fri May 24 02:50:38 2024 EDT
+gpg:                using RSA key 27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2
+gpg: using pgp trust model
+gpg: Good signature from "Daniel Stenberg <daniel@haxx.se>" [unknown]
+gpg: WARNING: This key is not certified with a trusted signature!
+gpg:          There is no indication that the signature belongs to the owner.
+Primary key fingerprint: 27ED EAF2 2F3A BCEB 50DB  9A12 5CC9 08FD B71E 12C2
+gpg: binary signature, digest algorithm SHA512, key algorithm rsa2048
+```
