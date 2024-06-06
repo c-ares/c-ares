@@ -12,7 +12,7 @@ Changes:
   otherwise will trigger a parse failure.
   [75de16c](https://github.com/c-ares/c-ares/commit/75de16c) and
   [40fb125](https://github.com/c-ares/c-ares/commit/40fb125)
-* Windows: use `GetTickCount64()`` for a monotonic timer that does not wrap. [1dff8f6](https://github.com/c-ares/c-ares/commit/1dff8f6)
+* Windows: use `GetTickCount64()` for a monotonic timer that does not wrap. [1dff8f6](https://github.com/c-ares/c-ares/commit/1dff8f6)
 
 Bugfixes:
 
