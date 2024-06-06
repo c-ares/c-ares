@@ -167,6 +167,8 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
 done:
   if (status != ARES_SUCCESS) {
     ares_event_configchg_free(c);
+  } else {
+    *configchg = c;
   }
   return status;
 }
