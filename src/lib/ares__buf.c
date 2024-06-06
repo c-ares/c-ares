@@ -87,7 +87,7 @@ void ares__buf_destroy(ares__buf_t *buf)
 static ares_bool_t ares__buf_is_const(const ares__buf_t *buf)
 {
   if (buf == NULL) {
-    return ARES_FALSE; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_FALSE; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   if (buf->data != NULL && buf->alloc_buf == NULL) {
@@ -107,7 +107,7 @@ void ares__buf_reclaim(ares__buf_t *buf)
   }
 
   if (ares__buf_is_const(buf)) {
-    return; /* LCOV_EXCL_LINE: defensive coding */
+    return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   /* Silence coverity.  All lengths are zero so would bail out later but
@@ -151,7 +151,7 @@ static ares_status_t ares__buf_ensure_space(ares__buf_t *buf,
   }
 
   if (ares__buf_is_const(buf)) {
-    return ARES_EFORMERR; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   /* When calling ares__buf_finish_str() we end up adding a null terminator,
@@ -201,11 +201,11 @@ static ares_status_t ares__buf_ensure_space(ares__buf_t *buf,
 ares_status_t ares__buf_set_length(ares__buf_t *buf, size_t len)
 {
   if (buf == NULL || ares__buf_is_const(buf)) {
-    return ARES_EFORMERR; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   if (len >= buf->alloc_buf_len - buf->offset) {
-    return ARES_EFORMERR; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   buf->data_len = len;
@@ -787,7 +787,7 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
   ares_bool_t   first  = ARES_TRUE;
 
   if (buf == NULL || delims == NULL || delims_len == 0 || list == NULL) {
-    return ARES_EFORMERR; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   *list = ares__llist_create(ares__buf_destroy_cb);
@@ -825,7 +825,7 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
 
     /* Shouldn't be possible */
     if (ptr == NULL) {
-      status = ARES_EFORMERR; /* LCOV_EXCL_LINE: defensive coding */
+      status = ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
       goto done;
     }
 
@@ -934,7 +934,7 @@ ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx)
   }
 
   if (idx > buf->data_len) {
-    return ARES_EFORMERR; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   buf->offset = idx;
@@ -966,7 +966,7 @@ static ares_status_t ares__buf_parse_dns_binstr_int(
   while (orig_len - ares__buf_len(buf) < remaining_len) {
     status = ares__buf_fetch_bytes(buf, &len, 1);
     if (status != ARES_SUCCESS) {
-      break; /* LCOV_EXCL_LINE: defensive coding */
+      break; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
     if (len) {
@@ -1049,7 +1049,7 @@ ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num, size_t len)
 
     /* Silence coverity.  Shouldn't be possible since we calculate it above */
     if (mod == 0) {
-      return ARES_EFORMERR; /* LCOV_EXCL_LINE: defensive coding */
+      return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
     digit  /= mod;
@@ -1166,7 +1166,7 @@ ares_status_t ares__buf_load_file(const char *filename, ares__buf_t *buf)
   ares_status_t  status;
 
   if (filename == NULL || buf == NULL) {
-    return ARES_EFORMERR; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   fp = fopen(filename, "rb");
@@ -1188,25 +1188,25 @@ ares_status_t ares__buf_load_file(const char *filename, ares__buf_t *buf)
 
   /* Get length portably, fstat() is POSIX, not C */
   if (fseek(fp, 0, SEEK_END) != 0) {
-    status = ARES_EFILE; /* LCOV_EXCL_LINE: defensive coding */
-    goto done; /* LCOV_EXCL_LINE: defensive coding */
+    status = ARES_EFILE; /* LCOV_EXCL_LINE: DefensiveCoding */
+    goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   ftell_len = ftell(fp);
   if (ftell_len < 0) {
-    status = ARES_EFILE; /* LCOV_EXCL_LINE: defensive coding */
-    goto done; /* LCOV_EXCL_LINE: defensive coding */
+    status = ARES_EFILE; /* LCOV_EXCL_LINE: DefensiveCoding */
+    goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
   len = (size_t)ftell_len;
 
   if (fseek(fp, 0, SEEK_SET) != 0) {
-    status = ARES_EFILE; /* LCOV_EXCL_LINE: defensive coding */
-    goto done; /* LCOV_EXCL_LINE: defensive coding */
+    status = ARES_EFILE; /* LCOV_EXCL_LINE: DefensiveCoding */
+    goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   if (len == 0) {
-    status = ARES_SUCCESS; /* LCOV_EXCL_LINE: defensive coding */
-    goto done; /* LCOV_EXCL_LINE: defensive coding */
+    status = ARES_SUCCESS; /* LCOV_EXCL_LINE: DefensiveCoding */
+    goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   /* Read entire data into buffer */
@@ -1219,8 +1219,8 @@ ares_status_t ares__buf_load_file(const char *filename, ares__buf_t *buf)
 
   ptr_len = fread(ptr, 1, len, fp);
   if (ptr_len != len) {
-    status = ARES_EFILE; /* LCOV_EXCL_LINE: defensive coding */
-    goto done; /* LCOV_EXCL_LINE: defensive coding */
+    status = ARES_EFILE; /* LCOV_EXCL_LINE: DefensiveCoding */
+    goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   ares__buf_append_finish(buf, len);

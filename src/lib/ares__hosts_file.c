@@ -105,7 +105,7 @@ const void *ares_dns_pton(const char *ipaddr, struct ares_addr *addr,
   size_t      ptr_len = 0;
 
   if (ipaddr == NULL || addr == NULL || out_len == NULL) {
-    return NULL; /* LCOV_EXCL_LINE: defensive coding */
+    return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   *out_len = 0;
@@ -150,7 +150,7 @@ static ares_bool_t ares__normalize_ipaddr(const char *ipaddr, char *out,
   }
 
   if (!ares_inet_ntop(data.family, addr, out, (ares_socklen_t)out_len)) {
-    return ARES_FALSE; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_FALSE; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   return ARES_TRUE;
@@ -315,8 +315,8 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
   if (matchtype != ARES_MATCH_NONE) {
     status = ares__hosts_file_merge_entry(hosts, match, entry, matchtype);
     if (status != ARES_SUCCESS) {
-      ares__hosts_entry_destroy(entry); /* LCOV_EXCL_LINE: defensive coding */
-      return status; /* LCOV_EXCL_LINE: defensive coding */
+      ares__hosts_entry_destroy(entry); /* LCOV_EXCL_LINE: DefensiveCoding */
+      return status; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
     /* entry was invalidated above by merging */
     entry = match;
@@ -728,7 +728,7 @@ ares_status_t ares__hosts_search_ipaddr(ares_channel_t *channel,
   }
 
   if (channel->hf == NULL) {
-    return ARES_ENOTFOUND; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_ENOTFOUND; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   if (!ares__normalize_ipaddr(ipaddr, addr, sizeof(addr))) {
@@ -757,7 +757,7 @@ ares_status_t ares__hosts_search_host(ares_channel_t *channel,
   }
 
   if (channel->hf == NULL) {
-    return ARES_ENOTFOUND; /* LCOV_EXCL_LINE: defensive coding */
+    return ARES_ENOTFOUND; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   *entry = ares__htable_strvp_get_direct(channel->hf->hosthash, host);
@@ -849,7 +849,7 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
   /* Cap at 100, some people use https://github.com/StevenBlack/hosts and we
    * don't need 200k+ aliases */
   if (naliases > 100) {
-    naliases = 100; /* LCOV_EXCL_LINE: defensive coding */
+    naliases = 100; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   (*hostent)->h_aliases =
@@ -911,7 +911,7 @@ static ares_status_t
      * https://github.com/StevenBlack/hosts and we don't need 200k+ aliases */
     cnt++;
     if (cnt > 100) {
-      break; /* LCOV_EXCL_LINE: defensive coding */
+      break; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
     cname = ares__append_addrinfo_cname(&cnames);
@@ -953,8 +953,8 @@ static ares_status_t
 
 done:
   if (status != ARES_SUCCESS) {
-    ares__freeaddrinfo_cnames(cnames); /* LCOV_EXCL_LINE: defensive coding */
-    return status; /* LCOV_EXCL_LINE: defensive coding */
+    ares__freeaddrinfo_cnames(cnames); /* LCOV_EXCL_LINE: DefensiveCoding */
+    return status; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   *cnames_out = cnames;
@@ -977,8 +977,8 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
     case AF_INET6:
     case AF_UNSPEC:
       break;
-    default: /* LCOV_EXCL_LINE: defensive coding */
-      return ARES_EBADFAMILY; /* LCOV_EXCL_LINE: defensive coding */
+    default: /* LCOV_EXCL_LINE: DefensiveCoding */
+      return ARES_EBADFAMILY; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   ai->name = ares_strdup(name);
@@ -1004,14 +1004,14 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
 
     status = ares_append_ai_node(addr.family, port, 0, ptr, &ainodes);
     if (status != ARES_SUCCESS) {
-      goto done; /* LCOV_EXCL_LINE: defensive coding */
+      goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
   }
 
   if (want_cnames) {
     status = ares__hosts_ai_append_cnames(entry, &cnames);
     if (status != ARES_SUCCESS) {
-      goto done; /* LCOV_EXCL_LINE: defensive coding */
+      goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
   }
 
