@@ -60,4 +60,19 @@ Please, do not mail volunteers privately about c-ares.
  haxx.se if you suspect one.
 
 
+## Release keys
 
+Primary GPG keys for c-ares Releasers (some Releasers sign with subkeys):
+
+* **Daniel Stenberg** <<daniel@haxx.se>>
+  `27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2`
+* **Brad House** <<brad@brad-house.com>>
+  `DA7D64E4C82C6294CB73A20E22E3D13B5411B7CA`
+
+To import the full set of trusted release keys (including subkeys possibly used
+to sign releases):
+
+```bash
+gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2 # Daniel Stenberg
+gpg --keyserver hkps://keys.openpgp.org --recv-keys DA7D64E4C82C6294CB73A20E22E3D13B5411B7CA     # Brad House
+```
