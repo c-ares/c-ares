@@ -135,8 +135,6 @@ void ares__buf_reclaim(ares__buf_t *buf)
   if (buf->tag_offset != SIZE_MAX) {
     buf->tag_offset -= prefix_size;
   }
-
-  return;
 }
 
 static ares_status_t ares__buf_ensure_space(ares__buf_t *buf,
