@@ -56,7 +56,7 @@ typedef struct ares_rand_rc4 {
 
 static unsigned int ares_u32_from_ptr(void *addr)
 {
-  /* LOCV_EXCL_START: FallbackCode */
+  /* LCOV_EXCL_START: FallbackCode */
   if (sizeof(void *) == 8) {
     return (unsigned int)((((ares_uint64_t)addr >> 32) & 0xFFFFFFFF) |
                           ((ares_uint64_t)addr & 0xFFFFFFFF));
@@ -69,7 +69,7 @@ static unsigned int ares_u32_from_ptr(void *addr)
 static void ares_rc4_generate_key(ares_rand_rc4 *rc4_state, unsigned char *key,
                                   size_t key_len)
 {
-  /* LOCV_EXCL_START: FallbackCode */
+  /* LCOV_EXCL_START: FallbackCode */
   size_t         i;
   size_t         len = 0;
   unsigned int   data;
@@ -102,12 +102,12 @@ static void ares_rc4_generate_key(ares_rand_rc4 *rc4_state, unsigned char *key,
   for (i = len; i < key_len; i++) {
     key[i] = (unsigned char)(rand() % 256); /* LCOV_EXCL_LINE */
   }
-  /* LOCV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }
 
 static void ares_rc4_init(ares_rand_rc4 *rc4_state)
 {
-  /* LOCV_EXCL_START: FallbackCode */
+  /* LCOV_EXCL_START: FallbackCode */
   unsigned char key[ARES_RC4_KEY_LEN];
   size_t        i;
   size_t        j;
@@ -125,7 +125,7 @@ static void ares_rc4_init(ares_rand_rc4 *rc4_state)
 
   rc4_state->i = 0;
   rc4_state->j = 0;
-  /* LOCV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }
 
 /* Just outputs the key schedule, no need to XOR with any data since we have
@@ -133,7 +133,7 @@ static void ares_rc4_init(ares_rand_rc4 *rc4_state)
 static void ares_rc4_prng(ares_rand_rc4 *rc4_state, unsigned char *buf,
                           size_t len)
 {
-  /* LOCV_EXCL_START: FallbackCode */
+  /* LCOV_EXCL_START: FallbackCode */
   unsigned char *S = rc4_state->S;
   size_t         i = rc4_state->i;
   size_t         j = rc4_state->j;
@@ -149,7 +149,7 @@ static void ares_rc4_prng(ares_rand_rc4 *rc4_state, unsigned char *buf,
 
   rc4_state->i = i;
   rc4_state->j = j;
-  /* LOCV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }
 
 struct ares_rand_state {
@@ -195,7 +195,7 @@ static ares_bool_t ares__init_rand_engine(ares_rand_state *state)
 #endif
 
 #if defined(CARES_RANDOM_FILE)
-  /* LOCV_EXCL_START: FallbackCode */
+  /* LCOV_EXCL_START: FallbackCode */
   if (!(state->bad_backends & ARES_RAND_FILE)) {
     state->type            = ARES_RAND_FILE;
     state->state.rand_file = fopen(CARES_RANDOM_FILE, "rb");
@@ -204,12 +204,12 @@ static ares_bool_t ares__init_rand_engine(ares_rand_state *state)
       return ARES_TRUE;
     }
   }
-  /* LOCV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 
   /* Fall-Thru on failure to RC4 */
 #endif
 
-  /* LOCV_EXCL_START: FallbackCode */
+  /* LCOV_EXCL_START: FallbackCode */
   state->type = ARES_RAND_RC4;
   ares_rc4_init(&state->state.rc4);
   /* LCOV_EXCL_STOP */
@@ -244,7 +244,7 @@ static void ares__clear_rand_state(ares_rand_state *state)
   switch (state->type) {
     case ARES_RAND_OS:
       break;
-    /* LOCV_EXCL_START: FallbackCode */
+    /* LCOV_EXCL_START: FallbackCode */
     case ARES_RAND_FILE:
       fclose(state->state.rand_file);
       break;
@@ -256,7 +256,7 @@ static void ares__clear_rand_state(ares_rand_state *state)
 
 static void ares__reinit_rand(ares_rand_state *state)
 {
-  /* LOCV_EXCL_START: UntestablePath */
+  /* LCOV_EXCL_START: UntestablePath */
   ares__clear_rand_state(state);
   ares__init_rand_engine(state);
   /* LCOV_EXCL_STOP */
@@ -313,7 +313,7 @@ static void ares__rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
         break;
 #endif
 
-      /* LOCV_EXCL_START: FallbackCode */
+      /* LCOV_EXCL_START: FallbackCode */
 
       case ARES_RAND_FILE:
         while (1) {
@@ -340,7 +340,7 @@ static void ares__rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
 
     /* If we didn't return before we got here, that means we had a critical rand
      * failure and need to reinitialized */
-    ares__reinit_rand(state); /* LOCV_EXCL_LINE: UntestablePath */
+    ares__reinit_rand(state); /* LCOV_EXCL_LINE: UntestablePath */
   }
 }
 
