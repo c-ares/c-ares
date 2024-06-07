@@ -39,7 +39,7 @@ best practices in regards to C coding standards.
 
 The full source code and revision history is available in our
 [GitHub  repository](https://github.com/c-ares/c-ares).  Our signed releases
-are available in the ['c-ares' release archives](https://c-ares.org/download/).
+are available in the [release archives](https://c-ares.org/download/).
 
 
 See the [INSTALL.md](INSTALL.md) file for build information.
