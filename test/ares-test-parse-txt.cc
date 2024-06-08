@@ -254,6 +254,9 @@ TEST_F(LibraryTest, ParseTxtReplyErrors) {
     EXPECT_NE(ARES_SUCCESS, ares_parse_txt_reply(data.data(), (int)len, &txt));
     EXPECT_EQ(nullptr, txt);
   }
+
+  // Negative Length
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), -1, &txt));
 }
 
 TEST_F(LibraryTest, ParseTxtReplyAllocFail) {

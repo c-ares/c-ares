@@ -120,6 +120,9 @@ TEST_F(LibraryTest, ParseNaptrReplyErrors) {
     int rc = ares_parse_naptr_reply(data.data(), (int)len, &naptr);
     EXPECT_TRUE(rc == ARES_EBADRESP || rc == ARES_EBADNAME);
   }
+
+  // Negative Length
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_naptr_reply(data.data(), -1, &naptr));
 }
 
 TEST_F(LibraryTest, ParseNaptrReplyTooShort) {

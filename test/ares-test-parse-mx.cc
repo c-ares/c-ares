@@ -144,6 +144,9 @@ TEST_F(LibraryTest, ParseMxReplyErrors) {
     EXPECT_EQ(nullptr, mx);
     EXPECT_TRUE(rc == ARES_EBADRESP || rc == ARES_EBADNAME);
   }
+
+  // Negative Length
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), -1, &mx));
 }
 
 TEST_F(LibraryTest, ParseMxReplyAllocFail) {

@@ -121,6 +121,9 @@ TEST_F(LibraryTest, ParseNsReplyErrors) {
   for (size_t len = 1; len < data.size(); len++) {
     EXPECT_EQ(ARES_EBADRESP, ares_parse_ns_reply(data.data(), (int)len, &host));
   }
+
+  // Negative Length
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_ns_reply(data.data(), -1, &host));
 }
 
 TEST_F(LibraryTest, ParseNsReplyAllocFail) {
