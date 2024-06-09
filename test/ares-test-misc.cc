@@ -576,5 +576,29 @@ TEST_F(LibraryTest, ExpandString) {
                                (unsigned char**)&result, &len));
 }
 
+TEST_F(LibraryTest, StrError) {
+  ares_status_t status[] = {
+    ARES_SUCCESS, ARES_ENODATA, ARES_EFORMERR, ARES_ESERVFAIL, ARES_ENOTFOUND,
+    ARES_ENOTIMP, ARES_EREFUSED, ARES_EBADQUERY, ARES_EBADNAME, ARES_EBADFAMILY,
+    ARES_EBADRESP, ARES_ECONNREFUSED, ARES_ETIMEOUT, ARES_EOF, ARES_EFILE,
+    ARES_ENOMEM, ARES_EDESTRUCTION, ARES_EBADSTR, ARES_EBADFLAGS, ARES_ENONAME,
+    ARES_EBADHINTS, ARES_ENOTINITIALIZED, ARES_ELOADIPHLPAPI,
+    ARES_EADDRGETNETWORKPARAMS, ARES_ECANCELLED, ARES_ESERVICE, ARES_ENOSERVER
+  };
+  size_t i;
+  const char *str = nullptr;
+
+  for (i=0; i < sizeof(status) / sizeof(*status); i++) {
+    str = ares_strerror((int)status[i]);
+    EXPECT_NE(nullptr, str);
+    EXPECT_NE("unknown", std::string(str));
+  }
+
+  /* unknown value */
+  str = ares_strerror(0x12345678);
+  EXPECT_NE(nullptr, str);
+  EXPECT_EQ("unknown", std::string(str));
+}
+
 }  // namespace test
 }  // namespace ares
