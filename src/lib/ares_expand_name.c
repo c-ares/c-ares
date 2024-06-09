@@ -100,19 +100,3 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
   *enclen = (long)enclen_temp;
   return (int)status;
 }
-
-/* Like ares_expand_name_validated  but returns EBADRESP in case of invalid
- * input. */
-ares_status_t ares__expand_name_for_response(const unsigned char *encoded,
-                                             const unsigned char *abuf,
-                                             size_t alen, char **s,
-                                             size_t     *enclen,
-                                             ares_bool_t is_hostname)
-{
-  ares_status_t status =
-    ares__expand_name_validated(encoded, abuf, alen, s, enclen, is_hostname);
-  if (status == ARES_EBADNAME) {
-    status = ARES_EBADRESP;
-  }
-  return status;
-}
