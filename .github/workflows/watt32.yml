@@ -20,7 +20,7 @@ jobs:
           repository: gvanem/Watt-32
           path: watt-32
       - name: "Watt-32: Make sure lang.c timestamp is ahead of checkout time so it doesn't try to rebuild and fail"
-        run: (Get-ChildItem "lang.c").LastWriteTime = Get-Date
+        run: (Get-ChildItem "watt-32/src/lang.c").LastWriteTime = Get-Date
       - name: Build Watt-32
         run: |
           cd watt-32\src
