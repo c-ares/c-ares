@@ -182,8 +182,8 @@ CFLAGS  = /D_WIN32_WINNT=0x0602 /DWATT32 /I$(WATT_ROOT)\inc
 !  IFNDEF PLATFORM
 PLATFORM = x86
 !  ENDIF
-EX_LIBS_REL = $(WATT_ROOT)\lib\$(PLATFORM)\wattcpvc_imp.lib
-EX_LIBS_DBG = $(WATT_ROOT)\lib\$(PLATFORM)\wattcpvc_imp_d.lib
+EX_LIBS_REL = $(WATT_ROOT)\lib\$(PLATFORM)\wattcpvc_imp.lib advapi32.lib
+EX_LIBS_DBG = $(WATT_ROOT)\lib\$(PLATFORM)\wattcpvc_imp_d.lib advapi32.lib
 !ELSE
 CFLAGS  = /D_WIN32_WINNT=0x0602
 EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
