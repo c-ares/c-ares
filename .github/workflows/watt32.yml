@@ -28,10 +28,21 @@ jobs:
       - name: Build Watt-32
         run: |
           cd watt-32\src
-          configur.bat visualc
+          & .\configur.bat visualc
           echo "Configured"
           nmake -nologo -f visualc-release_32.mak
-        shell: cmd
+        # Powershell doesn't preserve environment variables set by configur.bat
+        env:
+          MKMAKE: ..\util\win32\mkmake.exe
+          MKDEP: ..\util\win32\mkdep.exe
+          HC_ERR: ..\util\win32\hc_err.exe
+          WC_ERR: ..\util\win32\wc_err.exe
+          BCC_ERR: ..\util\win32\bcc_err.exe
+          W32_BIN2C: ..\util\win32\bin2c.exe
+          W32_BIN2C_: ../util/win32/bin2c.exe
+          W32_NASM: ..\util\win32\nasm.exe
+          W32_NASM_: ../util/win32/nasm.exe
+          DJ_ERR: ..\util\win32\dj_err.exe
       - name: Build c-ares
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
