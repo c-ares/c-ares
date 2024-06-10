@@ -9,6 +9,9 @@ on:
     branches:
       - main
 
+env:
+  WATT_ROOT: "C:\NET\WATT"
+
 jobs:
   build:
     runs-on: windows-latest
@@ -24,8 +27,6 @@ jobs:
           repository: gvanem/Watt-32
           path: watt-32
       - name: Build Watt-32
-        env:
-          WATT_ROOT: "${{ runner.temp }}/watt"
         run: |
           cd watt-32/src
           & .\configur.bat visualc
