@@ -10,7 +10,7 @@ on:
       - main
 
 env:
-  WATT_ROOT: "${{ env.RUNNER_TEMP }}/watt"
+  WATT_ROOT: "${{ runner.temp }}/watt"
 
 jobs:
   build:
