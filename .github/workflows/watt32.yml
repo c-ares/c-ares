@@ -1,0 +1,51 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: WATT32
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      WATT_ROOT: "${{ github.workspace }}\\watt-32"
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+      - name: Checkout Watt-32
+        uses: actions/checkout@v4
+        with:
+          repository: gvanem/Watt-32
+          path: watt-32
+      - name: "Watt-32: Make sure lang.c timestamp is ahead of checkout time so it doesn't try to rebuild and fail"
+        run: (Get-ChildItem "watt-32/src/lang.c").LastWriteTime = Get-Date
+      - name: Build Watt-32
+        run: |
+          cd watt-32\src
+          & .\configur.bat visualc
+          echo "Configured"
+          nmake -nologo -f visualc-release_32.mak
+        # Powershell doesn't preserve environment variables set by configur.bat
+        env:
+          MKMAKE: ..\util\win32\mkmake.exe
+          MKDEP: ..\util\win32\mkdep.exe
+          HC_ERR: ..\util\win32\hc_err.exe
+          WC_ERR: ..\util\win32\wc_err.exe
+          BCC_ERR: ..\util\win32\bcc_err.exe
+          W32_BIN2C: ..\util\win32\bin2c.exe
+          W32_BIN2C_: ../util/win32/bin2c.exe
+          W32_NASM: ..\util\win32\nasm.exe
+          W32_NASM_: ../util/win32/nasm.exe
+          DJ_ERR: ..\util\win32\dj_err.exe
+      - name: Build c-ares
+        run: |
+          Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
+          nmake USE_WATT32=1 CFG=dll-release /NOLOGO /f .\Makefile.msvc
+          nmake USE_WATT32=1 CFG=lib-release /NOLOGO /f .\Makefile.msvc
+
+
+

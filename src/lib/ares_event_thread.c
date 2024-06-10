@@ -355,7 +355,7 @@ static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
 {
   switch (evsys) {
     case ARES_EVSYS_WIN32:
-#if defined(_WIN32)
+#if defined(USE_WINSOCK)
       return &ares_evsys_win32;
 #else
       return NULL;
@@ -391,7 +391,7 @@ static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
 
     /* case ARES_EVSYS_DEFAULT: */
     default:
-#if defined(_WIN32)
+#if defined(USE_WINSOCK)
       return &ares_evsys_win32;
 #elif defined(HAVE_KQUEUE)
       return &ares_evsys_kqueue;

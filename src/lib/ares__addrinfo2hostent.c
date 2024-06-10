@@ -39,8 +39,6 @@
 #  include <arpa/inet.h>
 #endif
 
-#include "ares_nameser.h"
-
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
 #endif
@@ -50,8 +48,6 @@
 #endif
 
 #include "ares.h"
-#include "ares_dns.h"
-#include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
 ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,

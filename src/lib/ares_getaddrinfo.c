@@ -60,10 +60,7 @@
 #include "ares_private.h"
 #include "ares_dns.h"
 
-#ifdef WATT32
-#  undef WIN32
-#endif
-#ifdef WIN32
+#ifdef _WIN32
 #  include "ares_platform.h"
 #endif
 
