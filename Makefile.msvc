@@ -178,7 +178,8 @@ PROG3_OBJDIR = $(PROG3_OUTDIR)\obj
 # -------------------------------------
 
 !IF "$(USE_WATT32)" == "1"
-CFLAGS  = /DWIN32 /DWATT32 /I$(WATT_ROOT)\inc
+CFLAGS  = /DWIN32 /D_WIN32_WINNT=0x0602  /I$(WATT_ROOT)\inc
+# /DWATT32
 EX_LIBS_REL = $(WATT_ROOT)\lib\wattcpvc_imp.lib
 EX_LIBS_DBG = $(WATT_ROOT)\lib\wattcpvc_imp_d.lib
 !ELSE
