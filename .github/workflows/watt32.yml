@@ -9,14 +9,11 @@ on:
     branches:
       - main
 
-env:
-  WATT_ROOT: "C:\\NET\\WATT"
-
 jobs:
   build:
     runs-on: windows-latest
     env:
-      WATT_ROOT: "${{ github.workspace }}/watt-32"
+      WATT_ROOT: "${{ github.workspace }}\\watt-32"
     steps:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -33,11 +30,12 @@ jobs:
           env
           cd watt-32/src
           & .\configur.bat visualc
+          echo "Configured"
           nmake -nologo -f visualc-release_32.mak
       - name: Build c-ares
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
-          nmake /NOLOGO /f .\Makefile.msvc
+          nmake USE_WATT32=1 /NOLOGO /f .\Makefile.msvc
 
 
 
