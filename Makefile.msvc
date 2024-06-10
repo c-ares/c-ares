@@ -71,7 +71,9 @@ RTLIBD = /MTd
 # otherwise Winsock tcp/ip stack will be used as default.
 # --------------------------------------------------------
 
+!IFNDEF USE_WATT32
 USE_WATT32 = 0
+!ENDIF
 
 # --------------------------------------------------------
 # Detect compiler version.
