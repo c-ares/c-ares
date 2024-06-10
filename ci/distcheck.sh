@@ -12,7 +12,9 @@ fi
 
 if [ "$OS" = "linux" ]; then
     # Make distribution tarball
-    ./maketgz 99.98.97
+    autoreconf -fi
+    ./configure
+    make dist VERSION=99.98.97
     # Extract distribution tarball for building
     tar xvf c-ares-99.98.97.tar.gz
     cd c-ares-99.98.97
