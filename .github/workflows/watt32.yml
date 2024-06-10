@@ -16,8 +16,18 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
-      - name: Checkout Source
+      - name: Checkout c-ares
         uses: actions/checkout@v4
+      - name: Checkout Watt-32
+        uses: actions/checkout@v4
+        with:
+          repository: gvanem/Watt-32
+          path: watt-32
+      - name: Build Watt-32
+        run: |
+          cd watt-32/src
+          & .\configur.bat visualc
+          nmake -nologo -f visualc-release_32.mak
       - name: Build c-ares
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
