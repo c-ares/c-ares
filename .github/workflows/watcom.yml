@@ -1,13 +1,8 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 name: OpenWatcom
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: push
+
 jobs:
   build:
     runs-on: windows-latest

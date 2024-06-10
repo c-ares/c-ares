@@ -1,13 +1,7 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 name: WATT32
-on:
-  push:
-    branches:
-      - watt32
-  pull_request:
-    branches:
-      - main
+on: push
 
 jobs:
   build:
@@ -46,7 +40,7 @@ jobs:
       - name: Build c-ares
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
-          nmake USE_WATT32=1 /NOLOGO /f .\Makefile.msvc
+          nmake USE_WATT32=0 /NOLOGO /f .\Makefile.msvc
 
 
 
