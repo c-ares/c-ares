@@ -178,12 +178,11 @@ PROG3_OBJDIR = $(PROG3_OUTDIR)\obj
 # -------------------------------------
 
 !IF "$(USE_WATT32)" == "1"
-CFLAGS  = /DWIN32 /D_WIN32_WINNT=0x0602 /DWATT32 /I$(WATT_ROOT)\inc
-# /DWATT32
+CFLAGS  = /D_WIN32_WINNT=0x0602 /DWATT32 /I$(WATT_ROOT)\inc
 EX_LIBS_REL = $(WATT_ROOT)\lib\$(Platform)\wattcpvc_imp.lib
 EX_LIBS_DBG = $(WATT_ROOT)\lib\$(Platform)\wattcpvc_imp_d.lib
 !ELSE
-CFLAGS  = /DWIN32 /D_WIN32_WINNT=0x0602
+CFLAGS  = /D_WIN32_WINNT=0x0602
 EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
 EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
 !ENDIF

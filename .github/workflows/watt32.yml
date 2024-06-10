@@ -40,7 +40,7 @@ jobs:
       - name: Build c-ares
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
-          nmake USE_WATT32=0 /NOLOGO /f .\Makefile.msvc
+          nmake USE_WATT32=1 /NOLOGO /f .\Makefile.msvc
 
 
 
