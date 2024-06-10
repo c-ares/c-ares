@@ -9,12 +9,11 @@ on:
     branches:
       - main
 
-env:
-  WATT_ROOT: "${{ runner.temp }}/watt"
-
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      WATT_ROOT: "${{ runner.temp }}/watt"
     steps:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
