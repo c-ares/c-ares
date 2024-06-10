@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Build c-ares
         run: |
-          buildconf.bat
+          Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
           nmake /NOLOGO /f .\Makefile.msvc
 
 
