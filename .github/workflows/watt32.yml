@@ -10,7 +10,7 @@ on:
       - main
 
 env:
-  WATT_ROOT: "C:\NET\WATT"
+  WATT_ROOT: "C:\\NET\\WATT"
 
 jobs:
   build:
