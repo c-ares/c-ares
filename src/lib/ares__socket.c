@@ -145,7 +145,7 @@ static int setsocknonblock(ares_socket_t sockfd, /* operate on this */
 #endif
 }
 
-#if defined(IPV6_V6ONLY) && defined(WIN32)
+#if defined(IPV6_V6ONLY) && defined(USE_WINSOCK)
 /* It makes support for IPv4-mapped IPv6 addresses.
  * Linux kernel, NetBSD, FreeBSD and Darwin: default is off;
  * Windows Vista and later: default is on;

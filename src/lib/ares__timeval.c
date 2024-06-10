@@ -28,7 +28,7 @@
 #include "ares.h"
 #include "ares_private.h"
 
-#if defined(WIN32) && !defined(MSDOS)
+#if defined(_WIN32) && !defined(MSDOS)
 
 ares_timeval_t ares__tvnow(void)
 {

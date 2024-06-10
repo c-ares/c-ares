@@ -67,11 +67,6 @@
 #include "ares_private.h"
 #include "ares_event.h"
 
-#ifdef WATT32
-#  undef WIN32 /* Redefined in MingW/MSVC headers */
-#endif
-
-
 int ares_init(ares_channel_t **channelptr)
 {
   return ares_init_options(channelptr, NULL, 0);
