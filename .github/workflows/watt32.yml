@@ -27,11 +27,11 @@ jobs:
           path: watt-32
       - name: Build Watt-32
         run: |
-          env
-          cd watt-32/src
-          & .\configur.bat visualc
+          cd watt-32\src
+          configur.bat visualc
           echo "Configured"
           nmake -nologo -f visualc-release_32.mak
+        shell: cmd
       - name: Build c-ares
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
