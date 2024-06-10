@@ -37,11 +37,10 @@
 #  include <arpa/inet.h>
 #endif
 
-#if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
-#  include <ws2ipdef.h>
-#endif
-
 #if defined(USE_WINSOCK)
+#  if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#    include <ws2ipdef.h>
+#  endif
 #  if defined(HAVE_IPHLPAPI_H)
 #    include <iphlpapi.h>
 #  endif
@@ -137,7 +136,7 @@ static ares_status_t
   ares__system_loopback_addrs(int aftype, unsigned short port,
                               struct ares_addrinfo_node **nodes)
 {
-#if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600 && \
+#if defined(USE_WINSOCK) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600 && \
   !defined(__WATCOMC__)
   PMIB_UNICASTIPADDRESS_TABLE table;
   unsigned int                i;
