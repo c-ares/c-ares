@@ -9,6 +9,9 @@ on:
     branches:
       - main
 
+env:
+  WATT_ROOT: "${{ RUNNER_TEMP }}/watt"
+
 jobs:
   build:
     runs-on: windows-latest
