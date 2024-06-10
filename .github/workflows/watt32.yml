@@ -1,0 +1,25 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: WATT32
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1.4.1
+        arch: x86
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Build c-ares
+        run: |
+          nmake /NOLOGO /f .\Makefile.msvc
+
+
+
