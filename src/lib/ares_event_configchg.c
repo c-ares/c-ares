@@ -173,7 +173,7 @@ done:
   return status;
 }
 
-#elif defined(_WIN32)
+#elif defined(USE_WINSOCK)
 
 #  include <winsock2.h>
 #  include <iphlpapi.h>
@@ -388,7 +388,7 @@ done:
   return status;
 }
 
-#elif defined(HAVE_STAT)
+#elif defined(HAVE_STAT) && !defined(_WIN32)
 #  ifdef HAVE_SYS_TYPES_H
 #    include <sys/types.h>
 #  endif

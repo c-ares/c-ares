@@ -44,10 +44,6 @@
 #include "ares_platform.h"
 #include "ares_private.h"
 
-#ifdef WATT32
-#  undef WIN32
-#endif
-
 struct addr_query {
   /* Arguments passed to ares_gethostbyaddr() */
   ares_channel_t    *channel;

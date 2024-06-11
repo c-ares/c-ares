@@ -658,7 +658,7 @@ static ares_status_t ares__hosts_path(const ares_channel_t *channel,
   }
 
   if (!path_hosts) {
-#ifdef WIN32
+#if defined(USE_WINSOCK)
     char  PATH_HOSTS[MAX_PATH] = "";
     char  tmp[MAX_PATH];
     HKEY  hkeyHosts;

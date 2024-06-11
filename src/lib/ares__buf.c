@@ -135,8 +135,6 @@ void ares__buf_reclaim(ares__buf_t *buf)
   if (buf->tag_offset != SIZE_MAX) {
     buf->tag_offset -= prefix_size;
   }
-
-  return;
 }
 
 static ares_status_t ares__buf_ensure_space(ares__buf_t *buf,
@@ -231,9 +229,9 @@ ares_status_t ares__buf_append(ares__buf_t *buf, const unsigned char *data,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__buf_append_byte(ares__buf_t *buf, unsigned char byte)
+ares_status_t ares__buf_append_byte(ares__buf_t *buf, unsigned char b)
 {
-  return ares__buf_append(buf, &byte, 1);
+  return ares__buf_append(buf, &b, 1);
 }
 
 ares_status_t ares__buf_append_be16(ares__buf_t *buf, unsigned short u16)

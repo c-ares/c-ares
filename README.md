@@ -35,17 +35,11 @@ While c-ares has been around for over 20 years, it has been actively maintained
 both in regards to the latest DNS RFCs as well as updated to follow the latest
 best practices in regards to C coding standards.
 
-This is c-ares, an asynchronous resolver library.  It is intended for
-applications which need to perform DNS queries without blocking, or need to
-perform multiple DNS queries in parallel.  The primary examples of such
-applications are servers which communicate with multiple clients and programs
-with graphical user interfaces.
-
 ## Code
 
 The full source code and revision history is available in our
 [GitHub  repository](https://github.com/c-ares/c-ares).  Our signed releases
-are available in the ['c-ares' release archives](https://c-ares.org/download/).
+are available in the [release archives](https://c-ares.org/download/).
 
 
 See the [INSTALL.md](INSTALL.md) file for build information.
@@ -66,4 +60,42 @@ Please, do not mail volunteers privately about c-ares.
  haxx.se if you suspect one.
 
 
+## Release keys
 
+Primary GPG keys for c-ares Releasers (some Releasers sign with subkeys):
+
+* **Daniel Stenberg** <<daniel@haxx.se>>
+  `27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2`
+* **Brad House** <<brad@brad-house.com>>
+  `DA7D64E4C82C6294CB73A20E22E3D13B5411B7CA`
+
+To import the full set of trusted release keys (including subkeys possibly used
+to sign releases):
+
+```bash
+gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2 # Daniel Stenberg
+gpg --keyserver hkps://keys.openpgp.org --recv-keys DA7D64E4C82C6294CB73A20E22E3D13B5411B7CA     # Brad House
+```
+
+### Verifying signatures
+
+For each release `c-ares-X.Y.Z.tar.gz` there is a corresponding
+`c-ares-X.Y.Z.tar.gz.asc` file which contains the detached signature for the
+release.
+
+After fetching all of the possible valid signing keys and loading into your
+keychain as per the prior section, you can simply run the command below on
+the downloaded package and detached signature:
+
+```bash
+% gpg -v --verify c-ares-1.29.0.tar.gz.asc c-ares-1.29.0.tar.gz
+gpg: enabled compatibility flags:
+gpg: Signature made Fri May 24 02:50:38 2024 EDT
+gpg:                using RSA key 27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2
+gpg: using pgp trust model
+gpg: Good signature from "Daniel Stenberg <daniel@haxx.se>" [unknown]
+gpg: WARNING: This key is not certified with a trusted signature!
+gpg:          There is no indication that the signature belongs to the owner.
+Primary key fingerprint: 27ED EAF2 2F3A BCEB 50DB  9A12 5CC9 08FD B71E 12C2
+gpg: binary signature, digest algorithm SHA512, key algorithm rsa2048
+```

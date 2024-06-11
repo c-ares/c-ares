@@ -71,12 +71,7 @@
 #include "ares_platform.h"
 #include "ares_private.h"
 
-#ifdef WATT32
-#  undef WIN32 /* Redefined in MingW/MSVC headers */
-#endif
-
-
-#ifdef WIN32
+#if defined(USE_WINSOCK)
 /*
  * get_REG_SZ()
  *
@@ -1074,7 +1069,7 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
 
   memset(&sysconfig, 0, sizeof(sysconfig));
 
-#ifdef _WIN32
+#if defined(USE_WINSOCK)
   status = ares__init_sysconfig_windows(&sysconfig);
 #elif defined(__MVS__)
   status = ares__init_sysconfig_mvs(&sysconfig);
