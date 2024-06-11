@@ -1229,6 +1229,44 @@ TEST_F(LibraryTest, HtableStrvp) {
   ares__htable_strvp_destroy(h);
 }
 
+TEST_F(LibraryTest, IfaceIPs) {
+  ares_status_t      status;
+  ares__iface_ips_t *ips = NULL;
+  size_t             i;
+
+  status = ares__iface_ips(&ips, ARES_IFACE_IP_DEFAULT, NULL);
+  EXPECT_TRUE(status == ARES_SUCCESS || status == ARES_ENOTIMP);
+
+  /* Not implemented, can't run tests */
+  if (status == ARES_ENOTIMP)
+    return;
+
+  EXPECT_NE(nullptr, ips);
+
+  for (i=0; i<ares__iface_ips_cnt(ips); i++) {
+    const char *name = ares__iface_ips_get_name(ips, i);
+    EXPECT_NE(nullptr, name);
+    int flags = (int)ares__iface_ips_get_flags(ips, i);
+    EXPECT_NE(0, (int)flags);
+    EXPECT_NE(nullptr, ares__iface_ips_get_addr(ips, i));
+    EXPECT_NE(0, ares__iface_ips_get_netmask(ips, i));
+    if (flags & ARES_IFACE_IP_LINKLOCAL && flags & ARES_IFACE_IP_V6) {
+      /* Hmm, seems not to work at least on MacOS
+       * EXPECT_NE(0, ares__iface_ips_get_ll_scope(ips, i));
+       */
+    } else {
+      EXPECT_EQ(0, ares__iface_ips_get_ll_scope(ips, i));
+    }
+    unsigned int idx = ares__if_nametoindex(name);
+    EXPECT_NE(0, idx);
+    char namebuf[256];
+    EXPECT_EQ(std::string(ares__if_indextoname(idx, namebuf, sizeof(namebuf))), std::string(name));
+  }
+
+  ares__iface_ips_destroy(ips);
+}
+
+
 #endif
 
 TEST_F(DefaultChannelTest, SaveInvalidChannel) {

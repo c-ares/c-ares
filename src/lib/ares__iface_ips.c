@@ -490,7 +490,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
     }
 
     /* Name mismatch */
-    if (strcasecmp(ifa->ifa_name, name) != 0) {
+    if (name != NULL && strcasecmp(ifa->ifa_name, name) != 0) {
       continue;
     }
 
