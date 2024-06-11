@@ -1263,6 +1263,25 @@ TEST_F(LibraryTest, IfaceIPs) {
     EXPECT_EQ(std::string(ares__if_indextoname(idx, namebuf, sizeof(namebuf))), std::string(name));
   }
 
+
+  /* Negative checking */
+  ares__iface_ips_get_name(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_flags(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_addr(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_netmask(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_ll_scope(ips, ares__iface_ips_cnt(ips));
+
+  ares__iface_ips(NULL, ARES_IFACE_IP_DEFAULT, NULL);
+  ares__iface_ips_cnt(NULL);
+  ares__iface_ips_get_name(NULL, 0);
+  ares__iface_ips_get_flags(NULL, 0);
+  ares__iface_ips_get_addr(NULL, 0);
+  ares__iface_ips_get_netmask(NULL, 0);
+  ares__iface_ips_get_ll_scope(NULL, 0);
+  ares__iface_ips_destroy(NULL);
+  ares__if_nametoindex(NULL);
+  ares__if_indextoname(0, NULL, 0);
+
   ares__iface_ips_destroy(ips);
 }
 
