@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2006, 2008, 2009, 2011-2013, 2015-2017 Apple Inc. All rights reserved.
+ * Copyright (c) 2004-2006, 2008, 2009, 2011 Apple Inc. All rights reserved.
  *
  * @APPLE_LICENSE_HEADER_START@
  *
@@ -34,8 +34,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <AvailabilityMacros.h>
 
-#define	DNSINFO_VERSION		20170629
+#define	DNSINFO_VERSION		20111104
 
 #define DEFAULT_SEARCH_ORDER    200000   /* search order for the "default" resolver domain name */
 
@@ -72,23 +73,17 @@ typedef struct {
 	DNS_VAR(uint32_t,		search_order);	/* search_order */
 	DNS_VAR(uint32_t,		if_index);
 	DNS_VAR(uint32_t,		flags);
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1080 /* MacOS 10.8 */
+	DNS_VAR(uint32_t,		reserved[6]);
+#else
 	DNS_VAR(uint32_t,		reach_flags);	/* SCNetworkReachabilityFlags */
-	DNS_VAR(uint32_t,		service_identifier);
-	DNS_PTR(char *,			cid);		/* configuration identifer */
-	DNS_PTR(char *,			if_name);	/* if_index interface name */
+	DNS_VAR(uint32_t,		reserved[5]);
+#endif
 } dns_resolver_t;
 #pragma pack()
 
 
-#define DNS_RESOLVER_FLAGS_REQUEST_A_RECORDS	0x0002		/* always requesting for A dns records in queries */
-#define DNS_RESOLVER_FLAGS_REQUEST_AAAA_RECORDS	0x0004		/* always requesting for AAAA dns records in queries */
-
-#define	DNS_RESOLVER_FLAGS_REQUEST_ALL_RECORDS	\
-	(DNS_RESOLVER_FLAGS_REQUEST_A_RECORDS | DNS_RESOLVER_FLAGS_REQUEST_AAAA_RECORDS)
-
-#define DNS_RESOLVER_FLAGS_SCOPED		0x1000		/* configuration is for scoped questions */
-#define DNS_RESOLVER_FLAGS_SERVICE_SPECIFIC	0x2000		/* configuration is service-specific */
-#define DNS_RESOLVER_FLAGS_SUPPLEMENTAL		0x4000		/* supplemental match configuration */
+#define DNS_RESOLVER_FLAGS_SCOPED	1		/* configuration is for scoped questions */
 
 
 #pragma pack(4)
@@ -97,10 +92,7 @@ typedef struct {
 	DNS_PTR(dns_resolver_t **,	resolver);
 	DNS_VAR(int32_t,		n_scoped_resolver);	/* "scoped" resolver configurations */
 	DNS_PTR(dns_resolver_t **,	scoped_resolver);
-	DNS_VAR(uint64_t,		generation);
-	DNS_VAR(int32_t,		n_service_specific_resolver);
-	DNS_PTR(dns_resolver_t **,	service_specific_resolver);
-	DNS_VAR(uint32_t,		version);
+	DNS_VAR(uint32_t,		reserved[5]);
 } dns_config_t;
 #pragma pack()
 
@@ -119,9 +111,11 @@ dns_configuration_copy		(void)				__OSX_AVAILABLE_STARTING(__MAC_10_4,__IPHONE_2
 void
 dns_configuration_free		(dns_config_t	*config)	__OSX_AVAILABLE_STARTING(__MAC_10_4,__IPHONE_2_0);
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
 void
 _dns_configuration_ack		(dns_config_t	*config,
 				 const char	*bundle_id)	__OSX_AVAILABLE_STARTING(__MAC_10_8, __IPHONE_6_0);
+#endif
 
 __END_DECLS
 
