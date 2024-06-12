@@ -263,6 +263,7 @@ done:
 #  include <unistd.h>
 #  include <notify.h>
 #  include <dlfcn.h>
+#  include <fcntl.h>
 
 struct ares_event_configchg {
   int fd;
