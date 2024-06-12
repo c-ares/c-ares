@@ -80,8 +80,16 @@ static void dnsinfo_destroy(dnsinfo_t *dnsinfo)
 
 static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
 {
-  dnsinfo_t    *dnsinfo = NULL;
-  ares_status_t status  = ARES_SUCCESS;
+  dnsinfo_t    *dnsinfo       = NULL;
+  ares_status_t status        = ARES_SUCCESS;
+  size_t        i;
+  const char   *searchlibs[]  = {
+    "/usr/lib/libSystem.dylib",
+    "SystemConfiguration.framework/SystemConfiguration",
+    "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration",
+    "/System/Library/Frameworks/SystemConfiguration.framework/Versions/Current/SystemConfiguration",
+    NULL
+  };
 
   if (dnsinfo_out == NULL) {
     status = ARES_EFORMERR;
@@ -91,22 +99,46 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
   *dnsinfo_out = NULL;
 
   dnsinfo = ares_malloc_zero(sizeof(*dnsinfo));
-
   if (dnsinfo == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
 
-  dnsinfo->handle = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY | RTLD_NOLOAD);
-  if (dnsinfo->handle == NULL) {
-    status = ARES_ESERVFAIL;
-    goto done;
+  for (i=0; searchlibs[i] != NULL; i++) {
+    dnsinfo->handle = dlopen(searchlibs[i], RTLD_LAZY | RTLD_NOLOAD);
+    if (dnsinfo->handle == NULL) {
+      /* Fail, loop */
+      continue;
+    }
+
+    dnsinfo->dns_configuration_copy =
+      dlsym(dnsinfo->handle, "dns_configuration_copy");
+
+    if (dnsinfo->dns_configuration_copy == NULL) {
+      /* Might be needed for PPC ABI */
+      dnsinfo->dns_configuration_copy =
+        dlsym(dnsinfo->handle, "_dns_configuration_copy");
+    }
+
+    dnsinfo->dns_configuration_free =
+      dlsym(dnsinfo->handle, "dns_configuration_free");
+
+    if (dnsinfo->dns_configuration_free == NULL) {
+      /* Might be needed for PPC ABI */
+      dnsinfo->dns_configuration_free =
+        dlsym(dnsinfo->handle, "_dns_configuration_free");
+    }
+
+    if (dnsinfo->dns_configuration_copy != NULL &&
+        dnsinfo->dns_configuration_free != NULL) {
+      break;
+    }
+
+    /* Fail, loop */
+    dlclose(dnsinfo->handle);
+    dnsinfo->handle = NULL;
   }
 
-  dnsinfo->dns_configuration_copy =
-    dlsym(dnsinfo->handle, "dns_configuration_copy");
-  dnsinfo->dns_configuration_free =
-    dlsym(dnsinfo->handle, "dns_configuration_free");
 
   if (dnsinfo->dns_configuration_copy == NULL ||
       dnsinfo->dns_configuration_free == NULL) {
