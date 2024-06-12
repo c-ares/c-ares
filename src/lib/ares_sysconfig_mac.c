@@ -162,12 +162,17 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
   unsigned short port   = 0;
   ares_status_t  status = ARES_SUCCESS;
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080 /* MacOS 10.8 */
   /* XXX: resolver->domain is for domain-specific servers.  When we implement
    *      this support, we'll want to use this.  But for now, we're going to
-   *      skip any servers which set this since we can't properly route. */
+   *      skip any servers which set this since we can't properly route.
+   *      MacOS used to use this setting for a different purpose in the
+   *      past however, so on versions of MacOS < 10.8 just ignore this
+   *      completely. */
   if (resolver->domain != NULL) {
     return ARES_SUCCESS;
   }
+#endif
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080 /* MacOS 10.8 */
   /* Check to see if DNS server should be used, base this on if the server is
