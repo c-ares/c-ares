@@ -52,8 +52,10 @@
 #  include <dlfcn.h>
 #  include <arpa/inet.h>
 #  include "thirdparty/apple/dnsinfo.h"
-#  include <SystemConfiguration/SCNetworkConfiguration.h>
 #  include <AvailabilityMacros.h>
+#  if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080 /* MacOS 10.8 */
+#    include <SystemConfiguration/SCNetworkConfiguration.h>
+#  endif
 #  include "ares.h"
 #  include "ares_private.h"
 
