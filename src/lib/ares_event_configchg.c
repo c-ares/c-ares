@@ -332,11 +332,17 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
                                         ares_event_thread_t     *e)
 {
-  ares_status_t status                               = ARES_SUCCESS;
-  void         *handle                               = NULL;
-  const char *(*pdns_configuration_notify_key)(void) = NULL;
-  const char *notify_key                             = NULL;
-  int         flags;
+  ares_status_t   status                               = ARES_SUCCESS;
+  void           *handle                               = NULL;
+  const char   *(*pdns_configuration_notify_key)(void) = NULL;
+  const char     *notify_key                           = NULL;
+  int             flags;
+  size_t          i;
+  const char     *searchlibs[]                         = {
+    "/usr/lib/libSystem.dylib",
+    "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration",
+    NULL
+  };
 
   *configchg = ares_malloc_zero(sizeof(**configchg));
   if (*configchg == NULL) {
@@ -344,13 +350,22 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
   }
 
   /* Load symbol as it isn't normally public */
-  handle = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY | RTLD_NOLOAD);
-  if (handle == NULL) {
-    status = ARES_ESERVFAIL;
-    goto done;
-  }
+  for (i=0; searchlibs[i] != NULL; i++) {
+    handle = dlopen(searchlibs[i], RTLD_LAZY);
+    if (handle == NULL) {
+      /* Fail, loop! */
+      continue;
+    }
 
-  pdns_configuration_notify_key = dlsym(handle, "dns_configuration_notify_key");
+    pdns_configuration_notify_key = dlsym(handle, "dns_configuration_notify_key");
+    if (pdns_configuration_notify_key != NULL) {
+      break;
+    }
+
+    /* Fail, loop! */
+    dlclose(handle);
+    handle = NULL;
+  }
 
   if (pdns_configuration_notify_key == NULL) {
     status = ARES_ESERVFAIL;
