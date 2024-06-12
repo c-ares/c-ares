@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2006, 2008, 2009, 2011-2013, 2015-2017 Apple Inc. All rights reserved.
+ * Copyright (c) 2004-2006, 2008, 2009, 2011-2013, 2015-2018 Apple Inc. All rights reserved.
  *
  * @APPLE_LICENSE_HEADER_START@
  *
@@ -28,7 +28,7 @@
  * These routines provide access to the systems DNS configuration
  */
 
-#include <Availability.h>
+#include <os/availability.h>
 #include <sys/cdefs.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -111,17 +111,17 @@ __BEGIN_DECLS
  * DNS configuration access APIs
  */
 const char *
-dns_configuration_notify_key    (void)				__OSX_AVAILABLE_STARTING(__MAC_10_4,__IPHONE_2_0);
+dns_configuration_notify_key    (void)				API_AVAILABLE(macos(10.4), ios(2.0));
 
 dns_config_t *
-dns_configuration_copy		(void)				__OSX_AVAILABLE_STARTING(__MAC_10_4,__IPHONE_2_0);
+dns_configuration_copy		(void)				API_AVAILABLE(macos(10.4), ios(2.0));
 
 void
-dns_configuration_free		(dns_config_t	*config)	__OSX_AVAILABLE_STARTING(__MAC_10_4,__IPHONE_2_0);
+dns_configuration_free		(dns_config_t	*config)	API_AVAILABLE(macos(10.4), ios(2.0));
 
 void
 _dns_configuration_ack		(dns_config_t	*config,
-				 const char	*bundle_id)	__OSX_AVAILABLE_STARTING(__MAC_10_8, __IPHONE_6_0);
+				 const char	*bundle_id)	API_AVAILABLE(macos(10.8), ios(6.0));
 
 __END_DECLS
 
