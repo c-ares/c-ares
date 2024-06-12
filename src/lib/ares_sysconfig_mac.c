@@ -53,6 +53,7 @@
 #  include <arpa/inet.h>
 #  include "thirdparty/apple/dnsinfo.h"
 #  include <SystemConfiguration/SCNetworkConfiguration.h>
+#  include <AvailabilityMacros.h>
 #  include "ares.h"
 #  include "ares_private.h"
 
@@ -148,6 +149,7 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
     return ARES_SUCCESS;
   }
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080 /* MacOS 10.8 */
   /* Check to see if DNS server should be used, base this on if the server is
    * reachable or can be reachable automatically if we send traffic that
    * direction. */
@@ -156,6 +158,7 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
          kSCNetworkReachabilityFlagsConnectionOnTraffic))) {
     return ARES_SUCCESS;
   }
+#endif
 
   /* NOTE: it doesn't look like resolver->flags is relevant */
 
@@ -220,7 +223,8 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
    *   - resolver->timeout appears unused, always 0, so we ignore this
    *   - resolver->service_identifier doesn't appear relevant to us
    *   - resolver->cid also isn't relevant
-   *   - resolver->if_index we don't need, if_name is used instead.
+   *   - resolver->if_name we won't use since it isn't available in MacOS 10.8
+   *     or earlier, use resolver->if_index instead to then lookup the name.
    */
 
   /* XXX: resolver->search_order appears like it might be relevant, we might
@@ -234,6 +238,8 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
     struct ares_addr       addr;
     unsigned short         addrport;
     const struct sockaddr *sockaddr;
+    char                   if_name_str[256] = "";
+    const char            *if_name;
 
     /* UBSAN alignment workaround to fetch memory address */
     memcpy(&sockaddr, resolver->nameserver + i, sizeof(sockaddr));
@@ -263,8 +269,11 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
     if (addrport == 0) {
       addrport = port;
     }
+
+    if_name = ares__if_indextoname(resolver->if_index, if_name_str,
+                                   sizeof(if_name_str));
     status = ares__sconfig_append(&sysconfig->sconfig, &addr, addrport,
-                                  addrport, resolver->if_name);
+                                  addrport, if_name);
     if (status != ARES_SUCCESS) {
       return status;
     }
