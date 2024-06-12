@@ -105,7 +105,7 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
   }
 
   for (i=0; searchlibs[i] != NULL; i++) {
-    dnsinfo->handle = dlopen(searchlibs[i], RTLD_LAZY | RTLD_NOLOAD);
+    dnsinfo->handle = dlopen(searchlibs[i], RTLD_LAZY /* | RTLD_NOLOAD */);
     if (dnsinfo->handle == NULL) {
       /* Fail, loop */
       continue;
