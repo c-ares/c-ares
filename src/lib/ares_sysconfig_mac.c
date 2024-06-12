@@ -85,9 +85,7 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
   size_t        i;
   const char   *searchlibs[]  = {
     "/usr/lib/libSystem.dylib",
-    "SystemConfiguration.framework/SystemConfiguration",
     "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration",
-    "/System/Library/Frameworks/SystemConfiguration.framework/Versions/Current/SystemConfiguration",
     NULL
   };
 
@@ -114,20 +112,8 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
     dnsinfo->dns_configuration_copy =
       dlsym(dnsinfo->handle, "dns_configuration_copy");
 
-    if (dnsinfo->dns_configuration_copy == NULL) {
-      /* Might be needed for PPC ABI */
-      dnsinfo->dns_configuration_copy =
-        dlsym(dnsinfo->handle, "_dns_configuration_copy");
-    }
-
     dnsinfo->dns_configuration_free =
       dlsym(dnsinfo->handle, "dns_configuration_free");
-
-    if (dnsinfo->dns_configuration_free == NULL) {
-      /* Might be needed for PPC ABI */
-      dnsinfo->dns_configuration_free =
-        dlsym(dnsinfo->handle, "_dns_configuration_free");
-    }
 
     if (dnsinfo->dns_configuration_copy != NULL &&
         dnsinfo->dns_configuration_free != NULL) {
