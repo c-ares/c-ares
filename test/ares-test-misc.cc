@@ -570,6 +570,45 @@ TEST_F(LibraryTest, ExpandString) {
                                (unsigned char**)&result, &len));
 }
 
+TEST_F(LibraryTest, DNSMapping) {
+  ares_dns_rec_type_t types[] = {
+    ARES_REC_TYPE_A,
+    ARES_REC_TYPE_NS,
+    ARES_REC_TYPE_CNAME,
+    ARES_REC_TYPE_SOA,
+    ARES_REC_TYPE_PTR,
+    ARES_REC_TYPE_HINFO,
+    ARES_REC_TYPE_MX,
+    ARES_REC_TYPE_TXT,
+    ARES_REC_TYPE_SIG,
+    ARES_REC_TYPE_AAAA,
+    ARES_REC_TYPE_SRV,
+    ARES_REC_TYPE_NAPTR,
+    ARES_REC_TYPE_OPT,
+    ARES_REC_TYPE_TLSA,
+    ARES_REC_TYPE_SVCB,
+    ARES_REC_TYPE_HTTPS,
+    ARES_REC_TYPE_ANY,
+    ARES_REC_TYPE_URI,
+    ARES_REC_TYPE_CAA
+  };
+
+  for (size_t i=0; i<sizeof(types) / sizeof(*types); i++) {
+    ares_dns_rec_type_t type;
+    EXPECT_TRUE(ares_dns_rec_type_fromstr(&type, ares_dns_rec_type_tostr(types[i])));
+    EXPECT_EQ(types[i], type);
+    size_t cnt;
+    const ares_dns_rr_key_t *keys = ares_dns_rr_get_keys(type, &cnt);
+    for (size_t j=0; j<cnt; j++) {
+      const char *name = ares_dns_rr_key_tostr(keys[j]);
+      EXPECT_NE(nullptr, name);
+      EXPECT_NE("UNKNOWN", std::string(name));
+      EXPECT_EQ(type, ares_dns_rr_key_to_rec_type(keys[j]));
+      EXPECT_NE(0, (int)ares_dns_rr_key_datatype(keys[j]));
+    }
+  }
+}
+
 TEST_F(LibraryTest, StrError) {
   ares_status_t status[] = {
     ARES_SUCCESS, ARES_ENODATA, ARES_EFORMERR, ARES_ESERVFAIL, ARES_ENOTFOUND,
@@ -614,6 +653,7 @@ TEST_F(LibraryTest, UsageErrors) {
   ares_query_dnsrec(NULL, NULL, ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL, NULL);
   ares_query(NULL, NULL, ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL);
 }
+
 
 }  // namespace test
 }  // namespace ares
