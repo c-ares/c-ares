@@ -308,6 +308,9 @@ TEST_F(LibraryTest, CreateQueryFailures) {
             ares_create_query("example..com", C_IN, T_A, 0x1234, 0,
                     &p, &len, 0));
   if (p) ares_free_string(p);
+
+  EXPECT_EQ(ARES_EFORMERR,
+            ares_create_query(NULL, C_IN, T_A, 0x1234, 0, NULL, NULL, 0));
 }
 
 TEST_F(LibraryTest, CreateQueryOnionDomain) {
@@ -544,15 +547,6 @@ TEST_F(LibraryTest, Version) {
   EXPECT_EQ(ARES_VERSION, version);
 }
 
-TEST_F(LibraryTest, Strerror) {
-  EXPECT_EQ("Successful completion",
-            std::string(ares_strerror(ARES_SUCCESS)));
-  EXPECT_EQ("DNS query cancelled",
-            std::string(ares_strerror(ARES_ECANCELLED)));
-  EXPECT_EQ("unknown",
-            std::string(ares_strerror(99)));
-}
-
 TEST_F(LibraryTest, ExpandString) {
   std::vector<byte> s1 = { 3, 'a', 'b', 'c'};
   char* result = nullptr;
@@ -598,6 +592,25 @@ TEST_F(LibraryTest, StrError) {
   str = ares_strerror(0x12345678);
   EXPECT_NE(nullptr, str);
   EXPECT_EQ("unknown", std::string(str));
+}
+
+TEST_F(LibraryTest, UsageErrors) {
+  ares_cancel(NULL);
+  ares_set_socket_callback(NULL, NULL, NULL);
+  ares_set_socket_configure_callback(NULL, NULL, NULL);
+  ares_set_socket_functions(NULL, NULL, NULL);
+  ares_destroy(NULL);
+  ares_expand_name(NULL, NULL, 0, NULL, NULL);
+  ares_expand_string(NULL, NULL, 0, NULL, NULL);
+  ares_fds(NULL, NULL, NULL);
+  ares_getaddrinfo(NULL, NULL, NULL, NULL, NULL, NULL);
+  ares_gethostbyaddr(NULL, NULL, 0, 0, NULL, NULL);
+  ares_getnameinfo(NULL, NULL, 0, 0, NULL, NULL);
+  ares_reinit(NULL);
+  ares_dup(NULL, NULL);
+  ares_set_local_ip4(NULL, 0);
+  ares_set_local_ip6(NULL, NULL);
+  ares_set_local_dev(NULL, NULL);
 }
 
 }  // namespace test

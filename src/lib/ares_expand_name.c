@@ -91,8 +91,8 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
   size_t        enclen_temp = 0;
   ares_status_t status;
 
-  if (alen < 0) {
-    return ARES_EBADRESP;
+  if (encoded == NULL || abuf == NULL || alen <= 0 || enclen == NULL) {
+    return ARES_EBADNAME;
   }
 
   status  = ares__expand_name_validated(encoded, abuf, (size_t)alen, s,
