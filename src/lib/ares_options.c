@@ -249,7 +249,7 @@ static ares_status_t ares__init_options_servers(ares_channel_t       *channel,
 
   status = ares_in_addr_to_server_config_llist(servers, nservers, &slist);
   if (status != ARES_SUCCESS) {
-    return status;
+    return status; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   status = ares__servers_update(channel, slist, ARES_TRUE);
@@ -266,12 +266,12 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
   size_t i;
 
   if (channel == NULL) {
-    return ARES_ENODATA;
+    return ARES_ENODATA; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   if (options == NULL) {
     if (optmask != 0) {
-      return ARES_ENODATA;
+      return ARES_ENODATA; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
     return ARES_SUCCESS;
   }
@@ -389,13 +389,13 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
     channel->domains =
       ares_malloc_zero((size_t)options->ndomains * sizeof(char *));
     if (!channel->domains) {
-      return ARES_ENOMEM;
+      return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
     channel->ndomains = (size_t)options->ndomains;
     for (i = 0; i < (size_t)options->ndomains; i++) {
       channel->domains[i] = ares_strdup(options->domains[i]);
       if (!channel->domains[i]) {
-        return ARES_ENOMEM;
+        return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       }
     }
   }
@@ -407,7 +407,7 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
     } else {
       channel->lookups = ares_strdup(options->lookups);
       if (!channel->lookups) {
-        return ARES_ENOMEM;
+        return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       }
     }
   }
@@ -418,7 +418,7 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
     channel->sortlist =
       ares_malloc((size_t)options->nsort * sizeof(struct apattern));
     if (!channel->sortlist) {
-      return ARES_ENOMEM;
+      return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
     for (i = 0; i < (size_t)options->nsort; i++) {
       channel->sortlist[i] = options->sortlist[i];
@@ -432,7 +432,7 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
     } else {
       channel->resolvconf_path = ares_strdup(options->resolvconf_path);
       if (channel->resolvconf_path == NULL) {
-        return ARES_ENOMEM;
+        return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       }
     }
   }
@@ -444,7 +444,7 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
     } else {
       channel->hosts_path = ares_strdup(options->hosts_path);
       if (channel->hosts_path == NULL) {
-        return ARES_ENOMEM;
+        return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       }
     }
   }
@@ -475,7 +475,7 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
       status = ares__init_options_servers(channel, options->servers,
                                           (size_t)options->nservers);
       if (status != ARES_SUCCESS) {
-        return status;
+        return status; /* LCOV_EXCL_LINE: OutOfMemory */
       }
     }
   }

@@ -611,6 +611,8 @@ TEST_F(LibraryTest, UsageErrors) {
   ares_set_local_ip4(NULL, 0);
   ares_set_local_ip6(NULL, NULL);
   ares_set_local_dev(NULL, NULL);
+  ares_query_dnsrec(NULL, NULL, ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL, NULL);
+  ares_query(NULL, NULL, ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL);
 }
 
 }  // namespace test

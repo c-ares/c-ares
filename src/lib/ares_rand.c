@@ -215,7 +215,7 @@ static ares_bool_t ares__init_rand_engine(ares_rand_state *state)
   /* LCOV_EXCL_STOP */
 
   /* Currently cannot fail */
-  return ARES_TRUE;
+  return ARES_TRUE; /* LCOV_EXCL_LINE: UntestablePath */
 }
 
 ares_rand_state *ares__init_rand_state(void)
@@ -238,7 +238,7 @@ ares_rand_state *ares__init_rand_state(void)
 static void ares__clear_rand_state(ares_rand_state *state)
 {
   if (!state) {
-    return;
+    return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   switch (state->type) {
