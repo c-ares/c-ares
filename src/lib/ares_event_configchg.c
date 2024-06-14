@@ -193,17 +193,16 @@ struct ares_event_configchg {
 
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
-#  ifdef __WATCOMC__
-  /* Not supported */
-#  else
   if (configchg == NULL) {
     return;
   }
 
+#  ifndef __WATCOMC__
   if (configchg->ifchg_hnd != NULL) {
     CancelMibChangeNotify2(configchg->ifchg_hnd);
     configchg->ifchg_hnd = NULL;
   }
+#  endif
 
   if (configchg->regip4_wait != NULL) {
     UnregisterWait(configchg->regip4_wait);
@@ -236,10 +235,20 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
   }
 
   ares_free(configchg);
-#  endif
 }
 
+
 #  ifndef __WATCOMC__
+static void ares_event_configchg_ip_cb(PVOID                 CallerContext,
+                                       PMIB_IPINTERFACE_ROW  Row,
+                                       MIB_NOTIFICATION_TYPE NotificationType)
+{
+  ares_event_configchg_t *configchg = CallerContext;
+  (void)Row;
+  (void)NotificationType;
+  ares_reinit(configchg->e->channel);
+}
+#  endif
 
 static ares_bool_t ares_event_configchg_regnotify(ares_event_configchg_t *configchg)
 {
@@ -263,16 +272,6 @@ static ares_bool_t ares_event_configchg_regnotify(ares_event_configchg_t *config
   return ARES_TRUE;
 }
 
-static void ares_event_configchg_ip_cb(PVOID                 CallerContext,
-                                       PMIB_IPINTERFACE_ROW  Row,
-                                       MIB_NOTIFICATION_TYPE NotificationType)
-{
-  ares_event_configchg_t *configchg = CallerContext;
-  (void)Row;
-  (void)NotificationType;
-  ares_reinit(configchg->e->channel);
-}
-
 static VOID CALLBACK ares_event_configchg_reg_cb(PVOID lpParameter,
                                                  BOOLEAN TimerOrWaitFired)
 {
@@ -286,15 +285,9 @@ static VOID CALLBACK ares_event_configchg_reg_cb(PVOID lpParameter,
   ares_event_configchg_regnotify(configchg);
 }
 
-#  endif
-
-
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
                                         ares_event_thread_t     *e)
 {
-#  ifdef __WATCOMC__
-  return ARES_ENOTIMP;
-#  else
   ares_status_t           status = ARES_SUCCESS;
   ares_event_configchg_t *c      = NULL;
 
@@ -305,6 +298,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
 
   c->e = e;
 
+#ifndef __WATCOMC__
   /* NOTE: If a user goes into the control panel and changes the network
    *       adapter DNS addresses manually, this will NOT trigger a notification.
    *       We've also tried listening on NotifyUnicastIpAddressChange(), but
@@ -316,6 +310,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
     status = ARES_ESERVFAIL;
     goto done;
   }
+#endif
 
   /* Monitor HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\Interfaces
    * and HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces
@@ -371,7 +366,6 @@ done:
   }
 
   return status;
-#  endif
 }
 
 #elif defined(__APPLE__)
