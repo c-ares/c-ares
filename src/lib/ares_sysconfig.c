@@ -1043,7 +1043,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
     channel->nsort    = sysconfig->nsortlist;
   }
 
-  if (sysconfig->ndots && !(channel->optmask & ARES_OPT_NDOTS)) {
+  if (!(channel->optmask & ARES_OPT_NDOTS)) {
     channel->ndots = sysconfig->ndots;
   }
 
