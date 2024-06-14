@@ -252,6 +252,9 @@ static void ares_event_configchg_ip_cb(PVOID                 CallerContext,
 
 static ares_bool_t ares_event_configchg_regnotify(ares_event_configchg_t *configchg)
 {
+#  if defined(__WATCOMC__) && !defined(REG_NOTIFY_THREAD_AGNOSTIC)
+#    define REG_NOTIFY_THREAD_AGNOSTIC 0x10000000L
+#  endif
   DWORD flags =
     REG_NOTIFY_CHANGE_NAME|REG_NOTIFY_CHANGE_LAST_SET|REG_NOTIFY_THREAD_AGNOSTIC;
 
