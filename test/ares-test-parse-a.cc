@@ -139,6 +139,10 @@ TEST_F(LibraryTest, ParseMalformedAReply) {
   // Truncate mid-answer.
   EXPECT_EQ(ARES_EBADRESP, ares_parse_a_reply(data.data(), 42,
                                               &host, info, &count));
+
+  // Negative length
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_a_reply(data.data(), -1,
+                                              &host, info, &count));
 }
 
 TEST_F(LibraryTest, ParseAReplyNoData) {

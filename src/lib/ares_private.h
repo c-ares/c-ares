@@ -419,11 +419,6 @@ ares_status_t  ares__expand_name_validated(const unsigned char *encoded,
                                            const unsigned char *abuf,
                                            size_t alen, char **s, size_t *enclen,
                                            ares_bool_t is_hostname);
-ares_status_t  ares__expand_name_for_response(const unsigned char *encoded,
-                                              const unsigned char *abuf,
-                                              size_t alen, char **s,
-                                              size_t     *enclen,
-                                              ares_bool_t is_hostname);
 ares_status_t  ares_expand_string_ex(const unsigned char *encoded,
                                      const unsigned char *abuf, size_t alen,
                                      unsigned char **s, size_t *enclen);

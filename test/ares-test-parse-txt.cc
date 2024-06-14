@@ -212,6 +212,7 @@ TEST_F(LibraryTest, ParseTxtReplyErrors) {
     .add_answer(new DNSTxtRR("example.com", 100, {expected2a, expected2b}));
   std::vector<byte> data = pkt.data();
   struct ares_txt_reply* txt = nullptr;
+  struct ares_txt_ext* txt_ext = nullptr;
 
   // No question.
   pkt.questions_.clear();
@@ -254,6 +255,10 @@ TEST_F(LibraryTest, ParseTxtReplyErrors) {
     EXPECT_NE(ARES_SUCCESS, ares_parse_txt_reply(data.data(), (int)len, &txt));
     EXPECT_EQ(nullptr, txt);
   }
+
+  // Negative Length
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply(data.data(), -1, &txt));
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_txt_reply_ext(data.data(), -1, &txt_ext));
 }
 
 TEST_F(LibraryTest, ParseTxtReplyAllocFail) {

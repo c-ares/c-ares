@@ -308,6 +308,9 @@ TEST_F(LibraryTest, CreateQueryFailures) {
             ares_create_query("example..com", C_IN, T_A, 0x1234, 0,
                     &p, &len, 0));
   if (p) ares_free_string(p);
+
+  EXPECT_EQ(ARES_EFORMERR,
+            ares_create_query(NULL, C_IN, T_A, 0x1234, 0, NULL, NULL, 0));
 }
 
 TEST_F(LibraryTest, CreateQueryOnionDomain) {
@@ -544,15 +547,6 @@ TEST_F(LibraryTest, Version) {
   EXPECT_EQ(ARES_VERSION, version);
 }
 
-TEST_F(LibraryTest, Strerror) {
-  EXPECT_EQ("Successful completion",
-            std::string(ares_strerror(ARES_SUCCESS)));
-  EXPECT_EQ("DNS query cancelled",
-            std::string(ares_strerror(ARES_ECANCELLED)));
-  EXPECT_EQ("unknown",
-            std::string(ares_strerror(99)));
-}
-
 TEST_F(LibraryTest, ExpandString) {
   std::vector<byte> s1 = { 3, 'a', 'b', 'c'};
   char* result = nullptr;
@@ -575,6 +569,91 @@ TEST_F(LibraryTest, ExpandString) {
             ares_expand_string(s1.data(), s1.data(), (int)s1.size(),
                                (unsigned char**)&result, &len));
 }
+
+TEST_F(LibraryTest, DNSMapping) {
+  ares_dns_rec_type_t types[] = {
+    ARES_REC_TYPE_A,
+    ARES_REC_TYPE_NS,
+    ARES_REC_TYPE_CNAME,
+    ARES_REC_TYPE_SOA,
+    ARES_REC_TYPE_PTR,
+    ARES_REC_TYPE_HINFO,
+    ARES_REC_TYPE_MX,
+    ARES_REC_TYPE_TXT,
+    ARES_REC_TYPE_SIG,
+    ARES_REC_TYPE_AAAA,
+    ARES_REC_TYPE_SRV,
+    ARES_REC_TYPE_NAPTR,
+    ARES_REC_TYPE_OPT,
+    ARES_REC_TYPE_TLSA,
+    ARES_REC_TYPE_SVCB,
+    ARES_REC_TYPE_HTTPS,
+    ARES_REC_TYPE_ANY,
+    ARES_REC_TYPE_URI,
+    ARES_REC_TYPE_CAA
+  };
+
+  for (size_t i=0; i<sizeof(types) / sizeof(*types); i++) {
+    ares_dns_rec_type_t type;
+    EXPECT_TRUE(ares_dns_rec_type_fromstr(&type, ares_dns_rec_type_tostr(types[i])));
+    EXPECT_EQ(types[i], type);
+    size_t cnt;
+    const ares_dns_rr_key_t *keys = ares_dns_rr_get_keys(type, &cnt);
+    for (size_t j=0; j<cnt; j++) {
+      const char *name = ares_dns_rr_key_tostr(keys[j]);
+      EXPECT_NE(nullptr, name);
+      EXPECT_NE("UNKNOWN", std::string(name));
+      EXPECT_EQ(type, ares_dns_rr_key_to_rec_type(keys[j]));
+      EXPECT_NE(0, (int)ares_dns_rr_key_datatype(keys[j]));
+    }
+  }
+}
+
+TEST_F(LibraryTest, StrError) {
+  ares_status_t status[] = {
+    ARES_SUCCESS, ARES_ENODATA, ARES_EFORMERR, ARES_ESERVFAIL, ARES_ENOTFOUND,
+    ARES_ENOTIMP, ARES_EREFUSED, ARES_EBADQUERY, ARES_EBADNAME, ARES_EBADFAMILY,
+    ARES_EBADRESP, ARES_ECONNREFUSED, ARES_ETIMEOUT, ARES_EOF, ARES_EFILE,
+    ARES_ENOMEM, ARES_EDESTRUCTION, ARES_EBADSTR, ARES_EBADFLAGS, ARES_ENONAME,
+    ARES_EBADHINTS, ARES_ENOTINITIALIZED, ARES_ELOADIPHLPAPI,
+    ARES_EADDRGETNETWORKPARAMS, ARES_ECANCELLED, ARES_ESERVICE, ARES_ENOSERVER
+  };
+  size_t i;
+  const char *str = nullptr;
+
+  for (i=0; i < sizeof(status) / sizeof(*status); i++) {
+    str = ares_strerror((int)status[i]);
+    EXPECT_NE(nullptr, str);
+    EXPECT_NE("unknown", std::string(str));
+  }
+
+  /* unknown value */
+  str = ares_strerror(0x12345678);
+  EXPECT_NE(nullptr, str);
+  EXPECT_EQ("unknown", std::string(str));
+}
+
+TEST_F(LibraryTest, UsageErrors) {
+  ares_cancel(NULL);
+  ares_set_socket_callback(NULL, NULL, NULL);
+  ares_set_socket_configure_callback(NULL, NULL, NULL);
+  ares_set_socket_functions(NULL, NULL, NULL);
+  ares_destroy(NULL);
+  ares_expand_name(NULL, NULL, 0, NULL, NULL);
+  ares_expand_string(NULL, NULL, 0, NULL, NULL);
+  ares_fds(NULL, NULL, NULL);
+  ares_getaddrinfo(NULL, NULL, NULL, NULL, NULL, NULL);
+  ares_gethostbyaddr(NULL, NULL, 0, 0, NULL, NULL);
+  ares_getnameinfo(NULL, NULL, 0, 0, NULL, NULL);
+  ares_reinit(NULL);
+  ares_dup(NULL, NULL);
+  ares_set_local_ip4(NULL, 0);
+  ares_set_local_ip6(NULL, NULL);
+  ares_set_local_dev(NULL, NULL);
+  ares_query_dnsrec(NULL, NULL, ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL, NULL);
+  ares_query(NULL, NULL, ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL);
+}
+
 
 }  // namespace test
 }  // namespace ares

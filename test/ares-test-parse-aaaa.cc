@@ -195,6 +195,10 @@ TEST_F(LibraryTest, ParseAaaaReplyErrors) {
     EXPECT_EQ(ARES_EBADRESP, ares_parse_aaaa_reply(data.data(), (int)len,
                                                    nullptr, info, &count));
   }
+
+  // Negative length
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_aaaa_reply(data.data(), -1,
+                                                 &host, info, &count));
 }
 
 TEST_F(LibraryTest, ParseAaaaReplyAllocFail) {

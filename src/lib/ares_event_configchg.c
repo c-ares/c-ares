@@ -54,7 +54,7 @@ struct ares_event_configchg {
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
   if (configchg == NULL) {
-    return;
+    return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   /* Tell event system to stop monitoring for changes.  This will cause the
@@ -67,7 +67,7 @@ static void ares_event_configchg_free(void *data)
 {
   ares_event_configchg_t *configchg = data;
   if (configchg == NULL) {
-    return;
+    return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   if (configchg->inotify_fd >= 0) {
@@ -142,22 +142,22 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
 
   c = ares_malloc_zero(sizeof(*c));
   if (c == NULL) {
-    return ARES_ENOMEM;
+    return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   c->e          = e;
   c->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
   if (c->inotify_fd == -1) {
-    status = ARES_ESERVFAIL;
-    goto done;
+    status = ARES_ESERVFAIL; /* LCOV_EXCL_LINE: UntestablePath */
+    goto done; /* LCOV_EXCL_LINE: UntestablePath */
   }
 
   /* We need to monitor /etc/resolv.conf, /etc/nsswitch.conf */
   if (inotify_add_watch(c->inotify_fd, "/etc",
                         IN_CREATE | IN_MODIFY | IN_MOVED_TO | IN_ONLYDIR) ==
       -1) {
-    status = ARES_ESERVFAIL;
-    goto done;
+    status = ARES_ESERVFAIL; /* LCOV_EXCL_LINE: UntestablePath */
+    goto done; /* LCOV_EXCL_LINE: UntestablePath */
   }
 
   status =

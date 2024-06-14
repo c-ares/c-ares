@@ -291,6 +291,9 @@ TEST_F(LibraryTest, ParseSrvReplyErrors) {
     int rc = ares_parse_srv_reply(data.data(), (int)len, &srv);
     EXPECT_TRUE(rc == ARES_EBADRESP || rc == ARES_EBADNAME);
   }
+
+  // Negative Length
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_srv_reply(data.data(), -1, &srv));
 }
 
 TEST_F(LibraryTest, ParseSrvReplyAllocFail) {

@@ -291,6 +291,9 @@ TEST_F(LibraryTest, ParseUriReplyErrors) {
     int rc = ares_parse_uri_reply(data.data(), (int)len, &uri);
     EXPECT_TRUE(rc == ARES_EBADRESP || rc == ARES_EBADNAME);
   }
+
+  // Negative Length
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_uri_reply(data.data(), -1, &uri));
 }
 
 TEST_F(LibraryTest, ParseUriReplyAllocFail) {

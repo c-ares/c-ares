@@ -1007,7 +1007,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
     char **temp =
       ares__strsplit_duplicate(sysconfig->domains, sysconfig->ndomains);
     if (temp == NULL) {
-      return ARES_ENOMEM;
+      return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
     ares__strsplit_free(channel->domains, channel->ndomains);
@@ -1018,7 +1018,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
   if (sysconfig->lookups && !(channel->optmask & ARES_OPT_LOOKUPS)) {
     char *temp = ares_strdup(sysconfig->lookups);
     if (temp == NULL) {
-      return ARES_ENOMEM;
+      return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
     ares_free(channel->lookups);
@@ -1029,7 +1029,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
     struct apattern *temp =
       ares_malloc(sizeof(*channel->sortlist) * sysconfig->nsortlist);
     if (temp == NULL) {
-      return ARES_ENOMEM;
+      return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
     memcpy(temp, sysconfig->sortlist,
            sizeof(*channel->sortlist) * sysconfig->nsortlist);

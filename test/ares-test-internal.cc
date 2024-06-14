@@ -805,6 +805,50 @@ TEST_F(LibraryTest, DNSRecord) {
 
   ares_dns_record_destroy(dnsrec);
   ares_free_string(msg);
+
+  // Invalid
+  EXPECT_NE(ARES_SUCCESS, ares_dns_parse(NULL, 0, 0, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_create(NULL, 0, 0, ARES_OPCODE_QUERY, ARES_RCODE_NOERROR));
+  EXPECT_EQ(0, ares_dns_record_get_id(NULL));
+  EXPECT_EQ(0, ares_dns_record_get_flags(NULL));
+  EXPECT_EQ(0, (int)ares_dns_record_get_opcode(NULL));
+  EXPECT_EQ(0, (int)ares_dns_record_get_rcode(NULL));
+  EXPECT_EQ(0, (int)ares_dns_record_query_cnt(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_query_set_name(NULL, 0, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_query_set_type(NULL, 0, ARES_REC_TYPE_A));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_query_get(NULL, 0, NULL, NULL, NULL));
+  EXPECT_EQ(0, ares_dns_record_rr_cnt(NULL, ARES_SECTION_ANSWER));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_rr_add(NULL, NULL, ARES_SECTION_ANSWER, NULL, ARES_REC_TYPE_A, ARES_CLASS_IN, 0));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_rr_del(NULL, ARES_SECTION_ANSWER, 0));
+  EXPECT_EQ(nullptr, ares_dns_record_rr_get(NULL, ARES_SECTION_ANSWER, 0));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_name(NULL));
+  EXPECT_EQ(0, (int)ares_dns_rr_get_type(NULL));
+  EXPECT_EQ(0, (int)ares_dns_rr_get_class(NULL));
+  EXPECT_EQ(0, ares_dns_rr_get_ttl(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_write(NULL, NULL, NULL));
+#ifndef CARES_SYMBOL_HIDING
+  ares_dns_record_write_ttl_decrement(NULL, 0);
+#endif
+  EXPECT_EQ(nullptr, ares_dns_rr_get_addr(NULL, ARES_RR_A_ADDR));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_addr(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_addr6(NULL, ARES_RR_AAAA_ADDR));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_addr6(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(0, ares_dns_rr_get_u8(NULL, ARES_RR_SIG_ALGORITHM));
+  EXPECT_EQ(0, ares_dns_rr_get_u8(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(0, ares_dns_rr_get_u16(NULL, ARES_RR_MX_PREFERENCE));
+  EXPECT_EQ(0, ares_dns_rr_get_u16(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(0, ares_dns_rr_get_u32(NULL, ARES_RR_SOA_SERIAL));
+  EXPECT_EQ(0, ares_dns_rr_get_u32(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_bin(NULL, ARES_RR_TXT_DATA, NULL));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_bin(NULL, ARES_RR_NS_NSDNAME, NULL));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_str(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_str(NULL, ARES_RR_MX_PREFERENCE));
+  EXPECT_EQ(0, ares_dns_rr_get_opt_cnt(NULL, ARES_RR_OPT_OPTIONS));
+  EXPECT_EQ(0, ares_dns_rr_get_opt_cnt(NULL, ARES_RR_A_ADDR));
+  EXPECT_EQ(65535, ares_dns_rr_get_opt(NULL, ARES_RR_OPT_OPTIONS, 0, NULL, NULL));
+  EXPECT_EQ(65535, ares_dns_rr_get_opt(NULL, ARES_RR_A_ADDR, 0, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares_dns_rr_get_opt_byid(NULL, ARES_RR_OPT_OPTIONS, 1, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares_dns_rr_get_opt_byid(NULL, ARES_RR_A_ADDR, 1, NULL, NULL));
 }
 
 TEST_F(LibraryTest, DNSParseFlags) {
@@ -1228,6 +1272,63 @@ TEST_F(LibraryTest, HtableStrvp) {
   ares__llist_destroy(l);
   ares__htable_strvp_destroy(h);
 }
+
+TEST_F(LibraryTest, IfaceIPs) {
+  ares_status_t      status;
+  ares__iface_ips_t *ips = NULL;
+  size_t             i;
+
+  status = ares__iface_ips(&ips, ARES_IFACE_IP_DEFAULT, NULL);
+  EXPECT_TRUE(status == ARES_SUCCESS || status == ARES_ENOTIMP);
+
+  /* Not implemented, can't run tests */
+  if (status == ARES_ENOTIMP)
+    return;
+
+  EXPECT_NE(nullptr, ips);
+
+  for (i=0; i<ares__iface_ips_cnt(ips); i++) {
+    const char *name = ares__iface_ips_get_name(ips, i);
+    EXPECT_NE(nullptr, name);
+    int flags = (int)ares__iface_ips_get_flags(ips, i);
+    EXPECT_NE(0, (int)flags);
+    EXPECT_NE(nullptr, ares__iface_ips_get_addr(ips, i));
+    EXPECT_NE(0, ares__iface_ips_get_netmask(ips, i));
+    if (flags & ARES_IFACE_IP_LINKLOCAL && flags & ARES_IFACE_IP_V6) {
+      /* Hmm, seems not to work at least on MacOS
+       * EXPECT_NE(0, ares__iface_ips_get_ll_scope(ips, i));
+       */
+    } else {
+      EXPECT_EQ(0, ares__iface_ips_get_ll_scope(ips, i));
+    }
+    unsigned int idx = ares__if_nametoindex(name);
+    EXPECT_NE(0, idx);
+    char namebuf[256];
+    EXPECT_EQ(std::string(ares__if_indextoname(idx, namebuf, sizeof(namebuf))), std::string(name));
+  }
+
+
+  /* Negative checking */
+  ares__iface_ips_get_name(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_flags(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_addr(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_netmask(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_ll_scope(ips, ares__iface_ips_cnt(ips));
+
+  ares__iface_ips(NULL, ARES_IFACE_IP_DEFAULT, NULL);
+  ares__iface_ips_cnt(NULL);
+  ares__iface_ips_get_name(NULL, 0);
+  ares__iface_ips_get_flags(NULL, 0);
+  ares__iface_ips_get_addr(NULL, 0);
+  ares__iface_ips_get_netmask(NULL, 0);
+  ares__iface_ips_get_ll_scope(NULL, 0);
+  ares__iface_ips_destroy(NULL);
+  ares__if_nametoindex(NULL);
+  ares__if_indextoname(0, NULL, 0);
+
+  ares__iface_ips_destroy(ips);
+}
+
 
 #endif
 
