@@ -805,6 +805,28 @@ TEST_F(LibraryTest, DNSRecord) {
 
   ares_dns_record_destroy(dnsrec);
   ares_free_string(msg);
+
+  // Invalid
+  EXPECT_NE(ARES_SUCCESS, ares_dns_parse(NULL, 0, 0, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_create(NULL, 0, 0, ARES_OPCODE_QUERY, ARES_RCODE_NOERROR));
+  EXPECT_EQ(0, ares_dns_record_get_id(NULL));
+  EXPECT_EQ(0, ares_dns_record_get_flags(NULL));
+  EXPECT_EQ(0, (int)ares_dns_record_get_opcode(NULL));
+  EXPECT_EQ(0, (int)ares_dns_record_get_rcode(NULL));
+  EXPECT_EQ(0, (int)ares_dns_record_query_cnt(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_query_set_name(NULL, 0, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_query_set_type(NULL, 0, ARES_REC_TYPE_A));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_query_get(NULL, 0, NULL, NULL, NULL));
+  EXPECT_EQ(0, ares_dns_record_rr_cnt(NULL, ARES_SECTION_ANSWER));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_rr_add(NULL, NULL, ARES_SECTION_ANSWER, NULL, ARES_REC_TYPE_A, ARES_CLASS_IN, 0));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_record_rr_del(NULL, ARES_SECTION_ANSWER, 0));
+  EXPECT_EQ(nullptr, ares_dns_record_rr_get(NULL, ARES_SECTION_ANSWER, 0));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_name(NULL));
+  EXPECT_EQ(0, (int)ares_dns_rr_get_type(NULL));
+  EXPECT_EQ(0, (int)ares_dns_rr_get_class(NULL));
+  EXPECT_EQ(0, ares_dns_rr_get_ttl(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_dns_write(NULL, NULL, NULL));
+  ares_dns_record_write_ttl_decrement(NULL, 0);
 }
 
 TEST_F(LibraryTest, DNSParseFlags) {
