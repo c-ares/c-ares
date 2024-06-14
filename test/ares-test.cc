@@ -757,6 +757,11 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
     optmask |= ARES_OPT_FLAGS;
   }
 
+  if (!(optmask & ARES_OPT_NDOTS)) {
+    opts.ndots = 1;
+    optmask |= ARES_OPT_NDOTS;
+  }
+
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
   EXPECT_NE(nullptr, channel_);
 
