@@ -311,7 +311,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
    *       that didn't get triggered either.
    */
   if (NotifyIpInterfaceChange(
-        AF_UNSPEC, (PIPINTERFACE_CHANGE_CALLBACK)ares_event_ipchg_cb,
+        AF_UNSPEC, (PIPINTERFACE_CHANGE_CALLBACK)ares_event_configchg_ip_cb,
         *configchg, FALSE, &c->ifchg_hnd) != NO_ERROR) {
     status = ARES_ESERVFAIL;
     goto done;
@@ -347,13 +347,13 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
   }
 
   if (!RegisterWaitForSingleObject(&c->regip4_wait, c->regip4_event,
-    ares_event_regchg_cb, c, INFINITE, WT_EXECUTEDEFAULT)) {
+    ares_event_configchg_reg_cb, c, INFINITE, WT_EXECUTEDEFAULT)) {
     status = ARES_ESERVFAIL;
     goto done;
   }
 
   if (!RegisterWaitForSingleObject(&c->regip6_wait, c->regip6_event,
-    ares_event_regchg_cb, c, INFINITE, WT_EXECUTEDEFAULT)) {
+    ares_event_configchg_reg_cb, c, INFINITE, WT_EXECUTEDEFAULT)) {
     status = ARES_ESERVFAIL;
     goto done;
   }
