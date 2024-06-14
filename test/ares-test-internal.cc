@@ -827,6 +827,26 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(0, ares_dns_rr_get_ttl(NULL));
   EXPECT_NE(ARES_SUCCESS, ares_dns_write(NULL, NULL, NULL));
   ares_dns_record_write_ttl_decrement(NULL, 0);
+  EXPECT_EQ(nullptr, ares_dns_rr_get_addr(NULL, ARES_RR_A_ADDR));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_addr(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_addr6(NULL, ARES_RR_AAAA_ADDR));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_addr6(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(0, ares_dns_rr_get_u8(NULL, ARES_RR_SIG_ALGORITHM));
+  EXPECT_EQ(0, ares_dns_rr_get_u8(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(0, ares_dns_rr_get_u16(NULL, ARES_RR_MX_PREFERENCE));
+  EXPECT_EQ(0, ares_dns_rr_get_u16(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(0, ares_dns_rr_get_u32(NULL, ARES_RR_SOA_SERIAL));
+  EXPECT_EQ(0, ares_dns_rr_get_u32(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_bin(NULL, ARES_RR_TXT_DATA, NULL));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_bin(NULL, ARES_RR_NS_NSDNAME, NULL));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_str(NULL, ARES_RR_NS_NSDNAME));
+  EXPECT_EQ(nullptr, ares_dns_rr_get_str(NULL, ARES_RR_MX_PREFERENCE));
+  EXPECT_EQ(0, ares_dns_rr_get_opt_cnt(NULL, ARES_RR_OPT_OPTIONS));
+  EXPECT_EQ(0, ares_dns_rr_get_opt_cnt(NULL, ARES_RR_A_ADDR));
+  EXPECT_EQ(65535, ares_dns_rr_get_opt(NULL, ARES_RR_OPT_OPTIONS, 0, NULL, NULL));
+  EXPECT_EQ(65535, ares_dns_rr_get_opt(NULL, ARES_RR_A_ADDR, 0, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares_dns_rr_get_opt_byid(NULL, ARES_RR_OPT_OPTIONS, 1, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares_dns_rr_get_opt_byid(NULL, ARES_RR_A_ADDR, 1, NULL, NULL));
 }
 
 TEST_F(LibraryTest, DNSParseFlags) {
