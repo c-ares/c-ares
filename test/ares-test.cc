@@ -763,9 +763,19 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
     optmask |= ARES_OPT_FLAGS;
   }
 
+  /* Tests expect ndots=1 in general, the system config may not default to this
+   * so we don't want to inherit that. */
   if (!(optmask & ARES_OPT_NDOTS)) {
     opts.ndots = 1;
     optmask |= ARES_OPT_NDOTS;
+  }
+
+  /* Disable the query cache for tests unless explicitly enabled. As of
+   * c-ares 1.31.0, the query cache is enabled by default so we have to set
+   * the option and set the TTL to 0 to effectively disable it. */
+  if (!(optmask & ARES_OPT_QUERY_CACHE)) {
+    opts.qcache_max_ttl = 0;
+    optmask |= ARES_OPT_QUERY_CACHE;
   }
 
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel_, &opts, optmask));
