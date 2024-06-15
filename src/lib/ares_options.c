@@ -459,7 +459,7 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
 
   /* As of c-ares 1.31.0, the Query Cache is on by default.  The only way to
    * disable it is to set options->qcache_max_ttl = 0 while specifying the
-   * ARES_OPT_QUERY_CACHE which will actually disable it alltogether. */
+   * ARES_OPT_QUERY_CACHE which will actually disable it completely. */
   if (optmask & ARES_OPT_QUERY_CACHE) {
     /* qcache_max_ttl is unsigned unlike the others */
     channel->qcache_max_ttl = options->qcache_max_ttl;
