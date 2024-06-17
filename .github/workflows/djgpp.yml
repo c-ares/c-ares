@@ -12,6 +12,7 @@ jobs:
       WATT_ROOT: "${{ github.workspace }}\\watt-32"
       DJGPP_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
       DJ_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
+      RUNNER_TEMP: "${{ env.runner_temp }}"
     steps:
       - name: Install mingw-w64-make
         uses: msys2/setup-msys2@v2
@@ -19,7 +20,9 @@ jobs:
           install: mingw-w64-x86_64-make
       - name: dir msys
         run: |
-          dir $RUNNER_TEMP\mingw64\bin
+          dir $env:RUNNER_TEMP\mingw64\bin
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: Checkout Watt-32
