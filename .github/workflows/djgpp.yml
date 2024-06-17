@@ -13,6 +13,18 @@ jobs:
       DJGPP_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
       DJ_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
     steps:
+     - name: dir msys
+        run: |
+          dir c:\msys64
+      - name: dir msys usr bin
+        run: |
+          dir c:\msys64\usr\bin
+      - name: dir msys mingw32 bin
+        run: |
+          dir c:\msys64\mingw32
+      - name: dir msys mingw64 bin
+        run: |
+          dir c:\msys64\mingw64
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: Checkout Watt-32
@@ -22,8 +34,6 @@ jobs:
           path: watt-32
       - name: Fetch DJGPP
         run: |
-          dir c:\msys64\usr\bin
-          dir c:\msys64\mingw32\bin
           Invoke-WebRequest https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-mingw-gcc1220-standalone.zip -OutFile djgpp-mingw-gcc1220-standalone.zip
           Expand-Archive -Path djgpp-mingw-gcc1220-standalone.zip
       - name: Build Watt-32
