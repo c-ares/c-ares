@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubutu-latest
+    runs-on: ubuntu-latest
     env:
       WATT_ROOT: "${{ github.workspace }}/watt-32"
       DJGPP_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
