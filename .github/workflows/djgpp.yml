@@ -16,9 +16,7 @@ jobs:
       - name: Install mingw-w64-make
         uses: msys2/setup-msys2@v2
         with:
-          update: true
-          install: >-
-            mingw-w64-make
+          install: mingw-w64-x86_64-make
       - name: dir msys
         run: |
           dir c:\msys64
