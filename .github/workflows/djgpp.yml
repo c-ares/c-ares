@@ -26,7 +26,7 @@ jobs:
       - name: Fetch DJGPP
         run: |
           Invoke-WebRequest https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-mingw-gcc1220-standalone.zip -OutFile djgpp-mingw-gcc1220-standalone.zip
-          Expand-Archive -Path djgpp-mingw-gcc1220-standalone.zip
+          Expand-Archive -Path djgpp-mingw-gcc1220-standalone.zip -DestinationPath .
       - name: dir
         run: |
           dir
