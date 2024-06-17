@@ -10,8 +10,8 @@ jobs:
     runs-on: ubutu-latest
     env:
       WATT_ROOT: "${{ github.workspace }}/watt-32"
-      DJGPP_PREFIX: "${{ runner.temp }}/djgpp/bin/i586-pc-msdosdjgpp"
-      DJ_PREFIX: "${{ runner.temp }}/djgpp/bin/i586-pc-msdosdjgpp"
+      DJGPP_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
+      DJ_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
     steps:
       - name: Checkout c-ares
         uses: actions/checkout@v4
@@ -22,7 +22,6 @@ jobs:
           path: watt-32
       - name: Fetch DJGPP
         run: |
-          cd ${{ runner.temp }}
           wget https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2
           tar -jxpf djgpp-linux64-gcc1220.tar.bz2
       - name: Build Watt-32
