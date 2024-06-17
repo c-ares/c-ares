@@ -27,7 +27,8 @@ jobs:
         run: |
           Invoke-WebRequest https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-mingw-gcc1220-standalone.zip -OutFile djgpp-mingw-gcc1220-standalone.zip
           Expand-Archive -Path djgpp-mingw-gcc1220-standalone.zip -DestinationPath .
-          $DJGPP_PATH=(Get-Location) + '/djgpp'
+          $PWD=Get-Location
+          $DJGPP_PATH=$PWD + '/djgpp'
           $DJGPP_PATH=$DJGPP_PATH.Replace('\', '/')
           Add-Content -Path $Env:GITHUB_ENV -Value "DJGPP_PATH=$DJGPP_PATH"
       - name: Build Watt-32
