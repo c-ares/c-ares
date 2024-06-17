@@ -13,15 +13,9 @@ jobs:
       DJGPP_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
       DJ_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
     steps:
-      - name: Install mingw-w64-make
-        uses: msys2/setup-msys2@v2
-        with:
-          install: mingw-w64-x86_64-make
-      - name: dir msys
+      - name: Install GNU Make
         run: |
-          dir $env:RUNNER_TEMP\msys64\mingw64\bin
-        env:
-          RUNNER_TEMP: ${{ runner.temp }}
+          choco install --yes make
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: Checkout Watt-32
@@ -38,10 +32,9 @@ jobs:
           cd watt-32\src
           & .\configur.bat djgpp
           echo "Configured"
-          & $env:RUNNER_TEMP\msys64\mingw64\bin\mingw32-make.exe -f djgpp.mak
+          make -f djgpp.mak
         env:
-          RUNNER_TEMP: ${{ runner.temp }}
-        # Powershell doesn't preserve environment variables set by configur.bat
+          # Powershell doesn't preserve environment variables set by configur.bat
           MKMAKE: ..\util\win32\mkmake.exe
           MKDEP: ..\util\win32\mkdep.exe
           HC_ERR: ..\util\win32\hc_err.exe
@@ -55,9 +48,7 @@ jobs:
       - name: Build c-ares
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
-          & $env:RUNNER_TEMP\msys64\mingw64\bin\mingw32-make.exe -f Makefile.dj
-        env:
-          RUNNER_TEMP: ${{ runner.temp }}
+          make -f Makefile.dj
 
 
 
