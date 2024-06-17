@@ -74,7 +74,7 @@
 #  define HAVE_VARIADIC_MACROS_GCC 1
 
 /* Because djgpp <= 2.03 doesn't have snprintf() etc. */
-#  if (DJGPP_MINOR < 4)
+#  if defined(DJGPP_MINOR) && DJGPP_MINOR < 4
 #    define _MPRINTF_REPLACE
 #  endif
 
@@ -110,8 +110,5 @@
 #  define HAVE_IF_NAMETOINDEX                    1
 #  define HAVE_IF_INDEXTONAME                    1
 #endif
-
-#undef word
-#undef byte
 
 #endif /* HEADER_CONFIG_DOS_H */
