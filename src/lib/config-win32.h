@@ -219,6 +219,7 @@
 #  define HAVE_NETDB_H             1
 #  define HAVE_NETINET_IN_H        1
 #  define HAVE_SYS_SOCKET_H        1
+#  define HAVE_SYS_IOCTL_H         1
 #  define HAVE_NETINET_TCP_H       1
 #  define HAVE_AF_INET6            1
 #  define HAVE_PF_INET6            1
