@@ -13,10 +13,12 @@ jobs:
       DJGPP_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
       DJ_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
     steps:
-      - name: Install Mingw64 make
-        shell: C:\msys64\usr\bin\bash.exe
-        run: |
-          pacman.exe -S --noconfirm --needed --noprogressbar mingw-w64-make
+      - name: Install mingw-w64-make
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-make
       - name: dir msys
         run: |
           dir c:\msys64
