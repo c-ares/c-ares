@@ -104,7 +104,6 @@
 #  define HAVE_SYS_SOCKET_H                      1
 #  define HAVE_SYS_UIO_H                         1
 #  define NS_INADDRSZ                            4
-#  define HAVE_STRUCT_SOCKADDR_IN6               1
 #  define HAVE_GETSERVBYPORT_R                   1
 #  define GETSERVBYPORT_R_ARGS                   6
 #  define HAVE_WRITEV                            1
