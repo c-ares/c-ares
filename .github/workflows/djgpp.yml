@@ -20,6 +20,8 @@ jobs:
       - name: show files
         shell: msys2 {0}
         run: |
+          export
+          cd ${RUNNER_TEMP}
           ls -lR
       - name: dir msys
         run: |
