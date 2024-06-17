@@ -41,7 +41,6 @@ CFLAGS = -g -O2 -I./include -I./src/lib \
          -Wold-style-definition \
          -Wpacked \
          -Wpointer-arith \
-         -Wredundant-decls \
          -Wshadow \
          -Wsign-conversion \
          -Wstrict-overflow \
@@ -58,6 +57,9 @@ CFLAGS = -g -O2 -I./include -I./src/lib \
          -D_REENTRANT \
          -DCARES_NO_DEPRECATED \
          -Dselect=select_s
+
+# Can't enable -Wredundant-decls due to WATT32 issues
+
 
 LDFLAGS = -s
 
