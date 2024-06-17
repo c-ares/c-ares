@@ -9,9 +9,9 @@ jobs:
   build:
     runs-on: windows-latest
     env:
-      WATT_ROOT: "${{ github.workspace }}/watt-32"
-      DJGPP_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
-      DJ_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
+      WATT_ROOT: "D:/a/c-ares/c-ares/watt-32"
+      DJGPP_PREFIX: "D:/a/c-ares/c-ares/djgpp/bin/i586-pc-msdosdjgpp"
+      DJ_PREFIX: "D:/a/c-ares/c-ares/djgpp/bin/i586-pc-msdosdjgpp"
     steps:
       - name: Install GNU Make
         run: |
