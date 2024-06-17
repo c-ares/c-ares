@@ -22,6 +22,8 @@ OBJ_DIR = djgpp
 CFLAGS = -g -O2 -I./include -I./src/lib \
          -I$(WATT32_ROOT)/inc -Wall \
          -DWATT32 -DHAVE_CONFIG_H   \
+         -D_REENTRANT \
+         -DCARES_NO_DEPRECATED \
          -Dselect=select_s
 
 LDFLAGS = -s

@@ -85,27 +85,30 @@
 #  define strerror(e)     strerror_s_((e))
 #endif
 
+/* This seems odd, can DOS build without WATT32? */
 #ifdef WATT32
-#  define HAVE_AF_INET6                   1
-#  define HAVE_ARPA_INET_H                1
-#  define HAVE_ARPA_NAMESER_H             1
-#  define HAVE_CLOSE_S                    1
-#  define HAVE_GETHOSTNAME                1
-#  define HAVE_NETDB_H                    1
-#  define HAVE_NETINET_IN_H               1
-#  define HAVE_NETINET_TCP_H              1
-#  define HAVE_PF_INET6                   1
-#  define HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID 1
-#  define HAVE_STRUCT_ADDRINFO            1
-#  define HAVE_STRUCT_IN6_ADDR            1
-#  define HAVE_STRUCT_SOCKADDR_IN6        1
-#  define HAVE_SYS_SOCKET_H               1
-#  define HAVE_SYS_UIO_H                  1
-#  define NS_INADDRSZ                     4
-#  define HAVE_STRUCT_SOCKADDR_IN6        1
-
-#  define HAVE_GETSERVBYPORT_R 1
-#  define GETSERVBYPORT_R_ARGS 5
+#  define HAVE_AF_INET6                          1
+#  define HAVE_ARPA_INET_H                       1
+#  define HAVE_ARPA_NAMESER_H                    1
+#  define HAVE_CLOSE_S                           1
+#  define HAVE_GETHOSTNAME                       1
+#  define HAVE_NETDB_H                           1
+#  define HAVE_NETINET_IN_H                      1
+#  define HAVE_NETINET_TCP_H                     1
+#  define HAVE_PF_INET6                          1
+#  define HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID 1
+#  define HAVE_STRUCT_ADDRINFO                   1
+#  define HAVE_STRUCT_IN6_ADDR                   1
+#  define HAVE_STRUCT_SOCKADDR_IN6               1
+#  define HAVE_SYS_SOCKET_H                      1
+#  define HAVE_SYS_UIO_H                         1
+#  define NS_INADDRSZ                            4
+#  define HAVE_STRUCT_SOCKADDR_IN6               1
+#  define HAVE_GETSERVBYPORT_R                   1
+#  define GETSERVBYPORT_R_ARGS                   5
+#  define HAVE_WRITEV                            1
+#  define HAVE_IF_NAMETOINDEX                    1
+#  define HAVE_IF_INDEXTONAME                    1
 #endif
 
 #undef word
