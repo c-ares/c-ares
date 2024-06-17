@@ -352,13 +352,13 @@ static ares_status_t ares__qcache_insert(ares__qcache_t      *qcache,
     ttl = ares__qcache_calc_minttl(dnsrec);
   }
 
+  if (ttl > qcache->max_ttl) {
+    ttl = qcache->max_ttl;
+  }
+
   /* Don't cache something that is already expired */
   if (ttl == 0) {
     return ARES_EREFUSED;
-  }
-
-  if (ttl > qcache->max_ttl) {
-    ttl = qcache->max_ttl;
   }
 
   entry = ares_malloc_zero(sizeof(*entry));

@@ -346,12 +346,13 @@ int ares_init_options(ares_channel_t           **channelptr,
     goto done;
   }
 
-  if (channel->qcache_max_ttl > 0) {
-    status = ares__qcache_create(channel->rand_state, channel->qcache_max_ttl,
-                                 &channel->qcache);
-    if (status != ARES_SUCCESS) {
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
-    }
+  /* Go ahead and let it initialize the query cache even if the ttl is 0 and
+   * completely unused.  This reduces the number of different code paths that
+   * might be followed even if there is a minor performance hit. */
+  status = ares__qcache_create(channel->rand_state, channel->qcache_max_ttl,
+                               &channel->qcache);
+  if (status != ARES_SUCCESS) {
+    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   if (status == ARES_SUCCESS) {
