@@ -22,6 +22,8 @@ jobs:
           path: watt-32
       - name: Fetch DJGPP
         run: |
+          dir c:\msys64\usr\bin
+          dir c:\msys64\mingw32\bin
           Invoke-WebRequest https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-mingw-gcc1220-standalone.zip -OutFile djgpp-mingw-gcc1220-standalone.zip
           Expand-Archive -Path djgpp-mingw-gcc1220-standalone.zip
       - name: Build Watt-32
