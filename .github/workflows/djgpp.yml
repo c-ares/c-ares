@@ -21,10 +21,10 @@ jobs:
           dir c:\msys64\usr\bin
       - name: dir msys mingw32 bin
         run: |
-          dir c:\msys64\mingw32
+          dir c:\msys64\mingw32\bin
       - name: dir msys mingw64 bin
         run: |
-          dir c:\msys64\mingw64
+          dir c:\msys64\mingw64\bin
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: Checkout Watt-32
