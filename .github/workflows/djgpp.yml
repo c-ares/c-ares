@@ -13,6 +13,8 @@ jobs:
       DJGPP_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
       DJ_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
     steps:
+      - name: apt dependencies
+        run: sudo apt-get install nasm flex
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: Checkout Watt-32
