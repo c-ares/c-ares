@@ -19,7 +19,7 @@ jobs:
           install: mingw-w64-x86_64-make
       - name: dir msys
         run: |
-          dir $env:RUNNER_TEMP\mingw64\bin
+          dir ${{ env.RUNNER_TEMP }}\mingw64\bin
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: Checkout Watt-32
@@ -36,7 +36,7 @@ jobs:
           cd watt-32\src
           & .\configur.bat djgpp
           echo "Configured"
-          $env:RUNNER_TEMP\mingw64\bin\mingw32-make -f djgpp.mak
+          ${{ env.RUNNER_TEMP }}\mingw64\bin\mingw32-make -f djgpp.mak
         # Powershell doesn't preserve environment variables set by configur.bat
         env:
           MKMAKE: ..\util\win32\mkmake.exe
@@ -52,7 +52,7 @@ jobs:
       - name: Build c-ares
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
-          $env:RUNNER_TEMP\mingw64\bin\mingw32-make -f Makefile.dj
+          ${{ env.RUNNER_TEMP }}\mingw64\bin\mingw32-make -f Makefile.dj
 
 
 
