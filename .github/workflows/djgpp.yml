@@ -13,7 +13,7 @@ jobs:
       DJGPP_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
       DJ_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
     steps:
-     - name: dir msys
+      - name: dir msys
         run: |
           dir c:\msys64
       - name: dir msys usr bin
