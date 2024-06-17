@@ -8,10 +8,6 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    env:
-      WATT_ROOT: "D:/a/c-ares/c-ares/watt-32"
-      DJGPP_PREFIX: "D:/a/c-ares/c-ares/djgpp/bin/i586-pc-msdosdjgpp"
-      DJ_PREFIX: "D:/a/c-ares/c-ares/djgpp/bin/i586-pc-msdosdjgpp-"
     steps:
       - name: Install GNU Make
         run: |
@@ -31,6 +27,12 @@ jobs:
           $DJGPP_PATH="$PWD/djgpp"
           $DJGPP_PATH=$DJGPP_PATH.Replace('\', '/')
           Add-Content -Path $Env:GITHUB_ENV -Value "DJGPP_PATH=$DJGPP_PATH"
+      - name: Set Watt-32 Path
+        run: |
+          $PWD=Get-Location
+          $WATT32_PATH="$PWD/watt-32"
+          $WATT32_PATH=$WATT32_PATH.Replace('\', '/')
+          Add-Content -Path $Env:GITHUB_ENV -Value "WATT_ROOT=$WATT32_PATH"
       - name: Build Watt-32
         run: |
           cd watt-32\src
@@ -38,6 +40,7 @@ jobs:
           echo "Configured"
           make -f djgpp.mak
         env:
+          DJGPP_PREFIX: "${{ env.DJGPP_PATH }}/bin/i586-pc-msdosdjgpp"
           # Powershell doesn't preserve environment variables set by configur.bat
           MKMAKE: ..\util\win32\mkmake.exe
           MKDEP: ..\util\win32\mkdep.exe
@@ -53,6 +56,8 @@ jobs:
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
           make -f Makefile.dj
+        env:
+          DJ_PREFIX: "${{ env.DJGPP_PATH }}/bin/i586-pc-msdosdjgpp-"
 
 
 
