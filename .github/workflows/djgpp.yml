@@ -12,6 +12,7 @@ jobs:
       WATT_ROOT: "${{ github.workspace }}\\watt-32"
       DJGPP_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
       DJ_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
+      RUNNER_TEMP: "${{ runner.temp }}"
     steps:
       - name: Install mingw-w64-make
         uses: msys2/setup-msys2@v2
@@ -38,7 +39,7 @@ jobs:
           cd watt-32\src
           & .\configur.bat djgpp
           echo "Configured"
-          $RUNNER_TEMP\msys64\mingw64\bin\mingw32-make -f djgpp.mak
+          $env:RUNNER_TEMP\msys64\mingw64\bin\mingw32-make -f djgpp.mak
         env:
           RUNNER_TEMP: ${{ runner.temp }}
         # Powershell doesn't preserve environment variables set by configur.bat
@@ -55,7 +56,7 @@ jobs:
       - name: Build c-ares
         run: |
           Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
-          $RUNNER_TEMP\msys64\mingw64\bin\mingw32-make -f Makefile.dj
+          $env:RUNNER_TEMP\msys64\mingw64\bin\mingw32-make -f Makefile.dj
         env:
           RUNNER_TEMP: ${{ runner.temp }}
 
