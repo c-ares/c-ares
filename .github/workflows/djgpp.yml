@@ -7,11 +7,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     env:
-      WATT_ROOT: "${{ github.workspace }}/watt-32"
-      DJGPP_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
-      DJ_PREFIX: "${{ github.workspace }}/djgpp/bin/i586-pc-msdosdjgpp"
+      WATT_ROOT: "${{ github.workspace }}\\watt-32"
+      DJGPP_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
+      DJ_PREFIX: "${{ github.workspace }}\\djgpp\\bin\\i586-pc-msdosdjgpp"
     steps:
       - name: apt dependencies
         run: sudo apt-get install nasm flex
@@ -24,18 +24,30 @@ jobs:
           path: watt-32
       - name: Fetch DJGPP
         run: |
-          wget https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2
-          tar -jxpf djgpp-linux64-gcc1220.tar.bz2
+          Invoke-WebRequest https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-mingw-gcc1220-standalone.zip -OutFile djgpp-mingw-gcc1220-standalone.zip
+          Expand-Archive -Path djgpp-mingw-gcc1220-standalone.zip
       - name: Build Watt-32
         run: |
-          cd watt-32/src
-          ./configur.sh djgpp
+          cd watt-32\src
+          & .\configur.bat djgpp
           echo "Configured"
-          make -f djgpp.mak
+          c:\msys64\usr\bin\make -f djgpp.mak
+        # Powershell doesn't preserve environment variables set by configur.bat
+        env:
+          MKMAKE: ..\util\win32\mkmake.exe
+          MKDEP: ..\util\win32\mkdep.exe
+          HC_ERR: ..\util\win32\hc_err.exe
+          WC_ERR: ..\util\win32\wc_err.exe
+          BCC_ERR: ..\util\win32\bcc_err.exe
+          W32_BIN2C: ..\util\win32\bin2c.exe
+          W32_BIN2C_: ../util/win32/bin2c.exe
+          W32_NASM: ..\util\win32\nasm.exe
+          W32_NASM_: ../util/win32/nasm.exe
+          DJ_ERR: ..\util\win32\dj_err.exe
       - name: Build c-ares
         run: |
-          cp include/ares_build.h.dist include/ares_build.h
-          make -f Makefile.dj
+          Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
+          c:\msys64\usr\bin\make -f Makefile.dj
 
 
 
