@@ -57,6 +57,7 @@ jobs:
       - name: "CMake: build and test c-ares"
         shell: msys2 {0}
         run: |
+          export
           cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ matrix.cmake_opts }} -Bbuild -G Ninja .
           cmake --build build
           ./build_cmake/bin/adig.exe www.google.com
