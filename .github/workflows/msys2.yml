@@ -50,18 +50,16 @@ jobs:
         uses: actions/checkout@v4
       - name: "CMake: build and test c-ares"
         run: |
-          export
-          ls -l /mingw64/bin/
-          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ matrix.cmake_opts }} -Bbuild -G Ninja .
-          cmake --build build
-          ./build/bin/adig.exe www.google.com
-          ./build/bin/ahost.exe www.google.com
-          ./build/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ matrix.cmake_opts }} -Bbuild_cmake -G Ninja .
+          cmake --build build_cmake
+          ./build_cmake/bin/adig.exe www.google.com
+          ./build_cmake/bin/ahost.exe www.google.com
+          ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "Autotools: build and test c-ares"
         run: |
           autoreconf -fi
-          mkdir build
-          cd build
+          mkdir build_autotools
+          cd build_autotools
           ../configure --enable-static --disable-shared --enable-tests
           make
           ./src/tools/adig.exe www.google.com
