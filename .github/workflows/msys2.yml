@@ -1,0 +1,69 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: MSYS2 (Windows)
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: true
+      max-parallel: 2
+      matrix:
+        include:
+          - { msystem: MINGW64, env: x86_64,       cmake_opts: "" }
+          - { msystem: MINGW32, env: i686,         cmake_opts: "" }
+          - { msystem: UCRT64,  env: ucrt-x86_64,  cmake_opts: "" }
+          - { msystem: CLANG64, env: clang-x86_64, cmake_opts: "-DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined" }
+    defaults:
+      run:
+        shell: msys2 {0}
+    name: ${{ matrix.msystem }}
+    steps:
+      - name: Install MSYS2 and base packages
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            autoconf
+            autoconf-archive
+            automake
+            libtool
+            make
+            mingw-w64-${{ matrix.env }}-cmake
+            mingw-w64-${{ matrix.env }}-ninja
+            mingw-w64-${{ matrix.env }}-gtest
+      - name: Install gcc compiler
+        if: ${{ matrix.env != 'clang-x86_64' }}
+        run: |
+          pacman --noconfirm -S --needed mingw-w64-${{ matrix.env }}-gcc
+      - name: Install clang compiler
+        if: ${{ matrix.env == 'clang-x86_64' }}
+        run: |
+          pacman --noconfirm -S --needed mingw-w64-${{ matrix.env }}-clang mingw-w64-${{ matrix.env }}-clang-analyzer
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+      - name: "CMake: build and test c-ares"
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ matrix.cmake_opts }} -Bbuild_cmake -G Ninja .
+          cmake --build build_cmake
+          ./build_cmake/bin/adig.exe www.google.com
+          ./build_cmake/bin/ahost.exe www.google.com
+          ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+      - name: "Autotools: build and test c-ares"
+        run: |
+          autoreconf -fi
+          mkdir build_autotools
+          cd build_autotools
+          ../configure --enable-static --disable-shared --enable-tests
+          make -j3
+          ./src/tools/adig.exe www.google.com
+          ./src/tools/ahost.exe www.google.com
+          ./test/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
