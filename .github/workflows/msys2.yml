@@ -11,17 +11,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - { sys: mingw64, env: x86_64,       cmake_opts: "" }
-          - { sys: mingw64, env: i686,         cmake_opts: "" }
-          - { sys: clang64, env: clang-x86_64, cmake_opts: "-DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined" }
+          - { msystem: MINGW64, env: x86_64,       cmake_opts: "" }
+          - { msystem: MINGW32, env: i686,         cmake_opts: "" }
+          - { msystem: CLANG64, env: clang-x86_64, cmake_opts: "-DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined" }
     defaults:
       run:
         shell: msys2 {0}
+    name: ${{ matrix.msystem }}
     steps:
       - name: Install MSYS2 and base packages
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ${{ matrix.sys }}
+          msystem: ${{ matrix.msystem }}
           update: true
           install: >-
             autoconf
@@ -37,7 +38,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         if: ${{ matrix.env != 'clang-x86_64' }}
         with:
-          msystem: ${{ matrix.sys }}
+          msystem: ${{ matrix.msystem }}
           release: false
           install: >-
             mingw-w64-${{ matrix.env }}-gcc
@@ -45,15 +46,14 @@ jobs:
         uses: msys2/setup-msys2@v2
         if: ${{ matrix.env == 'clang-x86_64' }}
         with:
-          msystem: ${{ matrix.sys }}
+          msystem: ${{ matrix.msystem }}
           release: false
           install: >-
             mingw-w64-${{ matrix.env }}-clang
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "CMake: build and test c-ares"
-        env:
-          MSYSTEM: ${{ matrix.sys }}
+        shell: msys2 {0}
         run: |
           cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ matrix.cmake_opts }} -Bbuild -G Ninja .
           cmake --build build
@@ -61,8 +61,7 @@ jobs:
           ./build_cmake/bin/ahost.exe www.google.com
           ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "Autotools: build and test c-ares"
-        env:
-          MSYSTEM: ${{ matrix.sys }}
+        shell: msys2 {0}
         run: |
           ./buildconf
           mkdir build
