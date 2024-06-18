@@ -5,18 +5,20 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - { msystem: MINGW64, env: x86_64,       cmake_opts: "" }
           - { msystem: MINGW32, env: i686,         cmake_opts: "" }
           - { msystem: CLANG64, env: clang-x86_64, cmake_opts: "-DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined" }
-    defaults:
-      run:
-        shell: msys2 {0}
     name: ${{ matrix.msystem }}
     steps:
       - name: Install MSYS2 and base packages
