@@ -33,7 +33,7 @@ jobs:
             mingw-w64-${{ matrix.env }}-ninja
             mingw-w64-${{ matrix.env }}-gtest
       - uses: msys2/setup-msys2@v2
-        if: ${{ matrix.env == "clang-x86_64" }}
+        if: ${{ matrix.env == 'clang-x86_64' }}
         with:
           install: >-
             mingw-w64-${{ matrix.env }}-clang
