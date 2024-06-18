@@ -13,7 +13,8 @@ jobs:
   build:
     runs-on: windows-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 1
       matrix:
         include:
           - { msystem: MINGW64, env: x86_64,       cmake_opts: "" }
@@ -49,13 +50,6 @@ jobs:
           pacman --noconfirm -S --needed mingw-w64-${{ matrix.env }}-clang mingw-w64-${{ matrix.env }}-clang-analyzer
       - name: Checkout c-ares
         uses: actions/checkout@v4
-      - name: "CMake: build and test c-ares"
-        run: |
-          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ matrix.cmake_opts }} -Bbuild_cmake -G Ninja .
-          cmake --build build_cmake
-          ./build_cmake/bin/adig.exe www.google.com
-          ./build_cmake/bin/ahost.exe www.google.com
-          ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "Autotools: build and test c-ares"
         run: |
           autoreconf -fi
@@ -66,3 +60,10 @@ jobs:
           ./src/tools/adig.exe www.google.com
           ./src/tools/ahost.exe www.google.com
           ./test/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+      - name: "CMake: build and test c-ares"
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ matrix.cmake_opts }} -Bbuild_cmake -G Ninja .
+          cmake --build build_cmake
+          ./build_cmake/bin/adig.exe www.google.com
+          ./build_cmake/bin/ahost.exe www.google.com
+          ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
