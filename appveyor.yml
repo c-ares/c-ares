@@ -47,48 +47,6 @@ environment:
       CMAKE_EXTRA_OPTIONS: -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL
       BUILD_GOOGLETEST: yes
 
-    # MinGW gcc via MSYS2 (latest version)
-    - COMPILER: MINGW
-      CONFTOOL: CMAKE
-      SYSTEM: MSYS2
-      SKIP_TESTS: no
-      MSYSTEM: MINGW64
-      TOOLSDIR: ./build/bin
-      TESTDIR: ./build/bin
-      CMAKE_EXTRA_OPTIONS: -GNinja
-      CHERE_INVOKING: YES
-
-    # MinGW gcc via MSYS2 using autotools
-    - COMPILER: MINGW
-      CONFTOOL: AUTOTOOLS
-      SKIP_TESTS: no
-      SYSTEM: MSYS2
-      MSYSTEM: MINGW64
-      TOOLSDIR: ./src/tools
-      TESTDIR: ./test
-      CHERE_INVOKING: YES
-
-    # MinGW clang UBSAN via MSYS2
-    - COMPILER: MINGW
-      CONFTOOL: CMAKE
-      SKIP_TESTS: no
-      SYSTEM: MSYS2
-      MSYSTEM: CLANG64
-      TOOLSDIR: ./build/bin
-      TESTDIR: ./build/bin
-      CMAKE_EXTRA_OPTIONS: -GNinja -DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined
-      CHERE_INVOKING: YES
-
-    # MinGW clang ASAN via MSYS2 -- doesn't work due to some issue with clang itself
-    # - COMPILER: MINGW
-    #   CONFTOOL: CMAKE
-    #   SKIP_TESTS: no
-    #   SYSTEM: MSYS2
-    #   MSYSTEM: CLANG64
-    #   TESTDIR: ./cmakebld/bin
-    #   CMAKE_EXTRA_OPTIONS: -GNinja -DCMAKE_CXX_FLAGS=-fsanitize=address -DCMAKE_C_FLAGS=-fsanitize=address -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address
-    #   CHERE_INVOKING: YES
-
     # MSVC 2022, 64-bit x86 (nmake)
     - COMPILER: MSVC
       CONFTOOL: NMAKE
@@ -145,9 +103,6 @@ before_build:
   # Setup build environment for the selected compiler (not all compilers need to do anything here).
   #  -- Visual Studio --
   - if "%COMPILER%" == "MSVC" call "%MSVC_SETUP_PATH%" %MSVC_SETUP_ARG%
-  - if "%SYSTEM%" == "MSYS2" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syuu"
-  - if "%SYSTEM%" == "MSYS2" if "%MSYSTEM%" == "MINGW64" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu autoconf autoconf-archive automake libtool make git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-gtest"
-  - if "%SYSTEM%" == "MSYS2" if "%MSYSTEM%" == "CLANG64" C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu autoconf autoconf-archive automake libtool make git mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-analyzer mingw-w64-clang-x86_64-cmake mingw-w64-clang-x86_64-ninja mingw-w64-clang-x86_64-gtest"
   - if "%BUILD_GOOGLETEST%" == "yes" git clone --depth=1 https://github.com/google/googletest googletest
   - if "%BUILD_GOOGLETEST%" == "yes" cd googletest
   - if "%BUILD_GOOGLETEST%" == "yes" cmake -DCMAKE_INSTALL_PREFIX=C:\projects\googletest -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -GNinja -Bbuild
@@ -156,11 +111,6 @@ before_build:
   - if "%BUILD_GOOGLETEST%" == "yes" cd ..
 
 build_script:
-  - if "%SYSTEM%" == "MSYS2"   if "%CONFTOOL%" == "CMAKE"     C:\msys64\usr\bin\bash -lc "%ANALYZE_PREFIX% cmake -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% -Bbuild ."
-  - if "%SYSTEM%" == "MSYS2"   if "%CONFTOOL%" == "CMAKE"     C:\msys64\usr\bin\bash -lc "%ANALYZE_PREFIX% cmake --build build"
-  - if "%SYSTEM%" == "MSYS2"   if "%CONFTOOL%" == "AUTOTOOLS" C:\msys64\usr\bin\bash -lc "./buildconf"
-  - if "%SYSTEM%" == "MSYS2"   if "%CONFTOOL%" == "AUTOTOOLS" C:\msys64\usr\bin\bash -lc "%ANALYZE_PREFIX% ./configure --enable-static --disable-shared --enable-tests"
-  - if "%SYSTEM%" == "MSYS2"   if "%CONFTOOL%" == "AUTOTOOLS" C:\msys64\usr\bin\bash -lc "%ANALYZE_PREFIX% make"
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "NMAKE"     copy .\include\ares_build.h.dist .\include\ares_build.h
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "NMAKE"     nmake /NOLOGO /f .\Makefile.msvc
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE"     cmake -DCMAKE_BUILD_TYPE=%configuration% -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON %CMAKE_EXTRA_OPTIONS% -Bbuild
@@ -171,9 +121,6 @@ build_script:
 
 test_script:
   # We can't use powershell for tests due to treating stderr as an error
-  - if "%SYSTEM%" == "MSYS2"                              if not "%SKIP_TESTS%" == "yes" C:\msys64\usr\bin\bash -lc "%TOOLSDIR%/adig.exe www.google.com"
-  - if "%SYSTEM%" == "MSYS2"                              if not "%SKIP_TESTS%" == "yes" C:\msys64\usr\bin\bash -lc "%TOOLSDIR%/ahost.exe www.google.com"
-  - if "%SYSTEM%" == "MSYS2"                              if not "%SKIP_TESTS%" == "yes" C:\msys64\usr\bin\bash -lc "%TESTDIR%/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "NMAKE" if not "%SKIP_TESTS%" == "yes" cd test
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "NMAKE" if not "%SKIP_TESTS%" == "yes" nmake GTEST_ROOT=C:\projects\googletest /NOLOGO /f .\Makefile.msvc vtest
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "NMAKE" if not "%SKIP_TESTS%" == "yes" nmake GTEST_ROOT=C:\projects\googletest /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
