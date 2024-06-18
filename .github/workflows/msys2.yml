@@ -14,7 +14,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       fail-fast: true
-      max-parallel: 1
+      max-parallel: 2
       matrix:
         include:
           - { msystem: MINGW64, env: x86_64,       cmake_opts: "" }
@@ -50,16 +50,6 @@ jobs:
           pacman --noconfirm -S --needed mingw-w64-${{ matrix.env }}-clang mingw-w64-${{ matrix.env }}-clang-analyzer
       - name: Checkout c-ares
         uses: actions/checkout@v4
-      - name: "Autotools: build and test c-ares"
-        run: |
-          autoreconf -fi
-          mkdir build_autotools
-          cd build_autotools
-          ../configure --enable-static --disable-shared --enable-tests
-          make
-          ./src/tools/adig.exe www.google.com
-          ./src/tools/ahost.exe www.google.com
-          ./test/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "CMake: build and test c-ares"
         run: |
           cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ matrix.cmake_opts }} -Bbuild_cmake -G Ninja .
@@ -67,3 +57,13 @@ jobs:
           ./build_cmake/bin/adig.exe www.google.com
           ./build_cmake/bin/ahost.exe www.google.com
           ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+      - name: "Autotools: build and test c-ares"
+        run: |
+          autoreconf -fi
+          mkdir build_autotools
+          cd build_autotools
+          ../configure --enable-static --disable-shared --enable-tests
+          make -j3
+          ./src/tools/adig.exe www.google.com
+          ./src/tools/ahost.exe www.google.com
+          ./test/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
