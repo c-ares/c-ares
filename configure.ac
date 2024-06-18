@@ -902,12 +902,12 @@ AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(PKGCONFIG_CFLAGS)
 AC_SUBST(BUILD_SUBDIRS)
 
-AC_CONFIG_FILES([Makefile           \
-                 include/Makefile   \
-                 src/Makefile       \
-                 src/lib/Makefile   \
-                 src/tools/Makefile \
-                 docs/Makefile      \
+AC_CONFIG_FILES([Makefile
+                 include/Makefile
+                 src/Makefile
+                 src/lib/Makefile
+                 src/tools/Makefile
+                 docs/Makefile
                  libcares.pc ])
 AM_COND_IF([BUILD_TESTS],
            [AC_CONFIG_FILES([test/Makefile])])

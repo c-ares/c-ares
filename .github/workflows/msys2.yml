@@ -59,7 +59,7 @@ jobs:
           ./build/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "Autotools: build and test c-ares"
         run: |
-          ./buildconf
+          autoreconf -fi
           mkdir build
           cd build
           ../configure --enable-static --disable-shared --enable-tests
