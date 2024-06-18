@@ -11,8 +11,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - { sys: mingw64, env: x86_64 }
-          - { sys: mingw64, env: x86_64 }
+          - { sys: mingw64, env: x86_64,       cmake_opts: "" }
+          - { sys: mingw64, env: i686,         cmake_opts: "" }
+          - { sys: clang64, env: clang-x86_64, cmake_opts: "-DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined" }
     defaults:
       run:
         shell: msys2 {0}
@@ -31,20 +32,25 @@ jobs:
             mingw-w64-${{ matrix.env }}-gcc
             mingw-w64-${{ matrix.env }}-ninja
             mingw-w64-${{ matrix.env }}-gtest
+      - uses: msys2/setup-msys2@v2
+        if: ${{ matrix.env == "clang-x86_64" }}
+        with:
+          install: >-
+            mingw-w64-${{ matrix.env }}-clang
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "CMake: build and test c-ares"
         run: |
-          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON %CMAKE_EXTRA_OPTIONS% -Bbuild_cmake -G Ninja .
-          cmake --build build_cmake
+          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ matrix.cmake_opts }} -Bbuild -G Ninja .
+          cmake --build build
           ./build_cmake/bin/adig.exe www.google.com
           ./build_cmake/bin/ahost.exe www.google.com
           ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "Autotools: build and test c-ares"
         run: |
           ./buildconf
-          mkdir build_autotools
-          cd build_autotools
+          mkdir build
+          cd build
           ../configure --enable-static --disable-shared --enable-tests
           make
           ./src/tools/adig.exe www.google.com
