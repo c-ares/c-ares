@@ -6,14 +6,11 @@ name: Codespell
 
 on:
   push:
-    branches:
-    - main
     paths:
     - 'src/**'
     - 'include/**'
   pull_request:
-    branches:
-    - main
+    paths:
     - 'src/**'
     - 'include/**'
 
