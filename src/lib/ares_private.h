@@ -31,11 +31,6 @@
 #  include <netinet/in.h>
 #endif
 
-#ifdef WATT32
-#  include <tcp.h>
-#  include <sys/ioctl.h>
-#endif
-
 #define DEFAULT_TIMEOUT 2000 /* milliseconds */
 #define DEFAULT_TRIES   3
 #ifndef INADDR_NONE

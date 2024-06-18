@@ -1,0 +1,63 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: DJGPP
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Install GNU Make
+        run: |
+          choco install --yes make
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+      - name: Checkout Watt-32
+        uses: actions/checkout@v4
+        with:
+          repository: gvanem/Watt-32
+          path: watt-32
+      - name: Fetch DJGPP
+        run: |
+          Invoke-WebRequest https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-mingw-gcc1220-standalone.zip -OutFile djgpp-mingw-gcc1220-standalone.zip
+          Expand-Archive -Path djgpp-mingw-gcc1220-standalone.zip -DestinationPath .
+      - name: Set DJGPP_PATH environment variable
+        run: |
+          $PWD=Get-Location
+          $DJGPP_PATH="$PWD/djgpp".Replace('\', '/')
+          Add-Content -Path $Env:GITHUB_ENV -Value "DJGPP_PATH=$DJGPP_PATH"
+      - name: Set WATT_ROOT Environment variable
+        run: |
+          $PWD=Get-Location
+          $WATT_ROOT="$PWD/watt-32".Replace('\', '/')
+          Add-Content -Path $Env:GITHUB_ENV -Value "WATT_ROOT=$WATT_ROOT"
+      - name: Build Watt-32
+        run: |
+          cd watt-32\src
+          & .\configur.bat djgpp
+          echo "Configured"
+          make -f djgpp.mak
+        env:
+          DJGPP_PREFIX: "${{ env.DJGPP_PATH }}/bin/i586-pc-msdosdjgpp"
+          # Powershell doesn't preserve environment variables set by configur.bat
+          MKMAKE: ..\util\win32\mkmake.exe
+          MKDEP: ..\util\win32\mkdep.exe
+          HC_ERR: ..\util\win32\hc_err.exe
+          WC_ERR: ..\util\win32\wc_err.exe
+          BCC_ERR: ..\util\win32\bcc_err.exe
+          W32_BIN2C: ..\util\win32\bin2c.exe
+          W32_BIN2C_: ../util/win32/bin2c.exe
+          W32_NASM: ..\util\win32\nasm.exe
+          W32_NASM_: ../util/win32/nasm.exe
+          DJ_ERR: ..\util\win32\dj_err.exe
+      - name: Build c-ares
+        run: |
+          Copy-Item "include\ares_build.h.dist" -Destination "include\ares_build.h"
+          make -f Makefile.dj
+        env:
+          DJ_PREFIX: "${{ env.DJGPP_PATH }}/bin/i586-pc-msdosdjgpp-"
+
+
+

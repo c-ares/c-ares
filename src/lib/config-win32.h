@@ -219,12 +219,17 @@
 #  define HAVE_NETDB_H             1
 #  define HAVE_NETINET_IN_H        1
 #  define HAVE_SYS_SOCKET_H        1
+#  define HAVE_SYS_IOCTL_H         1
 #  define HAVE_NETINET_TCP_H       1
 #  define HAVE_AF_INET6            1
 #  define HAVE_PF_INET6            1
 #  define HAVE_STRUCT_IN6_ADDR     1
 #  define HAVE_STRUCT_SOCKADDR_IN6 1
 #  define HAVE_WRITEV              1
+#  define HAVE_IF_NAMETOINDEX      1
+#  define HAVE_IF_INDEXTONAME      1
+#  define HAVE_GETSERVBYPORT_R     1
+#  define GETSERVBYPORT_R_ARGS     6
 #  undef HAVE_WINSOCK_H
 #  undef HAVE_WINSOCK2_H
 #  undef HAVE_WS2TCPIP_H
