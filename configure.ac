@@ -294,17 +294,7 @@ if test "$ac_cv_native_windows" = "yes" ; then
   dnl other headers, AC_CHECK_HEADERS only allows you to specify headers that
   dnl must be included *before* the header being checked.
 
-  AC_CHECK_HEADERS(
-    windows.h  \
-    winsock2.h \
-    ws2tcpip.h \
-    iphlpapi.h \
-    netioapi.h \
-    ws2ipdef.h \
-    winternl.h \
-    ntdef.h    \
-    ntstatus.h \
-    mswsock.h,
+  AC_CHECK_HEADERS([windows.h winsock2.h ws2tcpip.h iphlpapi.h netioapi.h ws2ipdef.h winternl.h ntdef.h ntstatus.h mswsock.h ],
     [], [], [-])
 
   dnl Windows builds require linking to iphlpapi
@@ -415,42 +405,10 @@ AS_HELP_STRING([--enable-libgcc],[use libgcc when linking]),
        AC_MSG_RESULT(no)
 )
 
-dnl check for a few basic system headers we need
-AC_CHECK_HEADERS(
-       malloc.h \
-       memory.h \
-       AvailabilityMacros.h \
-       sys/types.h \
-       sys/time.h \
-       sys/select.h \
-       sys/socket.h \
-       sys/filio.h \
-       sys/ioctl.h \
-       sys/param.h \
-       sys/uio.h \
-       sys/random.h \
-       sys/event.h \
-       sys/epoll.h \
-       assert.h \
-       iphlpapi.h \
-       netioapi.h \
-       netdb.h \
-       netinet/in.h \
-       netinet6/in6.h \
-       netinet/tcp.h \
-       net/if.h \
-       ifaddrs.h \
-       fcntl.h \
-       errno.h \
-       socket.h \
-       strings.h \
-       stdbool.h \
-       time.h \
-       poll.h \
-       limits.h \
-       arpa/nameser.h \
-       arpa/nameser_compat.h \
-       arpa/inet.h,
+dnl check for a few basic system headers we need.  It would be nice if we could
+dnl split these on separate lines, but for some reason autotools on Windows doesn't
+dnl allow this, even tried ending lines with a backslash.
+AC_CHECK_HEADERS([malloc.h memory.h AvailabilityMacros.h sys/types.h sys/time.h sys/select.h sys/socket.h sys/filio.h sys/ioctl.h sys/param.h sys/uio.h sys/random.h sys/event.h sys/epoll.h assert.h iphlpapi.h netioapi.h netdb.h netinet/in.h netinet6/in6.h netinet/tcp.h net/if.h ifaddrs.h fcntl.h errno.h socket.h strings.h stdbool.h time.h poll.h limits.h arpa/nameser.h arpa/nameser_compat.h arpa/inet.h ],
 dnl to do if not found
 [],
 dnl to do if found
@@ -911,12 +869,12 @@ AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(PKGCONFIG_CFLAGS)
 AC_SUBST(BUILD_SUBDIRS)
 
-AC_CONFIG_FILES([Makefile           \
-                 include/Makefile   \
-                 src/Makefile       \
-                 src/lib/Makefile   \
-                 src/tools/Makefile \
-                 docs/Makefile      \
+AC_CONFIG_FILES([Makefile
+                 include/Makefile
+                 src/Makefile
+                 src/lib/Makefile
+                 src/tools/Makefile
+                 docs/Makefile
                  libcares.pc ])
 AM_COND_IF([BUILD_TESTS],
            [AC_CONFIG_FILES([test/Makefile])])
