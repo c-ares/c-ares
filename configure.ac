@@ -294,17 +294,18 @@ if test "$ac_cv_native_windows" = "yes" ; then
   dnl other headers, AC_CHECK_HEADERS only allows you to specify headers that
   dnl must be included *before* the header being checked.
 
-  AC_CHECK_HEADERS(
-    windows.h  \
-    winsock2.h \
-    ws2tcpip.h \
-    iphlpapi.h \
-    netioapi.h \
-    ws2ipdef.h \
-    winternl.h \
-    ntdef.h    \
-    ntstatus.h \
-    mswsock.h,
+  AC_CHECK_HEADERS([
+    windows.h
+    winsock2.h
+    ws2tcpip.h
+    iphlpapi.h
+    netioapi.h
+    ws2ipdef.h
+    winternl.h
+    ntdef.h
+    ntstatus.h
+    mswsock.h
+    ],
     [], [], [-])
 
   dnl Windows builds require linking to iphlpapi
@@ -407,7 +408,7 @@ AS_HELP_STRING([--enable-libgcc],[use libgcc when linking]),
 )
 
 dnl check for a few basic system headers we need
-AC_CHECK_HEADERS(
+AC_CHECK_HEADERS([
        malloc.h
        memory.h
        AvailabilityMacros.h
@@ -441,7 +442,8 @@ AC_CHECK_HEADERS(
        limits.h
        arpa/nameser.h
        arpa/nameser_compat.h
-       arpa/inet.h,
+       arpa/inet.h
+],
 dnl to do if not found
 [],
 dnl to do if found
