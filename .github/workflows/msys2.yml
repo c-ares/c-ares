@@ -88,10 +88,15 @@ jobs:
           ./build_asan/bin/adig.exe www.google.com
           ./build_asan/bin/ahost.exe www.google.com
           ./build_asan/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
-# Something is up with the linker when invoked under scan-build, it can't find the basic Windows libraries during link time.
-#      - name: "CMake: Analyze: build c-ares"
-#        if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
-#        # Ninja won't work because the analyzer is a perl script so CreateProcess() can't be used. Use MSYS Makefiles
-#        run: |
-#          scan-build-py -v cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_BUILD_TESTS=OFF -Bbuild_analyze -G "MSYS Makefiles" .
-#          scan-build-py -v cmake --build build_analyze
+      - name: "Autotools: Static Analyzer: build c-ares"
+        if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
+        # Cmake won't work because it somehow mangles linker args and it can't find core windows libraries
+        # Must build static only with autotools otherwise libtool creates a wrapper with reportable issues
+        run: |
+          autoreconf -fi
+          mkdir build_analyze
+          cd build_analyze
+          scan-build --use-cc=clang --use-c++=clang++ -v ../configure --enable-static --disable-shared --disable-tests
+          scan-build --use-cc=clang --use-c++=clang++ -v make -j3
+          ./src/tools/adig.exe www.google.com
+          ./src/tools/ahost.exe www.google.com
