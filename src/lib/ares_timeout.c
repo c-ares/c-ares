@@ -59,7 +59,12 @@ static struct timeval ares_timeval_to_struct_timeval(const ares_timeval_t *atv)
 {
   struct timeval tv;
 
+#ifdef USE_WINSOCK
+  tv.tv_sec  = (long)atv->sec;
+#else
   tv.tv_sec  = (time_t)atv->sec;
+#endif
+
   tv.tv_usec = (int)atv->usec;
 
   return tv;
