@@ -88,4 +88,8 @@ jobs:
           ./build_asan/bin/adig.exe www.google.com
           ./build_asan/bin/ahost.exe www.google.com
           ./build_asan/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
-
+      - name: "CMake: Analyze: build c-ares"
+        if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
+        run: |
+          scan-build -v cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_BUILD_TESTS=OFF -Bbuild_analyze -G Ninja .
+          scan-build -v cmake --build build_analyze
