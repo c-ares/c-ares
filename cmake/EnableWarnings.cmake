@@ -109,6 +109,9 @@ set(_debug_flags_C)
 set(_debug_flags_CXX)
 
 if (MSVC)
+	# Don't automatically set /W3
+	CMAKE_POLICY (SET CMP0092 NEW)
+
 	# Visual Studio uses a completely different nomenclature for warnings than gcc/mingw/clang, so none of the
 	# "-W[name]" warnings will work.
 
