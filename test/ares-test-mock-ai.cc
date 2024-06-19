@@ -40,6 +40,7 @@ namespace ares {
 namespace test {
 
 MATCHER_P(IncludesNumAddresses, n, "") {
+  (void)result_listener;
   if(!arg)
     return false;
   int cnt = 0;
@@ -49,6 +50,7 @@ MATCHER_P(IncludesNumAddresses, n, "") {
 }
 
 MATCHER_P(IncludesV4Address, address, "") {
+  (void)result_listener;
   if(!arg)
     return false;
   in_addr addressnum = {};
@@ -67,6 +69,7 @@ MATCHER_P(IncludesV4Address, address, "") {
 }
 
 MATCHER_P(IncludesV6Address, address, "") {
+  (void)result_listener;
   if(!arg)
     return false;
   in6_addr addressnum = {};

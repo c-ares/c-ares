@@ -341,21 +341,21 @@ std::string RRToString(const std::vector<byte>& packet,
     case T_TXT: {
       const byte* p = *data;
       while (p < (*data + rdatalen)) {
-        int len = *p++;
-        if ((p + len) <= (*data + rdatalen)) {
-          std::string txt(p, p + len);
-          ss << " " << len << ":'" << txt << "'";
+        int tlen = *p++;
+        if ((p + tlen) <= (*data + rdatalen)) {
+          std::string txt(p, p + tlen);
+          ss << " " << tlen << ":'" << txt << "'";
         } else {
           ss << "(string too long)";
         }
-        p += len;
+        p += tlen;
       }
       break;
     }
     case T_CNAME:
     case T_NS:
     case T_PTR: {
-      int rc = ares_expand_name(*data, packet.data(), (int)packet.size(), &name, &enclen);
+      rc = ares_expand_name(*data, packet.data(), (int)packet.size(), &name, &enclen);
       if (rc != ARES_SUCCESS) {
         ss << "(error from ares_expand_name)";
         break;
@@ -366,7 +366,7 @@ std::string RRToString(const std::vector<byte>& packet,
     }
     case T_MX:
       if (rdatalen > 2) {
-        int rc = ares_expand_name(*data + 2, packet.data(), (int)packet.size(), &name, &enclen);
+        rc = ares_expand_name(*data + 2, packet.data(), (int)packet.size(), &name, &enclen);
         if (rc != ARES_SUCCESS) {
           ss << "(error from ares_expand_name)";
           break;
@@ -384,7 +384,7 @@ std::string RRToString(const std::vector<byte>& packet,
         unsigned long weight = DNS__16BIT(p + 2);
         unsigned long port = DNS__16BIT(p + 4);
         p += 6;
-        int rc = ares_expand_name(p, packet.data(), (int)packet.size(), &name, &enclen);
+        rc = ares_expand_name(p, packet.data(), (int)packet.size(), &name, &enclen);
         if (rc != ARES_SUCCESS) {
           ss << "(error from ares_expand_name)";
           break;
@@ -411,7 +411,7 @@ std::string RRToString(const std::vector<byte>& packet,
     }
     case T_SOA: {
       const byte* p = *data;
-      int rc = ares_expand_name(p, packet.data(), (int)packet.size(), &name, &enclen);
+      rc = ares_expand_name(p, packet.data(), (int)packet.size(), &name, &enclen);
       if (rc != ARES_SUCCESS) {
         ss << "(error from ares_expand_name)";
         break;
@@ -447,22 +447,22 @@ std::string RRToString(const std::vector<byte>& packet,
         p += 4;
         ss << order << " " << pref;
 
-        int len = *p++;
-        std::string flags(p, p + len);
+        int nlen = *p++;
+        std::string flags(p, p + nlen);
         ss << " " << flags;
-        p += len;
+        p += nlen;
 
-        len = *p++;
-        std::string service(p, p + len);
+        nlen = *p++;
+        std::string service(p, p + nlen);
         ss << " '" << service << "'";
-        p += len;
+        p += nlen;
 
-        len = *p++;
-        std::string regexp(p, p + len);
+        nlen = *p++;
+        std::string regexp(p, p + nlen);
         ss << " '" << regexp << "'";
-        p += len;
+        p += nlen;
 
-        int rc = ares_expand_name(p, packet.data(), (int)packet.size(), &name, &enclen);
+        rc = ares_expand_name(p, packet.data(), (int)packet.size(), &name, &enclen);
         if (rc != ARES_SUCCESS) {
           ss << "(error from ares_expand_name)";
           break;
