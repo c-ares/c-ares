@@ -17,10 +17,11 @@ jobs:
       max-parallel: 2
       matrix:
         include:
+          - { msystem: CLANG64, env: clang-x86_64 }
           - { msystem: MINGW64, env: x86_64       }
           - { msystem: MINGW32, env: i686         }
-          - { msystem: UCRT64,  env: ucrt-x86_64  }
-          - { msystem: CLANG64, env: clang-x86_64 }
+          # No need to test UCRT64 since clang64 uses UCRT
+          # - { msystem: UCRT64,  env: ucrt-x86_64  }
     defaults:
       run:
         shell: msys2 {0}
@@ -70,7 +71,7 @@ jobs:
       - name: "CMake: UBSAN: build and test c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         env:
-          CMAKE_OPTS: "-DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_STATIC_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined"
+          CMAKE_OPTS: "-DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined"
         run: |
           cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ env.CMAKE_OPTS }} -Bbuild_cmake -G Ninja .
           cmake --build build_cmake
@@ -80,7 +81,7 @@ jobs:
       - name: "CMake: ASAN: build and test c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         env:
-          CMAKE_OPTS: "-DCMAKE_CXX_FLAGS=-fsanitize=address -DCMAKE_C_FLAGS=-fsanitize=address -DCMAKE_STATIC_LINKER_FLAGS=-fsanitize=address -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address"
+          CMAKE_OPTS: "-DCMAKE_CXX_FLAGS=-fsanitize=address -DCMAKE_C_FLAGS=-fsanitize=address -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address"
         run: |
           cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ env.CMAKE_OPTS }} -Bbuild_cmake -G Ninja .
           cmake --build build_cmake
