@@ -57,7 +57,7 @@ static ares_int64_t ares__round_up_pow2_u64(ares_int64_t n)
   return n;
 }
 
-ares_bool ares__is_64bit(void)
+ares_bool_t ares__is_64bit(void)
 {
 #ifdef _MSC_VER
 #  pragma warning( push )
