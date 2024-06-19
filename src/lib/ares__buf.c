@@ -944,7 +944,7 @@ static ares_status_t ares__buf_parse_dns_binstr_int(
   ares_bool_t allow_multiple, ares_bool_t validate_printable)
 {
   unsigned char len;
-  ares_status_t status;
+  ares_status_t status   = ARES_EBADRESP;
   ares__buf_t  *binbuf   = NULL;
   size_t        orig_len = ares__buf_len(buf);
 

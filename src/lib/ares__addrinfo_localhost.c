@@ -140,7 +140,7 @@ static ares_status_t
   !defined(__WATCOMC__)
   PMIB_UNICASTIPADDRESS_TABLE table;
   unsigned int                i;
-  ares_status_t               status;
+  ares_status_t               status = ARES_ENOTFOUND;
 
   *nodes = NULL;
 

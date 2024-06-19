@@ -242,8 +242,8 @@ if (MSVC)
 		/w14242 # 'identifier': conversion from 'type1' to 'type2', possible loss of data
 		/w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
 		/w14263 # 'function': member function does not override any base class virtual member function
-		/w14265 # 'classname': class has virtual functions, but destructor is not virtual instances of this class may not
-		        # be destructed correctly
+		/w14265 # 'classname': class has virtual functions, but destructor is not virtual instances of this class may
+		        # not be destructed correctly
 		/w14287 # 'operator': unsigned/negative constant mismatch
 		/we4289 # nonstandard extension used: 'variable': loop control variable declared in the for-loop is used outside
 		        # the for-loop scope
@@ -262,6 +262,10 @@ if (MSVC)
 		/w14928 # illegal copy-initialization; more than one user-defined conversion has been implicitly applied
 
 		# Disable some warnings
+		/wd4201 # nonstandard extension used: nameless struct/union. Used in some windows headers, e.g. IO_STATUS_BLOCK,
+		        # disable.
+		/wd4206 # nonstandard extension used: translation unit is empty. All files in c-ares are compiled even if not
+		        # used, so we need to ignore this.
 
 		# Turn some warnings into errors
 		/we4013 # Treat "function undefined, assuming extern returning int" warning as an error. https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4013
