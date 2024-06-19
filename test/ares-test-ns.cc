@@ -209,7 +209,7 @@ void ContainerFilesystem::EnsureDirExists(const std::string& dir) {
     return;
   }
   size_t idx = dir.rfind('/');
-  if (idx != std::string::npos) {
+  if (idx != SIZE_MAX) {
     std::string prevdir = dir.substr(0, idx);
     EnsureDirExists(prevdir);
   }

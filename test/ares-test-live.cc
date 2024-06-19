@@ -177,7 +177,7 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByNameV4) {
     EXPECT_EQ(ARES_SUCCESS, result.status_);
     EXPECT_EQ(1, (int)result.host_.addrs_.size());
     EXPECT_EQ(AF_INET, result.host_.addrtype_);
-    EXPECT_NE(std::string::npos, result.host_.name_.find("localhost"));
+    EXPECT_NE(SIZE_MAX, result.host_.name_.find("localhost"));
   }
 }
 
@@ -192,7 +192,7 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByNameV6) {
     EXPECT_EQ(AF_INET6, result.host_.addrtype_);
     std::stringstream ss;
     ss << HostEnt(result.host_);
-    EXPECT_NE(std::string::npos, result.host_.name_.find("localhost"));
+    EXPECT_NE(SIZE_MAX, result.host_.name_.find("localhost"));
   }
 }
 
@@ -205,7 +205,7 @@ TEST_P(DefaultChannelModeTest, LiveGetNonExistLocalhostByNameV4) {
     EXPECT_EQ(ARES_SUCCESS, result.status_);
     EXPECT_EQ(1, (int)result.host_.addrs_.size());
     EXPECT_EQ(AF_INET, result.host_.addrtype_);
-    EXPECT_NE(std::string::npos, result.host_.name_.find("idonotexist.localhost"));
+    EXPECT_NE(SIZE_MAX, result.host_.name_.find("idonotexist.localhost"));
   }
 }
 
@@ -220,7 +220,7 @@ TEST_P(DefaultChannelModeTest, LiveGetNonExistLocalhostByNameV6) {
     EXPECT_EQ(AF_INET6, result.host_.addrtype_);
     std::stringstream ss;
     ss << HostEnt(result.host_);
-    EXPECT_NE(std::string::npos, result.host_.name_.find("idonotexist.localhost"));
+    EXPECT_NE(SIZE_MAX, result.host_.name_.find("idonotexist.localhost"));
   }
 }
 
@@ -272,8 +272,8 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrV4) {
     EXPECT_LT(0, (int)result.host_.addrs_.size());
     EXPECT_EQ(AF_INET, result.host_.addrtype_);
     // oddly, travis does not resolve to localhost, but a random hostname starting with travis-job
-    if (result.host_.name_.find("travis-job") == std::string::npos) {
-        EXPECT_NE(std::string::npos,
+    if (result.host_.name_.find("travis-job") == SIZE_MAX) {
+        EXPECT_NE(SIZE_MAX,
                   result.host_.name_.find("localhost"));
     }
   }
@@ -292,8 +292,8 @@ TEST_P(DefaultChannelModeTest, LiveGetLocalhostByAddrV6) {
     EXPECT_LT(0, (int)result.host_.addrs_.size());
     EXPECT_EQ(AF_INET6, result.host_.addrtype_);
     const std::string& name = result.host_.name_;
-    EXPECT_TRUE(std::string::npos != name.find("localhost") ||
-                std::string::npos != name.find("ip6-loopback"));
+    EXPECT_TRUE(SIZE_MAX != name.find("localhost") ||
+                SIZE_MAX != name.find("ip6-loopback"));
   }
 }
 

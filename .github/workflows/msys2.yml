@@ -51,6 +51,16 @@ jobs:
           pacman --noconfirm -S --needed mingw-w64-${{ matrix.env }}-clang mingw-w64-${{ matrix.env }}-clang-analyzer
       - name: Checkout c-ares
         uses: actions/checkout@v4
+      - name: "CMake: ASAN: build and test c-ares"
+        if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
+        env:
+          CMAKE_OPTS: "-DCMAKE_CXX_FLAGS=-fsanitize=address -DCMAKE_C_FLAGS=-fsanitize=address -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address"
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ env.CMAKE_OPTS }} -Bbuild_cmake -G Ninja .
+          cmake --build build_cmake
+          ./build_cmake/bin/adig.exe www.google.com
+          ./build_cmake/bin/ahost.exe www.google.com
+          ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "CMake: build and test c-ares"
         run: |
           cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON -Bbuild_cmake -G Ninja .
@@ -78,13 +88,4 @@ jobs:
           ./build_cmake/bin/adig.exe www.google.com
           ./build_cmake/bin/ahost.exe www.google.com
           ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
-      - name: "CMake: ASAN: build and test c-ares"
-        if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
-        env:
-          CMAKE_OPTS: "-DCMAKE_CXX_FLAGS=-fsanitize=address -DCMAKE_C_FLAGS=-fsanitize=address -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address"
-        run: |
-          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ env.CMAKE_OPTS }} -Bbuild_cmake -G Ninja .
-          cmake --build build_cmake
-          ./build_cmake/bin/adig.exe www.google.com
-          ./build_cmake/bin/ahost.exe www.google.com
-          ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+
