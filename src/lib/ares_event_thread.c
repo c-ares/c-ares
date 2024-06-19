@@ -391,22 +391,23 @@ static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
 
     /* case ARES_EVSYS_DEFAULT: */
     default:
-#if defined(USE_WINSOCK)
-      return &ares_evsys_win32;
-#elif defined(HAVE_KQUEUE)
-      return &ares_evsys_kqueue;
-#elif defined(HAVE_EPOLL)
-      return &ares_evsys_epoll;
-#elif defined(HAVE_POLL)
-      return &ares_evsys_poll;
-#elif defined(HAVE_PIPE)
-      return &ares_evsys_select;
-#else
       break;
-#endif
   }
 
+  /* default */
+#if defined(USE_WINSOCK)
+  return &ares_evsys_win32;
+#elif defined(HAVE_KQUEUE)
+  return &ares_evsys_kqueue;
+#elif defined(HAVE_EPOLL)
+  return &ares_evsys_epoll;
+#elif defined(HAVE_POLL)
+  return &ares_evsys_poll;
+#elif defined(HAVE_PIPE)
+  return &ares_evsys_select;
+#else
   return NULL;
+#endif
 }
 
 ares_status_t ares_event_thread_init(ares_channel_t *channel)

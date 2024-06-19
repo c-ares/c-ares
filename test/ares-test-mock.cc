@@ -140,6 +140,7 @@ TEST_P(MockUDPChannelTest, TruncationRetry) {
 static int sock_cb_count = 0;
 static int SocketConnectCallback(ares_socket_t fd, int type, void *data) {
   int rc = *(int*)data;
+  (void)type;
   if (verbose) std::cerr << "SocketConnectCallback(" << fd << ") invoked" << std::endl;
   sock_cb_count++;
   return rc;
@@ -185,6 +186,7 @@ TEST_P(MockChannelTest, SockFailCallback) {
 static int sock_config_cb_count = 0;
 static int SocketConfigureCallback(ares_socket_t fd, int type, void *data) {
   int rc = *(int*)data;
+  (void)type;
   if (verbose) std::cerr << "SocketConfigureCallback(" << fd << ") invoked" << std::endl;
   sock_config_cb_count++;
   return rc;

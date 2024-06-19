@@ -39,6 +39,121 @@ include(CheckCXXCompilerFlag)
 
 get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Helper functions
+
+
+# This function can be called in subdirectories, to prune out warnings that they don't want.
+#  vararg: warning flags to remove from list of enabled warnings. All "no" flags after EXPLICIT_DISABLE
+#          will be added to C flags.
+#
+# Ex.: remove_warnings(-Wall -Wdouble-promotion -Wcomment) prunes those warnings flags from the compile command.
+function(remove_warnings)
+	get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+	set(langs C)
+	if ("CXX" IN_LIST languages)
+		list(APPEND langs CXX)
+	endif ()
+
+	foreach(lang ${langs})
+		set(toadd)
+		set(in_explicit_disable FALSE)
+		foreach (flag ${ARGN})
+			if (flag STREQUAL "EXPLICIT_DISABLE")
+				set(in_explicit_disable TRUE)
+			elseif (in_explicit_disable)
+				list(APPEND toadd "${flag}")
+			else ()
+				string(REGEX REPLACE "${flag}([ \t]+|$)" "" CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}")
+			endif ()
+		endforeach ()
+		_int_enable_warnings_set_flags(lang ${toadd})
+		string(STRIP "${CMAKE_${lang}_FLAGS}" CMAKE_${lang}_FLAGS)
+		set(CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}" PARENT_SCOPE)
+	endforeach()
+endfunction()
+
+
+# Explicitly suppress all warnings. As long as this flag is the last warning flag, warnings will be
+# suppressed even if earlier flags enabled warnings.
+function(remove_all_warnings)
+	get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+	set(langs C)
+	if ("CXX" IN_LIST languages)
+		list(APPEND langs CXX)
+	endif ()
+
+	foreach(lang ${langs})
+		string(REGEX REPLACE "[-/][Ww][^ \t]*([ \t]+|$)" "" CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}")
+		if (MSVC)
+			string(APPEND CMAKE_${lang}_FLAGS " /w")
+		else ()
+			string(APPEND CMAKE_${lang}_FLAGS " -w")
+		endif ()
+		string(STRIP "${CMAKE_${lang}_FLAGS}" CMAKE_${lang}_FLAGS)
+		set(CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}" PARENT_SCOPE)
+	endforeach()
+endfunction()
+
+
+function(remove_all_warnings_from_targets)
+	foreach (target ${ARGN})
+		if (MSVC)
+			target_compile_options(${target} PRIVATE "/w")
+		else ()
+			target_compile_options(${target} PRIVATE "-w")
+		endif ()
+	endforeach()
+endfunction()
+
+
+# Save the current warning settings to an internal variable.
+function(push_warnings)
+	get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+	set(langs C)
+	if ("CXX" IN_LIST languages)
+		list(APPEND langs CXX)
+	endif ()
+
+	foreach(lang ${langs})
+		if (CMAKE_${lang}_FLAGS MATCHES ";")
+			message(AUTHOR_WARNING "Cannot push warnings for ${lang}, CMAKE_${lang}_FLAGS contains semicolons")
+			continue()
+		endif ()
+		# Add current flags to end of internal list.
+		list(APPEND _enable_warnings_internal_${lang}_flags_stack "${CMAKE_${lang}_FLAGS}")
+		# Propagate results up to caller's scope.
+		set(_enable_warnings_internal_${lang}_flags_stack "${_enable_warnings_internal_${lang}_flags_stack}" PARENT_SCOPE)
+	endforeach()
+endfunction()
+
+
+# Restore the current warning settings from an internal variable.
+function(pop_warnings)
+	get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+	set(langs C)
+	if ("CXX" IN_LIST languages)
+		list(APPEND langs CXX)
+	endif ()
+
+	foreach(lang ${langs})
+		if (NOT _enable_warnings_internal_${lang}_flags_stack)
+			continue()
+		endif ()
+		# Pop flags off of end of list, overwrite current flags with whatever we popped off.
+		list(GET _enable_warnings_internal_${lang}_flags_stack -1 CMAKE_${lang}_FLAGS)
+		list(REMOVE_AT _enable_warnings_internal_${lang}_flags_stack -1)
+		# Propagate results up to caller's scope.
+		set(_enable_warnings_internal_${lang}_flags_stack "${_enable_warnings_internal_${lang}_flags_stack}" PARENT_SCOPE)
+		string(STRIP "${CMAKE_${lang}_FLAGS}" CMAKE_${lang}_FLAGS)
+		set(CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}" PARENT_SCOPE)
+	endforeach()
+endfunction()
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Runs when included automatically
+
 # internal helper: _int_enable_warnings_set_flags_ex(langs_var configs_var [warnings flags])
 function(_int_enable_warnings_set_flags_ex langs_var configs_var)
 	if (NOT ARGN)
@@ -109,6 +224,9 @@ set(_debug_flags_C)
 set(_debug_flags_CXX)
 
 if (MSVC)
+	# Don't automatically set /W3
+	CMAKE_POLICY (SET CMP0092 NEW)
+
 	# Visual Studio uses a completely different nomenclature for warnings than gcc/mingw/clang, so none of the
 	# "-W[name]" warnings will work.
 
@@ -119,7 +237,37 @@ if (MSVC)
 	# * warning C4201: nonstandard extension used : nameless struct/union
 	#     Triggered by system includes (commctrl.h, shtypes.h, Shlobj.h)
 	set(_flags
-		/W3
+		# Enable warnings
+		/W4 # Baseline reasonable warnings
+		/w14242 # 'identifier': conversion from 'type1' to 'type2', possible loss of data
+		/w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
+		/w14263 # 'function': member function does not override any base class virtual member function
+		/w14265 # 'classname': class has virtual functions, but destructor is not virtual instances of this class may
+		        # not be destructed correctly
+		/w14287 # 'operator': unsigned/negative constant mismatch
+		/we4289 # nonstandard extension used: 'variable': loop control variable declared in the for-loop is used outside
+		        # the for-loop scope
+		/w14296 # 'operator': expression is always 'boolean_value'
+		/w14311 # 'variable': pointer truncation from 'type1' to 'type2'
+		/w14545 # expression before comma evaluates to a function which is missing an argument list
+		/w14546 # function call before comma missing argument list
+		/w14547 # 'operator': operator before comma has no effect; expected operator with side-effect
+		/w14549 # 'operator': operator before comma has no effect; did you intend 'operator'?
+		/w14555 # expression has no effect; expected expression with side- effect
+		/w14619 # pragma warning: there is no warning number 'number'
+		/w14640 # Enable warning on thread un-safe static member initialization
+		/w14826 # Conversion from 'type1' to 'type2' is sign-extended. This may cause unexpected runtime behavior.
+		/w14905 # wide string literal cast to 'LPSTR'
+		/w14906 # string literal cast to 'LPWSTR'
+		/w14928 # illegal copy-initialization; more than one user-defined conversion has been implicitly applied
+
+		# Disable some warnings
+		/wd4201 # nonstandard extension used: nameless struct/union. Used in some windows headers, e.g. IO_STATUS_BLOCK,
+		        # disable.
+		/wd4206 # nonstandard extension used: translation unit is empty. All files in c-ares are compiled even if not
+		        # used, so we need to ignore this.
+
+		# Turn some warnings into errors
 		/we4013 # Treat "function undefined, assuming extern returning int" warning as an error. https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4013
 	)
 
@@ -285,115 +433,7 @@ foreach(_lang ${languages})
 	endif ()
 endforeach()
 
-
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Helper functions
-
-
-# This function can be called in subdirectories, to prune out warnings that they don't want.
-#  vararg: warning flags to remove from list of enabled warnings. All "no" flags after EXPLICIT_DISABLE
-#          will be added to C flags.
-#
-# Ex.: remove_warnings(-Wall -Wdouble-promotion -Wcomment) prunes those warnings flags from the compile command.
-function(remove_warnings)
-	get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-	set(langs C)
-	if ("CXX" IN_LIST languages)
-		list(APPEND langs CXX)
-	endif ()
-
-	foreach(lang ${langs})
-		set(toadd)
-		set(in_explicit_disable FALSE)
-		foreach (flag ${ARGN})
-			if (flag STREQUAL "EXPLICIT_DISABLE")
-				set(in_explicit_disable TRUE)
-			elseif (in_explicit_disable)
-				list(APPEND toadd "${flag}")
-			else ()
-				string(REGEX REPLACE "${flag}([ \t]+|$)" "" CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}")
-			endif ()
-		endforeach ()
-		_int_enable_warnings_set_flags(lang ${toadd})
-		string(STRIP "${CMAKE_${lang}_FLAGS}" CMAKE_${lang}_FLAGS)
-		set(CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}" PARENT_SCOPE)
-	endforeach()
-endfunction()
-
-
-# Explicitly suppress all warnings. As long as this flag is the last warning flag, warnings will be
-# suppressed even if earlier flags enabled warnings.
-function(remove_all_warnings)
-	get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-	set(langs C)
-	if ("CXX" IN_LIST languages)
-		list(APPEND langs CXX)
-	endif ()
-
-	foreach(lang ${langs})
-		string(REGEX REPLACE "[-/][Ww][^ \t]*([ \t]+|$)" "" CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}")
-		if (MSVC)
-			string(APPEND CMAKE_${lang}_FLAGS " /w")
-		else ()
-			string(APPEND CMAKE_${lang}_FLAGS " -w")
-		endif ()
-		string(STRIP "${CMAKE_${lang}_FLAGS}" CMAKE_${lang}_FLAGS)
-		set(CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}" PARENT_SCOPE)
-	endforeach()
-endfunction()
-
-
-function(remove_all_warnings_from_targets)
-	foreach (target ${ARGN})
-		if (MSVC)
-			target_compile_options(${target} PRIVATE "/w")
-		else ()
-			target_compile_options(${target} PRIVATE "-w")
-		endif ()
-	endforeach()
-endfunction()
-
-
-# Save the current warning settings to an internal variable.
-function(push_warnings)
-	get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-	set(langs C)
-	if ("CXX" IN_LIST languages)
-		list(APPEND langs CXX)
-	endif ()
-
-	foreach(lang ${langs})
-		if (CMAKE_${lang}_FLAGS MATCHES ";")
-			message(AUTHOR_WARNING "Cannot push warnings for ${lang}, CMAKE_${lang}_FLAGS contains semicolons")
-			continue()
-		endif ()
-		# Add current flags to end of internal list.
-		list(APPEND _enable_warnings_internal_${lang}_flags_stack "${CMAKE_${lang}_FLAGS}")
-		# Propagate results up to caller's scope.
-		set(_enable_warnings_internal_${lang}_flags_stack "${_enable_warnings_internal_${lang}_flags_stack}" PARENT_SCOPE)
-	endforeach()
-endfunction()
-
-
-# Restore the current warning settings from an internal variable.
-function(pop_warnings)
-	get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-	set(langs C)
-	if ("CXX" IN_LIST languages)
-		list(APPEND langs CXX)
-	endif ()
-
-	foreach(lang ${langs})
-		if (NOT _enable_warnings_internal_${lang}_flags_stack)
-			continue()
-		endif ()
-		# Pop flags off of end of list, overwrite current flags with whatever we popped off.
-		list(GET _enable_warnings_internal_${lang}_flags_stack -1 CMAKE_${lang}_FLAGS)
-		list(REMOVE_AT _enable_warnings_internal_${lang}_flags_stack -1)
-		# Propagate results up to caller's scope.
-		set(_enable_warnings_internal_${lang}_flags_stack "${_enable_warnings_internal_${lang}_flags_stack}" PARENT_SCOPE)
-		string(STRIP "${CMAKE_${lang}_FLAGS}" CMAKE_${lang}_FLAGS)
-		set(CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS}" PARENT_SCOPE)
-	endforeach()
-endfunction()
+# CMP0092 doesn't appear to really work, really remove the /W3 here.
+if (MSVC)
+  remove_warnings(/W3)
+endif ()

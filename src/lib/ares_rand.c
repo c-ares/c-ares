@@ -57,7 +57,7 @@ typedef struct ares_rand_rc4 {
 static unsigned int ares_u32_from_ptr(void *addr)
 {
   /* LCOV_EXCL_START: FallbackCode */
-  if (sizeof(void *) == 8) {
+  if (ares__is_64bit()) {
     return (unsigned int)((((ares_uint64_t)addr >> 32) & 0xFFFFFFFF) |
                           ((ares_uint64_t)addr & 0xFFFFFFFF));
   }

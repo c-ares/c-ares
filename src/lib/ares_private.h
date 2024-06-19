@@ -627,6 +627,7 @@ ares_bool_t   ares__subnet_match(const struct ares_addr *addr,
                                  unsigned char           netmask);
 ares_bool_t   ares__addr_is_linklocal(const struct ares_addr *addr);
 
+ares_bool_t   ares__is_64bit(void);
 size_t        ares__round_up_pow2(size_t n);
 size_t        ares__log2(size_t n);
 size_t        ares__pow(size_t x, size_t y);
