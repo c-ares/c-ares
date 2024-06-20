@@ -132,8 +132,10 @@ int main(int argc, char *argv[])
   }
 
   memset(&options, 0, sizeof(options));
-  optmask       |= ARES_OPT_EVENT_THREAD;
-  options.evsys  = ARES_EVSYS_DEFAULT;
+  optmask               |= ARES_OPT_EVENT_THREAD;
+  options.evsys          = ARES_EVSYS_DEFAULT;
+  optmask               |= ARES_OPT_QUERY_CACHE;
+  options.qcache_max_ttl = 0;
 
   status = (ares_status_t)ares_init_options(&channel, &options, optmask);
   if (status != ARES_SUCCESS) {
@@ -151,9 +153,13 @@ int main(int argc, char *argv[])
 
   for (count = 1; is_running == ARES_TRUE; count++) {
     struct ares_addrinfo_hints hints;
+    char *servers = ares_get_servers_csv(channel);
+
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
-    printf("Attempt %zu...\n", count);
+    printf("Attempt %zu using server list: %s ...\n", count, servers);
+    ares_free_string(servers);
+
     ares_getaddrinfo(channel, argv[1], NULL, &hints, ai_callback, argv[1]);
 #ifdef _WIN32
     Sleep(1000);
