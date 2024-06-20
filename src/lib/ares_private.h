@@ -447,6 +447,9 @@ ares_status_t ares__init_sysconfig_files(const ares_channel_t *channel,
 #ifdef __APPLE__
 ares_status_t ares__init_sysconfig_macos(ares_sysconfig_t *sysconfig);
 #endif
+#ifdef USE_WINSOCK
+ares_status_t ares__init_sysconfig_windows(ares_sysconfig_t *sysconfig);
+#endif
 
 ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
                                    const char *str);
