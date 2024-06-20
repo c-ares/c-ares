@@ -37,6 +37,7 @@
 #  include <windows.h>
 #else
 #  include <unistd.h>
+#  include <signal.h>
 #  include <netinet/in.h>
 #  include <arpa/inet.h>
 #  include <netdb.h>
@@ -76,6 +77,35 @@ static void ai_callback(void *arg, int status, int timeouts,
   ares_freeaddrinfo(result);
 }
 
+
+static volatile ares_bool_t is_running = ARES_TRUE;
+
+
+#ifdef _WIN32
+static BOOL WINAPI ctrlc_handler(_In_ DWORD dwCtrlType)
+{
+  switch (dwCtrlType) {
+    case CTRL_C_EVENT:
+      is_running = ARES_FALSE;
+      return TRUE;
+    default:
+      break;
+  }
+  return FALSE;
+}
+#else
+static void ctrlc_handler(int sig)
+{
+  switch(sig) {
+    case SIGINT:
+      is_running = ARES_FALSE;
+      break;
+    default:
+      break;
+  }
+}
+#endif
+
 int main(int argc, char *argv[])
 {
   struct ares_options options;
@@ -111,9 +141,15 @@ int main(int argc, char *argv[])
     return 1;
   }
 
+#ifdef _WIN32
+  SetConsoleCtrlHandler(ctrlc_handler, TRUE);
+#else
+  signal(SIGINT, ctrlc_handler);
+#endif
+
   printf("Querying for %s every 1s, press CTRL-C to quit...\n", argv[1]);
 
-  for (count = 1;; count++) {
+  for (count = 1; is_running == ARES_TRUE; count++) {
     struct ares_addrinfo_hints hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -126,6 +162,7 @@ int main(int argc, char *argv[])
 #endif
   }
 
+  printf("CTRL-C captured, cleaning up...\n");
   ares_destroy(channel);
   ares_library_cleanup();
 
