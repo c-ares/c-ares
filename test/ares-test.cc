@@ -600,7 +600,7 @@ void MockServer::ProcessFD(ares_socket_t fd) {
   }
   if (fd == tcpfd_) {
     ares_socket_t connfd = accept(tcpfd_, NULL, NULL);
-    if (connfd < 0) {
+    if (connfd == ARES_SOCKET_BAD) {
       std::cerr << "Error accepting connection on fd " << fd << std::endl;
     } else {
       connfds_.insert(connfd);
@@ -1034,7 +1034,10 @@ std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
     if(next_cname->name) {
       os << next_cname->name;
     }
-    if((next_cname = next_cname->next))
+
+    next_cname = next_cname->next;
+
+    if (next_cname != NULL)
       os << ", ";
     else
       os << " ";
@@ -1063,7 +1066,8 @@ std::ostream& operator<<(std::ostream& os, const AddrInfo& ai) {
       os << ":" << port;
     }
     os << "]";
-    if((next = next->ai_next))
+    next = next->ai_next;
+    if (next != NULL)
       os << ", ";
   }
   os << '}';

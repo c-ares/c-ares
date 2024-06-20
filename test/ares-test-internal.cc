@@ -736,7 +736,7 @@ TEST_F(LibraryTest, DNSRecord) {
     ares__buf_append_str(printmsg, ares_dns_section_tostr((ares_dns_section_t)i));
     ares__buf_append_str(printmsg, " SECTION:\n");
     for (size_t j = 0; j < ares_dns_record_rr_cnt(dnsrec, (ares_dns_section_t)i); j++) {
-      const ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, (ares_dns_section_t)i, j);
+      rr = ares_dns_record_rr_get(dnsrec, (ares_dns_section_t)i, j);
       ares__buf_append_str(printmsg, ares_dns_rr_get_name(rr));
       ares__buf_append_str(printmsg, ".\t\t\t");
       ares__buf_append_str(printmsg, ares_dns_class_tostr(ares_dns_rr_get_class(rr)));
