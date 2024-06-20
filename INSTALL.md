@@ -42,7 +42,7 @@ unpacked the source archive):
 You probably need to be root when doing the last command.
 
 If you have checked out the sources from the git repository, read the
-[GIT-INFO](GIT_INFO) on how to proceed.
+[GIT-INFO](GIT-INFO) on how to proceed.
 
 Get a full listing of all available configure options by invoking it like:
 
