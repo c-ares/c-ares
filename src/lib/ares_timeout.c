@@ -55,6 +55,19 @@ void ares__timeval_remaining(ares_timeval_t       *remaining,
   }
 }
 
+void ares__timeval_diff(ares_timeval_t       *tvdiff,
+                        const ares_timeval_t *tvstart,
+                        const ares_timeval_t *tvstop)
+{
+  tvdiff->sec = tvstop->sec - tvstart->sec;
+  if (tvstop->usec > tvstart->usec) {
+    tvdiff->usec = tvstop->usec - tvstart->usec;
+  } else {
+    tvdiff->sec -= 1;
+    tvdiff->usec = tvstop->usec + 1000000 - tvstart->usec;
+  }
+}
+
 static struct timeval ares_timeval_to_struct_timeval(const ares_timeval_t *atv)
 {
   struct timeval tv;

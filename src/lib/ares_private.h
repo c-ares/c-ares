@@ -170,6 +170,25 @@ typedef struct {
   unsigned int usec; /*!< Microseconds. Can't be negative. */
 } ares_timeval_t;
 
+/*! Various buckets for grouping history */
+typedef enum {
+  ARES_METRIC_1MINUTE = 0, /*!< Bucket for tracking over the last minute */
+  ARES_METRIC_15MINUTES,   /*!< Bucket for tracking over the last 15 minutes */
+  ARES_METRIC_1HOUR,       /*!< Bucket for tracking over the last hour */
+  ARES_METRIC_1DAY,        /*!< Bucket for tracking over the last day */
+  ARES_METRIC_INCEPTION,   /*!< Bucket for tracking since inception */
+  ARES_METRIC_COUNT        /*!< Count of buckets, not a real bucket */
+} ares_server_bucket_t;
+
+/*! Data metrics collected for each bucket */
+typedef struct {
+  time_t        ts;
+  unsigned int  latency_min_ms;
+  unsigned int  latency_max_ms;
+  ares_uint64_t total_ms;
+  ares_uint64_t total_count;
+} ares_server_metrics_t;
+
 struct server_state {
   /* Configuration */
   size_t                    idx; /* index for server in system configuration */
@@ -195,6 +214,9 @@ struct server_state {
   /* TCP output queue */
   ares__buf_t              *tcp_send;
 
+  /*! Buckets for collecting metrics about the server */
+  ares_server_metrics_t     metrics[ARES_METRIC_COUNT];
+
   /* Link back to owning channel */
   ares_channel_t           *channel;
 };
@@ -203,6 +225,7 @@ struct server_state {
 struct query {
   /* Query ID from qbuf, for faster lookup, and current timeout */
   unsigned short            qid; /* host byte order */
+  ares_timeval_t            ts; /*!< Timestamp query was sent */
   ares_timeval_t            timeout;
   ares_channel_t           *channel;
 
@@ -229,8 +252,8 @@ struct query {
   ares_bool_t   using_tcp;
   ares_status_t error_status;
   size_t        timeouts; /* number of timeouts we saw for this request */
-  ares_bool_t no_retries; /* do not perform any additional retries, this is set
-                           * when a query is to be canceled */
+  ares_bool_t   no_retries; /* do not perform any additional retries, this is set
+                             * when a query is to be canceled */
 };
 
 struct apattern {
@@ -410,6 +433,9 @@ ares_timeval_t ares__tvnow(void);
 void           ares__timeval_remaining(ares_timeval_t       *remaining,
                                        const ares_timeval_t *now,
                                        const ares_timeval_t *tout);
+void           ares__timeval_diff(ares_timeval_t       *tvdiff,
+                                  const ares_timeval_t *tvstart,
+                                  const ares_timeval_t *tvstop);
 ares_status_t  ares__expand_name_validated(const unsigned char *encoded,
                                            const unsigned char *abuf,
                                            size_t alen, char **s, size_t *enclen,
@@ -650,6 +676,11 @@ ares_status_t ares_qcache_fetch(ares_channel_t           *channel,
                                 const ares_timeval_t     *now,
                                 const ares_dns_record_t  *dnsrec,
                                 const ares_dns_record_t **dnsrec_resp);
+
+void ares_metrics_record(const struct query *query, struct server_state *server,
+                         ares_status_t status, const ares_dns_record_t *dnsrec);
+size_t ares_metrics_server_timeout(const struct server_state *server,
+                                   const ares_timeval_t      *now);
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel);
 void          ares__channel_threading_destroy(ares_channel_t *channel);
