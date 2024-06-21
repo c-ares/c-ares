@@ -24,6 +24,73 @@
  * SPDX-License-Identifier: MIT
  */
 
+
+/* IMPLEMENTATION NOTES
+ * ====================
+ *
+ * With very little effort we should be able to determine fairly proper timeouts
+ * we can use based on prior query history.  We can also track in order to
+ * auto-scale when network conditions change (e.g. maybe there is a provider
+ * failover and timings change due to that).  Apple appears to do this within
+ * their system resolver in MacOS.  Obviously we should have a minimum, maximum,
+ * and initial value to make sure the algorithm doesn't somehow go off the
+ * rails.
+ *
+ * Values:
+ * - Minimum Timeout: 250ms (approximate RTT half-way around the globe)
+ * - Maximum Timeout: 5000ms (Recommended timeout in RFC 1123), can be reduced
+ *   by ARES_OPT_MAXTIMEOUTMS, but otherwise the bound specified by the option
+ *   caps the retry timeout.
+ * - Initial Timeout: User-specified via configuration or ARES_OPT_TIMEOUTMS
+ * - Average latency multiplier: 5x (a local DNS server returning a cached value
+ *   will be quicker than if it needs to recurse so we need to account for this)
+ *
+ * Per-server buckets for tracking latency over time (these are ephemeral
+ * meaning they don't persist once a channel is destroyed).  There will be some
+ * skew to prevent most buckets from resetting at the same time:
+ * - 1 minute (using 1:01)
+ * - 15 minutes (using 15:30)
+ * - 1 hr (using 59:00)
+ * - 1 day (using 23:58:57)
+ * - since inception
+ *
+ * Each bucket would contain:
+ * - timestamp (divided by interval)
+ * - minimum latency
+ * - maximum latency
+ * - total time
+ * - count
+ * NOTE: average latency is (total time / count), we will calculate this
+ *       dynamically when needed
+ *
+ * Basic algorithm for calculating timeout to use would be:
+ * - Scan from most recent bucket to least recent
+ * - Check timestamp of bucket, if doesn't match current time, continue to next
+ *   bucket
+ * - Check count of bucket, if its zero, continue to next bucket
+ * - If we reached the end with no bucket match, use "Initial Timeout"
+ * - If bucket is selected, take ("total time" / count) as Average latency,
+ *   multiply by "Average Latency Multiplier", bound by "Minimum Timeout" and
+ *   "Maximum Timeout"
+ * NOTE: The timeout calculated may not be the timeout used.  If we are retrying
+ * the query on the same server another time, then it will use a larger value
+ *
+ * On each query reply where the response is legitimate (proper response or
+ * NXDOMAIN) and not something like a server error:
+ * - Cycle through each bucket in order
+ * - Check timestamp of bucket against current timestamp, if out of date clear
+ *   all values
+ * - Compare current minimum and maximum recorded latency against query time and
+ *   adjust if necessary
+ * - Increment "count" by 1 and "total time" by the query time
+ *
+ * Other Notes:
+ * - This is always-on, the only user-configurable value is the initial
+ *   timeout which will simply re-uses the current option.
+ * - Minimum and Maximum latencies for a bucket are currently unused but are
+ *   there in case we find a need for them in the future.
+ */
+
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
@@ -45,16 +112,16 @@ static time_t ares_metric_timestamp(ares_server_bucket_t bucket,
 
   switch (bucket) {
     case ARES_METRIC_1MINUTE:
-      divisor = 60;
+      divisor = 61; /* 1:01 */
       break;
     case ARES_METRIC_15MINUTES:
-      divisor = 15 * 60;
+      divisor = (15 * 60) + 30; /* 15:30 */
       break;
     case ARES_METRIC_1HOUR:
-      divisor = 60 * 60;
+      divisor = 59 * 60; /* 59:00 */
       break;
     case ARES_METRIC_1DAY:
-      divisor = 24 * 60 * 60;
+      divisor = (23 * 60 * 60) + (58 * 60) + 57; /* 23:58:57 */
       break;
     case ARES_METRIC_INCEPTION:
       return 1;
