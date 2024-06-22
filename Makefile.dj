@@ -21,7 +21,6 @@ OBJ_DIR = djgpp
 
 CFLAGS = -g -O2 -I./include -I./src/lib \
          -I$(WATT32_ROOT)/inc \
-         -std=c90 \
          -Wall \
          -Wextra \
          -Waggregate-return \
