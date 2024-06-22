@@ -44,6 +44,8 @@
  * - Initial Timeout: User-specified via configuration or ARES_OPT_TIMEOUTMS
  * - Average latency multiplier: 5x (a local DNS server returning a cached value
  *   will be quicker than if it needs to recurse so we need to account for this)
+ * - Minimum Count for Average: 3.  This is the minimum number of queries we
+ *   need to form an average for the bucket.
  *
  * Per-server buckets for tracking latency over time (these are ephemeral
  * meaning they don't persist once a channel is destroyed).  We record both the
@@ -68,7 +70,8 @@
  * - Scan from most recent bucket to least recent
  * - Check timestamp of bucket, if doesn't match current time, continue to next
  *   bucket
- * - Check count of bucket, if its zero, continue to next bucket
+ * - Check count of bucket, if its not at least the "Minimum Count for Average",
+ *   check the previous bucket, otherwise continue to next bucket
  * - If we reached the end with no bucket match, use "Initial Timeout"
  * - If bucket is selected, take ("total time" / count) as Average latency,
  *   multiply by "Average Latency Multiplier", bound by "Minimum Timeout" and
@@ -105,6 +108,9 @@
 
 /*! Upper timeout bounds, only used if channel->maxtimeout not set */
 #define MAX_TIMEOUT_MS         5000
+
+/*! Minimum queries required to form an average */
+#define MIN_COUNT_FOR_AVERAGE  3
 
 static time_t ares_metric_timestamp(ares_server_bucket_t bucket,
                                     const ares_timeval_t *now,
@@ -212,10 +218,12 @@ size_t ares_metrics_server_timeout(const struct server_state *server,
 
     /* This ts has been invalidated, see if we should use the previous
      * time period */
-    if (ts != server->metrics[i].ts || server->metrics[i].total_count == 0) {
+    if (ts != server->metrics[i].ts ||
+        server->metrics[i].total_count < MIN_COUNT_FOR_AVERAGE) {
       time_t prev_ts = ares_metric_timestamp(i, now, ARES_TRUE);
       if (prev_ts != server->metrics[i].prev_ts ||
-          server->metrics[i].prev_total_count == 0) {
+          server->metrics[i].prev_total_count < MIN_COUNT_FOR_AVERAGE) {
+        /* Move onto next bucket */
         continue;
       }
       /* Calculate average time for previous bucket */
