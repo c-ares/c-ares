@@ -82,8 +82,8 @@
  * On each query reply where the response is legitimate (proper response or
  * NXDOMAIN) and not something like a server error:
  * - Cycle through each bucket in order
- * - Check timestamp of bucket against current timestamp, if out of date clear
- *   all values
+ * - Check timestamp of bucket against current timestamp, if out of date
+ *   overwrite previous entry with values, clear current values
  * - Compare current minimum and maximum recorded latency against query time and
  *   adjust if necessary
  * - Increment "count" by 1 and "total time" by the query time
