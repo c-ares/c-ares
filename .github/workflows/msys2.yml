@@ -17,9 +17,9 @@ jobs:
       max-parallel: 2
       matrix:
         include:
-          - { msystem: CLANG64, env: clang-x86_64 }
-          - { msystem: MINGW64, env: x86_64       }
-          - { msystem: MINGW32, env: i686         }
+          - { msystem: CLANG64, env: clang-x86_64, extra_packages: "mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-analyzer" }
+          - { msystem: MINGW64, env: x86_64,       extra_packages: "mingw-w64-x86_64-gcc"                                               }
+          - { msystem: MINGW32, env: i686,         extra_packages: "mingw-w64-i686-gcc"                                                 }
           # No need to test UCRT64 since clang64 uses UCRT
           # - { msystem: UCRT64,  env: ucrt-x86_64  }
     defaults:
@@ -41,14 +41,7 @@ jobs:
             mingw-w64-${{ matrix.env }}-cmake
             mingw-w64-${{ matrix.env }}-ninja
             mingw-w64-${{ matrix.env }}-gtest
-      - name: Install gcc compiler
-        if: ${{ matrix.env != 'clang-x86_64' && matrix.env != 'clang-i686' }}
-        run: |
-          pacman --noconfirm -S --needed mingw-w64-${{ matrix.env }}-gcc
-      - name: Install clang compiler
-        if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
-        run: |
-          pacman --noconfirm -S --needed mingw-w64-${{ matrix.env }}-clang mingw-w64-${{ matrix.env }}-clang-analyzer
+            ${{ matrix.extra_packages }}
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "CMake: build and test c-ares"
