@@ -473,7 +473,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
       continue;
     }
 
-    pdns_configuration_notify_key =
+    pdns_configuration_notify_key = (const char *(*)(void))
       dlsym(handle, "dns_configuration_notify_key");
     if (pdns_configuration_notify_key != NULL) {
       break;

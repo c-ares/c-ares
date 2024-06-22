@@ -41,7 +41,7 @@
  * warning: cast from 'const struct sockaddr *' to 'const struct sockaddr_in6 *'
  * increases required alignment from 1 to 4 [-Wcast-align]
  */
-#define CARES_INADDR_CAST(type, var) ((type)((void *)var))
+#define CARES_INADDR_CAST(type, var) ((type)((const void *)var))
 
 #if defined(USE_WINSOCK)
 

@@ -305,7 +305,9 @@ else ()
 		-Wextra
 
 		# Enable additional warnings not covered by Wall and Wextra.
+		-Waggregate-return
 		-Wcast-align
+		-Wcast-qual
 		-Wconversion
 		-Wdeclaration-after-statement
 		-Wdouble-promotion
@@ -323,6 +325,7 @@ else ()
 		-Wno-coverage-mismatch
 		-Wold-style-definition
 		-Wpacked
+		-Wpedantic
 		-Wpointer-arith
 		-Wredundant-decls
 		-Wshadow
@@ -331,6 +334,7 @@ else ()
 		-Wstrict-prototypes
 		-Wtrampolines
 		-Wundef
+		-Wunreachable-code
 		-Wunused
 		-Wvariadic-macros
 		-Wvla
@@ -349,6 +353,8 @@ else ()
 		# Some clang versions might warn if an argument like "-I/path/to/headers" is unused,
 		# silence these.
 		-Qunused-arguments
+
+		-Wno-long-long
 	)
 
 	# C++ flags:

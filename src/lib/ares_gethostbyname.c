@@ -102,12 +102,16 @@ static void ares_gethostbyname_callback(void *arg, int status, int timeouts,
 void ares_gethostbyname(ares_channel_t *channel, const char *name, int family,
                         ares_host_callback callback, void *arg)
 {
-  const struct ares_addrinfo_hints hints = { ARES_AI_CANONNAME, family, 0, 0 };
-  struct host_query               *ghbn_arg;
+  struct ares_addrinfo_hints hints;
+  struct host_query         *ghbn_arg;
 
   if (!callback) {
     return;
   }
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_flags  = ARES_AI_CANONNAME;
+  hints.ai_family = family;
 
   ghbn_arg = ares_malloc(sizeof(*ghbn_arg));
   if (!ghbn_arg) {

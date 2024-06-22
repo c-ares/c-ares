@@ -43,7 +43,7 @@
 typedef enum {
   ARES_RAND_OS   = 1 << 0, /* OS-provided such as RtlGenRandom or arc4random */
   ARES_RAND_FILE = 1 << 1, /* OS file-backed random number generator */
-  ARES_RAND_RC4  = 1 << 2, /* Internal RC4 based PRNG */
+  ARES_RAND_RC4  = 1 << 2  /* Internal RC4 based PRNG */
 } ares_rand_backend;
 
 #define ARES_RC4_KEY_LEN 32 /* 256 bits */

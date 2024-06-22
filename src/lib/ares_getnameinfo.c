@@ -100,11 +100,11 @@ static void  ares_getnameinfo_int(ares_channel_t        *channel,
   /* Validate socket address family and length */
   if (sa && sa->sa_family == AF_INET &&
       salen >= (ares_socklen_t)sizeof(struct sockaddr_in)) {
-    addr = CARES_INADDR_CAST(struct sockaddr_in *, sa);
+    addr = CARES_INADDR_CAST(const struct sockaddr_in *, sa);
     port = addr->sin_port;
   } else if (sa && sa->sa_family == AF_INET6 &&
              salen >= (ares_socklen_t)sizeof(struct sockaddr_in6)) {
-    addr6 = CARES_INADDR_CAST(struct sockaddr_in6 *, sa);
+    addr6 = CARES_INADDR_CAST(const struct sockaddr_in6 *, sa);
     port  = addr6->sin6_port;
   } else {
     callback(arg, ARES_ENOTIMP, 0, NULL, NULL);

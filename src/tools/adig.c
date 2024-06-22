@@ -113,12 +113,16 @@ static void free_config(adig_config_t *config)
 
 static void print_help(void)
 {
+  /* Split due to maximum c89 string literal of 509 bytes */
   printf("adig version %s\n\n", ares_version(NULL));
   printf(
     "usage: adig [-h] [-d] [-f flag] [[-s server] ...] [-T|U port] [-c class]\n"
-    "            [-t type] name ...\n\n"
-    "  -h : Display this help and exit.\n"
-    "  -d : Print some extra debugging output.\n"
+    "            [-t type] name ...\n\n");
+  printf(
+    "  -h : Display this help and exit.\n");
+  printf(
+    "  -d : Print some extra debugging output.\n");
+  printf(
     "  -f flag   : Add a behavior control flag. Possible values are\n"
     "              igntc     - do not retry a truncated query as TCP, just\n"
     "                          return the truncated answer\n"
@@ -127,21 +131,26 @@ static void print_help(void)
     "              norecurse - don't query upstream servers recursively\n"
     "              primary   - use the first server\n"
     "              stayopen  - don't close the communication sockets\n"
-    "              usevc     - use TCP only\n"
+    "              usevc     - use TCP only\n");
+  printf(
     "  -s server : Connect to the specified DNS server, instead of the\n"
     "              system's default one(s). Servers are tried in round-robin,\n"
-    "              if the previous one failed.\n"
-    "  -T port   : Connect to the specified TCP port of DNS server.\n"
-    "  -U port   : Connect to the specified UDP port of DNS server.\n"
+    "              if the previous one failed.\n");
+  printf(
+    "  -T port   : Connect to the specified TCP port of DNS server.\n");
+  printf(
+    "  -U port   : Connect to the specified UDP port of DNS server.\n");
+  printf(
     "  -c class  : Set the query class. Possible values for class are:\n"
-    "              ANY, CHAOS, HS and IN (default)\n"
+    "              ANY, CHAOS, HS and IN (default)\n");
+  printf(
     "  -t type   : Query records of the specified type. Possible values for\n"
     "              type are:\n"
     "              A (default), AAAA, ANY, CNAME, HINFO, MX, NAPTR, NS, PTR,\n"
     "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
 }
 
-static ares_bool_t read_cmdline(int argc, const char **argv,
+static ares_bool_t read_cmdline(int argc, const char * const * argv,
                                 adig_config_t *config)
 {
   ares_getopt_state_t state;
@@ -897,7 +906,7 @@ int main(int argc, char **argv)
   memset(&config, 0, sizeof(config));
   config.qclass = ARES_CLASS_IN;
   config.qtype  = ARES_REC_TYPE_A;
-  if (!read_cmdline(argc, (const char **)argv, &config)) {
+  if (!read_cmdline(argc, (const char * const *)argv, &config)) {
     printf("\n** ERROR: %s\n\n", config.error);
     print_help();
     rv = 1;

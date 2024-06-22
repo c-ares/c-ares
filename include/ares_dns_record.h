@@ -94,7 +94,7 @@ typedef enum {
   ARES_OPCODE_IQUERY = 1, /*!< Inverse query. Obsolete. */
   ARES_OPCODE_STATUS = 2, /*!< Name server status query */
   ARES_OPCODE_NOTIFY = 4, /*!< Zone change notification (RFC 1996) */
-  ARES_OPCODE_UPDATE = 5, /*!< Zone update message (RFC2136) */
+  ARES_OPCODE_UPDATE = 5  /*!< Zone update message (RFC2136) */
 } ares_dns_opcode_t;
 
 /*! DNS Header flags */
@@ -108,7 +108,7 @@ typedef enum {
   ARES_FLAG_AD = 1 << 5, /*!< RFC 2065. Authentic Data bit indicates in a
                           * response that the data included has been verified by
                           * the server providing it */
-  ARES_FLAG_CD = 1 << 6, /*!< RFC 2065. Checking Disabled bit indicates in a
+  ARES_FLAG_CD = 1 << 6  /*!< RFC 2065. Checking Disabled bit indicates in a
                           * query that non-verified data is acceptable to the
                           * resolver sending the query. */
 } ares_dns_flags_t;
@@ -152,7 +152,7 @@ typedef enum {
   ARES_RCODE_BADNAME   = 20, /*!< RFC 2930. Duplicate Key Name */
   ARES_RCODE_BADALG    = 21, /*!< RFC 2930. Algorithm not supported */
   ARES_RCODE_BADTRUNC  = 22, /*!< RFC 8945. Bad Truncation */
-  ARES_RCODE_BADCOOKIE = 23, /*!< RVC 7973. Bad/missing Server Cookie */
+  ARES_RCODE_BADCOOKIE = 23  /*!< RVC 7973. Bad/missing Server Cookie */
 } ares_dns_rcode_t;
 
 /*! Data types used */
@@ -169,7 +169,7 @@ typedef enum {
                               *   printable. Guaranteed to have a NULL
                               *   terminator for convenience (not included in
                               *   length) */
-  ARES_DATATYPE_OPT = 10,    /*!< Array of options.  16bit identifier, BIN
+  ARES_DATATYPE_OPT = 10     /*!< Array of options.  16bit identifier, BIN
                               *   data. */
 } ares_dns_datatype_t;
 
@@ -292,7 +292,7 @@ typedef enum {
   /*! RAW Record. RR Type. Datatype: U16 */
   ARES_RR_RAW_RR_TYPE = (ARES_REC_TYPE_RAW_RR * 100) + 1,
   /*! RAW Record. RR Data. Datatype: BIN */
-  ARES_RR_RAW_RR_DATA = (ARES_REC_TYPE_RAW_RR * 100) + 2,
+  ARES_RR_RAW_RR_DATA = (ARES_REC_TYPE_RAW_RR * 100) + 2
 } ares_dns_rr_key_t;
 
 /*! TLSA Record ARES_RR_TLSA_CERT_USAGE known values */
@@ -372,7 +372,7 @@ typedef enum {
   /*! RFC 8145. Signaling Trust Anchor Knowledge in DNSSEC */
   ARES_OPT_PARAM_EDNS_KEY_TAG = 14,
   /*! RFC 8914. Extended ERROR code and message */
-  ARES_OPT_PARAM_EXTENDED_DNS_ERROR = 15,
+  ARES_OPT_PARAM_EXTENDED_DNS_ERROR = 15
 } ares_opt_param_t;
 
 /*! Data type for option records for keys like ARES_RR_OPT_OPTIONS and

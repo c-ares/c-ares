@@ -45,6 +45,11 @@
  * private header extracted from:
  * https://opensource.apple.com/source/configd/configd-1109.140.1/dnsinfo/dnsinfo.h
  */
+
+/* The apple header uses anonymous unions which came with C11 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wc11-extensions"
+
 #  include "ares_setup.h"
 #  include <stdio.h>
 #  include <stdlib.h>
@@ -110,10 +115,10 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
       continue;
     }
 
-    dnsinfo->dns_configuration_copy =
+    dnsinfo->dns_configuration_copy = (dns_config_t *(*)(void))
       dlsym(dnsinfo->handle, "dns_configuration_copy");
 
-    dnsinfo->dns_configuration_free =
+    dnsinfo->dns_configuration_free = (void (*)(dns_config_t *))
       dlsym(dnsinfo->handle, "dns_configuration_free");
 
     if (dnsinfo->dns_configuration_copy != NULL &&
@@ -365,6 +370,7 @@ done:
   }
   return status;
 }
+#pragma GCC diagnostic pop
 
 
 #endif

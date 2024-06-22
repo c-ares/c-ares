@@ -564,7 +564,7 @@ SET (RECVFROM_TYPE_ARG5 "struct sockaddr *")
 SET (RECV_TYPE_ARG4 int)
 SET (GETNAMEINFO_TYPE_ARG1 "struct sockaddr *")
 SET (GETNAMEINFO_TYPE_ARG7 int)
-SET (SEND_TYPE_ARG2 "void *")
+SET (SEND_TYPE_ARG2 "const void *")
 SET (SEND_TYPE_ARG4 int)
 ################################################################################
 

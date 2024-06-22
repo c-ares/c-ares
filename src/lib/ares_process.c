@@ -1222,14 +1222,14 @@ static ares_bool_t same_address(const struct sockaddr  *sa,
     switch (aa->family) {
       case AF_INET:
         addr1 = &aa->addr.addr4;
-        addr2 = &(CARES_INADDR_CAST(struct sockaddr_in *, sa))->sin_addr;
+        addr2 = &(CARES_INADDR_CAST(const struct sockaddr_in *, sa))->sin_addr;
         if (memcmp(addr1, addr2, sizeof(aa->addr.addr4)) == 0) {
           return ARES_TRUE; /* match */
         }
         break;
       case AF_INET6:
         addr1 = &aa->addr.addr6;
-        addr2 = &(CARES_INADDR_CAST(struct sockaddr_in6 *, sa))->sin6_addr;
+        addr2 = &(CARES_INADDR_CAST(const struct sockaddr_in6 *, sa))->sin6_addr;
         if (memcmp(addr1, addr2, sizeof(aa->addr.addr6)) == 0) {
           return ARES_TRUE; /* match */
         }

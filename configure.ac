@@ -245,42 +245,8 @@ AC_SUBST(CARES_SYMBOL_HIDING_CFLAG)
 
 
 if test "$enable_warnings" = "yes"; then
-  AX_APPEND_COMPILE_FLAGS([-Wall \
-    -Wextra \
-    -Wcast-align \
-    -Wconversion \
-    -Wdeclaration-after-statement \
-    -Wdouble-promotion \
-    -Wfloat-equal \
-    -Wformat-security \
-    -Winit-self \
-    -Wjump-misses-init \
-    -Wlogical-op \
-    -Wmissing-braces \
-    -Wmissing-declarations \
-    -Wmissing-format-attribute \
-    -Wmissing-include-dirs \
-    -Wmissing-prototypes \
-    -Wnested-externs \
-    -Wno-coverage-mismatch \
-    -Wold-style-definition \
-    -Wpacked \
-    -Wpointer-arith \
-    -Wredundant-decls \
-    -Wshadow \
-    -Wsign-conversion \
-    -Wstrict-overflow \
-    -Wstrict-prototypes \
-    -Wtrampolines \
-    -Wundef \
-    -Wunused \
-    -Wvariadic-macros \
-    -Wvla \
-    -Wwrite-strings \
-    -Werror=implicit-int \
-    -Werror=implicit-function-declaration \
-    -Werror=partial-availability \
-  ], [AM_CFLAGS], [-Werror])
+  AX_APPEND_COMPILE_FLAGS([-std=c90 -Wall -Wextra -Waggregate-return -Wcast-align -Wcast-qual -Wconversion -Wdeclaration-after-statement -Wdouble-promotion -Wfloat-equal -Wformat-security -Winit-self -Wjump-misses-init -Wlogical-op -Wmissing-braces -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wmissing-prototypes -Wnested-externs -Wno-coverage-mismatch -Wold-style-definition -Wpacked -Wpedantic -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-conversion -Wstrict-overflow -Wstrict-prototypes -Wtrampolines -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -Wwrite-strings -Werror=implicit-int -Werror=implicit-function-declaration -Werror=partial-availability -Wno-long-long ],
+    [AM_CFLAGS], [-Werror])
 fi
 
 if test "$ax_cv_c_compiler_vendor" = "intel"; then
@@ -663,7 +629,7 @@ recvfrom_type_arg5="struct sockaddr *"
 recv_type_arg4=int
 getnameinfo_type_arg1="struct sockaddr *"
 getnameinfo_type_arg7=int
-send_type_arg2="void *"
+send_type_arg2="const void *"
 send_type_arg4=int
 
 AC_DEFINE_UNQUOTED([RECVFROM_TYPE_RETV],     [ ${recvfrom_type_retv} ],     [ recvfrom() return value ])
