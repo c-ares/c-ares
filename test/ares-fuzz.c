@@ -75,7 +75,11 @@ int main(int argc, char *argv[])
   if (argc == 1) {
     int count = 0;
     while (KEEP_FUZZING(count)) {
+#ifndef STDIN_FILENO
+      ProcessFile(fileno(stdin));
+#else
       ProcessFile(STDIN_FILENO);
+#endif
       count++;
     }
   } else {
