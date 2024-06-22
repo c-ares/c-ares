@@ -257,8 +257,11 @@ void ProcessWork(ares_channel_t *channel,
   fd_set readers, writers;
 
 #ifndef CARES_SYMBOL_HIDING
-  ares_timeval_t tv_begin  = ares__tvnow();
-  ares_timeval_t tv_cancel = tv_begin;
+  ares_timeval_t tv_begin;
+  ares_timeval_t tv_cancel;
+
+  ares__tvnow(&tv_begin);
+  memcpy(&tv_cancel, &tv_begin, sizeof(tv_cancel));
 
   if (cancel_ms) {
     if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
@@ -274,8 +277,10 @@ void ProcessWork(ares_channel_t *channel,
 
   while (true) {
 #ifndef CARES_SYMBOL_HIDING
-    ares_timeval_t  tv_now = ares__tvnow();
+    ares_timeval_t  tv_now;
     ares_timeval_t  atv_remaining;
+
+    ares__tvnow(&tv_now);
 #endif
     struct timeval  tv;
     struct timeval *tv_select;
@@ -862,11 +867,13 @@ void MockEventThreadOptsTest::ProcessThread() {
     int nfds = 0;
     fd_set readers;
 #ifndef CARES_SYMBOL_HIDING
-    ares_timeval_t tv_now = ares__tvnow();
+    ares_timeval_t tv_now;
     ares_timeval_t atv_remaining;
+
+    ares__tvnow(&tv_now);
     if (cancel_ms_ && !has_cancel_ms) {
-      tv_begin  = ares__tvnow();
-      tv_cancel = tv_begin;
+      ares__tvnow(&tv_begin);
+      memcpy(&tv_cancel, &tv_begin, sizeof(tv_cancel));
       if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms_ << "ms" << std::endl;
       tv_cancel.sec  += (cancel_ms_ / 1000);
       tv_cancel.usec += ((cancel_ms_ % 1000) * 1000);

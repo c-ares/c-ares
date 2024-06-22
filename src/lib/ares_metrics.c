@@ -150,7 +150,7 @@ static time_t ares_metric_timestamp(ares_server_bucket_t  bucket,
 void ares_metrics_record(const struct query *query, struct server_state *server,
                          ares_status_t status, const ares_dns_record_t *dnsrec)
 {
-  ares_timeval_t       now = ares__tvnow();
+  ares_timeval_t       now;
   ares_timeval_t       tvdiff;
   unsigned int         query_ms;
   ares_dns_rcode_t     rcode;
@@ -163,6 +163,8 @@ void ares_metrics_record(const struct query *query, struct server_state *server,
   if (server == NULL) {
     return;
   }
+
+  ares__tvnow(&now);
 
   rcode = ares_dns_record_get_rcode(dnsrec);
   if (rcode != ARES_RCODE_NOERROR && rcode != ARES_RCODE_NXDOMAIN) {

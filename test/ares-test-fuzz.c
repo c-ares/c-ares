@@ -29,10 +29,10 @@
 
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
-// Entrypoint for Clang's libfuzzer
+/* Entrypoint for Clang's libfuzzer */
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size)
 {
-  // Feed the data into each of the ares_parse_*_reply functions.
+  /* Feed the data into each of the ares_parse_*_reply functions. */
   struct hostent          *host = NULL;
   struct ares_addrttl      info[5];
   struct ares_addr6ttl     info6[5];

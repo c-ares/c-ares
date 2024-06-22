@@ -91,7 +91,7 @@ static void ares_rc4_generate_key(ares_rand_rc4 *rc4_state, unsigned char *key,
   memcpy(key + len, &data, sizeof(data));
   len += sizeof(data);
 
-  tv   = ares__tvnow();
+  ares__tvnow(&tv);
   data = (unsigned int)((tv.sec | tv.usec) & 0xFFFFFFFF);
   memcpy(key + len, &data, sizeof(data));
   len += sizeof(data);

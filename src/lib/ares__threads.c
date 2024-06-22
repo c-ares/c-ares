@@ -564,7 +564,7 @@ ares_status_t ares_queue_wait_empty(ares_channel_t *channel, int timeout_ms)
   }
 
   if (timeout_ms >= 0) {
-    tout       = ares__tvnow();
+    ares__tvnow(&tout);
     tout.sec  += (ares_int64_t)(timeout_ms / 1000);
     tout.usec += (unsigned int)(timeout_ms % 1000) * 1000;
   }
@@ -575,9 +575,10 @@ ares_status_t ares_queue_wait_empty(ares_channel_t *channel, int timeout_ms)
       ares__thread_cond_wait(channel->cond_empty, channel->lock);
     } else {
       ares_timeval_t tv_remaining;
-      ares_timeval_t tv_now = ares__tvnow();
+      ares_timeval_t tv_now;
       unsigned long  tms;
 
+      ares__tvnow(&tv_now);
       ares__timeval_remaining(&tv_remaining, &tv_now, &tout);
       tms =
         (unsigned long)((tv_remaining.sec * 1000) + (tv_remaining.usec / 1000));

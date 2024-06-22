@@ -55,10 +55,12 @@ static ares_status_t ares_send_dnsrec_int(ares_channel_t          *channel,
 {
   struct query            *query;
   size_t                   packetsz;
-  ares_timeval_t           now = ares__tvnow();
+  ares_timeval_t           now;
   ares_status_t            status;
   unsigned short           id          = generate_unique_qid(channel);
   const ares_dns_record_t *dnsrec_resp = NULL;
+
+  ares__tvnow(&now);
 
   if (ares__slist_len(channel->servers) == 0) {
     callback(arg, ARES_ENOSERVER, 0, NULL);

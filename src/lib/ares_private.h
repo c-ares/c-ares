@@ -434,7 +434,7 @@ void             ares__destroy_rand_state(ares_rand_state *state);
 void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len);
 
 unsigned short ares__generate_new_id(ares_rand_state *state);
-ares_timeval_t ares__tvnow(void);
+void           ares__tvnow(ares_timeval_t *now);
 void           ares__timeval_remaining(ares_timeval_t       *remaining,
                                        const ares_timeval_t *now,
                                        const ares_timeval_t *tout);

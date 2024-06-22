@@ -123,7 +123,7 @@ static void server_increment_failures(struct server_state *server,
   server->consec_failures++;
   ares__slist_node_reinsert(node);
 
-  next_retry_time = ares__tvnow();
+  ares__tvnow(&next_retry_time);
   timeadd(&next_retry_time, channel->server_retry_delay);
   server->next_retry_time = next_retry_time;
 
@@ -201,7 +201,7 @@ static void processfds(ares_channel_t *channel, fd_set *read_fds,
 
   ares__channel_lock(channel);
 
-  now = ares__tvnow();
+  ares__tvnow(&now);
   read_packets(channel, read_fds, read_fd, &now);
   process_timeouts(channel, &now);
   /* Write last as the other 2 operations might have triggered writes */
@@ -917,8 +917,10 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
   ares__rand_bytes(channel->rand_state, (unsigned char *)&r, sizeof(r));
   if (r % channel->server_retry_chance == 0) {
     /* Select a suitable failed server to retry. */
-    ares_timeval_t      now = ares__tvnow();
+    ares_timeval_t      now;
     ares__slist_node_t *node;
+
+    ares__tvnow(&now);
     for (node = ares__slist_node_first(channel->servers); node != NULL;
          node = ares__slist_node_next(node)) {
       struct server_state *node_val = ares__slist_node_val(node);
