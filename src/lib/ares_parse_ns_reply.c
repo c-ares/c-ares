@@ -74,7 +74,7 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
   hostent = ares_malloc(sizeof(*hostent));
   if (hostent == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   memset(hostent, 0, sizeof(*hostent));
@@ -82,7 +82,7 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
   hostent->h_addr_list = ares_malloc(sizeof(*hostent->h_addr_list));
   if (hostent->h_addr_list == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
   hostent->h_addr_list[0] = NULL;
   hostent->h_addrtype     = AF_INET;
@@ -96,14 +96,14 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
   hostent->h_name = ares_strdup(hostname);
   if (hostent->h_name == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   /* Preallocate the maximum number + 1 */
   hostent->h_aliases = ares_malloc((ancount + 1) * sizeof(*hostent->h_aliases));
   if (hostent->h_aliases == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
   memset(hostent->h_aliases, 0, (ancount + 1) * sizeof(*hostent->h_aliases));
 
@@ -114,7 +114,7 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
     if (rr == NULL) {
       /* Shouldn't be possible */
       status = ARES_EBADRESP; /* LCOV_EXCL_LINE: DefensiveCoding */
-      goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
+      goto done;              /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
     if (ares_dns_rr_get_class(rr) != ARES_CLASS_IN ||
@@ -125,7 +125,7 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
     hostname = ares_dns_rr_get_str(rr, ARES_RR_NS_NSDNAME);
     if (hostname == NULL) {
       status = ARES_EBADRESP; /* LCOV_EXCL_LINE: DefensiveCoding */
-      goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
+      goto done;              /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
     hostent->h_aliases[nscount] = ares_strdup(hostname);

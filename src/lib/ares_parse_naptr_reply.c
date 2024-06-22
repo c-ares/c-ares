@@ -64,7 +64,7 @@ int ares_parse_naptr_reply(const unsigned char *abuf, int alen_int,
     if (rr == NULL) {
       /* Shouldn't be possible */
       status = ARES_EBADRESP; /* LCOV_EXCL_LINE: DefensiveCoding */
-      goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
+      goto done;              /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
     if (ares_dns_rr_get_class(rr) != ARES_CLASS_IN ||
@@ -76,7 +76,7 @@ int ares_parse_naptr_reply(const unsigned char *abuf, int alen_int,
     naptr_curr = ares_malloc_data(ARES_DATATYPE_NAPTR_REPLY);
     if (naptr_curr == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
     /* Link in the record */
@@ -95,27 +95,27 @@ int ares_parse_naptr_reply(const unsigned char *abuf, int alen_int,
       ares_dns_rr_get_str(rr, ARES_RR_NAPTR_FLAGS));
     if (naptr_curr->flags == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
     /* XXX: Why is this unsigned char * ? */
     naptr_curr->service = (unsigned char *)ares_strdup(
       ares_dns_rr_get_str(rr, ARES_RR_NAPTR_SERVICES));
     if (naptr_curr->service == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
     /* XXX: Why is this unsigned char * ? */
     naptr_curr->regexp = (unsigned char *)ares_strdup(
       ares_dns_rr_get_str(rr, ARES_RR_NAPTR_REGEXP));
     if (naptr_curr->regexp == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
     naptr_curr->replacement =
       ares_strdup(ares_dns_rr_get_str(rr, ARES_RR_NAPTR_REPLACEMENT));
     if (naptr_curr->replacement == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 

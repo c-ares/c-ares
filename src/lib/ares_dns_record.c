@@ -293,7 +293,7 @@ ares_status_t ares_dns_record_query_set_name(ares_dns_record_t *dnsrec,
   dnsrec->qd[idx].name = ares_strdup(name);
   if (dnsrec->qd[idx].name == NULL) {
     dnsrec->qd[idx].name = orig_name; /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+    return ARES_ENOMEM;               /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   ares_free(orig_name);

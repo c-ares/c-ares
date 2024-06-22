@@ -76,13 +76,13 @@ static ares_bool_t ares_evsys_epoll_init(ares_event_thread_t *e)
   ep->epoll_fd = epoll_create1(EPOLL_CLOEXEC);
   if (ep->epoll_fd == -1) {
     ares_evsys_epoll_destroy(e); /* LCOV_EXCL_LINE: UntestablePath */
-    return ARES_FALSE; /* LCOV_EXCL_LINE: UntestablePath */
+    return ARES_FALSE;           /* LCOV_EXCL_LINE: UntestablePath */
   }
 
   e->ev_signal = ares_pipeevent_create(e);
   if (e->ev_signal == NULL) {
     ares_evsys_epoll_destroy(e); /* LCOV_EXCL_LINE: UntestablePath */
-    return ARES_FALSE; /* LCOV_EXCL_LINE: UntestablePath */
+    return ARES_FALSE;           /* LCOV_EXCL_LINE: UntestablePath */
   }
 
   return ARES_TRUE;

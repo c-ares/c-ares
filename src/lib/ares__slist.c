@@ -254,7 +254,7 @@ fail:
     ares_free(node);
   }
   return NULL;
-/* LCOV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }
 
 static void ares__slist_node_pop(ares__slist_node_t *node)

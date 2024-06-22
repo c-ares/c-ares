@@ -106,7 +106,7 @@ ares_status_t ares_parse_ptr_reply_dnsrec(const ares_dns_record_t *dnsrec,
     if (rr == NULL) {
       /* Shouldn't be possible */
       status = ARES_EBADRESP; /* LCOV_EXCL_LINE: DefensiveCoding */
-      goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
+      goto done;              /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
     if (ares_dns_rr_get_class(rr) != ARES_CLASS_IN) {
@@ -118,7 +118,7 @@ ares_status_t ares_parse_ptr_reply_dnsrec(const ares_dns_record_t *dnsrec,
       ptrname = ares_dns_rr_get_str(rr, ARES_RR_CNAME_CNAME);
       if (ptrname == NULL) {
         status = ARES_EBADRESP; /* LCOV_EXCL_LINE: DefensiveCoding */
-        goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
+        goto done;              /* LCOV_EXCL_LINE: DefensiveCoding */
       }
     }
 
@@ -146,7 +146,7 @@ ares_status_t ares_parse_ptr_reply_dnsrec(const ares_dns_record_t *dnsrec,
     hostname = ares_dns_rr_get_str(rr, ARES_RR_PTR_DNAME);
     if (hostname == NULL) {
       status = ARES_EBADRESP; /* LCOV_EXCL_LINE: DefensiveCoding */
-      goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
+      goto done;              /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
     /* Append as an alias */
@@ -169,7 +169,7 @@ ares_status_t ares_parse_ptr_reply_dnsrec(const ares_dns_record_t *dnsrec,
   hostent->h_name = ares_strdup(hostname);
   if (hostent->h_name == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
 done:

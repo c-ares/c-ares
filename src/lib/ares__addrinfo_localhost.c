@@ -208,7 +208,7 @@ ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
     case AF_INET6:
     case AF_UNSPEC:
       break;
-    default: /* LCOV_EXCL_LINE: DefensiveCoding */
+    default:                  /* LCOV_EXCL_LINE: DefensiveCoding */
       return ARES_EBADFAMILY; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
@@ -233,5 +233,5 @@ enomem:
   ares_free(ai->name);
   ai->name = NULL;
   return ARES_ENOMEM;
-/* LCOV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }

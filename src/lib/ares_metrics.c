@@ -101,20 +101,20 @@
 
 /*! Minimum timeout value. Chosen due to it being approximately RTT half-way
  *  around the world */
-#define MIN_TIMEOUT_MS         250
+#define MIN_TIMEOUT_MS 250
 
 /*! Multiplier to apply to average latency to come up with an initial timeout */
 #define AVG_TIMEOUT_MULTIPLIER 5
 
 /*! Upper timeout bounds, only used if channel->maxtimeout not set */
-#define MAX_TIMEOUT_MS         5000
+#define MAX_TIMEOUT_MS 5000
 
 /*! Minimum queries required to form an average */
-#define MIN_COUNT_FOR_AVERAGE  3
+#define MIN_COUNT_FOR_AVERAGE 3
 
-static time_t ares_metric_timestamp(ares_server_bucket_t bucket,
+static time_t ares_metric_timestamp(ares_server_bucket_t  bucket,
                                     const ares_timeval_t *now,
-                                    ares_bool_t is_previous)
+                                    ares_bool_t           is_previous)
 {
   time_t divisor = 1; /* Silence bogus MSVC warning by setting default value */
 
@@ -132,7 +132,7 @@ static time_t ares_metric_timestamp(ares_server_bucket_t bucket,
       divisor = 24 * 60 * 60;
       break;
     case ARES_METRIC_INCEPTION:
-      return is_previous?0:1;
+      return is_previous ? 0 : 1;
     case ARES_METRIC_COUNT:
       return 0; /* Invalid! */
   }
@@ -150,7 +150,7 @@ static time_t ares_metric_timestamp(ares_server_bucket_t bucket,
 void ares_metrics_record(const struct query *query, struct server_state *server,
                          ares_status_t status, const ares_dns_record_t *dnsrec)
 {
-  ares_timeval_t       now    = ares__tvnow();
+  ares_timeval_t       now = ares__tvnow();
   ares_timeval_t       tvdiff;
   unsigned int         query_ms;
   ares_dns_rcode_t     rcode;
@@ -176,8 +176,8 @@ void ares_metrics_record(const struct query *query, struct server_state *server,
   }
 
   /* Place in each bucket */
-  for (i=0; i<ARES_METRIC_COUNT; i++) {
-    time_t ts      = ares_metric_timestamp(i, &now, ARES_FALSE);
+  for (i = 0; i < ARES_METRIC_COUNT; i++) {
+    time_t ts = ares_metric_timestamp(i, &now, ARES_FALSE);
 
     /* Copy metrics to prev and clear */
     if (ts != server->metrics[i].ts) {
@@ -208,12 +208,12 @@ void ares_metrics_record(const struct query *query, struct server_state *server,
 size_t ares_metrics_server_timeout(const struct server_state *server,
                                    const ares_timeval_t      *now)
 {
-  const ares_channel_t *channel    = server->channel;
+  const ares_channel_t *channel = server->channel;
   ares_server_bucket_t  i;
   size_t                timeout_ms = 0;
 
 
-  for (i=0; i<ARES_METRIC_COUNT; i++) {
+  for (i = 0; i < ARES_METRIC_COUNT; i++) {
     time_t ts = ares_metric_timestamp(i, now, ARES_FALSE);
 
     /* This ts has been invalidated, see if we should use the previous
@@ -227,10 +227,12 @@ size_t ares_metrics_server_timeout(const struct server_state *server,
         continue;
       }
       /* Calculate average time for previous bucket */
-      timeout_ms = (size_t)(server->metrics[i].prev_total_ms / server->metrics[i].prev_total_count);
+      timeout_ms = (size_t)(server->metrics[i].prev_total_ms /
+                            server->metrics[i].prev_total_count);
     } else {
       /* Calculate average time for current bucket*/
-      timeout_ms = (size_t)(server->metrics[i].total_ms / server->metrics[i].total_count);
+      timeout_ms =
+        (size_t)(server->metrics[i].total_ms / server->metrics[i].total_count);
     }
 
     /* Multiply average by constant to get timeout value */

@@ -132,8 +132,9 @@ static void next_lookup(struct addr_query *aquery)
       case 'b':
         name = ares_dns_addr_to_ptr(&aquery->addr);
         if (name == NULL) {
-          end_aquery(aquery, ARES_ENOMEM, NULL); /* LCOV_EXCL_LINE: OutOfMemory */
-          return; /* LCOV_EXCL_LINE: OutOfMemory */
+          end_aquery(aquery, ARES_ENOMEM,
+                     NULL); /* LCOV_EXCL_LINE: OutOfMemory */
+          return;           /* LCOV_EXCL_LINE: OutOfMemory */
         }
         aquery->remaining_lookups = p + 1;
         ares_query_dnsrec(aquery->channel, name, ARES_CLASS_IN,

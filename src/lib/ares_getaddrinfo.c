@@ -275,7 +275,7 @@ static ares_bool_t fake_addrinfo(const char *name, unsigned short port,
         status = ares_append_ai_node(AF_INET, port, 0, &addr4, &ai->nodes);
         if (status != ARES_SUCCESS) {
           callback(arg, (int)status, 0, NULL); /* LCOV_EXCL_LINE: OutOfMemory */
-          return ARES_TRUE; /* LCOV_EXCL_LINE: OutOfMemory */
+          return ARES_TRUE;                    /* LCOV_EXCL_LINE: OutOfMemory */
         }
       }
     }
@@ -289,7 +289,7 @@ static ares_bool_t fake_addrinfo(const char *name, unsigned short port,
       status = ares_append_ai_node(AF_INET6, port, 0, &addr6, &ai->nodes);
       if (status != ARES_SUCCESS) {
         callback(arg, (int)status, 0, NULL); /* LCOV_EXCL_LINE: OutOfMemory */
-        return ARES_TRUE; /* LCOV_EXCL_LINE: OutOfMemory */
+        return ARES_TRUE;                    /* LCOV_EXCL_LINE: OutOfMemory */
       }
     }
   }

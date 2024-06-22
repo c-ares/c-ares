@@ -77,7 +77,6 @@ static void ai_callback(void *arg, int status, int timeouts,
   ares_freeaddrinfo(result);
 }
 
-
 static volatile ares_bool_t is_running = ARES_TRUE;
 
 
@@ -96,7 +95,7 @@ static BOOL WINAPI ctrlc_handler(_In_ DWORD dwCtrlType)
 #else
 static void ctrlc_handler(int sig)
 {
-  switch(sig) {
+  switch (sig) {
     case SIGINT:
       is_running = ARES_FALSE;
       break;
@@ -132,10 +131,10 @@ int main(int argc, char *argv[])
   }
 
   memset(&options, 0, sizeof(options));
-  optmask               |= ARES_OPT_EVENT_THREAD;
-  options.evsys          = ARES_EVSYS_DEFAULT;
-  optmask               |= ARES_OPT_QUERY_CACHE;
-  options.qcache_max_ttl = 0;
+  optmask                |= ARES_OPT_EVENT_THREAD;
+  options.evsys           = ARES_EVSYS_DEFAULT;
+  optmask                |= ARES_OPT_QUERY_CACHE;
+  options.qcache_max_ttl  = 0;
 
   status = (ares_status_t)ares_init_options(&channel, &options, optmask);
   if (status != ARES_SUCCESS) {
@@ -153,7 +152,7 @@ int main(int argc, char *argv[])
 
   for (count = 1; is_running == ARES_TRUE; count++) {
     struct ares_addrinfo_hints hints;
-    char *servers = ares_get_servers_csv(channel);
+    char                      *servers = ares_get_servers_csv(channel);
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;

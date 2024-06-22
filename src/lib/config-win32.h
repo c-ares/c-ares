@@ -212,7 +212,7 @@
 #  undef SEND_TYPE_ARG1
 #  define SEND_TYPE_ARG1 int
 #  undef RECVFROM_TYPE_ARG1
-#  define RECVFROM_TYPE_ARG1 int
+#  define RECVFROM_TYPE_ARG1       int
 #  define NS_INADDRSZ              4
 #  define HAVE_ARPA_NAMESER_H      1
 #  define HAVE_ARPA_INET_H         1
@@ -356,7 +356,7 @@
 #endif
 
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600) && \
-   !defined(__WATCOMC__) && !defined(WATT32)
+  !defined(__WATCOMC__) && !defined(WATT32)
 /* Define if you have if_nametoindex() */
 #  define HAVE_IF_NAMETOINDEX 1
 /* Define if you have if_indextoname() */

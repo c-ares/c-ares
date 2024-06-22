@@ -80,12 +80,13 @@ static void dnsinfo_destroy(dnsinfo_t *dnsinfo)
 
 static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
 {
-  dnsinfo_t    *dnsinfo       = NULL;
-  ares_status_t status        = ARES_SUCCESS;
+  dnsinfo_t    *dnsinfo = NULL;
+  ares_status_t status  = ARES_SUCCESS;
   size_t        i;
-  const char   *searchlibs[]  = {
+  const char   *searchlibs[] = {
     "/usr/lib/libSystem.dylib",
-    "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration",
+    "/System/Library/Frameworks/SystemConfiguration.framework/"
+      "SystemConfiguration",
     NULL
   };
 
@@ -102,7 +103,7 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
     goto done;
   }
 
-  for (i=0; searchlibs[i] != NULL; i++) {
+  for (i = 0; searchlibs[i] != NULL; i++) {
     dnsinfo->handle = dlopen(searchlibs[i], RTLD_LAZY /* | RTLD_NOLOAD */);
     if (dnsinfo->handle == NULL) {
       /* Fail, loop */
@@ -162,7 +163,7 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
   unsigned short port   = 0;
   ares_status_t  status = ARES_SUCCESS;
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080 /* MacOS 10.8 */
+#  if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080 /* MacOS 10.8 */
   /* XXX: resolver->domain is for domain-specific servers.  When we implement
    *      this support, we'll want to use this.  But for now, we're going to
    *      skip any servers which set this since we can't properly route.
@@ -172,9 +173,9 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
   if (resolver->domain != NULL) {
     return ARES_SUCCESS;
   }
-#endif
+#  endif
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080 /* MacOS 10.8 */
+#  if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080 /* MacOS 10.8 */
   /* Check to see if DNS server should be used, base this on if the server is
    * reachable or can be reachable automatically if we send traffic that
    * direction. */
@@ -183,7 +184,7 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
          kSCNetworkReachabilityFlagsConnectionOnTraffic))) {
     return ARES_SUCCESS;
   }
-#endif
+#  endif
 
   /* NOTE: it doesn't look like resolver->flags is relevant */
 
@@ -296,8 +297,8 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
 
     if_name = ares__if_indextoname(resolver->if_index, if_name_str,
                                    sizeof(if_name_str));
-    status = ares__sconfig_append(&sysconfig->sconfig, &addr, addrport,
-                                  addrport, if_name);
+    status  = ares__sconfig_append(&sysconfig->sconfig, &addr, addrport,
+                                   addrport, if_name);
     if (status != ARES_SUCCESS) {
       return status;
     }

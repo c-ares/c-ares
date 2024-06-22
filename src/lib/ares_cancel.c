@@ -58,7 +58,7 @@ void ares_cancel(ares_channel_t *channel)
      * can't report to caller */
     if (channel->all_queries == NULL) {
       channel->all_queries = list_copy; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;                        /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
     node = ares__llist_node_first(list_copy);

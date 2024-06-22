@@ -114,7 +114,7 @@ fail:
     ares_free(htable);
   }
   return NULL;
-/* LCOV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }
 
 ares_bool_t ares__htable_vpvp_insert(ares__htable_vpvp_t *htable, void *key,

@@ -229,7 +229,7 @@ ares_rand_state *ares__init_rand_state(void)
 
   if (!ares__init_rand_engine(state)) {
     ares_free(state); /* LCOV_EXCL_LINE: UntestablePath */
-    return NULL; /* LCOV_EXCL_LINE: UntestablePath */
+    return NULL;      /* LCOV_EXCL_LINE: UntestablePath */
   }
 
   return state;
@@ -250,7 +250,7 @@ static void ares__clear_rand_state(ares_rand_state *state)
       break;
     case ARES_RAND_RC4:
       break;
-    /* LCOV_EXCL_STOP */
+      /* LCOV_EXCL_STOP */
   }
 }
 
@@ -313,7 +313,7 @@ static void ares__rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
         break;
 #endif
 
-      /* LCOV_EXCL_START: FallbackCode */
+        /* LCOV_EXCL_START: FallbackCode */
 
       case ARES_RAND_FILE:
         while (1) {
@@ -334,8 +334,7 @@ static void ares__rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
         ares_rc4_prng(&state->state.rc4, buf, len);
         return;
 
-      /* LCOV_EXCL_STOP */
-
+        /* LCOV_EXCL_STOP */
     }
 
     /* If we didn't return before we got here, that means we had a critical rand

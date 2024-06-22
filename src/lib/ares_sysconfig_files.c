@@ -263,7 +263,7 @@ ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
 
     if (!sortlist_append(sortlist, nsort, &pat)) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 

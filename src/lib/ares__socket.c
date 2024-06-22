@@ -305,7 +305,7 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
         setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (void *)&opt, sizeof(opt)) ==
           -1) {
       ares__close_socket(channel, s); /* LCOV_EXCL_LINE: UntestablePath */
-      return ARES_ECONNREFUSED; /* LCOV_EXCL_LINE: UntestablePath */
+      return ARES_ECONNREFUSED;       /* LCOV_EXCL_LINE: UntestablePath */
     }
   }
 #endif
@@ -339,7 +339,7 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
   conn = ares_malloc(sizeof(*conn));
   if (conn == NULL) {
     ares__close_socket(channel, s); /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+    return ARES_ENOMEM;             /* LCOV_EXCL_LINE: OutOfMemory */
   }
   memset(conn, 0, sizeof(*conn));
   conn->fd              = s;

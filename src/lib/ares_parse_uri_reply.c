@@ -65,7 +65,7 @@ int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
     if (rr == NULL) {
       /* Shouldn't be possible */
       status = ARES_EBADRESP; /* LCOV_EXCL_LINE: DefensiveCoding */
-      goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
+      goto done;              /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
     if (ares_dns_rr_get_class(rr) != ARES_CLASS_IN ||
@@ -77,7 +77,7 @@ int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
     uri_curr = ares_malloc_data(ARES_DATATYPE_URI_REPLY);
     if (uri_curr == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
     /* Link in the record */

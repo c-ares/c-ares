@@ -195,7 +195,7 @@ enomem:
   ares_free_hostent(*host);
   *host = NULL;
   return ARES_ENOMEM;
-/* LCOV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }
 
 ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,

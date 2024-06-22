@@ -197,7 +197,7 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     hostname = ares_malloc(len);
     if (!hostname) {
       rc = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto error; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto error;       /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
     do {
@@ -210,7 +210,7 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
         p     = ares_realloc(hostname, len);
         if (!p) {
           rc = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-          goto error; /* LCOV_EXCL_LINE: OutOfMemory */
+          goto error;       /* LCOV_EXCL_LINE: OutOfMemory */
         }
         hostname = p;
         continue;
@@ -229,12 +229,12 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
       channel->domains = ares_malloc(sizeof(char *));
       if (!channel->domains) {
         rc = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-        goto error; /* LCOV_EXCL_LINE: OutOfMemory */
+        goto error;       /* LCOV_EXCL_LINE: OutOfMemory */
       }
       channel->domains[0] = ares_strdup(dot + 1);
       if (!channel->domains[0]) {
         rc = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-        goto error; /* LCOV_EXCL_LINE: OutOfMemory */
+        goto error;       /* LCOV_EXCL_LINE: OutOfMemory */
       }
       channel->ndomains = 1;
     }

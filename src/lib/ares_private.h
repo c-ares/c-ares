@@ -189,7 +189,8 @@ typedef struct {
   ares_uint64_t total_count;    /*!< Number of queries for bucket */
 
   time_t        prev_ts;        /*!< Previous period bucket timestamp */
-  ares_uint64_t prev_total_ms;  /*!< Previous period bucket cumulative query time */
+  ares_uint64_t
+    prev_total_ms; /*!< Previous period bucket cumulative query time */
   ares_uint64_t prev_total_count; /*!< Previous period bucket query count */
 } ares_server_metrics_t;
 
@@ -229,7 +230,7 @@ struct server_state {
 struct query {
   /* Query ID from qbuf, for faster lookup, and current timeout */
   unsigned short            qid; /* host byte order */
-  ares_timeval_t            ts; /*!< Timestamp query was sent */
+  ares_timeval_t            ts;  /*!< Timestamp query was sent */
   ares_timeval_t            timeout;
   ares_channel_t           *channel;
 
@@ -256,8 +257,8 @@ struct query {
   ares_bool_t   using_tcp;
   ares_status_t error_status;
   size_t        timeouts; /* number of timeouts we saw for this request */
-  ares_bool_t   no_retries; /* do not perform any additional retries, this is set
-                             * when a query is to be canceled */
+  ares_bool_t no_retries; /* do not perform any additional retries, this is set
+                           * when a query is to be canceled */
 };
 
 struct apattern {
@@ -437,21 +438,20 @@ ares_timeval_t ares__tvnow(void);
 void           ares__timeval_remaining(ares_timeval_t       *remaining,
                                        const ares_timeval_t *now,
                                        const ares_timeval_t *tout);
-void           ares__timeval_diff(ares_timeval_t       *tvdiff,
-                                  const ares_timeval_t *tvstart,
-                                  const ares_timeval_t *tvstop);
-ares_status_t  ares__expand_name_validated(const unsigned char *encoded,
-                                           const unsigned char *abuf,
-                                           size_t alen, char **s, size_t *enclen,
-                                           ares_bool_t is_hostname);
-ares_status_t  ares_expand_string_ex(const unsigned char *encoded,
-                                     const unsigned char *abuf, size_t alen,
-                                     unsigned char **s, size_t *enclen);
-ares_status_t  ares__init_servers_state(ares_channel_t *channel);
-ares_status_t  ares__init_by_options(ares_channel_t            *channel,
-                                     const struct ares_options *options,
-                                     int                        optmask);
-ares_status_t  ares__init_by_sysconfig(ares_channel_t *channel);
+void ares__timeval_diff(ares_timeval_t *tvdiff, const ares_timeval_t *tvstart,
+                        const ares_timeval_t *tvstop);
+ares_status_t ares__expand_name_validated(const unsigned char *encoded,
+                                          const unsigned char *abuf,
+                                          size_t alen, char **s, size_t *enclen,
+                                          ares_bool_t is_hostname);
+ares_status_t ares_expand_string_ex(const unsigned char *encoded,
+                                    const unsigned char *abuf, size_t alen,
+                                    unsigned char **s, size_t *enclen);
+ares_status_t ares__init_servers_state(ares_channel_t *channel);
+ares_status_t ares__init_by_options(ares_channel_t            *channel,
+                                    const struct ares_options *options,
+                                    int                        optmask);
+ares_status_t ares__init_by_sysconfig(ares_channel_t *channel);
 
 typedef struct {
   ares__llist_t   *sconfig;
@@ -683,8 +683,8 @@ ares_status_t ares_qcache_fetch(ares_channel_t           *channel,
 
 void ares_metrics_record(const struct query *query, struct server_state *server,
                          ares_status_t status, const ares_dns_record_t *dnsrec);
-size_t ares_metrics_server_timeout(const struct server_state *server,
-                                   const ares_timeval_t      *now);
+size_t        ares_metrics_server_timeout(const struct server_state *server,
+                                          const ares_timeval_t      *now);
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel);
 void          ares__channel_threading_destroy(ares_channel_t *channel);

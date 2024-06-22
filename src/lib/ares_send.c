@@ -78,7 +78,7 @@ static ares_status_t ares_send_dnsrec_int(ares_channel_t          *channel,
   query = ares_malloc(sizeof(struct query));
   if (!query) {
     callback(arg, ARES_ENOMEM, 0, NULL); /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+    return ARES_ENOMEM;                  /* LCOV_EXCL_LINE: OutOfMemory */
   }
   memset(query, 0, sizeof(*query));
 

@@ -464,8 +464,8 @@ ares_status_t ares__init_by_options(ares_channel_t            *channel,
     /* qcache_max_ttl is unsigned unlike the others */
     channel->qcache_max_ttl = options->qcache_max_ttl;
   } else {
-    optmask                |= ARES_OPT_QUERY_CACHE;
-    channel->qcache_max_ttl = 3600;
+    optmask                 |= ARES_OPT_QUERY_CACHE;
+    channel->qcache_max_ttl  = 3600;
   }
 
   /* Initialize the ipv4 servers if provided */

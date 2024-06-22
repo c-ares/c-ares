@@ -249,7 +249,7 @@ static ares_status_t ares__hostent_localhost(const char *name, int family,
   ai = ares_malloc_zero(sizeof(*ai));
   if (ai == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   status = ares__addrinfo_localhost(name, 0, &hints, ai);

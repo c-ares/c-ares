@@ -397,7 +397,7 @@ ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
     *sconfig = ares__llist_create(ares_free);
     if (*sconfig == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto fail;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 
@@ -423,7 +423,7 @@ ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
 
   if (ares__llist_insert_last(*sconfig, s) == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto fail;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   return ARES_SUCCESS;
@@ -613,24 +613,24 @@ static ares_status_t ares__server_create(ares_channel_t       *channel,
   server->tcp_parser = ares__buf_create();
   if (server->tcp_parser == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   server->tcp_send = ares__buf_create();
   if (server->tcp_send == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   server->connections = ares__llist_create(NULL);
   if (server->connections == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   if (ares__slist_insert(channel->servers, server) == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   status = ARES_SUCCESS;
@@ -823,7 +823,7 @@ static ares_status_t
 
     if (ares__llist_insert_last(s, sconfig) == NULL) {
       ares_free(sconfig); /* LCOV_EXCL_LINE: OutOfMemory */
-      goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto fail;          /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 
@@ -834,7 +834,7 @@ static ares_status_t
 fail:
   ares__llist_destroy(s);
   return ARES_ENOMEM;
-/* LCOV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }
 
 static ares_status_t ares_addr_port_node_to_server_config_llist(
@@ -877,7 +877,7 @@ static ares_status_t ares_addr_port_node_to_server_config_llist(
 
     if (ares__llist_insert_last(s, sconfig) == NULL) {
       ares_free(sconfig); /* LCOV_EXCL_LINE: OutOfMemory */
-      goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto fail;          /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 
@@ -888,7 +888,7 @@ static ares_status_t ares_addr_port_node_to_server_config_llist(
 fail:
   ares__llist_destroy(s);
   return ARES_ENOMEM;
-/* LCOV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }
 
 ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
@@ -929,7 +929,7 @@ ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
 fail:
   ares__llist_destroy(s);
   return ARES_ENOMEM;
-/* LCOV_EXCL_STOP */
+  /* LCOV_EXCL_STOP */
 }
 
 /* Write out the details of a server to a buffer */

@@ -69,13 +69,13 @@ static ares_bool_t   same_questions(const ares_dns_record_t *qrec,
                                     const ares_dns_record_t *arec);
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
-static void          end_query(ares_channel_t *channel, struct server_state *server,
-                               struct query *query, ares_status_t status,
-                               const ares_dns_record_t *dnsrec);
+static void end_query(ares_channel_t *channel, struct server_state *server,
+                      struct query *query, ares_status_t status,
+                      const ares_dns_record_t *dnsrec);
 
 /* Invoke the server state callback after a success or failure */
-static void          invoke_server_state_cb(const struct server_state *server,
-                                            ares_bool_t success, int flags)
+static void invoke_server_state_cb(const struct server_state *server,
+                                   ares_bool_t success, int flags)
 {
   const ares_channel_t *channel = server->channel;
   ares__buf_t          *buf;
@@ -94,7 +94,7 @@ static void          invoke_server_state_cb(const struct server_state *server,
   status = ares_get_server_addr(server, buf);
   if (status != ARES_SUCCESS) {
     ares__buf_destroy(buf); /* LCOV_EXCL_LINE: OutOfMemory */
-    return; /* LCOV_EXCL_LINE: OutOfMemory */
+    return;                 /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   server_string = ares__buf_finish_str(buf, NULL);
@@ -945,9 +945,9 @@ static ares_status_t ares__append_tcpbuf(struct server_state *server,
   return ares__buf_append(server->tcp_send, query->qbuf, query->qlen);
 }
 
-static size_t ares__calc_query_timeout(const struct query *query,
+static size_t ares__calc_query_timeout(const struct query        *query,
                                        const struct server_state *server,
-                                       const ares_timeval_t *now)
+                                       const ares_timeval_t      *now)
 {
   const ares_channel_t *channel  = query->channel;
   size_t                timeout  = ares_metrics_server_timeout(server, now);
@@ -1252,7 +1252,6 @@ static void ares_detach_query(struct query *query)
   query->node_queries_to_conn    = NULL;
   query->node_all_queries        = NULL;
 }
-
 
 static void end_query(ares_channel_t *channel, struct server_state *server,
                       struct query *query, ares_status_t status,
