@@ -24,6 +24,12 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* Uses an anonymous union */
+#if defined(__GNUC__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wc11-extensions"
+#endif
+
 #include "ares_setup.h"
 #include "ares.h"
 #include "ares_private.h"
@@ -255,10 +261,10 @@ static ares_bool_t ares_evsys_win32_init(ares_event_thread_t *e)
   }
 
   /* Load Internal symbols not typically accessible */
-  ew->NtDeviceIoControlFile = (NtDeviceIoControlFile_t)(void *)GetProcAddress(
+  ew->NtDeviceIoControlFile = (NtDeviceIoControlFile_t)GetProcAddress(
     ntdll, "NtDeviceIoControlFile");
   ew->NtCancelIoFileEx =
-    (NtCancelIoFileEx_t)(void *)GetProcAddress(ntdll, "NtCancelIoFileEx");
+    (NtCancelIoFileEx_t)GetProcAddress(ntdll, "NtCancelIoFileEx");
 
   if (ew->NtCancelIoFileEx == NULL || ew->NtDeviceIoControlFile == NULL) {
     goto fail;
@@ -365,8 +371,6 @@ static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
     IOCTL_AFD_POLL, &ed->afd_poll_info, sizeof(ed->afd_poll_info),
     &ed->afd_poll_info, sizeof(ed->afd_poll_info));
   if (status != STATUS_SUCCESS && status != STATUS_PENDING) {
-    printf("%s(): failed to perform IOCTL_AFD_POLL operation\n", __FUNCTION__);
-    fflush(stdout);
     return ARES_FALSE;
   }
 
@@ -441,8 +445,6 @@ static ares_bool_t ares_evsys_win32_event_add(ares_event_t *event)
 
   ed->base_socket = ares_evsys_win32_basesocket(ed->socket);
   if (ed->base_socket == ARES_SOCKET_BAD) {
-    fprintf(stderr, "%s(): could not determine base socket for fd %d\n",
-            __FUNCTION__, (int)event->fd);
     ares_evsys_win32_eventdata_destroy(ed);
     return ARES_FALSE;
   }
@@ -451,9 +453,6 @@ static ares_bool_t ares_evsys_win32_event_add(ares_event_t *event)
    * socket handle */
   if (WSADuplicateSocketW(ed->base_socket, GetCurrentProcessId(),
                           &protocol_info) != 0) {
-    fprintf(stderr,
-            "%s(): could not retrieve protocol info for creating peer socket\n",
-            __FUNCTION__);
     ares_evsys_win32_eventdata_destroy(ed);
     return ARES_FALSE;
   }
@@ -462,7 +461,6 @@ static ares_bool_t ares_evsys_win32_event_add(ares_event_t *event)
     WSASocketW(protocol_info.iAddressFamily, protocol_info.iSocketType,
                protocol_info.iProtocol, &protocol_info, 0, WSA_FLAG_OVERLAPPED);
   if (ed->peer_socket == ARES_SOCKET_BAD) {
-    fprintf(stderr, "%s(): could not create peer socket\n", __FUNCTION__);
     ares_evsys_win32_eventdata_destroy(ed);
     return ARES_FALSE;
   }
@@ -471,7 +469,6 @@ static ares_bool_t ares_evsys_win32_event_add(ares_event_t *event)
 
   if (CreateIoCompletionPort((HANDLE)ed->peer_socket, ew->iocp_handle,
                              (ULONG_PTR)ed, 0) == NULL) {
-    fprintf(stderr, "%s(): failed to bind peer socket to IOCP\n", __FUNCTION__);
     ares_evsys_win32_eventdata_destroy(ed);
     return ARES_FALSE;
   }
@@ -598,4 +595,8 @@ const ares_event_sys_t ares_evsys_win32 = { "win32",
                                             ares_evsys_win32_event_del,
                                             ares_evsys_win32_event_mod,
                                             ares_evsys_win32_wait };
+#endif
+
+#if defined(__GNUC__)
+#  pragma GCC diagnostic pop
 #endif
