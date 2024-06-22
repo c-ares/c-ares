@@ -173,12 +173,12 @@
 #  define CARES_HAVE_WINDOWS_H          1
 #  define CARES_HAVE_SYS_TYPES_H        1
 
-#  if defined(USE_WINSOCK)
-#    define CARES_HAVE_WS2TCPIP_H       1
-#    define CARES_HAVE_WINSOCK2_H       1
-#  elif defined(WATT32)
+#  if defined(WATT32)
 #    define CARES_HAVE_SYS_SOCKET_H     1
 #    define CARES_HAVE_SYS_SELECT_H     1
+#  else
+#    define CARES_HAVE_WS2TCPIP_H       1
+#    define CARES_HAVE_WINSOCK2_H       1
 #  endif
 
 #elif defined(__GNUC__)
@@ -192,36 +192,6 @@
    Error Compilation_aborted_Unknown_non_configure_build_target
 #endif
 
-#ifdef CARES_HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif
-
-#ifdef CARES_HAVE_SYS_SOCKET_H
-#  include <sys/socket.h>
-#endif
-
-#ifdef CARES_HAVE_SYS_SELECT_H
-#  include <sys/select.h>
-#endif
-
-#ifdef CARES_HAVE_WINSOCK2_H
-#  include <winsock2.h>
-#endif
-
-#ifdef CARES_HAVE_WS2TCPIP_H
-#  include <ws2tcpip.h>
-#endif
-
-#ifdef CARES_HAVE_WINDOWS_H
-#  include <windows.h>
-#endif
-
-/* Data type definition of ares_socklen_t. */
-
-#ifdef CARES_TYPEOF_ARES_SOCKLEN_T
-  typedef CARES_TYPEOF_ARES_SOCKLEN_T ares_socklen_t;
-#endif
-
 /* Data type definition of ares_ssize_t. */
 #ifdef _WIN32
 #  ifdef _WIN64
@@ -232,7 +202,5 @@
 #else
 #  define CARES_TYPEOF_ARES_SSIZE_T ssize_t
 #endif
-
-typedef CARES_TYPEOF_ARES_SSIZE_T ares_ssize_t;
 
 #endif /* __CARES_BUILD_H */

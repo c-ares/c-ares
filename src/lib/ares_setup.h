@@ -85,12 +85,6 @@
 
 #include <ares_build.h>
 
-/*
- * Compile time sanity checks must also be done when building the library.
- */
-
-#include <ares_rules.h>
-
 /* ================================================================= */
 /* No system header file shall be included in this file before this  */
 /* point. The only allowed ones are those included from ares_build.h */
