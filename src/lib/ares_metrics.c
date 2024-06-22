@@ -116,7 +116,7 @@ static time_t ares_metric_timestamp(ares_server_bucket_t bucket,
                                     const ares_timeval_t *now,
                                     ares_bool_t is_previous)
 {
-  time_t divisor;
+  time_t divisor = 1; /* Silence bogus MSVC warning by setting default value */
 
   switch (bucket) {
     case ARES_METRIC_1MINUTE:
