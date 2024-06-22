@@ -732,6 +732,9 @@ fi
 if test "x$ac_cv_header_sys_socket_h" = "xyes" ; then
   CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_SOCKET_H],[1])
 fi
+if test "x$ac_cv_header_sys_select_h" = "xyes" ; then
+  CARES_DEFINE_UNQUOTED([CARES_HAVE_SYS_SELECT_H],[1])
+fi
 if test "x$ac_cv_header_ws2tcpip_h" = "xyes" ; then
   CARES_DEFINE_UNQUOTED([CARES_HAVE_WS2TCPIP_H],[1])
 fi
