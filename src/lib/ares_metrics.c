@@ -29,7 +29,7 @@
  * ====================
  *
  * With very little effort we should be able to determine fairly proper timeouts
- * we can use based on prior query history.  We can also track in order to
+ * we can use based on prior query history.  We track in order to be able to
  * auto-scale when network conditions change (e.g. maybe there is a provider
  * failover and timings change due to that).  Apple appears to do this within
  * their system resolver in MacOS.  Obviously we should have a minimum, maximum,
