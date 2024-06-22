@@ -551,9 +551,14 @@ static ares_status_t config_change_check(ares__htable_strvp_t *filestat,
                                          const char           *resolvconf_path)
 {
   size_t      i;
-  const char *configfiles[] = { resolvconf_path, "/etc/nsswitch.conf",
-                                "/etc/netsvc.conf", "/etc/svc.conf", NULL };
+  const char *configfiles[5];
   ares_bool_t changed       = ARES_FALSE;
+
+  configfiles[0] = resolvconf_path;
+  configfiles[1] = "/etc/nsswitch.conf";
+  configfiles[2] = "/etc/netsvc.conf";
+  configfiles[3] = "/etc/svc.conf";
+  configfiles[4] = NULL;
 
   for (i = 0; configfiles[i] != NULL; i++) {
     fileinfo_t *fi = ares__htable_strvp_get_direct(filestat, configfiles[i]);
