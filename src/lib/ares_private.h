@@ -182,11 +182,15 @@ typedef enum {
 
 /*! Data metrics collected for each bucket */
 typedef struct {
-  time_t        ts;
-  unsigned int  latency_min_ms;
-  unsigned int  latency_max_ms;
-  ares_uint64_t total_ms;
-  ares_uint64_t total_count;
+  time_t        ts;             /*!< Timestamp divided by bucket divisor */
+  unsigned int  latency_min_ms; /*!< Minimum latency for queries */
+  unsigned int  latency_max_ms; /*!< Maximum latency for queries */
+  ares_uint64_t total_ms;       /*!< Cumulative query time for bucket */
+  ares_uint64_t total_count;    /*!< Number of queries for bucket */
+
+  time_t        prev_ts;        /*!< Previous period bucket timestamp */
+  ares_uint64_t prev_total_ms;  /*!< Previous period bucket cumulative query time */
+  ares_uint64_t prev_total_count; /*!< Previous period bucket query count */
 } ares_server_metrics_t;
 
 struct server_state {

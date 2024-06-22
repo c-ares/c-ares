@@ -46,12 +46,13 @@
  *   will be quicker than if it needs to recurse so we need to account for this)
  *
  * Per-server buckets for tracking latency over time (these are ephemeral
- * meaning they don't persist once a channel is destroyed).  There will be some
- * skew to prevent most buckets from resetting at the same time:
- * - 1 minute (using 1:01)
- * - 15 minutes (using 15:30)
- * - 1 hr (using 59:00)
- * - 1 day (using 23:58:57)
+ * meaning they don't persist once a channel is destroyed).  We record both the
+ * current timespan for the bucket and the immediate preceding timespan in case
+ * of roll-overs we can still maintain recent metrics for calculations:
+ * - 1 minute
+ * - 15 minutes
+ * - 1 hr
+ * - 1 day
  * - since inception
  *
  * Each bucket would contain:
@@ -106,27 +107,35 @@
 #define MAX_TIMEOUT_MS         5000
 
 static time_t ares_metric_timestamp(ares_server_bucket_t bucket,
-                                    const ares_timeval_t *now)
+                                    const ares_timeval_t *now,
+                                    ares_bool_t is_previous)
 {
   time_t divisor;
 
   switch (bucket) {
     case ARES_METRIC_1MINUTE:
-      divisor = 61; /* 1:01 */
+      divisor = 60;
       break;
     case ARES_METRIC_15MINUTES:
-      divisor = (15 * 60) + 30; /* 15:30 */
+      divisor = 15 * 60;
       break;
     case ARES_METRIC_1HOUR:
-      divisor = 59 * 60; /* 59:00 */
+      divisor = 60 * 60;
       break;
     case ARES_METRIC_1DAY:
-      divisor = (23 * 60 * 60) + (58 * 60) + 57; /* 23:58:57 */
+      divisor = 24 * 60 * 60;
       break;
     case ARES_METRIC_INCEPTION:
-      return 1;
+      return is_previous?0:1;
     case ARES_METRIC_COUNT:
       return 0; /* Invalid! */
+  }
+
+  if (is_previous) {
+    if (divisor >= now->sec) {
+      return 0;
+    }
+    return (time_t)((now->sec - divisor) / divisor);
   }
 
   return (time_t)(now->sec / divisor);
@@ -162,10 +171,18 @@ void ares_metrics_record(const struct query *query, struct server_state *server,
 
   /* Place in each bucket */
   for (i=0; i<ARES_METRIC_COUNT; i++) {
-    time_t ts = ares_metric_timestamp(i, &now);
+    time_t ts      = ares_metric_timestamp(i, &now, ARES_FALSE);
+
+    /* Copy metrics to prev and clear */
     if (ts != server->metrics[i].ts) {
-      memset(&server->metrics[i], 0, sizeof(server->metrics[i]));
-      server->metrics[i].ts = ts;
+      server->metrics[i].prev_ts          = server->metrics[i].ts;
+      server->metrics[i].prev_total_ms    = server->metrics[i].total_ms;
+      server->metrics[i].prev_total_count = server->metrics[i].total_count;
+      server->metrics[i].ts               = ts;
+      server->metrics[i].latency_min_ms   = 0;
+      server->metrics[i].latency_max_ms   = 0;
+      server->metrics[i].total_ms         = 0;
+      server->metrics[i].total_count      = 0;
     }
 
     if (server->metrics[i].latency_min_ms == 0 ||
@@ -191,16 +208,23 @@ size_t ares_metrics_server_timeout(const struct server_state *server,
   ares_server_bucket_t  i;
 
   for (i=0; i<ARES_METRIC_COUNT; i++) {
-    time_t ts = ares_metric_timestamp(i, now);
+    time_t ts = ares_metric_timestamp(i, now, ARES_FALSE);
     size_t timeout_ms;
 
-    /* This ts has been invalidated, go to the next */
+    /* This ts has been invalidated, see if we should use the previous
+     * time period */
     if (ts != server->metrics[i].ts || server->metrics[i].total_count == 0) {
-      continue;
+      time_t prev_ts = ares_metric_timestamp(i, now, ARES_TRUE);
+      if (prev_ts != server->metrics[i].prev_ts ||
+          server->metrics[i].prev_total_count == 0) {
+        continue;
+      }
+      /* Calculate average time for previous bucket */
+      timeout_ms = (size_t)(server->metrics[i].prev_total_ms / server->metrics[i].prev_total_count);
+    } else {
+      /* Calculate average time for current bucket*/
+      timeout_ms = (size_t)(server->metrics[i].total_ms / server->metrics[i].total_count);
     }
-
-    /* Calculate average time */
-    timeout_ms = (size_t)(server->metrics[i].total_ms / server->metrics[i].total_count);
 
     /* Multiply average by constant to get timeout value */
     timeout_ms *= AVG_TIMEOUT_MULTIPLIER;
