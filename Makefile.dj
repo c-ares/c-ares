@@ -42,7 +42,6 @@ CFLAGS = -g -O2 -I./include -I./src/lib \
          -Wno-coverage-mismatch \
          -Wold-style-definition \
          -Wpacked \
-         -Wpedantic \
          -Wpointer-arith \
          -Wshadow \
          -Wsign-conversion \

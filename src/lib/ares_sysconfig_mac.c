@@ -372,5 +372,9 @@ done:
 }
 #pragma GCC diagnostic pop
 
+#else
+
+/* Prevent compiler warnings due to empty unit */
+static int ares_sysconfig_mac = 0;
 
 #endif
