@@ -199,17 +199,16 @@ void ares_metrics_record(const struct query *query, struct server_state *server,
   }
 }
 
-
-
 size_t ares_metrics_server_timeout(const struct server_state *server,
                                    const ares_timeval_t      *now)
 {
-  const ares_channel_t *channel = server->channel;
+  const ares_channel_t *channel    = server->channel;
   ares_server_bucket_t  i;
+  size_t                timeout_ms = 0;
+
 
   for (i=0; i<ARES_METRIC_COUNT; i++) {
     time_t ts = ares_metric_timestamp(i, now, ARES_FALSE);
-    size_t timeout_ms;
 
     /* This ts has been invalidated, see if we should use the previous
      * time period */
@@ -228,23 +227,26 @@ size_t ares_metrics_server_timeout(const struct server_state *server,
 
     /* Multiply average by constant to get timeout value */
     timeout_ms *= AVG_TIMEOUT_MULTIPLIER;
-
-    /* don't go below lower bounds */
-    if (timeout_ms < MIN_TIMEOUT_MS) {
-      timeout_ms = MIN_TIMEOUT_MS;
-    }
-
-    /* don't go above upper bounds */
-    if (channel->maxtimeout && timeout_ms > channel->maxtimeout) {
-      timeout_ms = (size_t)channel->maxtimeout;
-    } else if (timeout_ms > MAX_TIMEOUT_MS) {
-      timeout_ms = MAX_TIMEOUT_MS;
-    }
-
-    return timeout_ms;
+    break;
   }
 
   /* If we're here, that means its the first query for the server, so we just
    * use the initial default timeout */
-  return channel->timeout;
+  if (timeout_ms == 0) {
+    timeout_ms = channel->timeout;
+  }
+
+  /* don't go below lower bounds */
+  if (timeout_ms < MIN_TIMEOUT_MS) {
+    timeout_ms = MIN_TIMEOUT_MS;
+  }
+
+  /* don't go above upper bounds */
+  if (channel->maxtimeout && timeout_ms > channel->maxtimeout) {
+    timeout_ms = (size_t)channel->maxtimeout;
+  } else if (timeout_ms > MAX_TIMEOUT_MS) {
+    timeout_ms = MAX_TIMEOUT_MS;
+  }
+
+  return timeout_ms;
 }
