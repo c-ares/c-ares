@@ -25,7 +25,7 @@
  */
 
 /* Uses an anonymous union */
-#if defined(__GNUC__)
+#if defined(__clang__)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wc11-extensions"
 #endif
@@ -260,11 +260,27 @@ static ares_bool_t ares_evsys_win32_init(ares_event_thread_t *e)
     goto fail;
   }
 
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wpedantic"
+/* Without the (void *) cast we get:
+ *  warning: cast between incompatible function types from 'FARPROC' {aka 'long long int (*)()'} to 'NTSTATUS (*)(...)'} [-Wcast-function-type]
+ * but with it we get:
+ *   warning: ISO C forbids conversion of function pointer to object pointer type [-Wpedantic]
+ * look unsolvable short of killing the warning.
+ */
+#endif
+
+
   /* Load Internal symbols not typically accessible */
-  ew->NtDeviceIoControlFile = (NtDeviceIoControlFile_t)GetProcAddress(
+  ew->NtDeviceIoControlFile = (NtDeviceIoControlFile_t)(void *)GetProcAddress(
     ntdll, "NtDeviceIoControlFile");
   ew->NtCancelIoFileEx =
-    (NtCancelIoFileEx_t)GetProcAddress(ntdll, "NtCancelIoFileEx");
+    (NtCancelIoFileEx_t)(void *)GetProcAddress(ntdll, "NtCancelIoFileEx");
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
 
   if (ew->NtCancelIoFileEx == NULL || ew->NtDeviceIoControlFile == NULL) {
     goto fail;
@@ -597,6 +613,6 @@ const ares_event_sys_t ares_evsys_win32 = { "win32",
                                             ares_evsys_win32_wait };
 #endif
 
-#if defined(__GNUC__)
+#if defined(__clang__)
 #  pragma GCC diagnostic pop
 #endif

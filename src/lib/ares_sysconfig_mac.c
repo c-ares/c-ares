@@ -47,8 +47,10 @@
  */
 
 /* The apple header uses anonymous unions which came with C11 */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wc11-extensions"
+#  if defined(__clang__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wc11-extensions"
+#  endif
 
 #  include "ares_setup.h"
 #  include <stdio.h>
@@ -370,7 +372,10 @@ done:
   }
   return status;
 }
-#pragma GCC diagnostic pop
+
+#  if defined(__clang__)
+#    pragma GCC diagnostic pop
+#  endif
 
 #else
 
