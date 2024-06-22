@@ -27,10 +27,10 @@
  * General driver to allow command-line fuzzer (i.e. afl) to
  * exercise the libFuzzer entrypoint.
  */
+#include <stdio.h>
 
 #include <sys/types.h>
 #include <fcntl.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef WIN32
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
   if (argc == 1) {
     int count = 0;
     while (KEEP_FUZZING(count)) {
-      ProcessFile(fileno(stdin));
+      ProcessFile(STDIN_FILENO);
       count++;
     }
   } else {

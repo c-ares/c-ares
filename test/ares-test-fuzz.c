@@ -24,7 +24,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stddef.h>
-
+#include <stdio.h>
 #include "ares.h"
 
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
