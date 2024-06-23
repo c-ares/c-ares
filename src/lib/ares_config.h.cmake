@@ -377,12 +377,6 @@
 /* Define to 1 if you have the __system_property_get function */
 #cmakedefine HAVE___SYSTEM_PROPERTY_GET 1
 
-/* Define to 1 if you need the malloc.h header file even with stdlib.h */
-#cmakedefine NEED_MALLOC_H 1
-
-/* Define to 1 if you need the memory.h header file even with stdlib.h */
-#cmakedefine NEED_MEMORY_H 1
-
 /* Define if have arc4random_buf() */
 #cmakedefine HAVE_ARC4RANDOM_BUF 1
 

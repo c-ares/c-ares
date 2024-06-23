@@ -26,6 +26,14 @@
 #ifndef __ARES_SETUP_H
 #define __ARES_SETUP_H
 
+/* ============================================================================
+ * NOTE: This file is automatically included by ares_private.h and should not
+ *       typically be included directly.
+ *       All c-ares source files should include ares_private.h as the
+ *       first header.
+ * ============================================================================
+ */
+
 /*
  * Include configuration script results or hand-crafted
  * configuration file for platforms which lack config tool.
@@ -38,43 +46,6 @@
 #    include "config-win32.h"
 #  endif
 #endif /* HAVE_CONFIG_H */
-
-/* ================================================================ */
-/* Definition of preprocessor macros/symbols which modify compiler  */
-/* behaviour or generated code characteristics must be done here,   */
-/* as appropriate, before any system header file is included. It is */
-/* also possible to have them defined in the config file included   */
-/* before this point. As a result of all this we frown inclusion of */
-/* system header files in our config files, avoid this at any cost. */
-/* ================================================================ */
-
-/*
- * AIX 4.3 and newer needs _THREAD_SAFE defined to build
- * proper reentrant code. Others may also need it.
- */
-
-#ifdef NEED_THREAD_SAFE
-#  ifndef _THREAD_SAFE
-#    define _THREAD_SAFE
-#  endif
-#endif
-
-/*
- * Tru64 needs _REENTRANT set for a few function prototypes and
- * things to appear in the system header files. Unixware needs it
- * to build proper reentrant code. Others may also need it.
- */
-
-#ifdef NEED_REENTRANT
-#  ifndef _REENTRANT
-#    define _REENTRANT
-#  endif
-#endif
-
-/* ================================================================ */
-/*  If you need to include a system header file for your platform,  */
-/*  please, do it beyond the point further indicated in this file.  */
-/* ================================================================ */
 
 /*
  * c-ares external interface definitions are also used internally,
@@ -137,12 +108,8 @@
 #  include <sys/types.h>
 #endif
 
-#ifdef NEED_MALLOC_H
+#ifdef HAVE_MALLOC_H
 #  include <malloc.h>
-#endif
-
-#ifdef NEED_MEMORY_H
-#  include <memory.h>
 #endif
 
 #ifdef HAVE_SYS_STAT_H

@@ -33,8 +33,7 @@
 #define HAVE_UNISTD_H            1
 #define HAVE_WRITEV              1
 #define HAVE_STAT                1
-
-#define NEED_MALLOC_H 1
+#define HAVE_MALLOC_H            1
 
 /* Qualifiers for send(), recv(), recvfrom() and getnameinfo(). */
 

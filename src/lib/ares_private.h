@@ -27,6 +27,12 @@
 #ifndef __ARES_PRIVATE_H
 #define __ARES_PRIVATE_H
 
+/* ============================================================================
+ * NOTE: All c-ares source files should include ares_private.h as the first
+ *       header.
+ * ============================================================================
+ */
+
 #include "ares_setup.h"
 #include "ares.h"
 
