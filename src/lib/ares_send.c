@@ -48,10 +48,10 @@ static unsigned short generate_unique_qid(ares_channel_t *channel)
   return id;
 }
 
-static ares_status_t ares_send_dnsrec_int(ares_channel_t          *channel,
-                                          const ares_dns_record_t *dnsrec,
-                                          ares_callback_dnsrec     callback,
-                                          void *arg, unsigned short *qid)
+ares_status_t ares_send_nolock(ares_channel_t          *channel,
+                               const ares_dns_record_t *dnsrec,
+                               ares_callback_dnsrec     callback,
+                               void *arg, unsigned short *qid)
 {
   struct query            *query;
   size_t                   packetsz;
@@ -163,7 +163,7 @@ ares_status_t ares_send_dnsrec(ares_channel_t          *channel,
 
   ares__channel_lock(channel);
 
-  status = ares_send_dnsrec_int(channel, dnsrec, callback, arg, qid);
+  status = ares_send_nolock(channel, dnsrec, callback, arg, qid);
 
   ares__channel_unlock(channel);
 
