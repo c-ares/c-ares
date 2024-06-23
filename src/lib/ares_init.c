@@ -490,7 +490,6 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
 
   *dest = NULL; /* in case of failure return NULL explicitly */
 
-  ares__channel_lock(src);
   /* First get the options supported by the old ares_save_options() function,
      which is most of them */
   rc = (ares_status_t)ares_save_options(src, &opts, &optmask);
@@ -509,6 +508,7 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
     goto done;
   }
 
+  ares__channel_lock(src);
   /* Now clone the options that ares_save_options() doesn't support, but are
    * user-provided */
   (*dest)->sock_create_cb       = src->sock_create_cb;
@@ -524,7 +524,7 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
               sizeof((*dest)->local_dev_name));
   (*dest)->local_ip4 = src->local_ip4;
   memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
-
+  ares__channel_unlock(src);
 
   /* Servers are a bit unique as ares_init_options() only allows ipv4 servers
    * and not a port per server, but there are other user specified ways, that
@@ -556,7 +556,6 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
 
   rc = ARES_SUCCESS;
 done:
-  ares__channel_unlock(src);
   return (int)rc; /* everything went fine */
 }
 
