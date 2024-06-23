@@ -134,9 +134,6 @@
 #elif defined(_WIN32_WCE)
 #  define CARES_TYPEOF_ARES_SOCKLEN_T int
 
-#elif defined(__MINGW32__)
-#  define CARES_TYPEOF_ARES_SOCKLEN_T int
-
 #elif defined(__VMS)
 #  define CARES_TYPEOF_ARES_SOCKLEN_T unsigned int
 
