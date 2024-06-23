@@ -544,9 +544,7 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
 #define SOCK_STATE_CALLBACK(c, s, r, w)                           \
   do {                                                            \
     if ((c)->sock_state_cb) {                                     \
-      ares__channel_unlock((c));                                  \
       (c)->sock_state_cb((c)->sock_state_cb_data, (s), (r), (w)); \
-      ares__channel_lock((c));                                    \
     }                                                             \
   } while (0)
 
