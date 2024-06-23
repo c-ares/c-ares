@@ -219,30 +219,18 @@ struct ares__thread_mutex {
 
 ares__thread_mutex_t *ares__thread_mutex_create(void)
 {
-  pthread_mutexattr_t   attr;
   ares__thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
   if (mut == NULL) {
     return NULL;
   }
 
-  if (pthread_mutexattr_init(&attr) != 0) {
-    ares_free(mut);
-    return NULL;
-  }
-
-  if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0) {
+  if (pthread_mutex_init(&mut->mutex, NULL) != 0) {
     goto fail;
   }
 
-  if (pthread_mutex_init(&mut->mutex, &attr) != 0) {
-    goto fail;
-  }
-
-  pthread_mutexattr_destroy(&attr);
   return mut;
 
 fail:
-  pthread_mutexattr_destroy(&attr);
   ares_free(mut);
   return NULL;
 }

@@ -495,6 +495,11 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
                                             ares_bool_t           want_cnames,
                                             struct ares_addrinfo *ai);
 
+/* Same as ares_gethostbyaddr() except does not take a channel lock.  Use this
+ * if a channel lock is already held */
+void ares_gethostbyaddr_nolock(ares_channel_t *channel, const void *addr,
+                               int addrlen, int family,
+                               ares_host_callback callback, void *arg);
 
 /*! Parse a compressed DNS name as defined in RFC1035 starting at the current
  *  offset within the buffer.
@@ -554,7 +559,9 @@ void          ares_queue_notify_empty(ares_channel_t *channel);
 #define SOCK_STATE_CALLBACK(c, s, r, w)                           \
   do {                                                            \
     if ((c)->sock_state_cb) {                                     \
+      ares__channel_unlock((c));                                  \
       (c)->sock_state_cb((c)->sock_state_cb_data, (s), (r), (w)); \
+      ares__channel_lock((c));                                    \
     }                                                             \
   } while (0)
 
