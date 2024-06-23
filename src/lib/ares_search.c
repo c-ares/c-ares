@@ -82,7 +82,7 @@ static void ares_search_int(ares_channel_t *channel, const char *name,
     return;
   }
   if (s) {
-    ares_query(channel, s, dnsclass, type, callback, arg);
+    ares_query_qid(channel, s, dnsclass, type, callback, arg, NULL);
     ares_free(s);
     return;
   }
@@ -140,14 +140,14 @@ static void ares_search_int(ares_channel_t *channel, const char *name,
     /* Try the name as-is first. */
     squery->next_domain  = 0;
     squery->trying_as_is = ARES_TRUE;
-    ares_query(channel, name, dnsclass, type, search_callback, squery);
+    ares_query_qid(channel, name, dnsclass, type, search_callback, squery, NULL);
   } else {
     /* Try the name as-is last; start with the first search domain. */
     squery->next_domain  = 1;
     squery->trying_as_is = ARES_FALSE;
     status               = ares__cat_domain(name, squery->domains[0], &s);
     if (status == ARES_SUCCESS) {
-      ares_query(channel, s, dnsclass, type, search_callback, squery);
+      ares_query_qid(channel, s, dnsclass, type, search_callback, squery, NULL);
       ares_free(s);
     } else {
       /* failed, free the malloc()ed memory */
@@ -209,15 +209,15 @@ static void search_callback(void *arg, int status, int timeouts,
       } else {
         squery->trying_as_is = ARES_FALSE;
         squery->next_domain++;
-        ares_query(channel, s, squery->dnsclass, squery->type, search_callback,
-                   squery);
+        ares_query_qid(channel, s, squery->dnsclass, squery->type,
+                       search_callback, squery, NULL);
         ares_free(s);
       }
     } else if (squery->status_as_is == -1) {
       /* Try the name as-is at the end. */
       squery->trying_as_is = ARES_TRUE;
-      ares_query(channel, squery->name, squery->dnsclass, squery->type,
-                 search_callback, squery);
+      ares_query_qid(channel, squery->name, squery->dnsclass, squery->type,
+                     search_callback, squery, NULL);
     } else {
       if (squery->status_as_is == ARES_ENOTFOUND && squery->ever_got_nodata) {
         end_squery(squery, ARES_ENODATA, NULL, 0);

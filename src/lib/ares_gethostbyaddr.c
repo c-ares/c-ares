@@ -68,9 +68,9 @@ static ares_status_t file_lookup(ares_channel_t         *channel,
                                  const struct ares_addr *addr,
                                  struct hostent        **host);
 
-static void ares_gethostbyaddr_int(ares_channel_t *channel, const void *addr,
-                                   int addrlen, int family,
-                                   ares_host_callback callback, void *arg)
+void ares_gethostbyaddr_nolock(ares_channel_t *channel, const void *addr,
+                               int addrlen, int family,
+                               ares_host_callback callback, void *arg)
 {
   struct addr_query *aquery;
 
@@ -118,7 +118,7 @@ void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
     return;
   }
   ares__channel_lock(channel);
-  ares_gethostbyaddr_int(channel, addr, addrlen, family, callback, arg);
+  ares_gethostbyaddr_nolock(channel, addr, addrlen, family, callback, arg);
   ares__channel_unlock(channel);
 }
 
@@ -138,7 +138,7 @@ static void next_lookup(struct addr_query *aquery)
           return;
         }
         aquery->remaining_lookups = p + 1;
-        ares_query(aquery->channel, name, C_IN, T_PTR, addr_callback, aquery);
+        ares_query_qid(aquery->channel, name, C_IN, T_PTR, addr_callback, aquery, NULL);
         ares_free(name);
         return;
       case 'f':

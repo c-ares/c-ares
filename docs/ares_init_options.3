@@ -217,7 +217,8 @@ The value of
 .I sock_state_cb_data
 will be passed as the
 .I data
-argument.
+argument.  Since this may be called cross-thread, a channel lock is NOT held
+when this callback is called.
 
 Cannot be used with \fBARES_OPT_EVENT_THREAD\fP.
 .TP 18
