@@ -230,12 +230,6 @@ if (MSVC)
 	# Visual Studio uses a completely different nomenclature for warnings than gcc/mingw/clang, so none of the
 	# "-W[name]" warnings will work.
 
-	# W4 would be better but it produces unnecessary warnings like:
-	# *  warning C4706: assignment within conditional expression
-	#     Triggered when doing "while(1)"
-	# * warning C4115: 'timeval' : named type definition in parentheses
-	# * warning C4201: nonstandard extension used : nameless struct/union
-	#     Triggered by system includes (commctrl.h, shtypes.h, Shlobj.h)
 	set(_flags
 		# Enable warnings
 		/W4 # Baseline reasonable warnings
