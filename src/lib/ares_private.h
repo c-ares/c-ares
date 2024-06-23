@@ -596,9 +596,7 @@ void          ares_queue_notify_empty(ares_channel_t *channel);
 #define SOCK_STATE_CALLBACK(c, s, r, w)                           \
   do {                                                            \
     if ((c)->sock_state_cb) {                                     \
-      ares__channel_unlock((c));                                  \
       (c)->sock_state_cb((c)->sock_state_cb_data, (s), (r), (w)); \
-      ares__channel_lock((c));                                    \
     }                                                             \
   } while (0)
 
