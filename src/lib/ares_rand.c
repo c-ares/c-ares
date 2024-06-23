@@ -24,8 +24,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
-#include "ares.h"
 #include "ares_private.h"
 #include <stdlib.h>
 
@@ -104,6 +102,13 @@ static void ares_rc4_generate_key(ares_rand_rc4 *rc4_state, unsigned char *key,
   }
   /* LCOV_EXCL_STOP */
 }
+
+#define ARES_SWAP_BYTE(a, b)           \
+  do {                                 \
+    unsigned char swapByte = *(a);     \
+    *(a)                   = *(b);     \
+    *(b)                   = swapByte; \
+  } while (0)
 
 static void ares_rc4_init(ares_rand_rc4 *rc4_state)
 {

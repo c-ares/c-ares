@@ -25,7 +25,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_SYS_PARAM_H
 #  include <sys/param.h>
@@ -61,10 +61,8 @@
 #  include <iphlpapi.h>
 #endif
 
-#include "ares.h"
 #include "ares_inet_net_pton.h"
 #include "ares_platform.h"
-#include "ares_private.h"
 #include "ares_event.h"
 
 int ares_init(ares_channel_t **channelptr)

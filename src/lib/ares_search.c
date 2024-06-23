@@ -25,15 +25,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
 #endif
-
-#include "ares.h"
-#include "ares_private.h"
-#include "ares_dns.h"
 
 struct search_query {
   /* Arguments passed to ares_search_dnsrec() */

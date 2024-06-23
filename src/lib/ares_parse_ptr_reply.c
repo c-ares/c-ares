@@ -24,7 +24,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
@@ -33,8 +33,6 @@
 #  include <netdb.h>
 #endif
 
-#include "ares.h"
-#include "ares_private.h"
 
 ares_status_t ares_parse_ptr_reply_dnsrec(const ares_dns_record_t *dnsrec,
                                           const void *addr, int addrlen,

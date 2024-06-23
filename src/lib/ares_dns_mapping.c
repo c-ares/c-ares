@@ -23,8 +23,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "ares_setup.h"
-#include "ares.h"
 #include "ares_private.h"
 
 ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode)

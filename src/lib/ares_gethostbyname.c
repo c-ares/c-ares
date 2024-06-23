@@ -25,7 +25,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
@@ -43,10 +43,8 @@
 #  include <strings.h>
 #endif
 
-#include "ares.h"
 #include "ares_inet_net_pton.h"
 #include "ares_platform.h"
-#include "ares_private.h"
 
 static void   sort_addresses(const struct hostent  *host,
                              const struct apattern *sortlist, size_t nsort);

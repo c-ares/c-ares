@@ -28,10 +28,6 @@
 #define ARES_TEST_H
 
 #include "ares_setup.h"
-#ifdef HAVE_CONFIG_H
-#  include "ares_config.h"
-#endif
-
 #include "dns-proto.h"
 // Include ares internal file for DNS protocol constants
 #include "ares_nameser.h"

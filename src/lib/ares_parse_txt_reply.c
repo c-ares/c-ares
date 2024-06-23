@@ -24,10 +24,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
-#include "ares.h"
-#include "ares_data.h"
 #include "ares_private.h"
+#include "ares_data.h"
 
 static int ares__parse_txt_reply(const unsigned char *abuf, size_t alen,
                                  ares_bool_t ex, void **txt_out)
