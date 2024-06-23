@@ -62,8 +62,8 @@ ENDIF ()
 
 INCLUDE (EnableWarnings)
 
-# allow linking against the static runtime library in msvc
 IF (MSVC)
+	# allow linking against the static runtime library in msvc
 	OPTION (CARES_MSVC_STATIC_RUNTIME "Link against the static runtime library" OFF)
 	IF (CARES_MSVC_STATIC_RUNTIME)
 		# CMAKE_CONFIGURATION_TYPES is empty on non-IDE generators (Ninja, NMake)
@@ -75,6 +75,13 @@ IF (MSVC)
 			IF (${flag_var} MATCHES "/MD")
 				STRING (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
 			ENDIF ()
+		ENDFOREACH ()
+
+		# Prevent: error C1041: cannot open program database '....'; if multiple CL.EXE write to the same .PDB file, please use /FS
+		FOREACH (config_type ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
+			STRING (TOUPPER ${config_type} upper_config_type)
+			SET (flag_var "CMAKE_C_FLAGS_${upper_config_type}")
+			SET (${flag_var} "${${flag_var}} /FS")
 		ENDFOREACH ()
 
 		# clean up
