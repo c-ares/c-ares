@@ -675,20 +675,20 @@ static ares_bool_t next_dns_lookup(struct host_query *hquery)
   switch (hquery->hints.ai_family) {
     case AF_INET:
       hquery->remaining += 1;
-      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN, ARES_REC_TYPE_A,
+      ares_query_nolock(hquery->channel, name, ARES_CLASS_IN, ARES_REC_TYPE_A,
                         host_callback, hquery, &hquery->qid_a);
       break;
     case AF_INET6:
       hquery->remaining += 1;
-      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN,
+      ares_query_nolock(hquery->channel, name, ARES_CLASS_IN,
                         ARES_REC_TYPE_AAAA, host_callback, hquery,
                         &hquery->qid_aaaa);
       break;
     case AF_UNSPEC:
       hquery->remaining += 2;
-      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN, ARES_REC_TYPE_A,
+      ares_query_nolock(hquery->channel, name, ARES_CLASS_IN, ARES_REC_TYPE_A,
                         host_callback, hquery, &hquery->qid_a);
-      ares_query_dnsrec(hquery->channel, name, ARES_CLASS_IN,
+      ares_query_nolock(hquery->channel, name, ARES_CLASS_IN,
                         ARES_REC_TYPE_AAAA, host_callback, hquery,
                         &hquery->qid_aaaa);
       break;
