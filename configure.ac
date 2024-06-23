@@ -649,7 +649,6 @@ AC_DEFINE_UNQUOTED([RECV_TYPE_ARG4],         [ ${recv_type_arg4} ],         [ re
 AC_DEFINE_UNQUOTED([SEND_TYPE_RETV],         [ ${send_type_retv} ],         [ send() return value ])
 AC_DEFINE_UNQUOTED([SEND_TYPE_ARG1],         [ ${send_type_arg1} ],         [ send() arg1 type ])
 AC_DEFINE_UNQUOTED([SEND_TYPE_ARG2],         [ ${send_type_arg2} ],         [ send() arg2 type ])
-AC_DEFINE_UNQUOTED([SEND_QUAL_ARG2],         [ ],                           [ send() arg2 qualifier ])
 AC_DEFINE_UNQUOTED([SEND_TYPE_ARG3],         [ ${send_type_arg3} ],         [ send() arg3 type ])
 AC_DEFINE_UNQUOTED([SEND_TYPE_ARG4],         [ ${send_type_arg4} ],         [ send() arg4 type ])
 

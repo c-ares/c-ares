@@ -152,7 +152,7 @@ struct timeval {
  * which is used to write outgoing data on a connected socket.
  * If yours has another name then don't define HAVE_SEND.
  *
- * If HAVE_SEND is defined then SEND_TYPE_ARG1, SEND_QUAL_ARG2,
+ * If HAVE_SEND is defined then SEND_TYPE_ARG1,
  * SEND_TYPE_ARG2, SEND_TYPE_ARG3, SEND_TYPE_ARG4 and
  * SEND_TYPE_RETV must also be defined.
  */
@@ -184,7 +184,7 @@ Error Missing_definition_of_macro_sread
       write((SEND_TYPE_ARG1)(x), (SEND_TYPE_ARG2)(y), (SEND_TYPE_ARG3)(z))
 
 #elif defined(HAVE_SEND)
-#  if !defined(SEND_TYPE_ARG1) || !defined(SEND_QUAL_ARG2) || \
+#  if !defined(SEND_TYPE_ARG1) || \
     !defined(SEND_TYPE_ARG2) || !defined(SEND_TYPE_ARG3) ||   \
     !defined(SEND_TYPE_ARG4) || !defined(SEND_TYPE_RETV)
   /* */

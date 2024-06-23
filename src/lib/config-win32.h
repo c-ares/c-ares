@@ -190,11 +190,8 @@
 /* Define to the type of arg 1 for send. */
 #define SEND_TYPE_ARG1 SOCKET
 
-/* Define to the type qualifier of arg 2 for send. */
-#define SEND_QUAL_ARG2 const
-
 /* Define to the type of arg 2 for send. */
-#define SEND_TYPE_ARG2 char *
+#define SEND_TYPE_ARG2 const char *
 
 /* Define to the type of arg 3 for send. */
 #define SEND_TYPE_ARG3 int
