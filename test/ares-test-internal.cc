@@ -42,11 +42,10 @@ extern "C" {
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 // ... so we can include the library's config without symbol redefinitions.
-#include "ares_setup.h"
+#include "ares_private.h"
 #include "ares_inet_net_pton.h"
 #include "ares_data.h"
 #include "ares_strsplit.h"
-#include "ares_private.h"
 #include "ares__htable.h"
 
 #ifdef HAVE_ARPA_INET_H
