@@ -703,8 +703,6 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
     return ARES_EFORMERR;
   }
 
-  ares__channel_lock(channel);
-
   /* NOTE: a NULL or zero entry server list is considered valid due to
    *       real-world people needing support for this for their test harnesses
    */
@@ -773,7 +771,6 @@ ares_status_t ares__servers_update(ares_channel_t *channel,
   status = ARES_SUCCESS;
 
 done:
-  ares__channel_unlock(channel);
   return status;
 }
 
@@ -1044,8 +1041,9 @@ int ares_set_servers(ares_channel_t              *channel,
     return (int)status;
   }
 
-  /* NOTE: lock is in ares__servers_update() */
+  ares__channel_lock(channel);
   status = ares__servers_update(channel, slist, ARES_TRUE);
+  ares__channel_unlock(channel);
 
   ares__llist_destroy(slist);
 
@@ -1067,8 +1065,9 @@ int ares_set_servers_ports(ares_channel_t                   *channel,
     return (int)status;
   }
 
-  /* NOTE: lock is in ares__servers_update() */
+  ares__channel_lock(channel);
   status = ares__servers_update(channel, slist, ARES_TRUE);
+  ares__channel_unlock(channel);
 
   ares__llist_destroy(slist);
 
@@ -1086,8 +1085,6 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
     return ARES_ENODATA;
   }
 
-  /* NOTE: lock is in ares__servers_update() */
-
   if (ares_strlen(_csv) == 0) {
     /* blank all servers */
     return (ares_status_t)ares_set_servers_ports(channel, NULL);
@@ -1099,8 +1096,9 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
     return status;
   }
 
-  /* NOTE: lock is in ares__servers_update() */
+  ares__channel_lock(channel);
   status = ares__servers_update(channel, slist, ARES_TRUE);
+  ares__channel_unlock(channel);
 
   ares__llist_destroy(slist);
 
@@ -1110,13 +1108,11 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
 /* We'll go ahead and honor ports anyhow */
 int ares_set_servers_csv(ares_channel_t *channel, const char *_csv)
 {
-  /* NOTE: lock is in ares__servers_update() */
   return (int)set_servers_csv(channel, _csv);
 }
 
 int ares_set_servers_ports_csv(ares_channel_t *channel, const char *_csv)
 {
-  /* NOTE: lock is in ares__servers_update() */
   return (int)set_servers_csv(channel, _csv);
 }
 

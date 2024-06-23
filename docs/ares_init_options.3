@@ -216,7 +216,8 @@ The value of
 .I sock_state_cb_data
 will be passed as the
 .I data
-argument.
+argument.  Since this may be called cross-thread, a channel lock is NOT held
+when this callback is called.
 .TP 18
 .B ARES_OPT_SORTLIST
 .B struct apattern *\fIsortlist\fP;
