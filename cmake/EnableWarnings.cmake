@@ -258,8 +258,6 @@ if (MSVC)
 		# Disable some warnings
 		/wd4201 # nonstandard extension used: nameless struct/union. Used in some windows headers, e.g. IO_STATUS_BLOCK,
 		        # disable.
-		/wd4206 # nonstandard extension used: translation unit is empty. All files in c-ares are compiled even if not
-		        # used, so we need to ignore this.
 
 		# Turn some warnings into errors
 		/we4013 # Treat "function undefined, assuming extern returning int" warning as an error. https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4013
