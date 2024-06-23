@@ -64,11 +64,11 @@ static void ares_query_dnsrec_cb(void *arg, ares_status_t status,
   ares_free(qquery);
 }
 
-static ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
-                                    ares_dns_class_t     dnsclass,
-                                    ares_dns_rec_type_t  type,
-                                    ares_callback_dnsrec callback, void *arg,
-                                    unsigned short *qid)
+ares_status_t ares_query_nolock(ares_channel_t *channel, const char *name,
+                                ares_dns_class_t     dnsclass,
+                                ares_dns_rec_type_t  type,
+                                ares_callback_dnsrec callback, void *arg,
+                                unsigned short *qid)
 {
   ares_status_t            status;
   ares_dns_record_t       *dnsrec = NULL;
@@ -111,7 +111,7 @@ static ares_status_t ares_query_int(ares_channel_t *channel, const char *name,
   qquery->arg      = arg;
 
   /* Send it off.  qcallback will be called when we get an answer. */
-  status = ares_send_dnsrec(channel, dnsrec, ares_query_dnsrec_cb, qquery, qid);
+  status = ares_send_nolock(channel, dnsrec, ares_query_dnsrec_cb, qquery, qid);
 
   ares_dns_record_destroy(dnsrec);
   return status;
@@ -130,7 +130,7 @@ ares_status_t ares_query_dnsrec(ares_channel_t *channel, const char *name,
   }
 
   ares__channel_lock(channel);
-  status = ares_query_int(channel, name, dnsclass, type, callback, arg, qid);
+  status = ares_query_nolock(channel, name, dnsclass, type, callback, arg, qid);
   ares__channel_unlock(channel);
   return status;
 }
