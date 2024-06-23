@@ -30,8 +30,6 @@
 #  pragma GCC diagnostic ignored "-Wc11-extensions"
 #endif
 
-#include "ares_setup.h"
-#include "ares.h"
 #include "ares_private.h"
 #include "ares_event.h"
 #include "ares_event_win32.h"

@@ -25,14 +25,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_LIMITS_H
 #  include <limits.h>
 #endif
 
-#include "ares.h"
-#include "ares_private.h"
 
 void ares__timeval_remaining(ares_timeval_t       *remaining,
                              const ares_timeval_t *now,

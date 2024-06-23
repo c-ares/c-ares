@@ -52,7 +52,7 @@
 #    pragma GCC diagnostic ignored "-Wc11-extensions"
 #  endif
 
-#  include "ares_setup.h"
+#  include "ares_private.h"
 #  include <stdio.h>
 #  include <stdlib.h>
 #  include <string.h>
@@ -63,8 +63,6 @@
 #  if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080 /* MacOS 10.8 */
 #    include <SystemConfiguration/SCNetworkConfiguration.h>
 #  endif
-#  include "ares.h"
-#  include "ares_private.h"
 
 typedef struct {
   void *handle;

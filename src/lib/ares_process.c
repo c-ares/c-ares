@@ -25,8 +25,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
-
+#include "ares_private.h"
 
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
@@ -45,10 +44,6 @@
 #include <fcntl.h>
 #include <limits.h>
 
-#include "ares.h"
-#include "ares_private.h"
-#include "ares_nameser.h"
-#include "ares_dns.h"
 
 static void          timeadd(ares_timeval_t *now, size_t millisecs);
 static ares_bool_t   try_again(int errnum);

@@ -27,6 +27,9 @@
 #ifndef __ARES_PRIVATE_H
 #define __ARES_PRIVATE_H
 
+#include "ares_setup.h"
+#include "ares.h"
+
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
 #endif
@@ -636,13 +639,6 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
  */
 void          ares_queue_notify_empty(ares_channel_t *channel);
 
-
-#define ARES_SWAP_BYTE(a, b)           \
-  do {                                 \
-    unsigned char swapByte = *(a);     \
-    *(a)                   = *(b);     \
-    *(b)                   = swapByte; \
-  } while (0)
 
 #define SOCK_STATE_CALLBACK(c, s, r, w)                           \
   do {                                                            \

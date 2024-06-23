@@ -25,16 +25,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
 #endif
 
 #include "ares_nameser.h"
-
-#include "ares.h"
-#include "ares_private.h" /* for the memdebug */
 
 /* Simply decodes a length-encoded character string. The first byte of the
  * input is the length of the string to be returned and the bytes thereafter

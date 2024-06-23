@@ -24,7 +24,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
@@ -44,8 +44,6 @@
 #  include <limits.h>
 #endif
 
-#include "ares.h"
-#include "ares_private.h"
 
 ares_status_t ares__parse_into_addrinfo(const ares_dns_record_t *dnsrec,
                                         ares_bool_t    cname_only_is_enodata,

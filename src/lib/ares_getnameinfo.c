@@ -23,7 +23,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_GETSERVBYPORT_R
 #  if !defined(GETSERVBYPORT_R_ARGS) || (GETSERVBYPORT_R_ARGS < 4) || \
@@ -51,9 +51,7 @@
 #  include <iphlpapi.h>
 #endif
 
-#include "ares.h"
 #include "ares_ipv6.h"
-#include "ares_private.h"
 
 struct nameinfo_query {
   ares_nameinfo_callback callback;
@@ -411,8 +409,8 @@ static char *ares_striendstr(const char *s1, const char *s2)
   c1       = c1_begin;
   c2       = s2;
   while (c2 < s2 + s2_len) {
-    lo1 = TOLOWER(*c1);
-    lo2 = TOLOWER(*c2);
+    lo1 = ares__tolower((unsigned char)*c1);
+    lo2 = ares__tolower((unsigned char)*c2);
     if (lo1 != lo2) {
       return NULL;
     } else {

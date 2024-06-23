@@ -25,7 +25,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
@@ -48,10 +48,6 @@
 #    include <netioapi.h>
 #  endif
 #endif
-
-#include "ares.h"
-#include "ares_inet_net_pton.h"
-#include "ares_private.h"
 
 ares_status_t ares_append_ai_node(int aftype, unsigned short port,
                                   unsigned int ttl, const void *adata,

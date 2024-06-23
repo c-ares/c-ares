@@ -25,16 +25,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
 
-#include "ares.h"
 #include "ares_data.h"
 #include "ares_inet_net_pton.h"
-#include "ares_private.h"
 
 void ares_destroy_options(struct ares_options *options)
 {

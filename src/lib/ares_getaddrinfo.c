@@ -26,7 +26,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_GETSERVBYNAME_R
 #  if !defined(GETSERVBYNAME_R_ARGS) || (GETSERVBYNAME_R_ARGS < 4) || \
@@ -56,8 +56,6 @@
 #  include <limits.h>
 #endif
 
-#include "ares.h"
-#include "ares_private.h"
 #include "ares_dns.h"
 
 #ifdef _WIN32
@@ -254,7 +252,7 @@ static ares_bool_t fake_addrinfo(const char *name, unsigned short port,
     ares_bool_t valid   = ARES_TRUE;
     const char *p;
     for (p = name; *p; p++) {
-      if (!ISDIGIT(*p) && *p != '.') {
+      if (!isdigit(*p) && *p != '.') {
         valid = ARES_FALSE;
         break;
       } else if (*p == '.') {

@@ -23,13 +23,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
-#if defined(__MVS__)
-#  include <strings.h>
-#endif
-
-#include "ares_setup.h"
-#include "ares.h"
 #include "ares_private.h"
 
 void ares__strsplit_free(char **elms, size_t num_elm)

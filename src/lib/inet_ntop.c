@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
@@ -27,10 +27,7 @@
 #endif
 
 #include "ares_nameser.h"
-
-#include "ares.h"
 #include "ares_ipv6.h"
-#include "ares_private.h"
 
 #ifndef HAVE_INET_NTOP
 

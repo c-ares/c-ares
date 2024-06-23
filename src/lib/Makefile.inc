@@ -111,6 +111,5 @@ HHEADERS = ares__buf.h			\
   ares_str.h				\
   ares_strsplit.h			\
   ares_setup.h				\
-  setup_once.h				\
   thirdparty/apple/dnsinfo.h
 

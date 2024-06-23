@@ -25,17 +25,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
 #endif
-
-#include "ares_nameser.h"
-
-#include "ares.h"
-#include "ares_dns.h"
-#include "ares_private.h"
 
 typedef struct {
   ares_callback_dnsrec callback;

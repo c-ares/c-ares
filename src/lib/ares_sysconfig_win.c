@@ -25,7 +25,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_SYS_PARAM_H
 #  include <sys/param.h>
@@ -43,8 +43,6 @@
 #  include <arpa/inet.h>
 #endif
 
-#include "ares_nameser.h"
-
 #if defined(USE_WINSOCK)
 #  if defined(HAVE_IPHLPAPI_H)
 #    include <iphlpapi.h>
@@ -54,10 +52,8 @@
 #  endif
 #endif
 
-#include "ares.h"
 #include "ares_inet_net_pton.h"
 #include "ares_platform.h"
-#include "ares_private.h"
 
 #if defined(USE_WINSOCK)
 /*

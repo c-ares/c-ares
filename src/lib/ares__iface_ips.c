@@ -23,8 +23,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "ares_setup.h"
-
+#include "ares_private.h"
 
 #ifdef USE_WINSOCK
 #  include <winsock2.h>
@@ -59,8 +58,6 @@
 #  include <netdb.h>
 #endif
 
-#include "ares.h"
-#include "ares_private.h"
 
 static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
                                                const char        *name);

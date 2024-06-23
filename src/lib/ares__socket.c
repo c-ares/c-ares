@@ -24,7 +24,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_SYS_UIO_H
 #  include <sys/uio.h>
@@ -56,8 +56,6 @@
 #include <fcntl.h>
 #include <limits.h>
 
-#include "ares.h"
-#include "ares_private.h"
 
 ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                    void *data, size_t data_len, int flags,

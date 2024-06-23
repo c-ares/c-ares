@@ -24,7 +24,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
@@ -35,9 +35,6 @@
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
-
-#include "ares.h"
-#include "ares_private.h"
 
 int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
                         struct hostent **host)

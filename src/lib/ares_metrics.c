@@ -95,8 +95,6 @@
  *   there in case we find a need for them in the future.
  */
 
-#include "ares_setup.h"
-#include "ares.h"
 #include "ares_private.h"
 
 /*! Minimum timeout value. Chosen due to it being approximately RTT half-way
