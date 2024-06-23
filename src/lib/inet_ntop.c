@@ -59,10 +59,10 @@ const char        *ares_inet_ntop(int af, const void *src, char *dst,
     case AF_INET6:
       return inet_ntop6(src, dst, (size_t)size);
     default:
-      SET_ERRNO(EAFNOSUPPORT);
-      return NULL;
+      break;
   }
-  /* NOTREACHED */
+  SET_ERRNO(EAFNOSUPPORT);
+  return NULL;
 }
 
 /* const char *
@@ -200,9 +200,9 @@ static const char *inet_ntop6(const unsigned char *src, char *dst, size_t size)
    */
   if ((size_t)(tp - tmp) > size) {
     SET_ERRNO(ENOSPC);
-    return (NULL);
+    return NULL;
   }
   ares_strcpy(dst, tmp, size);
-  return (dst);
+  return dst;
 }
 
