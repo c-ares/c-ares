@@ -587,6 +587,12 @@ static ares_status_t ares_dns_write_rr_opt(ares__buf_t         *buf,
 
   (void)namelist;
 
+  /* Coverity reports on this even though its not possible when taken
+   * into context */
+  if (len == 0) {
+    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
   /* We need to go back and overwrite the class and ttl that were emitted as
    * the OPT record overloads them for its own use (yes, very strange!) */
   status = ares__buf_set_length(buf, len - 2 /* RDLENGTH */
@@ -862,6 +868,12 @@ static ares_status_t ares_dns_write_rr_raw_rr(ares__buf_t         *buf,
   size_t               data_len = 0;
 
   (void)namelist;
+
+  /* Coverity reports on this even though its not possible when taken
+   * into context */
+  if (len == 0) {
+    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
 
   /* We need to go back and overwrite the type that was emitted by the parent
    * function */

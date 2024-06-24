@@ -837,7 +837,7 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
     }
 
     if (flags & ARES_BUF_SPLIT_RTRIM) {
-      while (len && ares__is_whitespace(ptr[len - 1], ARES_TRUE)) {
+      while (len > 0 && ares__is_whitespace(ptr[len - 1], ARES_TRUE)) {
         len--;
       }
     }

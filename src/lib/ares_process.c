@@ -376,7 +376,7 @@ static void read_tcp_data(ares_channel_t           *channel,
 
     /* Can't fail except for misuse */
     data = ares__buf_tag_fetch(server->tcp_parser, &data_len);
-    if (data == NULL) {
+    if (data == NULL || data_len < 2) {
       ares__buf_tag_clear(server->tcp_parser);
       break;
     }
