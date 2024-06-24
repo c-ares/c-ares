@@ -526,8 +526,12 @@ static unsigned short getaddrport(struct sockaddr_storage *addr)
 {
   if (addr->ss_family == AF_INET)
     return ntohs(((struct sockaddr_in *)(void *)addr)->sin_port);
+  if (addr->ss_family == AF_INET6)
+    return ntohs(((struct sockaddr_in6 *)(void *)addr)->sin6_port);
 
-  return ntohs(((struct sockaddr_in6 *)(void *)addr)->sin6_port);
+  /* TCP should use getpeername() to get the port, getting this from recvfrom
+   * won't work */
+  return 0;
 }
 
 void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, ares_socklen_t addrlen,
@@ -616,6 +620,7 @@ void MockServer::ProcessFD(ares_socket_t fd) {
   // Activity on a data-bearing file descriptor.
   struct sockaddr_storage addr;
   socklen_t addrlen = sizeof(addr);
+  memset(&addr, 0, sizeof(addr));
   byte buffer[2048];
   ares_ssize_t len = (ares_ssize_t)recvfrom(fd, BYTE_CAST buffer, sizeof(buffer), 0,
                      (struct sockaddr *)&addr, &addrlen);
