@@ -77,13 +77,6 @@ IF (MSVC)
 			ENDIF ()
 		ENDFOREACH ()
 
-		# Prevent: error C1041: cannot open program database '....'; if multiple CL.EXE write to the same .PDB file, please use /FS
-		FOREACH (config_type ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
-			STRING (TOUPPER ${config_type} upper_config_type)
-			SET (flag_var "CMAKE_C_FLAGS_${upper_config_type}")
-			SET (${flag_var} "${${flag_var}} /FS")
-		ENDFOREACH ()
-
 		# clean up
 		SET (upper_config_type)
 		SET (config_type)
