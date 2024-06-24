@@ -227,9 +227,9 @@ The value of
 .I sock_state_cb_data
 will be passed as the
 .I data
-argument.  The channel lock is held during this callback, if calling
-cross-thread care must be taken to ensure no other c-ares functions are
-called from this callback.
+argument.  The channel lock is held during this callback, if in a multithreaded
+application, care must be taken to ensure lock order is correct to be able to
+handle this and avoid deadlocks.
 
 Cannot be used with \fBARES_OPT_EVENT_THREAD\fP.
 .TP 18
