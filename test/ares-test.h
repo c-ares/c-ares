@@ -218,6 +218,7 @@ protected:
   ares_channel_t *channel_;
 };
 
+
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
 public:

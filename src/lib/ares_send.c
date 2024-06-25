@@ -49,7 +49,6 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
                                void *arg, unsigned short *qid)
 {
   struct query            *query;
-  size_t                   packetsz;
   ares_timeval_t           now;
   ares_status_t            status;
   unsigned short           id          = generate_unique_qid(channel);
@@ -79,22 +78,20 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
   }
   memset(query, 0, sizeof(*query));
 
-  query->channel = channel;
-
-  status = ares_dns_write(dnsrec, &query->qbuf, &query->qlen);
-  if (status != ARES_SUCCESS) {
-    ares_free(query);
-    callback(arg, status, 0, NULL);
-    return status;
-  }
-
+  query->channel      = channel;
   query->qid          = id;
   query->timeout.sec  = 0;
   query->timeout.usec = 0;
 
-  /* Ignore first 2 bytes, assign our own query id */
-  query->qbuf[0] = (unsigned char)((id >> 8) & 0xFF);
-  query->qbuf[1] = (unsigned char)(id & 0xFF);
+  /* Duplicate Query */
+  query->query = ares_dns_record_duplicate(dnsrec);
+  if (query->query == NULL) {
+    ares_free(query);
+    callback(arg, ARES_ENOMEM, 0, NULL);
+    return ARES_ENOMEM;
+  }
+
+  ares_dns_record_set_id(query->query, id);
 
   /* Fill in query arguments. */
   query->callback = callback;
@@ -103,9 +100,7 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
   /* Initialize query status. */
   query->try_count = 0;
 
-  packetsz = (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : PACKETSZ;
-  query->using_tcp =
-    (channel->flags & ARES_FLAG_USEVC) || query->qlen > packetsz;
+  query->using_tcp = (channel->flags & ARES_FLAG_USEVC)?ARES_TRUE:ARES_FALSE;
 
   query->error_status = ARES_SUCCESS;
   query->timeouts     = 0;

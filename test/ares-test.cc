@@ -668,11 +668,37 @@ std::set<ares_socket_t> MockServer::fds() const {
 }
 
 
+static void strtolower(char *dest, const char *src, size_t dest_size)
+{
+  size_t len;
+
+  if (dest == NULL)
+    return;
+
+  memset(dest, 0, dest_size);
+
+  if (src == NULL)
+    return;
+
+  len = strlen(src);
+  if (len >= dest_size)
+    return;
+
+  for (size_t i = 0; i<len; i++) {
+    dest[i] = (char)tolower(src[i]);
+  }
+}
+
 void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
                                 ares_socklen_t addrlen, const std::string &reqstr,
                                 int qid, const std::string& name, int rrtype) {
+
+  /* DNS 0x20 will mix case, do case-insensitive matching of name in request */
+  char lower_name[256];
+  strtolower(lower_name, name.c_str(), sizeof(lower_name));
+
   // Before processing, let gMock know the request is happening.
-  OnRequest(name, rrtype);
+  OnRequest(lower_name, rrtype);
 
   // If we are expecting a specific request then check it matches here.
   if (expected_request_.length() > 0) {
