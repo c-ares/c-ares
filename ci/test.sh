@@ -30,6 +30,9 @@ else
     TESTSBIN="${PWD}/cmakebld/bin"
 fi
 
+GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1
+export GTEST_INSTALL_FAILURE_SIGNAL_HANDLER
+
 $TEST_WRAP "${TOOLSBIN}/adig" www.google.com
 $TEST_WRAP "${TOOLSBIN}/ahost" www.google.com
 cd "${TESTSBIN}"

@@ -50,7 +50,7 @@ jobs:
           cmake --build build_cmake
           ./build_cmake/bin/adig.exe www.google.com
           ./build_cmake/bin/ahost.exe www.google.com
-          ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1 ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "Autotools: build and test c-ares"
         run: |
           autoreconf -fi
@@ -60,7 +60,7 @@ jobs:
           make -j3
           ./src/tools/adig.exe www.google.com
           ./src/tools/ahost.exe www.google.com
-          ./test/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1 ./test/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "CMake: UBSAN: build and test c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         env:
@@ -70,7 +70,7 @@ jobs:
           cmake --build build_ubsan
           ./build_ubsan/bin/adig.exe www.google.com
           ./build_ubsan/bin/ahost.exe www.google.com
-          ./build_ubsan/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1 ./build_ubsan/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "CMake: ASAN: build and test c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         env:
@@ -80,7 +80,7 @@ jobs:
           cmake --build build_asan
           ./build_asan/bin/adig.exe www.google.com
           ./build_asan/bin/ahost.exe www.google.com
-          ./build_asan/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1 ./build_asan/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
       - name: "Autotools: Static Analyzer: build c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         # Cmake won't work because it somehow mangles linker args and it can't find core windows libraries
