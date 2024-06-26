@@ -179,6 +179,13 @@ std::string ClassToString(int qclass) {
   }
 }
 
+static void cppstrtolower(std::string &str)
+{
+  std::transform(str.begin(), str.end(), str.begin(),
+    [](unsigned char c){ return std::tolower(c); });
+}
+
+
 std::string AddressToString(const void* vaddr, int len) {
   const byte* addr = reinterpret_cast<const byte*>(vaddr);
   std::stringstream ss;
@@ -272,7 +279,13 @@ std::string QuestionToString(const std::vector<byte>& packet,
   }
   *len -= (int)enclen;
   *data += enclen;
-  ss << "'" << name << "' ";
+
+  // DNS 0x20 may mix case, output as all lower for checks as the mixed case
+  // is really more of an internal thing
+  std::string namestr = name;
+  cppstrtolower(namestr);
+
+  ss << "'" << namestr << "' ";
   ares_free_string(name);
   if (*len < NS_QFIXEDSZ) {
     ss << "(too short, len left " << *len << ")";
@@ -515,9 +528,14 @@ std::vector<byte> EncodeString(const std::string& name) {
   return data;
 }
 
-std::vector<byte> DNSQuestion::data() const {
+std::vector<byte> DNSQuestion::data(const std::string *request_name) const {
   std::vector<byte> data;
-  std::vector<byte> encname = EncodeString(name_);
+  std::vector<byte> encname;
+  if (request_name != nullptr && strcasecmp(request_name->c_str(), name_.c_str()) == 0) {
+    encname = EncodeString(*request_name);
+  } else {
+    encname = EncodeString(name_);
+  }
   data.insert(data.end(), encname.begin(), encname.end());
   PushInt16(&data, rrtype_);
   PushInt16(&data, qclass_);
@@ -641,7 +659,7 @@ std::vector<byte> DNSNaptrRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSPacket::data() const {
+std::vector<byte> DNSPacket::data(const std::string *request_name) const {
   std::vector<byte> data;
   PushInt16(&data, qid_);
   byte b = 0x00;
@@ -669,7 +687,7 @@ std::vector<byte> DNSPacket::data() const {
   PushInt16(&data, count);
 
   for (const std::unique_ptr<DNSQuestion>& question : questions_) {
-    std::vector<byte> qdata = question->data();
+    std::vector<byte> qdata = question->data(request_name);
     data.insert(data.end(), qdata.begin(), qdata.end());
   }
   for (const std::unique_ptr<DNSRR>& rr : answers_) {

@@ -1221,7 +1221,13 @@ static ares_bool_t same_questions(const ares_dns_record_t *qrec,
         aname == NULL) {
       goto done;
     }
-    if (strcasecmp(qname, aname) != 0 || qtype != atype || qclass != aclass) {
+
+    /* NOTE: for DNS 0x20, part of the protection is to use a case-sensitive
+     *       comparison of the DNS query name.  This expects the upstream DNS
+     *       server to preserve the case of the name in the response packet.
+     *       https://datatracker.ietf.org/doc/html/draft-vixie-dnsext-dns0x20-00
+     */
+    if (strcmp(qname, aname) != 0 || qtype != atype || qclass != aclass) {
       goto done;
     }
   }

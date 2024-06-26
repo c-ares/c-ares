@@ -43,6 +43,66 @@ static unsigned short generate_unique_qid(ares_channel_t *channel)
   return id;
 }
 
+
+/* https://datatracker.ietf.org/doc/html/draft-vixie-dnsext-dns0x20-00 */
+static ares_status_t ares_apply_dns0x20(ares_channel_t *channel,
+                                        ares_dns_record_t *dnsrec)
+{
+  ares_status_t status  = ARES_SUCCESS;
+  const char   *name    = NULL;
+  char          dns0x20name[256];
+  unsigned char randdata[256 / 8];
+  size_t        len;
+  size_t        remaining_bits;
+  size_t        total_bits;
+  size_t        i;
+
+  status = ares_dns_record_query_get(dnsrec, 0, &name, NULL, NULL);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  len = ares_strlen(name);
+  if (len == 0 || len >= sizeof(dns0x20name)) {
+    status = ARES_EBADNAME;
+    goto done;
+  }
+
+  memset(dns0x20name, 0, sizeof(dns0x20name));
+
+  /* Fetch the minimum amount of random data we'd need for the string, which
+   * is 1 bit per byte */
+  total_bits = ((len + 7) / 8) * 8;
+  remaining_bits = total_bits;
+  ares__rand_bytes(channel->rand_state, randdata, total_bits / 8);
+
+  /* Randomly apply 0x20 to name */
+  for (i=0; i<len; i++) {
+    size_t bit;
+
+    /* Only apply 0x20 to alpha characters */
+    if (!isalpha(name[i])) {
+      dns0x20name[i] = name[i];
+      continue;
+    }
+
+    /* coin flip */
+    bit = total_bits - remaining_bits;
+    if (randdata[bit / 8] & (1 << (bit % 8))) {
+      dns0x20name[i] = name[i] | 0x20; /* Set 0x20 */
+    } else {
+      dns0x20name[i] = (char)(((unsigned char)name[i]) & 0xDF); /* Unset 0x20 */
+    }
+    remaining_bits--;
+  }
+
+  status = ares_dns_record_query_set_name(dnsrec, 0, dns0x20name);
+
+done:
+  return status;
+}
+
+
 ares_status_t ares_send_nolock(ares_channel_t          *channel,
                                const ares_dns_record_t *dnsrec,
                                ares_callback_dnsrec     callback,
@@ -92,6 +152,15 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
   }
 
   ares_dns_record_set_id(query->query, id);
+
+  status = ares_apply_dns0x20(channel, query->query);
+  if (status != ARES_SUCCESS) {
+    /* LCOV_EXCL_START: OutOfMemory */
+    callback(arg, status, 0, NULL);
+    ares__free_query(query);
+    return status;
+    /* LCOV_EXCL_STOP */
+  }
 
   /* Fill in query arguments. */
   query->callback = callback;

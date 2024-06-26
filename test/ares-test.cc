@@ -705,12 +705,16 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
     ASSERT_EQ(expected_request_, reqstr);
   }
 
-  if (reply_.size() == 0) {
+  if (reply_ != nullptr) {
+    exact_reply_ = reply_->data(&name);
+  }
+
+  if (exact_reply_.size() == 0) {
     return;
   }
 
   // Make a local copy of the current pending reply.
-  std::vector<byte> reply = reply_;
+  std::vector<byte> reply = exact_reply_;
 
   if (qid_ >= 0) {
     // Use the explicitly specified query ID.
@@ -983,12 +987,22 @@ std::ostream& operator<<(std::ostream& os, const HostResult& result) {
   return os;
 }
 
+static void cppstrtolower(std::string &str)
+{
+  std::transform(str.begin(), str.end(), str.begin(),
+    [](unsigned char c){ return std::tolower(c); });
+}
+
 HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
   if (!hostent)
     return;
 
-  if (hostent->h_name)
+  if (hostent->h_name) {
     name_ = hostent->h_name;
+    // DNS 0x20 may mix case, output as all lower for checks as the mixed case
+    // is really more of an internal thing
+    cppstrtolower(name_);
+  }
 
   if (hostent->h_aliases) {
     char** palias = hostent->h_aliases;
