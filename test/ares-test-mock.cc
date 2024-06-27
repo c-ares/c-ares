@@ -40,7 +40,25 @@ using testing::DoAll;
 namespace ares {
 namespace test {
 
-TEST_P(MockChannelTest, Basic) {
+class NoDNS0x20MockTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
+ public:
+  NoDNS0x20MockTest()
+    : MockChannelOptsTest(1, GetParam(), false,
+                          FillOptions(&opts_),
+                          ARES_OPT_FLAGS) {}
+  static struct ares_options* FillOptions(struct ares_options * opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->flags = ARES_FLAG_EDNS;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+
+TEST_P(NoDNS0x20MockTest, Basic) {
   std::vector<byte> reply = {
     0x00, 0x00,  // qid
     0x84, // response + query + AA + not-TC + not-RD
@@ -1796,6 +1814,8 @@ std::string PrintFamily(const testing::TestParamInfo<int> &info)
   name += af_tostr(info.param);
   return name;
 }
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, NoDNS0x20MockTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
