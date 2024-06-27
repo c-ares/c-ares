@@ -142,6 +142,7 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
   query->qid          = id;
   query->timeout.sec  = 0;
   query->timeout.usec = 0;
+  query->using_tcp    = (channel->flags & ARES_FLAG_USEVC)?ARES_TRUE:ARES_FALSE;
 
   /* Duplicate Query */
   query->query = ares_dns_record_duplicate(dnsrec);
@@ -153,13 +154,15 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
 
   ares_dns_record_set_id(query->query, id);
 
-  status = ares_apply_dns0x20(channel, query->query);
-  if (status != ARES_SUCCESS) {
-    /* LCOV_EXCL_START: OutOfMemory */
-    callback(arg, status, 0, NULL);
-    ares__free_query(query);
-    return status;
-    /* LCOV_EXCL_STOP */
+  if (channel->flags & ARES_FLAG_DNS0x20 && !query->using_tcp) {
+    status = ares_apply_dns0x20(channel, query->query);
+    if (status != ARES_SUCCESS) {
+      /* LCOV_EXCL_START: OutOfMemory */
+      callback(arg, status, 0, NULL);
+      ares__free_query(query);
+      return status;
+      /* LCOV_EXCL_STOP */
+    }
   }
 
   /* Fill in query arguments. */
@@ -169,7 +172,6 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
   /* Initialize query status. */
   query->try_count = 0;
 
-  query->using_tcp = (channel->flags & ARES_FLAG_USEVC)?ARES_TRUE:ARES_FALSE;
 
   query->error_status = ARES_SUCCESS;
   query->timeouts     = 0;
