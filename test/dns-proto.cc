@@ -36,6 +36,10 @@
 #include <sstream>
 #include <algorithm>
 
+#if defined(_WIN32) && !defined(strcasecmp)
+#  define strcasecmp(a,b) stricmp(a,b)
+#endif
+
 namespace ares {
 
 std::string HexDump(std::vector<byte> data) {
