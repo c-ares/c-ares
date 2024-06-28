@@ -34,6 +34,7 @@
 #include <stdlib.h>
 
 #include <sstream>
+#include <algorithm>
 
 namespace ares {
 

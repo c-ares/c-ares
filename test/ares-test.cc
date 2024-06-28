@@ -58,6 +58,7 @@ extern "C" {
 
 #include <functional>
 #include <sstream>
+#include <algorithm>
 
 #ifdef WIN32
 #define BYTE_CAST (char *)
