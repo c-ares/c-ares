@@ -432,6 +432,7 @@ void DefaultChannelModeTest::Process(unsigned int cancel_ms) {
 
 MockServer::MockServer(int family, unsigned short port)
   : udpport_(port), tcpport_(port), qid_(-1) {
+  reply_ = nullptr;
   // Create a TCP socket to receive data on.
   tcp_data_ = NULL;
   tcp_data_len_ = 0;
