@@ -516,7 +516,7 @@ void PushInt16(std::vector<byte>* data, int value) {
   data->push_back((byte)value & 0x00ff);
 }
 
-std::vector<byte> EncodeString(const std::string& name) {
+std::vector<byte> EncodeString(const std::string &name) {
   std::vector<byte> data;
   std::stringstream ss(name);
   std::string label;
@@ -533,11 +533,11 @@ std::vector<byte> EncodeString(const std::string& name) {
   return data;
 }
 
-std::vector<byte> DNSQuestion::data(const std::string *request_name) const {
+std::vector<byte> DNSQuestion::data(const char *request_name) const {
   std::vector<byte> data;
   std::vector<byte> encname;
-  if (request_name != nullptr && strcasecmp(request_name->c_str(), name_.c_str()) == 0) {
-    encname = EncodeString(*request_name);
+  if (request_name != nullptr && strcasecmp(request_name, name_.c_str()) == 0) {
+    encname = EncodeString(request_name);
   } else {
     encname = EncodeString(name_);
   }
@@ -664,7 +664,7 @@ std::vector<byte> DNSNaptrRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSPacket::data(const std::string *request_name) const {
+std::vector<byte> DNSPacket::data(const char *request_name) const {
   std::vector<byte> data;
   PushInt16(&data, qid_);
   byte b = 0x00;

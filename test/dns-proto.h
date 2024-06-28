@@ -81,7 +81,7 @@ struct DNSQuestion {
   {
   }
 
-  virtual std::vector<byte> data(const std::string *request_name) const;
+  virtual std::vector<byte> data(const char *request_name) const;
 
   virtual std::vector<byte> data() const
   {
@@ -381,7 +381,7 @@ struct DNSPacket {
   }
 
   // Return the encoded packet.
-  std::vector<byte>                         data(const std::string *request_name) const;
+  std::vector<byte>                         data(const char *request_name) const;
   std::vector<byte>                         data() const
   {
     return data(nullptr);

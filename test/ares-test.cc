@@ -571,21 +571,22 @@ void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, 
   }
   if (enclen > qlen) {
     std::cerr << "(error, encoded name len " << enclen << "bigger than remaining data " << qlen << " bytes)" << std::endl;
+    ares_free_string(name);
     return;
   }
   qlen -= (int)enclen;
   question += enclen;
-  std::string namestr(name);
-  ares_free_string(name);
 
   if (qlen < 4) {
     std::cerr << "Unexpected question size (" << qlen
               << " bytes after name)" << std::endl;
+    ares_free_string(name);
     return;
   }
   if (DNS_QUESTION_CLASS(question) != C_IN) {
     std::cerr << "Unexpected question class (" << DNS_QUESTION_CLASS(question)
               << ")" << std::endl;
+    ares_free_string(name);
     return;
   }
   int rrtype = DNS_QUESTION_TYPE(question);
@@ -596,11 +597,11 @@ void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, 
     std::cerr << "received " << (fd == udpfd_ ? "UDP" : "TCP") << " request " << reqstr
               << " on port " << (fd == udpfd_ ? udpport_ : tcpport_)
               << ":" << getaddrport(addr) << std::endl;
-    std::cerr << "ProcessRequest(" << qid << ", '" << namestr
+    std::cerr << "ProcessRequest(" << qid << ", '" << name
               << "', " << RRTypeToString(rrtype) << ")" << std::endl;
   }
-  ProcessRequest(fd, addr, addrlen, reqstr, qid, namestr, rrtype);
-
+  ProcessRequest(fd, addr, addrlen, reqstr, qid, name, rrtype);
+  ares_free_string(name);
 }
 
 void MockServer::ProcessFD(ares_socket_t fd) {
@@ -692,11 +693,11 @@ static void strtolower(char *dest, const char *src, size_t dest_size)
 
 void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
                                 ares_socklen_t addrlen, const std::string &reqstr,
-                                int qid, const std::string& name, int rrtype) {
+                                int qid, const char *name, int rrtype) {
 
   /* DNS 0x20 will mix case, do case-insensitive matching of name in request */
   char lower_name[256];
-  strtolower(lower_name, name.c_str(), sizeof(lower_name));
+  strtolower(lower_name, name, sizeof(lower_name));
 
   // Before processing, let gMock know the request is happening.
   OnRequest(lower_name, rrtype);
@@ -707,7 +708,7 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
   }
 
   if (reply_ != nullptr) {
-    exact_reply_ = reply_->data(&name);
+    exact_reply_ = reply_->data(name);
   }
 
   if (exact_reply_.size() == 0) {
