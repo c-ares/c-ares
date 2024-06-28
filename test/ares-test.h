@@ -240,6 +240,7 @@ public:
   void SetReply(const DNSPacket *reply)
   {
     reply_ = reply;
+    exact_reply_.clear();
   }
 
   // Set the reply to be sent next as well as the request (in string form) that
@@ -258,6 +259,8 @@ public:
 
   void Disconnect()
   {
+    reply_ = nullptr;
+    exact_reply_.clear();
     for (ares_socket_t fd : connfds_) {
       sclose(fd);
     }
