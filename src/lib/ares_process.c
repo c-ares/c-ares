@@ -60,8 +60,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
 static void          handle_conn_error(struct server_connection *conn,
                                        ares_bool_t               critical_failure);
 
-static ares_bool_t   same_questions(const ares_channel_t *channel,
-                                    const ares_dns_record_t *qrec,
+static ares_bool_t   same_questions(const struct query *query,
                                     const ares_dns_record_t *arec);
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
@@ -684,7 +683,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
 
   /* Both the query id and the questions must be the same. We will drop any
    * replies that aren't for the same query as this is considered invalid. */
-  if (!same_questions(channel, query->query, rdnsrec)) {
+  if (!same_questions(query, rdnsrec)) {
     /* Possible qid conflict due to delayed response, that's ok */
     status = ARES_SUCCESS;
     goto cleanup;
@@ -1192,12 +1191,13 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
   return ARES_SUCCESS;
 }
 
-static ares_bool_t same_questions(const ares_channel_t *channel,
-                                  const ares_dns_record_t *qrec,
+static ares_bool_t same_questions(const struct query *query,
                                   const ares_dns_record_t *arec)
 {
-  size_t      i;
-  ares_bool_t rv = ARES_FALSE;
+  size_t                   i;
+  ares_bool_t              rv      = ARES_FALSE;
+  const ares_dns_record_t *qrec    = query->query;
+  const ares_channel_t    *channel = query->channel;
 
 
   if (ares_dns_record_query_cnt(qrec) != ares_dns_record_query_cnt(arec)) {
@@ -1228,7 +1228,7 @@ static ares_bool_t same_questions(const ares_channel_t *channel,
       goto done;
     }
 
-    if (channel->flags & ARES_FLAG_DNS0x20) {
+    if (channel->flags & ARES_FLAG_DNS0x20 && !query->using_tcp) {
       /* NOTE: for DNS 0x20, part of the protection is to use a case-sensitive
        *       comparison of the DNS query name.  This expects the upstream DNS
        *       server to preserve the case of the name in the response packet.
