@@ -670,35 +670,13 @@ std::set<ares_socket_t> MockServer::fds() const {
   return result;
 }
 
-
-static void strtolower(char *dest, const char *src, size_t dest_size)
-{
-  size_t len;
-
-  if (dest == NULL)
-    return;
-
-  memset(dest, 0, dest_size);
-
-  if (src == NULL)
-    return;
-
-  len = strlen(src);
-  if (len >= dest_size)
-    return;
-
-  for (size_t i = 0; i<len; i++) {
-    dest[i] = (char)tolower(src[i]);
-  }
-}
-
 void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
                                 ares_socklen_t addrlen, const std::string &reqstr,
                                 int qid, const char *name, int rrtype) {
 
   /* DNS 0x20 will mix case, do case-insensitive matching of name in request */
   char lower_name[256];
-  strtolower(lower_name, name, sizeof(lower_name));
+  ares_strtolower(lower_name, name, sizeof(lower_name));
 
   // Before processing, let gMock know the request is happening.
   OnRequest(lower_name, rrtype);
@@ -996,21 +974,16 @@ std::ostream& operator<<(std::ostream& os, const HostResult& result) {
   return os;
 }
 
-static void cppstrtolower(std::string &str)
-{
-  std::transform(str.begin(), str.end(), str.begin(),
-    [](unsigned char c){ return std::tolower(c); });
-}
-
 HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
   if (!hostent)
     return;
 
   if (hostent->h_name) {
-    name_ = hostent->h_name;
     // DNS 0x20 may mix case, output as all lower for checks as the mixed case
     // is really more of an internal thing
-    cppstrtolower(name_);
+    char lowername[256];
+    ares_strtolower(lowername, hostent->h_name, sizeof(lowername));
+    name_ = lowername;
   }
 
   if (hostent->h_aliases) {

@@ -40,6 +40,28 @@
 #  define strcasecmp(a,b) stricmp(a,b)
 #endif
 
+void ares_strtolower(char *dest, const char *src, size_t dest_size)
+{
+  size_t len;
+
+  if (dest == NULL)
+    return;
+
+  memset(dest, 0, dest_size);
+
+  if (src == NULL)
+    return;
+
+  len = strlen(src);
+  if (len >= dest_size)
+    return;
+
+  for (size_t i = 0; i<len; i++) {
+    dest[i] = (char)tolower(src[i]);
+  }
+}
+
+
 namespace ares {
 
 std::string HexDump(std::vector<byte> data) {
@@ -184,13 +206,6 @@ std::string ClassToString(int qclass) {
   }
 }
 
-static void cppstrtolower(std::string &str)
-{
-  std::transform(str.begin(), str.end(), str.begin(),
-    [](unsigned char c){ return std::tolower(c); });
-}
-
-
 std::string AddressToString(const void* vaddr, int len) {
   const byte* addr = reinterpret_cast<const byte*>(vaddr);
   std::stringstream ss;
@@ -287,11 +302,11 @@ std::string QuestionToString(const std::vector<byte>& packet,
 
   // DNS 0x20 may mix case, output as all lower for checks as the mixed case
   // is really more of an internal thing
-  std::string namestr = name;
-  cppstrtolower(namestr);
-
-  ss << "'" << namestr << "' ";
+  char lowername[256];
+  ares_strtolower(lowername, name, sizeof(lowername));
   ares_free_string(name);
+
+  ss << "'" << lowername << "' ";
   if (*len < NS_QFIXEDSZ) {
     ss << "(too short, len left " << *len << ")";
     return ss.str();

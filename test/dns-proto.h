@@ -36,6 +36,8 @@
 #include <string>
 #include <vector>
 
+extern "C" void ares_strtolower(char *dest, const char *src, size_t dest_size);
+
 namespace ares {
 
 typedef unsigned char byte;
