@@ -36,7 +36,7 @@
 #include <string>
 #include <vector>
 
-extern "C" void ares_strtolower(char *dest, const char *src, size_t dest_size);
+extern "C" void arestest_strtolower(char *dest, const char *src, size_t dest_size);
 
 namespace ares {
 

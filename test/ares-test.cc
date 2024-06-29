@@ -676,7 +676,7 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
 
   /* DNS 0x20 will mix case, do case-insensitive matching of name in request */
   char lower_name[256];
-  ares_strtolower(lower_name, name, sizeof(lower_name));
+  arestest_strtolower(lower_name, name, sizeof(lower_name));
 
   // Before processing, let gMock know the request is happening.
   OnRequest(lower_name, rrtype);
@@ -982,7 +982,7 @@ HostEnt::HostEnt(const struct hostent *hostent) : addrtype_(-1) {
     // DNS 0x20 may mix case, output as all lower for checks as the mixed case
     // is really more of an internal thing
     char lowername[256];
-    ares_strtolower(lowername, hostent->h_name, sizeof(lowername));
+    arestest_strtolower(lowername, hostent->h_name, sizeof(lowername));
     name_ = lowername;
   }
 

@@ -40,7 +40,7 @@
 #  define strcasecmp(a,b) stricmp(a,b)
 #endif
 
-void ares_strtolower(char *dest, const char *src, size_t dest_size)
+void arestest_strtolower(char *dest, const char *src, size_t dest_size)
 {
   size_t len;
 
@@ -303,7 +303,7 @@ std::string QuestionToString(const std::vector<byte>& packet,
   // DNS 0x20 may mix case, output as all lower for checks as the mixed case
   // is really more of an internal thing
   char lowername[256];
-  ares_strtolower(lowername, name, sizeof(lowername));
+  arestest_strtolower(lowername, name, sizeof(lowername));
   ares_free_string(name);
 
   ss << "'" << lowername << "' ";
