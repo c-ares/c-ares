@@ -135,7 +135,9 @@ servers available.  Instead, fail initialization with \fIARES_ENOSERVER\fP.
 Enable support for DNS 0x20 as per https://datatracker.ietf.org/doc/html/draft-vixie-dnsext-dns0x20-00
 which adds additional entropy to the request by randomizing the case of the
 query name.  Integrators need to ensure they treat DNS name responses as
-case-insensitive.
+case-insensitive.  In rare circumstances this may cause the inability to lookup
+certain domains if the upstream server or the authoritative server for the
+domain is non-compliant.
 .RE
 .TP 18
 .B ARES_OPT_TIMEOUT
