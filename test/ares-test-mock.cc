@@ -40,7 +40,25 @@ using testing::DoAll;
 namespace ares {
 namespace test {
 
-TEST_P(MockChannelTest, Basic) {
+class NoDNS0x20MockTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
+ public:
+  NoDNS0x20MockTest()
+    : MockChannelOptsTest(1, GetParam(), false,
+                          FillOptions(&opts_),
+                          ARES_OPT_FLAGS) {}
+  static struct ares_options* FillOptions(struct ares_options * opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->flags = ARES_FLAG_EDNS;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+
+TEST_P(NoDNS0x20MockTest, Basic) {
   std::vector<byte> reply = {
     0x00, 0x00,  // qid
     0x84, // response + query + AA + not-TC + not-RD
@@ -78,6 +96,48 @@ TEST_P(MockChannelTest, Basic) {
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
+}
+
+TEST_P(MockUDPChannelTest, DNS0x20BadReply) {
+  std::vector<byte> reply = {
+    0x00, 0x00,  // qid
+    0x84, // response + query + AA + not-TC + not-RD
+    0x00, // not-RA + not-Z + not-AD + not-CD + rc=NoError
+    0x00, 0x01,  // 1 question
+    0x00, 0x01,  // 1 answer RRs
+    0x00, 0x00,  // 0 authority RRs
+    0x00, 0x00,  // 0 additional RRs
+    // Question
+    0x03, 'w', 'w', 'w',
+    0x1D, 's', 'o', 'm', 'e', 'l', 'o', 'n', 'g', 'd', 'o', 'm', 'a', 'i', 'n', 'n', 'a', 'm', 'e', 'b', 'e', 'c', 'a', 'u', 's', 'e', 'p', 'r', 'n', 'g',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x01,  // type A
+    0x00, 0x01,  // class IN
+    // Answer
+    0x03, 'w', 'w', 'w',
+    0x1D, 's', 'o', 'm', 'e', 'l', 'o', 'n', 'g', 'd', 'o', 'm', 'a', 'i', 'n', 'n', 'a', 'm', 'e', 'b', 'e', 'c', 'a', 'u', 's', 'e', 'p', 'r', 'n', 'g',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x01,  // type A
+    0x00, 0x01,  // class IN
+    0x00, 0x00, 0x01, 0x00,  // TTL
+    0x00, 0x04,  // rdata length
+    0x01, 0x02, 0x03, 0x04
+  };
+
+  ON_CALL(server_, OnRequest("www.somelongdomainnamebecauseprng.com", T_A))
+    .WillByDefault(SetReplyData(&server_, reply));
+
+  /* Reply will be thrown out due to mismatched case for DNS 0x20 in response,
+   * its technically possible this test case may not fail if somehow the
+   * PRNG returns all lowercase domain name so we need to make this domain
+   * fairly long to make sure those odds are very very very low */
+  HostResult result;
+  ares_gethostbyname(channel_, "www.somelongdomainnamebecauseprng.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ETIMEOUT, result.status_);
 }
 
 // UDP only so mock server doesn't get confused by concatenated requests
@@ -1796,6 +1856,8 @@ std::string PrintFamily(const testing::TestParamInfo<int> &info)
   name += af_tostr(info.param);
   return name;
 }
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, NoDNS0x20MockTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 

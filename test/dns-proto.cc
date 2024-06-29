@@ -34,6 +34,33 @@
 #include <stdlib.h>
 
 #include <sstream>
+#include <algorithm>
+
+#if defined(_WIN32) && !defined(strcasecmp)
+#  define strcasecmp(a,b) stricmp(a,b)
+#endif
+
+void arestest_strtolower(char *dest, const char *src, size_t dest_size)
+{
+  size_t len;
+
+  if (dest == NULL)
+    return;
+
+  memset(dest, 0, dest_size);
+
+  if (src == NULL)
+    return;
+
+  len = strlen(src);
+  if (len >= dest_size)
+    return;
+
+  for (size_t i = 0; i<len; i++) {
+    dest[i] = (char)tolower(src[i]);
+  }
+}
+
 
 namespace ares {
 
@@ -272,8 +299,14 @@ std::string QuestionToString(const std::vector<byte>& packet,
   }
   *len -= (int)enclen;
   *data += enclen;
-  ss << "'" << name << "' ";
+
+  // DNS 0x20 may mix case, output as all lower for checks as the mixed case
+  // is really more of an internal thing
+  char lowername[256];
+  arestest_strtolower(lowername, name, sizeof(lowername));
   ares_free_string(name);
+
+  ss << "'" << lowername << "' ";
   if (*len < NS_QFIXEDSZ) {
     ss << "(too short, len left " << *len << ")";
     return ss.str();
@@ -498,7 +531,7 @@ void PushInt16(std::vector<byte>* data, int value) {
   data->push_back((byte)value & 0x00ff);
 }
 
-std::vector<byte> EncodeString(const std::string& name) {
+std::vector<byte> EncodeString(const std::string &name) {
   std::vector<byte> data;
   std::stringstream ss(name);
   std::string label;
@@ -515,9 +548,14 @@ std::vector<byte> EncodeString(const std::string& name) {
   return data;
 }
 
-std::vector<byte> DNSQuestion::data() const {
+std::vector<byte> DNSQuestion::data(const char *request_name) const {
   std::vector<byte> data;
-  std::vector<byte> encname = EncodeString(name_);
+  std::vector<byte> encname;
+  if (request_name != nullptr && strcasecmp(request_name, name_.c_str()) == 0) {
+    encname = EncodeString(request_name);
+  } else {
+    encname = EncodeString(name_);
+  }
   data.insert(data.end(), encname.begin(), encname.end());
   PushInt16(&data, rrtype_);
   PushInt16(&data, qclass_);
@@ -641,7 +679,7 @@ std::vector<byte> DNSNaptrRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSPacket::data() const {
+std::vector<byte> DNSPacket::data(const char *request_name) const {
   std::vector<byte> data;
   PushInt16(&data, qid_);
   byte b = 0x00;
@@ -669,7 +707,7 @@ std::vector<byte> DNSPacket::data() const {
   PushInt16(&data, count);
 
   for (const std::unique_ptr<DNSQuestion>& question : questions_) {
-    std::vector<byte> qdata = question->data();
+    std::vector<byte> qdata = question->data(request_name);
     data.insert(data.end(), qdata.begin(), qdata.end());
   }
   for (const std::unique_ptr<DNSRR>& rr : answers_) {

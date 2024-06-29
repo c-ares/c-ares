@@ -297,7 +297,7 @@ TEST_F(LibraryTest, ParseAReplyErrors) {
   ASSERT_NE(nullptr, host);
   std::stringstream ss;
   ss << HostEnt(host);
-  EXPECT_EQ("{'Axample.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  EXPECT_EQ("{'axample.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
   ares_free_hostent(host);
   host = nullptr;
 

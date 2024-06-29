@@ -42,46 +42,6 @@ using testing::DoAll;
 namespace ares {
 namespace test {
 
-TEST_P(MockEventThreadTest, Basic) {
-  std::vector<byte> reply = {
-    0x00, 0x00,  // qid
-    0x84, // response + query + AA + not-TC + not-RD
-    0x00, // not-RA + not-Z + not-AD + not-CD + rc=NoError
-    0x00, 0x01,  // 1 question
-    0x00, 0x01,  // 1 answer RRs
-    0x00, 0x00,  // 0 authority RRs
-    0x00, 0x00,  // 0 additional RRs
-    // Question
-    0x03, 'w', 'w', 'w',
-    0x06, 'g', 'o', 'o', 'g', 'l', 'e',
-    0x03, 'c', 'o', 'm',
-    0x00,
-    0x00, 0x01,  // type A
-    0x00, 0x01,  // class IN
-    // Answer
-    0x03, 'w', 'w', 'w',
-    0x06, 'g', 'o', 'o', 'g', 'l', 'e',
-    0x03, 'c', 'o', 'm',
-    0x00,
-    0x00, 0x01,  // type A
-    0x00, 0x01,  // class IN
-    0x00, 0x00, 0x01, 0x00,  // TTL
-    0x00, 0x04,  // rdata length
-    0x01, 0x02, 0x03, 0x04
-  };
-
-  ON_CALL(server_, OnRequest("www.google.com", T_A))
-    .WillByDefault(SetReplyData(&server_, reply));
-
-  HostResult result;
-  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
-  Process();
-  EXPECT_TRUE(result.done_);
-  std::stringstream ss;
-  ss << result.host_;
-  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
-}
-
 // UDP only so mock server doesn't get confused by concatenated requests
 TEST_P(MockUDPEventThreadTest, GetHostByNameParallelLookups) {
   DNSPacket rsp1;

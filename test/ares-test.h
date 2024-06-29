@@ -218,6 +218,7 @@ protected:
   ares_channel_t *channel_;
 };
 
+
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
 public:
@@ -232,12 +233,14 @@ public:
   // with the value from the request.
   void SetReplyData(const std::vector<byte> &reply)
   {
-    reply_ = reply;
+    exact_reply_ = reply;
+    reply_ = nullptr;
   }
 
   void SetReply(const DNSPacket *reply)
   {
-    SetReplyData(reply->data());
+    reply_ = reply;
+    exact_reply_.clear();
   }
 
   // Set the reply to be sent next as well as the request (in string form) that
@@ -246,7 +249,7 @@ public:
   void SetReplyExpRequest(const DNSPacket *reply, const std::string &request)
   {
     expected_request_ = request;
-    SetReply(reply);
+    reply_ = reply;
   }
 
   void SetReplyQID(int qid)
@@ -256,6 +259,8 @@ public:
 
   void Disconnect()
   {
+    reply_ = nullptr;
+    exact_reply_.clear();
     for (ares_socket_t fd : connfds_) {
       sclose(fd);
     }
@@ -285,7 +290,7 @@ public:
 private:
   void           ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr,
                                 ares_socklen_t addrlen, const std::string &reqstr,
-                                int qid, const std::string &name, int rrtype);
+                                int qid, const char *name, int rrtype);
   void           ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr,
                                ares_socklen_t addrlen, byte *data, int len);
   unsigned short udpport_;
@@ -293,7 +298,8 @@ private:
   ares_socket_t  udpfd_;
   ares_socket_t  tcpfd_;
   std::set<ares_socket_t> connfds_;
-  std::vector<byte>       reply_;
+  std::vector<byte>       exact_reply_;
+  const DNSPacket        *reply_;
   std::string             expected_request_;
   int                     qid_;
   unsigned char          *tcp_data_;

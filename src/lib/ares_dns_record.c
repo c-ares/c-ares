@@ -66,6 +66,15 @@ unsigned short ares_dns_record_get_id(const ares_dns_record_t *dnsrec)
   return dnsrec->id;
 }
 
+ares_bool_t ares_dns_record_set_id(ares_dns_record_t *dnsrec, unsigned short id)
+{
+  if (dnsrec == NULL) {
+    return ARES_FALSE;
+  }
+  dnsrec->id = id;
+  return ARES_TRUE;
+}
+
 unsigned short ares_dns_record_get_flags(const ares_dns_record_t *dnsrec)
 {
   if (dnsrec == NULL) {

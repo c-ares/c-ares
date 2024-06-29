@@ -254,9 +254,8 @@ struct query {
   /* connection handle query is associated with */
   struct server_connection *conn;
 
-  /* Arguments passed to ares_send() */
-  unsigned char            *qbuf;
-  size_t                    qlen;
+  /* Query */
+  ares_dns_record_t        *query;
 
   ares_callback_dnsrec      callback;
   void                     *arg;

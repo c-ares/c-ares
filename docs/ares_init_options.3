@@ -130,6 +130,14 @@ v1.22, this is on by default if flags are otherwise not set.
 .B ARES_FLAG_NO_DFLT_SVR
 Do not attempt to add a default local named server if there are no other
 servers available.  Instead, fail initialization with \fIARES_ENOSERVER\fP.
+.TP 23
+.B ARES_FLAG_DNS0x20
+Enable support for DNS 0x20 as per https://datatracker.ietf.org/doc/html/draft-vixie-dnsext-dns0x20-00
+which adds additional entropy to the request by randomizing the case of the
+query name.  Integrators need to ensure they treat DNS name responses as
+case-insensitive.  In rare circumstances this may cause the inability to lookup
+certain domains if the upstream server or the authoritative server for the
+domain is non-compliant.
 .RE
 .TP 18
 .B ARES_OPT_TIMEOUT

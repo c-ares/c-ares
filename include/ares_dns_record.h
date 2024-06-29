@@ -600,6 +600,15 @@ CARES_EXTERN void          ares_dns_record_destroy(ares_dns_record_t *dnsrec);
 CARES_EXTERN unsigned short
   ares_dns_record_get_id(const ares_dns_record_t *dnsrec);
 
+/*! Overwrite the DNS query id
+ *
+ * \param[in] dnsrec  Initialized record object
+ * \param[in] id      DNS query id
+ * \return ARES_TRUE on success, ARES_FALSE on usage error
+ */
+CARES_EXTERN ares_bool_t
+  ares_dns_record_set_id(ares_dns_record_t *dnsrec, unsigned short id);
+
 /*! Get the DNS Record Flags
  *
  *  \param[in] dnsrec  Initialized record object

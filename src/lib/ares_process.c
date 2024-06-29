@@ -60,7 +60,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
 static void          handle_conn_error(struct server_connection *conn,
                                        ares_bool_t               critical_failure);
 
-static ares_bool_t   same_questions(const ares_dns_record_t *qrec,
+static ares_bool_t   same_questions(const struct query *query,
                                     const ares_dns_record_t *arec);
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
@@ -619,22 +619,19 @@ static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
   }
 }
 
-static ares_status_t rewrite_without_edns(ares_dns_record_t *qdnsrec,
-                                          struct query      *query)
+static ares_status_t rewrite_without_edns(struct query *query)
 {
-  ares_status_t  status;
+  ares_status_t  status = ARES_SUCCESS;
   size_t         i;
   ares_bool_t    found_opt_rr = ARES_FALSE;
-  unsigned char *msg          = NULL;
-  size_t         msglen       = 0;
 
   /* Find and remove the OPT RR record */
-  for (i = 0; i < ares_dns_record_rr_cnt(qdnsrec, ARES_SECTION_ADDITIONAL);
+  for (i = 0; i < ares_dns_record_rr_cnt(query->query, ARES_SECTION_ADDITIONAL);
        i++) {
     const ares_dns_rr_t *rr;
-    rr = ares_dns_record_rr_get(qdnsrec, ARES_SECTION_ADDITIONAL, i);
+    rr = ares_dns_record_rr_get(query->query, ARES_SECTION_ADDITIONAL, i);
     if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
-      ares_dns_record_rr_del(qdnsrec, ARES_SECTION_ADDITIONAL, i);
+      ares_dns_record_rr_del(query->query, ARES_SECTION_ADDITIONAL, i);
       found_opt_rr = ARES_TRUE;
       break;
     }
@@ -644,16 +641,6 @@ static ares_status_t rewrite_without_edns(ares_dns_record_t *qdnsrec,
     status = ARES_EFORMERR;
     goto done;
   }
-
-  /* Rewrite the DNS message */
-  status = ares_dns_write(qdnsrec, &msg, &msglen);
-  if (status != ARES_SUCCESS) {
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
-  }
-
-  ares_free(query->qbuf);
-  query->qbuf = msg;
-  query->qlen = msglen;
 
 done:
   return status;
@@ -672,7 +659,6 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    * invalidating the connection all-together */
   struct server_state *server  = conn->server;
   ares_dns_record_t   *rdnsrec = NULL;
-  ares_dns_record_t   *qdnsrec = NULL;
   ares_status_t        status;
   ares_bool_t          is_cached = ARES_FALSE;
 
@@ -695,16 +681,9 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     goto cleanup;
   }
 
-  /* Parse the question we sent as we use it to compare */
-  status = ares_dns_parse(query->qbuf, query->qlen, 0, &qdnsrec);
-  if (status != ARES_SUCCESS) {
-    end_query(channel, server, query, status, NULL);
-    goto cleanup;
-  }
-
   /* Both the query id and the questions must be the same. We will drop any
    * replies that aren't for the same query as this is considered invalid. */
-  if (!same_questions(qdnsrec, rdnsrec)) {
+  if (!same_questions(query, rdnsrec)) {
     /* Possible qid conflict due to delayed response, that's ok */
     status = ARES_SUCCESS;
     goto cleanup;
@@ -721,8 +700,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    * protocol extension is not understood by the responder. We must retry the
    * query without EDNS enabled. */
   if (ares_dns_record_get_rcode(rdnsrec) == ARES_RCODE_FORMERR &&
-      ares_dns_has_opt_rr(qdnsrec) && !ares_dns_has_opt_rr(rdnsrec)) {
-    status = rewrite_without_edns(qdnsrec, query);
+      ares_dns_has_opt_rr(query->query) && !ares_dns_has_opt_rr(rdnsrec)) {
+    status = rewrite_without_edns(query);
     if (status != ARES_SUCCESS) {
       end_query(channel, server, query, status, NULL);
       goto cleanup;
@@ -793,7 +772,6 @@ cleanup:
     ares_dns_record_destroy(rdnsrec);
   }
 
-  ares_dns_record_destroy(qdnsrec);
   return status;
 }
 
@@ -934,12 +912,49 @@ static ares_status_t ares__append_tcpbuf(struct server_state *server,
                                          const struct query  *query)
 {
   ares_status_t status;
+  unsigned char *qbuf     = NULL;
+  size_t         qbuf_len = 0;
 
-  status = ares__buf_append_be16(server->tcp_send, (unsigned short)query->qlen);
+  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
   if (status != ARES_SUCCESS) {
-    return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;
   }
-  return ares__buf_append(server->tcp_send, query->qbuf, query->qlen);
+
+  status = ares__buf_append_be16(server->tcp_send, (unsigned short)qbuf_len);
+  if (status != ARES_SUCCESS) {
+    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+  }
+
+  status = ares__buf_append(server->tcp_send, qbuf, qbuf_len);
+
+done:
+  ares_free(qbuf);
+  return status;
+}
+
+
+static ares_status_t ares__write_udpbuf(ares_channel_t      *channel,
+                                        ares_socket_t        fd,
+                                        const struct query  *query)
+{
+  ares_status_t status;
+  unsigned char *qbuf     = NULL;
+  size_t         qbuf_len = 0;
+
+  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  if (ares__socket_write(channel, fd, qbuf, qbuf_len) == -1) {
+    status = ARES_ESERVFAIL;
+  } else {
+    status = ARES_SUCCESS;
+  }
+
+done:
+  ares_free(qbuf);
+  return status;
 }
 
 static size_t ares__calc_query_timeout(const struct query        *query,
@@ -1108,7 +1123,15 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
     }
 
     conn = ares__llist_node_val(node);
-    if (ares__socket_write(channel, conn->fd, query->qbuf, query->qlen) == -1) {
+
+    status = ares__write_udpbuf(channel, conn->fd, query);
+    if (status != ARES_SUCCESS) {
+      if (status == ARES_ENOMEM) {
+        /* Not retryable */
+        end_query(channel, server, query, status, NULL);
+        return status;
+      }
+
       /* FIXME: Handle EAGAIN here since it likely can happen. */
       server_increment_failures(server, query->using_tcp);
       status = ares__requeue_query(query, now);
@@ -1168,11 +1191,13 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
   return ARES_SUCCESS;
 }
 
-static ares_bool_t same_questions(const ares_dns_record_t *qrec,
+static ares_bool_t same_questions(const struct query *query,
                                   const ares_dns_record_t *arec)
 {
-  size_t      i;
-  ares_bool_t rv = ARES_FALSE;
+  size_t                   i;
+  ares_bool_t              rv      = ARES_FALSE;
+  const ares_dns_record_t *qrec    = query->query;
+  const ares_channel_t    *channel = query->channel;
 
 
   if (ares_dns_record_query_cnt(qrec) != ares_dns_record_query_cnt(arec)) {
@@ -1198,8 +1223,25 @@ static ares_bool_t same_questions(const ares_dns_record_t *qrec,
         aname == NULL) {
       goto done;
     }
-    if (strcasecmp(qname, aname) != 0 || qtype != atype || qclass != aclass) {
+
+    if (qtype != atype || qclass != aclass) {
       goto done;
+    }
+
+    if (channel->flags & ARES_FLAG_DNS0x20 && !query->using_tcp) {
+      /* NOTE: for DNS 0x20, part of the protection is to use a case-sensitive
+       *       comparison of the DNS query name.  This expects the upstream DNS
+       *       server to preserve the case of the name in the response packet.
+       *       https://datatracker.ietf.org/doc/html/draft-vixie-dnsext-dns0x20-00
+       */
+      if (strcmp(qname, aname) != 0) {
+        goto done;
+      }
+    } else {
+      /* without DNS0x20 use case-insensitive matching */
+      if (strcasecmp(qname, aname) != 0) {
+        goto done;
+      }
     }
   }
 
@@ -1275,7 +1317,7 @@ void ares__free_query(struct query *query)
   query->callback = NULL;
   query->arg      = NULL;
   /* Deallocate the memory associated with the query */
-  ares_free(query->qbuf);
+  ares_dns_record_destroy(query->query);
 
   ares_free(query);
 }
