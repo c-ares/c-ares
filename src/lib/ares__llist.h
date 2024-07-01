@@ -122,6 +122,14 @@ ares__llist_node_t *ares__llist_node_first(ares__llist_t *list);
  */
 ares__llist_node_t *ares__llist_node_last(ares__llist_t *list);
 
+/*! Obtain a node based on its index.  This is an O(n) operation.
+ *
+ *  \param[in] list Initialized list object
+ *  \param[in] idx  Index of node to retrieve
+ *  \return node at index or NULL if invalid index
+ */
+ares__llist_node_t *ares__llist_node_idx(ares__llist_t *list, size_t idx);
+
 /*! Obtain next node in respect to specified node
  *
  *  \param[in] node  Node referenced
@@ -135,6 +143,7 @@ ares__llist_node_t *ares__llist_node_next(ares__llist_node_t *node);
  *  \return node or NULL if none
  */
 ares__llist_node_t *ares__llist_node_prev(ares__llist_node_t *node);
+
 
 /*! Obtain value from node
  *

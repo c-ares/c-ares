@@ -77,6 +77,24 @@ ares_status_t
 ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
                                             size_t           ancount);
 
+
+struct ares__dns_multistring;
+typedef struct ares__dns_multistring ares__dns_multistring_t;
+
+ares__dns_multistring_t *ares__dns_multistring_create(void);
+void ares__dns_multistring_destroy(ares__dns_multistring_t *strs);
+ares_status_t ares__dns_multistring_append(ares__dns_multistring_t *strs,
+                                           size_t idx,
+                                           const unsigned char *str, size_t len);
+ares_status_t ares__dns_multistring_del(ares__dns_multistring_t *strs,
+                                        size_t idx);
+ares_status_t ares__dns_multistring_add(ares__dns_multistring_t *strs,
+                                        const unsigned char *str, size_t len);
+ares__buf_t *ares__dns_multistring_get(ares__dns_multistring_t *strs,
+                                       size_t idx);
+const unsigned char *ares__dns_multistring_get_combined(
+  ares__dns_multistring_t *strs, size_t *len);
+
 struct ares_dns_qd {
   char               *name;
   ares_dns_rec_type_t qtype;

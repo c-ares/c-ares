@@ -24,6 +24,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_data.c				\
   ares_destroy.c			\
   ares_dns_mapping.c			\
+  ares_dns_multistring.c	\
   ares_dns_name.c			\
   ares_dns_parse.c			\
   ares_dns_record.c			\

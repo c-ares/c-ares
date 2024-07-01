@@ -184,6 +184,26 @@ ares__llist_node_t *ares__llist_node_first(ares__llist_t *list)
   return list->head;
 }
 
+ares__llist_node_t *ares__llist_node_idx(ares__llist_t *list, size_t idx)
+{
+  ares__llist_node_t *node;
+  size_t              cnt;
+
+  if (list == NULL) {
+    return NULL;
+  }
+  if (idx >= list->cnt) {
+    return NULL;
+  }
+
+  node = list->head;
+  for (cnt = 0; node != NULL && cnt < idx; cnt++) {
+    node = node->next;
+  }
+
+  return node;
+}
+
 ares__llist_node_t *ares__llist_node_last(ares__llist_t *list)
 {
   if (list == NULL) {
