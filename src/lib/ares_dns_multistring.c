@@ -26,41 +26,42 @@
 #include "ares_private.h"
 #include "ares_dns_private.h"
 
+typedef struct {
+  unsigned char *data;
+  size_t         len;
+} multistring_data_t;
 
-struct  ares__dns_multistring {
+struct ares__dns_multistring {
   /*! whether or not cached concatenated string is valid */
-  ares_bool_t    cache_invalidated;
+  ares_bool_t         cache_invalidated;
   /*!<combined/concatenated string cache */
-  unsigned char *cache_str;
+  unsigned char      *cache_str;
   /*! length of combined/concatenated string */
-  size_t         cache_str_len;
-  /*! List of ares__buf_t pointers for string */
-  ares__llist_t *strs;
+  size_t              cache_str_len;
+  /*! Data making up strings */
+  multistring_data_t *strs;
+  size_t              cnt;
+  size_t              alloc;
 };
-
-
-static void ares___dns_multistring_list_destroy(void *arg)
-{
-  if (arg == NULL) {
-    return;
-  }
-  ares__buf_destroy(arg);
-}
 
 ares__dns_multistring_t *ares__dns_multistring_create(void)
 {
-  ares__dns_multistring_t *strs = ares_malloc_zero(sizeof(*strs));
+  return ares_malloc_zero(sizeof(ares__dns_multistring_t));
+}
+
+void ares__dns_multistring_clear(ares__dns_multistring_t *strs)
+{
+  size_t i;
+
   if (strs == NULL) {
-    return NULL;
+    return;
   }
 
-  strs->strs = ares__llist_create(ares___dns_multistring_list_destroy);
-  if (strs->strs == NULL) {
-    ares_free(strs);
-    return NULL;
+  for (i=0; i<strs->cnt; i++) {
+    ares_free(strs->strs[i].data);
+    memset(&strs->strs[i], 0, sizeof(strs->strs[i]));
   }
-
-  return strs;
+  strs->cnt = 0;
 }
 
 void ares__dns_multistring_destroy(ares__dns_multistring_t *strs)
@@ -68,59 +69,53 @@ void ares__dns_multistring_destroy(ares__dns_multistring_t *strs)
   if (strs == NULL) {
     return;
   }
-  ares__llist_destroy(strs->strs);
+  ares__dns_multistring_clear(strs);
+  ares_free(strs->strs);
   ares_free(strs->cache_str);
   ares_free(strs);
 }
 
-ares_status_t ares__dns_multistring_append(ares__dns_multistring_t *strs,
-                                           size_t idx,
-                                           const unsigned char *str, size_t len)
+ares_status_t ares__dns_multistring_replace_own(ares__dns_multistring_t *strs,
+                                                size_t idx,
+                                                unsigned char *str, size_t len)
 {
-  ares__llist_node_t *node;
-  ares__buf_t        *buf;
-
-  if (strs == NULL || str == NULL || len == 0) {
+  if (strs == NULL || str == NULL || len == 0 || idx >= strs->cnt) {
     return ARES_EFORMERR;
   }
 
   strs->cache_invalidated = ARES_TRUE;
-
-  node = ares__llist_node_idx(strs->strs, idx);
-  if (node == NULL) {
-    return ARES_EFORMERR;
-  }
-
-  buf = ares__llist_node_val(node);
-  return ares__buf_append(buf, str, len);
+  ares_free(strs->strs[idx].data);
+  strs->strs[idx].data = str;
+  strs->strs[idx].len = len;
+  return ARES_SUCCESS;
 }
 
 ares_status_t ares__dns_multistring_del(ares__dns_multistring_t *strs,
                                         size_t idx)
 {
-  ares__llist_node_t *node;
+  size_t move_cnt;
 
-  if (strs == NULL) {
+  if (strs == NULL || idx >= strs->cnt) {
     return ARES_EFORMERR;
   }
 
   strs->cache_invalidated = ARES_TRUE;
 
-  node = ares__llist_node_idx(strs->strs, idx);
-  if (node == NULL) {
-    return ARES_EFORMERR;
+  ares_free(strs->strs[idx].data);
+
+  move_cnt = strs->cnt - idx - 1;
+  if (move_cnt) {
+    memmove(&strs->strs[idx], &strs->strs[idx+1], sizeof(*strs->strs) * move_cnt);
   }
 
-  ares__llist_node_destroy(node);
+  strs->cnt--;
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__dns_multistring_add(ares__dns_multistring_t *strs,
-                                        const unsigned char *str, size_t len)
-{
-  ares__buf_t  *buf;
-  ares_status_t status;
 
+ares_status_t ares__dns_multistring_add_own(ares__dns_multistring_t *strs,
+                                            unsigned char *str, size_t len)
+{
   if (strs == NULL) {
     return ARES_EFORMERR;
   }
@@ -132,50 +127,39 @@ ares_status_t ares__dns_multistring_add(ares__dns_multistring_t *strs,
     return ARES_EFORMERR;
   }
 
-  buf = ares__buf_create();
-  if (buf == NULL) {
-    return ARES_ENOMEM;
-  }
-
-  if (len) {
-    status = ares__buf_append(buf, str, len);
-    if (status != ARES_SUCCESS) {
-      ares__buf_destroy(buf);
-      return status;
+  if (strs->alloc < strs->cnt + 1) {
+    size_t newalloc = (strs->alloc == 0)?1:(strs->alloc << 1);
+    void *ptr       = ares_realloc_zero(strs->strs, strs->alloc * sizeof(*strs->strs), (newalloc) * sizeof(*strs->strs));
+    if (ptr == NULL) {
+      return ARES_ENOMEM;
     }
+    strs->strs  = ptr;
+    strs->alloc = newalloc;
   }
 
-  if (ares__llist_insert_last(strs->strs, buf) == NULL) {
-    ares__buf_destroy(buf);
-    return ARES_ENOMEM;
-  }
+  strs->strs[strs->cnt].data = str;
+  strs->strs[strs->cnt].len = len;
+  strs->cnt++;
 
   return ARES_SUCCESS;
 }
 
-ares__buf_t *ares__dns_multistring_get(ares__dns_multistring_t *strs,
-                                       size_t idx)
+const unsigned char *ares__dns_multistring_get(ares__dns_multistring_t *strs,
+                                               size_t idx, size_t *len)
 {
-  ares__llist_node_t *node;
-
-  if (strs == NULL) {
+  if (strs == NULL || idx >= strs->cnt || len == NULL) {
     return NULL;
   }
 
-  node = ares__llist_node_idx(strs->strs, idx);
-  if (node == NULL) {
-    return NULL;
-  }
-
-  return ares__llist_node_val(node);
+  *len = strs->strs[idx].len;
+  return strs->strs[idx].data;
 }
-
 
 const unsigned char *ares__dns_multistring_get_combined(
   ares__dns_multistring_t *strs, size_t *len)
 {
   ares__buf_t        *buf = NULL;
-  ares__llist_node_t *node;
+  size_t              i;
 
   if (strs == NULL || len == NULL) {
     return NULL;
@@ -196,12 +180,8 @@ const unsigned char *ares__dns_multistring_get_combined(
 
   buf = ares__buf_create();
 
-  for (node = ares__llist_node_first(strs->strs); node != NULL;
-       node = ares__llist_node_next(node)) {
-    ares__buf_t *strbuf = ares__llist_node_val(node);
-    size_t strlen;
-    if (ares__buf_append(buf, ares__buf_peek(strbuf, &strlen), strlen)
-        != ARES_SUCCESS) {
+  for (i=0; i<strs->cnt; i++) {
+    if (ares__buf_append(buf, strs->strs[i].data, strs->strs[i].len) != ARES_SUCCESS) {
       ares__buf_destroy(buf);
       return NULL;
     }

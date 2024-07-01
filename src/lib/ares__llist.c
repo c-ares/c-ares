@@ -341,7 +341,7 @@ void ares__llist_node_replace(ares__llist_node_t *node, void *val)
   node->data = val;
 }
 
-void ares__llist_destroy(ares__llist_t *list)
+void ares__llist_clear(ares__llist_t *list)
 {
   ares__llist_node_t *node;
 
@@ -352,6 +352,14 @@ void ares__llist_destroy(ares__llist_t *list)
   while ((node = ares__llist_node_first(list)) != NULL) {
     ares__llist_node_destroy(node);
   }
+}
+
+void ares__llist_destroy(ares__llist_t *list)
+{
+  if (list == NULL) {
+    return;
+  }
+  ares__llist_clear(list);
   ares_free(list);
 }
 

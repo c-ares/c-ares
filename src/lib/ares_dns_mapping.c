@@ -516,8 +516,10 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
       return ARES_DATATYPE_U8;
 
     case ARES_RR_CAA_VALUE:
-    case ARES_RR_TXT_DATA:
       return ARES_DATATYPE_BINP;
+
+    case ARES_RR_TXT_DATA:
+      return ARES_DATATYPE_ABINP;
 
     case ARES_RR_SIG_SIGNATURE:
     case ARES_RR_TLSA_DATA:

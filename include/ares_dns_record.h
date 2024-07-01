@@ -157,20 +157,23 @@ typedef enum {
 
 /*! Data types used */
 typedef enum {
-  ARES_DATATYPE_INADDR  = 1, /*!< struct in_addr * type */
-  ARES_DATATYPE_INADDR6 = 2, /*!< struct ares_in6_addr * type */
-  ARES_DATATYPE_U8      = 3, /*!< 8bit unsigned integer */
-  ARES_DATATYPE_U16     = 4, /*!< 16bit unsigned integer */
-  ARES_DATATYPE_U32     = 5, /*!< 32bit unsigned integer */
-  ARES_DATATYPE_NAME    = 6, /*!< Null-terminated string of a domain name */
-  ARES_DATATYPE_STR     = 7, /*!< Null-terminated string */
-  ARES_DATATYPE_BIN     = 8, /*!< Binary data */
-  ARES_DATATYPE_BINP    = 9, /*!< Officially defined as binary data, but likely
-                              *   printable. Guaranteed to have a NULL
-                              *   terminator for convenience (not included in
-                              *   length) */
-  ARES_DATATYPE_OPT = 10     /*!< Array of options.  16bit identifier, BIN
-                              *   data. */
+  ARES_DATATYPE_INADDR  = 1,  /*!< struct in_addr * type */
+  ARES_DATATYPE_INADDR6 = 2,  /*!< struct ares_in6_addr * type */
+  ARES_DATATYPE_U8      = 3,  /*!< 8bit unsigned integer */
+  ARES_DATATYPE_U16     = 4,  /*!< 16bit unsigned integer */
+  ARES_DATATYPE_U32     = 5,  /*!< 32bit unsigned integer */
+  ARES_DATATYPE_NAME    = 6,  /*!< Null-terminated string of a domain name */
+  ARES_DATATYPE_STR     = 7,  /*!< Null-terminated string */
+  ARES_DATATYPE_BIN     = 8,  /*!< Binary data */
+  ARES_DATATYPE_BINP    = 9,  /*!< Officially defined as binary data, but likely
+                               *   printable. Guaranteed to have a NULL
+                               *   terminator for convenience (not included in
+                               *   length) */
+  ARES_DATATYPE_OPT     = 10, /*!< Array of options.  16bit identifier, BIN
+                               *   data. */
+  ARES_DATATYPE_ABINP   = 11  /*!< Array of binary data, likely printable.
+                               *   Guaranteed to have a NULL terminator for
+                               *   convenience (not included in length) */
 } ares_dns_datatype_t;
 
 /*! Keys used for all RR Types.  We take the record type and multiply by 100
@@ -207,7 +210,7 @@ typedef enum {
   ARES_RR_MX_PREFERENCE = (ARES_REC_TYPE_MX * 100) + 1,
   /*! MX Record. Exchange, domain. Datatype: NAME */
   ARES_RR_MX_EXCHANGE = (ARES_REC_TYPE_MX * 100) + 2,
-  /*! TXT Record. Data. Datatype: BINP */
+  /*! TXT Record. Data. Datatype: ABINP */
   ARES_RR_TXT_DATA = (ARES_REC_TYPE_TXT * 100) + 1,
   /*! SIG Record. Type Covered. Datatype: U16 */
   ARES_RR_SIG_TYPE_COVERED = (ARES_REC_TYPE_SIG * 100) + 1,

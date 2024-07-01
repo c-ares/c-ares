@@ -159,6 +159,12 @@ void               *ares__llist_node_val(ares__llist_node_t *node);
  */
 size_t              ares__llist_len(const ares__llist_t *list);
 
+/*! Clear all entries in the list, but don't destroy the list object.
+ *
+ *  \param[in] list  Initialized list object
+ */
+void                ares__llist_clear(ares__llist_t *list);
+
 /*! Obtain list object from referenced node
  *
  *  \param[in] node  Node referenced

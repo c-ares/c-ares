@@ -152,7 +152,7 @@ static void ares__dns_rr_free(ares_dns_rr_t *rr)
       break;
 
     case ARES_REC_TYPE_TXT:
-      ares_free(rr->r.txt.data);
+      ares__dns_multistring_destroy(rr->r.txt.strs);
       break;
 
     case ARES_REC_TYPE_SIG:
@@ -671,11 +671,7 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
       return &dns_rr->r.sig.signature;
 
     case ARES_RR_TXT_DATA:
-      if (lenptr == NULL) {
-        return NULL;
-      }
-      *lenptr = &dns_rr->r.txt.data_len;
-      return &dns_rr->r.txt.data;
+      return &dns_rr->r.txt.strs;
 
     case ARES_RR_SRV_PRIORITY:
       return &dns_rr->r.srv.priority;
@@ -890,21 +886,34 @@ const unsigned char *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
   size_t const          *bin_len = NULL;
 
   if ((ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN &&
-       ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP) ||
+       ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP &&
+       ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) ||
       len == NULL) {
     return NULL;
   }
 
+  /* Array of strings, return concatenated version */
+  if (ares_dns_rr_key_datatype(key) == ARES_DATATYPE_ABINP) {
+    ares__dns_multistring_t * const *strs =
+      ares_dns_rr_data_ptr_const(dns_rr, key, NULL);
+
+    if (strs == NULL) {
+      return NULL;
+    }
+
+    return ares__dns_multistring_get_combined(*strs, len);
+  }
+
+  /* Not a multi-string, just straight binary data */
   bin = ares_dns_rr_data_ptr_const(dns_rr, key, &bin_len);
   if (bin == NULL) {
-    return 0;
+    return NULL;
   }
 
   /* Shouldn't be possible */
   if (bin_len == NULL) {
     return NULL;
   }
-
   *len = *bin_len;
 
   return *bin;
@@ -1122,8 +1131,28 @@ ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
   size_t         *bin_len = NULL;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN &&
-      ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP) {
+      ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP &&
+      ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
     return ARES_EFORMERR;
+  }
+
+  if (ares_dns_rr_key_datatype(key) == ARES_DATATYPE_ABINP) {
+    ares__dns_multistring_t **strs = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+    if (strs == NULL) {
+      return ARES_EFORMERR;
+    }
+
+    if (*strs == NULL) {
+      *strs = ares__dns_multistring_create();
+      if (*strs == NULL) {
+        return ARES_ENOMEM;
+      }
+    }
+
+    /* Clear all existing entries as this is an override */
+    ares__dns_multistring_clear(*strs);
+
+    return ares__dns_multistring_add_own(*strs, val, len);
   }
 
   bin = ares_dns_rr_data_ptr(dns_rr, key, &bin_len);
@@ -1145,7 +1174,10 @@ ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
 {
   ares_status_t       status;
   ares_dns_datatype_t datatype = ares_dns_rr_key_datatype(key);
-  size_t         alloclen = (datatype == ARES_DATATYPE_BINP) ? len + 1 : len;
+  ares_bool_t         is_nullterm =
+    (datatype == ARES_DATATYPE_BINP || datatype == ARES_DATATYPE_ABINP) ?
+      ARES_TRUE:ARES_FALSE;
+  size_t         alloclen = is_nullterm ? len + 1 : len;
   unsigned char *temp     = ares_malloc(alloclen);
 
   if (temp == NULL) {
@@ -1155,7 +1187,7 @@ ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   memcpy(temp, val, len);
 
   /* NULL-term BINP */
-  if (datatype == ARES_DATATYPE_BINP) {
+  if (is_nullterm) {
     temp[len] = 0;
   }
 
