@@ -920,9 +920,13 @@ void MockEventThreadOptsTest::ProcessThread() {
       }
     }
 
+    /* We just always wait 20ms then recheck. Not doing any complex signaling. */
+    tv.tv_sec  = 0;
+    tv.tv_usec = 20000;
+
 #ifndef CARES_SYMBOL_HIDING
+    unsigned int remaining_ms = 0;
     if (has_cancel_ms) {
-      unsigned int remaining_ms;
       ares__timeval_remaining(&atv_remaining,
                               &tv_now,
                               &tv_cancel);
@@ -934,11 +938,11 @@ void MockEventThreadOptsTest::ProcessThread() {
         has_cancel_ms = false;
       }
     }
-#endif
 
-    /* We just always wait 20ms then recheck. Not doing any complex signaling. */
-    tv.tv_sec  = 0;
-    tv.tv_usec = 20000;
+    if (has_cancel_ms && remaining_ms < 20) {
+      tv.tv_usec = (int)remaining_ms * 1000;
+    }
+#endif
 
     mutex.unlock();
     if (select(nfds, &readers, nullptr, nullptr, &tv) < 0) {
