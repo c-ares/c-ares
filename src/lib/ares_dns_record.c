@@ -920,7 +920,7 @@ const unsigned char *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
 }
 
 size_t ares_dns_rr_get_abin_cnt(const ares_dns_rr_t *dns_rr,
-                                ares_dns_rr_key_t key)
+                                ares_dns_rr_key_t    key)
 {
   ares__dns_multistring_t * const *strs;
 
@@ -937,8 +937,8 @@ size_t ares_dns_rr_get_abin_cnt(const ares_dns_rr_t *dns_rr,
 }
 
 const unsigned char *ares_dns_rr_get_abin(const ares_dns_rr_t *dns_rr,
-                                          ares_dns_rr_key_t key,
-                                          size_t idx, size_t *len)
+                                          ares_dns_rr_key_t key, size_t idx,
+                                          size_t *len)
 {
   ares__dns_multistring_t * const *strs;
 
@@ -954,8 +954,7 @@ const unsigned char *ares_dns_rr_get_abin(const ares_dns_rr_t *dns_rr,
   return ares__dns_multistring_get(*strs, idx, len);
 }
 
-ares_status_t ares_dns_rr_del_abin(ares_dns_rr_t *dns_rr,
-                                   ares_dns_rr_key_t key,
+ares_status_t ares_dns_rr_del_abin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                    size_t idx)
 {
   ares__dns_multistring_t **strs;
@@ -976,11 +975,11 @@ ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                    const unsigned char *val, size_t len)
 {
   ares_status_t       status;
-  ares_dns_datatype_t datatype    = ares_dns_rr_key_datatype(key);
-  ares_bool_t         is_nullterm = (datatype == ARES_DATATYPE_ABINP) ?
-      ARES_TRUE:ARES_FALSE;
-  size_t         alloclen = is_nullterm ? len + 1 : len;
-  unsigned char *temp;
+  ares_dns_datatype_t datatype = ares_dns_rr_key_datatype(key);
+  ares_bool_t         is_nullterm =
+    (datatype == ARES_DATATYPE_ABINP) ? ARES_TRUE : ARES_FALSE;
+  size_t                    alloclen = is_nullterm ? len + 1 : len;
+  unsigned char            *temp;
   ares__dns_multistring_t **strs;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
@@ -1275,8 +1274,9 @@ ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   ares_status_t       status;
   ares_dns_datatype_t datatype = ares_dns_rr_key_datatype(key);
   ares_bool_t         is_nullterm =
-    (datatype == ARES_DATATYPE_BINP || datatype == ARES_DATATYPE_ABINP) ?
-      ARES_TRUE:ARES_FALSE;
+    (datatype == ARES_DATATYPE_BINP || datatype == ARES_DATATYPE_ABINP)
+              ? ARES_TRUE
+              : ARES_FALSE;
   size_t         alloclen = is_nullterm ? len + 1 : len;
   unsigned char *temp     = ares_malloc(alloclen);
 

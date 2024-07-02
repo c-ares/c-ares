@@ -576,8 +576,9 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
  *  \return ARES_SUCCESS on success
  */
 ares_status_t ares__buf_parse_dns_abinstr(ares__buf_t *buf,
-  size_t remaining_len, ares__dns_multistring_t **strs,
-  ares_bool_t validate_printable);
+                                          size_t       remaining_len,
+                                          ares__dns_multistring_t **strs,
+                                          ares_bool_t validate_printable);
 
 /*! Parse a character-string as defined in RFC1035, as binary, however for
  *  convenience this does guarantee a NULL terminator (that is not included

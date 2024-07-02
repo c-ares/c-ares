@@ -57,7 +57,7 @@ void ares__dns_multistring_clear(ares__dns_multistring_t *strs)
     return;
   }
 
-  for (i=0; i<strs->cnt; i++) {
+  for (i = 0; i < strs->cnt; i++) {
     ares_free(strs->strs[i].data);
     memset(&strs->strs[i], 0, sizeof(strs->strs[i]));
   }
@@ -76,8 +76,8 @@ void ares__dns_multistring_destroy(ares__dns_multistring_t *strs)
 }
 
 ares_status_t ares__dns_multistring_replace_own(ares__dns_multistring_t *strs,
-                                                size_t idx,
-                                                unsigned char *str, size_t len)
+                                                size_t idx, unsigned char *str,
+                                                size_t len)
 {
   if (strs == NULL || str == NULL || len == 0 || idx >= strs->cnt) {
     return ARES_EFORMERR;
@@ -86,12 +86,12 @@ ares_status_t ares__dns_multistring_replace_own(ares__dns_multistring_t *strs,
   strs->cache_invalidated = ARES_TRUE;
   ares_free(strs->strs[idx].data);
   strs->strs[idx].data = str;
-  strs->strs[idx].len = len;
+  strs->strs[idx].len  = len;
   return ARES_SUCCESS;
 }
 
 ares_status_t ares__dns_multistring_del(ares__dns_multistring_t *strs,
-                                        size_t idx)
+                                        size_t                   idx)
 {
   size_t move_cnt;
 
@@ -105,13 +105,13 @@ ares_status_t ares__dns_multistring_del(ares__dns_multistring_t *strs,
 
   move_cnt = strs->cnt - idx - 1;
   if (move_cnt) {
-    memmove(&strs->strs[idx], &strs->strs[idx+1], sizeof(*strs->strs) * move_cnt);
+    memmove(&strs->strs[idx], &strs->strs[idx + 1],
+            sizeof(*strs->strs) * move_cnt);
   }
 
   strs->cnt--;
   return ARES_SUCCESS;
 }
-
 
 ares_status_t ares__dns_multistring_add_own(ares__dns_multistring_t *strs,
                                             unsigned char *str, size_t len)
@@ -128,8 +128,9 @@ ares_status_t ares__dns_multistring_add_own(ares__dns_multistring_t *strs,
   }
 
   if (strs->alloc < strs->cnt + 1) {
-    size_t newalloc = (strs->alloc == 0)?1:(strs->alloc << 1);
-    void *ptr       = ares_realloc_zero(strs->strs, strs->alloc * sizeof(*strs->strs), (newalloc) * sizeof(*strs->strs));
+    size_t newalloc = (strs->alloc == 0) ? 1 : (strs->alloc << 1);
+    void *ptr = ares_realloc_zero(strs->strs, strs->alloc * sizeof(*strs->strs),
+                                  (newalloc) * sizeof(*strs->strs));
     if (ptr == NULL) {
       return ARES_ENOMEM;
     }
@@ -138,7 +139,7 @@ ares_status_t ares__dns_multistring_add_own(ares__dns_multistring_t *strs,
   }
 
   strs->strs[strs->cnt].data = str;
-  strs->strs[strs->cnt].len = len;
+  strs->strs[strs->cnt].len  = len;
   strs->cnt++;
 
   return ARES_SUCCESS;
@@ -146,8 +147,9 @@ ares_status_t ares__dns_multistring_add_own(ares__dns_multistring_t *strs,
 
 size_t ares__dns_multistring_cnt(ares__dns_multistring_t *strs)
 {
-  if (strs == NULL)
+  if (strs == NULL) {
     return 0;
+  }
   return strs->cnt;
 }
 
@@ -162,11 +164,11 @@ const unsigned char *ares__dns_multistring_get(ares__dns_multistring_t *strs,
   return strs->strs[idx].data;
 }
 
-const unsigned char *ares__dns_multistring_get_combined(
-  ares__dns_multistring_t *strs, size_t *len)
+const unsigned char *
+  ares__dns_multistring_get_combined(ares__dns_multistring_t *strs, size_t *len)
 {
-  ares__buf_t        *buf = NULL;
-  size_t              i;
+  ares__buf_t *buf = NULL;
+  size_t       i;
 
   if (strs == NULL || len == NULL) {
     return NULL;
@@ -187,15 +189,16 @@ const unsigned char *ares__dns_multistring_get_combined(
 
   buf = ares__buf_create();
 
-  for (i=0; i<strs->cnt; i++) {
-    if (ares__buf_append(buf, strs->strs[i].data, strs->strs[i].len) != ARES_SUCCESS) {
+  for (i = 0; i < strs->cnt; i++) {
+    if (ares__buf_append(buf, strs->strs[i].data, strs->strs[i].len) !=
+        ARES_SUCCESS) {
       ares__buf_destroy(buf);
       return NULL;
     }
   }
 
-  strs->cache_str = (unsigned char *)ares__buf_finish_str(buf,
-                                                          &strs->cache_str_len);
+  strs->cache_str =
+    (unsigned char *)ares__buf_finish_str(buf, &strs->cache_str_len);
   if (strs->cache_str != NULL) {
     strs->cache_invalidated = ARES_FALSE;
   }

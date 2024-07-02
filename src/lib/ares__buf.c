@@ -938,8 +938,9 @@ ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx)
 }
 
 ares_status_t ares__buf_parse_dns_abinstr(ares__buf_t *buf,
-  size_t remaining_len, ares__dns_multistring_t **strs,
-  ares_bool_t validate_printable)
+                                          size_t       remaining_len,
+                                          ares__dns_multistring_t **strs,
+                                          ares_bool_t validate_printable)
 {
   unsigned char len;
   ares_status_t status   = ARES_EBADRESP;
@@ -1006,13 +1007,14 @@ ares_status_t ares__buf_parse_dns_abinstr(ares__buf_t *buf,
   return status;
 }
 
-static ares_status_t ares__buf_parse_dns_binstr_int(
-  ares__buf_t *buf, size_t remaining_len, unsigned char **bin, size_t *bin_len,
-  ares_bool_t validate_printable)
+static ares_status_t
+  ares__buf_parse_dns_binstr_int(ares__buf_t *buf, size_t remaining_len,
+                                 unsigned char **bin, size_t *bin_len,
+                                 ares_bool_t validate_printable)
 {
   unsigned char len;
-  ares_status_t status   = ARES_EBADRESP;
-  ares__buf_t  *binbuf   = NULL;
+  ares_status_t status = ARES_EBADRESP;
+  ares__buf_t  *binbuf = NULL;
 
   if (buf == NULL) {
     return ARES_EFORMERR;
@@ -1087,8 +1089,8 @@ ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
 {
   size_t len;
 
-  return ares__buf_parse_dns_binstr_int(
-    buf, remaining_len, (unsigned char **)str, &len, ARES_TRUE);
+  return ares__buf_parse_dns_binstr_int(buf, remaining_len,
+                                        (unsigned char **)str, &len, ARES_TRUE);
 }
 
 ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num, size_t len)

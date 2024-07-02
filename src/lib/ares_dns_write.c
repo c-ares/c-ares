@@ -218,7 +218,6 @@ static ares_status_t ares_dns_write_rr_str(ares__buf_t         *buf,
   return ares__buf_append(buf, (const unsigned char *)str, len);
 }
 
-
 static ares_status_t ares_dns_write_binstr(ares__buf_t         *buf,
                                            const unsigned char *bin,
                                            size_t               bin_len)
@@ -261,16 +260,15 @@ static ares_status_t ares_dns_write_rr_abin(ares__buf_t         *buf,
                                             const ares_dns_rr_t *rr,
                                             ares_dns_rr_key_t    key)
 {
-
-  ares_status_t        status = ARES_EFORMERR;
-  size_t               i;
-  size_t               cnt   = ares_dns_rr_get_abin_cnt(rr, key);
+  ares_status_t status = ARES_EFORMERR;
+  size_t        i;
+  size_t        cnt = ares_dns_rr_get_abin_cnt(rr, key);
 
   if (cnt == 0) {
     return ARES_EFORMERR;
   }
 
-  for (i=0; i<cnt; i++) {
+  for (i = 0; i < cnt; i++) {
     const unsigned char *bin;
     size_t               bin_len;
 
