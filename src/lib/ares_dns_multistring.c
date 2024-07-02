@@ -144,6 +144,13 @@ ares_status_t ares__dns_multistring_add_own(ares__dns_multistring_t *strs,
   return ARES_SUCCESS;
 }
 
+size_t ares__dns_multistring_cnt(ares__dns_multistring_t *strs)
+{
+  if (strs == NULL)
+    return 0;
+  return strs->cnt;
+}
+
 const unsigned char *ares__dns_multistring_get(ares__dns_multistring_t *strs,
                                                size_t idx, size_t *len)
 {

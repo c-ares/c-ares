@@ -622,6 +622,21 @@ static void print_binp(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
   print_opt_binp(binp, len);
 }
 
+static void print_abinp(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
+{
+  size_t               i;
+  size_t               cnt = ares_dns_rr_get_abin_cnt(rr, key);
+
+  for (i=0; i<cnt; i++) {
+    size_t               len;
+    const unsigned char *binp = ares_dns_rr_get_abin(rr, key, i, &len);
+    if (i != 0) {
+      printf(" ");
+    }
+    print_opt_binp(binp, len);
+  }
+}
+
 static void print_rr(const ares_dns_rr_t *rr)
 {
   const char              *name     = ares_dns_rr_get_name(rr);
@@ -680,6 +695,9 @@ static void print_rr(const ares_dns_rr_t *rr)
         break;
       case ARES_DATATYPE_BINP:
         print_binp(rr, keys[i]);
+        break;
+      case ARES_DATATYPE_ABINP:
+        print_abinp(rr, keys[i]);
         break;
       case ARES_DATATYPE_OPT:
         print_opts(rr, keys[i]);

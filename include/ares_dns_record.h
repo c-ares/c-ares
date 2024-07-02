@@ -875,6 +875,34 @@ CARES_EXTERN ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t       *dns_rr,
                                                const unsigned char *val,
                                                size_t               len);
 
+/*! Add binary array value (ABINP) data for specified resource record and key.
+ *  Can only be used on keys with datatype ARES_DATATYPE_ABINP.  The value will
+ *  Be added as the last element in the array.
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \param[in] val    Pointer to binary data.
+ *  \param[in] len    Length of binary data
+ *  \return ARES_SUCCESS on success
+ */
+CARES_EXTERN ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t *dns_rr,
+                                                ares_dns_rr_key_t key,
+                                                const unsigned char *val,
+                                                size_t len);
+
+/*! Delete binary array value (ABINP) data for specified resource record and
+ *  key by specified index. Can only be used on keys with datatype
+ *  ARES_DATATYPE_ABINP.  The value at the index will be deleted.
+ *
+ *  \param[in] dns_rr Pointer to resource record
+ *  \param[in] key    DNS Resource Record Key
+ *  \param[in] idx    Index to delete
+ *  \return ARES_SUCCESS on success
+ */
+CARES_EXTERN ares_status_t ares_dns_rr_del_abin(ares_dns_rr_t *dns_rr,
+                                                ares_dns_rr_key_t key,
+                                                size_t idx);
+
 /*! Set the option for the RR
  *
  *  \param[in]  dns_rr   Pointer to resource record
@@ -951,8 +979,9 @@ CARES_EXTERN unsigned int   ares_dns_rr_get_u32(const ares_dns_rr_t *dns_rr,
                                                 ares_dns_rr_key_t    key);
 
 /*! Retrieve a pointer to the binary data.  Can only be used on keys with
- *  datatype ARES_DATATYPE_BIN or ARES_DATATYPE_BINP.  If BINP, the data is
- *  guaranteed to have a NULL terminator which is NOT included in the length.
+ *  datatype ARES_DATATYPE_BIN, ARES_DATATYPE_BINP, or ARES_DATATYPE_ABINP.
+ *  If BINP or ABINP, the data is guaranteed to have a NULL terminator which
+ *  is NOT included in the length.
  *
  *  \param[in]  dns_rr Pointer to resource record
  *  \param[in]  key    DNS Resource Record Key
@@ -962,6 +991,30 @@ CARES_EXTERN unsigned int   ares_dns_rr_get_u32(const ares_dns_rr_t *dns_rr,
 CARES_EXTERN const unsigned char *
   ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                       size_t *len);
+
+/*! Retrieve the count of stored binary values. Can only be used on keys with
+ *  datatype ARES_DATATYPE_ABINP.
+ *
+ *  \param[in]  dns_rr Pointer to resource record
+ *  \param[in]  key    DNS Resource Record Key
+ *  \return count of values
+ */
+CARES_EXTERN size_t ares_dns_rr_get_abin_cnt(const ares_dns_rr_t *dns_rr,
+                                             ares_dns_rr_key_t key);
+
+/*! Retrieve a pointer to the binary data from the specified index.  Can only be
+ *  used on keys with datatype ARES_DATATYPE_ABINP.  If ABINP, the data is
+ *  guaranteed to have a NULL terminator which is NOT included in the length.
+ *
+ *  \param[in]  dns_rr Pointer to resource record
+ *  \param[in]  key    DNS Resource Record Key
+ *  \param[in]  idx    Index of value to retrieve
+ *  \param[out] len    Length of binary data returned
+ *  \return pointer binary data or NULL on error
+ */
+CARES_EXTERN const unsigned char *ares_dns_rr_get_abin(
+  const ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key, size_t idx, size_t *len);
+
 
 /*! Retrieve the number of options stored for the RR.
  *

@@ -919,6 +919,99 @@ const unsigned char *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
   return *bin;
 }
 
+size_t ares_dns_rr_get_abin_cnt(const ares_dns_rr_t *dns_rr,
+                                ares_dns_rr_key_t key)
+{
+  ares__dns_multistring_t * const *strs;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
+    return 0;
+  }
+
+  strs = ares_dns_rr_data_ptr_const(dns_rr, key, NULL);
+  if (strs == NULL) {
+    return 0;
+  }
+
+  return ares__dns_multistring_cnt(*strs);
+}
+
+const unsigned char *ares_dns_rr_get_abin(const ares_dns_rr_t *dns_rr,
+                                          ares_dns_rr_key_t key,
+                                          size_t idx, size_t *len)
+{
+  ares__dns_multistring_t * const *strs;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
+    return NULL;
+  }
+
+  strs = ares_dns_rr_data_ptr_const(dns_rr, key, NULL);
+  if (strs == NULL) {
+    return NULL;
+  }
+
+  return ares__dns_multistring_get(*strs, idx, len);
+}
+
+ares_status_t ares_dns_rr_del_abin(ares_dns_rr_t *dns_rr,
+                                   ares_dns_rr_key_t key,
+                                   size_t idx)
+{
+  ares__dns_multistring_t **strs;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
+    return ARES_EFORMERR;
+  }
+
+  strs = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (strs == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  return ares__dns_multistring_del(*strs, idx);
+}
+
+ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                                   const unsigned char *val, size_t len)
+{
+  ares_status_t       status;
+  ares_dns_datatype_t datatype    = ares_dns_rr_key_datatype(key);
+  ares_bool_t         is_nullterm = (datatype == ARES_DATATYPE_ABINP) ?
+      ARES_TRUE:ARES_FALSE;
+  size_t         alloclen = is_nullterm ? len + 1 : len;
+  unsigned char *temp;
+  ares__dns_multistring_t **strs;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
+    return ARES_EFORMERR;
+  }
+
+  strs = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (strs == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  temp = ares_malloc(alloclen);
+  if (temp == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  memcpy(temp, val, len);
+
+  /* NULL-term ABINP */
+  if (is_nullterm) {
+    temp[len] = 0;
+  }
+
+  status = ares__dns_multistring_add_own(*strs, temp, len);
+  if (status != ARES_SUCCESS) {
+    ares_free(temp);
+  }
+
+  return status;
+}
+
 const char *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
                                 ares_dns_rr_key_t    key)
 {
