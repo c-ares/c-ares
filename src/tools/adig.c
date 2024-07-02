@@ -84,7 +84,9 @@ static const nv_t configflags[] = {
   { "igntc",     ARES_FLAG_IGNTC     },
   { "norecurse", ARES_FLAG_NORECURSE },
   { "stayopen",  ARES_FLAG_STAYOPEN  },
-  { "noaliases", ARES_FLAG_NOALIASES }
+  { "noaliases", ARES_FLAG_NOALIASES },
+  { "edns",      ARES_FLAG_EDNS      },
+  { "dns0x20",   ARES_FLAG_DNS0x20   }
 };
 static const size_t nconfigflags = sizeof(configflags) / sizeof(*configflags);
 
@@ -123,15 +125,19 @@ static void print_help(void)
   printf(
     "  -d : Print some extra debugging output.\n");
   printf(
-    "  -f flag   : Add a behavior control flag. Possible values are\n"
+    "  -f flag   : Add a behavior control flag. May be specified more than once\n"
+    "              to add additional flags. Possible values are:\n"
     "              igntc     - do not retry a truncated query as TCP, just\n"
     "                          return the truncated answer\n"
     "              noaliases - don't honor the HOSTALIASES environment\n"
-    "                          variable\n"
+    "                          variable\n");
+  printf(
     "              norecurse - don't query upstream servers recursively\n"
     "              primary   - use the first server\n"
     "              stayopen  - don't close the communication sockets\n"
-    "              usevc     - use TCP only\n");
+    "              usevc     - use TCP only\n"
+    "              edns      - use EDNS\n"
+    "              dns0x20   - enable DNS 0x20 support\n");
   printf(
     "  -s server : Connect to the specified DNS server, instead of the\n"
     "              system's default one(s). Servers are tried in round-robin,\n"
@@ -622,6 +628,21 @@ static void print_binp(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
   print_opt_binp(binp, len);
 }
 
+static void print_abinp(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
+{
+  size_t               i;
+  size_t               cnt = ares_dns_rr_get_abin_cnt(rr, key);
+
+  for (i=0; i<cnt; i++) {
+    size_t               len;
+    const unsigned char *binp = ares_dns_rr_get_abin(rr, key, i, &len);
+    if (i != 0) {
+      printf(" ");
+    }
+    print_opt_binp(binp, len);
+  }
+}
+
 static void print_rr(const ares_dns_rr_t *rr)
 {
   const char              *name     = ares_dns_rr_get_name(rr);
@@ -680,6 +701,9 @@ static void print_rr(const ares_dns_rr_t *rr)
         break;
       case ARES_DATATYPE_BINP:
         print_binp(rr, keys[i]);
+        break;
+      case ARES_DATATYPE_ABINP:
+        print_abinp(rr, keys[i]);
         break;
       case ARES_DATATYPE_OPT:
         print_opts(rr, keys[i]);

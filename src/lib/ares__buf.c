@@ -937,13 +937,13 @@ ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx)
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares__buf_parse_dns_binstr_int(
-  ares__buf_t *buf, size_t remaining_len, unsigned char **bin, size_t *bin_len,
-  ares_bool_t allow_multiple, ares_bool_t validate_printable)
+ares_status_t ares__buf_parse_dns_abinstr(ares__buf_t *buf,
+                                          size_t       remaining_len,
+                                          ares__dns_multistring_t **strs,
+                                          ares_bool_t validate_printable)
 {
   unsigned char len;
   ares_status_t status   = ARES_EBADRESP;
-  ares__buf_t  *binbuf   = NULL;
   size_t        orig_len = ares__buf_len(buf);
 
   if (buf == NULL) {
@@ -954,9 +954,11 @@ static ares_status_t ares__buf_parse_dns_binstr_int(
     return ARES_EBADRESP;
   }
 
-  binbuf = ares__buf_create();
-  if (binbuf == NULL) {
-    return ARES_ENOMEM;
+  if (strs != NULL) {
+    *strs = ares__dns_multistring_create();
+    if (*strs == NULL) {
+      return ARES_ENOMEM;
+    }
   }
 
   while (orig_len - ares__buf_len(buf) < remaining_len) {
@@ -977,22 +979,88 @@ static ares_status_t ares__buf_parse_dns_binstr_int(
         }
       }
 
-      if (bin != NULL) {
-        status = ares__buf_fetch_bytes_into_buf(buf, binbuf, len);
+      if (strs != NULL) {
+        unsigned char *data = NULL;
+        status = ares__buf_fetch_bytes_dup(buf, len, ARES_TRUE, &data);
+        if (status != ARES_SUCCESS) {
+          break;
+        }
+        status = ares__dns_multistring_add_own(*strs, data, len);
+        if (status != ARES_SUCCESS) {
+          ares_free(data);
+          break;
+        }
       } else {
         status = ares__buf_consume(buf, len);
+        if (status != ARES_SUCCESS) {
+          break;
+        }
       }
-      if (status != ARES_SUCCESS) {
-        break;
-      }
-    }
-
-    if (!allow_multiple) {
-      break;
     }
   }
 
+  if (status != ARES_SUCCESS && strs != NULL) {
+    ares__dns_multistring_destroy(*strs);
+    *strs = NULL;
+  }
 
+  return status;
+}
+
+static ares_status_t
+  ares__buf_parse_dns_binstr_int(ares__buf_t *buf, size_t remaining_len,
+                                 unsigned char **bin, size_t *bin_len,
+                                 ares_bool_t validate_printable)
+{
+  unsigned char len;
+  ares_status_t status = ARES_EBADRESP;
+  ares__buf_t  *binbuf = NULL;
+
+  if (buf == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (remaining_len == 0) {
+    return ARES_EBADRESP;
+  }
+
+  binbuf = ares__buf_create();
+  if (binbuf == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  status = ares__buf_fetch_bytes(buf, &len, 1);
+  if (status != ARES_SUCCESS) {
+    goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
+  remaining_len--;
+
+  if (len > remaining_len) {
+    status = ARES_EBADRESP;
+    goto done;
+  }
+
+  if (len) {
+    /* When used by the _str() parser, it really needs to be validated to
+     * be a valid printable ascii string.  Do that here */
+    if (validate_printable && ares__buf_len(buf) >= len) {
+      size_t      mylen;
+      const char *data = (const char *)ares__buf_peek(buf, &mylen);
+      if (!ares__str_isprint(data, len)) {
+        status = ARES_EBADSTR;
+        goto done;
+      }
+    }
+
+    if (bin != NULL) {
+      status = ares__buf_fetch_bytes_into_buf(buf, binbuf, len);
+    } else {
+      status = ares__buf_consume(buf, len);
+    }
+  }
+
+done:
   if (status != ARES_SUCCESS) {
     ares__buf_destroy(binbuf);
   } else {
@@ -1010,20 +1078,19 @@ static ares_status_t ares__buf_parse_dns_binstr_int(
 }
 
 ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
-                                         unsigned char **bin, size_t *bin_len,
-                                         ares_bool_t allow_multiple)
+                                         unsigned char **bin, size_t *bin_len)
 {
   return ares__buf_parse_dns_binstr_int(buf, remaining_len, bin, bin_len,
-                                        allow_multiple, ARES_FALSE);
+                                        ARES_FALSE);
 }
 
 ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
-                                      char **str, ares_bool_t allow_multiple)
+                                      char **str)
 {
   size_t len;
 
-  return ares__buf_parse_dns_binstr_int(
-    buf, remaining_len, (unsigned char **)str, &len, allow_multiple, ARES_TRUE);
+  return ares__buf_parse_dns_binstr_int(buf, remaining_len,
+                                        (unsigned char **)str, &len, ARES_TRUE);
 }
 
 ares_status_t ares__buf_append_num_dec(ares__buf_t *buf, size_t num, size_t len)

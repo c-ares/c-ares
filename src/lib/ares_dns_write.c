@@ -218,20 +218,14 @@ static ares_status_t ares_dns_write_rr_str(ares__buf_t         *buf,
   return ares__buf_append(buf, (const unsigned char *)str, len);
 }
 
-static ares_status_t ares_dns_write_rr_binstrs(ares__buf_t         *buf,
-                                               const ares_dns_rr_t *rr,
-                                               ares_dns_rr_key_t    key)
+static ares_status_t ares_dns_write_binstr(ares__buf_t         *buf,
+                                           const unsigned char *bin,
+                                           size_t               bin_len)
 {
-  const unsigned char *bin;
   const unsigned char *ptr;
-  size_t               bin_len;
   size_t               ptr_len;
   ares_status_t        status;
 
-  bin = ares_dns_rr_get_bin(rr, key, &bin_len);
-  if (bin == NULL) {
-    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
-  }
   /* split into possible multiple 255-byte or less length strings */
   ptr     = bin;
   ptr_len = bin_len;
@@ -260,6 +254,33 @@ static ares_status_t ares_dns_write_rr_binstrs(ares__buf_t         *buf,
   } while (ptr_len > 0);
 
   return ARES_SUCCESS;
+}
+
+static ares_status_t ares_dns_write_rr_abin(ares__buf_t         *buf,
+                                            const ares_dns_rr_t *rr,
+                                            ares_dns_rr_key_t    key)
+{
+  ares_status_t status = ARES_EFORMERR;
+  size_t        i;
+  size_t        cnt = ares_dns_rr_get_abin_cnt(rr, key);
+
+  if (cnt == 0) {
+    return ARES_EFORMERR;
+  }
+
+  for (i = 0; i < cnt; i++) {
+    const unsigned char *bin;
+    size_t               bin_len;
+
+    bin = ares_dns_rr_get_abin(rr, key, i, &bin_len);
+
+    status = ares_dns_write_binstr(buf, bin, bin_len);
+    if (status != ARES_SUCCESS) {
+      break;
+    }
+  }
+
+  return status;
 }
 
 static ares_status_t ares_dns_write_rr_be32(ares__buf_t         *buf,
@@ -419,7 +440,7 @@ static ares_status_t ares_dns_write_rr_txt(ares__buf_t         *buf,
                                            ares__llist_t      **namelist)
 {
   (void)namelist;
-  return ares_dns_write_rr_binstrs(buf, rr, ARES_RR_TXT_DATA);
+  return ares_dns_write_rr_abin(buf, rr, ARES_RR_TXT_DATA);
 }
 
 static ares_status_t ares_dns_write_rr_sig(ares__buf_t         *buf,
