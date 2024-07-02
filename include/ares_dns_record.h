@@ -1005,6 +1005,8 @@ CARES_EXTERN size_t ares_dns_rr_get_abin_cnt(const ares_dns_rr_t *dns_rr,
 /*! Retrieve a pointer to the binary array data from the specified index.  Can
  *  only be used on keys with datatype ARES_DATATYPE_ABINP.  If ABINP, the data
  *  is guaranteed to have a NULL terminator which is NOT included in the length.
+ *  If want all array membersconcatenated, may use ares_dns_rr_get_bin()
+ *  instead.
  *
  *  \param[in]  dns_rr Pointer to resource record
  *  \param[in]  key    DNS Resource Record Key

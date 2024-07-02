@@ -462,10 +462,14 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
       ARES_REC_TYPE_TXT, ARES_CLASS_IN, 3600));
-  const char txt[] = "blah=here blah=there anywhere";
+  const char txt1[] = "blah=here blah=there anywhere";
+  const char txt2[] = "some other record";
   EXPECT_EQ(ARES_SUCCESS,
-    ares_dns_rr_set_bin(rr, ARES_RR_TXT_DATA, (unsigned char *)txt,
-      sizeof(txt)-1));
+    ares_dns_rr_add_abin(rr, ARES_RR_TXT_DATA, (unsigned char *)txt1,
+      sizeof(txt1)-1));
+   EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_add_abin(rr, ARES_RR_TXT_DATA, (unsigned char *)txt2,
+      sizeof(txt2)-1));
   /* SIG */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",

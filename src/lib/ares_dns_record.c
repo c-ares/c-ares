@@ -992,6 +992,13 @@ ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
     return ARES_EFORMERR;
   }
 
+  if (*strs == NULL) {
+    *strs = ares__dns_multistring_create();
+    if (*strs == NULL) {
+      return ARES_ENOMEM;
+    }
+  }
+
   temp = ares_malloc(alloclen);
   if (temp == NULL) {
     return ARES_ENOMEM;
