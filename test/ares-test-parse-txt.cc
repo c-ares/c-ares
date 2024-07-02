@@ -51,11 +51,14 @@ TEST_F(LibraryTest, ParseTxtReplyOK) {
 
   struct ares_txt_reply* txt2 = txt->next;
   ASSERT_NE(nullptr, txt2);
-  std::vector<byte> rsp = std::vector<byte>(expected2a.data(), expected2a.data() + expected2a.size());
-  rsp.insert(rsp.end(), expected2b.data(), expected2b.data() + expected2b.size());
-  EXPECT_EQ(rsp,
+  EXPECT_EQ(std::vector<byte>(expected2a.data(), expected2a.data() + expected2a.size()),
             std::vector<byte>(txt2->txt, txt2->txt + txt2->length));
 
+  struct ares_txt_reply* txt3 = txt2->next;
+  ASSERT_NE(nullptr, txt3);
+  EXPECT_EQ(std::vector<byte>(expected2b.data(), expected2b.data() + expected2b.size()),
+            std::vector<byte>(txt3->txt, txt3->txt + txt3->length));
+  EXPECT_EQ(nullptr, txt3->next);
   ares_free_data(txt);
 }
 
@@ -79,12 +82,16 @@ TEST_F(LibraryTest, ParseTxtExtReplyOK) {
 
   struct ares_txt_ext* txt2 = txt->next;
   ASSERT_NE(nullptr, txt2);
-  std::vector<byte> rsp = std::vector<byte>(expected2a.data(), expected2a.data() + expected2a.size());
-  rsp.insert(rsp.end(), expected2b.data(), expected2b.data() + expected2b.size());
-  EXPECT_EQ(rsp,
+  EXPECT_EQ(std::vector<byte>(expected2a.data(), expected2a.data() + expected2a.size()),
             std::vector<byte>(txt2->txt, txt2->txt + txt2->length));
   EXPECT_EQ(1, txt2->record_start);
 
+  struct ares_txt_ext* txt3 = txt2->next;
+  ASSERT_NE(nullptr, txt3);
+  EXPECT_EQ(std::vector<byte>(expected2b.data(), expected2b.data() + expected2b.size()),
+            std::vector<byte>(txt3->txt, txt3->txt + txt3->length));
+  EXPECT_EQ(nullptr, txt3->next);
+  EXPECT_EQ(0, txt3->record_start);
   ares_free_data(txt);
 }
 
