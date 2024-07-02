@@ -34,7 +34,7 @@ typedef struct {
 struct ares__dns_multistring {
   /*! whether or not cached concatenated string is valid */
   ares_bool_t         cache_invalidated;
-  /*!<combined/concatenated string cache */
+  /*! combined/concatenated string cache */
   unsigned char      *cache_str;
   /*! length of combined/concatenated string */
   size_t              cache_str_len;
