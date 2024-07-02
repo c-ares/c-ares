@@ -1336,6 +1336,29 @@ ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   return status;
 }
 
+ares_status_t ares_dns_rr_set_abin_own(ares_dns_rr_t           *dns_rr,
+                                       ares_dns_rr_key_t        key,
+                                       ares__dns_multistring_t *strs)
+{
+  ares__dns_multistring_t **strs_ptr;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
+    return ARES_EFORMERR;
+  }
+
+  strs_ptr = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (strs_ptr == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (*strs_ptr != NULL) {
+    ares__dns_multistring_destroy(*strs_ptr);
+  }
+  *strs_ptr = strs;
+
+  return ARES_SUCCESS;
+}
+
 ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
                                       ares_dns_rr_key_t key, unsigned short opt,
                                       unsigned char *val, size_t val_len)

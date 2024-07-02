@@ -41,6 +41,9 @@ ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
 ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
                                       ares_dns_rr_key_t key, unsigned char *val,
                                       size_t len);
+ares_status_t ares_dns_rr_set_abin_own(ares_dns_rr_t           *dns_rr,
+                                       ares_dns_rr_key_t        key,
+                                       ares__dns_multistring_t *strs);
 ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
                                       ares_dns_rr_key_t key, unsigned short opt,
                                       unsigned char *val, size_t val_len);
@@ -76,26 +79,6 @@ ares_status_t
  */
 ares_status_t ares_dns_query_reply_tostatus(ares_dns_rcode_t rcode,
                                             size_t           ancount);
-
-
-struct ares__dns_multistring;
-typedef struct ares__dns_multistring ares__dns_multistring_t;
-
-ares__dns_multistring_t *ares__dns_multistring_create(void);
-void ares__dns_multistring_clear(ares__dns_multistring_t *strs);
-void ares__dns_multistring_destroy(ares__dns_multistring_t *strs);
-ares_status_t ares__dns_multistring_replace_own(ares__dns_multistring_t *strs,
-                                                size_t idx,
-                                                unsigned char *str, size_t len);
-ares_status_t ares__dns_multistring_del(ares__dns_multistring_t *strs,
-                                        size_t idx);
-ares_status_t ares__dns_multistring_add_own(ares__dns_multistring_t *strs,
-                                            unsigned char *str, size_t len);
-size_t ares__dns_multistring_cnt(ares__dns_multistring_t *strs);
-const unsigned char *ares__dns_multistring_get(ares__dns_multistring_t *strs,
-                                               size_t idx, size_t *len);
-const unsigned char *ares__dns_multistring_get_combined(
-  ares__dns_multistring_t *strs, size_t *len);
 
 struct ares_dns_qd {
   char               *name;

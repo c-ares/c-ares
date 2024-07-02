@@ -100,6 +100,7 @@ HHEADERS = ares__buf.h			\
   ares__threads.h			\
   ares_android.h			\
   ares_data.h				\
+  ares_dns_multistring.h		\
   ares_dns_private.h			\
   ares_event.h				\
   ares_event_win32.h			\

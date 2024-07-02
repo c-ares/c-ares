@@ -111,6 +111,7 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares__htable_szvp.h"
 #include "ares__htable_asvp.h"
 #include "ares__htable_vpvp.h"
+#include "ares_dns_multistring.h"
 #include "ares__buf.h"
 #include "ares_dns_private.h"
 #include "ares__iface_ips.h"
