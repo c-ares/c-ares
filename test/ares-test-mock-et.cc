@@ -823,7 +823,7 @@ TEST_P(MockEventThreadTest, BulkCancel) {
       if (result[i].status_ == ARES_ECANCELLED)
         cancel_cnt++;
     }
-    printf("%s(): success %zu, cancel %zu\n", __FUNCTION__, success_cnt, cancel_cnt);
+    if (verbose) std::cerr << "success: " << success_cnt << ", cancel: " << cancel_cnt << std::endl;
   }
 }
 #endif
