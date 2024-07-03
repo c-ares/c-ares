@@ -789,7 +789,45 @@ TEST_P(MockEventThreadTest, PartialQueryCancel) {
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ECANCELLED, result.status_);
 }
+
+// Test case for Issue #798, we're really looking for a crash, the results
+// don't matter.  Should either be successful or canceled.
+TEST_P(MockEventThreadTest, BulkCancel) {
+  std::vector<byte> nothing;
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+#define BULKCANCEL_LOOP 5
+#define BULKCANCEL_CNT 50
+  for (size_t l = 0; l<BULKCANCEL_LOOP; l++) {
+    HostResult result[BULKCANCEL_CNT];
+    for (size_t i = 0; i<BULKCANCEL_CNT; i++) {
+      ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result[i]);
+    }
+    // After 1ms, issues ares_cancel(), there should be queries outstanding that
+    // are cancelled.
+    Process(1);
+
+    size_t success_cnt = 0;
+    size_t cancel_cnt = 0;
+    for (size_t i = 0; i<BULKCANCEL_CNT; i++) {
+      EXPECT_TRUE(result[i].done_);
+      EXPECT_TRUE(result[i].status_ == ARES_ECANCELLED || result[i].status_ == ARES_SUCCESS);
+      if (result[i].status_ == ARES_SUCCESS)
+        success_cnt++;
+      if (result[i].status_ == ARES_ECANCELLED)
+        cancel_cnt++;
+    }
+    if (verbose) std::cerr << "success: " << success_cnt << ", cancel: " << cancel_cnt << std::endl;
+  }
+}
 #endif
+
 
 TEST_P(MockEventThreadTest, UnspecifiedFamilyV6) {
   DNSPacket rsp6;

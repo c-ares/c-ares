@@ -874,39 +874,37 @@ void MockChannelOptsTest::Process(unsigned int cancel_ms) {
               cancel_ms);
 }
 
-void MockEventThreadOptsTest::ProcessThread() {
+void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
   std::set<ares_socket_t> fds;
 
 #ifndef CARES_SYMBOL_HIDING
-  bool has_cancel_ms = false;
+  bool has_cancel_ms = (cancel_ms > 0)?true:false;
   ares_timeval_t tv_begin;
   ares_timeval_t tv_cancel;
 #endif
 
-  mutex.lock();
+#ifndef CARES_SYMBOL_HIDING
+  ares_timeval_t tv_now;
+  ares_timeval_t atv_remaining;
 
-  while (isup) {
+  if (has_cancel_ms) {
+    ares__tvnow(&tv_begin);
+    memcpy(&tv_cancel, &tv_begin, sizeof(tv_cancel));
+    if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
+    tv_cancel.sec  += (cancel_ms / 1000);
+    tv_cancel.usec += ((cancel_ms % 1000) * 1000);
+  }
+#else
+  if (cancel_ms) {
+    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
+    return;
+  }
+#endif
+
+  while (ares_queue_active_queries(channel_)) {
     int nfds = 0;
     fd_set readers;
-#ifndef CARES_SYMBOL_HIDING
-    ares_timeval_t tv_now;
-    ares_timeval_t atv_remaining;
 
-    ares__tvnow(&tv_now);
-    if (cancel_ms_ && !has_cancel_ms) {
-      ares__tvnow(&tv_begin);
-      memcpy(&tv_cancel, &tv_begin, sizeof(tv_cancel));
-      if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms_ << "ms" << std::endl;
-      tv_cancel.sec  += (cancel_ms_ / 1000);
-      tv_cancel.usec += ((cancel_ms_ % 1000) * 1000);
-      has_cancel_ms = true;
-    }
-#else
-    if (cancel_ms_) {
-      std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
-      return;
-    }
-#endif
     struct timeval  tv;
 
     /* c-ares is using its own event thread, so we only need to monitor the
@@ -920,9 +918,15 @@ void MockEventThreadOptsTest::ProcessThread() {
       }
     }
 
+    /* We just always wait 20ms then recheck. Not doing any complex signaling. */
+    tv.tv_sec  = 0;
+    tv.tv_usec = 20000;
+
 #ifndef CARES_SYMBOL_HIDING
+    ares__tvnow(&tv_now);
+
+    unsigned int remaining_ms = 0;
     if (has_cancel_ms) {
-      unsigned int remaining_ms;
       ares__timeval_remaining(&atv_remaining,
                               &tv_now,
                               &tv_cancel);
@@ -930,17 +934,16 @@ void MockEventThreadOptsTest::ProcessThread() {
       if (remaining_ms == 0) {
         if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
         ares_cancel(channel_);
-        cancel_ms_ = 0; /* Disable issuing cancel again */
+        cancel_ms = 0; /* Disable issuing cancel again */
         has_cancel_ms = false;
       }
     }
+
+    if (has_cancel_ms && remaining_ms < 20) {
+      tv.tv_usec = (int)remaining_ms * 1000;
+    }
 #endif
 
-    /* We just always wait 20ms then recheck. Not doing any complex signaling. */
-    tv.tv_sec  = 0;
-    tv.tv_usec = 20000;
-
-    mutex.unlock();
     if (select(nfds, &readers, nullptr, nullptr, &tv) < 0) {
       fprintf(stderr, "select() failed, errno %d\n", errno);
       return;
@@ -952,10 +955,7 @@ void MockEventThreadOptsTest::ProcessThread() {
         ProcessFD(fd);
       }
     }
-    mutex.lock();
   }
-  mutex.unlock();
-
 }
 
 std::ostream& operator<<(std::ostream& os, const HostResult& result) {
