@@ -18,6 +18,8 @@ in the source code repo
   branch like:
 ```
 BRANCH=1.32
+git pull
+git checkout main
 git checkout -b v${BRANCH} main
 git commit --allow-empty -m "Created release branch v${BRANCH}"
 git push -u origin v${BRANCH}
@@ -51,7 +53,6 @@ make dist VERSION=${RELEASE}
 ```
 gpg -ab c-ares-${RELEASE}.tar.gz
 ```
-
 - Create a new release on GitHub using the `RELEASE-NOTES.md` as the body.
   Upload the generated tarball and signature as an artifact.
 
@@ -59,14 +60,10 @@ in the c-ares-www repo
 ----------------------
 
 - edit `index.t` (version number and date),
-
 - edit `changelog.t` (add the new release in there)
-
 - edit `download/index.t` for the new release
-
 - commit all local changes
-
-- push the git commits and the new tag
+- push the git commits
 
 inform
 ------
