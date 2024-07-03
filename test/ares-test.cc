@@ -922,10 +922,9 @@ void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
     tv.tv_sec  = 0;
     tv.tv_usec = 20000;
 
+#ifndef CARES_SYMBOL_HIDING
     ares__tvnow(&tv_now);
 
-
-#ifndef CARES_SYMBOL_HIDING
     unsigned int remaining_ms = 0;
     if (has_cancel_ms) {
       ares__timeval_remaining(&atv_remaining,
