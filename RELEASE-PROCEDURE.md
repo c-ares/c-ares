@@ -11,35 +11,45 @@ in the source code repo
 - edit `include/ares_version.h` and set `ARES_VERSION_*` definitions to reflect
   the current version.
 - All release tags need to be made off a release branch named `vX.Y`, where `X`
-  is the Major version number, and `Y` is the minor version number. If this
-  branch is not yet created, you may create it off the `main` branch like:
+  is the Major version number, and `Y` is the minor version number. We also
+  want to create an empty commit in the branch with a message, this ensures
+  when we tag a release from the branch, it gets tied to the branch itself and
+  not a commit which may be shared across this branch and `main`. Create the
+  branch like:
 ```
-  git checkout -b v1.30 main
-  git push -u origin v1.30
+BRANCH=1.32
+git checkout -b v${BRANCH} main
+git commit --allow-empty -m "Created release branch v${BRANCH}"
+git push -u origin v${BRANCH}
 ```
 - make sure all relevant changes are committed on the release branch
 - Create a signed tag for the release using a name of `vX.Y.Z` where `X` is the
   Major version number, `Y` is the minor version number, and `Z` is the release.
   This tag needs to be created from the release branch, for example:
 ```
-git tag -s v1.30.0 -m 'c-ares release 1.30.0' v1.30
+BRANCH=1.32
+RELEASE=1.32.0
+git checkout v${BRANCH}
+git pull
+git tag -s v${RELEASE} -m 'c-ares release v${RELEASE}' v${BRANCH}
 git push origin --tags
 ```
 - Create the release tarball using `make dist`, it is best to check out the
   specific tag fresh and build from that:
 ```
-git clone --depth 1 --branch v1.30.0 https://github.com/c-ares/c-ares c-ares-1.30.0 && \
-cd c-ares-1.30.0 && \
+RELEASE=1.32.0
+git clone --depth 1 --branch v${RELEASE} https://github.com/c-ares/c-ares c-ares-${RELEASE} && \
+cd c-ares-${RELEASE} && \
 autoreconf -fi && \
 ./configure && \
 make && \
-make dist VERSION=1.30.0
+make dist VERSION=${RELEASE}
 ```
 - GPG sign the release with a detached signature. Valid signing keys are currently:
   - Daniel Stenberg <daniel@haxx.se> - 27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2
   - Brad House <brad@brad-house.com> - DA7D64E4C82C6294CB73A20E22E3D13B5411B7CA
 ```
-gpg -ab c-ares-1.30.0.tar.gz
+gpg -ab c-ares-${RELEASE}.tar.gz
 ```
 
 - Create a new release on GitHub using the `RELEASE-NOTES.md` as the body.
