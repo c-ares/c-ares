@@ -783,10 +783,12 @@ TEST_F(LibraryTest, DNSRecord) {
             /* TODO */
             break;
           case ARES_DATATYPE_BINP:
-            ares__buf_append_byte(printmsg, '"');
-            size_t templen;
-            ares__buf_append_str(printmsg, (const char *)ares_dns_rr_get_bin(rr, keys[k], &templen));
-            ares__buf_append_byte(printmsg, '"');
+            {
+              ares__buf_append_byte(printmsg, '"');
+              size_t templen;
+              ares__buf_append_str(printmsg, (const char *)ares_dns_rr_get_bin(rr, keys[k], &templen));
+              ares__buf_append_byte(printmsg, '"');
+            }
             break;
           case ARES_DATATYPE_ABINP:
             for (size_t a=0; a<ares_dns_rr_get_abin_cnt(rr, keys[k]); a++) {
