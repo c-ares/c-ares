@@ -300,10 +300,10 @@ static unsigned int ares__qcache_soa_minimum(ares_dns_record_t *dnsrec)
 }
 
 /* On success, takes ownership of dnsrec */
-static ares_status_t ares__qcache_insert(ares__qcache_t      *qcache,
-                                         ares_dns_record_t   *qresp,
-                                         ares_dns_record_t   *qreq,
-                                         const ares_timeval_t *now)
+static ares_status_t ares__qcache_insert(ares__qcache_t            *qcache,
+                                         ares_dns_record_t         *qresp,
+                                         const ares_dns_record_t   *qreq,
+                                         const ares_timeval_t      *now)
 {
   ares__qcache_entry_t *entry;
   unsigned int          ttl;
