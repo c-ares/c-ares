@@ -59,9 +59,9 @@ gpg -ab c-ares-${RELEASE}.tar.gz
 in the c-ares-www repo
 ----------------------
 
-- edit `index.t` (version number and date),
-- edit `changelog.t` (add the new release in there)
-- edit `download/index.t` for the new release
+- edit `index.md`, change version and date in frontmatter
+- edit `changelog.md`, copy `RELEASE-NOTES.md` content
+- edit `download.md`, add new version and date in frontmatter
 - commit all local changes
 - push the git commits
 
