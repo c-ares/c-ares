@@ -43,17 +43,17 @@ void ares__tvnow(ares_timeval_t *now)
    * 1 microsecond or better resolution with a rollover not less than 100 years
    */
   LARGE_INTEGER freq;
-  LARGE_INTEGER now;
+  LARGE_INTEGER current;
 
   /* Not sure how long it takes to get the frequency, I see it recommended to
    * cache it */
   QueryPerformanceFrequency(&freq);
-  QueryPerformanceCounter(&now);
+  QueryPerformanceCounter(&current);
 
-  now->tv_sec = now.QuadPart / freq.QuadPart;
+  now->sec = current.QuadPart / freq.QuadPart;
   /* We want to prevent overflows so we get the remainder, then multiply to
    * microseconds before dividing */
-  now->tv_usec = ((now.QuadPart % freq.QuadPart) * 1000000) / freq.QuadPart;
+  now->usec = ((current.QuadPart % freq.QuadPart) * 1000000) / freq.QuadPart;
 #endif
 }
 
