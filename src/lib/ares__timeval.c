@@ -53,7 +53,8 @@ void ares__tvnow(ares_timeval_t *now)
   now->sec = current.QuadPart / freq.QuadPart;
   /* We want to prevent overflows so we get the remainder, then multiply to
    * microseconds before dividing */
-  now->usec = ((current.QuadPart % freq.QuadPart) * 1000000) / freq.QuadPart;
+  now->usec = (unsigned int)((current.QuadPart % freq.QuadPart) * 1000000) /
+              freq.QuadPart;
 #endif
 }
 
