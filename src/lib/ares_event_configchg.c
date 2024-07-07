@@ -304,7 +304,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
    *       that didn't get triggered either.
    */
   if (NotifyIpInterfaceChange(
-        AF_UNSPEC, (PIPINTERFACE_CHANGE_CALLBACK)ares_event_configchg_ip_cb,
+        AF_UNSPEC, ares_event_configchg_ip_cb,
         *configchg, FALSE, &c->ifchg_hnd) != NO_ERROR) {
     status = ARES_ESERVFAIL;
     goto done;
