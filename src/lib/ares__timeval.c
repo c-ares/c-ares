@@ -30,18 +30,11 @@
 
 void ares__tvnow(ares_timeval_t *now)
 {
-#if 0
-  /* GetTickCount64() is available on Windows Vista and higher.
-   * Resolution is ~10-16ms */
-  ULONGLONG      milliseconds = GetTickCount64();
-
-  now->sec  = (ares_int64_t)milliseconds / 1000;
-  now->usec = (unsigned int)(milliseconds % 1000) * 1000;
-#else
   /* QueryPerformanceCounters() has been around since Windows 2000, though
    * significant fixes were made in later versions.  Documentation states
-   * 1 microsecond or better resolution with a rollover not less than 100 years
-   */
+   * 1 microsecond or better resolution with a rollover not less than 100 years.
+   * This differs from GetTickCount{64}() which has a resolution between 10 and
+   * 16 ms. */
   LARGE_INTEGER freq;
   LARGE_INTEGER current;
 
@@ -53,9 +46,8 @@ void ares__tvnow(ares_timeval_t *now)
   now->sec = current.QuadPart / freq.QuadPart;
   /* We want to prevent overflows so we get the remainder, then multiply to
    * microseconds before dividing */
-  now->usec = (unsigned int)((current.QuadPart % freq.QuadPart) * 1000000) /
-              freq.QuadPart;
-#endif
+  now->usec = (unsigned int)(((current.QuadPart % freq.QuadPart) * 1000000) /
+              freq.QuadPart);
 }
 
 #elif defined(HAVE_CLOCK_GETTIME_MONOTONIC)
