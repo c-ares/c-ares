@@ -237,7 +237,7 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 
 
 #  ifndef __WATCOMC__
-static void NETIOAPI_API
+static void NETIOAPI_API_
   ares_event_configchg_ip_cb(PVOID                 CallerContext,
                              PMIB_IPINTERFACE_ROW  Row,
                              MIB_NOTIFICATION_TYPE NotificationType)
