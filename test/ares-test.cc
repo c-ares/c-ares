@@ -59,6 +59,7 @@ extern "C" {
 #include <functional>
 #include <sstream>
 #include <algorithm>
+#include <chrono>
 
 #ifdef WIN32
 #define BYTE_CAST (char *)
@@ -257,32 +258,15 @@ void ProcessWork(ares_channel_t *channel,
   int nfds, count;
   fd_set readers, writers;
 
-#ifndef CARES_SYMBOL_HIDING
-  ares_timeval_t tv_begin;
-  ares_timeval_t tv_cancel;
-
-  ares__tvnow(&tv_begin);
-  memcpy(&tv_cancel, &tv_begin, sizeof(tv_cancel));
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  auto tv_cancel = tv_begin;
 
   if (cancel_ms) {
     if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
-    tv_cancel.sec  += (cancel_ms / 1000);
-    tv_cancel.usec += ((cancel_ms % 1000) * 1000);
+    tv_cancel += std::chrono::milliseconds(cancel_ms);
   }
-#else
-  if (cancel_ms) {
-    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
-    return;
-  }
-#endif
 
   while (true) {
-#ifndef CARES_SYMBOL_HIDING
-    ares_timeval_t  tv_now;
-    ares_timeval_t  atv_remaining;
-
-    ares__tvnow(&tv_now);
-#endif
     struct timeval  tv;
     struct timeval *tv_select;
 
@@ -308,29 +292,24 @@ void ProcessWork(ares_channel_t *channel,
     if (tv_select == NULL)
       return;
 
-#ifndef CARES_SYMBOL_HIDING
     if (cancel_ms) {
-      unsigned int remaining_ms;
-      ares__timeval_remaining(&atv_remaining,
-                              &tv_now,
-                              &tv_cancel);
+      auto tv_now       = std::chrono::high_resolution_clock::now();
+      auto remaining_ms = std::chrono::duration_cast<std::chrono::milliseconds>(tv_cancel - tv_now).count();
 
-      remaining_ms = (unsigned int)((atv_remaining.sec * 1000) + (atv_remaining.usec / 1000));
-      if (remaining_ms == 0) {
+      if (remaining_ms <= 0) {
         if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
         ares_cancel(channel);
         cancel_ms = 0; /* Disable issuing cancel again */
       } else {
         struct timeval tv_remaining;
 
-        tv_remaining.tv_sec = atv_remaining.sec;
-        tv_remaining.tv_usec = (int)atv_remaining.usec;
+        tv_remaining.tv_sec = remaining_ms / 1000;
+        tv_remaining.tv_usec = (int)(remaining_ms % 1000);
 
         /* Recalculate proper timeout since we also have a cancel to wait on */
         tv_select = ares_timeout(channel, &tv_remaining, &tv);
       }
     }
-#endif
 
     count = select(nfds, &readers, &writers, nullptr, tv_select);
     if (count < 0) {
@@ -877,29 +856,13 @@ void MockChannelOptsTest::Process(unsigned int cancel_ms) {
 void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
   std::set<ares_socket_t> fds;
 
-#ifndef CARES_SYMBOL_HIDING
-  bool has_cancel_ms = (cancel_ms > 0)?true:false;
-  ares_timeval_t tv_begin;
-  ares_timeval_t tv_cancel;
-#endif
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  auto tv_cancel = tv_begin;
 
-#ifndef CARES_SYMBOL_HIDING
-  ares_timeval_t tv_now;
-  ares_timeval_t atv_remaining;
-
-  if (has_cancel_ms) {
-    ares__tvnow(&tv_begin);
-    memcpy(&tv_cancel, &tv_begin, sizeof(tv_cancel));
-    if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
-    tv_cancel.sec  += (cancel_ms / 1000);
-    tv_cancel.usec += ((cancel_ms % 1000) * 1000);
-  }
-#else
   if (cancel_ms) {
-    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
-    return;
+    if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
+    tv_cancel += std::chrono::milliseconds(cancel_ms);
   }
-#endif
 
   while (ares_queue_active_queries(channel_)) {
     int nfds = 0;
@@ -918,31 +881,24 @@ void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
       }
     }
 
-    /* We just always wait 20ms then recheck. Not doing any complex signaling. */
+    /* We just always wait 20ms then recheck if we're done. Not doing any
+     * complex signaling. */
     tv.tv_sec  = 0;
     tv.tv_usec = 20000;
 
-#ifndef CARES_SYMBOL_HIDING
-    ares__tvnow(&tv_now);
+    if (cancel_ms) {
+      auto tv_now       = std::chrono::high_resolution_clock::now();
+      auto remaining_ms = std::chrono::duration_cast<std::chrono::milliseconds>(tv_cancel - tv_now).count();
 
-    unsigned int remaining_ms = 0;
-    if (has_cancel_ms) {
-      ares__timeval_remaining(&atv_remaining,
-                              &tv_now,
-                              &tv_cancel);
-      remaining_ms = (unsigned int)((atv_remaining.sec * 1000) + (atv_remaining.usec / 1000));
-      if (remaining_ms == 0) {
+      if (remaining_ms <= 0) {
         if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
         ares_cancel(channel_);
         cancel_ms = 0; /* Disable issuing cancel again */
-        has_cancel_ms = false;
+      } else {
+        tv.tv_sec = remaining_ms / 1000;
+        tv.tv_usec = (int)(remaining_ms % 1000);
       }
     }
-
-    if (has_cancel_ms && remaining_ms < 20) {
-      tv.tv_usec = (int)remaining_ms * 1000;
-    }
-#endif
 
     if (select(nfds, &readers, nullptr, nullptr, &tv) < 0) {
       fprintf(stderr, "select() failed, errno %d\n", errno);
