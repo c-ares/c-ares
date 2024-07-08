@@ -57,6 +57,8 @@ extern "C" {
 
 #include <functional>
 #include <sstream>
+#include <algorithm>
+#include <chrono>
 
 #ifdef WIN32
 #define BYTE_CAST (char *)
@@ -106,27 +108,15 @@ void ProcessWork(ares_channel_t *channel,
   int nfds, count;
   fd_set readers, writers;
 
-#ifndef CARES_SYMBOL_HIDING
-  struct timeval tv_begin  = ares__tvnow();
-  struct timeval tv_cancel = tv_begin;
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  auto tv_cancel = tv_begin;
 
   if (cancel_ms) {
     if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
-    tv_cancel.tv_sec  += (cancel_ms / 1000);
-    tv_cancel.tv_usec += ((cancel_ms % 1000) * 1000);
+    tv_cancel += std::chrono::milliseconds(cancel_ms);
   }
-#else
-  if (cancel_ms) {
-    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
-    return;
-  }
-#endif
 
   while (true) {
-#ifndef CARES_SYMBOL_HIDING
-    struct timeval  tv_now = ares__tvnow();
-    struct timeval  tv_remaining;
-#endif
     struct timeval  tv;
     struct timeval *tv_select;
 
@@ -152,23 +142,24 @@ void ProcessWork(ares_channel_t *channel,
     if (tv_select == NULL)
       return;
 
-#ifndef CARES_SYMBOL_HIDING
     if (cancel_ms) {
-      unsigned int remaining_ms;
-      ares__timeval_remaining(&tv_remaining,
-                              &tv_now,
-                              &tv_cancel);
-      remaining_ms = (unsigned int)((tv_remaining.tv_sec * 1000) + (tv_remaining.tv_usec / 1000));
-      if (remaining_ms == 0) {
+      auto tv_now       = std::chrono::high_resolution_clock::now();
+      auto remaining_ms = std::chrono::duration_cast<std::chrono::milliseconds>(tv_cancel - tv_now).count();
+
+      if (remaining_ms <= 0) {
         if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
         ares_cancel(channel);
         cancel_ms = 0; /* Disable issuing cancel again */
       } else {
+        struct timeval tv_remaining;
+
+        tv_remaining.tv_sec = remaining_ms / 1000;
+        tv_remaining.tv_usec = (int)(remaining_ms % 1000);
+
         /* Recalculate proper timeout since we also have a cancel to wait on */
         tv_select = ares_timeout(channel, &tv_remaining, &tv);
       }
     }
-#endif
 
     count = select(nfds, &readers, &writers, nullptr, tv_select);
     if (count < 0) {
