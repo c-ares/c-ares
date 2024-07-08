@@ -239,9 +239,10 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 
 
 #  ifndef __WATCOMC__
-static void ares_event_configchg_ip_cb(PVOID                 CallerContext,
-                                       PMIB_IPINTERFACE_ROW  Row,
-                                       MIB_NOTIFICATION_TYPE NotificationType)
+static void NETIOAPI_API_
+  ares_event_configchg_ip_cb(PVOID                 CallerContext,
+                             PMIB_IPINTERFACE_ROW  Row,
+                             MIB_NOTIFICATION_TYPE NotificationType)
 {
   ares_event_configchg_t *configchg = CallerContext;
   (void)Row;
@@ -308,7 +309,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
    *       that didn't get triggered either.
    */
   if (NotifyIpInterfaceChange(
-        AF_UNSPEC, (PIPINTERFACE_CHANGE_CALLBACK)ares_event_configchg_ip_cb,
+        AF_UNSPEC, ares_event_configchg_ip_cb,
         *configchg, FALSE, &c->ifchg_hnd) != NO_ERROR) {
     status = ARES_ESERVFAIL;
     goto done;
