@@ -766,7 +766,6 @@ TEST_P(MockEventThreadTest, DestroyQuick) {
   EXPECT_TRUE(result.done_);
 }
 
-#ifndef CARES_SYMBOL_HIDING
 // Test case for Issue #662
 TEST_P(MockEventThreadTest, PartialQueryCancel) {
   std::vector<byte> nothing;
@@ -826,8 +825,6 @@ TEST_P(MockEventThreadTest, BulkCancel) {
     if (verbose) std::cerr << "success: " << success_cnt << ", cancel: " << cancel_cnt << std::endl;
   }
 }
-#endif
-
 
 TEST_P(MockEventThreadTest, UnspecifiedFamilyV6) {
   DNSPacket rsp6;
