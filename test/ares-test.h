@@ -357,7 +357,9 @@ public:
   {
   }
 
-  void Process(unsigned int cancel_ms = 0);
+  ~MockEventThreadOptsTest()
+  {
+  }
 
   static struct ares_options *FillOptionsET(struct ares_options *opts, struct ares_options *givenopts, ares_evsys_t evsys) {
     if (givenopts) {
@@ -369,6 +371,7 @@ public:
     return opts;
   }
 
+  void Process(unsigned int cancel_ms = 0);
 private:
   struct ares_options evopts_;
 };

@@ -822,7 +822,6 @@ TEST_P(MockEventThreadTest, DestroyQuick) {
   EXPECT_TRUE(result.done_);
 }
 
-#ifndef CARES_SYMBOL_HIDING
 // Test case for Issue #662
 TEST_P(MockEventThreadTest, PartialQueryCancel) {
   std::vector<byte> nothing;
@@ -845,7 +844,6 @@ TEST_P(MockEventThreadTest, PartialQueryCancel) {
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ECANCELLED, result.status_);
 }
-#endif
 
 TEST_P(MockEventThreadTest, UnspecifiedFamilyV6) {
   DNSPacket rsp6;

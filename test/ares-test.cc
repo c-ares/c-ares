@@ -57,6 +57,8 @@ extern "C" {
 
 #include <functional>
 #include <sstream>
+#include <algorithm>
+#include <chrono>
 
 #ifdef WIN32
 #define BYTE_CAST (char *)
@@ -255,27 +257,15 @@ void ProcessWork(ares_channel_t *channel,
   int nfds, count;
   fd_set readers, writers;
 
-#ifndef CARES_SYMBOL_HIDING
-  struct timeval tv_begin  = ares__tvnow();
-  struct timeval tv_cancel = tv_begin;
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  auto tv_cancel = tv_begin;
 
   if (cancel_ms) {
     if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
-    tv_cancel.tv_sec  += (cancel_ms / 1000);
-    tv_cancel.tv_usec += ((cancel_ms % 1000) * 1000);
+    tv_cancel += std::chrono::milliseconds(cancel_ms);
   }
-#else
-  if (cancel_ms) {
-    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
-    return;
-  }
-#endif
 
   while (true) {
-#ifndef CARES_SYMBOL_HIDING
-    struct timeval  tv_now = ares__tvnow();
-    struct timeval  tv_remaining;
-#endif
     struct timeval  tv;
     struct timeval *tv_select;
 
@@ -301,23 +291,24 @@ void ProcessWork(ares_channel_t *channel,
     if (tv_select == NULL)
       return;
 
-#ifndef CARES_SYMBOL_HIDING
     if (cancel_ms) {
-      unsigned int remaining_ms;
-      ares__timeval_remaining(&tv_remaining,
-                              &tv_now,
-                              &tv_cancel);
-      remaining_ms = (unsigned int)((tv_remaining.tv_sec * 1000) + (tv_remaining.tv_usec / 1000));
-      if (remaining_ms == 0) {
+      auto tv_now       = std::chrono::high_resolution_clock::now();
+      auto remaining_ms = std::chrono::duration_cast<std::chrono::milliseconds>(tv_cancel - tv_now).count();
+
+      if (remaining_ms <= 0) {
         if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
         ares_cancel(channel);
         cancel_ms = 0; /* Disable issuing cancel again */
       } else {
+        struct timeval tv_remaining;
+
+        tv_remaining.tv_sec = remaining_ms / 1000;
+        tv_remaining.tv_usec = (int)(remaining_ms % 1000);
+
         /* Recalculate proper timeout since we also have a cancel to wait on */
         tv_select = ares_timeout(channel, &tv_remaining, &tv);
       }
     }
-#endif
 
     count = select(nfds, &readers, &writers, nullptr, tv_select);
     if (count < 0) {
@@ -327,97 +318,6 @@ void ProcessWork(ares_channel_t *channel,
 
     // Let the library process any activity.
     ares_process(channel, &readers, &writers);
-
-    // Let the provided callback process any activity on the extra FD.
-    for (ares_socket_t extrafd : extrafds) {
-      if (FD_ISSET(extrafd, &readers)) {
-        process_extra(extrafd);
-      }
-    }
-  }
-}
-
-void ProcessWorkEventThread(ares_channel_t *channel,
-                            std::function<std::set<ares_socket_t>()> get_extrafds,
-                            std::function<void(ares_socket_t)> process_extra,
-                            unsigned int cancel_ms) {
-  int nfds=0, count;
-  fd_set readers;
-  size_t retry_cnt = 1;
-
-#ifndef CARES_SYMBOL_HIDING
-  struct timeval tv_begin  = ares__tvnow();
-  struct timeval tv_cancel = tv_begin;
-
-  if (cancel_ms) {
-    if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
-    tv_cancel.tv_sec  += (cancel_ms / 1000);
-    tv_cancel.tv_usec += ((cancel_ms % 1000) * 1000);
-  }
-#else
-  if (cancel_ms) {
-    std::cerr << "library built with symbol hiding, can't test with cancel support" << std::endl;
-    return;
-  }
-#endif
-
-  while (true) {
-#ifndef CARES_SYMBOL_HIDING
-    struct timeval  tv_now = ares__tvnow();
-    struct timeval  tv_remaining;
-#endif
-    struct timeval  tv;
-
-    /* c-ares is using its own event thread, so we only need to monitor the
-     * extrafds passed in */
-    FD_ZERO(&readers);
-    std::set<ares_socket_t> extrafds = get_extrafds();
-    for (ares_socket_t extrafd : extrafds) {
-      FD_SET(extrafd, &readers);
-      if (extrafd >= (ares_socket_t)nfds) {
-        nfds = (int)extrafd + 1;
-      }
-    }
-
-    /* If ares_timeout returns NULL, it means there are no requests in queue,
-     * so we can break out, but lets loop one additional time just incase we
-     * have some weird multithreading issue where a result hasn't yet been
-     * delivered.  This is really just an odd case, its not "normal" to try
-     * to determine if an event has been delivered by solely monitoring the
-     * channel, really we should know how many callbacks we expect and how
-     * many we get, but that's not easy to do in a test framework. */
-    if (ares_timeout(channel, NULL, &tv) == NULL) {
-      if (retry_cnt == 0)
-        return;
-      retry_cnt--;
-    } else {
-      retry_cnt = 1;
-    }
-
-#ifndef CARES_SYMBOL_HIDING
-    if (cancel_ms) {
-      unsigned int remaining_ms;
-      ares__timeval_remaining(&tv_remaining,
-                              &tv_now,
-                              &tv_cancel);
-      remaining_ms = (unsigned int)((tv_remaining.tv_sec * 1000) + (tv_remaining.tv_usec / 1000));
-      if (remaining_ms == 0) {
-        if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
-        ares_cancel(channel);
-        cancel_ms = 0; /* Disable issuing cancel again */
-      }
-    }
-#endif
-
-    /* We just always wait 50ms then recheck. Not doing any complex signalling. */
-    tv.tv_sec  = 0;
-    tv.tv_usec = 50000;
-
-    count = select(nfds, &readers, nullptr, nullptr, &tv);
-    if (count < 0) {
-      fprintf(stderr, "select() failed, errno %d\n", errno);
-      return;
-    }
 
     // Let the provided callback process any activity on the extra FD.
     for (ares_socket_t extrafd : extrafds) {
@@ -908,11 +808,67 @@ void MockChannelOptsTest::Process(unsigned int cancel_ms) {
 }
 
 void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
-  using namespace std::placeholders;
-  ProcessWorkEventThread(channel_,
-              std::bind(&MockEventThreadOptsTest::fds, this),
-              std::bind(&MockEventThreadOptsTest::ProcessFD, this, _1),
-              cancel_ms);
+  std::set<ares_socket_t> fds;
+
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  auto tv_cancel = tv_begin;
+
+  if (cancel_ms) {
+    if (verbose) std::cerr << "ares_cancel will be called after " << cancel_ms << "ms" << std::endl;
+    tv_cancel += std::chrono::milliseconds(cancel_ms);
+  }
+
+  while (1) {
+    int nfds = 0;
+    fd_set readers;
+    struct timeval tv;
+
+    if (ares_timeout(channel_, NULL, &tv) == NULL) {
+      break;
+    }
+
+    /* c-ares is using its own event thread, so we only need to monitor the
+     * extrafds passed in */
+    FD_ZERO(&readers);
+    fds = MockEventThreadOptsTest::fds();
+    for (ares_socket_t fd : fds) {
+      FD_SET(fd, &readers);
+      if (fd >= (ares_socket_t)nfds) {
+        nfds = (int)fd + 1;
+      }
+    }
+
+    /* We just always wait 20ms then recheck if we're done. Not doing any
+     * complex signaling. */
+    tv.tv_sec  = 0;
+    tv.tv_usec = 20000;
+
+    if (cancel_ms) {
+      auto tv_now       = std::chrono::high_resolution_clock::now();
+      auto remaining_ms = std::chrono::duration_cast<std::chrono::milliseconds>(tv_cancel - tv_now).count();
+
+      if (remaining_ms <= 0) {
+        if (verbose) std::cerr << "Issuing ares_cancel()" << std::endl;
+        ares_cancel(channel_);
+        cancel_ms = 0; /* Disable issuing cancel again */
+      } else {
+        tv.tv_sec = remaining_ms / 1000;
+        tv.tv_usec = (int)(remaining_ms % 1000);
+      }
+    }
+
+    if (select(nfds, &readers, nullptr, nullptr, &tv) < 0) {
+      fprintf(stderr, "select() failed, errno %d\n", errno);
+      return;
+    }
+
+    // Let the provided callback process any activity on the extra FD.
+    for (ares_socket_t fd : fds) {
+      if (FD_ISSET(fd, &readers)) {
+        ProcessFD(fd);
+      }
+    }
+  }
 }
 
 std::ostream& operator<<(std::ostream& os, const HostResult& result) {
