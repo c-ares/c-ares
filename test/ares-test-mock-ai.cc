@@ -497,7 +497,6 @@ TEST_P(MockChannelTestAI, FamilyV6) {
   EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
 }
 
-#ifndef CARES_SYMBOL_HIDING
 // Test case for Issue #662
 TEST_P(MockChannelTestAI, PartialQueryCancel) {
   std::vector<byte> nothing;
@@ -525,7 +524,6 @@ TEST_P(MockChannelTestAI, PartialQueryCancel) {
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ECANCELLED, result.status_);
 }
-#endif
 
 TEST_P(MockChannelTestAI, FamilyV4) {
   DNSPacket rsp4;
