@@ -369,17 +369,10 @@ public:
                           FillOptionsET(&evopts_, givenopts, evsys),
                           optmask | ARES_OPT_EVENT_THREAD)
   {
-    cancel_ms_ = 0;
-    isup       = true;
-    thread     = std::thread(&MockEventThreadOptsTest::ProcessThread, this);
   }
 
   ~MockEventThreadOptsTest()
   {
-    mutex.lock();
-    isup = false;
-    mutex.unlock();
-    thread.join();
   }
 
   static struct ares_options *FillOptionsET(struct ares_options *opts,
@@ -395,21 +388,9 @@ public:
     return opts;
   }
 
-  void Process(unsigned int cancel_ms = 0)
-  {
-    mutex.lock();
-    cancel_ms_ = cancel_ms;
-    mutex.unlock();
-    ares_queue_wait_empty(channel_, -1);
-  }
-
+  void Process(unsigned int cancel_ms = 0);
 private:
-  void                ProcessThread();
   struct ares_options evopts_;
-  unsigned int        cancel_ms_;
-  bool                isup;
-  std::mutex          mutex;
-  std::thread         thread;
 };
 
 class MockEventThreadTest
