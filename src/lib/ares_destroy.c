@@ -39,6 +39,7 @@ void ares_destroy(ares_channel_t *channel)
   }
 
   /* Disable configuration change monitoring */
+  ares__channel_lock(channel);
   if (channel->optmask & ARES_OPT_EVENT_THREAD) {
     ares_event_thread_t *e = channel->sock_state_cb_data;
     if (e && e->configchg) {
@@ -46,8 +47,10 @@ void ares_destroy(ares_channel_t *channel)
       e->configchg = NULL;
     }
   }
+  ares__channel_unlock(channel);
 
-  /* Wait for reinit thread to exit if there was one pending */
+  /* Wait for reinit thread to exit if there was one pending, can't be
+   * holding a lock as the thread may take locks. */
   if (channel->reinit_thread != NULL) {
     void *rv;
     ares__thread_join(channel->reinit_thread, &rv);
