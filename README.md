@@ -113,7 +113,6 @@ gpg: binary signature, digest algorithm SHA512, key algorithm rsa2048
 - [RFC1035](https://datatracker.ietf.org/doc/html/rfc7873).
   Initial/Base DNS RFC
 - [RFC2671](https://datatracker.ietf.org/doc/html/rfc2671),
-  [RFC2673](https://datatracker.ietf.org/doc/html/rfc2673),
   [RFC6891](https://datatracker.ietf.org/doc/html/rfc6891).
   EDNS0 option (meta-RR)
 - [RFC3596](https://datatracker.ietf.org/doc/html/rfc3596).

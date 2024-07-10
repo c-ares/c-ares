@@ -152,7 +152,7 @@ typedef enum {
   ARES_RCODE_BADNAME   = 20, /*!< RFC 2930. Duplicate Key Name */
   ARES_RCODE_BADALG    = 21, /*!< RFC 2930. Algorithm not supported */
   ARES_RCODE_BADTRUNC  = 22, /*!< RFC 8945. Bad Truncation */
-  ARES_RCODE_BADCOOKIE = 23  /*!< RVC 7973. Bad/missing Server Cookie */
+  ARES_RCODE_BADCOOKIE = 23  /*!< RFC 7873. Bad/missing Server Cookie */
 } ares_dns_rcode_t;
 
 /*! Data types used */
