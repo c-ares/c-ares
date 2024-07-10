@@ -127,7 +127,7 @@ gpg: binary signature, digest algorithm SHA512, key algorithm rsa2048
 - [RFC9460](https://datatracker.ietf.org/doc/html/rfc9460).
   General Purpose Service Binding, Service Binding type for use with HTTPS.
   `SVCB` and `HTTPS` Records.
-- [RFC 7553](https://datatracker.ietf.org/doc/html/rfc7553).
+- [RFC7553](https://datatracker.ietf.org/doc/html/rfc7553).
   Uniform Resource Identifier. `URI` Record.
 - [RFC6844](https://datatracker.ietf.org/doc/html/rfc6844).
   Certification Authority Authorization. `CAA` Record.
