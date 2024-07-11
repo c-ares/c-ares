@@ -9,6 +9,9 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  GTEST_ARGS: "-4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
+
 jobs:
   build:
     runs-on: windows-latest
@@ -42,6 +45,7 @@ jobs:
             mingw-w64-${{ matrix.env }}-cmake
             mingw-w64-${{ matrix.env }}-ninja
             mingw-w64-${{ matrix.env }}-gtest
+            mingw-w64-${{ matrix.env }}-lldb
             ${{ matrix.extra_packages }}
       - name: Checkout c-ares
         uses: actions/checkout@v4
@@ -51,7 +55,7 @@ jobs:
           cmake --build build_cmake
           ./build_cmake/bin/adig.exe www.google.com
           ./build_cmake/bin/ahost.exe www.google.com
-          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1 ./build_cmake/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_cmake/bin/arestest.exe
       - name: "Autotools: build and test c-ares"
         run: |
           autoreconf -fi
@@ -61,7 +65,7 @@ jobs:
           make -j3
           ./src/tools/adig.exe www.google.com
           ./src/tools/ahost.exe www.google.com
-          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1 ./test/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./test/arestest.exe
       - name: "CMake: UBSAN: build and test c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         env:
@@ -71,7 +75,7 @@ jobs:
           cmake --build build_ubsan
           ./build_ubsan/bin/adig.exe www.google.com
           ./build_ubsan/bin/ahost.exe www.google.com
-          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1 ./build_ubsan/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_usban/bin/arestest.exe
       - name: "CMake: ASAN: build and test c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         env:
@@ -81,7 +85,7 @@ jobs:
           cmake --build build_asan
           ./build_asan/bin/adig.exe www.google.com
           ./build_asan/bin/ahost.exe www.google.com
-          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1 ./build_asan/bin/arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_asan/bin/arestest.exe
       - name: "Autotools: Static Analyzer: build c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         # Cmake won't work because it somehow mangles linker args and it can't find core windows libraries

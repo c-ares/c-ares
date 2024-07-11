@@ -817,9 +817,9 @@ TEST_P(MockEventThreadTest, BulkCancel) {
     for (size_t i = 0; i<BULKCANCEL_CNT; i++) {
       EXPECT_TRUE(result[i].done_);
       EXPECT_TRUE(result[i].status_ == ARES_ECANCELLED || result[i].status_ == ARES_SUCCESS);
-      if (result[i].status_ == ARES_SUCCESS)
+      if (result[i].done_ && result[i].status_ == ARES_SUCCESS)
         success_cnt++;
-      if (result[i].status_ == ARES_ECANCELLED)
+      if (result[i].done_ && result[i].status_ == ARES_ECANCELLED)
         cancel_cnt++;
     }
     if (verbose) std::cerr << "success: " << success_cnt << ", cancel: " << cancel_cnt << std::endl;

@@ -56,16 +56,15 @@
  * doesn't directly follow either methodology.
  *
  * Initialization:
- *   1. Dynamically load the NtDeviceIoControlFile and NtCancelIoFileEx internal
- *      symbols from ntdll.dll.  These functions are used to submit the AFD POLL
- *      request and to cancel a prior request, respectively.
+ *   1. Dynamically load the NtDeviceIoControlFile internal symbol from
+ *      ntdll.dll.  This function is used to submit the AFD POLL request.
  *   2. Create an IO Completion Port base handle via CreateIoCompletionPort()
  *      that all socket events will be delivered through.
  *   3. Create a callback to be used to be able to interrupt waiting for IOCP
  *      events, this may be called for allowing enqueuing of additional socket
  *      events or removing socket events. PostQueuedCompletionStatus() is the
- *      obvious choice.  Use the same container structure as used with a Socket
- *      but tagged indicating it is not as the CompletionKey (important!).
+ *      obvious choice.  We can use the same container format, the event
+ *      delivered won't have an OVERLAPPED pointer so we can differentiate.
  *
  * Socket Add:
  *   1. Create/Allocate a container for holding metadata about a socket:
@@ -84,44 +83,50 @@
  *      submitting AFD POLL requests.
  *   4. Bind to IOCP using CreateIoCompletionPort() referencing the "peer
  *      socket" and the base IOCP handle from "Initialization".  Use the
- *      pointer to the socket container as the "CompletionKey" which will be
- *      returned when an event occurs.
+ *      "peer socket" as the "CompletionKey" which will be returned when an
+ *      event occurs.
  *   5. Submit AFD POLL request (see "AFD POLL Request" section)
+ *   6. Record a mapping between the "peer socket" and the socket container.
+ *   NOTE: We use the "peer socket" as the completion key due to observation of
+ *         events being delivered for sockets that have already been closed. If
+ *         we used the container, we'd be referencing free'd memory if this
+ *         occurs.
  *
  * Socket Delete:
- *   1. Call "AFD Poll Cancel" (see Section of same name)
- *   2. If a cancel was requested (not bypassed due to no events, etc), tag the
- *      "container" for the socket as pending delete, and when the next IOCP
- *      event for the socket is dequeued, cleanup.
- *   3. Otherwise, call closesocket(peer_socket) then free() the container
- *      which will officially delete it.
- *   NOTE: Deferring delete may be completely unnecessary.  In theory closing
- *         the peer_socket() should guarantee no additional events will be
- *         delivered.  But maybe if there's a pending event that hasn't been
- *         read yet but already trigggered it would be an issue, so this is
- *         "safer" unless we can prove its not necessary.
+ *   1. Call
+ *      NtCancelIoFileEx((HANDLE)peer_socket, iosb, &temp_iosb);
+ *      to cancel any pending operations.
+ *   2. Call closesocket(peer_socket) to close the socket
+ *   3. remove the mapping between the peer_socket and the container.
+ *   4. free() the container
+ *   NOTE: We have to use the container mapping due to stale events being
+ *         delivered.
  *
  * Socket Modify:
- *   1. Call "AFD Poll Cancel" (see Section of same name)
- *   2. If a cancel was not enqueued because there is no pending request,
- *      submit AFD POLL request (see "AFD POLL Request" section), otherwise
- *      defer until next socket event.
+ *   1. Submit AFD POLL request (see "AFD POLL Request" section), it will
+ *      automatically cancel any prior poll request so there's no reason to
+ *      call an explicit cancel.
  *
  * Event Wait:
  *   1. Call GetQueuedCompletionStatusEx() with the base IOCP handle, a
  *      stack allocated array of OVERLAPPED_ENTRY's, and an appropriate
  *      timeout.
- *   2. Iterate across returned events, the CompletionKey is a pointer to the
- *      container registered with CreateIoCompletionPort() or
- *      PostQueuedCompletionStatus()
- *   3. If object indicates it is pending delete, go ahead and
- *      closesocket(peer_socket) and free() the container. Go to the next event.
- *   4. Submit AFD POLL Request (see "AFD POLL Request"). We must re-enable
- *      the request each time we receive a response, it is not persistent.
+ *   2. Iterate across returned events, if the lpOverlapped is NULL, then the
+ *      the CompletionKey is a pointer to the container registered via
+ *      PostQueuedCompletionStatus(), otherwise it is the "peer socket"
+ *      registered with CreateIoCompletionPort() which needs to be dereferenced
+ *      to the "socket container".
+ *      NOTE: the dereference may fail if the connection was already cleaned up!
+ *   4. If it is a "socket container" Submit AFD POLL Request
+ *      (see "AFD POLL Request"). We must re-enable the request each time we
+ *      receive a response, it is not persistent.
  *   5. Notify of any events received as indicated in the AFD_POLL_INFO
  *      Handles[0].Events (NOTE: check NumberOfHandles first, make sure it is
  *      > 0, otherwise we might not have events such as if our last request
- *      was cancelled).
+ *      was cancelled).  Also need to check the IO_STATUS_BUFFER status member
+ *      is STATUS_SUCCESS as otherwise it may simply advertise back to you the
+ *      requested events.  This can happen during an automatic cancel such as
+ *      when we are modifying the conditions we want to wait on.
  *
  * AFD Poll Request:
  *   1. Initialize the AFD_POLL_INFO structure:
@@ -138,18 +143,33 @@
  *                            &iosb, IOCTL_AFD_POLL
  *                            &afd_poll_info, sizeof(afd_poll_info),
  *                            &afd_poll_info, sizeof(afd_poll_info));
- *
- * AFD Poll Cancel:
- *   1. Check to see if the IO_STATUS_BLOCK "Status" member for the socket
- *      is still STATUS_PENDING, if not, no cancel request is necessary.
- *   2. Call
- *      NtCancelIoFileEx((HANDLE)peer_socket, &iosb, &temp_iosb);
+ *   NOTE: libuv used the memory starting at overlapped.Internal for the
+ *         AFD_POLL_INFO pointer, no idea why.  Via testing we know its not
+ *         needed.  That said the data in the OVERLAPPED structure seems
+ *         meaningless so maybe they were just trying to align it to be
+ *         meaningful.
  *
  *
  * References:
  *   - https://github.com/piscisaureus/wepoll/
  *   - https://github.com/libuv/libuv/
  */
+
+#  include <stdarg.h>
+
+#  define CARES_DEBUG 1
+
+static void CARES_DEBUG_LOG(const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+#  ifdef CARES_DEBUG
+  vfprintf(stderr, fmt, ap);
+  fflush(stderr);
+#  endif
+  va_end(ap);
+}
 
 typedef struct {
   /* Dynamically loaded symbols */
@@ -158,25 +178,32 @@ typedef struct {
 
   /* Implementation details */
   HANDLE                  iocp_handle;
+
+  /* peer_socket -> ares_evsys_win32_eventdata_t * mapping for safe lookups
+   * of events.  We can't just pass the data structure for event notifications
+   * due to stale events being delivered thus causing use-after-free.
+   * Also we can't use the existing socket mapping because if there is fast
+   * recycling of ids, we may not detect that, but due to the way the
+   * peer_socket is delayed being destroyed until the event thread can handle
+   * it, the likelihood it will cycle too quickly is very small. */
+  ares__htable_asvp_t    *peer_socket_handles;
 } ares_evsys_win32_t;
 
 typedef struct {
   /*! Pointer to parent event container */
-  ares_event_t   *event;
+  ares_event_t *event;
   /*! Socket passed in to monitor */
-  SOCKET          socket;
+  SOCKET        socket;
   /*! Base socket derived from provided socket */
-  SOCKET          base_socket;
+  SOCKET        base_socket;
   /*! New socket (duplicate base_socket handle) supporting OVERLAPPED operation
    */
-  SOCKET          peer_socket;
+  SOCKET        peer_socket;
   /*! Structure for submitting AFD POLL requests (Internals!) */
-  AFD_POLL_INFO   afd_poll_info;
+  AFD_POLL_INFO afd_poll_info;
   /*! Overlapped structure submitted with AFD POLL requests and returned with
    * IOCP results */
-  OVERLAPPED      overlapped;
-  /*! AFD operation IO Status Block */
-  IO_STATUS_BLOCK iosb;
+  OVERLAPPED    overlapped;
 } ares_evsys_win32_eventdata_t;
 
 static void ares_iocpevent_signal(const ares_event_t *event)
@@ -223,6 +250,8 @@ static void ares_evsys_win32_destroy(ares_event_thread_t *e)
     return;
   }
 
+  CARES_DEBUG_LOG("** Win32 Event Destroy\n");
+
   ew = e->ev_sys_data;
   if (ew == NULL) {
     return;
@@ -232,6 +261,8 @@ static void ares_evsys_win32_destroy(ares_event_thread_t *e)
     CloseHandle(ew->iocp_handle);
   }
 
+  ares__htable_asvp_destroy(ew->peer_socket_handles);
+
   ares_free(ew);
   e->ev_sys_data = NULL;
 }
@@ -240,6 +271,8 @@ static ares_bool_t ares_evsys_win32_init(ares_event_thread_t *e)
 {
   ares_evsys_win32_t *ew = NULL;
   HMODULE             ntdll;
+
+  CARES_DEBUG_LOG("** Win32 Event Init\n");
 
   ew = ares_malloc_zero(sizeof(*ew));
   if (ew == NULL) {
@@ -255,16 +288,16 @@ static ares_bool_t ares_evsys_win32_init(ares_event_thread_t *e)
     goto fail;
   }
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wpedantic"
+#  ifdef __GNUC__
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wpedantic"
 /* Without the (void *) cast we get:
- *  warning: cast between incompatible function types from 'FARPROC' {aka 'long long int (*)()'} to 'NTSTATUS (*)(...)'} [-Wcast-function-type]
- * but with it we get:
- *   warning: ISO C forbids conversion of function pointer to object pointer type [-Wpedantic]
- * look unsolvable short of killing the warning.
+ *  warning: cast between incompatible function types from 'FARPROC' {aka 'long
+ * long int (*)()'} to 'NTSTATUS (*)(...)'} [-Wcast-function-type] but with it
+ * we get: warning: ISO C forbids conversion of function pointer to object
+ * pointer type [-Wpedantic] look unsolvable short of killing the warning.
  */
-#endif
+#  endif
 
 
   /* Load Internal symbols not typically accessible */
@@ -273,9 +306,9 @@ static ares_bool_t ares_evsys_win32_init(ares_event_thread_t *e)
   ew->NtCancelIoFileEx =
     (NtCancelIoFileEx_t)(void *)GetProcAddress(ntdll, "NtCancelIoFileEx");
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic pop
-#endif
+#  ifdef __GNUC__
+#    pragma GCC diagnostic pop
+#  endif
 
   if (ew->NtCancelIoFileEx == NULL || ew->NtDeviceIoControlFile == NULL) {
     goto fail;
@@ -288,6 +321,11 @@ static ares_bool_t ares_evsys_win32_init(ares_event_thread_t *e)
 
   e->ev_signal = ares_iocpevent_create(e);
   if (e->ev_signal == NULL) {
+    goto fail;
+  }
+
+  ew->peer_socket_handles = ares__htable_asvp_create(NULL);
+  if (ew->peer_socket_handles == NULL) {
     goto fail;
   }
 
@@ -346,6 +384,7 @@ static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
   ares_evsys_win32_t           *ew = e->ev_sys_data;
   ares_evsys_win32_eventdata_t *ed = event->data;
   NTSTATUS                      status;
+  IO_STATUS_BLOCK              *iosb_ptr;
 
   if (e == NULL || ed == NULL || ew == NULL) {
     return ARES_FALSE;
@@ -357,7 +396,7 @@ static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
   ed->afd_poll_info.Timeout.QuadPart  = LLONG_MAX;
   ed->afd_poll_info.Handles[0].Handle = (HANDLE)ed->base_socket;
   ed->afd_poll_info.Handles[0].Status = 0;
-  ed->afd_poll_info.Handles[0].Events = 0;
+  ed->afd_poll_info.Handles[0].Events = AFD_POLL_LOCAL_CLOSE;
 
   if (flags & ARES_EVENT_FLAG_READ) {
     ed->afd_poll_info.Handles[0].Events |=
@@ -373,39 +412,53 @@ static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
   }
 
   memset(&ed->overlapped, 0, sizeof(ed->overlapped));
-  memset(&ed->iosb, 0, sizeof(ed->iosb));
-  ed->iosb.Status = STATUS_PENDING;
+  /* Mapping the IO_STATUS_BLOCK pointer to the first member in the
+   * OVERLAPPED structure is something that libuv does. This sort of
+   * tracks since the Status member for the IO_STATUS_BLOCK is the
+   * first member and the "Internal" member for OVERLAPPED has a meaning
+   * of status.  The OVERLAPPED structure appears to be otherwise unused when
+   * testing using independent structures. I'm not actually sure if using this
+   * provides any real benefits other than memory efficiency but maybe there
+   * is some internal edge case they know about. */
+  iosb_ptr         = (IO_STATUS_BLOCK *)&ed->overlapped.Internal;
+  iosb_ptr->Status = STATUS_PENDING;
 
   status = ew->NtDeviceIoControlFile(
-    (HANDLE)ed->peer_socket, NULL, NULL, &ed->overlapped, &ed->iosb,
+    (HANDLE)ed->peer_socket, NULL, NULL, &ed->overlapped, iosb_ptr,
     IOCTL_AFD_POLL, &ed->afd_poll_info, sizeof(ed->afd_poll_info),
     &ed->afd_poll_info, sizeof(ed->afd_poll_info));
   if (status != STATUS_SUCCESS && status != STATUS_PENDING) {
     return ARES_FALSE;
   }
-
+  CARES_DEBUG_LOG("++ afd_enqueue ed=%p flags=%X\n", (void *)ed,
+                  (unsigned int)flags);
   return ARES_TRUE;
 }
 
 static ares_bool_t ares_evsys_win32_afd_cancel(ares_evsys_win32_eventdata_t *ed)
 {
+  IO_STATUS_BLOCK    *iosb_ptr;
   IO_STATUS_BLOCK     cancel_iosb;
   ares_evsys_win32_t *ew;
   NTSTATUS            status;
 
-  /* Detached due to destroy */
-  if (ed->event == NULL) {
-    return ARES_FALSE;
-  }
-
-  /* Not pending, nothing to do */
-  if (ed->iosb.Status != STATUS_PENDING) {
-    return ARES_FALSE;
-  }
-
   ew = ed->event->e->ev_sys_data;
+
+  /* See discussion in ares_evsys_win32_afd_enqueue() */
+  iosb_ptr = (IO_STATUS_BLOCK *)&ed->overlapped.Internal;
+
+  /* Not pending, nothing to do. Most likely that means there is a pending
+   * event that hasn't yet been delivered otherwise it would be re-armed
+   * already */
+  if (iosb_ptr->Status != STATUS_PENDING) {
+CARES_DEBUG_LOG("** cancel not needed for ed=%p\n", (void *)ed);
+    return ARES_FALSE;
+  }
+
   status =
-    ew->NtCancelIoFileEx((HANDLE)ed->peer_socket, &ed->iosb, &cancel_iosb);
+    ew->NtCancelIoFileEx((HANDLE)ed->peer_socket, iosb_ptr, &cancel_iosb);
+
+CARES_DEBUG_LOG("** Enqueued cancel for ed=%p, status = %lX\n", (void *)ed, status);
 
   /* NtCancelIoFileEx() may return STATUS_NOT_FOUND if the operation completed
    * just before calling NtCancelIoFileEx(), but we have not yet received the
@@ -417,13 +470,17 @@ static ares_bool_t ares_evsys_win32_afd_cancel(ares_evsys_win32_eventdata_t *ed)
   return ARES_FALSE;
 }
 
-static void ares_evsys_win32_eventdata_destroy(ares_evsys_win32_eventdata_t *ed)
+static void ares_evsys_win32_eventdata_destroy(ares_evsys_win32_t           *ew,
+                                               ares_evsys_win32_eventdata_t *ed)
 {
-  if (ed == NULL) {
+  if (ew == NULL || ed == NULL) {
     return;
   }
-
+  CARES_DEBUG_LOG("-- deleting ed=%p (%s)\n", (void *)ed,
+    (ed->peer_socket == ARES_SOCKET_BAD)?"data":"socket");
+  /* These type of handles are deferred destroy. Update tracking. */
   if (ed->peer_socket != ARES_SOCKET_BAD) {
+    ares__htable_asvp_remove(ew->peer_socket_handles, ed->peer_socket);
     closesocket(ed->peer_socket);
   }
 
@@ -436,84 +493,93 @@ static ares_bool_t ares_evsys_win32_event_add(ares_event_t *event)
   ares_evsys_win32_t           *ew = e->ev_sys_data;
   ares_evsys_win32_eventdata_t *ed;
   WSAPROTOCOL_INFOW             protocol_info;
+  ares_bool_t                   rc = ARES_FALSE;
 
   ed              = ares_malloc_zero(sizeof(*ed));
   ed->event       = event;
   ed->socket      = event->fd;
   ed->base_socket = ARES_SOCKET_BAD;
   ed->peer_socket = ARES_SOCKET_BAD;
+  event->data     = ed;
+
+  CARES_DEBUG_LOG("++ add ed=%p (%s) flags=%X\n", (void *)ed,
+                  (ed->socket == ARES_SOCKET_BAD) ? "data" : "socket",
+                  (unsigned int)event->flags);
 
   /* Likely a signal event, not something we will directly handle.  We create
    * the ares_evsys_win32_eventdata_t as the placeholder to use as the
    * IOCP Completion Key */
   if (ed->socket == ARES_SOCKET_BAD) {
-    event->data = ed;
-    return ARES_TRUE;
+    rc = ARES_TRUE;
+    goto done;
   }
 
   ed->base_socket = ares_evsys_win32_basesocket(ed->socket);
   if (ed->base_socket == ARES_SOCKET_BAD) {
-    ares_evsys_win32_eventdata_destroy(ed);
-    return ARES_FALSE;
+    goto done;
   }
 
   /* Create a peer socket that supports OVERLAPPED so we can use IOCP on the
    * socket handle */
   if (WSADuplicateSocketW(ed->base_socket, GetCurrentProcessId(),
                           &protocol_info) != 0) {
-    ares_evsys_win32_eventdata_destroy(ed);
-    return ARES_FALSE;
+    goto done;
   }
 
   ed->peer_socket =
     WSASocketW(protocol_info.iAddressFamily, protocol_info.iSocketType,
                protocol_info.iProtocol, &protocol_info, 0, WSA_FLAG_OVERLAPPED);
   if (ed->peer_socket == ARES_SOCKET_BAD) {
-    ares_evsys_win32_eventdata_destroy(ed);
-    return ARES_FALSE;
+    goto done;
   }
 
   SetHandleInformation((HANDLE)ed->peer_socket, HANDLE_FLAG_INHERIT, 0);
 
+/*
+  SetFileCompletionNotificationModes((HANDLE)ed->peer_socket,
+                                     FILE_SKIP_SET_EVENT_ON_HANDLE);
+*/
+
   if (CreateIoCompletionPort((HANDLE)ed->peer_socket, ew->iocp_handle,
-                             (ULONG_PTR)ed, 0) == NULL) {
-    ares_evsys_win32_eventdata_destroy(ed);
-    return ARES_FALSE;
+                             (ULONG_PTR)ed->peer_socket, 0) == NULL) {
+    goto done;
   }
 
-  event->data = ed;
+
+  if (!ares__htable_asvp_insert(ew->peer_socket_handles, ed->peer_socket, ed)) {
+    goto done;
+  }
 
   if (!ares_evsys_win32_afd_enqueue(event, event->flags)) {
-    event->data = NULL;
-    ares_evsys_win32_eventdata_destroy(ed);
-    return ARES_FALSE;
+    goto done;
   }
 
-  return ARES_TRUE;
+  rc = ARES_TRUE;
+
+done:
+  if (!rc) {
+    ares_evsys_win32_eventdata_destroy(ew, ed);
+    event->data = NULL;
+  }
+  return rc;
 }
 
 static void ares_evsys_win32_event_del(ares_event_t *event)
 {
   ares_evsys_win32_eventdata_t *ed = event->data;
-  ares_event_thread_t          *e  = event->e;
 
-  if (event->fd == ARES_SOCKET_BAD || !e->isup || ed == NULL ||
-      !ares_evsys_win32_afd_cancel(ed)) {
-    /* Didn't need to enqueue a cancellation, for one of these reasons:
-     *  - Not an IOCP socket
-     *  - This is during shutdown of the event thread, no more signals can be
-     *    delivered.
-     *  - It has been determined there is no AFD POLL queued currently for the
-     *    socket.
-     */
-    ares_evsys_win32_eventdata_destroy(ed);
-    event->data = NULL;
-  } else {
-    /* Detach from event, so when the cancel event comes through,
-     * it will clean up */
-    ed->event   = NULL;
-    event->data = NULL;
+  CARES_DEBUG_LOG("-- DELETE called on ed=%p\n", ed);
+
+  /*
+   * Cancel pending AFD Poll operation.  Not sure this is absolutely necessary.
+   */
+  if (ed && ed->peer_socket != ARES_SOCKET_BAD) {
+    ares_evsys_win32_afd_cancel(ed);
   }
+
+  ares_evsys_win32_eventdata_destroy(event->e->ev_sys_data, ed);
+
+  event->data = NULL;
 }
 
 static void ares_evsys_win32_event_mod(ares_event_t      *event,
@@ -526,11 +592,13 @@ static void ares_evsys_win32_event_mod(ares_event_t      *event,
     return;
   }
 
-  /* Try to cancel any current outstanding poll, if one is not running,
-   * go ahead and queue it up */
-  if (!ares_evsys_win32_afd_cancel(ed)) {
-    ares_evsys_win32_afd_enqueue(event, new_flags);
-  }
+  CARES_DEBUG_LOG("** mod ed=%p new_flags=%X\n", (void *)ed,
+                  (unsigned int)new_flags);
+
+  /* All we need to do is cancel the pending operation.  When the event gets
+   * delivered for the cancellation, it will automatically re-enqueue a new
+   * event */
+  ares_evsys_win32_afd_cancel(ed);
 }
 
 static size_t ares_evsys_win32_wait(ares_event_thread_t *e,
@@ -538,60 +606,109 @@ static size_t ares_evsys_win32_wait(ares_event_thread_t *e,
 {
   ares_evsys_win32_t *ew = e->ev_sys_data;
   OVERLAPPED_ENTRY    entries[16];
-  ULONG               nentries = sizeof(entries) / sizeof(*entries);
+  ULONG               maxentries = sizeof(entries) / sizeof(*entries);
+  ULONG               nentries;
   BOOL                status;
   size_t              i;
-  size_t              cnt = 0;
+  size_t              cnt  = 0;
+  DWORD               tout = (timeout_ms == 0) ? INFINITE : (DWORD)timeout_ms;
 
-  status = GetQueuedCompletionStatusEx(
-    ew->iocp_handle, entries, nentries, &nentries,
-    (timeout_ms == 0) ? INFINITE : (DWORD)timeout_ms, FALSE);
+  CARES_DEBUG_LOG("** Wait Enter\n");
+  /* Process in a loop for as long as it fills the entire entries buffer, and
+   * on subsequent attempts, ensure the timeout is 0 */
+  do {
+    nentries = maxentries;
+    status   = GetQueuedCompletionStatusEx(ew->iocp_handle, entries, nentries,
+                                           &nentries, tout, FALSE);
 
-  if (!status) {
-    return 0;
-  }
+    /* Next loop around, we want to return instantly if there are no events to
+     * be processed */
+    tout = 0;
 
-  for (i = 0; i < (size_t)nentries; i++) {
-    ares_event_flags_t            flags = 0;
-    ares_evsys_win32_eventdata_t *ed =
-      (ares_evsys_win32_eventdata_t *)entries[i].lpCompletionKey;
-    ares_event_t *event = ed->event;
+    if (!status) {
+      break;
+    }
 
-    if (ed->socket == ARES_SOCKET_BAD) {
-      /* Some sort of signal event */
-      flags = ARES_EVENT_FLAG_OTHER;
-    } else {
-      /* Process events */
-      if (ed->afd_poll_info.NumberOfHandles > 0) {
-        if (ed->afd_poll_info.Handles[0].Events &
-            (AFD_POLL_RECEIVE | AFD_POLL_DISCONNECT | AFD_POLL_ACCEPT |
-             AFD_POLL_ABORT)) {
-          flags |= ARES_EVENT_FLAG_READ;
+    CARES_DEBUG_LOG("\t** GetQueuedCompletionStatusEx returned %zu entries\n",
+                    (size_t)nentries);
+    for (i = 0; i < (size_t)nentries; i++) {
+      ares_event_flags_t            flags = 0;
+      ares_evsys_win32_eventdata_t *ed    = NULL;
+      ares_event_t                 *event = NULL;
+
+      /* We have to dereference the data structure from peer_socket because we
+       * have seen events delivered for closed connections.  We determine socket
+       * vs non-socket (triggered via PostQueuedCompletionStatus) by the
+       * existence of entries[i].lpOverlapped. */
+      if (entries[i].lpOverlapped != NULL) {
+        ed = ares__htable_asvp_get_direct(
+          ew->peer_socket_handles, (ares_socket_t)entries[i].lpCompletionKey);
+
+        /* If memory address for overlapped structure doesn't match expected,
+         * that means the peer socket id was reused and this event is for the
+         * old peer socket using the same id.  Discard */
+        if (&ed->overlapped != entries[i].lpOverlapped) {
+          ed = NULL;
         }
-        if (ed->afd_poll_info.Handles[0].Events &
-            (AFD_POLL_SEND | AFD_POLL_CONNECT_FAIL)) {
-          flags |= ARES_EVENT_FLAG_WRITE;
-        }
-
-        /* XXX: Handle ed->afd_poll_info.Handles[0].Events &
-         * AFD_POLL_LOCAL_CLOSE */
+      } else {
+        /* non-socket */
+        ed = (ares_evsys_win32_eventdata_t *)entries[i].lpCompletionKey;
       }
 
-      if (event == NULL) {
-        /* This means we need to cleanup the private event data as we've been
-         * detached */
-        ares_evsys_win32_eventdata_destroy(ed);
+      /* Must be a deleted handle, lets skip */
+      if (ed == NULL) {
+        CARES_DEBUG_LOG("\t\t** i=%zu, skip deleted handle\n", i);
+        continue;
+      }
+      event = ed->event;
+
+      CARES_DEBUG_LOG("\t\t** i=%zu, ed=%p, overlapped=%p (%s)\n", i,
+                      (void *)ed, (void *)entries[i].lpOverlapped,
+                      (ed->socket == ARES_SOCKET_BAD) ? "data" : "socket");
+      if (ed->socket == ARES_SOCKET_BAD) {
+        /* Some sort of signal event */
+        flags = ARES_EVENT_FLAG_OTHER;
       } else {
-        /* Re-enqueue so we can get more events on the socket */
+        IO_STATUS_BLOCK *iosb_ptr = (IO_STATUS_BLOCK *)&ed->overlapped.Internal;
+
+        /* Process events */
+        if (iosb_ptr->Status == STATUS_SUCCESS &&
+            ed->afd_poll_info.NumberOfHandles > 0) {
+          if (ed->afd_poll_info.Handles[0].Events &
+              (AFD_POLL_RECEIVE | AFD_POLL_DISCONNECT | AFD_POLL_ACCEPT |
+               AFD_POLL_ABORT)) {
+            flags |= ARES_EVENT_FLAG_READ;
+          }
+          if (ed->afd_poll_info.Handles[0].Events &
+              (AFD_POLL_SEND | AFD_POLL_CONNECT_FAIL)) {
+            flags |= ARES_EVENT_FLAG_WRITE;
+          }
+          if (ed->afd_poll_info.Handles[0].Events & AFD_POLL_LOCAL_CLOSE) {
+            CARES_DEBUG_LOG("\n\n*-*-*-*-*-\nLOCAL CLOSE on ed=%p\n*-*-*-*-*-\n\n", ed);
+          }
+          /* Mask flags against current desired flags.  We could have an event
+           * queued that is outdated. */
+          flags &= event->flags;
+        }
+        CARES_DEBUG_LOG("\t\t** ed=%p, iosb status=%lX, flags=%X\n",
+                        (void *)ed, (void *)event,
+                        (unsigned long)iosb_ptr->Status, (unsigned int)flags);
+
+
+        /* Re-enqueue so we can get more events on the socket, we either
+         * received a real event, or a cancellation notice.  Both cases we
+         * re-queue. */
         ares_evsys_win32_afd_enqueue(event, event->flags);
       }
-    }
 
-    if (event != NULL && flags != 0) {
-      cnt++;
-      event->cb(e, event->fd, event->data, flags);
+      if (flags != 0) {
+        cnt++;
+        event->cb(e, event->fd, event->data, flags);
+      }
     }
-  }
+  } while (nentries == maxentries);
+
+  CARES_DEBUG_LOG("** Wait Exit\n");
 
   return cnt;
 }
