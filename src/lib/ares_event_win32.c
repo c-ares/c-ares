@@ -131,24 +131,19 @@
  *      Handles[0].Handle = (HANDLE)base_socket;
  *      Handles[0].Status = 0;
  *      Handles[0].Events = ... set as appropriate AFD_POLL_RECEIVE, etc;
- *   2. Zero out the OVERLAPPED structure
- *   3. Create an IO_STATUS_BLOCK pointer (iosb) and set it to the address of
- *      the OVERLAPPED "Internal" member.
- *   4. Set the "Status" member of IO_STATUS_BLOCK to STATUS_PENDING
- *   5. Call
+ *   2. Zero out the OVERLAPPED and IO_STATUS_BLOCK structures
+ *   3. Set the "Status" member of IO_STATUS_BLOCK to STATUS_PENDING
+ *   4. Call
  *      NtDeviceIoControlFile((HANDLE)peer_socket, NULL, NULL, &overlapped,
- *                            iosb, IOCTL_AFD_POLL
+ *                            &iosb, IOCTL_AFD_POLL
  *                            &afd_poll_info, sizeof(afd_poll_info),
  *                            &afd_poll_info, sizeof(afd_poll_info));
- *   NOTE: Its not clear to me if the IO_STATUS_BLOCK pointing to OVERLAPPED
- *         is for efficiency or if its a requirement for AFD.  This is what
- *         libuv does, so I'm doing it here too.
  *
  * AFD Poll Cancel:
  *   1. Check to see if the IO_STATUS_BLOCK "Status" member for the socket
  *      is still STATUS_PENDING, if not, no cancel request is necessary.
  *   2. Call
- *      NtCancelIoFileEx((HANDLE)peer_socket, iosb, &temp_iosb);
+ *      NtCancelIoFileEx((HANDLE)peer_socket, &iosb, &temp_iosb);
  *
  *
  * References:
@@ -167,19 +162,21 @@ typedef struct {
 
 typedef struct {
   /*! Pointer to parent event container */
-  ares_event_t *event;
+  ares_event_t   *event;
   /*! Socket passed in to monitor */
-  SOCKET        socket;
+  SOCKET          socket;
   /*! Base socket derived from provided socket */
-  SOCKET        base_socket;
+  SOCKET          base_socket;
   /*! New socket (duplicate base_socket handle) supporting OVERLAPPED operation
    */
-  SOCKET        peer_socket;
+  SOCKET          peer_socket;
   /*! Structure for submitting AFD POLL requests (Internals!) */
-  AFD_POLL_INFO afd_poll_info;
+  AFD_POLL_INFO   afd_poll_info;
   /*! Overlapped structure submitted with AFD POLL requests and returned with
    * IOCP results */
-  OVERLAPPED    overlapped;
+  OVERLAPPED      overlapped;
+  /*! AFD operation IO Status Block */
+  IO_STATUS_BLOCK iosb;
 } ares_evsys_win32_eventdata_t;
 
 static void ares_iocpevent_signal(const ares_event_t *event)
@@ -349,7 +346,6 @@ static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
   ares_evsys_win32_t           *ew = e->ev_sys_data;
   ares_evsys_win32_eventdata_t *ed = event->data;
   NTSTATUS                      status;
-  IO_STATUS_BLOCK              *iosb_ptr;
 
   if (e == NULL || ed == NULL || ew == NULL) {
     return ARES_FALSE;
@@ -377,11 +373,11 @@ static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
   }
 
   memset(&ed->overlapped, 0, sizeof(ed->overlapped));
-  iosb_ptr         = (IO_STATUS_BLOCK *)&ed->overlapped.Internal;
-  iosb_ptr->Status = STATUS_PENDING;
+  memset(&ed->iosb, 0, sizeof(ed->iosb));
+  ed->iosb.Status = STATUS_PENDING;
 
   status = ew->NtDeviceIoControlFile(
-    (HANDLE)ed->peer_socket, NULL, NULL, &ed->overlapped, iosb_ptr,
+    (HANDLE)ed->peer_socket, NULL, NULL, &ed->overlapped, &ed->iosb,
     IOCTL_AFD_POLL, &ed->afd_poll_info, sizeof(ed->afd_poll_info),
     &ed->afd_poll_info, sizeof(ed->afd_poll_info));
   if (status != STATUS_SUCCESS && status != STATUS_PENDING) {
@@ -393,7 +389,6 @@ static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
 
 static ares_bool_t ares_evsys_win32_afd_cancel(ares_evsys_win32_eventdata_t *ed)
 {
-  IO_STATUS_BLOCK    *iosb_ptr;
   IO_STATUS_BLOCK     cancel_iosb;
   ares_evsys_win32_t *ew;
   NTSTATUS            status;
@@ -403,15 +398,14 @@ static ares_bool_t ares_evsys_win32_afd_cancel(ares_evsys_win32_eventdata_t *ed)
     return ARES_FALSE;
   }
 
-  iosb_ptr = (IO_STATUS_BLOCK *)&ed->overlapped.Internal;
   /* Not pending, nothing to do */
-  if (iosb_ptr->Status != STATUS_PENDING) {
+  if (ed->iosb.Status != STATUS_PENDING) {
     return ARES_FALSE;
   }
 
   ew = ed->event->e->ev_sys_data;
   status =
-    ew->NtCancelIoFileEx((HANDLE)ed->peer_socket, iosb_ptr, &cancel_iosb);
+    ew->NtCancelIoFileEx((HANDLE)ed->peer_socket, &ed->iosb, &cancel_iosb);
 
   /* NtCancelIoFileEx() may return STATUS_NOT_FOUND if the operation completed
    * just before calling NtCancelIoFileEx(), but we have not yet received the
