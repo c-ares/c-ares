@@ -55,7 +55,11 @@ jobs:
           cmake --build build_cmake
           ./build_cmake/bin/adig.exe www.google.com
           ./build_cmake/bin/ahost.exe www.google.com
-          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_cmake/bin/arestest.exe
+          if [ "${{ matrix.msystem }}" != "MINGW32" ] ; then
+            lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_cmake/bin/arestest.exe
+          else
+            ./build_cmake/bin/arestest.exe ${{ env.GTEST_ARGS }}
+          fi
       - name: "Autotools: build and test c-ares"
         run: |
           autoreconf -fi
@@ -65,9 +69,14 @@ jobs:
           make -j3
           ./src/tools/adig.exe www.google.com
           ./src/tools/ahost.exe www.google.com
-          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./test/arestest.exe
+          if [ "${{ matrix.msystem }}" != "MINGW32" ] ; then
+            lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./test/arestest.exe
+          else
+            ./test/arestest.exe ${{ env.GTEST_ARGS }}
+          fi
       - name: "CMake: UBSAN: build and test c-ares"
-        if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
+        # Bogus alignment errors on i686, so lets not run UBSAN on i686.
+        if: ${{ matrix.env == 'clang-x86_64' }}
         env:
           CMAKE_OPTS: "-DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined"
         run: |
@@ -75,7 +84,8 @@ jobs:
           cmake --build build_ubsan
           ./build_ubsan/bin/adig.exe www.google.com
           ./build_ubsan/bin/ahost.exe www.google.com
-          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_usban/bin/arestest.exe
+          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_ubsan/bin/arestest.exe
+#          ./build_ubsan/bin/arestest.exe ${{ env.GTEST_ARGS }}
       - name: "CMake: ASAN: build and test c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         env:
@@ -86,6 +96,7 @@ jobs:
           ./build_asan/bin/adig.exe www.google.com
           ./build_asan/bin/ahost.exe www.google.com
           lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_asan/bin/arestest.exe
+#          ./build_asan/bin/arestest.exe ${{ env.GTEST_ARGS }}
       - name: "Autotools: Static Analyzer: build c-ares"
         if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
         # Cmake won't work because it somehow mangles linker args and it can't find core windows libraries

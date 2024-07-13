@@ -268,8 +268,6 @@ static void ares_event_thread_cleanup(ares_event_thread_t *e)
   if (e->ev_updates != NULL) {
     ares__llist_node_t *node;
 
-fprintf(stderr, "** cleaning up unprocessed updates\n"); fflush(stderr);
-
     while ((node = ares__llist_node_first(e->ev_updates)) != NULL) {
       ares_event_destroy_cb(ares__llist_node_claim(node));
     }
@@ -278,13 +276,11 @@ fprintf(stderr, "** cleaning up unprocessed updates\n"); fflush(stderr);
   }
 
   if (e->ev_sock_handles != NULL) {
-fprintf(stderr, "** cleaning up sockets\n"); fflush(stderr);
     ares__htable_asvp_destroy(e->ev_sock_handles);
     e->ev_sock_handles = NULL;
   }
 
   if (e->ev_cust_handles != NULL) {
-fprintf(stderr, "** cleaning up data handles\n"); fflush(stderr);
     ares__htable_vpvp_destroy(e->ev_cust_handles);
     e->ev_cust_handles = NULL;
   }
@@ -292,7 +288,6 @@ fprintf(stderr, "** cleaning up data handles\n"); fflush(stderr);
   if (e->ev_sys != NULL && e->ev_sys->destroy != NULL) {
     e->ev_sys->destroy(e);
     e->ev_sys = NULL;
-fprintf(stderr, "** cleaning up complete\n"); fflush(stderr);
   }
 }
 
@@ -335,8 +330,6 @@ static void *ares_event_thread(void *arg)
 
   ares__thread_mutex_unlock(e->mutex);
 
-  fprintf(stderr, "** EventThread shutdown\n"); fflush(stderr);
-
   return NULL;
 }
 
@@ -356,7 +349,6 @@ static void ares_event_thread_destroy_int(ares_event_thread_t *e)
     ares__thread_join(e->thread, &rv);
     e->thread = NULL;
   }
-  fprintf(stderr, "** Event Thread closed\n"); fflush(stderr);
 
   /* If the event thread ever got to the point of starting, this is a no-op
    * as it runs this same cleanup when it shuts down */
@@ -366,7 +358,6 @@ static void ares_event_thread_destroy_int(ares_event_thread_t *e)
   e->mutex = NULL;
 
   ares_free(e);
-  fprintf(stderr, "** Event Thread cleanup complete\n"); fflush(stderr);
 }
 
 void ares_event_thread_destroy(ares_channel_t *channel)
