@@ -66,13 +66,13 @@
  *      requests.
  *   2. Create an IO Completion Port base handle via CreateIoCompletionPort()
  *      that all socket events will be delivered through.
- *   3. Open a reference to the Ancillary function driver with NtCreateFile()
- *      with path \Device\Afd .
- *   4. Add the AFD handle from the prior step to the IO Completion Port,
- *      we can leave the completion key as blank since events for multiple
- *      sockets will be delivered through this and we need to differentiate via
- *      the OVERLAPPED member returned.
- *   5. Create a callback to be used to be able to interrupt waiting for IOCP
+ *   3. Create a list of AFD Handles and track the number of poll requests
+ *      per AFD handle.  When we exceed a pre-determined limit of poll requests
+ *      for a handle (128), we will automatically create a new handle.  The
+ *      reason behind this is NtCancelIoFileEx uses a horrible algorithm for
+ *      issuing cancellations.  See:
+ *      https://github.com/python-trio/trio/issues/52#issuecomment-548215128
+ *   4. Create a callback to be used to be able to interrupt waiting for IOCP
  *      events, this may be called for allowing enqueuing of additional socket
  *      events or removing socket events. PostQueuedCompletionStatus() is the
  *      obvious choice.  We can use the same container format, the event
@@ -85,6 +85,8 @@
  *      - SOCKET base_socket;
  *      - IO_STATUS_BLOCK iosb; -- Used by AFD POLL, returned as OVERLAPPED
  *      - AFD_POLL_INFO afd_poll_info; -- Used by AFD POLL
+ *      - afd list node -- for tracking which AFD handle a POLL request was
+ *        submitted to.
  *   2. Call WSAIoctl(..., SIO_BASE_HANDLE, ...) to unwrap the SOCKET and get
  *      the "base socket" we can use for polling.  It appears this may fail so
  *      we should call WSAIoctl(..., SIO_BSP_HANDLE_POLL, ...) as a fallback.
@@ -118,18 +120,29 @@
  *      PostQueuedCompletionStatus(), otherwise it is the "IO Status Block"
  *      registered with the "AFD Poll Request" which needs to be dereferenced
  *      to the "socket container".
- *   3. If it is a "socket container" check to see if we are cleaning up, if so,
+ *   3. If it is a "socket container", disassociate it from the afd list node
+ *      it was previously submitted to.
+ *   4. If it is a "socket container" check to see if we are cleaning up, if so,
  *      clean it up.
- *   4. If it is a "socket container" that is still valid, Submit an
+ *   5. If it is a "socket container" that is still valid, Submit an
  *      AFD POLL Request (see "AFD POLL Request"). We must re-enable the request
  *      each time we receive a response, it is not persistent.
- *   5. Notify of any events received as indicated in the AFD_POLL_INFO
+ *   6. Notify of any events received as indicated in the AFD_POLL_INFO
  *      Handles[0].Events (NOTE: check NumberOfHandles > 0, and the status in
  *      the IO_STATUS_BLOCK.  If we received an AFD_POLL_LOCAL_CLOSE, clean up
  *      the connection like the integrator requested it to be cleaned up.
  *
  * AFD Poll Request:
- *   1. Initialize the AFD_POLL_INFO structure:
+ *   1. Find an afd poll handle in the list that has fewer pending requests than
+ *      the limit.
+ *   2. If an afd poll handle was not associated (e.g. due to all being over
+ *      limit), create a new afd poll handle by calling NtCreateFile()
+ *      with path \Device\Afd , then add the AFD handle to the IO Completion
+ *      Port.  We can leave the completion key as blank since events for
+ *      multiple sockets will be delivered through this and we need to
+ *      differentiate via the OVERLAPPED member returned.  Add the new AFD
+ *      handle to the list of handles.
+ *   3. Initialize the AFD_POLL_INFO structure:
  *      Exclusive         = FALSE; // allow multiple requests
  *      NumberOfHandles   = 1;
  *      Timeout.QuadPart  = LLONG_MAX;
@@ -137,9 +150,9 @@
  *      Handles[0].Status = 0;
  *      Handles[0].Events = AFD_POLL_LOCAL_CLOSE + additional events to wait for
  *                          such as AFD_POLL_RECEIVE, etc;
- *   2. Zero out the IO_STATUS_BLOCK structures
- *   3. Set the "Status" member of IO_STATUS_BLOCK to STATUS_PENDING
- *   4. Call
+ *   4. Zero out the IO_STATUS_BLOCK structures
+ *   5. Set the "Status" member of IO_STATUS_BLOCK to STATUS_PENDING
+ *   6. Call
  *      NtDeviceIoControlFile(afd, NULL, NULL, &iosb,
  *                            &iosb, IOCTL_AFD_POLL
  *                            &afd_poll_info, sizeof(afd_poll_info),
@@ -150,6 +163,10 @@
  *   - https://github.com/piscisaureus/wepoll/
  *   - https://github.com/libuv/libuv/
  */
+
+/* Cap the number of outstanding AFD poll requests per AFD handle due to known
+ * slowdowns with large lists and NtCancelIoFileEx() */
+#  define AFD_POLL_PER_HANDLE 128
 
 #  include <stdarg.h>
 
@@ -183,7 +200,7 @@ typedef struct {
   NtCancelIoFileEx_t      NtCancelIoFileEx;
 
   /* Implementation details */
-  HANDLE                  afd_handle;
+  ares__slist_t          *afd_handles;
   HANDLE                  iocp_handle;
 
   /* IO_STATUS_BLOCK * -> ares_evsys_win32_eventdata_t * mapping.  There is
@@ -218,6 +235,8 @@ typedef struct {
    *  with IOCP results as lpOverlapped (even though its a different structure)
    */
   IO_STATUS_BLOCK       iosb;
+  /*! AFD handle node an outstanding poll request is associated with */
+  ares__slist_node_t   *afd_handle_node;
   /* Lock is only for PostQueuedCompletionStatus() to prevent multiple
    * signals. Tracking via POLL_STATUS_PENDING/POLL_STATUS_NONE */
   ares__thread_mutex_t *lock;
@@ -240,8 +259,9 @@ static void   ares_iocpevent_signal(const ares_event_t *event)
   }
   ares__thread_mutex_unlock(ed->lock);
 
-  if (!queue_event)
+  if (!queue_event) {
     return;
+  }
 
   PostQueuedCompletionStatus(ew->iocp_handle, 0, (ULONG_PTR)event->data, NULL);
 }
@@ -301,14 +321,38 @@ static void ares_evsys_win32_destroy(ares_event_thread_t *e)
     CloseHandle(ew->iocp_handle);
   }
 
-  if (ew->afd_handle != NULL) {
-    CloseHandle(ew->afd_handle);
-  }
+  ares__slist_destroy(ew->afd_handles);
 
   ares__htable_vpvp_destroy(ew->sockets);
 
   ares_free(ew);
   e->ev_sys_data = NULL;
+}
+
+typedef struct {
+  size_t poll_cnt;
+  HANDLE afd_handle;
+} ares_afd_handle_t;
+
+static void ares_afd_handle_destroy(void *arg)
+{
+  ares_afd_handle_t *hnd = arg;
+  CloseHandle(hnd->afd_handle);
+  ares_free(hnd);
+}
+
+static int ares_afd_handle_cmp(const void *data1, const void *data2)
+{
+  const ares_afd_handle_t *hnd1 = data1;
+  const ares_afd_handle_t *hnd2 = data2;
+
+  if (hnd1->poll_cnt > hnd2->poll_cnt) {
+    return 1;
+  }
+  if (hnd1->poll_cnt < hnd2->poll_cnt) {
+    return -1;
+  }
+  return 0;
 }
 
 static void fill_object_attributes(OBJECT_ATTRIBUTES *attr,
@@ -323,14 +367,71 @@ static void fill_object_attributes(OBJECT_ATTRIBUTES *attr,
 #  define UNICODE_STRING_CONSTANT(s) \
     { (sizeof(s) - 1) * sizeof(wchar_t), sizeof(s) * sizeof(wchar_t), L##s }
 
+static ares__slist_node_t *ares_afd_handle_create(ares_evsys_win32_t *ew)
+{
+  UNICODE_STRING     afd_device_name = UNICODE_STRING_CONSTANT("\\Device\\Afd");
+  OBJECT_ATTRIBUTES  afd_attributes;
+  NTSTATUS           status;
+  IO_STATUS_BLOCK    iosb;
+  ares_afd_handle_t *afd   = ares_malloc_zero(sizeof(*afd));
+  ares__slist_node_t *node = NULL;
+  if (afd == NULL) {
+    goto fail;
+  }
+
+  /* Open a handle to the AFD subsystem */
+  fill_object_attributes(&afd_attributes, &afd_device_name, 0);
+  memset(&iosb, 0, sizeof(iosb));
+  iosb.Status = STATUS_PENDING;
+  status      = ew->NtCreateFile(&afd->afd_handle, SYNCHRONIZE, &afd_attributes,
+                                 &iosb, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                 FILE_OPEN, 0, NULL, 0);
+  if (status != STATUS_SUCCESS) {
+    CARES_DEBUG_LOG("** Failed to create AFD endpoint\n");
+    goto fail;
+  }
+
+  if (CreateIoCompletionPort(afd->afd_handle, ew->iocp_handle,
+                             0 /* CompletionKey */, 0) == NULL) {
+    goto fail;
+  }
+
+  if (!SetFileCompletionNotificationModes(afd->afd_handle,
+                                          FILE_SKIP_SET_EVENT_ON_HANDLE)) {
+    goto fail;
+  }
+
+  node = ares__slist_insert(ew->afd_handles, afd);
+  if (node == NULL) {
+    goto fail;
+  }
+
+  return node;
+
+fail:
+
+  ares_afd_handle_destroy(afd);
+  return NULL;
+}
+
+/* Fetch the lowest poll count entry, but if it exceeds the limit, create a
+ * new one and return that */
+static ares__slist_node_t *ares_afd_handle_fetch(ares_evsys_win32_t *ew)
+{
+  ares__slist_node_t *node = ares__slist_node_first(ew->afd_handles);
+  ares_afd_handle_t  *afd  = ares__slist_node_val(node);
+
+  if (afd != NULL && afd->poll_cnt < AFD_POLL_PER_HANDLE) {
+    return node;
+  }
+
+  return ares_afd_handle_create(ew);
+}
+
 static ares_bool_t ares_evsys_win32_init(ares_event_thread_t *e)
 {
   ares_evsys_win32_t *ew = NULL;
   HMODULE             ntdll;
-  NTSTATUS            status;
-  IO_STATUS_BLOCK     iosb;
-  UNICODE_STRING    afd_device_name = UNICODE_STRING_CONSTANT("\\Device\\Afd");
-  OBJECT_ATTRIBUTES afd_attributes;
 
   CARES_DEBUG_LOG("** Win32 Event Init\n");
 
@@ -381,25 +482,15 @@ static ares_bool_t ares_evsys_win32_init(ares_event_thread_t *e)
     goto fail;
   }
 
-  /* Open a handle to the AFD subsystem */
-  fill_object_attributes(&afd_attributes, &afd_device_name, 0);
-  memset(&iosb, 0, sizeof(iosb));
-  iosb.Status = STATUS_PENDING;
-  status      = ew->NtCreateFile(&ew->afd_handle, SYNCHRONIZE, &afd_attributes,
-                                 &iosb, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                 FILE_OPEN, 0, NULL, 0);
-  if (status != STATUS_SUCCESS) {
-    CARES_DEBUG_LOG("** Failed to create AFD endpoint\n");
+  ew->afd_handles = ares__slist_create(
+    e->channel->rand_state, ares_afd_handle_cmp, ares_afd_handle_destroy);
+  if (ew->afd_handles == NULL) {
     goto fail;
   }
 
-  if (CreateIoCompletionPort(ew->afd_handle, ew->iocp_handle,
-                             0 /* CompletionKey */, 0) == NULL) {
-    goto fail;
-  }
-
-  if (!SetFileCompletionNotificationModes(ew->afd_handle,
-                                          FILE_SKIP_SET_EVENT_ON_HANDLE)) {
+  /* Create at least the first afd handle, so we know of any critical system
+   * issues during startup */
+  if (ares_afd_handle_create(ew) == NULL) {
     goto fail;
   }
 
@@ -467,15 +558,25 @@ static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
   ares_event_thread_t          *e  = event->e;
   ares_evsys_win32_t           *ew = e->ev_sys_data;
   ares_evsys_win32_eventdata_t *ed = event->data;
+  ares_afd_handle_t            *afd;
   NTSTATUS                      status;
 
   if (e == NULL || ed == NULL || ew == NULL) {
     return ARES_FALSE;
   }
 
+  /* Misuse */
   if (ed->poll_status != POLL_STATUS_NONE) {
     return ARES_FALSE;
   }
+
+  ed->afd_handle_node = ares_afd_handle_fetch(ew);
+  /* System resource issue? */
+  if (ed->afd_handle_node == NULL) {
+    return ARES_FALSE;
+  }
+
+  afd = ares__slist_node_val(ed->afd_handle_node);
 
   /* Enqueue AFD Poll */
   ed->afd_poll_info.Exclusive         = FALSE;
@@ -502,13 +603,19 @@ static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
   ed->iosb.Status = STATUS_PENDING;
 
   status = ew->NtDeviceIoControlFile(
-    ew->afd_handle, NULL, NULL, &ed->iosb, &ed->iosb, IOCTL_AFD_POLL,
+    afd->afd_handle, NULL, NULL, &ed->iosb, &ed->iosb, IOCTL_AFD_POLL,
     &ed->afd_poll_info, sizeof(ed->afd_poll_info), &ed->afd_poll_info,
     sizeof(ed->afd_poll_info));
   if (status != STATUS_SUCCESS && status != STATUS_PENDING) {
     CARES_DEBUG_LOG("** afd_enqueue ed=%p FAILED\n", (void *)ed);
+    ed->afd_handle_node = NULL;
     return ARES_FALSE;
   }
+
+  /* Record that we submitted a poll request to this handle and tell it to
+   * re-sort the node since we changed its sort value */
+  afd->poll_cnt++;
+  ares__slist_node_reinsert(ed->afd_handle_node);
 
   ed->poll_status = POLL_STATUS_PENDING;
   CARES_DEBUG_LOG("++ afd_enqueue ed=%p flags=%X\n", (void *)ed,
@@ -521,8 +628,21 @@ static ares_bool_t ares_evsys_win32_afd_cancel(ares_evsys_win32_eventdata_t *ed)
   IO_STATUS_BLOCK     cancel_iosb;
   ares_evsys_win32_t *ew;
   NTSTATUS            status;
+  ares_afd_handle_t  *afd;
 
   ew = ed->event->e->ev_sys_data;
+
+  /* Misuse */
+  if (ed->poll_status != POLL_STATUS_PENDING) {
+    return ARES_FALSE;
+  }
+
+  afd = ares__slist_node_val(ed->afd_handle_node);
+
+  /* Misuse */
+  if (afd == NULL) {
+    return ARES_FALSE;
+  }
 
   ed->poll_status = POLL_STATUS_CANCEL;
 
@@ -534,7 +654,7 @@ static ares_bool_t ares_evsys_win32_afd_cancel(ares_evsys_win32_eventdata_t *ed)
     return ARES_FALSE;
   }
 
-  status = ew->NtCancelIoFileEx(ew->afd_handle, &ed->iosb, &cancel_iosb);
+  status = ew->NtCancelIoFileEx(afd->afd_handle, &ed->iosb, &cancel_iosb);
 
   CARES_DEBUG_LOG("** Enqueued cancel for ed=%p, status = %lX\n", (void *)ed,
                   status);
@@ -668,6 +788,111 @@ static void ares_evsys_win32_event_mod(ares_event_t      *event,
   ares_evsys_win32_afd_cancel(ed);
 }
 
+static ares_bool_t ares_evsys_win32_process_other_event(
+  ares_evsys_win32_t *ew, ares_evsys_win32_eventdata_t *ed, size_t i)
+{
+  ares_event_t *event = ed->event;
+
+  if (ew->is_shutdown) {
+    CARES_DEBUG_LOG("\t\t** i=%lu, skip non-socket handle during shutdown\n",
+                    (unsigned long)i);
+    return ARES_FALSE;
+  }
+
+  CARES_DEBUG_LOG("\t\t** i=%lu, ed=%p (data)\n", (unsigned long)i, (void *)ed);
+
+  event->cb(event->e, event->fd, event->data, ARES_EVENT_FLAG_OTHER);
+  return ARES_TRUE;
+}
+
+static ares_bool_t ares_evsys_win32_process_socket_event(
+  ares_evsys_win32_t *ew, ares_evsys_win32_eventdata_t *ed, size_t i)
+{
+  ares_event_flags_t flags = 0;
+  ares_event_t      *event = NULL;
+  ares_afd_handle_t *afd   = NULL;
+
+  /* Shouldn't be possible */
+  if (ed == NULL) {
+    CARES_DEBUG_LOG("\t\t** i=%lu, Invalid handle.\n", (unsigned long)i);
+    return ARES_FALSE;
+  }
+
+  event = ed->event;
+
+  CARES_DEBUG_LOG("\t\t** i=%lu, ed=%p (socket)\n", (unsigned long)i,
+                  (void *)ed);
+
+  /* Process events */
+  if (ed->poll_status == POLL_STATUS_PENDING &&
+      ed->iosb.Status == STATUS_SUCCESS &&
+      ed->afd_poll_info.NumberOfHandles > 0) {
+    if (ed->afd_poll_info.Handles[0].Events &
+        (AFD_POLL_RECEIVE | AFD_POLL_DISCONNECT | AFD_POLL_ACCEPT |
+         AFD_POLL_ABORT)) {
+      flags |= ARES_EVENT_FLAG_READ;
+    }
+    if (ed->afd_poll_info.Handles[0].Events &
+        (AFD_POLL_SEND | AFD_POLL_CONNECT_FAIL)) {
+      flags |= ARES_EVENT_FLAG_WRITE;
+    }
+    if (ed->afd_poll_info.Handles[0].Events & AFD_POLL_LOCAL_CLOSE) {
+      CARES_DEBUG_LOG("\t\t** ed=%p LOCAL CLOSE\n", (void *)ed);
+      ed->poll_status = POLL_STATUS_DESTROY;
+    }
+  }
+
+  CARES_DEBUG_LOG("\t\t** ed=%p, iosb status=%lX, poll_status=%d, flags=%X\n",
+                  (void *)ed, (unsigned long)ed->iosb.Status,
+                  (int)ed->poll_status, (unsigned int)flags);
+
+  /* Decrement poll count for AFD handle then resort, also disassociate
+   * with socket */
+  afd = ares__slist_node_val(ed->afd_handle_node);
+  afd->poll_cnt--;
+  ares__slist_node_reinsert(ed->afd_handle_node);
+  ed->afd_handle_node = NULL;
+
+  /* Pending destroy, go ahead and kill it */
+  if (ed->poll_status == POLL_STATUS_DESTROY) {
+    ares_evsys_win32_eventdata_destroy(ew, ed);
+    return ARES_FALSE;
+  }
+
+  ed->poll_status = POLL_STATUS_NONE;
+
+  /* Mask flags against current desired flags.  We could have an event
+   * queued that is outdated. */
+  flags &= event->flags;
+
+  /* Don't actually do anything with the event that was delivered as we are
+   * in a shutdown/cleanup process.  Mostly just handling the delayed
+   * destruction of sockets */
+  if (ew->is_shutdown) {
+    return ARES_FALSE;
+  }
+
+  /* Re-enqueue so we can get more events on the socket, we either
+   * received a real event, or a cancellation notice.  Both cases we
+   * re-queue using the current configured event flags.
+   *
+   * If we can't re-enqueue, that likely means the socket has been
+   * closed, so we want to kill our reference to it
+   */
+  if (!ares_evsys_win32_afd_enqueue(event, event->flags)) {
+    ares_evsys_win32_eventdata_destroy(ew, ed);
+    return ARES_FALSE;
+  }
+
+  /* No events we recognize to deliver */
+  if (flags == 0) {
+    return ARES_FALSE;
+  }
+
+  event->cb(event->e, event->fd, event->data, flags);
+  return ARES_TRUE;
+}
+
 static size_t ares_evsys_win32_wait(ares_event_thread_t *e,
                                     unsigned long        timeout_ms)
 {
@@ -699,96 +924,24 @@ static size_t ares_evsys_win32_wait(ares_event_thread_t *e,
     CARES_DEBUG_LOG("\t** GetQueuedCompletionStatusEx returned %lu entries\n",
                     (unsigned long)nentries);
     for (i = 0; i < (size_t)nentries; i++) {
-      ares_event_flags_t            flags = 0;
-      ares_evsys_win32_eventdata_t *ed    = NULL;
-      ares_event_t                 *event = NULL;
+      ares_evsys_win32_eventdata_t *ed = NULL;
+      ares_bool_t                   rc;
 
       /* For things triggered via PostQueuedCompletionStatus() we have an
        * lpCompletionKey we can just use.  Otherwise we need to dereference the
        * pointer returned in lpOverlapped to determine the referenced
        * socket */
       if (entries[i].lpCompletionKey) {
-        if (ew->is_shutdown) {
-          CARES_DEBUG_LOG(
-            "\t\t** i=%lu, skip non-socket handle during shutdown\n",
-            (unsigned long)i);
-          continue;
-        }
-        /* non-socket */
         ed = (ares_evsys_win32_eventdata_t *)entries[i].lpCompletionKey;
+        rc = ares_evsys_win32_process_other_event(ew, ed, i);
       } else {
-        /* socket */
         ed = ares__htable_vpvp_get_direct(ew->sockets, entries[i].lpOverlapped);
+        rc = ares_evsys_win32_process_socket_event(ew, ed, i);
       }
 
-      /* Must be a deleted handle, lets skip */
-      if (ed == NULL) {
-        CARES_DEBUG_LOG("\t\t** i=%lu, skip deleted handle\n",
-                        (unsigned long)i);
-        continue;
-      }
-
-      event = ed->event;
-
-      CARES_DEBUG_LOG("\t\t** i=%lu, ed=%p, overlapped=%p (%s)\n",
-                      (unsigned long)i, (void *)ed,
-                      (void *)entries[i].lpOverlapped,
-                      (ed->socket == ARES_SOCKET_BAD) ? "data" : "socket");
-      if (ed->socket == ARES_SOCKET_BAD) {
-        /* Some sort of signal event */
-        flags = ARES_EVENT_FLAG_OTHER;
-      } else {
-        /* Process events */
-        if (ed->poll_status == POLL_STATUS_PENDING &&
-            ed->iosb.Status == STATUS_SUCCESS &&
-            ed->afd_poll_info.NumberOfHandles > 0) {
-          if (ed->afd_poll_info.Handles[0].Events &
-              (AFD_POLL_RECEIVE | AFD_POLL_DISCONNECT | AFD_POLL_ACCEPT |
-               AFD_POLL_ABORT)) {
-            flags |= ARES_EVENT_FLAG_READ;
-          }
-          if (ed->afd_poll_info.Handles[0].Events &
-              (AFD_POLL_SEND | AFD_POLL_CONNECT_FAIL)) {
-            flags |= ARES_EVENT_FLAG_WRITE;
-          }
-          if (ed->afd_poll_info.Handles[0].Events & AFD_POLL_LOCAL_CLOSE) {
-            CARES_DEBUG_LOG("\t\t** ed=%p LOCAL CLOSE\n", (void *)ed);
-            ed->poll_status = POLL_STATUS_DESTROY;
-          }
-        }
-
-        CARES_DEBUG_LOG(
-          "\t\t** ed=%p, iosb status=%lX, poll_status=%d, flags=%X\n",
-          (void *)ed, (unsigned long)ed->iosb.Status, (int)ed->poll_status,
-          (unsigned int)flags);
-
-        if (ed->poll_status == POLL_STATUS_DESTROY) {
-          ares_evsys_win32_eventdata_destroy(ew, ed);
-          continue;
-        }
-
-        ed->poll_status = POLL_STATUS_NONE;
-
-        /* Mask flags against current desired flags.  We could have an event
-         * queued that is outdated. */
-        flags &= event->flags;
-
-        /* Re-enqueue so we can get more events on the socket, we either
-         * received a real event, or a cancellation notice.  Both cases we
-         * re-queue. */
-        if (!ew->is_shutdown) {
-          /* If we can't re-enqueue, that likely means the socket has been
-           * closed, so we want to kill our reference to it */
-          if (!ares_evsys_win32_afd_enqueue(event, event->flags)) {
-            ares_evsys_win32_eventdata_destroy(ew, ed);
-            continue;
-          }
-        }
-      }
-
-      if (flags != 0 && !ew->is_shutdown) {
+      /* We processed actual events */
+      if (rc) {
         cnt++;
-        event->cb(e, event->fd, event->data, flags);
       }
     }
   } while (nentries == maxentries);
