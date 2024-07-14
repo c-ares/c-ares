@@ -132,7 +132,7 @@ test_script:
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" cd %TESTDIR%
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\adig.exe www.google.com
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\ahost.exe www.google.com
-  - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\arestest.exe -4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
+  - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\arestest.exe --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\dnsdump.exe "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_a" "%APPVEYOR_BUILD_FOLDER%\test\fuzzinput\answer_aaaa"
 
 #on_finish:
