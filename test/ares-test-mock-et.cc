@@ -143,7 +143,9 @@ static int sock_cb_count = 0;
 static int SocketConnectCallback(ares_socket_t fd, int type, void *data) {
   int rc = *(int*)data;
   if (verbose) std::cerr << "SocketConnectCallback(" << fd << ") invoked" << std::endl;
+  (void)type;
   sock_cb_count++;
+  if (verbose) std::cerr << "SocketConnectCallback(fd: " << fd << ", cnt: " << sock_cb_count << ") invoked" << std::endl;
   return rc;
 }
 

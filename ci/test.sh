@@ -33,7 +33,7 @@ fi
 $TEST_WRAP "${TOOLSBIN}/adig" www.google.com
 $TEST_WRAP "${TOOLSBIN}/ahost" www.google.com
 cd "${TESTSBIN}"
-$TEST_WRAP ./arestest -4 -v $TEST_FILTER
+$TEST_WRAP ./arestest -4 $TEST_FILTER
 ./aresfuzz ${TESTDIR}/fuzzinput/*
 ./aresfuzzname ${TESTDIR}/fuzznames/*
 ./dnsdump "${TESTDIR}/fuzzinput/answer_a" "${TESTDIR}/fuzzinput/answer_aaaa"
