@@ -865,6 +865,8 @@ void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
   }
 
   while (ares_queue_active_queries(channel_)) {
+    //if (verbose) std::cerr << "pending queries: " << ares_queue_active_queries(channel_) << std::endl;
+
     int nfds = 0;
     fd_set readers;
 
@@ -912,6 +914,8 @@ void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
       }
     }
   }
+
+  //if (verbose) std::cerr << "pending queries at process end: " << ares_queue_active_queries(channel_) << std::endl;
 }
 
 std::ostream& operator<<(std::ostream& os, const HostResult& result) {
