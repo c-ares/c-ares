@@ -345,9 +345,6 @@ static ares_bool_t get_DNS_Windows(char **outptr)
     goto done;
   }
 
-  /* NOTE: misaligned_assign() is used to work around UBSAN issues on 32bit
-   *       windows. */
-
   for (ipaaEntry = ipaa; ipaaEntry; ipaaEntry = ipaaEntry->Next) {
     if (ipaaEntry->OperStatus != IfOperStatusUp) {
       continue;
