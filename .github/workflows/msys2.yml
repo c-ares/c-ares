@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GTEST_ARGS: "-4 -v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
+  GTEST_ARGS: "-4 --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
 
 jobs:
   build:
