@@ -42,8 +42,17 @@ void ares_destroy(ares_channel_t *channel)
     return;
   }
 
-  /* Disable configuration change monitoring */
+  /* Mark as being shutdown */
   ares__channel_lock(channel);
+  channel->sys_up = ARES_FALSE;
+  ares__channel_unlock(channel);
+
+  /* Disable configuration change monitoring.  We can't hold a lock because
+   * some cleanup routines, such as on Windows, are synchronous operations.
+   * What we've observed is a system config change event was triggered right
+   * at shutdown time and it tries to take the channel lock and the destruction
+   * waits for that event to complete before it continues so we get a channel
+   * lock deadlock at shutdown if we hold a lock during this process. */
   if (channel->optmask & ARES_OPT_EVENT_THREAD) {
     ares_event_thread_t *e = channel->sock_state_cb_data;
     if (e && e->configchg) {
@@ -51,7 +60,6 @@ void ares_destroy(ares_channel_t *channel)
       e->configchg = NULL;
     }
   }
-  ares__channel_unlock(channel);
 
   /* Wait for reinit thread to exit if there was one pending, can't be
    * holding a lock as the thread may take locks. */
@@ -61,7 +69,8 @@ void ares_destroy(ares_channel_t *channel)
     channel->reinit_thread = NULL;
   }
 
-  /* Lock because callbacks will be triggered */
+  /* Lock because callbacks will be triggered, and any system-generated
+   * callbacks need to hold a channel lock. */
   ares__channel_lock(channel);
 
   /* Destroy all queries */
