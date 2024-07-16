@@ -26,6 +26,7 @@ jobs:
           usesh: true
           # package list: http://pkg.oracle.com/solaris/release/en/catalog.shtml
           prepare: |
+            pkg update
             pkg install cmake gcc ninja pkg-config
           run: |
             echo "BUILD_TYPE: $BUILD_TYPE"
