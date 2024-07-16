@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-set -e
+set -e -x
 
 OS=""
 if [ "$TRAVIS_OS_NAME" != "" ]; then
