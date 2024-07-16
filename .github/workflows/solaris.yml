@@ -14,7 +14,8 @@ jobs:
       DIST: SOLARIS
       BUILD_TYPE: "cmake"
       CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_VERBOSE_MAKEFILE=ON"
-      CMAKE_TEST_FLAGS: "-DCMAKE_PREFIX_PATH=/usr/local/ -DCARES_BUILD_TESTS=ON -DCMAKE_CXX_FLAGS=-DGTEST_HAS_PTHREAD=0"
+      CMAKE_TEST_FLAGS: "-DCMAKE_PREFIX_PATH=/usr/local/ -DCARES_BUILD_TESTS=ON"
+      CXXFLAGS: "-DGTEST_HAS_PTHREAD=0"
       TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
     steps:
       - uses: actions/checkout@v4
@@ -22,12 +23,20 @@ jobs:
         id: solaris
         uses: vmactions/solaris-vm@v1
         with:
-          envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER'
+          envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER CXXFLAGS'
           usesh: true
           # package list: http://pkg.oracle.com/solaris/release/en/catalog.shtml
           prepare: |
             pkg install -v --no-refresh cmake gcc pkg-config gnu-make git
-          # Note: using googletest v1.13.x because that's the last version to support cmake 3.9, v1.14.x went to cmake 3.13
+          # We have to jump through a lot of hoops with google test.
+          #  - We need to max out at v1.13.x because this solaris VM is old and
+          #    only has cmake 3.9
+          #  - We have to compile google test ourselves because it isn't available.
+          #  - We have to forcibly compile google test without threading because
+          #    solaris throws an exception for some unknown reason.
+          #  - The forcible threading disablement doesn't appear to propagate to
+          #    proper cflags with compiling c-ares tests so we need to set a
+          #    CXX flag to let google test know it was compiled without threading.
           run: |
             git clone --depth=1 -b v1.13.x https://github.com/google/googletest googletest
             cd googletest
