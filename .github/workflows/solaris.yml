@@ -22,10 +22,12 @@ jobs:
         id: solaris
         uses: vmactions/solaris-vm@v1
         with:
+          release: "11.4-gcc"
           envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER'
           usesh: true
           prepare: |
-            pkgutil -y -i cmake pkgconfig
+            pkg list -a '*''
+            pkg install cmake gcc
           run: |
             echo "BUILD_TYPE: $BUILD_TYPE"
             echo "CMAKE_FLAGS: $CMAKE_FLAGS"
