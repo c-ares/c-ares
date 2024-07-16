@@ -32,8 +32,8 @@ jobs:
             git clone --depth=1 -b v1.13.x https://github.com/google/googletest googletest
             cd googletest
             cmake -DCMAKE_INSTALL_PREFIX=/usr/local .
-            cmake --build .
-            cmake --install .
+            gmake
+            gmake install
             cd ..
             ./ci/build.sh
             ./ci/test.sh
