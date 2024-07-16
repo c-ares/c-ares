@@ -1,0 +1,34 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: Solaris
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: "Solaris Build and Test"
+    env:
+      DIST: SOLARIS
+      BUILD_TYPE: "cmake"
+      CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON"
+      CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
+      TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Solaris Build and Test
+        id: solaris
+        uses: vmactions/solaris-vm@v1
+        with:
+          envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER'
+          usesh: true
+          prepare: |
+            pkgutil -y -i cmake pkgconfig
+          run: |
+            echo "BUILD_TYPE: $BUILD_TYPE"
+            echo "CMAKE_FLAGS: $CMAKE_FLAGS"
+            echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
+            ./ci/build.sh
+#            ./ci/test.sh
