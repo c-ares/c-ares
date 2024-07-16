@@ -13,7 +13,7 @@ jobs:
     env:
       DIST: SOLARIS
       BUILD_TYPE: "cmake"
-      CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+      CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON"
       CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
       TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
     steps:
@@ -26,7 +26,7 @@ jobs:
           usesh: true
           # package list: http://pkg.oracle.com/solaris/release/en/catalog.shtml
           prepare: |
-            pkg install --no-refresh cmake gcc pkg-config
+            pkg install -v --no-refresh cmake gcc pkg-config gnu-make
           run: |
             echo "BUILD_TYPE: $BUILD_TYPE"
             echo "CMAKE_FLAGS: $CMAKE_FLAGS"
