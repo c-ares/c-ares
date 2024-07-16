@@ -13,7 +13,7 @@ jobs:
     env:
       DIST: SOLARIS
       BUILD_TYPE: "cmake"
-      CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON"
+      CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
       CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
       TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
     steps:
@@ -26,8 +26,7 @@ jobs:
           envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER'
           usesh: true
           prepare: |
-            pkg list -a '*''
-            pkg install cmake gcc
+            pkg install cmake gcc ninja pkg-config
           run: |
             echo "BUILD_TYPE: $BUILD_TYPE"
             echo "CMAKE_FLAGS: $CMAKE_FLAGS"
