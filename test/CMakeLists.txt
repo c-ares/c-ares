@@ -9,8 +9,12 @@ ENDIF ()
 find_package(Threads)
 find_package(GTest REQUIRED)
 
-IF (NOT TARGET GTest::gmock)
-  Message(FATAL_ERROR "GoogleTest found but the GMock component was not found")
+IF (CMAKE_VERSION VERSION_LESS "3.23.0")
+  Message("GoogleTest found, cmake version too old to verify GMock, look for errors...")
+ELSE ()
+  IF (NOT TARGET GTest::gmock)
+    Message(FATAL_ERROR "GoogleTest found but the GMock component was not found")
+  ENDIF()
 ENDIF()
 
 # create target to access and use internal cares library
