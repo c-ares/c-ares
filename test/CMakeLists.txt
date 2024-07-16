@@ -40,8 +40,11 @@ include(${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake)
 
 add_executable(arestest ${TESTSOURCES} ${TESTHEADERS})
 target_include_directories(arestest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(arestest PRIVATE caresinternal GTest::gmock)
-
+IF (CMAKE_VERSION VERSION_LESS "3.23.0")
+  target_link_libraries(arestest PRIVATE caresinternal GTest::gtest -lgmock)
+ELSE ()
+  target_link_libraries(arestest PRIVATE caresinternal GTest::gmock)
+ENDIF()
 target_compile_definitions(arestest PRIVATE CARES_NO_DEPRECATED)
 
 IF (CARES_BUILD_CONTAINER_TESTS)
