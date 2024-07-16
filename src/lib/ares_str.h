@@ -80,7 +80,7 @@ ares_bool_t   ares__str_isprint(const char *str, size_t len);
                            (((unsigned char)x) >= 'a' && \
                            ((unsigned char)x) <= 'f') || \
                            (((unsigned char)x) >= 'A' && \
-                           ((unsigned char)x) <= 'Z'))
+                           ((unsigned char)x) <= 'F'))
 #define ares__isupper(x) (((unsigned char)x) >= 'A' && \
                           ((unsigned char)x) <= 'Z')
 #define ares__islower(x) (((unsigned char)x) >= 'a' && \
