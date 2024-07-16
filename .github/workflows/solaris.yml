@@ -14,7 +14,7 @@ jobs:
       DIST: SOLARIS
       BUILD_TYPE: "cmake"
       CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON"
-      CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+      CMAKE_TEST_FLAGS: "-DGTest_DIR=/usr/local -DCARES_BUILD_TESTS=ON"
       TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
           run: |
             git clone --depth=1 -b v1.13.x https://github.com/google/googletest googletest
             cd googletest
-            cmake -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW .
+            cmake -DCMAKE_INSTALL_PREFIX=/usr/local .
             cmake --build .
             cmake --install .
             cd ..
