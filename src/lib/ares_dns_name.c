@@ -212,7 +212,7 @@ static ares_status_t ares_parse_dns_name_escape(ares__buf_t *namebuf,
   }
 
   /* If next character is a digit, read 2 more digits */
-  if (isdigit(c)) {
+  if (ares__isdigit(c)) {
     size_t       i;
     unsigned int val = 0;
 
@@ -224,7 +224,7 @@ static ares_status_t ares_parse_dns_name_escape(ares__buf_t *namebuf,
         return ARES_EBADNAME;
       }
 
-      if (!isdigit(c)) {
+      if (!ares__isdigit(c)) {
         return ARES_EBADNAME;
       }
       val *= 10;

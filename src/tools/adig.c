@@ -219,26 +219,33 @@ static ares_bool_t read_cmdline(int argc, const char * const * argv,
         break;
 
       case 'T':
-        /* Set the TCP port number. */
-        if (!isdigit(*state.optarg)) {
-          snprintf(config->error, sizeof(config->error), "invalid port number");
-          return ARES_FALSE;
+        {
+          /* Set the TCP port number. */
+          long port = strtol(state.optarg, NULL, 0);
+
+          if (port <= 0 || port > 65535) {
+            snprintf(config->error, sizeof(config->error), "invalid port number");
+            return ARES_FALSE;
+          }
+          config->options.tcp_port = (unsigned short)port;
+          config->options.flags   |= ARES_FLAG_USEVC;
+          config->optmask         |= ARES_OPT_TCP_PORT;
         }
-        config->options.tcp_port =
-          (unsigned short)strtol(state.optarg, NULL, 0);
-        config->options.flags |= ARES_FLAG_USEVC;
-        config->optmask       |= ARES_OPT_TCP_PORT;
         break;
 
       case 'U':
-        /* Set the UDP port number. */
-        if (!isdigit(*state.optarg)) {
-          snprintf(config->error, sizeof(config->error), "invalid port number");
-          return ARES_FALSE;
+        {
+          /* Set the TCP port number. */
+          long port = strtol(state.optarg, NULL, 0);
+
+          if (port <= 0 || port > 65535) {
+            snprintf(config->error, sizeof(config->error), "invalid port number");
+            return ARES_FALSE;
+          }
+          config->options.udp_port = (unsigned short)port;
+          config->options.flags   |= ARES_FLAG_USEVC;
+          config->optmask         |= ARES_OPT_UDP_PORT;
         }
-        config->options.udp_port =
-          (unsigned short)strtol(state.optarg, NULL, 0);
-        config->optmask |= ARES_OPT_UDP_PORT;
         break;
 
       case ':':

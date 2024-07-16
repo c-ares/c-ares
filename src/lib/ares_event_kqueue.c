@@ -198,7 +198,7 @@ static size_t ares_evsys_kqueue_wait(ares_event_thread_t *e,
   size_t               cnt     = 0;
 
   if (timeout_ms != 0) {
-    ts.tv_sec  = timeout_ms / 1000;
+    ts.tv_sec  = (time_t)timeout_ms / 1000;
     ts.tv_nsec = (timeout_ms % 1000) * 1000 * 1000;
     timeout    = &ts;
   }

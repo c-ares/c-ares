@@ -81,7 +81,7 @@ static ares_status_t ares_apply_dns0x20(ares_channel_t *channel,
     size_t bit;
 
     /* Only apply 0x20 to alpha characters */
-    if (!isalpha(name[i])) {
+    if (!ares__isalpha(name[i])) {
       dns0x20name[i] = name[i];
       continue;
     }
