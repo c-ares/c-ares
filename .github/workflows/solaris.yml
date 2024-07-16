@@ -22,9 +22,9 @@ jobs:
         id: solaris
         uses: vmactions/solaris-vm@v1
         with:
-          release: "11.4-gcc"
           envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER'
           usesh: true
+          # package list: http://pkg.oracle.com/solaris/release/en/catalog.shtml
           prepare: |
             pkg install cmake gcc ninja pkg-config
           run: |
