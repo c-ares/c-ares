@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-set -e
+set -e -x
 
 # Travis on MacOS uses CloudFlare's DNS (1.1.1.1/1.0.0.1) which rejects ANY requests.
 # Also, LiveSearchTXT is known to fail on Cirrus-CI on some MacOS hosts, we don't get

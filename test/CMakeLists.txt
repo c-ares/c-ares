@@ -9,8 +9,12 @@ ENDIF ()
 find_package(Threads)
 find_package(GTest REQUIRED)
 
-IF (NOT TARGET GTest::gmock)
-  Message(FATAL_ERROR "GoogleTest found but the GMock component was not found")
+IF (CMAKE_VERSION VERSION_LESS "3.23.0")
+  Message("GoogleTest found, cmake version too old to verify GMock, look for errors...")
+ELSE ()
+  IF (NOT TARGET GTest::gmock)
+    Message(FATAL_ERROR "GoogleTest found but the GMock component was not found")
+  ENDIF()
 ENDIF()
 
 # create target to access and use internal cares library
@@ -36,8 +40,15 @@ include(${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake)
 
 add_executable(arestest ${TESTSOURCES} ${TESTHEADERS})
 target_include_directories(arestest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(arestest PRIVATE caresinternal GTest::gmock)
-
+IF (CMAKE_VERSION VERSION_LESS "3.23.0")
+  FIND_LIBRARY(LIBGMOCK NAMES gmock PATHS ${GTEST_ROOT} PATH_SUFFIXES lib)
+  IF (LIBGMOCK-NOTFOUND)
+    MESSAGE(FATAL_ERROR "Could not find Gmock")
+  ENDIF ()
+  target_link_libraries(arestest PRIVATE caresinternal GTest::GTest ${LIBGMOCK})
+ELSE ()
+  target_link_libraries(arestest PRIVATE caresinternal GTest::gmock)
+ENDIF()
 target_compile_definitions(arestest PRIVATE CARES_NO_DEPRECATED)
 
 IF (CARES_BUILD_CONTAINER_TESTS)
