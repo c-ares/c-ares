@@ -339,7 +339,9 @@ typedef struct {
 static void ares_afd_handle_destroy(void *arg)
 {
   ares_afd_handle_t *hnd = arg;
-  CloseHandle(hnd->afd_handle);
+  if (hnd != NULL && hnd->afd_handle != NULL) {
+    CloseHandle(hnd->afd_handle);
+  }
   ares_free(hnd);
 }
 
