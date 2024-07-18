@@ -272,10 +272,16 @@ MockServer::MockServer(int family, unsigned short port)
   // Send TCP data right away.
   setsockopt(tcpfd_, IPPROTO_TCP, TCP_NODELAY,
              BYTE_CAST &optval , sizeof(int));
+#if defined(SO_NOSIGPIPE)
+  setsockopt(tcpfd_, SOL_SOCKET, SO_NOSIGPIPE, (void *)&optval, sizeof(optval));
+#endif
 
   // Create a UDP socket to receive data on.
   udpfd_ = socket(family, SOCK_DGRAM, 0);
   EXPECT_NE(ARES_SOCKET_BAD, udpfd_);
+#if defined(SO_NOSIGPIPE)
+  setsockopt(udpfd_, SOL_SOCKET, SO_NOSIGPIPE, (void *)&optval, sizeof(optval));
+#endif
 
   // Bind the sockets to the given port.
   if (family == AF_INET) {
@@ -480,6 +486,8 @@ std::set<ares_socket_t> MockServer::fds() const {
 
 void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr, ares_socklen_t addrlen,
                                 int qid, const std::string& name, int rrtype) {
+  int flags = 0;
+
   // Before processing, let gMock know the request is happening.
   OnRequest(name, rrtype);
 
@@ -512,7 +520,10 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
     addrlen = 0;
   }
 
-  int rc = sendto(fd, BYTE_CAST reply.data(), reply.size(), 0,
+#ifdef MSG_NOSIGNAL
+  flags |= MSG_NOSIGNAL;
+#endif
+  int rc = sendto(fd, BYTE_CAST reply.data(), reply.size(), flags,
                   (struct sockaddr *)addr, addrlen);
   if (rc < static_cast<int>(reply.size())) {
     std::cerr << "Failed to send full reply, rc=" << rc << std::endl;
