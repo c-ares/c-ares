@@ -208,13 +208,10 @@ task:
           ;;
         FREEBSD)
           # pkg upgrade -y && \
-          pkg install -y cmake ninja googletest pkgconf lldb
+          pkg install -y cmake ninja googletest pkgconf llvm gmake
           case "${BUILD_TYPE}" in
-            asan|analyze|ubsan|lsan)
-              pkg install -y llvm autoconf automake libtool gmake
-              ;;
             autotools)
-              pkg install -y autoconf automake libtool gmake
+              pkg install -y autoconf automake libtool
               ;;
           esac
           ;;
