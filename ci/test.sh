@@ -36,7 +36,17 @@ export GTEST_INSTALL_FAILURE_SIGNAL_HANDLER
 $TEST_WRAP "${TOOLSBIN}/adig" www.google.com
 $TEST_WRAP "${TOOLSBIN}/ahost" www.google.com
 cd "${TESTSBIN}"
-$TEST_WRAP ./arestest -4 $TEST_FILTER
+
+if [ "$TEST_WRAP" != "" ] ; then
+  $TEST_WRAP ./arestest -4 $TEST_FILTER
+elif [ "$TEST_DEBUGGER" == "gdb" ] ; then
+  gdb --batch --return-child-result -ex "run" -ex "thread apply all bt" -ex "quit" --args ./arestest -4 $TEST_FILTER
+elif [ "$TEST_DEBUGGER" == "lldb" ] ; then
+  lldb --batch -o "run -4 $TEST_FILTER" -k "thread backtrace all" -k "quit 1" ./arestest
+else
+  ./arestest -4 $TEST_FILTER
+fi
+
 ./aresfuzz ${TESTDIR}/fuzzinput/*
 ./aresfuzzname ${TESTDIR}/fuzznames/*
 ./dnsdump "${TESTDIR}/fuzzinput/answer_a" "${TESTDIR}/fuzzinput/answer_aaaa"
