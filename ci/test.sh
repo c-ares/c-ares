@@ -25,6 +25,7 @@ TESTDIR="${PWD}/test"
 if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     TOOLSBIN="${PWD}/atoolsbld/src/tools"
     TESTSBIN="${PWD}/atoolsbld/test"
+    TEST_DEBUGGER=""
 else
     TOOLSBIN="${PWD}/cmakebld/bin"
     TESTSBIN="${PWD}/cmakebld/bin"
@@ -40,9 +41,9 @@ cd "${TESTSBIN}"
 if [ "$TEST_WRAP" != "" ] ; then
   $TEST_WRAP ./arestest -4 $TEST_FILTER
 elif [ "$TEST_DEBUGGER" = "gdb" ] ; then
-  gdb --batch --batch-silent --return-child-result -ex "handle SIGPIPE nostop noprint pass" -ex "run" -ex "thread apply all bt" -ex "quit" --args ./arestest -4 $TEST_FILTER
+  gdb --batch --return-child-result -ex "handle SIGPIPE nostop noprint pass" -ex "run" -ex "thread apply all bt" -ex "quit" --args ./arestest -4 $TEST_FILTER
 elif [ "$TEST_DEBUGGER" = "lldb" ] ; then
-  lldb --batch -o "process handle SIGPIPE -n true -p true -s false" -o "run -4 $TEST_FILTER" -k "thread backtrace all" -k "quit 1" ./arestest
+  lldb --batch -o "run -4 $TEST_FILTER" -o "process handle SIGPIPE -n true -p true -s false" -k "thread backtrace all" -k "quit 1" ./arestest
 else
   ./arestest -4 $TEST_FILTER
 fi
