@@ -217,7 +217,7 @@ task:
           ;;
         MACOS|iOS)
           brew update
-          brew install ninja cmake googletest lldb
+          brew install ninja cmake googletest
           case "${BUILD_TYPE}" in
             asan|ubsan|lsan|analyze)
               brew install llvm autoconf automake libtool make ninja
