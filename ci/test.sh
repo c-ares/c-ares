@@ -43,7 +43,7 @@ if [ "$TEST_WRAP" != "" ] ; then
 elif [ "$TEST_DEBUGGER" = "gdb" ] ; then
   gdb --batch --return-child-result -ex "handle SIGPIPE nostop noprint pass" -ex "run" -ex "thread apply all bt" -ex "quit" --args ./arestest -4 $TEST_FILTER
 elif [ "$TEST_DEBUGGER" = "lldb" ] ; then
-  lldb --batch -o "process handle SIGPIPE -n true -p true -s false" -o "run" -k "thread backtrace all" -k "quit 1" -- ./arestest -4 $TEST_FILTER
+  lldb --batch -o "process handle SIGPIPE -n true -p true -s false" -o "process launch --shell-expand-args 0" -k "thread backtrace all" -k "quit 1" -- ./arestest -4 $TEST_FILTER
 else
   ./arestest -4 $TEST_FILTER
 fi
