@@ -23,7 +23,7 @@ jobs:
         id: solaris
         uses: vmactions/solaris-vm@v1
         with:
-          envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER CXXFLAGS'
+          envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER CXXFLAGS TEST_DEBUGGER'
           usesh: true
           # package list: http://pkg.oracle.com/solaris/release/en/catalog.shtml
           prepare: |
