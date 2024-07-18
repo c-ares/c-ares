@@ -797,7 +797,6 @@ ares_status_t ares__requeue_query(struct query         *query,
   size_t max_tries        = ares__slist_len(channel->servers) * channel->tries;
 
   query->try_count++;
-
   if (query->try_count < max_tries && !query->no_retries) {
     return ares__send_query(query, now);
   }
@@ -947,7 +946,14 @@ static ares_status_t ares__write_udpbuf(ares_channel_t      *channel,
   }
 
   if (ares__socket_write(channel, fd, qbuf, qbuf_len) == -1) {
-    status = ARES_ESERVFAIL;
+    if (try_again(SOCKERRNO)) {
+      status = ARES_ESERVFAIL;
+    } else {
+      /* UDP is connection-less, but we might receive an ICMP unreachable which
+       * means we can't talk to the remote host at all and that will be
+       * reflected here */
+      status = ARES_ECONNREFUSED;
+    }
   } else {
     status = ARES_SUCCESS;
   }
@@ -1132,7 +1138,20 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
         return status;
       }
 
-      /* FIXME: Handle EAGAIN here since it likely can happen. */
+      if (status == ARES_ECONNREFUSED) {
+        handle_conn_error(conn, ARES_TRUE);
+
+        /* This query wasn't yet bound to the connection, need to manually
+         * requeue it and return an appropriate error */
+        status = ares__requeue_query(query, now);
+        if (status == ARES_ETIMEOUT) {
+          status = ARES_ECONNREFUSED;
+        }
+        return status;
+      }
+
+      /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
+       * just requeue to a different server/connection. */
       server_increment_failures(server, query->using_tcp);
       status = ares__requeue_query(query, now);
 
