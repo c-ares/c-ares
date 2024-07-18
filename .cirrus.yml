@@ -119,7 +119,7 @@ task:
       env:
         BUILD_TYPE: "asan"
         CC: "clang"
-        TEST_DEBUGGER: "lldb"
+        TEST_DEBUGGER: "none"
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=address"
         CXXFLAGS: "-fsanitize=address"
@@ -130,7 +130,7 @@ task:
       env:
         BUILD_TYPE: "ubsan"
         CC: "clang"
-        TEST_DEBUGGER: "lldb"
+        TEST_DEBUGGER: "none"
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
         CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
