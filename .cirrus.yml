@@ -201,6 +201,9 @@ task:
               apt-get install -yq lcov git pip
               pip3 install --break-system-packages --user cpp-coveralls
               ;;
+            *)
+              apt-get install -yq gdb
+              ;;
           esac
           ;;
         FREEBSD)
