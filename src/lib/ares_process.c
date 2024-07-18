@@ -58,7 +58,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
                                     struct server_connection *conn,
                                     ares_bool_t tcp, const ares_timeval_t *now);
 static void          handle_conn_error(struct server_connection *conn,
-                                       ares_bool_t               critical_failure);
+                                       ares_bool_t               critical_failure,
+                                       ares_status_t             failure_status);
 
 static ares_bool_t   same_questions(const struct query *query,
                                     const ares_dns_record_t *arec);
@@ -301,7 +302,7 @@ static void write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
     count = ares__socket_write(channel, server->tcp_conn->fd, data, data_len);
     if (count <= 0) {
       if (!try_again(SOCKERRNO)) {
-        handle_conn_error(server->tcp_conn, ARES_TRUE);
+        handle_conn_error(server->tcp_conn, ARES_TRUE, ARES_ECONNREFUSED);
       }
       continue;
     }
@@ -334,7 +335,7 @@ static void read_tcp_data(ares_channel_t           *channel,
   ptr = ares__buf_append_start(server->tcp_parser, &ptr_len);
 
   if (ptr == NULL) {
-    handle_conn_error(conn, ARES_FALSE /* not critical to connection */);
+    handle_conn_error(conn, ARES_FALSE /* not critical to connection */, ARES_SUCCESS);
     return; /* bail out on malloc failure. TODO: make this
                function return error codes */
   }
@@ -344,7 +345,7 @@ static void read_tcp_data(ares_channel_t           *channel,
   if (count <= 0) {
     ares__buf_append_finish(server->tcp_parser, 0);
     if (!(count == -1 && try_again(SOCKERRNO))) {
-      handle_conn_error(conn, ARES_TRUE);
+      handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED);
     }
     return;
   }
@@ -388,7 +389,7 @@ static void read_tcp_data(ares_channel_t           *channel,
     /* We finished reading this answer; process it */
     status = process_answer(channel, data, data_len, conn, ARES_TRUE, now);
     if (status != ARES_SUCCESS) {
-      handle_conn_error(conn, ARES_TRUE);
+      handle_conn_error(conn, ARES_TRUE, status);
       return;
     }
 
@@ -503,7 +504,7 @@ static void read_udp_packets_fd(ares_channel_t           *channel,
         break;
       }
 
-      handle_conn_error(conn, ARES_TRUE);
+      handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED);
       return;
 #ifdef HAVE_RECVFROM
     } else if (!same_address(&from.sa, &conn->server->addr)) {
@@ -775,7 +776,8 @@ cleanup:
 }
 
 static void handle_conn_error(struct server_connection *conn,
-                              ares_bool_t               critical_failure)
+                              ares_bool_t               critical_failure,
+                              ares_status_t             failure_status)
 {
   struct server_state *server = conn->server;
 
@@ -786,7 +788,7 @@ static void handle_conn_error(struct server_connection *conn,
   }
 
   /* This will requeue any connections automatically */
-  ares__close_connection(conn, ARES_ECONNREFUSED);
+  ares__close_connection(conn, failure_status);
 }
 
 ares_status_t ares__requeue_query(struct query         *query,
@@ -1141,7 +1143,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
       }
 
       if (status == ARES_ECONNREFUSED) {
-        handle_conn_error(conn, ARES_TRUE);
+        handle_conn_error(conn, ARES_TRUE, status);
 
         /* This query wasn't yet bound to the connection, need to manually
          * requeue it and return an appropriate error */
