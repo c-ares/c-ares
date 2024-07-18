@@ -19,6 +19,7 @@ task:
         BUILD_VALGRIND: "yes"
         BUILD_COVERAGE: "yes"
         BUILD_ANALYZE: "yes"
+        TEST_DEBUGGER: "gdb"
         TEST_SYMBOL_VISIBILITY: "yes"
       container:
         image: debian:latest
@@ -32,6 +33,7 @@ task:
         BUILD_UBSAN: "yes"
         BUILD_VALGRIND: "yes"
         BUILD_ANALYZE: "yes"
+        TEST_DEBUGGER: "gdb"
         TEST_SYMBOL_VISIBILITY: "yes"
       container:
         image: alpine:latest
@@ -40,6 +42,7 @@ task:
         DIST: "UBUNTU"
         LC_ALL: "C"
         MAKE: "make"
+        TEST_DEBUGGER: "gdb"
       container:
         image: ubuntu:20.04
     - name: "Debian arm64"
@@ -57,12 +60,14 @@ task:
         BUILD_ASAN: "no"
         BUILD_UBSAN: "no"
         BUILD_ANALYZE: "yes"
+        TEST_DEBUGGER: "gdb"
       arm_container:
         image: debian:latest
     - name: "FreeBSD amd64"
       env:
         DIST: "FREEBSD"
         SCAN_BUILD: "scan-build"
+        TEST_DEBUGGER: "lldb"
         MAKE: "gmake"
         BUILD_ANALYZE: "yes"
         TEST_SYMBOL_VISIBILITY: "yes"
@@ -73,6 +78,7 @@ task:
         DIST: "MACOS"
         SCAN_BUILD: "/opt/homebrew/opt/llvm/bin/scan-build-py"
         MAKE: "make"
+        TEST_DEBUGGER: "lldb"
         BUILD_ASAN: "yes"
         BUILD_UBSAN: "yes"
         BUILD_ANALYZE: "yes"
@@ -113,6 +119,7 @@ task:
       env:
         BUILD_TYPE: "asan"
         CC: "clang"
+        TEST_DEBUGGER: "none"
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=address"
         CXXFLAGS: "-fsanitize=address"
@@ -123,6 +130,7 @@ task:
       env:
         BUILD_TYPE: "ubsan"
         CC: "clang"
+        TEST_DEBUGGER: "none"
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
         CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
@@ -132,6 +140,7 @@ task:
       env:
         BUILD_TYPE: "analyze"
         CC: "clang"
+        TEST_DEBUGGER: "lldb"
         SCAN_WRAP: "${SCAN_BUILD} -v --status-bugs"
         CONFIG_OPTS: "--enable-debug --disable-tests"
         CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
@@ -161,16 +170,16 @@ task:
           apk add cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make
           case "${BUILD_TYPE}" in
             asan|lsan|ubsan)
-              apk add clang17 compiler-rt
+              apk add clang17 compiler-rt lldb
               ;;
             analyze)
-              apk add clang17 clang17-analyzer compiler-rt
+              apk add clang17 clang17-analyzer compiler-rt lldb
               ;;
             valgrind)
               apk add gcc g++ valgrind
               ;;
             *)
-              apk add gcc g++
+              apk add gcc g++ gdb
               ;;
           esac
           ;;
@@ -180,10 +189,10 @@ task:
           apt-get install -y cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config
           case "${BUILD_TYPE}" in
             asan|lsan|ubsan)
-              apt-get install -yq clang
+              apt-get install -yq clang lldb
               ;;
             analyze)
-              apt-get install -yq clang clang-tools
+              apt-get install -yq clang clang-tools lldb
               ;;
             valgrind)
               apt-get install -yq valgrind
@@ -192,17 +201,17 @@ task:
               apt-get install -yq lcov git pip
               pip3 install --break-system-packages --user cpp-coveralls
               ;;
+            *)
+              apt-get install -yq gdb
+              ;;
           esac
           ;;
         FREEBSD)
           # pkg upgrade -y && \
-          pkg install -y cmake ninja googletest pkgconf
+          pkg install -y cmake ninja googletest pkgconf llvm gmake
           case "${BUILD_TYPE}" in
-            asan|analyze|ubsan|lsan)
-              pkg install -y llvm autoconf automake libtool gmake
-              ;;
             autotools)
-              pkg install -y autoconf automake libtool gmake
+              pkg install -y autoconf automake libtool
               ;;
           esac
           ;;

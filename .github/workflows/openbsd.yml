@@ -18,14 +18,14 @@ jobs:
           BUILD_TYPE: "cmake"
           CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
-          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER: 1
+          TEST_DEBUGGER: "lldb"
         with:
           operating_system: openbsd
           version: '7.5'
           shell: 'bash'
-          environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS GTEST_INSTALL_FAILURE_SIGNAL_HANDLER
+          environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_DEBUGGER
           run: |
-            sudo pkg_add cmake gtest pkgconf ninja
+            sudo pkg_add cmake gtest pkgconf ninja gdb lldb
             echo "BUILD_TYPE: $BUILD_TYPE"
             echo "CMAKE_FLAGS: $CMAKE_FLAGS"
             echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
