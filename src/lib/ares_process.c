@@ -952,6 +952,7 @@ static ares_status_t ares__write_udpbuf(ares_channel_t      *channel,
   }
 
   if (ares__socket_write(channel, fd, qbuf, qbuf_len) == -1) {
+#if 0
     if (try_again(SOCKERRNO)) {
       status = ARES_ESERVFAIL;
     } else {
@@ -960,6 +961,9 @@ static ares_status_t ares__write_udpbuf(ares_channel_t      *channel,
        * reflected here */
       status = ARES_ECONNREFUSED;
     }
+#else
+    status = ARES_ESERVFAIL;
+#endif
   } else {
     status = ARES_SUCCESS;
   }
@@ -1141,7 +1145,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
         end_query(channel, server, query, status, NULL);
         return status;
       }
-
+#if 0
       if (status == ARES_ECONNREFUSED) {
         handle_conn_error(conn, ARES_TRUE, status);
 
@@ -1153,6 +1157,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
         }
         return status;
       }
+#endif
 
       /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
        * just requeue to a different server/connection. */
