@@ -81,41 +81,59 @@ void ares__close_sockets(struct server_state *server)
   }
 }
 
-void ares__check_cleanup_conn(const ares_channel_t     *channel,
-                              struct server_connection *conn)
+void ares__check_cleanup_conns(const ares_channel_t *channel)
 {
-  ares_bool_t do_cleanup = ARES_FALSE;
+  ares__slist_node_t *snode;
 
-  if (channel == NULL || conn == NULL) {
+  if (channel == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  if (ares__llist_len(conn->queries_to_conn)) {
-    return;
-  }
+  /* Iterate across each server */
+  for (snode = ares__slist_node_first(channel->servers); snode != NULL;
+       snode = ares__slist_node_next(snode)) {
 
-  /* If we are configured not to stay open, close it out */
-  if (!(channel->flags & ARES_FLAG_STAYOPEN)) {
-    do_cleanup = ARES_TRUE;
-  }
+    struct server_state *server = ares__slist_node_val(snode);
+    ares__llist_node_t  *cnode;
 
-  /* If the associated server has failures, close it out. Resetting the
-   * connection (and specifically the source port number) can help resolve
-   * situations where packets are being dropped.
-   */
-  if (conn->server->consec_failures > 0) {
-    do_cleanup = ARES_TRUE;
-  }
+    /* Iterate across each connection */
+    cnode = ares__llist_node_first(server->connections);
+    while (cnode != NULL) {
+      ares__llist_node_t       *next       = ares__llist_node_next(cnode);
+      struct server_connection *conn       = ares__llist_node_val(cnode);
+      ares_bool_t               do_cleanup = ARES_FALSE;
+      cnode = next;
 
-  /* If the udp connection hit its max queries, always close it */
-  if (!conn->is_tcp && channel->udp_max_queries > 0 &&
-      conn->total_queries >= channel->udp_max_queries) {
-    do_cleanup = ARES_TRUE;
-  }
+      /* Has connections, not eligible */
+      if (ares__llist_len(conn->queries_to_conn)) {
+        continue;
+      }
 
-  if (!do_cleanup) {
-    return;
-  }
+      /* If we are configured not to stay open, close it out */
+      if (!(channel->flags & ARES_FLAG_STAYOPEN)) {
+        do_cleanup = ARES_TRUE;
+      }
 
-  ares__close_connection(conn, ARES_SUCCESS);
+      /* If the associated server has failures, close it out. Resetting the
+       * connection (and specifically the source port number) can help resolve
+       * situations where packets are being dropped.
+       */
+      if (conn->server->consec_failures > 0) {
+        do_cleanup = ARES_TRUE;
+      }
+
+      /* If the udp connection hit its max queries, always close it */
+      if (!conn->is_tcp && channel->udp_max_queries > 0 &&
+          conn->total_queries >= channel->udp_max_queries) {
+        do_cleanup = ARES_TRUE;
+      }
+
+      if (!do_cleanup) {
+        continue;
+      }
+
+      /* Clean it up */
+      ares__close_connection(conn, ARES_SUCCESS);
+    }
+  }
 }
