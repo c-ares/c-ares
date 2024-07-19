@@ -28,7 +28,8 @@
 #include "ares_private.h"
 #include <assert.h>
 
-static void ares__requeue_queries(struct server_connection *conn)
+static void ares__requeue_queries(struct server_connection *conn,
+                                  ares_status_t requeue_status)
 {
   struct query  *query;
   ares_timeval_t now;
@@ -36,11 +37,12 @@ static void ares__requeue_queries(struct server_connection *conn)
   ares__tvnow(&now);
 
   while ((query = ares__llist_first_val(conn->queries_to_conn)) != NULL) {
-    ares__requeue_query(query, &now);
+    ares__requeue_query(query, &now, requeue_status);
   }
 }
 
-void ares__close_connection(struct server_connection *conn)
+void ares__close_connection(struct server_connection *conn,
+                            ares_status_t requeue_status)
 {
   struct server_state *server  = conn->server;
   ares_channel_t      *channel = server->channel;
@@ -58,7 +60,7 @@ void ares__close_connection(struct server_connection *conn)
   }
 
   /* Requeue queries to other connections */
-  ares__requeue_queries(conn);
+  ares__requeue_queries(conn, requeue_status);
 
   ares__llist_destroy(conn->queries_to_conn);
 
@@ -74,7 +76,7 @@ void ares__close_sockets(struct server_state *server)
 
   while ((node = ares__llist_node_first(server->connections)) != NULL) {
     struct server_connection *conn = ares__llist_node_val(node);
-    ares__close_connection(conn);
+    ares__close_connection(conn, ARES_SUCCESS);
   }
 }
 
@@ -114,5 +116,5 @@ void ares__check_cleanup_conn(const ares_channel_t     *channel,
     return;
   }
 
-  ares__close_connection(conn);
+  ares__close_connection(conn, ARES_SUCCESS);
 }
