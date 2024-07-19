@@ -78,6 +78,26 @@ TEST_P(MockUDPEventThreadTest, GetHostByNameParallelLookups) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss3.str());
 }
 
+// c-ares issue #819
+TEST_P(MockUDPEventThreadTest, BadLoopbackServerNoTimeouts) {
+  ares_set_servers_csv(channel_, "127.0.0.1:12345");
+#define BADLOOPBACK_TESTCNT 5
+  HostResult result[BADLOOPBACK_TESTCNT];
+  for (size_t i=0; i<BADLOOPBACK_TESTCNT; i++) {
+    ares_gethostbyname(channel_, "www.google.com.", AF_UNSPEC, HostCallback, &result[i]);
+  }
+  Process();
+  for (size_t i=0; i<BADLOOPBACK_TESTCNT; i++) {
+    EXPECT_TRUE(result[i].done_);
+#if 0
+    EXPECT_EQ(ARES_ECONNREFUSED, result[i].status_);
+    EXPECT_EQ(0, result[i].timeouts_);
+#else
+    EXPECT_TRUE(result[i].status_ == ARES_ECONNREFUSED || result[i].status_ == ARES_ETIMEOUT);
+#endif
+  }
+}
+
 // UDP to TCP specific test
 TEST_P(MockUDPEventThreadTest, TruncationRetry) {
   DNSPacket rsptruncated;
