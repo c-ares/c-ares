@@ -89,8 +89,20 @@ TEST_P(MockUDPEventThreadTest, BadLoopbackServerNoTimeouts) {
   Process();
   for (size_t i=0; i<BADLOOPBACK_TESTCNT; i++) {
     EXPECT_TRUE(result[i].done_);
+
+    /* This test relies on the ICMP unreachable packet coming back on UDP connections
+     * when there is no listener on the other end.  Most OS's handle this properly,
+     * but not all.  For instance, Solaris 11 seems to not be compliant (it
+     * does however honor it sometimes, just not always) so while we still run
+     * the test, we don't do a strict validation of the result. This test is
+     * really just testing an optimization, UDP is connectionless so you
+     * should expect most connections to rely on timeouts and not ICMP unreachable. */
+# ifdef __sun
+    EXPECT_TRUE(result[i].status_ == ARES_ECONNREFUSED || result[i].status_ == ARES_ETIMEOUT);
+# else
     EXPECT_EQ(ARES_ECONNREFUSED, result[i].status_);
     EXPECT_EQ(0, result[i].timeouts_);
+#endif
   }
 }
 
