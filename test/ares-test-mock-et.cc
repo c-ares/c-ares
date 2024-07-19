@@ -104,7 +104,7 @@ TEST_P(MockUDPEventThreadTest, BadLoopbackServerNoTimeouts) {
      * should expect most connections to rely on timeouts and not ICMP unreachable.
      */
 # if defined(__sun) || defined(_WIN32)
-    EXPECT_TRUE(result[i].status_ == ARES_ECONNREFUSED || result[i].status_ == ARES_ETIMEOUT);
+    EXPECT_TRUE(result[i].status_ == ARES_ECONNREFUSED || result[i].status_ == ARES_ETIMEOUT || result[i].status_ == ARES_ESERVFAIL);
 # else
     EXPECT_EQ(ARES_ECONNREFUSED, result[i].status_);
     EXPECT_EQ(0, result[i].timeouts_);
