@@ -129,11 +129,25 @@ TEST_P(MockUDPEventThreadTest, BadLoopbackServerNoTimeouts) {
   Process();
   for (size_t i=0; i<BADLOOPBACK_TESTCNT; i++) {
     EXPECT_TRUE(result[i].done_);
-#if 0
+
+    /* This test relies on the ICMP unreachable packet coming back on UDP connections
+     * when there is no listener on the other end.  Most OS's handle this properly,
+     * but not all.  For instance, Solaris 11 seems to not be compliant (it
+     * does however honor it sometimes, just not always) so while we still run
+     * the test, we don't do a strict validation of the result.
+     *
+     * Windows also appears to have intermittent issues, AppVeyor fails but GitHub Actions
+     * succeeds, which seems strange.  This test goes to loopback so the network
+     * it resides on shouldn't matter.
+     *
+     * This test is really just testing an optimization, UDP is connectionless so you
+     * should expect most connections to rely on timeouts and not ICMP unreachable.
+     */
+# if defined(__sun) || defined(_WIN32)
+    EXPECT_TRUE(result[i].status_ == ARES_ECONNREFUSED || result[i].status_ == ARES_ETIMEOUT || result[i].status_ == ARES_ESERVFAIL);
+# else
     EXPECT_EQ(ARES_ECONNREFUSED, result[i].status_);
     EXPECT_EQ(0, result[i].timeouts_);
-#else
-    EXPECT_TRUE(result[i].status_ == ARES_ECONNREFUSED || result[i].status_ == ARES_ETIMEOUT || result[i].status_ == ARES_ESERVFAIL);
 #endif
   }
 }
