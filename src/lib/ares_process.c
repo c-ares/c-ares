@@ -952,7 +952,6 @@ static ares_status_t ares__write_udpbuf(ares_channel_t      *channel,
   }
 
   if (ares__socket_write(channel, fd, qbuf, qbuf_len) == -1) {
-#if 0
     if (try_again(SOCKERRNO)) {
       status = ARES_ESERVFAIL;
     } else {
@@ -961,9 +960,6 @@ static ares_status_t ares__write_udpbuf(ares_channel_t      *channel,
        * reflected here */
       status = ARES_ECONNREFUSED;
     }
-#else
-    status = ARES_ESERVFAIL;
-#endif
   } else {
     status = ARES_SUCCESS;
   }
