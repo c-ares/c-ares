@@ -525,7 +525,7 @@ TEST_P(MockTCPChannelTest, MalformedResponse) {
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
-  EXPECT_EQ(ARES_ETIMEOUT, result.status_);
+  EXPECT_EQ(ARES_EBADRESP, result.status_);
 }
 
 TEST_P(MockTCPChannelTest, FormErrResponse) {
