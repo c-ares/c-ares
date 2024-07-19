@@ -16,6 +16,7 @@ jobs:
       CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON"
       CMAKE_TEST_FLAGS: "-DCMAKE_PREFIX_PATH=/usr/local/ -DCARES_BUILD_TESTS=ON -DCMAKE_CXX_FLAGS=-DGTEST_HAS_PTHREAD=0"
       TEST_FILTER: "--gtest_filter=-*Live*"
+      # Due to the ancient GDB version in the repo right now, we can't run it through GDB
       TEST_DEBUGGER: "none"
     steps:
       - uses: actions/checkout@v4
