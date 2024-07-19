@@ -1150,6 +1150,18 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
         return status;
       }
 
+      if (status == ARES_ECONNREFUSED) {
+        handle_conn_error(conn, ARES_TRUE, status);
+
+        /* This query wasn't yet bound to the connection, need to manually
+         * requeue it and return an appropriate error */
+        status = ares__requeue_query(query, now, status);
+        if (status == ARES_ETIMEOUT) {
+          status = ARES_ECONNREFUSED;
+        }
+        return status;
+      }
+
       /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
        * just requeue to a different server/connection. */
       server_increment_failures(server, query->using_tcp);
