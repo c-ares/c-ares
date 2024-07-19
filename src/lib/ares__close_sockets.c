@@ -47,6 +47,8 @@ void ares__close_connection(struct server_connection *conn,
   struct server_state *server  = conn->server;
   ares_channel_t      *channel = server->channel;
 
+  conn->in_cleanup = ARES_TRUE;
+
   /* Unlink */
   ares__llist_node_claim(
     ares__htable_asvp_get_direct(channel->connnode_by_socket, conn->fd));
@@ -87,6 +89,13 @@ void ares__check_cleanup_conn(const ares_channel_t     *channel,
 
   if (channel == NULL || conn == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
+  /* If connectin is in process of being cleaned up, skip trying to do it again.
+   * This can be triggered during the requeue of a connection cleanup, so we
+   * need to make sure we don't recurse */
+  if (conn->in_cleanup) {
+    return;
   }
 
   if (ares__llist_len(conn->queries_to_conn)) {

@@ -625,7 +625,6 @@ static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
     server_increment_failures(conn->server, query->using_tcp);
     ares__requeue_query(query, now, ARES_ETIMEOUT);
     ares__check_cleanup_conn(channel, conn);
-
     node = next;
   }
 }

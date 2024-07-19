@@ -162,6 +162,9 @@ struct server_connection {
   size_t               total_queries;
   /* list of outstanding queries to this connection */
   ares__llist_t       *queries_to_conn;
+  /* Whether a connection cleanup is in process. Used to prevent possible
+   * recursion issues when requeuing queries */
+  ares_bool_t          in_cleanup;
 };
 
 #ifdef _MSC_VER
