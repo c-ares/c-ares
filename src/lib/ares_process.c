@@ -606,13 +606,15 @@ static void read_packets(ares_channel_t *channel, fd_set *read_fds,
 /* If any queries have timed out, note the timeout and move them on. */
 static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
 {
-  ares__slist_node_t *node =
-    ares__slist_node_first(channel->queries_by_timeout);
-  while (node != NULL) {
+  ares__slist_node_t *node;
+
+  /* Just keep popping off the first as this list will re-sort as things come
+   * and go.  We don't want to try to rely on 'next' as some operation might
+   * cause a cleanup of that pointer and would become invalid */
+  while ((node = ares__slist_node_first(channel->queries_by_timeout)) != NULL) {
     struct query             *query = ares__slist_node_val(node);
-    /* Node might be removed, cache next */
-    ares__slist_node_t       *next = ares__slist_node_next(node);
     struct server_connection *conn;
+
     /* Since this is sorted, as soon as we hit a query that isn't timed out,
      * break */
     if (!ares__timedout(now, &query->timeout)) {
@@ -625,7 +627,6 @@ static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
     server_increment_failures(conn->server, query->using_tcp);
     ares__requeue_query(query, now, ARES_ETIMEOUT);
     ares__check_cleanup_conn(channel, conn);
-    node = next;
   }
 }
 
