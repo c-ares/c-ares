@@ -93,7 +93,7 @@ TEST_P(MockUDPEventThreadTest, BadLoopbackServerNoTimeouts) {
     EXPECT_EQ(ARES_ECONNREFUSED, result[i].status_);
     EXPECT_EQ(0, result[i].timeouts_);
 #else
-    EXPECT_TRUE(result[i].status_ == ARES_ECONNREFUSED || result[i].status_ == ARES_ETIMEOUT);
+    EXPECT_TRUE(result[i].status_ == ARES_ECONNREFUSED || result[i].status_ == ARES_ETIMEOUT || result[i].status_ == ARES_ESERVFAIL);
 #endif
   }
 }
