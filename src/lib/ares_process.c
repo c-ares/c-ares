@@ -214,6 +214,8 @@ static void processfds(ares_channel_t *channel, fd_set *read_fds,
   /* Write last as the other 2 operations might have triggered writes */
   write_tcp_data(channel, write_fds, write_fd);
 
+  /* See if any connections should be cleaned up */
+  ares__check_cleanup_conns(channel);
   ares__channel_unlock(channel);
 }
 
@@ -407,8 +409,6 @@ static void read_tcp_data(ares_channel_t           *channel,
     /* Since we processed the answer, clear the tag so space can be reclaimed */
     ares__buf_tag_clear(server->tcp_parser);
   }
-
-  ares__check_cleanup_conn(channel, conn);
 }
 
 static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
@@ -532,8 +532,6 @@ static void read_udp_packets_fd(ares_channel_t           *channel,
     /* Try to read again only if *we* set up the socket, otherwise it may be
      * a blocking socket and would cause recvfrom to hang. */
   } while (read_len >= 0 && channel->sock_funcs == NULL);
-
-  ares__check_cleanup_conn(channel, conn);
 }
 
 static void read_packets(ares_channel_t *channel, fd_set *read_fds,
@@ -626,7 +624,6 @@ static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
     conn = query->conn;
     server_increment_failures(conn->server, query->using_tcp);
     ares__requeue_query(query, now, ARES_ETIMEOUT);
-    ares__check_cleanup_conn(channel, conn);
   }
 }
 

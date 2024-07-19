@@ -162,9 +162,6 @@ struct server_connection {
   size_t               total_queries;
   /* list of outstanding queries to this connection */
   ares__llist_t       *queries_to_conn;
-  /* Whether a connection cleanup is in process. Used to prevent possible
-   * recursion issues when requeuing queries */
-  ares_bool_t          in_cleanup;
 };
 
 #ifdef _MSC_VER
@@ -445,8 +442,7 @@ void ares__dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
 void ares__close_connection(struct server_connection *conn,
                             ares_status_t requeue_status);
 void ares__close_sockets(struct server_state *server);
-void ares__check_cleanup_conn(const ares_channel_t     *channel,
-                              struct server_connection *conn);
+void ares__check_cleanup_conns(const ares_channel_t *channel);
 void ares__free_query(struct query *query);
 
 ares_rand_state *ares__init_rand_state(void);
