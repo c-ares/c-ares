@@ -334,7 +334,8 @@ ares_bool_t   ares__timedout(const struct timeval *now,
 
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
 ares_status_t ares__send_query(struct query *query, struct timeval *now);
-ares_status_t ares__requeue_query(struct query *query, struct timeval *now);
+ares_status_t ares__requeue_query(struct query *query, struct timeval *now,
+                                  ares_status_t status);
 
 /* Identical to ares_query, but returns a normal ares return code like
  * ARES_SUCCESS, and can be passed the qid by reference which will be
@@ -347,7 +348,8 @@ ares_status_t ares_query_qid(ares_channel_t *channel, const char *name,
 ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
                            size_t qlen, ares_callback callback, void *arg,
                            unsigned short *qid);
-void          ares__close_connection(struct server_connection *conn);
+void          ares__close_connection(struct server_connection *conn,
+                                     ares_status_t requeue_status);
 void          ares__close_sockets(struct server_state *server);
 void          ares__check_cleanup_conn(const ares_channel_t     *channel,
                                        struct server_connection *conn);
