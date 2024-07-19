@@ -72,7 +72,17 @@ static void          end_query(ares_channel_t *channel, struct query *query,
                                ares_status_t status, const unsigned char *abuf,
                                size_t alen);
 
-static void          server_increment_failures(struct server_state *server)
+static void ares__query_disassociate_from_conn(struct query *query)
+{
+  /* If its not part of a connection, it can't be tracked for timeouts either */
+  ares__slist_node_destroy(query->node_queries_by_timeout);
+  ares__llist_node_destroy(query->node_queries_to_conn);
+  query->node_queries_by_timeout = NULL;
+  query->node_queries_to_conn    = NULL;
+  query->conn                    = NULL;
+}
+
+static void server_increment_failures(struct server_state *server)
 {
   ares__slist_node_t   *node;
   const ares_channel_t *channel = server->channel;
@@ -155,6 +165,8 @@ static void processfds(ares_channel_t *channel, fd_set *read_fds,
   /* Write last as the other 2 operations might have triggered writes */
   write_tcp_data(channel, write_fds, write_fd);
 
+  /* See if any connections should be cleaned up */
+  ares__check_cleanup_conns(channel);
   ares__channel_unlock(channel);
 }
 
@@ -347,8 +359,6 @@ static void read_tcp_data(ares_channel_t           *channel,
     /* Since we processed the answer, clear the tag so space can be reclaimed */
     ares__buf_tag_clear(server->tcp_parser);
   }
-
-  ares__check_cleanup_conn(channel, conn);
 }
 
 static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
@@ -472,8 +482,6 @@ static void read_udp_packets_fd(ares_channel_t           *channel,
     /* Try to read again only if *we* set up the socket, otherwise it may be
      * a blocking socket and would cause recvfrom to hang. */
   } while (read_len >= 0 && channel->sock_funcs == NULL);
-
-  ares__check_cleanup_conn(channel, conn);
 }
 
 static void read_packets(ares_channel_t *channel, fd_set *read_fds,
@@ -546,13 +554,15 @@ static void read_packets(ares_channel_t *channel, fd_set *read_fds,
 /* If any queries have timed out, note the timeout and move them on. */
 static void process_timeouts(ares_channel_t *channel, struct timeval *now)
 {
-  ares__slist_node_t *node =
-    ares__slist_node_first(channel->queries_by_timeout);
-  while (node != NULL) {
+  ares__slist_node_t *node;
+
+  /* Just keep popping off the first as this list will re-sort as things come
+   * and go.  We don't want to try to rely on 'next' as some operation might
+   * cause a cleanup of that pointer and would become invalid */
+  while ((node = ares__slist_node_first(channel->queries_by_timeout)) != NULL) {
     struct query             *query = ares__slist_node_val(node);
-    /* Node might be removed, cache next */
-    ares__slist_node_t       *next = ares__slist_node_next(node);
     struct server_connection *conn;
+
     /* Since this is sorted, as soon as we hit a query that isn't timed out,
      * break */
     if (!ares__timedout(now, &query->timeout)) {
@@ -564,9 +574,6 @@ static void process_timeouts(ares_channel_t *channel, struct timeval *now)
     conn = query->conn;
     server_increment_failures(conn->server);
     ares__requeue_query(query, now, ARES_ETIMEOUT);
-    ares__check_cleanup_conn(channel, conn);
-
-    node = next;
   }
 }
 
@@ -765,6 +772,8 @@ ares_status_t ares__requeue_query(struct query *query, struct timeval *now,
   ares_channel_t *channel = query->channel;
   size_t max_tries        = ares__slist_len(channel->servers) * channel->tries;
 
+  ares__query_disassociate_from_conn(query);
+
   if (status != ARES_SUCCESS) {
     query->error_status = status;
   }
@@ -886,8 +895,6 @@ ares_status_t ares__send_query(struct query *query, struct timeval *now)
   size_t                    timeplus;
   ares_status_t             status;
   ares_bool_t               new_connection = ARES_FALSE;
-
-  query->conn = NULL;
 
   /* Choose the server to send the query to */
   if (channel->rotate) {
@@ -1118,12 +1125,9 @@ static ares_bool_t same_address(const struct sockaddr  *sa,
 static void ares_detach_query(struct query *query)
 {
   /* Remove the query from all the lists in which it is linked */
+  ares__query_disassociate_from_conn(query);
   ares__htable_szvp_remove(query->channel->queries_by_qid, query->qid);
-  ares__slist_node_destroy(query->node_queries_by_timeout);
-  ares__llist_node_destroy(query->node_queries_to_conn);
   ares__llist_node_destroy(query->node_all_queries);
-  query->node_queries_by_timeout = NULL;
-  query->node_queries_to_conn    = NULL;
   query->node_all_queries        = NULL;
 }
 

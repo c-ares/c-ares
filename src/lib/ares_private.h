@@ -351,8 +351,7 @@ ares_status_t ares_send_ex(ares_channel_t *channel, const unsigned char *qbuf,
 void          ares__close_connection(struct server_connection *conn,
                                      ares_status_t requeue_status);
 void          ares__close_sockets(struct server_state *server);
-void          ares__check_cleanup_conn(const ares_channel_t     *channel,
-                                       struct server_connection *conn);
+void          ares__check_cleanup_conns(const ares_channel_t *channel);
 ares_status_t ares__read_line(FILE *fp, char **buf, size_t *bufsize);
 void          ares__free_query(struct query *query);
 
