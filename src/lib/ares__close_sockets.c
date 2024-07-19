@@ -91,7 +91,7 @@ void ares__check_cleanup_conn(const ares_channel_t     *channel,
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  /* If connectin is in process of being cleaned up, skip trying to do it again.
+  /* If connection is in process of being cleaned up, skip trying to do it again.
    * This can be triggered during the requeue of a connection cleanup, so we
    * need to make sure we don't recurse */
   if (conn->in_cleanup) {
