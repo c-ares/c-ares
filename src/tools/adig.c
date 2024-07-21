@@ -46,17 +46,17 @@
 #include "ares_dns.h"
 
 #ifndef HAVE_STRDUP
-#  include "ares_str.h"
+#  include "str/ares_str.h"
 #  define strdup(ptr) ares_strdup(ptr)
 #endif
 
 #ifndef HAVE_STRCASECMP
-#  include "ares_strcasecmp.h"
+#  include "str/ares_strcasecmp.h"
 #  define strcasecmp(p1, p2) ares_strcasecmp(p1, p2)
 #endif
 
 #ifndef HAVE_STRNCASECMP
-#  include "ares_strcasecmp.h"
+#  include "str/ares_strcasecmp.h"
 #  define strncasecmp(p1, p2, n) ares_strncasecmp(p1, p2, n)
 #endif
 

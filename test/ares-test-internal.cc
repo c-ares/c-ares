@@ -45,8 +45,8 @@ extern "C" {
 #include "ares_private.h"
 #include "ares_inet_net_pton.h"
 #include "ares_data.h"
-#include "ares_strsplit.h"
-#include "ares__htable.h"
+#include "str/ares_strsplit.h"
+#include "dsa/ares__htable.h"
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
