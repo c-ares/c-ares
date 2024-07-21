@@ -40,8 +40,6 @@ cd "${TESTSBIN}"
 
 if [ "$TEST_WRAP" != "" ] ; then
   $TEST_WRAP ./arestest -4 $TEST_FILTER
-elif [ "$TEST_DEBUGGER" = "gdb-nothreads" ] ; then
-  gdb --batch --batch-silent --return-child-result -ex "handle SIGPIPE nostop noprint pass" -ex "run" -ex "bt" -ex "quit" --args ./arestest -4 $TEST_FILTER
 elif [ "$TEST_DEBUGGER" = "gdb" ] ; then
   gdb --batch --batch-silent --return-child-result -ex "handle SIGPIPE nostop noprint pass" -ex "run" -ex "thread apply all bt" -ex "quit" --args ./arestest -4 $TEST_FILTER
 elif [ "$TEST_DEBUGGER" = "lldb" ] ; then
