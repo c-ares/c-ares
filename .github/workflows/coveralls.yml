@@ -22,18 +22,19 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_BUILD_TESTS=ON -DCARES_COVERAGE=ON -G Ninja ..
           ninja
       - name: Test
-        working-directory: ${{runner.workspace}}/build
         shell: bash
         run: |
+          cd build
           ./bin/adig www.google.com
           ./bin/ahost www.google.com
           ./bin/arestest -v -4 --gtest_filter='-*LiveSearchTXT*:*LiveSearchANY*''
       - name: Generate Coverage
-        working-directory: ${{runner.workspace}}/build
         shell: bash
-        run: ninja coverage
+        run: |
+          cd build
+          ninja coverage
       - name: Upload to Coveralls
         uses: coverallsapp/github-action@master
         with:
-          path-to-lcov: ${{runner.workspace}}/build/coverage.info
+          path-to-lcov: ${{runner.workspace}}/c-ares/c-ares/build/coverage.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
