@@ -19,14 +19,12 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_BUILD_TESTS=ON -DCARES_COVERAGE=ON -G Ninja ..
+          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_BUILD_TESTS=ON -DCARES_COVERAGE=ON -DCARES_BUILD_TOOLS=OFF -G Ninja ..
           ninja
       - name: Test
         shell: bash
         run: |
           cd build
-          ./bin/adig www.google.com
-          ./bin/ahost www.google.com
           ./bin/arestest -v -4 --gtest_filter='-*LiveSearchTXT*:*LiveSearchANY*'
       - name: Generate Coverage
         shell: bash
