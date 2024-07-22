@@ -1,0 +1,39 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: Coveralls
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Coveralls
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: lcov libgmock-dev ninja-build
+          version: 1.0
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_BUILD_TESTS=ON -DCARES_COVERAGE=ON -G Ninja ..
+          ninja
+      - name: Test
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: |
+          ./bin/adig www.google.com
+          ./bin/ahost www.google.com
+          ./bin/arestest -v -4 --gtest_filter='-*LiveSearchTXT*:*LiveSearchANY*''
+      - name: Generate Coverage
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: ninja coverage
+      - name: Upload to Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          path-to-lcov: ${{runner.workspace}}/build/coverage.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
