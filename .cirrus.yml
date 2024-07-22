@@ -7,7 +7,6 @@ env:
   CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
 
 task:
-  skip: "changesIncludeOnly('doc/*', '.github/*', 'appveyor.yml', '*.md', 'Makefile.watcom', 'Makefile.dj', 'Makefile.msvc', 'Makefile.m32')"
   matrix:
     - name: "Debian amd64"
       env:
@@ -152,17 +151,6 @@ task:
         BUILD_TYPE: "valgrind"
         TEST_WRAP: "valgrind --leak-check=full"
         TEST_FILTER: "--gtest_filter=-*Container*:-*LiveSearchANY*"
-#    - name: "COVERAGE"
-#      only_if: $BUILD_COVERAGE == 'yes'
-#      env:
-#        BUILD_TYPE: "coverage"
-#        CI_NAME: "cirrus-ci"
-#        CI_BUILD_NUMBER: "${CIRRUS_TASK_ID}"
-#        CI_BUILD_URL: "https://cirrus-ci.com/task/${CIRRUS_TASK_ID}"
-#        CI_BRANCH: "${CIRRUS_BRANCH}"
-#        CI_PULL_REQUEST: "${CIRRUS_PR}"
-#        COVERALLS_REPO_TOKEN: "ENCRYPTED[a46bc6ca908e9e74f102c686cde67cae21d3e792dff46a60e860d1179d9349e8eb5a529132d0effefebdb0dbc3f95810]"
-#        CONFIG_OPTS: "--enable-debug --disable-shared --enable-code-coverage --enable-tests"
 
   install_script:
     - |
@@ -198,10 +186,6 @@ task:
             valgrind)
               apt-get install -yq valgrind
               ;;
-            coverage)
-              apt-get install -yq lcov git pip
-              pip3 install --break-system-packages --user cpp-coveralls
-              ;;
             *)
               apt-get install -yq gdb
               ;;
@@ -234,5 +218,4 @@ task:
     - ./ci/build.sh
     - ./ci/test.sh
     - if [ "$BUILD_TYPE" = "autotools" -a "$DIST" = "DEBIAN" ]; then ./ci/distcheck.sh ; fi
-    - if [ "$BUILD_TYPE" = "coverage" ]; then ./ci/covupload.sh ; fi
 
