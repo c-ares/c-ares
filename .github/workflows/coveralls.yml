@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           cd build
-          ./bin/arestest -v -4 --gtest_filter='-*LiveSearchTXT*:*LiveSearchANY*'
+          ./bin/arestest -v --gtest_filter='-*LiveSearchTXT*:*LiveSearchANY*:*LiveSearchNS*'
       - name: Generate Coverage
         shell: bash
         run: |
