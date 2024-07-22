@@ -41,7 +41,7 @@ extern "C" {
 #include "ares_setup.h"
 #include "ares_inet_net_pton.h"
 #include "ares_data.h"
-#include "ares_strsplit.h"
+#include "str/ares_strsplit.h"
 #include "ares_private.h"
 }
 
