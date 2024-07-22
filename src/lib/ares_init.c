@@ -63,7 +63,7 @@
 
 #include "ares_inet_net_pton.h"
 #include "ares_platform.h"
-#include "ares_event.h"
+#include "event/ares_event.h"
 
 int ares_init(ares_channel_t **channelptr)
 {

@@ -34,7 +34,6 @@ environment:
       TOOLSDIR: ./build/bin
       TESTDIR: ./build/bin
       BUILD_GOOGLETEST: yes
-      GTEST_INSTALL_FAILURE_SIGNAL_HANDLER: 1
 
     # MSVC 2022, 64-bit x64 (cmake)
     - COMPILER: MSVC
@@ -47,7 +46,6 @@ environment:
       TESTDIR: ./build/bin
       CMAKE_EXTRA_OPTIONS: -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL
       BUILD_GOOGLETEST: yes
-      GTEST_INSTALL_FAILURE_SIGNAL_HANDLER: 1
 
     # MSVC 2022, 64-bit x86 (nmake)
     - COMPILER: MSVC
@@ -57,7 +55,6 @@ environment:
       MSVC_SETUP_ARG: x64
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
       BUILD_GOOGLETEST: yes
-      GTEST_INSTALL_FAILURE_SIGNAL_HANDLER: 1
 
     # MSVC 2022, 32-bit x86 (nmake)
     - COMPILER: MSVC
@@ -67,7 +64,6 @@ environment:
       MSVC_SETUP_ARG: x86
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat
       BUILD_GOOGLETEST: yes
-      GTEST_INSTALL_FAILURE_SIGNAL_HANDLER: 1
 
     # MinGW, 32-bit x86 (makefiles)
     - COMPILER: MINGW
@@ -76,7 +72,6 @@ environment:
       SKIP_TESTS: no
       PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
       BUILD_GOOGLETEST: yes
-      GTEST_INSTALL_FAILURE_SIGNAL_HANDLER: 1
 
     # MinGW, 32-bit x86 (cmake static only)
     - COMPILER: MINGW
@@ -88,7 +83,6 @@ environment:
       PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
       CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest
       BUILD_GOOGLETEST: yes
-      GTEST_INSTALL_FAILURE_SIGNAL_HANDLER: 1
 
 # Disabled until AppVeyor updates their Visual Studio with this patch:
 # https://developercommunity.visualstudio.com/t/clexe-compiler-error-C1007-when-compili/10486219

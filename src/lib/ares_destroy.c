@@ -26,7 +26,7 @@
  */
 
 #include "ares_private.h"
-#include "ares_event.h"
+#include "event/ares_event.h"
 #include <assert.h>
 
 void ares_destroy(ares_channel_t *channel)
