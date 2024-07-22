@@ -922,7 +922,7 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
 
   *hostent = NULL;
 
-  if (!ai) {
+  if (ai == NULL) {
     return ARES_ENOMEM;
   }
 
@@ -937,8 +937,8 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
   }
 
 done:
+  ares_freeaddrinfo(ai);
   if (status != ARES_SUCCESS) {
-    ares_freeaddrinfo(ai);
     ares_free_hostent(*hostent);
     *hostent = NULL;
   }
