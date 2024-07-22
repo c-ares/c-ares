@@ -36,5 +36,5 @@ jobs:
       - name: Upload to Coveralls
         uses: coverallsapp/github-action@master
         with:
-          path-to-lcov: ${{runner.workspace}}/c-ares/c-ares/build/coverage.info
+          path-to-lcov: ${{runner.workspace}}/c-ares/build/coverage.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
