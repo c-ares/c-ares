@@ -182,6 +182,7 @@ task:
         FREEBSD)
           # pkg upgrade -y && \
           pkg install -y bash cmake ninja googletest pkgconf llvm gmake
+          ln -sf /usr/local/bin/bash /bin/bash
           case "${BUILD_TYPE}" in
             autotools)
               pkg install -y autoconf automake libtool

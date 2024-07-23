@@ -33,6 +33,7 @@ jobs:
             echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
             echo "PKG_PATH: $PKG_PATH"
             sudo -E /usr/pkg/sbin/pkg_add -u bash cmake googletest pkgconf ninja-build gdb
+            sudo ln -sf /usr/pkg/bin/bash /bin/bash
             ./ci/build.sh
             ./ci/test.sh
 
