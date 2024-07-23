@@ -29,6 +29,7 @@ if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     export CXXFLAGS="${CXXFLAGS} -O0 -g"
     $SCAN_WRAP ../configure --disable-symbol-hiding --enable-maintainer-mode $CONFIG_OPTS
     $SCAN_WRAP make
+    cd ..
 else
     # Use cmake for everything else
     rm -rf cmakebld
@@ -39,4 +40,5 @@ else
     fi
     $SCAN_WRAP cmake ${CMAKE_FLAGS} ${CMAKE_TEST_FLAGS} ..
     $SCAN_WRAP cmake --build .
+    cd ..
 fi
