@@ -5,8 +5,12 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.ref }}-macos
+  cancel-in-progress: true
+
 env:
-  GTEST_ARGS: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
+  TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
   CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
   MAKE: make
 
@@ -16,7 +20,9 @@ jobs:
     name: "MacOS"
     steps:
       - name: Install packages
-        run: brew install ninja cmake googletest llvm autoconf automake libtool make ninja
+        uses: tecolicom/actions-use-homebrew-tools@v1
+        with:
+          tools: cmake googletest llvm autoconf automake libtool make ninja
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "CMake: build and test c-ares"
