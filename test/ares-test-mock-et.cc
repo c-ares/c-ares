@@ -1429,13 +1429,6 @@ class ServerFailoverOptsMockEventThreadTest : public MockMultiServerEventThreadT
   struct ares_options opts_;
 };
 
-static void ares_sleep_time(unsigned int ms)
-{
-  auto duration = std::chrono::milliseconds(ms);
-  auto wake_time = std::chrono::high_resolution_clock::now() + duration;
-  std::this_thread::sleep_until(wake_time);
-}
-
 // Test case to trigger server failover behavior. We use a retry chance of
 // 100% and a retry delay so that we can test behavior reliably.
 TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
@@ -1524,6 +1517,11 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
+
+  // Test might take a while to run, so we want to subtrack that time from the
+  // time we'd otherwise sleep.
+  auto elapse_start = tv_now;
+
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has not been hit yet. Server0 was last successful, so should be tried first (and will fail), Server1 is also healthy so will respond." << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
@@ -1536,9 +1534,16 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   // Sleep for another half the retry delay and check that server #2 is retried
   // whilst server #0 is not.
   tv_now = std::chrono::high_resolution_clock::now();
+  unsigned int elapsed_time = (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - elapse_start).count();
+
   delay_ms = (SERVER_FAILOVER_RETRY_DELAY/2) + (SERVER_FAILOVER_RETRY_DELAY / 2 / 10);
-  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
-  ares_sleep_time(delay_ms);
+  if (elapsed_time > delay_ms) {
+    if (verbose) std::cerr << "elapsed duration " << elapsed_time << "ms greater than desired delay of " << delay_ms << "ms, not sleeping" << std::endl;
+  } else {
+    delay_ms -= elapsed_time; // subtract already elapsed time
+    if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
+    ares_sleep_time(delay_ms);
+  }
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has expired on Server2 but not Server0, will try on Server2 and fail, then Server1 will answer" << std::endl;
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
