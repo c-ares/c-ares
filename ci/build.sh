@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: MIT
 set -e -x
 
+PWD=`pwd`
+
 OS=""
 if [ "$TRAVIS_OS_NAME" != "" ]; then
     OS="$TRAVIS_OS_NAME"
@@ -40,3 +42,4 @@ else
     $SCAN_WRAP cmake ${CMAKE_FLAGS} ${CMAKE_TEST_FLAGS} ..
     $SCAN_WRAP cmake --build .
 fi
+cd "${PWD}"
