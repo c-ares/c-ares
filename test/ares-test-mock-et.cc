@@ -1429,6 +1429,13 @@ class ServerFailoverOptsMockEventThreadTest : public MockMultiServerEventThreadT
   struct ares_options opts_;
 };
 
+static void ares_sleep_time(unsigned int ms)
+{
+  auto duration = std::chrono::milliseconds(ms);
+  auto wake_time = std::chrono::high_resolution_clock::now() + duration;
+  std::this_thread::sleep_until(wake_time);
+}
+
 // Test case to trigger server failover behavior. We use a retry chance of
 // 100% and a retry delay so that we can test behavior reliably.
 TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
@@ -1467,7 +1474,7 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   tv_now = std::chrono::high_resolution_clock::now();
   delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
-  std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+  ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 should be past retry delay and should be tried again successfully" << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
@@ -1497,7 +1504,7 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   tv_now = std::chrono::high_resolution_clock::now();
   delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
-  std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+  ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Past retry delay, so will choose Server2 and Server0 that are down. Server2 will fail but Server0 will succeed." << std::endl;
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
@@ -1515,7 +1522,7 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   tv_now = std::chrono::high_resolution_clock::now();
   delay_ms = (SERVER_FAILOVER_RETRY_DELAY/2) + (SERVER_FAILOVER_RETRY_DELAY / 2 / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
-  std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+  ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has not been hit yet. Server0 was last successful, so should be tried first (and will fail), Server1 is also healthy so will respond." << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
@@ -1531,7 +1538,7 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   tv_now = std::chrono::high_resolution_clock::now();
   delay_ms = (SERVER_FAILOVER_RETRY_DELAY/2) + (SERVER_FAILOVER_RETRY_DELAY / 2 / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
-  std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+  ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has expired on Server2 but not Server0, will try on Server2 and fail, then Server1 will answer" << std::endl;
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
