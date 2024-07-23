@@ -249,6 +249,16 @@ unsigned long long LibraryTest::fails_ = 0;
 std::map<size_t, int> LibraryTest::size_fails_;
 std::mutex            LibraryTest::lock_;
 
+void ares_sleep_time(unsigned int ms)
+{
+  auto duration   = std::chrono::milliseconds(ms);
+  auto start_time = std::chrono::high_resolution_clock::now();
+  auto wake_time  = start_time + duration;
+  std::this_thread::sleep_until(wake_time);
+  auto end_time   = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << "sleep requested " << ms << "ms, slept for " << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << "ms" << std::endl;
+}
+
 void ProcessWork(ares_channel_t *channel,
                  std::function<std::set<ares_socket_t>()> get_extrafds,
                  std::function<void(ares_socket_t)> process_extra,
