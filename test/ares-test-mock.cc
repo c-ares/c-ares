@@ -1832,6 +1832,11 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
     .WillOnce(SetReply(servers_[0].get(), &okrsp));
   CheckExample();
 
+  // Test might take a while to run and the sleep may not be accurate, so we
+  // want to track this interval otherwise we may not pass the last test case
+  // on slow systems.
+  auto elapse_start = tv_now;
+
   // 4. If there are multiple failed servers, then servers which have not yet
   //    met the retry delay should be skipped.
   //
@@ -1839,14 +1844,10 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   // server #2 has just been retried.
   // Sleep for half the retry delay and trigger a failure on server #0.
   tv_now = std::chrono::high_resolution_clock::now();
-  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/2) + (SERVER_FAILOVER_RETRY_DELAY / 2 / 10);
+  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/2);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
-
-  // Test might take a while to run, so we want to subtrack that time from the
-  // time we'd otherwise sleep.
-  auto elapse_start = tv_now;
 
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has not been hit yet. Server0 was last successful, so should be tried first (and will fail), Server1 is also healthy so will respond." << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
@@ -1856,13 +1857,13 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   CheckExample();
 
   // The sorted servers now look like [1] (f0) [0] (f1) [2] (f2). Server #0
-  // has just failed whilst server #2 is halfway through the retry delay.
-  // Sleep for another half the retry delay and check that server #2 is retried
-  // whilst server #0 is not.
+  // has just failed whilst server #2 is somewhere in its retry delay.
+  // Sleep until we know server #2s retry delay has elapsed but Server #0 has
+  // not.
   tv_now = std::chrono::high_resolution_clock::now();
-  unsigned int elapsed_time = (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - elapse_start).count();
 
-  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/2) + (SERVER_FAILOVER_RETRY_DELAY / 2 / 10);
+  unsigned int elapsed_time = (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - elapse_start).count();
+  delay_ms = (SERVER_FAILOVER_RETRY_DELAY) + (SERVER_FAILOVER_RETRY_DELAY / 10);
   if (elapsed_time > delay_ms) {
     if (verbose) std::cerr << "elapsed duration " << elapsed_time << "ms greater than desired delay of " << delay_ms << "ms, not sleeping" << std::endl;
   } else {
