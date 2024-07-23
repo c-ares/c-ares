@@ -23,8 +23,16 @@ PWD=`pwd`
 TESTDIR="${PWD}/test"
 
 if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
-    TOOLSBIN="${PWD}/atoolsbld/src/tools/.libs/"
-    TESTSBIN="${PWD}/atoolsbld/test/.libs/"
+    if [ -f "${PWD}/atoolsbld/src/tools/.libs/adig" ] ; then
+        TOOLSBIN="${PWD}/atoolsbld/src/tools/.libs/"
+    else
+        TOOLSBIN="${PWD}/atoolsbld/src/tools/"
+    fi
+    if [ -f "${PWD}/atoolsbld/test/.libs/arestest" ] ; then
+        TESTSBIN="${PWD}/atoolsbld/test/.libs/"
+    else
+        TESTSBIN="${PWD}/atoolsbld/test/"
+    fi
     export LD_LIBRARY_PATH=${PWD}/atoolsbld/src/lib/.libs:$LD_LIBRARY_PATH
     export DYLD_LIBRARY_PATH=${PWD}/atoolsbld/src/lib/.libs:$DYLD_LIBRARY_PATH
 else
