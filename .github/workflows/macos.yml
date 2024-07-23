@@ -1,0 +1,74 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: MacOS
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GTEST_ARGS: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
+  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+  MAKE: make
+
+jobs:
+  build:
+    runs-on: macos-latest
+    name: "MacOS"
+    steps:
+      - name: Install packages
+        run: brew install ninja cmake googletest llvm autoconf automake libtool make ninja
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+      - name: "CMake: build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: lldb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Autotools: build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+          TEST_DEBUGGER: lldb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: UBSAN: build and test c-ares"
+        env:
+          BUILD_TYPE: "ubsan"
+          CC: "clang"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+          CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+          LDFLAGS: "-fsanitize=undefined"
+          TEST_DEBUGGER: "none"
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: ASAN: build and test c-ares"
+        env:
+          BUILD_TYPE: "asan"
+          CC: "clang"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CFLAGS: "-fsanitize=address"
+          CXXFLAGS: "-fsanitize=address"
+          LDFLAGS: "-fsanitize=address"
+          TEST_DEBUGGER: "none"
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Cmake: Static Analyzer: build c-ares"
+        env:
+          BUILD_TYPE: "analyze"
+          CC: "clang"
+          SCAN_WRAP: "/opt/homebrew/opt/llvm/bin/scan-build-py -v --status-bugs"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
+          TEST_DEBUGGER: "lldb"
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
