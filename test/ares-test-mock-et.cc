@@ -1293,20 +1293,6 @@ class NoRotateMultiMockEventThreadTest : public MockMultiServerEventThreadTest {
   NoRotateMultiMockEventThreadTest() : MockMultiServerEventThreadTest(nullptr, ARES_OPT_NOROTATE) {}
 };
 
-class ServerFailoverOptsMockEventThreadTest : public MockMultiServerEventThreadTest {
- public:
-  ServerFailoverOptsMockEventThreadTest()
-    : MockMultiServerEventThreadTest(FillOptions(&opts_),
-                                     ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
-  static struct ares_options* FillOptions(struct ares_options *opts) {
-    memset(opts, 0, sizeof(struct ares_options));
-    opts->server_failover_opts.retry_chance = 1;
-    opts->server_failover_opts.retry_delay = 250;
-    return opts;
-  }
- private:
-  struct ares_options opts_;
-};
 
 TEST_P(NoRotateMultiMockEventThreadTest, ThirdServer) {
   struct ares_options opts;
@@ -1427,8 +1413,23 @@ TEST_P(NoRotateMultiMockEventThreadTest, ServerNoResponseFailover) {
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss4.str());
 }
 
+class ServerFailoverOptsMockEventThreadTest : public MockMultiServerEventThreadTest {
+ public:
+  ServerFailoverOptsMockEventThreadTest()
+    : MockMultiServerEventThreadTest(FillOptions(&opts_),
+                                     ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+  static struct ares_options* FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->server_failover_opts.retry_chance = 1;
+    opts->server_failover_opts.retry_delay = 500;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
 // Test case to trigger server failover behavior. We use a retry chance of
-// 100% and a retry delay of 250ms so that we can test behavior reliably.
+// 100% and a retry delay of 500ms so that we can test behavior reliably.
 TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   DNSPacket servfailrsp;
   servfailrsp.set_response().set_aa().set_rcode(SERVFAIL)
@@ -1452,10 +1453,10 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
     .WillOnce(SetReply(servers_[1].get(), &okrsp));
   CheckExample();
 
-  // Sleep for the retry delay (actually a little more than 250ms to account
+  // Sleep for the retry delay (actually a little more than 500ms to account
   // for unreliable timing, e.g. NTP slew) and send in another query. Server #0
   // should be retried.
-  std::this_thread::sleep_for(std::chrono::milliseconds(260));
+  std::this_thread::sleep_for(std::chrono::milliseconds(550));
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &okrsp));
   CheckExample();
@@ -1478,7 +1479,7 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   // At this point the sorted servers look like [1] (f0) [2] (f1) [0] (f2).
   // Sleep for the retry delay and send in another query. Server #2 should be
   // retried first, and then server #0.
-  std::this_thread::sleep_for(std::chrono::milliseconds(260));
+  std::this_thread::sleep_for(std::chrono::milliseconds(550));
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
@@ -1491,7 +1492,7 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   // The sorted servers currently look like [0] (f0) [1] (f0) [2] (f2) and
   // server #2 has just been retried.
   // Sleep for half the retry delay and trigger a failure on server #0.
-  std::this_thread::sleep_for(std::chrono::milliseconds(130));
+  std::this_thread::sleep_for(std::chrono::milliseconds(270));
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
   EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
@@ -1502,7 +1503,7 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   // has just failed whilst server #2 is halfway through the retry delay.
   // Sleep for another half the retry delay and check that server #2 is retried
   // whilst server #0 is not.
-  std::this_thread::sleep_for(std::chrono::milliseconds(130));
+  std::this_thread::sleep_for(std::chrono::milliseconds(270));
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
   EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
