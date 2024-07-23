@@ -17,6 +17,7 @@ fi
 
 if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     autoreconf -fi
+    rm -rf atoolsbld
     mkdir atoolsbld
     cd atoolsbld
     if [ "$DIST" = "iOS" ] ; then
@@ -30,6 +31,7 @@ if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     $SCAN_WRAP make
 else
     # Use cmake for everything else
+    rm -rf cmakebld
     mkdir cmakebld
     cd cmakebld
     if [ "$DIST" = "iOS" ] ; then

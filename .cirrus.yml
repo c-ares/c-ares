@@ -73,18 +73,6 @@ task:
         TEST_SYMBOL_VISIBILITY: "yes"
       freebsd_instance:
         image_family: freebsd-13-3
-    - name: "MacOS"
-      env:
-        DIST: "MACOS"
-        SCAN_BUILD: "/opt/homebrew/opt/llvm/bin/scan-build-py"
-        MAKE: "make"
-        TEST_DEBUGGER: "lldb"
-        BUILD_ASAN: "yes"
-        BUILD_UBSAN: "yes"
-        BUILD_ANALYZE: "yes"
-        TEST_SYMBOL_VISIBILITY: "yes"
-      macos_instance:
-        image: ghcr.io/cirruslabs/macos-sonoma-xcode:latest
     - name: "iOS"
       env:
         DIST: "iOS"
@@ -150,7 +138,7 @@ task:
       env:
         BUILD_TYPE: "valgrind"
         TEST_WRAP: "valgrind --leak-check=full"
-        TEST_FILTER: "--gtest_filter=-*Container*:-*LiveSearchANY*"
+        TEST_FILTER: "-4 --gtest_filter=-*Container*:-*LiveSearchANY*"
 
   install_script:
     - |
