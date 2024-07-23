@@ -63,7 +63,7 @@ int EnterContainer(void *data) {
   // Ensure we are apparently root before continuing.
   int count = 10;
   while (getuid() != 0 && count > 0) {
-    ares_sleep_time(100);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     count--;
   }
   if (getuid() != 0) {
