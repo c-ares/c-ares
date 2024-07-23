@@ -21,18 +21,19 @@ jobs:
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           PKG_PATH: https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/amd64/10.0/All/
           TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*Parallel*"
-          GTEST_INSTALL_FAILURE_SIGNAL_HANDLER: 1
+          TEST_DEBUGGER: "gdb"
         with:
           operating_system: netbsd
           version: '10.0'
           shell: 'bash'
-          environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS PKG_PATH TEST_FILTER GTEST_INSTALL_FAILURE_SIGNAL_HANDLER
+          environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS PKG_PATH TEST_FILTER TEST_DEBUGGER
           run: |
             echo "BUILD_TYPE: $BUILD_TYPE"
             echo "CMAKE_FLAGS: $CMAKE_FLAGS"
             echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
             echo "PKG_PATH: $PKG_PATH"
-            sudo -E /usr/pkg/sbin/pkg_add -u cmake googletest pkgconf ninja-build
+            sudo -E /usr/pkg/sbin/pkg_add -u bash cmake googletest pkgconf ninja-build gdb
+            sudo ln -sf /usr/pkg/bin/bash /bin/bash
             ./ci/build.sh
             ./ci/test.sh
 
