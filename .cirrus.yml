@@ -142,7 +142,7 @@ task:
     - |
       case "${DIST}" in
         ALPINE)
-          apk add cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make
+          apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make
           case "${BUILD_TYPE}" in
             asan|lsan|ubsan)
               apk add clang17 compiler-rt
@@ -180,7 +180,8 @@ task:
           ;;
         FREEBSD)
           # pkg upgrade -y && \
-          pkg install -y cmake ninja googletest pkgconf
+          pkg install -y bash cmake ninja googletest pkgconf
+          ln -sf /usr/local/bin/bash /bin/bash
           case "${BUILD_TYPE}" in
             asan|analyze|ubsan|lsan)
               pkg install -y llvm autoconf automake libtool gmake
