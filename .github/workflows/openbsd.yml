@@ -24,7 +24,8 @@ jobs:
           shell: 'bash'
           environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS
           run: |
-            sudo pkg_add cmake gtest pkgconf ninja
+            sudo pkg_add bash cmake gtest pkgconf ninja gdb lldb
+            sudo ln -sf /usr/local/bin/bash /bin/bash
             echo "BUILD_TYPE: $BUILD_TYPE"
             echo "CMAKE_FLAGS: $CMAKE_FLAGS"
             echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
