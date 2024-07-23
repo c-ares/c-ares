@@ -1842,9 +1842,9 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   //
   // The sorted servers currently look like [0] (f0) [1] (f0) [2] (f2) and
   // server #2 has just been retried.
-  // Sleep for half the retry delay and trigger a failure on server #0.
+  // Sleep for 1/3 the retry delay and trigger a failure on server #0.
   tv_now = std::chrono::high_resolution_clock::now();
-  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/2);
+  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/3);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();

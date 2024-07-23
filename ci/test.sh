@@ -43,7 +43,7 @@ elif [ "$TEST_DEBUGGER" = "gdb" ] ; then
 elif [ "$TEST_DEBUGGER" = "lldb" ] ; then
   # LLDB won't return the exit code of the child process, so we need to extract it from the test output and verify it.
   lldb --batch -o "settings set target.process.extra-startup-command 'process handle SIGPIPE -n true -p true -s false'" -o "process launch --shell-expand-args 0" -k "thread backtrace all" -k "quit 1" -- ./arestest $TEST_FILTER 2>&1 | tee test_output.txt
-  exit_code=`egrep "Process \d+ exited with status = \d+ (.*)" test_output.txt | sed -E 's/.* = ([0-9]+).*/\1/'`
+  exit_code=`grep "Process [0-9]* exited with status = [0-9]* (.*)" test_output.txt | sed 's/.* = \([0-9]*\).*/\1/'`
   echo "Test Exit Code: ${exit_code}"
   if [ "${exit_code}" != "0" ] ; then
     exit 1
