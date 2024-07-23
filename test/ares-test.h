@@ -88,6 +88,8 @@ extern std::vector<std::tuple<ares_evsys_t, int>>       evsys_families;
 extern std::vector<std::pair<int, bool>>                families_modes;
 extern std::vector<std::tuple<ares_evsys_t, int, bool>> evsys_families_modes;
 
+// Hopefully a more accurate sleep than sleep_for()
+void ares_sleep_time(unsigned int ms);
 
 // Process all pending work on ares-owned file descriptors, plus
 // optionally the given set-of-FDs + work function.
