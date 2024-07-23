@@ -25,6 +25,8 @@ TESTDIR="${PWD}/test"
 if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     TOOLSBIN="${PWD}/atoolsbld/src/tools/.libs/"
     TESTSBIN="${PWD}/atoolsbld/test/.libs/"
+    export LD_LIBRARY_PATH=${PWD}/atoolsbld/src/lib/.libs:$LD_LIBRARY_PATH
+    export DYLD_LIBRARY_PATH=${PWD}/atoolsbld/src/lib/.libs:$DYLD_LIBRARY_PATH
 else
     TOOLSBIN="${PWD}/cmakebld/bin"
     TESTSBIN="${PWD}/cmakebld/bin"
