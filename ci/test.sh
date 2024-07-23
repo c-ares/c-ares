@@ -23,16 +23,12 @@ PWD=`pwd`
 TESTDIR="${PWD}/test"
 
 if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
-    TOOLSBIN="${PWD}/atoolsbld/src/tools"
-    TESTSBIN="${PWD}/atoolsbld/test"
-    TEST_DEBUGGER=""
+    TOOLSBIN="${PWD}/atoolsbld/src/tools/.libs/"
+    TESTSBIN="${PWD}/atoolsbld/test/.libs/"
 else
     TOOLSBIN="${PWD}/cmakebld/bin"
     TESTSBIN="${PWD}/cmakebld/bin"
 fi
-
-GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1
-export GTEST_INSTALL_FAILURE_SIGNAL_HANDLER
 
 $TEST_WRAP "${TOOLSBIN}/adig" www.google.com
 $TEST_WRAP "${TOOLSBIN}/ahost" www.google.com
