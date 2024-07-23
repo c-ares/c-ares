@@ -125,7 +125,7 @@ task:
       env:
         BUILD_TYPE: "valgrind"
         TEST_WRAP: "valgrind --leak-check=full"
-        TEST_FILTER: "--gtest_filter=-*Container*:-*LiveSearchANY*"
+        TEST_FILTER: "-4 --gtest_filter=-*Container*:-*LiveSearchANY*"
     - name: "COVERAGE"
       only_if: $BUILD_COVERAGE == 'yes'
       env:
