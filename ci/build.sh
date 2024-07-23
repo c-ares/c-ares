@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-set -e
+set -e -x
 
 OS=""
 if [ "$TRAVIS_OS_NAME" != "" ]; then
@@ -17,6 +17,7 @@ fi
 
 if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     autoreconf -fi
+    rm -rf atoolsbld
     mkdir atoolsbld
     cd atoolsbld
     if [ "$DIST" = "iOS" ] ; then
@@ -30,9 +31,12 @@ if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     $SCAN_WRAP make
 else
     # Use cmake for everything else
+    rm -rf cmakebld
+    mkdir cmakebld
+    cd cmakebld
     if [ "$DIST" = "iOS" ] ; then
         CMAKE_FLAGS="${CMAKE_FLAGS} -DCMAKE_OSX_SYSROOT=${SYSROOT}"
     fi
-    $SCAN_WRAP cmake ${CMAKE_FLAGS} ${CMAKE_TEST_FLAGS} -Bcmakebld .
-    $SCAN_WRAP cmake --build cmakebld
+    $SCAN_WRAP cmake ${CMAKE_FLAGS} ${CMAKE_TEST_FLAGS} ..
+    $SCAN_WRAP cmake --build .
 fi

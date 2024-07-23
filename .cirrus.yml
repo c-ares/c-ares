@@ -68,16 +68,6 @@ task:
         TEST_SYMBOL_VISIBILITY: "yes"
       freebsd_instance:
         image_family: freebsd-13-3
-    - name: "MacOS"
-      env:
-        DIST: "MACOS"
-        SCAN_BUILD: "/opt/homebrew/opt/llvm/bin/scan-build-py"
-        MAKE: "make"
-        BUILD_ASAN: "yes"
-        BUILD_ANALYZE: "yes"
-        TEST_SYMBOL_VISIBILITY: "yes"
-      macos_instance:
-        image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
     - name: "iOS"
       env:
         DIST: "iOS"

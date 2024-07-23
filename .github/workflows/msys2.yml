@@ -6,7 +6,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.ref }}-msys2
   cancel-in-progress: true
 
 jobs:
