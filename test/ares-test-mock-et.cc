@@ -1462,7 +1462,8 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   // Sleep for the retry delay (actually a little more than 500ms to account
   // for unreliable timing, e.g. NTP slew) and send in another query. Server #0
   // should be retried.
-  if (verbose) std::cerr << "sleep 550ms" << std::endl;
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep 550ms" << std::endl;
   std::this_thread::sleep_for(std::chrono::milliseconds(550));
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 should be past retry delay and should be tried again successfully" << std::endl;
@@ -1490,7 +1491,8 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   // At this point the sorted servers look like [1] (f0) [2] (f1) [0] (f2).
   // Sleep for the retry delay and send in another query. Server #2 should be
   // retried first, and then server #0.
-  if (verbose) std::cerr << "sleep 550ms" << std::endl;
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep 550ms" << std::endl;
   std::this_thread::sleep_for(std::chrono::milliseconds(550));
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Past retry delay, so will choose Server2 and Server0 that are down. Server2 will fail but Server0 will succeed." << std::endl;
@@ -1506,7 +1508,8 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   // The sorted servers currently look like [0] (f0) [1] (f0) [2] (f2) and
   // server #2 has just been retried.
   // Sleep for half the retry delay and trigger a failure on server #0.
-  if (verbose) std::cerr << "sleep 270ms" << std::endl;
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep 270ms" << std::endl;
   std::this_thread::sleep_for(std::chrono::milliseconds(270));
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has not been hit yet. Server0 was last successful, so should be tried first (and will fail), Server1 is also healthy so will respond." << std::endl;
@@ -1520,7 +1523,8 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
   // has just failed whilst server #2 is halfway through the retry delay.
   // Sleep for another half the retry delay and check that server #2 is retried
   // whilst server #0 is not.
-  if (verbose) std::cerr << "sleep 270ms" << std::endl;
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep 270ms" << std::endl;
   std::this_thread::sleep_for(std::chrono::milliseconds(270));
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has expired on Server2 but not Server0, will try on Server2 and fail, then Server1 will answer" << std::endl;
