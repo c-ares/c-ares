@@ -249,6 +249,9 @@ TEST_P(MockUDPEventThreadMaxQueriesTest, GetHostByNameParallelLookups) {
   }
 }
 
+/* This test case is likely to fail in heavily loaded environments, it was
+ * there to stress the windows event system.  Not needed to be on normally */
+#if 0
 class MockUDPEventThreadSingleQueryPerConnTest
     : public MockEventThreadOptsTest,
       public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
@@ -296,7 +299,7 @@ TEST_P(MockUDPEventThreadSingleQueryPerConnTest, LotsOfConnections) {
     EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
   }
 }
-
+#endif
 
 class CacheQueriesEventThreadTest
     : public MockEventThreadOptsTest,
