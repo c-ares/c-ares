@@ -8,7 +8,6 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__parse_into_addrinfo.c		\
   ares__socket.c			\
   ares__sortaddrinfo.c			\
-  ares__timeval.c			\
   ares_android.c			\
   ares_cancel.c				\
   ares_data.c				\
@@ -85,6 +84,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   str/ares_strsplit.c			\
   util/ares__iface_ips.c		\
   util/ares__threads.c			\
+  util/ares__timeval.c			\
   util/ares_math.c			\
   util/ares_rand.c
 
