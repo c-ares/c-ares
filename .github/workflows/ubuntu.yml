@@ -1,23 +1,23 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-name: Ubuntu
+name: Ubuntu (latest)
 on:
   push:
   pull_request:
 
 concurrency:
-  group: ${{ github.ref }}-ubuntu
+  group: ${{ github.ref }}-ubuntu-latest
   cancel-in-progress: true
 
 env:
-  TEST_FILTER: "-v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
+  TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
   CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
   MAKE: make
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: "Ubuntu"
+    name: "Ubuntu (latest)"
     steps:
       - name: Install packages
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -88,7 +88,7 @@ jobs:
         env:
           BUILD_TYPE: "valgrind"
           TEST_WRAP: "valgrind --leak-check=full"
-          TEST_FILTER: "-4 --gtest_filter=-*Container*:-*LiveSearchANY*"
+          TEST_FILTER: "--gtest_filter=-*Container*:*LiveSearchANY*:*LiveSearchTXT*"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           TEST_DEBUGGER: none
         run: |
