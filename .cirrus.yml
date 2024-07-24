@@ -8,20 +8,6 @@ env:
 
 task:
   matrix:
-    - name: "Debian amd64"
-      env:
-        DIST: "DEBIAN"
-        LC_ALL: "C"
-        SCAN_BUILD: "scan-build"
-        MAKE: "make"
-        BUILD_ASAN: "yes"
-        BUILD_UBSAN: "yes"
-        BUILD_VALGRIND: "yes"
-        BUILD_COVERAGE: "yes"
-        BUILD_ANALYZE: "yes"
-        TEST_SYMBOL_VISIBILITY: "yes"
-      container:
-        image: debian:latest
     - name: "Alpine amd64"
       env:
         DIST: "ALPINE"
@@ -82,11 +68,6 @@ task:
     - name: "CMAKE"
       env:
         BUILD_TYPE: "cmake"
-    - name: "CMAKE HIDE SYMBOLS"
-      only_if: $TEST_SYMBOL_VISIBILITY == 'yes'
-      env:
-        BUILD_TYPE: "cmake"
-        CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=OFF -DCARES_SYMBOL_HIDING=ON -G Ninja"
     - name: "AUTOTOOLS"
       env:
         BUILD_TYPE: "autotools"

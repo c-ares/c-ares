@@ -1,0 +1,106 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: Ubuntu (latest)
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-ubuntu-latest
+  cancel-in-progress: true
+
+env:
+  TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
+  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+  MAKE: make
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: "Ubuntu (latest)"
+    steps:
+      - name: Install packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
+          version: 1.0
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+      - name: "CMake: build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Autotools: build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+          ./ci/distcheck.sh
+      - name: "CMake: (no threads) build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_THREADS=OFF -G Ninja"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: (hide symbols) build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=OFF -DCARES_SYMBOL_HIDING=ON -G Ninja"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: UBSAN: build and test c-ares"
+        env:
+          BUILD_TYPE: "ubsan"
+          CC: "clang"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+          CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+          LDFLAGS: "-fsanitize=undefined"
+          TEST_DEBUGGER: "none"
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: ASAN: build and test c-ares"
+        env:
+          BUILD_TYPE: "asan"
+          CC: "clang"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CFLAGS: "-fsanitize=address"
+          CXXFLAGS: "-fsanitize=address"
+          LDFLAGS: "-fsanitize=address"
+          TEST_DEBUGGER: "none"
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Valgrind: build and test c-ares"
+        env:
+          BUILD_TYPE: "valgrind"
+          TEST_WRAP: "valgrind --leak-check=full"
+          TEST_FILTER: "--gtest_filter=-*Container*:*LiveSearchANY*:*LiveSearchTXT*"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: none
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: Static Analyzer: build c-ares"
+        env:
+          BUILD_TYPE: "analyze"
+          CC: "clang"
+          SCAN_WRAP: "scan-build -v --status-bugs"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
+          TEST_DEBUGGER: "lldb"
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
