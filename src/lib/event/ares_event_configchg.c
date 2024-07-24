@@ -238,8 +238,7 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 
 #  ifndef __WATCOMC__
 static void NETIOAPI_API_
-  ares_event_configchg_ip_cb(PVOID                 CallerContext,
-                             PMIB_IPINTERFACE_ROW  Row,
+  ares_event_configchg_ip_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row,
                              MIB_NOTIFICATION_TYPE NotificationType)
 {
   ares_event_configchg_t *configchg = CallerContext;
@@ -303,9 +302,8 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
    *       We've also tried listening on NotifyUnicastIpAddressChange(), but
    *       that didn't get triggered either.
    */
-  if (NotifyIpInterfaceChange(
-        AF_UNSPEC, ares_event_configchg_ip_cb,
-        c, FALSE, &c->ifchg_hnd) != NO_ERROR) {
+  if (NotifyIpInterfaceChange(AF_UNSPEC, ares_event_configchg_ip_cb, c, FALSE,
+                              &c->ifchg_hnd) != NO_ERROR) {
     status = ARES_ESERVFAIL;
     goto done;
   }
@@ -316,8 +314,8 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
    * for changes via RegNotifyChangeKeyValue() */
   if (RegOpenKeyExW(
         HKEY_LOCAL_MACHINE,
-        L"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces", 0,
-        KEY_NOTIFY, &c->regip4) != ERROR_SUCCESS) {
+        L"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces",
+        0, KEY_NOTIFY, &c->regip4) != ERROR_SUCCESS) {
     status = ARES_ESERVFAIL;
     goto done;
   }
@@ -472,8 +470,8 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
       continue;
     }
 
-    pdns_configuration_notify_key = (const char *(*)(void))
-      dlsym(handle, "dns_configuration_notify_key");
+    pdns_configuration_notify_key =
+      (const char *(*)(void))dlsym(handle, "dns_configuration_notify_key");
     if (pdns_configuration_notify_key != NULL) {
       break;
     }
@@ -551,7 +549,7 @@ static ares_status_t config_change_check(ares__htable_strvp_t *filestat,
 {
   size_t      i;
   const char *configfiles[5];
-  ares_bool_t changed       = ARES_FALSE;
+  ares_bool_t changed = ARES_FALSE;
 
   configfiles[0] = resolvconf_path;
   configfiles[1] = "/etc/nsswitch.conf";

@@ -123,11 +123,9 @@ static void ares_evsys_kqueue_enqueue(ares_evsys_kqueue_t *kq, int fd,
 
   if (kq->nchanges > kq->nchanges_alloc) {
     kq->nchanges_alloc <<= 1;
-    kq->changelist = ares_realloc_zero(
-      kq->changelist,
-      (kq->nchanges_alloc >> 1) * sizeof(*kq->changelist),
-      kq->nchanges_alloc        * sizeof(*kq->changelist)
-    );
+    kq->changelist       = ares_realloc_zero(
+      kq->changelist, (kq->nchanges_alloc >> 1) * sizeof(*kq->changelist),
+      kq->nchanges_alloc * sizeof(*kq->changelist));
   }
 
   EV_SET(&kq->changelist[idx], fd, filter, flags, 0, 0, 0);

@@ -36,7 +36,8 @@
 #include <string>
 #include <vector>
 
-extern "C" void arestest_strtolower(char *dest, const char *src, size_t dest_size);
+extern "C" void arestest_strtolower(char *dest, const char *src,
+                                    size_t dest_size);
 
 namespace ares {
 
@@ -90,9 +91,9 @@ struct DNSQuestion {
     return data(nullptr);
   }
 
-  std::string               name_;
-  int                       rrtype_;
-  int                       qclass_;
+  std::string name_;
+  int         rrtype_;
+  int         qclass_;
 };
 
 struct DNSRR : public DNSQuestion {
@@ -383,12 +384,12 @@ struct DNSPacket {
   }
 
   // Return the encoded packet.
-  std::vector<byte>                         data(const char *request_name) const;
-  std::vector<byte>                         data() const
+  std::vector<byte> data(const char *request_name) const;
+
+  std::vector<byte> data() const
   {
     return data(nullptr);
   }
-
 
   int                                       qid_;
   bool                                      response_;

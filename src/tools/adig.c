@@ -120,35 +120,30 @@ static void print_help(void)
   printf(
     "usage: adig [-h] [-d] [-f flag] [[-s server] ...] [-T|U port] [-c class]\n"
     "            [-t type] name ...\n\n");
+  printf("  -h : Display this help and exit.\n");
+  printf("  -d : Print some extra debugging output.\n");
   printf(
-    "  -h : Display this help and exit.\n");
-  printf(
-    "  -d : Print some extra debugging output.\n");
-  printf(
-    "  -f flag   : Add a behavior control flag. May be specified more than once\n"
+    "  -f flag   : Add a behavior control flag. May be specified more than "
+    "once\n"
     "              to add additional flags. Possible values are:\n"
     "              igntc     - do not retry a truncated query as TCP, just\n"
     "                          return the truncated answer\n"
     "              noaliases - don't honor the HOSTALIASES environment\n"
     "                          variable\n");
-  printf(
-    "              norecurse - don't query upstream servers recursively\n"
-    "              primary   - use the first server\n"
-    "              stayopen  - don't close the communication sockets\n"
-    "              usevc     - use TCP only\n"
-    "              edns      - use EDNS\n"
-    "              dns0x20   - enable DNS 0x20 support\n");
+  printf("              norecurse - don't query upstream servers recursively\n"
+         "              primary   - use the first server\n"
+         "              stayopen  - don't close the communication sockets\n"
+         "              usevc     - use TCP only\n"
+         "              edns      - use EDNS\n"
+         "              dns0x20   - enable DNS 0x20 support\n");
   printf(
     "  -s server : Connect to the specified DNS server, instead of the\n"
     "              system's default one(s). Servers are tried in round-robin,\n"
     "              if the previous one failed.\n");
-  printf(
-    "  -T port   : Connect to the specified TCP port of DNS server.\n");
-  printf(
-    "  -U port   : Connect to the specified UDP port of DNS server.\n");
-  printf(
-    "  -c class  : Set the query class. Possible values for class are:\n"
-    "              ANY, CHAOS, HS and IN (default)\n");
+  printf("  -T port   : Connect to the specified TCP port of DNS server.\n");
+  printf("  -U port   : Connect to the specified UDP port of DNS server.\n");
+  printf("  -c class  : Set the query class. Possible values for class are:\n"
+         "              ANY, CHAOS, HS and IN (default)\n");
   printf(
     "  -t type   : Query records of the specified type. Possible values for\n"
     "              type are:\n"
@@ -156,7 +151,7 @@ static void print_help(void)
     "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
 }
 
-static ares_bool_t read_cmdline(int argc, const char * const * argv,
+static ares_bool_t read_cmdline(int argc, const char * const *argv,
                                 adig_config_t *config)
 {
   ares_getopt_state_t state;
@@ -224,12 +219,13 @@ static ares_bool_t read_cmdline(int argc, const char * const * argv,
           long port = strtol(state.optarg, NULL, 0);
 
           if (port <= 0 || port > 65535) {
-            snprintf(config->error, sizeof(config->error), "invalid port number");
+            snprintf(config->error, sizeof(config->error),
+                     "invalid port number");
             return ARES_FALSE;
           }
-          config->options.tcp_port = (unsigned short)port;
-          config->options.flags   |= ARES_FLAG_USEVC;
-          config->optmask         |= ARES_OPT_TCP_PORT;
+          config->options.tcp_port  = (unsigned short)port;
+          config->options.flags    |= ARES_FLAG_USEVC;
+          config->optmask          |= ARES_OPT_TCP_PORT;
         }
         break;
 
@@ -239,12 +235,13 @@ static ares_bool_t read_cmdline(int argc, const char * const * argv,
           long port = strtol(state.optarg, NULL, 0);
 
           if (port <= 0 || port > 65535) {
-            snprintf(config->error, sizeof(config->error), "invalid port number");
+            snprintf(config->error, sizeof(config->error),
+                     "invalid port number");
             return ARES_FALSE;
           }
-          config->options.udp_port = (unsigned short)port;
-          config->options.flags   |= ARES_FLAG_USEVC;
-          config->optmask         |= ARES_OPT_UDP_PORT;
+          config->options.udp_port  = (unsigned short)port;
+          config->options.flags    |= ARES_FLAG_USEVC;
+          config->optmask          |= ARES_OPT_UDP_PORT;
         }
         break;
 
@@ -637,10 +634,10 @@ static void print_binp(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
 
 static void print_abinp(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
 {
-  size_t               i;
-  size_t               cnt = ares_dns_rr_get_abin_cnt(rr, key);
+  size_t i;
+  size_t cnt = ares_dns_rr_get_abin_cnt(rr, key);
 
-  for (i=0; i<cnt; i++) {
+  for (i = 0; i < cnt; i++) {
     size_t               len;
     const unsigned char *binp = ares_dns_rr_get_abin(rr, key, i, &len);
     if (i != 0) {

@@ -85,7 +85,7 @@ extern std::vector<std::pair<int, bool>>                families_modes;
 extern std::vector<std::tuple<ares_evsys_t, int, bool>> evsys_families_modes;
 
 // Hopefully a more accurate sleep than sleep_for()
-void ares_sleep_time(unsigned int ms);
+void                    ares_sleep_time(unsigned int ms);
 
 // Process all pending work on ares-owned file descriptors, plus
 // optionally the given set-of-FDs + work function.
@@ -220,7 +220,6 @@ protected:
   ares_channel_t *channel_;
 };
 
-
 // Mock DNS server to allow responses to be scripted by tests.
 class MockServer {
 public:
@@ -236,7 +235,7 @@ public:
   void SetReplyData(const std::vector<byte> &reply)
   {
     exact_reply_ = reply;
-    reply_ = nullptr;
+    reply_       = nullptr;
   }
 
   void SetReply(const DNSPacket *reply)
@@ -251,7 +250,7 @@ public:
   void SetReplyExpRequest(const DNSPacket *reply, const std::string &request)
   {
     expected_request_ = request;
-    reply_ = reply;
+    reply_            = reply;
   }
 
   void SetReplyQID(int qid)
@@ -391,6 +390,7 @@ public:
   }
 
   void Process(unsigned int cancel_ms = 0);
+
 private:
   struct ares_options evopts_;
 };

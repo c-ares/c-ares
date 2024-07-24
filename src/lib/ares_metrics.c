@@ -252,7 +252,7 @@ size_t ares_metrics_server_timeout(const struct server_state *server,
   }
 
   /* don't go above upper bounds */
-  max_timeout_ms = channel->maxtimeout?channel->maxtimeout:MAX_TIMEOUT_MS;
+  max_timeout_ms = channel->maxtimeout ? channel->maxtimeout : MAX_TIMEOUT_MS;
   if (timeout_ms > max_timeout_ms) {
     timeout_ms = max_timeout_ms;
   }

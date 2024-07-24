@@ -300,9 +300,9 @@ Error Missing_definition_of_macro_sread
       write((SEND_TYPE_ARG1)(x), (SEND_TYPE_ARG2)(y), (SEND_TYPE_ARG3)(z))
 
 #elif defined(HAVE_SEND)
-#  if !defined(SEND_TYPE_ARG1) || \
-    !defined(SEND_TYPE_ARG2) || !defined(SEND_TYPE_ARG3) ||   \
-    !defined(SEND_TYPE_ARG4) || !defined(SEND_TYPE_RETV)
+#  if !defined(SEND_TYPE_ARG1) || !defined(SEND_TYPE_ARG2) || \
+    !defined(SEND_TYPE_ARG3) || !defined(SEND_TYPE_ARG4) ||   \
+    !defined(SEND_TYPE_RETV)
   /* */
   Error Missing_definition_of_return_and_arguments_types_of_send
 /* */
@@ -343,7 +343,7 @@ Error Missing_definition_of_macro_sread
 #else
 #  define DEBUGF(x) \
     do {            \
-    } while(0)
+    } while (0)
 #endif
 
 /*

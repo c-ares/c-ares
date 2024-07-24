@@ -133,7 +133,8 @@ static int ares_inet_net_pton_ipv4(const char *src, unsigned char *dst,
   }
 
   bits = -1;
-  if (ch == '/' && ares__isascii(src[0]) && ares__isdigit(src[0]) && dst > odst) {
+  if (ch == '/' && ares__isascii(src[0]) && ares__isdigit(src[0]) &&
+      dst > odst) {
     /* CIDR width specifier.  Nothing can follow it. */
     ch   = *src++; /* Skip over the /. */
     bits = 0;

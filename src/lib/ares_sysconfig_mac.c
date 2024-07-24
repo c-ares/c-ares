@@ -115,11 +115,11 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
       continue;
     }
 
-    dnsinfo->dns_configuration_copy = (dns_config_t *(*)(void))
+    dnsinfo->dns_configuration_copy = (dns_config_t * (*)(void))
       dlsym(dnsinfo->handle, "dns_configuration_copy");
 
-    dnsinfo->dns_configuration_free = (void (*)(dns_config_t *))
-      dlsym(dnsinfo->handle, "dns_configuration_free");
+    dnsinfo->dns_configuration_free = (void (*)(dns_config_t *))dlsym(
+      dnsinfo->handle, "dns_configuration_free");
 
     if (dnsinfo->dns_configuration_copy != NULL &&
         dnsinfo->dns_configuration_free != NULL) {

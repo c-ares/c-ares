@@ -56,7 +56,6 @@
 #include <fcntl.h>
 #include <limits.h>
 
-
 ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                    void *data, size_t data_len, int flags,
                                    struct sockaddr *from,

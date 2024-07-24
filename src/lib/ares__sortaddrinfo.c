@@ -51,7 +51,6 @@
 #include <assert.h>
 #include <limits.h>
 
-
 struct addrinfo_sort_elem {
   struct ares_addrinfo_node *ai;
   ares_bool_t                has_src_addr;

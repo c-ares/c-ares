@@ -157,23 +157,23 @@ typedef enum {
 
 /*! Data types used */
 typedef enum {
-  ARES_DATATYPE_INADDR  = 1,  /*!< struct in_addr * type */
-  ARES_DATATYPE_INADDR6 = 2,  /*!< struct ares_in6_addr * type */
-  ARES_DATATYPE_U8      = 3,  /*!< 8bit unsigned integer */
-  ARES_DATATYPE_U16     = 4,  /*!< 16bit unsigned integer */
-  ARES_DATATYPE_U32     = 5,  /*!< 32bit unsigned integer */
-  ARES_DATATYPE_NAME    = 6,  /*!< Null-terminated string of a domain name */
-  ARES_DATATYPE_STR     = 7,  /*!< Null-terminated string */
-  ARES_DATATYPE_BIN     = 8,  /*!< Binary data */
-  ARES_DATATYPE_BINP    = 9,  /*!< Officially defined as binary data, but likely
-                               *   printable. Guaranteed to have a NULL
-                               *   terminator for convenience (not included in
-                               *   length) */
-  ARES_DATATYPE_OPT     = 10, /*!< Array of options.  16bit identifier, BIN
-                               *   data. */
-  ARES_DATATYPE_ABINP   = 11  /*!< Array of binary data, likely printable.
-                               *   Guaranteed to have a NULL terminator for
-                               *   convenience (not included in length) */
+  ARES_DATATYPE_INADDR  = 1, /*!< struct in_addr * type */
+  ARES_DATATYPE_INADDR6 = 2, /*!< struct ares_in6_addr * type */
+  ARES_DATATYPE_U8      = 3, /*!< 8bit unsigned integer */
+  ARES_DATATYPE_U16     = 4, /*!< 16bit unsigned integer */
+  ARES_DATATYPE_U32     = 5, /*!< 32bit unsigned integer */
+  ARES_DATATYPE_NAME    = 6, /*!< Null-terminated string of a domain name */
+  ARES_DATATYPE_STR     = 7, /*!< Null-terminated string */
+  ARES_DATATYPE_BIN     = 8, /*!< Binary data */
+  ARES_DATATYPE_BINP    = 9, /*!< Officially defined as binary data, but likely
+                              *   printable. Guaranteed to have a NULL
+                              *   terminator for convenience (not included in
+                              *   length) */
+  ARES_DATATYPE_OPT = 10,    /*!< Array of options.  16bit identifier, BIN
+                              *   data. */
+  ARES_DATATYPE_ABINP = 11   /*!< Array of binary data, likely printable.
+                              *   Guaranteed to have a NULL terminator for
+                              *   convenience (not included in length) */
 } ares_dns_datatype_t;
 
 /*! Keys used for all RR Types.  We take the record type and multiply by 100
@@ -609,8 +609,8 @@ CARES_EXTERN unsigned short
  * \param[in] id      DNS query id
  * \return ARES_TRUE on success, ARES_FALSE on usage error
  */
-CARES_EXTERN ares_bool_t
-  ares_dns_record_set_id(ares_dns_record_t *dnsrec, unsigned short id);
+CARES_EXTERN ares_bool_t ares_dns_record_set_id(ares_dns_record_t *dnsrec,
+                                                unsigned short     id);
 
 /*! Get the DNS Record Flags
  *
@@ -885,10 +885,10 @@ CARES_EXTERN ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t       *dns_rr,
  *  \param[in] len    Length of binary data
  *  \return ARES_SUCCESS on success
  */
-CARES_EXTERN ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t *dns_rr,
-                                                ares_dns_rr_key_t key,
+CARES_EXTERN ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t       *dns_rr,
+                                                ares_dns_rr_key_t    key,
                                                 const unsigned char *val,
-                                                size_t len);
+                                                size_t               len);
 
 /*! Delete binary array value (ABINP) data for specified resource record and
  *  key by specified index. Can only be used on keys with datatype
@@ -899,9 +899,9 @@ CARES_EXTERN ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t *dns_rr,
  *  \param[in] idx    Index to delete
  *  \return ARES_SUCCESS on success
  */
-CARES_EXTERN ares_status_t ares_dns_rr_del_abin(ares_dns_rr_t *dns_rr,
+CARES_EXTERN ares_status_t ares_dns_rr_del_abin(ares_dns_rr_t    *dns_rr,
                                                 ares_dns_rr_key_t key,
-                                                size_t idx);
+                                                size_t            idx);
 
 /*! Set the option for the RR
  *
@@ -1000,7 +1000,7 @@ CARES_EXTERN const unsigned char *
  *  \return count of values
  */
 CARES_EXTERN size_t ares_dns_rr_get_abin_cnt(const ares_dns_rr_t *dns_rr,
-                                             ares_dns_rr_key_t key);
+                                             ares_dns_rr_key_t    key);
 
 /*! Retrieve a pointer to the binary array data from the specified index.  Can
  *  only be used on keys with datatype ARES_DATATYPE_ABINP.  If ABINP, the data
@@ -1014,8 +1014,9 @@ CARES_EXTERN size_t ares_dns_rr_get_abin_cnt(const ares_dns_rr_t *dns_rr,
  *  \param[out] len    Length of binary data returned
  *  \return pointer binary data or NULL on error
  */
-CARES_EXTERN const unsigned char *ares_dns_rr_get_abin(
-  const ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key, size_t idx, size_t *len);
+CARES_EXTERN const unsigned char *
+  ares_dns_rr_get_abin(const ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
+                       size_t idx, size_t *len);
 
 
 /*! Retrieve the number of options stored for the RR.

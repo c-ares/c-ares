@@ -370,7 +370,7 @@ void ares_event_thread_destroy(ares_channel_t *channel)
 
   ares_event_thread_destroy_int(e);
   channel->sock_state_cb_data = NULL;
-  channel->sock_state_cb = NULL;
+  channel->sock_state_cb      = NULL;
 }
 
 static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)

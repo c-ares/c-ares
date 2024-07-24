@@ -440,7 +440,7 @@ void ares__dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
                              const ares_dns_record_t *dnsrec);
 
 void ares__close_connection(struct server_connection *conn,
-                            ares_status_t requeue_status);
+                            ares_status_t             requeue_status);
 void ares__close_sockets(struct server_state *server);
 void ares__check_cleanup_conns(const ares_channel_t *channel);
 void ares__free_query(struct query *query);
@@ -616,8 +616,8 @@ ares_status_t ares_query_nolock(ares_channel_t *channel, const char *name,
  * if a channel lock is already held */
 ares_status_t ares_send_nolock(ares_channel_t          *channel,
                                const ares_dns_record_t *dnsrec,
-                               ares_callback_dnsrec     callback,
-                               void *arg, unsigned short *qid);
+                               ares_callback_dnsrec callback, void *arg,
+                               unsigned short *qid);
 
 /* Same as ares_gethostbyaddr() except does not take a channel lock.  Use this
  * if a channel lock is already held */

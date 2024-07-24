@@ -61,14 +61,13 @@ static void          handle_conn_error(struct server_connection *conn,
                                        ares_bool_t               critical_failure,
                                        ares_status_t             failure_status);
 
-static ares_bool_t   same_questions(const struct query *query,
+static ares_bool_t   same_questions(const struct query      *query,
                                     const ares_dns_record_t *arec);
 static ares_bool_t   same_address(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
 static void end_query(ares_channel_t *channel, struct server_state *server,
                       struct query *query, ares_status_t status,
                       const ares_dns_record_t *dnsrec);
-
 
 static void ares__query_disassociate_from_conn(struct query *query)
 {
@@ -348,7 +347,8 @@ static void read_tcp_data(ares_channel_t           *channel,
   ptr = ares__buf_append_start(server->tcp_parser, &ptr_len);
 
   if (ptr == NULL) {
-    handle_conn_error(conn, ARES_FALSE /* not critical to connection */, ARES_SUCCESS);
+    handle_conn_error(conn, ARES_FALSE /* not critical to connection */,
+                      ARES_SUCCESS);
     return; /* bail out on malloc failure. TODO: make this
                function return error codes */
   }
@@ -629,9 +629,9 @@ static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
 
 static ares_status_t rewrite_without_edns(struct query *query)
 {
-  ares_status_t  status = ARES_SUCCESS;
-  size_t         i;
-  ares_bool_t    found_opt_rr = ARES_FALSE;
+  ares_status_t status = ARES_SUCCESS;
+  size_t        i;
+  ares_bool_t   found_opt_rr = ARES_FALSE;
 
   /* Find and remove the OPT RR record */
   for (i = 0; i < ares_dns_record_rr_cnt(query->query, ARES_SECTION_ADDITIONAL);
@@ -926,7 +926,7 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
 static ares_status_t ares__append_tcpbuf(struct server_state *server,
                                          const struct query  *query)
 {
-  ares_status_t status;
+  ares_status_t  status;
   unsigned char *qbuf     = NULL;
   size_t         qbuf_len = 0;
 
@@ -947,12 +947,11 @@ done:
   return status;
 }
 
-
-static ares_status_t ares__write_udpbuf(ares_channel_t      *channel,
-                                        ares_socket_t        fd,
-                                        const struct query  *query)
+static ares_status_t ares__write_udpbuf(ares_channel_t     *channel,
+                                        ares_socket_t       fd,
+                                        const struct query *query)
 {
-  ares_status_t status;
+  ares_status_t  status;
   unsigned char *qbuf     = NULL;
   size_t         qbuf_len = 0;
 
@@ -1222,7 +1221,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
   return ARES_SUCCESS;
 }
 
-static ares_bool_t same_questions(const struct query *query,
+static ares_bool_t same_questions(const struct query      *query,
                                   const ares_dns_record_t *arec)
 {
   size_t                   i;
@@ -1299,7 +1298,8 @@ static ares_bool_t same_address(const struct sockaddr  *sa,
         break;
       case AF_INET6:
         addr1 = &aa->addr.addr6;
-        addr2 = &(CARES_INADDR_CAST(const struct sockaddr_in6 *, sa))->sin6_addr;
+        addr2 =
+          &(CARES_INADDR_CAST(const struct sockaddr_in6 *, sa))->sin6_addr;
         if (memcmp(addr1, addr2, sizeof(aa->addr.addr6)) == 0) {
           return ARES_TRUE; /* match */
         }
@@ -1317,7 +1317,7 @@ static void ares_detach_query(struct query *query)
   ares__query_disassociate_from_conn(query);
   ares__htable_szvp_remove(query->channel->queries_by_qid, query->qid);
   ares__llist_node_destroy(query->node_all_queries);
-  query->node_all_queries        = NULL;
+  query->node_all_queries = NULL;
 }
 
 static void end_query(ares_channel_t *channel, struct server_state *server,

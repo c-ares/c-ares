@@ -156,7 +156,8 @@ int main(int argc, char *argv[])
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
-    printf("Attempt %u using server list: %s ...\n", (unsigned int)count, servers);
+    printf("Attempt %u using server list: %s ...\n", (unsigned int)count,
+           servers);
     ares_free_string(servers);
 
     ares_getaddrinfo(channel, argv[1], NULL, &hints, ai_callback, argv[1]);

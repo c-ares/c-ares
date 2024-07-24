@@ -153,8 +153,9 @@ size_t ares__dns_multistring_cnt(const ares__dns_multistring_t *strs)
   return strs->cnt;
 }
 
-const unsigned char *ares__dns_multistring_get(
-  const ares__dns_multistring_t *strs, size_t idx, size_t *len)
+const unsigned char *
+  ares__dns_multistring_get(const ares__dns_multistring_t *strs, size_t idx,
+                            size_t *len)
 {
   if (strs == NULL || idx >= strs->cnt || len == NULL) {
     return NULL;
