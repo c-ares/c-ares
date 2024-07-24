@@ -13,6 +13,7 @@ env:
   TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
   CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -G Ninja"
   MAKE: make
+  DIST: Windows
 
 jobs:
   build:
