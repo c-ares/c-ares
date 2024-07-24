@@ -27,7 +27,10 @@ if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
     fi
     export CFLAGS="${CFLAGS} -O0 -g"
     export CXXFLAGS="${CXXFLAGS} -O0 -g"
-    $SCAN_WRAP ../configure --disable-symbol-hiding --enable-maintainer-mode $CONFIG_OPTS
+    if [ "$DIST" != "Windows" ] ; then
+        CONFIG_OPTS="${CONFIG_OPTS} --disable-symbol-hiding"
+    fi
+    $SCAN_WRAP ../configure --enable-maintainer-mode $CONFIG_OPTS
     $SCAN_WRAP make
     cd ..
 else
