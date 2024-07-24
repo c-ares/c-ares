@@ -18,10 +18,10 @@ in the source code repo
   branch like:
 ```
 BRANCH=1.32
-git pull
-git checkout main
-git checkout -b v${BRANCH} main
-git commit --allow-empty -m "Created release branch v${BRANCH}"
+git pull && \
+git checkout main && \
+git checkout -b v${BRANCH} main && \
+git commit --allow-empty -m "Created release branch v${BRANCH}" && \
 git push -u origin v${BRANCH}
 ```
 - make sure all relevant changes are committed on the release branch
@@ -31,9 +31,9 @@ git push -u origin v${BRANCH}
 ```
 BRANCH=1.32
 RELEASE=1.32.0
-git checkout v${BRANCH}
-git pull
-git tag -s v${RELEASE} -m 'c-ares release v${RELEASE}' v${BRANCH}
+git checkout v${BRANCH} && \
+git pull && \
+git tag -s v${RELEASE} -m 'c-ares release v${RELEASE}' v${BRANCH} && \
 git push origin --tags
 ```
 - Create the release tarball using `make dist`, it is best to check out the
