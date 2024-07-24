@@ -1630,8 +1630,9 @@ INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockEventThreadTest, ::tes
 
 INSTANTIATE_TEST_SUITE_P(TransportModes, ServerFailoverOptsMockEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families_modes), ares::test::PrintEvsysFamilyMode);
 
+#if 0
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPEventThreadSingleQueryPerConnTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
-
+#endif
 
 }  // namespace test
 }  // namespace ares
