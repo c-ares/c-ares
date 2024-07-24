@@ -10,7 +10,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GTEST_ARGS: "-4 --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
+  TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
+  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -G Ninja"
+  MAKE: make
 
 jobs:
   build:
@@ -46,61 +48,56 @@ jobs:
             mingw-w64-${{ matrix.env }}-ninja
             mingw-w64-${{ matrix.env }}-gtest
             mingw-w64-${{ matrix.env }}-lldb
+            mingw-w64-${{ matrix.env }}-gdb
             ${{ matrix.extra_packages }}
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "CMake: build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: ${{ ( matrix.msystem == 'CLANG32' || matrix.msystem == 'CLANG64' ) && 'lldb' || 'gdb' }}
         run: |
-          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON -Bbuild_cmake -G Ninja .
-          cmake --build build_cmake
-          ./build_cmake/bin/adig.exe www.google.com
-          ./build_cmake/bin/ahost.exe www.google.com
-          if [ "${{ matrix.msystem }}" != "MINGW32" ] ; then
-            lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_cmake/bin/arestest.exe
-          else
-            ./build_cmake/bin/arestest.exe ${{ env.GTEST_ARGS }}
-          fi
+          ./ci/build.sh
+          ./ci/test.sh
       - name: "Autotools: build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+          TEST_DEBUGGER: ${{ ( matrix.msystem == 'CLANG32' || matrix.msystem == 'CLANG64' ) && 'lldb' || 'gdb' }}
         run: |
-          autoreconf -fi
-          mkdir build_autotools
-          cd build_autotools
-          ../configure --enable-static --disable-shared --enable-tests
-          make -j3
-          ./src/tools/adig.exe www.google.com
-          ./src/tools/ahost.exe www.google.com
-          if [ "${{ matrix.msystem }}" != "MINGW32" ] ; then
-            lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./test/arestest.exe
-          else
-            ./test/arestest.exe ${{ env.GTEST_ARGS }}
-          fi
+          ./ci/build.sh
+          ./ci/test.sh
       - name: "CMake: UBSAN: build and test c-ares"
         # Bogus alignment errors on i686, so lets not run UBSAN on i686.
-        if: ${{ matrix.env == 'clang-x86_64' }}
+        if: ${{ matrix.msystem == 'CLANG64' }}
         env:
-          CMAKE_OPTS: "-DCMAKE_CXX_FLAGS=-fsanitize=undefined -DCMAKE_C_FLAGS=-fsanitize=undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=undefined -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=undefined"
+          BUILD_TYPE: "ubsan"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+          CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+          LDFLAGS: "-fsanitize=undefined"
+          TEST_DEBUGGER: "none"
         run: |
-          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ env.CMAKE_OPTS }} -Bbuild_ubsan -G Ninja .
-          cmake --build build_ubsan
-          ./build_ubsan/bin/adig.exe www.google.com
-          ./build_ubsan/bin/ahost.exe www.google.com
-          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_ubsan/bin/arestest.exe
-#          ./build_ubsan/bin/arestest.exe ${{ env.GTEST_ARGS }}
+          ./ci/build.sh
+          ./ci/test.sh
       - name: "CMake: ASAN: build and test c-ares"
-        if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
+        # Bogus alignment errors on i686, so lets not run UBSAN on i686.
+        if: ${{ matrix.msystem == 'CLANG64' || matrix.msystem == 'CLANG32' }}
         env:
-          CMAKE_OPTS: "-DCMAKE_CXX_FLAGS=-fsanitize=address -DCMAKE_C_FLAGS=-fsanitize=address -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address"
+          BUILD_TYPE: "asan"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CFLAGS: "-fsanitize=address"
+          CXXFLAGS: "-fsanitize=address"
+          LDFLAGS: "-fsanitize=address"
+          TEST_DEBUGGER: "none"
         run: |
-          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON ${{ env.CMAKE_OPTS }} -Bbuild_asan -G Ninja .
-          cmake --build build_asan
-          ./build_asan/bin/adig.exe www.google.com
-          ./build_asan/bin/ahost.exe www.google.com
-          lldb --batch -o 'run ${{ env.GTEST_ARGS }}' -k 'thread backtrace all' -k 'quit 1' ./build_asan/bin/arestest.exe
-#          ./build_asan/bin/arestest.exe ${{ env.GTEST_ARGS }}
+          ./ci/build.sh
+          ./ci/test.sh
       - name: "Autotools: Static Analyzer: build c-ares"
-        if: ${{ matrix.env == 'clang-x86_64' || matrix.env == 'clang-i686' }}
+        if: ${{ matrix.msystem == 'CLANG64' || matrix.msystem == 'CLANG32' }}
         # Cmake won't work because it somehow mangles linker args and it can't find core windows libraries
         # Must build static only with autotools otherwise libtool creates a wrapper with reportable issues
+        # That means we can't use './ci/build.sh' since it uses CMake
         run: |
           autoreconf -fi
           mkdir build_analyze
