@@ -662,13 +662,14 @@ static ares_status_t process_answer(ares_channel_t      *channel,
                                     struct server_connection *conn,
                                     ares_bool_t tcp, const ares_timeval_t *now)
 {
-  struct query        *query;
+  struct query          *query;
   /* Cache these as once ares__send_query() gets called, it may end up
    * invalidating the connection all-together */
-  struct server_state *server  = conn->server;
-  ares_dns_record_t   *rdnsrec = NULL;
-  ares_status_t        status;
-  ares_bool_t          is_cached = ARES_FALSE;
+  struct server_state   *server  = conn->server;
+  ares_dns_record_t     *rdnsrec = NULL;
+  ares_status_t          status;
+  ares_bool_t            is_cached = ARES_FALSE;
+  ares_cookie_response_t cookie_resp;
 
   /* Parse the response */
   status = ares_dns_parse(abuf, alen, 0, &rdnsrec);
@@ -695,6 +696,22 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     /* Possible qid conflict due to delayed response, that's ok */
     status = ARES_SUCCESS;
     goto cleanup;
+  }
+
+  /* Validate DNS cookie in response */
+  cookie_resp = ares_cookie_validate(query->query, rdnsrec, conn, now);
+  switch (cookie_resp) {
+    case ARES_COOKIE_SUCCESS:
+      /* Do nothing */
+      break;
+    case ARES_COOKIE_DROP:
+      status = ARES_SUCCESS;
+      goto cleanup;
+      break;
+/* TODO: Implement me
+    case ARES_COOKIE_REND:
+      break;
+*/
   }
 
   /* At this point we know we've received an answer for this query, so we should

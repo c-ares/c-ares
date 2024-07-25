@@ -755,6 +755,16 @@ size_t        ares_metrics_server_timeout(const struct server_state *server,
 ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
                                 struct server_connection *conn,
                                 const ares_timeval_t     *now);
+typedef enum {
+  ARES_COOKIE_SUCCESS = 0,
+  ARES_COOKIE_DROP    = 1,
+  ARES_COOKIE_RESEND  = 2
+} ares_cookie_response_t;
+
+ares_cookie_response_t ares_cookie_validate(const ares_dns_record_t  *dnsreq,
+                                            const ares_dns_record_t  *dnsresp,
+                                            struct server_connection *conn,
+                                            const ares_timeval_t     *now);
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel);
 void          ares__channel_threading_destroy(ares_channel_t *channel);

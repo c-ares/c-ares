@@ -86,7 +86,7 @@ static void ares_cookie_generate(ares_cookie_t *cookie,
                                  struct server_connection *conn,
                                  const ares_timeval_t *now)
 {
-  ares_channel_t      *channel = conn->server->channel;
+  ares_channel_t *channel = conn->server->channel;
 
   ares__rand_bytes(channel->rand_state, cookie->client, sizeof(cookie->client));
   memcpy(&cookie->client_ts, now, sizeof(cookie->client_ts));
@@ -202,3 +202,83 @@ ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
   return ares_dns_rr_set_opt(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
                              c, c_len);
 }
+
+ares_cookie_response_t ares_cookie_validate(const ares_dns_record_t  *dnsreq,
+                                            const ares_dns_record_t  *dnsresp,
+                                            struct server_connection *conn,
+                                            const ares_timeval_t     *now)
+{
+  struct server_state *server  = conn->server;
+  ares_cookie_t       *cookie  = &server->cookie;
+  const unsigned char *resp_cookie;
+  size_t               resp_cookie_len;
+  const unsigned char *req_cookie;
+  size_t               req_cookie_len;
+
+  resp_cookie = ares_dns_cookie_fetch(dnsresp, &resp_cookie_len);
+
+  /* Invalid cookie length, drop */
+  if (resp_cookie && (resp_cookie_len < 8 || resp_cookie_len > 40)) {
+    return ARES_COOKIE_DROP;
+  }
+
+  req_cookie = ares_dns_cookie_fetch(dnsreq, &req_cookie_len);
+
+  /* Didn't request cookies, so we can stop evaluating */
+  if (req_cookie == NULL) {
+    return ARES_COOKIE_SUCCESS;
+  }
+
+  /* If 8-byte prefix for returned cookie doesn't match the requested cookie,
+   * drop for spoofing */
+  if (resp_cookie && memcmp(req_cookie, resp_cookie, 8) != 0) {
+    return ARES_COOKIE_DROP;
+  }
+
+  if (resp_cookie_len > 8) {
+    /* Make sure we record that we successfully received a cookie response */
+    cookie->state = ARES_COOKIE_SUPPORTED;
+    memset(&cookie->unsupported_ts, 0, sizeof(cookie->unsupported_ts));
+
+    /* If client cookie hasn't been rotated, save the returned server cookie */
+    if (memcmp(cookie->client, req_cookie, sizeof(cookie->client)) == 0) {
+      memcpy(cookie->server, resp_cookie + 8, resp_cookie_len - 8);
+    }
+  }
+
+  if (ares_dns_record_get_rcode(dnsresp) == ARES_RCODE_BADCOOKIE) {
+    /* Illegal to return BADCOOKIE but no cookie, drop */
+    if (resp_cookie == NULL) {
+      return ARES_COOKIE_DROP;
+    }
+
+    /* Resend the request, hopefully it will work the next time as we should
+     * have recorded a server cookie */
+    return ARES_COOKIE_RESEND;
+  }
+
+  /* We've got a response with a server cookie, and we've done all the
+   * evaluation we can, return success */
+  if (resp_cookie_len > 8) {
+    return ARES_COOKIE_SUCCESS;
+  }
+
+  if (cookie->state == ARES_COOKIE_SUPPORTED) {
+    /* If we're not currently tracking an error time yet, start */
+    if (!timeval_is_set(&cookie->unsupported_ts)) {
+      memcpy(&cookie->unsupported_ts, now, sizeof(cookie->unsupported_ts));
+    }
+    /* Drop it since we expected a cookie */
+    return ARES_COOKIE_DROP;
+  }
+
+  if (cookie->state == ARES_COOKIE_GENERATED) {
+    ares_cookie_clear(cookie);
+    cookie->state = ARES_COOKIE_UNSUPPORTED;
+    memcpy(&cookie->unsupported_ts, now, sizeof(cookie->unsupported_ts));
+  }
+
+  /* Cookie state should be UNSUPPORTED if we're here */
+  return ARES_COOKIE_SUCCESS;
+}
+
