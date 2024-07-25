@@ -377,8 +377,8 @@ struct ares_options {
   unsigned short tcp_port; /* host byte order */
   int            socket_send_buffer_size;
   int            socket_receive_buffer_size;
-  struct in_addr    *servers;
   int                nservers;
+  struct in_addr    *servers;
   char             **domains;
   int                ndomains;
   char              *lookups;
