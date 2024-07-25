@@ -242,6 +242,61 @@ static int configure_socket(ares_socket_t s, struct server_state *server)
   return 0;
 }
 
+ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr *ares_addr,
+                                       unsigned short   *port,
+                                       const struct sockaddr *sockaddr)
+{
+  if (sockaddr->sa_family == AF_INET) {
+    /* NOTE: memcpy sockaddr_in due to alignment issues found by UBSAN due to
+     *       dnsinfo packing on MacOS */
+    struct sockaddr_in sockaddr_in;
+    memcpy(&sockaddr_in, sockaddr, sizeof(sockaddr_in));
+
+    ares_addr->family = AF_INET;
+    memcpy(&ares_addr->addr.addr4, &(sockaddr_in.sin_addr),
+           sizeof(ares_addr->addr.addr4));
+
+    if (port) {
+      *port = ntohs(sockaddr_in.sin_port);
+    }
+    return ARES_TRUE;
+  }
+
+  if (sockaddr->sa_family == AF_INET6) {
+    /* NOTE: memcpy sockaddr_in6 due to alignment issues found by UBSAN due to
+     *       dnsinfo packing on MacOS */
+    struct sockaddr_in6 sockaddr_in6;
+    memcpy(&sockaddr_in6, sockaddr, sizeof(sockaddr_in6));
+
+    ares_addr->family = AF_INET6;
+    memcpy(&ares_addr->addr.addr6, &(sockaddr_in6.sin6_addr),
+           sizeof(ares_addr->addr.addr6));
+    if (port) {
+      *port = ntohs(sockaddr_in6.sin6_port);
+    }
+    return ARES_TRUE;
+  }
+
+  return ARES_FALSE;
+}
+
+static ares_status_t ares_conn_set_self_ip(struct server_connection *conn)
+{
+  struct sockaddr addr;
+  ares_socklen_t  len = sizeof(addr);
+
+  int rv = getsockname(conn->fd, &addr, &len);
+  if (rv != 0) {
+    return ARES_ECONNREFUSED;
+  }
+
+  if (!ares_sockaddr_to_ares_addr(&conn->self_ip, NULL, &addr)) {
+    return ARES_ECONNREFUSED;
+  }
+
+  return ARES_SUCCESS;
+}
+
 ares_status_t ares__open_connection(ares_channel_t      *channel,
                                     struct server_state *server,
                                     ares_bool_t          is_tcp)
@@ -249,6 +304,7 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
   ares_socket_t  s;
   int            opt;
   ares_socklen_t salen;
+  ares_status_t  status;
 
   union {
     struct sockaddr_in  sa4;
@@ -356,6 +412,16 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
     ares__close_socket(channel, s);
     ares_free(conn);
     return ARES_ENOMEM;
+    /* LCOV_EXCL_STOP */
+  }
+
+  /* Need to store our own ip for DNS cookie support */
+  status = ares_conn_set_self_ip(conn);
+  if (status != ARES_SUCCESS) {
+    /* LCOV_EXCL_START: UntestablePath */
+    ares__close_socket(channel, s);
+    ares_free(conn);
+    return status;
     /* LCOV_EXCL_STOP */
   }
 

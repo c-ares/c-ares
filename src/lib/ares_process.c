@@ -924,44 +924,55 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
   return first_server;
 }
 
-static ares_status_t ares__append_tcpbuf(struct server_state *server,
-                                         const struct query  *query)
+static ares_status_t ares__append_tcpbuf(struct server_connection *conn,
+                                         const struct query       *query,
+                                         const ares_timeval_t     *now)
 {
   ares_status_t  status;
   unsigned char *qbuf     = NULL;
   size_t         qbuf_len = 0;
+
+  status = ares_cookie_apply(query->query, conn, now);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
 
   status = ares_dns_write(query->query, &qbuf, &qbuf_len);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  status = ares__buf_append_be16(server->tcp_send, (unsigned short)qbuf_len);
+  status = ares__buf_append_be16(conn->server->tcp_send, (unsigned short)qbuf_len);
   if (status != ARES_SUCCESS) {
     goto done; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  status = ares__buf_append(server->tcp_send, qbuf, qbuf_len);
+  status = ares__buf_append(conn->server->tcp_send, qbuf, qbuf_len);
 
 done:
   ares_free(qbuf);
   return status;
 }
 
-static ares_status_t ares__write_udpbuf(ares_channel_t     *channel,
-                                        ares_socket_t       fd,
-                                        const struct query *query)
+static ares_status_t ares__write_udpbuf(struct server_connection *conn,
+                                        const struct query       *query,
+                                        const ares_timeval_t     *now)
 {
   ares_status_t  status;
   unsigned char *qbuf     = NULL;
   size_t         qbuf_len = 0;
+
+  status = ares_cookie_apply(query->query, conn, now);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
 
   status = ares_dns_write(query->query, &qbuf, &qbuf_len);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  if (ares__socket_write(channel, fd, qbuf, qbuf_len) == -1) {
+  if (ares__socket_write(conn->server->channel, conn->fd, qbuf, qbuf_len) == -1) {
     if (try_again(SOCKERRNO)) {
       status = ARES_ESERVFAIL;
     } else {
@@ -1085,7 +1096,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
 
     prior_len = ares__buf_len(server->tcp_send);
 
-    status = ares__append_tcpbuf(server, query);
+    status = ares__append_tcpbuf(conn, query, now);
     if (status != ARES_SUCCESS) {
       end_query(channel, server, query, status, NULL);
 
@@ -1142,7 +1153,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
 
     conn = ares__llist_node_val(node);
 
-    status = ares__write_udpbuf(channel, conn->fd, query);
+    status = ares__write_udpbuf(conn, query, now);
     if (status != ARES_SUCCESS) {
       if (status == ARES_ENOMEM) {
         /* Not retryable */

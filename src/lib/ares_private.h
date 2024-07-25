@@ -157,6 +157,7 @@ struct server_state;
 struct server_connection {
   struct server_state *server;
   ares_socket_t        fd;
+  struct ares_addr     self_ip;
   ares_bool_t          is_tcp;
   /* total number of queries run on this connection since it was established */
   size_t               total_queries;
@@ -204,14 +205,20 @@ typedef struct {
   ares_uint64_t prev_total_count; /*!< Previous period bucket query count */
 } ares_server_metrics_t;
 
+typedef enum {
+  ARES_COOKIE_INITIAL     = 0,
+  ARES_COOKIE_GENERATED   = 1,
+  ARES_COOKIE_SUPPORTED   = 2,
+  ARES_COOKIE_UNSUPPORTED = 3
+} ares_cookie_state_t;
+
 /*! Structure holding tracking data for RFC 7873/9018 DNS cookies.
  *  Implementation plan for this feature is here:
  *  https://github.com/c-ares/c-ares/issues/620
  */
 typedef struct {
-  /*! starts at false.  If this server ever responds with a cookie, gets set to
-   *  true */
-  ares_bool_t      supported;
+  /*! starts at INITIAL, transitions as needed. */
+  ares_cookie_state_t state;
   /*! randomly-generate client cookie */
   unsigned char    client[8];
   /*! timestamp client cookie was generated, used for rotation purposes */
@@ -580,6 +587,9 @@ ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
 ares_status_t ares__open_connection(ares_channel_t      *channel,
                                     struct server_state *server,
                                     ares_bool_t          is_tcp);
+ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr *ares_addr,
+                                       unsigned short   *port,
+                                       const struct sockaddr *sockaddr);
 ares_socket_t ares__open_socket(ares_channel_t *channel, int af, int type,
                                 int protocol);
 ares_ssize_t  ares__socket_write(ares_channel_t *channel, ares_socket_t s,
@@ -741,6 +751,10 @@ void ares_metrics_record(const struct query *query, struct server_state *server,
                          ares_status_t status, const ares_dns_record_t *dnsrec);
 size_t        ares_metrics_server_timeout(const struct server_state *server,
                                           const ares_timeval_t      *now);
+
+ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
+                                struct server_connection *conn,
+                                const ares_timeval_t     *now);
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel);
 void          ares__channel_threading_destroy(ares_channel_t *channel);

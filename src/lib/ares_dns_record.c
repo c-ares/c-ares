@@ -1466,7 +1466,7 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t *dns_rr,
 {
   ares__dns_options_t **options;
   size_t                idx;
-
+  size_t                cnt_after;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
     return ARES_EFORMERR;
@@ -1475,6 +1475,11 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t *dns_rr,
   options = ares_dns_rr_data_ptr(dns_rr, key, NULL);
   if (options == NULL) {
     return ARES_EFORMERR;
+  }
+
+  /* No options */
+  if (*options == NULL) {
+    return ARES_SUCCESS;
   }
 
   for (idx = 0; idx < (*options)->cnt; idx++) {
@@ -1488,9 +1493,10 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t *dns_rr,
     return ARES_ENOTFOUND;
   }
 
-  if (idx != (*options)->cnt - 1) {
+  cnt_after = (*options)->cnt - idx - 1;
+  if (cnt_after) {
     memmove(&(*options)->optval[idx], &(*options)->optval[idx+1],
-      sizeof(*(*options)->optval) * ((*options)->cnt - idx - 1));
+      sizeof(*(*options)->optval) * cnt_after);
   }
 
   (*options)->cnt--;
