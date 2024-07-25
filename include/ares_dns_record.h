@@ -918,6 +918,17 @@ CARES_EXTERN ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t       *dns_rr,
                                                const unsigned char *val,
                                                size_t               val_len);
 
+/*! Delete the option for the RR by id
+ *
+ *  \param[in] dns_rr   Pointer to resource record
+ *  \param[in] key      DNS Resource Record Key
+ *  \param[in] opt      Option record key id.
+ *  \return ARES_SUCCESS if removed, ARES_ENOTFOUND if not found
+ */
+CARES_EXTERN ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t *dns_rr,
+                                                    ares_dns_rr_key_t key,
+                                                    unsigned short opt);
+
 /*! Retrieve a pointer to the ipv4 address.  Can only be used on keys with
  *  datatype ARES_DATATYPE_INADDR.
  *

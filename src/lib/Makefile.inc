@@ -10,6 +10,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares__sortaddrinfo.c			\
   ares_android.c			\
   ares_cancel.c				\
+  ares_cookie.c				\
   ares_data.c				\
   ares_destroy.c			\
   ares_dns_mapping.c			\

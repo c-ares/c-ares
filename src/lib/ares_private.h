@@ -204,6 +204,30 @@ typedef struct {
   ares_uint64_t prev_total_count; /*!< Previous period bucket query count */
 } ares_server_metrics_t;
 
+/*! Structure holding tracking data for RFC 7873/9018 DNS cookies.
+ *  Implementation plan for this feature is here:
+ *  https://github.com/c-ares/c-ares/issues/620
+ */
+typedef struct {
+  /*! starts at false.  If this server ever responds with a cookie, gets set to
+   *  true */
+  ares_bool_t      supported;
+  /*! randomly-generate client cookie */
+  unsigned char    client[8];
+  /*! timestamp client cookie was generated, used for rotation purposes */
+  ares_timeval_t   client_ts;
+  /*! IP address last used for client to connect to server.  If this changes
+   *  The client cookie gets invalidated */
+  struct ares_addr client_ip;
+  /*! Server Cookie last received, 8-32 bytes in length */
+  unsigned char    server[32];
+  /*! Length of server cookie on file. */
+  size_t           server_len;
+  /*! Timestamp of last attempt to use cookies, but it was determined that the
+   *  server didn't support them */
+  ares_timeval_t   unsupported_ts;
+} ares_cookie_t;
+
 struct server_state {
   /* Configuration */
   size_t                    idx; /* index for server in system configuration */
@@ -231,6 +255,9 @@ struct server_state {
 
   /*! Buckets for collecting metrics about the server */
   ares_server_metrics_t     metrics[ARES_METRIC_COUNT];
+
+  /*! RFC 7873/9018 DNS Cookies */
+  ares_cookie_t             cookie;
 
   /* Link back to owning channel */
   ares_channel_t           *channel;
@@ -266,8 +293,8 @@ struct query {
   ares_bool_t   using_tcp;
   ares_status_t error_status;
   size_t        timeouts; /* number of timeouts we saw for this request */
-  ares_bool_t no_retries; /* do not perform any additional retries, this is set
-                           * when a query is to be canceled */
+  ares_bool_t   no_retries; /* do not perform any additional retries, this is
+                             * set when a query is to be canceled */
 };
 
 struct apattern {

@@ -51,7 +51,8 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
                                       unsigned char *val, size_t val_len);
 ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
                                           ares_dns_section_t sect, size_t cnt);
-ares_bool_t   ares_dns_has_opt_rr(const ares_dns_record_t *rec);
+ares_dns_rr_t *ares_dns_get_opt_rr(ares_dns_record_t *rec);
+const ares_dns_rr_t *ares_dns_get_opt_rr_const(const ares_dns_record_t *rec);
 void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
                                                   unsigned int       ttl_decrement);
 
