@@ -1493,6 +1493,8 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t *dns_rr,
     return ARES_ENOTFOUND;
   }
 
+  ares_free((*options)->optval[idx].val);
+
   cnt_after = (*options)->cnt - idx - 1;
   if (cnt_after) {
     memmove(&(*options)->optval[idx], &(*options)->optval[idx+1],
