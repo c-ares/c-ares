@@ -687,7 +687,7 @@ std::vector<byte> DNSOptRR::data(const ares_dns_record_t *dnsrec) const {
   }
 
   if (cookie.size()) {
-    len += 4 + cookie.size();
+    len += 4 + (int)cookie.size();
   }
   for (const DNSOption& opt : opts_) {
     len += (4 + (int)opt.data_.size());
