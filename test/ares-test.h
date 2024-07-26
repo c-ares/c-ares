@@ -290,7 +290,8 @@ public:
 
 private:
   void           ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr,
-                                ares_socklen_t addrlen, const std::string &reqstr,
+                                ares_socklen_t addrlen, const std::vector<byte> &req,
+                                const std::string &reqstr,
                                 int qid, const char *name, int rrtype);
   void           ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr,
                                ares_socklen_t addrlen, byte *data, int len);
@@ -499,23 +500,27 @@ std::ostream &operator<<(std::ostream &os, const HostResult &result);
 
 // C++ wrapper for ares_dns_record_t.
 struct AresDnsRecord {
-  AresDnsRecord() : dnsrec_(nullptr)
-  {
-  }
-
   ~AresDnsRecord()
   {
     ares_dns_record_destroy(dnsrec_);
+    dnsrec_ = NULL;
   }
 
-  AresDnsRecord(const ares_dns_record_t *dnsrec) : dnsrec_(nullptr)
+  AresDnsRecord() : dnsrec_(NULL)
   {
-    if (dnsrec == NULL)
+  }
+
+  void SetDnsRecord(const ares_dns_record_t *dnsrec) {
+    if (dnsrec_ != NULL) {
+      ares_dns_record_destroy(dnsrec_);
+    }
+    if (dnsrec == NULL) {
       return;
+    }
     dnsrec_ = ares_dns_record_duplicate(dnsrec);
   }
 
-  ares_dns_record_t *dnsrec_;
+  ares_dns_record_t *dnsrec_ = NULL;
 };
 
 std::ostream &operator<<(std::ostream &os, const AresDnsRecord &result);
@@ -598,6 +603,8 @@ std::ostream &operator<<(std::ostream &os, const AddrInfoResult &result);
 // structures.
 void          HostCallback(void *data, int status, int timeouts,
                            struct hostent *hostent);
+void QueryCallback(void *data, ares_status_t status, size_t timeouts,
+                   const ares_dns_record_t *dnsrec);
 void SearchCallback(void *data, int status, int timeouts, unsigned char *abuf,
                     int alen);
 void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,

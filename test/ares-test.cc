@@ -596,7 +596,7 @@ void MockServer::ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr, 
     std::cerr << "ProcessRequest(" << qid << ", '" << name
               << "', " << RRTypeToString(rrtype) << ")" << std::endl;
   }
-  ProcessRequest(fd, addr, addrlen, reqstr, qid, name, rrtype);
+  ProcessRequest(fd, addr, addrlen, req, reqstr, qid, name, rrtype);
   ares_free_string(name);
 }
 
@@ -666,7 +666,8 @@ std::set<ares_socket_t> MockServer::fds() const {
 }
 
 void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
-                                ares_socklen_t addrlen, const std::string &reqstr,
+                                ares_socklen_t addrlen, const std::vector<byte> &req,
+                                const std::string &reqstr,
                                 int qid, const char *name, int rrtype) {
 
   /* DNS 0x20 will mix case, do case-insensitive matching of name in request */
@@ -691,7 +692,7 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
      * request.  If we can't parse it, oh well, we'll just pass NULL, most
      * replies don't need anything from the request other than the name which
      * is passed separately. */
-    ares_dns_parse((const unsigned char *)reqstr.c_str(), reqstr.length(), 0, &dnsrec);
+    ares_dns_parse(req.data(), req.size(), 0, &dnsrec);
     exact_reply_ = reply_->data(name, dnsrec);
     ares_dns_record_destroy(dnsrec);
   }
@@ -1067,7 +1068,7 @@ void QueryCallback(void *data, ares_status_t status, size_t timeouts,
   result->status_ = status;
   result->timeouts_ = timeouts;
   if (dnsrec)
-    result->dnsrec_ = AresDnsRecord(dnsrec);
+    result->dnsrec_.SetDnsRecord(dnsrec);
   if (verbose) std::cerr << "QueryCallback(" << *result << ")" << std::endl;
 }
 

@@ -647,7 +647,7 @@ std::vector<byte> DNSSoaRR::data(const ares_dns_record_t *dnsrec) const {
   return data;
 }
 
-static const ares_dns_rr_t *fetch_rr(const ares_dns_record_t *rec)
+const ares_dns_rr_t *fetch_rr_opt(const ares_dns_record_t *rec)
 {
   size_t i;
   for (i = 0; i < ares_dns_record_rr_cnt(rec, ARES_SECTION_ADDITIONAL); i++) {
@@ -663,10 +663,29 @@ static const ares_dns_rr_t *fetch_rr(const ares_dns_record_t *rec)
 
 std::vector<byte> DNSOptRR::data(const ares_dns_record_t *dnsrec) const {
   std::vector<byte> data = DNSRR::data(dnsrec);
-  int len = 0;
+  int len                = 0;
+  std::vector<byte> cookie;
+
+  /* See if we should be applying a server cookie */
+  if (server_cookie_.size()) {
+    const ares_dns_rr_t *rr  = fetch_rr_opt(dnsrec);
+    const unsigned char *val = NULL;
+    size_t               len = 0;
+
+    if (ares_dns_rr_get_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
+                                  &val, &len)) {
+      cookie.insert(cookie.end(), val, val+8);
+      cookie.insert(cookie.end(), server_cookie_.begin(), server_cookie_.end());
+    }
+  }
+
+  if (cookie.size()) {
+    len += 4 + cookie.size();
+  }
   for (const DNSOption& opt : opts_) {
     len += (4 + (int)opt.data_.size());
   }
+
   PushInt16(&data, len);
   for (const DNSOption& opt : opts_) {
     PushInt16(&data, opt.code_);
@@ -674,27 +693,12 @@ std::vector<byte> DNSOptRR::data(const ares_dns_record_t *dnsrec) const {
     data.insert(data.end(), opt.data_.begin(), opt.data_.end());
   }
 
-  /* See if we should be applying a server cookie */
-  if (server_cookie_.size()) {
-    const ares_dns_rr_t *rr  = fetch_rr(dnsrec);
-    const unsigned char *val = NULL;
-    size_t               len = 0;
-
-    if (rr == NULL) {
-      goto done;
-    }
-
-    if (!ares_dns_rr_get_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
-                                  &val, &len)) {
-      goto done;
-    }
-
-    PushInt16(&data, 10);
-    PushInt16(&data, (int)server_cookie_.size() + 8);
-    data.insert(data.end(), server_cookie_.begin(), server_cookie_.end());
+  if (cookie.size()) {
+    PushInt16(&data, ARES_OPT_PARAM_COOKIE);
+    PushInt16(&data, (int)cookie.size());
+    data.insert(data.end(), cookie.begin(), cookie.end());
   }
 
-done:
   return data;
 }
 

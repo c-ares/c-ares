@@ -1513,6 +1513,56 @@ TEST_P(MockChannelTest, GetHostByAddrDestroy) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
+static const unsigned char *
+  fetch_server_cookie(const ares_dns_record_t *dnsrec, size_t *len)
+{
+  const ares_dns_rr_t *rr  = fetch_rr_opt(dnsrec);
+  const unsigned char *val = NULL;
+  *len                     = 0;
+
+  if (rr == NULL) {
+    return NULL;
+  }
+
+  if (!ares_dns_rr_get_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
+                                &val, len)) {
+    return NULL;
+  }
+
+  if (*len <= 8) {
+    *len = 0;
+    return NULL;
+  }
+
+  *len -= 8;
+  val  += 8;
+  return val;
+}
+
+
+TEST_P(MockUDPChannelTest, DNSCookieSingle) {
+  DNSPacket reply;
+  std::vector<byte> server_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 1280, server_cookie));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &reply));
+
+  QueryResult result;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result, NULL);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(0, result.timeouts_);
+
+  size_t len;
+  const unsigned char *returned_cookie = fetch_server_cookie(result.dnsrec_.dnsrec_, &len);
+  EXPECT_EQ(len, server_cookie.size());
+  EXPECT_TRUE(memcmp(server_cookie.data(), returned_cookie, len) == 0);
+
+}
+
 #ifndef WIN32
 TEST_P(MockChannelTest, HostAlias) {
   DNSPacket reply;

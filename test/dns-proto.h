@@ -53,6 +53,8 @@ std::string           RRTypeToString(int rrtype);
 std::string           ClassToString(int qclass);
 std::string           AddressToString(const void *addr, int len);
 
+const ares_dns_rr_t *fetch_rr_opt(const ares_dns_record_t *rec);
+
 // Convert DNS protocol data to strings.
 // Note that these functions are not defensive; they assume
 // a validly formatted input, and so should not be used on
