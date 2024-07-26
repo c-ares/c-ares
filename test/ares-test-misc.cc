@@ -519,7 +519,7 @@ TEST_F(LibraryTest, CreateEDNSQuery) {
   std::string actual = PacketToString(data);
   DNSPacket pkt;
   pkt.set_qid(0x1234).add_question(new DNSQuestion("example.com", T_A))
-    .add_additional(new DNSOptRR(0, 0, 0, 1280, { } /* No server cookie */));
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, { } /* No server cookie */));
   std::string expected = PacketToString(pkt.data());
   EXPECT_EQ(expected, actual);
 }

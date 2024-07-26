@@ -1570,7 +1570,7 @@ TEST_P(MockUDPChannelTest, DNSCookieSingle) {
   reply.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
     .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
-    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie));
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, server_cookie));
   EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
     .WillOnce(SetReply(&server_, &reply));
 
@@ -1592,12 +1592,12 @@ TEST_P(MockUDPChannelTest, DNSCookieMissingAfterGood) {
   reply.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
     .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
-    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie));
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, server_cookie));
   DNSPacket reply_nocookie;
   reply_nocookie.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
     .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
-    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }));
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, { }));
 
   EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
     .WillOnce(SetReply(&server_, &reply))
@@ -1637,12 +1637,12 @@ TEST_P(MockUDPChannelTest, DNSCookieBadLen) {
   reply.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
     .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
-    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie));
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, server_cookie));
   DNSPacket reply_badcookielen;
   reply_badcookielen.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
     .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
-    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie_bad ));
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, server_cookie_bad ));
 
   EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
     .WillOnce(SetReply(&server_, &reply_badcookielen))
@@ -1665,17 +1665,17 @@ TEST_P(MockUDPChannelTest, DNSCookieServerRotate) {
   reply_cookie1.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
     .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
-    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie));
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, {}, server_cookie));
   DNSPacket reply_cookie2_badcookie;
   reply_cookie2_badcookie.set_response().set_aa().set_rcode(ARES_RCODE_BADCOOKIE & 0xF)
     .add_question(new DNSQuestion("www.google.com", T_A))
     .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
-    .add_additional(new DNSOptRR((ARES_RCODE_BADCOOKIE >> 4) & 0xFF, 0, 0, 1280, { server_cookie_rotate }));
+    .add_additional(new DNSOptRR((ARES_RCODE_BADCOOKIE >> 4) & 0xFF, 0, 0, 1280, { }, server_cookie_rotate));
   DNSPacket reply_cookie2;
   reply_cookie2.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
     .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
-    .add_additional(new DNSOptRR(0, 0, 0, 1280, { server_cookie_rotate }));
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, server_cookie_rotate));
 
   EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
     .WillOnce(SetReply(&server_, &reply_cookie1))
@@ -1708,6 +1708,68 @@ TEST_P(MockUDPChannelTest, DNSCookieServerRotate) {
   EXPECT_EQ(len1, len2);
   EXPECT_TRUE(memcmp(client_cookie_1, client_cookie_2, len1) == 0);
 }
+
+TEST_P(MockUDPChannelTest, DNSCookieSpoof) {
+  std::vector<byte> client_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  std::vector<byte> server_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
+
+  DNSPacket reply_spoof;
+  reply_spoof.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, client_cookie, server_cookie));
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, server_cookie));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &reply_spoof))
+    .WillOnce(SetReply(&server_, &reply));
+
+  /* This test will return a reply that doesn't have the same client cookie as
+   * was sent, this should result in a drop of the packet alltogether, then
+   * the library will retry and a proper result will be sent. */
+  QueryResult result;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result, NULL);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(1, result.timeouts_);
+}
+
+TEST_P(MockUDPChannelTest, DNSCookieTCPUpgrade) {
+  std::vector<byte> server_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
+
+  DNSPacket reply_badcookie;
+  reply_badcookie.set_response().set_aa().set_rcode(ARES_RCODE_BADCOOKIE & 0xF)
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR((ARES_RCODE_BADCOOKIE >> 4) & 0xFF, 0, 0, 1280, { }, server_cookie));
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, { }));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &reply_badcookie))
+    .WillOnce(SetReply(&server_, &reply_badcookie))
+    .WillOnce(SetReply(&server_, &reply_badcookie))
+    .WillOnce(SetReply(&server_, &reply));
+
+  /* This test will establish the server supports cookies, but continuously
+   * returns BADCOOKIE which is an indicator that there is some form of
+   * AnyCast issue across servers, so it upgrades to TCP afterwards.  No
+   * timeouts are recorded as the queries are sent back-to-back as immediate
+   * reattempts after the response. */
+  QueryResult result;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result, NULL);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(0, result.timeouts_);
+}
+
 
 #ifndef WIN32
 TEST_P(MockChannelTest, HostAlias) {

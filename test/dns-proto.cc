@@ -674,7 +674,14 @@ std::vector<byte> DNSOptRR::data(const ares_dns_record_t *dnsrec) const {
 
     if (ares_dns_rr_get_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
                                   &val, &len)) {
-      cookie.insert(cookie.end(), val, val+8);
+      /* If client cookie was provided to test framework, we are overwriting
+       * the one received from the client.  This is likely to test failure
+       * scenarios */
+      if (client_cookie_.size()) {
+        cookie.insert(cookie.end(), client_cookie_.begin(), client_cookie_.end());
+      } else {
+        cookie.insert(cookie.end(), val, val+8);
+      }
       cookie.insert(cookie.end(), server_cookie_.begin(), server_cookie_.end());
     }
   }
