@@ -239,7 +239,7 @@ ares_status_t ares_cookie_validate(struct query             *query,
     return ARES_EBADRESP;
   }
 
-  if (resp_cookie_len > 8) {
+  if (resp_cookie && resp_cookie_len > 8) {
     /* Make sure we record that we successfully received a cookie response */
     cookie->state = ARES_COOKIE_SUPPORTED;
     memset(&cookie->unsupported_ts, 0, sizeof(cookie->unsupported_ts));
