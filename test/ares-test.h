@@ -496,6 +496,48 @@ struct HostResult {
 
 std::ostream &operator<<(std::ostream &os, const HostResult &result);
 
+
+// C++ wrapper for ares_dns_record_t.
+struct AresDnsRecord {
+  AresDnsRecord() : dnsrec_(nullptr)
+  {
+  }
+
+  ~AresDnsRecord()
+  {
+    ares_dns_record_destroy(dnsrec_);
+  }
+
+  AresDnsRecord(const ares_dns_record_t *dnsrec) : dnsrec_(nullptr)
+  {
+    if (dnsrec == NULL)
+      return;
+    dnsrec_ = ares_dns_record_duplicate(dnsrec);
+  }
+
+  ares_dns_record_t *dnsrec_;
+};
+
+std::ostream &operator<<(std::ostream &os, const AresDnsRecord &result);
+
+// Structure that describes the result of an ares_host_callback invocation.
+struct QueryResult {
+  QueryResult() : done_(false), status_(ARES_SUCCESS), timeouts_(0)
+  {
+  }
+
+  // Whether the callback has been invoked.
+  bool    done_;
+  // Explicitly provided result information.
+  ares_status_t status_;
+  size_t        timeouts_;
+  // Contents of the ares_dns_record_t structure if provided
+  AresDnsRecord dnsrec_;
+};
+
+std::ostream &operator<<(std::ostream &os, const QueryResult &result);
+
+
 // Structure that describes the result of an ares_callback invocation.
 struct SearchResult {
   // Whether the callback has been invoked.
