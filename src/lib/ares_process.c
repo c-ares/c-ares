@@ -623,7 +623,7 @@ static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
 
     conn = query->conn;
     server_increment_failures(conn->server, query->using_tcp);
-    ares__requeue_query(query, now, ARES_ETIMEOUT);
+    ares__requeue_query(query, now, ARES_ETIMEOUT, ARES_TRUE);
   }
 }
 
@@ -669,7 +669,6 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   ares_dns_record_t     *rdnsrec = NULL;
   ares_status_t          status;
   ares_bool_t            is_cached = ARES_FALSE;
-  ares_cookie_response_t cookie_resp;
 
   /* Parse the response */
   status = ares_dns_parse(abuf, alen, 0, &rdnsrec);
@@ -698,20 +697,12 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     goto cleanup;
   }
 
-  /* Validate DNS cookie in response */
-  cookie_resp = ares_cookie_validate(query->query, rdnsrec, conn, now);
-  switch (cookie_resp) {
-    case ARES_COOKIE_SUCCESS:
-      /* Do nothing */
-      break;
-    case ARES_COOKIE_DROP:
-      status = ARES_SUCCESS;
-      goto cleanup;
-      break;
-/* TODO: Implement me
-    case ARES_COOKIE_REND:
-      break;
-*/
+  /* Validate DNS cookie in response. This function may need to requeue the
+   * query. */
+  if (ares_cookie_validate(query, rdnsrec, conn, now) != ARES_SUCCESS) {
+    /* Drop response and return */
+    status = ARES_SUCCESS;
+    goto cleanup;
   }
 
   /* At this point we know we've received an answer for this query, so we should
@@ -772,7 +763,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
       }
 
       server_increment_failures(server, query->using_tcp);
-      ares__requeue_query(query, now, status);
+      ares__requeue_query(query, now, status, ARES_TRUE);
 
       /* Should any of these cause a connection termination?
        * Maybe SERVER_FAILURE? */
@@ -819,7 +810,8 @@ static void handle_conn_error(struct server_connection *conn,
 
 ares_status_t ares__requeue_query(struct query         *query,
                                   const ares_timeval_t *now,
-                                  ares_status_t         status)
+                                  ares_status_t         status,
+                                  ares_bool_t           inc_try_count)
 {
   ares_channel_t *channel = query->channel;
   size_t max_tries        = ares__slist_len(channel->servers) * channel->tries;
@@ -830,7 +822,10 @@ ares_status_t ares__requeue_query(struct query         *query,
     query->error_status = status;
   }
 
-  query->try_count++;
+  if (inc_try_count) {
+    query->try_count++;
+  }
+
   if (query->try_count < max_tries && !query->no_retries) {
     return ares__send_query(query, now);
   }
@@ -1100,7 +1095,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
         case ARES_ECONNREFUSED:
         case ARES_EBADFAMILY:
           server_increment_failures(server, query->using_tcp);
-          return ares__requeue_query(query, now, status);
+          return ares__requeue_query(query, now, status, ARES_TRUE);
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
@@ -1158,7 +1153,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
         case ARES_ECONNREFUSED:
         case ARES_EBADFAMILY:
           server_increment_failures(server, query->using_tcp);
-          return ares__requeue_query(query, now, status);
+          return ares__requeue_query(query, now, status, ARES_TRUE);
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
@@ -1183,7 +1178,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
 
         /* This query wasn't yet bound to the connection, need to manually
          * requeue it and return an appropriate error */
-        status = ares__requeue_query(query, now, status);
+        status = ares__requeue_query(query, now, status, ARES_TRUE);
         if (status == ARES_ETIMEOUT) {
           status = ARES_ECONNREFUSED;
         }
@@ -1193,7 +1188,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
       /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
        * just requeue to a different server/connection. */
       server_increment_failures(server, query->using_tcp);
-      status = ares__requeue_query(query, now, status);
+      status = ares__requeue_query(query, now, status, ARES_TRUE);
 
       /* Only safe to kill connection if it was new, otherwise it should be
        * cleaned up by another process later */

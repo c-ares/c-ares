@@ -35,6 +35,8 @@
 /* 2 minutes */
 #define COOKIE_REGRESSION_TIMEOUT_MS (120 * 1000)
 
+#define COOKIE_RESEND_MAX 3
+
 static const unsigned char *ares_dns_cookie_fetch(const ares_dns_record_t *dnsrec,
                                                   size_t *len)
 {
@@ -203,36 +205,37 @@ ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
                              c, c_len);
 }
 
-ares_cookie_response_t ares_cookie_validate(const ares_dns_record_t  *dnsreq,
-                                            const ares_dns_record_t  *dnsresp,
-                                            struct server_connection *conn,
-                                            const ares_timeval_t     *now)
+ares_status_t ares_cookie_validate(struct query             *query,
+                                   const ares_dns_record_t  *dnsresp,
+                                   struct server_connection *conn,
+                                   const ares_timeval_t     *now)
 {
-  struct server_state *server  = conn->server;
-  ares_cookie_t       *cookie  = &server->cookie;
-  const unsigned char *resp_cookie;
-  size_t               resp_cookie_len;
-  const unsigned char *req_cookie;
-  size_t               req_cookie_len;
+  struct server_state     *server  = conn->server;
+  ares_cookie_t           *cookie  = &server->cookie;
+  const ares_dns_record_t *dnsreq = query->query;
+  const unsigned char     *resp_cookie;
+  size_t                   resp_cookie_len;
+  const unsigned char     *req_cookie;
+  size_t                   req_cookie_len;
 
   resp_cookie = ares_dns_cookie_fetch(dnsresp, &resp_cookie_len);
 
   /* Invalid cookie length, drop */
   if (resp_cookie && (resp_cookie_len < 8 || resp_cookie_len > 40)) {
-    return ARES_COOKIE_DROP;
+    return ARES_EBADRESP;
   }
 
   req_cookie = ares_dns_cookie_fetch(dnsreq, &req_cookie_len);
 
   /* Didn't request cookies, so we can stop evaluating */
   if (req_cookie == NULL) {
-    return ARES_COOKIE_SUCCESS;
+    return ARES_SUCCESS;
   }
 
   /* If 8-byte prefix for returned cookie doesn't match the requested cookie,
    * drop for spoofing */
   if (resp_cookie && memcmp(req_cookie, resp_cookie, 8) != 0) {
-    return ARES_COOKIE_DROP;
+    return ARES_EBADRESP;
   }
 
   if (resp_cookie_len > 8) {
@@ -249,18 +252,26 @@ ares_cookie_response_t ares_cookie_validate(const ares_dns_record_t  *dnsreq,
   if (ares_dns_record_get_rcode(dnsresp) == ARES_RCODE_BADCOOKIE) {
     /* Illegal to return BADCOOKIE but no cookie, drop */
     if (resp_cookie == NULL) {
-      return ARES_COOKIE_DROP;
+      return ARES_EBADRESP;
+    }
+
+    /* If we have too many attempts to send a cookie, we need to requeue as
+     * tcp */
+    query->cookie_try_count++;
+    if (query->cookie_try_count >= COOKIE_RESEND_MAX) {
+      query->using_tcp = ARES_TRUE;
     }
 
     /* Resend the request, hopefully it will work the next time as we should
      * have recorded a server cookie */
-    return ARES_COOKIE_RESEND;
+    return ares__requeue_query(query, now, ARES_SUCCESS,
+                               ARES_FALSE /* Don't increment try count */);
   }
 
   /* We've got a response with a server cookie, and we've done all the
    * evaluation we can, return success */
   if (resp_cookie_len > 8) {
-    return ARES_COOKIE_SUCCESS;
+    return ARES_SUCCESS;
   }
 
   if (cookie->state == ARES_COOKIE_SUPPORTED) {
@@ -269,7 +280,7 @@ ares_cookie_response_t ares_cookie_validate(const ares_dns_record_t  *dnsreq,
       memcpy(&cookie->unsupported_ts, now, sizeof(cookie->unsupported_ts));
     }
     /* Drop it since we expected a cookie */
-    return ARES_COOKIE_DROP;
+    return ARES_EBADRESP;
   }
 
   if (cookie->state == ARES_COOKIE_GENERATED) {
@@ -279,6 +290,6 @@ ares_cookie_response_t ares_cookie_validate(const ares_dns_record_t  *dnsreq,
   }
 
   /* Cookie state should be UNSUPPORTED if we're here */
-  return ARES_COOKIE_SUCCESS;
+  return ARES_SUCCESS;
 }
 

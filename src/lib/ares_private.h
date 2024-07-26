@@ -297,6 +297,7 @@ struct query {
 
   /* Query status */
   size_t        try_count; /* Number of times we tried this query already. */
+  size_t        cookie_try_count; /* Attempt count for cookie resends */
   ares_bool_t   using_tcp;
   ares_status_t error_status;
   size_t        timeouts; /* number of timeouts we saw for this request */
@@ -445,7 +446,8 @@ ares_bool_t   ares__timedout(const ares_timeval_t *now,
 ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now);
 ares_status_t ares__requeue_query(struct query         *query,
                                   const ares_timeval_t *now,
-                                  ares_status_t         status);
+                                  ares_status_t         status,
+                                  ares_bool_t           inc_try_count);
 
 /*! Retrieve a list of names to use for searching.  The first successful
  *  query in the list wins.  This function also uses the HOSTSALIASES file
@@ -755,16 +757,10 @@ size_t        ares_metrics_server_timeout(const struct server_state *server,
 ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
                                 struct server_connection *conn,
                                 const ares_timeval_t     *now);
-typedef enum {
-  ARES_COOKIE_SUCCESS = 0,
-  ARES_COOKIE_DROP    = 1,
-  ARES_COOKIE_RESEND  = 2
-} ares_cookie_response_t;
-
-ares_cookie_response_t ares_cookie_validate(const ares_dns_record_t  *dnsreq,
-                                            const ares_dns_record_t  *dnsresp,
-                                            struct server_connection *conn,
-                                            const ares_timeval_t     *now);
+ares_status_t ares_cookie_validate(struct query             *query,
+                                   const ares_dns_record_t  *dnsresp,
+                                   struct server_connection *conn,
+                                   const ares_timeval_t     *now);
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel);
 void          ares__channel_threading_destroy(ares_channel_t *channel);
