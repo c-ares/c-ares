@@ -754,18 +754,31 @@ static void print_section(ares_dns_record_t *dnsrec, ares_dns_section_t section)
 
 static void print_opt_psuedosection(ares_dns_record_t *dnsrec)
 {
-  const ares_dns_rr_t *rr = has_opt(dnsrec, ARES_SECTION_ADDITIONAL);
+  const ares_dns_rr_t *rr         = has_opt(dnsrec, ARES_SECTION_ADDITIONAL);
+  const unsigned char *cookie     = NULL;
+  size_t               cookie_len = 0;
+
   if (rr == NULL) {
     return;
   }
 
+  if (!ares_dns_rr_get_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
+                                &cookie, &cookie_len)) {
+    cookie = NULL;
+  }
+
+
   printf(";; OPT PSEUDOSECTION:\n");
-  printf("; EDNS: version: %u, flags: %u; udp: %u\t",
+  printf("; EDNS: version: %u, flags: %u; udp: %u\n",
          (unsigned int)ares_dns_rr_get_u8(rr, ARES_RR_OPT_VERSION),
          (unsigned int)ares_dns_rr_get_u16(rr, ARES_RR_OPT_FLAGS),
          (unsigned int)ares_dns_rr_get_u16(rr, ARES_RR_OPT_UDP_SIZE));
 
-  printf("\n");
+  if (cookie) {
+    printf("; COOKIE: ");
+    print_opt_bin(cookie, cookie_len);
+    printf(" (good)\n");
+  }
 }
 
 static void callback(void *arg, int status, int timeouts, unsigned char *abuf,

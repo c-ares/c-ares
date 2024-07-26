@@ -59,10 +59,10 @@
  * ### Constants:
  *  - `COOKIE_CLIENT_TIMEOUT`: 86400s (1 day)
  *     - How often to regenerate the per-server client cookie, even if our
- * source ip address hasn't changed.
+ *       source ip address hasn't changed.
  *  - `COOKIE_UNSUPPORTED_TIMEOUT`: 300s (5 minutes)
  *     - If a server responds without a cookie in the reply, this is how long to
- * wait before attempting to send a client cookie again.
+ *       wait before attempting to send a client cookie again.
  *  - `COOKIE_REGRESSION_TIMEOUT`: 120s (2 minutes)
  *     - If a server was once known to return cookies, and all of a sudden stops
  *       returning cookies (but the reply is otherwise valid), this is how long
