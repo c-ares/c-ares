@@ -220,19 +220,19 @@ typedef struct {
   /*! starts at INITIAL, transitions as needed. */
   ares_cookie_state_t state;
   /*! randomly-generate client cookie */
-  unsigned char    client[8];
+  unsigned char       client[8];
   /*! timestamp client cookie was generated, used for rotation purposes */
-  ares_timeval_t   client_ts;
+  ares_timeval_t      client_ts;
   /*! IP address last used for client to connect to server.  If this changes
    *  The client cookie gets invalidated */
-  struct ares_addr client_ip;
+  struct ares_addr    client_ip;
   /*! Server Cookie last received, 8-32 bytes in length */
-  unsigned char    server[32];
+  unsigned char       server[32];
   /*! Length of server cookie on file. */
-  size_t           server_len;
+  size_t              server_len;
   /*! Timestamp of last attempt to use cookies, but it was determined that the
    *  server didn't support them */
-  ares_timeval_t   unsupported_ts;
+  ares_timeval_t      unsupported_ts;
 } ares_cookie_t;
 
 struct server_state {
@@ -300,7 +300,7 @@ struct query {
   size_t        cookie_try_count; /* Attempt count for cookie resends */
   ares_bool_t   using_tcp;
   ares_status_t error_status;
-  size_t        timeouts; /* number of timeouts we saw for this request */
+  size_t        timeouts;   /* number of timeouts we saw for this request */
   ares_bool_t   no_retries; /* do not perform any additional retries, this is
                              * set when a query is to be canceled */
 };
@@ -589,9 +589,9 @@ ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
 ares_status_t ares__open_connection(ares_channel_t      *channel,
                                     struct server_state *server,
                                     ares_bool_t          is_tcp);
-ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr *ares_addr,
-                                       unsigned short   *port,
-                                       const struct sockaddr *sockaddr);
+ares_bool_t   ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
+                                         unsigned short        *port,
+                                         const struct sockaddr *sockaddr);
 ares_socket_t ares__open_socket(ares_channel_t *channel, int af, int type,
                                 int protocol);
 ares_ssize_t  ares__socket_write(ares_channel_t *channel, ares_socket_t s,

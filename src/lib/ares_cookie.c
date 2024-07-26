@@ -37,12 +37,12 @@
 
 #define COOKIE_RESEND_MAX 3
 
-static const unsigned char *ares_dns_cookie_fetch(const ares_dns_record_t *dnsrec,
-                                                  size_t *len)
+static const unsigned char *
+  ares_dns_cookie_fetch(const ares_dns_record_t *dnsrec, size_t *len)
 {
   const ares_dns_rr_t *rr  = ares_dns_get_opt_rr_const(dnsrec);
   const unsigned char *val = NULL;
-  *len = 0;
+  *len                     = 0;
 
   if (rr == NULL) {
     return NULL;
@@ -58,14 +58,15 @@ static const unsigned char *ares_dns_cookie_fetch(const ares_dns_record_t *dnsre
 
 static ares_bool_t timeval_is_set(const ares_timeval_t *tv)
 {
-  if (tv->sec != 0 && tv->usec != 0)
+  if (tv->sec != 0 && tv->usec != 0) {
     return ARES_TRUE;
+  }
   return ARES_FALSE;
 }
 
 static ares_bool_t timeval_expired(const ares_timeval_t *tv,
                                    const ares_timeval_t *now,
-                                   unsigned long millsecs)
+                                   unsigned long         millsecs)
 {
   ares_int64_t   tvdiff_ms;
   ares_timeval_t tvdiff;
@@ -84,9 +85,9 @@ static void ares_cookie_clear(ares_cookie_t *cookie)
   cookie->state = ARES_COOKIE_INITIAL;
 }
 
-static void ares_cookie_generate(ares_cookie_t *cookie,
+static void ares_cookie_generate(ares_cookie_t            *cookie,
                                  struct server_connection *conn,
-                                 const ares_timeval_t *now)
+                                 const ares_timeval_t     *now)
 {
   ares_channel_t *channel = conn->server->channel;
 
@@ -111,13 +112,13 @@ static ares_bool_t ares_addr_equal(const struct ares_addr *addr1,
   switch (addr1->family) {
     case AF_INET:
       if (memcmp(&addr1->addr.addr4, &addr2->addr.addr4,
-          sizeof(addr1->addr.addr4)) == 0) {
+                 sizeof(addr1->addr.addr4)) == 0) {
         return ARES_TRUE;
       }
       break;
     case AF_INET6:
       if (memcmp(&addr1->addr.addr6, &addr2->addr.addr6,
-          sizeof(addr1->addr.addr6)) == 0) {
+                 sizeof(addr1->addr.addr6)) == 0) {
         return ARES_TRUE;
       }
       break;
@@ -132,9 +133,9 @@ ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
                                 struct server_connection *conn,
                                 const ares_timeval_t     *now)
 {
-  struct server_state *server  = conn->server;
-  ares_cookie_t       *cookie  = &server->cookie;
-  ares_dns_rr_t       *rr      = ares_dns_get_opt_rr(dnsrec);
+  struct server_state *server = conn->server;
+  ares_cookie_t       *cookie = &server->cookie;
+  ares_dns_rr_t       *rr     = ares_dns_get_opt_rr(dnsrec);
   unsigned char        c[40];
   size_t               c_len;
 
@@ -151,10 +152,10 @@ ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
   }
 
   /* Look for regression */
-  if (cookie->state == ARES_COOKIE_SUPPORTED    &&
-      timeval_is_set(&cookie->unsupported_ts)   &&
+  if (cookie->state == ARES_COOKIE_SUPPORTED &&
+      timeval_is_set(&cookie->unsupported_ts) &&
       timeval_expired(&cookie->unsupported_ts, now,
-        COOKIE_REGRESSION_TIMEOUT_MS)) {
+                      COOKIE_REGRESSION_TIMEOUT_MS)) {
     ares_cookie_clear(cookie);
   }
 
@@ -162,7 +163,7 @@ ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
   if (cookie->state == ARES_COOKIE_UNSUPPORTED) {
     /* If timer hasn't expired, just delete any possible cookie and return */
     if (!timeval_expired(&cookie->unsupported_ts, now,
-        COOKIE_REGRESSION_TIMEOUT_MS)) {
+                         COOKIE_REGRESSION_TIMEOUT_MS)) {
       ares_dns_rr_del_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE);
       return ARES_SUCCESS;
     }
@@ -180,7 +181,7 @@ ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
   /* Regenerate the cookie and clear the server cookie if the client ip has
    * changed */
   if ((cookie->state == ARES_COOKIE_GENERATED ||
-      cookie->state == ARES_COOKIE_SUPPORTED) &&
+       cookie->state == ARES_COOKIE_SUPPORTED) &&
       !ares_addr_equal(&conn->self_ip, &cookie->client_ip)) {
     ares_cookie_clear_server(cookie);
     ares_cookie_generate(cookie, conn, now);
@@ -201,8 +202,8 @@ ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
   }
   c_len = sizeof(cookie->client) + cookie->server_len;
 
-  return ares_dns_rr_set_opt(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
-                             c, c_len);
+  return ares_dns_rr_set_opt(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE, c,
+                             c_len);
 }
 
 ares_status_t ares_cookie_validate(struct query             *query,
@@ -210,8 +211,8 @@ ares_status_t ares_cookie_validate(struct query             *query,
                                    struct server_connection *conn,
                                    const ares_timeval_t     *now)
 {
-  struct server_state     *server  = conn->server;
-  ares_cookie_t           *cookie  = &server->cookie;
+  struct server_state     *server = conn->server;
+  ares_cookie_t           *cookie = &server->cookie;
   const ares_dns_record_t *dnsreq = query->query;
   const unsigned char     *resp_cookie;
   size_t                   resp_cookie_len;
@@ -292,4 +293,3 @@ ares_status_t ares_cookie_validate(struct query             *query,
   /* Cookie state should be UNSUPPORTED if we're here */
   return ARES_SUCCESS;
 }
-

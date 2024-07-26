@@ -242,8 +242,8 @@ static int configure_socket(ares_socket_t s, struct server_state *server)
   return 0;
 }
 
-ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr *ares_addr,
-                                       unsigned short   *port,
+ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
+                                       unsigned short        *port,
                                        const struct sockaddr *sockaddr)
 {
   if (sockaddr->sa_family == AF_INET) {
@@ -289,9 +289,10 @@ static ares_status_t ares_conn_set_self_ip(struct server_connection *conn)
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
   } from;
+
   ares_socklen_t len = sizeof(from);
 
-  int rv = getsockname(conn->fd, &from.sa, &len);
+  int            rv = getsockname(conn->fd, &from.sa, &len);
   if (rv != 0) {
     return ARES_ECONNREFUSED;
   }

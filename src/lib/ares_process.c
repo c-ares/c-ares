@@ -662,13 +662,13 @@ static ares_status_t process_answer(ares_channel_t      *channel,
                                     struct server_connection *conn,
                                     ares_bool_t tcp, const ares_timeval_t *now)
 {
-  struct query          *query;
+  struct query        *query;
   /* Cache these as once ares__send_query() gets called, it may end up
    * invalidating the connection all-together */
-  struct server_state   *server  = conn->server;
-  ares_dns_record_t     *rdnsrec = NULL;
-  ares_status_t          status;
-  ares_bool_t            is_cached = ARES_FALSE;
+  struct server_state *server  = conn->server;
+  ares_dns_record_t   *rdnsrec = NULL;
+  ares_status_t        status;
+  ares_bool_t          is_cached = ARES_FALSE;
 
   /* Parse the response */
   status = ares_dns_parse(abuf, alen, 0, &rdnsrec);
@@ -954,7 +954,8 @@ static ares_status_t ares__append_tcpbuf(struct server_connection *conn,
     goto done;
   }
 
-  status = ares__buf_append_be16(conn->server->tcp_send, (unsigned short)qbuf_len);
+  status =
+    ares__buf_append_be16(conn->server->tcp_send, (unsigned short)qbuf_len);
   if (status != ARES_SUCCESS) {
     goto done; /* LCOV_EXCL_LINE: OutOfMemory */
   }
@@ -984,7 +985,8 @@ static ares_status_t ares__write_udpbuf(struct server_connection *conn,
     goto done;
   }
 
-  if (ares__socket_write(conn->server->channel, conn->fd, qbuf, qbuf_len) == -1) {
+  if (ares__socket_write(conn->server->channel, conn->fd, qbuf, qbuf_len) ==
+      -1) {
     if (try_again(SOCKERRNO)) {
       status = ARES_ESERVFAIL;
     } else {

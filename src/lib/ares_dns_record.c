@@ -1460,9 +1460,9 @@ ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   return status;
 }
 
-ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t *dns_rr,
+ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t    *dns_rr,
                                        ares_dns_rr_key_t key,
-                                       unsigned short opt)
+                                       unsigned short    opt)
 {
   ares__dns_options_t **options;
   size_t                idx;
@@ -1497,8 +1497,8 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t *dns_rr,
 
   cnt_after = (*options)->cnt - idx - 1;
   if (cnt_after) {
-    memmove(&(*options)->optval[idx], &(*options)->optval[idx+1],
-      sizeof(*(*options)->optval) * cnt_after);
+    memmove(&(*options)->optval[idx], &(*options)->optval[idx + 1],
+            sizeof(*(*options)->optval) * cnt_after);
   }
 
   (*options)->cnt--;
@@ -1581,8 +1581,7 @@ ares_dns_rr_t *ares_dns_get_opt_rr(ares_dns_record_t *rec)
 {
   size_t i;
   for (i = 0; i < ares_dns_record_rr_cnt(rec, ARES_SECTION_ADDITIONAL); i++) {
-    ares_dns_rr_t *rr =
-      ares_dns_record_rr_get(rec, ARES_SECTION_ADDITIONAL, i);
+    ares_dns_rr_t *rr = ares_dns_record_rr_get(rec, ARES_SECTION_ADDITIONAL, i);
 
     if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
       return rr;

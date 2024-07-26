@@ -38,23 +38,23 @@ ares_bool_t ares_dns_class_isvalid(ares_dns_class_t    qclass,
                                    ares_dns_rec_type_t type,
                                    ares_bool_t         is_query);
 ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect);
-ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
-                                      ares_dns_rr_key_t key, char *val);
-ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
-                                      ares_dns_rr_key_t key, unsigned char *val,
-                                      size_t len);
-ares_status_t ares_dns_rr_set_abin_own(ares_dns_rr_t           *dns_rr,
-                                       ares_dns_rr_key_t        key,
-                                       ares__dns_multistring_t *strs);
-ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
-                                      ares_dns_rr_key_t key, unsigned short opt,
-                                      unsigned char *val, size_t val_len);
-ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
-                                          ares_dns_section_t sect, size_t cnt);
-ares_dns_rr_t *ares_dns_get_opt_rr(ares_dns_record_t *rec);
+ares_status_t        ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
+                                             ares_dns_rr_key_t key, char *val);
+ares_status_t        ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
+                                             ares_dns_rr_key_t key, unsigned char *val,
+                                             size_t len);
+ares_status_t        ares_dns_rr_set_abin_own(ares_dns_rr_t           *dns_rr,
+                                              ares_dns_rr_key_t        key,
+                                              ares__dns_multistring_t *strs);
+ares_status_t        ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
+                                             ares_dns_rr_key_t key, unsigned short opt,
+                                             unsigned char *val, size_t val_len);
+ares_status_t        ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
+                                                 ares_dns_section_t sect, size_t cnt);
+ares_dns_rr_t       *ares_dns_get_opt_rr(ares_dns_record_t *rec);
 const ares_dns_rr_t *ares_dns_get_opt_rr_const(const ares_dns_record_t *rec);
-void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
-                                                  unsigned int       ttl_decrement);
+void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
+                                         unsigned int       ttl_decrement);
 
 /*! Create a DNS record object for a query. The arguments are the same as
  *  those for ares_create_query().
