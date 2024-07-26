@@ -24,6 +24,165 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* DNS cookies are a simple form of learned mutual authentication supported by
+ * most DNS server implementations these days and can help prevent DNS Cache
+ * Poisoning attacks for clients and DNS amplification attacks for servers.
+ *
+ * A good overview is here:
+ * https://www.dotmagazine.online/issues/digital-responsibility-and-sustainability/dns-cookies-transaction-mechanism
+ *
+ * RFCs used for implementation are
+ * [RFC7873](https://datatracker.ietf.org/doc/html/rfc7873) which is extended by
+ * [RFC9018](https://datatracker.ietf.org/doc/html/rfc9018).
+ *
+ * Though this could be used on TCP, the likelihood of it being useful is small
+ * and could cause some issues.  TCP is better used as a fallback in case there
+ * are issues with DNS Cookie support in the upstream servers (e.g. AnyCast
+ * cluster issues).
+ *
+ * While most recursive DNS servers support DNS Cookies, public DNS servers like
+ * Google (8.8.8.8, 8.8.4.4) and CloudFlare (1.1.1.1, 1.0.0.1) don't seem to
+ * have this enabled yet for unknown reasons.
+ *
+ * The risk to having DNS Cookie support always enabled is nearly zero as there
+ * is built-in detection support and it will simply bypass using cookies if the
+ * remote server doesn't support it.  The problem arises if a remote server
+ * supports DNS cookies, then stops supporting them (such as if an administrator
+ * reconfigured the server, or maybe there are different servers in a cluster
+ * with different configurations).  We need to detect this behavior by tracking
+ * how much time has gone by since we received our last valid cookie reply, and
+ * if we exceed the threshold, reset all cookie parameters like we haven't
+ * attempted a request yet.
+ *
+ * ## Implementation Plan
+ *
+ * ### Constants:
+ *  - `COOKIE_CLIENT_TIMEOUT`: 86400s (1 day)
+ *     - How often to regenerate the per-server client cookie, even if our
+ * source ip address hasn't changed.
+ *  - `COOKIE_UNSUPPORTED_TIMEOUT`: 300s (5 minutes)
+ *     - If a server responds without a cookie in the reply, this is how long to
+ * wait before attempting to send a client cookie again.
+ *  - `COOKIE_REGRESSION_TIMEOUT`: 120s (2 minutes)
+ *     - If a server was once known to return cookies, and all of a sudden stops
+ *       returning cookies (but the reply is otherwise valid), this is how long
+ *       to continue to attempt to use cookies before giving up and resetting.
+ *       Such an event would cause an outage for this duration, but since a
+ *       cache poisoning attack should be dropping invalid replies we should be
+ *       able to still get the valid reply and not assume it is a server
+ *       regression just because we received replies without cookies.
+ *  - `COOKIE_RESEND_MAX`: 3
+ *    - Maximum times to resend a query to a server due to the server responding
+ *      with `BAD_COOKIE`, after this, we switch to TCP.
+ *
+ * ### Per-server variables:
+ *  - `cookie.state`: Known state of cookie support, enumeration.
+ *    - `INITIAL` (0): Initial state, not yet determined. Used during startup.
+ *    - `GENERATED` (1): Cookie has been generated and sent to a server, but no
+ *      validated response yet.
+ *    - `SUPPORTED` (2):  Server has been determined to properly support cookies
+ *    - `UNSUPPORTED` (3): Server has been determined to not support cookies
+ *  - `cookie.client` : 8 byte randomly generated client cookie
+ *  - `cookie.client_ts`: Timestamp client cookie was generated
+ *  - `cookie.client_ip`: IP address client used to connect to server
+ *  - `cookie.server`: 8 to 32 byte server cookie
+ *  - `cookie.server_len`: length of server cookie
+ *  - `cookie.unsupported_ts`: Timestamp of last attempt to use a cookies, but
+ *    it was determined that the server didn't support them.
+ *
+ * ### Per-query variables:
+ *  - `query.client_cookie`: Duplicate of `cookie.client` at the point in time
+ *    the query is put on the wire.  This should be available in the
+ *    `ares_dns_record_t` for the request for verification purposes so we don't
+ *    actually need to duplicate this, just naming it here for the ease of
+ *    documentation below.
+ * - `query.cookie_try_count`: Number of tries to send a cookie but receive
+ *   `BAD_COOKIE` responses.  Used to know when we need to switch to TCP.
+ *
+ * ### Procedure:
+ * **NOTE**: These steps will all be done after obtaining a connection handle as
+ * some of these steps depend on determining the source ip address for the
+ * connection.
+ *
+ * 1. If the query is not using EDNS, then **skip any remaining processing**.
+ * 2. If using TCP, ensure there is no EDNS cookie opt (10) set (there may have
+ *    been if this is a resend after upgrade to TCP), then **skip any remaining
+ *    processing**.
+ * 3. If `cookie.state == SUPPORTED`, `cookie.unsupported_ts` is non-zero, and
+ *    evaluates greater than `COOKIE_REGRESSION_TIMEOUT`, then clear all cookie
+ *    settings, set `cookie.state = INITIAL`. Continue to next step (4)
+ * 4. If `cookie.state == UNSUPPORTED`
+ *     - If `cookie.unsupported_ts` evaluates less than
+ *       `COOKIE_UNSUPPORTED_TIMEOUT`
+ *        - Ensure there is no EDNS cookie opt (10) set (shouldn't be unless
+ *          requestor had put this themselves), then **skip any remaining
+ *          processing** as we don't want to try to send cookies.
+ *     - Otherwise:
+ *       - clear all cookie settings, set `cookie.state = INITIAL`.
+ *       - Continue to next step (5) which will send a new cookie.
+ * 5. If `cookie.state == INITIAL`:
+ *    - randomly generate new `cookie.client`
+ *    - set `cookie.client_ts` to the current timestamp.
+ *    - set `cookie.state = GENERATED`.
+ *    - set `cookie.client_ip` to the current source ip address.
+ * 6. If `cookie.state == GENERATED || cookie.state == SUPPORTED` and
+ *    `cookie.client_ip` does not match the current source ip address:
+ *    - clear `cookie.server`
+ *    - randomly generate new `cookie.client`
+ *    - set `cookie.client_ts` to the current timestamp.
+ *    - set `cookie.client_ip` to the current source ip address.
+ *    - do not change the `cookie.state`
+ * 7. If `cookie.state == SUPPORTED` and `cookie.client_ts` evaluation exceeds
+ *    `COOKIE_CLIENT_TIMEOUT`:
+ *    - clear `cookie.server`
+ *    - randomly generate new `cookie.client`
+ *    - set `cookie.client_ts` to the current timestamp.
+ *    - set `cookie.client_ip` to the current source ip address.
+ *    - do not change the `cookie.state`
+ * 8. Generate EDNS OPT record (10) for client cookie.  The option value will be
+ *    the `cookie.client` concatenated with the `cookie.server`.  If there is no
+ *    known server cookie, it will not be appended. Copy `cookie.client` to
+ *    `query.client_cookie` to handle possible client cookie changes by other
+ *    queries before a reply is received (technically this is in the cached
+ *    `ares_dns_record_t` so no need to manually do this). Send request to
+ *    server.
+ * 9. Evaluate response:
+ *     1. If invalid EDNS OPT cookie (10) length sent back in response (valid
+ *        length is 16-40), or bad client cookie value (validate first 8 bytes
+ *        against `query.client_cookie` not `cookie.client`), **drop response**
+ *        as if it hadn't been received.  This is likely a spoofing attack.
+ *        Wait for valid response up to normal response timeout.
+ *     2. If a EDNS OPT cookie (10) server cookie is returned:
+ *         - set `cookie.unsupported_ts` to zero and `cookie.state = SUPPORTED`.
+ *           We can confirm this server supports cookies based on the existence
+ *           of this record.
+ *         - If a new EDNS OPT cookie (10) server cookie is in the response, and
+ *           the `client.cookie` matches the `query.client_cookie` still (hasn't
+ *           been rotated by some other parallel query), save it as
+ *           `cookie.server`.
+ *     3. If dns response `rcode` is `BAD_COOKIE`:
+ *         - Ensure a EDNS OPT cookie (10) is returned, otherwise **drop
+ *           response**, this is completely invalid and likely an spoof of some
+ *           sort.
+ *         - Otherwise
+ *           - Increment `query.cookie_try_count`
+ *           - If `query.cookie_try_count >= COOKIE_RESEND_MAX`, set
+ *             `query.using_tcp` to force the next attempt to use TCP.
+ *           - **Requeue the query**, but do not increment the normal
+ *             `try_count` as a `BAD_COOKIE` reply isn't a normal try failure.
+ *             This should end up going all the way back to step 1 on the next
+ *             attempt.
+ *     4. If EDNS OPT cookie (10) is **NOT** returned in the response:
+ *         - If `cookie.state == SUPPORTED`
+ *           - if `cookie.unsupported_ts` is zero, set to the current timestamp.
+ *           - Drop the response, wait for a valid response to be returned
+ *         - if `cookie.state == GENERATED`
+ *           - clear all cookie settings
+ *           - set `cookie.state = UNSUPPORTED`
+ *           - set `cookie.unsupported_ts` to the current time
+ *         - Accept response (state should be `UNSUPPORTED` if we're here)
+ */
+
 #include "ares_private.h"
 
 /* 1 day */
