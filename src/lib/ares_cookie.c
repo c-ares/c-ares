@@ -72,7 +72,7 @@ static ares_bool_t timeval_expired(const ares_timeval_t *tv,
   ares_timeval_t tvdiff;
   ares__timeval_diff(&tvdiff, tv, now);
 
-  tvdiff_ms = tv->sec * 1000 + tv->usec / 1000;
+  tvdiff_ms = tvdiff.sec * 1000 + tvdiff.usec / 1000;
   if (tvdiff_ms >= (ares_int64_t)millsecs) {
     return ARES_TRUE;
   }
@@ -265,8 +265,11 @@ ares_status_t ares_cookie_validate(struct query             *query,
 
     /* Resend the request, hopefully it will work the next time as we should
      * have recorded a server cookie */
-    return ares__requeue_query(query, now, ARES_SUCCESS,
-                               ARES_FALSE /* Don't increment try count */);
+    ares__requeue_query(query, now, ARES_SUCCESS,
+                        ARES_FALSE /* Don't increment try count */);
+
+    /* Parent needs to drop this response */
+    return ARES_EBADRESP;
   }
 
   /* We've got a response with a server cookie, and we've done all the

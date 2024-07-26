@@ -1539,6 +1539,30 @@ static const unsigned char *
   return val;
 }
 
+static const unsigned char *
+  fetch_client_cookie(const ares_dns_record_t *dnsrec, size_t *len)
+{
+  const ares_dns_rr_t *rr  = fetch_rr_opt(dnsrec);
+  const unsigned char *val = NULL;
+  *len                     = 0;
+
+  if (rr == NULL) {
+    return NULL;
+  }
+
+  if (!ares_dns_rr_get_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
+                                &val, len)) {
+    return NULL;
+  }
+
+  if (*len < 8) {
+    *len = 0;
+    return NULL;
+  }
+
+  *len = 8;
+  return val;
+}
 
 TEST_P(MockUDPChannelTest, DNSCookieSingle) {
   DNSPacket reply;
@@ -1546,7 +1570,7 @@ TEST_P(MockUDPChannelTest, DNSCookieSingle) {
   reply.set_response().set_aa()
     .add_question(new DNSQuestion("www.google.com", T_A))
     .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
-    .add_additional(new DNSOptRR(0, 1280, server_cookie));
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie));
   EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
     .WillOnce(SetReply(&server_, &reply));
 
@@ -1560,7 +1584,129 @@ TEST_P(MockUDPChannelTest, DNSCookieSingle) {
   const unsigned char *returned_cookie = fetch_server_cookie(result.dnsrec_.dnsrec_, &len);
   EXPECT_EQ(len, server_cookie.size());
   EXPECT_TRUE(memcmp(server_cookie.data(), returned_cookie, len) == 0);
+}
 
+TEST_P(MockUDPChannelTest, DNSCookieMissingAfterGood) {
+  DNSPacket reply;
+  std::vector<byte> server_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie));
+  DNSPacket reply_nocookie;
+  reply_nocookie.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &reply))
+    .WillOnce(SetReply(&server_, &reply_nocookie))
+    .WillOnce(SetReply(&server_, &reply));
+
+  /* This test will establish the server supports cookies, then the next reply
+   * will be missing the server cookie and therefore be rejected and timeout, then
+   * an internal retry will occur and the cookie will be present again. */
+  QueryResult result1;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result1, NULL);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  EXPECT_EQ(0, result1.timeouts_);
+
+  QueryResult result2;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result2, NULL);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  EXPECT_EQ(1, result2.timeouts_);
+
+  /* Client cookie should NOT have rotated */
+  size_t len1;
+  const unsigned char *client_cookie_1 = fetch_client_cookie(result1.dnsrec_.dnsrec_, &len1);
+  size_t len2;
+  const unsigned char *client_cookie_2 = fetch_client_cookie(result2.dnsrec_.dnsrec_, &len2);
+  EXPECT_EQ(len1, 8);
+  EXPECT_EQ(len1, len2);
+  EXPECT_TRUE(memcmp(client_cookie_1, client_cookie_2, len1) == 0);
+}
+
+
+TEST_P(MockUDPChannelTest, DNSCookieBadLen) {
+  std::vector<byte> server_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  std::vector<byte> server_cookie_bad = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0 };
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie));
+  DNSPacket reply_badcookielen;
+  reply_badcookielen.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie_bad ));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &reply_badcookielen))
+    .WillOnce(SetReply(&server_, &reply));
+
+  /* This test will send back a malformed cookie len, then when it times out and retry occurs will send back a valid cookie. */
+  QueryResult result1;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result1, NULL);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  EXPECT_EQ(1, result1.timeouts_);
+}
+
+
+TEST_P(MockUDPChannelTest, DNSCookieServerRotate) {
+  std::vector<byte> server_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  std::vector<byte> server_cookie_rotate = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF };
+
+  DNSPacket reply_cookie1;
+  reply_cookie1.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, server_cookie));
+  DNSPacket reply_cookie2_badcookie;
+  reply_cookie2_badcookie.set_response().set_aa().set_rcode(ARES_RCODE_BADCOOKIE & 0xF)
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR((ARES_RCODE_BADCOOKIE >> 4) & 0xFF, 0, 0, 1280, { server_cookie_rotate }));
+  DNSPacket reply_cookie2;
+  reply_cookie2.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { server_cookie_rotate }));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &reply_cookie1))
+    .WillOnce(SetReply(&server_, &reply_cookie2_badcookie))
+    .WillOnce(SetReply(&server_, &reply_cookie2));
+
+  /* This test will establish the server supports cookies, then the next reply
+   * the server returns BADCOOKIE indicating the cookie has rotated and
+   * returns a new cookie. Then the query will be automatically retried with
+   * the newly returned cookie. No timeouts should be indicated, and the
+   * client cookie should not rotate. */
+  QueryResult result1;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result1, NULL);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  EXPECT_EQ(0, result1.timeouts_);
+
+  QueryResult result2;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result2, NULL);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  EXPECT_EQ(0, result2.timeouts_);
+
+  /* Client cookie should NOT have rotated */
+  size_t len1;
+  const unsigned char *client_cookie_1 = fetch_client_cookie(result1.dnsrec_.dnsrec_, &len1);
+  size_t len2;
+  const unsigned char *client_cookie_2 = fetch_client_cookie(result2.dnsrec_.dnsrec_, &len2);
+  EXPECT_EQ(len1, 8);
+  EXPECT_EQ(len1, len2);
+  EXPECT_TRUE(memcmp(client_cookie_1, client_cookie_2, len1) == 0);
 }
 
 #ifndef WIN32

@@ -288,8 +288,8 @@ struct DNSOption {
 };
 
 struct DNSOptRR : public DNSRR {
-  DNSOptRR(int extrcode, int udpsize, std::vector<byte> server_cookie)
-    : DNSRR("", T_OPT, static_cast<int>(udpsize), extrcode)
+  DNSOptRR(unsigned char extrcode, unsigned char version, unsigned short flags, int udpsize, std::vector<byte> server_cookie)
+    : DNSRR("", T_OPT, static_cast<int>(udpsize), ((int)extrcode) << 24 | ((int)version) << 16 | ((int)flags)/* ttl */)
   {
     server_cookie_ = server_cookie;
   }
