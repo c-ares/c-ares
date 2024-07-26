@@ -289,12 +289,12 @@ static ares_status_t ares_conn_set_self_ip(struct server_connection *conn)
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
   } from;
-
+  int            rv;
   ares_socklen_t len = sizeof(from);
 
   memset(&from, 0, sizeof(from));
 
-  int            rv = getsockname(conn->fd, &from.sa, &len);
+  rv = getsockname(conn->fd, &from.sa, &len);
   if (rv != 0) {
     return ARES_ECONNREFUSED;
   }
