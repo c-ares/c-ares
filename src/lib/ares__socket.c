@@ -282,15 +282,21 @@ ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr *ares_addr,
 
 static ares_status_t ares_conn_set_self_ip(struct server_connection *conn)
 {
-  struct sockaddr_storage addr;
-  ares_socklen_t          len = sizeof(addr);
+  /* Some old systems might not have sockaddr_storage, so we make a union
+   * that's guaranteed to be large enough */
+  union {
+    struct sockaddr     sa;
+    struct sockaddr_in  sa4;
+    struct sockaddr_in6 sa6;
+  } from;
+  ares_socklen_t len = sizeof(from);
 
-  int rv = getsockname(conn->fd, (struct sockaddr *)&addr, &len);
+  int rv = getsockname(conn->fd, &from.sa, &len);
   if (rv != 0) {
     return ARES_ECONNREFUSED;
   }
 
-  if (!ares_sockaddr_to_ares_addr(&conn->self_ip, NULL, (struct sockaddr *)&addr)) {
+  if (!ares_sockaddr_to_ares_addr(&conn->self_ip, NULL, &from.sa)) {
     return ARES_ECONNREFUSED;
   }
 
