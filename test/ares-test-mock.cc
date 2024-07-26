@@ -1005,7 +1005,9 @@ TEST_P(MockChannelTest, SearchHighNdots) {
 
 // Test that performing an EDNS search with an OPT RR options value works. The
 // options value should be included on the requests to the mock server.
-TEST_P(MockEDNSChannelTest, SearchOptVal) {
+// We are going to do this only via TCP since this won't include the dynamically
+// generated DNS cookie that would otherwise mess with this result.
+TEST_P(MockTCPChannelTest, SearchOptVal) {
   /* Define the OPT RR options code and value to use. */
   unsigned short opt_opt = 3;
   unsigned char opt_val[] = { 'c', '-', 'a', 'r', 'e', 's' };
