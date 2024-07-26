@@ -73,8 +73,8 @@ TEST_F(LibraryTest, ParsePtrReplyCname) {
 struct DNSMalformedCnameRR : public DNSCnameRR {
   DNSMalformedCnameRR(const std::string& name, int ttl, const std::string& other)
     : DNSCnameRR(name, ttl, other) {}
-  std::vector<byte> data() const {
-    std::vector<byte> data = DNSRR::data();
+  std::vector<byte> data(const ares_dns_record_t *dnsrec) const {
+    std::vector<byte> data = DNSRR::data(dnsrec);
     std::vector<byte> encname = EncodeString(other_);
     encname[0] = encname[0] + 63;  // invalid label length
     int len = (int)encname.size();

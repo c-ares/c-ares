@@ -683,7 +683,17 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
   }
 
   if (reply_ != nullptr) {
-    exact_reply_ = reply_->data(name);
+    ares_dns_record_t *dnsrec = NULL;
+    /* We will *attempt* to parse the request string.  It may be malformed that
+     * will lead to a parse failure.  If so, we just ignore it.  We want to
+     * pass this parsed data structure to the reply generator in case it needs
+     * to extract metadata (such as a DNS client cookie) from the original
+     * request.  If we can't parse it, oh well, we'll just pass NULL, most
+     * replies don't need anything from the request other than the name which
+     * is passed separately. */
+    ares_dns_parse((const unsigned char *)reqstr.c_str(), reqstr.length(), 0, &dnsrec);
+    exact_reply_ = reply_->data(name, dnsrec);
+    ares_dns_record_destroy(dnsrec);
   }
 
   if (exact_reply_.size() == 0) {

@@ -84,11 +84,16 @@ struct DNSQuestion {
   {
   }
 
-  virtual std::vector<byte> data(const char *request_name) const;
+  virtual std::vector<byte> data(const char *request_name, const ares_dns_record_t *dnsrec) const;
+
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const
+  {
+    return data(nullptr, dnsrec);
+  }
 
   virtual std::vector<byte> data() const
   {
-    return data(nullptr);
+    return data(nullptr, nullptr);
   }
 
   std::string name_;
@@ -111,7 +116,7 @@ struct DNSRR : public DNSQuestion {
   {
   }
 
-  virtual std::vector<byte> data() const = 0;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const = 0;
   int                       ttl_;
 };
 
@@ -128,7 +133,7 @@ struct DNSAddressRR : public DNSRR {
   {
   }
 
-  virtual std::vector<byte> data() const;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   std::vector<byte>         addr_;
 };
 
@@ -163,7 +168,7 @@ struct DNSSingleNameRR : public DNSRR {
   {
   }
 
-  virtual std::vector<byte> data() const;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   std::string               other_;
 };
 
@@ -195,7 +200,7 @@ struct DNSTxtRR : public DNSRR {
   {
   }
 
-  virtual std::vector<byte> data() const;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   std::vector<std::string>  txt_;
 };
 
@@ -205,7 +210,7 @@ struct DNSMxRR : public DNSRR {
   {
   }
 
-  virtual std::vector<byte> data() const;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   int                       pref_;
   std::string               other_;
 };
@@ -218,7 +223,7 @@ struct DNSSrvRR : public DNSRR {
   {
   }
 
-  virtual std::vector<byte> data() const;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   int                       prio_;
   int                       weight_;
   int                       port_;
@@ -232,7 +237,7 @@ struct DNSUriRR : public DNSRR {
   {
   }
 
-  virtual std::vector<byte> data() const;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   int                       prio_;
   int                       weight_;
   std::string               target_;
@@ -247,7 +252,7 @@ struct DNSSoaRR : public DNSRR {
   {
   }
 
-  virtual std::vector<byte> data() const;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   std::string               nsname_;
   std::string               rname_;
   int                       serial_;
@@ -266,7 +271,7 @@ struct DNSNaptrRR : public DNSRR {
   {
   }
 
-  virtual std::vector<byte> data() const;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   int                       order_;
   int                       pref_;
   std::string               flags_;
@@ -281,13 +286,15 @@ struct DNSOption {
 };
 
 struct DNSOptRR : public DNSRR {
-  DNSOptRR(int extrcode, int udpsize)
+  DNSOptRR(int extrcode, int udpsize, std::vector<byte> server_cookie)
     : DNSRR("", T_OPT, static_cast<int>(udpsize), extrcode)
   {
+    server_cookie_ = server_cookie;
   }
 
-  virtual std::vector<byte> data() const;
+  virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   std::vector<DNSOption>    opts_;
+  std::vector<byte>         server_cookie_;
 };
 
 struct DNSPacket {
@@ -384,11 +391,11 @@ struct DNSPacket {
   }
 
   // Return the encoded packet.
-  std::vector<byte> data(const char *request_name) const;
+  std::vector<byte> data(const char *request_name, const ares_dns_record_t *dnsrec) const;
 
   std::vector<byte> data() const
   {
-    return data(nullptr);
+    return data(nullptr, nullptr);
   }
 
   int                                       qid_;
