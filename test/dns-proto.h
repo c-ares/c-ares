@@ -288,17 +288,19 @@ struct DNSOption {
 };
 
 struct DNSOptRR : public DNSRR {
-  DNSOptRR(unsigned char extrcode, unsigned char version, unsigned short flags, int udpsize, std::vector<byte> client_cookie, std::vector<byte> server_cookie)
+  DNSOptRR(unsigned char extrcode, unsigned char version, unsigned short flags, int udpsize, std::vector<byte> client_cookie, std::vector<byte> server_cookie, bool expect_server_cookie)
     : DNSRR("", T_OPT, static_cast<int>(udpsize), ((int)extrcode) << 24 | ((int)version) << 16 | ((int)flags)/* ttl */)
   {
     client_cookie_ = client_cookie;
     server_cookie_ = server_cookie;
+    expect_server_cookie_ = expect_server_cookie;
   }
 
   virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const;
   std::vector<DNSOption>    opts_;
   std::vector<byte>         client_cookie_;
   std::vector<byte>         server_cookie_;
+  bool                      expect_server_cookie_;
 };
 
 struct DNSPacket {

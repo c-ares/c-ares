@@ -662,28 +662,39 @@ const ares_dns_rr_t *fetch_rr_opt(const ares_dns_record_t *rec)
 }
 
 std::vector<byte> DNSOptRR::data(const ares_dns_record_t *dnsrec) const {
-  std::vector<byte> data = DNSRR::data(dnsrec);
-  int len                = 0;
-  std::vector<byte> cookie;
+  std::vector<byte>    data = DNSRR::data(dnsrec);
+  int len                   = 0;
+  std::vector<byte>    cookie;
+  const ares_dns_rr_t *rr  = fetch_rr_opt(dnsrec);
+  size_t               passed_cookie_len = 0;
+  const unsigned char *passed_cookie = NULL;
+
+  ares_dns_rr_get_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
+                           &passed_cookie, &passed_cookie_len);
+
+  /* Error out if we expected a server cookie but didn't get one, or if the
+   * passed in server cookie doesn't match our expected value */
+  if (expect_server_cookie_ &&
+      (passed_cookie_len <= 8 ||
+       passed_cookie_len - 8 != server_cookie_.size() ||
+       memcmp(passed_cookie + 8, server_cookie_.data(), server_cookie_.size()) != 0
+      )
+     ) {
+    data.clear();
+    return data;
+  }
 
   /* See if we should be applying a server cookie */
-  if (server_cookie_.size()) {
-    const ares_dns_rr_t *rr  = fetch_rr_opt(dnsrec);
-    const unsigned char *val = NULL;
-    size_t               len = 0;
-
-    if (ares_dns_rr_get_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
-                                  &val, &len)) {
-      /* If client cookie was provided to test framework, we are overwriting
-       * the one received from the client.  This is likely to test failure
-       * scenarios */
-      if (client_cookie_.size()) {
-        cookie.insert(cookie.end(), client_cookie_.begin(), client_cookie_.end());
-      } else {
-        cookie.insert(cookie.end(), val, val+8);
-      }
-      cookie.insert(cookie.end(), server_cookie_.begin(), server_cookie_.end());
+  if (server_cookie_.size() && passed_cookie_len >= 8) {
+    /* If client cookie was provided to test framework, we are overwriting
+     * the one received from the client.  This is likely to test failure
+     * scenarios */
+    if (client_cookie_.size()) {
+      cookie.insert(cookie.end(), client_cookie_.begin(), client_cookie_.end());
+    } else {
+      cookie.insert(cookie.end(), passed_cookie, passed_cookie+8);
     }
+    cookie.insert(cookie.end(), server_cookie_.begin(), server_cookie_.end());
   }
 
   if (cookie.size()) {
@@ -755,18 +766,34 @@ std::vector<byte> DNSPacket::data(const char *request_name, const ares_dns_recor
 
   for (const std::unique_ptr<DNSQuestion>& question : questions_) {
     std::vector<byte> qdata = question->data(request_name, dnsrec);
+    if (qdata.size() == 0) {
+      data.clear();
+      return data;
+    }
     data.insert(data.end(), qdata.begin(), qdata.end());
   }
   for (const std::unique_ptr<DNSRR>& rr : answers_) {
     std::vector<byte> rrdata = rr->data(dnsrec);
+    if (rrdata.size() == 0) {
+      data.clear();
+      return data;
+    }
     data.insert(data.end(), rrdata.begin(), rrdata.end());
   }
   for (const std::unique_ptr<DNSRR>& rr : auths_) {
     std::vector<byte> rrdata = rr->data(dnsrec);
+    if (rrdata.size() == 0) {
+      data.clear();
+      return data;
+    }
     data.insert(data.end(), rrdata.begin(), rrdata.end());
   }
   for (const std::unique_ptr<DNSRR>& rr : adds_) {
     std::vector<byte> rrdata = rr->data(dnsrec);
+    if (rrdata.size() == 0) {
+      data.clear();
+      return data;
+    }
     data.insert(data.end(), rrdata.begin(), rrdata.end());
   }
   return data;

@@ -409,7 +409,8 @@ ares_status_t ares_cookie_validate(struct query             *query,
 
     /* If client cookie hasn't been rotated, save the returned server cookie */
     if (memcmp(cookie->client, req_cookie, sizeof(cookie->client)) == 0) {
-      memcpy(cookie->server, resp_cookie + 8, resp_cookie_len - 8);
+      cookie->server_len = resp_cookie_len - 8;
+      memcpy(cookie->server, resp_cookie + 8, cookie->server_len);
     }
   }
 
