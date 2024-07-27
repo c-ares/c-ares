@@ -143,13 +143,13 @@ ares_status_t ares_event_update(ares_event_t **event, ares_event_thread_t *e,
     ev = ares_malloc_zero(sizeof(*ev));
     if (ev == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
     if (ares__llist_insert_last(e->ev_updates, ev) == NULL) {
-      ares_free(ev); /* LCOV_EXCL_LINE: OutOfMemory */
+      ares_free(ev);        /* LCOV_EXCL_LINE: OutOfMemory */
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 

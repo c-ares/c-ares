@@ -623,7 +623,7 @@ static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
 
     conn = query->conn;
     server_increment_failures(conn->server, query->using_tcp);
-    ares__requeue_query(query, now, ARES_ETIMEOUT);
+    ares__requeue_query(query, now, ARES_ETIMEOUT, ARES_TRUE);
   }
 }
 
@@ -697,6 +697,14 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     goto cleanup;
   }
 
+  /* Validate DNS cookie in response. This function may need to requeue the
+   * query. */
+  if (ares_cookie_validate(query, rdnsrec, conn, now) != ARES_SUCCESS) {
+    /* Drop response and return */
+    status = ARES_SUCCESS;
+    goto cleanup;
+  }
+
   /* At this point we know we've received an answer for this query, so we should
    * remove it from the connection's queue so we can possibly invalidate the
    * connection. Delay cleaning up the connection though as we may enqueue
@@ -708,7 +716,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
    * protocol extension is not understood by the responder. We must retry the
    * query without EDNS enabled. */
   if (ares_dns_record_get_rcode(rdnsrec) == ARES_RCODE_FORMERR &&
-      ares_dns_has_opt_rr(query->query) && !ares_dns_has_opt_rr(rdnsrec)) {
+      ares_dns_get_opt_rr_const(query->query) != NULL &&
+      ares_dns_get_opt_rr_const(rdnsrec) == NULL) {
     status = rewrite_without_edns(query);
     if (status != ARES_SUCCESS) {
       end_query(channel, server, query, status, NULL);
@@ -754,7 +763,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
       }
 
       server_increment_failures(server, query->using_tcp);
-      ares__requeue_query(query, now, status);
+      ares__requeue_query(query, now, status, ARES_TRUE);
 
       /* Should any of these cause a connection termination?
        * Maybe SERVER_FAILURE? */
@@ -801,7 +810,8 @@ static void handle_conn_error(struct server_connection *conn,
 
 ares_status_t ares__requeue_query(struct query         *query,
                                   const ares_timeval_t *now,
-                                  ares_status_t         status)
+                                  ares_status_t         status,
+                                  ares_bool_t           inc_try_count)
 {
   ares_channel_t *channel = query->channel;
   size_t max_tries        = ares__slist_len(channel->servers) * channel->tries;
@@ -812,7 +822,10 @@ ares_status_t ares__requeue_query(struct query         *query,
     query->error_status = status;
   }
 
-  query->try_count++;
+  if (inc_try_count) {
+    query->try_count++;
+  }
+
   if (query->try_count < max_tries && !query->no_retries) {
     return ares__send_query(query, now);
   }
@@ -923,44 +936,57 @@ static struct server_state *ares__failover_server(ares_channel_t *channel)
   return first_server;
 }
 
-static ares_status_t ares__append_tcpbuf(struct server_state *server,
-                                         const struct query  *query)
+static ares_status_t ares__append_tcpbuf(struct server_connection *conn,
+                                         const struct query       *query,
+                                         const ares_timeval_t     *now)
 {
   ares_status_t  status;
   unsigned char *qbuf     = NULL;
   size_t         qbuf_len = 0;
+
+  status = ares_cookie_apply(query->query, conn, now);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
 
   status = ares_dns_write(query->query, &qbuf, &qbuf_len);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  status = ares__buf_append_be16(server->tcp_send, (unsigned short)qbuf_len);
+  status =
+    ares__buf_append_be16(conn->server->tcp_send, (unsigned short)qbuf_len);
   if (status != ARES_SUCCESS) {
     goto done; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  status = ares__buf_append(server->tcp_send, qbuf, qbuf_len);
+  status = ares__buf_append(conn->server->tcp_send, qbuf, qbuf_len);
 
 done:
   ares_free(qbuf);
   return status;
 }
 
-static ares_status_t ares__write_udpbuf(ares_channel_t     *channel,
-                                        ares_socket_t       fd,
-                                        const struct query *query)
+static ares_status_t ares__write_udpbuf(struct server_connection *conn,
+                                        const struct query       *query,
+                                        const ares_timeval_t     *now)
 {
   ares_status_t  status;
   unsigned char *qbuf     = NULL;
   size_t         qbuf_len = 0;
+
+  status = ares_cookie_apply(query->query, conn, now);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
 
   status = ares_dns_write(query->query, &qbuf, &qbuf_len);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  if (ares__socket_write(channel, fd, qbuf, qbuf_len) == -1) {
+  if (ares__socket_write(conn->server->channel, conn->fd, qbuf, qbuf_len) ==
+      -1) {
     if (try_again(SOCKERRNO)) {
       status = ARES_ESERVFAIL;
     } else {
@@ -1071,7 +1097,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
         case ARES_ECONNREFUSED:
         case ARES_EBADFAMILY:
           server_increment_failures(server, query->using_tcp);
-          return ares__requeue_query(query, now, status);
+          return ares__requeue_query(query, now, status, ARES_TRUE);
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
@@ -1084,7 +1110,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
 
     prior_len = ares__buf_len(server->tcp_send);
 
-    status = ares__append_tcpbuf(server, query);
+    status = ares__append_tcpbuf(conn, query, now);
     if (status != ARES_SUCCESS) {
       end_query(channel, server, query, status, NULL);
 
@@ -1129,7 +1155,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
         case ARES_ECONNREFUSED:
         case ARES_EBADFAMILY:
           server_increment_failures(server, query->using_tcp);
-          return ares__requeue_query(query, now, status);
+          return ares__requeue_query(query, now, status, ARES_TRUE);
 
         /* Anything else is not retryable, likely ENOMEM */
         default:
@@ -1141,7 +1167,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
 
     conn = ares__llist_node_val(node);
 
-    status = ares__write_udpbuf(channel, conn->fd, query);
+    status = ares__write_udpbuf(conn, query, now);
     if (status != ARES_SUCCESS) {
       if (status == ARES_ENOMEM) {
         /* Not retryable */
@@ -1154,7 +1180,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
 
         /* This query wasn't yet bound to the connection, need to manually
          * requeue it and return an appropriate error */
-        status = ares__requeue_query(query, now, status);
+        status = ares__requeue_query(query, now, status, ARES_TRUE);
         if (status == ARES_ETIMEOUT) {
           status = ARES_ECONNREFUSED;
         }
@@ -1164,7 +1190,7 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
       /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
        * just requeue to a different server/connection. */
       server_increment_failures(server, query->using_tcp);
-      status = ares__requeue_query(query, now, status);
+      status = ares__requeue_query(query, now, status, ARES_TRUE);
 
       /* Only safe to kill connection if it was new, otherwise it should be
        * cleaned up by another process later */

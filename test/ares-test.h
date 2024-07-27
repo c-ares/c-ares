@@ -290,7 +290,8 @@ public:
 
 private:
   void           ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr,
-                                ares_socklen_t addrlen, const std::string &reqstr,
+                                ares_socklen_t addrlen, const std::vector<byte> &req,
+                                const std::string &reqstr,
                                 int qid, const char *name, int rrtype);
   void           ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr,
                                ares_socklen_t addrlen, byte *data, int len);
@@ -496,6 +497,52 @@ struct HostResult {
 
 std::ostream &operator<<(std::ostream &os, const HostResult &result);
 
+
+// C++ wrapper for ares_dns_record_t.
+struct AresDnsRecord {
+  ~AresDnsRecord()
+  {
+    ares_dns_record_destroy(dnsrec_);
+    dnsrec_ = NULL;
+  }
+
+  AresDnsRecord() : dnsrec_(NULL)
+  {
+  }
+
+  void SetDnsRecord(const ares_dns_record_t *dnsrec) {
+    if (dnsrec_ != NULL) {
+      ares_dns_record_destroy(dnsrec_);
+    }
+    if (dnsrec == NULL) {
+      return;
+    }
+    dnsrec_ = ares_dns_record_duplicate(dnsrec);
+  }
+
+  ares_dns_record_t *dnsrec_ = NULL;
+};
+
+std::ostream &operator<<(std::ostream &os, const AresDnsRecord &result);
+
+// Structure that describes the result of an ares_host_callback invocation.
+struct QueryResult {
+  QueryResult() : done_(false), status_(ARES_SUCCESS), timeouts_(0)
+  {
+  }
+
+  // Whether the callback has been invoked.
+  bool    done_;
+  // Explicitly provided result information.
+  ares_status_t status_;
+  size_t        timeouts_;
+  // Contents of the ares_dns_record_t structure if provided
+  AresDnsRecord dnsrec_;
+};
+
+std::ostream &operator<<(std::ostream &os, const QueryResult &result);
+
+
 // Structure that describes the result of an ares_callback invocation.
 struct SearchResult {
   // Whether the callback has been invoked.
@@ -556,6 +603,8 @@ std::ostream &operator<<(std::ostream &os, const AddrInfoResult &result);
 // structures.
 void          HostCallback(void *data, int status, int timeouts,
                            struct hostent *hostent);
+void QueryCallback(void *data, ares_status_t status, size_t timeouts,
+                   const ares_dns_record_t *dnsrec);
 void SearchCallback(void *data, int status, int timeouts, unsigned char *abuf,
                     int alen);
 void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,

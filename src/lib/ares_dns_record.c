@@ -1460,6 +1460,51 @@ ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   return status;
 }
 
+ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t    *dns_rr,
+                                       ares_dns_rr_key_t key,
+                                       unsigned short    opt)
+{
+  ares__dns_options_t **options;
+  size_t                idx;
+  size_t                cnt_after;
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
+    return ARES_EFORMERR;
+  }
+
+  options = ares_dns_rr_data_ptr(dns_rr, key, NULL);
+  if (options == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  /* No options */
+  if (*options == NULL) {
+    return ARES_SUCCESS;
+  }
+
+  for (idx = 0; idx < (*options)->cnt; idx++) {
+    if ((*options)->optval[idx].opt == opt) {
+      break;
+    }
+  }
+
+  /* No matching option */
+  if (idx == (*options)->cnt) {
+    return ARES_ENOTFOUND;
+  }
+
+  ares_free((*options)->optval[idx].val);
+
+  cnt_after = (*options)->cnt - idx - 1;
+  if (cnt_after) {
+    memmove(&(*options)->optval[idx], &(*options)->optval[idx + 1],
+            sizeof(*(*options)->optval) * cnt_after);
+  }
+
+  (*options)->cnt--;
+  return ARES_SUCCESS;
+}
+
 char *ares_dns_addr_to_ptr(const struct ares_addr *addr)
 {
   ares__buf_t               *buf     = NULL;
@@ -1532,8 +1577,20 @@ fail:
   return NULL;
 }
 
-/* search for an OPT RR in the response */
-ares_bool_t ares_dns_has_opt_rr(const ares_dns_record_t *rec)
+ares_dns_rr_t *ares_dns_get_opt_rr(ares_dns_record_t *rec)
+{
+  size_t i;
+  for (i = 0; i < ares_dns_record_rr_cnt(rec, ARES_SECTION_ADDITIONAL); i++) {
+    ares_dns_rr_t *rr = ares_dns_record_rr_get(rec, ARES_SECTION_ADDITIONAL, i);
+
+    if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
+      return rr;
+    }
+  }
+  return NULL;
+}
+
+const ares_dns_rr_t *ares_dns_get_opt_rr_const(const ares_dns_record_t *rec)
 {
   size_t i;
   for (i = 0; i < ares_dns_record_rr_cnt(rec, ARES_SECTION_ADDITIONAL); i++) {
@@ -1541,10 +1598,10 @@ ares_bool_t ares_dns_has_opt_rr(const ares_dns_record_t *rec)
       ares_dns_record_rr_get_const(rec, ARES_SECTION_ADDITIONAL, i);
 
     if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
-      return ARES_TRUE;
+      return rr;
     }
   }
-  return ARES_FALSE;
+  return NULL;
 }
 
 /* Construct a DNS record for a name with given class and type. Used internally

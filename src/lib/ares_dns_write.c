@@ -91,7 +91,7 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   }
 
   /* RCODE */
-  if (dnsrec->rcode > 15 && !ares_dns_has_opt_rr(dnsrec)) {
+  if (dnsrec->rcode > 15 && ares_dns_get_opt_rr_const(dnsrec) == NULL) {
     /* Must have OPT RR in order to write extended error codes */
     rcode = ARES_RCODE_SERVFAIL;
   } else {

@@ -548,7 +548,7 @@ std::vector<byte> EncodeString(const std::string &name) {
   return data;
 }
 
-std::vector<byte> DNSQuestion::data(const char *request_name) const {
+std::vector<byte> DNSQuestion::data(const char *request_name, const ares_dns_record_t *dnsrec) const {
   std::vector<byte> data;
   std::vector<byte> encname;
   if (request_name != nullptr && strcasecmp(request_name, name_.c_str()) == 0) {
@@ -562,14 +562,14 @@ std::vector<byte> DNSQuestion::data(const char *request_name) const {
   return data;
 }
 
-std::vector<byte> DNSRR::data() const {
-  std::vector<byte> data = DNSQuestion::data();
+std::vector<byte> DNSRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSQuestion::data(dnsrec);
   PushInt32(&data, ttl_);
   return data;
 }
 
-std::vector<byte> DNSSingleNameRR::data() const {
-  std::vector<byte> data = DNSRR::data();
+std::vector<byte> DNSSingleNameRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSRR::data(dnsrec);
   std::vector<byte> encname = EncodeString(other_);
   int len = (int)encname.size();
   PushInt16(&data, len);
@@ -577,8 +577,8 @@ std::vector<byte> DNSSingleNameRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSTxtRR::data() const {
-  std::vector<byte> data = DNSRR::data();
+std::vector<byte> DNSTxtRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSRR::data(dnsrec);
   int len = 0;
   for (const std::string& txt : txt_) {
     len += (1 + (int)txt.size());
@@ -591,8 +591,8 @@ std::vector<byte> DNSTxtRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSMxRR::data() const {
-  std::vector<byte> data = DNSRR::data();
+std::vector<byte> DNSMxRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSRR::data(dnsrec);
   std::vector<byte> encname = EncodeString(other_);
   int len = 2 + (int)encname.size();
   PushInt16(&data, len);
@@ -601,8 +601,8 @@ std::vector<byte> DNSMxRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSSrvRR::data() const {
-  std::vector<byte> data = DNSRR::data();
+std::vector<byte> DNSSrvRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSRR::data(dnsrec);
   std::vector<byte> encname = EncodeString(target_);
   int len = 6 + (int)encname.size();
   PushInt16(&data, len);
@@ -613,8 +613,8 @@ std::vector<byte> DNSSrvRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSUriRR::data() const {
-  std::vector<byte> data = DNSRR::data();
+std::vector<byte> DNSUriRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSRR::data(dnsrec);
   int len = 4 + (int)target_.size();
   PushInt16(&data, len);
   PushInt16(&data, prio_);
@@ -623,16 +623,16 @@ std::vector<byte> DNSUriRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSAddressRR::data() const {
-  std::vector<byte> data = DNSRR::data();
+std::vector<byte> DNSAddressRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSRR::data(dnsrec);
   int len = (int)addr_.size();
   PushInt16(&data, len);
   data.insert(data.end(), addr_.begin(), addr_.end());
   return data;
 }
 
-std::vector<byte> DNSSoaRR::data() const {
-  std::vector<byte> data = DNSRR::data();
+std::vector<byte> DNSSoaRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSRR::data(dnsrec);
   std::vector<byte> encname1 = EncodeString(nsname_);
   std::vector<byte> encname2 = EncodeString(rname_);
   int len = (int)encname1.size() + (int)encname2.size() + 5*4;
@@ -647,23 +647,70 @@ std::vector<byte> DNSSoaRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSOptRR::data() const {
-  std::vector<byte> data = DNSRR::data();
-  int len = 0;
+const ares_dns_rr_t *fetch_rr_opt(const ares_dns_record_t *rec)
+{
+  size_t i;
+  for (i = 0; i < ares_dns_record_rr_cnt(rec, ARES_SECTION_ADDITIONAL); i++) {
+    const ares_dns_rr_t *rr =
+      ares_dns_record_rr_get_const(rec, ARES_SECTION_ADDITIONAL, i);
+
+    if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
+      return rr;
+    }
+  }
+  return NULL;
+}
+
+std::vector<byte> DNSOptRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSRR::data(dnsrec);
+  int len                = 0;
+  std::vector<byte> cookie;
+
+  /* See if we should be applying a server cookie */
+  if (server_cookie_.size()) {
+    const ares_dns_rr_t *rr  = fetch_rr_opt(dnsrec);
+    const unsigned char *val = NULL;
+    size_t               len = 0;
+
+    if (ares_dns_rr_get_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE,
+                                  &val, &len)) {
+      /* If client cookie was provided to test framework, we are overwriting
+       * the one received from the client.  This is likely to test failure
+       * scenarios */
+      if (client_cookie_.size()) {
+        cookie.insert(cookie.end(), client_cookie_.begin(), client_cookie_.end());
+      } else {
+        cookie.insert(cookie.end(), val, val+8);
+      }
+      cookie.insert(cookie.end(), server_cookie_.begin(), server_cookie_.end());
+    }
+  }
+
+  if (cookie.size()) {
+    len += 4 + (int)cookie.size();
+  }
   for (const DNSOption& opt : opts_) {
     len += (4 + (int)opt.data_.size());
   }
+
   PushInt16(&data, len);
   for (const DNSOption& opt : opts_) {
     PushInt16(&data, opt.code_);
     PushInt16(&data, (int)opt.data_.size());
     data.insert(data.end(), opt.data_.begin(), opt.data_.end());
   }
+
+  if (cookie.size()) {
+    PushInt16(&data, ARES_OPT_PARAM_COOKIE);
+    PushInt16(&data, (int)cookie.size());
+    data.insert(data.end(), cookie.begin(), cookie.end());
+  }
+
   return data;
 }
 
-std::vector<byte> DNSNaptrRR::data() const {
-  std::vector<byte> data = DNSRR::data();
+std::vector<byte> DNSNaptrRR::data(const ares_dns_record_t *dnsrec) const {
+  std::vector<byte> data = DNSRR::data(dnsrec);
   std::vector<byte> encname = EncodeString(replacement_);
   int len = (4 + 1 + (int)flags_.size() + 1 + (int)service_.size() + 1 + (int)regexp_.size() + (int)encname.size());
   PushInt16(&data, len);
@@ -679,7 +726,7 @@ std::vector<byte> DNSNaptrRR::data() const {
   return data;
 }
 
-std::vector<byte> DNSPacket::data(const char *request_name) const {
+std::vector<byte> DNSPacket::data(const char *request_name, const ares_dns_record_t *dnsrec) const {
   std::vector<byte> data;
   PushInt16(&data, qid_);
   byte b = 0x00;
@@ -707,19 +754,19 @@ std::vector<byte> DNSPacket::data(const char *request_name) const {
   PushInt16(&data, count);
 
   for (const std::unique_ptr<DNSQuestion>& question : questions_) {
-    std::vector<byte> qdata = question->data(request_name);
+    std::vector<byte> qdata = question->data(request_name, dnsrec);
     data.insert(data.end(), qdata.begin(), qdata.end());
   }
   for (const std::unique_ptr<DNSRR>& rr : answers_) {
-    std::vector<byte> rrdata = rr->data();
+    std::vector<byte> rrdata = rr->data(dnsrec);
     data.insert(data.end(), rrdata.begin(), rrdata.end());
   }
   for (const std::unique_ptr<DNSRR>& rr : auths_) {
-    std::vector<byte> rrdata = rr->data();
+    std::vector<byte> rrdata = rr->data(dnsrec);
     data.insert(data.end(), rrdata.begin(), rrdata.end());
   }
   for (const std::unique_ptr<DNSRR>& rr : adds_) {
-    std::vector<byte> rrdata = rr->data();
+    std::vector<byte> rrdata = rr->data(dnsrec);
     data.insert(data.end(), rrdata.begin(), rrdata.end());
   }
   return data;
