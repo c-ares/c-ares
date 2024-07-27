@@ -329,6 +329,9 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 {$(SRCDIR)\src\lib\legacy}.c{$(CARES_OBJDIR)\legacy}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(CARES_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
+{$(SRCDIR)\src\lib\record}.c{$(CARES_OBJDIR)\record}.obj:
+    $(CC_CMD) $(CC_CFLAGS) $(CARES_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
+
 {$(SRCDIR)\src\lib\str}.c{$(CARES_OBJDIR)\str}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(CARES_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
@@ -416,6 +419,7 @@ $(CARES_OBJDIR): $(CARES_OUTDIR)
     @if not exist $(CARES_OBJDIR)\dsa mkdir $(CARES_OBJDIR)\dsa
     @if not exist $(CARES_OBJDIR)\event mkdir $(CARES_OBJDIR)\event
     @if not exist $(CARES_OBJDIR)\legacy mkdir $(CARES_OBJDIR)\legacy
+    @if not exist $(CARES_OBJDIR)\record mkdir $(CARES_OBJDIR)\record
     @if not exist $(CARES_OBJDIR)\str mkdir $(CARES_OBJDIR)\str
     @if not exist $(CARES_OBJDIR)\util mkdir $(CARES_OBJDIR)\util
 
@@ -431,6 +435,7 @@ clean:
     @-RMDIR /S /Q $(CARES_OBJDIR)\dsa >NUL 2>&1
     @-RMDIR /S /Q $(CARES_OBJDIR)\event >NUL 2>&1
     @-RMDIR /S /Q $(CARES_OBJDIR)\legacy >NUL 2>&1
+    @-RMDIR /S /Q $(CARES_OBJDIR)\record >NUL 2>&1
     @-RMDIR /S /Q $(CARES_OBJDIR)\str >NUL 2>&1
     @-RMDIR /S /Q $(CARES_OBJDIR)\util >NUL 2>&1
     @-RMDIR /S /Q $(CARES_OUTDIR) >NUL 2>&1

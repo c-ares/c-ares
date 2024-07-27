@@ -100,12 +100,14 @@ $(OBJ_BASE):
 	-$(MD) $^@\stat\dsa
 	-$(MD) $^@\stat\event
 	-$(MD) $^@\stat\legacy
+	-$(MD) $^@\stat\record
 	-$(MD) $^@\stat\str
 	-$(MD) $^@\stat\util
 	-$(MD) $^@\dyn
 	-$(MD) $^@\dyn\dsa
 	-$(MD) $^@\dyn\event
 	-$(MD) $^@\dyn\legacy
+	-$(MD) $^@\dyn\record
 	-$(MD) $^@\dyn\str
 	-$(MD) $^@\dyn\util
 	-$(MD) $^@\tools
@@ -142,12 +144,14 @@ vclean realclean: clean .SYMBOLIC
 	-$(RD) $(OBJ_BASE)\stat\dsa
 	-$(RD) $(OBJ_BASE)\stat\event
 	-$(RD) $(OBJ_BASE)\stat\legacy
+	-$(RD) $(OBJ_BASE)\stat\record
 	-$(RD) $(OBJ_BASE)\stat\str
 	-$(RD) $(OBJ_BASE)\stat\util
 	-$(RD) $(OBJ_BASE)\dyn
 	-$(RD) $(OBJ_BASE)\dyn\dsa
 	-$(RD) $(OBJ_BASE)\dyn\event
 	-$(RD) $(OBJ_BASE)\dyn\legacy
+	-$(RD) $(OBJ_BASE)\dyn\record
 	-$(RD) $(OBJ_BASE)\dyn\str
 	-$(RD) $(OBJ_BASE)\dyn\util
 	-$(RD) $(OBJ_BASE)\tools
@@ -177,6 +181,10 @@ $(RESOURCE): src\lib\cares.rc .AUTODEPEND
 	$(CC) $(CFLAGS) -bd .\src\lib\legacy\$^& -fo=$^@
 
 .ERASE
+{record}.c{$(OBJ_BASE)\dyn\record}.obj:
+	$(CC) $(CFLAGS) -bd .\src\lib\record\$^& -fo=$^@
+
+.ERASE
 {str}.c{$(OBJ_BASE)\dyn\str}.obj:
 	$(CC) $(CFLAGS) -bd .\src\lib\str\$^& -fo=$^@
 
@@ -199,6 +207,10 @@ $(RESOURCE): src\lib\cares.rc .AUTODEPEND
 .ERASE
 {legacy}.c{$(OBJ_BASE)\stat\legacy}.obj:
 	$(CC) $(CFLAGS) -DCARES_STATICLIB .\src\lib\legacy\$^& -fo=$^@
+
+.ERASE
+{record}.c{$(OBJ_BASE)\stat\record}.obj:
+	$(CC) $(CFLAGS) -DCARES_STATICLIB .\src\lib\record\$^& -fo=$^@
 
 .ERASE
 {str}.c{$(OBJ_BASE)\stat\str}.obj:

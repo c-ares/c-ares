@@ -13,12 +13,6 @@ CSOURCES = ares__addrinfo2hostent.c	\
   ares_cookie.c				\
   ares_data.c				\
   ares_destroy.c			\
-  ares_dns_mapping.c			\
-  ares_dns_multistring.c		\
-  ares_dns_name.c			\
-  ares_dns_parse.c			\
-  ares_dns_record.c			\
-  ares_dns_write.c			\
   ares_free_hostent.c			\
   ares_free_string.c			\
   ares_freeaddrinfo.c			\
@@ -79,6 +73,12 @@ CSOURCES = ares__addrinfo2hostent.c	\
   legacy/ares_parse_srv_reply.c		\
   legacy/ares_parse_txt_reply.c		\
   legacy/ares_parse_uri_reply.c		\
+  record/ares_dns_mapping.c		\
+  record/ares_dns_multistring.c		\
+  record/ares_dns_name.c		\
+  record/ares_dns_parse.c		\
+  record/ares_dns_record.c		\
+  record/ares_dns_write.c		\
   str/ares__buf.c			\
   str/ares_strcasecmp.c			\
   str/ares_str.c			\
@@ -91,8 +91,6 @@ CSOURCES = ares__addrinfo2hostent.c	\
 
 HHEADERS = ares_android.h			\
   ares_data.h				\
-  ares_dns_multistring.h		\
-  ares_dns_private.h			\
   ares_getenv.h				\
   ares_inet_net_pton.h			\
   ares_ipv6.h				\
@@ -108,6 +106,8 @@ HHEADERS = ares_android.h			\
   dsa/ares__slist.h			\
   event/ares_event.h			\
   event/ares_event_win32.h		\
+  record/ares_dns_multistring.h		\
+  record/ares_dns_private.h		\
   str/ares__buf.h			\
   str/ares_strcasecmp.h			\
   str/ares_str.h			\
