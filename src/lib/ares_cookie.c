@@ -276,8 +276,12 @@ static ares_bool_t ares_addr_equal(const struct ares_addr *addr1,
       }
       break;
     case AF_INET6:
-      if (memcmp(&addr1->addr.addr6, &addr2->addr.addr6,
-                 sizeof(addr1->addr.addr6)) == 0) {
+      /* This structure is weird, and due to padding SonarCloud complains if
+       * you don't punch all the way down.  At some point we should rework
+       * this structure */
+      if (memcmp(&addr1->addr.addr6._S6_un._S6_u8,
+                 &addr2->addr.addr6._S6_un._S6_u8,
+                 sizeof(addr1->addr.addr6._S6_un._S6_u8)) == 0) {
         return ARES_TRUE;
       }
       break;
