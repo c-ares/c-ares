@@ -444,7 +444,7 @@ MockServer::MockServer(int family, unsigned short port)
   setsockopt(tcpfd_, SOL_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen));
 #  else
   int on = 1;
-  setsockopt(tcpfd_, IPPROTO_TCP, TCP_FASTOPEN, &on, sizeof(on));
+  setsockopt(tcpfd_, IPPROTO_TCP, TCP_FASTOPEN, BYTE_CAST &on, sizeof(on));
 #  endif
 #endif
 
