@@ -1427,6 +1427,10 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
 
   (*options)->cnt++;
 
+  /* Make sure our entry is all zero'd out as its new, we're not replacing
+   * an already-existing value */
+  memset(&(*options)->optval[idx], 0, sizeof((*options)->optval[idx]));
+
 done:
   ares_free((*options)->optval[idx].val);
   (*options)->optval[idx].opt     = opt;
@@ -1494,6 +1498,7 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t    *dns_rr,
   }
 
   ares_free((*options)->optval[idx].val);
+  memset(&(*options)->optval[idx], 0, sizeof((*options)->optval[idx]));
 
   cnt_after = (*options)->cnt - idx - 1;
   if (cnt_after) {
