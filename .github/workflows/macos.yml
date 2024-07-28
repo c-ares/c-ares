@@ -23,6 +23,8 @@ jobs:
         run: brew install cmake googletest llvm autoconf automake libtool make ninja
       - name: Checkout c-ares
         uses: actions/checkout@v4
+      - name: "Make sure TCP FastOpen is enabled"
+        run: sudo sysctl net.inet.tcp.fastopen=3
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
