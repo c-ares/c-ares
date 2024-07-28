@@ -136,7 +136,7 @@ gpg: binary signature, digest algorithm SHA512, key algorithm rsa2048
   `SIG0` Record. Only basic parser, not full implementation.
 - [RFC7873](https://datatracker.ietf.org/doc/html/rfc7873),
   [RFC9018](https://datatracker.ietf.org/doc/html/rfc9018).
-  DNS Cookie off-path dns poisoning and amplification mitigation. *In progress*.
+  DNS Cookie off-path dns poisoning and amplification mitigation.
 - [draft-vixie-dnsext-dns0x20-00](https://datatracker.ietf.org/doc/html/draft-vixie-dnsext-dns0x20-00).
   DNS 0x20 query name case randomization to prevent cache poisioning attacks.
 - [RFC7686](https://datatracker.ietf.org/doc/html/rfc7686).
