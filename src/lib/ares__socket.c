@@ -405,9 +405,12 @@ static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
 #endif
 }
 
-ares_status_t ares__open_connection(ares_conn_t   **conn_out,
-                                    ares_channel_t *channel,
-                                    ares_server_t *server, ares_query_t *query)
+ares_status_t ares__open_connection(ares_conn_t        **conn_out,
+                                    ares_channel_t      *channel,
+                                    ares_server_t       *server,
+                                    ares_query_t        *query,
+                                    const unsigned char *data,
+                                    size_t              *data_len)
 {
   ares_socklen_t salen;
   ares_status_t  status;
@@ -434,10 +437,11 @@ ares_status_t ares__open_connection(ares_conn_t   **conn_out,
   conn->queries_to_conn = ares__llist_create(NULL);
   conn->flags           = is_tcp?ARES_CONN_FLAG_TCP:ARES_CONN_FLAG_NONE;
 
-  /* Enable TFO if the OS supports it, it might be disabled later if an
-   * error is encountered. Make sure a user isn't overriding anything. */
+  /* Enable TFO if the OS supports it and we were passed in data to send during
+   * the connect. It might be disabled later if an error is encountered. Make
+   * sure a user isn't overriding anything. */
   if (conn->flags & ARES_CONN_FLAG_TCP && channel->sock_funcs == NULL &&
-      TFO_SUPPORTED) {
+      TFO_SUPPORTED && data != NULL && data_len != NULL && *data_len > 0) {
     conn->flags |= ARES_CONN_FLAG_TFO;
   }
 

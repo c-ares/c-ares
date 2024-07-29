@@ -1100,7 +1100,7 @@ ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
 
   conn = ares__fetch_connection(channel, server, query);
   if (conn == NULL) {
-    status = ares__open_connection(&conn, channel, server, query);
+    status = ares__open_connection(&conn, channel, server, query, NULL, NULL);
     switch (status) {
       /* Good result, continue on */
       case ARES_SUCCESS:
