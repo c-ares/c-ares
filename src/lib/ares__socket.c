@@ -306,15 +306,16 @@ static ares_status_t ares_conn_set_self_ip(struct server_connection *conn)
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__open_connection(ares_channel_t      *channel,
-                                    struct server_state *server,
-                                    ares_bool_t          is_tcp)
+ares_status_t ares__open_connection(struct server_connection **conn_out,
+                                    ares_channel_t            *channel,
+                                    struct server_state       *server,
+                                    struct query              *query)
 {
   ares_socket_t  s;
   int            opt;
   ares_socklen_t salen;
   ares_status_t  status;
-
+  ares_bool_t    is_tcp = query->using_tcp;
   union {
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
@@ -323,6 +324,8 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
   struct server_connection *conn;
   ares__llist_node_t       *node;
   int                       type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
+
+  *conn_out = NULL;
 
   switch (server->addr.family) {
     case AF_INET:
@@ -468,6 +471,8 @@ ares_status_t ares__open_connection(ares_channel_t      *channel,
   if (is_tcp) {
     server->tcp_conn = conn;
   }
+
+  *conn_out = conn;
 
   return ARES_SUCCESS;
 }

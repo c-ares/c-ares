@@ -1056,6 +1056,38 @@ static size_t ares__calc_query_timeout(const struct query        *query,
   return timeplus;
 }
 
+static struct server_connection *
+  ares__fetch_connection(ares_channel_t *channel, struct server_state *server,
+                         const struct query *query)
+{
+  ares__llist_node_t       *node;
+  struct server_connection *conn;
+
+  if (query->using_tcp) {
+    return server->tcp_conn;
+  }
+
+  /* Fetch existing UDP connection */
+  node = ares__llist_node_first(server->connections);
+  if (node == NULL) {
+    return NULL;
+  }
+
+  conn = ares__llist_node_val(node);
+  /* Not UDP, skip */
+  if (conn->is_tcp) {
+    return NULL;
+  }
+
+  /* Used too many times */
+  if (channel->udp_max_queries > 0 &&
+      conn->total_queries >= channel->udp_max_queries) {
+    return NULL;
+  }
+
+  return conn;
+}
+
 ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
 {
   ares_channel_t           *channel = query->channel;
@@ -1063,7 +1095,6 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
   struct server_connection *conn;
   size_t                    timeplus;
   ares_status_t             status;
-  ares_bool_t               new_connection = ARES_FALSE;
 
   /* Choose the server to send the query to */
   if (channel->rotate) {
@@ -1079,94 +1110,40 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
     return ARES_ENOSERVER;
   }
 
-  if (query->using_tcp) {
-    size_t prior_len = 0;
-    /* Make sure the TCP socket for this server is set up and queue
-     * a send request.
-     */
-    if (server->tcp_conn == NULL) {
-      new_connection = ARES_TRUE;
-      status         = ares__open_connection(channel, server, ARES_TRUE);
-      switch (status) {
-        /* Good result, continue on */
-        case ARES_SUCCESS:
-          break;
+  conn = ares__fetch_connection(channel, server, query);
+  if (conn == NULL) {
+    status = ares__open_connection(&conn, channel, server, query);
+    switch (status) {
+      /* Good result, continue on */
+      case ARES_SUCCESS:
+        break;
 
-        /* These conditions are retryable as they are server-specific
-         * error codes */
-        case ARES_ECONNREFUSED:
-        case ARES_EBADFAMILY:
-          server_increment_failures(server, query->using_tcp);
-          return ares__requeue_query(query, now, status, ARES_TRUE);
+      /* These conditions are retryable as they are server-specific
+       * error codes */
+      case ARES_ECONNREFUSED:
+      case ARES_EBADFAMILY:
+        server_increment_failures(server, query->using_tcp);
+        return ares__requeue_query(query, now, status, ARES_TRUE);
 
-        /* Anything else is not retryable, likely ENOMEM */
-        default:
-          end_query(channel, server, query, status, NULL);
-          return status;
-      }
+      /* Anything else is not retryable, likely ENOMEM */
+      default:
+        end_query(channel, server, query, status, NULL);
+        return status;
     }
+  }
 
-    conn = server->tcp_conn;
-
-    prior_len = ares__buf_len(server->tcp_send);
-
+  if (query->using_tcp) {
+    size_t prior_len = ares__buf_len(server->tcp_send);
     status = ares__append_tcpbuf(conn, query, now);
     if (status != ARES_SUCCESS) {
       end_query(channel, server, query, status, NULL);
-
-      /* Only safe to kill connection if it was new, otherwise it should be
-       * cleaned up by another process later */
-      if (new_connection) {
-        ares__close_connection(conn, status);
-      }
       return status;
     }
 
     if (prior_len == 0) {
       SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
     }
-
   } else {
-    ares__llist_node_t *node = ares__llist_node_first(server->connections);
-
-    /* Don't use the found connection if we've gone over the maximum number
-     * of queries. Also, skip over the TCP connection if it is the first in
-     * the list */
-    if (node != NULL) {
-      conn = ares__llist_node_val(node);
-      if (conn->is_tcp) {
-        node = NULL;
-      } else if (channel->udp_max_queries > 0 &&
-                 conn->total_queries >= channel->udp_max_queries) {
-        node = NULL;
-      }
-    }
-
-    if (node == NULL) {
-      new_connection = ARES_TRUE;
-      status         = ares__open_connection(channel, server, ARES_FALSE);
-      switch (status) {
-        /* Good result, continue on */
-        case ARES_SUCCESS:
-          break;
-
-        /* These conditions are retryable as they are server-specific
-         * error codes */
-        case ARES_ECONNREFUSED:
-        case ARES_EBADFAMILY:
-          server_increment_failures(server, query->using_tcp);
-          return ares__requeue_query(query, now, status, ARES_TRUE);
-
-        /* Anything else is not retryable, likely ENOMEM */
-        default:
-          end_query(channel, server, query, status, NULL);
-          return status;
-      }
-      node = ares__llist_node_first(server->connections);
-    }
-
-    conn = ares__llist_node_val(node);
-
     status = ares__write_udpbuf(conn, query, now);
     if (status != ARES_SUCCESS) {
       if (status == ARES_ENOMEM) {
@@ -1192,12 +1169,6 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
       server_increment_failures(server, query->using_tcp);
       status = ares__requeue_query(query, now, status, ARES_TRUE);
 
-      /* Only safe to kill connection if it was new, otherwise it should be
-       * cleaned up by another process later */
-      if (new_connection) {
-        ares__close_connection(conn, status);
-      }
-
       return status;
     }
   }
@@ -1215,11 +1186,6 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
   if (!query->node_queries_by_timeout) {
     /* LCOV_EXCL_START: OutOfMemory */
     end_query(channel, server, query, ARES_ENOMEM, NULL);
-    /* Only safe to kill connection if it was new, otherwise it should be
-     * cleaned up by another process later */
-    if (new_connection) {
-      ares__close_connection(conn, ARES_SUCCESS);
-    }
     return ARES_ENOMEM;
     /* LCOV_EXCL_STOP */
   }
@@ -1233,11 +1199,6 @@ ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now)
   if (query->node_queries_to_conn == NULL) {
     /* LCOV_EXCL_START: OutOfMemory */
     end_query(channel, server, query, ARES_ENOMEM, NULL);
-    /* Only safe to kill connection if it was new, otherwise it should be
-     * cleaned up by another process later */
-    if (new_connection) {
-      ares__close_connection(conn, ARES_SUCCESS);
-    }
     return ARES_ENOMEM;
     /* LCOV_EXCL_STOP */
   }
