@@ -26,9 +26,6 @@ jobs:
           version: 1.0
       - name: Checkout c-ares
         uses: actions/checkout@v4
-      - name: "Make sure TCP FastOpen is enabled"
-        run: |
-          sudo sysctl -w net.ipv4.tcp_fastopen=3
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE

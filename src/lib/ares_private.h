@@ -161,8 +161,7 @@ typedef struct ares_conn ares_conn_t;
 
 typedef enum {
   ARES_CONN_FLAG_NONE = 0,      /*!< No flags */
-  ARES_CONN_FLAG_TCP  = 1 << 0, /*!< TCP not UDP */
-  ARES_CONN_FLAG_TFO  = 1 << 1  /*!< TCP Fast Open, can only be set with TCP */
+  ARES_CONN_FLAG_TCP  = 1 << 0  /*!< TCP not UDP */
 } ares_conn_flags_t;
 
 struct ares_conn {

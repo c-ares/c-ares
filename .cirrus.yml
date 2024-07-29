@@ -158,9 +158,6 @@ task:
           # pkg upgrade -y && \
           pkg install -y bash cmake ninja googletest pkgconf llvm gmake
           ln -sf /usr/local/bin/bash /bin/bash
-          # Enable TCP FastOpen
-          sysctl net.inet.tcp.fastopen.server_enable=1
-          sysctl net.inet.tcp.fastopen.client_enable=1
           case "${BUILD_TYPE}" in
             autotools)
               pkg install -y autoconf automake libtool
