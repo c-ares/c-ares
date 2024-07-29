@@ -931,73 +931,6 @@ static ares_server_t *ares__failover_server(ares_channel_t *channel)
   return first_server;
 }
 
-static ares_status_t ares__append_tcpbuf(ares_conn_t          *conn,
-                                         const ares_query_t   *query,
-                                         const ares_timeval_t *now)
-{
-  ares_status_t  status;
-  unsigned char *qbuf     = NULL;
-  size_t         qbuf_len = 0;
-
-  status = ares_cookie_apply(query->query, conn, now);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
-  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
-  status =
-    ares__buf_append_be16(conn->server->tcp_send, (unsigned short)qbuf_len);
-  if (status != ARES_SUCCESS) {
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
-  }
-
-  status = ares__buf_append(conn->server->tcp_send, qbuf, qbuf_len);
-
-done:
-  ares_free(qbuf);
-  return status;
-}
-
-static ares_status_t ares__write_udpbuf(ares_conn_t          *conn,
-                                        const ares_query_t   *query,
-                                        const ares_timeval_t *now)
-{
-  ares_status_t  status;
-  unsigned char *qbuf     = NULL;
-  size_t         qbuf_len = 0;
-
-  status = ares_cookie_apply(query->query, conn, now);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
-  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
-  if (ares__socket_write(conn->server->channel, conn->fd, qbuf, qbuf_len) ==
-      -1) {
-    if (try_again(SOCKERRNO)) {
-      status = ARES_ESERVFAIL;
-    } else {
-      /* UDP is connection-less, but we might receive an ICMP unreachable which
-       * means we can't talk to the remote host at all and that will be
-       * reflected here */
-      status = ARES_ECONNREFUSED;
-    }
-  } else {
-    status = ARES_SUCCESS;
-  }
-
-done:
-  ares_free(qbuf);
-  return status;
-}
 
 static size_t ares__calc_query_timeout(const ares_query_t   *query,
                                        const ares_server_t  *server,
@@ -1083,6 +1016,65 @@ static ares_conn_t *ares__fetch_connection(ares_channel_t     *channel,
   return conn;
 }
 
+static ares_status_t ares__query_write(ares_conn_t *conn, ares_query_t *query,
+                                       const ares_timeval_t *now)
+{
+  unsigned char  *qbuf     = NULL;
+  size_t          qbuf_len = 0;
+  ares_server_t  *server   = conn->server;
+  ares_channel_t *channel  = server->channel;
+  ares_status_t   status;
+
+  status = ares_cookie_apply(query->query, conn, now);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  if (conn->is_tcp) {
+    size_t prior_len = ares__buf_len(server->tcp_send);
+
+    status =
+      ares__buf_append_be16(server->tcp_send, (unsigned short)qbuf_len);
+    if (status != ARES_SUCCESS) {
+      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+    status = ares__buf_append(server->tcp_send, qbuf, qbuf_len);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    if (prior_len == 0) {
+      SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
+    }
+  } else {
+    if (ares__socket_write(channel, conn->fd, qbuf, qbuf_len) ==
+      -1) {
+      if (try_again(SOCKERRNO)) {
+        status = ARES_ESERVFAIL;
+        goto done;
+      } else {
+        /* UDP is connection-less, but we might receive an ICMP unreachable which
+         * means we can't talk to the remote host at all and that will be
+         * reflected here */
+        status = ARES_ECONNREFUSED;
+        goto done;
+      }
+    }
+  }
+
+  status = ARES_SUCCESS;
+
+done:
+  ares_free(qbuf);
+  return status;
+}
+
 ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
 {
   ares_channel_t *channel = query->channel;
@@ -1127,45 +1119,34 @@ ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
     }
   }
 
-  if (query->using_tcp) {
-    size_t prior_len = ares__buf_len(server->tcp_send);
-    status           = ares__append_tcpbuf(conn, query, now);
-    if (status != ARES_SUCCESS) {
+  status = ares__query_write(conn, query, now);
+  switch (status) {
+    /* Good result, continue on */
+    case ARES_SUCCESS:
+      break;
+
+    case ARES_ENOMEM:
+      /* Not retryable */
       end_query(channel, server, query, status, NULL);
       return status;
-    }
 
-    if (prior_len == 0) {
-      SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
-    }
-  } else {
-    status = ares__write_udpbuf(conn, query, now);
-    if (status != ARES_SUCCESS) {
-      if (status == ARES_ENOMEM) {
-        /* Not retryable */
-        end_query(channel, server, query, status, NULL);
-        return status;
+    /* These conditions are retryable as they are server-specific
+     * error codes */
+    case ARES_ECONNREFUSED:
+    case ARES_EBADFAMILY:
+      handle_conn_error(conn, ARES_TRUE, status);
+      status = ares__requeue_query(query, now, status, ARES_TRUE);
+      if (status == ARES_ETIMEOUT) {
+        status = ARES_ECONNREFUSED;
       }
+      return status;
 
-      if (status == ARES_ECONNREFUSED) {
-        handle_conn_error(conn, ARES_TRUE, status);
-
-        /* This query wasn't yet bound to the connection, need to manually
-         * requeue it and return an appropriate error */
-        status = ares__requeue_query(query, now, status, ARES_TRUE);
-        if (status == ARES_ETIMEOUT) {
-          status = ARES_ECONNREFUSED;
-        }
-        return status;
-      }
-
-      /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
-       * just requeue to a different server/connection. */
+    /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
+     * just requeue to a different server/connection. */
+    default:
       server_increment_failures(server, query->using_tcp);
       status = ares__requeue_query(query, now, status, ARES_TRUE);
-
       return status;
-    }
   }
 
   timeplus = ares__calc_query_timeout(query, server, now);
