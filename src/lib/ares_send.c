@@ -106,7 +106,7 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
                                ares_callback_dnsrec callback, void *arg,
                                unsigned short *qid)
 {
-  struct query            *query;
+  ares_query_t            *query;
   ares_timeval_t           now;
   ares_status_t            status;
   unsigned short           id          = generate_unique_qid(channel);
@@ -129,7 +129,7 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
   }
 
   /* Allocate space for query and allocated fields. */
-  query = ares_malloc(sizeof(struct query));
+  query = ares_malloc(sizeof(ares_query_t));
   if (!query) {
     callback(arg, ARES_ENOMEM, 0, NULL); /* LCOV_EXCL_LINE: OutOfMemory */
     return ARES_ENOMEM;                  /* LCOV_EXCL_LINE: OutOfMemory */

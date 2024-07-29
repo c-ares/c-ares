@@ -291,8 +291,8 @@ public:
 private:
   void           ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr,
                                 ares_socklen_t addrlen, const std::vector<byte> &req,
-                                const std::string &reqstr,
-                                int qid, const char *name, int rrtype);
+                                const std::string &reqstr, int qid, const char *name,
+                                int rrtype);
   void           ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr,
                                ares_socklen_t addrlen, byte *data, int len);
   unsigned short udpport_;
@@ -497,7 +497,6 @@ struct HostResult {
 
 std::ostream &operator<<(std::ostream &os, const HostResult &result);
 
-
 // C++ wrapper for ares_dns_record_t.
 struct AresDnsRecord {
   ~AresDnsRecord()
@@ -510,7 +509,8 @@ struct AresDnsRecord {
   {
   }
 
-  void SetDnsRecord(const ares_dns_record_t *dnsrec) {
+  void SetDnsRecord(const ares_dns_record_t *dnsrec)
+  {
     if (dnsrec_ != NULL) {
       ares_dns_record_destroy(dnsrec_);
     }
@@ -532,7 +532,7 @@ struct QueryResult {
   }
 
   // Whether the callback has been invoked.
-  bool    done_;
+  bool          done_;
   // Explicitly provided result information.
   ares_status_t status_;
   size_t        timeouts_;
@@ -541,7 +541,6 @@ struct QueryResult {
 };
 
 std::ostream &operator<<(std::ostream &os, const QueryResult &result);
-
 
 // Structure that describes the result of an ares_callback invocation.
 struct SearchResult {
@@ -603,8 +602,8 @@ std::ostream &operator<<(std::ostream &os, const AddrInfoResult &result);
 // structures.
 void          HostCallback(void *data, int status, int timeouts,
                            struct hostent *hostent);
-void QueryCallback(void *data, ares_status_t status, size_t timeouts,
-                   const ares_dns_record_t *dnsrec);
+void          QueryCallback(void *data, ares_status_t status, size_t timeouts,
+                            const ares_dns_record_t *dnsrec);
 void SearchCallback(void *data, int status, int timeouts, unsigned char *abuf,
                     int alen);
 void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,

@@ -53,7 +53,7 @@ std::string           RRTypeToString(int rrtype);
 std::string           ClassToString(int qclass);
 std::string           AddressToString(const void *addr, int len);
 
-const ares_dns_rr_t *fetch_rr_opt(const ares_dns_record_t *rec);
+const ares_dns_rr_t  *fetch_rr_opt(const ares_dns_record_t *rec);
 
 // Convert DNS protocol data to strings.
 // Note that these functions are not defensive; they assume
@@ -86,7 +86,8 @@ struct DNSQuestion {
   {
   }
 
-  virtual std::vector<byte> data(const char *request_name, const ares_dns_record_t *dnsrec) const;
+  virtual std::vector<byte> data(const char              *request_name,
+                                 const ares_dns_record_t *dnsrec) const;
 
   virtual std::vector<byte> data(const ares_dns_record_t *dnsrec) const
   {
@@ -288,11 +289,15 @@ struct DNSOption {
 };
 
 struct DNSOptRR : public DNSRR {
-  DNSOptRR(unsigned char extrcode, unsigned char version, unsigned short flags, int udpsize, std::vector<byte> client_cookie, std::vector<byte> server_cookie, bool expect_server_cookie)
-    : DNSRR("", T_OPT, static_cast<int>(udpsize), ((int)extrcode) << 24 | ((int)version) << 16 | ((int)flags)/* ttl */)
+  DNSOptRR(unsigned char extrcode, unsigned char version, unsigned short flags,
+           int udpsize, std::vector<byte> client_cookie,
+           std::vector<byte> server_cookie, bool expect_server_cookie)
+    : DNSRR("", T_OPT, static_cast<int>(udpsize),
+            ((int)extrcode) << 24 | ((int)version) << 16 |
+              ((int)flags) /* ttl */)
   {
-    client_cookie_ = client_cookie;
-    server_cookie_ = server_cookie;
+    client_cookie_        = client_cookie;
+    server_cookie_        = server_cookie;
     expect_server_cookie_ = expect_server_cookie;
   }
 
@@ -397,7 +402,8 @@ struct DNSPacket {
   }
 
   // Return the encoded packet.
-  std::vector<byte> data(const char *request_name, const ares_dns_record_t *dnsrec) const;
+  std::vector<byte> data(const char              *request_name,
+                         const ares_dns_record_t *dnsrec) const;
 
   std::vector<byte> data() const
   {

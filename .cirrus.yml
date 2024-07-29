@@ -57,7 +57,7 @@ task:
         BUILD_ANALYZE: "yes"
         TEST_SYMBOL_VISIBILITY: "yes"
       freebsd_instance:
-        image_family: freebsd-13-3
+        image_family: freebsd-14-1
     - name: "iOS"
       env:
         DIST: "iOS"
