@@ -158,7 +158,7 @@ static void set_ipv6_v6only(ares_socket_t sockfd, int on)
 #  define set_ipv6_v6only(s, v)
 #endif
 
-static int configure_socket(ares_socket_t s, struct server_state *server)
+static int configure_socket(ares_socket_t s, ares_server_t *server)
 {
   union {
     struct sockaddr     sa;
@@ -280,7 +280,7 @@ ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
   return ARES_FALSE;
 }
 
-static ares_status_t ares_conn_set_self_ip(struct server_connection *conn)
+static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn)
 {
   /* Some old systems might not have sockaddr_storage, so we make a union
    * that's guaranteed to be large enough */
@@ -289,6 +289,7 @@ static ares_status_t ares_conn_set_self_ip(struct server_connection *conn)
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
   } from;
+
   int            rv;
   ares_socklen_t len = sizeof(from);
 
@@ -306,24 +307,24 @@ static ares_status_t ares_conn_set_self_ip(struct server_connection *conn)
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__open_connection(struct server_connection **conn_out,
-                                    ares_channel_t            *channel,
-                                    struct server_state       *server,
-                                    struct query              *query)
+ares_status_t ares__open_connection(ares_conn_t   **conn_out,
+                                    ares_channel_t *channel,
+                                    ares_server_t *server, ares_query_t *query)
 {
   ares_socket_t  s;
   int            opt;
   ares_socklen_t salen;
   ares_status_t  status;
   ares_bool_t    is_tcp = query->using_tcp;
+
   union {
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
   } saddr;
-  struct sockaddr          *sa;
-  struct server_connection *conn;
-  ares__llist_node_t       *node;
-  int                       type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
+  struct sockaddr    *sa;
+  ares_conn_t        *conn;
+  ares__llist_node_t *node;
+  int                 type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
 
   *conn_out = NULL;
 

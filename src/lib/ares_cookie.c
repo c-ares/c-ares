@@ -244,9 +244,8 @@ static void ares_cookie_clear(ares_cookie_t *cookie)
   cookie->state = ARES_COOKIE_INITIAL;
 }
 
-static void ares_cookie_generate(ares_cookie_t            *cookie,
-                                 struct server_connection *conn,
-                                 const ares_timeval_t     *now)
+static void ares_cookie_generate(ares_cookie_t *cookie, ares_conn_t *conn,
+                                 const ares_timeval_t *now)
 {
   ares_channel_t *channel = conn->server->channel;
 
@@ -292,15 +291,14 @@ static ares_bool_t ares_addr_equal(const struct ares_addr *addr1,
   return ARES_FALSE;
 }
 
-ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
-                                struct server_connection *conn,
-                                const ares_timeval_t     *now)
+ares_status_t ares_cookie_apply(ares_dns_record_t *dnsrec, ares_conn_t *conn,
+                                const ares_timeval_t *now)
 {
-  struct server_state *server = conn->server;
-  ares_cookie_t       *cookie = &server->cookie;
-  ares_dns_rr_t       *rr     = ares_dns_get_opt_rr(dnsrec);
-  unsigned char        c[40];
-  size_t               c_len;
+  ares_server_t *server = conn->server;
+  ares_cookie_t *cookie = &server->cookie;
+  ares_dns_rr_t *rr     = ares_dns_get_opt_rr(dnsrec);
+  unsigned char  c[40];
+  size_t         c_len;
 
   /* If there is no OPT record, then EDNS isn't supported, and therefore
    * cookies can't be supported */
@@ -369,12 +367,11 @@ ares_status_t ares_cookie_apply(ares_dns_record_t        *dnsrec,
                              c_len);
 }
 
-ares_status_t ares_cookie_validate(struct query             *query,
-                                   const ares_dns_record_t  *dnsresp,
-                                   struct server_connection *conn,
-                                   const ares_timeval_t     *now)
+ares_status_t ares_cookie_validate(ares_query_t            *query,
+                                   const ares_dns_record_t *dnsresp,
+                                   ares_conn_t *conn, const ares_timeval_t *now)
 {
-  struct server_state     *server = conn->server;
+  ares_server_t           *server = conn->server;
   ares_cookie_t           *cookie = &server->cookie;
   const ares_dns_record_t *dnsreq = query->query;
   const unsigned char     *resp_cookie;

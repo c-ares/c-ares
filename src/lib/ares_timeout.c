@@ -88,7 +88,7 @@ static struct timeval *ares_timeout_int(const ares_channel_t *channel,
                                         struct timeval       *maxtv,
                                         struct timeval       *tvbuf)
 {
-  const struct query *query;
+  const ares_query_t *query;
   ares__slist_node_t *node;
   ares_timeval_t      now;
   ares_timeval_t      atvbuf;
