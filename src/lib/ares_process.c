@@ -554,7 +554,7 @@ static void read_packets(ares_channel_t *channel, fd_set *read_fds,
 
     conn = ares__llist_node_val(node);
 
-    if (conn->is_tcp) {
+    if (conn->flags & ARES_CONN_FLAG_TCP) {
       read_tcp_data(channel, conn, now);
     } else {
       read_udp_packets_fd(channel, conn, now);
@@ -588,7 +588,7 @@ static void read_packets(ares_channel_t *channel, fd_set *read_fds,
 
     conn = ares__llist_node_val(node);
 
-    if (conn->is_tcp) {
+    if (conn->flags & ARES_CONN_FLAG_TCP) {
       read_tcp_data(channel, conn, now);
     } else {
       read_udp_packets_fd(channel, conn, now);
@@ -797,7 +797,8 @@ static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
   /* Increment failures first before requeue so it is unlikely to requeue
    * to the same server */
   if (critical_failure) {
-    server_increment_failures(server, conn->is_tcp);
+    server_increment_failures(server,
+      (conn->flags & ARES_CONN_FLAG_TCP)?ARES_TRUE:ARES_FALSE);
   }
 
   /* This will requeue any connections automatically */
@@ -1003,7 +1004,7 @@ static ares_conn_t *ares__fetch_connection(ares_channel_t     *channel,
 
   conn = ares__llist_node_val(node);
   /* Not UDP, skip */
-  if (conn->is_tcp) {
+  if (conn->flags & ARES_CONN_FLAG_TCP) {
     return NULL;
   }
 
@@ -1035,7 +1036,7 @@ static ares_status_t ares__query_write(ares_conn_t *conn, ares_query_t *query,
     goto done;
   }
 
-  if (conn->is_tcp) {
+  if (conn->flags & ARES_CONN_FLAG_TCP) {
     size_t prior_len = ares__buf_len(server->tcp_send);
 
     status =

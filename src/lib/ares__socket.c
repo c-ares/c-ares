@@ -193,7 +193,7 @@ static ares_status_t configure_socket(ares_conn_t *conn)
 #endif
 
 #ifdef TCP_NODELAY
-  if (conn->is_tcp) {
+  if (conn->flags & ARES_CONN_FLAG_TCP) {
     /*
      * Disable the Nagle algorithm (only relevant for TCP sockets, and thus not
      * in configure_socket). In general, in DNS lookups we're pretty much
@@ -351,7 +351,7 @@ ares_status_t ares__open_connection(ares_conn_t   **conn_out,
   conn->fd              = ARES_SOCKET_BAD;
   conn->server          = server;
   conn->queries_to_conn = ares__llist_create(NULL);
-  conn->is_tcp          = is_tcp;
+  conn->flags           = is_tcp?ARES_CONN_FLAG_TCP:ARES_CONN_FLAG_NONE;
   if (conn->queries_to_conn == NULL) {
     /* LCOV_EXCL_START: OutOfMemory */
     status = ARES_ENOMEM;

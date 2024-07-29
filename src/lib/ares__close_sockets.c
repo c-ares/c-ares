@@ -51,7 +51,7 @@ void ares__close_connection(ares_conn_t *conn, ares_status_t requeue_status)
     ares__htable_asvp_get_direct(channel->connnode_by_socket, conn->fd));
   ares__htable_asvp_remove(channel->connnode_by_socket, conn->fd);
 
-  if (conn->is_tcp) {
+  if (conn->flags & ARES_CONN_FLAG_TCP) {
     /* Reset any existing input and output buffer. */
     ares__buf_consume(server->tcp_parser, ares__buf_len(server->tcp_parser));
     ares__buf_consume(server->tcp_send, ares__buf_len(server->tcp_send));
@@ -120,7 +120,7 @@ void ares__check_cleanup_conns(const ares_channel_t *channel)
       }
 
       /* If the udp connection hit its max queries, always close it */
-      if (!conn->is_tcp && channel->udp_max_queries > 0 &&
+      if (!(conn->flags & ARES_CONN_FLAG_TCP) && channel->udp_max_queries > 0 &&
           conn->total_queries >= channel->udp_max_queries) {
         do_cleanup = ARES_TRUE;
       }

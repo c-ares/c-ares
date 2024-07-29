@@ -61,17 +61,18 @@ int ares_getsock(const ares_channel_t *channel, ares_socket_t *socks,
       /* We only need to register interest in UDP sockets if we have
        * outstanding queries.
        */
-      if (!active_queries && !conn->is_tcp) {
+      if (!active_queries && !(conn->flags & ARES_CONN_FLAG_TCP)) {
         continue;
       }
 
       socks[sockindex] = conn->fd;
 
-      if (active_queries || conn->is_tcp) {
+      if (active_queries || (conn->flags & ARES_CONN_FLAG_TCP)) {
         bitmap |= ARES_GETSOCK_READABLE(setbits, sockindex);
       }
 
-      if (conn->is_tcp && ares__buf_len(server->tcp_send)) {
+      if ((conn->flags & ARES_CONN_FLAG_TCP) &&
+          ares__buf_len(server->tcp_send)) {
         /* then the tcp socket is also writable! */
         bitmap |= ARES_GETSOCK_WRITABLE(setbits, sockindex);
       }

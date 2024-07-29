@@ -307,7 +307,7 @@ ares_status_t ares_cookie_apply(ares_dns_record_t *dnsrec, ares_conn_t *conn,
   }
 
   /* No cookies on TCP, make sure we remove one if one is present */
-  if (conn->is_tcp) {
+  if (conn->flags & ARES_CONN_FLAG_TCP) {
     ares_dns_rr_del_opt_byid(rr, ARES_RR_OPT_OPTIONS, ARES_OPT_PARAM_COOKIE);
     return ARES_SUCCESS;
   }

@@ -159,15 +159,21 @@ typedef struct ares_server ares_server_t;
 struct ares_conn;
 typedef struct ares_conn ares_conn_t;
 
+typedef enum {
+  ARES_CONN_FLAG_NONE = 0,      /*!< No flags */
+  ARES_CONN_FLAG_TCP  = 1 << 0, /*!< TCP not UDP */
+  ARES_CONN_FLAG_TFO  = 1 << 1  /*!< TCP Fast Open, can only be set with TCP */
+} ares_conn_flags_t;
+
 struct ares_conn {
-  ares_server_t   *server;
-  ares_socket_t    fd;
-  struct ares_addr self_ip;
-  ares_bool_t      is_tcp;
+  ares_server_t    *server;
+  ares_socket_t     fd;
+  struct ares_addr  self_ip;
+  ares_conn_flags_t flags;
   /* total number of queries run on this connection since it was established */
-  size_t           total_queries;
+  size_t            total_queries;
   /* list of outstanding queries to this connection */
-  ares__llist_t   *queries_to_conn;
+  ares__llist_t    *queries_to_conn;
 };
 
 #ifdef _MSC_VER
