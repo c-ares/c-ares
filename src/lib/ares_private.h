@@ -606,9 +606,11 @@ ares_ssize_t  ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                     ares_socklen_t  *from_len);
 ares_ssize_t  ares__socket_recv(ares_channel_t *channel, ares_socket_t s,
                                 void *data, size_t data_len);
-void          ares__close_socket(ares_channel, ares_socket_t);
-int  ares__connect_socket(ares_channel_t *channel, ares_socket_t sockfd,
-                          const struct sockaddr *addr, ares_socklen_t addrlen);
+void          ares__close_socket(ares_channel_t *channel, ares_socket_t s);
+ares_status_t ares__connect_socket(ares_channel_t *channel,
+                                   ares_socket_t sockfd,
+                                   const struct sockaddr *addr,
+                                   ares_socklen_t addrlen);
 void ares__destroy_server(ares_server_t *server);
 
 ares_status_t ares__servers_update(ares_channel_t *channel,

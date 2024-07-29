@@ -158,7 +158,7 @@ static void set_ipv6_v6only(ares_socket_t sockfd, int on)
 #  define set_ipv6_v6only(s, v)
 #endif
 
-static int configure_socket(ares_socket_t s, ares_server_t *server)
+static ares_status_t configure_socket(ares_conn_t *conn)
 {
   union {
     struct sockaddr     sa;
@@ -167,19 +167,20 @@ static int configure_socket(ares_socket_t s, ares_server_t *server)
   } local;
 
   ares_socklen_t  bindlen = 0;
+  ares_server_t  *server  = conn->server;
   ares_channel_t *channel = server->channel;
 
   /* do not set options for user-managed sockets */
   if (channel->sock_funcs && channel->sock_funcs->asocket) {
-    return 0;
+    return ARES_SUCCESS;
   }
 
-  (void)setsocknonblock(s, 1);
+  (void)setsocknonblock(conn->fd, 1);
 
 #if defined(FD_CLOEXEC) && !defined(MSDOS)
   /* Configure the socket fd as close-on-exec. */
-  if (fcntl(s, F_SETFD, FD_CLOEXEC) == -1) {
-    return -1; /* LCOV_EXCL_LINE */
+  if (fcntl(conn->fd, F_SETFD, FD_CLOEXEC) != 0) {
+    return ARES_ECONNREFUSED; /* LCOV_EXCL_LINE */
   }
 #endif
 
@@ -187,31 +188,47 @@ static int configure_socket(ares_socket_t s, ares_server_t *server)
 #if defined(SO_NOSIGPIPE)
   {
     int opt = 1;
-    setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, (void *)&opt, sizeof(opt));
+    setsockopt(conn->fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&opt, sizeof(opt));
+  }
+#endif
+
+#ifdef TCP_NODELAY
+  if (conn->is_tcp) {
+    /*
+     * Disable the Nagle algorithm (only relevant for TCP sockets, and thus not
+     * in configure_socket). In general, in DNS lookups we're pretty much
+     * interested in firing off a single request and then waiting for a reply,
+     * so batching isn't very interesting.
+     */
+    int opt = 1;
+    if (setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, (void *)&opt,
+        sizeof(opt)) != 0) {
+      return ARES_ECONNREFUSED;
+    }
   }
 #endif
 
   /* Set the socket's send and receive buffer sizes. */
-  if ((channel->socket_send_buffer_size > 0) &&
-      setsockopt(s, SOL_SOCKET, SO_SNDBUF,
+  if (channel->socket_send_buffer_size > 0 &&
+      setsockopt(conn->fd, SOL_SOCKET, SO_SNDBUF,
                  (void *)&channel->socket_send_buffer_size,
-                 sizeof(channel->socket_send_buffer_size)) == -1) {
-    return -1; /* LCOV_EXCL_LINE: UntestablePath */
+                 sizeof(channel->socket_send_buffer_size)) != 0) {
+    return ARES_ECONNREFUSED; /* LCOV_EXCL_LINE: UntestablePath */
   }
 
-  if ((channel->socket_receive_buffer_size > 0) &&
-      setsockopt(s, SOL_SOCKET, SO_RCVBUF,
+  if (channel->socket_receive_buffer_size > 0 &&
+      setsockopt(conn->fd, SOL_SOCKET, SO_RCVBUF,
                  (void *)&channel->socket_receive_buffer_size,
-                 sizeof(channel->socket_receive_buffer_size)) == -1) {
-    return -1; /* LCOV_EXCL_LINE: UntestablePath */
+                 sizeof(channel->socket_receive_buffer_size)) != 0) {
+    return ARES_ECONNREFUSED; /* LCOV_EXCL_LINE: UntestablePath */
   }
 
 #ifdef SO_BINDTODEVICE
-  if (channel->local_dev_name[0] &&
-      setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, channel->local_dev_name,
-                 sizeof(channel->local_dev_name))) {
-    /* Only root can do this, and usually not fatal if it doesn't work, so */
-    /* just continue on. */
+  if (ares_strlen(channel->local_dev_name)) {
+      /* Only root can do this, and usually not fatal if it doesn't work, so
+       * just continue on. */
+      setsockopt(conn->fd, SOL_SOCKET, SO_BINDTODEVICE, channel->local_dev_name,
+                 sizeof(channel->local_dev_name));
   }
 #endif
 
@@ -231,15 +248,15 @@ static int configure_socket(ares_socket_t s, ares_server_t *server)
     bindlen = sizeof(local.sa6);
   }
 
-  if (bindlen && bind(s, &local.sa, bindlen) < 0) {
-    return -1;
+  if (bindlen && bind(conn->fd, &local.sa, bindlen) < 0) {
+    return ARES_ECONNREFUSED;
   }
 
   if (server->addr.family == AF_INET6) {
-    set_ipv6_v6only(s, 0);
+    set_ipv6_v6only(conn->fd, 0);
   }
 
-  return 0;
+  return ARES_SUCCESS;
 }
 
 ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
@@ -311,8 +328,6 @@ ares_status_t ares__open_connection(ares_conn_t   **conn_out,
                                     ares_channel_t *channel,
                                     ares_server_t *server, ares_query_t *query)
 {
-  ares_socket_t  s;
-  int            opt;
   ares_socklen_t salen;
   ares_status_t  status;
   ares_bool_t    is_tcp = query->using_tcp;
@@ -323,10 +338,26 @@ ares_status_t ares__open_connection(ares_conn_t   **conn_out,
   } saddr;
   struct sockaddr    *sa;
   ares_conn_t        *conn;
-  ares__llist_node_t *node;
-  int                 type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
+  ares__llist_node_t *node = NULL;
+  int                 sock_type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
 
   *conn_out = NULL;
+
+  conn = ares_malloc(sizeof(*conn));
+  if (conn == NULL) {
+    return ARES_ENOMEM;             /* LCOV_EXCL_LINE: OutOfMemory */
+  }
+  memset(conn, 0, sizeof(*conn));
+  conn->fd              = ARES_SOCKET_BAD;
+  conn->server          = server;
+  conn->queries_to_conn = ares__llist_create(NULL);
+  conn->is_tcp          = is_tcp;
+  if (conn->queries_to_conn == NULL) {
+    /* LCOV_EXCL_START: OutOfMemory */
+    status = ARES_ENOMEM;
+    goto done;
+    /* LCOV_EXCL_STOP */
+  }
 
   switch (server->addr.family) {
     case AF_INET:
@@ -351,91 +382,50 @@ ares_status_t ares__open_connection(ares_conn_t   **conn_out,
 #endif
       break;
     default:
-      return ARES_EBADFAMILY; /* LCOV_EXCL_LINE */
+      status = ARES_EBADFAMILY; /* LCOV_EXCL_LINE */
+      goto done;
   }
 
+
   /* Acquire a socket. */
-  s = ares__open_socket(channel, server->addr.family, type, 0);
-  if (s == ARES_SOCKET_BAD) {
-    return ARES_ECONNREFUSED;
+  conn->fd = ares__open_socket(channel, server->addr.family, sock_type, 0);
+  if (conn->fd == ARES_SOCKET_BAD) {
+    status = ARES_ECONNREFUSED;
+    goto done;
   }
 
   /* Configure it. */
-  if (configure_socket(s, server) < 0) {
-    ares__close_socket(channel, s);
-    return ARES_ECONNREFUSED;
+  status = configure_socket(conn);
+  if (status != ARES_SUCCESS) {
+    goto done;
   }
-
-#ifdef TCP_NODELAY
-  if (is_tcp) {
-    /*
-     * Disable the Nagle algorithm (only relevant for TCP sockets, and thus not
-     * in configure_socket). In general, in DNS lookups we're pretty much
-     * interested in firing off a single request and then waiting for a reply,
-     * so batching isn't very interesting.
-     */
-    opt = 1;
-    if ((!channel->sock_funcs || !channel->sock_funcs->asocket) &&
-        setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (void *)&opt, sizeof(opt)) ==
-          -1) {
-      ares__close_socket(channel, s); /* LCOV_EXCL_LINE: UntestablePath */
-      return ARES_ECONNREFUSED;       /* LCOV_EXCL_LINE: UntestablePath */
-    }
-  }
-#endif
 
   if (channel->sock_config_cb) {
-    int err = channel->sock_config_cb(s, type, channel->sock_config_cb_data);
+    int err = channel->sock_config_cb(conn->fd, sock_type, channel->sock_config_cb_data);
     if (err < 0) {
-      ares__close_socket(channel, s);
-      return ARES_ECONNREFUSED;
+      status = ARES_ECONNREFUSED;
+      goto done;
     }
   }
 
   /* Connect to the server. */
-  if (ares__connect_socket(channel, s, sa, salen) == -1) {
-    int err = SOCKERRNO;
-
-    if (err != EINPROGRESS && err != EWOULDBLOCK) {
-      ares__close_socket(channel, s);
-      return ARES_ECONNREFUSED;
-    }
+  status = ares__connect_socket(channel, conn->fd, sa, salen);
+  if (status != ARES_SUCCESS) {
+    goto done;
   }
 
   if (channel->sock_create_cb) {
-    int err = channel->sock_create_cb(s, type, channel->sock_create_cb_data);
+    int err = channel->sock_create_cb(conn->fd, sock_type, channel->sock_create_cb_data);
     if (err < 0) {
-      ares__close_socket(channel, s);
-      return ARES_ECONNREFUSED;
+      status = ARES_ECONNREFUSED;
+      goto done;
     }
-  }
-
-  conn = ares_malloc(sizeof(*conn));
-  if (conn == NULL) {
-    ares__close_socket(channel, s); /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM;             /* LCOV_EXCL_LINE: OutOfMemory */
-  }
-  memset(conn, 0, sizeof(*conn));
-  conn->fd              = s;
-  conn->server          = server;
-  conn->queries_to_conn = ares__llist_create(NULL);
-  conn->is_tcp          = is_tcp;
-  if (conn->queries_to_conn == NULL) {
-    /* LCOV_EXCL_START: OutOfMemory */
-    ares__close_socket(channel, s);
-    ares_free(conn);
-    return ARES_ENOMEM;
-    /* LCOV_EXCL_STOP */
   }
 
   /* Need to store our own ip for DNS cookie support */
   status = ares_conn_set_self_ip(conn);
   if (status != ARES_SUCCESS) {
-    /* LCOV_EXCL_START: UntestablePath */
-    ares__close_socket(channel, s);
-    ares_free(conn);
-    return status;
-    /* LCOV_EXCL_STOP */
+    goto done; /* LCOV_EXCL_LINE: UntestablePath */
   }
 
   /* TCP connections are thrown to the end as we don't spawn multiple TCP
@@ -448,34 +438,36 @@ ares_status_t ares__open_connection(ares_conn_t   **conn_out,
   }
   if (node == NULL) {
     /* LCOV_EXCL_START: OutOfMemory */
-    ares__close_socket(channel, s);
-    ares__llist_destroy(conn->queries_to_conn);
-    ares_free(conn);
-    return ARES_ENOMEM;
+    status = ARES_ENOMEM;
+    goto done;
     /* LCOV_EXCL_STOP */
   }
 
   /* Register globally to quickly map event on file descriptor to connection
    * node object */
-  if (!ares__htable_asvp_insert(channel->connnode_by_socket, s, node)) {
+  if (!ares__htable_asvp_insert(channel->connnode_by_socket, conn->fd, node)) {
     /* LCOV_EXCL_START: OutOfMemory */
-    ares__close_socket(channel, s);
-    ares__llist_destroy(conn->queries_to_conn);
-    ares__llist_node_claim(node);
-    ares_free(conn);
-    return ARES_ENOMEM;
+    status = ARES_ENOMEM;
+    goto done;
     /* LCOV_EXCL_STOP */
   }
 
-  SOCK_STATE_CALLBACK(channel, s, 1, 0);
+  SOCK_STATE_CALLBACK(channel, conn->fd, 1, 0);
 
   if (is_tcp) {
     server->tcp_conn = conn;
   }
 
-  *conn_out = conn;
-
-  return ARES_SUCCESS;
+done:
+  if (status != ARES_SUCCESS) {
+    ares__llist_node_claim(node);
+    ares__llist_destroy(conn->queries_to_conn);
+    ares__close_socket(channel, conn->fd);
+    ares_free(conn);
+  } else {
+    *conn_out = conn;
+  }
+  return status;
 }
 
 ares_socket_t ares__open_socket(ares_channel_t *channel, int af, int type,
@@ -489,15 +481,31 @@ ares_socket_t ares__open_socket(ares_channel_t *channel, int af, int type,
   return socket(af, type, protocol);
 }
 
-int ares__connect_socket(ares_channel_t *channel, ares_socket_t sockfd,
-                         const struct sockaddr *addr, ares_socklen_t addrlen)
+ares_status_t ares__connect_socket(ares_channel_t *channel,
+                                   ares_socket_t sockfd,
+                                   const struct sockaddr *addr,
+                                   ares_socklen_t addrlen)
 {
-  if (channel->sock_funcs && channel->sock_funcs->aconnect) {
-    return channel->sock_funcs->aconnect(sockfd, addr, addrlen,
-                                         channel->sock_func_cb_data);
-  }
+  int rv;
+  int err;
 
-  return connect(sockfd, addr, addrlen);
+  do {
+    if (channel->sock_funcs && channel->sock_funcs->aconnect) {
+      rv = channel->sock_funcs->aconnect(sockfd, addr, addrlen,
+                                         channel->sock_func_cb_data);
+    } else {
+      rv = connect(sockfd, addr, addrlen);
+    }
+
+    err = SOCKERRNO;
+
+    if (rv == -1 && err != EINPROGRESS && err != EWOULDBLOCK) {
+      return ARES_ECONNREFUSED;
+    }
+
+  } while (rv == -1 && err == EINTR);
+
+  return ARES_SUCCESS;
 }
 
 void ares__close_socket(ares_channel_t *channel, ares_socket_t s)
