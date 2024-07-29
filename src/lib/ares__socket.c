@@ -56,6 +56,28 @@
 #include <fcntl.h>
 #include <limits.h>
 
+#if defined(__linux__) && defined(MSG_FASTOPEN)
+#  define TFO_SUPPORTED      1
+#  define TFO_SKIP_CONNECT   1
+#  define TFO_USE_SENDTO     1
+#  define TFO_USE_CONNECTX   0
+#  define TFO_CLIENT_SOCKOPT 0
+#elif defined(__FreeBSD__) && defined(TCP_FASTOPEN)
+#  define TFO_SUPPORTED      1
+#  define TFO_SKIP_CONNECT   1
+#  define TFO_USE_SENDTO     1
+#  define TFO_USE_CONNECTX   0
+#  define TFO_CLIENT_SOCKOPT 1
+#elif defined(__APPLE__) && defined(HAVE_CONNECTX)
+#  define TFO_SUPPORTED      1
+#  define TFO_SKIP_CONNECT   0
+#  define TFO_USE_SENDTO     0
+#  define TFO_USE_CONNECTX   1
+#  define TFO_CLIENT_SOCKOPT 0
+#else
+#  define TFO_SUPPORTED      0
+#endif
+
 ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                    void *data, size_t data_len, int flags,
                                    struct sockaddr *from,
@@ -192,22 +214,6 @@ static ares_status_t configure_socket(ares_conn_t *conn)
   }
 #endif
 
-#ifdef TCP_NODELAY
-  if (conn->flags & ARES_CONN_FLAG_TCP) {
-    /*
-     * Disable the Nagle algorithm (only relevant for TCP sockets, and thus not
-     * in configure_socket). In general, in DNS lookups we're pretty much
-     * interested in firing off a single request and then waiting for a reply,
-     * so batching isn't very interesting.
-     */
-    int opt = 1;
-    if (setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, (void *)&opt,
-        sizeof(opt)) != 0) {
-      return ARES_ECONNREFUSED;
-    }
-  }
-#endif
-
   /* Set the socket's send and receive buffer sizes. */
   if (channel->socket_send_buffer_size > 0 &&
       setsockopt(conn->fd, SOL_SOCKET, SO_SNDBUF,
@@ -254,6 +260,34 @@ static ares_status_t configure_socket(ares_conn_t *conn)
 
   if (server->addr.family == AF_INET6) {
     set_ipv6_v6only(conn->fd, 0);
+  }
+
+  if (conn->flags & ARES_CONN_FLAG_TCP) {
+    int opt = 1;
+
+#ifdef TCP_NODELAY
+    /*
+     * Disable the Nagle algorithm (only relevant for TCP sockets, and thus not
+     * in configure_socket). In general, in DNS lookups we're pretty much
+     * interested in firing off a single request and then waiting for a reply,
+     * so batching isn't very interesting.
+     */
+    if (setsockopt(conn->fd, IPPROTO_TCP, TCP_NODELAY, (void *)&opt,
+        sizeof(opt)) != 0) {
+      return ARES_ECONNREFUSED;
+    }
+#endif
+
+    if (conn->flags & ARES_CONN_FLAG_TFO) {
+#if defined(TFO_CLIENT_SOCKOPT) && TFO_CLIENT_SOCKOPT
+      if (setsockopt(conn->fd, IPPROTO_TCP, TCP_FASTOPEN, (void *)&opt,
+          sizeof(opt)) != 0) {
+        /* Disable TFO if flag can't be set. */
+        conn->flags &= ~(ARES_CONN_FLAG_TFO);
+      }
+#endif
+    }
+
   }
 
   return ARES_SUCCESS;
@@ -324,6 +358,53 @@ static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn)
   return ARES_SUCCESS;
 }
 
+static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
+                                        ares_socklen_t salen)
+{
+  /* Normal non TCPFastOpen style connect */
+  if (!(conn->flags & ARES_CONN_FLAG_TFO)) {
+    return ares__connect_socket(conn->server->channel, conn->fd, sa, salen);
+  }
+
+  /* Linux and FreeBSD don't want any sort of connect() so skip */
+#if defined(TFO_SKIP_CONNECT) && TFO_SKIP_CONNECT
+  return ARES_SUCCESS;
+#elif defined(TFO_USE_CONNECTX)
+  {
+    int rv;
+    int err;
+
+    do {
+      sa_endpoints_t endpoints;
+      memset(&endpoints, 0, sizeof(endpoints));
+      endpoints.sae_dstaddr    = sa;
+      endpoints.sae_dstaddrlen = salen;
+      rv = connectx(conn->fd,
+                    &endpoints,
+                    SAE_ASSOCID_ANY,
+                    CONNECT_DATA_IDEMPOTENT | CONNECT_RESUME_ON_READ_WRITE,
+                    NULL,
+                    0,
+                    NULL,
+                    NULL);
+
+      err = SOCKERRNO;
+
+      if (rv == -1 && err != EINPROGRESS && err != EWOULDBLOCK) {
+        return ARES_ECONNREFUSED;
+      }
+
+    } while (rv == -1 && err == EINTR);
+  }
+  return ARES_SUCCESS;
+#elif defined(TFO_SUPPORTED) && TFO_SUPPORTED
+#  error unknown TFO connect option
+#else
+  /* Shouldn't be possible */
+  return ARES_ECONNREFUSED;
+#endif
+}
+
 ares_status_t ares__open_connection(ares_conn_t   **conn_out,
                                     ares_channel_t *channel,
                                     ares_server_t *server, ares_query_t *query)
@@ -352,6 +433,14 @@ ares_status_t ares__open_connection(ares_conn_t   **conn_out,
   conn->server          = server;
   conn->queries_to_conn = ares__llist_create(NULL);
   conn->flags           = is_tcp?ARES_CONN_FLAG_TCP:ARES_CONN_FLAG_NONE;
+
+  /* Enable TFO if the OS supports it, it might be disabled later if an
+   * error is encountered. Make sure a user isn't overriding anything. */
+  if (conn->flags & ARES_CONN_FLAG_TCP && channel->sock_funcs == NULL &&
+      TFO_SUPPORTED) {
+    conn->flags |= ARES_CONN_FLAG_TFO;
+  }
+
   if (conn->queries_to_conn == NULL) {
     /* LCOV_EXCL_START: OutOfMemory */
     status = ARES_ENOMEM;
@@ -408,8 +497,8 @@ ares_status_t ares__open_connection(ares_conn_t   **conn_out,
     }
   }
 
-  /* Connect to the server. */
-  status = ares__connect_socket(channel, conn->fd, sa, salen);
+  /* Connect */
+  status = ares__conn_connect(conn, sa, salen);
   if (status != ARES_SUCCESS) {
     goto done;
   }
