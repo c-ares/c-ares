@@ -148,7 +148,7 @@ ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
 }
 
 ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len,
-                              struct sockaddr *sa, size_t sa_len)
+                              struct sockaddr *sa, ares_socklen_t sa_len)
 {
   ares_channel_t *channel = conn->server->channel;
   int             flags   = 0;
@@ -167,6 +167,9 @@ ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len,
 
 #if defined(TFO_USE_SENDTO) && TFO_USE_SENDTO
   if (sa != NULL) {
+#  if defined(MSG_FASTOPEN)
+    flags |= MSG_FASTOPEN;
+#  endif
     return (ares_ssize_t)sendto((SEND_TYPE_ARG1)conn->fd, (SEND_TYPE_ARG2)data,
                                 (SEND_TYPE_ARG3)len, (SEND_TYPE_ARG4)flags,
                                 sa, sa_len);

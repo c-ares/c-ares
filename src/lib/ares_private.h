@@ -608,7 +608,7 @@ ares_socket_t ares__open_socket(ares_channel_t *channel, int af, int type,
                                 int protocol);
 ares_bool_t ares__socket_try_again(int errnum);
 ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len,
-                              struct sockaddr *sa, size_t sa_len);
+                              struct sockaddr *sa, ares_socklen_t sa_len);
 
 ares_status_t ares__conn_query_write(ares_conn_t          *conn,
                                      ares_query_t         *query,
