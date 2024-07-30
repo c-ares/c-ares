@@ -198,6 +198,40 @@ static ares_status_t ares__conn_set_sockaddr(const ares_conn_t *conn,
   return ARES_EBADFAMILY;
 }
 
+static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
+{
+  struct sockaddr_storage sa_storage;
+  int                     rv;
+  ares_socklen_t          len = sizeof(sa_storage);
+
+  /* We call this twice on TFO, if we already have the IP we can go ahead and
+   * skip processing */
+  if (!early && conn->self_ip.family != AF_UNSPEC) {
+    return ARES_SUCCESS;
+  }
+
+  memset(&sa_storage, 0, sizeof(sa_storage));
+
+  rv = getsockname(conn->fd, (struct sockaddr *)(void *)&sa_storage, &len);
+  if (rv != 0) {
+    /* During TCP FastOpen, we can't get the IP this early since connect()
+     * may not be called.  That's ok, we'll try again later */
+    if (early && conn->flags & ARES_CONN_FLAG_TCP &&
+        conn->flags & ARES_CONN_FLAG_TFO) {
+      memset(&conn->self_ip, 0, sizeof(conn->self_ip));
+      return ARES_SUCCESS;
+    }
+    return ARES_ECONNREFUSED;
+  }
+
+  if (!ares_sockaddr_to_ares_addr(&conn->self_ip, NULL,
+                                  (struct sockaddr *)(void *)&sa_storage)) {
+    return ARES_ECONNREFUSED;
+  }
+
+  return ARES_SUCCESS;
+}
+
 ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len)
 {
   ares_channel_t *channel = conn->server->channel;
@@ -468,40 +502,6 @@ ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
   }
 
   return ARES_FALSE;
-}
-
-static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
-{
-  struct sockaddr_storage sa_storage;
-  int                     rv;
-  ares_socklen_t          len = sizeof(sa_storage);
-
-  /* We call this twice on TFO, if we already have the IP we can go ahead and
-   * skip processing */
-  if (!early && conn->self_ip.family != AF_UNSPEC) {
-    return ARES_SUCCESS;
-  }
-
-  memset(&sa_storage, 0, sizeof(sa_storage));
-
-  rv = getsockname(conn->fd, (struct sockaddr *)(void *)&sa_storage, &len);
-  if (rv != 0) {
-    /* During TCP FastOpen, we can't get the IP this early since connect()
-     * may not be called.  That's ok, we'll try again later */
-    if (early && conn->flags & ARES_CONN_FLAG_TCP &&
-        conn->flags & ARES_CONN_FLAG_TFO) {
-      memset(&conn->self_ip, 0, sizeof(conn->self_ip));
-      return ARES_SUCCESS;
-    }
-    return ARES_ECONNREFUSED;
-  }
-
-  if (!ares_sockaddr_to_ares_addr(&conn->self_ip, NULL,
-                                  (struct sockaddr *)(void *)&sa_storage)) {
-    return ARES_ECONNREFUSED;
-  }
-
-  return ARES_SUCCESS;
 }
 
 static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
