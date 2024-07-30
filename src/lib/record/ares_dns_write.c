@@ -1164,7 +1164,7 @@ ares_status_t ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
   }
 
   len     = ares__buf_len(buf);
-  msg_len = len- orig_len - 2;
+  msg_len = len - orig_len - 2;
   if (msg_len > 65535) {
     status = ARES_EBADQUERY;
     goto done;
