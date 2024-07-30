@@ -440,8 +440,8 @@ MockServer::MockServer(int family, unsigned short port)
   /* Test system enable TCP FastOpen */
 #if defined(TCP_FASTOPEN)
 #  ifdef __linux__
-  int qlen = 512;
-  setsockopt(tcpfd_, SOL_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen));
+  int qlen = 32;
+  setsockopt(tcpfd_, IPPROTO_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen));
 #  else
   int on = 1;
   setsockopt(tcpfd_, IPPROTO_TCP, TCP_FASTOPEN, BYTE_CAST &on, sizeof(on));

@@ -58,22 +58,22 @@
 
 #if defined(__linux__) && defined(MSG_FASTOPEN)
 #  define TFO_SUPPORTED      1
-#  define TFO_SKIP_CONNECT   1
-#  define TFO_USE_SENDTO     1
+#  define TFO_SKIP_CONNECT   0
+#  define TFO_USE_SENDTO     0
 #  define TFO_USE_CONNECTX   0
-#  define TFO_CLIENT_SOCKOPT 0
+#  define TFO_CLIENT_SOCKOPT TCP_FASTOPEN_CONNECT
 #elif defined(__FreeBSD__) && defined(TCP_FASTOPEN)
 #  define TFO_SUPPORTED      1
 #  define TFO_SKIP_CONNECT   1
 #  define TFO_USE_SENDTO     1
 #  define TFO_USE_CONNECTX   0
-#  define TFO_CLIENT_SOCKOPT 1
+#  define TFO_CLIENT_SOCKOPT TCP_FASTOPEN
 #elif defined(__APPLE__) && defined(HAVE_CONNECTX)
 #  define TFO_SUPPORTED      1
 #  define TFO_SKIP_CONNECT   0
 #  define TFO_USE_SENDTO     0
 #  define TFO_USE_CONNECTX   1
-#  define TFO_CLIENT_SOCKOPT 0
+#  undef TFO_CLIENT_SOCKOPT
 #else
 #  define TFO_SUPPORTED      0
 #endif
@@ -354,8 +354,8 @@ static ares_status_t configure_socket(ares_conn_t *conn)
 #endif
 
     if (conn->flags & ARES_CONN_FLAG_TFO) {
-#if defined(TFO_CLIENT_SOCKOPT) && TFO_CLIENT_SOCKOPT
-      if (setsockopt(conn->fd, IPPROTO_TCP, TCP_FASTOPEN, (void *)&opt,
+#if defined(TFO_CLIENT_SOCKOPT)
+      if (setsockopt(conn->fd, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
           sizeof(opt)) != 0) {
         /* Disable TFO if flag can't be set. */
         conn->flags &= ~(ARES_CONN_FLAG_TFO);
@@ -486,7 +486,7 @@ static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
   }
   return ARES_SUCCESS;
 #elif defined(TFO_SUPPORTED) && TFO_SUPPORTED
-#  error unknown TFO connect option
+  return ares__connect_socket(conn->server->channel, conn->fd, sa, salen);
 #else
   /* Shouldn't be possible */
   return ARES_ECONNREFUSED;
