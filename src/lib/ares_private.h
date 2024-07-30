@@ -163,9 +163,9 @@ typedef enum {
   /*! No flags */
   ARES_CONN_FLAG_NONE = 0,
   /*! TCP connection, not UDP */
-  ARES_CONN_FLAG_TCP  = 1 << 0,
+  ARES_CONN_FLAG_TCP = 1 << 0,
   /*! TCP Fast Open is enabled and being used if supported by the OS */
-  ARES_CONN_FLAG_TFO  = 1 << 1,
+  ARES_CONN_FLAG_TFO = 1 << 1,
   /*! TCP Fast Open has not yet sent its first packet. Gets unset on first
    *  write to a connection */
   ARES_CONN_FLAG_TFO_INITIAL = 1 << 2
@@ -612,11 +612,10 @@ ares_bool_t   ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
                                          const struct sockaddr *sockaddr);
 ares_socket_t ares__open_socket(ares_channel_t *channel, int af, int type,
                                 int protocol);
-ares_bool_t ares__socket_try_again(int errnum);
-ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len);
+ares_bool_t   ares__socket_try_again(int errnum);
+ares_ssize_t  ares__conn_write(ares_conn_t *conn, const void *data, size_t len);
 
-ares_status_t ares__conn_query_write(ares_conn_t          *conn,
-                                     ares_query_t         *query,
+ares_status_t ares__conn_query_write(ares_conn_t *conn, ares_query_t *query,
                                      const ares_timeval_t *now);
 ares_ssize_t  ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                     void *data, size_t data_len, int flags,
@@ -625,11 +624,11 @@ ares_ssize_t  ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
 ares_ssize_t  ares__socket_recv(ares_channel_t *channel, ares_socket_t s,
                                 void *data, size_t data_len);
 void          ares__close_socket(ares_channel_t *channel, ares_socket_t s);
-ares_status_t ares__connect_socket(ares_channel_t *channel,
-                                   ares_socket_t sockfd,
+ares_status_t ares__connect_socket(ares_channel_t        *channel,
+                                   ares_socket_t          sockfd,
                                    const struct sockaddr *addr,
-                                   ares_socklen_t addrlen);
-void ares__destroy_server(ares_server_t *server);
+                                   ares_socklen_t         addrlen);
+void          ares__destroy_server(ares_server_t *server);
 
 ares_status_t ares__servers_update(ares_channel_t *channel,
                                    ares__llist_t  *server_list,

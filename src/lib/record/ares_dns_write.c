@@ -1091,7 +1091,7 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
 }
 
 ares_status_t ares_dns_write_buf(const ares_dns_record_t *dnsrec,
-                                 ares__buf_t *buf)
+                                 ares__buf_t             *buf)
 {
   ares__llist_t *namelist = NULL;
   size_t         orig_len;
@@ -1138,7 +1138,7 @@ done:
 }
 
 ares_status_t ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
-                                     ares__buf_t *buf)
+                                     ares__buf_t             *buf)
 {
   ares_status_t status;
   size_t        orig_len;
@@ -1186,8 +1186,8 @@ done:
 ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
                              unsigned char **buf, size_t *buf_len)
 {
-  ares__buf_t   *b = NULL;
-  ares_status_t  status;
+  ares__buf_t  *b = NULL;
+  ares_status_t status;
 
   if (buf == NULL || buf_len == NULL || dnsrec == NULL) {
     return ARES_EFORMERR;

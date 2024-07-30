@@ -768,8 +768,8 @@ static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
   /* Increment failures first before requeue so it is unlikely to requeue
    * to the same server */
   if (critical_failure) {
-    server_increment_failures(server,
-      (conn->flags & ARES_CONN_FLAG_TCP)?ARES_TRUE:ARES_FALSE);
+    server_increment_failures(
+      server, (conn->flags & ARES_CONN_FLAG_TCP) ? ARES_TRUE : ARES_FALSE);
   }
 
   /* This will requeue any connections automatically */
@@ -903,7 +903,6 @@ static ares_server_t *ares__failover_server(ares_channel_t *channel)
   return first_server;
 }
 
-
 static size_t ares__calc_query_timeout(const ares_query_t   *query,
                                        const ares_server_t  *server,
                                        const ares_timeval_t *now)
@@ -987,7 +986,6 @@ static ares_conn_t *ares__fetch_connection(ares_channel_t     *channel,
 
   return conn;
 }
-
 
 ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
 {
