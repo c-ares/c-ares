@@ -165,7 +165,7 @@ static ares_status_t ares__conn_set_sockaddr(const ares_conn_t *conn,
     case AF_INET:
       {
         struct sockaddr_in *sin = (struct sockaddr_in *)(void *)sa;
-        if (*salen < sizeof(*sin)) {
+        if (*salen < (ares_socklen_t)sizeof(*sin)) {
           return ARES_EFORMERR;
         }
         *salen = sizeof(*sin);
@@ -178,7 +178,7 @@ static ares_status_t ares__conn_set_sockaddr(const ares_conn_t *conn,
     case AF_INET6:
       {
         struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)(void *)sa;
-        if (*salen < sizeof(*sin6)) {
+        if (*salen < (ares_socklen_t)sizeof(*sin6)) {
           return ARES_EFORMERR;
         }
         *salen = sizeof(*sin6);
@@ -636,12 +636,12 @@ ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
 {
   ares_status_t           status;
   struct sockaddr_storage sa_storage;
-  ares_socklen_t          salen     = sizeof(sa_storage);
-  struct sockaddr        *sa        = (struct sockaddr *)&sa_storage;
+  ares_socklen_t          salen  = sizeof(sa_storage);
+  struct sockaddr        *sa     = (struct sockaddr *)&sa_storage;
   ares_conn_t            *conn;
-  ares__llist_node_t     *node      = NULL;
-  ares_bool_t             is_tcp    = query->using_tcp;
-  int                     sock_type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
+  ares__llist_node_t     *node   = NULL;
+  ares_bool_t             is_tcp = query->using_tcp;
+  int                     stype  = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
 
   *conn_out = NULL;
 
@@ -678,7 +678,7 @@ ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
   }
 
   /* Acquire a socket. */
-  conn->fd = ares__open_socket(channel, server->addr.family, sock_type, 0);
+  conn->fd = ares__open_socket(channel, server->addr.family, stype, 0);
   if (conn->fd == ARES_SOCKET_BAD) {
     status = ARES_ECONNREFUSED;
     goto done;
@@ -691,7 +691,7 @@ ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
   }
 
   if (channel->sock_config_cb) {
-    int err = channel->sock_config_cb(conn->fd, sock_type, channel->sock_config_cb_data);
+    int err = channel->sock_config_cb(conn->fd, stype, channel->sock_config_cb_data);
     if (err < 0) {
       status = ARES_ECONNREFUSED;
       goto done;
@@ -705,7 +705,7 @@ ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
   }
 
   if (channel->sock_create_cb) {
-    int err = channel->sock_create_cb(conn->fd, sock_type, channel->sock_create_cb_data);
+    int err = channel->sock_create_cb(conn->fd, stype, channel->sock_create_cb_data);
     if (err < 0) {
       status = ARES_ECONNREFUSED;
       goto done;
