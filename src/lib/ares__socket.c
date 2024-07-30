@@ -78,6 +78,17 @@
 #  define TFO_SUPPORTED      0
 #endif
 
+
+#ifndef HAVE_WRITEV
+/* Structure for scatter/gather I/O. */
+struct iovec {
+  void  *iov_base; /* Pointer to data. */
+  size_t iov_len;  /* Length of data.  */
+};
+#endif
+
+
+
 /* Return 1 if the specified error number describes a readiness error, or 0
  * otherwise. This is mostly for HP-UX, which could return EAGAIN or
  * EWOULDBLOCK. See this man page
@@ -782,15 +793,6 @@ void ares__close_socket(ares_channel_t *channel, ares_socket_t s)
     sclose(s);
   }
 }
-
-#ifndef HAVE_WRITEV
-/* Structure for scatter/gather I/O. */
-struct iovec {
-  void  *iov_base; /* Pointer to data. */
-  size_t iov_len;  /* Length of data.  */
-};
-#endif
-
 
 
 void ares_set_socket_callback(ares_channel_t           *channel,
