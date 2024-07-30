@@ -160,9 +160,15 @@ struct ares_conn;
 typedef struct ares_conn ares_conn_t;
 
 typedef enum {
-  ARES_CONN_FLAG_NONE = 0,      /*!< No flags */
-  ARES_CONN_FLAG_TCP  = 1 << 0, /*!< TCP not UDP */
-  ARES_CONN_FLAG_TFO  = 1 << 1  /*!< TCP Fast Open, can only be set with TCP */
+  /*! No flags */
+  ARES_CONN_FLAG_NONE = 0,
+  /*! TCP connection, not UDP */
+  ARES_CONN_FLAG_TCP  = 1 << 0,
+  /*! TCP Fast Open is enabled and being used if supported by the OS */
+  ARES_CONN_FLAG_TFO  = 1 << 1,
+  /*! TCP Fast Open has not yet sent its first packet. Gets unset on first
+   *  write to a connection */
+  ARES_CONN_FLAG_TFO_INITIAL = 1 << 2
 } ares_conn_flags_t;
 
 struct ares_conn {
@@ -607,14 +613,11 @@ ares_bool_t   ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
 ares_socket_t ares__open_socket(ares_channel_t *channel, int af, int type,
                                 int protocol);
 ares_bool_t ares__socket_try_again(int errnum);
-ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len,
-                              struct sockaddr *sa, ares_socklen_t sa_len);
+ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len);
 
 ares_status_t ares__conn_query_write(ares_conn_t          *conn,
                                      ares_query_t         *query,
-                                     const ares_timeval_t *now,
-                                     struct sockaddr      *sa,
-                                     ares_socklen_t        salen);
+                                     const ares_timeval_t *now);
 ares_ssize_t  ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                     void *data, size_t data_len, int flags,
                                     struct sockaddr *from,

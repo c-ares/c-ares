@@ -281,7 +281,7 @@ static void write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
     }
 
     data  = ares__buf_peek(server->tcp_send, &data_len);
-    count = ares__conn_write(server->tcp_conn, data, data_len, NULL, 0);
+    count = ares__conn_write(server->tcp_conn, data, data_len);
     if (count <= 0) {
       if (!ares__socket_try_again(SOCKERRNO)) {
         handle_conn_error(server->tcp_conn, ARES_TRUE, ARES_ECONNREFUSED);
@@ -1033,7 +1033,7 @@ ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
     }
   } else {
     /* On an existing connection we write it ourselves */
-    status = ares__conn_query_write(conn, query, now, NULL, 0);
+    status = ares__conn_query_write(conn, query, now);
     switch (status) {
       /* Good result, continue on */
       case ARES_SUCCESS:

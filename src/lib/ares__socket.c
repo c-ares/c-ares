@@ -147,8 +147,58 @@ ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
 #endif
 }
 
-ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len,
-                              struct sockaddr *sa, ares_socklen_t sa_len)
+/* Use like:
+ *   struct sockaddr_storage sa_storage;
+ *   ares_socklen_t          salen     = sizeof(sa_storage);
+ *   struct sockaddr        *sa        = (struct sockaddr *)&sa_storage;
+ *   ares__conn_set_sockaddr(conn, sa, &salen);
+ */
+static ares_status_t ares__conn_set_sockaddr(const ares_conn_t *conn,
+                                             struct sockaddr   *sa,
+                                             ares_socklen_t    *salen)
+{
+   ares_server_t *server = conn->server;
+   unsigned short port   = conn->flags & ARES_CONN_FLAG_TCP ?
+                           server->tcp_port : server->udp_port;
+
+   switch (server->addr.family) {
+    case AF_INET:
+      {
+        struct sockaddr_in *sin = (struct sockaddr_in *)(void *)sa;
+        if (*salen < sizeof(*sin)) {
+          return ARES_EFORMERR;
+        }
+        *salen = sizeof(*sin);
+        memset(sin, 0, sizeof(*sin));
+        sin->sin_family = AF_INET;
+        sin->sin_port   = htons(port);
+        memcpy(&sin->sin_addr, &server->addr.addr.addr4, sizeof(sin->sin_addr));
+      }
+      return ARES_SUCCESS;
+    case AF_INET6:
+      {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)(void *)sa;
+        if (*salen < sizeof(*sin6)) {
+          return ARES_EFORMERR;
+        }
+        *salen = sizeof(*sin6);
+        memset(sin6, 0, sizeof(*sin6));
+        sin6->sin6_family = AF_INET6;
+        sin6->sin6_port   = htons(port);
+        memcpy(&sin6->sin6_addr, &server->addr.addr.addr6, sizeof(sin6->sin6_addr));
+  #ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
+        sin6->sin6_scope_id = server->ll_scope;
+  #endif
+      }
+      return ARES_SUCCESS;
+    default:
+      break;
+  }
+
+  return ARES_EBADFAMILY;
+}
+
+ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len)
 {
   ares_channel_t *channel = conn->server->channel;
   int             flags   = 0;
@@ -165,16 +215,29 @@ ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len,
       channel->sock_func_cb_data);
   }
 
+  if (conn->flags & ARES_CONN_FLAG_TFO_INITIAL) {
+    conn->flags &= ~((unsigned int)ARES_CONN_FLAG_TFO_INITIAL);
+
 #if defined(TFO_USE_SENDTO) && TFO_USE_SENDTO
-  if (sa != NULL) {
-    return (ares_ssize_t)sendto((SEND_TYPE_ARG1)conn->fd, (SEND_TYPE_ARG2)data,
-                                (SEND_TYPE_ARG3)len, (SEND_TYPE_ARG4)flags,
-                                sa, sa_len);
-  }
-#else
-  (void)sa;
-  (void)sa_len;
+    {
+      struct sockaddr_storage sa_storage;
+      ares_socklen_t          salen     = sizeof(sa_storage);
+      struct sockaddr        *sa        = (struct sockaddr *)&sa_storage;
+      ares_status_t           status;
+
+      status = ares__conn_set_sockaddr(conn, sa, &salen);
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
+
+      return (ares_ssize_t)sendto((SEND_TYPE_ARG1)conn->fd,
+                                  (SEND_TYPE_ARG2)data,
+                                  (SEND_TYPE_ARG3)len,
+                                  (SEND_TYPE_ARG4)flags,
+                                  sa, sa_len);
+    }
 #endif
+  }
 
   return (ares_ssize_t)send((SEND_TYPE_ARG1)conn->fd, (SEND_TYPE_ARG2)data,
                             (SEND_TYPE_ARG3)len, (SEND_TYPE_ARG4)flags);
@@ -405,16 +468,9 @@ ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
 
 static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
 {
-  /* Some old systems might not have sockaddr_storage, so we make a union
-   * that's guaranteed to be large enough */
-  union {
-    struct sockaddr     sa;
-    struct sockaddr_in  sa4;
-    struct sockaddr_in6 sa6;
-  } from;
-
-  int            rv;
-  ares_socklen_t len = sizeof(from);
+  struct sockaddr_storage sa_storage;
+  int                     rv;
+  ares_socklen_t          len = sizeof(sa_storage);
 
   /* We call this twice on TFO, if we already have the IP we can go ahead and
    * skip processing */
@@ -422,9 +478,9 @@ static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
     return ARES_SUCCESS;
   }
 
-  memset(&from, 0, sizeof(from));
+  memset(&sa_storage, 0, sizeof(sa_storage));
 
-  rv = getsockname(conn->fd, &from.sa, &len);
+  rv = getsockname(conn->fd, (struct sockaddr *)(void *)&sa_storage, &len);
   if (rv != 0) {
     /* During TCP FastOpen, we can't get the IP this early since connect()
      * may not be called.  That's ok, we'll try again later */
@@ -436,7 +492,8 @@ static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
     return ARES_ECONNREFUSED;
   }
 
-  if (!ares_sockaddr_to_ares_addr(&conn->self_ip, NULL, &from.sa)) {
+  if (!ares_sockaddr_to_ares_addr(&conn->self_ip, NULL,
+                                  (struct sockaddr *)(void *)&sa_storage)) {
     return ARES_ECONNREFUSED;
   }
 
@@ -492,9 +549,7 @@ static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
 
 ares_status_t ares__conn_query_write(ares_conn_t          *conn,
                                      ares_query_t         *query,
-                                     const ares_timeval_t *now,
-                                     struct sockaddr      *sa,
-                                     ares_socklen_t        salen)
+                                     const ares_timeval_t *now)
 {
   unsigned char  *qbuf     = NULL;
   size_t          qbuf_len = 0;
@@ -516,13 +571,13 @@ ares_status_t ares__conn_query_write(ares_conn_t          *conn,
       return status;
     }
 
-    if (conn->flags & ARES_CONN_FLAG_TFO && sa != NULL) {
+    if (conn->flags & ARES_CONN_FLAG_TFO_INITIAL) {
       /* When using TFO, we need to put it on the wire immediately. */
       size_t               data_len;
       const unsigned char *data = NULL;
 
       data = ares__buf_peek(server->tcp_send, &data_len);
-      len  = ares__conn_write(conn, data, data_len, sa, salen);
+      len  = ares__conn_write(conn, data, data_len);
       if (len <= 0) {
         if (ares__socket_try_again(SOCKERRNO)) {
           /* This means we must not have qualified for TFO, keep the data
@@ -555,7 +610,7 @@ ares_status_t ares__conn_query_write(ares_conn_t          *conn,
     return status;
   }
 
-  len = ares__conn_write(conn, qbuf, qbuf_len, NULL, 0);
+  len = ares__conn_write(conn, qbuf, qbuf_len);
   ares_free(qbuf);
 
   if (len == -1) {
@@ -572,24 +627,21 @@ ares_status_t ares__conn_query_write(ares_conn_t          *conn,
 }
 
 
+
 ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
                                              ares_channel_t       *channel,
                                              ares_server_t        *server,
                                              ares_query_t         *query,
                                              const ares_timeval_t *now)
 {
-  ares_socklen_t salen;
-  ares_status_t  status;
-  ares_bool_t    is_tcp = query->using_tcp;
-
-  union {
-    struct sockaddr_in  sa4;
-    struct sockaddr_in6 sa6;
-  } saddr;
-  struct sockaddr    *sa;
-  ares_conn_t        *conn;
-  ares__llist_node_t *node = NULL;
-  int                 sock_type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
+  ares_status_t           status;
+  struct sockaddr_storage sa_storage;
+  ares_socklen_t          salen     = sizeof(sa_storage);
+  struct sockaddr        *sa        = (struct sockaddr *)&sa_storage;
+  ares_conn_t            *conn;
+  ares__llist_node_t     *node      = NULL;
+  ares_bool_t             is_tcp    = query->using_tcp;
+  int                     sock_type = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
 
   *conn_out = NULL;
 
@@ -597,6 +649,7 @@ ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
   if (conn == NULL) {
     return ARES_ENOMEM;             /* LCOV_EXCL_LINE: OutOfMemory */
   }
+
   memset(conn, 0, sizeof(*conn));
   conn->fd              = ARES_SOCKET_BAD;
   conn->server          = server;
@@ -618,31 +671,10 @@ ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
     /* LCOV_EXCL_STOP */
   }
 
-  switch (server->addr.family) {
-    case AF_INET:
-      sa    = (void *)&saddr.sa4;
-      salen = sizeof(saddr.sa4);
-      memset(sa, 0, (size_t)salen);
-      saddr.sa4.sin_family = AF_INET;
-      saddr.sa4.sin_port = htons(is_tcp ? server->tcp_port : server->udp_port);
-      memcpy(&saddr.sa4.sin_addr, &server->addr.addr.addr4,
-             sizeof(saddr.sa4.sin_addr));
-      break;
-    case AF_INET6:
-      sa    = (void *)&saddr.sa6;
-      salen = sizeof(saddr.sa6);
-      memset(sa, 0, (size_t)salen);
-      saddr.sa6.sin6_family = AF_INET6;
-      saddr.sa6.sin6_port = htons(is_tcp ? server->tcp_port : server->udp_port);
-      memcpy(&saddr.sa6.sin6_addr, &server->addr.addr.addr6,
-             sizeof(saddr.sa6.sin6_addr));
-#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
-      saddr.sa6.sin6_scope_id = server->ll_scope;
-#endif
-      break;
-    default:
-      status = ARES_EBADFAMILY; /* LCOV_EXCL_LINE */
-      goto done;
+  /* Convert into the struct sockaddr structure needed by the OS */
+  status = ares__conn_set_sockaddr(conn, sa, &salen);
+  if (status != ARES_SUCCESS) {
+    goto done;
   }
 
   /* Acquire a socket. */
@@ -680,6 +712,11 @@ ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
     }
   }
 
+  /* Let the connection know we haven't written our first packet yet for TFO */
+  if (conn->flags & ARES_CONN_FLAG_TFO) {
+    conn->flags |= ARES_CONN_FLAG_TFO_INITIAL;
+  }
+
   /* Need to store our own ip for DNS cookie support */
   status = ares_conn_set_self_ip(conn, ARES_FALSE);
   if (status != ARES_SUCCESS) {
@@ -688,14 +725,14 @@ ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
 
   /* With TFO, we actually write the query before the connection is fully
    * established.  We also do this with UDP. */
-  status = ares__conn_query_write(conn, query, now, sa, salen);
+  status = ares__conn_query_write(conn, query, now);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
   /* If using TFO, we might not have been able to get an IP earlier, try
    * again. */
-  status = ares_conn_set_self_ip(conn, ARES_FALSE);
+  status = ares_conn_set_self_ip(conn, ARES_TRUE);
   if (status != ARES_SUCCESS) {
     goto done; /* LCOV_EXCL_LINE: UntestablePath */
   }
