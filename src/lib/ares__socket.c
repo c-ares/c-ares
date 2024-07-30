@@ -78,6 +78,46 @@
 #  define TFO_SUPPORTED      0
 #endif
 
+/* Return 1 if the specified error number describes a readiness error, or 0
+ * otherwise. This is mostly for HP-UX, which could return EAGAIN or
+ * EWOULDBLOCK. See this man page
+ *
+ * http://devrsrc1.external.hp.com/STKS/cgi-bin/man2html?
+ *     manpage=/usr/share/man/man2.Z/send.2
+ */
+ares_bool_t ares__socket_try_again(int errnum)
+{
+#if !defined EWOULDBLOCK && !defined EAGAIN
+#  error "Neither EWOULDBLOCK nor EAGAIN defined"
+#endif
+
+#ifdef EWOULDBLOCK
+  if (errnum == EWOULDBLOCK) {
+    return ARES_TRUE;
+  }
+#endif
+
+#if defined EAGAIN && EAGAIN != EWOULDBLOCK
+  if (errnum == EAGAIN) {
+    return ARES_TRUE;
+  }
+#endif
+
+  return ARES_FALSE;
+}
+
+ares_ssize_t ares__socket_recv(ares_channel_t *channel, ares_socket_t s,
+                               void *data, size_t data_len)
+{
+  if (channel->sock_funcs && channel->sock_funcs->arecvfrom) {
+    return channel->sock_funcs->arecvfrom(s, data, data_len, 0, 0, 0,
+                                          channel->sock_func_cb_data);
+  }
+
+  return (ares_ssize_t)recv((RECV_TYPE_ARG1)s, (RECV_TYPE_ARG2)data,
+                            (RECV_TYPE_ARG3)data_len, (RECV_TYPE_ARG4)(0));
+}
+
 ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                    void *data, size_t data_len, int flags,
                                    struct sockaddr *from,
@@ -92,20 +132,41 @@ ares_ssize_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
   return (ares_ssize_t)recvfrom(s, data, (RECVFROM_TYPE_ARG3)data_len, flags,
                                 from, from_len);
 #else
-  return sread(s, data, data_len);
+  return ares__socket_recv(channel, s, data, data_len);
 #endif
 }
 
-ares_ssize_t ares__socket_recv(ares_channel_t *channel, ares_socket_t s,
-                               void *data, size_t data_len)
+ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len,
+                              struct sockaddr *sa, size_t sa_len)
 {
-  if (channel->sock_funcs && channel->sock_funcs->arecvfrom) {
-    return channel->sock_funcs->arecvfrom(s, data, data_len, 0, 0, 0,
-                                          channel->sock_func_cb_data);
+  ares_channel_t *channel = conn->server->channel;
+  int             flags   = 0;
+
+#ifdef HAVE_MSG_NOSIGNAL
+  flags |= MSG_NOSIGNAL;
+#endif
+
+  if (channel->sock_funcs && channel->sock_funcs->asendv) {
+    struct iovec vec;
+    vec.iov_base = (void *)((size_t)data); /* Cast off const */
+    vec.iov_len  = len;
+    return channel->sock_funcs->asendv(conn->fd, &vec, 1,
+      channel->sock_func_cb_data);
   }
 
-  /* sread() is a wrapper for read() or recv() depending on the system */
-  return sread(s, data, data_len);
+#if defined(TFO_USE_SENDTO) && TFO_USE_SENDTO
+  if (sa != NULL) {
+    return (ares_ssize_t)sendto((SEND_TYPE_ARG1)conn->fd, (SEND_TYPE_ARG2)data,
+                                (SEND_TYPE_ARG3)len, (SEND_TYPE_ARG4)flags,
+                                sa, sa_len);
+  }
+#else
+  (void)sa;
+  (void)sa_len;
+#endif
+
+  return (ares_ssize_t)send((SEND_TYPE_ARG1)conn->fd, (SEND_TYPE_ARG2)data,
+                            (SEND_TYPE_ARG3)len, (SEND_TYPE_ARG4)flags);
 }
 
 /*
@@ -331,7 +392,7 @@ ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
   return ARES_FALSE;
 }
 
-static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn)
+static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
 {
   /* Some old systems might not have sockaddr_storage, so we make a union
    * that's guaranteed to be large enough */
@@ -344,10 +405,23 @@ static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn)
   int            rv;
   ares_socklen_t len = sizeof(from);
 
+  /* We call this twice on TFO, if we already have the IP we can go ahead and
+   * skip processing */
+  if (!early && conn->self_ip.family != AF_UNSPEC) {
+    return ARES_SUCCESS;
+  }
+
   memset(&from, 0, sizeof(from));
 
   rv = getsockname(conn->fd, &from.sa, &len);
   if (rv != 0) {
+    /* During TCP FastOpen, we can't get the IP this early since connect()
+     * may not be called.  That's ok, we'll try again later */
+    if (early && conn->flags & ARES_CONN_FLAG_TCP &&
+        conn->flags & ARES_CONN_FLAG_TFO) {
+      memset(&conn->self_ip, 0, sizeof(conn->self_ip));
+      return ARES_SUCCESS;
+    }
     return ARES_ECONNREFUSED;
   }
 
@@ -379,6 +453,7 @@ static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
       memset(&endpoints, 0, sizeof(endpoints));
       endpoints.sae_dstaddr    = sa;
       endpoints.sae_dstaddrlen = salen;
+
       rv = connectx(conn->fd,
                     &endpoints,
                     SAE_ASSOCID_ANY,
@@ -389,7 +464,6 @@ static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
                     NULL);
 
       err = SOCKERRNO;
-
       if (rv == -1 && err != EINPROGRESS && err != EWOULDBLOCK) {
         return ARES_ECONNREFUSED;
       }
@@ -405,12 +479,94 @@ static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
 #endif
 }
 
-ares_status_t ares__open_connection(ares_conn_t        **conn_out,
-                                    ares_channel_t      *channel,
-                                    ares_server_t       *server,
-                                    ares_query_t        *query,
-                                    const unsigned char *data,
-                                    size_t              *data_len)
+ares_status_t ares__conn_query_write(ares_conn_t          *conn,
+                                     ares_query_t         *query,
+                                     const ares_timeval_t *now,
+                                     struct sockaddr      *sa,
+                                     ares_socklen_t        salen)
+{
+  unsigned char  *qbuf     = NULL;
+  size_t          qbuf_len = 0;
+  ares_server_t  *server   = conn->server;
+  ares_channel_t *channel  = server->channel;
+  ares_status_t   status;
+
+  status = ares_cookie_apply(query->query, conn, now);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  if (conn->flags & ARES_CONN_FLAG_TCP) {
+    size_t prior_len = ares__buf_len(server->tcp_send);
+
+    status = ares_dns_write_buf_tcp(query->query, server->tcp_send);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    if (conn->flags & ARES_CONN_FLAG_TFO && sa != NULL) {
+      /* When using TFO, we need to put it on the wire immediately. */
+      ares_ssize_t         len;
+      size_t               data_len;
+      const unsigned char *data = NULL;
+
+      data = ares__buf_peek(server->tcp_send, &data_len);
+      len  = ares__conn_write(conn, data, data_len, sa, salen);
+      if (len <= 0) {
+        if (ares__socket_try_again(SOCKERRNO)) {
+          status = ARES_ESERVFAIL;
+          goto done;
+        } else {
+          /* UDP is connection-less, but we might receive an ICMP unreachable which
+           * means we can't talk to the remote host at all and that will be
+           * reflected here */
+          status = ARES_ECONNREFUSED;
+          goto done;
+        }
+      } else {
+        /* Consume what was written */
+        ares__buf_consume(server->tcp_send, (size_t)len);
+      }
+    } else {
+      if (prior_len == 0) {
+        SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
+      }
+    }
+
+  } else {
+
+    status = ares_dns_write(query->query, &qbuf, &qbuf_len);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    if (ares__conn_write(conn, qbuf, qbuf_len, NULL, 0) == -1) {
+      if (ares__socket_try_again(SOCKERRNO)) {
+        status = ARES_ESERVFAIL;
+        goto done;
+      } else {
+        /* UDP is connection-less, but we might receive an ICMP unreachable which
+         * means we can't talk to the remote host at all and that will be
+         * reflected here */
+        status = ARES_ECONNREFUSED;
+        goto done;
+      }
+    }
+  }
+
+  status = ARES_SUCCESS;
+
+done:
+  ares_free(qbuf);
+  return status;
+}
+
+
+ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
+                                             ares_channel_t       *channel,
+                                             ares_server_t        *server,
+                                             ares_query_t         *query,
+                                             const ares_timeval_t *now)
 {
   ares_socklen_t salen;
   ares_status_t  status;
@@ -441,7 +597,7 @@ ares_status_t ares__open_connection(ares_conn_t        **conn_out,
    * the connect. It might be disabled later if an error is encountered. Make
    * sure a user isn't overriding anything. */
   if (conn->flags & ARES_CONN_FLAG_TCP && channel->sock_funcs == NULL &&
-      TFO_SUPPORTED && data != NULL && data_len != NULL && *data_len > 0) {
+      TFO_SUPPORTED) {
     conn->flags |= ARES_CONN_FLAG_TFO;
   }
 
@@ -479,7 +635,6 @@ ares_status_t ares__open_connection(ares_conn_t        **conn_out,
       goto done;
   }
 
-
   /* Acquire a socket. */
   conn->fd = ares__open_socket(channel, server->addr.family, sock_type, 0);
   if (conn->fd == ARES_SOCKET_BAD) {
@@ -516,7 +671,21 @@ ares_status_t ares__open_connection(ares_conn_t        **conn_out,
   }
 
   /* Need to store our own ip for DNS cookie support */
-  status = ares_conn_set_self_ip(conn);
+  status = ares_conn_set_self_ip(conn, ARES_FALSE);
+  if (status != ARES_SUCCESS) {
+    goto done; /* LCOV_EXCL_LINE: UntestablePath */
+  }
+
+  /* With TFO, we actually write the query before the connection is fully
+   * established.  We also do this with UDP. */
+  status = ares__conn_query_write(conn, query, now, sa, salen);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* If using TFO, we might not have been able to get an IP earlier, try
+   * again. */
+  status = ares_conn_set_self_ip(conn, ARES_FALSE);
   if (status != ARES_SUCCESS) {
     goto done; /* LCOV_EXCL_LINE: UntestablePath */
   }
@@ -545,7 +714,7 @@ ares_status_t ares__open_connection(ares_conn_t        **conn_out,
     /* LCOV_EXCL_STOP */
   }
 
-  SOCK_STATE_CALLBACK(channel, conn->fd, 1, 0);
+  SOCK_STATE_CALLBACK(channel, conn->fd, 1, is_tcp?1:0);
 
   if (is_tcp) {
     server->tcp_conn = conn;
@@ -622,17 +791,7 @@ struct iovec {
 };
 #endif
 
-ares_ssize_t ares__socket_write(ares_channel_t *channel, ares_socket_t s,
-                                const void *data, size_t len)
-{
-  if (channel->sock_funcs && channel->sock_funcs->asendv) {
-    struct iovec vec;
-    vec.iov_base = (void *)((size_t)data); /* Cast off const */
-    vec.iov_len  = len;
-    return channel->sock_funcs->asendv(s, &vec, 1, channel->sock_func_cb_data);
-  }
-  return swrite(s, data, len);
-}
+
 
 void ares_set_socket_callback(ares_channel_t           *channel,
                               ares_sock_create_callback cb, void *data)
