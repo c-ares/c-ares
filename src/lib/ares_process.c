@@ -987,6 +987,82 @@ static ares_conn_t *ares__fetch_connection(ares_channel_t     *channel,
   return conn;
 }
 
+static ares_status_t ares__conn_query_write(ares_conn_t *conn,
+                                            ares_query_t *query,
+                                            const ares_timeval_t *now)
+{
+  unsigned char  *qbuf     = NULL;
+  size_t          qbuf_len = 0;
+  ares_ssize_t    len;
+  ares_server_t  *server  = conn->server;
+  ares_channel_t *channel = server->channel;
+  ares_status_t   status;
+
+  status = ares_cookie_apply(query->query, conn, now);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  if (conn->flags & ARES_CONN_FLAG_TCP) {
+    size_t prior_len = ares__buf_len(server->tcp_send);
+
+    status = ares_dns_write_buf_tcp(query->query, server->tcp_send);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    if (conn->flags & ARES_CONN_FLAG_TFO_INITIAL) {
+      /* When using TFO, we need to put it on the wire immediately. */
+      size_t               data_len;
+      const unsigned char *data = NULL;
+
+      data = ares__buf_peek(server->tcp_send, &data_len);
+      len  = ares__conn_write(conn, data, data_len);
+      if (len <= 0) {
+        if (ares__socket_try_again(SOCKERRNO)) {
+          /* This means we must not have qualified for TFO, keep the data
+           * buffered, wait on write signal. */
+          return ARES_SUCCESS;
+        }
+
+        /* TCP TFO might delay failure.  Reflect that here */
+        return ARES_ECONNREFUSED;
+      }
+
+      /* Consume what was written */
+      ares__buf_consume(server->tcp_send, (size_t)len);
+      return ARES_SUCCESS;
+    }
+
+    if (prior_len == 0) {
+      SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
+    }
+
+    return ARES_SUCCESS;
+  }
+
+  /* UDP Here */
+  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  len = ares__conn_write(conn, qbuf, qbuf_len);
+  ares_free(qbuf);
+
+  if (len == -1) {
+    if (ares__socket_try_again(SOCKERRNO)) {
+      return ARES_ESERVFAIL;
+    }
+    /* UDP is connection-less, but we might receive an ICMP unreachable which
+     * means we can't talk to the remote host at all and that will be
+     * reflected here */
+    return ARES_ECONNREFUSED;
+  }
+
+  return ARES_SUCCESS;
+}
+
 ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
 {
   ares_channel_t *channel = query->channel;
@@ -1011,7 +1087,7 @@ ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
 
   conn = ares__fetch_connection(channel, server, query);
   if (conn == NULL) {
-    status = ares__open_connection_and_send(&conn, channel, server, query, now);
+    status = ares__open_connection(&conn, channel, server, query->using_tcp);
     switch (status) {
       /* Good result, continue on */
       case ARES_SUCCESS:
@@ -1029,37 +1105,37 @@ ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
         end_query(channel, server, query, status, NULL);
         return status;
     }
-  } else {
-    /* On an existing connection we write it ourselves */
-    status = ares__conn_query_write(conn, query, now);
-    switch (status) {
-      /* Good result, continue on */
-      case ARES_SUCCESS:
-        break;
+  }
 
-      case ARES_ENOMEM:
-        /* Not retryable */
-        end_query(channel, server, query, status, NULL);
-        return status;
+  /* Write the query */
+  status = ares__conn_query_write(conn, query, now);
+  switch (status) {
+    /* Good result, continue on */
+    case ARES_SUCCESS:
+      break;
 
-      /* These conditions are retryable as they are server-specific
-       * error codes */
-      case ARES_ECONNREFUSED:
-      case ARES_EBADFAMILY:
-        handle_conn_error(conn, ARES_TRUE, status);
-        status = ares__requeue_query(query, now, status, ARES_TRUE);
-        if (status == ARES_ETIMEOUT) {
-          status = ARES_ECONNREFUSED;
-        }
-        return status;
+    case ARES_ENOMEM:
+      /* Not retryable */
+      end_query(channel, server, query, status, NULL);
+      return status;
 
-      /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
-       * just requeue to a different server/connection. */
-      default:
-        server_increment_failures(server, query->using_tcp);
-        status = ares__requeue_query(query, now, status, ARES_TRUE);
-        return status;
-    }
+    /* These conditions are retryable as they are server-specific
+     * error codes */
+    case ARES_ECONNREFUSED:
+    case ARES_EBADFAMILY:
+      handle_conn_error(conn, ARES_TRUE, status);
+      status = ares__requeue_query(query, now, status, ARES_TRUE);
+      if (status == ARES_ETIMEOUT) {
+        status = ARES_ECONNREFUSED;
+      }
+      return status;
+
+    /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
+     * just requeue to a different server/connection. */
+    default:
+      server_increment_failures(server, query->using_tcp);
+      status = ares__requeue_query(query, now, status, ARES_TRUE);
+      return status;
   }
 
   timeplus = ares__calc_query_timeout(query, server, now);

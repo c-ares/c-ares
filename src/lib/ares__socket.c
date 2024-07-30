@@ -224,15 +224,22 @@ ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len)
       ares_socklen_t          salen = sizeof(sa_storage);
       struct sockaddr        *sa    = (struct sockaddr *)&sa_storage;
       ares_status_t           status;
+      ares_ssize_t            rv;
 
       status = ares__conn_set_sockaddr(conn, sa, &salen);
       if (status != ARES_SUCCESS) {
         return status;
       }
 
-      return (ares_ssize_t)sendto((SEND_TYPE_ARG1)conn->fd,
-                                  (SEND_TYPE_ARG2)data, (SEND_TYPE_ARG3)len,
-                                  (SEND_TYPE_ARG4)flags, sa, salen);
+      rv = (ares_ssize_t)sendto((SEND_TYPE_ARG1)conn->fd,
+                                (SEND_TYPE_ARG2)data, (SEND_TYPE_ARG3)len,
+                                (SEND_TYPE_ARG4)flags, sa, salen);
+
+      /* If using TFO, we might not have been able to get an IP earlier, since
+       * we hadn't informed the OS of the destination.  When using sendto()
+       * now we have so we should be able to fetch it */
+      ares_conn_set_self_ip(conn, ARES_TRUE);
+      return rv;
     }
 #endif
   }
@@ -539,97 +546,17 @@ static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
 #endif
 }
 
-ares_status_t ares__conn_query_write(ares_conn_t *conn, ares_query_t *query,
-                                     const ares_timeval_t *now)
-{
-  unsigned char  *qbuf     = NULL;
-  size_t          qbuf_len = 0;
-  ares_ssize_t    len;
-  ares_server_t  *server  = conn->server;
-  ares_channel_t *channel = server->channel;
-  ares_status_t   status;
-
-  status = ares_cookie_apply(query->query, conn, now);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  if (conn->flags & ARES_CONN_FLAG_TCP) {
-    size_t prior_len = ares__buf_len(server->tcp_send);
-
-    status = ares_dns_write_buf_tcp(query->query, server->tcp_send);
-    if (status != ARES_SUCCESS) {
-      return status;
-    }
-
-    if (conn->flags & ARES_CONN_FLAG_TFO_INITIAL) {
-      /* When using TFO, we need to put it on the wire immediately. */
-      size_t               data_len;
-      const unsigned char *data = NULL;
-
-      data = ares__buf_peek(server->tcp_send, &data_len);
-      len  = ares__conn_write(conn, data, data_len);
-      if (len <= 0) {
-        if (ares__socket_try_again(SOCKERRNO)) {
-          /* This means we must not have qualified for TFO, keep the data
-           * buffered, wait on write signal. */
-          if (prior_len == 0) {
-            SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
-          }
-          return ARES_SUCCESS;
-        }
-
-        /* TCP TFO might delay failure.  Reflect that here */
-        return ARES_ECONNREFUSED;
-      }
-
-      /* Consume what was written */
-      ares__buf_consume(server->tcp_send, (size_t)len);
-      return ARES_SUCCESS;
-    }
-
-    if (prior_len == 0) {
-      SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
-    }
-
-    return ARES_SUCCESS;
-  }
-
-  /* UDP Here */
-  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  len = ares__conn_write(conn, qbuf, qbuf_len);
-  ares_free(qbuf);
-
-  if (len == -1) {
-    if (ares__socket_try_again(SOCKERRNO)) {
-      return ARES_ESERVFAIL;
-    }
-    /* UDP is connection-less, but we might receive an ICMP unreachable which
-     * means we can't talk to the remote host at all and that will be
-     * reflected here */
-    return ARES_ECONNREFUSED;
-  }
-
-  return ARES_SUCCESS;
-}
-
-ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
-                                             ares_channel_t       *channel,
-                                             ares_server_t        *server,
-                                             ares_query_t         *query,
-                                             const ares_timeval_t *now)
+ares_status_t ares__open_connection(ares_conn_t         **conn_out,
+                                    ares_channel_t       *channel,
+                                    ares_server_t        *server,
+                                    ares_bool_t           is_tcp)
 {
   ares_status_t           status;
   struct sockaddr_storage sa_storage;
-  ares_socklen_t          salen = sizeof(sa_storage);
-  struct sockaddr        *sa    = (struct sockaddr *)&sa_storage;
+  ares_socklen_t          salen  = sizeof(sa_storage);
+  struct sockaddr        *sa     = (struct sockaddr *)&sa_storage;
   ares_conn_t            *conn;
   ares__llist_node_t     *node   = NULL;
-  ares_bool_t             is_tcp = query->using_tcp;
   int                     stype  = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
 
   *conn_out = NULL;
@@ -710,20 +637,6 @@ ares_status_t ares__open_connection_and_send(ares_conn_t         **conn_out,
 
   /* Need to store our own ip for DNS cookie support */
   status = ares_conn_set_self_ip(conn, ARES_FALSE);
-  if (status != ARES_SUCCESS) {
-    goto done; /* LCOV_EXCL_LINE: UntestablePath */
-  }
-
-  /* With TFO, we actually write the query before the connection is fully
-   * established.  We also do this with UDP. */
-  status = ares__conn_query_write(conn, query, now);
-  if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
-  /* If using TFO, we might not have been able to get an IP earlier, try
-   * again. */
-  status = ares_conn_set_self_ip(conn, ARES_TRUE);
   if (status != ARES_SUCCESS) {
     goto done; /* LCOV_EXCL_LINE: UntestablePath */
   }
