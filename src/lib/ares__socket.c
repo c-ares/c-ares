@@ -457,7 +457,7 @@ static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
   /* Linux and FreeBSD don't want any sort of connect() so skip */
 #if defined(TFO_SKIP_CONNECT) && TFO_SKIP_CONNECT
   return ARES_SUCCESS;
-#elif defined(TFO_USE_CONNECTX)
+#elif defined(TFO_USE_CONNECTX) && TFO_USE_CONNECTX
   {
     int rv;
     int err;
