@@ -167,9 +167,6 @@ ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len,
 
 #if defined(TFO_USE_SENDTO) && TFO_USE_SENDTO
   if (sa != NULL) {
-#  if defined(MSG_FASTOPEN)
-    flags |= MSG_FASTOPEN;
-#  endif
     return (ares_ssize_t)sendto((SEND_TYPE_ARG1)conn->fd, (SEND_TYPE_ARG2)data,
                                 (SEND_TYPE_ARG3)len, (SEND_TYPE_ARG4)flags,
                                 sa, sa_len);
@@ -358,7 +355,7 @@ static ares_status_t configure_socket(ares_conn_t *conn)
       if (setsockopt(conn->fd, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
           sizeof(opt)) != 0) {
         /* Disable TFO if flag can't be set. */
-        conn->flags &= ~(ARES_CONN_FLAG_TFO);
+        conn->flags &= ~((unsigned int)ARES_CONN_FLAG_TFO);
       }
 #endif
     }
@@ -501,13 +498,14 @@ ares_status_t ares__conn_query_write(ares_conn_t          *conn,
 {
   unsigned char  *qbuf     = NULL;
   size_t          qbuf_len = 0;
+  ares_ssize_t    len;
   ares_server_t  *server   = conn->server;
   ares_channel_t *channel  = server->channel;
   ares_status_t   status;
 
   status = ares_cookie_apply(query->query, conn, now);
   if (status != ARES_SUCCESS) {
-    goto done;
+    return status;
   }
 
   if (conn->flags & ARES_CONN_FLAG_TCP) {
@@ -515,12 +513,11 @@ ares_status_t ares__conn_query_write(ares_conn_t          *conn,
 
     status = ares_dns_write_buf_tcp(query->query, server->tcp_send);
     if (status != ARES_SUCCESS) {
-      goto done;
+      return status;
     }
 
     if (conn->flags & ARES_CONN_FLAG_TFO && sa != NULL) {
       /* When using TFO, we need to put it on the wire immediately. */
-      ares_ssize_t         len;
       size_t               data_len;
       const unsigned char *data = NULL;
 
@@ -528,51 +525,50 @@ ares_status_t ares__conn_query_write(ares_conn_t          *conn,
       len  = ares__conn_write(conn, data, data_len, sa, salen);
       if (len <= 0) {
         if (ares__socket_try_again(SOCKERRNO)) {
-          status = ARES_ESERVFAIL;
-          goto done;
-        } else {
-          /* UDP is connection-less, but we might receive an ICMP unreachable which
-           * means we can't talk to the remote host at all and that will be
-           * reflected here */
-          status = ARES_ECONNREFUSED;
-          goto done;
+          /* This means we must not have qualified for TFO, keep the data
+           * buffered, wait on write signal. */
+          if (prior_len == 0) {
+            SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
+          }
+          return ARES_SUCCESS;
         }
-      } else {
-        /* Consume what was written */
-        ares__buf_consume(server->tcp_send, (size_t)len);
+
+        /* TCP TFO might delay failure.  Reflect that here */
+        return ARES_ECONNREFUSED;
       }
-    } else {
-      if (prior_len == 0) {
-        SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
-      }
+
+      /* Consume what was written */
+      ares__buf_consume(server->tcp_send, (size_t)len);
+      return ARES_SUCCESS;
     }
 
-  } else {
-
-    status = ares_dns_write(query->query, &qbuf, &qbuf_len);
-    if (status != ARES_SUCCESS) {
-      goto done;
+    if (prior_len == 0) {
+      SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
     }
 
-    if (ares__conn_write(conn, qbuf, qbuf_len, NULL, 0) == -1) {
-      if (ares__socket_try_again(SOCKERRNO)) {
-        status = ARES_ESERVFAIL;
-        goto done;
-      } else {
-        /* UDP is connection-less, but we might receive an ICMP unreachable which
-         * means we can't talk to the remote host at all and that will be
-         * reflected here */
-        status = ARES_ECONNREFUSED;
-        goto done;
-      }
-    }
+    return ARES_SUCCESS;
   }
 
-  status = ARES_SUCCESS;
+  /* UDP Here */
+  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
 
-done:
+  len = ares__conn_write(conn, qbuf, qbuf_len, NULL, 0);
   ares_free(qbuf);
-  return status;
+
+  if (len == -1) {
+    if (ares__socket_try_again(SOCKERRNO)) {
+      return ARES_ESERVFAIL;
+    }
+    /* UDP is connection-less, but we might receive an ICMP unreachable which
+     * means we can't talk to the remote host at all and that will be
+     * reflected here */
+    return ARES_ECONNREFUSED;
+  }
+
+  return ARES_SUCCESS;
 }
 
 
