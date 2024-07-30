@@ -87,16 +87,6 @@ jobs:
         run: |
           ./ci/build.sh
           ./ci/test.sh
-      - name: "Valgrind: build and test c-ares"
-        env:
-          BUILD_TYPE: "valgrind"
-          TEST_WRAP: "valgrind --leak-check=full"
-          TEST_FILTER: "--gtest_filter=-*Container*:*LiveSearchANY*:*LiveSearchTXT*"
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
-          TEST_DEBUGGER: none
-        run: |
-          ./ci/build.sh
-          ./ci/test.sh
       - name: "CMake: Static Analyzer: build c-ares"
         env:
           BUILD_TYPE: "analyze"
@@ -105,6 +95,17 @@ jobs:
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
           TEST_DEBUGGER: "lldb"
         run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Valgrind: build and test c-ares (no TCP FastOpen)"
+        env:
+          BUILD_TYPE: "valgrind"
+          TEST_WRAP: "valgrind --leak-check=full"
+          TEST_FILTER: "--gtest_filter=-*Container*:*LiveSearchANY*:*LiveSearchTXT*"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: none
+        run: |
+          sudo sysctl -w net.ipv4.tcp_fastopen=0
           ./ci/build.sh
           ./ci/test.sh
       - name: "CMake: No TCP FastOpen"
