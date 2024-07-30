@@ -234,7 +234,7 @@ ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len)
                                   (SEND_TYPE_ARG2)data,
                                   (SEND_TYPE_ARG3)len,
                                   (SEND_TYPE_ARG4)flags,
-                                  sa, sa_len);
+                                  sa, salen);
     }
 #endif
   }
