@@ -231,9 +231,9 @@ ares_ssize_t ares__conn_write(ares_conn_t *conn, const void *data, size_t len)
         return status;
       }
 
-      rv = (ares_ssize_t)sendto((SEND_TYPE_ARG1)conn->fd,
-                                (SEND_TYPE_ARG2)data, (SEND_TYPE_ARG3)len,
-                                (SEND_TYPE_ARG4)flags, sa, salen);
+      rv = (ares_ssize_t)sendto((SEND_TYPE_ARG1)conn->fd, (SEND_TYPE_ARG2)data,
+                                (SEND_TYPE_ARG3)len, (SEND_TYPE_ARG4)flags, sa,
+                                salen);
 
       /* If using TFO, we might not have been able to get an IP earlier, since
        * we hadn't informed the OS of the destination.  When using sendto()
@@ -546,18 +546,17 @@ static ares_status_t ares__conn_connect(ares_conn_t *conn, struct sockaddr *sa,
 #endif
 }
 
-ares_status_t ares__open_connection(ares_conn_t         **conn_out,
-                                    ares_channel_t       *channel,
-                                    ares_server_t        *server,
-                                    ares_bool_t           is_tcp)
+ares_status_t ares__open_connection(ares_conn_t   **conn_out,
+                                    ares_channel_t *channel,
+                                    ares_server_t *server, ares_bool_t is_tcp)
 {
   ares_status_t           status;
   struct sockaddr_storage sa_storage;
-  ares_socklen_t          salen  = sizeof(sa_storage);
-  struct sockaddr        *sa     = (struct sockaddr *)&sa_storage;
+  ares_socklen_t          salen = sizeof(sa_storage);
+  struct sockaddr        *sa    = (struct sockaddr *)&sa_storage;
   ares_conn_t            *conn;
-  ares__llist_node_t     *node   = NULL;
-  int                     stype  = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
+  ares__llist_node_t     *node  = NULL;
+  int                     stype = is_tcp ? SOCK_STREAM : SOCK_DGRAM;
 
   *conn_out = NULL;
 

@@ -987,8 +987,8 @@ static ares_conn_t *ares__fetch_connection(ares_channel_t     *channel,
   return conn;
 }
 
-static ares_status_t ares__conn_query_write(ares_conn_t *conn,
-                                            ares_query_t *query,
+static ares_status_t ares__conn_query_write(ares_conn_t          *conn,
+                                            ares_query_t         *query,
                                             const ares_timeval_t *now)
 {
   unsigned char  *qbuf     = NULL;

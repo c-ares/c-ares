@@ -602,10 +602,9 @@ ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
 ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
                                        const struct ares_addrinfo_hints *hints,
                                        struct ares_addrinfo             *ai);
-ares_status_t ares__open_connection(ares_conn_t         **conn_out,
-                                    ares_channel_t       *channel,
-                                    ares_server_t        *server,
-                                    ares_bool_t           is_tcp);
+ares_status_t ares__open_connection(ares_conn_t   **conn_out,
+                                    ares_channel_t *channel,
+                                    ares_server_t *server, ares_bool_t is_tcp);
 ares_bool_t   ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
                                          unsigned short        *port,
                                          const struct sockaddr *sockaddr);
