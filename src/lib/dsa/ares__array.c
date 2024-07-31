@@ -114,8 +114,12 @@ static ares_status_t ares__array_move(ares__array_t *arr, size_t dest_idx,
   if (dest_idx > src_idx && arr->cnt + (dest_idx - src_idx) > arr->alloc_cnt) {
     return ARES_EFORMERR;
   }
+  if (dest_idx < src_idx) {
+    nmembers = arr->cnt - dest_idx;
+  } else {
+    nmembers = arr->cnt - src_idx;
+  }
 
-  nmembers = arr->cnt - src_idx;
   memmove(dest_ptr, src_ptr, nmembers * arr->member_size);
 
   return ARES_SUCCESS;
@@ -185,7 +189,7 @@ ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr, size_t 
   /* If we're inserting anywhere other than the end, we need to move some
    * elements out of the way */
   if (idx != arr->cnt) {
-    status = ares__array_move(arr, idx+arr->offset, idx+arr->offset+1);
+    status = ares__array_move(arr, idx+arr->offset+1, idx+arr->offset);
     if (status != ARES_SUCCESS) {
       return status;
     }

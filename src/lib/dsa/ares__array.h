@@ -50,9 +50,18 @@ typedef void (*ares__array_destructor_t)(void *data);
 
 /*! Create an array object
  *
+ *  NOTE: members of the array are typically going to be an going to be a
+ *        struct with compiler/ABI specific padding to ensure proper alignment.
+ *        Care needs to be taken if using primitive types, especially floating
+ *        point numbers which size may not indicate the required alignment.
+ *        For example, a double may be 80 bits (10 bytes), but required
+ *        alignment of 16 bytes.  In such a case, a member_size of 16 would be
+ *        required to be used.
+ *
  *  \param[in] destruct     Optional. Destructor to call on a removed member
  *  \param[in] member_size  Size of array member, usually determined using
  *                          sizeof() for the member such as a struct.
+ *
  *  \return array object or NULL on out of memory
  */
 ares__array_t *ares__array_create(size_t member_size,

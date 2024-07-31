@@ -105,6 +105,7 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 struct ares_rand_state;
 typedef struct ares_rand_state ares_rand_state;
 
+#include "dsa/ares__array.h"
 #include "dsa/ares__llist.h"
 #include "dsa/ares__slist.h"
 #include "dsa/ares__htable_strvp.h"

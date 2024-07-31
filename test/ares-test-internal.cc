@@ -1001,6 +1001,23 @@ TEST_F(LibraryTest, CatDomain) {
   ares_free(s);
 }
 
+TEST_F(LibraryTest, ArrayMisuse) {
+  EXPECT_EQ(NULL, ares__array_create(0, NULL));
+  ares__array_destroy(NULL);
+  EXPECT_EQ(NULL, ares__array_finish(NULL, NULL));
+  EXPECT_EQ(0, ares__array_len(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares__array_insert_at(NULL, NULL, 0));
+  EXPECT_NE(ARES_SUCCESS, ares__array_insert_last(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares__array_insert_first(NULL, NULL));
+  EXPECT_EQ(NULL, ares__array_at(NULL, 0));
+  EXPECT_EQ(NULL, ares__array_first(NULL));
+  EXPECT_EQ(NULL, ares__array_last(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares__array_claim_at(NULL, 0, NULL, 0));
+  EXPECT_NE(ARES_SUCCESS, ares__array_remove_at(NULL, 0));
+  EXPECT_NE(ARES_SUCCESS, ares__array_remove_first(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares__array_remove_last(NULL));
+}
+
 TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ(NULL, ares__buf_create_const(NULL, 0));
   ares__buf_reclaim(NULL);
@@ -1096,6 +1113,117 @@ TEST_F(LibraryTest, SlistMisuse) {
   EXPECT_EQ(NULL, ares__slist_node_claim(NULL));
 }
 
+typedef struct {
+  unsigned int id;
+  ares__buf_t *buf;
+} array_member_t;
+
+static void array_member_init(void *mb, unsigned int id)
+{
+  array_member_t *m = (array_member_t *)mb;
+  m->id             = id;
+  m->buf            = ares__buf_create();
+  ares__buf_append_be32(m->buf, id);
+}
+
+static void array_member_destroy(void *mb)
+{
+  array_member_t *m = (array_member_t *)mb;
+  ares__buf_destroy(m->buf);
+}
+
+TEST_F(LibraryTest, Array) {
+  ares__array_t  *a       = NULL;
+  array_member_t *m       = NULL;
+  array_member_t  mbuf;
+  unsigned int    cnt     = 0;
+  unsigned int    removed = 0;
+  void           *ptr     = NULL;
+  size_t          i;
+
+  a = ares__array_create(sizeof(array_member_t), array_member_destroy);
+  EXPECT_NE(nullptr, a);
+
+  /* Add 8 elements */
+  for ( ; cnt < 8 ; cnt++) {
+    EXPECT_EQ(ARES_SUCCESS, ares__array_insert_last(&ptr, a));
+    array_member_init(ptr, cnt+1);
+  }
+
+  /* Verify count */
+  EXPECT_EQ(cnt, ares__array_len(a));
+
+  /* Remove the first 2 elements */
+  EXPECT_EQ(ARES_SUCCESS, ares__array_remove_first(a));
+  EXPECT_EQ(ARES_SUCCESS, ares__array_remove_first(a));
+  removed += 2;
+
+  /* Verify count */
+  EXPECT_EQ(cnt-removed, ares__array_len(a));
+
+  /* Verify id of first element */
+  m = (array_member_t *)ares__array_first(a);
+  EXPECT_NE(nullptr, m);
+  EXPECT_EQ(3, m->id);
+
+
+  /* Add 100 total elements, this should force a shift of memory at some
+   * to make sure moves are working */
+  for ( ; cnt < 100 ; cnt++) {
+    EXPECT_EQ(ARES_SUCCESS, ares__array_insert_last(&ptr, a));
+    array_member_init(ptr, cnt+1);
+  }
+
+  /* Verify count */
+  EXPECT_EQ(cnt-removed, ares__array_len(a));
+
+  /* Remove 2 from the end */
+  EXPECT_EQ(ARES_SUCCESS, ares__array_remove_last(a));
+  EXPECT_EQ(ARES_SUCCESS, ares__array_remove_last(a));
+  removed += 2;
+
+  /* Verify count */
+  EXPECT_EQ(cnt-removed, ares__array_len(a));
+
+  /* Verify expected id of last member */
+  m = (array_member_t *)ares__array_last(a);
+  EXPECT_NE(nullptr, m);
+  EXPECT_EQ(cnt-2, m->id);
+
+  /* Remove 3 middle members */
+  EXPECT_EQ(ARES_SUCCESS, ares__array_remove_at(a, ares__array_len(a)/2));
+  EXPECT_EQ(ARES_SUCCESS, ares__array_remove_at(a, ares__array_len(a)/2));
+  EXPECT_EQ(ARES_SUCCESS, ares__array_remove_at(a, ares__array_len(a)/2));
+  removed += 3;
+
+  /* Verify count */
+  EXPECT_EQ(cnt-removed, ares__array_len(a));
+
+  /* Claim a middle member then re-add it at the same position */
+  i = ares__array_len(a) / 2;
+  EXPECT_EQ(ARES_SUCCESS, ares__array_claim_at(&mbuf, sizeof(mbuf), a, i));
+  EXPECT_EQ(ARES_SUCCESS, ares__array_insert_at(&ptr, a, i));
+  array_member_init(ptr, mbuf.id);
+  array_member_destroy((void *)&mbuf);
+  /* Verify count */
+  EXPECT_EQ(cnt-removed, ares__array_len(a));
+
+  /* Iterate across the array, make sure each entry is greater than the last and
+   * the data in the buffer matches the id in the array */
+  unsigned int last_id = 0;
+  for (i=0; i<ares__array_len(a); i++) {
+    m = (array_member_t *)ares__array_at(a, i);
+    EXPECT_NE(nullptr, m);
+    EXPECT_GT(m->id, last_id);
+    last_id = m->id;
+
+    unsigned int bufval = 0;
+    EXPECT_EQ(ARES_SUCCESS, ares__buf_fetch_be32(m->buf, &bufval));
+    EXPECT_EQ(bufval, m->id);
+  }
+
+  ares__array_destroy(a);
+}
 
 TEST_F(LibraryTest, HtableVpvp) {
   ares__llist_t       *l = NULL;
