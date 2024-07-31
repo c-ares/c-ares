@@ -42,6 +42,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   inet_net_pton.c			\
   inet_ntop.c				\
   windows_port.c			\
+  dsa/ares__array.c			\
   dsa/ares__htable.c			\
   dsa/ares__htable_asvp.c		\
   dsa/ares__htable_strvp.c		\
@@ -97,6 +98,7 @@ HHEADERS = ares_android.h			\
   ares_platform.h			\
   ares_private.h			\
   ares_setup.h				\
+  dsa/ares__array.h			\
   dsa/ares__htable.h			\
   dsa/ares__htable_asvp.h		\
   dsa/ares__htable_strvp.h		\
