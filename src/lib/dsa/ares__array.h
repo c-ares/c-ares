@@ -85,7 +85,7 @@ ares__array_t *ares__array_create(size_t member_size,
  *    ARES_ENOMEM on out of memory */
 ares_status_t ares__array_set_size(ares__array_t *arr, size_t size);
 
-/*! Sort the array using the given comparision function.  This is not
+/*! Sort the array using the given comparison function.  This is not
  *  persistent, any future elements inserted will not maintain this sort.
  *
  *  \param[in]  arr      Initialized array object.
