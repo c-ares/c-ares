@@ -422,7 +422,7 @@ done:
 
 ares_status_t ares_qcache_insert(ares_channel_t       *channel,
                                  const ares_timeval_t *now,
-                                 const struct query   *query,
+                                 const ares_query_t   *query,
                                  ares_dns_record_t    *dnsrec)
 {
   return ares__qcache_insert(channel->qcache, dnsrec, query->query, now);

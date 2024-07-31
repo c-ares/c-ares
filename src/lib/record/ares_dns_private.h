@@ -53,8 +53,16 @@ ares_status_t        ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
                                                  ares_dns_section_t sect, size_t cnt);
 ares_dns_rr_t       *ares_dns_get_opt_rr(ares_dns_record_t *rec);
 const ares_dns_rr_t *ares_dns_get_opt_rr_const(const ares_dns_record_t *rec);
-void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
-                                         unsigned int       ttl_decrement);
+void          ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
+                                                  unsigned int       ttl_decrement);
+
+/* Same as ares_dns_write() but appends to an existing buffer object */
+ares_status_t ares_dns_write_buf(const ares_dns_record_t *dnsrec,
+                                 ares__buf_t             *buf);
+
+/* Same as ares_dns_write_buf(), but prepends a 16bit length */
+ares_status_t ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
+                                     ares__buf_t             *buf);
 
 /*! Create a DNS record object for a query. The arguments are the same as
  *  those for ares_create_query().

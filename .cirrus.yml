@@ -57,7 +57,7 @@ task:
         BUILD_ANALYZE: "yes"
         TEST_SYMBOL_VISIBILITY: "yes"
       freebsd_instance:
-        image_family: freebsd-13-3
+        image_family: freebsd-14-1
     - name: "iOS"
       env:
         DIST: "iOS"
@@ -158,6 +158,9 @@ task:
           # pkg upgrade -y && \
           pkg install -y bash cmake ninja googletest pkgconf llvm gmake
           ln -sf /usr/local/bin/bash /bin/bash
+          # Enable TCP FastOpen
+          sysctl net.inet.tcp.fastopen.server_enable=1
+          sysctl net.inet.tcp.fastopen.client_enable=1
           case "${BUILD_TYPE}" in
             autotools)
               pkg install -y autoconf automake libtool

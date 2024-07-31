@@ -67,6 +67,9 @@
 /* Define to 1 if you have the connect function. */
 #cmakedefine HAVE_CONNECT 1
 
+/* Define to 1 if you have the connectx function. */
+#cmakedefine HAVE_CONNECTX 1
+
 /* define if the compiler supports basic C++11 syntax */
 #cmakedefine HAVE_CXX11 1
 

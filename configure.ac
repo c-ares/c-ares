@@ -538,6 +538,7 @@ AC_CHECK_DECL(send,            [AC_DEFINE([HAVE_SEND],              1, [Define t
 AC_CHECK_DECL(getnameinfo,     [AC_DEFINE([HAVE_GETNAMEINFO],       1, [Define to 1 if you have `getnameinfo`]    )], [], $cares_all_includes)
 AC_CHECK_DECL(gethostname,     [AC_DEFINE([HAVE_GETHOSTNAME],       1, [Define to 1 if you have `gethostname`]    )], [], $cares_all_includes)
 AC_CHECK_DECL(connect,         [AC_DEFINE([HAVE_CONNECT],           1, [Define to 1 if you have `connect`]        )], [], $cares_all_includes)
+AC_CHECK_DECL(connectx,        [AC_DEFINE([HAVE_CONNECTX],          1, [Define to 1 if you have `connectx`]       )], [], $cares_all_includes)
 AC_CHECK_DECL(closesocket,     [AC_DEFINE([HAVE_CLOSESOCKET],       1, [Define to 1 if you have `closesocket`]    )], [], $cares_all_includes)
 AC_CHECK_DECL(CloseSocket,     [AC_DEFINE([HAVE_CLOSESOCKET_CAMEL], 1, [Define to 1 if you have `CloseSocket`]    )], [], $cares_all_includes)
 AC_CHECK_DECL(fcntl,           [AC_DEFINE([HAVE_FCNTL],             1, [Define to 1 if you have `fcntl`]          )], [], $cares_all_includes)

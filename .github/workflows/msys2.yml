@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TEST_FILTER: "-4 --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
+  TEST_FILTER: "-4 --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveSearchNS*:*LiveGetLocalhostByAddr*"
   CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -G Ninja"
   CONFIG_OPTS: "--disable-shared"
   MAKE: make

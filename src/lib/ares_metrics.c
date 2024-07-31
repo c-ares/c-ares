@@ -145,7 +145,7 @@ static time_t ares_metric_timestamp(ares_server_bucket_t  bucket,
   return (time_t)(now->sec / divisor);
 }
 
-void ares_metrics_record(const struct query *query, struct server_state *server,
+void ares_metrics_record(const ares_query_t *query, ares_server_t *server,
                          ares_status_t status, const ares_dns_record_t *dnsrec)
 {
   ares_timeval_t       now;
@@ -205,8 +205,8 @@ void ares_metrics_record(const struct query *query, struct server_state *server,
   }
 }
 
-size_t ares_metrics_server_timeout(const struct server_state *server,
-                                   const ares_timeval_t      *now)
+size_t ares_metrics_server_timeout(const ares_server_t  *server,
+                                   const ares_timeval_t *now)
 {
   const ares_channel_t *channel = server->channel;
   ares_server_bucket_t  i;
