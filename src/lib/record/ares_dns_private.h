@@ -263,21 +263,10 @@ struct ares_dns_record {
                                     *   the ttl of any resource records by
                                     *   this amount.  Used for cache */
 
-  ares_dns_qd_t    *qd;
-  size_t            qdcount;
-  size_t            qdalloc;
-
-  ares_dns_rr_t    *an;
-  size_t            ancount;
-  size_t            analloc;
-
-  ares_dns_rr_t    *ns;
-  size_t            nscount;
-  size_t            nsalloc;
-
-  ares_dns_rr_t    *ar;
-  size_t            arcount;
-  size_t            aralloc;
+  ares__array_t    *qd;            /*!< Type is ares_dns_qd_t */
+  ares__array_t    *an;            /*!< Type is ares_dns_rr_t */
+  ares__array_t    *ns;            /*!< Type is ares_dns_rr_t */
+  ares__array_t    *ar;            /*!< Type is ares_dns_rr_t */
 };
 
 #endif
