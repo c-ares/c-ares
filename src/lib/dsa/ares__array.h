@@ -161,6 +161,22 @@ void *ares__array_first(ares__array_t *arr);
  *  \return pointer on success, NULL on failure */
 void *ares__array_last(ares__array_t *arr);
 
+/*! Fetch a constant pointer to the given element in the array
+ *  \param[in]  array  Initialized array object
+ *  \param[in]  idx    Index to fetch
+ *  \return pointer on success, NULL on failure */
+const void *ares__array_at_const(const ares__array_t *arr, size_t idx);
+
+/*! Fetch a constant pointer to the first element in the array
+ *  \param[in]  array  Initialized array object
+ *  \return pointer on success, NULL on failure */
+const void *ares__array_first_const(const ares__array_t *arr);
+
+/*! Fetch a constant pointer to the last element in the array
+ *  \param[in]  array  Initialized array object
+ *  \return pointer on success, NULL on failure */
+const void *ares__array_last_const(const ares__array_t *arr);
+
 /*! Claim the data from the specified array index, copying it to the buffer
  *  provided by the caller.  The index specified in the array will then be
  *  removed (without calling any possible destructor)

@@ -71,6 +71,13 @@ void *ares__array_at(ares__array_t *arr, size_t idx)
   return (unsigned char *)arr->arr + ((idx + arr->offset) * arr->member_size);
 }
 
+const void *ares__array_at_const(const ares__array_t *arr, size_t idx)
+{
+  if (arr == NULL || idx >= arr->cnt)
+    return NULL;
+  return (unsigned char *)arr->arr + ((idx + arr->offset) * arr->member_size);
+}
+
 ares_status_t ares__array_sort(ares__array_t *arr, ares__array_cmp_t cmp)
 {
   if (arr == NULL || cmp == NULL) {
@@ -268,6 +275,20 @@ void *ares__array_last(ares__array_t *arr)
     return NULL;
   }
   return ares__array_at(arr, cnt-1);
+}
+
+const void *ares__array_first_const(const ares__array_t *arr)
+{
+  return ares__array_at_const(arr, 0);
+}
+
+const void *ares__array_last_const(const ares__array_t *arr)
+{
+  size_t cnt = ares__array_len(arr);
+  if (cnt == 0) {
+    return NULL;
+  }
+  return ares__array_at_const(arr, cnt-1);
 }
 
 ares_status_t ares__array_claim_at(void *dest, size_t dest_size,
