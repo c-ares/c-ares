@@ -71,6 +71,23 @@ void *ares__array_at(ares__array_t *arr, size_t idx)
   return (unsigned char *)arr->arr + ((idx + arr->offset) * arr->member_size);
 }
 
+ares_status_t ares__array_sort(ares__array_t *arr, ares__array_cmp_t cmp)
+{
+  if (arr == NULL || cmp == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  /* Nothing to sort */
+  if (arr->cnt < 2) {
+    return ARES_SUCCESS;
+  }
+
+  qsort((unsigned char *)arr->arr + (arr->offset * arr->member_size),
+        arr->cnt, arr->member_size, cmp);
+  return ARES_SUCCESS;
+}
+
+
 void ares__array_destroy(ares__array_t *arr)
 {
   size_t i;

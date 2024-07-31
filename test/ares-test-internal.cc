@@ -1132,6 +1132,17 @@ static void array_member_destroy(void *mb)
   ares__buf_destroy(m->buf);
 }
 
+static int array_sort_cmp(const void *data1, const void *data2)
+{
+  const array_member_t *m1 = (const array_member_t *)data1;
+  const array_member_t *m2 = (const array_member_t *)data2;
+  if (m1->id > m2->id)
+    return 1;
+  if (m1->id < m2->id)
+    return -1;
+  return 0;
+}
+
 TEST_F(LibraryTest, Array) {
   ares__array_t  *a       = NULL;
   array_member_t *m       = NULL;
@@ -1218,7 +1229,32 @@ TEST_F(LibraryTest, Array) {
     last_id = m->id;
 
     unsigned int bufval = 0;
+    ares__buf_tag(m->buf);
     EXPECT_EQ(ARES_SUCCESS, ares__buf_fetch_be32(m->buf, &bufval));
+    ares__buf_tag_rollback(m->buf);
+    EXPECT_EQ(bufval, m->id);
+  }
+
+  /* add a new element in the middle to the beginning with a high id */
+  EXPECT_EQ(ARES_SUCCESS, ares__array_insert_at(&ptr, a, ares__array_len(a)/2));
+  array_member_init(ptr, 100000);
+
+  /* Sort the array */
+  EXPECT_EQ(ARES_SUCCESS, ares__array_sort(a, array_sort_cmp));
+
+  /* Iterate across the array, make sure each entry is greater than the last and
+   * the data in the buffer matches the id in the array */
+  last_id = 0;
+  for (i=0; i<ares__array_len(a); i++) {
+    m = (array_member_t *)ares__array_at(a, i);
+    EXPECT_NE(nullptr, m);
+    EXPECT_GT(m->id, last_id);
+    last_id = m->id;
+
+    unsigned int bufval = 0;
+    ares__buf_tag(m->buf);
+    EXPECT_EQ(ARES_SUCCESS, ares__buf_fetch_be32(m->buf, &bufval));
+    ares__buf_tag_rollback(m->buf);
     EXPECT_EQ(bufval, m->id);
   }
 

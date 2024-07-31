@@ -48,6 +48,14 @@ typedef struct ares__array ares__array_t;
  */
 typedef void (*ares__array_destructor_t)(void *data);
 
+/*! Callback to compare two array elements used for sorting
+ *
+ *  \param[in] data1 array member 1
+ *  \param[in] data2 array member 2
+ *  \return < 0 if data1 < data2, > 0 if data1 > data2, 0 if data1 == data2
+ */
+typedef int (*ares__array_cmp_t)(const void *data1, const void *data2);
+
 /*! Create an array object
  *
  *  NOTE: members of the array are typically going to be an going to be a
@@ -66,6 +74,15 @@ typedef void (*ares__array_destructor_t)(void *data);
  */
 ares__array_t *ares__array_create(size_t member_size,
                                   ares__array_destructor_t destruct);
+
+/*! Sort the array using the given comparision function.  This is not
+ *  persistent, any future elements inserted will not maintain this sort.
+ *
+ *  \param[in]  arr      Initialized array object.
+ *  \param[in]  cb       Sort callback
+ *  \return ARES_SUCCESS on success
+ */
+ares_status_t ares__array_sort(ares__array_t *arr, ares__array_cmp_t cmp);
 
 /*! Destroy an array object.  If a destructor is set, will be called on each
  *  member of the array.
