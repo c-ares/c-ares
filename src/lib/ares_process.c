@@ -400,6 +400,8 @@ static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
     for (node = ares__llist_node_first(server->connections); node != NULL;
          node = ares__llist_node_next(node)) {
       const ares_conn_t *conn = ares__llist_node_val(node);
+      ares_socket_t     *sptr;
+      ares_status_t      status;
 
       if (conn->fd == ARES_SOCKET_BAD) {
         continue;
