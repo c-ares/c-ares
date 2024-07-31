@@ -81,27 +81,20 @@ static jmethodID jni_get_method_id(JNIEnv *env, jclass cls,
   return mid;
 }
 
-static char *get_thread_name(char *name)
-{
-  if (prctl(PR_GET_NAME, name) == 0) {
-    return name;
-  }
-  return NULL;
-}
-
-static JavaVMAttachArgs get_jvm_attach_args(char *name)
-{
-  JavaVMAttachArgs args;
-  args.version = JNI_VERSION_1_6;
-  args.name    = get_thread_name(name);
-  args.group   = NULL;
-  return args;
-}
-
 static int jvm_attach(JNIEnv **env)
 {
-  char             name[17] = {0};
-  JavaVMAttachArgs args     = get_jvm_attach_args(name);
+  char              name[17] = {0};
+
+  JavaVMAttachArgs  args;
+
+  args.version = JNI_VERSION_1_6;
+  if (prctl(PR_GET_NAME, name) == 0) {
+    args.name = name;
+  } else {
+    args.name = NULL;
+  }
+  args.group   = NULL;
+
   return (*android_jvm)->AttachCurrentThread(android_jvm, env, &args);
 }
 
