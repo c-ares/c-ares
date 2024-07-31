@@ -46,7 +46,6 @@
 
 
 static void          timeadd(ares_timeval_t *now, size_t millisecs);
-static ares_bool_t   try_again(int errnum);
 static void          write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
                                     ares_socket_t write_fd);
 static void          read_packets(ares_channel_t *channel, fd_set *read_fds,
@@ -236,34 +235,6 @@ void ares_process_fd(ares_channel_t *channel,
   processfds(channel, NULL, read_fd, NULL, write_fd);
 }
 
-/* Return 1 if the specified error number describes a readiness error, or 0
- * otherwise. This is mostly for HP-UX, which could return EAGAIN or
- * EWOULDBLOCK. See this man page
- *
- * http://devrsrc1.external.hp.com/STKS/cgi-bin/man2html?
- *     manpage=/usr/share/man/man2.Z/send.2
- */
-static ares_bool_t try_again(int errnum)
-{
-#if !defined EWOULDBLOCK && !defined EAGAIN
-#  error "Neither EWOULDBLOCK nor EAGAIN defined"
-#endif
-
-#ifdef EWOULDBLOCK
-  if (errnum == EWOULDBLOCK) {
-    return ARES_TRUE;
-  }
-#endif
-
-#if defined EAGAIN && EAGAIN != EWOULDBLOCK
-  if (errnum == EAGAIN) {
-    return ARES_TRUE;
-  }
-#endif
-
-  return ARES_FALSE;
-}
-
 /* If any TCP sockets select true for writing, write out queued data
  * we have for them.
  */
@@ -310,9 +281,9 @@ static void write_tcp_data(ares_channel_t *channel, fd_set *write_fds,
     }
 
     data  = ares__buf_peek(server->tcp_send, &data_len);
-    count = ares__socket_write(channel, server->tcp_conn->fd, data, data_len);
+    count = ares__conn_write(server->tcp_conn, data, data_len);
     if (count <= 0) {
-      if (!try_again(SOCKERRNO)) {
+      if (!ares__socket_try_again(SOCKERRNO)) {
         handle_conn_error(server->tcp_conn, ARES_TRUE, ARES_ECONNREFUSED);
       }
       continue;
@@ -355,7 +326,7 @@ static void read_tcp_data(ares_channel_t *channel, ares_conn_t *conn,
   count = ares__socket_recv(channel, conn->fd, ptr, ptr_len);
   if (count <= 0) {
     ares__buf_append_finish(server->tcp_parser, 0);
-    if (!(count == -1 && try_again(SOCKERRNO))) {
+    if (!(count == -1 && ares__socket_try_again(SOCKERRNO))) {
       handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED);
     }
     return;
@@ -508,7 +479,7 @@ static void read_udp_packets_fd(ares_channel_t *channel, ares_conn_t *conn,
        * tcp */
       continue;
     } else if (read_len < 0) {
-      if (try_again(SOCKERRNO)) {
+      if (ares__socket_try_again(SOCKERRNO)) {
         break;
       }
 
@@ -797,8 +768,8 @@ static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
   /* Increment failures first before requeue so it is unlikely to requeue
    * to the same server */
   if (critical_failure) {
-    server_increment_failures(server,
-      (conn->flags & ARES_CONN_FLAG_TCP)?ARES_TRUE:ARES_FALSE);
+    server_increment_failures(
+      server, (conn->flags & ARES_CONN_FLAG_TCP) ? ARES_TRUE : ARES_FALSE);
   }
 
   /* This will requeue any connections automatically */
@@ -932,7 +903,6 @@ static ares_server_t *ares__failover_server(ares_channel_t *channel)
   return first_server;
 }
 
-
 static size_t ares__calc_query_timeout(const ares_query_t   *query,
                                        const ares_server_t  *server,
                                        const ares_timeval_t *now)
@@ -1017,63 +987,80 @@ static ares_conn_t *ares__fetch_connection(ares_channel_t     *channel,
   return conn;
 }
 
-static ares_status_t ares__query_write(ares_conn_t *conn, ares_query_t *query,
-                                       const ares_timeval_t *now)
+static ares_status_t ares__conn_query_write(ares_conn_t          *conn,
+                                            ares_query_t         *query,
+                                            const ares_timeval_t *now)
 {
   unsigned char  *qbuf     = NULL;
   size_t          qbuf_len = 0;
-  ares_server_t  *server   = conn->server;
-  ares_channel_t *channel  = server->channel;
+  ares_ssize_t    len;
+  ares_server_t  *server  = conn->server;
+  ares_channel_t *channel = server->channel;
   ares_status_t   status;
 
   status = ares_cookie_apply(query->query, conn, now);
   if (status != ARES_SUCCESS) {
-    goto done;
-  }
-
-  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
-  if (status != ARES_SUCCESS) {
-    goto done;
+    return status;
   }
 
   if (conn->flags & ARES_CONN_FLAG_TCP) {
     size_t prior_len = ares__buf_len(server->tcp_send);
 
-    status =
-      ares__buf_append_be16(server->tcp_send, (unsigned short)qbuf_len);
+    status = ares_dns_write_buf_tcp(query->query, server->tcp_send);
     if (status != ARES_SUCCESS) {
-      goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+      return status;
     }
 
-    status = ares__buf_append(server->tcp_send, qbuf, qbuf_len);
-    if (status != ARES_SUCCESS) {
-      goto done;
+    if (conn->flags & ARES_CONN_FLAG_TFO_INITIAL) {
+      /* When using TFO, we need to put it on the wire immediately. */
+      size_t               data_len;
+      const unsigned char *data = NULL;
+
+      data = ares__buf_peek(server->tcp_send, &data_len);
+      len  = ares__conn_write(conn, data, data_len);
+      if (len <= 0) {
+        if (ares__socket_try_again(SOCKERRNO)) {
+          /* This means we must not have qualified for TFO, keep the data
+           * buffered, wait on write signal. */
+          return ARES_SUCCESS;
+        }
+
+        /* TCP TFO might delay failure.  Reflect that here */
+        return ARES_ECONNREFUSED;
+      }
+
+      /* Consume what was written */
+      ares__buf_consume(server->tcp_send, (size_t)len);
+      return ARES_SUCCESS;
     }
 
     if (prior_len == 0) {
       SOCK_STATE_CALLBACK(channel, conn->fd, 1, 1);
     }
-  } else {
-    if (ares__socket_write(channel, conn->fd, qbuf, qbuf_len) ==
-      -1) {
-      if (try_again(SOCKERRNO)) {
-        status = ARES_ESERVFAIL;
-        goto done;
-      } else {
-        /* UDP is connection-less, but we might receive an ICMP unreachable which
-         * means we can't talk to the remote host at all and that will be
-         * reflected here */
-        status = ARES_ECONNREFUSED;
-        goto done;
-      }
-    }
+
+    return ARES_SUCCESS;
   }
 
-  status = ARES_SUCCESS;
+  /* UDP Here */
+  status = ares_dns_write(query->query, &qbuf, &qbuf_len);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
 
-done:
+  len = ares__conn_write(conn, qbuf, qbuf_len);
   ares_free(qbuf);
-  return status;
+
+  if (len == -1) {
+    if (ares__socket_try_again(SOCKERRNO)) {
+      return ARES_ESERVFAIL;
+    }
+    /* UDP is connection-less, but we might receive an ICMP unreachable which
+     * means we can't talk to the remote host at all and that will be
+     * reflected here */
+    return ARES_ECONNREFUSED;
+  }
+
+  return ARES_SUCCESS;
 }
 
 ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
@@ -1100,7 +1087,7 @@ ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
 
   conn = ares__fetch_connection(channel, server, query);
   if (conn == NULL) {
-    status = ares__open_connection(&conn, channel, server, query);
+    status = ares__open_connection(&conn, channel, server, query->using_tcp);
     switch (status) {
       /* Good result, continue on */
       case ARES_SUCCESS:
@@ -1120,7 +1107,8 @@ ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
     }
   }
 
-  status = ares__query_write(conn, query, now);
+  /* Write the query */
+  status = ares__conn_query_write(conn, query, now);
   switch (status) {
     /* Good result, continue on */
     case ARES_SUCCESS:

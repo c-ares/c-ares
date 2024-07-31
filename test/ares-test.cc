@@ -437,6 +437,17 @@ MockServer::MockServer(int family, unsigned short port)
   setsockopt(tcpfd_, SOL_SOCKET, SO_NOSIGPIPE, (void *)&optval, sizeof(optval));
 #endif
 
+  /* Test system enable TCP FastOpen */
+#if defined(TCP_FASTOPEN)
+#  ifdef __linux__
+  int qlen = 32;
+  setsockopt(tcpfd_, IPPROTO_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen));
+#  else
+  int on = 1;
+  setsockopt(tcpfd_, IPPROTO_TCP, TCP_FASTOPEN, BYTE_CAST &on, sizeof(on));
+#  endif
+#endif
+
   // Create a UDP socket to receive data on.
   udpfd_ = socket(family, SOCK_DGRAM, 0);
   EXPECT_NE(ARES_SOCKET_BAD, udpfd_);

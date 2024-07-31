@@ -876,6 +876,8 @@ TEST_P(MockChannelTest, SearchDomainsBare) {
   ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(0, result.timeouts_);
+
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'www' aliases=[] addrs=[2.3.4.5]}", ss.str());

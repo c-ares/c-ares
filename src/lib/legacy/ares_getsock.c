@@ -67,12 +67,11 @@ int ares_getsock(const ares_channel_t *channel, ares_socket_t *socks,
 
       socks[sockindex] = conn->fd;
 
-      if (active_queries || (conn->flags & ARES_CONN_FLAG_TCP)) {
+      if (active_queries || conn->flags & ARES_CONN_FLAG_TCP) {
         bitmap |= ARES_GETSOCK_READABLE(setbits, sockindex);
       }
 
-      if ((conn->flags & ARES_CONN_FLAG_TCP) &&
-          ares__buf_len(server->tcp_send)) {
+      if (conn->flags & ARES_CONN_FLAG_TCP && ares__buf_len(server->tcp_send)) {
         /* then the tcp socket is also writable! */
         bitmap |= ARES_GETSOCK_WRITABLE(setbits, sockindex);
       }
