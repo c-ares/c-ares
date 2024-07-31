@@ -156,8 +156,8 @@ static ares_status_t ares__conn_set_sockaddr(const ares_conn_t *conn,
                                              struct sockaddr   *sa,
                                              ares_socklen_t    *salen)
 {
-  ares_server_t *server = conn->server;
-  unsigned short port =
+  const ares_server_t *server = conn->server;
+  unsigned short       port   =
     conn->flags & ARES_CONN_FLAG_TCP ? server->tcp_port : server->udp_port;
 
   switch (server->addr.family) {
