@@ -164,6 +164,37 @@ void *ares__array_finish(ares__array_t *arr, size_t *num_members)
   return ptr;
 }
 
+ares_status_t ares__array_set_size(ares__array_t *arr, size_t size)
+{
+  void *temp;
+
+  if (arr == NULL || size == 0 || size < arr->cnt) {
+    return ARES_EFORMERR;
+  }
+
+  /* Always operate on powers of 2 */
+  size = ares__round_up_pow2(size);
+
+  if (size < ARES__ARRAY_MIN) {
+    size = ARES__ARRAY_MIN;
+  }
+
+  /* If our allocation size is already large enough, skip */
+  if (size <= arr->alloc_cnt) {
+    return ARES_SUCCESS;
+  }
+
+  temp = ares_realloc_zero(arr->arr, arr->alloc_cnt * arr->member_size,
+                           size * arr->member_size);
+  if (temp == NULL) {
+    return ARES_ENOMEM;
+  }
+  arr->alloc_cnt = size;
+  arr->arr       = temp;
+  return ARES_SUCCESS;
+}
+
+
 ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr, size_t idx)
 {
   void         *ptr;
@@ -179,19 +210,9 @@ ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr, size_t 
   }
 
   /* Allocate more if needed */
-  if (arr->cnt + 1 > arr->alloc_cnt) {
-    size_t new_alloc_cnt = arr->alloc_cnt << 1;
-    void  *temp;
-    if (new_alloc_cnt == 0) {
-      new_alloc_cnt = ARES__ARRAY_MIN;
-    }
-    temp = ares_realloc_zero(arr->arr, arr->alloc_cnt * arr->member_size,
-                             new_alloc_cnt * arr->member_size);
-    if (temp == NULL) {
-      return ARES_ENOMEM;
-    }
-    arr->alloc_cnt = new_alloc_cnt;
-    arr->arr       = temp;
+  status = ares__array_set_size(arr, arr->cnt + 1);
+  if (status != ARES_SUCCESS) {
+    return status;
   }
 
   /* Shift if we have memory but not enough room at the end */

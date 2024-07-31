@@ -75,6 +75,16 @@ typedef int (*ares__array_cmp_t)(const void *data1, const void *data2);
 ares__array_t *ares__array_create(size_t member_size,
                                   ares__array_destructor_t destruct);
 
+
+/*! Request the array be at least the requested size.  Useful if the desired
+ *  array size is known prior to populating the array to prevent reallocations.
+ *
+ *  \param[in] arr  Initialized array object.
+ *  \param[in] size Minimum number of members
+ *  \return ARES_SUCCESS on success, ARES_EFORMERR on misuse,
+ *    ARES_ENOMEM on out of memory */
+ares_status_t ares__array_set_size(ares__array_t *arr, size_t size);
+
 /*! Sort the array using the given comparision function.  This is not
  *  persistent, any future elements inserted will not maintain this sort.
  *
