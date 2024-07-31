@@ -1173,7 +1173,10 @@ ares_status_t ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
   /* Now we need to overwrite the length, so we jump back to the original
    * message length, overwrite the section and jump back */
   ares__buf_set_length(buf, orig_len);
-  ares__buf_append_be16(buf, (unsigned short)(msg_len & 0xFFFF));
+  status = ares__buf_append_be16(buf, (unsigned short)(msg_len & 0xFFFF));
+  if (status != ARES_SUCCESS) {
+    goto done; /* LCOV_EXCL_LINE: UntestablePath */
+  }
   ares__buf_set_length(buf, len);
 
 done:

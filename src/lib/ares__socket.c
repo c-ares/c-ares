@@ -384,7 +384,8 @@ static ares_status_t configure_socket(ares_conn_t *conn)
 #if defined(SO_NOSIGPIPE)
   {
     int opt = 1;
-    setsockopt(conn->fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&opt, sizeof(opt));
+    (void)setsockopt(conn->fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&opt,
+                     sizeof(opt));
   }
 #endif
 
@@ -407,8 +408,8 @@ static ares_status_t configure_socket(ares_conn_t *conn)
   if (ares_strlen(channel->local_dev_name)) {
     /* Only root can do this, and usually not fatal if it doesn't work, so
      * just continue on. */
-    setsockopt(conn->fd, SOL_SOCKET, SO_BINDTODEVICE, channel->local_dev_name,
-               sizeof(channel->local_dev_name));
+    (void)setsockopt(conn->fd, SOL_SOCKET, SO_BINDTODEVICE,
+                     channel->local_dev_name, sizeof(channel->local_dev_name));
   }
 #endif
 
