@@ -411,35 +411,15 @@ static void read_tcp_data(ares_channel_t           *channel,
   }
 }
 
-static int socket_list_append(ares_socket_t **socketlist, ares_socket_t fd,
-                              size_t *alloc_cnt, size_t *num)
-{
-  if (*num >= *alloc_cnt) {
-    /* Grow by powers of 2 */
-    size_t         new_alloc = (*alloc_cnt) << 1;
-    ares_socket_t *new_list =
-      ares_realloc(socketlist, new_alloc * sizeof(*new_list));
-    if (new_list == NULL) {
-      return 0; /* LCOV_EXCL_LINE: OutOfMemory */
-    }
-    *alloc_cnt  = new_alloc;
-    *socketlist = new_list;
-  }
-
-  (*socketlist)[(*num)++] = fd;
-  return 1;
-}
-
 static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
                                           size_t               *num)
 {
-  size_t              alloc_cnt = 1 << 4;
-  ares_socket_t      *out       = ares_malloc(alloc_cnt * sizeof(*out));
   ares__slist_node_t *snode;
+  ares__array_t      *arr  = ares__array_create(sizeof(ares_socket_t), NULL);
 
   *num = 0;
 
-  if (out == NULL) {
+  if (arr == NULL) {
     return NULL; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
@@ -451,23 +431,23 @@ static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
     for (node = ares__llist_node_first(server->connections); node != NULL;
          node = ares__llist_node_next(node)) {
       const struct server_connection *conn = ares__llist_node_val(node);
+      ares_status_t                   status;
+      ares_socket_t                  *sptr;
 
       if (conn->fd == ARES_SOCKET_BAD) {
         continue;
       }
 
-      if (!socket_list_append(&out, conn->fd, &alloc_cnt, num)) {
-        goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
+      status = ares__array_insert_last((void **)&sptr, arr);
+      if (status != ARES_SUCCESS) {
+        ares__array_destroy(arr); /* LCOV_EXCL_LINE: OutOfMemory */
+        return NULL; /* LCOV_EXCL_LINE: OutOfMemory */
       }
+      *sptr = conn->fd;
     }
   }
 
-  return out;
-
-fail:
-  ares_free(out);
-  *num = 0;
-  return NULL;
+  return ares__array_finish(arr, num);
 }
 
 /* If any UDP sockets select true for reading, process them. */
