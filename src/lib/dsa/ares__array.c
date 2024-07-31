@@ -85,6 +85,7 @@ void ares__array_destroy(ares__array_t *arr)
   }
 
   ares_free(arr->arr);
+  ares_free(arr);
 }
 
 /* NOTE: this function operates on actual indexes, NOT indexes using the
@@ -120,6 +121,27 @@ static ares_status_t ares__array_move(ares__array_t *arr, size_t dest_idx,
   return ARES_SUCCESS;
 }
 
+void *ares__array_finish(ares__array_t *arr, size_t *num_members)
+{
+  void *ptr;
+
+  if (arr == NULL || num_members == NULL) {
+    return NULL;
+  }
+
+  /* Make sure we move data to beginning of allocation */
+  if (arr->offset != 0) {
+    if (ares__array_move(arr, 0, arr->offset) != ARES_SUCCESS) {
+      return NULL;
+    }
+    arr->offset = 0;
+  }
+
+  ptr          = arr->arr;
+  *num_members = arr->cnt;
+  ares_free(arr);
+  return ptr;
+}
 
 ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr, size_t idx)
 {
