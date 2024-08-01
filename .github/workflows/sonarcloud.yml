@@ -14,10 +14,10 @@ concurrency:
 
 jobs:
   build:
-    name: SonarCloud: Build and analyze
     runs-on: ubuntu-latest
     env:
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
+    name: "SonarCloud: Build and analyze"
     steps:
       - uses: actions/checkout@v4
         with:

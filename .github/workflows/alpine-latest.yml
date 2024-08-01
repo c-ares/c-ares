@@ -17,7 +17,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: alpine:latest
+    container:
+      image: alpine:latest
       options: --privileged
     name: "Alpine (latest)"
     steps:

@@ -17,7 +17,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ubuntu:20.04
+    container:
+      image: ubuntu:20.04
+      options: --privileged
     name: "Ubuntu 20.04"
     steps:
       - name: Install packages
