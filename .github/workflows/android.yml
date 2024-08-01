@@ -61,13 +61,13 @@ jobs:
           TOOLCHAIN: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64"
           TARGET: aarch64-linux-android
           API: 26
-          AR: "${{ env.TOOLCHAIN }}/bin/llvm-ar"
-          CC: "${{ env.TOOLCHAIN }}/bin/clang --target=${{ env.TARGET }}${{ env.API }}"
-          AS: "${{ env.CC }}"
-          CXX: "${{ env.TOOLCHAIN }}/bin/clang++ --target=${{ env.TARGET }}${{ env.API }}"
-          LD: "${{ env.TOOLCHAIN }}/bin/ld"
-          RANLIB: "${{ env.TOOLCHAIN }}/bin/llvm-ranlib"
-          STRIP: "${{ env.TOOLCHAIN }}/bin/llvm-strip"
-          CONFIG_OPTS: "--host ${{ env.TARGET }}"
+          AR: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+          CC: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=aarch64-linux-android26"
+          AS: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --target=aarch64-linux-android26"
+          CXX: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=aarch64-linux-android26"
+          LD: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/ld"
+          RANLIB: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib"
+          STRIP: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip"
+          CONFIG_OPTS: "--host aarch64-linux-android"
         run: |
           ./ci/build.sh
