@@ -22,14 +22,6 @@ task:
         TEST_SYMBOL_VISIBILITY: "yes"
       container:
         image: alpine:latest
-    - name: "Ubuntu OLD amd64"
-      env:
-        DIST: "UBUNTU"
-        LC_ALL: "C"
-        MAKE: "make"
-        TEST_DEBUGGER: "gdb"
-      container:
-        image: ubuntu:20.04
     - name: "Debian arm64"
       env:
         DIST: "DEBIAN-ARM"
