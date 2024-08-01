@@ -15,9 +15,9 @@ concurrency:
 permissions: {}
 
 jobs:
-  name: REUSE compliance
   check:
     runs-on: ubuntu-latest
+    name: REUSE compliance
     steps:
     - uses: actions/checkout@v4
     - name: REUSE Compliance Check

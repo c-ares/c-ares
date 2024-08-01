@@ -20,10 +20,10 @@ jobs:
     container: ubuntu:20.04
     name: "Ubuntu 20.04"
     steps:
-      - name: Install curl (needed by cache-apt-pkgs-action)
+      - name: Install packages needed by cache-apt-pkgs-action
         run: |
           apt-get update
-          apt-get install -y curl sudo
+          apt-get install --no-upgrade --no-install-recommends -y curl sudo wget
       - name: Install packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
