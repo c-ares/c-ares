@@ -1,6 +1,6 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-name: Windows UWP
+name: Windows UWP (Store)
 on:
   push:
   pull_request:
@@ -12,7 +12,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
-    name: Windows UWP
+    name: Windows UWP (Store)
     steps:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
