@@ -91,6 +91,6 @@ jobs:
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           TEST_DEBUGGER: none
         run: |
-          sudo sysctl -w net.ipv4.tcp_fastopen=3
+          sudo sysctl -w net.ipv4.tcp_fastopen=0
           ./ci/build.sh
           ./ci/test.sh
