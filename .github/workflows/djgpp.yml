@@ -5,6 +5,10 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.ref }}-djgpp
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest

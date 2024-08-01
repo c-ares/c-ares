@@ -5,6 +5,10 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.ref }}-openbsd
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
