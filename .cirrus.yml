@@ -8,20 +8,6 @@ env:
 
 task:
   matrix:
-    - name: "Alpine amd64"
-      env:
-        DIST: "ALPINE"
-        LC_ALL: "C"
-        SCAN_BUILD: "scan-build"
-        MAKE: "make"
-        BUILD_ASAN: "yes"
-        BUILD_UBSAN: "yes"
-        BUILD_VALGRIND: "yes"
-        BUILD_ANALYZE: "yes"
-        TEST_DEBUGGER: "gdb"
-        TEST_SYMBOL_VISIBILITY: "yes"
-      container:
-        image: alpine:latest
     - name: "Debian arm64"
       env:
         DIST: "DEBIAN-ARM"
@@ -109,24 +95,6 @@ task:
 
   install_script:
     - |
-      case "${DIST}" in
-        ALPINE)
-          apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make
-          case "${BUILD_TYPE}" in
-            asan|lsan|ubsan)
-              apk add clang17 compiler-rt lldb
-              ;;
-            analyze)
-              apk add clang17 clang17-analyzer compiler-rt lldb
-              ;;
-            valgrind)
-              apk add gcc g++ valgrind
-              ;;
-            *)
-              apk add gcc g++ gdb
-              ;;
-          esac
-          ;;
         UBUNTU|DEBIAN*)
           export DEBIAN_FRONTEND=noninteractive && \
           apt-get update && \

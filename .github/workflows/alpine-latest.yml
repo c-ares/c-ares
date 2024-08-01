@@ -1,12 +1,12 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-name: Ubuntu 20.04
+name: Alpine (latest)
 on:
   push:
   pull_request:
 
 concurrency:
-  group: ${{ github.ref }}-ubuntu-2004
+  group: ${{ github.ref }}-alpine-latest
   cancel-in-progress: true
 
 env:
@@ -17,16 +17,12 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ubuntu:20.04
-    name: "Ubuntu 20.04"
+    container: alpine:latest
+    name: "Alpine (latest)"
     steps:
       - name: Install packages
-        env:
-          DEBIAN_FRONTEND: noninteractive
         run: |
-          apt-get update
-          apt-get dist-upgrade -y --assume-yes
-          apt-get install -y --assume-yes sudo curl wget cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
+          apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make clang17 clang17-analyzer compiler-rt lldb gcc g++ valgrind gdb sudo
       - name: Checkout c-ares
         uses: actions/checkout@v4
 # This will probably fail in a container...
