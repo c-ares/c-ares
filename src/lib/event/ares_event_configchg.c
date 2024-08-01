@@ -195,13 +195,14 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
     return;
   }
 
-#  ifndef __WATCOMC__
+#  ifdef HAVE_NOTIFYIPINTERFACECHANGE
   if (configchg->ifchg_hnd != NULL) {
     CancelMibChangeNotify2(configchg->ifchg_hnd);
     configchg->ifchg_hnd = NULL;
   }
 #  endif
 
+#  ifdef HAVE_REGISTERWAITFORSINGLEOBJECT
   if (configchg->regip4_wait != NULL) {
     UnregisterWait(configchg->regip4_wait);
     configchg->regip4_wait = NULL;
@@ -231,12 +232,13 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
     CloseHandle(configchg->regip6_event);
     configchg->regip6_event = NULL;
   }
+#  endif
 
   ares_free(configchg);
 }
 
 
-#  ifndef __WATCOMC__
+#  ifdef HAVE_NOTIFYIPINTERFACECHANGE
 static void NETIOAPI_API_
   ares_event_configchg_ip_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row,
                              MIB_NOTIFICATION_TYPE NotificationType)
@@ -251,9 +253,10 @@ static void NETIOAPI_API_
 static ares_bool_t
   ares_event_configchg_regnotify(ares_event_configchg_t *configchg)
 {
-#  if defined(__WATCOMC__) && !defined(REG_NOTIFY_THREAD_AGNOSTIC)
-#    define REG_NOTIFY_THREAD_AGNOSTIC 0x10000000L
-#  endif
+#  ifdef HAVE_REGISTERWAITFORSINGLEOBJECT
+#    if defined(__WATCOMC__) && !defined(REG_NOTIFY_THREAD_AGNOSTIC)
+#      define REG_NOTIFY_THREAD_AGNOSTIC 0x10000000L
+#    endif
   DWORD flags = REG_NOTIFY_CHANGE_NAME | REG_NOTIFY_CHANGE_LAST_SET |
                 REG_NOTIFY_THREAD_AGNOSTIC;
 
@@ -266,7 +269,9 @@ static ares_bool_t
                               configchg->regip6_event, TRUE) != ERROR_SUCCESS) {
     return ARES_FALSE;
   }
-
+#  else
+  (void)configchg;
+#  endif
   return ARES_TRUE;
 }
 
@@ -296,7 +301,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
 
   c->e = e;
 
-#  ifndef __WATCOMC__
+#  ifdef HAVE_NOTIFYIPINTERFACECHANGE
   /* NOTE: If a user goes into the control panel and changes the network
    *       adapter DNS addresses manually, this will NOT trigger a notification.
    *       We've also tried listening on NotifyUnicastIpAddressChange(), but
@@ -309,6 +314,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
   }
 #  endif
 
+#  ifdef HAVE_REGISTERWAITFORSINGLEOBJECT
   /* Monitor HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\Interfaces
    * and HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces
    * for changes via RegNotifyChangeKeyValue() */
@@ -353,6 +359,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
     status = ARES_ESERVFAIL;
     goto done;
   }
+#  endif
 
   if (!ares_event_configchg_regnotify(c)) {
     status = ARES_ESERVFAIL;
