@@ -25,5 +25,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Build c-ares
         run: |
-          cmake -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64 -Bbuild
+          dir
+          mkdir build
+          cmake -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_SYSTEM_NAME=WindowsStore -A x64 -Bbuild
           cmake --build build --config Debug
+
+# -DCMAKE_SYSTEM_VERSION=10.0
