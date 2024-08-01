@@ -1,0 +1,29 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: Windows UWP
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-uwp
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    name: Windows UWP
+    steps:
+      - name: Install CMake
+        run: |
+          choco install --yes cmake
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          uwp: true
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+      - name: Build Watt-32
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64 -Bbuild
+          cmake --build build --config Debug
