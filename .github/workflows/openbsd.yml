@@ -5,12 +5,16 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.ref }}-openbsd
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    name: OpenBSD
     steps:
       - uses: actions/checkout@v4
-
       - name: Test
         uses: cross-platform-actions/action@v0.24.0
         env:

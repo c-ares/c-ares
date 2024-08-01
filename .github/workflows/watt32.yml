@@ -5,9 +5,14 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.ref }}-watt32
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
+    name: WATT32
     env:
       WATT_ROOT: "${{ github.workspace }}\\watt-32"
     steps:

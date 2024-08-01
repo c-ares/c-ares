@@ -5,9 +5,14 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.ref }}-openwatcom
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
+    name: OpenWatcom
     steps:
       - uses: open-watcom/setup-watcom@v0
       - name: Checkout Source

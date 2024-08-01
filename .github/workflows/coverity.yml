@@ -7,9 +7,15 @@ on:
   push:
     branches: [ coverity_scan ]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-coverity
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    name: Coverity
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4

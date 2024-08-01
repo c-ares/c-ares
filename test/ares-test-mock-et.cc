@@ -1421,10 +1421,8 @@ TEST_P(NoRotateMultiMockEventThreadTest, ServerNoResponseFailover) {
  * system.  Its possible we could set a realtime priority on a thread to
  * help with this, but for now, just increase the delay */
 #  define SERVER_FAILOVER_RETRY_DELAY 750
-#elif defined(_WIN32)
-#  define SERVER_FAILOVER_RETRY_DELAY 500
 #else
-#  define SERVER_FAILOVER_RETRY_DELAY 250
+#  define SERVER_FAILOVER_RETRY_DELAY 500
 #endif
 class ServerFailoverOptsMockEventThreadTest : public MockMultiServerEventThreadTest {
  public:

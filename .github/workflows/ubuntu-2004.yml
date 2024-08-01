@@ -1,12 +1,12 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-name: Ubuntu (latest)
+name: Ubuntu 20.04
 on:
   push:
   pull_request:
 
 concurrency:
-  group: ${{ github.ref }}-ubuntu-latest
+  group: ${{ github.ref }}-ubuntu-2004
   cancel-in-progress: true
 
 env:
@@ -17,13 +17,19 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: "Ubuntu (latest)"
+    container:
+      image: ubuntu:20.04
+# Needed for TCP FastOpen
+      options: --privileged
+    name: "Ubuntu 20.04"
     steps:
       - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
-          version: 1.0
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get dist-upgrade -y --assume-yes
+          apt-get install -y --assume-yes sudo curl wget cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "Make sure TCP FastOpen is enabled"
@@ -44,29 +50,11 @@ jobs:
         run: |
           ./ci/build.sh
           ./ci/test.sh
-          ./ci/distcheck.sh
-      - name: "CMake: (no threads) build and test c-ares"
-        env:
-          BUILD_TYPE: CMAKE
-          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_THREADS=OFF -G Ninja"
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
-          TEST_DEBUGGER: gdb
-        run: |
-          ./ci/build.sh
-          ./ci/test.sh
-      - name: "CMake: (hide symbols) build and test c-ares"
-        env:
-          BUILD_TYPE: CMAKE
-          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=OFF -DCARES_SYMBOL_HIDING=ON -G Ninja"
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
-          TEST_DEBUGGER: gdb
-        run: |
-          ./ci/build.sh
-          ./ci/test.sh
       - name: "CMake: UBSAN: build and test c-ares"
         env:
           BUILD_TYPE: "ubsan"
           CC: "clang"
+          CXX: "clang++"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
           CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
@@ -79,6 +67,7 @@ jobs:
         env:
           BUILD_TYPE: "asan"
           CC: "clang"
+          CXX: "clang++"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=address"
           CXXFLAGS: "-fsanitize=address"
@@ -91,6 +80,7 @@ jobs:
         env:
           BUILD_TYPE: "analyze"
           CC: "clang"
+          CXX: "clang++"
           SCAN_WRAP: "scan-build -v --status-bugs"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
           TEST_DEBUGGER: "lldb"
@@ -104,15 +94,6 @@ jobs:
           TEST_FILTER: "--gtest_filter=-*Container*:*LiveSearchANY*:*LiveSearchTXT*"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           TEST_DEBUGGER: none
-        run: |
-          sudo sysctl -w net.ipv4.tcp_fastopen=0
-          ./ci/build.sh
-          ./ci/test.sh
-      - name: "CMake: No TCP FastOpen"
-        env:
-          BUILD_TYPE: CMAKE
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
-          TEST_DEBUGGER: gdb
         run: |
           sudo sysctl -w net.ipv4.tcp_fastopen=0
           ./ci/build.sh
