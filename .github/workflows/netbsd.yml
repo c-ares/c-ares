@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    name: NetBSD
     steps:
       - uses: actions/checkout@v4
 

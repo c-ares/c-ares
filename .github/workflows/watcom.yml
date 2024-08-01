@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    name: OpenWatcom
     steps:
       - uses: open-watcom/setup-watcom@v0
       - name: Checkout Source
