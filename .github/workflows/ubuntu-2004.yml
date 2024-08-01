@@ -70,6 +70,7 @@ jobs:
         env:
           BUILD_TYPE: "ubsan"
           CC: "clang"
+          CXX: "clang++"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
           CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
@@ -82,6 +83,7 @@ jobs:
         env:
           BUILD_TYPE: "asan"
           CC: "clang"
+          CXX: "clang++"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=address"
           CXXFLAGS: "-fsanitize=address"
@@ -94,6 +96,7 @@ jobs:
         env:
           BUILD_TYPE: "analyze"
           CC: "clang"
+          CXX: "clang++"
           SCAN_WRAP: "scan-build -v --status-bugs"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
           TEST_DEBUGGER: "lldb"

@@ -18,6 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: alpine:latest
+      options: --privileged
     name: "Alpine (latest)"
     steps:
       - name: Install packages
@@ -26,9 +27,9 @@ jobs:
       - name: Checkout c-ares
         uses: actions/checkout@v4
 # This will fails in a container...
-#      - name: "Make sure TCP FastOpen is enabled"
-#        run: |
-#          sudo sysctl -w net.ipv4.tcp_fastopen=3
+      - name: "Make sure TCP FastOpen is enabled"
+        run: |
+          sudo sysctl -w net.ipv4.tcp_fastopen=3
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
@@ -66,6 +67,7 @@ jobs:
         env:
           BUILD_TYPE: "ubsan"
           CC: "clang"
+          CXX: "clang++"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
           CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
@@ -78,6 +80,7 @@ jobs:
         env:
           BUILD_TYPE: "asan"
           CC: "clang"
+          CXX: "clang++"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=address"
           CXXFLAGS: "-fsanitize=address"
@@ -90,6 +93,7 @@ jobs:
         env:
           BUILD_TYPE: "analyze"
           CC: "clang"
+          CXX: "clang++"
           SCAN_WRAP: "scan-build -v --status-bugs"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
           TEST_DEBUGGER: "lldb"
