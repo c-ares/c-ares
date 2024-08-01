@@ -384,7 +384,7 @@ static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
                                           size_t               *num)
 {
   ares__slist_node_t *snode;
-  ares__array_t      *arr  = ares__array_create(sizeof(ares_socket_t), NULL);
+  ares__array_t      *arr = ares__array_create(sizeof(ares_socket_t), NULL);
 
   *num = 0;
 
@@ -410,7 +410,7 @@ static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
       status = ares__array_insert_last((void **)&sptr, arr);
       if (status != ARES_SUCCESS) {
         ares__array_destroy(arr); /* LCOV_EXCL_LINE: OutOfMemory */
-        return NULL; /* LCOV_EXCL_LINE: OutOfMemory */
+        return NULL;              /* LCOV_EXCL_LINE: OutOfMemory */
       }
       *sptr = conn->fd;
     }

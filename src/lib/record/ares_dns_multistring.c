@@ -33,13 +33,13 @@ typedef struct {
 
 struct ares__dns_multistring {
   /*! whether or not cached concatenated string is valid */
-  ares_bool_t         cache_invalidated;
+  ares_bool_t    cache_invalidated;
   /*! combined/concatenated string cache */
-  unsigned char      *cache_str;
+  unsigned char *cache_str;
   /*! length of combined/concatenated string */
-  size_t              cache_str_len;
+  size_t         cache_str_len;
   /*! Data making up strings */
-  ares__array_t      *strs; /*!< multistring_data_t type */
+  ares__array_t *strs; /*!< multistring_data_t type */
 };
 
 static void ares__dns_multistring_free_cb(void *arg)
@@ -116,7 +116,7 @@ ares_status_t ares__dns_multistring_replace_own(ares__dns_multistring_t *strs,
 ares_status_t ares__dns_multistring_del(ares__dns_multistring_t *strs,
                                         size_t                   idx)
 {
-  if (strs == NULL ) {
+  if (strs == NULL) {
     return ARES_EFORMERR;
   }
 
@@ -183,8 +183,8 @@ const unsigned char *
 const unsigned char *
   ares__dns_multistring_get_combined(ares__dns_multistring_t *strs, size_t *len)
 {
-  ares__buf_t        *buf = NULL;
-  size_t              i;
+  ares__buf_t *buf = NULL;
+  size_t       i;
 
   if (strs == NULL || len == NULL) {
     return NULL;

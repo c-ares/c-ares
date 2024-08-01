@@ -157,7 +157,7 @@ static ares_status_t ares__conn_set_sockaddr(const ares_conn_t *conn,
                                              ares_socklen_t    *salen)
 {
   const ares_server_t *server = conn->server;
-  unsigned short       port   =
+  unsigned short       port =
     conn->flags & ARES_CONN_FLAG_TCP ? server->tcp_port : server->udp_port;
   struct sockaddr_in  *sin;
   struct sockaddr_in6 *sin6;
@@ -454,7 +454,7 @@ static ares_status_t configure_socket(ares_conn_t *conn)
 #if defined(TFO_CLIENT_SOCKOPT)
     if (conn->flags & ARES_CONN_FLAG_TFO &&
         setsockopt(conn->fd, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
-                   sizeof(opt)) != 0 ) {
+                   sizeof(opt)) != 0) {
       /* Disable TFO if flag can't be set. */
       conn->flags &= ~((unsigned int)ARES_CONN_FLAG_TFO);
     }

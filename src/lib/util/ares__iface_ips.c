@@ -71,16 +71,16 @@ typedef struct {
 } ares__iface_ip_t;
 
 struct ares__iface_ips {
-  ares__array_t         *ips;  /*!< Type is ares__iface_ip_t */
+  ares__array_t         *ips; /*!< Type is ares__iface_ip_t */
   ares__iface_ip_flags_t enum_flags;
 };
-
 
 static void ares__iface_ip_free_cb(void *arg)
 {
   ares__iface_ip_t *ip = arg;
-  if (ip == NULL)
+  if (ip == NULL) {
     return;
+  }
   ares_free(ip->name);
 }
 
@@ -92,8 +92,8 @@ static ares__iface_ips_t *ares__iface_ips_alloc(ares__iface_ip_flags_t flags)
   }
 
   ips->enum_flags = flags;
-  ips->ips        = ares__array_create(sizeof(ares__iface_ip_t),
-                                       ares__iface_ip_free_cb);
+  ips->ips =
+    ares__array_create(sizeof(ares__iface_ip_t), ares__iface_ip_free_cb);
   if (ips->ips == NULL) {
     ares_free(ips); /* LCOV_EXCL_LINE: OutOfMemory */
     return NULL;    /* LCOV_EXCL_LINE: OutOfMemory */

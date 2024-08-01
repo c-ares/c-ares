@@ -34,16 +34,18 @@ static void ares__dns_rr_free(ares_dns_rr_t *rr);
 static void ares_dns_qd_free_cb(void *arg)
 {
   ares_dns_qd_t *qd = arg;
-  if (qd == NULL)
+  if (qd == NULL) {
     return;
+  }
   ares_free(qd->name);
 }
 
 static void ares_dns_rr_free_cb(void *arg)
 {
   ares_dns_rr_t *rr = arg;
-  if (rr == NULL)
+  if (rr == NULL) {
     return;
+  }
   ares__dns_rr_free(rr);
 }
 
@@ -72,17 +74,17 @@ ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
   (*dnsrec)->flags  = flags;
   (*dnsrec)->opcode = opcode;
   (*dnsrec)->rcode  = rcode;
-  (*dnsrec)->qd     = ares__array_create(sizeof(ares_dns_qd_t),
-                                         ares_dns_qd_free_cb);
-  (*dnsrec)->an     = ares__array_create(sizeof(ares_dns_rr_t),
-                                         ares_dns_rr_free_cb);
-  (*dnsrec)->ns     = ares__array_create(sizeof(ares_dns_rr_t),
-                                         ares_dns_rr_free_cb);
-  (*dnsrec)->ar     = ares__array_create(sizeof(ares_dns_rr_t),
-                                         ares_dns_rr_free_cb);
+  (*dnsrec)->qd =
+    ares__array_create(sizeof(ares_dns_qd_t), ares_dns_qd_free_cb);
+  (*dnsrec)->an =
+    ares__array_create(sizeof(ares_dns_rr_t), ares_dns_rr_free_cb);
+  (*dnsrec)->ns =
+    ares__array_create(sizeof(ares_dns_rr_t), ares_dns_rr_free_cb);
+  (*dnsrec)->ar =
+    ares__array_create(sizeof(ares_dns_rr_t), ares_dns_rr_free_cb);
 
-  if ((*dnsrec)->qd == NULL || (*dnsrec)->an == NULL ||
-      (*dnsrec)->ns == NULL || (*dnsrec)->ar == NULL) {
+  if ((*dnsrec)->qd == NULL || (*dnsrec)->an == NULL || (*dnsrec)->ns == NULL ||
+      (*dnsrec)->ar == NULL) {
     ares_dns_record_destroy(*dnsrec);
     *dnsrec = NULL;
     return ARES_ENOMEM;
@@ -401,10 +403,10 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
                                      ares_dns_rec_type_t type,
                                      ares_dns_class_t rclass, unsigned int ttl)
 {
-  ares_dns_rr_t  *rr     = NULL;
-  ares__array_t  *arr    = NULL;
-  ares_status_t   status;
-  size_t          idx;
+  ares_dns_rr_t *rr  = NULL;
+  ares__array_t *arr = NULL;
+  ares_status_t  status;
+  size_t         idx;
 
   if (dnsrec == NULL || name == NULL || rr_out == NULL ||
       !ares_dns_section_isvalid(sect) ||
@@ -452,7 +454,7 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
 ares_status_t ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
                                      ares_dns_section_t sect, size_t idx)
 {
-  ares__array_t *arr    = NULL;
+  ares__array_t *arr = NULL;
 
   if (dnsrec == NULL || !ares_dns_section_isvalid(sect)) {
     return ARES_EFORMERR;
@@ -1357,8 +1359,8 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
   }
 
   if (*options == NULL) {
-    *options = ares__array_create(sizeof(ares__dns_optval_t),
-                                  ares__dns_opt_free_cb);
+    *options =
+      ares__array_create(sizeof(ares__dns_optval_t), ares__dns_opt_free_cb);
   }
   if (*options == NULL) {
     return ARES_ENOMEM;
@@ -1422,7 +1424,7 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t    *dns_rr,
                                        ares_dns_rr_key_t key,
                                        unsigned short    opt)
 {
-  ares__array_t          **options;
+  ares__array_t           **options;
   const ares__dns_optval_t *optptr;
   size_t                    idx;
   size_t                    cnt;

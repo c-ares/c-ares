@@ -162,24 +162,24 @@ static ares__buf_t *ares_dns_labels_add(ares__array_t *labels)
   return *buf;
 }
 
-static ares__buf_t *
-  ares_dns_labels_get_last(ares__array_t *labels)
+static ares__buf_t *ares_dns_labels_get_last(ares__array_t *labels)
 {
   ares__buf_t **buf = ares__array_last(labels);
 
-  if (buf == NULL)
+  if (buf == NULL) {
     return NULL;
+  }
 
   return *buf;
 }
 
-static ares__buf_t *
-  ares_dns_labels_get_at(ares__array_t *labels, size_t idx)
+static ares__buf_t *ares_dns_labels_get_at(ares__array_t *labels, size_t idx)
 {
   ares__buf_t **buf = ares__array_at(labels, idx);
 
-  if (buf == NULL)
+  if (buf == NULL) {
     return NULL;
+  }
 
   return *buf;
 }
@@ -335,7 +335,8 @@ static ares_status_t ares_split_dns_name(ares__array_t *labels,
   }
 
   /* Can't exceed maximum (unescaped) length */
-  if (ares__array_len(labels) && total_len + ares__array_len(labels) - 1 > 255) {
+  if (ares__array_len(labels) &&
+      total_len + ares__array_len(labels) - 1 > 255) {
     status = ARES_EBADNAME;
     goto done;
   }
@@ -354,7 +355,7 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
   const ares_nameoffset_t *off = NULL;
   size_t                   name_len;
   size_t                   orig_name_len;
-  size_t                   pos = ares__buf_len(buf);
+  size_t                   pos    = ares__buf_len(buf);
   ares__array_t           *labels = NULL;
   char                     name_copy[512];
   ares_status_t            status;

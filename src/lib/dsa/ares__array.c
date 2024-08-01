@@ -29,15 +29,15 @@
 #define ARES__ARRAY_MIN 4
 
 struct ares__array {
-  ares__array_destructor_t  destruct;
-  void                     *arr;
-  size_t                    member_size;
-  size_t                    cnt;
-  size_t                    offset;
-  size_t                    alloc_cnt;
+  ares__array_destructor_t destruct;
+  void                    *arr;
+  size_t                   member_size;
+  size_t                   cnt;
+  size_t                   offset;
+  size_t                   alloc_cnt;
 };
 
-ares__array_t *ares__array_create(size_t member_size,
+ares__array_t *ares__array_create(size_t                   member_size,
                                   ares__array_destructor_t destruct)
 {
   ares__array_t *arr;
@@ -66,15 +66,17 @@ size_t ares__array_len(const ares__array_t *arr)
 
 void *ares__array_at(ares__array_t *arr, size_t idx)
 {
-  if (arr == NULL || idx >= arr->cnt)
+  if (arr == NULL || idx >= arr->cnt) {
     return NULL;
+  }
   return (unsigned char *)arr->arr + ((idx + arr->offset) * arr->member_size);
 }
 
 const void *ares__array_at_const(const ares__array_t *arr, size_t idx)
 {
-  if (arr == NULL || idx >= arr->cnt)
+  if (arr == NULL || idx >= arr->cnt) {
     return NULL;
+  }
   return (unsigned char *)arr->arr + ((idx + arr->offset) * arr->member_size);
 }
 
@@ -89,21 +91,21 @@ ares_status_t ares__array_sort(ares__array_t *arr, ares__array_cmp_t cmp)
     return ARES_SUCCESS;
   }
 
-  qsort((unsigned char *)arr->arr + (arr->offset * arr->member_size),
-        arr->cnt, arr->member_size, cmp);
+  qsort((unsigned char *)arr->arr + (arr->offset * arr->member_size), arr->cnt,
+        arr->member_size, cmp);
   return ARES_SUCCESS;
 }
-
 
 void ares__array_destroy(ares__array_t *arr)
 {
   size_t i;
 
-  if (arr == NULL)
+  if (arr == NULL) {
     return;
+  }
 
   if (arr->destruct != NULL) {
-    for (i=0; i<arr->cnt; i++) {
+    for (i = 0; i < arr->cnt; i++) {
       arr->destruct(ares__array_at(arr, i));
     }
   }
@@ -117,9 +119,9 @@ void ares__array_destroy(ares__array_t *arr)
 static ares_status_t ares__array_move(ares__array_t *arr, size_t dest_idx,
                                       size_t src_idx)
 {
-  void         *dest_ptr;
-  const void   *src_ptr;
-  size_t        nmembers;
+  void       *dest_ptr;
+  const void *src_ptr;
+  size_t      nmembers;
 
   if (arr == NULL || dest_idx >= arr->alloc_cnt || src_idx >= arr->alloc_cnt) {
     return ARES_EFORMERR;
@@ -201,8 +203,8 @@ ares_status_t ares__array_set_size(ares__array_t *arr, size_t size)
   return ARES_SUCCESS;
 }
 
-
-ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr, size_t idx)
+ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr,
+                                    size_t idx)
 {
   void         *ptr;
   ares_status_t status;
@@ -234,7 +236,7 @@ ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr, size_t 
   /* If we're inserting anywhere other than the end, we need to move some
    * elements out of the way */
   if (idx != arr->cnt) {
-    status = ares__array_move(arr, idx+arr->offset+1, idx+arr->offset);
+    status = ares__array_move(arr, idx + arr->offset + 1, idx + arr->offset);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -242,7 +244,7 @@ ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr, size_t 
 
   /* Ok, we're guaranteed to have a gap where we need it, lets zero it out,
    * and return it */
-  ptr = (unsigned char *)arr->arr + ((idx+arr->offset) * arr->member_size);
+  ptr = (unsigned char *)arr->arr + ((idx + arr->offset) * arr->member_size);
   memset(ptr, 0, arr->member_size);
   arr->cnt++;
 
@@ -274,7 +276,7 @@ void *ares__array_last(ares__array_t *arr)
   if (cnt == 0) {
     return NULL;
   }
-  return ares__array_at(arr, cnt-1);
+  return ares__array_at(arr, cnt - 1);
 }
 
 const void *ares__array_first_const(const ares__array_t *arr)
@@ -288,7 +290,7 @@ const void *ares__array_last_const(const ares__array_t *arr)
   if (cnt == 0) {
     return NULL;
   }
-  return ares__array_at_const(arr, cnt-1);
+  return ares__array_at_const(arr, cnt - 1);
 }
 
 ares_status_t ares__array_claim_at(void *dest, size_t dest_size,
@@ -312,10 +314,10 @@ ares_status_t ares__array_claim_at(void *dest, size_t dest_size,
     /* Optimization, if first element, just increment offset, makes removing a
      * lot from the start quick */
     arr->offset++;
-  } else if (idx != arr->cnt-1) {
+  } else if (idx != arr->cnt - 1) {
     /* Must shift entire array if removing an element from the middle. Does
      * nothing if removing last element other than decrement count. */
-    status = ares__array_move(arr, idx+arr->offset, idx+arr->offset+1);
+    status = ares__array_move(arr, idx + arr->offset, idx + arr->offset + 1);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -350,5 +352,5 @@ ares_status_t ares__array_remove_last(ares__array_t *arr)
   if (cnt == 0) {
     return ARES_EFORMERR;
   }
-  return ares__array_remove_at(arr, cnt-1);
+  return ares__array_remove_at(arr, cnt - 1);
 }

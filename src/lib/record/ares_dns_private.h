@@ -177,11 +177,11 @@ typedef struct {
 } ares__dns_optval_t;
 
 typedef struct {
-  unsigned short   udp_size; /*!< taken from class */
-  unsigned char    version;  /*!< taken from bits 8-16 of ttl */
-  unsigned short   flags;    /*!< Flags, remaining 16 bits, though only
-                              *   1 currently defined */
-  ares__array_t   *options;  /*!< Type is ares__dns_optval_t */
+  unsigned short udp_size; /*!< taken from class */
+  unsigned char  version;  /*!< taken from bits 8-16 of ttl */
+  unsigned short flags;    /*!< Flags, remaining 16 bits, though only
+                            *   1 currently defined */
+  ares__array_t *options;  /*!< Type is ares__dns_optval_t */
 } ares__dns_opt_t;
 
 typedef struct {
