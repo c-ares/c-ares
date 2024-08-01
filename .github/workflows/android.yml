@@ -1,0 +1,30 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: Android on Ubuntu
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-ubuntu-latest
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: "Ubuntu (latest)"
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+
+      - name: Build SampleApplication
+        run: android/gradlew --project-dir=android c-ares:assembleRelease
