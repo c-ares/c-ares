@@ -202,6 +202,7 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
   }
 #  endif
 
+#  ifdef HAVE_REGISTERWAITFORSINGLEOBJECT
   if (configchg->regip4_wait != NULL) {
     UnregisterWait(configchg->regip4_wait);
     configchg->regip4_wait = NULL;
@@ -231,6 +232,7 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
     CloseHandle(configchg->regip6_event);
     configchg->regip6_event = NULL;
   }
+#  endif
 
   ares_free(configchg);
 }
@@ -248,12 +250,14 @@ static void NETIOAPI_API_
 }
 #  endif
 
+#  ifdef HAVE_REGISTERWAITFORSINGLEOBJECT
+
 static ares_bool_t
   ares_event_configchg_regnotify(ares_event_configchg_t *configchg)
 {
-#  if defined(__WATCOMC__) && !defined(REG_NOTIFY_THREAD_AGNOSTIC)
-#    define REG_NOTIFY_THREAD_AGNOSTIC 0x10000000L
-#  endif
+#    if defined(__WATCOMC__) && !defined(REG_NOTIFY_THREAD_AGNOSTIC)
+#      define REG_NOTIFY_THREAD_AGNOSTIC 0x10000000L
+#    endif
   DWORD flags = REG_NOTIFY_CHANGE_NAME | REG_NOTIFY_CHANGE_LAST_SET |
                 REG_NOTIFY_THREAD_AGNOSTIC;
 
@@ -269,6 +273,7 @@ static ares_bool_t
 
   return ARES_TRUE;
 }
+#  endif
 
 static VOID CALLBACK ares_event_configchg_reg_cb(PVOID   lpParameter,
                                                  BOOLEAN TimerOrWaitFired)
@@ -309,6 +314,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
   }
 #  endif
 
+#  ifdef HAVE_REGISTERWAITFORSINGLEOBJECT
   /* Monitor HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\Interfaces
    * and HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces
    * for changes via RegNotifyChangeKeyValue() */
@@ -358,6 +364,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
     status = ARES_ESERVFAIL;
     goto done;
   }
+#  endif
 
 done:
   if (status != ARES_SUCCESS) {
