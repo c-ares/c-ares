@@ -21,10 +21,12 @@ jobs:
     name: "Ubuntu 20.04"
     steps:
       - name: Install packages
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
           apt-get update
-          apt-get dist-upgrade -y
-          apt-get install -y sudo curl wget cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
+          apt-get dist-upgrade -y --assume-yes
+          apt-get install -y --assume-yes sudo curl wget cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "Make sure TCP FastOpen is enabled"
