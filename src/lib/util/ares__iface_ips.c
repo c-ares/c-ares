@@ -220,13 +220,13 @@ size_t ares__iface_ips_cnt(const ares__iface_ips_t *ips)
 
 const char *ares__iface_ips_get_name(const ares__iface_ips_t *ips, size_t idx)
 {
-  ares__iface_ip_t *ip;
+  const ares__iface_ip_t *ip;
 
   if (ips == NULL) {
     return NULL;
   }
 
-  ip = ares__array_at(ips->ips, idx);
+  ip = ares__array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return NULL;
   }
@@ -237,13 +237,13 @@ const char *ares__iface_ips_get_name(const ares__iface_ips_t *ips, size_t idx)
 const struct ares_addr *ares__iface_ips_get_addr(const ares__iface_ips_t *ips,
                                                  size_t                   idx)
 {
-  ares__iface_ip_t *ip;
+  const ares__iface_ip_t *ip;
 
   if (ips == NULL) {
     return NULL;
   }
 
-  ip = ares__array_at(ips->ips, idx);
+  ip = ares__array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return NULL;
   }
@@ -254,13 +254,13 @@ const struct ares_addr *ares__iface_ips_get_addr(const ares__iface_ips_t *ips,
 ares__iface_ip_flags_t ares__iface_ips_get_flags(const ares__iface_ips_t *ips,
                                                  size_t                   idx)
 {
-  ares__iface_ip_t *ip;
+  const ares__iface_ip_t *ip;
 
   if (ips == NULL) {
     return 0;
   }
 
-  ip = ares__array_at(ips->ips, idx);
+  ip = ares__array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return 0;
   }
@@ -271,13 +271,13 @@ ares__iface_ip_flags_t ares__iface_ips_get_flags(const ares__iface_ips_t *ips,
 unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips,
                                           size_t                   idx)
 {
-  ares__iface_ip_t *ip;
+  const ares__iface_ip_t *ip;
 
   if (ips == NULL) {
     return 0;
   }
 
-  ip = ares__array_at(ips->ips, idx);
+  ip = ares__array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return 0;
   }
@@ -288,13 +288,13 @@ unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips,
 unsigned int ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
                                           size_t                   idx)
 {
-  ares__iface_ip_t *ip;
+  const ares__iface_ip_t *ip;
 
   if (ips == NULL) {
     return 0;
   }
 
-  ip = ares__array_at(ips->ips, idx);
+  ip = ares__array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return 0;
   }

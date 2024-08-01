@@ -324,8 +324,8 @@ static ares_status_t ares_split_dns_name(ares__array_t *labels,
 
   /* Scan to make sure label lengths are valid */
   for (i = 0; i < ares__array_len(labels); i++) {
-    ares__buf_t *buf = ares_dns_labels_get_at(labels, i);
-    size_t       len = ares__buf_len(buf);
+    const ares__buf_t *buf = ares_dns_labels_get_at(labels, i);
+    size_t             len = ares__buf_len(buf);
     /* No 0-length labels, and no labels over 63 bytes */
     if (len == 0 || len > 63) {
       status = ARES_EBADNAME;
@@ -394,7 +394,7 @@ ares_status_t ares__dns_name_write(ares__buf_t *buf, ares__llist_t **list,
 
     for (i = 0; i < ares__array_len(labels); i++) {
       size_t               len  = 0;
-      ares__buf_t         *lbuf = ares_dns_labels_get_at(labels, i);
+      const ares__buf_t   *lbuf = ares_dns_labels_get_at(labels, i);
       const unsigned char *ptr  = ares__buf_peek(lbuf, &len);
 
       status = ares__buf_append_byte(buf, (unsigned char)(len & 0xFF));

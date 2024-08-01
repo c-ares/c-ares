@@ -165,13 +165,13 @@ const unsigned char *
   ares__dns_multistring_get(const ares__dns_multistring_t *strs, size_t idx,
                             size_t *len)
 {
-  multistring_data_t *data;
+  const multistring_data_t *data;
 
   if (strs == NULL || len == NULL) {
     return NULL;
   }
 
-  data = ares__array_at(strs->strs, idx);
+  data = ares__array_at_const(strs->strs, idx);
   if (data == NULL) {
     return NULL;
   }
@@ -206,7 +206,7 @@ const unsigned char *
   buf = ares__buf_create();
 
   for (i = 0; i < ares__array_len(strs->strs); i++) {
-    multistring_data_t *data = ares__array_at(strs->strs, i);
+    const multistring_data_t *data = ares__array_at_const(strs->strs, i);
     if (data == NULL ||
         ares__buf_append(buf, data->data, data->len) != ARES_SUCCESS) {
       ares__buf_destroy(buf);

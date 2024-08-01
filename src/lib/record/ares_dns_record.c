@@ -1422,10 +1422,10 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t    *dns_rr,
                                        ares_dns_rr_key_t key,
                                        unsigned short    opt)
 {
-  ares__array_t     **options;
-  ares__dns_optval_t *optptr;
-  size_t              idx;
-  size_t              cnt;
+  ares__array_t          **options;
+  const ares__dns_optval_t *optptr;
+  size_t                    idx;
+  size_t                    cnt;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
     return ARES_EFORMERR;
@@ -1443,7 +1443,7 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t    *dns_rr,
 
   cnt = ares__array_len(*options);
   for (idx = 0; idx < cnt; idx++) {
-    optptr = ares__array_at(*options, idx);
+    optptr = ares__array_at_const(*options, idx);
     if (optptr == NULL) {
       return ARES_ENOTFOUND;
     }

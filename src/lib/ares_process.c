@@ -935,9 +935,9 @@ static size_t ares__calc_query_timeout(const ares_query_t   *query,
   return timeplus;
 }
 
-static ares_conn_t *ares__fetch_connection(ares_channel_t     *channel,
-                                           ares_server_t      *server,
-                                           const ares_query_t *query)
+static ares_conn_t *ares__fetch_connection(const ares_channel_t *channel,
+                                           ares_server_t        *server,
+                                           const ares_query_t   *query)
 {
   ares__llist_node_t *node;
   ares_conn_t        *conn;

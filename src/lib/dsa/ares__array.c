@@ -118,7 +118,7 @@ static ares_status_t ares__array_move(ares__array_t *arr, size_t dest_idx,
                                       size_t src_idx)
 {
   void         *dest_ptr;
-  void         *src_ptr;
+  const void   *src_ptr;
   size_t        nmembers;
 
   if (arr == NULL || dest_idx >= arr->alloc_cnt || src_idx >= arr->alloc_cnt) {

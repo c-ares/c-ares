@@ -159,37 +159,35 @@ static ares_status_t ares__conn_set_sockaddr(const ares_conn_t *conn,
   const ares_server_t *server = conn->server;
   unsigned short       port   =
     conn->flags & ARES_CONN_FLAG_TCP ? server->tcp_port : server->udp_port;
+  struct sockaddr_in  *sin;
+  struct sockaddr_in6 *sin6;
 
   switch (server->addr.family) {
     case AF_INET:
-      {
-        struct sockaddr_in *sin = (struct sockaddr_in *)(void *)sa;
-        if (*salen < (ares_socklen_t)sizeof(*sin)) {
-          return ARES_EFORMERR;
-        }
-        *salen = sizeof(*sin);
-        memset(sin, 0, sizeof(*sin));
-        sin->sin_family = AF_INET;
-        sin->sin_port   = htons(port);
-        memcpy(&sin->sin_addr, &server->addr.addr.addr4, sizeof(sin->sin_addr));
+      sin = (struct sockaddr_in *)(void *)sa;
+      if (*salen < (ares_socklen_t)sizeof(*sin)) {
+        return ARES_EFORMERR;
       }
+      *salen = sizeof(*sin);
+      memset(sin, 0, sizeof(*sin));
+      sin->sin_family = AF_INET;
+      sin->sin_port   = htons(port);
+      memcpy(&sin->sin_addr, &server->addr.addr.addr4, sizeof(sin->sin_addr));
       return ARES_SUCCESS;
     case AF_INET6:
-      {
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)(void *)sa;
-        if (*salen < (ares_socklen_t)sizeof(*sin6)) {
-          return ARES_EFORMERR;
-        }
-        *salen = sizeof(*sin6);
-        memset(sin6, 0, sizeof(*sin6));
-        sin6->sin6_family = AF_INET6;
-        sin6->sin6_port   = htons(port);
-        memcpy(&sin6->sin6_addr, &server->addr.addr.addr6,
-               sizeof(sin6->sin6_addr));
-#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
-        sin6->sin6_scope_id = server->ll_scope;
-#endif
+      sin6 = (struct sockaddr_in6 *)(void *)sa;
+      if (*salen < (ares_socklen_t)sizeof(*sin6)) {
+        return ARES_EFORMERR;
       }
+      *salen = sizeof(*sin6);
+      memset(sin6, 0, sizeof(*sin6));
+      sin6->sin6_family = AF_INET6;
+      sin6->sin6_port   = htons(port);
+      memcpy(&sin6->sin6_addr, &server->addr.addr.addr6,
+             sizeof(sin6->sin6_addr));
+#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
+      sin6->sin6_scope_id = server->ll_scope;
+#endif
       return ARES_SUCCESS;
     default:
       break;
@@ -453,15 +451,14 @@ static ares_status_t configure_socket(ares_conn_t *conn)
     }
 #endif
 
-    if (conn->flags & ARES_CONN_FLAG_TFO) {
 #if defined(TFO_CLIENT_SOCKOPT)
-      if (setsockopt(conn->fd, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
-                     sizeof(opt)) != 0) {
-        /* Disable TFO if flag can't be set. */
-        conn->flags &= ~((unsigned int)ARES_CONN_FLAG_TFO);
-      }
-#endif
+    if (conn->flags & ARES_CONN_FLAG_TFO &&
+        setsockopt(conn->fd, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
+                   sizeof(opt)) != 0 ) {
+      /* Disable TFO if flag can't be set. */
+      conn->flags &= ~((unsigned int)ARES_CONN_FLAG_TFO);
     }
+#endif
   }
 
   return ARES_SUCCESS;
