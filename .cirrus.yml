@@ -36,16 +36,6 @@ task:
         TEST_SYMBOL_VISIBILITY: "yes"
       freebsd_instance:
         image_family: freebsd-14-1
-    - name: "iOS"
-      env:
-        DIST: "iOS"
-        MAKE: "make"
-        CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 -DCMAKE_OSX_ARCHITECTURES=armv7;armv7s;arm64 -G Ninja"
-        CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
-        CFLAGS: "-arch armv7 -arch armv7s -arch arm64 -miphoneos-version-min=10.0"
-        CONFIG_OPTS: "--host=arm-apple-darwin10 --disable-tests"
-      macos_instance:
-        image: ghcr.io/cirruslabs/macos-sonoma-xcode:latest
   matrix:
     - name: "CMAKE"
       env:
@@ -125,18 +115,6 @@ task:
           case "${BUILD_TYPE}" in
             autotools)
               pkg install -y autoconf automake libtool
-              ;;
-          esac
-          ;;
-        MACOS|iOS)
-          brew update
-          brew install ninja cmake googletest
-          case "${BUILD_TYPE}" in
-            asan|ubsan|lsan|analyze)
-              brew install llvm autoconf automake libtool make ninja
-              ;;
-            autotools)
-              brew install autoconf automake libtool make
               ;;
           esac
           ;;
