@@ -95,6 +95,7 @@ task:
 
   install_script:
     - |
+      case "${DIST}" in
         UBUNTU|DEBIAN*)
           export DEBIAN_FRONTEND=noninteractive && \
           apt-get update && \
