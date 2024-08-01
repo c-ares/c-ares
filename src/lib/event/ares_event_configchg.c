@@ -250,11 +250,10 @@ static void NETIOAPI_API_
 }
 #  endif
 
-#  ifdef HAVE_REGISTERWAITFORSINGLEOBJECT
-
 static ares_bool_t
   ares_event_configchg_regnotify(ares_event_configchg_t *configchg)
 {
+#  ifdef HAVE_REGISTERWAITFORSINGLEOBJECT
 #    if defined(__WATCOMC__) && !defined(REG_NOTIFY_THREAD_AGNOSTIC)
 #      define REG_NOTIFY_THREAD_AGNOSTIC 0x10000000L
 #    endif
@@ -270,10 +269,11 @@ static ares_bool_t
                               configchg->regip6_event, TRUE) != ERROR_SUCCESS) {
     return ARES_FALSE;
   }
-
+#  else
+  (void)configchg;
+#  endif
   return ARES_TRUE;
 }
-#  endif
 
 static VOID CALLBACK ares_event_configchg_reg_cb(PVOID   lpParameter,
                                                  BOOLEAN TimerOrWaitFired)
@@ -359,12 +359,12 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
     status = ARES_ESERVFAIL;
     goto done;
   }
+#  endif
 
   if (!ares_event_configchg_regnotify(c)) {
     status = ARES_ESERVFAIL;
     goto done;
   }
-#  endif
 
 done:
   if (status != ARES_SUCCESS) {
