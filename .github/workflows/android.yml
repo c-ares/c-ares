@@ -68,6 +68,6 @@ jobs:
           LD: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/ld"
           RANLIB: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib"
           STRIP: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip"
-          CONFIG_OPTS: "--host aarch64-linux-android"
+          CONFIG_OPTS: "--host aarch64-linux-android --disable-shared"
         run: |
           ./ci/build.sh
