@@ -195,7 +195,7 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
     return;
   }
 
-#  ifndef __WATCOMC__
+#  ifdef HAVE_NOTIFYIPINTERFACECHANGE
   if (configchg->ifchg_hnd != NULL) {
     CancelMibChangeNotify2(configchg->ifchg_hnd);
     configchg->ifchg_hnd = NULL;
@@ -236,7 +236,7 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 }
 
 
-#  ifndef __WATCOMC__
+#  ifdef HAVE_NOTIFYIPINTERFACECHANGE
 static void NETIOAPI_API_
   ares_event_configchg_ip_cb(PVOID CallerContext, PMIB_IPINTERFACE_ROW Row,
                              MIB_NOTIFICATION_TYPE NotificationType)
@@ -296,7 +296,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
 
   c->e = e;
 
-#  ifndef __WATCOMC__
+#  ifdef HAVE_NOTIFYIPINTERFACECHANGE
   /* NOTE: If a user goes into the control panel and changes the network
    *       adapter DNS addresses manually, this will NOT trigger a notification.
    *       We've also tried listening on NotifyUnicastIpAddressChange(), but

@@ -362,6 +362,8 @@
 #  define HAVE_CONVERTINTERFACEINDEXTOLUID 1
 /* Define to 1 if you have the `ConvertInterfaceLuidToNameA' function. */
 #  define HAVE_CONVERTINTERFACELUIDTONAMEA 1
+/* Define to 1 if you have the `NotifyIpInterfaceChange' function. */
+#  define HAVE_NOTIFYIPINTERFACECHANGE 1
 #endif
 
 /* ---------------------------------------------------------------- */
