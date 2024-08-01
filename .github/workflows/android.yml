@@ -55,19 +55,19 @@ jobs:
           CMAKE_FLAGS: "${{ env.CMAKE_DEFAULT_FLAGS }} -DANDROID_ABI=x86_64 -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake"
         run: |
           ./ci/build.sh
-#       - name: "Autotools: aarch64 build c-ares"
-#         env:
-#           BUILD_TYPE: autotools
-#           TOOLCHAIN: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64"
-#           TARGET: aarch64-linux-android
-#           API: 26
-#           AR: "${{ env.TOOLCHAIN }}/bin/llvm-ar"
-#           CC: "${{ env.TOOLCHAIN }}/bin/clang --target=${{ env.TARGET }}${{ env.API }}"
-#           AS: "${{ env.CC }}"
-#           CXX: "${{ env.TOOLCHAIN }}/bin/clang++ --target=${{ env.TARGET }}${{ env.API }}"
-#           LD: "${{ env.TOOLCHAIN }}/bin/ld"
-#           RANLIB: "${{ env.TOOLCHAIN }}/bin/llvm-ranlib"
-#           STRIP: "${{ env.TOOLCHAIN }}/bin/llvm-strip"
-#           CONFIG_OPTS: "--host ${{ env.TARGET }}"
-#         run: |
-#           ./ci/build.sh
+      - name: "Autotools: aarch64 build c-ares"
+        env:
+          BUILD_TYPE: autotools
+          TOOLCHAIN: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64"
+          TARGET: aarch64-linux-android
+          API: 26
+          AR: "${{ env.TOOLCHAIN }}/bin/llvm-ar"
+          CC: "${{ env.TOOLCHAIN }}/bin/clang --target=${{ env.TARGET }}${{ env.API }}"
+          AS: "${{ env.CC }}"
+          CXX: "${{ env.TOOLCHAIN }}/bin/clang++ --target=${{ env.TARGET }}${{ env.API }}"
+          LD: "${{ env.TOOLCHAIN }}/bin/ld"
+          RANLIB: "${{ env.TOOLCHAIN }}/bin/llvm-ranlib"
+          STRIP: "${{ env.TOOLCHAIN }}/bin/llvm-strip"
+          CONFIG_OPTS: "--host ${{ env.TARGET }}"
+        run: |
+          ./ci/build.sh
