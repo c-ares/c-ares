@@ -1,0 +1,43 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: Android
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-android
+  cancel-in-progress: true
+
+env:
+  CMAKE_DEFAULT_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-26 -G Ninja"
+  MAKE: make
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: "Android"
+    steps:
+      - name: Install packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: cmake ninja-build autoconf automake libtool pkg-config
+          version: 1.0
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+      - uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r21e
+          add-to-path: false
+      - name: "CMake: build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_FLAGS: "${{ env.CMAKE_DEFAULT_FLAGS }} -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake"
+        run: |
+          ./ci/build.sh
+#      - name: "Autotools: build and test c-ares"
+#        env:
+#          BUILD_TYPE: autotools
+#        run: |
+#          ./ci/build.sh
