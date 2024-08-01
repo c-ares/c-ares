@@ -372,7 +372,7 @@ size_t ares_dns_record_rr_cnt(const ares_dns_record_t *dnsrec,
 ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
                                           ares_dns_section_t sect, size_t cnt)
 {
-  ares__array_t *arr;
+  ares__array_t *arr = NULL;
 
   if (dnsrec == NULL || !ares_dns_section_isvalid(sect)) {
     return ARES_EFORMERR;
@@ -478,7 +478,7 @@ ares_status_t ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
 ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
                                       ares_dns_section_t sect, size_t idx)
 {
-  ares__array_t *arr;
+  ares__array_t *arr = NULL;
 
   if (dnsrec == NULL || !ares_dns_section_isvalid(sect)) {
     return NULL;
