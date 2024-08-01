@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: alpine:latest
+# Needed for TCP FastOpen
       options: --privileged
     name: "Alpine (latest)"
     steps:
@@ -27,7 +28,6 @@ jobs:
           apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make clang17 clang17-analyzer compiler-rt lldb gcc g++ valgrind gdb sudo
       - name: Checkout c-ares
         uses: actions/checkout@v4
-# This will fails in a container...
       - name: "Make sure TCP FastOpen is enabled"
         run: |
           sudo sysctl -w net.ipv4.tcp_fastopen=3
@@ -101,7 +101,7 @@ jobs:
         run: |
           ./ci/build.sh
           ./ci/test.sh
-      - name: "Valgrind: build and test c-ares"
+      - name: "Valgrind: build and test c-ares (no TCP FastOpen)"
         env:
           BUILD_TYPE: "valgrind"
           TEST_WRAP: "valgrind --leak-check=full"
@@ -109,5 +109,6 @@ jobs:
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           TEST_DEBUGGER: none
         run: |
+          sudo sysctl -w net.ipv4.tcp_fastopen=3
           ./ci/build.sh
           ./ci/test.sh

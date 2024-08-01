@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ubuntu:20.04
+# Needed for TCP FastOpen
       options: --privileged
     name: "Ubuntu 20.04"
     steps:
@@ -31,7 +32,6 @@ jobs:
           apt-get install -y --assume-yes sudo curl wget cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
       - name: Checkout c-ares
         uses: actions/checkout@v4
-# This will probably fail in a container...
       - name: "Make sure TCP FastOpen is enabled"
         run: |
           sudo sysctl -w net.ipv4.tcp_fastopen=3
