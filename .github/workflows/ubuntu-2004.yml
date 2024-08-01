@@ -20,15 +20,11 @@ jobs:
     container: ubuntu:20.04
     name: "Ubuntu 20.04"
     steps:
-      - name: Install packages needed by cache-apt-pkgs-action
+      - name: Install packages
         run: |
           apt-get update
-          apt-get install --no-upgrade --no-install-recommends -y curl sudo wget
-      - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
-          version: 1.0
+          apt-get dist-upgrade -y
+          apt-get install -y sudo curl wget cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "Make sure TCP FastOpen is enabled"
