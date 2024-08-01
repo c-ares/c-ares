@@ -14,9 +14,6 @@ jobs:
     runs-on: windows-latest
     name: Windows UWP
     steps:
-      - name: Install CMake
-        run: |
-          choco install --yes cmake
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
@@ -25,7 +22,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Build c-ares
         run: |
-          dir
           mkdir build
           cmake -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON "-DCMAKE_SYSTEM_VERSION=10.0" -DCMAKE_SYSTEM_NAME=WindowsStore -A x64 -Bbuild
           cmake --build build --config Debug
