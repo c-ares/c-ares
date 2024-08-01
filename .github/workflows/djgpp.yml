@@ -12,6 +12,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
+    name: DJGPP
     steps:
       - name: Install GNU Make
         run: |
