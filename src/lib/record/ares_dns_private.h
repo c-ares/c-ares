@@ -177,18 +177,11 @@ typedef struct {
 } ares__dns_optval_t;
 
 typedef struct {
-  ares__dns_optval_t *optval; /*!< Attribute/value pairs */
-  size_t              cnt;    /*!< Count of Attribute/Value pairs */
-  size_t              alloc;  /*!< Allocated count of attribute/value
-                               *   pairs */
-} ares__dns_options_t;
-
-typedef struct {
-  unsigned short       udp_size; /*!< taken from class */
-  unsigned char        version;  /*!< taken from bits 8-16 of ttl */
-  unsigned short       flags;    /*!< Flags, remaining 16 bits, though only
-                                  *   1 currently defined */
-  ares__dns_options_t *options;  /*!< Attribute/Value pairs */
+  unsigned short   udp_size; /*!< taken from class */
+  unsigned char    version;  /*!< taken from bits 8-16 of ttl */
+  unsigned short   flags;    /*!< Flags, remaining 16 bits, though only
+                              *   1 currently defined */
+  ares__array_t   *options;  /*!< Type is ares__dns_optval_t */
 } ares__dns_opt_t;
 
 typedef struct {
@@ -200,9 +193,9 @@ typedef struct {
 } ares__dns_tlsa_t;
 
 typedef struct {
-  unsigned short       priority;
-  char                *target;
-  ares__dns_options_t *params;
+  unsigned short priority;
+  char          *target;
+  ares__array_t *params; /*!< Type is ares__dns_optval_t */
 } ares__dns_svcb_t;
 
 typedef struct {
@@ -271,21 +264,10 @@ struct ares_dns_record {
                                     *   the ttl of any resource records by
                                     *   this amount.  Used for cache */
 
-  ares_dns_qd_t    *qd;
-  size_t            qdcount;
-  size_t            qdalloc;
-
-  ares_dns_rr_t    *an;
-  size_t            ancount;
-  size_t            analloc;
-
-  ares_dns_rr_t    *ns;
-  size_t            nscount;
-  size_t            nsalloc;
-
-  ares_dns_rr_t    *ar;
-  size_t            arcount;
-  size_t            aralloc;
+  ares__array_t    *qd;            /*!< Type is ares_dns_qd_t */
+  ares__array_t    *an;            /*!< Type is ares_dns_rr_t */
+  ares__array_t    *ns;            /*!< Type is ares_dns_rr_t */
+  ares__array_t    *ar;            /*!< Type is ares_dns_rr_t */
 };
 
 #endif

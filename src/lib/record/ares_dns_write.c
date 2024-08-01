@@ -105,25 +105,29 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
   }
 
   /* QDCOUNT */
-  status = ares__buf_append_be16(buf, (unsigned short)dnsrec->qdcount);
+  status = ares__buf_append_be16(buf,
+    (unsigned short)ares_dns_record_query_cnt(dnsrec));
   if (status != ARES_SUCCESS) {
     return status; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   /* ANCOUNT */
-  status = ares__buf_append_be16(buf, (unsigned short)dnsrec->ancount);
+  status = ares__buf_append_be16(buf,
+    (unsigned short)ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER));
   if (status != ARES_SUCCESS) {
     return status; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   /* NSCOUNT */
-  status = ares__buf_append_be16(buf, (unsigned short)dnsrec->nscount);
+  status = ares__buf_append_be16(buf,
+    (unsigned short)ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
   if (status != ARES_SUCCESS) {
     return status; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   /* ARCOUNT */
-  status = ares__buf_append_be16(buf, (unsigned short)dnsrec->arcount);
+  status = ares__buf_append_be16(buf,
+    (unsigned short)ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
   if (status != ARES_SUCCESS) {
     return status; /* LCOV_EXCL_LINE: OutOfMemory */
   }
