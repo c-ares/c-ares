@@ -1053,7 +1053,7 @@ ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t *dns_rr,
   ares__array_t * const    *opts;
   size_t                    i;
   size_t                    cnt;
-  const ares__dns_optval_t *optptr;
+  const ares__dns_optval_t *optptr = NULL;
 
   if (val) {
     *val = NULL;
@@ -1082,7 +1082,7 @@ ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t *dns_rr,
     }
   }
 
-  if (i >= cnt) {
+  if (i >= cnt || optptr == NULL) {
     return ARES_FALSE;
   }
 
@@ -1344,7 +1344,7 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
                                       unsigned char *val, size_t val_len)
 {
   ares__array_t     **options;
-  ares__dns_optval_t *optptr;
+  ares__dns_optval_t *optptr = NULL;
   size_t              idx;
   size_t              cnt;
   ares_status_t       status;
@@ -1378,7 +1378,7 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
   }
 
   /* Duplicate entry, replace */
-  if (idx != cnt) {
+  if (idx != cnt && optptr != NULL) {
     goto done;
   }
 
