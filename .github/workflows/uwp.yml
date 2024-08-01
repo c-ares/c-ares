@@ -25,5 +25,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Build c-ares
         run: |
-          cmake -DCMAKE_INSTALL_PREFIX=C:\projects\build-cares\test_install -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64 -Bbuild .
-          cmake --build build --config Debug
+          mkdir build
+          cd build
+          cmake -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -A x64 -G "NMake Makefiles" ..
+          nmake
