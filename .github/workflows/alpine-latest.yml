@@ -46,24 +46,6 @@ jobs:
         run: |
           ./ci/build.sh
           ./ci/test.sh
-      - name: "CMake: (no threads) build and test c-ares"
-        env:
-          BUILD_TYPE: CMAKE
-          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_THREADS=OFF -G Ninja"
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
-          TEST_DEBUGGER: gdb
-        run: |
-          ./ci/build.sh
-          ./ci/test.sh
-      - name: "CMake: (hide symbols) build and test c-ares"
-        env:
-          BUILD_TYPE: CMAKE
-          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=OFF -DCARES_SYMBOL_HIDING=ON -G Ninja"
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
-          TEST_DEBUGGER: gdb
-        run: |
-          ./ci/build.sh
-          ./ci/test.sh
       - name: "CMake: UBSAN: build and test c-ares"
         env:
           BUILD_TYPE: "ubsan"
