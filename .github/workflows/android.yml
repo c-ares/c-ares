@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CMAKE_DEFAULT_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-26 -G Ninja"
+  CMAKE_DEFAULT_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja -DANDROID_PLATFORM=android-26"
   MAKE: make
 
 jobs:
@@ -25,19 +25,49 @@ jobs:
           version: 1.0
       - name: Checkout c-ares
         uses: actions/checkout@v4
-      - uses: nttld/setup-ndk@v1
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
           ndk-version: r21e
           add-to-path: false
-      - name: "CMake: build and test c-ares"
+      - name: "CMake: armeabi-v7a build c-ares"
         env:
           BUILD_TYPE: CMAKE
-          CMAKE_FLAGS: "${{ env.CMAKE_DEFAULT_FLAGS }} -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake"
+          CMAKE_FLAGS: "${{ env.CMAKE_DEFAULT_FLAGS }} -DANDROID_ABI=armeabi-v7a -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake"
         run: |
           ./ci/build.sh
-#      - name: "Autotools: build and test c-ares"
-#        env:
-#          BUILD_TYPE: autotools
-#        run: |
-#          ./ci/build.sh
+      - name: "CMake: arm64-v8a build c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_FLAGS: "${{ env.CMAKE_DEFAULT_FLAGS }} -DANDROID_ABI=arm64-v8a -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake"
+        run: |
+          ./ci/build.sh
+      - name: "CMake: x86 build c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_FLAGS: "${{ env.CMAKE_DEFAULT_FLAGS }} -DANDROID_ABI=x86 -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake"
+        run: |
+          ./ci/build.sh
+      - name: "CMake: x86_64 build c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_FLAGS: "${{ env.CMAKE_DEFAULT_FLAGS }} -DANDROID_ABI=x86_64 -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake"
+        run: |
+          ./ci/build.sh
+       - name: "Autotools: build and test c-ares"
+         env:
+           BUILD_TYPE: autotools
+           TOOLCHAIN: "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64"
+           TARGET: aarch64-linux-android
+           API: 26
+           AR: "${{ env.TOOLCHAIN }}/bin/llvm-ar"
+           CC: "${{ env.TOOLCHAIN }}/bin/clang --target=${{ env.TARGET }}${{ env.API }}"
+           AS: "${{ env.CC }}"
+           CXX: "${{ env.TOOLCHAIN }}/bin/clang++ --target=${{ env.TARGET }}${{ env.API }}"
+           LD: "${{ env.TOOLCHAIN }}/bin/ld"
+           RANLIB: "${{ env.TOOLCHAIN }}/bin/llvm-ranlib"
+           STRIP: "${{ env.TOOLCHAIN }}/bin/llvm-strip"
+           CONFIG_OPTS: "--host ${{ env.TARGET }}"
+         run: |
+           ./ci/build.sh
