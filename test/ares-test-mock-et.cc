@@ -1424,7 +1424,7 @@ TEST_P(NoRotateMultiMockEventThreadTest, ServerNoResponseFailover) {
 #elif defined(_WIN32)
 #  define SERVER_FAILOVER_RETRY_DELAY 500
 #else
-#  define SERVER_FAILOVER_RETRY_DELAY 250
+#  define SERVER_FAILOVER_RETRY_DELAY 330
 #endif
 class ServerFailoverOptsMockEventThreadTest : public MockMultiServerEventThreadTest {
  public:
