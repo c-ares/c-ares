@@ -239,7 +239,7 @@ static ares_status_t ares__init_sysconfig_android(ares_sysconfig_t *sysconfig)
     char propname[PROP_NAME_MAX];
     char propvalue[PROP_VALUE_MAX] = "";
     for (i = 1; i <= MAX_DNS_PROPERTIES; i++) {
-      snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
+      snprintf(propname, sizeof(propname), "%s%zu", DNS_PROP_NAME_PREFIX, i);
       if (__system_property_get(propname, propvalue) < 1) {
         break;
       }
