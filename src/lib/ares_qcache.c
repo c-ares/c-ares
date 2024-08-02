@@ -346,8 +346,8 @@ static ares_status_t ares__qcache_insert(ares__qcache_t          *qcache,
   }
 
   entry->dnsrec    = qresp;
-  entry->expire_ts = now->sec + (time_t)ttl;
-  entry->insert_ts = now->sec;
+  entry->expire_ts = (time_t)now->sec + (time_t)ttl;
+  entry->insert_ts = (time_t)now->sec;
 
   /* We can't guarantee the server responded with the same flags as the
    * request had, so we have to re-parse the request in order to generate the
