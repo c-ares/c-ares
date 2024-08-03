@@ -1,0 +1,53 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: CentOS 7
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-centos7
+  cancel-in-progress: true
+
+env:
+  TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
+  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+  MAKE: make
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: centos:7
+      options: --privileged
+    name: "CentOS 7"
+    steps:
+      - name: Switch Repo to Vault
+        run: |
+          sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's/^#baseurl/baseurl/' -e 's/mirror.centos.org/vault.centos.org/' /etc/yum.repos.d/*.repo
+          yum clean all
+      - name: Install EPEL
+        run: |
+          yum install epel-release
+          sed -i -e 's|https://dl.fedoraproject.org/pub/epel|archives.fedoraproject.org/pub/archive/epel|' /etc/yum.repos.d/*.repo
+          yum repolist
+      - name: Install packages
+        run: |
+          yum install gcc gcc-c++ make autoconf automake libtool cmake gtest gmock git
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+      - name: "CMake: build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Autotools: build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
