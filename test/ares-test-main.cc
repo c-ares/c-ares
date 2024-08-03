@@ -28,6 +28,39 @@
 
 #include "ares-test.h"
 
+#ifdef __APPLE__
+#  include <mach/mach.h>
+#  include <mach/mach_time.h>
+#  include <pthread.h>
+
+static void thread_set_realtime(pthread_t pthread)
+{
+  mach_timebase_info_data_t            timebase_info;
+  const uint64_t                       NANOS_PER_MSEC = 1000000ULL;
+  double                               clock2abs;
+  int                                  rv;
+  thread_time_constraint_policy_data_t policy;
+
+  mach_timebase_info(&timebase_info);
+  clock2abs = ((double)timebase_info.denom / (double)timebase_info.numer)
+              * NANOS_PER_MSEC;
+
+  policy.period      = 0;
+  policy.computation = (uint32_t)(5 * clock2abs); // 5 ms of work
+  policy.constraint  = (uint32_t)(10 * clock2abs);
+  policy.preemptible = FALSE;
+
+  rv = thread_policy_set(pthread_mach_thread_np(pthread),
+                         THREAD_TIME_CONSTRAINT_POLICY,
+                         (thread_policy_t)&policy,
+                         THREAD_TIME_CONSTRAINT_POLICY_COUNT);
+  if (rv != KERN_SUCCESS) {
+    mach_error("thread_policy_set:", rv);
+    exit(1);
+  }
+}
+#endif
+
 int main(int argc, char* argv[]) {
   std::vector<char*> gtest_argv = {argv[0]};
   for (int ii = 1; ii < argc; ii++) {
@@ -60,6 +93,15 @@ int main(int argc, char* argv[]) {
   WSAStartup(wVersionRequested, &wsaData);
 #else
   signal(SIGPIPE, SIG_IGN);
+#endif
+
+#ifdef __APPLE__
+  /* We need to increase the priority in order for some timing-sensitive tests
+   * to succeed reliably.  On CI systems, the host can be overloaded and things
+   * like sleep timers can wait many multiples of the time specified otherwise.
+   * This is sort of a necessary hack for test reliability. Not something that
+   * would generally be used */
+  thread_set_realtime(pthread_self());
 #endif
 
   int rc = RUN_ALL_TESTS();

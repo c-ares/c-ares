@@ -1416,13 +1416,10 @@ TEST_P(NoRotateMultiMockEventThreadTest, ServerNoResponseFailover) {
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss4.str());
 }
 
-#ifdef __APPLE__
-/* Apple's sleep is no where near accurate, especially on a heavily loaded
- * system.  Its possible we could set a realtime priority on a thread to
- * help with this, but for now, just increase the delay */
-#  define SERVER_FAILOVER_RETRY_DELAY 750
-#else
+#if defined(_WIN32)
 #  define SERVER_FAILOVER_RETRY_DELAY 500
+#else
+#  define SERVER_FAILOVER_RETRY_DELAY 330
 #endif
 class ServerFailoverOptsMockEventThreadTest : public MockMultiServerEventThreadTest {
  public:
