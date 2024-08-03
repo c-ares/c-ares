@@ -28,12 +28,12 @@ jobs:
           yum clean all
       - name: Install EPEL
         run: |
-          yum install epel-release
+          yum install -y epel-release
           sed -i -e 's|https://dl.fedoraproject.org/pub/epel|archives.fedoraproject.org/pub/archive/epel|' /etc/yum.repos.d/*.repo
           yum repolist
       - name: Install packages
         run: |
-          yum install gcc gcc-c++ make autoconf automake libtool cmake gtest gmock git
+          yum install -y gcc gcc-c++ make autoconf automake libtool cmake gtest gmock git
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "CMake: build and test c-ares"
