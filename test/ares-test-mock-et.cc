@@ -1416,10 +1416,10 @@ TEST_P(NoRotateMultiMockEventThreadTest, ServerNoResponseFailover) {
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss4.str());
 }
 
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32)
 #  define SERVER_FAILOVER_RETRY_DELAY 500
 #else
-#  define SERVER_FAILOVER_RETRY_DELAY 250
+#  define SERVER_FAILOVER_RETRY_DELAY 330
 #endif
 class ServerFailoverOptsMockEventThreadTest : public MockMultiServerEventThreadTest {
  public:
