@@ -41,10 +41,10 @@ static void thread_set_realtime(pthread_t pthread)
   int                                  rv;
   thread_time_constraint_policy_data_t policy;
 
+  mach_timebase_info(&timebase_info);
   clock2abs = ((double)timebase_info.denom / (double)timebase_info.numer)
               * NANOS_PER_MSEC;
 
-  mach_timebase_info(&timebase_info);
   policy.period      = 0;
   policy.computation = (uint32_t)(5 * clock2abs); // 5 ms of work
   policy.constraint  = (uint32_t)(10 * clock2abs);
@@ -56,7 +56,7 @@ static void thread_set_realtime(pthread_t pthread)
                          THREAD_TIME_CONSTRAINT_POLICY_COUNT);
   if (rv != KERN_SUCCESS) {
     mach_error("thread_policy_set:", rv);
-    /* Ignore failure */
+    exit(1);
   }
 }
 #endif
