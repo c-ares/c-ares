@@ -35,7 +35,8 @@ jobs:
         run: |
           yum install -y gcc gcc-c++ make autoconf automake libtool cmake gtest gmock git
       - name: Checkout c-ares
-        uses: actions/checkout@v2
+        run: |
+          git clone https://github.com/${{ github.repository }}/${{ github.ref }} .
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
