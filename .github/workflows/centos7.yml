@@ -34,7 +34,7 @@ jobs:
           yum repolist
       - name: Install packages
         run: |
-          yum install -y gcc gcc-c++ make autoconf automake libtool cmake3 git ninja-build
+          yum install -y gcc gcc-c++ make autoconf automake libtool cmake3 git ninja-build gdb
           ln -sf /usr/bin/cmake3 /usr/bin/cmake
       - name: Checkout c-ares
         uses: actions/checkout@v1
