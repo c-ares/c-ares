@@ -36,6 +36,8 @@ jobs:
         run: |
           yum install -y gcc gcc-c++ make autoconf automake libtool cmake3 git ninja-build
           ln -sf /usr/bin/cmake3 /usr/bin/cmake
+      - name: Checkout c-ares
+        uses: actions/checkout@v1
       - name: Build GoogleTest
         run: |
           git clone --depth=1 -b v1.10.x https://github.com/google/googletest googletest
@@ -43,8 +45,6 @@ jobs:
           cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_GMOCK=ON -DINSTALL_GTEST=ON -G Ninja .
           ninja install
           cd ..
-      - name: Checkout c-ares
-        uses: actions/checkout@v1
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
