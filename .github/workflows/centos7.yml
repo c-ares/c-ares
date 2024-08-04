@@ -1,0 +1,61 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: CentOS 7
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-centos7
+  cancel-in-progress: true
+
+env:
+  TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
+  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+  CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH=/usr/local/"
+  MAKE: make
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: centos:7
+      options: --privileged
+    name: "CentOS 7"
+    steps:
+      - name: Switch Repo to Vault
+        run: |
+          sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's/^#baseurl/baseurl/' -e 's/mirror.centos.org/vault.centos.org/' /etc/yum.repos.d/*.repo
+          yum clean all
+      - name: Install EPEL
+        run: |
+          yum install -y epel-release
+          sed -i -e 's|https://dl.fedoraproject.org/pub/epel|archives.fedoraproject.org/pub/archive/epel|' /etc/yum.repos.d/*.repo
+          yum repolist
+      - name: Install packages
+        run: |
+          yum install -y gcc gcc-c++ make autoconf automake libtool cmake3 git ninja-build gdb
+          ln -sf /usr/bin/cmake3 /usr/bin/cmake
+      - name: Checkout c-ares
+        uses: actions/checkout@v1
+      - name: Build GoogleTest
+        # GoogleTest v1.10 doesn't require c++14
+        run: |
+          git clone --depth=1 -b v1.10.x https://github.com/google/googletest googletest
+          cd googletest
+          cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_GMOCK=ON -DINSTALL_GTEST=ON -G Ninja .
+          ninja install
+          cd ..
+      - name: "CMake: build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Autotools: build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+        # Can't run tests due to C++14 check and compiler not supporting C++14
+        run: |
+          ./ci/build.sh
