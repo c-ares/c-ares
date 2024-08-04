@@ -817,6 +817,46 @@ TEST_P(MockChannelTest, SearchDomains) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
+TEST_P(CacheQueriesTest, SearchDomainsCache) {
+  DNSPacket nofirst;
+  nofirst.set_response().set_aa().set_rcode(NXDOMAIN)
+    .add_question(new DNSQuestion("www.first.com", T_A))
+    .add_auth(new DNSSoaRR("first.com", 600, "ns1.first.com", "admin.first.com", 123456, 3600, 3600, 3600, 3600));
+  EXPECT_CALL(server_, OnRequest("www.first.com", T_A))
+    .WillOnce(SetReply(&server_, &nofirst));
+  DNSPacket nosecond;
+  nosecond.set_response().set_aa().set_rcode(NXDOMAIN)
+    .add_question(new DNSQuestion("www.second.org", T_A))
+    .add_auth(new DNSSoaRR("second.org", 600, "ns1.second.org", "admin.second.org", 123456, 3600, 3600, 3600, 3600));
+  EXPECT_CALL(server_, OnRequest("www.second.org", T_A))
+    .WillOnce(SetReply(&server_, &nosecond));
+  DNSPacket yesthird;
+  yesthird.set_response().set_aa()
+    .add_question(new DNSQuestion("www.third.gov", T_A))
+    .add_answer(new DNSARR("www.third.gov", 0x0200, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.third.gov", T_A))
+    .WillOnce(SetReply(&server_, &yesthird));
+
+  // First pass through should send the queries.  The EXPECT_CALL .WillOnce
+  // will make sure this only happens once (vs ON_CALL .WillByDefault)
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
+
+  // This pass should be fully served by cache and yield the same result
+  HostResult cacheresult;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &cacheresult);
+  Process();
+  EXPECT_TRUE(cacheresult.done_);
+  std::stringstream sscache;
+  sscache << cacheresult.host_;
+  EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", sscache.str());
+}
+
 // Relies on retries so is UDP-only
 TEST_P(MockUDPChannelTest, SearchDomainsWithResentReply) {
   DNSPacket nofirst;
