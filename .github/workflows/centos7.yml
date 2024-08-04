@@ -12,6 +12,7 @@ concurrency:
 env:
   TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
   CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+  CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH=/usr/local/"
   MAKE: make
 
 jobs:
@@ -33,13 +34,17 @@ jobs:
           yum repolist
       - name: Install packages
         run: |
-          yum install -y gcc gcc-c++ make autoconf automake libtool cmake3 gtest gmock git ninja-build
+          yum install -y gcc gcc-c++ make autoconf automake libtool cmake3 git ninja-build
           ln -sf /usr/bin/cmake3 /usr/bin/cmake
+      - name: Build GoogleTest
+        run: |
+          git clone --depth=1 -b v1.13.x https://github.com/google/googletest googletest
+          cd googletest
+          cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_GMOCK=ON -DINSTALL_GTEST=ON -G Ninja .
+          ninja install
+          cd ..
       - name: Checkout c-ares
         uses: actions/checkout@v1
-#      - name: Checkout c-ares
-#        run: |
-#          git clone --depth=1 https://github.com/${{ github.repository }}/${{ github.ref }} .
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
