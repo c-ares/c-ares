@@ -39,6 +39,7 @@ jobs:
       - name: Checkout c-ares
         uses: actions/checkout@v1
       - name: Build GoogleTest
+        # GoogleTest v1.10 doesn't require c++14
         run: |
           git clone --depth=1 -b v1.10.x https://github.com/google/googletest googletest
           cd googletest
@@ -48,7 +49,6 @@ jobs:
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           TEST_DEBUGGER: gdb
         run: |
           ./ci/build.sh
@@ -56,7 +56,6 @@ jobs:
       - name: "Autotools: build and test c-ares"
         env:
           BUILD_TYPE: autotools
-          TEST_DEBUGGER: gdb
+        # Can't run tests due to C++14 check and compiler not supporting C++14
         run: |
           ./ci/build.sh
-          ./ci/test.sh
