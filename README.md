@@ -82,7 +82,7 @@ to sign releases):
 
 ```bash
 gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2 # Daniel Stenberg
-gpg --keyserver hkps://keys.openpgp.org --recv-keys DA7D64E4C82C6294CB73A20E22E3D13B5411B7CA     # Brad House
+gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys DA7D64E4C82C6294CB73A20E22E3D13B5411B7CA # Brad House
 ```
 
 ### Verifying signatures
