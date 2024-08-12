@@ -137,14 +137,57 @@ static void print_help(void)
     "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
 }
 
+static int split_rcline(char *rcline, char **rcargv, int len) {
+  int   rcargc;
+  char *last = NULL;
+
+  for (rcargc = 1, rcargv[rcargc] = strtok_r(rcline, " \n", &last);
+    rcargc < len && rcargv[rcargc];
+    rcargv[++rcargc] = strtok_r(NULL, " \n", &last))
+  {
+    DEBUGF(fprintf(stderr, "split_rcline() argc: %d, argv: %s\n", rcargc, rcargv[rcargc]));
+  }
+
+  return (rcargc);
+}
+
 static ares_bool_t read_cmdline(int argc, const char * const *argv,
-                                adig_config_t *config)
+                                adig_config_t *config, ares_bool_t is_rcfile)
 {
-  ares_getopt_state_t state;
-  int                 c;
+  ares_getopt_state_t  state;
+  int                  c;
+  char                *homedir;
 
   ares_getopt_init(&state, argc, argv);
   state.opterr = 0;
+
+  if (!is_rcfile) {
+    homedir = getenv("HOME");
+    if (homedir != NULL) {
+      char            rcfile[256];
+      static FILE    *rcdata = NULL;
+      char            rcline[256];
+
+      unsigned int    rclen;
+      unsigned int    rcsize = sizeof(rcfile);
+      int             rcargc;
+      char           *rcargv[64];
+
+      rclen = (unsigned int) snprintf(rcfile, rcsize, "%s/.adigrc", homedir);
+      if (rclen < rcsize) {
+        rcdata = fopen(rcfile, "r");
+
+        if (rcdata != NULL) {
+          while (fgets(rcline, sizeof(rcline), rcdata) != 0) {
+            rcargc = split_rcline(rcline, rcargv, 62);
+            read_cmdline(rcargc, (const char * const *)rcargv, config, ARES_TRUE);
+          }
+
+          fclose(rcdata);
+        }
+      }
+    }
+  }
 
   while ((c = ares_getopt(&state, "dh?f:s:c:t:T:U:")) != -1) {
     int f;
@@ -933,7 +976,7 @@ int main(int argc, char **argv)
   memset(&config, 0, sizeof(config));
   config.qclass = ARES_CLASS_IN;
   config.qtype  = ARES_REC_TYPE_A;
-  if (!read_cmdline(argc, (const char * const *)argv, &config)) {
+  if (!read_cmdline(argc, (const char * const *)argv, &config, ARES_FALSE)) {
     printf("\n** ERROR: %s\n\n", config.error);
     print_help();
     rv = 1;
