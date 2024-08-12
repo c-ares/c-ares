@@ -46,6 +46,10 @@
 #include "ares_dns.h"
 #include "ares_str.h"
 
+#if defined(_WIN32)
+#  define strtok_r strtok_s
+#endif
+
 #include "ares_getopt.h"
 
 typedef struct {
