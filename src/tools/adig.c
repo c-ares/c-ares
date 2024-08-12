@@ -160,14 +160,44 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
 {
   ares_getopt_state_t  state;
   int                  c;
+  char                 configdir[256];
+  char                *configdir_xdg;
+  unsigned int         cdlen = 0;
+  unsigned int         cdsize = sizeof(configdir);
   char                *homedir;
 
   ares_getopt_init(&state, argc, argv);
   state.opterr = 0;
 
   if (!is_rcfile) {
+
+#if defined(WIN32)
+    cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s", getenv("APPDATA"), "c-ares");
+
+#elif defined(__APPLE__)
     homedir = getenv("HOME");
     if (homedir != NULL) {
+      cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s/%s/%s", homedir, "Library", "Application Support", "c-ares");
+    }
+
+#else
+    configdir_xdg = getenv("XDG_CONFIG_HOME");
+
+    if (configdir_xdg == NULL) {
+      homedir = getenv("HOME");
+      if (homedir != NULL) {
+        cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s", homedir, ".config");
+      }
+    }
+    else {
+      cdlen = (unsigned int) snprintf(configdir, cdsize, "%s", configdir_xdg);
+    }
+
+#endif
+
+    DEBUGF(fprintf(stderr, "read_cmdline() configdir: %s\n", configdir));
+
+    if (cdlen != 0 && cdlen < cdsize) {
       char            rcfile[256];
       static FILE    *rcdata = NULL;
       char            rcline[256];
@@ -177,7 +207,7 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
       int             rcargc;
       char           *rcargv[64];
 
-      rclen = (unsigned int) snprintf(rcfile, rcsize, "%s/.adigrc", homedir);
+      rclen = (unsigned int) snprintf(rcfile, rcsize, "%s/adigrc", configdir);
       if (rclen < rcsize) {
         rcdata = fopen(rcfile, "r");
 
