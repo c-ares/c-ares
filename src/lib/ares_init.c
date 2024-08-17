@@ -171,15 +171,6 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     }
   }
 
-#if defined(USE_WINSOCK)
-#  define toolong(x) (x == -1) && (SOCKERRNO == WSAEFAULT)
-#elif defined(ENAMETOOLONG)
-#  define toolong(x) \
-    (x == -1) && ((SOCKERRNO == ENAMETOOLONG) || (SOCKERRNO == EINVAL))
-#else
-#  define toolong(x) (x == -1) && (SOCKERRNO == EINVAL)
-#endif
-
   if (channel->ndomains == 0) {
     /* Derive a default domain search list from the kernel hostname,
      * or set it to empty if the hostname isn't helpful.
@@ -187,9 +178,7 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
 #ifndef HAVE_GETHOSTNAME
     channel->ndomains = 0; /* default to none */
 #else
-    GETHOSTNAME_TYPE_ARG2 lenv = 64;
-    size_t                len  = 64;
-    int                   res;
+    size_t len        = 256;
     channel->ndomains = 0; /* default to none */
 
     hostname = ares_malloc(len);
@@ -198,28 +187,11 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
       goto error;       /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
-    do {
-      res = gethostname(hostname, lenv);
-
-      if (toolong(res)) {
-        char *p;
-        len  *= 2;
-        lenv *= 2;
-        p     = ares_realloc(hostname, len);
-        if (!p) {
-          rc = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-          goto error;       /* LCOV_EXCL_LINE: OutOfMemory */
-        }
-        hostname = p;
-        continue;
-      } else if (res) {
-        /* Lets not treat a gethostname failure as critical, since we
-         * are ok if gethostname doesn't even exist */
-        *hostname = '\0';
-        break;
-      }
-
-    } while (res != 0);
+    if (gethostname(hostname, (GETHOSTNAME_TYPE_ARG2)len) != 0) {
+      /* Lets not treat a gethostname failure as critical, since we
+       * are ok if gethostname doesn't even exist */
+      *hostname = '\0';
+    }
 
     dot = strchr(hostname, '.');
     if (dot) {

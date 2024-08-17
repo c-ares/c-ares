@@ -460,6 +460,8 @@ typedef void (*ares_server_state_callback)(const char *server_string,
                                            ares_bool_t success, int flags,
                                            void *data);
 
+typedef void (*ares_notify_pending_write_callback)(void *data);
+
 CARES_EXTERN int ares_library_init(int flags);
 
 CARES_EXTERN int ares_library_init_mem(int flags, void *(*amalloc)(size_t size),
@@ -525,6 +527,13 @@ CARES_EXTERN void
                   ares_set_server_state_callback(ares_channel_t            *channel,
                                                  ares_server_state_callback callback,
                                                  void                      *user_data);
+
+CARES_EXTERN void ares_set_notify_pending_write_callback(
+  ares_channel_t                    *channel,
+  ares_notify_pending_write_callback callback,
+  void                              *user_data);
+
+CARES_EXTERN void ares_process_pending_write(ares_channel_t *channel);
 
 CARES_EXTERN int  ares_set_sortlist(ares_channel_t *channel,
                                     const char     *sortstr);

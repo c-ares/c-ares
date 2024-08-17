@@ -68,8 +68,9 @@ int ares_fds(const ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
         nfds = conn->fd + 1;
       }
 
-      /* TCP only wait on write if we have buffered data */
-      if (conn->flags & ARES_CONN_FLAG_TCP && ares__buf_len(server->tcp_send)) {
+      /* TCP only wait on write if we have the flag set */
+      if (conn->flags & ARES_CONN_FLAG_TCP &&
+          conn->state_flags & ARES_CONN_STATE_WRITE) {
         FD_SET(conn->fd, write_fds);
       }
     }

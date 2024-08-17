@@ -345,8 +345,9 @@ static int rfc6724_compare(const void *ptr1, const void *ptr2)
 static int find_src_addr(ares_channel_t *channel, const struct sockaddr *addr,
                          struct sockaddr *src_addr)
 {
-  ares_socket_t  sock;
-  ares_socklen_t len;
+  ares_socket_t   sock;
+  ares_socklen_t  len;
+  ares_conn_err_t err;
 
   switch (addr->sa_family) {
     case AF_INET:
@@ -360,13 +361,12 @@ static int find_src_addr(ares_channel_t *channel, const struct sockaddr *addr,
       return 0;
   }
 
-  sock = ares__open_socket(channel, addr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
-  if (sock == ARES_SOCKET_BAD) {
-    if (SOCKERRNO == EAFNOSUPPORT) {
-      return 0;
-    } else {
-      return -1;
-    }
+  err =
+    ares__open_socket(&sock, channel, addr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
+  if (err == ARES_CONN_ERR_AFNOSUPPORT) {
+    return 0;
+  } else if (err != ARES_CONN_ERR_SUCCESS) {
+    return -1;
   }
 
   if (ares__connect_socket(channel, sock, addr, len) != ARES_SUCCESS) {

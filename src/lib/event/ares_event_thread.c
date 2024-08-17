@@ -216,6 +216,17 @@ static void ares_event_thread_sockstate_cb(void *data, ares_socket_t socket_fd,
                     NULL, NULL, NULL);
 }
 
+static void ares_event_thread_notifywrite_cb(void *data)
+{
+  ares_event_thread_t *e = data;
+
+  ares__thread_mutex_lock(e->mutex);
+  e->process_pending_write = ARES_TRUE;
+  ares__thread_mutex_unlock(e->mutex);
+
+  ares_event_thread_wake(e);
+}
+
 static void ares_event_process_updates(ares_event_thread_t *e)
 {
   ares__llist_node_t *node;
@@ -310,6 +321,7 @@ static void *ares_event_thread(void *arg)
     struct timeval        tv;
     const struct timeval *tvout;
     unsigned long         timeout_ms = 0; /* 0 = unlimited */
+    ares_bool_t           process_pending_write;
 
     ares_event_process_updates(e);
 
@@ -325,6 +337,15 @@ static void *ares_event_thread(void *arg)
     }
 
     e->ev_sys->wait(e, timeout_ms);
+
+    /* Process pending write operation */
+    ares__thread_mutex_lock(e->mutex);
+    process_pending_write    = e->process_pending_write;
+    e->process_pending_write = ARES_FALSE;
+    ares__thread_mutex_unlock(e->mutex);
+    if (process_pending_write) {
+      ares_process_pending_write(e->channel);
+    }
 
     /* Each iteration should do timeout processing */
     if (e->isup) {
@@ -379,8 +400,10 @@ void ares_event_thread_destroy(ares_channel_t *channel)
   }
 
   ares_event_thread_destroy_int(e);
-  channel->sock_state_cb_data = NULL;
-  channel->sock_state_cb      = NULL;
+  channel->sock_state_cb_data           = NULL;
+  channel->sock_state_cb                = NULL;
+  channel->notify_pending_write_cb      = NULL;
+  channel->notify_pending_write_cb_data = NULL;
 }
 
 static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
@@ -483,8 +506,10 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
     return ARES_ENOTIMP;              /* LCOV_EXCL_LINE: UntestablePath */
   }
 
-  channel->sock_state_cb      = ares_event_thread_sockstate_cb;
-  channel->sock_state_cb_data = e;
+  channel->sock_state_cb                = ares_event_thread_sockstate_cb;
+  channel->sock_state_cb_data           = e;
+  channel->notify_pending_write_cb      = ares_event_thread_notifywrite_cb;
+  channel->notify_pending_write_cb_data = e;
 
   if (!e->ev_sys->init(e)) {
     /* LCOV_EXCL_START: UntestablePath */
