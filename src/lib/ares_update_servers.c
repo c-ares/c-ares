@@ -608,18 +608,6 @@ static ares_status_t ares__server_create(ares_channel_t       *channel,
     server->ll_scope = sconfig->ll_scope;
   }
 
-  server->tcp_parser = ares__buf_create();
-  if (server->tcp_parser == NULL) {
-    status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
-  }
-
-  server->tcp_send = ares__buf_create();
-  if (server->tcp_send == NULL) {
-    status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
-  }
-
   server->connections = ares__llist_create(NULL);
   if (server->connections == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */

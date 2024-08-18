@@ -1234,7 +1234,7 @@ ares_status_t ares__buf_load_file(const char *filename, ares__buf_t *buf)
 
   fp = fopen(filename, "rb");
   if (fp == NULL) {
-    int error = ERRNO;
+    int error = errno;
     switch (error) {
       case ENOENT:
       case ESRCH:
