@@ -51,6 +51,10 @@ struct ares__htable {
 
 static unsigned int ares__htable_generate_seed(ares__htable_t *htable)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  /* Seed needs to be static for fuzzing */
+  return 2166136261U;
+#else
   unsigned int seed = 0;
   time_t       t    = time(NULL);
 
@@ -61,6 +65,7 @@ static unsigned int ares__htable_generate_seed(ares__htable_t *htable)
   seed |= (unsigned int)((size_t)&seed & 0xFFFFFFFF);
   seed |= (unsigned int)(((ares_uint64_t)t) & 0xFFFFFFFF);
   return seed;
+#endif
 }
 
 static void ares__htable_buckets_destroy(ares__llist_t **buckets,

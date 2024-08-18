@@ -77,6 +77,10 @@ static void ares_rc4_generate_key(ares_rand_rc4 *rc4_state, unsigned char *key,
     return;
   }
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  /* For fuzzing, random should be deterministic */
+  srand(0);
+#else
   /* Randomness is hard to come by.  Maybe the system randomizes heap and stack
    * addresses. Maybe the current timestamp give us some randomness. Use
    * rc4_state (heap), &i (stack), and ares__tvnow()
@@ -96,6 +100,7 @@ static void ares_rc4_generate_key(ares_rand_rc4 *rc4_state, unsigned char *key,
 
   srand(ares_u32_from_ptr(rc4_state) | ares_u32_from_ptr(&i) |
         (unsigned int)((tv.sec | tv.usec) & 0xFFFFFFFF));
+#endif
 
   for (i = len; i < key_len; i++) {
     key[i] = (unsigned char)(rand() % 256); /* LCOV_EXCL_LINE */
@@ -191,6 +196,11 @@ BOOLEAN WINAPI SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
 static ares_bool_t ares__init_rand_engine(ares_rand_state *state)
 {
   state->cache_remaining = 0;
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  /* For fuzzing, random should be deterministic */
+  state->bad_backends |= ARES_RAND_OS|ARES_RAND_FILE;
+#endif
 
 #if defined(HAVE_ARC4RANDOM_BUF) || defined(HAVE_GETRANDOM) || defined(_WIN32)
   if (!(state->bad_backends & ARES_RAND_OS)) {
