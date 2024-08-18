@@ -551,12 +551,12 @@ done:
 
 ares_status_t ares__conn_flush(ares_conn_t *conn)
 {
-  const unsigned char  *data;
-  size_t                data_len;
-  size_t                count;
-  ares_conn_err_t       err;
-  ares_status_t         status;
-  ares_bool_t           tfo = ARES_FALSE;
+  const unsigned char *data;
+  size_t               data_len;
+  size_t               count;
+  ares_conn_err_t      err;
+  ares_status_t        status;
+  ares_bool_t          tfo = ARES_FALSE;
 
   if (conn == NULL) {
     return ARES_EFORMERR;

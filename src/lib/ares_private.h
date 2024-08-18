@@ -654,7 +654,7 @@ ares_conn_err_t ares__open_socket(ares_socket_t *sock, ares_channel_t *channel,
 ares_bool_t     ares__socket_try_again(int errnum);
 ares_conn_err_t ares__conn_write(ares_conn_t *conn, const void *data,
                                  size_t len, size_t *written);
-ares_status_t ares__conn_flush(ares_conn_t *conn);
+ares_status_t   ares__conn_flush(ares_conn_t *conn);
 ares_conn_err_t ares__conn_read(ares_conn_t *conn, void *data, size_t len,
                                 size_t *read_bytes);
 void            ares__conn_sock_state_cb_update(ares_conn_t            *conn,

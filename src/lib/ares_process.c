@@ -45,16 +45,16 @@
 #include <limits.h>
 
 
-static void timeadd(ares_timeval_t *now, size_t millisecs);
-static void process_write(ares_channel_t *channel, fd_set *write_fds,
-                          ares_socket_t write_fd);
-static void process_read(ares_channel_t *channel, fd_set *read_fds,
-                         ares_socket_t read_fd, const ares_timeval_t *now);
-static void process_timeouts(ares_channel_t       *channel,
-                             const ares_timeval_t *now);
+static void          timeadd(ares_timeval_t *now, size_t millisecs);
+static void          process_write(ares_channel_t *channel, fd_set *write_fds,
+                                   ares_socket_t write_fd);
+static void          process_read(ares_channel_t *channel, fd_set *read_fds,
+                                  ares_socket_t read_fd, const ares_timeval_t *now);
+static void          process_timeouts(ares_channel_t       *channel,
+                                      const ares_timeval_t *now);
 static ares_status_t process_answer(ares_channel_t      *channel,
                                     const unsigned char *abuf, size_t alen,
-                                    ares_conn_t *conn,
+                                    ares_conn_t          *conn,
                                     const ares_timeval_t *now);
 static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
                               ares_status_t failure_status);
@@ -384,13 +384,13 @@ static ares_status_t read_conn_packets(ares_conn_t *conn)
 {
   ares_bool_t     read_again;
   ares_conn_err_t err;
-  ares_channel_t *channel    = conn->server->channel;
+  ares_channel_t *channel = conn->server->channel;
 
   do {
-    size_t          count;
-    size_t          len = 65535;
-    unsigned char  *ptr;
-    size_t          start_len = ares__buf_len(conn->in_buf);
+    size_t         count;
+    size_t         len = 65535;
+    unsigned char *ptr;
+    size_t         start_len = ares__buf_len(conn->in_buf);
 
     /* If UDP, lets write out a placeholder for the length indicator */
     if (!(conn->flags & ARES_CONN_FLAG_TCP)) {
@@ -628,7 +628,7 @@ done:
  * the connection to be terminated after this call. */
 static ares_status_t process_answer(ares_channel_t      *channel,
                                     const unsigned char *abuf, size_t alen,
-                                    ares_conn_t *conn,
+                                    ares_conn_t          *conn,
                                     const ares_timeval_t *now)
 {
   ares_query_t      *query;
@@ -692,7 +692,6 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   if (ares_dns_record_get_rcode(rdnsrec) == ARES_RCODE_FORMERR &&
       ares_dns_get_opt_rr_const(query->query) != NULL &&
       ares_dns_get_opt_rr_const(rdnsrec) == NULL) {
-
     status = rewrite_without_edns(query);
     if (status != ARES_SUCCESS) {
       end_query(channel, server, query, status, NULL);

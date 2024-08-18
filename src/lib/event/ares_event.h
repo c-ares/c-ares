@@ -97,7 +97,7 @@ struct ares_event_thread {
    *  ares_timeout() and ares_process_fd(). */
   ares_channel_t         *channel;
   /*! Whether or not on the next loop we should process a pending write */
-  ares_bool_t            process_pending_write;
+  ares_bool_t             process_pending_write;
   /*! Not-yet-processed event handle updates.  These will get enqueued by a
    *  thread other than the event thread itself. The event thread will then
    *  be woken then process these updates itself */

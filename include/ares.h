@@ -529,9 +529,8 @@ CARES_EXTERN void
                                                  void                      *user_data);
 
 CARES_EXTERN void ares_set_notify_pending_write_callback(
-  ares_channel_t                    *channel,
-  ares_notify_pending_write_callback callback,
-  void                              *user_data);
+  ares_channel_t *channel, ares_notify_pending_write_callback callback,
+  void *user_data);
 
 CARES_EXTERN void ares_process_pending_write(ares_channel_t *channel);
 
