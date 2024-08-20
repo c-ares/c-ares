@@ -817,6 +817,28 @@ TEST_P(MockChannelTest, SearchDomains) {
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
+// Issue #858
+TEST_P(CacheQueriesTest, BlankName) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion(".", T_SOA))
+    .add_answer(new DNSSoaRR(".", 600, "a.root-servers.net", "nstld.verisign-grs.com", 123456, 3600, 3600, 3600, 3600));
+  EXPECT_CALL(server_, OnRequest("", T_SOA))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  QueryResult result;
+  ares_query_dnsrec(channel_, ".", ARES_CLASS_IN, ARES_REC_TYPE_SOA, QueryCallback, &result, NULL);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(0, result.timeouts_);
+
+  QueryResult cacheresult;
+  ares_query_dnsrec(channel_, ".", ARES_CLASS_IN, ARES_REC_TYPE_SOA, QueryCallback, &cacheresult, NULL);
+  Process();
+  EXPECT_TRUE(cacheresult.done_);
+  EXPECT_EQ(0, cacheresult.timeouts_);
+}
+
 // Relies on retries so is UDP-only
 TEST_P(MockUDPChannelTest, SearchDomainsWithResentReply) {
   DNSPacket nofirst;

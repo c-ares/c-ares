@@ -1021,7 +1021,7 @@ TEST_F(LibraryTest, ArrayMisuse) {
 TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ(NULL, ares__buf_create_const(NULL, 0));
   ares__buf_reclaim(NULL);
-  EXPECT_NE(ARES_SUCCESS, ares__buf_append(NULL, NULL, 0));
+  EXPECT_NE(ARES_SUCCESS, ares__buf_append(NULL, NULL, 55));
   size_t len = 10;
   EXPECT_EQ(NULL, ares__buf_append_start(NULL, &len));
   EXPECT_EQ(NULL, ares__buf_append_start(NULL, NULL));
