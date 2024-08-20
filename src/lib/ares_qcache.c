@@ -121,9 +121,11 @@ static char *ares__qcache_calc_key(const ares_dns_record_t *dnsrec)
       name_len--;
     }
 
-    status = ares__buf_append(buf, (const unsigned char *)name, name_len);
-    if (status != ARES_SUCCESS) {
-      goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
+    if (name_len > 0) {
+      status = ares__buf_append(buf, (const unsigned char *)name, name_len);
+      if (status != ARES_SUCCESS) {
+        goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
+      }
     }
   }
 
