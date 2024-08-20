@@ -1023,6 +1023,44 @@ void HostCallback(void *data, int status, int timeouts,
   if (verbose) std::cerr << "HostCallback(" << *result << ")" << std::endl;
 }
 
+std::ostream& operator<<(std::ostream& os, const AresDnsRecord& dnsrec) {
+  os << "{'";
+  /* XXX: Todo */
+  os << '}';
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const QueryResult& result) {
+  os << '{';
+  if (result.done_) {
+    os << StatusToString(result.status_);
+      if (result.dnsrec_.dnsrec_ != nullptr) {
+        os << " " << result.dnsrec_;
+      } else {
+        os << ", (no dnsrec)";
+      }
+  } else {
+    os << "(incomplete)";
+  }
+  os << '}';
+  return os;
+}
+
+void QueryCallback(void *data, ares_status_t status, size_t timeouts,
+                   const ares_dns_record_t *dnsrec) {
+  EXPECT_NE(nullptr, data);
+  if (data == nullptr)
+    return;
+
+  QueryResult* result = reinterpret_cast<QueryResult*>(data);
+  result->done_ = true;
+  result->status_ = status;
+  result->timeouts_ = timeouts;
+  if (dnsrec)
+    result->dnsrec_.SetDnsRecord(dnsrec);
+  if (verbose) std::cerr << "QueryCallback(" << *result << ")" << std::endl;
+}
+
 std::ostream& operator<<(std::ostream& os, const AddrInfoResult& result) {
   os << '{';
   if (result.done_ && result.ai_) {
