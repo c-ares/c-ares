@@ -105,15 +105,15 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 struct ares_rand_state;
 typedef struct ares_rand_state ares_rand_state;
 
-#include "dsa/ares__array.h"
-#include "dsa/ares__llist.h"
+#include "ares__array.h"
+#include "ares__llist.h"
 #include "dsa/ares__slist.h"
-#include "dsa/ares__htable_strvp.h"
-#include "dsa/ares__htable_szvp.h"
-#include "dsa/ares__htable_asvp.h"
-#include "dsa/ares__htable_vpvp.h"
+#include "ares__htable_strvp.h"
+#include "ares__htable_szvp.h"
+#include "ares__htable_asvp.h"
+#include "ares__htable_vpvp.h"
 #include "record/ares_dns_multistring.h"
-#include "str/ares__buf.h"
+#include "ares__buf.h"
 #include "record/ares_dns_private.h"
 #include "util/ares__iface_ips.h"
 #include "util/ares__threads.h"
@@ -123,7 +123,7 @@ typedef struct ares_rand_state ares_rand_state;
 #  define getenv(ptr) ares_getenv(ptr)
 #endif
 
-#include "str/ares_str.h"
+#include "ares_str.h"
 #include "str/ares_strsplit.h"
 
 #ifndef HAVE_STRCASECMP

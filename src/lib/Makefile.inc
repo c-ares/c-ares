@@ -98,23 +98,22 @@ HHEADERS = ares_android.h			\
   ares_platform.h			\
   ares_private.h			\
   ares_setup.h				\
-  dsa/ares__array.h			\
   dsa/ares__htable.h			\
-  dsa/ares__htable_asvp.h		\
-  dsa/ares__htable_strvp.h		\
-  dsa/ares__htable_szvp.h		\
-  dsa/ares__htable_vpvp.h		\
-  dsa/ares__llist.h			\
   dsa/ares__slist.h			\
   event/ares_event.h			\
   event/ares_event_win32.h		\
+  include/ares__array.h			\
+  include/ares__buf.h			\
+  include/ares__htable_asvp.h		\
+  include/ares__htable_strvp.h		\
+  include/ares__htable_szvp.h		\
+  include/ares__htable_vpvp.h		\
+  include/ares__llist.h			\
+  include/ares_str.h			\
   record/ares_dns_multistring.h		\
   record/ares_dns_private.h		\
-  str/ares__buf.h			\
   str/ares_strcasecmp.h			\
-  str/ares_str.h			\
   str/ares_strsplit.h			\
   util/ares__iface_ips.h		\
   util/ares__threads.h			\
   thirdparty/apple/dnsinfo.h
-
