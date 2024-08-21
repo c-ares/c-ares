@@ -179,6 +179,7 @@ CARES_EXTERN ares_bool_t ares_strcaseeq(const char *a, const char *b);
  *  \param[in] n Length
  *  \return ARES_TRUE on match, or ARES_FALSE if no match
  */
-CARES_EXTERN ares_bool_t ares_strcaseeq_max(const char *a, const char *b, size_t n);
+CARES_EXTERN ares_bool_t ares_strcaseeq_max(const char *a, const char *b,
+                                            size_t n);
 
 #endif /* __ARES_STR_H */
