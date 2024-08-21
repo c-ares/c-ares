@@ -349,9 +349,9 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
     if (ares_strcaseeq(value, "dns")    || ares_strcaseeq(value, "bind") ||
         ares_strcaseeq(value, "resolv") || ares_strcaseeq(value, "resolve")) {
       ch = 'b';
-    } else if (ares_strcaseeq(value, "files")      ||
-               ares_strcaseeq(value, "file")  == 0 ||
-               ares_strcaseeq(value, "local") == 0) {
+    } else if (ares_strcaseeq(value, "files") ||
+               ares_strcaseeq(value, "file")  ||
+               ares_strcaseeq(value, "local")) {
       ch = 'f';
     } else {
       continue;
@@ -651,7 +651,7 @@ static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
   }
 
   /* Only support "hosts:" */
-  if (ares_streq(option, "hosts")) {
+  if (!ares_streq(option, "hosts")) {
     goto done;
   }
 
@@ -698,7 +698,7 @@ static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
   }
 
   /* Only support "hosts=" */
-  if (ares_streq(option, "hosts")) {
+  if (!ares_streq(option, "hosts")) {
     goto done;
   }
 
