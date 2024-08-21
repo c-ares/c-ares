@@ -332,6 +332,14 @@ TEST_F(LibraryTest, IfaceIPs) {
 
   ares__iface_ips_destroy(ips);
 }
+
+TEST_F(LibraryTest, HtableMisuse) {
+  EXPECT_EQ(NULL, ares__htable_create(NULL, NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares__htable_insert(NULL, NULL));
+  EXPECT_EQ(NULL, ares__htable_get(NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares__htable_remove(NULL, NULL));
+  EXPECT_EQ((size_t)0, ares__htable_num_keys(NULL));
+}
 #endif /* !CARES_SYMBOL_HIDING */
 
 TEST_F(LibraryTest, InetPtoN) {
@@ -1107,14 +1115,6 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_NE(ARES_SUCCESS, ares__buf_set_position(NULL, 0));
   EXPECT_NE(ARES_SUCCESS, ares__dns_name_parse(NULL, NULL, ARES_FALSE));
   EXPECT_NE(ARES_SUCCESS, ares__buf_parse_dns_binstr(NULL, 0, NULL, NULL));
-}
-
-TEST_F(LibraryTest, HtableMisuse) {
-  EXPECT_EQ(NULL, ares__htable_create(NULL, NULL, NULL, NULL));
-  EXPECT_EQ(ARES_FALSE, ares__htable_insert(NULL, NULL));
-  EXPECT_EQ(NULL, ares__htable_get(NULL, NULL));
-  EXPECT_EQ(ARES_FALSE, ares__htable_remove(NULL, NULL));
-  EXPECT_EQ((size_t)0, ares__htable_num_keys(NULL));
 }
 
 TEST_F(LibraryTest, HtableAsvpMisuse) {

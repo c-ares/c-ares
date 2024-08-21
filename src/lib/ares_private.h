@@ -100,6 +100,7 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 
 #endif
 
+#include "ares_mem.h"
 #include "ares_ipv6.h"
 
 struct ares_rand_state;
@@ -468,13 +469,6 @@ struct ares_channeldata {
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
 ares_bool_t ares__is_onion_domain(const char *name);
-
-/* Memory management functions */
-extern void *(*ares_malloc)(size_t size);
-extern void *(*ares_realloc)(void *ptr, size_t size);
-extern void (*ares_free)(void *ptr);
-void         *ares_malloc_zero(size_t size);
-void         *ares_realloc_zero(void *ptr, size_t orig_size, size_t new_size);
 
 /* return true if now is exactly check time or later */
 ares_bool_t   ares__timedout(const ares_timeval_t *now,
