@@ -344,15 +344,6 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 {$(SRCDIR)\src\tools}.c{$(PROG3_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$@ /Fd$(PROG3_OBJDIR)\ /c $<
 
-# Hack Alert! we reference ../lib/str files in the Makefile.inc for tools as they
-# share some files with the library itself.  We need to hack around that here.
-
-{$(SRCDIR)\src\lib\str}.c{$(PROG2_OBJDIR)\..\lib\str}.obj:
-    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG2_OBJDIR)\str\$(@F) /Fd$(PROG2_OBJDIR)\str\ /c $<
-
-{$(SRCDIR)\src\lib\str}.c{$(PROG3_OBJDIR)\..\lib\str}.obj:
-    $(CC_CMD) $(CC_CFLAGS) $(SPROG_CFLAGS) /Fo$(PROG3_OBJDIR)\str\$(@F) /Fd$(PROG3_OBJDIR)\str\ /c $<
-
 # ------------------------------------------------------------- #
 # ------------------------------------------------------------- #
 # Default target when no CFG library type has been specified,   #
