@@ -26,6 +26,8 @@
 #ifndef __ARES_DNS_MULTISTRING_H
 #define __ARES_DNS_MULTISTRING_H
 
+#include "ares__buf.h"
+
 struct ares__dns_multistring;
 typedef struct ares__dns_multistring ares__dns_multistring_t;
 
@@ -46,5 +48,26 @@ const unsigned char *
 const unsigned char *
   ares__dns_multistring_get_combined(ares__dns_multistring_t *strs,
                                      size_t                  *len);
+
+/*! Parse an array of character strings as defined in RFC1035, as binary,
+ *  however, for convenience this does guarantee a NULL terminator (that is
+ *  not included in the length for each value).
+ *
+ *  \param[in]  buf                initialized buffer object
+ *  \param[in]  remaining_len      maximum length that should be used for
+ *                                 parsing the string, this is often less than
+ *                                 the remaining buffer and is based on the RR
+ *                                 record length.
+ *  \param[out] strs               Pointer passed by reference to be filled in
+ *                                 with
+ *                                 the array of values.
+ *  \param[out] validate_printable Validate the strings contain only printable
+ *                                 data.
+ *  \return ARES_SUCCESS on success
+ */
+ares_status_t ares__dns_multistring_parse_buf(ares__buf_t *buf,
+                                              size_t       remaining_len,
+                                              ares__dns_multistring_t **strs,
+                                              ares_bool_t validate_printable);
 
 #endif

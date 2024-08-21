@@ -61,7 +61,7 @@ typedef void (*ares__htable_vpvp_val_free_t)(void *val);
  *
  *  \param[in] htable  Initialized hashtable
  */
-void ares__htable_vpvp_destroy(ares__htable_vpvp_t *htable);
+CARES_EXTERN void ares__htable_vpvp_destroy(ares__htable_vpvp_t *htable);
 
 /*! Create size_t key, void pointer value hash table
  *
@@ -72,9 +72,9 @@ void ares__htable_vpvp_destroy(ares__htable_vpvp_t *htable);
  *                       NULL it is expected the caller will clean up any user
  *                       supplied values.
  */
-ares__htable_vpvp_t           *
+CARES_EXTERN ares__htable_vpvp_t *
   ares__htable_vpvp_create(ares__htable_vpvp_key_free_t key_free,
-                                     ares__htable_vpvp_val_free_t val_free);
+                           ares__htable_vpvp_val_free_t val_free);
 
 /*! Insert key/value into hash table
  *
@@ -83,8 +83,8 @@ ares__htable_vpvp_t           *
  *  \param[in] val    value to store (takes ownership). May be NULL.
  *  \return ARES_TRUE on success, ARES_FALSE on failure or out of memory
  */
-ares_bool_t ares__htable_vpvp_insert(ares__htable_vpvp_t *htable, void *key,
-                                     void *val);
+CARES_EXTERN ares_bool_t ares__htable_vpvp_insert(ares__htable_vpvp_t *htable,
+                                                  void *key, void *val);
 
 /*! Retrieve value from hashtable based on key
  *
@@ -93,8 +93,8 @@ ares_bool_t ares__htable_vpvp_insert(ares__htable_vpvp_t *htable, void *key,
  *  \param[out] val     Optional.  Pointer to store value.
  *  \return ARES_TRUE on success, ARES_FALSE on failure
  */
-ares_bool_t ares__htable_vpvp_get(const ares__htable_vpvp_t *htable,
-                                  const void *key, void **val);
+CARES_EXTERN ares_bool_t ares__htable_vpvp_get(
+  const ares__htable_vpvp_t *htable, const void *key, void **val);
 
 /*! Retrieve value from hashtable directly as return value.  Caveat to this
  *  function over ares__htable_vpvp_get() is that if a NULL value is stored
@@ -104,8 +104,9 @@ ares_bool_t ares__htable_vpvp_get(const ares__htable_vpvp_t *htable,
  *  \param[in] key     key to use to search
  *  \return value associated with key in hashtable or NULL
  */
-void       *ares__htable_vpvp_get_direct(const ares__htable_vpvp_t *htable,
-                                         const void                *key);
+CARES_EXTERN void *
+  ares__htable_vpvp_get_direct(const ares__htable_vpvp_t *htable,
+                               const void                *key);
 
 /*! Remove a value from the hashtable by key
  *
@@ -113,15 +114,16 @@ void       *ares__htable_vpvp_get_direct(const ares__htable_vpvp_t *htable,
  *  \param[in] key     key to use to search
  *  \return ARES_TRUE if found, ARES_FALSE if not
  */
-ares_bool_t ares__htable_vpvp_remove(ares__htable_vpvp_t *htable,
-                                     const void          *key);
+CARES_EXTERN ares_bool_t ares__htable_vpvp_remove(ares__htable_vpvp_t *htable,
+                                                  const void          *key);
 
 /*! Retrieve the number of keys stored in the hash table
  *
  *  \param[in] htable  Initialized hash table
  *  \return count
  */
-size_t      ares__htable_vpvp_num_keys(const ares__htable_vpvp_t *htable);
+CARES_EXTERN size_t
+  ares__htable_vpvp_num_keys(const ares__htable_vpvp_t *htable);
 
 /*! @} */
 

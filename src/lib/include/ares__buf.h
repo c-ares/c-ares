@@ -26,6 +26,8 @@
 #ifndef __ARES__BUF_H
 #define __ARES__BUF_H
 
+#include "ares.h"
+
 /*! \addtogroup ares__buf Safe Data Builder and buffer
  *
  * This is a buffer building and parsing framework with a focus on security over
@@ -45,13 +47,13 @@
 struct ares__buf;
 
 /*! Opaque data type for generic hash table implementation */
-typedef struct ares__buf ares__buf_t;
+typedef struct ares__buf    ares__buf_t;
 
 /*! Create a new buffer object that dynamically allocates buffers for data.
  *
  *  \return initialized buffer object or NULL if out of memory.
  */
-ares__buf_t             *ares__buf_create(void);
+CARES_EXTERN ares__buf_t   *ares__buf_create(void);
 
 /*! Create a new buffer object that uses a user-provided data pointer.  The
  *  data provided will not be manipulated, and cannot be appended to.  This
@@ -62,14 +64,15 @@ ares__buf_t             *ares__buf_create(void);
  *
  *  \return initialized buffer object or NULL if out of memory or misuse.
  */
-ares__buf_t *ares__buf_create_const(const unsigned char *data, size_t data_len);
+CARES_EXTERN ares__buf_t   *ares__buf_create_const(const unsigned char *data,
+                                                   size_t               data_len);
 
 
 /*! Destroy an initialized buffer object.
  *
  *  \param[in] buf  Initialized buf object
  */
-void         ares__buf_destroy(ares__buf_t *buf);
+CARES_EXTERN void           ares__buf_destroy(ares__buf_t *buf);
 
 
 /*! Append multiple bytes to a dynamic buffer object
@@ -79,8 +82,9 @@ void         ares__buf_destroy(ares__buf_t *buf);
  *  \param[in] data_len Length of data to copy to buffer object.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t  ares__buf_append(ares__buf_t *buf, const unsigned char *data,
-                                size_t data_len);
+CARES_EXTERN ares_status_t  ares__buf_append(ares__buf_t         *buf,
+                                             const unsigned char *data,
+                                             size_t               data_len);
 
 /*! Append a single byte to the dynamic buffer object
  *
@@ -88,7 +92,8 @@ ares_status_t  ares__buf_append(ares__buf_t *buf, const unsigned char *data,
  *  \param[in] b        Single byte to append to buffer object.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t  ares__buf_append_byte(ares__buf_t *buf, unsigned char b);
+CARES_EXTERN ares_status_t  ares__buf_append_byte(ares__buf_t  *buf,
+                                                  unsigned char b);
 
 /*! Append a null-terminated string to the dynamic buffer object
  *
@@ -96,7 +101,8 @@ ares_status_t  ares__buf_append_byte(ares__buf_t *buf, unsigned char b);
  *  \param[in] str      String to append to buffer object.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t  ares__buf_append_str(ares__buf_t *buf, const char *str);
+CARES_EXTERN ares_status_t  ares__buf_append_str(ares__buf_t *buf,
+                                                 const char  *str);
 
 /*! Append a 16bit Big Endian number to the buffer.
  *
@@ -104,7 +110,8 @@ ares_status_t  ares__buf_append_str(ares__buf_t *buf, const char *str);
  *  \param[out] u16     16bit integer
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t  ares__buf_append_be16(ares__buf_t *buf, unsigned short u16);
+CARES_EXTERN ares_status_t  ares__buf_append_be16(ares__buf_t   *buf,
+                                                  unsigned short u16);
 
 /*! Append a 32bit Big Endian number to the buffer.
  *
@@ -112,7 +119,8 @@ ares_status_t  ares__buf_append_be16(ares__buf_t *buf, unsigned short u16);
  *  \param[out] u32     32bit integer
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t  ares__buf_append_be32(ares__buf_t *buf, unsigned int u32);
+CARES_EXTERN ares_status_t  ares__buf_append_be32(ares__buf_t *buf,
+                                                  unsigned int u32);
 
 /*! Append a number in ASCII decimal form.
  *
@@ -121,8 +129,8 @@ ares_status_t  ares__buf_append_be32(ares__buf_t *buf, unsigned int u32);
  *  \param[in] len  Length to output, use 0 for no padding
  *  \return ARES_SUCCESS on success
  */
-ares_status_t  ares__buf_append_num_dec(ares__buf_t *buf, size_t num,
-                                        size_t len);
+CARES_EXTERN ares_status_t  ares__buf_append_num_dec(ares__buf_t *buf,
+                                                     size_t num, size_t len);
 
 /*! Append a number in ASCII hexadecimal form.
  *
@@ -131,8 +139,8 @@ ares_status_t  ares__buf_append_num_dec(ares__buf_t *buf, size_t num,
  *  \param[in] len  Length to output, use 0 for no padding
  *  \return ARES_SUCCESS on success
  */
-ares_status_t  ares__buf_append_num_hex(ares__buf_t *buf, size_t num,
-                                        size_t len);
+CARES_EXTERN ares_status_t  ares__buf_append_num_hex(ares__buf_t *buf,
+                                                     size_t num, size_t len);
 
 /*! Sets the current buffer length.  This *may* be used if there is a need to
  *  override a prior position in the buffer, such as if there is a length
@@ -147,7 +155,7 @@ ares_status_t  ares__buf_append_num_hex(ares__buf_t *buf, size_t num,
  *  \param[in]  len  Length to set
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t  ares__buf_set_length(ares__buf_t *buf, size_t len);
+CARES_EXTERN ares_status_t  ares__buf_set_length(ares__buf_t *buf, size_t len);
 
 
 /*! Start a dynamic append operation that returns a buffer suitable for
@@ -161,7 +169,8 @@ ares_status_t  ares__buf_set_length(ares__buf_t *buf, size_t len);
  *                         returned.
  *  \return Pointer to writable buffer or NULL on failure (usage, out of mem)
  */
-unsigned char *ares__buf_append_start(ares__buf_t *buf, size_t *len);
+CARES_EXTERN unsigned char *ares__buf_append_start(ares__buf_t *buf,
+                                                   size_t      *len);
 
 /*! Finish a dynamic append operation.  Called after
  *  ares__buf_append_start() once desired data is written.
@@ -171,7 +180,7 @@ unsigned char *ares__buf_append_start(ares__buf_t *buf, size_t *len);
  *                    operation. Must not be greater than returned from
  *                    ares__buf_append_start().
  */
-void           ares__buf_append_finish(ares__buf_t *buf, size_t len);
+CARES_EXTERN void ares__buf_append_finish(ares__buf_t *buf, size_t len);
 
 /*! Write the data provided to the buffer in a hexdump format.
  *
@@ -180,8 +189,9 @@ void           ares__buf_append_finish(ares__buf_t *buf, size_t len);
  *  \param[in] len      Length of data to hexdump
  *  \return ARES_SUCCESS on success.
  */
-ares_status_t  ares__buf_hexdump(ares__buf_t *buf, const unsigned char *data,
-                                 size_t len);
+CARES_EXTERN ares_status_t  ares__buf_hexdump(ares__buf_t         *buf,
+                                              const unsigned char *data,
+                                              size_t               len);
 
 /*! Clean up ares__buf_t and return allocated pointer to unprocessed data.  It
  *  is the responsibility of the  caller to ares_free() the returned buffer.
@@ -191,7 +201,7 @@ ares_status_t  ares__buf_hexdump(ares__buf_t *buf, const unsigned char *data,
  * \param[out] len    Length of data returned
  * \return pointer to unprocessed data (may be zero length) or NULL on error.
  */
-unsigned char *ares__buf_finish_bin(ares__buf_t *buf, size_t *len);
+CARES_EXTERN unsigned char *ares__buf_finish_bin(ares__buf_t *buf, size_t *len);
 
 /*! Clean up ares__buf_t and return allocated pointer to unprocessed data and
  *  return it as a string (null terminated).  It is the responsibility of the
@@ -207,7 +217,7 @@ unsigned char *ares__buf_finish_bin(ares__buf_t *buf, size_t *len);
  * \param[out] len    Optional. Length of data returned, or NULL if not needed.
  * \return pointer to unprocessed data or NULL on error.
  */
-char          *ares__buf_finish_str(ares__buf_t *buf, size_t *len);
+CARES_EXTERN char          *ares__buf_finish_str(ares__buf_t *buf, size_t *len);
 
 /*! Tag a position to save in the buffer in case parsing needs to rollback,
  *  such as if insufficient data is available, but more data may be added in
@@ -216,14 +226,14 @@ char          *ares__buf_finish_str(ares__buf_t *buf, size_t *len);
  *
  *  \param[in] buf Initialized buffer object
  */
-void           ares__buf_tag(ares__buf_t *buf);
+CARES_EXTERN void           ares__buf_tag(ares__buf_t *buf);
 
 /*! Rollback to a tagged position.  Will automatically clear the tag.
  *
  *  \param[in] buf Initialized buffer object
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t  ares__buf_tag_rollback(ares__buf_t *buf);
+CARES_EXTERN ares_status_t  ares__buf_tag_rollback(ares__buf_t *buf);
 
 /*! Clear the tagged position without rolling back.  You should do this any
  *  time a tag is no longer needed as future append operations can reclaim
@@ -232,7 +242,7 @@ ares_status_t  ares__buf_tag_rollback(ares__buf_t *buf);
  *  \param[in] buf Initialized buffer object
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t  ares__buf_tag_clear(ares__buf_t *buf);
+CARES_EXTERN ares_status_t  ares__buf_tag_clear(ares__buf_t *buf);
 
 /*! Fetch the buffer and length of data starting from the tagged position up
  *  to the _current_ position.  It will not unset the tagged position.  The
@@ -243,14 +253,15 @@ ares_status_t  ares__buf_tag_clear(ares__buf_t *buf);
  *  \return NULL on failure (such as no tag), otherwise pointer to start of
  *          buffer
  */
-const unsigned char *ares__buf_tag_fetch(const ares__buf_t *buf, size_t *len);
+CARES_EXTERN const unsigned char *ares__buf_tag_fetch(const ares__buf_t *buf,
+                                                      size_t            *len);
 
 /*! Get the length of the current tag offset to the current position.
  *
  *  \param[in]  buf    Initialized buffer object
  *  \return length
  */
-size_t               ares__buf_tag_length(const ares__buf_t *buf);
+CARES_EXTERN size_t               ares__buf_tag_length(const ares__buf_t *buf);
 
 /*! Fetch the bytes starting from the tagged position up to the _current_
  *  position using the provided buffer.  It will not unset the tagged position.
@@ -261,8 +272,9 @@ size_t               ares__buf_tag_length(const ares__buf_t *buf);
  *                        buffer.
  *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size
  */
-ares_status_t        ares__buf_tag_fetch_bytes(const ares__buf_t *buf,
-                                               unsigned char *bytes, size_t *len);
+CARES_EXTERN ares_status_t ares__buf_tag_fetch_bytes(const ares__buf_t *buf,
+                                                     unsigned char     *bytes,
+                                                     size_t            *len);
 
 /*! Fetch the bytes starting from the tagged position up to the _current_
  *  position as a NULL-terminated string using the provided buffer.  The data
@@ -276,8 +288,8 @@ ares_status_t        ares__buf_tag_fetch_bytes(const ares__buf_t *buf,
  *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size,
  *          ARES_EBADSTR if not printable ASCII
  */
-ares_status_t ares__buf_tag_fetch_string(const ares__buf_t *buf, char *str,
-                                         size_t len);
+CARES_EXTERN ares_status_t ares__buf_tag_fetch_string(const ares__buf_t *buf,
+                                                      char *str, size_t len);
 
 /*! Consume the given number of bytes without reading them.
  *
@@ -285,7 +297,7 @@ ares_status_t ares__buf_tag_fetch_string(const ares__buf_t *buf, char *str,
  *  \param[in] len    Length to consume
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_consume(ares__buf_t *buf, size_t len);
+CARES_EXTERN ares_status_t ares__buf_consume(ares__buf_t *buf, size_t len);
 
 /*! Fetch a 16bit Big Endian number from the buffer.
  *
@@ -293,7 +305,8 @@ ares_status_t ares__buf_consume(ares__buf_t *buf, size_t len);
  *  \param[out] u16     Buffer to hold 16bit integer
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16);
+CARES_EXTERN ares_status_t ares__buf_fetch_be16(ares__buf_t    *buf,
+                                                unsigned short *u16);
 
 /*! Fetch a 32bit Big Endian number from the buffer.
  *
@@ -301,7 +314,8 @@ ares_status_t ares__buf_fetch_be16(ares__buf_t *buf, unsigned short *u16);
  *  \param[out] u32     Buffer to hold 32bit integer
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_fetch_be32(ares__buf_t *buf, unsigned int *u32);
+CARES_EXTERN ares_status_t ares__buf_fetch_be32(ares__buf_t  *buf,
+                                                unsigned int *u32);
 
 
 /*! Fetch the requested number of bytes into the provided buffer
@@ -311,8 +325,9 @@ ares_status_t ares__buf_fetch_be32(ares__buf_t *buf, unsigned int *u32);
  *  \param[in]  len     Requested number of bytes (must be > 0)
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
-                                    size_t len);
+CARES_EXTERN ares_status_t ares__buf_fetch_bytes(ares__buf_t   *buf,
+                                                 unsigned char *bytes,
+                                                 size_t         len);
 
 
 /*! Fetch the requested number of bytes and return a new buffer that must be
@@ -326,9 +341,10 @@ ares_status_t ares__buf_fetch_bytes(ares__buf_t *buf, unsigned char *bytes,
  *  \param[out] bytes     Pointer passed by reference. Will be allocated.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
-                                        ares_bool_t     null_term,
-                                        unsigned char **bytes);
+CARES_EXTERN ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t    *buf,
+                                                     size_t          len,
+                                                     ares_bool_t     null_term,
+                                                     unsigned char **bytes);
 
 /*! Fetch the requested number of bytes and place them into the provided
  *  dest buffer object.
@@ -338,8 +354,9 @@ ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
  *  \param[in]  len     Requested number of bytes (must be > 0)
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
-                                             ares__buf_t *dest, size_t len);
+CARES_EXTERN ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
+                                                          ares__buf_t *dest,
+                                                          size_t       len);
 
 /*! Fetch the requested number of bytes and return a new buffer that must be
  *  ares_free()'d by the caller.  The returned buffer is a null terminated
@@ -350,7 +367,8 @@ ares_status_t ares__buf_fetch_bytes_into_buf(ares__buf_t *buf,
  *  \param[out] str     Pointer passed by reference. Will be allocated.
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len, char **str);
+CARES_EXTERN ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len,
+                                                   char **str);
 
 /*! Consume whitespace characters (0x09, 0x0B, 0x0C, 0x0D, 0x20, and optionally
  *  0x0A).
@@ -360,8 +378,8 @@ ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len, char **str);
  *                                ARES_FALSE otherwise.
  *  \return number of whitespace characters consumed
  */
-size_t        ares__buf_consume_whitespace(ares__buf_t *buf,
-                                           ares_bool_t  include_linefeed);
+CARES_EXTERN size_t        ares__buf_consume_whitespace(ares__buf_t *buf,
+                                                        ares_bool_t  include_linefeed);
 
 
 /*! Consume any non-whitespace character (anything other than 0x09, 0x0B, 0x0C,
@@ -370,7 +388,7 @@ size_t        ares__buf_consume_whitespace(ares__buf_t *buf,
  *  \param[in]  buf               Initialized buffer object
  *  \return number of characters consumed
  */
-size_t        ares__buf_consume_nonwhitespace(ares__buf_t *buf);
+CARES_EXTERN size_t        ares__buf_consume_nonwhitespace(ares__buf_t *buf);
 
 
 /*! Consume until a character in the character set provided is reached.  Does
@@ -385,9 +403,9 @@ size_t        ares__buf_consume_nonwhitespace(ares__buf_t *buf);
  *                                0 if not found.
  *  \return number of characters consumed
  */
-size_t        ares__buf_consume_until_charset(ares__buf_t         *buf,
-                                              const unsigned char *charset, size_t len,
-                                              ares_bool_t require_charset);
+CARES_EXTERN size_t        ares__buf_consume_until_charset(
+         ares__buf_t *buf, const unsigned char *charset, size_t len,
+         ares_bool_t require_charset);
 
 
 /*! Consume while the characters match the characters in the provided set.
@@ -397,8 +415,9 @@ size_t        ares__buf_consume_until_charset(ares__buf_t         *buf,
  *  \param[in] len                length of character set
  *  \return number of characters consumed
  */
-size_t ares__buf_consume_charset(ares__buf_t *buf, const unsigned char *charset,
-                                 size_t len);
+CARES_EXTERN size_t ares__buf_consume_charset(ares__buf_t         *buf,
+                                              const unsigned char *charset,
+                                              size_t               len);
 
 
 /*! Consume from the current position until the end of the line, and optionally
@@ -409,7 +428,8 @@ size_t ares__buf_consume_charset(ares__buf_t *buf, const unsigned char *charset,
  *                                ARES_FALSE otherwise.
  *  \return number of characters consumed
  */
-size_t ares__buf_consume_line(ares__buf_t *buf, ares_bool_t include_linefeed);
+CARES_EXTERN size_t ares__buf_consume_line(ares__buf_t *buf,
+                                           ares_bool_t  include_linefeed);
 
 typedef enum {
   /*! No flags */
@@ -457,9 +477,9 @@ typedef enum {
  *                                objects.
  *  \return ARES_SUCCESS on success, or error like ARES_ENOMEM.
  */
-ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
-                              size_t delims_len, ares__buf_split_t flags,
-                              size_t max_sections, ares__llist_t **list);
+CARES_EXTERN ares_status_t ares__buf_split(
+  ares__buf_t *buf, const unsigned char *delims, size_t delims_len,
+  ares__buf_split_t flags, size_t max_sections, ares__llist_t **list);
 
 
 /*! Check the unprocessed buffer to see if it begins with the sequence of
@@ -470,8 +490,9 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
  *  \param[in] data_len     Length of data to compare.
  *  \return ARES_TRUE on match, ARES_FALSE otherwise.
  */
-ares_bool_t   ares__buf_begins_with(const ares__buf_t   *buf,
-                                    const unsigned char *data, size_t data_len);
+CARES_EXTERN ares_bool_t          ares__buf_begins_with(const ares__buf_t   *buf,
+                                                        const unsigned char *data,
+                                                        size_t               data_len);
 
 
 /*! Size of unprocessed remaining data length
@@ -479,7 +500,7 @@ ares_bool_t   ares__buf_begins_with(const ares__buf_t   *buf,
  *  \param[in] buf Initialized buffer object
  *  \return length remaining
  */
-size_t        ares__buf_len(const ares__buf_t *buf);
+CARES_EXTERN size_t               ares__buf_len(const ares__buf_t *buf);
 
 /*! Retrieve a pointer to the currently unprocessed data.  Generally this isn't
  *  recommended to be used in practice.  The returned pointer may be invalidated
@@ -489,7 +510,8 @@ size_t        ares__buf_len(const ares__buf_t *buf);
  *  \param[out] len    Length of available data
  *  \return Pointer to buffer of unprocessed data
  */
-const unsigned char *ares__buf_peek(const ares__buf_t *buf, size_t *len);
+CARES_EXTERN const unsigned char *ares__buf_peek(const ares__buf_t *buf,
+                                                 size_t            *len);
 
 
 /*! Wipe any processed data from the beginning of the buffer.  This will
@@ -512,7 +534,7 @@ const unsigned char *ares__buf_peek(const ares__buf_t *buf, size_t *len);
  *
  *  \param[in]  buf    Initialized buffer object
  */
-void                 ares__buf_reclaim(ares__buf_t *buf);
+CARES_EXTERN void                 ares__buf_reclaim(ares__buf_t *buf);
 
 /*! Set the current offset within the internal buffer.
  *
@@ -528,7 +550,7 @@ void                 ares__buf_reclaim(ares__buf_t *buf);
  *  \param[in] idx  Index to set position
  *  \return ARES_SUCCESS if valid index
  */
-ares_status_t        ares__buf_set_position(ares__buf_t *buf, size_t idx);
+CARES_EXTERN ares_status_t ares__buf_set_position(ares__buf_t *buf, size_t idx);
 
 /*! Get the current offset within the internal buffer.
  *
@@ -542,7 +564,7 @@ ares_status_t        ares__buf_set_position(ares__buf_t *buf, size_t idx);
  *  \param[in] buf Initialized buffer object
  *  \return index of current position
  */
-size_t               ares__buf_get_position(const ares__buf_t *buf);
+CARES_EXTERN size_t        ares__buf_get_position(const ares__buf_t *buf);
 
 /*! Parse a character-string as defined in RFC1035, as a null-terminated
  *  string.
@@ -556,29 +578,9 @@ size_t               ares__buf_get_position(const ares__buf_t *buf);
  *                             ares_free()'d by the caller.
  *  \return ARES_SUCCESS on success
  */
-ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf, size_t remaining_len,
-                                      char **name);
-
-/*! Parse an array of character strings as defined in RFC1035, as binary,
- *  however, for convenience this does guarantee a NULL terminator (that is
- *  not included in the length for each value).
- *
- *  \param[in]  buf                initialized buffer object
- *  \param[in]  remaining_len      maximum length that should be used for
- *                                 parsing the string, this is often less than
- *                                 the remaining buffer and is based on the RR
- *                                 record length.
- *  \param[out] strs               Pointer passed by reference to be filled in
- *                                 with
- *                                 the array of values.
- *  \param[out] validate_printable Validate the strings contain only printable
- *                                 data.
- *  \return ARES_SUCCESS on success
- */
-ares_status_t ares__buf_parse_dns_abinstr(ares__buf_t *buf,
-                                          size_t       remaining_len,
-                                          ares__dns_multistring_t **strs,
-                                          ares_bool_t validate_printable);
+CARES_EXTERN ares_status_t ares__buf_parse_dns_str(ares__buf_t *buf,
+                                                   size_t       remaining_len,
+                                                   char       **name);
 
 /*! Parse a character-string as defined in RFC1035, as binary, however for
  *  convenience this does guarantee a NULL terminator (that is not included
@@ -594,8 +596,10 @@ ares_status_t ares__buf_parse_dns_abinstr(ares__buf_t *buf,
  *  \param[out] bin_len        Length of returned string.
  *  \return ARES_SUCCESS on success
  */
-ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
-                                         unsigned char **bin, size_t *bin_len);
+CARES_EXTERN ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf,
+                                                      size_t remaining_len,
+                                                      unsigned char **bin,
+                                                      size_t         *bin_len);
 
 /*! Load data from specified file path into provided buffer.  The entire file
  *  is loaded into memory.
@@ -606,7 +610,8 @@ ares_status_t ares__buf_parse_dns_binstr(ares__buf_t *buf, size_t remaining_len,
  *  \return ARES_ENOTFOUND if file not found, ARES_EFILE if issues reading
  *          file, ARES_ENOMEM if out of memory, ARES_SUCCESS on success.
  */
-ares_status_t ares__buf_load_file(const char *filename, ares__buf_t *buf);
+CARES_EXTERN ares_status_t ares__buf_load_file(const char  *filename,
+                                               ares__buf_t *buf);
 
 /*! @} */
 

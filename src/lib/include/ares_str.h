@@ -27,9 +27,9 @@
 #ifndef __ARES_STR_H
 #define __ARES_STR_H
 
-char         *ares_strdup(const char *s1);
+CARES_EXTERN char  *ares_strdup(const char *s1);
 
-size_t        ares_strlen(const char *str);
+CARES_EXTERN size_t ares_strlen(const char *str);
 
 /*! Copy string from source to destination with destination buffer size
  *  provided.  The destination is guaranteed to be null terminated, if the
@@ -41,23 +41,23 @@ size_t        ares_strlen(const char *str);
  *  \param[in]  dest_size  Size of destination buffer
  *  \return String length.  Will be at most dest_size-1
  */
-size_t        ares_strcpy(char *dest, const char *src, size_t dest_size);
+CARES_EXTERN size_t ares_strcpy(char *dest, const char *src, size_t dest_size);
 
-ares_bool_t   ares_str_isnum(const char *str);
+CARES_EXTERN ares_bool_t   ares_str_isnum(const char *str);
 
-void          ares__str_ltrim(char *str);
-void          ares__str_rtrim(char *str);
-void          ares__str_trim(char *str);
+CARES_EXTERN void          ares__str_ltrim(char *str);
+CARES_EXTERN void          ares__str_rtrim(char *str);
+CARES_EXTERN void          ares__str_trim(char *str);
 
-unsigned char ares__tolower(unsigned char c);
-ares_bool_t   ares__memeq_ci(const unsigned char *ptr, const unsigned char *val,
-                             size_t len);
+CARES_EXTERN unsigned char ares__tolower(unsigned char c);
+CARES_EXTERN ares_bool_t   ares__memeq_ci(const unsigned char *ptr,
+                                          const unsigned char *val, size_t len);
 
-ares_bool_t   ares__isspace(int ch);
-ares_bool_t   ares__isprint(int ch);
-ares_bool_t   ares__is_hostnamech(int ch);
+CARES_EXTERN ares_bool_t   ares__isspace(int ch);
+CARES_EXTERN ares_bool_t   ares__isprint(int ch);
+CARES_EXTERN ares_bool_t   ares__is_hostnamech(int ch);
 
-ares_bool_t   ares__is_hostname(const char *str);
+CARES_EXTERN ares_bool_t   ares__is_hostname(const char *str);
 
 /*! Validate the string provided is printable.  The length specified must be
  *  at least the size of the buffer provided.  If a NULL-terminator is hit
@@ -70,7 +70,7 @@ ares_bool_t   ares__is_hostname(const char *str);
  *                  If 0, will return TRUE since it did not hit an exception.
  *  \return ARES_TRUE if the entire string is printable, ARES_FALSE if not.
  */
-ares_bool_t   ares__str_isprint(const char *str, size_t len);
+CARES_EXTERN ares_bool_t   ares__str_isprint(const char *str, size_t len);
 
 /* We only care about ASCII rules */
 #define ares__isascii(x) (((unsigned char)x) <= 127)

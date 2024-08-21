@@ -55,7 +55,7 @@ typedef void (*ares__htable_strvp_val_free_t)(void *val);
  *
  *  \param[in] htable  Initialized hashtable
  */
-void ares__htable_strvp_destroy(ares__htable_strvp_t *htable);
+CARES_EXTERN void ares__htable_strvp_destroy(ares__htable_strvp_t *htable);
 
 /*! Create string, void pointer value hash table
  *
@@ -63,7 +63,7 @@ void ares__htable_strvp_destroy(ares__htable_strvp_t *htable);
  *                       NULL it is expected the caller will clean up any user
  *                       supplied values.
  */
-ares__htable_strvp_t           *
+CARES_EXTERN ares__htable_strvp_t *
   ares__htable_strvp_create(ares__htable_strvp_val_free_t val_free);
 
 /*! Insert key/value into hash table
@@ -73,8 +73,8 @@ ares__htable_strvp_t           *
  *  \param[in] val    value to store (takes ownership). May be NULL.
  *  \return ARES_TRUE on success, ARES_FALSE on failure or out of memory
  */
-ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
-                                      const char *key, void *val);
+CARES_EXTERN ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
+                                                   const char *key, void *val);
 
 /*! Retrieve value from hashtable based on key
  *
@@ -83,8 +83,8 @@ ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
  *  \param[out] val     Optional.  Pointer to store value.
  *  \return ARES_TRUE on success, ARES_FALSE on failure
  */
-ares_bool_t ares__htable_strvp_get(const ares__htable_strvp_t *htable,
-                                   const char *key, void **val);
+CARES_EXTERN ares_bool_t ares__htable_strvp_get(
+  const ares__htable_strvp_t *htable, const char *key, void **val);
 
 /*! Retrieve value from hashtable directly as return value.  Caveat to this
  *  function over ares__htable_strvp_get() is that if a NULL value is stored
@@ -94,8 +94,9 @@ ares_bool_t ares__htable_strvp_get(const ares__htable_strvp_t *htable,
  *  \param[in] key     key to use to search
  *  \return value associated with key in hashtable or NULL
  */
-void       *ares__htable_strvp_get_direct(const ares__htable_strvp_t *htable,
-                                          const char                 *key);
+CARES_EXTERN void *
+  ares__htable_strvp_get_direct(const ares__htable_strvp_t *htable,
+                                const char                 *key);
 
 /*! Remove a value from the hashtable by key
  *
@@ -103,15 +104,16 @@ void       *ares__htable_strvp_get_direct(const ares__htable_strvp_t *htable,
  *  \param[in] key     key to use to search
  *  \return ARES_TRUE if found, ARES_FALSE if not
  */
-ares_bool_t ares__htable_strvp_remove(ares__htable_strvp_t *htable,
-                                      const char           *key);
+CARES_EXTERN ares_bool_t ares__htable_strvp_remove(ares__htable_strvp_t *htable,
+                                                   const char           *key);
 
 /*! Retrieve the number of keys stored in the hash table
  *
  *  \param[in] htable  Initialized hash table
  *  \return count
  */
-size_t      ares__htable_strvp_num_keys(const ares__htable_strvp_t *htable);
+CARES_EXTERN size_t
+  ares__htable_strvp_num_keys(const ares__htable_strvp_t *htable);
 
 /*! @} */
 

@@ -95,7 +95,8 @@ static ares_status_t
   ares_status_t            status;
   ares__dns_multistring_t *strs = NULL;
 
-  status = ares__buf_parse_dns_abinstr(buf, max_len, &strs, validate_printable);
+  status = ares__dns_multistring_parse_buf(buf, max_len, &strs,
+                                           validate_printable);
   if (status != ARES_SUCCESS) {
     return status;
   }
