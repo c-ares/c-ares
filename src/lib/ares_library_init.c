@@ -62,9 +62,9 @@ static void default_free(void *p)
   free(p);
 }
 
-void *(*__ares_malloc)(size_t size)             = default_malloc;
-void *(*__ares_realloc)(void *ptr, size_t size) = default_realloc;
-void (*__ares_free)(void *ptr)                  = default_free;
+static void *(*__ares_malloc)(size_t size)             = default_malloc;
+static void *(*__ares_realloc)(void *ptr, size_t size) = default_realloc;
+static void (*__ares_free)(void *ptr)                  = default_free;
 
 void *ares_malloc(size_t size)
 {
