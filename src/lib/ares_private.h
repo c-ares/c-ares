@@ -127,16 +127,6 @@ typedef struct ares_rand_state ares_rand_state;
 #include "ares_str.h"
 #include "str/ares_strsplit.h"
 
-#ifndef HAVE_STRCASECMP
-#  include "str/ares_strcasecmp.h"
-#  define strcasecmp(p1, p2) ares_strcasecmp(p1, p2)
-#endif
-
-#ifndef HAVE_STRNCASECMP
-#  include "str/ares_strcasecmp.h"
-#  define strncasecmp(p1, p2, n) ares_strncasecmp(p1, p2, n)
-#endif
-
 /********* EDNS defines section ******/
 #define EDNSPACKETSZ                                          \
   1232 /* Reasonable UDP payload size, as agreed by operators \

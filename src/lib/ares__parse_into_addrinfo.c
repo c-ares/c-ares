@@ -90,7 +90,7 @@ ares_status_t ares__parse_into_addrinfo(const ares_dns_record_t *dnsrec,
      *
      * rname = ares_dns_rr_get_name(rr);
      * if ((rtype == ARES_REC_TYPE_A || rtype == ARES_REC_TYPE_AAAA) &&
-     *     strcasecmp(rname, hostname) != 0) {
+     *     !ares_strcaseeq(rname, hostname)) {
      *   continue;
      * }
      */
@@ -147,7 +147,7 @@ ares_status_t ares__parse_into_addrinfo(const ares_dns_record_t *dnsrec,
   }
 
   /* save the hostname as ai->name */
-  if (ai->name == NULL || strcasecmp(ai->name, hostname) != 0) {
+  if (ai->name == NULL || !ares_strcaseeq(ai->name, hostname)) {
     ares_free(ai->name);
     ai->name = ares_strdup(hostname);
     if (ai->name == NULL) {

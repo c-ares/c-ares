@@ -1190,12 +1190,12 @@ static ares_bool_t same_questions(const ares_query_t      *query,
        *       server to preserve the case of the name in the response packet.
        *       https://datatracker.ietf.org/doc/html/draft-vixie-dnsext-dns0x20-00
        */
-      if (strcmp(qname, aname) != 0) {
+      if (!ares_streq(qname, aname)) {
         goto done;
       }
     } else {
       /* without DNS0x20 use case-insensitive matching */
-      if (strcasecmp(qname, aname) != 0) {
+      if (!ares_strcaseeq(qname, aname)) {
         goto done;
       }
     }

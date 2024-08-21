@@ -116,8 +116,8 @@ static void ares_event_configchg_cb(ares_event_thread_t *e, ares_socket_t fd,
         continue;
       }
 
-      if (strcasecmp(event->name, "resolv.conf") == 0 ||
-          strcasecmp(event->name, "nsswitch.conf") == 0) {
+      if (ares_strcaseeq(event->name, "resolv.conf") ||
+          ares_strcaseeq(event->name, "nsswitch.conf")) {
         triggered = ARES_TRUE;
       }
     }

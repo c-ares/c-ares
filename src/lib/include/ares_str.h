@@ -86,4 +86,99 @@ CARES_EXTERN ares_bool_t   ares__str_isprint(const char *str, size_t len);
   (((unsigned char)x) >= 'a' && ((unsigned char)x) <= 'z')
 #define ares__isalpha(x) (ares__islower(x) || ares__isupper(x))
 
+/*! Compare two strings (for sorting)
+ *
+ *  Treats NULL and "" strings as equivalent
+ *
+ *  \param[in] a First String
+ *  \param[in] b Second String
+ *  \return < 0 if First String less than Second String,
+ *            0 if First String equal to Second String,
+ *          > 0 if First String greater than Second String
+ */
+CARES_EXTERN int ares_strcmp(const char *a, const char *b);
+
+/*! Compare two strings up to specified length (for sorting)
+ *
+ *  Treats NULL and "" strings as equivalent
+ *
+ *  \param[in] a First String
+ *  \param[in] b Second String
+ *  \param[in] n Length
+ *  \return < 0 if First String less than Second String,
+ *            0 if First String equal to Second String,
+ *          > 0 if First String greater than Second String
+ */
+CARES_EXTERN int ares_strncmp(const char *a, const char *b, size_t n);
+
+
+/*! Compare two strings in a case-insensitive manner (for sorting)
+ *
+ *  Treats NULL and "" strings as equivalent
+ *
+ *  \param[in] a First String
+ *  \param[in] b Second String
+ *  \return < 0 if First String less than Second String,
+ *            0 if First String equal to Second String,
+ *          > 0 if First String greater than Second String
+ */
+CARES_EXTERN int ares_strcasecmp(const char *a, const char *b);
+
+/*! Compare two strings in a case-insensitive manner up to specified length
+ *  (for sorting)
+ *
+ *  Treats NULL and "" strings as equivalent
+ *
+ *  \param[in] a First String
+ *  \param[in] b Second String
+ *  \param[in] n Length
+ *  \return < 0 if First String less than Second String,
+ *            0 if First String equal to Second String,
+ *          > 0 if First String greater than Second String
+ */
+CARES_EXTERN int ares_strncasecmp(const char *a, const char *b, size_t n);
+
+/*! Compare two strings for equality
+ *
+ *  Treats NULL and "" strings as equivalent
+ *
+ *  \param[in] a First String
+ *  \param[in] b Second String
+ *  \return ARES_TRUE on match, or ARES_FALSE if no match
+ */
+CARES_EXTERN ares_bool_t ares_streq(const char *a, const char *b);
+
+/*! Compare two strings for equality up to specified length
+ *
+ *  Treats NULL and "" strings as equivalent
+ *
+ *  \param[in] a First String
+ *  \param[in] b Second String
+ *  \param[in] n Length
+ *  \return ARES_TRUE on match, or ARES_FALSE if no match
+ */
+CARES_EXTERN ares_bool_t ares_streq_max(const char *a, const char *b, size_t n);
+
+/*! Compare two strings for equality in a case insensitive manner
+ *
+ *  Treats NULL and "" strings as equivalent
+ *
+ *  \param[in] a First String
+ *  \param[in] b Second String
+ *  \return ARES_TRUE on match, or ARES_FALSE if no match
+ */
+CARES_EXTERN ares_bool_t ares_strcaseeq(const char *a, const char *b);
+
+/*! Compare two strings for equality up to specified length in a case
+ *  insensitive manner
+ *
+ *  Treats NULL and "" strings as equivalent
+ *
+ *  \param[in] a First String
+ *  \param[in] b Second String
+ *  \param[in] n Length
+ *  \return ARES_TRUE on match, or ARES_FALSE if no match
+ */
+CARES_EXTERN ares_bool_t ares_strcaseeq_max(const char *a, const char *b, size_t n);
+
 #endif /* __ARES_STR_H */

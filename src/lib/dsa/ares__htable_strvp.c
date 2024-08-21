@@ -74,14 +74,7 @@ static void bucket_free(void *bucket)
 
 static ares_bool_t key_eq(const void *key1, const void *key2)
 {
-  const char *k1 = key1;
-  const char *k2 = key2;
-
-  if (strcasecmp(k1, k2) == 0) {
-    return ARES_TRUE;
-  }
-
-  return ARES_FALSE;
+  return ares_strcaseeq(key1, key2);
 }
 
 ares__htable_strvp_t *

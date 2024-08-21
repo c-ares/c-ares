@@ -366,7 +366,7 @@ static ares_bool_t ares__hosts_entry_isdup(ares_hosts_entry_t *entry,
   for (node = ares__llist_node_first(entry->ips); node != NULL;
        node = ares__llist_node_next(node)) {
     const char *myhost = ares__llist_node_val(node);
-    if (strcasecmp(myhost, host) == 0) {
+    if (ares_strcaseeq(myhost, host)) {
       return ARES_TRUE;
     }
   }
@@ -620,7 +620,7 @@ static ares_bool_t ares__hosts_expired(const char              *filename,
   }
 
   /* If filenames are different, its expired */
-  if (strcasecmp(hf->filename, filename) != 0) {
+  if (!ares_strcaseeq(hf->filename, filename)) {
     return ARES_TRUE;
   }
 

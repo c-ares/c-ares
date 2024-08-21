@@ -44,21 +44,7 @@
 
 #include "ares.h"
 #include "ares_dns.h"
-
-#ifndef HAVE_STRDUP
-#  include "str/ares_str.h"
-#  define strdup(ptr) ares_strdup(ptr)
-#endif
-
-#ifndef HAVE_STRCASECMP
-#  include "str/ares_strcasecmp.h"
-#  define strcasecmp(p1, p2) ares_strcasecmp(p1, p2)
-#endif
-
-#ifndef HAVE_STRNCASECMP
-#  include "str/ares_strcasecmp.h"
-#  define strncasecmp(p1, p2, n) ares_strncasecmp(p1, p2, n)
-#endif
+#include "ares_str.h"
 
 #include "ares_getopt.h"
 
@@ -99,7 +85,7 @@ static int          lookup_flag(const nv_t *nv, size_t num_nv, const char *name)
   }
 
   for (i = 0; i < num_nv; i++) {
-    if (strcasecmp(nv[i].name, name) == 0) {
+    if (ares_strcaseeq(nv[i].name, name)) {
       return nv[i].value;
     }
   }

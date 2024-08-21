@@ -11032,7 +11032,7 @@ struct servent *getservbyport(int port, const char *proto)
   if (!error) {
     for (i = 0; i < (sizeof(IANAports) / sizeof(IANAports[0])) - 1; i++) {
       if (u_port == IANAports[i].s_port) {
-        if (!protocol || !strcasecmp(protocol, IANAports[i].s_proto)) {
+        if (!protocol || ares_strcaseeq(protocol, IANAports[i].s_proto)) {
           return (struct servent *)&IANAports[i];
         }
       }

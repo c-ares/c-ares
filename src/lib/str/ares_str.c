@@ -286,3 +286,168 @@ ares_bool_t ares__str_isprint(const char *str, size_t len)
   }
   return ARES_TRUE;
 }
+
+int ares_strcmp(const char *a, const char *b)
+{
+  if (a == NULL && b == NULL) {
+    return 0;
+  }
+
+  if (a != NULL && b == NULL) {
+    if (*a == 0) {
+      return 0;
+    }
+    return 1;
+  }
+
+  if (a == NULL && b != NULL) {
+    if (*b == 0) {
+      return 0;
+    }
+    return -1;
+  }
+
+  return strcmp(a, b);
+}
+
+int ares_strncmp(const char *a, const char *b, size_t n)
+{
+  if (n == 0) {
+    return 0;
+  }
+
+  if (a == NULL && b == NULL) {
+    return 0;
+  }
+
+  if (a != NULL && b == NULL) {
+    if (*a == 0) {
+      return 0;
+    }
+    return 1;
+  }
+
+  if (a == NULL && b != NULL) {
+    if (*b == 0) {
+      return 0;
+    }
+    return -1;
+  }
+
+  return strncmp(a, b, n);
+}
+
+int ares_strcasecmp(const char *a, const char *b)
+{
+  if (a == NULL && b == NULL) {
+    return 0;
+  }
+
+  if (a != NULL && b == NULL) {
+    if (*a == 0) {
+      return 0;
+    }
+    return 1;
+  }
+
+  if (a == NULL && b != NULL) {
+    if (*b == 0) {
+      return 0;
+    }
+    return -1;
+  }
+
+#  if defined(HAVE_STRCASECMP)
+  return strcasecmp(a, b);
+#  elif defined(HAVE_STRCMPI)
+  return strcmpi(a, b);
+#  elif defined(HAVE_STRICMP)
+  return stricmp(a, b);
+#  else
+  {
+    size_t i;
+
+    for (i = 0; i < (size_t)-1; i++) {
+      int c1 = ares__tolower(a[i]);
+      int c2 = ares__tolower(b[i]);
+      if (c1 != c2) {
+        return c1 - c2;
+      }
+      if (!c1) {
+        break;
+      }
+    }
+  }
+  return 0;
+#  endif
+}
+
+int ares_strncasecmp(const char *a, const char *b, size_t n)
+{
+  if (n == 0) {
+    return 0;
+  }
+
+  if (a == NULL && b == NULL) {
+    return 0;
+  }
+
+  if (a != NULL && b == NULL) {
+    if (*a == 0) {
+      return 0;
+    }
+    return 1;
+  }
+
+  if (a == NULL && b != NULL) {
+    if (*b == 0) {
+      return 0;
+    }
+    return -1;
+  }
+
+#  if defined(HAVE_STRNCASECMP)
+  return strncasecmp(a,b,n);
+#  elif defined(HAVE_STRNCMPI)
+  return strncmpi(a, b, n);
+#  elif defined(HAVE_STRNICMP)
+  return strnicmp(a, b, n);
+#  else
+  {
+    size_t i;
+
+    for (i = 0; i < n; i++) {
+      int c1 = ares__tolower(a[i]);
+      int c2 = ares__tolower(b[i]);
+      if (c1 != c2) {
+        return c1 - c2;
+      }
+      if (!c1) {
+        break;
+      }
+    }
+  }
+  return 0;
+#  endif
+}
+
+ares_bool_t ares_strcaseeq(const char *a, const char *b)
+{
+  return ares_strcasecmp(a,b) == 0?ARES_TRUE:ARES_FALSE;
+}
+
+ares_bool_t ares_strcaseeq_max(const char *a, const char *b, size_t n)
+{
+  return ares_strncasecmp(a,b,n) == 0?ARES_TRUE:ARES_FALSE;
+}
+
+ares_bool_t ares_streq(const char *a, const char *b)
+{
+  return ares_strcmp(a,b) == 0?ARES_TRUE:ARES_FALSE;
+}
+
+ares_bool_t ares_streq_max(const char *a, const char *b, size_t n)
+{
+  return ares_strncmp(a,b,n) == 0?ARES_TRUE:ARES_FALSE;
+}
+

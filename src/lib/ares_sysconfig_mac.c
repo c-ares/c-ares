@@ -154,7 +154,7 @@ static ares_bool_t search_is_duplicate(const ares_sysconfig_t *sysconfig,
 {
   size_t i;
   for (i = 0; i < sysconfig->ndomains; i++) {
-    if (strcasecmp(sysconfig->domains[i], name) == 0) {
+    if (ares_strcaseeq(sysconfig->domains[i], name)) {
       return ARES_TRUE;
     }
   }
