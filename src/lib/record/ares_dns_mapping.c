@@ -681,7 +681,7 @@ ares_bool_t ares_dns_class_fromstr(ares_dns_class_t *qclass, const char *str)
   }
 
   for (i = 0; list[i].name != NULL; i++) {
-    if (strcasecmp(list[i].name, str) == 0) {
+    if (ares_strcaseeq(list[i].name, str)) {
       *qclass = list[i].qclass;
       return ARES_TRUE;
     }
@@ -726,7 +726,7 @@ ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
   }
 
   for (i = 0; list[i].name != NULL; i++) {
-    if (strcasecmp(list[i].name, str) == 0) {
+    if (ares_strcaseeq(list[i].name, str)) {
       *qtype = list[i].type;
       return ARES_TRUE;
     }

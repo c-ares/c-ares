@@ -474,7 +474,7 @@ ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
   }
   memcpy(*s, name, nlen);
   (*s)[nlen] = '.';
-  if (strcmp(domain, ".") == 0) {
+  if (ares_streq(domain, ".")) {
     /* Avoid appending the root domain to the separator, which would set *s to
        an ill-formed value (ending in two consecutive dots). */
     dlen = 0;
@@ -555,7 +555,7 @@ ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
     }
 
     /* Match hostname */
-    if (strcasecmp(hostname, name) != 0) {
+    if (!ares_strcaseeq(hostname, name)) {
       continue;
     }
 

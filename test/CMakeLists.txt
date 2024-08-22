@@ -26,6 +26,7 @@ target_include_directories(caresinternal
              "${PROJECT_BINARY_DIR}/src/lib"
              "${PROJECT_SOURCE_DIR}"
              "${PROJECT_SOURCE_DIR}/src/lib"
+             "${PROJECT_SOURCE_DIR}/src/lib/include"
              "${PROJECT_SOURCE_DIR}/include"
 )
 

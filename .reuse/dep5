@@ -9,7 +9,7 @@ Copyright: The c-ares project and its contributors.
 License: MIT
 
 # Docs
-Files: AUTHORS CHANGES CHANGES.0 CONTRIBUTING.md GIT-INFO NEWS README.cares README.md README.msvc RELEASE-NOTES RELEASE-PROCEDURE.md SECURITY.md DEVELOPER-NOTES.md TODO INSTALL.md test/README.md test/gmock-1.11.0/README.md src/lib/thirdparty/apple/README.md
+Files: AUTHORS CONTRIBUTING.md GIT-INFO README.md README.msvc RELEASE-PROCEDURE.md RELEASE-NOTES.md SECURITY.md DEVELOPER-NOTES.md INSTALL.md test/README.md src/lib/include/README.md src/lib/thirdparty/apple/README.md
 Copyright: The c-ares project and its contributors.
 License: MIT
 

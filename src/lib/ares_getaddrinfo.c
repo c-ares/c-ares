@@ -371,7 +371,7 @@ ares_bool_t ares__is_localhost(const char *name)
     return ARES_FALSE; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  if (strcmp(name, "localhost") == 0) {
+  if (ares_strcaseeq(name, "localhost")) {
     return ARES_TRUE;
   }
 
@@ -380,7 +380,7 @@ ares_bool_t ares__is_localhost(const char *name)
     return ARES_FALSE;
   }
 
-  if (strcmp(name + (len - 10 /* strlen(".localhost") */), ".localhost") == 0) {
+  if (ares_strcaseeq(name + (len - 10 /* strlen(".localhost") */), ".localhost")) {
     return ARES_TRUE;
   }
 

@@ -100,20 +100,21 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 
 #endif
 
+#include "ares_mem.h"
 #include "ares_ipv6.h"
 
 struct ares_rand_state;
 typedef struct ares_rand_state ares_rand_state;
 
-#include "dsa/ares__array.h"
-#include "dsa/ares__llist.h"
+#include "ares__array.h"
+#include "ares__llist.h"
 #include "dsa/ares__slist.h"
-#include "dsa/ares__htable_strvp.h"
-#include "dsa/ares__htable_szvp.h"
-#include "dsa/ares__htable_asvp.h"
-#include "dsa/ares__htable_vpvp.h"
+#include "ares__htable_strvp.h"
+#include "ares__htable_szvp.h"
+#include "ares__htable_asvp.h"
+#include "ares__htable_vpvp.h"
 #include "record/ares_dns_multistring.h"
-#include "str/ares__buf.h"
+#include "ares__buf.h"
 #include "record/ares_dns_private.h"
 #include "util/ares__iface_ips.h"
 #include "util/ares__threads.h"
@@ -123,18 +124,8 @@ typedef struct ares_rand_state ares_rand_state;
 #  define getenv(ptr) ares_getenv(ptr)
 #endif
 
-#include "str/ares_str.h"
+#include "ares_str.h"
 #include "str/ares_strsplit.h"
-
-#ifndef HAVE_STRCASECMP
-#  include "str/ares_strcasecmp.h"
-#  define strcasecmp(p1, p2) ares_strcasecmp(p1, p2)
-#endif
-
-#ifndef HAVE_STRNCASECMP
-#  include "str/ares_strcasecmp.h"
-#  define strncasecmp(p1, p2, n) ares_strncasecmp(p1, p2, n)
-#endif
 
 /********* EDNS defines section ******/
 #define EDNSPACKETSZ                                          \
@@ -468,13 +459,6 @@ struct ares_channeldata {
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
 ares_bool_t ares__is_onion_domain(const char *name);
-
-/* Memory management functions */
-extern void *(*ares_malloc)(size_t size);
-extern void *(*ares_realloc)(void *ptr, size_t size);
-extern void (*ares_free)(void *ptr);
-void         *ares_malloc_zero(size_t size);
-void         *ares_realloc_zero(void *ptr, size_t orig_size, size_t new_size);
 
 /* return true if now is exactly check time or later */
 ares_bool_t   ares__timedout(const ares_timeval_t *now,

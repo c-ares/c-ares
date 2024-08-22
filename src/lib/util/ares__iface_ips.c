@@ -334,7 +334,7 @@ static ares_bool_t name_match(const char *name, const char *adapter_name,
     return ARES_TRUE;
   }
 
-  if (strcasecmp(name, adapter_name) == 0) {
+  if (ares_strcaseeq(name, adapter_name)) {
     return ARES_TRUE;
   }
 
@@ -515,7 +515,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
     }
 
     /* Name mismatch */
-    if (name != NULL && strcasecmp(ifa->ifa_name, name) != 0) {
+    if (name != NULL && !ares_strcaseeq(ifa->ifa_name, name)) {
       continue;
     }
 

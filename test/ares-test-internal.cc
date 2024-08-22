@@ -71,9 +71,7 @@ void CheckPtoN4(int size, unsigned int value, const char *input) {
     << " for input " << input;
   EXPECT_EQ(expected, a4.s_addr) << " for input " << input;
 }
-#endif
 
-#ifndef CARES_SYMBOL_HIDING
 TEST_F(LibraryTest, Strsplit) {
   using std::vector;
   using std::string;
@@ -112,15 +110,11 @@ TEST_F(LibraryTest, Strsplit) {
     ares__strsplit_free(out, n);
   }
 }
-#endif
 
-TEST_F(LibraryTest, InetPtoN) {
+TEST_F(LibraryTest, InetNetPtoN) {
+  uint32_t expected;
   struct in_addr a4;
   struct in6_addr a6;
-
-#ifndef CARES_SYMBOL_HIDING
-  uint32_t expected;
-
   CheckPtoN4(4 * 8, 0x01020304, "1.2.3.4");
   CheckPtoN4(4 * 8, 0x81010101, "129.1.1.1");
   CheckPtoN4(4 * 8, 0xC0010101, "192.1.1.1");
@@ -220,8 +214,137 @@ TEST_F(LibraryTest, InetPtoN) {
   EXPECT_EQ(-1, ares_inet_net_pton(AF_INET, "0x0xyz", &a4, 0));
   EXPECT_EQ(-1, ares_inet_net_pton(AF_INET, "0x1122334", &a4, sizeof(a4) - 1));
   EXPECT_EQ(-1, ares_inet_net_pton(AF_INET, "253", &a4, sizeof(a4) - 1));
-#endif
+}
 
+TEST_F(LibraryTest, FreeLongChain) {
+  struct ares_addr_node *data = nullptr;
+  for (int ii = 0; ii < 100000; ii++) {
+    struct ares_addr_node *prev = (struct ares_addr_node*)ares_malloc_data(ARES_DATATYPE_ADDR_NODE);
+    prev->next = data;
+    data = prev;
+  }
+
+  ares_free_data(data);
+}
+
+TEST_F(LibraryTest, MallocDataFail) {
+  EXPECT_EQ(nullptr, ares_malloc_data((ares_datatype)99));
+  SetAllocSizeFail(sizeof(struct ares_data));
+  EXPECT_EQ(nullptr, ares_malloc_data(ARES_DATATYPE_MX_REPLY));
+}
+
+TEST(Misc, OnionDomain) {
+  EXPECT_EQ(0, ares__is_onion_domain("onion.no"));
+  EXPECT_EQ(0, ares__is_onion_domain(".onion.no"));
+  EXPECT_EQ(1, ares__is_onion_domain(".onion"));
+  EXPECT_EQ(1, ares__is_onion_domain(".onion."));
+  EXPECT_EQ(1, ares__is_onion_domain("yes.onion"));
+  EXPECT_EQ(1, ares__is_onion_domain("yes.onion."));
+  EXPECT_EQ(1, ares__is_onion_domain("YES.ONION"));
+  EXPECT_EQ(1, ares__is_onion_domain("YES.ONION."));
+}
+
+TEST_F(LibraryTest, CatDomain) {
+  char *s;
+
+  ares__cat_domain("foo", "example.net", &s);
+  EXPECT_STREQ("foo.example.net", s);
+  ares_free(s);
+
+  ares__cat_domain("foo", ".", &s);
+  EXPECT_STREQ("foo.", s);
+  ares_free(s);
+
+  ares__cat_domain("foo", "example.net.", &s);
+  EXPECT_STREQ("foo.example.net.", s);
+  ares_free(s);
+}
+
+TEST_F(LibraryTest, SlistMisuse) {
+  EXPECT_EQ(NULL, ares__slist_create(NULL, NULL, NULL));
+  ares__slist_replace_destructor(NULL, NULL);
+  EXPECT_EQ(NULL, ares__slist_insert(NULL, NULL));
+  EXPECT_EQ(NULL, ares__slist_node_find(NULL, NULL));
+  EXPECT_EQ(NULL, ares__slist_node_first(NULL));
+  EXPECT_EQ(NULL, ares__slist_node_last(NULL));
+  EXPECT_EQ(NULL, ares__slist_node_next(NULL));
+  EXPECT_EQ(NULL, ares__slist_node_prev(NULL));
+  EXPECT_EQ(NULL, ares__slist_node_val(NULL));
+  EXPECT_EQ((size_t)0, ares__slist_len(NULL));
+  EXPECT_EQ(NULL, ares__slist_node_parent(NULL));
+  EXPECT_EQ(NULL, ares__slist_first_val(NULL));
+  EXPECT_EQ(NULL, ares__slist_last_val(NULL));
+  EXPECT_EQ(NULL, ares__slist_node_claim(NULL));
+}
+
+TEST_F(LibraryTest, IfaceIPs) {
+  ares_status_t      status;
+  ares__iface_ips_t *ips = NULL;
+  size_t             i;
+
+  status = ares__iface_ips(&ips, ARES_IFACE_IP_DEFAULT, NULL);
+  EXPECT_TRUE(status == ARES_SUCCESS || status == ARES_ENOTIMP);
+
+  /* Not implemented, can't run tests */
+  if (status == ARES_ENOTIMP)
+    return;
+
+  EXPECT_NE(nullptr, ips);
+
+  for (i=0; i<ares__iface_ips_cnt(ips); i++) {
+    const char *name = ares__iface_ips_get_name(ips, i);
+    EXPECT_NE(nullptr, name);
+    int flags = (int)ares__iface_ips_get_flags(ips, i);
+    EXPECT_NE(0, (int)flags);
+    EXPECT_NE(nullptr, ares__iface_ips_get_addr(ips, i));
+    EXPECT_NE(0, ares__iface_ips_get_netmask(ips, i));
+    if (flags & ARES_IFACE_IP_LINKLOCAL && flags & ARES_IFACE_IP_V6) {
+      /* Hmm, seems not to work at least on MacOS
+       * EXPECT_NE(0, ares__iface_ips_get_ll_scope(ips, i));
+       */
+    } else {
+      EXPECT_EQ(0, ares__iface_ips_get_ll_scope(ips, i));
+    }
+    unsigned int idx = ares__if_nametoindex(name);
+    EXPECT_NE(0, idx);
+    char namebuf[256];
+    EXPECT_EQ(std::string(ares__if_indextoname(idx, namebuf, sizeof(namebuf))), std::string(name));
+  }
+
+
+  /* Negative checking */
+  ares__iface_ips_get_name(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_flags(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_addr(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_netmask(ips, ares__iface_ips_cnt(ips));
+  ares__iface_ips_get_ll_scope(ips, ares__iface_ips_cnt(ips));
+
+  ares__iface_ips(NULL, ARES_IFACE_IP_DEFAULT, NULL);
+  ares__iface_ips_cnt(NULL);
+  ares__iface_ips_get_name(NULL, 0);
+  ares__iface_ips_get_flags(NULL, 0);
+  ares__iface_ips_get_addr(NULL, 0);
+  ares__iface_ips_get_netmask(NULL, 0);
+  ares__iface_ips_get_ll_scope(NULL, 0);
+  ares__iface_ips_destroy(NULL);
+  ares__if_nametoindex(NULL);
+  ares__if_indextoname(0, NULL, 0);
+
+  ares__iface_ips_destroy(ips);
+}
+
+TEST_F(LibraryTest, HtableMisuse) {
+  EXPECT_EQ(NULL, ares__htable_create(NULL, NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares__htable_insert(NULL, NULL));
+  EXPECT_EQ(NULL, ares__htable_get(NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares__htable_remove(NULL, NULL));
+  EXPECT_EQ((size_t)0, ares__htable_num_keys(NULL));
+}
+#endif /* !CARES_SYMBOL_HIDING */
+
+TEST_F(LibraryTest, InetPtoN) {
+  struct in_addr a4;
+  struct in6_addr a6;
   EXPECT_EQ(1, ares_inet_pton(AF_INET, "1.2.3.4", &a4));
   EXPECT_EQ(1, ares_inet_pton(AF_INET6, "12:34::ff", &a6));
   EXPECT_EQ(1, ares_inet_pton(AF_INET6, "12:34::ffff:1.2.3.4", &a6));
@@ -251,18 +374,6 @@ TEST_F(LibraryTest, FreeCorruptData) {
   free(data);
 }
 
-#ifndef CARES_SYMBOL_HIDING
-TEST_F(LibraryTest, FreeLongChain) {
-  struct ares_addr_node *data = nullptr;
-  for (int ii = 0; ii < 100000; ii++) {
-    struct ares_addr_node *prev = (struct ares_addr_node*)ares_malloc_data(ARES_DATATYPE_ADDR_NODE);
-    prev->next = data;
-    data = prev;
-  }
-
-  ares_free_data(data);
-}
-
 TEST(LibraryInit, StrdupFailures) {
   EXPECT_EQ(ARES_SUCCESS, ares_library_init(ARES_LIB_INIT_ALL));
   char* copy = ares_strdup("string");
@@ -275,12 +386,6 @@ TEST_F(LibraryTest, StrdupFailures) {
   SetAllocFail(1);
   char* copy = ares_strdup("string");
   EXPECT_EQ(nullptr, copy);
-}
-
-TEST_F(LibraryTest, MallocDataFail) {
-  EXPECT_EQ(nullptr, ares_malloc_data((ares_datatype)99));
-  SetAllocSizeFail(sizeof(struct ares_data));
-  EXPECT_EQ(nullptr, ares_malloc_data(ARES_DATATYPE_MX_REPLY));
 }
 
 TEST_F(FileChannelTest, GetAddrInfoHostsPositive) {
@@ -392,19 +497,6 @@ TEST_F(FileChannelTest, GetAddrInfoAllocFail) {
     }
   }
 }
-
-TEST(Misc, OnionDomain) {
-  EXPECT_EQ(0, ares__is_onion_domain("onion.no"));
-  EXPECT_EQ(0, ares__is_onion_domain(".onion.no"));
-  EXPECT_EQ(1, ares__is_onion_domain(".onion"));
-  EXPECT_EQ(1, ares__is_onion_domain(".onion."));
-  EXPECT_EQ(1, ares__is_onion_domain("yes.onion"));
-  EXPECT_EQ(1, ares__is_onion_domain("yes.onion."));
-  EXPECT_EQ(1, ares__is_onion_domain("YES.ONION"));
-  EXPECT_EQ(1, ares__is_onion_domain("YES.ONION."));
-}
-
-#endif
 
 TEST_F(LibraryTest, DNSRecord) {
   ares_dns_record_t   *dnsrec = NULL;
@@ -677,13 +769,11 @@ TEST_F(LibraryTest, DNSRecord) {
   /* Write */
   EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
 
-#ifndef CARES_SYMBOL_HIDING
   ares__buf_t *hexdump = ares__buf_create();
   EXPECT_EQ(ARES_SUCCESS, ares__buf_hexdump(hexdump, msg, msglen));
   char *hexdata = ares__buf_finish_str(hexdump, NULL);
   //printf("HEXDUMP\n%s", hexdata);
   ares_free(hexdata);
-#endif
 
   ares_dns_record_destroy(dnsrec); dnsrec = NULL;
 
@@ -699,7 +789,6 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(nscount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
   EXPECT_EQ(arcount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
 
-#ifndef CARES_SYMBOL_HIDING
   /* Iterate and print */
   ares__buf_t *printmsg = ares__buf_create();
   ares__buf_append_str(printmsg, ";; ->>HEADER<<- opcode: ");
@@ -817,7 +906,6 @@ TEST_F(LibraryTest, DNSRecord) {
   char *printdata = ares__buf_finish_str(printmsg, NULL);
   //printf("%s", printdata);
   ares_free(printdata);
-#endif
 
   ares_dns_record_destroy(dnsrec);
   ares_free_string(msg);
@@ -983,24 +1071,6 @@ TEST_F(LibraryTest, DNSParseFlags) {
   ares_free_string(msg); msg = NULL;
 }
 
-#ifndef CARES_SYMBOL_HIDING
-
-TEST_F(LibraryTest, CatDomain) {
-  char *s;
-
-  ares__cat_domain("foo", "example.net", &s);
-  EXPECT_STREQ("foo.example.net", s);
-  ares_free(s);
-
-  ares__cat_domain("foo", ".", &s);
-  EXPECT_STREQ("foo.", s);
-  ares_free(s);
-
-  ares__cat_domain("foo", "example.net.", &s);
-  EXPECT_STREQ("foo.example.net.", s);
-  ares_free(s);
-}
-
 TEST_F(LibraryTest, ArrayMisuse) {
   EXPECT_EQ(NULL, ares__array_create(0, NULL));
   ares__array_destroy(NULL);
@@ -1043,16 +1113,7 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ(ARES_FALSE, ares__buf_begins_with(NULL, NULL, 0));
   EXPECT_EQ((size_t)0, ares__buf_get_position(NULL));
   EXPECT_NE(ARES_SUCCESS, ares__buf_set_position(NULL, 0));
-  EXPECT_NE(ARES_SUCCESS, ares__dns_name_parse(NULL, NULL, ARES_FALSE));
   EXPECT_NE(ARES_SUCCESS, ares__buf_parse_dns_binstr(NULL, 0, NULL, NULL));
-}
-
-TEST_F(LibraryTest, HtableMisuse) {
-  EXPECT_EQ(NULL, ares__htable_create(NULL, NULL, NULL, NULL));
-  EXPECT_EQ(ARES_FALSE, ares__htable_insert(NULL, NULL));
-  EXPECT_EQ(NULL, ares__htable_get(NULL, NULL));
-  EXPECT_EQ(ARES_FALSE, ares__htable_remove(NULL, NULL));
-  EXPECT_EQ((size_t)0, ares__htable_num_keys(NULL));
 }
 
 TEST_F(LibraryTest, HtableAsvpMisuse) {
@@ -1094,23 +1155,6 @@ TEST_F(LibraryTest, LlistMisuse) {
   EXPECT_EQ(NULL, ares__llist_node_parent(NULL));
   EXPECT_EQ(NULL, ares__llist_node_claim(NULL));
   ares__llist_node_replace(NULL, NULL);
-}
-
-TEST_F(LibraryTest, SlistMisuse) {
-  EXPECT_EQ(NULL, ares__slist_create(NULL, NULL, NULL));
-  ares__slist_replace_destructor(NULL, NULL);
-  EXPECT_EQ(NULL, ares__slist_insert(NULL, NULL));
-  EXPECT_EQ(NULL, ares__slist_node_find(NULL, NULL));
-  EXPECT_EQ(NULL, ares__slist_node_first(NULL));
-  EXPECT_EQ(NULL, ares__slist_node_last(NULL));
-  EXPECT_EQ(NULL, ares__slist_node_next(NULL));
-  EXPECT_EQ(NULL, ares__slist_node_prev(NULL));
-  EXPECT_EQ(NULL, ares__slist_node_val(NULL));
-  EXPECT_EQ((size_t)0, ares__slist_len(NULL));
-  EXPECT_EQ(NULL, ares__slist_node_parent(NULL));
-  EXPECT_EQ(NULL, ares__slist_first_val(NULL));
-  EXPECT_EQ(NULL, ares__slist_last_val(NULL));
-  EXPECT_EQ(NULL, ares__slist_node_claim(NULL));
 }
 
 typedef struct {
@@ -1452,65 +1496,6 @@ TEST_F(LibraryTest, HtableStrvp) {
   ares__llist_destroy(l);
   ares__htable_strvp_destroy(h);
 }
-
-TEST_F(LibraryTest, IfaceIPs) {
-  ares_status_t      status;
-  ares__iface_ips_t *ips = NULL;
-  size_t             i;
-
-  status = ares__iface_ips(&ips, ARES_IFACE_IP_DEFAULT, NULL);
-  EXPECT_TRUE(status == ARES_SUCCESS || status == ARES_ENOTIMP);
-
-  /* Not implemented, can't run tests */
-  if (status == ARES_ENOTIMP)
-    return;
-
-  EXPECT_NE(nullptr, ips);
-
-  for (i=0; i<ares__iface_ips_cnt(ips); i++) {
-    const char *name = ares__iface_ips_get_name(ips, i);
-    EXPECT_NE(nullptr, name);
-    int flags = (int)ares__iface_ips_get_flags(ips, i);
-    EXPECT_NE(0, (int)flags);
-    EXPECT_NE(nullptr, ares__iface_ips_get_addr(ips, i));
-    EXPECT_NE(0, ares__iface_ips_get_netmask(ips, i));
-    if (flags & ARES_IFACE_IP_LINKLOCAL && flags & ARES_IFACE_IP_V6) {
-      /* Hmm, seems not to work at least on MacOS
-       * EXPECT_NE(0, ares__iface_ips_get_ll_scope(ips, i));
-       */
-    } else {
-      EXPECT_EQ(0, ares__iface_ips_get_ll_scope(ips, i));
-    }
-    unsigned int idx = ares__if_nametoindex(name);
-    EXPECT_NE(0, idx);
-    char namebuf[256];
-    EXPECT_EQ(std::string(ares__if_indextoname(idx, namebuf, sizeof(namebuf))), std::string(name));
-  }
-
-
-  /* Negative checking */
-  ares__iface_ips_get_name(ips, ares__iface_ips_cnt(ips));
-  ares__iface_ips_get_flags(ips, ares__iface_ips_cnt(ips));
-  ares__iface_ips_get_addr(ips, ares__iface_ips_cnt(ips));
-  ares__iface_ips_get_netmask(ips, ares__iface_ips_cnt(ips));
-  ares__iface_ips_get_ll_scope(ips, ares__iface_ips_cnt(ips));
-
-  ares__iface_ips(NULL, ARES_IFACE_IP_DEFAULT, NULL);
-  ares__iface_ips_cnt(NULL);
-  ares__iface_ips_get_name(NULL, 0);
-  ares__iface_ips_get_flags(NULL, 0);
-  ares__iface_ips_get_addr(NULL, 0);
-  ares__iface_ips_get_netmask(NULL, 0);
-  ares__iface_ips_get_ll_scope(NULL, 0);
-  ares__iface_ips_destroy(NULL);
-  ares__if_nametoindex(NULL);
-  ares__if_indextoname(0, NULL, 0);
-
-  ares__iface_ips_destroy(ips);
-}
-
-
-#endif
 
 TEST_F(DefaultChannelTest, SaveInvalidChannel) {
   ares__slist_t *saved = channel_->servers;

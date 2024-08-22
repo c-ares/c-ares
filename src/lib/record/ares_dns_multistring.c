@@ -222,3 +222,74 @@ const unsigned char *
   *len = strs->cache_str_len;
   return strs->cache_str;
 }
+
+ares_status_t ares__dns_multistring_parse_buf(ares__buf_t *buf,
+                                              size_t       remaining_len,
+                                              ares__dns_multistring_t **strs,
+                                              ares_bool_t validate_printable)
+{
+  unsigned char len;
+  ares_status_t status   = ARES_EBADRESP;
+  size_t        orig_len = ares__buf_len(buf);
+
+  if (buf == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (remaining_len == 0) {
+    return ARES_EBADRESP;
+  }
+
+  if (strs != NULL) {
+    *strs = ares__dns_multistring_create();
+    if (*strs == NULL) {
+      return ARES_ENOMEM;
+    }
+  }
+
+  while (orig_len - ares__buf_len(buf) < remaining_len) {
+    status = ares__buf_fetch_bytes(buf, &len, 1);
+    if (status != ARES_SUCCESS) {
+      break; /* LCOV_EXCL_LINE: DefensiveCoding */
+    }
+
+    if (len) {
+      /* When used by the _str() parser, it really needs to be validated to
+       * be a valid printable ascii string.  Do that here */
+      if (validate_printable && ares__buf_len(buf) >= len) {
+        size_t      mylen;
+        const char *data = (const char *)ares__buf_peek(buf, &mylen);
+        if (!ares__str_isprint(data, len)) {
+          status = ARES_EBADSTR;
+          break;
+        }
+      }
+
+      if (strs != NULL) {
+        unsigned char *data = NULL;
+        status = ares__buf_fetch_bytes_dup(buf, len, ARES_TRUE, &data);
+        if (status != ARES_SUCCESS) {
+          break;
+        }
+        status = ares__dns_multistring_add_own(*strs, data, len);
+        if (status != ARES_SUCCESS) {
+          ares_free(data);
+          break;
+        }
+      } else {
+        status = ares__buf_consume(buf, len);
+        if (status != ARES_SUCCESS) {
+          break;
+        }
+      }
+    }
+  }
+
+  if (status != ARES_SUCCESS && strs != NULL) {
+    ares__dns_multistring_destroy(*strs);
+    *strs = NULL;
+  }
+
+  return status;
+}
+

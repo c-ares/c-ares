@@ -114,7 +114,7 @@ static const ares_nameoffset_t *ares__nameoffset_find(ares__llist_t *list,
     /* Due to DNS 0x20, lets not inadvertently mangle things, use case-sensitive
      * matching instead of case-insensitive.  This may result in slightly
      * larger DNS queries overall. */
-    if (strcmp(val->name, name + prefix_len) != 0) {
+    if (!ares_streq(val->name, name + prefix_len)) {
       continue;
     }
 

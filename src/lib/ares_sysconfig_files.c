@@ -346,12 +346,12 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
       continue;
     }
 
-    if (strcasecmp(value, "dns") == 0 || strcasecmp(value, "bind") == 0 ||
-        strcasecmp(value, "resolv") == 0 || strcasecmp(value, "resolve") == 0) {
+    if (ares_strcaseeq(value, "dns")    || ares_strcaseeq(value, "bind") ||
+        ares_strcaseeq(value, "resolv") || ares_strcaseeq(value, "resolve")) {
       ch = 'b';
-    } else if (strcasecmp(value, "files") == 0 ||
-               strcasecmp(value, "file") == 0 ||
-               strcasecmp(value, "local") == 0) {
+    } else if (ares_strcaseeq(value, "files") ||
+               ares_strcaseeq(value, "file")  ||
+               ares_strcaseeq(value, "local")) {
       ch = 'f';
     } else {
       continue;
@@ -409,21 +409,21 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
     valint = (unsigned int)strtoul(val, NULL, 10);
   }
 
-  if (strcmp(key, "ndots") == 0) {
+  if (ares_streq(key, "ndots")) {
     sysconfig->ndots = valint;
-  } else if (strcmp(key, "retrans") == 0 || strcmp(key, "timeout") == 0) {
+  } else if (ares_streq(key, "retrans") || ares_streq(key, "timeout")) {
     if (valint == 0) {
       return ARES_EFORMERR;
     }
     sysconfig->timeout_ms = valint * 1000;
-  } else if (strcmp(key, "retry") == 0 || strcmp(key, "attempts") == 0) {
+  } else if (ares_streq(key, "retry") || ares_streq(key, "attempts")) {
     if (valint == 0) {
       return ARES_EFORMERR;
     }
     sysconfig->tries = valint;
-  } else if (strcmp(key, "rotate") == 0) {
+  } else if (ares_streq(key, "rotate")) {
     sysconfig->rotate = ARES_TRUE;
-  } else if (strcmp(key, "use-vc") == 0 || strcmp(key, "usevc") == 0) {
+  } else if (ares_streq(key, "use-vc") || ares_streq(key, "usevc")) {
     sysconfig->usevc = ARES_TRUE;
   }
 
@@ -590,21 +590,21 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
 
   /* At this point we have a string option and a string value, both trimmed
    * of leading and trailing whitespace.  Lets try to evaluate them */
-  if (strcmp(option, "domain") == 0) {
+  if (ares_streq(option, "domain")) {
     /* Domain is legacy, don't overwrite an existing config set by search */
     if (sysconfig->domains == NULL) {
       status = config_search(sysconfig, value, 1);
     }
-  } else if (strcmp(option, "lookup") == 0 ||
-             strcmp(option, "hostresorder") == 0) {
+  } else if (ares_streq(option, "lookup") ||
+             ares_streq(option, "hostresorder")) {
     ares__buf_tag_rollback(line);
     status = config_lookup(sysconfig, line, " \t");
-  } else if (strcmp(option, "search") == 0) {
+  } else if (ares_streq(option, "search")) {
     status = config_search(sysconfig, value, 0);
-  } else if (strcmp(option, "nameserver") == 0) {
+  } else if (ares_streq(option, "nameserver")) {
     status =
       ares__sconfig_append_fromstr(&sysconfig->sconfig, value, ARES_TRUE);
-  } else if (strcmp(option, "sortlist") == 0) {
+  } else if (ares_streq(option, "sortlist")) {
     /* Ignore all failures except ENOMEM.  If the sysadmin set a bad
      * sortlist, just ignore the sortlist, don't cause an inoperable
      * channel */
@@ -613,7 +613,7 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
     if (status != ARES_ENOMEM) {
       status = ARES_SUCCESS;
     }
-  } else if (strcmp(option, "options") == 0) {
+  } else if (ares_streq(option, "options")) {
     status = ares__sysconfig_set_options(sysconfig, value);
   }
 
@@ -651,7 +651,7 @@ static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
   }
 
   /* Only support "hosts:" */
-  if (strcmp(option, "hosts") != 0) {
+  if (!ares_streq(option, "hosts")) {
     goto done;
   }
 
@@ -698,7 +698,7 @@ static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
   }
 
   /* Only support "hosts=" */
-  if (strcmp(option, "hosts") != 0) {
+  if (!ares_streq(option, "hosts")) {
     goto done;
   }
 

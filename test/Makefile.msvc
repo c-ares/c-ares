@@ -150,7 +150,7 @@ EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
 
 CC_CMD_REL = cl.exe /nologo $(RTLIB) /DNDEBUG /O2 /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_SECURE_NO_WARNINGS
 CC_CMD_DBG = cl.exe /nologo $(RTLIBD) /D_DEBUG /Od /Zi /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_SECURE_NO_WARNINGS /RTCsu
-CC_CFLAGS  = $(CFLAGS) /I. /I../src/lib /I../include /I $(GTEST_ROOT)/include /W3 /EHsc /FD
+CC_CFLAGS  = $(CFLAGS) /I. /I../src/lib /I../src/lib/include /I../include /I $(GTEST_ROOT)/include /W3 /EHsc /FD
 
 RC_CMD_REL = rc.exe /l 0x409 /d "NDEBUG"
 RC_CMD_DBG = rc.exe /l 0x409 /d "_DEBUG"

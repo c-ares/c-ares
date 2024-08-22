@@ -1,6 +1,5 @@
 /* MIT License
  *
- * Copyright (c) 1998 Massachusetts Institute of Technology
  * Copyright (c) The c-ares project and its contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,55 +24,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_private.h"
-#include "ares_strcasecmp.h"
+#ifndef __ARES_MEM_H
+#define __ARES_MEM_H
 
-#ifndef HAVE_STRCASECMP
-int ares_strcasecmp(const char *a, const char *b)
-{
-#  if defined(HAVE_STRCMPI)
-  return strcmpi(a, b);
-#  elif defined(HAVE_STRICMP)
-  return stricmp(a, b);
-#  else
-  size_t i;
+/* Memory management functions */
+CARES_EXTERN void *ares_malloc(size_t size);
+CARES_EXTERN void *ares_realloc(void *ptr, size_t size);
+CARES_EXTERN void  ares_free(void *ptr);
+CARES_EXTERN void *ares_malloc_zero(size_t size);
+CARES_EXTERN void *ares_realloc_zero(void *ptr, size_t orig_size,
+                                     size_t new_size);
 
-  for (i = 0; i < (size_t)-1; i++) {
-    int c1 = ares__tolower(a[i]);
-    int c2 = ares__tolower(b[i]);
-    if (c1 != c2) {
-      return c1 - c2;
-    }
-    if (!c1) {
-      break;
-    }
-  }
-  return 0;
-#  endif
-}
-#endif
-
-#ifndef HAVE_STRNCASECMP
-int ares_strncasecmp(const char *a, const char *b, size_t n)
-{
-#  if defined(HAVE_STRNCMPI)
-  return strncmpi(a, b, n);
-#  elif defined(HAVE_STRNICMP)
-  return strnicmp(a, b, n);
-#  else
-  size_t i;
-
-  for (i = 0; i < n; i++) {
-    int c1 = ares__tolower(a[i]);
-    int c2 = ares__tolower(b[i]);
-    if (c1 != c2) {
-      return c1 - c2;
-    }
-    if (!c1) {
-      break;
-    }
-  }
-  return 0;
-#  endif
-}
 #endif
