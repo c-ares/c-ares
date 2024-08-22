@@ -45,7 +45,7 @@ class NoDNS0x20MockTest
       public ::testing::WithParamInterface<int> {
  public:
   NoDNS0x20MockTest()
-    : MockChannelOptsTest(1, GetParam(), false,
+    : MockChannelOptsTest(1, GetParam(), false, false,
                           FillOptions(&opts_),
                           ARES_OPT_FLAGS) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
@@ -453,7 +453,7 @@ class MockUDPMaxQueriesTest
       public ::testing::WithParamInterface<int> {
  public:
   MockUDPMaxQueriesTest()
-    : MockChannelOptsTest(1, GetParam(), false,
+    : MockChannelOptsTest(1, GetParam(), false, false,
                           FillOptions(&opts_),
                           ARES_OPT_UDP_MAX_QUERIES) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
@@ -500,7 +500,7 @@ class CacheQueriesTest
       public ::testing::WithParamInterface<int> {
  public:
   CacheQueriesTest()
-    : MockChannelOptsTest(1, GetParam(), false,
+    : MockChannelOptsTest(1, GetParam(), false, false,
                           FillOptions(&opts_),
                           ARES_OPT_QUERY_CACHE) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
@@ -665,7 +665,7 @@ class MockExtraOptsTest
       public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   MockExtraOptsTest()
-    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second, false,
                           FillOptions(&opts_),
                           ARES_OPT_SOCK_SNDBUF|ARES_OPT_SOCK_RCVBUF) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
@@ -707,7 +707,7 @@ class MockFlagsChannelOptsTest
       public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   MockFlagsChannelOptsTest(int flags)
-    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second, false,
                           FillOptions(&opts_, flags), ARES_OPT_FLAGS) {}
   static struct ares_options* FillOptions(struct ares_options * opts, int flags) {
     memset(opts, 0, sizeof(struct ares_options));
@@ -816,6 +816,67 @@ TEST_P(MockChannelTest, SearchDomains) {
   ss << result.host_;
   EXPECT_EQ("{'www.third.gov' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
+
+#ifdef HAVE_CONTAINER
+// Issue #852
+class ContainedMockChannelSysConfig
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<std::pair<int, bool>> {
+ public:
+  ContainedMockChannelSysConfig()
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second, true, nullptr, 0) {}
+};
+
+NameContentList files_no_ndots = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n" // Will be replaced
+                       "search example.com example.org\n"
+                       "options edns0 trust-ad\n"}, // ndots:1 is default
+  {"/etc/hosts", "3.4.5.6 ahostname.com\n"},
+  {"/etc/nsswitch.conf", "hosts: files dns\n"}};
+CONTAINED_TEST_P(ContainedMockChannelSysConfig, SysConfigNdotsDefault,
+                 "myhostname", "mydomainname.org", files_no_ndots) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 0x0200, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  return HasFailure();
+}
+
+NameContentList files_ndots0 = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n" // Will be replaced
+                       "search example.com example.org\n"
+                       "options edns0 trust-ad ndots:0\n"}, // ndots:1 is default
+  {"/etc/hosts", "3.4.5.6 ahostname.com\n"},
+  {"/etc/nsswitch.conf", "hosts: files dns\n"}};
+CONTAINED_TEST_P(ContainedMockChannelSysConfig, SysConfigNdots0,
+                 "myhostname", "mydomainname.org", files_ndots0) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www", T_A))
+    .add_answer(new DNSARR("www", 0x0200, {1, 2, 3, 4}));
+  EXPECT_CALL(server_, OnRequest("www", T_A))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www' aliases=[] addrs=[1.2.3.4]}", ss.str());
+  return HasFailure();
+}
+#endif
 
 // Issue #858
 TEST_P(CacheQueriesTest, BlankName) {
@@ -1624,7 +1685,7 @@ class MockMultiServerChannelTest
     public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   MockMultiServerChannelTest(ares_options *opts, int optmask)
-    : MockChannelOptsTest(3, GetParam().first, GetParam().second, opts, optmask) {}
+    : MockChannelOptsTest(3, GetParam().first, GetParam().second, false, opts, optmask) {}
   void CheckExample() {
     HostResult result;
     ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
@@ -1948,6 +2009,10 @@ std::string PrintFamily(const testing::TestParamInfo<int> &info)
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, NoDNS0x20MockTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+
+#ifdef HAVE_CONTAINER
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, ContainedMockChannelSysConfig, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+#endif
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 

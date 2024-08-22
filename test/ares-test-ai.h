@@ -39,7 +39,7 @@ class MockChannelTestAI
     public ::testing::WithParamInterface<std::pair<int, bool>> {
 public:
   MockChannelTestAI()
-    : MockChannelOptsTest(1, GetParam().first, GetParam().second, nullptr, 0)
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second, false, nullptr, 0)
   {
   }
 };
@@ -47,7 +47,7 @@ public:
 class MockUDPChannelTestAI : public MockChannelOptsTest,
                              public ::testing::WithParamInterface<int> {
 public:
-  MockUDPChannelTestAI() : MockChannelOptsTest(1, GetParam(), false, nullptr, 0)
+  MockUDPChannelTestAI() : MockChannelOptsTest(1, GetParam(), false, false, nullptr, 0)
   {
   }
 };
@@ -55,7 +55,7 @@ public:
 class MockTCPChannelTestAI : public MockChannelOptsTest,
                              public ::testing::WithParamInterface<int> {
 public:
-  MockTCPChannelTestAI() : MockChannelOptsTest(1, GetParam(), true, nullptr, 0)
+  MockTCPChannelTestAI() : MockChannelOptsTest(1, GetParam(), true, false, nullptr, 0)
   {
   }
 };
