@@ -586,7 +586,7 @@ ares_status_t ares__conn_flush(ares_conn_t *conn)
       ares__buf_tag_rollback(conn->out_buf);
 
       data = ares__buf_peek(conn->out_buf, &data_len);
-      if (data_len < msg_len + 2) {
+      if (data_len < (size_t)(msg_len + 2)) {
         status = ARES_EFORMERR;
         goto done;
       }
