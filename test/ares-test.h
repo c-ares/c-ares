@@ -764,6 +764,52 @@ int RunInContainer(ContainerFilesystem *fs, const std::string &hostname,
     }                                                                         \
     int ICLASS_NAME(casename, testname)::InnerTestBody()
 
+#define CTP_NAME(test_suite_name) Contained##test_suite_name
+
+#define CONTAINED_TEST_P(test_suite_name, test_name, hostname, domainname, files) \
+  class GTEST_TEST_CLASS_NAME_(test_suite_name, test_name)                     \
+      : public test_suite_name {                                               \
+   public:                                                                     \
+    GTEST_TEST_CLASS_NAME_(test_suite_name, test_name)() {}                    \
+    int InnerTestBody();                                                       \
+    void TestBody()                                                            \
+    {                                                                          \
+      ContainerFilesystem chroot(files, "..");                                 \
+      VoidToIntFn         fn =                                                 \
+        [this](void) -> int {                                                  \
+          ares_reinit(this->channel_);                                         \
+          ares_sleep_time(50);                                                 \
+          return this->InnerTestBody();                                        \
+        };                                                                     \
+      EXPECT_EQ(0, RunInContainer(&chroot, hostname, domainname, fn));         \
+    }                                                                          \
+                                                                               \
+   private:                                                                    \
+    static int AddToRegistry() {                                               \
+      ::testing::UnitTest::GetInstance()                                       \
+          ->parameterized_test_registry()                                      \
+          .GetTestSuitePatternHolder<test_suite_name>(                         \
+              GTEST_STRINGIFY_(test_suite_name),                               \
+              ::testing::internal::CodeLocation(__FILE__, __LINE__))           \
+          ->AddTestPattern(                                                    \
+              GTEST_STRINGIFY_(test_suite_name), GTEST_STRINGIFY_(test_name),  \
+              new ::testing::internal::TestMetaFactory<GTEST_TEST_CLASS_NAME_( \
+                  test_suite_name, test_name)>(),                              \
+              ::testing::internal::CodeLocation(__FILE__, __LINE__));          \
+      return 0;                                                                \
+    }                                                                          \
+    static int gtest_registering_dummy_ GTEST_ATTRIBUTE_UNUSED_;               \
+    GTEST_TEST_CLASS_NAME_(test_suite_name, test_name)                         \
+    (const GTEST_TEST_CLASS_NAME_(test_suite_name, test_name) &) = delete;     \
+    GTEST_TEST_CLASS_NAME_(test_suite_name, test_name) & operator=(            \
+        const GTEST_TEST_CLASS_NAME_(test_suite_name,                          \
+                                     test_name) &) = delete; /* NOLINT */      \
+  };                                                                           \
+  int GTEST_TEST_CLASS_NAME_(test_suite_name,                                  \
+                             test_name)::gtest_registering_dummy_ =            \
+      GTEST_TEST_CLASS_NAME_(test_suite_name, test_name)::AddToRegistry();     \
+  int GTEST_TEST_CLASS_NAME_(test_suite_name, test_name)::InnerTestBody()
+
 #endif
 
 /* Assigns virtual IO functions to a channel. These functions simply call

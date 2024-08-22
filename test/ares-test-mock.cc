@@ -849,6 +849,7 @@ CONTAINED_TEST_P(MockChannelSysConfig, SysConfigNdotsDefault,
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  return HasFailure();
 }
 
 NameContentList files_ndots0 = {
@@ -873,6 +874,7 @@ CONTAINED_TEST_P(MockChannelSysConfig, SysConfigNdots0,
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'www' aliases=[] addrs=[1.2.3.4]}", ss.str());
+  return HasFailure();
 }
 #endif
 

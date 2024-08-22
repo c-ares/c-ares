@@ -32,7 +32,7 @@ jobs:
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
           TEST_DEBUGGER: gdb
         run: |
           ./ci/build.sh
@@ -49,7 +49,7 @@ jobs:
         env:
           BUILD_TYPE: CMAKE
           CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_THREADS=OFF -G Ninja"
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
           TEST_DEBUGGER: gdb
         run: |
           ./ci/build.sh
@@ -58,7 +58,7 @@ jobs:
         env:
           BUILD_TYPE: CMAKE
           CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=OFF -DCARES_SYMBOL_HIDING=ON -G Ninja"
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
           TEST_DEBUGGER: gdb
         run: |
           ./ci/build.sh
@@ -68,7 +68,7 @@ jobs:
           BUILD_TYPE: "ubsan"
           CC: "clang"
           CXX: "clang++"
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
           CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
           CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
           LDFLAGS: "-fsanitize=undefined"
@@ -81,7 +81,7 @@ jobs:
           BUILD_TYPE: "asan"
           CC: "clang"
           CXX: "clang++"
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
           CFLAGS: "-fsanitize=address"
           CXXFLAGS: "-fsanitize=address"
           LDFLAGS: "-fsanitize=address"
@@ -114,7 +114,7 @@ jobs:
       - name: "CMake: No TCP FastOpen"
         env:
           BUILD_TYPE: CMAKE
-          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
           TEST_DEBUGGER: gdb
         run: |
           sudo sysctl -w net.ipv4.tcp_fastopen=0

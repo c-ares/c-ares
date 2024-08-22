@@ -19,7 +19,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_BUILD_TESTS=ON -DCARES_COVERAGE=ON -DCARES_BUILD_TOOLS=OFF -G Ninja ..
+          cmake -DCMAKE_BUILD_TYPE=DEBUG -DCARES_BUILD_CONTAINER_TESTS=ON -DCARES_COVERAGE=ON -DCARES_BUILD_TOOLS=OFF -G Ninja ..
           ninja
       - name: Test
         shell: bash
