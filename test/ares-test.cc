@@ -766,11 +766,13 @@ MockChannelOptsTest::NiceMockServers MockChannelOptsTest::BuildServers(int count
 MockChannelOptsTest::MockChannelOptsTest(int count,
                                          int family,
                                          bool force_tcp,
+                                         bool honor_sysconfig,
                                          struct ares_options* givenopts,
                                          int optmask)
   : servers_(BuildServers(count, family, mock_port)),
     server_(*servers_[0].get()), channel_(nullptr) {
   // Set up channel options.
+  const char *domains[3] = {"first.com", "second.org", "third.gov"};
   struct ares_options opts;
   if (givenopts) {
     memcpy(&opts, givenopts, sizeof(opts));
@@ -778,39 +780,37 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
     memset(&opts, 0, sizeof(opts));
   }
 
-  // Point the library at the first mock server by default (overridden below).
-  opts.udp_port = server_.udpport();
-  optmask |= ARES_OPT_UDP_PORT;
-  opts.tcp_port = server_.tcpport();
-  optmask |= ARES_OPT_TCP_PORT;
+  /* Honor items from resolv.conf except the dns server itself */
+  if (!honor_sysconfig) {
+    if (!(optmask & (ARES_OPT_TIMEOUTMS|ARES_OPT_TIMEOUT))) {
+      // Reduce timeouts significantly to shorten test times.
+      opts.timeout = 250;
+      optmask |= ARES_OPT_TIMEOUTMS;
+    }
+    // If not already overridden, set 3 retries.
+    if (!(optmask & ARES_OPT_TRIES)) {
+      opts.tries = 3;
+      optmask |= ARES_OPT_TRIES;
+    }
 
-  if (!(optmask & (ARES_OPT_TIMEOUTMS|ARES_OPT_TIMEOUT))) {
-    // Reduce timeouts significantly to shorten test times.
-    opts.timeout = 250;
-    optmask |= ARES_OPT_TIMEOUTMS;
+    // If not already overridden, set search domains.
+    if (!(optmask & ARES_OPT_DOMAINS)) {
+      opts.ndomains = 3;
+      opts.domains = (char**)domains;
+      optmask |= ARES_OPT_DOMAINS;
+    }
+
+    /* Tests expect ndots=1 in general, the system config may not default to this
+     * so we don't want to inherit that. */
+    if (!(optmask & ARES_OPT_NDOTS)) {
+      opts.ndots = 1;
+      optmask |= ARES_OPT_NDOTS;
+    }
   }
-  // If not already overridden, set 3 retries.
-  if (!(optmask & ARES_OPT_TRIES)) {
-    opts.tries = 3;
-    optmask |= ARES_OPT_TRIES;
-  }
-  // If not already overridden, set search domains.
-  const char *domains[3] = {"first.com", "second.org", "third.gov"};
-  if (!(optmask & ARES_OPT_DOMAINS)) {
-    opts.ndomains = 3;
-    opts.domains = (char**)domains;
-    optmask |= ARES_OPT_DOMAINS;
-  }
+
   if (force_tcp) {
     opts.flags |= ARES_FLAG_USEVC;
     optmask |= ARES_OPT_FLAGS;
-  }
-
-  /* Tests expect ndots=1 in general, the system config may not default to this
-   * so we don't want to inherit that. */
-  if (!(optmask & ARES_OPT_NDOTS)) {
-    opts.ndots = 1;
-    optmask |= ARES_OPT_NDOTS;
   }
 
   /* Disable the query cache for tests unless explicitly enabled. As of
