@@ -772,6 +772,7 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
   : servers_(BuildServers(count, family, mock_port)),
     server_(*servers_[0].get()), channel_(nullptr) {
   // Set up channel options.
+  const char *domains[3] = {"first.com", "second.org", "third.gov"};
   struct ares_options opts;
   if (givenopts) {
     memcpy(&opts, givenopts, sizeof(opts));
@@ -793,7 +794,6 @@ MockChannelOptsTest::MockChannelOptsTest(int count,
     }
 
     // If not already overridden, set search domains.
-    const char *domains[3] = {"first.com", "second.org", "third.gov"};
     if (!(optmask & ARES_OPT_DOMAINS)) {
       opts.ndomains = 3;
       opts.domains = (char**)domains;
