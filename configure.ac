@@ -153,8 +153,6 @@ _EOF
 ])
 
 AX_CODE_COVERAGE
-AX_CHECK_USER_NAMESPACE
-AX_CHECK_UTS_NAMESPACE
 AC_SYS_LARGEFILE
 
 case $host_os in
@@ -818,6 +816,12 @@ if test "x$build_tests" != "xno" ; then
       build_tests=no
     else
       AC_MSG_ERROR([tests require gmock])
+    fi
+  else
+    PKG_CHECK_MODULES([GMOCK112], [gmock >= 1.12.0], [ have_gmock_v112=yes ], [ have_gmock_v112=no ])
+    if test "x$have_gmock_v112" = "xyes" ; then
+      AX_CHECK_USER_NAMESPACE
+      AX_CHECK_UTS_NAMESPACE
     fi
   fi
 fi
