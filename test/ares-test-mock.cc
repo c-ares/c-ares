@@ -819,11 +819,11 @@ TEST_P(MockChannelTest, SearchDomains) {
 
 #ifdef HAVE_CONTAINER
 // Issue #852
-class MockChannelSysConfig
+class ContainedMockChannelSysConfig
     : public MockChannelOptsTest,
       public ::testing::WithParamInterface<std::pair<int, bool>> {
  public:
-  MockChannelSysConfig()
+  ContainedMockChannelSysConfig()
     : MockChannelOptsTest(1, GetParam().first, GetParam().second, true, nullptr, 0) {}
 };
 
@@ -833,7 +833,7 @@ NameContentList files_no_ndots = {
                        "options edns0 trust-ad\n"}, // ndots:1 is default
   {"/etc/hosts", "3.4.5.6 ahostname.com\n"},
   {"/etc/nsswitch.conf", "hosts: files dns\n"}};
-CONTAINED_TEST_P(MockChannelSysConfig, SysConfigNdotsDefault,
+CONTAINED_TEST_P(ContainedMockChannelSysConfig, SysConfigNdotsDefault,
                  "myhostname", "mydomainname.org", files_no_ndots) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
@@ -858,7 +858,7 @@ NameContentList files_ndots0 = {
                        "options edns0 trust-ad ndots:0\n"}, // ndots:1 is default
   {"/etc/hosts", "3.4.5.6 ahostname.com\n"},
   {"/etc/nsswitch.conf", "hosts: files dns\n"}};
-CONTAINED_TEST_P(MockChannelSysConfig, SysConfigNdots0,
+CONTAINED_TEST_P(ContainedMockChannelSysConfig, SysConfigNdots0,
                  "myhostname", "mydomainname.org", files_ndots0) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
@@ -2315,7 +2315,7 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, NoDNS0x20MockTest, ::testing::ValuesIn
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 #ifdef HAVE_CONTAINER
-INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockChannelSysConfig, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, ContainedMockChannelSysConfig, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 #endif
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families), PrintFamily);

@@ -764,8 +764,6 @@ int RunInContainer(ContainerFilesystem *fs, const std::string &hostname,
     }                                                                         \
     int ICLASS_NAME(casename, testname)::InnerTestBody()
 
-#define CTP_NAME(test_suite_name) Contained##test_suite_name
-
 #define CONTAINED_TEST_P(test_suite_name, test_name, hostname, domainname, files) \
   class GTEST_TEST_CLASS_NAME_(test_suite_name, test_name)                     \
       : public test_suite_name {                                               \
