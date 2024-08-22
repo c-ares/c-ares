@@ -376,7 +376,7 @@ static ares_status_t ares__init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
   }
 
   if (res.ndots >= 0) {
-    sysconfig->ndots = (size_t)res.ndots;
+    sysconfig->ndots = (ares_ssize_t)res.ndots;
   }
 /* Apple does not allow configuration of retry, so this is a static dummy
  * value, ignore */
@@ -465,8 +465,8 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
     channel->nsort    = sysconfig->nsortlist;
   }
 
-  if (!(channel->optmask & ARES_OPT_NDOTS)) {
-    channel->ndots = sysconfig->ndots;
+  if (!(channel->optmask & ARES_OPT_NDOTS) && sysconfig->ndots >= 0) {
+    channel->ndots = (size_t)sysconfig->ndots;
   }
 
   if (sysconfig->tries && !(channel->optmask & ARES_OPT_TRIES)) {
@@ -494,6 +494,7 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
   ares_sysconfig_t sysconfig;
 
   memset(&sysconfig, 0, sizeof(sysconfig));
+  sysconfig.ndots = -1; /* Indicator it isn't set */
 
 #if defined(USE_WINSOCK)
   status = ares__init_sysconfig_windows(&sysconfig);

@@ -311,7 +311,7 @@ private:
 // Test fixture that uses a mock DNS server.
 class MockChannelOptsTest : public LibraryTest {
 public:
-  MockChannelOptsTest(int count, int family, bool force_tcp,
+  MockChannelOptsTest(int count, int family, bool force_tcp, bool honor_sysconfig,
                       struct ares_options *givenopts, int optmask);
   ~MockChannelOptsTest();
 
@@ -341,7 +341,7 @@ class MockChannelTest
     public ::testing::WithParamInterface<std::pair<int, bool>> {
 public:
   MockChannelTest()
-    : MockChannelOptsTest(1, GetParam().first, GetParam().second, nullptr, 0)
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second, false, nullptr, 0)
   {
   }
 };
@@ -349,7 +349,7 @@ public:
 class MockUDPChannelTest : public MockChannelOptsTest,
                            public ::testing::WithParamInterface<int> {
 public:
-  MockUDPChannelTest() : MockChannelOptsTest(1, GetParam(), false, nullptr, 0)
+  MockUDPChannelTest() : MockChannelOptsTest(1, GetParam(), false, false, nullptr, 0)
   {
   }
 };
@@ -357,7 +357,7 @@ public:
 class MockTCPChannelTest : public MockChannelOptsTest,
                            public ::testing::WithParamInterface<int> {
 public:
-  MockTCPChannelTest() : MockChannelOptsTest(1, GetParam(), true, nullptr, 0)
+  MockTCPChannelTest() : MockChannelOptsTest(1, GetParam(), true, false, nullptr, 0)
   {
   }
 };
@@ -367,7 +367,7 @@ public:
   MockEventThreadOptsTest(int count, ares_evsys_t evsys, int family,
                           bool force_tcp, struct ares_options *givenopts,
                           int optmask)
-    : MockChannelOptsTest(count, family, force_tcp,
+    : MockChannelOptsTest(count, family, force_tcp, false,
                           FillOptionsET(&evopts_, givenopts, evsys),
                           optmask | ARES_OPT_EVENT_THREAD)
   {

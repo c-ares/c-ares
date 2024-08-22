@@ -549,7 +549,7 @@ typedef struct {
   char           **domains;
   size_t           ndomains;
   char            *lookups;
-  size_t           ndots;
+  ares_ssize_t     ndots;
   size_t           tries;
   ares_bool_t      rotate;
   size_t           timeout_ms;
