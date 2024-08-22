@@ -263,7 +263,7 @@ class MockExtraOptsTestAI
       public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   MockExtraOptsTestAI()
-    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second, false,
                           FillOptions(&opts_),
                           ARES_OPT_SOCK_SNDBUF|ARES_OPT_SOCK_RCVBUF) {}
   static struct ares_options* FillOptions(struct ares_options * opts) {
@@ -308,7 +308,7 @@ class MockExtraOptsNDotsTestAI
       public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   MockExtraOptsNDotsTestAI(int ndots)
-    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second, false,
                           FillOptions(&opts_, ndots),
                           ARES_OPT_SOCK_SNDBUF|ARES_OPT_SOCK_RCVBUF|ARES_OPT_NDOTS) {}
   static struct ares_options* FillOptions(struct ares_options * opts, int ndots) {
@@ -406,7 +406,7 @@ class MockFlagsChannelOptsTestAI
       public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   MockFlagsChannelOptsTestAI(int flags)
-    : MockChannelOptsTest(1, GetParam().first, GetParam().second,
+    : MockChannelOptsTest(1, GetParam().first, GetParam().second, false,
                           FillOptions(&opts_, flags), ARES_OPT_FLAGS) {}
   static struct ares_options* FillOptions(struct ares_options * opts, int flags) {
     memset(opts, 0, sizeof(struct ares_options));
@@ -701,7 +701,7 @@ class MockMultiServerChannelTestAI
     public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   MockMultiServerChannelTestAI(bool rotate)
-    : MockChannelOptsTest(3, GetParam().first, GetParam().second, nullptr, rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE) {}
+    : MockChannelOptsTest(3, GetParam().first, GetParam().second, false, nullptr, rotate ? ARES_OPT_ROTATE : ARES_OPT_NOROTATE) {}
   void CheckExample() {
     AddrInfoResult result;
     struct ares_addrinfo_hints hints = {};

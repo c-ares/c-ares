@@ -1072,6 +1072,7 @@ ares_status_t ares__init_by_sysconfig(ares_channel_t *channel)
   ares_sysconfig_t sysconfig;
 
   memset(&sysconfig, 0, sizeof(sysconfig));
+  sysconfig.ndots = 1; /* Default value if not otherwise set */
 
 #ifdef _WIN32
   status = ares__init_sysconfig_windows(&sysconfig);
