@@ -776,7 +776,7 @@ int RunInContainer(ContainerFilesystem *fs, const std::string &hostname,
       VoidToIntFn         fn =                                                 \
         [this](void) -> int {                                                  \
           ares_reinit(this->channel_);                                         \
-          ares_sleep_time(50);                                                 \
+          ares_sleep_time(100);                                                \
           return this->InnerTestBody();                                        \
         };                                                                     \
       EXPECT_EQ(0, RunInContainer(&chroot, hostname, domainname, fn));         \
