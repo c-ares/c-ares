@@ -404,6 +404,123 @@ TEST_P(MockExtraOptsNDots0TestAI, SimpleQuery) {
   EXPECT_EQ("{addr=[1.2.3.4]}", ss.str());
 }
 
+
+// Issue #852, systemd-resolved returns SERVFAIL (and possibly REFUSED) on
+// single label domains.  We need to work around this by continuing to go
+// to the next in the search list. See also
+// https://github.com/systemd/systemd/issues/34101
+TEST_P(MockExtraOptsNDots0TestAI, SystemdServFail) {
+  DNSPacket rsp_ndots0;
+  rsp_ndots0.set_response().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("ndots0", T_A));
+  EXPECT_CALL(server_, OnRequest("ndots0", T_A))
+    // Will call until it hits max retries
+    .WillRepeatedly(SetReply(&server_, &rsp_ndots0));
+
+  DNSPacket rsp_ndots0_first;
+  rsp_ndots0_first.set_response().set_aa()
+    .add_question(new DNSQuestion("ndots0.first.com", T_A))
+    .add_answer(new DNSARR("ndots0.first.com", 100, {1, 2, 3, 4}));
+  EXPECT_CALL(server_, OnRequest("ndots0.first.com", T_A))
+    .WillOnce(SetReply(&server_, &rsp_ndots0_first));
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "ndots0", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{addr=[1.2.3.4]}", ss.str());
+}
+TEST_P(MockExtraOptsNDots0TestAI, SystemdServFailSearch) {
+  DNSPacket rsp_ndots0;
+  rsp_ndots0.set_response().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("ndots0", T_A));
+  EXPECT_CALL(server_, OnRequest("ndots0", T_A))
+    // Will call until it hits max retries
+    .WillRepeatedly(SetReply(&server_, &rsp_ndots0));
+
+  DNSPacket rsp_ndots0_first;
+  rsp_ndots0_first.set_response().set_aa()
+    .add_question(new DNSQuestion("ndots0.first.com", T_A))
+    .add_answer(new DNSARR("ndots0.first.com", 100, {1, 2, 3, 4}));
+  EXPECT_CALL(server_, OnRequest("ndots0.first.com", T_A))
+    .WillOnce(SetReply(&server_, &rsp_ndots0_first));
+
+  QueryResult result;
+  ares_dns_record_t *dnsrec = NULL;
+  ares_dns_record_create(&dnsrec, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY, ARES_RCODE_NOERROR);
+  ares_dns_record_query_add(dnsrec, "ndots0", ARES_REC_TYPE_A, ARES_CLASS_IN);
+  ares_search_dnsrec(channel_, dnsrec, QueryCallback, &result);
+  ares_dns_record_destroy(dnsrec);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+
+  // QueryResult doesn't provide an easy way to retrieve the address, just ignore,
+  // success is probably good enough
+}
+TEST_P(MockExtraOptsNDots0TestAI, SystemdRefused) {
+  DNSPacket rsp_ndots0;
+  rsp_ndots0.set_response().set_rcode(REFUSED)
+    .add_question(new DNSQuestion("ndots0", T_A));
+  EXPECT_CALL(server_, OnRequest("ndots0", T_A))
+    // Will call until it hits max retries
+    .WillRepeatedly(SetReply(&server_, &rsp_ndots0));
+
+  DNSPacket rsp_ndots0_first;
+  rsp_ndots0_first.set_response().set_aa()
+    .add_question(new DNSQuestion("ndots0.first.com", T_A))
+    .add_answer(new DNSARR("ndots0.first.com", 100, {1, 2, 3, 4}));
+  EXPECT_CALL(server_, OnRequest("ndots0.first.com", T_A))
+    .WillOnce(SetReply(&server_, &rsp_ndots0_first));
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "ndots0", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{addr=[1.2.3.4]}", ss.str());
+}
+TEST_P(MockExtraOptsNDots0TestAI, SystemdRefusedSearch) {
+  DNSPacket rsp_ndots0;
+  rsp_ndots0.set_response().set_rcode(REFUSED)
+    .add_question(new DNSQuestion("ndots0", T_A));
+  EXPECT_CALL(server_, OnRequest("ndots0", T_A))
+    // Will call until it hits max retries
+    .WillRepeatedly(SetReply(&server_, &rsp_ndots0));
+
+  DNSPacket rsp_ndots0_first;
+  rsp_ndots0_first.set_response().set_aa()
+    .add_question(new DNSQuestion("ndots0.first.com", T_A))
+    .add_answer(new DNSARR("ndots0.first.com", 100, {1, 2, 3, 4}));
+  EXPECT_CALL(server_, OnRequest("ndots0.first.com", T_A))
+    .WillOnce(SetReply(&server_, &rsp_ndots0_first));
+
+  QueryResult result;
+  ares_dns_record_t *dnsrec = NULL;
+  ares_dns_record_create(&dnsrec, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY, ARES_RCODE_NOERROR);
+  ares_dns_record_query_add(dnsrec, "ndots0", ARES_REC_TYPE_A, ARES_CLASS_IN);
+  ares_search_dnsrec(channel_, dnsrec, QueryCallback, &result);
+  ares_dns_record_destroy(dnsrec);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+
+  // QueryResult doesn't provide an easy way to retrieve the address, just ignore,
+  // success is probably good enough
+}
+
+
 class MockFlagsChannelOptsTestAI
     : public MockChannelOptsTest,
       public ::testing::WithParamInterface< std::pair<int, bool> > {
