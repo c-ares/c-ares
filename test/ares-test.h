@@ -770,7 +770,7 @@ int RunInContainer(ContainerFilesystem *fs, const std::string &hostname,
       VoidToIntFn         fn =                                                 \
         [this](void) -> int {                                                  \
           ares_reinit(this->channel_);                                         \
-          std::this_thread::sleep_for(100ms);                                  \
+          std::this_thread::sleep_for(chrono::miliseconds(100));               \
           return this->InnerTestBody();                                        \
         };                                                                     \
       EXPECT_EQ(0, RunInContainer(&chroot, hostname, domainname, fn));         \
