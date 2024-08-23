@@ -53,7 +53,7 @@ static unsigned int ares__htable_generate_seed(ares__htable_t *htable)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
   /* Seed needs to be static for fuzzing */
-  return 2166136261U;
+  return 0;
 #else
   unsigned int seed = 0;
   time_t       t    = time(NULL);
