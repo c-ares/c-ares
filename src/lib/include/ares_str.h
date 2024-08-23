@@ -52,11 +52,6 @@ CARES_EXTERN void          ares__str_trim(char *str);
 CARES_EXTERN unsigned char ares__tolower(unsigned char c);
 CARES_EXTERN ares_bool_t   ares__memeq_ci(const unsigned char *ptr,
                                           const unsigned char *val, size_t len);
-
-CARES_EXTERN ares_bool_t   ares__isspace(int ch);
-CARES_EXTERN ares_bool_t   ares__isprint(int ch);
-CARES_EXTERN ares_bool_t   ares__is_hostnamech(int ch);
-
 CARES_EXTERN ares_bool_t   ares__is_hostname(const char *str);
 
 /*! Validate the string provided is printable.  The length specified must be
@@ -74,17 +69,54 @@ CARES_EXTERN ares_bool_t   ares__str_isprint(const char *str, size_t len);
 
 /* We only care about ASCII rules */
 #define ares__isascii(x) (((unsigned char)x) <= 127)
+
 #define ares__isdigit(x) \
   (((unsigned char)x) >= '0' && ((unsigned char)x) <= '9')
+
 #define ares__isxdigit(x)                                      \
   (ares__isdigit(x) ||                                         \
    (((unsigned char)x) >= 'a' && ((unsigned char)x) <= 'f') || \
    (((unsigned char)x) >= 'A' && ((unsigned char)x) <= 'F'))
+
 #define ares__isupper(x) \
   (((unsigned char)x) >= 'A' && ((unsigned char)x) <= 'Z')
+
 #define ares__islower(x) \
   (((unsigned char)x) >= 'a' && ((unsigned char)x) <= 'z')
+
 #define ares__isalpha(x) (ares__islower(x) || ares__isupper(x))
+
+#define ares__isspace(x) (((unsigned char)(x)) == '\r' || \
+                          ((unsigned char)(x)) == '\t' || \
+                          ((unsigned char)(x)) == ' '  || \
+                          ((unsigned char)(x)) == '\v' || \
+                          ((unsigned char)(x)) == '\f' || \
+                          ((unsigned char)(x)) == '\n')
+
+#define ares__isprint(x) (((unsigned char)(x)) >= 0x20 && \
+                          ((unsigned char)(x)) <= 0x7E)
+
+/* Character set allowed by hostnames.  This is to include the normal
+ * domain name character set plus:
+ *  - underscores which are used in SRV records.
+ *  - Forward slashes such as are used for classless in-addr.arpa
+ *    delegation (CNAMEs)
+ *  - Asterisks may be used for wildcard domains in CNAMEs as seen in the
+ *    real world.
+ * While RFC 2181 section 11 does state not to do validation,
+ * that applies to servers, not clients.  Vulnerabilities have been
+ * reported when this validation is not performed.  Security is more
+ * important than edge-case compatibility (which is probably invalid
+ * anyhow).
+ * [A-Za-z0-9-*._/]
+ */
+#define ares__is_hostnamech(x) (ares__isalpha(x) || ares__isdigit(x) || \
+                                ((unsigned char)(x)) == '-' || \
+                                ((unsigned char)(x)) == '.' || \
+                                ((unsigned char)(x)) == '_' || \
+                                ((unsigned char)(x)) == '/' || \
+                                ((unsigned char)(x)) == '*')
+
 
 /*! Compare two strings (for sorting)
  *
