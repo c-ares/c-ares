@@ -469,8 +469,8 @@ TEST_P(MockExtraOptsNDots0TestAI, SystemdRefused) {
   rsp_ndots0.set_response().set_rcode(REFUSED)
     .add_question(new DNSQuestion("ndots0", T_A));
   EXPECT_CALL(server_, OnRequest("ndots0", T_A))
-    // Refused should not allow retries
-    .WillOnce(SetReply(&server_, &rsp_ndots0));
+    // Will call until it hits max retries
+    .WillRepeatedly(SetReply(&server_, &rsp_ndots0));
 
   DNSPacket rsp_ndots0_first;
   rsp_ndots0_first.set_response().set_aa()
@@ -496,8 +496,8 @@ TEST_P(MockExtraOptsNDots0TestAI, SystemdRefusedSearch) {
   rsp_ndots0.set_response().set_rcode(REFUSED)
     .add_question(new DNSQuestion("ndots0", T_A));
   EXPECT_CALL(server_, OnRequest("ndots0", T_A))
-    // Refused should not allow retries
-    .WillOnce(SetReply(&server_, &rsp_ndots0));
+    // Will call until it hits max retries
+    .WillRepeatedly(SetReply(&server_, &rsp_ndots0));
 
   DNSPacket rsp_ndots0_first;
   rsp_ndots0_first.set_response().set_aa()
