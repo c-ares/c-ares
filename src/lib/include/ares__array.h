@@ -153,6 +153,52 @@ CARES_EXTERN ares_status_t ares__array_insert_last(void         **elem_ptr,
 CARES_EXTERN ares_status_t ares__array_insert_first(void         **elem_ptr,
                                                     ares__array_t *arr);
 
+
+/*! Insert a new array member at the given index and copy the data pointed
+ *  to by the data pointer into the array.  This will copy member_size bytes
+ *  from the provided pointer, this may not be safe for some data types
+ *  that may have a smaller size than the provided member_size which includes
+ *  padding as discussed in ares__array_create().
+ *
+ *  \param[in]  arr      Initialized array object.
+ *  \param[in]  idx      Index in array to place new element, will shift any
+ *                       elements down that exist after this point.
+ *  \param[in]  data_ptr Pointer to data to copy into array.
+ *  \return ARES_SUCCESS on success, ARES_EFORMERR on bad index or null data ptr,
+ *          ARES_ENOMEM on out of memory.
+ */
+CARES_EXTERN ares_status_t ares__array_insertdata_at(ares__array_t *arr,
+                                                     size_t idx,
+                                                     void *data_ptr);
+
+/*! Insert a new array member at the end of the array and copy the data pointed
+ *  to by the data pointer into the array.  This will copy member_size bytes
+ *  from the provided pointer, this may not be safe for some data types
+ *  that may have a smaller size than the provided member_size which includes
+ *  padding as discussed in ares__array_create().
+ *
+ *  \param[in]  arr      Initialized array object.
+ *  \param[in]  data_ptr Pointer to data to copy into array.
+ *  \return ARES_SUCCESS on success, ARES_EFORMERR on bad index or null data ptr,
+ *          ARES_ENOMEM on out of memory.
+ */
+CARES_EXTERN ares_status_t ares__array_insertdata_last(ares__array_t *arr,
+                                                       void *data_ptr);
+
+/*! Insert a new array member at the beginning of the array and copy the data pointed
+ *  to by the data pointer into the array.  This will copy member_size bytes
+ *  from the provided pointer, this may not be safe for some data types
+ *  that may have a smaller size than the provided member_size which includes
+ *  padding as discussed in ares__array_create().
+ *
+ *  \param[in]  arr      Initialized array object.
+ *  \param[in]  data_ptr Pointer to data to copy into array.
+ *  \return ARES_SUCCESS on success, ARES_EFORMERR on bad index or null data ptr,
+ *          ARES_ENOMEM on out of memory.
+ */
+CARES_EXTERN ares_status_t ares__array_insertdata_first(ares__array_t *arr,
+                                                        void *data_ptr);
+
 /*! Fetch a pointer to the given element in the array
  *  \param[in]  array  Initialized array object
  *  \param[in]  idx    Index to fetch
@@ -226,6 +272,7 @@ CARES_EXTERN ares_status_t ares__array_remove_first(ares__array_t *arr);
  *  \return ARES_SUCCESS if removed, ARES_EFORMERR on invalid use
  */
 CARES_EXTERN ares_status_t ares__array_remove_last(ares__array_t *arr);
+
 
 /*! @} */
 
