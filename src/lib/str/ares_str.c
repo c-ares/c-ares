@@ -394,9 +394,10 @@ ares_bool_t ares_streq_max(const char *a, const char *b, size_t n)
   return ares_strncmp(a,b,n) == 0?ARES_TRUE:ARES_FALSE;
 }
 
-void ares_free_array(void **arr, size_t nmembers, void (*freefunc)(void *))
+void ares_free_array(void *arrp, size_t nmembers, void (*freefunc)(void *))
 {
   size_t i;
+  void **arr = arrp;
 
   if (arr == NULL)
     return;

@@ -214,4 +214,16 @@ CARES_EXTERN ares_bool_t ares_strcaseeq(const char *a, const char *b);
 CARES_EXTERN ares_bool_t ares_strcaseeq_max(const char *a, const char *b,
                                             size_t n);
 
+/*! Free a C array, each element in the array will be freed by the provided
+ *  free function.  Both NULL-terminated arrays and known length arrays are
+ *  supported.
+ *
+ *  \param[in] arr      Array to be freed.
+ *  \param[in] nmembers Number of members in the array, or SIZE_MAX for
+ *                      NULL-terminated arrays
+ *  \param[in] freefunc Function to call on each array member (e.g. ares_free)
+ */
+CARES_EXTERN void ares_free_array(void *arr, size_t nmembers,
+                                  void (*freefunc)(void *));
+
 #endif /* __ARES_STR_H */

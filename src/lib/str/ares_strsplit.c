@@ -27,16 +27,7 @@
 
 void ares__strsplit_free(char **elms, size_t num_elm)
 {
-  size_t i;
-
-  if (elms == NULL) {
-    return;
-  }
-
-  for (i = 0; i < num_elm; i++) {
-    ares_free(elms[i]);
-  }
-  ares_free(elms);
+  ares_free_array(elms, num_elm, ares_free);
 }
 
 char **ares__strsplit_duplicate(char **elms, size_t num_elm)
