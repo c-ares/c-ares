@@ -27,6 +27,7 @@
 #define __ARES__BUF_H
 
 #include "ares.h"
+#include "ares__llist.h"
 
 /*! \addtogroup ares__buf Safe Data Builder and buffer
  *
