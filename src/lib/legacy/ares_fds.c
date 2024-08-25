@@ -69,8 +69,7 @@ int ares_fds(const ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
       }
 
       /* TCP only wait on write if we have the flag set */
-      if (conn->flags & ARES_CONN_FLAG_TCP &&
-          conn->state_flags & ARES_CONN_STATE_WRITE) {
+      if (conn->state_flags & ARES_CONN_STATE_WRITE) {
         FD_SET(conn->fd, write_fds);
       }
     }

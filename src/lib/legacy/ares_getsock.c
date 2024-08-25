@@ -71,8 +71,7 @@ int ares_getsock(const ares_channel_t *channel, ares_socket_t *socks,
         bitmap |= ARES_GETSOCK_READABLE(setbits, sockindex);
       }
 
-      if (conn->flags & ARES_CONN_FLAG_TCP &&
-          conn->state_flags & ARES_CONN_STATE_WRITE) {
+      if (conn->state_flags & ARES_CONN_STATE_WRITE) {
         /* then the tcp socket is also writable! */
         bitmap |= ARES_GETSOCK_WRITABLE(setbits, sockindex);
       }
