@@ -892,6 +892,12 @@ done:
   return status;
 }
 
+static void ares__free_split_array(void *arg)
+{
+  void **ptr = arg;
+  ares_free(*ptr);
+}
+
 ares_status_t ares__buf_split_str(ares__buf_t *buf, const unsigned char *delims,
                                   size_t delims_len, ares__buf_split_t flags,
                                   size_t max_sections, char ***strs,
@@ -914,14 +920,14 @@ ares_status_t ares__buf_split_str(ares__buf_t *buf, const unsigned char *delims,
     goto done;
   }
 
-  arr = ares__array_create(sizeof(char *), ares_free);
+  arr = ares__array_create(sizeof(char *), ares__free_split_array);
   if (arr == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
 
   for (node = ares__llist_node_first(list); node != NULL;
-       ares__llist_node_next(node)) {
+       node = ares__llist_node_next(node)) {
     ares__buf_t *lbuf = ares__llist_node_val(node);
     char        *str  = NULL;
 
