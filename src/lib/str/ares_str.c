@@ -394,3 +394,24 @@ ares_bool_t ares_streq_max(const char *a, const char *b, size_t n)
   return ares_strncmp(a,b,n) == 0?ARES_TRUE:ARES_FALSE;
 }
 
+void ares_free_array(void **arr, size_t nmembers, void (*freefunc)(void *))
+{
+  size_t i;
+
+  if (arr == NULL)
+    return;
+
+  if (freefunc != NULL) {
+    if (nmembers == SIZE_MAX) {
+      for (i = 0; arr[i] != NULL; i++) {
+        freefunc(arr[i]);
+      }
+    } else {
+      for (i = 0; i<nmembers; i++) {
+        freefunc(arr[i]);
+      }
+    }
+  }
+
+  ares_free(arr);
+}

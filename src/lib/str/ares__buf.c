@@ -906,6 +906,9 @@ ares_status_t ares__buf_split_str(ares__buf_t *buf, const unsigned char *delims,
     return ARES_EFORMERR;
   }
 
+  *strs  = NULL;
+  *nstrs = 0;
+
   status = ares__buf_split(buf, delims, delims_len, flags, max_sections, &list);
   if (status != ARES_SUCCESS) {
     goto done;
