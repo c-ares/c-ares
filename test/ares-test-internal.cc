@@ -1349,6 +1349,24 @@ TEST_F(LibraryTest, HtableVpvp) {
   ares__htable_vpvp_destroy(h);
 }
 
+TEST_F(LibraryTest, BufSplitStr) {
+  ares__buf_t  *buf   = NULL;
+  char        **strs  = NULL;
+  size_t        nstrs = 0;
+
+  buf = ares__buf_create();
+  ares__buf_append_str(buf, "string1\nstring2 string3\t   \nstring4");
+  ares__buf_split_str(buf, (const unsigned char *)"\n \t", 2, ARES_BUF_SPLIT_TRIM, 0, &strs, &nstrs);
+  ares__buf_destroy(buf);
+
+  EXPECT_EQ(4, nstrs);
+  EXPECT_TRUE(ares_streq(strs[0], "string1"));
+  EXPECT_TRUE(ares_streq(strs[1], "string2"));
+  EXPECT_TRUE(ares_streq(strs[2], "string3"));
+  EXPECT_TRUE(ares_streq(strs[3], "string4"));
+  ares_free_array(strs, nstrs, ares_free);
+}
+
 typedef struct {
   ares_socket_t s;
 } test_htable_asvp_t;

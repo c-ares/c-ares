@@ -553,10 +553,18 @@ ares_status_t ares__buf_fetch_bytes_dup(ares__buf_t *buf, size_t len,
 ares_status_t ares__buf_fetch_str_dup(ares__buf_t *buf, size_t len, char **str)
 {
   size_t               remaining_len;
+  size_t               i;
   const unsigned char *ptr = ares__buf_fetch(buf, &remaining_len);
 
   if (buf == NULL || str == NULL || len == 0 || remaining_len < len) {
     return ARES_EBADRESP;
+  }
+
+  /* Validate string is printable */
+  for (i = 0; i < len; i++) {
+    if (!ares__isprint(ptr[i])) {
+      return ARES_EBADSTR;
+    }
   }
 
   *str = ares_malloc(len + 1);
@@ -881,6 +889,67 @@ done:
     *list = NULL;
   }
 
+  return status;
+}
+
+static void ares__free_split_array(void *arg)
+{
+  void **ptr = arg;
+  ares_free(*ptr);
+}
+
+ares_status_t ares__buf_split_str(ares__buf_t *buf, const unsigned char *delims,
+                                  size_t delims_len, ares__buf_split_t flags,
+                                  size_t max_sections, char ***strs,
+                                  size_t *nstrs)
+{
+  ares_status_t       status;
+  ares__llist_t      *list = NULL;
+  ares__llist_node_t *node;
+  ares__array_t      *arr  = NULL;
+
+  if (strs == NULL || nstrs == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *strs  = NULL;
+  *nstrs = 0;
+
+  status = ares__buf_split(buf, delims, delims_len, flags, max_sections, &list);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  arr = ares__array_create(sizeof(char *), ares__free_split_array);
+  if (arr == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  for (node = ares__llist_node_first(list); node != NULL;
+       node = ares__llist_node_next(node)) {
+    ares__buf_t *lbuf = ares__llist_node_val(node);
+    char        *str  = NULL;
+
+    status = ares__buf_fetch_str_dup(lbuf, ares__buf_len(lbuf), &str);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    status = ares__array_insertdata_last(arr, &str);
+    if (status != ARES_SUCCESS) {
+      ares_free(str);
+      goto done;
+    }
+  }
+
+done:
+  ares__llist_destroy(list);
+  if (status == ARES_SUCCESS) {
+    *strs = ares__array_finish(arr, nstrs);
+  } else {
+    ares__array_destroy(arr);
+  }
   return status;
 }
 
