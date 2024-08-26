@@ -18,6 +18,8 @@ information, where \fINAME\fR is a valid DNS name (e.g. www.example.com,
 1.2.3.10.in-addr.arpa).
 .PP
 This utility comes with the \fBc\-ares\fR asynchronous resolver library.
+.PP
+It is possible to specify default arguments for \fBadig\fR via \fB${XDG_CONFIG_HOME}/adigrc\fR.
 .SH OPTIONS
 .TP
 \fB\-c\fR class
@@ -57,6 +59,10 @@ Connect to the specified TCP port of DNS server.
 .TP
 \fB\-U\fR port
 Connect to the specified UDP port of DNS server.
+
+.SH FILES
+
+${XDG_CONFIG_HOME}/adigrc
 
 .SH "REPORTING BUGS"
 Report bugs to the c-ares mailing list:
