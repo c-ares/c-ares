@@ -50,6 +50,12 @@
 #include "ares_mem.h"
 #include "ares_str.h"
 
+#include "limits.h"
+
+#ifndef PATH_MAX
+#  define PATH_MAX 1024
+#endif
+
 typedef struct {
   ares_bool_t         is_help;
   struct ares_options options;
@@ -258,19 +264,18 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
 
   if (!is_rcfile) {
     config->args_processed = state.optind;
-  }
-  if (config->args_processed >= argc) {
-    snprintf(config->error, sizeof(config->error), "missing query name");
-    return ARES_FALSE;
+    if (config->args_processed >= argc) {
+      snprintf(config->error, sizeof(config->error), "missing query name");
+      return ARES_FALSE;
+    }
   }
   return ARES_TRUE;
 }
 
 static ares_bool_t read_rcfile(adig_config_t *config)
 {
-  char         configdir[128];
-  unsigned int cdlen  = 0;
-  unsigned int cdsize = sizeof(configdir);
+  char         configdir[PATH_MAX];
+  unsigned int cdlen = 0;
 
 #if !defined(WIN32)
 #  if !defined(__APPLE__)
@@ -279,9 +284,8 @@ static ares_bool_t read_rcfile(adig_config_t *config)
   char *homedir;
 #endif
 
-  char          rcfile[128];
+  char          rcfile[PATH_MAX];
   unsigned int  rclen;
-  unsigned int  rcsize = sizeof(rcfile);
 
   size_t        rcargc;
   char        **rcargv;
@@ -289,14 +293,15 @@ static ares_bool_t read_rcfile(adig_config_t *config)
   ares_status_t rcstatus;
 
 #if defined(WIN32)
-  cdlen = (unsigned int)snprintf(configdir, cdsize, "%s/%s", getenv("APPDATA"),
-                                 "c-ares");
+  cdlen = (unsigned int)snprintf(configdir, sizeof(configdir), "%s/%s",
+                                 getenv("APPDATA"), "c-ares");
 
 #elif defined(__APPLE__)
   homedir = getenv("HOME");
   if (homedir != NULL) {
-    cdlen = (unsigned int)snprintf(configdir, cdsize, "%s/%s/%s/%s", homedir,
-                                   "Library", "Application Support", "c-ares");
+    cdlen = (unsigned int)snprintf(configdir, sizeof(configdir), "%s/%s/%s/%s",
+                                   homedir, "Library", "Application Support",
+                                   "c-ares");
   }
 
 #else
@@ -305,26 +310,28 @@ static ares_bool_t read_rcfile(adig_config_t *config)
   if (configdir_xdg == NULL) {
     homedir = getenv("HOME");
     if (homedir != NULL) {
-      cdlen =
-        (unsigned int)snprintf(configdir, cdsize, "%s/%s", homedir, ".config");
+      cdlen = (unsigned int)snprintf(configdir, sizeof(configdir), "%s/%s",
+                                     homedir, ".config");
     }
   } else {
-    cdlen = (unsigned int)snprintf(configdir, cdsize, "%s", configdir_xdg);
+    cdlen =
+      (unsigned int)snprintf(configdir, sizeof(configdir), "%s", configdir_xdg);
   }
 
 #endif
 
   DEBUGF(fprintf(stderr, "read_cmdline() configdir: %s\n", configdir));
 
-  if (cdlen == 0 && cdlen > cdsize) {
+  if (cdlen == 0 || cdlen > sizeof(configdir)) {
     DEBUGF(
       fprintf(stderr, "read_cmdline() skipping rcfile parsing on directory\n"));
     return ARES_TRUE;
   }
 
-  rclen = (unsigned int)snprintf(rcfile, rcsize, "%s/adigrc", configdir);
+  rclen =
+    (unsigned int)snprintf(rcfile, sizeof(rcfile), "%s/adigrc", configdir);
 
-  if (rclen > rcsize) {
+  if (rclen > sizeof(rcfile)) {
     DEBUGF(fprintf(stderr, "read_cmdline() skipping rcfile parsing on file\n"));
     return ARES_TRUE;
   }
