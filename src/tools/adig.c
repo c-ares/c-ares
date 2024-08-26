@@ -43,7 +43,10 @@
 #endif
 
 #include "ares.h"
+#include "ares__array.h"
+#include "ares__buf.h"
 #include "ares_dns.h"
+#include "ares_private.h"
 #include "ares_str.h"
 
 #if defined(_WIN32)
@@ -141,20 +144,6 @@ static void print_help(void)
     "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
 }
 
-static int split_rcline(char *rcline, char **rcargv, int len) {
-  int   rcargc;
-  char *last = NULL;
-
-  for (rcargc = 1, rcargv[rcargc] = strtok_r(rcline, " \n", &last);
-    rcargc < len && rcargv[rcargc];
-    rcargv[++rcargc] = strtok_r(NULL, " \n", &last))
-  {
-    DEBUGF(fprintf(stderr, "split_rcline() argc: %d, argv: %s\n", rcargc, rcargv[rcargc]));
-  }
-
-  return (rcargc);
-}
-
 static ares_bool_t read_cmdline(int argc, const char * const *argv,
                                 adig_config_t *config, ares_bool_t is_rcfile)
 {
@@ -169,7 +158,9 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
   ares_getopt_init(&state, argc, argv);
   state.opterr = 0;
 
-  if (!is_rcfile) {
+  if (is_rcfile) {
+    state.optind = 0;
+  } else {
 
 #if defined(WIN32)
     cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s", getenv("APPDATA"), "c-ares");
@@ -199,25 +190,26 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
 
     if (cdlen != 0 && cdlen < cdsize) {
       char            rcfile[256];
-      static FILE    *rcdata = NULL;
-      char            rcline[256];
 
       unsigned int    rclen;
       unsigned int    rcsize = sizeof(rcfile);
-      int             rcargc;
-      char           *rcargv[64];
+
+      size_t          rcargc;
+      char          **rcargv;
+      ares__buf_t    *rcbuf;
 
       rclen = (unsigned int) snprintf(rcfile, rcsize, "%s/adigrc", configdir);
       if (rclen < rcsize) {
-        rcdata = fopen(rcfile, "r");
+        rcbuf = ares__buf_create();
+        if (ares__buf_load_file(rcfile, rcbuf) == ARES_SUCCESS) {
+          ares__buf_split_str(rcbuf, (const unsigned char *)"\n ", 2, ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
+          ares__buf_destroy(rcbuf);
 
-        if (rcdata != NULL) {
-          while (fgets(rcline, sizeof(rcline), rcdata) != 0) {
-            rcargc = split_rcline(rcline, rcargv, 62);
-            read_cmdline(rcargc, (const char * const *)rcargv, config, ARES_TRUE);
-          }
+          read_cmdline((int)rcargc, (const char * const *)rcargv, config, ARES_TRUE);
 
-          fclose(rcdata);
+          ares_free_array(rcargv, rcargc, ares_free);
+        } else {
+          DEBUGF(fprintf(stderr, "read_cmdline() failed to load rcfile"));
         }
       }
     }
