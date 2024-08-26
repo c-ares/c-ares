@@ -4,61 +4,44 @@
 .\"
 .TH ARES_PROCESS 3 "25 July 1998"
 .SH NAME
-ares_process \- Process events for name resolution
+ares_process_fd, ares_process \- Process events for name resolution
 .SH SYNOPSIS
 .nf
 #include <ares.h>
+
+void ares_process_fd(ares_channel_t *\fIchannel\fP,
+                     ares_socket_t \fIread_fd\fP,
+                     ares_socket_t \fIwrite_fd\fP)
 
 void ares_process(ares_channel_t *\fIchannel\fP,
                   fd_set *\fIread_fds\fP,
                   fd_set *\fIwrite_fds\fP)
 
-void ares_process_fd(ares_channel_t *\fIchannel\fP,
-                     ares_socket_t \fIread_fd\fP,
-                     ares_socket_t \fIwrite_fd\fP)
 .fi
 .SH DESCRIPTION
-The \fBares_process(3)\fP function handles input/output events and timeouts
+The \fBares_process_fd(3)\fP function handles input/output events and timeouts
 associated with queries pending on the name service channel identified by
-.IR channel .
-The file descriptor sets pointed to by \fIread_fds\fP and \fIwrite_fds\fP
-should have file descriptors set in them according to whether the file
-descriptors specified by \fIares_fds(3)\fP are ready for reading and writing.
-(The easiest way to determine this information is to invoke \fBselect(3)\fP
-with a timeout no greater than the timeout given by \fIares_timeout(3)\fP).
+\fIchannel\fP. The file descriptor passed in \fIread_fd\fP and \fIwrite_fd\fP
+indicate if the file descriptor has been notified of a read event or write
+event, respectively.  If a notification has not occurred, use
+\fIARES_SOCKET_BAD\fP.
 
-The \fBares_process(3)\fP function will invoke callbacks for pending queries
-if they complete successfully or fail.
+This function is typically used with the \fIARES_OPT_SOCK_STATE_CB\fP option.
 
-\fBares_process_fd(3)\fP works the same way but acts and operates only on the
-specific file descriptors (sockets) you pass in to the function. Use
-ARES_SOCKET_BAD for "no action". This function is provided to allow users of
-c-ares to avoid \fIselect(3)\fP in their applications and within c-ares.
+\fBares_timeout(3)\fP should be used to retrieve the desired timeout, and when
+the timeout expires, the integrator must call \fBares_process_fd(3)\fP with
+both sockets set to \fIARES_SOCKET_BAD\fP.  There is no need to do this if
+events are also delivered for any file descriptors as timeout processing
+will automatically be handled by any call to \fBares_process_fd(3)\fP.
 
-To only process possible timeout conditions without a socket event occurring,
-one may pass NULL as the values for both \fIread_fds\fP and \fIwrite_fds\fP for
-\fBares_process(3)\fP, or ARES_SOCKET_BAD for both \fIread_fd\fP and
-\fIwrite_fd\fP for \fBares_process_fd(3)\fP.
-.SH EXAMPLE
-The following code fragment waits for all pending queries on a channel
-to complete:
+The \fBares_process(3)\fP function works in the same manner, except it works
+on \fIfd_sets\fP as is used by \fBselect(3)\fP and retrieved by
+\fBares_fds(3)\fP.  This method is deprecated and should not be used in modern
+applications due to known limitations to the \fBselect(3)\fP implementation.
 
-.nf
-int nfds, count;
-fd_set readers, writers;
-struct timeval tv, *tvp;
 
-while (1) {
-  FD_ZERO(&readers);
-  FD_ZERO(&writers);
-  nfds = ares_fds(channel, &readers, &writers);
-  if (nfds == 0)
-    break;
-  tvp = ares_timeout(channel, NULL, &tv);
-  count = select(nfds, &readers, &writers, NULL, tvp);
-  ares_process(channel, &readers, &writers);
-}
-.fi
 .SH SEE ALSO
 .BR ares_fds (3),
-.BR ares_timeout (3)
+.BR ares_timeout (3),
+.BR ares_init_options (3)
+with \fIARES_OPT_EVENT_THREAD\fP or \fIARES_OPT_SOCK_STATE_CB\fP
