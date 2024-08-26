@@ -268,11 +268,16 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
 
 static ares_bool_t read_rcfile(adig_config_t *config)
 {
-  char          configdir[128];
-  char         *configdir_xdg;
-  unsigned int  cdlen  = 0;
-  unsigned int  cdsize = sizeof(configdir);
-  char         *homedir;
+  char         configdir[128];
+  unsigned int cdlen  = 0;
+  unsigned int cdsize = sizeof(configdir);
+
+#if !defined(WIN32)
+#  if !defined(__APPLE__)
+  char *configdir_xdg;
+#  endif
+  char *homedir;
+#endif
 
   char          rcfile[128];
   unsigned int  rclen;
