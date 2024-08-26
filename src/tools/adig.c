@@ -149,70 +149,12 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
 {
   ares_getopt_state_t  state;
   int                  c;
-  char                 configdir[256];
-  char                *configdir_xdg;
-  unsigned int         cdlen = 0;
-  unsigned int         cdsize = sizeof(configdir);
-  char                *homedir;
 
   ares_getopt_init(&state, argc, argv);
   state.opterr = 0;
 
   if (is_rcfile) {
     state.optind = 0;
-  } else {
-
-#if defined(WIN32)
-    cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s", getenv("APPDATA"), "c-ares");
-
-#elif defined(__APPLE__)
-    homedir = getenv("HOME");
-    if (homedir != NULL) {
-      cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s/%s/%s", homedir, "Library", "Application Support", "c-ares");
-    }
-
-#else
-    configdir_xdg = getenv("XDG_CONFIG_HOME");
-
-    if (configdir_xdg == NULL) {
-      homedir = getenv("HOME");
-      if (homedir != NULL) {
-        cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s", homedir, ".config");
-      }
-    }
-    else {
-      cdlen = (unsigned int) snprintf(configdir, cdsize, "%s", configdir_xdg);
-    }
-
-#endif
-
-    DEBUGF(fprintf(stderr, "read_cmdline() configdir: %s\n", configdir));
-
-    if (cdlen != 0 && cdlen < cdsize) {
-      char            rcfile[256];
-
-      unsigned int    rclen;
-      unsigned int    rcsize = sizeof(rcfile);
-
-      size_t          rcargc;
-      char          **rcargv;
-      ares__buf_t    *rcbuf;
-
-      rclen = (unsigned int) snprintf(rcfile, rcsize, "%s/adigrc", configdir);
-      if (rclen < rcsize) {
-        rcbuf = ares__buf_create();
-        if (ares__buf_load_file(rcfile, rcbuf) == ARES_SUCCESS) {
-          ares__buf_split_str(rcbuf, (const unsigned char *)"\n ", 2, ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
-          ares__buf_destroy(rcbuf);
-
-          read_cmdline((int)rcargc, (const char * const *)rcargv, config, ARES_TRUE);
-
-          ares_free_array(rcargv, rcargc, ares_free);
-        } else {
-          DEBUGF(fprintf(stderr, "read_cmdline() failed to load rcfile"));
-        }
-      }
-    }
   }
 
   while ((c = ares_getopt(&state, "dh?f:s:c:t:T:U:")) != -1) {
@@ -317,6 +259,80 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
     snprintf(config->error, sizeof(config->error), "missing query name");
     return ARES_FALSE;
   }
+  return ARES_TRUE;
+}
+
+static ares_bool_t read_rcfile(adig_config_t *config)
+{
+  char                 configdir[256];
+  char                *configdir_xdg;
+  unsigned int         cdlen = 0;
+  unsigned int         cdsize = sizeof(configdir);
+  char                *homedir;
+
+#if defined(WIN32)
+  cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s", getenv("APPDATA"), "c-ares");
+
+#elif defined(__APPLE__)
+  homedir = getenv("HOME");
+  if (homedir != NULL) {
+    cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s/%s/%s", homedir, "Library", "Application Support", "c-ares");
+  }
+
+#else
+  configdir_xdg = getenv("XDG_CONFIG_HOME");
+
+  if (configdir_xdg == NULL) {
+    homedir = getenv("HOME");
+    if (homedir != NULL) {
+      cdlen = (unsigned int) snprintf(configdir, cdsize, "%s/%s", homedir, ".config");
+    }
+  }
+  else {
+    cdlen = (unsigned int) snprintf(configdir, cdsize, "%s", configdir_xdg);
+  }
+
+#endif
+
+  DEBUGF(fprintf(stderr, "read_cmdline() configdir: %s\n", configdir));
+
+  if (cdlen != 0 && cdlen < cdsize) {
+    char            rcfile[256];
+
+    unsigned int    rclen;
+    unsigned int    rcsize = sizeof(rcfile);
+
+    size_t          rcargc;
+    char          **rcargv;
+    ares__buf_t    *rcbuf;
+    ares_status_t   rcstatus;
+
+    rclen = (unsigned int) snprintf(rcfile, rcsize, "%s/adigrc", configdir);
+    if (rclen < rcsize) {
+      rcbuf = ares__buf_create();
+      if (ares__buf_load_file(rcfile, rcbuf) == ARES_SUCCESS) {
+        rcstatus = ares__buf_split_str(rcbuf, (const unsigned char *)"\n ", 2, ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
+        ares__buf_destroy(rcbuf);
+
+        if (rcstatus == ARES_SUCCESS) {
+          read_cmdline((int)rcargc, (const char * const *)rcargv, config, ARES_TRUE);
+
+        } else {
+          snprintf(config->error, sizeof(config->error), "rcfile at %s is invalid: %s", rcfile, ares_strerror(rcstatus));
+        }
+
+        ares_free_array(rcargv, rcargc, ares_free);
+
+        if (rcstatus != ARES_SUCCESS) {
+          return ARES_FALSE;
+        }
+
+      } else {
+        DEBUGF(fprintf(stderr, "read_cmdline() failed to load rcfile"));
+      }
+    }
+  }
+
   return ARES_TRUE;
 }
 
@@ -1002,6 +1018,9 @@ int main(int argc, char **argv)
   memset(&config, 0, sizeof(config));
   config.qclass = ARES_CLASS_IN;
   config.qtype  = ARES_REC_TYPE_A;
+  if (!read_rcfile(&config)) {
+    fprintf(stderr, "\n** ERROR: %s\n", config.error);
+  }
   if (!read_cmdline(argc, (const char * const *)argv, &config, ARES_FALSE)) {
     printf("\n** ERROR: %s\n\n", config.error);
     print_help();
