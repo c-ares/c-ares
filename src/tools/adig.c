@@ -328,7 +328,6 @@ static ares_bool_t read_rcfile(adig_config_t *config)
   if (ares__buf_load_file(rcfile, rcbuf) == ARES_SUCCESS) {
     rcstatus = ares__buf_split_str(rcbuf, (const unsigned char *)"\n ", 2,
                                    ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
-    ares__buf_destroy(rcbuf);
 
     if (rcstatus == ARES_SUCCESS) {
       read_cmdline((int)rcargc, (const char * const *)rcargv, config,
@@ -342,12 +341,14 @@ static ares_bool_t read_rcfile(adig_config_t *config)
     ares_free_array(rcargv, rcargc, ares_free);
 
     if (rcstatus != ARES_SUCCESS) {
+      ares__buf_destroy(rcbuf);
       return ARES_FALSE;
     }
 
   } else {
     DEBUGF(fprintf(stderr, "read_cmdline() failed to load rcfile"));
   }
+  ares__buf_destroy(rcbuf);
 
   return ARES_TRUE;
 }
