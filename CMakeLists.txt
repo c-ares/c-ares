@@ -688,7 +688,6 @@ IF (HAVE_ARPA_NAMESER_COMPAT_H)
 	SET (CARES_HAVE_ARPA_NAMESER_COMPAT_H 1)
 ENDIF()
 
-
 # Coverage
 IF (CARES_COVERAGE)
 	# set compiler flags
@@ -708,6 +707,15 @@ IF (CARES_COVERAGE)
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 ENDIF()
+
+IF (MSVC)
+	# AppVeyor reports issues like "fatal error C1041: cannot open program database" randomly.
+	# The /FS flag is supposed to correct this on highly parallel builds like performed when
+	# using Ninja, but it looks like CMake already adds this.  Maybe appending it at the
+	# end will work as maybe some prior flag is counteracting its effectiveness.
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+ENDIF ()
 
 # TRANSFORM_MAKEFILE_INC
 #
