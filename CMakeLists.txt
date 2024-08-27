@@ -708,15 +708,6 @@ IF (CARES_COVERAGE)
 	)
 ENDIF()
 
-IF (MSVC)
-	# AppVeyor reports issues like "fatal error C1041: cannot open program database" randomly.
-	# The /FS flag is supposed to correct this on highly parallel builds like performed when
-	# using Ninja, but it looks like CMake already adds this.  Maybe appending it at the
-	# end will work as maybe some prior flag is counteracting its effectiveness.
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
-ENDIF ()
-
 # TRANSFORM_MAKEFILE_INC
 #
 # This function consumes the "Makefile.inc" autotools file, and converts it into
@@ -763,9 +754,6 @@ IF (CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS)
 	ADD_SUBDIRECTORY (test)
 ENDIF ()
 
-
-
-
 # Export targets
 IF (CARES_INSTALL)
 	SET (CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
@@ -788,7 +776,6 @@ IF (CARES_INSTALL)
 	CONFIGURE_FILE("libcares.pc.cmake" "libcares.pc" @ONLY)
 	INSTALL (FILES "${CMAKE_CURRENT_BINARY_DIR}/libcares.pc" COMPONENT Devel DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 ENDIF ()
-
 
 # Legacy chain-building variables (provided for compatibility with old code).
 # Don't use these, external code should be updated to refer to the aliases directly (e.g., Cares::cares).

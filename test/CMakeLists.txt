@@ -55,22 +55,40 @@ target_compile_definitions(arestest PRIVATE CARES_NO_DEPRECATED)
 IF (CARES_BUILD_CONTAINER_TESTS)
   target_compile_definitions(arestest PRIVATE HAVE_USER_NAMESPACE HAVE_UTS_NAMESPACE)
 ENDIF ()
+# Avoid "fatal error C1041: cannot open program database" due to multiple
+# targets trying to use the same PDB.  /FS does NOT resolve this issue.
+set_target_properties(arestest PROPERTIES COMPILE_PDB_NAME arestest.pdb)
 
 add_executable(aresfuzz ${FUZZSOURCES})
 target_compile_definitions(aresfuzz PRIVATE CARES_NO_DEPRECATED)
 target_link_libraries(aresfuzz PRIVATE caresinternal)
+# Avoid "fatal error C1041: cannot open program database" due to multiple
+# targets trying to use the same PDB.  /FS does NOT resolve this issue.
+set_target_properties(aresfuzz PROPERTIES COMPILE_PDB_NAME aresfuzz.pdb)
 
 add_executable(aresfuzzname ${FUZZNAMESOURCES})
 target_compile_definitions(aresfuzzname PRIVATE CARES_NO_DEPRECATED)
 target_link_libraries(aresfuzzname PRIVATE caresinternal)
+# Avoid "fatal error C1041: cannot open program database" due to multiple
+# targets trying to use the same PDB.  /FS does NOT resolve this issue.
+set_target_properties(aresfuzzname PROPERTIES COMPILE_PDB_NAME aresfuzzname.pdb)
 
 add_executable(dnsdump ${DUMPSOURCES})
 target_compile_definitions(dnsdump PRIVATE CARES_NO_DEPRECATED)
 target_link_libraries(dnsdump PRIVATE caresinternal)
+# Avoid "fatal error C1041: cannot open program database" due to multiple
+# targets trying to use the same PDB.  /FS does NOT resolve this issue.
+set_target_properties(dnsdump PROPERTIES COMPILE_PDB_NAME dnsdump.pdb)
 
 add_executable(ares_queryloop ${LOOPSOURCES})
 target_compile_definitions(ares_queryloop PRIVATE CARES_NO_DEPRECATED)
 target_link_libraries(ares_queryloop PRIVATE caresinternal)
+# Avoid "fatal error C1041: cannot open program database" due to multiple
+# targets trying to use the same PDB.  /FS does NOT resolve this issue.
+set_target_properties(ares_queryloop PROPERTIES COMPILE_PDB_NAME ares_queryloop.pdb)
+
+
+
 
 # register tests
 
