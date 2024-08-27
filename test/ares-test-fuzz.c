@@ -29,7 +29,22 @@
 
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
-/* Entrypoint for Clang's libfuzzer */
+#ifdef USE_LEGACY_PARSERS
+
+/* This implementation calls the legacy c-ares parsers, which historically
+ * all used different logic and parsing.  As of c-ares 1.21.0 these are
+ * simply wrappers around a single parser, and simply convert the parsed
+ * DNS response into the data structures the legacy parsers used which is a
+ * small amount of code and not likely going to vary based on the input data.
+ *
+ * Instead, these days, it makes more sense to test the new parser directly
+ * instead of calling it 10 or 11 times with the same input data to speed up
+ * the number of iterations per second the fuzzer can perform.
+ *
+ * We are keeping this legacy fuzzer test for historic reasons or if someone
+ * finds them of use.
+ */
+
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size)
 {
   /* Feed the data into each of the ares_parse_*_reply functions. */
@@ -106,3 +121,25 @@ int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size)
 
   return 0;
 }
+
+#else
+
+int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size)
+{
+  ares_dns_record_t *dnsrec = NULL;
+
+  /* There is never a reason to have a size > 65535, it is immediately
+   * rejected by the parser */
+  if (size > 65535) {
+    return -1;
+  }
+
+  ares_dns_parse(data, size, 0, &dnsrec);
+  if (dnsrec) {
+    ares_dns_record_destroy(dnsrec);
+  }
+
+  return 0;
+}
+
+#endif
