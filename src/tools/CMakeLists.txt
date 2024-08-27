@@ -26,6 +26,11 @@ IF (CARES_BUILD_TOOLS)
 
 	TARGET_COMPILE_DEFINITIONS (ahost PRIVATE HAVE_CONFIG_H=1 CARES_NO_DEPRECATED)
 	TARGET_LINK_LIBRARIES (ahost PRIVATE ${PROJECT_NAME})
+
+	# Avoid "fatal error C1041: cannot open program database" due to multiple
+	# targets trying to use the same PDB.  /FS does NOT resolve this issue.
+	SET_TARGET_PROPERTIES(ahost PROPERTIES COMPILE_PDB_NAME ahost.pdb)
+
 	IF (CARES_INSTALL)
 		INSTALL (TARGETS ahost COMPONENT Tools ${TARGETS_INST_DEST})
 	ENDIF ()
@@ -55,6 +60,11 @@ IF (CARES_BUILD_TOOLS)
 
 	TARGET_COMPILE_DEFINITIONS (adig PRIVATE HAVE_CONFIG_H=1 CARES_NO_DEPRECATED)
 	TARGET_LINK_LIBRARIES (adig PRIVATE ${PROJECT_NAME})
+
+	# Avoid "fatal error C1041: cannot open program database" due to multiple
+	# targets trying to use the same PDB.  /FS does NOT resolve this issue.
+	SET_TARGET_PROPERTIES(adig PROPERTIES COMPILE_PDB_NAME adig.pdb)
+
 	IF (CARES_INSTALL)
 		INSTALL (TARGETS adig COMPONENT Tools ${TARGETS_INST_DEST})
 	ENDIF ()
