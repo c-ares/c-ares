@@ -111,7 +111,7 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
   return is_query ? ARES_TRUE : ARES_FALSE;
 }
 
-ares_bool_t ares_dns_rec_type_allow_name_compression(ares_dns_rec_type_t type)
+ares_bool_t ares_dns_rec_allow_name_comp(ares_dns_rec_type_t type)
 {
   /* Only record types defined in RFC1035 allow name compression within the
    * RDATA.  Otherwise nameservers that don't understand an RR may not be

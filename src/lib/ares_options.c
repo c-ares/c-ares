@@ -245,7 +245,7 @@ static ares_status_t ares__init_options_servers(ares_channel_t       *channel,
   ares__llist_t *slist = NULL;
   ares_status_t  status;
 
-  status = ares_in_addr_to_server_config_llist(servers, nservers, &slist);
+  status = ares_in_addr_to_sconfig_llist(servers, nservers, &slist);
   if (status != ARES_SUCCESS) {
     return status; /* LCOV_EXCL_LINE: OutOfMemory */
   }

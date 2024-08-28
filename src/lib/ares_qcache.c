@@ -412,8 +412,8 @@ ares_status_t ares_qcache_fetch(ares_channel_t           *channel,
     goto done;
   }
 
-  ares_dns_record_write_ttl_decrement(
-    entry->dnsrec, (unsigned int)(now->sec - entry->insert_ts));
+  ares_dns_record_ttl_decrement(entry->dnsrec,
+                                (unsigned int)(now->sec - entry->insert_ts));
 
   *dnsrec_resp = entry->dnsrec;
 

@@ -45,9 +45,8 @@ size_t        ares__dns_multistring_cnt(const ares__dns_multistring_t *strs);
 const unsigned char *
   ares__dns_multistring_get(const ares__dns_multistring_t *strs, size_t idx,
                             size_t *len);
-const unsigned char             *
-  ares__dns_multistring_get_combined(ares__dns_multistring_t *strs,
-                                                 size_t                  *len);
+const unsigned char *
+  ares__dns_multistring_combined(ares__dns_multistring_t *strs, size_t *len);
 
 /*! Parse an array of character strings as defined in RFC1035, as binary,
  *  however, for convenience this does guarantee a NULL terminator (that is

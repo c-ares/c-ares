@@ -958,7 +958,7 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
     }
 
     type           = ares_dns_rr_get_type(rr);
-    allow_compress = ares_dns_rec_type_allow_name_compression(type);
+    allow_compress = ares_dns_rec_allow_name_comp(type);
     if (allow_compress) {
       namelistptr = namelist;
     }
@@ -1219,8 +1219,8 @@ ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
   return status;
 }
 
-void ares_dns_record_write_ttl_decrement(ares_dns_record_t *dnsrec,
-                                         unsigned int       ttl_decrement)
+void ares_dns_record_ttl_decrement(ares_dns_record_t *dnsrec,
+                                   unsigned int       ttl_decrement)
 {
   if (dnsrec == NULL) {
     return;

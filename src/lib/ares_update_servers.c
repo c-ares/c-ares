@@ -769,8 +769,8 @@ done:
 }
 
 static ares_status_t
-  ares_addr_node_to_server_config_llist(const struct ares_addr_node *servers,
-                                        ares__llist_t              **llist)
+  ares_addr_node_to_sconfig_llist(const struct ares_addr_node *servers,
+                                  ares__llist_t              **llist)
 {
   const struct ares_addr_node *node;
   ares__llist_t               *s;
@@ -820,8 +820,9 @@ fail:
   /* LCOV_EXCL_STOP */
 }
 
-static ares_status_t ares_addr_port_node_to_server_config_llist(
-  const struct ares_addr_port_node *servers, ares__llist_t **llist)
+static ares_status_t
+  ares_addrpnode_to_sconfig_llist(const struct ares_addr_port_node *servers,
+                                  ares__llist_t                   **llist)
 {
   const struct ares_addr_port_node *node;
   ares__llist_t                    *s;
@@ -874,9 +875,9 @@ fail:
   /* LCOV_EXCL_STOP */
 }
 
-ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
-                                                  size_t          nservers,
-                                                  ares__llist_t **llist)
+ares_status_t ares_in_addr_to_sconfig_llist(const struct in_addr *servers,
+                                            size_t                nservers,
+                                            ares__llist_t       **llist)
 {
   size_t         i;
   ares__llist_t *s;
@@ -1093,7 +1094,7 @@ int ares_set_servers(ares_channel_t              *channel,
     return ARES_ENODATA;
   }
 
-  status = ares_addr_node_to_server_config_llist(servers, &slist);
+  status = ares_addr_node_to_sconfig_llist(servers, &slist);
   if (status != ARES_SUCCESS) {
     return (int)status;
   }
@@ -1117,7 +1118,7 @@ int ares_set_servers_ports(ares_channel_t                   *channel,
     return ARES_ENODATA;
   }
 
-  status = ares_addr_port_node_to_server_config_llist(servers, &slist);
+  status = ares_addrpnode_to_sconfig_llist(servers, &slist);
   if (status != ARES_SUCCESS) {
     return (int)status;
   }

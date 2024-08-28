@@ -64,7 +64,7 @@ static void        end_query(ares_channel_t *channel, ares_server_t *server,
                              ares_query_t *query, ares_status_t status,
                              const ares_dns_record_t *dnsrec);
 
-static void        ares__query_disassociate_from_conn(ares_query_t *query)
+static void        ares__query_remove_from_conn(ares_query_t *query)
 {
   /* If its not part of a connection, it can't be tracked for timeouts either */
   ares__slist_node_destroy(query->node_queries_by_timeout);
@@ -791,7 +791,7 @@ ares_status_t ares__requeue_query(ares_query_t            *query,
   ares_channel_t *channel = query->channel;
   size_t max_tries        = ares__slist_len(channel->servers) * channel->tries;
 
-  ares__query_disassociate_from_conn(query);
+  ares__query_remove_from_conn(query);
 
   if (status != ARES_SUCCESS) {
     query->error_status = status;
@@ -1208,7 +1208,7 @@ done:
 static void ares_detach_query(ares_query_t *query)
 {
   /* Remove the query from all the lists in which it is linked */
-  ares__query_disassociate_from_conn(query);
+  ares__query_remove_from_conn(query);
   ares__htable_szvp_remove(query->channel->queries_by_qid, query->qid);
   ares__llist_node_destroy(query->node_all_queries);
   query->node_all_queries = NULL;

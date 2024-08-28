@@ -282,7 +282,7 @@ static ares_bool_t ares__htable_expand(ares__htable_t *htable)
         htable->num_collisions++;
       }
 
-      ares__llist_node_move_parent_first(node, buckets[idx]);
+      ares__llist_node_mvparent_first(node, buckets[idx]);
     }
 
     /* Abandoned bucket, destroy */

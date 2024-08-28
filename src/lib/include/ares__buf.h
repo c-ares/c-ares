@@ -440,9 +440,9 @@ typedef enum {
    *  incompatible with ARES_BUF_SPLIT_LTRIM since the delimiter is always
    *  the first character.
    */
-  ARES_BUF_SPLIT_DONT_CONSUME_DELIMS = 1 << 0,
+  ARES_BUF_SPLIT_KEEP_DELIMS = 1 << 0,
   /*! Allow blank sections, by default blank sections are not emitted.  If using
-   *  ARES_BUF_SPLIT_DONT_CONSUME_DELIMS, the delimiter is not counted as part
+   *  ARES_BUF_SPLIT_KEEP_DELIMS, the delimiter is not counted as part
    *  of the section */
   ARES_BUF_SPLIT_ALLOW_BLANK = 1 << 1,
   /*! Remove duplicate entries */

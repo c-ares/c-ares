@@ -226,8 +226,8 @@ CARES_EXTERN void ares__llist_destroy(ares__llist_t *list);
  * \param[in] node       node to move
  * \param[in] new_parent new list
  */
-CARES_EXTERN void ares__llist_node_move_parent_last(ares__llist_node_t *node,
-                                                    ares__llist_t *new_parent);
+CARES_EXTERN void ares__llist_node_mvparent_last(ares__llist_node_t *node,
+                                                 ares__llist_t *new_parent);
 
 /*! Detach node from the current list and re-attach it to the new list as the
  *  first entry.
@@ -235,8 +235,8 @@ CARES_EXTERN void ares__llist_node_move_parent_last(ares__llist_node_t *node,
  * \param[in] node       node to move
  * \param[in] new_parent new list
  */
-CARES_EXTERN void ares__llist_node_move_parent_first(ares__llist_node_t *node,
-                                                     ares__llist_t *new_parent);
+CARES_EXTERN void ares__llist_node_mvparent_first(ares__llist_node_t *node,
+                                                  ares__llist_t *new_parent);
 /*! @} */
 
 #endif /* __ARES__LLIST_H */

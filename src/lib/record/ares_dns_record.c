@@ -856,7 +856,7 @@ const unsigned char *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
       return NULL;
     }
 
-    return ares__dns_multistring_get_combined(*strs, len);
+    return ares__dns_multistring_combined(*strs, len);
   }
 
   /* Not a multi-string, just straight binary data */

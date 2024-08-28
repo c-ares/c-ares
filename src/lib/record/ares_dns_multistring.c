@@ -181,7 +181,7 @@ const unsigned char *
 }
 
 const unsigned char *
-  ares__dns_multistring_get_combined(ares__dns_multistring_t *strs, size_t *len)
+  ares__dns_multistring_combined(ares__dns_multistring_t *strs, size_t *len)
 {
   ares__buf_t *buf = NULL;
   size_t       i;

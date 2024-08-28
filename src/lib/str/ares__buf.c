@@ -812,7 +812,7 @@ ares_status_t ares__buf_split(ares__buf_t *buf, const unsigned char *delims,
       /* No delimiter yet, just tag the start */
       ares__buf_tag(buf);
     } else {
-      if (flags & ARES_BUF_SPLIT_DONT_CONSUME_DELIMS) {
+      if (flags & ARES_BUF_SPLIT_KEEP_DELIMS) {
         /* tag then eat delimiter so its first byte in buffer */
         ares__buf_tag(buf);
         ares__buf_consume(buf, 1);

@@ -245,7 +245,7 @@ static ares_status_t ares__hosts_file_merge_entry(
         continue;
       }
 
-      ares__llist_node_move_parent_last(node, existing->ips);
+      ares__llist_node_mvparent_last(node, existing->ips);
     }
   }
 
@@ -258,7 +258,7 @@ static ares_status_t ares__hosts_file_merge_entry(
       continue;
     }
 
-    ares__llist_node_move_parent_last(node, existing->hosts);
+    ares__llist_node_mvparent_last(node, existing->hosts);
   }
 
   ares__hosts_entry_destroy(entry);

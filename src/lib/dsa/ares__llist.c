@@ -363,8 +363,8 @@ void ares__llist_destroy(ares__llist_t *list)
   ares_free(list);
 }
 
-void ares__llist_node_move_parent_last(ares__llist_node_t *node,
-                                       ares__llist_t      *new_parent)
+void ares__llist_node_mvparent_last(ares__llist_node_t *node,
+                                    ares__llist_t      *new_parent)
 {
   if (node == NULL || new_parent == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -374,8 +374,8 @@ void ares__llist_node_move_parent_last(ares__llist_node_t *node,
   ares__llist_attach_at(new_parent, ARES__LLIST_INSERT_TAIL, NULL, node);
 }
 
-void ares__llist_node_move_parent_first(ares__llist_node_t *node,
-                                        ares__llist_t      *new_parent)
+void ares__llist_node_mvparent_first(ares__llist_node_t *node,
+                                     ares__llist_t      *new_parent)
 {
   if (node == NULL || new_parent == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */

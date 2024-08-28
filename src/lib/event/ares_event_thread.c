@@ -216,7 +216,7 @@ static void ares_event_thread_sockstate_cb(void *data, ares_socket_t socket_fd,
                     NULL, NULL, NULL);
 }
 
-static void ares_event_thread_notifywrite_cb(void *data)
+static void notifywrite_cb(void *data)
 {
   ares_event_thread_t *e = data;
 
@@ -508,7 +508,7 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
 
   channel->sock_state_cb                = ares_event_thread_sockstate_cb;
   channel->sock_state_cb_data           = e;
-  channel->notify_pending_write_cb      = ares_event_thread_notifywrite_cb;
+  channel->notify_pending_write_cb      = notifywrite_cb;
   channel->notify_pending_write_cb_data = e;
 
   if (!e->ev_sys->init(e)) {
