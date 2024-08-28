@@ -346,11 +346,11 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig,
       continue;
     }
 
-    if (ares_strcaseeq(value, "dns")    || ares_strcaseeq(value, "bind") ||
+    if (ares_strcaseeq(value, "dns") || ares_strcaseeq(value, "bind") ||
         ares_strcaseeq(value, "resolv") || ares_strcaseeq(value, "resolve")) {
       ch = 'b';
     } else if (ares_strcaseeq(value, "files") ||
-               ares_strcaseeq(value, "file")  ||
+               ares_strcaseeq(value, "file") ||
                ares_strcaseeq(value, "local")) {
       ch = 'f';
     } else {

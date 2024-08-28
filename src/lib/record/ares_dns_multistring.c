@@ -292,4 +292,3 @@ ares_status_t ares__dns_multistring_parse_buf(ares__buf_t *buf,
 
   return status;
 }
-

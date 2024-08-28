@@ -300,13 +300,13 @@ int ares_strcasecmp(const char *a, const char *b)
     return -1;
   }
 
-#  if defined(HAVE_STRCASECMP)
+#if defined(HAVE_STRCASECMP)
   return strcasecmp(a, b);
-#  elif defined(HAVE_STRCMPI)
+#elif defined(HAVE_STRCMPI)
   return strcmpi(a, b);
-#  elif defined(HAVE_STRICMP)
+#elif defined(HAVE_STRICMP)
   return stricmp(a, b);
-#  else
+#else
   {
     size_t i;
 
@@ -322,7 +322,7 @@ int ares_strcasecmp(const char *a, const char *b)
     }
   }
   return 0;
-#  endif
+#endif
 }
 
 int ares_strncasecmp(const char *a, const char *b, size_t n)
@@ -349,13 +349,13 @@ int ares_strncasecmp(const char *a, const char *b, size_t n)
     return -1;
   }
 
-#  if defined(HAVE_STRNCASECMP)
-  return strncasecmp(a,b,n);
-#  elif defined(HAVE_STRNCMPI)
+#if defined(HAVE_STRNCASECMP)
+  return strncasecmp(a, b, n);
+#elif defined(HAVE_STRNCMPI)
   return strncmpi(a, b, n);
-#  elif defined(HAVE_STRNICMP)
+#elif defined(HAVE_STRNICMP)
   return strnicmp(a, b, n);
-#  else
+#else
   {
     size_t i;
 
@@ -371,27 +371,27 @@ int ares_strncasecmp(const char *a, const char *b, size_t n)
     }
   }
   return 0;
-#  endif
+#endif
 }
 
 ares_bool_t ares_strcaseeq(const char *a, const char *b)
 {
-  return ares_strcasecmp(a,b) == 0?ARES_TRUE:ARES_FALSE;
+  return ares_strcasecmp(a, b) == 0 ? ARES_TRUE : ARES_FALSE;
 }
 
 ares_bool_t ares_strcaseeq_max(const char *a, const char *b, size_t n)
 {
-  return ares_strncasecmp(a,b,n) == 0?ARES_TRUE:ARES_FALSE;
+  return ares_strncasecmp(a, b, n) == 0 ? ARES_TRUE : ARES_FALSE;
 }
 
 ares_bool_t ares_streq(const char *a, const char *b)
 {
-  return ares_strcmp(a,b) == 0?ARES_TRUE:ARES_FALSE;
+  return ares_strcmp(a, b) == 0 ? ARES_TRUE : ARES_FALSE;
 }
 
 ares_bool_t ares_streq_max(const char *a, const char *b, size_t n)
 {
-  return ares_strncmp(a,b,n) == 0?ARES_TRUE:ARES_FALSE;
+  return ares_strncmp(a, b, n) == 0 ? ARES_TRUE : ARES_FALSE;
 }
 
 void ares_free_array(void *arrp, size_t nmembers, void (*freefunc)(void *))
@@ -399,8 +399,9 @@ void ares_free_array(void *arrp, size_t nmembers, void (*freefunc)(void *))
   size_t i;
   void **arr = arrp;
 
-  if (arr == NULL)
+  if (arr == NULL) {
     return;
+  }
 
   if (freefunc != NULL) {
     if (nmembers == SIZE_MAX) {
@@ -408,7 +409,7 @@ void ares_free_array(void *arrp, size_t nmembers, void (*freefunc)(void *))
         freefunc(arr[i]);
       }
     } else {
-      for (i = 0; i<nmembers; i++) {
+      for (i = 0; i < nmembers; i++) {
         freefunc(arr[i]);
       }
     }

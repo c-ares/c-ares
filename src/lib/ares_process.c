@@ -45,14 +45,13 @@
 #include <limits.h>
 
 
-static void          timeadd(ares_timeval_t *now, size_t millisecs);
-static void          process_write(const ares_channel_t *channel,
-                                   fd_set *write_fds, ares_socket_t write_fd);
-static void          process_read(const ares_channel_t *channel,
-                                  fd_set *read_fds, ares_socket_t read_fd,
-                                  const ares_timeval_t *now);
-static void          process_timeouts(ares_channel_t       *channel,
-                                      const ares_timeval_t *now);
+static void timeadd(ares_timeval_t *now, size_t millisecs);
+static void process_write(const ares_channel_t *channel, fd_set *write_fds,
+                          ares_socket_t write_fd);
+static void process_read(const ares_channel_t *channel, fd_set *read_fds,
+                         ares_socket_t read_fd, const ares_timeval_t *now);
+static void process_timeouts(ares_channel_t       *channel,
+                             const ares_timeval_t *now);
 static ares_status_t process_answer(ares_channel_t      *channel,
                                     const unsigned char *abuf, size_t alen,
                                     ares_conn_t          *conn,
@@ -395,7 +394,7 @@ static ares_status_t read_conn_packets(ares_conn_t *conn)
 
     /* If UDP, lets write out a placeholder for the length indicator */
     if (!(conn->flags & ARES_CONN_FLAG_TCP) &&
-      ares__buf_append_be16(conn->in_buf, 0) != ARES_SUCCESS) {
+        ares__buf_append_be16(conn->in_buf, 0) != ARES_SUCCESS) {
       handle_conn_error(conn, ARES_FALSE /* not critical to connection */,
                         ARES_SUCCESS);
       return ARES_ENOMEM;

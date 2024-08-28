@@ -280,7 +280,7 @@ ares_status_t ares__array_insertdata_at(ares__array_t *arr, size_t idx,
 }
 
 ares_status_t ares__array_insertdata_last(ares__array_t *arr,
-                                          const void *data_ptr)
+                                          const void    *data_ptr)
 {
   ares_status_t status;
   void         *ptr = NULL;
@@ -294,7 +294,7 @@ ares_status_t ares__array_insertdata_last(ares__array_t *arr,
 }
 
 ares_status_t ares__array_insertdata_first(ares__array_t *arr,
-                                           const void *data_ptr)
+                                           const void    *data_ptr)
 {
   ares_status_t status;
   void         *ptr = NULL;

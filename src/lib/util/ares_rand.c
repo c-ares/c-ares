@@ -199,7 +199,7 @@ static ares_bool_t ares__init_rand_engine(ares_rand_state *state)
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
   /* For fuzzing, random should be deterministic */
-  state->bad_backends |= ARES_RAND_OS|ARES_RAND_FILE;
+  state->bad_backends |= ARES_RAND_OS | ARES_RAND_FILE;
 #endif
 
 #if defined(HAVE_ARC4RANDOM_BUF) || defined(HAVE_GETRANDOM) || defined(_WIN32)

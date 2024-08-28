@@ -114,10 +114,9 @@ static void search_callback(void *arg, ares_status_t status, size_t timeouts,
   squery->timeouts += timeouts;
 
   if (dnsrec) {
-    ares_dns_rcode_t rcode   = ares_dns_record_get_rcode(dnsrec);
-    size_t           ancount = ares_dns_record_rr_cnt(dnsrec,
-                                                      ARES_SECTION_ANSWER);
-    mystatus = ares_dns_query_reply_tostatus(rcode, ancount);
+    ares_dns_rcode_t rcode = ares_dns_record_get_rcode(dnsrec);
+    size_t ancount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER);
+    mystatus       = ares_dns_query_reply_tostatus(rcode, ancount);
   } else {
     mystatus = status;
   }
@@ -128,9 +127,9 @@ static void search_callback(void *arg, ares_status_t status, size_t timeouts,
       break;
     case ARES_ESERVFAIL:
     case ARES_EREFUSED:
-       /* Issue #852, systemd-resolved may return SERVFAIL or REFUSED on a
+      /* Issue #852, systemd-resolved may return SERVFAIL or REFUSED on a
        * single label domain name. */
-      if (ares__name_label_cnt(squery->names[squery->next_name_idx-1]) != 1) {
+      if (ares__name_label_cnt(squery->names[squery->next_name_idx - 1]) != 1) {
         end_squery(squery, mystatus, dnsrec);
         return;
       }
@@ -188,8 +187,8 @@ static ares_bool_t ares__search_eligible(const ares_channel_t *channel,
 
 size_t ares__name_label_cnt(const char *name)
 {
-  const char   *p;
-  size_t        ndots = 0;
+  const char *p;
+  size_t      ndots = 0;
 
   if (name == NULL) {
     return 0;
@@ -202,7 +201,7 @@ size_t ares__name_label_cnt(const char *name)
   }
 
   /* Label count is 1 greater than ndots */
-  return ndots+1;
+  return ndots + 1;
 }
 
 ares_status_t ares__search_name_list(const ares_channel_t *channel,

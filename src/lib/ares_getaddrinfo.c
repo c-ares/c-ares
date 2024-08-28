@@ -380,7 +380,8 @@ ares_bool_t ares__is_localhost(const char *name)
     return ARES_FALSE;
   }
 
-  if (ares_strcaseeq(name + (len - 10 /* strlen(".localhost") */), ".localhost")) {
+  if (ares_strcaseeq(name + (len - 10 /* strlen(".localhost") */),
+                     ".localhost")) {
     return ARES_TRUE;
   }
 
@@ -528,10 +529,9 @@ static void host_callback(void *arg, ares_status_t status, size_t timeouts,
         hquery->nodata_cnt++;
       }
       next_lookup(hquery, hquery->nodata_cnt ? ARES_ENODATA : status);
-    } else if (
-        (status == ARES_ESERVFAIL || status == ARES_EREFUSED) &&
-        ares__name_label_cnt(hquery->names[hquery->next_name_idx-1]) == 1
-      ) {
+    } else if ((status == ARES_ESERVFAIL || status == ARES_EREFUSED) &&
+               ares__name_label_cnt(hquery->names[hquery->next_name_idx - 1]) ==
+                 1) {
       /* Issue #852, systemd-resolved may return SERVFAIL or REFUSED on a
        * single label domain name. */
       next_lookup(hquery, hquery->nodata_cnt ? ARES_ENODATA : status);

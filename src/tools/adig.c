@@ -346,8 +346,8 @@ static ares_bool_t read_rcfile(adig_config_t *config)
                    ARES_TRUE);
 
     } else {
-      snprintf(config->error, sizeof(config->error),
-               "rcfile is invalid: %s", ares_strerror((int)rcstatus));
+      snprintf(config->error, sizeof(config->error), "rcfile is invalid: %s",
+               ares_strerror((int)rcstatus));
     }
 
     ares_free_array(rcargv, rcargc, ares_free);

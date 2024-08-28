@@ -906,7 +906,7 @@ ares_status_t ares__buf_split_str(ares__buf_t *buf, const unsigned char *delims,
   ares_status_t       status;
   ares__llist_t      *list = NULL;
   ares__llist_node_t *node;
-  ares__array_t      *arr  = NULL;
+  ares__array_t      *arr = NULL;
 
   if (strs == NULL || nstrs == NULL) {
     return ARES_EFORMERR;

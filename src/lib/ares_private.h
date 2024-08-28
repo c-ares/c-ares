@@ -458,7 +458,7 @@ struct ares_channeldata {
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
-ares_bool_t ares__is_onion_domain(const char *name);
+ares_bool_t   ares__is_onion_domain(const char *name);
 
 /* return true if now is exactly check time or later */
 ares_bool_t   ares__timedout(const ares_timeval_t *now,
@@ -473,7 +473,7 @@ ares_status_t ares__requeue_query(ares_query_t            *query,
                                   const ares_dns_record_t *dnsrec);
 
 /*! Count the number of labels (dots+1) in a domain */
-size_t ares__name_label_cnt(const char *name);
+size_t        ares__name_label_cnt(const char *name);
 
 /*! Retrieve a list of names to use for searching.  The first successful
  *  query in the list wins.  This function also uses the HOSTSALIASES file

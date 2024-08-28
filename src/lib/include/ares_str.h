@@ -86,15 +86,13 @@ CARES_EXTERN ares_bool_t   ares__str_isprint(const char *str, size_t len);
 
 #define ares__isalpha(x) (ares__islower(x) || ares__isupper(x))
 
-#define ares__isspace(x) (((unsigned char)(x)) == '\r' || \
-                          ((unsigned char)(x)) == '\t' || \
-                          ((unsigned char)(x)) == ' '  || \
-                          ((unsigned char)(x)) == '\v' || \
-                          ((unsigned char)(x)) == '\f' || \
-                          ((unsigned char)(x)) == '\n')
+#define ares__isspace(x)                                           \
+  (((unsigned char)(x)) == '\r' || ((unsigned char)(x)) == '\t' || \
+   ((unsigned char)(x)) == ' ' || ((unsigned char)(x)) == '\v' ||  \
+   ((unsigned char)(x)) == '\f' || ((unsigned char)(x)) == '\n')
 
-#define ares__isprint(x) (((unsigned char)(x)) >= 0x20 && \
-                          ((unsigned char)(x)) <= 0x7E)
+#define ares__isprint(x) \
+  (((unsigned char)(x)) >= 0x20 && ((unsigned char)(x)) <= 0x7E)
 
 /* Character set allowed by hostnames.  This is to include the normal
  * domain name character set plus:
@@ -110,12 +108,10 @@ CARES_EXTERN ares_bool_t   ares__str_isprint(const char *str, size_t len);
  * anyhow).
  * [A-Za-z0-9-*._/]
  */
-#define ares__is_hostnamech(x) (ares__isalpha(x) || ares__isdigit(x) || \
-                                ((unsigned char)(x)) == '-' || \
-                                ((unsigned char)(x)) == '.' || \
-                                ((unsigned char)(x)) == '_' || \
-                                ((unsigned char)(x)) == '/' || \
-                                ((unsigned char)(x)) == '*')
+#define ares__is_hostnamech(x)                                            \
+  (ares__isalpha(x) || ares__isdigit(x) || ((unsigned char)(x)) == '-' || \
+   ((unsigned char)(x)) == '.' || ((unsigned char)(x)) == '_' ||          \
+   ((unsigned char)(x)) == '/' || ((unsigned char)(x)) == '*')
 
 
 /*! Compare two strings (for sorting)
@@ -223,7 +219,7 @@ CARES_EXTERN ares_bool_t ares_strcaseeq_max(const char *a, const char *b,
  *                      NULL-terminated arrays
  *  \param[in] freefunc Function to call on each array member (e.g. ares_free)
  */
-CARES_EXTERN void ares_free_array(void *arr, size_t nmembers,
-                                  void (*freefunc)(void *));
+CARES_EXTERN void        ares_free_array(void *arr, size_t nmembers,
+                                         void (*freefunc)(void *));
 
 #endif /* __ARES_STR_H */
