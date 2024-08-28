@@ -34,9 +34,9 @@ typedef struct ares__dns_multistring ares__dns_multistring_t;
 ares__dns_multistring_t             *ares__dns_multistring_create(void);
 void          ares__dns_multistring_clear(ares__dns_multistring_t *strs);
 void          ares__dns_multistring_destroy(ares__dns_multistring_t *strs);
-ares_status_t ares__dns_multistring_replace_own(ares__dns_multistring_t *strs,
-                                                size_t idx, unsigned char *str,
-                                                size_t len);
+ares_status_t ares__dns_multistring_swap_own(ares__dns_multistring_t *strs,
+                                             size_t idx, unsigned char *str,
+                                             size_t len);
 ares_status_t ares__dns_multistring_del(ares__dns_multistring_t *strs,
                                         size_t                   idx);
 ares_status_t ares__dns_multistring_add_own(ares__dns_multistring_t *strs,

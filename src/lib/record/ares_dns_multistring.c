@@ -90,9 +90,9 @@ void ares__dns_multistring_destroy(ares__dns_multistring_t *strs)
   ares_free(strs);
 }
 
-ares_status_t ares__dns_multistring_replace_own(ares__dns_multistring_t *strs,
-                                                size_t idx, unsigned char *str,
-                                                size_t len)
+ares_status_t ares__dns_multistring_swap_own(ares__dns_multistring_t *strs,
+                                             size_t idx, unsigned char *str,
+                                             size_t len)
 {
   multistring_data_t *data;
 
