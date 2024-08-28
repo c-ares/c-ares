@@ -1161,9 +1161,8 @@ void ares_set_socket_functions(ares_channel_t                     *channel,
   channel->sock_func_cb_data = data;
 }
 
-void ares_set_notify_pending_write_callback(
-  ares_channel_t *channel, ares_notify_pending_write_callback callback,
-  void *user_data)
+void ares_set_pending_write_cb(ares_channel_t       *channel,
+                               ares_pending_write_cb callback, void *user_data)
 {
   if (channel == NULL || channel->optmask & ARES_OPT_EVENT_THREAD) {
     return;

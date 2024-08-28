@@ -4,26 +4,26 @@
 .\"
 .TH ARES_SET_NOTIFY_PENDING_WRITE_CALLBACK 3 "13 Aug 2024"
 .SH NAME
-ares_set_notify_pending_write_callback, ares_process_pending_write \- Function
+ares_set_pending_write_cb, ares_process_pending_write \- Function
 for setting a callback which is triggered when there is potential pending data
 which needs to be written.
 .SH SYNOPSIS
 .nf
 #include <ares.h>
 
-typedef void (*ares_notify_pending_write_callback)(void *\fIdata\fP);
+typedef void (*ares_pending_write_cb)(void *\fIdata\fP);
 
-void ares_set_notify_pending_write_callback(
-  ares_channel_t                    *\fIchannel\fP,
-  ares_notify_pending_write_callback \fIcallback\fP,
-  void                              *\fIuser_data\fP);
+void ares_set_pending_write_cb(
+  ares_channel_t        *\fIchannel\fP,
+  ares_pending_write_cb  \fIcallback\fP,
+  void                  *\fIuser_data\fP);
 
 void ares_process_pending_write(ares_channel_t *\fIchannel\fP);
 
 .fi
 
 .SH DESCRIPTION
-The \fBares_set_notify_pending_write_callback(3)\fP function sets a callback
+The \fBares_set_pending_write_cb(3)\fP function sets a callback
 function \fIcallback\fP in the given ares channel handle \fIchannel\fP that
 is invoked whenever there is new pending TCP data to be written.  Since TCP
 is stream based, if there are multiple queries being enqueued back to back they

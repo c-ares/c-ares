@@ -410,7 +410,7 @@ struct ares_channeldata {
   const struct ares_socket_functions *sock_funcs;
   void                               *sock_func_cb_data;
 
-  ares_notify_pending_write_callback  notify_pending_write_cb;
+  ares_pending_write_cb               notify_pending_write_cb;
   void                               *notify_pending_write_cb_data;
   ares_bool_t                         notify_pending_write;
 
