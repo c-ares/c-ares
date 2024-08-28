@@ -169,7 +169,7 @@ CARES_EXTERN ares_status_t ares__array_insert_first(void         **elem_ptr,
  */
 CARES_EXTERN ares_status_t ares__array_insertdata_at(ares__array_t *arr,
                                                      size_t idx,
-                                                     void *data_ptr);
+                                                     const void *data_ptr);
 
 /*! Insert a new array member at the end of the array and copy the data pointed
  *  to by the data pointer into the array.  This will copy member_size bytes
@@ -183,7 +183,7 @@ CARES_EXTERN ares_status_t ares__array_insertdata_at(ares__array_t *arr,
  *          ARES_ENOMEM on out of memory.
  */
 CARES_EXTERN ares_status_t ares__array_insertdata_last(ares__array_t *arr,
-                                                       void *data_ptr);
+                                                       const void *data_ptr);
 
 /*! Insert a new array member at the beginning of the array and copy the data pointed
  *  to by the data pointer into the array.  This will copy member_size bytes
@@ -197,7 +197,7 @@ CARES_EXTERN ares_status_t ares__array_insertdata_last(ares__array_t *arr,
  *          ARES_ENOMEM on out of memory.
  */
 CARES_EXTERN ares_status_t ares__array_insertdata_first(ares__array_t *arr,
-                                                        void *data_ptr);
+                                                        const void *data_ptr);
 
 /*! Fetch a pointer to the given element in the array
  *  \param[in]  array  Initialized array object

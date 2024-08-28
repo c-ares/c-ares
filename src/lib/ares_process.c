@@ -46,10 +46,11 @@
 
 
 static void          timeadd(ares_timeval_t *now, size_t millisecs);
-static void          process_write(ares_channel_t *channel, fd_set *write_fds,
-                                   ares_socket_t write_fd);
-static void          process_read(ares_channel_t *channel, fd_set *read_fds,
-                                  ares_socket_t read_fd, const ares_timeval_t *now);
+static void          process_write(const ares_channel_t *channel,
+                                   fd_set *write_fds, ares_socket_t write_fd);
+static void          process_read(const ares_channel_t *channel,
+                                  fd_set *read_fds, ares_socket_t read_fd,
+                                  const ares_timeval_t *now);
 static void          process_timeouts(ares_channel_t       *channel,
                                       const ares_timeval_t *now);
 static ares_status_t process_answer(ares_channel_t      *channel,
@@ -287,7 +288,7 @@ static void ares_notify_write(ares_conn_t *conn)
   }
 }
 
-static void process_write(ares_channel_t *channel, fd_set *write_fds,
+static void process_write(const ares_channel_t *channel, fd_set *write_fds,
                           ares_socket_t write_fd)
 {
   size_t              i;
@@ -382,9 +383,9 @@ void ares_process_pending_write(ares_channel_t *channel)
 
 static ares_status_t read_conn_packets(ares_conn_t *conn)
 {
-  ares_bool_t     read_again;
-  ares_conn_err_t err;
-  ares_channel_t *channel = conn->server->channel;
+  ares_bool_t           read_again;
+  ares_conn_err_t       err;
+  const ares_channel_t *channel = conn->server->channel;
 
   do {
     size_t         count;
@@ -393,12 +394,11 @@ static ares_status_t read_conn_packets(ares_conn_t *conn)
     size_t         start_len = ares__buf_len(conn->in_buf);
 
     /* If UDP, lets write out a placeholder for the length indicator */
-    if (!(conn->flags & ARES_CONN_FLAG_TCP)) {
-      if (ares__buf_append_be16(conn->in_buf, 0) != ARES_SUCCESS) {
-        handle_conn_error(conn, ARES_FALSE /* not critical to connection */,
-                          ARES_SUCCESS);
-        return ARES_ENOMEM;
-      }
+    if (!(conn->flags & ARES_CONN_FLAG_TCP) &&
+      ares__buf_append_be16(conn->in_buf, 0) != ARES_SUCCESS) {
+      handle_conn_error(conn, ARES_FALSE /* not critical to connection */,
+                        ARES_SUCCESS);
+      return ARES_ENOMEM;
     }
 
     /* Get a buffer of sufficient size */
@@ -422,7 +422,7 @@ static ares_status_t read_conn_packets(ares_conn_t *conn)
     }
 
     /* Record amount of data read */
-    ares__buf_append_finish(conn->in_buf, (size_t)count);
+    ares__buf_append_finish(conn->in_buf, count);
 
     /* Only loop if we're not overwriting socket functions, and are using UDP
      * or are using TCP and read the maximum buffer size */
@@ -516,7 +516,7 @@ static void read_conn(ares_conn_t *conn, const ares_timeval_t *now)
   read_answers(conn, now);
 }
 
-static void process_read(ares_channel_t *channel, fd_set *read_fds,
+static void process_read(const ares_channel_t *channel, fd_set *read_fds,
                          ares_socket_t read_fd, const ares_timeval_t *now)
 {
   size_t              i;
@@ -1104,8 +1104,6 @@ ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now)
       }
       return status;
 
-    /* FIXME: Handle EAGAIN here since it likely can happen. Right now we
-     * just requeue to a different server/connection. */
     default:
       server_increment_failures(server, query->using_tcp);
       status = ares__requeue_query(query, now, status, ARES_TRUE, NULL);

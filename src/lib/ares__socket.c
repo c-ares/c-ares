@@ -610,7 +610,7 @@ ares_status_t ares__conn_flush(ares_conn_t *conn)
     }
 
     /* Strip data written from the buffer */
-    ares__buf_consume(conn->out_buf, (size_t)count);
+    ares__buf_consume(conn->out_buf, count);
     status = ARES_SUCCESS;
 
     /* Loop only for UDP since we have to send per-packet.  We already
