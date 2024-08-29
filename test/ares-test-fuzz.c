@@ -290,6 +290,7 @@ done:
   ares_dns_record_destroy(dnsrec);
   ares__buf_destroy(printmsg);
   ares_free(printdata);
+  ares_free(datadup);
   return 0;
 }
 
