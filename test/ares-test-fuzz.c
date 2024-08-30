@@ -26,8 +26,8 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "ares.h"
-#include "ares__buf.h"
-#include "ares_mem.h"
+#include "include/ares__buf.h"
+#include "include/ares_mem.h"
 
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
