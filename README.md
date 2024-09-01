@@ -109,6 +109,9 @@ gpg: binary signature, digest algorithm SHA512, key algorithm rsa2048
 ```
 
 ## Features
+
+See [Features](FEATURES.md)
+
 ### Supported RFCs and Proposals
 - [RFC1035](https://datatracker.ietf.org/doc/html/rfc1035).
   Initial/Base DNS RFC
