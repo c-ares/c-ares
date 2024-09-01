@@ -9,7 +9,7 @@ operation.
 - [Query Cache](#query-cache)
 - [DNS 0x20 Query Name Case Randomization](#dns-0x20-query-name-case-randomization)
 - [DNS Cookies](#dns-cookies)
-- [TCP FastOpen (0-RTT)](#tcp-fastopen)
+- [TCP FastOpen (0-RTT)](#tcp-fastopen-0-rtt)
 - [Event Thread](#event-thread)
 - [System Configuration Change Monitoring](#system-configuration-change-monitoring)
 
