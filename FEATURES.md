@@ -117,10 +117,10 @@ This feature is disabled by default and can be enabled via `ARES_FLAG_DNS0x20`.
 There are some instances where servers do not properly facilitate this feature
 and unlike in a recursive resolver where it may be possible to determine an
 authoritative server is incapable, its much harder to come to any reliable
-conclusion as a stub resolver where the issue resides.  Due to the recent wide
-deployment of DNS 0x20 in large public DNS servers, it is expected
-compatibility will improve rapidly where this feature, in time, may be able
-to be enabled by default.
+conclusion as a stub resolver as to where in the path the issue resides.  Due to
+the recent wide deployment of DNS 0x20 in large public DNS servers, it is
+expected compatibility will improve rapidly where this feature, in time, may be
+able to be enabled by default.
 
 Another feature which can be used to prevent off-path cache poisoning attacks
 is [DNS Cookies](#dns-cookies).
@@ -130,7 +130,7 @@ is [DNS Cookies](#dns-cookies).
 
 DNS Cookies are are a method of learned mutual authentication between a server
 and a client as defined in
-[RFC7873](https://datatracker.ietf.org/doc/html/rfc7873),
+[RFC7873](https://datatracker.ietf.org/doc/html/rfc7873)
 and [RFC9018](https://datatracker.ietf.org/doc/html/rfc9018).
 
 This mutual authentication ensures clients are protected from off-path cache
@@ -177,20 +177,39 @@ Supported systems also need to be configured appropriately on both the client
 and server systems.
 
 ### Linux TFO
-sysctl `net.ipv4.tcp_fastopen`:
+In linux a single sysctl value is used with flags to set the desired fastopen
+behavior.
+
+It is recommended to make any changes permanent by creating a file in
+`/etc/sysctl.d/` with the appropriate key and value.  Legacy Linux systems
+might need to update `/etc/sysctl.conf` directly.  After modifying the
+configuration, it can be loaded via `sysctl -p`.
+
+`net.ipv4.tcp_fastopen`:
    - `1` = client only (typically default)
    - `2` = server only
    - `3` = client and server
 
 ### MacOS TFO
-sysctl `net.inet.tcp.fastopen`
+In MacOS, TCP FastOpen is enabled by default for clients and servers.  You can
+verify via the `net.inet.tcp.fastopen` sysctl.
+
+If any change is needed, you should make it persistent as per this guidance:
+[Persistent Sysctl Settings](https://discussions.apple.com/thread/253840320?)
+
+`net.inet.tcp.fastopen`
    - `1` = client only
    - `2` = server only
    - `3` = client and server (typically default)
 
 ### FreeBSD TFO
-sysctl `net.inet.tcp.fastopen.server_enable` (boolean) and
-`net.inet.tcp.fastopen.client_enable` (boolean).
+In FreeBSD, server mode TCP FastOpen is typically enabled by default but
+client mode is disabled.  It is recommended to edit `/etc/sysctl.conf` and
+place in the values you wish to persist to enable or disable TCP Fast Open.
+Once the file is modified, it can be loaded via `sysctl -f /etc/sysctl.conf`.
+
+- `net.inet.tcp.fastopen.server_enable` (boolean) - enable/disable server
+- `net.inet.tcp.fastopen.client_enable` (boolean) - enable/disable client
 
 
 ## Event Thread
