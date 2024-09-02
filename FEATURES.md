@@ -1,9 +1,5 @@
 # Features
 
-Information about a few features in c-ares which can provide insight into
-behavior and security of the system, and what tunables may be used to tweak
-operation.
-
 - [Dynamic Server Timeout Calculation](#dynamic-server-timeout-calculation)
 - [Failed Server Isolation](#failed-server-isolation)
 - [Query Cache](#query-cache)
@@ -138,7 +134,7 @@ and a client as defined in
 and [RFC9018](https://datatracker.ietf.org/doc/html/rfc9018).
 
 This mutual authentication ensures clients are protected from off-path cache
-poisioning attacks, and protects servers from being used as DNS amplification
+poisoning attacks, and protects servers from being used as DNS amplification
 attack sources.  Many servers will disable query throttling limits when DNS
 Cookies are in use. It only applies to UDP connections.
 
@@ -168,9 +164,10 @@ have already have been established in order to obtain the client cookie to
 allow the server to trust the data sent in the first packet and know it was not
 an off-path attack.
 
-TCP FastOpen can only be used with indemoptent requests since in timeout
+TCP FastOpen can only be used with idempotent requests since in timeout
 conditions the SYN packet with data may be re-sent which may cause the server
-to process the packet more than once.  Luckily DNS requests are idemoptent.
+to process the packet more than once.  Luckily DNS requests are idempotent by
+nature.
 
 TCP FastOpen is supported on Linux, MacOS, and FreeBSD. Most other systems do
 not support this feature, or like on Windows require use of completion
@@ -179,19 +176,19 @@ notifications to use it whereas c-ares relies on readiness notifications.
 Supported systems also need to be configured appropriately on both the client
 and server systems.
 
-### Linux
+### Linux TFO
 sysctl `net.ipv4.tcp_fastopen`:
    - `1` = client only (typically default)
    - `2` = server only
    - `3` = client and server
 
-### MacOS
+### MacOS TFO
 sysctl `net.inet.tcp.fastopen`
    - `1` = client only
    - `2` = server only
    - `3` = client and server (typically default)
 
-### FreeBSD
+### FreeBSD TFO
 sysctl `net.inet.tcp.fastopen.server_enable` (boolean) and
 `net.inet.tcp.fastopen.client_enable` (boolean).
 
@@ -232,7 +229,9 @@ configuration.
 It is supported on Windows, MacOS, iOS and any system configuration that uses
 `/etc/resolv.conf` and similar files such as Linux and FreeBSD.  Specifically
 excluded are DOS and Android due to missing mechanisms to support such a
-feature.
+feature.  On linux file monitoring will result in immediate change detection,
+however on other unix-like systems a polling mechanism is used that checks every
+30s for changes.
 
 This feature requires the c-ares channel to persist for the lifetime of the
 application.
