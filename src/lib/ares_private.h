@@ -40,6 +40,32 @@
 #  include <netinet/in.h>
 #endif
 
+#include "ares_mem.h"
+#include "ares_ipv6.h"
+#include "util/ares_math.h"
+#include "util/ares_time.h"
+#include "util/ares_rand.h"
+#include "ares__array.h"
+#include "ares__llist.h"
+#include "dsa/ares__slist.h"
+#include "ares__htable_strvp.h"
+#include "ares__htable_szvp.h"
+#include "ares__htable_asvp.h"
+#include "ares__htable_vpvp.h"
+#include "record/ares_dns_multistring.h"
+#include "ares__buf.h"
+#include "record/ares_dns_private.h"
+#include "util/ares__iface_ips.h"
+#include "util/ares__threads.h"
+#include "ares_conn.h"
+#include "ares_str.h"
+#include "str/ares_strsplit.h"
+
+#ifndef HAVE_GETENV
+#  include "ares_getenv.h"
+#  define getenv(ptr) ares_getenv(ptr)
+#endif
+
 #define DEFAULT_TIMEOUT 2000 /* milliseconds */
 #define DEFAULT_TRIES   3
 #ifndef INADDR_NONE
@@ -100,33 +126,6 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 
 #endif
 
-#include "ares_mem.h"
-#include "ares_ipv6.h"
-
-struct ares_rand_state;
-typedef struct ares_rand_state ares_rand_state;
-
-#include "ares__array.h"
-#include "ares__llist.h"
-#include "dsa/ares__slist.h"
-#include "ares__htable_strvp.h"
-#include "ares__htable_szvp.h"
-#include "ares__htable_asvp.h"
-#include "ares__htable_vpvp.h"
-#include "record/ares_dns_multistring.h"
-#include "ares__buf.h"
-#include "record/ares_dns_private.h"
-#include "util/ares__iface_ips.h"
-#include "util/ares__threads.h"
-
-#ifndef HAVE_GETENV
-#  include "ares_getenv.h"
-#  define getenv(ptr) ares_getenv(ptr)
-#endif
-
-#include "ares_str.h"
-#include "str/ares_strsplit.h"
-
 /********* EDNS defines section ******/
 #define EDNSPACKETSZ                                          \
   1232 /* Reasonable UDP payload size, as agreed by operators \
@@ -144,156 +143,6 @@ typedef struct ares_rand_state ares_rand_state;
 
 struct ares_query;
 typedef struct ares_query ares_query_t;
-
-struct ares_server;
-typedef struct ares_server ares_server_t;
-
-struct ares_conn;
-typedef struct ares_conn ares_conn_t;
-
-typedef enum {
-  /*! No flags */
-  ARES_CONN_FLAG_NONE = 0,
-  /*! TCP connection, not UDP */
-  ARES_CONN_FLAG_TCP = 1 << 0,
-  /*! TCP Fast Open is enabled and being used if supported by the OS */
-  ARES_CONN_FLAG_TFO = 1 << 1,
-  /*! TCP Fast Open has not yet sent its first packet. Gets unset on first
-   *  write to a connection */
-  ARES_CONN_FLAG_TFO_INITIAL = 1 << 2
-} ares_conn_flags_t;
-
-typedef enum {
-  ARES_CONN_STATE_NONE      = 0,
-  ARES_CONN_STATE_READ      = 1 << 0,
-  ARES_CONN_STATE_WRITE     = 1 << 1,
-  ARES_CONN_STATE_CONNECTED = 1 << 2, /* This doesn't get a callback */
-  ARES_CONN_STATE_CBFLAGS   = ARES_CONN_STATE_READ | ARES_CONN_STATE_WRITE
-} ares_conn_state_flags_t;
-
-struct ares_conn {
-  ares_server_t          *server;
-  ares_socket_t           fd;
-  struct ares_addr        self_ip;
-  ares_conn_flags_t       flags;
-  ares_conn_state_flags_t state_flags;
-
-  /*! Outbound buffered data that is not yet sent.  Exists as one contiguous
-   *  stream in TCP format (big endian 16bit length prefix followed by DNS
-   *  wire-format message).  For TCP this can be sent as-is, UDP this must
-   *  be sent per-packet (stripping the length prefix) */
-  ares__buf_t            *out_buf;
-
-  /*! Inbound buffered data that is not yet parsed.  Exists as one contiguous
-   *  stream in TCP format (big endian 16bit length prefix followed by DNS
-   *  wire-format message).  TCP may have partial data and this needs to be
-   *  handled gracefully, but UDP will always have a full message */
-  ares__buf_t            *in_buf;
-
-  /* total number of queries run on this connection since it was established */
-  size_t                  total_queries;
-
-  /* list of outstanding queries to this connection */
-  ares__llist_t          *queries_to_conn;
-};
-
-#ifdef _MSC_VER
-typedef __int64          ares_int64_t;
-typedef unsigned __int64 ares_uint64_t;
-#else
-typedef long long          ares_int64_t;
-typedef unsigned long long ares_uint64_t;
-#endif
-
-/*! struct timeval on some systems like Windows doesn't support 64bit time so
- *  therefore can't be used due to Y2K38 issues.  Make our own that does have
- *  64bit time. */
-typedef struct {
-  ares_int64_t sec;  /*!< Seconds */
-  unsigned int usec; /*!< Microseconds. Can't be negative. */
-} ares_timeval_t;
-
-/*! Various buckets for grouping history */
-typedef enum {
-  ARES_METRIC_1MINUTE = 0, /*!< Bucket for tracking over the last minute */
-  ARES_METRIC_15MINUTES,   /*!< Bucket for tracking over the last 15 minutes */
-  ARES_METRIC_1HOUR,       /*!< Bucket for tracking over the last hour */
-  ARES_METRIC_1DAY,        /*!< Bucket for tracking over the last day */
-  ARES_METRIC_INCEPTION,   /*!< Bucket for tracking since inception */
-  ARES_METRIC_COUNT        /*!< Count of buckets, not a real bucket */
-} ares_server_bucket_t;
-
-/*! Data metrics collected for each bucket */
-typedef struct {
-  time_t        ts;             /*!< Timestamp divided by bucket divisor */
-  unsigned int  latency_min_ms; /*!< Minimum latency for queries */
-  unsigned int  latency_max_ms; /*!< Maximum latency for queries */
-  ares_uint64_t total_ms;       /*!< Cumulative query time for bucket */
-  ares_uint64_t total_count;    /*!< Number of queries for bucket */
-
-  time_t        prev_ts;        /*!< Previous period bucket timestamp */
-  ares_uint64_t
-    prev_total_ms; /*!< Previous period bucket cumulative query time */
-  ares_uint64_t prev_total_count; /*!< Previous period bucket query count */
-} ares_server_metrics_t;
-
-typedef enum {
-  ARES_COOKIE_INITIAL     = 0,
-  ARES_COOKIE_GENERATED   = 1,
-  ARES_COOKIE_SUPPORTED   = 2,
-  ARES_COOKIE_UNSUPPORTED = 3
-} ares_cookie_state_t;
-
-/*! Structure holding tracking data for RFC 7873/9018 DNS cookies.
- *  Implementation plan for this feature is here:
- *  https://github.com/c-ares/c-ares/issues/620
- */
-typedef struct {
-  /*! starts at INITIAL, transitions as needed. */
-  ares_cookie_state_t state;
-  /*! randomly-generate client cookie */
-  unsigned char       client[8];
-  /*! timestamp client cookie was generated, used for rotation purposes */
-  ares_timeval_t      client_ts;
-  /*! IP address last used for client to connect to server.  If this changes
-   *  The client cookie gets invalidated */
-  struct ares_addr    client_ip;
-  /*! Server Cookie last received, 8-32 bytes in length */
-  unsigned char       server[32];
-  /*! Length of server cookie on file. */
-  size_t              server_len;
-  /*! Timestamp of last attempt to use cookies, but it was determined that the
-   *  server didn't support them */
-  ares_timeval_t      unsupported_ts;
-} ares_cookie_t;
-
-struct ares_server {
-  /* Configuration */
-  size_t                idx;      /* index for server in system configuration */
-  struct ares_addr      addr;
-  unsigned short        udp_port; /* host byte order */
-  unsigned short        tcp_port; /* host byte order */
-  char                  ll_iface[64];    /* IPv6 Link Local Interface */
-  unsigned int          ll_scope;        /* IPv6 Link Local Scope */
-
-  size_t                consec_failures; /* Consecutive query failure count
-                                          * can be hard errors or timeouts
-                                          */
-  ares__llist_t        *connections;
-  ares_conn_t          *tcp_conn;
-
-  /* The next time when we will retry this server if it has hit failures */
-  ares_timeval_t        next_retry_time;
-
-  /*! Buckets for collecting metrics about the server */
-  ares_server_metrics_t metrics[ARES_METRIC_COUNT];
-
-  /*! RFC 7873/9018 DNS Cookies */
-  ares_cookie_t         cookie;
-
-  /* Link back to owning channel */
-  ares_channel_t       *channel;
-};
 
 /* State to represent a DNS query */
 struct ares_query {
@@ -460,10 +309,6 @@ struct ares_channeldata {
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
 ares_bool_t   ares__is_onion_domain(const char *name);
 
-/* return true if now is exactly check time or later */
-ares_bool_t   ares__timedout(const ares_timeval_t *now,
-                             const ares_timeval_t *check);
-
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
 ares_status_t ares__send_query(ares_query_t *query, const ares_timeval_t *now);
 ares_status_t ares__requeue_query(ares_query_t            *query,
@@ -501,34 +346,21 @@ void         *ares__dnsrec_convert_arg(ares_callback callback, void *arg);
 void ares__dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
                              const ares_dns_record_t *dnsrec);
 
-void ares__close_connection(ares_conn_t *conn, ares_status_t requeue_status);
-void ares__close_sockets(ares_server_t *server);
-void ares__check_cleanup_conns(const ares_channel_t *channel);
 void ares__free_query(ares_query_t *query);
 
-ares_rand_state *ares__init_rand_state(void);
-void             ares__destroy_rand_state(ares_rand_state *state);
-void ares__rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len);
-
 unsigned short ares__generate_new_id(ares_rand_state *state);
-void           ares__tvnow(ares_timeval_t *now);
-void           ares__timeval_remaining(ares_timeval_t       *remaining,
-                                       const ares_timeval_t *now,
-                                       const ares_timeval_t *tout);
-void ares__timeval_diff(ares_timeval_t *tvdiff, const ares_timeval_t *tvstart,
-                        const ares_timeval_t *tvstop);
-ares_status_t ares__expand_name_validated(const unsigned char *encoded,
-                                          const unsigned char *abuf,
-                                          size_t alen, char **s, size_t *enclen,
-                                          ares_bool_t is_hostname);
-ares_status_t ares_expand_string_ex(const unsigned char *encoded,
-                                    const unsigned char *abuf, size_t alen,
-                                    unsigned char **s, size_t *enclen);
-ares_status_t ares__init_servers_state(ares_channel_t *channel);
-ares_status_t ares__init_by_options(ares_channel_t            *channel,
-                                    const struct ares_options *options,
-                                    int                        optmask);
-ares_status_t ares__init_by_sysconfig(ares_channel_t *channel);
+ares_status_t  ares__expand_name_validated(const unsigned char *encoded,
+                                           const unsigned char *abuf,
+                                           size_t alen, char **s, size_t *enclen,
+                                           ares_bool_t is_hostname);
+ares_status_t  ares_expand_string_ex(const unsigned char *encoded,
+                                     const unsigned char *abuf, size_t alen,
+                                     unsigned char **s, size_t *enclen);
+ares_status_t  ares__init_servers_state(ares_channel_t *channel);
+ares_status_t  ares__init_by_options(ares_channel_t            *channel,
+                                     const struct ares_options *options,
+                                     int                        optmask);
+ares_status_t  ares__init_by_sysconfig(ares_channel_t *channel);
 
 typedef struct {
   ares__llist_t   *sconfig;
@@ -560,8 +392,6 @@ ares_status_t ares__init_sysconfig_windows(ares_sysconfig_t *sysconfig);
 
 ares_status_t ares__parse_sortlist(struct apattern **sortlist, size_t *nsort,
                                    const char *str);
-
-void          ares__destroy_servers_state(ares_channel_t *channel);
 
 /* Returns ARES_SUCCESS if alias found, alias is set.  Returns ARES_ENOTFOUND
  * if not alias found.  Returns other errors on critical failure like
@@ -611,74 +441,23 @@ ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
 ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
                                        const struct ares_addrinfo_hints *hints,
                                        struct ares_addrinfo             *ai);
-ares_status_t ares__open_connection(ares_conn_t   **conn_out,
-                                    ares_channel_t *channel,
-                                    ares_server_t *server, ares_bool_t is_tcp);
-ares_bool_t   ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
-                                         unsigned short        *port,
-                                         const struct sockaddr *sockaddr);
 
-/*! Socket errors */
-typedef enum {
-  ARES_CONN_ERR_SUCCESS      = 0,  /*!< Success */
-  ARES_CONN_ERR_WOULDBLOCK   = 1,  /*!< Operation would block */
-  ARES_CONN_ERR_CONNCLOSED   = 2,  /*!< Connection closed (gracefully) */
-  ARES_CONN_ERR_CONNABORTED  = 3,  /*!< Connection Aborted */
-  ARES_CONN_ERR_CONNRESET    = 4,  /*!< Connection Reset */
-  ARES_CONN_ERR_CONNREFUSED  = 5,  /*!< Connection Refused */
-  ARES_CONN_ERR_CONNTIMEDOUT = 6,  /*!< Connection Timed Out */
-  ARES_CONN_ERR_HOSTDOWN     = 7,  /*!< Host Down */
-  ARES_CONN_ERR_HOSTUNREACH  = 8,  /*!< Host Unreachable */
-  ARES_CONN_ERR_NETDOWN      = 9,  /*!< Network Down */
-  ARES_CONN_ERR_NETUNREACH   = 10, /*!< Network Unreachable */
-  ARES_CONN_ERR_INTERRUPT    = 11, /*!< Call interrupted by signal, repeat */
-  ARES_CONN_ERR_AFNOSUPPORT  = 12, /*!< Address family not supported */
-  ARES_CONN_ERR_BADADDR      = 13, /*!< Bad Address / Unavailable */
-  ARES_CONN_ERR_FAILURE      = 99  /*!< Generic failure */
-} ares_conn_err_t;
-
-ares_conn_err_t ares__open_socket(ares_socket_t *sock, ares_channel_t *channel,
-                                  int af, int type, int protocol);
-ares_bool_t     ares__socket_try_again(int errnum);
-ares_conn_err_t ares__conn_write(ares_conn_t *conn, const void *data,
-                                 size_t len, size_t *written);
-ares_status_t   ares__conn_flush(ares_conn_t *conn);
-ares_conn_err_t ares__conn_read(ares_conn_t *conn, void *data, size_t len,
-                                size_t *read_bytes);
-void            ares__conn_sock_state_cb_update(ares_conn_t            *conn,
-                                                ares_conn_state_flags_t flags);
-ares_conn_err_t ares__socket_recv(ares_channel_t *channel, ares_socket_t s,
-                                  ares_bool_t is_tcp, void *data,
-                                  size_t data_len, size_t *read_bytes);
-ares_conn_err_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
-                                      ares_bool_t is_tcp, void *data,
-                                      size_t data_len, int flags,
-                                      struct sockaddr *from,
-                                      ares_socklen_t  *from_len,
-                                      size_t          *read_bytes);
-void            ares__close_socket(ares_channel_t *channel, ares_socket_t s);
-ares_status_t   ares__connect_socket(ares_channel_t        *channel,
-                                     ares_socket_t          sockfd,
-                                     const struct sockaddr *addr,
-                                     ares_socklen_t         addrlen);
-void            ares__destroy_server(ares_server_t *server);
-
-ares_status_t   ares__servers_update(ares_channel_t *channel,
-                                     ares__llist_t  *server_list,
-                                     ares_bool_t     user_specified);
-ares_status_t   ares__sconfig_append(ares__llist_t         **sconfig,
-                                     const struct ares_addr *addr,
-                                     unsigned short          udp_port,
-                                     unsigned short          tcp_port,
-                                     const char             *ll_iface);
-ares_status_t   ares__sconfig_append_fromstr(ares__llist_t **sconfig,
-                                             const char     *str,
-                                             ares_bool_t     ignore_invalid);
-ares_status_t   ares_in_addr_to_sconfig_llist(const struct in_addr *servers,
-                                              size_t                nservers,
-                                              ares__llist_t       **llist);
-ares_status_t   ares_get_server_addr(const ares_server_t *server,
-                                     ares__buf_t         *buf);
+ares_status_t ares__servers_update(ares_channel_t *channel,
+                                   ares__llist_t  *server_list,
+                                   ares_bool_t     user_specified);
+ares_status_t ares__sconfig_append(ares__llist_t         **sconfig,
+                                   const struct ares_addr *addr,
+                                   unsigned short          udp_port,
+                                   unsigned short          tcp_port,
+                                   const char             *ll_iface);
+ares_status_t ares__sconfig_append_fromstr(ares__llist_t **sconfig,
+                                           const char     *str,
+                                           ares_bool_t     ignore_invalid);
+ares_status_t ares_in_addr_to_sconfig_llist(const struct in_addr *servers,
+                                            size_t                nservers,
+                                            ares__llist_t       **llist);
+ares_status_t ares_get_server_addr(const ares_server_t *server,
+                                   ares__buf_t         *buf);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
@@ -776,13 +555,6 @@ ares_bool_t   ares__subnet_match(const struct ares_addr *addr,
                                  unsigned char           netmask);
 ares_bool_t   ares__addr_is_linklocal(const struct ares_addr *addr);
 
-ares_bool_t   ares__is_64bit(void);
-size_t        ares__round_up_pow2(size_t n);
-size_t        ares__log2(size_t n);
-size_t        ares__pow(size_t x, size_t y);
-size_t        ares__count_digits(size_t n);
-size_t        ares__count_hexdigits(size_t n);
-unsigned char ares__count_bits_u8(unsigned char x);
 void          ares__qcache_destroy(ares__qcache_t *cache);
 ares_status_t ares__qcache_create(ares_rand_state *rand_state,
                                   unsigned int     max_ttl,

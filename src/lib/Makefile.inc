@@ -90,6 +90,7 @@ CSOURCES = ares__addrinfo2hostent.c	\
   util/ares_rand.c
 
 HHEADERS = ares_android.h			\
+  ares_conn.h				\
   ares_data.h				\
   ares_getenv.h				\
   ares_inet_net_pton.h			\
@@ -114,4 +115,7 @@ HHEADERS = ares_android.h			\
   str/ares_strsplit.h			\
   util/ares__iface_ips.h		\
   util/ares__threads.h			\
+  util/ares_math.h			\
+  util/ares_rand.h			\
+  util/ares_time.h			\
   thirdparty/apple/dnsinfo.h
