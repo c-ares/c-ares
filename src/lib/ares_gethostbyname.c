@@ -239,7 +239,7 @@ static size_t get6_address_index(const struct ares_in6_addr *addr,
 }
 
 static ares_status_t ares_hostent_localhost(const char *name, int family,
-                                             struct hostent **host_out)
+                                            struct hostent **host_out)
 {
   ares_status_t              status;
   struct ares_addrinfo      *ai = NULL;

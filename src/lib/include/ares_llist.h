@@ -59,8 +59,7 @@ typedef void (*ares_llist_destructor_t)(void *data);
  *  \param[in] destruct  Optional. Destructor to call on all removed nodes
  *  \return linked list object or NULL on out of memory
  */
-CARES_EXTERN ares_llist_t *
-  ares_llist_create(ares_llist_destructor_t destruct);
+CARES_EXTERN ares_llist_t *ares_llist_create(ares_llist_destructor_t destruct);
 
 /*! Replace destructor for linked list nodes.  Typically this is used
  *  when wanting to disable the destructor by using NULL.
@@ -70,7 +69,7 @@ CARES_EXTERN ares_llist_t *
  */
 CARES_EXTERN void
   ares_llist_replace_destructor(ares_llist_t           *list,
-                                 ares_llist_destructor_t destruct);
+                                ares_llist_destructor_t destruct);
 
 /*! Insert value as the first node in the linked list
  *
@@ -80,7 +79,7 @@ CARES_EXTERN void
  *   misuse
  */
 CARES_EXTERN ares_llist_node_t *ares_llist_insert_first(ares_llist_t *list,
-                                                          void          *val);
+                                                        void         *val);
 
 /*! Insert value as the last node in the linked list
  *
@@ -90,7 +89,7 @@ CARES_EXTERN ares_llist_node_t *ares_llist_insert_first(ares_llist_t *list,
  *   misuse
  */
 CARES_EXTERN ares_llist_node_t *ares_llist_insert_last(ares_llist_t *list,
-                                                         void          *val);
+                                                       void         *val);
 
 /*! Insert value before specified node in the linked list
  *
@@ -109,8 +108,8 @@ CARES_EXTERN ares_llist_node_t *
  *  \return node object referencing place in list, or null if out of memory or
  *   misuse
  */
-CARES_EXTERN ares_llist_node_t *
-  ares_llist_insert_after(ares_llist_node_t *node, void *val);
+CARES_EXTERN ares_llist_node_t *ares_llist_insert_after(ares_llist_node_t *node,
+                                                        void              *val);
 
 /*! Obtain first node in list
  *
@@ -133,23 +132,21 @@ CARES_EXTERN ares_llist_node_t *ares_llist_node_last(ares_llist_t *list);
  *  \return node at index or NULL if invalid index
  */
 CARES_EXTERN ares_llist_node_t *ares_llist_node_idx(ares_llist_t *list,
-                                                      size_t         idx);
+                                                    size_t        idx);
 
 /*! Obtain next node in respect to specified node
  *
  *  \param[in] node  Node referenced
  *  \return node or NULL if none
  */
-CARES_EXTERN ares_llist_node_t *
-  ares_llist_node_next(ares_llist_node_t *node);
+CARES_EXTERN ares_llist_node_t *ares_llist_node_next(ares_llist_node_t *node);
 
 /*! Obtain previous node in respect to specified node
  *
  *  \param[in] node  Node referenced
  *  \return node or NULL if none
  */
-CARES_EXTERN ares_llist_node_t                           *
-  ares_llist_node_prev(ares_llist_node_t *node);
+CARES_EXTERN ares_llist_node_t *ares_llist_node_prev(ares_llist_node_t *node);
 
 
 /*! Obtain value from node
@@ -157,41 +154,41 @@ CARES_EXTERN ares_llist_node_t                           *
  *  \param[in] node  Node referenced
  *  \return user provided value from node
  */
-CARES_EXTERN void          *ares_llist_node_val(ares_llist_node_t *node);
+CARES_EXTERN void              *ares_llist_node_val(ares_llist_node_t *node);
 
 /*! Obtain the number of entries in the list
  *
  *  \param[in] list  Initialized list object
  *  \return count
  */
-CARES_EXTERN size_t         ares_llist_len(const ares_llist_t *list);
+CARES_EXTERN size_t             ares_llist_len(const ares_llist_t *list);
 
 /*! Clear all entries in the list, but don't destroy the list object.
  *
  *  \param[in] list  Initialized list object
  */
-CARES_EXTERN void           ares_llist_clear(ares_llist_t *list);
+CARES_EXTERN void               ares_llist_clear(ares_llist_t *list);
 
 /*! Obtain list object from referenced node
  *
  *  \param[in] node  Node referenced
  *  \return list object node belongs to
  */
-CARES_EXTERN ares_llist_t *ares_llist_node_parent(ares_llist_node_t *node);
+CARES_EXTERN ares_llist_t      *ares_llist_node_parent(ares_llist_node_t *node);
 
 /*! Obtain the first user-supplied value in the list
  *
  *  \param[in] list Initialized list object
  *  \return first user supplied value or NULL if none
  */
-CARES_EXTERN void          *ares_llist_first_val(ares_llist_t *list);
+CARES_EXTERN void              *ares_llist_first_val(ares_llist_t *list);
 
 /*! Obtain the last user-supplied value in the list
  *
  *  \param[in] list Initialized list object
  *  \return last user supplied value or NULL if none
  */
-CARES_EXTERN void          *ares_llist_last_val(ares_llist_t *list);
+CARES_EXTERN void              *ares_llist_last_val(ares_llist_t *list);
 
 /*! Take ownership of user-supplied value in list without calling destructor.
  *  Will unchain entry from list.
@@ -199,7 +196,7 @@ CARES_EXTERN void          *ares_llist_last_val(ares_llist_t *list);
  *  \param[in] node Node referenced
  *  \return user supplied value
  */
-CARES_EXTERN void          *ares_llist_node_claim(ares_llist_node_t *node);
+CARES_EXTERN void              *ares_llist_node_claim(ares_llist_node_t *node);
 
 /*! Replace user-supplied value for node
  *
@@ -227,7 +224,7 @@ CARES_EXTERN void ares_llist_destroy(ares_llist_t *list);
  * \param[in] new_parent new list
  */
 CARES_EXTERN void ares_llist_node_mvparent_last(ares_llist_node_t *node,
-                                                 ares_llist_t *new_parent);
+                                                ares_llist_t      *new_parent);
 
 /*! Detach node from the current list and re-attach it to the new list as the
  *  first entry.
@@ -236,7 +233,7 @@ CARES_EXTERN void ares_llist_node_mvparent_last(ares_llist_node_t *node,
  * \param[in] new_parent new list
  */
 CARES_EXTERN void ares_llist_node_mvparent_first(ares_llist_node_t *node,
-                                                  ares_llist_t *new_parent);
+                                                 ares_llist_t      *new_parent);
 /*! @} */
 
 #endif /* __ARES__LLIST_H */

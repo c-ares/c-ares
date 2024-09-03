@@ -184,8 +184,7 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
   query->node_queries_to_conn    = NULL;
 
   /* Chain the query into the list of all queries. */
-  query->node_all_queries =
-    ares_llist_insert_last(channel->all_queries, query);
+  query->node_all_queries = ares_llist_insert_last(channel->all_queries, query);
   if (query->node_all_queries == NULL) {
     /* LCOV_EXCL_START: OutOfMemory */
     callback(arg, ARES_ENOMEM, 0, NULL);

@@ -36,10 +36,10 @@ struct ares_htable {
   ares_htable_bucket_key_t  bucket_key;
   ares_htable_bucket_free_t bucket_free;
   ares_htable_key_eq_t      key_eq;
-  unsigned int               seed;
-  unsigned int               size;
-  size_t                     num_keys;
-  size_t                     num_collisions;
+  unsigned int              seed;
+  unsigned int              size;
+  size_t                    num_keys;
+  size_t                    num_collisions;
   /* NOTE: if we converted buckets into ares_slist_t we could guarantee on
    *       hash collisions we would have O(log n) worst case insert and search
    *       performance.  (We'd also need to make key_eq into a key_cmp to
@@ -69,8 +69,8 @@ static unsigned int ares_htable_generate_seed(ares_htable_t *htable)
 }
 
 static void ares_htable_buckets_destroy(ares_llist_t **buckets,
-                                         unsigned int    size,
-                                         ares_bool_t     destroy_vals)
+                                        unsigned int   size,
+                                        ares_bool_t    destroy_vals)
 {
   unsigned int i;
 
@@ -103,9 +103,9 @@ void ares_htable_destroy(ares_htable_t *htable)
 }
 
 ares_htable_t *ares_htable_create(ares_htable_hashfunc_t    hash_func,
-                                    ares_htable_bucket_key_t  bucket_key,
-                                    ares_htable_bucket_free_t bucket_free,
-                                    ares_htable_key_eq_t      key_eq)
+                                  ares_htable_bucket_key_t  bucket_key,
+                                  ares_htable_bucket_free_t bucket_free,
+                                  ares_htable_key_eq_t      key_eq)
 {
   ares_htable_t *htable = NULL;
 
@@ -175,7 +175,7 @@ const void **ares_htable_all_buckets(const ares_htable_t *htable, size_t *num)
 #define HASH_IDX(h, key) h->hash(key, h->seed) & (h->size - 1)
 
 static ares_llist_node_t *ares_htable_find(const ares_htable_t *htable,
-                                             unsigned int idx, const void *key)
+                                           unsigned int idx, const void *key)
 {
   ares_llist_node_t *node = NULL;
 
@@ -192,11 +192,11 @@ static ares_llist_node_t *ares_htable_find(const ares_htable_t *htable,
 static ares_bool_t ares_htable_expand(ares_htable_t *htable)
 {
   ares_llist_t **buckets  = NULL;
-  unsigned int    old_size = htable->size;
-  size_t          i;
+  unsigned int   old_size = htable->size;
+  size_t         i;
   ares_llist_t **prealloc_llist     = NULL;
-  size_t          prealloc_llist_len = 0;
-  ares_bool_t     rv                 = ARES_FALSE;
+  size_t         prealloc_llist_len = 0;
+  ares_bool_t    rv                 = ARES_FALSE;
 
   /* Not a failure, just won't expand */
   if (old_size == ARES__HTABLE_MAX_BUCKETS) {
@@ -303,7 +303,7 @@ done:
   ares_free(buckets);
   /* destroy any unused preallocated buckets */
   ares_htable_buckets_destroy(prealloc_llist, (unsigned int)prealloc_llist_len,
-                               ARES_FALSE);
+                              ARES_FALSE);
 
   /* On failure, we need to restore the htable size */
   if (rv != ARES_TRUE) {
@@ -315,9 +315,9 @@ done:
 
 ares_bool_t ares_htable_insert(ares_htable_t *htable, void *bucket)
 {
-  unsigned int        idx  = 0;
+  unsigned int       idx  = 0;
   ares_llist_node_t *node = NULL;
-  const void         *key  = NULL;
+  const void        *key  = NULL;
 
   if (htable == NULL || bucket == NULL) {
     return ARES_FALSE;
@@ -384,7 +384,7 @@ void *ares_htable_get(const ares_htable_t *htable, const void *key)
 ares_bool_t ares_htable_remove(ares_htable_t *htable, const void *key)
 {
   ares_llist_node_t *node;
-  unsigned int        idx;
+  unsigned int       idx;
 
   if (htable == NULL || key == NULL) {
     return ARES_FALSE;
@@ -416,7 +416,7 @@ size_t ares_htable_num_keys(const ares_htable_t *htable)
 }
 
 unsigned int ares_htable_hash_FNV1a(const unsigned char *key, size_t key_len,
-                                     unsigned int seed)
+                                    unsigned int seed)
 {
   unsigned int hv = seed ^ 2166136261U;
   size_t       i;
@@ -432,7 +432,7 @@ unsigned int ares_htable_hash_FNV1a(const unsigned char *key, size_t key_len,
 
 /* Case insensitive version, meant for ASCII strings */
 unsigned int ares_htable_hash_FNV1a_casecmp(const unsigned char *key,
-                                             size_t key_len, unsigned int seed)
+                                            size_t key_len, unsigned int seed)
 {
   unsigned int hv = seed ^ 2166136261U;
   size_t       i;

@@ -204,14 +204,14 @@ typedef struct {
   NtCancelIoFileEx_t      NtCancelIoFileEx;
 
   /* Implementation details */
-  ares_slist_t          *afd_handles;
+  ares_slist_t           *afd_handles;
   HANDLE                  iocp_handle;
 
   /* IO_STATUS_BLOCK * -> ares_evsys_win32_eventdata_t * mapping.  There is
    * no completion key passed to IOCP with this method so we have to look
    * up based on the lpOverlapped returned (which is mapped to IO_STATUS_BLOCK)
    */
-  ares_htable_vpvp_t    *sockets;
+  ares_htable_vpvp_t     *sockets;
 
   /* Flag about whether or not we are shutting down */
   ares_bool_t             is_shutdown;
@@ -226,19 +226,19 @@ typedef enum {
 
 typedef struct {
   /*! Pointer to parent event container */
-  ares_event_t         *event;
+  ares_event_t        *event;
   /*! Socket passed in to monitor */
-  SOCKET                socket;
+  SOCKET               socket;
   /*! Base socket derived from provided socket */
-  SOCKET                base_socket;
+  SOCKET               base_socket;
   /*! Structure for submitting AFD POLL requests (Internals!) */
-  AFD_POLL_INFO         afd_poll_info;
+  AFD_POLL_INFO        afd_poll_info;
   /*! Status of current polling operation */
-  poll_status_t         poll_status;
+  poll_status_t        poll_status;
   /*! IO Status Block structure submitted with AFD POLL requests and returned
    *  with IOCP results as lpOverlapped (even though its a different structure)
    */
-  IO_STATUS_BLOCK       iosb;
+  IO_STATUS_BLOCK      iosb;
   /*! AFD handle node an outstanding poll request is associated with */
   ares_slist_node_t   *afd_handle_node;
   /* Lock is only for PostQueuedCompletionStatus() to prevent multiple
@@ -379,7 +379,7 @@ static ares_slist_node_t *ares_afd_handle_create(ares_evsys_win32_t *ew)
   OBJECT_ATTRIBUTES  afd_attributes;
   NTSTATUS           status;
   IO_STATUS_BLOCK    iosb;
-  ares_afd_handle_t *afd   = ares_malloc_zero(sizeof(*afd));
+  ares_afd_handle_t *afd  = ares_malloc_zero(sizeof(*afd));
   ares_slist_node_t *node = NULL;
   if (afd == NULL) {
     goto fail;
@@ -425,7 +425,7 @@ fail:
 static ares_slist_node_t *ares_afd_handle_fetch(ares_evsys_win32_t *ew)
 {
   ares_slist_node_t *node = ares_slist_node_first(ew->afd_handles);
-  ares_afd_handle_t  *afd  = ares_slist_node_val(node);
+  ares_afd_handle_t *afd  = ares_slist_node_val(node);
 
   if (afd != NULL && afd->poll_cnt < AFD_POLL_PER_HANDLE) {
     return node;

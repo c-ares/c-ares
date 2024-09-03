@@ -51,7 +51,7 @@ CARES_EXTERN void          ares_str_trim(char *str);
 
 CARES_EXTERN unsigned char ares_tolower(unsigned char c);
 CARES_EXTERN ares_bool_t   ares_memeq_ci(const unsigned char *ptr,
-                                          const unsigned char *val, size_t len);
+                                         const unsigned char *val, size_t len);
 CARES_EXTERN ares_bool_t   ares_is_hostname(const char *str);
 
 /*! Validate the string provided is printable.  The length specified must be
@@ -70,23 +70,20 @@ CARES_EXTERN ares_bool_t   ares_str_isprint(const char *str, size_t len);
 /* We only care about ASCII rules */
 #define ares_isascii(x) (((unsigned char)x) <= 127)
 
-#define ares_isdigit(x) \
-  (((unsigned char)x) >= '0' && ((unsigned char)x) <= '9')
+#define ares_isdigit(x) (((unsigned char)x) >= '0' && ((unsigned char)x) <= '9')
 
-#define ares_isxdigit(x)                                      \
-  (ares_isdigit(x) ||                                         \
+#define ares_isxdigit(x)                                       \
+  (ares_isdigit(x) ||                                          \
    (((unsigned char)x) >= 'a' && ((unsigned char)x) <= 'f') || \
    (((unsigned char)x) >= 'A' && ((unsigned char)x) <= 'F'))
 
-#define ares_isupper(x) \
-  (((unsigned char)x) >= 'A' && ((unsigned char)x) <= 'Z')
+#define ares_isupper(x) (((unsigned char)x) >= 'A' && ((unsigned char)x) <= 'Z')
 
-#define ares_islower(x) \
-  (((unsigned char)x) >= 'a' && ((unsigned char)x) <= 'z')
+#define ares_islower(x) (((unsigned char)x) >= 'a' && ((unsigned char)x) <= 'z')
 
 #define ares_isalpha(x) (ares_islower(x) || ares_isupper(x))
 
-#define ares_isspace(x)                                           \
+#define ares_isspace(x)                                            \
   (((unsigned char)(x)) == '\r' || ((unsigned char)(x)) == '\t' || \
    ((unsigned char)(x)) == ' ' || ((unsigned char)(x)) == '\v' ||  \
    ((unsigned char)(x)) == '\f' || ((unsigned char)(x)) == '\n')
@@ -108,9 +105,9 @@ CARES_EXTERN ares_bool_t   ares_str_isprint(const char *str, size_t len);
  * anyhow).
  * [A-Za-z0-9-*._/]
  */
-#define ares_is_hostnamech(x)                                            \
+#define ares_is_hostnamech(x)                                           \
   (ares_isalpha(x) || ares_isdigit(x) || ((unsigned char)(x)) == '-' || \
-   ((unsigned char)(x)) == '.' || ((unsigned char)(x)) == '_' ||          \
+   ((unsigned char)(x)) == '.' || ((unsigned char)(x)) == '_' ||        \
    ((unsigned char)(x)) == '/' || ((unsigned char)(x)) == '*')
 
 

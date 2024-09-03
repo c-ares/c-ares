@@ -124,7 +124,7 @@ struct ares_addrinfo_cname *
 }
 
 void ares_addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
-                               struct ares_addrinfo_cname  *tail)
+                              struct ares_addrinfo_cname  *tail)
 {
   struct ares_addrinfo_cname *last = *head;
   if (!last) {
@@ -164,7 +164,7 @@ struct ares_addrinfo_node *
 }
 
 void ares_addrinfo_cat_nodes(struct ares_addrinfo_node **head,
-                              struct ares_addrinfo_node  *tail)
+                             struct ares_addrinfo_node  *tail)
 {
   struct ares_addrinfo_node *last = *head;
   if (!last) {
@@ -426,7 +426,7 @@ done:
   if (status != ARES_SUCCESS && status != ARES_ENOMEM &&
       ares_is_localhost(hquery->name)) {
     return ares_addrinfo_localhost(hquery->name, hquery->port, &hquery->hints,
-                                    hquery->ai);
+                                   hquery->ai);
   }
 
   return status;

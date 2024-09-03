@@ -289,7 +289,7 @@ static ares_bool_t read_rcfile(adig_config_t *config)
 
   size_t        rcargc;
   char        **rcargv;
-  ares_buf_t  *rcbuf;
+  ares_buf_t   *rcbuf;
   ares_status_t rcstatus;
 
 #if defined(WIN32)
@@ -339,7 +339,7 @@ static ares_bool_t read_rcfile(adig_config_t *config)
   rcbuf = ares_buf_create();
   if (ares_buf_load_file(rcfile, rcbuf) == ARES_SUCCESS) {
     rcstatus = ares_buf_split_str(rcbuf, (const unsigned char *)"\n ", 2,
-                                   ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
+                                  ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
 
     if (rcstatus == ARES_SUCCESS) {
       read_cmdline((int)rcargc, (const char * const *)rcargv, config,

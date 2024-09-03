@@ -86,7 +86,7 @@ CARES_EXTERN ares_socket_t *
  *  \return ARES_TRUE on success, ARES_FALSE on out of memory or misuse
  */
 CARES_EXTERN ares_bool_t ares_htable_asvp_insert(ares_htable_asvp_t *htable,
-                                                  ares_socket_t key, void *val);
+                                                 ares_socket_t key, void *val);
 
 /*! Retrieve value from hashtable based on key
  *
@@ -95,8 +95,8 @@ CARES_EXTERN ares_bool_t ares_htable_asvp_insert(ares_htable_asvp_t *htable,
  *  \param[out] val     Optional.  Pointer to store value.
  *  \return ARES_TRUE on success, ARES_FALSE on failure
  */
-CARES_EXTERN ares_bool_t ares_htable_asvp_get(
-  const ares_htable_asvp_t *htable, ares_socket_t key, void **val);
+CARES_EXTERN ares_bool_t ares_htable_asvp_get(const ares_htable_asvp_t *htable,
+                                              ares_socket_t key, void **val);
 
 /*! Retrieve value from hashtable directly as return value.  Caveat to this
  *  function over ares_htable_asvp_get() is that if a NULL value is stored
@@ -106,9 +106,8 @@ CARES_EXTERN ares_bool_t ares_htable_asvp_get(
  *  \param[in] key     key to use to search
  *  \return value associated with key in hashtable or NULL
  */
-CARES_EXTERN void *
-  ares_htable_asvp_get_direct(const ares_htable_asvp_t *htable,
-                               ares_socket_t              key);
+CARES_EXTERN void *ares_htable_asvp_get_direct(const ares_htable_asvp_t *htable,
+                                               ares_socket_t             key);
 
 /*! Remove a value from the hashtable by key
  *
@@ -117,15 +116,14 @@ CARES_EXTERN void *
  *  \return ARES_TRUE if found, ARES_FALSE if not found
  */
 CARES_EXTERN ares_bool_t ares_htable_asvp_remove(ares_htable_asvp_t *htable,
-                                                  ares_socket_t        key);
+                                                 ares_socket_t       key);
 
 /*! Retrieve the number of keys stored in the hash table
  *
  *  \param[in] htable  Initialized hash table
  *  \return count
  */
-CARES_EXTERN size_t
-  ares_htable_asvp_num_keys(const ares_htable_asvp_t *htable);
+CARES_EXTERN size_t ares_htable_asvp_num_keys(const ares_htable_asvp_t *htable);
 
 /*! @} */
 

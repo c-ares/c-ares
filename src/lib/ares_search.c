@@ -169,7 +169,7 @@ static void search_callback(void *arg, ares_status_t status, size_t timeouts,
 /* Determine if the domain should be looked up as-is, or if it is eligible
  * for search by appending domains */
 static ares_bool_t ares_search_eligible(const ares_channel_t *channel,
-                                         const char           *name)
+                                        const char           *name)
 {
   size_t len = ares_strlen(name);
 
@@ -205,8 +205,8 @@ size_t ares_name_label_cnt(const char *name)
 }
 
 ares_status_t ares_search_name_list(const ares_channel_t *channel,
-                                     const char *name, char ***names,
-                                     size_t *names_len)
+                                    const char *name, char ***names,
+                                    size_t *names_len)
 {
   ares_status_t status;
   char        **list     = NULL;
@@ -406,7 +406,7 @@ void *ares_dnsrec_convert_arg(ares_callback callback, void *arg)
  *  the inner callback.
  */
 void ares_dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
-                             const ares_dns_record_t *dnsrec)
+                            const ares_dns_record_t *dnsrec)
 {
   dnsrec_convert_arg_t *carg = arg;
   unsigned char        *abuf = NULL;
@@ -510,10 +510,10 @@ ares_status_t ares_cat_domain(const char *name, const char *domain, char **s)
 }
 
 ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
-                                       const char *name, char **alias)
+                                      const char *name, char **alias)
 {
-  ares_status_t       status      = ARES_SUCCESS;
-  const char         *hostaliases = NULL;
+  ares_status_t      status      = ARES_SUCCESS;
+  const char        *hostaliases = NULL;
   ares_buf_t        *buf         = NULL;
   ares_llist_t      *lines       = NULL;
   ares_llist_node_t *node;
@@ -560,7 +560,7 @@ ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
    */
 
   status = ares_buf_split(buf, (const unsigned char *)"\n", 1,
-                           ARES_BUF_SPLIT_TRIM, 0, &lines);
+                          ARES_BUF_SPLIT_TRIM, 0, &lines);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -568,8 +568,8 @@ ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
   for (node = ares_llist_node_first(lines); node != NULL;
        node = ares_llist_node_next(node)) {
     ares_buf_t *line         = ares_llist_node_val(node);
-    char         hostname[64] = "";
-    char         fqdn[256]    = "";
+    char        hostname[64] = "";
+    char        fqdn[256]    = "";
 
     /* Pull off hostname */
     ares_buf_tag(line);

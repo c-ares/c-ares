@@ -101,7 +101,7 @@ static ares_status_t ares_init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
 
     status =
       ares_sconfig_append(&sysconfig->sconfig, &addr, htons(addr_in->sin_port),
-                           htons(addr_in->sin_port), NULL);
+                          htons(addr_in->sin_port), NULL);
 
     if (status != ARES_SUCCESS) {
       return status;
@@ -118,7 +118,7 @@ static ares_status_t ares_init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
 
     status =
       ares_sconfig_append(&sysconfig->sconfig, &addr, htons(addr_in->sin_port),
-                           htons(addr_in->sin_port), NULL);
+                          htons(addr_in->sin_port), NULL);
 
     if (status != ARES_SUCCESS) {
       return status;
@@ -153,8 +153,7 @@ static ares_status_t ares_init_sysconfig_riscos(ares_sysconfig_t *sysconfig)
       if (space) {
         *space = '\0';
       }
-      status =
-        ares_sconfig_append_fromstr(&sysconfig->sconfig, pos, ARES_TRUE);
+      status = ares_sconfig_append_fromstr(&sysconfig->sconfig, pos, ARES_TRUE);
       if (status != ARES_SUCCESS) {
         break;
       }
@@ -212,7 +211,7 @@ static ares_status_t ares_init_sysconfig_android(ares_sysconfig_t *sysconfig)
   if (dns_servers != NULL) {
     for (i = 0; i < num_servers; i++) {
       status = ares_sconfig_append_fromstr(&sysconfig->sconfig, dns_servers[i],
-                                            ARES_TRUE);
+                                           ARES_TRUE);
       if (status != ARES_SUCCESS) {
         return status;
       }
@@ -265,7 +264,7 @@ static ares_status_t ares_init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
   int                      nscount;
   size_t                   i;
   size_t                   entries = 0;
-  ares_buf_t             *ipbuf   = NULL;
+  ares_buf_t              *ipbuf   = NULL;
 
   memset(&res, 0, sizeof(res));
 
@@ -345,8 +344,7 @@ static ares_status_t ares_init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
       goto done;
     }
 
-    status =
-      ares_sconfig_append_fromstr(&sysconfig->sconfig, ipstr, ARES_TRUE);
+    status = ares_sconfig_append_fromstr(&sysconfig->sconfig, ipstr, ARES_TRUE);
 
     ares_free(ipstr);
     if (status != ARES_SUCCESS) {

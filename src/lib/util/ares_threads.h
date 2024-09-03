@@ -43,10 +43,10 @@ void          ares_thread_cond_destroy(ares_thread_cond_t *cond);
 void          ares_thread_cond_signal(ares_thread_cond_t *cond);
 void          ares_thread_cond_broadcast(ares_thread_cond_t *cond);
 ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
-                                     ares_thread_mutex_t *mut);
+                                    ares_thread_mutex_t *mut);
 ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
-                                          ares_thread_mutex_t *mut,
-                                          unsigned long         timeout_ms);
+                                         ares_thread_mutex_t *mut,
+                                         unsigned long        timeout_ms);
 
 
 struct ares_thread;
@@ -54,7 +54,7 @@ typedef struct ares_thread ares_thread_t;
 
 typedef void *(*ares_thread_func_t)(void *arg);
 ares_status_t ares_thread_create(ares_thread_t    **thread,
-                                  ares_thread_func_t func, void *arg);
+                                 ares_thread_func_t func, void *arg);
 ares_status_t ares_thread_join(ares_thread_t *thread, void **rv);
 
 #endif

@@ -29,7 +29,7 @@
 #include <assert.h>
 
 static void ares_requeue_queries(ares_conn_t  *conn,
-                                  ares_status_t requeue_status)
+                                 ares_status_t requeue_status)
 {
   ares_query_t  *query;
   ares_timeval_t now;
@@ -91,16 +91,16 @@ void ares_check_cleanup_conns(const ares_channel_t *channel)
   /* Iterate across each server */
   for (snode = ares_slist_node_first(channel->servers); snode != NULL;
        snode = ares_slist_node_next(snode)) {
-    ares_server_t      *server = ares_slist_node_val(snode);
+    ares_server_t     *server = ares_slist_node_val(snode);
     ares_llist_node_t *cnode;
 
     /* Iterate across each connection */
     cnode = ares_llist_node_first(server->connections);
     while (cnode != NULL) {
       ares_llist_node_t *next       = ares_llist_node_next(cnode);
-      ares_conn_t        *conn       = ares_llist_node_val(cnode);
-      ares_bool_t         do_cleanup = ARES_FALSE;
-      cnode                          = next;
+      ares_conn_t       *conn       = ares_llist_node_val(cnode);
+      ares_bool_t        do_cleanup = ARES_FALSE;
+      cnode                         = next;
 
       /* Has connections, not eligible */
       if (ares_llist_len(conn->queries_to_conn)) {

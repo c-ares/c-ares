@@ -42,7 +42,7 @@ static void ares_nameoffset_free(void *arg)
 }
 
 static ares_status_t ares_nameoffset_create(ares_llist_t **list,
-                                             const char *name, size_t idx)
+                                            const char *name, size_t idx)
 {
   ares_status_t      status;
   ares_nameoffset_t *off = NULL;
@@ -84,10 +84,10 @@ fail:
 }
 
 static const ares_nameoffset_t *ares_nameoffset_find(ares_llist_t *list,
-                                                      const char    *name)
+                                                     const char   *name)
 {
   size_t                   name_len = ares_strlen(name);
-  ares_llist_node_t      *node;
+  ares_llist_node_t       *node;
   const ares_nameoffset_t *longest_match = NULL;
 
   if (list == NULL || name == NULL || name_len == 0) {
@@ -191,7 +191,7 @@ static void ares_dns_name_labels_del_last(ares_array_t *labels)
 
 static ares_status_t ares_parse_dns_name_escape(ares_buf_t *namebuf,
                                                 ares_buf_t *label,
-                                                ares_bool_t  validate_hostname)
+                                                ares_bool_t validate_hostname)
 {
   ares_status_t status;
   unsigned char c;
@@ -242,12 +242,12 @@ static ares_status_t ares_parse_dns_name_escape(ares_buf_t *namebuf,
 }
 
 static ares_status_t ares_split_dns_name(ares_array_t *labels,
-                                         ares_bool_t    validate_hostname,
-                                         const char    *name)
+                                         ares_bool_t   validate_hostname,
+                                         const char   *name)
 {
   ares_status_t status;
-  ares_buf_t  *label   = NULL;
-  ares_buf_t  *namebuf = NULL;
+  ares_buf_t   *label   = NULL;
+  ares_buf_t   *namebuf = NULL;
   size_t        i;
   size_t        total_len = 0;
   unsigned char c;
@@ -325,7 +325,7 @@ static ares_status_t ares_split_dns_name(ares_array_t *labels,
   /* Scan to make sure label lengths are valid */
   for (i = 0; i < ares_array_len(labels); i++) {
     const ares_buf_t *buf = ares_dns_labels_get_at(labels, i);
-    size_t             len = ares_buf_len(buf);
+    size_t            len = ares_buf_len(buf);
     /* No 0-length labels, and no labels over 63 bytes */
     if (len == 0 || len > 63) {
       status = ARES_EBADNAME;
@@ -335,8 +335,7 @@ static ares_status_t ares_split_dns_name(ares_array_t *labels,
   }
 
   /* Can't exceed maximum (unescaped) length */
-  if (ares_array_len(labels) &&
-      total_len + ares_array_len(labels) - 1 > 255) {
+  if (ares_array_len(labels) && total_len + ares_array_len(labels) - 1 > 255) {
     status = ARES_EBADNAME;
     goto done;
   }
@@ -349,14 +348,14 @@ done:
 }
 
 ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
-                                   ares_bool_t validate_hostname,
-                                   const char *name)
+                                  ares_bool_t validate_hostname,
+                                  const char *name)
 {
   const ares_nameoffset_t *off = NULL;
   size_t                   name_len;
   size_t                   orig_name_len;
   size_t                   pos    = ares_buf_len(buf);
-  ares_array_t           *labels = NULL;
+  ares_array_t            *labels = NULL;
   char                     name_copy[512];
   ares_status_t            status;
 
@@ -395,7 +394,7 @@ ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
 
     for (i = 0; i < ares_array_len(labels); i++) {
       size_t               len  = 0;
-      const ares_buf_t   *lbuf = ares_dns_labels_get_at(labels, i);
+      const ares_buf_t    *lbuf = ares_dns_labels_get_at(labels, i);
       const unsigned char *ptr  = ares_buf_peek(lbuf, &len);
 
       status = ares_buf_append_byte(buf, (unsigned char)(len & 0xFF));
@@ -466,8 +465,8 @@ static ares_bool_t is_reservedch(int ch)
 }
 
 static ares_status_t ares_fetch_dnsname_into_buf(ares_buf_t *buf,
-                                                  ares_buf_t *dest, size_t len,
-                                                  ares_bool_t is_hostname)
+                                                 ares_buf_t *dest, size_t len,
+                                                 ares_bool_t is_hostname)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares_buf_peek(buf, &remaining_len);
@@ -532,12 +531,12 @@ fail:
 }
 
 ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
-                                   ares_bool_t is_hostname)
+                                  ares_bool_t is_hostname)
 {
   size_t        save_offset = 0;
   unsigned char c;
   ares_status_t status;
-  ares_buf_t  *namebuf     = NULL;
+  ares_buf_t   *namebuf     = NULL;
   size_t        label_start = ares_buf_get_position(buf);
 
   if (buf == NULL) {

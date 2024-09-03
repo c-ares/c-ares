@@ -48,7 +48,7 @@ void ares_cancel(ares_channel_t *channel)
      * queries being cancelled will not be cancelled themselves.
      */
     ares_llist_t      *list_copy = channel->all_queries;
-    channel->all_queries          = ares_llist_create(NULL);
+    channel->all_queries         = ares_llist_create(NULL);
 
     /* Out of memory, this function doesn't return a result code though so we
      * can't report to caller */

@@ -33,8 +33,8 @@
 
 
 void ares_timeval_remaining(ares_timeval_t       *remaining,
-                             const ares_timeval_t *now,
-                             const ares_timeval_t *tout)
+                            const ares_timeval_t *now,
+                            const ares_timeval_t *tout)
 {
   memset(remaining, 0, sizeof(*remaining));
 
@@ -54,7 +54,7 @@ void ares_timeval_remaining(ares_timeval_t       *remaining,
 }
 
 void ares_timeval_diff(ares_timeval_t *tvdiff, const ares_timeval_t *tvstart,
-                        const ares_timeval_t *tvstop)
+                       const ares_timeval_t *tvstop)
 {
   tvdiff->sec = tvstop->sec - tvstart->sec;
   if (tvstop->usec > tvstart->usec) {
@@ -89,7 +89,7 @@ static struct timeval *ares_timeout_int(const ares_channel_t *channel,
                                         struct timeval       *tvbuf)
 {
   const ares_query_t *query;
-  ares_slist_node_t *node;
+  ares_slist_node_t  *node;
   ares_timeval_t      now;
   ares_timeval_t      atvbuf;
   ares_timeval_t      amaxtv;

@@ -545,17 +545,17 @@ typedef struct {
 } fileinfo_t;
 
 struct ares_event_configchg {
-  ares_bool_t           isup;
+  ares_bool_t          isup;
   ares_thread_t       *thread;
   ares_htable_strvp_t *filestat;
   ares_thread_mutex_t *lock;
   ares_thread_cond_t  *wake;
-  const char           *resolvconf_path;
-  ares_event_thread_t  *e;
+  const char          *resolvconf_path;
+  ares_event_thread_t *e;
 };
 
 static ares_status_t config_change_check(ares_htable_strvp_t *filestat,
-                                         const char           *resolvconf_path)
+                                         const char          *resolvconf_path)
 {
   size_t      i;
   const char *configfiles[5];

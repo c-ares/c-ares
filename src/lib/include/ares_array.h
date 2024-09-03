@@ -74,8 +74,8 @@ typedef int (*ares_array_cmp_t)(const void *data1, const void *data2);
  *
  *  \return array object or NULL on out of memory
  */
-CARES_EXTERN ares_array_t *
-  ares_array_create(size_t member_size, ares_array_destructor_t destruct);
+CARES_EXTERN ares_array_t *ares_array_create(size_t member_size,
+                                             ares_array_destructor_t destruct);
 
 
 /*! Request the array be at least the requested size.  Useful if the desired
@@ -85,8 +85,7 @@ CARES_EXTERN ares_array_t *
  *  \param[in] size Minimum number of members
  *  \return ARES_SUCCESS on success, ARES_EFORMERR on misuse,
  *    ARES_ENOMEM on out of memory */
-CARES_EXTERN ares_status_t ares_array_set_size(ares_array_t *arr,
-                                                size_t         size);
+CARES_EXTERN ares_status_t ares_array_set_size(ares_array_t *arr, size_t size);
 
 /*! Sort the array using the given comparison function.  This is not
  *  persistent, any future elements inserted will not maintain this sort.
@@ -96,7 +95,7 @@ CARES_EXTERN ares_status_t ares_array_set_size(ares_array_t *arr,
  *  \return ARES_SUCCESS on success
  */
 CARES_EXTERN ares_status_t ares_array_sort(ares_array_t    *arr,
-                                            ares_array_cmp_t cmp);
+                                           ares_array_cmp_t cmp);
 
 /*! Destroy an array object.  If a destructor is set, will be called on each
  *  member of the array.
@@ -131,9 +130,8 @@ CARES_EXTERN size_t ares_array_len(const ares_array_t *arr);
  *  \return ARES_SUCCESS on success, ARES_EFORMERR on bad index,
  *          ARES_ENOMEM on out of memory.
  */
-CARES_EXTERN ares_status_t ares_array_insert_at(void         **elem_ptr,
-                                                 ares_array_t *arr,
-                                                 size_t         idx);
+CARES_EXTERN ares_status_t ares_array_insert_at(void        **elem_ptr,
+                                                ares_array_t *arr, size_t idx);
 
 /*! Insert a new array member at the end of the array
  *
@@ -141,8 +139,8 @@ CARES_EXTERN ares_status_t ares_array_insert_at(void         **elem_ptr,
  *  \param[in]  arr      Initialized array object.
  *  \return ARES_SUCCESS on success, ARES_ENOMEM on out of memory.
  */
-CARES_EXTERN ares_status_t ares_array_insert_last(void         **elem_ptr,
-                                                   ares_array_t *arr);
+CARES_EXTERN ares_status_t ares_array_insert_last(void        **elem_ptr,
+                                                  ares_array_t *arr);
 
 /*! Insert a new array member at the beginning of the array
  *
@@ -150,8 +148,8 @@ CARES_EXTERN ares_status_t ares_array_insert_last(void         **elem_ptr,
  *  \param[in]  arr      Initialized array object.
  *  \return ARES_SUCCESS on success, ARES_ENOMEM on out of memory.
  */
-CARES_EXTERN ares_status_t ares_array_insert_first(void         **elem_ptr,
-                                                    ares_array_t *arr);
+CARES_EXTERN ares_status_t ares_array_insert_first(void        **elem_ptr,
+                                                   ares_array_t *arr);
 
 
 /*! Insert a new array member at the given index and copy the data pointed
@@ -168,8 +166,8 @@ CARES_EXTERN ares_status_t ares_array_insert_first(void         **elem_ptr,
  * ptr, ARES_ENOMEM on out of memory.
  */
 CARES_EXTERN ares_status_t ares_array_insertdata_at(ares_array_t *arr,
-                                                     size_t         idx,
-                                                     const void    *data_ptr);
+                                                    size_t        idx,
+                                                    const void   *data_ptr);
 
 /*! Insert a new array member at the end of the array and copy the data pointed
  *  to by the data pointer into the array.  This will copy member_size bytes
@@ -183,7 +181,7 @@ CARES_EXTERN ares_status_t ares_array_insertdata_at(ares_array_t *arr,
  * ptr, ARES_ENOMEM on out of memory.
  */
 CARES_EXTERN ares_status_t ares_array_insertdata_last(ares_array_t *arr,
-                                                       const void    *data_ptr);
+                                                      const void   *data_ptr);
 
 /*! Insert a new array member at the beginning of the array and copy the data
  * pointed to by the data pointer into the array.  This will copy member_size
@@ -197,7 +195,7 @@ CARES_EXTERN ares_status_t ares_array_insertdata_last(ares_array_t *arr,
  * ptr, ARES_ENOMEM on out of memory.
  */
 CARES_EXTERN ares_status_t ares_array_insertdata_first(ares_array_t *arr,
-                                                        const void *data_ptr);
+                                                       const void   *data_ptr);
 
 /*! Fetch a pointer to the given element in the array
  *  \param[in]  array  Initialized array object
@@ -220,7 +218,7 @@ CARES_EXTERN void         *ares_array_last(ares_array_t *arr);
  *  \param[in]  idx    Index to fetch
  *  \return pointer on success, NULL on failure */
 CARES_EXTERN const void   *ares_array_at_const(const ares_array_t *arr,
-                                                size_t               idx);
+                                               size_t              idx);
 
 /*! Fetch a constant pointer to the first element in the array
  *  \param[in]  array  Initialized array object
@@ -247,7 +245,7 @@ CARES_EXTERN const void   *ares_array_last_const(const ares_array_t *arr);
  *  \return ARES_SUCCESS on success, ARES_EFORMERR on usage failure.
  */
 CARES_EXTERN ares_status_t ares_array_claim_at(void *dest, size_t dest_size,
-                                                ares_array_t *arr, size_t idx);
+                                               ares_array_t *arr, size_t idx);
 
 /*! Remove the member at the specified array index.  The destructor will be
  *  called.
@@ -256,8 +254,7 @@ CARES_EXTERN ares_status_t ares_array_claim_at(void *dest, size_t dest_size,
  *  \param[in] idx  Index to remove
  *  \return ARES_SUCCESS if removed, ARES_EFORMERR on invalid use
  */
-CARES_EXTERN ares_status_t ares_array_remove_at(ares_array_t *arr,
-                                                 size_t         idx);
+CARES_EXTERN ares_status_t ares_array_remove_at(ares_array_t *arr, size_t idx);
 
 /*! Remove the first member of the array.
  *

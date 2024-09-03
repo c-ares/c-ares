@@ -31,30 +31,30 @@
 #define ARES__SLIST_START_LEVELS 4
 
 struct ares_slist {
-  ares_rand_state         *rand_state;
-  unsigned char            rand_data[8];
-  size_t                   rand_bits;
+  ares_rand_state        *rand_state;
+  unsigned char           rand_data[8];
+  size_t                  rand_bits;
 
   ares_slist_node_t     **head;
-  size_t                   levels;
+  size_t                  levels;
   ares_slist_node_t      *tail;
 
   ares_slist_cmp_t        cmp;
   ares_slist_destructor_t destruct;
-  size_t                   cnt;
+  size_t                  cnt;
 };
 
 struct ares_slist_node {
-  void                *data;
+  void               *data;
   ares_slist_node_t **prev;
   ares_slist_node_t **next;
-  size_t               levels;
+  size_t              levels;
   ares_slist_t       *parent;
 };
 
-ares_slist_t *ares_slist_create(ares_rand_state         *rand_state,
-                                  ares_slist_cmp_t        cmp,
-                                  ares_slist_destructor_t destruct)
+ares_slist_t *ares_slist_create(ares_rand_state        *rand_state,
+                                ares_slist_cmp_t        cmp,
+                                ares_slist_destructor_t destruct)
 {
   ares_slist_t *list;
 
@@ -92,8 +92,7 @@ static ares_bool_t ares_slist_coin_flip(ares_slist_t *list)
    * to be excessive in caching ourselves.  Prefer to require less memory per
    * skiplist */
   if (list->rand_bits == 0) {
-    ares_rand_bytes(list->rand_state, list->rand_data,
-                     sizeof(list->rand_data));
+    ares_rand_bytes(list->rand_state, list->rand_data, sizeof(list->rand_data));
     list->rand_bits = total_bits;
   }
 
@@ -104,7 +103,7 @@ static ares_bool_t ares_slist_coin_flip(ares_slist_t *list)
 }
 
 void ares_slist_replace_destructor(ares_slist_t           *list,
-                                    ares_slist_destructor_t destruct)
+                                   ares_slist_destructor_t destruct)
 {
   if (list == NULL) {
     return;
@@ -143,7 +142,7 @@ static size_t ares_slist_calc_level(ares_slist_t *list)
 
 static void ares_slist_node_push(ares_slist_t *list, ares_slist_node_t *node)
 {
-  size_t              i;
+  size_t             i;
   ares_slist_node_t *left = NULL;
 
   /* Scan from highest level in the slist, even if we're not using that number
@@ -258,7 +257,7 @@ fail:
 static void ares_slist_node_pop(ares_slist_node_t *node)
 {
   ares_slist_t *list = node->parent;
-  size_t         i;
+  size_t        i;
 
   /* relink each node at each level */
   for (i = node->levels; i-- > 0;) {
@@ -284,7 +283,7 @@ static void ares_slist_node_pop(ares_slist_node_t *node)
 void *ares_slist_node_claim(ares_slist_node_t *node)
 {
   ares_slist_t *list;
-  void          *val;
+  void         *val;
 
   if (node == NULL) {
     return NULL;
@@ -320,9 +319,9 @@ void ares_slist_node_reinsert(ares_slist_node_t *node)
 
 ares_slist_node_t *ares_slist_node_find(ares_slist_t *list, const void *val)
 {
-  size_t              i;
+  size_t             i;
   ares_slist_node_t *node = NULL;
-  int                 rv   = -1;
+  int                rv   = -1;
 
   if (list == NULL || val == NULL) {
     return NULL;
@@ -448,7 +447,7 @@ void *ares_slist_last_val(ares_slist_t *list)
 void ares_slist_node_destroy(ares_slist_node_t *node)
 {
   ares_slist_destructor_t destruct;
-  void                    *val;
+  void                   *val;
 
   if (node == NULL) {
     return;

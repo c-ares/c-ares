@@ -78,10 +78,10 @@
  */
 
 struct ares_hosts_file {
-  time_t                ts;
+  time_t               ts;
   /*! cache the filename so we know if the filename changes it automatically
    *  invalidates the cache */
-  char                 *filename;
+  char                *filename;
   /*! iphash is the owner of the 'entry' object as there is only ever a single
    *  match to the object. */
   ares_htable_strvp_t *iphash;
@@ -90,8 +90,8 @@ struct ares_hosts_file {
 };
 
 struct ares_hosts_entry {
-  size_t         refcnt; /*! If the entry is stored multiple times in the
-                          *  ip address hash, we have to reference count it */
+  size_t        refcnt; /*! If the entry is stored multiple times in the
+                         *  ip address hash, we have to reference count it */
   ares_llist_t *ips;
   ares_llist_t *hosts;
 };
@@ -133,7 +133,7 @@ const void *ares_dns_pton(const char *ipaddr, struct ares_addr *addr,
 }
 
 static ares_bool_t ares_normalize_ipaddr(const char *ipaddr, char *out,
-                                          size_t out_len)
+                                         size_t out_len)
 {
   struct ares_addr data;
   const void      *addr;
@@ -267,7 +267,7 @@ static ares_status_t ares_hosts_file_merge_entry(
 
 static ares_hosts_file_match_t
   ares_hosts_file_match(const ares_hosts_file_t *hf, ares_hosts_entry_t *entry,
-                         ares_hosts_entry_t **match)
+                        ares_hosts_entry_t **match)
 {
   ares_llist_node_t *node;
   *match = NULL;
@@ -295,11 +295,11 @@ static ares_hosts_file_match_t
 
 /*! entry is invalidated upon calling this function, always, even on error */
 static ares_status_t ares_hosts_file_add(ares_hosts_file_t  *hosts,
-                                          ares_hosts_entry_t *entry)
+                                         ares_hosts_entry_t *entry)
 {
   ares_hosts_entry_t     *match  = NULL;
   ares_status_t           status = ARES_SUCCESS;
-  ares_llist_node_t     *node;
+  ares_llist_node_t      *node;
   ares_hosts_file_match_t matchtype;
   size_t                  num_hostnames;
 
@@ -314,7 +314,7 @@ static ares_status_t ares_hosts_file_add(ares_hosts_file_t  *hosts,
     status = ares_hosts_file_merge_entry(hosts, match, entry, matchtype);
     if (status != ARES_SUCCESS) {
       ares_hosts_entry_destroy(entry); /* LCOV_EXCL_LINE: DefensiveCoding */
-      return status;                    /* LCOV_EXCL_LINE: DefensiveCoding */
+      return status;                   /* LCOV_EXCL_LINE: DefensiveCoding */
     }
     /* entry was invalidated above by merging */
     entry = match;
@@ -359,7 +359,7 @@ static ares_status_t ares_hosts_file_add(ares_hosts_file_t  *hosts,
 }
 
 static ares_bool_t ares_hosts_entry_isdup(ares_hosts_entry_t *entry,
-                                           const char         *host)
+                                          const char         *host)
 {
   ares_llist_node_t *node;
 
@@ -374,8 +374,8 @@ static ares_bool_t ares_hosts_entry_isdup(ares_hosts_entry_t *entry,
   return ARES_FALSE;
 }
 
-static ares_status_t ares_parse_hosts_hostnames(ares_buf_t        *buf,
-                                                 ares_hosts_entry_t *entry)
+static ares_status_t ares_parse_hosts_hostnames(ares_buf_t         *buf,
+                                                ares_hosts_entry_t *entry)
 {
   entry->hosts = ares_llist_create(ares_free);
   if (entry->hosts == NULL) {
@@ -448,8 +448,8 @@ static ares_status_t ares_parse_hosts_hostnames(ares_buf_t        *buf,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_parse_hosts_ipaddr(ares_buf_t         *buf,
-                                              ares_hosts_entry_t **entry_out)
+static ares_status_t ares_parse_hosts_ipaddr(ares_buf_t          *buf,
+                                             ares_hosts_entry_t **entry_out)
 {
   char                addr[INET6_ADDRSTRLEN];
   char               *temp;
@@ -499,9 +499,9 @@ static ares_status_t ares_parse_hosts_ipaddr(ares_buf_t         *buf,
 }
 
 static ares_status_t ares_parse_hosts(const char         *filename,
-                                       ares_hosts_file_t **out)
+                                      ares_hosts_file_t **out)
 {
-  ares_buf_t        *buf    = NULL;
+  ares_buf_t         *buf    = NULL;
   ares_status_t       status = ARES_EBADRESP;
   ares_hosts_file_t  *hf     = NULL;
   ares_hosts_entry_t *entry  = NULL;
@@ -591,7 +591,7 @@ done:
 }
 
 static ares_bool_t ares_hosts_expired(const char              *filename,
-                                       const ares_hosts_file_t *hf)
+                                      const ares_hosts_file_t *hf)
 {
   time_t mod_ts = 0;
 
@@ -632,7 +632,7 @@ static ares_bool_t ares_hosts_expired(const char              *filename,
 }
 
 static ares_status_t ares_hosts_path(const ares_channel_t *channel,
-                                      ares_bool_t use_env, char **path)
+                                     ares_bool_t use_env, char **path)
 {
   char *path_hosts = NULL;
 
@@ -689,7 +689,7 @@ static ares_status_t ares_hosts_path(const ares_channel_t *channel,
 }
 
 static ares_status_t ares_hosts_update(ares_channel_t *channel,
-                                        ares_bool_t     use_env)
+                                       ares_bool_t     use_env)
 {
   ares_status_t status;
   char         *filename = NULL;
@@ -713,8 +713,8 @@ static ares_status_t ares_hosts_update(ares_channel_t *channel,
 }
 
 ares_status_t ares_hosts_search_ipaddr(ares_channel_t *channel,
-                                        ares_bool_t use_env, const char *ipaddr,
-                                        const ares_hosts_entry_t **entry)
+                                       ares_bool_t use_env, const char *ipaddr,
+                                       const ares_hosts_entry_t **entry)
 {
   ares_status_t status;
   char          addr[INET6_ADDRSTRLEN];
@@ -743,8 +743,8 @@ ares_status_t ares_hosts_search_ipaddr(ares_channel_t *channel,
 }
 
 ares_status_t ares_hosts_search_host(ares_channel_t *channel,
-                                      ares_bool_t use_env, const char *host,
-                                      const ares_hosts_entry_t **entry)
+                                     ares_bool_t use_env, const char *host,
+                                     const ares_hosts_entry_t **entry)
 {
   ares_status_t status;
 
@@ -769,12 +769,12 @@ ares_status_t ares_hosts_search_host(ares_channel_t *channel,
 
 static ares_status_t
   ares_hosts_ai_append_cnames(const ares_hosts_entry_t    *entry,
-                               struct ares_addrinfo_cname **cnames_out)
+                              struct ares_addrinfo_cname **cnames_out)
 {
   struct ares_addrinfo_cname *cname  = NULL;
   struct ares_addrinfo_cname *cnames = NULL;
   const char                 *primaryhost;
-  ares_llist_node_t         *node;
+  ares_llist_node_t          *node;
   ares_status_t               status;
   size_t                      cnt = 0;
 
@@ -833,7 +833,7 @@ static ares_status_t
 done:
   if (status != ARES_SUCCESS) {
     ares_freeaddrinfo_cnames(cnames); /* LCOV_EXCL_LINE: DefensiveCoding */
-    return status;                     /* LCOV_EXCL_LINE: DefensiveCoding */
+    return status;                    /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   *cnames_out = cnames;
@@ -841,15 +841,15 @@ done:
 }
 
 ares_status_t ares_hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
-                                            const char *name, int family,
-                                            unsigned short        port,
-                                            ares_bool_t           want_cnames,
-                                            struct ares_addrinfo *ai)
+                                           const char *name, int family,
+                                           unsigned short        port,
+                                           ares_bool_t           want_cnames,
+                                           struct ares_addrinfo *ai)
 {
   ares_status_t               status;
   struct ares_addrinfo_cname *cnames  = NULL;
   struct ares_addrinfo_node  *ainodes = NULL;
-  ares_llist_node_t         *node;
+  ares_llist_node_t          *node;
 
   switch (family) {
     case AF_INET:
@@ -915,7 +915,7 @@ done:
 }
 
 ares_status_t ares_hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
-                                           int family, struct hostent **hostent)
+                                          int family, struct hostent **hostent)
 {
   ares_status_t         status;
   struct ares_addrinfo *ai = ares_malloc_zero(sizeof(*ai));

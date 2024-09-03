@@ -30,15 +30,15 @@
 
 struct ares_array {
   ares_array_destructor_t destruct;
-  void                    *arr;
-  size_t                   member_size;
-  size_t                   cnt;
-  size_t                   offset;
-  size_t                   alloc_cnt;
+  void                   *arr;
+  size_t                  member_size;
+  size_t                  cnt;
+  size_t                  offset;
+  size_t                  alloc_cnt;
 };
 
-ares_array_t *ares_array_create(size_t                   member_size,
-                                  ares_array_destructor_t destruct)
+ares_array_t *ares_array_create(size_t                  member_size,
+                                ares_array_destructor_t destruct)
 {
   ares_array_t *arr;
 
@@ -117,7 +117,7 @@ void ares_array_destroy(ares_array_t *arr)
 /* NOTE: this function operates on actual indexes, NOT indexes using the
  *       arr->offset */
 static ares_status_t ares_array_move(ares_array_t *arr, size_t dest_idx,
-                                      size_t src_idx)
+                                     size_t src_idx)
 {
   void       *dest_ptr;
   const void *src_ptr;
@@ -204,7 +204,7 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
 }
 
 ares_status_t ares_array_insert_at(void **elem_ptr, ares_array_t *arr,
-                                    size_t idx)
+                                   size_t idx)
 {
   void         *ptr;
   ares_status_t status;
@@ -266,7 +266,7 @@ ares_status_t ares_array_insert_first(void **elem_ptr, ares_array_t *arr)
 }
 
 ares_status_t ares_array_insertdata_at(ares_array_t *arr, size_t idx,
-                                        const void *data_ptr)
+                                       const void *data_ptr)
 {
   ares_status_t status;
   void         *ptr = NULL;
@@ -280,7 +280,7 @@ ares_status_t ares_array_insertdata_at(ares_array_t *arr, size_t idx,
 }
 
 ares_status_t ares_array_insertdata_last(ares_array_t *arr,
-                                          const void    *data_ptr)
+                                         const void   *data_ptr)
 {
   ares_status_t status;
   void         *ptr = NULL;
@@ -294,7 +294,7 @@ ares_status_t ares_array_insertdata_last(ares_array_t *arr,
 }
 
 ares_status_t ares_array_insertdata_first(ares_array_t *arr,
-                                           const void    *data_ptr)
+                                          const void   *data_ptr)
 {
   ares_status_t status;
   void         *ptr = NULL;
@@ -336,7 +336,7 @@ const void *ares_array_last_const(const ares_array_t *arr)
 }
 
 ares_status_t ares_array_claim_at(void *dest, size_t dest_size,
-                                   ares_array_t *arr, size_t idx)
+                                  ares_array_t *arr, size_t idx)
 {
   ares_status_t status;
 

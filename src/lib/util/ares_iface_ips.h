@@ -53,7 +53,7 @@ typedef struct ares_iface_ips ares_iface_ips_t;
  *
  *  \param[in]  ips   Initialized IP address enumeration structure
  */
-void                           ares_iface_ips_destroy(ares_iface_ips_t *ips);
+void                          ares_iface_ips_destroy(ares_iface_ips_t *ips);
 
 /*! Enumerate ip addresses on interfaces
  *
@@ -63,15 +63,15 @@ void                           ares_iface_ips_destroy(ares_iface_ips_t *ips);
  *  \return ARES_ENOMEM on out of memory, ARES_ENOTIMP if not supported on
  *          the system, ARES_SUCCESS on success
  */
-ares_status_t                  ares_iface_ips(ares_iface_ips_t    **ips,
-                                               ares_iface_ip_flags_t flags, const char *name);
+ares_status_t                 ares_iface_ips(ares_iface_ips_t    **ips,
+                                             ares_iface_ip_flags_t flags, const char *name);
 
 /*! Count of ips enumerated
  *
  * \param[in]  ips   Initialized IP address enumeration structure
  * \return count
  */
-size_t      ares_iface_ips_cnt(const ares_iface_ips_t *ips);
+size_t                        ares_iface_ips_cnt(const ares_iface_ips_t *ips);
 
 /*! Retrieve interface name
  *
@@ -88,7 +88,7 @@ const char *ares_iface_ips_get_name(const ares_iface_ips_t *ips, size_t idx);
  * \return interface address
  */
 const struct ares_addr *ares_iface_ips_get_addr(const ares_iface_ips_t *ips,
-                                                 size_t                   idx);
+                                                size_t                  idx);
 
 /*! Retrieve interface address flags
  *
@@ -96,8 +96,8 @@ const struct ares_addr *ares_iface_ips_get_addr(const ares_iface_ips_t *ips,
  * \param[in]  idx   Index of entry to pull
  * \return interface address flags
  */
-ares_iface_ip_flags_t  ares_iface_ips_get_flags(const ares_iface_ips_t *ips,
-                                                  size_t                   idx);
+ares_iface_ip_flags_t   ares_iface_ips_get_flags(const ares_iface_ips_t *ips,
+                                                 size_t                  idx);
 
 /*! Retrieve interface address netmask
  *
@@ -105,8 +105,8 @@ ares_iface_ip_flags_t  ares_iface_ips_get_flags(const ares_iface_ips_t *ips,
  * \param[in]  idx   Index of entry to pull
  * \return interface address netmask
  */
-unsigned char ares_iface_ips_get_netmask(const ares_iface_ips_t *ips,
-                                          size_t                   idx);
+unsigned char           ares_iface_ips_get_netmask(const ares_iface_ips_t *ips,
+                                                   size_t                  idx);
 
 /*! Retrieve interface ipv6 link local scope
  *
@@ -114,8 +114,8 @@ unsigned char ares_iface_ips_get_netmask(const ares_iface_ips_t *ips,
  * \param[in]  idx   Index of entry to pull
  * \return interface ipv6 link local scope
  */
-unsigned int  ares_iface_ips_get_ll_scope(const ares_iface_ips_t *ips,
-                                           size_t                   idx);
+unsigned int            ares_iface_ips_get_ll_scope(const ares_iface_ips_t *ips,
+                                                    size_t                  idx);
 
 
 /*! Retrieve the interface index (aka link local scope) from the interface
@@ -124,7 +124,7 @@ unsigned int  ares_iface_ips_get_ll_scope(const ares_iface_ips_t *ips,
  * \param[in] name  Interface name
  * \return 0 on failure, index otherwise
  */
-unsigned int  ares_if_nametoindex(const char *name);
+unsigned int            ares_if_nametoindex(const char *name);
 
 /*! Retrieves the interface name from the index (aka link local scope)
  *
@@ -133,7 +133,7 @@ unsigned int  ares_if_nametoindex(const char *name);
  * \param[in] name_len Length of provided buffer, must be at least IF_NAMESIZE
  * \return NULL on failure, or pointer to name on success
  */
-const char   *ares_if_indextoname(unsigned int index, char *name,
-                                   size_t name_len);
+const char             *ares_if_indextoname(unsigned int index, char *name,
+                                            size_t name_len);
 
 #endif

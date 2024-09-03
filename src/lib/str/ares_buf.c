@@ -135,8 +135,7 @@ void ares_buf_reclaim(ares_buf_t *buf)
   }
 }
 
-static ares_status_t ares_buf_ensure_space(ares_buf_t *buf,
-                                            size_t       needed_size)
+static ares_status_t ares_buf_ensure_space(ares_buf_t *buf, size_t needed_size)
 {
   size_t         remaining_size;
   size_t         alloc_size;
@@ -209,7 +208,7 @@ ares_status_t ares_buf_set_length(ares_buf_t *buf, size_t len)
 }
 
 ares_status_t ares_buf_append(ares_buf_t *buf, const unsigned char *data,
-                               size_t data_len)
+                              size_t data_len)
 {
   ares_status_t status;
 
@@ -317,8 +316,7 @@ unsigned char *ares_buf_finish_bin(ares_buf_t *buf, size_t *len)
   ares_buf_reclaim(buf);
 
   /* We don't want to return NULL except on failure, may be zero-length */
-  if (buf->alloc_buf == NULL &&
-      ares_buf_ensure_space(buf, 1) != ARES_SUCCESS) {
+  if (buf->alloc_buf == NULL && ares_buf_ensure_space(buf, 1) != ARES_SUCCESS) {
     return NULL; /* LCOV_EXCL_LINE: OutOfMemory */
   }
   ptr  = buf->alloc_buf;
@@ -397,7 +395,7 @@ size_t ares_buf_tag_length(const ares_buf_t *buf)
 }
 
 ares_status_t ares_buf_tag_fetch_bytes(const ares_buf_t *buf,
-                                        unsigned char *bytes, size_t *len)
+                                       unsigned char *bytes, size_t *len)
 {
   size_t               ptr_len = 0;
   const unsigned char *ptr     = ares_buf_tag_fetch(buf, &ptr_len);
@@ -419,7 +417,7 @@ ares_status_t ares_buf_tag_fetch_bytes(const ares_buf_t *buf,
 }
 
 ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
-                                         size_t len)
+                                        size_t len)
 {
   size_t        out_len;
   ares_status_t status;
@@ -514,7 +512,7 @@ ares_status_t ares_buf_fetch_be32(ares_buf_t *buf, unsigned int *u32)
 }
 
 ares_status_t ares_buf_fetch_bytes(ares_buf_t *buf, unsigned char *bytes,
-                                    size_t len)
+                                   size_t len)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
@@ -528,8 +526,8 @@ ares_status_t ares_buf_fetch_bytes(ares_buf_t *buf, unsigned char *bytes,
 }
 
 ares_status_t ares_buf_fetch_bytes_dup(ares_buf_t *buf, size_t len,
-                                        ares_bool_t     null_term,
-                                        unsigned char **bytes)
+                                       ares_bool_t     null_term,
+                                       unsigned char **bytes)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
@@ -578,8 +576,8 @@ ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str)
   return ares_buf_consume(buf, len);
 }
 
-ares_status_t ares_buf_fetch_bytes_into_buf(ares_buf_t *buf,
-                                             ares_buf_t *dest, size_t len)
+ares_status_t ares_buf_fetch_bytes_into_buf(ares_buf_t *buf, ares_buf_t *dest,
+                                            size_t len)
 {
   size_t               remaining_len;
   const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
@@ -598,7 +596,7 @@ ares_status_t ares_buf_fetch_bytes_into_buf(ares_buf_t *buf,
 }
 
 static ares_bool_t ares_is_whitespace(unsigned char c,
-                                       ares_bool_t   include_linefeed)
+                                      ares_bool_t   include_linefeed)
 {
   switch (c) {
     case '\r':
@@ -616,7 +614,7 @@ static ares_bool_t ares_is_whitespace(unsigned char c,
 }
 
 size_t ares_buf_consume_whitespace(ares_buf_t *buf,
-                                    ares_bool_t  include_linefeed)
+                                   ares_bool_t include_linefeed)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
@@ -687,9 +685,9 @@ done:
   return i;
 }
 
-size_t ares_buf_consume_until_charset(ares_buf_t         *buf,
-                                       const unsigned char *charset, size_t len,
-                                       ares_bool_t require_charset)
+size_t ares_buf_consume_until_charset(ares_buf_t          *buf,
+                                      const unsigned char *charset, size_t len,
+                                      ares_bool_t require_charset)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
@@ -722,7 +720,7 @@ done:
 }
 
 size_t ares_buf_consume_charset(ares_buf_t *buf, const unsigned char *charset,
-                                 size_t len)
+                                size_t len)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
@@ -756,16 +754,16 @@ static void ares_buf_destroy_cb(void *arg)
   ares_buf_destroy(arg);
 }
 
-static ares_bool_t ares_buf_split_isduplicate(ares_llist_t       *list,
-                                               const unsigned char *val,
-                                               size_t               len,
-                                               ares_buf_split_t    flags)
+static ares_bool_t ares_buf_split_isduplicate(ares_llist_t        *list,
+                                              const unsigned char *val,
+                                              size_t               len,
+                                              ares_buf_split_t     flags)
 {
   ares_llist_node_t *node;
 
   for (node = ares_llist_node_first(list); node != NULL;
        node = ares_llist_node_next(node)) {
-    const ares_buf_t   *buf  = ares_llist_node_val(node);
+    const ares_buf_t    *buf  = ares_llist_node_val(node);
     size_t               plen = 0;
     const unsigned char *ptr  = ares_buf_peek(buf, &plen);
 
@@ -788,8 +786,8 @@ static ares_bool_t ares_buf_split_isduplicate(ares_llist_t       *list,
 }
 
 ares_status_t ares_buf_split(ares_buf_t *buf, const unsigned char *delims,
-                              size_t delims_len, ares_buf_split_t flags,
-                              size_t max_sections, ares_llist_t **list)
+                             size_t delims_len, ares_buf_split_t flags,
+                             size_t max_sections, ares_llist_t **list)
 {
   ares_status_t status = ARES_SUCCESS;
   ares_bool_t   first  = ARES_TRUE;
@@ -899,11 +897,11 @@ static void ares_free_split_array(void *arg)
 }
 
 ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
-                                  size_t delims_len, ares_buf_split_t flags,
-                                  size_t max_sections, char ***strs,
-                                  size_t *nstrs)
+                                 size_t delims_len, ares_buf_split_t flags,
+                                 size_t max_sections, char ***strs,
+                                 size_t *nstrs)
 {
-  ares_status_t       status;
+  ares_status_t      status;
   ares_llist_t      *list = NULL;
   ares_llist_node_t *node;
   ares_array_t      *arr = NULL;
@@ -929,7 +927,7 @@ ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
   for (node = ares_llist_node_first(list); node != NULL;
        node = ares_llist_node_next(node)) {
     ares_buf_t *lbuf = ares_llist_node_val(node);
-    char        *str  = NULL;
+    char       *str  = NULL;
 
     status = ares_buf_fetch_str_dup(lbuf, ares_buf_len(lbuf), &str);
     if (status != ARES_SUCCESS) {
@@ -953,8 +951,8 @@ done:
   return status;
 }
 
-ares_bool_t ares_buf_begins_with(const ares_buf_t   *buf,
-                                  const unsigned char *data, size_t data_len)
+ares_bool_t ares_buf_begins_with(const ares_buf_t    *buf,
+                                 const unsigned char *data, size_t data_len)
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
@@ -1012,12 +1010,12 @@ ares_status_t ares_buf_set_position(ares_buf_t *buf, size_t idx)
 
 static ares_status_t
   ares_buf_parse_dns_binstr_int(ares_buf_t *buf, size_t remaining_len,
-                                 unsigned char **bin, size_t *bin_len,
-                                 ares_bool_t validate_printable)
+                                unsigned char **bin, size_t *bin_len,
+                                ares_bool_t validate_printable)
 {
   unsigned char len;
   ares_status_t status = ARES_EBADRESP;
-  ares_buf_t  *binbuf = NULL;
+  ares_buf_t   *binbuf = NULL;
 
   if (buf == NULL) {
     return ARES_EFORMERR;
@@ -1081,19 +1079,19 @@ done:
 }
 
 ares_status_t ares_buf_parse_dns_binstr(ares_buf_t *buf, size_t remaining_len,
-                                         unsigned char **bin, size_t *bin_len)
+                                        unsigned char **bin, size_t *bin_len)
 {
   return ares_buf_parse_dns_binstr_int(buf, remaining_len, bin, bin_len,
-                                        ARES_FALSE);
+                                       ARES_FALSE);
 }
 
 ares_status_t ares_buf_parse_dns_str(ares_buf_t *buf, size_t remaining_len,
-                                      char **str)
+                                     char **str)
 {
   size_t len;
 
   return ares_buf_parse_dns_binstr_int(buf, remaining_len,
-                                        (unsigned char **)str, &len, ARES_TRUE);
+                                       (unsigned char **)str, &len, ARES_TRUE);
 }
 
 ares_status_t ares_buf_append_num_dec(ares_buf_t *buf, size_t num, size_t len)
@@ -1152,8 +1150,8 @@ ares_status_t ares_buf_append_str(ares_buf_t *buf, const char *str)
 }
 
 static ares_status_t ares_buf_hexdump_line(ares_buf_t *buf, size_t idx,
-                                            const unsigned char *data,
-                                            size_t               len)
+                                           const unsigned char *data,
+                                           size_t               len)
 {
   size_t        i;
   ares_status_t status;
@@ -1206,7 +1204,7 @@ static ares_status_t ares_buf_hexdump_line(ares_buf_t *buf, size_t idx,
 }
 
 ares_status_t ares_buf_hexdump(ares_buf_t *buf, const unsigned char *data,
-                                size_t len)
+                               size_t len)
 {
   size_t i;
 

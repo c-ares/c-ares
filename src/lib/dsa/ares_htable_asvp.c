@@ -33,8 +33,8 @@ struct ares_htable_asvp {
 };
 
 typedef struct {
-  ares_socket_t        key;
-  void                *val;
+  ares_socket_t       key;
+  void               *val;
   ares_htable_asvp_t *parent;
 } ares_htable_asvp_bucket_t;
 
@@ -51,8 +51,7 @@ void ares_htable_asvp_destroy(ares_htable_asvp_t *htable)
 static unsigned int hash_func(const void *key, unsigned int seed)
 {
   const ares_socket_t *arg = key;
-  return ares_htable_hash_FNV1a((const unsigned char *)arg, sizeof(*arg),
-                                 seed);
+  return ares_htable_hash_FNV1a((const unsigned char *)arg, sizeof(*arg), seed);
 }
 
 static const void *bucket_key(const void *bucket)
@@ -92,8 +91,7 @@ ares_htable_asvp_t *
     goto fail;
   }
 
-  htable->hash =
-    ares_htable_create(hash_func, bucket_key, bucket_free, key_eq);
+  htable->hash = ares_htable_create(hash_func, bucket_key, bucket_free, key_eq);
   if (htable->hash == NULL) {
     goto fail;
   }
@@ -111,7 +109,7 @@ fail:
 }
 
 ares_socket_t *ares_htable_asvp_keys(const ares_htable_asvp_t *htable,
-                                      size_t                    *num)
+                                     size_t                   *num)
 {
   const void   **buckets = NULL;
   size_t         cnt     = 0;
@@ -145,7 +143,7 @@ ares_socket_t *ares_htable_asvp_keys(const ares_htable_asvp_t *htable,
 }
 
 ares_bool_t ares_htable_asvp_insert(ares_htable_asvp_t *htable,
-                                     ares_socket_t key, void *val)
+                                    ares_socket_t key, void *val)
 {
   ares_htable_asvp_bucket_t *bucket = NULL;
 
@@ -176,7 +174,7 @@ fail:
 }
 
 ares_bool_t ares_htable_asvp_get(const ares_htable_asvp_t *htable,
-                                  ares_socket_t key, void **val)
+                                 ares_socket_t key, void **val)
 {
   ares_htable_asvp_bucket_t *bucket = NULL;
 
@@ -200,7 +198,7 @@ ares_bool_t ares_htable_asvp_get(const ares_htable_asvp_t *htable,
 }
 
 void *ares_htable_asvp_get_direct(const ares_htable_asvp_t *htable,
-                                   ares_socket_t              key)
+                                  ares_socket_t             key)
 {
   void *val = NULL;
   ares_htable_asvp_get(htable, key, &val);
@@ -208,7 +206,7 @@ void *ares_htable_asvp_get_direct(const ares_htable_asvp_t *htable,
 }
 
 ares_bool_t ares_htable_asvp_remove(ares_htable_asvp_t *htable,
-                                     ares_socket_t        key)
+                                    ares_socket_t       key)
 {
   if (htable == NULL) {
     return ARES_FALSE;

@@ -282,10 +282,10 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
       addrport = port;
     }
 
-    if_name = ares_if_indextoname(resolver->if_index, if_name_str,
-                                   sizeof(if_name_str));
-    status  = ares_sconfig_append(&sysconfig->sconfig, &addr, addrport,
-                                   addrport, if_name);
+    if_name =
+      ares_if_indextoname(resolver->if_index, if_name_str, sizeof(if_name_str));
+    status = ares_sconfig_append(&sysconfig->sconfig, &addr, addrport, addrport,
+                                 if_name);
     if (status != ARES_SUCCESS) {
       return status;
     }

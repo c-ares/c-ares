@@ -34,8 +34,8 @@ struct ares_htable_vpvp {
 };
 
 typedef struct {
-  void                *key;
-  void                *val;
+  void               *key;
+  void               *val;
   ares_htable_vpvp_t *parent;
 } ares_htable_vpvp_bucket_t;
 
@@ -51,8 +51,7 @@ void ares_htable_vpvp_destroy(ares_htable_vpvp_t *htable)
 
 static unsigned int hash_func(const void *key, unsigned int seed)
 {
-  return ares_htable_hash_FNV1a((const unsigned char *)&key, sizeof(key),
-                                 seed);
+  return ares_htable_hash_FNV1a((const unsigned char *)&key, sizeof(key), seed);
 }
 
 static const void *bucket_key(const void *bucket)
@@ -87,15 +86,14 @@ static ares_bool_t key_eq(const void *key1, const void *key2)
 
 ares_htable_vpvp_t *
   ares_htable_vpvp_create(ares_htable_vpvp_key_free_t key_free,
-                           ares_htable_vpvp_val_free_t val_free)
+                          ares_htable_vpvp_val_free_t val_free)
 {
   ares_htable_vpvp_t *htable = ares_malloc(sizeof(*htable));
   if (htable == NULL) {
     goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  htable->hash =
-    ares_htable_create(hash_func, bucket_key, bucket_free, key_eq);
+  htable->hash = ares_htable_create(hash_func, bucket_key, bucket_free, key_eq);
   if (htable->hash == NULL) {
     goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
   }
@@ -116,7 +114,7 @@ fail:
 }
 
 ares_bool_t ares_htable_vpvp_insert(ares_htable_vpvp_t *htable, void *key,
-                                     void *val)
+                                    void *val)
 {
   ares_htable_vpvp_bucket_t *bucket = NULL;
 
@@ -147,7 +145,7 @@ fail:
 }
 
 ares_bool_t ares_htable_vpvp_get(const ares_htable_vpvp_t *htable,
-                                  const void *key, void **val)
+                                 const void *key, void **val)
 {
   ares_htable_vpvp_bucket_t *bucket = NULL;
 
@@ -171,15 +169,14 @@ ares_bool_t ares_htable_vpvp_get(const ares_htable_vpvp_t *htable,
 }
 
 void *ares_htable_vpvp_get_direct(const ares_htable_vpvp_t *htable,
-                                   const void                *key)
+                                  const void               *key)
 {
   void *val = NULL;
   ares_htable_vpvp_get(htable, key, &val);
   return val;
 }
 
-ares_bool_t ares_htable_vpvp_remove(ares_htable_vpvp_t *htable,
-                                     const void          *key)
+ares_bool_t ares_htable_vpvp_remove(ares_htable_vpvp_t *htable, const void *key)
 {
   if (htable == NULL) {
     return ARES_FALSE;

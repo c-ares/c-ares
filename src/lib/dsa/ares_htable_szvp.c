@@ -33,8 +33,8 @@ struct ares_htable_szvp {
 };
 
 typedef struct {
-  size_t               key;
-  void                *val;
+  size_t              key;
+  void               *val;
   ares_htable_szvp_t *parent;
 } ares_htable_szvp_bucket_t;
 
@@ -51,8 +51,7 @@ void ares_htable_szvp_destroy(ares_htable_szvp_t *htable)
 static unsigned int hash_func(const void *key, unsigned int seed)
 {
   const size_t *arg = key;
-  return ares_htable_hash_FNV1a((const unsigned char *)arg, sizeof(*arg),
-                                 seed);
+  return ares_htable_hash_FNV1a((const unsigned char *)arg, sizeof(*arg), seed);
 }
 
 static const void *bucket_key(const void *bucket)
@@ -92,8 +91,7 @@ ares_htable_szvp_t *
     goto fail;
   }
 
-  htable->hash =
-    ares_htable_create(hash_func, bucket_key, bucket_free, key_eq);
+  htable->hash = ares_htable_create(hash_func, bucket_key, bucket_free, key_eq);
   if (htable->hash == NULL) {
     goto fail;
   }
@@ -111,7 +109,7 @@ fail:
 }
 
 ares_bool_t ares_htable_szvp_insert(ares_htable_szvp_t *htable, size_t key,
-                                     void *val)
+                                    void *val)
 {
   ares_htable_szvp_bucket_t *bucket = NULL;
 
@@ -142,7 +140,7 @@ fail:
 }
 
 ares_bool_t ares_htable_szvp_get(const ares_htable_szvp_t *htable, size_t key,
-                                  void **val)
+                                 void **val)
 {
   ares_htable_szvp_bucket_t *bucket = NULL;
 
@@ -165,8 +163,7 @@ ares_bool_t ares_htable_szvp_get(const ares_htable_szvp_t *htable, size_t key,
   return ARES_TRUE;
 }
 
-void *ares_htable_szvp_get_direct(const ares_htable_szvp_t *htable,
-                                   size_t                     key)
+void *ares_htable_szvp_get_direct(const ares_htable_szvp_t *htable, size_t key)
 {
   void *val = NULL;
   ares_htable_szvp_get(htable, key, &val);

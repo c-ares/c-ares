@@ -103,7 +103,7 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
 
 static ares_status_t
   ares_default_loopback_addrs(int aftype, unsigned short port,
-                               struct ares_addrinfo_node **nodes)
+                              struct ares_addrinfo_node **nodes)
 {
   ares_status_t status = ARES_SUCCESS;
 
@@ -130,7 +130,7 @@ static ares_status_t
 
 static ares_status_t
   ares_system_loopback_addrs(int aftype, unsigned short port,
-                              struct ares_addrinfo_node **nodes)
+                             struct ares_addrinfo_node **nodes)
 {
 #if defined(USE_WINSOCK) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600 && \
   !defined(__WATCOMC__)
@@ -192,8 +192,8 @@ fail:
 }
 
 ares_status_t ares_addrinfo_localhost(const char *name, unsigned short port,
-                                       const struct ares_addrinfo_hints *hints,
-                                       struct ares_addrinfo             *ai)
+                                      const struct ares_addrinfo_hints *hints,
+                                      struct ares_addrinfo             *ai)
 {
   struct ares_addrinfo_node *nodes = NULL;
   ares_status_t              status;

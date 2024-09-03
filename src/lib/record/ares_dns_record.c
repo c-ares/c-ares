@@ -74,14 +74,10 @@ ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
   (*dnsrec)->flags  = flags;
   (*dnsrec)->opcode = opcode;
   (*dnsrec)->rcode  = rcode;
-  (*dnsrec)->qd =
-    ares_array_create(sizeof(ares_dns_qd_t), ares_dns_qd_free_cb);
-  (*dnsrec)->an =
-    ares_array_create(sizeof(ares_dns_rr_t), ares_dns_rr_free_cb);
-  (*dnsrec)->ns =
-    ares_array_create(sizeof(ares_dns_rr_t), ares_dns_rr_free_cb);
-  (*dnsrec)->ar =
-    ares_array_create(sizeof(ares_dns_rr_t), ares_dns_rr_free_cb);
+  (*dnsrec)->qd = ares_array_create(sizeof(ares_dns_qd_t), ares_dns_qd_free_cb);
+  (*dnsrec)->an = ares_array_create(sizeof(ares_dns_rr_t), ares_dns_rr_free_cb);
+  (*dnsrec)->ns = ares_array_create(sizeof(ares_dns_rr_t), ares_dns_rr_free_cb);
+  (*dnsrec)->ar = ares_array_create(sizeof(ares_dns_rr_t), ares_dns_rr_free_cb);
 
   if ((*dnsrec)->qd == NULL || (*dnsrec)->an == NULL || (*dnsrec)->ns == NULL ||
       (*dnsrec)->ar == NULL) {
@@ -404,7 +400,7 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
                                      ares_dns_class_t rclass, unsigned int ttl)
 {
   ares_dns_rr_t *rr  = NULL;
-  ares_array_t *arr = NULL;
+  ares_array_t  *arr = NULL;
   ares_status_t  status;
   size_t         idx;
 
@@ -933,8 +929,8 @@ ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   ares_dns_datatype_t datatype = ares_dns_rr_key_datatype(key);
   ares_bool_t         is_nullterm =
     (datatype == ARES_DATATYPE_ABINP) ? ARES_TRUE : ARES_FALSE;
-  size_t                    alloclen = is_nullterm ? len + 1 : len;
-  unsigned char            *temp;
+  size_t                   alloclen = is_nullterm ? len + 1 : len;
+  unsigned char           *temp;
   ares_dns_multistring_t **strs;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
@@ -1051,8 +1047,8 @@ ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t *dns_rr,
                                      const unsigned char **val, size_t *val_len)
 {
   ares_array_t * const    *opts;
-  size_t                    i;
-  size_t                    cnt;
+  size_t                   i;
+  size_t                   cnt;
   const ares_dns_optval_t *optptr = NULL;
 
   if (val) {
@@ -1307,8 +1303,8 @@ ares_status_t ares_dns_rr_set_str(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   return status;
 }
 
-ares_status_t ares_dns_rr_set_abin_own(ares_dns_rr_t           *dns_rr,
-                                       ares_dns_rr_key_t        key,
+ares_status_t ares_dns_rr_set_abin_own(ares_dns_rr_t          *dns_rr,
+                                       ares_dns_rr_key_t       key,
                                        ares_dns_multistring_t *strs)
 {
   ares_dns_multistring_t **strs_ptr;
@@ -1345,9 +1341,9 @@ ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
 {
   ares_array_t     **options;
   ares_dns_optval_t *optptr = NULL;
-  size_t              idx;
-  size_t              cnt;
-  ares_status_t       status;
+  size_t             idx;
+  size_t             cnt;
+  ares_status_t      status;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
     return ARES_EFORMERR;
@@ -1426,8 +1422,8 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t    *dns_rr,
 {
   ares_array_t           **options;
   const ares_dns_optval_t *optptr;
-  size_t                    idx;
-  size_t                    cnt;
+  size_t                   idx;
+  size_t                   cnt;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_OPT) {
     return ARES_EFORMERR;
@@ -1459,7 +1455,7 @@ ares_status_t ares_dns_rr_del_opt_byid(ares_dns_rr_t    *dns_rr,
 
 char *ares_dns_addr_to_ptr(const struct ares_addr *addr)
 {
-  ares_buf_t               *buf     = NULL;
+  ares_buf_t                *buf     = NULL;
   const unsigned char       *ptr     = NULL;
   size_t                     ptr_len = 0;
   size_t                     i;

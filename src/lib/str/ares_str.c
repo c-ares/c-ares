@@ -187,7 +187,7 @@ unsigned char ares_tolower(unsigned char c)
 }
 
 ares_bool_t ares_memeq_ci(const unsigned char *ptr, const unsigned char *val,
-                           size_t len)
+                          size_t len)
 {
   size_t i;
   for (i = 0; i < len; i++) {

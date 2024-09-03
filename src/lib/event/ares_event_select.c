@@ -75,7 +75,7 @@ static size_t ares_evsys_select_wait(ares_event_thread_t *e,
                                      unsigned long        timeout_ms)
 {
   size_t          num_fds = 0;
-  ares_socket_t  *fdlist = ares_htable_asvp_keys(e->ev_sock_handles, &num_fds);
+  ares_socket_t  *fdlist  = ares_htable_asvp_keys(e->ev_sock_handles, &num_fds);
   int             rv;
   size_t          cnt = 0;
   size_t          i;

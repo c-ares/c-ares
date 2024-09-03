@@ -48,7 +48,7 @@ char **ares_strsplit_duplicate(char **elms, size_t num_elm)
     out[i] = ares_strdup(elms[i]);
     if (out[i] == NULL) {
       ares_strsplit_free(out, num_elm); /* LCOV_EXCL_LINE: OutOfMemory */
-      return NULL;                       /* LCOV_EXCL_LINE: OutOfMemory */
+      return NULL;                      /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 
@@ -57,13 +57,13 @@ char **ares_strsplit_duplicate(char **elms, size_t num_elm)
 
 char **ares_strsplit(const char *in, const char *delms, size_t *num_elm)
 {
-  ares_status_t       status;
+  ares_status_t      status;
   ares_buf_t        *buf   = NULL;
   ares_llist_t      *llist = NULL;
   ares_llist_node_t *node;
-  char              **out = NULL;
-  size_t              cnt = 0;
-  size_t              idx = 0;
+  char             **out = NULL;
+  size_t             cnt = 0;
+  size_t             idx = 0;
 
   if (in == NULL || delms == NULL || num_elm == NULL) {
     return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -99,7 +99,7 @@ char **ares_strsplit(const char *in, const char *delms, size_t *num_elm)
   for (node = ares_llist_node_first(llist); node != NULL;
        node = ares_llist_node_next(node)) {
     ares_buf_t *val  = ares_llist_node_val(node);
-    char        *temp = NULL;
+    char       *temp = NULL;
 
     status = ares_buf_fetch_str_dup(val, ares_buf_len(val), &temp);
     if (status != ARES_SUCCESS) {

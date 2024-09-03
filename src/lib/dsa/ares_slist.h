@@ -80,17 +80,17 @@ typedef int (*ares_slist_cmp_t)(const void *data1, const void *data2);
  *  \param[in] destruct     SkipList Node Value Destructor. Optional, use NULL.
  *  \return Initialized SkipList Object or NULL on misuse or ENOMEM
  */
-ares_slist_t      *ares_slist_create(ares_rand_state         *rand_state,
-                                       ares_slist_cmp_t        cmp,
-                                       ares_slist_destructor_t destruct);
+ares_slist_t      *ares_slist_create(ares_rand_state        *rand_state,
+                                     ares_slist_cmp_t        cmp,
+                                     ares_slist_destructor_t destruct);
 
 /*! Replace SkipList Node Value Destructor
  *
  *  \param[in] list      Initialized SkipList Object
  *  \param[in] destruct  Replacement destructor. May be NULL.
  */
-void                ares_slist_replace_destructor(ares_slist_t           *list,
-                                                   ares_slist_destructor_t destruct);
+void               ares_slist_replace_destructor(ares_slist_t           *list,
+                                                 ares_slist_destructor_t destruct);
 
 /*! Insert Value into SkipList
  *
@@ -143,14 +143,14 @@ ares_slist_node_t *ares_slist_node_find(ares_slist_t *list, const void *val);
  *  \param[in] node  SkipList Node Object
  *  \return user defined node value
  */
-void               *ares_slist_node_val(ares_slist_node_t *node);
+void              *ares_slist_node_val(ares_slist_node_t *node);
 
 /*! Fetch number of entries in SkipList Object
  *
  *  \param[in] list  Initialized SkipList Object
  *  \return number of entries
  */
-size_t              ares_slist_len(const ares_slist_t *list);
+size_t             ares_slist_len(const ares_slist_t *list);
 
 /*! Fetch SkipList Object from SkipList Node
  *
@@ -164,21 +164,21 @@ ares_slist_t      *ares_slist_node_parent(ares_slist_node_t *node);
  *  \param[in] list  Initialized SkipList Object
  *  \return user defined node value or NULL if none
  */
-void               *ares_slist_first_val(ares_slist_t *list);
+void              *ares_slist_first_val(ares_slist_t *list);
 
 /*! Fetch last Node Value in SkipList
  *
  *  \param[in] list  Initialized SkipList Object
  *  \return user defined node value or NULL if none
  */
-void               *ares_slist_last_val(ares_slist_t *list);
+void              *ares_slist_last_val(ares_slist_t *list);
 
 /*! Take back ownership of Node Value in SkipList, remove from SkipList.
  *
  *  \param[in] node  SkipList Node Object
  *  \return user defined node value
  */
-void               *ares_slist_node_claim(ares_slist_node_t *node);
+void              *ares_slist_node_claim(ares_slist_node_t *node);
 
 /*! The internals of the node have changed, thus its position in the sorted
  *  list is no longer valid.  This function will remove it and re-add it to
@@ -187,19 +187,19 @@ void               *ares_slist_node_claim(ares_slist_node_t *node);
  *
  *  \param[in] node  SkipList Node Object
  */
-void                ares_slist_node_reinsert(ares_slist_node_t *node);
+void               ares_slist_node_reinsert(ares_slist_node_t *node);
 
 /*! Remove Node from SkipList, calling destructor for Node Value.
  *
  *  \param[in] node  SkipList Node Object
  */
-void                ares_slist_node_destroy(ares_slist_node_t *node);
+void               ares_slist_node_destroy(ares_slist_node_t *node);
 
 /*! Destroy SkipList Object.  If there are any nodes, they will be destroyed.
  *
  *  \param[in] list  Initialized SkipList Object
  */
-void                ares_slist_destroy(ares_slist_t *list);
+void               ares_slist_destroy(ares_slist_t *list);
 
 /*! @} */
 

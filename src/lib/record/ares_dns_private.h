@@ -43,8 +43,8 @@ ares_status_t        ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
 ares_status_t        ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
                                              ares_dns_rr_key_t key, unsigned char *val,
                                              size_t len);
-ares_status_t        ares_dns_rr_set_abin_own(ares_dns_rr_t           *dns_rr,
-                                              ares_dns_rr_key_t        key,
+ares_status_t        ares_dns_rr_set_abin_own(ares_dns_rr_t          *dns_rr,
+                                              ares_dns_rr_key_t       key,
                                               ares_dns_multistring_t *strs);
 ares_status_t        ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
                                              ares_dns_rr_key_t key, unsigned short opt,
@@ -58,11 +58,11 @@ void                 ares_dns_record_ttl_decrement(ares_dns_record_t *dnsrec,
 
 /* Same as ares_dns_write() but appends to an existing buffer object */
 ares_status_t        ares_dns_write_buf(const ares_dns_record_t *dnsrec,
-                                        ares_buf_t             *buf);
+                                        ares_buf_t              *buf);
 
 /* Same as ares_dns_write_buf(), but prepends a 16bit length */
 ares_status_t        ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
-                                            ares_buf_t             *buf);
+                                            ares_buf_t              *buf);
 
 /*! Create a DNS record object for a query. The arguments are the same as
  *  those for ares_create_query().
@@ -181,7 +181,7 @@ typedef struct {
   unsigned char  version;  /*!< taken from bits 8-16 of ttl */
   unsigned short flags;    /*!< Flags, remaining 16 bits, though only
                             *   1 currently defined */
-  ares_array_t *options;  /*!< Type is ares_dns_optval_t */
+  ares_array_t  *options;  /*!< Type is ares_dns_optval_t */
 } ares_dns_opt_t;
 
 typedef struct {
@@ -195,7 +195,7 @@ typedef struct {
 typedef struct {
   unsigned short priority;
   char          *target;
-  ares_array_t *params; /*!< Type is ares_dns_optval_t */
+  ares_array_t  *params; /*!< Type is ares_dns_optval_t */
 } ares_dns_svcb_t;
 
 typedef struct {
@@ -264,10 +264,10 @@ struct ares_dns_record {
                                     *   the ttl of any resource records by
                                     *   this amount.  Used for cache */
 
-  ares_array_t    *qd;            /*!< Type is ares_dns_qd_t */
-  ares_array_t    *an;            /*!< Type is ares_dns_rr_t */
-  ares_array_t    *ns;            /*!< Type is ares_dns_rr_t */
-  ares_array_t    *ar;            /*!< Type is ares_dns_rr_t */
+  ares_array_t     *qd;            /*!< Type is ares_dns_qd_t */
+  ares_array_t     *an;            /*!< Type is ares_dns_rr_t */
+  ares_array_t     *ns;            /*!< Type is ares_dns_rr_t */
+  ares_array_t     *ar;            /*!< Type is ares_dns_rr_t */
 };
 
 #endif

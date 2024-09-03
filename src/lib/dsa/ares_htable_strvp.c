@@ -33,8 +33,8 @@ struct ares_htable_strvp {
 };
 
 typedef struct {
-  char                 *key;
-  void                 *val;
+  char                *key;
+  void                *val;
   ares_htable_strvp_t *parent;
 } ares_htable_strvp_bucket_t;
 
@@ -52,7 +52,7 @@ static unsigned int hash_func(const void *key, unsigned int seed)
 {
   const char *arg = key;
   return ares_htable_hash_FNV1a_casecmp((const unsigned char *)arg,
-                                         ares_strlen(arg), seed);
+                                        ares_strlen(arg), seed);
 }
 
 static const void *bucket_key(const void *bucket)
@@ -85,8 +85,7 @@ ares_htable_strvp_t *
     goto fail;
   }
 
-  htable->hash =
-    ares_htable_create(hash_func, bucket_key, bucket_free, key_eq);
+  htable->hash = ares_htable_create(hash_func, bucket_key, bucket_free, key_eq);
   if (htable->hash == NULL) {
     goto fail;
   }
@@ -104,7 +103,7 @@ fail:
 }
 
 ares_bool_t ares_htable_strvp_insert(ares_htable_strvp_t *htable,
-                                      const char *key, void *val)
+                                     const char *key, void *val)
 {
   ares_htable_strvp_bucket_t *bucket = NULL;
 
@@ -139,7 +138,7 @@ fail:
 }
 
 ares_bool_t ares_htable_strvp_get(const ares_htable_strvp_t *htable,
-                                   const char *key, void **val)
+                                  const char *key, void **val)
 {
   ares_htable_strvp_bucket_t *bucket = NULL;
 
@@ -163,7 +162,7 @@ ares_bool_t ares_htable_strvp_get(const ares_htable_strvp_t *htable,
 }
 
 void *ares_htable_strvp_get_direct(const ares_htable_strvp_t *htable,
-                                    const char                 *key)
+                                   const char                *key)
 {
   void *val = NULL;
   ares_htable_strvp_get(htable, key, &val);
@@ -171,7 +170,7 @@ void *ares_htable_strvp_get_direct(const ares_htable_strvp_t *htable,
 }
 
 ares_bool_t ares_htable_strvp_remove(ares_htable_strvp_t *htable,
-                                      const char           *key)
+                                     const char          *key)
 {
   if (htable == NULL) {
     return ARES_FALSE;

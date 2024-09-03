@@ -30,11 +30,11 @@ struct ares_llist {
   ares_llist_node_t      *head;
   ares_llist_node_t      *tail;
   ares_llist_destructor_t destruct;
-  size_t                   cnt;
+  size_t                  cnt;
 };
 
 struct ares_llist_node {
-  void               *data;
+  void              *data;
   ares_llist_node_t *prev;
   ares_llist_node_t *next;
   ares_llist_t      *parent;
@@ -54,7 +54,7 @@ ares_llist_t *ares_llist_create(ares_llist_destructor_t destruct)
 }
 
 void ares_llist_replace_destructor(ares_llist_t           *list,
-                                    ares_llist_destructor_t destruct)
+                                   ares_llist_destructor_t destruct)
 {
   if (list == NULL) {
     return;
@@ -70,9 +70,8 @@ typedef enum {
 } ares_llist_insert_type_t;
 
 static void ares_llist_attach_at(ares_llist_t            *list,
-                                  ares_llist_insert_type_t type,
-                                  ares_llist_node_t       *at,
-                                  ares_llist_node_t       *node)
+                                 ares_llist_insert_type_t type,
+                                 ares_llist_node_t *at, ares_llist_node_t *node)
 {
   if (list == NULL || node == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -118,9 +117,8 @@ static void ares_llist_attach_at(ares_llist_t            *list,
 }
 
 static ares_llist_node_t *ares_llist_insert_at(ares_llist_t            *list,
-                                                 ares_llist_insert_type_t type,
-                                                 ares_llist_node_t       *at,
-                                                 void                     *val)
+                                               ares_llist_insert_type_t type,
+                                               ares_llist_node_t *at, void *val)
 {
   ares_llist_node_t *node = NULL;
 
@@ -150,19 +148,17 @@ ares_llist_node_t *ares_llist_insert_last(ares_llist_t *list, void *val)
   return ares_llist_insert_at(list, ARES__LLIST_INSERT_TAIL, NULL, val);
 }
 
-ares_llist_node_t *ares_llist_insert_before(ares_llist_node_t *node,
-                                              void               *val)
+ares_llist_node_t *ares_llist_insert_before(ares_llist_node_t *node, void *val)
 {
   if (node == NULL) {
     return NULL;
   }
 
   return ares_llist_insert_at(node->parent, ARES__LLIST_INSERT_BEFORE, node,
-                               val);
+                              val);
 }
 
-ares_llist_node_t *ares_llist_insert_after(ares_llist_node_t *node,
-                                             void               *val)
+ares_llist_node_t *ares_llist_insert_after(ares_llist_node_t *node, void *val)
 {
   if (node == NULL) {
     return NULL;
@@ -173,7 +169,7 @@ ares_llist_node_t *ares_llist_insert_after(ares_llist_node_t *node,
   }
 
   return ares_llist_insert_at(node->parent, ARES__LLIST_INSERT_BEFORE,
-                               node->next, val);
+                              node->next, val);
 }
 
 ares_llist_node_t *ares_llist_node_first(ares_llist_t *list)
@@ -187,7 +183,7 @@ ares_llist_node_t *ares_llist_node_first(ares_llist_t *list)
 ares_llist_node_t *ares_llist_node_idx(ares_llist_t *list, size_t idx)
 {
   ares_llist_node_t *node;
-  size_t              cnt;
+  size_t             cnt;
 
   if (list == NULL) {
     return NULL;
@@ -311,7 +307,7 @@ void *ares_llist_node_claim(ares_llist_node_t *node)
 void ares_llist_node_destroy(ares_llist_node_t *node)
 {
   ares_llist_destructor_t destruct;
-  void                    *val;
+  void                   *val;
 
   if (node == NULL) {
     return;
@@ -364,7 +360,7 @@ void ares_llist_destroy(ares_llist_t *list)
 }
 
 void ares_llist_node_mvparent_last(ares_llist_node_t *node,
-                                    ares_llist_t      *new_parent)
+                                   ares_llist_t      *new_parent)
 {
   if (node == NULL || new_parent == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -375,7 +371,7 @@ void ares_llist_node_mvparent_last(ares_llist_node_t *node,
 }
 
 void ares_llist_node_mvparent_first(ares_llist_node_t *node,
-                                     ares_llist_t      *new_parent)
+                                    ares_llist_t      *new_parent)
 {
   if (node == NULL || new_parent == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */

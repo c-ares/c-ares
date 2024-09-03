@@ -43,7 +43,7 @@ ares_status_t ares_expand_string_ex(const unsigned char *encoded,
                                     unsigned char **s, size_t *enclen)
 {
   ares_status_t status;
-  ares_buf_t  *buf = NULL;
+  ares_buf_t   *buf = NULL;
   size_t        start_len;
   size_t        len = 0;
 

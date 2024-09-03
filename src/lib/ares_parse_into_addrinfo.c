@@ -46,9 +46,9 @@
 
 
 ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
-                                        ares_bool_t    cname_only_is_enodata,
-                                        unsigned short port,
-                                        struct ares_addrinfo *ai)
+                                       ares_bool_t    cname_only_is_enodata,
+                                       unsigned short port,
+                                       struct ares_addrinfo *ai)
 {
   ares_status_t               status;
   size_t                      i;

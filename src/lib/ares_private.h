@@ -156,9 +156,9 @@ struct ares_query {
    * Node object for each list entry the query belongs to in order to
    * make removal operations O(1).
    */
-  ares_slist_node_t  *node_queries_by_timeout;
-  ares_llist_node_t  *node_queries_to_conn;
-  ares_llist_node_t  *node_all_queries;
+  ares_slist_node_t   *node_queries_by_timeout;
+  ares_llist_node_t   *node_queries_to_conn;
+  ares_llist_node_t   *node_all_queries;
 
   /* connection handle query is associated with */
   ares_conn_t         *conn;
@@ -192,32 +192,32 @@ typedef struct ares_hosts_file ares_hosts_file_t;
 
 struct ares_channeldata {
   /* Configuration data */
-  unsigned int          flags;
-  size_t                timeout; /* in milliseconds */
-  size_t                tries;
-  size_t                ndots;
-  size_t                maxtimeout;              /* in milliseconds */
-  ares_bool_t           rotate;
-  unsigned short        udp_port;                /* stored in network order */
-  unsigned short        tcp_port;                /* stored in network order */
-  int                   socket_send_buffer_size; /* setsockopt takes int */
-  int                   socket_receive_buffer_size; /* setsockopt takes int */
-  char                **domains;
-  size_t                ndomains;
-  struct apattern      *sortlist;
-  size_t                nsort;
-  char                 *lookups;
-  size_t                ednspsz;
-  unsigned int          qcache_max_ttl;
-  ares_evsys_t          evsys;
-  unsigned int          optmask;
+  unsigned int         flags;
+  size_t               timeout; /* in milliseconds */
+  size_t               tries;
+  size_t               ndots;
+  size_t               maxtimeout;                 /* in milliseconds */
+  ares_bool_t          rotate;
+  unsigned short       udp_port;                   /* stored in network order */
+  unsigned short       tcp_port;                   /* stored in network order */
+  int                  socket_send_buffer_size;    /* setsockopt takes int */
+  int                  socket_receive_buffer_size; /* setsockopt takes int */
+  char               **domains;
+  size_t               ndomains;
+  struct apattern     *sortlist;
+  size_t               nsort;
+  char                *lookups;
+  size_t               ednspsz;
+  unsigned int         qcache_max_ttl;
+  ares_evsys_t         evsys;
+  unsigned int         optmask;
 
   /* For binding to local devices and/or IP addresses.  Leave
    * them null/zero for no binding.
    */
-  char                  local_dev_name[32];
-  unsigned int          local_ip4;
-  unsigned char         local_ip6[16];
+  char                 local_dev_name[32];
+  unsigned int         local_ip4;
+  unsigned char        local_ip6[16];
 
   /* Thread safety lock */
   ares_thread_mutex_t *lock;
@@ -231,7 +231,7 @@ struct ares_channeldata {
 
   /* random state to use when generating new ids and generating retry penalties
    */
-  ares_rand_state      *rand_state;
+  ares_rand_state     *rand_state;
 
   /* All active queries in a single list */
   ares_llist_t        *all_queries;
@@ -247,8 +247,8 @@ struct ares_channeldata {
    * scan all connections) */
   ares_htable_asvp_t  *connnode_by_socket;
 
-  ares_sock_state_cb    sock_state_cb;
-  void                 *sock_state_cb_data;
+  ares_sock_state_cb   sock_state_cb;
+  void                *sock_state_cb_data;
 
   ares_sock_create_callback           sock_create_cb;
   void                               *sock_create_cb_data;
@@ -276,7 +276,7 @@ struct ares_channeldata {
   ares_hosts_file_t                  *hf;
 
   /* Query Cache */
-  ares_qcache_t                     *qcache;
+  ares_qcache_t                      *qcache;
 
   /* Fields controlling server failover behavior.
    * The retry chance is the probability (1/N) by which we will retry a failed
@@ -297,7 +297,7 @@ struct ares_channeldata {
    * reading may block.  The thread handle is provided for waiting on thread
    * exit. */
   ares_bool_t                         reinit_pending;
-  ares_thread_t                     *reinit_thread;
+  ares_thread_t                      *reinit_thread;
 
   /* Whether the system is up or not.  This is mainly to prevent deadlocks
    * and access violations during the cleanup process.  Some things like
@@ -311,11 +311,10 @@ ares_bool_t   ares_is_onion_domain(const char *name);
 
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
 ares_status_t ares_send_query(ares_query_t *query, const ares_timeval_t *now);
-ares_status_t ares_requeue_query(ares_query_t            *query,
-                                  const ares_timeval_t    *now,
-                                  ares_status_t            status,
-                                  ares_bool_t              inc_try_count,
-                                  const ares_dns_record_t *dnsrec);
+ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
+                                 ares_status_t            status,
+                                 ares_bool_t              inc_try_count,
+                                 const ares_dns_record_t *dnsrec);
 
 /*! Count the number of labels (dots+1) in a domain */
 size_t        ares_name_label_cnt(const char *name);
@@ -332,8 +331,8 @@ size_t        ares_name_label_cnt(const char *name);
  *  \return ARES_SUCCESS on success, otherwise one of the other error codes.
  */
 ares_status_t ares_search_name_list(const ares_channel_t *channel,
-                                     const char *name, char ***names,
-                                     size_t *names_len);
+                                    const char *name, char ***names,
+                                    size_t *names_len);
 
 /*! Function to create callback arg for converting from ares_callback_dnsrec
  *  to ares_calback */
@@ -344,26 +343,26 @@ void         *ares_dnsrec_convert_arg(ares_callback callback, void *arg);
  *  the inner callback.
  */
 void ares_dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
-                             const ares_dns_record_t *dnsrec);
+                            const ares_dns_record_t *dnsrec);
 
 void ares_free_query(ares_query_t *query);
 
 unsigned short ares_generate_new_id(ares_rand_state *state);
 ares_status_t  ares_expand_name_validated(const unsigned char *encoded,
-                                           const unsigned char *abuf,
-                                           size_t alen, char **s, size_t *enclen,
-                                           ares_bool_t is_hostname);
+                                          const unsigned char *abuf, size_t alen,
+                                          char **s, size_t *enclen,
+                                          ares_bool_t is_hostname);
 ares_status_t  ares_expand_string_ex(const unsigned char *encoded,
                                      const unsigned char *abuf, size_t alen,
                                      unsigned char **s, size_t *enclen);
 ares_status_t  ares_init_servers_state(ares_channel_t *channel);
 ares_status_t  ares_init_by_options(ares_channel_t            *channel,
-                                     const struct ares_options *options,
-                                     int                        optmask);
+                                    const struct ares_options *options,
+                                    int                        optmask);
 ares_status_t  ares_init_by_sysconfig(ares_channel_t *channel);
 
 typedef struct {
-  ares_llist_t   *sconfig;
+  ares_llist_t    *sconfig;
   struct apattern *sortlist;
   size_t           nsortlist;
   char           **domains;
@@ -377,12 +376,12 @@ typedef struct {
 } ares_sysconfig_t;
 
 ares_status_t ares_sysconfig_set_options(ares_sysconfig_t *sysconfig,
-                                          const char       *str);
+                                         const char       *str);
 
 ares_status_t ares_init_by_environment(ares_sysconfig_t *sysconfig);
 
 ares_status_t ares_init_sysconfig_files(const ares_channel_t *channel,
-                                         ares_sysconfig_t     *sysconfig);
+                                        ares_sysconfig_t     *sysconfig);
 #ifdef __APPLE__
 ares_status_t ares_init_sysconfig_macos(ares_sysconfig_t *sysconfig);
 #endif
@@ -391,17 +390,17 @@ ares_status_t ares_init_sysconfig_windows(ares_sysconfig_t *sysconfig);
 #endif
 
 ares_status_t ares_parse_sortlist(struct apattern **sortlist, size_t *nsort,
-                                   const char *str);
+                                  const char *str);
 
 /* Returns ARES_SUCCESS if alias found, alias is set.  Returns ARES_ENOTFOUND
  * if not alias found.  Returns other errors on critical failure like
  * ARES_ENOMEM */
 ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
-                                       const char *name, char **alias);
+                                      const char *name, char **alias);
 
 ares_status_t ares_cat_domain(const char *name, const char *domain, char **s);
 ares_status_t ares_sortaddrinfo(ares_channel_t            *channel,
-                                 struct ares_addrinfo_node *ai_node);
+                                struct ares_addrinfo_node *ai_node);
 
 void          ares_freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node);
 ares_bool_t   ares_is_localhost(const char *name);
@@ -409,11 +408,11 @@ ares_bool_t   ares_is_localhost(const char *name);
 struct ares_addrinfo_node    *
   ares_append_addrinfo_node(struct ares_addrinfo_node **ai_node);
 void ares_addrinfo_cat_nodes(struct ares_addrinfo_node **head,
-                              struct ares_addrinfo_node  *tail);
+                             struct ares_addrinfo_node  *tail);
 
 void ares_freeaddrinfo_cnames(struct ares_addrinfo_cname *ai_cname);
 
-struct ares_addrinfo_cname *
+struct ares_addrinfo_cname             *
   ares_append_addrinfo_cname(struct ares_addrinfo_cname **ai_cname);
 
 ares_status_t ares_append_ai_node(int aftype, unsigned short port,
@@ -421,62 +420,61 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
                                   struct ares_addrinfo_node **nodes);
 
 void          ares_addrinfo_cat_cnames(struct ares_addrinfo_cname **head,
-                                        struct ares_addrinfo_cname  *tail);
+                                       struct ares_addrinfo_cname  *tail);
 
 ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
-                                        ares_bool_t    cname_only_is_enodata,
-                                        unsigned short port,
-                                        struct ares_addrinfo *ai);
+                                       ares_bool_t    cname_only_is_enodata,
+                                       unsigned short port,
+                                       struct ares_addrinfo *ai);
 ares_status_t ares_parse_ptr_reply_dnsrec(const ares_dns_record_t *dnsrec,
                                           const void *addr, int addrlen,
                                           int family, struct hostent **host);
 
 ares_status_t ares_addrinfo2hostent(const struct ares_addrinfo *ai, int family,
-                                     struct hostent **host);
+                                    struct hostent **host);
 ares_status_t ares_addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
-                                     size_t                req_naddrttls,
-                                     struct ares_addrttl  *addrttls,
-                                     struct ares_addr6ttl *addr6ttls,
-                                     size_t               *naddrttls);
+                                    size_t                req_naddrttls,
+                                    struct ares_addrttl  *addrttls,
+                                    struct ares_addr6ttl *addr6ttls,
+                                    size_t               *naddrttls);
 ares_status_t ares_addrinfo_localhost(const char *name, unsigned short port,
-                                       const struct ares_addrinfo_hints *hints,
-                                       struct ares_addrinfo             *ai);
+                                      const struct ares_addrinfo_hints *hints,
+                                      struct ares_addrinfo             *ai);
 
 ares_status_t ares_servers_update(ares_channel_t *channel,
-                                   ares_llist_t  *server_list,
-                                   ares_bool_t     user_specified);
-ares_status_t ares_sconfig_append(ares_llist_t         **sconfig,
-                                   const struct ares_addr *addr,
-                                   unsigned short          udp_port,
-                                   unsigned short          tcp_port,
-                                   const char             *ll_iface);
+                                  ares_llist_t   *server_list,
+                                  ares_bool_t     user_specified);
+ares_status_t ares_sconfig_append(ares_llist_t          **sconfig,
+                                  const struct ares_addr *addr,
+                                  unsigned short          udp_port,
+                                  unsigned short          tcp_port,
+                                  const char             *ll_iface);
 ares_status_t ares_sconfig_append_fromstr(ares_llist_t **sconfig,
-                                           const char     *str,
-                                           ares_bool_t     ignore_invalid);
+                                          const char    *str,
+                                          ares_bool_t    ignore_invalid);
 ares_status_t ares_in_addr_to_sconfig_llist(const struct in_addr *servers,
                                             size_t                nservers,
-                                            ares_llist_t       **llist);
+                                            ares_llist_t        **llist);
 ares_status_t ares_get_server_addr(const ares_server_t *server,
-                                   ares_buf_t         *buf);
+                                   ares_buf_t          *buf);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
 
 void                            ares_hosts_file_destroy(ares_hosts_file_t *hf);
 ares_status_t ares_hosts_search_ipaddr(ares_channel_t *channel,
-                                        ares_bool_t use_env, const char *ipaddr,
-                                        const ares_hosts_entry_t **entry);
+                                       ares_bool_t use_env, const char *ipaddr,
+                                       const ares_hosts_entry_t **entry);
 ares_status_t ares_hosts_search_host(ares_channel_t *channel,
-                                      ares_bool_t use_env, const char *host,
-                                      const ares_hosts_entry_t **entry);
+                                     ares_bool_t use_env, const char *host,
+                                     const ares_hosts_entry_t **entry);
 ares_status_t ares_hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
-                                           int                       family,
-                                           struct hostent          **hostent);
+                                          int family, struct hostent **hostent);
 ares_status_t ares_hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
-                                            const char *name, int family,
-                                            unsigned short        port,
-                                            ares_bool_t           want_cnames,
-                                            struct ares_addrinfo *ai);
+                                           const char *name, int family,
+                                           unsigned short        port,
+                                           ares_bool_t           want_cnames,
+                                           struct ares_addrinfo *ai);
 
 /* Same as ares_query_dnsrec() except does not take a channel lock.  Use this
  * if a channel lock is already held */
@@ -514,7 +512,7 @@ void ares_gethostbyaddr_nolock(ares_channel_t *channel, const void *addr,
  *  \return ARES_SUCCESS on success
  */
 ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
-                                   ares_bool_t is_hostname);
+                                  ares_bool_t is_hostname);
 
 /*! Write the DNS name to the buffer in the DNS domain-name syntax as a
  *  series of labels.  The maximum domain name length is 255 characters with
@@ -534,8 +532,8 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
  *          bad.
  */
 ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
-                                   ares_bool_t validate_hostname,
-                                   const char *name);
+                                  ares_bool_t validate_hostname,
+                                  const char *name);
 
 /*! Check if the queue is empty, if so, wake any waiters.  This is only
  *  effective if built with threading support.
@@ -546,19 +544,19 @@ ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
  */
 void          ares_queue_notify_empty(ares_channel_t *channel);
 
-#define ARES_CONFIG_CHECK(x)                                               \
+#define ARES_CONFIG_CHECK(x)                                              \
   (x && x->lookups && ares_slist_len(x->servers) > 0 && x->timeout > 0 && \
    x->tries > 0)
 
 ares_bool_t   ares_subnet_match(const struct ares_addr *addr,
-                                 const struct ares_addr *subnet,
-                                 unsigned char           netmask);
+                                const struct ares_addr *subnet,
+                                unsigned char           netmask);
 ares_bool_t   ares_addr_is_linklocal(const struct ares_addr *addr);
 
 void          ares_qcache_destroy(ares_qcache_t *cache);
 ares_status_t ares_qcache_create(ares_rand_state *rand_state,
-                                  unsigned int     max_ttl,
-                                  ares_qcache_t **cache_out);
+                                 unsigned int     max_ttl,
+                                 ares_qcache_t  **cache_out);
 void          ares_qcache_flush(ares_qcache_t *cache);
 ares_status_t ares_qcache_insert(ares_channel_t       *channel,
                                  const ares_timeval_t *now,

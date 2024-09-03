@@ -128,7 +128,7 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
   const char *dot;
 #endif
   struct ares_addr addr;
-  ares_llist_t   *sconfig = NULL;
+  ares_llist_t    *sconfig = NULL;
 
   /* Enable EDNS by default */
   if (!(channel->optmask & ARES_OPT_FLAGS)) {
@@ -323,7 +323,7 @@ int ares_init_options(ares_channel_t           **channelptr,
    * completely unused.  This reduces the number of different code paths that
    * might be followed even if there is a minor performance hit. */
   status = ares_qcache_create(channel->rand_state, channel->qcache_max_ttl,
-                               &channel->qcache);
+                              &channel->qcache);
   if (status != ARES_SUCCESS) {
     goto done; /* LCOV_EXCL_LINE: OutOfMemory */
   }

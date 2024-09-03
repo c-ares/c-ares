@@ -31,7 +31,7 @@
 
 void ares_destroy(ares_channel_t *channel)
 {
-  size_t              i;
+  size_t             i;
   ares_llist_node_t *node = NULL;
 
   if (channel == NULL) {
@@ -73,7 +73,7 @@ void ares_destroy(ares_channel_t *channel)
   node = ares_llist_node_first(channel->all_queries);
   while (node != NULL) {
     ares_llist_node_t *next  = ares_llist_node_next(node);
-    ares_query_t       *query = ares_llist_node_claim(node);
+    ares_query_t      *query = ares_llist_node_claim(node);
 
     query->node_all_queries = NULL;
     query->callback(query->arg, ARES_EDESTRUCTION, 0, NULL);

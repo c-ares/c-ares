@@ -28,7 +28,7 @@
 struct ares_qcache {
   ares_htable_strvp_t *cache;
   ares_slist_t        *expire;
-  unsigned int          max_ttl;
+  unsigned int         max_ttl;
 };
 
 typedef struct {
@@ -40,7 +40,7 @@ typedef struct {
 
 static char *ares_qcache_calc_key(const ares_dns_record_t *dnsrec)
 {
-  ares_buf_t     *buf = ares_buf_create();
+  ares_buf_t      *buf = ares_buf_create();
   size_t           i;
   ares_status_t    status;
   ares_dns_flags_t flags;
@@ -138,8 +138,7 @@ fail:
   /* LCOV_EXCL_STOP */
 }
 
-static void ares_qcache_expire(ares_qcache_t       *cache,
-                                const ares_timeval_t *now)
+static void ares_qcache_expire(ares_qcache_t *cache, const ares_timeval_t *now)
 {
   ares_slist_node_t *node;
 
@@ -205,10 +204,10 @@ static void ares_qcache_entry_destroy_cb(void *arg)
 }
 
 ares_status_t ares_qcache_create(ares_rand_state *rand_state,
-                                  unsigned int     max_ttl,
-                                  ares_qcache_t **cache_out)
+                                 unsigned int     max_ttl,
+                                 ares_qcache_t  **cache_out)
 {
-  ares_status_t   status = ARES_SUCCESS;
+  ares_status_t  status = ARES_SUCCESS;
   ares_qcache_t *cache;
 
   cache = ares_malloc_zero(sizeof(*cache));
@@ -224,7 +223,7 @@ ares_status_t ares_qcache_create(ares_rand_state *rand_state,
   }
 
   cache->expire = ares_slist_create(rand_state, ares_qcache_entry_sort_cb,
-                                     ares_qcache_entry_destroy_cb);
+                                    ares_qcache_entry_destroy_cb);
   if (cache->expire == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
@@ -302,15 +301,15 @@ static unsigned int ares_qcache_soa_minimum(ares_dns_record_t *dnsrec)
 }
 
 /* On success, takes ownership of dnsrec */
-static ares_status_t ares_qcache_insert_int(ares_qcache_t          *qcache,
+static ares_status_t ares_qcache_insert_int(ares_qcache_t           *qcache,
                                             ares_dns_record_t       *qresp,
                                             const ares_dns_record_t *qreq,
                                             const ares_timeval_t    *now)
 {
   ares_qcache_entry_t *entry;
-  unsigned int          ttl;
-  ares_dns_rcode_t      rcode = ares_dns_record_get_rcode(qresp);
-  ares_dns_flags_t      flags = ares_dns_record_get_flags(qresp);
+  unsigned int         ttl;
+  ares_dns_rcode_t     rcode = ares_dns_record_get_rcode(qresp);
+  ares_dns_flags_t     flags = ares_dns_record_get_flags(qresp);
 
   if (qcache == NULL || qresp == NULL) {
     return ARES_EFORMERR;
@@ -386,9 +385,9 @@ ares_status_t ares_qcache_fetch(ares_channel_t           *channel,
                                 const ares_dns_record_t  *dnsrec,
                                 const ares_dns_record_t **dnsrec_resp)
 {
-  char                 *key = NULL;
+  char                *key = NULL;
   ares_qcache_entry_t *entry;
-  ares_status_t         status = ARES_SUCCESS;
+  ares_status_t        status = ARES_SUCCESS;
 
   if (channel == NULL || dnsrec == NULL || dnsrec_resp == NULL) {
     return ARES_EFORMERR;

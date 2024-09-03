@@ -387,7 +387,7 @@ static int find_src_addr(ares_channel_t *channel, const struct sockaddr *addr,
  * Will leave the list unchanged if an error occurs.
  */
 ares_status_t ares_sortaddrinfo(ares_channel_t            *channel,
-                                 struct ares_addrinfo_node *list_sentinel)
+                                struct ares_addrinfo_node *list_sentinel)
 {
   struct ares_addrinfo_node *cur;
   size_t                     nelem = 0;

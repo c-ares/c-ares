@@ -31,7 +31,7 @@
 
 
 static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
-                                           ares_buf_t             *buf)
+                                           ares_buf_t              *buf)
 {
   unsigned short u16;
   unsigned short opcode;
@@ -120,14 +120,14 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
 
   /* NSCOUNT */
   status = ares_buf_append_be16(buf, (unsigned short)ares_dns_record_rr_cnt(
-                                        dnsrec, ARES_SECTION_AUTHORITY));
+                                       dnsrec, ARES_SECTION_AUTHORITY));
   if (status != ARES_SUCCESS) {
     return status; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   /* ARCOUNT */
   status = ares_buf_append_be16(buf, (unsigned short)ares_dns_record_rr_cnt(
-                                        dnsrec, ARES_SECTION_ADDITIONAL));
+                                       dnsrec, ARES_SECTION_ADDITIONAL));
   if (status != ARES_SUCCESS) {
     return status; /* LCOV_EXCL_LINE: OutOfMemory */
   }
@@ -136,8 +136,8 @@ static ares_status_t ares_dns_write_header(const ares_dns_record_t *dnsrec,
 }
 
 static ares_status_t ares_dns_write_questions(const ares_dns_record_t *dnsrec,
-                                              ares_llist_t          **namelist,
-                                              ares_buf_t             *buf)
+                                              ares_llist_t           **namelist,
+                                              ares_buf_t              *buf)
 {
   size_t i;
 
@@ -174,9 +174,9 @@ static ares_status_t ares_dns_write_questions(const ares_dns_record_t *dnsrec,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_dns_write_rr_name(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_name(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
-                                            ares_llist_t      **namelist,
+                                            ares_llist_t       **namelist,
                                             ares_bool_t       validate_hostname,
                                             ares_dns_rr_key_t key)
 {
@@ -190,7 +190,7 @@ static ares_status_t ares_dns_write_rr_name(ares_buf_t         *buf,
   return ares_dns_name_write(buf, namelist, validate_hostname, name);
 }
 
-static ares_status_t ares_dns_write_rr_str(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_str(ares_buf_t          *buf,
                                            const ares_dns_rr_t *rr,
                                            ares_dns_rr_key_t    key)
 {
@@ -222,7 +222,7 @@ static ares_status_t ares_dns_write_rr_str(ares_buf_t         *buf,
   return ares_buf_append(buf, (const unsigned char *)str, len);
 }
 
-static ares_status_t ares_dns_write_binstr(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_binstr(ares_buf_t          *buf,
                                            const unsigned char *bin,
                                            size_t               bin_len)
 {
@@ -260,7 +260,7 @@ static ares_status_t ares_dns_write_binstr(ares_buf_t         *buf,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_dns_write_rr_abin(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_abin(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
                                             ares_dns_rr_key_t    key)
 {
@@ -287,7 +287,7 @@ static ares_status_t ares_dns_write_rr_abin(ares_buf_t         *buf,
   return status;
 }
 
-static ares_status_t ares_dns_write_rr_be32(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_be32(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
                                             ares_dns_rr_key_t    key)
 {
@@ -297,7 +297,7 @@ static ares_status_t ares_dns_write_rr_be32(ares_buf_t         *buf,
   return ares_buf_append_be32(buf, ares_dns_rr_get_u32(rr, key));
 }
 
-static ares_status_t ares_dns_write_rr_be16(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_be16(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
                                             ares_dns_rr_key_t    key)
 {
@@ -307,7 +307,7 @@ static ares_status_t ares_dns_write_rr_be16(ares_buf_t         *buf,
   return ares_buf_append_be16(buf, ares_dns_rr_get_u16(rr, key));
 }
 
-static ares_status_t ares_dns_write_rr_u8(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_u8(ares_buf_t          *buf,
                                           const ares_dns_rr_t *rr,
                                           ares_dns_rr_key_t    key)
 {
@@ -317,9 +317,9 @@ static ares_status_t ares_dns_write_rr_u8(ares_buf_t         *buf,
   return ares_buf_append_byte(buf, ares_dns_rr_get_u8(rr, key));
 }
 
-static ares_status_t ares_dns_write_rr_a(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_a(ares_buf_t          *buf,
                                          const ares_dns_rr_t *rr,
-                                         ares_llist_t      **namelist)
+                                         ares_llist_t       **namelist)
 {
   const struct in_addr *addr;
   (void)namelist;
@@ -332,25 +332,25 @@ static ares_status_t ares_dns_write_rr_a(ares_buf_t         *buf,
   return ares_buf_append(buf, (const unsigned char *)addr, sizeof(*addr));
 }
 
-static ares_status_t ares_dns_write_rr_ns(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_ns(ares_buf_t          *buf,
                                           const ares_dns_rr_t *rr,
-                                          ares_llist_t      **namelist)
+                                          ares_llist_t       **namelist)
 {
   return ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
                                 ARES_RR_NS_NSDNAME);
 }
 
-static ares_status_t ares_dns_write_rr_cname(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_cname(ares_buf_t          *buf,
                                              const ares_dns_rr_t *rr,
-                                             ares_llist_t      **namelist)
+                                             ares_llist_t       **namelist)
 {
   return ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
                                 ARES_RR_CNAME_CNAME);
 }
 
-static ares_status_t ares_dns_write_rr_soa(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_soa(ares_buf_t          *buf,
                                            const ares_dns_rr_t *rr,
-                                           ares_llist_t      **namelist)
+                                           ares_llist_t       **namelist)
 {
   ares_status_t status;
 
@@ -396,17 +396,17 @@ static ares_status_t ares_dns_write_rr_soa(ares_buf_t         *buf,
   return ares_dns_write_rr_be32(buf, rr, ARES_RR_SOA_MINIMUM);
 }
 
-static ares_status_t ares_dns_write_rr_ptr(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_ptr(ares_buf_t          *buf,
                                            const ares_dns_rr_t *rr,
-                                           ares_llist_t      **namelist)
+                                           ares_llist_t       **namelist)
 {
   return ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
                                 ARES_RR_PTR_DNAME);
 }
 
-static ares_status_t ares_dns_write_rr_hinfo(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_hinfo(ares_buf_t          *buf,
                                              const ares_dns_rr_t *rr,
-                                             ares_llist_t      **namelist)
+                                             ares_llist_t       **namelist)
 {
   ares_status_t status;
 
@@ -422,9 +422,9 @@ static ares_status_t ares_dns_write_rr_hinfo(ares_buf_t         *buf,
   return ares_dns_write_rr_str(buf, rr, ARES_RR_HINFO_OS);
 }
 
-static ares_status_t ares_dns_write_rr_mx(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_mx(ares_buf_t          *buf,
                                           const ares_dns_rr_t *rr,
-                                          ares_llist_t      **namelist)
+                                          ares_llist_t       **namelist)
 {
   ares_status_t status;
 
@@ -439,17 +439,17 @@ static ares_status_t ares_dns_write_rr_mx(ares_buf_t         *buf,
                                 ARES_RR_MX_EXCHANGE);
 }
 
-static ares_status_t ares_dns_write_rr_txt(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_txt(ares_buf_t          *buf,
                                            const ares_dns_rr_t *rr,
-                                           ares_llist_t      **namelist)
+                                           ares_llist_t       **namelist)
 {
   (void)namelist;
   return ares_dns_write_rr_abin(buf, rr, ARES_RR_TXT_DATA);
 }
 
-static ares_status_t ares_dns_write_rr_sig(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_sig(ares_buf_t          *buf,
                                            const ares_dns_rr_t *rr,
-                                           ares_llist_t      **namelist)
+                                           ares_llist_t       **namelist)
 {
   ares_status_t        status;
   const unsigned char *data;
@@ -515,9 +515,9 @@ static ares_status_t ares_dns_write_rr_sig(ares_buf_t         *buf,
   return ares_buf_append(buf, data, len);
 }
 
-static ares_status_t ares_dns_write_rr_aaaa(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_aaaa(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
-                                            ares_llist_t      **namelist)
+                                            ares_llist_t       **namelist)
 {
   const struct ares_in6_addr *addr;
   (void)namelist;
@@ -530,9 +530,9 @@ static ares_status_t ares_dns_write_rr_aaaa(ares_buf_t         *buf,
   return ares_buf_append(buf, (const unsigned char *)addr, sizeof(*addr));
 }
 
-static ares_status_t ares_dns_write_rr_srv(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_srv(ares_buf_t          *buf,
                                            const ares_dns_rr_t *rr,
-                                           ares_llist_t      **namelist)
+                                           ares_llist_t       **namelist)
 {
   ares_status_t status;
 
@@ -559,9 +559,9 @@ static ares_status_t ares_dns_write_rr_srv(ares_buf_t         *buf,
                                 ARES_RR_SRV_TARGET);
 }
 
-static ares_status_t ares_dns_write_rr_naptr(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_naptr(ares_buf_t          *buf,
                                              const ares_dns_rr_t *rr,
-                                             ares_llist_t      **namelist)
+                                             ares_llist_t       **namelist)
 {
   ares_status_t status;
 
@@ -600,9 +600,9 @@ static ares_status_t ares_dns_write_rr_naptr(ares_buf_t         *buf,
                                 ARES_RR_NAPTR_REPLACEMENT);
 }
 
-static ares_status_t ares_dns_write_rr_opt(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_opt(ares_buf_t          *buf,
                                            const ares_dns_rr_t *rr,
-                                           ares_llist_t      **namelist)
+                                           ares_llist_t       **namelist)
 {
   size_t         len = ares_buf_len(buf);
   ares_status_t  status;
@@ -621,8 +621,8 @@ static ares_status_t ares_dns_write_rr_opt(ares_buf_t         *buf,
   /* We need to go back and overwrite the class and ttl that were emitted as
    * the OPT record overloads them for its own use (yes, very strange!) */
   status = ares_buf_set_length(buf, len - 2 /* RDLENGTH */
-                                       - 4   /* TTL */
-                                       - 2 /* CLASS */);
+                                      - 4   /* TTL */
+                                      - 2 /* CLASS */);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -681,9 +681,9 @@ static ares_status_t ares_dns_write_rr_opt(ares_buf_t         *buf,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_dns_write_rr_tlsa(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_tlsa(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
-                                            ares_llist_t      **namelist)
+                                            ares_llist_t       **namelist)
 {
   ares_status_t        status;
   const unsigned char *data;
@@ -718,9 +718,9 @@ static ares_status_t ares_dns_write_rr_tlsa(ares_buf_t         *buf,
   return ares_buf_append(buf, data, len);
 }
 
-static ares_status_t ares_dns_write_rr_svcb(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_svcb(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
-                                            ares_llist_t      **namelist)
+                                            ares_llist_t       **namelist)
 {
   ares_status_t status;
   size_t        i;
@@ -769,9 +769,9 @@ static ares_status_t ares_dns_write_rr_svcb(ares_buf_t         *buf,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_dns_write_rr_https(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_https(ares_buf_t          *buf,
                                              const ares_dns_rr_t *rr,
-                                             ares_llist_t      **namelist)
+                                             ares_llist_t       **namelist)
 {
   ares_status_t status;
   size_t        i;
@@ -820,9 +820,9 @@ static ares_status_t ares_dns_write_rr_https(ares_buf_t         *buf,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_dns_write_rr_uri(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_uri(ares_buf_t          *buf,
                                            const ares_dns_rr_t *rr,
-                                           ares_llist_t      **namelist)
+                                           ares_llist_t       **namelist)
 {
   ares_status_t status;
   const char   *target;
@@ -849,12 +849,12 @@ static ares_status_t ares_dns_write_rr_uri(ares_buf_t         *buf,
   }
 
   return ares_buf_append(buf, (const unsigned char *)target,
-                          ares_strlen(target));
+                         ares_strlen(target));
 }
 
-static ares_status_t ares_dns_write_rr_caa(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_caa(ares_buf_t          *buf,
                                            const ares_dns_rr_t *rr,
-                                           ares_llist_t      **namelist)
+                                           ares_llist_t       **namelist)
 {
   const unsigned char *data     = NULL;
   size_t               data_len = 0;
@@ -883,9 +883,9 @@ static ares_status_t ares_dns_write_rr_caa(ares_buf_t         *buf,
   return ares_buf_append(buf, data, data_len);
 }
 
-static ares_status_t ares_dns_write_rr_raw_rr(ares_buf_t         *buf,
+static ares_status_t ares_dns_write_rr_raw_rr(ares_buf_t          *buf,
                                               const ares_dns_rr_t *rr,
-                                              ares_llist_t      **namelist)
+                                              ares_llist_t       **namelist)
 {
   size_t               len = ares_buf_len(buf);
   ares_status_t        status;
@@ -903,9 +903,9 @@ static ares_status_t ares_dns_write_rr_raw_rr(ares_buf_t         *buf,
   /* We need to go back and overwrite the type that was emitted by the parent
    * function */
   status = ares_buf_set_length(buf, len - 2 /* RDLENGTH */
-                                       - 4   /* TTL */
-                                       - 2   /* CLASS */
-                                       - 2 /* TYPE */);
+                                      - 4   /* TTL */
+                                      - 2   /* CLASS */
+                                      - 2 /* TYPE */);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -935,9 +935,9 @@ static ares_status_t ares_dns_write_rr_raw_rr(ares_buf_t         *buf,
 }
 
 static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
-                                       ares_llist_t          **namelist,
+                                       ares_llist_t           **namelist,
                                        ares_dns_section_t       section,
-                                       ares_buf_t             *buf)
+                                       ares_buf_t              *buf)
 {
   size_t i;
 
@@ -945,7 +945,7 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
     const ares_dns_rr_t *rr;
     ares_dns_rec_type_t  type;
     ares_bool_t          allow_compress;
-    ares_llist_t      **namelistptr = NULL;
+    ares_llist_t       **namelistptr = NULL;
     size_t               pos_len;
     ares_status_t        status;
     size_t               rdlength;
@@ -1095,11 +1095,11 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
 }
 
 ares_status_t ares_dns_write_buf(const ares_dns_record_t *dnsrec,
-                                 ares_buf_t             *buf)
+                                 ares_buf_t              *buf)
 {
   ares_llist_t *namelist = NULL;
-  size_t         orig_len;
-  ares_status_t  status;
+  size_t        orig_len;
+  ares_status_t status;
 
   if (dnsrec == NULL || buf == NULL) {
     return ARES_EFORMERR;
@@ -1142,7 +1142,7 @@ done:
 }
 
 ares_status_t ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
-                                     ares_buf_t             *buf)
+                                     ares_buf_t              *buf)
 {
   ares_status_t status;
   size_t        orig_len;
@@ -1193,7 +1193,7 @@ done:
 ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
                              unsigned char **buf, size_t *buf_len)
 {
-  ares_buf_t  *b = NULL;
+  ares_buf_t   *b = NULL;
   ares_status_t status;
 
   if (buf == NULL || buf_len == NULL || dnsrec == NULL) {

@@ -107,7 +107,7 @@ void ares_thread_cond_broadcast(ares_thread_cond_t *cond)
 }
 
 ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
-                                     ares_thread_mutex_t *mut)
+                                    ares_thread_mutex_t *mut)
 {
   if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
@@ -118,8 +118,8 @@ ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
 }
 
 ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
-                                          ares_thread_mutex_t *mut,
-                                          unsigned long         timeout_ms)
+                                         ares_thread_mutex_t *mut,
+                                         unsigned long        timeout_ms)
 {
   if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
@@ -151,7 +151,7 @@ static DWORD WINAPI ares_thread_func(LPVOID lpParameter)
 }
 
 ares_status_t ares_thread_create(ares_thread_t    **thread,
-                                  ares_thread_func_t func, void *arg)
+                                 ares_thread_func_t func, void *arg)
 {
   ares_thread_t *thr = NULL;
 
@@ -217,7 +217,7 @@ struct ares_thread_mutex {
 
 ares_thread_mutex_t *ares_thread_mutex_create(void)
 {
-  pthread_mutexattr_t   attr;
+  pthread_mutexattr_t  attr;
   ares_thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
   if (mut == NULL) {
     return NULL;
@@ -312,7 +312,7 @@ void ares_thread_cond_broadcast(ares_thread_cond_t *cond)
 }
 
 ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
-                                     ares_thread_mutex_t *mut)
+                                    ares_thread_mutex_t *mut)
 {
   if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
@@ -346,8 +346,8 @@ static void ares_timespec_timeout(struct timespec *ts, unsigned long add_ms)
 }
 
 ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
-                                          ares_thread_mutex_t *mut,
-                                          unsigned long         timeout_ms)
+                                         ares_thread_mutex_t *mut,
+                                         unsigned long        timeout_ms)
 {
   struct timespec ts;
 
@@ -369,7 +369,7 @@ struct ares_thread {
 };
 
 ares_status_t ares_thread_create(ares_thread_t    **thread,
-                                  ares_thread_func_t func, void *arg)
+                                 ares_thread_func_t func, void *arg)
 {
   ares_thread_t *thr = NULL;
 
@@ -461,7 +461,7 @@ void ares_thread_cond_broadcast(ares_thread_cond_t *cond)
 }
 
 ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
-                                     ares_thread_mutex_t *mut)
+                                    ares_thread_mutex_t *mut)
 {
   (void)cond;
   (void)mut;
@@ -469,8 +469,8 @@ ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
 }
 
 ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
-                                          ares_thread_mutex_t *mut,
-                                          unsigned long         timeout_ms)
+                                         ares_thread_mutex_t *mut,
+                                         unsigned long        timeout_ms)
 {
   (void)cond;
   (void)mut;
@@ -479,7 +479,7 @@ ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
 }
 
 ares_status_t ares_thread_create(ares_thread_t    **thread,
-                                  ares_thread_func_t func, void *arg)
+                                 ares_thread_func_t func, void *arg)
 {
   (void)thread;
   (void)func;

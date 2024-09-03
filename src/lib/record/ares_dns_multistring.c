@@ -39,7 +39,7 @@ struct ares_dns_multistring {
   /*! length of combined/concatenated string */
   size_t         cache_str_len;
   /*! Data making up strings */
-  ares_array_t *strs; /*!< multistring_data_t type */
+  ares_array_t  *strs; /*!< multistring_data_t type */
 };
 
 static void ares_dns_multistring_free_cb(void *arg)
@@ -58,8 +58,8 @@ ares_dns_multistring_t *ares_dns_multistring_create(void)
     return NULL;
   }
 
-  strs->strs = ares_array_create(sizeof(multistring_data_t),
-                                  ares_dns_multistring_free_cb);
+  strs->strs =
+    ares_array_create(sizeof(multistring_data_t), ares_dns_multistring_free_cb);
   if (strs->strs == NULL) {
     ares_free(strs);
     return NULL;
@@ -91,8 +91,8 @@ void ares_dns_multistring_destroy(ares_dns_multistring_t *strs)
 }
 
 ares_status_t ares_dns_multistring_swap_own(ares_dns_multistring_t *strs,
-                                             size_t idx, unsigned char *str,
-                                             size_t len)
+                                            size_t idx, unsigned char *str,
+                                            size_t len)
 {
   multistring_data_t *data;
 
@@ -113,8 +113,7 @@ ares_status_t ares_dns_multistring_swap_own(ares_dns_multistring_t *strs,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_dns_multistring_del(ares_dns_multistring_t *strs,
-                                        size_t                   idx)
+ares_status_t ares_dns_multistring_del(ares_dns_multistring_t *strs, size_t idx)
 {
   if (strs == NULL) {
     return ARES_EFORMERR;
@@ -126,7 +125,7 @@ ares_status_t ares_dns_multistring_del(ares_dns_multistring_t *strs,
 }
 
 ares_status_t ares_dns_multistring_add_own(ares_dns_multistring_t *strs,
-                                            unsigned char *str, size_t len)
+                                           unsigned char *str, size_t len)
 {
   multistring_data_t *data;
   ares_status_t       status;
@@ -163,7 +162,7 @@ size_t ares_dns_multistring_cnt(const ares_dns_multistring_t *strs)
 
 const unsigned char *
   ares_dns_multistring_get(const ares_dns_multistring_t *strs, size_t idx,
-                            size_t *len)
+                           size_t *len)
 {
   const multistring_data_t *data;
 
@@ -180,11 +179,11 @@ const unsigned char *
   return data->data;
 }
 
-const unsigned char *
-  ares_dns_multistring_combined(ares_dns_multistring_t *strs, size_t *len)
+const unsigned char *ares_dns_multistring_combined(ares_dns_multistring_t *strs,
+                                                   size_t                 *len)
 {
   ares_buf_t *buf = NULL;
-  size_t       i;
+  size_t      i;
 
   if (strs == NULL || len == NULL) {
     return NULL;
@@ -224,9 +223,9 @@ const unsigned char *
 }
 
 ares_status_t ares_dns_multistring_parse_buf(ares_buf_t *buf,
-                                              size_t       remaining_len,
-                                              ares_dns_multistring_t **strs,
-                                              ares_bool_t validate_printable)
+                                             size_t      remaining_len,
+                                             ares_dns_multistring_t **strs,
+                                             ares_bool_t validate_printable)
 {
   unsigned char len;
   ares_status_t status   = ARES_EBADRESP;

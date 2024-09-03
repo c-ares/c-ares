@@ -34,12 +34,12 @@
 #include "ares_nameser.h"
 
 ares_status_t ares_expand_name_validated(const unsigned char *encoded,
-                                          const unsigned char *abuf,
-                                          size_t alen, char **s, size_t *enclen,
-                                          ares_bool_t is_hostname)
+                                         const unsigned char *abuf, size_t alen,
+                                         char **s, size_t *enclen,
+                                         ares_bool_t is_hostname)
 {
   ares_status_t status;
-  ares_buf_t  *buf = NULL;
+  ares_buf_t   *buf = NULL;
   size_t        start_len;
 
   if (encoded == NULL || abuf == NULL || alen == 0 || enclen == NULL) {
@@ -93,7 +93,7 @@ int ares_expand_name(const unsigned char *encoded, const unsigned char *abuf,
   }
 
   status  = ares_expand_name_validated(encoded, abuf, (size_t)alen, s,
-                                        &enclen_temp, ARES_FALSE);
+                                       &enclen_temp, ARES_FALSE);
   *enclen = (long)enclen_temp;
   return (int)status;
 }

@@ -74,7 +74,7 @@ CARES_EXTERN ares_htable_strvp_t *
  *  \return ARES_TRUE on success, ARES_FALSE on failure or out of memory
  */
 CARES_EXTERN ares_bool_t ares_htable_strvp_insert(ares_htable_strvp_t *htable,
-                                                   const char *key, void *val);
+                                                  const char *key, void *val);
 
 /*! Retrieve value from hashtable based on key
  *
@@ -96,7 +96,7 @@ CARES_EXTERN ares_bool_t ares_htable_strvp_get(
  */
 CARES_EXTERN void *
   ares_htable_strvp_get_direct(const ares_htable_strvp_t *htable,
-                                const char                 *key);
+                               const char                *key);
 
 /*! Remove a value from the hashtable by key
  *
@@ -105,7 +105,7 @@ CARES_EXTERN void *
  *  \return ARES_TRUE if found, ARES_FALSE if not
  */
 CARES_EXTERN ares_bool_t ares_htable_strvp_remove(ares_htable_strvp_t *htable,
-                                                   const char           *key);
+                                                  const char          *key);
 
 /*! Retrieve the number of keys stored in the hash table
  *

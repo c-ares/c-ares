@@ -288,7 +288,7 @@ void ares_destroy_rand_state(ares_rand_state *state)
 }
 
 static void ares_rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
-                                   size_t len)
+                                  size_t len)
 {
   while (1) {
     size_t bytes_read = 0;

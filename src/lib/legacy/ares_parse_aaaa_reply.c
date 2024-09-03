@@ -89,7 +89,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
   if (addrttls != NULL && req_naddrttls) {
     size_t temp_naddrttls = 0;
     ares_addrinfo2addrttl(&ai, AF_INET6, req_naddrttls, NULL, addrttls,
-                           &temp_naddrttls);
+                          &temp_naddrttls);
     *naddrttls = (int)temp_naddrttls;
   }
 

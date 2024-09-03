@@ -59,7 +59,7 @@ typedef struct ares_htable ares_htable_t;
  *  \return hash
  */
 typedef unsigned int (*ares_htable_hashfunc_t)(const void  *key,
-                                                unsigned int seed);
+                                               unsigned int seed);
 
 /*! Callback to free the bucket
  *
@@ -80,15 +80,14 @@ typedef const void *(*ares_htable_bucket_key_t)(const void *bucket);
  *  \param[in] key2  second key
  *  \return ARES_TRUE if equal, ARES_FALSE if not
  */
-typedef ares_bool_t (*ares_htable_key_eq_t)(const void *key1,
-                                             const void *key2);
+typedef ares_bool_t (*ares_htable_key_eq_t)(const void *key1, const void *key2);
 
 
 /*! Destroy the initialized hashtable
  *
  *  \param[in] htable initialized hashtable
  */
-void            ares_htable_destroy(ares_htable_t *htable);
+void           ares_htable_destroy(ares_htable_t *htable);
 
 /*! Create a new hashtable
  *
@@ -99,16 +98,16 @@ void            ares_htable_destroy(ares_htable_t *htable);
  *  \return initialized hashtable.  NULL if out of memory or misuse.
  */
 ares_htable_t *ares_htable_create(ares_htable_hashfunc_t    hash_func,
-                                    ares_htable_bucket_key_t  bucket_key,
-                                    ares_htable_bucket_free_t bucket_free,
-                                    ares_htable_key_eq_t      key_eq);
+                                  ares_htable_bucket_key_t  bucket_key,
+                                  ares_htable_bucket_free_t bucket_free,
+                                  ares_htable_key_eq_t      key_eq);
 
 /*! Count of keys from initialized hashtable
  *
  *  \param[in] htable  Initialized hashtable.
  *  \return count of keys
  */
-size_t          ares_htable_num_keys(const ares_htable_t *htable);
+size_t         ares_htable_num_keys(const ares_htable_t *htable);
 
 /*! Retrieve an array of buckets from the hashtable.  This is mainly used as
  *  a helper for retrieving an array of keys.
@@ -120,8 +119,7 @@ size_t          ares_htable_num_keys(const ares_htable_t *htable);
  *          will be a dangling pointer.  It is expected wrappers will make
  *          such values safe by duplicating them.
  */
-const void    **ares_htable_all_buckets(const ares_htable_t *htable,
-                                         size_t               *num);
+const void **ares_htable_all_buckets(const ares_htable_t *htable, size_t *num);
 
 /*! Insert bucket into hashtable
  *
@@ -130,7 +128,7 @@ const void    **ares_htable_all_buckets(const ares_htable_t *htable,
  *                     allowed to be NULL.
  *  \return ARES_TRUE on success, ARES_FALSE if out of memory
  */
-ares_bool_t     ares_htable_insert(ares_htable_t *htable, void *bucket);
+ares_bool_t  ares_htable_insert(ares_htable_t *htable, void *bucket);
 
 /*! Retrieve bucket from hashtable based on key.
  *
@@ -138,7 +136,7 @@ ares_bool_t     ares_htable_insert(ares_htable_t *htable, void *bucket);
  *  \param[in] key     Pointer to key to use for comparison.
  *  \return matching bucket, or NULL if not found.
  */
-void           *ares_htable_get(const ares_htable_t *htable, const void *key);
+void        *ares_htable_get(const ares_htable_t *htable, const void *key);
 
 /*! Remove bucket from hashtable by key
  *
@@ -146,7 +144,7 @@ void           *ares_htable_get(const ares_htable_t *htable, const void *key);
  *  \param[in] key     Pointer to key to use for comparison
  *  \return ARES_TRUE if found, ARES_FALSE if not found
  */
-ares_bool_t     ares_htable_remove(ares_htable_t *htable, const void *key);
+ares_bool_t  ares_htable_remove(ares_htable_t *htable, const void *key);
 
 /*! FNV1a hash algorithm.  Can be used as underlying primitive for building
  *  a wrapper hashtable.
@@ -157,7 +155,7 @@ ares_bool_t     ares_htable_remove(ares_htable_t *htable, const void *key);
  *  \return hash value
  */
 unsigned int ares_htable_hash_FNV1a(const unsigned char *key, size_t key_len,
-                                     unsigned int seed);
+                                    unsigned int seed);
 
 /*! FNV1a hash algorithm, but converts all characters to lowercase before
  *  hashing to make the hash case-insensitive. Can be used as underlying
@@ -169,7 +167,7 @@ unsigned int ares_htable_hash_FNV1a(const unsigned char *key, size_t key_len,
  *  \return hash value
  */
 unsigned int ares_htable_hash_FNV1a_casecmp(const unsigned char *key,
-                                             size_t key_len, unsigned int seed);
+                                            size_t key_len, unsigned int seed);
 
 /*! @} */
 

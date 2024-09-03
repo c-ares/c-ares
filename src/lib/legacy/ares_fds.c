@@ -29,10 +29,10 @@
 
 int ares_fds(const ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
 {
-  ares_socket_t       nfds;
+  ares_socket_t      nfds;
   ares_slist_node_t *snode;
   /* Are there any active queries? */
-  size_t              active_queries;
+  size_t             active_queries;
 
   if (channel == NULL || read_fds == NULL || write_fds == NULL) {
     return 0;
@@ -45,7 +45,7 @@ int ares_fds(const ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
   nfds = 0;
   for (snode = ares_slist_node_first(channel->servers); snode != NULL;
        snode = ares_slist_node_next(snode)) {
-    ares_server_t      *server = ares_slist_node_val(snode);
+    ares_server_t     *server = ares_slist_node_val(snode);
     ares_llist_node_t *node;
 
     for (node = ares_llist_node_first(server->connections); node != NULL;
