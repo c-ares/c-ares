@@ -26,35 +26,35 @@
 #ifndef __ARES__THREADS_H
 #define __ARES__THREADS_H
 
-struct ares__thread_mutex;
-typedef struct ares__thread_mutex ares__thread_mutex_t;
+struct ares_thread_mutex;
+typedef struct ares_thread_mutex ares_thread_mutex_t;
 
-ares__thread_mutex_t             *ares__thread_mutex_create(void);
-void ares__thread_mutex_destroy(ares__thread_mutex_t *mut);
-void ares__thread_mutex_lock(ares__thread_mutex_t *mut);
-void ares__thread_mutex_unlock(ares__thread_mutex_t *mut);
+ares_thread_mutex_t             *ares_thread_mutex_create(void);
+void ares_thread_mutex_destroy(ares_thread_mutex_t *mut);
+void ares_thread_mutex_lock(ares_thread_mutex_t *mut);
+void ares_thread_mutex_unlock(ares_thread_mutex_t *mut);
 
 
-struct ares__thread_cond;
-typedef struct ares__thread_cond ares__thread_cond_t;
+struct ares_thread_cond;
+typedef struct ares_thread_cond ares_thread_cond_t;
 
-ares__thread_cond_t             *ares__thread_cond_create(void);
-void          ares__thread_cond_destroy(ares__thread_cond_t *cond);
-void          ares__thread_cond_signal(ares__thread_cond_t *cond);
-void          ares__thread_cond_broadcast(ares__thread_cond_t *cond);
-ares_status_t ares__thread_cond_wait(ares__thread_cond_t  *cond,
-                                     ares__thread_mutex_t *mut);
-ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
-                                          ares__thread_mutex_t *mut,
+ares_thread_cond_t             *ares_thread_cond_create(void);
+void          ares_thread_cond_destroy(ares_thread_cond_t *cond);
+void          ares_thread_cond_signal(ares_thread_cond_t *cond);
+void          ares_thread_cond_broadcast(ares_thread_cond_t *cond);
+ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
+                                     ares_thread_mutex_t *mut);
+ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
+                                          ares_thread_mutex_t *mut,
                                           unsigned long         timeout_ms);
 
 
-struct ares__thread;
-typedef struct ares__thread ares__thread_t;
+struct ares_thread;
+typedef struct ares_thread ares_thread_t;
 
-typedef void *(*ares__thread_func_t)(void *arg);
-ares_status_t ares__thread_create(ares__thread_t    **thread,
-                                  ares__thread_func_t func, void *arg);
-ares_status_t ares__thread_join(ares__thread_t *thread, void **rv);
+typedef void *(*ares_thread_func_t)(void *arg);
+ares_status_t ares_thread_create(ares_thread_t    **thread,
+                                  ares_thread_func_t func, void *arg);
+ares_status_t ares_thread_join(ares_thread_t *thread, void **rv);
 
 #endif

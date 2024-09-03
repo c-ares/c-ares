@@ -24,46 +24,46 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ares_private.h"
-#include "ares__htable.h"
-#include "ares__htable_strvp.h"
+#include "ares_htable.h"
+#include "ares_htable_strvp.h"
 
-struct ares__htable_strvp {
-  ares__htable_strvp_val_free_t free_val;
-  ares__htable_t               *hash;
+struct ares_htable_strvp {
+  ares_htable_strvp_val_free_t free_val;
+  ares_htable_t               *hash;
 };
 
 typedef struct {
   char                 *key;
   void                 *val;
-  ares__htable_strvp_t *parent;
-} ares__htable_strvp_bucket_t;
+  ares_htable_strvp_t *parent;
+} ares_htable_strvp_bucket_t;
 
-void ares__htable_strvp_destroy(ares__htable_strvp_t *htable)
+void ares_htable_strvp_destroy(ares_htable_strvp_t *htable)
 {
   if (htable == NULL) {
     return;
   }
 
-  ares__htable_destroy(htable->hash);
+  ares_htable_destroy(htable->hash);
   ares_free(htable);
 }
 
 static unsigned int hash_func(const void *key, unsigned int seed)
 {
   const char *arg = key;
-  return ares__htable_hash_FNV1a_casecmp((const unsigned char *)arg,
+  return ares_htable_hash_FNV1a_casecmp((const unsigned char *)arg,
                                          ares_strlen(arg), seed);
 }
 
 static const void *bucket_key(const void *bucket)
 {
-  const ares__htable_strvp_bucket_t *arg = bucket;
+  const ares_htable_strvp_bucket_t *arg = bucket;
   return arg->key;
 }
 
 static void bucket_free(void *bucket)
 {
-  ares__htable_strvp_bucket_t *arg = bucket;
+  ares_htable_strvp_bucket_t *arg = bucket;
 
   if (arg->parent->free_val) {
     arg->parent->free_val(arg->val);
@@ -77,16 +77,16 @@ static ares_bool_t key_eq(const void *key1, const void *key2)
   return ares_strcaseeq(key1, key2);
 }
 
-ares__htable_strvp_t *
-  ares__htable_strvp_create(ares__htable_strvp_val_free_t val_free)
+ares_htable_strvp_t *
+  ares_htable_strvp_create(ares_htable_strvp_val_free_t val_free)
 {
-  ares__htable_strvp_t *htable = ares_malloc(sizeof(*htable));
+  ares_htable_strvp_t *htable = ares_malloc(sizeof(*htable));
   if (htable == NULL) {
     goto fail;
   }
 
   htable->hash =
-    ares__htable_create(hash_func, bucket_key, bucket_free, key_eq);
+    ares_htable_create(hash_func, bucket_key, bucket_free, key_eq);
   if (htable->hash == NULL) {
     goto fail;
   }
@@ -97,16 +97,16 @@ ares__htable_strvp_t *
 
 fail:
   if (htable) {
-    ares__htable_destroy(htable->hash);
+    ares_htable_destroy(htable->hash);
     ares_free(htable);
   }
   return NULL;
 }
 
-ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
+ares_bool_t ares_htable_strvp_insert(ares_htable_strvp_t *htable,
                                       const char *key, void *val)
 {
-  ares__htable_strvp_bucket_t *bucket = NULL;
+  ares_htable_strvp_bucket_t *bucket = NULL;
 
   if (htable == NULL || key == NULL) {
     goto fail;
@@ -124,7 +124,7 @@ ares_bool_t ares__htable_strvp_insert(ares__htable_strvp_t *htable,
   }
   bucket->val = val;
 
-  if (!ares__htable_insert(htable->hash, bucket)) {
+  if (!ares_htable_insert(htable->hash, bucket)) {
     goto fail;
   }
 
@@ -138,10 +138,10 @@ fail:
   return ARES_FALSE;
 }
 
-ares_bool_t ares__htable_strvp_get(const ares__htable_strvp_t *htable,
+ares_bool_t ares_htable_strvp_get(const ares_htable_strvp_t *htable,
                                    const char *key, void **val)
 {
-  ares__htable_strvp_bucket_t *bucket = NULL;
+  ares_htable_strvp_bucket_t *bucket = NULL;
 
   if (val) {
     *val = NULL;
@@ -151,7 +151,7 @@ ares_bool_t ares__htable_strvp_get(const ares__htable_strvp_t *htable,
     return ARES_FALSE;
   }
 
-  bucket = ares__htable_get(htable->hash, key);
+  bucket = ares_htable_get(htable->hash, key);
   if (bucket == NULL) {
     return ARES_FALSE;
   }
@@ -162,28 +162,28 @@ ares_bool_t ares__htable_strvp_get(const ares__htable_strvp_t *htable,
   return ARES_TRUE;
 }
 
-void *ares__htable_strvp_get_direct(const ares__htable_strvp_t *htable,
+void *ares_htable_strvp_get_direct(const ares_htable_strvp_t *htable,
                                     const char                 *key)
 {
   void *val = NULL;
-  ares__htable_strvp_get(htable, key, &val);
+  ares_htable_strvp_get(htable, key, &val);
   return val;
 }
 
-ares_bool_t ares__htable_strvp_remove(ares__htable_strvp_t *htable,
+ares_bool_t ares_htable_strvp_remove(ares_htable_strvp_t *htable,
                                       const char           *key)
 {
   if (htable == NULL) {
     return ARES_FALSE;
   }
 
-  return ares__htable_remove(htable->hash, key);
+  return ares_htable_remove(htable->hash, key);
 }
 
-size_t ares__htable_strvp_num_keys(const ares__htable_strvp_t *htable)
+size_t ares_htable_strvp_num_keys(const ares_htable_strvp_t *htable)
 {
   if (htable == NULL) {
     return 0;
   }
-  return ares__htable_num_keys(htable->hash);
+  return ares_htable_num_keys(htable->hash);
 }

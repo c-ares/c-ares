@@ -32,7 +32,7 @@
 #endif
 
 
-void ares__timeval_remaining(ares_timeval_t       *remaining,
+void ares_timeval_remaining(ares_timeval_t       *remaining,
                              const ares_timeval_t *now,
                              const ares_timeval_t *tout)
 {
@@ -53,7 +53,7 @@ void ares__timeval_remaining(ares_timeval_t       *remaining,
   }
 }
 
-void ares__timeval_diff(ares_timeval_t *tvdiff, const ares_timeval_t *tvstart,
+void ares_timeval_diff(ares_timeval_t *tvdiff, const ares_timeval_t *tvstart,
                         const ares_timeval_t *tvstop)
 {
   tvdiff->sec = tvstop->sec - tvstart->sec;
@@ -89,24 +89,24 @@ static struct timeval *ares_timeout_int(const ares_channel_t *channel,
                                         struct timeval       *tvbuf)
 {
   const ares_query_t *query;
-  ares__slist_node_t *node;
+  ares_slist_node_t *node;
   ares_timeval_t      now;
   ares_timeval_t      atvbuf;
   ares_timeval_t      amaxtv;
 
   /* The minimum timeout of all queries is always the first entry in
    * channel->queries_by_timeout */
-  node = ares__slist_node_first(channel->queries_by_timeout);
+  node = ares_slist_node_first(channel->queries_by_timeout);
   /* no queries/timeout */
   if (node == NULL) {
     return maxtv;
   }
 
-  query = ares__slist_node_val(node);
+  query = ares_slist_node_val(node);
 
-  ares__tvnow(&now);
+  ares_tvnow(&now);
 
-  ares__timeval_remaining(&atvbuf, &now, &query->timeout);
+  ares_timeval_remaining(&atvbuf, &now, &query->timeout);
 
   ares_timeval_to_struct_timeval(tvbuf, &atvbuf);
 
@@ -141,11 +141,11 @@ struct timeval *ares_timeout(const ares_channel_t *channel,
     return NULL;
   }
 
-  ares__channel_lock(channel);
+  ares_channel_lock(channel);
 
   rv = ares_timeout_int(channel, maxtv, tvbuf);
 
-  ares__channel_unlock(channel);
+  ares_channel_unlock(channel);
 
   return rv;
 }

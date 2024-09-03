@@ -35,7 +35,7 @@
 #  define V_PLATFORM_WIN32_NT      2
 #  define V_PLATFORM_WIN32_CE      3
 
-win_platform ares__getplatform(void)
+win_platform ares_getplatform(void)
 {
   OSVERSIONINFOEX OsvEx;
 

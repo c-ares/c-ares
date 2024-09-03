@@ -37,7 +37,7 @@ typedef enum {
   WIN_CE
 } win_platform;
 
-win_platform ares__getplatform(void);
+win_platform ares_getplatform(void);
 
 #endif
 
