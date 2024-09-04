@@ -768,6 +768,17 @@ int RunInContainer(ContainerFilesystem *fs, const std::string &hostname,
     }                                                                         \
     int ICLASS_NAME(casename, testname)::InnerTestBody()
 
+
+
+/* Derived from googletest/include/gtest/gtest-param-test.h, specifically the
+ * TEST_P() macro, and some fixes to try to be compatible with different
+ * versions. */
+#ifndef GTEST_ATTRIBUTE_UNUSED_
+#  define GTEST_ATTRIBUTE_UNUSED_
+#endif
+#ifndef GTEST_INTERNAL_ATTRIBUTE_MAYBE_UNUSED
+#  define GTEST_INTERNAL_ATTRIBUTE_MAYBE_UNUSED
+#endif
 #  define CONTAINED_TEST_P(test_suite_name, test_name, hostname, domainname, \
                            files)                                            \
     class GTEST_TEST_CLASS_NAME_(test_suite_name, test_name)                 \
@@ -781,9 +792,9 @@ int RunInContainer(ContainerFilesystem *fs, const std::string &hostname,
       {                                                                      \
         ContainerFilesystem chroot(files, "..");                             \
         VoidToIntFn         fn = [this](void) -> int {                       \
-          ares_reinit(this->channel_);                               \
-          ares_sleep_time(100);                                      \
-          return this->InnerTestBody();                              \
+          ares_reinit(this->channel_);                                       \
+          ares_sleep_time(100);                                              \
+          return this->InnerTestBody();                                      \
         };                                                                   \
         EXPECT_EQ(0, RunInContainer(&chroot, hostname, domainname, fn));     \
       }                                                                      \
@@ -803,12 +814,8 @@ int RunInContainer(ContainerFilesystem *fs, const std::string &hostname,
             ::testing::internal::CodeLocation(__FILE__, __LINE__));          \
         return 0;                                                            \
       }                                                                      \
-      static int gtest_registering_dummy_ GTEST_ATTRIBUTE_UNUSED_;           \
-      GTEST_TEST_CLASS_NAME_(test_suite_name, test_name)                     \
-      (const GTEST_TEST_CLASS_NAME_(test_suite_name, test_name) &) = delete; \
-      GTEST_TEST_CLASS_NAME_(test_suite_name, test_name) &operator=(         \
-        const GTEST_TEST_CLASS_NAME_(test_suite_name,                        \
-                                     test_name) &) = delete; /* NOLINT */    \
+      GTEST_INTERNAL_ATTRIBUTE_MAYBE_UNUSED static int                       \
+        gtest_registering_dummy_ GTEST_ATTRIBUTE_UNUSED_;                    \
     };                                                                       \
     int GTEST_TEST_CLASS_NAME_(test_suite_name,                              \
                                test_name)::gtest_registering_dummy_ =        \
