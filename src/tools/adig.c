@@ -43,8 +43,8 @@
 #endif
 
 #include "ares.h"
-#include "ares__array.h"
-#include "ares__buf.h"
+#include "ares_array.h"
+#include "ares_buf.h"
 #include "ares_dns.h"
 #include "ares_getopt.h"
 #include "ares_mem.h"
@@ -289,7 +289,7 @@ static ares_bool_t read_rcfile(adig_config_t *config)
 
   size_t        rcargc;
   char        **rcargv;
-  ares__buf_t  *rcbuf;
+  ares_buf_t   *rcbuf;
   ares_status_t rcstatus;
 
 #if defined(WIN32)
@@ -336,10 +336,10 @@ static ares_bool_t read_rcfile(adig_config_t *config)
     return ARES_TRUE;
   }
 
-  rcbuf = ares__buf_create();
-  if (ares__buf_load_file(rcfile, rcbuf) == ARES_SUCCESS) {
-    rcstatus = ares__buf_split_str(rcbuf, (const unsigned char *)"\n ", 2,
-                                   ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
+  rcbuf = ares_buf_create();
+  if (ares_buf_load_file(rcfile, rcbuf) == ARES_SUCCESS) {
+    rcstatus = ares_buf_split_str(rcbuf, (const unsigned char *)"\n ", 2,
+                                  ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
 
     if (rcstatus == ARES_SUCCESS) {
       read_cmdline((int)rcargc, (const char * const *)rcargv, config,
@@ -353,14 +353,14 @@ static ares_bool_t read_rcfile(adig_config_t *config)
     ares_free_array(rcargv, rcargc, ares_free);
 
     if (rcstatus != ARES_SUCCESS) {
-      ares__buf_destroy(rcbuf);
+      ares_buf_destroy(rcbuf);
       return ARES_FALSE;
     }
 
   } else {
     DEBUGF(fprintf(stderr, "read_cmdline() failed to load rcfile"));
   }
-  ares__buf_destroy(rcbuf);
+  ares_buf_destroy(rcbuf);
 
   return ARES_TRUE;
 }

@@ -28,82 +28,82 @@
 #include "ares_private.h"
 #include <assert.h>
 
-static void ares__requeue_queries(ares_conn_t  *conn,
-                                  ares_status_t requeue_status)
+static void ares_requeue_queries(ares_conn_t  *conn,
+                                 ares_status_t requeue_status)
 {
   ares_query_t  *query;
   ares_timeval_t now;
 
-  ares__tvnow(&now);
+  ares_tvnow(&now);
 
-  while ((query = ares__llist_first_val(conn->queries_to_conn)) != NULL) {
-    ares__requeue_query(query, &now, requeue_status, ARES_TRUE, NULL);
+  while ((query = ares_llist_first_val(conn->queries_to_conn)) != NULL) {
+    ares_requeue_query(query, &now, requeue_status, ARES_TRUE, NULL);
   }
 }
 
-void ares__close_connection(ares_conn_t *conn, ares_status_t requeue_status)
+void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status)
 {
   ares_server_t  *server  = conn->server;
   ares_channel_t *channel = server->channel;
 
   /* Unlink */
-  ares__llist_node_claim(
-    ares__htable_asvp_get_direct(channel->connnode_by_socket, conn->fd));
-  ares__htable_asvp_remove(channel->connnode_by_socket, conn->fd);
+  ares_llist_node_claim(
+    ares_htable_asvp_get_direct(channel->connnode_by_socket, conn->fd));
+  ares_htable_asvp_remove(channel->connnode_by_socket, conn->fd);
 
   if (conn->flags & ARES_CONN_FLAG_TCP) {
     server->tcp_conn = NULL;
   }
 
-  ares__buf_destroy(conn->in_buf);
-  ares__buf_destroy(conn->out_buf);
+  ares_buf_destroy(conn->in_buf);
+  ares_buf_destroy(conn->out_buf);
 
   /* Requeue queries to other connections */
-  ares__requeue_queries(conn, requeue_status);
+  ares_requeue_queries(conn, requeue_status);
 
-  ares__llist_destroy(conn->queries_to_conn);
+  ares_llist_destroy(conn->queries_to_conn);
 
-  ares__conn_sock_state_cb_update(conn, ARES_CONN_STATE_NONE);
+  ares_conn_sock_state_cb_update(conn, ARES_CONN_STATE_NONE);
 
-  ares__close_socket(channel, conn->fd);
+  ares_close_socket(channel, conn->fd);
 
   ares_free(conn);
 }
 
-void ares__close_sockets(ares_server_t *server)
+void ares_close_sockets(ares_server_t *server)
 {
-  ares__llist_node_t *node;
+  ares_llist_node_t *node;
 
-  while ((node = ares__llist_node_first(server->connections)) != NULL) {
-    ares_conn_t *conn = ares__llist_node_val(node);
-    ares__close_connection(conn, ARES_SUCCESS);
+  while ((node = ares_llist_node_first(server->connections)) != NULL) {
+    ares_conn_t *conn = ares_llist_node_val(node);
+    ares_close_connection(conn, ARES_SUCCESS);
   }
 }
 
-void ares__check_cleanup_conns(const ares_channel_t *channel)
+void ares_check_cleanup_conns(const ares_channel_t *channel)
 {
-  ares__slist_node_t *snode;
+  ares_slist_node_t *snode;
 
   if (channel == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   /* Iterate across each server */
-  for (snode = ares__slist_node_first(channel->servers); snode != NULL;
-       snode = ares__slist_node_next(snode)) {
-    ares_server_t      *server = ares__slist_node_val(snode);
-    ares__llist_node_t *cnode;
+  for (snode = ares_slist_node_first(channel->servers); snode != NULL;
+       snode = ares_slist_node_next(snode)) {
+    ares_server_t     *server = ares_slist_node_val(snode);
+    ares_llist_node_t *cnode;
 
     /* Iterate across each connection */
-    cnode = ares__llist_node_first(server->connections);
+    cnode = ares_llist_node_first(server->connections);
     while (cnode != NULL) {
-      ares__llist_node_t *next       = ares__llist_node_next(cnode);
-      ares_conn_t        *conn       = ares__llist_node_val(cnode);
-      ares_bool_t         do_cleanup = ARES_FALSE;
-      cnode                          = next;
+      ares_llist_node_t *next       = ares_llist_node_next(cnode);
+      ares_conn_t       *conn       = ares_llist_node_val(cnode);
+      ares_bool_t        do_cleanup = ARES_FALSE;
+      cnode                         = next;
 
       /* Has connections, not eligible */
-      if (ares__llist_len(conn->queries_to_conn)) {
+      if (ares_llist_len(conn->queries_to_conn)) {
         continue;
       }
 
@@ -131,7 +131,7 @@ void ares__check_cleanup_conns(const ares_channel_t *channel)
       }
 
       /* Clean it up */
-      ares__close_connection(conn, ARES_SUCCESS);
+      ares_close_connection(conn, ARES_SUCCESS);
     }
   }
 }

@@ -24,23 +24,23 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ares_private.h"
-#include "ares__array.h"
+#include "ares_array.h"
 
 #define ARES__ARRAY_MIN 4
 
-struct ares__array {
-  ares__array_destructor_t destruct;
-  void                    *arr;
-  size_t                   member_size;
-  size_t                   cnt;
-  size_t                   offset;
-  size_t                   alloc_cnt;
+struct ares_array {
+  ares_array_destructor_t destruct;
+  void                   *arr;
+  size_t                  member_size;
+  size_t                  cnt;
+  size_t                  offset;
+  size_t                  alloc_cnt;
 };
 
-ares__array_t *ares__array_create(size_t                   member_size,
-                                  ares__array_destructor_t destruct)
+ares_array_t *ares_array_create(size_t                  member_size,
+                                ares_array_destructor_t destruct)
 {
-  ares__array_t *arr;
+  ares_array_t *arr;
 
   if (member_size == 0) {
     return NULL;
@@ -56,7 +56,7 @@ ares__array_t *ares__array_create(size_t                   member_size,
   return arr;
 }
 
-size_t ares__array_len(const ares__array_t *arr)
+size_t ares_array_len(const ares_array_t *arr)
 {
   if (arr == NULL) {
     return 0;
@@ -64,7 +64,7 @@ size_t ares__array_len(const ares__array_t *arr)
   return arr->cnt;
 }
 
-void *ares__array_at(ares__array_t *arr, size_t idx)
+void *ares_array_at(ares_array_t *arr, size_t idx)
 {
   if (arr == NULL || idx >= arr->cnt) {
     return NULL;
@@ -72,7 +72,7 @@ void *ares__array_at(ares__array_t *arr, size_t idx)
   return (unsigned char *)arr->arr + ((idx + arr->offset) * arr->member_size);
 }
 
-const void *ares__array_at_const(const ares__array_t *arr, size_t idx)
+const void *ares_array_at_const(const ares_array_t *arr, size_t idx)
 {
   if (arr == NULL || idx >= arr->cnt) {
     return NULL;
@@ -80,7 +80,7 @@ const void *ares__array_at_const(const ares__array_t *arr, size_t idx)
   return (unsigned char *)arr->arr + ((idx + arr->offset) * arr->member_size);
 }
 
-ares_status_t ares__array_sort(ares__array_t *arr, ares__array_cmp_t cmp)
+ares_status_t ares_array_sort(ares_array_t *arr, ares_array_cmp_t cmp)
 {
   if (arr == NULL || cmp == NULL) {
     return ARES_EFORMERR;
@@ -96,7 +96,7 @@ ares_status_t ares__array_sort(ares__array_t *arr, ares__array_cmp_t cmp)
   return ARES_SUCCESS;
 }
 
-void ares__array_destroy(ares__array_t *arr)
+void ares_array_destroy(ares_array_t *arr)
 {
   size_t i;
 
@@ -106,7 +106,7 @@ void ares__array_destroy(ares__array_t *arr)
 
   if (arr->destruct != NULL) {
     for (i = 0; i < arr->cnt; i++) {
-      arr->destruct(ares__array_at(arr, i));
+      arr->destruct(ares_array_at(arr, i));
     }
   }
 
@@ -116,8 +116,8 @@ void ares__array_destroy(ares__array_t *arr)
 
 /* NOTE: this function operates on actual indexes, NOT indexes using the
  *       arr->offset */
-static ares_status_t ares__array_move(ares__array_t *arr, size_t dest_idx,
-                                      size_t src_idx)
+static ares_status_t ares_array_move(ares_array_t *arr, size_t dest_idx,
+                                     size_t src_idx)
 {
   void       *dest_ptr;
   const void *src_ptr;
@@ -151,7 +151,7 @@ static ares_status_t ares__array_move(ares__array_t *arr, size_t dest_idx,
   return ARES_SUCCESS;
 }
 
-void *ares__array_finish(ares__array_t *arr, size_t *num_members)
+void *ares_array_finish(ares_array_t *arr, size_t *num_members)
 {
   void *ptr;
 
@@ -161,7 +161,7 @@ void *ares__array_finish(ares__array_t *arr, size_t *num_members)
 
   /* Make sure we move data to beginning of allocation */
   if (arr->offset != 0) {
-    if (ares__array_move(arr, 0, arr->offset) != ARES_SUCCESS) {
+    if (ares_array_move(arr, 0, arr->offset) != ARES_SUCCESS) {
       return NULL;
     }
     arr->offset = 0;
@@ -173,7 +173,7 @@ void *ares__array_finish(ares__array_t *arr, size_t *num_members)
   return ptr;
 }
 
-ares_status_t ares__array_set_size(ares__array_t *arr, size_t size)
+ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
 {
   void *temp;
 
@@ -182,7 +182,7 @@ ares_status_t ares__array_set_size(ares__array_t *arr, size_t size)
   }
 
   /* Always operate on powers of 2 */
-  size = ares__round_up_pow2(size);
+  size = ares_round_up_pow2(size);
 
   if (size < ARES__ARRAY_MIN) {
     size = ARES__ARRAY_MIN;
@@ -203,8 +203,8 @@ ares_status_t ares__array_set_size(ares__array_t *arr, size_t size)
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr,
-                                    size_t idx)
+ares_status_t ares_array_insert_at(void **elem_ptr, ares_array_t *arr,
+                                   size_t idx)
 {
   void         *ptr;
   ares_status_t status;
@@ -219,14 +219,14 @@ ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr,
   }
 
   /* Allocate more if needed */
-  status = ares__array_set_size(arr, arr->cnt + 1);
+  status = ares_array_set_size(arr, arr->cnt + 1);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* Shift if we have memory but not enough room at the end */
   if (arr->cnt + 1 + arr->offset > arr->alloc_cnt) {
-    status = ares__array_move(arr, 0, arr->offset);
+    status = ares_array_move(arr, 0, arr->offset);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -236,7 +236,7 @@ ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr,
   /* If we're inserting anywhere other than the end, we need to move some
    * elements out of the way */
   if (idx != arr->cnt) {
-    status = ares__array_move(arr, idx + arr->offset + 1, idx + arr->offset);
+    status = ares_array_move(arr, idx + arr->offset + 1, idx + arr->offset);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -255,23 +255,23 @@ ares_status_t ares__array_insert_at(void **elem_ptr, ares__array_t *arr,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__array_insert_last(void **elem_ptr, ares__array_t *arr)
+ares_status_t ares_array_insert_last(void **elem_ptr, ares_array_t *arr)
 {
-  return ares__array_insert_at(elem_ptr, arr, ares__array_len(arr));
+  return ares_array_insert_at(elem_ptr, arr, ares_array_len(arr));
 }
 
-ares_status_t ares__array_insert_first(void **elem_ptr, ares__array_t *arr)
+ares_status_t ares_array_insert_first(void **elem_ptr, ares_array_t *arr)
 {
-  return ares__array_insert_at(elem_ptr, arr, 0);
+  return ares_array_insert_at(elem_ptr, arr, 0);
 }
 
-ares_status_t ares__array_insertdata_at(ares__array_t *arr, size_t idx,
-                                        const void *data_ptr)
+ares_status_t ares_array_insertdata_at(ares_array_t *arr, size_t idx,
+                                       const void *data_ptr)
 {
   ares_status_t status;
   void         *ptr = NULL;
 
-  status = ares__array_insert_at(&ptr, arr, idx);
+  status = ares_array_insert_at(&ptr, arr, idx);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -279,13 +279,13 @@ ares_status_t ares__array_insertdata_at(ares__array_t *arr, size_t idx,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__array_insertdata_last(ares__array_t *arr,
-                                          const void    *data_ptr)
+ares_status_t ares_array_insertdata_last(ares_array_t *arr,
+                                         const void   *data_ptr)
 {
   ares_status_t status;
   void         *ptr = NULL;
 
-  status = ares__array_insert_last(&ptr, arr);
+  status = ares_array_insert_last(&ptr, arr);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -293,13 +293,13 @@ ares_status_t ares__array_insertdata_last(ares__array_t *arr,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__array_insertdata_first(ares__array_t *arr,
-                                           const void    *data_ptr)
+ares_status_t ares_array_insertdata_first(ares_array_t *arr,
+                                          const void   *data_ptr)
 {
   ares_status_t status;
   void         *ptr = NULL;
 
-  status = ares__array_insert_last(&ptr, arr);
+  status = ares_array_insert_last(&ptr, arr);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -307,36 +307,36 @@ ares_status_t ares__array_insertdata_first(ares__array_t *arr,
   return ARES_SUCCESS;
 }
 
-void *ares__array_first(ares__array_t *arr)
+void *ares_array_first(ares_array_t *arr)
 {
-  return ares__array_at(arr, 0);
+  return ares_array_at(arr, 0);
 }
 
-void *ares__array_last(ares__array_t *arr)
+void *ares_array_last(ares_array_t *arr)
 {
-  size_t cnt = ares__array_len(arr);
+  size_t cnt = ares_array_len(arr);
   if (cnt == 0) {
     return NULL;
   }
-  return ares__array_at(arr, cnt - 1);
+  return ares_array_at(arr, cnt - 1);
 }
 
-const void *ares__array_first_const(const ares__array_t *arr)
+const void *ares_array_first_const(const ares_array_t *arr)
 {
-  return ares__array_at_const(arr, 0);
+  return ares_array_at_const(arr, 0);
 }
 
-const void *ares__array_last_const(const ares__array_t *arr)
+const void *ares_array_last_const(const ares_array_t *arr)
 {
-  size_t cnt = ares__array_len(arr);
+  size_t cnt = ares_array_len(arr);
   if (cnt == 0) {
     return NULL;
   }
-  return ares__array_at_const(arr, cnt - 1);
+  return ares_array_at_const(arr, cnt - 1);
 }
 
-ares_status_t ares__array_claim_at(void *dest, size_t dest_size,
-                                   ares__array_t *arr, size_t idx)
+ares_status_t ares_array_claim_at(void *dest, size_t dest_size,
+                                  ares_array_t *arr, size_t idx)
 {
   ares_status_t status;
 
@@ -349,7 +349,7 @@ ares_status_t ares__array_claim_at(void *dest, size_t dest_size,
   }
 
   if (dest) {
-    memcpy(dest, ares__array_at(arr, idx), arr->member_size);
+    memcpy(dest, ares_array_at(arr, idx), arr->member_size);
   }
 
   if (idx == 0) {
@@ -359,7 +359,7 @@ ares_status_t ares__array_claim_at(void *dest, size_t dest_size,
   } else if (idx != arr->cnt - 1) {
     /* Must shift entire array if removing an element from the middle. Does
      * nothing if removing last element other than decrement count. */
-    status = ares__array_move(arr, idx + arr->offset, idx + arr->offset + 1);
+    status = ares_array_move(arr, idx + arr->offset, idx + arr->offset + 1);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -369,9 +369,9 @@ ares_status_t ares__array_claim_at(void *dest, size_t dest_size,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__array_remove_at(ares__array_t *arr, size_t idx)
+ares_status_t ares_array_remove_at(ares_array_t *arr, size_t idx)
 {
-  void *ptr = ares__array_at(arr, idx);
+  void *ptr = ares_array_at(arr, idx);
   if (arr == NULL || ptr == NULL) {
     return ARES_EFORMERR;
   }
@@ -380,19 +380,19 @@ ares_status_t ares__array_remove_at(ares__array_t *arr, size_t idx)
     arr->destruct(ptr);
   }
 
-  return ares__array_claim_at(NULL, 0, arr, idx);
+  return ares_array_claim_at(NULL, 0, arr, idx);
 }
 
-ares_status_t ares__array_remove_first(ares__array_t *arr)
+ares_status_t ares_array_remove_first(ares_array_t *arr)
 {
-  return ares__array_remove_at(arr, 0);
+  return ares_array_remove_at(arr, 0);
 }
 
-ares_status_t ares__array_remove_last(ares__array_t *arr)
+ares_status_t ares_array_remove_last(ares_array_t *arr)
 {
-  size_t cnt = ares__array_len(arr);
+  size_t cnt = ares_array_len(arr);
   if (cnt == 0) {
     return ARES_EFORMERR;
   }
-  return ares__array_remove_at(arr, cnt - 1);
+  return ares_array_remove_at(arr, cnt - 1);
 }

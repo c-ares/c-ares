@@ -45,10 +45,10 @@
 #endif
 
 
-ares_status_t ares__parse_into_addrinfo(const ares_dns_record_t *dnsrec,
-                                        ares_bool_t    cname_only_is_enodata,
-                                        unsigned short port,
-                                        struct ares_addrinfo *ai)
+ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
+                                       ares_bool_t    cname_only_is_enodata,
+                                       unsigned short port,
+                                       struct ares_addrinfo *ai)
 {
   ares_status_t               status;
   size_t                      i;
@@ -103,7 +103,7 @@ ares_status_t ares__parse_into_addrinfo(const ares_dns_record_t *dnsrec,
        * SA: Seems wrong as it introduces order dependency. */
       hostname = ares_dns_rr_get_str(rr, ARES_RR_CNAME_CNAME);
 
-      cname = ares__append_addrinfo_cname(&cnames);
+      cname = ares_append_addrinfo_cname(&cnames);
       if (cname == NULL) {
         status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
         goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
@@ -157,18 +157,18 @@ ares_status_t ares__parse_into_addrinfo(const ares_dns_record_t *dnsrec,
   }
 
   if (got_a || got_aaaa) {
-    ares__addrinfo_cat_nodes(&ai->nodes, nodes);
+    ares_addrinfo_cat_nodes(&ai->nodes, nodes);
     nodes = NULL;
   }
 
   if (got_cname) {
-    ares__addrinfo_cat_cnames(&ai->cnames, cnames);
+    ares_addrinfo_cat_cnames(&ai->cnames, cnames);
     cnames = NULL;
   }
 
 done:
-  ares__freeaddrinfo_cnames(cnames);
-  ares__freeaddrinfo_nodes(nodes);
+  ares_freeaddrinfo_cnames(cnames);
+  ares_freeaddrinfo_nodes(nodes);
 
   /* compatibility */
   if (status == ARES_EBADNAME) {

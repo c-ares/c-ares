@@ -78,22 +78,22 @@
  */
 
 struct ares_hosts_file {
-  time_t                ts;
+  time_t               ts;
   /*! cache the filename so we know if the filename changes it automatically
    *  invalidates the cache */
-  char                 *filename;
+  char                *filename;
   /*! iphash is the owner of the 'entry' object as there is only ever a single
    *  match to the object. */
-  ares__htable_strvp_t *iphash;
+  ares_htable_strvp_t *iphash;
   /*! hosthash does not own the entry so won't free on destruction */
-  ares__htable_strvp_t *hosthash;
+  ares_htable_strvp_t *hosthash;
 };
 
 struct ares_hosts_entry {
-  size_t         refcnt; /*! If the entry is stored multiple times in the
-                          *  ip address hash, we have to reference count it */
-  ares__llist_t *ips;
-  ares__llist_t *hosts;
+  size_t        refcnt; /*! If the entry is stored multiple times in the
+                         *  ip address hash, we have to reference count it */
+  ares_llist_t *ips;
+  ares_llist_t *hosts;
 };
 
 const void *ares_dns_pton(const char *ipaddr, struct ares_addr *addr,
@@ -132,8 +132,8 @@ const void *ares_dns_pton(const char *ipaddr, struct ares_addr *addr,
   return ptr;
 }
 
-static ares_bool_t ares__normalize_ipaddr(const char *ipaddr, char *out,
-                                          size_t out_len)
+static ares_bool_t ares_normalize_ipaddr(const char *ipaddr, char *out,
+                                         size_t out_len)
 {
   struct ares_addr data;
   const void      *addr;
@@ -154,7 +154,7 @@ static ares_bool_t ares__normalize_ipaddr(const char *ipaddr, char *out,
   return ARES_TRUE;
 }
 
-static void ares__hosts_entry_destroy(ares_hosts_entry_t *entry)
+static void ares_hosts_entry_destroy(ares_hosts_entry_t *entry)
 {
   if (entry == NULL) {
     return;
@@ -169,29 +169,29 @@ static void ares__hosts_entry_destroy(ares_hosts_entry_t *entry)
     return;
   }
 
-  ares__llist_destroy(entry->hosts);
-  ares__llist_destroy(entry->ips);
+  ares_llist_destroy(entry->hosts);
+  ares_llist_destroy(entry->ips);
   ares_free(entry);
 }
 
-static void ares__hosts_entry_destroy_cb(void *entry)
+static void ares_hosts_entry_destroy_cb(void *entry)
 {
-  ares__hosts_entry_destroy(entry);
+  ares_hosts_entry_destroy(entry);
 }
 
-void ares__hosts_file_destroy(ares_hosts_file_t *hf)
+void ares_hosts_file_destroy(ares_hosts_file_t *hf)
 {
   if (hf == NULL) {
     return;
   }
 
   ares_free(hf->filename);
-  ares__htable_strvp_destroy(hf->hosthash);
-  ares__htable_strvp_destroy(hf->iphash);
+  ares_htable_strvp_destroy(hf->hosthash);
+  ares_htable_strvp_destroy(hf->iphash);
   ares_free(hf);
 }
 
-static ares_hosts_file_t *ares__hosts_file_create(const char *filename)
+static ares_hosts_file_t *ares_hosts_file_create(const char *filename)
 {
   ares_hosts_file_t *hf = ares_malloc_zero(sizeof(*hf));
   if (hf == NULL) {
@@ -205,12 +205,12 @@ static ares_hosts_file_t *ares__hosts_file_create(const char *filename)
     goto fail;
   }
 
-  hf->iphash = ares__htable_strvp_create(ares__hosts_entry_destroy_cb);
+  hf->iphash = ares_htable_strvp_create(ares_hosts_entry_destroy_cb);
   if (hf->iphash == NULL) {
     goto fail;
   }
 
-  hf->hosthash = ares__htable_strvp_create(NULL);
+  hf->hosthash = ares_htable_strvp_create(NULL);
   if (hf->hosthash == NULL) {
     goto fail;
   }
@@ -218,7 +218,7 @@ static ares_hosts_file_t *ares__hosts_file_create(const char *filename)
   return hf;
 
 fail:
-  ares__hosts_file_destroy(hf);
+  ares_hosts_file_destroy(hf);
   return NULL;
 }
 
@@ -228,63 +228,63 @@ typedef enum {
   ARES_MATCH_HOST   = 2
 } ares_hosts_file_match_t;
 
-static ares_status_t ares__hosts_file_merge_entry(
+static ares_status_t ares_hosts_file_merge_entry(
   const ares_hosts_file_t *hf, ares_hosts_entry_t *existing,
   ares_hosts_entry_t *entry, ares_hosts_file_match_t matchtype)
 {
-  ares__llist_node_t *node;
+  ares_llist_node_t *node;
 
   /* If we matched on IP address, we know there can only be 1, so there's no
    * reason to do anything */
   if (matchtype != ARES_MATCH_IPADDR) {
-    while ((node = ares__llist_node_first(entry->ips)) != NULL) {
-      const char *ipaddr = ares__llist_node_val(node);
+    while ((node = ares_llist_node_first(entry->ips)) != NULL) {
+      const char *ipaddr = ares_llist_node_val(node);
 
-      if (ares__htable_strvp_get_direct(hf->iphash, ipaddr) != NULL) {
-        ares__llist_node_destroy(node);
+      if (ares_htable_strvp_get_direct(hf->iphash, ipaddr) != NULL) {
+        ares_llist_node_destroy(node);
         continue;
       }
 
-      ares__llist_node_mvparent_last(node, existing->ips);
+      ares_llist_node_mvparent_last(node, existing->ips);
     }
   }
 
 
-  while ((node = ares__llist_node_first(entry->hosts)) != NULL) {
-    const char *hostname = ares__llist_node_val(node);
+  while ((node = ares_llist_node_first(entry->hosts)) != NULL) {
+    const char *hostname = ares_llist_node_val(node);
 
-    if (ares__htable_strvp_get_direct(hf->hosthash, hostname) != NULL) {
-      ares__llist_node_destroy(node);
+    if (ares_htable_strvp_get_direct(hf->hosthash, hostname) != NULL) {
+      ares_llist_node_destroy(node);
       continue;
     }
 
-    ares__llist_node_mvparent_last(node, existing->hosts);
+    ares_llist_node_mvparent_last(node, existing->hosts);
   }
 
-  ares__hosts_entry_destroy(entry);
+  ares_hosts_entry_destroy(entry);
   return ARES_SUCCESS;
 }
 
 static ares_hosts_file_match_t
-  ares__hosts_file_match(const ares_hosts_file_t *hf, ares_hosts_entry_t *entry,
-                         ares_hosts_entry_t **match)
+  ares_hosts_file_match(const ares_hosts_file_t *hf, ares_hosts_entry_t *entry,
+                        ares_hosts_entry_t **match)
 {
-  ares__llist_node_t *node;
+  ares_llist_node_t *node;
   *match = NULL;
 
-  for (node = ares__llist_node_first(entry->ips); node != NULL;
-       node = ares__llist_node_next(node)) {
-    const char *ipaddr = ares__llist_node_val(node);
-    *match             = ares__htable_strvp_get_direct(hf->iphash, ipaddr);
+  for (node = ares_llist_node_first(entry->ips); node != NULL;
+       node = ares_llist_node_next(node)) {
+    const char *ipaddr = ares_llist_node_val(node);
+    *match             = ares_htable_strvp_get_direct(hf->iphash, ipaddr);
     if (*match != NULL) {
       return ARES_MATCH_IPADDR;
     }
   }
 
-  for (node = ares__llist_node_first(entry->hosts); node != NULL;
-       node = ares__llist_node_next(node)) {
-    const char *host = ares__llist_node_val(node);
-    *match           = ares__htable_strvp_get_direct(hf->hosthash, host);
+  for (node = ares_llist_node_first(entry->hosts); node != NULL;
+       node = ares_llist_node_next(node)) {
+    const char *host = ares_llist_node_val(node);
+    *match           = ares_htable_strvp_get_direct(hf->hosthash, host);
     if (*match != NULL) {
       return ARES_MATCH_HOST;
     }
@@ -294,38 +294,38 @@ static ares_hosts_file_match_t
 }
 
 /*! entry is invalidated upon calling this function, always, even on error */
-static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
-                                          ares_hosts_entry_t *entry)
+static ares_status_t ares_hosts_file_add(ares_hosts_file_t  *hosts,
+                                         ares_hosts_entry_t *entry)
 {
   ares_hosts_entry_t     *match  = NULL;
   ares_status_t           status = ARES_SUCCESS;
-  ares__llist_node_t     *node;
+  ares_llist_node_t      *node;
   ares_hosts_file_match_t matchtype;
   size_t                  num_hostnames;
 
   /* Record the number of hostnames in this entry file.  If we merge into an
    * existing record, these will be *appended* to the entry, so we'll count
    * backwards when adding to the hosts hashtable */
-  num_hostnames = ares__llist_len(entry->hosts);
+  num_hostnames = ares_llist_len(entry->hosts);
 
-  matchtype = ares__hosts_file_match(hosts, entry, &match);
+  matchtype = ares_hosts_file_match(hosts, entry, &match);
 
   if (matchtype != ARES_MATCH_NONE) {
-    status = ares__hosts_file_merge_entry(hosts, match, entry, matchtype);
+    status = ares_hosts_file_merge_entry(hosts, match, entry, matchtype);
     if (status != ARES_SUCCESS) {
-      ares__hosts_entry_destroy(entry); /* LCOV_EXCL_LINE: DefensiveCoding */
-      return status;                    /* LCOV_EXCL_LINE: DefensiveCoding */
+      ares_hosts_entry_destroy(entry); /* LCOV_EXCL_LINE: DefensiveCoding */
+      return status;                   /* LCOV_EXCL_LINE: DefensiveCoding */
     }
     /* entry was invalidated above by merging */
     entry = match;
   }
 
   if (matchtype != ARES_MATCH_IPADDR) {
-    const char *ipaddr = ares__llist_last_val(entry->ips);
+    const char *ipaddr = ares_llist_last_val(entry->ips);
 
-    if (!ares__htable_strvp_get(hosts->iphash, ipaddr, NULL)) {
-      if (!ares__htable_strvp_insert(hosts->iphash, ipaddr, entry)) {
-        ares__hosts_entry_destroy(entry);
+    if (!ares_htable_strvp_get(hosts->iphash, ipaddr, NULL)) {
+      if (!ares_htable_strvp_insert(hosts->iphash, ipaddr, entry)) {
+        ares_hosts_entry_destroy(entry);
         return ARES_ENOMEM;
       }
       entry->refcnt++;
@@ -334,9 +334,9 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
 
   /* Go backwards, on a merge, hostnames are appended.  Breakout once we've
    * consumed all the hosts that we appended */
-  for (node = ares__llist_node_last(entry->hosts); node != NULL;
-       node = ares__llist_node_prev(node)) {
-    const char *val = ares__llist_node_val(node);
+  for (node = ares_llist_node_last(entry->hosts); node != NULL;
+       node = ares_llist_node_prev(node)) {
+    const char *val = ares_llist_node_val(node);
 
     if (num_hostnames == 0) {
       break;
@@ -346,11 +346,11 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
 
     /* first hostname match wins.  If we detect a duplicate hostname for another
      * ip it will automatically be added to the same entry */
-    if (ares__htable_strvp_get(hosts->hosthash, val, NULL)) {
+    if (ares_htable_strvp_get(hosts->hosthash, val, NULL)) {
       continue;
     }
 
-    if (!ares__htable_strvp_insert(hosts->hosthash, val, entry)) {
+    if (!ares_htable_strvp_insert(hosts->hosthash, val, entry)) {
       return ARES_ENOMEM;
     }
   }
@@ -358,14 +358,14 @@ static ares_status_t ares__hosts_file_add(ares_hosts_file_t  *hosts,
   return ARES_SUCCESS;
 }
 
-static ares_bool_t ares__hosts_entry_isdup(ares_hosts_entry_t *entry,
-                                           const char         *host)
+static ares_bool_t ares_hosts_entry_isdup(ares_hosts_entry_t *entry,
+                                          const char         *host)
 {
-  ares__llist_node_t *node;
+  ares_llist_node_t *node;
 
-  for (node = ares__llist_node_first(entry->ips); node != NULL;
-       node = ares__llist_node_next(node)) {
-    const char *myhost = ares__llist_node_val(node);
+  for (node = ares_llist_node_first(entry->ips); node != NULL;
+       node = ares_llist_node_next(node)) {
+    const char *myhost = ares_llist_node_val(node);
     if (ares_strcaseeq(myhost, host)) {
       return ARES_TRUE;
     }
@@ -374,44 +374,44 @@ static ares_bool_t ares__hosts_entry_isdup(ares_hosts_entry_t *entry,
   return ARES_FALSE;
 }
 
-static ares_status_t ares__parse_hosts_hostnames(ares__buf_t        *buf,
-                                                 ares_hosts_entry_t *entry)
+static ares_status_t ares_parse_hosts_hostnames(ares_buf_t         *buf,
+                                                ares_hosts_entry_t *entry)
 {
-  entry->hosts = ares__llist_create(ares_free);
+  entry->hosts = ares_llist_create(ares_free);
   if (entry->hosts == NULL) {
     return ARES_ENOMEM;
   }
 
   /* Parse hostnames and aliases */
-  while (ares__buf_len(buf)) {
+  while (ares_buf_len(buf)) {
     char          hostname[256];
     char         *temp;
     ares_status_t status;
     unsigned char comment = '#';
 
-    ares__buf_consume_whitespace(buf, ARES_FALSE);
+    ares_buf_consume_whitespace(buf, ARES_FALSE);
 
-    if (ares__buf_len(buf) == 0) {
+    if (ares_buf_len(buf) == 0) {
       break;
     }
 
     /* See if it is a comment, if so stop processing */
-    if (ares__buf_begins_with(buf, &comment, 1)) {
+    if (ares_buf_begins_with(buf, &comment, 1)) {
       break;
     }
 
-    ares__buf_tag(buf);
+    ares_buf_tag(buf);
 
     /* Must be at end of line */
-    if (ares__buf_consume_nonwhitespace(buf) == 0) {
+    if (ares_buf_consume_nonwhitespace(buf) == 0) {
       break;
     }
 
-    status = ares__buf_tag_fetch_string(buf, hostname, sizeof(hostname));
+    status = ares_buf_tag_fetch_string(buf, hostname, sizeof(hostname));
     if (status != ARES_SUCCESS) {
       /* Bad entry, just ignore as long as its not the first.  If its the first,
        * it must be valid */
-      if (ares__llist_len(entry->hosts) == 0) {
+      if (ares_llist_len(entry->hosts) == 0) {
         return ARES_EBADSTR;
       }
 
@@ -419,12 +419,12 @@ static ares_status_t ares__parse_hosts_hostnames(ares__buf_t        *buf,
     }
 
     /* Validate it is a valid hostname characterset */
-    if (!ares__is_hostname(hostname)) {
+    if (!ares_is_hostname(hostname)) {
       continue;
     }
 
     /* Don't add a duplicate to the same entry */
-    if (ares__hosts_entry_isdup(entry, hostname)) {
+    if (ares_hosts_entry_isdup(entry, hostname)) {
       continue;
     }
 
@@ -434,22 +434,22 @@ static ares_status_t ares__parse_hosts_hostnames(ares__buf_t        *buf,
       return ARES_ENOMEM;
     }
 
-    if (ares__llist_insert_last(entry->hosts, temp) == NULL) {
+    if (ares_llist_insert_last(entry->hosts, temp) == NULL) {
       ares_free(temp);
       return ARES_ENOMEM;
     }
   }
 
   /* Must have at least 1 entry */
-  if (ares__llist_len(entry->hosts) == 0) {
+  if (ares_llist_len(entry->hosts) == 0) {
     return ARES_EBADSTR;
   }
 
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares__parse_hosts_ipaddr(ares__buf_t         *buf,
-                                              ares_hosts_entry_t **entry_out)
+static ares_status_t ares_parse_hosts_ipaddr(ares_buf_t          *buf,
+                                             ares_hosts_entry_t **entry_out)
 {
   char                addr[INET6_ADDRSTRLEN];
   char               *temp;
@@ -458,15 +458,15 @@ static ares_status_t ares__parse_hosts_ipaddr(ares__buf_t         *buf,
 
   *entry_out = NULL;
 
-  ares__buf_tag(buf);
-  ares__buf_consume_nonwhitespace(buf);
-  status = ares__buf_tag_fetch_string(buf, addr, sizeof(addr));
+  ares_buf_tag(buf);
+  ares_buf_consume_nonwhitespace(buf);
+  status = ares_buf_tag_fetch_string(buf, addr, sizeof(addr));
   if (status != ARES_SUCCESS) {
     return status;
   }
 
   /* Validate and normalize the ip address format */
-  if (!ares__normalize_ipaddr(addr, addr, sizeof(addr))) {
+  if (!ares_normalize_ipaddr(addr, addr, sizeof(addr))) {
     return ARES_EBADSTR;
   }
 
@@ -475,21 +475,21 @@ static ares_status_t ares__parse_hosts_ipaddr(ares__buf_t         *buf,
     return ARES_ENOMEM;
   }
 
-  entry->ips = ares__llist_create(ares_free);
+  entry->ips = ares_llist_create(ares_free);
   if (entry->ips == NULL) {
-    ares__hosts_entry_destroy(entry);
+    ares_hosts_entry_destroy(entry);
     return ARES_ENOMEM;
   }
 
   temp = ares_strdup(addr);
   if (temp == NULL) {
-    ares__hosts_entry_destroy(entry);
+    ares_hosts_entry_destroy(entry);
     return ARES_ENOMEM;
   }
 
-  if (ares__llist_insert_first(entry->ips, temp) == NULL) {
+  if (ares_llist_insert_first(entry->ips, temp) == NULL) {
     ares_free(temp);
-    ares__hosts_entry_destroy(entry);
+    ares_hosts_entry_destroy(entry);
     return ARES_ENOMEM;
   }
 
@@ -498,100 +498,100 @@ static ares_status_t ares__parse_hosts_ipaddr(ares__buf_t         *buf,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares__parse_hosts(const char         *filename,
-                                       ares_hosts_file_t **out)
+static ares_status_t ares_parse_hosts(const char         *filename,
+                                      ares_hosts_file_t **out)
 {
-  ares__buf_t        *buf    = NULL;
+  ares_buf_t         *buf    = NULL;
   ares_status_t       status = ARES_EBADRESP;
   ares_hosts_file_t  *hf     = NULL;
   ares_hosts_entry_t *entry  = NULL;
 
   *out = NULL;
 
-  buf = ares__buf_create();
+  buf = ares_buf_create();
   if (buf == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
 
-  status = ares__buf_load_file(filename, buf);
+  status = ares_buf_load_file(filename, buf);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  hf = ares__hosts_file_create(filename);
+  hf = ares_hosts_file_create(filename);
   if (hf == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
 
-  while (ares__buf_len(buf)) {
+  while (ares_buf_len(buf)) {
     unsigned char comment = '#';
 
     /* -- Start of new line here -- */
 
     /* Consume any leading whitespace */
-    ares__buf_consume_whitespace(buf, ARES_FALSE);
+    ares_buf_consume_whitespace(buf, ARES_FALSE);
 
-    if (ares__buf_len(buf) == 0) {
+    if (ares_buf_len(buf) == 0) {
       break;
     }
 
     /* See if it is a comment, if so, consume remaining line */
-    if (ares__buf_begins_with(buf, &comment, 1)) {
-      ares__buf_consume_line(buf, ARES_TRUE);
+    if (ares_buf_begins_with(buf, &comment, 1)) {
+      ares_buf_consume_line(buf, ARES_TRUE);
       continue;
     }
 
     /* Pull off ip address */
-    status = ares__parse_hosts_ipaddr(buf, &entry);
+    status = ares_parse_hosts_ipaddr(buf, &entry);
     if (status == ARES_ENOMEM) {
       goto done;
     }
     if (status != ARES_SUCCESS) {
       /* Bad line, consume and go onto next */
-      ares__buf_consume_line(buf, ARES_TRUE);
+      ares_buf_consume_line(buf, ARES_TRUE);
       continue;
     }
 
     /* Parse of the hostnames */
-    status = ares__parse_hosts_hostnames(buf, entry);
+    status = ares_parse_hosts_hostnames(buf, entry);
     if (status == ARES_ENOMEM) {
       goto done;
     } else if (status != ARES_SUCCESS) {
       /* Bad line, consume and go onto next */
-      ares__hosts_entry_destroy(entry);
+      ares_hosts_entry_destroy(entry);
       entry = NULL;
-      ares__buf_consume_line(buf, ARES_TRUE);
+      ares_buf_consume_line(buf, ARES_TRUE);
       continue;
     }
 
     /* Append the successful entry to the hosts file */
-    status = ares__hosts_file_add(hf, entry);
+    status = ares_hosts_file_add(hf, entry);
     entry  = NULL; /* is always invalidated by this function, even on error */
     if (status != ARES_SUCCESS) {
       goto done;
     }
 
     /* Go to next line */
-    ares__buf_consume_line(buf, ARES_TRUE);
+    ares_buf_consume_line(buf, ARES_TRUE);
   }
 
   status = ARES_SUCCESS;
 
 done:
-  ares__hosts_entry_destroy(entry);
-  ares__buf_destroy(buf);
+  ares_hosts_entry_destroy(entry);
+  ares_buf_destroy(buf);
   if (status != ARES_SUCCESS) {
-    ares__hosts_file_destroy(hf);
+    ares_hosts_file_destroy(hf);
   } else {
     *out = hf;
   }
   return status;
 }
 
-static ares_bool_t ares__hosts_expired(const char              *filename,
-                                       const ares_hosts_file_t *hf)
+static ares_bool_t ares_hosts_expired(const char              *filename,
+                                      const ares_hosts_file_t *hf)
 {
   time_t mod_ts = 0;
 
@@ -631,8 +631,8 @@ static ares_bool_t ares__hosts_expired(const char              *filename,
   return ARES_FALSE;
 }
 
-static ares_status_t ares__hosts_path(const ares_channel_t *channel,
-                                      ares_bool_t use_env, char **path)
+static ares_status_t ares_hosts_path(const ares_channel_t *channel,
+                                     ares_bool_t use_env, char **path)
 {
   char *path_hosts = NULL;
 
@@ -688,40 +688,40 @@ static ares_status_t ares__hosts_path(const ares_channel_t *channel,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares__hosts_update(ares_channel_t *channel,
-                                        ares_bool_t     use_env)
+static ares_status_t ares_hosts_update(ares_channel_t *channel,
+                                       ares_bool_t     use_env)
 {
   ares_status_t status;
   char         *filename = NULL;
 
-  status = ares__hosts_path(channel, use_env, &filename);
+  status = ares_hosts_path(channel, use_env, &filename);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  if (!ares__hosts_expired(filename, channel->hf)) {
+  if (!ares_hosts_expired(filename, channel->hf)) {
     ares_free(filename);
     return ARES_SUCCESS;
   }
 
-  ares__hosts_file_destroy(channel->hf);
+  ares_hosts_file_destroy(channel->hf);
   channel->hf = NULL;
 
-  status = ares__parse_hosts(filename, &channel->hf);
+  status = ares_parse_hosts(filename, &channel->hf);
   ares_free(filename);
   return status;
 }
 
-ares_status_t ares__hosts_search_ipaddr(ares_channel_t *channel,
-                                        ares_bool_t use_env, const char *ipaddr,
-                                        const ares_hosts_entry_t **entry)
+ares_status_t ares_hosts_search_ipaddr(ares_channel_t *channel,
+                                       ares_bool_t use_env, const char *ipaddr,
+                                       const ares_hosts_entry_t **entry)
 {
   ares_status_t status;
   char          addr[INET6_ADDRSTRLEN];
 
   *entry = NULL;
 
-  status = ares__hosts_update(channel, use_env);
+  status = ares_hosts_update(channel, use_env);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -730,11 +730,11 @@ ares_status_t ares__hosts_search_ipaddr(ares_channel_t *channel,
     return ARES_ENOTFOUND; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  if (!ares__normalize_ipaddr(ipaddr, addr, sizeof(addr))) {
+  if (!ares_normalize_ipaddr(ipaddr, addr, sizeof(addr))) {
     return ARES_EBADNAME;
   }
 
-  *entry = ares__htable_strvp_get_direct(channel->hf->iphash, addr);
+  *entry = ares_htable_strvp_get_direct(channel->hf->iphash, addr);
   if (*entry == NULL) {
     return ARES_ENOTFOUND;
   }
@@ -742,15 +742,15 @@ ares_status_t ares__hosts_search_ipaddr(ares_channel_t *channel,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__hosts_search_host(ares_channel_t *channel,
-                                      ares_bool_t use_env, const char *host,
-                                      const ares_hosts_entry_t **entry)
+ares_status_t ares_hosts_search_host(ares_channel_t *channel,
+                                     ares_bool_t use_env, const char *host,
+                                     const ares_hosts_entry_t **entry)
 {
   ares_status_t status;
 
   *entry = NULL;
 
-  status = ares__hosts_update(channel, use_env);
+  status = ares_hosts_update(channel, use_env);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -759,7 +759,7 @@ ares_status_t ares__hosts_search_host(ares_channel_t *channel,
     return ARES_ENOTFOUND; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  *entry = ares__htable_strvp_get_direct(channel->hf->hosthash, host);
+  *entry = ares_htable_strvp_get_direct(channel->hf->hosthash, host);
   if (*entry == NULL) {
     return ARES_ENOTFOUND;
   }
@@ -768,23 +768,23 @@ ares_status_t ares__hosts_search_host(ares_channel_t *channel,
 }
 
 static ares_status_t
-  ares__hosts_ai_append_cnames(const ares_hosts_entry_t    *entry,
-                               struct ares_addrinfo_cname **cnames_out)
+  ares_hosts_ai_append_cnames(const ares_hosts_entry_t    *entry,
+                              struct ares_addrinfo_cname **cnames_out)
 {
   struct ares_addrinfo_cname *cname  = NULL;
   struct ares_addrinfo_cname *cnames = NULL;
   const char                 *primaryhost;
-  ares__llist_node_t         *node;
+  ares_llist_node_t          *node;
   ares_status_t               status;
   size_t                      cnt = 0;
 
-  node        = ares__llist_node_first(entry->hosts);
-  primaryhost = ares__llist_node_val(node);
+  node        = ares_llist_node_first(entry->hosts);
+  primaryhost = ares_llist_node_val(node);
   /* Skip to next node to start with aliases */
-  node = ares__llist_node_next(node);
+  node = ares_llist_node_next(node);
 
   while (node != NULL) {
-    const char *host = ares__llist_node_val(node);
+    const char *host = ares_llist_node_val(node);
 
     /* Cap at 100 entries. , some people use
      * https://github.com/StevenBlack/hosts and we don't need 200k+ aliases */
@@ -793,7 +793,7 @@ static ares_status_t
       break; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
-    cname = ares__append_addrinfo_cname(&cnames);
+    cname = ares_append_addrinfo_cname(&cnames);
     if (cname == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
@@ -811,12 +811,12 @@ static ares_status_t
       goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
-    node = ares__llist_node_next(node);
+    node = ares_llist_node_next(node);
   }
 
   /* No entries, add only primary */
   if (cnames == NULL) {
-    cname = ares__append_addrinfo_cname(&cnames);
+    cname = ares_append_addrinfo_cname(&cnames);
     if (cname == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
@@ -832,24 +832,24 @@ static ares_status_t
 
 done:
   if (status != ARES_SUCCESS) {
-    ares__freeaddrinfo_cnames(cnames); /* LCOV_EXCL_LINE: DefensiveCoding */
-    return status;                     /* LCOV_EXCL_LINE: DefensiveCoding */
+    ares_freeaddrinfo_cnames(cnames); /* LCOV_EXCL_LINE: DefensiveCoding */
+    return status;                    /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   *cnames_out = cnames;
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
-                                            const char *name, int family,
-                                            unsigned short        port,
-                                            ares_bool_t           want_cnames,
-                                            struct ares_addrinfo *ai)
+ares_status_t ares_hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
+                                           const char *name, int family,
+                                           unsigned short        port,
+                                           ares_bool_t           want_cnames,
+                                           struct ares_addrinfo *ai)
 {
   ares_status_t               status;
   struct ares_addrinfo_cname *cnames  = NULL;
   struct ares_addrinfo_node  *ainodes = NULL;
-  ares__llist_node_t         *node;
+  ares_llist_node_t          *node;
 
   switch (family) {
     case AF_INET:
@@ -868,12 +868,12 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
     }
   }
 
-  for (node = ares__llist_node_first(entry->ips); node != NULL;
-       node = ares__llist_node_next(node)) {
+  for (node = ares_llist_node_first(entry->ips); node != NULL;
+       node = ares_llist_node_next(node)) {
     struct ares_addr addr;
     const void      *ptr     = NULL;
     size_t           ptr_len = 0;
-    const char      *ipaddr  = ares__llist_node_val(node);
+    const char      *ipaddr  = ares_llist_node_val(node);
 
     memset(&addr, 0, sizeof(addr));
     addr.family = family;
@@ -890,7 +890,7 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
   }
 
   if (want_cnames) {
-    status = ares__hosts_ai_append_cnames(entry, &cnames);
+    status = ares_hosts_ai_append_cnames(entry, &cnames);
     if (status != ARES_SUCCESS) {
       goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
@@ -901,21 +901,21 @@ ares_status_t ares__hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
 done:
   if (status != ARES_SUCCESS) {
     /* LCOV_EXCL_START: defensive coding */
-    ares__freeaddrinfo_cnames(cnames);
-    ares__freeaddrinfo_nodes(ainodes);
+    ares_freeaddrinfo_cnames(cnames);
+    ares_freeaddrinfo_nodes(ainodes);
     ares_free(ai->name);
     ai->name = NULL;
     return status;
     /* LCOV_EXCL_STOP */
   }
-  ares__addrinfo_cat_cnames(&ai->cnames, cnames);
-  ares__addrinfo_cat_nodes(&ai->nodes, ainodes);
+  ares_addrinfo_cat_cnames(&ai->cnames, cnames);
+  ares_addrinfo_cat_nodes(&ai->nodes, ainodes);
 
   return status;
 }
 
-ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
-                                           int family, struct hostent **hostent)
+ares_status_t ares_hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
+                                          int family, struct hostent **hostent)
 {
   ares_status_t         status;
   struct ares_addrinfo *ai = ares_malloc_zero(sizeof(*ai));
@@ -926,12 +926,12 @@ ares_status_t ares__hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
     return ARES_ENOMEM;
   }
 
-  status = ares__hosts_entry_to_addrinfo(entry, NULL, family, 0, ARES_TRUE, ai);
+  status = ares_hosts_entry_to_addrinfo(entry, NULL, family, 0, ARES_TRUE, ai);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  status = ares__addrinfo2hostent(ai, family, hostent);
+  status = ares_addrinfo2hostent(ai, family, hostent);
   if (status != ARES_SUCCESS) {
     goto done;
   }

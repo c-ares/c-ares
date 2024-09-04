@@ -24,25 +24,25 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ares_private.h"
-#include "ares__llist.h"
+#include "ares_llist.h"
 
-struct ares__llist {
-  ares__llist_node_t      *head;
-  ares__llist_node_t      *tail;
-  ares__llist_destructor_t destruct;
-  size_t                   cnt;
+struct ares_llist {
+  ares_llist_node_t      *head;
+  ares_llist_node_t      *tail;
+  ares_llist_destructor_t destruct;
+  size_t                  cnt;
 };
 
-struct ares__llist_node {
-  void               *data;
-  ares__llist_node_t *prev;
-  ares__llist_node_t *next;
-  ares__llist_t      *parent;
+struct ares_llist_node {
+  void              *data;
+  ares_llist_node_t *prev;
+  ares_llist_node_t *next;
+  ares_llist_t      *parent;
 };
 
-ares__llist_t *ares__llist_create(ares__llist_destructor_t destruct)
+ares_llist_t *ares_llist_create(ares_llist_destructor_t destruct)
 {
-  ares__llist_t *list = ares_malloc_zero(sizeof(*list));
+  ares_llist_t *list = ares_malloc_zero(sizeof(*list));
 
   if (list == NULL) {
     return NULL;
@@ -53,8 +53,8 @@ ares__llist_t *ares__llist_create(ares__llist_destructor_t destruct)
   return list;
 }
 
-void ares__llist_replace_destructor(ares__llist_t           *list,
-                                    ares__llist_destructor_t destruct)
+void ares_llist_replace_destructor(ares_llist_t           *list,
+                                   ares_llist_destructor_t destruct)
 {
   if (list == NULL) {
     return;
@@ -67,12 +67,11 @@ typedef enum {
   ARES__LLIST_INSERT_HEAD,
   ARES__LLIST_INSERT_TAIL,
   ARES__LLIST_INSERT_BEFORE
-} ares__llist_insert_type_t;
+} ares_llist_insert_type_t;
 
-static void ares__llist_attach_at(ares__llist_t            *list,
-                                  ares__llist_insert_type_t type,
-                                  ares__llist_node_t       *at,
-                                  ares__llist_node_t       *node)
+static void ares_llist_attach_at(ares_llist_t            *list,
+                                 ares_llist_insert_type_t type,
+                                 ares_llist_node_t *at, ares_llist_node_t *node)
 {
   if (list == NULL || node == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -117,12 +116,11 @@ static void ares__llist_attach_at(ares__llist_t            *list,
   list->cnt++;
 }
 
-static ares__llist_node_t *ares__llist_insert_at(ares__llist_t            *list,
-                                                 ares__llist_insert_type_t type,
-                                                 ares__llist_node_t       *at,
-                                                 void                     *val)
+static ares_llist_node_t *ares_llist_insert_at(ares_llist_t            *list,
+                                               ares_llist_insert_type_t type,
+                                               ares_llist_node_t *at, void *val)
 {
-  ares__llist_node_t *node = NULL;
+  ares_llist_node_t *node = NULL;
 
   if (list == NULL || val == NULL) {
     return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -135,48 +133,46 @@ static ares__llist_node_t *ares__llist_insert_at(ares__llist_t            *list,
   }
 
   node->data = val;
-  ares__llist_attach_at(list, type, at, node);
+  ares_llist_attach_at(list, type, at, node);
 
   return node;
 }
 
-ares__llist_node_t *ares__llist_insert_first(ares__llist_t *list, void *val)
+ares_llist_node_t *ares_llist_insert_first(ares_llist_t *list, void *val)
 {
-  return ares__llist_insert_at(list, ARES__LLIST_INSERT_HEAD, NULL, val);
+  return ares_llist_insert_at(list, ARES__LLIST_INSERT_HEAD, NULL, val);
 }
 
-ares__llist_node_t *ares__llist_insert_last(ares__llist_t *list, void *val)
+ares_llist_node_t *ares_llist_insert_last(ares_llist_t *list, void *val)
 {
-  return ares__llist_insert_at(list, ARES__LLIST_INSERT_TAIL, NULL, val);
+  return ares_llist_insert_at(list, ARES__LLIST_INSERT_TAIL, NULL, val);
 }
 
-ares__llist_node_t *ares__llist_insert_before(ares__llist_node_t *node,
-                                              void               *val)
+ares_llist_node_t *ares_llist_insert_before(ares_llist_node_t *node, void *val)
 {
   if (node == NULL) {
     return NULL;
   }
 
-  return ares__llist_insert_at(node->parent, ARES__LLIST_INSERT_BEFORE, node,
-                               val);
+  return ares_llist_insert_at(node->parent, ARES__LLIST_INSERT_BEFORE, node,
+                              val);
 }
 
-ares__llist_node_t *ares__llist_insert_after(ares__llist_node_t *node,
-                                             void               *val)
+ares_llist_node_t *ares_llist_insert_after(ares_llist_node_t *node, void *val)
 {
   if (node == NULL) {
     return NULL;
   }
 
   if (node->next == NULL) {
-    return ares__llist_insert_last(node->parent, val);
+    return ares_llist_insert_last(node->parent, val);
   }
 
-  return ares__llist_insert_at(node->parent, ARES__LLIST_INSERT_BEFORE,
-                               node->next, val);
+  return ares_llist_insert_at(node->parent, ARES__LLIST_INSERT_BEFORE,
+                              node->next, val);
 }
 
-ares__llist_node_t *ares__llist_node_first(ares__llist_t *list)
+ares_llist_node_t *ares_llist_node_first(ares_llist_t *list)
 {
   if (list == NULL) {
     return NULL;
@@ -184,10 +180,10 @@ ares__llist_node_t *ares__llist_node_first(ares__llist_t *list)
   return list->head;
 }
 
-ares__llist_node_t *ares__llist_node_idx(ares__llist_t *list, size_t idx)
+ares_llist_node_t *ares_llist_node_idx(ares_llist_t *list, size_t idx)
 {
-  ares__llist_node_t *node;
-  size_t              cnt;
+  ares_llist_node_t *node;
+  size_t             cnt;
 
   if (list == NULL) {
     return NULL;
@@ -204,7 +200,7 @@ ares__llist_node_t *ares__llist_node_idx(ares__llist_t *list, size_t idx)
   return node;
 }
 
-ares__llist_node_t *ares__llist_node_last(ares__llist_t *list)
+ares_llist_node_t *ares_llist_node_last(ares_llist_t *list)
 {
   if (list == NULL) {
     return NULL;
@@ -212,7 +208,7 @@ ares__llist_node_t *ares__llist_node_last(ares__llist_t *list)
   return list->tail;
 }
 
-ares__llist_node_t *ares__llist_node_next(ares__llist_node_t *node)
+ares_llist_node_t *ares_llist_node_next(ares_llist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -220,7 +216,7 @@ ares__llist_node_t *ares__llist_node_next(ares__llist_node_t *node)
   return node->next;
 }
 
-ares__llist_node_t *ares__llist_node_prev(ares__llist_node_t *node)
+ares_llist_node_t *ares_llist_node_prev(ares_llist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -228,7 +224,7 @@ ares__llist_node_t *ares__llist_node_prev(ares__llist_node_t *node)
   return node->prev;
 }
 
-void *ares__llist_node_val(ares__llist_node_t *node)
+void *ares_llist_node_val(ares_llist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -237,7 +233,7 @@ void *ares__llist_node_val(ares__llist_node_t *node)
   return node->data;
 }
 
-size_t ares__llist_len(const ares__llist_t *list)
+size_t ares_llist_len(const ares_llist_t *list)
 {
   if (list == NULL) {
     return 0;
@@ -245,7 +241,7 @@ size_t ares__llist_len(const ares__llist_t *list)
   return list->cnt;
 }
 
-ares__llist_t *ares__llist_node_parent(ares__llist_node_t *node)
+ares_llist_t *ares_llist_node_parent(ares_llist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -253,19 +249,19 @@ ares__llist_t *ares__llist_node_parent(ares__llist_node_t *node)
   return node->parent;
 }
 
-void *ares__llist_first_val(ares__llist_t *list)
+void *ares_llist_first_val(ares_llist_t *list)
 {
-  return ares__llist_node_val(ares__llist_node_first(list));
+  return ares_llist_node_val(ares_llist_node_first(list));
 }
 
-void *ares__llist_last_val(ares__llist_t *list)
+void *ares_llist_last_val(ares_llist_t *list)
 {
-  return ares__llist_node_val(ares__llist_node_last(list));
+  return ares_llist_node_val(ares_llist_node_last(list));
 }
 
-static void ares__llist_node_detach(ares__llist_node_t *node)
+static void ares_llist_node_detach(ares_llist_node_t *node)
 {
-  ares__llist_t *list;
+  ares_llist_t *list;
 
   if (node == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -293,7 +289,7 @@ static void ares__llist_node_detach(ares__llist_node_t *node)
   list->cnt--;
 }
 
-void *ares__llist_node_claim(ares__llist_node_t *node)
+void *ares_llist_node_claim(ares_llist_node_t *node)
 {
   void *val;
 
@@ -302,16 +298,16 @@ void *ares__llist_node_claim(ares__llist_node_t *node)
   }
 
   val = node->data;
-  ares__llist_node_detach(node);
+  ares_llist_node_detach(node);
   ares_free(node);
 
   return val;
 }
 
-void ares__llist_node_destroy(ares__llist_node_t *node)
+void ares_llist_node_destroy(ares_llist_node_t *node)
 {
-  ares__llist_destructor_t destruct;
-  void                    *val;
+  ares_llist_destructor_t destruct;
+  void                   *val;
 
   if (node == NULL) {
     return;
@@ -319,15 +315,15 @@ void ares__llist_node_destroy(ares__llist_node_t *node)
 
   destruct = node->parent->destruct;
 
-  val = ares__llist_node_claim(node);
+  val = ares_llist_node_claim(node);
   if (val != NULL && destruct != NULL) {
     destruct(val);
   }
 }
 
-void ares__llist_node_replace(ares__llist_node_t *node, void *val)
+void ares_llist_node_replace(ares_llist_node_t *node, void *val)
 {
-  ares__llist_destructor_t destruct;
+  ares_llist_destructor_t destruct;
 
   if (node == NULL) {
     return;
@@ -341,46 +337,46 @@ void ares__llist_node_replace(ares__llist_node_t *node, void *val)
   node->data = val;
 }
 
-void ares__llist_clear(ares__llist_t *list)
+void ares_llist_clear(ares_llist_t *list)
 {
-  ares__llist_node_t *node;
+  ares_llist_node_t *node;
 
   if (list == NULL) {
     return;
   }
 
-  while ((node = ares__llist_node_first(list)) != NULL) {
-    ares__llist_node_destroy(node);
+  while ((node = ares_llist_node_first(list)) != NULL) {
+    ares_llist_node_destroy(node);
   }
 }
 
-void ares__llist_destroy(ares__llist_t *list)
+void ares_llist_destroy(ares_llist_t *list)
 {
   if (list == NULL) {
     return;
   }
-  ares__llist_clear(list);
+  ares_llist_clear(list);
   ares_free(list);
 }
 
-void ares__llist_node_mvparent_last(ares__llist_node_t *node,
-                                    ares__llist_t      *new_parent)
+void ares_llist_node_mvparent_last(ares_llist_node_t *node,
+                                   ares_llist_t      *new_parent)
 {
   if (node == NULL || new_parent == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  ares__llist_node_detach(node);
-  ares__llist_attach_at(new_parent, ARES__LLIST_INSERT_TAIL, NULL, node);
+  ares_llist_node_detach(node);
+  ares_llist_attach_at(new_parent, ARES__LLIST_INSERT_TAIL, NULL, node);
 }
 
-void ares__llist_node_mvparent_first(ares__llist_node_t *node,
-                                     ares__llist_t      *new_parent)
+void ares_llist_node_mvparent_first(ares_llist_node_t *node,
+                                    ares_llist_t      *new_parent)
 {
   if (node == NULL || new_parent == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  ares__llist_node_detach(node);
-  ares__llist_attach_at(new_parent, ARES__LLIST_INSERT_HEAD, NULL, node);
+  ares_llist_node_detach(node);
+  ares_llist_attach_at(new_parent, ARES__LLIST_INSERT_HEAD, NULL, node);
 }

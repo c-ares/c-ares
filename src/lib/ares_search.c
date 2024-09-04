@@ -55,7 +55,7 @@ static void squery_free(struct search_query *squery)
   if (squery == NULL) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
-  ares__strsplit_free(squery->names, squery->names_cnt);
+  ares_strsplit_free(squery->names, squery->names_cnt);
   ares_dns_record_destroy(squery->dnsrec);
   ares_free(squery);
 }
@@ -129,7 +129,7 @@ static void search_callback(void *arg, ares_status_t status, size_t timeouts,
     case ARES_EREFUSED:
       /* Issue #852, systemd-resolved may return SERVFAIL or REFUSED on a
        * single label domain name. */
-      if (ares__name_label_cnt(squery->names[squery->next_name_idx - 1]) != 1) {
+      if (ares_name_label_cnt(squery->names[squery->next_name_idx - 1]) != 1) {
         end_squery(squery, mystatus, dnsrec);
         return;
       }
@@ -168,8 +168,8 @@ static void search_callback(void *arg, ares_status_t status, size_t timeouts,
 
 /* Determine if the domain should be looked up as-is, or if it is eligible
  * for search by appending domains */
-static ares_bool_t ares__search_eligible(const ares_channel_t *channel,
-                                         const char           *name)
+static ares_bool_t ares_search_eligible(const ares_channel_t *channel,
+                                        const char           *name)
 {
   size_t len = ares_strlen(name);
 
@@ -185,7 +185,7 @@ static ares_bool_t ares__search_eligible(const ares_channel_t *channel,
   return ARES_TRUE;
 }
 
-size_t ares__name_label_cnt(const char *name)
+size_t ares_name_label_cnt(const char *name)
 {
   const char *p;
   size_t      ndots = 0;
@@ -204,9 +204,9 @@ size_t ares__name_label_cnt(const char *name)
   return ndots + 1;
 }
 
-ares_status_t ares__search_name_list(const ares_channel_t *channel,
-                                     const char *name, char ***names,
-                                     size_t *names_len)
+ares_status_t ares_search_name_list(const ares_channel_t *channel,
+                                    const char *name, char ***names,
+                                    size_t *names_len)
 {
   ares_status_t status;
   char        **list     = NULL;
@@ -217,7 +217,7 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
   size_t        i;
 
   /* Perform HOSTALIASES resolution */
-  status = ares__lookup_hostaliases(channel, name, &alias);
+  status = ares_lookup_hostaliases(channel, name, &alias);
   if (status == ARES_SUCCESS) {
     /* If hostalias succeeds, there is no searching, it is used as-is */
     list_len = 1;
@@ -234,7 +234,7 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
   }
 
   /* See if searching is eligible at all, if not, look up as-is only */
-  if (!ares__search_eligible(channel, name)) {
+  if (!ares_search_eligible(channel, name)) {
     list_len = 1;
     list     = ares_malloc_zero(sizeof(*list) * list_len);
     if (list == NULL) {
@@ -251,7 +251,7 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
   }
 
   /* Count the number of dots in name, 1 less than label count */
-  ndots = ares__name_label_cnt(name);
+  ndots = ares_name_label_cnt(name);
   if (ndots > 0) {
     ndots--;
   }
@@ -265,7 +265,7 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
   }
 
   /* Set status here, its possible there are no search domains at all, so
-   * status may be ARES_ENOTFOUND from ares__lookup_hostaliases(). */
+   * status may be ARES_ENOTFOUND from ares_lookup_hostaliases(). */
   status = ARES_SUCCESS;
 
   /* Try as-is first */
@@ -280,7 +280,7 @@ ares_status_t ares__search_name_list(const ares_channel_t *channel,
 
   /* Append each search suffix to the name */
   for (i = 0; i < channel->ndomains; i++) {
-    status = ares__cat_domain(name, channel->domains[i], &list[idx]);
+    status = ares_cat_domain(name, channel->domains[i], &list[idx]);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -303,7 +303,7 @@ done:
     *names     = list;
     *names_len = list_len;
   } else {
-    ares__strsplit_free(list, list_len);
+    ares_strsplit_free(list, list_len);
   }
 
   ares_free(alias);
@@ -333,7 +333,7 @@ static ares_status_t ares_search_int(ares_channel_t          *channel,
   }
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
-  if (ares__is_onion_domain(name)) {
+  if (ares_is_onion_domain(name)) {
     status = ARES_ENOTFOUND;
     goto fail;
   }
@@ -362,7 +362,7 @@ static ares_status_t ares_search_int(ares_channel_t          *channel,
   squery->ever_got_nodata = ARES_FALSE;
 
   status =
-    ares__search_name_list(channel, name, &squery->names, &squery->names_cnt);
+    ares_search_name_list(channel, name, &squery->names, &squery->names_cnt);
   if (status != ARES_SUCCESS) {
     goto fail;
   }
@@ -382,7 +382,7 @@ fail:
   return status;
 }
 
-/* Callback argument structure passed to ares__dnsrec_convert_cb(). */
+/* Callback argument structure passed to ares_dnsrec_convert_cb(). */
 typedef struct {
   ares_callback callback;
   void         *arg;
@@ -390,7 +390,7 @@ typedef struct {
 
 /*! Function to create callback arg for converting from ares_callback_dnsrec
  *  to ares_calback */
-void *ares__dnsrec_convert_arg(ares_callback callback, void *arg)
+void *ares_dnsrec_convert_arg(ares_callback callback, void *arg)
 {
   dnsrec_convert_arg_t *carg = ares_malloc_zero(sizeof(*carg));
   if (carg == NULL) {
@@ -405,8 +405,8 @@ void *ares__dnsrec_convert_arg(ares_callback callback, void *arg)
  *  the ares_callback prototype, by writing the result and passing that to
  *  the inner callback.
  */
-void ares__dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
-                             const ares_dns_record_t *dnsrec)
+void ares_dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
+                            const ares_dns_record_t *dnsrec)
 {
   dnsrec_convert_arg_t *carg = arg;
   unsigned char        *abuf = NULL;
@@ -441,11 +441,11 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
   }
 
   /* For now, ares_search_int() uses the ares_callback prototype. We need to
-   * wrap the callback passed to this function in ares__dnsrec_convert_cb, to
+   * wrap the callback passed to this function in ares_dnsrec_convert_cb, to
    * convert from ares_callback_dnsrec to ares_callback. Allocate the convert
    * arg structure here.
    */
-  carg = ares__dnsrec_convert_arg(callback, arg);
+  carg = ares_dnsrec_convert_arg(callback, arg);
   if (carg == NULL) {
     callback(arg, ARES_ENOMEM, 0, NULL, 0);
     return;
@@ -462,9 +462,9 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
     return;
   }
 
-  ares__channel_lock(channel);
-  ares_search_int(channel, dnsrec, ares__dnsrec_convert_cb, carg);
-  ares__channel_unlock(channel);
+  ares_channel_lock(channel);
+  ares_search_int(channel, dnsrec, ares_dnsrec_convert_cb, carg);
+  ares_channel_unlock(channel);
 
   ares_dns_record_destroy(dnsrec);
 }
@@ -480,15 +480,15 @@ ares_status_t ares_search_dnsrec(ares_channel_t          *channel,
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  ares__channel_lock(channel);
+  ares_channel_lock(channel);
   status = ares_search_int(channel, dnsrec, callback, arg);
-  ares__channel_unlock(channel);
+  ares_channel_unlock(channel);
 
   return status;
 }
 
 /* Concatenate two domains. */
-ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
+ares_status_t ares_cat_domain(const char *name, const char *domain, char **s)
 {
   size_t nlen = ares_strlen(name);
   size_t dlen = ares_strlen(domain);
@@ -509,14 +509,14 @@ ares_status_t ares__cat_domain(const char *name, const char *domain, char **s)
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
-                                       const char *name, char **alias)
+ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
+                                      const char *name, char **alias)
 {
-  ares_status_t       status      = ARES_SUCCESS;
-  const char         *hostaliases = NULL;
-  ares__buf_t        *buf         = NULL;
-  ares__llist_t      *lines       = NULL;
-  ares__llist_node_t *node;
+  ares_status_t      status      = ARES_SUCCESS;
+  const char        *hostaliases = NULL;
+  ares_buf_t        *buf         = NULL;
+  ares_llist_t      *lines       = NULL;
+  ares_llist_node_t *node;
 
   if (channel == NULL || name == NULL || alias == NULL) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -540,13 +540,13 @@ ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
     goto done;
   }
 
-  buf = ares__buf_create();
+  buf = ares_buf_create();
   if (buf == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  status = ares__buf_load_file(hostaliases, buf);
+  status = ares_buf_load_file(hostaliases, buf);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -559,22 +559,22 @@ ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
    * curl    www.curl.se
    */
 
-  status = ares__buf_split(buf, (const unsigned char *)"\n", 1,
-                           ARES_BUF_SPLIT_TRIM, 0, &lines);
+  status = ares_buf_split(buf, (const unsigned char *)"\n", 1,
+                          ARES_BUF_SPLIT_TRIM, 0, &lines);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  for (node = ares__llist_node_first(lines); node != NULL;
-       node = ares__llist_node_next(node)) {
-    ares__buf_t *line         = ares__llist_node_val(node);
-    char         hostname[64] = "";
-    char         fqdn[256]    = "";
+  for (node = ares_llist_node_first(lines); node != NULL;
+       node = ares_llist_node_next(node)) {
+    ares_buf_t *line         = ares_llist_node_val(node);
+    char        hostname[64] = "";
+    char        fqdn[256]    = "";
 
     /* Pull off hostname */
-    ares__buf_tag(line);
-    ares__buf_consume_nonwhitespace(line);
-    if (ares__buf_tag_fetch_string(line, hostname, sizeof(hostname)) !=
+    ares_buf_tag(line);
+    ares_buf_consume_nonwhitespace(line);
+    if (ares_buf_tag_fetch_string(line, hostname, sizeof(hostname)) !=
         ARES_SUCCESS) {
       continue;
     }
@@ -585,18 +585,18 @@ ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
     }
 
     /* consume whitespace */
-    ares__buf_consume_whitespace(line, ARES_TRUE);
+    ares_buf_consume_whitespace(line, ARES_TRUE);
 
     /* pull off fqdn */
-    ares__buf_tag(line);
-    ares__buf_consume_nonwhitespace(line);
-    if (ares__buf_tag_fetch_string(line, fqdn, sizeof(fqdn)) != ARES_SUCCESS ||
+    ares_buf_tag(line);
+    ares_buf_consume_nonwhitespace(line);
+    if (ares_buf_tag_fetch_string(line, fqdn, sizeof(fqdn)) != ARES_SUCCESS ||
         ares_strlen(fqdn) == 0) {
       continue;
     }
 
     /* Validate characterset */
-    if (!ares__is_hostname(fqdn)) {
+    if (!ares_is_hostname(fqdn)) {
       continue;
     }
 
@@ -614,8 +614,8 @@ ares_status_t ares__lookup_hostaliases(const ares_channel_t *channel,
   status = ARES_ENOTFOUND;
 
 done:
-  ares__buf_destroy(buf);
-  ares__llist_destroy(lines);
+  ares_buf_destroy(buf);
+  ares_llist_destroy(lines);
 
   return status;
 }

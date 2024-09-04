@@ -63,19 +63,19 @@ struct ares_conn {
    *  stream in TCP format (big endian 16bit length prefix followed by DNS
    *  wire-format message).  For TCP this can be sent as-is, UDP this must
    *  be sent per-packet (stripping the length prefix) */
-  ares__buf_t            *out_buf;
+  ares_buf_t             *out_buf;
 
   /*! Inbound buffered data that is not yet parsed.  Exists as one contiguous
    *  stream in TCP format (big endian 16bit length prefix followed by DNS
    *  wire-format message).  TCP may have partial data and this needs to be
    *  handled gracefully, but UDP will always have a full message */
-  ares__buf_t            *in_buf;
+  ares_buf_t             *in_buf;
 
   /* total number of queries run on this connection since it was established */
   size_t                  total_queries;
 
   /* list of outstanding queries to this connection */
-  ares__llist_t          *queries_to_conn;
+  ares_llist_t           *queries_to_conn;
 };
 
 /*! Various buckets for grouping history */
@@ -144,7 +144,7 @@ struct ares_server {
   size_t                consec_failures; /* Consecutive query failure count
                                           * can be hard errors or timeouts
                                           */
-  ares__llist_t        *connections;
+  ares_llist_t         *connections;
   ares_conn_t          *tcp_conn;
 
   /* The next time when we will retry this server if it has hit failures */
@@ -160,14 +160,14 @@ struct ares_server {
   ares_channel_t       *channel;
 };
 
-void ares__close_connection(ares_conn_t *conn, ares_status_t requeue_status);
-void ares__close_sockets(ares_server_t *server);
-void ares__check_cleanup_conns(const ares_channel_t *channel);
+void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status);
+void ares_close_sockets(ares_server_t *server);
+void ares_check_cleanup_conns(const ares_channel_t *channel);
 
-void ares__destroy_servers_state(ares_channel_t *channel);
-ares_status_t ares__open_connection(ares_conn_t   **conn_out,
-                                    ares_channel_t *channel,
-                                    ares_server_t *server, ares_bool_t is_tcp);
+void ares_destroy_servers_state(ares_channel_t *channel);
+ares_status_t ares_open_connection(ares_conn_t   **conn_out,
+                                   ares_channel_t *channel,
+                                   ares_server_t *server, ares_bool_t is_tcp);
 ares_bool_t   ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
                                          unsigned short        *port,
                                          const struct sockaddr *sockaddr);
@@ -193,30 +193,29 @@ typedef enum {
   ARES_CONN_ERR_FAILURE      = 99  /*!< Generic failure */
 } ares_conn_err_t;
 
-ares_conn_err_t ares__open_socket(ares_socket_t *sock, ares_channel_t *channel,
-                                  int af, int type, int protocol);
-ares_bool_t     ares__socket_try_again(int errnum);
-ares_conn_err_t ares__conn_write(ares_conn_t *conn, const void *data,
-                                 size_t len, size_t *written);
-ares_status_t   ares__conn_flush(ares_conn_t *conn);
-ares_conn_err_t ares__conn_read(ares_conn_t *conn, void *data, size_t len,
-                                size_t *read_bytes);
-void            ares__conn_sock_state_cb_update(ares_conn_t            *conn,
-                                                ares_conn_state_flags_t flags);
-ares_conn_err_t ares__socket_recv(ares_channel_t *channel, ares_socket_t s,
-                                  ares_bool_t is_tcp, void *data,
-                                  size_t data_len, size_t *read_bytes);
-ares_conn_err_t ares__socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
-                                      ares_bool_t is_tcp, void *data,
-                                      size_t data_len, int flags,
-                                      struct sockaddr *from,
-                                      ares_socklen_t  *from_len,
-                                      size_t          *read_bytes);
-void            ares__close_socket(ares_channel_t *channel, ares_socket_t s);
-ares_status_t   ares__connect_socket(ares_channel_t        *channel,
-                                     ares_socket_t          sockfd,
-                                     const struct sockaddr *addr,
-                                     ares_socklen_t         addrlen);
-void            ares__destroy_server(ares_server_t *server);
+ares_conn_err_t ares_open_socket(ares_socket_t *sock, ares_channel_t *channel,
+                                 int af, int type, int protocol);
+ares_bool_t     ares_socket_try_again(int errnum);
+ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
+                                size_t *written);
+ares_status_t   ares_conn_flush(ares_conn_t *conn);
+ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
+                               size_t *read_bytes);
+void            ares_conn_sock_state_cb_update(ares_conn_t            *conn,
+                                               ares_conn_state_flags_t flags);
+ares_conn_err_t ares_socket_recv(ares_channel_t *channel, ares_socket_t s,
+                                 ares_bool_t is_tcp, void *data,
+                                 size_t data_len, size_t *read_bytes);
+ares_conn_err_t ares_socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
+                                     ares_bool_t is_tcp, void *data,
+                                     size_t data_len, int flags,
+                                     struct sockaddr *from,
+                                     ares_socklen_t  *from_len,
+                                     size_t          *read_bytes);
+void            ares_close_socket(ares_channel_t *channel, ares_socket_t s);
+ares_status_t ares_connect_socket(ares_channel_t *channel, ares_socket_t sockfd,
+                                  const struct sockaddr *addr,
+                                  ares_socklen_t         addrlen);
+void          ares_destroy_server(ares_server_t *server);
 
 #endif

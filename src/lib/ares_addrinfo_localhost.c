@@ -55,7 +55,7 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
 {
   struct ares_addrinfo_node *node;
 
-  node = ares__append_addrinfo_node(nodes);
+  node = ares_append_addrinfo_node(nodes);
   if (!node) {
     return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }
@@ -102,8 +102,8 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
 }
 
 static ares_status_t
-  ares__default_loopback_addrs(int aftype, unsigned short port,
-                               struct ares_addrinfo_node **nodes)
+  ares_default_loopback_addrs(int aftype, unsigned short port,
+                              struct ares_addrinfo_node **nodes)
 {
   ares_status_t status = ARES_SUCCESS;
 
@@ -129,8 +129,8 @@ static ares_status_t
 }
 
 static ares_status_t
-  ares__system_loopback_addrs(int aftype, unsigned short port,
-                              struct ares_addrinfo_node **nodes)
+  ares_system_loopback_addrs(int aftype, unsigned short port,
+                             struct ares_addrinfo_node **nodes)
 {
 #if defined(USE_WINSOCK) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600 && \
   !defined(__WATCOMC__)
@@ -176,7 +176,7 @@ fail:
   FreeMibTable(table);
 
   if (status != ARES_SUCCESS) {
-    ares__freeaddrinfo_nodes(*nodes);
+    ares_freeaddrinfo_nodes(*nodes);
     *nodes = NULL;
   }
 
@@ -191,9 +191,9 @@ fail:
 #endif
 }
 
-ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
-                                       const struct ares_addrinfo_hints *hints,
-                                       struct ares_addrinfo             *ai)
+ares_status_t ares_addrinfo_localhost(const char *name, unsigned short port,
+                                      const struct ares_addrinfo_hints *hints,
+                                      struct ares_addrinfo             *ai)
 {
   struct ares_addrinfo_node *nodes = NULL;
   ares_status_t              status;
@@ -213,19 +213,19 @@ ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
     goto enomem; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  status = ares__system_loopback_addrs(hints->ai_family, port, &nodes);
+  status = ares_system_loopback_addrs(hints->ai_family, port, &nodes);
 
   if (status == ARES_ENOTFOUND) {
-    status = ares__default_loopback_addrs(hints->ai_family, port, &nodes);
+    status = ares_default_loopback_addrs(hints->ai_family, port, &nodes);
   }
 
-  ares__addrinfo_cat_nodes(&ai->nodes, nodes);
+  ares_addrinfo_cat_nodes(&ai->nodes, nodes);
 
   return status;
 
 /* LCOV_EXCL_START: OutOfMemory */
 enomem:
-  ares__freeaddrinfo_nodes(nodes);
+  ares_freeaddrinfo_nodes(nodes);
   ares_free(ai->name);
   ai->name = NULL;
   return ARES_ENOMEM;

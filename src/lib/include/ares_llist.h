@@ -26,7 +26,7 @@
 #ifndef __ARES__LLIST_H
 #define __ARES__LLIST_H
 
-/*! \addtogroup ares__llist LinkedList Data Structure
+/*! \addtogroup ares_llist LinkedList Data Structure
  *
  * This is a doubly-linked list data structure.
  *
@@ -38,29 +38,28 @@
  * @{
  */
 
-struct ares__llist;
+struct ares_llist;
 
 /*! Opaque data structure for linked list */
-typedef struct ares__llist ares__llist_t;
+typedef struct ares_llist ares_llist_t;
 
-struct ares__llist_node;
+struct ares_llist_node;
 
 /*! Opaque data structure for a node in a linked list */
-typedef struct ares__llist_node ares__llist_node_t;
+typedef struct ares_llist_node ares_llist_node_t;
 
 /*! Callback to free user-defined node data
  *
  *  \param[in] data  user supplied data
  */
-typedef void (*ares__llist_destructor_t)(void *data);
+typedef void (*ares_llist_destructor_t)(void *data);
 
 /*! Create a linked list object
  *
  *  \param[in] destruct  Optional. Destructor to call on all removed nodes
  *  \return linked list object or NULL on out of memory
  */
-CARES_EXTERN ares__llist_t *
-  ares__llist_create(ares__llist_destructor_t destruct);
+CARES_EXTERN ares_llist_t *ares_llist_create(ares_llist_destructor_t destruct);
 
 /*! Replace destructor for linked list nodes.  Typically this is used
  *  when wanting to disable the destructor by using NULL.
@@ -69,8 +68,8 @@ CARES_EXTERN ares__llist_t *
  *  \param[in] destruct  replacement destructor, NULL is allowed
  */
 CARES_EXTERN void
-  ares__llist_replace_destructor(ares__llist_t           *list,
-                                 ares__llist_destructor_t destruct);
+  ares_llist_replace_destructor(ares_llist_t           *list,
+                                ares_llist_destructor_t destruct);
 
 /*! Insert value as the first node in the linked list
  *
@@ -79,8 +78,8 @@ CARES_EXTERN void
  *  \return node object referencing place in list, or null if out of memory or
  *   misuse
  */
-CARES_EXTERN ares__llist_node_t *ares__llist_insert_first(ares__llist_t *list,
-                                                          void          *val);
+CARES_EXTERN ares_llist_node_t *ares_llist_insert_first(ares_llist_t *list,
+                                                        void         *val);
 
 /*! Insert value as the last node in the linked list
  *
@@ -89,8 +88,8 @@ CARES_EXTERN ares__llist_node_t *ares__llist_insert_first(ares__llist_t *list,
  *  \return node object referencing place in list, or null if out of memory or
  *   misuse
  */
-CARES_EXTERN ares__llist_node_t *ares__llist_insert_last(ares__llist_t *list,
-                                                         void          *val);
+CARES_EXTERN ares_llist_node_t *ares_llist_insert_last(ares_llist_t *list,
+                                                       void         *val);
 
 /*! Insert value before specified node in the linked list
  *
@@ -99,8 +98,8 @@ CARES_EXTERN ares__llist_node_t *ares__llist_insert_last(ares__llist_t *list,
  *  \return node object referencing place in list, or null if out of memory or
  *   misuse
  */
-CARES_EXTERN ares__llist_node_t *
-  ares__llist_insert_before(ares__llist_node_t *node, void *val);
+CARES_EXTERN ares_llist_node_t *
+  ares_llist_insert_before(ares_llist_node_t *node, void *val);
 
 /*! Insert value after specified node in the linked list
  *
@@ -109,22 +108,22 @@ CARES_EXTERN ares__llist_node_t *
  *  \return node object referencing place in list, or null if out of memory or
  *   misuse
  */
-CARES_EXTERN ares__llist_node_t *
-  ares__llist_insert_after(ares__llist_node_t *node, void *val);
+CARES_EXTERN ares_llist_node_t *ares_llist_insert_after(ares_llist_node_t *node,
+                                                        void              *val);
 
 /*! Obtain first node in list
  *
  *  \param[in] list  Initialized list object
  *  \return first node in list or NULL if none
  */
-CARES_EXTERN ares__llist_node_t *ares__llist_node_first(ares__llist_t *list);
+CARES_EXTERN ares_llist_node_t *ares_llist_node_first(ares_llist_t *list);
 
 /*! Obtain last node in list
  *
  *  \param[in] list  Initialized list object
  *  \return last node in list or NULL if none
  */
-CARES_EXTERN ares__llist_node_t *ares__llist_node_last(ares__llist_t *list);
+CARES_EXTERN ares_llist_node_t *ares_llist_node_last(ares_llist_t *list);
 
 /*! Obtain a node based on its index.  This is an O(n) operation.
  *
@@ -132,24 +131,22 @@ CARES_EXTERN ares__llist_node_t *ares__llist_node_last(ares__llist_t *list);
  *  \param[in] idx  Index of node to retrieve
  *  \return node at index or NULL if invalid index
  */
-CARES_EXTERN ares__llist_node_t *ares__llist_node_idx(ares__llist_t *list,
-                                                      size_t         idx);
+CARES_EXTERN ares_llist_node_t *ares_llist_node_idx(ares_llist_t *list,
+                                                    size_t        idx);
 
 /*! Obtain next node in respect to specified node
  *
  *  \param[in] node  Node referenced
  *  \return node or NULL if none
  */
-CARES_EXTERN ares__llist_node_t *
-  ares__llist_node_next(ares__llist_node_t *node);
+CARES_EXTERN ares_llist_node_t *ares_llist_node_next(ares_llist_node_t *node);
 
 /*! Obtain previous node in respect to specified node
  *
  *  \param[in] node  Node referenced
  *  \return node or NULL if none
  */
-CARES_EXTERN ares__llist_node_t                           *
-  ares__llist_node_prev(ares__llist_node_t *node);
+CARES_EXTERN ares_llist_node_t *ares_llist_node_prev(ares_llist_node_t *node);
 
 
 /*! Obtain value from node
@@ -157,41 +154,41 @@ CARES_EXTERN ares__llist_node_t                           *
  *  \param[in] node  Node referenced
  *  \return user provided value from node
  */
-CARES_EXTERN void          *ares__llist_node_val(ares__llist_node_t *node);
+CARES_EXTERN void              *ares_llist_node_val(ares_llist_node_t *node);
 
 /*! Obtain the number of entries in the list
  *
  *  \param[in] list  Initialized list object
  *  \return count
  */
-CARES_EXTERN size_t         ares__llist_len(const ares__llist_t *list);
+CARES_EXTERN size_t             ares_llist_len(const ares_llist_t *list);
 
 /*! Clear all entries in the list, but don't destroy the list object.
  *
  *  \param[in] list  Initialized list object
  */
-CARES_EXTERN void           ares__llist_clear(ares__llist_t *list);
+CARES_EXTERN void               ares_llist_clear(ares_llist_t *list);
 
 /*! Obtain list object from referenced node
  *
  *  \param[in] node  Node referenced
  *  \return list object node belongs to
  */
-CARES_EXTERN ares__llist_t *ares__llist_node_parent(ares__llist_node_t *node);
+CARES_EXTERN ares_llist_t      *ares_llist_node_parent(ares_llist_node_t *node);
 
 /*! Obtain the first user-supplied value in the list
  *
  *  \param[in] list Initialized list object
  *  \return first user supplied value or NULL if none
  */
-CARES_EXTERN void          *ares__llist_first_val(ares__llist_t *list);
+CARES_EXTERN void              *ares_llist_first_val(ares_llist_t *list);
 
 /*! Obtain the last user-supplied value in the list
  *
  *  \param[in] list Initialized list object
  *  \return last user supplied value or NULL if none
  */
-CARES_EXTERN void          *ares__llist_last_val(ares__llist_t *list);
+CARES_EXTERN void              *ares_llist_last_val(ares_llist_t *list);
 
 /*! Take ownership of user-supplied value in list without calling destructor.
  *  Will unchain entry from list.
@@ -199,26 +196,26 @@ CARES_EXTERN void          *ares__llist_last_val(ares__llist_t *list);
  *  \param[in] node Node referenced
  *  \return user supplied value
  */
-CARES_EXTERN void          *ares__llist_node_claim(ares__llist_node_t *node);
+CARES_EXTERN void              *ares_llist_node_claim(ares_llist_node_t *node);
 
 /*! Replace user-supplied value for node
  *
  *  \param[in] node Node referenced
  *  \param[in] val  new user-supplied value
  */
-CARES_EXTERN void ares__llist_node_replace(ares__llist_node_t *node, void *val);
+CARES_EXTERN void ares_llist_node_replace(ares_llist_node_t *node, void *val);
 
 /*! Destroy the node, removing it from the list and calling destructor.
  *
  *  \param[in] node  Node referenced
  */
-CARES_EXTERN void ares__llist_node_destroy(ares__llist_node_t *node);
+CARES_EXTERN void ares_llist_node_destroy(ares_llist_node_t *node);
 
 /*! Destroy the list object and all nodes in the list.
  *
  *  \param[in] list Initialized list object
  */
-CARES_EXTERN void ares__llist_destroy(ares__llist_t *list);
+CARES_EXTERN void ares_llist_destroy(ares_llist_t *list);
 
 /*! Detach node from the current list and re-attach it to the new list as the
  *  last entry.
@@ -226,8 +223,8 @@ CARES_EXTERN void ares__llist_destroy(ares__llist_t *list);
  * \param[in] node       node to move
  * \param[in] new_parent new list
  */
-CARES_EXTERN void ares__llist_node_mvparent_last(ares__llist_node_t *node,
-                                                 ares__llist_t *new_parent);
+CARES_EXTERN void ares_llist_node_mvparent_last(ares_llist_node_t *node,
+                                                ares_llist_t      *new_parent);
 
 /*! Detach node from the current list and re-attach it to the new list as the
  *  first entry.
@@ -235,8 +232,8 @@ CARES_EXTERN void ares__llist_node_mvparent_last(ares__llist_node_t *node,
  * \param[in] node       node to move
  * \param[in] new_parent new list
  */
-CARES_EXTERN void ares__llist_node_mvparent_first(ares__llist_node_t *node,
-                                                  ares__llist_t *new_parent);
+CARES_EXTERN void ares_llist_node_mvparent_first(ares_llist_node_t *node,
+                                                 ares_llist_t      *new_parent);
 /*! @} */
 
 #endif /* __ARES__LLIST_H */

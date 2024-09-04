@@ -42,18 +42,18 @@ typedef enum {
   /*! Default, enumerate all ips for online interfaces, including loopback */
   ARES_IFACE_IP_DEFAULT = (ARES_IFACE_IP_V4 | ARES_IFACE_IP_V6 |
                            ARES_IFACE_IP_LOOPBACK | ARES_IFACE_IP_LINKLOCAL)
-} ares__iface_ip_flags_t;
+} ares_iface_ip_flags_t;
 
-struct ares__iface_ips;
+struct ares_iface_ips;
 
 /*! Opaque pointer for holding enumerated interface ip addresses */
-typedef struct ares__iface_ips ares__iface_ips_t;
+typedef struct ares_iface_ips ares_iface_ips_t;
 
-/*! Destroy ip address enumeration created by ares__iface_ips().
+/*! Destroy ip address enumeration created by ares_iface_ips().
  *
  *  \param[in]  ips   Initialized IP address enumeration structure
  */
-void                           ares__iface_ips_destroy(ares__iface_ips_t *ips);
+void                          ares_iface_ips_destroy(ares_iface_ips_t *ips);
 
 /*! Enumerate ip addresses on interfaces
  *
@@ -63,15 +63,15 @@ void                           ares__iface_ips_destroy(ares__iface_ips_t *ips);
  *  \return ARES_ENOMEM on out of memory, ARES_ENOTIMP if not supported on
  *          the system, ARES_SUCCESS on success
  */
-ares_status_t                  ares__iface_ips(ares__iface_ips_t    **ips,
-                                               ares__iface_ip_flags_t flags, const char *name);
+ares_status_t                 ares_iface_ips(ares_iface_ips_t    **ips,
+                                             ares_iface_ip_flags_t flags, const char *name);
 
 /*! Count of ips enumerated
  *
  * \param[in]  ips   Initialized IP address enumeration structure
  * \return count
  */
-size_t      ares__iface_ips_cnt(const ares__iface_ips_t *ips);
+size_t                        ares_iface_ips_cnt(const ares_iface_ips_t *ips);
 
 /*! Retrieve interface name
  *
@@ -79,7 +79,7 @@ size_t      ares__iface_ips_cnt(const ares__iface_ips_t *ips);
  * \param[in]  idx   Index of entry to pull
  * \return interface name
  */
-const char *ares__iface_ips_get_name(const ares__iface_ips_t *ips, size_t idx);
+const char *ares_iface_ips_get_name(const ares_iface_ips_t *ips, size_t idx);
 
 /*! Retrieve interface address
  *
@@ -87,8 +87,8 @@ const char *ares__iface_ips_get_name(const ares__iface_ips_t *ips, size_t idx);
  * \param[in]  idx   Index of entry to pull
  * \return interface address
  */
-const struct ares_addr *ares__iface_ips_get_addr(const ares__iface_ips_t *ips,
-                                                 size_t                   idx);
+const struct ares_addr *ares_iface_ips_get_addr(const ares_iface_ips_t *ips,
+                                                size_t                  idx);
 
 /*! Retrieve interface address flags
  *
@@ -96,8 +96,8 @@ const struct ares_addr *ares__iface_ips_get_addr(const ares__iface_ips_t *ips,
  * \param[in]  idx   Index of entry to pull
  * \return interface address flags
  */
-ares__iface_ip_flags_t  ares__iface_ips_get_flags(const ares__iface_ips_t *ips,
-                                                  size_t                   idx);
+ares_iface_ip_flags_t   ares_iface_ips_get_flags(const ares_iface_ips_t *ips,
+                                                 size_t                  idx);
 
 /*! Retrieve interface address netmask
  *
@@ -105,8 +105,8 @@ ares__iface_ip_flags_t  ares__iface_ips_get_flags(const ares__iface_ips_t *ips,
  * \param[in]  idx   Index of entry to pull
  * \return interface address netmask
  */
-unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips,
-                                          size_t                   idx);
+unsigned char           ares_iface_ips_get_netmask(const ares_iface_ips_t *ips,
+                                                   size_t                  idx);
 
 /*! Retrieve interface ipv6 link local scope
  *
@@ -114,8 +114,8 @@ unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips,
  * \param[in]  idx   Index of entry to pull
  * \return interface ipv6 link local scope
  */
-unsigned int  ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
-                                           size_t                   idx);
+unsigned int            ares_iface_ips_get_ll_scope(const ares_iface_ips_t *ips,
+                                                    size_t                  idx);
 
 
 /*! Retrieve the interface index (aka link local scope) from the interface
@@ -124,7 +124,7 @@ unsigned int  ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
  * \param[in] name  Interface name
  * \return 0 on failure, index otherwise
  */
-unsigned int  ares__if_nametoindex(const char *name);
+unsigned int            ares_if_nametoindex(const char *name);
 
 /*! Retrieves the interface name from the index (aka link local scope)
  *
@@ -133,7 +133,7 @@ unsigned int  ares__if_nametoindex(const char *name);
  * \param[in] name_len Length of provided buffer, must be at least IF_NAMESIZE
  * \return NULL on failure, or pointer to name on success
  */
-const char   *ares__if_indextoname(unsigned int index, char *name,
-                                   size_t name_len);
+const char             *ares_if_indextoname(unsigned int index, char *name,
+                                            size_t name_len);
 
 #endif

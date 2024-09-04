@@ -28,7 +28,7 @@
 
 #if defined(_WIN32) && !defined(MSDOS)
 
-void ares__tvnow(ares_timeval_t *now)
+void ares_tvnow(ares_timeval_t *now)
 {
   /* QueryPerformanceCounters() has been around since Windows 2000, though
    * significant fixes were made in later versions.  Documentation states
@@ -52,7 +52,7 @@ void ares__tvnow(ares_timeval_t *now)
 
 #elif defined(HAVE_CLOCK_GETTIME_MONOTONIC)
 
-void ares__tvnow(ares_timeval_t *now)
+void ares_tvnow(ares_timeval_t *now)
 {
   /* clock_gettime() is guaranteed to be increased monotonically when the
    * monotonic clock is queried. Time starting point is unspecified, it
@@ -76,7 +76,7 @@ void ares__tvnow(ares_timeval_t *now)
 
 #elif defined(HAVE_GETTIMEOFDAY)
 
-void ares__tvnow(ares_timeval_t *now)
+void ares_tvnow(ares_timeval_t *now)
 {
   /* gettimeofday() is not granted to be increased monotonically, due to
    * clock drifting and external source time synchronization it can jump

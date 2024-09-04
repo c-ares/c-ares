@@ -243,7 +243,7 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
 #  endif
 
   if (resolver->options != NULL) {
-    status = ares__sysconfig_set_options(sysconfig, resolver->options);
+    status = ares_sysconfig_set_options(sysconfig, resolver->options);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -282,10 +282,10 @@ static ares_status_t read_resolver(const dns_resolver_t *resolver,
       addrport = port;
     }
 
-    if_name = ares__if_indextoname(resolver->if_index, if_name_str,
-                                   sizeof(if_name_str));
-    status  = ares__sconfig_append(&sysconfig->sconfig, &addr, addrport,
-                                   addrport, if_name);
+    if_name =
+      ares_if_indextoname(resolver->if_index, if_name_str, sizeof(if_name_str));
+    status = ares_sconfig_append(&sysconfig->sconfig, &addr, addrport, addrport,
+                                 if_name);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -315,7 +315,7 @@ static ares_status_t read_resolvers(dns_resolver_t **resolvers, int nresolvers,
   return status;
 }
 
-ares_status_t ares__init_sysconfig_macos(ares_sysconfig_t *sysconfig)
+ares_status_t ares_init_sysconfig_macos(ares_sysconfig_t *sysconfig)
 {
   dnsinfo_t    *dnsinfo = NULL;
   dns_config_t *sc_dns  = NULL;

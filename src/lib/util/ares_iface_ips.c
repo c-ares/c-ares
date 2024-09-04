@@ -59,41 +59,40 @@
 #endif
 
 
-static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
-                                               const char        *name);
+static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
+                                              const char       *name);
 
 typedef struct {
-  char                  *name;
-  struct ares_addr       addr;
-  unsigned char          netmask;
-  unsigned int           ll_scope;
-  ares__iface_ip_flags_t flags;
-} ares__iface_ip_t;
+  char                 *name;
+  struct ares_addr      addr;
+  unsigned char         netmask;
+  unsigned int          ll_scope;
+  ares_iface_ip_flags_t flags;
+} ares_iface_ip_t;
 
-struct ares__iface_ips {
-  ares__array_t         *ips; /*!< Type is ares__iface_ip_t */
-  ares__iface_ip_flags_t enum_flags;
+struct ares_iface_ips {
+  ares_array_t         *ips; /*!< Type is ares_iface_ip_t */
+  ares_iface_ip_flags_t enum_flags;
 };
 
-static void ares__iface_ip_free_cb(void *arg)
+static void ares_iface_ip_free_cb(void *arg)
 {
-  ares__iface_ip_t *ip = arg;
+  ares_iface_ip_t *ip = arg;
   if (ip == NULL) {
     return;
   }
   ares_free(ip->name);
 }
 
-static ares__iface_ips_t *ares__iface_ips_alloc(ares__iface_ip_flags_t flags)
+static ares_iface_ips_t *ares_iface_ips_alloc(ares_iface_ip_flags_t flags)
 {
-  ares__iface_ips_t *ips = ares_malloc_zero(sizeof(*ips));
+  ares_iface_ips_t *ips = ares_malloc_zero(sizeof(*ips));
   if (ips == NULL) {
     return NULL; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   ips->enum_flags = flags;
-  ips->ips =
-    ares__array_create(sizeof(ares__iface_ip_t), ares__iface_ip_free_cb);
+  ips->ips = ares_array_create(sizeof(ares_iface_ip_t), ares_iface_ip_free_cb);
   if (ips->ips == NULL) {
     ares_free(ips); /* LCOV_EXCL_LINE: OutOfMemory */
     return NULL;    /* LCOV_EXCL_LINE: OutOfMemory */
@@ -101,18 +100,18 @@ static ares__iface_ips_t *ares__iface_ips_alloc(ares__iface_ip_flags_t flags)
   return ips;
 }
 
-void ares__iface_ips_destroy(ares__iface_ips_t *ips)
+void ares_iface_ips_destroy(ares_iface_ips_t *ips)
 {
   if (ips == NULL) {
     return;
   }
 
-  ares__array_destroy(ips->ips);
+  ares_array_destroy(ips->ips);
   ares_free(ips);
 }
 
-ares_status_t ares__iface_ips(ares__iface_ips_t    **ips,
-                              ares__iface_ip_flags_t flags, const char *name)
+ares_status_t ares_iface_ips(ares_iface_ips_t    **ips,
+                             ares_iface_ip_flags_t flags, const char *name)
 {
   ares_status_t status;
 
@@ -120,15 +119,15 @@ ares_status_t ares__iface_ips(ares__iface_ips_t    **ips,
     return ARES_EFORMERR;
   }
 
-  *ips = ares__iface_ips_alloc(flags);
+  *ips = ares_iface_ips_alloc(flags);
   if (*ips == NULL) {
     return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  status = ares__iface_ips_enumerate(*ips, name);
+  status = ares_iface_ips_enumerate(*ips, name);
   if (status != ARES_SUCCESS) {
     /* LCOV_EXCL_START: UntestablePath */
-    ares__iface_ips_destroy(*ips);
+    ares_iface_ips_destroy(*ips);
     *ips = NULL;
     return status;
     /* LCOV_EXCL_STOP */
@@ -138,12 +137,12 @@ ares_status_t ares__iface_ips(ares__iface_ips_t    **ips,
 }
 
 static ares_status_t
-  ares__iface_ips_add(ares__iface_ips_t *ips, ares__iface_ip_flags_t flags,
-                      const char *name, const struct ares_addr *addr,
-                      unsigned char netmask, unsigned int ll_scope)
+  ares_iface_ips_add(ares_iface_ips_t *ips, ares_iface_ip_flags_t flags,
+                     const char *name, const struct ares_addr *addr,
+                     unsigned char netmask, unsigned int ll_scope)
 {
-  ares__iface_ip_t *ip;
-  ares_status_t     status;
+  ares_iface_ip_t *ip;
+  ares_status_t    status;
 
   if (ips == NULL || name == NULL || addr == NULL) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -162,7 +161,7 @@ static ares_status_t
   }
 
   /* Check for link-local */
-  if (ares__addr_is_linklocal(addr)) {
+  if (ares_addr_is_linklocal(addr)) {
     flags |= ARES_IFACE_IP_LINKLOCAL;
   }
   if (flags & ARES_IFACE_IP_LINKLOCAL &&
@@ -190,7 +189,7 @@ static ares_status_t
     }
   }
 
-  status = ares__array_insert_last((void **)&ip, ips->ips);
+  status = ares_array_insert_last((void **)&ip, ips->ips);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -203,30 +202,30 @@ static ares_status_t
   memcpy(&ip->addr, addr, sizeof(*addr));
   ip->name = ares_strdup(name);
   if (ip->name == NULL) {
-    ares__array_remove_last(ips->ips);
+    ares_array_remove_last(ips->ips);
     return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   return ARES_SUCCESS;
 }
 
-size_t ares__iface_ips_cnt(const ares__iface_ips_t *ips)
+size_t ares_iface_ips_cnt(const ares_iface_ips_t *ips)
 {
   if (ips == NULL) {
     return 0;
   }
-  return ares__array_len(ips->ips);
+  return ares_array_len(ips->ips);
 }
 
-const char *ares__iface_ips_get_name(const ares__iface_ips_t *ips, size_t idx)
+const char *ares_iface_ips_get_name(const ares_iface_ips_t *ips, size_t idx)
 {
-  const ares__iface_ip_t *ip;
+  const ares_iface_ip_t *ip;
 
   if (ips == NULL) {
     return NULL;
   }
 
-  ip = ares__array_at_const(ips->ips, idx);
+  ip = ares_array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return NULL;
   }
@@ -234,16 +233,16 @@ const char *ares__iface_ips_get_name(const ares__iface_ips_t *ips, size_t idx)
   return ip->name;
 }
 
-const struct ares_addr *ares__iface_ips_get_addr(const ares__iface_ips_t *ips,
-                                                 size_t                   idx)
+const struct ares_addr *ares_iface_ips_get_addr(const ares_iface_ips_t *ips,
+                                                size_t                  idx)
 {
-  const ares__iface_ip_t *ip;
+  const ares_iface_ip_t *ip;
 
   if (ips == NULL) {
     return NULL;
   }
 
-  ip = ares__array_at_const(ips->ips, idx);
+  ip = ares_array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return NULL;
   }
@@ -251,16 +250,16 @@ const struct ares_addr *ares__iface_ips_get_addr(const ares__iface_ips_t *ips,
   return &ip->addr;
 }
 
-ares__iface_ip_flags_t ares__iface_ips_get_flags(const ares__iface_ips_t *ips,
-                                                 size_t                   idx)
+ares_iface_ip_flags_t ares_iface_ips_get_flags(const ares_iface_ips_t *ips,
+                                               size_t                  idx)
 {
-  const ares__iface_ip_t *ip;
+  const ares_iface_ip_t *ip;
 
   if (ips == NULL) {
     return 0;
   }
 
-  ip = ares__array_at_const(ips->ips, idx);
+  ip = ares_array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return 0;
   }
@@ -268,16 +267,16 @@ ares__iface_ip_flags_t ares__iface_ips_get_flags(const ares__iface_ips_t *ips,
   return ip->flags;
 }
 
-unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips,
-                                          size_t                   idx)
+unsigned char ares_iface_ips_get_netmask(const ares_iface_ips_t *ips,
+                                         size_t                  idx)
 {
-  const ares__iface_ip_t *ip;
+  const ares_iface_ip_t *ip;
 
   if (ips == NULL) {
     return 0;
   }
 
-  ip = ares__array_at_const(ips->ips, idx);
+  ip = ares_array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return 0;
   }
@@ -285,16 +284,16 @@ unsigned char ares__iface_ips_get_netmask(const ares__iface_ips_t *ips,
   return ip->netmask;
 }
 
-unsigned int ares__iface_ips_get_ll_scope(const ares__iface_ips_t *ips,
-                                          size_t                   idx)
+unsigned int ares_iface_ips_get_ll_scope(const ares_iface_ips_t *ips,
+                                         size_t                  idx)
 {
-  const ares__iface_ip_t *ip;
+  const ares_iface_ip_t *ip;
 
   if (ips == NULL) {
     return 0;
   }
 
-  ip = ares__array_at_const(ips->ips, idx);
+  ip = ares_array_at_const(ips->ips, idx);
   if (ip == NULL) {
     return 0;
   }
@@ -345,8 +344,8 @@ static ares_bool_t name_match(const char *name, const char *adapter_name,
   return ARES_FALSE;
 }
 
-static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
-                                               const char        *name)
+static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
+                                              const char       *name)
 {
   ULONG myflags = GAA_FLAG_INCLUDE_PREFIX /*|GAA_FLAG_INCLUDE_ALL_INTERFACES */;
   ULONG outBufLen = 0;
@@ -377,7 +376,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
 
   for (address = addresses; address != NULL; address = address->Next) {
     IP_ADAPTER_UNICAST_ADDRESS *ipaddr     = NULL;
-    ares__iface_ip_flags_t      addrflag   = 0;
+    ares_iface_ip_flags_t       addrflag   = 0;
     char                        ifname[64] = "";
 
 #  if defined(HAVE_CONVERTINTERFACEINDEXTOLUID) && \
@@ -431,9 +430,9 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
         continue;
       }
 
-      status = ares__iface_ips_add(ips, addrflag, ifname, &addr,
-                                   ipaddr->OnLinkPrefixLength /* netmask */,
-                                   address->Ipv6IfIndex /* ll_scope */);
+      status = ares_iface_ips_add(ips, addrflag, ifname, &addr,
+                                  ipaddr->OnLinkPrefixLength /* netmask */,
+                                  address->Ipv6IfIndex /* ll_scope */);
 
       if (status != ARES_SUCCESS) {
         goto done;
@@ -454,13 +453,13 @@ static unsigned char count_addr_bits(const unsigned char *addr, size_t addr_len)
   unsigned char count = 0;
 
   for (i = 0; i < addr_len; i++) {
-    count += ares__count_bits_u8(addr[i]);
+    count += ares_count_bits_u8(addr[i]);
   }
   return count;
 }
 
-static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
-                                               const char        *name)
+static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
+                                              const char       *name)
 {
   struct ifaddrs *ifap   = NULL;
   struct ifaddrs *ifa    = NULL;
@@ -472,10 +471,10 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
   }
 
   for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
-    ares__iface_ip_flags_t addrflag = 0;
-    struct ares_addr       addr;
-    unsigned char          netmask  = 0;
-    unsigned int           ll_scope = 0;
+    ares_iface_ip_flags_t addrflag = 0;
+    struct ares_addr      addr;
+    unsigned char         netmask  = 0;
+    unsigned int          ll_scope = 0;
 
     if (ifa->ifa_addr == NULL) {
       continue;
@@ -519,8 +518,8 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
       continue;
     }
 
-    status = ares__iface_ips_add(ips, addrflag, ifa->ifa_name, &addr, netmask,
-                                 ll_scope);
+    status = ares_iface_ips_add(ips, addrflag, ifa->ifa_name, &addr, netmask,
+                                ll_scope);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -533,8 +532,8 @@ done:
 
 #else
 
-static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
-                                               const char        *name)
+static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
+                                              const char       *name)
 {
   (void)ips;
   (void)name;
@@ -544,7 +543,7 @@ static ares_status_t ares__iface_ips_enumerate(ares__iface_ips_t *ips,
 #endif
 
 
-unsigned int ares__if_nametoindex(const char *name)
+unsigned int ares_if_nametoindex(const char *name)
 {
 #ifdef HAVE_IF_NAMETOINDEX
   if (name == NULL) {
@@ -552,36 +551,35 @@ unsigned int ares__if_nametoindex(const char *name)
   }
   return if_nametoindex(name);
 #else
-  ares_status_t      status;
-  ares__iface_ips_t *ips = NULL;
-  size_t             i;
-  unsigned int       index = 0;
+  ares_status_t     status;
+  ares_iface_ips_t *ips = NULL;
+  size_t            i;
+  unsigned int      index = 0;
 
   if (name == NULL) {
     return 0;
   }
 
   status =
-    ares__iface_ips(&ips, ARES_IFACE_IP_V6 | ARES_IFACE_IP_LINKLOCAL, name);
+    ares_iface_ips(&ips, ARES_IFACE_IP_V6 | ARES_IFACE_IP_LINKLOCAL, name);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  for (i = 0; i < ares__iface_ips_cnt(ips); i++) {
-    if (ares__iface_ips_get_flags(ips, i) & ARES_IFACE_IP_LINKLOCAL) {
-      index = ares__iface_ips_get_ll_scope(ips, i);
+  for (i = 0; i < ares_iface_ips_cnt(ips); i++) {
+    if (ares_iface_ips_get_flags(ips, i) & ARES_IFACE_IP_LINKLOCAL) {
+      index = ares_iface_ips_get_ll_scope(ips, i);
       goto done;
     }
   }
 
 done:
-  ares__iface_ips_destroy(ips);
+  ares_iface_ips_destroy(ips);
   return index;
 #endif
 }
 
-const char *ares__if_indextoname(unsigned int index, char *name,
-                                 size_t name_len)
+const char *ares_if_indextoname(unsigned int index, char *name, size_t name_len)
 {
 #ifdef HAVE_IF_INDEXTONAME
   if (name_len < IF_NAMESIZE) {
@@ -589,10 +587,10 @@ const char *ares__if_indextoname(unsigned int index, char *name,
   }
   return if_indextoname(index, name);
 #else
-  ares_status_t      status;
-  ares__iface_ips_t *ips = NULL;
-  size_t             i;
-  const char        *ptr = NULL;
+  ares_status_t     status;
+  ares_iface_ips_t *ips = NULL;
+  size_t            i;
+  const char       *ptr = NULL;
 
   if (name == NULL || name_len < IF_NAMESIZE) {
     goto done;
@@ -603,22 +601,22 @@ const char *ares__if_indextoname(unsigned int index, char *name,
   }
 
   status =
-    ares__iface_ips(&ips, ARES_IFACE_IP_V6 | ARES_IFACE_IP_LINKLOCAL, NULL);
+    ares_iface_ips(&ips, ARES_IFACE_IP_V6 | ARES_IFACE_IP_LINKLOCAL, NULL);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  for (i = 0; i < ares__iface_ips_cnt(ips); i++) {
-    if (ares__iface_ips_get_flags(ips, i) & ARES_IFACE_IP_LINKLOCAL &&
-        ares__iface_ips_get_ll_scope(ips, i) == index) {
-      ares_strcpy(name, ares__iface_ips_get_name(ips, i), name_len);
+  for (i = 0; i < ares_iface_ips_cnt(ips); i++) {
+    if (ares_iface_ips_get_flags(ips, i) & ARES_IFACE_IP_LINKLOCAL &&
+        ares_iface_ips_get_ll_scope(ips, i) == index) {
+      ares_strcpy(name, ares_iface_ips_get_name(ips, i), name_len);
       ptr = name;
       goto done;
     }
   }
 
 done:
-  ares__iface_ips_destroy(ips);
+  ares_iface_ips_destroy(ips);
   return ptr;
 #endif
 }

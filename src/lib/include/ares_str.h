@@ -45,14 +45,14 @@ CARES_EXTERN size_t ares_strcpy(char *dest, const char *src, size_t dest_size);
 
 CARES_EXTERN ares_bool_t   ares_str_isnum(const char *str);
 
-CARES_EXTERN void          ares__str_ltrim(char *str);
-CARES_EXTERN void          ares__str_rtrim(char *str);
-CARES_EXTERN void          ares__str_trim(char *str);
+CARES_EXTERN void          ares_str_ltrim(char *str);
+CARES_EXTERN void          ares_str_rtrim(char *str);
+CARES_EXTERN void          ares_str_trim(char *str);
 
-CARES_EXTERN unsigned char ares__tolower(unsigned char c);
-CARES_EXTERN ares_bool_t   ares__memeq_ci(const unsigned char *ptr,
-                                          const unsigned char *val, size_t len);
-CARES_EXTERN ares_bool_t   ares__is_hostname(const char *str);
+CARES_EXTERN unsigned char ares_tolower(unsigned char c);
+CARES_EXTERN ares_bool_t   ares_memeq_ci(const unsigned char *ptr,
+                                         const unsigned char *val, size_t len);
+CARES_EXTERN ares_bool_t   ares_is_hostname(const char *str);
 
 /*! Validate the string provided is printable.  The length specified must be
  *  at least the size of the buffer provided.  If a NULL-terminator is hit
@@ -65,33 +65,30 @@ CARES_EXTERN ares_bool_t   ares__is_hostname(const char *str);
  *                  If 0, will return TRUE since it did not hit an exception.
  *  \return ARES_TRUE if the entire string is printable, ARES_FALSE if not.
  */
-CARES_EXTERN ares_bool_t   ares__str_isprint(const char *str, size_t len);
+CARES_EXTERN ares_bool_t   ares_str_isprint(const char *str, size_t len);
 
 /* We only care about ASCII rules */
-#define ares__isascii(x) (((unsigned char)x) <= 127)
+#define ares_isascii(x) (((unsigned char)x) <= 127)
 
-#define ares__isdigit(x) \
-  (((unsigned char)x) >= '0' && ((unsigned char)x) <= '9')
+#define ares_isdigit(x) (((unsigned char)x) >= '0' && ((unsigned char)x) <= '9')
 
-#define ares__isxdigit(x)                                      \
-  (ares__isdigit(x) ||                                         \
+#define ares_isxdigit(x)                                       \
+  (ares_isdigit(x) ||                                          \
    (((unsigned char)x) >= 'a' && ((unsigned char)x) <= 'f') || \
    (((unsigned char)x) >= 'A' && ((unsigned char)x) <= 'F'))
 
-#define ares__isupper(x) \
-  (((unsigned char)x) >= 'A' && ((unsigned char)x) <= 'Z')
+#define ares_isupper(x) (((unsigned char)x) >= 'A' && ((unsigned char)x) <= 'Z')
 
-#define ares__islower(x) \
-  (((unsigned char)x) >= 'a' && ((unsigned char)x) <= 'z')
+#define ares_islower(x) (((unsigned char)x) >= 'a' && ((unsigned char)x) <= 'z')
 
-#define ares__isalpha(x) (ares__islower(x) || ares__isupper(x))
+#define ares_isalpha(x) (ares_islower(x) || ares_isupper(x))
 
-#define ares__isspace(x)                                           \
+#define ares_isspace(x)                                            \
   (((unsigned char)(x)) == '\r' || ((unsigned char)(x)) == '\t' || \
    ((unsigned char)(x)) == ' ' || ((unsigned char)(x)) == '\v' ||  \
    ((unsigned char)(x)) == '\f' || ((unsigned char)(x)) == '\n')
 
-#define ares__isprint(x) \
+#define ares_isprint(x) \
   (((unsigned char)(x)) >= 0x20 && ((unsigned char)(x)) <= 0x7E)
 
 /* Character set allowed by hostnames.  This is to include the normal
@@ -108,9 +105,9 @@ CARES_EXTERN ares_bool_t   ares__str_isprint(const char *str, size_t len);
  * anyhow).
  * [A-Za-z0-9-*._/]
  */
-#define ares__is_hostnamech(x)                                            \
-  (ares__isalpha(x) || ares__isdigit(x) || ((unsigned char)(x)) == '-' || \
-   ((unsigned char)(x)) == '.' || ((unsigned char)(x)) == '_' ||          \
+#define ares_is_hostnamech(x)                                           \
+  (ares_isalpha(x) || ares_isdigit(x) || ((unsigned char)(x)) == '-' || \
+   ((unsigned char)(x)) == '.' || ((unsigned char)(x)) == '_' ||        \
    ((unsigned char)(x)) == '/' || ((unsigned char)(x)) == '*')
 
 

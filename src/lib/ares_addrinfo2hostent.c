@@ -48,8 +48,8 @@
 #endif
 
 
-ares_status_t ares__addrinfo2hostent(const struct ares_addrinfo *ai, int family,
-                                     struct hostent **host)
+ares_status_t ares_addrinfo2hostent(const struct ares_addrinfo *ai, int family,
+                                    struct hostent **host)
 {
   struct ares_addrinfo_node  *next;
   struct ares_addrinfo_cname *next_cname;
@@ -196,11 +196,11 @@ enomem:
   /* LCOV_EXCL_STOP */
 }
 
-ares_status_t ares__addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
-                                     size_t                req_naddrttls,
-                                     struct ares_addrttl  *addrttls,
-                                     struct ares_addr6ttl *addr6ttls,
-                                     size_t               *naddrttls)
+ares_status_t ares_addrinfo2addrttl(const struct ares_addrinfo *ai, int family,
+                                    size_t                req_naddrttls,
+                                    struct ares_addrttl  *addrttls,
+                                    struct ares_addr6ttl *addr6ttls,
+                                    size_t               *naddrttls)
 {
   struct ares_addrinfo_node  *next;
   struct ares_addrinfo_cname *next_cname;

@@ -34,12 +34,12 @@ typedef long long          ares_int64_t;
 typedef unsigned long long ares_uint64_t;
 #endif
 
-ares_bool_t   ares__is_64bit(void);
-size_t        ares__round_up_pow2(size_t n);
-size_t        ares__log2(size_t n);
-size_t        ares__pow(size_t x, size_t y);
-size_t        ares__count_digits(size_t n);
-size_t        ares__count_hexdigits(size_t n);
-unsigned char ares__count_bits_u8(unsigned char x);
+ares_bool_t   ares_is_64bit(void);
+size_t        ares_round_up_pow2(size_t n);
+size_t        ares_log2(size_t n);
+size_t        ares_pow(size_t x, size_t y);
+size_t        ares_count_digits(size_t n);
+size_t        ares_count_hexdigits(size_t n);
+unsigned char ares_count_bits_u8(unsigned char x);
 
 #endif

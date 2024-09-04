@@ -28,13 +28,13 @@
 #ifdef CARES_THREADS
 #  ifdef _WIN32
 
-struct ares__thread_mutex {
+struct ares_thread_mutex {
   CRITICAL_SECTION mutex;
 };
 
-ares__thread_mutex_t *ares__thread_mutex_create(void)
+ares_thread_mutex_t *ares_thread_mutex_create(void)
 {
-  ares__thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
+  ares_thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
   if (mut == NULL) {
     return NULL;
   }
@@ -43,7 +43,7 @@ ares__thread_mutex_t *ares__thread_mutex_create(void)
   return mut;
 }
 
-void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
+void ares_thread_mutex_destroy(ares_thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -52,7 +52,7 @@ void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
   ares_free(mut);
 }
 
-void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
+void ares_thread_mutex_lock(ares_thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -60,7 +60,7 @@ void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
   EnterCriticalSection(&mut->mutex);
 }
 
-void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
+void ares_thread_mutex_unlock(ares_thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -68,13 +68,13 @@ void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
   LeaveCriticalSection(&mut->mutex);
 }
 
-struct ares__thread_cond {
+struct ares_thread_cond {
   CONDITION_VARIABLE cond;
 };
 
-ares__thread_cond_t *ares__thread_cond_create(void)
+ares_thread_cond_t *ares_thread_cond_create(void)
 {
-  ares__thread_cond_t *cond = ares_malloc_zero(sizeof(*cond));
+  ares_thread_cond_t *cond = ares_malloc_zero(sizeof(*cond));
   if (cond == NULL) {
     return NULL;
   }
@@ -82,7 +82,7 @@ ares__thread_cond_t *ares__thread_cond_create(void)
   return cond;
 }
 
-void ares__thread_cond_destroy(ares__thread_cond_t *cond)
+void ares_thread_cond_destroy(ares_thread_cond_t *cond)
 {
   if (cond == NULL) {
     return;
@@ -90,7 +90,7 @@ void ares__thread_cond_destroy(ares__thread_cond_t *cond)
   ares_free(cond);
 }
 
-void ares__thread_cond_signal(ares__thread_cond_t *cond)
+void ares_thread_cond_signal(ares_thread_cond_t *cond)
 {
   if (cond == NULL) {
     return;
@@ -98,7 +98,7 @@ void ares__thread_cond_signal(ares__thread_cond_t *cond)
   WakeConditionVariable(&cond->cond);
 }
 
-void ares__thread_cond_broadcast(ares__thread_cond_t *cond)
+void ares_thread_cond_broadcast(ares_thread_cond_t *cond)
 {
   if (cond == NULL) {
     return;
@@ -106,8 +106,8 @@ void ares__thread_cond_broadcast(ares__thread_cond_t *cond)
   WakeAllConditionVariable(&cond->cond);
 }
 
-ares_status_t ares__thread_cond_wait(ares__thread_cond_t  *cond,
-                                     ares__thread_mutex_t *mut)
+ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
+                                    ares_thread_mutex_t *mut)
 {
   if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
@@ -117,9 +117,9 @@ ares_status_t ares__thread_cond_wait(ares__thread_cond_t  *cond,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
-                                          ares__thread_mutex_t *mut,
-                                          unsigned long         timeout_ms)
+ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
+                                         ares_thread_mutex_t *mut,
+                                         unsigned long        timeout_ms)
 {
   if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
@@ -132,7 +132,7 @@ ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
   return ARES_SUCCESS;
 }
 
-struct ares__thread {
+struct ares_thread {
   HANDLE thread;
   DWORD  id;
 
@@ -142,18 +142,18 @@ struct ares__thread {
 };
 
 /* Wrap for pthread compatibility */
-static DWORD WINAPI ares__thread_func(LPVOID lpParameter)
+static DWORD WINAPI ares_thread_func(LPVOID lpParameter)
 {
-  ares__thread_t *thread = lpParameter;
+  ares_thread_t *thread = lpParameter;
 
   thread->rv = thread->func(thread->arg);
   return 0;
 }
 
-ares_status_t ares__thread_create(ares__thread_t    **thread,
-                                  ares__thread_func_t func, void *arg)
+ares_status_t ares_thread_create(ares_thread_t    **thread,
+                                 ares_thread_func_t func, void *arg)
 {
-  ares__thread_t *thr = NULL;
+  ares_thread_t *thr = NULL;
 
   if (func == NULL || thread == NULL) {
     return ARES_EFORMERR;
@@ -166,7 +166,7 @@ ares_status_t ares__thread_create(ares__thread_t    **thread,
 
   thr->func   = func;
   thr->arg    = arg;
-  thr->thread = CreateThread(NULL, 0, ares__thread_func, thr, 0, &thr->id);
+  thr->thread = CreateThread(NULL, 0, ares_thread_func, thr, 0, &thr->id);
   if (thr->thread == NULL) {
     ares_free(thr);
     return ARES_ESERVFAIL;
@@ -176,7 +176,7 @@ ares_status_t ares__thread_create(ares__thread_t    **thread,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__thread_join(ares__thread_t *thread, void **rv)
+ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
 {
   ares_status_t status = ARES_SUCCESS;
 
@@ -211,14 +211,14 @@ ares_status_t ares__thread_join(ares__thread_t *thread, void **rv)
 #      include <sys/time.h>
 #    endif
 
-struct ares__thread_mutex {
+struct ares_thread_mutex {
   pthread_mutex_t mutex;
 };
 
-ares__thread_mutex_t *ares__thread_mutex_create(void)
+ares_thread_mutex_t *ares_thread_mutex_create(void)
 {
-  pthread_mutexattr_t   attr;
-  ares__thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
+  pthread_mutexattr_t  attr;
+  ares_thread_mutex_t *mut = ares_malloc_zero(sizeof(*mut));
   if (mut == NULL) {
     return NULL;
   }
@@ -247,7 +247,7 @@ fail:
   /* LCOV_EXCL_STOP */
 }
 
-void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
+void ares_thread_mutex_destroy(ares_thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -256,7 +256,7 @@ void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
   ares_free(mut);
 }
 
-void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
+void ares_thread_mutex_lock(ares_thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -264,7 +264,7 @@ void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
   pthread_mutex_lock(&mut->mutex);
 }
 
-void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
+void ares_thread_mutex_unlock(ares_thread_mutex_t *mut)
 {
   if (mut == NULL) {
     return;
@@ -272,13 +272,13 @@ void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
   pthread_mutex_unlock(&mut->mutex);
 }
 
-struct ares__thread_cond {
+struct ares_thread_cond {
   pthread_cond_t cond;
 };
 
-ares__thread_cond_t *ares__thread_cond_create(void)
+ares_thread_cond_t *ares_thread_cond_create(void)
 {
-  ares__thread_cond_t *cond = ares_malloc_zero(sizeof(*cond));
+  ares_thread_cond_t *cond = ares_malloc_zero(sizeof(*cond));
   if (cond == NULL) {
     return NULL;
   }
@@ -286,7 +286,7 @@ ares__thread_cond_t *ares__thread_cond_create(void)
   return cond;
 }
 
-void ares__thread_cond_destroy(ares__thread_cond_t *cond)
+void ares_thread_cond_destroy(ares_thread_cond_t *cond)
 {
   if (cond == NULL) {
     return;
@@ -295,7 +295,7 @@ void ares__thread_cond_destroy(ares__thread_cond_t *cond)
   ares_free(cond);
 }
 
-void ares__thread_cond_signal(ares__thread_cond_t *cond)
+void ares_thread_cond_signal(ares_thread_cond_t *cond)
 {
   if (cond == NULL) {
     return;
@@ -303,7 +303,7 @@ void ares__thread_cond_signal(ares__thread_cond_t *cond)
   pthread_cond_signal(&cond->cond);
 }
 
-void ares__thread_cond_broadcast(ares__thread_cond_t *cond)
+void ares_thread_cond_broadcast(ares_thread_cond_t *cond)
 {
   if (cond == NULL) {
     return;
@@ -311,8 +311,8 @@ void ares__thread_cond_broadcast(ares__thread_cond_t *cond)
   pthread_cond_broadcast(&cond->cond);
 }
 
-ares_status_t ares__thread_cond_wait(ares__thread_cond_t  *cond,
-                                     ares__thread_mutex_t *mut)
+ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
+                                    ares_thread_mutex_t *mut)
 {
   if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
@@ -322,7 +322,7 @@ ares_status_t ares__thread_cond_wait(ares__thread_cond_t  *cond,
   return ARES_SUCCESS;
 }
 
-static void ares__timespec_timeout(struct timespec *ts, unsigned long add_ms)
+static void ares_timespec_timeout(struct timespec *ts, unsigned long add_ms)
 {
 #    if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_REALTIME)
   clock_gettime(CLOCK_REALTIME, ts);
@@ -345,9 +345,9 @@ static void ares__timespec_timeout(struct timespec *ts, unsigned long add_ms)
   }
 }
 
-ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
-                                          ares__thread_mutex_t *mut,
-                                          unsigned long         timeout_ms)
+ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
+                                         ares_thread_mutex_t *mut,
+                                         unsigned long        timeout_ms)
 {
   struct timespec ts;
 
@@ -355,7 +355,7 @@ ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
     return ARES_EFORMERR;
   }
 
-  ares__timespec_timeout(&ts, timeout_ms);
+  ares_timespec_timeout(&ts, timeout_ms);
 
   if (pthread_cond_timedwait(&cond->cond, &mut->mutex, &ts) != 0) {
     return ARES_ETIMEOUT;
@@ -364,14 +364,14 @@ ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
   return ARES_SUCCESS;
 }
 
-struct ares__thread {
+struct ares_thread {
   pthread_t thread;
 };
 
-ares_status_t ares__thread_create(ares__thread_t    **thread,
-                                  ares__thread_func_t func, void *arg)
+ares_status_t ares_thread_create(ares_thread_t    **thread,
+                                 ares_thread_func_t func, void *arg)
 {
-  ares__thread_t *thr = NULL;
+  ares_thread_t *thr = NULL;
 
   if (func == NULL || thread == NULL) {
     return ARES_EFORMERR;
@@ -390,7 +390,7 @@ ares_status_t ares__thread_create(ares__thread_t    **thread,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares__thread_join(ares__thread_t *thread, void **rv)
+ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
 {
   void         *ret    = NULL;
   ares_status_t status = ARES_SUCCESS;
@@ -420,57 +420,57 @@ ares_bool_t ares_threadsafety(void)
 #else /* !CARES_THREADS */
 
 /* NoOp */
-ares__thread_mutex_t *ares__thread_mutex_create(void)
+ares_thread_mutex_t *ares_thread_mutex_create(void)
 {
   return NULL;
 }
 
-void ares__thread_mutex_destroy(ares__thread_mutex_t *mut)
+void ares_thread_mutex_destroy(ares_thread_mutex_t *mut)
 {
   (void)mut;
 }
 
-void ares__thread_mutex_lock(ares__thread_mutex_t *mut)
+void ares_thread_mutex_lock(ares_thread_mutex_t *mut)
 {
   (void)mut;
 }
 
-void ares__thread_mutex_unlock(ares__thread_mutex_t *mut)
+void ares_thread_mutex_unlock(ares_thread_mutex_t *mut)
 {
   (void)mut;
 }
 
-ares__thread_cond_t *ares__thread_cond_create(void)
+ares_thread_cond_t *ares_thread_cond_create(void)
 {
   return NULL;
 }
 
-void ares__thread_cond_destroy(ares__thread_cond_t *cond)
+void ares_thread_cond_destroy(ares_thread_cond_t *cond)
 {
   (void)cond;
 }
 
-void ares__thread_cond_signal(ares__thread_cond_t *cond)
+void ares_thread_cond_signal(ares_thread_cond_t *cond)
 {
   (void)cond;
 }
 
-void ares__thread_cond_broadcast(ares__thread_cond_t *cond)
+void ares_thread_cond_broadcast(ares_thread_cond_t *cond)
 {
   (void)cond;
 }
 
-ares_status_t ares__thread_cond_wait(ares__thread_cond_t  *cond,
-                                     ares__thread_mutex_t *mut)
+ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
+                                    ares_thread_mutex_t *mut)
 {
   (void)cond;
   (void)mut;
   return ARES_ENOTIMP;
 }
 
-ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
-                                          ares__thread_mutex_t *mut,
-                                          unsigned long         timeout_ms)
+ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
+                                         ares_thread_mutex_t *mut,
+                                         unsigned long        timeout_ms)
 {
   (void)cond;
   (void)mut;
@@ -478,8 +478,8 @@ ares_status_t ares__thread_cond_timedwait(ares__thread_cond_t  *cond,
   return ARES_ENOTIMP;
 }
 
-ares_status_t ares__thread_create(ares__thread_t    **thread,
-                                  ares__thread_func_t func, void *arg)
+ares_status_t ares_thread_create(ares_thread_t    **thread,
+                                 ares_thread_func_t func, void *arg)
 {
   (void)thread;
   (void)func;
@@ -487,7 +487,7 @@ ares_status_t ares__thread_create(ares__thread_t    **thread,
   return ARES_ENOTIMP;
 }
 
-ares_status_t ares__thread_join(ares__thread_t *thread, void **rv)
+ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
 {
   (void)thread;
   (void)rv;
@@ -501,7 +501,7 @@ ares_bool_t ares_threadsafety(void)
 #endif
 
 
-ares_status_t ares__channel_threading_init(ares_channel_t *channel)
+ares_status_t ares_channel_threading_init(ares_channel_t *channel)
 {
   ares_status_t status = ARES_SUCCESS;
 
@@ -510,13 +510,13 @@ ares_status_t ares__channel_threading_init(ares_channel_t *channel)
     return ARES_SUCCESS;
   }
 
-  channel->lock = ares__thread_mutex_create();
+  channel->lock = ares_thread_mutex_create();
   if (channel->lock == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
 
-  channel->cond_empty = ares__thread_cond_create();
+  channel->cond_empty = ares_thread_cond_create();
   if (channel->cond_empty == NULL) {
     status = ARES_ENOMEM;
     goto done;
@@ -524,27 +524,27 @@ ares_status_t ares__channel_threading_init(ares_channel_t *channel)
 
 done:
   if (status != ARES_SUCCESS) {
-    ares__channel_threading_destroy(channel);
+    ares_channel_threading_destroy(channel);
   }
   return status;
 }
 
-void ares__channel_threading_destroy(ares_channel_t *channel)
+void ares_channel_threading_destroy(ares_channel_t *channel)
 {
-  ares__thread_mutex_destroy(channel->lock);
+  ares_thread_mutex_destroy(channel->lock);
   channel->lock = NULL;
-  ares__thread_cond_destroy(channel->cond_empty);
+  ares_thread_cond_destroy(channel->cond_empty);
   channel->cond_empty = NULL;
 }
 
-void ares__channel_lock(const ares_channel_t *channel)
+void ares_channel_lock(const ares_channel_t *channel)
 {
-  ares__thread_mutex_lock(channel->lock);
+  ares_thread_mutex_lock(channel->lock);
 }
 
-void ares__channel_unlock(const ares_channel_t *channel)
+void ares_channel_unlock(const ares_channel_t *channel)
 {
-  ares__thread_mutex_unlock(channel->lock);
+  ares_thread_mutex_unlock(channel->lock);
 }
 
 /* Must not be holding a channel lock already, public function only */
@@ -562,29 +562,29 @@ ares_status_t ares_queue_wait_empty(ares_channel_t *channel, int timeout_ms)
   }
 
   if (timeout_ms >= 0) {
-    ares__tvnow(&tout);
+    ares_tvnow(&tout);
     tout.sec  += (ares_int64_t)(timeout_ms / 1000);
     tout.usec += (unsigned int)(timeout_ms % 1000) * 1000;
   }
 
-  ares__thread_mutex_lock(channel->lock);
-  while (ares__llist_len(channel->all_queries)) {
+  ares_thread_mutex_lock(channel->lock);
+  while (ares_llist_len(channel->all_queries)) {
     if (timeout_ms < 0) {
-      ares__thread_cond_wait(channel->cond_empty, channel->lock);
+      ares_thread_cond_wait(channel->cond_empty, channel->lock);
     } else {
       ares_timeval_t tv_remaining;
       ares_timeval_t tv_now;
       unsigned long  tms;
 
-      ares__tvnow(&tv_now);
-      ares__timeval_remaining(&tv_remaining, &tv_now, &tout);
+      ares_tvnow(&tv_now);
+      ares_timeval_remaining(&tv_remaining, &tv_now, &tout);
       tms =
         (unsigned long)((tv_remaining.sec * 1000) + (tv_remaining.usec / 1000));
       if (tms == 0) {
         status = ARES_ETIMEOUT;
       } else {
         status =
-          ares__thread_cond_timedwait(channel->cond_empty, channel->lock, tms);
+          ares_thread_cond_timedwait(channel->cond_empty, channel->lock, tms);
       }
 
       /* If there was a timeout, don't loop.  Otherwise, make sure this wasn't
@@ -594,7 +594,7 @@ ares_status_t ares_queue_wait_empty(ares_channel_t *channel, int timeout_ms)
       }
     }
   }
-  ares__thread_mutex_unlock(channel->lock);
+  ares_thread_mutex_unlock(channel->lock);
   return status;
 }
 
@@ -605,10 +605,10 @@ void ares_queue_notify_empty(ares_channel_t *channel)
   }
 
   /* We are guaranteed to be holding a channel lock already */
-  if (ares__llist_len(channel->all_queries)) {
+  if (ares_llist_len(channel->all_queries)) {
     return;
   }
 
   /* Notify all waiters of the conditional */
-  ares__thread_cond_broadcast(channel->cond_empty);
+  ares_thread_cond_broadcast(channel->cond_empty);
 }

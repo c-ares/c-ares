@@ -24,39 +24,39 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ares_private.h"
-#include "ares__slist.h"
+#include "ares_slist.h"
 
 /* SkipList implementation */
 
 #define ARES__SLIST_START_LEVELS 4
 
-struct ares__slist {
-  ares_rand_state         *rand_state;
-  unsigned char            rand_data[8];
-  size_t                   rand_bits;
+struct ares_slist {
+  ares_rand_state        *rand_state;
+  unsigned char           rand_data[8];
+  size_t                  rand_bits;
 
-  ares__slist_node_t     **head;
-  size_t                   levels;
-  ares__slist_node_t      *tail;
+  ares_slist_node_t     **head;
+  size_t                  levels;
+  ares_slist_node_t      *tail;
 
-  ares__slist_cmp_t        cmp;
-  ares__slist_destructor_t destruct;
-  size_t                   cnt;
+  ares_slist_cmp_t        cmp;
+  ares_slist_destructor_t destruct;
+  size_t                  cnt;
 };
 
-struct ares__slist_node {
-  void                *data;
-  ares__slist_node_t **prev;
-  ares__slist_node_t **next;
-  size_t               levels;
-  ares__slist_t       *parent;
+struct ares_slist_node {
+  void               *data;
+  ares_slist_node_t **prev;
+  ares_slist_node_t **next;
+  size_t              levels;
+  ares_slist_t       *parent;
 };
 
-ares__slist_t *ares__slist_create(ares_rand_state         *rand_state,
-                                  ares__slist_cmp_t        cmp,
-                                  ares__slist_destructor_t destruct)
+ares_slist_t *ares_slist_create(ares_rand_state        *rand_state,
+                                ares_slist_cmp_t        cmp,
+                                ares_slist_destructor_t destruct)
 {
-  ares__slist_t *list;
+  ares_slist_t *list;
 
   if (rand_state == NULL || cmp == NULL) {
     return NULL;
@@ -82,18 +82,17 @@ ares__slist_t *ares__slist_create(ares_rand_state         *rand_state,
   return list;
 }
 
-static ares_bool_t ares__slist_coin_flip(ares__slist_t *list)
+static ares_bool_t ares_slist_coin_flip(ares_slist_t *list)
 {
   size_t total_bits = sizeof(list->rand_data) * 8;
   size_t bit;
 
   /* Refill random data used for coin flips.  We pull this in 8 byte chunks.
-   * ares__rand_bytes() has some built-in caching of its own so we don't need
+   * ares_rand_bytes() has some built-in caching of its own so we don't need
    * to be excessive in caching ourselves.  Prefer to require less memory per
    * skiplist */
   if (list->rand_bits == 0) {
-    ares__rand_bytes(list->rand_state, list->rand_data,
-                     sizeof(list->rand_data));
+    ares_rand_bytes(list->rand_state, list->rand_data, sizeof(list->rand_data));
     list->rand_bits = total_bits;
   }
 
@@ -103,8 +102,8 @@ static ares_bool_t ares__slist_coin_flip(ares__slist_t *list)
   return (list->rand_data[bit / 8] & (1 << (bit % 8))) ? ARES_TRUE : ARES_FALSE;
 }
 
-void ares__slist_replace_destructor(ares__slist_t           *list,
-                                    ares__slist_destructor_t destruct)
+void ares_slist_replace_destructor(ares_slist_t           *list,
+                                   ares_slist_destructor_t destruct)
 {
   if (list == NULL) {
     return;
@@ -113,14 +112,14 @@ void ares__slist_replace_destructor(ares__slist_t           *list,
   list->destruct = destruct;
 }
 
-static size_t ares__slist_max_level(const ares__slist_t *list)
+static size_t ares_slist_max_level(const ares_slist_t *list)
 {
   size_t max_level = 0;
 
   if (list->cnt + 1 <= (1 << ARES__SLIST_START_LEVELS)) {
     max_level = ARES__SLIST_START_LEVELS;
   } else {
-    max_level = ares__log2(ares__round_up_pow2(list->cnt + 1));
+    max_level = ares_log2(ares_round_up_pow2(list->cnt + 1));
   }
 
   if (list->levels > max_level) {
@@ -130,21 +129,21 @@ static size_t ares__slist_max_level(const ares__slist_t *list)
   return max_level;
 }
 
-static size_t ares__slist_calc_level(ares__slist_t *list)
+static size_t ares_slist_calc_level(ares_slist_t *list)
 {
-  size_t max_level = ares__slist_max_level(list);
+  size_t max_level = ares_slist_max_level(list);
   size_t level;
 
-  for (level = 1; ares__slist_coin_flip(list) && level < max_level; level++)
+  for (level = 1; ares_slist_coin_flip(list) && level < max_level; level++)
     ;
 
   return level;
 }
 
-static void ares__slist_node_push(ares__slist_t *list, ares__slist_node_t *node)
+static void ares_slist_node_push(ares_slist_t *list, ares_slist_node_t *node)
 {
-  size_t              i;
-  ares__slist_node_t *left = NULL;
+  size_t             i;
+  ares_slist_node_t *left = NULL;
 
   /* Scan from highest level in the slist, even if we're not using that number
    * of levels for this entry as this is what makes it O(log n) */
@@ -193,9 +192,9 @@ static void ares__slist_node_push(ares__slist_t *list, ares__slist_node_t *node)
   }
 }
 
-ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
+ares_slist_node_t *ares_slist_insert(ares_slist_t *list, void *val)
 {
-  ares__slist_node_t *node = NULL;
+  ares_slist_node_t *node = NULL;
 
   if (list == NULL || val == NULL) {
     return NULL;
@@ -211,7 +210,7 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
   node->parent = list;
 
   /* Randomly determine the number of levels we want to use */
-  node->levels = ares__slist_calc_level(list);
+  node->levels = ares_slist_calc_level(list);
 
   /* Allocate array of next and prev nodes for linking each level */
   node->next = ares_malloc_zero(sizeof(*node->next) * node->levels);
@@ -238,7 +237,7 @@ ares__slist_node_t *ares__slist_insert(ares__slist_t *list, void *val)
     list->levels = node->levels;
   }
 
-  ares__slist_node_push(list, node);
+  ares_slist_node_push(list, node);
 
   list->cnt++;
 
@@ -255,10 +254,10 @@ fail:
   /* LCOV_EXCL_STOP */
 }
 
-static void ares__slist_node_pop(ares__slist_node_t *node)
+static void ares_slist_node_pop(ares_slist_node_t *node)
 {
-  ares__slist_t *list = node->parent;
-  size_t         i;
+  ares_slist_t *list = node->parent;
+  size_t        i;
 
   /* relink each node at each level */
   for (i = node->levels; i-- > 0;) {
@@ -281,10 +280,10 @@ static void ares__slist_node_pop(ares__slist_node_t *node)
   memset(node->prev, 0, sizeof(*node->prev) * node->levels);
 }
 
-void *ares__slist_node_claim(ares__slist_node_t *node)
+void *ares_slist_node_claim(ares_slist_node_t *node)
 {
-  ares__slist_t *list;
-  void          *val;
+  ares_slist_t *list;
+  void         *val;
 
   if (node == NULL) {
     return NULL;
@@ -293,7 +292,7 @@ void *ares__slist_node_claim(ares__slist_node_t *node)
   list = node->parent;
   val  = node->data;
 
-  ares__slist_node_pop(node);
+  ares_slist_node_pop(node);
 
   ares_free(node->next);
   ares_free(node->prev);
@@ -304,9 +303,9 @@ void *ares__slist_node_claim(ares__slist_node_t *node)
   return val;
 }
 
-void ares__slist_node_reinsert(ares__slist_node_t *node)
+void ares_slist_node_reinsert(ares_slist_node_t *node)
 {
-  ares__slist_t *list;
+  ares_slist_t *list;
 
   if (node == NULL) {
     return;
@@ -314,15 +313,15 @@ void ares__slist_node_reinsert(ares__slist_node_t *node)
 
   list = node->parent;
 
-  ares__slist_node_pop(node);
-  ares__slist_node_push(list, node);
+  ares_slist_node_pop(node);
+  ares_slist_node_push(list, node);
 }
 
-ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val)
+ares_slist_node_t *ares_slist_node_find(ares_slist_t *list, const void *val)
 {
-  size_t              i;
-  ares__slist_node_t *node = NULL;
-  int                 rv   = -1;
+  size_t             i;
+  ares_slist_node_t *node = NULL;
+  int                rv   = -1;
 
   if (list == NULL || val == NULL) {
     return NULL;
@@ -377,7 +376,7 @@ ares__slist_node_t *ares__slist_node_find(ares__slist_t *list, const void *val)
   return node;
 }
 
-ares__slist_node_t *ares__slist_node_first(ares__slist_t *list)
+ares_slist_node_t *ares_slist_node_first(ares_slist_t *list)
 {
   if (list == NULL) {
     return NULL;
@@ -386,7 +385,7 @@ ares__slist_node_t *ares__slist_node_first(ares__slist_t *list)
   return list->head[0];
 }
 
-ares__slist_node_t *ares__slist_node_last(ares__slist_t *list)
+ares_slist_node_t *ares_slist_node_last(ares_slist_t *list)
 {
   if (list == NULL) {
     return NULL;
@@ -394,7 +393,7 @@ ares__slist_node_t *ares__slist_node_last(ares__slist_t *list)
   return list->tail;
 }
 
-ares__slist_node_t *ares__slist_node_next(ares__slist_node_t *node)
+ares_slist_node_t *ares_slist_node_next(ares_slist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -402,7 +401,7 @@ ares__slist_node_t *ares__slist_node_next(ares__slist_node_t *node)
   return node->next[0];
 }
 
-ares__slist_node_t *ares__slist_node_prev(ares__slist_node_t *node)
+ares_slist_node_t *ares_slist_node_prev(ares_slist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -410,7 +409,7 @@ ares__slist_node_t *ares__slist_node_prev(ares__slist_node_t *node)
   return node->prev[0];
 }
 
-void *ares__slist_node_val(ares__slist_node_t *node)
+void *ares_slist_node_val(ares_slist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -419,7 +418,7 @@ void *ares__slist_node_val(ares__slist_node_t *node)
   return node->data;
 }
 
-size_t ares__slist_len(const ares__slist_t *list)
+size_t ares_slist_len(const ares_slist_t *list)
 {
   if (list == NULL) {
     return 0;
@@ -427,7 +426,7 @@ size_t ares__slist_len(const ares__slist_t *list)
   return list->cnt;
 }
 
-ares__slist_t *ares__slist_node_parent(ares__slist_node_t *node)
+ares_slist_t *ares_slist_node_parent(ares_slist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -435,43 +434,43 @@ ares__slist_t *ares__slist_node_parent(ares__slist_node_t *node)
   return node->parent;
 }
 
-void *ares__slist_first_val(ares__slist_t *list)
+void *ares_slist_first_val(ares_slist_t *list)
 {
-  return ares__slist_node_val(ares__slist_node_first(list));
+  return ares_slist_node_val(ares_slist_node_first(list));
 }
 
-void *ares__slist_last_val(ares__slist_t *list)
+void *ares_slist_last_val(ares_slist_t *list)
 {
-  return ares__slist_node_val(ares__slist_node_last(list));
+  return ares_slist_node_val(ares_slist_node_last(list));
 }
 
-void ares__slist_node_destroy(ares__slist_node_t *node)
+void ares_slist_node_destroy(ares_slist_node_t *node)
 {
-  ares__slist_destructor_t destruct;
-  void                    *val;
+  ares_slist_destructor_t destruct;
+  void                   *val;
 
   if (node == NULL) {
     return;
   }
 
   destruct = node->parent->destruct;
-  val      = ares__slist_node_claim(node);
+  val      = ares_slist_node_claim(node);
 
   if (val != NULL && destruct != NULL) {
     destruct(val);
   }
 }
 
-void ares__slist_destroy(ares__slist_t *list)
+void ares_slist_destroy(ares_slist_t *list)
 {
-  ares__slist_node_t *node;
+  ares_slist_node_t *node;
 
   if (list == NULL) {
     return;
   }
 
-  while ((node = ares__slist_node_first(list)) != NULL) {
-    ares__slist_node_destroy(node);
+  while ((node = ares_slist_node_first(list)) != NULL) {
+    ares_slist_node_destroy(node);
   }
 
   ares_free(list->head);

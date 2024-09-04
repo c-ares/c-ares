@@ -25,12 +25,12 @@
  */
 #include "ares_private.h"
 
-void ares__strsplit_free(char **elms, size_t num_elm)
+void ares_strsplit_free(char **elms, size_t num_elm)
 {
   ares_free_array(elms, num_elm, ares_free);
 }
 
-char **ares__strsplit_duplicate(char **elms, size_t num_elm)
+char **ares_strsplit_duplicate(char **elms, size_t num_elm)
 {
   size_t i;
   char **out;
@@ -47,23 +47,23 @@ char **ares__strsplit_duplicate(char **elms, size_t num_elm)
   for (i = 0; i < num_elm; i++) {
     out[i] = ares_strdup(elms[i]);
     if (out[i] == NULL) {
-      ares__strsplit_free(out, num_elm); /* LCOV_EXCL_LINE: OutOfMemory */
-      return NULL;                       /* LCOV_EXCL_LINE: OutOfMemory */
+      ares_strsplit_free(out, num_elm); /* LCOV_EXCL_LINE: OutOfMemory */
+      return NULL;                      /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 
   return out;
 }
 
-char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
+char **ares_strsplit(const char *in, const char *delms, size_t *num_elm)
 {
-  ares_status_t       status;
-  ares__buf_t        *buf   = NULL;
-  ares__llist_t      *llist = NULL;
-  ares__llist_node_t *node;
-  char              **out = NULL;
-  size_t              cnt = 0;
-  size_t              idx = 0;
+  ares_status_t      status;
+  ares_buf_t        *buf   = NULL;
+  ares_llist_t      *llist = NULL;
+  ares_llist_node_t *node;
+  char             **out = NULL;
+  size_t             cnt = 0;
+  size_t             idx = 0;
 
   if (in == NULL || delms == NULL || num_elm == NULL) {
     return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -71,19 +71,19 @@ char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
 
   *num_elm = 0;
 
-  buf = ares__buf_create_const((const unsigned char *)in, ares_strlen(in));
+  buf = ares_buf_create_const((const unsigned char *)in, ares_strlen(in));
   if (buf == NULL) {
     return NULL;
   }
 
-  status = ares__buf_split(
+  status = ares_buf_split(
     buf, (const unsigned char *)delms, ares_strlen(delms),
     ARES_BUF_SPLIT_NO_DUPLICATES | ARES_BUF_SPLIT_CASE_INSENSITIVE, 0, &llist);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  cnt = ares__llist_len(llist);
+  cnt = ares_llist_len(llist);
   if (cnt == 0) {
     status = ARES_EFORMERR;
     goto done;
@@ -96,12 +96,12 @@ char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
     goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  for (node = ares__llist_node_first(llist); node != NULL;
-       node = ares__llist_node_next(node)) {
-    ares__buf_t *val  = ares__llist_node_val(node);
-    char        *temp = NULL;
+  for (node = ares_llist_node_first(llist); node != NULL;
+       node = ares_llist_node_next(node)) {
+    ares_buf_t *val  = ares_llist_node_val(node);
+    char       *temp = NULL;
 
-    status = ares__buf_fetch_str_dup(val, ares__buf_len(val), &temp);
+    status = ares_buf_fetch_str_dup(val, ares_buf_len(val), &temp);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -113,10 +113,10 @@ char **ares__strsplit(const char *in, const char *delms, size_t *num_elm)
   status   = ARES_SUCCESS;
 
 done:
-  ares__llist_destroy(llist);
-  ares__buf_destroy(buf);
+  ares_llist_destroy(llist);
+  ares_buf_destroy(buf);
   if (status != ARES_SUCCESS) {
-    ares__strsplit_free(out, cnt);
+    ares_strsplit_free(out, cnt);
     out = NULL;
   }
 

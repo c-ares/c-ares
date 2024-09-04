@@ -362,23 +362,23 @@ static int find_src_addr(ares_channel_t *channel, const struct sockaddr *addr,
   }
 
   err =
-    ares__open_socket(&sock, channel, addr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
+    ares_open_socket(&sock, channel, addr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
   if (err == ARES_CONN_ERR_AFNOSUPPORT) {
     return 0;
   } else if (err != ARES_CONN_ERR_SUCCESS) {
     return -1;
   }
 
-  if (ares__connect_socket(channel, sock, addr, len) != ARES_SUCCESS) {
-    ares__close_socket(channel, sock);
+  if (ares_connect_socket(channel, sock, addr, len) != ARES_SUCCESS) {
+    ares_close_socket(channel, sock);
     return 0;
   }
 
   if (getsockname(sock, src_addr, &len) != 0) {
-    ares__close_socket(channel, sock);
+    ares_close_socket(channel, sock);
     return -1;
   }
-  ares__close_socket(channel, sock);
+  ares_close_socket(channel, sock);
   return 1;
 }
 
@@ -386,8 +386,8 @@ static int find_src_addr(ares_channel_t *channel, const struct sockaddr *addr,
  * Sort the linked list starting at sentinel->ai_next in RFC6724 order.
  * Will leave the list unchanged if an error occurs.
  */
-ares_status_t ares__sortaddrinfo(ares_channel_t            *channel,
-                                 struct ares_addrinfo_node *list_sentinel)
+ares_status_t ares_sortaddrinfo(ares_channel_t            *channel,
+                                struct ares_addrinfo_node *list_sentinel)
 {
   struct ares_addrinfo_node *cur;
   size_t                     nelem = 0;
