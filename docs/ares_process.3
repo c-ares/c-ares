@@ -14,7 +14,7 @@ typedef enum {
   ARES_FD_EVENT_NONE  = 0,      /*!< No events */
   ARES_FD_EVENT_READ  = 1 << 0, /*!< Read event (including disconnect/error) */
   ARES_FD_EVENT_WRITE = 1 << 1  /*!< Write event */
-} ares_fd_event_t;
+} ares_fd_eventflag_t;
 
 /*! Type holding a file descriptor and mask of events, used by
  *  ares_process_fds() */
@@ -54,7 +54,7 @@ The \fBares_process_fds(3)\fP function handles input/output events on file
 descriptors and timeouts associated with queries pending on the channel
 identified by \fIchannel\fP.  The file descriptors to be processed are passed
 in an array of \fIares_fd_events_t\fP data structures in the \fIfd\fP member,
-and events are a bitwise mask of \fIares_event_fd_t\fP in the \fIevent\fP
+and events are a bitwise mask of \fIares_fd_eventflag_t\fP in the \fIevent\fP
 member.  This function can also be used to process timeouts by passing NULL
 to the \fIevents\fP member with \fInevents\fP value of 0.  Flags may also be
 specified in the \fIflags\fP field and are defined in \fBares_process_flag_t\fP.

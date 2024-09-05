@@ -671,13 +671,13 @@ typedef enum {
   ARES_FD_EVENT_NONE  = 0,      /*!< No events */
   ARES_FD_EVENT_READ  = 1 << 0, /*!< Read event (including disconnect/error) */
   ARES_FD_EVENT_WRITE = 1 << 1  /*!< Write event */
-} ares_fd_event_t;
+} ares_fd_eventflag_t;
 
 /*! Type holding a file descriptor and mask of events, used by
  *  ares_process_fds() */
 typedef struct {
   ares_socket_t fd;     /*!< File descriptor */
-  unsigned int  events; /*!< Mask of ares_fd_event_t */
+  unsigned int  events; /*!< Mask of ares_fd_eventflag_t */
 } ares_fd_events_t;
 
 /*! Flags used by ares_process_fds() */
@@ -702,8 +702,7 @@ typedef enum {
  */
 CARES_EXTERN void ares_process_fds(ares_channel_t         *channel,
                                    const ares_fd_events_t *events,
-                                   size_t                  nevents,
-                                   unsigned int            flags);
+                                   size_t nevents, unsigned int flags);
 
 CARES_EXTERN void ares_process_fd(ares_channel_t *channel,
                                   ares_socket_t   read_fd,

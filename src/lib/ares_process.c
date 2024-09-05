@@ -47,7 +47,7 @@
 
 static void timeadd(ares_timeval_t *now, size_t millisecs);
 static void process_write(const ares_channel_t *channel,
-                          ares_socket_t write_fd);
+                          ares_socket_t         write_fd);
 static void process_read(const ares_channel_t *channel, ares_socket_t read_fd,
                          const ares_timeval_t *now);
 static void process_timeouts(ares_channel_t       *channel,
@@ -189,8 +189,7 @@ static void timeadd(ares_timeval_t *now, size_t millisecs)
 
 static void ares_process_fds_nolock(ares_channel_t         *channel,
                                     const ares_fd_events_t *events,
-                                    size_t                  nevents,
-                                    unsigned int            flags)
+                                    size_t nevents, unsigned int flags)
 {
   ares_timeval_t now;
   size_t         i;
@@ -202,7 +201,7 @@ static void ares_process_fds_nolock(ares_channel_t         *channel,
   ares_tvnow(&now);
 
   /* Process read events */
-  for (i=0; i<nevents; i++) {
+  for (i = 0; i < nevents; i++) {
     if (events[i].fd == ARES_SOCKET_BAD ||
         !(events[i].events & ARES_FD_EVENT_READ)) {
       continue;
@@ -211,7 +210,7 @@ static void ares_process_fds_nolock(ares_channel_t         *channel,
   }
 
   /* Process write events */
-  for (i=0; i<nevents; i++) {
+  for (i = 0; i < nevents; i++) {
     if (events[i].fd == ARES_SOCKET_BAD ||
         !(events[i].events & ARES_FD_EVENT_WRITE)) {
       continue;
@@ -225,10 +224,8 @@ static void ares_process_fds_nolock(ares_channel_t         *channel,
   }
 }
 
-void ares_process_fds(ares_channel_t         *channel,
-                      const ares_fd_events_t *events,
-                      size_t                  nevents,
-                      unsigned int            flags)
+void ares_process_fds(ares_channel_t *channel, const ares_fd_events_t *events,
+                      size_t nevents, unsigned int flags)
 {
   if (channel == NULL) {
     return;
@@ -239,9 +236,8 @@ void ares_process_fds(ares_channel_t         *channel,
   ares_channel_unlock(channel);
 }
 
-void ares_process_fd(ares_channel_t *channel,
-                     ares_socket_t   read_fd,
-                     ares_socket_t   write_fd)
+void ares_process_fd(ares_channel_t *channel, ares_socket_t read_fd,
+                     ares_socket_t write_fd)
 {
   ares_fd_events_t events[2];
   size_t           nevents = 0;
@@ -250,16 +246,16 @@ void ares_process_fd(ares_channel_t *channel,
 
   if (read_fd != ARES_SOCKET_BAD) {
     nevents++;
-    events[nevents-1].fd      = read_fd;
-    events[nevents-1].events |= ARES_FD_EVENT_READ;
+    events[nevents - 1].fd      = read_fd;
+    events[nevents - 1].events |= ARES_FD_EVENT_READ;
   }
 
   if (write_fd != ARES_SOCKET_BAD) {
     if (write_fd != read_fd) {
       nevents++;
     }
-    events[nevents-1].fd      = read_fd;
-    events[nevents-1].events |= ARES_FD_EVENT_WRITE;
+    events[nevents - 1].fd      = read_fd;
+    events[nevents - 1].events |= ARES_FD_EVENT_WRITE;
   }
 
   ares_process_fds(channel, events, nevents, ARES_PROCESS_FLAG_NONE);
@@ -339,16 +335,16 @@ void ares_process(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
     ares_bool_t had_read = ARES_FALSE;
     if (read_fds && FD_ISSET(socketlist[i], read_fds)) {
       nevents++;
-      events[nevents-1].fd      = socketlist[i];
-      events[nevents-1].events |= ARES_FD_EVENT_READ;
-      had_read                  = ARES_TRUE;
+      events[nevents - 1].fd      = socketlist[i];
+      events[nevents - 1].events |= ARES_FD_EVENT_READ;
+      had_read                    = ARES_TRUE;
     }
     if (write_fds && FD_ISSET(socketlist[i], write_fds)) {
       if (!had_read) {
         nevents++;
       }
-      events[nevents-1].fd      = socketlist[i];
-      events[nevents-1].events |= ARES_FD_EVENT_WRITE;
+      events[nevents - 1].fd      = socketlist[i];
+      events[nevents - 1].events |= ARES_FD_EVENT_WRITE;
     }
   }
 
@@ -545,7 +541,6 @@ static void read_answers(ares_conn_t *conn, const ares_timeval_t *now)
   }
 }
 
-
 static void process_read(const ares_channel_t *channel, ares_socket_t read_fd,
                          const ares_timeval_t *now)
 {
@@ -570,7 +565,6 @@ static void process_read(const ares_channel_t *channel, ares_socket_t read_fd,
 
   read_answers(conn, now);
 }
-
 
 /* If any queries have timed out, note the timeout and move them on. */
 static void process_timeouts(ares_channel_t *channel, const ares_timeval_t *now)
