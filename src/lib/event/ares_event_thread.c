@@ -189,11 +189,18 @@ static void ares_event_thread_process_fd(ares_event_thread_t *e,
                                          ares_socket_t fd, void *data,
                                          ares_event_flags_t flags)
 {
+  ares_fd_events_t event;
   (void)data;
 
-  ares_process_fd(e->channel,
-                  (flags & ARES_EVENT_FLAG_READ) ? fd : ARES_SOCKET_BAD,
-                  (flags & ARES_EVENT_FLAG_WRITE) ? fd : ARES_SOCKET_BAD);
+  event.fd     = fd;
+  event.events = 0;
+  if (flags & ARES_EVENT_FLAG_READ) {
+    event.events |= ARES_FD_EVENT_READ;
+  }
+  if (flags & ARES_EVENT_FLAG_WRITE) {
+    event.events |= ARES_FD_EVENT_WRITE;
+  }
+  ares_process_fds(e->channel, &event, 1, ARES_PROCESS_FLAG_SKIP_NON_FD);
 }
 
 static void ares_event_thread_sockstate_cb(void *data, ares_socket_t socket_fd,
@@ -347,9 +354,10 @@ static void *ares_event_thread(void *arg)
       ares_process_pending_write(e->channel);
     }
 
-    /* Each iteration should do timeout processing */
+    /* Each iteration should do timeout processing and any other cleanup
+     * that may not have been performed */
     if (e->isup) {
-      ares_process_fd(e->channel, ARES_SOCKET_BAD, ARES_SOCKET_BAD);
+      ares_process_fds(e->channel, NULL, 0, ARES_PROCESS_FLAG_NONE);
     }
 
     /* Relock before we loop again */

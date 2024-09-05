@@ -115,6 +115,7 @@ MANPAGES = ares_cancel.3		\
   ares_parse_uri_reply.3		\
   ares_process.3			\
   ares_process_fd.3			\
+  ares_process_fds.3			\
   ares_process_pending_write.3		\
   ares_query.3				\
   ares_query_dnsrec.3			\

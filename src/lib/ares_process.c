@@ -46,10 +46,10 @@
 
 
 static void timeadd(ares_timeval_t *now, size_t millisecs);
-static void process_write(const ares_channel_t *channel, fd_set *write_fds,
-                          ares_socket_t write_fd);
-static void process_read(const ares_channel_t *channel, fd_set *read_fds,
-                         ares_socket_t read_fd, const ares_timeval_t *now);
+static void process_write(const ares_channel_t *channel,
+                          ares_socket_t         write_fd);
+static void process_read(const ares_channel_t *channel, ares_socket_t read_fd,
+                         const ares_timeval_t *now);
 static void process_timeouts(ares_channel_t       *channel,
                              const ares_timeval_t *now);
 static ares_status_t process_answer(ares_channel_t      *channel,
@@ -187,47 +187,78 @@ static void timeadd(ares_timeval_t *now, size_t millisecs)
   }
 }
 
-/*
- * generic process function
- */
-static void processfds(ares_channel_t *channel, fd_set *read_fds,
-                       ares_socket_t read_fd, fd_set *write_fds,
-                       ares_socket_t write_fd)
+static void ares_process_fds_nolock(ares_channel_t         *channel,
+                                    const ares_fd_events_t *events,
+                                    size_t nevents, unsigned int flags)
 {
   ares_timeval_t now;
+  size_t         i;
 
-  if (channel == NULL) {
+  if (channel == NULL || (events == NULL && nevents != 0)) {
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  ares_channel_lock(channel);
   ares_tvnow(&now);
-  process_read(channel, read_fds, read_fd, &now);
-  process_timeouts(channel, &now);
-  process_write(channel, write_fds, write_fd);
 
-  /* See if any connections should be cleaned up */
-  ares_check_cleanup_conns(channel);
+  /* Process read events */
+  for (i = 0; i < nevents; i++) {
+    if (events[i].fd == ARES_SOCKET_BAD ||
+        !(events[i].events & ARES_FD_EVENT_READ)) {
+      continue;
+    }
+    process_read(channel, events[i].fd, &now);
+  }
+
+  /* Process write events */
+  for (i = 0; i < nevents; i++) {
+    if (events[i].fd == ARES_SOCKET_BAD ||
+        !(events[i].events & ARES_FD_EVENT_WRITE)) {
+      continue;
+    }
+    process_write(channel, events[i].fd);
+  }
+
+  if (!(flags & ARES_PROCESS_FLAG_SKIP_NON_FD)) {
+    ares_check_cleanup_conns(channel);
+    process_timeouts(channel, &now);
+  }
+}
+
+void ares_process_fds(ares_channel_t *channel, const ares_fd_events_t *events,
+                      size_t nevents, unsigned int flags)
+{
+  if (channel == NULL) {
+    return;
+  }
+
+  ares_channel_lock(channel);
+  ares_process_fds_nolock(channel, events, nevents, flags);
   ares_channel_unlock(channel);
 }
 
-/* Something interesting happened on the wire, or there was a timeout.
- * See what's up and respond accordingly.
- */
-void ares_process(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
+void ares_process_fd(ares_channel_t *channel, ares_socket_t read_fd,
+                     ares_socket_t write_fd)
 {
-  processfds(channel, read_fds, ARES_SOCKET_BAD, write_fds, ARES_SOCKET_BAD);
-}
+  ares_fd_events_t events[2];
+  size_t           nevents = 0;
 
-/* Something interesting happened on the wire, or there was a timeout.
- * See what's up and respond accordingly.
- */
-void ares_process_fd(ares_channel_t *channel,
-                     ares_socket_t   read_fd, /* use ARES_SOCKET_BAD or valid
-                                                 file descriptors */
-                     ares_socket_t   write_fd)
-{
-  processfds(channel, NULL, read_fd, NULL, write_fd);
+  memset(events, 0, sizeof(events));
+
+  if (read_fd != ARES_SOCKET_BAD) {
+    nevents++;
+    events[nevents - 1].fd      = read_fd;
+    events[nevents - 1].events |= ARES_FD_EVENT_READ;
+  }
+
+  if (write_fd != ARES_SOCKET_BAD) {
+    if (write_fd != read_fd) {
+      nevents++;
+    }
+    events[nevents - 1].fd      = read_fd;
+    events[nevents - 1].events |= ARES_FD_EVENT_WRITE;
+  }
+
+  ares_process_fds(channel, events, nevents, ARES_PROCESS_FLAG_NONE);
 }
 
 static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
@@ -269,12 +300,73 @@ static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
   return ares_array_finish(arr, num);
 }
 
-/* If any TCP sockets select true for writing, write out queued data
- * we have for them.
+/* Something interesting happened on the wire, or there was a timeout.
+ * See what's up and respond accordingly.
  */
-static void ares_notify_write(ares_conn_t *conn)
+void ares_process(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
 {
-  ares_status_t status;
+  size_t            i;
+  size_t            num_sockets;
+  ares_socket_t    *socketlist;
+  ares_fd_events_t *events  = NULL;
+  size_t            nevents = 0;
+
+  if (channel == NULL) {
+    return;
+  }
+
+  ares_channel_lock(channel);
+
+  /* There is no good way to iterate across an fd_set, instead we must pull a
+   * list of all known fds, and iterate across that checking against the fd_set.
+   */
+  socketlist = channel_socket_list(channel, &num_sockets);
+
+  /* Lets create an events array, maximum number is the number of sockets in
+   * the list, so we'll use that and just track entries with nevents */
+  if (num_sockets) {
+    events = ares_malloc_zero(sizeof(*events) * num_sockets);
+    if (events == NULL) {
+      goto done;
+    }
+  }
+
+  for (i = 0; i < num_sockets; i++) {
+    ares_bool_t had_read = ARES_FALSE;
+    if (read_fds && FD_ISSET(socketlist[i], read_fds)) {
+      nevents++;
+      events[nevents - 1].fd      = socketlist[i];
+      events[nevents - 1].events |= ARES_FD_EVENT_READ;
+      had_read                    = ARES_TRUE;
+    }
+    if (write_fds && FD_ISSET(socketlist[i], write_fds)) {
+      if (!had_read) {
+        nevents++;
+      }
+      events[nevents - 1].fd      = socketlist[i];
+      events[nevents - 1].events |= ARES_FD_EVENT_WRITE;
+    }
+  }
+
+done:
+  ares_process_fds_nolock(channel, events, nevents, ARES_PROCESS_FLAG_NONE);
+  ares_free(events);
+  ares_free(socketlist);
+  ares_channel_unlock(channel);
+}
+
+static void process_write(const ares_channel_t *channel, ares_socket_t write_fd)
+{
+  ares_llist_node_t *node;
+  ares_conn_t       *conn;
+  ares_status_t      status;
+
+  node = ares_htable_asvp_get_direct(channel->connnode_by_socket, write_fd);
+  if (node == NULL) {
+    return;
+  }
+
+  conn = ares_llist_node_val(node);
 
   /* Mark as connected if we got here and TFO Initial not set */
   if (!(conn->flags & ARES_CONN_FLAG_TFO_INITIAL)) {
@@ -285,59 +377,6 @@ static void ares_notify_write(ares_conn_t *conn)
   if (status != ARES_SUCCESS) {
     handle_conn_error(conn, ARES_TRUE, status);
   }
-}
-
-static void process_write(const ares_channel_t *channel, fd_set *write_fds,
-                          ares_socket_t write_fd)
-{
-  size_t             i;
-  ares_socket_t     *socketlist  = NULL;
-  size_t             num_sockets = 0;
-  ares_llist_node_t *node        = NULL;
-
-  if (!write_fds && write_fd == ARES_SOCKET_BAD) {
-    /* no possible action */
-    return;
-  }
-
-  /* Single socket specified */
-  if (!write_fds) {
-    node = ares_htable_asvp_get_direct(channel->connnode_by_socket, write_fd);
-    if (node == NULL) {
-      return;
-    }
-
-    ares_notify_write(ares_llist_node_val(node));
-    return;
-  }
-
-  /* There is no good way to iterate across an fd_set, instead we must pull a
-   * list of all known fds, and iterate across that checking against the fd_set.
-   */
-  socketlist = channel_socket_list(channel, &num_sockets);
-
-  for (i = 0; i < num_sockets; i++) {
-    if (!FD_ISSET(socketlist[i], write_fds)) {
-      continue;
-    }
-
-    /* If there's an error and we close this socket, then open
-     * another with the same fd to talk to another server, then we
-     * don't want to think that it was the new socket that was
-     * ready. This is not disastrous, but is likely to result in
-     * extra system calls and confusion. */
-    FD_CLR(socketlist[i], write_fds);
-
-    node =
-      ares_htable_asvp_get_direct(channel->connnode_by_socket, socketlist[i]);
-    if (node == NULL) {
-      return;
-    }
-
-    ares_notify_write(ares_llist_node_val(node));
-  }
-
-  ares_free(socketlist);
 }
 
 void ares_process_pending_write(ares_channel_t *channel)
@@ -502,8 +541,19 @@ static void read_answers(ares_conn_t *conn, const ares_timeval_t *now)
   }
 }
 
-static void read_conn(ares_conn_t *conn, const ares_timeval_t *now)
+static void process_read(const ares_channel_t *channel, ares_socket_t read_fd,
+                         const ares_timeval_t *now)
 {
+  ares_llist_node_t *node;
+  ares_conn_t       *conn;
+
+  node = ares_htable_asvp_get_direct(channel->connnode_by_socket, read_fd);
+  if (node == NULL) {
+    return;
+  }
+
+  conn = ares_llist_node_val(node);
+
   /* TODO: There might be a potential issue here where there was a read that
    *       read some data, then looped and read again and got a disconnect.
    *       Right now, that would cause a resend instead of processing the data
@@ -512,61 +562,8 @@ static void read_conn(ares_conn_t *conn, const ares_timeval_t *now)
   if (read_conn_packets(conn) != ARES_SUCCESS) {
     return;
   }
+
   read_answers(conn, now);
-}
-
-static void process_read(const ares_channel_t *channel, fd_set *read_fds,
-                         ares_socket_t read_fd, const ares_timeval_t *now)
-{
-  size_t             i;
-  ares_socket_t     *socketlist  = NULL;
-  size_t             num_sockets = 0;
-  ares_llist_node_t *node        = NULL;
-
-  if (!read_fds && (read_fd == ARES_SOCKET_BAD)) {
-    /* no possible action */
-    return;
-  }
-
-  /* Single socket specified */
-  if (!read_fds) {
-    node = ares_htable_asvp_get_direct(channel->connnode_by_socket, read_fd);
-    if (node == NULL) {
-      return;
-    }
-
-    read_conn(ares_llist_node_val(node), now);
-
-    return;
-  }
-
-  /* There is no good way to iterate across an fd_set, instead we must pull a
-   * list of all known fds, and iterate across that checking against the fd_set.
-   */
-  socketlist = channel_socket_list(channel, &num_sockets);
-
-  for (i = 0; i < num_sockets; i++) {
-    if (!FD_ISSET(socketlist[i], read_fds)) {
-      continue;
-    }
-
-    /* If there's an error and we close this socket, then open
-     * another with the same fd to talk to another server, then we
-     * don't want to think that it was the new socket that was
-     * ready. This is not disastrous, but is likely to result in
-     * extra system calls and confusion. */
-    FD_CLR(socketlist[i], read_fds);
-
-    node =
-      ares_htable_asvp_get_direct(channel->connnode_by_socket, socketlist[i]);
-    if (node == NULL) {
-      return;
-    }
-
-    read_conn(ares_llist_node_val(node), now);
-  }
-
-  ares_free(socketlist);
 }
 
 /* If any queries have timed out, note the timeout and move them on. */

@@ -663,8 +663,46 @@ CARES_EXTERN struct timeval *ares_timeout(const ares_channel_t *channel,
                                           struct timeval       *maxtv,
                                           struct timeval       *tv);
 
-CARES_EXTERN CARES_DEPRECATED_FOR(ares_process_fd) void ares_process(
+CARES_EXTERN CARES_DEPRECATED_FOR(ares_process_fds) void ares_process(
   ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds);
+
+/*! Events used by ares_fd_events_t */
+typedef enum {
+  ARES_FD_EVENT_NONE  = 0,      /*!< No events */
+  ARES_FD_EVENT_READ  = 1 << 0, /*!< Read event (including disconnect/error) */
+  ARES_FD_EVENT_WRITE = 1 << 1  /*!< Write event */
+} ares_fd_eventflag_t;
+
+/*! Type holding a file descriptor and mask of events, used by
+ *  ares_process_fds() */
+typedef struct {
+  ares_socket_t fd;     /*!< File descriptor */
+  unsigned int  events; /*!< Mask of ares_fd_eventflag_t */
+} ares_fd_events_t;
+
+/*! Flags used by ares_process_fds() */
+typedef enum {
+  ARES_PROCESS_FLAG_NONE        = 0,     /*!< No flag value */
+  ARES_PROCESS_FLAG_SKIP_NON_FD = 1 << 0 /*!< skip any processing unrelated to
+                                          *   the file descriptor events passed
+                                          *    in */
+} ares_process_flag_t;
+
+/*! Process events on multiple file descriptors based on the event mask
+ *  associated with each file descriptor.  Recommended over calling
+ *  ares_process_fd() multiple times since it would trigger additional logic
+ *  such as timeout processing on each call.
+ *
+ *  \param[in] channel  Initialized ares channel
+ *  \param[in] events   Array of file descriptors with events.  May be NULL if
+ *                      no events, but may have timeouts to process.
+ *  \param[in] nevents  Number of elements in the events array.  May be 0 if
+ *                      no events, but may have timeouts to process.
+ *  \param[in] flags    Flags to alter behavior of the process command.
+ */
+CARES_EXTERN void ares_process_fds(ares_channel_t         *channel,
+                                   const ares_fd_events_t *events,
+                                   size_t nevents, unsigned int flags);
 
 CARES_EXTERN void ares_process_fd(ares_channel_t *channel,
                                   ares_socket_t   read_fd,
