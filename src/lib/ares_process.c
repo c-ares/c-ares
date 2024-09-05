@@ -189,7 +189,8 @@ static void timeadd(ares_timeval_t *now, size_t millisecs)
 
 static void ares_process_fds_nolock(ares_channel_t         *channel,
                                     const ares_fd_events_t *events,
-                                    size_t                  nevents)
+                                    size_t                  nevents,
+                                    unsigned int            flags)
 {
   ares_timeval_t now;
   size_t         i;
@@ -198,7 +199,6 @@ static void ares_process_fds_nolock(ares_channel_t         *channel,
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  ares_channel_lock(channel);
   ares_tvnow(&now);
 
   /* Process read events */
@@ -210,8 +210,6 @@ static void ares_process_fds_nolock(ares_channel_t         *channel,
     process_read(channel, events[i].fd, &now);
   }
 
-  process_timeouts(channel, &now);
-
   /* Process write events */
   for (i=0; i<nevents; i++) {
     if (events[i].fd == ARES_SOCKET_BAD ||
@@ -221,21 +219,23 @@ static void ares_process_fds_nolock(ares_channel_t         *channel,
     process_write(channel, events[i].fd);
   }
 
-  /* See if any connections should be cleaned up */
-  ares_check_cleanup_conns(channel);
-  ares_channel_unlock(channel);
+  if (!(flags & ARES_PROCESS_FLAG_SKIP_NON_FD)) {
+    ares_check_cleanup_conns(channel);
+    process_timeouts(channel, &now);
+  }
 }
 
 void ares_process_fds(ares_channel_t         *channel,
                       const ares_fd_events_t *events,
-                      size_t                  nevents)
+                      size_t                  nevents,
+                      unsigned int            flags)
 {
   if (channel == NULL) {
     return;
   }
 
   ares_channel_lock(channel);
-  ares_process_fds_nolock(channel, events, nevents);
+  ares_process_fds_nolock(channel, events, nevents, flags);
   ares_channel_unlock(channel);
 }
 
@@ -262,7 +262,7 @@ void ares_process_fd(ares_channel_t *channel,
     events[nevents-1].events |= ARES_FD_EVENT_WRITE;
   }
 
-  ares_process_fds(channel, events, nevents);
+  ares_process_fds(channel, events, nevents, ARES_PROCESS_FLAG_NONE);
 }
 
 static ares_socket_t *channel_socket_list(const ares_channel_t *channel,
@@ -353,7 +353,7 @@ void ares_process(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
   }
 
 done:
-  ares_process_fds_nolock(channel, events, nevents);
+  ares_process_fds_nolock(channel, events, nevents, ARES_PROCESS_FLAG_NONE);
   ares_free(events);
   ares_free(socketlist);
   ares_channel_unlock(channel);

@@ -680,6 +680,14 @@ typedef struct {
   unsigned int  events; /*!< Mask of ares_fd_event_t */
 } ares_fd_events_t;
 
+/*! Flags used by ares_process_fds() */
+typedef enum {
+  ARES_PROCESS_FLAG_NONE        = 0,     /*!< No flag value */
+  ARES_PROCESS_FLAG_SKIP_NON_FD = 1 << 0 /*!< skip any processing unrelated to
+                                          *   the file descriptor events passed
+                                          *    in */
+} ares_process_flag_t;
+
 /*! Process events on multiple file descriptors based on the event mask
  *  associated with each file descriptor.  Recommended over calling
  *  ares_process_fd() multiple times since it would trigger additional logic
@@ -690,10 +698,12 @@ typedef struct {
  *                      no events, but may have timeouts to process.
  *  \param[in] nevents  Number of elements in the events array.  May be 0 if
  *                      no events, but may have timeouts to process.
+ *  \param[in] flags    Flags to alter behavior of the process command.
  */
 CARES_EXTERN void ares_process_fds(ares_channel_t         *channel,
                                    const ares_fd_events_t *events,
-                                   size_t                  nevents);
+                                   size_t                  nevents,
+                                   unsigned int            flags);
 
 CARES_EXTERN void ares_process_fd(ares_channel_t *channel,
                                   ares_socket_t   read_fd,

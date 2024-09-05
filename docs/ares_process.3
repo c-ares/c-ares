@@ -23,10 +23,16 @@ typedef struct {
   unsigned int  events; /*!< Mask of ares_fd_event_t */
 } ares_fd_events_t;
 
+typedef enum {
+  ARES_PROCESS_FLAG_NONE        = 0,
+  ARES_PROCESS_FLAG_SKIP_NON_FD = 1 << 0
+} ares_process_flag_t;
+
 
 void ares_process_fds(ares_channel_t         *\fIchannel\fP,
                       const ares_fd_events_t *\fIevents\fP,
-                      size_t                  \fInevents\fP)
+                      size_t                  \fInevents\fP,
+                      unsigned int            \fIflags\fP)
 
 void ares_process_fd(ares_channel_t *\fIchannel\fP,
                      ares_socket_t \fIread_fd\fP,
@@ -50,7 +56,16 @@ identified by \fIchannel\fP.  The file descriptors to be processed are passed
 in an array of \fIares_fd_events_t\fP data structures in the \fIfd\fP member,
 and events are a bitwise mask of \fIares_event_fd_t\fP in the \fIevent\fP
 member.  This function can also be used to process timeouts by passing NULL
-to the \fIevents\fP member with \fInevents\fP value of 0.
+to the \fIevents\fP member with \fInevents\fP value of 0.  Flags may also be
+specified in the \fIflags\fP field and are defined in \fBares_process_flag_t\fP.
+
+\fBARES_PROCESS_FLAG_SKIP_NON_FD\fP can be specified to specifically skip any
+processing unrelated to the file descriptor events passed in, examples include
+timeout processing and cleanup handling.  This is useful if an integrator
+knows they will be sending multiple \fIares_process_fds(3)\fP requests and
+wants to skip that extra processing.  However, the integrator must send the
+final request with the flag so that timeout and other processing gets performed
+before their event loop waits on additional events.
 
 It is allowable to use an \fIares_fd_events_t\fP with \fIevents\fP member of
 value \fIARES_FD_EVENT_NONE\fP (0) if there are no events for a given file
