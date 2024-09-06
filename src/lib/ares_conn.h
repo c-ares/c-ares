@@ -26,11 +26,13 @@
 #ifndef __ARES_CONN_H
 #define __ARES_CONN_H
 
-struct ares_server;
-typedef struct ares_server ares_server_t;
+#include "ares_socket.h"
 
 struct ares_conn;
 typedef struct ares_conn ares_conn_t;
+
+struct ares_server;
+typedef struct ares_server ares_server_t;
 
 typedef enum {
   /*! No flags */
@@ -165,42 +167,16 @@ void ares_close_sockets(ares_server_t *server);
 void ares_check_cleanup_conns(const ares_channel_t *channel);
 
 void ares_destroy_servers_state(ares_channel_t *channel);
-ares_status_t ares_open_connection(ares_conn_t   **conn_out,
-                                   ares_channel_t *channel,
-                                   ares_server_t *server, ares_bool_t is_tcp);
-ares_bool_t   ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
-                                         unsigned short        *port,
-                                         const struct sockaddr *sockaddr);
+ares_status_t   ares_open_connection(ares_conn_t   **conn_out,
+                                     ares_channel_t *channel,
+                                     ares_server_t *server, ares_bool_t is_tcp);
 
-/*! Socket errors */
-typedef enum {
-  ARES_CONN_ERR_SUCCESS      = 0,  /*!< Success */
-  ARES_CONN_ERR_WOULDBLOCK   = 1,  /*!< Operation would block */
-  ARES_CONN_ERR_CONNCLOSED   = 2,  /*!< Connection closed (gracefully) */
-  ARES_CONN_ERR_CONNABORTED  = 3,  /*!< Connection Aborted */
-  ARES_CONN_ERR_CONNRESET    = 4,  /*!< Connection Reset */
-  ARES_CONN_ERR_CONNREFUSED  = 5,  /*!< Connection Refused */
-  ARES_CONN_ERR_CONNTIMEDOUT = 6,  /*!< Connection Timed Out */
-  ARES_CONN_ERR_HOSTDOWN     = 7,  /*!< Host Down */
-  ARES_CONN_ERR_HOSTUNREACH  = 8,  /*!< Host Unreachable */
-  ARES_CONN_ERR_NETDOWN      = 9,  /*!< Network Down */
-  ARES_CONN_ERR_NETUNREACH   = 10, /*!< Network Unreachable */
-  ARES_CONN_ERR_INTERRUPT    = 11, /*!< Call interrupted by signal, repeat */
-  ARES_CONN_ERR_AFNOSUPPORT  = 12, /*!< Address family not supported */
-  ARES_CONN_ERR_BADADDR      = 13, /*!< Bad Address / Unavailable */
-  ARES_CONN_ERR_NOMEM        = 14, /*!< Out of memory */
-  ARES_CONN_ERR_INVALID      = 15, /*!< Invalid Usage */
-  ARES_CONN_ERR_FAILURE      = 99  /*!< Generic failure */
-} ares_conn_err_t;
-
-ares_conn_err_t ares_open_socket(ares_socket_t *sock, ares_channel_t *channel,
-                                 int af, int type, int protocol);
-ares_bool_t     ares_socket_try_again(int errnum);
 ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
                                 size_t *written);
 ares_status_t   ares_conn_flush(ares_conn_t *conn);
 ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
                                size_t *read_bytes);
+ares_conn_t    *ares_conn_from_fd(ares_channel_t *channel, ares_socket_t fd);
 void            ares_conn_sock_state_cb_update(ares_conn_t            *conn,
                                                ares_conn_state_flags_t flags);
 ares_conn_err_t ares_socket_recv(ares_channel_t *channel, ares_socket_t s,
@@ -212,10 +188,7 @@ ares_conn_err_t ares_socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                      struct sockaddr *from,
                                      ares_socklen_t  *from_len,
                                      size_t          *read_bytes);
-void            ares_close_socket(ares_channel_t *channel, ares_socket_t s);
-ares_status_t ares_connect_socket(ares_channel_t *channel, ares_socket_t sockfd,
-                                  const struct sockaddr *addr,
-                                  ares_socklen_t         addrlen);
-void          ares_destroy_server(ares_server_t *server);
+
+void            ares_destroy_server(ares_server_t *server);
 
 #endif

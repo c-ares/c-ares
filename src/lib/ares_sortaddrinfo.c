@@ -362,23 +362,24 @@ static int find_src_addr(ares_channel_t *channel, const struct sockaddr *addr,
   }
 
   err =
-    ares_open_socket(&sock, channel, addr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
+    ares_socket_open(&sock, channel, addr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
   if (err == ARES_CONN_ERR_AFNOSUPPORT) {
     return 0;
   } else if (err != ARES_CONN_ERR_SUCCESS) {
     return -1;
   }
 
-  if (ares_connect_socket(channel, sock, addr, len) != ARES_SUCCESS) {
-    ares_close_socket(channel, sock);
+  err = ares_socket_connect(channel, sock, ARES_FALSE, addr, len);
+  if (err != ARES_CONN_ERR_SUCCESS && err != ARES_CONN_ERR_WOULDBLOCK) {
+    ares_socket_close(channel, sock);
     return 0;
   }
 
   if (getsockname(sock, src_addr, &len) != 0) {
-    ares_close_socket(channel, sock);
+    ares_socket_close(channel, sock);
     return -1;
   }
-  ares_close_socket(channel, sock);
+  ares_socket_close(channel, sock);
   return 1;
 }
 

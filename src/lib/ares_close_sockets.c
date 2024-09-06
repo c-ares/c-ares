@@ -65,7 +65,7 @@ void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status)
 
   ares_conn_sock_state_cb_update(conn, ARES_CONN_STATE_NONE);
 
-  ares_close_socket(channel, conn->fd);
+  ares_socket_close(channel, conn->fd);
 
   ares_free(conn);
 }
