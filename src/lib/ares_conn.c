@@ -396,7 +396,7 @@ ares_status_t ares_open_connection(ares_conn_t   **conn_out,
   /* Enable TFO if possible */
   if (conn->flags & ARES_CONN_FLAG_TFO) {
     if (ares_socket_enable_tfo(channel, conn->fd) != ARES_CONN_ERR_SUCCESS) {
-      conn->flags &= (ARES_CONN_FLAG_TFO);
+      conn->flags &= ~(ARES_CONN_FLAG_TFO);
     }
   }
 
