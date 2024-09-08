@@ -699,14 +699,16 @@ typedef enum {
  *  \param[in] nevents  Number of elements in the events array.  May be 0 if
  *                      no events, but may have timeouts to process.
  *  \param[in] flags    Flags to alter behavior of the process command.
+ *  \return ARES_ENOMEM on out of memory, ARES_EFORMERR on misuse,
+ *          otherwise ARES_SUCCESS
  */
-CARES_EXTERN void ares_process_fds(ares_channel_t         *channel,
-                                   const ares_fd_events_t *events,
-                                   size_t nevents, unsigned int flags);
+CARES_EXTERN ares_status_t ares_process_fds(ares_channel_t         *channel,
+                                            const ares_fd_events_t *events,
+                                            size_t nevents, unsigned int flags);
 
-CARES_EXTERN void ares_process_fd(ares_channel_t *channel,
-                                  ares_socket_t   read_fd,
-                                  ares_socket_t   write_fd);
+CARES_EXTERN void          ares_process_fd(ares_channel_t *channel,
+                                           ares_socket_t   read_fd,
+                                           ares_socket_t   write_fd);
 
 CARES_EXTERN CARES_DEPRECATED_FOR(ares_dns_record_create) int ares_create_query(
   const char *name, int dnsclass, int type, unsigned short id, int rd,

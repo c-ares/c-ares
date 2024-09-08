@@ -29,10 +29,10 @@ typedef enum {
 } ares_process_flag_t;
 
 
-void ares_process_fds(ares_channel_t         *\fIchannel\fP,
-                      const ares_fd_events_t *\fIevents\fP,
-                      size_t                  \fInevents\fP,
-                      unsigned int            \fIflags\fP)
+ares_status_t ares_process_fds(ares_channel_t         *\fIchannel\fP,
+                               const ares_fd_events_t *\fIevents\fP,
+                               size_t                  \fInevents\fP,
+                               unsigned int            \fIflags\fP)
 
 void ares_process_fd(ares_channel_t *\fIchannel\fP,
                      ares_socket_t \fIread_fd\fP,
@@ -71,6 +71,9 @@ It is allowable to use an \fIares_fd_events_t\fP with \fIevents\fP member of
 value \fIARES_FD_EVENT_NONE\fP (0) if there are no events for a given file
 descriptor if an integrator wishes to simply maintain an array with all
 possible file descriptors and update readiness via the \fIevent\fP member.
+
+This function will return \fIARES_ENOMEM\fP in out of memory conditions,
+otherwise will return \fIARES_SUCCESS\fP.
 
 This function is recommended over \fBares_process_fd(3)\fP since it can
 handle processing of multiple file descriptors at once, thus skipping repeating
