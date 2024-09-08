@@ -1106,6 +1106,8 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
   ares_conn_t    *conn;
   size_t          timeplus;
   ares_status_t   status;
+  ares_bool_t     probe_downed_server = ARES_TRUE;
+
 
   /* Choose the server to send the query to */
   if (requested_server != NULL) {
@@ -1123,6 +1125,13 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
   if (server == NULL) {
     end_query(channel, server, query, ARES_ENOSERVER /* ? */, NULL);
     return ARES_ENOSERVER;
+  }
+
+  /* If a query is directed to a specific query, or the server chosen has
+   * failures, or the query is being retried, don't probe for downed servers */
+  if (requested_server != NULL || server->consec_failures > 0 ||
+      query->try_count != 0) {
+    probe_downed_server = ARES_FALSE;
   }
 
   conn = ares_fetch_connection(channel, server, query);
@@ -1210,9 +1219,8 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
   conn->total_queries++;
 
   /* We just successfully enqueud a query, see if we should probe downed
-   * servers. (and only if this didn't specify an exact server to use as that
-   * might be a special type of query like itself being a probe) */
-  if (requested_server == NULL) {
+   * servers. */
+  if (probe_downed_server) {
     ares_probe_failed_server(channel, server, query);
   }
 
