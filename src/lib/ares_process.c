@@ -277,7 +277,7 @@ void ares_process_fd(ares_channel_t *channel, ares_socket_t read_fd,
     if (write_fd != read_fd) {
       nevents++;
     }
-    events[nevents - 1].fd      = read_fd;
+    events[nevents - 1].fd      = write_fd;
     events[nevents - 1].events |= ARES_FD_EVENT_WRITE;
   }
 
