@@ -2275,12 +2275,12 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   // but not yet expired that it will probe the next failed server instead.
   // In this case #2 is the server that the query will go to and succeed, and
   // then a probe will be sent for #0 (since #1 is not expired) and succeed.  We
-  // will sleep for half the retry duration before spawning the queries so we can
+  // will sleep for 1/4 the retry duration before spawning the queries so we can
   // then sleep for the rest for the follow-up test.  This will leave the servers
   // in this state:
   //   #0 (failures: 0), #2 (failures: 0), #3 (failures: 0), #1 (failures: 1 not expired)
   tv_now = std::chrono::high_resolution_clock::now();
-  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/2);
+  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/4);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
