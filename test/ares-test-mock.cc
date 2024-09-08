@@ -2254,9 +2254,6 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
     .WillOnce(SetReply(servers_[2].get(), &okrsp));
   CheckExample();
 
-  // We need to track retry delay time to know what is expired when.
-  auto elapse_start = tv_now;
-
   // Cause another server to fail so we have at least one non-expired failed
   // server and one expired failed server.  #1 is highest priority, which we
   // will fail, #2 will succeed, and #3 will be probed and succeed:
@@ -2280,6 +2277,10 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   // in this state:
   //   #0 (failures: 0), #2 (failures: 0), #3 (failures: 0), #1 (failures: 1 not expired)
   tv_now = std::chrono::high_resolution_clock::now();
+
+  // We need to track retry delay time to know what is expired when.
+  auto elapse_start = tv_now;
+
   delay_ms = (SERVER_FAILOVER_RETRY_DELAY/4);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
