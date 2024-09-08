@@ -60,9 +60,9 @@ Administrators may customize these settings via `ARES_OPT_SERVER_FAILOVER`.
 In the future we may use independent queries to probe downed servers to not
 impact latency of any queries when a server is known to be down.
 
-`ARES_OPT_ROTATE` or a system configuration option of `rotate` will disable
-this feature as servers will be chosen at random.  In the future we may
-enhance this capability to only randomly choose online servers.
+`ARES_OPT_ROTATE` or a system configuration option of `rotate` will randomly
+select a server from the list of highest priority servers.  Any servers in a
+lower priority bracket will be omitted from the random selection.
 
 This feature requires the c-ares channel to persist for the lifetime of the
 application.

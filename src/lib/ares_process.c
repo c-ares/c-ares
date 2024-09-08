@@ -844,16 +844,42 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
   return ARES_ETIMEOUT;
 }
 
-/* Pick a random server from the list, we first get a random number in the
- * range of the number of servers, then scan until we find that server in
- * the list */
+/*! Count the number of servers that share the same highest priority (lowest
+ *  consecutive failures).  Since they are sorted in priority order, we just
+ *  stop when the consecutive failure count changes. Used for random selection
+ *  of good servers. */
+static size_t count_highest_prio_servers(ares_channel_t *channel)
+{
+  ares_slist_node_t *node;
+  size_t             cnt                  = 0;
+  size_t             last_consec_failures = SIZE_MAX;
+
+  for (node = ares_slist_node_first(channel->servers); node != NULL;
+       node = ares_slist_node_next(node)) {
+    const ares_server_t *server = ares_slist_node_val(node);
+
+    if (last_consec_failures != SIZE_MAX &&
+        last_consec_failures < server->consec_failures) {
+      break;
+    }
+
+    last_consec_failures = server->consec_failures;
+    cnt++;
+  }
+
+  return cnt;
+}
+
+/* Pick a random *best* server from the list, we first get a random number in
+ * the range of the number of *best* servers, then scan until we find that
+ * server in the list */
 static ares_server_t *ares_random_server(ares_channel_t *channel)
 {
   unsigned char      c;
   size_t             cnt;
   size_t             idx;
   ares_slist_node_t *node;
-  size_t             num_servers = ares_slist_len(channel->servers);
+  size_t             num_servers = count_highest_prio_servers(channel);
 
   /* Silence coverity, not possible */
   if (num_servers == 0) {
@@ -891,7 +917,7 @@ static ares_server_t *ares_random_server(ares_channel_t *channel)
  * To resolve this, with some probability we select a failed server to retry
  * instead.
  */
-static ares_server_t *ares_failover_server(ares_channel_t *channel)
+static ares_server_t *ares_server_select(ares_channel_t *channel)
 {
   ares_server_t       *first_server = ares_slist_first_val(channel->servers);
   const ares_server_t *last_server  = ares_slist_last_val(channel->servers);
@@ -902,8 +928,14 @@ static ares_server_t *ares_failover_server(ares_channel_t *channel)
     return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  /* If no servers have failures, then prefer the first server in the list. */
-  if (last_server != NULL && last_server->consec_failures == 0) {
+  /* If no servers have failures, or we're not configured with a server retry
+   * chance, then use normal logic for server selection */
+  if ((last_server != NULL && last_server->consec_failures == 0) ||
+      channel->server_retry_chance == 0) {
+    /* If rotate is turned on, do a random selection */
+    if (channel->rotate) {
+      return ares_random_server(channel);
+    }
     return first_server;
   }
 
@@ -1075,13 +1107,7 @@ ares_status_t ares_send_query(ares_query_t *query, const ares_timeval_t *now)
   ares_status_t   status;
 
   /* Choose the server to send the query to */
-  if (channel->rotate) {
-    /* Pull random server */
-    server = ares_random_server(channel);
-  } else {
-    /* Pull server with failover behavior */
-    server = ares_failover_server(channel);
-  }
+  server = ares_server_select(channel);
 
   if (server == NULL) {
     end_query(channel, server, query, ARES_ENOSERVER /* ? */, NULL);
