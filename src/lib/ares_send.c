@@ -106,6 +106,8 @@ done:
 }
 
 ares_status_t ares_send_nolock(ares_channel_t          *channel,
+                               ares_server_t           *server,
+                               ares_send_flags_t        flags,
                                const ares_dns_record_t *dnsrec,
                                ares_callback_dnsrec callback, void *arg,
                                unsigned short *qid)
@@ -123,13 +125,15 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
     return ARES_ENOSERVER;
   }
 
-  /* Check query cache */
-  status = ares_qcache_fetch(channel, &now, dnsrec, &dnsrec_resp);
-  if (status != ARES_ENOTFOUND) {
-    /* ARES_SUCCESS means we retrieved the cache, anything else is a critical
-     * failure, all result in termination */
-    callback(arg, status, 0, dnsrec_resp);
-    return status;
+  if (!(flags & ARES_SEND_FLAG_NOCACHE)) {
+    /* Check query cache */
+    status = ares_qcache_fetch(channel, &now, dnsrec, &dnsrec_resp);
+    if (status != ARES_ENOTFOUND) {
+      /* ARES_SUCCESS means we retrieved the cache, anything else is a critical
+       * failure, all result in termination */
+      callback(arg, status, 0, dnsrec_resp);
+      return status;
+    }
   }
 
   /* Allocate space for query and allocated fields. */
@@ -175,6 +179,9 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
   /* Initialize query status. */
   query->try_count = 0;
 
+  if (flags & ARES_SEND_FLAG_NORETRY) {
+    query->no_retries = ARES_TRUE;
+  }
 
   query->error_status = ARES_SUCCESS;
   query->timeouts     = 0;
@@ -206,7 +213,7 @@ ares_status_t ares_send_nolock(ares_channel_t          *channel,
 
   /* Perform the first query action. */
 
-  status = ares_send_query(query, &now);
+  status = ares_send_query(server, query, &now);
   if (status == ARES_SUCCESS && qid) {
     *qid = id;
   }
@@ -226,7 +233,7 @@ ares_status_t ares_send_dnsrec(ares_channel_t          *channel,
 
   ares_channel_lock(channel);
 
-  status = ares_send_nolock(channel, dnsrec, callback, arg, qid);
+  status = ares_send_nolock(channel, NULL, 0, dnsrec, callback, arg, qid);
 
   ares_channel_unlock(channel);
 

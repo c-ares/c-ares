@@ -105,7 +105,7 @@ ares_status_t ares_query_nolock(ares_channel_t *channel, const char *name,
   qquery->arg      = arg;
 
   /* Send it off.  qcallback will be called when we get an answer. */
-  status = ares_send_nolock(channel, dnsrec, ares_query_dnsrec_cb, qquery, qid);
+  status = ares_send_nolock(channel, NULL, 0, dnsrec, ares_query_dnsrec_cb, qquery, qid);
 
   ares_dns_record_destroy(dnsrec);
   return status;
