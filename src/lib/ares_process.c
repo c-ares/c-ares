@@ -1304,7 +1304,9 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
 {
   /* If we were probing for the server to come back online, lets mark it as
    * no longer being probed */
-  server->probe_pending = ARES_FALSE;
+  if (server != NULL) {
+    server->probe_pending = ARES_FALSE;
+  }
 
   ares_metrics_record(query, server, status, dnsrec);
 
