@@ -944,12 +944,13 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
   }
 
   /* Select the first server with failures to retry that has passed the retry
-   * timeout */
+   * timeout and doesn't already have a pending probe */
   ares_tvnow(&now);
   for (node = ares_slist_node_first(channel->servers); node != NULL;
        node = ares_slist_node_next(node)) {
     ares_server_t *node_val = ares_slist_node_val(node);
     if (node_val != NULL && node_val->consec_failures > 0 &&
+        !node_val->probe_pending &&
         ares_timedout(&now, &node_val->next_retry_time)) {
       probe_server = node_val;
       break;
@@ -1221,6 +1222,7 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
   /* We just successfully enqueud a query, see if we should probe downed
    * servers. */
   if (probe_downed_server) {
+    server->probe_pending = ARES_TRUE;
     ares_probe_failed_server(channel, server, query);
   }
 
@@ -1300,6 +1302,10 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
                       ares_query_t *query, ares_status_t status,
                       const ares_dns_record_t *dnsrec)
 {
+  /* If we were probing for the server to come back online, lets mark it as
+   * no longer being probed */
+  server->probe_pending = ARES_FALSE;
+
   ares_metrics_record(query, server, status, dnsrec);
 
   /* Invoke the callback. */
