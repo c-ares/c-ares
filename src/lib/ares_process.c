@@ -966,6 +966,7 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
   /* Enqueue an identical query onto the specified server without honoring
    * the cache or allowing retries.  We want to make sure it only attempts to
    * use the server in question */
+  probe_server->probe_pending = ARES_TRUE;
   ares_send_nolock(channel, probe_server,
                    ARES_SEND_FLAG_NOCACHE|ARES_SEND_FLAG_NORETRY,
                    query->query, server_probe_cb, NULL, NULL);
@@ -1222,7 +1223,6 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
   /* We just successfully enqueud a query, see if we should probe downed
    * servers. */
   if (probe_downed_server) {
-    server->probe_pending = ARES_TRUE;
     ares_probe_failed_server(channel, server, query);
   }
 
