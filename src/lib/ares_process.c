@@ -728,7 +728,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
       goto cleanup;
     }
 
-    ares_send_query(query, now);
+    /* Send to same server */
+    ares_send_query(server, query, now);
     status = ARES_SUCCESS;
     goto cleanup;
   }
@@ -741,7 +742,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
       !(conn->flags & ARES_CONN_FLAG_TCP) &&
       !(channel->flags & ARES_FLAG_IGNTC)) {
     query->using_tcp = ARES_TRUE;
-    ares_send_query(query, now);
+    ares_send_query(NULL, query, now);
     status = ARES_SUCCESS; /* Switched to TCP is ok */
     goto cleanup;
   }
@@ -832,7 +833,7 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
   }
 
   if (query->try_count < max_tries && !query->no_retries) {
-    return ares_send_query(query, now);
+    return ares_send_query(NULL, query, now);
   }
 
   /* If we are here, all attempts to perform query failed. */
@@ -844,16 +845,42 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
   return ARES_ETIMEOUT;
 }
 
-/* Pick a random server from the list, we first get a random number in the
- * range of the number of servers, then scan until we find that server in
- * the list */
+/*! Count the number of servers that share the same highest priority (lowest
+ *  consecutive failures).  Since they are sorted in priority order, we just
+ *  stop when the consecutive failure count changes. Used for random selection
+ *  of good servers. */
+static size_t count_highest_prio_servers(ares_channel_t *channel)
+{
+  ares_slist_node_t *node;
+  size_t             cnt                  = 0;
+  size_t             last_consec_failures = SIZE_MAX;
+
+  for (node = ares_slist_node_first(channel->servers); node != NULL;
+       node = ares_slist_node_next(node)) {
+    const ares_server_t *server = ares_slist_node_val(node);
+
+    if (last_consec_failures != SIZE_MAX &&
+        last_consec_failures < server->consec_failures) {
+      break;
+    }
+
+    last_consec_failures = server->consec_failures;
+    cnt++;
+  }
+
+  return cnt;
+}
+
+/* Pick a random *best* server from the list, we first get a random number in
+ * the range of the number of *best* servers, then scan until we find that
+ * server in the list */
 static ares_server_t *ares_random_server(ares_channel_t *channel)
 {
   unsigned char      c;
   size_t             cnt;
   size_t             idx;
   ares_slist_node_t *node;
-  size_t             num_servers = ares_slist_len(channel->servers);
+  size_t             num_servers = count_highest_prio_servers(channel);
 
   /* Silence coverity, not possible */
   if (num_servers == 0) {
@@ -878,40 +905,32 @@ static ares_server_t *ares_random_server(ares_channel_t *channel)
   return NULL;
 }
 
-/* Pick a server from the list with failover behavior.
- *
- * We default to using the first server in the sorted list of servers. That is
- * the server with the lowest number of consecutive failures and then the
- * highest priority server (by idx) if there is a draw.
- *
- * However, if a server temporarily goes down and hits some failures, then that
- * server will never be retried until all other servers hit the same number of
- * failures. This may prevent the server from being retried for a long time.
- *
- * To resolve this, with some probability we select a failed server to retry
- * instead.
- */
-static ares_server_t *ares_failover_server(ares_channel_t *channel)
+static void server_probe_cb(void *arg, ares_status_t status, size_t timeouts,
+                            const ares_dns_record_t *dnsrec)
 {
-  ares_server_t       *first_server = ares_slist_first_val(channel->servers);
+  (void)arg;
+  (void)status;
+  (void)timeouts;
+  (void)dnsrec;
+  /* Nothing to do, the logic internally will handle success/fail of this */
+}
+
+/* Determine if we should probe a downed server */
+static void ares_probe_failed_server(ares_channel_t      *channel,
+                                     const ares_server_t *server,
+                                     const ares_query_t  *query)
+{
   const ares_server_t *last_server  = ares_slist_last_val(channel->servers);
   unsigned short       r;
+  ares_timeval_t       now;
+  ares_slist_node_t   *node;
+  ares_server_t       *probe_server = NULL;
 
-  /* Defensive code against no servers being available on the channel. */
-  if (first_server == NULL) {
-    return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
-  }
-
-  /* If no servers have failures, then prefer the first server in the list. */
-  if (last_server != NULL && last_server->consec_failures == 0) {
-    return first_server;
-  }
-
-  /* If we are not configured with a server retry chance then return the first
-   * server.
-   */
-  if (channel->server_retry_chance == 0) {
-    return first_server;
+  /* If no servers have failures, or we're not configured with a server retry
+   * chance, then nothing to probe */
+  if ((last_server != NULL && last_server->consec_failures == 0) ||
+      channel->server_retry_chance == 0) {
+    return;
   }
 
   /* Generate a random value to decide whether to retry a failed server. The
@@ -920,24 +939,38 @@ static ares_server_t *ares_failover_server(ares_channel_t *channel)
    * We use an unsigned short for the random value for increased precision.
    */
   ares_rand_bytes(channel->rand_state, (unsigned char *)&r, sizeof(r));
-  if (r % channel->server_retry_chance == 0) {
-    /* Select a suitable failed server to retry. */
-    ares_timeval_t     now;
-    ares_slist_node_t *node;
+  if (r % channel->server_retry_chance != 0) {
+    return;
+  }
 
-    ares_tvnow(&now);
-    for (node = ares_slist_node_first(channel->servers); node != NULL;
-         node = ares_slist_node_next(node)) {
-      ares_server_t *node_val = ares_slist_node_val(node);
-      if (node_val != NULL && node_val->consec_failures > 0 &&
-          ares_timedout(&now, &node_val->next_retry_time)) {
-        return node_val;
-      }
+  /* Select the first server with failures to retry that has passed the retry
+   * timeout and doesn't already have a pending probe */
+  ares_tvnow(&now);
+  for (node = ares_slist_node_first(channel->servers); node != NULL;
+       node = ares_slist_node_next(node)) {
+    ares_server_t *node_val = ares_slist_node_val(node);
+    if (node_val != NULL && node_val->consec_failures > 0 &&
+        !node_val->probe_pending &&
+        ares_timedout(&now, &node_val->next_retry_time)) {
+      probe_server = node_val;
+      break;
     }
   }
 
-  /* If we have not returned yet, then return the first server. */
-  return first_server;
+  /* Either nothing to probe or the query was enqueud to the same server
+   * we were going to probe. Do nothing. */
+  if (probe_server == NULL || server == probe_server) {
+    return;
+  }
+
+  /* Enqueue an identical query onto the specified server without honoring
+   * the cache or allowing retries.  We want to make sure it only attempts to
+   * use the server in question */
+  probe_server->probe_pending = ARES_TRUE;
+  ares_send_nolock(channel, probe_server,
+                   ARES_SEND_FLAG_NOCACHE|ARES_SEND_FLAG_NORETRY,
+                   query->query, server_probe_cb, NULL, NULL);
+
 }
 
 static size_t ares_calc_query_timeout(const ares_query_t   *query,
@@ -1066,26 +1099,41 @@ static ares_status_t ares_conn_query_write(ares_conn_t          *conn,
   return ares_conn_flush(conn);
 }
 
-ares_status_t ares_send_query(ares_query_t *query, const ares_timeval_t *now)
+ares_status_t ares_send_query(ares_server_t *requested_server,
+                              ares_query_t *query,
+                              const ares_timeval_t *now)
 {
   ares_channel_t *channel = query->channel;
   ares_server_t  *server;
   ares_conn_t    *conn;
   size_t          timeplus;
   ares_status_t   status;
+  ares_bool_t     probe_downed_server = ARES_TRUE;
+
 
   /* Choose the server to send the query to */
-  if (channel->rotate) {
-    /* Pull random server */
-    server = ares_random_server(channel);
+  if (requested_server != NULL) {
+    server = requested_server;
   } else {
-    /* Pull server with failover behavior */
-    server = ares_failover_server(channel);
+    /* If rotate is turned on, do a random selection */
+    if (channel->rotate) {
+      server = ares_random_server(channel);
+    } else {
+      /* First server in list */
+      server = ares_slist_first_val(channel->servers);
+    }
   }
 
   if (server == NULL) {
     end_query(channel, server, query, ARES_ENOSERVER /* ? */, NULL);
     return ARES_ENOSERVER;
+  }
+
+  /* If a query is directed to a specific query, or the server chosen has
+   * failures, or the query is being retried, don't probe for downed servers */
+  if (requested_server != NULL || server->consec_failures > 0 ||
+      query->try_count != 0) {
+    probe_downed_server = ARES_FALSE;
   }
 
   conn = ares_fetch_connection(channel, server, query);
@@ -1172,6 +1220,12 @@ ares_status_t ares_send_query(ares_query_t *query, const ares_timeval_t *now)
   query->conn = conn;
   conn->total_queries++;
 
+  /* We just successfully enqueud a query, see if we should probe downed
+   * servers. */
+  if (probe_downed_server) {
+    ares_probe_failed_server(channel, server, query);
+  }
+
   return ARES_SUCCESS;
 }
 
@@ -1248,6 +1302,12 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
                       ares_query_t *query, ares_status_t status,
                       const ares_dns_record_t *dnsrec)
 {
+  /* If we were probing for the server to come back online, lets mark it as
+   * no longer being probed */
+  if (server != NULL) {
+    server->probe_pending = ARES_FALSE;
+  }
+
   ares_metrics_record(query, server, status, dnsrec);
 
   /* Invoke the callback. */

@@ -2136,11 +2136,25 @@ TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
 #else
 #  define SERVER_FAILOVER_RETRY_DELAY 330
 #endif
-class ServerFailoverOptsMultiMockTest : public MockMultiServerChannelTest {
+
+class ServerFailoverOptsMultiMockTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
   ServerFailoverOptsMultiMockTest()
-    : MockMultiServerChannelTest(FillOptions(&opts_),
-                                 ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+    : MockChannelOptsTest(4, GetParam().first, GetParam().second, false,
+                          FillOptions(&opts_),
+                          ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+  void CheckExample() {
+    HostResult result;
+    ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  }
+
   static struct ares_options* FillOptions(struct ares_options *opts) {
     memset(opts, 0, sizeof(struct ares_options));
     opts->server_failover_opts.retry_chance = 1;
@@ -2150,6 +2164,7 @@ class ServerFailoverOptsMultiMockTest : public MockMultiServerChannelTest {
  private:
   struct ares_options opts_;
 };
+
 
 // Test case to trigger server failover behavior. We use a retry chance of
 // 100% and a retry delay so that we can test behavior reliably.
@@ -2166,15 +2181,15 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   auto tv_now   = std::chrono::high_resolution_clock::now();
   unsigned int delay_ms;
 
-  // 1. If all servers are healthy, then the first server should be selected.
+  // At start all servers are healthy, first server should be selected
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: First server should be selected" << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &okrsp));
   CheckExample();
 
-  // 2. Failed servers should be retried after the retry delay.
-  //
-  // Fail server #0 but leave server #1 as healthy.
+  // Fail server #0 but leave server #1 as healthy.  This results in server
+  // order:
+  //  #1 (failures: 0), #2 (failures: 0), #3 (failures: 0), #0 (failures: 1)
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 will fail but leave Server1 as healthy" << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
@@ -2184,25 +2199,32 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   CheckExample();
 
   // Sleep for the retry delay (actually a little more than the retry delay to account
-  // for unreliable timing, e.g. NTP slew) and send in another query. Server #0
-  // should be retried.
+  // for unreliable timing, e.g. NTP slew) and send in another query. The real
+  // query will be sent to Server #1 (which will succeed) and Server #0 will
+  // be probed and return a successful result.  This leaves the server order
+  // of:
+  //   #0 (failures: 0), #1 (failures: 0), #2 (failures: 0), #3 (failures: 0)
   tv_now = std::chrono::high_resolution_clock::now();
   delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
-  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 should be past retry delay and should be tried again successfully" << std::endl;
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 should be past retry delay and should be probed (successful), server 1 will respond successful for real query" << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
   CheckExample();
 
-  // 3. If there are multiple failed servers, then the servers should be
-  //    retried in sorted order.
-  //
-  // Fail all servers for the first round of tries. On the second round server
-  // #1 responds successfully.
+
+  // Fail all servers for the first round of tries. On the second round, #0
+  // responds successfully. This should leave server order of:
+  //   #1 (failures: 0), #2 (failures: 1), #3 (failures: 1), #0 (failures: 2)
+  // NOTE: A single query being retried won't spawn probes to downed servers,
+  //       only an initial query attempt is eligible to spawn probes.  So
+  //       no probes are sent for this test.
   tv_now = std::chrono::high_resolution_clock::now();
-  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: All 3 servers will fail on the first attempt. On second attempt, Server0 will fail, but Server1 will answer correctly." << std::endl;
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: All 4 servers will fail on the first attempt, server 0 will fail on second. Server 1 will succeed on second." << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
     .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
@@ -2211,51 +2233,69 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
     .WillOnce(SetReply(servers_[1].get(), &okrsp));
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[3], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[3].get(), &servfailrsp));
   CheckExample();
 
-  // At this point the sorted servers look like [1] (f0) [2] (f1) [0] (f2).
-  // Sleep for the retry delay and send in another query. Server #2 should be
-  // retried first, and then server #0.
+
+  // Sleep for the retry delay and send in another query. Server #1 is the
+  // highest priority server and will respond with success, however a probe
+  // will be sent for Server #2 which will succeed:
+  //  #1 (failures: 0), #2 (failures: 0), #3 (failures: 1 - expired), #0 (failures: 2 - expired)
   tv_now = std::chrono::high_resolution_clock::now();
   delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
-  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Past retry delay, so will choose Server2 and Server0 that are down. Server2 will fail but Server0 will succeed." << std::endl;
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Past retry delay, will query Server 1 and probe Server 2, both will succeed." << std::endl;
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
-    .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
-  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
-    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+    .WillOnce(SetReply(servers_[2].get(), &okrsp));
   CheckExample();
 
-  // Test might take a while to run and the sleep may not be accurate, so we
-  // want to track this interval otherwise we may not pass the last test case
-  // on slow systems.
+  // Cause another server to fail so we have at least one non-expired failed
+  // server and one expired failed server.  #1 is highest priority, which we
+  // will fail, #2 will succeed, and #3 will be probed and succeed:
+  //  #2 (failures: 0), #3 (failures: 0), #1 (failures: 1 not expired), #0 (failures: 2 expired)
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Will query Server 1 and fail, Server 2 will answer successfully. Server 3 will be probed and succeed." << std::endl;
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[2].get(), &okrsp));
+  EXPECT_CALL(*servers_[3], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[3].get(), &okrsp));
+  CheckExample();
+
+  // We need to make sure that if there is a failed server that is higher priority
+  // but not yet expired that it will probe the next failed server instead.
+  // In this case #2 is the server that the query will go to and succeed, and
+  // then a probe will be sent for #0 (since #1 is not expired) and succeed.  We
+  // will sleep for 1/4 the retry duration before spawning the queries so we can
+  // then sleep for the rest for the follow-up test.  This will leave the servers
+  // in this state:
+  //   #0 (failures: 0), #2 (failures: 0), #3 (failures: 0), #1 (failures: 1 not expired)
+  tv_now = std::chrono::high_resolution_clock::now();
+
+  // We need to track retry delay time to know what is expired when.
   auto elapse_start = tv_now;
 
-  // 4. If there are multiple failed servers, then servers which have not yet
-  //    met the retry delay should be skipped.
-  //
-  // The sorted servers currently look like [0] (f0) [1] (f0) [2] (f2) and
-  // server #2 has just been retried.
-  // Sleep for 1/2 the retry delay and trigger a failure on server #0.
-  tv_now = std::chrono::high_resolution_clock::now();
-  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/2);
+  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/4);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
 
-  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has not been hit yet. Server0 was last successful, so should be tried first (and will fail), Server1 is also healthy so will respond." << std::endl;
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has not been hit yet. Server2 will be queried and succeed. Server 0 (not server 1 due to non-expired retry delay) will be probed and succeed." << std::endl;
+  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[2].get(), &okrsp));
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
-    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
-  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
-    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
   CheckExample();
 
-  // The sorted servers now look like [1] (f0) [0] (f1) [2] (f2). Server #0
-  // has just failed whilst server #2 is somewhere in its retry delay.
-  // Sleep until we know server #2s retry delay has elapsed but Server #0 has
-  // not.
+  // Finally we sleep for the remainder of the retry delay, send another
+  // query, which should succeed on Server #0, and also probe Server #1 which
+  // will also succeed.
   tv_now = std::chrono::high_resolution_clock::now();
 
   unsigned int elapsed_time = (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - elapse_start).count();
@@ -2268,9 +2308,9 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
     ares_sleep_time(delay_ms);
   }
   tv_now = std::chrono::high_resolution_clock::now();
-  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has expired on Server2 but not Server0, will try on Server2 and fail, then Server1 will answer" << std::endl;
-  EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
-    .WillOnce(SetReply(servers_[2].get(), &servfailrsp));
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has expired on Server1, Server 0 will be queried and succeed, Server 1 will be probed and succeed." << std::endl;
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
   EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[1].get(), &okrsp));
   CheckExample();

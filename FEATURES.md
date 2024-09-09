@@ -50,19 +50,23 @@ application.
 Each server is tracked for failures relating to consecutive connectivity issues
 or unrecoverable response codes.  Servers are sorted in priority order based
 on this metric.  Downed servers will be brought back online either when the
-current highest priority has failed, or has been determined to be online when
-a query is randomly selected to probe a downed server.
+current highest priority server has failed, or has been determined to be online
+when a query is randomly selected to probe a downed server.
 
 By default a downed server won't be retried for 5 seconds, and queries will
 have a 10% chance of being chosen after this timeframe to test a downed server.
+When a downed server is selected to be probed, the query will be duplicated
+and sent to the downed server independent of the original query itself.  This
+means that probing a downed server will always use an intended legitimate
+query, but not have a negative impact of a delayed response in case that server
+is still down.
+
 Administrators may customize these settings via `ARES_OPT_SERVER_FAILOVER`.
 
-In the future we may use independent queries to probe downed servers to not
-impact latency of any queries when a server is known to be down.
-
-`ARES_OPT_ROTATE` or a system configuration option of `rotate` will disable
-this feature as servers will be chosen at random.  In the future we may
-enhance this capability to only randomly choose online servers.
+Additionally, when using `ARES_OPT_ROTATE` or a system configuration option of
+`rotate`, c-ares will randomly select a server from the list of highest priority
+servers based on failures.  Any servers in any lower priority bracket will be
+omitted from the random selection.
 
 This feature requires the c-ares channel to persist for the lifetime of the
 application.

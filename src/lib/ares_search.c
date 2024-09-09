@@ -93,7 +93,7 @@ static ares_status_t ares_search_next(ares_channel_t      *channel,
   }
 
   status =
-    ares_send_nolock(channel, squery->dnsrec, search_callback, squery, NULL);
+    ares_send_nolock(channel, NULL, 0, squery->dnsrec, search_callback, squery, NULL);
 
   if (status != ARES_EFORMERR) {
     *skip_cleanup = ARES_TRUE;
