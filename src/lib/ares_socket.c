@@ -56,25 +56,25 @@
 #include <limits.h>
 
 #if defined(__linux__) && defined(TCP_FASTOPEN_CONNECT)
-#  define TFO_SUPPORTED      ARES_TRUE
+#  define TFO_SUPPORTED      1
 #  define TFO_SKIP_CONNECT   0
 #  define TFO_USE_SENDTO     0
 #  define TFO_USE_CONNECTX   0
 #  define TFO_CLIENT_SOCKOPT TCP_FASTOPEN_CONNECT
 #elif defined(__FreeBSD__) && defined(TCP_FASTOPEN)
-#  define TFO_SUPPORTED      ARES_TRUE
+#  define TFO_SUPPORTED      1
 #  define TFO_SKIP_CONNECT   1
 #  define TFO_USE_SENDTO     1
 #  define TFO_USE_CONNECTX   0
 #  define TFO_CLIENT_SOCKOPT TCP_FASTOPEN
 #elif defined(__APPLE__) && defined(HAVE_CONNECTX)
-#  define TFO_SUPPORTED    ARES_TRUE
+#  define TFO_SUPPORTED    1
 #  define TFO_SKIP_CONNECT 0
 #  define TFO_USE_SENDTO   0
 #  define TFO_USE_CONNECTX 1
 #  undef TFO_CLIENT_SOCKOPT
 #else
-#  define TFO_SUPPORTED ARES_FALSE
+#  define TFO_SUPPORTED 0
 #endif
 
 
@@ -176,12 +176,16 @@ struct iovec {
 
 ares_bool_t ares_socket_tfo_supported(const ares_channel_t *channel)
 {
-  if (!TFO_SUPPORTED ||
-      (channel->sock_funcs != NULL && channel->sock_funcs->asendv != NULL)) {
+#if defined(TFO_SUPPORTED) && !TFO_SUPPORTED
+  (void)channel;
+  return ARES_FALSE;
+#else
+  if (channel->sock_funcs != NULL && channel->sock_funcs->asendv != NULL) {
     return ARES_FALSE;
   }
 
   return ARES_TRUE;
+#endif
 }
 
 static ares_conn_err_t ares_socket_deref_error(int err)
