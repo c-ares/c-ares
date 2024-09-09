@@ -318,7 +318,7 @@ void ares_slist_node_reinsert(ares_slist_node_t *node)
 }
 
 ares_slist_node_t *ares_slist_node_find(const ares_slist_t *list,
-                                        const void *val)
+                                        const void         *val)
 {
   size_t             i;
   ares_slist_node_t *node = NULL;

@@ -314,9 +314,9 @@ done:
   return status;
 }
 
-static ares_status_t ares_conn_connect(ares_conn_t *conn,
+static ares_status_t ares_conn_connect(ares_conn_t           *conn,
                                        const struct sockaddr *sa,
-                                       ares_socklen_t salen)
+                                       ares_socklen_t         salen)
 {
   ares_conn_err_t err;
 
@@ -503,4 +503,3 @@ ares_conn_t *ares_conn_from_fd(const ares_channel_t *channel, ares_socket_t fd)
 
   return ares_llist_node_val(node);
 }
-

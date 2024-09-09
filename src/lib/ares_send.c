@@ -105,8 +105,7 @@ done:
   return status;
 }
 
-ares_status_t ares_send_nolock(ares_channel_t          *channel,
-                               ares_server_t           *server,
+ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
                                ares_send_flags_t        flags,
                                const ares_dns_record_t *dnsrec,
                                ares_callback_dnsrec callback, void *arg,

@@ -136,7 +136,7 @@ ares_slist_node_t *ares_slist_node_prev(const ares_slist_node_t *node);
  *  \return SkipList Node Object or NULL if not found
  */
 ares_slist_node_t *ares_slist_node_find(const ares_slist_t *list,
-                                        const void *val);
+                                        const void         *val);
 
 
 /*! Fetch Node Value
