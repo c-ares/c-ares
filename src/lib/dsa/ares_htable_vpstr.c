@@ -138,7 +138,7 @@ fail:
 ares_bool_t ares_htable_vpstr_get(const ares_htable_vpstr_t *htable,
                                   const void *key, const char **val)
 {
-  ares_htable_vpstr_bucket_t *bucket = NULL;
+  const ares_htable_vpstr_bucket_t *bucket = NULL;
 
   if (val) {
     *val = NULL;

@@ -74,6 +74,7 @@ ares_conn_err_t ares_socket_write(ares_channel_t *channel, ares_socket_t fd,
                                   size_t *written);
 ares_conn_err_t ares_socket_write_tfo(ares_channel_t *channel, ares_socket_t fd,
                                       const void *data, size_t len,
-                                      size_t *written, struct sockaddr *sa,
+                                      size_t *written,
+                                      const struct sockaddr *sa,
                                       ares_socklen_t salen);
 #endif

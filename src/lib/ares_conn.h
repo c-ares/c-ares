@@ -178,7 +178,8 @@ ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
 ares_status_t   ares_conn_flush(ares_conn_t *conn);
 ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
                                size_t *read_bytes);
-ares_conn_t    *ares_conn_from_fd(ares_channel_t *channel, ares_socket_t fd);
+ares_conn_t    *ares_conn_from_fd(const ares_channel_t *channel,
+                                  ares_socket_t fd);
 void            ares_conn_sock_state_cb_update(ares_conn_t            *conn,
                                                ares_conn_state_flags_t flags);
 ares_conn_err_t ares_socket_recv(ares_channel_t *channel, ares_socket_t s,

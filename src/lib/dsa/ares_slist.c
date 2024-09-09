@@ -317,7 +317,8 @@ void ares_slist_node_reinsert(ares_slist_node_t *node)
   ares_slist_node_push(list, node);
 }
 
-ares_slist_node_t *ares_slist_node_find(ares_slist_t *list, const void *val)
+ares_slist_node_t *ares_slist_node_find(const ares_slist_t *list,
+                                        const void *val)
 {
   size_t             i;
   ares_slist_node_t *node = NULL;
@@ -376,7 +377,7 @@ ares_slist_node_t *ares_slist_node_find(ares_slist_t *list, const void *val)
   return node;
 }
 
-ares_slist_node_t *ares_slist_node_first(ares_slist_t *list)
+ares_slist_node_t *ares_slist_node_first(const ares_slist_t *list)
 {
   if (list == NULL) {
     return NULL;
@@ -385,7 +386,7 @@ ares_slist_node_t *ares_slist_node_first(ares_slist_t *list)
   return list->head[0];
 }
 
-ares_slist_node_t *ares_slist_node_last(ares_slist_t *list)
+ares_slist_node_t *ares_slist_node_last(const ares_slist_t *list)
 {
   if (list == NULL) {
     return NULL;
@@ -393,7 +394,7 @@ ares_slist_node_t *ares_slist_node_last(ares_slist_t *list)
   return list->tail;
 }
 
-ares_slist_node_t *ares_slist_node_next(ares_slist_node_t *node)
+ares_slist_node_t *ares_slist_node_next(const ares_slist_node_t *node)
 {
   if (node == NULL) {
     return NULL;
@@ -401,7 +402,7 @@ ares_slist_node_t *ares_slist_node_next(ares_slist_node_t *node)
   return node->next[0];
 }
 
-ares_slist_node_t *ares_slist_node_prev(ares_slist_node_t *node)
+ares_slist_node_t *ares_slist_node_prev(const ares_slist_node_t *node)
 {
   if (node == NULL) {
     return NULL;

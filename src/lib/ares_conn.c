@@ -314,7 +314,8 @@ done:
   return status;
 }
 
-static ares_status_t ares_conn_connect(ares_conn_t *conn, struct sockaddr *sa,
+static ares_status_t ares_conn_connect(ares_conn_t *conn,
+                                       const struct sockaddr *sa,
                                        ares_socklen_t salen)
 {
   ares_conn_err_t err;
@@ -394,10 +395,9 @@ ares_status_t ares_open_connection(ares_conn_t   **conn_out,
   }
 
   /* Enable TFO if possible */
-  if (conn->flags & ARES_CONN_FLAG_TFO) {
-    if (ares_socket_enable_tfo(channel, conn->fd) != ARES_CONN_ERR_SUCCESS) {
-      conn->flags &= ~((unsigned int)ARES_CONN_FLAG_TFO);
-    }
+  if (conn->flags & ARES_CONN_FLAG_TFO &&
+      ares_socket_enable_tfo(channel, conn->fd) != ARES_CONN_ERR_SUCCESS) {
+    conn->flags &= ~((unsigned int)ARES_CONN_FLAG_TFO);
   }
 
   if (channel->sock_config_cb) {
@@ -492,7 +492,7 @@ done:
   return status;
 }
 
-ares_conn_t *ares_conn_from_fd(ares_channel_t *channel, ares_socket_t fd)
+ares_conn_t *ares_conn_from_fd(const ares_channel_t *channel, ares_socket_t fd)
 {
   ares_llist_node_t *node;
 
