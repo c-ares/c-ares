@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     name: "Solaris Build and Test"
     env:
       DIST: SOLARIS
@@ -29,22 +29,23 @@ jobs:
         with:
           envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER CXXFLAGS TEST_DEBUGGER'
           usesh: true
-          mem: 4096
+          cpu: 4
+          mem: 8192
           release: 11.4-gcc
           # package list: http://pkg.oracle.com/solaris/release/en/catalog.shtml
           prepare: |
             pkg install -v --no-refresh gdb
           # We have to jump through a lot of hoops with google test.
-          #  - We need to max out at v1.13.x because this solaris VM is old and
-          #    only has cmake 3.9
           #  - We have to compile google test ourselves because it isn't available.
           #  - We have to forcibly compile google test without threading because
           #    solaris throws an exception for some unknown reason.
           #  - The forcible threading disablement doesn't appear to propagate to
           #    proper cflags with compiling c-ares tests so we need to set a
           #    CXX flag to let google test know it was compiled without threading.
+          #  - NOTE: v1.15.x is the latest version available at the time of this
+          #          writing.
           run: |
-            git clone --depth=1 -b v1.13.x https://github.com/google/googletest googletest
+            git clone --depth=1 -b v1.15.x https://github.com/google/googletest googletest
             cd googletest
             cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_GMOCK=ON -DINSTALL_GTEST=ON -Dgtest_disable_pthreads=ON -DCMAKE_VERBOSE_MAKEFILE=ON .
             gmake
