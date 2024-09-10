@@ -20,8 +20,7 @@ jobs:
       CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON"
       CMAKE_TEST_FLAGS: "-DCMAKE_PREFIX_PATH=/usr/local/ -DCARES_BUILD_TESTS=ON -DCMAKE_CXX_FLAGS=-DGTEST_HAS_PTHREAD=0"
       TEST_FILTER: "--gtest_filter=-*Live*"
-      # Due to the ancient GDB version in the repo right now, we can't run it through GDB
-      TEST_DEBUGGER: "none"
+      TEST_DEBUGGER: "gdb"
     steps:
       - uses: actions/checkout@v4
       - name: Solaris Build and Test
@@ -30,9 +29,11 @@ jobs:
         with:
           envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER CXXFLAGS TEST_DEBUGGER'
           usesh: true
+          mem: 4096
+          release: 11.4-gcc
           # package list: http://pkg.oracle.com/solaris/release/en/catalog.shtml
           prepare: |
-            pkg install -v --no-refresh cmake gcc pkg-config gnu-make git gdb
+            pkg install -v --no-refresh gdb
           # We have to jump through a lot of hoops with google test.
           #  - We need to max out at v1.13.x because this solaris VM is old and
           #    only has cmake 3.9
