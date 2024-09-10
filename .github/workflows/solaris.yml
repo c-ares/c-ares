@@ -29,7 +29,8 @@ jobs:
         with:
           envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER CXXFLAGS TEST_DEBUGGER'
           usesh: true
-          mem: 4096
+          cpu: 4
+          mem: 8192
           release: 11.4-gcc
           # package list: http://pkg.oracle.com/solaris/release/en/catalog.shtml
           prepare: |
@@ -41,6 +42,8 @@ jobs:
           #  - The forcible threading disablement doesn't appear to propagate to
           #    proper cflags with compiling c-ares tests so we need to set a
           #    CXX flag to let google test know it was compiled without threading.
+          #  - NOTE: v1.15.x is the latest version available at the time of this
+          #          writing.
           run: |
             git clone --depth=1 -b v1.15.x https://github.com/google/googletest googletest
             cd googletest
