@@ -60,7 +60,6 @@
 #endif
 
 #include "ares_inet_net_pton.h"
-#include "ares_platform.h"
 
 static unsigned char ip_natural_mask(const struct ares_addr *addr)
 {

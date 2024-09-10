@@ -44,7 +44,6 @@
 #endif
 
 #include "ares_inet_net_pton.h"
-#include "ares_platform.h"
 
 static void   sort_addresses(const struct hostent  *host,
                              const struct apattern *sortlist, size_t nsort);

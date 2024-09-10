@@ -23,7 +23,6 @@ CSOURCES = ares_addrinfo2hostent.c	\
   ares_library_init.c			\
   ares_metrics.c			\
   ares_options.c			\
-  ares_platform.c			\
   ares_parse_into_addrinfo.c		\
   ares_process.c			\
   ares_qcache.c				\
@@ -97,7 +96,6 @@ HHEADERS = ares_android.h			\
   ares_getenv.h				\
   ares_inet_net_pton.h			\
   ares_ipv6.h				\
-  ares_platform.h			\
   ares_private.h			\
   ares_setup.h				\
   ares_socket.h				\
