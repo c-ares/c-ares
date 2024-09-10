@@ -40,7 +40,6 @@
 #  include <arpa/inet.h>
 #endif
 #include <time.h>
-#include "ares_platform.h"
 
 /* HOSTS FILE PROCESSING OVERVIEW
  * ==============================

@@ -58,10 +58,6 @@
 
 #include "ares_dns.h"
 
-#ifdef _WIN32
-#  include "ares_platform.h"
-#endif
-
 struct host_query {
   ares_channel_t            *channel;
   char                      *name;

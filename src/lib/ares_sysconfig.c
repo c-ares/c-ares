@@ -56,7 +56,6 @@
 #endif
 
 #include "ares_inet_net_pton.h"
-#include "ares_platform.h"
 
 
 #if defined(__MVS__)

@@ -53,7 +53,6 @@
 #endif
 
 #include "ares_inet_net_pton.h"
-#include "ares_platform.h"
 
 #if defined(USE_WINSOCK)
 /*
@@ -513,10 +512,6 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
   char *p      = NULL;
 
   *outptr = NULL;
-
-  if (ares_getplatform() != WIN_NT) {
-    return ARES_FALSE;
-  }
 
   /* 1. Global DNS Suffix Search List */
   if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ, &hKey) ==

@@ -39,7 +39,6 @@
 
 #include "ares_nameser.h"
 #include "ares_inet_net_pton.h"
-#include "ares_platform.h"
 
 struct addr_query {
   /* Arguments passed to ares_gethostbyaddr() */
