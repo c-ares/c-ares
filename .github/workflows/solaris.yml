@@ -32,8 +32,8 @@ jobs:
           mem: 4096
           release: 11.4-gcc
           # package list: http://pkg.oracle.com/solaris/release/en/catalog.shtml
-          # prepare: |
-          #   pkg install -v --no-refresh cmake gcc pkg-config gnu-make git gdb
+          prepare: |
+            pkg install -v --no-refresh gdb
           # We have to jump through a lot of hoops with google test.
           #  - We need to max out at v1.13.x because this solaris VM is old and
           #    only has cmake 3.9
