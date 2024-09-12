@@ -31,7 +31,7 @@
 
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
-#ifdef USE_LEGACY_PARSERS
+#ifdef USE_LEGACY_FUZZERS
 
 /* This implementation calls the legacy c-ares parsers, which historically
  * all used different logic and parsing.  As of c-ares 1.21.0 these are

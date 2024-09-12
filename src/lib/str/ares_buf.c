@@ -416,6 +416,23 @@ ares_status_t ares_buf_tag_fetch_bytes(const ares_buf_t *buf,
   return ARES_SUCCESS;
 }
 
+ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
+                                          ares_buf_t      **newbuf)
+{
+  size_t               ptr_len = 0;
+  const unsigned char *ptr     = ares_buf_tag_fetch(buf, &ptr_len);
+
+  if (ptr == NULL || newbuf == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *newbuf = ares_buf_create_const(ptr, ptr_len);
+  if (*newbuf == NULL) {
+    return ARES_ENOMEM;
+  }
+  return ARES_SUCCESS;
+}
+
 ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
                                         size_t len)
 {
@@ -445,6 +462,31 @@ ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
     }
   }
 
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf, char **str)
+{
+  size_t               ptr_len = 0;
+  const unsigned char *ptr     = ares_buf_tag_fetch(buf, &ptr_len);
+
+  if (ptr == NULL || str == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (!ares_str_isprint((const char *)ptr, ptr_len)) {
+    return ARES_EBADSTR;
+  }
+
+  *str = ares_malloc(ptr_len + 1);
+  if (*str == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  if (ptr_len > 0) {
+    memcpy(*str, ptr, ptr_len);
+  }
+  (*str)[ptr_len] = 0;
   return ARES_SUCCESS;
 }
 
@@ -710,7 +752,38 @@ size_t ares_buf_consume_until_charset(ares_buf_t          *buf,
 
 done:
   if (require_charset && !found) {
+    return SIZE_MAX;
+  }
+
+  if (i > 0) {
+    ares_buf_consume(buf, i);
+  }
+  return i;
+}
+
+size_t ares_buf_consume_until_seq(ares_buf_t *buf, const unsigned char *seq,
+                                  size_t len, ares_bool_t require_seq)
+{
+  size_t               remaining_len = 0;
+  const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
+  size_t               i;
+  ares_bool_t          found = ARES_FALSE;
+
+  if (ptr == NULL || seq == NULL || len == 0) {
     return 0;
+  }
+
+  for (i = 0; i < remaining_len; i++) {
+    if (ptr[i] == seq[0] && remaining_len - i >= len &&
+        ares_memeq(ptr + i, seq, len)) {
+      found = ARES_TRUE;
+      goto done;
+    }
+  }
+
+done:
+  if (require_seq && !found) {
+    return SIZE_MAX;
   }
 
   if (i > 0) {
@@ -984,6 +1057,22 @@ size_t ares_buf_len(const ares_buf_t *buf)
 const unsigned char *ares_buf_peek(const ares_buf_t *buf, size_t *len)
 {
   return ares_buf_fetch(buf, len);
+}
+
+ares_status_t ares_buf_peek_byte(const ares_buf_t *buf, unsigned char *b)
+{
+  size_t               remaining_len = 0;
+  const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
+
+  if (buf == NULL || b == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (remaining_len == 0) {
+    return ARES_EBADRESP;
+  }
+  *b = ptr[0];
+  return ARES_SUCCESS;
 }
 
 size_t ares_buf_get_position(const ares_buf_t *buf)

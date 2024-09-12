@@ -44,12 +44,16 @@ CARES_EXTERN size_t ares_strlen(const char *str);
 CARES_EXTERN size_t ares_strcpy(char *dest, const char *src, size_t dest_size);
 
 CARES_EXTERN ares_bool_t   ares_str_isnum(const char *str);
+CARES_EXTERN ares_bool_t   ares_str_isalnum(const char *str);
 
 CARES_EXTERN void          ares_str_ltrim(char *str);
 CARES_EXTERN void          ares_str_rtrim(char *str);
 CARES_EXTERN void          ares_str_trim(char *str);
+CARES_EXTERN void          ares_str_lower(char *str);
 
 CARES_EXTERN unsigned char ares_tolower(unsigned char c);
+CARES_EXTERN ares_bool_t   ares_memeq(const unsigned char *ptr,
+                                      const unsigned char *val, size_t len);
 CARES_EXTERN ares_bool_t   ares_memeq_ci(const unsigned char *ptr,
                                          const unsigned char *val, size_t len);
 CARES_EXTERN ares_bool_t   ares_is_hostname(const char *str);

@@ -39,6 +39,9 @@
 #ifdef HAVE_NET_IF_H
 #  include <net/if.h>
 #endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 #if defined(USE_WINSOCK)
 #  if defined(HAVE_IPHLPAPI_H)
@@ -232,7 +235,7 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
 
     /* Consume until ] */
     if (ares_buf_consume_until_charset(buf, (const unsigned char *)"]", 1,
-                                       ARES_TRUE) == 0) {
+                                       ARES_TRUE) == SIZE_MAX) {
       return ARES_EBADSTR;
     }
 
