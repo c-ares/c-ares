@@ -211,6 +211,16 @@ ares_status_t  ares_uri_set_fragment(ares_uri_t *uri, const char *fragment);
  */
 const char    *ares_uri_get_fragment(ares_uri_t *uri);
 
+/*! Parse the provided URI buffer into a new URI object.
+ *
+ *  \param[out] out  Returned new URI object. free with ares_uri_destroy().
+ *  \param[in]  buf  Buffer object containing the URI
+ *  \return ARES_SUCCESS on successful parse. On failure the 'buf' object will
+ *          be restored to its initial state in case another parser needs to
+ *          be attempted.
+ */
+ares_status_t  ares_uri_parse_buf(ares_uri_t **out, ares_buf_t *buf);
+
 /*! Parse the provided URI string into a new URI object.
  *
  *  \param[out] out  Returned new URI object. free with ares_uri_destroy().

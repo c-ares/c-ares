@@ -335,9 +335,8 @@ static ares_status_t ares_uri_set_username_own(ares_uri_t *uri, char *username)
     return ARES_EFORMERR;
   }
 
-  if (username != NULL &&
-      (!ares_str_isprint(username, ares_strlen(username)) ||
-        ares_strlen(username) == 0)) {
+  if (username != NULL && (!ares_str_isprint(username, ares_strlen(username)) ||
+                           ares_strlen(username) == 0)) {
     return ARES_EBADSTR;
   }
 
@@ -479,6 +478,15 @@ ares_status_t ares_uri_set_host(ares_uri_t *uri, const char *host)
 
   ares_strcpy(uri->host, host, sizeof(uri->host));
   return ARES_SUCCESS;
+}
+
+const char *ares_uri_get_host(ares_uri_t *uri)
+{
+  if (uri == NULL) {
+    return NULL;
+  }
+
+  return uri->host;
 }
 
 ares_status_t ares_uri_set_port(ares_uri_t *uri, unsigned short port)
@@ -689,8 +697,8 @@ static ares_status_t ares_uri_write_scheme(ares_uri_t *uri, ares_buf_t *buf)
 
 static ares_status_t ares_uri_write_authority(ares_uri_t *uri, ares_buf_t *buf)
 {
-  ares_status_t    status;
-  ares_bool_t      is_ipv6 = ARES_FALSE;
+  ares_status_t status;
+  ares_bool_t   is_ipv6 = ARES_FALSE;
 
   if (ares_strlen(uri->username)) {
     status = ares_uri_encode_buf(buf, uri->username, ares_uri_chis_userinfo);
@@ -1457,30 +1465,23 @@ static ares_status_t ares_uri_parse_fragment(ares_uri_t *uri, ares_buf_t *buf)
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_uri_parse(ares_uri_t **out, const char *str)
+ares_status_t ares_uri_parse_buf(ares_uri_t **out, ares_buf_t *buf)
 {
   ares_status_t status;
   ares_uri_t   *uri = NULL;
-  ares_buf_t   *buf = NULL;
+  size_t        orig_pos;
 
-  if (out == NULL || str == NULL) {
+  if (out == NULL || buf == NULL) {
     return ARES_EFORMERR;
   }
+
+  *out = NULL;
+
+  orig_pos = ares_buf_get_position(buf);
 
   uri = ares_uri_create();
   if (uri == NULL) {
     status = ARES_ENOMEM;
-    goto done;
-  }
-
-  buf = ares_buf_create();
-  if (buf == NULL) {
-    status = ARES_ENOMEM;
-    goto done;
-  }
-
-  status = ares_buf_append_str(buf, str);
-  if (status != ARES_SUCCESS) {
     goto done;
   }
 
@@ -1510,12 +1511,44 @@ ares_status_t ares_uri_parse(ares_uri_t **out, const char *str)
   }
 
 done:
-  ares_buf_destroy(buf);
-
   if (status != ARES_SUCCESS) {
+    ares_buf_set_position(buf, orig_pos);
     ares_uri_destroy(uri);
   } else {
     *out = uri;
   }
+  return status;
+}
+
+ares_status_t ares_uri_parse(ares_uri_t **out, const char *str)
+{
+  ares_status_t status;
+  ares_buf_t   *buf = NULL;
+
+  if (out == NULL || str == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *out = NULL;
+
+  buf = ares_buf_create();
+  if (buf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  status = ares_buf_append_str(buf, str);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares_uri_parse_buf(out, buf);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+done:
+  ares_buf_destroy(buf);
+
   return status;
 }

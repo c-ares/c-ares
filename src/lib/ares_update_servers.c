@@ -195,6 +195,53 @@ static ares_bool_t ares_server_blacklisted(const struct ares_addr *addr)
   return ARES_FALSE;
 }
 
+static ares_status_t parse_nameserver_uri(ares_buf_t     *buf,
+                                          ares_sconfig_t *sconfig)
+{
+  ares_uri_t   *uri    = NULL;
+  ares_status_t status = ARES_SUCCESS;
+  const char   *port;
+  char         *ll_scope;
+  char          hoststr[256];
+  size_t        addrlen;
+
+  status = ares_uri_parse_buf(&uri, buf);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  if (!ares_streq("dns", ares_uri_get_scheme(uri))) {
+    status = ARES_EBADSTR;
+    goto done;
+  }
+
+  ares_strcpy(hoststr, ares_uri_get_host(uri), sizeof(hoststr));
+  ll_scope = strchr(hoststr, '%');
+  if (ll_scope != NULL) {
+    *ll_scope = 0;
+    ll_scope++;
+    ares_strcpy(sconfig->ll_iface, ll_scope, sizeof(sconfig->ll_iface));
+  }
+
+  /* Convert ip address from string to network byte order */
+  sconfig->addr.family = AF_UNSPEC;
+  if (ares_dns_pton(hoststr, &sconfig->addr, &addrlen) == NULL) {
+    status = ARES_EBADSTR;
+    goto done;
+  }
+
+  sconfig->udp_port = ares_uri_get_port(uri);
+  sconfig->tcp_port = sconfig->udp_port;
+  port              = ares_uri_get_query_key(uri, "tcpport");
+  if (port != NULL) {
+    sconfig->tcp_port = (unsigned short)atoi(port);
+  }
+
+done:
+  ares_uri_destroy(uri);
+  return status;
+}
+
 /* Parse address and port in these formats, either ipv4 or ipv6 addresses
  * are allowed:
  *   ipaddr
@@ -479,7 +526,11 @@ ares_status_t ares_sconfig_append_fromstr(ares_llist_t **sconfig,
     ares_buf_t    *entry = ares_llist_node_val(node);
     ares_sconfig_t s;
 
-    status = parse_nameserver(entry, &s);
+    status = parse_nameserver_uri(entry, &s);
+    if (status != ARES_SUCCESS) {
+      status = parse_nameserver(entry, &s);
+    }
+
     if (status != ARES_SUCCESS) {
       if (ignore_invalid) {
         continue;
@@ -918,11 +969,81 @@ fail:
   /* LCOV_EXCL_STOP */
 }
 
+static ares_bool_t ares_server_use_uri(const ares_server_t *server)
+{
+  /* Currently only reason to use new format is if the ports for udp and tcp
+   * are different */
+  if (server->tcp_port != server->udp_port) {
+    return ARES_TRUE;
+  }
+  return ARES_FALSE;
+}
+
+static ares_status_t ares_get_server_addr_uri(const ares_server_t *server,
+                                              ares_buf_t          *buf)
+{
+  ares_uri_t   *uri = NULL;
+  ares_status_t status;
+  char          addr[INET6_ADDRSTRLEN];
+
+  uri = ares_uri_create();
+  if (uri == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  status = ares_uri_set_scheme(uri, "dns");
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  ares_inet_ntop(server->addr.family, &server->addr.addr, addr, sizeof(addr));
+
+  if (ares_strlen(server->ll_iface)) {
+    char addr_iface[INET6_ADDRSTRLEN + 17];
+
+    snprintf(addr_iface, sizeof(addr_iface), "%s%%%s", addr, server->ll_iface);
+    status = ares_uri_set_host(uri, addr_iface);
+  } else {
+    status = ares_uri_set_host(uri, addr);
+  }
+
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares_uri_set_port(uri, server->udp_port);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  if (server->udp_port != server->tcp_port) {
+    char port[6];
+    snprintf(port, sizeof(port), "%d", server->tcp_port);
+    status = ares_uri_set_query_key(uri, "tcpport", port);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
+
+  status = ares_uri_write_buf(uri, buf);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+done:
+  ares_uri_destroy(uri);
+  return status;
+}
+
 /* Write out the details of a server to a buffer */
 ares_status_t ares_get_server_addr(const ares_server_t *server, ares_buf_t *buf)
 {
   ares_status_t status;
   char          addr[INET6_ADDRSTRLEN];
+
+  if (ares_server_use_uri(server)) {
+    return ares_get_server_addr_uri(server, buf);
+  }
 
   /* ipv4addr or [ipv6addr] */
   if (server->addr.family == AF_INET6) {
