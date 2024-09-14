@@ -1257,26 +1257,28 @@ static ares_status_t ares_uri_parse_path(ares_uri_t *uri, ares_buf_t *buf)
                                  ARES_FALSE);
   status = ares_buf_tag_fetch_strdup(buf, &path);
   if (status != ARES_SUCCESS) {
-    return status;
+    goto done;
   }
 
   if (!ares_uri_str_isvalid(path, SIZE_MAX, ares_uri_chis_path_enc)) {
-    ares_free(path);
-    return ARES_EBADSTR;
+    status = ARES_EBADSTR;
+    goto done;
   }
 
   status = ares_uri_decode_inplace(path, ARES_FALSE, ARES_TRUE, &len);
   if (status != ARES_SUCCESS) {
-    return status;
+    goto done;
   }
 
   status = ares_uri_set_path_own(uri, path);
   if (status != ARES_SUCCESS) {
-    ares_free(path);
-    return status;
+    goto done;
   }
+  path = NULL;
 
-  return ARES_SUCCESS;
+done:
+  ares_free(path);
+  return status;
 }
 
 static ares_status_t ares_uri_parse_query_buf(ares_uri_t *uri, ares_buf_t *buf)
@@ -1443,26 +1445,28 @@ static ares_status_t ares_uri_parse_fragment(ares_uri_t *uri, ares_buf_t *buf)
   /* Rest of the buffer is the fragment */
   status = ares_buf_fetch_str_dup(buf, ares_buf_len(buf), &fragment);
   if (status != ARES_SUCCESS) {
-    return status;
+    goto done;
   }
 
   if (!ares_uri_str_isvalid(fragment, SIZE_MAX, ares_uri_chis_fragment_enc)) {
-    ares_free(fragment);
-    return ARES_EBADSTR;
+    status = ARES_EBADSTR;
+    goto done;
   }
 
   status = ares_uri_decode_inplace(fragment, ARES_FALSE, ARES_TRUE, &len);
   if (status != ARES_SUCCESS) {
-    return status;
+    goto done;
   }
 
   status = ares_uri_set_fragment_own(uri, fragment);
   if (status != ARES_SUCCESS) {
-    ares_free(fragment);
-    return status;
+    goto done;
   }
+  fragment = NULL;
 
-  return ARES_SUCCESS;
+done:
+  ares_free(fragment);
+  return status;
 }
 
 ares_status_t ares_uri_parse_buf(ares_uri_t **out, ares_buf_t *buf)
