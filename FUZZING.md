@@ -23,7 +23,8 @@ ninja
 
 3. Build the fuzz test itself linked against our fuzzing-enabled build:
 ```
-${CC} -W -Wall -Og -fsanitize=address,fuzzer -I../include -I../src/lib/include -I. -o ares-test-fuzz ../test/ares-test-fuzz.c -L./lib -Wl,-rpath ./lib -lcares
+${CC} -W -Wall -Og -fsanitize=address,fuzzer -I../include -I../src/lib -I. -o ares-test-fuzz ../test/ares-test-fuzz.c -L./lib -Wl,-rpath ./lib -lcares
+${CC} -W -Wall -Og -fsanitize=address,fuzzer -I../include -I../src/lib -I. -o ares-test-fuzz-name ../test/ares-test-fuzz-name.c -L./lib -Wl,-rpath ./lib -lcares
 ```
 
 4. Run the fuzzer, its better if you can provide seed input but it does pretty
@@ -32,8 +33,16 @@ ${CC} -W -Wall -Og -fsanitize=address,fuzzer -I../include -I../src/lib/include -
    https://llvm.org/docs/LibFuzzer.html
 ```
 mkdir corpus
+cp ../test/fuzzinput/* corpus
 ./ares-test-fuzz -max_len=65535 corpus
 ```
+or
+```
+mkdir corpus
+cp ../test/fuzznames/* corpus
+./ares-test-fuzz-name -max_len=1024 corpus
+```
+
 
 ## AFL
 
