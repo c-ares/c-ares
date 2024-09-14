@@ -33,13 +33,13 @@ ${CC} -W -Wall -Og -fsanitize=address,fuzzer -I../include -I../src/lib -I. -o ar
    https://llvm.org/docs/LibFuzzer.html
 ```
 mkdir corpus
-cp ../test/fuzzinput/* .
+cp ../test/fuzzinput/* corpus
 ./ares-test-fuzz -max_len=65535 corpus
 ```
 or
 ```
 mkdir corpus
-cp ../test/fuzznames/* .
+cp ../test/fuzznames/* corpus
 ./ares-test-fuzz-name -max_len=65535 corpus
 ```
 
