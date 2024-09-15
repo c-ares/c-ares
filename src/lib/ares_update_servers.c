@@ -501,10 +501,11 @@ ares_status_t ares_sconfig_append_fromstr(ares_llist_t **sconfig,
                                           const char    *str,
                                           ares_bool_t    ignore_invalid)
 {
-  ares_status_t      status = ARES_SUCCESS;
-  ares_buf_t        *buf    = NULL;
-  ares_llist_t      *list   = NULL;
-  ares_llist_node_t *node;
+  ares_status_t status = ARES_SUCCESS;
+  ares_buf_t   *buf    = NULL;
+  ares_array_t *list   = NULL;
+  size_t        num;
+  size_t        i;
 
   /* On Windows, there may be more than one nameserver specified in the same
    * registry key, so we parse input as a space or comma separated list.
@@ -521,9 +522,10 @@ ares_status_t ares_sconfig_append_fromstr(ares_llist_t **sconfig,
     goto done;
   }
 
-  for (node = ares_llist_node_first(list); node != NULL;
-       node = ares_llist_node_next(node)) {
-    ares_buf_t    *entry = ares_llist_node_val(node);
+  num = ares_array_len(list);
+  for (i = 0; i < num; i++) {
+    ares_buf_t   **bufptr = ares_array_at(list, i);
+    ares_buf_t    *entry  = *bufptr;
     ares_sconfig_t s;
 
     status = parse_nameserver_uri(entry, &s);
@@ -549,7 +551,7 @@ ares_status_t ares_sconfig_append_fromstr(ares_llist_t **sconfig,
   status = ARES_SUCCESS;
 
 done:
-  ares_llist_destroy(list);
+  ares_array_destroy(list);
   ares_buf_destroy(buf);
   return status;
 }
@@ -999,7 +1001,7 @@ static ares_status_t ares_get_server_addr_uri(const ares_server_t *server,
   ares_inet_ntop(server->addr.family, &server->addr.addr, addr, sizeof(addr));
 
   if (ares_strlen(server->ll_iface)) {
-    char addr_iface[INET6_ADDRSTRLEN + 17];
+    char addr_iface[256];
 
     snprintf(addr_iface, sizeof(addr_iface), "%s%%%s", addr, server->ll_iface);
     status = ares_uri_set_host(uri, addr_iface);

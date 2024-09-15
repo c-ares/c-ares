@@ -512,11 +512,12 @@ ares_status_t ares_cat_domain(const char *name, const char *domain, char **s)
 ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
                                       const char *name, char **alias)
 {
-  ares_status_t      status      = ARES_SUCCESS;
-  const char        *hostaliases = NULL;
-  ares_buf_t        *buf         = NULL;
-  ares_llist_t      *lines       = NULL;
-  ares_llist_node_t *node;
+  ares_status_t status      = ARES_SUCCESS;
+  const char   *hostaliases = NULL;
+  ares_buf_t   *buf         = NULL;
+  ares_array_t *lines       = NULL;
+  size_t        num;
+  size_t        i;
 
   if (channel == NULL || name == NULL || alias == NULL) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -565,11 +566,12 @@ ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
     goto done;
   }
 
-  for (node = ares_llist_node_first(lines); node != NULL;
-       node = ares_llist_node_next(node)) {
-    ares_buf_t *line         = ares_llist_node_val(node);
-    char        hostname[64] = "";
-    char        fqdn[256]    = "";
+  num = ares_array_len(lines);
+  for (i = 0; i < num; i++) {
+    ares_buf_t **bufptr       = ares_array_at(lines, i);
+    ares_buf_t  *line         = *bufptr;
+    char         hostname[64] = "";
+    char         fqdn[256]    = "";
 
     /* Pull off hostname */
     ares_buf_tag(line);
@@ -615,7 +617,7 @@ ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
 
 done:
   ares_buf_destroy(buf);
-  ares_llist_destroy(lines);
+  ares_array_destroy(lines);
 
   return status;
 }

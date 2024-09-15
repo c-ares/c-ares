@@ -215,6 +215,43 @@ void ares_str_lower(char *str)
   }
 }
 
+unsigned char *ares_memmem(const unsigned char *big, size_t big_len,
+                           const unsigned char *little, size_t little_len)
+{
+  unsigned char *ptr;
+
+  if (big == NULL || little == NULL || big_len == 0 || little_len == 0) {
+    return NULL;
+  }
+
+#ifdef HAVE_MEMMEM
+  ptr = memmem(big, big_len, little, little_len);
+  return ptr;
+#else
+  while (1) {
+    ptr = memchr(big, little[0], big_len);
+    if (ptr == NULL) {
+      break;
+    }
+
+    big_len -= (size_t)(ptr - big);
+    big      = ptr;
+    if (big_len < little_len) {
+      break;
+    }
+
+    if (memcmp(big, little, little_len) == 0) {
+      return ptr;
+    }
+
+    big++;
+    big_len--;
+  }
+
+  return NULL;
+#endif
+}
+
 ares_bool_t ares_memeq(const unsigned char *ptr, const unsigned char *val,
                        size_t len)
 {

@@ -456,7 +456,7 @@ ares_status_t ares_uri_set_host(ares_uri_t *uri, const char *host)
   memset(&addr, 0, sizeof(addr));
   addr.family = AF_UNSPEC;
   if (ares_dns_pton(hoststr, &addr, &addrlen) != NULL) {
-    char ipaddr[256];
+    char ipaddr[INET6_ADDRSTRLEN];
     ares_inet_ntop(addr.family, &addr.addr, ipaddr, sizeof(ipaddr));
     /* Only IPv6 is allowed to have a scope */
     if (ll_scope != NULL && addr.family != AF_INET6) {

@@ -27,7 +27,7 @@
 #define __ARES__BUF_H
 
 #include "ares.h"
-#include "ares_llist.h"
+#include "ares_array.h"
 
 /*! \addtogroup ares_buf Safe Data Builder and buffer
  *
@@ -513,16 +513,19 @@ typedef enum {
  *                                character in the value.  A value of 1 would
  *                                have little usefulness and would effectively
  *                                ignore the delimiter itself.
- *  \param[out] list              Result. Depending on flags, this may be a
- *                                valid list with no elements.  Use
- *                                ares_llist_destroy() to free the memory which
- *                                will also free the contained ares_buf_t
- *                                objects.
+ *  \param[out] arr               Result. Depending on flags, this may be a
+ *                                valid array with no elements.  Use
+ *                                ares_array_destroy() to free the memory which
+ *                                will also free the contained ares_buf_t *
+ *                                objects. Each buf object returned by
+ *                                ares_array_at() or similar is a pointer to
+ *                                an ares_buf_t * object, meaning you need to
+ *                                accept it as "ares_buf_t **" then dereference.
  *  \return ARES_SUCCESS on success, or error like ARES_ENOMEM.
  */
 CARES_EXTERN ares_status_t ares_buf_split(
   ares_buf_t *buf, const unsigned char *delims, size_t delims_len,
-  ares_buf_split_t flags, size_t max_sections, ares_llist_t **list);
+  ares_buf_split_t flags, size_t max_sections, ares_array_t **arr);
 
 /*! Split the provided buffer into a C array of C strings.
  *

@@ -733,17 +733,29 @@ size_t ares_buf_consume_until_charset(ares_buf_t          *buf,
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
-  size_t               i;
+  size_t               pos;
   ares_bool_t          found = ARES_FALSE;
 
   if (ptr == NULL || charset == NULL || len == 0) {
     return 0;
   }
 
-  for (i = 0; i < remaining_len; i++) {
+  /* Optimize for single character searches */
+  if (len == 1) {
+    const unsigned char *p = memchr(ptr, charset[0], remaining_len);
+    if (p != NULL) {
+      found = ARES_TRUE;
+      pos   = (size_t)(p - ptr);
+    } else {
+      pos = remaining_len;
+    }
+    goto done;
+  }
+
+  for (pos = 0; pos < remaining_len; pos++) {
     size_t j;
     for (j = 0; j < len; j++) {
-      if (ptr[i] == charset[j]) {
+      if (ptr[pos] == charset[j]) {
         found = ARES_TRUE;
         goto done;
       }
@@ -755,10 +767,10 @@ done:
     return SIZE_MAX;
   }
 
-  if (i > 0) {
-    ares_buf_consume(buf, i);
+  if (pos > 0) {
+    ares_buf_consume(buf, pos);
   }
-  return i;
+  return pos;
 }
 
 size_t ares_buf_consume_until_seq(ares_buf_t *buf, const unsigned char *seq,
@@ -766,30 +778,29 @@ size_t ares_buf_consume_until_seq(ares_buf_t *buf, const unsigned char *seq,
 {
   size_t               remaining_len = 0;
   const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
-  size_t               i;
-  ares_bool_t          found = ARES_FALSE;
+  const unsigned char *p;
+  size_t               consume_len = 0;
 
   if (ptr == NULL || seq == NULL || len == 0) {
     return 0;
   }
 
-  for (i = 0; i < remaining_len; i++) {
-    if (ptr[i] == seq[0] && remaining_len - i >= len &&
-        ares_memeq(ptr + i, seq, len)) {
-      found = ARES_TRUE;
-      goto done;
-    }
-  }
-
-done:
-  if (require_seq && !found) {
+  p = ares_memmem(ptr, remaining_len, seq, len);
+  if (require_seq && p == NULL) {
     return SIZE_MAX;
   }
 
-  if (i > 0) {
-    ares_buf_consume(buf, i);
+  if (p != NULL) {
+    consume_len = (size_t)(p - ptr);
+  } else {
+    consume_len = remaining_len;
   }
-  return i;
+
+  if (consume_len > 0) {
+    ares_buf_consume(buf, consume_len);
+  }
+
+  return consume_len;
 }
 
 size_t ares_buf_consume_charset(ares_buf_t *buf, const unsigned char *charset,
@@ -824,21 +835,23 @@ size_t ares_buf_consume_charset(ares_buf_t *buf, const unsigned char *charset,
 
 static void ares_buf_destroy_cb(void *arg)
 {
-  ares_buf_destroy(arg);
+  ares_buf_t **buf = arg;
+  ares_buf_destroy(*buf);
 }
 
-static ares_bool_t ares_buf_split_isduplicate(ares_llist_t        *list,
+static ares_bool_t ares_buf_split_isduplicate(ares_array_t        *arr,
                                               const unsigned char *val,
                                               size_t               len,
                                               ares_buf_split_t     flags)
 {
-  ares_llist_node_t *node;
+  size_t i;
+  size_t num = ares_array_len(arr);
 
-  for (node = ares_llist_node_first(list); node != NULL;
-       node = ares_llist_node_next(node)) {
-    const ares_buf_t    *buf  = ares_llist_node_val(node);
-    size_t               plen = 0;
-    const unsigned char *ptr  = ares_buf_peek(buf, &plen);
+  for (i = 0; i < num; i++) {
+    ares_buf_t         **bufptr = ares_array_at(arr, i);
+    ares_buf_t          *buf    = *bufptr;
+    size_t               plen   = 0;
+    const unsigned char *ptr    = ares_buf_peek(buf, &plen);
 
     /* Can't be duplicate if lengths mismatch */
     if (plen != len) {
@@ -850,27 +863,28 @@ static ares_bool_t ares_buf_split_isduplicate(ares_llist_t        *list,
         return ARES_TRUE;
       }
     } else {
-      if (memcmp(ptr, val, len) == 0) {
+      if (ares_memeq(ptr, val, len)) {
         return ARES_TRUE;
       }
     }
   }
+
   return ARES_FALSE;
 }
 
 ares_status_t ares_buf_split(ares_buf_t *buf, const unsigned char *delims,
                              size_t delims_len, ares_buf_split_t flags,
-                             size_t max_sections, ares_llist_t **list)
+                             size_t max_sections, ares_array_t **arr)
 {
   ares_status_t status = ARES_SUCCESS;
   ares_bool_t   first  = ARES_TRUE;
 
-  if (buf == NULL || delims == NULL || delims_len == 0 || list == NULL) {
+  if (buf == NULL || delims == NULL || delims_len == 0 || arr == NULL) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  *list = ares_llist_create(ares_buf_destroy_cb);
-  if (*list == NULL) {
+  *arr = ares_array_create(sizeof(ares_buf_t *), ares_buf_destroy_cb);
+  if (*arr == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
@@ -894,7 +908,7 @@ ares_status_t ares_buf_split(ares_buf_t *buf, const unsigned char *delims,
       }
     }
 
-    if (max_sections && ares_llist_len(*list) >= max_sections - 1) {
+    if (max_sections && ares_array_len(*arr) >= max_sections - 1) {
       ares_buf_consume(buf, ares_buf_len(buf));
     } else {
       ares_buf_consume_until_charset(buf, delims, delims_len, ARES_FALSE);
@@ -929,7 +943,7 @@ ares_status_t ares_buf_split(ares_buf_t *buf, const unsigned char *delims,
       ares_buf_t *data;
 
       if (!(flags & ARES_BUF_SPLIT_NO_DUPLICATES) ||
-          !ares_buf_split_isduplicate(*list, ptr, len, flags)) {
+          !ares_buf_split_isduplicate(*arr, ptr, len, flags)) {
         /* Since we don't allow const buffers of 0 length, and user wants
          * 0-length buffers, swap what we do here */
         if (len) {
@@ -943,9 +957,9 @@ ares_status_t ares_buf_split(ares_buf_t *buf, const unsigned char *delims,
           goto done;
         }
 
-        if (ares_llist_insert_last(*list, data) == NULL) {
+        status = ares_array_insertdata_last(*arr, &data);
+        if (status != ARES_SUCCESS) {
           ares_buf_destroy(data);
-          status = ARES_ENOMEM;
           goto done;
         }
       }
@@ -956,8 +970,8 @@ ares_status_t ares_buf_split(ares_buf_t *buf, const unsigned char *delims,
 
 done:
   if (status != ARES_SUCCESS) {
-    ares_llist_destroy(*list);
-    *list = NULL;
+    ares_array_destroy(*arr);
+    *arr = NULL;
   }
 
   return status;
@@ -974,10 +988,11 @@ ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
                                  size_t max_sections, char ***strs,
                                  size_t *nstrs)
 {
-  ares_status_t      status;
-  ares_llist_t      *list = NULL;
-  ares_llist_node_t *node;
-  ares_array_t      *arr = NULL;
+  ares_status_t status;
+  ares_array_t *split = NULL;
+  ares_array_t *arr   = NULL;
+  size_t        i;
+  size_t        len;
 
   if (strs == NULL || nstrs == NULL) {
     return ARES_EFORMERR;
@@ -986,7 +1001,7 @@ ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
   *strs  = NULL;
   *nstrs = 0;
 
-  status = ares_buf_split(buf, delims, delims_len, flags, max_sections, &list);
+  status = ares_buf_split(buf, delims, delims_len, flags, max_sections, &split);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -997,10 +1012,11 @@ ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
     goto done;
   }
 
-  for (node = ares_llist_node_first(list); node != NULL;
-       node = ares_llist_node_next(node)) {
-    ares_buf_t *lbuf = ares_llist_node_val(node);
-    char       *str  = NULL;
+  len = ares_array_len(split);
+  for (i = 0; i < len; i++) {
+    ares_buf_t **bufptr = ares_array_at(split, i);
+    ares_buf_t  *lbuf   = *bufptr;
+    char        *str    = NULL;
 
     status = ares_buf_fetch_str_dup(lbuf, ares_buf_len(lbuf), &str);
     if (status != ARES_SUCCESS) {
@@ -1015,7 +1031,7 @@ ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
   }
 
 done:
-  ares_llist_destroy(list);
+  ares_array_destroy(split);
   if (status == ARES_SUCCESS) {
     *strs = ares_array_finish(arr, nstrs);
   } else {
