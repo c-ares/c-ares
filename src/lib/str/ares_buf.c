@@ -849,7 +849,7 @@ static ares_bool_t ares_buf_split_isduplicate(ares_array_t        *arr,
 
   for (i = 0; i < num; i++) {
     ares_buf_t         **bufptr = ares_array_at(arr, i);
-    ares_buf_t          *buf    = *bufptr;
+    const ares_buf_t    *buf    = *bufptr;
     size_t               plen   = 0;
     const unsigned char *ptr    = ares_buf_peek(buf, &plen);
 

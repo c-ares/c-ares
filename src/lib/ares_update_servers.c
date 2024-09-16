@@ -573,7 +573,7 @@ static unsigned short ares_sconfig_get_port(const ares_channel_t *channel,
   return port;
 }
 
-static ares_slist_node_t *ares_server_find(ares_channel_t       *channel,
+static ares_slist_node_t *ares_server_find(const ares_channel_t *channel,
                                            const ares_sconfig_t *s)
 {
   ares_slist_node_t *node;

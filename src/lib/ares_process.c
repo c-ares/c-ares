@@ -849,7 +849,7 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
  *  consecutive failures).  Since they are sorted in priority order, we just
  *  stop when the consecutive failure count changes. Used for random selection
  *  of good servers. */
-static size_t count_highest_prio_servers(ares_channel_t *channel)
+static size_t count_highest_prio_servers(const ares_channel_t *channel)
 {
   ares_slist_node_t *node;
   size_t             cnt                  = 0;

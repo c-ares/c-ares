@@ -481,19 +481,22 @@ static void set_ipv6_v6only(ares_socket_t sockfd, int on)
 ares_conn_err_t ares_socket_enable_tfo(const ares_channel_t *channel,
                                        ares_socket_t         fd)
 {
+#if defined(TFO_CLIENT_SOCKOPT)
+  int opt = 1;
+
   if (!ares_socket_tfo_supported(channel)) {
     return ARES_CONN_ERR_NOTIMP;
   }
 
-#if defined(TFO_CLIENT_SOCKOPT)
-  {
-    int opt = 1;
-    if (setsockopt(fd, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
-                   sizeof(opt)) != 0) {
-      return ARES_CONN_ERR_NOTIMP;
-    }
+  if (setsockopt(fd, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
+                 sizeof(opt)) != 0) {
+    return ARES_CONN_ERR_NOTIMP;
   }
 #else
+  if (!ares_socket_tfo_supported(channel)) {
+    return ARES_CONN_ERR_NOTIMP;
+  }
+
   (void)fd;
 #endif
   return ARES_CONN_ERR_SUCCESS;

@@ -320,7 +320,7 @@ ares_status_t ares_uri_set_scheme(ares_uri_t *uri, const char *scheme)
   return ARES_SUCCESS;
 }
 
-const char *ares_uri_get_scheme(ares_uri_t *uri)
+const char *ares_uri_get_scheme(const ares_uri_t *uri)
 {
   if (uri == NULL) {
     return NULL;
@@ -370,7 +370,7 @@ ares_status_t ares_uri_set_username(ares_uri_t *uri, const char *username)
   return status;
 }
 
-const char *ares_uri_get_username(ares_uri_t *uri)
+const char *ares_uri_get_username(const ares_uri_t *uri)
 {
   if (uri == NULL) {
     return NULL;
@@ -418,7 +418,7 @@ ares_status_t ares_uri_set_password(ares_uri_t *uri, const char *password)
   return status;
 }
 
-const char *ares_uri_get_password(ares_uri_t *uri)
+const char *ares_uri_get_password(const ares_uri_t *uri)
 {
   if (uri == NULL) {
     return NULL;
@@ -480,7 +480,7 @@ ares_status_t ares_uri_set_host(ares_uri_t *uri, const char *host)
   return ARES_SUCCESS;
 }
 
-const char *ares_uri_get_host(ares_uri_t *uri)
+const char *ares_uri_get_host(const ares_uri_t *uri)
 {
   if (uri == NULL) {
     return NULL;
@@ -498,14 +498,13 @@ ares_status_t ares_uri_set_port(ares_uri_t *uri, unsigned short port)
   return ARES_SUCCESS;
 }
 
-unsigned short ares_uri_get_port(ares_uri_t *uri)
+unsigned short ares_uri_get_port(const ares_uri_t *uri)
 {
   if (uri == NULL) {
     return 0;
   }
   return uri->port;
 }
-
 
 /* URI spec says path normalization is a requirement */
 static char *ares_uri_path_normalize(const char *path)
@@ -546,7 +545,7 @@ static char *ares_uri_path_normalize(const char *path)
       i--;
     } else if (ares_streq(str, "..")) {
       if (i != 0) {
-        ares_array_remove_at(arr, (size_t)i-1);
+        ares_array_remove_at(arr, (size_t)i - 1);
         i--;
       }
       ares_array_remove_at(arr, (size_t)i);
@@ -614,7 +613,7 @@ ares_status_t ares_uri_set_path(ares_uri_t *uri, const char *path)
   return ARES_SUCCESS;
 }
 
-const char *ares_uri_get_path(ares_uri_t *uri)
+const char *ares_uri_get_path(const ares_uri_t *uri)
 {
   if (uri == NULL) {
     return NULL;
@@ -655,7 +654,7 @@ ares_status_t ares_uri_del_query_key(ares_uri_t *uri, const char *key)
   return ARES_SUCCESS;
 }
 
-const char *ares_uri_get_query_key(ares_uri_t *uri, const char *key)
+const char *ares_uri_get_query_key(const ares_uri_t *uri, const char *key)
 {
   if (uri == NULL || key == NULL || *key == 0 ||
       !ares_str_isprint(key, ares_strlen(key))) {
@@ -665,7 +664,7 @@ const char *ares_uri_get_query_key(ares_uri_t *uri, const char *key)
   return ares_htable_dict_get_direct(uri->query, key);
 }
 
-char **ares_uri_get_query_keys(ares_uri_t *uri, size_t *num)
+char **ares_uri_get_query_keys(const ares_uri_t *uri, size_t *num)
 {
   if (uri == NULL || num == NULL) {
     return NULL;
@@ -713,7 +712,7 @@ ares_status_t ares_uri_set_fragment(ares_uri_t *uri, const char *fragment)
   return status;
 }
 
-const char *ares_uri_get_fragment(ares_uri_t *uri)
+const char *ares_uri_get_fragment(const ares_uri_t *uri)
 {
   if (uri == NULL) {
     return NULL;
@@ -747,7 +746,8 @@ static ares_status_t ares_uri_encode_buf(ares_buf_t *buf, const char *str,
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_uri_write_scheme(ares_uri_t *uri, ares_buf_t *buf)
+static ares_status_t ares_uri_write_scheme(const ares_uri_t *uri,
+                                           ares_buf_t       *buf)
 {
   ares_status_t status;
 
@@ -764,7 +764,8 @@ static ares_status_t ares_uri_write_scheme(ares_uri_t *uri, ares_buf_t *buf)
   return status;
 }
 
-static ares_status_t ares_uri_write_authority(ares_uri_t *uri, ares_buf_t *buf)
+static ares_status_t ares_uri_write_authority(const ares_uri_t *uri,
+                                              ares_buf_t       *buf)
 {
   ares_status_t status;
   ares_bool_t   is_ipv6 = ARES_FALSE;
@@ -844,7 +845,7 @@ static ares_status_t ares_uri_write_authority(ares_uri_t *uri, ares_buf_t *buf)
   return status;
 }
 
-static ares_status_t ares_uri_write_path(ares_uri_t *uri, ares_buf_t *buf)
+static ares_status_t ares_uri_write_path(const ares_uri_t *uri, ares_buf_t *buf)
 {
   ares_status_t status;
 
@@ -867,7 +868,8 @@ static ares_status_t ares_uri_write_path(ares_uri_t *uri, ares_buf_t *buf)
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_uri_write_query(ares_uri_t *uri, ares_buf_t *buf)
+static ares_status_t ares_uri_write_query(const ares_uri_t *uri,
+                                          ares_buf_t       *buf)
 {
   ares_status_t status;
   char        **keys;
@@ -922,7 +924,8 @@ done:
   return status;
 }
 
-static ares_status_t ares_uri_write_fragment(ares_uri_t *uri, ares_buf_t *buf)
+static ares_status_t ares_uri_write_fragment(const ares_uri_t *uri,
+                                             ares_buf_t       *buf)
 {
   ares_status_t status;
 
@@ -943,7 +946,7 @@ static ares_status_t ares_uri_write_fragment(ares_uri_t *uri, ares_buf_t *buf)
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_uri_write_buf(ares_uri_t *uri, ares_buf_t *buf)
+ares_status_t ares_uri_write_buf(const ares_uri_t *uri, ares_buf_t *buf)
 {
   ares_status_t status;
   size_t        orig_len;
@@ -990,7 +993,7 @@ done:
   return status;
 }
 
-ares_status_t ares_uri_write(char **out, ares_uri_t *uri)
+ares_status_t ares_uri_write(char **out, const ares_uri_t *uri)
 {
   ares_buf_t   *buf;
   ares_status_t status;

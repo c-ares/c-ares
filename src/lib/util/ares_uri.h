@@ -72,7 +72,7 @@ ares_status_t  ares_uri_set_scheme(ares_uri_t *uri, const char *scheme);
  *  \param[in] uri    Initialized URI object
  *  \return string containing URI scheme
  */
-const char    *ares_uri_get_scheme(ares_uri_t *uri);
+const char    *ares_uri_get_scheme(const ares_uri_t *uri);
 
 /*! Set the username in the URI object
  *
@@ -87,7 +87,7 @@ ares_status_t  ares_uri_set_username(ares_uri_t *uri, const char *username);
  *  \param[in] uri    Initialized URI object
  *  \return string containing username, maybe NULL if not set.
  */
-const char    *ares_uri_get_username(ares_uri_t *uri);
+const char    *ares_uri_get_username(const ares_uri_t *uri);
 
 /*! Set the password in the URI object
  *
@@ -102,7 +102,7 @@ ares_status_t  ares_uri_set_password(ares_uri_t *uri, const char *password);
  *  \param[in] uri    Initialized URI object
  *  \return string containing password, maybe NULL if not set.
  */
-const char    *ares_uri_get_password(ares_uri_t *uri);
+const char    *ares_uri_get_password(const ares_uri_t *uri);
 
 /*! Set the host or ip address in the URI object.  This is required to be
  *  set to write a URI.  The character set is strictly validated.
@@ -119,7 +119,7 @@ ares_status_t  ares_uri_set_host(ares_uri_t *uri, const char *host);
  *  \param[in] uri    Initialized URI object
  *  \return string containing host, maybe NULL if not set.
  */
-const char    *ares_uri_get_host(ares_uri_t *uri);
+const char    *ares_uri_get_host(const ares_uri_t *uri);
 
 /*! Set the port to use in the URI object.  A port value of 0 will omit
  *  the port from the URI when written, thus using the scheme's default.
@@ -135,7 +135,7 @@ ares_status_t  ares_uri_set_port(ares_uri_t *uri, unsigned short port);
  *  \param[in] uri    Initialized URI object
  *  \return port number, or 0 if not set.
  */
-unsigned short ares_uri_get_port(ares_uri_t *uri);
+unsigned short ares_uri_get_port(const ares_uri_t *uri);
 
 /*! Set the path in the URI object.  Unsupported characters will be URI-encoded
  *  when written.
@@ -152,7 +152,7 @@ ares_status_t  ares_uri_set_path(ares_uri_t *uri, const char *path);
  *  \param[in] uri Initialized URI object
  *  \return path string, or NULL if not set.
  */
-const char    *ares_uri_get_path(ares_uri_t *uri);
+const char    *ares_uri_get_path(const ares_uri_t *uri);
 
 /*! Set a new query key/value pair.  There is no set order for query keys
  *  when output in the URI, they will be emitted in a random order.  Keys are
@@ -183,7 +183,7 @@ ares_status_t  ares_uri_del_query_key(ares_uri_t *uri, const char *key);
  *          NULL value set.  There is currently no way to indicate the
  *          difference.
  */
-const char    *ares_uri_get_query_key(ares_uri_t *uri, const char *key);
+const char    *ares_uri_get_query_key(const ares_uri_t *uri, const char *key);
 
 /*! Retrieve a complete list of query keys.
  *
@@ -192,7 +192,7 @@ const char    *ares_uri_get_query_key(ares_uri_t *uri, const char *key);
  *  \return NULL on failure or no keys. Use
  *          ares_free_array(keys, num, ares_free) when done with array.
  */
-char         **ares_uri_get_query_keys(ares_uri_t *uri, size_t *num);
+char         **ares_uri_get_query_keys(const ares_uri_t *uri, size_t *num);
 
 /*! Set the fragment in the URI object.  Unsupported characters will be
  *  URI-encoded when written.
@@ -209,7 +209,7 @@ ares_status_t  ares_uri_set_fragment(ares_uri_t *uri, const char *fragment);
  *  \param[in] uri Initialized URI object
  *  \return fragment string, or NULL if not set.
  */
-const char    *ares_uri_get_fragment(ares_uri_t *uri);
+const char    *ares_uri_get_fragment(const ares_uri_t *uri);
 
 /*! Parse the provided URI buffer into a new URI object.
  *
@@ -236,7 +236,7 @@ ares_status_t  ares_uri_parse(ares_uri_t **out, const char *uri);
  *  \param[in]  uri  Initialized URI object.
  *  \return ARES_SUCCESS on successful write.
  */
-ares_status_t  ares_uri_write(char **out, ares_uri_t *uri);
+ares_status_t  ares_uri_write(char **out, const ares_uri_t *uri);
 
 /*! Write URI object to an existing ares_buf_t object.  Requires at least the
  *  scheme and host to be set for this to succeed.
@@ -245,7 +245,7 @@ ares_status_t  ares_uri_write(char **out, ares_uri_t *uri);
  *  \param[in,out] buf  Destination buf object.
  *  \return ARES_SUCCESS on successful write.
  */
-ares_status_t  ares_uri_write_buf(ares_uri_t *uri, ares_buf_t *buf);
+ares_status_t  ares_uri_write_buf(const ares_uri_t *uri, ares_buf_t *buf);
 
 /*! @} */
 
