@@ -757,9 +757,6 @@ static ares_status_t ares_uri_write_scheme(const ares_uri_t *uri,
   }
 
   status = ares_buf_append_str(buf, "://");
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
 
   return status;
 }
