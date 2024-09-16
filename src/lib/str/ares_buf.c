@@ -983,31 +983,30 @@ static void ares_free_split_array(void *arg)
   ares_free(*ptr);
 }
 
-ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
-                                 size_t delims_len, ares_buf_split_t flags,
-                                 size_t max_sections, char ***strs,
-                                 size_t *nstrs)
+ares_status_t ares_buf_split_str_array(ares_buf_t          *buf,
+                                       const unsigned char *delims,
+                                       size_t               delims_len,
+                                       ares_buf_split_t     flags,
+                                       size_t max_sections, ares_array_t **arr)
 {
   ares_status_t status;
   ares_array_t *split = NULL;
-  ares_array_t *arr   = NULL;
   size_t        i;
   size_t        len;
 
-  if (strs == NULL || nstrs == NULL) {
+  if (arr == NULL) {
     return ARES_EFORMERR;
   }
 
-  *strs  = NULL;
-  *nstrs = 0;
+  *arr = NULL;
 
   status = ares_buf_split(buf, delims, delims_len, flags, max_sections, &split);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  arr = ares_array_create(sizeof(char *), ares_free_split_array);
-  if (arr == NULL) {
+  *arr = ares_array_create(sizeof(char *), ares_free_split_array);
+  if (*arr == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
@@ -1023,7 +1022,7 @@ ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
       goto done;
     }
 
-    status = ares_array_insertdata_last(arr, &str);
+    status = ares_array_insertdata_last(*arr, &str);
     if (status != ARES_SUCCESS) {
       ares_free(str);
       goto done;
@@ -1032,6 +1031,36 @@ ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
 
 done:
   ares_array_destroy(split);
+  if (status != ARES_SUCCESS) {
+    ares_array_destroy(*arr);
+    *arr = NULL;
+  }
+  return status;
+}
+
+ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
+                                 size_t delims_len, ares_buf_split_t flags,
+                                 size_t max_sections, char ***strs,
+                                 size_t *nstrs)
+{
+  ares_status_t status;
+  ares_array_t *arr = NULL;
+
+  if (strs == NULL || nstrs == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *strs  = NULL;
+  *nstrs = 0;
+
+  status = ares_buf_split_str_array(buf, delims, delims_len, flags,
+                                    max_sections, &arr);
+
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+done:
   if (status == ARES_SUCCESS) {
     *strs = ares_array_finish(arr, nstrs);
   } else {

@@ -380,8 +380,8 @@ done:
 static ares_status_t process_option(ares_sysconfig_t *sysconfig,
                                     ares_buf_t       *option)
 {
-  char        **kv     = NULL;
-  size_t        num    = 0;
+  char        **kv  = NULL;
+  size_t        num = 0;
   const char   *key;
   const char   *val;
   unsigned int  valint = 0;

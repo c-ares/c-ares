@@ -506,8 +506,93 @@ unsigned short ares_uri_get_port(ares_uri_t *uri)
   return uri->port;
 }
 
-static ares_status_t ares_uri_set_path_own(ares_uri_t *uri, char *path)
+
+/* URI spec says path normalization is a requirement */
+static char *ares_uri_path_normalize(const char *path)
 {
+  ares_status_t status;
+  ares_array_t *arr     = NULL;
+  ares_buf_t   *outpath = NULL;
+  ares_buf_t   *inpath  = NULL;
+  ares_ssize_t  i;
+  size_t        j;
+  size_t        len;
+
+  inpath =
+    ares_buf_create_const((const unsigned char *)path, ares_strlen(path));
+  if (inpath == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  outpath = ares_buf_create();
+  if (outpath == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  status = ares_buf_split_str_array(inpath, (const unsigned char *)"/", 1,
+                                    ARES_BUF_SPLIT_TRIM, 0, &arr);
+  if (status != ARES_SUCCESS) {
+    return NULL;
+  }
+
+  for (i = 0; i < (ares_ssize_t)ares_array_len(arr); i++) {
+    const char **strptr = ares_array_at(arr, (size_t)i);
+    const char  *str    = *strptr;
+
+    if (ares_streq(str, ".")) {
+      ares_array_remove_at(arr, (size_t)i);
+      i--;
+    } else if (ares_streq(str, "..")) {
+      if (i != 0) {
+        ares_array_remove_at(arr, (size_t)i-1);
+        i--;
+      }
+      ares_array_remove_at(arr, (size_t)i);
+      i--;
+    }
+  }
+
+  status = ares_buf_append_byte(outpath, '/');
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  len = ares_array_len(arr);
+  for (j = 0; j < len; j++) {
+    const char **strptr = ares_array_at(arr, j);
+    const char  *str    = *strptr;
+    status              = ares_buf_append_str(outpath, str);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+
+    /* Path separator, but on the last entry, we need to check if it was
+     * originally terminated or not because they have different meanings */
+    if (j != len - 1 || path[ares_strlen(path) - 1] == '/') {
+      status = ares_buf_append_byte(outpath, '/');
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+    }
+  }
+
+done:
+  ares_array_destroy(arr);
+  ares_buf_destroy(inpath);
+  if (status != ARES_SUCCESS) {
+    ares_buf_destroy(outpath);
+    return NULL;
+  }
+
+  return ares_buf_finish_str(outpath, NULL);
+}
+
+ares_status_t ares_uri_set_path(ares_uri_t *uri, const char *path)
+{
+  char *temp = NULL;
+
   if (uri == NULL) {
     return ARES_EFORMERR;
   }
@@ -516,33 +601,17 @@ static ares_status_t ares_uri_set_path_own(ares_uri_t *uri, char *path)
     return ARES_EBADSTR;
   }
 
-  ares_free(uri->path);
-  uri->path = path;
-  return ARES_SUCCESS;
-}
-
-ares_status_t ares_uri_set_path(ares_uri_t *uri, const char *path)
-{
-  ares_status_t status;
-  char         *temp = NULL;
-
-  if (uri == NULL) {
-    return ARES_EFORMERR;
-  }
-
   if (path != NULL) {
-    temp = ares_strdup(path);
+    temp = ares_uri_path_normalize(path);
     if (temp == NULL) {
       return ARES_ENOMEM;
     }
   }
 
-  status = ares_uri_set_path_own(uri, temp);
-  if (status != ARES_SUCCESS) {
-    ares_free(temp);
-  }
+  ares_free(uri->path);
+  uri->path = temp;
 
-  return status;
+  return ARES_SUCCESS;
 }
 
 const char *ares_uri_get_path(ares_uri_t *uri)
@@ -1270,7 +1339,7 @@ static ares_status_t ares_uri_parse_path(ares_uri_t *uri, ares_buf_t *buf)
     goto done;
   }
 
-  status = ares_uri_set_path_own(uri, path);
+  status = ares_uri_set_path(uri, path);
   if (status != ARES_SUCCESS) {
     goto done;
   }

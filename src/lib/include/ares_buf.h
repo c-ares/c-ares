@@ -527,6 +527,26 @@ CARES_EXTERN ares_status_t ares_buf_split(
   ares_buf_t *buf, const unsigned char *delims, size_t delims_len,
   ares_buf_split_t flags, size_t max_sections, ares_array_t **arr);
 
+/*! Split the provided buffer into an ares_array_t of C strings.
+ *
+ *  \param[in]  buf               Initialized buffer object
+ *  \param[in]  delims            Possible delimiters
+ *  \param[in]  delims_len        Length of possible delimiters
+ *  \param[in]  flags             One more more flags
+ *  \param[in]  max_sections      Maximum number of sections.  Use 0 for
+ *                                unlimited. Useful for splitting key/value
+ *                                pairs where the delimiter may be a valid
+ *                                character in the value.  A value of 1 would
+ *                                have little usefulness and would effectively
+ *                                ignore the delimiter itself.
+ *  \param[out] arr               Array of strings. Free using
+ *                                ares_array_destroy().
+ *  \return ARES_SUCCESS on success, or error like ARES_ENOMEM.
+ */
+CARES_EXTERN ares_status_t ares_buf_split_str_array(
+  ares_buf_t *buf, const unsigned char *delims, size_t delims_len,
+  ares_buf_split_t flags, size_t max_sections, ares_array_t **arr);
+
 /*! Split the provided buffer into a C array of C strings.
  *
  *  \param[in]  buf               Initialized buffer object
