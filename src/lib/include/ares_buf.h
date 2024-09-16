@@ -27,7 +27,7 @@
 #define __ARES__BUF_H
 
 #include "ares.h"
-#include "ares_llist.h"
+#include "ares_array.h"
 
 /*! \addtogroup ares_buf Safe Data Builder and buffer
  *
@@ -279,17 +279,43 @@ CARES_EXTERN ares_status_t ares_buf_tag_fetch_bytes(const ares_buf_t *buf,
 /*! Fetch the bytes starting from the tagged position up to the _current_
  *  position as a NULL-terminated string using the provided buffer.  The data
  *  is validated to be ASCII-printable data.  It will not unset the tagged
- *  poition.
+ *  position.
  *
  *  \param[in]     buf    Initialized buffer object
  *  \param[in,out] str    Buffer to hold data
- *  \param[in]     len    On input, buffer size, on output, bytes place in
- *                        buffer.
+ *  \param[in]     len    buffer size
  *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size,
  *          ARES_EBADSTR if not printable ASCII
  */
 CARES_EXTERN ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf,
                                                      char *str, size_t len);
+
+/*! Fetch the bytes starting from the tagged position up to the _current_
+ *  position as a NULL-terminated string and placed into a newly allocated
+ *  buffer.  The data is validated to be ASCII-printable data.  It will not
+ *  unset the tagged position.
+ *
+ *  \param[in]  buf    Initialized buffer object
+ *  \param[out] str    New buffer to hold output, free with ares_free()
+ *
+ *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size,
+ *          ARES_EBADSTR if not printable ASCII
+ */
+CARES_EXTERN ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf,
+                                                     char            **str);
+
+/*! Fetch the bytes starting from the tagged position up to the _current_
+ *  position as const buffer.  Care must be taken to not append or destroy the
+ *  passed in buffer until the newly fetched buffer is no longer needed since
+ *  it points to memory inside the passed in buffer which could be invalidated.
+ *
+ *  \param[in]     buf    Initialized buffer object
+ *  \param[out]    newbuf New const buffer object, must be destroyed when done.
+
+ *  \return ARES_SUCCESS if fetched
+ */
+CARES_EXTERN ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
+                                                       ares_buf_t **newbuf);
 
 /*! Consume the given number of bytes without reading them.
  *
@@ -399,7 +425,7 @@ CARES_EXTERN size_t        ares_buf_consume_nonwhitespace(ares_buf_t *buf);
  *  \param[in] require_charset    require we find a character from the charset.
  *                                if ARES_FALSE it will simply consume the
  *                                rest of the buffer.  If ARES_TRUE will return
- *                                0 if not found.
+ *                                SIZE_MAX if not found.
  *  \return number of characters consumed
  */
 CARES_EXTERN size_t        ares_buf_consume_until_charset(ares_buf_t          *buf,
@@ -407,6 +433,23 @@ CARES_EXTERN size_t        ares_buf_consume_until_charset(ares_buf_t          *b
                                                           size_t               len,
                                                           ares_bool_t require_charset);
 
+
+/*! Consume until a sequence of bytes is encountered.  Does not include the
+ *  sequence of characters itself.
+ *
+ *  \param[in] buf                Initialized buffer object
+ *  \param[in] seq                sequence of bytes
+ *  \param[in] len                length of sequence
+ *  \param[in] require_charset    require we find the sequence.
+ *                                if ARES_FALSE it will simply consume the
+ *                                rest of the buffer.  If ARES_TRUE will return
+ *                                SIZE_MAX if not found.
+ *  \return number of characters consumed
+ */
+CARES_EXTERN size_t        ares_buf_consume_until_seq(ares_buf_t          *buf,
+                                                      const unsigned char *seq,
+                                                      size_t               len,
+                                                      ares_bool_t require_seq);
 
 /*! Consume while the characters match the characters in the provided set.
  *
@@ -470,16 +513,39 @@ typedef enum {
  *                                character in the value.  A value of 1 would
  *                                have little usefulness and would effectively
  *                                ignore the delimiter itself.
- *  \param[out] list              Result. Depending on flags, this may be a
- *                                valid list with no elements.  Use
- *                                ares_llist_destroy() to free the memory which
- *                                will also free the contained ares_buf_t
- *                                objects.
+ *  \param[out] arr               Result. Depending on flags, this may be a
+ *                                valid array with no elements.  Use
+ *                                ares_array_destroy() to free the memory which
+ *                                will also free the contained ares_buf_t *
+ *                                objects. Each buf object returned by
+ *                                ares_array_at() or similar is a pointer to
+ *                                an ares_buf_t * object, meaning you need to
+ *                                accept it as "ares_buf_t **" then dereference.
  *  \return ARES_SUCCESS on success, or error like ARES_ENOMEM.
  */
 CARES_EXTERN ares_status_t ares_buf_split(
   ares_buf_t *buf, const unsigned char *delims, size_t delims_len,
-  ares_buf_split_t flags, size_t max_sections, ares_llist_t **list);
+  ares_buf_split_t flags, size_t max_sections, ares_array_t **arr);
+
+/*! Split the provided buffer into an ares_array_t of C strings.
+ *
+ *  \param[in]  buf               Initialized buffer object
+ *  \param[in]  delims            Possible delimiters
+ *  \param[in]  delims_len        Length of possible delimiters
+ *  \param[in]  flags             One more more flags
+ *  \param[in]  max_sections      Maximum number of sections.  Use 0 for
+ *                                unlimited. Useful for splitting key/value
+ *                                pairs where the delimiter may be a valid
+ *                                character in the value.  A value of 1 would
+ *                                have little usefulness and would effectively
+ *                                ignore the delimiter itself.
+ *  \param[out] arr               Array of strings. Free using
+ *                                ares_array_destroy().
+ *  \return ARES_SUCCESS on success, or error like ARES_ENOMEM.
+ */
+CARES_EXTERN ares_status_t ares_buf_split_str_array(
+  ares_buf_t *buf, const unsigned char *delims, size_t delims_len,
+  ares_buf_split_t flags, size_t max_sections, ares_array_t **arr);
 
 /*! Split the provided buffer into a C array of C strings.
  *
@@ -533,6 +599,14 @@ CARES_EXTERN size_t               ares_buf_len(const ares_buf_t *buf);
 CARES_EXTERN const unsigned char *ares_buf_peek(const ares_buf_t *buf,
                                                 size_t           *len);
 
+/*! Retrieve the next byte in the buffer without moving forward.
+ *
+ *  \param[in]  buf  Initialized buffer object
+ *  \param[out] b    Single byte
+ *  \return \return ARES_SUCCESS on success, or error
+ */
+CARES_EXTERN ares_status_t        ares_buf_peek_byte(const ares_buf_t *buf,
+                                                     unsigned char    *b);
 
 /*! Wipe any processed data from the beginning of the buffer.  This will
  *  move any remaining data to the front of the internally allocated buffer.

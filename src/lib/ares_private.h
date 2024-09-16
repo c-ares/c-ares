@@ -51,6 +51,7 @@
 #include "ares_htable_strvp.h"
 #include "ares_htable_szvp.h"
 #include "ares_htable_asvp.h"
+#include "ares_htable_dict.h"
 #include "ares_htable_vpvp.h"
 #include "ares_htable_vpstr.h"
 #include "record/ares_dns_multistring.h"
@@ -62,6 +63,7 @@
 #include "ares_conn.h"
 #include "ares_str.h"
 #include "str/ares_strsplit.h"
+#include "util/ares_uri.h"
 
 #ifndef HAVE_GETENV
 #  include "ares_getenv.h"

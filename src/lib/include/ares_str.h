@@ -43,16 +43,24 @@ CARES_EXTERN size_t ares_strlen(const char *str);
  */
 CARES_EXTERN size_t ares_strcpy(char *dest, const char *src, size_t dest_size);
 
-CARES_EXTERN ares_bool_t   ares_str_isnum(const char *str);
+CARES_EXTERN ares_bool_t    ares_str_isnum(const char *str);
+CARES_EXTERN ares_bool_t    ares_str_isalnum(const char *str);
 
-CARES_EXTERN void          ares_str_ltrim(char *str);
-CARES_EXTERN void          ares_str_rtrim(char *str);
-CARES_EXTERN void          ares_str_trim(char *str);
+CARES_EXTERN void           ares_str_ltrim(char *str);
+CARES_EXTERN void           ares_str_rtrim(char *str);
+CARES_EXTERN void           ares_str_trim(char *str);
+CARES_EXTERN void           ares_str_lower(char *str);
 
-CARES_EXTERN unsigned char ares_tolower(unsigned char c);
-CARES_EXTERN ares_bool_t   ares_memeq_ci(const unsigned char *ptr,
-                                         const unsigned char *val, size_t len);
-CARES_EXTERN ares_bool_t   ares_is_hostname(const char *str);
+CARES_EXTERN unsigned char  ares_tolower(unsigned char c);
+CARES_EXTERN unsigned char *ares_memmem(const unsigned char *big,
+                                        size_t               big_len,
+                                        const unsigned char *little,
+                                        size_t               little_len);
+CARES_EXTERN ares_bool_t    ares_memeq(const unsigned char *ptr,
+                                       const unsigned char *val, size_t len);
+CARES_EXTERN ares_bool_t    ares_memeq_ci(const unsigned char *ptr,
+                                          const unsigned char *val, size_t len);
+CARES_EXTERN ares_bool_t    ares_is_hostname(const char *str);
 
 /*! Validate the string provided is printable.  The length specified must be
  *  at least the size of the buffer provided.  If a NULL-terminator is hit
@@ -65,7 +73,7 @@ CARES_EXTERN ares_bool_t   ares_is_hostname(const char *str);
  *                  If 0, will return TRUE since it did not hit an exception.
  *  \return ARES_TRUE if the entire string is printable, ARES_FALSE if not.
  */
-CARES_EXTERN ares_bool_t   ares_str_isprint(const char *str, size_t len);
+CARES_EXTERN ares_bool_t    ares_str_isprint(const char *str, size_t len);
 
 /* We only care about ASCII rules */
 #define ares_isascii(x) (((unsigned char)x) <= 127)

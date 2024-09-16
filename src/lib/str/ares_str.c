@@ -101,7 +101,23 @@ ares_bool_t ares_str_isnum(const char *str)
   }
 
   for (i = 0; str[i] != 0; i++) {
-    if (str[i] < '0' || str[i] > '9') {
+    if (!ares_isdigit(str[i])) {
+      return ARES_FALSE;
+    }
+  }
+  return ARES_TRUE;
+}
+
+ares_bool_t ares_str_isalnum(const char *str)
+{
+  size_t i;
+
+  if (str == NULL || *str == 0) {
+    return ARES_FALSE;
+  }
+
+  for (i = 0; str[i] != 0; i++) {
+    if (!ares_isdigit(str[i]) && !ares_isalpha(str[i])) {
       return ARES_FALSE;
     }
   }
@@ -184,6 +200,62 @@ static const unsigned char ares_tolower_lookup[] = {
 unsigned char ares_tolower(unsigned char c)
 {
   return ares_tolower_lookup[c];
+}
+
+void ares_str_lower(char *str)
+{
+  size_t i;
+
+  if (str == NULL) {
+    return;
+  }
+
+  for (i = 0; str[i] != 0; i++) {
+    str[i] = (char)ares_tolower((unsigned char)str[i]);
+  }
+}
+
+unsigned char *ares_memmem(const unsigned char *big, size_t big_len,
+                           const unsigned char *little, size_t little_len)
+{
+  unsigned char *ptr;
+
+  if (big == NULL || little == NULL || big_len == 0 || little_len == 0) {
+    return NULL;
+  }
+
+#ifdef HAVE_MEMMEM
+  ptr = memmem(big, big_len, little, little_len);
+  return ptr;
+#else
+  while (1) {
+    ptr = memchr(big, little[0], big_len);
+    if (ptr == NULL) {
+      break;
+    }
+
+    big_len -= (size_t)(ptr - big);
+    big      = ptr;
+    if (big_len < little_len) {
+      break;
+    }
+
+    if (memcmp(big, little, little_len) == 0) {
+      return ptr;
+    }
+
+    big++;
+    big_len--;
+  }
+
+  return NULL;
+#endif
+}
+
+ares_bool_t ares_memeq(const unsigned char *ptr, const unsigned char *val,
+                       size_t len)
+{
+  return memcmp(ptr, val, len) == 0 ? ARES_TRUE : ARES_FALSE;
 }
 
 ares_bool_t ares_memeq_ci(const unsigned char *ptr, const unsigned char *val,

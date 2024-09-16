@@ -340,6 +340,83 @@ TEST_F(LibraryTest, HtableMisuse) {
   EXPECT_EQ(ARES_FALSE, ares_htable_remove(NULL, NULL));
   EXPECT_EQ((size_t)0, ares_htable_num_keys(NULL));
 }
+
+TEST_F(LibraryTest, URI) {
+  struct {
+    ares_bool_t success;
+    const char *uri;
+    const char *alt_match_uri;
+  } tests[] = {
+    { ARES_TRUE,  "https://www.example.com",                                                               NULL },
+    { ARES_TRUE,  "https://www.example.com:8443",                                                          NULL },
+    { ARES_TRUE,  "https://user:password@www.example.com",                                                 NULL },
+    { ARES_TRUE,  "https://user%25:password@www.example.com",                                              NULL },
+    { ARES_TRUE,  "https://user:password%25@www.example.com",                                              NULL },
+    { ARES_TRUE,  "https://user@www.example.com",                                                          NULL },
+    { ARES_TRUE,  "https://www.example.com/path",                                                          NULL },
+    { ARES_TRUE,  "https://www.example.com/path/",                                                         NULL },
+    { ARES_TRUE,  "https://www.example.com/a/../",                                                         "https://www.example.com/" },
+    { ARES_TRUE,  "https://www.example.com/../a/",                                                         "https://www.example.com/a/" },
+    { ARES_TRUE,  "https://www.example.com/.././../a/",                                                    "https://www.example.com/a/" },
+    { ARES_TRUE,  "https://www.example.com/.././../a//b/c/d/../../",                                       "https://www.example.com/a/b/" },
+    { ARES_TRUE,  "https://www.example.com?key=val",                                                       NULL },
+    { ARES_TRUE,  "https://www.example.com?key",                                                           NULL },
+    { ARES_TRUE,  "https://www.example.com?key=",                                                          "https://www.example.com?key" },
+    { ARES_TRUE,  "https://www.example.com#fragment",                                                      NULL },
+    { ARES_TRUE,  "https://user:password@www.example.com/path",                                            NULL },
+    { ARES_TRUE,  "https://user:password@www.example.com/path#fragment",                                   NULL },
+    { ARES_TRUE,  "https://user:password@www.example.com/path?key=val",                                    NULL },
+    { ARES_TRUE,  "https://user:password@www.example.com/path?key=val#fragment",                           NULL },
+    { ARES_TRUE,  "HTTPS://www.example.com",                                                               "https://www.example.com" },
+    { ARES_TRUE,  "https://www.example.com?key=hello+world",                                               "https://www.example.com?key=hello%20world" },
+    { ARES_TRUE,  "https://www.example.com?key=val%26",                                                    NULL },
+    { ARES_TRUE,  "https://www.example.com?key%26=val",                                                    NULL },
+    { ARES_TRUE,  "https://www.example.com?key=Aa2-._~/?!$'()*,;:@",                                       NULL },
+    { ARES_TRUE,  "https://www.example.com?key1=val1&key2=val2&key3=val3&key4=val4",                       "ignore" }, /* keys get randomized, can't match */
+    { ARES_TRUE,  "https://www.example.com?key=%41%61%32%2D%2E%5f%7e%2F%3F%21%24%27%28%29%2a%2C%3b%3a%40", "https://www.example.com?key=Aa2-._~/?!$'()*,;:@" },
+    { ARES_TRUE,  "dns+tls://192.168.1.1:53",                                                              NULL },
+    { ARES_TRUE,  "dns+tls://[fe80::1]:53",                                                                NULL },
+    { ARES_TRUE,  "dns://[fe80::b542:84df:1719:65e3%en0]",                                                 NULL },
+    { ARES_TRUE,  "dns+tls://[fe80:00::00:1]:53",                                                          "dns+tls://[fe80::1]:53" },
+    { ARES_TRUE,  "d.n+s-tls://www.example.com",                                                           NULL },
+    { ARES_FALSE, "dns*tls://www.example.com",                                                             NULL }, /* invalid scheme character */
+    { ARES_FALSE, "https://www.example.com?key=val%01",                                                    NULL }, /* non-printable character */
+    { ARES_FALSE, "abcdef0123456789://www.example.com",                                                    NULL }, /* scheme too long */
+    { ARES_FALSE, "www.example.com",                                                                       NULL }, /* missing scheme */
+    { ARES_FALSE, "https://www.example.com?key=val%0",                                                     NULL }, /* truncated uri-encoding */
+    { ARES_FALSE, "https://www.example.com?key=val%AZ",                                                    NULL }, /* invalid uri-encoding sequence */
+    { ARES_FALSE, "https://www.example.com?key=hello world",                                               NULL }, /* invalid character in query value */
+    { ARES_FALSE, "https://:password@www.example.com",                                                     NULL }, /* can't have password without username */
+    { ARES_FALSE, "dns+tls://[fe8G::1]",                                                                   NULL }, /* invalid ipv6 address */
+
+    { ARES_FALSE, NULL, NULL }
+  };
+  size_t i;
+
+  for (i=0; tests[i].uri != NULL; i++) {
+    ares_uri_t *uri = NULL;
+    ares_status_t status;
+
+    if (verbose) std::cerr << "Testing " << tests[i].uri << std::endl;
+    status = ares_uri_parse(&uri, tests[i].uri);
+    if (tests[i].success) {
+      EXPECT_EQ(ARES_SUCCESS, status);
+    } else {
+      EXPECT_NE(ARES_SUCCESS, status);
+    }
+
+    if (status == ARES_SUCCESS) {
+      char *out = NULL;
+      EXPECT_EQ(ARES_SUCCESS, ares_uri_write(&out, uri));
+      if (tests[i].alt_match_uri == NULL || strcmp(tests[i].alt_match_uri, "ignore") != 0) {
+        EXPECT_STRCASEEQ(tests[i].alt_match_uri == NULL?tests[i].uri:tests[i].alt_match_uri, out);
+      }
+      ares_free(out);
+    }
+    ares_uri_destroy(uri);
+  }
+
+}
 #endif /* !CARES_SYMBOL_HIDING */
 
 TEST_F(LibraryTest, InetPtoN) {

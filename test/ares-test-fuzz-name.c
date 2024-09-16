@@ -33,6 +33,11 @@
 
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size);
 
+/* Fuzzing on a query name isn't very useful as its already fuzzed as part
+ * of the normal fuzzing operations.  So we'll disable this by default and
+ * instead use this same fuzzer to validate our URI scheme parsers accessed
+ * via ares_set_servers_csv() */
+#ifdef USE_LEGACY_FUZZERS
 /* Entrypoint for Clang's libfuzzer, exercising query creation. */
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size)
 {
@@ -48,3 +53,27 @@ int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size)
   free(name);
   return 0;
 }
+
+#else
+
+int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size)
+{
+  ares_channel_t *channel = NULL;
+  char           *csv;
+
+  ares_library_init(ARES_LIB_INIT_ALL);
+  ares_init(&channel);
+
+  /* Need to null-term data */
+  csv = malloc(size + 1);
+  memcpy(csv, data, size);
+  csv[size] = '\0';
+  ares_set_servers_csv(channel, csv);
+  free(csv);
+
+  ares_destroy(channel);
+  ares_library_cleanup();
+
+  return 0;
+}
+#endif

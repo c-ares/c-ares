@@ -212,10 +212,11 @@ static ares_status_t parse_sort(ares_buf_t *buf, struct apattern *pat)
 ares_status_t ares_parse_sortlist(struct apattern **sortlist, size_t *nsort,
                                   const char *str)
 {
-  ares_buf_t        *buf    = NULL;
-  ares_llist_t      *list   = NULL;
-  ares_status_t      status = ARES_SUCCESS;
-  ares_llist_node_t *node   = NULL;
+  ares_buf_t   *buf    = NULL;
+  ares_status_t status = ARES_SUCCESS;
+  ares_array_t *arr    = NULL;
+  size_t        num    = 0;
+  size_t        i;
 
   if (sortlist == NULL || nsort == NULL || str == NULL) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -236,14 +237,15 @@ ares_status_t ares_parse_sortlist(struct apattern **sortlist, size_t *nsort,
 
   /* Split on space or semicolon */
   status = ares_buf_split(buf, (const unsigned char *)" ;", 2,
-                          ARES_BUF_SPLIT_NONE, 0, &list);
+                          ARES_BUF_SPLIT_NONE, 0, &arr);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  for (node = ares_llist_node_first(list); node != NULL;
-       node = ares_llist_node_next(node)) {
-    ares_buf_t     *entry = ares_llist_node_val(node);
+  num = ares_array_len(arr);
+  for (i = 0; i < num; i++) {
+    ares_buf_t    **bufptr = ares_array_at(arr, i);
+    ares_buf_t     *entry  = *bufptr;
 
     struct apattern pat;
 
@@ -266,7 +268,7 @@ ares_status_t ares_parse_sortlist(struct apattern **sortlist, size_t *nsort,
 
 done:
   ares_buf_destroy(buf);
-  ares_llist_destroy(list);
+  ares_array_destroy(arr);
 
   if (status != ARES_SUCCESS) {
     ares_free(*sortlist);
@@ -319,31 +321,24 @@ static ares_status_t buf_fetch_string(ares_buf_t *buf, char *str,
 static ares_status_t config_lookup(ares_sysconfig_t *sysconfig, ares_buf_t *buf,
                                    const char *separators)
 {
-  ares_status_t      status;
-  char               lookupstr[32];
-  size_t             lookupstr_cnt = 0;
-  ares_llist_t      *lookups       = NULL;
-  ares_llist_node_t *node;
-  size_t             separators_len = ares_strlen(separators);
+  ares_status_t status;
+  char          lookupstr[32];
+  size_t        lookupstr_cnt = 0;
+  char        **lookups       = NULL;
+  size_t        num           = 0;
+  size_t        i;
+  size_t        separators_len = ares_strlen(separators);
 
-  status = ares_buf_split(buf, (const unsigned char *)separators,
-                          separators_len, ARES_BUF_SPLIT_TRIM, 0, &lookups);
+  status =
+    ares_buf_split_str(buf, (const unsigned char *)separators, separators_len,
+                       ARES_BUF_SPLIT_TRIM, 0, &lookups, &num);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  memset(lookupstr, 0, sizeof(lookupstr));
-
-  for (node = ares_llist_node_first(lookups); node != NULL;
-       node = ares_llist_node_next(node)) {
-    char        value[128];
+  for (i = 0; i < num; i++) {
+    const char *value = lookups[i];
     char        ch;
-    ares_buf_t *valbuf = ares_llist_node_val(node);
-
-    status = buf_fetch_string(valbuf, value, sizeof(value));
-    if (status != ARES_SUCCESS) {
-      continue;
-    }
 
     if (ares_strcaseeq(value, "dns") || ares_strcaseeq(value, "bind") ||
         ares_strcaseeq(value, "resolv") || ares_strcaseeq(value, "resolve")) {
@@ -363,10 +358,12 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig, ares_buf_t *buf,
   }
 
   if (lookupstr_cnt) {
+    lookupstr[lookupstr_cnt] = 0;
     ares_free(sysconfig->lookups);
     sysconfig->lookups = ares_strdup(lookupstr);
     if (sysconfig->lookups == NULL) {
-      return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+      status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+      goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 
@@ -376,35 +373,35 @@ done:
   if (status != ARES_ENOMEM) {
     status = ARES_SUCCESS;
   }
-  ares_llist_destroy(lookups);
+  ares_free_array(lookups, num, ares_free);
   return status;
 }
 
 static ares_status_t process_option(ares_sysconfig_t *sysconfig,
                                     ares_buf_t       *option)
 {
-  ares_llist_t *kv      = NULL;
-  char          key[32] = "";
-  char          val[32] = "";
-  unsigned int  valint  = 0;
+  char        **kv  = NULL;
+  size_t        num = 0;
+  const char   *key;
+  const char   *val;
+  unsigned int  valint = 0;
   ares_status_t status;
 
   /* Split on : */
-  status = ares_buf_split(option, (const unsigned char *)":", 1,
-                          ARES_BUF_SPLIT_TRIM, 2, &kv);
+  status = ares_buf_split_str(option, (const unsigned char *)":", 1,
+                              ARES_BUF_SPLIT_TRIM, 2, &kv, &num);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  status = buf_fetch_string(ares_llist_first_val(kv), key, sizeof(key));
-  if (status != ARES_SUCCESS) {
+  if (num < 1) {
+    status = ARES_EBADSTR;
     goto done;
   }
-  if (ares_llist_len(kv) == 2) {
-    status = buf_fetch_string(ares_llist_last_val(kv), val, sizeof(val));
-    if (status != ARES_SUCCESS) {
-      goto done;
-    }
+
+  key = kv[0];
+  if (num == 2) {
+    val    = kv[1];
     valint = (unsigned int)strtoul(val, NULL, 10);
   }
 
@@ -427,17 +424,18 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
   }
 
 done:
-  ares_llist_destroy(kv);
+  ares_free_array(kv, num, ares_free);
   return status;
 }
 
 ares_status_t ares_sysconfig_set_options(ares_sysconfig_t *sysconfig,
                                          const char       *str)
 {
-  ares_buf_t        *buf     = NULL;
-  ares_llist_t      *options = NULL;
-  ares_status_t      status;
-  ares_llist_node_t *node;
+  ares_buf_t   *buf     = NULL;
+  ares_array_t *options = NULL;
+  size_t        num;
+  size_t        i;
+  ares_status_t status;
 
   buf = ares_buf_create_const((const unsigned char *)str, ares_strlen(str));
   if (buf == NULL) {
@@ -450,9 +448,10 @@ ares_status_t ares_sysconfig_set_options(ares_sysconfig_t *sysconfig,
     goto done;
   }
 
-  for (node = ares_llist_node_first(options); node != NULL;
-       node = ares_llist_node_next(node)) {
-    ares_buf_t *valbuf = ares_llist_node_val(node);
+  num = ares_array_len(options);
+  for (i = 0; i < num; i++) {
+    ares_buf_t **bufptr = ares_array_at(options, i);
+    ares_buf_t  *valbuf = *bufptr;
 
     status = process_option(sysconfig, valbuf);
     /* Out of memory is the only fatal condition */
@@ -464,7 +463,7 @@ ares_status_t ares_sysconfig_set_options(ares_sysconfig_t *sysconfig,
   status = ARES_SUCCESS;
 
 done:
-  ares_llist_destroy(options);
+  ares_array_destroy(options);
   ares_buf_destroy(buf);
   return status;
 }
@@ -625,9 +624,10 @@ static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
                                          ares_buf_t       *line)
 {
   char          option[32];
-  ares_buf_t   *buf;
   ares_status_t status = ARES_SUCCESS;
-  ares_llist_t *sects  = NULL;
+  ares_array_t *sects  = NULL;
+  ares_buf_t  **bufptr;
+  ares_buf_t   *buf;
 
   /* Ignore lines beginning with a comment */
   if (ares_buf_begins_with(line, (const unsigned char *)"#", 1)) {
@@ -638,11 +638,13 @@ static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
   status = ares_buf_split(line, (const unsigned char *)":", 1,
                           ARES_BUF_SPLIT_TRIM, 2, &sects);
 
-  if (status != ARES_SUCCESS || ares_llist_len(sects) != 2) {
+  if (status != ARES_SUCCESS || ares_array_len(sects) != 2) {
     goto done;
   }
 
-  buf    = ares_llist_first_val(sects);
+  bufptr = ares_array_at(sects, 0);
+  buf    = *bufptr;
+
   status = buf_fetch_string(buf, option, sizeof(option));
   if (status != ARES_SUCCESS) {
     goto done;
@@ -654,11 +656,12 @@ static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
   }
 
   /* Values are space separated */
-  buf    = ares_llist_last_val(sects);
+  bufptr = ares_array_at(sects, 1);
+  buf    = *bufptr;
   status = config_lookup(sysconfig, buf, " \t");
 
 done:
-  ares_llist_destroy(sects);
+  ares_array_destroy(sects);
   if (status != ARES_ENOMEM) {
     status = ARES_SUCCESS;
   }
@@ -672,9 +675,10 @@ static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
                                         ares_buf_t       *line)
 {
   char          option[32];
+  ares_buf_t  **bufptr;
   ares_buf_t   *buf;
   ares_status_t status = ARES_SUCCESS;
-  ares_llist_t *sects  = NULL;
+  ares_array_t *sects  = NULL;
 
   /* Ignore lines beginning with a comment */
   if (ares_buf_begins_with(line, (const unsigned char *)"#", 1)) {
@@ -685,11 +689,12 @@ static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
   status = ares_buf_split(line, (const unsigned char *)"=", 1,
                           ARES_BUF_SPLIT_TRIM, 2, &sects);
 
-  if (status != ARES_SUCCESS || ares_llist_len(sects) != 2) {
+  if (status != ARES_SUCCESS || ares_array_len(sects) != 2) {
     goto done;
   }
 
-  buf    = ares_llist_first_val(sects);
+  bufptr = ares_array_at(sects, 0);
+  buf    = *bufptr;
   status = buf_fetch_string(buf, option, sizeof(option));
   if (status != ARES_SUCCESS) {
     goto done;
@@ -701,11 +706,12 @@ static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
   }
 
   /* Values are comma separated */
-  buf    = ares_llist_last_val(sects);
+  bufptr = ares_array_at(sects, 1);
+  buf    = *bufptr;
   status = config_lookup(sysconfig, buf, ",");
 
 done:
-  ares_llist_destroy(sects);
+  ares_array_destroy(sects);
   if (status != ARES_ENOMEM) {
     status = ARES_SUCCESS;
   }
@@ -726,10 +732,11 @@ static ares_status_t process_config_lines(const char       *filename,
                                           ares_sysconfig_t *sysconfig,
                                           line_callback_t   cb)
 {
-  ares_status_t      status = ARES_SUCCESS;
-  ares_llist_node_t *node;
-  ares_llist_t      *lines = NULL;
-  ares_buf_t        *buf   = NULL;
+  ares_status_t status = ARES_SUCCESS;
+  ares_array_t *lines  = NULL;
+  ares_buf_t   *buf    = NULL;
+  size_t        num;
+  size_t        i;
 
   buf = ares_buf_create();
   if (buf == NULL) {
@@ -748,9 +755,10 @@ static ares_status_t process_config_lines(const char       *filename,
     goto done;
   }
 
-  for (node = ares_llist_node_first(lines); node != NULL;
-       node = ares_llist_node_next(node)) {
-    ares_buf_t *line = ares_llist_node_val(node);
+  num = ares_array_len(lines);
+  for (i = 0; i < num; i++) {
+    ares_buf_t **bufptr = ares_array_at(lines, i);
+    ares_buf_t  *line   = *bufptr;
 
     status = cb(sysconfig, line);
     if (status != ARES_SUCCESS) {
@@ -760,7 +768,7 @@ static ares_status_t process_config_lines(const char       *filename,
 
 done:
   ares_buf_destroy(buf);
-  ares_llist_destroy(lines);
+  ares_array_destroy(lines);
 
   return status;
 }
