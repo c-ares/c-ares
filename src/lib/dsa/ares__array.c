@@ -140,12 +140,8 @@ static ares_status_t ares__array_move(ares__array_t *arr, size_t dest_idx,
   if (dest_idx > src_idx && arr->cnt + (dest_idx - src_idx) > arr->alloc_cnt) {
     return ARES_EFORMERR;
   }
-  if (dest_idx < src_idx) {
-    nmembers = (arr->cnt + arr->offset) - dest_idx;
-  } else {
-    nmembers = (arr->cnt + arr->offset) - src_idx;
-  }
 
+  nmembers = arr->cnt - (src_idx - arr->offset);
   memmove(dest_ptr, src_ptr, nmembers * arr->member_size);
 
   return ARES_SUCCESS;
