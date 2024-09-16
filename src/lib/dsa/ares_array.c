@@ -141,9 +141,9 @@ static ares_status_t ares_array_move(ares_array_t *arr, size_t dest_idx,
     return ARES_EFORMERR;
   }
   if (dest_idx < src_idx) {
-    nmembers = arr->cnt - dest_idx;
+    nmembers = (arr->cnt + arr->offset) - dest_idx;
   } else {
-    nmembers = arr->cnt - src_idx;
+    nmembers = (arr->cnt + arr->offset) - src_idx;
   }
 
   memmove(dest_ptr, src_ptr, nmembers * arr->member_size);

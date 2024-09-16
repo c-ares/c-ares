@@ -40,7 +40,7 @@ or
 ```
 mkdir corpus
 cp ../test/fuzznames/* corpus
-./ares-test-fuzz-name -max_len=65535 corpus
+./ares-test-fuzz-name -max_len=1024 corpus
 ```
 
 
