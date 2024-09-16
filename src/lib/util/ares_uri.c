@@ -1343,7 +1343,6 @@ static ares_status_t ares_uri_parse_path(ares_uri_t *uri, ares_buf_t *buf)
   if (status != ARES_SUCCESS) {
     goto done;
   }
-  path = NULL;
 
 done:
   ares_free(path);
