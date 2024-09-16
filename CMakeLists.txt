@@ -496,7 +496,10 @@ IF (CARES_THREADS)
 			CARES_EXTRAINCLUDE_IFSET (HAVE_PTHREAD_NP_H                    pthread_np.h)
 			CHECK_SYMBOL_EXISTS (pthread_init  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_PTHREAD_INIT)
 			# Make sure libcares.pc.cmake knows about thread libraries on static builds
-			LIST (APPEND CARES_DEPENDENT_LIBS ${CMAKE_THREAD_LIBS_INIT})
+			# The variable set by FIND_PACKAGE(Threads) has a -l prefix on it, we need
+			# to strip that first since CARES_DEPENDENT_LIBS doesn't expect that.
+			STRING (REPLACE "-l" "" CARES_THREAD_LIBRARY "${CMAKE_THREAD_LIBS_INIT}")
+			LIST (APPEND CARES_DEPENDENT_LIBS ${CARES_THREAD_LIBRARY})
 		ELSE ()
 			MESSAGE (WARNING "Threading support not found, disabling...")
 			SET (CARES_THREADS OFF)
