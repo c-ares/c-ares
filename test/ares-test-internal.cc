@@ -367,6 +367,7 @@ TEST_F(LibraryTest, URI) {
     { ARES_TRUE,  "https://user:password@www.example.com/path#fragment",                                   NULL },
     { ARES_TRUE,  "https://user:password@www.example.com/path?key=val",                                    NULL },
     { ARES_TRUE,  "https://user:password@www.example.com/path?key=val#fragment",                           NULL },
+    { ARES_TRUE,  "https://user:password@www.example.com/path?key=val#fragment/with?chars",                NULL },
     { ARES_TRUE,  "HTTPS://www.example.com",                                                               "https://www.example.com" },
     { ARES_TRUE,  "https://www.example.com?key=hello+world",                                               "https://www.example.com?key=hello%20world" },
     { ARES_TRUE,  "https://www.example.com?key=val%26",                                                    NULL },
@@ -380,6 +381,7 @@ TEST_F(LibraryTest, URI) {
     { ARES_TRUE,  "dns+tls://[fe80:00::00:1]:53",                                                          "dns+tls://[fe80::1]:53" },
     { ARES_TRUE,  "d.n+s-tls://www.example.com",                                                           NULL },
     { ARES_FALSE, "dns*tls://www.example.com",                                                             NULL }, /* invalid scheme character */
+    { ARES_FALSE, "0dns://www.example.com",                                                                NULL }, /* dns can't start with digits */
     { ARES_FALSE, "https://www.example.com?key=val%01",                                                    NULL }, /* non-printable character */
     { ARES_FALSE, "abcdef0123456789://www.example.com",                                                    NULL }, /* scheme too long */
     { ARES_FALSE, "www.example.com",                                                                       NULL }, /* missing scheme */
@@ -416,6 +418,29 @@ TEST_F(LibraryTest, URI) {
     ares_uri_destroy(uri);
   }
 
+  /* Invalid tests  */
+  EXPECT_NE(ARES_SUCCESS, ares_uri_set_scheme(NULL, NULL));
+  EXPECT_EQ(nullptr, ares_uri_get_scheme(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_set_username(NULL, NULL));
+  EXPECT_EQ(nullptr, ares_uri_get_username(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_set_password(NULL, NULL));
+  EXPECT_EQ(nullptr, ares_uri_get_password(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_set_host(NULL, NULL));
+  EXPECT_EQ(nullptr, ares_uri_get_host(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_set_port(NULL, 0));
+  EXPECT_EQ(0, ares_uri_get_port(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_set_path(NULL, NULL));
+  EXPECT_EQ(nullptr, ares_uri_get_path(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_set_query_key(NULL, NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_del_query_key(NULL, NULL));
+  EXPECT_EQ(nullptr, ares_uri_get_query_key(NULL, NULL));
+  EXPECT_EQ(nullptr, ares_uri_get_query_keys(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_set_fragment(NULL, NULL));
+  EXPECT_EQ(nullptr, ares_uri_get_fragment(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_write_buf(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_write(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_parse_buf(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_uri_parse_buf(NULL, NULL));
 }
 #endif /* !CARES_SYMBOL_HIDING */
 
@@ -1154,8 +1179,11 @@ TEST_F(LibraryTest, ArrayMisuse) {
   EXPECT_EQ(NULL, ares_array_finish(NULL, NULL));
   EXPECT_EQ(0, ares_array_len(NULL));
   EXPECT_NE(ARES_SUCCESS, ares_array_insert_at(NULL, NULL, 0));
+  EXPECT_NE(ARES_SUCCESS, ares_array_insertdata_at(NULL, 0, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_array_insert_last(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_array_insertdata_last(NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_array_insert_first(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_array_insertdata_first(NULL, NULL));
   EXPECT_EQ(NULL, ares_array_at(NULL, 0));
   EXPECT_EQ(NULL, ares_array_first(NULL));
   EXPECT_EQ(NULL, ares_array_last(NULL));
@@ -1163,6 +1191,8 @@ TEST_F(LibraryTest, ArrayMisuse) {
   EXPECT_NE(ARES_SUCCESS, ares_array_remove_at(NULL, 0));
   EXPECT_NE(ARES_SUCCESS, ares_array_remove_first(NULL));
   EXPECT_NE(ARES_SUCCESS, ares_array_remove_last(NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_array_sort(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_array_set_size(NULL, 0));
 }
 
 TEST_F(LibraryTest, BufMisuse) {
@@ -1205,6 +1235,20 @@ TEST_F(LibraryTest, HtableStrvpMisuse) {
   EXPECT_EQ(ARES_FALSE, ares_htable_strvp_get(NULL, NULL, NULL));
   EXPECT_EQ(ARES_FALSE, ares_htable_strvp_remove(NULL, NULL));
   EXPECT_EQ((size_t)0, ares_htable_strvp_num_keys(NULL));
+}
+
+TEST_F(LibraryTest, HtableVpStrMisuse) {
+  EXPECT_EQ(ARES_FALSE, ares_htable_vpstr_insert(NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares_htable_vpstr_get(NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares_htable_vpstr_remove(NULL, NULL));
+  EXPECT_EQ((size_t)0, ares_htable_vpstr_num_keys(NULL));
+}
+
+TEST_F(LibraryTest, HtableDictMisuse) {
+  EXPECT_EQ(ARES_FALSE, ares_htable_dict_insert(NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares_htable_dict_get(NULL, NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares_htable_dict_remove(NULL, NULL));
+  EXPECT_EQ((size_t)0, ares_htable_dict_num_keys(NULL));
 }
 
 TEST_F(LibraryTest, HtableSzvpMisuse) {
@@ -1265,7 +1309,7 @@ static int array_sort_cmp(const void *data1, const void *data2)
 }
 
 TEST_F(LibraryTest, Array) {
-  ares_array_t  *a       = NULL;
+  ares_array_t   *a       = NULL;
   array_member_t *m       = NULL;
   array_member_t  mbuf;
   unsigned int    cnt     = 0;
@@ -1276,11 +1320,17 @@ TEST_F(LibraryTest, Array) {
   a = ares_array_create(sizeof(array_member_t), array_member_destroy);
   EXPECT_NE(nullptr, a);
 
+  /* Try to sort with no elements, should break out */
+  EXPECT_EQ(ARES_SUCCESS, ares_array_sort(a, array_sort_cmp));
+
   /* Add 8 elements */
   for ( ; cnt < 8 ; cnt++) {
     EXPECT_EQ(ARES_SUCCESS, ares_array_insert_last(&ptr, a));
     array_member_init(ptr, cnt+1);
   }
+
+  /* Insert at invalid index */
+  EXPECT_NE(ARES_SUCCESS, ares_array_insert_at(&ptr, a, 12345678));
 
   /* Verify count */
   EXPECT_EQ(cnt, ares_array_len(a));
@@ -1545,6 +1595,56 @@ TEST_F(LibraryTest, HtableSzvp) {
 
 typedef struct {
   char s[32];
+} test_htable_vpstr_t;
+
+TEST_F(LibraryTest, HtableVpstr) {
+  ares_llist_t        *l = NULL;
+  ares_htable_vpstr_t *h = NULL;
+  ares_llist_node_t   *n = NULL;
+  size_t                i;
+
+#define VPSTR_TABLE_SIZE 1000
+
+  l = ares_llist_create(ares_free);
+  EXPECT_NE((void *)NULL, l);
+
+  h = ares_htable_vpstr_create();
+  EXPECT_NE((void *)NULL, h);
+
+  for (i=0; i<VPSTR_TABLE_SIZE; i++) {
+    test_htable_vpstr_t *s = (test_htable_vpstr_t *)ares_malloc_zero(sizeof(*s));
+    EXPECT_NE((void *)NULL, s);
+    snprintf(s->s, sizeof(s->s), "%d", (int)i);
+    EXPECT_NE((void *)NULL, ares_llist_insert_last(l, s));
+    EXPECT_TRUE(ares_htable_vpstr_insert(h, s, s->s));
+  }
+
+  EXPECT_EQ(VPSTR_TABLE_SIZE, ares_llist_len(l));
+  EXPECT_EQ(VPSTR_TABLE_SIZE, ares_htable_vpstr_num_keys(h));
+
+  n = ares_llist_node_first(l);
+  EXPECT_NE((void *)NULL, n);
+  while (n != NULL) {
+    ares_llist_node_t *next = ares_llist_node_next(n);
+    test_htable_vpstr_t *s   = (test_htable_vpstr_t *)ares_llist_node_val(n);
+    EXPECT_NE((void *)NULL, s);
+    EXPECT_STREQ(s->s, ares_htable_vpstr_get_direct(h, s));
+    EXPECT_TRUE(ares_htable_vpstr_get(h, s, NULL));
+    EXPECT_TRUE(ares_htable_vpstr_remove(h, s));
+    ares_llist_node_destroy(n);
+    n = next;
+  }
+
+  EXPECT_EQ(0, ares_llist_len(l));
+  EXPECT_EQ(0, ares_htable_vpstr_num_keys(h));
+
+  ares_llist_destroy(l);
+  ares_htable_vpstr_destroy(h);
+}
+
+
+typedef struct {
+  char s[32];
 } test_htable_strvp_t;
 
 TEST_F(LibraryTest, HtableStrvp) {
@@ -1590,6 +1690,41 @@ TEST_F(LibraryTest, HtableStrvp) {
 
   ares_llist_destroy(l);
   ares_htable_strvp_destroy(h);
+}
+
+TEST_F(LibraryTest, HtableDict) {
+  ares_htable_dict_t  *h = NULL;
+  size_t               i;
+  char               **keys;
+  size_t               nkeys;
+
+#define DICT_TABLE_SIZE 1000
+
+  h = ares_htable_dict_create();
+  EXPECT_NE((void *)NULL, h);
+
+  for (i=0; i<DICT_TABLE_SIZE; i++) {
+    char key[32];
+    char val[32];
+    snprintf(key, sizeof(key), "%d", (int)i);
+    snprintf(val, sizeof(val), "val%d", (int)i);
+    EXPECT_TRUE(ares_htable_dict_insert(h, key, val));
+  }
+
+  EXPECT_EQ(DICT_TABLE_SIZE, ares_htable_dict_num_keys(h));
+
+  keys = ares_htable_dict_keys(h, &nkeys);
+  for (i=0; i<nkeys; i++) {
+    char val[32];
+    snprintf(val, sizeof(val), "val%s", keys[i]);
+    EXPECT_STREQ(val, ares_htable_dict_get_direct(h, keys[i]));
+    EXPECT_TRUE(ares_htable_dict_get(h, keys[i], NULL));
+    EXPECT_TRUE(ares_htable_dict_remove(h, keys[i]));
+  }
+
+  EXPECT_EQ(0, ares_htable_dict_num_keys(h));
+
+  ares_htable_dict_destroy(h);
 }
 
 TEST_F(DefaultChannelTest, SaveInvalidChannel) {
