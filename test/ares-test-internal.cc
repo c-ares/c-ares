@@ -1721,6 +1721,7 @@ TEST_F(LibraryTest, HtableDict) {
     EXPECT_TRUE(ares_htable_dict_get(h, keys[i], NULL));
     EXPECT_TRUE(ares_htable_dict_remove(h, keys[i]));
   }
+  ares_free_array(keys, nkeys, ares_free);
 
   EXPECT_EQ(0, ares_htable_dict_num_keys(h));
 
