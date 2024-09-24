@@ -574,7 +574,12 @@ ares_status_t ares_socket_configure(ares_channel_t *channel, int family,
            sizeof(channel->local_ip6));
     bindlen = sizeof(local.sa6);
   }
-
+#ifdef IP_BIND_ADDRESS_NO_PORT
+  if (is_tcp && bindlen) {
+    int opt = 1;
+    (void) setsockopt(fd, SOL_IP, IP_BIND_ADDRESS_NO_PORT, &opt, sizeof(opt));
+  }
+#endif
   if (bindlen && bind(fd, &local.sa, bindlen) < 0) {
     return ARES_ECONNREFUSED;
   }
