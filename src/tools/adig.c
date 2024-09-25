@@ -102,6 +102,77 @@ typedef struct {
 
 static adig_config_t global_config;
 
+
+static const char *helpstr[] = {
+"usage: adig [@server] [-c class] [-p port#] [-q name] [-t type] [-x addr]",
+"       [name] [type] [class] [queryopt...]",
+"",
+"@server: server ip address.  May specify multiple in comma delimited format.",
+"         may be specified in URI format",
+"name:    name of the resource record that is to be looked up",
+"type:    what type of query is required.  e.g. - A, AAAA, MX, TXT, etc.  If",
+"         no specified, A will be used.",
+"class:   Sets the query class, defaults to IN.  May also be HS or CH.",
+"",
+"OPTIONS",
+"-c class: Sets the query class, defaults to IN.  May also be HS or CH.",
+"-h:       Prints this help.",
+"-p port:  Sends query to a port other than 53.  Often recommended to set",
+"          the port using @server instead.",
+"-q name:  Specifies the domain name to query. Useful to distinguish name",
+"          from other arguments",
+"-r:       Skip adigrc processing",
+"-t type:  Indicates resource record type to query. Usefule to distinguish",
+"          type from other arguments",
+"-x addr:  Simplified reverse lookups.  Sets the type to PTR and forms a",
+"          valid in-arpa query string",
+"",
+"FLAGS",
+"+[no]aaonly:      Sets the aa flag in the query. Default is off.",
+"+[no]aaflag:      Alias for +[no]aaonly",
+"+[no]additional:  Toggles printing the additional section. On by default.",
+"+[no]adflag:      Sets the ad (authentic data) bit in the query. Default is",
+"                  off.",
+"+[no]aliases:     Whether or not to honor the HOSTALIASES file. Default is",
+"                  on.",
+"+[no]all:         Toggles all of +[no]cmd, +[no]stats, +[no]question,",
+"                  +[no]answer, +[no]authority, +[no]additional, +[no]comments",
+"+[no]answer:      Toggles printing the answer. On by default.",
+"+[no]authority:   Toggles printing the authority. On by default.",
+"+bufsize=#:       UDP EDNS 0 packet size allowed. Defaults to 1232.",
+"+[no]cdflag:      Sets the CD (checking disabled) bit in the query. Default",
+"                  is off.",
+"+[no]class:       Display the class when printing the record. On by default.",
+"+[no]cmd:         Toggles printing the command requested. On by default.",
+"+[no]comments:    Toggles printing the comments. On by default",
+"+[no]defname:     Alias for +[no]search",
+"+domain=somename: Sets the search list to a single domain.",
+"+[no]dns0x20:     Whether or not to use DNS 0x20 case randomization when",
+"                  sending queries.  Default is off.",
+"+[no]edns[=#]:    Enable or disable EDNS.  Only allows a value of 0 if",
+"                  specified. Default is to enable EDNS.",
+"+[no]ignore:      Ignore truncation on UDP, by default retried on TCP.",
+"+[no]keepopen:    Whether or not the server connection should be persistent.",
+"                  Default is off.",
+"+ndots=#:         Sets the number of dots that must appear before being",
+"                  considered absolute. Defaults to 1.",
+"+[no]primary:     Whether or not to only use a single server if more than one",
+"                  server is available.  Defaults to using all servers.",
+"+[no]qr:          Toggles printing the request query. Off by default.",
+"+[no]question:    Toggles printing the question. On by default.",
+"+[no]recurse:     Toggles the RD (Recursion Desired) bit. On by default.",
+"+retry=#:         Same as +tries but does not include the initial attempt.",
+"+[no]search:      To use or not use the search list. Search list is not used",
+"                  by default.",
+"+[no]stats:       Toggles printing the statistics. On by default.",
+"+[no]tcp:         Whether to use TCP qhen querying name servers. Default is",
+"                  UDP.",
+"+tries=#:         Number of query tries. Defaults to 3.",
+"+[no]ttlid:       Display the TTL when printing the record. On by default.",
+"+[no]vc:          Alias for +[no]tcp",
+"",
+NULL };
+
 static void          free_config(void)
 {
   free(global_config.servers);
@@ -112,40 +183,11 @@ static void          free_config(void)
 
 static void print_help(void)
 {
-  /* Split due to maximum c89 string literal of 509 bytes */
+  size_t i;
   printf("adig version %s\n\n", ares_version(NULL));
-  printf(
-    "usage: adig [-h] [-d] [-f flag] [[-s server] ...] [-T|U port] [-c class]\n"
-    "            [-t type] name ...\n\n");
-  printf("  -h : Display this help and exit.\n");
-  printf("  -d : Print some extra debugging output.\n");
-  printf(
-    "  -f flag   : Add a behavior control flag. May be specified more than "
-    "once\n"
-    "              to add additional flags. Possible values are:\n"
-    "              igntc     - do not retry a truncated query as TCP, just\n"
-    "                          return the truncated answer\n"
-    "              noaliases - don't honor the HOSTALIASES environment\n"
-    "                          variable\n");
-  printf("              norecurse - don't query upstream servers recursively\n"
-         "              primary   - use the first server\n"
-         "              stayopen  - don't close the communication sockets\n"
-         "              usevc     - use TCP only\n"
-         "              edns      - use EDNS\n"
-         "              dns0x20   - enable DNS 0x20 support\n");
-  printf(
-    "  -s server : Connect to the specified DNS server, instead of the\n"
-    "              system's default one(s). Servers are tried in round-robin,\n"
-    "              if the previous one failed.\n");
-  printf("  -T port   : Connect to the specified TCP port of DNS server.\n");
-  printf("  -U port   : Connect to the specified UDP port of DNS server.\n");
-  printf("  -c class  : Set the query class. Possible values for class are:\n"
-         "              ANY, CHAOS, HS and IN (default)\n");
-  printf(
-    "  -t type   : Query records of the specified type. Possible values for\n"
-    "              type are:\n"
-    "              A (default), AAAA, ANY, CNAME, HINFO, MX, NAPTR, NS, PTR,\n"
-    "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
+  for (i=0; helpstr[i] != NULL; i++) {
+    printf("%s\n", helpstr[i]);
+  }
 }
 
 static void print_flags(ares_dns_flags_t flags)
@@ -854,22 +896,34 @@ typedef enum {
 typedef ares_bool_t (*dig_opt_cb_t)(char prefix, const char *name,
                                     ares_bool_t is_true, const char *value);
 
-static ares_bool_t opt_bind_address_cb(char prefix, const char *name,
-                                       ares_bool_t is_true, const char *value)
-{
-  return ARES_FALSE;
-}
 
 static ares_bool_t opt_class_cb(char prefix, const char *name,
                                 ares_bool_t is_true, const char *value)
 {
-  return ARES_FALSE;
+  (void)prefix;
+  (void)name;
+  (void)is_true;
+
+  if (!ares_dns_class_fromstr(&global_config.qclass, value)) {
+    snprintf(global_config.error, sizeof(global_config.error), "unrecognized class %s", value);
+    return ARES_FALSE;
+  }
+
+  return ARES_TRUE;
 }
 
 static ares_bool_t opt_type_cb(char prefix, const char *name,
                                ares_bool_t is_true, const char *value)
 {
-  return ARES_FALSE;
+  (void)prefix;
+  (void)name;
+  (void)is_true;
+
+  if (!ares_dns_rec_type_fromstr(&global_config.qtype, value)) {
+    snprintf(global_config.error, sizeof(global_config.error), "unrecognized record type %s", value);
+    return ARES_FALSE;
+  }
+  return ARES_TRUE;
 }
 
 static ares_bool_t opt_ptr_cb(char prefix, const char *name,
@@ -904,6 +958,9 @@ static ares_bool_t opt_all_cb(char prefix, const char *name,
 static ares_bool_t opt_edns_cb(char prefix, const char *name,
                                ares_bool_t is_true, const char *value)
 {
+  (void)prefix;
+  (void)name;
+
   global_config.opts.edns = is_true;
   if (is_true && value != NULL && atoi(value) > 0) {
     snprintf(global_config.error, sizeof(global_config.error),
@@ -937,11 +994,32 @@ static ares_bool_t opt_dig_bare_cb(char prefix, const char *name,
   (void)name;
   (void)is_true;
 
-  ares_free(global_config.name);
-  global_config.name = strdup(value);
+  /* Handle @servers */
+  if (*value == '@') {
+    free(global_config.servers);
+    global_config.servers = strdup(value+1);
+    return ARES_TRUE;
+  }
 
-  /* XXX: handle class and type */
-  return ARES_TRUE;
+  /* See if it is a DNS class */
+  if (ares_dns_class_fromstr(&global_config.qclass, value)) {
+    return ARES_TRUE;
+  }
+
+  /* See if it is a DNS record type */
+  if (ares_dns_rec_type_fromstr(&global_config.qtype, value)) {
+    return ARES_TRUE;
+  }
+
+  /* See if it is a domain name */
+  if (ares_is_hostname(value)) {
+    free(global_config.name);
+    global_config.name = strdup(value);
+    return ARES_TRUE;
+  }
+
+  snprintf(global_config.error, sizeof(global_config.error), "unrecognized argument %s", value);
+  return ARES_FALSE;
 }
 
 static const struct {
@@ -963,7 +1041,7 @@ static const struct {
 } dig_options[] = {
   /* -4 (ipv4 only) */
   /* -6 (ipv6 only) */
-  { '-', "b",          0,   OPT_TYPE_FUNC,   (void *)opt_bind_address_cb           },
+  /* { '-', "b",          0,   OPT_TYPE_FUNC,   (void *)opt_bind_address_cb           }, */
   { '-', "c",          0,   OPT_TYPE_FUNC,   (void *)opt_class_cb                  },
   /* -f file */
   { '-', "h",          0,   OPT_TYPE_BOOL,   &global_config.is_help                },
@@ -976,59 +1054,38 @@ static const struct {
   /* -u (print microseconds instead of milliseconds) */
   { '-', "x",          0,   OPT_TYPE_FUNC,   (void *)opt_ptr_cb                    },
   /* -y [hmac:]keynam:secret */
-  { '+', "tcp",        0,   OPT_TYPE_BOOL,   &global_config.opts.tcp               },
-  { '+', "vc",         0,   OPT_TYPE_BOOL,   &global_config.opts.tcp               },
-  { '+', "ignore",     0,   OPT_TYPE_BOOL,   &global_config.opts.ignore_tc         },
-  { '+', "domain",     '=', OPT_TYPE_STRING, &global_config.opts.search            },
-  { '+', "search",     0,   OPT_TYPE_BOOL,   &global_config.opts.ignore_search     },
-  /* [no]showsearch */
-  { '+', "defname",    0,   OPT_TYPE_BOOL,   &global_config.opts.ignore_search     },
-  { '+', "aaonly",     0,   OPT_TYPE_BOOL,   &global_config.opts.aa_flag           },
   { '+', "aaflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.aa_flag           },
-  { '+', "adflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.ad_flag           },
-  { '+', "cdflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.cd_flag           },
-  { '+', "cl",         0,   OPT_TYPE_BOOL,   &global_config.opts.display_class     },
-  { '+', "ttlid",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_ttl       },
-  { '+', "recurse",    0,   OPT_TYPE_BOOL,   &global_config.opts.rd_flag           },
-  /* +[no]nssearch */
-  /* +[no]trace */
-  { '+', "cmd",        0,   OPT_TYPE_BOOL,   &global_config.opts.display_command   },
-  /* +[no]short */
-  /* +[no]identify */
-  /* +[no]comments */
-  { '+', "stats",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_stats     },
-  { '+', "qr",         0,   OPT_TYPE_BOOL,   &global_config.opts.display_query     },
-  { '+', "question",   0,   OPT_TYPE_BOOL,   &global_config.opts.display_question  },
-  { '+', "answer",     0,   OPT_TYPE_BOOL,   &global_config.opts.display_answer    },
-  { '+', "authority",  0,   OPT_TYPE_BOOL,   &global_config.opts.display_authority },
+  { '+', "aaonly",     0,   OPT_TYPE_BOOL,   &global_config.opts.aa_flag           },
   { '+', "additional", 0,   OPT_TYPE_BOOL,
    &global_config.opts.display_additional                                          },
-  { '+', "comments",   0,   OPT_TYPE_BOOL,   &global_config.opts.display_comments  },
-  { '+', "all",        '=', OPT_TYPE_FUNC,   (void *)opt_all_cb                    },
-  /* [no]time */
-  { '+', "tries",      '=', OPT_TYPE_SIZE_T, &global_config.opts.tries             },
-  { '+', "retry",      '=', OPT_TYPE_FUNC,   (void *)opt_retry_cb                  },
-  { '+', "ndots",      '=', OPT_TYPE_SIZE_T, &global_config.opts.ndots             },
-  { '+', "bufsize",    '=', OPT_TYPE_SIZE_T, &global_config.opts.udp_size          },
-  { '+', "edns",       '=', OPT_TYPE_FUNC,   (void *)opt_edns_cb                   },
-  /* +[no]multiline */
-  /* +[no]onesoa */
-  /* +[no]fail */
-  /* +[no]besteffort */
-  /*
-    { '+', "dnssec",       0, OPT_TYPE_BOOL,   &global_config.opts.do_flag },
-  */
-  /* +[no]sigchase */
-  /* +trusted-key=###### */
-  /* +[no]topdown */
-  /* +[no]nsid */
-
-  /* Added by c-ares */
-  { '+', "primary",    0,   OPT_TYPE_BOOL,   &global_config.opts.primary           },
-  { '+', "stayopen",   0,   OPT_TYPE_BOOL,   &global_config.opts.stayopen          },
+  { '+', "adflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.ad_flag           },
   { '+', "aliases",    0,   OPT_TYPE_BOOL,   &global_config.opts.aliases           },
+  { '+', "all",        '=', OPT_TYPE_FUNC,   (void *)opt_all_cb                    },
+  { '+', "answer",     0,   OPT_TYPE_BOOL,   &global_config.opts.display_answer    },
+  { '+', "authority",  0,   OPT_TYPE_BOOL,   &global_config.opts.display_authority },
+  { '+', "bufsize",    '=', OPT_TYPE_SIZE_T, &global_config.opts.udp_size          },
+  { '+', "cdflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.cd_flag           },
+  { '+', "class",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_class     },
+  { '+', "cmd",        0,   OPT_TYPE_BOOL,   &global_config.opts.display_command   },
+  { '+', "comments",   0,   OPT_TYPE_BOOL,   &global_config.opts.display_comments  },
+  { '+', "defname",    0,   OPT_TYPE_BOOL,   &global_config.opts.ignore_search     },
   { '+', "dns0x20",    0,   OPT_TYPE_BOOL,   &global_config.opts.dns0x20           },
-
+  { '+', "domain",     '=', OPT_TYPE_STRING, &global_config.opts.search            },
+  { '+', "edns",       '=', OPT_TYPE_FUNC,   (void *)opt_edns_cb                   },
+  { '+', "keepopen",   0,   OPT_TYPE_BOOL,   &global_config.opts.stayopen          },
+  { '+', "ignore",     0,   OPT_TYPE_BOOL,   &global_config.opts.ignore_tc         },
+  { '+', "ndots",      '=', OPT_TYPE_SIZE_T, &global_config.opts.ndots             },
+  { '+', "primary",    0,   OPT_TYPE_BOOL,   &global_config.opts.primary           },
+  { '+', "qr",         0,   OPT_TYPE_BOOL,   &global_config.opts.display_query     },
+  { '+', "question",   0,   OPT_TYPE_BOOL,   &global_config.opts.display_question  },
+  { '+', "recurse",    0,   OPT_TYPE_BOOL,   &global_config.opts.rd_flag           },
+  { '+', "retry",      '=', OPT_TYPE_FUNC,   (void *)opt_retry_cb                  },
+  { '+', "search",     0,   OPT_TYPE_BOOL,   &global_config.opts.ignore_search     },
+  { '+', "stats",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_stats     },
+  { '+', "tcp",        0,   OPT_TYPE_BOOL,   &global_config.opts.tcp               },
+  { '+', "tries",      '=', OPT_TYPE_SIZE_T, &global_config.opts.tries             },
+  { '+', "ttlid",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_ttl       },
+  { '+', "vc",         0,   OPT_TYPE_BOOL,   &global_config.opts.tcp               },
   { 0,   NULL,         0,   OPT_TYPE_FUNC,   (void *)opt_dig_bare_cb               },
   { 0,   NULL,         0,   0,               NULL                                  }
 };
@@ -1375,6 +1432,13 @@ int main(int argc, char **argv)
     goto done;
   }
 
+  if (global_config.name == NULL) {
+    printf("missing query name\n");
+    print_help();
+    rv = 1;
+    goto done;
+  }
+
   config_opts();
 
   status = (ares_status_t)ares_init_options(&channel, &global_config.options,
@@ -1389,8 +1453,8 @@ int main(int argc, char **argv)
     status =
       (ares_status_t)ares_set_servers_ports_csv(channel, global_config.servers);
     if (status != ARES_SUCCESS) {
-      fprintf(stderr, "ares_set_servers_ports_csv: %s\n",
-              ares_strerror((int)status));
+      fprintf(stderr, "ares_set_servers_ports_csv: %s: %s\n",
+              ares_strerror((int)status), global_config.servers);
       rv = 1;
       goto done;
     }
