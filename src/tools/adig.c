@@ -171,7 +171,7 @@ static const char   *helpstr[] = {
     "used",
   "                  by default.",
   "+[no]stats:       Toggles printing the statistics. On by default.",
-  "+[no]tcp:         Whether to use TCP qhen querying name servers. Default is",
+  "+[no]tcp:         Whether to use TCP when querying name servers. Default is",
   "                  UDP.",
   "+tries=#:         Number of query tries. Defaults to 3.",
   "+[no]ttlid:       Display the TTL when printing the record. On by default.",
