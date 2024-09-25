@@ -1125,12 +1125,13 @@ static const struct {
   { 0,   NULL,         0,   0,               NULL,                                   NULL            }
 };
 
-static ares_bool_t read_cmdline(int argc, const char * const *argv)
+static ares_bool_t read_cmdline(int argc, const char * const *argv,
+                                int start_idx)
 {
   int    arg;
   size_t opt;
 
-  for (arg = 1; arg < argc; arg++) {
+  for (arg = start_idx; arg < argc; arg++) {
     ares_bool_t option_handled = ARES_FALSE;
 
     for (opt = 0; !option_handled &&
@@ -1197,11 +1198,26 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv)
 
       switch (dig_options[opt].type) {
         case OPT_TYPE_BOOL:
-          *((ares_bool_t *)dig_options[opt].opt) = is_true;
+          {
+            ares_bool_t *b = dig_options[opt].opt;
+            if (b == NULL) {
+              snprintf(global_config.error, sizeof(global_config.error),
+                       "invalid use for %c%s", dig_options[opt].prefix,
+                       dig_options[opt].name);
+              return ARES_FALSE;
+            }
+            *b = is_true;
+          }
           break;
         case OPT_TYPE_STRING:
           {
-            char **str = (char **)dig_options[opt].opt;
+            char **str = dig_options[opt].opt;
+            if (str == NULL) {
+              snprintf(global_config.error, sizeof(global_config.error),
+                       "invalid use for %c%s", dig_options[opt].prefix,
+                       dig_options[opt].name);
+              return ARES_FALSE;
+            }
             if (value == NULL) {
               snprintf(global_config.error, sizeof(global_config.error),
                        "missing value for %c%s", dig_options[opt].prefix,
@@ -1216,7 +1232,13 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv)
           }
         case OPT_TYPE_SIZE_T:
           {
-            size_t *s = (size_t *)dig_options[opt].opt;
+            size_t *s = dig_options[opt].opt;
+            if (s == NULL) {
+              snprintf(global_config.error, sizeof(global_config.error),
+                       "invalid use for %c%s", dig_options[opt].prefix,
+                       dig_options[opt].name);
+              return ARES_FALSE;
+            }
             if (value == NULL) {
               snprintf(global_config.error, sizeof(global_config.error),
                        "missing value for %c%s", dig_options[opt].prefix,
@@ -1234,7 +1256,13 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv)
           }
         case OPT_TYPE_U16:
           {
-            unsigned short *s = (unsigned short *)dig_options[opt].opt;
+            unsigned short *s = dig_options[opt].opt;
+            if (s == NULL) {
+              snprintf(global_config.error, sizeof(global_config.error),
+                       "invalid use for %c%s", dig_options[opt].prefix,
+                       dig_options[opt].name);
+              return ARES_FALSE;
+            }
             if (value == NULL) {
               snprintf(global_config.error, sizeof(global_config.error),
                        "missing value for %c%s", dig_options[opt].prefix,
@@ -1251,6 +1279,11 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv)
             break;
           }
         case OPT_TYPE_FUNC:
+          if (dig_options[opt].cb == NULL) {
+            snprintf(global_config.error, sizeof(global_config.error),
+                     "missing callback");
+            return ARES_FALSE;
+          }
           if (!dig_options[opt].cb(dig_options[opt].prefix,
                                    dig_options[opt].name, is_true, value)) {
             return ARES_FALSE;
@@ -1340,7 +1373,7 @@ static ares_bool_t read_rcfile(void)
                                   ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
 
     if (rcstatus == ARES_SUCCESS) {
-      read_cmdline((int)rcargc, (const char * const *)rcargv);
+      read_cmdline((int)rcargc, (const char * const *)rcargv, 0);
 
     } else {
       snprintf(global_config.error, sizeof(global_config.error),
@@ -1456,7 +1489,7 @@ int main(int argc, char **argv)
 
   config_defaults();
 
-  if (!read_cmdline(argc, (const char * const *)argv)) {
+  if (!read_cmdline(argc, (const char * const *)argv, 1)) {
     printf("\n** ERROR: %s\n\n", global_config.error);
     print_help();
     rv = 1;
