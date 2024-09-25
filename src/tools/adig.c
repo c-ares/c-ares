@@ -1054,70 +1054,75 @@ static ares_bool_t opt_dig_bare_cb(char prefix, const char *name,
 static const struct {
   /* Prefix for option.  If 0 then this param is a non-option and type must be
    * OPT_TYPE_FUNC where the entire value for the param will be passed */
-  char        prefix;
+  char         prefix;
   /* Name of option.  If null, there is none and the value is expected to be
    * immediately after the prefix character */
-  const char *name;
+  const char  *name;
   /* Separator between key and value.  If 0 then uses the next argument as the
    * value, otherwise splits on the separator. BOOL types won't ever use a
    * separator and is ignored.*/
-  char        separator;
+  char         separator;
   /* Type of parameter passed in.  If it is OPT_TYPE_FUNC, then it calls the
    * dig_opt_cb_t callback */
-  opt_type_t  type;
-  /* Pointer to argument to fill in (or if a callback, to call) */
-  void       *opt;
+  opt_type_t   type;
+  /* Pointer to argument to fill in */
+  void        *opt;
+  /* Callback if OPT_TYPE_FUNC */
+  dig_opt_cb_t cb;
 } dig_options[] = {
   /* -4 (ipv4 only) */
   /* -6 (ipv6 only) */
-  /* { '-', "b",          0,   OPT_TYPE_FUNC,   (void *)opt_bind_address_cb },
+  /* { '-', "b",          0,   OPT_TYPE_FUNC,   NULL, opt_bind_address_cb },
    */
-  { '-', "c",          0,   OPT_TYPE_FUNC,   (void *)opt_class_cb                  },
+  { '-', "c",          0,   OPT_TYPE_FUNC,   NULL,                                   opt_class_cb    },
   /* -f file */
-  { '-', "h",          0,   OPT_TYPE_BOOL,   &global_config.is_help                },
+  { '-', "h",          0,   OPT_TYPE_BOOL,   &global_config.is_help,                 NULL            },
   /* -k keyfile */
   /* -m (memory usage debugging) */
-  { '-', "p",          0,   OPT_TYPE_U16,    &global_config.opts.port              },
-  { '-', "q",          0,   OPT_TYPE_STRING, &global_config.name                   },
-  { '-', "r",          0,   OPT_TYPE_BOOL,   &global_config.no_rcfile              },
-  { '-', "t",          0,   OPT_TYPE_FUNC,   (void *)opt_type_cb                   },
+  { '-', "p",          0,   OPT_TYPE_U16,    &global_config.opts.port,               NULL            },
+  { '-', "q",          0,   OPT_TYPE_STRING, &global_config.name,                    NULL            },
+  { '-', "r",          0,   OPT_TYPE_BOOL,   &global_config.no_rcfile,               NULL            },
+  { '-', "t",          0,   OPT_TYPE_FUNC,   NULL,                                   opt_type_cb     },
   /* -u (print microseconds instead of milliseconds) */
-  { '-', "x",          0,   OPT_TYPE_FUNC,   (void *)opt_ptr_cb                    },
+  { '-', "x",          0,   OPT_TYPE_FUNC,   NULL,                                   opt_ptr_cb      },
   /* -y [hmac:]keynam:secret */
-  { '+', "aaflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.aa_flag           },
-  { '+', "aaonly",     0,   OPT_TYPE_BOOL,   &global_config.opts.aa_flag           },
-  { '+', "additional", 0,   OPT_TYPE_BOOL,
-   &global_config.opts.display_additional                                          },
-  { '+', "adflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.ad_flag           },
-  { '+', "aliases",    0,   OPT_TYPE_BOOL,   &global_config.opts.aliases           },
-  { '+', "all",        '=', OPT_TYPE_FUNC,   (void *)opt_all_cb                    },
-  { '+', "answer",     0,   OPT_TYPE_BOOL,   &global_config.opts.display_answer    },
-  { '+', "authority",  0,   OPT_TYPE_BOOL,   &global_config.opts.display_authority },
-  { '+', "bufsize",    '=', OPT_TYPE_SIZE_T, &global_config.opts.udp_size          },
-  { '+', "cdflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.cd_flag           },
-  { '+', "class",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_class     },
-  { '+', "cmd",        0,   OPT_TYPE_BOOL,   &global_config.opts.display_command   },
-  { '+', "comments",   0,   OPT_TYPE_BOOL,   &global_config.opts.display_comments  },
-  { '+', "defname",    0,   OPT_TYPE_BOOL,   &global_config.opts.do_search         },
-  { '+', "dns0x20",    0,   OPT_TYPE_BOOL,   &global_config.opts.dns0x20           },
-  { '+', "domain",     '=', OPT_TYPE_STRING, &global_config.opts.search            },
-  { '+', "edns",       '=', OPT_TYPE_FUNC,   (void *)opt_edns_cb                   },
-  { '+', "keepopen",   0,   OPT_TYPE_BOOL,   &global_config.opts.stayopen          },
-  { '+', "ignore",     0,   OPT_TYPE_BOOL,   &global_config.opts.ignore_tc         },
-  { '+', "ndots",      '=', OPT_TYPE_SIZE_T, &global_config.opts.ndots             },
-  { '+', "primary",    0,   OPT_TYPE_BOOL,   &global_config.opts.primary           },
-  { '+', "qr",         0,   OPT_TYPE_BOOL,   &global_config.opts.display_query     },
-  { '+', "question",   0,   OPT_TYPE_BOOL,   &global_config.opts.display_question  },
-  { '+', "recurse",    0,   OPT_TYPE_BOOL,   &global_config.opts.rd_flag           },
-  { '+', "retry",      '=', OPT_TYPE_FUNC,   (void *)opt_retry_cb                  },
-  { '+', "search",     0,   OPT_TYPE_BOOL,   &global_config.opts.do_search         },
-  { '+', "stats",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_stats     },
-  { '+', "tcp",        0,   OPT_TYPE_BOOL,   &global_config.opts.tcp               },
-  { '+', "tries",      '=', OPT_TYPE_SIZE_T, &global_config.opts.tries             },
-  { '+', "ttlid",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_ttl       },
-  { '+', "vc",         0,   OPT_TYPE_BOOL,   &global_config.opts.tcp               },
-  { 0,   NULL,         0,   OPT_TYPE_FUNC,   (void *)opt_dig_bare_cb               },
-  { 0,   NULL,         0,   0,               NULL                                  }
+  { '+', "aaflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.aa_flag,            NULL            },
+  { '+', "aaonly",     0,   OPT_TYPE_BOOL,   &global_config.opts.aa_flag,            NULL            },
+  { '+', "additional", 0,   OPT_TYPE_BOOL,   &global_config.opts.display_additional,
+   NULL                                                                                              },
+  { '+', "adflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.ad_flag,            NULL            },
+  { '+', "aliases",    0,   OPT_TYPE_BOOL,   &global_config.opts.aliases,            NULL            },
+  { '+', "all",        '=', OPT_TYPE_FUNC,   NULL,                                   opt_all_cb      },
+  { '+', "answer",     0,   OPT_TYPE_BOOL,   &global_config.opts.display_answer,     NULL            },
+  { '+', "authority",  0,   OPT_TYPE_BOOL,   &global_config.opts.display_authority,
+   NULL                                                                                              },
+  { '+', "bufsize",    '=', OPT_TYPE_SIZE_T, &global_config.opts.udp_size,           NULL            },
+  { '+', "cdflag",     0,   OPT_TYPE_BOOL,   &global_config.opts.cd_flag,            NULL            },
+  { '+', "class",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_class,      NULL            },
+  { '+', "cmd",        0,   OPT_TYPE_BOOL,   &global_config.opts.display_command,    NULL            },
+  { '+', "comments",   0,   OPT_TYPE_BOOL,   &global_config.opts.display_comments,
+   NULL                                                                                              },
+  { '+', "defname",    0,   OPT_TYPE_BOOL,   &global_config.opts.do_search,          NULL            },
+  { '+', "dns0x20",    0,   OPT_TYPE_BOOL,   &global_config.opts.dns0x20,            NULL            },
+  { '+', "domain",     '=', OPT_TYPE_STRING, &global_config.opts.search,             NULL            },
+  { '+', "edns",       '=', OPT_TYPE_FUNC,   NULL,                                   opt_edns_cb     },
+  { '+', "keepopen",   0,   OPT_TYPE_BOOL,   &global_config.opts.stayopen,           NULL            },
+  { '+', "ignore",     0,   OPT_TYPE_BOOL,   &global_config.opts.ignore_tc,          NULL            },
+  { '+', "ndots",      '=', OPT_TYPE_SIZE_T, &global_config.opts.ndots,              NULL            },
+  { '+', "primary",    0,   OPT_TYPE_BOOL,   &global_config.opts.primary,            NULL            },
+  { '+', "qr",         0,   OPT_TYPE_BOOL,   &global_config.opts.display_query,      NULL            },
+  { '+', "question",   0,   OPT_TYPE_BOOL,   &global_config.opts.display_question,
+   NULL                                                                                              },
+  { '+', "recurse",    0,   OPT_TYPE_BOOL,   &global_config.opts.rd_flag,            NULL            },
+  { '+', "retry",      '=', OPT_TYPE_FUNC,   NULL,                                   opt_retry_cb    },
+  { '+', "search",     0,   OPT_TYPE_BOOL,   &global_config.opts.do_search,          NULL            },
+  { '+', "stats",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_stats,      NULL            },
+  { '+', "tcp",        0,   OPT_TYPE_BOOL,   &global_config.opts.tcp,                NULL            },
+  { '+', "tries",      '=', OPT_TYPE_SIZE_T, &global_config.opts.tries,              NULL            },
+  { '+', "ttlid",      0,   OPT_TYPE_BOOL,   &global_config.opts.display_ttl,        NULL            },
+  { '+', "vc",         0,   OPT_TYPE_BOOL,   &global_config.opts.tcp,                NULL            },
+  { 0,   NULL,         0,   OPT_TYPE_FUNC,   NULL,                                   opt_dig_bare_cb },
+  { 0,   NULL,         0,   0,               NULL,                                   NULL            }
 };
 
 static ares_bool_t read_cmdline(int argc, const char * const *argv)
@@ -1244,9 +1249,8 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv)
             break;
           }
         case OPT_TYPE_FUNC:
-          if (!((dig_opt_cb_t)dig_options[opt].opt)(dig_options[opt].prefix,
-                                                    dig_options[opt].name,
-                                                    is_true, value)) {
+          if (!dig_options[opt].cb(dig_options[opt].prefix,
+                                   dig_options[opt].name, is_true, value)) {
             return ARES_FALSE;
           }
           break;
