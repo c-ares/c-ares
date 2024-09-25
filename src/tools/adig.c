@@ -1133,7 +1133,9 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv)
   for (arg = 1; arg < argc; arg++) {
     ares_bool_t option_handled = ARES_FALSE;
 
-    for (opt = 0; !option_handled && dig_options[opt].opt != NULL; opt++) {
+    for (opt = 0; !option_handled &&
+                  (dig_options[opt].opt != NULL || dig_options[opt].cb != NULL);
+         opt++) {
       ares_bool_t is_true = ARES_TRUE;
       const char *value   = NULL;
       const char *nameptr = NULL;
