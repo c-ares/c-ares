@@ -122,7 +122,7 @@ static const char *helpstr[] = {
 "-q name:  Specifies the domain name to query. Useful to distinguish name",
 "          from other arguments",
 "-r:       Skip adigrc processing",
-"-t type:  Indicates resource record type to query. Usefule to distinguish",
+"-t type:  Indicates resource record type to query. Useful to distinguish",
 "          type from other arguments",
 "-x addr:  Simplified reverse lookups.  Sets the type to PTR and forms a",
 "          valid in-arpa query string",
@@ -233,7 +233,11 @@ static void print_header(const ares_dns_record_t *dnsrec)
 static void print_question(const ares_dns_record_t *dnsrec)
 {
   size_t i;
-  printf(";; QUESTION SECTION:\n");
+
+  if (global_config.opts.display_comments) {
+    printf(";; QUESTION SECTION:\n");
+  }
+
   for (i = 0; i < ares_dns_record_query_cnt(dnsrec); i++) {
     const char         *name;
     ares_dns_rec_type_t qtype;
@@ -254,10 +258,17 @@ static void print_question(const ares_dns_record_t *dnsrec)
     if (len + 1 < 16) {
       printf("\t");
     }
-    printf("%s\t%s\n", ares_dns_class_tostr(qclass),
-           ares_dns_rec_type_tostr(qtype));
+
+    if (global_config.opts.display_class) {
+      printf("%s\t", ares_dns_class_tostr(qclass));
+    }
+
+    printf("%s\n", ares_dns_rec_type_tostr(qtype));
   }
-  printf("\n");
+
+  if (global_config.opts.display_comments) {
+    printf("\n");
+  }
 }
 
 static void print_opt_none(const unsigned char *val, size_t val_len)
@@ -672,7 +683,9 @@ static void print_section(ares_dns_record_t *dnsrec, ares_dns_section_t section)
     return;
   }
 
-  printf(";; %s SECTION:\n", ares_dns_section_tostr(section));
+  if (global_config.opts.display_comments) {
+    printf(";; %s SECTION:\n", ares_dns_section_tostr(section));
+  }
   for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, section); i++) {
     const ares_dns_rr_t *rr = ares_dns_record_rr_get(dnsrec, section, i);
     if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT) {
@@ -680,7 +693,9 @@ static void print_section(ares_dns_record_t *dnsrec, ares_dns_section_t section)
     }
     print_rr(rr);
   }
-  printf("\n");
+  if (global_config.opts.display_comments) {
+    printf("\n");
+  }
 }
 
 static void print_opt_psuedosection(ares_dns_record_t *dnsrec)
@@ -698,7 +713,6 @@ static void print_opt_psuedosection(ares_dns_record_t *dnsrec)
     cookie = NULL;
   }
 
-
   printf(";; OPT PSEUDOSECTION:\n");
   printf("; EDNS: version: %u, flags: %u; udp: %u\n",
          (unsigned int)ares_dns_rr_get_u8(rr, ARES_RR_OPT_VERSION),
@@ -710,6 +724,7 @@ static void print_opt_psuedosection(ares_dns_record_t *dnsrec)
     print_opt_bin(cookie, cookie_len);
     printf(" (good)\n");
   }
+
 }
 
 static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
@@ -719,17 +734,18 @@ static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
   (void)arg;
   (void)timeouts;
 
-  /* We got a "Server status" */
-  if (status >= ARES_SUCCESS && status <= ARES_EREFUSED) {
-    printf(";; Got answer:");
-  } else {
-    printf(";;");
+  if (global_config.opts.display_comments) {
+    /* We got a "Server status" */
+    if (status >= ARES_SUCCESS && status <= ARES_EREFUSED) {
+      printf(";; Got answer:");
+    } else {
+      printf(";;");
+    }
+    if (status != ARES_SUCCESS) {
+      printf(" %s", ares_strerror(status));
+    }
+    printf("\n");
   }
-
-  if (status != ARES_SUCCESS) {
-    printf(" %s", ares_strerror(status));
-  }
-  printf("\n");
 
   if (abuf == NULL || alen == 0) {
     return;
@@ -742,8 +758,10 @@ static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
     return;
   }
 
-  print_header(dnsrec);
-  print_opt_psuedosection(dnsrec);
+  if (global_config.opts.display_comments) {
+    print_header(dnsrec);
+    print_opt_psuedosection(dnsrec);
+  }
 
   if (global_config.opts.display_question) {
     print_question(dnsrec);
@@ -761,7 +779,9 @@ static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
     print_section(dnsrec, ARES_SECTION_AUTHORITY);
   }
 
-  printf(";; MSG SIZE  rcvd: %d\n\n", alen);
+  if (global_config.opts.display_stats) {
+    printf(";; MSG SIZE  rcvd: %d\n\n", alen);
+  }
   ares_dns_record_destroy(dnsrec);
 }
 
@@ -1472,9 +1492,11 @@ int main(int argc, char **argv)
   }
 
   /* Debug */
-  printf("\n; <<>> c-ares DiG %s <<>>", ares_version(NULL));
-  printf(" %s", global_config.name);
-  printf("\n");
+  if (global_config.opts.display_command) {
+    printf("\n; <<>> c-ares DiG %s <<>>", ares_version(NULL));
+    printf(" %s", global_config.name);
+    printf("\n");
+  }
 
   /* Process events */
   rv = event_loop(channel);
