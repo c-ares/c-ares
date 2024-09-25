@@ -37,7 +37,7 @@ IF (CARES_BUILD_TOOLS)
 
 
 	# Build adig
-	ADD_EXECUTABLE (adig adig.c ${SAMPLESOURCES})
+	ADD_EXECUTABLE (adig adig.c)
 	# Don't build adig and ahost in parallel.  This is to prevent a Windows MSVC
 	# build error due to them both using the same source files.
 	ADD_DEPENDENCIES(adig ahost)

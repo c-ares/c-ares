@@ -125,7 +125,7 @@ $(LIBNAME).lib: $(OBJS_STAT) $(LIB_ARG)
 $(OBJ_BASE)\tools\ares_getopt.obj:
 	$(CC) $(CFLAGS) -DCARES_STATICLIB .\src\tools\ares_getopt.c -fo=$^@
 
-adig.exe: $(OBJ_BASE)\tools\ares_getopt.obj $(LIBNAME).lib
+adig.exe: $(LIBNAME).lib
 	$(CC) $(CFLAGS) src\tools\adig.c -fo=$(OBJ_BASE)\tools\adig.obj
 	$(LD) name $^@ system nt $(LFLAGS) file { $(OBJ_BASE)\tools\adig.obj $[@ } library $]@, ws2_32.lib, iphlpapi.lib
 
