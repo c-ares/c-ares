@@ -817,13 +817,15 @@ static ares_status_t enqueue_query(ares_channel_t *channel)
     goto done;
   }
 
-  status = ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "",
-                                  ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0);
-  if (status != ARES_SUCCESS) {
-    goto done;
+  if (global_config.opts.edns) {
+    status = ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "",
+                                    ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+    ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, (unsigned short)global_config.opts.udp_size);
+    ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0);
   }
-  ares_dns_rr_set_u16(rr, ARES_RR_OPT_UDP_SIZE, 1280);
-  ares_dns_rr_set_u8(rr, ARES_RR_OPT_VERSION, 0);
 
   status = ares_dns_write(dnsrec, &buf, &buf_len);
   if (status != ARES_SUCCESS) {
