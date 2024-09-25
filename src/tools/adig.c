@@ -57,54 +57,55 @@
 #endif
 
 typedef struct {
+  unsigned short port;
+  size_t         tries;
+  size_t         ndots;
+  ares_bool_t tcp;
+  ares_bool_t ignore_tc;
+  char       *search;
+  ares_bool_t ignore_search;
+  ares_bool_t aa_flag;
+  ares_bool_t ad_flag;
+  ares_bool_t cd_flag;
+  ares_bool_t rd_flag;
+  ares_bool_t do_flag;
+  size_t      udp_size;
+  ares_bool_t primary;
+  ares_bool_t aliases;
+  ares_bool_t stayopen;
+  ares_bool_t dns0x20;
+  ares_bool_t display_class;
+  ares_bool_t display_ttl;
+  ares_bool_t display_command;
+  ares_bool_t display_stats;
+  ares_bool_t display_query;
+  ares_bool_t display_question;
+  ares_bool_t display_answer;
+  ares_bool_t display_authority;
+  ares_bool_t display_additional;
+} dns_options_t;
+
+typedef struct {
+  dns_options_t       opts;
   ares_bool_t         is_help;
+  ares_bool_t         no_rcfile;
   struct ares_options options;
   int                 optmask;
   ares_dns_class_t    qclass;
   ares_dns_rec_type_t qtype;
-  int                 args_processed;
+  char               *name;
   char               *servers;
   char                error[256];
 } adig_config_t;
 
-typedef struct {
-  const char *name;
-  int         value;
-} nv_t;
+static adig_config_t global_config;
 
-static const nv_t configflags[] = {
-  { "usevc",     ARES_FLAG_USEVC     },
-  { "primary",   ARES_FLAG_PRIMARY   },
-  { "igntc",     ARES_FLAG_IGNTC     },
-  { "norecurse", ARES_FLAG_NORECURSE },
-  { "stayopen",  ARES_FLAG_STAYOPEN  },
-  { "noaliases", ARES_FLAG_NOALIASES },
-  { "edns",      ARES_FLAG_EDNS      },
-  { "dns0x20",   ARES_FLAG_DNS0x20   }
-};
-static const size_t nconfigflags = sizeof(configflags) / sizeof(*configflags);
-
-static int          lookup_flag(const nv_t *nv, size_t num_nv, const char *name)
+static void free_config(void)
 {
-  size_t i;
-
-  if (name == NULL) {
-    return 0;
-  }
-
-  for (i = 0; i < num_nv; i++) {
-    if (ares_strcaseeq(nv[i].name, name)) {
-      return nv[i].value;
-    }
-  }
-
-  return 0;
-}
-
-static void free_config(adig_config_t *config)
-{
-  free(config->servers);
-  memset(config, 0, sizeof(*config));
+  free(global_config.servers);
+  free(global_config.name);
+  free(global_config.opts.search);
+  memset(&global_config, 0, sizeof(global_config));
 }
 
 static void print_help(void)
@@ -145,225 +146,6 @@ static void print_help(void)
     "              SOA, SRV, TXT, TLSA, URI, CAA, SVCB, HTTPS\n\n");
 }
 
-static ares_bool_t read_cmdline(int argc, const char * const *argv,
-                                adig_config_t *config, ares_bool_t is_rcfile)
-{
-  ares_getopt_state_t state;
-  int                 c;
-
-  if (is_rcfile != ARES_TRUE && is_rcfile != ARES_FALSE) {
-    DEBUGF(fprintf(stderr, "read_cmdline() illegal use of is_rcfile"));
-    snprintf(config->error, sizeof(config->error), "%s",
-             "internal argument parsing failure");
-    return ARES_FALSE;
-  }
-
-  ares_getopt_init(&state, argc, argv);
-  state.opterr = 0;
-
-  if (is_rcfile) {
-    state.optind = 0;
-  }
-
-  while ((c = ares_getopt(&state, "dh?f:s:c:t:T:U:")) != -1) {
-    int f;
-
-    switch (c) {
-      case 'd':
-#ifdef WATT32
-        dbug_init();
-#endif
-        break;
-
-      case 'h':
-        config->is_help = ARES_TRUE;
-        return ARES_TRUE;
-
-      case 'f':
-        f = lookup_flag(configflags, nconfigflags, state.optarg);
-        if (f == 0) {
-          snprintf(config->error, sizeof(config->error), "flag %s unknown",
-                   state.optarg);
-        }
-
-        config->options.flags |= f;
-        config->optmask       |= ARES_OPT_FLAGS;
-        break;
-
-      case 's':
-        if (state.optarg == NULL) {
-          snprintf(config->error, sizeof(config->error), "%s",
-                   "missing servers");
-          return ARES_FALSE;
-        }
-        if (config->servers) {
-          free(config->servers);
-        }
-        config->servers = strdup(state.optarg);
-        break;
-
-      case 'c':
-        if (!ares_dns_class_fromstr(&config->qclass, state.optarg)) {
-          snprintf(config->error, sizeof(config->error),
-                   "unrecognized class %s", state.optarg);
-          return ARES_FALSE;
-        }
-        break;
-
-      case 't':
-        if (!ares_dns_rec_type_fromstr(&config->qtype, state.optarg)) {
-          snprintf(config->error, sizeof(config->error), "unrecognized type %s",
-                   state.optarg);
-          return ARES_FALSE;
-        }
-        break;
-
-      case 'T':
-        {
-          /* Set the TCP port number. */
-          long port = strtol(state.optarg, NULL, 0);
-
-          if (port <= 0 || port > 65535) {
-            snprintf(config->error, sizeof(config->error),
-                     "invalid port number");
-            return ARES_FALSE;
-          }
-          config->options.tcp_port  = (unsigned short)port;
-          config->options.flags    |= ARES_FLAG_USEVC;
-          config->optmask          |= ARES_OPT_TCP_PORT;
-        }
-        break;
-
-      case 'U':
-        {
-          /* Set the TCP port number. */
-          long port = strtol(state.optarg, NULL, 0);
-
-          if (port <= 0 || port > 65535) {
-            snprintf(config->error, sizeof(config->error),
-                     "invalid port number");
-            return ARES_FALSE;
-          }
-          config->options.udp_port  = (unsigned short)port;
-          config->options.flags    |= ARES_FLAG_USEVC;
-          config->optmask          |= ARES_OPT_UDP_PORT;
-        }
-        break;
-
-      case ':':
-        snprintf(config->error, sizeof(config->error),
-                 "%c requires an argument", state.optopt);
-        return ARES_FALSE;
-
-      default:
-        snprintf(config->error, sizeof(config->error),
-                 "unrecognized option: %c", state.optopt);
-        return ARES_FALSE;
-    }
-  }
-
-  if (!is_rcfile) {
-    config->args_processed = state.optind;
-    if (config->args_processed >= argc) {
-      snprintf(config->error, sizeof(config->error), "missing query name");
-      return ARES_FALSE;
-    }
-  }
-  return ARES_TRUE;
-}
-
-static ares_bool_t read_rcfile(adig_config_t *config)
-{
-  char         configdir[PATH_MAX];
-  unsigned int cdlen = 0;
-
-#if !defined(WIN32)
-#  if !defined(__APPLE__)
-  char *configdir_xdg;
-#  endif
-  char *homedir;
-#endif
-
-  char          rcfile[PATH_MAX];
-  unsigned int  rclen;
-
-  size_t        rcargc;
-  char        **rcargv;
-  ares_buf_t   *rcbuf;
-  ares_status_t rcstatus;
-
-#if defined(WIN32)
-  cdlen = (unsigned int)snprintf(configdir, sizeof(configdir), "%s/%s",
-                                 getenv("APPDATA"), "c-ares");
-
-#elif defined(__APPLE__)
-  homedir = getenv("HOME");
-  if (homedir != NULL) {
-    cdlen = (unsigned int)snprintf(configdir, sizeof(configdir), "%s/%s/%s/%s",
-                                   homedir, "Library", "Application Support",
-                                   "c-ares");
-  }
-
-#else
-  configdir_xdg = getenv("XDG_CONFIG_HOME");
-
-  if (configdir_xdg == NULL) {
-    homedir = getenv("HOME");
-    if (homedir != NULL) {
-      cdlen = (unsigned int)snprintf(configdir, sizeof(configdir), "%s/%s",
-                                     homedir, ".config");
-    }
-  } else {
-    cdlen =
-      (unsigned int)snprintf(configdir, sizeof(configdir), "%s", configdir_xdg);
-  }
-
-#endif
-
-  DEBUGF(fprintf(stderr, "read_cmdline() configdir: %s\n", configdir));
-
-  if (cdlen == 0 || cdlen > sizeof(configdir)) {
-    DEBUGF(
-      fprintf(stderr, "read_cmdline() skipping rcfile parsing on directory\n"));
-    return ARES_TRUE;
-  }
-
-  rclen =
-    (unsigned int)snprintf(rcfile, sizeof(rcfile), "%s/adigrc", configdir);
-
-  if (rclen > sizeof(rcfile)) {
-    DEBUGF(fprintf(stderr, "read_cmdline() skipping rcfile parsing on file\n"));
-    return ARES_TRUE;
-  }
-
-  rcbuf = ares_buf_create();
-  if (ares_buf_load_file(rcfile, rcbuf) == ARES_SUCCESS) {
-    rcstatus = ares_buf_split_str(rcbuf, (const unsigned char *)"\n ", 2,
-                                  ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
-
-    if (rcstatus == ARES_SUCCESS) {
-      read_cmdline((int)rcargc, (const char * const *)rcargv, config,
-                   ARES_TRUE);
-
-    } else {
-      snprintf(config->error, sizeof(config->error), "rcfile is invalid: %s",
-               ares_strerror((int)rcstatus));
-    }
-
-    ares_free_array(rcargv, rcargc, ares_free);
-
-    if (rcstatus != ARES_SUCCESS) {
-      ares_buf_destroy(rcbuf);
-      return ARES_FALSE;
-    }
-
-  } else {
-    DEBUGF(fprintf(stderr, "read_cmdline() failed to load rcfile"));
-  }
-  ares_buf_destroy(rcbuf);
-
-  return ARES_TRUE;
-}
 
 static void print_flags(ares_dns_flags_t flags)
 {
@@ -922,9 +704,7 @@ static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
   ares_dns_record_destroy(dnsrec);
 }
 
-static ares_status_t enqueue_query(ares_channel_t      *channel,
-                                   const adig_config_t *config,
-                                   const char          *name)
+static ares_status_t enqueue_query(ares_channel_t *channel)
 {
   ares_dns_record_t *dnsrec = NULL;
   ares_dns_rr_t     *rr     = NULL;
@@ -933,10 +713,7 @@ static ares_status_t enqueue_query(ares_channel_t      *channel,
   size_t             buf_len  = 0;
   unsigned short     flags    = 0;
   char              *nametemp = NULL;
-
-  if (!(config->options.flags & ARES_FLAG_NORECURSE)) {
-    flags |= ARES_FLAG_RD;
-  }
+  const char        *name     = global_config.name;
 
   status = ares_dns_record_create(&dnsrec, 0, flags, ARES_OPCODE_QUERY,
                                   ARES_RCODE_NOERROR);
@@ -946,7 +723,7 @@ static ares_status_t enqueue_query(ares_channel_t      *channel,
 
   /* If it is a PTR record, convert from ip address into in-arpa form
    * automatically */
-  if (config->qtype == ARES_REC_TYPE_PTR) {
+  if (global_config.qtype == ARES_REC_TYPE_PTR) {
     struct ares_addr addr;
     size_t           len;
     addr.family = AF_UNSPEC;
@@ -958,7 +735,7 @@ static ares_status_t enqueue_query(ares_channel_t      *channel,
   }
 
   status =
-    ares_dns_record_query_add(dnsrec, name, config->qtype, config->qclass);
+    ares_dns_record_query_add(dnsrec, name, global_config.qtype, global_config.qclass);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -1024,12 +801,371 @@ static int event_loop(ares_channel_t *channel)
   return 0;
 }
 
+
+typedef enum {
+  OPT_TYPE_BOOL,
+  OPT_TYPE_STRING,
+  OPT_TYPE_SIZE_T,
+  OPT_TYPE_U16,
+  OPT_TYPE_FUNC
+} opt_type_t;
+
+/* Callback called with OPT_TYPE_FUNC when processing options.
+ * \param[in] prefix  prefix character for option
+ * \param[in] name    name for option
+ * \param[in] is_true ARES_TRUE unless option was prefixed with 'no'
+ * \param[in] value   value for option
+ * \return ARES_TRUE on success, ARES_FALSE on failure.  Should fill in
+ *         global_config.error on error */
+typedef ares_bool_t (*dig_opt_cb_t)(char prefix, const char *name, ares_bool_t is_true, const char *value);
+
+static ares_bool_t opt_bind_address_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
+{
+  return ARES_FALSE;
+}
+
+static ares_bool_t opt_class_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
+{
+  return ARES_FALSE;
+}
+
+static ares_bool_t opt_type_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
+{
+  return ARES_FALSE;
+}
+
+static ares_bool_t opt_ptr_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
+{
+  return ARES_FALSE;
+}
+
+static ares_bool_t opt_all_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
+{
+  return ARES_FALSE;
+}
+
+static ares_bool_t opt_edns_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
+{
+  return ARES_FALSE;
+}
+
+static ares_bool_t opt_retry_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
+{
+  return ARES_FALSE;
+}
+
+static ares_bool_t opt_dig_bare_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
+{
+  ares_free(global_config.name);
+  global_config.name = strdup(value);
+  return ARES_TRUE;
+}
+
+static const struct {
+  /* Prefix for option.  If 0 then this param is a non-option and type must be
+   * OPT_TYPE_FUNC where the entire value for the param will be passed */
+  char         prefix;
+  /* Name of option.  If null, there is none and the value is expected to be
+   * immediately after the prefix character */
+  const char  *name;
+  /* Separator between key and value.  If 0 then uses the next argument as the
+   * value, otherwise splits on the separator. BOOL types won't ever use a
+   * separator and is ignored.*/
+  char         separator;
+  /* Type of parameter passed in.  If it is OPT_TYPE_FUNC, then it calls the
+   * dig_opt_cb_t callback */
+  opt_type_t   type;
+  /* Pointer to argument to fill in (or if a callback, to call) */
+  void        *opt;
+} dig_options[] = {
+  /* -4 (ipv4 only) */
+  /* -6 (ipv6 only) */
+  { '-', "b",            0, OPT_TYPE_FUNC,   (void *)opt_bind_address_cb },
+  { '-', "c",            0, OPT_TYPE_FUNC,   (void *)opt_class_cb },
+  /* -f file */
+  { '-', "h",            0, OPT_TYPE_BOOL,   &global_config.is_help },
+  /* -k keyfile */
+  /* -m (memory usage debugging) */
+  { '-', "p",            0, OPT_TYPE_U16,    &global_config.opts.port },
+  { '-', "q",            0, OPT_TYPE_STRING, &global_config.name },
+  { '-', "r",            0, OPT_TYPE_BOOL,   &global_config.no_rcfile },
+  { '-', "t",            0, OPT_TYPE_FUNC,   (void *)opt_type_cb },
+  /* -u (print microseconds instead of milliseconds) */
+  { '-', "x",            0, OPT_TYPE_FUNC,   (void *)opt_ptr_cb },
+  /* -y [hmac:]keynam:secret */
+  { '+', "tcp",          0, OPT_TYPE_BOOL,   &global_config.opts.tcp },
+  { '+', "vc",           0, OPT_TYPE_BOOL,   &global_config.opts.tcp },
+  { '+', "ignore",       0, OPT_TYPE_BOOL,   &global_config.opts.ignore_tc },
+  { '+', "domain",     '=', OPT_TYPE_STRING, &global_config.opts.search },
+  { '+', "search",       0, OPT_TYPE_BOOL,   &global_config.opts.ignore_search },
+  /* [no]showsearch */
+  { '+', "defname",      0, OPT_TYPE_BOOL,   &global_config.opts.ignore_search },
+  { '+', "aaonly",       0, OPT_TYPE_BOOL,   &global_config.opts.aa_flag },
+  { '+', "aaflag",       0, OPT_TYPE_BOOL,   &global_config.opts.aa_flag },
+  { '+', "adflag",       0, OPT_TYPE_BOOL,   &global_config.opts.ad_flag },
+  { '+', "cdflag",       0, OPT_TYPE_BOOL,   &global_config.opts.cd_flag },
+  { '+', "cl",           0, OPT_TYPE_BOOL,   &global_config.opts.display_class },
+  { '+', "ttlid",        0, OPT_TYPE_BOOL,   &global_config.opts.display_ttl },
+  { '+', "recurse",      0, OPT_TYPE_BOOL,   &global_config.opts.rd_flag },
+  /* +[no]nssearch */
+  /* +[no]trace */
+  { '+', "cmd",          0, OPT_TYPE_BOOL,   &global_config.opts.display_command },
+  /* +[no]short */
+  /* +[no]identify */
+  /* +[no]comments */
+  { '+', "stats",        0, OPT_TYPE_BOOL,   &global_config.opts.display_stats },
+  { '+', "qr",           0, OPT_TYPE_BOOL,   &global_config.opts.display_query },
+  { '+', "question",     0, OPT_TYPE_BOOL,   &global_config.opts.display_question },
+  { '+', "answer",       0, OPT_TYPE_BOOL,   &global_config.opts.display_answer },
+  { '+', "authority",    0, OPT_TYPE_BOOL,   &global_config.opts.display_authority },
+  { '+', "additional",   0, OPT_TYPE_BOOL,   &global_config.opts.display_additional },
+  { '+', "all",        '=', OPT_TYPE_FUNC,   (void *)opt_all_cb },
+  /* [no]time */
+  { '+', "tries",      '=', OPT_TYPE_SIZE_T, &global_config.opts.tries },
+  { '+', "retry",      '=', OPT_TYPE_FUNC,   (void *)opt_retry_cb },
+  { '+', "ndots",      '=', OPT_TYPE_SIZE_T, &global_config.opts.ndots },
+  { '+', "bufsize",    '=', OPT_TYPE_SIZE_T, &global_config.opts.udp_size },
+  { '+', "edns",       '=', OPT_TYPE_FUNC,   (void *)opt_edns_cb },
+  /* +[no]multiline */
+  /* +[no]onesoa */
+  /* +[no]fail */
+  /* +[no]besteffort */
+  { '+', "dnssec",       0, OPT_TYPE_BOOL,   &global_config.opts.do_flag },
+  /* +[no]sigchase */
+  /* +trusted-key=###### */
+  /* +[no]topdown */
+  /* +[no]nsid */
+
+  /* Added by c-ares */
+  { '+', "primary",      0, OPT_TYPE_BOOL,  &global_config.opts.primary },
+  { '+', "stayopen",     0, OPT_TYPE_BOOL,  &global_config.opts.stayopen },
+  { '+', "aliases",      0, OPT_TYPE_BOOL,  &global_config.opts.aliases },
+  { '+', "dns0x20",      0, OPT_TYPE_BOOL,  &global_config.opts.dns0x20 },
+
+  { 0, NULL, 0, OPT_TYPE_FUNC, (void *)opt_dig_bare_cb },
+  { 0, NULL, 0, 0, NULL}
+};
+
+static ares_bool_t read_cmdline(int argc, const char * const *argv)
+{
+  int    arg;
+  size_t opt;
+
+  for (arg = 1; arg < argc ; arg++) {
+    ares_bool_t option_handled = ARES_FALSE;
+
+    for (opt=0; !option_handled && dig_options[opt].opt != NULL; opt++) {
+      ares_bool_t is_true = ARES_TRUE;
+      const char *value   = NULL;
+      const char *nameptr = NULL;
+      size_t      namelen;
+
+      /* Match prefix character */
+      if (dig_options[opt].prefix != 0 && dig_options[opt].prefix != *(argv[arg])) {
+        continue;
+      }
+
+      nameptr = argv[arg];
+
+      /* skip prefix */
+      if (dig_options[opt].prefix != 0) {
+        nameptr++;
+      }
+
+      /* Negated option if it has a 'no' prefix */
+      if (ares_streq_max(nameptr, "no", 2)) {
+        is_true = ARES_FALSE;
+        nameptr += 2;
+      }
+
+      if (dig_options[opt].separator != 0) {
+        const char *ptr = strchr(nameptr, dig_options[opt].separator);
+        if (ptr == NULL) {
+          namelen = ares_strlen(nameptr);
+        } else {
+          namelen = (size_t)(ptr - nameptr);
+          value = ptr + 1;
+        }
+      } else {
+        namelen = ares_strlen(nameptr);
+      }
+
+      /* Match name */
+      if (dig_options[opt].name != NULL && !ares_streq_max(nameptr, dig_options[opt].name, namelen)) {
+        continue;
+      }
+
+      if (dig_options[opt].name == NULL) {
+        value = nameptr;
+      }
+
+      /* We need another argument for the value */
+      if (dig_options[opt].type != OPT_TYPE_BOOL && dig_options[opt].prefix != 0 && dig_options[opt].separator == 0) {
+        if (arg == argc - 1) {
+          snprintf(global_config.error, sizeof(global_config.error), "insufficient arguments for %c%s", dig_options[opt].prefix, dig_options[opt].name);
+          return ARES_FALSE;
+        }
+        arg++;
+        value = argv[arg];
+      }
+
+      switch (dig_options[opt].type) {
+        case OPT_TYPE_BOOL:
+          *((ares_bool_t *)dig_options[opt].opt) = is_true;
+          break;
+        case OPT_TYPE_STRING: {
+          char **str = (char **)dig_options[opt].opt;
+          if (value == NULL) {
+            snprintf(global_config.error, sizeof(global_config.error), "missing value for %c%s", dig_options[opt].prefix, dig_options[opt].name);
+            return ARES_FALSE;
+          }
+          if (*str != NULL) {
+            free(*str);
+            *str = strdup(value);
+          }
+          break;
+        }
+        case OPT_TYPE_SIZE_T: {
+          size_t *s = (size_t *)dig_options[opt].opt;
+          if (value == NULL) {
+            snprintf(global_config.error, sizeof(global_config.error), "missing value for %c%s", dig_options[opt].prefix, dig_options[opt].name);
+            return ARES_FALSE;
+          }
+          if (!ares_str_isnum(value)) {
+            snprintf(global_config.error, sizeof(global_config.error), "%c%s is not a numeric value", dig_options[opt].prefix, dig_options[opt].name);
+            return ARES_FALSE;
+          }
+          *s = strtoul(value, NULL, 10);
+          break;
+        }
+        case OPT_TYPE_U16: {
+          unsigned short *s = (unsigned short *)dig_options[opt].opt;
+          if (value == NULL) {
+            snprintf(global_config.error, sizeof(global_config.error), "missing value for %c%s", dig_options[opt].prefix, dig_options[opt].name);
+            return ARES_FALSE;
+          }
+          if (!ares_str_isnum(value)) {
+            snprintf(global_config.error, sizeof(global_config.error), "%c%s is not a numeric value", dig_options[opt].prefix, dig_options[opt].name);
+            return ARES_FALSE;
+          }
+          *s = (unsigned short)strtoul(value, NULL, 10);
+          break;
+        }
+      case OPT_TYPE_FUNC:
+        if (!((dig_opt_cb_t)dig_options[opt].opt)(dig_options[opt].prefix, dig_options[opt].name, is_true, value)) {
+          return ARES_FALSE;
+        }
+        break;
+      }
+      option_handled = ARES_TRUE;
+    }
+
+    if (!option_handled) {
+      snprintf(global_config.error, sizeof(global_config.error), "unrecognized option %s", argv[arg]);
+      return ARES_FALSE;
+    }
+  }
+
+  return ARES_TRUE;
+}
+
+
+static ares_bool_t read_rcfile(void)
+{
+  char         configdir[PATH_MAX];
+  unsigned int cdlen = 0;
+
+#if !defined(WIN32)
+#  if !defined(__APPLE__)
+  char *configdir_xdg;
+#  endif
+  char *homedir;
+#endif
+
+  char          rcfile[PATH_MAX];
+  unsigned int  rclen;
+
+  size_t        rcargc;
+  char        **rcargv;
+  ares_buf_t   *rcbuf;
+  ares_status_t rcstatus;
+
+#if defined(WIN32)
+  cdlen = (unsigned int)snprintf(configdir, sizeof(configdir), "%s/%s",
+                                 getenv("APPDATA"), "c-ares");
+
+#elif defined(__APPLE__)
+  homedir = getenv("HOME");
+  if (homedir != NULL) {
+    cdlen = (unsigned int)snprintf(configdir, sizeof(configdir), "%s/%s/%s/%s",
+                                   homedir, "Library", "Application Support",
+                                   "c-ares");
+  }
+
+#else
+  configdir_xdg = getenv("XDG_CONFIG_HOME");
+
+  if (configdir_xdg == NULL) {
+    homedir = getenv("HOME");
+    if (homedir != NULL) {
+      cdlen = (unsigned int)snprintf(configdir, sizeof(configdir), "%s/%s",
+                                     homedir, ".config");
+    }
+  } else {
+    cdlen =
+      (unsigned int)snprintf(configdir, sizeof(configdir), "%s", configdir_xdg);
+  }
+
+#endif
+
+  DEBUGF(fprintf(stderr, "read_cmdline() configdir: %s\n", configdir));
+
+  if (cdlen == 0 || cdlen > sizeof(configdir)) {
+    DEBUGF(
+      fprintf(stderr, "read_cmdline() skipping rcfile parsing on directory\n"));
+    return ARES_TRUE;
+  }
+
+  rclen =
+    (unsigned int)snprintf(rcfile, sizeof(rcfile), "%s/adigrc", configdir);
+
+  if (rclen > sizeof(rcfile)) {
+    DEBUGF(fprintf(stderr, "read_cmdline() skipping rcfile parsing on file\n"));
+    return ARES_TRUE;
+  }
+
+  rcbuf = ares_buf_create();
+  if (ares_buf_load_file(rcfile, rcbuf) == ARES_SUCCESS) {
+    rcstatus = ares_buf_split_str(rcbuf, (const unsigned char *)"\n ", 2,
+                                  ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
+
+    if (rcstatus == ARES_SUCCESS) {
+      read_cmdline((int)rcargc, (const char * const *)rcargv);
+
+    } else {
+      snprintf(global_config.error, sizeof(global_config.error), "rcfile is invalid: %s",
+               ares_strerror((int)rcstatus));
+    }
+
+    ares_free_array(rcargv, rcargc, ares_free);
+
+    if (rcstatus != ARES_SUCCESS) {
+      ares_buf_destroy(rcbuf);
+      return ARES_FALSE;
+    }
+
+  } else {
+    DEBUGF(fprintf(stderr, "read_cmdline() failed to load rcfile"));
+  }
+  ares_buf_destroy(rcbuf);
+
+  return ARES_TRUE;
+}
+
 int main(int argc, char **argv)
 {
   ares_channel_t *channel = NULL;
   ares_status_t   status;
-  adig_config_t   config;
-  int             i;
   int             rv = 0;
 
 #ifdef USE_WINSOCK
@@ -1044,34 +1180,36 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  memset(&config, 0, sizeof(config));
-  config.qclass = ARES_CLASS_IN;
-  config.qtype  = ARES_REC_TYPE_A;
-  if (!read_rcfile(&config)) {
-    fprintf(stderr, "\n** ERROR: %s\n", config.error);
-  }
-  if (!read_cmdline(argc, (const char * const *)argv, &config, ARES_FALSE)) {
-    printf("\n** ERROR: %s\n\n", config.error);
+  memset(&global_config, 0, sizeof(global_config));
+  global_config.qclass = ARES_CLASS_IN;
+  global_config.qtype  = ARES_REC_TYPE_A;
+
+  if (!read_cmdline(argc, (const char * const *)argv)) {
+    printf("\n** ERROR: %s\n\n", global_config.error);
     print_help();
     rv = 1;
     goto done;
   }
 
-  if (config.is_help) {
+  if (global_config.no_rcfile && !read_rcfile()) {
+    fprintf(stderr, "\n** ERROR: %s\n", global_config.error);
+  }
+
+  if (global_config.is_help) {
     print_help();
     goto done;
   }
 
   status =
-    (ares_status_t)ares_init_options(&channel, &config.options, config.optmask);
+    (ares_status_t)ares_init_options(&channel, &global_config.options, global_config.optmask);
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "ares_init_options: %s\n", ares_strerror((int)status));
     rv = 1;
     goto done;
   }
 
-  if (config.servers) {
-    status = (ares_status_t)ares_set_servers_ports_csv(channel, config.servers);
+  if (global_config.servers) {
+    status = (ares_status_t)ares_set_servers_ports_csv(channel, global_config.servers);
     if (status != ARES_SUCCESS) {
       fprintf(stderr, "ares_set_servers_ports_csv: %s\n",
               ares_strerror((int)status));
@@ -1081,28 +1219,24 @@ int main(int argc, char **argv)
   }
 
   /* Enqueue a query for each separate name */
-  for (i = config.args_processed; i < argc; i++) {
-    status = enqueue_query(channel, &config, argv[i]);
-    if (status != ARES_SUCCESS) {
-      fprintf(stderr, "Failed to create query for %s: %s\n", argv[i],
-              ares_strerror((int)status));
-      rv = 1;
-      goto done;
-    }
+  status = enqueue_query(channel);
+  if (status != ARES_SUCCESS) {
+    fprintf(stderr, "Failed to create query for %s: %s\n", global_config.name,
+            ares_strerror((int)status));
+    rv = 1;
+    goto done;
   }
 
   /* Debug */
   printf("\n; <<>> c-ares DiG %s <<>>", ares_version(NULL));
-  for (i = config.args_processed; i < argc; i++) {
-    printf(" %s", argv[i]);
-  }
+  printf("%s", global_config.name);
   printf("\n");
 
   /* Process events */
   rv = event_loop(channel);
 
 done:
-  free_config(&config);
+  free_config();
   ares_destroy(channel);
   ares_library_cleanup();
 
