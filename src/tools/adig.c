@@ -68,7 +68,8 @@ typedef struct {
   ares_bool_t ad_flag;
   ares_bool_t cd_flag;
   ares_bool_t rd_flag;
-  ares_bool_t do_flag;
+/* ares_bool_t do_flag; */
+  ares_bool_t edns;
   size_t      udp_size;
   ares_bool_t primary;
   ares_bool_t aliases;
@@ -83,6 +84,7 @@ typedef struct {
   ares_bool_t display_answer;
   ares_bool_t display_authority;
   ares_bool_t display_additional;
+  ares_bool_t display_comments;
 } dns_options_t;
 
 typedef struct {
@@ -549,9 +551,15 @@ static void print_rr(const ares_dns_rr_t *rr)
     printf("\t");
   }
 
-  printf("%u\t%s\t%s\t", ares_dns_rr_get_ttl(rr),
-         ares_dns_class_tostr(ares_dns_rr_get_class(rr)),
-         ares_dns_rec_type_tostr(rtype));
+  if (global_config.opts.display_ttl) {
+    printf("%u\t", ares_dns_rr_get_ttl(rr));
+  }
+
+  if (global_config.opts.display_class) {
+    printf("%s\t", ares_dns_class_tostr(ares_dns_rr_get_class(rr)));
+  }
+
+  printf("%s\t", ares_dns_rec_type_tostr(rtype));
 
   /* Output params here */
   for (i = 0; i < keys_cnt; i++) {
@@ -695,10 +703,22 @@ static void callback(void *arg, int status, int timeouts, unsigned char *abuf,
 
   print_header(dnsrec);
   print_opt_psuedosection(dnsrec);
-  print_question(dnsrec);
-  print_section(dnsrec, ARES_SECTION_ANSWER);
-  print_section(dnsrec, ARES_SECTION_ADDITIONAL);
-  print_section(dnsrec, ARES_SECTION_AUTHORITY);
+
+  if (global_config.opts.display_question) {
+    print_question(dnsrec);
+  }
+
+  if (global_config.opts.display_answer) {
+    print_section(dnsrec, ARES_SECTION_ANSWER);
+  }
+
+  if (global_config.opts.display_additional) {
+    print_section(dnsrec, ARES_SECTION_ADDITIONAL);
+  }
+
+  if (global_config.opts.display_authority) {
+    print_section(dnsrec, ARES_SECTION_AUTHORITY);
+  }
 
   printf(";; MSG SIZE  rcvd: %d\n\n", alen);
   ares_dns_record_destroy(dnsrec);
@@ -714,6 +734,22 @@ static ares_status_t enqueue_query(ares_channel_t *channel)
   unsigned short     flags    = 0;
   char              *nametemp = NULL;
   const char        *name     = global_config.name;
+
+  if (global_config.opts.aa_flag) {
+    flags |= ARES_FLAG_AA;
+  }
+
+  if (global_config.opts.ad_flag) {
+    flags |= ARES_FLAG_AD;
+  }
+
+  if (global_config.opts.cd_flag) {
+    flags |= ARES_FLAG_CD;
+  }
+
+  if (global_config.opts.rd_flag) {
+    flags |= ARES_FLAG_RD;
+  }
 
   status = ares_dns_record_create(&dnsrec, 0, flags, ARES_OPCODE_QUERY,
                                   ARES_RCODE_NOERROR);
@@ -836,28 +872,66 @@ static ares_bool_t opt_type_cb(char prefix, const char *name, ares_bool_t is_tru
 
 static ares_bool_t opt_ptr_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
 {
-  return ARES_FALSE;
+  (void)prefix;
+  (void)name;
+  (void)is_true;
+  global_config.qtype = ARES_REC_TYPE_PTR;
+  ares_free(global_config.name);
+  global_config.name = strdup(value);
+  return ARES_TRUE;
 }
 
 static ares_bool_t opt_all_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
 {
-  return ARES_FALSE;
+  (void)prefix;
+  (void)name;
+  (void)value;
+
+  global_config.opts.display_command = is_true;
+  global_config.opts.display_stats   = is_true;
+  global_config.opts.display_question = is_true;
+  global_config.opts.display_answer = is_true;
+  global_config.opts.display_authority = is_true;
+  global_config.opts.display_additional = is_true;
+  global_config.opts.display_comments = is_true;
+  return ARES_TRUE;
 }
 
 static ares_bool_t opt_edns_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
 {
-  return ARES_FALSE;
+  global_config.opts.edns = is_true;
+  if (is_true && value != NULL && atoi(value) > 0) {
+    snprintf(global_config.error, sizeof(global_config.error), "edns 0 only supported");
+    return ARES_FALSE;
+  }
+  return ARES_TRUE;
 }
 
 static ares_bool_t opt_retry_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
 {
-  return ARES_FALSE;
+  (void)prefix;
+  (void)name;
+  (void)is_true;
+
+  if (!ares_str_isnum(value)) {
+    snprintf(global_config.error, sizeof(global_config.error), "value not numeric");
+    return ARES_FALSE;
+  }
+
+  global_config.opts.tries = strtoul(value, NULL, 10) + 1;
+  return ARES_TRUE;
 }
 
 static ares_bool_t opt_dig_bare_cb(char prefix, const char *name, ares_bool_t is_true, const char *value)
 {
+  (void)prefix;
+  (void)name;
+  (void)is_true;
+
   ares_free(global_config.name);
   global_config.name = strdup(value);
+
+/* XXX: handle class and type */
   return ARES_TRUE;
 }
 
@@ -919,6 +993,7 @@ static const struct {
   { '+', "answer",       0, OPT_TYPE_BOOL,   &global_config.opts.display_answer },
   { '+', "authority",    0, OPT_TYPE_BOOL,   &global_config.opts.display_authority },
   { '+', "additional",   0, OPT_TYPE_BOOL,   &global_config.opts.display_additional },
+  { '+', "comments",     0, OPT_TYPE_BOOL,   &global_config.opts.display_comments },
   { '+', "all",        '=', OPT_TYPE_FUNC,   (void *)opt_all_cb },
   /* [no]time */
   { '+', "tries",      '=', OPT_TYPE_SIZE_T, &global_config.opts.tries },
@@ -930,7 +1005,9 @@ static const struct {
   /* +[no]onesoa */
   /* +[no]fail */
   /* +[no]besteffort */
+/*
   { '+', "dnssec",       0, OPT_TYPE_BOOL,   &global_config.opts.do_flag },
+*/
   /* +[no]sigchase */
   /* +trusted-key=###### */
   /* +[no]topdown */
@@ -1162,6 +1239,76 @@ static ares_bool_t read_rcfile(void)
   return ARES_TRUE;
 }
 
+static void config_defaults(void)
+{
+  memset(&global_config, 0, sizeof(global_config));
+
+  global_config.opts.tries = 3;
+  global_config.opts.ndots = 1;
+  global_config.opts.rd_flag = ARES_TRUE;
+  global_config.opts.edns = ARES_TRUE;
+  global_config.opts.udp_size = 1232;
+  global_config.opts.aliases = ARES_TRUE;
+  global_config.opts.display_class = ARES_TRUE;
+  global_config.opts.display_ttl = ARES_TRUE;
+  global_config.opts.display_command = ARES_TRUE;
+  global_config.opts.display_stats = ARES_TRUE;
+  global_config.opts.display_question = ARES_TRUE;
+  global_config.opts.display_answer = ARES_TRUE;
+  global_config.opts.display_authority = ARES_TRUE;
+  global_config.opts.display_additional = ARES_TRUE;
+  global_config.opts.display_comments = ARES_TRUE;
+  global_config.qclass = ARES_CLASS_IN;
+  global_config.qtype  = ARES_REC_TYPE_A;
+}
+
+static void config_opts(void)
+{
+  global_config.optmask = ARES_OPT_FLAGS;
+  if (global_config.opts.tcp) {
+    global_config.options.flags |= ARES_FLAG_USEVC;
+  }
+  if (global_config.opts.primary) {
+    global_config.options.flags |= ARES_FLAG_PRIMARY;
+  }
+  if (global_config.opts.edns) {
+    global_config.options.flags |= ARES_FLAG_EDNS;
+  }
+  if (global_config.opts.stayopen) {
+    global_config.options.flags |= ARES_FLAG_STAYOPEN;
+  }
+  if (global_config.opts.dns0x20) {
+    global_config.options.flags |= ARES_FLAG_DNS0x20;
+  }
+  if (!global_config.opts.aliases) {
+    global_config.options.flags |= ARES_FLAG_NOALIASES;
+  }
+  if (!global_config.opts.rd_flag) {
+    global_config.options.flags |= ARES_FLAG_NORECURSE;
+  }
+  if (global_config.opts.ignore_search) {
+    global_config.options.flags |= ARES_FLAG_NOSEARCH;
+  }
+  if (global_config.opts.ignore_tc) {
+    global_config.options.flags |= ARES_FLAG_IGNTC;
+  }
+  if (global_config.opts.port) {
+    global_config.optmask |= ARES_OPT_UDP_PORT;
+    global_config.options.udp_port = global_config.opts.port;
+  }
+
+  global_config.optmask |= ARES_OPT_TRIES;
+  global_config.options.tries = (int)global_config.opts.tries;
+
+  global_config.optmask |= ARES_OPT_NDOTS;
+  global_config.options.ndots = (int)global_config.opts.ndots;
+
+  global_config.optmask |= ARES_OPT_EDNSPSZ;
+  global_config.options.ednspsz = (int)global_config.opts.udp_size;
+
+  /* XXX: honor search */
+}
+
 int main(int argc, char **argv)
 {
   ares_channel_t *channel = NULL;
@@ -1180,9 +1327,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  memset(&global_config, 0, sizeof(global_config));
-  global_config.qclass = ARES_CLASS_IN;
-  global_config.qtype  = ARES_REC_TYPE_A;
+  config_defaults();
 
   if (!read_cmdline(argc, (const char * const *)argv)) {
     printf("\n** ERROR: %s\n\n", global_config.error);
@@ -1199,6 +1344,8 @@ int main(int argc, char **argv)
     print_help();
     goto done;
   }
+
+  config_opts();
 
   status =
     (ares_status_t)ares_init_options(&channel, &global_config.options, global_config.optmask);
@@ -1229,7 +1376,7 @@ int main(int argc, char **argv)
 
   /* Debug */
   printf("\n; <<>> c-ares DiG %s <<>>", ares_version(NULL));
-  printf("%s", global_config.name);
+  printf(" %s", global_config.name);
   printf("\n");
 
   /* Process events */
