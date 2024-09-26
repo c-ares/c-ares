@@ -1450,7 +1450,9 @@ static void config_opts(void)
   }
   if (global_config.opts.port) {
     global_config.optmask          |= ARES_OPT_UDP_PORT;
+    global_config.optmask          |= ARES_OPT_TCP_PORT;
     global_config.options.udp_port  = global_config.opts.port;
+    global_config.options.tcp_port  = global_config.opts.port;
   }
 
   global_config.optmask       |= ARES_OPT_TRIES;
