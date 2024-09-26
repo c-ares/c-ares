@@ -33,12 +33,19 @@
 #define ARES_VERSION_MAJOR 1
 #define ARES_VERSION_MINOR 33
 #define ARES_VERSION_PATCH 1
+
 #define ARES_VERSION                                        \
   ((ARES_VERSION_MAJOR << 16) | (ARES_VERSION_MINOR << 8) | \
    (ARES_VERSION_PATCH))
-#define ARES_VERSION_STR "1.33.1"
 
-#define CARES_HAVE_ARES_LIBRARY_INIT    1
-#define CARES_HAVE_ARES_LIBRARY_CLEANUP 1
+
+/* Need a level of indirection due to argument prescan to stringify a macro
+ * value. */
+#define ARES_STRINGIFY_PRE(s) #s
+#define ARES_STRINGIFY(s) ARES_STRINGIFY_PRE(s)
+
+#define ARES_VERSION_STR ARES_STRINGIFY(ARES_VERSION_MAJOR) "." \
+                         ARES_STRINGIFY(ARES_VERSION_MINOR) "." \
+                         ARES_STRINGIFY(ARES_VERSION_PATCH)
 
 #endif

@@ -475,6 +475,9 @@ CARES_EXTERN int  ares_library_init_android(jobject connectivity_manager);
 CARES_EXTERN int  ares_library_android_initialized(void);
 #endif
 
+#define CARES_HAVE_ARES_LIBRARY_INIT    1
+#define CARES_HAVE_ARES_LIBRARY_CLEANUP 1
+
 CARES_EXTERN int         ares_library_initialized(void);
 
 CARES_EXTERN void        ares_library_cleanup(void);
