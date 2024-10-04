@@ -123,6 +123,7 @@ static const char   *helpstr[] = {
   "-q name:  Specifies the domain name to query. Useful to distinguish name",
   "          from other arguments",
   "-r:       Skip adigrc processing",
+  "-s:       Server (alias for @server syntax), compatibility with old cmdline",
   "-t type:  Indicates resource record type to query. Useful to distinguish",
   "          type from other arguments",
   "-x addr:  Simplified reverse lookups.  Sets the type to PTR and forms a",
@@ -1029,6 +1030,13 @@ static ares_bool_t opt_dig_bare_cb(char prefix, const char *name,
     return ARES_TRUE;
   }
 
+  /* Make sure we don't pass options */
+  if (*value == '-' || *value == '+') {
+    snprintf(global_config.error, sizeof(global_config.error),
+             "unrecognized argument %s", value);
+    return ARES_FALSE;
+  }
+
   /* See if it is a DNS class */
   if (ares_dns_class_fromstr(&global_config.qclass, value)) {
     return ARES_TRUE;
@@ -1082,6 +1090,7 @@ static const struct {
   { '-', "p",          0,   OPT_TYPE_U16,    &global_config.opts.port,               NULL            },
   { '-', "q",          0,   OPT_TYPE_STRING, &global_config.name,                    NULL            },
   { '-', "r",          0,   OPT_TYPE_BOOL,   &global_config.no_rcfile,               NULL            },
+  { '-', "s",          0,   OPT_TYPE_STRING, &global_config.servers,                 NULL            },
   { '-', "t",          0,   OPT_TYPE_FUNC,   NULL,                                   opt_type_cb     },
   /* -u (print microseconds instead of milliseconds) */
   { '-', "x",          0,   OPT_TYPE_FUNC,   NULL,                                   opt_ptr_cb      },
@@ -1226,8 +1235,8 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
             }
             if (*str != NULL) {
               free(*str);
-              *str = strdup(value);
             }
+            *str = strdup(value);
             break;
           }
         case OPT_TYPE_SIZE_T:
