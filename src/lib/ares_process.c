@@ -442,8 +442,8 @@ void ares_process_pending_write(ares_channel_t *channel)
 
 static ares_status_t read_conn_packets(ares_conn_t *conn)
 {
-  ares_bool_t           read_again;
-  ares_conn_err_t       err;
+  ares_bool_t     read_again;
+  ares_conn_err_t err;
 
   do {
     size_t         count;

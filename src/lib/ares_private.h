@@ -261,8 +261,9 @@ struct ares_channeldata {
   void                               *sock_config_cb_data;
 
   struct ares_socket_functions_ex     sock_funcs;
-  const struct ares_socket_functions *legacy_sock_funcs;
   void                               *sock_func_cb_data;
+  const struct ares_socket_functions *legacy_sock_funcs;
+  void                               *legacy_sock_funcs_cb_data;
 
   ares_pending_write_cb               notify_pending_write_cb;
   void                               *notify_pending_write_cb_data;
@@ -366,7 +367,7 @@ ares_status_t  ares_init_by_options(ares_channel_t            *channel,
                                     const struct ares_options *options,
                                     int                        optmask);
 ares_status_t  ares_init_by_sysconfig(ares_channel_t *channel);
-void ares_set_socket_functions_default(ares_channel_t *channel);
+void           ares_set_socket_functions_default(ares_channel_t *channel);
 
 typedef struct {
   ares_llist_t    *sconfig;

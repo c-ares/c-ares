@@ -268,7 +268,8 @@ ares_conn_err_t ares_socket_write(ares_channel_t *channel, ares_socket_t fd,
   flags |= MSG_NOSIGNAL;
 #endif
 
-  rv = channel->sock_funcs.asendto(fd, data, len, flags, NULL, 0, channel->sock_func_cb_data);
+  rv = channel->sock_funcs.asendto(fd, data, len, flags, NULL, 0,
+                                   channel->sock_func_cb_data);
   if (rv <= 0) {
     err = ares_socket_deref_error(SOCKERRNO);
   } else {
@@ -299,7 +300,8 @@ ares_conn_err_t ares_socket_write_tfo(ares_channel_t *channel, ares_socket_t fd,
 #  endif
 
     err = ARES_CONN_ERR_SUCCESS;
-    rv  = (ares_ssize_t)channel->sock_funcs.sendto(fd, data, len, flags, sa, salen);
+    rv =
+      (ares_ssize_t)channel->sock_funcs.sendto(fd, data, len, flags, sa, salen);
     if (rv <= 0) {
       err = ares_socket_deref_error(SOCKERRNO);
     } else {
@@ -322,7 +324,8 @@ ares_conn_err_t ares_socket_recv(ares_channel_t *channel, ares_socket_t s,
 
   *read_bytes = 0;
 
-  rv = channel->sock_funcs.arecvfrom(s, data, data_len, 0, NULL, 0, channel->sock_func_cb_data);
+  rv = channel->sock_funcs.arecvfrom(s, data, data_len, 0, NULL, 0,
+                                     channel->sock_func_cb_data);
 
   if (rv > 0) {
     *read_bytes = (size_t)rv;
@@ -351,8 +354,8 @@ ares_conn_err_t ares_socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
 {
   ares_ssize_t rv;
 
-  rv = channel->sock_funcs.arecvfrom(s, data, data_len, flags, from,
-                                      from_len, channel->sock_func_cb_data);
+  rv = channel->sock_funcs.arecvfrom(s, data, data_len, flags, from, from_len,
+                                     channel->sock_func_cb_data);
 
   if (rv > 0) {
     *read_bytes = (size_t)rv;
@@ -449,7 +452,7 @@ ares_status_t ares_socket_configure(ares_channel_t *channel, int family,
 #ifdef IP_BIND_ADDRESS_NO_PORT
   if (is_tcp && bindlen) {
     int opt = 1;
-    (void) setsockopt(fd, SOL_IP, IP_BIND_ADDRESS_NO_PORT, &opt, sizeof(opt));
+    (void)setsockopt(fd, SOL_IP, IP_BIND_ADDRESS_NO_PORT, &opt, sizeof(opt));
   }
 #endif
   if (bindlen && bind(fd, &local.sa, bindlen) < 0) {
@@ -504,8 +507,8 @@ ares_conn_err_t ares_socket_open(ares_socket_t *sock, ares_channel_t *channel,
 
   *sock = ARES_SOCKET_BAD;
 
-  s = channel->sock_funcs.asocket(af, type, protocol,
-                                  channel->sock_func_cb_data);
+  s =
+    channel->sock_funcs.asocket(af, type, protocol, channel->sock_func_cb_data);
 
   if (s == ARES_SOCKET_BAD) {
     return ares_socket_deref_error(SOCKERRNO);
@@ -545,11 +548,11 @@ ares_conn_err_t ares_socket_connect(ares_channel_t *channel,
                     NULL, 0, NULL, NULL);
 #else
       rv = channel->sock_funcs.aconnect(sockfd, addr, addrlen,
-                                         channel->sock_func_cb_data);
+                                        channel->sock_func_cb_data);
 #endif
     } else {
       rv = channel->sock_funcs.aconnect(sockfd, addr, addrlen,
-                                         channel->sock_func_cb_data);
+                                        channel->sock_func_cb_data);
     }
 
     if (rv < 0) {

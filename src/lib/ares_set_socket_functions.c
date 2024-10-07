@@ -54,8 +54,10 @@
 #include <fcntl.h>
 #include <limits.h>
 
-ares_status_t ares_set_socket_functions_ex(ares_channel_t *channel,
-  const struct ares_socket_functions_ex *funcs, void *user_data)
+ares_status_t
+  ares_set_socket_functions_ex(ares_channel_t                        *channel,
+                               const struct ares_socket_functions_ex *funcs,
+                               void                                  *user_data)
 {
   unsigned int known_versions[] = { 1 };
   size_t       i;
@@ -65,7 +67,7 @@ ares_status_t ares_set_socket_functions_ex(ares_channel_t *channel,
   }
 
   /* Check to see if we know the version referenced */
-  for (i=0; i<sizeof(known_versions) / sizeof(*known_versions); i++) {
+  for (i = 0; i < sizeof(known_versions) / sizeof(*known_versions); i++) {
     if (funcs->version == known_versions[i]) {
       break;
     }
@@ -79,7 +81,7 @@ ares_status_t ares_set_socket_functions_ex(ares_channel_t *channel,
   /* Copy individually for ABI compliance.  memcpy() with a sizeof would do
    * invalid reads */
   if (funcs->version >= 1) {
-    if (funcs->asocket == NULL  || funcs->aclose == NULL    ||
+    if (funcs->asocket == NULL || funcs->aclose == NULL ||
         funcs->aconnect == NULL || funcs->arecvfrom == NULL ||
         funcs->asendto == NULL) {
       return ARES_EFORMERR;
@@ -100,7 +102,6 @@ ares_status_t ares_set_socket_functions_ex(ares_channel_t *channel,
 
   return ARES_SUCCESS;
 }
-
 
 static int setsocknonblock(ares_socket_t sockfd, /* operate on this */
                            int           nonblock /* TRUE or FALSE */)
@@ -164,7 +165,8 @@ static int default_aclose(ares_socket_t sock, void *user_data)
 #endif
 }
 
-static ares_socket_t default_asocket(int domain, int type, int protocol, void *user_data)
+static ares_socket_t default_asocket(int domain, int type, int protocol,
+                                     void *user_data)
 {
   ares_socket_t s;
   (void)user_data;
@@ -232,8 +234,6 @@ fail:
   return -1;
 }
 
-
-
 static int default_aconnect(ares_socket_t sock, const struct sockaddr *address,
                             ares_socklen_t address_len, void *user_data)
 {
@@ -242,13 +242,16 @@ static int default_aconnect(ares_socket_t sock, const struct sockaddr *address,
   return connect(sock, address, address_len);
 }
 
-static ares_ssize_t default_arecvfrom(ares_socket_t sock, void *buffer, size_t length, int flags,
-                            struct sockaddr *address, ares_socklen_t *address_len, void *user_data)
+static ares_ssize_t default_arecvfrom(ares_socket_t sock, void *buffer,
+                                      size_t length, int flags,
+                                      struct sockaddr *address,
+                                      ares_socklen_t  *address_len,
+                                      void            *user_data)
 {
   (void)user_data;
 
 #ifdef HAVE_RECVFROM
-    return (ares_ssize_t)recvfrom(sock, buffer, (RECVFROM_TYPE_ARG3)length, flags,
+  return (ares_ssize_t)recvfrom(sock, buffer, (RECVFROM_TYPE_ARG3)length, flags,
                                 address, address_len);
 #else
   if (address != NULL && address_len != NULL) {
@@ -259,22 +262,27 @@ static ares_ssize_t default_arecvfrom(ares_socket_t sock, void *buffer, size_t l
 #endif
 }
 
-static ares_ssize_t default_asendto(ares_socket_t sock, const void *buffer, size_t length, int flags, const struct sockaddr *address,
-                          ares_socklen_t address_len, void *user_data)
+static ares_ssize_t default_asendto(ares_socket_t sock, const void *buffer,
+                                    size_t length, int flags,
+                                    const struct sockaddr *address,
+                                    ares_socklen_t address_len, void *user_data)
 {
   (void)user_data;
 
   if (address != NULL) {
 #ifdef HAVE_SENDTO
     return (ares_ssize_t)sendto((SEND_TYPE_ARG1)sock, (SEND_TYPE_ARG2)buffer,
-                          (SEND_TYPE_ARG3)length, (SEND_TYPE_ARG4)flags, address, address_len);
+                                (SEND_TYPE_ARG3)length, (SEND_TYPE_ARG4)flags,
+                                address, address_len);
 #endif
   }
 
-  return (ares_ssize_t)send((SEND_TYPE_ARG1)sock, (SEND_TYPE_ARG2)buffer, (SEND_TYPE_ARG3)length, (SEND_TYPE_ARG4)flags);
+  return (ares_ssize_t)send((SEND_TYPE_ARG1)sock, (SEND_TYPE_ARG2)buffer,
+                            (SEND_TYPE_ARG3)length, (SEND_TYPE_ARG4)flags);
 }
- 
-static int default_agetsockname(ares_socket_t sock, struct sockaddr *address, ares_socklen_t *address_len, void *user_data)
+
+static int default_agetsockname(ares_socket_t sock, struct sockaddr *address,
+                                ares_socklen_t *address_len, void *user_data)
 {
   (void)user_data;
   return getsockname(sock, address, address_len);
@@ -296,17 +304,111 @@ void ares_set_socket_functions_default(ares_channel_t *channel)
   ares_set_socket_functions_ex(channel, &default_socket_functions, NULL);
 }
 
+static int legacycb_aclose(ares_socket_t sock, void *user_data)
+{
+  ares_channel_t *channel = user_data;
 
+  if (channel->legacy_sock_funcs != NULL &&
+      channel->legacy_sock_funcs->aclose != NULL) {
+    return channel->legacy_sock_funcs->aclose(
+      sock, channel->legacy_sock_funcs_cb_data);
+  }
+
+  return default_aclose(sock, NULL);
+}
+
+static ares_socket_t legacycb_asocket(int domain, int type, int protocol,
+                                      void *user_data)
+{
+  ares_channel_t *channel = user_data;
+
+  if (channel->legacy_sock_funcs != NULL &&
+      channel->legacy_sock_funcs->asocket != NULL) {
+    return channel->legacy_sock_funcs->asocket(
+      domain, type, protocol, channel->legacy_sock_funcs_cb_data);
+  }
+
+  return default_asocket(domain, type, protocol, NULL);
+}
+
+static int legacycb_aconnect(ares_socket_t sock, const struct sockaddr *address,
+                             ares_socklen_t address_len, void *user_data)
+{
+  ares_channel_t *channel = user_data;
+
+  if (channel->legacy_sock_funcs != NULL &&
+      channel->legacy_sock_funcs->aconnect != NULL) {
+    return channel->legacy_sock_funcs->aconnect(
+      sock, address, address_len, channel->legacy_sock_funcs_cb_data);
+  }
+
+  return default_aconnect(sock, address, address_len, NULL);
+}
+
+static ares_ssize_t legacycb_arecvfrom(ares_socket_t sock, void *buffer,
+                                       size_t length, int flags,
+                                       struct sockaddr *address,
+                                       ares_socklen_t  *address_len,
+                                       void            *user_data)
+{
+  ares_channel_t *channel = user_data;
+
+  if (channel->legacy_sock_funcs != NULL &&
+      channel->legacy_sock_funcs->arecvfrom != NULL) {
+    if (address != NULL && address_len != NULL) {
+      memset(address, 0, (size_t)*address_len);
+      address->sa_family = AF_UNSPEC;
+    }
+    return channel->legacy_sock_funcs->arecvfrom(
+      sock, buffer, length, flags, address, address_len,
+      channel->legacy_sock_funcs_cb_data);
+  }
+
+  return default_arecvfrom(sock, buffer, length, flags, address, address_len,
+                           NULL);
+}
+
+static ares_ssize_t legacycb_asendto(ares_socket_t sock, const void *buffer,
+                                     size_t length, int flags,
+                                     const struct sockaddr *address,
+                                     ares_socklen_t         address_len,
+                                     void                  *user_data)
+{
+  ares_channel_t *channel = user_data;
+
+  if (channel->legacy_sock_funcs != NULL &&
+      channel->legacy_sock_funcs->asendv != NULL) {
+    struct iovec vec;
+    vec.iov_base = (void *)((size_t)buffer); /* Cast off const */
+    vec.iov_len  = length;
+    return channel->legacy_sock_funcs->asendv(
+      sock, &vec, 1, channel->legacy_sock_funcs_cb_data);
+  }
+
+  return default_asendto(sock, buffer, length, flags, address, address_len,
+                         NULL);
+}
+
+
+static const struct ares_socket_functions_ex legacy_socket_functions = {
+  1,
+  legacycb_asocket,
+  legacycb_aclose,
+  legacycb_aconnect,
+  legacycb_arecvfrom,
+  legacycb_asendto,
+  NULL
+};
 
 void ares_set_socket_functions(ares_channel_t                     *channel,
                                const struct ares_socket_functions *funcs,
                                void                               *data)
 {
-  /* XXX: implement me
-    if (channel == NULL || channel->optmask & ARES_OPT_EVENT_THREAD) {
-      return;
-    }
-    channel->sock_funcs        = funcs;
-    channel->sock_func_cb_data = data;
-  */
+  if (channel == NULL || channel->optmask & ARES_OPT_EVENT_THREAD) {
+    return;
+  }
+
+  channel->legacy_sock_funcs         = funcs;
+  channel->legacy_sock_funcs_cb_data = data;
+  ares_set_socket_functions_ex(channel, &legacy_socket_functions, channel);
 }
