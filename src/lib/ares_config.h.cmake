@@ -245,6 +245,9 @@
 /* Define to 1 if you have the send function. */
 #cmakedefine HAVE_SEND 1
 
+/* Define to 1 if you have the sendto function. */
+#cmakedefine HAVE_SENDTO 1
+
 /* Define to 1 if you have the setsockopt function. */
 #cmakedefine HAVE_SETSOCKOPT 1
 

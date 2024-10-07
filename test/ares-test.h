@@ -51,6 +51,16 @@
 #include <vector>
 #include <chrono>
 
+#if defined(HAVE_CLOSESOCKET)
+#  define sclose(x) closesocket(x)
+#elif defined(HAVE_CLOSESOCKET_CAMEL)
+#  define sclose(x) CloseSocket(x)
+#elif defined(HAVE_CLOSE_S)
+#  define sclose(x) close_s(x)
+#else
+#  define sclose(x) close(x)
+#endif
+
 namespace ares {
 
 typedef unsigned char byte;

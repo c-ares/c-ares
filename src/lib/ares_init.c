@@ -346,6 +346,8 @@ int ares_init_options(ares_channel_t           **channelptr,
     goto done;
   }
 
+  ares_set_socket_functions_default(channel);
+
   /* Initialize the event thread */
   if (channel->optmask & ARES_OPT_EVENT_THREAD) {
     ares_event_thread_t *e = NULL;
