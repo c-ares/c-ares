@@ -1790,6 +1790,7 @@ const struct ares_socket_functions VirtualizeIO::default_functions = {
   NULL,
   NULL,
   NULL,
+  NULL,
   NULL
 };
 

@@ -565,6 +565,7 @@ struct ares_socket_functions {
   ares_ssize_t (*arecvfrom)(ares_socket_t, void *, size_t, int,
                             struct sockaddr *, ares_socklen_t *, void *);
   ares_ssize_t (*asendv)(ares_socket_t, const struct iovec *, int, void *);
+  int (*agetsockname)(ares_socket_t, struct sockaddr *, ares_socklen_t *);
 };
 
 CARES_EXTERN void

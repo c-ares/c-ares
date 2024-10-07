@@ -14,6 +14,7 @@ struct ares_socket_functions {
     ares_ssize_t (*\fIarecvfrom\fP)(ares_socket_t, void *, size_t, int,
                               struct sockaddr *, ares_socklen_t *, void *);
     ares_ssize_t (*\fIasendv\fP)(ares_socket_t, const struct iovec *, int, void *);
+    int (*\fIagetsockname\fP)(ares_socket_t, struct sockaddr *, ares_socklen_t *);
 };
 
 void ares_set_socket_functions(ares_channel_t *\fIchannel\fP,

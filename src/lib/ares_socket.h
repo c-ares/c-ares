@@ -77,4 +77,7 @@ ares_conn_err_t ares_socket_write_tfo(ares_channel_t *channel, ares_socket_t fd,
                                       size_t                *written,
                                       const struct sockaddr *sa,
                                       ares_socklen_t         salen);
+ares_conn_err_t ares_socket_get_sockname(ares_channel_t *channel, ares_socket_t fd,
+                                         struct sockaddr *sa,
+                                         ares_socklen_t *addrlen);
 #endif

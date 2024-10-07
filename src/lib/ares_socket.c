@@ -730,6 +730,25 @@ void ares_socket_close(ares_channel_t *channel, ares_socket_t s)
   }
 }
 
+ares_conn_err_t ares_socket_get_sockname(ares_channel_t *channel, ares_socket_t s,
+                                         struct sockaddr *sa,
+                                         ares_socklen_t *addrlen)
+{
+  int             rv;
+  ares_conn_err_t err = ARES_CONN_ERR_SUCCESS;
+
+  if (channel->sock_funcs && channel->sock_funcs->agetsockname) {
+    rv = channel->sock_funcs->agetsockname(s, sa, addrlen);
+  } else {
+    rv = getsockname(s, sa, addrlen);
+  }
+
+  if (rv < 0) {
+    err = ares_socket_deref_error(SOCKERRNO);
+  }
+  return err;
+}
+
 void ares_set_socket_callback(ares_channel_t           *channel,
                               ares_sock_create_callback cb, void *data)
 {

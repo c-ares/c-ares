@@ -129,8 +129,9 @@ static ares_status_t ares_conn_set_sockaddr(const ares_conn_t *conn,
 
 static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
 {
+  ares_channel_t         *channel = conn->server->channel;
   struct sockaddr_storage sa_storage;
-  int                     rv;
+  ares_conn_err_t         err = ARES_CONN_ERR_SUCCESS;
   ares_socklen_t          len = sizeof(sa_storage);
 
   /* We call this twice on TFO, if we already have the IP we can go ahead and
@@ -141,8 +142,8 @@ static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
 
   memset(&sa_storage, 0, sizeof(sa_storage));
 
-  rv = getsockname(conn->fd, (struct sockaddr *)(void *)&sa_storage, &len);
-  if (rv != 0) {
+  err = ares_socket_get_sockname(channel, conn->fd, (struct sockaddr *)(void *)&sa_storage, &len);
+  if (err != ARES_CONN_ERR_SUCCESS) {
     /* During TCP FastOpen, we can't get the IP this early since connect()
      * may not be called.  That's ok, we'll try again later */
     if (early && conn->flags & ARES_CONN_FLAG_TCP &&
