@@ -595,7 +595,7 @@ typedef enum {
   /*! Enable TCP Fast Open.  Value is a pointer to an ares_bool_t.  On some
    *  systems this could be a no-op if it is known it is on by default and
    *  return success.  Other systems may be a no-op if known the system does
-   *  not support the feature and returns failure with errno set to ENOTIMP.
+   *  not support the feature and returns failure with errno set to ENOSYS.
    */
   ARES_SOCKET_OPT_TCP_FASTOPEN
 } ares_socket_opt_t;
@@ -661,7 +661,7 @@ struct ares_socket_functions_ex {
    * \param[in] user_data    Pointer provided to
    * ares_set_socket_functions_ex().
    * \return Return 0 on success, otherwise -1 should be returned with an
-   *         appropriate errno set.  If errno is ENOTIMP an error will not be
+   *         appropriate errno set.  If errno is ENOSYS an error will not be
    *         propagated as it will take it to mean it is an intentional
    *         decision to not support the feature.
    */

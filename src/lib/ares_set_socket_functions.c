@@ -281,12 +281,16 @@ static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
       return setsockopt(sock, SOL_SOCKET, SO_RCVBUF, val, val_size);
 
     case ARES_SOCKET_OPT_BIND_DEVICE:
-      if (!ares_str_isprint(val, val_size)) {
+      if (!ares_str_isprint(val, (size_t)val_size)) {
         SET_SOCKERRNO(EINVAL);
         return -1;
       }
+#ifdef SO_BINDTODEVICE
       return setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, val, val_size);
-
+#else
+      SET_SOCKERRNO(ENOSYS);
+      return -1;
+#endif
     case ARES_SOCKET_OPT_TCP_FASTOPEN:
       if (val_size != sizeof(ares_bool_t)) {
         SET_SOCKERRNO(EINVAL);
@@ -323,9 +327,7 @@ static int default_aconnect(ares_socket_t sock, const struct sockaddr *address,
   if (flags & ARES_SOCKET_CONN_TCP_FASTOPEN) {
     return 0;
   }
-#endif
-
-#if defined(TFO_USE_CONNECTX) && TFO_USE_CONNECTX
+#elif defined(TFO_USE_CONNECTX) && TFO_USE_CONNECTX
   if (flags & ARES_SOCKET_CONN_TCP_FASTOPEN) {
     sa_endpoints_t endpoints;
 
@@ -340,6 +342,7 @@ static int default_aconnect(ares_socket_t sock, const struct sockaddr *address,
     return connect(sock, address, address_len);
   }
 #else
+  (void)flags;
   return connect(sock, address, address_len);
 #endif
 }
@@ -376,6 +379,8 @@ static ares_ssize_t default_asendto(ares_socket_t sock, const void *buffer,
     return (ares_ssize_t)sendto((SEND_TYPE_ARG1)sock, (SEND_TYPE_ARG2)buffer,
                                 (SEND_TYPE_ARG3)length, (SEND_TYPE_ARG4)flags,
                                 address, address_len);
+#else
+    (void)address_len;
 #endif
   }
 
@@ -401,6 +406,8 @@ static int default_abind(ares_socket_t sock, unsigned int flags,
     int opt = 1;
     (void)setsockopt(sock, SOL_IP, IP_BIND_ADDRESS_NO_PORT, &opt, sizeof(opt));
   }
+#else
+  (void)flags;
 #endif
 
   return bind(sock, address, address_len);
