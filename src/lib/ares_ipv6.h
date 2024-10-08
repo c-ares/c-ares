@@ -91,10 +91,10 @@ struct addrinfo {
 #endif
 
 #ifndef IF_NAMESIZE
-#  ifdef IF_NAMESIZE
-#    define IF_NAMESIZE IF_NAMESIZE
+#  ifdef IFNAMSIZ
+#    define IF_NAMESIZE IFNAMSIZ
 #  else
-#    define IF_NAMESIZE 256
+#    define IF_NAMESIZE 32
 #  endif
 #endif
 
