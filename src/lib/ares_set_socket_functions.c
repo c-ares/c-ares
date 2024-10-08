@@ -265,7 +265,7 @@ static ares_socket_t default_asocket(int domain, int type, int protocol,
 
 fail:
   default_aclose(s, user_data);
-  return -1;
+  return ARES_SOCKET_BAD;
 }
 
 static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
