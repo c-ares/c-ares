@@ -389,15 +389,20 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
   return ARES_SUCCESS;
 }
 
-static ares_status_t ares_sconfig_linklocal(ares_sconfig_t *s,
-                                            const char     *ll_iface)
+static ares_status_t ares_sconfig_linklocal(const ares_channel_t *channel,
+                                            ares_sconfig_t       *s,
+                                            const char           *ll_iface)
 {
   unsigned int ll_scope = 0;
+
 
   if (ares_str_isnum(ll_iface)) {
     char ifname[IF_NAMESIZE] = "";
     ll_scope                 = (unsigned int)atoi(ll_iface);
-    if (ares_if_indextoname(ll_scope, ifname, sizeof(ifname)) == NULL) {
+    if (channel->sock_funcs.aif_indextoname == NULL ||
+        channel->sock_funcs.aif_indextoname(ll_scope, ifname, sizeof(ifname),
+                                            channel->sock_func_cb_data) ==
+          NULL) {
       DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
                      ll_iface));
       return ARES_ENOTFOUND;
@@ -407,7 +412,10 @@ static ares_status_t ares_sconfig_linklocal(ares_sconfig_t *s,
     return ARES_SUCCESS;
   }
 
-  ll_scope = ares_if_nametoindex(ll_iface);
+  if (channel->sock_funcs.aif_nametoindex != NULL) {
+    ll_scope =
+      channel->sock_funcs.aif_nametoindex(ll_iface, channel->sock_func_cb_data);
+  }
   if (ll_scope == 0) {
     DEBUGF(fprintf(stderr, "Interface %s for ipv6 Link Local not found\n",
                    ll_iface));
@@ -418,7 +426,8 @@ static ares_status_t ares_sconfig_linklocal(ares_sconfig_t *s,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_sconfig_append(ares_llist_t          **sconfig,
+ares_status_t ares_sconfig_append(const ares_channel_t   *channel,
+                                  ares_llist_t          **sconfig,
                                   const struct ares_addr *addr,
                                   unsigned short          udp_port,
                                   unsigned short tcp_port, const char *ll_iface)
@@ -460,7 +469,7 @@ ares_status_t ares_sconfig_append(ares_llist_t          **sconfig,
       status = ARES_SUCCESS;
       goto fail;
     }
-    status = ares_sconfig_linklocal(s, ll_iface);
+    status = ares_sconfig_linklocal(channel, s, ll_iface);
     /* Silently ignore this entry, we can't validate the interface */
     if (status != ARES_SUCCESS) {
       status = ARES_SUCCESS;
@@ -497,9 +506,10 @@ fail:
  *
  * Returns an error code on failure, else ARES_SUCCESS.
  */
-ares_status_t ares_sconfig_append_fromstr(ares_llist_t **sconfig,
-                                          const char    *str,
-                                          ares_bool_t    ignore_invalid)
+ares_status_t ares_sconfig_append_fromstr(const ares_channel_t *channel,
+                                          ares_llist_t        **sconfig,
+                                          const char           *str,
+                                          ares_bool_t           ignore_invalid)
 {
   ares_status_t status = ARES_SUCCESS;
   ares_buf_t   *buf    = NULL;
@@ -541,8 +551,8 @@ ares_status_t ares_sconfig_append_fromstr(ares_llist_t **sconfig,
       }
     }
 
-    status =
-      ares_sconfig_append(sconfig, &s.addr, s.udp_port, s.tcp_port, s.ll_iface);
+    status = ares_sconfig_append(channel, sconfig, &s.addr, s.udp_port,
+                                 s.tcp_port, s.ll_iface);
     if (status != ARES_SUCCESS) {
       goto done; /* LCOV_EXCL_LINE: OutOfMemory */
     }
@@ -1275,7 +1285,7 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
     return status;
   }
 
-  status = ares_sconfig_append_fromstr(&slist, _csv, ARES_FALSE);
+  status = ares_sconfig_append_fromstr(channel, &slist, _csv, ARES_FALSE);
   if (status != ARES_SUCCESS) {
     ares_llist_destroy(slist);
     return status;

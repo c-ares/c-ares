@@ -759,7 +759,7 @@ struct ares_socket_functions_ex {
    *  \param[in] flags       ares_socket_bind_flags_t flags.
    *  \param[in] address     Buffer containing address.
    *  \param[in] address_len Size of address buffer.
-   *  \param[in]     user_data   Pointer provided to
+   *  \param[in] user_data   Pointer provided to
    * ares_set_socket_functions_ex().
    *  \return 0 on success. -1 on error with an appropriate errno (or
    * WSASetLastError()) set.
@@ -767,6 +767,31 @@ struct ares_socket_functions_ex {
   int (*abind)(ares_socket_t sock, unsigned int flags,
                const struct sockaddr *address, socklen_t address_len,
                void *user_data);
+
+  /* Optional. Convert an interface name into the interface index.  If this
+   * callback is not specified, then IPv6 Link-Local DNS servers cannot be used.
+   *
+   * \param[in] ifname  Interface Name as NULL-terminated string.
+   * \param[in] user_data Pointer provided to
+   * ares_set_socket_functions_ex().
+   * \return 0 on failure, otherwise interface index.
+   */
+  unsigned int (*aif_nametoindex)(const char *ifname, void *user_data);
+
+  /* Optional. Convert an interface index into the interface name.  If this
+   * callback is not specified, then IPv6 Link-Local DNS servers cannot be used.
+   *
+   * \param[in] ifindex        Interface index, must be > 0
+   * \param[in] ifname_buf     Buffer to hold interface name. Must be at least
+   *                           IFNAMSIZ in length or 32 bytes if IFNAMSIZ isn't
+   *                           defined.
+   * \param[in] ifname_buf_len Size of ifname_buf for verification.
+   * \param[in] user_data      Pointer provided to
+   * ares_set_socket_functions_ex().
+   * \return NULL on failure, otherwise pointer to provided ifname_buf
+   */
+  const char *(*aif_indextoname)(unsigned int ifindex, char *ifname_buf,
+                                 size_t ifname_buf_len, void *user_data);
 };
 
 /*! Override the native socket functions for the OS with the provided set.
@@ -780,6 +805,8 @@ struct ares_socket_functions_ex {
  *                       past the life of this call.
  *  \param[in] user_data User data thunk which will be passed to each call of
  *                       the registered callbacks.
+ *  \return ARES_SUCCESS on success, or another error code such as ARES_EFORMERR
+ *          on misuse.
  */
 CARES_EXTERN ares_status_t ares_set_socket_functions_ex(
   ares_channel_t *channel, const struct ares_socket_functions_ex *funcs,

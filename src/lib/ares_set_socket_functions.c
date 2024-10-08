@@ -422,6 +422,21 @@ static int default_abind(ares_socket_t sock, unsigned int flags,
   return bind(sock, address, address_len);
 }
 
+static unsigned int default_aif_nametoindex(const char *ifname, void *user_data)
+{
+  (void)user_data;
+  return ares_os_if_nametoindex(ifname);
+}
+
+static const char *default_aif_indextoname(unsigned int ifindex,
+                                           char        *ifname_buf,
+                                           size_t       ifname_buf_len,
+                                           void        *user_data)
+{
+  (void)user_data;
+  return ares_os_if_indextoname(ifindex, ifname_buf, ifname_buf_len);
+}
+
 static const struct ares_socket_functions_ex default_socket_functions = {
   1,
   ARES_SOCKFUNC_FLAG_NONBLOCKING,
@@ -432,7 +447,9 @@ static const struct ares_socket_functions_ex default_socket_functions = {
   default_arecvfrom,
   default_asendto,
   default_agetsockname,
-  default_abind
+  default_abind,
+  default_aif_nametoindex,
+  default_aif_indextoname
 };
 
 void ares_set_socket_functions_default(ares_channel_t *channel)
@@ -550,7 +567,9 @@ static const struct ares_socket_functions_ex legacy_socket_functions = {
   legacycb_arecvfrom,
   legacycb_asendto,
   NULL, /* agetsockname */
-  NULL  /* abind */
+  NULL, /* abind */
+  NULL, /* aif_nametoindex */
+  NULL  /* aif_indextoname */
 };
 
 void ares_set_socket_functions(ares_channel_t                     *channel,

@@ -157,7 +157,7 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     addr.family            = AF_INET;
     addr.addr.addr4.s_addr = htonl(INADDR_LOOPBACK);
 
-    rc = ares_sconfig_append(&sconfig, &addr, 0, 0, NULL);
+    rc = ares_sconfig_append(channel, &sconfig, &addr, 0, 0, NULL);
     if (rc != ARES_SUCCESS) {
       goto error; /* LCOV_EXCL_LINE: OutOfMemory */
     }

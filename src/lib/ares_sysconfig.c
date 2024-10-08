@@ -59,7 +59,8 @@
 
 
 #if defined(__MVS__)
-static ares_status_t ares_init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
+static ares_status_t ares_init_sysconfig_mvs(const ares_channel_t *channel,
+                                             ares_sysconfig_t     *sysconfig)
 {
   struct __res_state *res = 0;
   size_t              count4;
@@ -98,9 +99,9 @@ static ares_status_t ares_init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
     addr.addr.addr4.s_addr = addr_in->sin_addr.s_addr;
     addr.family            = AF_INET;
 
-    status =
-      ares_sconfig_append(&sysconfig->sconfig, &addr, htons(addr_in->sin_port),
-                          htons(addr_in->sin_port), NULL);
+    status = ares_sconfig_append(channel, &sysconfig->sconfig, &addr,
+                                 htons(addr_in->sin_port),
+                                 htons(addr_in->sin_port), NULL);
 
     if (status != ARES_SUCCESS) {
       return status;
@@ -115,9 +116,9 @@ static ares_status_t ares_init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
     memcpy(&(addr.addr.addr6), &(addr_in->sin6_addr),
            sizeof(addr_in->sin6_addr));
 
-    status =
-      ares_sconfig_append(&sysconfig->sconfig, &addr, htons(addr_in->sin_port),
-                          htons(addr_in->sin_port), NULL);
+    status = ares_sconfig_append(channel, &sysconfig->sconfig, &addr,
+                                 htons(addr_in->sin_port),
+                                 htons(addr_in->sin_port), NULL);
 
     if (status != ARES_SUCCESS) {
       return status;
@@ -129,7 +130,8 @@ static ares_status_t ares_init_sysconfig_mvs(ares_sysconfig_t *sysconfig)
 #endif
 
 #if defined(__riscos__)
-static ares_status_t ares_init_sysconfig_riscos(ares_sysconfig_t *sysconfig)
+static ares_status_t ares_init_sysconfig_riscos(const ares_channel_t *channel,
+                                                ares_sysconfig_t     *sysconfig)
 {
   char         *line;
   ares_status_t status = ARES_SUCCESS;
@@ -152,7 +154,8 @@ static ares_status_t ares_init_sysconfig_riscos(ares_sysconfig_t *sysconfig)
       if (space) {
         *space = '\0';
       }
-      status = ares_sconfig_append_fromstr(&sysconfig->sconfig, pos, ARES_TRUE);
+      status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig, pos,
+                                           ARES_TRUE);
       if (status != ARES_SUCCESS) {
         break;
       }
@@ -167,7 +170,8 @@ static ares_status_t ares_init_sysconfig_riscos(ares_sysconfig_t *sysconfig)
 #endif
 
 #if defined(WATT32)
-static ares_status_t ares_init_sysconfig_watt32(ares_sysconfig_t *sysconfig)
+static ares_status_t ares_init_sysconfig_watt32(const ares_channel_t *channel,
+                                                ares_sysconfig_t     *sysconfig)
 {
   size_t        i;
   ares_status_t status;
@@ -180,7 +184,8 @@ static ares_status_t ares_init_sysconfig_watt32(ares_sysconfig_t *sysconfig)
     addr.family            = AF_INET;
     addr.addr.addr4.s_addr = htonl(def_nameservers[i]);
 
-    status = ares_sconfig_append(&sysconfig->sconfig, &addr, 0, 0, NULL);
+    status =
+      ares_sconfig_append(channel, &sysconfig->sconfig, &addr, 0, 0, NULL);
 
     if (status != ARES_SUCCESS) {
       return status;
@@ -192,7 +197,8 @@ static ares_status_t ares_init_sysconfig_watt32(ares_sysconfig_t *sysconfig)
 #endif
 
 #if defined(ANDROID) || defined(__ANDROID__)
-static ares_status_t ares_init_sysconfig_android(ares_sysconfig_t *sysconfig)
+static ares_status_t ares_init_sysconfig_android(const ares_channel_t *channel,
+                                                 ares_sysconfig_t *sysconfig)
 {
   size_t        i;
   char        **dns_servers;
@@ -209,8 +215,8 @@ static ares_status_t ares_init_sysconfig_android(ares_sysconfig_t *sysconfig)
   dns_servers = ares_get_android_server_list(MAX_DNS_PROPERTIES, &num_servers);
   if (dns_servers != NULL) {
     for (i = 0; i < num_servers; i++) {
-      status = ares_sconfig_append_fromstr(&sysconfig->sconfig, dns_servers[i],
-                                           ARES_TRUE);
+      status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig,
+                                           dns_servers[i], ARES_TRUE);
       if (status != ARES_SUCCESS) {
         return status;
       }
@@ -241,8 +247,8 @@ static ares_status_t ares_init_sysconfig_android(ares_sysconfig_t *sysconfig)
       if (__system_property_get(propname, propvalue) < 1) {
         break;
       }
-      status =
-        ares_sconfig_append_fromstr(&sysconfig->sconfig, propvalue, ARES_TRUE);
+      status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig,
+                                           propvalue, ARES_TRUE);
       if (status != ARES_SUCCESS) {
         return status;
       }
@@ -255,7 +261,9 @@ static ares_status_t ares_init_sysconfig_android(ares_sysconfig_t *sysconfig)
 #endif
 
 #if defined(CARES_USE_LIBRESOLV)
-static ares_status_t ares_init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
+static ares_status_t
+  ares_init_sysconfig_libresolv(const ares_channel_t *channel,
+                                ares_sysconfig_t     *sysconfig)
 {
   struct __res_state       res;
   ares_status_t            status = ARES_SUCCESS;
@@ -343,7 +351,8 @@ static ares_status_t ares_init_sysconfig_libresolv(ares_sysconfig_t *sysconfig)
       goto done;
     }
 
-    status = ares_sconfig_append_fromstr(&sysconfig->sconfig, ipstr, ARES_TRUE);
+    status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig, ipstr,
+                                         ARES_TRUE);
 
     ares_free(ipstr);
     if (status != ARES_SUCCESS) {
@@ -494,19 +503,19 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
   sysconfig.ndots = 1; /* Default value if not otherwise set */
 
 #if defined(USE_WINSOCK)
-  status = ares_init_sysconfig_windows(&sysconfig);
+  status = ares_init_sysconfig_windows(channel, &sysconfig);
 #elif defined(__MVS__)
-  status = ares_init_sysconfig_mvs(&sysconfig);
+  status = ares_init_sysconfig_mvs(channel, &sysconfig);
 #elif defined(__riscos__)
-  status = ares_init_sysconfig_riscos(&sysconfig);
+  status = ares_init_sysconfig_riscos(channel, &sysconfig);
 #elif defined(WATT32)
-  status = ares_init_sysconfig_watt32(&sysconfig);
+  status = ares_init_sysconfig_watt32(channel, &sysconfig);
 #elif defined(ANDROID) || defined(__ANDROID__)
-  status = ares_init_sysconfig_android(&sysconfig);
+  status = ares_init_sysconfig_android(channel, &sysconfig);
 #elif defined(__APPLE__)
-  status = ares_init_sysconfig_macos(&sysconfig);
+  status = ares_init_sysconfig_macos(channel, &sysconfig);
 #elif defined(CARES_USE_LIBRESOLV)
-  status = ares_init_sysconfig_libresolv(&sysconfig);
+  status = ares_init_sysconfig_libresolv(channel, &sysconfig);
 #else
   status = ares_init_sysconfig_files(channel, &sysconfig);
 #endif

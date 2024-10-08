@@ -549,8 +549,9 @@ ares_status_t ares_init_by_environment(ares_sysconfig_t *sysconfig)
 /* This function will only return ARES_SUCCESS or ARES_ENOMEM.  Any other
  * conditions are ignored.  Users may mess up config files, but we want to
  * process anything we can. */
-static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
-                                           ares_buf_t       *line)
+static ares_status_t parse_resolvconf_line(const ares_channel_t *channel,
+                                           ares_sysconfig_t     *sysconfig,
+                                           ares_buf_t           *line)
 {
   char          option[32];
   char          value[512];
@@ -600,7 +601,8 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
   } else if (ares_streq(option, "search")) {
     status = config_search(sysconfig, value, 0);
   } else if (ares_streq(option, "nameserver")) {
-    status = ares_sconfig_append_fromstr(&sysconfig->sconfig, value, ARES_TRUE);
+    status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig, value,
+                                         ARES_TRUE);
   } else if (ares_streq(option, "sortlist")) {
     /* Ignore all failures except ENOMEM.  If the sysadmin set a bad
      * sortlist, just ignore the sortlist, don't cause an inoperable
@@ -620,14 +622,17 @@ static ares_status_t parse_resolvconf_line(ares_sysconfig_t *sysconfig,
 /* This function will only return ARES_SUCCESS or ARES_ENOMEM.  Any other
  * conditions are ignored.  Users may mess up config files, but we want to
  * process anything we can. */
-static ares_status_t parse_nsswitch_line(ares_sysconfig_t *sysconfig,
-                                         ares_buf_t       *line)
+static ares_status_t parse_nsswitch_line(const ares_channel_t *channel,
+                                         ares_sysconfig_t     *sysconfig,
+                                         ares_buf_t           *line)
 {
   char          option[32];
   ares_status_t status = ARES_SUCCESS;
   ares_array_t *sects  = NULL;
   ares_buf_t  **bufptr;
   ares_buf_t   *buf;
+
+  (void)channel;
 
   /* Ignore lines beginning with a comment */
   if (ares_buf_begins_with(line, (const unsigned char *)"#", 1)) {
@@ -671,14 +676,17 @@ done:
 /* This function will only return ARES_SUCCESS or ARES_ENOMEM.  Any other
  * conditions are ignored.  Users may mess up config files, but we want to
  * process anything we can. */
-static ares_status_t parse_svcconf_line(ares_sysconfig_t *sysconfig,
-                                        ares_buf_t       *line)
+static ares_status_t parse_svcconf_line(const ares_channel_t *channel,
+                                        ares_sysconfig_t     *sysconfig,
+                                        ares_buf_t           *line)
 {
   char          option[32];
   ares_buf_t  **bufptr;
   ares_buf_t   *buf;
   ares_status_t status = ARES_SUCCESS;
   ares_array_t *sects  = NULL;
+
+  (void)channel;
 
   /* Ignore lines beginning with a comment */
   if (ares_buf_begins_with(line, (const unsigned char *)"#", 1)) {
@@ -718,8 +726,9 @@ done:
   return status;
 }
 
-typedef ares_status_t (*line_callback_t)(ares_sysconfig_t *sysconfig,
-                                         ares_buf_t       *line);
+typedef ares_status_t (*line_callback_t)(const ares_channel_t *channel,
+                                         ares_sysconfig_t     *sysconfig,
+                                         ares_buf_t           *line);
 
 /* Should only return:
  *  ARES_ENOTFOUND - file not found
@@ -728,9 +737,10 @@ typedef ares_status_t (*line_callback_t)(ares_sysconfig_t *sysconfig,
  *  ARES_SUCCESS   - file processed, doesn't necessarily mean it was a good
  *                   file, but we're not erroring out if we can't parse
  *                   something (or anything at all) */
-static ares_status_t process_config_lines(const char       *filename,
-                                          ares_sysconfig_t *sysconfig,
-                                          line_callback_t   cb)
+static ares_status_t process_config_lines(const ares_channel_t *channel,
+                                          const char           *filename,
+                                          ares_sysconfig_t     *sysconfig,
+                                          line_callback_t       cb)
 {
   ares_status_t status = ARES_SUCCESS;
   ares_array_t *lines  = NULL;
@@ -760,7 +770,7 @@ static ares_status_t process_config_lines(const char       *filename,
     ares_buf_t **bufptr = ares_array_at(lines, i);
     ares_buf_t  *line   = *bufptr;
 
-    status = cb(sysconfig, line);
+    status = cb(channel, sysconfig, line);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -779,7 +789,8 @@ ares_status_t ares_init_sysconfig_files(const ares_channel_t *channel,
   ares_status_t status = ARES_SUCCESS;
 
   /* Resolv.conf */
-  status = process_config_lines((channel->resolvconf_path != NULL)
+  status = process_config_lines(channel,
+                                (channel->resolvconf_path != NULL)
                                   ? channel->resolvconf_path
                                   : PATH_RESOLV_CONF,
                                 sysconfig, parse_resolvconf_line);
@@ -788,21 +799,22 @@ ares_status_t ares_init_sysconfig_files(const ares_channel_t *channel,
   }
 
   /* Nsswitch.conf */
-  status =
-    process_config_lines("/etc/nsswitch.conf", sysconfig, parse_nsswitch_line);
+  status = process_config_lines(channel, "/etc/nsswitch.conf", sysconfig,
+                                parse_nsswitch_line);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
   }
 
   /* netsvc.conf */
-  status =
-    process_config_lines("/etc/netsvc.conf", sysconfig, parse_svcconf_line);
+  status = process_config_lines(channel, "/etc/netsvc.conf", sysconfig,
+                                parse_svcconf_line);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
   }
 
   /* svc.conf */
-  status = process_config_lines("/etc/svc.conf", sysconfig, parse_svcconf_line);
+  status = process_config_lines(channel, "/etc/svc.conf", sysconfig,
+                                parse_svcconf_line);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
     goto done;
   }
