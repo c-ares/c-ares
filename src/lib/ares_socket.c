@@ -242,6 +242,7 @@ ares_status_t ares_socket_configure(ares_channel_t *channel, int family,
 
   ares_socklen_t bindlen = 0;
   int            rv;
+  unsigned int   bind_flags = 0;
 
   /* Set the socket's send and receive buffer sizes. */
   if (channel->socket_send_buffer_size > 0) {
@@ -290,14 +291,17 @@ ares_status_t ares_socket_configure(ares_channel_t *channel, int family,
            sizeof(channel->local_ip6));
     bindlen = sizeof(local.sa6);
   }
-#ifdef IP_BIND_ADDRESS_NO_PORT
-  if (is_tcp && bindlen) {
-    int opt = 1;
-    (void)setsockopt(fd, SOL_IP, IP_BIND_ADDRESS_NO_PORT, &opt, sizeof(opt));
-  }
-#endif
-  if (bindlen && bind(fd, &local.sa, bindlen) < 0) {
-    return ARES_ECONNREFUSED;
+
+
+  if (bindlen && channel->sock_funcs.abind != NULL) {
+    bind_flags |= ARES_SOCKET_BIND_CLIENT;
+    if (is_tcp) {
+      bind_flags |= ARES_SOCKET_BIND_TCP;
+    }
+    if (channel->sock_funcs.abind(fd, bind_flags, &local.sa, bindlen,
+                                  channel->sock_func_cb_data) != 0) {
+      return ARES_ECONNREFUSED;
+    }
   }
 
   return ARES_SUCCESS;

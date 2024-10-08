@@ -606,6 +606,14 @@ typedef enum {
   ARES_SOCKET_CONN_TCP_FASTOPEN = 1 << 0
 } ares_socket_connect_flags_t;
 
+/*! Flags for behavior during bind */
+typedef enum {
+  /*! Bind is for a TCP connection */
+  ARES_SOCKET_BIND_TCP = 1 << 0,
+  /*! Bind is for a client connection, not server */
+  ARES_SOCKET_BIND_CLIENT = 1 << 1
+} ares_socket_bind_flags_t;
+
 /*! Socket functions to call rather than using OS-native functions */
 struct ares_socket_functions_ex {
   /*! ABI Version: must be "1" */
@@ -736,6 +744,23 @@ struct ares_socket_functions_ex {
    */
   int (*agetsockname)(ares_socket_t sock, struct sockaddr *address,
                       ares_socklen_t *address_len, void *user_data);
+
+  /*! Optional. Bind the socket to an address.  This can be used for client
+   *  connections to bind the source address for packets before connect, or
+   *  for server connections to bind to an address and port before listening.
+   *  Currently c-ares only supports client connections.
+   *
+   *  \param[in] sock        Socket file descriptor returned from asocket
+   *  \param[in] flags       ares_socket_bind_flags_t flags.
+   *  \param[in] address     Buffer containing address.
+   *  \param[in] address_len Size of address buffer.
+   *  \param[in]     user_data   Pointer provided to
+   * ares_set_socket_functions_ex().
+   *  \return 0 on success. -1 on error with an appropriate errno set.
+   */
+  int (*abind)(ares_socket_t sock, unsigned int flags,
+               const struct sockaddr *address, socklen_t address_len,
+               void *user_data);
 };
 
 /*! Override the native socket functions for the OS with the provided set.

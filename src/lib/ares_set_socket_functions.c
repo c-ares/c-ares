@@ -119,6 +119,7 @@ ares_status_t
     channel->sock_funcs.arecvfrom    = funcs->arecvfrom;
     channel->sock_funcs.asendto      = funcs->asendto;
     channel->sock_funcs.agetsockname = funcs->agetsockname;
+    channel->sock_funcs.abind        = funcs->abind;
   }
 
   /* Implement newer versions here ...*/
@@ -389,6 +390,21 @@ static int default_agetsockname(ares_socket_t sock, struct sockaddr *address,
   return getsockname(sock, address, address_len);
 }
 
+static int default_abind(ares_socket_t sock, unsigned int flags,
+                         const struct sockaddr *address, socklen_t address_len,
+                         void *user_data)
+{
+  (void)user_data;
+
+#ifdef IP_BIND_ADDRESS_NO_PORT
+  if (flags & ARES_SOCKET_BIND_TCP && flags & ARES_SOCKET_BIND_CLIENT) {
+    int opt = 1;
+    (void)setsockopt(sock, SOL_IP, IP_BIND_ADDRESS_NO_PORT, &opt, sizeof(opt));
+  }
+#endif
+
+  return bind(sock, address, address_len);
+}
 
 static const struct ares_socket_functions_ex default_socket_functions = {
   1,
@@ -399,7 +415,8 @@ static const struct ares_socket_functions_ex default_socket_functions = {
   default_aconnect,
   default_arecvfrom,
   default_asendto,
-  default_agetsockname
+  default_agetsockname,
+  default_abind
 };
 
 void ares_set_socket_functions_default(ares_channel_t *channel)
@@ -516,7 +533,8 @@ static const struct ares_socket_functions_ex legacy_socket_functions = {
   legacycb_aconnect,
   legacycb_arecvfrom,
   legacycb_asendto,
-  NULL
+  NULL, /* agetsockname */
+  NULL  /* abind */
 };
 
 void ares_set_socket_functions(ares_channel_t                     *channel,
