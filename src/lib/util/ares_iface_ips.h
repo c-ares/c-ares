@@ -130,7 +130,7 @@ unsigned int            ares_os_if_nametoindex(const char *name);
  *
  * \param[in] index  Interface index (> 0)
  * \param[in] name   Buffer to hold name
- * \param[in] name_len Length of provided buffer, must be at least IFNAMSIZ
+ * \param[in] name_len Length of provided buffer, must be at least IF_NAMESIZE
  * \return NULL on failure, or pointer to name on success
  */
 const char             *ares_os_if_indextoname(unsigned int index, char *name,

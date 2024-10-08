@@ -582,7 +582,7 @@ done:
 const char *ares_os_if_indextoname(unsigned int index, char *name, size_t name_len)
 {
 #ifdef HAVE_IF_INDEXTONAME
-  if (name_len < IFNAMSIZ) {
+  if (name_len < IF_NAMESIZE) {
     return NULL;
   }
   return if_indextoname(index, name);
@@ -592,7 +592,7 @@ const char *ares_os_if_indextoname(unsigned int index, char *name, size_t name_l
   size_t            i;
   const char       *ptr = NULL;
 
-  if (name == NULL || name_len < IFNAMSIZ) {
+  if (name == NULL || name_len < IF_NAMESIZE) {
     goto done;
   }
 
