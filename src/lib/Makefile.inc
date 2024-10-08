@@ -29,6 +29,7 @@ CSOURCES = ares_addrinfo2hostent.c	\
   ares_query.c				\
   ares_search.c				\
   ares_send.c				\
+  ares_set_socket_functions.c		\
   ares_socket.c				\
   ares_sortaddrinfo.c			\
   ares_strerror.c			\

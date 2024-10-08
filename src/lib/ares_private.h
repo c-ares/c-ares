@@ -260,8 +260,10 @@ struct ares_channeldata {
   ares_sock_config_callback           sock_config_cb;
   void                               *sock_config_cb_data;
 
-  const struct ares_socket_functions *sock_funcs;
+  struct ares_socket_functions_ex     sock_funcs;
   void                               *sock_func_cb_data;
+  const struct ares_socket_functions *legacy_sock_funcs;
+  void                               *legacy_sock_funcs_cb_data;
 
   ares_pending_write_cb               notify_pending_write_cb;
   void                               *notify_pending_write_cb_data;
@@ -365,6 +367,7 @@ ares_status_t  ares_init_by_options(ares_channel_t            *channel,
                                     const struct ares_options *options,
                                     int                        optmask);
 ares_status_t  ares_init_by_sysconfig(ares_channel_t *channel);
+void           ares_set_socket_functions_default(ares_channel_t *channel);
 
 typedef struct {
   ares_llist_t    *sconfig;
@@ -388,10 +391,12 @@ ares_status_t ares_init_by_environment(ares_sysconfig_t *sysconfig);
 ares_status_t ares_init_sysconfig_files(const ares_channel_t *channel,
                                         ares_sysconfig_t     *sysconfig);
 #ifdef __APPLE__
-ares_status_t ares_init_sysconfig_macos(ares_sysconfig_t *sysconfig);
+ares_status_t ares_init_sysconfig_macos(const ares_channel_t *channel,
+                                        ares_sysconfig_t     *sysconfig);
 #endif
 #ifdef USE_WINSOCK
-ares_status_t ares_init_sysconfig_windows(ares_sysconfig_t *sysconfig);
+ares_status_t ares_init_sysconfig_windows(const ares_channel_t *channel,
+                                          ares_sysconfig_t     *sysconfig);
 #endif
 
 ares_status_t ares_parse_sortlist(struct apattern **sortlist, size_t *nsort,
@@ -449,14 +454,14 @@ ares_status_t ares_addrinfo_localhost(const char *name, unsigned short port,
 ares_status_t ares_servers_update(ares_channel_t *channel,
                                   ares_llist_t   *server_list,
                                   ares_bool_t     user_specified);
-ares_status_t ares_sconfig_append(ares_llist_t          **sconfig,
-                                  const struct ares_addr *addr,
-                                  unsigned short          udp_port,
-                                  unsigned short          tcp_port,
-                                  const char             *ll_iface);
-ares_status_t ares_sconfig_append_fromstr(ares_llist_t **sconfig,
-                                          const char    *str,
-                                          ares_bool_t    ignore_invalid);
+ares_status_t
+  ares_sconfig_append(const ares_channel_t *channel, ares_llist_t **sconfig,
+                      const struct ares_addr *addr, unsigned short udp_port,
+                      unsigned short tcp_port, const char *ll_iface);
+ares_status_t ares_sconfig_append_fromstr(const ares_channel_t *channel,
+                                          ares_llist_t        **sconfig,
+                                          const char           *str,
+                                          ares_bool_t           ignore_invalid);
 ares_status_t ares_in_addr_to_sconfig_llist(const struct in_addr *servers,
                                             size_t                nservers,
                                             ares_llist_t        **llist);

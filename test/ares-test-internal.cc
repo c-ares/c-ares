@@ -305,10 +305,10 @@ TEST_F(LibraryTest, IfaceIPs) {
     } else {
       EXPECT_EQ(0, ares_iface_ips_get_ll_scope(ips, i));
     }
-    unsigned int idx = ares_if_nametoindex(name);
+    unsigned int idx = ares_os_if_nametoindex(name);
     EXPECT_NE(0, idx);
     char namebuf[256];
-    EXPECT_EQ(std::string(ares_if_indextoname(idx, namebuf, sizeof(namebuf))), std::string(name));
+    EXPECT_EQ(std::string(ares_os_if_indextoname(idx, namebuf, sizeof(namebuf))), std::string(name));
   }
 
 
@@ -327,8 +327,8 @@ TEST_F(LibraryTest, IfaceIPs) {
   ares_iface_ips_get_netmask(NULL, 0);
   ares_iface_ips_get_ll_scope(NULL, 0);
   ares_iface_ips_destroy(NULL);
-  ares_if_nametoindex(NULL);
-  ares_if_indextoname(0, NULL, 0);
+  ares_os_if_nametoindex(NULL);
+  ares_os_if_indextoname(0, NULL, 0);
 
   ares_iface_ips_destroy(ips);
 }

@@ -124,7 +124,7 @@ unsigned int            ares_iface_ips_get_ll_scope(const ares_iface_ips_t *ips,
  * \param[in] name  Interface name
  * \return 0 on failure, index otherwise
  */
-unsigned int            ares_if_nametoindex(const char *name);
+unsigned int            ares_os_if_nametoindex(const char *name);
 
 /*! Retrieves the interface name from the index (aka link local scope)
  *
@@ -133,7 +133,7 @@ unsigned int            ares_if_nametoindex(const char *name);
  * \param[in] name_len Length of provided buffer, must be at least IF_NAMESIZE
  * \return NULL on failure, or pointer to name on success
  */
-const char             *ares_if_indextoname(unsigned int index, char *name,
-                                            size_t name_len);
+const char             *ares_os_if_indextoname(unsigned int index, char *name,
+                                               size_t name_len);
 
 #endif

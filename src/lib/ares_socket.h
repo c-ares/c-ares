@@ -27,6 +27,95 @@
 #ifndef __ARES_SOCKET_H
 #define __ARES_SOCKET_H
 
+/* Macro SOCKERRNO / SET_SOCKERRNO() returns / sets the *socket-related* errno
+ * (or equivalent) on this platform to hide platform details to code using it.
+ */
+#ifdef USE_WINSOCK
+#  define SOCKERRNO        ((int)WSAGetLastError())
+#  define SET_SOCKERRNO(x) (WSASetLastError((int)(x)))
+#else
+#  define SOCKERRNO        (errno)
+#  define SET_SOCKERRNO(x) (errno = (x))
+#endif
+
+/* Portable error number symbolic names defined to Winsock error codes. */
+#ifdef USE_WINSOCK
+#  undef EBADF           /* override definition in errno.h */
+#  define EBADF WSAEBADF
+#  undef EINTR           /* override definition in errno.h */
+#  define EINTR WSAEINTR
+#  undef EINVAL          /* override definition in errno.h */
+#  define EINVAL WSAEINVAL
+#  undef EWOULDBLOCK     /* override definition in errno.h */
+#  define EWOULDBLOCK WSAEWOULDBLOCK
+#  undef EINPROGRESS     /* override definition in errno.h */
+#  define EINPROGRESS WSAEINPROGRESS
+#  undef EALREADY        /* override definition in errno.h */
+#  define EALREADY WSAEALREADY
+#  undef ENOTSOCK        /* override definition in errno.h */
+#  define ENOTSOCK WSAENOTSOCK
+#  undef EDESTADDRREQ    /* override definition in errno.h */
+#  define EDESTADDRREQ WSAEDESTADDRREQ
+#  undef EMSGSIZE        /* override definition in errno.h */
+#  define EMSGSIZE WSAEMSGSIZE
+#  undef EPROTOTYPE      /* override definition in errno.h */
+#  define EPROTOTYPE WSAEPROTOTYPE
+#  undef ENOPROTOOPT     /* override definition in errno.h */
+#  define ENOPROTOOPT WSAENOPROTOOPT
+#  undef EPROTONOSUPPORT /* override definition in errno.h */
+#  define EPROTONOSUPPORT WSAEPROTONOSUPPORT
+#  define ESOCKTNOSUPPORT WSAESOCKTNOSUPPORT
+#  undef EOPNOTSUPP /* override definition in errno.h */
+#  define EOPNOTSUPP WSAEOPNOTSUPP
+#  undef ENOSYS     /* override definition in errno.h */
+#  define ENOSYS       WSAEOPNOTSUPP
+#  define EPFNOSUPPORT WSAEPFNOSUPPORT
+#  undef EAFNOSUPPORT  /* override definition in errno.h */
+#  define EAFNOSUPPORT WSAEAFNOSUPPORT
+#  undef EADDRINUSE    /* override definition in errno.h */
+#  define EADDRINUSE WSAEADDRINUSE
+#  undef EADDRNOTAVAIL /* override definition in errno.h */
+#  define EADDRNOTAVAIL WSAEADDRNOTAVAIL
+#  undef ENETDOWN      /* override definition in errno.h */
+#  define ENETDOWN WSAENETDOWN
+#  undef ENETUNREACH   /* override definition in errno.h */
+#  define ENETUNREACH WSAENETUNREACH
+#  undef ENETRESET     /* override definition in errno.h */
+#  define ENETRESET WSAENETRESET
+#  undef ECONNABORTED  /* override definition in errno.h */
+#  define ECONNABORTED WSAECONNABORTED
+#  undef ECONNRESET    /* override definition in errno.h */
+#  define ECONNRESET WSAECONNRESET
+#  undef ENOBUFS       /* override definition in errno.h */
+#  define ENOBUFS WSAENOBUFS
+#  undef EISCONN       /* override definition in errno.h */
+#  define EISCONN WSAEISCONN
+#  undef ENOTCONN      /* override definition in errno.h */
+#  define ENOTCONN     WSAENOTCONN
+#  define ESHUTDOWN    WSAESHUTDOWN
+#  define ETOOMANYREFS WSAETOOMANYREFS
+#  undef ETIMEDOUT     /* override definition in errno.h */
+#  define ETIMEDOUT WSAETIMEDOUT
+#  undef ECONNREFUSED  /* override definition in errno.h */
+#  define ECONNREFUSED WSAECONNREFUSED
+#  undef ELOOP         /* override definition in errno.h */
+#  define ELOOP WSAELOOP
+#  ifndef ENAMETOOLONG /* possible previous definition in errno.h */
+#    define ENAMETOOLONG WSAENAMETOOLONG
+#  endif
+#  define EHOSTDOWN WSAEHOSTDOWN
+#  undef EHOSTUNREACH /* override definition in errno.h */
+#  define EHOSTUNREACH WSAEHOSTUNREACH
+#  ifndef ENOTEMPTY   /* possible previous definition in errno.h */
+#    define ENOTEMPTY WSAENOTEMPTY
+#  endif
+#  define EPROCLIM WSAEPROCLIM
+#  define EUSERS   WSAEUSERS
+#  define EDQUOT   WSAEDQUOT
+#  define ESTALE   WSAESTALE
+#  define EREMOTE  WSAEREMOTE
+#endif
+
 /*! Socket errors */
 typedef enum {
   ARES_CONN_ERR_SUCCESS      = 0,  /*!< Success */
@@ -50,8 +139,6 @@ typedef enum {
   ARES_CONN_ERR_FAILURE      = 99  /*!< Generic failure */
 } ares_conn_err_t;
 
-ares_bool_t     ares_socket_tfo_supported(const ares_channel_t *channel);
-
 ares_bool_t     ares_sockaddr_addr_eq(const struct sockaddr  *sa,
                                       const struct ares_addr *aa);
 ares_status_t   ares_socket_configure(ares_channel_t *channel, int family,
@@ -70,11 +157,7 @@ ares_bool_t     ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
                                            unsigned short        *port,
                                            const struct sockaddr *sockaddr);
 ares_conn_err_t ares_socket_write(ares_channel_t *channel, ares_socket_t fd,
-                                  const void *data, size_t len,
-                                  size_t *written);
-ares_conn_err_t ares_socket_write_tfo(ares_channel_t *channel, ares_socket_t fd,
-                                      const void *data, size_t len,
-                                      size_t                *written,
-                                      const struct sockaddr *sa,
-                                      ares_socklen_t         salen);
+                                  const void *data, size_t len, size_t *written,
+                                  const struct sockaddr *sa,
+                                  ares_socklen_t         salen);
 #endif

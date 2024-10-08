@@ -483,15 +483,12 @@ static ares_status_t read_conn_packets(ares_conn_t *conn)
     /* Record amount of data read */
     ares_buf_append_finish(conn->in_buf, count);
 
-    /* Only loop if we're not overwriting socket functions, and are using UDP
+    /* Only loop if sockets support non-blocking operation, and are using UDP
      * or are using TCP and read the maximum buffer size */
     read_again = ARES_FALSE;
-    if (channel->sock_funcs == NULL) {
-      if (!(conn->flags & ARES_CONN_FLAG_TCP)) {
-        read_again = ARES_TRUE;
-      } else if (count == len) {
-        read_again = ARES_TRUE;
-      }
+    if (channel->sock_funcs.flags & ARES_SOCKFUNC_FLAG_NONBLOCKING &&
+        (!(conn->flags & ARES_CONN_FLAG_TCP) || count == len)) {
+      read_again = ARES_TRUE;
     }
 
     /* If UDP, overwrite length */

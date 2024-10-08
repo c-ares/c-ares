@@ -567,10 +567,251 @@ struct ares_socket_functions {
   ares_ssize_t (*asendv)(ares_socket_t, const struct iovec *, int, void *);
 };
 
-CARES_EXTERN void
-             ares_set_socket_functions(ares_channel_t                     *channel,
-                                       const struct ares_socket_functions *funcs,
-                                       void                               *user_data);
+CARES_EXTERN CARES_DEPRECATED_FOR(
+  ares_set_socket_functions_ex) void ares_set_socket_functions(ares_channel_t
+                                                                 *channel,
+                                                               const struct
+                                                               ares_socket_functions
+                                                                    *funcs,
+                                                               void *user_data);
+
+/*! Flags defining behavior of socket functions */
+typedef enum {
+  /*! Strongly recommended to create sockets as non-blocking and set this
+   *  flag */
+  ARES_SOCKFUNC_FLAG_NONBLOCKING = 1 << 0
+} ares_sockfunc_flags_t;
+
+/*! Socket options in request to asetsockopt() in struct
+ *  ares_socket_functions_ex */
+typedef enum {
+  /*! Set the send buffer size. Value is a pointer to an int. (SO_SNDBUF) */
+  ARES_SOCKET_OPT_SENDBUF_SIZE,
+  /*! Set the recv buffer size. Value is a pointer to an int. (SO_RCVBUF) */
+  ARES_SOCKET_OPT_RECVBUF_SIZE,
+  /*! Set the network interface to use as the source for communication.
+   *  Value is a C string. (SO_BINDTODEVICE) */
+  ARES_SOCKET_OPT_BIND_DEVICE,
+  /*! Enable TCP Fast Open.  Value is a pointer to an ares_bool_t.  On some
+   *  systems this could be a no-op if it is known it is on by default and
+   *  return success.  Other systems may be a no-op if known the system does
+   *  not support the feature and returns failure with errno set to ENOSYS or
+   *  WSASetLastError(WSAEOPNOTSUPP).
+   */
+  ARES_SOCKET_OPT_TCP_FASTOPEN
+} ares_socket_opt_t;
+
+/*! Flags for behavior during connect */
+typedef enum {
+  /*! Connect using TCP Fast Open */
+  ARES_SOCKET_CONN_TCP_FASTOPEN = 1 << 0
+} ares_socket_connect_flags_t;
+
+/*! Flags for behavior during bind */
+typedef enum {
+  /*! Bind is for a TCP connection */
+  ARES_SOCKET_BIND_TCP = 1 << 0,
+  /*! Bind is for a client connection, not server */
+  ARES_SOCKET_BIND_CLIENT = 1 << 1
+} ares_socket_bind_flags_t;
+
+/*! Socket functions to call rather than using OS-native functions */
+struct ares_socket_functions_ex {
+  /*! ABI Version: must be "1" */
+  unsigned int version;
+
+  /*! Flags indicating behavior of the subsystem. One or more
+   * ares_sockfunc_flags_t  */
+  unsigned int flags;
+
+  /*! REQUIRED. Create a new socket file descriptor.  The file descriptor must
+   * be opened in non-blocking mode (so that reads and writes never block).
+   * Recommended other options would be to disable signals on write errors
+   * (SO_NOSIGPIPE), Disable the Nagle algorithm on SOCK_STREAM (TCP_NODELAY),
+   * and to automatically close file descriptors on exec (FD_CLOEXEC).
+   *
+   *  \param[in] domain      Socket domain. Valid values are AF_INET, AF_INET6.
+   *  \param[in] type       Socket type. Valid values are SOCK_STREAM (tcp) and
+   *                        SOCK_DGRAM (udp).
+   *  \param[in] protocol   In general this should be ignored, may be passed as
+   *                        0 (use as default for type), or may be IPPROTO_UDP
+   *                        or IPPROTO_TCP.
+   *  \param[in] user_data  Pointer provided to ares_set_socket_functions_ex().
+   *  \return ARES_SOCKET_BAD on error, or socket file descriptor on success.
+   *          On error, it is expected to set errno (or WSASetLastError()) to an
+   *          appropriate reason code such as EAFNOSUPPORT / WSAAFNOSUPPORT. */
+  ares_socket_t (*asocket)(int domain, int type, int protocol, void *user_data);
+
+  /*! REQUIRED. Close a socket file descriptor.
+   *  \param[in] sock      Socket file descriptor returned from asocket.
+   *  \param[in] user_data Pointer provided to ares_set_socket_functions_ex().
+   *  \return 0 on success.  On failure, should set errno (or WSASetLastError)
+   *          to an appropriate code such as EBADF / WSAEBADF */
+  int (*aclose)(ares_socket_t sock, void *user_data);
+
+
+  /*! REQUIRED. Set socket option.  This shares a similar syntax to the BSD
+   *  setsockopt() call, however we use our own options.  The value is typically
+   *  a pointer to the desired value and each option has its own data type it
+   *  will express in the documentation.
+   *
+   * \param[in] sock         Socket file descriptor returned from asocket.
+   * \param[in] opt          Option to set.
+   * \param[in] val          Pointer to value for option.
+   * \param[in] val_size     Size of value.
+   * \param[in] user_data    Pointer provided to
+   * ares_set_socket_functions_ex().
+   * \return Return 0 on success, otherwise -1 should be returned with an
+   *         appropriate errno (or WSASetLastError()) set.  If error is ENOSYS /
+   *         WSAEOPNOTSUPP an error will not be propagated as it will take it
+   *         to mean it is an intentional decision to not support the feature.
+   */
+  int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, void *val,
+                     ares_socklen_t val_size, void *user_data);
+
+  /*! REQUIRED. Connect to the remote using the supplied address.  For UDP
+   * sockets this will bind the file descriptor to only send and receive packets
+   * from the remote address provided.
+   *
+   *  \param[in] sock         Socket file descriptor returned from asocket.
+   *  \param[in] address      Address to connect to
+   *  \param[in] address_len  Size of address structure passed
+   *  \param[in] flags        One or more ares_socket_connect_flags_t
+   *  \param[in] user_data    Pointer provided to
+   * ares_set_socket_functions_ex().
+   *  \return Return 0 upon successful establishement, otherwise -1 should be
+   *          returned with an appropriate errno (or WSASetLastError()) set.  It
+   * is generally expected that most TCP connections (not using TCP Fast Open)
+   * will return -1 with an error of EINPROGRESS / WSAEINPROGRESS due to the
+   * non-blocking nature of the connection.  It is then the responsibility of
+   * the implementation to notify of writability on the socket to indicate the
+   * connection has succeeded (or readability on failure to retrieve the
+   * appropriate error).
+   */
+  int (*aconnect)(ares_socket_t sock, const struct sockaddr *address,
+                  ares_socklen_t address_len, unsigned int flags,
+                  void *user_data);
+
+  /*! REQUIRED. Attempt to read data from the remote.
+   *
+   *  \param[in]     sock        Socket file descriptor returned from asocket.
+   *  \param[in,out] buffer      Allocated buffer to place data read from
+   * socket.
+   *  \param[in]     length      Size of buffer
+   *  \param[in]     flags       Unused, always 0.
+   *  \param[in,out] address     Buffer to hold address data was received from.
+   *                             May be NULL if address not desired.
+   *  \param[in,out] address_len Input size of address buffer, output actual
+   *                             written size. Must be NULL if address is NULL.
+   *  \param[in]     user_data   Pointer provided to
+   * ares_set_socket_functions_ex().
+   *  \return -1 on error with appropriate errno (or WSASetLastError()) set,
+   * such as EWOULDBLOCK / EAGAIN / WSAEWOULDBLOCK, or ECONNRESET /
+   * WSAECONNRESET.
+   */
+  ares_ssize_t (*arecvfrom)(ares_socket_t sock, void *buffer, size_t length,
+                            int flags, struct sockaddr *address,
+                            ares_socklen_t *address_len, void *user_data);
+
+  /*! REQUIRED. Attempt to send data to the remote.  Optional address may be
+   * specified which may be useful on unbound UDP sockets (though currently not
+   * used), and TCP FastOpen where the connection is delayed until first write.
+   *
+   *  \param[in]     sock        Socket file descriptor returned from asocket.
+   *  \param[in]     buffer      Containing data to place onto wire.
+   *  \param[in]     length      Size of buffer
+   *  \param[in]     flags       Flags for writing.  Currently only used flag is
+   *                             MSG_NOSIGNAL if the host OS has such a flag. In
+   *                             general flags can be ignored.
+   *  \param[in]     address     Buffer containing address to send data to.  May
+   *                             be NULL.
+   *  \param[in,out] address_len Size of address buffer.  Must be 0 if address
+   *                             is NULL.
+   *  \param[in]     user_data   Pointer provided to
+   * ares_set_socket_functions_ex().
+   *  \return Number of bytes written. -1 on error with appropriate errno (or
+   * WSASetLastError()) set.
+   */
+  ares_ssize_t (*asendto)(ares_socket_t sock, const void *buffer, size_t length,
+                          int flags, const struct sockaddr *address,
+                          ares_socklen_t address_len, void *user_data);
+
+  /*! Optional. Retrieve the local address of the socket.
+   *
+   *  \param[in]     sock        Socket file descriptor returned from asocket
+   *  \param[in,out] address     Buffer to hold address
+   *  \param[in,out] address_len Size of address buffer on input, written size
+   * on output.
+   *  \param[in]     user_data   Pointer provided to
+   * ares_set_socket_functions_ex().
+   *  \return 0 on success. -1 on error with an appropriate errno (or
+   * WSASetLastError()) set.
+   */
+  int (*agetsockname)(ares_socket_t sock, struct sockaddr *address,
+                      ares_socklen_t *address_len, void *user_data);
+
+  /*! Optional. Bind the socket to an address.  This can be used for client
+   *  connections to bind the source address for packets before connect, or
+   *  for server connections to bind to an address and port before listening.
+   *  Currently c-ares only supports client connections.
+   *
+   *  \param[in] sock        Socket file descriptor returned from asocket
+   *  \param[in] flags       ares_socket_bind_flags_t flags.
+   *  \param[in] address     Buffer containing address.
+   *  \param[in] address_len Size of address buffer.
+   *  \param[in] user_data   Pointer provided to
+   * ares_set_socket_functions_ex().
+   *  \return 0 on success. -1 on error with an appropriate errno (or
+   * WSASetLastError()) set.
+   */
+  int (*abind)(ares_socket_t sock, unsigned int flags,
+               const struct sockaddr *address, socklen_t address_len,
+               void *user_data);
+
+  /* Optional. Convert an interface name into the interface index.  If this
+   * callback is not specified, then IPv6 Link-Local DNS servers cannot be used.
+   *
+   * \param[in] ifname  Interface Name as NULL-terminated string.
+   * \param[in] user_data Pointer provided to
+   * ares_set_socket_functions_ex().
+   * \return 0 on failure, otherwise interface index.
+   */
+  unsigned int (*aif_nametoindex)(const char *ifname, void *user_data);
+
+  /* Optional. Convert an interface index into the interface name.  If this
+   * callback is not specified, then IPv6 Link-Local DNS servers cannot be used.
+   *
+   * \param[in] ifindex        Interface index, must be > 0
+   * \param[in] ifname_buf     Buffer to hold interface name. Must be at least
+   *                           IFNAMSIZ in length or 32 bytes if IFNAMSIZ isn't
+   *                           defined.
+   * \param[in] ifname_buf_len Size of ifname_buf for verification.
+   * \param[in] user_data      Pointer provided to
+   * ares_set_socket_functions_ex().
+   * \return NULL on failure, otherwise pointer to provided ifname_buf
+   */
+  const char *(*aif_indextoname)(unsigned int ifindex, char *ifname_buf,
+                                 size_t ifname_buf_len, void *user_data);
+};
+
+/*! Override the native socket functions for the OS with the provided set.
+ *  An optional user data thunk may be specified which will be passed to
+ *  each registered callback.  Replaces ares_set_socket_functions().
+ *
+ *  \param[in] channel   An initialized c-ares channel.
+ *  \param[in] funcs     Structure registering the implementations for the
+ *                       various functions.  See the structure definition.
+ *                       This will be duplicated and does not need to exist
+ *                       past the life of this call.
+ *  \param[in] user_data User data thunk which will be passed to each call of
+ *                       the registered callbacks.
+ *  \return ARES_SUCCESS on success, or another error code such as ARES_EFORMERR
+ *          on misuse.
+ */
+CARES_EXTERN ares_status_t ares_set_socket_functions_ex(
+  ares_channel_t *channel, const struct ares_socket_functions_ex *funcs,
+  void *user_data);
+
 
 CARES_EXTERN CARES_DEPRECATED_FOR(ares_send_dnsrec) void ares_send(
   ares_channel_t *channel, const unsigned char *qbuf, int qlen,

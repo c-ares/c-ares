@@ -584,13 +584,15 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
   return *outptr != NULL ? ARES_TRUE : ARES_FALSE;
 }
 
-ares_status_t ares_init_sysconfig_windows(ares_sysconfig_t *sysconfig)
+ares_status_t ares_init_sysconfig_windows(const ares_channel_t *channel,
+                                          ares_sysconfig_t     *sysconfig)
 {
   char         *line   = NULL;
   ares_status_t status = ARES_SUCCESS;
 
   if (get_DNS_Windows(&line)) {
-    status = ares_sconfig_append_fromstr(&sysconfig->sconfig, line, ARES_TRUE);
+    status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig, line,
+                                         ARES_TRUE);
     ares_free(line);
     if (status != ARES_SUCCESS) {
       goto done;

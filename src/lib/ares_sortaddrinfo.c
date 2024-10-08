@@ -375,7 +375,9 @@ static int find_src_addr(ares_channel_t *channel, const struct sockaddr *addr,
     return 0;
   }
 
-  if (getsockname(sock, src_addr, &len) != 0) {
+  if (channel->sock_funcs.agetsockname == NULL ||
+      channel->sock_funcs.agetsockname(sock, src_addr, &len,
+                                       channel->sock_func_cb_data) != 0) {
     ares_socket_close(channel, sock);
     return -1;
   }

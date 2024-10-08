@@ -543,7 +543,7 @@ static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
 #endif
 
 
-unsigned int ares_if_nametoindex(const char *name)
+unsigned int ares_os_if_nametoindex(const char *name)
 {
 #ifdef HAVE_IF_NAMETOINDEX
   if (name == NULL) {
@@ -579,7 +579,7 @@ done:
 #endif
 }
 
-const char *ares_if_indextoname(unsigned int index, char *name, size_t name_len)
+const char *ares_os_if_indextoname(unsigned int index, char *name, size_t name_len)
 {
 #ifdef HAVE_IF_INDEXTONAME
   if (name_len < IF_NAMESIZE) {
