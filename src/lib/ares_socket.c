@@ -136,8 +136,9 @@ ares_bool_t ares_sockaddr_addr_eq(const struct sockaddr  *sa,
 }
 
 ares_conn_err_t ares_socket_write(ares_channel_t *channel, ares_socket_t fd,
-                                  const void *data, size_t len, size_t *written, const struct sockaddr *sa,
-                                      ares_socklen_t         salen)
+                                  const void *data, size_t len, size_t *written,
+                                  const struct sockaddr *sa,
+                                  ares_socklen_t         salen)
 {
   int             flags = 0;
   ares_ssize_t    rv;
@@ -221,8 +222,9 @@ ares_conn_err_t ares_socket_enable_tfo(const ares_channel_t *channel,
 {
   ares_bool_t opt = ARES_TRUE;
 
-  if (channel->sock_funcs.asetsockopt(fd, ARES_SOCKET_OPT_TCP_FASTOPEN, (void *)&opt,
-                 sizeof(opt), channel->sock_func_cb_data) != 0) {
+  if (channel->sock_funcs.asetsockopt(fd, ARES_SOCKET_OPT_TCP_FASTOPEN,
+                                      (void *)&opt, sizeof(opt),
+                                      channel->sock_func_cb_data) != 0) {
     return ARES_CONN_ERR_NOTIMP;
   }
 
@@ -239,22 +241,24 @@ ares_status_t ares_socket_configure(ares_channel_t *channel, int family,
   } local;
 
   ares_socklen_t bindlen = 0;
-  int rv;
+  int            rv;
 
   /* Set the socket's send and receive buffer sizes. */
   if (channel->socket_send_buffer_size > 0) {
-    rv = channel->sock_funcs.asetsockopt(fd, ARES_SOCKET_OPT_SENDBUF_SIZE,
-                 (void *)&channel->socket_send_buffer_size,
-                 sizeof(channel->socket_send_buffer_size), channel->sock_func_cb_data);
+    rv = channel->sock_funcs.asetsockopt(
+      fd, ARES_SOCKET_OPT_SENDBUF_SIZE,
+      (void *)&channel->socket_send_buffer_size,
+      sizeof(channel->socket_send_buffer_size), channel->sock_func_cb_data);
     if (rv != 0 && SOCKERRNO != ENOSYS) {
       return ARES_ECONNREFUSED; /* LCOV_EXCL_LINE: UntestablePath */
     }
   }
 
   if (channel->socket_receive_buffer_size > 0) {
-    rv = channel->sock_funcs.asetsockopt(fd, ARES_SOCKET_OPT_RECVBUF_SIZE,
-                 (void *)&channel->socket_receive_buffer_size,
-                 sizeof(channel->socket_receive_buffer_size), channel->sock_func_cb_data);
+    rv = channel->sock_funcs.asetsockopt(
+      fd, ARES_SOCKET_OPT_RECVBUF_SIZE,
+      (void *)&channel->socket_receive_buffer_size,
+      sizeof(channel->socket_receive_buffer_size), channel->sock_func_cb_data);
     if (rv != 0 && SOCKERRNO != ENOSYS) {
       return ARES_ECONNREFUSED; /* LCOV_EXCL_LINE: UntestablePath */
     }
@@ -262,9 +266,9 @@ ares_status_t ares_socket_configure(ares_channel_t *channel, int family,
 
   /* Bind to network interface if configured */
   if (ares_strlen(channel->local_dev_name)) {
-    rv = channel->sock_funcs.asetsockopt(fd, ARES_SOCKET_OPT_BIND_DEVICE,
-                 channel->local_dev_name, sizeof(channel->local_dev_name),
-                 channel->sock_func_cb_data);
+    rv = channel->sock_funcs.asetsockopt(
+      fd, ARES_SOCKET_OPT_BIND_DEVICE, channel->local_dev_name,
+      sizeof(channel->local_dev_name), channel->sock_func_cb_data);
     if (rv != 0 && SOCKERRNO != ENOSYS) {
       return ARES_ECONNREFUSED; /* LCOV_EXCL_LINE: UntestablePath */
     }

@@ -106,9 +106,8 @@ ares_status_t
    * invalid reads */
   if (funcs->version >= 1) {
     if (funcs->asocket == NULL || funcs->aclose == NULL ||
-        funcs->asetsockopt == NULL ||
-        funcs->aconnect == NULL || funcs->arecvfrom == NULL ||
-        funcs->asendto == NULL) {
+        funcs->asetsockopt == NULL || funcs->aconnect == NULL ||
+        funcs->arecvfrom == NULL || funcs->asendto == NULL) {
       return ARES_EFORMERR;
     }
     channel->sock_funcs.version      = funcs->version;
@@ -261,7 +260,9 @@ fail:
   return -1;
 }
 
-static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt, void *val, ares_socklen_t val_size, void *user_data)
+static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
+                               void *val, ares_socklen_t val_size,
+                               void *user_data)
 {
   switch (opt) {
     case ARES_SOCKET_OPT_SENDBUF_SIZE:
@@ -286,18 +287,18 @@ static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt, void *
       return setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, val, val_size);
 
     case ARES_SOCKET_OPT_TCP_FASTOPEN:
-        if (val_size != sizeof(ares_bool_t)) {
-          SET_SOCKERRNO(EINVAL);
-          return -1;
-        }
+      if (val_size != sizeof(ares_bool_t)) {
+        SET_SOCKERRNO(EINVAL);
+        return -1;
+      }
 #if defined(TFO_CLIENT_SOCKOPT)
-        {
-          int opt;
-          ares_bool_t *pval = val;
-          opt = *pval;
-          return setsockopt(sock, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
-                            sizeof(opt));
-        }
+      {
+        int          opt;
+        ares_bool_t *pval = val;
+        opt               = *pval;
+        return setsockopt(sock, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
+                          sizeof(opt));
+      }
 #elif TFO_SUPPORTED
       return 0;
 #else
@@ -310,7 +311,6 @@ static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt, void *
   SET_SOCKERRNO(ENOSYS);
   return -1;
 }
-
 
 static int default_aconnect(ares_socket_t sock, const struct sockaddr *address,
                             ares_socklen_t address_len, unsigned int flags,
@@ -339,7 +339,7 @@ static int default_aconnect(ares_socket_t sock, const struct sockaddr *address,
     return connect(sock, address, address_len);
   }
 #else
-   return connect(sock, address, address_len);
+  return connect(sock, address, address_len);
 #endif
 }
 
@@ -434,7 +434,9 @@ static ares_socket_t legacycb_asocket(int domain, int type, int protocol,
   return default_asocket(domain, type, protocol, NULL);
 }
 
-static int legacycb_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt, void *val, ares_socklen_t val_size, void *user_data)
+static int legacycb_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
+                                void *val, ares_socklen_t val_size,
+                                void *user_data)
 {
   (void)sock;
   (void)opt;
@@ -444,7 +446,6 @@ static int legacycb_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt, void 
   SET_SOCKERRNO(ENOSYS);
   return -1;
 }
-
 
 static int legacycb_aconnect(ares_socket_t sock, const struct sockaddr *address,
                              ares_socklen_t address_len, unsigned int flags,

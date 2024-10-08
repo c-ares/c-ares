@@ -164,9 +164,9 @@ static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
 ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
                                 size_t *written)
 {
-  ares_channel_t *channel = conn->server->channel;
-  ares_bool_t     is_tfo  = ARES_FALSE;
-  ares_conn_err_t err     = ARES_CONN_ERR_SUCCESS;
+  ares_channel_t         *channel = conn->server->channel;
+  ares_bool_t             is_tfo  = ARES_FALSE;
+  ares_conn_err_t         err     = ARES_CONN_ERR_SUCCESS;
   struct sockaddr_storage sa_storage;
   ares_socklen_t          salen = 0;
   struct sockaddr        *sa    = NULL;
@@ -193,8 +193,7 @@ ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
     }
   }
 
-  err =
-    ares_socket_write(channel, conn->fd, data, len, written, sa, salen);
+  err = ares_socket_write(channel, conn->fd, data, len, written, sa, salen);
   if (err != ARES_CONN_ERR_SUCCESS) {
     goto done;
   }

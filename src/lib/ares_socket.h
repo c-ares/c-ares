@@ -67,7 +67,7 @@
 #  define ESOCKTNOSUPPORT WSAESOCKTNOSUPPORT
 #  undef EOPNOTSUPP /* override definition in errno.h */
 #  define EOPNOTSUPP   WSAEOPNOTSUPP
-#  define ENOSYS WSAEOPNOTSUPP
+#  define ENOSYS       WSAEOPNOTSUPP
 #  define EPFNOSUPPORT WSAEPFNOSUPPORT
 #  undef EAFNOSUPPORT  /* override definition in errno.h */
 #  define EAFNOSUPPORT WSAEAFNOSUPPORT
@@ -156,8 +156,7 @@ ares_bool_t     ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
                                            unsigned short        *port,
                                            const struct sockaddr *sockaddr);
 ares_conn_err_t ares_socket_write(ares_channel_t *channel, ares_socket_t fd,
-                                      const void *data, size_t len,
-                                      size_t                *written,
-                                      const struct sockaddr *sa,
-                                      ares_socklen_t         salen);
+                                  const void *data, size_t len, size_t *written,
+                                  const struct sockaddr *sa,
+                                  ares_socklen_t         salen);
 #endif

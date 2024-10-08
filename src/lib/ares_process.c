@@ -486,7 +486,8 @@ static ares_status_t read_conn_packets(ares_conn_t *conn)
     /* Only loop if sockets support non-blocking operation, and are using UDP
      * or are using TCP and read the maximum buffer size */
     read_again = ARES_FALSE;
-    if (channel->sock_funcs.flags & ARES_SOCKFUNC_FLAG_NONBLOCKING && (!(conn->flags & ARES_CONN_FLAG_TCP) || count == len)) {
+    if (channel->sock_funcs.flags & ARES_SOCKFUNC_FLAG_NONBLOCKING &&
+        (!(conn->flags & ARES_CONN_FLAG_TCP) || count == len)) {
       read_again = ARES_TRUE;
     }
 

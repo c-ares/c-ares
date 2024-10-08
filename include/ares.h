@@ -584,7 +584,7 @@ typedef enum {
 
 /*! Socket options in request to asetsockopt() in struct
  *  ares_socket_functions_ex */
-typedef enum  {
+typedef enum {
   /*! Set the send buffer size. Value is a pointer to an int. (SO_SNDBUF) */
   ARES_SOCKET_OPT_SENDBUF_SIZE,
   /*! Set the recv buffer size. Value is a pointer to an int. (SO_RCVBUF) */
@@ -611,7 +611,8 @@ struct ares_socket_functions_ex {
   /*! ABI Version: must be "1" */
   unsigned int version;
 
-  /*! Flags indicating behavior of the subsystem. One or more ares_sockfunc_flags_t  */
+  /*! Flags indicating behavior of the subsystem. One or more
+   * ares_sockfunc_flags_t  */
   unsigned int flags;
 
   /*! REQUIRED. Create a new socket file descriptor.  The file descriptor must
@@ -656,7 +657,8 @@ struct ares_socket_functions_ex {
    *         propagated as it will take it to mean it is an intentional
    *         decision to not support the feature.
    */
-  int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, void *val, ares_socklen_t val_size, void *user_data);
+  int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, void *val,
+                     ares_socklen_t val_size, void *user_data);
 
   /*! REQUIRED. Connect to the remote using the supplied address.  For UDP
    * sockets this will bind the file descriptor to only send and receive packets
