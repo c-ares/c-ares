@@ -1,6 +1,6 @@
 .\" Copyright (C) Daniel Stenberg
 .\" SPDX-License-Identifier: MIT
-.TH ARES_SET_SOCKET_FUNCTIONS 3 "13 Dec 2016"
+.TH ARES_SET_SOCKET_FUNCTIONS 3 "8 Oct 2024"
 .SH NAME
 ares_set_socket_functions, ares_set_socket_functions_ex \- Set socket io callbacks
 .SH SYNOPSIS
@@ -28,8 +28,7 @@ typedef enum {
 } ares_socket_bind_flags_t;
 
 struct ares_socket_functions_ex {
-  /*! ABI Version: must be "1" */
-  unsigned int version;
+  unsigned int version; /* ABI Version: must be "1" */
   unsigned int flags;
 
   ares_socket_t (*asocket)(int domain, int type, int protocol, void *user_data);
@@ -141,31 +140,36 @@ in the options below defined in \fIares_socket_opt_t\fP.
 .B \fIaconnect\fP
 .B int(*)(ares_socket_t \fIfd\fP, const struct sockaddr * \fIaddr\fP, ares_socklen_t \fIaddr_len\fP, unsigned int \fIflags\fP, void * \fIuser_data\fP)
 .br
-\fBRequried\fP. Initiate a connection to the address indicated by \fIaddr\fP on a socket.
-Additional flags controlling behavior are in \fIares_socket_connect_flags_t\fP.
-See \fBconnect(2)\fP.
+\fBRequried\fP. Initiate a connection to the address indicated by \fIaddr\fP on
+a socket. Additional flags controlling behavior are in
+\fIares_socket_connect_flags_t\fP. See \fBconnect(2)\fP.
 
 .TP 18
 .B \fIarecvfrom\fP
 .B ares_ssize_t(*)(ares_socket_t \fIfd\fP, void * \fIbuffer\fP, size_t \fIbuf_size\fP, int \fIflags\fP, struct sockaddr * \fIaddr\fP, ares_socklen_t * \fIaddr_len\fP, void * \fIuser_data\fP)
 .br
-\fBRequired\fP. Receives data from remote socket endpoint, if available. If the \fIaddr\fP parameter is not NULL and the connection protocol provides the source address, the callback should fill this in. See
-\fBrecvfrom(2)\fP.
+\fBRequired\fP. Receives data from remote socket endpoint, if available. If the
+\fIaddr\fP parameter is not NULL and the connection protocol provides the source
+address, the callback should fill this in. The \fIflags\fP parameter is
+currently unused. See \fBrecvfrom(2)\fP.
 
 .TP 18
 .B \fIasendto\fP
 .B ares_ssize_t(*)(ares_socket_t \fIfd\fP, const void * \fIbuffer\fP, size_t \fIlength\fP, int \fIflags\fP, const struct sockaddr * \fIaddress\fP, ares_socklen_t \fIaddress_len\fP, void * \fIuser_data\fP)
 .br
-\fBRequired\fP. Send data, as provided by the \fIbuffer\fP, to the socket endpoint. An \fIaddress\fP is provided
-primarily to support TCP FastOpen scenarios.  In most calls, this will be \fBNULL\fP. See
-\fBsendto(2)\fP.
+\fBRequired\fP. Send data, as provided by the \fIbuffer\fP, to the socket
+endpoint. The \fIflags\fP member may be used on systems that have
+\fBMSG_NOSIGNAL\fP defined but is otherwise unused.  An \fIaddress\fP is
+provided primarily to support TCP FastOpen scenarios, which will be NULL in
+other circumstances. See \fBsendto(2)\fP.
 
 .TP 18
 .B \fIagetsockname\fP
 .B int(*)(ares_socket_t \fIfd\fP, struct sockaddr * \fIaddress\fP, ares_socklen_t * \fIaddress_len\fP, void * \fIuser_data\fP)
 .br
 Optional. Retrieve the local address of a socket and store it into the provided
-\fIaddress\fP buffer. May impact DNS Cookies if not provided. See \fBgetsockname(2)\fP.
+\fIaddress\fP buffer. May impact DNS Cookies if not provided. See
+\fBgetsockname(2)\fP.
 
 .TP 18
 .B \fIabind\fP
@@ -266,15 +270,15 @@ its built-in system functions in that case.
 All callback functions are expected to operate like their system equivalents,
 and to set \fBerrno(3)\fP or \fBWSASetLastError(3)\fP to an appropriate error
 code on failure. It is strongly recommended all io functions behave
-asynchronously and return error codes of \fBEAGAIN\fP, \fBEWOULDBLOCK\Fp, or
+asynchronously and return error codes of \fBEAGAIN\fP, \fBEWOULDBLOCK\fP, or
 \fBWSAEWOULDBLOCK\fP when they would otherwise block.
 
 .PP
-The \fIuser_data\fP value is provided to each callback function invocation to serve as
-context.
+The \fIuser_data\fP value is provided to each callback function invocation to
+serve as context.
 .PP
-The \fBares_socket_functions(3)\fP must provide the following callbacks (which are
-different from the \fBares_socket_functions_ex(3)\fP callbacks):
+The \fBares_socket_functions(3)\fP must provide the following callbacks (which
+are different from the \fBares_socket_functions_ex(3)\fP callbacks):
 
 .TP 18
 .B \fIasocket\fP
@@ -295,21 +299,22 @@ Closes the socket endpoint indicated by \fIfd\fP. See \fBclose(2)\fP.
 .B int(*)(ares_socket_t \fIfd\fP, const struct sockaddr * \fIaddr\fP, ares_socklen_t \fIaddr_len\fP, void * \fIuser_data\fP)
 .br
 Initiate a connection to the address indicated by \fIaddr\fP on a socket. See
-.BR connect(2)
+\fBconnect(2)\fP
 
 .TP 18
 .B \fIarecvfrom\fP
 .B ares_ssize_t(*)(ares_socket_t \fIfd\fP, void * \fIbuffer\fP, size_t \fIbuf_size\fP, int \fIflags\fP, struct sockaddr * \fIaddr\fP, ares_socklen_t * \fIaddr_len\fP, void * \fIuser_data\fP)
 .br
-Receives data from remote socket endpoint, if available. If the \fIaddr\fP parameter is not NULL and the connection protocol provides the source address, the callback should fill this in. See
-.BR recvfrom(2)
+Receives data from remote socket endpoint, if available. If the \fIaddr\fP
+parameter is not NULL and the connection protocol provides the source address,
+the callback should fill this in. See \fBrecvfrom(2)\fP
 
 .TP 18
 .B \fIasendv\fP
 .B ares_ssize_t(*)(ares_socket_t \fIfd\fP, const struct iovec * \fIdata\fP, int \fIlen\fP, void * \fIuser_data\fP)
 .br
-Send data, as provided by the iovec array \fIdata\fP, to the socket endpoint. See
-.BR writev(2),
+Send data, as provided by the iovec array \fIdata\fP, to the socket endpoint.
+See \fBwritev(2)\fP
 
 .PP
 The \fBares_socket_functions(3)\fP struct provided is not copied but directly
