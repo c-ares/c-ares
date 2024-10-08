@@ -2,10 +2,59 @@
 .\" SPDX-License-Identifier: MIT
 .TH ARES_SET_SOCKET_FUNCTIONS 3 "13 Dec 2016"
 .SH NAME
-ares_set_socket_functions \- Set socket io callbacks
+ares_set_socket_functions, ares_set_socket_functions_ex \- Set socket io callbacks
 .SH SYNOPSIS
 .nf
 #include <ares.h>
+
+typedef enum {
+  ARES_SOCKFUNC_FLAG_NONBLOCKING = 1 << 0
+} ares_sockfunc_flags_t;
+
+typedef enum {
+  ARES_SOCKET_OPT_SENDBUF_SIZE,
+  ARES_SOCKET_OPT_RECVBUF_SIZE,
+  ARES_SOCKET_OPT_BIND_DEVICE,
+  ARES_SOCKET_OPT_TCP_FASTOPEN
+} ares_socket_opt_t;
+
+typedef enum {
+  ARES_SOCKET_CONN_TCP_FASTOPEN = 1 << 0
+} ares_socket_connect_flags_t;
+
+typedef enum {
+  ARES_SOCKET_BIND_TCP = 1 << 0,
+  ARES_SOCKET_BIND_CLIENT = 1 << 1
+} ares_socket_bind_flags_t;
+
+struct ares_socket_functions_ex {
+  /*! ABI Version: must be "1" */
+  unsigned int version;
+  unsigned int flags;
+
+  ares_socket_t (*asocket)(int domain, int type, int protocol, void *user_data);
+  int (*aclose)(ares_socket_t sock, void *user_data);
+  int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, void *val,
+                     ares_socklen_t val_size, void *user_data);
+  int (*aconnect)(ares_socket_t sock, const struct sockaddr *address,
+                  ares_socklen_t address_len, unsigned int flags,
+                  void *user_data);
+  ares_ssize_t (*arecvfrom)(ares_socket_t sock, void *buffer, size_t length,
+                            int flags, struct sockaddr *address,
+                            ares_socklen_t *address_len, void *user_data);
+  ares_ssize_t (*asendto)(ares_socket_t sock, const void *buffer, size_t length,
+                          int flags, const struct sockaddr *address,
+                          ares_socklen_t address_len, void *user_data);
+  int (*agetsockname)(ares_socket_t sock, struct sockaddr *address,
+                      ares_socklen_t *address_len, void *user_data);
+  int (*abind)(ares_socket_t sock, unsigned int flags,
+               const struct sockaddr *address, socklen_t address_len,
+               void *user_data);
+};
+
+ares_status_t ares_set_socket_functions_ex(ares_channel_t *channel,
+  const struct ares_socket_functions_ex *funcs, void *user_data);
+
 
 struct ares_socket_functions {
     ares_socket_t (*\fIasocket\fP)(int, int, int, void *);
@@ -22,46 +71,49 @@ void ares_set_socket_functions(ares_channel_t *\fIchannel\fP,
 .fi
 .SH DESCRIPTION
 .PP
-This function sets a set of callback \fIfunctions\fP in the given ares channel handle.
-Cannot be used when \fBARES_OPT_EVENT_THREAD\fP is passed to \fIares_init_options(3)\fP.
 
-These callback functions will be invoked to create/destroy socket objects and perform
-io, instead of the normal system calls. A client application can override normal network
-operation fully through this functionality, and provide its own transport layer. You
-can choose to only implement some of the socket functions, and provide NULL to any
-others and c-ares will use its built-in system functions in that case.
+
+\fBares_set_socket_functions(3)\fP sets a set of callback \fIfunctions\fP in the
+given ares channel handle.  Cannot be used when \fBARES_OPT_EVENT_THREAD\fP is
+passed to \fIares_init_options(3)\fP.  This function is deprecated as of
+c-ares 1.34.0 in favor of \fIares_set_socket_functions_ex(3)\fP.
+
+\fBares_set_socket_functions(3)\fP allows you to choose to only implement
+some of the socket functions, and provide NULL to any others and c-ares will use
+its built-in system functions in that case.
+
+These callback functions will be invoked to create/destroy socket objects and
+perform io, instead of the normal system calls. A client application can
+override normal network operation fully through this functionality, and provide
+its own transport layer.
 .PP
-All callback functions are expected to operate like their system equivalents, and to
-set
-.BR errno(3)
-to an appropriate error code on failure. C-ares also expects all io functions to behave
-asynchronously, i.e. as if the socket object has been set to non-blocking mode. Thus
-read/write calls (for TCP connections) are expected to often generate
-.BR EAGAIN
-or
-.BR EWOULDBLOCK.
+All callback functions are expected to operate like their system equivalents,
+and to set \fBerrno(3)\fP or \fBWSASetLastError(3)\fP to an appropriate error
+code on failure. It is strongly recommended all io functions behave
+asynchronously and return error codes of \fBEAGAIN\fP, \fBEWOULDBLOCK\Fp, or
+\fBWSAEWOULDBLOCK\fP when they would otherwise block.
 
 .PP
 The \fIuser_data\fP value is provided to each callback function invocation to serve as
 context.
 .PP
-The
-.B ares_socket_functions
-must provide the following callbacks:
+The \fBares_socket_functions(3)\fP must provide the following callbacks (which are
+different from the \fBares_socket_functions_ex(3)\fP callbacks):
+
 .TP 18
 .B \fIasocket\fP
 .B ares_socket_t(*)(int \fIdomain\fP, int \fItype\fP, int \fIprotocol\fP, void * \fIuser_data\fP)
 .br
 Creates an endpoint for communication and returns a descriptor. \fIdomain\fP, \fItype\fP, and \fIprotocol\fP
-each correspond to the parameters of
-.BR socket(2).
-Returns ahandle to the newly created socket, or -1 on error.
+each correspond to the parameters of \fBsocket(2)\fP. Returns ahandle to the
+newly created socket, or -1 on error.
+
 .TP 18
 .B \fIaclose\fP
 .B int(*)(ares_socket_t \fIfd\fP, void * \fIuser_data\fP)
 .br
-Closes the socket endpoint indicated by \fIfd\fP. See
-.BR close(2)
+Closes the socket endpoint indicated by \fIfd\fP. See \fBclose(2)\fP.
+
 .TP 18
 .B \fIaconnect\fP
 .B int(*)(ares_socket_t \fIfd\fP, const struct sockaddr * \fIaddr\fP, ares_socklen_t \fIaddr_len\fP, void * \fIuser_data\fP)
@@ -84,18 +136,22 @@ Send data, as provided by the iovec array \fIdata\fP, to the socket endpoint. Se
 .BR writev(2),
 
 .PP
-The
-.B ares_socket_functions
-struct provided is not copied but directly referenced,
-and must thus remain valid through out the channels and any created socket's lifetime.
+The \fBares_socket_functions(3)\fP struct provided is not copied but directly
+referenced, and must thus remain valid through out the channels and any created
+socket's lifetime.  However, the \fBares_socket_functions_ex(3)\fP struct is
+duplicated and does not need to survive past the call to the function.
+
 .SH AVAILABILITY
-Added in c-ares 1.13.0
+ares_socket_functions added in c-ares 1.13.0, ares_socket_functions_ex added in
+c-ares 1.34.0
 .SH SEE ALSO
 .BR ares_init_options (3),
 .BR socket (2),
 .BR close (2),
 .BR connect (2),
-.BR recv (2),
 .BR recvfrom (2),
-.BR send (2),
+.BR sendto (2),
+.BR bind (2),
+.BR getsockname (2),
+.BR setsockopt (2),
 .BR writev (2)
