@@ -269,7 +269,7 @@ fail:
 }
 
 static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
-                               void *val, ares_socklen_t val_size,
+                               const void *val, ares_socklen_t val_size,
                                void *user_data)
 {
   switch (opt) {
@@ -306,9 +306,9 @@ static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
       }
 #if defined(TFO_CLIENT_SOCKOPT)
       {
-        int          oval;
-        ares_bool_t *pval = val;
-        oval              = (int)*pval;
+        int                oval;
+        const ares_bool_t *pval = val;
+        oval                    = (int)*pval;
         return setsockopt(sock, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&oval,
                           sizeof(oval));
       }
@@ -318,7 +318,7 @@ static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
       SET_SOCKERRNO(ENOSYS);
       return -1;
 #endif
-  };
+  }
 
   (void)user_data;
   SET_SOCKERRNO(ENOSYS);
@@ -452,7 +452,7 @@ static const struct ares_socket_functions_ex default_socket_functions = {
   default_aif_indextoname
 };
 
-void ares_set_socket_functions_default(ares_channel_t *channel)
+void ares_set_socket_functions_def(ares_channel_t *channel)
 {
   ares_set_socket_functions_ex(channel, &default_socket_functions, NULL);
 }
@@ -485,7 +485,7 @@ static ares_socket_t legacycb_asocket(int domain, int type, int protocol,
 }
 
 static int legacycb_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
-                                void *val, ares_socklen_t val_size,
+                                const void *val, ares_socklen_t val_size,
                                 void *user_data)
 {
   (void)sock;

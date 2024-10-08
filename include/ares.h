@@ -666,7 +666,7 @@ struct ares_socket_functions_ex {
    *         WSAEOPNOTSUPP an error will not be propagated as it will take it
    *         to mean it is an intentional decision to not support the feature.
    */
-  int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, void *val,
+  int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, const void *val,
                      ares_socklen_t val_size, void *user_data);
 
   /*! REQUIRED. Connect to the remote using the supplied address.  For UDP

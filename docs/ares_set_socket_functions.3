@@ -33,7 +33,7 @@ struct ares_socket_functions_ex {
 
   ares_socket_t (*asocket)(int domain, int type, int protocol, void *user_data);
   int (*aclose)(ares_socket_t sock, void *user_data);
-  int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, void *val,
+  int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, const void *val,
                      ares_socklen_t val_size, void *user_data);
   int (*aconnect)(ares_socket_t sock, const struct sockaddr *address,
                   ares_socklen_t address_len, unsigned int flags,
@@ -129,7 +129,7 @@ Flags available are specified in \fIares_sockfunc_flags_t\fP.
 
 .TP 18
 .B \fIasetsockopt\fP
-.B int(*)(ares_socket_t \fIfd\fP, ares_socket_opt_t \fIopt\fP, void * \fIval\fP, ares_socklen_t \fIval_size\fP, void * \fIuser_data\fP)
+.B int(*)(ares_socket_t \fIfd\fP, ares_socket_opt_t \fIopt\fP, const void * \fIval\fP, ares_socklen_t \fIval_size\fP, void * \fIuser_data\fP)
 .br
 \fBRequired\fP. Set socket option.  This shares a similar syntax to the BSD \fIsetsockopt(2)\fP
 call, however c-ares uses different options for portability. The value is

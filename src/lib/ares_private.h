@@ -367,7 +367,7 @@ ares_status_t  ares_init_by_options(ares_channel_t            *channel,
                                     const struct ares_options *options,
                                     int                        optmask);
 ares_status_t  ares_init_by_sysconfig(ares_channel_t *channel);
-void           ares_set_socket_functions_default(ares_channel_t *channel);
+void           ares_set_socket_functions_def(ares_channel_t *channel);
 
 typedef struct {
   ares_llist_t    *sconfig;
