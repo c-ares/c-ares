@@ -575,10 +575,44 @@ CARES_EXTERN CARES_DEPRECATED_FOR(
                                                                     *funcs,
                                                                void *user_data);
 
+/*! Flags defining behavior of socket functions */
+typedef enum {
+  /*! Strongly recommended to create sockets as non-blocking and set this
+   *  flag */
+  ARES_SOCKFUNC_FLAG_NONBLOCKING = 1 << 0
+} ares_sockfunc_flags_t;
+
+/*! Socket options in request to asetsockopt() in struct
+ *  ares_socket_functions_ex */
+typedef enum  {
+  /*! Set the send buffer size. Value is a pointer to an int. (SO_SNDBUF) */
+  ARES_SOCKET_OPT_SENDBUF_SIZE,
+  /*! Set the recv buffer size. Value is a pointer to an int. (SO_RCVBUF) */
+  ARES_SOCKET_OPT_RECVBUF_SIZE,
+  /*! Set the network interface to use as the source for communication.
+   *  Value is a C string. (SO_BINDTODEVICE) */
+  ARES_SOCKET_OPT_BIND_DEVICE,
+  /*! Enable TCP Fast Open.  Value is a pointer to an ares_bool_t.  On some
+   *  systems this could be a no-op if it is known it is on by default and
+   *  return success.  Other systems may be a no-op if known the system does
+   *  not support the feature and returns failure with errno set to ENOTIMP.
+   */
+  ARES_SOCKET_OPT_TCP_FASTOPEN
+} ares_socket_opt_t;
+
+/*! Flags for behavior during connect */
+typedef enum {
+  /*! Connect using TCP Fast Open */
+  ARES_SOCKET_CONN_TCP_FASTOPEN = 1 << 0
+} ares_socket_connect_flags_t;
+
 /*! Socket functions to call rather than using OS-native functions */
 struct ares_socket_functions_ex {
   /*! ABI Version: must be "1" */
   unsigned int version;
+
+  /*! Flags indicating behavior of the subsystem. One or more ares_sockfunc_flags_t  */
+  unsigned int flags;
 
   /*! REQUIRED. Create a new socket file descriptor.  The file descriptor must
    * be opened in non-blocking mode (so that reads and writes never block).
@@ -605,6 +639,25 @@ struct ares_socket_functions_ex {
    *          such as EBADF */
   int (*aclose)(ares_socket_t sock, void *user_data);
 
+
+  /*! REQUIRED. Set socket option.  This shares a similar syntax to the BSD
+   *  setsockopt() call, however we use our own options.  The value is typically
+   *  a pointer to the desired value and each option has its own data type it
+   *  will express in the documentation.
+   *
+   * \param[in] sock         Socket file descriptor returned from asocket.
+   * \param[in] opt          Option to set.
+   * \param[in] val          Pointer to value for option.
+   * \param[in] val_size     Size of value.
+   * \param[in] user_data    Pointer provided to
+   * ares_set_socket_functions_ex().
+   * \return Return 0 on success, otherwise -1 should be returned with an
+   *         appropriate errno set.  If errno is ENOTIMP an error will not be
+   *         propagated as it will take it to mean it is an intentional
+   *         decision to not support the feature.
+   */
+  int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, void *val, ares_socklen_t val_size, void *user_data);
+
   /*! REQUIRED. Connect to the remote using the supplied address.  For UDP
    * sockets this will bind the file descriptor to only send and receive packets
    * from the remote address provided.
@@ -612,6 +665,7 @@ struct ares_socket_functions_ex {
    *  \param[in] sock         Socket file descriptor returned from asocket.
    *  \param[in] address      Address to connect to
    *  \param[in] address_len  Size of address structure passed
+   *  \param[in] flags        One or more ares_socket_connect_flags_t
    *  \param[in] user_data    Pointer provided to
    * ares_set_socket_functions_ex().
    *  \return Return 0 upon successful establishement, otherwise -1 should be
@@ -624,7 +678,8 @@ struct ares_socket_functions_ex {
    *          retrieve the appropriate error).
    */
   int (*aconnect)(ares_socket_t sock, const struct sockaddr *address,
-                  ares_socklen_t address_len, void *user_data);
+                  ares_socklen_t address_len, unsigned int flags,
+                  void *user_data);
 
   /*! REQUIRED. Attempt to read data from the remote.
    *
@@ -681,6 +736,18 @@ struct ares_socket_functions_ex {
                       ares_socklen_t *address_len, void *user_data);
 };
 
+/*! Override the native socket functions for the OS with the provided set.
+ *  An optional user data thunk may be specified which will be passed to
+ *  each registered callback.  Replaces ares_set_socket_functions().
+ *
+ *  \param[in] channel   An initialized c-ares channel.
+ *  \param[in] funcs     Structure registering the implementations for the
+ *                       various functions.  See the structure definition.
+ *                       This will be duplicated and does not need to exist
+ *                       past the life of this call.
+ *  \param[in] user_data User data thunk which will be passed to each call of
+ *                       the registered callbacks.
+ */
 CARES_EXTERN ares_status_t ares_set_socket_functions_ex(
   ares_channel_t *channel, const struct ares_socket_functions_ex *funcs,
   void *user_data);

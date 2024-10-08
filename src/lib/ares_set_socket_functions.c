@@ -54,6 +54,30 @@
 #include <fcntl.h>
 #include <limits.h>
 
+
+#if defined(__linux__) && defined(TCP_FASTOPEN_CONNECT)
+#  define TFO_SUPPORTED      1
+#  define TFO_SKIP_CONNECT   0
+#  define TFO_USE_SENDTO     0
+#  define TFO_USE_CONNECTX   0
+#  define TFO_CLIENT_SOCKOPT TCP_FASTOPEN_CONNECT
+#elif defined(__FreeBSD__) && defined(TCP_FASTOPEN)
+#  define TFO_SUPPORTED      1
+#  define TFO_SKIP_CONNECT   1
+#  define TFO_USE_SENDTO     1
+#  define TFO_USE_CONNECTX   0
+#  define TFO_CLIENT_SOCKOPT TCP_FASTOPEN
+#elif defined(__APPLE__) && defined(HAVE_CONNECTX)
+#  define TFO_SUPPORTED    1
+#  define TFO_SKIP_CONNECT 0
+#  define TFO_USE_SENDTO   0
+#  define TFO_USE_CONNECTX 1
+#  undef TFO_CLIENT_SOCKOPT
+#else
+#  define TFO_SUPPORTED 0
+#endif
+
+
 ares_status_t
   ares_set_socket_functions_ex(ares_channel_t                        *channel,
                                const struct ares_socket_functions_ex *funcs,
@@ -82,13 +106,16 @@ ares_status_t
    * invalid reads */
   if (funcs->version >= 1) {
     if (funcs->asocket == NULL || funcs->aclose == NULL ||
+        funcs->asetsockopt == NULL ||
         funcs->aconnect == NULL || funcs->arecvfrom == NULL ||
         funcs->asendto == NULL) {
       return ARES_EFORMERR;
     }
     channel->sock_funcs.version      = funcs->version;
+    channel->sock_funcs.flags        = funcs->flags;
     channel->sock_funcs.asocket      = funcs->asocket;
     channel->sock_funcs.aclose       = funcs->aclose;
+    channel->sock_funcs.asetsockopt  = funcs->asetsockopt;
     channel->sock_funcs.aconnect     = funcs->aconnect;
     channel->sock_funcs.arecvfrom    = funcs->arecvfrom;
     channel->sock_funcs.asendto      = funcs->asendto;
@@ -234,12 +261,86 @@ fail:
   return -1;
 }
 
+static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt, void *val, ares_socklen_t val_size, void *user_data)
+{
+  switch (opt) {
+    case ARES_SOCKET_OPT_SENDBUF_SIZE:
+      if (val_size != sizeof(int)) {
+        SET_SOCKERRNO(EINVAL);
+        return -1;
+      }
+      return setsockopt(sock, SOL_SOCKET, SO_SNDBUF, val, val_size);
+
+    case ARES_SOCKET_OPT_RECVBUF_SIZE:
+      if (val_size != sizeof(int)) {
+        SET_SOCKERRNO(EINVAL);
+        return -1;
+      }
+      return setsockopt(sock, SOL_SOCKET, SO_RCVBUF, val, val_size);
+
+    case ARES_SOCKET_OPT_BIND_DEVICE:
+      if (!ares_str_isprint(val, val_size)) {
+        SET_SOCKERRNO(EINVAL);
+        return -1;
+      }
+      return setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, val, val_size);
+
+    case ARES_SOCKET_OPT_TCP_FASTOPEN:
+        if (val_size != sizeof(ares_bool_t)) {
+          SET_SOCKERRNO(EINVAL);
+          return -1;
+        }
+#if defined(TFO_CLIENT_SOCKOPT)
+        {
+          int opt;
+          ares_bool_t *pval = val;
+          opt = *pval;
+          return setsockopt(sock, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
+                            sizeof(opt));
+        }
+#elif TFO_SUPPORTED
+      return 0;
+#else
+      SET_SOCKERRNO(ENOSYS);
+      return -1;
+#endif
+  };
+
+  (void)user_data;
+  SET_SOCKERRNO(ENOSYS);
+  return -1;
+}
+
+
 static int default_aconnect(ares_socket_t sock, const struct sockaddr *address,
-                            ares_socklen_t address_len, void *user_data)
+                            ares_socklen_t address_len, unsigned int flags,
+                            void *user_data)
 {
   (void)user_data;
 
-  return connect(sock, address, address_len);
+#if defined(TFO_SKIP_CONNECT) && TFO_SKIP_CONNECT
+  if (flags & ARES_SOCKET_CONN_TCP_FASTOPEN) {
+    return 0;
+  }
+#endif
+
+#if defined(TFO_USE_CONNECTX) && TFO_USE_CONNECTX
+  if (flags & ARES_SOCKET_CONN_TCP_FASTOPEN) {
+    sa_endpoints_t endpoints;
+
+    memset(&endpoints, 0, sizeof(endpoints));
+    endpoints.sae_dstaddr    = address;
+    endpoints.sae_dstaddrlen = address_len;
+
+    return connectx(sock, &endpoints, SAE_ASSOCID_ANY,
+                    CONNECT_DATA_IDEMPOTENT | CONNECT_RESUME_ON_READ_WRITE,
+                    NULL, 0, NULL, NULL);
+  } else {
+    return connect(sock, address, address_len);
+  }
+#else
+   return connect(sock, address, address_len);
+#endif
 }
 
 static ares_ssize_t default_arecvfrom(ares_socket_t sock, void *buffer,
@@ -291,8 +392,10 @@ static int default_agetsockname(ares_socket_t sock, struct sockaddr *address,
 
 static const struct ares_socket_functions_ex default_socket_functions = {
   1,
+  ARES_SOCKFUNC_FLAG_NONBLOCKING,
   default_asocket,
   default_aclose,
+  default_asetsockopt,
   default_aconnect,
   default_arecvfrom,
   default_asendto,
@@ -331,8 +434,21 @@ static ares_socket_t legacycb_asocket(int domain, int type, int protocol,
   return default_asocket(domain, type, protocol, NULL);
 }
 
+static int legacycb_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt, void *val, ares_socklen_t val_size, void *user_data)
+{
+  (void)sock;
+  (void)opt;
+  (void)val;
+  (void)val_size;
+  (void)user_data;
+  SET_SOCKERRNO(ENOSYS);
+  return -1;
+}
+
+
 static int legacycb_aconnect(ares_socket_t sock, const struct sockaddr *address,
-                             ares_socklen_t address_len, void *user_data)
+                             ares_socklen_t address_len, unsigned int flags,
+                             void *user_data)
 {
   ares_channel_t *channel = user_data;
 
@@ -342,7 +458,7 @@ static int legacycb_aconnect(ares_socket_t sock, const struct sockaddr *address,
       sock, address, address_len, channel->legacy_sock_funcs_cb_data);
   }
 
-  return default_aconnect(sock, address, address_len, NULL);
+  return default_aconnect(sock, address, address_len, flags, NULL);
 }
 
 static ares_ssize_t legacycb_arecvfrom(ares_socket_t sock, void *buffer,
@@ -392,8 +508,10 @@ static ares_ssize_t legacycb_asendto(ares_socket_t sock, const void *buffer,
 
 static const struct ares_socket_functions_ex legacy_socket_functions = {
   1,
+  0,
   legacycb_asocket,
   legacycb_aclose,
+  legacycb_asetsockopt,
   legacycb_aconnect,
   legacycb_arecvfrom,
   legacycb_asendto,

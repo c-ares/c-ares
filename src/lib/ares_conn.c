@@ -167,6 +167,9 @@ ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
   ares_channel_t *channel = conn->server->channel;
   ares_bool_t     is_tfo  = ARES_FALSE;
   ares_conn_err_t err     = ARES_CONN_ERR_SUCCESS;
+  struct sockaddr_storage sa_storage;
+  ares_socklen_t          salen = 0;
+  struct sockaddr        *sa    = NULL;
 
   *written = 0;
 
@@ -177,10 +180,10 @@ ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
     return ARES_CONN_ERR_WOULDBLOCK;
   }
 
+  /* On initial write during TFO we need to send an address */
   if (conn->flags & ARES_CONN_FLAG_TFO_INITIAL) {
-    struct sockaddr_storage sa_storage;
-    ares_socklen_t          salen = sizeof(sa_storage);
-    struct sockaddr        *sa    = (struct sockaddr *)&sa_storage;
+    salen = sizeof(sa_storage);
+    sa    = (struct sockaddr *)&sa_storage;
 
     conn->flags &= ~((unsigned int)ARES_CONN_FLAG_TFO_INITIAL);
     is_tfo       = ARES_TRUE;
@@ -188,22 +191,19 @@ ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
     if (ares_conn_set_sockaddr(conn, sa, &salen) != ARES_SUCCESS) {
       return ARES_CONN_ERR_FAILURE;
     }
+  }
 
-    err =
-      ares_socket_write_tfo(channel, conn->fd, data, len, written, sa, salen);
-    if (err != ARES_CONN_ERR_SUCCESS) {
-      goto done;
-    }
+  err =
+    ares_socket_write(channel, conn->fd, data, len, written, sa, salen);
+  if (err != ARES_CONN_ERR_SUCCESS) {
+    goto done;
+  }
 
+  if (is_tfo) {
     /* If using TFO, we might not have been able to get an IP earlier, since
      * we hadn't informed the OS of the destination.  When using sendto()
      * now we have so we should be able to fetch it */
     ares_conn_set_self_ip(conn, ARES_FALSE);
-    goto done;
-  }
-
-  err = ares_socket_write(channel, conn->fd, data, len, written);
-  if (err != ARES_CONN_ERR_SUCCESS) {
     goto done;
   }
 
@@ -366,10 +366,9 @@ ares_status_t ares_open_connection(ares_conn_t   **conn_out,
     /* LCOV_EXCL_STOP */
   }
 
-  /* Enable TFO if the OS supports it and we were passed in data to send during
-   * the connect. It might be disabled later if an error is encountered. Make
-   * sure a user isn't overriding anything. */
-  if (conn->flags & ARES_CONN_FLAG_TCP && ares_socket_tfo_supported(channel)) {
+  /* Try to enable TFO always if using TCP. it will fail later on if its
+   * really not supported when we try to enable it on the socket. */
+  if (conn->flags & ARES_CONN_FLAG_TCP) {
     conn->flags |= ARES_CONN_FLAG_TFO;
   }
 
@@ -386,7 +385,7 @@ ares_status_t ares_open_connection(ares_conn_t   **conn_out,
     goto done;
   }
 
-  /* Configure it. */
+  /* Configure channel configured options */
   status = ares_socket_configure(
     channel, server->addr.family,
     (conn->flags & ARES_CONN_FLAG_TCP) ? ARES_TRUE : ARES_FALSE, conn->fd);
