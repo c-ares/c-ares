@@ -55,7 +55,6 @@
 #include <fcntl.h>
 #include <limits.h>
 
-
 static ares_conn_err_t ares_socket_deref_error(int err)
 {
   switch (err) {
@@ -260,12 +259,11 @@ ares_status_t ares_socket_configure(ares_channel_t *channel, int family,
 
   /* Bind to network interface if configured */
   if (ares_strlen(channel->local_dev_name)) {
-    rv = channel->sock_funcs.asetsockopt(
+    /* Prior versions silently ignored failure, so we need to maintain that
+     * compatibility */
+    (void)channel->sock_funcs.asetsockopt(
       fd, ARES_SOCKET_OPT_BIND_DEVICE, channel->local_dev_name,
       sizeof(channel->local_dev_name), channel->sock_func_cb_data);
-    if (rv != 0 && SOCKERRNO != ENOSYS) {
-      return ARES_ECONNREFUSED; /* LCOV_EXCL_LINE: UntestablePath */
-    }
   }
 
   /* Bind to ip address if configured */

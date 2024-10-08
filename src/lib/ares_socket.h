@@ -66,8 +66,8 @@
 #  define EPROTONOSUPPORT WSAEPROTONOSUPPORT
 #  define ESOCKTNOSUPPORT WSAESOCKTNOSUPPORT
 #  undef EOPNOTSUPP /* override definition in errno.h */
-#  define EOPNOTSUPP   WSAEOPNOTSUPP
-#  undef ENOSYS /* override definition in errno.h */
+#  define EOPNOTSUPP WSAEOPNOTSUPP
+#  undef ENOSYS     /* override definition in errno.h */
 #  define ENOSYS       WSAEOPNOTSUPP
 #  define EPFNOSUPPORT WSAEPFNOSUPPORT
 #  undef EAFNOSUPPORT  /* override definition in errno.h */
