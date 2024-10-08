@@ -306,11 +306,11 @@ static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
       }
 #if defined(TFO_CLIENT_SOCKOPT)
       {
-        int          opt;
+        int          oval;
         ares_bool_t *pval = val;
-        opt               = *pval;
-        return setsockopt(sock, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&opt,
-                          sizeof(opt));
+        oval              = (int)*pval;
+        return setsockopt(sock, IPPROTO_TCP, TFO_CLIENT_SOCKOPT, (void *)&oval,
+                          sizeof(oval));
       }
 #elif TFO_SUPPORTED
       return 0;
@@ -335,6 +335,7 @@ static int default_aconnect(ares_socket_t sock, const struct sockaddr *address,
   if (flags & ARES_SOCKET_CONN_TCP_FASTOPEN) {
     return 0;
   }
+  return connect(sock, address, address_len);
 #elif defined(TFO_USE_CONNECTX) && TFO_USE_CONNECTX
   if (flags & ARES_SOCKET_CONN_TCP_FASTOPEN) {
     sa_endpoints_t endpoints;
