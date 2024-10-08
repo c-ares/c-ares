@@ -55,13 +55,6 @@
 #include <fcntl.h>
 #include <limits.h>
 
-#ifndef HAVE_WRITEV
-/* Structure for scatter/gather I/O. */
-struct iovec {
-  void  *iov_base; /* Pointer to data. */
-  size_t iov_len;  /* Length of data.  */
-};
-#endif
 
 static ares_conn_err_t ares_socket_deref_error(int err)
 {

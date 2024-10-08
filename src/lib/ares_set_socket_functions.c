@@ -77,6 +77,13 @@
 #  define TFO_SUPPORTED 0
 #endif
 
+#ifndef HAVE_WRITEV
+/* Structure for scatter/gather I/O. */
+struct iovec {
+  void  *iov_base; /* Pointer to data. */
+  size_t iov_len;  /* Length of data.  */
+};
+#endif
 
 ares_status_t
   ares_set_socket_functions_ex(ares_channel_t                        *channel,
@@ -291,6 +298,7 @@ static int default_asetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
       SET_SOCKERRNO(ENOSYS);
       return -1;
 #endif
+
     case ARES_SOCKET_OPT_TCP_FASTOPEN:
       if (val_size != sizeof(ares_bool_t)) {
         SET_SOCKERRNO(EINVAL);
