@@ -595,7 +595,8 @@ typedef enum {
   /*! Enable TCP Fast Open.  Value is a pointer to an ares_bool_t.  On some
    *  systems this could be a no-op if it is known it is on by default and
    *  return success.  Other systems may be a no-op if known the system does
-   *  not support the feature and returns failure with errno set to ENOSYS.
+   *  not support the feature and returns failure with errno set to ENOSYS or
+   *  WSASetLastError(WSAEOPNOTSUPP).
    */
   ARES_SOCKET_OPT_TCP_FASTOPEN
 } ares_socket_opt_t;
@@ -637,15 +638,15 @@ struct ares_socket_functions_ex {
    *                        or IPPROTO_TCP.
    *  \param[in] user_data  Pointer provided to ares_set_socket_functions_ex().
    *  \return ARES_SOCKET_BAD on error, or socket file descriptor on success.
-   *          On error, it is expected to set errno to an appropriate reason
-   *          code such as EAFNOSUPPORT. */
+   *          On error, it is expected to set errno (or WSASetLastError()) to an
+   *          appropriate reason code such as EAFNOSUPPORT / WSAAFNOSUPPORT. */
   ares_socket_t (*asocket)(int domain, int type, int protocol, void *user_data);
 
   /*! REQUIRED. Close a socket file descriptor.
    *  \param[in] sock      Socket file descriptor returned from asocket.
    *  \param[in] user_data Pointer provided to ares_set_socket_functions_ex().
-   *  \return 0 on success.  On failure, should set errno to an appropriate code
-   *          such as EBADF */
+   *  \return 0 on success.  On failure, should set errno (or WSASetLastError)
+   *          to an appropriate code such as EBADF / WSAEBADF */
   int (*aclose)(ares_socket_t sock, void *user_data);
 
 
@@ -661,9 +662,9 @@ struct ares_socket_functions_ex {
    * \param[in] user_data    Pointer provided to
    * ares_set_socket_functions_ex().
    * \return Return 0 on success, otherwise -1 should be returned with an
-   *         appropriate errno set.  If errno is ENOSYS an error will not be
-   *         propagated as it will take it to mean it is an intentional
-   *         decision to not support the feature.
+   *         appropriate errno (or WSASetLastError()) set.  If error is ENOSYS /
+   *         WSAEOPNOTSUPP an error will not be propagated as it will take it
+   *         to mean it is an intentional decision to not support the feature.
    */
   int (*asetsockopt)(ares_socket_t sock, ares_socket_opt_t opt, void *val,
                      ares_socklen_t val_size, void *user_data);
@@ -679,13 +680,13 @@ struct ares_socket_functions_ex {
    *  \param[in] user_data    Pointer provided to
    * ares_set_socket_functions_ex().
    *  \return Return 0 upon successful establishement, otherwise -1 should be
-   *          returned with an appropriate errno set.  It is generally expected
-   *          that most TCP connections (not using TCP Fast Open) will return
-   *          -1 with an errno of EINPROGRESS due to the non-blocking nature
-   *          of the connection.  It is then the responsibility of the
-   *          implementation to notify of writability on the socket to indicate
-   *          the connection has succeeded (or readability on failure to
-   *          retrieve the appropriate error).
+   *          returned with an appropriate errno (or WSASetLastError()) set.  It
+   * is generally expected that most TCP connections (not using TCP Fast Open)
+   * will return -1 with an error of EINPROGRESS / WSAEINPROGRESS due to the
+   * non-blocking nature of the connection.  It is then the responsibility of
+   * the implementation to notify of writability on the socket to indicate the
+   * connection has succeeded (or readability on failure to retrieve the
+   * appropriate error).
    */
   int (*aconnect)(ares_socket_t sock, const struct sockaddr *address,
                   ares_socklen_t address_len, unsigned int flags,
@@ -704,8 +705,9 @@ struct ares_socket_functions_ex {
    *                             written size. Must be NULL if address is NULL.
    *  \param[in]     user_data   Pointer provided to
    * ares_set_socket_functions_ex().
-   *  \return -1 on error with appropriate errno set, such as EWOULDBLOCK,
-   *          EAGAIN, or ECONNRESET.
+   *  \return -1 on error with appropriate errno (or WSASetLastError()) set,
+   * such as EWOULDBLOCK / EAGAIN / WSAEWOULDBLOCK, or ECONNRESET /
+   * WSAECONNRESET.
    */
   ares_ssize_t (*arecvfrom)(ares_socket_t sock, void *buffer, size_t length,
                             int flags, struct sockaddr *address,
@@ -727,6 +729,8 @@ struct ares_socket_functions_ex {
    *                             is NULL.
    *  \param[in]     user_data   Pointer provided to
    * ares_set_socket_functions_ex().
+   *  \return Number of bytes written. -1 on error with appropriate errno (or
+   * WSASetLastError()) set.
    */
   ares_ssize_t (*asendto)(ares_socket_t sock, const void *buffer, size_t length,
                           int flags, const struct sockaddr *address,
@@ -740,7 +744,8 @@ struct ares_socket_functions_ex {
    * on output.
    *  \param[in]     user_data   Pointer provided to
    * ares_set_socket_functions_ex().
-   *  \return 0 on success. -1 on error with an appropriate errno set.
+   *  \return 0 on success. -1 on error with an appropriate errno (or
+   * WSASetLastError()) set.
    */
   int (*agetsockname)(ares_socket_t sock, struct sockaddr *address,
                       ares_socklen_t *address_len, void *user_data);
@@ -756,7 +761,8 @@ struct ares_socket_functions_ex {
    *  \param[in] address_len Size of address buffer.
    *  \param[in]     user_data   Pointer provided to
    * ares_set_socket_functions_ex().
-   *  \return 0 on success. -1 on error with an appropriate errno set.
+   *  \return 0 on success. -1 on error with an appropriate errno (or
+   * WSASetLastError()) set.
    */
   int (*abind)(ares_socket_t sock, unsigned int flags,
                const struct sockaddr *address, socklen_t address_len,
