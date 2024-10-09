@@ -129,6 +129,7 @@ static ares_status_t ares_conn_set_sockaddr(const ares_conn_t *conn,
 
 static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
 {
+  ares_channel_t         *channel = conn->server->channel;
   struct sockaddr_storage sa_storage;
   int                     rv;
   ares_socklen_t          len = sizeof(sa_storage);
@@ -141,7 +142,14 @@ static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
 
   memset(&sa_storage, 0, sizeof(sa_storage));
 
-  rv = getsockname(conn->fd, (struct sockaddr *)(void *)&sa_storage, &len);
+  if (channel->sock_funcs.agetsockname == NULL) {
+    /* Not specified, we can still use cookies cooked with an empty self_ip */
+    memset(&conn->self_ip, 0, sizeof(conn->self_ip));
+    return ARES_SUCCESS;
+  }
+  rv = channel->sock_funcs.agetsockname(conn->fd,
+                                        (struct sockaddr *)(void *)&sa_storage,
+                                        &len, channel->sock_func_cb_data);
   if (rv != 0) {
     /* During TCP FastOpen, we can't get the IP this early since connect()
      * may not be called.  That's ok, we'll try again later */
