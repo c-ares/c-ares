@@ -281,12 +281,11 @@ are different from the \fBares_socket_functions_ex(3)\fP callbacks):
 
 .RS 4
 .TP 8
-.B ares_socket_t (* \fIasocket\fP)(int \fIdomain\fP, int \fItype\fP, int \fIprotocol\fP, void * \fIuser_data\fP)
-.br
+.B ares_socket_t (*\fIasocket\fP)(int \fIdomain\fP, int \fItype\fP, int \fIprotocol\fP, void * \fIuser_data\fP)
 .br
 Creates an endpoint for communication and returns a descriptor. \fIdomain\fP, \fItype\fP, and \fIprotocol\fP
 each correspond to the parameters of \fBsocket(2)\fP. Returns ahandle to the
-newly created socket, or -1 on error.
+newly created socket, or ARES_SOCKET_BAD on error.
 
 .TP 8
 .B int (*\fIaclose\fP)(ares_socket_t \fIfd\fP, void * \fIuser_data\fP)
