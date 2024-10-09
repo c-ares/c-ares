@@ -89,7 +89,7 @@ to implement such callbacks will disable certain features within c-ares.  It
 is strongly recommended to implement all callbacks.
 
 All callback functions are expected to operate like their system equivalents,
-and to set \fBerrno(3)\fP or \fBWSASetLastError(3)\fP to an appropriate error
+and to set \fBerrno(2)\fP or \fBWSASetLastError(2)\fP to an appropriate error
 code on failure. It is strongly recommended that io callbacks are implemented
 to be asynchronous and indicated as such in the \fIflags\fP member.  The io
 callbacks can return error codes of \fBEAGAIN\fP, \fBEWOULDBLOCK\fP, or
@@ -267,7 +267,7 @@ its built-in system functions in that case.
 
 .PP
 All callback functions are expected to operate like their system equivalents,
-and to set \fBerrno(3)\fP or \fBWSASetLastError(3)\fP to an appropriate error
+and to set \fBerrno(2)\fP or \fBWSASetLastError(2)\fP to an appropriate error
 code on failure. It is strongly recommended all io functions behave
 asynchronously and return error codes of \fBEAGAIN\fP, \fBEWOULDBLOCK\fP, or
 \fBWSAEWOULDBLOCK\fP when they would otherwise block.
@@ -276,8 +276,8 @@ asynchronously and return error codes of \fBEAGAIN\fP, \fBEWOULDBLOCK\fP, or
 The \fIuser_data\fP value is provided to each callback function invocation to
 serve as context.
 .PP
-The \fBares_socket_functions(3)\fP must provide the following callbacks (which
-are different from the \fBares_socket_functions_ex(3)\fP callbacks):
+The \fBares_set_socket_functions(3)\fP must provide the following callbacks (which
+are different from the \fBares_set_socket_functions_ex(3)\fP callbacks):
 
 .RS 4
 .TP 8
@@ -313,9 +313,9 @@ See \fBwritev(2)\fP
 .RE
 
 .PP
-The \fBares_socket_functions(3)\fP struct provided is not copied but directly
+The \fBares_set_socket_functions(3)\fP struct provided is not copied but directly
 referenced, and must thus remain valid through out the channels and any created
-socket's lifetime.  However, the \fBares_socket_functions_ex(3)\fP struct is
+socket's lifetime.  However, the \fBares_set_socket_functions_ex(3)\fP struct is
 duplicated and does not need to survive past the call to the function.
 
 .SH AVAILABILITY
