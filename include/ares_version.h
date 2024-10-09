@@ -31,8 +31,8 @@
 #define ARES_COPYRIGHT "2004 - 2024 Daniel Stenberg, <daniel@haxx.se>."
 
 #define ARES_VERSION_MAJOR 1
-#define ARES_VERSION_MINOR 33
-#define ARES_VERSION_PATCH 1
+#define ARES_VERSION_MINOR 34
+#define ARES_VERSION_PATCH 0
 
 #define ARES_VERSION                                        \
   ((ARES_VERSION_MAJOR << 16) | (ARES_VERSION_MINOR << 8) | \
