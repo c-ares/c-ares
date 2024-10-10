@@ -1,3 +1,8 @@
+## c-ares version 1.34.1 - Octover 9 2024
+
+This release fixes a packaging issue.
+
+
 ## c-ares version 1.34.0 - October 9 2024
 
 This is a feature and bugfix release.
