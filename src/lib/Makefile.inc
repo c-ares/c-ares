@@ -115,14 +115,15 @@ HHEADERS = ares_android.h			\
   include/ares_htable_vpstr.h		\
   include/ares_htable_vpvp.h		\
   include/ares_llist.h			\
+  include/ares_mem.h			\
   include/ares_str.h			\
   record/ares_dns_multistring.h		\
   record/ares_dns_private.h		\
   str/ares_strsplit.h			\
-  util/ares_iface_ips.h		\
-  util/ares_threads.h			\
+  util/ares_iface_ips.h			\
   util/ares_math.h			\
   util/ares_rand.h			\
   util/ares_time.h			\
+  util/ares_threads.h			\
   util/ares_uri.h			\
   thirdparty/apple/dnsinfo.h
