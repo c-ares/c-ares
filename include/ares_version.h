@@ -32,7 +32,7 @@
 
 #define ARES_VERSION_MAJOR 1
 #define ARES_VERSION_MINOR 34
-#define ARES_VERSION_PATCH 0
+#define ARES_VERSION_PATCH 1
 
 #define ARES_VERSION                                        \
   ((ARES_VERSION_MAJOR << 16) | (ARES_VERSION_MINOR << 8) | \
