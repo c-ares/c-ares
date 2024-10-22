@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
-      version: ${{ steps.gettag.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
     name: "build"
     steps:
       - name: Install packages
@@ -27,7 +27,7 @@ jobs:
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: Get Tag version
-        id: gettag
+        id: version
         run: |
           version=`echo ${GITHUB_REF} | grep '^refs/tags/v' | sed -e 's|^refs/tags/v\(.*\)|\1|'`
           if [ "$version" = "" ] ; then
@@ -50,6 +50,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          body_path: RELEASE-NOTES.md
+          draft: true
+          make_latest: true
+          name: ${{ steps.version.outputs.version }}
           files: c-ares-${{ steps.version.outputs.version }}.tar.gz'
       - name: Generate subject
         id: hash
