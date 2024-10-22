@@ -55,6 +55,8 @@ jobs:
           make_latest: true
           name: ${{ steps.version.outputs.version }}
           files: c-ares-${{ steps.version.outputs.version }}.tar.gz'
+          fail_on_unmatched_files: true
+          discussion_category_name: "Announcements"
       - name: Generate subject
         id: hash
         run: |
