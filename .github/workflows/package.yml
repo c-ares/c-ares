@@ -3,7 +3,6 @@
 name: Build Release Package
 on:
   push:
-  pull_request:
 
 concurrency:
   group: ${{ github.ref }}-build-release-package
