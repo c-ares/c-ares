@@ -25,7 +25,6 @@ jobs:
       matrix:
         include:
           - { msystem: CLANG64, env: clang-x86_64, extra_packages: "mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-analyzer" }
-          - { msystem: CLANG32, env: clang-i686,   extra_packages: "mingw-w64-clang-i686-clang mingw-w64-clang-i686-clang-analyzer"     }
           - { msystem: MINGW64, env: x86_64,       extra_packages: "mingw-w64-x86_64-gcc"                                               }
           - { msystem: MINGW32, env: i686,         extra_packages: "mingw-w64-i686-gcc"                                                 }
           # No need to test UCRT64 since clang64 uses UCRT
