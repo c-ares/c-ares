@@ -3,14 +3,9 @@
 # SPDX-License-Identifier: MIT
 set -e -x
 
-OS=""
-if [ "$TRAVIS_OS_NAME" != "" ]; then
-    OS="$TRAVIS_OS_NAME"
-elif [ "$CIRRUS_OS" != "" ]; then
-    OS="$CIRRUS_OS"
-fi
+OS=`uname -s || true`
 
-if [ "$OS" = "linux" ]; then
+if [ "$OS" = "Linux" ]; then
     # Make distribution tarball
     autoreconf -fi
     ./configure
