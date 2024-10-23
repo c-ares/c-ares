@@ -16,6 +16,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      discussions: write
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
       version: ${{ steps.version.outputs.version }}
@@ -57,7 +60,7 @@ jobs:
           draft: true
           make_latest: true
           name: ${{ steps.version.outputs.version }}
-          files: c-ares-${{ steps.version.outputs.version }}.tar.gz'
+          files: c-ares-${{ steps.version.outputs.version }}.tar.gz
           fail_on_unmatched_files: true
           discussion_category_name: "Announcements"
       - name: Generate subject
