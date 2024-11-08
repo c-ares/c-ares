@@ -841,6 +841,72 @@ class NoRotateMultiMockTestAI : public MockMultiServerChannelTestAI {
   NoRotateMultiMockTestAI() : MockMultiServerChannelTestAI(nullptr, ARES_OPT_NOROTATE) {}
 };
 
+/* We want to terminate retries of other address classes on getaddrinfo if one
+ * address class is returned already to return replies faster.
+ * UPDATE: actually we want to do this only if the address class we received
+ *         was ipv4.  We've seen issues if ipv6 was returned but the host was
+ *         really only capable of ipv4.
+ */
+TEST_P(NoRotateMultiMockTestAI, v4Worksv6Timesout) {
+  std::vector<byte> nothing;
+
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &rsp4));
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_AAAA))
+    .WillOnce(SetReplyData(servers_[0].get(), nothing));
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "www.example.com.", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+  EXPECT_THAT(result.ai_, IncludesV4Address("1.2.3.4"));
+}
+
+TEST_P(NoRotateMultiMockTestAI, v6Worksv4TimesoutFirst) {
+  std::vector<byte> nothing;
+
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_AAAA))
+    .add_answer(new DNSAaaaRR("www.example.com", 100,
+                              {0x21, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}));
+
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReplyData(servers_[0].get(), nothing));
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_AAAA))
+    .WillOnce(SetReply(servers_[0].get(), &rsp6));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &rsp4));
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "www.example.com.", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(2));
+  EXPECT_THAT(result.ai_, IncludesV4Address("1.2.3.4"));
+  EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
+
+}
 
 TEST_P(NoRotateMultiMockTestAI, ThirdServer) {
   struct ares_options opts;
