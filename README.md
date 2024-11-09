@@ -109,11 +109,11 @@ gpg: binary signature, digest algorithm SHA512, key algorithm rsa2048
 ```
 
 ## SLSA Provenance
-This project generates SLSA provenance for its releases! This enables you to
+This project generates [SLSA](https://slsa.dev/) provenance for its releases! This enables you to
 verify the integrity of the downloaded artifacts and ensure that the release was
 generated from the intended repository.
 
-To verify the provenance of the release, please follow the instructions [here](https://github.com/slsa-framework/slsa-github-generator#verification-of-provenance).
+To verify the provenance of the release, please follow the instructions [here](https://github.com/slsa-framework/slsa-github-generator#verify-provenance).
 
 ## Features
 
