@@ -328,13 +328,15 @@ static void *ares_event_thread(void *arg)
 
     e->ev_sys->wait(e, timeout_ms);
 
+    /* Relock before we loop again */
+    ares_thread_mutex_lock(e->mutex);
+
     /* Each iteration should do timeout processing */
     if (e->isup) {
+      ares_thread_mutex_unlock(e->mutex);
       ares_process_fd(e->channel, ARES_SOCKET_BAD, ARES_SOCKET_BAD);
+      ares_thread_mutex_lock(e->mutex);
     }
-
-    /* Relock before we loop again */
-    ares__thread_mutex_lock(e->mutex);
   }
 
   /* Lets cleanup while we're in the thread itself */
