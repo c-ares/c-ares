@@ -78,4 +78,6 @@ jobs:
     with:
       base64-subjects: "${{ needs.build.outputs.hashes }}"
       upload-assets: ${{ startsWith(github.ref, 'refs/tags/') }}
+      upload-tag-name: "${{ needs.build.outputs.version }}"
+      draft-release: true
       provenance-name: "c-ares-${{ needs.build.outputs.version }}.intoto.jsonl"
