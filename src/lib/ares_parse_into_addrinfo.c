@@ -99,8 +99,7 @@ ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
       struct ares_addrinfo_cname *cname;
 
       got_cname = ARES_TRUE;
-      /* replace hostname with data from cname
-       * SA: Seems wrong as it introduces order dependency. */
+      /* replace hostname with data from cname */
       hostname = ares_dns_rr_get_str(rr, ARES_RR_CNAME_CNAME);
 
       cname = ares_append_addrinfo_cname(&cnames);
