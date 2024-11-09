@@ -108,6 +108,13 @@ Primary key fingerprint: 27ED EAF2 2F3A BCEB 50DB  9A12 5CC9 08FD B71E 12C2
 gpg: binary signature, digest algorithm SHA512, key algorithm rsa2048
 ```
 
+## SLSA Provenance
+This project generates SLSA provenance for its releases! This enables you to
+verify the integrity of the downloaded artifacts and ensure that the release was
+generated from the intended repository.
+
+To verify the provenance of the release, please follow the instructions [here](https://github.com/slsa-framework/slsa-github-generator#verification-of-provenance).
+
 ## Features
 
 See [Features](FEATURES.md)
