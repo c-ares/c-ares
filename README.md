@@ -115,6 +115,21 @@ generated from the intended repository.
 
 To verify the provenance of the release, please follow the instructions [here](https://github.com/slsa-framework/slsa-github-generator#verify-provenance).
 
+Example:
+```
+$ curl -sO https://github.com/c-ares/c-ares/releases/download/v1.34.3/c-ares-1.34.3.intoto.jsonl
+$ curl -sO https://github.com/c-ares/c-ares/releases/download/v1.34.3/c-ares-1.34.3.tar.gz
+$ slsa-verifier verify-artifact c-ares-1.34.3.tar.gz \
+    --provenance-path c-ares-1.34.3.intoto.jsonl \
+    --source-uri github.com/c-ares/c-ares \
+    --source-tag v1.34.3
+Verified signature against tlog entry index 147812470 at URL: https://rekor.sigstore.dev/api/v1/log/entries/108e9186e8c5677a9bfd5bc5181d05ada688a805f9a59cfd082dec27cb6d6567f85b7382eea39dc5
+Verified build using builder "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v2.0.0" at commit c29e75d54c3743783d51a609980495cf553b4bca
+Verifying artifact c-ares-1.34.3.tar.gz: PASSED
+
+PASSED: SLSA verification passed
+```
+
 ## Features
 
 See [Features](FEATURES.md)
