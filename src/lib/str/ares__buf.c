@@ -971,36 +971,38 @@ ares_status_t ares__buf_parse_dns_abinstr(ares__buf_t *buf,
       break; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
-    if (len) {
-      /* When used by the _str() parser, it really needs to be validated to
-       * be a valid printable ascii string.  Do that here */
-      if (validate_printable && ares__buf_len(buf) >= len) {
-        size_t      mylen;
-        const char *data = (const char *)ares__buf_peek(buf, &mylen);
-        if (!ares__str_isprint(data, len)) {
-          status = ARES_EBADSTR;
-          break;
-        }
-      }
 
-      if (strs != NULL) {
-        unsigned char *data = NULL;
+    /* When used by the _str() parser, it really needs to be validated to
+     * be a valid printable ascii string.  Do that here */
+    if (len && validate_printable && ares__buf_len(buf) >= len) {
+      size_t      mylen;
+      const char *data = (const char *)ares__buf_peek(buf, &mylen);
+      if (!ares__str_isprint(data, len)) {
+        status = ARES_EBADSTR;
+        break;
+      }
+    }
+
+    if (strs != NULL) {
+      unsigned char *data = NULL;
+      if (len) {
         status = ares__buf_fetch_bytes_dup(buf, len, ARES_TRUE, &data);
         if (status != ARES_SUCCESS) {
           break;
         }
-        status = ares__dns_multistring_add_own(*strs, data, len);
-        if (status != ARES_SUCCESS) {
-          ares_free(data);
-          break;
-        }
-      } else {
-        status = ares__buf_consume(buf, len);
-        if (status != ARES_SUCCESS) {
-          break;
-        }
+      }
+      status = ares__dns_multistring_add_own(*strs, data, len);
+      if (status != ARES_SUCCESS) {
+        ares_free(data);
+        break;
+      }
+    } else {
+      status = ares__buf_consume(buf, len);
+      if (status != ARES_SUCCESS) {
+        break;
       }
     }
+
   }
 
   if (status != ARES_SUCCESS && strs != NULL) {

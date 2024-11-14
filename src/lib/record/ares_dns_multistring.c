@@ -147,6 +147,18 @@ ares_status_t ares__dns_multistring_add_own(ares__dns_multistring_t *strs,
     return status;
   }
 
+  /* Issue #921, ares_dns_multistring_get() doesn't have a way to indicate
+   * success or fail on a zero-length string which is actually valid.  So we
+   * are going to allocate a 1-byte buffer to use as a placeholder in this
+   * case */
+  if (str == NULL) {
+    str = ares_malloc_zero(1);
+    if (str == NULL) {
+      ares__array_remove_last(strs->strs);
+      return ARES_ENOMEM;
+    }
+  }
+
   data->data = str;
   data->len  = len;
 
