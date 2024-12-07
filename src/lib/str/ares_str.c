@@ -32,6 +32,20 @@
 #  include <stdint.h>
 #endif
 
+size_t ares_strnlen(const char *str, size_t maxlen) {
+  size_t i;
+  if (str == NULL) {
+    return 0;
+  }
+
+  for(i = 0; i < maxlen; ++i) {
+    if (str[i] == 0) {
+      return i;
+    }
+  }
+  return maxlen;
+}
+
 size_t ares_strlen(const char *str)
 {
   if (str == NULL) {
