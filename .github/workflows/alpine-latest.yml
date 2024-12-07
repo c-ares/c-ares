@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Install packages
         run: |
-          apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make clang17 clang17-analyzer compiler-rt lldb gcc g++ valgrind gdb sudo
+          apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make clang clang-analyzer compiler-rt lldb gcc g++ valgrind gdb sudo
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "Make sure TCP FastOpen is enabled"
