@@ -37,7 +37,7 @@ CARES_EXTERN char  *ares_strdup(const char *s1);
  *  function, except that it returns 0 if the \p str pointer is \c
  *  NULL.
  *
- *  \param[in] str    The string to scan for NULL
+ *  \param[in] str    The string to scan for the NULL character
  *  \param[in] maxlen The maximum number of bytes to scan
  *  \return Index of first NULL byte. Between 0 and maxlen (inclusive).
  */
