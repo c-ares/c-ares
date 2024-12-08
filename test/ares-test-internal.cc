@@ -63,6 +63,28 @@ namespace ares {
 namespace test {
 
 #ifndef CARES_SYMBOL_HIDING
+TEST_F(LibraryTest, StringLength) {
+  const char data[] = "test\0test";
+  size_t n = sizeof data;
+  for(size_t i = 0; i < n; ++i) {
+    EXPECT_EQ(ares_strlen(&data[i]), ares_strnlen(&data[i], n - i));
+  }
+}
+
+TEST_F(LibraryTest, StringLengthNullPointer) {
+  EXPECT_EQ(ares_strlen(NULL), 0);
+  EXPECT_EQ(ares_strnlen(NULL, 0), 0);
+  EXPECT_EQ(ares_strnlen(NULL, 1), 0);
+  EXPECT_EQ(ares_strnlen(NULL, 42), 0);
+}
+
+TEST_F(LibraryTest, StringLengthWithoutNullTerminator) {
+  std::string data = "test";
+  for(size_t i = 0; i < data.length(); ++i) {
+    EXPECT_EQ(ares_strnlen(data.c_str(), i), i);
+  }
+}
+
 void CheckPtoN4(int size, unsigned int value, const char *input) {
   struct in_addr a4;
   a4.s_addr = 0;
