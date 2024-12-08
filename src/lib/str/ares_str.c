@@ -37,13 +37,17 @@ size_t ares_strnlen(const char *str, size_t maxlen) {
   if (str == NULL) {
     return 0;
   }
-
+#ifdef HAVE_STRNLEN
+  i = strnlen(str, maxlen);
+  return i;
+#else
   for(i = 0; i < maxlen; ++i) {
     if (str[i] == 0) {
       return i;
     }
   }
   return maxlen;
+#endif /* HAVE_STRNLEN */
 }
 
 size_t ares_strlen(const char *str)
