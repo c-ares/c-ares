@@ -190,6 +190,9 @@
 /* Define if you have the sendto function. */
 #define HAVE_SENDTO 1
 
+/* Define if you have the strnlen function. */
+#define HAVE_STRNLEN 1
+
 /* Define to the type of arg 1 for send. */
 #define SEND_TYPE_ARG1 SOCKET
 
