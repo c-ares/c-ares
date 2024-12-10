@@ -33,20 +33,19 @@
 #endif
 
 size_t ares_strnlen(const char *str, size_t maxlen) {
-  size_t i;
+  const char *p = NULL;
   if (str == NULL) {
     return 0;
   }
 #ifdef HAVE_STRNLEN
-  i = strnlen(str, maxlen);
-  return i;
+  (void)p;
+  return strnlen(str, maxlen);
 #else
-  for(i = 0; i < maxlen; ++i) {
-    if (str[i] == 0) {
-      return i;
-    }
+  if ((p = memchr(str, 0, maxlen)) == NULL) {
+    return maxlen;
+  } else {
+    return (size_t)(p - str);
   }
-  return maxlen;
 #endif /* HAVE_STRNLEN */
 }
 
