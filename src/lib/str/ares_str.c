@@ -25,6 +25,12 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* Provides us with Annex K of C11 (and onwards) if available.  In
+   particular functions such as strnlen_s from string.h become
+   available.  We restrict the scope of this request to only this
+   translation unit.*/
+#define __STDC_WANT_LIB_EXT1__ 1
+
 #include "ares_private.h"
 #include "ares_str.h"
 
@@ -34,20 +40,25 @@
 
 size_t ares_strnlen(const char *str, size_t maxlen) {
   size_t i;
+#ifdef __STDC_LIB_EXT1__
+  i = strnlen_s(str, maxlen);
+  return i;
+#else
   if (str == NULL) {
     return 0;
   }
-#ifdef HAVE_STRNLEN
+#  ifdef HAVE_STRNLEN
   i = strnlen(str, maxlen);
   return i;
-#else
+#  else
   for(i = 0; i < maxlen; ++i) {
     if (str[i] == 0) {
       return i;
     }
   }
   return maxlen;
-#endif /* HAVE_STRNLEN */
+#  endif /* HAVE_STRNLEN */
+#endif /* __STDC_LIB_EXT1__ */
 }
 
 size_t ares_strlen(const char *str)
