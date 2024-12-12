@@ -31,7 +31,7 @@ if [ "$BUILD_TYPE" = "autotools" -o "$BUILD_TYPE" = "coverage" ]; then
         CONFIG_OPTS="${CONFIG_OPTS} --disable-symbol-hiding"
     fi
     $SCAN_WRAP ../configure --enable-maintainer-mode $CONFIG_OPTS
-    $SCAN_WRAP make
+    $SCAN_WRAP make V=1
     cd ..
 else
     # Use cmake for everything else
