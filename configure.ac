@@ -826,8 +826,8 @@ if test "x$build_tests" != "xno" ; then
   else
     PKG_CHECK_MODULES([GMOCK112], [gmock >= 1.12.0], [ have_gmock_v112=yes ], [ have_gmock_v112=no ])
     if test "x$have_gmock_v112" = "xyes" ; then
-      AX_CHECK_USER_NAMESPACE
-      AX_CHECK_UTS_NAMESPACE
+      ARES_CHECK_USER_NAMESPACE
+      ARES_CHECK_UTS_NAMESPACE
     fi
   fi
 fi
