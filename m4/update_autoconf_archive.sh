@@ -1,4 +1,8 @@
 #!/bin/sh
+
+# Copyright (c) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+
 set -e
 
 for x in `find . -name "ax_*.m4"` ; do
