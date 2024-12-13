@@ -250,7 +250,7 @@ fi
 dnl Android requires c99, QNX requires gnu90, all others should use c90
 case $host_os in
   *qnx*)
-    AX_APPEND_COMPILE_FLAGS([-std=gnu90], [AM_CFLAGS], [-Werror])
+    AX_APPEND_COMPILE_FLAGS([-std=c99], [AM_CFLAGS], [-Werror])
     AX_APPEND_COMPILE_FLAGS([-D_QNX_SOURCE], [AM_CPPFLAGS], [-Werror])
     ;;
   *android*)
