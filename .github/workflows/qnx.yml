@@ -33,6 +33,7 @@ jobs:
           QNX_USER: ${{ secrets.QNX_USER }}
           QNX_PASSWORD: ${{ secrets.QNX_PASSWORD }}
         run: |
+          [ -z "${QNX_USER}" -o -z "${QNX_PASSWORD}" -o -z "${QNX_LICENSE_KEY}" ] && echo "Must set QNX_USER, QNX_PASSWORD, and QNX_LICENSE_KEY" && /bin/false
           echo "Downloading QNX Software Center ..."
           mkdir ${{ github.workspace }}/.qnx
           curl --cookie-jar ${{ github.workspace }}/.qnx/myqnxcookies.auth --form "userlogin=$QNX_USER" --form "password=$QNX_PASSWORD" -X POST https://www.qnx.com/account/login.html > login_response.html
