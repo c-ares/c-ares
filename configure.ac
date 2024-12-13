@@ -245,17 +245,21 @@ AC_SUBST(CARES_SYMBOL_HIDING_CFLAG)
 if test "$enable_warnings" = "yes"; then
   AX_APPEND_COMPILE_FLAGS([-Wall -Wextra -Waggregate-return -Wcast-align -Wcast-qual -Wconversion -Wdeclaration-after-statement -Wdouble-promotion -Wfloat-equal -Wformat-security -Winit-self -Wjump-misses-init -Wlogical-op -Wmissing-braces -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wmissing-prototypes -Wnested-externs -Wno-coverage-mismatch -Wold-style-definition -Wpacked -Wpedantic -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-conversion -Wstrict-overflow -Wstrict-prototypes -Wtrampolines -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -Wwrite-strings -Werror=implicit-int -Werror=implicit-function-declaration -Werror=partial-availability -Wno-long-long ],
     [AM_CFLAGS], [-Werror])
-
-  dnl Android requires c99, all others should use c90
-  case $host_os in
-    *android*)
-      AX_APPEND_COMPILE_FLAGS([-std=c99], [AM_CFLAGS], [-Werror])
-      ;;
-    *)
-      AX_APPEND_COMPILE_FLAGS([-std=c90], [AM_CFLAGS], [-Werror])
-      ;;
-  esac
 fi
+
+dnl Android requires c99, QNX requires gnu90, all others should use c90
+case $host_os in
+  *qnx*)
+    AX_APPEND_COMPILE_FLAGS([-std=gnu90], [AM_CFLAGS], [-Werror])
+    AX_APPEND_COMPILE_FLAGS([-D_QNX_SOURCE], [AM_CPPFLAGS], [-Werror])
+    ;;
+  *android*)
+    AX_APPEND_COMPILE_FLAGS([-std=c99], [AM_CFLAGS], [-Werror])
+    ;;
+  *)
+    AX_APPEND_COMPILE_FLAGS([-std=c90], [AM_CFLAGS], [-Werror])
+    ;;
+esac
 
 if test "$ax_cv_c_compiler_vendor" = "intel"; then
   AX_APPEND_COMPILE_FLAGS([-shared-intel], [AM_CFLAGS])
@@ -814,6 +818,13 @@ if test "x$build_tests" != "xno" -a "x$cross_compiling" = "xyes" ; then
     AC_MSG_ERROR([*** Tests not supported when cross compiling])
   fi
 fi
+
+dnl Forces compiling of tests even when cross-compiling.
+AC_ARG_ENABLE(tests-crossbuild,
+  AS_HELP_STRING([--enable-tests-crossbuild], [Enable test building even when cross building]),
+  [build_tests="$enableval"]
+)
+
 if test "x$build_tests" != "xno" ; then
   PKG_CHECK_MODULES([GMOCK], [gmock], [ have_gmock=yes ], [ have_gmock=no ])
   if test "x$have_gmock" = "xno" ; then

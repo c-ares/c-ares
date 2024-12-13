@@ -1,0 +1,89 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: QNX
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-qnx
+  cancel-in-progress: true
+
+env:
+  CC: qcc
+  CXX: q++
+  CFLAGS: "-V gcc_ntox86_64"
+  CXXFLAGS: "-V gcc_ntox86_64"
+  CPUVARDIR: "x86_64"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: "QNX"
+    steps:
+      - name: Install packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: cmake ninja-build autoconf automake libtool
+          version: 1.0
+      # Logic for intalling SDP taken right out of https://github.com/qnx-ports/build-files/blob/main/.github/workflows/c-ares.yml
+      - name: Download SDP 8.0
+        env:
+          QNX_LICENSE_KEY: ${{ secrets.QNX_LICENSE_KEY }}
+          QNX_USER: ${{ secrets.QNX_USER }}
+          QNX_PASSWORD: ${{ secrets.QNX_PASSWORD }}
+        run: |
+          [ -z "${QNX_USER}" -o -z "${QNX_PASSWORD}" -o -z "${QNX_LICENSE_KEY}" ] && echo "Must set QNX_USER, QNX_PASSWORD, and QNX_LICENSE_KEY" && /bin/false
+          echo "Downloading QNX Software Center ..."
+          mkdir ${{ github.workspace }}/.qnx
+          curl --cookie-jar ${{ github.workspace }}/.qnx/myqnxcookies.auth --form "userlogin=$QNX_USER" --form "password=$QNX_PASSWORD" -X POST https://www.qnx.com/account/login.html > login_response.html
+          curl -L --cookie ${{ github.workspace }}/.qnx/myqnxcookies.auth https://www.qnx.com/download/download/77351/qnx-setup-2.0.3-202408131717-linux.run > qnx-setup-lin.run
+          chmod a+x qnx-setup-lin.run
+          ./qnx-setup-lin.run force-override disable-auto-start agree-to-license-terms ${{ github.workspace }}/qnxinstall
+          echo "Installing License ..."
+          ${{ github.workspace }}/qnxinstall/qnxsoftwarecenter/qnxsoftwarecenter_clt -syncLicenseKeys -myqnx.user="$QNX_USER" -myqnx.password="$QNX_PASSWORD" -addLicenseKey $QNX_LICENSE_KEY
+          cp -r ~/.qnx/license ${{ github.workspace }}/.qnx
+          echo "Downloading QNX SDP ..."
+          ${{ github.workspace }}/qnxinstall/qnxsoftwarecenter/qnxsoftwarecenter_clt -mirror -cleanInstall -destination ${{ github.workspace }}/qnx800 -installBaseline com.qnx.qnx800 -myqnx.user="$QNX_USER" -myqnx.password="$QNX_PASSWORD"
+      - name: Checkout qnx-ports build-files
+        uses: actions/checkout@v4
+        with:
+          repository: qnx-ports/build-files
+          path: build-files
+      - name: Checkout qnx-ports googletest
+        uses: actions/checkout@v4
+        with:
+          repository: qnx-ports/googletest
+          path: googletest
+      - name: Build googletest
+        run: |
+          source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
+          PREFIX="/usr" BUILD_TESTING="OFF" QNX_PROJECT_ROOT="$(pwd)/googletest" make -C build-files/ports/googletest install -j$(nproc)
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+        with:
+          path: c-ares
+      - name: Set CMAKE_FIND_ROOT_PATH
+        run: |
+          source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
+          echo "QNX_TARGET=${QNX_TARGET}" >> $GITHUB_ENV
+          echo "CMAKE_FIND_ROOT_PATH=${QNX_TARGET};${QNX_TARGET}/${CPUVARDIR}" >> $GITHUB_ENV
+      - name: "Autotools: build c-ares"
+        env:
+          BUILD_TYPE: autotools
+          PKG_CONFIG_PATH: "${{ env.QNX_TARGET }}/${{ env.CPUVARDIR }}/usr/lib/pkgconfig"
+          CONFIG_OPTS: "--host=x86_64-unknown-nto-qnx8.0.0 --enable-tests-crossbuild"
+        run: |
+          source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
+          cd c-ares
+          ./ci/build.sh
+      - name: "CMake: build c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_SYSTEM_NAME=QNX -DCMAKE_FIND_ROOT_PATH=${{ env.CMAKE_FIND_ROOT_PATH }} -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
+        run: |
+          source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
+          cd c-ares
+          ./ci/build.sh
+
+
