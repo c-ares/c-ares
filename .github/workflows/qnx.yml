@@ -3,7 +3,6 @@
 name: QNX
 on:
   push:
-  pull_request:
 
 concurrency:
   group: ${{ github.ref }}-qnx
