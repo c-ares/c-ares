@@ -247,18 +247,21 @@ if test "$enable_warnings" = "yes"; then
     [AM_CFLAGS], [-Werror])
 fi
 
-dnl Android requires c99, QNX requires gnu90, all others should use c90
+dnl Android and QNX require c99, all others should use c90
 case $host_os in
-  *qnx*)
-    AX_APPEND_COMPILE_FLAGS([-std=gnu90], [AM_CFLAGS], [-Werror])
-    AX_APPEND_COMPILE_FLAGS([-D_QNX_SOURCE], [AM_CPPFLAGS], [-Werror])
-    ;;
-  *android*)
+  *qnx*|*android*)
     AX_APPEND_COMPILE_FLAGS([-std=c99], [AM_CFLAGS], [-Werror])
     ;;
   *)
     AX_APPEND_COMPILE_FLAGS([-std=c90], [AM_CFLAGS], [-Werror])
     ;;
+esac
+
+dnl QNX needs -D_QNX_SOURCE
+case $host_os in
+  *qnx*)
+    AX_APPEND_COMPILE_FLAGS([-D_QNX_SOURCE], [AM_CPPFLAGS], [-Werror])
+  ;;
 esac
 
 if test "$ax_cv_c_compiler_vendor" = "intel"; then

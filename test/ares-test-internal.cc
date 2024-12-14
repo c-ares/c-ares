@@ -1516,6 +1516,34 @@ TEST_F(LibraryTest, BufSplitStr) {
   ares_free_array(strs, nstrs, ares_free);
 }
 
+TEST_F(LibraryTest, BufReplace) {
+  ares_buf_t  *buf = NULL;
+  size_t       i;
+  struct {
+    const char *input;
+    const char *srch;
+    const char *rplc;
+    const char *output;
+  } tests[] = {
+    /* Same size */
+    { "nameserver_1.2.3.4\nnameserver_2.3.4.5\n", "_", " ", "nameserver 1.2.3.4\nnameserver 2.3.4.5\n" },
+    /* Longer */
+    { "nameserver_1.2.3.4\nnameserver_2.3.4.5\n", "_", "|||", "nameserver|||1.2.3.4\nnameserver|||2.3.4.5\n" },
+    /* Shorter */
+    { "nameserver_1.2.3.4\nnameserver_2.3.4.5\n", "_", "", "nameserver1.2.3.4\nnameserver2.3.4.5\n" }
+  };
+  char        *str = NULL;
+
+  for (i=0; i<sizeof(tests)/sizeof(*tests); i++) {
+    buf = ares_buf_create();
+    EXPECT_EQ(ARES_SUCCESS, ares_buf_append_str(buf, tests[i].input));
+    EXPECT_EQ(ARES_SUCCESS, ares_buf_replace(buf, (const unsigned char *)tests[i].srch, ares_strlen(tests[i].srch), (const unsigned char *)tests[i].rplc, ares_strlen(tests[i].rplc)));
+    str = ares_buf_finish_str(buf, NULL);
+    EXPECT_STREQ(str, tests[i].output);
+    ares_free(str);
+  }
+}
+
 typedef struct {
   ares_socket_t s;
 } test_htable_asvp_t;
