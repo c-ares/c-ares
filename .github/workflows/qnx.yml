@@ -3,7 +3,6 @@
 name: QNX
 on:
   push:
-  pull_request:
 
 concurrency:
   group: ${{ github.ref }}-qnx
@@ -68,19 +67,19 @@ jobs:
           source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
           echo "QNX_TARGET=${QNX_TARGET}" >> $GITHUB_ENV
           echo "CMAKE_FIND_ROOT_PATH=${QNX_TARGET};${QNX_TARGET}/${CPUVARDIR}" >> $GITHUB_ENV
+      - name: "CMake: build c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON -G Ninja -DCMAKE_SYSTEM_NAME=QNX -DCMAKE_FIND_ROOT_PATH=${{ env.CMAKE_FIND_ROOT_PATH }} -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
+        run: |
+          source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
+          cd c-ares
+          ./ci/build.sh
       - name: "Autotools: build c-ares"
         env:
           BUILD_TYPE: autotools
           PKG_CONFIG_PATH: "${{ env.QNX_TARGET }}/${{ env.CPUVARDIR }}/usr/lib/pkgconfig"
           CONFIG_OPTS: "--host=x86_64-unknown-nto-qnx8.0.0 --enable-tests-crossbuild"
-        run: |
-          source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
-          cd c-ares
-          ./ci/build.sh
-      - name: "CMake: build c-ares"
-        env:
-          BUILD_TYPE: CMAKE
-          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_SYSTEM_NAME=QNX -DCMAKE_FIND_ROOT_PATH=${{ env.CMAKE_FIND_ROOT_PATH }} -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
         run: |
           source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
           cd c-ares
