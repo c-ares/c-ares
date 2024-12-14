@@ -294,7 +294,10 @@ static ares_status_t
   }
 
   data_size = confstr(_CS_RESOLVE, (char *)data, data_size);
-  if (data_size > 0) {
+  if (data_size > 1) {
+    /* confstr returns byte for NULL terminator, strip */
+    data_size--;
+
     ares_buf_append_finish(buf, data_size);
     /* Its odd, this uses _ instead of " " between keywords, otherwise the
      * format is the same as resolv.conf, replace. */
