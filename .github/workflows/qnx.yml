@@ -84,9 +84,6 @@ jobs:
           source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
           cd c-ares
           ./ci/build.sh
-      - name: Add self to the kvm group
-        run: |
-          sudo usermod -a -G kvm ${USER}
       - name: "QNX: Run test cases"
         run: |
           source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
