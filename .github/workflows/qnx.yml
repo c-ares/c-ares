@@ -23,7 +23,7 @@ jobs:
       - name: Install packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: cmake ninja-build autoconf automake libtool
+          packages: cmake ninja-build autoconf automake libtool qemu-user qemu-system-x86 qemu-utils bridge-utils net-tools libvirt-clients libvirt-daemon-system
           version: 1.0
       # Logic for intalling SDP taken right out of https://github.com/qnx-ports/build-files/blob/main/.github/workflows/c-ares.yml
       - name: Download SDP 8.0
@@ -84,5 +84,28 @@ jobs:
           source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
           cd c-ares
           ./ci/build.sh
-
-
+      - name: "QNX: Run test cases"
+        run: |
+          source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
+          echo " * Create QNX Image"
+          mkdir qnximage
+          cd qnximage
+          ssh-keygen -q -t ed25519 -N '' -f ${HOME}/.ssh/id_ed25519
+          mkqnximage --ssh-ident=${HOME}/.ssh/id_ed25519.pub --ip=dhcp --build --type=qemu --hostname=qnx8 --data-size=1000 --sys-size=1000
+          echo " * Prestart QNX Image to set up networking as non-root"
+          mkqnximage --run=-h
+          mkqnximage --stop
+          echo " * Start QNX Image"
+          sudo -E env PATH=${PATH} mkqnximage --run=-h
+          QNX_IP=`sudo -E env PATH=${PATH} mkqnximage --getip`
+          echo "QNX_IP=${QNX_IP}" >> $GITHUB_ENV
+          echo "   * Running on ${QNX_IP}"
+          cd ..
+          echo " * Creating archives to send to QNX..."
+          ( cd ${QNX_TARGET}/x86_64/usr/lib && tar -cvf "${{ github.workspace }}/gtest.tar" libgmock*.so* libgtest*.so* )
+          tar -C c-ares/cmakebld/bin/ -cvf cares-bin.tar .
+          tar -C c-ares/cmakebld/lib/ -cvf cares-lib.tar .
+          echo " * Copying tests to QNX"
+          scp -o StrictHostKeyChecking=no *.tar c-ares/.github/scripts/qnx_tests.sh root@${QNX_IP}:
+          echo " * Executing ..."
+          ssh root@${QNX_IP} sh ./qnx_tests.sh
