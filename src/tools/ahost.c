@@ -44,11 +44,20 @@
 
 #include "ares_str.h"
 
+#define RV_OK     0 /* Success */
+#define RV_SYSERR 1 /* Internal system failure */
+#define RV_MISUSE 2 /* Misuse (command line) */
+#define RV_FAIL   3 /* Resolution failure */
+static int final_rv = RV_OK;
+
+
 static void callback(void *arg, int status, int timeouts, struct hostent *host);
 static void ai_callback(void *arg, int status, int timeouts,
                         struct ares_addrinfo *result);
 static void usage(void);
 static void print_help_info_ahost(void);
+
+
 
 int         main(int argc, char **argv)
 {
@@ -79,7 +88,7 @@ int         main(int argc, char **argv)
   status = ares_library_init(ARES_LIB_INIT_ALL);
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "ares_library_init: %s\n", ares_strerror(status));
-    return 1;
+    return RV_SYSERR;
   }
 
   ares_getopt_init(&state, argc, (const char * const *)argv);
@@ -139,7 +148,7 @@ int         main(int argc, char **argv)
   if (status != ARES_SUCCESS) {
     free(servers);
     fprintf(stderr, "ares_init: %s\n", ares_strerror(status));
-    return 1;
+    return RV_SYSERR;
   }
 
   if (servers) {
@@ -148,7 +157,7 @@ int         main(int argc, char **argv)
       fprintf(stderr, "ares_set_serveres_csv: %s\n", ares_strerror(status));
       free(servers);
       usage();
-      return 1;
+      return RV_MISUSE;
     }
     free(servers);
   }
@@ -197,7 +206,7 @@ int         main(int argc, char **argv)
   WSACleanup();
 #endif
 
-  return 0;
+  return final_rv;
 }
 
 static void callback(void *arg, int status, int timeouts, struct hostent *host)
@@ -208,6 +217,7 @@ static void callback(void *arg, int status, int timeouts, struct hostent *host)
 
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "%s: %s\n", (char *)arg, ares_strerror(status));
+    final_rv = RV_FAIL;
     return;
   }
 
@@ -229,6 +239,7 @@ static void ai_callback(void *arg, int status, int timeouts,
 
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "%s: %s\n", (char *)arg, ares_strerror(status));
+    final_rv = RV_FAIL;
     return;
   }
 
@@ -257,7 +268,7 @@ static void usage(void)
 {
   fprintf(stderr, "usage: ahost [-h] [-d] [[-D {domain}] ...] [-s {server}] "
                   "[-t {a|aaaa|u}] {host|addr} ...\n");
-  exit(1);
+  exit(RV_MISUSE);
 }
 
 /* Information from the man page. Formatting taken from man -h */
@@ -282,5 +293,5 @@ static void print_help_info_ahost(void)
     "              If type is \"aaaa\", print the AAAA record.\n"
     "              If type is \"u\" (default), print both A and AAAA records.\n"
     "\n");
-  exit(0);
+  exit(RV_OK);
 }

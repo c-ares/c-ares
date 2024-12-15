@@ -56,6 +56,12 @@
 #  define PATH_MAX 1024
 #endif
 
+#define RV_OK     0 /* Success */
+#define RV_SYSERR 1 /* Internal system failure */
+#define RV_MISUSE 2 /* Misuse (command line) */
+#define RV_FAIL   3 /* Resolution failure */
+static int final_rv = RV_OK;
+
 typedef struct {
   unsigned short port;
   size_t         tries;
@@ -773,6 +779,10 @@ static void callback(void *arg, ares_status_t status, size_t timeouts,
   (void)arg;
   (void)timeouts;
 
+  if (status != ARES_SUCCESS) {
+    final_rv = RV_FAIL;
+  }
+
   if (global_config.opts.display_comments) {
     /* We got a "Server status" */
     if (status >= ARES_SUCCESS && status <= ARES_EREFUSED) {
@@ -1484,7 +1494,6 @@ int main(int argc, char **argv)
 {
   ares_channel_t *channel = NULL;
   ares_status_t   status;
-  int             rv = 0;
 
 #ifdef USE_WINSOCK
   WORD    wVersionRequested = MAKEWORD(USE_WINSOCK, USE_WINSOCK);
@@ -1495,7 +1504,7 @@ int main(int argc, char **argv)
   status = (ares_status_t)ares_library_init(ARES_LIB_INIT_ALL);
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "ares_library_init: %s\n", ares_strerror((int)status));
-    return 1;
+    return RV_SYSERR;
   }
 
   config_defaults();
@@ -1503,7 +1512,7 @@ int main(int argc, char **argv)
   if (!read_cmdline(argc, (const char * const *)argv, 1)) {
     printf("\n** ERROR: %s\n\n", global_config.error);
     print_help();
-    rv = 1;
+    final_rv = RV_MISUSE;
     goto done;
   }
 
@@ -1519,7 +1528,7 @@ int main(int argc, char **argv)
   if (global_config.name == NULL) {
     printf("missing query name\n");
     print_help();
-    rv = 1;
+    final_rv = RV_MISUSE;
     goto done;
   }
 
@@ -1529,7 +1538,7 @@ int main(int argc, char **argv)
                                             global_config.optmask);
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "ares_init_options: %s\n", ares_strerror((int)status));
-    rv = 1;
+    final_rv = RV_SYSERR;
     goto done;
   }
 
@@ -1539,7 +1548,7 @@ int main(int argc, char **argv)
     if (status != ARES_SUCCESS) {
       fprintf(stderr, "ares_set_servers_ports_csv: %s: %s\n",
               ares_strerror((int)status), global_config.servers);
-      rv = 1;
+      final_rv = RV_MISUSE;
       goto done;
     }
   }
@@ -1556,12 +1565,14 @@ int main(int argc, char **argv)
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "Failed to create query for %s: %s\n", global_config.name,
             ares_strerror((int)status));
-    rv = 1;
+    final_rv = RV_MISUSE;
     goto done;
   }
 
   /* Process events */
-  rv = event_loop(channel);
+  if (event_loop(channel) != 0) {
+    final_rv = RV_SYSERR;
+  }
 
 done:
   free_config();
@@ -1571,5 +1582,5 @@ done:
 #ifdef USE_WINSOCK
   WSACleanup();
 #endif
-  return rv;
+  return final_rv;
 }
