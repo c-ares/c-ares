@@ -627,7 +627,7 @@ class ContainedMockChannelSysConfig
     : MockChannelOptsTest(1, GetParam().first, GetParam().second, true, nullptr, 0) {}
 };
 
-NameContentList files_no_ndots = {
+static NameContentList files_no_ndots = {
   {"/etc/resolv.conf", "nameserver 1.2.3.4\n" // Will be replaced
                        "search example.com example.org\n"
                        "options edns0 trust-ad\n"}, // ndots:1 is default
@@ -652,7 +652,8 @@ CONTAINED_TEST_P(ContainedMockChannelSysConfig, SysConfigNdotsDefault,
   return HasFailure();
 }
 
-NameContentList files_ndots0 = {
+
+static NameContentList files_ndots0 = {
   {"/etc/resolv.conf", "nameserver 1.2.3.4\n" // Will be replaced
                        "search example.com example.org\n"
                        "options edns0 trust-ad ndots:0\n"}, // ndots:1 is default
