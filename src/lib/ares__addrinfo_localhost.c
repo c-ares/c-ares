@@ -37,11 +37,10 @@
 #  include <arpa/inet.h>
 #endif
 
-#if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
-#  include <ws2ipdef.h>
-#endif
-
 #if defined(USE_WINSOCK)
+#  if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#    include <ws2ipdef.h>
+#  endif
 #  if defined(HAVE_IPHLPAPI_H)
 #    include <iphlpapi.h>
 #  endif
@@ -54,6 +53,19 @@
 #include "ares_inet_net_pton.h"
 #include "ares_private.h"
 
+static ares_bool_t ares_ai_has_family(int aftype,
+                                      const struct ares_addrinfo_node *nodes)
+{
+  const struct ares_addrinfo_node *node;
+
+  for (node = nodes; node != NULL; node = node->ai_next) {
+    if (node->ai_family == aftype)
+      return ARES_TRUE;
+  }
+
+  return ARES_FALSE;
+}
+
 ares_status_t ares_append_ai_node(int aftype, unsigned short port,
                                   unsigned int ttl, const void *adata,
                                   struct ares_addrinfo_node **nodes)
@@ -62,7 +74,7 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
 
   node = ares__append_addrinfo_node(nodes);
   if (!node) {
-    return ARES_ENOMEM;
+    return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   memset(node, 0, sizeof(*node));
@@ -70,7 +82,7 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
   if (aftype == AF_INET) {
     struct sockaddr_in *sin = ares_malloc(sizeof(*sin));
     if (!sin) {
-      return ARES_ENOMEM;
+      return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
     memset(sin, 0, sizeof(*sin));
@@ -88,7 +100,7 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
   if (aftype == AF_INET6) {
     struct sockaddr_in6 *sin6 = ares_malloc(sizeof(*sin6));
     if (!sin6) {
-      return ARES_ENOMEM;
+      return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
     memset(sin6, 0, sizeof(*sin6));
@@ -112,21 +124,23 @@ static ares_status_t
 {
   ares_status_t status = ARES_SUCCESS;
 
-  if (aftype == AF_UNSPEC || aftype == AF_INET6) {
+  if ((aftype == AF_UNSPEC || aftype == AF_INET6) &&
+      !ares_ai_has_family(AF_INET6, *nodes)) {
     struct ares_in6_addr addr6;
     ares_inet_pton(AF_INET6, "::1", &addr6);
     status = ares_append_ai_node(AF_INET6, port, 0, &addr6, nodes);
     if (status != ARES_SUCCESS) {
-      return status;
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 
-  if (aftype == AF_UNSPEC || aftype == AF_INET) {
+  if ((aftype == AF_UNSPEC || aftype == AF_INET) &&
+      !ares_ai_has_family(AF_INET, *nodes)) {
     struct in_addr addr4;
     ares_inet_pton(AF_INET, "127.0.0.1", &addr4);
     status = ares_append_ai_node(AF_INET, port, 0, &addr4, nodes);
     if (status != ARES_SUCCESS) {
-      return status;
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 
@@ -137,7 +151,7 @@ static ares_status_t
   ares__system_loopback_addrs(int aftype, unsigned short port,
                               struct ares_addrinfo_node **nodes)
 {
-#if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600 && \
+#if defined(USE_WINSOCK) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600 && \
   !defined(__WATCOMC__)
   PMIB_UNICASTIPADDRESS_TABLE table;
   unsigned int                i;
@@ -155,11 +169,13 @@ static ares_status_t
       continue;
     }
 
-    if (table->Table[i].Address.si_family == AF_INET) {
+    if (table->Table[i].Address.si_family == AF_INET &&
+        !ares_ai_has_family(AF_INET, *nodes)) {
       status =
         ares_append_ai_node(table->Table[i].Address.si_family, port, 0,
                             &table->Table[i].Address.Ipv4.sin_addr, nodes);
-    } else if (table->Table[i].Address.si_family == AF_INET6) {
+    } else if (table->Table[i].Address.si_family == AF_INET6 &&
+               !ares_ai_has_family(AF_INET6, *nodes)) {
       status =
         ares_append_ai_node(table->Table[i].Address.si_family, port, 0,
                             &table->Table[i].Address.Ipv6.sin6_addr, nodes);
@@ -200,8 +216,7 @@ ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
                                        const struct ares_addrinfo_hints *hints,
                                        struct ares_addrinfo             *ai)
 {
-  struct ares_addrinfo_node *nodes = NULL;
-  ares_status_t              status;
+  ares_status_t status;
 
   /* Validate family */
   switch (hints->ai_family) {
@@ -209,28 +224,26 @@ ares_status_t ares__addrinfo_localhost(const char *name, unsigned short port,
     case AF_INET6:
     case AF_UNSPEC:
       break;
-    default:
-      return ARES_EBADFAMILY;
+    default: /* LCOV_EXCL_LINE: DefensiveCoding */
+      return ARES_EBADFAMILY; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
+  if (ai->name != NULL) {
+    ares_free(ai->name);
+  }
   ai->name = ares_strdup(name);
-  if (!ai->name) {
-    goto enomem;
+  if (ai->name == NULL) {
+    status = ARES_ENOMEM;
+    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  status = ares__system_loopback_addrs(hints->ai_family, port, &nodes);
-
-  if (status == ARES_ENOTFOUND) {
-    status = ares__default_loopback_addrs(hints->ai_family, port, &nodes);
+  status = ares__system_loopback_addrs(hints->ai_family, port, &ai->nodes);
+  if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {
+    goto done;
   }
 
-  ares__addrinfo_cat_nodes(&ai->nodes, nodes);
+  status = ares__default_loopback_addrs(hints->ai_family, port, &ai->nodes);
 
+done:
   return status;
-
-enomem:
-  ares__freeaddrinfo_nodes(nodes);
-  ares_free(ai->name);
-  ai->name = NULL;
-  return ARES_ENOMEM;
 }
