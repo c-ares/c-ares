@@ -18,8 +18,8 @@ for the channel data identified by
 so that addresses returned by \fBares_gethostbyname(3)\fP are sorted according to the
 sortlist.  The provided
 .IR sortstr
-string that holds a space separated list of IP-address-netmask pairs.  The
-netmask is optional but follows the address after a slash if present.  For example,
+string that holds a space (or semicolon) separated list of IP-address-netmask pairs.
+The netmask is optional but follows the address after a slash if present.  For example,
 "130.155.160.0/255.255.240.0 130.155.0.0" will sort IPs in ascending
 order of appearance in the sortlist subnets, with those IPs that do
 not match any subnets coming last.  There is no particular order
