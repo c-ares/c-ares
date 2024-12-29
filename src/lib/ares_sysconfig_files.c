@@ -235,7 +235,15 @@ ares_status_t ares_parse_sortlist(struct apattern **sortlist, size_t *nsort,
     goto done;
   }
 
-  /* Split on space or semicolon */
+  /* Split on space or semicolon. It's not clear why the split on
+     semicolon is supported, but the user of this function is
+     ares_set_sortlist(), whose documentation does not mention
+     semicolons, only spaces as valid separation characters. It is
+     therefore unlikely that anyone uses semicolons.
+
+     The old parser behaved this way and this behavior of splitting in
+     semicolons was preserved in the parser rewrite on
+     e72ae094855a0aed44afadfb4de462065e144185 (see also #653).*/
   status = ares_buf_split(buf, (const unsigned char *)" ;", 2,
                           ARES_BUF_SPLIT_NONE, 0, &arr);
   if (status != ARES_SUCCESS) {
