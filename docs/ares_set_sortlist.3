@@ -25,8 +25,12 @@ order of appearance in the sortlist subnets, with those IPs that do
 not match any subnets coming last.  There is no particular order
 amongst IPs that tie in this sorting scheme.
 
-This function replaces any potentially previously configured address sortlist
-with the ones given in the configuration string.
+This function replaces any potentially previously configured address
+sortlist with the ones given in the configuration string. It also
+overrides the sortlist set in
+.B resolv.conf(5).
+Note that this function does not affect the order of results from
+\fBares_getaddrinfo(3)\fP.
 
 .SH RETURN VALUES
 .B ares_set_sortlist(3)
