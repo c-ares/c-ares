@@ -82,6 +82,7 @@ static int ares_inet_net_pton_ipv4(const char *src, unsigned char *dst,
   int                  bits;
   const unsigned char *odst = dst;
 
+  memset(dst, 0, size);
   ch = *src++;
   if (ch == '0' && (src[0] == 'x' || src[0] == 'X') && ares_isascii(src[1]) &&
       ares_isxdigit(src[1])) {
