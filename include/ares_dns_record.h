@@ -1103,6 +1103,8 @@ CARES_EXTERN ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
 /*! Duplicate a complete DNS message.  This does not copy internal members
  *  (such as the ttl decrement capability).
  *
+ *  Returns NULL if \p dnsrec is NULL.
+ *
  *  \param[in] dnsrec Pointer to initialized and filled DNS record object.
  *  \return duplicted DNS record object, or NULL on out of memory.
  */
