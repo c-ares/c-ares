@@ -1694,6 +1694,8 @@ TEST_P(MockUDPChannelTest, GetSock) {
   }
   EXPECT_NE((size_t)0, sock_cnt);
 
+  Process();
+
   bitmask = ares_getsock(channel_, nullptr, 0);
   EXPECT_EQ(0, bitmask);
 }
@@ -1729,6 +1731,8 @@ TEST_P(MockTCPChannelTest, GetSock) {
     }
   }
   EXPECT_NE((size_t)0, sock_cnt);
+
+  Process();
 
   bitmask = ares_getsock(channel_, nullptr, 0);
   EXPECT_EQ(0, bitmask);
