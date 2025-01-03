@@ -888,12 +888,16 @@ void MockChannelOptsTest::ProcessFD(ares_socket_t fd) {
   }
 }
 
-void MockChannelOptsTest::Process(unsigned int cancel_ms) {
+void MockChannelOptsTest::ProcessAltChannel(ares_channel_t *chan, unsigned int cancel_ms) {
   using namespace std::placeholders;
-  ProcessWork(channel_,
+  ProcessWork(chan,
               std::bind(&MockChannelOptsTest::fds, this),
               std::bind(&MockChannelOptsTest::ProcessFD, this, _1),
               cancel_ms);
+}
+
+void MockChannelOptsTest::Process(unsigned int cancel_ms) {
+  ProcessAltChannel(channel_, cancel_ms);
 }
 
 void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {

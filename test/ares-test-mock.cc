@@ -1662,6 +1662,135 @@ TEST_P(MockChannelTest, GetHostByAddrDestroy) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
+TEST_P(MockUDPChannelTest, GetSock) {
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  ares_socket_t socks[3] = {ARES_SOCKET_BAD, ARES_SOCKET_BAD, ARES_SOCKET_BAD};
+  int bitmask;
+
+  bitmask = ares_getsock(channel_, socks, 3);
+  EXPECT_EQ(0, bitmask);
+  bitmask = ares_getsock(channel_, nullptr, 0);
+  EXPECT_EQ(0, bitmask);
+
+  // Ask again with a pending query.
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  bitmask = ares_getsock(channel_, socks, 3);
+  EXPECT_NE(0, bitmask);
+
+  size_t sock_cnt = 0;
+  for (size_t i=0; i<3; i++) {
+    if (ARES_GETSOCK_READABLE(bitmask, i) || ARES_GETSOCK_WRITABLE(bitmask, i)) {
+      EXPECT_NE(ARES_SOCKET_BAD, socks[i]);
+      if (socks[i] != ARES_SOCKET_BAD)
+        sock_cnt++;
+    }
+  }
+  EXPECT_NE((size_t)0, sock_cnt);
+
+  Process();
+
+  bitmask = ares_getsock(channel_, nullptr, 0);
+  EXPECT_EQ(0, bitmask);
+}
+
+TEST_P(MockTCPChannelTest, GetSock) {
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  ares_socket_t socks[3] = {ARES_SOCKET_BAD, ARES_SOCKET_BAD, ARES_SOCKET_BAD};
+  int bitmask;
+
+  bitmask = ares_getsock(channel_, socks, 3);
+  EXPECT_EQ(0, bitmask);
+  bitmask = ares_getsock(channel_, nullptr, 0);
+  EXPECT_EQ(0, bitmask);
+
+  // Ask again with a pending query.
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  bitmask = ares_getsock(channel_, socks, 3);
+  EXPECT_NE(0, bitmask);
+
+  size_t sock_cnt = 0;
+  for (size_t i=0; i<3; i++) {
+    if (ARES_GETSOCK_READABLE(bitmask, i) || ARES_GETSOCK_WRITABLE(bitmask, i)) {
+      EXPECT_NE(ARES_SOCKET_BAD, socks[i]);
+      if (socks[i] != ARES_SOCKET_BAD)
+        sock_cnt++;
+    }
+  }
+  EXPECT_NE((size_t)0, sock_cnt);
+
+  Process();
+
+  bitmask = ares_getsock(channel_, nullptr, 0);
+  EXPECT_EQ(0, bitmask);
+}
+
+
+TEST_P(MockChannelTest, VerifySocketFunctionCallback) {
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  size_t count = 0;
+
+  sock_funcs.asocket = [](int af, int type, int protocol, void * p) -> ares_socket_t {
+    EXPECT_NE(nullptr, p);
+    (*reinterpret_cast<size_t *>(p))++;
+    return ::socket(af, type, protocol);
+  };
+
+  ares_set_socket_functions(channel_, &sock_funcs, &count);
+
+  {
+    count = 0;
+    HostResult result;
+    ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+    Process();
+
+    EXPECT_TRUE(result.done_);
+    EXPECT_EQ(ARES_SUCCESS, result.status_);
+    EXPECT_EQ(0, result.timeouts_);
+    EXPECT_NE((size_t)0, count);
+  }
+
+  {
+    count = 0;
+    ares_channel_t *copy;
+    EXPECT_EQ(ARES_SUCCESS, ares_dup(&copy, channel_));
+
+    HostResult result;
+    ares_gethostbyname(copy, "www.google.com.", AF_INET, HostCallback, &result);
+
+    ProcessAltChannel(copy);
+
+    EXPECT_TRUE(result.done_);
+    ares_destroy(copy);
+    EXPECT_NE((size_t)0, count);
+    EXPECT_EQ(ARES_SUCCESS, result.status_);
+    EXPECT_EQ(0, result.timeouts_);
+  }
+
+}
+
 static const unsigned char *
   fetch_server_cookie(const ares_dns_record_t *dnsrec, size_t *len)
 {
