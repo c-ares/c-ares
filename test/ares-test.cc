@@ -897,7 +897,7 @@ void MockChannelOptsTest::ProcessAltChannel(ares_channel_t *chan, unsigned int c
 }
 
 void MockChannelOptsTest::Process(unsigned int cancel_ms) {
-  ProcessAltChannel(channel_);
+  ProcessAltChannel(channel_, cancel_ms);
 }
 
 void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
