@@ -207,6 +207,10 @@ TEST_F(DefaultChannelTest, TimeoutValue) {
   Process();
 }
 
+TEST_F(LibraryTest, RecordDuplicateNull) {
+  EXPECT_EQ(ares_dns_record_duplicate(NULL), nullptr);
+}
+
 TEST_F(LibraryTest, InetNtoP) {
   struct in_addr addr;
   addr.s_addr = htonl(0x01020304);

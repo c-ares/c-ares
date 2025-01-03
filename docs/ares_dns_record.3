@@ -339,7 +339,7 @@ from \fIares_send_dnsrec(3)\fP or \fIares_search_dnsrec(3)\fP.  The structure
 to be duplicated is passed in the
 .IR dnsrec
 parameter, and the duplicated copy is returned, or NULL on error such as
-out of memory.
+out of memory, or if argument is NULL.
 
 The \fIares_dns_record_get_id(3)\fP function is used to retrieve the DNS
 message id from the DNS record provided in the
