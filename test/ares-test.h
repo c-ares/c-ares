@@ -328,6 +328,7 @@ public:
 
   // Process all pending work on ares-owned and mock-server-owned file
   // descriptors.
+  void ProcessAltChannel(ares_channel_t *chan, unsigned int cancel_ms = 0);
   void Process(unsigned int cancel_ms = 0);
 
 protected:
