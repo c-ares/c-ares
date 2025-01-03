@@ -671,7 +671,11 @@ VIRT_NONVIRT_TEST_F(DefaultChannelTest, LiveGetNameInfoAllocFail) {
 
 VIRT_NONVIRT_TEST_F(DefaultChannelTest, GetSock) {
   ares_socket_t socks[3] = {ARES_SOCKET_BAD, ARES_SOCKET_BAD, ARES_SOCKET_BAD};
-  int bitmask = ares_getsock(channel_, socks, 3);
+  int bitmask;
+
+  EXPECT_EQ(ARES_SUCCESS, (ares_status_t)ares_set_servers_csv(channel_, "127.0.0.1"));
+
+  bitmask = ares_getsock(channel_, socks, 3);
   EXPECT_EQ(0, bitmask);
   bitmask = ares_getsock(channel_, nullptr, 0);
   EXPECT_EQ(0, bitmask);
@@ -708,6 +712,8 @@ TEST_F(LibraryTest, GetTCPSock) {
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
   EXPECT_NE(nullptr, channel);
 
+  EXPECT_EQ(ARES_SUCCESS, (ares_status_t)ares_set_servers_csv(channel, "127.0.0.1"));
+
   ares_socket_t socks[3] = {ARES_SOCKET_BAD, ARES_SOCKET_BAD, ARES_SOCKET_BAD};
   int bitmask = ares_getsock(channel, socks, 3);
   EXPECT_EQ(0, bitmask);
@@ -743,6 +749,8 @@ TEST_F(DefaultChannelTest, VerifySocketFunctionCallback) {
 
   auto my_functions = VirtualizeIO::default_functions;
   size_t count = 0;
+
+  EXPECT_EQ(ARES_SUCCESS, (ares_status_t)ares_set_servers_csv(channel_, "127.0.0.1"));
 
   my_functions.asocket = [](int af, int type, int protocol, void * p) -> ares_socket_t {
     EXPECT_NE(nullptr, p);
