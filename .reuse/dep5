@@ -5,17 +5,17 @@ Source: https://c-ares.org/
 
 # Fuzzer data
 Files: test/fuzzinput/* test/fuzznames/*
-Copyright: The c-ares project and its contributors.
+Copyright: The c-ares project and its contributors
 License: MIT
 
 # Docs
 Files: AUTHORS CONTRIBUTING.md GIT-INFO README.md README.msvc RELEASE-PROCEDURE.md RELEASE-NOTES.md FEATURES.md SECURITY.md DEVELOPER-NOTES.md INSTALL.md FUZZING.md test/README.md src/lib/include/README.md src/lib/thirdparty/apple/README.md
-Copyright: The c-ares project and its contributors.
+Copyright: The c-ares project and its contributors
 License: MIT
 
 # dotfiles
 Files: .gitignore .gitattributes m4/.gitignore test/.gitignore
-Copyright: The c-ares project and its contributors.
+Copyright: The c-ares project and its contributors
 License: MIT
 
 # Imported m4 files
