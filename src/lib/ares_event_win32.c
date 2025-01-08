@@ -665,7 +665,7 @@ static ares_bool_t ares_evsys_win32_afd_cancel(ares_evsys_win32_eventdata_t *ed)
 
   /* NtCancelIoFileEx() may return STATUS_NOT_FOUND if the operation completed
    * just before calling NtCancelIoFileEx(), but we have not yet received the
-   * notifiction (but it should be queued for the next IOCP event).  */
+   * notification (but it should be queued for the next IOCP event).  */
   if (status == STATUS_SUCCESS || status == STATUS_NOT_FOUND) {
     return ARES_TRUE;
   }
