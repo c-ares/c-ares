@@ -237,8 +237,10 @@
 #  undef HAVE_NETIOAPI_H
 #endif
 
-/* Threading support enabled */
-#define CARES_THREADS 1
+/* Threading support enabled for Vista+ */
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT >= 0x0600
+#  define CARES_THREADS 1
+#endif
 
 /* ---------------------------------------------------------------- */
 /*                       TYPEDEF REPLACEMENTS                       */
