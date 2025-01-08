@@ -370,6 +370,8 @@
 #  define HAVE_CONVERTINTERFACELUIDTONAMEA 1
 /* Define to 1 if you have the `NotifyIpInterfaceChange' function. */
 #  define HAVE_NOTIFYIPINTERFACECHANGE 1
+/* Define to 1 if you have the `GetBestRoute2` function */
+#  define HAVE_GETBESTROUTE2 1
 #endif
 
 /* ---------------------------------------------------------------- */

@@ -37,11 +37,13 @@
 #include "ares_private.h"
 #include "ares_event.h"
 #include "ares_event_win32.h"
+
+
+#if defined(USE_WINSOCK) && defined(CARES_THREADS)
+
 #ifdef HAVE_LIMITS_H
 #  include <limits.h>
 #endif
-
-#if defined(USE_WINSOCK)
 
 /* IMPLEMENTATION NOTES
  * ====================

@@ -214,7 +214,10 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
                                 const ULONG                 interfaceMetric)
 {
   /* On this interface, get the best route to that destination. */
-#  if defined(__WATCOMC__)
+#  if !defined(HAVE_GETBESTROUTE2) || defined(__WATCOMC__)
+  (void)luid;
+  (void)dest;
+  (void)interfaceMetric;
   /* OpenWatcom's builtin Windows SDK does not have a definition for
    * MIB_IPFORWARD_ROW2, and also does not allow the usage of SOCKADDR_INET
    * as a variable. Let's work around this by returning the worst possible
@@ -257,7 +260,7 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
    * which describes the combination as a "sum".
    */
   return row.Metric + interfaceMetric;
-#  endif /* __WATCOMC__ */
+#  endif
 }
 
 /*

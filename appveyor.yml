@@ -23,14 +23,14 @@ configuration:
 #     CMAKE_EXTRA_OPTIONS: -DOPENSSL_ROOT_DIR=C:/OpenSSL-Win32
 environment:
   matrix:
-    # MSVC 2022, 32-bit x86 (cmake)
+    # MSVC 2022, 32-bit x86 (cmake, WindowsXP)
     - COMPILER: MSVC
       CONFTOOL: CMAKE
       SYSTEM: CONSOLE
       SKIP_TESTS: no
       MSVC_SETUP_ARG: x86
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat
-      CMAKE_EXTRA_OPTIONS: -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL
+      CMAKE_EXTRA_OPTIONS: -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -DCARES_THREADS=OFF -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0501"
       TOOLSDIR: ./build/bin
       TESTDIR: ./build/bin
       BUILD_GOOGLETEST: yes
@@ -65,15 +65,16 @@ environment:
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat
       BUILD_GOOGLETEST: yes
 
-    # MinGW, 32-bit x86 (makefiles)
+    # MinGW, 32-bit x86 (makefiles, Windows XP)
     - COMPILER: MINGW
       CONFTOOL: MAKE
       SYSTEM: CONSOLE
       SKIP_TESTS: no
       PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
       BUILD_GOOGLETEST: yes
+      MAKE_FLAGS: WIN32_WINNT=0x0501
 
-    # MinGW, 32-bit x86 (cmake static only)
+    # MinGW, 32-bit x86 (cmake static only, Windows XP)
     - COMPILER: MINGW
       CONFTOOL: CMAKE
       SYSTEM: CONSOLE
@@ -81,7 +82,7 @@ environment:
       TOOLSDIR: ./build/bin
       TESTDIR: ./build/bin
       PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
-      CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest
+      CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest -DCARES_THREADS=OFF -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0501"
       BUILD_GOOGLETEST: yes
 
 # Disabled until AppVeyor updates their Visual Studio with this patch:
@@ -117,7 +118,7 @@ build_script:
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE"     cmake --build build --config Debug
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE"     cmake --install build --config Debug
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "MAKE"      copy .\include\ares_build.h.dist .\include\ares_build.h
-  - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "MAKE"      mingw32-make.exe -f Makefile.m32 demos
+  - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "MAKE"      mingw32-make.exe -f Makefile.m32 demos %MAKE_FLAGS%
 
 test_script:
   # We can't use powershell for tests due to treating stderr as an error
