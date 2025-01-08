@@ -8,26 +8,6 @@ env:
 
 task:
   matrix:
-    - name: "Alpine amd64"
-      env:
-        DIST: "ALPINE"
-        LC_ALL: "C"
-        SCAN_BUILD: "scan-build"
-        MAKE: "make"
-        BUILD_ASAN: "yes"
-        BUILD_UBSAN: "yes"
-        BUILD_VALGRIND: "yes"
-        BUILD_ANALYZE: "yes"
-        TEST_SYMBOL_VISIBILITY: "yes"
-      container:
-        image: alpine:latest
-    - name: "Ubuntu OLD amd64"
-      env:
-        DIST: "UBUNTU"
-        LC_ALL: "C"
-        MAKE: "make"
-      container:
-        image: ubuntu:20.04
     - name: "Debian arm64"
       env:
         DIST: "DEBIAN-ARM"
@@ -43,27 +23,19 @@ task:
         BUILD_ASAN: "no"
         BUILD_UBSAN: "no"
         BUILD_ANALYZE: "yes"
+        TEST_DEBUGGER: "gdb"
       arm_container:
         image: debian:latest
     - name: "FreeBSD amd64"
       env:
         DIST: "FREEBSD"
         SCAN_BUILD: "scan-build"
+        TEST_DEBUGGER: "lldb"
         MAKE: "gmake"
         BUILD_ANALYZE: "yes"
         TEST_SYMBOL_VISIBILITY: "yes"
       freebsd_instance:
-        image_family: freebsd-13-3
-    - name: "iOS"
-      env:
-        DIST: "iOS"
-        MAKE: "make"
-        CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 -DCMAKE_OSX_ARCHITECTURES=armv7;armv7s;arm64 -G Ninja"
-        CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
-        CFLAGS: "-arch armv7 -arch armv7s -arch arm64 -miphoneos-version-min=10.0"
-        CONFIG_OPTS: "--host=arm-apple-darwin10 --disable-tests"
-      macos_instance:
-        image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
+        image_family: freebsd-14-1
   matrix:
     - name: "CMAKE"
       env:
@@ -78,6 +50,7 @@ task:
       env:
         BUILD_TYPE: "asan"
         CC: "clang"
+        TEST_DEBUGGER: "none"
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=address"
         CXXFLAGS: "-fsanitize=address"
@@ -88,6 +61,7 @@ task:
       env:
         BUILD_TYPE: "ubsan"
         CC: "clang"
+        TEST_DEBUGGER: "none"
         CONFIG_OPTS: "--enable-debug"
         CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
         CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
@@ -97,6 +71,7 @@ task:
       env:
         BUILD_TYPE: "analyze"
         CC: "clang"
+        TEST_DEBUGGER: "lldb"
         SCAN_WRAP: "${SCAN_BUILD} -v --status-bugs"
         CONFIG_OPTS: "--enable-debug --disable-tests"
         CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
@@ -107,80 +82,39 @@ task:
         BUILD_TYPE: "valgrind"
         TEST_WRAP: "valgrind --leak-check=full"
         TEST_FILTER: "-4 --gtest_filter=-*Container*:-*LiveSearchANY*"
-    - name: "COVERAGE"
-      only_if: $BUILD_COVERAGE == 'yes'
-      env:
-        BUILD_TYPE: "coverage"
-        CI_NAME: "cirrus-ci"
-        CI_BUILD_NUMBER: "${CIRRUS_TASK_ID}"
-        CI_BUILD_URL: "https://cirrus-ci.com/task/${CIRRUS_TASK_ID}"
-        CI_BRANCH: "${CIRRUS_BRANCH}"
-        CI_PULL_REQUEST: "${CIRRUS_PR}"
-        COVERALLS_REPO_TOKEN: "ENCRYPTED[a46bc6ca908e9e74f102c686cde67cae21d3e792dff46a60e860d1179d9349e8eb5a529132d0effefebdb0dbc3f95810]"
-        CONFIG_OPTS: "--enable-debug --disable-shared --enable-code-coverage --enable-tests"
 
   install_script:
     - |
       case "${DIST}" in
-        ALPINE)
-          apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make
-          case "${BUILD_TYPE}" in
-            asan|lsan|ubsan)
-              apk add clang17 compiler-rt
-              ;;
-            analyze)
-              apk add clang17 clang17-analyzer compiler-rt
-              ;;
-            valgrind)
-              apk add gcc g++ valgrind
-              ;;
-            *)
-              apk add gcc g++
-              ;;
-          esac
-          ;;
         UBUNTU|DEBIAN*)
           export DEBIAN_FRONTEND=noninteractive && \
           apt-get update && \
           apt-get install -y cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config
           case "${BUILD_TYPE}" in
             asan|lsan|ubsan)
-              apt-get install -yq clang
+              apt-get install -yq clang lldb
               ;;
             analyze)
-              apt-get install -yq clang clang-tools
+              apt-get install -yq clang clang-tools lldb
               ;;
             valgrind)
               apt-get install -yq valgrind
               ;;
-            coverage)
-              apt-get install -yq lcov git pip
-              pip3 install --break-system-packages --user cpp-coveralls
+            *)
+              apt-get install -yq gdb
               ;;
           esac
           ;;
         FREEBSD)
           # pkg upgrade -y && \
-          pkg install -y bash cmake ninja googletest pkgconf
+          pkg install -y bash cmake ninja googletest pkgconf llvm gmake
           ln -sf /usr/local/bin/bash /bin/bash
+          # Enable TCP FastOpen
+          sysctl net.inet.tcp.fastopen.server_enable=1
+          sysctl net.inet.tcp.fastopen.client_enable=1
           case "${BUILD_TYPE}" in
-            asan|analyze|ubsan|lsan)
-              pkg install -y llvm autoconf automake libtool gmake
-              ;;
             autotools)
-              pkg install -y autoconf automake libtool gmake
-              ;;
-          esac
-          ;;
-        MACOS|iOS)
-          brew update && \
-          brew install ninja cmake googletest
-          case "${BUILD_TYPE}" in
-            asan|ubsan|lsan|analyze)
-              brew install llvm autoconf automake libtool make
-              ;;
-            autotools)
-              brew install autoconf automake libtool make
+              pkg install -y autoconf automake libtool
               ;;
           esac
           ;;
@@ -190,5 +124,4 @@ task:
     - ./ci/build.sh
     - ./ci/test.sh
     - if [ "$BUILD_TYPE" = "autotools" -a "$DIST" = "DEBIAN" ]; then ./ci/distcheck.sh ; fi
-    - if [ "$BUILD_TYPE" = "coverage" ]; then ./ci/covupload.sh ; fi
 
