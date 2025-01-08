@@ -36,7 +36,7 @@ jobs:
           TEST_DEBUGGER: gdb
         run: |
           ./ci/build.sh
-          ./ci/test.sh
+          sudo ./ci/test.sh
       - name: "Autotools: build and test c-ares"
         env:
           BUILD_TYPE: autotools
@@ -53,7 +53,7 @@ jobs:
           TEST_DEBUGGER: gdb
         run: |
           ./ci/build.sh
-          ./ci/test.sh
+          sudo ./ci/test.sh
       - name: "CMake: (hide symbols) build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
@@ -62,7 +62,7 @@ jobs:
           TEST_DEBUGGER: gdb
         run: |
           ./ci/build.sh
-          ./ci/test.sh
+          sudo ./ci/test.sh
       - name: "CMake: UBSAN: build and test c-ares"
         env:
           BUILD_TYPE: "ubsan"
@@ -75,7 +75,7 @@ jobs:
           TEST_DEBUGGER: "none"
         run: |
           ./ci/build.sh
-          ./ci/test.sh
+          sudo ./ci/test.sh
       - name: "CMake: ASAN: build and test c-ares"
         env:
           BUILD_TYPE: "asan"
@@ -88,7 +88,7 @@ jobs:
           TEST_DEBUGGER: "none"
         run: |
           ./ci/build.sh
-          ./ci/test.sh
+          sudo ./ci/test.sh
       - name: "CMake: Static Analyzer: build c-ares"
         env:
           BUILD_TYPE: "analyze"
@@ -119,4 +119,4 @@ jobs:
         run: |
           sudo sysctl -w net.ipv4.tcp_fastopen=0
           ./ci/build.sh
-          ./ci/test.sh
+          sudo ./ci/test.sh
