@@ -38,7 +38,7 @@ jobs:
           TEST_DEBUGGER: gdb
         run: |
           ./ci/build.sh
-          ./ci/test.sh
+          sudo ./ci/test.sh
       - name: "Autotools: build and test c-ares"
         env:
           BUILD_TYPE: autotools
@@ -58,7 +58,7 @@ jobs:
           TEST_DEBUGGER: "none"
         run: |
           ./ci/build.sh
-          ./ci/test.sh
+          sudo ./ci/test.sh
       - name: "CMake: ASAN: build and test c-ares"
         env:
           BUILD_TYPE: "asan"
@@ -71,7 +71,7 @@ jobs:
           TEST_DEBUGGER: "none"
         run: |
           ./ci/build.sh
-          ./ci/test.sh
+          sudo ./ci/test.sh
       - name: "CMake: Static Analyzer: build c-ares"
         env:
           BUILD_TYPE: "analyze"
