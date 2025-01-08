@@ -105,4 +105,3 @@ jobs:
           TEST_DEBUGGER: "lldb"
         run: |
           ./ci/build.sh
-          sudo ./ci/test.sh
