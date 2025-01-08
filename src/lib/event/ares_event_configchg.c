@@ -722,6 +722,8 @@ void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
                                         ares_event_thread_t     *e)
 {
+  (void)configchg;
+  (void)e;
   /* No ability */
   return ARES_ENOTIMP;
 }
@@ -729,6 +731,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
 void ares_event_configchg_destroy(ares_event_configchg_t *configchg)
 {
   /* No-op */
+  (void)configchg;
 }
 
 #endif
