@@ -8,7 +8,9 @@ on:
 jobs:
   build:
     name: Coveralls
-    runs-on: ubuntu-latest
+    # Note gcov on ubuntu-latest (24.04) has some bugs:
+    # https://www.reddit.com/r/cpp_questions/comments/1ewnv8d/lcov_geninfo_error/
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: awalsh128/cache-apt-pkgs-action@latest
@@ -25,7 +27,7 @@ jobs:
         shell: bash
         run: |
           cd build
-          ./bin/arestest -v --gtest_filter='-*LiveSearchTXT*:*LiveSearchANY*:*LiveSearchNS*'
+          sudo ./bin/arestest -v --gtest_filter='-*LiveSearchTXT*:*LiveSearchANY*:*LiveSearchNS*'
       - name: Generate Coverage
         shell: bash
         run: |

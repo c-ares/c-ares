@@ -115,7 +115,7 @@
  *     - If `cookie.unsupported_ts` evaluates less than
  *       `COOKIE_UNSUPPORTED_TIMEOUT`
  *        - Ensure there is no EDNS cookie opt (10) set (shouldn't be unless
- *          requestor had put this themselves), then **skip any remaining
+ *          requester had put this themselves), then **skip any remaining
  *          processing** as we don't want to try to send cookies.
  *     - Otherwise:
  *       - clear all cookie settings, set `cookie.state = INITIAL`.
