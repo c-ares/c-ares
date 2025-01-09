@@ -21,7 +21,7 @@ issue to only the reporter and the project's security team.
 ## Reporting Vulnerabilities
 
 - The person discovering the issue, the reporter, reports the vulnerability
-  privately to [c-ares-security@haxx.se)[mailto:c-ares-security@haxx.se). That's
+  privately to [c-ares-security@haxx.se](mailto:c-ares-security@haxx.se). That's
   an email alias that reaches a handful of selected and trusted people.
 
 - Messages that do not relate to the reporting or managing of an undisclosed
@@ -137,7 +137,7 @@ announcement.
 
 ## Joining the Security Team
 
-Who is on the security team receiving notices via [c-ares-security@haxx.se)[mailto:c-ares-security@haxx.se)?
+Who is on the security team receiving notices via [c-ares-security@haxx.se](mailto:c-ares-security@haxx.se)?
 
 There are a couple of criteria you must meet, and then we might ask you to join
 the list or you can ask to join it. It really isn't very formal. We basically
