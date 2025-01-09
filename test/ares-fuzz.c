@@ -33,7 +33,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef WIN32
+#ifdef _WIN32
 #  include <io.h>
 #else
 #  include <unistd.h>
