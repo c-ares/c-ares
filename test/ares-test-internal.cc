@@ -299,6 +299,7 @@ TEST_F(LibraryTest, SlistMisuse) {
   EXPECT_EQ(NULL, ares_slist_node_claim(NULL));
 }
 
+#if !defined(_WIN32) || _WIN32_WINNT >= 0x0600
 TEST_F(LibraryTest, IfaceIPs) {
   ares_status_t      status;
   ares_iface_ips_t *ips = NULL;
@@ -354,6 +355,7 @@ TEST_F(LibraryTest, IfaceIPs) {
 
   ares_iface_ips_destroy(ips);
 }
+#endif
 
 TEST_F(LibraryTest, HtableMisuse) {
   EXPECT_EQ(NULL, ares_htable_create(NULL, NULL, NULL, NULL));

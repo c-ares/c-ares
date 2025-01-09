@@ -594,6 +594,7 @@ AC_CHECK_DECL(pipe,            [AC_DEFINE([HAVE_PIPE],              1, [Define t
 AC_CHECK_DECL(pipe2,           [AC_DEFINE([HAVE_PIPE2],             1, [Define to 1 if you have `pipe2`]          )], [], $cares_all_includes)
 AC_CHECK_DECL(kqueue,          [AC_DEFINE([HAVE_KQUEUE],            1, [Define to 1 if you have `kqueue`]         )], [], $cares_all_includes)
 AC_CHECK_DECL(epoll_create1,   [AC_DEFINE([HAVE_EPOLL],             1, [Define to 1 if you have `epoll_{create1,ctl,wait}`])], [], $cares_all_includes)
+AC_CHECK_DECL(GetBestRoute2,   [AC_DEFINE([HAVE_GETBESTROUTE2],     1, [Define to 1 if you have `GetBestRoute2`]  )], [], $cares_all_includes)
 AC_CHECK_DECL(ConvertInterfaceIndexToLuid, [AC_DEFINE([HAVE_CONVERTINTERFACEINDEXTOLUID], 1, [Define to 1 if you have `ConvertInterfaceIndexToLuid`])], [], $cares_all_includes)
 AC_CHECK_DECL(ConvertInterfaceLuidToNameA, [AC_DEFINE([HAVE_CONVERTINTERFACELUIDTONAMEA], 1, [Define to 1 if you have `ConvertInterfaceLuidToNameA`])], [], $cares_all_includes)
 AC_CHECK_DECL(NotifyIpInterfaceChange,     [AC_DEFINE([HAVE_NOTIFYIPINTERFACECHANGE],     1, [Define to 1 if you have `NotifyIpInterfaceChange`]    )], [], $cares_all_includes)
