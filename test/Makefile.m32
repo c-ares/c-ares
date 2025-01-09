@@ -10,6 +10,8 @@ CXX = g++
 CC = gcc
 LD = g++
 
+WIN32_WINNT ?= 0x0602
+
 ifeq "$(GTEST_ROOT)" ""
   $(error missing GTEST_ROOT)
 endif
@@ -19,7 +21,7 @@ ARES_SRC_DIR = ..
 # Where to find the built c-ares static library
 ARES_BLD_DIR = ..
 ARESLIB = $(ARES_BLD_DIR)/src/lib/libcares.a
-CPPFLAGS = -I$(ARES_SRC_DIR)/include -I$(ARES_SRC_DIR)/src/lib -I$(ARES_SRC_DIR)/src/lib/include -I$(GTEST_ROOT)/include -DCARES_STATICLIB -DCARES_NO_DEPRECATED
+CPPFLAGS = -I$(ARES_SRC_DIR)/include -I$(ARES_SRC_DIR)/src/lib -I$(ARES_SRC_DIR)/src/lib/include -I$(GTEST_ROOT)/include -DCARES_STATICLIB -DCARES_NO_DEPRECATED -D_WIN32_WINNT=$(WIN32_WINNT)
 CXXFLAGS = -Wall $(PTHREAD_CFLAGS) -std=gnu++14
 LDFLAGS =
 LDLIBS = -lws2_32 -liphlpapi

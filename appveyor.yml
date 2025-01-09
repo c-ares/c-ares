@@ -127,8 +127,8 @@ test_script:
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "NMAKE" if not "%SKIP_TESTS%" == "yes" nmake GTEST_ROOT=C:\projects\googletest /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "NMAKE" if not "%SKIP_TESTS%" == "yes" .\msvc\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "MAKE"  if not "%SKIP_TESTS%" == "yes" cd test
-  - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "MAKE"  if not "%SKIP_TESTS%" == "yes" mingw32-make.exe GTEST_ROOT=C:\projects\googletest -f Makefile.m32 vtest
-  - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "MAKE"  if not "%SKIP_TESTS%" == "yes" mingw32-make.exe GTEST_ROOT=C:\projects\googletest -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe
+  - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "MAKE"  if not "%SKIP_TESTS%" == "yes" mingw32-make.exe GTEST_ROOT=C:\projects\googletest -f Makefile.m32 vtest %MAKE_FLAGS%
+  - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "MAKE"  if not "%SKIP_TESTS%" == "yes" mingw32-make.exe GTEST_ROOT=C:\projects\googletest -f Makefile.m32 aresfuzz.exe aresfuzzname.exe dnsdump.exe %MAKE_FLAGS%
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "MAKE"  if not "%SKIP_TESTS%" == "yes" .\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" cd %TESTDIR%
   - if "%SYSTEM%" == "CONSOLE" if "%CONFTOOL%" == "CMAKE" if not "%SKIP_TESTS%" == "yes" .\adig.exe www.google.com
