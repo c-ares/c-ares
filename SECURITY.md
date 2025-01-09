@@ -36,7 +36,10 @@ issue to only the reporter and the project's security team.
    security team are volunteers.  A vast majority of vulnerability reports
    we receive are invalid.  Please don't waste their time.
 2. The report must have a detailed description of the issue or issues.
-3. The report should have a valid minimal test case to reproduce the issue.
+3. The report must contain the c-ares version that was tested.  If from an
+   unreleased version (e.g. from git main), please provide the branch name and
+   git hash tested.
+4. The report should have a valid minimal test case to reproduce the issue.
    1. Any code in a test case that isn't relevant to reproducing the issue
       ***must*** be removed.
    2. The test case ***must*** compile cleanly with warnings enabled, for
@@ -55,8 +58,8 @@ issue to only the reporter and the project's security team.
          generated the object (e.g. use `ares_free_hostent()` to free
          a `struct hostent *` created by `ares_parse_ptr_reply()`, not
          `ares_free_data()`).
-4. The report should include a stacktrace/backtrace of the issue if possible.
-5. Include the below acknowledgement statement in the email containing the
+5. The report should include a stacktrace/backtrace of the issue if possible.
+6. Include the below acknowledgement statement in the email containing the
    vulnerability report.  Evaluation of the vulnerabilities will not occur
    without this statement.  The team will simply respond redirecting you to this
    document on reporting requirements.  Acknowledgement statement:
