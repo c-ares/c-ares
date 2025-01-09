@@ -57,7 +57,10 @@ issue to only the reporter and the project's security team.
          a `struct hostent *` created by `ares_parse_ptr_reply()`, not
          `ares_free_data()`).
 4. The report should include a stacktrace/backtrace of the issue if possible.
-5. Include this statement in the email text when submiting a report:
+5. Include the below acknowledgement statement in the email containing the
+   vulnerability report.  Evaluation of the vulnerabilities will not occur
+   without this statement.  The team will simply respond redirecting you to this
+   document on reporting requirements.  Acknowledgement statement:
 ```
 I acknowledge I have read and complied with the security reporting requirements
 as described in https://c-ares.org/security.html
