@@ -62,7 +62,8 @@ issue to only the reporter and the project's security team.
 6. Include the below acknowledgement statement in the email containing the
    vulnerability report.  Evaluation of the vulnerabilities will not occur
    without this statement.  The team will simply respond redirecting you to this
-   document on reporting requirements.  Acknowledgement statement:
+   document on reporting requirements if the statement is not included.
+   Acknowledgement statement:
    ```
    I acknowledge I have read and complied with the security reporting
    requirements as described in https://c-ares.org/security.html
