@@ -24,6 +24,9 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ares_private.h"
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 #ifdef CARES_THREADS
 #  ifdef _WIN32
@@ -67,6 +70,8 @@ void ares_thread_mutex_unlock(ares_thread_mutex_t *mut)
   }
   LeaveCriticalSection(&mut->mutex);
 }
+
+#    if _WIN32_WINNT >= 0x0600 /* Vista */
 
 struct ares_thread_cond {
   CONDITION_VARIABLE cond;
@@ -119,18 +124,226 @@ ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
 
 ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
                                          ares_thread_mutex_t *mut,
-                                         unsigned long        timeout_ms)
+                                         size_t               timeout_ms)
 {
+  DWORD tout;
+
   if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
   }
 
-  if (!SleepConditionVariableCS(&cond->cond, &mut->mutex, timeout_ms)) {
+  if (timeout_ms == SIZE_MAX) {
+    tout = INFINITE;
+  } else {
+    tout = (DWORD)timeout_ms;
+  }
+
+  if (!SleepConditionVariableCS(&cond->cond, &mut->mutex, tout)) {
     return ARES_ETIMEOUT;
   }
 
   return ARES_SUCCESS;
 }
+
+#    else
+
+typedef enum {
+  ARES_W32_COND_SIGNAL    = 0,
+  ARES_W32_COND_BROADCAST,
+  ARES_W32_COND_EVMAX,
+  ARES_W32_COND_NONE = ARES_W32_COND_EVMAX
+} ares_w32_cond_event_t;
+
+struct ares_thread_cond {
+  HANDLE                events[2];
+  HANDLE                gate;
+  CRITICAL_SECTION      mutex;
+  size_t                waiters;
+  ares_w32_cond_event_t event;
+};
+
+ares_thread_cond_t *ares_thread_cond_create(void)
+{
+  ares_thread_cond_t *cond;
+
+  cond = ares_malloc_zero(sizeof(*cond));
+  if (cond == NULL) {
+    return NULL;
+  }
+
+  cond->events[ARES_W32_COND_SIGNAL] = CreateEvent(NULL, FALSE, FALSE, NULL);
+  if (cond->events[ARES_W32_COND_SIGNAL] == NULL) {
+    goto fail;
+  }
+
+  cond->events[ARES_W32_COND_BROADCAST] = CreateEvent(NULL, TRUE, FALSE, NULL);
+  if (cond->events[ARES_W32_COND_BROADCAST] == NULL) {
+    goto fail;
+  }
+
+  /* Use a semaphore as a gate so we don't lose signals */
+  cond->gate = CreateSemaphore(NULL, 1, 1, NULL);
+  if (cond->gate == NULL) {
+    goto fail;
+  }
+
+  InitializeCriticalSection(&cond->mutex);
+  cond->waiters = 0;
+  cond->event   = ARES_W32_COND_NONE;
+
+  return cond;
+
+fail:
+  ares_thread_cond_destroy(cond);
+  return NULL;
+}
+
+void ares_thread_cond_destroy(ares_thread_cond_t *cond)
+{
+  if (cond == NULL)
+    return;
+
+  if (cond->events[ARES_W32_COND_SIGNAL]) {
+    CloseHandle(cond->events[ARES_W32_COND_SIGNAL]);
+  }
+  if (cond->events[ARES_W32_COND_BROADCAST]) {
+    CloseHandle(cond->events[ARES_W32_COND_BROADCAST]);
+  }
+  if (cond->gate) {
+    CloseHandle(cond->gate);
+  }
+  DeleteCriticalSection(&cond->mutex);
+
+  ares_free(cond);
+}
+
+ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
+                                         ares_thread_mutex_t *mut,
+                                         size_t               timeout_ms)
+{
+  DWORD rv;
+  DWORD dwMilliseconds;
+
+  if (cond == NULL || mut == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  /* We may only enter when no wakeups active this will prevent the lost
+   * wakeup */
+  WaitForSingleObject(cond->gate, INFINITE);
+
+  EnterCriticalSection(&cond->mutex);
+  /* count waiters passing through */
+  cond->waiters++;
+  LeaveCriticalSection(&cond->mutex);
+
+  /* Open Gate */
+  ReleaseSemaphore(cond->gate, 1, NULL);
+
+  /* Release passed in mutex */
+  ares_thread_mutex_unlock(mut);
+
+  if (timeout_ms == SIZE_MAX) {
+    dwMilliseconds = INFINITE;
+  } else {
+    dwMilliseconds = (DWORD)timeout_ms;
+  }
+  rv = WaitForMultipleObjects(ARES_W32_COND_EVMAX, cond->events, FALSE,
+                              dwMilliseconds);
+
+  /* We go into a critical section to make sure cond->waiters isn't checked
+   * while we decrement.  This is especially important for a timeout since the
+   * gate may not be closed. We need to check to see if a broadcast/signal was
+   * pending as this thread could have been preempted prior to
+   * EnterCriticalSection but after WaitForMultipleObjects() so we may be
+   * responsible for resetting the event and closing the gate */
+  EnterCriticalSection(&cond->mutex);
+  cond->waiters--;
+
+  if (cond->event != ARES_W32_COND_NONE && cond->waiters == 0) {
+    /* Last waiter needs to reset the event on(as a broadcast event is not
+     * automatic) and also re-open the gate */
+    if (cond->event == ARES_W32_COND_BROADCAST) {
+      ResetEvent(cond->events[ARES_W32_COND_BROADCAST]);
+    }
+
+    /* Open Gate (closed by ares_thread_cond_broadcast()) since there are no
+     * more waiters for the event */
+    ReleaseSemaphore(cond->gate, 1, NULL);
+    cond->event = ARES_W32_COND_NONE;
+  } else if (rv == WAIT_OBJECT_0 + ARES_W32_COND_SIGNAL) {
+    /* If specifically, this thread was signalled and there are more waiting,
+     * re-open the gate and reset the event */
+    ReleaseSemaphore(cond->gate, 1, NULL);
+    cond->event = ARES_W32_COND_NONE;
+  } else {
+    /* This could be a standard timeout with more waiters, don't do anything */
+  }
+  LeaveCriticalSection(&cond->mutex);
+
+  /* re-lock the passed in mutex */
+  ares_thread_mutex_lock(mut);
+
+  if (rv == WAIT_TIMEOUT) {
+    return ARES_ETIMEOUT;
+  }
+
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
+                                    ares_thread_mutex_t *mut)
+{
+  return ares_thread_cond_timedwait(cond, mut, SIZE_MAX);
+}
+
+void ares_thread_cond_broadcast(ares_thread_cond_t *cond)
+{
+  if (cond == NULL) {
+    return;
+  }
+
+  /* close gate to prevent more waiters while broadcasting */
+  WaitForSingleObject(cond->gate, INFINITE);
+
+  /* If there are waiters, send a broadcast event,
+   * otherwise, just reopen the gate */
+  EnterCriticalSection(&cond->mutex);
+
+  cond->event = ARES_W32_COND_BROADCAST;
+  if (cond->waiters) {
+    /* wake all waiters */
+    SetEvent(cond->events[ARES_W32_COND_BROADCAST]);
+  } else {
+    /* if no waiters just reopen gate */
+    ReleaseSemaphore(cond->gate, 1, NULL);
+  }
+
+  LeaveCriticalSection(&cond->mutex);
+}
+
+void ares_thread_cond_signal(ares_thread_cond_t *cond)
+{
+  if (cond == NULL) {
+    return;
+  }
+
+  /* close gate to prevent more waiters while signalling */
+  WaitForSingleObject(cond->gate, INFINITE);
+
+  EnterCriticalSection(&cond->mutex);
+  cond->event = ARES_W32_COND_SIGNAL;
+  if (cond->waiters) {
+    /* wake one waiter */
+    SetEvent(cond->events[ARES_W32_COND_SIGNAL]);
+  } else {
+    /* no waiters, just reopen the gate */
+    ReleaseSemaphore(cond->gate, 1, NULL);
+  }
+  LeaveCriticalSection(&cond->mutex);
+}
+
+#    endif
 
 struct ares_thread {
   HANDLE thread;
@@ -322,7 +535,7 @@ ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
   return ARES_SUCCESS;
 }
 
-static void ares_timespec_timeout(struct timespec *ts, unsigned long add_ms)
+static void ares_timespec_timeout(struct timespec *ts, size_t add_ms)
 {
 #    if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_REALTIME)
   clock_gettime(CLOCK_REALTIME, ts);
@@ -347,12 +560,16 @@ static void ares_timespec_timeout(struct timespec *ts, unsigned long add_ms)
 
 ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
                                          ares_thread_mutex_t *mut,
-                                         unsigned long        timeout_ms)
+                                         size_t               timeout_ms)
 {
   struct timespec ts;
 
   if (cond == NULL || mut == NULL) {
     return ARES_EFORMERR;
+  }
+
+  if (timeout_ms == SIZE_MAX) {
+    return ares_thread_cond_wait(cond, mut);
   }
 
   ares_timespec_timeout(&ts, timeout_ms);
@@ -470,7 +687,7 @@ ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
 
 ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
                                          ares_thread_mutex_t *mut,
-                                         unsigned long        timeout_ms)
+                                         size_t               timeout_ms)
 {
   (void)cond;
   (void)mut;

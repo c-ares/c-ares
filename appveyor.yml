@@ -30,7 +30,7 @@ environment:
       SKIP_TESTS: no
       MSVC_SETUP_ARG: x86
       MSVC_SETUP_PATH: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat
-      CMAKE_EXTRA_OPTIONS: -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -DCARES_THREADS=OFF -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0501" -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0501"
+      CMAKE_EXTRA_OPTIONS: -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0501" -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0501"
       TOOLSDIR: ./build/bin
       TESTDIR: ./build/bin
       BUILD_GOOGLETEST: yes
@@ -82,7 +82,7 @@ environment:
       TOOLSDIR: ./build/bin
       TESTDIR: ./build/bin
       PATH: C:\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin;%PATH%
-      CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest -DCARES_THREADS=OFF -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0501" -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0501"
+      CMAKE_EXTRA_OPTIONS: -DCARES_SHARED=OFF -GNinja -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=C:\projects\googletest -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0501" -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0501"
       BUILD_GOOGLETEST: yes
 
 # Disabled until AppVeyor updates their Visual Studio with this patch:
