@@ -44,9 +44,11 @@ void          ares_thread_cond_signal(ares_thread_cond_t *cond);
 void          ares_thread_cond_broadcast(ares_thread_cond_t *cond);
 ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
                                     ares_thread_mutex_t *mut);
+
+/* NOTE: value of SIZE_MAX for timeout_ms means infinite */
 ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
                                          ares_thread_mutex_t *mut,
-                                         unsigned long        timeout_ms);
+                                         size_t               timeout_ms);
 
 
 struct ares_thread;

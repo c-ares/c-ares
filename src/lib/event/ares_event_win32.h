@@ -156,6 +156,16 @@ typedef NTSTATUS(NTAPI *NtCreateFile_t)(
 #    define HANDLE_FLAG_INHERIT 0x00000001
 #  endif
 
+
+#  ifndef HAVE_OVERLAPPED_ENTRY
+typedef struct _OVERLAPPED_ENTRY {
+  ULONG_PTR    lpCompletionKey;
+  LPOVERLAPPED lpOverlapped;
+  ULONG_PTR    Internal;
+  DWORD        dwNumberOfBytesTransferred;
+} OVERLAPPED_ENTRY, *LPOVERLAPPED_ENTRY;
+#  endif
+
 #endif /* _WIN32 */
 
 #endif /* __ARES_EVENT_WIN32_H */

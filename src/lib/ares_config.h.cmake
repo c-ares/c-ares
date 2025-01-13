@@ -148,6 +148,15 @@
 /* Define to 1 if you have the `GetBestRoute2' function. */
 #cmakedefine HAVE_GETBESTROUTE2 1
 
+/* Define to 1 if you have the `WSAIoctl' function. */
+#cmakedefine HAVE_WSAIOCTL 1
+
+/* Define to 1 if you have the `OVERLAPPED_ENTRY' data type. */
+#cmakedefine HAVE_OVERLAPPED_ENTRY 1
+
+/* Define to 1 if you have the `GetQueuedCompletionStatusEx' function. */
+#cmakedefine HAVE_GETQUEUEDCOMPLETIONSTATUSEX 1
+
 /* Define to 1 if you have the `ConvertInterfaceIndexToLuid' function. */
 #cmakedefine HAVE_CONVERTINTERFACEINDEXTOLUID 1
 
@@ -159,6 +168,9 @@
 
 /* Define to 1 if you have the `RegisterWaitForSingleObject' function. */
 #cmakedefine HAVE_REGISTERWAITFORSINGLEOBJECT 1
+
+/* Define to 1 if you have the `SetFileCompletionNotificationModes' function. */
+#cmakedefine HAVE_SETFILECOMPLETIONNOTIFICATIONMODES 1
 
 /* Define to 1 if you have a IPv6 capable working inet_net_pton function. */
 #cmakedefine HAVE_INET_NET_PTON 1

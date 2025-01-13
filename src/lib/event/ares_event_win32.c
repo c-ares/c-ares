@@ -404,10 +404,12 @@ static ares_slist_node_t *ares_afd_handle_create(ares_evsys_win32_t *ew)
     goto fail;
   }
 
+#ifdef HAVE_SETFILECOMPLETIONNOTIFICATIONMODES
   if (!SetFileCompletionNotificationModes(afd->afd_handle,
                                           FILE_SKIP_SET_EVENT_ON_HANDLE)) {
     goto fail;
   }
+#endif
 
   node = ares_slist_insert(ew->afd_handles, afd);
   if (node == NULL) {
@@ -521,6 +523,11 @@ fail:
 
 static ares_socket_t ares_evsys_win32_basesocket(ares_socket_t socket)
 {
+#ifndef HAVE_WSAIOCTL
+  /* Assume we don't have an LSP and return the provided socket as the base
+   * socket.  WSAIoctl() isn't supported on Windows XP or below */
+  return socket;
+#else
   while (1) {
     DWORD         bytes; /* Not used */
     ares_socket_t base_socket = ARES_SOCKET_BAD;
@@ -558,6 +565,7 @@ static ares_socket_t ares_evsys_win32_basesocket(ares_socket_t socket)
   }
 
   return socket;
+#endif
 }
 
 static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
@@ -906,6 +914,46 @@ static ares_bool_t ares_evsys_win32_process_socket_event(
   return ARES_TRUE;
 }
 
+static BOOL ares_GetQueuedCompletionStatusEx(
+  HANDLE CompletionPort,
+  LPOVERLAPPED_ENTRY lpCompletionPortEntries,
+  ULONG ulCount,
+  PULONG ulNumEntriesRemoved,
+  DWORD dwMilliseconds,
+  BOOL fAlertable)
+{
+#ifdef HAVE_GETQUEUEDCOMPLETIONSTATUSEX
+  return GetQueuedCompletionStatusEx(CompletionPort, lpCompletionPortEntries,
+    ulCount, ulNumEntriesRemoved, dwMilliseconds, fAlertable);
+#else
+  ULONG i;
+
+  (void)fAlertable;
+
+  memset(lpCompletionPortEntries, 0,
+         ulCount * sizeof(*lpCompletionPortEntries));
+  (*ulNumEntriesRemoved) = 0;
+
+  for (i=0; i<ulCount; i++) {
+    if (!GetQueuedCompletionStatus(CompletionPort,
+         &lpCompletionPortEntries[i].dwNumberOfBytesTransferred,
+         &lpCompletionPortEntries[i].lpCompletionKey,
+         &lpCompletionPortEntries[i].lpOverlapped,
+         (i == 0)?dwMilliseconds:0)) {
+      break;
+    }
+
+    (*ulNumEntriesRemoved)++;
+  }
+
+  if (*ulNumEntriesRemoved > 0) {
+    return TRUE;
+  }
+
+  return FALSE;
+#endif
+}
+
 static size_t ares_evsys_win32_wait(ares_event_thread_t *e,
                                     unsigned long        timeout_ms)
 {
@@ -923,8 +971,9 @@ static size_t ares_evsys_win32_wait(ares_event_thread_t *e,
    * on subsequent attempts, ensure the timeout is 0 */
   do {
     nentries = maxentries;
-    status   = GetQueuedCompletionStatusEx(ew->iocp_handle, entries, nentries,
-                                           &nentries, tout, FALSE);
+    status   = ares_GetQueuedCompletionStatusEx(ew->iocp_handle, entries,
+                                                nentries, &nentries, tout,
+                                                FALSE);
 
     /* Next loop around, we want to return instantly if there are no events to
      * be processed */
