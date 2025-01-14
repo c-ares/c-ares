@@ -237,10 +237,8 @@
 #  undef HAVE_NETIOAPI_H
 #endif
 
-/* Threading support enabled for Vista+ */
-#if !defined(_WIN32_WINNT) || _WIN32_WINNT >= 0x0600
-#  define CARES_THREADS 1
-#endif
+/* Threading support enabled on Windows always (really XP+ only). */
+#define CARES_THREADS 1
 
 /* ---------------------------------------------------------------- */
 /*                       TYPEDEF REPLACEMENTS                       */
@@ -359,6 +357,29 @@
 
 /* Define to 1 if you have the `RegisterWaitForSingleObject' function. */
 #define HAVE_REGISTERWAITFORSINGLEOBJECT 1
+
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+/* Define to 1 if you have the `SetFileCompletionNotificationModes' function. */
+#  define HAVE_SETFILECOMPLETIONNOTIFICATIONMODES 1
+/* Define to 1 if you have the `WSAIoctl' function. */
+#  define HAVE_WSAIOCTL 1
+/* Define to 1 if you have the `GetQueuedCompletionStatusEx' function. */
+#  define HAVE_GETQUEUEDCOMPLETIONSTATUSEX 1
+#endif
+
+/* OVERLAPPED_ENTRY was introduced with Windows Vista for use by
+ * GetQueuedCompletionStatusEx().  We define it if it doesn't exist as we
+ * re-implement GetQueuedCompletionStatusEx() for compatibility with XP.
+ * However, OVERLAPPED_ENTRY is *always* defined when using a Vista or Later
+ * SDK even when _WIN32_WINNT is set to < 0x0600.  So we're assuming anyone
+ * trying to support older windows versions is still probably compiling with a
+ * newer SDK.
+ * We have no way to detect the existence at compile time since we're not using
+ * autotools or cmake, so assume it is defined.   If someone is using something
+ * ancient like VC6 with the Windows Platform SDK for XP, then they'll need to
+ * modify this define.
+ */
+#define HAVE_OVERLAPPED_ENTRY 1
 
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600) && \
   !defined(__WATCOMC__) && !defined(WATT32)

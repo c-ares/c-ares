@@ -535,6 +535,8 @@ AC_CHECK_TYPE(socklen_t,
 
 AC_CHECK_TYPE(SOCKET, [], [], $cares_all_includes)
 
+AC_CHECK_TYPE(OVERLAPPED_ENTRY, [AC_DEFINE([HAVE_OVERLAPPED_ENTRY], 1, [Define to 1 if you have `OVERLAPPED_ENTRY`] )], [], $cares_all_includes)
+
 dnl ###############################################################################
 
 dnl clock_gettime might require an external library
@@ -595,11 +597,14 @@ AC_CHECK_DECL(pipe2,           [AC_DEFINE([HAVE_PIPE2],             1, [Define t
 AC_CHECK_DECL(kqueue,          [AC_DEFINE([HAVE_KQUEUE],            1, [Define to 1 if you have `kqueue`]         )], [], $cares_all_includes)
 AC_CHECK_DECL(epoll_create1,   [AC_DEFINE([HAVE_EPOLL],             1, [Define to 1 if you have `epoll_{create1,ctl,wait}`])], [], $cares_all_includes)
 AC_CHECK_DECL(GetBestRoute2,   [AC_DEFINE([HAVE_GETBESTROUTE2],     1, [Define to 1 if you have `GetBestRoute2`]  )], [], $cares_all_includes)
+AC_CHECK_DECL(GetQueuedCompletionStatusEx, [AC_DEFINE([HAVE_GETQUEUEDCOMPLETIONSTATUSEX], 1, [Define to 1 if you have `GetQueuedCompletionStatusEx`])], [], $cares_all_includes)
 AC_CHECK_DECL(ConvertInterfaceIndexToLuid, [AC_DEFINE([HAVE_CONVERTINTERFACEINDEXTOLUID], 1, [Define to 1 if you have `ConvertInterfaceIndexToLuid`])], [], $cares_all_includes)
 AC_CHECK_DECL(ConvertInterfaceLuidToNameA, [AC_DEFINE([HAVE_CONVERTINTERFACELUIDTONAMEA], 1, [Define to 1 if you have `ConvertInterfaceLuidToNameA`])], [], $cares_all_includes)
 AC_CHECK_DECL(NotifyIpInterfaceChange,     [AC_DEFINE([HAVE_NOTIFYIPINTERFACECHANGE],     1, [Define to 1 if you have `NotifyIpInterfaceChange`]    )], [], $cares_all_includes)
 AC_CHECK_DECL(RegisterWaitForSingleObject, [AC_DEFINE([HAVE_REGISTERWAITFORSINGLEOBJECT], 1, [Define to 1 if you have `RegisterWaitForSingleObject`])], [], $cares_all_includes)
 AC_CHECK_DECL(__system_property_get,       [AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET],       1, [Define to 1 if you have `__system_property_get`]      )], [], $cares_all_includes)
+AC_CHECK_DECL(SetFileCompletionNotificationModes, [AC_DEFINE([HAVE_SETFILECOMPLETIONNOTIFICATIONMODES], 1, [Define to 1 if you have `SetFileCompletionNotificationModes`])], [], $cares_all_includes)
+AC_CHECK_DECL(WSAIoctl, [AC_DEFINE([HAVE_WSAIoctl], 1, [Define to 1 if you have `WSAIoctl`])], [], $cares_all_includes)
 
 
 dnl ###############################################################################
