@@ -354,9 +354,9 @@ static void end_hquery(struct host_query *hquery, ares_status_t status)
     hquery->ai = NULL;
   }
 
-  if (hquery->hints->ai_query_id){
+  if (hquery->hints.ai_query_id && hquery->ai != NULL){
     hquery->ai->qid_a = hquery->qid_a;
-    hquery->ai->qid_aaaas = hquery->qid_aaaa;
+    hquery->ai->qid_aaaa = hquery->qid_aaaa;
   }
 
   hquery->callback(hquery->arg, (int)status, (int)hquery->timeouts, hquery->ai);
