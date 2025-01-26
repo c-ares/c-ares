@@ -497,11 +497,7 @@ IF (CARES_THREADS)
 			CARES_EXTRAINCLUDE_IFSET (HAVE_PTHREAD_H                       pthread.h)
 			CARES_EXTRAINCLUDE_IFSET (HAVE_PTHREAD_NP_H                    pthread_np.h)
 			CHECK_SYMBOL_EXISTS (pthread_init  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_PTHREAD_INIT)
-			# Make sure libcares.pc.cmake knows about thread libraries on static builds
-			# The variable set by FIND_PACKAGE(Threads) has a -l prefix on it, we need
-			# to strip that first since CARES_DEPENDENT_LIBS doesn't expect that.
-			STRING (REPLACE "-l" "" CARES_THREAD_LIBRARY "${CMAKE_THREAD_LIBS_INIT}")
-			LIST (APPEND CARES_DEPENDENT_LIBS ${CARES_THREAD_LIBRARY})
+			LIST (APPEND CARES_DEPENDENT_LIBS ${CMAKE_THREAD_LIBS_INIT})
 		ELSE ()
 			MESSAGE (WARNING "Threading support not found, disabling...")
 			SET (CARES_THREADS OFF)
@@ -750,12 +746,14 @@ IF (CARES_INSTALL)
 	INSTALL (EXPORT ${PROJECT_NAME}-targets COMPONENT Devel DESTINATION ${CMAKECONFIG_INSTALL_DIR} NAMESPACE ${PROJECT_NAME}::)
 	INSTALL (FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake" "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake" COMPONENT Devel DESTINATION ${CMAKECONFIG_INSTALL_DIR})
 
-	# pkgconfig support
-	IF (NOT CARES_SHARED)
-		FOREACH (LIB ${CARES_DEPENDENT_LIBS})
-			SET (CARES_PRIVATE_LIBS "${CARES_PRIVATE_LIBS} -l${LIB}")
-		ENDFOREACH ()
-	ENDIF ()
+	# pkgconfig support for static builds
+	FOREACH (LIB ${CARES_DEPENDENT_LIBS})
+		IF (NOT LIB MATCHES "^-")
+			SET (LIB "-l${LIB}")
+		ENDIF ()
+		SET (CARES_PRIVATE_LIBS "${CARES_PRIVATE_LIBS} ${LIB}")
+	ENDFOREACH ()
+
 	CONFIGURE_FILE("libcares.pc.cmake" "libcares.pc" @ONLY)
 	INSTALL (FILES "${CMAKE_CURRENT_BINARY_DIR}/libcares.pc" COMPONENT Devel DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 ENDIF ()
