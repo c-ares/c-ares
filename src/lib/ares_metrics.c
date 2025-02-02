@@ -197,7 +197,7 @@ void ares_metrics_record(const struct query *query, struct server_state *server,
     }
 
     if (query_ms > server->metrics[i].latency_max_ms) {
-      server->metrics[i].latency_min_ms = query_ms;
+      server->metrics[i].latency_max_ms = query_ms;
     }
 
     server->metrics[i].total_count++;
