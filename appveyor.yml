@@ -109,7 +109,7 @@ before_build:
   # Setup build environment for the selected compiler (not all compilers need to do anything here).
   #  -- Visual Studio --
   - if "%COMPILER%" == "MSVC" call "%MSVC_SETUP_PATH%" %MSVC_SETUP_ARG%
-  - if "%BUILD_GOOGLETEST%" == "yes" git clone --depth=1 https://github.com/google/googletest googletest
+  - if "%BUILD_GOOGLETEST%" == "yes" git clone --depth=1 -b v1.15.x https://github.com/google/googletest googletest
   - if "%BUILD_GOOGLETEST%" == "yes" cd googletest
   - if "%BUILD_GOOGLETEST%" == "yes" cmake -DCMAKE_INSTALL_PREFIX=C:\projects\googletest -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -GNinja -Bbuild
   - if "%BUILD_GOOGLETEST%" == "yes" cmake --build build --config Debug
