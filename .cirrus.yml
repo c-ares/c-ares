@@ -35,7 +35,7 @@ task:
         BUILD_ANALYZE: "yes"
         TEST_SYMBOL_VISIBILITY: "yes"
       freebsd_instance:
-        image_family: freebsd-14-1
+        image_family: freebsd-14
   matrix:
     - name: "CMAKE"
       env:
