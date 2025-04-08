@@ -105,6 +105,7 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 struct ares_rand_state;
 typedef struct ares_rand_state ares_rand_state;
 
+#include "ares__array.h"
 #include "ares__llist.h"
 #include "ares__slist.h"
 #include "ares__htable_strvp.h"
@@ -411,7 +412,8 @@ ares_bool_t   ares__timedout(const ares_timeval_t *now,
 ares_status_t ares__send_query(struct query *query, const ares_timeval_t *now);
 ares_status_t ares__requeue_query(struct query         *query,
                                   const ares_timeval_t *now,
-                                  ares_status_t         status);
+                                  ares_status_t         status,
+                                  ares__array_t       **requeue);
 
 /*! Retrieve a list of names to use for searching.  The first successful
  *  query in the list wins.  This function also uses the HOSTSALIASES file
