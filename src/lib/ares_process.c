@@ -556,7 +556,7 @@ cleanup:
       continue;
     }
 
-    internal_status = ares__send_query(query, now);
+    ares__send_query(query, now);
   }
   ares__array_destroy(requeue);
 }
