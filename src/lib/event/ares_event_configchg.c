@@ -655,7 +655,7 @@ ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
     goto done;
   }
 
-  c->lock = ares_thread_mutex_create();
+  c->lock = ares__thread_mutex_create();
   if (c->lock == NULL) {
     status = ARES_ENOMEM;
     goto done;
