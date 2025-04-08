@@ -345,16 +345,6 @@ void LibraryTest::SetFailSend() {
   failsend_ = true;
 }
 
-#ifndef HAVE_WRITEV
-extern "C" {
-/* Structure for scatter/gather I/O. */
-struct iovec {
-  void  *iov_base; /* Pointer to data. */
-  size_t iov_len;  /* Length of data.  */
-};
-};
-#endif
-
 // static
 ares_ssize_t LibraryTest::ares_sendv_fail(ares_socket_t socket, const struct iovec *vec, int len, void *user_data)
 {
