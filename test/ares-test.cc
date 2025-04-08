@@ -250,6 +250,7 @@ std::vector<std::pair<int, bool>> families_modes = both_families_both_modes;
 unsigned long long LibraryTest::fails_ = 0;
 std::map<size_t, int> LibraryTest::size_fails_;
 std::mutex            LibraryTest::lock_;
+bool LibraryTest::failsend_ = false;
 
 void ares_sleep_time(unsigned int ms)
 {
@@ -340,7 +341,29 @@ void ProcessWork(ares_channel_t *channel,
 }
 
 
+void LibraryTest::SetFailSend() {
+  failsend_ = true;
+}
+
 // static
+ares_ssize_t LibraryTest::ares_sendv_fail(ares_socket_t socket, const struct iovec *vec, int len, void *user_data)
+{
+  (void)user_data;
+
+  if (failsend_) {
+#ifdef USE_WINSOCK
+    WSASetLastError(WSAECONNREFUSED)
+#else
+    errno = ECONNREFUSED;
+#endif
+    failsend_ = false;
+    return -1;
+  }
+
+  return send(socket, vec[0].iov_base, vec[0].iov_len, 0);
+}
+
+
 void LibraryTest::SetAllocFail(int nth) {
   lock_.lock();
   assert(nth > 0);
@@ -684,6 +707,7 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
   /* DNS 0x20 will mix case, do case-insensitive matching of name in request */
   char lower_name[256];
   int flags = 0;
+
   arestest_strtolower(lower_name, name, sizeof(lower_name));
 
   // Before processing, let gMock know the request is happening.
@@ -745,10 +769,11 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
 #endif
 
   ares_ssize_t rc = (ares_ssize_t)sendto(fd, BYTE_CAST reply.data(), (SEND_TYPE_ARG3)reply.size(), flags,
-                  (struct sockaddr *)addr, addrlen);
+                                         (struct sockaddr *)addr, addrlen);
   if (rc < static_cast<ares_ssize_t>(reply.size())) {
     std::cerr << "Failed to send full reply, rc=" << rc << std::endl;
   }
+
 }
 
 // static
