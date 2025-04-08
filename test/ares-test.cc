@@ -368,7 +368,7 @@ ares_ssize_t LibraryTest::ares_sendv_fail(ares_socket_t socket, const struct iov
     return -1;
   }
 
-  return send(socket, vec[0].iov_base, vec[0].iov_len, 0);
+  return send(socket, (const char *)vec[0].iov_base, vec[0].iov_len, 0);
 }
 
 
