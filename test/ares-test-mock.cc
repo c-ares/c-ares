@@ -1622,6 +1622,66 @@ TEST_P(MockChannelTest, GetHostByAddrDestroy) {
   EXPECT_EQ(0, result.timeouts_);
 }
 
+TEST_P(MockChannelTest, TriggerResendThenConnFailSERVFAIL) {
+  // Set up the server response. The server always returns SERVFAIL.
+  DNSPacket badrsp;
+  badrsp.set_response().set_aa().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("www.google.com", T_A));
+  DNSPacket goodrsp;
+  goodrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReplyAndFailSend(&server_, &badrsp))
+    .WillOnce(SetReply(&server_, &goodrsp));
+
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+
+  sock_funcs.asendv = ares_sendv_fail;
+
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback,
+                     &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
+}
+
+TEST_P(MockUDPChannelTest, TriggerResendThenConnFailEDNS) {
+  // Set up the server response to simulate an EDNS failure
+  DNSPacket badrsp;
+  badrsp.set_response().set_aa().set_rcode(FORMERR)
+    .add_question(new DNSQuestion("www.google.com", T_A));
+  DNSPacket goodrsp;
+  goodrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReplyAndFailSend(&server_, &badrsp))
+    .WillOnce(SetReply(&server_, &goodrsp));
+
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+
+  sock_funcs.asendv = ares_sendv_fail;
+
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback,
+                     &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
+}
+
 static const unsigned char *
   fetch_server_cookie(const ares_dns_record_t *dnsrec, size_t *len)
 {

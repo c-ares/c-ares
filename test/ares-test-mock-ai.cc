@@ -713,6 +713,100 @@ TEST_P(MockChannelTestAI, FamilyUnspecified) {
   EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
 }
 
+
+TEST_P(MockChannelTestAI, TriggerResendThenConnFailSERVFAIL) {
+  // Set up the server response. The server always returns SERVFAIL.
+  DNSPacket badrsp4;
+  badrsp4.set_response().set_aa().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("www.google.com", T_A));
+  DNSPacket goodrsp4;
+  goodrsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+
+  DNSPacket goodrsp6;
+  goodrsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_AAAA))
+    .add_answer(new DNSAaaaRR("www.google.com", 100,
+                              {0x21, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReplyAndFailSend(&server_, &badrsp4))
+    .WillOnce(SetReply(&server_, &goodrsp4));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_AAAA))
+    .WillRepeatedly(SetReply(&server_, &goodrsp6));
+
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+
+  sock_funcs.asendv = ares_sendv_fail;
+
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints,
+                   AddrInfoCallback, &result);
+
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_TRUE(result.done_);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(2));
+  EXPECT_THAT(result.ai_, IncludesV4Address("1.2.3.4"));
+  EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
+}
+
+TEST_P(MockUDPChannelTestAI, TriggerResendThenConnFailEDNS) {
+  // Set up the server response to simulate an EDNS failure
+ DNSPacket badrsp4;
+  badrsp4.set_response().set_aa().set_rcode(FORMERR)
+    .add_question(new DNSQuestion("www.google.com", T_A));
+  DNSPacket goodrsp4;
+  goodrsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  DNSPacket goodrsp6;
+  goodrsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_AAAA))
+    .add_answer(new DNSAaaaRR("www.google.com", 100,
+                              {0x21, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReplyAndFailSend(&server_, &badrsp4))
+    .WillOnce(SetReply(&server_, &goodrsp4));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_AAAA))
+    .WillRepeatedly(SetReply(&server_, &goodrsp6));
+
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+
+  sock_funcs.asendv = ares_sendv_fail;
+
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "www.google.com.", NULL, &hints,
+                   AddrInfoCallback, &result);
+
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_TRUE(result.done_);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(2));
+  EXPECT_THAT(result.ai_, IncludesV4Address("1.2.3.4"));
+  EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
+}
+
+
+
 class MockEDNSChannelTestAI : public MockFlagsChannelOptsTestAI {
  public:
   MockEDNSChannelTestAI() : MockFlagsChannelOptsTestAI(ARES_FLAG_EDNS) {}

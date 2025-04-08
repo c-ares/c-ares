@@ -130,11 +130,17 @@ public:
   static void *arealloc(void *ptr, size_t size);
   static void  afree(void *ptr);
 
+  static void SetFailSend(void);
+  static ares_ssize_t ares_sendv_fail(ares_socket_t socket, const struct iovec *vec, int len,
+                                      void *user_data);
+
+
 private:
   static bool                  ShouldAllocFail(size_t size);
   static unsigned long long    fails_;
   static std::map<size_t, int> size_fails_;
   static std::mutex            lock_;
+  static bool                  failsend_;
 };
 
 // Test fixture that uses a default channel.
@@ -434,6 +440,12 @@ public:
 ACTION_P2(SetReplyData, mockserver, data)
 {
   mockserver->SetReplyData(data);
+}
+
+ACTION_P2(SetReplyAndFailSend, mockserver, reply)
+{
+  mockserver->SetReply(reply);
+  LibraryTest::SetFailSend();
 }
 
 ACTION_P2(SetReply, mockserver, reply)

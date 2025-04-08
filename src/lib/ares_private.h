@@ -466,7 +466,8 @@ ares_status_t ares__requeue_query(ares_query_t            *query,
                                   const ares_timeval_t    *now,
                                   ares_status_t            status,
                                   ares_bool_t              inc_try_count,
-                                  const ares_dns_record_t *dnsrec);
+                                  const ares_dns_record_t *dnsrec,
+                                  ares__array_t           **requeue);
 
 /*! Count the number of labels (dots+1) in a domain */
 size_t ares__name_label_cnt(const char *name);
@@ -782,7 +783,8 @@ ares_status_t ares_cookie_apply(ares_dns_record_t *dnsrec, ares_conn_t *conn,
 ares_status_t ares_cookie_validate(ares_query_t            *query,
                                    const ares_dns_record_t *dnsresp,
                                    ares_conn_t             *conn,
-                                   const ares_timeval_t    *now);
+                                   const ares_timeval_t    *now,
+                                   ares__array_t           **requeue);
 
 ares_status_t ares__channel_threading_init(ares_channel_t *channel);
 void          ares__channel_threading_destroy(ares_channel_t *channel);

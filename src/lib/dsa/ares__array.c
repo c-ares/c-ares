@@ -261,6 +261,21 @@ ares_status_t ares__array_insert_first(void **elem_ptr, ares__array_t *arr)
   return ares__array_insert_at(elem_ptr, arr, 0);
 }
 
+ares_status_t ares__array_insertdata_last(ares__array_t *arr,
+                                          const void   *data_ptr)
+{
+  ares_status_t status;
+  void         *ptr = NULL;
+
+  status = ares__array_insert_last(&ptr, arr);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+  memcpy(ptr, data_ptr, arr->member_size);
+  return ARES_SUCCESS;
+}
+
+
 void *ares__array_first(ares__array_t *arr)
 {
   return ares__array_at(arr, 0);
