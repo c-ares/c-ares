@@ -429,11 +429,7 @@ cleanup:
       continue;
     }
 
-    internal_status = ares__send_query(query, now);
-    /* We only care about ARES_ENOMEM */
-    if (internal_status == ARES_ENOMEM) {
-      status = ARES_ENOMEM;
-    }
+    ares__send_query(query, now);
   }
   ares__array_destroy(requeue);
 }
