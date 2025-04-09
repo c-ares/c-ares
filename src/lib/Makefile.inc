@@ -3,6 +3,7 @@
 
 CSOURCES = ares__addrinfo2hostent.c	\
   ares__addrinfo_localhost.c		\
+  ares__array.c				\
   ares__buf.c				\
   ares__close_sockets.c			\
   ares__hosts_file.c			\
@@ -88,7 +89,8 @@ CSOURCES = ares__addrinfo2hostent.c	\
   inet_ntop.c				\
   windows_port.c
 
-HHEADERS = ares__buf.h			\
+HHEADERS = ares__array.h		\
+  ares__buf.h				\
   ares__htable.h			\
   ares__htable_asvp.h			\
   ares__htable_strvp.h			\
