@@ -61,7 +61,7 @@
 #  define TFO_USE_SENDTO     0
 #  define TFO_USE_CONNECTX   0
 #  define TFO_CLIENT_SOCKOPT TCP_FASTOPEN_CONNECT
-#elif defined(__FreeBSD__) && defined(TCP_FASTOPEN)
+#elif (defined(__MidnightBSD__) || defined(__FreeBSD__)) && defined(TCP_FASTOPEN)
 #  define TFO_SUPPORTED      1
 #  define TFO_SKIP_CONNECT   1
 #  define TFO_USE_SENDTO     1
