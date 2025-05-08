@@ -285,14 +285,22 @@ struct ares_channeldata {
   ares_qcache_t                      *qcache;
 
   /* Fields controlling server failover behavior.
-   * The retry chance is the probability (1/N) by which we will retry a failed
-   * server instead of the best server when selecting a server to send queries
-   * to.
+   * The retry chance is the probability (1/N) by which we will duplicate a
+   * query to send to a failed server to determine if it is up again.
+   *
    * The retry delay is the minimum time in milliseconds to wait between doing
    * such retries (applied per-server).
+   *
+   * The min_consec_successes is the minimum number of consecutive successful
+   * queries before a server is considered "up" again.
+   *
+   * The max_consec_failures is the maximum number of consecutive failed
+   * queries before a server is considered "down" again.
    */
   unsigned short                      server_retry_chance;
   size_t                              server_retry_delay;
+  size_t                              min_consec_successes;
+  size_t                              max_consec_failures;
 
   /* Callback triggered when a server has a successful or failed response */
   ares_server_state_callback          server_state_cb;

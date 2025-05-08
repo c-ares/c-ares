@@ -96,10 +96,21 @@ static int server_sort_cb(const void *data1, const void *data2)
   const ares_server_t *s1 = data1;
   const ares_server_t *s2 = data2;
 
-  if (s1->consec_failures < s2->consec_failures) {
+  /* The logic for sorting is as follows:
+   * 1. Failed servers are sorted to the end of the list.
+   * 2. Among non-failed servers, sort by index in the original list.
+   * 3. Among failed servers, sort by consecutive failures then index.
+   */
+  if (!s1->is_failed && s2->is_failed) {
     return -1;
   }
-  if (s1->consec_failures > s2->consec_failures) {
+  if (s1->is_failed && !s2->is_failed) {
+    return 1;
+  }
+  if (s1->is_failed && s1->consec_failures < s2->consec_failures) {
+    return -1;
+  }
+  if (s1->is_failed && s1->consec_failures > s2->consec_failures) {
     return 1;
   }
   if (s1->idx < s2->idx) {
@@ -108,6 +119,8 @@ static int server_sort_cb(const void *data1, const void *data2)
   if (s1->idx > s2->idx) {
     return 1;
   }
+
+
   return 0;
 }
 
@@ -494,6 +507,8 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
   (*dest)->legacy_sock_funcs_cb_data = src->legacy_sock_funcs_cb_data;
   (*dest)->server_state_cb           = src->server_state_cb;
   (*dest)->server_state_cb_data      = src->server_state_cb_data;
+  (*dest)->min_consec_successes      = src->min_consec_successes;
+  (*dest)->max_consec_failures       = src->max_consec_failures;
 
   ares_strcpy((*dest)->local_dev_name, src->local_dev_name,
               sizeof((*dest)->local_dev_name));
@@ -597,4 +612,26 @@ int ares_set_sortlist(ares_channel_t *channel, const char *sortstr)
   }
   ares_channel_unlock(channel);
   return (int)status;
+}
+
+void ares_set_min_server_successes(ares_channel_t *channel,
+                                   unsigned int    minimum_successes)
+{
+  if (channel == NULL) {
+    return;
+  }
+  ares_channel_lock(channel);
+  channel->min_consec_successes = minimum_successes;
+  ares_channel_unlock(channel);
+}
+
+void ares_set_max_server_failures(ares_channel_t *channel,
+                                  unsigned int    maximum_failures)
+{
+  if (channel == NULL) {
+    return;
+  }
+  ares_channel_lock(channel);
+  channel->max_consec_failures = maximum_failures;
+  ares_channel_unlock(channel);
 }

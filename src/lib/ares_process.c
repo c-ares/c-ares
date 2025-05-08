@@ -123,7 +123,13 @@ static void server_increment_failures(ares_server_t *server,
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
+  server->consec_successes = 0;
   server->consec_failures++;
+
+  if (server->consec_failures >= channel->max_consec_failures) {
+    server->is_failed = ARES_TRUE;
+  }
+
   ares_slist_node_reinsert(node);
 
   ares_tvnow(&next_retry_time);
@@ -135,10 +141,12 @@ static void server_increment_failures(ares_server_t *server,
                                                : ARES_SERV_STATE_UDP);
 }
 
-static void server_set_good(ares_server_t *server, ares_bool_t used_tcp)
+static void server_increment_successes(ares_server_t *server,
+                                       ares_bool_t    used_tcp)
 {
   ares_slist_node_t    *node;
-  const ares_channel_t *channel = server->channel;
+  const ares_channel_t *channel  = server->channel;
+  ares_bool_t           reinsert = ARES_FALSE;
 
   node = ares_slist_node_find(channel->servers, server);
   if (node == NULL) {
@@ -147,6 +155,17 @@ static void server_set_good(ares_server_t *server, ares_bool_t used_tcp)
 
   if (server->consec_failures > 0) {
     server->consec_failures = 0;
+    reinsert                = ARES_TRUE;
+  }
+
+  server->consec_successes++;
+  if (server->is_failed &&
+      server->consec_successes >= channel->min_consec_successes) {
+    server->is_failed = ARES_FALSE;
+    reinsert          = ARES_TRUE;
+  }
+
+  if (reinsert) {
     ares_slist_node_reinsert(node);
   }
 
@@ -519,7 +538,7 @@ typedef struct {
 } ares_requeue_t;
 
 static ares_status_t ares_append_requeue(ares_array_t **requeue,
-                                         ares_query_t *query,
+                                         ares_query_t  *query,
                                          ares_server_t *server)
 {
   ares_requeue_t entry;
@@ -886,12 +905,18 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     is_cached = ARES_TRUE;
   }
 
-  server_set_good(server, query->using_tcp);
+  server_increment_successes(server, query->using_tcp);
   end_query(channel, server, query, ARES_SUCCESS, rdnsrec);
 
   status = ARES_SUCCESS;
 
 cleanup:
+  /* If we were probing for the server to come back online, lets mark it as
+   * no longer being probed */
+  if (server != NULL) {
+    server->probe_pending = ARES_FALSE;
+  }
+
   /* Don't cleanup the cached pointer to the dns response */
   if (!is_cached) {
     ares_dns_record_destroy(rdnsrec);
@@ -1037,7 +1062,7 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
 
   /* If no servers have failures, or we're not configured with a server retry
    * chance, then nothing to probe */
-  if ((last_server != NULL && last_server->consec_failures == 0) ||
+  if ((last_server != NULL && !last_server->is_failed) ||
       channel->server_retry_chance == 0) {
     return;
   }
@@ -1052,23 +1077,23 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
     return;
   }
 
-  /* Select the first server with failures to retry that has passed the retry
-   * timeout and doesn't already have a pending probe */
+  /* Select the first failed server to retry that has passed the retry
+   * timeout, doesn't already have a pending probe and isn't the server we are
+   * sending to.
+   */
   ares_tvnow(&now);
   for (node = ares_slist_node_first(channel->servers); node != NULL;
        node = ares_slist_node_next(node)) {
     ares_server_t *node_val = ares_slist_node_val(node);
-    if (node_val != NULL && node_val->consec_failures > 0 &&
-        !node_val->probe_pending &&
-        ares_timedout(&now, &node_val->next_retry_time)) {
+    if (node_val != NULL && node_val->is_failed && !node_val->probe_pending &&
+        ares_timedout(&now, &node_val->next_retry_time) && node_val != server) {
       probe_server = node_val;
       break;
     }
   }
 
-  /* Either nothing to probe or the query was enqueud to the same server
-   * we were going to probe. Do nothing. */
-  if (probe_server == NULL || server == probe_server) {
+  /* Nothing to probe. */
+  if (probe_server == NULL) {
     return;
   }
 
@@ -1409,12 +1434,6 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
                       ares_query_t *query, ares_status_t status,
                       const ares_dns_record_t *dnsrec)
 {
-  /* If we were probing for the server to come back online, lets mark it as
-   * no longer being probed */
-  if (server != NULL) {
-    server->probe_pending = ARES_FALSE;
-  }
-
   ares_metrics_record(query, server, status, dnsrec);
 
   /* Invoke the callback. */
