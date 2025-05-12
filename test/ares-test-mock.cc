@@ -2723,6 +2723,214 @@ TEST_P(ServerRiseFallMultiMockTest, ServerPromotion) {
   CheckExample();
 }
 
+class NoRotateSelectionMockTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+ NoRotateSelectionMockTest()
+    : MockChannelOptsTest(2, GetParam().first, GetParam().second, false,
+                          FillOptions(&opts_),
+                          ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+  void CheckExample() {
+    HostResult result;
+    ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  }
+
+  static struct ares_options* FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->server_failover_opts.retry_chance = 1;
+    opts->server_failover_opts.retry_delay = SERVER_FAILOVER_RETRY_DELAY;
+    return opts;
+  }
+
+  private:
+    struct ares_options opts_;
+};
+
+// Test case to trigger server promotion behavior.
+TEST_P(NoRotateSelectionMockTest, DontRepeatFailedServer) {
+  DNSPacket servfailrsp;
+  servfailrsp.set_response().set_aa().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("www.example.com", T_A));
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  auto tv_now   = std::chrono::high_resolution_clock::now();
+  unsigned int delay_ms;
+
+  // Fail server #0 but leave server #1 as healthy.  This results in server
+  // 0 being demoted, and server 1 being promoted to the top.
+  // This leaves the server order of:
+  //  #1 (state: up, failures: 0), #0 (state: down, failures: 1)
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 will fail but leave Server1 as healthy" << std::endl;
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  CheckExample();
+
+  // Sleep for the retry delay (actually a little more than the retry delay to account
+  // for unreliable timing, e.g. NTP slew) and send in another query. The real
+  // query will be sent to Server #1 (which will succeed) and Server #0 will
+  // be probed and return a failure result.  This leaves the server order
+  // of:
+  //  #1 (state: up, failures: 0), #0 (state: down, failures: 2)
+  tv_now = std::chrono::high_resolution_clock::now();
+  delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
+  ares_sleep_time(delay_ms);
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 should be past retry delay and should be probed (failure), server 1 will respond successful for real query" << std::endl;
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  CheckExample();
+
+  // Sleep for the retry delay (actually a little more than the retry delay to account
+  // for unreliable timing, e.g. NTP slew) and send in another query. The real
+  // query will be sent to Server #1 (which will succeed) and Server #0 will
+  // be probed and return a failure result.  This leaves the server order
+  // of:
+  //  #1 (state: up, failures: 0), #0 (state: down, failures: 3)
+  tv_now = std::chrono::high_resolution_clock::now();
+  delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
+  ares_sleep_time(delay_ms);
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 should be past retry delay and should be probed (failure), server 1 will respond successful for real query" << std::endl;
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  CheckExample();
+  
+  // Send in another query - don't wait for probes. This should result in the following selection order:
+  // #1 (status: up, failures 0) (over #0 (status: down failures 3))
+  // #1 (status: down failures 1) (over #0 (status: down failures 3))
+  // #0 (status: down, failures 3) (over #1 (status: down failures 2) as we have already selected #1)
+  // #1 (status: down, failures 2) (over #0 (status: down failures 4) as all servers have been tried)
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server 1 will fail for the real query (twice) and server 0 will fail" << std::endl;
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+    CheckExample();
+}
+
+
+class RotateSelectionMockTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+ RotateSelectionMockTest()
+    : MockChannelOptsTest(2, GetParam().first, GetParam().second, false,
+                          FillOptions(&opts_),
+                          ARES_OPT_SERVER_FAILOVER | ARES_OPT_ROTATE) {}
+                          
+  void CheckRepeated() {
+    HostResult result;
+    // Send 10 queries to ensure that all servers are selected.
+    for (int i = 0; i < 10; i++) {
+      ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback,
+                         &result);
+      Process();
+      EXPECT_TRUE(result.done_);
+      std::stringstream ss;
+      ss << result.host_;
+      EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+    }
+  }
+
+  void CheckExample() {
+    HostResult result;
+    ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
+    Process();
+    EXPECT_TRUE(result.done_);
+    std::stringstream ss;
+    ss << result.host_;
+    EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  }
+
+  static struct ares_options* FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->server_failover_opts.retry_chance = 1;
+    opts->server_failover_opts.retry_delay = SERVER_FAILOVER_RETRY_DELAY;
+    return opts;
+  }
+
+  private:
+    struct ares_options opts_;
+};
+
+// Test case to demonstrate server rotation behavior.
+TEST_P(RotateSelectionMockTest, RotateSelection) {
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  auto tv_now   = std::chrono::high_resolution_clock::now();
+  unsigned int delay_ms;
+
+  // At start all servers are healthy and any server should be selected.
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Pick between Server 0 & 1 randomly" << std::endl;
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .Times(::testing::AtLeast(1))
+    .WillRepeatedly(SetReply(servers_[0].get(), &okrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .Times(::testing::AtLeast(1))
+    .WillRepeatedly(SetReply(servers_[0].get(), &okrsp));
+  CheckRepeated();
+}
+
+// Test case to demonstrate server rotation behavior.
+TEST_P(RotateSelectionMockTest, RotateDoesntRepeatFailedServer) {
+  DNSPacket servfailrsp;
+  servfailrsp.set_response().set_aa().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("www.example.com", T_A));
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  auto tv_now   = std::chrono::high_resolution_clock::now();
+  unsigned int delay_ms;
+
+  // At start all servers are healthy and any server could be selected.
+  // After the first query, the server will be marked as failed and 
+  // the next query will be sent to the other server. After that, the next
+  // two queries will be split among the two servers (as failed servers
+  // aren't repeated). Finally, the last query will be sent successfully to
+  // either server.
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Pick between Server 0 & 1 randomly" << std::endl;
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
+    .WillRepeatedly(SetReply(servers_[0].get(), &okrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp))
+    .WillRepeatedly(SetReply(servers_[1].get(), &okrsp));
+  CheckExample();
+}
+
 const char *af_tostr(int af)
 {
   switch (af) {
@@ -2784,6 +2992,10 @@ INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockTest, ::testing::Value
 INSTANTIATE_TEST_SUITE_P(TransportModes, ServerFailoverOptsMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(TransportModes, ServerRiseFallMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+
+INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateSelectionMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+
+INSTANTIATE_TEST_SUITE_P(TransportModes, RotateSelectionMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 }  // namespace test
 }  // namespace ares

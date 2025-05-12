@@ -181,6 +181,8 @@ struct ares_query {
   size_t        timeouts;   /* number of timeouts we saw for this request */
   ares_bool_t   no_retries; /* do not perform any additional retries, this is
                              * set when a query is to be canceled */
+  ares_array_t *failed_servers_attempted; /* Failed servers attempted to be used
+                                             by this query. */
 };
 
 struct apattern {
@@ -321,11 +323,14 @@ struct ares_channeldata {
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
-ares_bool_t   ares_is_onion_domain(const char *name);
+ares_bool_t    ares_is_onion_domain(const char *name);
+
+/* Select the server to be used by the query. */
+ares_server_t *ares_select_server(ares_channel_t *channel, ares_query_t *query);
 
 /* Returns one of the normal ares status codes like ARES_SUCCESS */
-ares_status_t ares_send_query(ares_server_t *requested_server /* Optional */,
-                              ares_query_t *query, const ares_timeval_t *now);
+ares_status_t  ares_send_query(ares_server_t *requested_server /* Optional */,
+                               ares_query_t *query, const ares_timeval_t *now);
 ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
                                  ares_status_t            status,
                                  ares_bool_t              inc_try_count,
@@ -519,6 +524,8 @@ ares_status_t ares_query_nolock(ares_channel_t *channel, const char *name,
                                 ares_dns_rec_type_t  type,
                                 ares_callback_dnsrec callback, void *arg,
                                 unsigned short *qid);
+
+ares_bool_t   ares_query_sent_to_server(ares_query_t *query, size_t server_idx);
 
 /*! Flags controlling behavior for ares_send_nolock() */
 typedef enum {
