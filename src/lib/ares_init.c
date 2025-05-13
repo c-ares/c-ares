@@ -240,6 +240,12 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     channel->server_retry_delay  = DEFAULT_SERVER_RETRY_DELAY;
   }
 
+  /* Set default fields for server rise/fall behavior */
+  if (!(channel->optmask & ARES_OPT_SERVER_RISE_FALL)) {
+    channel->min_consec_successes = DEFAULT_SERVER_MIN_SUCCESSES;
+    channel->max_consec_failures  = DEFAULT_SERVER_MAX_FAILURES;
+  }
+
 error:
   if (hostname) {
     ares_free(hostname);
@@ -612,26 +618,4 @@ int ares_set_sortlist(ares_channel_t *channel, const char *sortstr)
   }
   ares_channel_unlock(channel);
   return (int)status;
-}
-
-void ares_set_min_server_successes(ares_channel_t *channel,
-                                   unsigned int    minimum_successes)
-{
-  if (channel == NULL) {
-    return;
-  }
-  ares_channel_lock(channel);
-  channel->min_consec_successes = minimum_successes;
-  ares_channel_unlock(channel);
-}
-
-void ares_set_max_server_failures(ares_channel_t *channel,
-                                  unsigned int    maximum_failures)
-{
-  if (channel == NULL) {
-    return;
-  }
-  ares_channel_lock(channel);
-  channel->max_consec_failures = maximum_failures;
-  ares_channel_unlock(channel);
 }

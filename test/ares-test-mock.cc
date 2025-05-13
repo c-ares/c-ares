@@ -2531,10 +2531,11 @@ class ServerRiseFallMultiMockTest
   : public MockChannelOptsTest,
     public ::testing::WithParamInterface< std::pair<int, bool> > {
  public:
-  ServerRiseFallMultiMockTest()
-    : MockChannelOptsTest(2, GetParam().first, GetParam().second, false,
-                          FillOptions(&opts_),
-                          ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+   ServerRiseFallMultiMockTest()
+     : MockChannelOptsTest(2, GetParam().first, GetParam().second, false,
+                           FillOptions(&opts_),
+                           ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE |
+                             ARES_OPT_SERVER_RISE_FALL) {}
   void CheckExample() {
     HostResult result;
     ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result);
@@ -2549,6 +2550,8 @@ class ServerRiseFallMultiMockTest
     memset(opts, 0, sizeof(struct ares_options));
     opts->server_failover_opts.retry_chance = 1;
     opts->server_failover_opts.retry_delay = SERVER_FAILOVER_RETRY_DELAY;
+    opts->server_failover_opts.min_consec_successes = 2;
+    opts->server_failover_opts.max_consec_failures = 2;
     return opts;
   }
 
@@ -2569,10 +2572,6 @@ TEST_P(ServerRiseFallMultiMockTest, ServerDemotion) {
     auto tv_begin = std::chrono::high_resolution_clock::now();
     auto tv_now   = std::chrono::high_resolution_clock::now();
     unsigned int delay_ms;
-
-  // Set the max server failures to 2, so that we can test that a server is
-  // demoted after 2 failures.
-  ares_set_max_server_failures(channel_, 2);
 
   // At start all servers are healthy, first server should be selected
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: First server should be selected" << std::endl;
@@ -2598,7 +2597,25 @@ TEST_P(ServerRiseFallMultiMockTest, ServerDemotion) {
   // query will be sent to Server #1 (which will succeed) and Server #0 will
   // be probed and return a successful result.  This leaves the server order
   // of:
-  //   #0 (state: up, failures: 0), #1 (state: up, failures: 0)
+  //   #1 (state: up, failures: 0), #0 (state: down, failures: 0, successes: 1),
+  tv_now = std::chrono::high_resolution_clock::now();
+  delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
+  ares_sleep_time(delay_ms);
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 should be past retry delay and should be probed (successful), server 1 will respond successful for real query" << std::endl;
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  CheckExample();
+
+  // Sleep for the retry delay (actually a little more than the retry delay to account
+  // for unreliable timing, e.g. NTP slew) and send in another query. The real
+  // query will be sent to Server #1 (which will succeed) and Server #0 will
+  // be probed and return a successful result.  This leaves the server order
+  // of:
+  //   #0 (state: up, failures: 0, successes: 2), #1 (state: up, failures: 0)
   tv_now = std::chrono::high_resolution_clock::now();
   delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
@@ -2632,17 +2649,14 @@ TEST_P(ServerRiseFallMultiMockTest, ServerPromotion) {
     auto tv_now   = std::chrono::high_resolution_clock::now();
     unsigned int delay_ms;
 
-  // Set the min server successes to 2, so that we can test that a server is
-  // promoted only after 2 successes.
-  ares_set_min_server_successes(channel_, 2);
-
   // Fail server #0 but leave server #1 as healthy.  This results in server
   // 0 being demoted, and server 1 being promoted to the top.
   // This leaves the server order of:
-  //  #1 (state: up, failures: 0, successes: 1), #0 (state: down, failures: 1, successes: 0)
+  //  #1 (state: up, failures: 0, successes: 1), #0 (state: down, failures: 2, successes: 0)
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Server0 will fail but leave Server1 as healthy" << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
     .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
   EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[1].get(), &okrsp));

@@ -241,30 +241,31 @@ typedef enum {
 #define ARES_FLAG_DNS0x20     (1 << 10)
 
 /* Option mask values */
-#define ARES_OPT_FLAGS           (1 << 0)
-#define ARES_OPT_TIMEOUT         (1 << 1)
-#define ARES_OPT_TRIES           (1 << 2)
-#define ARES_OPT_NDOTS           (1 << 3)
-#define ARES_OPT_UDP_PORT        (1 << 4)
-#define ARES_OPT_TCP_PORT        (1 << 5)
-#define ARES_OPT_SERVERS         (1 << 6)
-#define ARES_OPT_DOMAINS         (1 << 7)
-#define ARES_OPT_LOOKUPS         (1 << 8)
-#define ARES_OPT_SOCK_STATE_CB   (1 << 9)
-#define ARES_OPT_SORTLIST        (1 << 10)
-#define ARES_OPT_SOCK_SNDBUF     (1 << 11)
-#define ARES_OPT_SOCK_RCVBUF     (1 << 12)
-#define ARES_OPT_TIMEOUTMS       (1 << 13)
-#define ARES_OPT_ROTATE          (1 << 14)
-#define ARES_OPT_EDNSPSZ         (1 << 15)
-#define ARES_OPT_NOROTATE        (1 << 16)
-#define ARES_OPT_RESOLVCONF      (1 << 17)
-#define ARES_OPT_HOSTS_FILE      (1 << 18)
-#define ARES_OPT_UDP_MAX_QUERIES (1 << 19)
-#define ARES_OPT_MAXTIMEOUTMS    (1 << 20)
-#define ARES_OPT_QUERY_CACHE     (1 << 21)
-#define ARES_OPT_EVENT_THREAD    (1 << 22)
-#define ARES_OPT_SERVER_FAILOVER (1 << 23)
+#define ARES_OPT_FLAGS            (1 << 0)
+#define ARES_OPT_TIMEOUT          (1 << 1)
+#define ARES_OPT_TRIES            (1 << 2)
+#define ARES_OPT_NDOTS            (1 << 3)
+#define ARES_OPT_UDP_PORT         (1 << 4)
+#define ARES_OPT_TCP_PORT         (1 << 5)
+#define ARES_OPT_SERVERS          (1 << 6)
+#define ARES_OPT_DOMAINS          (1 << 7)
+#define ARES_OPT_LOOKUPS          (1 << 8)
+#define ARES_OPT_SOCK_STATE_CB    (1 << 9)
+#define ARES_OPT_SORTLIST         (1 << 10)
+#define ARES_OPT_SOCK_SNDBUF      (1 << 11)
+#define ARES_OPT_SOCK_RCVBUF      (1 << 12)
+#define ARES_OPT_TIMEOUTMS        (1 << 13)
+#define ARES_OPT_ROTATE           (1 << 14)
+#define ARES_OPT_EDNSPSZ          (1 << 15)
+#define ARES_OPT_NOROTATE         (1 << 16)
+#define ARES_OPT_RESOLVCONF       (1 << 17)
+#define ARES_OPT_HOSTS_FILE       (1 << 18)
+#define ARES_OPT_UDP_MAX_QUERIES  (1 << 19)
+#define ARES_OPT_MAXTIMEOUTMS     (1 << 20)
+#define ARES_OPT_QUERY_CACHE      (1 << 21)
+#define ARES_OPT_EVENT_THREAD     (1 << 22)
+#define ARES_OPT_SERVER_FAILOVER  (1 << 23)
+#define ARES_OPT_SERVER_RISE_FALL (1 << 24)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN        (1 << 0)
@@ -345,10 +346,16 @@ struct apattern;
  * to.
  * The retry delay is the minimum time in milliseconds to wait between doing
  * such retries (applied per-server).
+ * The min_consec_successes is the minimum number of consecutive successful
+ * queries before a server is considered "up" again.
+ * The max_consec_failures is the maximum number of consecutive failed
+ * queries before a server is considered "down".
  */
 struct ares_server_failover_options {
   unsigned short retry_chance;
   size_t         retry_delay;
+  size_t         min_consec_successes;
+  size_t         max_consec_failures;
 };
 
 /* NOTE about the ares_options struct to users and developers.

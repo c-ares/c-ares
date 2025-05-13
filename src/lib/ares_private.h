@@ -141,9 +141,12 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 
 /* Default values for server failover behavior. We retry failed servers with
  * a 10% probability and a minimum delay of 5 seconds between retries.
+ * We will promote/demote servers after 1 success/failure. 
  */
-#define DEFAULT_SERVER_RETRY_CHANCE 10
-#define DEFAULT_SERVER_RETRY_DELAY  5000
+#define DEFAULT_SERVER_RETRY_CHANCE  10
+#define DEFAULT_SERVER_RETRY_DELAY   5000
+#define DEFAULT_SERVER_MIN_SUCCESSES 1
+#define DEFAULT_SERVER_MAX_FAILURES  1
 
 struct ares_query;
 typedef struct ares_query ares_query_t;
