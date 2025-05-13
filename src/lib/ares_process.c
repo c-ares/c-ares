@@ -1102,7 +1102,7 @@ static void server_probe_cb(void *arg, ares_status_t status, size_t timeouts,
   /* Nothing to do, the logic internally will handle success/fail of this */
 }
 
-/* Determine if we should probe a downed server */
+/* Determine if we should probe downed servers */
 static void ares_probe_failed_server(ares_channel_t      *channel,
                                      const ares_server_t *server,
                                      const ares_query_t  *query)
@@ -1111,7 +1111,6 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
   unsigned short       r;
   ares_timeval_t       now;
   ares_slist_node_t   *node;
-  ares_server_t       *probe_server = NULL;
 
   /* If no servers have failures, or we're not configured with a server retry
    * chance, then nothing to probe */
@@ -1120,7 +1119,7 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
     return;
   }
 
-  /* Generate a random value to decide whether to retry a failed server. The
+  /* Generate a random value to decide whether to retry failed servers. The
    * probability to use is 1/channel->server_retry_chance, rounded up to a
    * precision of 1/2^B where B is the number of bits in the random value.
    * We use an unsigned short for the random value for increased precision.
@@ -1130,9 +1129,10 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
     return;
   }
 
-  /* Select the first failed server to retry that has passed the retry
-   * timeout, doesn't already have a pending probe and isn't the server we are
-   * sending to.
+  /* Send a probe to all failed servers that:
+   * - Have passed the retry timeout.
+   * - Don't already have a pending probe.
+   * - Isn't the server we are sending to.
    */
   ares_tvnow(&now);
   for (node = ares_slist_node_first(channel->servers); node != NULL;
@@ -1140,23 +1140,15 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
     ares_server_t *node_val = ares_slist_node_val(node);
     if (node_val != NULL && node_val->is_failed && !node_val->probe_pending &&
         ares_timedout(&now, &node_val->next_retry_time) && node_val != server) {
-      probe_server = node_val;
-      break;
+      /* Enqueue an identical query onto the specified server without honoring
+       * the cache or allowing retries.  We want to make sure it only attempts
+       * to use the server in question */
+      node_val->probe_pending = ARES_TRUE;
+      ares_send_nolock(channel, node_val,
+                       ARES_SEND_FLAG_NOCACHE | ARES_SEND_FLAG_NORETRY,
+                       query->query, server_probe_cb, NULL, NULL);
     }
   }
-
-  /* Nothing to probe. */
-  if (probe_server == NULL) {
-    return;
-  }
-
-  /* Enqueue an identical query onto the specified server without honoring
-   * the cache or allowing retries.  We want to make sure it only attempts to
-   * use the server in question */
-  probe_server->probe_pending = ARES_TRUE;
-  ares_send_nolock(channel, probe_server,
-                   ARES_SEND_FLAG_NOCACHE | ARES_SEND_FLAG_NORETRY,
-                   query->query, server_probe_cb, NULL, NULL);
 }
 
 static size_t ares_calc_query_timeout(const ares_query_t   *query,
