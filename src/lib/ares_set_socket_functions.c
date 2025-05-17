@@ -127,6 +127,8 @@ ares_status_t
     channel->sock_funcs.asendto      = funcs->asendto;
     channel->sock_funcs.agetsockname = funcs->agetsockname;
     channel->sock_funcs.abind        = funcs->abind;
+    channel->sock_funcs.aif_nametoindex = funcs->aif_nametoindex;
+    channel->sock_funcs.aif_indextoname = funcs->aif_indextoname;
   }
 
   /* Implement newer versions here ...*/

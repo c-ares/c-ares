@@ -271,6 +271,8 @@ int ares_init_options(ares_channel_t           **channelptr,
     goto done;
   }
 
+  ares_set_socket_functions_def(channel);
+
   /* Initialize Server List */
   channel->servers =
     ares_slist_create(channel->rand_state, server_sort_cb, server_destroy_cb);
@@ -345,8 +347,6 @@ int ares_init_options(ares_channel_t           **channelptr,
                    ares_strerror(status)));
     goto done;
   }
-
-  ares_set_socket_functions_def(channel);
 
   /* Initialize the event thread */
   if (channel->optmask & ARES_OPT_EVENT_THREAD) {
