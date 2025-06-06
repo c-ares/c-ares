@@ -1526,73 +1526,71 @@ TEST_P(ServerFailoverOptsMockEventThreadTest, ServerFailoverOpts) {
 
   // Sleep for the retry delay and send in another query. Server #1 is the
   // highest priority server and will respond with success, however a probe
-  // will be sent for Server #2 which will succeed:
-  //  #1 (failures: 0), #2 (failures: 0), #3 (failures: 1 - expired), #0 (failures: 2 - expired)
+  // will be sent to all other servers, only #2 will succeed.  This leaves
+  // the server order of:
+  //  #1 (failures: 0), #2 (failures: 0), #3 (failures: 2), #0 (failures: 3)
   tv_now = std::chrono::high_resolution_clock::now();
   delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
-  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Past retry delay, will query Server 1 and probe Server 2, both will succeed." << std::endl;
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Past retry delay, will query Server 1 and probe all other servers, Server 2 will succeed." << std::endl;
   EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[1].get(), &okrsp));
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &okrsp));
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[3], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[3].get(), &servfailrsp));
   CheckExample();
 
-  // Cause another server to fail so we have at least one non-expired failed
-  // server and one expired failed server.  #1 is highest priority, which we
-  // will fail, #2 will succeed, and #3 will be probed and succeed:
-  //  #2 (failures: 0), #3 (failures: 0), #1 (failures: 1 not expired), #0 (failures: 2 expired)
+  // Sleep for half of the retry period to ensure that servers are not retried
+  // during the retry period. Cause another server to fail.  #1 is highest
+  // priority, which we will fail, #2 will succeed:
+  //  #2 (failures: 0), #1 (failures: 1 not expired), #3 (failures: 2 not
+  //  expired), #0 (failures: 3 not expired)
   tv_now = std::chrono::high_resolution_clock::now();
-  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Will query Server 1 and fail, Server 2 will answer successfully. Server 3 will be probed and succeed." << std::endl;
+  delay_ms = (SERVER_FAILOVER_RETRY_DELAY / 2) + (SERVER_FAILOVER_RETRY_DELAY / 10);
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
+  ares_sleep_time(delay_ms);
+  tv_now = std::chrono::high_resolution_clock::now();
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Will query Server 1 and fail, Server 2 will answer successfully. No servers will be probed." << std::endl;
   EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[1].get(), &servfailrsp));
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &okrsp));
-  EXPECT_CALL(*servers_[3], OnRequest("www.example.com", T_A))
-    .WillOnce(SetReply(servers_[3].get(), &okrsp));
   CheckExample();
 
   // We need to make sure that if there is a failed server that is higher priority
-  // but not yet expired that it will probe the next failed server instead.
+  // but not yet expired then it will still probe the other failed servers.
   // In this case #2 is the server that the query will go to and succeed, and
-  // then a probe will be sent for #0 (since #1 is not expired) and succeed.  We
-  // will sleep for 1/4 the retry duration before spawning the queries so we can
+  // then a probe will be sent for #0 & #3 (since #1 is not expired) and succeed.  We
+  // will sleep for 1/2 the retry duration before spawning the queries so we can
   // then sleep for the rest for the follow-up test.  This will leave the servers
   // in this state:
   //   #0 (failures: 0), #2 (failures: 0), #3 (failures: 0), #1 (failures: 1 not expired)
   tv_now = std::chrono::high_resolution_clock::now();
-
-  // We need to track retry delay time to know what is expired when.
-  auto elapse_start = tv_now;
-
-  delay_ms = (SERVER_FAILOVER_RETRY_DELAY/4);
+  delay_ms = (SERVER_FAILOVER_RETRY_DELAY / 2) + (SERVER_FAILOVER_RETRY_DELAY / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
   ares_sleep_time(delay_ms);
-  tv_now = std::chrono::high_resolution_clock::now();
 
-  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has not been hit yet. Server2 will be queried and succeed. Server 0 (not server 1 due to non-expired retry delay) will be probed and succeed." << std::endl;
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has not been hit yet on Server1. Server2 will be queried and succeed. Server 0 & 3 (not server 1 due to non-expired retry delay) will be probed and succeed." << std::endl;
   EXPECT_CALL(*servers_[2], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[2].get(), &okrsp));
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  EXPECT_CALL(*servers_[3], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[3].get(), &okrsp));
   CheckExample();
 
   // Finally we sleep for the remainder of the retry delay, send another
   // query, which should succeed on Server #0, and also probe Server #1 which
   // will also succeed.
   tv_now = std::chrono::high_resolution_clock::now();
-
-  unsigned int elapsed_time = (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - elapse_start).count();
-  delay_ms = (SERVER_FAILOVER_RETRY_DELAY) + (SERVER_FAILOVER_RETRY_DELAY / 10);
-  if (elapsed_time > delay_ms) {
-    if (verbose) std::cerr << "elapsed duration " << elapsed_time << "ms greater than desired delay of " << delay_ms << "ms, not sleeping" << std::endl;
-  } else {
-    delay_ms -= elapsed_time; // subtract already elapsed time
-    if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
-    ares_sleep_time(delay_ms);
-  }
+  delay_ms = (SERVER_FAILOVER_RETRY_DELAY / 2) + (SERVER_FAILOVER_RETRY_DELAY / 10);
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
+  ares_sleep_time(delay_ms);
   tv_now = std::chrono::high_resolution_clock::now();
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Retry delay has expired on Server1, Server 0 will be queried and succeed, Server 1 will be probed and succeed." << std::endl;
   EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
