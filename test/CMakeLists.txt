@@ -1,6 +1,8 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 
+enable_language(CXX)
+
 # Get rid of: warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
 IF (MSVC)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
@@ -49,6 +51,7 @@ IF (CMAKE_VERSION VERSION_LESS "3.23.0")
 ELSE ()
   target_link_libraries(arestest PRIVATE caresinternal GTest::gmock)
 ENDIF()
+target_compile_features(arestest PRIVATE cxx_std_14)
 target_compile_definitions(arestest PRIVATE CARES_NO_DEPRECATED)
 
 IF (CARES_BUILD_CONTAINER_TESTS)
@@ -65,6 +68,7 @@ target_link_libraries(aresfuzzname PRIVATE caresinternal)
 
 add_executable(dnsdump ${DUMPSOURCES})
 target_compile_definitions(dnsdump PRIVATE CARES_NO_DEPRECATED)
+target_compile_features(dnsdump PRIVATE cxx_std_14)
 target_link_libraries(dnsdump PRIVATE caresinternal)
 
 add_executable(ares_queryloop ${LOOPSOURCES})

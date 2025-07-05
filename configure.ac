@@ -40,7 +40,8 @@ AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
-AX_CXX_COMPILE_STDCXX_14([noext],[optional])
+AX_CXX_COMPILE_STDCXX(14,[noext],[optional])
+AX_CXX_COMPILE_STDCXX(17,[noext],[optional])
 AM_INIT_AUTOMAKE([foreign subdir-objects 1.9.6])
 LT_INIT([win32-dll,pic,disable-fast-install,aix-soname=svr4])
 AC_LANG([C])
@@ -795,14 +796,6 @@ BUILD_SUBDIRS="include src docs"
 
 dnl ******** TESTS *******
 
-if test "x$build_tests" != "xno" -a "x$HAVE_CXX14" = "0" ; then
-  if test "x$build_tests" = "xmaybe" ; then
-    AC_MSG_WARN([cannot build tests without a CXX14 compiler])
-    build_tests=no
-  else
-    AC_MSG_ERROR([*** Building tests requires a CXX14 compiler])
-  fi
-fi
 if test "x$build_tests" != "xno" -a "x$cross_compiling" = "xyes" ; then
   if test "x$build_tests" = "xmaybe" ; then
     AC_MSG_WARN([cannot build tests when cross compiling])
@@ -826,12 +819,19 @@ if test "x$build_tests" != "xno" ; then
       AX_CHECK_USER_NAMESPACE
       AX_CHECK_UTS_NAMESPACE
     fi
+    PKG_CHECK_MODULES([GMOCK117], [gmock >= 1.17.0], [ have_gmock_v117=yes ], [ have_gmock_v117=no ])
+    if test "x$have_gmock_v117" = "xyes" ; then
+      dnl GMock v1.17.0 requires C++17 or higher
+      AX_CXX_COMPILE_STDCXX(17,[noext],[mandatory])
+    else
+      dnl older version needed v1.14.0
+      AX_CXX_COMPILE_STDCXX(14,[noext],[mandatory])
+    fi
   fi
 fi
 if test "x$build_tests" != "xno" ; then
   build_tests=yes
 
-  AX_CXX_COMPILE_STDCXX_14([noext],[mandatory])
   if test "$ac_cv_native_windows" != "yes" ; then
     AX_PTHREAD([ CARES_TEST_PTHREADS="yes" ], [ AC_MSG_ERROR([threading required for tests]) ])
   fi
