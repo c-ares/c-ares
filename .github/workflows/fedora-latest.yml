@@ -1,12 +1,12 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-name: Ubuntu Rolling (bleeding edge)
+name: Fedora Latest (bleeding edge)
 on:
   push:
   pull_request:
 
 concurrency:
-  group: ${{ github.ref }}-ubuntu-rolling
+  group: ${{ github.ref }}-fedora-latest
   cancel-in-progress: true
 
 env:
@@ -18,18 +18,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:rolling
+      image: fedora-latest
 # Needed for TCP FastOpen
       options: --privileged
-    name: "Ubuntu Rolling"
+    name: "Fedora Latest"
     steps:
       - name: Install packages
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          apt-get update
-          apt-get dist-upgrade -y --assume-yes
-          apt-get install -y --assume-yes sudo curl wget cmake ninja-build autoconf automake libtool g++-15 libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
+          yum install -y gcc gcc-c++ make autoconf automake libtool cmake git ninja-build gdb curl wget gmock pkgconf clang clang-tools lldb gdb valgrind
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "Make sure TCP FastOpen is enabled"
