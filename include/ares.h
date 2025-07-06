@@ -265,6 +265,7 @@ typedef enum {
 #define ARES_OPT_QUERY_CACHE     (1 << 21)
 #define ARES_OPT_EVENT_THREAD    (1 << 22)
 #define ARES_OPT_SERVER_FAILOVER (1 << 23)
+#define ARES_OPT_DISABLE_MONITOR (1 << 24)
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN        (1 << 0)

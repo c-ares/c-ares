@@ -359,12 +359,14 @@ int ares_init_options(ares_channel_t           **channelptr,
 
     /* Initialize monitor for configuration changes.  In some rare cases,
      * ARES_ENOTIMP may occur (OpenWatcom), ignore this. */
-    e      = channel->sock_state_cb_data;
-    status = ares_event_configchg_init(&e->configchg, e);
-    if (status != ARES_SUCCESS && status != ARES_ENOTIMP) {
-      goto done; /* LCOV_EXCL_LINE: UntestablePath */
+    if (!(channel->optmask & ARES_OPT_DISABLE_MONITOR)) {
+      e      = channel->sock_state_cb_data;
+      status = ares_event_configchg_init(&e->configchg, e);
+      if (status != ARES_SUCCESS && status != ARES_ENOTIMP) {
+        goto done; /* LCOV_EXCL_LINE: UntestablePath */
+      }
+      status = ARES_SUCCESS;
     }
-    status = ARES_SUCCESS;
   }
 
 done:

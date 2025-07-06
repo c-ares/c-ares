@@ -258,3 +258,4 @@ however on other unix-like systems a polling mechanism is used that checks every
 
 This feature requires the c-ares channel to persist for the lifetime of the
 application.
+If you want to disable this feature, you can set `ARES_OPT_DISABLE_MONITOR`.

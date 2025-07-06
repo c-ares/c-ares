@@ -328,7 +328,8 @@ any events on the file descriptors, so \fIares_process(3)\fP nor
 \fIares_process_fd(3)\fP should ever be called when this option is enabled.
 
 As of c-ares 1.29.0, when enabled, it will also automatically re-load the
-system configuration when changes are detected.
+system configuration when changes are detected, unless
+\ARES_OPT_DISABLE_MONITOR\fP is set to explicitly disable this feature.
 
 Use \fIares_threadsafety(3)\fP to determine if this option is available to be
 used.
