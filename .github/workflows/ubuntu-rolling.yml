@@ -29,7 +29,7 @@ jobs:
         run: |
           apt-get update
           apt-get dist-upgrade -y --assume-yes
-          apt-get install -y --assume-yes sudo curl wget cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
+          apt-get install -y --assume-yes sudo curl wget cmake ninja-build autoconf automake libtool g++-15 libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "Make sure TCP FastOpen is enabled"
