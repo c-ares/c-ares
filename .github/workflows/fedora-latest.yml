@@ -27,7 +27,7 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          yum install -y gcc gcc-c++ make autoconf automake libtool cmake git ninja-build gdb curl wget gmock pkgconf clang clang-tools-extra lldb gdb valgrind procps
+          yum install -y gcc gcc-c++ make autoconf automake libtool cmake git ninja-build gdb curl wget gtest gmock pkgconf clang clang-tools-extra lldb gdb valgrind procps
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "Make sure TCP FastOpen is enabled"
