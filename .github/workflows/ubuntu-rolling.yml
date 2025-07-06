@@ -1,0 +1,100 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: Ubuntu Rolling (bleeding edge)
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-ubuntu-rolling
+  cancel-in-progress: true
+
+env:
+  TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
+  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+  MAKE: make
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:rolling
+# Needed for TCP FastOpen
+      options: --privileged
+    name: "Ubuntu Rolling"
+    steps:
+      - name: Install packages
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get dist-upgrade -y --assume-yes
+          apt-get install -y --assume-yes sudo curl wget cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
+      - name: Checkout c-ares
+        uses: actions/checkout@v4
+      - name: "Make sure TCP FastOpen is enabled"
+        run: |
+          sudo sysctl -w net.ipv4.tcp_fastopen=3
+      - name: "CMake: build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Autotools: build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: UBSAN: build and test c-ares"
+        env:
+          BUILD_TYPE: "ubsan"
+          CC: "clang"
+          CXX: "clang++"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+          CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
+          LDFLAGS: "-fsanitize=undefined"
+          TEST_DEBUGGER: "none"
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: ASAN: build and test c-ares"
+        env:
+          BUILD_TYPE: "asan"
+          CC: "clang"
+          CXX: "clang++"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          CFLAGS: "-fsanitize=address"
+          CXXFLAGS: "-fsanitize=address"
+          LDFLAGS: "-fsanitize=address"
+          TEST_DEBUGGER: "none"
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: Static Analyzer: build c-ares"
+        env:
+          BUILD_TYPE: "analyze"
+          CC: "clang"
+          CXX: "clang++"
+          SCAN_WRAP: "scan-build -v --status-bugs"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
+          TEST_DEBUGGER: "lldb"
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Valgrind: build and test c-ares (no TCP FastOpen)"
+        env:
+          BUILD_TYPE: "valgrind"
+          TEST_WRAP: "valgrind --leak-check=full"
+          TEST_FILTER: "--gtest_filter=-*Container*:*LiveSearchANY*:*LiveSearchTXT*"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: none
+        run: |
+          sudo sysctl -w net.ipv4.tcp_fastopen=0
+          ./ci/build.sh
+          ./ci/test.sh
