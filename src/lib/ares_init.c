@@ -362,7 +362,8 @@ int ares_init_options(ares_channel_t           **channelptr,
     e      = channel->sock_state_cb_data;
     status = ares_event_configchg_init(&e->configchg, e);
     if (status != ARES_SUCCESS && status != ARES_ENOTIMP) {
-      goto done; /* LCOV_EXCL_LINE: UntestablePath */
+      DEBUGF(fprintf(stderr, "Error: ares_event_configchg_init failed: %s\n",
+                     ares_strerror(status)));
     }
     status = ARES_SUCCESS;
   }
