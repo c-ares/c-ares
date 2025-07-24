@@ -358,6 +358,9 @@
 /* Define to 1 if you have the `RegisterWaitForSingleObject' function. */
 #define HAVE_REGISTERWAITFORSINGLEOBJECT 1
 
+/* Define to 1 if you have the `RegNotifyChangeKeyValue' function. */
+#define HAVE_REGNOTIFYCHANGEKEYVALUE 1
+
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
 /* Define to 1 if you have the `SetFileCompletionNotificationModes' function. */
 #  define HAVE_SETFILECOMPLETIONNOTIFICATIONMODES 1
