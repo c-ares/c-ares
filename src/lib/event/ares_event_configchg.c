@@ -256,7 +256,7 @@ static void NETIOAPI_API_
 static ares_bool_t
   ares_event_configchg_regnotify(ares_event_configchg_t *configchg)
 {
-#  ifdef HAVE_REGISTERWAITFORSINGLEOBJECT
+#  if defined(HAVE_REGISTERWAITFORSINGLEOBJECT) && defined(HAVE_REGNOTIFYCHANGEKEYVALUE)
 #    if defined(__WATCOMC__) && !defined(REG_NOTIFY_THREAD_AGNOSTIC)
 #      define REG_NOTIFY_THREAD_AGNOSTIC 0x10000000L
 #    endif

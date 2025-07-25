@@ -603,6 +603,7 @@ AC_CHECK_DECL(ConvertInterfaceIndexToLuid, [AC_DEFINE([HAVE_CONVERTINTERFACEINDE
 AC_CHECK_DECL(ConvertInterfaceLuidToNameA, [AC_DEFINE([HAVE_CONVERTINTERFACELUIDTONAMEA], 1, [Define to 1 if you have `ConvertInterfaceLuidToNameA`])], [], $cares_all_includes)
 AC_CHECK_DECL(NotifyIpInterfaceChange,     [AC_DEFINE([HAVE_NOTIFYIPINTERFACECHANGE],     1, [Define to 1 if you have `NotifyIpInterfaceChange`]    )], [], $cares_all_includes)
 AC_CHECK_DECL(RegisterWaitForSingleObject, [AC_DEFINE([HAVE_REGISTERWAITFORSINGLEOBJECT], 1, [Define to 1 if you have `RegisterWaitForSingleObject`])], [], $cares_all_includes)
+AC_CHECK_DECL(RegNotifyChangeKeyValue, [AC_DEFINE([HAVE_REGNOTIFYCHANGEKEYVALUE], 1, [Define to 1 if you have `RegNotifyChangeKeyValue`])], [], $cares_all_includes)
 AC_CHECK_DECL(__system_property_get,       [AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET],       1, [Define to 1 if you have `__system_property_get`]      )], [], $cares_all_includes)
 AC_CHECK_DECL(SetFileCompletionNotificationModes, [AC_DEFINE([HAVE_SETFILECOMPLETIONNOTIFICATIONMODES], 1, [Define to 1 if you have `SetFileCompletionNotificationModes`])], [], $cares_all_includes)
 AC_CHECK_DECL(WSAIoctl, [AC_DEFINE([HAVE_WSAIoctl], 1, [Define to 1 if you have `WSAIoctl`])], [], $cares_all_includes)

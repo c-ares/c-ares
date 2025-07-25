@@ -169,6 +169,9 @@
 /* Define to 1 if you have the `RegisterWaitForSingleObject' function. */
 #cmakedefine HAVE_REGISTERWAITFORSINGLEOBJECT 1
 
+/* Define to 1 if you have the `RegNotifyChangeKeyValue' function. */
+#cmakedefine HAVE_REGNOTIFYCHANGEKEYVALUE 1
+
 /* Define to 1 if you have the `SetFileCompletionNotificationModes' function. */
 #cmakedefine HAVE_SETFILECOMPLETIONNOTIFICATIONMODES 1
 
