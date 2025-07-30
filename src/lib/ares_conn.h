@@ -140,14 +140,16 @@ struct ares_server {
   struct ares_addr      addr;
   unsigned short        udp_port; /* host byte order */
   unsigned short        tcp_port; /* host byte order */
-  char                  ll_iface[64];    /* IPv6 Link Local Interface */
-  unsigned int          ll_scope;        /* IPv6 Link Local Scope */
+  char                  ll_iface[64];     /* IPv6 Link Local Interface */
+  unsigned int          ll_scope;         /* IPv6 Link Local Scope */
 
-  size_t                consec_failures; /* Consecutive query failure count
-                                          * can be hard errors or timeouts
-                                          */
-  ares_bool_t           probe_pending;   /* Whether a probe is pending for this
-                                          * server due to prior failures */
+  size_t                consec_failures;  /* Consecutive query failure count
+                                           * can be hard errors or timeouts
+                                           */
+  size_t                consec_successes; /* Consecutive query success count */
+  ares_bool_t           is_failed;        /* Whether this server is failed */
+  ares_bool_t           probe_pending;    /* Whether a probe is pending for this
+                                           * server due to prior failures */
   ares_llist_t         *connections;
   ares_conn_t          *tcp_conn;
 
