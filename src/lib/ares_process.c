@@ -26,6 +26,7 @@
  */
 
 #include "ares_private.h"
+#include "event/ares_event.h"
 
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
@@ -1331,6 +1332,15 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
    * servers. */
   if (probe_downed_server) {
     ares_probe_failed_server(channel, server, query);
+  }
+
+  /* If using the event thread backend, wake the event thread */
+  if (channel->optmask & ARES_OPT_EVENT_THREAD) {
+    ares_event_thread_t *e = channel->sock_state_cb_data;
+    if (e) {
+      ares_event_update(NULL, e, ARES_EVENT_FLAG_OTHER, NULL, ARES_SOCKET_BAD, NULL, NULL, NULL);
+
+    }
   }
 
   return ARES_SUCCESS;
