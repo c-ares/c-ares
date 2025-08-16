@@ -211,11 +211,19 @@ static int compareAddresses(const void *arg1, const void *arg2)
  * to sort the DNS servers correctly.
  */
 static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
-                                const SOCKADDR_INET * const dest,
-                                const ULONG                 interfaceMetric)
+                                const struct sockaddr * const dest,
+                                const ULONG                   interfaceMetric)
 {
   MIB_IPFORWARD_ROW2 row;
   SOCKADDR_INET      ignored;
+
+  union {
+    const struct sockaddr *sa;
+    const SOCKADDR_INET   *sa_inet;
+  } namesrvr;
+
+  namesrvr.sa = dest;
+
   if (GetBestRoute2(/* The interface to use.  The index is ignored since we are
                      * passing a LUID.
                      */
@@ -223,7 +231,7 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
                     /* No specific source address. */
                     NULL,
                     /* Our destination address. */
-                    dest,
+                    namesrvr.sa_inet,
                     /* No options. */
                     0,
                     /* The route row. */
@@ -247,15 +255,16 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
    */
   return row.Metric + interfaceMetric;
 }
-#endif
+#  endif
 
 /*
  * get_DNS_Windows()
  *
- * Locates DNS info using GetAdaptersAddresses() function from the Internet
- * Protocol Helper (IP Helper) API. When located, this returns a pointer
- * in *outptr to a newly allocated memory area holding a null-terminated
- * string with a space or comma separated list of DNS IP addresses.
+ * Locates DNS info using GetAdaptersAddresses() and GetNetworkParams()
+ * functions from the Internet Protocol Helper (IP Helper) API.
+ * When located, this returns a pointer in *outptr to a newly allocated
+ * memory area holding a null-terminated string with a space or comma
+ * separated list of DNS IP addresses.
  *
  * Returns 0 and nullifies *outptr upon inability to return DNSes string.
  *
@@ -270,20 +279,23 @@ static ares_bool_t get_DNS_Windows(char **outptr)
 {
   IP_ADAPTER_DNS_SERVER_ADDRESS *ipaDNSAddr;
   IP_ADAPTER_ADDRESSES          *ipaa;
-  IP_ADAPTER_ADDRESSES          *newipaa;
   IP_ADAPTER_ADDRESSES          *ipaaEntry;
-  ULONG                          ReqBufsz  = IPAA_INITIAL_BUF_SZ;
-  ULONG                          Bufsz     = IPAA_INITIAL_BUF_SZ;
-  ULONG                          AddrFlags = 0;
-  int                            trying    = IPAA_MAX_TRIES;
+  ULONG AddrFlags = GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST |
+                    GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_FRIENDLY_NAME;
+
+  FIXED_INFO                    *fixedInfo = NULL;
+
   ULONG                          res;
+  ULONG                          ReqBufsz = IPAA_INITIAL_BUF_SZ;
+  ULONG                          Bufsz    = IPAA_INITIAL_BUF_SZ;
+  int                            trying   = IPAA_MAX_TRIES;
 
   /* The capacity of addresses, in elements. */
   size_t                         addressesSize;
   /* The number of elements in addresses. */
   size_t                         addressesIndex = 0;
   /* The addresses we will sort. */
-  Address                       *addresses;
+  Address                       *addresses = NULL;
 
   union {
     struct sockaddr     *sa;
@@ -295,7 +307,12 @@ static ares_bool_t get_DNS_Windows(char **outptr)
 
   ipaa = ares_malloc(Bufsz);
   if (!ipaa) {
-    return ARES_FALSE;
+    goto done;
+  }
+
+  fixedInfo = ares_malloc(Bufsz);
+  if (!fixedInfo) {
+    goto done;
   }
 
   /* Start with enough room for a few DNS server addresses and we'll grow it
@@ -305,54 +322,74 @@ static ares_bool_t get_DNS_Windows(char **outptr)
   addresses     = (Address *)ares_malloc(sizeof(Address) * addressesSize);
   if (addresses == NULL) {
     /* We need room for at least some addresses to function. */
-    ares_free(ipaa);
-    return ARES_FALSE;
-  }
-
-  /* Usually this call succeeds with initial buffer size */
-  res = GetAdaptersAddresses(AF_UNSPEC, AddrFlags, NULL, ipaa, &ReqBufsz);
-  if ((res != ERROR_BUFFER_OVERFLOW) && (res != ERROR_SUCCESS)) {
     goto done;
   }
 
-  while ((res == ERROR_BUFFER_OVERFLOW) && (--trying)) {
+  do {
+    res = GetAdaptersAddresses(AF_UNSPEC, AddrFlags, NULL, ipaa, &ReqBufsz);
     if (Bufsz < ReqBufsz) {
-      newipaa = ares_realloc(ipaa, ReqBufsz);
+      IP_ADAPTER_ADDRESSES *newipaa = ares_realloc(ipaa, ReqBufsz);
       if (!newipaa) {
         goto done;
       }
       Bufsz = ReqBufsz;
       ipaa  = newipaa;
     }
-    res = GetAdaptersAddresses(AF_UNSPEC, AddrFlags, NULL, ipaa, &ReqBufsz);
-    if (res == ERROR_SUCCESS) {
-      break;
-    }
-  }
-  if (res != ERROR_SUCCESS) {
-    goto done;
-  }
+  } while ((res == ERROR_BUFFER_OVERFLOW) && (--trying));
 
-  for (ipaaEntry = ipaa; ipaaEntry; ipaaEntry = ipaaEntry->Next) {
-    if (ipaaEntry->OperStatus != IfOperStatusUp) {
-      continue;
-    }
+  if (res == ERROR_SUCCESS) {
+    for (ipaaEntry = ipaa; ipaaEntry; ipaaEntry = ipaaEntry->Next) {
+      if (ipaaEntry->OperStatus != IfOperStatusUp) {
+        continue;
+      }
 
-    /* For each interface, find any associated DNS servers as IPv4 or IPv6
-     * addresses.  For each found address, find the best route to that DNS
-     * server address _on_ _that_ _interface_ (at this moment in time) and
-     * compute the resulting total metric, just as Windows routing will do.
-     * Then, sort all the addresses found by the metric.
-     */
-    for (ipaDNSAddr = ipaaEntry->FirstDnsServerAddress; ipaDNSAddr != NULL;
-         ipaDNSAddr = ipaDNSAddr->Next) {
-      char ipaddr[INET6_ADDRSTRLEN] = "";
+      /* For each interface, find any associated DNS servers as IPv4 or IPv6
+       * addresses.  For each found address, find the best route to that DNS
+       * server address _on_ _that_ _interface_ (at this moment in time) and
+       * compute the resulting total metric, just as Windows routing will do.
+       * Then, sort all the addresses found by the metric.
+       */
+      for (ipaDNSAddr = ipaaEntry->FirstDnsServerAddress; ipaDNSAddr != NULL;
+           ipaDNSAddr = ipaDNSAddr->Next) {
+        char         ipaddr[INET6_ADDRSTRLEN] = "";
+        const void  *addr;
+        USHORT       port;
+        unsigned int ll_scope = 0;
+        ULONG        metric;
 
-      namesrvr.sa = ipaDNSAddr->Address.lpSockaddr;
+        namesrvr.sa = ipaDNSAddr->Address.lpSockaddr;
 
-      if (namesrvr.sa->sa_family == AF_INET) {
-        if ((namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_ANY) ||
-            (namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_NONE)) {
+        if (namesrvr.sa->sa_family == AF_INET) {
+          addr   = &namesrvr.sa4->sin_addr;
+          port   = namesrvr.sa4->sin_port;
+          metric = ipaaEntry->Ipv4Metric;
+
+          if ((namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_ANY) ||
+              (namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_NONE)) {
+            continue;
+          }
+        } else if (namesrvr.sa->sa_family == AF_INET6) {
+          struct ares_addr aresAddr;
+
+          addr   = &namesrvr.sa6->sin6_addr;
+          port   = namesrvr.sa6->sin6_port;
+          metric = ipaaEntry->Ipv6Metric;
+
+          if (memcmp(addr, &ares_in6addr_any,
+                     sizeof(namesrvr.sa6->sin6_addr)) == 0) {
+            continue;
+          }
+
+          memset(&aresAddr, 0, sizeof(aresAddr));
+          aresAddr.family = AF_INET6;
+          memcpy(&aresAddr.addr.addr6, addr, sizeof(namesrvr.sa6->sin6_addr));
+
+          /* See if its link-local */
+          if (ares_addr_is_linklocal(&aresAddr)) {
+            ll_scope = ipaaEntry->Ipv6IfIndex;
+          }
+        } else {
+          /* Skip non-IPv4/IPv6 addresses completely. */
           continue;
         }
 
@@ -366,94 +403,111 @@ static ares_bool_t get_DNS_Windows(char **outptr)
           }
           addresses     = newMem;
           addressesSize = newSize;
+        }
+
+        if (!ares_inet_ntop(namesrvr.sa->sa_family, addr, ipaddr,
+                            sizeof(ipaddr))) {
+          continue;
         }
 
 #  if defined(HAVE_GETBESTROUTE2) && !defined(__WATCOMC__)
         /* OpenWatcom's builtin Windows SDK does not have a definition for
-         * MIB_IPFORWARD_ROW2, and also does not allow the usage of SOCKADDR_INET
-         * as a variable. Let's work around this by returning the worst possible
-         * metric, but only when using the OpenWatcom compiler.
-         * It may be worth investigating using a different version of the Windows
-         * SDK with OpenWatcom in the future, though this may be fixed in OpenWatcom
-         * 2.0.
+         * MIB_IPFORWARD_ROW2, and also does not allow the usage of
+         * SOCKADDR_INET as a variable. Let's work around this by returning the
+         * worst possible metric, but only when using the OpenWatcom compiler.
+         * It may be worth investigating using a different version of the
+         * Windows SDK with OpenWatcom in the future, though this may be fixed
+         * in OpenWatcom 2.0.
          */
-        addresses[addressesIndex].metric = getBestRouteMetric(
-          &ipaaEntry->Luid, (SOCKADDR_INET *)((void *)(namesrvr.sa)),
-          ipaaEntry->Ipv4Metric);
+        addresses[addressesIndex].metric =
+          getBestRouteMetric(&ipaaEntry->Luid, namesrvr.sa, metric);
 #  else
         addresses[addressesIndex].metric = (ULONG)-1;
 #  endif
 
         /* Record insertion index to make qsort stable */
         addresses[addressesIndex].orig_idx = addressesIndex;
-
-        if (!ares_inet_ntop(AF_INET, &namesrvr.sa4->sin_addr, ipaddr,
-                            sizeof(ipaddr))) {
-          continue;
-        }
-        snprintf(addresses[addressesIndex].text,
-                 sizeof(addresses[addressesIndex].text), "[%s]:%u", ipaddr,
-                 ntohs(namesrvr.sa4->sin_port));
-        ++addressesIndex;
-      } else if (namesrvr.sa->sa_family == AF_INET6) {
-        unsigned int     ll_scope = 0;
-        struct ares_addr addr;
-
-        if (memcmp(&namesrvr.sa6->sin6_addr, &ares_in6addr_any,
-                   sizeof(namesrvr.sa6->sin6_addr)) == 0) {
-          continue;
-        }
-
-        /* Allocate room for another address, if necessary, else skip. */
-        if (addressesIndex == addressesSize) {
-          const size_t    newSize = addressesSize + 4;
-          Address * const newMem =
-            (Address *)ares_realloc(addresses, sizeof(Address) * newSize);
-          if (newMem == NULL) {
-            continue;
-          }
-          addresses     = newMem;
-          addressesSize = newSize;
-        }
-
-        /* See if its link-local */
-        memset(&addr, 0, sizeof(addr));
-        addr.family = AF_INET6;
-        memcpy(&addr.addr.addr6, &namesrvr.sa6->sin6_addr, 16);
-        if (ares_addr_is_linklocal(&addr)) {
-          ll_scope = ipaaEntry->Ipv6IfIndex;
-        }
-
-#  if defined(HAVE_GETBESTROUTE2) && !defined(__WATCOMC__)
-        addresses[addressesIndex].metric = getBestRouteMetric(
-          &ipaaEntry->Luid, (SOCKADDR_INET *)((void *)(namesrvr.sa)),
-          ipaaEntry->Ipv6Metric);
-#  else
-        addresses[addressesIndex].metric = (ULONG)-1;
-#  endif
-
-        /* Record insertion index to make qsort stable */
-        addresses[addressesIndex].orig_idx = addressesIndex;
-
-        if (!ares_inet_ntop(AF_INET6, &namesrvr.sa6->sin6_addr, ipaddr,
-                            sizeof(ipaddr))) {
-          continue;
-        }
 
         if (ll_scope) {
           snprintf(addresses[addressesIndex].text,
                    sizeof(addresses[addressesIndex].text), "[%s]:%u%%%u",
-                   ipaddr, ntohs(namesrvr.sa6->sin6_port), ll_scope);
+                   ipaddr, ntohs(port), ll_scope);
         } else {
           snprintf(addresses[addressesIndex].text,
                    sizeof(addresses[addressesIndex].text), "[%s]:%u", ipaddr,
-                   ntohs(namesrvr.sa6->sin6_port));
+                   ntohs(port));
         }
         ++addressesIndex;
-      } else {
-        /* Skip non-IPv4/IPv6 addresses completely. */
+      }
+    }
+  }
+
+  ReqBufsz = IPAA_INITIAL_BUF_SZ;
+  Bufsz    = IPAA_INITIAL_BUF_SZ;
+  trying   = IPAA_MAX_TRIES;
+
+  /* For some users GetAdaptersAddresses returns no DNS servers,
+   * the legacy GetNetworkParams still works however.
+   * As such, we read the data from there too but with the lowest priority.
+   *
+   * This API only returns IPv4 servers without adapter distinction, with empty
+   * strings indicating no servers.
+   */
+  do {
+    res = GetNetworkParams(fixedInfo, &ReqBufsz);
+    if (Bufsz < ReqBufsz) {
+      IP_ADAPTER_ADDRESSES *newFixedInfo = ares_realloc(ipaa, ReqBufsz);
+      if (!newFixedInfo) {
+        goto done;
+      }
+      Bufsz = ReqBufsz;
+      ipaa  = newFixedInfo;
+    }
+  } while ((res == ERROR_BUFFER_OVERFLOW) && (--trying));
+
+  if (res == ERROR_SUCCESS) {
+    IP_ADDR_STRING *dnsList;
+    for (dnsList = &fixedInfo->DnsServerList; dnsList != NULL;
+         dnsList = dnsList->Next) {
+      size_t len =
+        strnlen(dnsList->IpAddress.String, sizeof(dnsList->IpAddress.String));
+
+      /* Filter out invalid addresses. */
+      if ((len == 0) || (len > 15)) {
         continue;
       }
+
+      if ((len == 7) && memcmp(dnsList->IpAddress.String, "0.0.0.0", 7) == 0) {
+        continue;
+      }
+
+      if ((len == 15) &&
+          memcmp(dnsList->IpAddress.String, "255.255.255.255", 15) == 0) {
+        continue;
+      }
+
+      /* Allocate room for another address, if necessary, else skip. */
+      if (addressesIndex == addressesSize) {
+        const size_t    newSize = addressesSize + 4;
+        Address * const newMem =
+          (Address *)ares_realloc(addresses, sizeof(Address) * newSize);
+        if (newMem == NULL) {
+          continue;
+        }
+        addresses     = newMem;
+        addressesSize = newSize;
+      }
+
+      /* Since the API is legacy, use its results as final fallback */
+      addresses[addressesIndex].metric = (ULONG)-1;
+
+      /* Record insertion index to make qsort stable */
+      addresses[addressesIndex].orig_idx = addressesIndex;
+
+      snprintf(addresses[addressesIndex].text,
+               sizeof(addresses[addressesIndex].text), "[%s]",
+               dnsList->IpAddress.String);
+      ++addressesIndex;
     }
   }
 
@@ -481,17 +535,19 @@ static ares_bool_t get_DNS_Windows(char **outptr)
   }
 
 done:
-  ares_free(addresses);
+  if (addresses) {
+    ares_free(addresses);
+  }
 
   if (ipaa) {
     ares_free(ipaa);
   }
 
-  if (!*outptr) {
-    return ARES_FALSE;
+  if (fixedInfo) {
+    ares_free(fixedInfo);
   }
 
-  return ARES_TRUE;
+  return *outptr != NULL ? ARES_TRUE : ARES_FALSE;
 }
 
 /*
