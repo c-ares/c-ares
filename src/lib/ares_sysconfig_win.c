@@ -255,7 +255,7 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
    */
   return row.Metric + interfaceMetric;
 }
-#  endif
+#endif
 
 /*
  * get_DNS_Windows()
