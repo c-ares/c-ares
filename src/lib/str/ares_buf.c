@@ -438,7 +438,6 @@ ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
 {
   size_t        out_len;
   ares_status_t status;
-  size_t        i;
 
   if (str == NULL || len == 0) {
     return ARES_EFORMERR;
@@ -454,13 +453,6 @@ ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
 
   /* NULL terminate */
   str[out_len] = 0;
-
-  /* Validate string is printable */
-  for (i = 0; i < out_len; i++) {
-    if (!ares_isprint(str[i])) {
-      return ARES_EBADSTR;
-    }
-  }
 
   return ARES_SUCCESS;
 }
@@ -593,18 +585,10 @@ ares_status_t ares_buf_fetch_bytes_dup(ares_buf_t *buf, size_t len,
 ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str)
 {
   size_t               remaining_len;
-  size_t               i;
   const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
 
   if (buf == NULL || str == NULL || len == 0 || remaining_len < len) {
     return ARES_EBADRESP;
-  }
-
-  /* Validate string is printable */
-  for (i = 0; i < len; i++) {
-    if (!ares_isprint(ptr[i])) {
-      return ARES_EBADSTR;
-    }
   }
 
   *str = ares_malloc(len + 1);
