@@ -469,8 +469,8 @@ static ares_bool_t get_DNS_Windows(char **outptr)
     IP_ADDR_STRING *dnsList;
     for (dnsList = &fixedInfo->DnsServerList; dnsList != NULL;
          dnsList = dnsList->Next) {
-      size_t len =
-        strnlen(dnsList->IpAddress.String, sizeof(dnsList->IpAddress.String));
+      size_t len = ares_strnlen(dnsList->IpAddress.String,
+                                sizeof(dnsList->IpAddress.String));
 
       /* Filter out invalid addresses. */
       if ((len == 0) || (len > 15)) {
