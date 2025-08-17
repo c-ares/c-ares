@@ -355,14 +355,17 @@ static ares_bool_t get_DNS_Windows(char **outptr)
         const void  *addr;
         USHORT       port;
         unsigned int ll_scope = 0;
-        ULONG        metric;
+        ULONG        metric   = (ULONG)-1;
 
         namesrvr.sa = ipaDNSAddr->Address.lpSockaddr;
 
         if (namesrvr.sa->sa_family == AF_INET) {
-          addr   = &namesrvr.sa4->sin_addr;
-          port   = namesrvr.sa4->sin_port;
+          addr = &namesrvr.sa4->sin_addr;
+          port = namesrvr.sa4->sin_port;
+
+#  if defined(HAVE_GETBESTROUTE2) && !defined(__WATCOMC__)
           metric = ipaaEntry->Ipv4Metric;
+#  endif
 
           if ((namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_ANY) ||
               (namesrvr.sa4->sin_addr.S_un.S_addr == INADDR_NONE)) {
@@ -371,9 +374,12 @@ static ares_bool_t get_DNS_Windows(char **outptr)
         } else if (namesrvr.sa->sa_family == AF_INET6) {
           struct ares_addr aresAddr;
 
-          addr   = &namesrvr.sa6->sin6_addr;
-          port   = namesrvr.sa6->sin6_port;
+          addr = &namesrvr.sa6->sin6_addr;
+          port = namesrvr.sa6->sin6_port;
+
+#  if defined(HAVE_GETBESTROUTE2) && !defined(__WATCOMC__)
           metric = ipaaEntry->Ipv6Metric;
+#  endif
 
           if (memcmp(addr, &ares_in6addr_any,
                      sizeof(namesrvr.sa6->sin6_addr)) == 0) {
@@ -422,7 +428,7 @@ static ares_bool_t get_DNS_Windows(char **outptr)
         addresses[addressesIndex].metric =
           getBestRouteMetric(&ipaaEntry->Luid, namesrvr.sa, metric);
 #  else
-        addresses[addressesIndex].metric = (ULONG)-1;
+        addresses[addressesIndex].metric = metric;
 #  endif
 
         /* Record insertion index to make qsort stable */
