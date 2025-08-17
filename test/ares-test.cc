@@ -936,7 +936,7 @@ void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {
     tv_cancel += std::chrono::milliseconds(cancel_ms);
   }
 
-  while (ares_queue_active_queries(channel_)) {
+  while (ARES_FALSE == ares_queue_empty(channel_)) {
     //if (verbose) std::cerr << "pending queries: " << ares_queue_active_queries(channel_) << std::endl;
 
     int nfds = 0;

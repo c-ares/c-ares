@@ -298,3 +298,20 @@ size_t ares_queue_active_queries(const ares_channel_t *channel)
 
   return len;
 }
+
+ares_bool_t ares_queue_empty(const ares_channel_t *channel)
+{
+  const void *val;
+
+  if (channel == NULL) {
+    return ARES_TRUE;
+  }
+
+  ares_channel_lock(channel);
+
+  val = ares_llist_first_val(channel->all_queries);
+
+  ares_channel_unlock(channel);
+
+  return val == NULL ? ARES_TRUE : ARES_FALSE;
+}
