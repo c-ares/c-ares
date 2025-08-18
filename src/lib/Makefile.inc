@@ -86,6 +86,7 @@ CSOURCES = ares_addrinfo2hostent.c	\
   str/ares_buf.c			\
   str/ares_str.c			\
   str/ares_strsplit.c			\
+  str/punycode.c			\
   util/ares_iface_ips.c			\
   util/ares_threads.c			\
   util/ares_timeval.c			\
