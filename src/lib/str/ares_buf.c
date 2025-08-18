@@ -293,6 +293,72 @@ ares_status_t ares_buf_append_be32(ares_buf_t *buf, unsigned int u32)
   return ARES_SUCCESS;
 }
 
+ares_status_t ares_buf_append_codepoint(ares_buf_t *buf, unsigned int codepoint)
+{
+  ares_status_t status;
+
+  if (codepoint <= 0x7F) { /* 1 byte sequence */
+    return ares_buf_append_byte(buf, (unsigned char)codepoint);
+  }
+
+  if (codepoint <= 0x7FF) { /* 2 byte sequence */
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0xC0 | ((codepoint >> 6) & 0x1F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+    return ares_buf_append_byte(buf,
+                                (unsigned char)(0x80 | (codepoint & 0x3F)));
+  }
+
+  if (codepoint < 0xFFFF) { /* 3 byte sequence */
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0xE0 | ((codepoint >> 12) & 0x0F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0x80 | ((codepoint >> 6) & 0x3F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+
+    return ares_buf_append_byte(buf,
+                                (unsigned char)(0x80 | (codepoint & 0x3F)));
+  }
+
+  if (codepoint <= 0x10FFFF) { /* 4 byte sequence */
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0xF0 | ((codepoint >> 18) & 0x07)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0x80 | ((codepoint >> 12) & 0x3F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0x80 | ((codepoint >> 6) & 0x3F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+    return ares_buf_append_byte(buf,
+                                (unsigned char)(0x80 | (codepoint & 0x3F)));
+  }
+
+  return ARES_EFORMERR;
+}
+
 unsigned char *ares_buf_append_start(ares_buf_t *buf, size_t *len)
 {
   ares_status_t status;
@@ -565,6 +631,55 @@ ares_status_t ares_buf_fetch_be32(ares_buf_t *buf, unsigned int *u32)
           (unsigned int)(ptr[2]) << 8 | (unsigned int)(ptr[3]));
 
   return ares_buf_consume(buf, sizeof(*u32));
+}
+
+ares_status_t ares_buf_fetch_codepoint(ares_buf_t *buf, unsigned int *codepoint)
+{
+  size_t               remaining_len;
+  const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
+  size_t               len_used;
+
+  if (buf == NULL || codepoint == NULL || remaining_len < 1) {
+    return ARES_EBADRESP;
+  }
+
+  if ((ptr[0] & 0x80) == 0) { /* 1-byte sequence (ASCII) */
+    if (codepoint) {
+      *codepoint = ptr[0];
+    }
+    len_used = 1;
+  } else if ((ptr[0] & 0xE0) == 0xC0) { /* 2-byte sequence */
+    if (remaining_len < 2) {
+      return ARES_EBADSTR;
+    }
+    if (codepoint) {
+      *codepoint = (unsigned int)(((ptr[0] & 0x1F) << 6) | (ptr[1] & 0x3F));
+    }
+    len_used = 2;
+  } else if ((ptr[0] & 0xF0) == 0xE0) { /* 3-byte sequence */
+    if (remaining_len < 3) {
+      return ARES_EBADSTR;
+    }
+    if (codepoint) {
+      *codepoint = (unsigned int)(((ptr[0] & 0x0F) << 12) |
+                                  ((ptr[1] & 0x3F) << 6) | (ptr[2] & 0x3F));
+    }
+    len_used = 3;
+  } else if ((ptr[0] & 0xF8) == 0xF0) { /* 4-byte sequence */
+    if (remaining_len < 3) {
+      return ARES_EBADSTR;
+    }
+    if (codepoint) {
+      *codepoint =
+        (unsigned int)(((ptr[0] & 0x07) << 18) | ((ptr[1] & 0x3F) << 12) |
+                       ((ptr[2] & 0x3F) << 6) | (ptr[3] & 0x3F));
+    }
+    len_used = 4;
+  } else {
+    return ARES_EBADSTR;
+  }
+
+  return ares_buf_consume(buf, len_used);
 }
 
 ares_status_t ares_buf_fetch_bytes(ares_buf_t *buf, unsigned char *bytes,
@@ -1111,6 +1226,40 @@ size_t ares_buf_len(const ares_buf_t *buf)
   }
 
   return buf->data_len - buf->offset;
+}
+
+ares_status_t ares_buf_len_utf8(const ares_buf_t *buf, size_t *len)
+{
+  size_t               remaining_len = 0;
+  const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
+  size_t               offset;
+  size_t               cnt      = 0;
+  size_t               len_used = 0;
+
+  if (buf == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  for (offset = 0; offset < remaining_len; offset += len_used) {
+    if ((ptr[offset] & 0x80) == 0) {           /* 1-byte sequence (ASCII) */
+      len_used = 1;
+    } else if ((ptr[offset] & 0xE0) == 0xC0) { /* 2-byte sequence */
+      len_used = 2;
+    } else if ((ptr[offset] & 0xF0) == 0xE0) { /* 3-byte sequence */
+      len_used = 3;
+    } else if ((ptr[offset] & 0xF8) == 0xF0) { /* 4-byte sequence */
+      len_used = 4;
+    } else {
+      return ARES_EBADSTR;
+    }
+    if (offset + len_used > remaining_len) {
+      return ARES_EBADSTR;
+    }
+    cnt++;
+  }
+
+  *len = cnt;
+  return ARES_SUCCESS;
 }
 
 const unsigned char *ares_buf_peek(const ares_buf_t *buf, size_t *len)
