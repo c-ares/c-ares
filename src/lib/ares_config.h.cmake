@@ -148,6 +148,9 @@
 /* Define to 1 if you have the `GetBestRoute2' function. */
 #cmakedefine HAVE_GETBESTROUTE2 1
 
+/* Define to 1 if you have the `IdnToAscii' function. */
+#cmakedefine HAVE_IDNTOASCII 1
+
 /* Define to 1 if you have the `WSAIoctl' function. */
 #cmakedefine HAVE_WSAIOCTL 1
 
