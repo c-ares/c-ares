@@ -111,7 +111,7 @@ CARES_EXTERN ares_bool_t    ares_str_isprint(const char *str, size_t len);
    ((unsigned char)(x)) == '\f' || ((unsigned char)(x)) == '\n')
 
 #define ares_isprint(x) \
-  (((unsigned char)(x)) >= 0x20 && ((unsigned char)(x)) <= 0x7E)
+  (((unsigned)(x)) >= 0x20 && ((unsigned)(x)) <= 0x7E)
 
 /* Character set allowed by hostnames.  This is to include the normal
  * domain name character set plus:
