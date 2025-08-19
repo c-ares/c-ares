@@ -398,6 +398,8 @@
 #  define HAVE_NOTIFYIPINTERFACECHANGE 1
 /* Define to 1 if you have the `GetBestRoute2` function */
 #  define HAVE_GETBESTROUTE2 1
+/* Define to 1 if you have the `IdnToAscii' function. */
+#  define HAVE_IDNTOASCII 1
 #endif
 
 /* ---------------------------------------------------------------- */
