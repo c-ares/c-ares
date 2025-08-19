@@ -281,7 +281,7 @@ if test "$ac_cv_native_windows" = "yes" ; then
 
   dnl Windows builds require linking to iphlpapi
   if test "$ac_cv_header_winsock2_h" = "yes"; then
-    LIBS="$LIBS -lws2_32 -liphlpapi"
+    LIBS="$LIBS -lws2_32 -liphlpapi -lNormaliz"
   fi
 fi
 
