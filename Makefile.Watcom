@@ -127,11 +127,11 @@ $(OBJ_BASE)\tools\ares_getopt.obj:
 
 adig.exe: $(LIBNAME).lib
 	$(CC) $(CFLAGS) src\tools\adig.c -fo=$(OBJ_BASE)\tools\adig.obj
-	$(LD) name $^@ system nt $(LFLAGS) file { $(OBJ_BASE)\tools\adig.obj $[@ } library $]@, ws2_32.lib, iphlpapi.lib
+	$(LD) name $^@ system nt $(LFLAGS) file { $(OBJ_BASE)\tools\adig.obj $[@ } library $]@, ws2_32.lib, iphlpapi.lib, Normaliz.lib
 
 ahost.exe: $(OBJ_BASE)\tools\ares_getopt.obj $(LIBNAME).lib
 	$(CC) $(CFLAGS) src\tools\ahost.c -fo=$(OBJ_BASE)\tools\ahost.obj
-	$(LD) name $^@ system nt $(LFLAGS) file { $(OBJ_BASE)\tools\ahost.obj $[@ } library $]@, ws2_32.lib, iphlpapi.lib
+	$(LD) name $^@ system nt $(LFLAGS) file { $(OBJ_BASE)\tools\ahost.obj $[@ } library $]@, ws2_32.lib, iphlpapi.lib, Normaliz.lib
 
 clean: .SYMBOLIC
 	-$(RM) $(OBJS_STAT)
@@ -234,6 +234,7 @@ $(LINK_ARG): $(__MAKEFILES__)
 !else
 	@%append $^@ library ws2_32.lib
 	@%append $^@ library iphlpapi.lib
+	@%append $^@ library Normaliz.lib
 !endif
 
 $(LIB_ARG): $(__MAKEFILES__)
