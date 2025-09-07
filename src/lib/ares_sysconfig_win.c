@@ -44,6 +44,9 @@
 #endif
 
 #if defined(USE_WINSOCK)
+#  if defined(HAVE_WINDOWS_H)
+#    include <Windows.h>
+#  endif
 #  if defined(HAVE_IPHLPAPI_H)
 #    include <iphlpapi.h>
 #  endif
@@ -55,55 +58,6 @@
 #include "ares_inet_net_pton.h"
 
 #if defined(USE_WINSOCK)
-/*
- * get_REG_SZ()
- *
- * Given a 'hKey' handle to an open registry key and a 'leafKeyName' pointer
- * to the name of the registry leaf key to be queried, fetch it's string
- * value and return a pointer in *outptr to a newly allocated memory area
- * holding it as a null-terminated string.
- *
- * Returns 0 and nullifies *outptr upon inability to return a string value.
- *
- * Returns 1 and sets *outptr when returning a dynamically allocated string.
- *
- * Supported on Windows NT 3.5 and newer.
- */
-static ares_bool_t get_REG_SZ(HKEY hKey, const char *leafKeyName, char **outptr)
-{
-  DWORD size = 0;
-  int   res;
-
-  *outptr = NULL;
-
-  /* Find out size of string stored in registry */
-  res = RegQueryValueExA(hKey, leafKeyName, 0, NULL, NULL, &size);
-  if ((res != ERROR_SUCCESS && res != ERROR_MORE_DATA) || !size) {
-    return ARES_FALSE;
-  }
-
-  /* Allocate buffer of indicated size plus one given that string
-     might have been stored without null termination */
-  *outptr = ares_malloc(size + 1);
-  if (!*outptr) {
-    return ARES_FALSE;
-  }
-
-  /* Get the value for real */
-  res = RegQueryValueExA(hKey, leafKeyName, 0, NULL, (unsigned char *)*outptr,
-                         &size);
-  if ((res != ERROR_SUCCESS) || (size == 1)) {
-    ares_free(*outptr);
-    *outptr = NULL;
-    return ARES_FALSE;
-  }
-
-  /* Null terminate buffer always */
-  *(*outptr + size) = '\0';
-
-  return ARES_TRUE;
-}
-
 static void commanjoin(char **dst, const char * const src, const size_t len)
 {
   char  *newbuf;
@@ -495,6 +449,160 @@ done:
 }
 
 /*
+ * to_ascii()
+ *
+ * Given a 'text' wide, comma or space separated, string, converts it to ASCII.
+ * When possible, it uses Punycode encoding for non-ASCII text.
+ *
+ * Returns NULL on conversion failure or on empty input.
+ */
+static char *to_ascii(WCHAR *text)
+{
+  char  *output = NULL;
+  size_t length = 0;
+  int    i;
+#  if defined(HAVE_IDNTOASCII)
+  WCHAR *punybuf     = NULL;
+  int    punybufsize = 0;
+
+  WCHAR *context;
+  WCHAR *token = wcstok(text, L", ", &context);
+  while (token != NULL) {
+    char *newout;
+    int   tokenlen = (int)wcslen(token);
+    /* Find out the required buffer size */
+    int   punysize = IdnToAscii(0, token, tokenlen, NULL, 0);
+    if (punysize < 1) {
+      continue;
+    }
+
+    if (punysize > punybufsize) {
+      WCHAR *newbuf = ares_realloc(punybuf, punysize * sizeof(WCHAR));
+      if (newbuf == NULL) {
+        continue;
+      }
+      punybuf     = newbuf;
+      punybufsize = punysize;
+    }
+
+    /* Convert the text */
+    punysize = IdnToAscii(0, token, tokenlen, punybuf, punybufsize);
+    if (punysize < 1) {
+      continue;
+    }
+
+    /* 2 additional bytes,
+     * one for null terminator and one for potential comma
+     */
+    newout = ares_realloc(output, length + punysize + 2);
+    if (newout == NULL) {
+      continue;
+    }
+    output = newout;
+
+    /* Join with commas */
+    if (length != 0) {
+      output[length]  = ',';
+      length         += 1;
+    }
+
+    for (i = 0; i < punysize; i++) {
+      output[length + i] = (char)punybuf[i];
+    }
+    length += punysize;
+
+    token = wcstok(NULL, L", ", &context);
+  }
+
+  if (punybuf != NULL) {
+    ares_free(punybuf);
+  }
+
+  if (length == 0) {
+    return NULL;
+  }
+#  else
+  length = wcslen(text);
+  if (length == 0) {
+    return NULL;
+  }
+
+  output = ares_malloc(length + 1);
+
+  /* When the API is not available, fail on non ASCII */
+  for (i = 0; i < length; i++) {
+    if (!ares_isprint(text[i])) {
+      ares_free(output);
+      return NULL;
+    }
+
+    output[i] = (char)text[i];
+  }
+#  endif
+
+  /* Null terminate buffer always */
+  output[length] = '\0';
+
+  return output;
+}
+
+/*
+ * get_REG_SZ()
+ *
+ * Given a 'hKey' handle to an open registry key and a 'leafKeyName' pointer
+ * to the name of the registry leaf key to be queried, fetch it's string
+ * value and return a pointer in *outptr to a newly allocated memory area
+ * holding it as a null-terminated string.
+ *
+ * Returns 0 and nullifies *outptr upon inability to return a string value.
+ *
+ * Returns 1 and sets *outptr when returning a dynamically allocated string.
+ *
+ * Supported on Windows 2000 and newer.
+ */
+static ares_bool_t get_REG_SZ(HKEY hKey, const WCHAR *leafKeyName,
+                              char **outptr)
+{
+  DWORD  size = 0;
+  WCHAR *buf;
+  int    res;
+
+  *outptr = NULL;
+
+  /* Find out size of string stored in registry */
+  res = RegQueryValueExW(hKey, leafKeyName, 0, NULL, NULL, &size);
+  if ((res != ERROR_SUCCESS && res != ERROR_MORE_DATA) || !size) {
+    return ARES_FALSE;
+  }
+
+  /* Allocate buffer of indicated size plus one given that string
+     might have been stored without null termination */
+  buf = ares_malloc(size + sizeof(WCHAR));
+  if (!buf) {
+    return ARES_FALSE;
+  }
+
+  /* Get the value for real */
+  res   = RegQueryValueExW(hKey, leafKeyName, 0, NULL, (BYTE *)buf, &size);
+  size /= sizeof(WCHAR);
+
+  if (size && (buf[size - 1] == L'\0')) {
+    size -= 1;
+  }
+  buf[size] = L'\0';
+
+  if ((res != ERROR_SUCCESS) || !size) {
+    ares_free(buf);
+    return ARES_FALSE;
+  }
+
+  *outptr = to_ascii(buf);
+  ares_free(buf);
+
+  return *outptr != NULL ? ARES_TRUE : ARES_FALSE;
+}
+
+/*
  * get_SuffixList_Windows()
  *
  * Reads the "DNS Suffix Search List" from registry and writes the list items
@@ -511,7 +619,7 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
 {
   HKEY  hKey;
   HKEY  hKeyEnum;
-  char  keyName[256];
+  WCHAR keyName[256];
   DWORD keyNameBuffSize;
   DWORD keyIdx = 0;
   char *p      = NULL;
@@ -556,12 +664,12 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
   if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY "\\" INTERFACES_KEY, 0,
                     KEY_READ, &hKey) == ERROR_SUCCESS) {
     for (;;) {
-      keyNameBuffSize = sizeof(keyName);
-      if (RegEnumKeyExA(hKey, keyIdx++, keyName, &keyNameBuffSize, 0, NULL,
+      keyNameBuffSize = sizeof(keyName) / sizeof(WCHAR);
+      if (RegEnumKeyExW(hKey, keyIdx++, keyName, &keyNameBuffSize, 0, NULL,
                         NULL, NULL) != ERROR_SUCCESS) {
         break;
       }
-      if (RegOpenKeyExA(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum) !=
+      if (RegOpenKeyExW(hKey, keyName, 0, KEY_QUERY_VALUE, &hKeyEnum) !=
           ERROR_SUCCESS) {
         continue;
       }

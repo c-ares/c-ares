@@ -148,8 +148,8 @@ LIB_OUTDIR = $(LIB_DIR)\$(CFG)
 # TCP/IP stack settings
 # -------------------------------------
 CFLAGS  = /DWIN32
-EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
-EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
+EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib Normaliz.lib
+EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib Normaliz.lib
 
 
 # ----------------------------
