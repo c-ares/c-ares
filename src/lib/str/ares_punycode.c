@@ -124,10 +124,6 @@ static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
   size_t        initial_len;
   unsigned int  cp;
 
-  if (inbuf == NULL) {
-    return ARES_ENOMEM;
-  }
-
   /* Get the total number of characters */
   status = ares_buf_len_utf8(inbuf, &utf8_cnt);
   if (status != ARES_SUCCESS) {
@@ -277,11 +273,11 @@ fail:
   ares_buf_destroy(outbuf);
   return status;
 }
-#if 0
-static size_t decode_digit(unsigned int v)
+
+static unsigned int decode_digit(unsigned int v)
 {
   if (ares_isdigit(v)) {
-    return 22 + (v - '0');
+    return 26 + (v - '0');
   }
   if (ares_islower(v)) {
     return v - 'a';
@@ -289,63 +285,96 @@ static size_t decode_digit(unsigned int v)
   if (ares_isupper(v)) {
     return v - 'A';
   }
-  return SIZE_MAX;
+  return BASE;
 }
 
-size_t punycode_decode(const char * const src, const size_t srclen,
-                       unsigned int * const dst, size_t * const dstlen)
+#define UINTMAX 0xFFFFFFFF
+
+static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
 {
-  const char *p;
-  size_t      b;
-  size_t      n;
-  size_t      t;
-  size_t      i;
-  size_t      k;
-  size_t      w;
-  size_t      si;
-  size_t      di;
-  size_t      digit;
-  size_t      org_i;
-  size_t      bias;
+  unsigned int  n;
+  size_t        i;
+  size_t        di;
+  size_t        bias;
+  unsigned int *utf32  = NULL;
+  ares_status_t status = ARES_SUCCESS;
+  size_t        num_ascii_chars;
 
-  /* Ensure that the input contains only ASCII characters. */
-  for (si = 0; si < srclen; si++) {
-    if (src[si] & 0x80) {
-      *dstlen = 0;
-      return 0;
+  if (inbuf == NULL || outbuf == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  /* Make sure input is all ascii-printable or its an error */
+  if (!ares_buf_isprint(inbuf)) {
+    return ARES_EFORMERR;
+  }
+
+  /* If it doesn't start with "xn--" then its all ascii */
+  if (!ares_buf_begins_with(inbuf, (const unsigned char *)"xn--", 4)) {
+    size_t               len;
+    const unsigned char *ptr = ares_buf_peek(inbuf, &len);
+    return ares_buf_append(outbuf, ptr, len);
+  }
+  ares_buf_consume(inbuf, 4);
+
+  /* Allocate a buffer to hold utf32 codepoints that is guaranteed to be big
+   * enough so we don't have to track overflows */
+  utf32 = ares_malloc_zero(sizeof(*utf32) * ares_buf_len(inbuf));
+  if (utf32 == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  ares_buf_tag(inbuf);
+
+  /* Search for the delimiter and copy */
+  num_ascii_chars = ares_buf_consume_last_charset(inbuf,
+      (const unsigned char *)"-", 1, ARES_TRUE);
+  if (num_ascii_chars != SIZE_MAX) {
+    size_t               data_len = 0;
+    const unsigned char *data     = ares_buf_tag_fetch(inbuf, &data_len);
+
+    for (i=0; i<num_ascii_chars; i++) {
+      utf32[i] = data[i];
     }
+    /* Consume '-' */
+    ares_buf_consume(inbuf, 1);
+    di = num_ascii_chars;
+  } else {
+    di = 0;
   }
 
-  /* Reverse-search for delimiter in input. */
-  for (p = src + srclen - 1; p > src && *p != '-'; p--)
-    ;
-  b = p - src;
-
-  /* Copy basic code points to output. */
-  di = min(b, *dstlen);
-
-  for (i = 0; i < di; i++) {
-    dst[i] = src[i];
-  }
+  ares_buf_tag_clear(inbuf);
 
   i    = 0;
   n    = INITIAL_N;
   bias = INITIAL_BIAS;
 
-  for (si = b + (b > 0); si < srclen && di < *dstlen; di++) {
-    org_i = i;
+  for ( ; ares_buf_len(inbuf) > 0; di++) {
+    size_t org_i = i;
+    size_t k;
+    size_t w;
 
-    for (w = 1, k = BASE; di < *dstlen; k += BASE) {
-      digit = decode_digit(src[si++]);
+    for (w = 1, k = BASE; ; k += BASE) {
+      unsigned char byte;
+      size_t        digit;
+      size_t        t;
 
-      if (digit == SIZE_MAX) {
-        goto fail;
+      status = ares_buf_fetch_bytes(inbuf, &byte, 1);
+      if (status != ARES_SUCCESS) {
+        goto done;
       }
 
-      if (digit > (SIZE_MAX - i) / w) {
+      digit = decode_digit(byte);
+
+      if (digit >= BASE) {
+        status = ARES_EFORMERR;
+        goto done;
+      }
+
+      if (digit > (UINTMAX - i) / w) {
         /* OVERFLOW */
-        // assert(0 && "OVERFLOW");
-        goto fail;
+        status = ARES_EFORMERR;
+        goto done;
       }
 
       i += digit * w;
@@ -362,10 +391,10 @@ size_t punycode_decode(const char * const src, const size_t srclen,
         break;
       }
 
-      if (w > SIZE_MAX / (BASE - t)) {
+      if (w > UINTMAX / (BASE - t)) {
         /* OVERFLOW */
-        // assert(0 && "OVERFLOW");
-        goto fail;
+        status = ARES_EFORMERR;
+        goto done;
       }
 
       w *= BASE - t;
@@ -373,23 +402,84 @@ size_t punycode_decode(const char * const src, const size_t srclen,
 
     bias = adapt_bias(i - org_i, di + 1, org_i == 0);
 
-    if (i / (di + 1) > SIZE_MAX - n) {
+    if (i / (di + 1) > UINTMAX - n) {
       /* OVERFLOW */
-      // assert(0 && "OVERFLOW");
-      goto fail;
+      status = ARES_EFORMERR;
+      goto done;
     }
 
     n += i / (di + 1);
     i %= (di + 1);
 
-    memmove(dst + i + 1, dst + i, (di - i) * sizeof(unsigned int));
-    dst[i++] = n;
+    memmove(utf32 + i + 1, utf32 + i, (di - i) * sizeof(utf32));
+    utf32[i++] = n;
   }
 
-fail:
-  /* Tell the caller how many bytes were written to the output buffer. */
-  *dstlen = di;
+  /* Convert to UTF8 */
+  for (i=0; i<di; i++) {
+    status = ares_buf_append_codepoint(outbuf, utf32[i]);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+  }
 
-  return si;
+done:
+  ares_free(utf32);
+  return status;
 }
-#endif
+
+ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
+{
+  ares_status_t status = ARES_SUCCESS;
+  ares_array_t *split  = NULL;
+  ares_buf_t   *inbuf  = NULL;
+  ares_buf_t   *outbuf = NULL;
+  size_t        i;
+
+  if (domain == NULL || out == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  inbuf =
+    ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
+  if (inbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto fail;
+  }
+
+  /* Each section of a domain must be punycode decoded separately */
+  status = ares_buf_split(inbuf, (const unsigned char *)".", 1,
+                          ARES_BUF_SPLIT_NONE, 0, &split);
+  if (status != ARES_SUCCESS) {
+    goto fail;
+  }
+
+  outbuf = ares_buf_create();
+  if (outbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto fail;
+  }
+
+  for (i = 0; i < ares_array_len(split); i++) {
+    ares_buf_t **sect = ares_array_at(split, i);
+    if (i != 0) {
+      status = ares_buf_append_byte(outbuf, '.');
+      if (status != ARES_SUCCESS) {
+        goto fail;
+      }
+    }
+    status = punycode_decode(*sect, outbuf);
+    if (status != ARES_SUCCESS) {
+      goto fail;
+    }
+  }
+
+  *out   = ares_buf_finish_str(outbuf, NULL);
+  outbuf = NULL;
+
+fail:
+  ares_array_destroy(split);
+  ares_buf_destroy(inbuf);
+  ares_buf_destroy(outbuf);
+  return status;
+}
