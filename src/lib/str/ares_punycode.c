@@ -216,35 +216,20 @@ static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_punycode_encode_domain(const char *domain, char **out)
+ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf, ares_buf_t *outbuf)
 {
   ares_status_t status = ARES_SUCCESS;
   ares_array_t *split  = NULL;
-  ares_buf_t   *inbuf  = NULL;
-  ares_buf_t   *outbuf = NULL;
   size_t        i;
 
-  if (domain == NULL || out == NULL) {
+  if (inbuf == NULL || outbuf == NULL) {
     return ARES_EFORMERR;
-  }
-
-  inbuf =
-    ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
-  if (inbuf == NULL) {
-    status = ARES_ENOMEM;
-    goto fail;
   }
 
   /* Each section of a domain must be punycode encoded separately */
   status = ares_buf_split(inbuf, (const unsigned char *)".", 1,
                           ARES_BUF_SPLIT_NONE, 0, &split);
   if (status != ARES_SUCCESS) {
-    goto fail;
-  }
-
-  outbuf = ares_buf_create();
-  if (outbuf == NULL) {
-    status = ARES_ENOMEM;
     goto fail;
   }
 
@@ -262,11 +247,39 @@ ares_status_t ares_punycode_encode_domain(const char *domain, char **out)
     }
   }
 
+fail:
+  ares_array_destroy(split);
+  return status;
+}
+
+ares_status_t ares_punycode_encode_domain(const char *domain, char **out)
+{
+  ares_buf_t   *inbuf  = NULL;
+  ares_buf_t   *outbuf = NULL;
+  ares_status_t status;
+
+  inbuf =
+    ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
+  if (inbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  outbuf = ares_buf_create();
+  if (outbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  status = ares_punycode_encode_domain_buf(inbuf, outbuf);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
   *out   = ares_buf_finish_str(outbuf, NULL);
   outbuf = NULL;
 
-fail:
-  ares_array_destroy(split);
+done:
   ares_buf_destroy(inbuf);
   ares_buf_destroy(outbuf);
   return status;
@@ -426,35 +439,20 @@ done:
   return status;
 }
 
-ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
+ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf, ares_buf_t *outbuf)
 {
   ares_status_t status = ARES_SUCCESS;
   ares_array_t *split  = NULL;
-  ares_buf_t   *inbuf  = NULL;
-  ares_buf_t   *outbuf = NULL;
   size_t        i;
 
-  if (domain == NULL || out == NULL) {
+  if (inbuf == NULL || outbuf == NULL) {
     return ARES_EFORMERR;
-  }
-
-  inbuf =
-    ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
-  if (inbuf == NULL) {
-    status = ARES_ENOMEM;
-    goto fail;
   }
 
   /* Each section of a domain must be punycode decoded separately */
   status = ares_buf_split(inbuf, (const unsigned char *)".", 1,
                           ARES_BUF_SPLIT_NONE, 0, &split);
   if (status != ARES_SUCCESS) {
-    goto fail;
-  }
-
-  outbuf = ares_buf_create();
-  if (outbuf == NULL) {
-    status = ARES_ENOMEM;
     goto fail;
   }
 
@@ -472,11 +470,40 @@ ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
     }
   }
 
+fail:
+  ares_array_destroy(split);
+  return status;
+}
+
+
+ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
+{
+  ares_buf_t   *inbuf  = NULL;
+  ares_buf_t   *outbuf = NULL;
+  ares_status_t status;
+
+  inbuf =
+    ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
+  if (inbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  outbuf = ares_buf_create();
+  if (outbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  status = ares_punycode_decode_domain_buf(inbuf, outbuf);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
   *out   = ares_buf_finish_str(outbuf, NULL);
   outbuf = NULL;
 
-fail:
-  ares_array_destroy(split);
+done:
   ares_buf_destroy(inbuf);
   ares_buf_destroy(outbuf);
   return status;
