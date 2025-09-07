@@ -24,6 +24,15 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* This code was originally derived from the code by Ben Noordhuis, however it
+ * has been heavily modified by Brad House in these ways:
+ *  - Does not take UTF32 input, instead operate directly on UTF8 input
+ *  - Use c-ares buffer objects for reading and writing for memory safety
+ *  - Output xn-- prefix on any encoded strings
+ *  - Split domain into its components to be able to operate on domains
+ * directly.
+ */
+
 #include "ares_private.h"
 #include "ares_str.h"
 #include "punycode.h"
@@ -102,9 +111,8 @@ static ares_status_t encode_var_int(const size_t bias, const size_t delta,
   return ares_buf_append_byte(buf, encode_digit((int)q));
 }
 
-ares_status_t punycode_encode(const char *src, size_t srclen, ares_buf_t *buf)
+static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
 {
-  ares_buf_t *inbuf = ares_buf_create_const((const unsigned char *)src, srclen);
   ares_status_t status = ARES_SUCCESS;
   size_t        b;
   size_t        h;
@@ -113,6 +121,7 @@ ares_status_t punycode_encode(const char *src, size_t srclen, ares_buf_t *buf)
   size_t        m;
   size_t        n;
   size_t        utf8_cnt;
+  size_t        initial_len;
   unsigned int  cp;
 
   if (inbuf == NULL) {
@@ -122,21 +131,22 @@ ares_status_t punycode_encode(const char *src, size_t srclen, ares_buf_t *buf)
   /* Get the total number of characters */
   status = ares_buf_len_utf8(inbuf, &utf8_cnt);
   if (status != ARES_SUCCESS) {
-    goto done;
+    return status;
   }
 
   /* If count matches the number of bytes, it is all ASCII */
   if (utf8_cnt == ares_buf_len(inbuf)) {
     size_t               len;
     const unsigned char *ptr = ares_buf_peek(inbuf, &len);
-    status                   = ares_buf_append(buf, ptr, len);
-    goto done;
+    return ares_buf_append(buf, ptr, len);
   }
+
+  initial_len = ares_buf_len(buf);
 
   /* Output prefix */
   status = ares_buf_append_str(buf, "xn--");
   if (status != ARES_SUCCESS) {
-    goto done;
+    return status;
   }
 
   /* Output all ASCII characters to output buffer in order */
@@ -144,25 +154,25 @@ ares_status_t punycode_encode(const char *src, size_t srclen, ares_buf_t *buf)
   while (ares_buf_len(inbuf)) {
     status = ares_buf_fetch_codepoint(inbuf, &cp);
     if (status != ARES_SUCCESS) {
-      goto done;
+      return status;
     }
 
     if (cp < 128) {
       status = ares_buf_append_byte(buf, (unsigned char)cp);
       if (status != ARES_SUCCESS) {
-        goto done;
+        return status;
       }
     }
   }
-  ares_buf_tag_rollback(buf);
+  ares_buf_tag_rollback(inbuf);
 
-  b = h = ares_buf_len(buf) - 4 /* Prefix */;
+  b = h = ares_buf_len(buf) - initial_len;
 
   /* If any data written, output '-' as a delimiter */
   if (b > 0) {
     status = ares_buf_append_byte(buf, '-');
     if (status != ARES_SUCCESS) {
-      goto done;
+      return status;
     }
   }
 
@@ -177,13 +187,13 @@ ares_status_t punycode_encode(const char *src, size_t srclen, ares_buf_t *buf)
     while (ares_buf_len(inbuf)) {
       status = ares_buf_fetch_codepoint(inbuf, &cp);
       if (status != ARES_SUCCESS) {
-        goto done;
+        return status;
       }
       if (cp >= n && cp < m) {
         m = cp;
       }
     }
-    ares_buf_tag_rollback(buf);
+    ares_buf_tag_rollback(inbuf);
 
     delta += (m - n) * (h + 1);
     n      = m;
@@ -206,11 +216,65 @@ ares_status_t punycode_encode(const char *src, size_t srclen, ares_buf_t *buf)
         h++;
       }
     }
-    ares_buf_tag_rollback(buf);
+    ares_buf_tag_rollback(inbuf);
   }
 
-done:
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares_punycode_encode_domain(const char *domain, char **out)
+{
+  ares_status_t status = ARES_SUCCESS;
+  ares_array_t *split  = NULL;
+  ares_buf_t   *inbuf  = NULL;
+  ares_buf_t   *outbuf = NULL;
+  size_t        i;
+
+  if (domain == NULL || out == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  inbuf =
+    ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
+  if (inbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto fail;
+  }
+
+  /* Each section of a domain must be punycode encoded separately */
+  status = ares_buf_split(inbuf, (const unsigned char *)".", 1,
+                          ARES_BUF_SPLIT_NONE, 0, &split);
+  if (status != ARES_SUCCESS) {
+    goto fail;
+  }
+
+  outbuf = ares_buf_create();
+  if (outbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto fail;
+  }
+
+  for (i = 0; i < ares_array_len(split); i++) {
+    ares_buf_t *sect = ares_array_at(split, i);
+    if (i != 0) {
+      status = ares_buf_append_byte(outbuf, '.');
+      if (status != ARES_SUCCESS) {
+        goto fail;
+      }
+    }
+    status = punycode_encode(sect, outbuf);
+    if (status != ARES_SUCCESS) {
+      goto fail;
+    }
+  }
+
+  *out   = ares_buf_finish_str(outbuf, NULL);
+  outbuf = NULL;
+
+fail:
+  ares_array_destroy(split);
   ares_buf_destroy(inbuf);
+  ares_buf_destroy(outbuf);
   return status;
 }
 
