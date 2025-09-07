@@ -291,7 +291,7 @@ static unsigned int decode_digit(unsigned int v)
 static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
 {
   unsigned int  n;
-  size_t        i;
+  unsigned int  i;
   size_t        di;
   size_t        bias;
   unsigned int *utf32  = NULL;
@@ -330,9 +330,10 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
   if (num_ascii_chars != SIZE_MAX) {
     size_t               data_len = 0;
     const unsigned char *data     = ares_buf_tag_fetch(inbuf, &data_len);
+    size_t               j;
 
-    for (i=0; i<num_ascii_chars; i++) {
-      utf32[i] = data[i];
+    for (j=0; j<num_ascii_chars; j++) {
+      utf32[j] = data[j];
     }
     /* Consume '-' */
     ares_buf_consume(inbuf, 1);
