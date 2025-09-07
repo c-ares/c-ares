@@ -20,7 +20,9 @@ jobs:
     name: "MacOS"
     steps:
       - name: Install packages
-        run: brew install cmake googletest llvm autoconf automake libtool make ninja
+        run: |
+          brew uninstall cmake || true
+          brew install cmake googletest llvm autoconf automake libtool make ninja
       - name: Checkout c-ares
         uses: actions/checkout@v4
       - name: "Make sure TCP FastOpen is enabled"
