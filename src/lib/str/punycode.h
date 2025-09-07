@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (C) 2011 by Ben Noordhuis <info@bnoordhuis.nl>
+ * Copyright (c) Brad House
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,21 +23,21 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#ifndef __PUNYCODE_H
-#define __PUNYCODE_H
+#ifndef __ARES_PUNYCODE_H
+#define __ARES_PUNYCODE_H
 
-#include <stddef.h>
-
-/**
- * Convert Unicode to Punycode. Returns the number of Unicode characters that
- * were converted.
+/*! Punycode encode a domain as per RFC3492
+ *
+ *  This function will split the domain into each component then punycode encode
+ *  it and rejoin the components.  If there are no UTF8 codepoints outside the
+ *  ascii range this will return the same as the input, but it is, however, an
+ *  expensive operation and users should scan the domain to see if conversion is
+ *  really necessary before calling this function.
+ *
+ *  \param[in]  domain  Input domain name
+ *  \param[out] out     Output punycode encoded domain
+ *  \return ARES_SUCCESS on success, or otherwise an ares_status_t error.
  */
-ares_status_t punycode_encode(const char *src, size_t srclen,
-                              ares_buf_t *buf);
-/**
- * Convert Punycode to Unicode. Returns the number of bytes that were converted.
- */
-size_t punycode_decode(const char *src, size_t srclen, unsigned int *dst,
-                       size_t *dstlen);
+ares_status_t ares_punycode_encode_domain(const char *domain, char **out);
 
-#endif /* punycode.h */
+#endif
