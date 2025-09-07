@@ -37,8 +37,6 @@
 #include "ares_str.h"
 #include "ares_punycode.h"
 
-#define min(a, b) ((a) < (b) ? (a) : (b))
-
 /* punycode parameters, see http://tools.ietf.org/html/rfc3492#section-5 */
 #define BASE         36
 #define TMIN         1
@@ -355,16 +353,16 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
     size_t w;
 
     for (w = 1, k = BASE; ; k += BASE) {
-      unsigned char byte;
+      unsigned char b;
       size_t        digit;
       size_t        t;
 
-      status = ares_buf_fetch_bytes(inbuf, &byte, 1);
+      status = ares_buf_fetch_bytes(inbuf, &b, 1);
       if (status != ARES_SUCCESS) {
         goto done;
       }
 
-      digit = decode_digit(byte);
+      digit = decode_digit(b);
 
       if (digit >= BASE) {
         status = ARES_EFORMERR;
