@@ -46,6 +46,7 @@ extern "C" {
 #include "ares_inet_net_pton.h"
 #include "ares_data.h"
 #include "str/ares_strsplit.h"
+#include "str/ares_punycode.h"
 #include "dsa/ares_htable.h"
 
 #ifdef HAVE_ARPA_INET_H
@@ -472,6 +473,54 @@ TEST_F(LibraryTest, URI) {
   EXPECT_NE(ARES_SUCCESS, ares_uri_parse_buf(NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_uri_parse_buf(NULL, NULL));
 }
+
+TEST_F(LibraryTest, PUNYCODE) {
+  struct {
+    ares_bool_t success;
+    const char *input;
+    const char *output;
+  } tests[] = {
+    { ARES_TRUE,  "www.google.com",      "www.google.com"                   },
+    { ARES_TRUE,  "www.bücher.com",      "www.xn--bcher-kva.com"            },
+    { ARES_TRUE,  "www.büücher.com",     "www.xn--bcher-kvaa.com"           },
+    { ARES_TRUE,  "www.bücüher.com",     "www.xn--bcher-kvab.com"           },
+    { ARES_TRUE,  "www.bücherü.com",     "www.xn--bcher-kvae.com"           },
+    { ARES_TRUE,  "www.ýbücher.com",     "www.xn--bcher-kvaf.com"           },
+    { ARES_TRUE,  "www.übücher.com",     "www.xn--bcher-jvab.com"           },
+    { ARES_TRUE,  "www.München.com",     "www.xn--Mnchen-3ya.com"           },
+    { ARES_TRUE,  "www.München-Ost.com", "www.xn--Mnchen-Ost-9db.com"       },
+    { ARES_TRUE,  "bücher.München.com",  "xn--bcher-kva.xn--Mnchen-3ya.com" },
+    { ARES_TRUE,  "www.abæcdöef.com",    "www.xn--abcdef-qua4k.com"         },
+    { ARES_TRUE,  "www.правда.com",      "www.xn--80aafi6cg.com"            },
+    { ARES_TRUE,  "www.ยจฆฟคฏข.com",     "www.xn--22cdfh1b8fsa.com"         },
+    { ARES_TRUE,  "www.도메인.com",        "www.xn--hq1bm8jm9l.com"           },
+    { ARES_TRUE,  "www.ドメイン名例.com",  "www.xn--eckwd4c7cu47r2wf.com"     },
+    { ARES_FALSE, NULL, NULL }
+  };
+  size_t i;
+
+  for (i=0; tests[i].input != NULL; i++) {
+    ares_status_t status;
+    char *output = NULL;
+
+    if (verbose) std::cerr << "Testing " << tests[i].input << std::endl;
+    status = ares_punycode_encode_domain(tests[i].input, &output);
+    if (tests[i].success) {
+      EXPECT_EQ(ARES_SUCCESS, status);
+    } else {
+      EXPECT_NE(ARES_SUCCESS, status);
+    }
+
+    if (status == ARES_SUCCESS) {
+      EXPECT_STREQ(output, tests[i].output);
+    }
+    ares_free(output);
+  }
+
+  /* Invalid tests  */
+  EXPECT_NE(ARES_SUCCESS, ares_punycode_encode_domain(NULL, NULL));
+}
+
 #endif /* !CARES_SYMBOL_HIDING */
 
 TEST_F(LibraryTest, InetPtoN) {
