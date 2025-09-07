@@ -409,8 +409,7 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
 
     n += i / (di + 1);
     i %= (di + 1);
-
-    memmove(utf32 + i + 1, utf32 + i, (di - i) * sizeof(utf32));
+    memmove(utf32 + i + 1, utf32 + i, (di - i) * sizeof(*utf32));
     utf32[i++] = n;
   }
 
