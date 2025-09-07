@@ -39,7 +39,7 @@ else
     mkdir cmakebld
     cd cmakebld
     if [ "$DIST" = "iOS" ] ; then
-        CMAKE_FLAGS="${CMAKE_FLAGS} -DCMAKE_OSX_SYSROOT=${SYSROOT}"
+        CMAKE_FLAGS="${CMAKE_FLAGS}"
     fi
     $SCAN_WRAP cmake ${CMAKE_FLAGS} ${CMAKE_TEST_FLAGS} ..
     $SCAN_WRAP cmake --build .
