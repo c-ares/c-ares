@@ -594,6 +594,18 @@ TEST_F(FileChannelTest, GetAddrInfoHostsIPV6) {
   EXPECT_EQ("{ipv6.com addr=[[0000:0000:0000:0000:0000:0000:0000:0001]]}", ss.str());
 }
 
+TEST_F(FileChannelTest, GetAddrInfoInvalidService) {
+  TempFile hostsfile("1.2.3.4 example.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints{};
+  AddrInfoResult result{};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "example.com", "invalid", &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_ESERVICE);
+}
 
 TEST_F(FileChannelTest, GetAddrInfoAllocFail) {
   TempFile hostsfile("1.2.3.4 example.com alias1 alias2\n");
