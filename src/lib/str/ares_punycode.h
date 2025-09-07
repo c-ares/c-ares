@@ -26,7 +26,22 @@
 #ifndef __ARES_PUNYCODE_H
 #define __ARES_PUNYCODE_H
 
-/*! Punycode encode a domain as per RFC3492
+
+/*! Punycode encode a domain as per RFC3492 from buf to buf.
+ *
+ *  This function will split the domain into each component then punycode encode
+ *  it and rejoin the components.  If there are no UTF8 codepoints outside the
+ *  ascii range this will return the same as the input, but it is, however, an
+ *  expensive operation and users should scan the domain to see if conversion is
+ *  really necessary before calling this function.
+ *
+ *  \param[in]     inbuf  Input domain name
+ *  \param[in,out] outbuf Output punycode encoded domain
+ *  \return ARES_SUCCESS on success, or otherwise an ares_status_t error.
+ */
+ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf, ares_buf_t *outbuf);
+
+/*! Punycode encode a domain as per RFC3492 from string to string.
  *
  *  This function will split the domain into each component then punycode encode
  *  it and rejoin the components.  If there are no UTF8 codepoints outside the
@@ -40,7 +55,21 @@
  */
 ares_status_t ares_punycode_encode_domain(const char *domain, char **out);
 
-/*! Punycode decode a domain as per RFC3492
+/*! Punycode decode a domain as per RFC3492 from buf to buf.
+ *
+ *  This function will split the domain into each component then punycode decode
+ *  it and rejoin the components.  If the passed in domain doesn't have any
+ *  sections starting with "xn--" this will return the same as the input, but
+ *  it is, however, an expensive operation and users should scan the domain to
+ *  see if conversion is really necessary before calling this function.
+ *
+ *  \param[in]     inbuf  Input domain name
+ *  \param[in,out] outbuf Output punycode decoded domain
+ *  \return ARES_SUCCESS on success, or otherwise an ares_status_t error.
+ */
+ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf, ares_buf_t *outbuf);
+
+/*! Punycode decode a domain as per RFC3492 from string to string.
  *
  *  This function will split the domain into each component then punycode decode
  *  it and rejoin the components.  If the passed in domain doesn't have any
