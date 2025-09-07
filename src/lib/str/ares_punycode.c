@@ -216,7 +216,8 @@ static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf, ares_buf_t *outbuf)
+ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf,
+                                              ares_buf_t *outbuf)
 {
   ares_status_t status = ARES_SUCCESS;
   ares_array_t *split  = NULL;
@@ -338,14 +339,14 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
   ares_buf_tag(inbuf);
 
   /* Search for the delimiter and copy */
-  num_ascii_chars = ares_buf_consume_last_charset(inbuf,
-      (const unsigned char *)"-", 1, ARES_TRUE);
+  num_ascii_chars = ares_buf_consume_last_charset(
+    inbuf, (const unsigned char *)"-", 1, ARES_TRUE);
   if (num_ascii_chars != SIZE_MAX) {
     size_t               data_len = 0;
     const unsigned char *data     = ares_buf_tag_fetch(inbuf, &data_len);
     size_t               j;
 
-    for (j=0; j<num_ascii_chars; j++) {
+    for (j = 0; j < num_ascii_chars; j++) {
       utf32[j] = data[j];
     }
     /* Consume '-' */
@@ -361,12 +362,12 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
   n    = INITIAL_N;
   bias = INITIAL_BIAS;
 
-  for ( ; ares_buf_len(inbuf) > 0; di++) {
+  for (; ares_buf_len(inbuf) > 0; di++) {
     size_t org_i = i;
     size_t k;
     size_t w;
 
-    for (w = 1, k = BASE; ; k += BASE) {
+    for (w = 1, k = BASE;; k += BASE) {
       unsigned char b;
       size_t        digit;
       size_t        t;
@@ -427,7 +428,7 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
   }
 
   /* Convert to UTF8 */
-  for (i=0; i<di; i++) {
+  for (i = 0; i < di; i++) {
     status = ares_buf_append_codepoint(outbuf, utf32[i]);
     if (status != ARES_SUCCESS) {
       goto done;
@@ -439,7 +440,8 @@ done:
   return status;
 }
 
-ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf, ares_buf_t *outbuf)
+ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf,
+                                              ares_buf_t *outbuf)
 {
   ares_status_t status = ARES_SUCCESS;
   ares_array_t *split  = NULL;
@@ -474,7 +476,6 @@ fail:
   ares_array_destroy(split);
   return status;
 }
-
 
 ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
 {

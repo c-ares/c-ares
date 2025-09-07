@@ -39,7 +39,8 @@
  *  \param[in,out] outbuf Output punycode encoded domain
  *  \return ARES_SUCCESS on success, or otherwise an ares_status_t error.
  */
-ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf, ares_buf_t *outbuf);
+ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf,
+                                              ares_buf_t *outbuf);
 
 /*! Punycode encode a domain as per RFC3492 from string to string.
  *
@@ -67,7 +68,8 @@ ares_status_t ares_punycode_encode_domain(const char *domain, char **out);
  *  \param[in,out] outbuf Output punycode decoded domain
  *  \return ARES_SUCCESS on success, or otherwise an ares_status_t error.
  */
-ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf, ares_buf_t *outbuf);
+ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf,
+                                              ares_buf_t *outbuf);
 
 /*! Punycode decode a domain as per RFC3492 from string to string.
  *
