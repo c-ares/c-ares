@@ -501,10 +501,11 @@ TEST_F(LibraryTest, PUNYCODE) {
 
   for (i=0; tests[i].input != NULL; i++) {
     ares_status_t status;
-    char *output = NULL;
+    char *encoded = NULL;
+    char *decoded = NULL;
 
     if (verbose) std::cerr << "Testing " << tests[i].input << std::endl;
-    status = ares_punycode_encode_domain(tests[i].input, &output);
+    status = ares_punycode_encode_domain(tests[i].input, &encoded);
     if (tests[i].success) {
       EXPECT_EQ(ARES_SUCCESS, status);
     } else {
@@ -512,9 +513,15 @@ TEST_F(LibraryTest, PUNYCODE) {
     }
 
     if (status == ARES_SUCCESS) {
-      EXPECT_STREQ(output, tests[i].output);
+      EXPECT_STREQ(encoded, tests[i].output);
+
+      status = ares_punycode_decode_domain(tests[i].output, &decoded);
+      EXPECT_EQ(ARES_SUCCESS, status);
+
+      EXPECT_STREQ(decoded, tests[i].input);
     }
-    ares_free(output);
+    ares_free(decoded);
+    ares_free(encoded);
   }
 
   /* Invalid tests  */

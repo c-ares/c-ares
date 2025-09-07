@@ -499,6 +499,19 @@ ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
   return ARES_SUCCESS;
 }
 
+ares_status_t ares_buf_tag_fetch_buf(const ares_buf_t *buf,
+                                     ares_buf_t *outbuf)
+{
+  size_t               ptr_len = 0;
+  const unsigned char *ptr     = ares_buf_tag_fetch(buf, &ptr_len);
+
+  if (ptr == NULL || outbuf == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  return ares_buf_append(outbuf, ptr, ptr_len);
+}
+
 ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
                                         size_t len)
 {
@@ -572,6 +585,18 @@ static const unsigned char *ares_buf_fetch(const ares_buf_t *buf, size_t *len)
   }
 
   return buf->data + buf->offset;
+}
+
+ares_bool_t ares_buf_isprint(const ares_buf_t *buf)
+{
+  size_t               len;
+  const unsigned char *data = ares_buf_fetch(buf, &len);
+
+  if (data == NULL || len == 0) {
+    return ARES_FALSE;
+  }
+
+  return ares_str_isprint((const char *)data, len);
 }
 
 ares_status_t ares_buf_consume(ares_buf_t *buf, size_t len)
@@ -886,6 +911,40 @@ done:
     ares_buf_consume(buf, pos);
   }
   return pos;
+}
+
+size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
+                                     const unsigned char *charset, size_t len,
+                                     ares_bool_t require_charset)
+{
+  size_t               remaining_len = 0;
+  const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
+  ares_ssize_t         pos;
+  ares_bool_t          found = ARES_FALSE;
+
+  if (ptr == NULL || charset == NULL || len == 0) {
+    return 0;
+  }
+
+  for (pos = (ares_ssize_t)remaining_len-1; pos >= 0; pos--) {
+    size_t j;
+    for (j = 0; j < len; j++) {
+      if (ptr[pos] == charset[j]) {
+        found = ARES_TRUE;
+        goto done;
+      }
+    }
+  }
+
+done:
+  if (require_charset && !found) {
+    return SIZE_MAX;
+  }
+
+  if (pos > 0) {
+    ares_buf_consume(buf, (size_t)pos);
+  }
+  return (size_t)pos;
 }
 
 size_t ares_buf_consume_until_seq(ares_buf_t *buf, const unsigned char *seq,

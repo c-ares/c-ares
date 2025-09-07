@@ -347,6 +347,24 @@ CARES_EXTERN ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf,
 CARES_EXTERN ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
                                                        ares_buf_t **newbuf);
 
+/*! Fetch the bytes starting from the tagged position up to the _current_
+ *  position and write into the provided buffer.
+ *
+ *  \param[in]     buf    Initialized buffer object
+ *  \param[out]    outbuf Buffer to write bytes into.
+
+ *  \return ARES_SUCCESS if fetched
+ */
+CARES_EXTERN ares_status_t ares_buf_tag_fetch_buf(const ares_buf_t *buf,
+                                                  ares_buf_t *outbuf);
+
+/*! Determine if entire remaining buffer is ASCII-printable.  If there are
+ *  no remaining bytes, returns ARES_FALSE.
+ *
+ *  \param[in] buf Initialized buffer object
+ *  \return ARES_TRUE if data is ascii-printable */
+CARES_EXTERN ares_bool_t ares_buf_isprint(const ares_buf_t *buf);
+
 /*! Consume the given number of bytes without reading them.
  *
  *  \param[in] buf    Initialized buffer object
@@ -474,6 +492,23 @@ CARES_EXTERN size_t        ares_buf_consume_until_charset(ares_buf_t          *b
                                                           const unsigned char *charset,
                                                           size_t               len,
                                                           ares_bool_t require_charset);
+
+/*! Search for a character in the character set provided from the end of the of
+ *  the buffer.  Does not include the character from the charset at the end.
+ *
+ *  \param[in] buf                Initialized buffer object
+ *  \param[in] charset            character set
+ *  \param[in] len                length of character set
+ *  \param[in] require_charset    require we find a character from the charset.
+ *                                if ARES_FALSE it will simply consume the
+ *                                rest of the buffer.  If ARES_TRUE will return
+ *                                SIZE_MAX if not found.
+ *  \return number of characters consumed
+ */
+CARES_EXTERN size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
+                                                  const unsigned char *charset,
+                                                  size_t len,
+                                                  ares_bool_t require_charset);
 
 
 /*! Consume until a sequence of bytes is encountered.  Does not include the

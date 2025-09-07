@@ -40,4 +40,18 @@
  */
 ares_status_t ares_punycode_encode_domain(const char *domain, char **out);
 
+/*! Punycode decode a domain as per RFC3492
+ *
+ *  This function will split the domain into each component then punycode decode
+ *  it and rejoin the components.  If the passed in domain doesn't have any
+ *  sections starting with "xn--" this will return the same as the input, but
+ *  it is, however, an expensive operation and users should scan the domain to
+ *  see if conversion is really necessary before calling this function.
+ *
+ *  \param[in]  domain  Input domain name
+ *  \param[out] out     Output punycode decoded domain
+ *  \return ARES_SUCCESS on success, or otherwise an ares_status_t error.
+ */
+ares_status_t ares_punycode_decode_domain(const char *domain, char **out);
+
 #endif
