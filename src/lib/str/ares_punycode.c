@@ -277,7 +277,7 @@ fail:
   ares_buf_destroy(outbuf);
   return status;
 }
-
+#if 0
 static size_t decode_digit(unsigned int v)
 {
   if (ares_isdigit(v)) {
@@ -392,3 +392,4 @@ fail:
 
   return si;
 }
+#endif
