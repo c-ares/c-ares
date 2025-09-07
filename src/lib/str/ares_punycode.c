@@ -35,7 +35,7 @@
 
 #include "ares_private.h"
 #include "ares_str.h"
-#include "punycode.h"
+#include "ares_punycode.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
@@ -141,13 +141,13 @@ static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
     return ares_buf_append(buf, ptr, len);
   }
 
-  initial_len = ares_buf_len(buf);
-
   /* Output prefix */
   status = ares_buf_append_str(buf, "xn--");
   if (status != ARES_SUCCESS) {
     return status;
   }
+
+  initial_len = ares_buf_len(buf);
 
   /* Output all ASCII characters to output buffer in order */
   ares_buf_tag(inbuf);
@@ -255,14 +255,14 @@ ares_status_t ares_punycode_encode_domain(const char *domain, char **out)
   }
 
   for (i = 0; i < ares_array_len(split); i++) {
-    ares_buf_t *sect = ares_array_at(split, i);
+    ares_buf_t **sect = ares_array_at(split, i);
     if (i != 0) {
       status = ares_buf_append_byte(outbuf, '.');
       if (status != ARES_SUCCESS) {
         goto fail;
       }
     }
-    status = punycode_encode(sect, outbuf);
+    status = punycode_encode(*sect, outbuf);
     if (status != ARES_SUCCESS) {
       goto fail;
     }
