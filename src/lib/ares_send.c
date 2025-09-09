@@ -194,6 +194,9 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
   query->node_queries_by_timeout = NULL;
   query->node_queries_to_conn    = NULL;
 
+  query->failed_servers_attempted =
+    ares_array_create(sizeof(ares_server_t *), NULL);
+
   /* Chain the query into the list of all queries. */
   query->node_all_queries = ares_llist_insert_last(channel->all_queries, query);
   if (query->node_all_queries == NULL) {

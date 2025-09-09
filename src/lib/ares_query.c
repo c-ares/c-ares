@@ -149,3 +149,26 @@ void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
                     (ares_dns_rec_type_t)type, ares_dnsrec_convert_cb, carg,
                     NULL);
 }
+
+/* Determine if this query has been sent to the server at server_idx, while
+ * that server was in the downed state. */
+ares_bool_t ares_query_sent_to_server(ares_query_t *query, size_t server_idx)
+{
+  ares_bool_t sent = ARES_FALSE;
+  size_t      idx;
+  size_t     *test_idx;
+
+  if (query == NULL) {
+    return sent; /* LCOV_EXCL_START: DefensiveCoding */
+  }
+
+  for (idx = 0; idx < ares_array_len(query->failed_servers_attempted); idx++) {
+    test_idx = ares_array_at(query->failed_servers_attempted, idx);
+    if (*test_idx == server_idx) {
+      sent = ARES_TRUE;
+      break;
+    }
+  }
+
+  return sent;
+}

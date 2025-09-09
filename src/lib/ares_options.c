@@ -233,6 +233,14 @@ int ares_save_options(const ares_channel_t *channel,
     options->server_failover_opts.retry_delay  = channel->server_retry_delay;
   }
 
+  /* Set options for server rise/fall behavior */
+  if (channel->optmask & ARES_OPT_SERVER_RISE_FALL) {
+    options->server_failover_opts.min_consec_successes =
+      channel->min_consec_successes;
+    options->server_failover_opts.max_consec_failures =
+      channel->max_consec_failures;
+  }
+
   *optmask = (int)channel->optmask;
 
   return ARES_SUCCESS;
@@ -484,6 +492,14 @@ ares_status_t ares_init_by_options(ares_channel_t            *channel,
   if (optmask & ARES_OPT_SERVER_FAILOVER) {
     channel->server_retry_chance = options->server_failover_opts.retry_chance;
     channel->server_retry_delay  = options->server_failover_opts.retry_delay;
+  }
+
+  /* Set options for server rise/fall behavior */
+  if (optmask & ARES_OPT_SERVER_RISE_FALL) {
+    channel->min_consec_successes =
+      options->server_failover_opts.min_consec_successes;
+    channel->max_consec_failures =
+      options->server_failover_opts.max_consec_failures;
   }
 
   channel->optmask = (unsigned int)optmask;

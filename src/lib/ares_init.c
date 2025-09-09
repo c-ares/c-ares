@@ -96,10 +96,21 @@ static int server_sort_cb(const void *data1, const void *data2)
   const ares_server_t *s1 = data1;
   const ares_server_t *s2 = data2;
 
-  if (s1->consec_failures < s2->consec_failures) {
+  /* The logic for sorting is as follows:
+   * 1. Failed servers are sorted to the end of the list.
+   * 2. Among non-failed servers, sort by index in the original list.
+   * 3. Among failed servers, sort by consecutive failures then index.
+   */
+  if (!s1->is_failed && s2->is_failed) {
     return -1;
   }
-  if (s1->consec_failures > s2->consec_failures) {
+  if (s1->is_failed && !s2->is_failed) {
+    return 1;
+  }
+  if (s1->is_failed && s1->consec_failures < s2->consec_failures) {
+    return -1;
+  }
+  if (s1->is_failed && s1->consec_failures > s2->consec_failures) {
     return 1;
   }
   if (s1->idx < s2->idx) {
@@ -108,6 +119,8 @@ static int server_sort_cb(const void *data1, const void *data2)
   if (s1->idx > s2->idx) {
     return 1;
   }
+
+
   return 0;
 }
 
@@ -225,6 +238,12 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
   if (!(channel->optmask & ARES_OPT_SERVER_FAILOVER)) {
     channel->server_retry_chance = DEFAULT_SERVER_RETRY_CHANCE;
     channel->server_retry_delay  = DEFAULT_SERVER_RETRY_DELAY;
+  }
+
+  /* Set default fields for server rise/fall behavior */
+  if (!(channel->optmask & ARES_OPT_SERVER_RISE_FALL)) {
+    channel->min_consec_successes = DEFAULT_SERVER_MIN_SUCCESSES;
+    channel->max_consec_failures  = DEFAULT_SERVER_MAX_FAILURES;
   }
 
 error:
@@ -495,6 +514,8 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
   (*dest)->legacy_sock_funcs_cb_data = src->legacy_sock_funcs_cb_data;
   (*dest)->server_state_cb           = src->server_state_cb;
   (*dest)->server_state_cb_data      = src->server_state_cb_data;
+  (*dest)->min_consec_successes      = src->min_consec_successes;
+  (*dest)->max_consec_failures       = src->max_consec_failures;
 
   ares_strcpy((*dest)->local_dev_name, src->local_dev_name,
               sizeof((*dest)->local_dev_name));
