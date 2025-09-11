@@ -23,17 +23,25 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#ifndef __ARES_CASEFOLD_H
-#define __ARES_CASEFOLD_H
+#ifndef __ARES_IDNAMAP_H
+#define __ARES_IDNAMAP_H
 
 #include "ares.h"
 
-typedef struct {
-  unsigned int code;
-  unsigned int mapping;
-} ares_casefold_data_t;
+typedef enum {
+  ARES_IDNA_STATUS_DISALLOWED = 1,
+  ARES_IDNA_STATUS_IGNORED = 2,
+  ARES_IDNA_STATUS_MAPPED = 3
+} ares_idnamap_status_t;
 
-extern size_t ares_casefold_data_len;
-extern ares_casefold_data_t ares_casefold_data[];
+typedef struct {
+  unsigned int          code_min;
+  unsigned int          code_max;
+  ares_idnamap_status_t status;
+  unsigned int          mapping[3];
+} ares_idnamap_data_t;
+
+extern size_t ares_idnamap_data_len;
+extern ares_idnamap_data_t ares_idnamap_data[];
 
 #endif
