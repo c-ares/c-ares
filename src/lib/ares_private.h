@@ -63,6 +63,7 @@
 #include "ares_conn.h"
 #include "ares_str.h"
 #include "str/ares_strsplit.h"
+#include "str/ares_punycode.h"
 #include "util/ares_uri.h"
 
 #ifndef HAVE_GETENV
