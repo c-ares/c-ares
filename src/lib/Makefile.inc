@@ -84,7 +84,7 @@ CSOURCES = ares_addrinfo2hostent.c	\
   record/ares_dns_record.c		\
   record/ares_dns_write.c		\
   str/ares_buf.c			\
-  str/ares_casefold.c			\
+  str/ares_idnamap.c			\
   str/ares_str.c			\
   str/ares_strsplit.c			\
   str/ares_punycode.c			\
@@ -121,7 +121,7 @@ HHEADERS = ares_android.h			\
   include/ares_str.h			\
   record/ares_dns_multistring.h		\
   record/ares_dns_private.h		\
-  str/ares_casefold.h			\
+  str/ares_idnamap.h			\
   str/ares_punycode.h			\
   str/ares_strsplit.h			\
   util/ares_iface_ips.h			\
