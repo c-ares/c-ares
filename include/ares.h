@@ -462,6 +462,8 @@ typedef void (*ares_server_state_callback)(const char *server_string,
 
 typedef void (*ares_pending_write_cb)(void *data);
 
+typedef void (*ares_query_enqueue_cb)(void *data);
+
 CARES_EXTERN int ares_library_init(int flags);
 
 CARES_EXTERN int ares_library_init_mem(int flags, void *(*amalloc)(size_t size),
@@ -533,6 +535,10 @@ CARES_EXTERN void
 
 CARES_EXTERN void ares_set_pending_write_cb(ares_channel_t       *channel,
                                             ares_pending_write_cb callback,
+                                            void                 *user_data);
+
+CARES_EXTERN void ares_set_query_enqueue_cb(ares_channel_t       *channel,
+                                            ares_query_enqueue_cb callback,
                                             void                 *user_data);
 
 CARES_EXTERN void ares_process_pending_write(ares_channel_t *channel);
