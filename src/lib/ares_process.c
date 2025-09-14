@@ -230,11 +230,14 @@ static ares_status_t ares_process_fds_nolock(ares_channel_t         *channel,
   }
 
   if (!(flags & ARES_PROCESS_FLAG_SKIP_NON_FD)) {
-    ares_check_cleanup_conns(channel);
     status = process_timeouts(channel, &now);
     if (status == ARES_ENOMEM) {
       goto done;
     }
+
+    /* Cleanup should be done after processing timeouts as it may invalidate
+     * connections */
+    ares_check_cleanup_conns(channel);
   }
 
 done:
