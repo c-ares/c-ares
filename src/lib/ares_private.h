@@ -93,11 +93,11 @@
 #  define DHCPNAMESERVER       "DhcpNameServer"
 #  define DATABASEPATH         "DatabasePath"
 #  define WIN_PATH_HOSTS       "\\hosts"
-#  define SEARCHLIST_KEY       "SearchList"
-#  define PRIMARYDNSSUFFIX_KEY "PrimaryDNSSuffix"
+#  define SEARCHLIST_KEY       L"SearchList"
+#  define PRIMARYDNSSUFFIX_KEY L"PrimaryDNSSuffix"
 #  define INTERFACES_KEY       "Interfaces"
-#  define DOMAIN_KEY           "Domain"
-#  define DHCPDOMAIN_KEY       "DhcpDomain"
+#  define DOMAIN_KEY           L"Domain"
+#  define DHCPDOMAIN_KEY       L"DhcpDomain"
 #  define PATH_RESOLV_CONF     ""
 #elif defined(WATT32)
 

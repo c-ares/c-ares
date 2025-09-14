@@ -188,8 +188,8 @@ EX_LIBS_REL = $(WATT_ROOT)\lib\$(PLATFORM)\wattcpvc_imp.lib advapi32.lib
 EX_LIBS_DBG = $(WATT_ROOT)\lib\$(PLATFORM)\wattcpvc_imp_d.lib advapi32.lib
 !ELSE
 CFLAGS  = /D_WIN32_WINNT=0x0602
-EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
-EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
+EX_LIBS_REL = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib Normaliz.lib
+EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib Normaliz.lib
 !ENDIF
 
 
