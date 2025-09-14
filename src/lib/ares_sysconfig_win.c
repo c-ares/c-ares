@@ -158,6 +158,14 @@ static void commajoin(char **dst, const char *src)
   commanjoin(dst, src, ares_strlen(src));
 }
 
+static void commajoin_asciionly(char **dst, const char *src)
+{
+  if (!ares_str_isprint(src, ares_strlen(src))) {
+    return;
+  }
+  commanjoin(dst, src, ares_strlen(src));
+}
+
 /* A structure to hold the string form of IPv4 and IPv6 addresses so we can
  * sort them by a metric.
  */
@@ -546,7 +554,7 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
       ERROR_SUCCESS) {
     get_REG_SZ(hKey, SEARCHLIST_KEY, outptr);
     if (get_REG_SZ(hKey, DOMAIN_KEY, &p)) {
-      commajoin(outptr, p);
+      commajoin_asciionly(outptr, p);
       ares_free(p);
       p = NULL;
     }
@@ -556,7 +564,7 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
   if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NT_DNSCLIENT, 0, KEY_READ, &hKey) ==
       ERROR_SUCCESS) {
     if (get_REG_SZ(hKey, SEARCHLIST_KEY, &p)) {
-      commajoin(outptr, p);
+      commajoin_asciionly(outptr, p);
       ares_free(p);
       p = NULL;
     }
@@ -568,7 +576,7 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
   if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_DNSCLIENT, 0, KEY_READ, &hKey) ==
       ERROR_SUCCESS) {
     if (get_REG_SZ(hKey, PRIMARYDNSSUFFIX_KEY, &p)) {
-      commajoin(outptr, p);
+      commajoin_asciionly(outptr, p);
       ares_free(p);
       p = NULL;
     }
@@ -590,17 +598,17 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
       }
       /* p can be comma separated (SearchList) */
       if (get_REG_SZ(hKeyEnum, SEARCHLIST_KEY, &p)) {
-        commajoin(outptr, p);
+        commajoin_asciionly(outptr, p);
         ares_free(p);
         p = NULL;
       }
       if (get_REG_SZ(hKeyEnum, DOMAIN_KEY, &p)) {
-        commajoin(outptr, p);
+        commajoin_asciionly(outptr, p);
         ares_free(p);
         p = NULL;
       }
       if (get_REG_SZ(hKeyEnum, DHCPDOMAIN_KEY, &p)) {
-        commajoin(outptr, p);
+        commajoin_asciionly(outptr, p);
         ares_free(p);
         p = NULL;
       }
