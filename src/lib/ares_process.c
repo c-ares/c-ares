@@ -230,11 +230,14 @@ static ares_status_t ares_process_fds_nolock(ares_channel_t         *channel,
   }
 
   if (!(flags & ARES_PROCESS_FLAG_SKIP_NON_FD)) {
-    ares_check_cleanup_conns(channel);
     status = process_timeouts(channel, &now);
     if (status == ARES_ENOMEM) {
       goto done;
     }
+
+    /* Cleanup should be done after processing timeouts as it may invalidate
+     * connections */
+    ares_check_cleanup_conns(channel);
   }
 
 done:
@@ -1156,6 +1159,12 @@ static ares_conn_t *ares_fetch_connection(const ares_channel_t *channel,
     return NULL;
   }
 
+  /* If the associated server has failures, don't use it.  It should be cleaned
+   * up later. */
+  if (conn->server->consec_failures > 0) {
+    return NULL;
+  }
+
   /* Used too many times */
   if (channel->udp_max_queries > 0 &&
       conn->total_queries >= channel->udp_max_queries) {
@@ -1216,7 +1225,6 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
   size_t          timeplus;
   ares_status_t   status;
   ares_bool_t     probe_downed_server = ARES_TRUE;
-
 
   /* Choose the server to send the query to */
   if (requested_server != NULL) {
@@ -1331,6 +1339,10 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
    * servers. */
   if (probe_downed_server) {
     ares_probe_failed_server(channel, server, query);
+  }
+
+  if (channel->query_enqueue_cb) {
+    channel->query_enqueue_cb(channel->query_enqueue_cb_data);
   }
 
   return ARES_SUCCESS;

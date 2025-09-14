@@ -269,6 +269,9 @@ struct ares_channeldata {
   void                               *notify_pending_write_cb_data;
   ares_bool_t                         notify_pending_write;
 
+  ares_query_enqueue_cb               query_enqueue_cb;
+  void                               *query_enqueue_cb_data;
+
   /* Path for resolv.conf file, configurable via ares_options */
   char                               *resolvconf_path;
 

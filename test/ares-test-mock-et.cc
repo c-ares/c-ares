@@ -112,6 +112,114 @@ TEST_P(MockUDPEventThreadTest, BadLoopbackServerNoTimeouts) {
   }
 }
 
+static int noop_close(ares_socket_t sock, void *user_data)
+{
+  (void)user_data;
+#if defined(HAVE_CLOSESOCKET)
+  return closesocket(sock);
+#elif defined(HAVE_CLOSESOCKET_CAMEL)
+  return CloseSocket(sock);
+#elif defined(HAVE_CLOSE_S)
+  return close_s(sock);
+#else
+  return close(sock);
+#endif
+  return 0;
+}
+
+static ares_socket_t noop_socket(int domain, int type, int protocol,
+                                 void *user_data)
+{
+  (void)user_data;
+  return socket(domain, type, protocol);
+}
+
+static int noop_setsockopt(ares_socket_t sock, ares_socket_opt_t opt,
+                           const void *val, ares_socklen_t val_size,
+                           void *user_data)
+{
+  (void)sock;
+  (void)opt;
+  (void)val;
+  (void)val_size;
+  (void)user_data;
+  return 0;
+}
+
+static int noop_connect(ares_socket_t sock, const struct sockaddr *address,
+                        ares_socklen_t address_len, unsigned int flags,
+                        void *user_data)
+{
+  (void)sock;
+  (void)address;
+  (void)address_len;
+  (void)flags;
+  (void)user_data;
+
+  return 0;
+}
+
+static ares_ssize_t noop_recvfrom(ares_socket_t sock, void *buffer,
+                                  size_t length, int flags,
+                                  struct sockaddr *address,
+                                  ares_socklen_t  *address_len,
+                                  void            *user_data)
+{
+  (void)sock;
+  (void)buffer;
+  (void)length;
+  (void)flags;
+  (void)address;
+  (void)address_len;
+  (void)user_data;
+
+  errno = EAGAIN;
+  return 0;
+}
+
+static ares_ssize_t noop_sendto(ares_socket_t sock, const void *buffer,
+                                size_t length, int flags,
+                                const struct sockaddr *address,
+                                ares_socklen_t address_len, void *user_data)
+{
+  (void)sock;
+  (void)buffer;
+  (void)flags;
+  (void)address;
+  (void)address_len;
+  (void)user_data;
+  /* Eat all data */
+  return (ares_ssize_t)length;
+}
+
+// Issue #1000 Event Thread stall on temporarily downed server.
+TEST_P(MockUDPEventThreadTest, DownServer) {
+  struct ares_socket_functions_ex noop_sock_funcs;
+  memset(&noop_sock_funcs, 0, sizeof(noop_sock_funcs));
+  noop_sock_funcs.version     = 1;
+  noop_sock_funcs.asocket     = noop_socket;
+  noop_sock_funcs.aclose      = noop_close;
+  noop_sock_funcs.asetsockopt = noop_setsockopt;
+  noop_sock_funcs.aconnect    = noop_connect;
+  noop_sock_funcs.arecvfrom   = noop_recvfrom;
+  noop_sock_funcs.asendto     = noop_sendto;
+  ares_set_socket_functions_ex(channel_, &noop_sock_funcs, NULL);
+
+  QueryResult result;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result, NULL);
+  // no need to call Process() since we're not actually connecting
+  ares_queue_wait_empty(channel_, -1);
+  EXPECT_TRUE(result.done_);
+  EXPECT_NE(0, result.timeouts_);
+
+  // Issue states second query stalls
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result, NULL);
+  // no need to call Process() since we're not actually connecting
+  ares_queue_wait_empty(channel_, -1);
+  EXPECT_TRUE(result.done_);
+  EXPECT_NE(0, result.timeouts_);
+}
+
 // UDP to TCP specific test
 TEST_P(MockUDPEventThreadTest, TruncationRetry) {
   DNSPacket rsptruncated;
