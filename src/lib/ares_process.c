@@ -1341,6 +1341,10 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
     ares_probe_failed_server(channel, server, query);
   }
 
+  if (channel->query_enqueue_cb) {
+    channel->query_enqueue_cb(channel->query_enqueue_cb_data);
+  }
+
   return ARES_SUCCESS;
 }
 
