@@ -145,6 +145,8 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 #define DEFAULT_SERVER_RETRY_CHANCE 10
 #define DEFAULT_SERVER_RETRY_DELAY  5000
 
+typedef void (*ares_query_enqueue_cb)(void *data);
+
 struct ares_query;
 typedef struct ares_query ares_query_t;
 
@@ -269,6 +271,9 @@ struct ares_channeldata {
   void                               *notify_pending_write_cb_data;
   ares_bool_t                         notify_pending_write;
 
+  ares_query_enqueue_cb               query_enqueue_cb;
+  void                               *query_enqueue_cb_data;
+
   /* Path for resolv.conf file, configurable via ares_options */
   char                               *resolvconf_path;
 
@@ -367,6 +372,9 @@ ares_status_t  ares_init_servers_state(ares_channel_t *channel);
 ares_status_t  ares_init_by_options(ares_channel_t            *channel,
                                     const struct ares_options *options,
                                     int                        optmask);
+void ares_set_query_enqueue_cb(ares_channel_t       *channel,
+                               ares_query_enqueue_cb callback,
+                               void                 *user_data);
 ares_status_t  ares_init_by_sysconfig(ares_channel_t *channel);
 void           ares_set_socket_functions_def(ares_channel_t *channel);
 
