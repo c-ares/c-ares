@@ -192,18 +192,17 @@ static ares_ssize_t noop_sendto(ares_socket_t sock, const void *buffer,
   return (ares_ssize_t)length;
 }
 
-static const struct ares_socket_functions_ex noop_sock_funcs = {
-  .version     = 1,
-  .asocket     = noop_socket,
-  .aclose      = noop_close,
-  .asetsockopt = noop_setsockopt,
-  .aconnect    = noop_connect,
-  .arecvfrom   = noop_recvfrom,
-  .asendto     = noop_sendto,
-};
-
 // Issue #1000 Event Thread stall on temporarily downed server.
 TEST_P(MockUDPEventThreadTest, DownServer) {
+  struct ares_socket_functions_ex noop_sock_funcs;
+  memset(&noop_sock_funcs, 0, sizeof(noop_sock_funcs));
+  noop_sock_funcs.version     = 1;
+  noop_sock_funcs.asocket     = noop_socket;
+  noop_sock_funcs.aclose      = noop_close;
+  noop_sock_funcs.asetsockopt = noop_setsockopt;
+  noop_sock_funcs.aconnect    = noop_connect;
+  noop_sock_funcs.arecvfrom   = noop_recvfrom;
+  noop_sock_funcs.asendto     = noop_sendto;
   ares_set_socket_functions_ex(channel_, &noop_sock_funcs, NULL);
 
   QueryResult result;
