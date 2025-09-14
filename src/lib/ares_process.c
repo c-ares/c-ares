@@ -1156,6 +1156,12 @@ static ares_conn_t *ares_fetch_connection(const ares_channel_t *channel,
     return NULL;
   }
 
+  /* If the associated server has failures, don't use it.  It should be cleaned
+   * up later. */
+  if (conn->server->consec_failures > 0) {
+    return NULL;
+  }
+
   /* Used too many times */
   if (channel->udp_max_queries > 0 &&
       conn->total_queries >= channel->udp_max_queries) {
@@ -1216,7 +1222,6 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
   size_t          timeplus;
   ares_status_t   status;
   ares_bool_t     probe_downed_server = ARES_TRUE;
-
 
   /* Choose the server to send the query to */
   if (requested_server != NULL) {
