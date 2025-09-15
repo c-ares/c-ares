@@ -655,36 +655,28 @@ ares_status_t ares_buf_fetch_codepoint(ares_buf_t *buf, unsigned int *codepoint)
   }
 
   if ((ptr[0] & 0x80) == 0) { /* 1-byte sequence (ASCII) */
-    if (codepoint) {
-      *codepoint = ptr[0];
-    }
+    *codepoint = ptr[0];
     len_used = 1;
   } else if ((ptr[0] & 0xE0) == 0xC0) { /* 2-byte sequence */
     if (remaining_len < 2) {
       return ARES_EBADSTR;
     }
-    if (codepoint) {
-      *codepoint = (unsigned int)(((ptr[0] & 0x1F) << 6) | (ptr[1] & 0x3F));
-    }
+    *codepoint = (unsigned int)(((ptr[0] & 0x1F) << 6) | (ptr[1] & 0x3F));
     len_used = 2;
   } else if ((ptr[0] & 0xF0) == 0xE0) { /* 3-byte sequence */
     if (remaining_len < 3) {
       return ARES_EBADSTR;
     }
-    if (codepoint) {
-      *codepoint = (unsigned int)(((ptr[0] & 0x0F) << 12) |
-                                  ((ptr[1] & 0x3F) << 6) | (ptr[2] & 0x3F));
-    }
+    *codepoint = (unsigned int)(((ptr[0] & 0x0F) << 12) |
+                                ((ptr[1] & 0x3F) << 6) | (ptr[2] & 0x3F));
     len_used = 3;
   } else if ((ptr[0] & 0xF8) == 0xF0) { /* 4-byte sequence */
     if (remaining_len < 3) {
       return ARES_EBADSTR;
     }
-    if (codepoint) {
-      *codepoint =
-        (unsigned int)(((ptr[0] & 0x07) << 18) | ((ptr[1] & 0x3F) << 12) |
-                       ((ptr[2] & 0x3F) << 6) | (ptr[3] & 0x3F));
-    }
+    *codepoint =
+      (unsigned int)(((ptr[0] & 0x07) << 18) | ((ptr[1] & 0x3F) << 12) |
+                     ((ptr[2] & 0x3F) << 6) | (ptr[3] & 0x3F));
     len_used = 4;
   } else {
     return ARES_EBADSTR;
