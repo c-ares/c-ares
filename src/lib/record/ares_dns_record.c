@@ -534,6 +534,15 @@ unsigned int ares_dns_rr_get_ttl(const ares_dns_rr_t *rr)
   return rr->ttl;
 }
 
+ares_status_t ares_dns_rr_set_ttl(ares_dns_rr_t *dns_rr, unsigned int ttl)
+{
+  if (dns_rr == NULL) {
+    return ARES_EFORMERR;
+  }
+  dns_rr->ttl = ttl;
+  return ARES_SUCCESS;
+}
+
 static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
                                   size_t **lenptr)
 {
