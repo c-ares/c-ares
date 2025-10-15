@@ -789,6 +789,16 @@ CARES_EXTERN ares_dns_class_t    ares_dns_rr_get_class(const ares_dns_rr_t *rr);
  */
 CARES_EXTERN unsigned int        ares_dns_rr_get_ttl(const ares_dns_rr_t *rr);
 
+
+/*! Overwrite the resource record TTL
+ *
+ * \param[in] dns_rr Pointer to resource record
+ * \param[in] ttl    TTL
+ * \return ARES_SUCCESS on success
+ */
+CARES_EXTERN ares_status_t       ares_dns_rr_set_ttl(ares_dns_rr_t *dns_rr, 
+                                                    unsigned int    ttl);
+
 /*! Set ipv4 address data type for specified resource record and key.  Can
  *  only be used on keys with datatype ARES_DATATYPE_INADDR
  *
