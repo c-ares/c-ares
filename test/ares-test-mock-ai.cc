@@ -805,7 +805,39 @@ TEST_P(MockUDPChannelTestAI, TriggerResendThenConnFailEDNS) {
   EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
 }
 
+TEST_P(MockUDPChannelTestAI, ConnectionRefusedOnSearchDomainRetry) {
+  DNSPacket badrsp4;
+  badrsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .set_rcode(NXDOMAIN);
 
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReplyAndFailSend(&server_, &badrsp4));
+
+  DNSPacket goodrsp4;
+  goodrsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com.first.com", T_A))
+    .add_answer(new DNSARR("www.google.com.first.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com.first.com", T_A))
+    .WillOnce(SetReply(&server_, &goodrsp4));
+
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+
+  sock_funcs.asendv = ares_sendv_fail;
+
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "www.google.com", NULL, &hints,
+                   AddrInfoCallback, &result);
+
+  Process();
+}
 
 class MockEDNSChannelTestAI : public MockFlagsChannelOptsTestAI {
  public:
