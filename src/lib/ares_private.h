@@ -310,7 +310,7 @@ ares_status_t ares_send_query(ares_server_t *requested_server /* Optional */,
 ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
                                  ares_status_t            status,
                                  ares_bool_t              inc_try_count,
-                                 const ares_dns_record_t *dnsrec,
+                                 ares_dns_record_t       *dnsrec,
                                  ares_array_t           **requeue);
 
 /*! Count the number of labels (dots+1) in a domain */
@@ -583,10 +583,10 @@ ares_status_t ares_qcache_create(ares_rand_state *rand_state,
                                  unsigned int     max_ttl,
                                  ares_qcache_t  **cache_out);
 void          ares_qcache_flush(ares_qcache_t *cache);
-ares_status_t ares_qcache_insert(ares_channel_t       *channel,
-                                 const ares_timeval_t *now,
-                                 const ares_query_t   *query,
-                                 ares_dns_record_t    *dnsrec);
+ares_status_t ares_qcache_insert(ares_channel_t          *channel,
+                                 const ares_timeval_t    *now,
+                                 const ares_query_t      *query,
+                                 const ares_dns_record_t *dnsrec);
 ares_status_t ares_qcache_fetch(ares_channel_t           *channel,
                                 const ares_timeval_t     *now,
                                 const ares_dns_record_t  *dnsrec,
