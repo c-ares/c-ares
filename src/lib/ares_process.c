@@ -894,27 +894,35 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     goto cleanup;
   }
 
+  /* We managed to obtain response, indicate success for now. */
+  status = ARES_SUCCESS;
+
   /* If we aren't passing through all error packets, discard packets
-   * with SERVFAIL, NOTIMP, or REFUSED response codes.
+   * with FORMERR, SERVFAIL, NXDOMAIN, NOTIMP, or REFUSED response codes.
    */
   if (!(channel->flags & ARES_FLAG_NOCHECKRESP)) {
     ares_dns_rcode_t rcode = ares_dns_record_get_rcode(rdnsrec);
-    if (rcode == ARES_RCODE_SERVFAIL || rcode == ARES_RCODE_NOTIMP ||
-        rcode == ARES_RCODE_REFUSED) {
-      switch (rcode) {
-        case ARES_RCODE_SERVFAIL:
-          status = ARES_ESERVFAIL;
-          break;
-        case ARES_RCODE_NOTIMP:
-          status = ARES_ENOTIMP;
-          break;
-        case ARES_RCODE_REFUSED:
-          status = ARES_EREFUSED;
-          break;
-        default:
-          break;
-      }
-
+    switch (rcode) {
+      case ARES_RCODE_FORMERR:
+        status = ARES_EFORMERR;
+        break;
+      case ARES_RCODE_SERVFAIL:
+        status = ARES_ESERVFAIL;
+        break;
+      case ARES_RCODE_NXDOMAIN:
+        status = ARES_ENODATA;
+        break;
+      case ARES_RCODE_NOTIMP:
+        status = ARES_ENOTIMP;
+        break;
+      case ARES_RCODE_REFUSED:
+        status = ARES_EREFUSED;
+        break;
+      default:
+        break;
+    }
+    
+    if (status != ARES_SUCCESS) {
       server_increment_failures(server, query->using_tcp);
       status = ares_requeue_query(query, now, status, ARES_TRUE, rdnsrec,
         requeue);
@@ -936,8 +944,6 @@ static ares_status_t process_answer(ares_channel_t      *channel,
   server_set_good(server, query->using_tcp);
   end_query(channel, server, query, ARES_SUCCESS, rdnsrec, requeue);
   rdnsrec = NULL; /* Free'd by the requeue */
-
-  status = ARES_SUCCESS;
 
 cleanup:
   /* Don't cleanup the cached pointer to the dns response */
