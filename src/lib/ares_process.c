@@ -977,8 +977,6 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
   size_t          max_tries = ares_slist_len(channel->servers) * channel->tries;
   ares_server_t  *server    = NULL;
 
-  /* Capture the server before removing the query from the connection, as we
-   * need it for end_query() to properly clear probe_pending flag. */
   if (query->conn != NULL) {
      server = query->conn->server;
   }
