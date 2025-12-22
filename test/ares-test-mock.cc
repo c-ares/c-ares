@@ -2530,7 +2530,9 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
 };
 
 
-// Test that probe_pending flag is properly cleared when a probe times out
+// Test that probe_pending flag is properly cleared when a probe times out,
+// by testing a scenario where a server is probed, the probe times out, and
+// then the server is probed again.
 TEST_P(ServerFailoverOptsMultiMockTest, ProbeAfterProbeTimeout) {
   std::vector<byte> nothing;
   DNSPacket okrsp;
@@ -2573,8 +2575,7 @@ TEST_P(ServerFailoverOptsMultiMockTest, ProbeAfterProbeTimeout) {
   EXPECT_TRUE(result2.done_);
 
   // Sleep past the retry delay again
-  // If probe_pending is cleared properly on timeout, this next
-  // query will trigger another probe to server #0
+  // The next query will trigger another probe to server #0
   tv_now = std::chrono::high_resolution_clock::now();
   delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
   if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms again" << std::endl;
