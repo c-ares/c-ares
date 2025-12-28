@@ -435,7 +435,7 @@ struct ares_addr {
 #include "ares_dns_record.h"
 
 typedef void (*ares_callback)(void *arg, int status, int timeouts,
-                              unsigned char *abuf, int alen);
+                              const unsigned char *abuf, int alen);
 
 typedef void (*ares_callback_dnsrec)(void *arg, ares_status_t status,
                                      size_t                   timeouts,

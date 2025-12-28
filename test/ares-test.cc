@@ -1202,7 +1202,7 @@ std::ostream& operator<<(std::ostream& os, const SearchResult& result) {
 }
 
 void SearchCallback(void *data, int status, int timeouts,
-                    unsigned char *abuf, int alen) {
+                    const unsigned char *abuf, int alen) {
   EXPECT_NE(nullptr, data);
   SearchResult* result = reinterpret_cast<SearchResult*>(data);
   result->done_ = true;

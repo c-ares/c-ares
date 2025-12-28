@@ -641,8 +641,8 @@ void          HostCallback(void *data, int status, int timeouts,
                            const struct hostent *hostent);
 void          QueryCallback(void *data, ares_status_t status, size_t timeouts,
                             const ares_dns_record_t *dnsrec);
-void SearchCallback(void *data, int status, int timeouts, unsigned char *abuf,
-                    int alen);
+void SearchCallback(void *data, int status, int timeouts,
+                    const unsigned char *abuf, int alen);
 void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,
                           const ares_dns_record_t *dnsrec);
 void NameInfoCallback(void *data, int status, int timeouts, const char *node,

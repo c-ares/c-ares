@@ -19,7 +19,8 @@ void ares_search_dnsrec(ares_channel_t *\fIchannel\fP,
                         ares_callback_dnsrec \fIcallback\fP, void *\fIarg\fP);
 
 typedef void (*ares_callback)(void *\fIarg\fP, int \fIstatus\fP,
-                              int \fItimeouts\fP, unsigned char *\fIabuf\fP,
+                              int \fItimeouts\fP,
+                              const unsigned char *\fIabuf\fP,
                               int \fIalen\fP);
 
 void ares_search(ares_channel_t *\fIchannel\fP, const char *\fIname\fP,
