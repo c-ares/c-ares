@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: "QNX"
     steps:
       - name: Install packages
@@ -36,7 +36,7 @@ jobs:
           echo "Downloading QNX Software Center ..."
           mkdir ${{ github.workspace }}/.qnx
           curl --cookie-jar ${{ github.workspace }}/.qnx/myqnxcookies.auth --form "userlogin=$QNX_USER" --form "password=$QNX_PASSWORD" -X POST https://www.qnx.com/account/login.html > login_response.html
-          curl -L --cookie ${{ github.workspace }}/.qnx/myqnxcookies.auth https://www.qnx.com/download/download/77351/qnx-setup-2.0.3-202408131717-linux.run > qnx-setup-lin.run
+          curl -L --cookie ${{ github.workspace }}/.qnx/myqnxcookies.auth https://www.qnx.com/download/download/79441/qnx-setup-2.0.4-202501021438-linux.run > qnx-setup-lin.run
           chmod a+x qnx-setup-lin.run
           ./qnx-setup-lin.run force-override disable-auto-start agree-to-license-terms ${{ github.workspace }}/qnxinstall
           echo "Installing License ..."
@@ -57,7 +57,8 @@ jobs:
       - name: Build googletest
         run: |
           source "${{ github.workspace }}/qnx800/qnxsdp-env.sh"
-          PREFIX="/usr" BUILD_TESTING="OFF" QNX_PROJECT_ROOT="$(pwd)/googletest" make -C build-files/ports/googletest install -j$(nproc)
+          env
+          make -C build-files/ports/googletest PREFIX=usr install -j$(nproc)
       - name: Checkout c-ares
         uses: actions/checkout@v4
         with:
