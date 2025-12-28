@@ -442,10 +442,10 @@ typedef void (*ares_callback_dnsrec)(void *arg, ares_status_t status,
                                      const ares_dns_record_t *dnsrec);
 
 typedef void (*ares_host_callback)(void *arg, int status, int timeouts,
-                                   struct hostent *hostent);
+                                   const struct hostent *hostent);
 
 typedef void (*ares_nameinfo_callback)(void *arg, int status, int timeouts,
-                                       char *node, char *service);
+                                       const char *node, const char *service);
 
 typedef int (*ares_sock_create_callback)(ares_socket_t socket_fd, int type,
                                          void *data);

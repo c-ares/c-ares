@@ -638,15 +638,15 @@ std::ostream &operator<<(std::ostream &os, const AddrInfoResult &result);
 // Standard implementation of ares callbacks that fill out the corresponding
 // structures.
 void          HostCallback(void *data, int status, int timeouts,
-                           struct hostent *hostent);
+                           const struct hostent *hostent);
 void          QueryCallback(void *data, ares_status_t status, size_t timeouts,
                             const ares_dns_record_t *dnsrec);
 void SearchCallback(void *data, int status, int timeouts, unsigned char *abuf,
                     int alen);
 void SearchCallbackDnsRec(void *data, ares_status_t status, size_t timeouts,
                           const ares_dns_record_t *dnsrec);
-void NameInfoCallback(void *data, int status, int timeouts, char *node,
-                      char *service);
+void NameInfoCallback(void *data, int status, int timeouts, const char *node,
+                      const char *service);
 void AddrInfoCallback(void *data, int status, int timeouts,
                       struct ares_addrinfo *res);
 

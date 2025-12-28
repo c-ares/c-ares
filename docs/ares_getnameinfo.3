@@ -10,8 +10,8 @@ ares_getnameinfo \- Address-to-nodename translation in protocol-independent mann
 #include <ares.h>
 
 typedef void (*ares_nameinfo_callback)(void *\fIarg\fP, int \fIstatus\fP,
-                                       int \fItimeouts\fP, char *\fInode\fP,
-                                       char *\fIservice\fP)
+                                       int \fItimeouts\fP, const char *\fInode\fP,
+                                       const char *\fIservice\fP)
 
 void ares_getnameinfo(ares_channel_t *\fIchannel\fP, const struct sockaddr *\fIsa\fP,
                       ares_socklen_t \fIsalen\fP, int \fIflags\fP,
@@ -24,7 +24,7 @@ function is defined for protocol-independent address translation. The function
 is a combination of \fIares_gethostbyaddr(3)\fP and \fIgetservbyport(3)\fP. The function will
 translate the address either by executing a host query on the name service channel
 identified by
-.IR channel 
+.IR channel
 or it will attempt to resolve it locally if possible.
 The parameters
 .I sa
@@ -68,8 +68,8 @@ A hostname lookup is being requested.
 A service name lookup is being requested.
 .PP
 When the query
-is complete or has 
-failed, the ares library will invoke \fIcallback\fP.  Completion or failure of 
+is complete or has
+failed, the ares library will invoke \fIcallback\fP.  Completion or failure of
 the query may happen immediately, or may happen during a later call to
 \fIares_process(3)\fP, \fIares_destroy(3)\fP or \fIares_cancel(3)\fP.
 .PP
@@ -129,19 +129,19 @@ given request.
 .PP
 On successful completion of the query, the callback argument
 .I node
-contains a string representing the hostname (assuming 
+contains a string representing the hostname (assuming
 .B ARES_NI_LOOKUPHOST
-was specified). Additionally, 
+was specified). Additionally,
 .I service
 contains a string representing the service name (assuming
 .B ARES_NI_LOOKUPSERVICE
 was specified).
 If the query did not complete successfully, or one of the values
-was not requested, 
+was not requested,
 .I node
 or
 .I service
-will be 
+will be
 .BR NULL .
 .SH SEE ALSO
 .BR ares_process (3),

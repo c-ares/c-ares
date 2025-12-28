@@ -1060,7 +1060,7 @@ std::ostream& operator<<(std::ostream& os, const HostEnt& host) {
 }
 
 void HostCallback(void *data, int status, int timeouts,
-                  struct hostent *hostent) {
+                  const struct hostent *hostent) {
   EXPECT_NE(nullptr, data);
   if (data == nullptr)
     return;
@@ -1241,7 +1241,7 @@ std::ostream& operator<<(std::ostream& os, const NameInfoResult& result) {
 }
 
 void NameInfoCallback(void *data, int status, int timeouts,
-                      char *node, char *service) {
+                      const char *node, const char *service) {
   EXPECT_NE(nullptr, data);
   NameInfoResult* result = reinterpret_cast<NameInfoResult*>(data);
   result->done_ = true;
