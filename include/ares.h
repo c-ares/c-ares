@@ -435,17 +435,17 @@ struct ares_addr {
 #include "ares_dns_record.h"
 
 typedef void (*ares_callback)(void *arg, int status, int timeouts,
-                              unsigned char *abuf, int alen);
+                              const unsigned char *abuf, int alen);
 
 typedef void (*ares_callback_dnsrec)(void *arg, ares_status_t status,
                                      size_t                   timeouts,
                                      const ares_dns_record_t *dnsrec);
 
 typedef void (*ares_host_callback)(void *arg, int status, int timeouts,
-                                   struct hostent *hostent);
+                                   const struct hostent *hostent);
 
 typedef void (*ares_nameinfo_callback)(void *arg, int status, int timeouts,
-                                       char *node, char *service);
+                                       const char *node, const char *service);
 
 typedef int (*ares_sock_create_callback)(ares_socket_t socket_fd, int type,
                                          void *data);

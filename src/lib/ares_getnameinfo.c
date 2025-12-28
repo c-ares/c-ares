@@ -75,7 +75,7 @@ struct nameinfo_query {
 #endif
 
 static void  nameinfo_callback(void *arg, int status, int timeouts,
-                               struct hostent *host);
+                               const struct hostent *host);
 static char *lookup_service(unsigned short port, unsigned int flags, char *buf,
                             size_t buflen);
 #ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
@@ -199,7 +199,7 @@ void ares_getnameinfo(ares_channel_t *channel, const struct sockaddr *sa,
 }
 
 static void nameinfo_callback(void *arg, int status, int timeouts,
-                              struct hostent *host)
+                              const struct hostent *host)
 {
   struct nameinfo_query *niquery = (struct nameinfo_query *)arg;
   char                   srvbuf[33];

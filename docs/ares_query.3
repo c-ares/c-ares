@@ -22,7 +22,7 @@ ares_status_t ares_query_dnsrec(ares_channel_t      *channel,
                                 unsigned short      *qid);
 
 typedef void (*ares_callback)(void *arg, int status,
-                              int timeouts, unsigned char *abuf,
+                              int timeouts, const unsigned char *abuf,
                               int alen);
 
 void ares_query(ares_channel_t *channel, const char *name,

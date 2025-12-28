@@ -19,7 +19,7 @@ ares_status_t ares_send_dnsrec(ares_channel_t *channel,
                                void *arg, unsigned short *qid);
 
 typedef void (*ares_callback)(void *arg, int status,
-                              int timeouts, unsigned char *abuf,
+                              int timeouts, const unsigned char *abuf,
                               int alen);
 
 void ares_send(ares_channel_t *channel, const unsigned char *qbuf,
