@@ -975,6 +975,11 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
 {
   ares_channel_t *channel   = query->channel;
   size_t          max_tries = ares_slist_len(channel->servers) * channel->tries;
+  ares_server_t  *server    = NULL;
+
+  if (query->conn != NULL) {
+     server = query->conn->server;
+  }
 
   ares_query_remove_from_conn(query);
 
@@ -999,7 +1004,7 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
     query->error_status = ARES_ETIMEOUT;
   }
 
-  end_query(channel, NULL, query, query->error_status, dnsrec, requeue);
+  end_query(channel, server, query, query->error_status, dnsrec, requeue);
   return ARES_ETIMEOUT;
 }
 
