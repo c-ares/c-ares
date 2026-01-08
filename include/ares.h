@@ -1084,6 +1084,8 @@ struct ares_addrinfo {
   struct ares_addrinfo_cname *cnames;
   struct ares_addrinfo_node  *nodes;
   char                       *name;
+  int                        qid_a;
+  int                        qid_aaaa;
 };
 
 struct ares_addrinfo_hints {
@@ -1091,6 +1093,7 @@ struct ares_addrinfo_hints {
   int ai_family;
   int ai_socktype;
   int ai_protocol;
+  int ai_query_id;
 };
 
 /*
