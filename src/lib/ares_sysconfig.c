@@ -218,13 +218,16 @@ static ares_status_t ares_init_sysconfig_android(const ares_channel_t *channel,
       status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig,
                                            dns_servers[i], ARES_TRUE);
       if (status != ARES_SUCCESS) {
-        return status;
+        break;
       }
     }
     for (i = 0; i < num_servers; i++) {
       ares_free(dns_servers[i]);
     }
     ares_free(dns_servers);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
   }
 
   domains            = ares_get_android_search_domains_list();
