@@ -273,7 +273,7 @@ static ares_status_t
    *   3. if confstr(_CS_DOMAIN, ...) this is the domain name.  Use this as
    *      preference over anything else found.
    */
-  ares_buf_t    *buf                = ares_buf_create();
+  ares_buf_t    *buf                = NULL;
   unsigned char *data               = NULL;
   size_t         data_size          = 0;
   ares_bool_t    process_resolvconf = ARES_TRUE;
