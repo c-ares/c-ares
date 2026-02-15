@@ -136,6 +136,9 @@ defined by RFC 1035. Can use \fIares_expand_string(3)\fP until buffer is consume
 .B ARES_OPT_DATATYPE_NAME
 - DNS Domain Name binary format as defined in RFC1035, can use \fIares_expand_name(3)\fP
 .br
+.B ARES_OPT_DATATYPE_UTF8_STR
+- A string, encoded in UTF-8 (RFC3629).
+.br
 .RE
 
 .B ares_svcb_param_t -
@@ -162,6 +165,9 @@ with \fIARES_RR_SVCB_PARAMS\fP or \fIARES_RR_HTTPS_PARAMS\fP:
 .br
 .B ARES_SVCB_PARAM_IPV6HINT
 - IPv6 address hints (RFC 9460 Section 7.3). Datatype: \fIARES_OPT_DATATYPE_INADDR6_LIST\fP
+.br
+.B ARES_SVCB_PARAM_DOHPATH
+- DNS over HTTPS path (RFC 9461 Section 5). Datatype: \fIARES_OPT_DATATYPE_UTF8_STR\fP
 .br
 
 .RE

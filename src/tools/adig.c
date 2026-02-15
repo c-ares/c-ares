@@ -515,6 +515,11 @@ static void print_opts(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
       case ARES_OPT_DATATYPE_NAME:
         print_opt_name(val, val_len);
         break;
+      case ARES_OPT_DATATYPE_UTF8_STR:
+        /* True UTF8 handling not implemented here, but in practice this is
+         * good enough. */
+        print_opt_binp(val, val_len);
+        break;
     }
   }
 }

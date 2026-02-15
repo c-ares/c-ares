@@ -343,7 +343,9 @@ typedef enum {
   /*! RESERVED (held for Encrypted ClientHello) */
   ARES_SVCB_PARAM_ECH = 5,
   /*! IPv6 address hints (RFC 9460 Section 7.3) */
-  ARES_SVCB_PARAM_IPV6HINT = 6
+  ARES_SVCB_PARAM_IPV6HINT = 6,
+  /*! DNS over HTTPS path (RFC 9461 Section 5) */
+  ARES_SVCB_PARAM_DOHPATH = 7
 } ares_svcb_param_t;
 
 /*! OPT RR known parameters */
@@ -403,7 +405,9 @@ typedef enum {
   /*! Binary Data */
   ARES_OPT_DATATYPE_BIN = 10,
   /*! DNS Domain Name Format */
-  ARES_OPT_DATATYPE_NAME = 11
+  ARES_OPT_DATATYPE_NAME = 11,
+  /*! UTF-8 encoded string */
+  ARES_OPT_DATATYPE_UTF8_STR = 12
 } ares_dns_opt_datatype_t;
 
 /*! Data type for flags to ares_dns_parse() */
@@ -796,7 +800,7 @@ CARES_EXTERN unsigned int        ares_dns_rr_get_ttl(const ares_dns_rr_t *rr);
  * \param[in] ttl    TTL
  * \return ARES_SUCCESS on success
  */
-CARES_EXTERN ares_status_t       ares_dns_rr_set_ttl(ares_dns_rr_t *dns_rr, 
+CARES_EXTERN ares_status_t       ares_dns_rr_set_ttl(ares_dns_rr_t *dns_rr,
                                                     unsigned int    ttl);
 
 /*! Set ipv4 address data type for specified resource record and key.  Can
