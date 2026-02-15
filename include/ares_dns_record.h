@@ -345,7 +345,9 @@ typedef enum {
   /*! IPv6 address hints (RFC 9460 Section 7.3) */
   ARES_SVCB_PARAM_IPV6HINT = 6,
   /*! DNS over HTTPS path (RFC 9461 Section 5) */
-  ARES_SVCB_PARAM_DOHPATH = 7
+  ARES_SVCB_PARAM_DOHPATH = 7,
+  /*! Oblivious HTTP (RFC 9540 Section 4) */
+  ARES_SVCB_PARAM_OHTTP = 8
 } ares_svcb_param_t;
 
 /*! OPT RR known parameters */
