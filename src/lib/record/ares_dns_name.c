@@ -65,7 +65,12 @@ static ares_status_t ares_nameoffset_create(ares_llist_t **list,
     return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  off->name     = ares_strdup(name);
+  off->name = ares_strdup(name);
+  if (off->name == NULL) {
+    status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto fail;            /* LCOV_EXCL_LINE: OutOfMemory */
+  }
+
   off->name_len = ares_strlen(off->name);
   off->idx      = idx;
 
