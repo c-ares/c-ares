@@ -2527,6 +2527,72 @@ TEST_P(ServerFailoverOptsMultiMockTest, ServerFailoverOpts) {
   EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
     .WillOnce(SetReply(servers_[1].get(), &okrsp));
   CheckExample();
+};
+
+
+// Test that probe_pending flag is properly cleared when a probe times out,
+// by testing a scenario where a server is probed, the probe times out, and
+// then the server is probed again.
+TEST_P(ServerFailoverOptsMultiMockTest, ProbeAfterProbeTimeout) {
+  std::vector<byte> nothing;
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  auto tv_now   = std::chrono::high_resolution_clock::now();
+  unsigned int delay_ms;
+
+  // First, fail server #0 so it becomes marked as failed
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Failing Server0 with timeout" << std::endl;
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReplyData(servers_[0].get(), nothing));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  HostResult result1;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result1);
+  Process();
+  EXPECT_TRUE(result1.done_);
+
+  // Sleep past the retry delay and send another query
+  // This should trigger a probe to server #0, which will timeout
+  tv_now = std::chrono::high_resolution_clock::now();
+  delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms" << std::endl;
+  ares_sleep_time(delay_ms);
+  tv_now = std::chrono::high_resolution_clock::now();
+
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Sending query that triggers probe to Server0, probe will timeout" << std::endl;
+  // Server #1 will handle the real query, Server #0 will be probed and timeout
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReplyData(servers_[0].get(), nothing));  // Probe times out
+  HostResult result2;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result2);
+  Process();
+  EXPECT_TRUE(result2.done_);
+
+  // Sleep past the retry delay again
+  // The next query will trigger another probe to server #0
+  tv_now = std::chrono::high_resolution_clock::now();
+  delay_ms = SERVER_FAILOVER_RETRY_DELAY + (SERVER_FAILOVER_RETRY_DELAY / 10);
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: sleep " << delay_ms << "ms again" << std::endl;
+  ares_sleep_time(delay_ms);
+  tv_now = std::chrono::high_resolution_clock::now();
+
+  if (verbose) std::cerr << std::chrono::duration_cast<std::chrono::milliseconds>(tv_now - tv_begin).count() << "ms: Sending another query - should trigger another probe to Server0" << std::endl;
+  // Server #1 will handle the real query
+  // Server #0 should be probed again
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  HostResult result3;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback, &result3);
+  Process();
+  EXPECT_TRUE(result3.done_);
 }
 
 const char *af_tostr(int af)
