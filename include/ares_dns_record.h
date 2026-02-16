@@ -343,7 +343,11 @@ typedef enum {
   /*! RESERVED (held for Encrypted ClientHello) */
   ARES_SVCB_PARAM_ECH = 5,
   /*! IPv6 address hints (RFC 9460 Section 7.3) */
-  ARES_SVCB_PARAM_IPV6HINT = 6
+  ARES_SVCB_PARAM_IPV6HINT = 6,
+  /*! DNS over HTTPS path (RFC 9461 Section 5) */
+  ARES_SVCB_PARAM_DOHPATH = 7,
+  /*! Oblivious HTTP (RFC 9540 Section 4) */
+  ARES_SVCB_PARAM_OHTTP = 8
 } ares_svcb_param_t;
 
 /*! OPT RR known parameters */
@@ -403,7 +407,9 @@ typedef enum {
   /*! Binary Data */
   ARES_OPT_DATATYPE_BIN = 10,
   /*! DNS Domain Name Format */
-  ARES_OPT_DATATYPE_NAME = 11
+  ARES_OPT_DATATYPE_NAME = 11,
+  /*! UTF-8 encoded string */
+  ARES_OPT_DATATYPE_UTF8_STR = 12
 } ares_dns_opt_datatype_t;
 
 /*! Data type for flags to ares_dns_parse() */

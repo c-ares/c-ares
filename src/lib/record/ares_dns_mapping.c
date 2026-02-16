@@ -808,6 +808,10 @@ static ares_dns_opt_datatype_t ares_dns_opt_get_type_svcb(unsigned short opt)
       return ARES_OPT_DATATYPE_INADDR4_LIST;
     case ARES_SVCB_PARAM_IPV6HINT:
       return ARES_OPT_DATATYPE_INADDR6_LIST;
+    case ARES_SVCB_PARAM_DOHPATH:
+      return ARES_OPT_DATATYPE_UTF8_STR;
+    case ARES_SVCB_PARAM_OHTTP:
+      return ARES_OPT_DATATYPE_NONE;
   }
   return ARES_OPT_DATATYPE_BIN;
 }
@@ -881,6 +885,10 @@ static const char *ares_dns_opt_get_name_svcb(unsigned short opt)
       return "ipv4hint";
     case ARES_SVCB_PARAM_IPV6HINT:
       return "ipv6hint";
+    case ARES_SVCB_PARAM_DOHPATH:
+      return "dohpath";
+    case ARES_SVCB_PARAM_OHTTP:
+      return "ohttp";
   }
   return NULL;
 }
