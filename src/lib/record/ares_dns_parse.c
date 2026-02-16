@@ -514,6 +514,7 @@ static ares_status_t ares_dns_parse_rr_opt(ares_buf_t *buf, ares_dns_rr_t *rr,
 
     status = ares_dns_rr_set_opt_own(rr, ARES_RR_OPT_OPTIONS, opt, val, len);
     if (status != ARES_SUCCESS) {
+      ares_free(val);
       return status;
     }
   }
@@ -607,6 +608,7 @@ static ares_status_t ares_dns_parse_rr_svcb(ares_buf_t *buf, ares_dns_rr_t *rr,
 
     status = ares_dns_rr_set_opt_own(rr, ARES_RR_SVCB_PARAMS, opt, val, len);
     if (status != ARES_SUCCESS) {
+      ares_free(val);
       return status;
     }
   }
@@ -658,6 +660,7 @@ static ares_status_t ares_dns_parse_rr_https(ares_buf_t *buf, ares_dns_rr_t *rr,
 
     status = ares_dns_rr_set_opt_own(rr, ARES_RR_HTTPS_PARAMS, opt, val, len);
     if (status != ARES_SUCCESS) {
+      ares_free(val);
       return status;
     }
   }
