@@ -123,6 +123,16 @@ CARES_EXTERN ares_status_t  ares_buf_append_be16(ares_buf_t    *buf,
 CARES_EXTERN ares_status_t  ares_buf_append_be32(ares_buf_t  *buf,
                                                  unsigned int u32);
 
+/*! Append a 32bit UTF codepoint as UTF8
+ *
+ *  \param[in] buf        Initialized buffer object
+ *  \param[in] codepoint  32bit UTF codepoint
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+CARES_EXTERN ares_status_t ares_buf_append_codepoint(ares_buf_t *buf,
+                                                     unsigned int codepoint);
+
+
 /*! Append a number in ASCII decimal form.
  *
  *  \param[in] buf  Initialized buffer object
@@ -337,6 +347,24 @@ CARES_EXTERN ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf,
 CARES_EXTERN ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
                                                        ares_buf_t **newbuf);
 
+/*! Fetch the bytes starting from the tagged position up to the _current_
+ *  position and write into the provided buffer.
+ *
+ *  \param[in]     buf    Initialized buffer object
+ *  \param[out]    outbuf Buffer to write bytes into.
+
+ *  \return ARES_SUCCESS if fetched
+ */
+CARES_EXTERN ares_status_t ares_buf_tag_fetch_buf(const ares_buf_t *buf,
+                                                  ares_buf_t *outbuf);
+
+/*! Determine if entire remaining buffer is ASCII-printable.  If there are
+ *  no remaining bytes, returns ARES_FALSE.
+ *
+ *  \param[in] buf Initialized buffer object
+ *  \return ARES_TRUE if data is ascii-printable */
+CARES_EXTERN ares_bool_t ares_buf_isprint(const ares_buf_t *buf);
+
 /*! Consume the given number of bytes without reading them.
  *
  *  \param[in] buf    Initialized buffer object
@@ -362,6 +390,18 @@ CARES_EXTERN ares_status_t ares_buf_fetch_be16(ares_buf_t     *buf,
  */
 CARES_EXTERN ares_status_t ares_buf_fetch_be32(ares_buf_t   *buf,
                                                unsigned int *u32);
+
+
+/*! Fetch a UTF 32bit codepoint from a UTF-8 encoded string.  Will consume
+ *  up to the length of the codepoint.
+ *
+ *  \param[in]  buf        Initialized buffer object
+ *  \param[out] codepoint  UTF codepoint
+ *  \return ARES_SUCCESS on success, ARES_EBADSTR if a non-unicode character
+ *          found
+ */
+CARES_EXTERN ares_status_t ares_buf_fetch_codepoint(ares_buf_t *buf,
+                                                    unsigned int *codepoint);
 
 
 /*! Fetch the requested number of bytes into the provided buffer
@@ -452,6 +492,23 @@ CARES_EXTERN size_t        ares_buf_consume_until_charset(ares_buf_t          *b
                                                           const unsigned char *charset,
                                                           size_t               len,
                                                           ares_bool_t require_charset);
+
+/*! Search for a character in the character set provided from the end of the of
+ *  the buffer.  Does not include the character from the charset at the end.
+ *
+ *  \param[in] buf                Initialized buffer object
+ *  \param[in] charset            character set
+ *  \param[in] len                length of character set
+ *  \param[in] require_charset    require we find a character from the charset.
+ *                                if ARES_FALSE it will simply consume the
+ *                                rest of the buffer.  If ARES_TRUE will return
+ *                                SIZE_MAX if not found.
+ *  \return number of characters consumed
+ */
+CARES_EXTERN size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
+                                                  const unsigned char *charset,
+                                                  size_t len,
+                                                  ares_bool_t require_charset);
 
 
 /*! Consume until a sequence of bytes is encountered.  Does not include the
@@ -607,6 +664,16 @@ CARES_EXTERN ares_bool_t          ares_buf_begins_with(const ares_buf_t    *buf,
  *  \return length remaining
  */
 CARES_EXTERN size_t               ares_buf_len(const ares_buf_t *buf);
+
+/*! Length of unprocessed remaining data in utf8/wide characters.
+ *
+ *  \param[in]  buf Initialized buffer object
+ *  \param[out] len Number of utf8 characters
+ *  \return ARES_SUCCESS on success, or error.
+ */
+CARES_EXTERN ares_status_t ares_buf_len_utf8(const ares_buf_t *buf,
+                                             size_t *len);
+
 
 /*! Retrieve a pointer to the currently unprocessed data.  Generally this isn't
  *  recommended to be used in practice.  The returned pointer may be invalidated

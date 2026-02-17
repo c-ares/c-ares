@@ -1,7 +1,7 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 ---
-Language: Cpp
+Language: C
 
 # -------
 # These are the most likely ones you might want to edit
