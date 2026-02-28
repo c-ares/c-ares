@@ -60,6 +60,7 @@ typedef enum {
   ARES_REC_TYPE_SSHFP = 44,   /*!< RFC 4255. SSH Key Fingerprint */
   ARES_REC_TYPE_RRSIG = 46,    /*!< RFC 4034. Resource Record Signature */
   ARES_REC_TYPE_NSEC  = 47,    /*!< RFC 4034. Next Secure */
+  ARES_REC_TYPE_DNSKEY = 48,   /*!< RFC 4034. DNS Public Key */
 
   ARES_REC_TYPE_TLSA = 52,     /*!< RFC 6698. DNS-Based Authentication of Named
                                 *   Entities (DANE) Transport Layer Security
@@ -301,6 +302,14 @@ typedef enum {
   ARES_RR_NSEC_NEXT_DOMAIN = (ARES_REC_TYPE_NSEC * 100) + 1,
   /*! NSEC Record. Type Bit Maps. Datatype: BIN */
   ARES_RR_NSEC_TYPE_BIT_MAPS = (ARES_REC_TYPE_NSEC * 100) + 2,
+  /*! DNSKEY Record. Flags. Datatype: U16 */
+  ARES_RR_DNSKEY_FLAGS = (ARES_REC_TYPE_DNSKEY * 100) + 1,
+  /*! DNSKEY Record. Protocol. Datatype: U8 */
+  ARES_RR_DNSKEY_PROTOCOL = (ARES_REC_TYPE_DNSKEY * 100) + 2,
+  /*! DNSKEY Record. Algorithm. Datatype: U8 */
+  ARES_RR_DNSKEY_ALGORITHM = (ARES_REC_TYPE_DNSKEY * 100) + 3,
+  /*! DNSKEY Record. Public Key. Datatype: BIN */
+  ARES_RR_DNSKEY_PUBLIC_KEY = (ARES_REC_TYPE_DNSKEY * 100) + 4,
   /*! TLSA Record. Certificate Usage. Datatype: U8 */
   ARES_RR_TLSA_CERT_USAGE = (ARES_REC_TYPE_TLSA * 100) + 1,
   /*! TLSA Record. Selector. Datatype: U8 */

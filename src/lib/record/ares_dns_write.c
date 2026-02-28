@@ -822,6 +822,39 @@ static ares_status_t ares_dns_write_rr_nsec(ares_buf_t          *buf,
 
   return ares_buf_append(buf, data, len);
 }
+
+static ares_status_t ares_dns_write_rr_dnskey(ares_buf_t          *buf,
+                                              const ares_dns_rr_t *rr,
+                                              ares_llist_t       **namelist)
+{
+  ares_status_t        status;
+  const unsigned char *data;
+  size_t               len = 0;
+
+  (void)namelist;
+
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_DNSKEY_FLAGS);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_DNSKEY_PROTOCOL);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_DNSKEY_ALGORITHM);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  data = ares_dns_rr_get_bin(rr, ARES_RR_DNSKEY_PUBLIC_KEY, &len);
+  if (data == NULL || len == 0) {
+    return ARES_EFORMERR;
+  }
+
+  return ares_buf_append(buf, data, len);
+}
 static ares_status_t ares_dns_write_rr_tlsa(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
                                             ares_llist_t       **namelist)
@@ -1198,6 +1231,9 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
         break;
       case ARES_REC_TYPE_NSEC:
         status = ares_dns_write_rr_nsec(buf, rr, namelistptr);
+        break;
+      case ARES_REC_TYPE_DNSKEY:
+        status = ares_dns_write_rr_dnskey(buf, rr, namelistptr);
         break;
       case ARES_REC_TYPE_TLSA:
         status = ares_dns_write_rr_tlsa(buf, rr, namelistptr);

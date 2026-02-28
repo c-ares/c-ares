@@ -100,6 +100,7 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_SSHFP:
     case ARES_REC_TYPE_RRSIG:
     case ARES_REC_TYPE_NSEC:
+    case ARES_REC_TYPE_DNSKEY:
     case ARES_REC_TYPE_TLSA:
     case ARES_REC_TYPE_SVCB:
     case ARES_REC_TYPE_HTTPS:
@@ -227,6 +228,8 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
       return "RRSIG";
     case ARES_REC_TYPE_NSEC:
       return "NSEC";
+    case ARES_REC_TYPE_DNSKEY:
+      return "DNSKEY";
     case ARES_REC_TYPE_TLSA:
       return "TLSA";
     case ARES_REC_TYPE_SVCB:
@@ -456,6 +459,18 @@ const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key)
     case ARES_RR_NSEC_TYPE_BIT_MAPS:
       return "TYPE_BIT_MAPS";
 
+    case ARES_RR_DNSKEY_FLAGS:
+      return "FLAGS";
+
+    case ARES_RR_DNSKEY_PROTOCOL:
+      return "PROTOCOL";
+
+    case ARES_RR_DNSKEY_ALGORITHM:
+      return "ALGORITHM";
+
+    case ARES_RR_DNSKEY_PUBLIC_KEY:
+      return "PUBLIC_KEY";
+
     case ARES_RR_TLSA_CERT_USAGE:
       return "CERT_USAGE";
 
@@ -566,6 +581,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_RRSIG_TYPE_COVERED:
     case ARES_RR_RRSIG_KEY_TAG:
     case ARES_RR_DS_KEY_TAG:
+    case ARES_RR_DNSKEY_FLAGS:
     case ARES_RR_SRV_PRIORITY:
     case ARES_RR_SRV_WEIGHT:
     case ARES_RR_SRV_PORT:
@@ -588,6 +604,8 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_DS_DIGEST_TYPE:
     case ARES_RR_SSHFP_ALGORITHM:
     case ARES_RR_SSHFP_FP_TYPE:
+    case ARES_RR_DNSKEY_PROTOCOL:
+    case ARES_RR_DNSKEY_ALGORITHM:
     case ARES_RR_OPT_VERSION:
     case ARES_RR_TLSA_CERT_USAGE:
     case ARES_RR_TLSA_SELECTOR:
@@ -606,6 +624,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_DS_DIGEST:
     case ARES_RR_SSHFP_FINGERPRINT:
     case ARES_RR_NSEC_TYPE_BIT_MAPS:
+    case ARES_RR_DNSKEY_PUBLIC_KEY:
     case ARES_RR_TLSA_DATA:
     case ARES_RR_RAW_RR_DATA:
       return ARES_DATATYPE_BIN;
@@ -668,6 +687,10 @@ static const ares_dns_rr_key_t rr_rrsig_keys[]  = { ARES_RR_RRSIG_TYPE_COVERED,
                                                     ARES_RR_RRSIG_SIGNATURE };
 static const ares_dns_rr_key_t rr_nsec_keys[]   = { ARES_RR_NSEC_NEXT_DOMAIN,
                                                     ARES_RR_NSEC_TYPE_BIT_MAPS };
+static const ares_dns_rr_key_t rr_dnskey_keys[] = { ARES_RR_DNSKEY_FLAGS,
+                                                    ARES_RR_DNSKEY_PROTOCOL,
+                                                    ARES_RR_DNSKEY_ALGORITHM,
+                                                    ARES_RR_DNSKEY_PUBLIC_KEY };
 static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
                                                     ARES_RR_TLSA_SELECTOR,
                                                     ARES_RR_TLSA_MATCH,
@@ -748,6 +771,9 @@ const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_NSEC:
       *cnt = sizeof(rr_nsec_keys) / sizeof(*rr_nsec_keys);
       return rr_nsec_keys;
+    case ARES_REC_TYPE_DNSKEY:
+      *cnt = sizeof(rr_dnskey_keys) / sizeof(*rr_dnskey_keys);
+      return rr_dnskey_keys;
     case ARES_REC_TYPE_TLSA:
       *cnt = sizeof(rr_tlsa_keys) / sizeof(*rr_tlsa_keys);
       return rr_tlsa_keys;
@@ -829,6 +855,7 @@ ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
     { "SSHFP",  ARES_REC_TYPE_SSHFP  },
     { "RRSIG",  ARES_REC_TYPE_RRSIG  },
     { "NSEC",   ARES_REC_TYPE_NSEC   },
+    { "DNSKEY", ARES_REC_TYPE_DNSKEY },
     { "TLSA",   ARES_REC_TYPE_TLSA   },
     { "SVCB",   ARES_REC_TYPE_SVCB   },
     { "HTTPS",  ARES_REC_TYPE_HTTPS  },
