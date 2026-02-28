@@ -305,6 +305,33 @@ Keys used for handling RR record parameters:
 .B ARES_RR_SSHFP_FINGERPRINT
 - SSHFP Record. Fingerprint. Datatype: \fIARES_DATATYPE_BIN\fP
 .br
+.B ARES_RR_RRSIG_TYPE_COVERED
+- RRSIG Record. Type Covered. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_RRSIG_ALGORITHM
+- RRSIG Record. Algorithm. See \fIares_dnssec_algorithm_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_RRSIG_LABELS
+- RRSIG Record. Labels. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_RRSIG_ORIGINAL_TTL
+- RRSIG Record. Original TTL. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_RRSIG_EXPIRATION
+- RRSIG Record. Signature Expiration. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_RRSIG_INCEPTION
+- RRSIG Record. Signature Inception. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_RRSIG_KEY_TAG
+- RRSIG Record. Key Tag. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_RRSIG_SIGNERS_NAME
+- RRSIG Record. Signer's Name. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_RRSIG_SIGNATURE
+- RRSIG Record. Signature. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
 .B ARES_RR_TLSA_CERT_USAGE
 - TLSA Record. Certificate Usage. See \fIares_tlsa_usage_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
 .br

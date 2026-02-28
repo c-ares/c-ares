@@ -198,6 +198,11 @@ static void ares_dns_rr_free(ares_dns_rr_t *rr)
     case ARES_REC_TYPE_SSHFP:
       ares_free(rr->r.sshfp.fingerprint);
       break;
+
+    case ARES_REC_TYPE_RRSIG:
+      ares_free(rr->r.rrsig.signers_name);
+      ares_free(rr->r.rrsig.signature);
+      break;
     case ARES_REC_TYPE_TLSA:
       ares_free(rr->r.tlsa.data);
       break;
@@ -710,6 +715,37 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
       }
       *lenptr = &dns_rr->r.sshfp.fingerprint_len;
       return &dns_rr->r.sshfp.fingerprint;
+
+    case ARES_RR_RRSIG_TYPE_COVERED:
+      return &dns_rr->r.rrsig.type_covered;
+
+    case ARES_RR_RRSIG_ALGORITHM:
+      return &dns_rr->r.rrsig.algorithm;
+
+    case ARES_RR_RRSIG_LABELS:
+      return &dns_rr->r.rrsig.labels;
+
+    case ARES_RR_RRSIG_ORIGINAL_TTL:
+      return &dns_rr->r.rrsig.original_ttl;
+
+    case ARES_RR_RRSIG_EXPIRATION:
+      return &dns_rr->r.rrsig.expiration;
+
+    case ARES_RR_RRSIG_INCEPTION:
+      return &dns_rr->r.rrsig.inception;
+
+    case ARES_RR_RRSIG_KEY_TAG:
+      return &dns_rr->r.rrsig.key_tag;
+
+    case ARES_RR_RRSIG_SIGNERS_NAME:
+      return &dns_rr->r.rrsig.signers_name;
+
+    case ARES_RR_RRSIG_SIGNATURE:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.rrsig.signature_len;
+      return &dns_rr->r.rrsig.signature;
 
     case ARES_RR_TLSA_CERT_USAGE:
       return &dns_rr->r.tlsa.cert_usage;

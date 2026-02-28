@@ -741,6 +741,65 @@ static ares_status_t ares_dns_write_rr_sshfp(ares_buf_t          *buf,
 
   return ares_buf_append(buf, data, len);
 }
+
+static ares_status_t ares_dns_write_rr_rrsig(ares_buf_t          *buf,
+                                             const ares_dns_rr_t *rr,
+                                             ares_llist_t       **namelist)
+{
+  ares_status_t        status;
+  const unsigned char *data;
+  size_t               len = 0;
+
+  (void)namelist;
+
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_RRSIG_TYPE_COVERED);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_RRSIG_ALGORITHM);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_RRSIG_LABELS);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_be32(buf, rr, ARES_RR_RRSIG_ORIGINAL_TTL);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_be32(buf, rr, ARES_RR_RRSIG_EXPIRATION);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_be32(buf, rr, ARES_RR_RRSIG_INCEPTION);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_RRSIG_KEY_TAG);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+                                  ARES_RR_RRSIG_SIGNERS_NAME);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  data = ares_dns_rr_get_bin(rr, ARES_RR_RRSIG_SIGNATURE, &len);
+  if (data == NULL || len == 0) {
+    return ARES_EFORMERR;
+  }
+
+  return ares_buf_append(buf, data, len);
+}
 static ares_status_t ares_dns_write_rr_tlsa(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
                                             ares_llist_t       **namelist)
@@ -1111,6 +1170,9 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
         break;
       case ARES_REC_TYPE_SSHFP:
         status = ares_dns_write_rr_sshfp(buf, rr, namelistptr);
+        break;
+      case ARES_REC_TYPE_RRSIG:
+        status = ares_dns_write_rr_rrsig(buf, rr, namelistptr);
         break;
       case ARES_REC_TYPE_TLSA:
         status = ares_dns_write_rr_tlsa(buf, rr, namelistptr);

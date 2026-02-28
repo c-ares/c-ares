@@ -98,6 +98,7 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_OPT:
     case ARES_REC_TYPE_DS:
     case ARES_REC_TYPE_SSHFP:
+    case ARES_REC_TYPE_RRSIG:
     case ARES_REC_TYPE_TLSA:
     case ARES_REC_TYPE_SVCB:
     case ARES_REC_TYPE_HTTPS:
@@ -153,7 +154,7 @@ ares_bool_t ares_dns_class_isvalid(ares_dns_class_t    qclass,
     case ARES_CLASS_NONE:
       return ARES_TRUE;
     case ARES_CLASS_ANY:
-      if (type == ARES_REC_TYPE_SIG) {
+      if (type == ARES_REC_TYPE_SIG || type == ARES_REC_TYPE_RRSIG) {
         return ARES_TRUE;
       }
       if (is_query) {
@@ -221,6 +222,8 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
       return "DS";
     case ARES_REC_TYPE_SSHFP:
       return "SSHFP";
+    case ARES_REC_TYPE_RRSIG:
+      return "RRSIG";
     case ARES_REC_TYPE_TLSA:
       return "TLSA";
     case ARES_REC_TYPE_SVCB:
@@ -417,6 +420,33 @@ const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key)
     case ARES_RR_SSHFP_FINGERPRINT:
       return "FINGERPRINT";
 
+    case ARES_RR_RRSIG_TYPE_COVERED:
+      return "TYPE_COVERED";
+
+    case ARES_RR_RRSIG_ALGORITHM:
+      return "ALGORITHM";
+
+    case ARES_RR_RRSIG_LABELS:
+      return "LABELS";
+
+    case ARES_RR_RRSIG_ORIGINAL_TTL:
+      return "ORIGINAL_TTL";
+
+    case ARES_RR_RRSIG_EXPIRATION:
+      return "EXPIRATION";
+
+    case ARES_RR_RRSIG_INCEPTION:
+      return "INCEPTION";
+
+    case ARES_RR_RRSIG_KEY_TAG:
+      return "KEY_TAG";
+
+    case ARES_RR_RRSIG_SIGNERS_NAME:
+      return "SIGNERS_NAME";
+
+    case ARES_RR_RRSIG_SIGNATURE:
+      return "SIGNATURE";
+
     case ARES_RR_TLSA_CERT_USAGE:
       return "CERT_USAGE";
 
@@ -491,6 +521,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_PTR_DNAME:
     case ARES_RR_MX_EXCHANGE:
     case ARES_RR_SIG_SIGNERS_NAME:
+    case ARES_RR_RRSIG_SIGNERS_NAME:
     case ARES_RR_SRV_TARGET:
     case ARES_RR_SVCB_TARGET:
     case ARES_RR_HTTPS_TARGET:
@@ -514,11 +545,16 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_SIG_ORIGINAL_TTL:
     case ARES_RR_SIG_EXPIRATION:
     case ARES_RR_SIG_INCEPTION:
+    case ARES_RR_RRSIG_ORIGINAL_TTL:
+    case ARES_RR_RRSIG_EXPIRATION:
+    case ARES_RR_RRSIG_INCEPTION:
       return ARES_DATATYPE_U32;
 
     case ARES_RR_MX_PREFERENCE:
     case ARES_RR_SIG_TYPE_COVERED:
     case ARES_RR_SIG_KEY_TAG:
+    case ARES_RR_RRSIG_TYPE_COVERED:
+    case ARES_RR_RRSIG_KEY_TAG:
     case ARES_RR_DS_KEY_TAG:
     case ARES_RR_SRV_PRIORITY:
     case ARES_RR_SRV_WEIGHT:
@@ -536,6 +572,8 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
 
     case ARES_RR_SIG_ALGORITHM:
     case ARES_RR_SIG_LABELS:
+    case ARES_RR_RRSIG_ALGORITHM:
+    case ARES_RR_RRSIG_LABELS:
     case ARES_RR_DS_ALGORITHM:
     case ARES_RR_DS_DIGEST_TYPE:
     case ARES_RR_SSHFP_ALGORITHM:
@@ -554,6 +592,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
       return ARES_DATATYPE_ABINP;
 
     case ARES_RR_SIG_SIGNATURE:
+    case ARES_RR_RRSIG_SIGNATURE:
     case ARES_RR_DS_DIGEST:
     case ARES_RR_SSHFP_FINGERPRINT:
     case ARES_RR_TLSA_DATA:
@@ -607,6 +646,15 @@ static const ares_dns_rr_key_t rr_ds_keys[]     = { ARES_RR_DS_KEY_TAG,
 static const ares_dns_rr_key_t rr_sshfp_keys[]  = { ARES_RR_SSHFP_ALGORITHM,
                                                     ARES_RR_SSHFP_FP_TYPE,
                                                     ARES_RR_SSHFP_FINGERPRINT };
+static const ares_dns_rr_key_t rr_rrsig_keys[]  = { ARES_RR_RRSIG_TYPE_COVERED,
+                                                    ARES_RR_RRSIG_ALGORITHM,
+                                                    ARES_RR_RRSIG_LABELS,
+                                                    ARES_RR_RRSIG_ORIGINAL_TTL,
+                                                    ARES_RR_RRSIG_EXPIRATION,
+                                                    ARES_RR_RRSIG_INCEPTION,
+                                                    ARES_RR_RRSIG_KEY_TAG,
+                                                    ARES_RR_RRSIG_SIGNERS_NAME,
+                                                    ARES_RR_RRSIG_SIGNATURE };
 static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
                                                     ARES_RR_TLSA_SELECTOR,
                                                     ARES_RR_TLSA_MATCH,
@@ -681,6 +729,9 @@ const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_SSHFP:
       *cnt = sizeof(rr_sshfp_keys) / sizeof(*rr_sshfp_keys);
       return rr_sshfp_keys;
+    case ARES_REC_TYPE_RRSIG:
+      *cnt = sizeof(rr_rrsig_keys) / sizeof(*rr_rrsig_keys);
+      return rr_rrsig_keys;
     case ARES_REC_TYPE_TLSA:
       *cnt = sizeof(rr_tlsa_keys) / sizeof(*rr_tlsa_keys);
       return rr_tlsa_keys;
@@ -760,6 +811,7 @@ ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
     { "OPT",    ARES_REC_TYPE_OPT    },
     { "DS",     ARES_REC_TYPE_DS     },
     { "SSHFP",  ARES_REC_TYPE_SSHFP  },
+    { "RRSIG",  ARES_REC_TYPE_RRSIG  },
     { "TLSA",   ARES_REC_TYPE_TLSA   },
     { "SVCB",   ARES_REC_TYPE_SVCB   },
     { "HTTPS",  ARES_REC_TYPE_HTTPS  },
