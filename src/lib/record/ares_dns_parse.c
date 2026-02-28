@@ -563,6 +563,44 @@ static ares_status_t ares_dns_parse_rr_ds(ares_buf_t *buf, ares_dns_rr_t *rr,
 
   return ARES_SUCCESS;
 }
+
+static ares_status_t ares_dns_parse_rr_sshfp(ares_buf_t *buf,
+                                             ares_dns_rr_t *rr,
+                                             size_t rdlength)
+{
+  ares_status_t  status;
+  size_t         orig_len = ares_buf_len(buf);
+  size_t         len;
+  unsigned char *data;
+
+  status = ares_dns_parse_and_set_u8(buf, rr, ARES_RR_SSHFP_ALGORITHM);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_parse_and_set_u8(buf, rr, ARES_RR_SSHFP_FP_TYPE);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  len = ares_dns_rr_remaining_len(buf, orig_len, rdlength);
+  if (len == 0) {
+    return ARES_EBADRESP;
+  }
+
+  status = ares_buf_fetch_bytes_dup(buf, len, ARES_FALSE, &data);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_rr_set_bin_own(rr, ARES_RR_SSHFP_FINGERPRINT, data, len);
+  if (status != ARES_SUCCESS) {
+    ares_free(data);
+    return status;
+  }
+
+  return ARES_SUCCESS;
+}
 static ares_status_t ares_dns_parse_rr_tlsa(ares_buf_t *buf, ares_dns_rr_t *rr,
                                             size_t rdlength)
 {
@@ -1012,6 +1050,8 @@ static ares_status_t
       return ares_dns_parse_rr_opt(buf, rr, rdlength, raw_class, raw_ttl);
     case ARES_REC_TYPE_DS:
       return ares_dns_parse_rr_ds(buf, rr, rdlength);
+    case ARES_REC_TYPE_SSHFP:
+      return ares_dns_parse_rr_sshfp(buf, rr, rdlength);
     case ARES_REC_TYPE_TLSA:
       return ares_dns_parse_rr_tlsa(buf, rr, rdlength);
     case ARES_REC_TYPE_SVCB:

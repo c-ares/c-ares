@@ -57,6 +57,7 @@ typedef enum {
   ARES_REC_TYPE_NAPTR = 35,    /*!< RFC 3403. Naming Authority Pointer */
   ARES_REC_TYPE_OPT   = 41,    /*!< RFC 6891. EDNS0 option (meta-RR) */
   ARES_REC_TYPE_DS    = 43,    /*!< RFC 4034. Delegation Signer */
+  ARES_REC_TYPE_SSHFP = 44,   /*!< RFC 4255. SSH Key Fingerprint */
 
   ARES_REC_TYPE_TLSA = 52,     /*!< RFC 6698. DNS-Based Authentication of Named
                                 *   Entities (DANE) Transport Layer Security
@@ -270,6 +271,12 @@ typedef enum {
   ARES_RR_DS_DIGEST_TYPE = (ARES_REC_TYPE_DS * 100) + 3,
   /*! DS Record. Digest. Datatype: BIN */
   ARES_RR_DS_DIGEST = (ARES_REC_TYPE_DS * 100) + 4,
+  /*! SSHFP Record. Algorithm. Datatype: U8 */
+  ARES_RR_SSHFP_ALGORITHM = (ARES_REC_TYPE_SSHFP * 100) + 1,
+  /*! SSHFP Record. Fingerprint Type. Datatype: U8 */
+  ARES_RR_SSHFP_FP_TYPE = (ARES_REC_TYPE_SSHFP * 100) + 2,
+  /*! SSHFP Record. Fingerprint. Datatype: BIN */
+  ARES_RR_SSHFP_FINGERPRINT = (ARES_REC_TYPE_SSHFP * 100) + 3,
   /*! TLSA Record. Certificate Usage. Datatype: U8 */
   ARES_RR_TLSA_CERT_USAGE = (ARES_REC_TYPE_TLSA * 100) + 1,
   /*! TLSA Record. Selector. Datatype: U8 */
@@ -337,6 +344,30 @@ typedef enum {
   /*! Sha512 match */
   ARES_TLSA_MATCH_SHA512 = 2
 } ares_tlsa_match_t;
+
+/*! SSHFP Record ARES_RR_SSHFP_ALGORITHM known values (RFC 4255, RFC 6594,
+ *  RFC 7479, RFC 8709) */
+typedef enum {
+  /*! RSA */
+  ARES_SSHFP_ALGORITHM_RSA = 1,
+  /*! DSA */
+  ARES_SSHFP_ALGORITHM_DSA = 2,
+  /*! ECDSA */
+  ARES_SSHFP_ALGORITHM_ECDSA = 3,
+  /*! Ed25519 (RFC 7479) */
+  ARES_SSHFP_ALGORITHM_ED25519 = 4,
+  /*! Ed448 (RFC 8709) */
+  ARES_SSHFP_ALGORITHM_ED448 = 6
+} ares_sshfp_algorithm_t;
+
+/*! SSHFP Record ARES_RR_SSHFP_FP_TYPE known values (RFC 4255, RFC 6594) */
+typedef enum {
+  /*! SHA-1 */
+  ARES_SSHFP_FP_SHA1 = 1,
+  /*! SHA-256 */
+  ARES_SSHFP_FP_SHA256 = 2
+} ares_sshfp_fp_type_t;
+
 /*! DNSSEC Algorithm Numbers (RFC 4034, RFC 8624) */
 typedef enum {
   /*! RSA/MD5 (deprecated, RFC 6725) */

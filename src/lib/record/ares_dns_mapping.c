@@ -97,6 +97,7 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_NAPTR:
     case ARES_REC_TYPE_OPT:
     case ARES_REC_TYPE_DS:
+    case ARES_REC_TYPE_SSHFP:
     case ARES_REC_TYPE_TLSA:
     case ARES_REC_TYPE_SVCB:
     case ARES_REC_TYPE_HTTPS:
@@ -218,6 +219,8 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
       return "OPT";
     case ARES_REC_TYPE_DS:
       return "DS";
+    case ARES_REC_TYPE_SSHFP:
+      return "SSHFP";
     case ARES_REC_TYPE_TLSA:
       return "TLSA";
     case ARES_REC_TYPE_SVCB:
@@ -405,6 +408,15 @@ const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key)
     case ARES_RR_DS_DIGEST:
       return "DIGEST";
 
+    case ARES_RR_SSHFP_ALGORITHM:
+      return "ALGORITHM";
+
+    case ARES_RR_SSHFP_FP_TYPE:
+      return "FP_TYPE";
+
+    case ARES_RR_SSHFP_FINGERPRINT:
+      return "FINGERPRINT";
+
     case ARES_RR_TLSA_CERT_USAGE:
       return "CERT_USAGE";
 
@@ -526,6 +538,8 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_SIG_LABELS:
     case ARES_RR_DS_ALGORITHM:
     case ARES_RR_DS_DIGEST_TYPE:
+    case ARES_RR_SSHFP_ALGORITHM:
+    case ARES_RR_SSHFP_FP_TYPE:
     case ARES_RR_OPT_VERSION:
     case ARES_RR_TLSA_CERT_USAGE:
     case ARES_RR_TLSA_SELECTOR:
@@ -541,6 +555,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
 
     case ARES_RR_SIG_SIGNATURE:
     case ARES_RR_DS_DIGEST:
+    case ARES_RR_SSHFP_FINGERPRINT:
     case ARES_RR_TLSA_DATA:
     case ARES_RR_RAW_RR_DATA:
       return ARES_DATATYPE_BIN;
@@ -589,6 +604,9 @@ static const ares_dns_rr_key_t rr_ds_keys[]     = { ARES_RR_DS_KEY_TAG,
                                                     ARES_RR_DS_ALGORITHM,
                                                     ARES_RR_DS_DIGEST_TYPE,
                                                     ARES_RR_DS_DIGEST };
+static const ares_dns_rr_key_t rr_sshfp_keys[]  = { ARES_RR_SSHFP_ALGORITHM,
+                                                    ARES_RR_SSHFP_FP_TYPE,
+                                                    ARES_RR_SSHFP_FINGERPRINT };
 static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
                                                     ARES_RR_TLSA_SELECTOR,
                                                     ARES_RR_TLSA_MATCH,
@@ -660,6 +678,9 @@ const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_DS:
       *cnt = sizeof(rr_ds_keys) / sizeof(*rr_ds_keys);
       return rr_ds_keys;
+    case ARES_REC_TYPE_SSHFP:
+      *cnt = sizeof(rr_sshfp_keys) / sizeof(*rr_sshfp_keys);
+      return rr_sshfp_keys;
     case ARES_REC_TYPE_TLSA:
       *cnt = sizeof(rr_tlsa_keys) / sizeof(*rr_tlsa_keys);
       return rr_tlsa_keys;
@@ -738,6 +759,7 @@ ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
     { "NAPTR",  ARES_REC_TYPE_NAPTR  },
     { "OPT",    ARES_REC_TYPE_OPT    },
     { "DS",     ARES_REC_TYPE_DS     },
+    { "SSHFP",  ARES_REC_TYPE_SSHFP  },
     { "TLSA",   ARES_REC_TYPE_TLSA   },
     { "SVCB",   ARES_REC_TYPE_SVCB   },
     { "HTTPS",  ARES_REC_TYPE_HTTPS  },
