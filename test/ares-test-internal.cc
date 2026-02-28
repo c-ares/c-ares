@@ -889,6 +889,17 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_bin(rr, ARES_RR_RRSIG_SIGNATURE, rrsig_sig,
       sizeof(rrsig_sig)));
+  /* NSEC */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_NSEC, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_NSEC_NEXT_DOMAIN, "next.example.com"));
+  const unsigned char nsec_bitmap[] = { 0x00, 0x06, 0x40, 0x01, 0x00,
+                                        0x00, 0x00, 0x03 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC_TYPE_BIT_MAPS, nsec_bitmap,
+      sizeof(nsec_bitmap)));
   /* SVCB */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
@@ -1051,6 +1062,19 @@ TEST_F(LibraryTest, DNSRecord) {
     const unsigned char *bin =
       ares_dns_rr_get_bin(rr, ARES_RR_RRSIG_SIGNATURE, &len);
     EXPECT_EQ(32, len);
+    EXPECT_NE(nullptr, bin);
+  }
+
+  /* NSEC - index 8 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 8);
+  EXPECT_EQ(ARES_REC_TYPE_NSEC, ares_dns_rr_get_type(rr));
+  EXPECT_STREQ("next.example.com",
+    ares_dns_rr_get_str(rr, ARES_RR_NSEC_NEXT_DOMAIN));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC_TYPE_BIT_MAPS, &len);
+    EXPECT_EQ(8, len);
     EXPECT_NE(nullptr, bin);
   }
   /* Iterate and print */

@@ -167,6 +167,12 @@ typedef struct {
   unsigned char *fingerprint;
   size_t         fingerprint_len;
 } ares_dns_sshfp_t;
+
+typedef struct {
+  char          *next_domain_name;
+  unsigned char *type_bit_maps;
+  size_t         type_bit_maps_len;
+} ares_dns_nsec_t;
 typedef struct {
   struct ares_in6_addr addr;
 } ares_dns_aaaa_t;
@@ -257,6 +263,7 @@ struct ares_dns_rr {
     ares_dns_rrsig_t  rrsig;
     ares_dns_ds_t     ds;
     ares_dns_sshfp_t  sshfp;
+    ares_dns_nsec_t   nsec;
     ares_dns_aaaa_t   aaaa;
     ares_dns_srv_t    srv;
     ares_dns_naptr_t  naptr;
