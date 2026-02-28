@@ -826,6 +826,23 @@ TEST_F(LibraryTest, DNSRecord) {
     0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_bin(rr, ARES_RR_TLSA_DATA, tlsa, sizeof(tlsa)));
+  /* DS */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_DS, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_DS_KEY_TAG, 0x1234));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_DS_ALGORITHM,
+      ARES_DNSSEC_ALGORITHM_RSASHA256));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_DS_DIGEST_TYPE, ARES_DS_DIGEST_SHA256));
+  const unsigned char ds_digest[] = {
+    0xd2, 0xab, 0xde, 0x24, 0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5,
+    0x4d, 0xf0, 0x34, 0xb9, 0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e,
+    0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_DS_DIGEST, ds_digest, sizeof(ds_digest)));
   /* SVCB */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
@@ -938,6 +955,22 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(nscount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
   EXPECT_EQ(arcount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
 
+  /* Verify record fields survived roundtrip */
+  /* DS - index 5 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 5);
+  EXPECT_EQ(ARES_REC_TYPE_DS, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(0x1234, ares_dns_rr_get_u16(rr, ARES_RR_DS_KEY_TAG));
+  EXPECT_EQ(ARES_DNSSEC_ALGORITHM_RSASHA256,
+    ares_dns_rr_get_u8(rr, ARES_RR_DS_ALGORITHM));
+  EXPECT_EQ(ARES_DS_DIGEST_SHA256,
+    ares_dns_rr_get_u8(rr, ARES_RR_DS_DIGEST_TYPE));
+  {
+    size_t len = 0;
+    const unsigned char *bin = ares_dns_rr_get_bin(rr, ARES_RR_DS_DIGEST, &len);
+    EXPECT_EQ(32, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0xd2, bin[0]);
+  }
   /* Iterate and print */
   ares_buf_t *printmsg = ares_buf_create();
   ares_buf_append_str(printmsg, ";; ->>HEADER<<- opcode: ");

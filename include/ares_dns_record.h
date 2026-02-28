@@ -56,6 +56,7 @@ typedef enum {
   ARES_REC_TYPE_SRV   = 33,    /*!< RFC 2782. Server Selection. */
   ARES_REC_TYPE_NAPTR = 35,    /*!< RFC 3403. Naming Authority Pointer */
   ARES_REC_TYPE_OPT   = 41,    /*!< RFC 6891. EDNS0 option (meta-RR) */
+  ARES_REC_TYPE_DS    = 43,    /*!< RFC 4034. Delegation Signer */
 
   ARES_REC_TYPE_TLSA = 52,     /*!< RFC 6698. DNS-Based Authentication of Named
                                 *   Entities (DANE) Transport Layer Security
@@ -261,6 +262,14 @@ typedef enum {
   ARES_RR_OPT_FLAGS = (ARES_REC_TYPE_OPT * 100) + 4,
   /*! OPT Record. Options. Datatype: OPT */
   ARES_RR_OPT_OPTIONS = (ARES_REC_TYPE_OPT * 100) + 5,
+  /*! DS Record. Key Tag. Datatype: U16 */
+  ARES_RR_DS_KEY_TAG = (ARES_REC_TYPE_DS * 100) + 1,
+  /*! DS Record. Algorithm. Datatype: U8 */
+  ARES_RR_DS_ALGORITHM = (ARES_REC_TYPE_DS * 100) + 2,
+  /*! DS Record. Digest Type. Datatype: U8 */
+  ARES_RR_DS_DIGEST_TYPE = (ARES_REC_TYPE_DS * 100) + 3,
+  /*! DS Record. Digest. Datatype: BIN */
+  ARES_RR_DS_DIGEST = (ARES_REC_TYPE_DS * 100) + 4,
   /*! TLSA Record. Certificate Usage. Datatype: U8 */
   ARES_RR_TLSA_CERT_USAGE = (ARES_REC_TYPE_TLSA * 100) + 1,
   /*! TLSA Record. Selector. Datatype: U8 */
@@ -328,7 +337,53 @@ typedef enum {
   /*! Sha512 match */
   ARES_TLSA_MATCH_SHA512 = 2
 } ares_tlsa_match_t;
+/*! DNSSEC Algorithm Numbers (RFC 4034, RFC 8624) */
+typedef enum {
+  /*! RSA/MD5 (deprecated, RFC 6725) */
+  ARES_DNSSEC_ALGORITHM_RSAMD5 = 1,
+  /*! Diffie-Hellman (RFC 2539) */
+  ARES_DNSSEC_ALGORITHM_DH = 2,
+  /*! DSA/SHA1 (RFC 3755, NOT RECOMMENDED) */
+  ARES_DNSSEC_ALGORITHM_DSA = 3,
+  /*! RSA/SHA-1 (RFC 3110, NOT RECOMMENDED) */
+  ARES_DNSSEC_ALGORITHM_RSASHA1 = 5,
+  /*! DSA-NSEC3-SHA1 (RFC 5155, NOT RECOMMENDED) */
+  ARES_DNSSEC_ALGORITHM_DSA_NSEC3_SHA1 = 6,
+  /*! RSASHA1-NSEC3-SHA1 (RFC 5155, NOT RECOMMENDED) */
+  ARES_DNSSEC_ALGORITHM_RSASHA1_NSEC3_SHA1 = 7,
+  /*! RSA/SHA-256 (RFC 5702) */
+  ARES_DNSSEC_ALGORITHM_RSASHA256 = 8,
+  /*! RSA/SHA-512 (RFC 5702) */
+  ARES_DNSSEC_ALGORITHM_RSASHA512 = 10,
+  /*! GOST R 34.10-2001 (RFC 5933) */
+  ARES_DNSSEC_ALGORITHM_ECC_GOST = 12,
+  /*! ECDSA Curve P-256 with SHA-256 (RFC 6605) */
+  ARES_DNSSEC_ALGORITHM_ECDSAP256SHA256 = 13,
+  /*! ECDSA Curve P-384 with SHA-384 (RFC 6605) */
+  ARES_DNSSEC_ALGORITHM_ECDSAP384SHA384 = 14,
+  /*! Ed25519 (RFC 8080) */
+  ARES_DNSSEC_ALGORITHM_ED25519 = 15,
+  /*! Ed448 (RFC 8080) */
+  ARES_DNSSEC_ALGORITHM_ED448 = 16,
+  /*! Indirect (RFC 4034) */
+  ARES_DNSSEC_ALGORITHM_INDIRECT = 252,
+  /*! Private algorithm (domain name) (RFC 4034) */
+  ARES_DNSSEC_ALGORITHM_PRIVATEDNS = 253,
+  /*! Private algorithm (OID) (RFC 4034) */
+  ARES_DNSSEC_ALGORITHM_PRIVATEOID = 254
+} ares_dnssec_algorithm_t;
 
+/*! DS Record Digest Type known values (RFC 4034, RFC 4509, RFC 6605) */
+typedef enum {
+  /*! SHA-1 (RFC 3658) */
+  ARES_DS_DIGEST_SHA1 = 1,
+  /*! SHA-256 (RFC 4509) */
+  ARES_DS_DIGEST_SHA256 = 2,
+  /*! GOST R 34.11-94 (RFC 5933) */
+  ARES_DS_DIGEST_GOST = 3,
+  /*! SHA-384 (RFC 6605) */
+  ARES_DS_DIGEST_SHA384 = 4
+} ares_ds_digest_t;
 /*! SVCB (and HTTPS) RR known parameters */
 typedef enum {
   /*! Mandatory keys in this RR (RFC 9460 Section 8) */
