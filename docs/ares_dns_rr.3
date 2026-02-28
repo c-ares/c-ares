@@ -296,6 +296,15 @@ Keys used for handling RR record parameters:
 .B ARES_RR_DS_DIGEST
 - DS Record. Digest. Datatype: \fIARES_DATATYPE_BIN\fP
 .br
+.B ARES_RR_SSHFP_ALGORITHM
+- SSHFP Record. Algorithm. See \fIares_sshfp_algorithm_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_SSHFP_FP_TYPE
+- SSHFP Record. Fingerprint Type. See \fIares_sshfp_fp_type_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_SSHFP_FINGERPRINT
+- SSHFP Record. Fingerprint. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
 .B ARES_RR_TLSA_CERT_USAGE
 - TLSA Record. Certificate Usage. See \fIares_tlsa_usage_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
 .br
@@ -393,6 +402,38 @@ TLSA Record \fIARES_RR_TLSA_MATCH\fP known values:
 - Sha512 match
 .br
 .RE
+
+.B ares_sshfp_algorithm_t -
+SSHFP Record \fIARES_RR_SSHFP_ALGORITHM\fP known values (RFC 4255, RFC 6594, RFC 7479, RFC 8709):
+.RS 4
+.B ARES_SSHFP_ALGORITHM_RSA
+- RSA
+.br
+.B ARES_SSHFP_ALGORITHM_DSA
+- DSA
+.br
+.B ARES_SSHFP_ALGORITHM_ECDSA
+- ECDSA
+.br
+.B ARES_SSHFP_ALGORITHM_ED25519
+- Ed25519
+.br
+.B ARES_SSHFP_ALGORITHM_ED448
+- Ed448
+.br
+.RE
+
+.B ares_sshfp_fp_type_t -
+SSHFP Record \fIARES_RR_SSHFP_FP_TYPE\fP known values (RFC 4255, RFC 6594):
+.RS 4
+.B ARES_SSHFP_FP_SHA1
+- SHA-1
+.br
+.B ARES_SSHFP_FP_SHA256
+- SHA-256
+.br
+.RE
+
 .B ares_dnssec_algorithm_t -
 DNSSEC Algorithm Numbers (RFC 4034, RFC 8624):
 .RS 4

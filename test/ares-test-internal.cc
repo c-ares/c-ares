@@ -843,6 +843,22 @@ TEST_F(LibraryTest, DNSRecord) {
     0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_bin(rr, ARES_RR_DS_DIGEST, ds_digest, sizeof(ds_digest)));
+  /* SSHFP */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_SSHFP, ARES_CLASS_IN, 3600));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_SSHFP_ALGORITHM,
+      ARES_SSHFP_ALGORITHM_RSA));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_SSHFP_FP_TYPE, ARES_SSHFP_FP_SHA256));
+  const unsigned char sshfp_fp[] = {
+    0xd2, 0xab, 0xde, 0x24, 0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5,
+    0x4d, 0xf0, 0x34, 0xb9, 0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e,
+    0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_SSHFP_FINGERPRINT, sshfp_fp,
+      sizeof(sshfp_fp)));
   /* SVCB */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
@@ -967,6 +983,22 @@ TEST_F(LibraryTest, DNSRecord) {
   {
     size_t len = 0;
     const unsigned char *bin = ares_dns_rr_get_bin(rr, ARES_RR_DS_DIGEST, &len);
+    EXPECT_EQ(32, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0xd2, bin[0]);
+  }
+
+  /* SSHFP - index 6 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 6);
+  EXPECT_EQ(ARES_REC_TYPE_SSHFP, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(ARES_SSHFP_ALGORITHM_RSA,
+    ares_dns_rr_get_u8(rr, ARES_RR_SSHFP_ALGORITHM));
+  EXPECT_EQ(ARES_SSHFP_FP_SHA256,
+    ares_dns_rr_get_u8(rr, ARES_RR_SSHFP_FP_TYPE));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_SSHFP_FINGERPRINT, &len);
     EXPECT_EQ(32, len);
     EXPECT_NE(nullptr, bin);
     EXPECT_EQ(0xd2, bin[0]);

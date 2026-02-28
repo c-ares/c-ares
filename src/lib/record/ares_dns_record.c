@@ -194,6 +194,10 @@ static void ares_dns_rr_free(ares_dns_rr_t *rr)
     case ARES_REC_TYPE_DS:
       ares_free(rr->r.ds.digest);
       break;
+
+    case ARES_REC_TYPE_SSHFP:
+      ares_free(rr->r.sshfp.fingerprint);
+      break;
     case ARES_REC_TYPE_TLSA:
       ares_free(rr->r.tlsa.data);
       break;
@@ -693,6 +697,19 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
       }
       *lenptr = &dns_rr->r.ds.digest_len;
       return &dns_rr->r.ds.digest;
+
+    case ARES_RR_SSHFP_ALGORITHM:
+      return &dns_rr->r.sshfp.algorithm;
+
+    case ARES_RR_SSHFP_FP_TYPE:
+      return &dns_rr->r.sshfp.fp_type;
+
+    case ARES_RR_SSHFP_FINGERPRINT:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.sshfp.fingerprint_len;
+      return &dns_rr->r.sshfp.fingerprint;
 
     case ARES_RR_TLSA_CERT_USAGE:
       return &dns_rr->r.tlsa.cert_usage;
