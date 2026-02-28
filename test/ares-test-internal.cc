@@ -900,6 +900,24 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_bin(rr, ARES_RR_NSEC_TYPE_BIT_MAPS, nsec_bitmap,
       sizeof(nsec_bitmap)));
+  /* DNSKEY */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_DNSKEY, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_DNSKEY_FLAGS, 257));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_DNSKEY_PROTOCOL, 3));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_DNSKEY_ALGORITHM,
+      ARES_DNSSEC_ALGORITHM_RSASHA256));
+  const unsigned char dnskey_pk[] = {
+    0xd2, 0xab, 0xde, 0x24, 0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5,
+    0x4d, 0xf0, 0x34, 0xb9, 0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e,
+    0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_DNSKEY_PUBLIC_KEY, dnskey_pk,
+      sizeof(dnskey_pk)));
   /* SVCB */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
@@ -1075,6 +1093,21 @@ TEST_F(LibraryTest, DNSRecord) {
     const unsigned char *bin =
       ares_dns_rr_get_bin(rr, ARES_RR_NSEC_TYPE_BIT_MAPS, &len);
     EXPECT_EQ(8, len);
+    EXPECT_NE(nullptr, bin);
+  }
+
+  /* DNSKEY - index 9 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 9);
+  EXPECT_EQ(ARES_REC_TYPE_DNSKEY, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(257, ares_dns_rr_get_u16(rr, ARES_RR_DNSKEY_FLAGS));
+  EXPECT_EQ(3, ares_dns_rr_get_u8(rr, ARES_RR_DNSKEY_PROTOCOL));
+  EXPECT_EQ(ARES_DNSSEC_ALGORITHM_RSASHA256,
+    ares_dns_rr_get_u8(rr, ARES_RR_DNSKEY_ALGORITHM));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_DNSKEY_PUBLIC_KEY, &len);
+    EXPECT_EQ(32, len);
     EXPECT_NE(nullptr, bin);
   }
   /* Iterate and print */

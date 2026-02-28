@@ -208,6 +208,10 @@ static void ares_dns_rr_free(ares_dns_rr_t *rr)
       ares_free(rr->r.nsec.next_domain_name);
       ares_free(rr->r.nsec.type_bit_maps);
       break;
+
+    case ARES_REC_TYPE_DNSKEY:
+      ares_free(rr->r.dnskey.public_key);
+      break;
     case ARES_REC_TYPE_TLSA:
       ares_free(rr->r.tlsa.data);
       break;
@@ -761,6 +765,22 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
       }
       *lenptr = &dns_rr->r.nsec.type_bit_maps_len;
       return &dns_rr->r.nsec.type_bit_maps;
+
+    case ARES_RR_DNSKEY_FLAGS:
+      return &dns_rr->r.dnskey.flags;
+
+    case ARES_RR_DNSKEY_PROTOCOL:
+      return &dns_rr->r.dnskey.protocol;
+
+    case ARES_RR_DNSKEY_ALGORITHM:
+      return &dns_rr->r.dnskey.algorithm;
+
+    case ARES_RR_DNSKEY_PUBLIC_KEY:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.dnskey.public_key_len;
+      return &dns_rr->r.dnskey.public_key;
 
     case ARES_RR_TLSA_CERT_USAGE:
       return &dns_rr->r.tlsa.cert_usage;
