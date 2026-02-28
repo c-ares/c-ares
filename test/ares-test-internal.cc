@@ -942,6 +942,20 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_bin(rr, ARES_RR_NSEC3_TYPE_BIT_MAPS, nsec_bitmap,
       sizeof(nsec_bitmap)));
+  /* NSEC3PARAM */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_NSEC3PARAM, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_NSEC3PARAM_HASH_ALGORITHM,
+      ARES_NSEC3_HASH_SHA1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_NSEC3PARAM_FLAGS, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_NSEC3PARAM_ITERATIONS, 10));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC3PARAM_SALT, nsec3_salt,
+      sizeof(nsec3_salt)));
   /* SVCB */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
@@ -1165,6 +1179,23 @@ TEST_F(LibraryTest, DNSRecord) {
     EXPECT_EQ(8, len);
     EXPECT_NE(nullptr, bin);
   }
+
+  /* NSEC3PARAM - index 11 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 11);
+  EXPECT_EQ(ARES_REC_TYPE_NSEC3PARAM, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(ARES_NSEC3_HASH_SHA1,
+    ares_dns_rr_get_u8(rr, ARES_RR_NSEC3PARAM_HASH_ALGORITHM));
+  EXPECT_EQ(0, ares_dns_rr_get_u8(rr, ARES_RR_NSEC3PARAM_FLAGS));
+  EXPECT_EQ(10, ares_dns_rr_get_u16(rr, ARES_RR_NSEC3PARAM_ITERATIONS));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC3PARAM_SALT, &len);
+    EXPECT_EQ(4, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0xaa, bin[0]);
+  }
+
   /* Iterate and print */
   ares_buf_t *printmsg = ares_buf_create();
   ares_buf_append_str(printmsg, ";; ->>HEADER<<- opcode: ");

@@ -193,6 +193,15 @@ typedef struct {
   unsigned char *type_bit_maps;
   size_t         type_bit_maps_len;
 } ares_dns_nsec3_t;
+
+typedef struct {
+  unsigned char  hash_algorithm;
+  unsigned char  flags;
+  unsigned short iterations;
+  unsigned char *salt;
+  size_t         salt_len;
+} ares_dns_nsec3param_t;
+
 typedef struct {
   struct ares_in6_addr addr;
 } ares_dns_aaaa_t;
@@ -286,6 +295,7 @@ struct ares_dns_rr {
     ares_dns_nsec_t   nsec;
     ares_dns_dnskey_t dnskey;
     ares_dns_nsec3_t  nsec3;
+    ares_dns_nsec3param_t nsec3param;
     ares_dns_aaaa_t   aaaa;
     ares_dns_srv_t    srv;
     ares_dns_naptr_t  naptr;
