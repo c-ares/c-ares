@@ -96,6 +96,7 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_SRV:
     case ARES_REC_TYPE_NAPTR:
     case ARES_REC_TYPE_OPT:
+    case ARES_REC_TYPE_DS:
     case ARES_REC_TYPE_TLSA:
     case ARES_REC_TYPE_SVCB:
     case ARES_REC_TYPE_HTTPS:
@@ -215,6 +216,8 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
       return "NAPTR";
     case ARES_REC_TYPE_OPT:
       return "OPT";
+    case ARES_REC_TYPE_DS:
+      return "DS";
     case ARES_REC_TYPE_TLSA:
       return "TLSA";
     case ARES_REC_TYPE_SVCB:
@@ -390,6 +393,18 @@ const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key)
     case ARES_RR_OPT_OPTIONS:
       return "OPTIONS";
 
+    case ARES_RR_DS_KEY_TAG:
+      return "KEY_TAG";
+
+    case ARES_RR_DS_ALGORITHM:
+      return "ALGORITHM";
+
+    case ARES_RR_DS_DIGEST_TYPE:
+      return "DIGEST_TYPE";
+
+    case ARES_RR_DS_DIGEST:
+      return "DIGEST";
+
     case ARES_RR_TLSA_CERT_USAGE:
       return "CERT_USAGE";
 
@@ -492,6 +507,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_MX_PREFERENCE:
     case ARES_RR_SIG_TYPE_COVERED:
     case ARES_RR_SIG_KEY_TAG:
+    case ARES_RR_DS_KEY_TAG:
     case ARES_RR_SRV_PRIORITY:
     case ARES_RR_SRV_WEIGHT:
     case ARES_RR_SRV_PORT:
@@ -508,6 +524,8 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
 
     case ARES_RR_SIG_ALGORITHM:
     case ARES_RR_SIG_LABELS:
+    case ARES_RR_DS_ALGORITHM:
+    case ARES_RR_DS_DIGEST_TYPE:
     case ARES_RR_OPT_VERSION:
     case ARES_RR_TLSA_CERT_USAGE:
     case ARES_RR_TLSA_SELECTOR:
@@ -522,6 +540,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
       return ARES_DATATYPE_ABINP;
 
     case ARES_RR_SIG_SIGNATURE:
+    case ARES_RR_DS_DIGEST:
     case ARES_RR_TLSA_DATA:
     case ARES_RR_RAW_RR_DATA:
       return ARES_DATATYPE_BIN;
@@ -566,6 +585,10 @@ static const ares_dns_rr_key_t rr_opt_keys[]    = { ARES_RR_OPT_UDP_SIZE,
                                                     ARES_RR_OPT_VERSION,
                                                     ARES_RR_OPT_FLAGS,
                                                     ARES_RR_OPT_OPTIONS };
+static const ares_dns_rr_key_t rr_ds_keys[]     = { ARES_RR_DS_KEY_TAG,
+                                                    ARES_RR_DS_ALGORITHM,
+                                                    ARES_RR_DS_DIGEST_TYPE,
+                                                    ARES_RR_DS_DIGEST };
 static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
                                                     ARES_RR_TLSA_SELECTOR,
                                                     ARES_RR_TLSA_MATCH,
@@ -634,6 +657,9 @@ const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_OPT:
       *cnt = sizeof(rr_opt_keys) / sizeof(*rr_opt_keys);
       return rr_opt_keys;
+    case ARES_REC_TYPE_DS:
+      *cnt = sizeof(rr_ds_keys) / sizeof(*rr_ds_keys);
+      return rr_ds_keys;
     case ARES_REC_TYPE_TLSA:
       *cnt = sizeof(rr_tlsa_keys) / sizeof(*rr_tlsa_keys);
       return rr_tlsa_keys;
@@ -711,6 +737,7 @@ ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
     { "SRV",    ARES_REC_TYPE_SRV    },
     { "NAPTR",  ARES_REC_TYPE_NAPTR  },
     { "OPT",    ARES_REC_TYPE_OPT    },
+    { "DS",     ARES_REC_TYPE_DS     },
     { "TLSA",   ARES_REC_TYPE_TLSA   },
     { "SVCB",   ARES_REC_TYPE_SVCB   },
     { "HTTPS",  ARES_REC_TYPE_HTTPS  },

@@ -191,6 +191,9 @@ static void ares_dns_rr_free(ares_dns_rr_t *rr)
       ares_array_destroy(rr->r.opt.options);
       break;
 
+    case ARES_REC_TYPE_DS:
+      ares_free(rr->r.ds.digest);
+      break;
     case ARES_REC_TYPE_TLSA:
       ares_free(rr->r.tlsa.data);
       break;
@@ -674,6 +677,22 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
 
     case ARES_RR_OPT_OPTIONS:
       return &dns_rr->r.opt.options;
+
+    case ARES_RR_DS_KEY_TAG:
+      return &dns_rr->r.ds.key_tag;
+
+    case ARES_RR_DS_ALGORITHM:
+      return &dns_rr->r.ds.algorithm;
+
+    case ARES_RR_DS_DIGEST_TYPE:
+      return &dns_rr->r.ds.digest_type;
+
+    case ARES_RR_DS_DIGEST:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.ds.digest_len;
+      return &dns_rr->r.ds.digest;
 
     case ARES_RR_TLSA_CERT_USAGE:
       return &dns_rr->r.tlsa.cert_usage;

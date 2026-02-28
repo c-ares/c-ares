@@ -284,6 +284,18 @@ Keys used for handling RR record parameters:
 .B ARES_RR_OPT_OPTIONS
 - OPT Record. Options. See \fIares_opt_param_t\fP. Datatype: \fIARES_DATATYPE_OPT\fP
 .br
+.B ARES_RR_DS_KEY_TAG
+- DS Record. Key Tag. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_DS_ALGORITHM
+- DS Record. Algorithm. See \fIares_dnssec_algorithm_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_DS_DIGEST_TYPE
+- DS Record. Digest Type. See \fIares_ds_digest_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_DS_DIGEST
+- DS Record. Digest. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
 .B ARES_RR_TLSA_CERT_USAGE
 - TLSA Record. Certificate Usage. See \fIares_tlsa_usage_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
 .br
@@ -381,7 +393,75 @@ TLSA Record \fIARES_RR_TLSA_MATCH\fP known values:
 - Sha512 match
 .br
 .RE
+.B ares_dnssec_algorithm_t -
+DNSSEC Algorithm Numbers (RFC 4034, RFC 8624):
+.RS 4
+.B ARES_DNSSEC_ALGORITHM_RSAMD5
+- RSA/MD5 (deprecated)
+.br
+.B ARES_DNSSEC_ALGORITHM_DH
+- Diffie-Hellman
+.br
+.B ARES_DNSSEC_ALGORITHM_DSA
+- DSA/SHA1 (NOT RECOMMENDED)
+.br
+.B ARES_DNSSEC_ALGORITHM_RSASHA1
+- RSA/SHA-1 (NOT RECOMMENDED)
+.br
+.B ARES_DNSSEC_ALGORITHM_DSA_NSEC3_SHA1
+- DSA-NSEC3-SHA1 (NOT RECOMMENDED)
+.br
+.B ARES_DNSSEC_ALGORITHM_RSASHA1_NSEC3_SHA1
+- RSASHA1-NSEC3-SHA1 (NOT RECOMMENDED)
+.br
+.B ARES_DNSSEC_ALGORITHM_RSASHA256
+- RSA/SHA-256
+.br
+.B ARES_DNSSEC_ALGORITHM_RSASHA512
+- RSA/SHA-512
+.br
+.B ARES_DNSSEC_ALGORITHM_ECC_GOST
+- GOST R 34.10-2001
+.br
+.B ARES_DNSSEC_ALGORITHM_ECDSAP256SHA256
+- ECDSA Curve P-256 with SHA-256
+.br
+.B ARES_DNSSEC_ALGORITHM_ECDSAP384SHA384
+- ECDSA Curve P-384 with SHA-384
+.br
+.B ARES_DNSSEC_ALGORITHM_ED25519
+- Ed25519
+.br
+.B ARES_DNSSEC_ALGORITHM_ED448
+- Ed448
+.br
+.B ARES_DNSSEC_ALGORITHM_INDIRECT
+- Indirect
+.br
+.B ARES_DNSSEC_ALGORITHM_PRIVATEDNS
+- Private algorithm (domain name)
+.br
+.B ARES_DNSSEC_ALGORITHM_PRIVATEOID
+- Private algorithm (OID)
+.br
+.RE
 
+.B ares_ds_digest_t -
+DS Record Digest Type known values (RFC 4034, RFC 4509, RFC 6605):
+.RS 4
+.B ARES_DS_DIGEST_SHA1
+- SHA-1
+.br
+.B ARES_DS_DIGEST_SHA256
+- SHA-256
+.br
+.B ARES_DS_DIGEST_GOST
+- GOST R 34.11-94
+.br
+.B ARES_DS_DIGEST_SHA384
+- SHA-384
+.br
+.RE
 
 .SH DESCRIPTION
 

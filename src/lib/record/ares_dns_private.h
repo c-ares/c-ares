@@ -150,6 +150,14 @@ typedef struct {
   size_t         signature_len;
 } ares_dns_sig_t;
 
+
+typedef struct {
+  unsigned short key_tag;
+  unsigned char  algorithm;
+  unsigned char  digest_type;
+  unsigned char *digest;
+  size_t         digest_len;
+} ares_dns_ds_t;
 typedef struct {
   struct ares_in6_addr addr;
 } ares_dns_aaaa_t;
@@ -237,6 +245,7 @@ struct ares_dns_rr {
     ares_dns_mx_t     mx;
     ares_dns_txt_t    txt;
     ares_dns_sig_t    sig;
+    ares_dns_ds_t     ds;
     ares_dns_aaaa_t   aaaa;
     ares_dns_srv_t    srv;
     ares_dns_naptr_t  naptr;
