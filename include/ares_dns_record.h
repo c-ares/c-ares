@@ -62,6 +62,7 @@ typedef enum {
   ARES_REC_TYPE_NSEC  = 47,    /*!< RFC 4034. Next Secure */
   ARES_REC_TYPE_DNSKEY = 48,   /*!< RFC 4034. DNS Public Key */
   ARES_REC_TYPE_NSEC3 = 50,    /*!< RFC 5155. NSEC3 */
+  ARES_REC_TYPE_NSEC3PARAM = 51, /*!< RFC 5155. NSEC3 Parameters */
 
   ARES_REC_TYPE_TLSA = 52,     /*!< RFC 6698. DNS-Based Authentication of Named
                                 *   Entities (DANE) Transport Layer Security
@@ -323,6 +324,14 @@ typedef enum {
   ARES_RR_NSEC3_NEXT_HASHED_OWNER = (ARES_REC_TYPE_NSEC3 * 100) + 5,
   /*! NSEC3 Record. Type Bit Maps. Datatype: BIN */
   ARES_RR_NSEC3_TYPE_BIT_MAPS = (ARES_REC_TYPE_NSEC3 * 100) + 6,
+  /*! NSEC3PARAM Record. Hash Algorithm. Datatype: U8 */
+  ARES_RR_NSEC3PARAM_HASH_ALGORITHM = (ARES_REC_TYPE_NSEC3PARAM * 100) + 1,
+  /*! NSEC3PARAM Record. Flags. Datatype: U8 */
+  ARES_RR_NSEC3PARAM_FLAGS = (ARES_REC_TYPE_NSEC3PARAM * 100) + 2,
+  /*! NSEC3PARAM Record. Iterations. Datatype: U16 */
+  ARES_RR_NSEC3PARAM_ITERATIONS = (ARES_REC_TYPE_NSEC3PARAM * 100) + 3,
+  /*! NSEC3PARAM Record. Salt. Datatype: BIN */
+  ARES_RR_NSEC3PARAM_SALT = (ARES_REC_TYPE_NSEC3PARAM * 100) + 4,
   /*! TLSA Record. Certificate Usage. Datatype: U8 */
   ARES_RR_TLSA_CERT_USAGE = (ARES_REC_TYPE_TLSA * 100) + 1,
   /*! TLSA Record. Selector. Datatype: U8 */

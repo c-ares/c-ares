@@ -842,6 +842,61 @@ static ares_status_t ares_dns_parse_rr_nsec3(ares_buf_t    *buf,
 
   return ARES_SUCCESS;
 }
+
+static ares_status_t ares_dns_parse_rr_nsec3param(ares_buf_t    *buf,
+                                                  ares_dns_rr_t *rr,
+                                                  size_t         rdlength)
+{
+  ares_status_t  status;
+  unsigned char  salt_length;
+  unsigned char *data;
+
+  (void)rdlength;
+
+  status =
+    ares_dns_parse_and_set_u8(buf, rr, ARES_RR_NSEC3PARAM_HASH_ALGORITHM);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_parse_and_set_u8(buf, rr, ARES_RR_NSEC3PARAM_FLAGS);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status =
+    ares_dns_parse_and_set_be16(buf, rr, ARES_RR_NSEC3PARAM_ITERATIONS);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Salt Length + Salt */
+  status = ares_buf_fetch_bytes(buf, &salt_length, 1);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  if (salt_length > 0) {
+    status = ares_buf_fetch_bytes_dup(buf, salt_length, ARES_FALSE, &data);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+    status = ares_dns_rr_set_bin_own(rr, ARES_RR_NSEC3PARAM_SALT, data,
+                                     salt_length);
+    if (status != ARES_SUCCESS) {
+      ares_free(data);
+      return status;
+    }
+  } else {
+    status = ares_dns_rr_set_bin_own(rr, ARES_RR_NSEC3PARAM_SALT, NULL, 0);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
+  return ARES_SUCCESS;
+}
+
 static ares_status_t ares_dns_parse_rr_tlsa(ares_buf_t *buf, ares_dns_rr_t *rr,
                                             size_t rdlength)
 {
@@ -1301,6 +1356,8 @@ static ares_status_t
       return ares_dns_parse_rr_dnskey(buf, rr, rdlength);
     case ARES_REC_TYPE_NSEC3:
       return ares_dns_parse_rr_nsec3(buf, rr, rdlength);
+    case ARES_REC_TYPE_NSEC3PARAM:
+      return ares_dns_parse_rr_nsec3param(buf, rr, rdlength);
     case ARES_REC_TYPE_TLSA:
       return ares_dns_parse_rr_tlsa(buf, rr, rdlength);
     case ARES_REC_TYPE_SVCB:

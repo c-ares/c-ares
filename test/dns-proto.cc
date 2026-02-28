@@ -183,6 +183,7 @@ std::string RRTypeToString(int rrtype) {
   case T_NSEC: return "NSEC";
   case T_DNSKEY: return "DNSKEY";
   case T_NSEC3: return "NSEC3";
+  case T_NSEC3PARAM: return "NSEC3PARAM";
   case T_TKEY: return "TKEY";
   case T_TSIG: return "TSIG";
   case T_IXFR: return "IXFR";

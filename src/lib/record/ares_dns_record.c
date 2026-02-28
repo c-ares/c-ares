@@ -218,6 +218,11 @@ static void ares_dns_rr_free(ares_dns_rr_t *rr)
       ares_free(rr->r.nsec3.next_hashed_owner_name);
       ares_free(rr->r.nsec3.type_bit_maps);
       break;
+
+    case ARES_REC_TYPE_NSEC3PARAM:
+      ares_free(rr->r.nsec3param.salt);
+      break;
+
     case ARES_REC_TYPE_TLSA:
       ares_free(rr->r.tlsa.data);
       break;
@@ -817,6 +822,22 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
       }
       *lenptr = &dns_rr->r.nsec3.type_bit_maps_len;
       return &dns_rr->r.nsec3.type_bit_maps;
+
+    case ARES_RR_NSEC3PARAM_HASH_ALGORITHM:
+      return &dns_rr->r.nsec3param.hash_algorithm;
+
+    case ARES_RR_NSEC3PARAM_FLAGS:
+      return &dns_rr->r.nsec3param.flags;
+
+    case ARES_RR_NSEC3PARAM_ITERATIONS:
+      return &dns_rr->r.nsec3param.iterations;
+
+    case ARES_RR_NSEC3PARAM_SALT:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.nsec3param.salt_len;
+      return &dns_rr->r.nsec3param.salt;
 
     case ARES_RR_TLSA_CERT_USAGE:
       return &dns_rr->r.tlsa.cert_usage;
