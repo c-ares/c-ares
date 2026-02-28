@@ -855,6 +855,76 @@ static ares_status_t ares_dns_write_rr_dnskey(ares_buf_t          *buf,
 
   return ares_buf_append(buf, data, len);
 }
+
+static ares_status_t ares_dns_write_rr_nsec3(ares_buf_t          *buf,
+                                             const ares_dns_rr_t *rr,
+                                             ares_llist_t       **namelist)
+{
+  ares_status_t        status;
+  const unsigned char *data;
+  size_t               len = 0;
+  unsigned char        u8val;
+
+  (void)namelist;
+
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_NSEC3_HASH_ALGORITHM);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_u8(buf, rr, ARES_RR_NSEC3_FLAGS);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  status = ares_dns_write_rr_be16(buf, rr, ARES_RR_NSEC3_ITERATIONS);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Salt Length + Salt */
+  data = ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_SALT, &len);
+  if (len > 255) {
+    return ARES_EFORMERR;
+  }
+  u8val = (unsigned char)len;
+  status = ares_buf_append_byte(buf, u8val);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+  if (len > 0) {
+    status = ares_buf_append(buf, data, len);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
+  /* Hash Length + Next Hashed Owner Name */
+  data = ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_NEXT_HASHED_OWNER, &len);
+  if (data == NULL || len == 0 || len > 255) {
+    return ARES_EFORMERR;
+  }
+  u8val = (unsigned char)len;
+  status = ares_buf_append_byte(buf, u8val);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+  status = ares_buf_append(buf, data, len);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* Type Bit Maps */
+  data = ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_TYPE_BIT_MAPS, &len);
+  if (data != NULL && len > 0) {
+    status = ares_buf_append(buf, data, len);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+  }
+
+  return ARES_SUCCESS;
+}
 static ares_status_t ares_dns_write_rr_tlsa(ares_buf_t          *buf,
                                             const ares_dns_rr_t *rr,
                                             ares_llist_t       **namelist)
@@ -1234,6 +1304,9 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
         break;
       case ARES_REC_TYPE_DNSKEY:
         status = ares_dns_write_rr_dnskey(buf, rr, namelistptr);
+        break;
+      case ARES_REC_TYPE_NSEC3:
+        status = ares_dns_write_rr_nsec3(buf, rr, namelistptr);
         break;
       case ARES_REC_TYPE_TLSA:
         status = ares_dns_write_rr_tlsa(buf, rr, namelistptr);

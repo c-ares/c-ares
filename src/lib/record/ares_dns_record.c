@@ -212,6 +212,12 @@ static void ares_dns_rr_free(ares_dns_rr_t *rr)
     case ARES_REC_TYPE_DNSKEY:
       ares_free(rr->r.dnskey.public_key);
       break;
+
+    case ARES_REC_TYPE_NSEC3:
+      ares_free(rr->r.nsec3.salt);
+      ares_free(rr->r.nsec3.next_hashed_owner_name);
+      ares_free(rr->r.nsec3.type_bit_maps);
+      break;
     case ARES_REC_TYPE_TLSA:
       ares_free(rr->r.tlsa.data);
       break;
@@ -781,6 +787,36 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
       }
       *lenptr = &dns_rr->r.dnskey.public_key_len;
       return &dns_rr->r.dnskey.public_key;
+
+    case ARES_RR_NSEC3_HASH_ALGORITHM:
+      return &dns_rr->r.nsec3.hash_algorithm;
+
+    case ARES_RR_NSEC3_FLAGS:
+      return &dns_rr->r.nsec3.flags;
+
+    case ARES_RR_NSEC3_ITERATIONS:
+      return &dns_rr->r.nsec3.iterations;
+
+    case ARES_RR_NSEC3_SALT:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.nsec3.salt_len;
+      return &dns_rr->r.nsec3.salt;
+
+    case ARES_RR_NSEC3_NEXT_HASHED_OWNER:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.nsec3.next_hashed_owner_name_len;
+      return &dns_rr->r.nsec3.next_hashed_owner_name;
+
+    case ARES_RR_NSEC3_TYPE_BIT_MAPS:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.nsec3.type_bit_maps_len;
+      return &dns_rr->r.nsec3.type_bit_maps;
 
     case ARES_RR_TLSA_CERT_USAGE:
       return &dns_rr->r.tlsa.cert_usage;

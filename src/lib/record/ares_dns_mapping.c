@@ -101,6 +101,7 @@ ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_RRSIG:
     case ARES_REC_TYPE_NSEC:
     case ARES_REC_TYPE_DNSKEY:
+    case ARES_REC_TYPE_NSEC3:
     case ARES_REC_TYPE_TLSA:
     case ARES_REC_TYPE_SVCB:
     case ARES_REC_TYPE_HTTPS:
@@ -230,6 +231,8 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
       return "NSEC";
     case ARES_REC_TYPE_DNSKEY:
       return "DNSKEY";
+    case ARES_REC_TYPE_NSEC3:
+      return "NSEC3";
     case ARES_REC_TYPE_TLSA:
       return "TLSA";
     case ARES_REC_TYPE_SVCB:
@@ -471,6 +474,24 @@ const char *ares_dns_rr_key_tostr(ares_dns_rr_key_t key)
     case ARES_RR_DNSKEY_PUBLIC_KEY:
       return "PUBLIC_KEY";
 
+    case ARES_RR_NSEC3_HASH_ALGORITHM:
+      return "HASH_ALGORITHM";
+
+    case ARES_RR_NSEC3_FLAGS:
+      return "FLAGS";
+
+    case ARES_RR_NSEC3_ITERATIONS:
+      return "ITERATIONS";
+
+    case ARES_RR_NSEC3_SALT:
+      return "SALT";
+
+    case ARES_RR_NSEC3_NEXT_HASHED_OWNER:
+      return "NEXT_HASHED_OWNER";
+
+    case ARES_RR_NSEC3_TYPE_BIT_MAPS:
+      return "TYPE_BIT_MAPS";
+
     case ARES_RR_TLSA_CERT_USAGE:
       return "CERT_USAGE";
 
@@ -582,6 +603,7 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_RRSIG_KEY_TAG:
     case ARES_RR_DS_KEY_TAG:
     case ARES_RR_DNSKEY_FLAGS:
+    case ARES_RR_NSEC3_ITERATIONS:
     case ARES_RR_SRV_PRIORITY:
     case ARES_RR_SRV_WEIGHT:
     case ARES_RR_SRV_PORT:
@@ -606,6 +628,8 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_SSHFP_FP_TYPE:
     case ARES_RR_DNSKEY_PROTOCOL:
     case ARES_RR_DNSKEY_ALGORITHM:
+    case ARES_RR_NSEC3_HASH_ALGORITHM:
+    case ARES_RR_NSEC3_FLAGS:
     case ARES_RR_OPT_VERSION:
     case ARES_RR_TLSA_CERT_USAGE:
     case ARES_RR_TLSA_SELECTOR:
@@ -625,6 +649,9 @@ ares_dns_datatype_t ares_dns_rr_key_datatype(ares_dns_rr_key_t key)
     case ARES_RR_SSHFP_FINGERPRINT:
     case ARES_RR_NSEC_TYPE_BIT_MAPS:
     case ARES_RR_DNSKEY_PUBLIC_KEY:
+    case ARES_RR_NSEC3_SALT:
+    case ARES_RR_NSEC3_NEXT_HASHED_OWNER:
+    case ARES_RR_NSEC3_TYPE_BIT_MAPS:
     case ARES_RR_TLSA_DATA:
     case ARES_RR_RAW_RR_DATA:
       return ARES_DATATYPE_BIN;
@@ -691,6 +718,12 @@ static const ares_dns_rr_key_t rr_dnskey_keys[] = { ARES_RR_DNSKEY_FLAGS,
                                                     ARES_RR_DNSKEY_PROTOCOL,
                                                     ARES_RR_DNSKEY_ALGORITHM,
                                                     ARES_RR_DNSKEY_PUBLIC_KEY };
+static const ares_dns_rr_key_t rr_nsec3_keys[]  = { ARES_RR_NSEC3_HASH_ALGORITHM,
+                                                    ARES_RR_NSEC3_FLAGS,
+                                                    ARES_RR_NSEC3_ITERATIONS,
+                                                    ARES_RR_NSEC3_SALT,
+                                                    ARES_RR_NSEC3_NEXT_HASHED_OWNER,
+                                                    ARES_RR_NSEC3_TYPE_BIT_MAPS };
 static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
                                                     ARES_RR_TLSA_SELECTOR,
                                                     ARES_RR_TLSA_MATCH,
@@ -774,6 +807,9 @@ const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
     case ARES_REC_TYPE_DNSKEY:
       *cnt = sizeof(rr_dnskey_keys) / sizeof(*rr_dnskey_keys);
       return rr_dnskey_keys;
+    case ARES_REC_TYPE_NSEC3:
+      *cnt = sizeof(rr_nsec3_keys) / sizeof(*rr_nsec3_keys);
+      return rr_nsec3_keys;
     case ARES_REC_TYPE_TLSA:
       *cnt = sizeof(rr_tlsa_keys) / sizeof(*rr_tlsa_keys);
       return rr_tlsa_keys;
@@ -856,6 +892,7 @@ ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
     { "RRSIG",  ARES_REC_TYPE_RRSIG  },
     { "NSEC",   ARES_REC_TYPE_NSEC   },
     { "DNSKEY", ARES_REC_TYPE_DNSKEY },
+    { "NSEC3",  ARES_REC_TYPE_NSEC3  },
     { "TLSA",   ARES_REC_TYPE_TLSA   },
     { "SVCB",   ARES_REC_TYPE_SVCB   },
     { "HTTPS",  ARES_REC_TYPE_HTTPS  },

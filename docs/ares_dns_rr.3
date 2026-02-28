@@ -350,6 +350,24 @@ Keys used for handling RR record parameters:
 .B ARES_RR_DNSKEY_PUBLIC_KEY
 - DNSKEY Record. Public Key. Datatype: \fIARES_DATATYPE_BIN\fP
 .br
+.B ARES_RR_NSEC3_HASH_ALGORITHM
+- NSEC3 Record. Hash Algorithm. See \fIares_nsec3_hash_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_NSEC3_FLAGS
+- NSEC3 Record. Flags. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_NSEC3_ITERATIONS
+- NSEC3 Record. Iterations. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_NSEC3_SALT
+- NSEC3 Record. Salt. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_NSEC3_NEXT_HASHED_OWNER
+- NSEC3 Record. Next Hashed Owner Name. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_NSEC3_TYPE_BIT_MAPS
+- NSEC3 Record. Type Bit Maps. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
 .B ARES_RR_TLSA_CERT_USAGE
 - TLSA Record. Certificate Usage. See \fIares_tlsa_usage_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
 .br
@@ -548,6 +566,15 @@ DS Record Digest Type known values (RFC 4034, RFC 4509, RFC 6605):
 - SHA-384
 .br
 .RE
+
+.B ares_nsec3_hash_t -
+NSEC3 Hash Algorithm known values (RFC 5155):
+.RS 4
+.B ARES_NSEC3_HASH_SHA1
+- SHA-1
+.br
+.RE
+
 
 .SH DESCRIPTION
 
