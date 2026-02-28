@@ -918,6 +918,30 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_bin(rr, ARES_RR_DNSKEY_PUBLIC_KEY, dnskey_pk,
       sizeof(dnskey_pk)));
+  /* NSEC3 */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "abc123.example.com", ARES_REC_TYPE_NSEC3, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_NSEC3_HASH_ALGORITHM,
+      ARES_NSEC3_HASH_SHA1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_NSEC3_FLAGS, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_NSEC3_ITERATIONS, 10));
+  const unsigned char nsec3_salt[] = { 0xaa, 0xbb, 0xcc, 0xdd };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC3_SALT, nsec3_salt,
+      sizeof(nsec3_salt)));
+  const unsigned char nsec3_next[] = {
+    0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5, 0x4d, 0xf0, 0x34, 0xb9,
+    0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC3_NEXT_HASHED_OWNER, nsec3_next,
+      sizeof(nsec3_next)));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC3_TYPE_BIT_MAPS, nsec_bitmap,
+      sizeof(nsec_bitmap)));
   /* SVCB */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
@@ -1108,6 +1132,37 @@ TEST_F(LibraryTest, DNSRecord) {
     const unsigned char *bin =
       ares_dns_rr_get_bin(rr, ARES_RR_DNSKEY_PUBLIC_KEY, &len);
     EXPECT_EQ(32, len);
+    EXPECT_NE(nullptr, bin);
+  }
+
+  /* NSEC3 - index 10 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 10);
+  EXPECT_EQ(ARES_REC_TYPE_NSEC3, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(ARES_NSEC3_HASH_SHA1,
+    ares_dns_rr_get_u8(rr, ARES_RR_NSEC3_HASH_ALGORITHM));
+  EXPECT_EQ(0, ares_dns_rr_get_u8(rr, ARES_RR_NSEC3_FLAGS));
+  EXPECT_EQ(10, ares_dns_rr_get_u16(rr, ARES_RR_NSEC3_ITERATIONS));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_SALT, &len);
+    EXPECT_EQ(4, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0xaa, bin[0]);
+  }
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_NEXT_HASHED_OWNER, &len);
+    EXPECT_EQ(20, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0x0d, bin[0]);
+  }
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_TYPE_BIT_MAPS, &len);
+    EXPECT_EQ(8, len);
     EXPECT_NE(nullptr, bin);
   }
   /* Iterate and print */
