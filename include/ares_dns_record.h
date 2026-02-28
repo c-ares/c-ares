@@ -58,6 +58,7 @@ typedef enum {
   ARES_REC_TYPE_OPT   = 41,    /*!< RFC 6891. EDNS0 option (meta-RR) */
   ARES_REC_TYPE_DS    = 43,    /*!< RFC 4034. Delegation Signer */
   ARES_REC_TYPE_SSHFP = 44,   /*!< RFC 4255. SSH Key Fingerprint */
+  ARES_REC_TYPE_RRSIG = 46,    /*!< RFC 4034. Resource Record Signature */
 
   ARES_REC_TYPE_TLSA = 52,     /*!< RFC 6698. DNS-Based Authentication of Named
                                 *   Entities (DANE) Transport Layer Security
@@ -277,6 +278,24 @@ typedef enum {
   ARES_RR_SSHFP_FP_TYPE = (ARES_REC_TYPE_SSHFP * 100) + 2,
   /*! SSHFP Record. Fingerprint. Datatype: BIN */
   ARES_RR_SSHFP_FINGERPRINT = (ARES_REC_TYPE_SSHFP * 100) + 3,
+  /*! RRSIG Record. Type Covered. Datatype: U16 */
+  ARES_RR_RRSIG_TYPE_COVERED = (ARES_REC_TYPE_RRSIG * 100) + 1,
+  /*! RRSIG Record. Algorithm. Datatype: U8 */
+  ARES_RR_RRSIG_ALGORITHM = (ARES_REC_TYPE_RRSIG * 100) + 2,
+  /*! RRSIG Record. Labels. Datatype: U8 */
+  ARES_RR_RRSIG_LABELS = (ARES_REC_TYPE_RRSIG * 100) + 3,
+  /*! RRSIG Record. Original TTL. Datatype: U32 */
+  ARES_RR_RRSIG_ORIGINAL_TTL = (ARES_REC_TYPE_RRSIG * 100) + 4,
+  /*! RRSIG Record. Signature Expiration. Datatype: U32 */
+  ARES_RR_RRSIG_EXPIRATION = (ARES_REC_TYPE_RRSIG * 100) + 5,
+  /*! RRSIG Record. Signature Inception. Datatype: U32 */
+  ARES_RR_RRSIG_INCEPTION = (ARES_REC_TYPE_RRSIG * 100) + 6,
+  /*! RRSIG Record. Key Tag. Datatype: U16 */
+  ARES_RR_RRSIG_KEY_TAG = (ARES_REC_TYPE_RRSIG * 100) + 7,
+  /*! RRSIG Record. Signers Name. Datatype: NAME */
+  ARES_RR_RRSIG_SIGNERS_NAME = (ARES_REC_TYPE_RRSIG * 100) + 8,
+  /*! RRSIG Record. Signature. Datatype: BIN */
+  ARES_RR_RRSIG_SIGNATURE = (ARES_REC_TYPE_RRSIG * 100) + 9,
   /*! TLSA Record. Certificate Usage. Datatype: U8 */
   ARES_RR_TLSA_CERT_USAGE = (ARES_REC_TYPE_TLSA * 100) + 1,
   /*! TLSA Record. Selector. Datatype: U8 */

@@ -150,6 +150,8 @@ typedef struct {
   size_t         signature_len;
 } ares_dns_sig_t;
 
+/* RRSIG has the same wire format as SIG */
+typedef ares_dns_sig_t ares_dns_rrsig_t;
 
 typedef struct {
   unsigned short key_tag;
@@ -252,6 +254,7 @@ struct ares_dns_rr {
     ares_dns_mx_t     mx;
     ares_dns_txt_t    txt;
     ares_dns_sig_t    sig;
+    ares_dns_rrsig_t  rrsig;
     ares_dns_ds_t     ds;
     ares_dns_sshfp_t  sshfp;
     ares_dns_aaaa_t   aaaa;
