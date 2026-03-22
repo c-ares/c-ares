@@ -77,7 +77,7 @@ typedef enum {
   ARES_CLASS_IN     = 1,   /*!< Internet */
   ARES_CLASS_CHAOS  = 3,   /*!< CHAOS */
   ARES_CLASS_HESIOD = 4,   /*!< Hesiod [Dyer 87] */
-  ARES_CLASS_HESOID = 4,   /*!< typo from older c-ares veresion for Hesiod */
+  ARES_CLASS_HESOID = 4,   /*!< typo from older c-ares version for Hesiod */
   ARES_CLASS_NONE   = 254, /*!< RFC 2136 */
   ARES_CLASS_ANY    = 255  /*!< Any class (requests only) */
 } ares_dns_class_t;
