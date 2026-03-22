@@ -152,6 +152,9 @@ static ares_status_t ares_buf_ensure_space(ares_buf_t *buf, size_t needed_size)
   /* When calling ares_buf_finish_str() we end up adding a null terminator,
    * so we want to ensure the size is always sufficient for this as we don't
    * want an ARES_ENOMEM at that point */
+  if (needed_size == SIZE_MAX) {
+    return ARES_ENOMEM;
+  }
   needed_size++;
 
   /* No need to do an expensive move operation, we have enough to just append */
@@ -177,6 +180,9 @@ static ares_status_t ares_buf_ensure_space(ares_buf_t *buf, size_t needed_size)
 
   /* Increase allocation by powers of 2 */
   do {
+    if (alloc_size > SIZE_MAX >> 1) {
+      return ARES_ENOMEM;
+    }
     alloc_size     <<= 1;
     remaining_size   = alloc_size - buf->data_len;
   } while (remaining_size < needed_size);
