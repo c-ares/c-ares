@@ -417,12 +417,14 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
     sysconfig->ndots = valint;
   } else if (ares_streq(key, "retrans") || ares_streq(key, "timeout")) {
     if (valint == 0) {
-      return ARES_EFORMERR;
+      status = ARES_EFORMERR;
+      goto done;
     }
     sysconfig->timeout_ms = valint * 1000;
   } else if (ares_streq(key, "retry") || ares_streq(key, "attempts")) {
     if (valint == 0) {
-      return ARES_EFORMERR;
+      status = ARES_EFORMERR;
+      goto done;
     }
     sysconfig->tries = valint;
   } else if (ares_streq(key, "rotate")) {
