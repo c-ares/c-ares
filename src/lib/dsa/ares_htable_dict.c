@@ -132,6 +132,7 @@ ares_bool_t ares_htable_dict_insert(ares_htable_dict_t *htable, const char *key,
 
 fail:
   if (bucket) {
+    ares_free(bucket->key);
     ares_free(bucket->val);
     ares_free(bucket);
   }
