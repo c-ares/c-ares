@@ -42,7 +42,7 @@ static unsigned int ares_round_up_pow2_u32(unsigned int n)
   return n;
 }
 
-static ares_int64_t ares_round_up_pow2_u64(ares_int64_t n)
+static ares_uint64_t ares_round_up_pow2_u64(ares_uint64_t n)
 {
   /* NOTE: if already a power of 2, will return itself, not the next */
   n--;
@@ -73,7 +73,7 @@ ares_bool_t ares_is_64bit(void)
 size_t ares_round_up_pow2(size_t n)
 {
   if (ares_is_64bit()) {
-    return (size_t)ares_round_up_pow2_u64((ares_int64_t)n);
+    return (size_t)ares_round_up_pow2_u64((ares_uint64_t)n);
   }
 
   return (size_t)ares_round_up_pow2_u32((unsigned int)n);
