@@ -967,7 +967,8 @@ ares_status_t ares_in_addr_to_sconfig_llist(const struct in_addr *servers,
            sizeof(sconfig->addr.addr.addr4));
 
     if (ares_llist_insert_last(s, sconfig) == NULL) {
-      goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
+      ares_free(sconfig); /* LCOV_EXCL_LINE: OutOfMemory */
+      goto fail;          /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
 
