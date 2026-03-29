@@ -224,6 +224,7 @@ char **ares_htable_dict_keys(const ares_htable_dict_t *htable, size_t *num)
 
 fail:
   *num = 0;
+  ares_free(buckets);
   ares_free_array(out, cnt, ares_free);
   return NULL;
 }
