@@ -104,6 +104,9 @@ static void ares_llist_attach_at(ares_llist_t            *list,
       node->next = at;
       node->prev = at->prev;
       at->prev   = node;
+      if (node->prev) {
+        node->prev->next = node;
+      }
       break;
   }
   if (list->tail == NULL) {

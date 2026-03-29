@@ -295,7 +295,7 @@ ares_status_t ares_array_insertdata_first(ares_array_t *arr,
   ares_status_t status;
   void         *ptr = NULL;
 
-  status = ares_array_insert_last(&ptr, arr);
+  status = ares_array_insert_first(&ptr, arr);
   if (status != ARES_SUCCESS) {
     return status;
   }
