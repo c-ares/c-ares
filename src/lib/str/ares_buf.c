@@ -1137,7 +1137,7 @@ ares_status_t ares_buf_replace(ares_buf_t *buf, const unsigned char *srch,
     /* Store the offset this was found because our actual pointer might be
      * switched out from under us by the call to ensure_space() if the
      * replacement pattern is larger than the search pattern */
-    found_offset   = (size_t)(ptr - (size_t)(buf->alloc_buf + buf->offset));
+    found_offset   = (size_t)(ptr - buf->alloc_buf - buf->offset);
     if (rplc_size > srch_size) {
       status = ares_buf_ensure_space(buf, rplc_size - srch_size);
       if (status != ARES_SUCCESS) {
