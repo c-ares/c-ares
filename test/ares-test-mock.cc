@@ -770,6 +770,62 @@ class MockEDNSChannelTest : public MockFlagsChannelOptsTest {
   MockEDNSChannelTest() : MockFlagsChannelOptsTest(ARES_FLAG_EDNS) {}
 };
 
+class MockRetryDepthChannelTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
+ public:
+  MockRetryDepthChannelTest()
+    : MockChannelOptsTest(1, GetParam(), false, false, FillOptions(&opts_),
+                          ARES_OPT_TRIES) {}
+
+  static struct ares_options *FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    /* Large retry depth used to exercise retry processing without stack growth. */
+    opts->tries = 20000;
+    return opts;
+  }
+
+ private:
+  struct ares_options opts_;
+};
+
+static size_t always_fail_socket_calls = 0;
+
+static ares_socket_t always_fail_socket(int af, int type, int protocol,
+                                        void *user_data)
+{
+  (void)af;
+  (void)type;
+  (void)protocol;
+  (void)user_data;
+  always_fail_socket_calls++;
+  return ARES_SOCKET_BAD;
+}
+
+TEST_P(MockRetryDepthChannelTest, HighRetryNoStackOverflow) {
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+  sock_funcs.asocket = always_fail_socket;
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+
+  always_fail_socket_calls = 0;
+
+  QueryResult result;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QueryCallback, &result, NULL);
+  Process();
+
+  if (!result.done_) {
+    /* Prevent callback use-after-scope if a query is still pending on failure. */
+    ares_cancel(channel_);
+    Process();
+  }
+
+  EXPECT_GT(always_fail_socket_calls, (size_t)1);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
+}
+
 TEST_P(MockEDNSChannelTest, RetryWithoutEDNS) {
   DNSPacket rspfail;
   rspfail.set_response().set_aa().set_rcode(FORMERR)
@@ -2650,6 +2706,8 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockExtraOptsTest, ::testing::ValuesIn
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockNoCheckRespChannelTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEDNSChannelTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockRetryDepthChannelTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
