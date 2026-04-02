@@ -173,12 +173,23 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
 {
   void *temp;
 
+  size_t rounded_size;
+
   if (arr == NULL || size == 0 || size < arr->cnt) {
     return ARES_EFORMERR;
   }
 
-  /* Always operate on powers of 2 */
-  size = ares_round_up_pow2(size);
+  /* Always operate on powers of 2.
+   *
+   * This change enforces a strict upper bound invariant: all buffer capacity
+   * calculations must be validated before arithmetic, ensuring no intermediate
+   * wraparound can influence allocation decisions.
+   */
+  rounded_size = ares_round_up_pow2(size);
+  if (size > 0 && rounded_size == 0) {
+    return ARES_ENOMEM;
+  }
+  size = rounded_size;
 
   if (size < ARES__ARRAY_MIN) {
     size = ARES__ARRAY_MIN;
@@ -187,6 +198,17 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
   /* If our allocation size is already large enough, skip */
   if (size <= arr->alloc_cnt) {
     return ARES_SUCCESS;
+  }
+
+  /* Defensive invariant: prevent division by zero and ensure multiplication
+   * safety for the upcoming realloc.
+   */
+  if (arr->member_size == 0) {
+    return ARES_ENOMEM;
+  }
+
+  if (size > SIZE_MAX / arr->member_size) {
+    return ARES_ENOMEM;
   }
 
   temp = ares_realloc_zero(arr->arr, arr->alloc_cnt * arr->member_size,
