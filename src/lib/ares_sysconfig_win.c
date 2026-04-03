@@ -118,6 +118,10 @@ static ares_bool_t get_REG_SZ(HKEY hKey, const WCHAR *leafKeyName, char **outptr
     return ARES_FALSE;
   }
   *outptr = ares_malloc_zero((size_t)len + 1);
+  if (*outptr == NULL) {
+    ares_free(val);
+    return ARES_FALSE;
+  }
   if (WideCharToMultiByte(CP_UTF8, 0, val, -1, *outptr, len, NULL, NULL)
     == 0) {
     ares_free(*outptr);
