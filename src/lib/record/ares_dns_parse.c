@@ -768,19 +768,18 @@ static ares_status_t ares_dns_parse_rr_raw_rr(ares_buf_t    *buf,
   ares_status_t  status;
   unsigned char *bytes = NULL;
 
+  /* Can't fail */
+  status = ares_dns_rr_set_u16(rr, ARES_RR_RAW_RR_TYPE, raw_type);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
   if (rdlength == 0) {
     return ARES_SUCCESS;
   }
 
   status = ares_buf_fetch_bytes_dup(buf, rdlength, ARES_FALSE, &bytes);
   if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  /* Can't fail */
-  status = ares_dns_rr_set_u16(rr, ARES_RR_RAW_RR_TYPE, raw_type);
-  if (status != ARES_SUCCESS) {
-    ares_free(bytes);
     return status;
   }
 

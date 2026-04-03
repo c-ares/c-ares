@@ -1574,6 +1574,47 @@ typedef struct {
   ares_socket_t s;
 } test_htable_asvp_t;
 
+TEST_F(LibraryTest, ZeroLengthRawRrKeepsType) {
+  ares_dns_record_t *parsed = NULL;
+  ares_dns_rr_t     *rr     = NULL;
+
+  /* Hand-crafted minimal DNS response with a zero-length RAW_RR.
+   * Header: id=0x1234, QR=1 RD=1 RA=1, QDCOUNT=1, ANCOUNT=1
+   * Question: \x07example\x03com\x00, type A (1), class IN (1)
+   * Answer:   \xc0\x0c (name ptr), type=0xFF98 (65432), class IN,
+   *           TTL=300, RDLENGTH=0 */
+  const unsigned char pkt[] = {
+    /* Header */
+    0x12, 0x34,  /* ID */
+    0x81, 0x80,  /* Flags: QR=1, RD=1, RA=1 */
+    0x00, 0x01,  /* QDCOUNT=1 */
+    0x00, 0x01,  /* ANCOUNT=1 */
+    0x00, 0x00,  /* NSCOUNT=0 */
+    0x00, 0x00,  /* ARCOUNT=0 */
+    /* Question: example.com, type A, class IN */
+    0x07, 'e','x','a','m','p','l','e',
+    0x03, 'c','o','m',
+    0x00,
+    0x00, 0x01,  /* QTYPE=A */
+    0x00, 0x01,  /* QCLASS=IN */
+    /* Answer RR: example.com (compressed), type 65432, class IN, TTL 300 */
+    0xc0, 0x0c,  /* Name pointer */
+    0xff, 0x98,  /* TYPE=65432 */
+    0x00, 0x01,  /* CLASS=IN */
+    0x00, 0x00, 0x01, 0x2c,  /* TTL=300 */
+    0x00, 0x00   /* RDLENGTH=0 */
+  };
+
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_parse(pkt, sizeof(pkt), 0, &parsed));
+  EXPECT_EQ(1, ares_dns_record_rr_cnt(parsed, ARES_SECTION_ANSWER));
+  rr = ares_dns_record_rr_get(parsed, ARES_SECTION_ANSWER, 0);
+  EXPECT_EQ(ARES_REC_TYPE_RAW_RR, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(65432, ares_dns_rr_get_u16(rr, ARES_RR_RAW_RR_TYPE));
+
+  ares_dns_record_destroy(parsed);
+}
+
 TEST_F(LibraryTest, HtableAsvp) {
   ares_llist_t       *l = NULL;
   ares_htable_asvp_t *h = NULL;
