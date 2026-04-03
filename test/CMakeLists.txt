@@ -38,6 +38,20 @@ ELSE ()
   target_link_libraries(caresinternal INTERFACE ${PROJECT_NAME}::cares)
 ENDIF ()
 
+if (TARGET ${PROJECT_NAME}_static_asan)
+  add_library(caresinternal_asan INTERFACE)
+  target_compile_definitions(caresinternal_asan INTERFACE HAVE_CONFIG_H=1)
+  target_include_directories(caresinternal_asan
+     INTERFACE "${PROJECT_BINARY_DIR}"
+               "${PROJECT_BINARY_DIR}/src/lib"
+               "${PROJECT_SOURCE_DIR}"
+               "${PROJECT_SOURCE_DIR}/src/lib"
+               "${PROJECT_SOURCE_DIR}/src/lib/include"
+               "${PROJECT_SOURCE_DIR}/include"
+  )
+  target_link_libraries(caresinternal_asan INTERFACE ${PROJECT_NAME}_static_asan)
+endif ()
+
 transform_makefile_inc("Makefile.inc" "${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake")
 include(${CMAKE_CURRENT_BINARY_DIR}/Makefile.inc.cmake)
 
@@ -91,8 +105,17 @@ target_link_libraries(ares_queryloop PRIVATE caresinternal)
 # targets trying to use the same PDB.  /FS does NOT resolve this issue.
 set_target_properties(ares_queryloop PROPERTIES COMPILE_PDB_NAME ares_queryloop.pdb)
 
-
-
+add_executable(ares_requeue_regress ${REGRESSSOURCES})
+if (TARGET caresinternal_asan)
+  target_link_libraries(ares_requeue_regress PRIVATE caresinternal_asan)
+else ()
+  target_link_libraries(ares_requeue_regress PRIVATE caresinternal)
+endif ()
+if ((CMAKE_C_COMPILER_ID MATCHES "GNU|Clang") AND NOT WIN32)
+  target_compile_options(ares_requeue_regress PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+  target_link_options(ares_requeue_regress PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+endif ()
+set_target_properties(ares_requeue_regress PROPERTIES COMPILE_PDB_NAME ares_requeue_regress.pdb)
 
 # register tests
 
@@ -111,3 +134,5 @@ add_test(
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/fuzznames"
   COMMAND $<TARGET_FILE:aresfuzzname> ${FUZZNAMES_FILES}
 )
+
+add_test(NAME ares_requeue_regress COMMAND $<TARGET_FILE:ares_requeue_regress>)
