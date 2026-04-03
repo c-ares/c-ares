@@ -1268,17 +1268,15 @@ static ares_status_t
   }
 
 done:
-  if (status != ARES_SUCCESS) {
-    ares_buf_destroy(binbuf);
+  if (status == ARES_SUCCESS && bin != NULL) {
+    size_t mylen = 0;
+    /* NOTE: we use ares_buf_finish_str() here as we guarantee NULL
+     *       Termination even though we are technically returning binary data.
+     */
+    *bin     = (unsigned char *)ares_buf_finish_str(binbuf, &mylen);
+    *bin_len = mylen;
   } else {
-    if (bin != NULL) {
-      size_t mylen = 0;
-      /* NOTE: we use ares_buf_finish_str() here as we guarantee NULL
-       *       Termination even though we are technically returning binary data.
-       */
-      *bin     = (unsigned char *)ares_buf_finish_str(binbuf, &mylen);
-      *bin_len = mylen;
-    }
+    ares_buf_destroy(binbuf);
   }
 
   return status;
