@@ -1117,7 +1117,7 @@ ares_status_t ares_buf_replace(ares_buf_t *buf, const unsigned char *srch,
   size_t        processed_len = 0;
   ares_status_t status;
 
-  if (buf->alloc_buf == NULL || srch == NULL || srch_size == 0 ||
+  if (buf == NULL || buf->alloc_buf == NULL || srch == NULL || srch_size == 0 ||
       (rplc == NULL && rplc_size != 0)) {
     return ARES_EFORMERR;
   }
