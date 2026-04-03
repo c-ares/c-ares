@@ -150,6 +150,10 @@ const void **ares_htable_all_buckets(const ares_htable_t *htable, size_t *num)
 
   *num = 0;
 
+  if (htable->num_keys == 0) {
+    return NULL;
+  }
+
   out = ares_malloc_zero(sizeof(*out) * htable->num_keys);
   if (out == NULL) {
     return NULL; /* LCOV_EXCL_LINE */
