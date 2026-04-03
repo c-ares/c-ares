@@ -1574,6 +1574,16 @@ typedef struct {
   ares_socket_t s;
 } test_htable_asvp_t;
 
+TEST_F(LibraryTest, RawRrTypeTostrFromstrRoundtrip) {
+  const char         *str;
+  ares_dns_rec_type_t qtype = (ares_dns_rec_type_t)0;
+
+  str = ares_dns_rec_type_tostr(ARES_REC_TYPE_RAW_RR);
+  EXPECT_NE((const char *)NULL, str);
+  EXPECT_TRUE(ares_dns_rec_type_fromstr(&qtype, str));
+  EXPECT_EQ(ARES_REC_TYPE_RAW_RR, qtype);
+}
+
 TEST_F(LibraryTest, HtableAsvp) {
   ares_llist_t       *l = NULL;
   ares_htable_asvp_t *h = NULL;
