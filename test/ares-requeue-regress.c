@@ -25,7 +25,6 @@
  */
 
 #include <ares.h>
-#include <netinet/in.h>
 
 #include <stddef.h>
 #include <stdint.h>
