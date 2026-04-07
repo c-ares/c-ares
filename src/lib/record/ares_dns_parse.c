@@ -29,6 +29,16 @@
 #  include <stdint.h>
 #endif
 
+/*
+ * INTERNAL ERROR CODE HANDLING
+ *
+ * This module uses ares_ecode_internal_t for detailed error diagnostics but
+ * must return only ares_status_t codes to maintain backward compatibility.
+ *
+ * Use ares_map_internal_error() to convert before returning to public APIs.
+ * See DEVELOPER-NOTES.md for the error code architecture.
+ */
+
 static size_t ares_dns_rr_remaining_len(const ares_buf_t *buf, size_t orig_len,
                                         size_t rdlength)
 {

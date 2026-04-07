@@ -10,6 +10,7 @@ CSOURCES = ares_addrinfo2hostent.c	\
   ares_cookie.c				\
   ares_data.c				\
   ares_destroy.c			\
+  ares_error_codes_internal.c		\
   ares_free_hostent.c			\
   ares_free_string.c			\
   ares_freeaddrinfo.c			\
@@ -96,6 +97,7 @@ CSOURCES = ares_addrinfo2hostent.c	\
 HHEADERS = ares_android.h			\
   ares_conn.h				\
   ares_data.h				\
+  ares_error_codes_internal.h		\
   ares_getenv.h				\
   ares_inet_net_pton.h			\
   ares_ipv6.h				\
