@@ -45,3 +45,72 @@ Developer Notes
 * Try to keep line lengths below 80 columns and formatted as the existing code.
   There is a `.clang-format` in the repository that can be used to run the
   automated code formatter as such: `clang-format -i */*.c */*.h */*/*.c */*/*.h`
+
+## Error Code Architecture
+
+### Overview
+
+c-ares uses a two-layer error code system to maintain backward compatibility
+while providing enhanced error diagnostics internally:
+
+**Public Layer:** The `ares_status_t` enum (0-26) is the public API contract.
+All code returning to users or invoking callbacks must use these codes.
+
+**Internal Layer:** The `ares_ecode_internal_t` enum (1000+) provides granular
+error information for diagnostics and future enhancements.
+
+### Mapping Strategy
+
+To maintain strict backward compatibility:
+
+1. **Internal code** can return granular `ares_ecode_internal_t` codes.
+2. **All public exit points** must convert to `ares_status_t` using the
+   `ares_map_internal_error()` function.
+3. **No new public error codes** can be introduced in existing functions.
+
+### Implementation Pattern
+
+When writing internal code that needs to return multiple error conditions:
+
+```c
+/* Internal use: return granular codes */
+ares_ecode_internal_t internal_parser(void) {
+  if (parse_failed)
+    return ARES_EINTERNAL_INVALID_MSG;
+  if (out_of_memory)
+    return ARES_EINTERNAL_OUT_OF_MEMORY;
+  return ARES_EINTERNAL_SUCCESS;
+}
+
+/* Public API: always convert before returning */
+ares_status_t ares_parse_dns_reply(const unsigned char *abuf, int alen) {
+  ares_ecode_internal_t result = internal_parser();
+  return ares_map_internal_error(result);
+}
+
+/* Callbacks: convert before invoking */
+void invoke_callback(ares_callback_dnsrec callback, void *arg,
+                     ares_ecode_internal_t status) {
+  ares_status_t public_status = ares_map_internal_error(status);
+  callback(arg, public_status, dnsrec);
+}
+```
+
+### Conversion Function
+
+**Location:** `src/lib/ares_error_codes_internal.c`
+**Declaration:** `src/lib/ares_private.h`
+
+The function `ares_map_internal_error()` is the single point of conversion.
+All internal error codes must be mapped through this function before reaching
+user code or callbacks.
+
+### Files to Update
+
+When adding new internal error handling:
+
+1. Define the internal error code in `include/ares_error_codes_internal.h`
+2. Add mapping logic in `ares_error_codes_internal.c`
+3. Use `ares_map_internal_error()` at all public exit points
+4. Test that public APIs return only valid `ares_status_t` codes
+
