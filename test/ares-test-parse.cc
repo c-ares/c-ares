@@ -26,11 +26,104 @@
 #include "ares-test.h"
 #include "dns-proto.h"
 
+#include <cstring>
 #include <sstream>
 #include <vector>
 
 namespace ares {
 namespace test {
+
+TEST_F(LibraryTest, ParseNameExactly255WireOctets) {
+  std::vector<byte> data;
+  ares_dns_record_t *dnsrec = nullptr;
+  const char        *qname  = nullptr;
+
+  PushInt16(&data, 0x1234);
+  PushInt16(&data, 0x8400);
+  PushInt16(&data, 1);
+  PushInt16(&data, 0);
+  PushInt16(&data, 0);
+  PushInt16(&data, 0);
+
+  /* QNAME: 63+63+63+61 labels => 255 octets on wire including root */
+  data.push_back(63);
+  data.insert(data.end(), 63, 'a');
+  data.push_back(63);
+  data.insert(data.end(), 63, 'b');
+  data.push_back(63);
+  data.insert(data.end(), 63, 'c');
+  data.push_back(61);
+  data.insert(data.end(), 61, 'd');
+  data.push_back(0);
+
+  PushInt16(&data, T_A);
+  PushInt16(&data, C_IN);
+
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_parse(data.data(), data.size(), 0, &dnsrec));
+
+  ASSERT_NE(nullptr, dnsrec);
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_get(dnsrec, 0, &qname, nullptr, nullptr));
+  ASSERT_NE(nullptr, qname);
+  EXPECT_EQ(253U, std::strlen(qname));
+
+  if (dnsrec != nullptr) {
+    ares_dns_record_destroy(dnsrec);
+  }
+}
+
+TEST_F(LibraryTest, ParseNameOver255WireOctetsViaCompression) {
+  std::vector<byte> data;
+  ares_dns_record_t *dnsrec = nullptr;
+  const byte         qname_offset = 0x0C;
+
+  PushInt16(&data, 0x1234);
+  PushInt16(&data, 0x8400);
+  PushInt16(&data, 1);
+  PushInt16(&data, 1);
+  PushInt16(&data, 0);
+  PushInt16(&data, 0);
+
+  /* Question name that is exactly 255 octets on wire */
+  data.push_back(63);
+  data.insert(data.end(), 63, 'a');
+  data.push_back(63);
+  data.insert(data.end(), 63, 'b');
+  data.push_back(63);
+  data.insert(data.end(), 63, 'c');
+  data.push_back(61);
+  data.insert(data.end(), 61, 'd');
+  data.push_back(0);
+
+  PushInt16(&data, T_A);
+  PushInt16(&data, C_IN);
+
+  // Answer name: label 'x' + pointer to original question name
+  // Compression pointer points to offset 12 (start of QNAME)
+  data.push_back(0x01);
+  data.push_back('x');
+  data.push_back(0xC0);
+  data.push_back(qname_offset);
+
+  // RR TYPE, CLASS, TTL, RDLENGTH, RDATA
+  PushInt16(&data, T_A);
+  PushInt16(&data, C_IN);
+  PushInt32(&data, 60);
+  PushInt16(&data, 4);
+  data.push_back(1);
+  data.push_back(2);
+  data.push_back(3);
+  data.push_back(4);
+
+  // Valid DNS packet; failure must be due to expanded name >255
+  EXPECT_EQ(ARES_EBADNAME,
+            ares_dns_parse(data.data(), data.size(), 0, &dnsrec));
+
+  if (dnsrec != nullptr) {
+    ares_dns_record_destroy(dnsrec);
+  }
+}
 
 TEST_F(LibraryTest, ParseRootName) {
   DNSPacket pkt;
@@ -205,6 +298,61 @@ TEST_F(LibraryTest, ParseFullyCompressedName) {
   ss << HostEnt(host);
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
   ares_free_hostent(host);
+}
+
+TEST_F(LibraryTest, DNSParseNormalCompressedName) {
+  std::vector<byte> data;
+  ares_dns_record_t *dnsrec = nullptr;
+
+  PushInt16(&data, 0x1234);
+  PushInt16(&data, 0x8400);
+  PushInt16(&data, 1);
+  PushInt16(&data, 1);
+  PushInt16(&data, 0);
+  PushInt16(&data, 0);
+
+  data.push_back(0x03);
+  data.push_back('w');
+  data.push_back('w');
+  data.push_back('w');
+  data.push_back(0x07);
+  data.push_back('e');
+  data.push_back('x');
+  data.push_back('a');
+  data.push_back('m');
+  data.push_back('p');
+  data.push_back('l');
+  data.push_back('e');
+  data.push_back(0x03);
+  data.push_back('c');
+  data.push_back('o');
+  data.push_back('m');
+  data.push_back(0x00);
+
+  PushInt16(&data, T_A);
+  PushInt16(&data, C_IN);
+
+  // Answer NAME via backward compression pointer to QNAME at offset 12
+  data.push_back(0xC0);
+  data.push_back(0x0C);
+  PushInt16(&data, T_A);
+  PushInt16(&data, C_IN);
+  PushInt32(&data, 0x01020304);
+  PushInt16(&data, 4);
+  data.push_back(0x02);
+  data.push_back(0x03);
+  data.push_back(0x04);
+  data.push_back(0x05);
+
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_parse(data.data(), data.size(), 0, &dnsrec));
+  ASSERT_NE(nullptr, dnsrec);
+  EXPECT_EQ(1U, ares_dns_record_query_cnt(dnsrec));
+  EXPECT_EQ(1U, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER));
+
+  if (dnsrec != nullptr) {
+    ares_dns_record_destroy(dnsrec);
+  }
 }
 
 

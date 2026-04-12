@@ -543,6 +543,7 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
   ares_status_t status;
   ares_buf_t   *namebuf     = NULL;
   size_t        label_start = ares_buf_get_position(buf);
+  size_t        name_wire_len = 1;
 
   if (buf == NULL) {
     return ARES_EFORMERR;
@@ -636,6 +637,14 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
     }
 
     /* New label */
+
+    /* RFC 1035: full domain name (wire format) must not exceed 255 octets
+     * including label length bytes and root terminator */
+    if (name_wire_len + (size_t)c + 1 > 255) {
+      status = ARES_EBADNAME;
+      goto fail;
+    }
+    name_wire_len += ((size_t)c + 1);
 
     /* Labels are separated by periods */
     if (ares_buf_len(namebuf) != 0 && name != NULL) {
