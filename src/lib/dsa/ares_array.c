@@ -186,7 +186,7 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
    * wraparound can influence allocation decisions.
    */
   rounded_size = ares_round_up_pow2(size);
-  if (size > 0 && rounded_size == 0) {
+  if (rounded_size < size) {
     return ARES_ENOMEM;
   }
   size = rounded_size;
@@ -200,12 +200,6 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
     return ARES_SUCCESS;
   }
 
-  /* Defensive invariant: prevent division by zero and ensure multiplication
-   * safety for the upcoming realloc.
-   */
-  if (arr->member_size == 0) {
-    return ARES_ENOMEM;
-  }
 
   if (size > SIZE_MAX / arr->member_size) {
     return ARES_ENOMEM;
