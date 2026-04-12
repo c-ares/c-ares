@@ -1117,7 +1117,7 @@ ares_status_t ares_buf_replace(ares_buf_t *buf, const unsigned char *srch,
   size_t        processed_len = 0;
   ares_status_t status;
 
-  if (buf->alloc_buf == NULL || srch == NULL || srch_size == 0 ||
+  if (buf == NULL || buf->alloc_buf == NULL || srch == NULL || srch_size == 0 ||
       (rplc == NULL && rplc_size != 0)) {
     return ARES_EFORMERR;
   }
@@ -1268,17 +1268,15 @@ static ares_status_t
   }
 
 done:
-  if (status != ARES_SUCCESS) {
-    ares_buf_destroy(binbuf);
+  if (status == ARES_SUCCESS && bin != NULL) {
+    size_t mylen = 0;
+    /* NOTE: we use ares_buf_finish_str() here as we guarantee NULL
+     *       Termination even though we are technically returning binary data.
+     */
+    *bin     = (unsigned char *)ares_buf_finish_str(binbuf, &mylen);
+    *bin_len = mylen;
   } else {
-    if (bin != NULL) {
-      size_t mylen = 0;
-      /* NOTE: we use ares_buf_finish_str() here as we guarantee NULL
-       *       Termination even though we are technically returning binary data.
-       */
-      *bin     = (unsigned char *)ares_buf_finish_str(binbuf, &mylen);
-      *bin_len = mylen;
-    }
+    ares_buf_destroy(binbuf);
   }
 
   return status;

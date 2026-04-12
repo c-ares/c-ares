@@ -1584,6 +1584,13 @@ TEST_F(LibraryTest, RawRrTypeTostrFromstrRoundtrip) {
   EXPECT_EQ(ARES_REC_TYPE_RAW_RR, qtype);
 }
 
+TEST_F(LibraryTest, BufReplaceNullBuf) {
+  EXPECT_EQ(ARES_EFORMERR,
+            ares_buf_replace(NULL,
+                             (const unsigned char *)"x", 1,
+                             (const unsigned char *)"y", 1));
+}
+
 TEST_F(LibraryTest, HtableAsvp) {
   ares_llist_t       *l = NULL;
   ares_htable_asvp_t *h = NULL;

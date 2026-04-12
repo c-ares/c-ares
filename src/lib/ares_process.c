@@ -45,7 +45,6 @@
 #include <limits.h>
 
 
-static void          timeadd(ares_timeval_t *now, size_t millisecs);
 static ares_status_t process_write(ares_channel_t *channel,
                                    ares_socket_t   write_fd);
 static ares_status_t process_read(ares_channel_t       *channel,
@@ -128,7 +127,7 @@ static void server_increment_failures(ares_server_t *server,
   ares_slist_node_reinsert(node);
 
   ares_tvnow(&next_retry_time);
-  timeadd(&next_retry_time, channel->server_retry_delay);
+  ares_timeval_add(&next_retry_time, channel->server_retry_delay);
   server->next_retry_time = next_retry_time;
 
   invoke_server_state_cb(server, ARES_FALSE,
@@ -176,18 +175,6 @@ ares_bool_t ares_timedout(const ares_timeval_t *now,
   return ((ares_int64_t)now->usec - (ares_int64_t)check->usec) >= 0
            ? ARES_TRUE
            : ARES_FALSE;
-}
-
-/* add the specific number of milliseconds to the time in the first argument */
-static void timeadd(ares_timeval_t *now, size_t millisecs)
-{
-  now->sec  += (ares_int64_t)millisecs / 1000;
-  now->usec += (unsigned int)((millisecs % 1000) * 1000);
-
-  if (now->usec >= 1000000) {
-    now->sec  += now->usec / 1000000;
-    now->usec %= 1000000;
-  }
 }
 
 static ares_status_t ares_process_fds_nolock(ares_channel_t         *channel,
@@ -1360,7 +1347,7 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
   ares_slist_node_destroy(query->node_queries_by_timeout);
   query->ts      = *now;
   query->timeout = *now;
-  timeadd(&query->timeout, timeplus);
+  ares_timeval_add(&query->timeout, timeplus);
   query->node_queries_by_timeout =
     ares_slist_insert(channel->queries_by_timeout, query);
   if (!query->node_queries_by_timeout) {
