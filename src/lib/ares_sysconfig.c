@@ -333,7 +333,7 @@ static ares_status_t
     char   domain[256];
     size_t domain_len;
 
-    domain_len = confstr(_CS_DOMAIN, domain, sizeof(domain_len));
+    domain_len = confstr(_CS_DOMAIN, domain, sizeof(domain));
     if (domain_len != 0) {
       ares_strsplit_free(sysconfig->domains, sysconfig->ndomains);
       sysconfig->domains = ares_strsplit(domain, ", ", &sysconfig->ndomains);

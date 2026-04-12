@@ -1613,6 +1613,12 @@ TEST_F(LibraryTest, ZeroLengthRawRrKeepsType) {
   EXPECT_EQ(65432, ares_dns_rr_get_u16(rr, ARES_RR_RAW_RR_TYPE));
 
   ares_dns_record_destroy(parsed);
+
+TEST_F(LibraryTest, BufReplaceNullBuf) {
+  EXPECT_EQ(ARES_EFORMERR,
+            ares_buf_replace(NULL,
+                             (const unsigned char *)"x", 1,
+                             (const unsigned char *)"y", 1));
 }
 
 TEST_F(LibraryTest, HtableAsvp) {
