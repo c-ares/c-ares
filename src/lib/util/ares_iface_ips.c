@@ -500,20 +500,28 @@ static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
       addr.family = AF_INET;
       memcpy(&addr.addr.addr4, &sockaddr_in->sin_addr, sizeof(addr.addr.addr4));
       /* netmask */
-      sockaddr_in = (struct sockaddr_in *)((void *)ifa->ifa_netmask);
-      netmask     = count_addr_bits((const void *)&sockaddr_in->sin_addr, 4);
+      if (ifa->ifa_netmask != NULL) {
+        sockaddr_in = (struct sockaddr_in *)((void *)ifa->ifa_netmask);
+        netmask     = count_addr_bits((const void *)&sockaddr_in->sin_addr, 4);
+      } else {
+        netmask = 32;
+      }
     } else if (ifa->ifa_addr->sa_family == AF_INET6) {
       const struct sockaddr_in6 *sockaddr_in6 =
         (const struct sockaddr_in6 *)((void *)ifa->ifa_addr);
       addr.family = AF_INET6;
       memcpy(&addr.addr.addr6, &sockaddr_in6->sin6_addr,
              sizeof(addr.addr.addr6));
-      /* netmask */
-      sockaddr_in6 = (struct sockaddr_in6 *)((void *)ifa->ifa_netmask);
-      netmask = count_addr_bits((const void *)&sockaddr_in6->sin6_addr, 16);
 #  ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
       ll_scope = sockaddr_in6->sin6_scope_id;
 #  endif
+      /* netmask */
+      if (ifa->ifa_netmask != NULL) {
+        sockaddr_in6 = (struct sockaddr_in6 *)((void *)ifa->ifa_netmask);
+        netmask = count_addr_bits((const void *)&sockaddr_in6->sin6_addr, 16);
+      } else {
+        netmask = 128;
+      }
     } else {
       /* unknown */
       continue;
