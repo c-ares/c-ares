@@ -1615,6 +1615,16 @@ TEST_F(LibraryTest, ZeroLengthRawRrKeepsType) {
   ares_dns_record_destroy(parsed);
 }
 
+TEST_F(LibraryTest, RawRrTypeTostrFromstrRoundtrip) {
+  const char         *str;
+  ares_dns_rec_type_t qtype = (ares_dns_rec_type_t)0;
+
+  str = ares_dns_rec_type_tostr(ARES_REC_TYPE_RAW_RR);
+  EXPECT_NE((const char *)NULL, str);
+  EXPECT_TRUE(ares_dns_rec_type_fromstr(&qtype, str));
+  EXPECT_EQ(ARES_REC_TYPE_RAW_RR, qtype);
+}
+
 TEST_F(LibraryTest, BufReplaceNullBuf) {
   EXPECT_EQ(ARES_EFORMERR,
             ares_buf_replace(NULL,

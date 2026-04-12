@@ -228,7 +228,7 @@ const char *ares_dns_rec_type_tostr(ares_dns_rec_type_t type)
     case ARES_REC_TYPE_CAA:
       return "CAA";
     case ARES_REC_TYPE_RAW_RR:
-      return "RAWRR";
+      return "RAW_RR";
   }
   return "UNKNOWN";
 }
