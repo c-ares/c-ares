@@ -35,6 +35,7 @@
 
 #include "ares_setup.h"
 #include "ares.h"
+#include "ares_error_codes_internal.h"
 
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
@@ -616,6 +617,15 @@ typedef struct ares_event_thread ares_event_thread_t;
 void          ares_event_thread_destroy(ares_channel_t *channel);
 ares_status_t ares_event_thread_init(ares_channel_t *channel);
 
+
+/*! Map internal error codes to public ares_status_t codes for backward
+ *  compatibility. Internal error codes provide granular information for
+ *  diagnostics, but the public API must return standardized codes.
+ *
+ *  \param[in]  internal_code An ares_ecode_internal_t error code
+ *  \return     Corresponding ares_status_t error code
+ */
+ares_status_t ares_map_internal_error(ares_ecode_internal_t internal_code);
 
 #ifdef _WIN32
 #  define HOSTENT_ADDRTYPE_TYPE short

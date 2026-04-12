@@ -1907,6 +1907,66 @@ static int configure_socket(ares_socket_t s) {
 #endif
 }
 
+TEST_F(LibraryTest, ErrorCodeMapping) {
+  /* Verify that internal error codes map to valid public ares_status_t codes */
+
+  /* Test success code */
+  EXPECT_EQ(ARES_SUCCESS, ares_map_internal_error(ARES_EINTERNAL_SUCCESS));
+
+  /* Test DNS message parsing errors map to EBADQUERY */
+  EXPECT_EQ(ARES_EBADQUERY,
+            ares_map_internal_error(ARES_EINTERNAL_INVALID_QUERY));
+  EXPECT_EQ(ARES_EBADQUERY,
+            ares_map_internal_error(ARES_EINTERNAL_INVALID_MSG));
+  EXPECT_EQ(ARES_EBADQUERY,
+            ares_map_internal_error(ARES_EINTERNAL_INVALID_NAME));
+
+  /* Test truncation and malformed response map to EBADRESP */
+  EXPECT_EQ(ARES_EBADRESP,
+            ares_map_internal_error(ARES_EINTERNAL_TRUNCATED));
+  EXPECT_EQ(ARES_EBADRESP,
+            ares_map_internal_error(ARES_EINTERNAL_MALFORMED_RESPONSE));
+  EXPECT_EQ(ARES_EBADRESP,
+            ares_map_internal_error(ARES_EINTERNAL_INVALID_RDATA));
+
+  /* Test connection errors map to ECONNREFUSED */
+  EXPECT_EQ(ARES_ECONNREFUSED,
+            ares_map_internal_error(ARES_EINTERNAL_CONNECTION_FAILED));
+  EXPECT_EQ(ARES_ECONNREFUSED,
+            ares_map_internal_error(ARES_EINTERNAL_SEND_FAILED));
+  EXPECT_EQ(ARES_ECONNREFUSED,
+            ares_map_internal_error(ARES_EINTERNAL_RECV_FAILED));
+
+  /* Test memory errors map to ENOMEM */
+  EXPECT_EQ(ARES_ENOMEM,
+            ares_map_internal_error(ARES_EINTERNAL_OUT_OF_MEMORY));
+  EXPECT_EQ(ARES_ENOMEM,
+            ares_map_internal_error(ARES_EINTERNAL_RESOURCE_EXHAUSTED));
+
+  /* Test validation errors map to EBADSTR */
+  EXPECT_EQ(ARES_EBADSTR,
+            ares_map_internal_error(ARES_EINTERNAL_INVALID_PARAMETER));
+  EXPECT_EQ(ARES_EBADSTR,
+            ares_map_internal_error(ARES_EINTERNAL_INVALID_LENGTH));
+  EXPECT_EQ(ARES_EBADSTR,
+            ares_map_internal_error(ARES_EINTERNAL_INVALID_ENCODING));
+
+  /* Test state errors */
+  EXPECT_EQ(ARES_ESERVFAIL,
+            ares_map_internal_error(ARES_EINTERNAL_INVALID_STATE));
+  EXPECT_EQ(ARES_EDESTRUCTION,
+            ares_map_internal_error(ARES_EINTERNAL_CHANNEL_DESTROYED));
+
+  /* Test timeout and cancellation */
+  EXPECT_EQ(ARES_ETIMEOUT,
+            ares_map_internal_error(ARES_EINTERNAL_TIMEOUT));
+  EXPECT_EQ(ARES_ECANCELLED,
+            ares_map_internal_error(ARES_EINTERNAL_CANCELLED));
+
+  /* Test that unmapped codes default to ESERVFAIL */
+  EXPECT_EQ(ARES_ESERVFAIL, ares_map_internal_error((ares_ecode_internal_t)9999));
+}
+
 // TODO: This should not really be in this file, but we need ares config
 // flags, and here they are available.
 const struct ares_socket_functions VirtualizeIO::default_functions = {
