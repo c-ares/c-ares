@@ -57,6 +57,37 @@ class NoDNS0x20MockTest
   struct ares_options opts_;
 };
 
+static std::vector<byte> MakeMaxReadTcpAReply(void) {
+  std::vector<byte> reply = {
+    0x00, 0x00,  // qid
+    0x84, 0x00,  // response + query + AA + noerror
+    0x00, 0x01,  // qdcount
+    0x00, 0x01,  // ancount
+    0x00, 0x00,  // nscount
+    0x00, 0x00,  // arcount
+    // Question: www.google.com IN A
+    0x03, 'w', 'w', 'w',
+    0x06, 'g', 'o', 'o', 'g', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x01,
+    0x00, 0x01,
+    // Answer: name ptr, IN A 1.2.3.4
+    0xc0, 0x0c,
+    0x00, 0x01,
+    0x00, 0x01,
+    0x00, 0x00, 0x00, 0x64,
+    0x00, 0x04,
+    0x01, 0x02, 0x03, 0x04
+  };
+
+  /* Keep payload at 65533 bytes so TCP frame length is exactly 65535,
+   * forcing the read loop to attempt one more recv() where disconnect can
+   * race with already-buffered data. */
+  reply.resize(65533, 0x00);
+  return reply;
+}
+
 
 TEST_P(NoDNS0x20MockTest, Basic) {
   std::vector<byte> reply = {
@@ -576,6 +607,27 @@ TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
     ss << result[i].host_;
     EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
   }
+}
+
+TEST_P(MockTCPChannelTest, ReadFullFrameThenDisconnect) {
+  std::vector<byte> reply = MakeMaxReadTcpAReply();
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(DoAll(SetReplyData(&server_, reply),
+                    DisconnectAfterReply(&server_)));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback,
+                     &result);
+  Process();
+
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ(0, result.timeouts_);
+
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
 TEST_P(MockTCPChannelTest, MalformedResponse) {

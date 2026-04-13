@@ -445,11 +445,18 @@ void ares_process_pending_write(ares_channel_t *channel)
   ares_channel_unlock(channel);
 }
 
-static ares_status_t read_conn_packets(ares_conn_t *conn)
+static ares_status_t read_conn_packets(ares_conn_t *conn,
+  ares_bool_t *conn_error)
 {
   ares_bool_t           read_again;
   ares_conn_err_t       err;
   const ares_channel_t *channel = conn->server->channel;
+
+  if (conn_error == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *conn_error = ARES_FALSE;
 
   do {
     size_t         count;
@@ -508,8 +515,7 @@ static ares_status_t read_conn_packets(ares_conn_t *conn)
   } while (read_again);
 
   if (err != ARES_CONN_ERR_SUCCESS && err != ARES_CONN_ERR_WOULDBLOCK) {
-    handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED);
-    return ARES_ECONNREFUSED;
+    *conn_error = ARES_TRUE;
   }
 
   return ARES_SUCCESS;
@@ -671,24 +677,32 @@ static ares_status_t process_read(ares_channel_t       *channel,
                                   const ares_timeval_t *now)
 {
   ares_conn_t  *conn = ares_conn_from_fd(channel, read_fd);
+  ares_bool_t   conn_error;
   ares_status_t status;
 
   if (conn == NULL) {
     return ARES_SUCCESS;
   }
 
-  /* TODO: There might be a potential issue here where there was a read that
-   *       read some data, then looped and read again and got a disconnect.
-   *       Right now, that would cause a resend instead of processing the data
-   *       we have.  This is fairly unlikely to occur due to only looping if
-   *       a full buffer of 65535 bytes was read. */
-  status = read_conn_packets(conn);
+  status = read_conn_packets(conn, &conn_error);
 
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  return read_answers(conn, now);
+  status = read_answers(conn, now);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  if (conn_error) {
+    conn = ares_conn_from_fd(channel, read_fd);
+    if (conn != NULL) {
+      handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED);
+    }
+  }
+
+  return ARES_SUCCESS;
 }
 
 /* If any queries have timed out, note the timeout and move them on. */
