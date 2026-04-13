@@ -515,6 +515,14 @@ static ares_status_t read_conn_packets(ares_conn_t *conn,
   } while (read_again);
 
   if (err != ARES_CONN_ERR_SUCCESS && err != ARES_CONN_ERR_WOULDBLOCK) {
+    /* If there is no packet data buffered, preserve the historical
+     * immediate connection-failure behavior so retries happen promptly.
+     * Only defer if there is buffered data to parse first. */
+    if (ares_buf_len(conn->in_buf) == 0) {
+      handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED);
+      return ARES_ECONNREFUSED;
+    }
+
     *conn_error = ARES_TRUE;
   }
 
