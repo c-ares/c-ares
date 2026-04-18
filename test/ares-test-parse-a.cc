@@ -132,6 +132,14 @@ TEST_F(LibraryTest, ParseMalformedAReply) {
   EXPECT_EQ(ARES_EBADRESP, ares_parse_a_reply(invalid_rrlen.data(), (int)invalid_rrlen.size(),
                                               &host, info, &count));
 
+  // RDLENGTH is larger than A RDATA with trailing bytes.
+  std::vector<byte> invalid_trailing(data);
+  invalid_trailing[50] = 0x00;
+  invalid_trailing[51] = 0x05;
+  invalid_trailing.push_back(0x00);
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_a_reply(invalid_trailing.data(), (int)invalid_trailing.size(),
+                                              &host, info, &count));
+
   // Truncate mid-question.
   EXPECT_EQ(ARES_EBADRESP, ares_parse_a_reply(data.data(), 26,
                                               &host, info, &count));
