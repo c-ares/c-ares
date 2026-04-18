@@ -194,7 +194,7 @@ void *ares_array_finish(ares_array_t *arr, size_t *num_members)
 
 ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
 {
-  void  *temp;
+  void *temp;
   size_t orig_size;
   size_t new_size;
   size_t rounded_size;
@@ -250,7 +250,7 @@ ares_status_t ares_array_insert_at(void **elem_ptr, ares_array_t *arr,
   }
 
   if (arr->cnt == SIZE_MAX) {
-    return ARES_ENOMEM;
+    return ARES_EFORMERR;
   }
 
   /* Allocate more if needed */
