@@ -37,6 +37,20 @@ struct ares_array {
   size_t                  alloc_cnt;
 };
 
+static ares_bool_t ares_array_mult_overflow(size_t a, size_t b, size_t *out)
+{
+  if (out == NULL) {
+    return ARES_TRUE;
+  }
+
+  if (a != 0 && b > SIZE_MAX / a) {
+    return ARES_TRUE;
+  }
+
+  *out = a * b;
+  return ARES_FALSE;
+}
+
 ares_array_t *ares_array_create(size_t                  member_size,
                                 ares_array_destructor_t destruct)
 {
@@ -122,6 +136,7 @@ static ares_status_t ares_array_move(ares_array_t *arr, size_t dest_idx,
   void       *dest_ptr;
   const void *src_ptr;
   size_t      nmembers;
+  size_t      nbytes;
 
   if (arr == NULL || dest_idx >= arr->alloc_cnt || src_idx >= arr->alloc_cnt) {
     return ARES_EFORMERR;
@@ -141,8 +156,16 @@ static ares_status_t ares_array_move(ares_array_t *arr, size_t dest_idx,
     return ARES_EFORMERR;
   }
 
+  if (src_idx < arr->offset || (src_idx - arr->offset) >= arr->cnt) {
+    return ARES_EFORMERR;
+  }
+
   nmembers = arr->cnt - (src_idx - arr->offset);
-  memmove(dest_ptr, src_ptr, nmembers * arr->member_size);
+  if (ares_array_mult_overflow(nmembers, arr->member_size, &nbytes)) {
+    return ARES_ENOMEM;
+  }
+
+  memmove(dest_ptr, src_ptr, nbytes);
 
   return ARES_SUCCESS;
 }
@@ -171,14 +194,22 @@ void *ares_array_finish(ares_array_t *arr, size_t *num_members)
 
 ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
 {
-  void *temp;
+  void  *temp;
+  size_t orig_size;
+  size_t new_size;
+  size_t rounded_size;
 
   if (arr == NULL || size == 0 || size < arr->cnt) {
     return ARES_EFORMERR;
   }
 
   /* Always operate on powers of 2 */
-  size = ares_round_up_pow2(size);
+  rounded_size = ares_round_up_pow2(size);
+  if (rounded_size < size) {
+    /* Overflow while rounding to next power-of-two growth target. */
+    return ARES_ENOMEM;
+  }
+  size = rounded_size;
 
   if (size < ARES__ARRAY_MIN) {
     size = ARES__ARRAY_MIN;
@@ -189,8 +220,12 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
     return ARES_SUCCESS;
   }
 
-  temp = ares_realloc_zero(arr->arr, arr->alloc_cnt * arr->member_size,
-                           size * arr->member_size);
+  if (ares_array_mult_overflow(arr->alloc_cnt, arr->member_size, &orig_size) ||
+      ares_array_mult_overflow(size, arr->member_size, &new_size)) {
+    return ARES_ENOMEM;
+  }
+
+  temp = ares_realloc_zero(arr->arr, orig_size, new_size);
   if (temp == NULL) {
     return ARES_ENOMEM;
   }
@@ -214,6 +249,10 @@ ares_status_t ares_array_insert_at(void **elem_ptr, ares_array_t *arr,
     return ARES_EFORMERR;
   }
 
+  if (arr->cnt == SIZE_MAX) {
+    return ARES_ENOMEM;
+  }
+
   /* Allocate more if needed */
   status = ares_array_set_size(arr, arr->cnt + 1);
   if (status != ARES_SUCCESS) {
@@ -221,6 +260,10 @@ ares_status_t ares_array_insert_at(void **elem_ptr, ares_array_t *arr,
   }
 
   /* Shift if we have memory but not enough room at the end */
+  if (arr->offset > SIZE_MAX - (arr->cnt + 1)) {
+    return ARES_ENOMEM;
+  }
+
   if (arr->cnt + 1 + arr->offset > arr->alloc_cnt) {
     status = ares_array_move(arr, 0, arr->offset);
     if (status != ARES_SUCCESS) {

@@ -1223,6 +1223,12 @@ TEST_F(LibraryTest, DNSParseFlags) {
 
 TEST_F(LibraryTest, ArrayMisuse) {
   EXPECT_EQ(NULL, ares_array_create(0, NULL));
+  ares_array_t *overflow_array =
+    ares_array_create((SIZE_MAX / 2) + 1, NULL);
+  EXPECT_NE((void *)NULL, overflow_array);
+  EXPECT_NE(ARES_SUCCESS, ares_array_set_size(overflow_array, 2));
+  EXPECT_NE(ARES_SUCCESS, ares_array_set_size(overflow_array, SIZE_MAX));
+  ares_array_destroy(overflow_array);
   ares_array_destroy(NULL);
   EXPECT_EQ(NULL, ares_array_finish(NULL, NULL));
   EXPECT_EQ(0, ares_array_len(NULL));
