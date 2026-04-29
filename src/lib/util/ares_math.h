@@ -49,5 +49,6 @@ size_t        ares_pow(size_t x, size_t y);
 size_t        ares_count_digits(size_t n);
 size_t        ares_count_hexdigits(size_t n);
 unsigned char ares_count_bits_u8(unsigned char x);
+ares_bool_t   ares_size_t_mul_overflow(size_t a, size_t b, size_t *res);
 
 #endif

@@ -178,7 +178,13 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
   }
 
   /* Always operate on powers of 2 */
-  size = ares_round_up_pow2(size);
+  {
+    size_t new_size = ares_round_up_pow2(size);
+    if (new_size < size) {
+      return ARES_ENOMEM;
+    }
+    size = new_size;
+  }
 
   if (size < ARES__ARRAY_MIN) {
     size = ARES__ARRAY_MIN;
@@ -189,8 +195,7 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
     return ARES_SUCCESS;
   }
 
-  temp = ares_realloc_zero(arr->arr, arr->alloc_cnt * arr->member_size,
-                           size * arr->member_size);
+  temp = ares_realloc_zero_array(arr->arr, arr->alloc_cnt, size, arr->member_size);
   if (temp == NULL) {
     return ARES_ENOMEM;
   }
