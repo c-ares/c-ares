@@ -234,7 +234,7 @@ static ares_status_t parse_nameserver_uri(ares_buf_t     *buf,
   sconfig->tcp_port = sconfig->udp_port;
   port              = ares_uri_get_query_key(uri, "tcpport");
   if (port != NULL) {
-    if (!ares_parse_port(port, &sconfig->tcp_port, ARES_FALSE)) {
+    if (!ares_parse_port(port, &sconfig->tcp_port, ARES_TRUE)) {
       status = ARES_EBADSTR;
       goto done;
     }
@@ -355,7 +355,7 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
       return status;
     }
 
-    if (!ares_parse_port(portstr, &sconfig->udp_port, ARES_FALSE)) {
+    if (!ares_parse_port(portstr, &sconfig->udp_port, ARES_TRUE)) {
       return ARES_EBADSTR;
     }
     sconfig->tcp_port = sconfig->udp_port;

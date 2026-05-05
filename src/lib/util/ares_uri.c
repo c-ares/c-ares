@@ -1243,7 +1243,7 @@ static ares_status_t ares_uri_parse_hostport(ares_uri_t *uri, ares_buf_t *buf)
   }
   port[len] = 0;
 
-  if (!ares_parse_port(port, &parsed_port, ARES_FALSE)) {
+  if (!ares_parse_port(port, &parsed_port, ARES_TRUE)) {
     return ARES_EBADSTR;
   }
 
