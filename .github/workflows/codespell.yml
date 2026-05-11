@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: MIT
 
 name: Codespell
+permissions:
+  contents: read
 
 on:
   push:

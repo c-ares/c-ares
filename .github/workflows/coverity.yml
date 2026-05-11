@@ -1,6 +1,8 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 name: coverity
+permissions:
+  contents: read
 on:
   schedule:
     - cron: "0 10 * * 1" # Mondays at 00:10 UTC
