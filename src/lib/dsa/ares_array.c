@@ -37,20 +37,6 @@ struct ares_array {
   size_t                  alloc_cnt;
 };
 
-static ares_bool_t ares_array_mult_overflow(size_t a, size_t b, size_t *out)
-{
-  if (out == NULL) {
-    return ARES_TRUE;
-  }
-
-  if (a != 0 && b > SIZE_MAX / a) {
-    return ARES_TRUE;
-  }
-
-  *out = a * b;
-  return ARES_FALSE;
-}
-
 ares_array_t *ares_array_create(size_t                  member_size,
                                 ares_array_destructor_t destruct)
 {
@@ -161,7 +147,7 @@ static ares_status_t ares_array_move(ares_array_t *arr, size_t dest_idx,
   }
 
   nmembers = arr->cnt - (src_idx - arr->offset);
-  if (ares_array_mult_overflow(nmembers, arr->member_size, &nbytes)) {
+  if (ares_size_mul_overflow(nmembers, arr->member_size, &nbytes)) {
     return ARES_ENOMEM;
   }
 
@@ -220,8 +206,8 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
     return ARES_SUCCESS;
   }
 
-  if (ares_array_mult_overflow(arr->alloc_cnt, arr->member_size, &orig_size) ||
-      ares_array_mult_overflow(size, arr->member_size, &new_size)) {
+  if (ares_size_mul_overflow(arr->alloc_cnt, arr->member_size, &orig_size) ||
+      ares_size_mul_overflow(size, arr->member_size, &new_size)) {
     return ARES_ENOMEM;
   }
 
