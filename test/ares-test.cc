@@ -443,7 +443,7 @@ void DefaultChannelModeTest::Process(unsigned int cancel_ms) {
 }
 
 MockServer::MockServer(int family, unsigned short port)
-  : udpport_(port), tcpport_(port), qid_(-1) {
+  : udpport_(port), tcpport_(port), qid_(-1), disconnect_after_reply_(false) {
   reply_ = nullptr;
   // Create a TCP socket to receive data on.
   tcp_data_ = NULL;
@@ -772,6 +772,15 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
                                          (struct sockaddr *)addr, addrlen);
   if (rc < static_cast<ares_ssize_t>(reply.size())) {
     std::cerr << "Failed to send full reply, rc=" << rc << std::endl;
+  }
+
+  if (disconnect_after_reply_ && fd != udpfd_) {
+    disconnect_after_reply_ = false;
+    connfds_.erase(fd);
+    sclose(fd);
+    free(tcp_data_);
+    tcp_data_     = NULL;
+    tcp_data_len_ = 0;
   }
 
 }
