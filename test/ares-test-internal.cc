@@ -826,6 +826,136 @@ TEST_F(LibraryTest, DNSRecord) {
     0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_rr_set_bin(rr, ARES_RR_TLSA_DATA, tlsa, sizeof(tlsa)));
+  /* DS */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_DS, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_DS_KEY_TAG, 0x1234));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_DS_ALGORITHM,
+      ARES_DNSSEC_ALGORITHM_RSASHA256));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_DS_DIGEST_TYPE, ARES_DS_DIGEST_SHA256));
+  const unsigned char ds_digest[] = {
+    0xd2, 0xab, 0xde, 0x24, 0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5,
+    0x4d, 0xf0, 0x34, 0xb9, 0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e,
+    0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_DS_DIGEST, ds_digest, sizeof(ds_digest)));
+  /* SSHFP */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_SSHFP, ARES_CLASS_IN, 3600));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_SSHFP_ALGORITHM,
+      ARES_SSHFP_ALGORITHM_RSA));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_SSHFP_FP_TYPE, ARES_SSHFP_FP_SHA256));
+  const unsigned char sshfp_fp[] = {
+    0xd2, 0xab, 0xde, 0x24, 0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5,
+    0x4d, 0xf0, 0x34, 0xb9, 0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e,
+    0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_SSHFP_FINGERPRINT, sshfp_fp,
+      sizeof(sshfp_fp)));
+  /* RRSIG */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_RRSIG, ARES_CLASS_ANY, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_RRSIG_TYPE_COVERED, ARES_REC_TYPE_A));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_RRSIG_ALGORITHM,
+      ARES_DNSSEC_ALGORITHM_RSASHA256));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_RRSIG_LABELS, 2));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_RRSIG_ORIGINAL_TTL, 3600));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_RRSIG_EXPIRATION,
+      (unsigned int)time(NULL)));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u32(rr, ARES_RR_RRSIG_INCEPTION,
+      (unsigned int)time(NULL) - (86400 * 365)));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_RRSIG_KEY_TAG, 0x5678));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_RRSIG_SIGNERS_NAME, "example.com"));
+  const unsigned char rrsig_sig[] = {
+    0xd2, 0xab, 0xde, 0x24, 0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5,
+    0x4d, 0xf0, 0x34, 0xb9, 0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e,
+    0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_RRSIG_SIGNATURE, rrsig_sig,
+      sizeof(rrsig_sig)));
+  /* NSEC */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_NSEC, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_NSEC_NEXT_DOMAIN, "next.example.com"));
+  const unsigned char nsec_bitmap[] = { 0x00, 0x06, 0x40, 0x01, 0x00,
+                                        0x00, 0x00, 0x03 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC_TYPE_BIT_MAPS, nsec_bitmap,
+      sizeof(nsec_bitmap)));
+  /* DNSKEY */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_DNSKEY, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_DNSKEY_FLAGS, 257));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_DNSKEY_PROTOCOL, 3));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_DNSKEY_ALGORITHM,
+      ARES_DNSSEC_ALGORITHM_RSASHA256));
+  const unsigned char dnskey_pk[] = {
+    0xd2, 0xab, 0xde, 0x24, 0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5,
+    0x4d, 0xf0, 0x34, 0xb9, 0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e,
+    0x45, 0x61, 0xcb, 0x10, 0x66, 0x18, 0xe9, 0x71 };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_DNSKEY_PUBLIC_KEY, dnskey_pk,
+      sizeof(dnskey_pk)));
+  /* NSEC3 */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "abc123.example.com", ARES_REC_TYPE_NSEC3, ARES_CLASS_IN, 86400));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_NSEC3_HASH_ALGORITHM,
+      ARES_NSEC3_HASH_SHA1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_NSEC3_FLAGS, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_NSEC3_ITERATIONS, 10));
+  const unsigned char nsec3_salt[] = { 0xaa, 0xbb, 0xcc, 0xdd };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC3_SALT, nsec3_salt,
+      sizeof(nsec3_salt)));
+  const unsigned char nsec3_next[] = {
+    0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5, 0x4d, 0xf0, 0x34, 0xb9,
+    0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e };
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC3_NEXT_HASHED_OWNER, nsec3_next,
+      sizeof(nsec3_next)));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC3_TYPE_BIT_MAPS, nsec_bitmap,
+      sizeof(nsec_bitmap)));
+  /* NSEC3PARAM */
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
+      "example.com", ARES_REC_TYPE_NSEC3PARAM, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_NSEC3PARAM_HASH_ALGORITHM,
+      ARES_NSEC3_HASH_SHA1));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u8(rr, ARES_RR_NSEC3PARAM_FLAGS, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_u16(rr, ARES_RR_NSEC3PARAM_ITERATIONS, 10));
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_bin(rr, ARES_RR_NSEC3PARAM_SALT, nsec3_salt,
+      sizeof(nsec3_salt)));
   /* SVCB */
   EXPECT_EQ(ARES_SUCCESS,
     ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL,
@@ -937,6 +1067,134 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ancount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER));
   EXPECT_EQ(nscount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY));
   EXPECT_EQ(arcount, ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ADDITIONAL));
+
+  /* Verify record fields survived roundtrip */
+  /* DS - index 5 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 5);
+  EXPECT_EQ(ARES_REC_TYPE_DS, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(0x1234, ares_dns_rr_get_u16(rr, ARES_RR_DS_KEY_TAG));
+  EXPECT_EQ(ARES_DNSSEC_ALGORITHM_RSASHA256,
+    ares_dns_rr_get_u8(rr, ARES_RR_DS_ALGORITHM));
+  EXPECT_EQ(ARES_DS_DIGEST_SHA256,
+    ares_dns_rr_get_u8(rr, ARES_RR_DS_DIGEST_TYPE));
+  {
+    size_t len = 0;
+    const unsigned char *bin = ares_dns_rr_get_bin(rr, ARES_RR_DS_DIGEST, &len);
+    EXPECT_EQ(32, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0xd2, bin[0]);
+  }
+
+  /* SSHFP - index 6 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 6);
+  EXPECT_EQ(ARES_REC_TYPE_SSHFP, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(ARES_SSHFP_ALGORITHM_RSA,
+    ares_dns_rr_get_u8(rr, ARES_RR_SSHFP_ALGORITHM));
+  EXPECT_EQ(ARES_SSHFP_FP_SHA256,
+    ares_dns_rr_get_u8(rr, ARES_RR_SSHFP_FP_TYPE));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_SSHFP_FINGERPRINT, &len);
+    EXPECT_EQ(32, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0xd2, bin[0]);
+  }
+
+  /* RRSIG - index 7 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 7);
+  EXPECT_EQ(ARES_REC_TYPE_RRSIG, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(ARES_REC_TYPE_A,
+    ares_dns_rr_get_u16(rr, ARES_RR_RRSIG_TYPE_COVERED));
+  EXPECT_EQ(ARES_DNSSEC_ALGORITHM_RSASHA256,
+    ares_dns_rr_get_u8(rr, ARES_RR_RRSIG_ALGORITHM));
+  EXPECT_EQ(2, ares_dns_rr_get_u8(rr, ARES_RR_RRSIG_LABELS));
+  EXPECT_EQ(3600, ares_dns_rr_get_u32(rr, ARES_RR_RRSIG_ORIGINAL_TTL));
+  EXPECT_EQ(0x5678, ares_dns_rr_get_u16(rr, ARES_RR_RRSIG_KEY_TAG));
+  EXPECT_STREQ("example.com",
+    ares_dns_rr_get_str(rr, ARES_RR_RRSIG_SIGNERS_NAME));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_RRSIG_SIGNATURE, &len);
+    EXPECT_EQ(32, len);
+    EXPECT_NE(nullptr, bin);
+  }
+
+  /* NSEC - index 8 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 8);
+  EXPECT_EQ(ARES_REC_TYPE_NSEC, ares_dns_rr_get_type(rr));
+  EXPECT_STREQ("next.example.com",
+    ares_dns_rr_get_str(rr, ARES_RR_NSEC_NEXT_DOMAIN));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC_TYPE_BIT_MAPS, &len);
+    EXPECT_EQ(8, len);
+    EXPECT_NE(nullptr, bin);
+  }
+
+  /* DNSKEY - index 9 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 9);
+  EXPECT_EQ(ARES_REC_TYPE_DNSKEY, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(257, ares_dns_rr_get_u16(rr, ARES_RR_DNSKEY_FLAGS));
+  EXPECT_EQ(3, ares_dns_rr_get_u8(rr, ARES_RR_DNSKEY_PROTOCOL));
+  EXPECT_EQ(ARES_DNSSEC_ALGORITHM_RSASHA256,
+    ares_dns_rr_get_u8(rr, ARES_RR_DNSKEY_ALGORITHM));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_DNSKEY_PUBLIC_KEY, &len);
+    EXPECT_EQ(32, len);
+    EXPECT_NE(nullptr, bin);
+  }
+
+  /* NSEC3 - index 10 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 10);
+  EXPECT_EQ(ARES_REC_TYPE_NSEC3, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(ARES_NSEC3_HASH_SHA1,
+    ares_dns_rr_get_u8(rr, ARES_RR_NSEC3_HASH_ALGORITHM));
+  EXPECT_EQ(0, ares_dns_rr_get_u8(rr, ARES_RR_NSEC3_FLAGS));
+  EXPECT_EQ(10, ares_dns_rr_get_u16(rr, ARES_RR_NSEC3_ITERATIONS));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_SALT, &len);
+    EXPECT_EQ(4, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0xaa, bin[0]);
+  }
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_NEXT_HASHED_OWNER, &len);
+    EXPECT_EQ(20, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0x0d, bin[0]);
+  }
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_TYPE_BIT_MAPS, &len);
+    EXPECT_EQ(8, len);
+    EXPECT_NE(nullptr, bin);
+  }
+
+  /* NSEC3PARAM - index 11 */
+  rr = ares_dns_record_rr_get(dnsrec, ARES_SECTION_ADDITIONAL, 11);
+  EXPECT_EQ(ARES_REC_TYPE_NSEC3PARAM, ares_dns_rr_get_type(rr));
+  EXPECT_EQ(ARES_NSEC3_HASH_SHA1,
+    ares_dns_rr_get_u8(rr, ARES_RR_NSEC3PARAM_HASH_ALGORITHM));
+  EXPECT_EQ(0, ares_dns_rr_get_u8(rr, ARES_RR_NSEC3PARAM_FLAGS));
+  EXPECT_EQ(10, ares_dns_rr_get_u16(rr, ARES_RR_NSEC3PARAM_ITERATIONS));
+  {
+    size_t len = 0;
+    const unsigned char *bin =
+      ares_dns_rr_get_bin(rr, ARES_RR_NSEC3PARAM_SALT, &len);
+    EXPECT_EQ(4, len);
+    EXPECT_NE(nullptr, bin);
+    EXPECT_EQ(0xaa, bin[0]);
+  }
 
   /* Iterate and print */
   ares_buf_t *printmsg = ares_buf_create();

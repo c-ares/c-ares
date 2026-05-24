@@ -159,6 +159,8 @@ typedef enum __ns_type {
   ns_t_rrsig    = 46,  /* Resource Record Signature (RFC4034) */
   ns_t_nsec     = 47,  /* Next Secure (RFC4034) */
   ns_t_dnskey   = 48,  /* DNS Public Key (RFC4034) */
+  ns_t_nsec3    = 50,  /* NSEC3 (RFC5155) */
+  ns_t_nsec3param = 51, /* NSEC3PARAM (RFC5155) */
   ns_t_tkey     = 249, /* Transaction key */
   ns_t_tsig     = 250, /* Transaction signature. */
   ns_t_ixfr     = 251, /* Incremental zone transfer. */
@@ -474,6 +476,12 @@ typedef enum __ns_rcode {
 #endif
 #ifndef T_DNSKEY
 #  define T_DNSKEY 48 /* ns_t_dnskey */
+#endif
+#ifndef T_NSEC3
+#  define T_NSEC3 50 /* ns_t_nsec3 */
+#endif
+#ifndef T_NSEC3PARAM
+#  define T_NSEC3PARAM 51 /* ns_t_nsec3param */
 #endif
 #ifndef T_TKEY
 #  define T_TKEY 249 /* ns_t_tkey */
