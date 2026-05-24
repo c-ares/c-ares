@@ -146,6 +146,39 @@ size_t ares_count_hexdigits(size_t n)
   return digits;
 }
 
+/* Detect __builtin_mul_overflow availability:
+ *   - Clang exposes it via __has_builtin
+ *   - GCC has supported it since 5.0
+ * Everything else (notably MSVC) falls back to the portable divide check. */
+#if defined(__has_builtin)
+#  if __has_builtin(__builtin_mul_overflow)
+#    define ARES_HAVE_BUILTIN_MUL_OVERFLOW 1
+#  endif
+#endif
+#if !defined(ARES_HAVE_BUILTIN_MUL_OVERFLOW) && \
+    defined(__GNUC__) && (__GNUC__ >= 5)
+#  define ARES_HAVE_BUILTIN_MUL_OVERFLOW 1
+#endif
+
+ares_bool_t ares_size_mul_overflow(size_t a, size_t b, size_t *out)
+{
+  if (out == NULL) {
+    return ARES_TRUE;
+  }
+
+#ifdef ARES_HAVE_BUILTIN_MUL_OVERFLOW
+  if (__builtin_mul_overflow(a, b, out)) {
+    return ARES_TRUE;
+  }
+#else
+  if (a != 0 && b > SIZE_MAX / a) {
+    return ARES_TRUE;
+  }
+  *out = a * b;
+#endif
+  return ARES_FALSE;
+}
+
 unsigned char ares_count_bits_u8(unsigned char x)
 {
   /* Implementation obtained from:
