@@ -40,3 +40,5 @@ DUMPSOURCES = dns-proto.cc		\
   dns-dump.cc
 
 LOOPSOURCES = ares_queryloop.c
+
+REGRESSSOURCES = ares-requeue-regress.c
