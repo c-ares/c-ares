@@ -1907,6 +1907,43 @@ static int configure_socket(ares_socket_t s) {
 #endif
 }
 
+// Issue #1043: retryable send failures recursed through ares_send_query()
+// until stack exhaustion. With many tries and always-failing sockets,
+// unpatched code overflows the stack; the fix processes retries iteratively.
+static int fail_socket_cb(ares_socket_t fd, int type, void *data) {
+  (void)fd;
+  (void)type;
+  (void)data;
+  return -1;
+}
+
+static void done_host_cb(void *arg, int status, int timeouts,
+                         const struct hostent *hostent) {
+  (void)timeouts;
+  (void)hostent;
+  *(int *)arg = status;
+}
+
+TEST_F(LibraryTest, RequeueNoStackOverflow) {
+  ares_channel_t     *channel = nullptr;
+  struct ares_options  opts;
+  memset(&opts, 0, sizeof(opts));
+  opts.tries = 50000;
+
+  ASSERT_EQ(ARES_SUCCESS,
+            ares_init_options(&channel, &opts, ARES_OPT_TRIES));
+  ASSERT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel, "127.0.0.1"));
+  ares_set_socket_callback(channel, fail_socket_cb, nullptr);
+
+  int status = ARES_SUCCESS;
+  ares_gethostbyname(channel, "example.com", AF_INET, done_host_cb, &status);
+
+  /* All sockets fail immediately so the callback fires synchronously */
+  EXPECT_EQ(ARES_ECONNREFUSED, status);
+
+  ares_destroy(channel);
+}
+
 // TODO: This should not really be in this file, but we need ares config
 // flags, and here they are available.
 const struct ares_socket_functions VirtualizeIO::default_functions = {
