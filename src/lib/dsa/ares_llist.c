@@ -383,3 +383,38 @@ void ares_llist_node_mvparent_first(ares_llist_node_t *node,
   ares_llist_node_detach(node);
   ares_llist_attach_at(new_parent, ARES__LLIST_INSERT_HEAD, NULL, node);
 }
+
+ares_llist_node_t *ares_llist_move_all_last(ares_llist_t *new_parent,
+                                            ares_llist_t *old_parent)
+{
+  ares_llist_node_t *first;
+  ares_llist_node_t *node;
+
+  if (new_parent == NULL || old_parent == NULL || new_parent == old_parent) {
+    return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
+  first = old_parent->head;
+  if (first == NULL) {
+    return NULL;
+  }
+
+  if (new_parent->tail != NULL) {
+    new_parent->tail->next = old_parent->head;
+    old_parent->head->prev = new_parent->tail;
+  } else {
+    new_parent->head = old_parent->head;
+  }
+  new_parent->tail = old_parent->tail;
+  new_parent->cnt += old_parent->cnt;
+
+  for (node = old_parent->head; node != NULL; node = node->next) {
+    node->parent = new_parent;
+  }
+
+  old_parent->head = NULL;
+  old_parent->tail = NULL;
+  old_parent->cnt  = 0;
+
+  return first;
+}

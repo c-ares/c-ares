@@ -225,6 +225,8 @@ struct ares_channeldata {
 
   /* All active queries in a single list */
   ares_llist_t        *all_queries;
+  /* Queries currently being cancelled */
+  ares_llist_t        *queries_being_cancelled;
   /* Queries bucketed by qid, for quickly dispatching DNS responses: */
   ares_htable_szvp_t  *queries_by_qid;
 
