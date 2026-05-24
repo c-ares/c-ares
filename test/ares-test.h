@@ -288,6 +288,7 @@ public:
   {
     reply_ = nullptr;
     exact_reply_.clear();
+    disconnect_after_reply_ = false;
     for (ares_socket_t fd : connfds_) {
       sclose(fd);
     }
@@ -295,6 +296,11 @@ public:
     free(tcp_data_);
     tcp_data_     = NULL;
     tcp_data_len_ = 0;
+  }
+
+  void DisconnectAfterReply()
+  {
+    disconnect_after_reply_ = true;
   }
 
   // The set of file descriptors that the server handles.
@@ -330,6 +336,7 @@ private:
   const DNSPacket        *reply_;
   std::string             expected_request_;
   int                     qid_;
+  bool                    disconnect_after_reply_;
   unsigned char          *tcp_data_;
   size_t                  tcp_data_len_;
 };
@@ -500,6 +507,11 @@ ACTION_P2(CancelChannel, mockserver, channel)
 ACTION_P(Disconnect, mockserver)
 {
   mockserver->Disconnect();
+}
+
+ACTION_P(DisconnectAfterReply, mockserver)
+{
+  mockserver->DisconnectAfterReply();
 }
 
 // C++ wrapper for struct hostent.
