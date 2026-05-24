@@ -28,6 +28,8 @@
 #include "ares_private.h"
 #include "ares_str.h"
 
+#include <errno.h>
+
 #ifdef HAVE_STDINT_H
 #  include <stdint.h>
 #endif
@@ -122,6 +124,35 @@ ares_bool_t ares_str_isnum(const char *str)
       return ARES_FALSE;
     }
   }
+  return ARES_TRUE;
+}
+
+ares_bool_t ares_parse_port(const char *str, unsigned short *port,
+                            ares_bool_t allow_zero)
+{
+  char         *endptr = NULL;
+  unsigned long val;
+
+  if (str == NULL || port == NULL || *str == 0) {
+    return ARES_FALSE;
+  }
+
+  errno = 0;
+  val   = strtoul(str, &endptr, 10);
+  if (errno == ERANGE || endptr == str || *endptr != '\0') {
+    return ARES_FALSE;
+  }
+
+  if (val > 65535UL) {
+    return ARES_FALSE;
+  }
+
+  if (!allow_zero && val == 0) {
+    return ARES_FALSE;
+  }
+
+  *port = (unsigned short)val;
+
   return ARES_TRUE;
 }
 
