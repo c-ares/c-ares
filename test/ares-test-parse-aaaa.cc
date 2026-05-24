@@ -196,6 +196,16 @@ TEST_F(LibraryTest, ParseAaaaReplyErrors) {
                                                    nullptr, info, &count));
   }
 
+  // AAAA RDLENGTH with trailing bytes must be rejected.
+  std::vector<byte> invalid_trailing = data;
+  invalid_trailing[50] = 0x00;
+  invalid_trailing[51] = 0x11;
+  invalid_trailing.insert(invalid_trailing.begin() + 68, 0x00);
+  EXPECT_EQ(ARES_EBADRESP, ares_parse_aaaa_reply(invalid_trailing.data(),
+                                                 (int)invalid_trailing.size(),
+                                                 &host, info, &count));
+  EXPECT_EQ(nullptr, host);
+
   // Negative length
   EXPECT_EQ(ARES_EBADRESP, ares_parse_aaaa_reply(data.data(), -1,
                                                  &host, info, &count));

@@ -1164,16 +1164,11 @@ static ares_status_t ares_dns_parse_rr(ares_buf_t *buf, unsigned int flags,
   /* Determine how many bytes were processed */
   processed_len = remaining_len - ares_buf_len(buf);
 
-  /* If too many bytes were processed, error! */
-  if (processed_len > rdlength) {
+  /* RDATA parsers must consume exactly rdlength bytes to avoid accepting
+   * malformed trailing data. */
+  if (processed_len != rdlength) {
     status = ARES_EBADRESP;
     goto done;
-  }
-
-  /* If too few bytes were processed, consume the unprocessed data for this
-   * record as the parser may not have wanted/needed to use it */
-  if (processed_len < rdlength) {
-    ares_buf_consume(buf, rdlength - processed_len);
   }
 
 
