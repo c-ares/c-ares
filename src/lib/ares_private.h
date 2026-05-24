@@ -413,6 +413,9 @@ ares_status_t ares_parse_sortlist(struct apattern **sortlist, size_t *nsort,
 ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
                                       const char *name, char **alias);
 
+ares_bool_t   ares_parse_port(const char *str, unsigned short *port,
+                              ares_bool_t allow_zero);
+
 ares_status_t ares_cat_domain(const char *name, const char *domain, char **s);
 ares_status_t ares_sortaddrinfo(ares_channel_t            *channel,
                                 struct ares_addrinfo_node *ai_node);
