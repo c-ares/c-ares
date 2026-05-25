@@ -170,8 +170,8 @@ static ares_status_t parse_sort(ares_buf_t *buf, struct apattern *pat)
 
     if (ares_str_isnum(maskstr)) {
       /* Numeric mask */
-      int mask = atoi(maskstr);
-      if (mask < 0 || mask > 128) {
+      unsigned long mask = strtoul(maskstr, NULL, 10);
+      if (mask > 128) {
         return ARES_EBADSTR;
       }
       if (pat->addr.family == AF_INET && mask > 32) {
