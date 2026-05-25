@@ -27,6 +27,8 @@
  */
 #include "ares_private.h"
 
+#include <errno.h>
+
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
@@ -402,8 +404,20 @@ static ares_status_t ares_sconfig_linklocal(const ares_channel_t *channel,
 
 
   if (ares_str_isnum(ll_iface)) {
-    char ifname[IF_NAMESIZE] = "";
-    ll_scope                 = (unsigned int)atoi(ll_iface);
+    char          ifname[IF_NAMESIZE] = "";
+    char         *end                 = NULL;
+    unsigned long scope;
+
+    /* atoi() is undefined on overflow, and the numeric interface index can be
+     * up to 15 digits; parse with strtoul() and reject anything that overflows
+     * or doesn't fit an interface index */
+    errno = 0;
+    scope = strtoul(ll_iface, &end, 10);
+    if (errno == ERANGE || end == ll_iface || *end != '\0' ||
+        scope != (unsigned long)(unsigned int)scope) {
+      return ARES_ENOTFOUND;
+    }
+    ll_scope = (unsigned int)scope;
     if (channel->sock_funcs.aif_indextoname == NULL ||
         channel->sock_funcs.aif_indextoname(ll_scope, ifname, sizeof(ifname),
                                             channel->sock_func_cb_data) ==
