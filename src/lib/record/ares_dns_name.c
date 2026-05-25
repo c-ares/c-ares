@@ -52,6 +52,14 @@ static ares_status_t ares_nameoffset_create(ares_llist_t **list,
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
+  /* Don't record a name as a compression target if it can't be referenced by
+   * a pointer.  DNS name compression offsets are only 14 bits (RFC 1035
+   * 4.1.4), so a name positioned beyond 0x3FFF would have its offset
+   * truncated when written, producing a pointer to the wrong location. */
+  if (idx > 0x3FFF) {
+    return ARES_SUCCESS;
+  }
+
   if (*list == NULL) {
     *list = ares_llist_create(ares_nameoffset_free);
   }
