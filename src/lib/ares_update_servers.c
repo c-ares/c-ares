@@ -403,7 +403,19 @@ static ares_status_t ares_sconfig_linklocal(const ares_channel_t *channel,
 
   if (ares_str_isnum(ll_iface)) {
     char ifname[IF_NAMESIZE] = "";
-    ll_scope                 = (unsigned int)atoi(ll_iface);
+    {
+      /* Use validated integer parsing instead of atoi() to avoid silent
+       * overflow or undefined behavior on inputs that exceed INT_MAX. */
+      unsigned long parsed;
+      char         *endptr = NULL;
+      errno  = 0;
+      parsed = strtoul(ll_iface, &endptr, 10);
+      if (errno != 0 || endptr == ll_iface || *endptr != '\0' ||
+          parsed > UINT_MAX) {
+        return ARES_EBADSTR;
+      }
+      ll_scope = (unsigned int)parsed;
+    }
     if (channel->sock_funcs.aif_indextoname == NULL ||
         channel->sock_funcs.aif_indextoname(ll_scope, ifname, sizeof(ifname),
                                             channel->sock_func_cb_data) ==
