@@ -1,3 +1,4 @@
+#include <errno.h>
 /* MIT License
  *
  * Copyright (c) 1998 Massachusetts Institute of Technology
@@ -410,7 +411,18 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
   key = kv[0];
   if (num == 2) {
     val    = kv[1];
-    valint = (unsigned int)strtoul(val, NULL, 10);
+    {
+      char         *strtoul_end = NULL;
+      unsigned long strtoul_val;
+      errno      = 0;
+      strtoul_val = strtoul(val, &strtoul_end, 10);
+      if (errno != 0 || strtoul_end == val || *strtoul_end != '\0' ||
+          strtoul_val > UINT_MAX) {
+        status = ARES_EBADSTR;
+        goto done;
+      }
+      valint = (unsigned int)strtoul_val;
+    }
   }
 
   if (ares_streq(key, "ndots")) {
