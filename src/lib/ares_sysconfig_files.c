@@ -1,4 +1,3 @@
-#include <errno.h>
 /* MIT License
  *
  * Copyright (c) 1998 Massachusetts Institute of Technology
