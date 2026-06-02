@@ -337,8 +337,15 @@ static ares_bool_t name_match(const char *name, const char *adapter_name,
     return ARES_TRUE;
   }
 
-  if (ares_str_isnum(name) && (unsigned int)atoi(name) == ll_scope) {
-    return ARES_TRUE;
+  if (ares_str_isnum(name)) {
+    char         *endptr = NULL;
+    unsigned long idx;
+
+    errno = 0;
+    idx   = strtoul(name, &endptr, 10);
+    if (errno != ERANGE && *endptr == '\0' && idx == (unsigned long)ll_scope) {
+      return ARES_TRUE;
+    }
   }
 
   return ARES_FALSE;
