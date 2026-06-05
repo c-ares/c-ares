@@ -543,6 +543,7 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
   ares_status_t status;
   ares_buf_t   *namebuf     = NULL;
   size_t        label_start = ares_buf_get_position(buf);
+  size_t        name_len    = 0;
 
   if (buf == NULL) {
     return ARES_EFORMERR;
@@ -636,6 +637,19 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
     }
 
     /* New label */
+
+    /* RFC 1035 3.1: a name is limited to 255 octets.  Enforce it during
+     * decompression so a chain of pointers can't expand a single name without
+     * bound.  Track the unescaped length (label data plus the separator that
+     * precedes each label after the first), matching ares_split_dns_name(). */
+    if (name_len) {
+      name_len++;
+    }
+    name_len += c;
+    if (name_len > 255) {
+      status = ARES_EBADNAME;
+      goto fail;
+    }
 
     /* Labels are separated by periods */
     if (ares_buf_len(namebuf) != 0 && name != NULL) {

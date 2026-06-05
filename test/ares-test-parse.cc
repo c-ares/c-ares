@@ -219,5 +219,41 @@ TEST_F(LibraryTest, ParseMalformedRRCount) {
   EXPECT_EQ(nullptr, dnsrec);
 }
 
+TEST_F(LibraryTest, ParseRejectsOverlongName) {
+  // RFC 1035 3.1 limits a name to 255 octets.  A longer name (here built from
+  // six 63-octet labels) must be rejected instead of expanded.
+  std::vector<byte> data = {
+    0x12, 0x34, 0x81, 0x80,
+    0x00, 0x01,  // num questions
+    0x00, 0x01,  // num answer RRs
+    0x00, 0x00,  // num authority RRs
+    0x00, 0x00,  // num additional RRs
+    // Question
+    0x01, 'a', 0x00,
+    0x00, 0x01,  // type A
+    0x00, 0x01,  // class IN
+  };
+  // Answer name: 6 x 63 = 378 octets, then root terminator
+  for (int i = 0; i < 6; i++) {
+    data.push_back(63);
+    for (int j = 0; j < 63; j++) {
+      data.push_back('a');
+    }
+  }
+  data.push_back(0x00);
+  std::vector<byte> tail = {
+    0x00, 0x01,              // type A
+    0x00, 0x01,              // class IN
+    0x00, 0x00, 0x00, 0x00,  // TTL
+    0x00, 0x04,              // rdata length
+    0x01, 0x02, 0x03, 0x04,
+  };
+  data.insert(data.end(), tail.begin(), tail.end());
+
+  ares_dns_record_t *dnsrec = NULL;
+  EXPECT_EQ(ARES_EBADNAME, ares_dns_parse(data.data(), data.size(), 0, &dnsrec));
+  EXPECT_EQ(nullptr, dnsrec);
+}
+
 }  // namespace test
 }  // namespace ares
