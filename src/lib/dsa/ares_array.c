@@ -378,6 +378,13 @@ ares_status_t ares_array_claim_at(void *dest, size_t dest_size,
   }
 
   arr->cnt--;
+
+  /* When empty, reset offset so a later insert doesn't compact from an
+   * out-of-range index (offset can reach alloc_cnt after front claims). */
+  if (arr->cnt == 0) {
+    arr->offset = 0;
+  }
+
   return ARES_SUCCESS;
 }
 
