@@ -399,6 +399,10 @@ ares_status_t ares_init_sysconfig_files(const ares_channel_t *channel,
 ares_status_t ares_init_sysconfig_macos(const ares_channel_t *channel,
                                         ares_sysconfig_t     *sysconfig);
 #endif
+#ifdef __PASE__
+ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
+                                       ares_sysconfig_t     *sysconfig);
+#endif
 #ifdef USE_WINSOCK
 ares_status_t ares_init_sysconfig_windows(const ares_channel_t *channel,
                                           ares_sysconfig_t     *sysconfig);

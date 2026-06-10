@@ -605,6 +605,8 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
   status = ares_init_sysconfig_android(channel, &sysconfig);
 #elif defined(__APPLE__)
   status = ares_init_sysconfig_macos(channel, &sysconfig);
+#elif defined(__PASE__)
+  status = ares_init_sysconfig_pase(channel, &sysconfig);
 #elif defined(CARES_USE_LIBRESOLV)
   status = ares_init_sysconfig_libresolv(channel, &sysconfig);
 #elif defined(__QNX__)
