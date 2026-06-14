@@ -13,6 +13,9 @@ concurrency:
   group: ${{ github.ref }}-sonarcloud
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,12 +23,12 @@ jobs:
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
     name: "SonarCloud: Build and analyze"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: "SonarCloud: Install Build-Wrapper"
-        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v7
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2 # v7
+      - uses: awalsh128/cache-apt-pkgs-action@5513791f75b039e2a79653b1a92238d3fb8d99b4 # latest
         with:
           packages: libgmock-dev
           version: 1.0
@@ -35,7 +38,7 @@ jobs:
           cmake -DCARES_BUILD_TESTS=ON -S . -B build
           build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build/ --config Release
       - name: "SonareCloud: Scan"
-        uses: SonarSource/sonarqube-scan-action@v7
+        uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2 # v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

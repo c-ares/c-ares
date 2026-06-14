@@ -9,6 +9,9 @@ concurrency:
   group: ${{ github.ref }}-djgpp
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: windows-latest
@@ -18,9 +21,9 @@ jobs:
         run: |
           choco install --yes make
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Checkout Watt-32
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           repository: gvanem/Watt-32
           path: watt-32

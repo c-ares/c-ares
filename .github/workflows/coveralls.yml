@@ -5,6 +5,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Coveralls
@@ -12,8 +15,8 @@ jobs:
     # https://www.reddit.com/r/cpp_questions/comments/1ewnv8d/lcov_geninfo_error/
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: awalsh128/cache-apt-pkgs-action@5513791f75b039e2a79653b1a92238d3fb8d99b4 # latest
         with:
           packages: lcov libgmock-dev ninja-build
           version: 1.0
@@ -34,7 +37,7 @@ jobs:
           cd build
           ninja coverage
       - name: Upload to Coveralls
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@09b709cf6a16e30b0808ba050c7a6e8a5ef13f8d # master
         with:
           path-to-lcov: ${{runner.workspace}}/c-ares/build/coverage.info
           github-token: ${{ secrets.GITHUB_TOKEN }}

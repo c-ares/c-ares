@@ -9,14 +9,17 @@ concurrency:
   group: ${{ github.ref }}-openbsd
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     name: OpenBSD
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Test
-        uses: cross-platform-actions/action@v0.24.0
+        uses: cross-platform-actions/action@0eaba0c982c4946c2410055c694efaeaa8cf33e0 # v0.24.0
         env:
           DIST: OPENBSD
           BUILD_TYPE: "cmake"

@@ -15,6 +15,9 @@ env:
   CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -G Ninja"
   CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: macos-latest
@@ -25,7 +28,7 @@ jobs:
           brew uninstall cmake || true
           brew install cmake googletest llvm autoconf automake libtool make ninja
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE

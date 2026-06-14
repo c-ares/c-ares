@@ -15,6 +15,9 @@ env:
   CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH=/usr/local/"
   MAKE: make
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,7 +40,7 @@ jobs:
           yum install -y gcc gcc-c++ make autoconf automake libtool cmake3 git ninja-build gdb
           ln -sf /usr/bin/cmake3 /usr/bin/cmake
       - name: Checkout c-ares
-        uses: actions/checkout@v1
+        uses: actions/checkout@544eadc6bf3d226fd7a7a9f0dc5b5bf7ca0675b9 # v1
       - name: Build GoogleTest
         # GoogleTest v1.10 doesn't require c++14
         run: |

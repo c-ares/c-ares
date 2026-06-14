@@ -16,6 +16,9 @@ env:
   MAKE: make
   DIST: Windows
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: windows-latest
@@ -32,7 +35,7 @@ jobs:
     name: ${{ matrix.msystem }}
     steps:
       - name: Install MSYS2 and base packages
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2
         with:
           msystem: ${{ matrix.msystem }}
           update: true
@@ -49,7 +52,7 @@ jobs:
             mingw-w64-${{ matrix.env }}-gdb
             ${{ matrix.extra_packages }}
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
