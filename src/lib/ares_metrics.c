@@ -247,8 +247,12 @@ size_t ares_metrics_server_timeout(const ares_server_t  *server,
   }
 
   /* don't go below lower bounds */
-  if (timeout_ms < MIN_TIMEOUT_MS) {
-    timeout_ms = MIN_TIMEOUT_MS;
+  {
+    size_t min_timeout_ms =
+      channel->mintimeout ? channel->mintimeout : MIN_TIMEOUT_MS;
+    if (timeout_ms < min_timeout_ms) {
+      timeout_ms = min_timeout_ms;
+    }
   }
 
   /* don't go above upper bounds */
