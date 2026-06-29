@@ -51,8 +51,8 @@ size_t        ares_count_hexdigits(size_t n);
 unsigned char ares_count_bits_u8(unsigned char x);
 
 /* Multiply two size_t values, detecting overflow. On success, writes the
- * product to *out and returns ARES_FALSE. On overflow (or if out is NULL),
- * returns ARES_TRUE and *out is left untouched. */
-ares_bool_t   ares_size_mul_overflow(size_t a, size_t b, size_t *out);
+ * product to *res and returns ARES_FALSE. On overflow, returns ARES_TRUE and
+ * *res is left untouched. */
+ares_bool_t   ares_size_t_mul_overflow(size_t a, size_t b, size_t *res);
 
 #endif

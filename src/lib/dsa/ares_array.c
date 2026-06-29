@@ -147,7 +147,7 @@ static ares_status_t ares_array_move(ares_array_t *arr, size_t dest_idx,
   }
 
   nmembers = arr->cnt - (src_idx - arr->offset);
-  if (ares_size_mul_overflow(nmembers, arr->member_size, &nbytes)) {
+  if (ares_size_t_mul_overflow(nmembers, arr->member_size, &nbytes)) {
     return ARES_ENOMEM;
   }
 
@@ -206,8 +206,8 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
     return ARES_SUCCESS;
   }
 
-  if (ares_size_mul_overflow(arr->alloc_cnt, arr->member_size, &orig_size) ||
-      ares_size_mul_overflow(size, arr->member_size, &new_size)) {
+  if (ares_size_t_mul_overflow(arr->alloc_cnt, arr->member_size, &orig_size) ||
+      ares_size_t_mul_overflow(size, arr->member_size, &new_size)) {
     return ARES_ENOMEM;
   }
 
