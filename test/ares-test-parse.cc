@@ -219,5 +219,31 @@ TEST_F(LibraryTest, ParseMalformedRRCount) {
   EXPECT_EQ(nullptr, dnsrec);
 }
 
+TEST_F(LibraryTest, ParseOverlongNameRejected) {
+  std::vector<byte> data = {
+    0x12, 0x34,  // qid
+    0x84, 0x00,  // response + AA
+    0x00, 0x01,  // num questions
+    0x00, 0x00,  // num answer RRs
+    0x00, 0x00,  // num authority RRs
+    0x00, 0x00,  // num additional RRs
+  };
+  // Question name made of 5 labels of 63 octets each, i.e. 5*64+1 = 321
+  // encoded octets, beyond the RFC1035 255-octet limit.
+  for (int i = 0; i < 5; i++) {
+    data.push_back(63);
+    for (int j = 0; j < 63; j++) {
+      data.push_back('a');
+    }
+  }
+  data.push_back(0x00);        // root
+  data.push_back(0x00); data.push_back(0x01);  // type A
+  data.push_back(0x00); data.push_back(0x01);  // class IN
+
+  ares_dns_record_t *dnsrec = nullptr;
+  EXPECT_EQ(ARES_EBADNAME, ares_dns_parse(data.data(), data.size(), 0, &dnsrec));
+  EXPECT_EQ(nullptr, dnsrec);
+}
+
 }  // namespace test
 }  // namespace ares

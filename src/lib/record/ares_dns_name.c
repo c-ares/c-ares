@@ -543,6 +543,7 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
   ares_status_t status;
   ares_buf_t   *namebuf     = NULL;
   size_t        label_start = ares_buf_get_position(buf);
+  size_t        name_len    = 0;
 
   if (buf == NULL) {
     return ARES_EFORMERR;
@@ -636,6 +637,16 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
     }
 
     /* New label */
+
+    /* RFC 1035 3.1 / 2.3.4: the total encoded length of a domain name is
+     * limited to 255 octets.  Enforce it here so that a compressed name
+     * pointing at a long label chain can't expand without bound, which also
+     * keeps the work done per name linear in the message size. */
+    name_len += (size_t)c + 1;
+    if (name_len > 255) {
+      status = ARES_EBADNAME;
+      goto fail;
+    }
 
     /* Labels are separated by periods */
     if (ares_buf_len(namebuf) != 0 && name != NULL) {
