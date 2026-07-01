@@ -1363,6 +1363,94 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_FALSE, ares_dns_rr_get_opt_byid(NULL, ARES_RR_A_ADDR, 1, NULL, NULL));
 }
 
+#ifndef CARES_SYMBOL_HIDING
+/* Regression coverage for the zero-length salt/type-bitmap code paths in
+* NSEC3 and NSEC3PARAM (empty non-terminal / opt-out per RFC 5155 7.1),
+* which the parser represents via ares_dns_rr_set_bin_own(..., NULL, 0).
+* That internal API isn't exported from shared builds with symbol hiding
+* enabled, so this test is skipped in that configuration. */
+TEST_F(LibraryTest, DNSRecordNSEC3EmptyFields) {
+ ares_dns_record_t *dnsrec = NULL;
+ ares_dns_rr_t     *rr     = NULL;
+
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_record_create(&dnsrec, 0x1234, 0, ARES_OPCODE_QUERY,
+                           ARES_RCODE_NOERROR));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_record_query_add(dnsrec, "example.com", ARES_REC_TYPE_NSEC3,
+                              ARES_CLASS_IN));
+
+ /* NSEC3 with empty salt and empty type bitmap. */
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER,
+     "def456.example.com", ARES_REC_TYPE_NSEC3, ARES_CLASS_IN, 86400));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_u8(rr, ARES_RR_NSEC3_HASH_ALGORITHM,
+     ARES_NSEC3_HASH_SHA1));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_u8(rr, ARES_RR_NSEC3_FLAGS, 1));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_u16(rr, ARES_RR_NSEC3_ITERATIONS, 10));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_bin_own(rr, ARES_RR_NSEC3_SALT, NULL, 0));
+ const unsigned char nsec3_next[] = {
+   0x0d, 0x7c, 0xd3, 0xee, 0x6b, 0x4b, 0x28, 0xc5, 0x4d, 0xf0, 0x34, 0xb9,
+   0x79, 0x83, 0xa1, 0xd1, 0x6e, 0x8a, 0x41, 0x0e };
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_bin(rr, ARES_RR_NSEC3_NEXT_HASHED_OWNER, nsec3_next,
+     sizeof(nsec3_next)));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_bin_own(rr, ARES_RR_NSEC3_TYPE_BIT_MAPS, NULL, 0));
+
+ /* NSEC3PARAM with empty salt. */
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER,
+     "example.com", ARES_REC_TYPE_NSEC3PARAM, ARES_CLASS_IN, 0));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_u8(rr, ARES_RR_NSEC3PARAM_HASH_ALGORITHM,
+     ARES_NSEC3_HASH_SHA1));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_u8(rr, ARES_RR_NSEC3PARAM_FLAGS, 0));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_u16(rr, ARES_RR_NSEC3PARAM_ITERATIONS, 10));
+ EXPECT_EQ(ARES_SUCCESS,
+   ares_dns_rr_set_bin_own(rr, ARES_RR_NSEC3PARAM_SALT, NULL, 0));
+
+ /* Write and re-parse to exercise the write-side empty-length paths too. */
+ unsigned char *buf    = NULL;
+ size_t         buflen = 0;
+ EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &buf, &buflen));
+
+ ares_dns_record_t *parsed = NULL;
+ EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(buf, buflen, 0, &parsed));
+
+ rr = ares_dns_record_rr_get(parsed, ARES_SECTION_ANSWER, 0);
+ EXPECT_EQ(ARES_REC_TYPE_NSEC3, ares_dns_rr_get_type(rr));
+ {
+   size_t len = 1;
+   ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_SALT, &len);
+   EXPECT_EQ((size_t)0, len);
+ }
+ {
+   size_t len = 1;
+   ares_dns_rr_get_bin(rr, ARES_RR_NSEC3_TYPE_BIT_MAPS, &len);
+   EXPECT_EQ((size_t)0, len);
+ }
+
+ rr = ares_dns_record_rr_get(parsed, ARES_SECTION_ANSWER, 1);
+ EXPECT_EQ(ARES_REC_TYPE_NSEC3PARAM, ares_dns_rr_get_type(rr));
+ {
+   size_t len = 1;
+   ares_dns_rr_get_bin(rr, ARES_RR_NSEC3PARAM_SALT, &len);
+   EXPECT_EQ((size_t)0, len);
+ }
+
+ ares_free(buf);
+ ares_dns_record_destroy(parsed);
+ ares_dns_record_destroy(dnsrec);
+}
+#endif /* !CARES_SYMBOL_HIDING */
+
 TEST_F(LibraryTest, DNSParseFlags) {
   ares_dns_record_t   *dnsrec = NULL;
   ares_dns_rr_t       *rr     = NULL;

@@ -43,25 +43,25 @@ extern "C" {
  *  on requests (e.g. ARES_REC_TYPE_ANY), and some may only be valid on
  *  responses */
 typedef enum {
-  ARES_REC_TYPE_A     = 1,     /*!< Host address. */
-  ARES_REC_TYPE_NS    = 2,     /*!< Authoritative server. */
-  ARES_REC_TYPE_CNAME = 5,     /*!< Canonical name. */
-  ARES_REC_TYPE_SOA   = 6,     /*!< Start of authority zone. */
-  ARES_REC_TYPE_PTR   = 12,    /*!< Domain name pointer. */
-  ARES_REC_TYPE_HINFO = 13,    /*!< Host information. */
-  ARES_REC_TYPE_MX    = 15,    /*!< Mail routing information. */
-  ARES_REC_TYPE_TXT   = 16,    /*!< Text strings. */
-  ARES_REC_TYPE_SIG   = 24,    /*!< RFC 2535 / RFC 2931. SIG Record */
-  ARES_REC_TYPE_AAAA  = 28,    /*!< RFC 3596. Ip6 Address. */
-  ARES_REC_TYPE_SRV   = 33,    /*!< RFC 2782. Server Selection. */
-  ARES_REC_TYPE_NAPTR = 35,    /*!< RFC 3403. Naming Authority Pointer */
-  ARES_REC_TYPE_OPT   = 41,    /*!< RFC 6891. EDNS0 option (meta-RR) */
-  ARES_REC_TYPE_DS    = 43,    /*!< RFC 4034. Delegation Signer */
-  ARES_REC_TYPE_SSHFP = 44,   /*!< RFC 4255. SSH Key Fingerprint */
-  ARES_REC_TYPE_RRSIG = 46,    /*!< RFC 4034. Resource Record Signature */
-  ARES_REC_TYPE_NSEC  = 47,    /*!< RFC 4034. Next Secure */
-  ARES_REC_TYPE_DNSKEY = 48,   /*!< RFC 4034. DNS Public Key */
-  ARES_REC_TYPE_NSEC3 = 50,    /*!< RFC 5155. NSEC3 */
+  ARES_REC_TYPE_A          = 1,  /*!< Host address. */
+  ARES_REC_TYPE_NS         = 2,  /*!< Authoritative server. */
+  ARES_REC_TYPE_CNAME      = 5,  /*!< Canonical name. */
+  ARES_REC_TYPE_SOA        = 6,  /*!< Start of authority zone. */
+  ARES_REC_TYPE_PTR        = 12, /*!< Domain name pointer. */
+  ARES_REC_TYPE_HINFO      = 13, /*!< Host information. */
+  ARES_REC_TYPE_MX         = 15, /*!< Mail routing information. */
+  ARES_REC_TYPE_TXT        = 16, /*!< Text strings. */
+  ARES_REC_TYPE_SIG        = 24, /*!< RFC 2535 / RFC 2931. SIG Record */
+  ARES_REC_TYPE_AAAA       = 28, /*!< RFC 3596. Ip6 Address. */
+  ARES_REC_TYPE_SRV        = 33, /*!< RFC 2782. Server Selection. */
+  ARES_REC_TYPE_NAPTR      = 35, /*!< RFC 3403. Naming Authority Pointer */
+  ARES_REC_TYPE_OPT        = 41, /*!< RFC 6891. EDNS0 option (meta-RR) */
+  ARES_REC_TYPE_DS         = 43, /*!< RFC 4034. Delegation Signer */
+  ARES_REC_TYPE_SSHFP      = 44, /*!< RFC 4255. SSH Key Fingerprint */
+  ARES_REC_TYPE_RRSIG      = 46, /*!< RFC 4034. Resource Record Signature */
+  ARES_REC_TYPE_NSEC       = 47, /*!< RFC 4034. Next Secure */
+  ARES_REC_TYPE_DNSKEY     = 48, /*!< RFC 4034. DNS Public Key */
+  ARES_REC_TYPE_NSEC3      = 50, /*!< RFC 5155. NSEC3 */
   ARES_REC_TYPE_NSEC3PARAM = 51, /*!< RFC 5155. NSEC3 Parameters */
 
   ARES_REC_TYPE_TLSA = 52,     /*!< RFC 6698. DNS-Based Authentication of Named

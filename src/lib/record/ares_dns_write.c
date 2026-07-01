@@ -787,7 +787,9 @@ static ares_status_t ares_dns_write_rr_rrsig(ares_buf_t          *buf,
     return status;
   }
 
-  status = ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+  /* RFC 4034 3.1.7: "A sender MUST NOT use DNS name compression on the
+   *                  Signer's Name field when transmitting a RRSIG RR." */
+  status = ares_dns_write_rr_name(buf, rr, NULL, ARES_FALSE,
                                   ARES_RR_RRSIG_SIGNERS_NAME);
   if (status != ARES_SUCCESS) {
     return status;
@@ -809,7 +811,11 @@ static ares_status_t ares_dns_write_rr_nsec(ares_buf_t          *buf,
   const unsigned char *data;
   size_t               len = 0;
 
-  status = ares_dns_write_rr_name(buf, rr, namelist, ARES_FALSE,
+  (void)namelist;
+
+  /* RFC 4034 4.1.1: "A sender MUST NOT use DNS name compression on the
+   *                  Next Domain Name field when transmitting an NSEC RR." */
+  status = ares_dns_write_rr_name(buf, rr, NULL, ARES_FALSE,
                                   ARES_RR_NSEC_NEXT_DOMAIN);
   if (status != ARES_SUCCESS) {
     return status;
