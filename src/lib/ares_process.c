@@ -1162,7 +1162,12 @@ static size_t ares_calc_query_timeout(const ares_query_t   *query,
    * retry from the last retry */
   rounds = (query->try_count / num_servers);
   if (rounds > 0) {
-    timeplus <<= rounds;
+    if (rounds >= sizeof(timeplus) * CHAR_BIT ||
+        timeplus > (SIZE_MAX >> rounds)) {
+      timeplus = SIZE_MAX;
+    } else {
+      timeplus <<= rounds;
+    }
   }
 
   if (channel->maxtimeout && timeplus > channel->maxtimeout) {
