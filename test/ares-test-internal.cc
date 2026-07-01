@@ -1488,22 +1488,32 @@ TEST_F(LibraryTest, ArrayClaimFrontThenReuse) {
   ares_array_t *a = ares_array_create(sizeof(size_t), NULL);
   EXPECT_NE(nullptr, a);
 
-  /* Interleave front-claim and append many times. */
-  for (size_t i = 0; i < 1000; i++) {
-    size_t  val = i;
-    size_t *ptr = NULL;
+  for (size_t iter = 0; iter < 4; iter++) {
+    /* Fill exactly to the minimum allocation (ARES__ARRAY_MIN == 4) so a
+     * full front-drain later pushes offset to precisely alloc_cnt. */
+    for (size_t i = 0; i < 4; i++) {
+      size_t val = iter * 100 + i;
+      EXPECT_EQ(ARES_SUCCESS, ares_array_insertdata_last(a, &val));
+    }
+    EXPECT_EQ((size_t)4, ares_array_len(a));
 
-    EXPECT_EQ(ARES_SUCCESS, ares_array_insertdata_last(a, &val));
-    EXPECT_EQ((size_t)1, ares_array_len(a));
-
-    EXPECT_EQ(ARES_SUCCESS, ares_array_claim_at(NULL, 0, a, 0));
+    /* Drain ALL elements from the front so offset climbs to alloc_cnt (the
+     * condition the fix guards); verify copy-out value and FIFO order. */
+    for (size_t i = 0; i < 4; i++) {
+      size_t out = 0;
+      EXPECT_EQ(ARES_SUCCESS, ares_array_claim_at(&out, sizeof(out), a, 0));
+      EXPECT_EQ(iter * 100 + i, out);
+    }
     EXPECT_EQ((size_t)0, ares_array_len(a));
 
-    /* Array is now empty; appending must continue to work. */
+    /* Array is now empty with offset == alloc_cnt; appending must still
+     * work, and the data must be readable back out. */
+    size_t *ptr = NULL;
     EXPECT_EQ(ARES_SUCCESS, ares_array_insert_last((void **)&ptr, a));
     EXPECT_NE(nullptr, ptr);
-    *ptr = i;
-    EXPECT_EQ(ARES_SUCCESS, ares_array_claim_at(NULL, 0, a, 0));
+    *ptr = 424242;
+    EXPECT_EQ((size_t)424242, *(size_t *)ares_array_at(a, 0));
+    EXPECT_EQ(ARES_SUCCESS, ares_array_remove_first(a));
   }
 
   EXPECT_EQ((size_t)0, ares_array_len(a));
