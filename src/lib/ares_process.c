@@ -496,7 +496,10 @@ static ares_status_t read_conn_packets(ares_conn_t *conn,
        * return more than the 2-byte length prefix is able to represent.  A
        * datagram that large can't be a valid DNS message, and writing the
        * truncated (unsigned short)count would desync the framing of everything
-       * buffered after it, so discard it. */
+       * buffered after it, so discard it.  Standard UDP can't actually deliver
+       * a payload this large (max is 65507 IPv4 / 65527 IPv6); the only vector
+       * is IPv6 jumbograms (RFC 2675), which DNS never uses.  This is purely
+       * defense-in-depth. */
       if (count > 65535) {
         ares_buf_set_length(conn->in_buf, start_len);
         break;
