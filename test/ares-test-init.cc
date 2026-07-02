@@ -329,6 +329,10 @@ TEST_F(DefaultChannelTest, SetSortlistFailures) {
   EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "1 /01234567890123456789012345678901"));
   EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "xyzzy ; lwk"));
   EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "xyzzy ; 0x123"));
+  /* Numeric netmask in-charset and buffer-fitting but out of range */
+  EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "1.2.3.0/129"));
+  EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "1.2.3.0/33"));
+  EXPECT_EQ(ARES_EBADSTR, ares_set_sortlist(channel_, "1.2.3.0/4294967296"));
 }
 
 TEST_F(DefaultChannelTest, SetSortlistVariants) {

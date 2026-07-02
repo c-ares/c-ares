@@ -156,6 +156,31 @@ ares_bool_t ares_parse_port(const char *str, unsigned short *port,
   return ARES_TRUE;
 }
 
+ares_bool_t ares_str_to_num(const char *str, unsigned int max,
+                            unsigned int *num)
+{
+  char         *endptr = NULL;
+  unsigned long val;
+
+  if (str == NULL || num == NULL || *str == 0) {
+    return ARES_FALSE;
+  }
+
+  errno = 0;
+  val   = strtoul(str, &endptr, 10);
+  if (errno == ERANGE || endptr == str || *endptr != '\0') {
+    return ARES_FALSE;
+  }
+
+  if (val > (unsigned long)max) {
+    return ARES_FALSE;
+  }
+
+  *num = (unsigned int)val;
+
+  return ARES_TRUE;
+}
+
 ares_bool_t ares_str_isalnum(const char *str)
 {
   size_t i;

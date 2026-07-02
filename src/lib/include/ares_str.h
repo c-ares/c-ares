@@ -60,6 +60,19 @@ CARES_EXTERN size_t ares_strcpy(char *dest, const char *src, size_t dest_size);
 CARES_EXTERN ares_bool_t    ares_str_isnum(const char *str);
 CARES_EXTERN ares_bool_t    ares_str_isalnum(const char *str);
 
+/*! Parse a base-10 unsigned integer from a NULL-terminated string.  Unlike
+ *  atoi(), this is well-defined on out-of-range input: empty strings, trailing
+ *  non-digit characters, values that overflow, and values greater than the
+ *  provided maximum are all rejected.
+ *
+ *  \param[in]  str  String to parse
+ *  \param[in]  max  Maximum permitted value (inclusive)
+ *  \param[out] num  Parsed value on success
+ *  \return ARES_TRUE on success, ARES_FALSE on invalid or out-of-range input
+ */
+CARES_EXTERN ares_bool_t    ares_str_to_num(const char *str, unsigned int max,
+                                            unsigned int *num);
+
 CARES_EXTERN void           ares_str_ltrim(char *str);
 CARES_EXTERN void           ares_str_rtrim(char *str);
 CARES_EXTERN void           ares_str_trim(char *str);

@@ -25,6 +25,8 @@
  */
 #include "ares_private.h"
 
+#include <limits.h>
+
 #ifdef USE_WINSOCK
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
@@ -337,8 +339,11 @@ static ares_bool_t name_match(const char *name, const char *adapter_name,
     return ARES_TRUE;
   }
 
-  if (ares_str_isnum(name) && (unsigned int)atoi(name) == ll_scope) {
-    return ARES_TRUE;
+  {
+    unsigned int idx;
+    if (ares_str_to_num(name, UINT_MAX, &idx) && idx == ll_scope) {
+      return ARES_TRUE;
+    }
   }
 
   return ARES_FALSE;

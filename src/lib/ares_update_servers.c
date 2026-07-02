@@ -42,6 +42,7 @@
 #ifdef HAVE_STDINT_H
 #  include <stdint.h>
 #endif
+#include <limits.h>
 
 #if defined(USE_WINSOCK)
 #  if defined(HAVE_IPHLPAPI_H)
@@ -403,7 +404,9 @@ static ares_status_t ares_sconfig_linklocal(const ares_channel_t *channel,
 
   if (ares_str_isnum(ll_iface)) {
     char ifname[IF_NAMESIZE] = "";
-    ll_scope                 = (unsigned int)atoi(ll_iface);
+    if (!ares_str_to_num(ll_iface, UINT_MAX, &ll_scope)) {
+      return ARES_ENOTFOUND;
+    }
     if (channel->sock_funcs.aif_indextoname == NULL ||
         channel->sock_funcs.aif_indextoname(ll_scope, ifname, sizeof(ifname),
                                             channel->sock_func_cb_data) ==
