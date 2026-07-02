@@ -392,10 +392,10 @@ struct ares_options {
   char              *hosts_path;
   int                udp_max_queries;
   int                maxtimeout; /* in milliseconds */
-  int                mintimeout; /* in milliseconds */
   unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
   ares_evsys_t evsys;
   struct ares_server_failover_options server_failover_opts;
+  int          mintimeout; /* in milliseconds */
 };
 
 struct hostent;
