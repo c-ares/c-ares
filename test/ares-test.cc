@@ -477,6 +477,18 @@ MockServer::MockServer(int family, unsigned short port)
 #if defined(SO_NOSIGPIPE)
   setsockopt(udpfd_, SOL_SOCKET, SO_NOSIGPIPE, (void *)&optval, sizeof(optval));
 #endif
+  /* This harness is single-threaded and drains one datagram per event-loop
+   * iteration, but a client (e.g. MockUDPMaxQueriesTest) can burst dozens of
+   * query datagrams into this single UDP socket before we read any of them.
+   * On hosts with a small default UDP receive buffer (e.g. QNX under QEMU)
+   * the excess datagrams are silently dropped, so those queries time out and
+   * spawn extra sockets, breaking tests that assert an exact socket count.
+   * Enlarge the receive buffer so the whole burst is buffered until we drain
+   * it (the OS clamps the request to its own maximum). */
+  {
+    int rcvbuf = 1024 * 1024;
+    setsockopt(udpfd_, SOL_SOCKET, SO_RCVBUF, BYTE_CAST &rcvbuf, sizeof(rcvbuf));
+  }
 
   // Bind the sockets to the given port.
   if (family == AF_INET) {
