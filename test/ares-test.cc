@@ -644,6 +644,17 @@ void MockServer::ProcessFD(ares_socket_t fd) {
     if (connfd == ARES_SOCKET_BAD) {
       std::cerr << "Error accepting connection on fd " << fd << std::endl;
     } else {
+      /* This test harness is single-threaded: the mock server runs in the same
+       * thread as the c-ares client, so the client can only drain a socket
+       * between our (blocking) sends, never during one.  A full-size TCP reply
+       * (MakeMaxReadTcpAReply() is a 65535-octet frame) therefore deadlocks a
+       * blocking send() on platforms whose default socket buffers can't hold
+       * the whole frame -- e.g. OpenBSD's ~16k default -- because send() waits
+       * for a reader that cannot run.  Enlarge the send buffer so the entire
+       * frame fits locally and send() returns without a concurrent reader. */
+      int sndbuf = 128 * 1024;
+      setsockopt(connfd, SOL_SOCKET, SO_SNDBUF, BYTE_CAST &sndbuf,
+                 sizeof(sndbuf));
       connfds_.insert(connfd);
     }
     return;
