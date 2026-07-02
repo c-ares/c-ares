@@ -1480,6 +1480,46 @@ TEST_F(LibraryTest, Array) {
   ares_array_destroy(a);
 }
 
+/* Regression: repeatedly claiming the first element drives the internal
+ * offset up to the allocation size.  Re-inserting afterwards must still
+ * succeed (previously ares_array_insert_at() failed with ARES_EFORMERR
+ * because compaction tried to move from an out-of-range source index). */
+TEST_F(LibraryTest, ArrayClaimFrontThenReuse) {
+  ares_array_t *a = ares_array_create(sizeof(size_t), NULL);
+  EXPECT_NE(nullptr, a);
+
+  for (size_t iter = 0; iter < 4; iter++) {
+    /* Fill exactly to the minimum allocation (ARES__ARRAY_MIN == 4) so a
+     * full front-drain later pushes offset to precisely alloc_cnt. */
+    for (size_t i = 0; i < 4; i++) {
+      size_t val = iter * 100 + i;
+      EXPECT_EQ(ARES_SUCCESS, ares_array_insertdata_last(a, &val));
+    }
+    EXPECT_EQ((size_t)4, ares_array_len(a));
+
+    /* Drain ALL elements from the front so offset climbs to alloc_cnt (the
+     * condition the fix guards); verify copy-out value and FIFO order. */
+    for (size_t i = 0; i < 4; i++) {
+      size_t out = 0;
+      EXPECT_EQ(ARES_SUCCESS, ares_array_claim_at(&out, sizeof(out), a, 0));
+      EXPECT_EQ(iter * 100 + i, out);
+    }
+    EXPECT_EQ((size_t)0, ares_array_len(a));
+
+    /* Array is now empty with offset == alloc_cnt; appending must still
+     * work, and the data must be readable back out. */
+    size_t *ptr = NULL;
+    EXPECT_EQ(ARES_SUCCESS, ares_array_insert_last((void **)&ptr, a));
+    EXPECT_NE(nullptr, ptr);
+    *ptr = 424242;
+    EXPECT_EQ((size_t)424242, *(size_t *)ares_array_at(a, 0));
+    EXPECT_EQ(ARES_SUCCESS, ares_array_remove_first(a));
+  }
+
+  EXPECT_EQ((size_t)0, ares_array_len(a));
+  ares_array_destroy(a);
+}
+
 TEST_F(LibraryTest, HtableVpvp) {
   ares_llist_t       *l = NULL;
   ares_htable_vpvp_t *h = NULL;
