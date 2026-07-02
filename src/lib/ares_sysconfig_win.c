@@ -134,8 +134,8 @@ static ares_bool_t get_REG_SZ(HKEY hKey, const WCHAR *leafKeyName, char **outptr
   return ARES_TRUE;
 }
 
-static ares_status_t ares_buf_commajoin(ares_buf_t *buf, const char *src,
-                                        ares_bool_t asciionly)
+static ares_status_t sysconfig_commajoin(ares_buf_t *buf, const char *src,
+                                         ares_bool_t asciionly)
 {
   ares_status_t status;
 
@@ -159,6 +159,24 @@ static ares_status_t ares_buf_commajoin(ares_buf_t *buf, const char *src,
   }
 
   return ares_buf_append_str(buf, src);
+}
+
+/* Read a REG_SZ value and comma-append it (ASCII-only) to *buf.
+ * On allocation failure, destroys *buf and sets it to NULL. */
+static void reg_commajoin(ares_buf_t **buf, HKEY key, const WCHAR *leaf)
+{
+  char *p = NULL;
+
+  if (*buf == NULL || !get_REG_SZ(key, leaf, &p)) {
+    return;
+  }
+
+  if (sysconfig_commajoin(*buf, p, ARES_TRUE) != ARES_SUCCESS) {
+    ares_buf_destroy(*buf);
+    *buf = NULL;
+  }
+
+  ares_free(p);
 }
 
 /* A structure to hold the string form of IPv4 and IPv6 addresses so we can
@@ -503,7 +521,7 @@ static ares_bool_t get_DNS_Windows(char **outptr)
       /* Iff we didn't emit this address already, emit it now. */
       if (j == i) {
         /* Add that to buf (if we can). */
-        if (ares_buf_commajoin(buf, addresses[i].text, ARES_FALSE) !=
+        if (sysconfig_commajoin(buf, addresses[i].text, ARES_FALSE) !=
             ARES_SUCCESS) {
           ares_buf_destroy(buf);
           buf = NULL;
@@ -554,48 +572,26 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
   char        keyName[256];
   DWORD       keyNameBuffSize;
   DWORD       keyIdx = 0;
-  char       *p      = NULL;
   ares_buf_t *buf    = ares_buf_create();
+
+  *outptr = NULL;
 
   if (buf == NULL) {
     return ARES_FALSE;
   }
 
-  *outptr = NULL;
-
   /* 1. Global DNS Suffix Search List */
   if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NS_NT_KEY, 0, KEY_READ, &hKey) ==
       ERROR_SUCCESS) {
-    if (buf != NULL && get_REG_SZ(hKey, SEARCHLIST_KEY, &p)) {
-      if (ares_buf_commajoin(buf, p, ARES_TRUE) != ARES_SUCCESS) {
-        ares_buf_destroy(buf);
-        buf = NULL;
-      }
-      ares_free(p);
-      p = NULL;
-    }
-    if (buf != NULL && get_REG_SZ(hKey, DOMAIN_KEY, &p)) {
-      if (ares_buf_commajoin(buf, p, ARES_TRUE) != ARES_SUCCESS) {
-        ares_buf_destroy(buf);
-        buf = NULL;
-      }
-      ares_free(p);
-      p = NULL;
-    }
+    reg_commajoin(&buf, hKey, SEARCHLIST_KEY);
+    reg_commajoin(&buf, hKey, DOMAIN_KEY);
     RegCloseKey(hKey);
   }
 
   if (buf != NULL &&
       RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NT_DNSCLIENT, 0, KEY_READ, &hKey) ==
         ERROR_SUCCESS) {
-    if (get_REG_SZ(hKey, SEARCHLIST_KEY, &p)) {
-      if (ares_buf_commajoin(buf, p, ARES_TRUE) != ARES_SUCCESS) {
-        ares_buf_destroy(buf);
-        buf = NULL;
-      }
-      ares_free(p);
-      p = NULL;
-    }
+    reg_commajoin(&buf, hKey, SEARCHLIST_KEY);
     RegCloseKey(hKey);
   }
 
@@ -604,14 +600,7 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
   if (buf != NULL &&
       RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_DNSCLIENT, 0, KEY_READ, &hKey) ==
         ERROR_SUCCESS) {
-    if (get_REG_SZ(hKey, PRIMARYDNSSUFFIX_KEY, &p)) {
-      if (ares_buf_commajoin(buf, p, ARES_TRUE) != ARES_SUCCESS) {
-        ares_buf_destroy(buf);
-        buf = NULL;
-      }
-      ares_free(p);
-      p = NULL;
-    }
+    reg_commajoin(&buf, hKey, PRIMARYDNSSUFFIX_KEY);
     RegCloseKey(hKey);
   }
 
@@ -629,31 +618,10 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
           ERROR_SUCCESS) {
         continue;
       }
-      /* p can be comma separated (SearchList) */
-      if (get_REG_SZ(hKeyEnum, SEARCHLIST_KEY, &p)) {
-        if (ares_buf_commajoin(buf, p, ARES_TRUE) != ARES_SUCCESS) {
-          ares_buf_destroy(buf);
-          buf = NULL;
-        }
-        ares_free(p);
-        p = NULL;
-      }
-      if (buf != NULL && get_REG_SZ(hKeyEnum, DOMAIN_KEY, &p)) {
-        if (ares_buf_commajoin(buf, p, ARES_TRUE) != ARES_SUCCESS) {
-          ares_buf_destroy(buf);
-          buf = NULL;
-        }
-        ares_free(p);
-        p = NULL;
-      }
-      if (buf != NULL && get_REG_SZ(hKeyEnum, DHCPDOMAIN_KEY, &p)) {
-        if (ares_buf_commajoin(buf, p, ARES_TRUE) != ARES_SUCCESS) {
-          ares_buf_destroy(buf);
-          buf = NULL;
-        }
-        ares_free(p);
-        p = NULL;
-      }
+      /* SearchList can be comma separated */
+      reg_commajoin(&buf, hKeyEnum, SEARCHLIST_KEY);
+      reg_commajoin(&buf, hKeyEnum, DOMAIN_KEY);
+      reg_commajoin(&buf, hKeyEnum, DHCPDOMAIN_KEY);
       RegCloseKey(hKeyEnum);
 
       if (buf == NULL) {
