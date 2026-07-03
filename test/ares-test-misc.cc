@@ -26,6 +26,8 @@
 #include "ares-test.h"
 #include "dns-proto.h"
 
+#include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -343,6 +345,95 @@ TEST_F(DefaultChannelTest, GetAddrinfoOnionDomain) {
   struct ares_addrinfo_hints hints = {0, 0, 0, 0};
   hints.ai_family = AF_UNSPEC;
   ares_getaddrinfo(channel_, "dontleak.onion", NULL, &hints, AddrInfoCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENOTFOUND, result.status_);
+}
+
+// Collect the resolved nodes of an AddrInfoResult as "addr:port" strings.
+static std::set<std::string> AddrInfoNodeStrings(const AddrInfoResult &result) {
+  std::set<std::string> out;
+  if (result.ai_ == nullptr) {
+    return out;
+  }
+  for (struct ares_addrinfo_node *n = result.ai_->nodes; n != NULL;
+       n = n->ai_next) {
+    std::stringstream ss;
+    if (n->ai_family == AF_INET) {
+      sockaddr_in *sin = reinterpret_cast<sockaddr_in *>(
+        reinterpret_cast<void *>(n->ai_addr));
+      ss << AddressToString(&sin->sin_addr, 4) << ":" << ntohs(sin->sin_port);
+    } else if (n->ai_family == AF_INET6) {
+      sockaddr_in6 *sin6 = reinterpret_cast<sockaddr_in6 *>(
+        reinterpret_cast<void *>(n->ai_addr));
+      ss << "[" << AddressToString(&sin6->sin6_addr, 16)
+         << "]:" << ntohs(sin6->sin6_port);
+    }
+    out.insert(ss.str());
+  }
+  return out;
+}
+
+// A NULL node/hostname with a service is a valid POSIX getaddrinfo() request;
+// it must not crash and, without ARES_AI_PASSIVE, returns loopback addresses.
+TEST_F(DefaultChannelTest, GetAddrinfoNullNameLoopback) {
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_flags  = ARES_AI_NUMERICSERV;
+  ares_getaddrinfo(channel_, NULL, "80", &hints, AddrInfoCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::set<std::string> expected = {
+      "127.0.0.1:80", "[0000:0000:0000:0000:0000:0000:0000:0001]:80"};
+  EXPECT_EQ(expected, AddrInfoNodeStrings(result));
+}
+
+// With ARES_AI_PASSIVE a NULL node returns wildcard addresses (for bind()).
+TEST_F(DefaultChannelTest, GetAddrinfoNullNamePassiveWildcard) {
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_flags  = ARES_AI_NUMERICSERV | ARES_AI_PASSIVE;
+  ares_getaddrinfo(channel_, NULL, "80", &hints, AddrInfoCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::set<std::string> expected = {
+      "0.0.0.0:80", "[0000:0000:0000:0000:0000:0000:0000:0000]:80"};
+  EXPECT_EQ(expected, AddrInfoNodeStrings(result));
+}
+
+// ai_family is honored for NULL-node synthesis.
+TEST_F(DefaultChannelTest, GetAddrinfoNullNameInetOnly) {
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_INET;
+  hints.ai_flags  = ARES_AI_NUMERICSERV;
+  ares_getaddrinfo(channel_, NULL, "80", &hints, AddrInfoCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::set<std::string> expected = {"127.0.0.1:80"};
+  EXPECT_EQ(expected, AddrInfoNodeStrings(result));
+}
+
+TEST_F(DefaultChannelTest, GetAddrinfoNullNameInet6Passive) {
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_INET6;
+  hints.ai_flags  = ARES_AI_NUMERICSERV | ARES_AI_PASSIVE;
+  ares_getaddrinfo(channel_, NULL, "80", &hints, AddrInfoCallback, &result);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  std::set<std::string> expected = {
+      "[0000:0000:0000:0000:0000:0000:0000:0000]:80"};
+  EXPECT_EQ(expected, AddrInfoNodeStrings(result));
+}
+
+// Both node and service NULL is invalid per POSIX; must error, not crash.
+TEST_F(DefaultChannelTest, GetAddrinfoNullNameNullService) {
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_UNSPEC;
+  ares_getaddrinfo(channel_, NULL, NULL, &hints, AddrInfoCallback, &result);
   EXPECT_TRUE(result.done_);
   EXPECT_EQ(ARES_ENOTFOUND, result.status_);
 }
