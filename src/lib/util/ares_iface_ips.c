@@ -256,12 +256,12 @@ ares_iface_ip_flags_t ares_iface_ips_get_flags(const ares_iface_ips_t *ips,
   const ares_iface_ip_t *ip;
 
   if (ips == NULL) {
-    return 0;
+    return ARES_IFACE_IP_NONE;
   }
 
   ip = ares_array_at_const(ips->ips, idx);
   if (ip == NULL) {
-    return 0;
+    return ARES_IFACE_IP_NONE;
   }
 
   return ip->flags;
@@ -376,7 +376,7 @@ static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
 
   for (address = addresses; address != NULL; address = address->Next) {
     IP_ADAPTER_UNICAST_ADDRESS *ipaddr     = NULL;
-    ares_iface_ip_flags_t       addrflag   = 0;
+    ares_iface_ip_flags_t       addrflag   = ARES_IFACE_IP_NONE;
     char                        ifname[64] = "";
 
 #  if defined(HAVE_CONVERTINTERFACEINDEXTOLUID) && \
@@ -477,7 +477,7 @@ static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
   }
 
   for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
-    ares_iface_ip_flags_t addrflag = 0;
+    ares_iface_ip_flags_t addrflag = ARES_IFACE_IP_NONE;
     struct ares_addr      addr;
     unsigned char         netmask  = 0;
     unsigned int          ll_scope = 0;
