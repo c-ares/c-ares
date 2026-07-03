@@ -523,6 +523,24 @@ CONTAINED_TEST_F(LibraryTest, ContainerSvcConfInit,
   return HasFailure();
 }
 
+// AIX /etc/netsvc.conf uses address-family-suffixed tokens (bind4/bind6,
+// local4/local6).  Ensure these are recognized rather than dropped.
+NameContentList netsvcconf = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "search first.com second.com\n"},
+  {"/etc/netsvc.conf", "hosts = bind4, local4\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerNetsvcConfAIXSuffix,
+                 "myhostname", "mydomainname.org", netsvcconf) {
+  ares_channel_t *channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  /* "bf" (not the default "fb") proves the bind4/local4 tokens were parsed. */
+  EXPECT_EQ(std::string("bf"), std::string(channel->lookups));
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 NameContentList malformedresolvconflookup = {
   {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
                        "lookup garbage\n"}};  // malformed line
