@@ -942,7 +942,11 @@ return the requested resource record pointer or NULL on failure (misuse).
 found, otherwise ARES_FALSE if not found (or misuse).
 
 .SH AVAILABILITY
-These functions were first introduced in c-ares version 1.22.0.
+These functions were first introduced in c-ares version 1.22.0, except
+\fIares_dns_record_rr_get_const(3)\fP which was introduced in version 1.28.0, and
+\fIares_dns_rr_get_abin_cnt(3)\fP, \fIares_dns_rr_get_abin(3)\fP,
+\fIares_dns_rr_add_abin(3)\fP and \fIares_dns_rr_del_abin(3)\fP which were
+introduced in version 1.32.0.
 .SH SEE ALSO
 .BR ares_dns_mapping (3),
 .BR ares_dns_record (3),
