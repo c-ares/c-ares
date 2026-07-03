@@ -149,6 +149,12 @@ TEST_F(DefaultChannelTest, SetServersCSV) {
             ares_set_servers_csv(channel_, "1.2.3.4 , [0102:0304:0506:0708:0910:1112:1314:1516]:53, [fe80::1]:53%iface0, 2.3.4.5"));
   EXPECT_EQ(expected, GetNameServers(channel_));
 
+  // Reject an out-of-range numeric link-local scope, keep rest.  Validation
+  // fails before the interface is looked up, so no real interface is needed.
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_set_servers_csv(channel_, "1.2.3.4 , [0102:0304:0506:0708:0910:1112:1314:1516]:53, [fe80::1]:53%99999999999, 2.3.4.5"));
+  EXPECT_EQ(expected, GetNameServers(channel_));
+
   // Same, with ports
   EXPECT_EQ(ARES_SUCCESS,
             ares_set_servers_ports_csv(channel_, "1.2.3.4:54,[0102:0304:0506:0708:0910:1112:1314:1516]:80,2.3.4.5:55"));

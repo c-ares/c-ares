@@ -27,6 +27,8 @@
  */
 #include "ares_private.h"
 
+#include <limits.h>
+
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
@@ -403,7 +405,13 @@ static ares_status_t ares_sconfig_linklocal(const ares_channel_t *channel,
 
   if (ares_str_isnum(ll_iface)) {
     char ifname[IF_NAMESIZE] = "";
-    ll_scope                 = (unsigned int)atoi(ll_iface);
+
+    /* A numeric interface index can be up to 15 digits; parse with the
+     * range-checked helper so an out-of-range value is rejected rather than
+     * silently wrapped as atoi() would */
+    if (!ares_str_parse_uint(ll_iface, UINT_MAX, &ll_scope)) {
+      return ARES_ENOTFOUND;
+    }
     if (channel->sock_funcs.aif_indextoname == NULL ||
         channel->sock_funcs.aif_indextoname(ll_scope, ifname, sizeof(ifname),
                                             channel->sock_func_cb_data) ==
