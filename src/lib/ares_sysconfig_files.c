@@ -348,12 +348,17 @@ static ares_status_t config_lookup(ares_sysconfig_t *sysconfig, ares_buf_t *buf,
     const char *value = lookups[i];
     char        ch;
 
+    /* AIX /etc/netsvc.conf uses address-family-suffixed tokens such as
+     * "bind4"/"bind6" and "local4"/"local6" in addition to the bare forms. */
     if (ares_strcaseeq(value, "dns") || ares_strcaseeq(value, "bind") ||
+        ares_strcaseeq(value, "bind4") || ares_strcaseeq(value, "bind6") ||
         ares_strcaseeq(value, "resolv") || ares_strcaseeq(value, "resolve")) {
       ch = 'b';
     } else if (ares_strcaseeq(value, "files") ||
                ares_strcaseeq(value, "file") ||
-               ares_strcaseeq(value, "local")) {
+               ares_strcaseeq(value, "local") ||
+               ares_strcaseeq(value, "local4") ||
+               ares_strcaseeq(value, "local6")) {
       ch = 'f';
     } else {
       continue;
