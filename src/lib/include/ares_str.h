@@ -61,11 +61,14 @@ CARES_EXTERN ares_bool_t    ares_str_isnum(const char *str);
 CARES_EXTERN ares_bool_t    ares_str_isalnum(const char *str);
 
 /*! Parse a base-10 unsigned integer from a NULL-terminated string.  Unlike
- *  atoi(), this rejects overflow, trailing garbage, and any value that does
- *  not fit within the caller-provided maximum.
+ *  atoi(), this rejects overflow, leading or trailing garbage (a sign,
+ *  whitespace, or non-digit characters), and any value that does not fit
+ *  within the caller-provided maximum.
  *
- *  \param[in]  str  String to parse.  Must be non-NULL and non-empty.
- *  \param[in]  max  Largest value considered valid.
+ *  \param[in]  str  String to parse.  May be NULL or empty, in which case
+ *                   ARES_FALSE is returned.
+ *  \param[in]  max  Largest value considered valid.  Values above UINT_MAX
+ *                   are capped to UINT_MAX since out is an unsigned int.
  *  \param[out] out  On success, receives the parsed value.  Untouched on
  *                   failure.
  *  \return ARES_TRUE if a valid in-range integer was parsed, ARES_FALSE

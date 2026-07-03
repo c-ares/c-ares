@@ -85,6 +85,19 @@ TEST_F(LibraryTest, StringLengthWithoutNullTerminator) {
   }
 }
 
+TEST_F(LibraryTest, StrParseUint) {
+  unsigned int v = 0;
+  EXPECT_TRUE(ares_str_parse_uint("0", 128, &v));    EXPECT_EQ(0u, v);
+  EXPECT_TRUE(ares_str_parse_uint("128", 128, &v));  EXPECT_EQ(128u, v);
+  EXPECT_FALSE(ares_str_parse_uint("129", 128, &v));            /* > max      */
+  EXPECT_FALSE(ares_str_parse_uint("4294967296", UINT_MAX, &v));/* LP64 fit   */
+  EXPECT_FALSE(ares_str_parse_uint("12x", UINT_MAX, &v));       /* trailing   */
+  EXPECT_FALSE(ares_str_parse_uint(" 5", UINT_MAX, &v));        /* leading ws */
+  EXPECT_FALSE(ares_str_parse_uint("-1", UINT_MAX, &v));        /* sign wrap  */
+  EXPECT_FALSE(ares_str_parse_uint("", UINT_MAX, &v));
+  EXPECT_FALSE(ares_str_parse_uint(NULL, UINT_MAX, &v));
+}
+
 void CheckPtoN4(int size, unsigned int value, const char *input) {
   struct in_addr a4;
   a4.s_addr = 0;
