@@ -1690,6 +1690,22 @@ static ares_status_t ares_dns_parse_buf(ares_buf_t *buf, unsigned int flags,
     }
   }
 
+  /* RFC 6891 6.1.1: a message MUST NOT contain more than one OPT RR.  Reject
+   * any response carrying multiple OPT records in the additional section. */
+  {
+    size_t rr_cnt  = ares_dns_record_rr_cnt(*dnsrec, ARES_SECTION_ADDITIONAL);
+    size_t opt_cnt = 0;
+    size_t j;
+    for (j = 0; j < rr_cnt; j++) {
+      const ares_dns_rr_t *rr =
+        ares_dns_record_rr_get_const(*dnsrec, ARES_SECTION_ADDITIONAL, j);
+      if (ares_dns_rr_get_type(rr) == ARES_REC_TYPE_OPT && ++opt_cnt > 1) {
+        status = ARES_EBADRESP;
+        goto fail;
+      }
+    }
+  }
+
   /* Finalize rcode now that if we have OPT it is processed */
   if (!ares_dns_rcode_isvalid((*dnsrec)->raw_rcode)) {
     (*dnsrec)->rcode = ARES_RCODE_SERVFAIL;
