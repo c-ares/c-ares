@@ -1903,6 +1903,51 @@ TEST_P(MockChannelTest, VerifySocketFunctionCallback) {
 
 }
 
+class MockHighRetrySocketFailTest : public MockChannelOptsTest {
+ public:
+  MockHighRetrySocketFailTest()
+    : MockChannelOptsTest(1, AF_INET, false, false, FillOptions(&opts_),
+                          ARES_OPT_TRIES) {}
+
+  static struct ares_options *FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->tries = 100000;
+    return opts;
+  }
+
+ private:
+  struct ares_options opts_;
+};
+
+TEST_F(MockHighRetrySocketFailTest, SocketOpenFailuresDoNotRecurse) {
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+
+  size_t count = 0;
+
+  sock_funcs.asocket =
+    [](int af, int type, int protocol, void *p) -> ares_socket_t {
+    (void)af;
+    (void)type;
+    (void)protocol;
+    EXPECT_NE(nullptr, p);
+    (*reinterpret_cast<size_t *>(p))++;
+    return ARES_SOCKET_BAD;
+  };
+
+  ares_set_socket_functions(channel_, &sock_funcs, &count);
+
+  QueryResult result;
+  ares_status_t status =
+    ares_query_dnsrec(channel_, "www.google.com.", ARES_CLASS_IN,
+                      ARES_REC_TYPE_A, QueryCallback, &result, NULL);
+
+  EXPECT_EQ(ARES_SUCCESS, status);
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
+  EXPECT_EQ(100000U, count);
+}
+
 static const unsigned char *
   fetch_server_cookie(const ares_dns_record_t *dnsrec, size_t *len)
 {
