@@ -3,6 +3,9 @@
 name: QNX
 on:
   push:
+    branches:
+      - main
+      - 'v*'
 
 concurrency:
   group: ${{ github.ref }}-qnx
