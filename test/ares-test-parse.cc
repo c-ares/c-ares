@@ -423,5 +423,37 @@ TEST_F(LibraryTest, ParseMultipleOptRejected) {
   EXPECT_EQ(nullptr, dnsrec);
 }
 
+// RFC 3597: only RR types defined in RFC 1035 may use name compression within
+// their RDATA.  A modern type such as SVCB must reject a compressed target,
+// same as SRV -- this exercises the shared policy, not an SRV special case.
+TEST_F(LibraryTest, ParseSvcbRejectsCompressedTarget) {
+  const unsigned char data[] = {
+    0x12, 0x34,              // qid
+    0x84, 0x00,              // response + AA
+    0x00, 0x01,              // qdcount
+    0x00, 0x01,              // ancount
+    0x00, 0x00,              // nscount
+    0x00, 0x00,              // arcount
+    // Question (name at offset 0x0c)
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x40,              // type SVCB (64)
+    0x00, 0x01,              // class IN
+    // Answer
+    0xc0, 0x0c,              // name -> pointer to example.com
+    0x00, 0x40,              // type SVCB
+    0x00, 0x01,              // class IN
+    0x00, 0x00, 0x00, 0x3c,  // TTL
+    0x00, 0x04,              // rdlength
+    0x00, 0x01,              // SvcPriority
+    0xc0, 0x0c,              // TargetName -> compression pointer (illegal)
+  };
+
+  ares_dns_record_t *dnsrec = NULL;
+  EXPECT_EQ(ARES_EBADNAME, ares_dns_parse(data, sizeof(data), 0, &dnsrec));
+  EXPECT_EQ(nullptr, dnsrec);
+}
+
 }  // namespace test
 }  // namespace ares

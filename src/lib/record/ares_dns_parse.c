@@ -46,8 +46,14 @@ static ares_status_t ares_dns_parse_and_set_dns_name(ares_buf_t    *buf,
 {
   ares_status_t status;
   char         *name = NULL;
+  /* Only RR types defined in RFC1035 may use name compression within their
+   * RDATA (RFC3597).  Reject compression pointers for any other type (e.g.
+   * SRV per RFC2782) to match the write-side policy and avoid following
+   * pointers that a non-understanding nameserver could not have rewritten. */
+  ares_bool_t   allow_compression =
+    ares_dns_rec_allow_name_comp(ares_dns_rr_get_type(rr));
 
-  status = ares_dns_name_parse(buf, &name, is_hostname);
+  status = ares_dns_name_parse(buf, &name, is_hostname, allow_compression);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -1399,7 +1405,7 @@ static ares_status_t ares_dns_parse_qd(ares_buf_t        *buf,
    */
 
   /* Name */
-  status = ares_dns_name_parse(buf, &name, ARES_FALSE);
+  status = ares_dns_name_parse(buf, &name, ARES_FALSE, ARES_TRUE);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -1470,7 +1476,7 @@ static ares_status_t ares_dns_parse_rr(ares_buf_t *buf, unsigned int flags,
    */
 
   /* Name */
-  status = ares_dns_name_parse(buf, &name, ARES_FALSE);
+  status = ares_dns_name_parse(buf, &name, ARES_FALSE, ARES_TRUE);
   if (status != ARES_SUCCESS) {
     goto done;
   }
