@@ -3,6 +3,9 @@
 name: Fedora Latest (bleeding edge)
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:

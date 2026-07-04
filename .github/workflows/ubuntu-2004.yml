@@ -3,6 +3,9 @@
 name: Ubuntu 20.04
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
