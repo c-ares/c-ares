@@ -526,6 +526,69 @@ TEST_P(MockUDPMaxQueriesTest, GetHostByNameParallelLookups) {
   }
 }
 
+// Regression test for #1152.  A transient failure (a single query timeout)
+// must not force a brand new UDP socket to be opened for every subsequent
+// query to the same server.  The connection that saw the timeout is retired
+// for new queries (ARES_CONN_FLAG_NONEW) and drains, while new queries share
+// one fresh connection.  Before the fix, ares_fetch_connection() rejected
+// reuse whenever the server's consec_failures was > 0, so a single dropped
+// packet caused a new socket per query and exhausted sockets/ports under load.
+class MockUDPTransientFailureTest
+    : public MockChannelOptsTest,
+      public ::testing::WithParamInterface<int> {
+ public:
+  MockUDPTransientFailureTest()
+    : MockChannelOptsTest(1, GetParam(), false, false,
+                          FillOptions(&opts_),
+                          ARES_OPT_TIMEOUTMS | ARES_OPT_TRIES) {}
+  static struct ares_options* FillOptions(struct ares_options * opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->timeout = 150; /* ms (ARES_OPT_TIMEOUTMS) - keep the test quick */
+    opts->tries   = 3;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+TEST_P(MockUDPTransientFailureTest, NoSocketExplosionOnTimeout) {
+  // Configure the server to never reply, so every query times out (a
+  // transient failure).  No SetReply() means ProcessRequest() drops the
+  // packet; the AnyNumber() expectation just silences uninteresting-call
+  // warnings for the many dropped requests.
+  EXPECT_CALL(server_, OnRequest("www.example.com", T_A))
+    .Times(testing::AnyNumber());
+
+  int rc = ARES_SUCCESS;
+  ares_set_socket_callback(channel_, SocketConnectCallback, &rc);
+  sock_cb_count = 0;
+
+  const size_t nqueries = 16;
+  HostResult result[nqueries];
+  for (size_t i = 0; i < nqueries; i++) {
+    ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback,
+                       &result[i]);
+  }
+  Process();
+
+  // All queries complete (they fail with a timeout since the server never
+  // replied).
+  for (size_t i = 0; i < nqueries; i++) {
+    EXPECT_TRUE(result[i].done_);
+  }
+
+  // The key assertion: with tries=3 the fix opens roughly one connection per
+  // retry round (the retired connection is skipped and the single replacement
+  // is reused by all queries), not one per query.  Before the fix this was on
+  // the order of nqueries*tries sockets.
+  EXPECT_LE(sock_cb_count, 6)
+    << "opened " << sock_cb_count << " sockets for " << nqueries
+    << " queries; a transient timeout must not force a new socket per query";
+}
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPTransientFailureTest,
+                         ::testing::ValuesIn(ares::test::families), PrintFamily);
+
 class CacheQueriesTest
     : public MockChannelOptsTest,
       public ::testing::WithParamInterface<int> {
