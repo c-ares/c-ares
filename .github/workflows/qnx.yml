@@ -70,12 +70,12 @@ jobs:
           echo "Downloading QNX SDP ..."
           retry ${{ github.workspace }}/qnxinstall/qnxsoftwarecenter/qnxsoftwarecenter_clt -mirror -cleanInstall -destination ${{ github.workspace }}/qnx800 -installBaseline com.qnx.qnx800 -myqnx.user="$QNX_USER" -myqnx.password="$QNX_PASSWORD"
       - name: Checkout qnx-ports build-files
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: qnx-ports/build-files
           path: build-files
       - name: Checkout qnx-ports googletest
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: qnx-ports/googletest
           path: googletest
@@ -85,7 +85,7 @@ jobs:
           env
           make -C build-files/ports/googletest PREFIX=usr install -j$(nproc)
       - name: Checkout c-ares
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           path: c-ares
       - name: Set CMAKE_FIND_ROOT_PATH

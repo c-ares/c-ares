@@ -32,7 +32,7 @@ jobs:
         run: |
           yum install -y gcc gcc-c++ make autoconf automake libtool cmake git ninja-build gdb curl wget gtest-devel gmock-devel pkgconf clang clang-tools-extra clang-analyzer lldb gdb valgrind procps
       - name: Checkout c-ares
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: "Make sure TCP FastOpen is enabled"
         run: |
           sudo sysctl -w net.ipv4.tcp_fastopen=3
