@@ -37,7 +37,7 @@ jobs:
           yum install -y gcc gcc-c++ make autoconf automake libtool cmake3 git ninja-build gdb
           ln -sf /usr/bin/cmake3 /usr/bin/cmake
       - name: Checkout c-ares
-        uses: actions/checkout@v1
+        uses: actions/checkout@50fbc622fc4ef5163becd7fab6573eac35f8462e # v1.2.0
       - name: Build GoogleTest
         # GoogleTest v1.10 doesn't require c++14
         run: |

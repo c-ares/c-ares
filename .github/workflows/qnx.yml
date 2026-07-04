@@ -21,7 +21,7 @@ jobs:
     name: "QNX"
     steps:
       - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
           packages: cmake ninja-build autoconf automake libtool qemu-user qemu-system-x86 qemu-utils bridge-utils net-tools libvirt-clients libvirt-daemon-system
           version: 1.0
@@ -67,12 +67,12 @@ jobs:
           echo "Downloading QNX SDP ..."
           retry ${{ github.workspace }}/qnxinstall/qnxsoftwarecenter/qnxsoftwarecenter_clt -mirror -cleanInstall -destination ${{ github.workspace }}/qnx800 -installBaseline com.qnx.qnx800 -myqnx.user="$QNX_USER" -myqnx.password="$QNX_PASSWORD"
       - name: Checkout qnx-ports build-files
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           repository: qnx-ports/build-files
           path: build-files
       - name: Checkout qnx-ports googletest
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           repository: qnx-ports/googletest
           path: googletest
@@ -82,7 +82,7 @@ jobs:
           env
           make -C build-files/ports/googletest PREFIX=usr install -j$(nproc)
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           path: c-ares
       - name: Set CMAKE_FIND_ROOT_PATH

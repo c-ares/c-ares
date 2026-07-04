@@ -14,9 +14,9 @@ jobs:
     runs-on: windows-latest
     name: OpenWatcom
     steps:
-      - uses: open-watcom/setup-watcom@v0
+      - uses: open-watcom/setup-watcom@7ef247f4cdd25d29b7757ae9908655d253d3e13c # v0
       - name: Checkout Source
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: configure
         run: buildconf.bat
         shell: cmd

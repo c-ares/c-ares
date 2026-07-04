@@ -27,7 +27,7 @@ jobs:
         run: |
           apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make clang clang-analyzer compiler-rt lldb gcc g++ valgrind gdb sudo
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: "Make sure TCP FastOpen is enabled"
         run: |
           sudo sysctl -w net.ipv4.tcp_fastopen=3
