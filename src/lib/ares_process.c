@@ -735,6 +735,12 @@ static ares_status_t process_timeouts(ares_channel_t       *channel,
     query->timeouts++;
 
     conn = query->conn;
+    /* Retire this connection for NEW queries.  A timeout suggests packets are
+     * being dropped on it, so route new queries to a fresh source port while
+     * the in-flight queries here drain (it is cleaned up once idle).  This is
+     * per-connection so a transient failure doesn't stop reuse of healthy
+     * connections to the same server. */
+    conn->flags |= ARES_CONN_FLAG_NONEW;
     server_increment_failures(conn->server, query->using_tcp);
     status = ares_requeue_query(query, now, ARES_ETIMEOUT, ARES_TRUE, NULL,
       NULL);
@@ -1236,9 +1242,13 @@ static ares_conn_t *ares_fetch_connection(const ares_channel_t *channel,
     return NULL;
   }
 
-  /* If the associated server has failures, don't use it.  It should be cleaned
-   * up later. */
-  if (conn->server->consec_failures > 0) {
+  /* Don't hand new queries to a connection that has been retired (e.g. it saw
+   * a timeout).  It keeps servicing its in-flight queries and is cleaned up
+   * once idle.  Note this is a per-connection check: a server-wide failure
+   * counter must not be used here or a single transient failure would evict
+   * every (including healthy) connection to the server and spawn a new socket
+   * per query. */
+  if (conn->flags & ARES_CONN_FLAG_NONEW) {
     return NULL;
   }
 
