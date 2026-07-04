@@ -4,6 +4,9 @@ name: NetBSD
 
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
