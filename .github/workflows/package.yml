@@ -24,12 +24,12 @@ jobs:
     name: "build"
     steps:
       - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
           packages: autoconf automake libtool g++ libgmock-dev pkg-config gdb
           version: 1.0
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Get Tag version
         id: version
         run: |
@@ -44,7 +44,7 @@ jobs:
           ./configure
           make dist
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: "c-ares-src-tarball"
           path: 'c-ares-*.tar.gz'
@@ -52,7 +52,7 @@ jobs:
           overwrite: true
           retention-days: 7
       - name: Upload Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: RELEASE-NOTES.md
@@ -93,11 +93,11 @@ jobs:
       contents: write # To add assets to a release.
     steps:
       - name: Download the provenance
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: ${{needs.provenance.outputs.provenance-name}}
       - name: Upload Provenance to Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         if: startsWith(github.ref, 'refs/tags/')
         id: upload-provenance
         with:

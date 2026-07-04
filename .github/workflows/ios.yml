@@ -25,7 +25,7 @@ jobs:
           brew uninstall cmake || true
           brew install cmake googletest llvm autoconf automake libtool make ninja
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE

@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     name: NetBSD
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Test
-        uses: cross-platform-actions/action@v0.24.0
+        uses: cross-platform-actions/action@b2e15da1e667187766fff4945d20b98ac7055576 # v0.24.0
         env:
           DIST: NETBSD
           BUILD_TYPE: "cmake"

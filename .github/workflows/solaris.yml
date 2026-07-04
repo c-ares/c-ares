@@ -22,10 +22,10 @@ jobs:
       TEST_FILTER: "--gtest_filter=-*Live*"
       TEST_DEBUGGER: "gdb"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Solaris Build and Test
         id: solaris
-        uses: vmactions/solaris-vm@v1
+        uses: vmactions/solaris-vm@d30dd6c228c8661ade859e36ead7660b9a62efcc # v1.3.7
         with:
           envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER CXXFLAGS TEST_DEBUGGER'
           usesh: true
