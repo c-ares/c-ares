@@ -549,7 +549,8 @@ fail:
 }
 
 ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
-                                  ares_bool_t is_hostname)
+                                  ares_bool_t is_hostname,
+                                  ares_bool_t allow_compression)
 {
   size_t        save_offset = 0;
   unsigned char c;
@@ -607,6 +608,13 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
        * of the ID field, etc.
        */
       size_t offset = (size_t)((c & 0x3F) << 8);
+
+      /* Some RR types (e.g. SRV) do not permit name compression within their
+       * RDATA.  Reject a compression pointer when it is not allowed. */
+      if (!allow_compression) {
+        status = ARES_EBADNAME;
+        goto fail;
+      }
 
       /* Fetch second byte of the redirect length */
       status = ares_buf_fetch_bytes(buf, &c, 1);
