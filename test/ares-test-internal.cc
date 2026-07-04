@@ -26,6 +26,7 @@
 #include "ares-test.h"
 #include "dns-proto.h"
 
+#include <climits>
 #include <stdio.h>
 
 #ifdef HAVE_UNISTD_H
@@ -86,14 +87,35 @@ TEST_F(LibraryTest, StringLengthWithoutNullTerminator) {
 }
 
 TEST_F(LibraryTest, StrParseUint) {
-  unsigned int v = 0;
-  EXPECT_TRUE(ares_str_parse_uint("0", 128, &v));    EXPECT_EQ(0u, v);
-  EXPECT_TRUE(ares_str_parse_uint("128", 128, &v));  EXPECT_EQ(128u, v);
-  EXPECT_FALSE(ares_str_parse_uint("129", 128, &v));            /* > max      */
-  EXPECT_FALSE(ares_str_parse_uint("4294967296", UINT_MAX, &v));/* LP64 fit   */
-  EXPECT_FALSE(ares_str_parse_uint("12x", UINT_MAX, &v));       /* trailing   */
-  EXPECT_FALSE(ares_str_parse_uint(" 5", UINT_MAX, &v));        /* leading ws */
-  EXPECT_FALSE(ares_str_parse_uint("-1", UINT_MAX, &v));        /* sign wrap  */
+  unsigned int v = 42;
+
+  EXPECT_TRUE(ares_str_parse_uint("0", 128, &v));
+  EXPECT_EQ(0u, v);
+  EXPECT_TRUE(ares_str_parse_uint("128", 128, &v));
+  EXPECT_EQ(128u, v);
+
+  // Exactly UINT_MAX is accepted (the interesting boundary: on a 32-bit
+  // unsigned long it parses to ULONG_MAX without ERANGE).
+  EXPECT_TRUE(ares_str_parse_uint("4294967295", UINT_MAX, &v));
+  EXPECT_EQ(UINT_MAX, v);
+
+  // max == 0 permits only "0".
+  EXPECT_TRUE(ares_str_parse_uint("0", 0, &v));
+  EXPECT_EQ(0u, v);
+
+  // Failure leaves *out untouched.
+  v = 42;
+  EXPECT_FALSE(ares_str_parse_uint("1", 0, &v));
+  EXPECT_EQ(42u, v);
+  EXPECT_FALSE(ares_str_parse_uint("129", 128, &v));
+  EXPECT_EQ(42u, v);
+
+  EXPECT_FALSE(ares_str_parse_uint("4294967296", UINT_MAX, &v)); // over on LP64
+  EXPECT_FALSE(ares_str_parse_uint("12x", UINT_MAX, &v));        // trailing
+  EXPECT_FALSE(ares_str_parse_uint("0x10", UINT_MAX, &v));       // trailing hex
+  EXPECT_FALSE(ares_str_parse_uint(" 5", UINT_MAX, &v));         // leading space
+  EXPECT_FALSE(ares_str_parse_uint("+5", UINT_MAX, &v));         // leading sign
+  EXPECT_FALSE(ares_str_parse_uint("-1", UINT_MAX, &v));         // sign wrap
   EXPECT_FALSE(ares_str_parse_uint("", UINT_MAX, &v));
   EXPECT_FALSE(ares_str_parse_uint(NULL, UINT_MAX, &v));
 }

@@ -406,9 +406,9 @@ static ares_status_t ares_sconfig_linklocal(const ares_channel_t *channel,
   if (ares_str_isnum(ll_iface)) {
     char ifname[IF_NAMESIZE] = "";
 
-    /* A numeric interface index can be up to 15 digits; parse with the
-     * range-checked helper so an out-of-range value is rejected rather than
-     * silently wrapped as atoi() would */
+    /* The interface identifier is all digits but may not fit in an
+     * unsigned int; parse with the range-checked helper rather than atoi(),
+     * whose behavior on overflow is undefined. */
     if (!ares_str_parse_uint(ll_iface, UINT_MAX, &ll_scope)) {
       return ARES_ENOTFOUND;
     }

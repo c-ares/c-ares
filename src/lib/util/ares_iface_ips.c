@@ -331,6 +331,8 @@ static char *wcharp_to_charp(const wchar_t *in)
 static ares_bool_t name_match(const char *name, const char *adapter_name,
                               unsigned int ll_scope)
 {
+  unsigned int scope;
+
   if (name == NULL || *name == 0) {
     return ARES_TRUE;
   }
@@ -339,11 +341,8 @@ static ares_bool_t name_match(const char *name, const char *adapter_name,
     return ARES_TRUE;
   }
 
-  {
-    unsigned int scope;
-    if (ares_str_parse_uint(name, UINT_MAX, &scope) && scope == ll_scope) {
-      return ARES_TRUE;
-    }
+  if (ares_str_parse_uint(name, UINT_MAX, &scope) && scope == ll_scope) {
+    return ARES_TRUE;
   }
 
   return ARES_FALSE;

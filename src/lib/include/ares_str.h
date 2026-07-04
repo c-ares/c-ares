@@ -74,9 +74,8 @@ CARES_EXTERN ares_bool_t    ares_str_isalnum(const char *str);
  *  \return ARES_TRUE if a valid in-range integer was parsed, ARES_FALSE
  *          otherwise.
  */
-CARES_EXTERN ares_bool_t    ares_str_parse_uint(const char *str,
-                                                unsigned long max,
-                                                unsigned int *out);
+CARES_EXTERN ares_bool_t ares_str_parse_uint(const char *str, unsigned long max,
+                                             unsigned int *out);
 
 CARES_EXTERN void           ares_str_ltrim(char *str);
 CARES_EXTERN void           ares_str_rtrim(char *str);
