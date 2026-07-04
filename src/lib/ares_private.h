@@ -131,6 +131,13 @@ W32_FUNC const char *_w32_GetHostsFile(void);
 #define DEFAULT_SERVER_RETRY_CHANCE 10
 #define DEFAULT_SERVER_RETRY_DELAY  5000
 
+/* Upper bound on the consecutive failure count tracked per server.  Only the
+ * relative order of the counts is used for server selection, so magnitude
+ * beyond "clearly down" carries no additional signal.  Capping it bounds how
+ * long a server that failed for an extended period sorts behind other failed
+ * servers once it comes back online. */
+#define SERVER_CONSEC_FAILURES_CAP 16
+
 struct ares_query;
 typedef struct ares_query ares_query_t;
 

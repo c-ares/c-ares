@@ -2647,6 +2647,178 @@ TEST_P(ServerFailoverOptsMultiMockTest, ProbeAfterProbeTimeout) {
   EXPECT_TRUE(result3.done_);
 }
 
+class ServerRecoveryMultiMockTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+  ServerRecoveryMultiMockTest()
+    : MockChannelOptsTest(2, GetParam().first, GetParam().second, false,
+                          FillOptions(&opts_),
+                          ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+
+  static struct ares_options* FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->server_failover_opts.retry_chance = 1;
+    opts->server_failover_opts.retry_delay = SERVER_FAILOVER_RETRY_DELAY;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+// Test that when every server has failures, a query sent to a failed server
+// still spawns a probe of another failed server.  Without this, a server
+// that recovers from an extended outage while another (better-sorted) server
+// is still failing is never noticed until the failure counts catch up
+// ("sticky recovery").
+TEST_P(ServerRecoveryMultiMockTest, StickyRecoveryProbe) {
+  DNSPacket servfailrsp;
+  servfailrsp.set_response().set_aa().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("www.example.com", T_A));
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+  unsigned int delay_ms = SERVER_FAILOVER_RETRY_DELAY +
+                          (SERVER_FAILOVER_RETRY_DELAY / 10);
+
+  // Fail all attempts of the first query so both servers end up failed.
+  // Attempts alternate between the servers as each failure re-sorts the
+  // list, so each server sees 3 requests (2 servers x 3 tries).  No probes
+  // are spawned: retries never probe, and the initial attempt is sent while
+  // all servers are still healthy.
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp));
+  HostResult result1;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback,
+                     &result1);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  EXPECT_EQ(ARES_ESERVFAIL, result1.status_);
+
+  // Sleep past the retry delay so both servers are eligible for probing.
+  ares_sleep_time(delay_ms);
+
+  // Server #0 recovers.  The query is sent to server #0 (both servers have
+  // equal failure counts and #0 failed least recently).  Even though the
+  // chosen server has failures, a probe must be spawned to the other failed
+  // server (#1), which is still down.
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp));
+  HostResult result2;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback,
+                     &result2);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  EXPECT_EQ(ARES_SUCCESS, result2.status_);
+
+  // Sleep past the retry delay again so server #1 is once more eligible for
+  // probing.
+  ares_sleep_time(delay_ms);
+
+  // Server #1 has now recovered.  The query goes to healthy server #0 and a
+  // probe is spawned to server #1 which succeeds, marking it healthy again.
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  HostResult result3;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback,
+                     &result3);
+  Process();
+  EXPECT_TRUE(result3.done_);
+  EXPECT_EQ(ARES_SUCCESS, result3.status_);
+}
+
+class ServerRecoveryNoProbeMultiMockTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+  ServerRecoveryNoProbeMultiMockTest()
+    : MockChannelOptsTest(2, GetParam().first, GetParam().second, false,
+                          FillOptions(&opts_),
+                          ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+
+  static struct ares_options* FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    // Probing disabled: recovery must come from server selection alone
+    opts->server_failover_opts.retry_chance = 0;
+    opts->server_failover_opts.retry_delay = SERVER_FAILOVER_RETRY_DELAY;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+// Test that with probing disabled, a server whose failure count went stale
+// during an outage is still retried once an actively-failing server reaches
+// the same count: servers with equal failure counts are tried
+// least-recently-failed first rather than in configuration order.
+TEST_P(ServerRecoveryNoProbeMultiMockTest, StickyRecoveryTieBreak) {
+  DNSPacket servfailrsp;
+  servfailrsp.set_response().set_aa().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("www.example.com", T_A));
+  DNSPacket okrsp;
+  okrsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.example.com", T_A))
+    .add_answer(new DNSARR("www.example.com", 100, {2,3,4,5}));
+
+  // Fail all attempts of the first query so both servers end up failed with
+  // a failure count of 3 (2 servers x 3 tries, alternating).
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[1].get(), &servfailrsp));
+  HostResult result1;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback,
+                     &result1);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  EXPECT_EQ(ARES_ESERVFAIL, result1.status_);
+
+  // Server #0 recovers briefly: the next query succeeds and resets its
+  // failure count, while server #1 stays failed with its count frozen at 3.
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &okrsp));
+  HostResult result2;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback,
+                     &result2);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  EXPECT_EQ(ARES_SUCCESS, result2.status_);
+
+  // Server #0 starts failing again while server #1 has (unnoticed)
+  // recovered.  The query retries server #0 until its failure count catches
+  // up to server #1's stale count of 3.  At that point server #1 must sort
+  // first (it failed least recently) and answer successfully.  Without the
+  // tie-break the remaining attempts would all go to server #0 and the query
+  // would fail without server #1 ever being tried.
+  EXPECT_CALL(*servers_[0], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp))
+    .WillOnce(SetReply(servers_[0].get(), &servfailrsp));
+  EXPECT_CALL(*servers_[1], OnRequest("www.example.com", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &okrsp));
+  HostResult result3;
+  ares_gethostbyname(channel_, "www.example.com.", AF_INET, HostCallback,
+                     &result3);
+  Process();
+  EXPECT_TRUE(result3.done_);
+  EXPECT_EQ(ARES_SUCCESS, result3.status_);
+}
+
 const char *af_tostr(int af)
 {
   switch (af) {
@@ -2706,6 +2878,10 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEDNSChannelTest, ::testing::Values
 INSTANTIATE_TEST_SUITE_P(TransportModes, NoRotateMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(TransportModes, ServerFailoverOptsMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+
+INSTANTIATE_TEST_SUITE_P(TransportModes, ServerRecoveryMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+
+INSTANTIATE_TEST_SUITE_P(TransportModes, ServerRecoveryNoProbeMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 }  // namespace test
 }  // namespace ares
