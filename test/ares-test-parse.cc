@@ -395,5 +395,33 @@ TEST_F(LibraryTest, ParseRejectsName256) {
   EXPECT_EQ(nullptr, dnsrec);
 }
 
+// A single OPT record in the additional section is valid (EDNS0).
+TEST_F(LibraryTest, ParseSingleOpt) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response()
+    .add_question(new DNSQuestion("example.com", T_A))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, {}, {}, false));
+  std::vector<byte> data = pkt.data();
+
+  ares_dns_record_t *dnsrec = NULL;
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(data.data(), data.size(), 0, &dnsrec));
+  EXPECT_NE(nullptr, dnsrec);
+  ares_dns_record_destroy(dnsrec);
+}
+
+// RFC 6891 6.1.1: more than one OPT record in a message is a format error.
+TEST_F(LibraryTest, ParseMultipleOptRejected) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response()
+    .add_question(new DNSQuestion("example.com", T_A))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, {}, {}, false))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, {}, {}, false));
+  std::vector<byte> data = pkt.data();
+
+  ares_dns_record_t *dnsrec = NULL;
+  EXPECT_EQ(ARES_EBADRESP, ares_dns_parse(data.data(), data.size(), 0, &dnsrec));
+  EXPECT_EQ(nullptr, dnsrec);
+}
+
 }  // namespace test
 }  // namespace ares
