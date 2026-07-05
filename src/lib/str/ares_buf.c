@@ -139,6 +139,7 @@ static ares_status_t ares_buf_ensure_space(ares_buf_t *buf, size_t needed_size)
 {
   size_t         remaining_size;
   size_t         alloc_size;
+  size_t         total_required;
   unsigned char *ptr;
 
   if (buf == NULL) {
@@ -151,11 +152,19 @@ static ares_status_t ares_buf_ensure_space(ares_buf_t *buf, size_t needed_size)
 
   /* When calling ares_buf_finish_str() we end up adding a null terminator,
    * so we want to ensure the size is always sufficient for this as we don't
-   * want an ARES_ENOMEM at that point */
-  if (needed_size == SIZE_MAX) {
+   * want an ARES_ENOMEM at that point.
+   */
+  if (buf->data_len >= SIZE_MAX - 1) {
     return ARES_ENOMEM;
   }
+
   needed_size++;
+
+  if (needed_size > SIZE_MAX - buf->data_len) {
+    return ARES_ENOMEM;
+  }
+
+  total_required = buf->data_len + needed_size;
 
   /* No need to do an expensive move operation, we have enough to just append */
   remaining_size = buf->alloc_buf_len - buf->data_len;
@@ -183,9 +192,8 @@ static ares_status_t ares_buf_ensure_space(ares_buf_t *buf, size_t needed_size)
     if (alloc_size > SIZE_MAX >> 1) {
       return ARES_ENOMEM;
     }
-    alloc_size     <<= 1;
-    remaining_size   = alloc_size - buf->data_len;
-  } while (remaining_size < needed_size);
+    alloc_size <<= 1;
+  } while (alloc_size < total_required);
 
   ptr = ares_realloc(buf->alloc_buf, alloc_size);
   if (ptr == NULL) {
