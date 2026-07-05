@@ -393,8 +393,8 @@ ares_bool_t ares_is_localhost(const char *name)
 
 static ares_status_t file_lookup(struct host_query *hquery)
 {
-  const ares_hosts_entry_t *entry;
-  ares_status_t             status;
+  ares_hosts_entry_t *entry = NULL;
+  ares_status_t       status;
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
   if (ares_is_onion_domain(hquery->name)) {
@@ -421,6 +421,8 @@ static ares_status_t file_lookup(struct host_query *hquery)
 
 
 done:
+  ares_hosts_entry_destroy(entry);
+
   /* RFC6761 section 6.3 #3 states that "Name resolution APIs and libraries
    * SHOULD recognize localhost names as special and SHOULD always return the
    * IP loopback address for address queries".

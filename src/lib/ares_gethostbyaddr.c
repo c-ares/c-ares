@@ -196,10 +196,10 @@ static ares_status_t file_lookup(ares_channel_t         *channel,
                                  const struct ares_addr *addr,
                                  struct hostent        **host)
 {
-  char                      ipaddr[INET6_ADDRSTRLEN];
-  const void               *ptr = NULL;
-  const ares_hosts_entry_t *entry;
-  ares_status_t             status;
+  char                ipaddr[INET6_ADDRSTRLEN];
+  const void         *ptr   = NULL;
+  ares_hosts_entry_t *entry = NULL;
+  ares_status_t       status;
 
   if (addr->family == AF_INET) {
     ptr = &addr->addr.addr4;
@@ -221,6 +221,7 @@ static ares_status_t file_lookup(ares_channel_t         *channel,
   }
 
   status = ares_hosts_entry_to_hostent(entry, addr->family, host);
+  ares_hosts_entry_destroy(entry);
   if (status != ARES_SUCCESS) {
     return status; /* LCOV_EXCL_LINE: OutOfMemory */
   }
