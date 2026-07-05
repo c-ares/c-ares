@@ -1192,6 +1192,44 @@ TEST_F(LibraryTest, DNSNameCompression14Bit) {
   ares_dns_record_destroy(dnsrec);
 }
 
+TEST_F(LibraryTest, DNSRecordRejectsInvalidBinaryInput) {
+  ares_dns_record_t *dnsrec = NULL;
+  ares_dns_rr_t     *rr     = NULL;
+  unsigned char      data[] = { 'x' };
+
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_create(&dnsrec, 0x1234, ARES_FLAG_RD,
+      ARES_OPCODE_QUERY, ARES_RCODE_NOERROR));
+
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+      ARES_REC_TYPE_TXT, ARES_CLASS_IN, 60));
+  EXPECT_EQ(ARES_ENOMEM,
+    ares_dns_rr_add_abin(rr, ARES_RR_TXT_DATA, data, SIZE_MAX));
+  EXPECT_EQ(ARES_EFORMERR,
+    ares_dns_rr_add_abin(rr, ARES_RR_TXT_DATA, NULL, 1));
+
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+      ARES_REC_TYPE_CAA, ARES_CLASS_IN, 60));
+  EXPECT_EQ(ARES_ENOMEM,
+    ares_dns_rr_set_bin(rr, ARES_RR_CAA_VALUE, data, SIZE_MAX));
+  EXPECT_EQ(ARES_EFORMERR,
+    ares_dns_rr_set_bin(rr, ARES_RR_CAA_VALUE, NULL, 1));
+  EXPECT_EQ(ARES_EFORMERR,
+    ares_dns_rr_set_bin(rr, ARES_RR_CAA_TAG, data, sizeof(data)));
+
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ADDITIONAL, "",
+      ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_ENOMEM,
+    ares_dns_rr_set_opt(rr, ARES_RR_OPT_OPTIONS, 3, data, SIZE_MAX));
+  EXPECT_EQ(ARES_EFORMERR,
+    ares_dns_rr_set_opt(rr, ARES_RR_OPT_OPTIONS, 3, NULL, 1));
+
+  ares_dns_record_destroy(dnsrec);
+}
+
 TEST_F(LibraryTest, DNSParseFlags) {
   ares_dns_record_t   *dnsrec = NULL;
   ares_dns_rr_t       *rr     = NULL;
