@@ -159,6 +159,16 @@ See [Features](FEATURES.md)
 - [RFC2535](https://datatracker.ietf.org/doc/html/rfc2535),
   [RFC2931](https://datatracker.ietf.org/doc/html/rfc2931).
   `SIG0` Record. Only basic parser, not full implementation.
+- [RFC4034](https://datatracker.ietf.org/doc/html/rfc4034).
+  Resource Records for the DNS Security Extensions (DNSSEC).
+  `DS`, `DNSKEY`, `RRSIG`, and `NSEC` Records. Parsing and writing only; no
+  DNSSEC validation is performed.
+- [RFC5155](https://datatracker.ietf.org/doc/html/rfc5155).
+  DNS Security (DNSSEC) Hashed Authenticated Denial of Existence.
+  `NSEC3` and `NSEC3PARAM` Records.
+- [RFC4255](https://datatracker.ietf.org/doc/html/rfc4255).
+  Using DNS to Securely Publish Secure Shell (SSH) Key Fingerprints.
+  `SSHFP` Record.
 - [RFC7873](https://datatracker.ietf.org/doc/html/rfc7873),
   [RFC9018](https://datatracker.ietf.org/doc/html/rfc9018).
   DNS Cookie off-path dns poisoning and amplification mitigation.
