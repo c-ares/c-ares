@@ -1,0 +1,72 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: Windows (MSVC)
+on:
+  push:
+    branches:
+      - main
+      - 'v*'
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-windows-msvc
+  cancel-in-progress: true
+
+env:
+  # Live tests need real network/DNS and are excluded, matching the other CIs.
+  TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "MSVC x64 (CMake)", arch: x64, conftool: CMAKE, cmake_extra: "" }
+          # 32-bit build, pinned to the minimum supported Windows API level
+          # (Vista, 0x0600) to verify it still compiles at that floor.
+          - { name: "MSVC x86 (CMake)", arch: x86, conftool: CMAKE, cmake_extra: '-DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0600" -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0600"' }
+          - { name: "MSVC x64 (NMake)", arch: x64, conftool: NMAKE, cmake_extra: "" }
+          - { name: "MSVC x86 (NMake)", arch: x86, conftool: NMAKE, cmake_extra: "" }
+    name: ${{ matrix.name }}
+    steps:
+      - name: Setup MSVC environment (${{ matrix.arch }})
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Checkout c-ares
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Build GoogleTest
+        shell: cmd
+        run: |
+          git clone --depth=1 -b v1.15.x https://github.com/google/googletest googletest || exit /b 1
+          cd googletest
+          cmake -DCMAKE_INSTALL_PREFIX=%GITHUB_WORKSPACE%\gtest-install -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -GNinja -Bbuild || exit /b 1
+          cmake --build build --config Debug || exit /b 1
+          cmake --install build --config Debug || exit /b 1
+
+      - name: "CMake: build and test"
+        if: ${{ matrix.conftool == 'CMAKE' }}
+        shell: cmd
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Debug -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_BUILD_TESTS=ON -DGTEST_ROOT=%GITHUB_WORKSPACE%\gtest-install -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL ${{ matrix.cmake_extra }} -GNinja -Bbuild || exit /b 1
+          cmake --build build --config Debug || exit /b 1
+          cd build\bin
+          adig.exe www.google.com || exit /b 1
+          ahost.exe www.google.com || exit /b 1
+          arestest.exe %TEST_FILTER% || exit /b 1
+          dnsdump.exe "%GITHUB_WORKSPACE%\test\fuzzinput\answer_a" "%GITHUB_WORKSPACE%\test\fuzzinput\answer_aaaa" || exit /b 1
+
+      - name: "NMake: build and test (Makefile.msvc)"
+        if: ${{ matrix.conftool == 'NMAKE' }}
+        shell: cmd
+        run: |
+          copy .\include\ares_build.h.dist .\include\ares_build.h || exit /b 1
+          nmake /NOLOGO /f .\Makefile.msvc || exit /b 1
+          cd test
+          nmake GTEST_ROOT=%GITHUB_WORKSPACE%\gtest-install /NOLOGO /f .\Makefile.msvc vtest || exit /b 1
+          nmake GTEST_ROOT=%GITHUB_WORKSPACE%\gtest-install /NOLOGO /f .\Makefile.msvc aresfuzz aresfuzzname dnsdump || exit /b 1
+          .\msvc\arestest\lib-debug\dnsdump.exe fuzzinput\answer_a fuzzinput\answer_aaaa || exit /b 1
