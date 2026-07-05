@@ -27,6 +27,7 @@
 #include "dns-proto.h"
 
 #include <climits>
+#include <cstdint>
 #include <stdio.h>
 
 #ifdef HAVE_UNISTD_H
@@ -1321,6 +1322,19 @@ TEST_F(LibraryTest, ArrayMisuse) {
   EXPECT_NE(ARES_SUCCESS, ares_array_remove_last(NULL));
   EXPECT_NE(ARES_SUCCESS, ares_array_sort(NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_array_set_size(NULL, 0));
+
+  /* Overflow in the size calculation must be rejected, not wrapped */
+  ares_array_t *overflow_array = ares_array_create((SIZE_MAX / 2) + 1, NULL);
+  EXPECT_NE((void *)NULL, overflow_array);
+  EXPECT_EQ(ARES_ENOMEM, ares_array_set_size(overflow_array, 2));
+  EXPECT_EQ(ARES_ENOMEM, ares_array_set_size(overflow_array, SIZE_MAX));
+  ares_array_destroy(overflow_array);
+
+  /* Overflow must also be rejected in the malloc-style wrapper, and in
+   * the original-size arm of the realloc wrapper */
+  EXPECT_EQ(NULL, ares_malloc_zero_array(SIZE_MAX, 2));
+  EXPECT_EQ(NULL, ares_malloc_zero_array(2, SIZE_MAX));
+  EXPECT_EQ(NULL, ares_realloc_zero_array(NULL, SIZE_MAX, 1, 2));
 }
 
 TEST_F(LibraryTest, BufMisuse) {
