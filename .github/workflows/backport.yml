@@ -1,0 +1,125 @@
+# Copyright (C) The c-ares project and its contributors
+#
+# SPDX-License-Identifier: MIT
+
+name: Backport
+
+# Cherry-pick a merged pull request onto one or more release branches when a
+# maintainer comments "/backport <branch> [<branch> ...] [--no-automerge]".
+#
+# Because "issue_comment" workflows always execute from the default branch and
+# have access to repository secrets, authorization is enforced explicitly: only
+# users whose repository role is "maintain" or "admin" may run the command.
+on:
+  issue_comment:
+    types: [created]
+
+# The default token is not used for privileged operations (a GitHub App token
+# is minted below), so it needs no elevated permissions.
+permissions:
+  contents: read
+
+concurrency:
+  group: backport-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  backport:
+    name: Backport
+    runs-on: ubuntu-latest
+    # Cheap pre-filter. Real authorization happens in the "Authorize" step.
+    if: >
+      github.event.issue.pull_request != null &&
+      startsWith(github.event.comment.body, '/backport')
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.BACKPORT_APP_ID }}
+          private-key: ${{ secrets.BACKPORT_APP_PRIVATE_KEY }}
+
+      - name: Authorize commenter (maintainers only)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+        run: |
+          role=$(gh api \
+            "repos/${{ github.repository }}/collaborators/${COMMENTER}/permission" \
+            -q '.role_name')
+          echo "${COMMENTER} has repository role '${role}'"
+          case "${role}" in
+            admin|maintain)
+              ;;
+            *)
+              gh pr comment "${{ github.event.issue.number }}" \
+                --repo "${{ github.repository }}" \
+                --body ":no_entry: \`/backport\` may only be run by project maintainers."
+              echo "::error::${COMMENTER} is not a maintainer (role: ${role})"
+              exit 1
+              ;;
+          esac
+
+      - name: Verify the pull request is merged
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          merged=$(gh pr view "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" --json mergedAt -q '.mergedAt')
+          if [ -z "${merged}" ] || [ "${merged}" = "null" ]; then
+            gh pr comment "${{ github.event.issue.number }}" \
+              --repo "${{ github.repository }}" \
+              --body ":warning: \`/backport\` only works on **merged** pull requests."
+            echo "::error::PR #${{ github.event.issue.number }} is not merged"
+            exit 1
+          fi
+
+      - name: Parse backport command
+        id: parse
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          COMMENT: ${{ github.event.comment.body }}
+        run: |
+          # Everything after the "/backport" token.
+          args="${COMMENT#*/backport}"
+          automerge=true
+          branches=""
+          for tok in ${args}; do
+            case "${tok}" in
+              --no-automerge)  automerge=false ;;
+              v[0-9]*.[0-9]*)  branches="${branches} ${tok}" ;;
+              *) ;;  # ignore anything else
+            esac
+          done
+          branches="$(echo "${branches}" | xargs)"
+          if [ -z "${branches}" ]; then
+            gh pr comment "${{ github.event.issue.number }}" \
+              --repo "${{ github.repository }}" \
+              --body ":warning: No target branches found. Usage: \`/backport v1.34 v1.33 [--no-automerge]\`"
+            echo "::error::No target branches parsed from comment"
+            exit 1
+          fi
+          echo "Target branches: ${branches} (auto-merge: ${automerge})"
+          echo "branches=${branches}" >> "$GITHUB_OUTPUT"
+          echo "automerge=${automerge}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Create backport pull requests
+        uses: korthout/backport-action@2e830a1d0b8269505846ddd407a70876913ad1f8 # v4.6.0
+        with:
+          github_token:       ${{ steps.app-token.outputs.token }}
+          source_pr_number:   ${{ github.event.issue.number }}
+          target_branches:    ${{ steps.parse.outputs.branches }}
+          # On conflict, commit the conflict markers and open a *draft* PR
+          # instead of failing. Draft PRs are never auto-merged, so a human
+          # must resolve the conflict and mark it ready.
+          experimental:       '{"conflict_resolution": "draft_commit_conflicts"}'
+          # Clean cherry-picks enable auto-merge; GitHub then merges only once
+          # all required status checks on the target branch pass.
+          auto_merge_enabled: ${{ steps.parse.outputs.automerge }}
+          auto_merge_method:  squash

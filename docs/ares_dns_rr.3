@@ -284,6 +284,102 @@ Keys used for handling RR record parameters:
 .B ARES_RR_OPT_OPTIONS
 - OPT Record. Options. See \fIares_opt_param_t\fP. Datatype: \fIARES_DATATYPE_OPT\fP
 .br
+.B ARES_RR_DS_KEY_TAG
+- DS Record. Key Tag. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_DS_ALGORITHM
+- DS Record. Algorithm. See \fIares_dnssec_algorithm_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_DS_DIGEST_TYPE
+- DS Record. Digest Type. See \fIares_ds_digest_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_DS_DIGEST
+- DS Record. Digest. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_SSHFP_ALGORITHM
+- SSHFP Record. Algorithm. See \fIares_sshfp_algorithm_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_SSHFP_FP_TYPE
+- SSHFP Record. Fingerprint Type. See \fIares_sshfp_fp_type_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_SSHFP_FINGERPRINT
+- SSHFP Record. Fingerprint. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_RRSIG_TYPE_COVERED
+- RRSIG Record. Type Covered. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_RRSIG_ALGORITHM
+- RRSIG Record. Algorithm. See \fIares_dnssec_algorithm_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_RRSIG_LABELS
+- RRSIG Record. Labels. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_RRSIG_ORIGINAL_TTL
+- RRSIG Record. Original TTL. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_RRSIG_EXPIRATION
+- RRSIG Record. Signature Expiration. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_RRSIG_INCEPTION
+- RRSIG Record. Signature Inception. Datatype: \fIARES_DATATYPE_U32\fP
+.br
+.B ARES_RR_RRSIG_KEY_TAG
+- RRSIG Record. Key Tag. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_RRSIG_SIGNERS_NAME
+- RRSIG Record. Signer's Name. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_RRSIG_SIGNATURE
+- RRSIG Record. Signature. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_NSEC_NEXT_DOMAIN
+- NSEC Record. Next Domain Name. Datatype: \fIARES_DATATYPE_NAME\fP
+.br
+.B ARES_RR_NSEC_TYPE_BIT_MAPS
+- NSEC Record. Type Bit Maps. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_DNSKEY_FLAGS
+- DNSKEY Record. Flags. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_DNSKEY_PROTOCOL
+- DNSKEY Record. Protocol. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_DNSKEY_ALGORITHM
+- DNSKEY Record. Algorithm. See \fIares_dnssec_algorithm_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_DNSKEY_PUBLIC_KEY
+- DNSKEY Record. Public Key. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_NSEC3_HASH_ALGORITHM
+- NSEC3 Record. Hash Algorithm. See \fIares_nsec3_hash_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_NSEC3_FLAGS
+- NSEC3 Record. Flags. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_NSEC3_ITERATIONS
+- NSEC3 Record. Iterations. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_NSEC3_SALT
+- NSEC3 Record. Salt. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_NSEC3_NEXT_HASHED_OWNER
+- NSEC3 Record. Next Hashed Owner Name. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_NSEC3_TYPE_BIT_MAPS
+- NSEC3 Record. Type Bit Maps. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
+.B ARES_RR_NSEC3PARAM_HASH_ALGORITHM
+- NSEC3PARAM Record. Hash Algorithm. See \fIares_nsec3_hash_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_NSEC3PARAM_FLAGS
+- NSEC3PARAM Record. Flags. Datatype: \fIARES_DATATYPE_U8\fP
+.br
+.B ARES_RR_NSEC3PARAM_ITERATIONS
+- NSEC3PARAM Record. Iterations. Datatype: \fIARES_DATATYPE_U16\fP
+.br
+.B ARES_RR_NSEC3PARAM_SALT
+- NSEC3PARAM Record. Salt. Datatype: \fIARES_DATATYPE_BIN\fP
+.br
 .B ARES_RR_TLSA_CERT_USAGE
 - TLSA Record. Certificate Usage. See \fIares_tlsa_usage_t\fP. Datatype: \fIARES_DATATYPE_U8\fP
 .br
@@ -379,6 +475,115 @@ TLSA Record \fIARES_RR_TLSA_MATCH\fP known values:
 .br
 .B ARES_TLSA_MATCH_SHA512
 - Sha512 match
+.br
+.RE
+
+.B ares_sshfp_algorithm_t -
+SSHFP Record \fIARES_RR_SSHFP_ALGORITHM\fP known values (RFC 4255, RFC 6594, RFC 7479, RFC 8709):
+.RS 4
+.B ARES_SSHFP_ALGORITHM_RSA
+- RSA
+.br
+.B ARES_SSHFP_ALGORITHM_DSA
+- DSA
+.br
+.B ARES_SSHFP_ALGORITHM_ECDSA
+- ECDSA
+.br
+.B ARES_SSHFP_ALGORITHM_ED25519
+- Ed25519
+.br
+.B ARES_SSHFP_ALGORITHM_ED448
+- Ed448
+.br
+.RE
+
+.B ares_sshfp_fp_type_t -
+SSHFP Record \fIARES_RR_SSHFP_FP_TYPE\fP known values (RFC 4255, RFC 6594):
+.RS 4
+.B ARES_SSHFP_FP_SHA1
+- SHA-1
+.br
+.B ARES_SSHFP_FP_SHA256
+- SHA-256
+.br
+.RE
+
+.B ares_dnssec_algorithm_t -
+DNSSEC Algorithm Numbers (RFC 4034, RFC 8624):
+.RS 4
+.B ARES_DNSSEC_ALGORITHM_RSAMD5
+- RSA/MD5 (deprecated)
+.br
+.B ARES_DNSSEC_ALGORITHM_DH
+- Diffie-Hellman
+.br
+.B ARES_DNSSEC_ALGORITHM_DSA
+- DSA/SHA1 (NOT RECOMMENDED)
+.br
+.B ARES_DNSSEC_ALGORITHM_RSASHA1
+- RSA/SHA-1 (NOT RECOMMENDED)
+.br
+.B ARES_DNSSEC_ALGORITHM_DSA_NSEC3_SHA1
+- DSA-NSEC3-SHA1 (NOT RECOMMENDED)
+.br
+.B ARES_DNSSEC_ALGORITHM_RSASHA1_NSEC3_SHA1
+- RSASHA1-NSEC3-SHA1 (NOT RECOMMENDED)
+.br
+.B ARES_DNSSEC_ALGORITHM_RSASHA256
+- RSA/SHA-256
+.br
+.B ARES_DNSSEC_ALGORITHM_RSASHA512
+- RSA/SHA-512
+.br
+.B ARES_DNSSEC_ALGORITHM_ECC_GOST
+- GOST R 34.10-2001
+.br
+.B ARES_DNSSEC_ALGORITHM_ECDSAP256SHA256
+- ECDSA Curve P-256 with SHA-256
+.br
+.B ARES_DNSSEC_ALGORITHM_ECDSAP384SHA384
+- ECDSA Curve P-384 with SHA-384
+.br
+.B ARES_DNSSEC_ALGORITHM_ED25519
+- Ed25519
+.br
+.B ARES_DNSSEC_ALGORITHM_ED448
+- Ed448
+.br
+.B ARES_DNSSEC_ALGORITHM_INDIRECT
+- Indirect
+.br
+.B ARES_DNSSEC_ALGORITHM_PRIVATEDNS
+- Private algorithm (domain name)
+.br
+.B ARES_DNSSEC_ALGORITHM_PRIVATEOID
+- Private algorithm (OID)
+.br
+.RE
+
+.B ares_ds_digest_t -
+DS Record Digest Type known values (RFC 4034, RFC 4509, RFC 6605):
+.RS 4
+.B ARES_DS_DIGEST_SHA1
+- SHA-1
+.br
+.B ARES_DS_DIGEST_SHA256
+- SHA-256
+.br
+.B ARES_DS_DIGEST_GOST
+- GOST R 34.11-94
+.br
+.B ARES_DS_DIGEST_SHA384
+- SHA-384
+.br
+.RE
+
+.B ares_nsec3_hash_t -
+NSEC3 Hash Algorithm known values (RFC 5155):
+.RS 4
+.B ARES_NSEC3_HASH_SHA1
+- SHA-1
 .br
 .RE
 
@@ -737,7 +942,11 @@ return the requested resource record pointer or NULL on failure (misuse).
 found, otherwise ARES_FALSE if not found (or misuse).
 
 .SH AVAILABILITY
-These functions were first introduced in c-ares version 1.22.0.
+These functions were first introduced in c-ares version 1.22.0, except
+\fIares_dns_record_rr_get_const(3)\fP which was introduced in version 1.28.0, and
+\fIares_dns_rr_get_abin_cnt(3)\fP, \fIares_dns_rr_get_abin(3)\fP,
+\fIares_dns_rr_add_abin(3)\fP and \fIares_dns_rr_del_abin(3)\fP which were
+introduced in version 1.32.0.
 .SH SEE ALSO
 .BR ares_dns_mapping (3),
 .BR ares_dns_record (3),

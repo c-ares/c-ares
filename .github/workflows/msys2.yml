@@ -3,6 +3,9 @@
 name: MSYS2 (Windows)
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -11,7 +14,7 @@ concurrency:
 
 env:
   TEST_FILTER: "-4 --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveSearchNS*:*LiveGetLocalhostByAddr*"
-  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -G Ninja"
+  CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -G Ninja"
   CONFIG_OPTS: "--disable-shared"
   MAKE: make
   DIST: Windows
@@ -32,7 +35,7 @@ jobs:
     name: ${{ matrix.msystem }}
     steps:
       - name: Install MSYS2 and base packages
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
         with:
           msystem: ${{ matrix.msystem }}
           update: true
@@ -49,7 +52,7 @@ jobs:
             mingw-w64-${{ matrix.env }}-gdb
             ${{ matrix.extra_packages }}
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE

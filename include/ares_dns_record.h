@@ -43,19 +43,26 @@ extern "C" {
  *  on requests (e.g. ARES_REC_TYPE_ANY), and some may only be valid on
  *  responses */
 typedef enum {
-  ARES_REC_TYPE_A     = 1,     /*!< Host address. */
-  ARES_REC_TYPE_NS    = 2,     /*!< Authoritative server. */
-  ARES_REC_TYPE_CNAME = 5,     /*!< Canonical name. */
-  ARES_REC_TYPE_SOA   = 6,     /*!< Start of authority zone. */
-  ARES_REC_TYPE_PTR   = 12,    /*!< Domain name pointer. */
-  ARES_REC_TYPE_HINFO = 13,    /*!< Host information. */
-  ARES_REC_TYPE_MX    = 15,    /*!< Mail routing information. */
-  ARES_REC_TYPE_TXT   = 16,    /*!< Text strings. */
-  ARES_REC_TYPE_SIG   = 24,    /*!< RFC 2535 / RFC 2931. SIG Record */
-  ARES_REC_TYPE_AAAA  = 28,    /*!< RFC 3596. Ip6 Address. */
-  ARES_REC_TYPE_SRV   = 33,    /*!< RFC 2782. Server Selection. */
-  ARES_REC_TYPE_NAPTR = 35,    /*!< RFC 3403. Naming Authority Pointer */
-  ARES_REC_TYPE_OPT   = 41,    /*!< RFC 6891. EDNS0 option (meta-RR) */
+  ARES_REC_TYPE_A          = 1,  /*!< Host address. */
+  ARES_REC_TYPE_NS         = 2,  /*!< Authoritative server. */
+  ARES_REC_TYPE_CNAME      = 5,  /*!< Canonical name. */
+  ARES_REC_TYPE_SOA        = 6,  /*!< Start of authority zone. */
+  ARES_REC_TYPE_PTR        = 12, /*!< Domain name pointer. */
+  ARES_REC_TYPE_HINFO      = 13, /*!< Host information. */
+  ARES_REC_TYPE_MX         = 15, /*!< Mail routing information. */
+  ARES_REC_TYPE_TXT        = 16, /*!< Text strings. */
+  ARES_REC_TYPE_SIG        = 24, /*!< RFC 2535 / RFC 2931. SIG Record */
+  ARES_REC_TYPE_AAAA       = 28, /*!< RFC 3596. Ip6 Address. */
+  ARES_REC_TYPE_SRV        = 33, /*!< RFC 2782. Server Selection. */
+  ARES_REC_TYPE_NAPTR      = 35, /*!< RFC 3403. Naming Authority Pointer */
+  ARES_REC_TYPE_OPT        = 41, /*!< RFC 6891. EDNS0 option (meta-RR) */
+  ARES_REC_TYPE_DS         = 43, /*!< RFC 4034. Delegation Signer */
+  ARES_REC_TYPE_SSHFP      = 44, /*!< RFC 4255. SSH Key Fingerprint */
+  ARES_REC_TYPE_RRSIG      = 46, /*!< RFC 4034. Resource Record Signature */
+  ARES_REC_TYPE_NSEC       = 47, /*!< RFC 4034. Next Secure */
+  ARES_REC_TYPE_DNSKEY     = 48, /*!< RFC 4034. DNS Public Key */
+  ARES_REC_TYPE_NSEC3      = 50, /*!< RFC 5155. NSEC3 */
+  ARES_REC_TYPE_NSEC3PARAM = 51, /*!< RFC 5155. NSEC3 Parameters */
 
   ARES_REC_TYPE_TLSA = 52,     /*!< RFC 6698. DNS-Based Authentication of Named
                                 *   Entities (DANE) Transport Layer Security
@@ -261,6 +268,70 @@ typedef enum {
   ARES_RR_OPT_FLAGS = (ARES_REC_TYPE_OPT * 100) + 4,
   /*! OPT Record. Options. Datatype: OPT */
   ARES_RR_OPT_OPTIONS = (ARES_REC_TYPE_OPT * 100) + 5,
+  /*! DS Record. Key Tag. Datatype: U16 */
+  ARES_RR_DS_KEY_TAG = (ARES_REC_TYPE_DS * 100) + 1,
+  /*! DS Record. Algorithm. Datatype: U8 */
+  ARES_RR_DS_ALGORITHM = (ARES_REC_TYPE_DS * 100) + 2,
+  /*! DS Record. Digest Type. Datatype: U8 */
+  ARES_RR_DS_DIGEST_TYPE = (ARES_REC_TYPE_DS * 100) + 3,
+  /*! DS Record. Digest. Datatype: BIN */
+  ARES_RR_DS_DIGEST = (ARES_REC_TYPE_DS * 100) + 4,
+  /*! SSHFP Record. Algorithm. Datatype: U8 */
+  ARES_RR_SSHFP_ALGORITHM = (ARES_REC_TYPE_SSHFP * 100) + 1,
+  /*! SSHFP Record. Fingerprint Type. Datatype: U8 */
+  ARES_RR_SSHFP_FP_TYPE = (ARES_REC_TYPE_SSHFP * 100) + 2,
+  /*! SSHFP Record. Fingerprint. Datatype: BIN */
+  ARES_RR_SSHFP_FINGERPRINT = (ARES_REC_TYPE_SSHFP * 100) + 3,
+  /*! RRSIG Record. Type Covered. Datatype: U16 */
+  ARES_RR_RRSIG_TYPE_COVERED = (ARES_REC_TYPE_RRSIG * 100) + 1,
+  /*! RRSIG Record. Algorithm. Datatype: U8 */
+  ARES_RR_RRSIG_ALGORITHM = (ARES_REC_TYPE_RRSIG * 100) + 2,
+  /*! RRSIG Record. Labels. Datatype: U8 */
+  ARES_RR_RRSIG_LABELS = (ARES_REC_TYPE_RRSIG * 100) + 3,
+  /*! RRSIG Record. Original TTL. Datatype: U32 */
+  ARES_RR_RRSIG_ORIGINAL_TTL = (ARES_REC_TYPE_RRSIG * 100) + 4,
+  /*! RRSIG Record. Signature Expiration. Datatype: U32 */
+  ARES_RR_RRSIG_EXPIRATION = (ARES_REC_TYPE_RRSIG * 100) + 5,
+  /*! RRSIG Record. Signature Inception. Datatype: U32 */
+  ARES_RR_RRSIG_INCEPTION = (ARES_REC_TYPE_RRSIG * 100) + 6,
+  /*! RRSIG Record. Key Tag. Datatype: U16 */
+  ARES_RR_RRSIG_KEY_TAG = (ARES_REC_TYPE_RRSIG * 100) + 7,
+  /*! RRSIG Record. Signers Name. Datatype: NAME */
+  ARES_RR_RRSIG_SIGNERS_NAME = (ARES_REC_TYPE_RRSIG * 100) + 8,
+  /*! RRSIG Record. Signature. Datatype: BIN */
+  ARES_RR_RRSIG_SIGNATURE = (ARES_REC_TYPE_RRSIG * 100) + 9,
+  /*! NSEC Record. Next Domain Name. Datatype: NAME */
+  ARES_RR_NSEC_NEXT_DOMAIN = (ARES_REC_TYPE_NSEC * 100) + 1,
+  /*! NSEC Record. Type Bit Maps. Datatype: BIN */
+  ARES_RR_NSEC_TYPE_BIT_MAPS = (ARES_REC_TYPE_NSEC * 100) + 2,
+  /*! DNSKEY Record. Flags. Datatype: U16 */
+  ARES_RR_DNSKEY_FLAGS = (ARES_REC_TYPE_DNSKEY * 100) + 1,
+  /*! DNSKEY Record. Protocol. Datatype: U8 */
+  ARES_RR_DNSKEY_PROTOCOL = (ARES_REC_TYPE_DNSKEY * 100) + 2,
+  /*! DNSKEY Record. Algorithm. Datatype: U8 */
+  ARES_RR_DNSKEY_ALGORITHM = (ARES_REC_TYPE_DNSKEY * 100) + 3,
+  /*! DNSKEY Record. Public Key. Datatype: BIN */
+  ARES_RR_DNSKEY_PUBLIC_KEY = (ARES_REC_TYPE_DNSKEY * 100) + 4,
+  /*! NSEC3 Record. Hash Algorithm. Datatype: U8 */
+  ARES_RR_NSEC3_HASH_ALGORITHM = (ARES_REC_TYPE_NSEC3 * 100) + 1,
+  /*! NSEC3 Record. Flags. Datatype: U8 */
+  ARES_RR_NSEC3_FLAGS = (ARES_REC_TYPE_NSEC3 * 100) + 2,
+  /*! NSEC3 Record. Iterations. Datatype: U16 */
+  ARES_RR_NSEC3_ITERATIONS = (ARES_REC_TYPE_NSEC3 * 100) + 3,
+  /*! NSEC3 Record. Salt. Datatype: BIN */
+  ARES_RR_NSEC3_SALT = (ARES_REC_TYPE_NSEC3 * 100) + 4,
+  /*! NSEC3 Record. Next Hashed Owner Name. Datatype: BIN */
+  ARES_RR_NSEC3_NEXT_HASHED_OWNER = (ARES_REC_TYPE_NSEC3 * 100) + 5,
+  /*! NSEC3 Record. Type Bit Maps. Datatype: BIN */
+  ARES_RR_NSEC3_TYPE_BIT_MAPS = (ARES_REC_TYPE_NSEC3 * 100) + 6,
+  /*! NSEC3PARAM Record. Hash Algorithm. Datatype: U8 */
+  ARES_RR_NSEC3PARAM_HASH_ALGORITHM = (ARES_REC_TYPE_NSEC3PARAM * 100) + 1,
+  /*! NSEC3PARAM Record. Flags. Datatype: U8 */
+  ARES_RR_NSEC3PARAM_FLAGS = (ARES_REC_TYPE_NSEC3PARAM * 100) + 2,
+  /*! NSEC3PARAM Record. Iterations. Datatype: U16 */
+  ARES_RR_NSEC3PARAM_ITERATIONS = (ARES_REC_TYPE_NSEC3PARAM * 100) + 3,
+  /*! NSEC3PARAM Record. Salt. Datatype: BIN */
+  ARES_RR_NSEC3PARAM_SALT = (ARES_REC_TYPE_NSEC3PARAM * 100) + 4,
   /*! TLSA Record. Certificate Usage. Datatype: U8 */
   ARES_RR_TLSA_CERT_USAGE = (ARES_REC_TYPE_TLSA * 100) + 1,
   /*! TLSA Record. Selector. Datatype: U8 */
@@ -328,6 +399,83 @@ typedef enum {
   /*! Sha512 match */
   ARES_TLSA_MATCH_SHA512 = 2
 } ares_tlsa_match_t;
+
+/*! SSHFP Record ARES_RR_SSHFP_ALGORITHM known values (RFC 4255, RFC 6594,
+ *  RFC 7479, RFC 8709) */
+typedef enum {
+  /*! RSA */
+  ARES_SSHFP_ALGORITHM_RSA = 1,
+  /*! DSA */
+  ARES_SSHFP_ALGORITHM_DSA = 2,
+  /*! ECDSA */
+  ARES_SSHFP_ALGORITHM_ECDSA = 3,
+  /*! Ed25519 (RFC 7479) */
+  ARES_SSHFP_ALGORITHM_ED25519 = 4,
+  /*! Ed448 (RFC 8709) */
+  ARES_SSHFP_ALGORITHM_ED448 = 6
+} ares_sshfp_algorithm_t;
+
+/*! SSHFP Record ARES_RR_SSHFP_FP_TYPE known values (RFC 4255, RFC 6594) */
+typedef enum {
+  /*! SHA-1 */
+  ARES_SSHFP_FP_SHA1 = 1,
+  /*! SHA-256 */
+  ARES_SSHFP_FP_SHA256 = 2
+} ares_sshfp_fp_type_t;
+
+/*! DNSSEC Algorithm Numbers (RFC 4034, RFC 8624) */
+typedef enum {
+  /*! RSA/MD5 (deprecated, RFC 6725) */
+  ARES_DNSSEC_ALGORITHM_RSAMD5 = 1,
+  /*! Diffie-Hellman (RFC 2539) */
+  ARES_DNSSEC_ALGORITHM_DH = 2,
+  /*! DSA/SHA1 (RFC 3755, NOT RECOMMENDED) */
+  ARES_DNSSEC_ALGORITHM_DSA = 3,
+  /*! RSA/SHA-1 (RFC 3110, NOT RECOMMENDED) */
+  ARES_DNSSEC_ALGORITHM_RSASHA1 = 5,
+  /*! DSA-NSEC3-SHA1 (RFC 5155, NOT RECOMMENDED) */
+  ARES_DNSSEC_ALGORITHM_DSA_NSEC3_SHA1 = 6,
+  /*! RSASHA1-NSEC3-SHA1 (RFC 5155, NOT RECOMMENDED) */
+  ARES_DNSSEC_ALGORITHM_RSASHA1_NSEC3_SHA1 = 7,
+  /*! RSA/SHA-256 (RFC 5702) */
+  ARES_DNSSEC_ALGORITHM_RSASHA256 = 8,
+  /*! RSA/SHA-512 (RFC 5702) */
+  ARES_DNSSEC_ALGORITHM_RSASHA512 = 10,
+  /*! GOST R 34.10-2001 (RFC 5933) */
+  ARES_DNSSEC_ALGORITHM_ECC_GOST = 12,
+  /*! ECDSA Curve P-256 with SHA-256 (RFC 6605) */
+  ARES_DNSSEC_ALGORITHM_ECDSAP256SHA256 = 13,
+  /*! ECDSA Curve P-384 with SHA-384 (RFC 6605) */
+  ARES_DNSSEC_ALGORITHM_ECDSAP384SHA384 = 14,
+  /*! Ed25519 (RFC 8080) */
+  ARES_DNSSEC_ALGORITHM_ED25519 = 15,
+  /*! Ed448 (RFC 8080) */
+  ARES_DNSSEC_ALGORITHM_ED448 = 16,
+  /*! Indirect (RFC 4034) */
+  ARES_DNSSEC_ALGORITHM_INDIRECT = 252,
+  /*! Private algorithm (domain name) (RFC 4034) */
+  ARES_DNSSEC_ALGORITHM_PRIVATEDNS = 253,
+  /*! Private algorithm (OID) (RFC 4034) */
+  ARES_DNSSEC_ALGORITHM_PRIVATEOID = 254
+} ares_dnssec_algorithm_t;
+
+/*! DS Record Digest Type known values (RFC 4034, RFC 4509, RFC 6605) */
+typedef enum {
+  /*! SHA-1 (RFC 3658) */
+  ARES_DS_DIGEST_SHA1 = 1,
+  /*! SHA-256 (RFC 4509) */
+  ARES_DS_DIGEST_SHA256 = 2,
+  /*! GOST R 34.11-94 (RFC 5933) */
+  ARES_DS_DIGEST_GOST = 3,
+  /*! SHA-384 (RFC 6605) */
+  ARES_DS_DIGEST_SHA384 = 4
+} ares_ds_digest_t;
+
+/*! NSEC3 Hash Algorithm known values (RFC 5155) */
+typedef enum {
+  /*! SHA-1 */
+  ARES_NSEC3_HASH_SHA1 = 1
+} ares_nsec3_hash_t;
 
 /*! SVCB (and HTTPS) RR known parameters */
 typedef enum {

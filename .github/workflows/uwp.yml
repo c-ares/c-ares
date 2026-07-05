@@ -3,6 +3,9 @@
 name: Windows UWP (Store)
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -14,16 +17,16 @@ jobs:
     runs-on: windows-latest
     name: Windows UWP (Store)
     steps:
-      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
           arch: x64
           uwp: true
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Build c-ares
         run: |
           mkdir build
-          cmake -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON "-DCMAKE_SYSTEM_VERSION=10.0" -DCMAKE_SYSTEM_NAME=WindowsStore -A x64 -Bbuild
+          cmake -DCARES_WERROR=ON -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON "-DCMAKE_SYSTEM_VERSION=10.0" -DCMAKE_SYSTEM_NAME=WindowsStore -A x64 -Bbuild
           cmake --build build --config Debug
 
 # -DCMAKE_SYSTEM_VERSION=10.0

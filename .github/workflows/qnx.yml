@@ -3,6 +3,9 @@
 name: QNX
 on:
   push:
+    branches:
+      - main
+      - 'v*'
 
 concurrency:
   group: ${{ github.ref }}-qnx
@@ -21,7 +24,7 @@ jobs:
     name: "QNX"
     steps:
       - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
           packages: cmake ninja-build autoconf automake libtool qemu-user qemu-system-x86 qemu-utils bridge-utils net-tools libvirt-clients libvirt-daemon-system
           version: 1.0
@@ -33,24 +36,46 @@ jobs:
           QNX_PASSWORD: ${{ secrets.QNX_PASSWORD }}
         run: |
           [ -z "${QNX_USER}" -o -z "${QNX_PASSWORD}" -o -z "${QNX_LICENSE_KEY}" ] && echo "Must set QNX_USER, QNX_PASSWORD, and QNX_LICENSE_KEY" && /bin/false
+
+          # QNX's download/licensing servers intermittently time out (curl exit
+          # 28), which fails this ~11 minute job during setup before any c-ares
+          # code is even built.  Retry the network-facing steps a few times so a
+          # transient blip doesn't fail the whole run.  curl gets its own
+          # --retry plus a bounded --connect-timeout (the observed hang was
+          # ~136s per attempt); the Java installer is wrapped in a shell retry.
+          retry() {
+            local n=1 max=4 delay=20
+            while true; do
+              "$@" && return 0
+              if [ "$n" -ge "$max" ]; then
+                echo "  * Command still failing after $n attempts, giving up: $*" >&2
+                return 1
+              fi
+              echo "  * Attempt $n failed, retrying in ${delay}s: $*" >&2
+              n=$((n + 1))
+              sleep "$delay"
+            done
+          }
+          CURL_RETRY="--connect-timeout 60 --retry 5 --retry-delay 10 --retry-connrefused"
+
           echo "Downloading QNX Software Center ..."
           mkdir ${{ github.workspace }}/.qnx
-          curl --cookie-jar ${{ github.workspace }}/.qnx/myqnxcookies.auth --form "userlogin=$QNX_USER" --form "password=$QNX_PASSWORD" -X POST https://www.qnx.com/account/login.html > login_response.html
-          curl -L --cookie ${{ github.workspace }}/.qnx/myqnxcookies.auth https://www.qnx.com/download/download/79441/qnx-setup-2.0.4-202501021438-linux.run > qnx-setup-lin.run
+          retry curl $CURL_RETRY --cookie-jar ${{ github.workspace }}/.qnx/myqnxcookies.auth --form "userlogin=$QNX_USER" --form "password=$QNX_PASSWORD" -X POST https://www.qnx.com/account/login.html -o login_response.html
+          retry curl $CURL_RETRY -L --cookie ${{ github.workspace }}/.qnx/myqnxcookies.auth https://www.qnx.com/download/download/79441/qnx-setup-2.0.4-202501021438-linux.run -o qnx-setup-lin.run
           chmod a+x qnx-setup-lin.run
           ./qnx-setup-lin.run force-override disable-auto-start agree-to-license-terms ${{ github.workspace }}/qnxinstall
           echo "Installing License ..."
-          ${{ github.workspace }}/qnxinstall/qnxsoftwarecenter/qnxsoftwarecenter_clt -syncLicenseKeys -myqnx.user="$QNX_USER" -myqnx.password="$QNX_PASSWORD" -addLicenseKey $QNX_LICENSE_KEY
+          retry ${{ github.workspace }}/qnxinstall/qnxsoftwarecenter/qnxsoftwarecenter_clt -syncLicenseKeys -myqnx.user="$QNX_USER" -myqnx.password="$QNX_PASSWORD" -addLicenseKey $QNX_LICENSE_KEY
           cp -r ~/.qnx/license ${{ github.workspace }}/.qnx
           echo "Downloading QNX SDP ..."
-          ${{ github.workspace }}/qnxinstall/qnxsoftwarecenter/qnxsoftwarecenter_clt -mirror -cleanInstall -destination ${{ github.workspace }}/qnx800 -installBaseline com.qnx.qnx800 -myqnx.user="$QNX_USER" -myqnx.password="$QNX_PASSWORD"
+          retry ${{ github.workspace }}/qnxinstall/qnxsoftwarecenter/qnxsoftwarecenter_clt -mirror -cleanInstall -destination ${{ github.workspace }}/qnx800 -installBaseline com.qnx.qnx800 -myqnx.user="$QNX_USER" -myqnx.password="$QNX_PASSWORD"
       - name: Checkout qnx-ports build-files
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: qnx-ports/build-files
           path: build-files
       - name: Checkout qnx-ports googletest
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: qnx-ports/googletest
           path: googletest
@@ -60,7 +85,7 @@ jobs:
           env
           make -C build-files/ports/googletest PREFIX=usr install -j$(nproc)
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           path: c-ares
       - name: Set CMAKE_FIND_ROOT_PATH

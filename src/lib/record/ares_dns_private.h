@@ -150,6 +150,58 @@ typedef struct {
   size_t         signature_len;
 } ares_dns_sig_t;
 
+/* RRSIG has the same wire format as SIG */
+typedef ares_dns_sig_t ares_dns_rrsig_t;
+
+typedef struct {
+  unsigned short key_tag;
+  unsigned char  algorithm;
+  unsigned char  digest_type;
+  unsigned char *digest;
+  size_t         digest_len;
+} ares_dns_ds_t;
+
+typedef struct {
+  unsigned char  algorithm;
+  unsigned char  fp_type;
+  unsigned char *fingerprint;
+  size_t         fingerprint_len;
+} ares_dns_sshfp_t;
+
+typedef struct {
+  char          *next_domain_name;
+  unsigned char *type_bit_maps;
+  size_t         type_bit_maps_len;
+} ares_dns_nsec_t;
+
+typedef struct {
+  unsigned short flags;
+  unsigned char  protocol;
+  unsigned char  algorithm;
+  unsigned char *public_key;
+  size_t         public_key_len;
+} ares_dns_dnskey_t;
+
+typedef struct {
+  unsigned char  hash_algorithm;
+  unsigned char  flags;
+  unsigned short iterations;
+  unsigned char *salt;
+  size_t         salt_len;
+  unsigned char *next_hashed_owner_name;
+  size_t         next_hashed_owner_name_len;
+  unsigned char *type_bit_maps;
+  size_t         type_bit_maps_len;
+} ares_dns_nsec3_t;
+
+typedef struct {
+  unsigned char  hash_algorithm;
+  unsigned char  flags;
+  unsigned short iterations;
+  unsigned char *salt;
+  size_t         salt_len;
+} ares_dns_nsec3param_t;
+
 typedef struct {
   struct ares_in6_addr addr;
 } ares_dns_aaaa_t;
@@ -237,6 +289,13 @@ struct ares_dns_rr {
     ares_dns_mx_t     mx;
     ares_dns_txt_t    txt;
     ares_dns_sig_t    sig;
+    ares_dns_rrsig_t  rrsig;
+    ares_dns_ds_t     ds;
+    ares_dns_sshfp_t  sshfp;
+    ares_dns_nsec_t   nsec;
+    ares_dns_dnskey_t dnskey;
+    ares_dns_nsec3_t  nsec3;
+    ares_dns_nsec3param_t nsec3param;
     ares_dns_aaaa_t   aaaa;
     ares_dns_srv_t    srv;
     ares_dns_naptr_t  naptr;
