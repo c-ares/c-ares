@@ -24,7 +24,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <limits.h>
 #include "ares_private.h"
 
 /* Uses public domain code snippets from

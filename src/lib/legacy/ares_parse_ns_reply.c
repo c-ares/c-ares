@@ -97,7 +97,8 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
   }
 
   /* Preallocate the maximum number + 1 */
-  hostent->h_aliases = ares_malloc_zero_array(ancount + 1, sizeof(*hostent->h_aliases));
+  hostent->h_aliases =
+    ares_malloc_zero_array(ancount + 1, sizeof(*hostent->h_aliases));
   if (hostent->h_aliases == NULL) {
     status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     goto done;            /* LCOV_EXCL_LINE: OutOfMemory */

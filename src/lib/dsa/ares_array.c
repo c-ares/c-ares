@@ -195,7 +195,8 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
     return ARES_SUCCESS;
   }
 
-  temp = ares_realloc_zero_array(arr->arr, arr->alloc_cnt, size, arr->member_size);
+  temp =
+    ares_realloc_zero_array(arr->arr, arr->alloc_cnt, size, arr->member_size);
   if (temp == NULL) {
     return ARES_ENOMEM;
   }
