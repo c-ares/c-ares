@@ -432,6 +432,9 @@ ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
 
   /* Output name compression offset jump */
   if (off != NULL) {
+    /* off->idx is guaranteed to fit in 14 bits: ares_nameoffset_create()
+     * refuses to record offsets beyond 0x3FFF, so the mask below never
+     * actually truncates. */
     unsigned short u16 =
       (unsigned short)0xC000 | (unsigned short)(off->idx & 0x3FFF);
     status = ares_buf_append_be16(buf, u16);
