@@ -1,0 +1,44 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: FreeBSD
+
+on:
+  push:
+    branches:
+      - main
+      - 'v*'
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-freebsd
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: FreeBSD
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Test
+        uses: cross-platform-actions/action@5ea7e8e4677bd726033a10b094ba1c5762b15dee # v1.3.0
+        env:
+          DIST: FREEBSD
+          BUILD_TYPE: "cmake"
+          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
+          TEST_DEBUGGER: "gdb"
+        with:
+          operating_system: freebsd
+          version: '14.2'
+          shell: 'bash'
+          environment_variables: DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER TEST_DEBUGGER
+          run: |
+            sudo pkg install -y bash cmake googletest pkgconf ninja gdb
+            sudo ln -sf /usr/local/bin/bash /bin/bash
+            echo "BUILD_TYPE: $BUILD_TYPE"
+            echo "CMAKE_FLAGS: $CMAKE_FLAGS"
+            echo "CMAKE_TEST_FLAGS: $CMAKE_TEST_FLAGS"
+            ./ci/build.sh
+            ./ci/test.sh
