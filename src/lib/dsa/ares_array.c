@@ -171,23 +171,17 @@ void *ares_array_finish(ares_array_t *arr, size_t *num_members)
 
 ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
 {
-  void *temp;
-
+  void  *temp;
   size_t rounded_size;
 
   if (arr == NULL || size == 0 || size < arr->cnt) {
     return ARES_EFORMERR;
   }
 
-  /* Always operate on powers of 2.
-   *
-   * This change enforces a strict upper bound invariant: all buffer capacity
-   * calculations must be validated before arithmetic, ensuring no intermediate
-   * wraparound can influence allocation decisions.
-   */
+  /* Always operate on powers of 2 */
   rounded_size = ares_round_up_pow2(size);
   if (rounded_size < size) {
-    return ARES_ENOMEM;
+    return ARES_ENOMEM; /* rounding wrapped around */
   }
   size = rounded_size;
 
@@ -200,13 +194,8 @@ ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
     return ARES_SUCCESS;
   }
 
-
-  if (size > SIZE_MAX / arr->member_size) {
-    return ARES_ENOMEM;
-  }
-
-  temp = ares_realloc_zero(arr->arr, arr->alloc_cnt * arr->member_size,
-                           size * arr->member_size);
+  temp =
+    ares_realloc_zero_array(arr->arr, arr->alloc_cnt, size, arr->member_size);
   if (temp == NULL) {
     return ARES_ENOMEM;
   }
