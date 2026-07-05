@@ -4,6 +4,9 @@ name: Solaris
 
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
