@@ -1128,6 +1128,63 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(ARES_FALSE, ares_dns_rr_get_opt_byid(NULL, ARES_RR_A_ADDR, 1, NULL, NULL));
 }
 
+TEST_F(LibraryTest, DNSNameCompression14Bit) {
+  ares_dns_record_t          *dnsrec = NULL;
+  ares_dns_rr_t              *rr     = NULL;
+  unsigned char              *msg    = NULL;
+  size_t                      msglen = 0;
+  std::vector<unsigned char>  txt(255, 'a');
+
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_create(&dnsrec, 0x1234, ARES_FLAG_QR,
+      ARES_OPCODE_QUERY, ARES_RCODE_NOERROR));
+
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_record_query_add(dnsrec, "example.com", ARES_REC_TYPE_ANY,
+      ARES_CLASS_IN));
+
+  /* Pad the message well past the 14-bit (16383 byte) compression pointer
+   * limit with large TXT records. */
+  for (size_t i = 0; i < 80; i++) {
+    EXPECT_EQ(ARES_SUCCESS,
+      ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+        ARES_REC_TYPE_TXT, ARES_CLASS_IN, 0));
+    EXPECT_EQ(ARES_SUCCESS,
+      ares_dns_rr_add_abin(rr, ARES_RR_TXT_DATA, txt.data(), txt.size()));
+  }
+
+  /* Past byte 16383, add a repeated owner name.  Its first occurrence records a
+   * compression target at an offset that doesn't fit in 14 bits; the second
+   * occurrence must be written uncompressed rather than as a pointer to
+   * (offset & 0x3FFF), which would corrupt the message. */
+  for (size_t i = 0; i < 2; i++) {
+    EXPECT_EQ(ARES_SUCCESS,
+      ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER,
+        "repeat.example.com", ARES_REC_TYPE_TXT, ARES_CLASS_IN, 0));
+    EXPECT_EQ(ARES_SUCCESS,
+      ares_dns_rr_add_abin(rr, ARES_RR_TXT_DATA, txt.data(), txt.size()));
+  }
+
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+  EXPECT_GT(msglen, 0x3FFFU);
+
+  /* Before the fix this parse failed / mis-parsed on the truncated pointer. */
+  ares_dns_record_t *parsed = NULL;
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, 0, &parsed));
+  ASSERT_NE(nullptr, parsed);
+
+  size_t ancount = ares_dns_record_rr_cnt(parsed, ARES_SECTION_ANSWER);
+  EXPECT_EQ(82U, ancount);
+  const ares_dns_rr_t *last =
+    ares_dns_record_rr_get_const(parsed, ARES_SECTION_ANSWER, ancount - 1);
+  ASSERT_NE(nullptr, last);
+  EXPECT_STREQ("repeat.example.com", ares_dns_rr_get_name(last));
+
+  ares_dns_record_destroy(parsed);
+  ares_free_string(msg);
+  ares_dns_record_destroy(dnsrec);
+}
+
 TEST_F(LibraryTest, DNSParseFlags) {
   ares_dns_record_t   *dnsrec = NULL;
   ares_dns_rr_t       *rr     = NULL;
