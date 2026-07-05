@@ -27,6 +27,8 @@
 
 #include "ares_private.h"
 
+#include <limits.h>
+
 #ifdef HAVE_SYS_PARAM_H
 #  include <sys/param.h>
 #endif
@@ -170,8 +172,8 @@ static ares_status_t parse_sort(ares_buf_t *buf, struct apattern *pat)
 
     if (ares_str_isnum(maskstr)) {
       /* Numeric mask */
-      int mask = atoi(maskstr);
-      if (mask < 0 || mask > 128) {
+      unsigned int mask;
+      if (!ares_str_parse_uint(maskstr, 128, &mask)) {
         return ARES_EBADSTR;
       }
       if (pat->addr.family == AF_INET && mask > 32) {
@@ -406,8 +408,11 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
 
   key = kv[0];
   if (num == 2) {
-    val    = kv[1];
-    valint = (unsigned int)strtoul(val, NULL, 10);
+    val = kv[1];
+    if (!ares_str_parse_uint(val, UINT_MAX, &valint)) {
+      status = ARES_EBADSTR;
+      goto done;
+    }
   }
 
   if (ares_streq(key, "ndots")) {
