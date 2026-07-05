@@ -32,6 +32,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Depth 2 so the PR merge commit's first parent (the current base
+          # branch tip) is available as the diff base below.
+          fetch-depth: 2
 
       - name: Install latest stable clang-format from apt.llvm.org
         run: |
@@ -49,11 +53,15 @@ jobs:
           echo "LLVM_VER=${LLVM_VER}" >> "${GITHUB_ENV}"
 
       - name: Check formatting of changed lines
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          git fetch --quiet --depth=1 origin "${BASE_SHA}"
-          git diff -U0 --no-color "${BASE_SHA}" HEAD -- \
+          # HEAD is the PR merge commit, so HEAD^1 is the current base branch
+          # tip and the diff below is exactly the lines this PR changes.  Do
+          # NOT use github.event.pull_request.base.sha here: it is pinned to
+          # the base tip at the time the PR was opened, so on an older branch
+          # it also sweeps in unrelated base-branch changes and flags lines
+          # the PR never touched (evaluated against the current .clang-format
+          # rather than the rules they were written under).
+          git diff -U0 --no-color HEAD^1 HEAD -- \
               '*.c' '*.h' ':!src/lib/thirdparty' | \
             "clang-format-diff-${LLVM_VER}" -p1 \
               -binary "clang-format-${LLVM_VER}" > clang-format.patch || true
