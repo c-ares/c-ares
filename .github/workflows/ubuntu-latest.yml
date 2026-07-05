@@ -3,6 +3,9 @@
 name: Ubuntu (latest)
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -11,7 +14,7 @@ concurrency:
 
 env:
   TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
-  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+  CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
   MAKE: make
 
 jobs:
@@ -20,12 +23,12 @@ jobs:
     name: "Ubuntu (latest)"
     steps:
       - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
           packages: cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
           version: 1.0
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: "Make sure TCP FastOpen is enabled"
         run: |
           sudo sysctl -w net.ipv4.tcp_fastopen=3
@@ -48,7 +51,7 @@ jobs:
       - name: "CMake: (no threads) build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
-          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_THREADS=OFF -G Ninja"
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_THREADS=OFF -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
           TEST_DEBUGGER: gdb
         run: |
@@ -57,7 +60,7 @@ jobs:
       - name: "CMake: (hide symbols) build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
-          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=OFF -DCARES_SYMBOL_HIDING=ON -G Ninja"
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=OFF -DCARES_SYMBOL_HIDING=ON -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
           TEST_DEBUGGER: gdb
         run: |

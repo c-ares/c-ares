@@ -3,6 +3,9 @@
 name: OpenWatcom
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -14,9 +17,9 @@ jobs:
     runs-on: windows-latest
     name: OpenWatcom
     steps:
-      - uses: open-watcom/setup-watcom@v0
+      - uses: open-watcom/setup-watcom@f0c24a936512429598af01e37fb4a96e8faece74 # v1
       - name: Checkout Source
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: configure
         run: buildconf.bat
         shell: cmd

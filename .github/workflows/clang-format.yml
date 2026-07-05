@@ -1,0 +1,71 @@
+# Copyright (C) The c-ares project and its contributors
+#
+# SPDX-License-Identifier: MIT
+
+name: clang-format
+
+# Validates formatting of lines changed by the PR (and only those lines,
+# via clang-format-diff) against the repository .clang-format rules.
+#
+# Always uses the latest stable clang-format from apt.llvm.org, discovered
+# at runtime from the llvm.sh installer script.  Our configuration requires
+# at least clang-format 20 (AlignFunctionDeclarations).
+
+on:
+  pull_request:
+    paths:
+      - '**.c'
+      - '**.h'
+      - '.clang-format'
+      - '.github/workflows/clang-format.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clang-format:
+    name: clang-format
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install latest stable clang-format from apt.llvm.org
+        run: |
+          wget -q https://apt.llvm.org/llvm.sh
+          LLVM_VER=$(sed -n 's/^CURRENT_LLVM_STABLE=\([0-9]*\).*/\1/p' llvm.sh)
+          echo "Latest stable LLVM version: ${LLVM_VER}"
+          CODENAME=$(. /etc/os-release && echo "${VERSION_CODENAME}")
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | \
+            sudo tee /etc/apt/trusted.gpg.d/apt-llvm-org.asc >/dev/null
+          echo "deb http://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-${LLVM_VER} main" | \
+            sudo tee /etc/apt/sources.list.d/apt-llvm-org.list
+          sudo apt-get update
+          sudo apt-get install -y "clang-format-${LLVM_VER}"
+          "clang-format-${LLVM_VER}" --version
+          echo "LLVM_VER=${LLVM_VER}" >> "${GITHUB_ENV}"
+
+      - name: Check formatting of changed lines
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --quiet --depth=1 origin "${BASE_SHA}"
+          git diff -U0 --no-color "${BASE_SHA}" HEAD -- \
+              '*.c' '*.h' ':!src/lib/thirdparty' | \
+            "clang-format-diff-${LLVM_VER}" -p1 \
+              -binary "clang-format-${LLVM_VER}" > clang-format.patch || true
+          if [ -s clang-format.patch ]; then
+            echo "::error::Changed lines are not clang-format clean.  Run 'git clang-format' (clang-format >= 20 required) or apply the patch below."
+            cat clang-format.patch
+            {
+              echo '### clang-format suggested changes'
+              echo '```diff'
+              cat clang-format.patch
+              echo '```'
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 1
+          fi
+          echo "All changed lines are clang-format clean"

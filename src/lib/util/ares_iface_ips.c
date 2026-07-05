@@ -25,6 +25,8 @@
  */
 #include "ares_private.h"
 
+#include <limits.h>
+
 #ifdef USE_WINSOCK
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
@@ -256,12 +258,12 @@ ares_iface_ip_flags_t ares_iface_ips_get_flags(const ares_iface_ips_t *ips,
   const ares_iface_ip_t *ip;
 
   if (ips == NULL) {
-    return 0;
+    return ARES_IFACE_IP_NONE;
   }
 
   ip = ares_array_at_const(ips->ips, idx);
   if (ip == NULL) {
-    return 0;
+    return ARES_IFACE_IP_NONE;
   }
 
   return ip->flags;
@@ -329,6 +331,8 @@ static char *wcharp_to_charp(const wchar_t *in)
 static ares_bool_t name_match(const char *name, const char *adapter_name,
                               unsigned int ll_scope)
 {
+  unsigned int scope;
+
   if (name == NULL || *name == 0) {
     return ARES_TRUE;
   }
@@ -337,7 +341,7 @@ static ares_bool_t name_match(const char *name, const char *adapter_name,
     return ARES_TRUE;
   }
 
-  if (ares_str_isnum(name) && (unsigned int)atoi(name) == ll_scope) {
+  if (ares_str_parse_uint(name, UINT_MAX, &scope) && scope == ll_scope) {
     return ARES_TRUE;
   }
 
@@ -376,7 +380,7 @@ static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
 
   for (address = addresses; address != NULL; address = address->Next) {
     IP_ADAPTER_UNICAST_ADDRESS *ipaddr     = NULL;
-    ares_iface_ip_flags_t       addrflag   = 0;
+    ares_iface_ip_flags_t       addrflag   = ARES_IFACE_IP_NONE;
     char                        ifname[64] = "";
 
 #  if defined(HAVE_CONVERTINTERFACEINDEXTOLUID) && \
@@ -477,7 +481,7 @@ static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
   }
 
   for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
-    ares_iface_ip_flags_t addrflag = 0;
+    ares_iface_ip_flags_t addrflag = ARES_IFACE_IP_NONE;
     struct ares_addr      addr;
     unsigned char         netmask  = 0;
     unsigned int          ll_scope = 0;

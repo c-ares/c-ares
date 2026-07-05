@@ -537,10 +537,15 @@ void ares_gethostbyaddr_nolock(ares_channel_t *channel, const void *addr,
  *                         ares_free()'d by the caller.
  *  \param[in] is_hostname if ARES_TRUE, will validate the character set for
  *                         a valid hostname or will return error.
+ *  \param[in] allow_compression if ARES_FALSE, a compression pointer
+ *                         encountered while parsing the name will be rejected
+ *                         with ARES_EBADNAME.  Used for RR types (e.g. SRV)
+ *                         whose RDATA names must not use name compression.
  *  \return ARES_SUCCESS on success
  */
 ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
-                                  ares_bool_t is_hostname);
+                                  ares_bool_t is_hostname,
+                                  ares_bool_t allow_compression);
 
 /*! Write the DNS name to the buffer in the DNS domain-name syntax as a
  *  series of labels.  The maximum domain name length is 255 characters with

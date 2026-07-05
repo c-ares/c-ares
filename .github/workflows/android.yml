@@ -3,6 +3,9 @@
 name: Android
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -19,14 +22,14 @@ jobs:
     name: "Android"
     steps:
       - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
           packages: cmake ninja-build autoconf automake libtool pkg-config
           version: 1.0
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Setup NDK
-        uses: nttld/setup-ndk@v1
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
         id: setup-ndk
         with:
           ndk-version: r21e

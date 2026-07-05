@@ -4,6 +4,9 @@ name: NetBSD
 
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -15,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     name: NetBSD
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Test
-        uses: cross-platform-actions/action@v0.24.0
+        uses: cross-platform-actions/action@5ea7e8e4677bd726033a10b094ba1c5762b15dee # v1.3.0
         env:
           DIST: NETBSD
           BUILD_TYPE: "cmake"

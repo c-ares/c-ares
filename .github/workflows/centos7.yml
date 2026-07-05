@@ -3,6 +3,9 @@
 name: CentOS 7
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -37,7 +40,16 @@ jobs:
           yum install -y gcc gcc-c++ make autoconf automake libtool cmake3 git ninja-build gdb
           ln -sf /usr/bin/cmake3 /usr/bin/cmake
       - name: Checkout c-ares
-        uses: actions/checkout@v1
+        # actions/checkout can't be used here: current versions require a newer
+        # Node.js/glibc than the CentOS 7 container provides, and the last
+        # compatible version (v1) is EOL.  Check out directly with git instead
+        # (fetch by GITHUB_REF so it works for both branch pushes and PR merge
+        # refs; CentOS 7's git is too old to fetch a bare commit SHA).
+        run: |
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}"
+          git fetch --depth=1 origin "${GITHUB_REF}"
+          git checkout FETCH_HEAD
       - name: Build GoogleTest
         # GoogleTest v1.10 doesn't require c++14
         run: |

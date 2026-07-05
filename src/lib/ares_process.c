@@ -492,6 +492,18 @@ static ares_status_t read_conn_packets(ares_conn_t *conn,
 
     /* If UDP, overwrite length */
     if (!(conn->flags & ARES_CONN_FLAG_TCP)) {
+      /* The read buffer is grown in powers of two, so a single recvfrom() can
+       * return more than the 2-byte length prefix is able to represent.  A
+       * datagram that large can't be a valid DNS message, and writing the
+       * truncated (unsigned short)count would desync the framing of everything
+       * buffered after it, so discard it.  Standard UDP can't actually deliver
+       * a payload this large (max is 65507 IPv4 / 65527 IPv6); the only vector
+       * is IPv6 jumbograms (RFC 2675), which DNS never uses.  This is purely
+       * defense-in-depth. */
+      if (count > 65535) {
+        ares_buf_set_length(conn->in_buf, start_len);
+        break;
+      }
       len = ares_buf_len(conn->in_buf);
       ares_buf_set_length(conn->in_buf, start_len);
       ares_buf_append_be16(conn->in_buf, (unsigned short)count);
@@ -723,6 +735,12 @@ static ares_status_t process_timeouts(ares_channel_t       *channel,
     query->timeouts++;
 
     conn = query->conn;
+    /* Retire this connection for NEW queries.  A timeout suggests packets are
+     * being dropped on it, so route new queries to a fresh source port while
+     * the in-flight queries here drain (it is cleaned up once idle).  This is
+     * per-connection so a transient failure doesn't stop reuse of healthy
+     * connections to the same server. */
+    conn->flags |= ARES_CONN_FLAG_NONEW;
     server_increment_failures(conn->server, query->using_tcp);
     status = ares_requeue_query(query, now, ARES_ETIMEOUT, ARES_TRUE, NULL,
       NULL);
@@ -1162,7 +1180,12 @@ static size_t ares_calc_query_timeout(const ares_query_t   *query,
    * retry from the last retry */
   rounds = (query->try_count / num_servers);
   if (rounds > 0) {
-    timeplus <<= rounds;
+    if (rounds >= sizeof(timeplus) * CHAR_BIT ||
+        timeplus > (SIZE_MAX >> rounds)) {
+      timeplus = SIZE_MAX;
+    } else {
+      timeplus <<= rounds;
+    }
   }
 
   if (channel->maxtimeout && timeplus > channel->maxtimeout) {
@@ -1219,9 +1242,13 @@ static ares_conn_t *ares_fetch_connection(const ares_channel_t *channel,
     return NULL;
   }
 
-  /* If the associated server has failures, don't use it.  It should be cleaned
-   * up later. */
-  if (conn->server->consec_failures > 0) {
+  /* Don't hand new queries to a connection that has been retired (e.g. it saw
+   * a timeout).  It keeps servicing its in-flight queries and is cleaned up
+   * once idle.  Note this is a per-connection check: a server-wide failure
+   * counter must not be used here or a single transient failure would evict
+   * every (including healthy) connection to the server and spawn a new socket
+   * per query. */
+  if (conn->flags & ARES_CONN_FLAG_NONEW) {
     return NULL;
   }
 

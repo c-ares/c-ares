@@ -3,6 +3,9 @@
 name: MacOS
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -11,7 +14,7 @@ concurrency:
 
 env:
   TEST_FILTER: "-v --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveGetLocalhostByAddr*"
-  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+  CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
   MAKE: make
 
 jobs:
@@ -24,7 +27,7 @@ jobs:
           brew uninstall cmake || true
           brew install cmake googletest llvm autoconf automake libtool make ninja
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: "Make sure TCP FastOpen is enabled"
         run: sudo sysctl net.inet.tcp.fastopen=3
       - name: "CMake: build and test c-ares"

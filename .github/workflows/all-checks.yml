@@ -1,0 +1,34 @@
+# Copyright (C) The c-ares project and its contributors
+#
+# SPDX-License-Identifier: MIT
+
+name: All Checks
+
+# Single merge-status aggregator
+# It waits for every OTHER check on the commit to pass or be skipped, so it
+# is the one check to mark required on the `main` ruleset: any workflow added
+# in the future is then automatically gated through it — fail it, and this
+# blocks the PR — with no per-check ruleset edits.
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  all-checks:
+    name: All Checks
+    runs-on: ubuntu-latest
+    permissions:
+      checks: read
+    steps:
+      - name: Wait for all checks to pass or be skipped
+        uses: poseidon/wait-for-status-checks@9530626e949e682ca077b96f6f2b5c5cdc4bf40d  # v0.6.0 + #627
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Ignore:
+          #   * "All Checks" — self (we set a name, so it isn't auto-ignored).
+          ignore: "All Checks"
+          timeout: 10800

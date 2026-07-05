@@ -3,6 +3,9 @@
 name: Fedora Latest (bleeding edge)
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -11,7 +14,7 @@ concurrency:
 
 env:
   TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
-  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
+  CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -G Ninja"
   MAKE: make
 
 jobs:
@@ -29,7 +32,7 @@ jobs:
         run: |
           yum install -y gcc gcc-c++ make autoconf automake libtool cmake git ninja-build gdb curl wget gtest-devel gmock-devel pkgconf clang clang-tools-extra clang-analyzer lldb gdb valgrind procps
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: "Make sure TCP FastOpen is enabled"
         run: |
           sudo sysctl -w net.ipv4.tcp_fastopen=3

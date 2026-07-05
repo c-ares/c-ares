@@ -3,6 +3,9 @@
 name: iOS
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -12,7 +15,7 @@ concurrency:
 env:
   DIST: "iOS"
   MAKE: "make"
-  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -G Ninja"
+  CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -G Ninja"
   CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
 
 jobs:
@@ -25,7 +28,7 @@ jobs:
           brew uninstall cmake || true
           brew install cmake googletest llvm autoconf automake libtool make ninja
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE

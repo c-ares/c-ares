@@ -4,6 +4,9 @@ name: Solaris
 
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -22,10 +25,10 @@ jobs:
       TEST_FILTER: "--gtest_filter=-*Live*"
       TEST_DEBUGGER: "gdb"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Solaris Build and Test
         id: solaris
-        uses: vmactions/solaris-vm@v1
+        uses: vmactions/solaris-vm@d30dd6c228c8661ade859e36ead7660b9a62efcc # v1.3.7
         with:
           envs: 'DIST BUILD_TYPE CMAKE_FLAGS CMAKE_TEST_FLAGS TEST_FILTER CXXFLAGS TEST_DEBUGGER'
           usesh: true
