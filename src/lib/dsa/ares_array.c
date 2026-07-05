@@ -171,20 +171,19 @@ void *ares_array_finish(ares_array_t *arr, size_t *num_members)
 
 ares_status_t ares_array_set_size(ares_array_t *arr, size_t size)
 {
-  void *temp;
+  void  *temp;
+  size_t rounded_size;
 
   if (arr == NULL || size == 0 || size < arr->cnt) {
     return ARES_EFORMERR;
   }
 
   /* Always operate on powers of 2 */
-  {
-    size_t new_size = ares_round_up_pow2(size);
-    if (new_size < size) {
-      return ARES_ENOMEM;
-    }
-    size = new_size;
+  rounded_size = ares_round_up_pow2(size);
+  if (rounded_size < size) {
+    return ARES_ENOMEM; /* rounding wrapped around */
   }
+  size = rounded_size;
 
   if (size < ARES__ARRAY_MIN) {
     size = ARES__ARRAY_MIN;
