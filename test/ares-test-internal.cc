@@ -1423,10 +1423,11 @@ TEST_F(LibraryTest, DNSNameCompression14Bit) {
       ares_dns_rr_add_abin(rr, ARES_RR_TXT_DATA, txt.data(), txt.size()));
   }
 
-  /* Past byte 16383, add a repeated owner name.  Its first occurrence records a
-   * compression target at an offset that doesn't fit in 14 bits; the second
-   * occurrence must be written uncompressed rather than as a pointer to
-   * (offset & 0x3FFF), which would corrupt the message. */
+  /* Past byte 16383, add a repeated owner name.  Its first occurrence lands at
+   * an offset that doesn't fit in 14 bits, so it must not be recorded as a
+   * compression target; the second occurrence must not be emitted as a pointer
+   * to (offset & 0x3FFF), which would corrupt the message.  It instead
+   * compresses only against the in-range example.com target. */
   for (size_t i = 0; i < 2; i++) {
     EXPECT_EQ(ARES_SUCCESS,
       ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER,
@@ -1437,6 +1438,11 @@ TEST_F(LibraryTest, DNSNameCompression14Bit) {
 
   EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
   EXPECT_GT(msglen, 0x3FFFU);
+
+  /* 12 hdr + 17 question + 80*268 compressed TXT + 2*275 repeat TXT.
+   * An exact size also verifies compression remains active for names
+   * below the limit. */
+  EXPECT_EQ(22019U, msglen);
 
   /* Before the fix this parse failed / mis-parsed on the truncated pointer. */
   ares_dns_record_t *parsed = NULL;
