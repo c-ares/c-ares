@@ -30,5 +30,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           # Ignore:
           #   * "All Checks" — self (we set a name, so it isn't auto-ignored).
-          ignore: "All Checks"
+          #   * "Coveralls"  — coverage reporting flakes intermittently (upload
+          #     failures) and must not gate merges; it is informational only.
+          ignore: "All Checks,Coveralls"
           timeout: 10800
