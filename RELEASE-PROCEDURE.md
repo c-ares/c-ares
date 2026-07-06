@@ -8,6 +8,11 @@ in the source code repo
 - edit `configure.ac`'s `CARES_VERSION_INFO`, and `CMakeLists.txt`'s
   `CARES_LIB_VERSIONINFO` set to the same value to denote the current shared
   object versioning.
+- edit the package version to the new release in both `configure.ac`'s
+  `AC_INIT([c-ares], [X.Y.Z], ...)` and `CMakeLists.txt`'s
+  `PROJECT (c-ares LANGUAGES C VERSION "X.Y.Z")`. This is the version that names
+  the generated `make dist` tarball (`c-ares-X.Y.Z.tar.gz`); if it is not bumped
+  the release packaging workflow will fail to find the expected tarball.
 - edit `include/ares_version.h` and set `ARES_VERSION_*` definitions to reflect
   the current version.
 - All release tags need to be made off a release branch named `vX.Y`, where `X`
