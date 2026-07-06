@@ -123,12 +123,21 @@ static void server_increment_failures(ares_server_t *server,
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  server->consec_failures++;
-  ares_slist_node_reinsert(node);
+  /* Cap the failure count.  Only the relative order matters for server
+   * selection, and an uncapped count would require an unbounded number of
+   * failures on other servers before a server that failed during an
+   * extended outage could be selected again. */
+  if (server->consec_failures < SERVER_CONSEC_FAILURES_CAP) {
+    server->consec_failures++;
+  }
 
+  /* Must update the retry time before reinserting since the sort uses it to
+   * order servers with the same failure count */
   ares_tvnow(&next_retry_time);
   ares_timeval_add(&next_retry_time, channel->server_retry_delay);
   server->next_retry_time = next_retry_time;
+
+  ares_slist_node_reinsert(node);
 
   invoke_server_state_cb(server, ARES_FALSE,
                          used_tcp == ARES_TRUE ? ARES_SERV_STATE_TCP
@@ -147,11 +156,12 @@ static void server_set_good(ares_server_t *server, ares_bool_t used_tcp)
 
   if (server->consec_failures > 0) {
     server->consec_failures = 0;
+    /* Must update the retry time before reinserting since the sort uses it
+     * to order servers with the same failure count */
+    server->next_retry_time.sec  = 0;
+    server->next_retry_time.usec = 0;
     ares_slist_node_reinsert(node);
   }
-
-  server->next_retry_time.sec  = 0;
-  server->next_retry_time.usec = 0;
 
   invoke_server_state_cb(server, ARES_TRUE,
                          used_tcp == ARES_TRUE ? ARES_SERV_STATE_TCP
@@ -1134,22 +1144,23 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
   }
 
   /* Select the first server with failures to retry that has passed the retry
-   * timeout and doesn't already have a pending probe */
+   * timeout and doesn't already have a pending probe.  Skip the server the
+   * triggering query was just sent to since that query is already exercising
+   * it. */
   ares_tvnow(&now);
   for (node = ares_slist_node_first(channel->servers); node != NULL;
        node = ares_slist_node_next(node)) {
     ares_server_t *node_val = ares_slist_node_val(node);
-    if (node_val != NULL && node_val->consec_failures > 0 &&
-        !node_val->probe_pending &&
+    if (node_val != NULL && node_val != server &&
+        node_val->consec_failures > 0 && !node_val->probe_pending &&
         ares_timedout(&now, &node_val->next_retry_time)) {
       probe_server = node_val;
       break;
     }
   }
 
-  /* Either nothing to probe or the query was enqueud to the same server
-   * we were going to probe. Do nothing. */
-  if (probe_server == NULL || server == probe_server) {
+  /* Nothing to probe */
+  if (probe_server == NULL) {
     return;
   }
 
@@ -1331,10 +1342,12 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
     return ARES_ENOSERVER;
   }
 
-  /* If a query is directed to a specific query, or the server chosen has
-   * failures, or the query is being retried, don't probe for downed servers */
-  if (requested_server != NULL || server->consec_failures > 0 ||
-      query->try_count != 0) {
+  /* If a query is directed to a specific server, or the query is being
+   * retried, don't probe for downed servers.  Note that the chosen server
+   * having failures itself does NOT disable probing: when every server has
+   * failures (e.g. during an extended outage), probes are the only way a
+   * recovered server that sorts behind the current best can be noticed. */
+  if (requested_server != NULL || query->try_count != 0) {
     probe_downed_server = ARES_FALSE;
   }
 
