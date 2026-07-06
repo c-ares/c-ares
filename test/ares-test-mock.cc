@@ -1837,6 +1837,115 @@ TEST_P(MockUDPChannelTest, TriggerResendThenConnFailEDNS) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
+// Regression for issue #1043: a long chain of retryable connection failures
+// used to recurse ares_requeue_query() -> ares_send_query() until the stack was
+// exhausted.  With a very high retry count and a socket that always fails to be
+// created (a retryable ARES_ECONNREFUSED), the retries must be processed
+// iteratively and the query must terminate cleanly rather than crashing.
+class MockRetryDepthChannelTest : public MockChannelOptsTest,
+                                  public ::testing::WithParamInterface<int> {
+public:
+  MockRetryDepthChannelTest()
+    : MockChannelOptsTest(1, GetParam(), false, false, FillOptions(&opts_),
+                          ARES_OPT_TRIES)
+  {
+  }
+
+  static struct ares_options *FillOptions(struct ares_options *opts)
+  {
+    memset(opts, 0, sizeof(struct ares_options));
+    /* Large enough that the old recursive path would overflow the stack. */
+    opts->tries = 100000;
+    return opts;
+  }
+
+private:
+  struct ares_options opts_;
+};
+
+static size_t g_always_fail_socket_calls = 0;
+
+static ares_socket_t always_fail_socket(int af, int type, int protocol,
+                                        void *user_data)
+{
+  (void)af;
+  (void)type;
+  (void)protocol;
+  (void)user_data;
+  g_always_fail_socket_calls++;
+  return ARES_SOCKET_BAD;
+}
+
+TEST_P(MockRetryDepthChannelTest, HighRetryNoStackOverflow) {
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+  sock_funcs.asocket = always_fail_socket;
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+
+  g_always_fail_socket_calls = 0;
+
+  QueryResult result;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QueryCallback, &result, NULL);
+  Process();
+
+  /* If the retries didn't drive the query to a terminal state on their own
+   * (e.g. it parked awaiting a response that will never arrive), cancel it so
+   * the query terminates deterministically. */
+  if (!result.done_) {
+    ares_cancel(channel_);
+    Process();
+  }
+
+  /* The essential property is that we reached this point at all: on unpatched
+   * code the retryable failures recursed ares_requeue_query()/ares_send_query()
+   * until the stack overflowed and the process aborted before getting here.  We
+   * also confirm the retries were attempted iteratively (more than one socket
+   * creation) and that the query reached a terminal state. */
+  EXPECT_GT(g_always_fail_socket_calls, (size_t)1);
+  EXPECT_TRUE(result.done_);
+}
+
+// Regression for CVE-2026-33630 / GHSA-6wfj-rwm7-3542: invoking ares_cancel()
+// from within a normal response callback must not double-free the query.  The
+// callback is dispatched from the read_answers() deferred-requeue flush, and the
+// query must be detached from all lookup lists before the callback runs so that
+// the reentrant ares_cancel() cannot find and free it a second time.
+struct CancelInCbData {
+  ares_channel_t *channel;
+  bool            done;
+};
+
+static void CancelChannelCallback(void *arg, ares_status_t status,
+                                  size_t timeouts,
+                                  const ares_dns_record_t *dnsrec)
+{
+  CancelInCbData *data = static_cast<CancelInCbData *>(arg);
+  (void)status;
+  (void)timeouts;
+  (void)dnsrec;
+  data->done = true;
+  /* Reentrant cancel from within the callback.  Must not double-free. */
+  ares_cancel(data->channel);
+}
+
+TEST_P(MockUDPChannelTest, CancelInCallbackNoDoubleFree) {
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  CancelInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    CancelChannelCallback, &data, NULL);
+  Process();
+  EXPECT_TRUE(data.done);
+}
+
 TEST_P(MockUDPChannelTest, GetSock) {
   DNSPacket reply;
   reply.set_response().set_aa()
@@ -2925,6 +3034,8 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, ContainedMockChannelSysConfig, ::testi
 #endif
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPChannelTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockRetryDepthChannelTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPMaxQueriesTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 
