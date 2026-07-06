@@ -434,18 +434,26 @@ struct ares_addr {
 /* DNS record parser, writer, and helpers */
 #include "ares_dns_record.h"
 
+/* IMPORTANT: the pointer parameters below (abuf, hostent, node, service) are
+ * intentionally NOT const.  Marking them const changes the function-pointer
+ * type and breaks API/ABI compatibility for existing C and (especially) C++
+ * applications that declare their callbacks with the historical non-const
+ * signature.  This was tried in PR #1060 and reverted for that reason.  These
+ * buffers are owned by c-ares and MUST be treated as read-only by the callback
+ * (do not modify or free them); that contract is documented in the man pages,
+ * not enforced via const, to preserve compatibility.  Do not re-add const. */
 typedef void (*ares_callback)(void *arg, int status, int timeouts,
-                              const unsigned char *abuf, int alen);
+                              unsigned char *abuf, int alen);
 
 typedef void (*ares_callback_dnsrec)(void *arg, ares_status_t status,
                                      size_t                   timeouts,
                                      const ares_dns_record_t *dnsrec);
 
 typedef void (*ares_host_callback)(void *arg, int status, int timeouts,
-                                   const struct hostent *hostent);
+                                   struct hostent *hostent);
 
 typedef void (*ares_nameinfo_callback)(void *arg, int status, int timeouts,
-                                       const char *node, const char *service);
+                                       char *node, char *service);
 
 typedef int (*ares_sock_create_callback)(ares_socket_t socket_fd, int type,
                                          void *data);
