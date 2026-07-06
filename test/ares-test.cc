@@ -1092,7 +1092,7 @@ std::ostream& operator<<(std::ostream& os, const HostEnt& host) {
 }
 
 void HostCallback(void *data, int status, int timeouts,
-                  const struct hostent *hostent) {
+                  struct hostent *hostent) {
   EXPECT_NE(nullptr, data);
   if (data == nullptr)
     return;
@@ -1234,7 +1234,7 @@ std::ostream& operator<<(std::ostream& os, const SearchResult& result) {
 }
 
 void SearchCallback(void *data, int status, int timeouts,
-                    const unsigned char *abuf, int alen) {
+                    unsigned char *abuf, int alen) {
   EXPECT_NE(nullptr, data);
   SearchResult* result = reinterpret_cast<SearchResult*>(data);
   result->done_ = true;
@@ -1273,7 +1273,7 @@ std::ostream& operator<<(std::ostream& os, const NameInfoResult& result) {
 }
 
 void NameInfoCallback(void *data, int status, int timeouts,
-                      const char *node, const char *service) {
+                      char *node, char *service) {
   EXPECT_NE(nullptr, data);
   NameInfoResult* result = reinterpret_cast<NameInfoResult*>(data);
   result->done_ = true;
