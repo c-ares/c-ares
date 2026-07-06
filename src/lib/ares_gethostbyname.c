@@ -288,8 +288,8 @@ static ares_status_t ares_gethostbyname_file_int(ares_channel_t *channel,
                                                  const char *name, int family,
                                                  struct hostent **host)
 {
-  ares_hosts_entry_t *entry = NULL;
-  ares_status_t       status;
+  const ares_hosts_entry_t *entry = NULL;
+  ares_status_t             status;
 
   /* We only take the channel to ensure that ares_init() been called. */
   if (channel == NULL || name == NULL || host == NULL) {
@@ -319,8 +319,6 @@ static ares_status_t ares_gethostbyname_file_int(ares_channel_t *channel,
   }
 
 done:
-  ares_hosts_entry_destroy(entry);
-
   /* RFC6761 section 6.3 #3 states that "Name resolution APIs and libraries
    * SHOULD recognize localhost names as special and SHOULD always return the
    * IP loopback address for address queries".

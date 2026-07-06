@@ -489,13 +489,12 @@ struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
 
 void                            ares_hosts_file_destroy(ares_hosts_file_t *hf);
-void ares_hosts_entry_destroy(ares_hosts_entry_t *entry);
 ares_status_t ares_hosts_search_ipaddr(ares_channel_t *channel,
                                        ares_bool_t use_env, const char *ipaddr,
-                                       ares_hosts_entry_t **entry);
+                                       const ares_hosts_entry_t **entry);
 ares_status_t ares_hosts_search_host(ares_channel_t *channel,
                                      ares_bool_t use_env, const char *host,
-                                     ares_hosts_entry_t **entry);
+                                     const ares_hosts_entry_t **entry);
 ares_status_t ares_hosts_entry_to_hostent(const ares_hosts_entry_t *entry,
                                           int family, struct hostent **hostent);
 ares_status_t ares_hosts_entry_to_addrinfo(const ares_hosts_entry_t *entry,
