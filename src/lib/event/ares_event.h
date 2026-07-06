@@ -83,7 +83,7 @@ typedef struct ares_event_configchg ares_event_configchg_t;
 ares_status_t ares_event_configchg_init(ares_event_configchg_t **configchg,
                                         ares_event_thread_t     *e);
 
-void          ares_event_configchg_destroy(ares_event_configchg_t *configchg);
+void ares_event_configchg_destroy(ares_event_configchg_t *configchg);
 
 struct ares_event_thread {
   /*! Whether the event thread should be online or not.  Checked on every wake

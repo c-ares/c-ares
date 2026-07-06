@@ -35,7 +35,8 @@
 #  include <stdint.h>
 #endif
 
-size_t ares_strnlen(const char *str, size_t maxlen) {
+size_t ares_strnlen(const char *str, size_t maxlen)
+{
   const char *p = NULL;
   if (str == NULL) {
     return 0;

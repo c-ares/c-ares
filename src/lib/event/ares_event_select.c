@@ -36,9 +36,9 @@
  * pipe() to wake the select() */
 #if defined(HAVE_PIPE) && defined(CARES_THREADS)
 
-#ifdef HAVE_SYS_SELECT_H
-#  include <sys/select.h>
-#endif
+#  ifdef HAVE_SYS_SELECT_H
+#    include <sys/select.h>
+#  endif
 
 static ares_bool_t ares_evsys_select_init(ares_event_thread_t *e)
 {

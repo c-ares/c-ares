@@ -45,10 +45,10 @@
 
 #include "ares_inet_net_pton.h"
 
-static void   sort_addresses(const struct hostent  *host,
-                             const struct apattern *sortlist, size_t nsort);
-static void   sort6_addresses(const struct hostent  *host,
-                              const struct apattern *sortlist, size_t nsort);
+static void sort_addresses(const struct hostent  *host,
+                           const struct apattern *sortlist, size_t nsort);
+static void sort6_addresses(const struct hostent  *host,
+                            const struct apattern *sortlist, size_t nsort);
 static size_t get_address_index(const struct in_addr  *addr,
                                 const struct apattern *sortlist, size_t nsort);
 static size_t get6_address_index(const struct ares_in6_addr *addr,
@@ -301,7 +301,7 @@ static ares_status_t ares_gethostbyname_file_int(ares_channel_t *channel,
     return ARES_ENOTFOUND;
   }
 
-  *host  = NULL;
+  *host = NULL;
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
   if (ares_is_onion_domain(name)) {

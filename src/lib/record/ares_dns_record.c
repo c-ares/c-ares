@@ -1419,8 +1419,8 @@ ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   ares_dns_datatype_t datatype = ares_dns_rr_key_datatype(key);
   ares_bool_t         is_nullterm =
     (datatype == ARES_DATATYPE_BINP || datatype == ARES_DATATYPE_ABINP)
-              ? ARES_TRUE
-              : ARES_FALSE;
+      ? ARES_TRUE
+      : ARES_FALSE;
   size_t         alloclen;
   unsigned char *temp;
 

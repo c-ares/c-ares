@@ -264,9 +264,8 @@ static ares_status_t ares_init_sysconfig_android(const ares_channel_t *channel,
 #endif
 
 #if defined(__QNX__)
-static ares_status_t
-  ares_init_sysconfig_qnx(const ares_channel_t *channel,
-                          ares_sysconfig_t     *sysconfig)
+static ares_status_t ares_init_sysconfig_qnx(const ares_channel_t *channel,
+                                             ares_sysconfig_t     *sysconfig)
 {
   /* QNX:
    *   1. use confstr(_CS_RESOLVE, ...) as primary resolv.conf data, replacing

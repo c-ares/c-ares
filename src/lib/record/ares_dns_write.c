@@ -815,8 +815,8 @@ static ares_status_t ares_dns_write_rr_nsec(ares_buf_t          *buf,
 
   /* RFC 4034 4.1.1: "A sender MUST NOT use DNS name compression on the
    *                  Next Domain Name field when transmitting an NSEC RR." */
-  status = ares_dns_write_rr_name(buf, rr, NULL, ARES_FALSE,
-                                  ARES_RR_NSEC_NEXT_DOMAIN);
+  status =
+    ares_dns_write_rr_name(buf, rr, NULL, ARES_FALSE, ARES_RR_NSEC_NEXT_DOMAIN);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -893,7 +893,7 @@ static ares_status_t ares_dns_write_rr_nsec3(ares_buf_t          *buf,
   if (len > 255) {
     return ARES_EFORMERR;
   }
-  u8val = (unsigned char)len;
+  u8val  = (unsigned char)len;
   status = ares_buf_append_byte(buf, u8val);
   if (status != ARES_SUCCESS) {
     return status;
@@ -910,7 +910,7 @@ static ares_status_t ares_dns_write_rr_nsec3(ares_buf_t          *buf,
   if (data == NULL || len == 0 || len > 255) {
     return ARES_EFORMERR;
   }
-  u8val = (unsigned char)len;
+  u8val  = (unsigned char)len;
   status = ares_buf_append_byte(buf, u8val);
   if (status != ARES_SUCCESS) {
     return status;
@@ -963,7 +963,7 @@ static ares_status_t ares_dns_write_rr_nsec3param(ares_buf_t          *buf,
   if (len > 255) {
     return ARES_EFORMERR;
   }
-  u8val = (unsigned char)len;
+  u8val  = (unsigned char)len;
   status = ares_buf_append_byte(buf, u8val);
   if (status != ARES_SUCCESS) {
     return status;

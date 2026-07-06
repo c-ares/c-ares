@@ -44,7 +44,7 @@ static int          ares_init_flags;
  * should never call malloc(0) so lets return NULL so we're more likely to find
  * an issue if it were to occur. */
 
-static void        *default_malloc(size_t size)
+static void *default_malloc(size_t size)
 {
   if (size == 0) {
     return NULL;

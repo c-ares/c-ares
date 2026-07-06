@@ -4,8 +4,13 @@
 
 name: clang-format
 
-# Validates formatting of lines changed by the PR (and only those lines,
-# via clang-format-diff) against the repository .clang-format rules.
+# Validates formatting of lines changed by the PR (via clang-format-diff)
+# against the repository .clang-format rules.  A changed file that is already
+# clang-format clean as a whole is skipped: it is by definition clean on the
+# lines this PR changed too, and the changed-lines check can otherwise emit
+# false positives on such a file (e.g. a bulk reformat, where a reformatted
+# line's alignment column is anchored by a neighboring line the PR did not
+# touch and clang-format-diff cannot see).
 #
 # Always uses the latest stable clang-format from apt.llvm.org, discovered
 # at runtime from the llvm.sh installer script.  Our configuration requires
@@ -61,8 +66,26 @@ jobs:
           # it also sweeps in unrelated base-branch changes and flags lines
           # the PR never touched (evaluated against the current .clang-format
           # rather than the rules they were written under).
-          git diff -U0 --no-color HEAD^1 HEAD -- \
-              '*.c' '*.h' ':!src/lib/thirdparty' | \
+          # Only check files that are not already whole-file clang-format clean.
+          # A whole-file-clean file is clean on its changed lines by definition,
+          # and skipping it avoids clang-format-diff false positives where a
+          # changed line's alignment is anchored by an untouched neighbor.
+          dirty=()
+          while IFS= read -r f; do
+            [ -n "${f}" ] || continue
+            if ! "clang-format-${LLVM_VER}" --dry-run -Werror "${f}" \
+                >/dev/null 2>&1; then
+              dirty+=("${f}")
+            fi
+          done < <(git diff --name-only --no-color HEAD^1 HEAD -- \
+              '*.c' '*.h' ':!src/lib/thirdparty')
+
+          if [ "${#dirty[@]}" -eq 0 ]; then
+            echo "All changed .c/.h files are clang-format clean"
+            exit 0
+          fi
+
+          git diff -U0 --no-color HEAD^1 HEAD -- "${dirty[@]}" | \
             "clang-format-diff-${LLVM_VER}" -p1 \
               -binary "clang-format-${LLVM_VER}" > clang-format.patch || true
           if [ -s clang-format.patch ]; then

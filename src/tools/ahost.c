@@ -58,9 +58,7 @@ static void ai_callback(void *arg, int status, int timeouts,
 static void usage(void);
 static void print_help_info_ahost(void);
 
-
-
-int         main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   struct ares_options  options;
   int                  optmask = 0;

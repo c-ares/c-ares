@@ -128,9 +128,9 @@ ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
       }
     } else if (rtype == ARES_REC_TYPE_AAAA) {
       got_aaaa = ARES_TRUE;
-      status   = ares_append_ai_node(AF_INET6, port, ares_dns_rr_get_ttl(rr),
-                                     ares_dns_rr_get_addr6(rr, ARES_RR_AAAA_ADDR),
-                                     &nodes);
+      status = ares_append_ai_node(AF_INET6, port, ares_dns_rr_get_ttl(rr),
+                                   ares_dns_rr_get_addr6(rr, ARES_RR_AAAA_ADDR),
+                                   &nodes);
       if (status != ARES_SUCCESS) {
         goto done; /* LCOV_EXCL_LINE: OutOfMemory */
       }

@@ -61,17 +61,16 @@ static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
                               ares_status_t failure_status);
 static ares_bool_t same_questions(const ares_query_t      *query,
                                   const ares_dns_record_t *arec);
-static void        end_query(ares_channel_t *channel, ares_server_t *server,
-                             ares_query_t *query, ares_status_t status,
-                             ares_dns_record_t *dnsrec,
-                             ares_array_t **requeue);
+static void end_query(ares_channel_t *channel, ares_server_t *server,
+                      ares_query_t *query, ares_status_t status,
+                      ares_dns_record_t *dnsrec, ares_array_t **requeue);
 static ares_status_t ares_send_query_int(ares_server_t        *requested_server,
                                          ares_query_t         *query,
                                          const ares_timeval_t *now,
                                          ares_array_t        **requeue);
-static void          ares_detach_query(ares_query_t *query);
+static void ares_detach_query(ares_query_t *query);
 
-static void        ares_query_remove_from_conn(ares_query_t *query)
+static void ares_query_remove_from_conn(ares_query_t *query)
 {
   /* If its not part of a connection, it can't be tracked for timeouts either */
   ares_slist_node_destroy(query->node_queries_by_timeout);
@@ -448,7 +447,7 @@ void ares_process_pending_write(ares_channel_t *channel)
 }
 
 static ares_status_t read_conn_packets(ares_conn_t *conn,
-  ares_bool_t *conn_error)
+                                       ares_bool_t *conn_error)
 {
   ares_bool_t           read_again;
   ares_conn_err_t       err;
@@ -558,12 +557,10 @@ typedef struct {
   ares_dns_record_t *dnsrec; /* endquery only: optional */
 } ares_requeue_t;
 
-static ares_status_t ares_append_requeue_int(ares_array_t     **requeue,
-                                             requeue_type_t     type,
-                                             ares_query_t      *query,
-                                             ares_server_t     *server,
-                                             ares_status_t      status,
-                                             ares_dns_record_t *dnsrec)
+static ares_status_t
+  ares_append_requeue_int(ares_array_t **requeue, requeue_type_t type,
+                          ares_query_t *query, ares_server_t *server,
+                          ares_status_t status, ares_dns_record_t *dnsrec)
 {
   ares_requeue_t entry;
 
@@ -589,7 +586,7 @@ static ares_status_t ares_append_requeue(ares_array_t **requeue,
                                          ares_server_t *server)
 {
   return ares_append_requeue_int(requeue, REQUEUE_REQUEUE, query, server, 0,
-    NULL);
+                                 NULL);
 }
 
 static ares_status_t ares_append_endqueue(ares_array_t     **requeue,
@@ -598,7 +595,7 @@ static ares_status_t ares_append_endqueue(ares_array_t     **requeue,
                                           ares_dns_record_t *dnsrec)
 {
   return ares_append_requeue_int(requeue, REQUEUE_ENDQUERY, query, NULL, status,
-    dnsrec);
+                                 dnsrec);
 }
 
 /* Drain the deferred requeue/endqueue list iteratively.  All flush sites
@@ -656,7 +653,8 @@ static ares_status_t ares_flush_requeue(ares_channel_t       *channel,
          * find this query still linked in all_queries/queries_by_qid, free it,
          * and the ares_free_query() below would then double-free it. */
         ares_detach_query(query);
-        query->callback(query->arg, entry.status, query->timeouts, entry.dnsrec);
+        query->callback(query->arg, entry.status, query->timeouts,
+                        entry.dnsrec);
         ares_free_query(query);
       }
       ares_dns_record_destroy(entry.dnsrec);
@@ -676,8 +674,8 @@ static ares_status_t ares_flush_requeue(ares_channel_t       *channel,
 static ares_status_t read_answers(ares_conn_t *conn, const ares_timeval_t *now)
 {
   ares_status_t   status;
-  ares_channel_t *channel  = conn->server->channel;
-  ares_array_t   *requeue  = NULL;
+  ares_channel_t *channel = conn->server->channel;
+  ares_array_t   *requeue = NULL;
 
   /* Process all queued answers */
   while (1) {
@@ -798,8 +796,8 @@ static ares_status_t process_timeouts(ares_channel_t       *channel,
      * connections to the same server. */
     conn->flags |= ARES_CONN_FLAG_NONEW;
     server_increment_failures(conn->server, query->using_tcp);
-    status = ares_requeue_query(query, now, ARES_ETIMEOUT, ARES_TRUE, NULL,
-      &requeue);
+    status =
+      ares_requeue_query(query, now, ARES_ETIMEOUT, ARES_TRUE, NULL, &requeue);
     if (status == ARES_ENOMEM) {
       goto done;
     }
@@ -940,8 +938,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
 
   /* Validate DNS cookie in response. This function may need to requeue the
    * query. */
-  if (ares_cookie_validate(query, rdnsrec, conn, now, requeue)
-      != ARES_SUCCESS) {
+  if (ares_cookie_validate(query, rdnsrec, conn, now, requeue) !=
+      ARES_SUCCESS) {
     /* Drop response and return */
     status = ARES_SUCCESS;
     goto cleanup;
@@ -977,7 +975,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
       !(conn->flags & ARES_CONN_FLAG_TCP) &&
       !(channel->flags & ARES_FLAG_IGNTC)) {
     query->using_tcp = ARES_TRUE;
-    status = ares_append_requeue(requeue, query, NULL);
+    status           = ares_append_requeue(requeue, query, NULL);
     /* Status will reflect success except on memory error, which is good since
      * requeuing to TCP is ok */
     goto cleanup;
@@ -1005,8 +1003,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
       }
 
       server_increment_failures(server, query->using_tcp);
-      status = ares_requeue_query(query, now, status, ARES_TRUE, rdnsrec,
-        requeue);
+      status =
+        ares_requeue_query(query, now, status, ARES_TRUE, rdnsrec, requeue);
       rdnsrec = NULL; /* Free'd by ares_requeue_query() */
 
       if (status != ARES_ENOMEM) {
@@ -1057,17 +1055,17 @@ static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
  * this needs to be delayed, so if requeue is not NULL, it will add the query
  * to the queue instead */
 ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
-                                 ares_status_t            status,
-                                 ares_bool_t              inc_try_count,
-                                 ares_dns_record_t       *dnsrec,
-                                 ares_array_t           **requeue)
+                                 ares_status_t      status,
+                                 ares_bool_t        inc_try_count,
+                                 ares_dns_record_t *dnsrec,
+                                 ares_array_t     **requeue)
 {
   ares_channel_t *channel   = query->channel;
   size_t          max_tries = ares_slist_len(channel->servers) * channel->tries;
   ares_server_t  *server    = NULL;
 
   if (query->conn != NULL) {
-     server = query->conn->server;
+    server = query->conn->server;
   }
 
   ares_query_remove_from_conn(query);
@@ -1366,9 +1364,10 @@ static ares_status_t ares_conn_query_write(ares_conn_t          *conn,
   return ares_conn_flush(conn);
 }
 
-/* Public entrypoint.  Establishes a requeue list and drives ares_send_query_int()
- * plus any retries/deferred callbacks it produces iteratively, so a chain of
- * retryable failures can never recurse until the stack is exhausted (#1043). */
+/* Public entrypoint.  Establishes a requeue list and drives
+ * ares_send_query_int() plus any retries/deferred callbacks it produces
+ * iteratively, so a chain of retryable failures can never recurse until the
+ * stack is exhausted (#1043). */
 ares_status_t ares_send_query(ares_server_t *requested_server,
                               ares_query_t *query, const ares_timeval_t *now)
 {
@@ -1379,9 +1378,9 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
 
   status = ares_send_query_int(requested_server, query, now, &requeue);
 
-  /* Drain any retries/deferred callbacks this send produced.  ares_flush_requeue()
-   * always fully processes and destroys the list (even on ENOMEM), and sends the
-   * empty-queue notification if needed. */
+  /* Drain any retries/deferred callbacks this send produced.
+   * ares_flush_requeue() always fully processes and destroys the list (even on
+   * ENOMEM), and sends the empty-queue notification if needed. */
   if (ares_flush_requeue(channel, now, &requeue) == ARES_ENOMEM) {
     status = ARES_ENOMEM;
   }

@@ -746,13 +746,12 @@ done:
   return status;
 }
 
-
 ares_status_t ares_sysconfig_process_buf(const ares_channel_t    *channel,
                                          ares_sysconfig_t        *sysconfig,
                                          ares_buf_t              *buf,
                                          ares_sysconfig_line_cb_t cb)
 {
-  ares_array_t *lines  = NULL;
+  ares_array_t *lines = NULL;
   size_t        num;
   size_t        i;
   ares_status_t status;

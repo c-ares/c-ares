@@ -47,7 +47,7 @@ static jmethodID android_list_get_mid = NULL;
 /* InetAddress.getHostAddress */
 static jmethodID android_ia_host_addr_mid = NULL;
 
-static jclass    jni_get_class(JNIEnv *env, const char *path)
+static jclass jni_get_class(JNIEnv *env, const char *path)
 {
   jclass cls = NULL;
 

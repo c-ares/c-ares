@@ -61,8 +61,8 @@ static const char *inet_ntop6(const unsigned char *src, char *dst, size_t size);
  * author:
  *     Paul Vixie, 1996.
  */
-const char        *ares_inet_ntop(int af, const void *src, char *dst,
-                                  ares_socklen_t size)
+const char *ares_inet_ntop(int af, const void *src, char *dst,
+                           ares_socklen_t size)
 {
   switch (af) {
     case AF_INET:

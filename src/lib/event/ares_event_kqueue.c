@@ -28,18 +28,18 @@
 
 #if defined(HAVE_KQUEUE) && defined(CARES_THREADS)
 
-#ifdef HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_EVENT_H
-#  include <sys/event.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
-#  include <sys/time.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#  include <fcntl.h>
-#endif
+#  ifdef HAVE_SYS_TYPES_H
+#    include <sys/types.h>
+#  endif
+#  ifdef HAVE_SYS_EVENT_H
+#    include <sys/event.h>
+#  endif
+#  ifdef HAVE_SYS_TIME_H
+#    include <sys/time.h>
+#  endif
+#  ifdef HAVE_FCNTL_H
+#    include <fcntl.h>
+#  endif
 
 typedef struct {
   int            kqueue_fd;

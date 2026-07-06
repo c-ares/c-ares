@@ -154,41 +154,41 @@ CARES_EXTERN ares_llist_node_t *ares_llist_node_prev(ares_llist_node_t *node);
  *  \param[in] node  Node referenced
  *  \return user provided value from node
  */
-CARES_EXTERN void              *ares_llist_node_val(ares_llist_node_t *node);
+CARES_EXTERN void *ares_llist_node_val(ares_llist_node_t *node);
 
 /*! Obtain the number of entries in the list
  *
  *  \param[in] list  Initialized list object
  *  \return count
  */
-CARES_EXTERN size_t             ares_llist_len(const ares_llist_t *list);
+CARES_EXTERN size_t ares_llist_len(const ares_llist_t *list);
 
 /*! Clear all entries in the list, but don't destroy the list object.
  *
  *  \param[in] list  Initialized list object
  */
-CARES_EXTERN void               ares_llist_clear(ares_llist_t *list);
+CARES_EXTERN void ares_llist_clear(ares_llist_t *list);
 
 /*! Obtain list object from referenced node
  *
  *  \param[in] node  Node referenced
  *  \return list object node belongs to
  */
-CARES_EXTERN ares_llist_t      *ares_llist_node_parent(ares_llist_node_t *node);
+CARES_EXTERN ares_llist_t *ares_llist_node_parent(ares_llist_node_t *node);
 
 /*! Obtain the first user-supplied value in the list
  *
  *  \param[in] list Initialized list object
  *  \return first user supplied value or NULL if none
  */
-CARES_EXTERN void              *ares_llist_first_val(ares_llist_t *list);
+CARES_EXTERN void *ares_llist_first_val(ares_llist_t *list);
 
 /*! Obtain the last user-supplied value in the list
  *
  *  \param[in] list Initialized list object
  *  \return last user supplied value or NULL if none
  */
-CARES_EXTERN void              *ares_llist_last_val(ares_llist_t *list);
+CARES_EXTERN void *ares_llist_last_val(ares_llist_t *list);
 
 /*! Take ownership of user-supplied value in list without calling destructor.
  *  Will unchain entry from list.
@@ -196,7 +196,7 @@ CARES_EXTERN void              *ares_llist_last_val(ares_llist_t *list);
  *  \param[in] node Node referenced
  *  \return user supplied value
  */
-CARES_EXTERN void              *ares_llist_node_claim(ares_llist_node_t *node);
+CARES_EXTERN void *ares_llist_node_claim(ares_llist_node_t *node);
 
 /*! Replace user-supplied value for node
  *
