@@ -19,7 +19,7 @@ ares_status_t ares_send_dnsrec(ares_channel_t *channel,
                                void *arg, unsigned short *qid);
 
 typedef void (*ares_callback)(void *arg, int status,
-                              int timeouts, const unsigned char *abuf,
+                              int timeouts, unsigned char *abuf,
                               int alen);
 
 void ares_send(ares_channel_t *channel, const unsigned char *qbuf,
@@ -130,6 +130,16 @@ for \fIares_send_dnsrec(3)\fP or
 and
 .IR alen
 for \fIares_send(3)\fP will be non-NULL.
+
+The
+.I abuf
+buffer is owned by the c-ares library and is only valid for the duration of
+the callback.  The callback
+.B must not
+modify or free it, and must not retain a reference to it after returning; treat
+it as read-only.  The parameter is intentionally not declared
+.B const
+solely to preserve API/ABI compatibility with existing applications.
 
 Unless the flag
 .B ARES_FLAG_NOCHECKRESP
