@@ -1171,12 +1171,12 @@ done:
 
 static ares_status_t ares_uri_parse_hostport(ares_uri_t *uri, ares_buf_t *buf)
 {
-  unsigned char b;
-  char          host[256];
-  char          port[6];
+  unsigned char  b;
+  char           host[256];
+  char           port[6];
   unsigned short parsed_port;
-  size_t        len;
-  ares_status_t status;
+  size_t         len;
+  ares_status_t  status;
 
   status = ares_buf_peek_byte(buf, &b);
   if (status != ARES_SUCCESS) {

@@ -43,7 +43,7 @@
 char **ares_strsplit(const char *in, const char *delms, size_t *num_elm);
 
 /* Frees the result returned from ares_strsplit(). */
-void   ares_strsplit_free(char **elms, size_t num_elm);
+void ares_strsplit_free(char **elms, size_t num_elm);
 
 /* Duplicate the array */
 char **ares_strsplit_duplicate(char **elms, size_t num_elm);

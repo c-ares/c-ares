@@ -258,7 +258,8 @@ static void NETIOAPI_API_
 static ares_bool_t
   ares_event_configchg_regnotify(ares_event_configchg_t *configchg)
 {
-#  if defined(HAVE_REGISTERWAITFORSINGLEOBJECT) && defined(HAVE_REGNOTIFYCHANGEKEYVALUE)
+#  if defined(HAVE_REGISTERWAITFORSINGLEOBJECT) && \
+    defined(HAVE_REGNOTIFYCHANGEKEYVALUE)
 #    if defined(__WATCOMC__) && !defined(REG_NOTIFY_THREAD_AGNOSTIC)
 #      define REG_NOTIFY_THREAD_AGNOSTIC 0x10000000L
 #    endif
@@ -563,21 +564,21 @@ static ares_status_t config_change_check(ares_htable_strvp_t *filestat,
   size_t      i;
   const char *configfiles[16];
   ares_bool_t changed = ARES_FALSE;
-  size_t      cnt = 0;
+  size_t      cnt     = 0;
 
   memset(configfiles, 0, sizeof(configfiles));
 
   configfiles[cnt++] = resolvconf_path;
   configfiles[cnt++] = "/etc/nsswitch.conf";
-#ifdef _AIX
+#  ifdef _AIX
   configfiles[cnt++] = "/etc/netsvc.conf";
-#endif
-#ifdef __osf /* Tru64 */
+#  endif
+#  ifdef __osf /* Tru64 */
   configfiles[cnt++] = "/etc/svc.conf";
-#endif
-#ifdef __QNX__
+#  endif
+#  ifdef __QNX__
   configfiles[cnt++] = "/etc/net.cfg";
-#endif
+#  endif
   configfiles[cnt++] = NULL;
 
   for (i = 0; configfiles[i] != NULL; i++) {

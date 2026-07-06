@@ -45,7 +45,7 @@ void ares_free_hostent(struct hostent *host)
   ares_free(host->h_aliases);
   if (host->h_addr_list) {
     size_t i;
-    for (i=0; host->h_addr_list[i] != NULL; i++) {
+    for (i = 0; host->h_addr_list[i] != NULL; i++) {
       ares_free(host->h_addr_list[i]);
     }
     ares_free(host->h_addr_list);

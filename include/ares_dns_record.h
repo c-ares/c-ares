@@ -656,7 +656,7 @@ CARES_EXTERN const void *ares_dns_pton(const char       *ipaddr,
  *  \param[in]  addr  properly filled address structure
  *  \return  String representing PTR, use ares_free_string() to free
  */
-CARES_EXTERN char       *ares_dns_addr_to_ptr(const struct ares_addr *addr);
+CARES_EXTERN char *ares_dns_addr_to_ptr(const struct ares_addr *addr);
 
 
 /*! The options/parameters extensions to some RRs can be somewhat opaque, this
@@ -748,7 +748,7 @@ CARES_EXTERN ares_status_t ares_dns_record_create(ares_dns_record_t **dnsrec,
  *
  *  \param[in] dnsrec  Initialized record object
  */
-CARES_EXTERN void          ares_dns_record_destroy(ares_dns_record_t *dnsrec);
+CARES_EXTERN void ares_dns_record_destroy(ares_dns_record_t *dnsrec);
 
 /*! Get the DNS Query ID
  *
@@ -921,7 +921,7 @@ CARES_EXTERN ares_status_t ares_dns_record_rr_del(ares_dns_record_t *dnsrec,
  *  \param[in] rr  Pointer to resource record
  *  \return Name
  */
-CARES_EXTERN const char   *ares_dns_rr_get_name(const ares_dns_rr_t *rr);
+CARES_EXTERN const char *ares_dns_rr_get_name(const ares_dns_rr_t *rr);
 
 /*! Retrieve the resource record type
  *
@@ -935,14 +935,14 @@ CARES_EXTERN ares_dns_rec_type_t ares_dns_rr_get_type(const ares_dns_rr_t *rr);
  *  \param[in] rr  Pointer to resource record
  *  \return class
  */
-CARES_EXTERN ares_dns_class_t    ares_dns_rr_get_class(const ares_dns_rr_t *rr);
+CARES_EXTERN ares_dns_class_t ares_dns_rr_get_class(const ares_dns_rr_t *rr);
 
 /*! Retrieve the resource record TTL
  *
  *  \param[in] rr  Pointer to resource record
  *  \return TTL
  */
-CARES_EXTERN unsigned int        ares_dns_rr_get_ttl(const ares_dns_rr_t *rr);
+CARES_EXTERN unsigned int ares_dns_rr_get_ttl(const ares_dns_rr_t *rr);
 
 
 /*! Overwrite the resource record TTL
@@ -951,8 +951,8 @@ CARES_EXTERN unsigned int        ares_dns_rr_get_ttl(const ares_dns_rr_t *rr);
  * \param[in] ttl    TTL
  * \return ARES_SUCCESS on success
  */
-CARES_EXTERN ares_status_t       ares_dns_rr_set_ttl(ares_dns_rr_t *dns_rr,
-                                                    unsigned int    ttl);
+CARES_EXTERN ares_status_t ares_dns_rr_set_ttl(ares_dns_rr_t *dns_rr,
+                                               unsigned int   ttl);
 
 /*! Set ipv4 address data type for specified resource record and key.  Can
  *  only be used on keys with datatype ARES_DATATYPE_INADDR
@@ -962,9 +962,9 @@ CARES_EXTERN ares_status_t       ares_dns_rr_set_ttl(ares_dns_rr_t *dns_rr,
  *  \param[in] addr   Pointer to ipv4 address to use.
  *  \return ARES_SUCCESS on success
  */
-CARES_EXTERN ares_status_t       ares_dns_rr_set_addr(ares_dns_rr_t        *dns_rr,
-                                                      ares_dns_rr_key_t     key,
-                                                      const struct in_addr *addr);
+CARES_EXTERN ares_status_t ares_dns_rr_set_addr(ares_dns_rr_t        *dns_rr,
+                                                ares_dns_rr_key_t     key,
+                                                const struct in_addr *addr);
 
 /*! Set ipv6 address data type for specified resource record and key.  Can
  *  only be used on keys with datatype ARES_DATATYPE_INADDR6
@@ -1121,8 +1121,8 @@ CARES_EXTERN const struct ares_in6_addr *
  *  \param[in] key    DNS Resource Record Key
  *  \return pointer string or NULL on error
  */
-CARES_EXTERN const char    *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
-                                                ares_dns_rr_key_t    key);
+CARES_EXTERN const char *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
+                                             ares_dns_rr_key_t    key);
 
 /*! Retrieve an 8bit unsigned integer.  Can only be used on keys with
  *  datatype ARES_DATATYPE_U8.
@@ -1131,8 +1131,8 @@ CARES_EXTERN const char    *ares_dns_rr_get_str(const ares_dns_rr_t *dns_rr,
  *  \param[in] key    DNS Resource Record Key
  *  \return 8bit unsigned integer
  */
-CARES_EXTERN unsigned char  ares_dns_rr_get_u8(const ares_dns_rr_t *dns_rr,
-                                               ares_dns_rr_key_t    key);
+CARES_EXTERN unsigned char ares_dns_rr_get_u8(const ares_dns_rr_t *dns_rr,
+                                              ares_dns_rr_key_t    key);
 
 /*! Retrieve an 16bit unsigned integer.  Can only be used on keys with
  *  datatype ARES_DATATYPE_U16.
@@ -1151,8 +1151,8 @@ CARES_EXTERN unsigned short ares_dns_rr_get_u16(const ares_dns_rr_t *dns_rr,
  *  \param[in] key    DNS Resource Record Key
  *  \return 32bit unsigned integer
  */
-CARES_EXTERN unsigned int   ares_dns_rr_get_u32(const ares_dns_rr_t *dns_rr,
-                                                ares_dns_rr_key_t    key);
+CARES_EXTERN unsigned int ares_dns_rr_get_u32(const ares_dns_rr_t *dns_rr,
+                                              ares_dns_rr_key_t    key);
 
 /*! Retrieve a pointer to the binary data.  Can only be used on keys with
  *  datatype ARES_DATATYPE_BIN, ARES_DATATYPE_BINP, or ARES_DATATYPE_ABINP.
@@ -1234,11 +1234,11 @@ CARES_EXTERN unsigned short
  *                      length.
  *  \return ARES_TRUE on success, ARES_FALSE on misuse.
  */
-CARES_EXTERN ares_bool_t   ares_dns_rr_get_opt_byid(const ares_dns_rr_t  *dns_rr,
-                                                    ares_dns_rr_key_t     key,
-                                                    unsigned short        opt,
-                                                    const unsigned char **val,
-                                                    size_t *val_len);
+CARES_EXTERN ares_bool_t ares_dns_rr_get_opt_byid(const ares_dns_rr_t  *dns_rr,
+                                                  ares_dns_rr_key_t     key,
+                                                  unsigned short        opt,
+                                                  const unsigned char **val,
+                                                  size_t *val_len);
 
 /*! Parse a complete DNS message.
  *

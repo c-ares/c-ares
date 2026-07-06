@@ -435,14 +435,16 @@ static ares_status_t ares_iface_ips_enumerate(ares_iface_ips_t *ips,
       }
 
       status = ares_iface_ips_add(ips, addrflag, ifname, &addr,
-#if _WIN32_WINNT >= 0x0600
+#  if _WIN32_WINNT >= 0x0600
                                   ipaddr->OnLinkPrefixLength /* netmask */,
-#else
-                                  ipaddr->Address.lpSockaddr->sa_family
-                                    == AF_INET?32:128,
-#endif
+#  else
+                                  ipaddr->Address.lpSockaddr->sa_family ==
+                                      AF_INET
+                                    ? 32
+                                    : 128,
+#  endif
                                   address->Ipv6IfIndex /* ll_scope */
-                                  );
+      );
 
       if (status != ARES_SUCCESS) {
         goto done;
@@ -597,7 +599,8 @@ done:
 #endif
 }
 
-const char *ares_os_if_indextoname(unsigned int index, char *name, size_t name_len)
+const char *ares_os_if_indextoname(unsigned int index, char *name,
+                                   size_t name_len)
 {
 #ifdef HAVE_IF_INDEXTONAME
   if (name_len < IF_NAMESIZE) {

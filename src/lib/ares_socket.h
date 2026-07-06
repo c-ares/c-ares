@@ -139,23 +139,23 @@ typedef enum {
   ARES_CONN_ERR_FAILURE      = 99  /*!< Generic failure */
 } ares_conn_err_t;
 
-ares_bool_t     ares_sockaddr_addr_eq(const struct sockaddr  *sa,
-                                      const struct ares_addr *aa);
-ares_status_t   ares_socket_configure(ares_channel_t *channel, int family,
-                                      ares_bool_t is_tcp, ares_socket_t fd);
+ares_bool_t ares_sockaddr_addr_eq(const struct sockaddr  *sa,
+                                  const struct ares_addr *aa);
+ares_status_t ares_socket_configure(ares_channel_t *channel, int family,
+                                    ares_bool_t is_tcp, ares_socket_t fd);
 ares_conn_err_t ares_socket_enable_tfo(const ares_channel_t *channel,
                                        ares_socket_t         fd);
 ares_conn_err_t ares_socket_open(ares_socket_t *sock, ares_channel_t *channel,
                                  int af, int type, int protocol);
-ares_bool_t     ares_socket_try_again(int errnum);
-void            ares_socket_close(ares_channel_t *channel, ares_socket_t s);
+ares_bool_t ares_socket_try_again(int errnum);
+void ares_socket_close(ares_channel_t *channel, ares_socket_t s);
 ares_conn_err_t ares_socket_connect(ares_channel_t *channel,
                                     ares_socket_t sockfd, ares_bool_t is_tfo,
                                     const struct sockaddr *addr,
                                     ares_socklen_t         addrlen);
-ares_bool_t     ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
-                                           unsigned short        *port,
-                                           const struct sockaddr *sockaddr);
+ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
+                                       unsigned short        *port,
+                                       const struct sockaddr *sockaddr);
 ares_conn_err_t ares_socket_write(ares_channel_t *channel, ares_socket_t fd,
                                   const void *data, size_t len, size_t *written,
                                   const struct sockaddr *sa,

@@ -428,39 +428,39 @@ static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
 {
   switch (evsys) {
     case ARES_EVSYS_WIN32:
-#if defined(USE_WINSOCK)
+#  if defined(USE_WINSOCK)
       return &ares_evsys_win32;
-#else
+#  else
       return NULL;
-#endif
+#  endif
 
     case ARES_EVSYS_EPOLL:
-#if defined(HAVE_EPOLL)
+#  if defined(HAVE_EPOLL)
       return &ares_evsys_epoll;
-#else
+#  else
       return NULL;
-#endif
+#  endif
 
     case ARES_EVSYS_KQUEUE:
-#if defined(HAVE_KQUEUE)
+#  if defined(HAVE_KQUEUE)
       return &ares_evsys_kqueue;
-#else
+#  else
       return NULL;
-#endif
+#  endif
 
     case ARES_EVSYS_POLL:
-#if defined(HAVE_POLL)
+#  if defined(HAVE_POLL)
       return &ares_evsys_poll;
-#else
+#  else
       return NULL;
-#endif
+#  endif
 
     case ARES_EVSYS_SELECT:
-#if defined(HAVE_PIPE)
+#  if defined(HAVE_PIPE)
       return &ares_evsys_select;
-#else
+#  else
       return NULL;
-#endif
+#  endif
 
     /* case ARES_EVSYS_DEFAULT: */
     default:
@@ -468,19 +468,19 @@ static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
   }
 
     /* default */
-#if defined(USE_WINSOCK)
+#  if defined(USE_WINSOCK)
   return &ares_evsys_win32;
-#elif defined(HAVE_KQUEUE)
+#  elif defined(HAVE_KQUEUE)
   return &ares_evsys_kqueue;
-#elif defined(HAVE_EPOLL)
+#  elif defined(HAVE_EPOLL)
   return &ares_evsys_epoll;
-#elif defined(HAVE_POLL)
+#  elif defined(HAVE_POLL)
   return &ares_evsys_poll;
-#elif defined(HAVE_PIPE)
+#  elif defined(HAVE_PIPE)
   return &ares_evsys_select;
-#else
+#  else
   return NULL;
-#endif
+#  endif
 }
 
 ares_status_t ares_event_thread_init(ares_channel_t *channel)

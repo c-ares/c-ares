@@ -31,10 +31,11 @@
  * compliant name.  Shared by the read and write paths. */
 #define ARES_MAX_NAME_PRESENTATION_LEN 255
 
-/* A name of <= 255 octets holds at most 128 labels, so it can never legitimately
- * require more than that many compression-pointer jumps.  Bounding the number of
- * indirections stops a name built purely from pointers (which never adds label
- * bytes, so the length cap never fires) from being walked without limit. */
+/* A name of <= 255 octets holds at most 128 labels, so it can never
+ * legitimately require more than that many compression-pointer jumps.  Bounding
+ * the number of indirections stops a name built purely from pointers (which
+ * never adds label bytes, so the length cap never fires) from being walked
+ * without limit. */
 #define ARES_MAX_INDIRS 128
 
 typedef struct {
@@ -650,8 +651,9 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
 
       /* Bound the number of indirections.  A name made purely of pointers never
        * adds label bytes, so the length cap below can't stop it; the
-       * strictly-decreasing rule alone still allows thousands of jumps per name.
-       * No legitimate <= 255 octet name needs more than 128 labels/jumps. */
+       * strictly-decreasing rule alone still allows thousands of jumps per
+       * name. No legitimate <= 255 octet name needs more than 128 labels/jumps.
+       */
       indir++;
       if (indir > ARES_MAX_INDIRS) {
         status = ARES_EBADNAME;
@@ -682,9 +684,9 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
     /* New label */
 
     /* RFC 1035 3.1 limits a name to 255 octets.  Enforce it during
-     * decompression so labels reached through a chain of pointers can't expand a
-     * single name without bound.  Track the presentation length (label data plus
-     * the separator that precedes each label after the first), matching
+     * decompression so labels reached through a chain of pointers can't expand
+     * a single name without bound.  Track the presentation length (label data
+     * plus the separator that precedes each label after the first), matching
      * ares_split_dns_name() on the write side. */
     if (name_len) {
       name_len++;

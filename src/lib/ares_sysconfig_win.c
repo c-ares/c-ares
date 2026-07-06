@@ -82,7 +82,8 @@
  *
  * Supported on Windows NT 3.5 and newer.
  */
-static ares_bool_t get_REG_SZ(HKEY hKey, const WCHAR *leafKeyName, char **outptr)
+static ares_bool_t get_REG_SZ(HKEY hKey, const WCHAR *leafKeyName,
+                              char **outptr)
 {
   DWORD  size = 0;
   int    res;
@@ -122,8 +123,7 @@ static ares_bool_t get_REG_SZ(HKEY hKey, const WCHAR *leafKeyName, char **outptr
     ares_free(val);
     return ARES_FALSE;
   }
-  if (WideCharToMultiByte(CP_UTF8, 0, val, -1, *outptr, len, NULL, NULL)
-    == 0) {
+  if (WideCharToMultiByte(CP_UTF8, 0, val, -1, *outptr, len, NULL, NULL) == 0) {
     ares_free(*outptr);
     *outptr = NULL;
     ares_free(val);
@@ -220,7 +220,7 @@ static int compareAddresses(const void *arg1, const void *arg2)
   return 0;
 }
 
-#if defined(HAVE_GETBESTROUTE2) && !defined(__WATCOMC__)
+#  if defined(HAVE_GETBESTROUTE2) && !defined(__WATCOMC__)
 /* There can be multiple routes to "the Internet".  And there can be different
  * DNS servers associated with each of the interfaces that offer those routes.
  * We have to assume that any DNS server can serve any request.  But, some DNS
@@ -291,7 +291,7 @@ static ULONG getBestRouteMetric(IF_LUID * const luid, /* Can't be const :( */
    */
   return row.Metric + interfaceMetric;
 }
-#endif
+#  endif
 
 /*
  * get_DNS_Windows()
@@ -414,12 +414,12 @@ static ares_bool_t get_DNS_Windows(char **outptr)
 
 #  if defined(HAVE_GETBESTROUTE2) && !defined(__WATCOMC__)
         /* OpenWatcom's builtin Windows SDK does not have a definition for
-         * MIB_IPFORWARD_ROW2, and also does not allow the usage of SOCKADDR_INET
-         * as a variable. Let's work around this by returning the worst possible
-         * metric, but only when using the OpenWatcom compiler.
-         * It may be worth investigating using a different version of the Windows
-         * SDK with OpenWatcom in the future, though this may be fixed in OpenWatcom
-         * 2.0.
+         * MIB_IPFORWARD_ROW2, and also does not allow the usage of
+         * SOCKADDR_INET as a variable. Let's work around this by returning the
+         * worst possible metric, but only when using the OpenWatcom compiler.
+         * It may be worth investigating using a different version of the
+         * Windows SDK with OpenWatcom in the future, though this may be fixed
+         * in OpenWatcom 2.0.
          */
         addresses[addressesIndex].metric = getBestRouteMetric(
           &ipaaEntry->Luid, (SOCKADDR_INET *)((void *)(namesrvr.sa)),
@@ -588,18 +588,16 @@ static ares_bool_t get_SuffixList_Windows(char **outptr)
     RegCloseKey(hKey);
   }
 
-  if (buf != NULL &&
-      RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NT_DNSCLIENT, 0, KEY_READ, &hKey) ==
-        ERROR_SUCCESS) {
+  if (buf != NULL && RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_NT_DNSCLIENT, 0,
+                                   KEY_READ, &hKey) == ERROR_SUCCESS) {
     reg_commajoin(&buf, hKey, SEARCHLIST_KEY);
     RegCloseKey(hKey);
   }
 
   /* 2. Connection Specific Search List composed of:
    *  a. Primary DNS Suffix */
-  if (buf != NULL &&
-      RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_DNSCLIENT, 0, KEY_READ, &hKey) ==
-        ERROR_SUCCESS) {
+  if (buf != NULL && RegOpenKeyExA(HKEY_LOCAL_MACHINE, WIN_DNSCLIENT, 0,
+                                   KEY_READ, &hKey) == ERROR_SUCCESS) {
     reg_commajoin(&buf, hKey, PRIMARYDNSSUFFIX_KEY);
     RegCloseKey(hKey);
   }

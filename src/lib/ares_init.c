@@ -499,10 +499,10 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
   ares_channel_lock(src);
   /* Now clone the options that ares_save_options() doesn't support, but are
    * user-provided */
-  (*dest)->sock_create_cb               = src->sock_create_cb;
-  (*dest)->sock_create_cb_data          = src->sock_create_cb_data;
-  (*dest)->sock_config_cb               = src->sock_config_cb;
-  (*dest)->sock_config_cb_data          = src->sock_config_cb_data;
+  (*dest)->sock_create_cb      = src->sock_create_cb;
+  (*dest)->sock_create_cb_data = src->sock_create_cb_data;
+  (*dest)->sock_config_cb      = src->sock_config_cb;
+  (*dest)->sock_config_cb_data = src->sock_config_cb_data;
   memcpy(&(*dest)->sock_funcs, &(src->sock_funcs), sizeof((*dest)->sock_funcs));
   (*dest)->sock_func_cb_data            = src->sock_func_cb_data;
   (*dest)->legacy_sock_funcs            = src->legacy_sock_funcs;
@@ -619,8 +619,7 @@ int ares_set_sortlist(ares_channel_t *channel, const char *sortstr)
 }
 
 void ares_set_query_enqueue_cb(ares_channel_t       *channel,
-                               ares_query_enqueue_cb callback,
-                               void                 *user_data)
+                               ares_query_enqueue_cb callback, void *user_data)
 {
   if (channel == NULL) {
     return;

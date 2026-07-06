@@ -42,8 +42,8 @@
 #include <time.h>
 
 #ifdef USE_WINSOCK
-#  define DATABASEPATH         "DatabasePath"
-#  define WIN_PATH_HOSTS       "\\hosts"
+#  define DATABASEPATH   "DatabasePath"
+#  define WIN_PATH_HOSTS "\\hosts"
 #endif
 
 /* HOSTS FILE PROCESSING OVERVIEW
@@ -674,7 +674,7 @@ static ares_status_t ares_hosts_path(const ares_channel_t *channel,
                      &dwLength);
     ExpandEnvironmentStringsA(tmp, PATH_HOSTS, MAX_PATH);
     RegCloseKey(hkeyHosts);
-    if (strlen(PATH_HOSTS)+strlen(WIN_PATH_HOSTS) >= MAX_PATH) {
+    if (strlen(PATH_HOSTS) + strlen(WIN_PATH_HOSTS) >= MAX_PATH) {
       return ARES_ENOTFOUND;
     }
     strcat(PATH_HOSTS, WIN_PATH_HOSTS);

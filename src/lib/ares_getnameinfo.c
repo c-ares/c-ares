@@ -74,8 +74,8 @@ struct nameinfo_query {
 #  define IPBUFSIZ (sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"))
 #endif
 
-static void  nameinfo_callback(void *arg, int status, int timeouts,
-                               const struct hostent *host);
+static void nameinfo_callback(void *arg, int status, int timeouts,
+                              const struct hostent *host);
 static char *lookup_service(unsigned short port, unsigned int flags, char *buf,
                             size_t buflen);
 #ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
@@ -84,10 +84,10 @@ static void append_scopeid(const struct sockaddr_in6 *addr6, unsigned int flags,
 #endif
 static char *ares_striendstr(const char *s1, const char *s2);
 
-static void  ares_getnameinfo_int(ares_channel_t        *channel,
-                                  const struct sockaddr *sa,
-                                  ares_socklen_t salen, int flags_int,
-                                  ares_nameinfo_callback callback, void *arg)
+static void ares_getnameinfo_int(ares_channel_t        *channel,
+                                 const struct sockaddr *sa,
+                                 ares_socklen_t salen, int flags_int,
+                                 ares_nameinfo_callback callback, void *arg)
 {
   const struct sockaddr_in  *addr  = NULL;
   const struct sockaddr_in6 *addr6 = NULL;

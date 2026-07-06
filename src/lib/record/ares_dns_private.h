@@ -26,43 +26,43 @@
 #ifndef __ARES_DNS_PRIVATE_H
 #define __ARES_DNS_PRIVATE_H
 
-ares_status_t        ares_dns_record_duplicate_ex(ares_dns_record_t      **dest,
-                                                  const ares_dns_record_t *src);
-ares_bool_t          ares_dns_rec_allow_name_comp(ares_dns_rec_type_t type);
-ares_bool_t          ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);
-ares_bool_t          ares_dns_rcode_isvalid(ares_dns_rcode_t rcode);
-ares_bool_t          ares_dns_flags_arevalid(unsigned short flags);
-ares_bool_t          ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
-                                               ares_bool_t         is_query);
-ares_bool_t          ares_dns_class_isvalid(ares_dns_class_t    qclass,
-                                            ares_dns_rec_type_t type,
-                                            ares_bool_t         is_query);
-ares_bool_t          ares_dns_section_isvalid(ares_dns_section_t sect);
-ares_status_t        ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
-                                             ares_dns_rr_key_t key, char *val);
-ares_status_t        ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
-                                             ares_dns_rr_key_t key, unsigned char *val,
-                                             size_t len);
-ares_status_t        ares_dns_rr_set_abin_own(ares_dns_rr_t          *dns_rr,
-                                              ares_dns_rr_key_t       key,
-                                              ares_dns_multistring_t *strs);
-ares_status_t        ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
-                                             ares_dns_rr_key_t key, unsigned short opt,
-                                             unsigned char *val, size_t val_len);
-ares_status_t        ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
-                                                 ares_dns_section_t sect, size_t cnt);
-ares_dns_rr_t       *ares_dns_get_opt_rr(ares_dns_record_t *rec);
+ares_status_t ares_dns_record_duplicate_ex(ares_dns_record_t      **dest,
+                                           const ares_dns_record_t *src);
+ares_bool_t ares_dns_rec_allow_name_comp(ares_dns_rec_type_t type);
+ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);
+ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode);
+ares_bool_t ares_dns_flags_arevalid(unsigned short flags);
+ares_bool_t ares_dns_rec_type_isvalid(ares_dns_rec_type_t type,
+                                      ares_bool_t         is_query);
+ares_bool_t ares_dns_class_isvalid(ares_dns_class_t    qclass,
+                                   ares_dns_rec_type_t type,
+                                   ares_bool_t         is_query);
+ares_bool_t ares_dns_section_isvalid(ares_dns_section_t sect);
+ares_status_t ares_dns_rr_set_str_own(ares_dns_rr_t    *dns_rr,
+                                      ares_dns_rr_key_t key, char *val);
+ares_status_t ares_dns_rr_set_bin_own(ares_dns_rr_t    *dns_rr,
+                                      ares_dns_rr_key_t key, unsigned char *val,
+                                      size_t len);
+ares_status_t ares_dns_rr_set_abin_own(ares_dns_rr_t          *dns_rr,
+                                       ares_dns_rr_key_t       key,
+                                       ares_dns_multistring_t *strs);
+ares_status_t ares_dns_rr_set_opt_own(ares_dns_rr_t    *dns_rr,
+                                      ares_dns_rr_key_t key, unsigned short opt,
+                                      unsigned char *val, size_t val_len);
+ares_status_t ares_dns_record_rr_prealloc(ares_dns_record_t *dnsrec,
+                                          ares_dns_section_t sect, size_t cnt);
+ares_dns_rr_t *ares_dns_get_opt_rr(ares_dns_record_t *rec);
 const ares_dns_rr_t *ares_dns_get_opt_rr_const(const ares_dns_record_t *rec);
-void                 ares_dns_record_ttl_decrement(ares_dns_record_t *dnsrec,
-                                                   unsigned int       ttl_decrement);
+void ares_dns_record_ttl_decrement(ares_dns_record_t *dnsrec,
+                                   unsigned int       ttl_decrement);
 
 /* Same as ares_dns_write() but appends to an existing buffer object */
-ares_status_t        ares_dns_write_buf(const ares_dns_record_t *dnsrec,
-                                        ares_buf_t              *buf);
+ares_status_t ares_dns_write_buf(const ares_dns_record_t *dnsrec,
+                                 ares_buf_t              *buf);
 
 /* Same as ares_dns_write_buf(), but prepends a 16bit length */
-ares_status_t        ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
-                                            ares_buf_t              *buf);
+ares_status_t ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
+                                     ares_buf_t              *buf);
 
 /*! Create a DNS record object for a query. The arguments are the same as
  *  those for ares_create_query().
@@ -280,28 +280,28 @@ struct ares_dns_rr {
   unsigned int        ttl;
 
   union {
-    ares_dns_a_t      a;
-    ares_dns_ns_t     ns;
-    ares_dns_cname_t  cname;
-    ares_dns_soa_t    soa;
-    ares_dns_ptr_t    ptr;
-    ares_dns_hinfo_t  hinfo;
-    ares_dns_mx_t     mx;
-    ares_dns_txt_t    txt;
-    ares_dns_sig_t    sig;
-    ares_dns_rrsig_t  rrsig;
-    ares_dns_ds_t     ds;
-    ares_dns_sshfp_t  sshfp;
-    ares_dns_nsec_t   nsec;
-    ares_dns_dnskey_t dnskey;
-    ares_dns_nsec3_t  nsec3;
+    ares_dns_a_t          a;
+    ares_dns_ns_t         ns;
+    ares_dns_cname_t      cname;
+    ares_dns_soa_t        soa;
+    ares_dns_ptr_t        ptr;
+    ares_dns_hinfo_t      hinfo;
+    ares_dns_mx_t         mx;
+    ares_dns_txt_t        txt;
+    ares_dns_sig_t        sig;
+    ares_dns_rrsig_t      rrsig;
+    ares_dns_ds_t         ds;
+    ares_dns_sshfp_t      sshfp;
+    ares_dns_nsec_t       nsec;
+    ares_dns_dnskey_t     dnskey;
+    ares_dns_nsec3_t      nsec3;
     ares_dns_nsec3param_t nsec3param;
-    ares_dns_aaaa_t   aaaa;
-    ares_dns_srv_t    srv;
-    ares_dns_naptr_t  naptr;
-    ares_dns_opt_t    opt;
-    ares_dns_tlsa_t   tlsa;
-    ares_dns_svcb_t   svcb;
+    ares_dns_aaaa_t       aaaa;
+    ares_dns_srv_t        srv;
+    ares_dns_naptr_t      naptr;
+    ares_dns_opt_t        opt;
+    ares_dns_tlsa_t       tlsa;
+    ares_dns_svcb_t       svcb;
     ares_dns_svcb_t   https; /*!< https is a type of svcb, so this is right */
     ares_dns_uri_t    uri;
     ares_dns_caa_t    caa;

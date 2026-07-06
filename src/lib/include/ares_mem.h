@@ -30,7 +30,7 @@
 /* Memory management functions */
 CARES_EXTERN void *ares_malloc(size_t size);
 CARES_EXTERN void *ares_realloc(void *ptr, size_t size);
-CARES_EXTERN void  ares_free(void *ptr);
+CARES_EXTERN void ares_free(void *ptr);
 CARES_EXTERN void *ares_malloc_zero(size_t size);
 CARES_EXTERN void *ares_realloc_zero(void *ptr, size_t orig_size,
                                      size_t new_size);

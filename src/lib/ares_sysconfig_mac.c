@@ -91,7 +91,7 @@ static ares_status_t dnsinfo_init(dnsinfo_t **dnsinfo_out)
   const char   *searchlibs[] = {
     "/usr/lib/libSystem.dylib",
     "/System/Library/Frameworks/SystemConfiguration.framework/"
-      "SystemConfiguration",
+    "SystemConfiguration",
     NULL
   };
 

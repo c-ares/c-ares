@@ -27,7 +27,7 @@
 #ifndef __ARES_STR_H
 #define __ARES_STR_H
 
-CARES_EXTERN char  *ares_strdup(const char *s1);
+CARES_EXTERN char *ares_strdup(const char *s1);
 
 /*! Scan up to maxlen bytes for the first NULL character and return
  *  its index, or maxlen if not found.  The function only returns
@@ -57,8 +57,8 @@ CARES_EXTERN size_t ares_strlen(const char *str);
  */
 CARES_EXTERN size_t ares_strcpy(char *dest, const char *src, size_t dest_size);
 
-CARES_EXTERN ares_bool_t    ares_str_isnum(const char *str);
-CARES_EXTERN ares_bool_t    ares_str_isalnum(const char *str);
+CARES_EXTERN ares_bool_t ares_str_isnum(const char *str);
+CARES_EXTERN ares_bool_t ares_str_isalnum(const char *str);
 
 /*! Parse a base-10 unsigned integer from a NULL-terminated string.  Unlike
  *  atoi(), this rejects overflow, leading or trailing garbage (a sign,
@@ -77,21 +77,21 @@ CARES_EXTERN ares_bool_t    ares_str_isalnum(const char *str);
 CARES_EXTERN ares_bool_t ares_str_parse_uint(const char *str, unsigned long max,
                                              unsigned int *out);
 
-CARES_EXTERN void           ares_str_ltrim(char *str);
-CARES_EXTERN void           ares_str_rtrim(char *str);
-CARES_EXTERN void           ares_str_trim(char *str);
-CARES_EXTERN void           ares_str_lower(char *str);
+CARES_EXTERN void ares_str_ltrim(char *str);
+CARES_EXTERN void ares_str_rtrim(char *str);
+CARES_EXTERN void ares_str_trim(char *str);
+CARES_EXTERN void ares_str_lower(char *str);
 
-CARES_EXTERN unsigned char  ares_tolower(unsigned char c);
+CARES_EXTERN unsigned char ares_tolower(unsigned char c);
 CARES_EXTERN unsigned char *ares_memmem(const unsigned char *big,
                                         size_t               big_len,
                                         const unsigned char *little,
                                         size_t               little_len);
-CARES_EXTERN ares_bool_t    ares_memeq(const unsigned char *ptr,
+CARES_EXTERN ares_bool_t ares_memeq(const unsigned char *ptr,
+                                    const unsigned char *val, size_t len);
+CARES_EXTERN ares_bool_t ares_memeq_ci(const unsigned char *ptr,
                                        const unsigned char *val, size_t len);
-CARES_EXTERN ares_bool_t    ares_memeq_ci(const unsigned char *ptr,
-                                          const unsigned char *val, size_t len);
-CARES_EXTERN ares_bool_t    ares_is_hostname(const char *str);
+CARES_EXTERN ares_bool_t ares_is_hostname(const char *str);
 
 /*! Validate the string provided is printable.  The length specified must be
  *  at least the size of the buffer provided.  If a NULL-terminator is hit
@@ -104,7 +104,7 @@ CARES_EXTERN ares_bool_t    ares_is_hostname(const char *str);
  *                  If 0, will return TRUE since it did not hit an exception.
  *  \return ARES_TRUE if the entire string is printable, ARES_FALSE if not.
  */
-CARES_EXTERN ares_bool_t    ares_str_isprint(const char *str, size_t len);
+CARES_EXTERN ares_bool_t ares_str_isprint(const char *str, size_t len);
 
 /* We only care about ASCII rules */
 #define ares_isascii(x) (((unsigned char)x) <= 127)
@@ -255,7 +255,7 @@ CARES_EXTERN ares_bool_t ares_strcaseeq_max(const char *a, const char *b,
  *                      NULL-terminated arrays
  *  \param[in] freefunc Function to call on each array member (e.g. ares_free)
  */
-CARES_EXTERN void        ares_free_array(void *arr, size_t nmembers,
-                                         void (*freefunc)(void *));
+CARES_EXTERN void ares_free_array(void *arr, size_t nmembers,
+                                  void (*freefunc)(void *));
 
 #endif /* __ARES_STR_H */

@@ -29,7 +29,7 @@
 struct ares_thread_mutex;
 typedef struct ares_thread_mutex ares_thread_mutex_t;
 
-ares_thread_mutex_t             *ares_thread_mutex_create(void);
+ares_thread_mutex_t *ares_thread_mutex_create(void);
 void ares_thread_mutex_destroy(ares_thread_mutex_t *mut);
 void ares_thread_mutex_lock(ares_thread_mutex_t *mut);
 void ares_thread_mutex_unlock(ares_thread_mutex_t *mut);
@@ -38,10 +38,10 @@ void ares_thread_mutex_unlock(ares_thread_mutex_t *mut);
 struct ares_thread_cond;
 typedef struct ares_thread_cond ares_thread_cond_t;
 
-ares_thread_cond_t             *ares_thread_cond_create(void);
-void          ares_thread_cond_destroy(ares_thread_cond_t *cond);
-void          ares_thread_cond_signal(ares_thread_cond_t *cond);
-void          ares_thread_cond_broadcast(ares_thread_cond_t *cond);
+ares_thread_cond_t *ares_thread_cond_create(void);
+void ares_thread_cond_destroy(ares_thread_cond_t *cond);
+void ares_thread_cond_signal(ares_thread_cond_t *cond);
+void ares_thread_cond_broadcast(ares_thread_cond_t *cond);
 ares_status_t ares_thread_cond_wait(ares_thread_cond_t  *cond,
                                     ares_thread_mutex_t *mut);
 

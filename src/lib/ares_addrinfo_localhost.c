@@ -49,14 +49,15 @@
 #  endif
 #endif
 
-static ares_bool_t ares_ai_has_family(int aftype,
+static ares_bool_t ares_ai_has_family(int                              aftype,
                                       const struct ares_addrinfo_node *nodes)
 {
   const struct ares_addrinfo_node *node;
 
   for (node = nodes; node != NULL; node = node->ai_next) {
-    if (node->ai_family == aftype)
+    if (node->ai_family == aftype) {
       return ARES_TRUE;
+    }
   }
 
   return ARES_FALSE;
@@ -102,8 +103,8 @@ ares_status_t ares_append_ai_node(int aftype, unsigned short port,
 
   node = ares_append_addrinfo_node(nodes);
   if (!node) {
-    ares_free(sa);                /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM;           /* LCOV_EXCL_LINE: OutOfMemory */
+    ares_free(sa);      /* LCOV_EXCL_LINE: OutOfMemory */
+    return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   node->ai_addr    = sa;

@@ -1163,9 +1163,7 @@ ares_status_t ares_buf_replace(ares_buf_t *buf, const unsigned char *srch,
 
     /* Move the data */
     move_data_len = buf->data_len - buf->offset - found_offset - srch_size;
-    memmove(ptr + rplc_size,
-            ptr + srch_size,
-            move_data_len);
+    memmove(ptr + rplc_size, ptr + srch_size, move_data_len);
 
     /* Copy in the replacement data */
     if (rplc != NULL && rplc_size > 0) {

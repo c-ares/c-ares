@@ -711,42 +711,39 @@ static const ares_dns_rr_key_t rr_naptr_keys[] = {
   ARES_RR_NAPTR_ORDER,    ARES_RR_NAPTR_PREFERENCE, ARES_RR_NAPTR_FLAGS,
   ARES_RR_NAPTR_SERVICES, ARES_RR_NAPTR_REGEXP,     ARES_RR_NAPTR_REPLACEMENT
 };
-static const ares_dns_rr_key_t rr_opt_keys[]    = { ARES_RR_OPT_UDP_SIZE,
-                                                    ARES_RR_OPT_VERSION,
-                                                    ARES_RR_OPT_FLAGS,
-                                                    ARES_RR_OPT_OPTIONS };
-static const ares_dns_rr_key_t rr_ds_keys[]     = { ARES_RR_DS_KEY_TAG,
-                                                    ARES_RR_DS_ALGORITHM,
-                                                    ARES_RR_DS_DIGEST_TYPE,
-                                                    ARES_RR_DS_DIGEST };
-static const ares_dns_rr_key_t rr_sshfp_keys[]  = { ARES_RR_SSHFP_ALGORITHM,
-                                                    ARES_RR_SSHFP_FP_TYPE,
-                                                    ARES_RR_SSHFP_FINGERPRINT };
-static const ares_dns_rr_key_t rr_rrsig_keys[]  = { ARES_RR_RRSIG_TYPE_COVERED,
-                                                    ARES_RR_RRSIG_ALGORITHM,
-                                                    ARES_RR_RRSIG_LABELS,
-                                                    ARES_RR_RRSIG_ORIGINAL_TTL,
-                                                    ARES_RR_RRSIG_EXPIRATION,
-                                                    ARES_RR_RRSIG_INCEPTION,
-                                                    ARES_RR_RRSIG_KEY_TAG,
-                                                    ARES_RR_RRSIG_SIGNERS_NAME,
-                                                    ARES_RR_RRSIG_SIGNATURE };
-static const ares_dns_rr_key_t rr_nsec_keys[]   = { ARES_RR_NSEC_NEXT_DOMAIN,
-                                                    ARES_RR_NSEC_TYPE_BIT_MAPS };
+static const ares_dns_rr_key_t rr_opt_keys[]   = { ARES_RR_OPT_UDP_SIZE,
+                                                   ARES_RR_OPT_VERSION,
+                                                   ARES_RR_OPT_FLAGS,
+                                                   ARES_RR_OPT_OPTIONS };
+static const ares_dns_rr_key_t rr_ds_keys[]    = { ARES_RR_DS_KEY_TAG,
+                                                   ARES_RR_DS_ALGORITHM,
+                                                   ARES_RR_DS_DIGEST_TYPE,
+                                                   ARES_RR_DS_DIGEST };
+static const ares_dns_rr_key_t rr_sshfp_keys[] = { ARES_RR_SSHFP_ALGORITHM,
+                                                   ARES_RR_SSHFP_FP_TYPE,
+                                                   ARES_RR_SSHFP_FINGERPRINT };
+static const ares_dns_rr_key_t rr_rrsig_keys[] = {
+  ARES_RR_RRSIG_TYPE_COVERED, ARES_RR_RRSIG_ALGORITHM,
+  ARES_RR_RRSIG_LABELS,       ARES_RR_RRSIG_ORIGINAL_TTL,
+  ARES_RR_RRSIG_EXPIRATION,   ARES_RR_RRSIG_INCEPTION,
+  ARES_RR_RRSIG_KEY_TAG,      ARES_RR_RRSIG_SIGNERS_NAME,
+  ARES_RR_RRSIG_SIGNATURE
+};
+static const ares_dns_rr_key_t rr_nsec_keys[] = { ARES_RR_NSEC_NEXT_DOMAIN,
+                                                  ARES_RR_NSEC_TYPE_BIT_MAPS };
 static const ares_dns_rr_key_t rr_dnskey_keys[] = { ARES_RR_DNSKEY_FLAGS,
                                                     ARES_RR_DNSKEY_PROTOCOL,
                                                     ARES_RR_DNSKEY_ALGORITHM,
                                                     ARES_RR_DNSKEY_PUBLIC_KEY };
-static const ares_dns_rr_key_t rr_nsec3_keys[]  = { ARES_RR_NSEC3_HASH_ALGORITHM,
-                                                    ARES_RR_NSEC3_FLAGS,
-                                                    ARES_RR_NSEC3_ITERATIONS,
-                                                    ARES_RR_NSEC3_SALT,
-                                                    ARES_RR_NSEC3_NEXT_HASHED_OWNER,
-                                                    ARES_RR_NSEC3_TYPE_BIT_MAPS };
-static const ares_dns_rr_key_t rr_nsec3param_keys[] = { ARES_RR_NSEC3PARAM_HASH_ALGORITHM,
-                                                        ARES_RR_NSEC3PARAM_FLAGS,
-                                                        ARES_RR_NSEC3PARAM_ITERATIONS,
-                                                        ARES_RR_NSEC3PARAM_SALT };
+static const ares_dns_rr_key_t rr_nsec3_keys[]  = {
+  ARES_RR_NSEC3_HASH_ALGORITHM,    ARES_RR_NSEC3_FLAGS,
+  ARES_RR_NSEC3_ITERATIONS,        ARES_RR_NSEC3_SALT,
+  ARES_RR_NSEC3_NEXT_HASHED_OWNER, ARES_RR_NSEC3_TYPE_BIT_MAPS
+};
+static const ares_dns_rr_key_t rr_nsec3param_keys[] = {
+  ARES_RR_NSEC3PARAM_HASH_ALGORITHM, ARES_RR_NSEC3PARAM_FLAGS,
+  ARES_RR_NSEC3PARAM_ITERATIONS, ARES_RR_NSEC3PARAM_SALT
+};
 static const ares_dns_rr_key_t rr_tlsa_keys[]   = { ARES_RR_TLSA_CERT_USAGE,
                                                     ARES_RR_TLSA_SELECTOR,
                                                     ARES_RR_TLSA_MATCH,
@@ -766,8 +763,8 @@ static const ares_dns_rr_key_t rr_caa_keys[]    = { ARES_RR_CAA_CRITICAL,
 static const ares_dns_rr_key_t rr_raw_rr_keys[] = { ARES_RR_RAW_RR_TYPE,
                                                     ARES_RR_RAW_RR_DATA };
 
-const ares_dns_rr_key_t       *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
-                                                    size_t             *cnt)
+const ares_dns_rr_key_t *ares_dns_rr_get_keys(ares_dns_rec_type_t type,
+                                              size_t             *cnt)
 {
   if (cnt == NULL) {
     return NULL;
@@ -900,34 +897,34 @@ ares_bool_t ares_dns_rec_type_fromstr(ares_dns_rec_type_t *qtype,
     const char         *name;
     ares_dns_rec_type_t type;
   } list[] = {
-    { "A",      ARES_REC_TYPE_A      },
-    { "NS",     ARES_REC_TYPE_NS     },
-    { "CNAME",  ARES_REC_TYPE_CNAME  },
-    { "SOA",    ARES_REC_TYPE_SOA    },
-    { "PTR",    ARES_REC_TYPE_PTR    },
-    { "HINFO",  ARES_REC_TYPE_HINFO  },
-    { "MX",     ARES_REC_TYPE_MX     },
-    { "TXT",    ARES_REC_TYPE_TXT    },
-    { "SIG",    ARES_REC_TYPE_SIG    },
-    { "AAAA",   ARES_REC_TYPE_AAAA   },
-    { "SRV",    ARES_REC_TYPE_SRV    },
-    { "NAPTR",  ARES_REC_TYPE_NAPTR  },
-    { "OPT",    ARES_REC_TYPE_OPT    },
-    { "DS",     ARES_REC_TYPE_DS     },
-    { "SSHFP",  ARES_REC_TYPE_SSHFP  },
-    { "RRSIG",  ARES_REC_TYPE_RRSIG  },
-    { "NSEC",   ARES_REC_TYPE_NSEC   },
-    { "DNSKEY", ARES_REC_TYPE_DNSKEY },
-    { "NSEC3",  ARES_REC_TYPE_NSEC3  },
+    { "A",          ARES_REC_TYPE_A          },
+    { "NS",         ARES_REC_TYPE_NS         },
+    { "CNAME",      ARES_REC_TYPE_CNAME      },
+    { "SOA",        ARES_REC_TYPE_SOA        },
+    { "PTR",        ARES_REC_TYPE_PTR        },
+    { "HINFO",      ARES_REC_TYPE_HINFO      },
+    { "MX",         ARES_REC_TYPE_MX         },
+    { "TXT",        ARES_REC_TYPE_TXT        },
+    { "SIG",        ARES_REC_TYPE_SIG        },
+    { "AAAA",       ARES_REC_TYPE_AAAA       },
+    { "SRV",        ARES_REC_TYPE_SRV        },
+    { "NAPTR",      ARES_REC_TYPE_NAPTR      },
+    { "OPT",        ARES_REC_TYPE_OPT        },
+    { "DS",         ARES_REC_TYPE_DS         },
+    { "SSHFP",      ARES_REC_TYPE_SSHFP      },
+    { "RRSIG",      ARES_REC_TYPE_RRSIG      },
+    { "NSEC",       ARES_REC_TYPE_NSEC       },
+    { "DNSKEY",     ARES_REC_TYPE_DNSKEY     },
+    { "NSEC3",      ARES_REC_TYPE_NSEC3      },
     { "NSEC3PARAM", ARES_REC_TYPE_NSEC3PARAM },
-    { "TLSA",   ARES_REC_TYPE_TLSA   },
-    { "SVCB",   ARES_REC_TYPE_SVCB   },
-    { "HTTPS",  ARES_REC_TYPE_HTTPS  },
-    { "ANY",    ARES_REC_TYPE_ANY    },
-    { "URI",    ARES_REC_TYPE_URI    },
-    { "CAA",    ARES_REC_TYPE_CAA    },
-    { "RAW_RR", ARES_REC_TYPE_RAW_RR },
-    { NULL,     0                    }
+    { "TLSA",       ARES_REC_TYPE_TLSA       },
+    { "SVCB",       ARES_REC_TYPE_SVCB       },
+    { "HTTPS",      ARES_REC_TYPE_HTTPS      },
+    { "ANY",        ARES_REC_TYPE_ANY        },
+    { "URI",        ARES_REC_TYPE_URI        },
+    { "CAA",        ARES_REC_TYPE_CAA        },
+    { "RAW_RR",     ARES_REC_TYPE_RAW_RR     },
+    { NULL,         0                        }
   };
 
   if (qtype == NULL || str == NULL) {

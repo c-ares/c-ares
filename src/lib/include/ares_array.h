@@ -102,7 +102,7 @@ CARES_EXTERN ares_status_t ares_array_sort(ares_array_t    *arr,
  *
  *  \param[in] arr     Initialized array object.
  */
-CARES_EXTERN void          ares_array_destroy(ares_array_t *arr);
+CARES_EXTERN void ares_array_destroy(ares_array_t *arr);
 
 /*! Retrieve the array in the native format.  This will also destroy the
  *  container.  It is the responsibility of the caller to free the returned
@@ -112,7 +112,7 @@ CARES_EXTERN void          ares_array_destroy(ares_array_t *arr);
  *  \param[out] num_members the number of members in the returned array
  *  \return pointer to native array on success, NULL on failure.
  */
-CARES_EXTERN void  *ares_array_finish(ares_array_t *arr, size_t *num_members);
+CARES_EXTERN void *ares_array_finish(ares_array_t *arr, size_t *num_members);
 
 /*! Retrieve the number of members in the array
  *
@@ -201,34 +201,34 @@ CARES_EXTERN ares_status_t ares_array_insertdata_first(ares_array_t *arr,
  *  \param[in]  array  Initialized array object
  *  \param[in]  idx    Index to fetch
  *  \return pointer on success, NULL on failure */
-CARES_EXTERN void         *ares_array_at(ares_array_t *arr, size_t idx);
+CARES_EXTERN void *ares_array_at(ares_array_t *arr, size_t idx);
 
 /*! Fetch a pointer to the first element in the array
  *  \param[in]  array  Initialized array object
  *  \return pointer on success, NULL on failure */
-CARES_EXTERN void         *ares_array_first(ares_array_t *arr);
+CARES_EXTERN void *ares_array_first(ares_array_t *arr);
 
 /*! Fetch a pointer to the last element in the array
  *  \param[in]  array  Initialized array object
  *  \return pointer on success, NULL on failure */
-CARES_EXTERN void         *ares_array_last(ares_array_t *arr);
+CARES_EXTERN void *ares_array_last(ares_array_t *arr);
 
 /*! Fetch a constant pointer to the given element in the array
  *  \param[in]  array  Initialized array object
  *  \param[in]  idx    Index to fetch
  *  \return pointer on success, NULL on failure */
-CARES_EXTERN const void   *ares_array_at_const(const ares_array_t *arr,
-                                               size_t              idx);
+CARES_EXTERN const void *ares_array_at_const(const ares_array_t *arr,
+                                             size_t              idx);
 
 /*! Fetch a constant pointer to the first element in the array
  *  \param[in]  array  Initialized array object
  *  \return pointer on success, NULL on failure */
-CARES_EXTERN const void   *ares_array_first_const(const ares_array_t *arr);
+CARES_EXTERN const void *ares_array_first_const(const ares_array_t *arr);
 
 /*! Fetch a constant pointer to the last element in the array
  *  \param[in]  array  Initialized array object
  *  \return pointer on success, NULL on failure */
-CARES_EXTERN const void   *ares_array_last_const(const ares_array_t *arr);
+CARES_EXTERN const void *ares_array_last_const(const ares_array_t *arr);
 
 /*! Claim the data from the specified array index, copying it to the buffer
  *  provided by the caller.  The index specified in the array will then be
