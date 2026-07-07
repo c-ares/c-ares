@@ -129,7 +129,7 @@ CARES_EXTERN ares_status_t ares_buf_append_be32(ares_buf_t  *buf,
  *  \param[in] codepoint  32bit UTF codepoint
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
-CARES_EXTERN ares_status_t ares_buf_append_codepoint(ares_buf_t *buf,
+CARES_EXTERN ares_status_t ares_buf_append_codepoint(ares_buf_t  *buf,
                                                      unsigned int codepoint);
 
 
@@ -357,7 +357,7 @@ CARES_EXTERN ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
  *  \return ARES_SUCCESS if fetched
  */
 CARES_EXTERN ares_status_t ares_buf_tag_fetch_buf(const ares_buf_t *buf,
-                                                  ares_buf_t *outbuf);
+                                                  ares_buf_t       *outbuf);
 
 /*! Determine if entire remaining buffer is ASCII-printable.  If there are
  *  no remaining bytes, returns ARES_FALSE.
@@ -401,7 +401,7 @@ CARES_EXTERN ares_status_t ares_buf_fetch_be32(ares_buf_t   *buf,
  *  \return ARES_SUCCESS on success, ARES_EBADSTR if a non-unicode character
  *          found
  */
-CARES_EXTERN ares_status_t ares_buf_fetch_codepoint(ares_buf_t *buf,
+CARES_EXTERN ares_status_t ares_buf_fetch_codepoint(ares_buf_t   *buf,
                                                     unsigned int *codepoint);
 
 
@@ -508,7 +508,7 @@ CARES_EXTERN size_t ares_buf_consume_until_charset(ares_buf_t          *buf,
  */
 CARES_EXTERN size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
                                                   const unsigned char *charset,
-                                                  size_t len,
+                                                  size_t               len,
                                                   ares_bool_t require_charset);
 
 
@@ -673,7 +673,7 @@ CARES_EXTERN size_t ares_buf_len(const ares_buf_t *buf);
  *  \return ARES_SUCCESS on success, or error.
  */
 CARES_EXTERN ares_status_t ares_buf_len_utf8(const ares_buf_t *buf,
-                                             size_t *len);
+                                             size_t           *len);
 
 
 /*! Retrieve a pointer to the currently unprocessed data.  Generally this isn't

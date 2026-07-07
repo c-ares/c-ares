@@ -256,8 +256,10 @@ if len(pool) > 0xFFFFFFFF:
 
 with open(outfile, 'w') as file:
     file.write("/* clang-format off */\n")
-    file.write("/* SPDX-FileCopyrightText: (C) The c-ares project and its contributors\n")
-    file.write(" * SPDX-License-Identifier: MIT\n")
+    # The tag strings are split so the REUSE scanner sees only the emitted
+    # file's tags, not phantom (and malformed) ones in this script's source.
+    file.write("/* SPDX-FileCopyright" "Text: (C) The c-ares project and its contributors\n")
+    file.write(" * SPDX-License" "-Identifier: MIT\n")
     file.write(" *\n")
     file.write(" * Table data derived from the Unicode(R) Character Database,\n")
     file.write(" * (C) Unicode, Inc., licensed under the UNICODE LICENSE V3\n")

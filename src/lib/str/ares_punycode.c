@@ -562,27 +562,26 @@ done:
   return status;
 }
 
-/*! Binary search the UTS #46 IDNA mapping table.  Returns NULL if the
- *  codepoint has no entry, meaning it is valid and used as-is. */
+static int ares_idnamap_cmp(const void *key, const void *member)
+{
+  const unsigned int        *cp = key;
+  const ares_idnamap_data_t *e  = member;
+
+  if (*cp < e->code_min) {
+    return -1;
+  }
+  if (*cp > e->code_max) {
+    return 1;
+  }
+  return 0;
+}
+
+/*! Search the UTS #46 IDNA mapping table.  Returns NULL if the codepoint has
+ *  no entry, meaning it is valid and used as-is. */
 static const ares_idnamap_data_t *ares_idnamap_lookup(unsigned int cp)
 {
-  size_t low  = 0;
-  size_t high = ares_idnamap_data_len;
-
-  while (low < high) {
-    size_t                     mid = low + (high - low) / 2;
-    const ares_idnamap_data_t *e   = &ares_idnamap_data[mid];
-
-    if (cp < e->code_min) {
-      high = mid;
-    } else if (cp > e->code_max) {
-      low = mid + 1;
-    } else {
-      return e;
-    }
-  }
-
-  return NULL;
+  return bsearch(&cp, ares_idnamap_data, ares_idnamap_data_len,
+                 sizeof(*ares_idnamap_data), ares_idnamap_cmp);
 }
 
 /*! Apply the UTS #46 mapping step to an entire domain.  This must occur
