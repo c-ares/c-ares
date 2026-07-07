@@ -1,3 +1,23 @@
+## c-ares version 1.34.8 - July 7 2026
+
+This is a bugfix release.
+
+Bugfixes:
+* Revert "Mark parameters in callbacks as const" which shipped in 1.34.7.
+  Changing the parameter types of the `ares_callback`, `ares_host_callback`,
+  and `ares_nameinfo_callback` function pointer typedefs was an unintended
+  API break: existing applications with the historical non-const callback
+  signatures no longer compiled, particularly in C++ where function pointer
+  types must match exactly. The read-only nature of the callback parameters
+  is now documented instead.
+  [PR #1244](https://github.com/c-ares/c-ares/pull/1244)
+
+Thanks go to these friendly people for their efforts and contributions for this
+release:
+
+* Brad House (@bradh352)
+
+
 ## c-ares version 1.34.7 - July 6 2026
 
 This is a security release.
