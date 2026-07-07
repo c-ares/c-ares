@@ -36,6 +36,7 @@
 #include "ares_private.h"
 #include "ares_str.h"
 #include "ares_punycode.h"
+#include "ares_idnamap.h"
 
 /* punycode parameters, see http://tools.ietf.org/html/rfc3492#section-5 */
 #define BASE         36
@@ -45,6 +46,14 @@
 #define DAMP         700
 #define INITIAL_N    128
 #define INITIAL_BIAS 72
+
+/* RFC 3492 requires detection of overflow in the delta arithmetic.  Deltas
+ * are represented here as size_t but bounded to 32 bits as per the RFC's
+ * recommendation for the minimum viable maxint. */
+#define PUNY_MAXINT ((size_t)0xFFFFFFFF)
+
+/* Maximum length of a single DNS label as per RFC 1035 */
+#define MAX_DNS_LABEL_LEN 63
 
 static size_t adapt_bias(size_t delta, size_t n_points, ares_bool_t is_first)
 {
@@ -61,17 +70,16 @@ static size_t adapt_bias(size_t delta, size_t n_points, ares_bool_t is_first)
   return k + (((BASE - TMIN + 1) * delta) / (delta + SKEW));
 }
 
-static unsigned char encode_digit(int c)
+static unsigned char encode_digit(size_t c)
 {
   if (c > 25) {
-    return ((unsigned char)c) + 22;  /* '0'..'9' */
+    return (unsigned char)(c + 22);  /* '0'..'9' */
   } else {
-    return ((unsigned char)c) + 'a'; /* 'a'..'z' */
+    return (unsigned char)(c + 'a'); /* 'a'..'z' */
   }
 }
 
-/* Encode as a generalized variable-length integer. Returns number of bytes
- * written. */
+/* Encode as a generalized variable-length integer. */
 static ares_status_t encode_var_int(const size_t bias, const size_t delta,
                                     ares_buf_t *buf)
 {
@@ -96,8 +104,7 @@ static ares_status_t encode_var_int(const size_t bias, const size_t delta,
       break;
     }
 
-    status =
-      ares_buf_append_byte(buf, encode_digit((int)(t + (q - t) % (BASE - t))));
+    status = ares_buf_append_byte(buf, encode_digit(t + (q - t) % (BASE - t)));
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -106,7 +113,7 @@ static ares_status_t encode_var_int(const size_t bias, const size_t delta,
     k += BASE;
   }
 
-  return ares_buf_append_byte(buf, encode_digit((int)q));
+  return ares_buf_append_byte(buf, encode_digit(q));
 }
 
 static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
@@ -189,6 +196,11 @@ static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
     }
     ares_buf_tag_rollback(inbuf);
 
+    /* Overflow check as per RFC 3492 Section 6.3 */
+    if (m - n > (PUNY_MAXINT - delta) / (h + 1)) {
+      return ARES_EBADNAME;
+    }
+
     delta += (m - n) * (h + 1);
     n      = m;
 
@@ -200,12 +212,15 @@ static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
       }
       if (cp < n) {
         delta++;
+        if (delta > PUNY_MAXINT) {
+          return ARES_EBADNAME;
+        }
       } else if (cp == n) {
         status = encode_var_int(bias, delta, buf);
         if (status != ARES_SUCCESS) {
           return status;
         }
-        bias  = adapt_bias(delta, h + 1, h == b);
+        bias  = adapt_bias(delta, h + 1, h == b ? ARES_TRUE : ARES_FALSE);
         delta = 0;
         h++;
       }
@@ -227,23 +242,36 @@ ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf,
     return ARES_EFORMERR;
   }
 
-  /* Each section of a domain must be punycode encoded separately */
+  /* Each section of a domain must be punycode encoded separately.  Blank
+   * sections are preserved so a fully-qualified domain's trailing dot (and
+   * any malformed empty label, for downstream validation to see) survives */
   status = ares_buf_split(inbuf, (const unsigned char *)".", 1,
-                          ARES_BUF_SPLIT_NONE, 0, &split);
+                          ARES_BUF_SPLIT_ALLOW_BLANK, 0, &split);
   if (status != ARES_SUCCESS) {
     goto fail;
   }
 
   for (i = 0; i < ares_array_len(split); i++) {
     ares_buf_t **sect = ares_array_at(split, i);
+    size_t       label_start;
+
     if (i != 0) {
       status = ares_buf_append_byte(outbuf, '.');
       if (status != ARES_SUCCESS) {
         goto fail;
       }
     }
+
+    label_start = ares_buf_len(outbuf);
+
     status = punycode_encode(*sect, outbuf);
     if (status != ARES_SUCCESS) {
+      goto fail;
+    }
+
+    /* An encoded label that exceeds the DNS label limit can never be used */
+    if (ares_buf_len(outbuf) - label_start > MAX_DNS_LABEL_LEN) {
+      status = ARES_EBADNAME;
       goto fail;
     }
   }
@@ -258,6 +286,10 @@ ares_status_t ares_punycode_encode_domain(const char *domain, char **out)
   ares_buf_t   *inbuf  = NULL;
   ares_buf_t   *outbuf = NULL;
   ares_status_t status;
+
+  if (domain == NULL || out == NULL) {
+    return ARES_EFORMERR;
+  }
 
   inbuf =
     ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
@@ -286,34 +318,38 @@ done:
   return status;
 }
 
-static unsigned int decode_digit(unsigned int v)
+static size_t decode_digit(unsigned char v)
 {
   if (ares_isdigit(v)) {
     return 26 + (v - '0');
   }
   if (ares_islower(v)) {
-    return v - 'a';
+    return (size_t)(v - 'a');
   }
   if (ares_isupper(v)) {
-    return v - 'A';
+    return (size_t)(v - 'A');
   }
   return BASE;
 }
 
-#define UINTMAX 0xFFFFFFFF
-
 static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
 {
-  unsigned int  n;
-  unsigned int  i;
-  size_t        di;
+  size_t        n;
+  size_t        i;
   size_t        bias;
-  unsigned int *utf32  = NULL;
-  ares_status_t status = ARES_SUCCESS;
+  ares_array_t *codepoints = NULL;
+  ares_status_t status     = ARES_SUCCESS;
   size_t        num_ascii_chars;
+  size_t        idx;
 
   if (inbuf == NULL || outbuf == NULL) {
     return ARES_EFORMERR;
+  }
+
+  /* Empty labels (e.g. the root from a fully-qualified domain's trailing
+   * dot) pass through, same as the encode direction */
+  if (ares_buf_len(inbuf) == 0) {
+    return ARES_SUCCESS;
   }
 
   /* Make sure input is all ascii-printable or its an error */
@@ -329,16 +365,14 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
   }
   ares_buf_consume(inbuf, 4);
 
-  /* Allocate a buffer to hold utf32 codepoints that is guaranteed to be big
-   * enough so we don't have to track overflows */
-  utf32 = ares_malloc_zero(sizeof(*utf32) * ares_buf_len(inbuf));
-  if (utf32 == NULL) {
+  codepoints = ares_array_create(sizeof(unsigned int), NULL);
+  if (codepoints == NULL) {
     return ARES_ENOMEM;
   }
 
   ares_buf_tag(inbuf);
 
-  /* Search for the delimiter and copy */
+  /* Search for the delimiter and copy the basic codepoints preceding it */
   num_ascii_chars = ares_buf_consume_last_charset(
     inbuf, (const unsigned char *)"-", 1, ARES_TRUE);
   if (num_ascii_chars != SIZE_MAX) {
@@ -347,13 +381,16 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
     size_t               j;
 
     for (j = 0; j < num_ascii_chars; j++) {
-      utf32[j] = data[j];
+      unsigned int *cp = NULL;
+
+      status = ares_array_insert_last((void **)&cp, codepoints);
+      if (status != ARES_SUCCESS) {
+        goto done;
+      }
+      *cp = data[j];
     }
     /* Consume '-' */
     ares_buf_consume(inbuf, 1);
-    di = num_ascii_chars;
-  } else {
-    di = 0;
   }
 
   ares_buf_tag_clear(inbuf);
@@ -362,10 +399,12 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
   n    = INITIAL_N;
   bias = INITIAL_BIAS;
 
-  for (; ares_buf_len(inbuf) > 0; di++) {
-    size_t org_i = i;
-    size_t k;
-    size_t w;
+  while (ares_buf_len(inbuf) > 0) {
+    size_t        org_i = i;
+    size_t        cnt   = ares_array_len(codepoints);
+    size_t        k;
+    size_t        w;
+    unsigned int *cp = NULL;
 
     for (w = 1, k = BASE;; k += BASE) {
       unsigned char b;
@@ -384,7 +423,7 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
         goto done;
       }
 
-      if (digit > (UINTMAX - i) / w) {
+      if (digit > (PUNY_MAXINT - i) / w) {
         /* OVERFLOW */
         status = ARES_EFORMERR;
         goto done;
@@ -404,7 +443,7 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
         break;
       }
 
-      if (w > UINTMAX / (BASE - t)) {
+      if (w > PUNY_MAXINT / (BASE - t)) {
         /* OVERFLOW */
         status = ARES_EFORMERR;
         goto done;
@@ -413,30 +452,38 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
       w *= BASE - t;
     }
 
-    bias = adapt_bias(i - org_i, di + 1, org_i == 0);
+    bias = adapt_bias(i - org_i, cnt + 1, org_i == 0 ? ARES_TRUE : ARES_FALSE);
 
-    if (i / (di + 1) > UINTMAX - n) {
+    if (i / (cnt + 1) > PUNY_MAXINT - n) {
       /* OVERFLOW */
       status = ARES_EFORMERR;
       goto done;
     }
 
-    n += i / (di + 1);
-    i %= (di + 1);
-    memmove(utf32 + i + 1, utf32 + i, (di - i) * sizeof(*utf32));
-    utf32[i++] = n;
+    n += i / (cnt + 1);
+    i %= (cnt + 1);
+
+    status = ares_array_insert_at((void **)&cp, codepoints, i);
+    if (status != ARES_SUCCESS) {
+      goto done;
+    }
+    *cp = (unsigned int)n;
+    i++;
   }
 
-  /* Convert to UTF8 */
-  for (i = 0; i < di; i++) {
-    status = ares_buf_append_codepoint(outbuf, utf32[i]);
+  /* Convert to UTF8.  ares_buf_append_codepoint() rejects decoded values
+   * that aren't valid Unicode scalar values (surrogates, > U+10FFFF). */
+  for (idx = 0; idx < ares_array_len(codepoints); idx++) {
+    const unsigned int *cp = ares_array_at(codepoints, idx);
+
+    status = ares_buf_append_codepoint(outbuf, *cp);
     if (status != ARES_SUCCESS) {
       goto done;
     }
   }
 
 done:
-  ares_free(utf32);
+  ares_array_destroy(codepoints);
   return status;
 }
 
@@ -451,9 +498,10 @@ ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf,
     return ARES_EFORMERR;
   }
 
-  /* Each section of a domain must be punycode decoded separately */
+  /* Each section of a domain must be punycode decoded separately.  Blank
+   * sections are preserved, matching the encode direction */
   status = ares_buf_split(inbuf, (const unsigned char *)".", 1,
-                          ARES_BUF_SPLIT_NONE, 0, &split);
+                          ARES_BUF_SPLIT_ALLOW_BLANK, 0, &split);
   if (status != ARES_SUCCESS) {
     goto fail;
   }
@@ -483,6 +531,10 @@ ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
   ares_buf_t   *outbuf = NULL;
   ares_status_t status;
 
+  if (domain == NULL || out == NULL) {
+    return ARES_EFORMERR;
+  }
+
   inbuf =
     ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
   if (inbuf == NULL) {
@@ -497,6 +549,152 @@ ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
   }
 
   status = ares_punycode_decode_domain_buf(inbuf, outbuf);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  *out   = ares_buf_finish_str(outbuf, NULL);
+  outbuf = NULL;
+
+done:
+  ares_buf_destroy(inbuf);
+  ares_buf_destroy(outbuf);
+  return status;
+}
+
+/*! Binary search the UTS #46 IDNA mapping table.  Returns NULL if the
+ *  codepoint has no entry, meaning it is valid and used as-is. */
+static const ares_idnamap_data_t *ares_idnamap_lookup(unsigned int cp)
+{
+  size_t low  = 0;
+  size_t high = ares_idnamap_data_len;
+
+  while (low < high) {
+    size_t                     mid = low + (high - low) / 2;
+    const ares_idnamap_data_t *e   = &ares_idnamap_data[mid];
+
+    if (cp < e->code_min) {
+      high = mid;
+    } else if (cp > e->code_max) {
+      low = mid + 1;
+    } else {
+      return e;
+    }
+  }
+
+  return NULL;
+}
+
+/*! Apply the UTS #46 mapping step to an entire domain.  This must occur
+ *  before splitting into labels since some codepoints (e.g. U+3002
+ *  IDEOGRAPHIC FULL STOP) map to '.' */
+static ares_status_t ares_idna_map_buf(ares_buf_t *inbuf, ares_buf_t *outbuf)
+{
+  ares_status_t status = ARES_SUCCESS;
+
+  while (ares_buf_len(inbuf) > 0) {
+    unsigned int               cp;
+    const ares_idnamap_data_t *entry;
+
+    status = ares_buf_fetch_codepoint(inbuf, &cp);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+
+    /* ASCII passes through directly (lowercased for canonical form) without
+     * consulting the table.  The table marks some ASCII such as '_' as
+     * disallowed via the non-normative NV8 IDNA2008 exclusions, but those
+     * characters are in widespread DNS use (e.g. service labels like _ldap).
+     * Hostname validity of ASCII is enforced when the query is written. */
+    if (cp < 0x80) {
+      status = ares_buf_append_byte(outbuf, ares_tolower((unsigned char)cp));
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
+      continue;
+    }
+
+    entry = ares_idnamap_lookup(cp);
+    if (entry == NULL) {
+      /* Valid, used as-is */
+      status = ares_buf_append_codepoint(outbuf, cp);
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
+      continue;
+    }
+
+    switch (entry->status) {
+      case ARES_IDNA_STATUS_DISALLOWED:
+        return ARES_EBADNAME;
+      case ARES_IDNA_STATUS_IGNORED:
+        break;
+      case ARES_IDNA_STATUS_MAPPED:
+        status = ares_buf_append(
+          outbuf, &ares_idnamap_data_pool[entry->map_offset], entry->map_len);
+        if (status != ARES_SUCCESS) {
+          return status;
+        }
+        break;
+      default:
+        /* Can't happen with a well-formed table */
+        return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+    }
+  }
+
+  return status;
+}
+
+ares_status_t ares_idna_encode_domain_buf(ares_buf_t *inbuf, ares_buf_t *outbuf)
+{
+  ares_buf_t   *mapped = NULL;
+  ares_status_t status;
+
+  if (inbuf == NULL || outbuf == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  mapped = ares_buf_create();
+  if (mapped == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  status = ares_idna_map_buf(inbuf, mapped);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares_punycode_encode_domain_buf(mapped, outbuf);
+
+done:
+  ares_buf_destroy(mapped);
+  return status;
+}
+
+ares_status_t ares_idna_encode_domain(const char *domain, char **out)
+{
+  ares_buf_t   *inbuf  = NULL;
+  ares_buf_t   *outbuf = NULL;
+  ares_status_t status;
+
+  if (domain == NULL || out == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  inbuf =
+    ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
+  if (inbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  outbuf = ares_buf_create();
+  if (outbuf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  status = ares_idna_encode_domain_buf(inbuf, outbuf);
   if (status != ARES_SUCCESS) {
     goto done;
   }

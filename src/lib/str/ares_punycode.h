@@ -85,4 +85,32 @@ ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf,
  */
 ares_status_t ares_punycode_decode_domain(const char *domain, char **out);
 
+/*! IDNA encode a domain from buf to buf: apply the UTS #46 mapping step
+ *  (nontransitional, casefolding, removing ignored codepoints, and rejecting
+ *  disallowed codepoints), then punycode encode each label as per RFC3492.
+ *
+ *  This is the function to use for converting a user-visible unicode domain
+ *  into the ASCII form used on the wire.  NFC normalization of the mapped
+ *  output is NOT currently performed; input that is not already in NFC form
+ *  (rare in practice, e.g. decomposed sequences from macOS filenames) may
+ *  produce a different label than a conforming UTS #46 implementation.
+ *
+ *  \param[in]     inbuf  Input domain name in UTF-8
+ *  \param[in,out] outbuf Output IDNA (punycode) encoded domain
+ *  \return ARES_SUCCESS on success, ARES_EBADNAME if the domain contains
+ *          disallowed codepoints or an encoded label exceeds the DNS label
+ *          length limit, or otherwise an ares_status_t error.
+ */
+ares_status_t ares_idna_encode_domain_buf(ares_buf_t *inbuf,
+                                          ares_buf_t *outbuf);
+
+/*! IDNA encode a domain from string to string.  See
+ *  ares_idna_encode_domain_buf() for details.
+ *
+ *  \param[in]  domain  Input domain name in UTF-8
+ *  \param[out] out     Output IDNA (punycode) encoded domain
+ *  \return ARES_SUCCESS on success, or otherwise an ares_status_t error.
+ */
+ares_status_t ares_idna_encode_domain(const char *domain, char **out);
+
 #endif
