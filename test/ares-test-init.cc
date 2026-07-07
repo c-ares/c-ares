@@ -463,6 +463,12 @@ CONTAINED_TEST_F(LibraryTest, ContainerIDNResolvInit,
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
 
   EXPECT_EQ((size_t)3, channel->ndomains);
+  /* Fail cleanly rather than crash the container child on a regression
+   * (ASSERT_* can't be used in the non-void test body) */
+  if (channel == nullptr || channel->ndomains != 3) {
+    ares_destroy(channel);
+    return true;
+  }
   EXPECT_EQ(std::string("xn--bcher-kva.de"), std::string(channel->domains[0]));
   EXPECT_EQ(std::string("first.com"), std::string(channel->domains[1]));
   EXPECT_EQ(std::string("xn--mnchen-3ya.example"),

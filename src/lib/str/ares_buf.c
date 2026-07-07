@@ -297,9 +297,10 @@ ares_status_t ares_buf_append_codepoint(ares_buf_t *buf, unsigned int codepoint)
 {
   ares_status_t status;
 
-  /* UTF-16 surrogate halves are not valid Unicode scalar values */
+  /* UTF-16 surrogate halves are not valid Unicode scalar values.  Same
+   * error code as the fetch/decode direction uses for invalid scalars */
   if (codepoint >= 0xD800 && codepoint <= 0xDFFF) {
-    return ARES_EFORMERR;
+    return ARES_EBADSTR;
   }
 
   if (codepoint <= 0x7F) { /* 1 byte sequence */
@@ -361,7 +362,8 @@ ares_status_t ares_buf_append_codepoint(ares_buf_t *buf, unsigned int codepoint)
                                 (unsigned char)(0x80 | (codepoint & 0x3F)));
   }
 
-  return ARES_EFORMERR;
+  /* > U+10FFFF is not a valid Unicode scalar value */
+  return ARES_EBADSTR;
 }
 
 unsigned char *ares_buf_append_start(ares_buf_t *buf, size_t *len)
@@ -516,18 +518,6 @@ ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
     return ARES_ENOMEM;
   }
   return ARES_SUCCESS;
-}
-
-ares_status_t ares_buf_tag_fetch_buf(const ares_buf_t *buf, ares_buf_t *outbuf)
-{
-  size_t               ptr_len = 0;
-  const unsigned char *ptr     = ares_buf_tag_fetch(buf, &ptr_len);
-
-  if (ptr == NULL || outbuf == NULL) {
-    return ARES_EFORMERR;
-  }
-
-  return ares_buf_append(outbuf, ptr, ptr_len);
 }
 
 static ares_status_t ares_buf_validate_charset(const unsigned char *ptr,
@@ -1015,7 +1005,7 @@ size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
   ares_bool_t          found = ARES_FALSE;
 
   if (ptr == NULL || charset == NULL || len == 0) {
-    return 0;
+    return require_charset ? SIZE_MAX : 0;
   }
 
   for (pos = (ares_ssize_t)remaining_len - 1; pos >= 0; pos--) {
@@ -1029,8 +1019,12 @@ size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
   }
 
 done:
-  if (require_charset && !found) {
-    return SIZE_MAX;
+  if (!found) {
+    if (require_charset) {
+      return SIZE_MAX;
+    }
+    ares_buf_consume(buf, remaining_len);
+    return remaining_len;
   }
 
   if (pos > 0) {

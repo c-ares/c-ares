@@ -512,50 +512,55 @@ TEST_F(LibraryTest, URI) {
 
 TEST_F(LibraryTest, PUNYCODE) {
   struct {
-    ares_bool_t success;
     const char *input;
     const char *output;
   } tests[] = {
-    { ARES_TRUE,  "www.google.com",      "www.google.com"                   },
-    { ARES_TRUE,  "www.bücher.com",      "www.xn--bcher-kva.com"            },
-    { ARES_TRUE,  "www.büücher.com",     "www.xn--bcher-kvaa.com"           },
-    { ARES_TRUE,  "www.bücüher.com",     "www.xn--bcher-kvab.com"           },
-    { ARES_TRUE,  "www.bücherü.com",     "www.xn--bcher-kvae.com"           },
-    { ARES_TRUE,  "www.ýbücher.com",     "www.xn--bcher-kvaf.com"           },
-    { ARES_TRUE,  "www.übücher.com",     "www.xn--bcher-jvab.com"           },
-    { ARES_TRUE,  "www.München.com",     "www.xn--Mnchen-3ya.com"           },
-    { ARES_TRUE,  "www.München-Ost.com", "www.xn--Mnchen-Ost-9db.com"       },
-    { ARES_TRUE,  "bücher.München.com",  "xn--bcher-kva.xn--Mnchen-3ya.com" },
-    { ARES_TRUE,  "www.abæcdöef.com",    "www.xn--abcdef-qua4k.com"         },
-    { ARES_TRUE,  "www.правда.com",      "www.xn--80aafi6cg.com"            },
-    { ARES_TRUE,  "www.ยจฆฟคฏข.com",     "www.xn--22cdfh1b8fsa.com"         },
-    { ARES_TRUE,  "www.도메인.com",        "www.xn--hq1bm8jm9l.com"           },
-    { ARES_TRUE,  "www.ドメイン名例.com",  "www.xn--eckwd4c7cu47r2wf.com"     },
+    { "www.google.com",      "www.google.com"                   },
+    { "www.bücher.com",      "www.xn--bcher-kva.com"            },
+    { "www.büücher.com",     "www.xn--bcher-kvaa.com"           },
+    { "www.bücüher.com",     "www.xn--bcher-kvab.com"           },
+    { "www.bücherü.com",     "www.xn--bcher-kvae.com"           },
+    { "www.ýbücher.com",     "www.xn--bcher-kvaf.com"           },
+    { "www.übücher.com",     "www.xn--bcher-jvab.com"           },
+    { "www.München.com",     "www.xn--Mnchen-3ya.com"           },
+    { "www.München-Ost.com", "www.xn--Mnchen-Ost-9db.com"       },
+    { "bücher.München.com",  "xn--bcher-kva.xn--Mnchen-3ya.com" },
+    { "www.abæcdöef.com",    "www.xn--abcdef-qua4k.com"         },
+    { "www.правда.com",      "www.xn--80aafi6cg.com"            },
+    { "www.ยจฆฟคฏข.com",     "www.xn--22cdfh1b8fsa.com"         },
+    { "www.도메인.com",        "www.xn--hq1bm8jm9l.com"           },
+    { "www.ドメイン名例.com",  "www.xn--eckwd4c7cu47r2wf.com"     },
+    /* Supplementary plane codepoint exercising 4-byte UTF-8 in both
+     * directions: U+10348 GOTHIC LETTER HWAIR */
+    { "\xF0\x90\x8D\x88.com", "xn--2c8c.com"                     },
     /* Trailing dot (fully-qualified) round-trips */
-    { ARES_TRUE,  "www.bücher.com.",     "www.xn--bcher-kva.com."           },
+    { "www.bücher.com.",     "www.xn--bcher-kva.com."           },
     /* RFC 3492 Section 7.1 sample strings (as single-label domains) */
     /* (B) Chinese (simplified) */
-    { ARES_TRUE,  "他们为什么不说中文",
-      "xn--ihqwcrb4cv8a8dqg056pqjye"                                        },
+    { "他们为什么不说中文",
+      "xn--ihqwcrb4cv8a8dqg056pqjye"                             },
     /* (C) Chinese (traditional) */
-    { ARES_TRUE,  "他們爲什麽不說中文",
-      "xn--ihqwctvzc91f659drss3x8bo0yb"                                     },
+    { "他們爲什麽不說中文",
+      "xn--ihqwctvzc91f659drss3x8bo0yb"                          },
     /* (D) Czech */
-    { ARES_TRUE,  "Pročprostěnemluvíčesky",
-      "xn--Proprostnemluvesky-uyb24dma41a"                                  },
+    { "Pročprostěnemluvíčesky",
+      "xn--Proprostnemluvesky-uyb24dma41a"                       },
     /* (E) Hebrew */
-    { ARES_TRUE,  "למההםפשוטלאמדבריםעברית",
-      "xn--4dbcagdahymbxekheh6e0a7fei0b"                                    },
+    { "למההםפשוטלאמדבריםעברית",
+      "xn--4dbcagdahymbxekheh6e0a7fei0b"                         },
     /* (G) Japanese */
-    { ARES_TRUE,  "なぜみんな日本語を話してくれないのか",
-      "xn--n8jok5ay5dzabd5bym9f0cm5685rrjetr6pdxa"                          },
+    { "なぜみんな日本語を話してくれないのか",
+      "xn--n8jok5ay5dzabd5bym9f0cm5685rrjetr6pdxa"               },
     /* (I) Russian */
-    { ARES_TRUE,  "почемужеонинеговорятпорусски",
-      "xn--b1abfaaepdrnnbgefbadotcwatmq2g4l"                                },
+    { "почемужеонинеговорятпорусски",
+      "xn--b1abfaaepdrnnbgefbadotcwatmq2g4l"                     },
     /* (K) Vietnamese */
-    { ARES_TRUE,  "TạisaohọkhôngthểchỉnóitiếngViệt",
-      "xn--TisaohkhngthchnitingVit-kjcr8268qyxafd2f1b9g"                    },
-    { ARES_FALSE, NULL, NULL }
+    { "TạisaohọkhôngthểchỉnóitiếngViệt",
+      "xn--TisaohkhngthchnitingVit-kjcr8268qyxafd2f1b9g"         },
+    /* (L) Japanese title with digits in the basic codepoint segment */
+    { "3年B組金八先生",
+      "xn--3B-ww4c5e180e575a65lsy2b"                             },
+    { NULL, NULL }
   };
   size_t i;
 
@@ -566,22 +571,44 @@ TEST_F(LibraryTest, PUNYCODE) {
 
     if (verbose) std::cerr << "Testing " << tests[i].input << std::endl;
     status = ares_punycode_encode_domain(tests[i].input, &encoded);
-    if (tests[i].success) {
-      EXPECT_EQ(ARES_SUCCESS, status);
-    } else {
-      EXPECT_NE(ARES_SUCCESS, status);
-    }
+    EXPECT_EQ(ARES_SUCCESS, status);
 
     if (status == ARES_SUCCESS) {
-      EXPECT_STREQ(encoded, tests[i].output);
+      EXPECT_STREQ(tests[i].output, encoded);
 
       status = ares_punycode_decode_domain(tests[i].output, &decoded);
       EXPECT_EQ(ARES_SUCCESS, status);
 
-      EXPECT_STREQ(decoded, tests[i].input);
+      EXPECT_STREQ(tests[i].input, decoded);
     }
     ares_free(decoded);
     ares_free(encoded);
+  }
+
+  /* The ACE prefix is case-insensitive on decode as per RFC 5890 */
+  {
+    char *decoded = NULL;
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_punycode_decode_domain("XN--FSQ.com", &decoded));
+    EXPECT_STREQ("例.com", decoded);
+    ares_free(decoded);
+    decoded = NULL;
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_punycode_decode_domain("Xn--fsq.com", &decoded));
+    EXPECT_STREQ("例.com", decoded);
+    ares_free(decoded);
+  }
+
+  /* Empty domains trivially round-trip */
+  {
+    char *out = NULL;
+    EXPECT_EQ(ARES_SUCCESS, ares_punycode_encode_domain("", &out));
+    EXPECT_STREQ("", out);
+    ares_free(out);
+    out = NULL;
+    EXPECT_EQ(ARES_SUCCESS, ares_punycode_decode_domain("", &out));
+    EXPECT_STREQ("", out);
+    ares_free(out);
   }
 
   /* Invalid tests  */
@@ -619,6 +646,14 @@ TEST_F(LibraryTest, PUNYCODE) {
     { "xn--999999999",   "overflow"                          },
     { "xn--a-b!c",       "invalid punycode digit"            },
     { "xn--a-rc4g",      "decodes to a UTF-16 surrogate half" },
+    /* RFC 3492 Section 6.2: the delimiter is only consumed when more than
+     * zero basic codepoints precede it; a leading '-' is part of the
+     * extended string and is not a valid digit */
+    { "xn---baa",        "leading delimiter, no basic codepoints" },
+    /* An encoded label longer than the 63 octet DNS limit is rejected
+     * before any decode work is performed */
+    { "xn--aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "encoded label exceeds 63 octets" },
     { NULL, NULL }
   };
   for (i=0; invalid_puny[i].input != NULL; i++) {
@@ -661,8 +696,10 @@ TEST_F(LibraryTest, IDNA) {
      * punycode API which preserves case) */
     { ARES_SUCCESS,  "www.München.com",   "www.xn--mnchen-3ya.com",
       "unicode casefold" },
-    /* Ignored codepoints are removed: U+00AD SOFT HYPHEN */
-    { ARES_SUCCESS,  "exam­ple.com", "example.com",
+    /* Ignored codepoints are removed: U+00AD SOFT HYPHEN.  Spelled in
+     * explicit bytes since the raw codepoint is invisible: an editor
+     * silently stripping it would leave this case testing nothing */
+    { ARES_SUCCESS,  "exam\xC2\xADple.com", "example.com",
       "soft hyphen ignored" },
     /* Label separator variants map to '.': U+3002 IDEOGRAPHIC FULL STOP */
     { ARES_SUCCESS,  "例。com",       "xn--fsq.com",
@@ -690,6 +727,24 @@ TEST_F(LibraryTest, IDNA) {
      * Windows-1252 execution charset into '?' */
     { ARES_EBADNAME, "\xF0\x9F\x98\x80.com", NULL,
       "emoji disallowed" },
+    /* An already-encoded label is ASCII and passes through unmodified, no
+     * double-encoding */
+    { ARES_SUCCESS,  "xn--bcher-kva.de",  "xn--bcher-kva.de",
+      "already encoded passthrough" },
+    /* Fullwidth characters map to their ASCII equivalents, lowercased:
+     * U+FF21..U+FF23 FULLWIDTH LATIN CAPITAL LETTER A..C */
+    { ARES_SUCCESS,  "ＡＢＣ.com",         "abc.com",
+      "fullwidth mapped to ascii" },
+    /* ZWNJ (U+200C) is a deviation codepoint kept by nontransitional
+     * processing; CheckJoiners (ContextJ) is documented as not implemented
+     * so it is accepted context-free */
+    { ARES_SUCCESS,  "a\xE2\x80\x8C" "b.com", "xn--ab-j1t.com",
+      "zwnj nontransitional" },
+    /* Blank labels pass through for downstream validation to see */
+    { ARES_SUCCESS,  "bücher..de",        "xn--bcher-kva..de",
+      "empty interior label preserved" },
+    { ARES_SUCCESS,  ".",                 ".",
+      "root dot" },
     { ARES_SUCCESS,  NULL, NULL, NULL }
   };
   size_t i;
@@ -707,8 +762,37 @@ TEST_F(LibraryTest, IDNA) {
     ares_free(encoded);
   }
 
+  /* Empty domain trivially round-trips */
+  {
+    char *out = NULL;
+    EXPECT_EQ(ARES_SUCCESS, ares_idna_encode_domain("", &out));
+    EXPECT_STREQ("", out);
+    ares_free(out);
+  }
+
   EXPECT_NE(ARES_SUCCESS, ares_idna_encode_domain(NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_idna_encode_domain("www.bücher.com", NULL));
+}
+
+TEST_F(LibraryTest, IDNAAllocFail) {
+  int ii;
+
+  /* Every allocation point in the idna/punycode path must fail cleanly with
+   * ARES_ENOMEM (ASAN/LSAN CI verifies no leak at any failure point) */
+  for (ii = 1; ii <= 30; ii++) {
+    char         *out = NULL;
+    ares_status_t status;
+
+    ClearFails();
+    SetAllocFail(ii);
+    status = ares_idna_encode_domain("bücher.München.example", &out);
+    if (status == ARES_SUCCESS) {
+      EXPECT_STREQ("xn--bcher-kva.xn--mnchen-3ya.example", out);
+    } else {
+      EXPECT_EQ(ARES_ENOMEM, status) << "attempt " << ii;
+    }
+    ares_free(out);
+  }
 }
 
 TEST_F(LibraryTest, SysConfigDomainsIDNA) {
@@ -731,6 +815,36 @@ TEST_F(LibraryTest, SysConfigDomainsIDNA) {
   EXPECT_STREQ("xn--mnchen-3ya.example", sysconfig.domains[2]);
 
   ares_strsplit_free(sysconfig.domains, sysconfig.ndomains);
+
+  /* Unconvertible entries are dropped regardless of position (first and
+   * last here, middle above) */
+  memset(&sysconfig, 0, sizeof(sysconfig));
+  sysconfig.domains = ares_strsplit(
+    "\xF0\x9F\x98\x80.com first.com bücher.de \xF0\x9F\x98\x80.org", " ",
+    &sysconfig.ndomains);
+  ASSERT_NE(nullptr, sysconfig.domains);
+  ASSERT_EQ((size_t)4, sysconfig.ndomains);
+
+  EXPECT_EQ(ARES_SUCCESS, ares_sysconfig_domains_idna(&sysconfig));
+  ASSERT_EQ((size_t)2, sysconfig.ndomains);
+  EXPECT_STREQ("first.com", sysconfig.domains[0]);
+  EXPECT_STREQ("xn--bcher-kva.de", sysconfig.domains[1]);
+
+  ares_strsplit_free(sysconfig.domains, sysconfig.ndomains);
+
+  /* If every entry is unconvertible the array itself must be released,
+   * otherwise ares_sysconfig_apply() would fail on the empty list and skip
+   * applying the rest of the configuration */
+  memset(&sysconfig, 0, sizeof(sysconfig));
+  sysconfig.domains =
+    ares_strsplit("\xF0\x9F\x98\x80.com \xF0\x9F\x98\x80.de", " ",
+                  &sysconfig.ndomains);
+  ASSERT_NE(nullptr, sysconfig.domains);
+  ASSERT_EQ((size_t)2, sysconfig.ndomains);
+
+  EXPECT_EQ(ARES_SUCCESS, ares_sysconfig_domains_idna(&sysconfig));
+  EXPECT_EQ((size_t)0, sysconfig.ndomains);
+  EXPECT_EQ(nullptr, sysconfig.domains);
 
   /* Empty list is a no-op */
   memset(&sysconfig, 0, sizeof(sysconfig));
@@ -813,6 +927,9 @@ TEST_F(LibraryTest, BufCharset) {
         << tests[i].descr << " fetch_str_dup charset " << (int)charset;
       if (status == ARES_SUCCESS) {
         EXPECT_STREQ(tests[i].data, str);
+      } else {
+        EXPECT_EQ(ARES_EBADSTR, status)
+          << tests[i].descr << " fetch_str_dup charset " << (int)charset;
       }
       ares_free(str);
       str = NULL;
@@ -831,6 +948,9 @@ TEST_F(LibraryTest, BufCharset) {
         << tests[i].descr << " tag_fetch_string charset " << (int)charset;
       if (status == ARES_SUCCESS) {
         EXPECT_STREQ(tests[i].data, strbuf);
+      } else {
+        EXPECT_EQ(ARES_EBADSTR, status)
+          << tests[i].descr << " tag_fetch_string charset " << (int)charset;
       }
 
       status = ares_buf_tag_fetch_strdup(buf, &str, charset);
@@ -839,11 +959,150 @@ TEST_F(LibraryTest, BufCharset) {
         << tests[i].descr << " tag_fetch_strdup charset " << (int)charset;
       if (status == ARES_SUCCESS) {
         EXPECT_STREQ(tests[i].data, str);
+      } else {
+        EXPECT_EQ(ARES_EBADSTR, status)
+          << tests[i].descr << " tag_fetch_strdup charset " << (int)charset;
       }
       ares_free(str);
       str = NULL;
       ares_buf_destroy(buf);
     }
+  }
+}
+
+TEST_F(LibraryTest, BufCodepoint) {
+  /* Encode boundaries for each UTF-8 sequence length, plus invalid scalar
+   * values, verified byte-exact and round-tripped through the decoder */
+  struct {
+    unsigned int cp;
+    const char  *utf8; /* NULL = not a valid scalar value, must be rejected */
+  } tests[] = {
+    { 0x41,     "A"                },
+    { 0x7F,     "\x7F"             },
+    { 0x80,     "\xC2\x80"         },
+    { 0x7FF,    "\xDF\xBF"         },
+    { 0x800,    "\xE0\xA0\x80"     },
+    { 0xD7FF,   "\xED\x9F\xBF"     },
+    { 0xE000,   "\xEE\x80\x80"     },
+    { 0xFFFF,   "\xEF\xBF\xBF"     },
+    { 0x10000,  "\xF0\x90\x80\x80" },
+    { 0x10FFFF, "\xF4\x8F\xBF\xBF" },
+    { 0xD800,   NULL               },
+    { 0xDFFF,   NULL               },
+    { 0x110000, NULL               },
+  };
+  size_t i;
+
+  for (i = 0; i < sizeof(tests) / sizeof(*tests); i++) {
+    ares_buf_t   *buf = ares_buf_create();
+    ares_status_t status;
+    char         *str = NULL;
+    size_t        len = 0;
+
+    ASSERT_NE(nullptr, buf);
+    status = ares_buf_append_codepoint(buf, tests[i].cp);
+
+    if (tests[i].utf8 == NULL) {
+      EXPECT_EQ(ARES_EBADSTR, status) << "codepoint 0x" << std::hex
+                                      << tests[i].cp;
+      ares_buf_destroy(buf);
+      continue;
+    }
+
+    ASSERT_EQ(ARES_SUCCESS, status) << "codepoint 0x" << std::hex
+                                    << tests[i].cp;
+
+    str = ares_buf_finish_str(buf, &len);
+    buf = NULL;
+    ASSERT_NE(nullptr, str);
+    EXPECT_EQ(strlen(tests[i].utf8), len);
+    EXPECT_STREQ(tests[i].utf8, str);
+
+    /* Round-trip through the decoder */
+    {
+      ares_buf_t  *rbuf = ares_buf_create_const((const unsigned char *)str,
+                                                len);
+      unsigned int cp   = 0;
+
+      ASSERT_NE(nullptr, rbuf);
+      EXPECT_EQ(ARES_SUCCESS, ares_buf_fetch_codepoint(rbuf, &cp));
+      EXPECT_EQ(tests[i].cp, cp);
+      EXPECT_EQ((size_t)0, ares_buf_len(rbuf));
+      ares_buf_destroy(rbuf);
+    }
+    ares_free(str);
+  }
+
+  /* ares_buf_len_utf8() counts codepoints, not bytes */
+  {
+    const char *data = "a\xC3\xBC\xE4\xBE\x8B\xF0\x9F\x98\x80"; /* aü例😀 */
+    ares_buf_t *buf  = ares_buf_create_const((const unsigned char *)data,
+                                             strlen(data));
+    size_t      cnt  = 0;
+
+    ASSERT_NE(nullptr, buf);
+    EXPECT_EQ(ARES_SUCCESS, ares_buf_len_utf8(buf, &cnt));
+    EXPECT_EQ((size_t)4, cnt);
+    ares_buf_destroy(buf);
+  }
+
+  /* ares_buf_consume_last_charset() semantics */
+  {
+    ares_buf_t *buf =
+      ares_buf_create_const((const unsigned char *)"abc-def", 7);
+    size_t      n;
+
+    ASSERT_NE(nullptr, buf);
+    /* Found: consumes up to (not including) the last matching character */
+    n = ares_buf_consume_last_charset(buf, (const unsigned char *)"-", 1,
+                                      ARES_TRUE);
+    EXPECT_EQ((size_t)3, n);
+    EXPECT_EQ((size_t)4, ares_buf_len(buf)); /* "-def" remains */
+    /* Not found, required: SIZE_MAX and nothing is consumed */
+    n = ares_buf_consume_last_charset(buf, (const unsigned char *)"@", 1,
+                                      ARES_TRUE);
+    EXPECT_EQ(SIZE_MAX, n);
+    EXPECT_EQ((size_t)4, ares_buf_len(buf));
+    /* Not found, not required: consumes the remainder */
+    n = ares_buf_consume_last_charset(buf, (const unsigned char *)"@", 1,
+                                      ARES_FALSE);
+    EXPECT_EQ((size_t)4, n);
+    EXPECT_EQ((size_t)0, ares_buf_len(buf));
+    /* Empty buffer: SIZE_MAX when required, 0 otherwise */
+    n = ares_buf_consume_last_charset(buf, (const unsigned char *)"@", 1,
+                                      ARES_TRUE);
+    EXPECT_EQ(SIZE_MAX, n);
+    n = ares_buf_consume_last_charset(buf, (const unsigned char *)"@", 1,
+                                      ARES_FALSE);
+    EXPECT_EQ((size_t)0, n);
+    ares_buf_destroy(buf);
+  }
+
+  /* ares_buf_isprint() */
+  {
+    ares_buf_t *buf = ares_buf_create_const((const unsigned char *)"abc", 3);
+    ASSERT_NE(nullptr, buf);
+    EXPECT_EQ(ARES_TRUE, ares_buf_isprint(buf));
+    ares_buf_destroy(buf);
+    buf = ares_buf_create_const((const unsigned char *)"a\x01" "c", 3);
+    ASSERT_NE(nullptr, buf);
+    EXPECT_EQ(ARES_FALSE, ares_buf_isprint(buf));
+    ares_buf_destroy(buf);
+  }
+
+  /* ARES_BUF_SPLIT_UTF8 (via ares_strsplit): a single invalid element fails
+   * the entire split rather than dropping only that element, in contrast to
+   * the drop-individually semantics of the sysconfig IDNA pass */
+  {
+    size_t n   = 0;
+    char **out = ares_strsplit("good.com b\xFF" "ad.com", " ", &n);
+    EXPECT_EQ(nullptr, out);
+    out = ares_strsplit("good.com bücher.de", " ", &n);
+    ASSERT_NE(nullptr, out);
+    EXPECT_EQ((size_t)2, n);
+    EXPECT_STREQ("good.com", out[0]);
+    EXPECT_STREQ("bücher.de", out[1]);
+    ares_strsplit_free(out, n);
   }
 }
 
@@ -2104,6 +2363,13 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ((size_t)0, ares_buf_consume_whitespace(NULL, ARES_FALSE));
   EXPECT_EQ((size_t)0, ares_buf_consume_nonwhitespace(NULL));
   EXPECT_EQ((size_t)0, ares_buf_consume_line(NULL, ARES_FALSE));
+  EXPECT_NE(ARES_SUCCESS, ares_buf_append_codepoint(NULL, 0x41));
+  EXPECT_NE(ARES_SUCCESS, ares_buf_fetch_codepoint(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_buf_len_utf8(NULL, NULL));
+  EXPECT_EQ(ARES_FALSE, ares_buf_isprint(NULL));
+  EXPECT_EQ((size_t)0,
+            ares_buf_consume_last_charset(NULL, NULL, 0, ARES_FALSE));
+  EXPECT_EQ(SIZE_MAX, ares_buf_consume_last_charset(NULL, NULL, 0, ARES_TRUE));
   EXPECT_EQ(ARES_FALSE, ares_buf_begins_with(NULL, NULL, 0));
   EXPECT_EQ((size_t)0, ares_buf_get_position(NULL));
   EXPECT_NE(ARES_SUCCESS, ares_buf_set_position(NULL, 0));

@@ -181,7 +181,7 @@ static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
   bias  = INITIAL_BIAS;
   delta = 0;
 
-  for (; h < utf8_cnt; n++, delta++) {
+  while (h < utf8_cnt) {
     /* Find next smallest non-basic code point. */
     ares_buf_tag(inbuf);
     m = SIZE_MAX;
@@ -211,10 +211,12 @@ static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
         return status;
       }
       if (cp < n) {
-        delta++;
-        if (delta > PUNY_MAXINT) {
+        /* RFC 3492 Section 6.3: increment delta, fail on overflow.  Checked
+         * before incrementing since size_t may be exactly 32 bits */
+        if (delta == PUNY_MAXINT) {
           return ARES_EBADNAME;
         }
+        delta++;
       } else if (cp == n) {
         status = encode_var_int(bias, delta, buf);
         if (status != ARES_SUCCESS) {
@@ -226,6 +228,13 @@ static ares_status_t punycode_encode(ares_buf_t *inbuf, ares_buf_t *buf)
       }
     }
     ares_buf_tag_rollback(inbuf);
+
+    /* RFC 3492 Section 6.3: increment delta and n, fail on overflow */
+    if (delta == PUNY_MAXINT) {
+      return ARES_EBADNAME;
+    }
+    delta++;
+    n++;
   }
 
   return ARES_SUCCESS;
@@ -291,6 +300,13 @@ ares_status_t ares_punycode_encode_domain(const char *domain, char **out)
     return ARES_EFORMERR;
   }
 
+  /* ares_buf_create_const() can't represent zero-length data, and an empty
+   * domain trivially round-trips */
+  if (ares_strlen(domain) == 0) {
+    *out = ares_strdup(domain);
+    return (*out == NULL) ? ARES_ENOMEM : ARES_SUCCESS;
+  }
+
   inbuf =
     ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
   if (inbuf == NULL) {
@@ -309,13 +325,36 @@ ares_status_t ares_punycode_encode_domain(const char *domain, char **out)
     goto done;
   }
 
-  *out   = ares_buf_finish_str(outbuf, NULL);
+  *out = ares_buf_finish_str(outbuf, NULL);
+  if (*out == NULL) {
+    status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
+  }
   outbuf = NULL;
 
 done:
   ares_buf_destroy(inbuf);
   ares_buf_destroy(outbuf);
   return status;
+}
+
+/*! The ACE prefix "xn--" is case-insensitive as per RFC 5890 Section
+ *  2.3.2.1 */
+static ares_bool_t ares_buf_begins_with_ace_prefix(const ares_buf_t *buf)
+{
+  size_t               len = 0;
+  const unsigned char *ptr = ares_buf_peek(buf, &len);
+
+  if (ptr == NULL || len < 4) {
+    return ARES_FALSE;
+  }
+
+  if (ares_tolower(ptr[0]) != 'x' || ares_tolower(ptr[1]) != 'n' ||
+      ptr[2] != '-' || ptr[3] != '-') {
+    return ARES_FALSE;
+  }
+
+  return ARES_TRUE;
 }
 
 static size_t decode_digit(unsigned char v)
@@ -352,17 +391,25 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
     return ARES_SUCCESS;
   }
 
-  /* Make sure input is all ascii-printable or its an error */
-  if (!ares_buf_isprint(inbuf)) {
-    return ARES_EFORMERR;
-  }
-
-  /* If it doesn't start with "xn--" then its all ascii */
-  if (!ares_buf_begins_with(inbuf, (const unsigned char *)"xn--", 4)) {
+  /* A label without the ACE prefix contains no encoded data and passes
+   * through as-is (including labels already in unicode form) */
+  if (!ares_buf_begins_with_ace_prefix(inbuf)) {
     size_t               len;
     const unsigned char *ptr = ares_buf_peek(inbuf, &len);
     return ares_buf_append(outbuf, ptr, len);
   }
+
+  /* An encoded label is ASCII by definition */
+  if (!ares_buf_isprint(inbuf)) {
+    return ARES_EBADNAME;
+  }
+
+  /* A DNS label can't exceed 63 octets; enforcing this also bounds the
+   * work performed decoding hostile input */
+  if (ares_buf_len(inbuf) > MAX_DNS_LABEL_LEN) {
+    return ARES_EBADNAME;
+  }
+
   ares_buf_consume(inbuf, 4);
 
   codepoints = ares_array_create(sizeof(unsigned int), NULL);
@@ -372,10 +419,13 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
 
   ares_buf_tag(inbuf);
 
-  /* Search for the delimiter and copy the basic codepoints preceding it */
+  /* Search for the delimiter and copy the basic codepoints preceding it.
+   * RFC 3492 Section 6.2: the delimiter is only present (and consumed) when
+   * more than zero basic code points were copied; a leading '-' is part of
+   * the extended string and will fail digit decoding below */
   num_ascii_chars = ares_buf_consume_last_charset(
     inbuf, (const unsigned char *)"-", 1, ARES_TRUE);
-  if (num_ascii_chars != SIZE_MAX) {
+  if (num_ascii_chars != SIZE_MAX && num_ascii_chars > 0) {
     size_t               data_len = 0;
     const unsigned char *data     = ares_buf_tag_fetch(inbuf, &data_len);
     size_t               j;
@@ -406,6 +456,8 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
     size_t        w;
     unsigned int *cp = NULL;
 
+    /* Decode a generalized variable-length integer into delta as per
+     * RFC 3492 Section 6.2, with the Section 6.4 overflow checks */
     for (w = 1, k = BASE;; k += BASE) {
       unsigned char b;
       size_t        digit;
@@ -419,13 +471,13 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
       digit = decode_digit(b);
 
       if (digit >= BASE) {
-        status = ARES_EFORMERR;
+        status = ARES_EBADNAME;
         goto done;
       }
 
       if (digit > (PUNY_MAXINT - i) / w) {
         /* OVERFLOW */
-        status = ARES_EFORMERR;
+        status = ARES_EBADNAME;
         goto done;
       }
 
@@ -445,7 +497,7 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
 
       if (w > PUNY_MAXINT / (BASE - t)) {
         /* OVERFLOW */
-        status = ARES_EFORMERR;
+        status = ARES_EBADNAME;
         goto done;
       }
 
@@ -456,13 +508,14 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
 
     if (i / (cnt + 1) > PUNY_MAXINT - n) {
       /* OVERFLOW */
-      status = ARES_EFORMERR;
+      status = ARES_EBADNAME;
       goto done;
     }
 
     n += i / (cnt + 1);
     i %= (cnt + 1);
 
+    /* RFC 3492 Section 6.2: insert n into the output at position i */
     status = ares_array_insert_at((void **)&cp, codepoints, i);
     if (status != ARES_SUCCESS) {
       goto done;
@@ -535,6 +588,13 @@ ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
     return ARES_EFORMERR;
   }
 
+  /* ares_buf_create_const() can't represent zero-length data, and an empty
+   * domain trivially round-trips */
+  if (ares_strlen(domain) == 0) {
+    *out = ares_strdup(domain);
+    return (*out == NULL) ? ARES_ENOMEM : ARES_SUCCESS;
+  }
+
   inbuf =
     ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
   if (inbuf == NULL) {
@@ -553,7 +613,11 @@ ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
     goto done;
   }
 
-  *out   = ares_buf_finish_str(outbuf, NULL);
+  *out = ares_buf_finish_str(outbuf, NULL);
+  if (*out == NULL) {
+    status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
+  }
   outbuf = NULL;
 
 done:
@@ -680,6 +744,13 @@ ares_status_t ares_idna_encode_domain(const char *domain, char **out)
     return ARES_EFORMERR;
   }
 
+  /* ares_buf_create_const() can't represent zero-length data, and an empty
+   * domain trivially round-trips */
+  if (ares_strlen(domain) == 0) {
+    *out = ares_strdup(domain);
+    return (*out == NULL) ? ARES_ENOMEM : ARES_SUCCESS;
+  }
+
   inbuf =
     ares_buf_create_const((const unsigned char *)domain, ares_strlen(domain));
   if (inbuf == NULL) {
@@ -698,7 +769,11 @@ ares_status_t ares_idna_encode_domain(const char *domain, char **out)
     goto done;
   }
 
-  *out   = ares_buf_finish_str(outbuf, NULL);
+  *out = ares_buf_finish_str(outbuf, NULL);
+  if (*out == NULL) {
+    status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
+  }
   outbuf = NULL;
 
 done:

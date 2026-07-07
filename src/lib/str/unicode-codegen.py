@@ -40,6 +40,7 @@
 # The emitted table is wrapped in clang-format off/on markers so the repository
 # clang-format CI treats the generated formatting as authoritative.
 
+import os
 import string
 import sys
 import urllib.request
@@ -62,10 +63,10 @@ try:
     if url.startswith("http://") or url.startswith("https://"):
         with urllib.request.urlopen(url) as response:
             data = response.read()
-            casefold = data.decode('utf-8')
+            contents = data.decode('utf-8')
     else:
         with open(url, encoding='utf-8') as f:
-            casefold = f.read()
+            contents = f.read()
 except Exception as e:
     print(f"An unexpected error occurred: {e}")
     sys.exit(1)
@@ -76,7 +77,7 @@ codepoints = []
 # FA6E..FA6F    ; disallowed                 # NA   <reserved-FA6E>..<reserved-FA6F>
 # FD40..FD4F    ; valid      ;      ; NV8    # 14.0 ARABIC LIGATURE RAHIMAHU ALLAAH..ARABIC LIGATURE RAHIMAHUM ALLAAH
 # FD92          ; mapped     ; 0645 062C 062E #1.1  ARABIC LIGATURE MEEM WITH JEEM WITH KHAH INITIAL FORM
-for line in casefold.splitlines():
+for line in contents.splitlines():
     # Strip comments
     line = line.split("#")[0].strip()
     if len(line) == 0:
@@ -155,7 +156,8 @@ for line in casefold.splitlines():
     if status == "valid":
         continue
 
-    # Map status to a numeric value
+    # Map status to a numeric value.  Must match ares_idnamap_status_t in
+    # ares_idnamap.h.
     if status == "disallowed":
         status = 1
     elif status == "ignored":
@@ -177,11 +179,25 @@ for line in casefold.splitlines():
     )
 
 if len(codepoints) == 0:
-    print(f"Invalid file format, no codepoints parsed")
+    print("Invalid file format, no codepoints parsed")
     sys.exit(1)
 
 # Make sure codepoints are sorted since we want this to be binary searchable
 codepoints = sorted(codepoints, key=lambda d: d['code_min'])
+
+# The runtime bsearch comparator requires each range to be well-formed and
+# the ranges to be disjoint; overlapping input would otherwise silently
+# survive the merge below and corrupt lookups.
+for i, entry in enumerate(codepoints):
+    if entry["code_min"] > entry["code_max"]:
+        print(f"invalid range: {entry}")
+        sys.exit(1)
+    if entry["code_max"] > 0x10FFFF:
+        print(f"range exceeds U+10FFFF: {entry}")
+        sys.exit(1)
+    if i > 0 and entry["code_min"] <= codepoints[i-1]["code_max"]:
+        print(f"overlapping ranges: {codepoints[i-1]} and {entry}")
+        sys.exit(1)
 
 # Merge contiguous ranges that are the same
 i = 1
@@ -208,14 +224,23 @@ def find_status(cp):
             return entry["status"]
     return 0  # valid
 
-for entry in codepoints:
-    if entry["status"] != 3:
-        continue
-    for cp in entry["mapping"]:
-        if cp >= 0x80 and find_status(cp) == 1:
-            entry["status"] = 1
-            entry["mapping"] = []
-            break
+# Iterate to a fixpoint: a flip can in principle make another entry's
+# mapping target disallowed, and a single pass over a list it mutates would
+# be order-dependent.  (No current Unicode version needs a second pass since
+# mapping targets are never themselves mapped, but this keeps the result
+# well-defined regardless of input.)
+changed = True
+while changed:
+    changed = False
+    for entry in codepoints:
+        if entry["status"] != 3:
+            continue
+        for cp in entry["mapping"]:
+            if cp >= 0x80 and find_status(cp) == 1:
+                entry["status"] = 1
+                entry["mapping"] = []
+                changed = True
+                break
 
 # Re-merge ranges that have become identical after the disallowed flip
 i = 1
@@ -259,13 +284,14 @@ with open(outfile, 'w') as file:
     # The tag strings are split so the REUSE scanner sees only the emitted
     # file's tags, not phantom (and malformed) ones in this script's source.
     file.write("/* SPDX-FileCopyright" "Text: (C) The c-ares project and its contributors\n")
-    file.write(" * SPDX-License" "-Identifier: MIT\n")
+    file.write(" * SPDX-FileCopyright" "Text: (C) Unicode, Inc.\n")
+    file.write(" * SPDX-License" "-Identifier: MIT AND Unicode-3.0\n")
     file.write(" *\n")
     file.write(" * Table data derived from the Unicode(R) Character Database,\n")
     file.write(" * (C) Unicode, Inc., licensed under the UNICODE LICENSE V3\n")
     file.write(" * (https://www.unicode.org/license.txt).\n")
     file.write(" *\n")
-    file.write(f" * Generated via {sys.argv[0]} with:\n")
+    file.write(f" * Generated via {os.path.basename(sys.argv[0])} with:\n")
     file.write(f" *   url:      {url}\n")
     file.write(f" *   headers:  {','.join(headers)}\n")
     file.write(f" *   datatype: {datatype}\n")

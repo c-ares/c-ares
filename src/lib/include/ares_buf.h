@@ -123,11 +123,14 @@ CARES_EXTERN ares_status_t ares_buf_append_be16(ares_buf_t    *buf,
 CARES_EXTERN ares_status_t ares_buf_append_be32(ares_buf_t  *buf,
                                                 unsigned int u32);
 
-/*! Append a 32bit UTF codepoint as UTF8
+/*! Append a 32bit UTF codepoint as UTF8.  Values that are not valid Unicode
+ *  scalar values (UTF-16 surrogate halves U+D800 through U+DFFF, and anything
+ *  greater than U+10FFFF) are rejected.
  *
  *  \param[in] buf        Initialized buffer object
  *  \param[in] codepoint  32bit UTF codepoint
- *  \return ARES_SUCCESS or one of the c-ares error codes
+ *  \return ARES_SUCCESS on success, ARES_EBADSTR if the codepoint is not a
+ *          valid Unicode scalar value, or one of the c-ares error codes
  */
 CARES_EXTERN ares_status_t ares_buf_append_codepoint(ares_buf_t  *buf,
                                                      unsigned int codepoint);
@@ -311,7 +314,11 @@ CARES_EXTERN ares_status_t ares_buf_tag_fetch_bytes(const ares_buf_t *buf,
 typedef enum {
   /*! Validate the data is printable ASCII only */
   ARES_BUF_CHARSET_ASCII = 0,
-  /*! Validate the data is printable ASCII or valid UTF-8 sequences */
+  /*! Validate the data is printable ASCII or valid UTF-8 sequences.  Note
+   *  that non-ASCII codepoints are only validated for well-formedness, not
+   *  printability (e.g. C1 controls and zero-width codepoints pass); it is
+   *  up to the consumer (such as IDNA conversion) to apply any further
+   *  restrictions */
   ARES_BUF_CHARSET_UTF8 = 1
 } ares_buf_charset_t;
 
@@ -357,17 +364,6 @@ CARES_EXTERN ares_status_t ares_buf_tag_fetch_strdup(
 CARES_EXTERN ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
                                                        ares_buf_t **newbuf);
 
-/*! Fetch the bytes starting from the tagged position up to the _current_
- *  position and write into the provided buffer.
- *
- *  \param[in]     buf    Initialized buffer object
- *  \param[out]    outbuf Buffer to write bytes into.
-
- *  \return ARES_SUCCESS if fetched
- */
-CARES_EXTERN ares_status_t ares_buf_tag_fetch_buf(const ares_buf_t *buf,
-                                                  ares_buf_t       *outbuf);
-
 /*! Determine if entire remaining buffer is ASCII-printable.  If there are
  *  no remaining bytes, returns ARES_FALSE.
  *
@@ -402,13 +398,14 @@ CARES_EXTERN ares_status_t ares_buf_fetch_be32(ares_buf_t   *buf,
                                                unsigned int *u32);
 
 
-/*! Fetch a UTF 32bit codepoint from a UTF-8 encoded string.  Will consume
- *  up to the length of the codepoint.
+/*! Fetch a UTF 32bit codepoint from a UTF-8 encoded string.  On success
+ *  consumes exactly the length of the UTF-8 sequence; on error nothing is
+ *  consumed.
  *
  *  \param[in]  buf        Initialized buffer object
  *  \param[out] codepoint  UTF codepoint
- *  \return ARES_SUCCESS on success, ARES_EBADSTR if a non-unicode character
- *          found
+ *  \return ARES_SUCCESS on success, ARES_EBADSTR if an invalid UTF-8
+ *          sequence is found, ARES_EBADRESP if the buffer is empty or NULL
  */
 CARES_EXTERN ares_status_t ares_buf_fetch_codepoint(ares_buf_t   *buf,
                                                     unsigned int *codepoint);
@@ -505,8 +502,8 @@ CARES_EXTERN size_t ares_buf_consume_until_charset(ares_buf_t          *buf,
                                                    size_t               len,
                                                    ares_bool_t require_charset);
 
-/*! Search for a character in the character set provided from the end of the of
- *  the buffer.  Does not include the character from the charset at the end.
+/*! Search for the last character in the buffer matching the character set
+ *  provided, and consume up to (but not including) that character.
  *
  *  \param[in] buf                Initialized buffer object
  *  \param[in] charset            character set
@@ -514,7 +511,8 @@ CARES_EXTERN size_t ares_buf_consume_until_charset(ares_buf_t          *buf,
  *  \param[in] require_charset    require we find a character from the charset.
  *                                if ARES_FALSE it will simply consume the
  *                                rest of the buffer.  If ARES_TRUE will return
- *                                SIZE_MAX if not found.
+ *                                SIZE_MAX (consuming nothing) if not found,
+ *                                including when the buffer is empty.
  *  \return number of characters consumed
  */
 CARES_EXTERN size_t ares_buf_consume_last_charset(ares_buf_t          *buf,

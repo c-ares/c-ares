@@ -536,6 +536,15 @@ ares_status_t ares_sysconfig_domains_idna(ares_sysconfig_t *sysconfig)
   }
 
   sysconfig->ndomains = cnt;
+
+  /* If every domain was dropped, the array must be released too:
+   * ares_sysconfig_apply() treats a non-NULL domains as a request to apply,
+   * and ares_strsplit_duplicate() fails on a zero-length list */
+  if (cnt == 0) {
+    ares_free(sysconfig->domains);
+    sysconfig->domains = NULL;
+  }
+
   return ARES_SUCCESS;
 }
 

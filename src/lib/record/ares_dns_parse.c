@@ -1070,16 +1070,12 @@ static ares_status_t ares_dns_parse_rr_uri(ares_buf_t *buf, ares_dns_rr_t *rr,
     return status;
   }
 
-  /* NOTE: Not in DNS string format */
+  /* NOTE: Not in DNS string format.  The fetch charset validation enforces
+   * the target is printable ASCII */
   status =
     ares_buf_fetch_str_dup(buf, remaining_len, &name, ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
     return status;
-  }
-
-  if (!ares_str_isprint(name, remaining_len)) {
-    ares_free(name);
-    return ARES_EBADRESP;
   }
 
   status = ares_dns_rr_set_str_own(rr, ARES_RR_URI_TARGET, name);

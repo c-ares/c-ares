@@ -1,6 +1,7 @@
 /* clang-format off */
 /* SPDX-FileCopyrightText: (C) The c-ares project and its contributors
- * SPDX-License-Identifier: MIT
+ * SPDX-FileCopyrightText: (C) Unicode, Inc.
+ * SPDX-License-Identifier: MIT AND Unicode-3.0
  *
  * Table data derived from the Unicode(R) Character Database,
  * (C) Unicode, Inc., licensed under the UNICODE LICENSE V3

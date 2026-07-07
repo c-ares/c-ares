@@ -30,7 +30,8 @@
 
 /*! UTS #46 IDNA mapping status.  Codepoints not present in the table are
  *  valid and used as-is (this includes deviation codepoints since we only
- *  perform nontransitional processing). */
+ *  perform nontransitional processing).  Numeric values must match the
+ *  status values emitted by unicode-codegen.py. */
 typedef enum {
   ARES_IDNA_STATUS_DISALLOWED = 1, /*!< Codepoint not permitted in a domain */
   ARES_IDNA_STATUS_IGNORED    = 2, /*!< Codepoint removed from the domain */
