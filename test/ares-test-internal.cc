@@ -685,8 +685,10 @@ TEST_F(LibraryTest, IDNA) {
     /* Disallowed codepoints are rejected: U+FFFD REPLACEMENT CHARACTER */
     { ARES_EBADNAME, "exam�ple.com", NULL,
       "replacement char disallowed" },
-    /* Emoji are excluded by IDNA2008 (NV8) */
-    { ARES_EBADNAME, "\U0001F600.com",    NULL,
+    /* Emoji are excluded by IDNA2008 (NV8).  U+1F600 is spelled in explicit
+     * UTF-8 bytes: MSVC without /utf-8 mangles \U escapes beyond the
+     * Windows-1252 execution charset into '?' */
+    { ARES_EBADNAME, "\xF0\x9F\x98\x80.com", NULL,
       "emoji disallowed" },
     { ARES_SUCCESS,  NULL, NULL, NULL }
   };
@@ -717,7 +719,7 @@ TEST_F(LibraryTest, SysConfigDomainsIDNA) {
    * and an unconvertible entry (disallowed emoji) is dropped without
    * affecting the rest */
   sysconfig.domains = ares_strsplit(
-    "first.com bücher.de \U0001F600.com münchen.example", " ",
+    "first.com bücher.de \xF0\x9F\x98\x80.com münchen.example", " ",
     &sysconfig.ndomains);
   ASSERT_NE(nullptr, sysconfig.domains);
   ASSERT_EQ((size_t)4, sysconfig.ndomains);

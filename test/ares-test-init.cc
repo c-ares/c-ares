@@ -455,7 +455,8 @@ CONTAINED_TEST_F(LibraryTest, ContainerFullResolvInit,
 // punycode form; entries that cannot be converted are dropped.
 NameContentList idnresolv = {
   {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
-                       "search bücher.de first.com \U0001F600.com münchen.example\n"}};
+                       "search bücher.de first.com \xF0\x9F\x98\x80.com"
+                       " münchen.example\n"}};
 CONTAINED_TEST_F(LibraryTest, ContainerIDNResolvInit,
                  "myhostname", "mydomainname.org", idnresolv) {
   ares_channel_t *channel = nullptr;
