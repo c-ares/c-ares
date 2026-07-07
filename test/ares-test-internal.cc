@@ -531,6 +531,30 @@ TEST_F(LibraryTest, PUNYCODE) {
     { ARES_TRUE,  "www.ยจฆฟคฏข.com",     "www.xn--22cdfh1b8fsa.com"         },
     { ARES_TRUE,  "www.도메인.com",        "www.xn--hq1bm8jm9l.com"           },
     { ARES_TRUE,  "www.ドメイン名例.com",  "www.xn--eckwd4c7cu47r2wf.com"     },
+    /* Trailing dot (fully-qualified) round-trips */
+    { ARES_TRUE,  "www.bücher.com.",     "www.xn--bcher-kva.com."           },
+    /* RFC 3492 Section 7.1 sample strings (as single-label domains) */
+    /* (B) Chinese (simplified) */
+    { ARES_TRUE,  "他们为什么不说中文",
+      "xn--ihqwcrb4cv8a8dqg056pqjye"                                        },
+    /* (C) Chinese (traditional) */
+    { ARES_TRUE,  "他們爲什麽不說中文",
+      "xn--ihqwctvzc91f659drss3x8bo0yb"                                     },
+    /* (D) Czech */
+    { ARES_TRUE,  "Pročprostěnemluvíčesky",
+      "xn--Proprostnemluvesky-uyb24dma41a"                                  },
+    /* (E) Hebrew */
+    { ARES_TRUE,  "למההםפשוטלאמדבריםעברית",
+      "xn--4dbcagdahymbxekheh6e0a7fei0b"                                    },
+    /* (G) Japanese */
+    { ARES_TRUE,  "なぜみんな日本語を話してくれないのか",
+      "xn--n8jok5ay5dzabd5bym9f0cm5685rrjetr6pdxa"                          },
+    /* (I) Russian */
+    { ARES_TRUE,  "почемужеонинеговорятпорусски",
+      "xn--b1abfaaepdrnnbgefbadotcwatmq2g4l"                                },
+    /* (K) Vietnamese */
+    { ARES_TRUE,  "TạisaohọkhôngthểchỉnóitiếngViệt",
+      "xn--TisaohkhngthchnitingVit-kjcr8268qyxafd2f1b9g"                    },
     { ARES_FALSE, NULL, NULL }
   };
   size_t i;
@@ -562,6 +586,127 @@ TEST_F(LibraryTest, PUNYCODE) {
 
   /* Invalid tests  */
   EXPECT_NE(ARES_SUCCESS, ares_punycode_encode_domain(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_punycode_encode_domain("www.bücher.com", NULL));
+
+  /* Invalid UTF-8 must be rejected, not decoded to garbage */
+  struct {
+    const char *input;
+    const char *descr;
+  } invalid_utf8[] = {
+    { "www.b\xC3.com",             "truncated 2-byte sequence"          },
+    { "www.b\xC3\x28.com",         "invalid continuation byte"          },
+    { "www.b\xC0\xAF.com",         "overlong encoding"                  },
+    { "www.b\xED\xA0\x80.com",     "UTF-16 surrogate half"              },
+    { "www.b\xF4\x90\x80\x80.com", "codepoint beyond U+10FFFF"          },
+    { "www.b\xF0\x9F\x98",         "truncated 4-byte sequence at end"   },
+    { "www.b\xFF.com",             "invalid lead byte"                  },
+    { NULL, NULL }
+  };
+  for (i=0; invalid_utf8[i].input != NULL; i++) {
+    char *encoded = NULL;
+    if (verbose) std::cerr << "Testing " << invalid_utf8[i].descr << std::endl;
+    EXPECT_NE(ARES_SUCCESS,
+              ares_punycode_encode_domain(invalid_utf8[i].input, &encoded))
+      << invalid_utf8[i].descr;
+    ares_free(encoded);
+  }
+
+  /* Invalid punycode decode must error, not emit invalid unicode */
+  struct {
+    const char *input;
+    const char *descr;
+  } invalid_puny[] = {
+    { "xn--999999999",   "overflow"                          },
+    { "xn--a-b!c",       "invalid punycode digit"            },
+    { "xn--a-rc4g",      "decodes to a UTF-16 surrogate half" },
+    { NULL, NULL }
+  };
+  for (i=0; invalid_puny[i].input != NULL; i++) {
+    char *decoded = NULL;
+    if (verbose) std::cerr << "Testing " << invalid_puny[i].descr << std::endl;
+    EXPECT_NE(ARES_SUCCESS,
+              ares_punycode_decode_domain(invalid_puny[i].input, &decoded))
+      << invalid_puny[i].descr;
+    ares_free(decoded);
+  }
+
+  /* A label whose encoded form exceeds the 63 octet DNS limit is rejected */
+  {
+    std::string toolong;
+    char       *encoded = NULL;
+    for (i = 0; i < 60; i++) {
+      toolong += "ü";
+    }
+    toolong += ".com";
+    EXPECT_EQ(ARES_EBADNAME,
+              ares_punycode_encode_domain(toolong.c_str(), &encoded));
+    ares_free(encoded);
+  }
+}
+
+TEST_F(LibraryTest, IDNA) {
+  struct {
+    ares_status_t status;
+    const char   *input;
+    const char   *output;
+    const char   *descr;
+  } tests[] = {
+    /* No-op for plain ascii */
+    { ARES_SUCCESS,  "www.example.com",   "www.example.com",
+      "plain ascii" },
+    /* ASCII is lowercased for canonical form */
+    { ARES_SUCCESS,  "WWW.EXAMPLE.COM",   "www.example.com",
+      "ascii lowercased" },
+    /* Unicode casefolding is applied before punycode (unlike the raw
+     * punycode API which preserves case) */
+    { ARES_SUCCESS,  "www.München.com",   "www.xn--mnchen-3ya.com",
+      "unicode casefold" },
+    /* Ignored codepoints are removed: U+00AD SOFT HYPHEN */
+    { ARES_SUCCESS,  "exam­ple.com", "example.com",
+      "soft hyphen ignored" },
+    /* Label separator variants map to '.': U+3002 IDEOGRAPHIC FULL STOP */
+    { ARES_SUCCESS,  "例。com",       "xn--fsq.com",
+      "ideographic full stop" },
+    /* Deviation characters are valid in nontransitional processing */
+    { ARES_SUCCESS,  "faß.de",            "xn--fa-hia.de",
+      "sharp s deviation" },
+    /* Multi-codepoint compatibility mappings must not be truncated:
+     * U+2167 ROMAN NUMERAL EIGHT maps to 'viii' (4 codepoints) */
+    { ARES_SUCCESS,  "Ⅷ.example.com",     "viii.example.com",
+      "roman numeral viii" },
+    /* U+2152 VULGAR FRACTION ONE TENTH maps to '1⁄10' (4 codepoints,
+     * including non-ascii U+2044 FRACTION SLASH which is disallowed) */
+    { ARES_EBADNAME, "⅒.example.com",     NULL,
+      "vulgar fraction one tenth" },
+    /* Underscore is in widespread DNS use and must pass through even
+     * though the IDNA2008 NV8 exclusions would reject it */
+    { ARES_SUCCESS,  "_dmarc.bücher.com", "_dmarc.xn--bcher-kva.com",
+      "underscore passthrough" },
+    /* Disallowed codepoints are rejected: U+FFFD REPLACEMENT CHARACTER */
+    { ARES_EBADNAME, "exam�ple.com", NULL,
+      "replacement char disallowed" },
+    /* Emoji are excluded by IDNA2008 (NV8) */
+    { ARES_EBADNAME, "\U0001F600.com",    NULL,
+      "emoji disallowed" },
+    { ARES_SUCCESS,  NULL, NULL, NULL }
+  };
+  size_t i;
+
+  for (i=0; tests[i].input != NULL; i++) {
+    ares_status_t status;
+    char         *encoded = NULL;
+
+    if (verbose) std::cerr << "Testing " << tests[i].descr << std::endl;
+    status = ares_idna_encode_domain(tests[i].input, &encoded);
+    EXPECT_EQ(tests[i].status, status) << tests[i].descr;
+    if (status == ARES_SUCCESS && tests[i].output != NULL) {
+      EXPECT_STREQ(tests[i].output, encoded) << tests[i].descr;
+    }
+    ares_free(encoded);
+  }
+
+  EXPECT_NE(ARES_SUCCESS, ares_idna_encode_domain(NULL, NULL));
+  EXPECT_NE(ARES_SUCCESS, ares_idna_encode_domain("www.bücher.com", NULL));
 }
 
 #endif /* !CARES_SYMBOL_HIDING */
