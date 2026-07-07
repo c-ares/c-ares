@@ -937,12 +937,24 @@ static BOOL
   (*ulNumEntriesRemoved) = 0;
 
   for (i = 0; i < ulCount; i++) {
-    if (!GetQueuedCompletionStatus(
-          CompletionPort,
-          &lpCompletionPortEntries[i].dwNumberOfBytesTransferred,
-          &lpCompletionPortEntries[i].lpCompletionKey,
-          &lpCompletionPortEntries[i].lpOverlapped,
-          (i == 0) ? dwMilliseconds : 0)) {
+    BOOL success = GetQueuedCompletionStatus(
+      CompletionPort, &lpCompletionPortEntries[i].dwNumberOfBytesTransferred,
+      &lpCompletionPortEntries[i].lpCompletionKey,
+      &lpCompletionPortEntries[i].lpOverlapped, (i == 0) ? dwMilliseconds : 0);
+
+    /* GetQueuedCompletionStatus() returns FALSE in two very different
+     * situations that we must distinguish, otherwise we silently lose events:
+     *   1. No completion packet was dequeued (timeout, or the port failed).
+     *      In this case lpOverlapped is set to NULL and we should stop.
+     *   2. A completion packet WAS dequeued, but it is for a *failed* I/O
+     *      operation (lpOverlapped is non-NULL).  This is exactly what an
+     *      outstanding AFD POLL request delivers when the underlying socket is
+     *      reset or closed, and it must still be handled so the socket's poll
+     *      state is cleaned up / re-armed -- otherwise that socket's events are
+     *      never delivered again and any query waiting on it hangs forever.
+     * GetQueuedCompletionStatusEx() returns these failed-I/O entries in its
+     * output array, so emulate that behavior here rather than dropping them. */
+    if (!success && lpCompletionPortEntries[i].lpOverlapped == NULL) {
       break;
     }
 
