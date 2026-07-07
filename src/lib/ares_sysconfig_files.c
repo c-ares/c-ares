@@ -594,6 +594,12 @@ ares_status_t ares_sysconfig_parse_resolv_line(const ares_channel_t *channel,
     return ARES_SUCCESS;
   }
 
+  /* The option keyword (search, domain, nameserver, ...) is ASCII by
+   * definition, but the value may contain UTF-8: unicode search domains are
+   * converted to their punycode form after all config sources are gathered.
+   * buf_fetch_string() therefore validates as UTF-8; values for options
+   * that can't legitimately contain unicode are rejected by their
+   * respective downstream parsers. */
   status = ares_buf_tag_fetch_string(line, option, sizeof(option),
                                      ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
