@@ -530,12 +530,15 @@ ares_status_t ares_buf_tag_fetch_buf(const ares_buf_t *buf, ares_buf_t *outbuf)
   return ares_buf_append(outbuf, ptr, ptr_len);
 }
 
+static ares_status_t ares_buf_validate_charset(const unsigned char *ptr,
+                                               size_t               len,
+                                               ares_buf_charset_t   charset);
+
 ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
-                                        size_t len)
+                                        size_t len, ares_buf_charset_t charset)
 {
   size_t        out_len;
   ares_status_t status;
-  size_t        i;
 
   if (str == NULL || len == 0) {
     return ARES_EFORMERR;
@@ -552,27 +555,24 @@ ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
   /* NULL terminate */
   str[out_len] = 0;
 
-  /* Validate string is printable */
-  for (i = 0; i < out_len; i++) {
-    if (!ares_isprint(str[i])) {
-      return ARES_EBADSTR;
-    }
-  }
-
-  return ARES_SUCCESS;
+  return ares_buf_validate_charset((const unsigned char *)str, out_len,
+                                   charset);
 }
 
-ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf, char **str)
+ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf, char **str,
+                                        ares_buf_charset_t charset)
 {
   size_t               ptr_len = 0;
   const unsigned char *ptr     = ares_buf_tag_fetch(buf, &ptr_len);
+  ares_status_t        status;
 
   if (ptr == NULL || str == NULL) {
     return ARES_EFORMERR;
   }
 
-  if (!ares_str_isprint((const char *)ptr, ptr_len)) {
-    return ARES_EBADSTR;
+  status = ares_buf_validate_charset(ptr, ptr_len, charset);
+  if (status != ARES_SUCCESS) {
+    return status;
   }
 
   *str = ares_malloc(ptr_len + 1);
@@ -782,34 +782,6 @@ ares_status_t ares_buf_fetch_bytes_dup(ares_buf_t *buf, size_t len,
   return ares_buf_consume(buf, len);
 }
 
-ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str)
-{
-  size_t               remaining_len;
-  size_t               i;
-  const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
-
-  if (buf == NULL || str == NULL || len == 0 || remaining_len < len) {
-    return ARES_EBADRESP;
-  }
-
-  /* Validate string is printable */
-  for (i = 0; i < len; i++) {
-    if (!ares_isprint(ptr[i])) {
-      return ARES_EBADSTR;
-    }
-  }
-
-  *str = ares_malloc(len + 1);
-  if (*str == NULL) {
-    return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
-  }
-
-  memcpy(*str, ptr, len);
-  (*str)[len] = 0;
-
-  return ares_buf_consume(buf, len);
-}
-
 /*! Validate data is printable ASCII or valid UTF-8 sequences */
 static ares_status_t ares_buf_validate_print_utf8(const unsigned char *ptr,
                                                   size_t               len)
@@ -834,8 +806,25 @@ static ares_status_t ares_buf_validate_print_utf8(const unsigned char *ptr,
   return ARES_SUCCESS;
 }
 
-ares_status_t ares_buf_fetch_str_dup_utf8(ares_buf_t *buf, size_t len,
-                                          char **str)
+static ares_status_t ares_buf_validate_charset(const unsigned char *ptr,
+                                               size_t               len,
+                                               ares_buf_charset_t   charset)
+{
+  switch (charset) {
+    case ARES_BUF_CHARSET_ASCII:
+      if (!ares_str_isprint((const char *)ptr, len)) {
+        return ARES_EBADSTR;
+      }
+      return ARES_SUCCESS;
+    case ARES_BUF_CHARSET_UTF8:
+      return ares_buf_validate_print_utf8(ptr, len);
+  }
+
+  return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+}
+
+ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str,
+                                     ares_buf_charset_t charset)
 {
   size_t               remaining_len;
   ares_status_t        status;
@@ -845,7 +834,7 @@ ares_status_t ares_buf_fetch_str_dup_utf8(ares_buf_t *buf, size_t len,
     return ARES_EBADRESP;
   }
 
-  status = ares_buf_validate_print_utf8(ptr, len);
+  status = ares_buf_validate_charset(ptr, len, charset);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -859,30 +848,6 @@ ares_status_t ares_buf_fetch_str_dup_utf8(ares_buf_t *buf, size_t len,
   (*str)[len] = 0;
 
   return ares_buf_consume(buf, len);
-}
-
-ares_status_t ares_buf_tag_fetch_string_utf8(const ares_buf_t *buf, char *str,
-                                             size_t len)
-{
-  size_t        out_len;
-  ares_status_t status;
-
-  if (str == NULL || len == 0) {
-    return ARES_EFORMERR;
-  }
-
-  /* Space for NULL terminator */
-  out_len = len - 1;
-
-  status = ares_buf_tag_fetch_bytes(buf, (unsigned char *)str, &out_len);
-  if (status != ARES_SUCCESS) {
-    return status;
-  }
-
-  /* NULL terminate */
-  str[out_len] = 0;
-
-  return ares_buf_validate_print_utf8((const unsigned char *)str, out_len);
 }
 
 ares_status_t ares_buf_fetch_bytes_into_buf(ares_buf_t *buf, ares_buf_t *dest,
@@ -1318,11 +1283,10 @@ ares_status_t ares_buf_split_str_array(ares_buf_t          *buf,
     ares_buf_t  *lbuf   = *bufptr;
     char        *str    = NULL;
 
-    if (flags & ARES_BUF_SPLIT_UTF8) {
-      status = ares_buf_fetch_str_dup_utf8(lbuf, ares_buf_len(lbuf), &str);
-    } else {
-      status = ares_buf_fetch_str_dup(lbuf, ares_buf_len(lbuf), &str);
-    }
+    status = ares_buf_fetch_str_dup(lbuf, ares_buf_len(lbuf), &str,
+                                    (flags & ARES_BUF_SPLIT_UTF8)
+                                      ? ARES_BUF_CHARSET_UTF8
+                                      : ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       goto done;
     }

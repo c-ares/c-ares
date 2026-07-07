@@ -411,7 +411,8 @@ static ares_status_t ares_parse_hosts_hostnames(ares_buf_t         *buf,
       break;
     }
 
-    status = ares_buf_tag_fetch_string(buf, hostname, sizeof(hostname));
+    status = ares_buf_tag_fetch_string(buf, hostname, sizeof(hostname),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       /* Bad entry, just ignore as long as its not the first.  If its the first,
        * it must be valid */
@@ -464,7 +465,8 @@ static ares_status_t ares_parse_hosts_ipaddr(ares_buf_t          *buf,
 
   ares_buf_tag(buf);
   ares_buf_consume_nonwhitespace(buf);
-  status = ares_buf_tag_fetch_string(buf, addr, sizeof(addr));
+  status =
+    ares_buf_tag_fetch_string(buf, addr, sizeof(addr), ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
     return status;
   }

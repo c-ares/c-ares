@@ -136,7 +136,8 @@ static ares_status_t parse_sort(ares_buf_t *buf, struct apattern *pat)
   }
 
   /* Fetch ip address */
-  status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr));
+  status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr),
+                                     ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -165,7 +166,8 @@ static ares_status_t parse_sort(ares_buf_t *buf, struct apattern *pat)
     }
 
     /* Fetch mask */
-    status = ares_buf_tag_fetch_string(buf, maskstr, sizeof(maskstr));
+    status = ares_buf_tag_fetch_string(buf, maskstr, sizeof(maskstr),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -326,7 +328,7 @@ static ares_status_t buf_fetch_string(ares_buf_t *buf, char *str,
   ares_buf_tag(buf);
   ares_buf_consume(buf, ares_buf_len(buf));
 
-  status = ares_buf_tag_fetch_string_utf8(buf, str, str_len);
+  status = ares_buf_tag_fetch_string(buf, str, str_len, ARES_BUF_CHARSET_UTF8);
   return status;
 }
 
@@ -592,7 +594,8 @@ ares_status_t ares_sysconfig_parse_resolv_line(const ares_channel_t *channel,
     return ARES_SUCCESS;
   }
 
-  status = ares_buf_tag_fetch_string(line, option, sizeof(option));
+  status = ares_buf_tag_fetch_string(line, option, sizeof(option),
+                                     ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
     return ARES_SUCCESS;
   }

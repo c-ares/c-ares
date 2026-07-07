@@ -307,48 +307,42 @@ CARES_EXTERN ares_status_t ares_buf_tag_fetch_bytes(const ares_buf_t *buf,
                                                     unsigned char    *bytes,
                                                     size_t           *len);
 
-/*! Fetch the bytes starting from the tagged position up to the _current_
- *  position as a NULL-terminated string using the provided buffer.  The data
- *  is validated to be ASCII-printable data.  It will not unset the tagged
- *  position.
- *
- *  \param[in]     buf    Initialized buffer object
- *  \param[in,out] str    Buffer to hold data
- *  \param[in]     len    buffer size
- *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size,
- *          ARES_EBADSTR if not printable ASCII
- */
-CARES_EXTERN ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf,
-                                                     char *str, size_t len);
+/*! Character set validation for string fetch operations */
+typedef enum {
+  /*! Validate the data is printable ASCII only */
+  ARES_BUF_CHARSET_ASCII = 0,
+  /*! Validate the data is printable ASCII or valid UTF-8 sequences */
+  ARES_BUF_CHARSET_UTF8 = 1
+} ares_buf_charset_t;
 
 /*! Fetch the bytes starting from the tagged position up to the _current_
- *  position as a NULL-terminated string.  It will not unset the tagged
- *  position.  The data is validated to be printable ASCII or valid UTF-8
- *  sequences.
+ *  position as a NULL-terminated string using the provided buffer.  The data
+ *  is validated per the requested character set.  It will not unset the
+ *  tagged position.
  *
- *  \param[in]  buf    Initialized buffer object
- *  \param[out] str    String to write
- *  \param[in]  len    Length of string, must be > 0
+ *  \param[in]     buf     Initialized buffer object
+ *  \param[in,out] str     Buffer to hold data
+ *  \param[in]     len     buffer size
+ *  \param[in]     charset Character set validation to perform
  *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size,
- *          ARES_EBADSTR if not printable ASCII or valid UTF-8
+ *          ARES_EBADSTR if character set validation fails
  */
-CARES_EXTERN ares_status_t ares_buf_tag_fetch_string_utf8(const ares_buf_t *buf,
-                                                          char             *str,
-                                                          size_t len);
+CARES_EXTERN ares_status_t ares_buf_tag_fetch_string(
+  const ares_buf_t *buf, char *str, size_t len, ares_buf_charset_t charset);
 
 /*! Fetch the bytes starting from the tagged position up to the _current_
  *  position as a NULL-terminated string and placed into a newly allocated
- *  buffer.  The data is validated to be ASCII-printable data.  It will not
- *  unset the tagged position.
+ *  buffer.  The data is validated per the requested character set.  It will
+ *  not unset the tagged position.
  *
- *  \param[in]  buf    Initialized buffer object
- *  \param[out] str    New buffer to hold output, free with ares_free()
- *
+ *  \param[in]  buf     Initialized buffer object
+ *  \param[out] str     New buffer to hold output, free with ares_free()
+ *  \param[in]  charset Character set validation to perform
  *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size,
- *          ARES_EBADSTR if not printable ASCII
+ *          ARES_EBADSTR if character set validation fails
  */
-CARES_EXTERN ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf,
-                                                     char            **str);
+CARES_EXTERN ares_status_t ares_buf_tag_fetch_strdup(
+  const ares_buf_t *buf, char **str, ares_buf_charset_t charset);
 
 /*! Fetch the bytes starting from the tagged position up to the _current_
  *  position as const buffer.  Care must be taken to not append or destroy the
@@ -461,28 +455,17 @@ CARES_EXTERN ares_status_t ares_buf_fetch_bytes_into_buf(ares_buf_t *buf,
 
 /*! Fetch the requested number of bytes and return a new buffer that must be
  *  ares_free()'d by the caller.  The returned buffer is a null terminated
- *  string.  The data is validated to be ASCII-printable.
+ *  string.  The data is validated per the requested character set.
  *
  *  \param[in]  buf     Initialized buffer object
  *  \param[in]  len     Requested number of bytes (must be > 0)
  *  \param[out] str     Pointer passed by reference. Will be allocated.
+ *  \param[in]  charset Character set validation to perform
  *  \return ARES_SUCCESS or one of the c-ares error codes
  */
 CARES_EXTERN ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len,
-                                                  char **str);
-
-/*! Fetch the requested number of bytes and return a new buffer that must be
- *  ares_free()'d by the caller.  The returned buffer is a null terminated
- *  string.  The data is validated to be printable ASCII or valid UTF-8
- *  sequences.
- *
- *  \param[in]  buf     Initialized buffer object
- *  \param[in]  len     Requested number of bytes (must be > 0)
- *  \param[out] str     Pointer passed by reference. Will be allocated.
- *  \return ARES_SUCCESS or one of the c-ares error codes
- */
-CARES_EXTERN ares_status_t ares_buf_fetch_str_dup_utf8(ares_buf_t *buf,
-                                                       size_t len, char **str);
+                                                  char             **str,
+                                                  ares_buf_charset_t charset);
 
 /*! Consume whitespace characters (0x09, 0x0B, 0x0C, 0x0D, 0x20, and optionally
  *  0x0A).

@@ -576,8 +576,8 @@ ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
     /* Pull off hostname */
     ares_buf_tag(line);
     ares_buf_consume_nonwhitespace(line);
-    if (ares_buf_tag_fetch_string(line, hostname, sizeof(hostname)) !=
-        ARES_SUCCESS) {
+    if (ares_buf_tag_fetch_string(line, hostname, sizeof(hostname),
+                                  ARES_BUF_CHARSET_ASCII) != ARES_SUCCESS) {
       continue;
     }
 
@@ -592,7 +592,8 @@ ares_status_t ares_lookup_hostaliases(const ares_channel_t *channel,
     /* pull off fqdn */
     ares_buf_tag(line);
     ares_buf_consume_nonwhitespace(line);
-    if (ares_buf_tag_fetch_string(line, fqdn, sizeof(fqdn)) != ARES_SUCCESS ||
+    if (ares_buf_tag_fetch_string(line, fqdn, sizeof(fqdn),
+                                  ARES_BUF_CHARSET_ASCII) != ARES_SUCCESS ||
         ares_strlen(fqdn) == 0) {
       continue;
     }

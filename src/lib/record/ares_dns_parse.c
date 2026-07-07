@@ -1071,7 +1071,8 @@ static ares_status_t ares_dns_parse_rr_uri(ares_buf_t *buf, ares_dns_rr_t *rr,
   }
 
   /* NOTE: Not in DNS string format */
-  status = ares_buf_fetch_str_dup(buf, remaining_len, &name);
+  status =
+    ares_buf_fetch_str_dup(buf, remaining_len, &name, ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
     return status;
   }

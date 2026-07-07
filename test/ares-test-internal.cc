@@ -766,6 +766,87 @@ TEST_F(LibraryTest, SysConfigDomainsIDNA) {
   }
 }
 
+TEST_F(LibraryTest, BufCharset) {
+  struct {
+    ares_bool_t ascii_ok;
+    ares_bool_t utf8_ok;
+    const char *data;
+    const char *descr;
+  } tests[] = {
+    { ARES_TRUE,  ARES_TRUE,  "plain ascii",         "printable ascii"     },
+    { ARES_FALSE, ARES_TRUE,  "b\xC3\xBC" "cher",    "2-byte utf8"         },
+    { ARES_FALSE, ARES_TRUE,  "b\xE4\xBE\x8B",       "3-byte utf8"         },
+    { ARES_FALSE, ARES_TRUE,  "b\xF0\x9F\x98\x80",   "4-byte utf8"         },
+    { ARES_FALSE, ARES_FALSE, "b\xC3",               "truncated sequence"  },
+    { ARES_FALSE, ARES_FALSE, "b\xC3\x28",           "bad continuation"    },
+    { ARES_FALSE, ARES_FALSE, "b\xC0\xAF",           "overlong encoding"   },
+    { ARES_FALSE, ARES_FALSE, "b\xED\xA0\x80",       "surrogate half"      },
+    { ARES_FALSE, ARES_FALSE, "b\xFF",               "invalid lead byte"   },
+    { ARES_FALSE, ARES_FALSE, "b\x01",               "non-printable ascii" },
+    { ARES_FALSE, ARES_FALSE, "b\x7F",               "ascii del"           },
+    { ARES_FALSE, ARES_FALSE, NULL, NULL }
+  };
+  size_t i;
+  size_t c;
+
+  for (i = 0; tests[i].data != NULL; i++) {
+    for (c = 0; c < 2; c++) {
+      ares_buf_charset_t charset =
+        (c == 0) ? ARES_BUF_CHARSET_ASCII : ARES_BUF_CHARSET_UTF8;
+      ares_bool_t   expect_ok = (c == 0) ? tests[i].ascii_ok : tests[i].utf8_ok;
+      size_t        data_len  = strlen(tests[i].data);
+      ares_buf_t   *buf;
+      char          strbuf[64];
+      char         *str = NULL;
+      ares_status_t status;
+
+      if (verbose) std::cerr << "Testing " << tests[i].descr
+                             << " charset " << (int)charset << std::endl;
+
+      /* ares_buf_fetch_str_dup() */
+      buf = ares_buf_create_const((const unsigned char *)tests[i].data,
+                                  data_len);
+      ASSERT_NE(nullptr, buf);
+      status = ares_buf_fetch_str_dup(buf, data_len, &str, charset);
+      EXPECT_EQ(expect_ok ? ARES_TRUE : ARES_FALSE,
+                (status == ARES_SUCCESS) ? ARES_TRUE : ARES_FALSE)
+        << tests[i].descr << " fetch_str_dup charset " << (int)charset;
+      if (status == ARES_SUCCESS) {
+        EXPECT_STREQ(tests[i].data, str);
+      }
+      ares_free(str);
+      str = NULL;
+      ares_buf_destroy(buf);
+
+      /* ares_buf_tag_fetch_string() and ares_buf_tag_fetch_strdup() */
+      buf = ares_buf_create_const((const unsigned char *)tests[i].data,
+                                  data_len);
+      ASSERT_NE(nullptr, buf);
+      ares_buf_tag(buf);
+      ares_buf_consume(buf, data_len);
+
+      status = ares_buf_tag_fetch_string(buf, strbuf, sizeof(strbuf), charset);
+      EXPECT_EQ(expect_ok ? ARES_TRUE : ARES_FALSE,
+                (status == ARES_SUCCESS) ? ARES_TRUE : ARES_FALSE)
+        << tests[i].descr << " tag_fetch_string charset " << (int)charset;
+      if (status == ARES_SUCCESS) {
+        EXPECT_STREQ(tests[i].data, strbuf);
+      }
+
+      status = ares_buf_tag_fetch_strdup(buf, &str, charset);
+      EXPECT_EQ(expect_ok ? ARES_TRUE : ARES_FALSE,
+                (status == ARES_SUCCESS) ? ARES_TRUE : ARES_FALSE)
+        << tests[i].descr << " tag_fetch_strdup charset " << (int)charset;
+      if (status == ARES_SUCCESS) {
+        EXPECT_STREQ(tests[i].data, str);
+      }
+      ares_free(str);
+      str = NULL;
+      ares_buf_destroy(buf);
+    }
+  }
+}
+
 #endif /* !CARES_SYMBOL_HIDING */
 
 TEST_F(LibraryTest, InetPtoN) {
@@ -2013,9 +2094,13 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ(NULL, ares_buf_tag_fetch(NULL, NULL));
   EXPECT_EQ((size_t)0, ares_buf_tag_length(NULL));
   EXPECT_NE(ARES_SUCCESS, ares_buf_tag_fetch_bytes(NULL, NULL, NULL));
-  EXPECT_NE(ARES_SUCCESS, ares_buf_tag_fetch_string(NULL, NULL, 0));
+  EXPECT_NE(ARES_SUCCESS,
+            ares_buf_tag_fetch_string(NULL, NULL, 0, ARES_BUF_CHARSET_ASCII));
+  EXPECT_NE(ARES_SUCCESS,
+            ares_buf_tag_fetch_strdup(NULL, NULL, ARES_BUF_CHARSET_UTF8));
   EXPECT_NE(ARES_SUCCESS, ares_buf_fetch_bytes_dup(NULL, 0, ARES_FALSE, NULL));
-  EXPECT_NE(ARES_SUCCESS, ares_buf_fetch_str_dup(NULL, 0, NULL));
+  EXPECT_NE(ARES_SUCCESS,
+            ares_buf_fetch_str_dup(NULL, 0, NULL, ARES_BUF_CHARSET_ASCII));
   EXPECT_EQ((size_t)0, ares_buf_consume_whitespace(NULL, ARES_FALSE));
   EXPECT_EQ((size_t)0, ares_buf_consume_nonwhitespace(NULL));
   EXPECT_EQ((size_t)0, ares_buf_consume_line(NULL, ARES_FALSE));
