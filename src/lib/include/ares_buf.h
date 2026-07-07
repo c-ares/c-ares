@@ -322,6 +322,21 @@ CARES_EXTERN ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf,
                                                      char *str, size_t len);
 
 /*! Fetch the bytes starting from the tagged position up to the _current_
+ *  position as a NULL-terminated string.  It will not unset the tagged
+ *  position.  The data is validated to be printable ASCII or valid UTF-8
+ *  sequences.
+ *
+ *  \param[in]  buf    Initialized buffer object
+ *  \param[out] str    String to write
+ *  \param[in]  len    Length of string, must be > 0
+ *  \return ARES_SUCCESS if fetched, ARES_EFORMERR if insufficient buffer size,
+ *          ARES_EBADSTR if not printable ASCII or valid UTF-8
+ */
+CARES_EXTERN ares_status_t ares_buf_tag_fetch_string_utf8(const ares_buf_t *buf,
+                                                          char             *str,
+                                                          size_t len);
+
+/*! Fetch the bytes starting from the tagged position up to the _current_
  *  position as a NULL-terminated string and placed into a newly allocated
  *  buffer.  The data is validated to be ASCII-printable data.  It will not
  *  unset the tagged position.
@@ -456,6 +471,19 @@ CARES_EXTERN ares_status_t ares_buf_fetch_bytes_into_buf(ares_buf_t *buf,
 CARES_EXTERN ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len,
                                                   char **str);
 
+/*! Fetch the requested number of bytes and return a new buffer that must be
+ *  ares_free()'d by the caller.  The returned buffer is a null terminated
+ *  string.  The data is validated to be printable ASCII or valid UTF-8
+ *  sequences.
+ *
+ *  \param[in]  buf     Initialized buffer object
+ *  \param[in]  len     Requested number of bytes (must be > 0)
+ *  \param[out] str     Pointer passed by reference. Will be allocated.
+ *  \return ARES_SUCCESS or one of the c-ares error codes
+ */
+CARES_EXTERN ares_status_t ares_buf_fetch_str_dup_utf8(ares_buf_t *buf,
+                                                       size_t len, char **str);
+
 /*! Consume whitespace characters (0x09, 0x0B, 0x0C, 0x0D, 0x20, and optionally
  *  0x0A).
  *
@@ -574,7 +602,12 @@ typedef enum {
   /*! Trim trailing whitespace from buffer */
   ARES_BUF_SPLIT_RTRIM = 1 << 5,
   /*! Trim leading and trailing whitespace from buffer */
-  ARES_BUF_SPLIT_TRIM = (ARES_BUF_SPLIT_LTRIM | ARES_BUF_SPLIT_RTRIM)
+  ARES_BUF_SPLIT_TRIM = (ARES_BUF_SPLIT_LTRIM | ARES_BUF_SPLIT_RTRIM),
+  /*! When splitting into strings, permit validated UTF-8 sequences in
+   *  addition to printable ASCII rather than requiring printable ASCII
+   *  only.  Needed for values that may legitimately contain unicode, such
+   *  as IDN search domains from system configuration. */
+  ARES_BUF_SPLIT_UTF8 = 1 << 6
 } ares_buf_split_t;
 
 /*! Split the provided buffer into multiple sub-buffers stored in the variable

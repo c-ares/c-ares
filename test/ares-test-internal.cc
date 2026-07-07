@@ -709,6 +709,61 @@ TEST_F(LibraryTest, IDNA) {
   EXPECT_NE(ARES_SUCCESS, ares_idna_encode_domain("www.bücher.com", NULL));
 }
 
+TEST_F(LibraryTest, SysConfigDomainsIDNA) {
+  ares_sysconfig_t sysconfig;
+  memset(&sysconfig, 0, sizeof(sysconfig));
+
+  /* Mixed list: ascii stays untouched, unicode is converted to punycode,
+   * and an unconvertible entry (disallowed emoji) is dropped without
+   * affecting the rest */
+  sysconfig.domains = ares_strsplit(
+    "first.com bücher.de \U0001F600.com münchen.example", " ",
+    &sysconfig.ndomains);
+  ASSERT_NE(nullptr, sysconfig.domains);
+  ASSERT_EQ((size_t)4, sysconfig.ndomains);
+
+  EXPECT_EQ(ARES_SUCCESS, ares_sysconfig_domains_idna(&sysconfig));
+  ASSERT_EQ((size_t)3, sysconfig.ndomains);
+  EXPECT_STREQ("first.com", sysconfig.domains[0]);
+  EXPECT_STREQ("xn--bcher-kva.de", sysconfig.domains[1]);
+  EXPECT_STREQ("xn--mnchen-3ya.example", sysconfig.domains[2]);
+
+  ares_strsplit_free(sysconfig.domains, sysconfig.ndomains);
+
+  /* Empty list is a no-op */
+  memset(&sysconfig, 0, sizeof(sysconfig));
+  EXPECT_EQ(ARES_SUCCESS, ares_sysconfig_domains_idna(&sysconfig));
+  EXPECT_EQ((size_t)0, sysconfig.ndomains);
+
+  /* Full resolv.conf line parse path: unicode search values survive line
+   * parsing and are converted by the idna pass */
+  {
+    ares_channel_t *channel = nullptr;
+    std::string     line    = "search bücher.de first.com";
+    ares_buf_t     *buf     = ares_buf_create_const(
+      (const unsigned char *)line.c_str(), line.size());
+
+    ASSERT_NE(nullptr, buf);
+    EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+    memset(&sysconfig, 0, sizeof(sysconfig));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_sysconfig_parse_resolv_line(channel, &sysconfig, buf));
+    ASSERT_EQ((size_t)2, sysconfig.ndomains);
+    EXPECT_STREQ("bücher.de", sysconfig.domains[0]);
+    EXPECT_STREQ("first.com", sysconfig.domains[1]);
+
+    EXPECT_EQ(ARES_SUCCESS, ares_sysconfig_domains_idna(&sysconfig));
+    ASSERT_EQ((size_t)2, sysconfig.ndomains);
+    EXPECT_STREQ("xn--bcher-kva.de", sysconfig.domains[0]);
+    EXPECT_STREQ("first.com", sysconfig.domains[1]);
+
+    ares_strsplit_free(sysconfig.domains, sysconfig.ndomains);
+    ares_buf_destroy(buf);
+    ares_destroy(channel);
+  }
+}
+
 #endif /* !CARES_SYMBOL_HIDING */
 
 TEST_F(LibraryTest, InetPtoN) {

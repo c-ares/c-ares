@@ -317,6 +317,8 @@ static ares_status_t config_search(ares_sysconfig_t *sysconfig, const char *str,
   return ARES_SUCCESS;
 }
 
+/* UTF8 is permitted since values such as search domains may contain unicode
+ * (IDN) entries, which are converted to their punycode form after parsing */
 static ares_status_t buf_fetch_string(ares_buf_t *buf, char *str,
                                       size_t str_len)
 {
@@ -324,7 +326,7 @@ static ares_status_t buf_fetch_string(ares_buf_t *buf, char *str,
   ares_buf_tag(buf);
   ares_buf_consume(buf, ares_buf_len(buf));
 
-  status = ares_buf_tag_fetch_string(buf, str, str_len);
+  status = ares_buf_tag_fetch_string_utf8(buf, str, str_len);
   return status;
 }
 

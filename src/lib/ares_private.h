@@ -384,6 +384,16 @@ typedef struct {
 ares_status_t ares_sysconfig_set_options(ares_sysconfig_t *sysconfig,
                                          const char       *str);
 
+/*! Convert any unicode (IDN) search domains gathered from system
+ *  configuration into their punycode form as needed on the wire.  Domains
+ *  that cannot be converted are dropped so the remaining configuration
+ *  still applies.
+ *
+ *  \param[in,out] sysconfig  System configuration with gathered domains
+ *  \return ARES_SUCCESS or ARES_ENOMEM
+ */
+ares_status_t ares_sysconfig_domains_idna(ares_sysconfig_t *sysconfig);
+
 ares_status_t ares_init_by_environment(ares_sysconfig_t *sysconfig);
 
 

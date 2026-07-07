@@ -810,6 +810,81 @@ ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str)
   return ares_buf_consume(buf, len);
 }
 
+/*! Validate data is printable ASCII or valid UTF-8 sequences */
+static ares_status_t ares_buf_validate_print_utf8(const unsigned char *ptr,
+                                                  size_t               len)
+{
+  size_t i;
+
+  for (i = 0; i < len;) {
+    unsigned int  cp;
+    size_t        len_used;
+    ares_status_t status;
+
+    status = ares_utf8_decode_cp(ptr + i, len - i, &cp, &len_used);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+    if (cp < 0x80 && !ares_isprint((unsigned char)cp)) {
+      return ARES_EBADSTR;
+    }
+    i += len_used;
+  }
+
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares_buf_fetch_str_dup_utf8(ares_buf_t *buf, size_t len,
+                                          char **str)
+{
+  size_t               remaining_len;
+  ares_status_t        status;
+  const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
+
+  if (buf == NULL || str == NULL || len == 0 || remaining_len < len) {
+    return ARES_EBADRESP;
+  }
+
+  status = ares_buf_validate_print_utf8(ptr, len);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  *str = ares_malloc(len + 1);
+  if (*str == NULL) {
+    return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+  }
+
+  memcpy(*str, ptr, len);
+  (*str)[len] = 0;
+
+  return ares_buf_consume(buf, len);
+}
+
+ares_status_t ares_buf_tag_fetch_string_utf8(const ares_buf_t *buf, char *str,
+                                             size_t len)
+{
+  size_t        out_len;
+  ares_status_t status;
+
+  if (str == NULL || len == 0) {
+    return ARES_EFORMERR;
+  }
+
+  /* Space for NULL terminator */
+  out_len = len - 1;
+
+  status = ares_buf_tag_fetch_bytes(buf, (unsigned char *)str, &out_len);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  /* NULL terminate */
+  str[out_len] = 0;
+
+  return ares_buf_validate_print_utf8((const unsigned char *)str, out_len);
+}
+
 ares_status_t ares_buf_fetch_bytes_into_buf(ares_buf_t *buf, ares_buf_t *dest,
                                             size_t len)
 {
@@ -1243,7 +1318,11 @@ ares_status_t ares_buf_split_str_array(ares_buf_t          *buf,
     ares_buf_t  *lbuf   = *bufptr;
     char        *str    = NULL;
 
-    status = ares_buf_fetch_str_dup(lbuf, ares_buf_len(lbuf), &str);
+    if (flags & ARES_BUF_SPLIT_UTF8) {
+      status = ares_buf_fetch_str_dup_utf8(lbuf, ares_buf_len(lbuf), &str);
+    } else {
+      status = ares_buf_fetch_str_dup(lbuf, ares_buf_len(lbuf), &str);
+    }
     if (status != ARES_SUCCESS) {
       goto done;
     }

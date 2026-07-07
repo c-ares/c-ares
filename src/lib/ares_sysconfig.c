@@ -502,6 +502,43 @@ done:
 }
 #endif
 
+ares_status_t ares_sysconfig_domains_idna(ares_sysconfig_t *sysconfig)
+{
+  size_t i;
+  size_t cnt = 0;
+
+  for (i = 0; i < sysconfig->ndomains; i++) {
+    char *domain = sysconfig->domains[i];
+
+    sysconfig->domains[i] = NULL;
+
+    if (!ares_str_isprint(domain, ares_strlen(domain))) {
+      char         *encoded = NULL;
+      ares_status_t status  = ares_idna_encode_domain(domain, &encoded);
+
+      if (status == ARES_ENOMEM) {
+        ares_free(domain);
+        return status;
+      }
+
+      if (status != ARES_SUCCESS) {
+        /* Skip a domain we can't represent rather than break the rest of
+         * the configuration */
+        ares_free(domain);
+        continue;
+      }
+
+      ares_free(domain);
+      domain = encoded;
+    }
+
+    sysconfig->domains[cnt++] = domain;
+  }
+
+  sysconfig->ndomains = cnt;
+  return ARES_SUCCESS;
+}
+
 static void ares_sysconfig_free(ares_sysconfig_t *sysconfig)
 {
   ares_llist_destroy(sysconfig->sconfig);
@@ -618,6 +655,13 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
 
   /* Environment is supposed to override sysconfig */
   status = ares_init_by_environment(&sysconfig);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* Search domains from any configuration source (registry, resolv.conf,
+   * environment, ...) may be unicode (IDN); DNS needs the punycode form */
+  status = ares_sysconfig_domains_idna(&sysconfig);
   if (status != ARES_SUCCESS) {
     goto done;
   }
