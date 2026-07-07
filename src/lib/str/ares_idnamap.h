@@ -55,5 +55,8 @@ typedef struct {
 extern const size_t              ares_idnamap_data_len;
 extern const ares_idnamap_data_t ares_idnamap_data[];
 extern const unsigned char       ares_idnamap_data_pool[];
+/*! Byte length of ares_idnamap_data_pool, for bounds validation of the
+ *  map_offset/map_len pool references */
+extern const size_t              ares_idnamap_data_pool_len;
 
 #endif

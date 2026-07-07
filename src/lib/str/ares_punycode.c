@@ -693,6 +693,13 @@ static ares_status_t ares_idna_map_buf(ares_buf_t *inbuf, ares_buf_t *outbuf)
       case ARES_IDNA_STATUS_IGNORED:
         break;
       case ARES_IDNA_STATUS_MAPPED:
+        /* The generator guarantees pool references are in bounds (also
+         * verified by the IDNAMapTable unit test); guard anyhow so a corrupt
+         * table can never cause an out-of-bounds read */
+        if ((size_t)entry->map_offset + entry->map_len >
+            ares_idnamap_data_pool_len) {
+          return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+        }
         status = ares_buf_append(
           outbuf, &ares_idnamap_data_pool[entry->map_offset], entry->map_len);
         if (status != ARES_SUCCESS) {

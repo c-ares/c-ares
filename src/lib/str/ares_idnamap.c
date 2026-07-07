@@ -1061,6 +1061,9 @@ const unsigned char ares_idnamap_data_pool[] = {
   0xaa, 0x98, 0x80,
 };
 
+const size_t ares_idnamap_data_pool_len =
+  sizeof(ares_idnamap_data_pool) / sizeof(*ares_idnamap_data_pool);
+
 const ares_idnamap_data_t ares_idnamap_data[] = {
   {        0x0,       0x2c, 1,   0,     0 },
   {       0x2f,       0x2f, 1,   0,     0 },

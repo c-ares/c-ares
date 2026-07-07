@@ -49,6 +49,7 @@ extern "C" {
 #include "ares_data.h"
 #include "str/ares_strsplit.h"
 #include "str/ares_punycode.h"
+#include "str/ares_idnamap.h"
 #include "dsa/ares_htable.h"
 
 #ifdef HAVE_ARPA_INET_H
@@ -792,6 +793,63 @@ TEST_F(LibraryTest, IDNAAllocFail) {
       EXPECT_EQ(ARES_ENOMEM, status) << "attempt " << ii;
     }
     ares_free(out);
+  }
+}
+
+/* Structural validation of the generated UTS #46 mapping table.  The
+ * generator constructs pool references so they are in bounds by design;
+ * this catches any regeneration drift or hand-editing before it can reach
+ * the runtime lookup */
+TEST_F(LibraryTest, IDNAMapTable) {
+  size_t i;
+
+  EXPECT_GT(ares_idnamap_data_len, (size_t)0);
+  EXPECT_GT(ares_idnamap_data_pool_len, (size_t)0);
+
+  for (i = 0; i < ares_idnamap_data_len; i++) {
+    const ares_idnamap_data_t *e = &ares_idnamap_data[i];
+
+    /* Well-formed range, within unicode, sorted and non-overlapping */
+    EXPECT_LE(e->code_min, e->code_max) << "entry " << i;
+    EXPECT_LE(e->code_max, (unsigned int)0x10FFFF) << "entry " << i;
+    if (i > 0) {
+      EXPECT_GT(e->code_min, ares_idnamap_data[i - 1].code_max)
+        << "entry " << i;
+    }
+
+    switch (e->status) {
+      case ARES_IDNA_STATUS_MAPPED:
+        /* Pool reference must be in bounds and decode as valid UTF-8 */
+        EXPECT_GT((unsigned int)e->map_len, (unsigned int)0) << "entry " << i;
+        ASSERT_LE((size_t)e->map_offset + e->map_len,
+                  ares_idnamap_data_pool_len)
+          << "entry " << i;
+        {
+          ares_buf_t  *buf = ares_buf_create_const(
+            &ares_idnamap_data_pool[e->map_offset], e->map_len);
+          unsigned int cp = 0;
+
+          ASSERT_NE(nullptr, buf);
+          while (ares_buf_len(buf) > 0) {
+            EXPECT_EQ(ARES_SUCCESS, ares_buf_fetch_codepoint(buf, &cp))
+              << "entry " << i;
+            if (HasFailure()) {
+              break;
+            }
+          }
+          ares_buf_destroy(buf);
+        }
+        break;
+      case ARES_IDNA_STATUS_DISALLOWED:
+      case ARES_IDNA_STATUS_IGNORED:
+        EXPECT_EQ(0, e->map_len) << "entry " << i;
+        EXPECT_EQ((unsigned int)0, e->map_offset) << "entry " << i;
+        break;
+      default:
+        ADD_FAILURE() << "entry " << i << " has invalid status "
+                      << (int)e->status;
+        break;
+    }
   }
 }
 

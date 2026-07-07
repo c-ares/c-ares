@@ -309,6 +309,9 @@ with open(outfile, 'w') as file:
         file.write(f"  {chunk},\n")
     file.write("};\n\n")
 
+    file.write(f"const size_t {varname}_pool_len =\n")
+    file.write(f"  sizeof({varname}_pool) / sizeof(*{varname}_pool);\n\n")
+
     file.write(f"const {datatype} {varname}[] = {{\n")
     for entry in codepoints:
         file.write("  { %10s, %10s, %d, %3d, %5d },\n" % (
