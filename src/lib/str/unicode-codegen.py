@@ -25,6 +25,21 @@
 #
 # SPDX-License-Identifier: MIT
 
+# Generates the UTS #46 IDNA mapping table (ares_idnamap.c) from the Unicode
+# Character Database's IdnaMappingTable.txt.
+#
+# Requires the Unicode 15.1 or later format of the data file (earlier versions
+# contain disallowed_STD3_* statuses which this parser intentionally rejects).
+#
+# Mappings are variable length (up to 18 codepoints in Unicode 17), so the
+# mapped UTF-8 sequences are emitted into a shared byte pool referenced by
+# offset/length from each table entry.  Duplicate mapping sequences share pool
+# data.  Generation hard-errors if a mapping cannot be represented rather than
+# silently truncating.
+#
+# The emitted table is wrapped in clang-format off/on markers so the repository
+# clang-format CI treats the generated formatting as authoritative.
+
 import string
 import sys
 import urllib.request
@@ -33,8 +48,8 @@ def is_hex(s: str) -> bool:
     return all(c in string.hexdigits for c in s)
 
 if len(sys.argv) != 6:
-    print(f"Usage: {sys.argv[0]} url headers datatype varname casefold.c")
-    print(f"Example: {sys.argv[0]} https://www.unicode.org/Public/17.0.0/idna/IdnaMappingTable.txt ares_idnamap.h ares_idnamap_data_t ares_idnamap_data ares_idnamap.c")
+    print(f"Usage: {sys.argv[0]} url_or_file headers datatype varname out.c")
+    print(f"Example: {sys.argv[0]} https://www.unicode.org/Public/17.0.0/idna/IdnaMappingTable.txt ares_private.h,ares_idnamap.h ares_idnamap_data_t ares_idnamap_data ares_idnamap.c")
     sys.exit(1)
 
 url = sys.argv[1]
@@ -44,9 +59,13 @@ varname = sys.argv[4]
 outfile = sys.argv[5]
 
 try:
-    with urllib.request.urlopen(url) as response:
-        data = response.read()
-        casefold = data.decode('utf-8')
+    if url.startswith("http://") or url.startswith("https://"):
+        with urllib.request.urlopen(url) as response:
+            data = response.read()
+            casefold = data.decode('utf-8')
+    else:
+        with open(url, encoding='utf-8') as f:
+            casefold = f.read()
 except Exception as e:
     print(f"An unexpected error occurred: {e}")
     sys.exit(1)
@@ -57,23 +76,20 @@ codepoints = []
 # FA6E..FA6F    ; disallowed                 # NA   <reserved-FA6E>..<reserved-FA6F>
 # FD40..FD4F    ; valid      ;      ; NV8    # 14.0 ARABIC LIGATURE RAHIMAHU ALLAAH..ARABIC LIGATURE RAHIMAHUM ALLAAH
 # FD92          ; mapped     ; 0645 062C 062E #1.1  ARABIC LIGATURE MEEM WITH JEEM WITH KHAH INITIAL FORM
-
-lines = casefold.splitlines()
-for line in lines:
-    if line.startswith('#') or len(line) == 0:
+for line in casefold.splitlines():
+    # Strip comments
+    line = line.split("#")[0].strip()
+    if len(line) == 0:
         continue
 
-    # Strip off any comments
-    line = line.split("#")[0];
-
-    sects = line.split(";")
-    if len(sects) < 2 or len(sects) > 4:
-        print(f"Expected 2 - 4 sections delimited by ';' on line: {line}")
+    sects = [ s.strip() for s in line.split(";") ]
+    if len(sects) < 2:
+        print(f"invalid line format: {line}")
         sys.exit(1)
 
-    # Map. For each code point in the domain_name string, look up the Status
-    #      value in Section 5, IDNA Mapping Table, and take the following
-    #      actions:
+    code = sects[0].split("..")
+
+    # Status handling, from UTS #46:
     #    * disallowed: Leave the code point unchanged in the string. Note: The
     #      Convert/Validate step below checks for disallowed characters, after
     #      mapping and normalization.
@@ -93,12 +109,10 @@ for line in lines:
         print(f"unrecognized status {status} in line: {line}")
         sys.exit(1)
 
-    code = sects[0].strip().replace("..","-").split("-")
+    mapping = []
 
     if len(sects) >= 3 and len(sects[2].strip()) > 0:
         mapping = sects[2].strip().split(" ")
-    else:
-        mapping = []
 
     if len(code) > 2:
         print(f"Too many codes: {line}")
@@ -149,6 +163,10 @@ for line in lines:
     elif status == "mapped":
         status = 3
 
+    if status == 3 and len(int_mapping) == 0:
+        print(f"mapped status without mapping data: {line}")
+        sys.exit(1)
+
     codepoints.append(
         {
             "code_min": int_code[0],
@@ -176,27 +194,108 @@ while i < len(codepoints):
     else:
         i+=1
 
+# UTS #46 performs validation AFTER mapping, so a codepoint whose mapping
+# target is itself disallowed (possible here because we reinterpret the
+# non-normative NV8/XV8 IDNA2008 exclusions as disallowed, e.g. U+2152 VULGAR
+# FRACTION ONE TENTH maps to '1/10' using U+2044 FRACTION SLASH which is NV8)
+# must be rejected.  Resolve that at generation time by flipping such entries
+# to disallowed so the runtime mapper never needs a second validation pass.
+# ASCII targets are exempt: the runtime passes ASCII through without
+# consulting the table and hostname validity is enforced at query-write time.
+def find_status(cp):
+    for entry in codepoints:
+        if entry["code_min"] <= cp <= entry["code_max"]:
+            return entry["status"]
+    return 0  # valid
+
+for entry in codepoints:
+    if entry["status"] != 3:
+        continue
+    for cp in entry["mapping"]:
+        if cp >= 0x80 and find_status(cp) == 1:
+            entry["status"] = 1
+            entry["mapping"] = []
+            break
+
+# Re-merge ranges that have become identical after the disallowed flip
+i = 1
+while i < len(codepoints):
+    if (codepoints[i]["code_min"] == codepoints[i-1]["code_max"]+1 and
+        codepoints[i]["status"] == codepoints[i-1]["status"] and
+        codepoints[i]["mapping"] == codepoints[i-1]["mapping"]):
+        codepoints[i-1]["code_max"] = codepoints[i]["code_max"]
+        del codepoints[i]
+    else:
+        i+=1
+
+# Build the UTF-8 mapping pool.  Each mapped entry stores an offset/length
+# into this shared pool.  Identical mapping sequences share pool bytes.
+pool = bytearray()
+pool_index = {}
+for entry in codepoints:
+    utf8 = "".join(chr(cp) for cp in entry["mapping"]).encode("utf-8")
+    if len(utf8) == 0:
+        entry["map_offset"] = 0
+        entry["map_len"] = 0
+        continue
+    if len(utf8) > 255:
+        print(f"mapping exceeds 255 UTF-8 bytes, format cannot represent it: {entry}")
+        sys.exit(1)
+    if utf8 in pool_index:
+        offset = pool_index[utf8]
+    else:
+        offset = len(pool)
+        pool_index[utf8] = offset
+        pool.extend(utf8)
+    entry["map_offset"] = offset
+    entry["map_len"] = len(utf8)
+
+if len(pool) > 0xFFFFFFFF:
+    print(f"pool exceeds unsigned int range")
+    sys.exit(1)
+
 with open(outfile, 'w') as file:
-    file.write(f"/* Generated via {sys.argv[0]} {url} {','.join(headers)} {datatype} {varname} {outfile} */\n")
+    file.write("/* clang-format off */\n")
+    file.write("/* SPDX-FileCopyrightText: (C) The c-ares project and its contributors\n")
+    file.write(" * SPDX-License-Identifier: MIT\n")
+    file.write(" *\n")
+    file.write(" * Table data derived from the Unicode(R) Character Database,\n")
+    file.write(" * (C) Unicode, Inc., licensed under the UNICODE LICENSE V3\n")
+    file.write(" * (https://www.unicode.org/license.txt).\n")
+    file.write(" *\n")
+    file.write(f" * Generated via {sys.argv[0]} with:\n")
+    file.write(f" *   url:      {url}\n")
+    file.write(f" *   headers:  {','.join(headers)}\n")
+    file.write(f" *   datatype: {datatype}\n")
+    file.write(f" *   varname:  {varname}\n")
+    file.write(f" *   outfile:  {outfile}\n")
+    file.write(" * DO NOT EDIT MANUALLY.\n")
+    file.write(" */\n")
     for header in headers:
         file.write(f'#include "{header}"\n')
     file.write("\n")
-    file.write(f"size_t {varname}_len = {len(codepoints)};\n")
-    file.write(f"{datatype} {varname}[] = {{\n")
+
+    file.write(f"const unsigned char {varname}_pool[] = {{\n")
+    for i in range(0, len(pool), 12):
+        chunk = ", ".join("0x%02x" % b for b in pool[i:i+12])
+        file.write(f"  {chunk},\n")
+    file.write("};\n\n")
+
+    file.write(f"const {datatype} {varname}[] = {{\n")
     for entry in codepoints:
-        file.write("  { %10s, %10s, %d, { %10s, %10s, %10s } },\n" % (
+        file.write("  { %10s, %10s, %d, %3d, %5d },\n" % (
                 hex(entry["code_min"]),
                 hex(entry["code_max"]),
                 entry["status"],
-                hex(0 if len(entry["mapping"]) < 1 else entry["mapping"][0]),
-                hex(0 if len(entry["mapping"]) < 2 else entry["mapping"][1]),
-                hex(0 if len(entry["mapping"]) < 3 else entry["mapping"][2])
+                entry["map_len"],
+                entry["map_offset"]
             )
         )
+    file.write("};\n\n")
 
-    file.write(f"}};\n")
+    file.write(f"const size_t {varname}_len =\n")
+    file.write(f"  sizeof({varname}) / sizeof(*{varname});\n")
+    file.write("/* clang-format on */\n")
 
-
-
-print(f"wrote {outfile}")
+print(f"wrote {outfile}: {len(codepoints)} entries, {len(pool)} pool bytes")
 sys.exit(0)

@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2023 Brad House
+ * Copyright (c) 2025 Brad House
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,22 +26,33 @@
 #ifndef __ARES_IDNAMAP_H
 #define __ARES_IDNAMAP_H
 
-#include "ares.h"
+#include <stddef.h>
 
+/*! UTS #46 IDNA mapping status.  Codepoints not present in the table are
+ *  valid and used as-is (this includes deviation codepoints since we only
+ *  perform nontransitional processing). */
 typedef enum {
-  ARES_IDNA_STATUS_DISALLOWED = 1,
-  ARES_IDNA_STATUS_IGNORED = 2,
-  ARES_IDNA_STATUS_MAPPED = 3
+  ARES_IDNA_STATUS_DISALLOWED = 1, /*!< Codepoint not permitted in a domain */
+  ARES_IDNA_STATUS_IGNORED    = 2, /*!< Codepoint removed from the domain */
+  ARES_IDNA_STATUS_MAPPED     = 3  /*!< Codepoint replaced by mapping data */
 } ares_idnamap_status_t;
 
+/*! Inclusive codepoint range and its mapping status.  Sorted ascending by
+ *  code_min with no overlapping ranges, suitable for binary search.  For
+ *  ARES_IDNA_STATUS_MAPPED, the replacement is the UTF-8 byte sequence
+ *  ares_idnamap_data_pool[map_offset] through map_offset + map_len - 1;
+ *  mappings are variable length (up to 18 codepoints in Unicode 17) so they
+ *  are stored in the shared pool rather than inline. */
 typedef struct {
-  unsigned int          code_min;
-  unsigned int          code_max;
-  ares_idnamap_status_t status;
-  unsigned int          mapping[3];
+  unsigned int  code_min;   /*!< First codepoint in range */
+  unsigned int  code_max;   /*!< Last codepoint in range (inclusive) */
+  unsigned char status;     /*!< ares_idnamap_status_t */
+  unsigned char map_len;    /*!< Byte length of UTF-8 mapping in pool */
+  unsigned int  map_offset; /*!< Offset of UTF-8 mapping in pool */
 } ares_idnamap_data_t;
 
-extern size_t ares_idnamap_data_len;
-extern ares_idnamap_data_t ares_idnamap_data[];
+extern const size_t              ares_idnamap_data_len;
+extern const ares_idnamap_data_t ares_idnamap_data[];
+extern const unsigned char       ares_idnamap_data_pool[];
 
 #endif
