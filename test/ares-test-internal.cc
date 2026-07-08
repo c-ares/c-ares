@@ -48,7 +48,7 @@ extern "C" {
 #include "ares_inet_net_pton.h"
 #include "ares_data.h"
 #include "str/ares_strsplit.h"
-#include "str/ares_punycode.h"
+#include "ares_punycode.h"
 #include "str/ares_idnamap.h"
 #include "dsa/ares_htable.h"
 
@@ -647,6 +647,7 @@ TEST_F(LibraryTest, PUNYCODE) {
     { "xn--999999999",   "overflow"                          },
     { "xn--a-b!c",       "invalid punycode digit"            },
     { "xn--a-rc4g",      "decodes to a UTF-16 surrogate half" },
+    { "xn--9",           "truncated variable-length integer" },
     /* RFC 3492 Section 6.2: the delimiter is only consumed when more than
      * zero basic codepoints precede it; a leading '-' is part of the
      * extended string and is not a valid digit */
@@ -663,6 +664,14 @@ TEST_F(LibraryTest, PUNYCODE) {
     EXPECT_NE(ARES_SUCCESS,
               ares_punycode_decode_domain(invalid_puny[i].input, &decoded))
       << invalid_puny[i].descr;
+    ares_free(decoded);
+  }
+
+  /* Malformed punycode is ARES_EBADNAME specifically: a truncated
+   * variable-length integer must not leak the buf layer's ARES_EBADRESP */
+  {
+    char *decoded = NULL;
+    EXPECT_EQ(ARES_EBADNAME, ares_punycode_decode_domain("xn--9", &decoded));
     ares_free(decoded);
   }
 
@@ -746,6 +755,13 @@ TEST_F(LibraryTest, IDNA) {
       "empty interior label preserved" },
     { ARES_SUCCESS,  ".",                 ".",
       "root dot" },
+    /* A label reduced to nothing by ignored codepoints (here U+00AD SOFT
+     * HYPHEN, in explicit bytes) can never form a valid DNS label and is
+     * rejected -- unlike the blank labels present in the input above */
+    { ARES_EBADNAME, "a.\xC2\xAD.b",      NULL,
+      "label of only ignored codepoints" },
+    { ARES_EBADNAME, "\xC2\xAD",          NULL,
+      "domain of only ignored codepoints" },
     { ARES_SUCCESS,  NULL, NULL, NULL }
   };
   size_t i;
@@ -818,7 +834,7 @@ TEST_F(LibraryTest, IDNAMapTable) {
     }
 
     switch (e->status) {
-      case ARES_IDNA_STATUS_MAPPED:
+      case ARES_IDNAMAP_STATUS_MAPPED:
         /* Pool reference must be in bounds and decode as valid UTF-8 */
         EXPECT_GT((unsigned int)e->map_len, (unsigned int)0) << "entry " << i;
         ASSERT_LE((size_t)e->map_offset + e->map_len,
@@ -840,8 +856,8 @@ TEST_F(LibraryTest, IDNAMapTable) {
           ares_buf_destroy(buf);
         }
         break;
-      case ARES_IDNA_STATUS_DISALLOWED:
-      case ARES_IDNA_STATUS_IGNORED:
+      case ARES_IDNAMAP_STATUS_DISALLOWED:
+      case ARES_IDNAMAP_STATUS_IGNORED:
         EXPECT_EQ(0, e->map_len) << "entry " << i;
         EXPECT_EQ((unsigned int)0, e->map_offset) << "entry " << i;
         break;
@@ -908,6 +924,26 @@ TEST_F(LibraryTest, SysConfigDomainsIDNA) {
   memset(&sysconfig, 0, sizeof(sysconfig));
   EXPECT_EQ(ARES_SUCCESS, ares_sysconfig_domains_idna(&sysconfig));
   EXPECT_EQ((size_t)0, sysconfig.ndomains);
+
+  /* An entry unprintable due to an embedded control byte rather than
+   * unicode is unchanged by IDNA encoding (ASCII passes through) and is
+   * dropped as unusable.  Built by hand: ares_strsplit() itself rejects
+   * control bytes, but not every config source goes through it */
+  memset(&sysconfig, 0, sizeof(sysconfig));
+  sysconfig.domains =
+    (char **)ares_malloc_zero(sizeof(*sysconfig.domains) * 2);
+  ASSERT_NE(nullptr, sysconfig.domains);
+  sysconfig.domains[0] = ares_strdup("f\x01oo.example.com");
+  sysconfig.domains[1] = ares_strdup("first.com");
+  ASSERT_NE(nullptr, sysconfig.domains[0]);
+  ASSERT_NE(nullptr, sysconfig.domains[1]);
+  sysconfig.ndomains = 2;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_sysconfig_domains_idna(&sysconfig));
+  ASSERT_EQ((size_t)1, sysconfig.ndomains);
+  EXPECT_STREQ("first.com", sysconfig.domains[0]);
+
+  ares_strsplit_free(sysconfig.domains, sysconfig.ndomains);
 
   /* Full resolv.conf line parse path: unicode search values survive line
    * parsing and are converted by the idna pass */

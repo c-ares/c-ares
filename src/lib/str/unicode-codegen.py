@@ -242,6 +242,19 @@ while changed:
                 changed = True
                 break
 
+# Every remaining mapping target must itself be in final form: not mapped or
+# ignored (the runtime applies mappings in a single pass) and not uppercase
+# ASCII (the runtime lowercases ASCII it passes through, but mapped output is
+# emitted verbatim).  No Unicode version to date violates this; hard-error
+# rather than silently emit a non-canonical table if a future one does.
+for entry in codepoints:
+    if entry["status"] != 3:
+        continue
+    for cp in entry["mapping"]:
+        if (cp >= 0x80 and find_status(cp) in (2, 3)) or 0x41 <= cp <= 0x5A:
+            print(f"mapping target U+{cp:04X} of {entry} is not in final form")
+            sys.exit(1)
+
 # Re-merge ranges that have become identical after the disallowed flip
 i = 1
 while i < len(codepoints):
@@ -276,7 +289,7 @@ for entry in codepoints:
     entry["map_len"] = len(utf8)
 
 if len(pool) > 0xFFFFFFFF:
-    print(f"pool exceeds unsigned int range")
+    print("pool exceeds unsigned int range")
     sys.exit(1)
 
 with open(outfile, 'w') as file:

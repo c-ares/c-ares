@@ -31,9 +31,11 @@
  *
  *  This function will split the domain into each component then punycode encode
  *  it and rejoin the components.  If there are no UTF8 codepoints outside the
- *  ascii range this will return the same as the input, but it is, however, an
- *  expensive operation and users should scan the domain to see if conversion is
- *  really necessary before calling this function.
+ *  ascii range this will return the same as the input (provided every label
+ *  is within the 63 octet DNS limit, which is enforced on encoded and
+ *  pass-through labels alike), but it is, however, an expensive operation and
+ *  users should scan the domain to see if conversion is really necessary
+ *  before calling this function.
  *
  *  \param[in,out] inbuf  Input domain name.  Consumed by this function.
  *  \param[in,out] outbuf Output punycode encoded domain.  On error may
@@ -61,9 +63,10 @@ CARES_EXTERN ares_status_t ares_punycode_encode_domain(const char *domain,
  *  it and rejoin the components.  Labels not starting with the "xn--" ACE
  *  prefix (compared case-insensitively as per RFC 5890) contain no encoded
  *  data and are passed through as-is, so a domain with no encoded labels
- *  returns the same as the input.  It is, however, an expensive operation and
- *  users should scan the domain to see if conversion is really necessary
- *  before calling this function.
+ *  returns the same as the input (encoded labels are subject to the 63 octet
+ *  DNS limit).  It is, however, an expensive operation and users should scan
+ *  the domain to see if conversion is really necessary before calling this
+ *  function.
  *
  *  \param[in,out] inbuf  Input domain name.  Consumed by this function.
  *  \param[in,out] outbuf Output punycode decoded domain.  On error may
@@ -101,14 +104,18 @@ CARES_EXTERN ares_status_t ares_punycode_decode_domain(const char *domain,
  *   - The non-normative IDNA2008 NV8/XV8 exclusions are treated as
  *     disallowed for unicode codepoints, which is stricter than web browsers:
  *     e.g. emoji domains that browsers resolve are rejected here.
+ *   - ASCII bypasses the mapping table entirely and is only lowercased, so
+ *     ASCII the table marks disallowed (e.g. '_', '~') is accepted here;
+ *     hostname validity of ASCII is enforced when the query is written.
  *
  *  \param[in,out] inbuf  Input domain name in UTF-8.  Consumed by this
  *                        function.
  *  \param[in,out] outbuf Output IDNA (punycode) encoded domain.  On error
  *                        may contain a partially-encoded name.
  *  \return ARES_SUCCESS on success, ARES_EBADNAME if the domain contains
- *          disallowed codepoints or an encoded label exceeds the DNS label
- *          length limit, or otherwise an ares_status_t error.
+ *          disallowed codepoints, a label is reduced to nothing by ignored
+ *          codepoints, or an encoded label exceeds the DNS label length
+ *          limit, or otherwise an ares_status_t error.
  */
 CARES_EXTERN ares_status_t ares_idna_encode_domain_buf(ares_buf_t *inbuf,
                                                        ares_buf_t *outbuf);

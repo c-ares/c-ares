@@ -28,6 +28,10 @@
 
 /* Split a string on delms skipping empty or duplicate elements.
  *
+ * Tokens may contain validated UTF-8 in addition to printable ASCII (every
+ * current consumer splits search domain lists, which may be IDN); input
+ * containing invalid UTF-8 fails the entire split (returns NULL).
+ *
  * param in String to split.
  * param delms String of characters to treat as a delimiter.
  *             Each character in the string is a delimiter so

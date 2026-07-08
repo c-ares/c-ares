@@ -461,11 +461,15 @@ CONTAINED_TEST_F(LibraryTest, ContainerIDNResolvInit,
                  "myhostname", "mydomainname.org", idnresolv) {
   ares_channel_t *channel = nullptr;
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  /* Fail cleanly rather than crash the container child on a regression
+   * (ASSERT_* can't be used in the non-void test body); the nullptr check
+   * must precede any dereference, including the ndomains EXPECT below */
+  if (channel == nullptr) {
+    return true;
+  }
 
   EXPECT_EQ((size_t)3, channel->ndomains);
-  /* Fail cleanly rather than crash the container child on a regression
-   * (ASSERT_* can't be used in the non-void test body) */
-  if (channel == nullptr || channel->ndomains != 3) {
+  if (channel->ndomains != 3) {
     ares_destroy(channel);
     return true;
   }

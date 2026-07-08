@@ -516,19 +516,26 @@ ares_status_t ares_sysconfig_domains_idna(ares_sysconfig_t *sysconfig)
       char         *encoded = NULL;
       ares_status_t status  = ares_idna_encode_domain(domain, &encoded);
 
+      ares_free(domain);
+
       if (status == ARES_ENOMEM) {
-        ares_free(domain);
         return status;
       }
 
       if (status != ARES_SUCCESS) {
         /* Skip a domain we can't represent rather than break the rest of
          * the configuration */
-        ares_free(domain);
         continue;
       }
 
-      ares_free(domain);
+      /* IDNA encoding leaves ASCII untouched, so an entry that was
+       * unprintable due to embedded control bytes rather than unicode is
+       * still unusable; drop it like any other unrepresentable entry */
+      if (!ares_str_isprint(encoded, ares_strlen(encoded))) {
+        ares_free(encoded);
+        continue;
+      }
+
       domain = encoded;
     }
 

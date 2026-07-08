@@ -365,10 +365,11 @@ CARES_EXTERN ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
                                                        ares_buf_t **newbuf);
 
 /*! Determine if entire remaining buffer is ASCII-printable.  If there are
- *  no remaining bytes, returns ARES_FALSE.
+ *  no remaining bytes, or buf is NULL, returns ARES_FALSE.
  *
  *  \param[in] buf Initialized buffer object
- *  \return ARES_TRUE if data is ascii-printable */
+ *  \return ARES_TRUE if data is ascii-printable
+ */
 CARES_EXTERN ares_bool_t ares_buf_isprint(const ares_buf_t *buf);
 
 /*! Consume the given number of bytes without reading them.
@@ -495,7 +496,9 @@ CARES_EXTERN size_t ares_buf_consume_nonwhitespace(ares_buf_t *buf);
  *                                if ARES_FALSE it will simply consume the
  *                                rest of the buffer.  If ARES_TRUE will return
  *                                SIZE_MAX if not found.
- *  \return number of characters consumed
+ *  \return number of characters consumed.  On invalid parameters nothing is
+ *          consumed and 0 (or SIZE_MAX if require_charset is ARES_TRUE) is
+ *          returned.
  */
 CARES_EXTERN size_t ares_buf_consume_until_charset(ares_buf_t          *buf,
                                                    const unsigned char *charset,
@@ -513,7 +516,9 @@ CARES_EXTERN size_t ares_buf_consume_until_charset(ares_buf_t          *buf,
  *                                rest of the buffer.  If ARES_TRUE will return
  *                                SIZE_MAX (consuming nothing) if not found,
  *                                including when the buffer is empty.
- *  \return number of characters consumed
+ *  \return number of characters consumed.  On invalid parameters nothing is
+ *          consumed and 0 (or SIZE_MAX if require_charset is ARES_TRUE) is
+ *          returned.
  */
 CARES_EXTERN size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
                                                   const unsigned char *charset,
@@ -680,11 +685,13 @@ CARES_EXTERN ares_bool_t ares_buf_begins_with(const ares_buf_t    *buf,
  */
 CARES_EXTERN size_t ares_buf_len(const ares_buf_t *buf);
 
-/*! Length of unprocessed remaining data in utf8/wide characters.
+/*! Length of unprocessed remaining data in Unicode codepoints; the data is
+ *  validated as UTF-8 while counting.
  *
  *  \param[in]  buf Initialized buffer object
- *  \param[out] len Number of utf8 characters
- *  \return ARES_SUCCESS on success, or error.
+ *  \param[out] len Number of Unicode codepoints (0 if the buffer is empty)
+ *  \return ARES_SUCCESS on success, ARES_EBADSTR if the remaining data is
+ *          not valid UTF-8, ARES_EFORMERR on invalid parameters.
  */
 CARES_EXTERN ares_status_t ares_buf_len_utf8(const ares_buf_t *buf,
                                              size_t           *len);

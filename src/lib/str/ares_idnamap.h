@@ -33,14 +33,14 @@
  *  perform nontransitional processing).  Numeric values must match the
  *  status values emitted by unicode-codegen.py. */
 typedef enum {
-  ARES_IDNA_STATUS_DISALLOWED = 1, /*!< Codepoint not permitted in a domain */
-  ARES_IDNA_STATUS_IGNORED    = 2, /*!< Codepoint removed from the domain */
-  ARES_IDNA_STATUS_MAPPED     = 3  /*!< Codepoint replaced by mapping data */
+  ARES_IDNAMAP_STATUS_DISALLOWED = 1, /*!< Not permitted in a domain */
+  ARES_IDNAMAP_STATUS_IGNORED    = 2, /*!< Removed from the domain */
+  ARES_IDNAMAP_STATUS_MAPPED     = 3  /*!< Replaced by mapping data */
 } ares_idnamap_status_t;
 
 /*! Inclusive codepoint range and its mapping status.  Sorted ascending by
  *  code_min with no overlapping ranges, suitable for binary search.  For
- *  ARES_IDNA_STATUS_MAPPED, the replacement is the UTF-8 byte sequence
+ *  ARES_IDNAMAP_STATUS_MAPPED, the replacement is the UTF-8 byte sequence
  *  ares_idnamap_data_pool[map_offset] through map_offset + map_len - 1;
  *  mappings are variable length (up to 18 codepoints in Unicode 17) so they
  *  are stored in the shared pool rather than inline. */

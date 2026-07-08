@@ -257,7 +257,7 @@ ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf,
   status = ares_buf_split(inbuf, (const unsigned char *)".", 1,
                           ARES_BUF_SPLIT_ALLOW_BLANK, 0, &split);
   if (status != ARES_SUCCESS) {
-    goto fail;
+    goto done;
   }
 
   for (i = 0; i < ares_array_len(split); i++) {
@@ -267,7 +267,7 @@ ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf,
     if (i != 0) {
       status = ares_buf_append_byte(outbuf, '.');
       if (status != ARES_SUCCESS) {
-        goto fail;
+        goto done;
       }
     }
 
@@ -275,17 +275,17 @@ ares_status_t ares_punycode_encode_domain_buf(ares_buf_t *inbuf,
 
     status = punycode_encode(*sect, outbuf);
     if (status != ARES_SUCCESS) {
-      goto fail;
+      goto done;
     }
 
     /* An encoded label that exceeds the DNS label limit can never be used */
     if (ares_buf_len(outbuf) - label_start > MAX_DNS_LABEL_LEN) {
       status = ARES_EBADNAME;
-      goto fail;
+      goto done;
     }
   }
 
-fail:
+done:
   ares_array_destroy(split);
   return status;
 }
@@ -465,6 +465,9 @@ static ares_status_t punycode_decode(ares_buf_t *inbuf, ares_buf_t *outbuf)
 
       status = ares_buf_fetch_bytes(inbuf, &b, 1);
       if (status != ARES_SUCCESS) {
+        /* A truncated variable-length integer is malformed punycode; don't
+         * leak the buf layer's ARES_EBADRESP */
+        status = ARES_EBADNAME;
         goto done;
       }
 
@@ -556,7 +559,7 @@ ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf,
   status = ares_buf_split(inbuf, (const unsigned char *)".", 1,
                           ARES_BUF_SPLIT_ALLOW_BLANK, 0, &split);
   if (status != ARES_SUCCESS) {
-    goto fail;
+    goto done;
   }
 
   for (i = 0; i < ares_array_len(split); i++) {
@@ -564,16 +567,16 @@ ares_status_t ares_punycode_decode_domain_buf(ares_buf_t *inbuf,
     if (i != 0) {
       status = ares_buf_append_byte(outbuf, '.');
       if (status != ARES_SUCCESS) {
-        goto fail;
+        goto done;
       }
     }
     status = punycode_decode(*sect, outbuf);
     if (status != ARES_SUCCESS) {
-      goto fail;
+      goto done;
     }
   }
 
-fail:
+done:
   ares_array_destroy(split);
   return status;
 }
@@ -650,19 +653,65 @@ static const ares_idnamap_data_t *ares_idnamap_lookup(unsigned int cp)
 
 /*! Apply the UTS #46 mapping step to an entire domain.  This must occur
  *  before splitting into labels since some codepoints (e.g. U+3002
- *  IDEOGRAPHIC FULL STOP) map to '.' */
+ *  IDEOGRAPHIC FULL STOP) map to '.'.
+ *
+ *  A label that contained input codepoints but emitted none has been reduced
+ *  to nothing by ignored codepoints and can never form a valid DNS label
+ *  (the UTS #46 VerifyDnsLength minimum), so it is rejected; blank labels
+ *  already present in the input still pass through for downstream validation
+ *  to see. */
 static ares_status_t ares_idna_map_buf(ares_buf_t *inbuf, ares_buf_t *outbuf)
 {
-  ares_status_t status = ARES_SUCCESS;
+  ares_status_t status         = ARES_SUCCESS;
+  size_t        label_consumed = 0; /* input codepoints in current label */
+  size_t        label_emitted  = 0; /* output codepoints in current label */
 
   while (ares_buf_len(inbuf) > 0) {
     unsigned int               cp;
-    const ares_idnamap_data_t *entry;
+    const ares_idnamap_data_t *entry  = NULL;
+    ares_bool_t                is_sep = ARES_FALSE;
 
     status = ares_buf_fetch_codepoint(inbuf, &cp);
     if (status != ARES_SUCCESS) {
       return status;
     }
+
+    if (cp == '.') {
+      is_sep = ARES_TRUE;
+    } else if (cp >= 0x80) {
+      entry = ares_idnamap_lookup(cp);
+      if (entry != NULL && entry->status == ARES_IDNAMAP_STATUS_MAPPED) {
+        /* The generator guarantees pool references are in bounds (also
+         * verified by the IDNAMapTable unit test); guard anyhow, in
+         * overflow-proof form, so a corrupt table can never cause an
+         * out-of-bounds read */
+        if (entry->map_len > ares_idnamap_data_pool_len ||
+            (size_t)entry->map_offset >
+              ares_idnamap_data_pool_len - entry->map_len) {
+          return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+        }
+        /* Label separator variants map to '.' */
+        if (entry->map_len == 1 &&
+            ares_idnamap_data_pool[entry->map_offset] == '.') {
+          is_sep = ARES_TRUE;
+        }
+      }
+    }
+
+    if (is_sep) {
+      if (label_consumed > 0 && label_emitted == 0) {
+        return ARES_EBADNAME;
+      }
+      label_consumed = 0;
+      label_emitted  = 0;
+      status         = ares_buf_append_byte(outbuf, '.');
+      if (status != ARES_SUCCESS) {
+        return status;
+      }
+      continue;
+    }
+
+    label_consumed++;
 
     /* ASCII passes through directly (lowercased for canonical form) without
      * consulting the table.  The table marks some ASCII such as '_' as
@@ -674,42 +723,43 @@ static ares_status_t ares_idna_map_buf(ares_buf_t *inbuf, ares_buf_t *outbuf)
       if (status != ARES_SUCCESS) {
         return status;
       }
+      label_emitted++;
       continue;
     }
 
-    entry = ares_idnamap_lookup(cp);
     if (entry == NULL) {
       /* Valid, used as-is */
       status = ares_buf_append_codepoint(outbuf, cp);
       if (status != ARES_SUCCESS) {
         return status;
       }
+      label_emitted++;
       continue;
     }
 
     switch (entry->status) {
-      case ARES_IDNA_STATUS_DISALLOWED:
+      case ARES_IDNAMAP_STATUS_DISALLOWED:
         return ARES_EBADNAME;
-      case ARES_IDNA_STATUS_IGNORED:
+      case ARES_IDNAMAP_STATUS_IGNORED:
         break;
-      case ARES_IDNA_STATUS_MAPPED:
-        /* The generator guarantees pool references are in bounds (also
-         * verified by the IDNAMapTable unit test); guard anyhow so a corrupt
-         * table can never cause an out-of-bounds read */
-        if ((size_t)entry->map_offset + entry->map_len >
-            ares_idnamap_data_pool_len) {
-          return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
-        }
+      case ARES_IDNAMAP_STATUS_MAPPED:
+        /* Pool reference already bounds-validated above */
         status = ares_buf_append(
           outbuf, &ares_idnamap_data_pool[entry->map_offset], entry->map_len);
         if (status != ARES_SUCCESS) {
           return status;
         }
+        label_emitted++;
         break;
       default:
         /* Can't happen with a well-formed table */
         return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
+  }
+
+  /* Final label */
+  if (label_consumed > 0 && label_emitted == 0) {
+    return ARES_EBADNAME;
   }
 
   return status;
