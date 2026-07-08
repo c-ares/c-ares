@@ -4,8 +4,11 @@
 enable_language(CXX)
 
 # Get rid of: warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+# /utf-8: test sources contain UTF-8 string literals (punycode/IDNA vectors);
+# without it MSVC interprets them in the system ANSI codepage, mangling them
+# on DBCS locales (e.g. cp932/cp936/cp949).
 IF (MSVC)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /utf-8")
 ENDIF ()
 
 find_package(Threads)

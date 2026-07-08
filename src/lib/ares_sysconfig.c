@@ -502,6 +502,59 @@ done:
 }
 #endif
 
+ares_status_t ares_sysconfig_domains_idna(ares_sysconfig_t *sysconfig)
+{
+  size_t i;
+  size_t cnt = 0;
+
+  for (i = 0; i < sysconfig->ndomains; i++) {
+    char *domain = sysconfig->domains[i];
+
+    sysconfig->domains[i] = NULL;
+
+    if (!ares_str_isprint(domain, ares_strlen(domain))) {
+      char         *encoded = NULL;
+      ares_status_t status  = ares_idna_encode_domain(domain, &encoded);
+
+      ares_free(domain);
+
+      if (status == ARES_ENOMEM) {
+        return status;
+      }
+
+      if (status != ARES_SUCCESS) {
+        /* Skip a domain we can't represent rather than break the rest of
+         * the configuration */
+        continue;
+      }
+
+      /* IDNA encoding leaves ASCII untouched, so an entry that was
+       * unprintable due to embedded control bytes rather than unicode is
+       * still unusable; drop it like any other unrepresentable entry */
+      if (!ares_str_isprint(encoded, ares_strlen(encoded))) {
+        ares_free(encoded);
+        continue;
+      }
+
+      domain = encoded;
+    }
+
+    sysconfig->domains[cnt++] = domain;
+  }
+
+  sysconfig->ndomains = cnt;
+
+  /* If every domain was dropped, the array must be released too:
+   * ares_sysconfig_apply() treats a non-NULL domains as a request to apply,
+   * and ares_strsplit_duplicate() fails on a zero-length list */
+  if (cnt == 0) {
+    ares_free(sysconfig->domains);
+    sysconfig->domains = NULL;
+  }
+
+  return ARES_SUCCESS;
+}
+
 static void ares_sysconfig_free(ares_sysconfig_t *sysconfig)
 {
   ares_llist_destroy(sysconfig->sconfig);
@@ -618,6 +671,13 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
 
   /* Environment is supposed to override sysconfig */
   status = ares_init_by_environment(&sysconfig);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* Search domains from any configuration source (registry, resolv.conf,
+   * environment, ...) may be unicode (IDN); DNS needs the punycode form */
+  status = ares_sysconfig_domains_idna(&sysconfig);
   if (status != ARES_SUCCESS) {
     goto done;
   }

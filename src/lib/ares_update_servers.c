@@ -291,7 +291,8 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
       return ARES_EBADSTR;
     }
 
-    status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr));
+    status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -325,7 +326,8 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
       }
     }
 
-    status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr));
+    status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -352,7 +354,8 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
       return ARES_EBADSTR;
     }
 
-    status = ares_buf_tag_fetch_string(buf, portstr, sizeof(portstr));
+    status = ares_buf_tag_fetch_string(buf, portstr, sizeof(portstr),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -379,7 +382,8 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
     }
 
     status = ares_buf_tag_fetch_string(buf, sconfig->ll_iface,
-                                       sizeof(sconfig->ll_iface));
+                                       sizeof(sconfig->ll_iface),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }

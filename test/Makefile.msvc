@@ -158,7 +158,10 @@ EX_LIBS_DBG = ws2_32.lib advapi32.lib kernel32.lib iphlpapi.lib
 
 CC_CMD_REL = cl.exe /nologo $(RTLIB) /DNDEBUG /O2 /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_SECURE_NO_WARNINGS
 CC_CMD_DBG = cl.exe /nologo $(RTLIBD) /D_DEBUG /Od /Zi /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_SECURE_NO_WARNINGS /RTCsu
-CC_CFLAGS  = $(CFLAGS) /I. /I../src/lib /I../src/lib/include /I../include /I $(GTEST_ROOT)/include /W3 /EHsc /FD
+# /utf-8: test sources contain UTF-8 string literals (punycode/IDNA vectors);
+# without it MSVC interprets them in the system ANSI codepage, mangling them
+# on DBCS locales (e.g. cp932/cp936/cp949).
+CC_CFLAGS  = $(CFLAGS) /I. /I../src/lib /I../src/lib/include /I../include /I $(GTEST_ROOT)/include /W3 /EHsc /FD /utf-8
 
 RC_CMD_REL = rc.exe /l 0x409 /d "NDEBUG"
 RC_CMD_DBG = rc.exe /l 0x409 /d "_DEBUG"

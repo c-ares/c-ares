@@ -134,8 +134,7 @@ static ares_bool_t get_REG_SZ(HKEY hKey, const WCHAR *leafKeyName,
   return ARES_TRUE;
 }
 
-static ares_status_t sysconfig_commajoin(ares_buf_t *buf, const char *src,
-                                         ares_bool_t asciionly)
+static ares_status_t sysconfig_commajoin(ares_buf_t *buf, const char *src)
 {
   ares_status_t status;
 
@@ -144,10 +143,6 @@ static ares_status_t sysconfig_commajoin(ares_buf_t *buf, const char *src,
   }
 
   if (src == NULL || *src == '\0') {
-    return ARES_SUCCESS;
-  }
-
-  if (asciionly && !ares_str_isprint(src, ares_strlen(src))) {
     return ARES_SUCCESS;
   }
 
@@ -161,7 +156,10 @@ static ares_status_t sysconfig_commajoin(ares_buf_t *buf, const char *src,
   return ares_buf_append_str(buf, src);
 }
 
-/* Read a REG_SZ value and comma-append it (ASCII-only) to *buf.
+/* Read a REG_SZ value and comma-append the search domains it contains to
+ * *buf.  Windows stores search domains as the user entered them so an IDN
+ * suffix may be unicode; it is passed through as-is here and converted to
+ * its punycode form centrally by ares_sysconfig_domains_idna().
  * On allocation failure, destroys *buf and sets it to NULL. */
 static void reg_commajoin(ares_buf_t **buf, HKEY key, const WCHAR *leaf)
 {
@@ -171,7 +169,7 @@ static void reg_commajoin(ares_buf_t **buf, HKEY key, const WCHAR *leaf)
     return;
   }
 
-  if (sysconfig_commajoin(*buf, p, ARES_TRUE) != ARES_SUCCESS) {
+  if (sysconfig_commajoin(*buf, p) != ARES_SUCCESS) {
     ares_buf_destroy(*buf);
     *buf = NULL;
   }
@@ -521,8 +519,7 @@ static ares_bool_t get_DNS_Windows(char **outptr)
       /* Iff we didn't emit this address already, emit it now. */
       if (j == i) {
         /* Add that to buf (if we can). */
-        if (sysconfig_commajoin(buf, addresses[i].text, ARES_FALSE) !=
-            ARES_SUCCESS) {
+        if (sysconfig_commajoin(buf, addresses[i].text) != ARES_SUCCESS) {
           ares_buf_destroy(buf);
           buf = NULL;
           break;

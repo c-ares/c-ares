@@ -451,6 +451,37 @@ CONTAINED_TEST_F(LibraryTest, ContainerFullResolvInit,
   return HasFailure();
 }
 
+// Unicode (IDN) search domains from resolv.conf are converted to their
+// punycode form; entries that cannot be converted are dropped.
+NameContentList idnresolv = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "search bücher.de first.com \xF0\x9F\x98\x80.com"
+                       " münchen.example\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerIDNResolvInit,
+                 "myhostname", "mydomainname.org", idnresolv) {
+  ares_channel_t *channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  /* Fail cleanly rather than crash the container child on a regression
+   * (ASSERT_* can't be used in the non-void test body); the nullptr check
+   * must precede any dereference, including the ndomains EXPECT below */
+  if (channel == nullptr) {
+    return true;
+  }
+
+  EXPECT_EQ((size_t)3, channel->ndomains);
+  if (channel->ndomains != 3) {
+    ares_destroy(channel);
+    return true;
+  }
+  EXPECT_EQ(std::string("xn--bcher-kva.de"), std::string(channel->domains[0]));
+  EXPECT_EQ(std::string("first.com"), std::string(channel->domains[1]));
+  EXPECT_EQ(std::string("xn--mnchen-3ya.example"),
+            std::string(channel->domains[2]));
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 // Allow path for resolv.conf to be configurable
 NameContentList myresolvconf = {
   {"/tmp/myresolv.cnf", " nameserver   1.2.3.4 \n"

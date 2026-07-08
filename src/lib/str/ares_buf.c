@@ -293,6 +293,79 @@ ares_status_t ares_buf_append_be32(ares_buf_t *buf, unsigned int u32)
   return ARES_SUCCESS;
 }
 
+ares_status_t ares_buf_append_codepoint(ares_buf_t *buf, unsigned int codepoint)
+{
+  ares_status_t status;
+
+  /* UTF-16 surrogate halves are not valid Unicode scalar values.  Same
+   * error code as the fetch/decode direction uses for invalid scalars */
+  if (codepoint >= 0xD800 && codepoint <= 0xDFFF) {
+    return ARES_EBADSTR;
+  }
+
+  if (codepoint <= 0x7F) { /* 1 byte sequence */
+    return ares_buf_append_byte(buf, (unsigned char)codepoint);
+  }
+
+  if (codepoint <= 0x7FF) { /* 2 byte sequence */
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0xC0 | ((codepoint >> 6) & 0x1F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+    return ares_buf_append_byte(buf,
+                                (unsigned char)(0x80 | (codepoint & 0x3F)));
+  }
+
+  if (codepoint <= 0xFFFF) { /* 3 byte sequence */
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0xE0 | ((codepoint >> 12) & 0x0F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0x80 | ((codepoint >> 6) & 0x3F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+
+    return ares_buf_append_byte(buf,
+                                (unsigned char)(0x80 | (codepoint & 0x3F)));
+  }
+
+  if (codepoint <= 0x10FFFF) { /* 4 byte sequence */
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0xF0 | ((codepoint >> 18) & 0x07)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0x80 | ((codepoint >> 12) & 0x3F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+
+    status = ares_buf_append_byte(
+      buf, (unsigned char)(0x80 | ((codepoint >> 6) & 0x3F)));
+    if (status != ARES_SUCCESS) {
+      return status; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+
+    return ares_buf_append_byte(buf,
+                                (unsigned char)(0x80 | (codepoint & 0x3F)));
+  }
+
+  /* > U+10FFFF is not a valid Unicode scalar value */
+  return ARES_EBADSTR;
+}
+
 unsigned char *ares_buf_append_start(ares_buf_t *buf, size_t *len)
 {
   ares_status_t status;
@@ -447,12 +520,15 @@ ares_status_t ares_buf_tag_fetch_constbuf(const ares_buf_t *buf,
   return ARES_SUCCESS;
 }
 
+static ares_status_t ares_buf_validate_charset(const unsigned char *ptr,
+                                               size_t               len,
+                                               ares_buf_charset_t   charset);
+
 ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
-                                        size_t len)
+                                        size_t len, ares_buf_charset_t charset)
 {
   size_t        out_len;
   ares_status_t status;
-  size_t        i;
 
   if (str == NULL || len == 0) {
     return ARES_EFORMERR;
@@ -469,27 +545,24 @@ ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
   /* NULL terminate */
   str[out_len] = 0;
 
-  /* Validate string is printable */
-  for (i = 0; i < out_len; i++) {
-    if (!ares_isprint(str[i])) {
-      return ARES_EBADSTR;
-    }
-  }
-
-  return ARES_SUCCESS;
+  return ares_buf_validate_charset((const unsigned char *)str, out_len,
+                                   charset);
 }
 
-ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf, char **str)
+ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf, char **str,
+                                        ares_buf_charset_t charset)
 {
   size_t               ptr_len = 0;
   const unsigned char *ptr     = ares_buf_tag_fetch(buf, &ptr_len);
+  ares_status_t        status;
 
   if (ptr == NULL || str == NULL) {
     return ARES_EFORMERR;
   }
 
-  if (!ares_str_isprint((const char *)ptr, ptr_len)) {
-    return ARES_EBADSTR;
+  status = ares_buf_validate_charset(ptr, ptr_len, charset);
+  if (status != ARES_SUCCESS) {
+    return status;
   }
 
   *str = ares_malloc(ptr_len + 1);
@@ -520,6 +593,18 @@ static const unsigned char *ares_buf_fetch(const ares_buf_t *buf, size_t *len)
   }
 
   return buf->data + buf->offset;
+}
+
+ares_bool_t ares_buf_isprint(const ares_buf_t *buf)
+{
+  size_t               len;
+  const unsigned char *data = ares_buf_fetch(buf, &len);
+
+  if (data == NULL || len == 0) {
+    return ARES_FALSE;
+  }
+
+  return ares_str_isprint((const char *)data, len);
 }
 
 ares_status_t ares_buf_consume(ares_buf_t *buf, size_t len)
@@ -567,6 +652,89 @@ ares_status_t ares_buf_fetch_be32(ares_buf_t *buf, unsigned int *u32)
   return ares_buf_consume(buf, sizeof(*u32));
 }
 
+/*! Decode and validate a single UTF-8 sequence.  Rejects truncated and
+ *  malformed sequences, overlong encodings, UTF-16 surrogate halves, and
+ *  codepoints beyond U+10FFFF so no invalid Unicode scalar value is ever
+ *  emitted. */
+static ares_status_t ares_utf8_decode_cp(const unsigned char *ptr,
+                                         size_t               remaining_len,
+                                         unsigned int        *codepoint,
+                                         size_t              *len_used)
+{
+  unsigned int cp;
+
+  if (ptr == NULL || remaining_len < 1) {
+    return ARES_EBADRESP;
+  }
+
+  if ((ptr[0] & 0x80) == 0) { /* 1-byte sequence (ASCII) */
+    cp        = ptr[0];
+    *len_used = 1;
+  } else if ((ptr[0] & 0xE0) == 0xC0) { /* 2-byte sequence */
+    if (remaining_len < 2 || (ptr[1] & 0xC0) != 0x80) {
+      return ARES_EBADSTR;
+    }
+    cp = (unsigned int)(((unsigned int)(ptr[0] & 0x1F) << 6) |
+                        (unsigned int)(ptr[1] & 0x3F));
+    /* Overlong encoding */
+    if (cp < 0x80) {
+      return ARES_EBADSTR;
+    }
+    *len_used = 2;
+  } else if ((ptr[0] & 0xF0) == 0xE0) { /* 3-byte sequence */
+    if (remaining_len < 3 || (ptr[1] & 0xC0) != 0x80 ||
+        (ptr[2] & 0xC0) != 0x80) {
+      return ARES_EBADSTR;
+    }
+    cp = (unsigned int)(((unsigned int)(ptr[0] & 0x0F) << 12) |
+                        ((unsigned int)(ptr[1] & 0x3F) << 6) |
+                        (unsigned int)(ptr[2] & 0x3F));
+    /* Overlong encoding or UTF-16 surrogate half */
+    if (cp < 0x800 || (cp >= 0xD800 && cp <= 0xDFFF)) {
+      return ARES_EBADSTR;
+    }
+    *len_used = 3;
+  } else if ((ptr[0] & 0xF8) == 0xF0) { /* 4-byte sequence */
+    if (remaining_len < 4 || (ptr[1] & 0xC0) != 0x80 ||
+        (ptr[2] & 0xC0) != 0x80 || (ptr[3] & 0xC0) != 0x80) {
+      return ARES_EBADSTR;
+    }
+    cp = (unsigned int)(((unsigned int)(ptr[0] & 0x07) << 18) |
+                        ((unsigned int)(ptr[1] & 0x3F) << 12) |
+                        ((unsigned int)(ptr[2] & 0x3F) << 6) |
+                        (unsigned int)(ptr[3] & 0x3F));
+    /* Overlong encoding or beyond last valid codepoint */
+    if (cp < 0x10000 || cp > 0x10FFFF) {
+      return ARES_EBADSTR;
+    }
+    *len_used = 4;
+  } else {
+    return ARES_EBADSTR;
+  }
+
+  *codepoint = cp;
+  return ARES_SUCCESS;
+}
+
+ares_status_t ares_buf_fetch_codepoint(ares_buf_t *buf, unsigned int *codepoint)
+{
+  size_t               remaining_len;
+  const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
+  size_t               len_used;
+  ares_status_t        status;
+
+  if (buf == NULL || codepoint == NULL) {
+    return ARES_EBADRESP;
+  }
+
+  status = ares_utf8_decode_cp(ptr, remaining_len, codepoint, &len_used);
+  if (status != ARES_SUCCESS) {
+    return status;
+  }
+
+  return ares_buf_consume(buf, len_used);
+}
+
 ares_status_t ares_buf_fetch_bytes(ares_buf_t *buf, unsigned char *bytes,
                                    size_t len)
 {
@@ -604,21 +772,61 @@ ares_status_t ares_buf_fetch_bytes_dup(ares_buf_t *buf, size_t len,
   return ares_buf_consume(buf, len);
 }
 
-ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str)
+/*! Validate data is printable ASCII or valid UTF-8 sequences */
+static ares_status_t ares_buf_validate_print_utf8(const unsigned char *ptr,
+                                                  size_t               len)
+{
+  size_t i;
+
+  for (i = 0; i < len;) {
+    unsigned int  cp;
+    size_t        len_used;
+    ares_status_t status;
+
+    status = ares_utf8_decode_cp(ptr + i, len - i, &cp, &len_used);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+    if (cp < 0x80 && !ares_isprint((unsigned char)cp)) {
+      return ARES_EBADSTR;
+    }
+    i += len_used;
+  }
+
+  return ARES_SUCCESS;
+}
+
+static ares_status_t ares_buf_validate_charset(const unsigned char *ptr,
+                                               size_t               len,
+                                               ares_buf_charset_t   charset)
+{
+  switch (charset) {
+    case ARES_BUF_CHARSET_ASCII:
+      if (!ares_str_isprint((const char *)ptr, len)) {
+        return ARES_EBADSTR;
+      }
+      return ARES_SUCCESS;
+    case ARES_BUF_CHARSET_UTF8:
+      return ares_buf_validate_print_utf8(ptr, len);
+  }
+
+  return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+}
+
+ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str,
+                                     ares_buf_charset_t charset)
 {
   size_t               remaining_len;
-  size_t               i;
+  ares_status_t        status;
   const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
 
   if (buf == NULL || str == NULL || len == 0 || remaining_len < len) {
     return ARES_EBADRESP;
   }
 
-  /* Validate string is printable */
-  for (i = 0; i < len; i++) {
-    if (!ares_isprint(ptr[i])) {
-      return ARES_EBADSTR;
-    }
+  status = ares_buf_validate_charset(ptr, len, charset);
+  if (status != ARES_SUCCESS) {
+    return status;
   }
 
   *str = ares_malloc(len + 1);
@@ -785,6 +993,44 @@ done:
     ares_buf_consume(buf, pos);
   }
   return pos;
+}
+
+size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
+                                     const unsigned char *charset, size_t len,
+                                     ares_bool_t require_charset)
+{
+  size_t               remaining_len = 0;
+  const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
+  ares_ssize_t         pos;
+  ares_bool_t          found = ARES_FALSE;
+
+  if (ptr == NULL || charset == NULL || len == 0) {
+    return require_charset ? SIZE_MAX : 0;
+  }
+
+  for (pos = (ares_ssize_t)remaining_len - 1; pos >= 0; pos--) {
+    size_t j;
+    for (j = 0; j < len; j++) {
+      if (ptr[pos] == charset[j]) {
+        found = ARES_TRUE;
+        goto done;
+      }
+    }
+  }
+
+done:
+  if (!found) {
+    if (require_charset) {
+      return SIZE_MAX;
+    }
+    ares_buf_consume(buf, remaining_len);
+    return remaining_len;
+  }
+
+  if (pos > 0) {
+    ares_buf_consume(buf, (size_t)pos);
+  }
+  return (size_t)pos;
 }
 
 size_t ares_buf_consume_until_seq(ares_buf_t *buf, const unsigned char *seq,
@@ -1031,7 +1277,10 @@ ares_status_t ares_buf_split_str_array(ares_buf_t          *buf,
     ares_buf_t  *lbuf   = *bufptr;
     char        *str    = NULL;
 
-    status = ares_buf_fetch_str_dup(lbuf, ares_buf_len(lbuf), &str);
+    status = ares_buf_fetch_str_dup(lbuf, ares_buf_len(lbuf), &str,
+                                    (flags & ARES_BUF_SPLIT_UTF8)
+                                      ? ARES_BUF_CHARSET_UTF8
+                                      : ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -1111,6 +1360,34 @@ size_t ares_buf_len(const ares_buf_t *buf)
   }
 
   return buf->data_len - buf->offset;
+}
+
+ares_status_t ares_buf_len_utf8(const ares_buf_t *buf, size_t *len)
+{
+  size_t               remaining_len = 0;
+  const unsigned char *ptr           = ares_buf_fetch(buf, &remaining_len);
+  size_t               offset;
+  size_t               cnt      = 0;
+  size_t               len_used = 0;
+
+  if (buf == NULL || len == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  for (offset = 0; offset < remaining_len; offset += len_used) {
+    unsigned int  cp;
+    ares_status_t status;
+
+    status =
+      ares_utf8_decode_cp(ptr + offset, remaining_len - offset, &cp, &len_used);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
+    cnt++;
+  }
+
+  *len = cnt;
+  return ARES_SUCCESS;
 }
 
 const unsigned char *ares_buf_peek(const ares_buf_t *buf, size_t *len)
