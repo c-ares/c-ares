@@ -1,3 +1,29 @@
+/* MIT License
+ *
+ * Copyright (c) 2026 The c-ares project and its contributors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 #include "ares_private.h"
 
 #ifdef __PASE__
@@ -9,7 +35,7 @@
 #  include <pthread.h>
 #  include <unistd.h>
 
-/* EBCDIC space character constant */
+/* EBCDIC space character (CCSID 37: 0x40 = space) */
 #define EBCDIC_SPACE '\x40'
 
 /* IBM i ILE API structures for QtocRtvTCPA */
@@ -53,7 +79,22 @@ static int             qtocrtvtcpa_initialized = 0;
 static pid_t           cached_pid              = 0;
 static pthread_mutex_t ile_mutex               = PTHREAD_MUTEX_INITIALIZER;
 
-/* EBCDIC to ASCII lookup table (256 bytes) - much faster than if-statements */
+/* EBCDIC to ASCII lookup table (CCSID 37).
+ * Only the DNS/hostname charset (letters, digits, hyphen, dot, space, comma)
+ * is guaranteed fully correct; other slots map identity or to a safe fallback.
+ * Key corrections vs a naive identity table:
+ *   0x40 -> ' '   (space)
+ *   0x4B -> '.'   (period)
+ *   0x60 -> '-'   (hyphen)
+ *   0x6B -> ','   (comma)   -- delimiter used by ares_strsplit
+ *   0x81-0x89 -> a-i
+ *   0x91-0x99 -> j-r
+ *   0xA2-0xA9 -> s-z
+ *   0xC1-0xC9 -> A-I
+ *   0xD1-0xD9 -> J-R
+ *   0xE2-0xE9 -> S-Z
+ *   0xF0-0xF9 -> 0-9
+ */
 static const unsigned char ebcdic_to_ascii_table[256] = {
   /* 0x00-0x0F */
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -67,15 +108,15 @@ static const unsigned char ebcdic_to_ascii_table[256] = {
   /* 0x30-0x3F */
   0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
   0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
-  /* 0x40 = EBCDIC space */
+  /* 0x40 = EBCDIC space -> ASCII space */
   ' ',  0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
   0x48, 0x49, 0x4A, '.',  0x4C, 0x4D, 0x4E, 0x4F,
   /* 0x50-0x5F */
   '&',  0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57,
   0x58, 0x59, 0x5A, '$',  0x5C, 0x5D, 0x5E, 0x5F,
-  /* 0x60 = EBCDIC minus/hyphen */
+  /* 0x60 = EBCDIC hyphen/minus -> ASCII hyphen */
   '-',  0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67,
-  0x68, 0x69, 0x6A, 0x6B, '%',  0x6D, 0x6E, 0x6F,
+  0x68, 0x69, 0x6A, ',',  '%',  0x6D, 0x6E, 0x6F,
   /* 0x70-0x7F */
   0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77,
   0x78, 0x79, 0x7A, '#',  0x7C, 0x7D, 0x7E, 0x7F,
@@ -105,36 +146,45 @@ static const unsigned char ebcdic_to_ascii_table[256] = {
   '8',  '9',  0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF
 };
 
-/* Fast EBCDIC to ASCII conversion using lookup table */
-static char ebcdic_to_ascii(unsigned char c)
+/* Convert an EBCDIC buffer (up to len bytes) into a NUL-terminated ASCII
+ * string in out, which must be at least len+1 bytes.  Stops at the first
+ * NUL; trailing EBCDIC blank (0x40) padding becomes ASCII spaces, which
+ * ares_strsplit() then drops as empty tokens. */
+static void ebcdic_to_ascii_str(const char *ebcdic, size_t len, char *out)
 {
-  return (char)ebcdic_to_ascii_table[c];
+  size_t i;
+  for (i = 0; i < len && ebcdic[i] != '\0'; i++) {
+    out[i] = (char)ebcdic_to_ascii_table[(unsigned char)ebcdic[i]];
+  }
+  out[i] = '\0';
 }
 
-/* Thread-safe initialization of ILE API with fork detection */
-static ares_status_t load_ile_api(void)
+/* Thread-safe initialization of ILE API with fork detection.
+ * ILE pointers are invalidated in a child process after fork(), so we
+ * cache the PID and re-initialize whenever it changes. */
+static ares_bool_t load_ile_api(void)
 {
-  ares_status_t      status      = ARES_SUCCESS;
+  ares_bool_t        ok          = ARES_TRUE;
   unsigned long long actmark;
   pid_t              current_pid = getpid();
 
   pthread_mutex_lock(&ile_mutex);
 
-  /* Re-initialize if we're in a different process (after fork) */
+  /* Fast path: already initialized in this process */
   if (qtocrtvtcpa_initialized && cached_pid == current_pid) {
     pthread_mutex_unlock(&ile_mutex);
-    return ARES_SUCCESS;
+    return ARES_TRUE;
   }
 
-  /* Load or reload the ILE service program */
+  /* Load (or reload after fork) the ILE service program */
   actmark = _ILELOADX("QSYS/QTOCNETSTS", ILELOAD_LIBOBJ);
   if (actmark == (unsigned long long)-1) {
-    status = ARES_ELOADIPHLPAPI;
+    ok = ARES_FALSE;
     goto cleanup;
   }
 
   if (_ILESYMX(&qtocrtvtcpa_ptr, actmark, "QtocRtvTCPA") < 0) {
-    status = ARES_ELOADIPHLPAPI;
+    ok = ARES_FALSE;
     goto cleanup;
   }
 
@@ -143,27 +193,45 @@ static ares_status_t load_ile_api(void)
 
 cleanup:
   pthread_mutex_unlock(&ile_mutex);
-  return status;
+  return ok;
 }
 
 ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
                                        ares_sysconfig_t     *sysconfig)
 {
+  /* --- All declarations at top of function (C89/C90 compliance) --- */
   ares_status_t status;
   unsigned int  buflen;
   char         *buffer = NULL;
   tcpa1100_t   *header;
   tcpa1400_t   *header2;
   int           i, rc;
+  size_t        off;
+  char          ip_str[INET6_ADDRSTRLEN + 10]; /* extra room for [ip]:port */
+  struct {
+    int  bytes_provided;
+    int  bytes_available;
+    char msgid[8];
+    char data[256];
+  } err_code;
+  const arg_type_t signature[] = { ARG_MEMPTR, ARG_MEMPTR, ARG_MEMPTR,
+                                    ARG_MEMPTR, ARG_END };
+  struct {
+    ILEarglist_base base;
+    ILEpointer      buffer;
+    ILEpointer      buflen;
+    ILEpointer      format;
+    ILEpointer      errcode;
+  } arglist __attribute__((aligned(16)));
+  /* Format name "TCPA1400" in EBCDIC */
+  char format[9] = "\xe3\xc3\xd7\xc1\xf1\xf4\xf0\xf0";
 
-  /* Load ILE API if not already loaded */
-  status = load_ile_api();
-  if (status != ARES_SUCCESS) {
-    /* Fall back to file-based configuration */
+  /* Load ILE API; fall back to file-based config if unavailable */
+  if (!load_ile_api()) {
     return ares_init_sysconfig_files(channel, sysconfig, ARES_TRUE);
   }
 
-  /* Allocate buffer for API call */
+  /* Allocate buffer for the API response */
   buflen = sizeof(tcpa1100_t) + sizeof(tcpa1400_t) +
            sizeof(dns_list_item_t) * 10 + 512;
 
@@ -173,32 +241,10 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
   }
 
   memset(buffer, 0, buflen);
-
-  /* Prepare error code structure */
-  struct {
-    int  bytes_provided;
-    int  bytes_available;
-    char msgid[8];
-    char data[256];
-  } err_code;
   memset(&err_code, 0, sizeof(err_code));
   err_code.bytes_provided = sizeof(err_code);
 
-  /* Prepare argument list for ILE call */
-  const arg_type_t signature[] = { ARG_MEMPTR, ARG_MEMPTR, ARG_MEMPTR,
-                                    ARG_MEMPTR, ARG_END };
-
-  struct {
-    ILEarglist_base base;
-    ILEpointer      buffer;
-    ILEpointer      buflen;
-    ILEpointer      format;
-    ILEpointer      errcode;
-  } arglist __attribute__((aligned(16)));
-
-  /* Format name in EBCDIC: "TCPA1400" */
-  char format[9] = "\xe3\xc3\xd7\xc1\xf1\xf4\xf0\xf0";
-
+  /* Wire up argument pointers for the ILE call */
   arglist.buffer.s.addr  = (address64_t)(intptr_t)&buffer[0];
   arglist.buflen.s.addr  = (address64_t)(intptr_t)&buflen;
   arglist.format.s.addr  = (address64_t)(intptr_t)&format[0];
@@ -209,68 +255,100 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
 
   if (rc != ILECALL_NOERROR || err_code.bytes_available) {
     ares_free(buffer);
-    /* Fall back to file-based configuration */
     return ares_init_sysconfig_files(channel, sysconfig, ARES_TRUE);
   }
 
-  /* Parse the returned data */
-  header  = (tcpa1100_t *)buffer;
+  /* --- Validate outer header offset before use (B5) --- */
+  header = (tcpa1100_t *)buffer;
+  if (header->additional_info_offset < 0 ||
+      (size_t)header->additional_info_offset + sizeof(tcpa1400_t) > buflen) {
+    ares_free(buffer);
+    return ares_init_sysconfig_files(channel, sysconfig, ARES_TRUE);
+  }
   header2 = (tcpa1400_t *)(buffer + header->additional_info_offset);
 
-  /* Extract DNS servers */
-  for (i = 0; i < header2->dns_list_count && i < 10; i++) {
-    dns_list_item_t *item =
-      (dns_list_item_t *)(buffer + header2->dns_list_offset +
-                          (i * header2->dns_list_entry_size));
+  /* --- Extract DNS servers (B5: validate offsets; B6: apply port) --- */
+  if (header2->dns_list_entry_size < (int)sizeof(dns_list_item_t)) {
+    ares_free(buffer);
+    return ares_init_sysconfig_files(channel, sysconfig, ARES_TRUE);
+  }
 
-    char ip[INET6_ADDRSTRLEN];
-    int  af = (item->version == 1 ? AF_INET : AF_INET6);
+  for (i = 0; i < header2->dns_list_count; i++) {
+    dns_list_item_t *item;
+    char             ip[INET6_ADDRSTRLEN];
+    int              af;
 
-    if (inet_ntop(af, item->ip_address, ip, sizeof(ip)) != NULL) {
-      /* Skip empty or invalid entries that the API returns when slots are unused.
-       * The QtocRtvTCPA API returns 0.0.0.0 or :: for unused DNS server slots
-       * rather than reducing dns_list_count, so we filter them here. */
-      if (strlen(ip) > 0 && strcmp(ip, "0.0.0.0") != 0 &&
-          strcmp(ip, "::") != 0) {
-        status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig, ip,
-                                             ARES_TRUE);
-        if (status != ARES_SUCCESS) {
-          ares_free(buffer);
-          return status;
-        }
-      }
+    off = (size_t)header2->dns_list_offset +
+          (size_t)i * (size_t)header2->dns_list_entry_size;
+    if (off + sizeof(dns_list_item_t) > buflen) {
+      break;
+    }
+    item = (dns_list_item_t *)(buffer + off);
+    af   = (item->version == 1 ? AF_INET : AF_INET6);
+
+    if (inet_ntop(af, item->ip_address, ip, sizeof(ip)) == NULL) {
+      continue;
+    }
+
+    /* Apply non-standard port if configured (B6) */
+    if (header2->dns_listening_port != 0 && header2->dns_listening_port != 53) {
+      snprintf(ip_str, sizeof(ip_str), "[%s]:%d", ip,
+               header2->dns_listening_port);
+    } else {
+      snprintf(ip_str, sizeof(ip_str), "%s", ip);
+    }
+
+    status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig,
+                                         ip_str, ARES_TRUE);
+    if (status != ARES_SUCCESS) {
+      ares_free(buffer);
+      return status;
     }
   }
 
-  /* Extract domain search list (convert from EBCDIC) */
-  if (header2->search_list[0] != '\0' && header2->search_list[0] != EBCDIC_SPACE) {
-    char search_ascii[256];
-    int  j;
-    for (j = 0; j < sizeof(header2->search_list) && header2->search_list[j] != '\0' &&
-                header2->search_list[j] != EBCDIC_SPACE;
-         j++) {
-      search_ascii[j] = ebcdic_to_ascii((unsigned char)header2->search_list[j]);
-    }
-    search_ascii[j] = '\0';
-
-    if (j > 0) {
-      sysconfig->domains = ares_strsplit(search_ascii, ", ", &sysconfig->ndomains);
-      if (sysconfig->domains == NULL) {
-        ares_free(buffer);
-        return ARES_ENOMEM;
-      }
+  /* --- Extract domain search list (B2: convert whole field, no truncation) ---
+   * The field is EBCDIC, space-separated, blank-padded.  Convert the whole
+   * buffer first; EBCDIC 0x40 becomes ASCII ' ', which ares_strsplit then
+   * uses as a delimiter — correctly splitting all domains and dropping the
+   * trailing blank padding as empty tokens. */
+  {
+    char search_ascii[sizeof(header2->search_list) + 1]; /* +1 for NUL (B2) */
+    ebcdic_to_ascii_str(header2->search_list, sizeof(header2->search_list),
+                        search_ascii);
+    sysconfig->domains =
+      ares_strsplit(search_ascii, ", ", &sysconfig->ndomains);
+    /* NULL with ndomains==0 means the field was empty, not an alloc error */
+    if (sysconfig->domains == NULL && sysconfig->ndomains > 0) {
+      ares_free(buffer);
+      return ARES_ENOMEM;
     }
   }
 
-  /* Configure timeout (time_interval is in seconds) */
+  /* --- Fall back to domain_name if search list yielded no domains (B7) ---
+   * CHGTCPDMN DMNNAME(...) sets a primary domain independently of the
+   * search list; use it as a single-entry search domain when needed. */
+  if (sysconfig->ndomains == 0 && header2->domain_name[0] != '\0' &&
+      header2->domain_name[0] != EBCDIC_SPACE) {
+    char domain_ascii[sizeof(header2->domain_name) + 1];
+    ebcdic_to_ascii_str(header2->domain_name, sizeof(header2->domain_name),
+                        domain_ascii);
+    sysconfig->domains =
+      ares_strsplit(domain_ascii, " ", &sysconfig->ndomains);
+    if (sysconfig->domains == NULL && sysconfig->ndomains > 0) {
+      ares_free(buffer);
+      return ARES_ENOMEM;
+    }
+  }
+
+  /* --- Configure timeout (B11: cast to size_t before multiply) --- */
   if (header2->time_interval > 0) {
-    sysconfig->timeout_ms = header2->time_interval * 1000;
+    sysconfig->timeout_ms = (size_t)header2->time_interval * 1000;
   }
 
-  /* Configure retries (attempts) */
-  if (header2->retries > 0) {
-    sysconfig->tries = header2->retries;
-  }
+  /* --- Configure tries (B3: IBM retries excludes first attempt) ---
+   * retries=0 means 1 total attempt; retries=2 means 3 total.
+   * Set unconditionally — the API always returns a valid value (0-99). */
+  sysconfig->tries = (size_t)header2->retries + 1;
 
   /* Configure rotate (initial_server: 1=first always, 2=rotate) */
   if (header2->initial_server == 2) {
@@ -282,12 +360,21 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
     sysconfig->usevc = ARES_TRUE;
   }
 
-  /* Configure lookup order (search_order: 1=local first, 2=remote first)
-   * This maps to the "lookup" option in resolv.conf */
+  /* --- Configure lookup order (B9: explicit if/else if; NULL-check strdup) ---
+   * search_order: 1=local files first ("fb"), 2=remote DNS first ("bf").
+   * Leave unchanged for 0 or any unrecognised value. */
   if (header2->search_order == 1) {
-    sysconfig->lookups = ares_strdup("fb");  /* files, bind */
-  } else {
-    sysconfig->lookups = ares_strdup("bf");  /* bind, files */
+    sysconfig->lookups = ares_strdup("fb"); /* files, bind */
+    if (sysconfig->lookups == NULL) {
+      ares_free(buffer);
+      return ARES_ENOMEM;
+    }
+  } else if (header2->search_order == 2) {
+    sysconfig->lookups = ares_strdup("bf"); /* bind, files */
+    if (sysconfig->lookups == NULL) {
+      ares_free(buffer);
+      return ARES_ENOMEM;
+    }
   }
 
   ares_free(buffer);
