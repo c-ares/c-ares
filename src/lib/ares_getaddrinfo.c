@@ -401,6 +401,16 @@ static ares_status_t file_lookup(struct host_query *hquery)
     return ARES_ENOTFOUND;
   }
 
+  /* RFC6761 section 6.3 #3 states that "Name resolution APIs and libraries
+   * SHOULD recognize localhost names as special and SHOULD always return the
+   * IP loopback address for address queries".
+   * We will also ignore ALL errors when trying to resolve localhost, such
+   * as permissions errors reading /etc/hosts or a malformed /etc/hosts. */
+  if (ares_is_localhost(hquery->name)) {
+    return ares_addrinfo_localhost(hquery->name, hquery->port, &hquery->hints,
+                                   hquery->ai);
+  }
+
   status = ares_hosts_search_host(
     hquery->channel,
     (hquery->hints.ai_flags & ARES_AI_ENVHOSTS) ? ARES_TRUE : ARES_FALSE,
@@ -421,21 +431,6 @@ static ares_status_t file_lookup(struct host_query *hquery)
 
 
 done:
-  /* RFC6761 section 6.3 #3 states that "Name resolution APIs and libraries
-   * SHOULD recognize localhost names as special and SHOULD always return the
-   * IP loopback address for address queries".
-   * We will also ignore ALL errors when trying to resolve localhost, such
-   * as permissions errors reading /etc/hosts or a malformed /etc/hosts.
-   *
-   * Also, just because the query itself returned success from /etc/hosts
-   * lookup doesn't mean it returned everything it needed to for all requested
-   * address families. As long as we're not on a critical out of memory
-   * condition pass it through to fill in any other address classes. */
-  if (status != ARES_ENOMEM && ares_is_localhost(hquery->name)) {
-    return ares_addrinfo_localhost(hquery->name, hquery->port, &hquery->hints,
-                                   hquery->ai);
-  }
-
   return status;
 }
 
