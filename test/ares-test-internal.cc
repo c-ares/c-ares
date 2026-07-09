@@ -1328,6 +1328,23 @@ TEST_F(FileChannelTest, GetAddrInfoHostsIPV6) {
   EXPECT_EQ("{ipv6.com addr=[[0000:0000:0000:0000:0000:0000:0000:0001]]}", ss.str());
 }
 
+TEST_F(FileChannelTest, GetAddrInfoHostsLocalhostIgnoresNonLoopback) {
+  TempFile hostsfile("192.0.2.10 localhost\n");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  AddrInfoResult result = {};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "localhost", NULL, &hints, AddrInfoCallback,
+                   &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(result.status_, ARES_SUCCESS);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{addr=[127.0.0.1]}", ss.str());
+}
+
 TEST_F(FileChannelTest, GetAddrInfoInvalidService) {
   TempFile hostsfile("1.2.3.4 example.com");
   EnvValue with_env("CARES_HOSTS", hostsfile.filename());
