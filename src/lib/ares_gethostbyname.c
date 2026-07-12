@@ -288,7 +288,7 @@ static ares_status_t ares_gethostbyname_file_int(ares_channel_t *channel,
                                                  const char *name, int family,
                                                  struct hostent **host)
 {
-  const ares_hosts_entry_t *entry;
+  const ares_hosts_entry_t *entry = NULL;
   ares_status_t             status;
 
   /* We only take the channel to ensure that ares_init() been called. */

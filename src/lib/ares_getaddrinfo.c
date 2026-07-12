@@ -393,7 +393,7 @@ ares_bool_t ares_is_localhost(const char *name)
 
 static ares_status_t file_lookup(struct host_query *hquery)
 {
-  const ares_hosts_entry_t *entry;
+  const ares_hosts_entry_t *entry = NULL;
   ares_status_t             status;
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */

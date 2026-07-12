@@ -197,8 +197,8 @@ static ares_status_t file_lookup(ares_channel_t         *channel,
                                  struct hostent        **host)
 {
   char                      ipaddr[INET6_ADDRSTRLEN];
-  const void               *ptr = NULL;
-  const ares_hosts_entry_t *entry;
+  const void               *ptr   = NULL;
+  const ares_hosts_entry_t *entry = NULL;
   ares_status_t             status;
 
   if (addr->family == AF_INET) {

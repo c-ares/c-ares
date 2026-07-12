@@ -1328,6 +1328,208 @@ TEST_F(FileChannelTest, GetAddrInfoHostsIPV6) {
   EXPECT_EQ("{ipv6.com addr=[[0000:0000:0000:0000:0000:0000:0000:0001]]}", ss.str());
 }
 
+// Regression for #1049: hostnames merged into a single entry only because they
+// share an ip address must not leak each other's *other* addresses (forward
+// lookup) or appear as each other's aliases (address-scoped cnames).  Here
+// mullvad-no-svg shares 10.124.2.38 with mullvad-no (which drags in the whole
+// group), but must resolve to only 10.124.2.38, and mullvad-no-osl (no shared
+// address) must not be reported as an alias.
+TEST_F(FileChannelTest, GetAddrInfoHostsSharedIPNoLeak)
+{
+  TempFile                   hostsfile("10.124.0.6   mullvad-no\n"
+                                       "10.124.0.108 mullvad-no\n"
+                                       "10.124.2.38  mullvad-no\n"
+                                       "10.124.0.6   mullvad-no-osl\n"
+                                       "10.124.0.108 mullvad-no-osl\n"
+                                       "10.124.2.38  mullvad-no-svg\n");
+  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints  = { 0, 0, 0, 0 };
+  AddrInfoResult             result = {};
+  hints.ai_family                   = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "mullvad-no-svg", NULL, &hints, AddrInfoCallback,
+                   &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{mullvad-no-svg->mullvad-no addr=[10.124.2.38]}", ss.str());
+}
+
+// The legitimate multi-address case still returns all of a hostname's own
+// addresses (mullvad-no genuinely has three).
+TEST_F(FileChannelTest, GetAddrInfoHostsMultiAddressPreserved)
+{
+  TempFile                   hostsfile("10.124.0.6   mullvad-no\n"
+                                       "10.124.0.108 mullvad-no\n"
+                                       "10.124.2.38  mullvad-no\n"
+                                       "10.124.0.6   mullvad-no-osl\n"
+                                       "10.124.0.108 mullvad-no-osl\n"
+                                       "10.124.2.38  mullvad-no-svg\n");
+  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints  = { 0, 0, 0, 0 };
+  AddrInfoResult             result = {};
+  hints.ai_family                   = AF_INET;
+  hints.ai_flags                    = ARES_AI_NOSORT | ARES_AI_ENVHOSTS;
+  ares_getaddrinfo(channel_, "mullvad-no", NULL, &hints, AddrInfoCallback,
+                   &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{addr=[10.124.0.6], addr=[10.124.0.108], addr=[10.124.2.38]}",
+            ss.str());
+}
+
+// Regression for #1049: a "bridge" line whose ip already belongs to one
+// hostname and whose hostname already belongs to another must NOT drop the
+// address.  Here mullvad-no-svg appears with 10.124.2.38 and with 10.64.0.1
+// (a line that also lists mullvad).  Both addresses must be returned; the old
+// merged store silently dropped 10.64.0.1.
+TEST_F(FileChannelTest, GetAddrInfoHostsBridgeFallback)
+{
+  TempFile                   hostsfile("10.64.0.1 mullvad\n"
+                                       "10.124.2.38 mullvad-no-svg\n"
+                                       "10.64.0.1 mullvad-no-svg\n");
+  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints  = { 0, 0, 0, 0 };
+  AddrInfoResult             result = {};
+  hints.ai_family                   = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "mullvad-no-svg", NULL, &hints, AddrInfoCallback,
+                   &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{mullvad->mullvad-no-svg addr=[10.124.2.38], addr=[10.64.0.1]}",
+            ss.str());
+}
+
+// A shared ip chains hostnames together, but a forward lookup must return only
+// the addresses the queried name actually appeared with.  c shares 1.1.1.1
+// with a (which owns only 1.1.1.1) and has its own 3.3.3.3; b's 2.2.2.2 must
+// not leak in.
+TEST_F(FileChannelTest, GetAddrInfoHostsChain)
+{
+  TempFile                   hostsfile("1.1.1.1 a\n"
+                                       "2.2.2.2 b\n"
+                                       "1.1.1.1 c\n"
+                                       "3.3.3.3 c\n");
+  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints  = { 0, 0, 0, 0 };
+  AddrInfoResult             result = {};
+  hints.ai_family                   = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "c", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{c->a addr=[1.1.1.1], addr=[3.3.3.3]}", ss.str());
+}
+
+// A hostname sharing an ip with a multi-family host must not inherit the other
+// host's address of a different family.  other shares 192.168.1.1 with host,
+// but host's 2620:1234::1 must not appear in an AF_UNSPEC lookup of other.
+TEST_F(FileChannelTest, GetAddrInfoHostsMixedFamilyNoLeak)
+{
+  TempFile                   hostsfile("192.168.1.1 host\n"
+                                       "2620:1234::1 host\n"
+                                       "192.168.1.1 other\n");
+  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints  = { 0, 0, 0, 0 };
+  AddrInfoResult             result = {};
+  hints.ai_family                   = AF_UNSPEC;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "other", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{other->host addr=[192.168.1.1]}", ss.str());
+}
+
+// Hostnames are matched case-insensitively, so FooBar and foobar are the same
+// name and FOOBAR resolves to both of their addresses.
+TEST_F(FileChannelTest, GetAddrInfoHostsCaseInsensitive)
+{
+  TempFile                   hostsfile("1.1.1.1 FooBar\n"
+                                       "2.2.2.2 foobar\n");
+  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints  = { 0, 0, 0, 0 };
+  AddrInfoResult             result = {};
+  hints.ai_family                   = AF_INET;
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "FOOBAR", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.ai_;
+  EXPECT_EQ("{FooBar addr=[1.1.1.1], addr=[2.2.2.2]}", ss.str());
+}
+
+// Reverse lookup (ares_gethostbyaddr) is address-scoped: only the names that
+// appeared with the queried address, and only that address.  a (which only
+// shares 1.1.1.1 with b) must not appear when reverse-resolving 2.2.2.2.
+// gethostbyaddr uses use_env=FALSE, so configure the hosts file via
+// ARES_OPT_HOSTS_FILE on a private channel.
+TEST_F(LibraryTest, GetHostByAddrHostsFile)
+{
+  TempFile            hostsfile("1.1.1.1 a\n"
+                                "1.1.1.1 b\n"
+                                "2.2.2.2 b\n"
+                                "2.2.2.2 c\n");
+  ares_channel_t     *channel = nullptr;
+  struct ares_options opts;
+  memset(&opts, 0, sizeof(opts));
+  opts.hosts_path = strdup(hostsfile.filename());
+  int optmask     = ARES_OPT_HOSTS_FILE;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+  free(opts.hosts_path);
+
+  struct in_addr addr;
+  ares_inet_pton(AF_INET, "2.2.2.2", &addr);
+  HostResult result;
+  ares_gethostbyaddr(channel, &addr, sizeof(addr), AF_INET, HostCallback,
+                     &result);
+  ProcessWork(channel, NoExtraFDs, nullptr);
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'b' aliases=[c] addrs=[2.2.2.2]}", ss.str());
+
+  ares_destroy(channel);
+}
+
+// Forward lookup via ares_gethostbyname (also use_env=FALSE, private channel).
+// c only appeared with 2.2.2.2; b's other address 1.1.1.1 must not leak.  The
+// canonical name is the first file-order name that shares the address (b).
+TEST_F(LibraryTest, GetHostByNameHostsFile)
+{
+  TempFile            hostsfile("1.1.1.1 a\n"
+                                "1.1.1.1 b\n"
+                                "2.2.2.2 b\n"
+                                "2.2.2.2 c\n");
+  ares_channel_t     *channel = nullptr;
+  struct ares_options opts;
+  memset(&opts, 0, sizeof(opts));
+  opts.hosts_path = strdup(hostsfile.filename());
+  int optmask     = ARES_OPT_HOSTS_FILE;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+  free(opts.hosts_path);
+
+  HostResult result;
+  ares_gethostbyname(channel, "c", AF_INET, HostCallback, &result);
+  ProcessWork(channel, NoExtraFDs, nullptr);
+  EXPECT_TRUE(result.done_);
+  std::stringstream ss;
+  ss << result.host_;
+  EXPECT_EQ("{'b' aliases=[c] addrs=[2.2.2.2]}", ss.str());
+
+  ares_destroy(channel);
+}
+
 TEST_F(FileChannelTest, GetAddrInfoInvalidService) {
   TempFile hostsfile("1.2.3.4 example.com");
   EnvValue with_env("CARES_HOSTS", hostsfile.filename());
