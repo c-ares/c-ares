@@ -25,7 +25,7 @@ jobs:
       - name: Install packages
         run: |
           brew uninstall cmake || true
-          brew install cmake googletest llvm autoconf automake libtool make ninja
+          brew install cmake googletest llvm autoconf automake libtool make ninja openssl@3
       - name: Checkout c-ares
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: "Make sure TCP FastOpen is enabled"
@@ -33,6 +33,18 @@ jobs:
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: lldb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: (crypto/DoT) build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          # Exercises the OpenSSL backend and the macOS Security.framework
+          # trust-anchor loading path, and runs the DoT mock tests.  Point at
+          # brew's OpenSSL so CMake doesn't pick up the system LibreSSL.
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3 -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           TEST_DEBUGGER: lldb
         run: |

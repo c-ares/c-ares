@@ -25,7 +25,7 @@ jobs:
       - name: Install packages
         uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
-          packages: cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind
+          packages: cmake ninja-build autoconf automake libtool g++ libgmock-dev pkg-config clang clang-tools lldb gdb valgrind libssl-dev
           version: 1.0
       - name: Checkout c-ares
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -40,6 +40,40 @@ jobs:
         run: |
           ./ci/build.sh
           sudo ./ci/test.sh
+      - name: "CMake: (crypto/DoT) build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -G Ninja"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          sudo ./ci/test.sh
+      - name: "CMake: ASAN (crypto/DoT): build and test c-ares"
+        env:
+          BUILD_TYPE: "asan"
+          CC: "clang"
+          CXX: "clang++"
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -G Ninja"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
+          CFLAGS: "-fsanitize=address"
+          CXXFLAGS: "-fsanitize=address"
+          LDFLAGS: "-fsanitize=address"
+          TEST_DEBUGGER: "none"
+        run: |
+          ./ci/build.sh
+          sudo ./ci/test.sh
+      - name: "Autotools: (crypto/DoT) build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+          CONFIG_OPTS: "--enable-cares-crypto"
+          TEST_DEBUGGER: gdb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      # Runs after the crypto autotools build because ci/distcheck.sh does an
+      # in-source ./configure, which would make a subsequent out-of-source
+      # ../configure fail with "source directory already configured".
       - name: "Autotools: build and test c-ares"
         env:
           BUILD_TYPE: autotools
