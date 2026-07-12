@@ -12,7 +12,7 @@ OBJECTS = $(addprefix $(OBJ_DIR)/, \
 CSRC = $(addprefix src/lib/, $(CSOURCES))
 #CSRC := $(filter-out src/lib/windows_port.c, $(CSOURCES))
 
-OBJ_SUBDIRS = $(OBJ_DIR)/dsa $(OBJ_DIR)/event $(OBJ_DIR)/legacy $(OBJ_DIR)/record $(OBJ_DIR)/str $(OBJ_DIR)/util
+OBJ_SUBDIRS = $(OBJ_DIR)/crypto $(OBJ_DIR)/dsa $(OBJ_DIR)/event $(OBJ_DIR)/legacy $(OBJ_DIR)/record $(OBJ_DIR)/str $(OBJ_DIR)/util
 
 VPATH = src/lib src/tools
 
