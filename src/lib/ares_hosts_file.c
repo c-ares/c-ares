@@ -102,6 +102,12 @@
  * the queried name, canonical first (the first such name in file order).
  */
 
+/*! Maximum number of address-scoped aliases (beyond the canonical name) that we
+ *  retain in a forward entry and emit as cnames.  Bounds the StevenBlack/hosts
+ *  blocklist case where a single address can carry hundreds of thousands of
+ *  names. */
+#define ARES_HOSTS_MAX_ALIASES 100
+
 struct ares_hosts_file {
   time_t               ts;
   /*! cache the filename so we know if the filename changes it automatically
@@ -258,8 +264,8 @@ fail:
 }
 
 /* Case-insensitive membership test for an ip/host string list */
-static ares_bool_t ares_hosts_iplist_contains(ares_llist_t *list,
-                                              const char   *ipaddr)
+static ares_bool_t ares_hosts_strlist_contains(ares_llist_t *list,
+                                               const char   *ipaddr)
 {
   ares_llist_node_t *node;
 
@@ -421,7 +427,7 @@ static ares_status_t ares_hosts_file_add(ares_hosts_file_t   *hosts,
     }
 
     /* Already multi-address.  Record the edge if this ip is new for host. */
-    if (ares_hosts_iplist_contains(m, ipaddr)) {
+    if (ares_hosts_strlist_contains(m, ipaddr)) {
       continue;
     }
     if (ares_hosts_list_append_strdup(m, ipaddr) == NULL) {
@@ -483,19 +489,27 @@ static ares_status_t ares_hosts_build_forward_entry(ares_hosts_file_t   *hosts,
     ares_hosts_entry_t *rev = ares_htable_strvp_get_direct(hosts->iphash, ip);
     ares_llist_node_t  *nnode;
 
-    if (ares_llist_len(ent->hosts) >= 101) {
-      break; /* LCOV_EXCL_LINE: DefensiveCoding */
+    /* Every ip in ent->ips was recorded during parse and so has an iphash
+     * entry; nothing removes from iphash.  Guard anyway so a future change that
+     * could drop an entry degrades to a lookup miss rather than a NULL deref.
+     */
+    if (rev == NULL) {
+      continue; /* LCOV_EXCL_LINE: DefensiveCoding */
+    }
+
+    if (ares_llist_len(ent->hosts) >= ARES_HOSTS_MAX_ALIASES + 1) {
+      break; /* LCOV_EXCL_LINE: FallbackCode */
     }
 
     for (nnode = ares_llist_node_first(rev->hosts); nnode != NULL;
          nnode = ares_llist_node_next(nnode)) {
       const char *nm = ares_llist_node_val(nnode);
 
-      if (ares_hosts_iplist_contains(ent->hosts, nm)) {
+      if (ares_hosts_strlist_contains(ent->hosts, nm)) {
         continue;
       }
-      if (ares_llist_len(ent->hosts) >= 101) {
-        break; /* LCOV_EXCL_LINE: DefensiveCoding */
+      if (ares_llist_len(ent->hosts) >= ARES_HOSTS_MAX_ALIASES + 1) {
+        break; /* LCOV_EXCL_LINE: FallbackCode */
       }
 
       if (ares_hosts_list_append_strdup(ent->hosts, nm) == NULL) {
@@ -994,11 +1008,11 @@ static ares_status_t
   while (node != NULL) {
     const char *host = ares_llist_node_val(node);
 
-    /* Cap at 100 aliases, some people use
+    /* Cap aliases (ARES_HOSTS_MAX_ALIASES); some people use
      * https://github.com/StevenBlack/hosts and we don't need 200k+ aliases */
     cnt++;
-    if (cnt > 100) {
-      break; /* LCOV_EXCL_LINE: DefensiveCoding */
+    if (cnt > ARES_HOSTS_MAX_ALIASES) {
+      break; /* LCOV_EXCL_LINE: FallbackCode */
     }
 
     cname = ares_append_addrinfo_cname(&cnames);
