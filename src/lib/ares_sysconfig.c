@@ -94,14 +94,15 @@ static ares_status_t ares_init_sysconfig_mvs(const ares_channel_t *channel,
 
   for (i = 0; i < count4; i++) {
     struct sockaddr_in *addr_in = &(res->nsaddr_list[i]);
-    struct ares_addr    addr;
+    ares_sconfig_t      sc;
 
-    addr.addr.addr4.s_addr = addr_in->sin_addr.s_addr;
-    addr.family            = AF_INET;
+    memset(&sc, 0, sizeof(sc));
+    sc.addr.addr.addr4.s_addr = addr_in->sin_addr.s_addr;
+    sc.addr.family            = AF_INET;
+    sc.udp_port               = htons(addr_in->sin_port);
+    sc.tcp_port               = sc.udp_port;
 
-    status = ares_sconfig_append(channel, &sysconfig->sconfig, &addr,
-                                 htons(addr_in->sin_port),
-                                 htons(addr_in->sin_port), NULL);
+    status = ares_sconfig_append(channel, &sysconfig->sconfig, &sc);
 
     if (status != ARES_SUCCESS) {
       return status;
@@ -110,15 +111,16 @@ static ares_status_t ares_init_sysconfig_mvs(const ares_channel_t *channel,
 
   for (i = 0; i < count6; i++) {
     struct sockaddr_in6 *addr_in = &(v6->__stat_nsaddr_list[i]);
-    struct ares_addr     addr;
+    ares_sconfig_t       sc;
 
-    addr.family = AF_INET6;
-    memcpy(&(addr.addr.addr6), &(addr_in->sin6_addr),
+    memset(&sc, 0, sizeof(sc));
+    sc.addr.family = AF_INET6;
+    memcpy(&(sc.addr.addr.addr6), &(addr_in->sin6_addr),
            sizeof(addr_in->sin6_addr));
+    sc.udp_port = htons(addr_in->sin_port);
+    sc.tcp_port = sc.udp_port;
 
-    status = ares_sconfig_append(channel, &sysconfig->sconfig, &addr,
-                                 htons(addr_in->sin_port),
-                                 htons(addr_in->sin_port), NULL);
+    status = ares_sconfig_append(channel, &sysconfig->sconfig, &sc);
 
     if (status != ARES_SUCCESS) {
       return status;
@@ -179,13 +181,13 @@ static ares_status_t ares_init_sysconfig_watt32(const ares_channel_t *channel,
   sock_init();
 
   for (i = 0; def_nameservers[i]; i++) {
-    struct ares_addr addr;
+    ares_sconfig_t sc;
 
-    addr.family            = AF_INET;
-    addr.addr.addr4.s_addr = htonl(def_nameservers[i]);
+    memset(&sc, 0, sizeof(sc));
+    sc.addr.family            = AF_INET;
+    sc.addr.addr.addr4.s_addr = htonl(def_nameservers[i]);
 
-    status =
-      ares_sconfig_append(channel, &sysconfig->sconfig, &addr, 0, 0, NULL);
+    status = ares_sconfig_append(channel, &sysconfig->sconfig, &sc);
 
     if (status != ARES_SUCCESS) {
       return status;

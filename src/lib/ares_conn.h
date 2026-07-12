@@ -31,8 +31,28 @@
 struct ares_conn;
 typedef struct ares_conn ares_conn_t;
 
+#include "crypto/ares_crypto.h"
+
 struct ares_server;
 typedef struct ares_server ares_server_t;
+
+/*! TLS certificate verification behavior for a DoT server */
+typedef enum {
+  /*! Strict when an authentication name is configured, opportunistic
+   *  otherwise (RFC 8310) */
+  ARES_TLS_VERIFY_DEFAULT = 0,
+  /*! Verify the certificate chain (and the authentication name when
+   *  configured); fail the connection otherwise */
+  ARES_TLS_VERIFY_STRICT = 1,
+  /*! Encrypt but perform no certificate verification */
+  ARES_TLS_VERIFY_OPPORTUNISTIC = 2
+} ares_tls_verify_t;
+
+/*! Resolve a connection's configured verify mode to the effective mode:
+ *  ARES_TLS_VERIFY_DEFAULT becomes strict when an authentication name is
+ *  configured, opportunistic otherwise (RFC 8310).  Shared by the session
+ *  cache key and both crypto backends so enforcement can't drift. */
+ares_tls_verify_t ares_tls_effective_verify(const ares_conn_t *conn);
 
 typedef enum {
   /*! No flags */
@@ -49,7 +69,9 @@ typedef enum {
    *  it).  Its in-flight queries continue to drain and it is cleaned up once
    *  idle.  This is a per-connection signal so that a transient failure does
    *  not evict otherwise-healthy connections to the same server. */
-  ARES_CONN_FLAG_NONEW = 1 << 3
+  ARES_CONN_FLAG_NONEW = 1 << 3,
+  /*! Connection uses TLS */
+  ARES_CONN_FLAG_TLS = 1 << 4
 } ares_conn_flags_t;
 
 typedef enum {
@@ -66,6 +88,12 @@ struct ares_conn {
   struct ares_addr        self_ip;
   ares_conn_flags_t       flags;
   ares_conn_state_flags_t state_flags;
+  ares_tls_t             *tls;
+  /*! Bytes at the head of out_buf provisionally sent as TLSv1.3 early data
+   *  (0-RTT) during the handshake but not yet consumed: they remain
+   *  buffered until the handshake confirms acceptance, so a rejected 0-RTT
+   *  flight replays through the normal write path. */
+  size_t                  tls_earlydata_sent;
 
   /*! Outbound buffered data that is not yet sent.  Exists as one contiguous
    *  stream in TCP format (big endian 16bit length prefix followed by DNS
@@ -149,6 +177,13 @@ struct ares_server {
   char                  ll_iface[64];    /* IPv6 Link Local Interface */
   unsigned int          ll_scope;        /* IPv6 Link Local Scope */
 
+  /* DNS-over-TLS (RFC 7858) configuration */
+  ares_bool_t           use_tls;           /* Server speaks TLS (over TCP) */
+  ares_tls_verify_t     tls_verify;        /* Certificate verification mode */
+  char                  tls_hostname[256]; /* Authentication name for SNI and
+                                            * certificate verification; blank
+                                            * for none */
+
   size_t                consec_failures; /* Consecutive query failure count
                                           * can be hard errors or timeouts
                                           */
@@ -184,6 +219,23 @@ ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
 ares_status_t ares_conn_flush(ares_conn_t *conn);
 ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
                                size_t *read_bytes);
+
+/*! Raw socket read/write, bypassing any TLS layering on the connection.
+ *  These are what the TLS backend's I/O bridge calls; everything else uses
+ *  ares_conn_read()/ares_conn_write() which route through TLS when
+ *  applicable. */
+ares_conn_err_t ares_conn_read_raw(ares_conn_t *conn, void *data, size_t len,
+                                   size_t *read_bytes);
+ares_conn_err_t ares_conn_write_raw(ares_conn_t *conn, const void *data,
+                                    size_t len, size_t *written);
+/*! Whether the TLS backend holds buffered decrypted data / complete records
+ *  that won't refire a socket read event; the read loop must keep reading
+ *  while true.  Returns ARES_FALSE for non-TLS connections. */
+ares_bool_t ares_conn_tls_read_pending(const ares_conn_t *conn);
+ares_status_t ares_conn_interpret_events(ares_fd_events_t      **out,
+                                         ares_channel_t         *channel,
+                                         const ares_fd_events_t *events,
+                                         size_t                 *nevents);
 ares_conn_t *ares_conn_from_fd(const ares_channel_t *channel, ares_socket_t fd);
 void ares_conn_sock_state_cb_update(ares_conn_t            *conn,
                                     ares_conn_state_flags_t flags);

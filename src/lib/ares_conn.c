@@ -42,8 +42,8 @@ void ares_conn_sock_state_cb_update(ares_conn_t            *conn,
   conn->state_flags |= flags;
 }
 
-ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
-                               size_t *read_bytes)
+ares_conn_err_t ares_conn_read_raw(ares_conn_t *conn, void *data, size_t len,
+                                   size_t *read_bytes)
 {
   ares_channel_t *channel = conn->server->channel;
   ares_conn_err_t err;
@@ -169,8 +169,8 @@ static ares_status_t ares_conn_set_self_ip(ares_conn_t *conn, ares_bool_t early)
   return ARES_SUCCESS;
 }
 
-ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
-                                size_t *written)
+ares_conn_err_t ares_conn_write_raw(ares_conn_t *conn, const void *data,
+                                    size_t len, size_t *written)
 {
   ares_channel_t         *channel = conn->server->channel;
   ares_bool_t             is_tfo  = ARES_FALSE;
@@ -231,6 +231,152 @@ done:
   return err;
 }
 
+/*! Drive the TLS handshake as needed; ARES_CONN_ERR_SUCCESS means the
+ *  session is established and application I/O may proceed */
+static ares_conn_err_t ares_conn_tls_advance_handshake(ares_conn_t *conn)
+{
+  switch (ares_tlsimp_get_state(conn->tls)) {
+    case ARES_TLS_STATE_INIT:
+    case ARES_TLS_STATE_EARLYDATA:
+    case ARES_TLS_STATE_CONNECT:
+      return ares_tlsimp_connect(conn->tls);
+    case ARES_TLS_STATE_ESTABLISHED:
+      return ARES_CONN_ERR_SUCCESS;
+    case ARES_TLS_STATE_SHUTDOWN:
+    case ARES_TLS_STATE_DISCONNECTED:
+      return ARES_CONN_ERR_CONNCLOSED;
+    case ARES_TLS_STATE_ERROR:
+    default:
+      return ARES_CONN_ERR_CONNRESET;
+  }
+}
+
+ares_bool_t ares_conn_tls_read_pending(const ares_conn_t *conn)
+{
+  /* The TLS backend may hold buffered decrypted data or complete records that
+   * won't produce a new socket read event (e.g. Schannel bulk-reads several
+   * records in one recv), so the read loop must keep reading while this is
+   * true rather than waiting on the fd. */
+  if (conn == NULL || !(conn->flags & ARES_CONN_FLAG_TLS) ||
+      conn->tls == NULL) {
+    return ARES_FALSE;
+  }
+  return ares_tlsimp_get_read_pending(conn->tls);
+}
+
+ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
+                               size_t *read_bytes)
+{
+  ares_conn_err_t err;
+
+  if (!(conn->flags & ARES_CONN_FLAG_TLS)) {
+    return ares_conn_read_raw(conn, data, len, read_bytes);
+  }
+
+  err = ares_conn_tls_advance_handshake(conn);
+  if (err != ARES_CONN_ERR_SUCCESS) {
+    return err;
+  }
+
+  *read_bytes = len;
+  err         = ares_tlsimp_read(conn->tls, data, read_bytes);
+  if (err != ARES_CONN_ERR_SUCCESS) {
+    *read_bytes = 0;
+    return err;
+  }
+  conn->state_flags |= ARES_CONN_STATE_CONNECTED;
+  return err;
+}
+
+ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
+                                size_t *written)
+{
+  ares_conn_err_t  err;
+  ares_tls_state_t state;
+  size_t           accepted = 0;
+  size_t           w;
+
+  if (!(conn->flags & ARES_CONN_FLAG_TLS)) {
+    return ares_conn_write_raw(conn, data, len, written);
+  }
+
+  *written = 0;
+
+  /* TLSv1.3 Early Data (0-RTT): while the handshake is still in progress and
+   * the resumed session advertises early-data capacity, feed the pending
+   * query into the early-data flight.  Bytes sent this way are tracked in
+   * conn->tls_earlydata_sent but NOT reported written until the handshake
+   * confirms acceptance below, so out_buf keeps them and a rejected flight
+   * replays.  DNS queries are idempotent, so 0-RTT replay is safe (same
+   * rationale as DoH over GET).
+   *
+   * A cache miss (no resumable session) reports an early-data size of 0, so
+   * this whole block is skipped and the connection does an ordinary 1-RTT
+   * handshake. */
+  state = ares_tlsimp_get_state(conn->tls);
+  if (state == ARES_TLS_STATE_INIT || state == ARES_TLS_STATE_EARLYDATA) {
+    size_t budget = ares_tlsimp_get_earlydata_size(conn->tls);
+    if (budget > conn->tls_earlydata_sent && len > conn->tls_earlydata_sent) {
+      size_t off = conn->tls_earlydata_sent;
+      size_t ew  = len - off;
+
+      if (ew > budget - off) {
+        ew = budget - off;
+      }
+
+      err = ares_tlsimp_earlydata_write(conn->tls,
+                                        (const unsigned char *)data + off, &ew);
+      if (err == ARES_CONN_ERR_SUCCESS) {
+        conn->tls_earlydata_sent += ew;
+      } else if (err == ARES_CONN_ERR_WOULDBLOCK) {
+        return ARES_CONN_ERR_WOULDBLOCK;
+      }
+      /* Any other early-data error (e.g. budget exhausted) just falls
+       * through to the normal handshake + write path. */
+    }
+  }
+
+  /* Drive the handshake to completion. */
+  err = ares_conn_tls_advance_handshake(conn);
+  if (err != ARES_CONN_ERR_SUCCESS) {
+    return err;
+  }
+
+  /* Handshake established.  Reconcile any early data we sent: if the server
+   * accepted it, those leading out_buf bytes are delivered and only the
+   * remainder needs writing; if it rejected them, everything is re-sent
+   * through the normal write path. */
+  if (conn->tls_earlydata_sent > 0) {
+    if (ares_tlsimp_earlydata_accepted(conn->tls)) {
+      accepted = conn->tls_earlydata_sent;
+    }
+    conn->tls_earlydata_sent = 0;
+  }
+
+  if (accepted >= len) {
+    *written = accepted;
+    return ARES_CONN_ERR_SUCCESS;
+  }
+
+  w = len - accepted;
+  err =
+    ares_tlsimp_write(conn->tls, (const unsigned char *)data + accepted, &w);
+  if (err != ARES_CONN_ERR_SUCCESS) {
+    /* If early data was delivered but the remainder blocked, report the
+     * delivered prefix so it is consumed and the rest retried from the
+     * correct offset. */
+    if (accepted > 0) {
+      *written = accepted;
+      return ARES_CONN_ERR_SUCCESS;
+    }
+    *written = 0;
+    return err;
+  }
+
+  *written = accepted + w;
+  return ARES_CONN_ERR_SUCCESS;
+}
+
 ares_status_t ares_conn_flush(ares_conn_t *conn)
 {
   const unsigned char *data;
@@ -279,6 +425,12 @@ ares_status_t ares_conn_flush(ares_conn_t *conn)
     err = ares_conn_write(conn, data, data_len, &count);
     if (err != ARES_CONN_ERR_SUCCESS) {
       if (err != ARES_CONN_ERR_WOULDBLOCK) {
+        /* Every fatal transport error -- including ARES_CONN_ERR_SECURITY from
+         * a failed TLS handshake / certificate verification -- currently
+         * collapses to ARES_ECONNREFUSED, so a strict verification failure is
+         * retried like a connection refusal.  A distinct terminal status that
+         * suppresses retry (and a no-downgrade security tier) is deferred to
+         * the follow-up tracked in #1255. */
         status = ARES_ECONNREFUSED;
         goto done;
       }
@@ -309,9 +461,25 @@ done:
       flags |= ARES_CONN_STATE_WRITE;
     }
 
-    /* If using TCP and not all data was written (partial write), that means
-     * we need to also wait on a write event */
-    if (conn->flags & ARES_CONN_FLAG_TCP && ares_buf_len(conn->out_buf)) {
+    if (conn->flags & ARES_CONN_FLAG_TLS &&
+        ares_tlsimp_get_state(conn->tls) != ARES_TLS_STATE_ESTABLISHED) {
+      /* While the TLS handshake is still in progress the queued query can't
+       * drain until it completes, so buffer-emptiness is the wrong signal for
+       * arming the write event: it would keep ARES_CONN_STATE_WRITE set while
+       * the handshake is blocked on a *readable* socket, and every
+       * level-triggered event loop would then spin at 100% CPU on the
+       * persistently-writable fd.  Instead, arm the write event only when the
+       * TLS layer actually wants to write.  (When it wants to read, we fall
+       * through with just ARES_CONN_STATE_READ, and process_read() re-flushes
+       * this buffer once the handshake finishes.) */
+      ares_tls_stateflag_t sf = ares_tlsimp_get_stateflag(conn->tls);
+      if (sf & (ARES_TLS_SF_READ_WANTWRITE | ARES_TLS_SF_WRITE_WANTWRITE)) {
+        flags |= ARES_CONN_STATE_WRITE;
+      }
+    } else if (conn->flags & ARES_CONN_FLAG_TCP &&
+               ares_buf_len(conn->out_buf)) {
+      /* If using TCP and not all data was written (partial write), that means
+       * we need to also wait on a write event */
       flags |= ARES_CONN_STATE_WRITE;
     }
 
@@ -373,8 +541,28 @@ ares_status_t ares_open_connection(ares_conn_t   **conn_out,
     /* LCOV_EXCL_STOP */
   }
 
+  if (server->use_tls) {
+    if (!is_tcp) {
+      /* DoT is TLS over TCP; UDP connections must never be requested for a
+       * TLS server */
+      status = ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+      goto done;              /* LCOV_EXCL_LINE: DefensiveCoding */
+    }
+    conn->flags |= ARES_CONN_FLAG_TLS;
+    status       = ares_tls_create(&conn->tls, channel->crypto_ctx, conn);
+    if (status != ARES_SUCCESS) {
+      /* ARES_ENOTIMP when built without crypto support */
+      goto done;
+    }
+  }
+
   /* Try to enable TFO always if using TCP. it will fail later on if its
-   * really not supported when we try to enable it on the socket. */
+   * really not supported when we try to enable it on the socket.
+   * For TLS this composes with the handshake: the first BIO write (the
+   * ClientHello, carrying 0-RTT early data when a session is resumed)
+   * rides the SYN via the same ares_conn_write_raw() TFO_INITIAL path,
+   * giving true 0-RTT including the TCP round trip.  Falls back to an
+   * ordinary connect where TFO is unavailable. */
   if (conn->flags & ARES_CONN_FLAG_TCP) {
     conn->flags |= ARES_CONN_FLAG_TFO;
   }
@@ -488,6 +676,7 @@ done:
   if (status != ARES_SUCCESS) {
     ares_llist_node_claim(node);
     ares_llist_destroy(conn->queries_to_conn);
+    ares_tlsimp_destroy(conn->tls);
     ares_socket_close(channel, conn->fd);
     ares_buf_destroy(conn->out_buf);
     ares_buf_destroy(conn->in_buf);
@@ -508,4 +697,103 @@ ares_conn_t *ares_conn_from_fd(const ares_channel_t *channel, ares_socket_t fd)
   }
 
   return ares_llist_node_val(node);
+}
+
+ares_status_t ares_conn_interpret_events(ares_fd_events_t      **out,
+                                         ares_channel_t         *channel,
+                                         const ares_fd_events_t *events,
+                                         size_t                 *nevents)
+{
+  size_t      i;
+  size_t      orig_events = *nevents;
+  size_t      cnt         = 0;
+  ares_bool_t has_tls     = ARES_FALSE;
+
+  if (orig_events == 0 || events == NULL || nevents == NULL || out == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *out = NULL;
+
+  /* Common case: no TLS connections are involved, so the events apply
+   * as-is -- indicated by a NULL out with success -- and the hot event
+   * path performs no allocation */
+  for (i = 0; i < orig_events; i++) {
+    ares_conn_t *conn = ares_conn_from_fd(channel, events[i].fd);
+    if (conn != NULL && (conn->flags & ARES_CONN_FLAG_TLS)) {
+      has_tls = ARES_TRUE;
+      break;
+    }
+  }
+  if (!has_tls) {
+    return ARES_SUCCESS;
+  }
+
+  *out = ares_malloc_zero_array(orig_events, sizeof(**out));
+  if (*out == NULL) {
+    return ARES_ENOMEM;
+  }
+
+  for (i = 0; i < orig_events; i++) {
+    ares_tls_stateflag_t sf;
+    ares_conn_t         *conn = ares_conn_from_fd(channel, events[i].fd);
+
+    if (conn == NULL || events[i].events == ARES_FD_EVENT_NONE) {
+      continue;
+    }
+
+    (*out)[cnt].fd = events[i].fd;
+    if (!(conn->flags & ARES_CONN_FLAG_TLS)) {
+      (*out)[cnt].events = events[i].events;
+      cnt++;
+      continue;
+    }
+
+    /* Want-flags redirect events while an operation is blocked inside the
+     * TLS layer (e.g. a logical write needing a readable socket during a
+     * handshake).  When an operation's want-group is empty the TLS layer
+     * has no opinion and the event passes through with its natural
+     * meaning, so pending upper-layer work (like a queued query right
+     * after the handshake completes) still gets dispatched. */
+    sf = ares_tlsimp_get_stateflag(conn->tls);
+    if (events[i].events & ARES_FD_EVENT_READ) {
+      if (sf & ARES_TLS_SF_READ_WANTREAD || !(sf & ARES_TLS_SF_READ)) {
+        (*out)[cnt].events |= ARES_FD_EVENT_READ;
+      }
+      if (sf & ARES_TLS_SF_WRITE_WANTREAD) {
+        (*out)[cnt].events |= ARES_FD_EVENT_WRITE;
+      }
+    }
+    if (events[i].events & ARES_FD_EVENT_WRITE) {
+      if (sf & ARES_TLS_SF_READ_WANTWRITE) {
+        (*out)[cnt].events |= ARES_FD_EVENT_READ;
+      }
+      if (sf & ARES_TLS_SF_WRITE_WANTWRITE || !(sf & ARES_TLS_SF_WRITE)) {
+        (*out)[cnt].events |= ARES_FD_EVENT_WRITE;
+      }
+    }
+
+    /* Before the socket is connected a write event is the connect
+     * notification -- with TCP FastOpen, the ack of the SYN that already
+     * carried the ClientHello.  The want-flag remapping above can map it to
+     * nothing when the just-started handshake is already blocked on read,
+     * which would swallow the notification: process_write() would never run to
+     * mark the connection connected and re-derive the socket wait-set, so the
+     * write event stays armed on a persistently-writable socket and the event
+     * loop busy-spins.  Pass a connect-time write event through so the
+     * connection makes progress and the wait-set is recomputed. */
+    if (!(conn->state_flags & ARES_CONN_STATE_CONNECTED) &&
+        (events[i].events & ARES_FD_EVENT_WRITE)) {
+      (*out)[cnt].events |= ARES_FD_EVENT_WRITE;
+    }
+
+    /* Only keep the entry if the want-flag remapping produced actual event
+     * bits; a zero-events entry would inflate nevents for no reason. */
+    if ((*out)[cnt].events != ARES_FD_EVENT_NONE) {
+      cnt++;
+    }
+  }
+
+  *nevents = cnt;
+  return ARES_SUCCESS;
 }

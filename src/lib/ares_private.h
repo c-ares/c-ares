@@ -61,6 +61,7 @@
 #include "util/ares_threads.h"
 #include "ares_socket.h"
 #include "ares_conn.h"
+#include "crypto/ares_crypto.h"
 #include "ares_str.h"
 #include "str/ares_strsplit.h"
 #include "ares_punycode.h"
@@ -302,6 +303,9 @@ struct ares_channeldata {
   ares_bool_t                         reinit_pending;
   ares_thread_t                      *reinit_thread;
 
+  /* Crypto subsystem state */
+  ares_crypto_ctx_t                  *crypto_ctx;
+
   /* Whether the system is up or not.  This is mainly to prevent deadlocks
    * and access violations during the cleanup process.  Some things like
    * system config changes might get triggered and we need a flag to make
@@ -482,10 +486,26 @@ ares_status_t ares_addrinfo_localhost(const char *name, unsigned short port,
 ares_status_t ares_servers_update(ares_channel_t *channel,
                                   ares_llist_t   *server_list,
                                   ares_bool_t     user_specified);
-ares_status_t
-  ares_sconfig_append(const ares_channel_t *channel, ares_llist_t **sconfig,
-                      const struct ares_addr *addr, unsigned short udp_port,
-                      unsigned short tcp_port, const char *ll_iface);
+
+/*! Server configuration entry as parsed from a configuration source,
+ *  before being realized as an ares_server_t */
+typedef struct {
+  struct ares_addr  addr;
+  unsigned short    tcp_port;
+  unsigned short    udp_port;
+
+  char              ll_iface[64];
+  unsigned int      ll_scope;
+
+  /* DNS-over-TLS settings, see the ares_server_t equivalents */
+  ares_bool_t       use_tls;
+  ares_tls_verify_t tls_verify;
+  char              tls_hostname[256];
+} ares_sconfig_t;
+
+ares_status_t ares_sconfig_append(const ares_channel_t *channel,
+                                  ares_llist_t        **sconfig,
+                                  const ares_sconfig_t *s);
 ares_status_t ares_sconfig_append_fromstr(const ares_channel_t *channel,
                                           ares_llist_t        **sconfig,
                                           const char           *str,

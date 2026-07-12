@@ -65,6 +65,17 @@ void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status)
 
   ares_conn_sock_state_cb_update(conn, ARES_CONN_STATE_NONE);
 
+  if (conn->flags & ARES_CONN_FLAG_TLS) {
+    /* Best-effort close_notify: an abruptly-dropped connection causes the
+     * TLS backend to evict the session from the resumption cache, losing
+     * the warm-start (and eventually 0-RTT) benefit for the next
+     * connection */
+    if (ares_tlsimp_get_state(conn->tls) == ARES_TLS_STATE_ESTABLISHED) {
+      (void)ares_tlsimp_shutdown(conn->tls);
+    }
+    ares_tlsimp_destroy(conn->tls);
+  }
+
   ares_socket_close(channel, conn->fd);
 
   ares_free(conn);
