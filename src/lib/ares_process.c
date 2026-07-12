@@ -58,7 +58,7 @@ static ares_status_t process_answer(ares_channel_t      *channel,
                                     const ares_timeval_t *now,
                                     ares_array_t        **requeue);
 static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
-                              ares_status_t failure_status,
+                              ares_status_t  failure_status,
                               ares_array_t **requeue);
 static ares_bool_t same_questions(const ares_query_t      *query,
                                   const ares_dns_record_t *arec);
@@ -1037,13 +1037,13 @@ cleanup:
 }
 
 static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
-                              ares_status_t failure_status,
+                              ares_status_t  failure_status,
                               ares_array_t **requeue)
 {
-  ares_server_t  *server         = conn->server;
-  ares_channel_t *channel        = server->channel;
-  ares_array_t   *local_requeue  = NULL;
-  ares_array_t  **use_requeue    = requeue != NULL ? requeue : &local_requeue;
+  ares_server_t  *server        = conn->server;
+  ares_channel_t *channel       = server->channel;
+  ares_array_t   *local_requeue = NULL;
+  ares_array_t  **use_requeue   = requeue != NULL ? requeue : &local_requeue;
 
   /* Increment failures first before requeue so it is unlikely to requeue
    * to the same server */

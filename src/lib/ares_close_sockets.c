@@ -28,8 +28,8 @@
 #include "ares_private.h"
 #include <assert.h>
 
-static void ares_requeue_queries(ares_conn_t  *conn,
-                                 ares_status_t requeue_status,
+static void ares_requeue_queries(ares_conn_t   *conn,
+                                 ares_status_t  requeue_status,
                                  ares_array_t **requeue)
 {
   ares_query_t  *query;
