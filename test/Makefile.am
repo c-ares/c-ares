@@ -24,9 +24,11 @@ noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump ares_queryloop
 EXTRA_DIST = fuzzcheck.sh CMakeLists.txt Makefile.m32 Makefile.msvc README.md $(srcdir)/fuzzinput/* $(srcdir)/fuzznames/*
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 
-# Not interested in coverage of test code, but linking the test binary needs the coverage option
-arestest_CXXFLAGS = $(AM_CXXFLAGS) $(GMOCK_CFLAGS)
-arestest_LDADD = $(GMOCK_LIBS) $(top_builddir)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS)
+# Not interested in coverage of test code, but linking the test binary needs the coverage option.
+# The mock DoT server drives a TLS server directly (e.g. OpenSSL), so the test
+# binary needs the crypto backend's include/link flags in --enable-cares-crypto builds.
+arestest_CXXFLAGS = $(AM_CXXFLAGS) $(GMOCK_CFLAGS) $(CARES_CRYPTO_CPPFLAGS)
+arestest_LDADD = $(GMOCK_LIBS) $(top_builddir)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS) $(CARES_CRYPTO_LIBS) $(CARES_CRYPTO_LDFLAGS)
 
 aresfuzz_SOURCES = $(FUZZSOURCES)
 aresfuzz_LDADD = $(top_builddir)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS)
