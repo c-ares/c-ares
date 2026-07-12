@@ -24,7 +24,10 @@ It is possible to specify default arguments for \fBadig\fR via \fB${XDG_CONFIG_H
 .TP
 \fB@server\fR
 Server ip address.  May specify multiple in comma delimited format. May be
-specified in URI format.
+specified in URI format, including \fIdns+tls://\fP for DNS over TLS (DoT),
+e.g. \fI@dns+tls://1.1.1.1?hostname=one.one.one.one\fR.  See
+\fBares_set_servers_csv\fR(3) for the full URI syntax and query parameters
+(\fIhostname\fR, \fIverify\fR, ...).
 .TP
 \fBname\fR
 Name of the resource record that is to be looked up

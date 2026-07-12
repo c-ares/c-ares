@@ -82,19 +82,17 @@ in the future.
 specified as part of the authority component of the URI will be used for both
 UDP and TCP by default, this option will override the TCP port.
 
-\fIipaddr\fP - Only for \fIdns+tls://\fP and \fIdns+https://\fP. If the
-authority component of the URI contains a hostname, this is used to specify the
-ip address of the hostname. If not specified, will need to use a non-secure
-server to perform a DNS lookup to retrieve this information. It is always
-recommended to have both the ip address and fully qualified domain name
-specified.
+\fIhostname\fP - Only for \fIdns+tls://\fP. The authority component of a
+\fIdns+tls://\fP URI is always an ip address; this parameter supplies the
+fully qualified domain name of the server, used as the TLS SNI and certificate
+authentication name. Recommended (and required for \fIverify=strict\fP).
 
-\fIhostname\fP - Only for \fIdns+tls://\fP and \fIdns+https://\fP. If the
-authority component of the URI contains an ip address, this is used to specify
-the fully qualified domain name of the server. If not specified, will need to
-use a non-secure server to perform a DNS reverse lookup to retrieve this
-information. It is always recommended to have both the ip address and fully
-qualified domain name specified.
+\fIverify\fP - Only for \fIdns+tls://\fP. Certificate verification mode, per
+RFC 8310. One of \fIstrict\fP (verify the certificate chain, and the
+authentication name when a hostname is configured; fail the connection
+otherwise), \fIopportunistic\fP (encrypt but perform no certificate
+verification), or \fIdefault\fP (strict when a hostname is configured,
+opportunistic otherwise). Defaults to \fIdefault\fP.
 
 \fIdomain\fP - If specified, this server is a domain-specific server. Any
 queries for this domain will be routed to this server. Multiple servers may be
@@ -111,14 +109,14 @@ dns://192.168.1.1:55
 dns://192.168.1.1?tcpport=1153
 dns://10.0.1.1?domain=myvpn.com
 dns+tls://8.8.8.8?hostname=dns.google
-dns+tls://one.one.one.one?ipaddr=1.1.1.1
+dns+tls://1.1.1.1?hostname=one.one.one.one&verify=strict
 
 .fi
 
-\fBNOTE\fP: While we are defining the scheme for things like domain-specific
-servers, DNS over TLS and DNS over HTTPS, the underlying implementations for
-those features do not yet exist and therefore will result in errors if they are
-attempted to be used.
+\fBNOTE\fP: DNS over TLS (\fIdns+tls://\fP) is implemented when c-ares is built
+with crypto support.  The domain-specific server and DNS over HTTPS
+(\fIdns+https://\fP) implementations do not yet exist and will result in errors
+if used.
 
 .PP
 As of c-ares 1.24.0, \fBares_set_servers_csv\fP and \fBares_set_servers_ports_csv\fP
