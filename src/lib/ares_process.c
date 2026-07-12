@@ -58,7 +58,8 @@ static ares_status_t process_answer(ares_channel_t      *channel,
                                     const ares_timeval_t *now,
                                     ares_array_t        **requeue);
 static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
-                              ares_status_t failure_status);
+                              ares_status_t failure_status,
+                              ares_array_t **requeue);
 static ares_bool_t same_questions(const ares_query_t      *query,
                                   const ares_dns_record_t *arec);
 static void end_query(ares_channel_t *channel, ares_server_t *server,
@@ -401,7 +402,7 @@ static ares_status_t process_write(ares_channel_t *channel,
 
   status = ares_conn_flush(conn);
   if (status != ARES_SUCCESS) {
-    handle_conn_error(conn, ARES_TRUE, status);
+    handle_conn_error(conn, ARES_TRUE, status, NULL);
   }
   return status;
 }
@@ -439,7 +440,7 @@ void ares_process_pending_write(ares_channel_t *channel)
     /* Enqueue any pending data if there is any */
     status = ares_conn_flush(conn);
     if (status != ARES_SUCCESS) {
-      handle_conn_error(conn, ARES_TRUE, status);
+      handle_conn_error(conn, ARES_TRUE, status, NULL);
     }
   }
 
@@ -469,7 +470,7 @@ static ares_status_t read_conn_packets(ares_conn_t *conn,
     if (!(conn->flags & ARES_CONN_FLAG_TCP) &&
         ares_buf_append_be16(conn->in_buf, 0) != ARES_SUCCESS) {
       handle_conn_error(conn, ARES_FALSE /* not critical to connection */,
-                        ARES_SUCCESS);
+                        ARES_SUCCESS, NULL);
       return ARES_ENOMEM;
     }
 
@@ -478,7 +479,7 @@ static ares_status_t read_conn_packets(ares_conn_t *conn,
 
     if (ptr == NULL) {
       handle_conn_error(conn, ARES_FALSE /* not critical to connection */,
-                        ARES_SUCCESS);
+                        ARES_SUCCESS, NULL);
       return ARES_ENOMEM;
     }
 
@@ -532,7 +533,7 @@ static ares_status_t read_conn_packets(ares_conn_t *conn,
      * immediate connection-failure behavior so retries happen promptly.
      * Only defer if there is buffered data to parse first. */
     if (ares_buf_len(conn->in_buf) == 0) {
-      handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED);
+      handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED, NULL);
       return ARES_ECONNREFUSED;
     }
 
@@ -714,7 +715,7 @@ static ares_status_t read_answers(ares_conn_t *conn, const ares_timeval_t *now)
     /* We finished reading this answer; process it */
     status = process_answer(channel, data, data_len, conn, now, &requeue);
     if (status != ARES_SUCCESS) {
-      handle_conn_error(conn, ARES_TRUE, status);
+      handle_conn_error(conn, ARES_TRUE, status, &requeue);
       goto cleanup;
     }
 
@@ -758,7 +759,7 @@ static ares_status_t process_read(ares_channel_t       *channel,
   if (conn_error) {
     conn = ares_conn_from_fd(channel, read_fd);
     if (conn != NULL) {
-      handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED);
+      handle_conn_error(conn, ARES_TRUE, ARES_ECONNREFUSED, NULL);
     }
   }
 
@@ -1036,9 +1037,13 @@ cleanup:
 }
 
 static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
-                              ares_status_t failure_status)
+                              ares_status_t failure_status,
+                              ares_array_t **requeue)
 {
-  ares_server_t *server = conn->server;
+  ares_server_t  *server         = conn->server;
+  ares_channel_t *channel        = server->channel;
+  ares_array_t   *local_requeue  = NULL;
+  ares_array_t  **use_requeue    = requeue != NULL ? requeue : &local_requeue;
 
   /* Increment failures first before requeue so it is unlikely to requeue
    * to the same server */
@@ -1048,7 +1053,13 @@ static void handle_conn_error(ares_conn_t *conn, ares_bool_t critical_failure,
   }
 
   /* This will requeue any connections automatically */
-  ares_close_connection(conn, failure_status);
+  ares_close_connection(conn, failure_status, use_requeue);
+
+  if (requeue == NULL) {
+    ares_timeval_t now;
+    ares_tvnow(&now);
+    ares_flush_requeue(channel, &now, &local_requeue);
+  }
 }
 
 /* Requeue query will normally call ares_send_query() but in some circumstances
@@ -1475,7 +1486,7 @@ static ares_status_t ares_send_query_int(ares_server_t        *requested_server,
      * error codes */
     case ARES_ECONNREFUSED:
     case ARES_EBADFAMILY:
-      handle_conn_error(conn, ARES_TRUE, status);
+      handle_conn_error(conn, ARES_TRUE, status, requeue);
       status = ares_requeue_query(query, now, status, ARES_TRUE, NULL, requeue);
       if (status == ARES_ETIMEOUT) {
         status = ARES_ECONNREFUSED;

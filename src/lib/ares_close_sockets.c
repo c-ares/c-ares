@@ -29,7 +29,8 @@
 #include <assert.h>
 
 static void ares_requeue_queries(ares_conn_t  *conn,
-                                 ares_status_t requeue_status)
+                                 ares_status_t requeue_status,
+                                 ares_array_t **requeue)
 {
   ares_query_t  *query;
   ares_timeval_t now;
@@ -37,11 +38,12 @@ static void ares_requeue_queries(ares_conn_t  *conn,
   ares_tvnow(&now);
 
   while ((query = ares_llist_first_val(conn->queries_to_conn)) != NULL) {
-    ares_requeue_query(query, &now, requeue_status, ARES_TRUE, NULL, NULL);
+    ares_requeue_query(query, &now, requeue_status, ARES_TRUE, NULL, requeue);
   }
 }
 
-void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status)
+void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status,
+                           ares_array_t **requeue)
 {
   ares_server_t  *server  = conn->server;
   ares_channel_t *channel = server->channel;
@@ -59,7 +61,7 @@ void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status)
   ares_buf_destroy(conn->out_buf);
 
   /* Requeue queries to other connections */
-  ares_requeue_queries(conn, requeue_status);
+  ares_requeue_queries(conn, requeue_status, requeue);
 
   ares_llist_destroy(conn->queries_to_conn);
 
@@ -76,7 +78,7 @@ void ares_close_sockets(ares_server_t *server)
 
   while ((node = ares_llist_node_first(server->connections)) != NULL) {
     ares_conn_t *conn = ares_llist_node_val(node);
-    ares_close_connection(conn, ARES_SUCCESS);
+    ares_close_connection(conn, ARES_SUCCESS, NULL);
   }
 }
 
@@ -131,7 +133,7 @@ void ares_check_cleanup_conns(const ares_channel_t *channel)
       }
 
       /* Clean it up */
-      ares_close_connection(conn, ARES_SUCCESS);
+      ares_close_connection(conn, ARES_SUCCESS, NULL);
     }
   }
 }
