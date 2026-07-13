@@ -67,6 +67,8 @@ jobs:
           BUILD_TYPE: "asan"
           CC: "clang"
           CXX: "clang++"
+          # Enable crypto so the DoT tests run under ASAN
+          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_CONTAINER_TESTS=ON"
           CFLAGS: "-fsanitize=address"
           CXXFLAGS: "-fsanitize=address"
@@ -91,6 +93,8 @@ jobs:
       - name: "Valgrind: build and test c-ares (no TCP FastOpen)"
         env:
           BUILD_TYPE: "valgrind"
+          # Enable crypto so the DoT tests run under valgrind
+          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -G Ninja"
           TEST_WRAP: "valgrind --leak-check=full"
           TEST_FILTER: "--gtest_filter=-*Container*:*LiveSearchANY*:*LiveSearchTXT*"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
