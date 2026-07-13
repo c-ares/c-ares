@@ -476,6 +476,19 @@ done:
       if (sf & (ARES_TLS_SF_READ_WANTWRITE | ARES_TLS_SF_WRITE_WANTWRITE)) {
         flags |= ARES_CONN_STATE_WRITE;
       }
+    } else if (conn->flags & ARES_CONN_FLAG_TLS) {
+      /* Established TLS: buffer-emptiness is still the wrong signal to arm the
+       * write event.  A write can block on a *readable* socket (TLS 1.3
+       * post-handshake message or TLS 1.2 renegotiation set
+       * ARES_TLS_SF_WRITE_WANTREAD) while the query remains in out_buf; arming
+       * WRITE there would spin at 100% CPU on the persistently-writable fd.
+       * Arm WRITE only when the TLS layer actually wants to write -- which also
+       * covers the ordinary partial-write case (WANT_WRITE on a full socket
+       * buffer). */
+      ares_tls_stateflag_t sf = ares_tlsimp_get_stateflag(conn->tls);
+      if (sf & (ARES_TLS_SF_READ_WANTWRITE | ARES_TLS_SF_WRITE_WANTWRITE)) {
+        flags |= ARES_CONN_STATE_WRITE;
+      }
     } else if (conn->flags & ARES_CONN_FLAG_TCP &&
                ares_buf_len(conn->out_buf)) {
       /* If using TCP and not all data was written (partial write), that means
@@ -705,11 +718,16 @@ ares_status_t ares_conn_interpret_events(ares_fd_events_t      **out,
                                          size_t                 *nevents)
 {
   size_t      i;
-  size_t      orig_events = *nevents;
-  size_t      cnt         = 0;
-  ares_bool_t has_tls     = ARES_FALSE;
+  size_t      orig_events;
+  size_t      cnt     = 0;
+  ares_bool_t has_tls = ARES_FALSE;
 
-  if (orig_events == 0 || events == NULL || nevents == NULL || out == NULL) {
+  if (nevents == NULL || events == NULL || out == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  orig_events = *nevents;
+  if (orig_events == 0) {
     return ARES_EFORMERR;
   }
 

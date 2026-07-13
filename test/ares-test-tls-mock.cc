@@ -237,13 +237,9 @@ TEST_F(MockDoTServerTest, DefaultWithNameMismatch)
   }
   ASSERT_TRUE(BuildChannel(true, "default", "wrong.example.com"));
 
-  DNSPacket rsp;
-  rsp.set_response()
-    .set_aa()
-    .add_question(new DNSQuestion("dot.example.com", T_A))
-    .add_answer(new DNSARR("dot.example.com", 100, { 1, 2, 3, 4 }));
-  ON_CALL(*server_, OnRequest("dot.example.com", T_A))
-    .WillByDefault(SetReply(server_.get(), &rsp));
+  /* verify=default + hostname resolves to strict, so a name mismatch must abort
+   * before the query is transmitted (mirrors StrictNameMismatch). */
+  EXPECT_CALL(*server_, OnRequest("dot.example.com", T_A)).Times(0);
 
   HostResult result;
   ares_gethostbyname(channel_, "dot.example.com", AF_INET, HostCallback,
@@ -261,6 +257,18 @@ TEST_F(MockDoTServerTest, StrictRequiresHostname)
     GTEST_SKIP() << "no mock DoT server backend for this crypto build";
   }
   EXPECT_FALSE(BuildChannel(true, "strict"));
+}
+
+/* An IP literal is not a usable TLS authentication name: RFC 6066 forbids an
+ * IP-literal SNI, and the reference identity matches only dNSName SANs (never
+ * iPAddress), so a numeric hostname= is rejected at config time rather than
+ * deferred to a guaranteed handshake failure. */
+TEST_F(MockDoTServerTest, IPLiteralHostnameRejected)
+{
+  if (!HasBackend()) {
+    GTEST_SKIP() << "no mock DoT server backend for this crypto build";
+  }
+  EXPECT_FALSE(BuildChannel(true, "strict", "1.1.1.1"));
 }
 
 /* Opportunistic mode encrypts without verifying, so an untrusted cert still
@@ -449,17 +457,26 @@ TEST_F(MockDoTServerTest, TamperedRecord)
   HostResult result;
   ares_gethostbyname(channel_, "dot.example.com", AF_INET, HostCallback,
                      &result);
+  auto start = std::chrono::steady_clock::now();
   Process();
+  auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::steady_clock::now() - start)
+                      .count();
   EXPECT_TRUE(result.done_);
   EXPECT_NE(ARES_SUCCESS, result.status_);
   /* The handshake itself completes; the tampered record fails afterward.  At
    * least one full handshake proves the failure is at the application-data
    * layer (exercising the decrypt-failure classification), not a handshake
-   * failure, and that it failed promptly rather than hanging until the query
-   * timed out.  How many times it then retries is backend-specific -- OpenSSL
+   * failure.  How many times it then retries is backend-specific -- OpenSSL
    * tears the connection down and reconnects, Schannel fails terminally -- so
    * assert only that the handshake was reached, not an exact count. */
   EXPECT_GE(server_->TLSFullHandshakes(), 1);
+  /* Prove it failed *promptly* rather than degrading to a hang until the query
+   * timed out: a silent mishandling of the decrypt failure as WOULDBLOCK would
+   * stall for at least one full timeout period (opts.timeout == 1000ms).  On
+   * localhost the classify-and-fail path is tens of ms even with a retry, so a
+   * bound below a single timeout period cleanly distinguishes the two. */
+  EXPECT_LT(elapsed_ms, 900);
 }
 
 /* Server drops the connection mid-handshake: the query must fail cleanly,

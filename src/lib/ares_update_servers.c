@@ -237,6 +237,14 @@ static ares_status_t parse_nameserver_uri(ares_buf_t     *buf,
   sconfig->tcp_port = sconfig->udp_port;
   port              = ares_uri_get_query_key(uri, "tcpport");
   if (port != NULL) {
+    /* tcpport overrides only the TCP port of a dns:// server (whose authority
+     * port otherwise applies to both UDP and TCP).  DoT is a single
+     * TLS-over-TCP connection on the authority port, so the override is
+     * meaningless there -- reject it rather than silently honoring it. */
+    if (sconfig->use_tls) {
+      status = ARES_EBADSTR;
+      goto done;
+    }
     if (!ares_parse_port(port, &sconfig->tcp_port, ARES_TRUE)) {
       status = ARES_EBADSTR;
       goto done;
@@ -248,9 +256,21 @@ static ares_status_t parse_nameserver_uri(ares_buf_t     *buf,
     const char *verify   = ares_uri_get_query_key(uri, "verify");
 
     if (hostname != NULL) {
+      struct ares_addr ip;
+
+      ip.family = AF_UNSPEC;
       if (ares_strlen(hostname) == 0 ||
           ares_strlen(hostname) >= sizeof(sconfig->tls_hostname) ||
           !ares_is_hostname(hostname)) {
+        status = ARES_EBADSTR;
+        goto done;
+      }
+      /* An IP literal is not a usable authentication name: RFC 6066 3 forbids
+       * an IP-literal SNI, and the backends match the reference identity only
+       * against dNSName SANs (never iPAddress SANs), so a numeric hostname=
+       * would be guaranteed to fail strict verification.  Reject it fail-closed
+       * here rather than deferring to an unavoidable handshake failure. */
+      if (ares_dns_pton(hostname, &ip, &addrlen) != NULL) {
         status = ARES_EBADSTR;
         goto done;
       }
@@ -643,14 +663,17 @@ static unsigned short ares_sconfig_get_port(const ares_channel_t *channel,
   return port;
 }
 
-/* Fold a configured verification mode to its effective mode, the same way the
- * TLS session-cache key does (RFC 8310: DEFAULT is strict when an
- * authentication name is present, opportunistic otherwise).  Comparing the
- * effective mode keeps server-identity dedup consistent with the cache key --
- * e.g. verify=strict and verify=default+hostname, which behave identically,
- * are the same server rather than two entries sharing one cache identity. */
-static ares_tls_verify_t ares_tls_verify_effective(ares_tls_verify_t verify,
-                                                   ares_bool_t have_hostname)
+/* Fold a configured verification mode to its effective mode (RFC 8310: DEFAULT
+ * is strict when an authentication name is present, opportunistic otherwise).
+ * This MUST stay in lockstep with ares_tls_effective_verify() in
+ * ares_crypto.c, which folds the same way for the session-cache key and backend
+ * enforcement -- the two live in separate translation units (crypto.c is absent
+ * from non-crypto builds) so they can't be merged.  Comparing the effective
+ * mode keeps server-identity dedup consistent with the cache key -- e.g.
+ * verify=strict and verify=default+hostname, which behave identically, are the
+ * same server rather than two entries sharing one cache identity. */
+static ares_tls_verify_t ares_tls_fold_verify(ares_tls_verify_t verify,
+                                              ares_bool_t       have_hostname)
 {
   if (verify == ARES_TLS_VERIFY_DEFAULT) {
     return have_hostname ? ARES_TLS_VERIFY_STRICT
@@ -673,8 +696,8 @@ static ares_bool_t
   if (!use_tls_a) {
     return ARES_TRUE;
   }
-  if (ares_tls_verify_effective(verify_a, ares_strlen(hostname_a) > 0) !=
-      ares_tls_verify_effective(verify_b, ares_strlen(hostname_b) > 0)) {
+  if (ares_tls_fold_verify(verify_a, ares_strlen(hostname_a) > 0) !=
+      ares_tls_fold_verify(verify_b, ares_strlen(hostname_b) > 0)) {
     return ARES_FALSE;
   }
   return ares_strcaseeq(hostname_a, hostname_b);

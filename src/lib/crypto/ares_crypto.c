@@ -98,7 +98,10 @@ void ares_crypto_thread_cleanup(ares_crypto_ctx_t *ctx)
 /* Resolve DEFAULT to the effective mode (strict with an auth name,
  * opportunistic otherwise).  Shared by the session-cache key and both backend
  * enforcement paths so the "no unverified session resumed under strict"
- * guarantee can't drift from what the backends actually enforce. */
+ * guarantee can't drift from what the backends actually enforce.  MUST stay in
+ * lockstep with ares_tls_fold_verify() in ares_update_servers.c (server-
+ * identity dedup), which folds the same way but can't share code -- this file
+ * is absent from non-crypto builds. */
 ares_tls_verify_t ares_tls_effective_verify(const ares_conn_t *conn)
 {
   ares_tls_verify_t verify = conn->server->tls_verify;

@@ -75,6 +75,19 @@ jobs:
         run: |
           ./ci/build.sh
           ./ci/test.sh
+      - name: "Autotools: (crypto/DoT) build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+          # Gates the autotools+OpenSSL link on mingw, the -no-undefined platform
+          # that motivated the libcares_la_LIBADD (not _LIBS) fix: arestest links
+          # libcares.la and its SSL_* symbols would be unresolved if the crypto
+          # libs weren't recorded in the .la.  The mingw OpenSSL pkg-config files
+          # are on the default search path.
+          CONFIG_OPTS: "--disable-shared --enable-cares-crypto"
+          TEST_DEBUGGER: ${{ ( matrix.msystem == 'CLANG32' || matrix.msystem == 'CLANG64' ) && 'lldb' || 'gdb' }}
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
       - name: "Autotools: build and test c-ares"
         env:
           BUILD_TYPE: autotools

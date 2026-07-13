@@ -817,8 +817,12 @@ if test "${CARES_CRYPTO}" = "yes" ; then
     AC_DEFINE([CARES_CRYPTO_OPENSSL], 1, [Define to 1 to use OpenSSL for c-ares crypto])
     CARES_CRYPTO_CPPFLAGS="${openssl_CFLAGS}"
     CARES_CRYPTO_LIBS="${openssl_LIBS}"
+    dnl OpenSSL on Apple uses the Security/CoreFoundation frameworks for system
+    dnl trust store access.  Keep these in _LIBS (-> libcares_la_LIBADD) rather
+    dnl than _LDFLAGS so libtool records them in the .la dependency_libs and they
+    dnl propagate to downstream static consumers.
     if test "x$host_vendor" = "xapple" ; then
-      CARES_CRYPTO_LDFLAGS="-framework CoreFoundation -framework Security"
+      CARES_CRYPTO_LIBS="${CARES_CRYPTO_LIBS} -framework CoreFoundation -framework Security"
     fi
     dnl System certificate store enumeration (wincrypt)
     if test "x$ac_cv_native_windows" = "xyes" ; then

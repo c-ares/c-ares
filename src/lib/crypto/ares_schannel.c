@@ -483,11 +483,14 @@ static ares_conn_err_t schan_verify_cert(ares_tls_t *tls)
   }
 
   if (tls->target_name != NULL && ares_strlen(tls->target_name) > 0) {
-    int wlen = MultiByteToWideChar(CP_ACP, 0, tls->target_name, -1, NULL, 0);
+    /* Use CP_UTF8 (locale-independent) rather than CP_ACP: the authentication
+     * name is an ASCII/punycode DNS hostname, so the ANSI code page would only
+     * introduce locale-dependent behavior for non-ASCII input. */
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, tls->target_name, -1, NULL, 0);
     if (wlen > 0) {
       wname = ares_malloc_zero_array((size_t)wlen, sizeof(WCHAR));
       if (wname != NULL) {
-        MultiByteToWideChar(CP_ACP, 0, tls->target_name, -1, wname, wlen);
+        MultiByteToWideChar(CP_UTF8, 0, tls->target_name, -1, wname, wlen);
       }
     }
     if (wname == NULL) {
@@ -1236,7 +1239,9 @@ ares_bool_t ares_tlsimp_earlydata_accepted(ares_tls_t *tls)
 ares_tls_state_t ares_tlsimp_get_state(ares_tls_t *tls)
 {
   if (tls == NULL) {
-    return 0;
+    /* Fail safe: a NULL handle must not be treated as a fresh INIT state that
+     * the connection layer would route into a connect attempt. */
+    return ARES_TLS_STATE_ERROR;
   }
   return tls->state;
 }

@@ -50,6 +50,22 @@ jobs:
         run: |
           ./ci/build.sh
           ./ci/test.sh
+      - name: "Autotools: (crypto/DoT) build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+          # Gates the autotools+OpenSSL link on macOS: CARES_CRYPTO_LIBS carries
+          # the Security/CoreFoundation frameworks, and libtool's two-token
+          # "-framework X" handling in the .la dependency_libs is fragile.
+          # arestest is itself a libcares consumer, so its link would fail if the
+          # crypto libs/frameworks weren't recorded -- the CMake crypto leg does
+          # not exercise this path.  Point pkg-config at brew's OpenSSL so
+          # PKG_CHECK_MODULES finds it instead of the system LibreSSL.
+          CONFIG_OPTS: "--enable-cares-crypto"
+          PKG_CONFIG_PATH: "/opt/homebrew/opt/openssl@3/lib/pkgconfig"
+          TEST_DEBUGGER: lldb
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
       - name: "Autotools: build and test c-ares"
         env:
           BUILD_TYPE: autotools

@@ -543,8 +543,11 @@ ares_status_t ares_cryptoimp_ctx_init(ares_cryptoimp_ctx_t **ctx,
   SSL_CTX_set_mode((*ctx)->sslctx, SSL_MODE_ENABLE_PARTIAL_WRITE |
                                      SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER |
                                      SSL_MODE_AUTO_RETRY);
-  SSL_CTX_set_verify((*ctx)->sslctx,
-                     SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+  /* SSL_VERIFY_FAIL_IF_NO_PEER_CERT is a server-side-only flag (ignored on a
+   * client), so it would imply an enforcement that does not exist here.  A
+   * TLS server is always required to present a certificate, and a missing one
+   * fails the handshake regardless. */
+  SSL_CTX_set_verify((*ctx)->sslctx, SSL_VERIFY_PEER, NULL);
   SSL_CTX_sess_set_new_cb((*ctx)->sslctx, ares_ossl_sslsess_new_cb);
   SSL_CTX_sess_set_remove_cb((*ctx)->sslctx, ares_ossl_sslsess_remove_cb);
 
@@ -604,8 +607,10 @@ ares_status_t ares_tlsimp_create(ares_tls_t          **tls,
   SSL_set_bio(state->ssl, bio, bio);
 
   /* SNI and peer hostname verification from the server's authentication
-   * name, when configured.  The name is validated as a hostname at config
-   * time, so it is not an IP literal (which would be an invalid SNI). */
+   * name, when configured.  Config validation (ares_update_servers.c) requires
+   * this to be a DNS hostname and rejects IP literals, so it is safe to use as
+   * both an SNI value (RFC 6066 3 forbids an IP-literal SNI) and a dNSName
+   * reference identity. */
   if (ares_strlen(conn->server->tls_hostname) > 0) {
     if (SSL_set_tlsext_host_name(state->ssl, conn->server->tls_hostname) != 1 ||
         SSL_set1_host(state->ssl, conn->server->tls_hostname) != 1) {
@@ -708,9 +713,12 @@ ares_conn_err_t ares_tlsimp_connect(ares_tls_t *tls)
    * strict-mode diagnosis is impossible if both surface identically.  Only
    * meaningful when verifying -- under SSL_VERIFY_NONE (opportunistic) the
    * chain result is computed but not enforced, so a transport failure with a
-   * non-OK chain must not be relabeled a security error. */
+   * non-OK chain must not be relabeled a security error.  A server that
+   * presented no certificate at all yields X509_V_OK, so check for that
+   * explicitly as well. */
   if (SSL_get_verify_mode(tls->ssl) != SSL_VERIFY_NONE &&
-      SSL_get_verify_result(tls->ssl) != X509_V_OK) {
+      (SSL_get0_peer_certificate(tls->ssl) == NULL ||
+       SSL_get_verify_result(tls->ssl) != X509_V_OK)) {
     return ARES_CONN_ERR_SECURITY;
   }
 

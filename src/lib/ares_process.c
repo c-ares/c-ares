@@ -774,7 +774,13 @@ static ares_status_t process_read(ares_channel_t       *channel,
    * the connection is already flagged for teardown. */
   if (!conn_error && (conn->flags & ARES_CONN_FLAG_TLS) &&
       ares_buf_len(conn->out_buf) > 0) {
-    ares_conn_flush(conn);
+    /* A fatal flush error must not be swallowed (deferring it to a later event
+     * or timeout).  ares_conn_flush() does not tear down the connection, so
+     * route it through the conn_error path below -- after read_answers() has
+     * drained anything already decoded -- rather than tearing down here. */
+    if (ares_conn_flush(conn) != ARES_SUCCESS) {
+      conn_error = ARES_TRUE;
+    }
   }
 
   status = read_answers(conn, now);

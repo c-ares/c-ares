@@ -204,9 +204,12 @@ backend**; Schannel does not expose a client-side early-data primitive.  A
 Schannel connection performs an ordinary 1-RTT handshake instead.
 
 0-RTT early data is subject to replay by an on-path attacker, so it is only
-safe for idempotent requests.  DNS queries are idempotent (the same as the
-rationale for [TCP FastOpen](#tcp-fastopen-0-rtt) below), so replay cannot
+safe for idempotent requests.  A standard DNS QUERY is idempotent (the same as
+the rationale for [TCP FastOpen](#tcp-fastopen-0-rtt) below), so replay cannot
 change resolver state; a replayed query at worst yields a duplicate answer.
+(`ares_send()` also accepts caller-built messages with other opcodes, e.g. an
+RFC 2136 UPDATE, which are not necessarily idempotent under replay -- but such
+non-QUERY use is outside the stub-resolver path that drives early data.)
 
 ### Limitations
 
