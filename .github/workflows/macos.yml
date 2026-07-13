@@ -77,6 +77,8 @@ jobs:
         env:
           BUILD_TYPE: "ubsan"
           CC: "clang"
+          # Enable crypto so the DoT tests run under UBSAN (point at brew OpenSSL)
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3 -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
           CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"

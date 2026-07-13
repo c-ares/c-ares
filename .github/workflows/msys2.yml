@@ -100,6 +100,8 @@ jobs:
         if: ${{ matrix.msystem == 'CLANG64' }}
         env:
           BUILD_TYPE: "ubsan"
+          # Enable crypto so the DoT tests run under UBSAN (OpenSSL backend)
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -DCARES_CRYPTO_BACKEND=openssl -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
           CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"

@@ -56,6 +56,8 @@ jobs:
           BUILD_TYPE: "ubsan"
           CC: "clang"
           CXX: "clang++"
+          # Enable crypto so the DoT tests run under UBSAN
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
           CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
