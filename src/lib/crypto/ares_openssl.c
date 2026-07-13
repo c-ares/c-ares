@@ -543,6 +543,11 @@ ares_status_t ares_cryptoimp_ctx_init(ares_cryptoimp_ctx_t **ctx,
   SSL_CTX_set_mode((*ctx)->sslctx, SSL_MODE_ENABLE_PARTIAL_WRITE |
                                      SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER |
                                      SSL_MODE_AUTO_RETRY);
+  /* A DoT client never needs renegotiation.  Refuse a server-initiated TLS 1.2
+   * renegotiation outright (it is also a known DoS vector, and matches the
+   * Schannel backend which refuses it rather than re-validating a possibly
+   * different certificate).  Harmless on TLS 1.3, which has no renegotiation. */
+  SSL_CTX_set_options((*ctx)->sslctx, SSL_OP_NO_RENEGOTIATION);
   /* SSL_VERIFY_FAIL_IF_NO_PEER_CERT is a server-side-only flag (ignored on a
    * client), so it would imply an enforcement that does not exist here.  A
    * TLS server is always required to present a certificate, and a missing one

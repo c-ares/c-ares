@@ -582,6 +582,30 @@ static ares_conn_err_t schan_reneg_revalidate(ares_tls_t *tls)
   return verr;
 }
 
+/* Older SDKs (the legacy SCHANNEL_CRED path, TLS 1.2 only) don't define this. */
+#  ifndef SP_PROT_TLS1_3_CLIENT
+#    define SP_PROT_TLS1_3_CLIENT 0x00002000
+#  endif
+
+/* Whether a SEC_I_RENEGOTIATE is a genuine server-initiated renegotiation that
+ * must be refused, as opposed to a TLS 1.3 post-handshake flight (which
+ * Schannel also surfaces as SEC_I_RENEGOTIATE).  Returns TRUE only when the
+ * negotiated protocol can be *positively* confirmed to be pre-TLS-1.3; if the
+ * version query fails it returns FALSE so a real TLS 1.3 NewSessionTicket /
+ * KeyUpdate is never mistakenly refused (the flight is instead processed and
+ * the certificate re-validated defensively). */
+static ares_bool_t schan_reneg_must_refuse(ares_tls_t *tls)
+{
+  SecPkgContext_ConnectionInfo ci;
+
+  memset(&ci, 0, sizeof(ci));
+  if (QueryContextAttributes(&tls->ctxt, SECPKG_ATTR_CONNECTION_INFO, &ci) !=
+      SEC_E_OK) {
+    return ARES_FALSE;
+  }
+  return (ci.dwProtocol & SP_PROT_TLS1_3_CLIENT) ? ARES_FALSE : ARES_TRUE;
+}
+
 /* ------------------------------------------------------------------------- *
  * Handshake driver
  * ------------------------------------------------------------------------- */
@@ -933,17 +957,20 @@ ares_conn_err_t ares_tlsimp_read(ares_tls_t *tls, unsigned char *buf,
       }
 
       if (ss == SEC_I_RENEGOTIATE) {
-        /* Post-handshake message (TLS 1.3 ticket / key update).  The
-         * remaining handshake bytes are in the SECBUFFER_EXTRA; feed them
-         * back through the negotiation driver.
-         *
-         * Note: the certificate is not re-validated here.  For TLS 1.3 that
-         * is correct (the peer cert cannot change post-handshake).  A TLS 1.2
-         * server-initiated renegotiation could in principle present a
-         * different cert; that is rare and largely disabled under
-         * SCH_USE_STRONG_CRYPTO, but a future hardening could re-validate on
-         * renegotiation or refuse it. */
+        /* Schannel surfaces both a TLS 1.3 post-handshake message
+         * (NewSessionTicket / KeyUpdate) and a genuine pre-1.3
+         * server-initiated renegotiation as SEC_I_RENEGOTIATE.  A DoT client
+         * never needs renegotiation, and a TLS 1.2 renegotiation could present
+         * a *different*, unvalidated certificate -- so refuse it fail-closed
+         * when the protocol is positively pre-1.3.  A TLS 1.3 flight (or one
+         * whose version can't be confirmed) is processed normally below (the
+         * cert cannot change under 1.3) and re-validated defensively via
+         * schan_reneg_revalidate(). */
         size_t extra = 0;
+        if (schan_reneg_must_refuse(tls)) {
+          tls->state = ARES_TLS_STATE_ERROR;
+          return ARES_CONN_ERR_SECURITY;
+        }
         for (i = 1; i < 4; i++) {
           if (bufs[i].BufferType == SECBUFFER_EXTRA) {
             extra = (size_t)bufs[i].cbBuffer;
