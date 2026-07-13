@@ -23,12 +23,16 @@ TESTSOURCES = ares-test-main.cc	\
   ares-test-mock-ai.cc			\
   ares-test-mock-et.cc		\
   ares-test-internal.cc		\
+  ares-test-tls.cc			\
+  ares-test-tls-server.cc		\
+  ares-test-tls-mock.cc			\
   dns-proto.cc				\
   dns-proto-test.cc
 
 TESTHEADERS = ares-test.h		\
   dns-proto.h	\
-  ares-test-ai.h
+  ares-test-ai.h			\
+  ares-test-tls-server.h
 
 FUZZSOURCES = ares-test-fuzz.c		\
   ares-fuzz.c

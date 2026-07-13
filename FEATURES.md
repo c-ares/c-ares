@@ -5,6 +5,7 @@
 - [Query Cache](#query-cache)
 - [DNS 0x20 Query Name Case Randomization](#dns-0x20-query-name-case-randomization)
 - [DNS Cookies](#dns-cookies)
+- [DNS-over-TLS (DoT)](#dns-over-tls-dot)
 - [TCP FastOpen (0-RTT)](#tcp-fastopen-0-rtt)
 - [Event Thread](#event-thread)
 - [System Configuration Change Monitoring](#system-configuration-change-monitoring)
@@ -157,6 +158,83 @@ by default.
 
 This feature requires the c-ares channel to persist for the lifetime of the
 application.
+
+
+## DNS-over-TLS (DoT)
+
+DNS-over-TLS, defined in
+[RFC7858](https://datatracker.ietf.org/doc/html/rfc7858), carries DNS over a
+TLS-encrypted TCP connection on port 853, protecting queries and responses
+from eavesdropping and tampering on the wire.
+
+DoT is an optional build-time feature enabled with the `CARES_CRYPTO` CMake
+option (or `--enable-cares-crypto` for autotools); it is off by default.
+
+A server is configured for DoT with the `dns+tls://` scheme in the server
+configuration string, for example via `ares_set_servers_csv()`:
+
+```
+dns+tls://1.1.1.1?hostname=one.one.one.one&verify=strict
+```
+
+The `hostname` query parameter supplies the authentication name used for SNI
+and certificate name verification.  The `verify` parameter selects the
+verification mode (per [RFC8310](https://datatracker.ietf.org/doc/html/rfc8310)):
+
+- `strict` — verify the certificate chain, and the authentication name when
+  one is configured; fail the connection otherwise.
+- `opportunistic` — encrypt but perform no certificate verification.
+- `default` (the default) — `strict` when an authentication name is
+  configured, `opportunistic` otherwise.
+
+Secure connections are established over TLS 1.2 or later, and session
+resumption is used to avoid a full handshake on reconnect.
+
+### Crypto backends
+
+The TLS implementation is provided by a pluggable crypto backend selected at
+configure time with `CARES_CRYPTO_BACKEND` (`auto`, `openssl`, or
+`schannel`).  The default, `auto`, selects the native Windows **Schannel**
+backend on Windows (so DoT works with no external dependency) and
+**OpenSSL** (>= 3.0) everywhere else.
+
+TLS 1.3 Early Data (0-RTT), which lets a resumed connection carry its first
+query without an extra round trip, is available **only with the OpenSSL
+backend**; Schannel does not expose a client-side early-data primitive.  A
+Schannel connection performs an ordinary 1-RTT handshake instead.
+
+0-RTT early data is subject to replay by an on-path attacker, so it is only
+safe for idempotent requests.  A standard DNS QUERY is idempotent (the same as
+the rationale for [TCP FastOpen](#tcp-fastopen-0-rtt) below), so replay cannot
+change resolver state; a replayed query at worst yields a duplicate answer.
+Only the QUERY opcode is sent as early data: a caller-built non-QUERY message
+(e.g. an RFC 2136 UPDATE via `ares_send()`), which is not necessarily
+idempotent, is held back and sent in the normal post-handshake flight.
+
+### Limitations
+
+- **No EDNS(0) padding yet** (RFC 7830 / RFC 8467).  The connection is
+  encrypted, but query and response *sizes* remain observable to a passive
+  on-path observer, which can leak information about the names being resolved.
+- **Strict Privacy requires an all-DoT server list.**  If a channel mixes
+  plaintext (`dns://`) and `dns+tls://?verify=strict` servers, a strict query
+  can currently fail over to a plaintext server.  For Strict Privacy
+  (RFC 8310), configure only `dns+tls://` servers.  A no-silent-downgrade
+  server tier is planned.
+- **`verify=opportunistic` cannot be combined with a `hostname`.**  The
+  combination is rejected at configuration time (`ARES_EBADSTR`): an
+  authentication name that is never checked provides no security, so the intent
+  must be explicit (RFC 8310 §6.5's soft-fail authentication attempt is not
+  implemented).  Use `verify=strict` (or `default` with a `hostname`) to
+  authenticate the server.
+- **OpenSSL backend uses a private library context.**  c-ares' TLS is isolated
+  from the host application's global OpenSSL configuration, so the host's
+  `openssl.cnf` and system providers (including **FIPS**) do not apply — DoT is
+  not FIPS-validated even in a FIPS deployment.  A future opt-in will allow
+  using the process-default context for such deployments.  If you drive c-ares
+  TLS on your own short-lived threads (instead of the built-in event thread),
+  reuse one thread for the channel's lifetime to avoid a small per-thread
+  OpenSSL leak.
 
 
 ## TCP FastOpen (0-RTT)

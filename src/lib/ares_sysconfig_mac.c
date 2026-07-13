@@ -289,8 +289,18 @@ static ares_status_t read_resolver(const ares_channel_t *channel,
         channel->sock_func_cb_data);
     }
 
-    status = ares_sconfig_append(channel, &sysconfig->sconfig, &addr, addrport,
-                                 addrport, if_name);
+    {
+      ares_sconfig_t sc;
+
+      memset(&sc, 0, sizeof(sc));
+      memcpy(&sc.addr, &addr, sizeof(sc.addr));
+      sc.udp_port = addrport;
+      sc.tcp_port = addrport;
+      if (if_name != NULL) {
+        ares_strcpy(sc.ll_iface, if_name, sizeof(sc.ll_iface));
+      }
+      status = ares_sconfig_append(channel, &sysconfig->sconfig, &sc);
+    }
     if (status != ARES_SUCCESS) {
       return status;
     }

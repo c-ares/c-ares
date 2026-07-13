@@ -29,6 +29,15 @@ jobs:
           - { name: "MSVC x86 (CMake)", arch: x86, conftool: CMAKE, cmake_extra: '-DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0501" -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0501"' }
           - { name: "MSVC x64 (NMake)", arch: x64, conftool: NMAKE, cmake_extra: "" }
           - { name: "MSVC x86 (NMake)", arch: x86, conftool: NMAKE, cmake_extra: "" }
+          # Crypto (DoT) build against OpenSSL.  The backend-agnostic mock DoT
+          # tests run here (they terminate TLS with OpenSSL); only the
+          # socketpair harness in ares-test-tls.cc is POSIX-only.
+          - { name: "MSVC x64 (CMake+OpenSSL)", arch: x64, conftool: CMAKE, crypto: yes, cmake_extra: '-DCARES_CRYPTO=ON -DCARES_CRYPTO_BACKEND=openssl -DOPENSSL_ROOT_DIR="C:\Program Files\OpenSSL"' }
+          # Crypto (DoT) build against the native Schannel backend (no external
+          # dependency).  The mock DoT tests run here too, exercising the
+          # Schannel client against a Schannel server; only the socketpair
+          # harness is POSIX-only.
+          - { name: "MSVC x64 (CMake+Schannel)", arch: x64, conftool: CMAKE, cmake_extra: '-DCARES_CRYPTO=ON -DCARES_CRYPTO_BACKEND=schannel' }
     name: ${{ matrix.name }}
     steps:
       - name: Setup MSVC environment (${{ matrix.arch }})
@@ -38,6 +47,13 @@ jobs:
 
       - name: Checkout c-ares
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install OpenSSL (Win64)
+        if: ${{ matrix.crypto == 'yes' }}
+        shell: cmd
+        run: |
+          choco install openssl -y --no-progress --limit-output || exit /b 1
+          echo C:\Program Files\OpenSSL\bin>> %GITHUB_PATH%
 
       - name: Build GoogleTest
         shell: cmd

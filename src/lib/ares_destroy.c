@@ -129,6 +129,8 @@ void ares_destroy(ares_channel_t *channel)
 
   ares_qcache_destroy(channel->qcache);
 
+  ares_crypto_ctx_destroy(channel->crypto_ctx);
+
   ares_channel_threading_destroy(channel);
 
   ares_free(channel);
