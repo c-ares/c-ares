@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Install packages
         run: |
-          apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make clang clang-analyzer compiler-rt lldb gcc g++ valgrind gdb sudo
+          apk add bash cmake samurai gtest-dev autoconf autoconf-archive automake libtool pkgconf make clang clang-analyzer compiler-rt lldb gcc g++ valgrind gdb sudo openssl-dev
       - name: Checkout c-ares
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: "Make sure TCP FastOpen is enabled"
@@ -80,6 +80,8 @@ jobs:
           BUILD_TYPE: "analyze"
           CC: "clang"
           CXX: "clang++"
+          # Enable crypto so the static analyzer covers the DoT/OpenSSL backend.
+          CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -G Ninja"
           SCAN_WRAP: "scan-build -v --status-bugs"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
           TEST_DEBUGGER: "lldb"

@@ -130,7 +130,10 @@ jobs:
           autoreconf -fi
           mkdir build_analyze
           cd build_analyze
-          scan-build --use-cc=clang --use-c++=clang++ -v ../configure --enable-static --disable-shared --disable-tests
+          # --enable-cares-crypto so the analyzer covers the DoT/Schannel backend
+          # (auto-selected on Windows); this is the only clang static-analysis
+          # coverage of the Schannel code (MSVC legs don't run scan-build).
+          scan-build --use-cc=clang --use-c++=clang++ -v ../configure --enable-static --disable-shared --disable-tests --enable-cares-crypto
           scan-build --use-cc=clang --use-c++=clang++ -v make -j3
           ./src/tools/adig.exe www.google.com
           ./src/tools/ahost.exe www.google.com

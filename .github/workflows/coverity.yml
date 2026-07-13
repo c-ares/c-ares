@@ -20,7 +20,7 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: apt dependencies
-        run: sudo apt-get install cmake ninja-build
+        run: sudo apt-get install cmake ninja-build libssl-dev
       - name: Download Coverity Build Tool
         run: |
           wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=$TOKEN&project=c-ares" -O cov-analysis-linux64.tar.gz
@@ -32,7 +32,8 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCARES_BUILD_TESTS=OFF -G Ninja ..
+          # Enable crypto so Coverity scans the DoT/OpenSSL backend
+          cmake -DCARES_BUILD_TESTS=OFF -DCARES_CRYPTO=ON -G Ninja ..
       - name: Build with cov-build
         run: |
           export PATH=`pwd`/cov-analysis-linux64/bin:$PATH

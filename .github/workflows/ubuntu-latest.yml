@@ -131,6 +131,8 @@ jobs:
           BUILD_TYPE: "analyze"
           CC: "clang"
           CXX: "clang++"
+          # Enable crypto so the static analyzer covers the DoT/OpenSSL backend.
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -G Ninja"
           SCAN_WRAP: "scan-build -v --status-bugs"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=OFF"
           TEST_DEBUGGER: "lldb"
