@@ -302,6 +302,12 @@ int ares_init_options(ares_channel_t           **channelptr,
     goto done;
   }
 
+  channel->queries_being_cancelled = ares_llist_create(NULL);
+  if (channel->queries_being_cancelled == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
   channel->queries_by_qid = ares_htable_szvp_create(NULL);
   if (channel->queries_by_qid == NULL) {
     status = ARES_ENOMEM;

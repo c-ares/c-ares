@@ -234,6 +234,15 @@ CARES_EXTERN void ares_llist_node_mvparent_last(ares_llist_node_t *node,
  */
 CARES_EXTERN void ares_llist_node_mvparent_first(ares_llist_node_t *node,
                                                  ares_llist_t      *new_parent);
+
+/*! Move all nodes from one list to the end of another list.
+ *
+ *  \param[in] new_parent list to receive nodes
+ *  \param[in] old_parent list to move nodes from
+ *  \return first node moved, or NULL if no nodes moved
+ */
+CARES_EXTERN ares_llist_node_t *
+  ares_llist_move_all_last(ares_llist_t *new_parent, ares_llist_t *old_parent);
 /*! @} */
 
 #endif /* __ARES__LLIST_H */

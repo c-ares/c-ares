@@ -89,6 +89,7 @@ void ares_destroy(ares_channel_t *channel)
    * so all query lists should be empty now.
    */
   assert(ares_llist_len(channel->all_queries) == 0);
+  assert(ares_llist_len(channel->queries_being_cancelled) == 0);
   assert(ares_htable_szvp_num_keys(channel->queries_by_qid) == 0);
   assert(ares_slist_len(channel->queries_by_timeout) == 0);
 #endif
@@ -115,6 +116,7 @@ void ares_destroy(ares_channel_t *channel)
   }
 
   ares_llist_destroy(channel->all_queries);
+  ares_llist_destroy(channel->queries_being_cancelled);
   ares_slist_destroy(channel->queries_by_timeout);
   ares_htable_szvp_destroy(channel->queries_by_qid);
   ares_htable_asvp_destroy(channel->connnode_by_socket);
