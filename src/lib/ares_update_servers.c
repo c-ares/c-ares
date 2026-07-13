@@ -662,7 +662,12 @@ static unsigned short ares_sconfig_get_port(const ares_channel_t *channel,
 {
   unsigned short port = is_tcp ? s->tcp_port : s->udp_port;
 
-  if (port == 0) {
+  /* A DoT server never inherits the channel-wide plaintext port options
+   * (ARES_OPT_TCP_PORT/ARES_OPT_UDP_PORT): only an explicit URI port or the
+   * RFC 7858 default (853) applies.  Inheriting them would connect DoT on the
+   * plaintext port and could also desync udp_port/tcp_port so CSV
+   * serialization emits a ?tcpport= that re-parse rejects. */
+  if (port == 0 && !s->use_tls) {
     port = is_tcp ? channel->tcp_port : channel->udp_port;
   }
 

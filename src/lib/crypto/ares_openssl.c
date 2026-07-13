@@ -33,6 +33,7 @@
 #  include <openssl/bio.h>
 #  include <openssl/pem.h>
 #  include <openssl/err.h>
+#  include <openssl/x509v3.h> /* X509_CHECK_FLAG_NEVER_CHECK_SUBJECT */
 
 #  ifdef __APPLE__
 #    include <Security/Security.h>
@@ -424,8 +425,14 @@ static int ares_ossl_bio_destroy(BIO *b)
 
 static BIO_METHOD *ares_ossl_create_bio_method(void)
 {
-  BIO_METHOD *bio_method = BIO_meth_new(
-    BIO_get_new_index() | BIO_TYPE_SOURCE_SINK, "c-ares tls io glue");
+  BIO_METHOD *bio_method;
+  int         idx = BIO_get_new_index();
+
+  if (idx == -1) {
+    return NULL; /* LCOV_EXCL_LINE: BIO type exhaustion */
+  }
+
+  bio_method = BIO_meth_new(idx | BIO_TYPE_SOURCE_SINK, "c-ares tls io glue");
   if (bio_method == NULL) {
     return NULL; /* LCOV_EXCL_LINE: OutOfMemory */
   }
@@ -581,7 +588,7 @@ ares_status_t ares_tlsimp_create(ares_tls_t          **tls,
   BIO          *bio    = NULL;
   SSL_SESSION  *sess   = NULL;
 
-  if (tls == NULL || conn == NULL) {
+  if (tls == NULL || conn == NULL || crypto_ctx == NULL) {
     return ARES_EFORMERR;
   }
 
@@ -617,6 +624,11 @@ ares_status_t ares_tlsimp_create(ares_tls_t          **tls,
    * both an SNI value (RFC 6066 3 forbids an IP-literal SNI) and a dNSName
    * reference identity. */
   if (ares_strlen(conn->server->tls_hostname) > 0) {
+    /* Match the reference identity only against SAN dNSName entries, never the
+     * legacy CN fallback (RFC 6125/8310).  Certs without a SAN are effectively
+     * extinct on public resolvers, and the Schannel backend behaves
+     * equivalently. */
+    SSL_set_hostflags(state->ssl, X509_CHECK_FLAG_NEVER_CHECK_SUBJECT);
     if (SSL_set_tlsext_host_name(state->ssl, conn->server->tls_hostname) != 1 ||
         SSL_set1_host(state->ssl, conn->server->tls_hostname) != 1) {
       status = ARES_ESERVFAIL;
@@ -720,8 +732,15 @@ ares_conn_err_t ares_tlsimp_connect(ares_tls_t *tls)
    * chain result is computed but not enforced, so a transport failure with a
    * non-OK chain must not be relabeled a security error.  A server that
    * presented no certificate at all yields X509_V_OK, so check for that
-   * explicitly as well. */
-  if (SSL_get_verify_mode(tls->ssl) != SSL_VERIFY_NONE &&
+   * explicitly as well.
+   *
+   * A real recorded I/O error takes precedence: a connection reset *during*
+   * the handshake (before the peer's Certificate message) also leaves no peer
+   * cert and a non-OK chain, but it is a transport failure, not a security
+   * one -- so only classify as SECURITY when no transport error was recorded.
+   */
+  if (tls->last_io_error == ARES_CONN_ERR_SUCCESS &&
+      SSL_get_verify_mode(tls->ssl) != SSL_VERIFY_NONE &&
       (SSL_get0_peer_certificate(tls->ssl) == NULL ||
        SSL_get_verify_result(tls->ssl) != X509_V_OK)) {
     return ARES_CONN_ERR_SECURITY;

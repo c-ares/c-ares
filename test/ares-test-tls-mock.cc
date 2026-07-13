@@ -83,7 +83,8 @@ public:
    * server's CA into the client trust store; verify selects the URI
    * verification mode; hostname (optional) sets SNI / the session-cache key. */
   bool BuildChannel(bool trust, const char *verify,
-                    const char *hostname = nullptr)
+                    const char  *hostname   = nullptr,
+                    unsigned int timeout_ms = 1000)
   {
     struct ares_options opts;
     int                 optmask = 0;
@@ -93,7 +94,7 @@ public:
     /* Deterministic: no search domains, short timeout, no query cache */
     opts.ndomains        = 0;
     optmask             |= ARES_OPT_DOMAINS;
-    opts.timeout         = 1000;
+    opts.timeout          = (int)timeout_ms;
     optmask             |= ARES_OPT_TIMEOUTMS;
     opts.tries           = 2;
     optmask             |= ARES_OPT_TRIES;
@@ -281,6 +282,44 @@ TEST_F(MockDoTServerTest, OpportunisticWithHostnameRejected)
   EXPECT_FALSE(BuildChannel(true, "opportunistic", "dot.example.com"));
 }
 
+/* A dns+tls:// server with no explicit port must default to 853 (RFC 7858) and
+ * never inherit the channel-wide ARES_OPT_TCP_PORT/ARES_OPT_UDP_PORT plaintext
+ * ports.  Inheriting only one would also desync udp/tcp so ares_get_servers_csv
+ * emits a ?tcpport= that re-parse rejects (broken round-trip).  No live server
+ * or backend needed -- this is pure config. */
+TEST_F(LibraryTest, DoTPortDefaults853IgnoringChannelPortOpts)
+{
+  ares_channel_t     *channel = nullptr;
+  struct ares_options opts;
+  int                 optmask = 0;
+
+  memset(&opts, 0, sizeof(opts));
+  opts.tcp_port  = 5353; /* deliberately non-853 */
+  optmask       |= ARES_OPT_TCP_PORT;
+  opts.udp_port  = 5354;
+  optmask       |= ARES_OPT_UDP_PORT;
+  ASSERT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+
+  ASSERT_EQ(
+    ARES_SUCCESS,
+    ares_set_servers_csv(
+      channel, "dns+tls://1.1.1.1?hostname=one.one.one.one&verify=strict"));
+
+  char *csv = ares_get_servers_csv(channel);
+  ASSERT_NE(nullptr, csv);
+  std::string s(csv);
+  ares_free_string(csv);
+
+  /* Did not inherit the channel plaintext ports, and udp/tcp stayed in sync
+   * (no tcpport=), so the CSV round-trips. */
+  EXPECT_EQ(std::string::npos, s.find("5353"));
+  EXPECT_EQ(std::string::npos, s.find("5354"));
+  EXPECT_EQ(std::string::npos, s.find("tcpport"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel, s.c_str()));
+
+  ares_destroy(channel);
+}
+
 /* Opportunistic mode encrypts without verifying, so an untrusted cert still
  * yields a successful query. */
 TEST_F(MockDoTServerTest, Opportunistic)
@@ -453,7 +492,12 @@ TEST_F(MockDoTServerTest, TamperedRecord)
   if (!HasBackend()) {
     GTEST_SKIP() << "no mock DoT server backend for this crypto build";
   }
-  ASSERT_TRUE(BuildChannel(true, "strict", kMockDoTHostname));
+  /* Use a deliberately large timeout so the "did it fail promptly vs hang"
+   * distinguisher has wide margin even on the slow valgrind/ASAN CI legs: a
+   * silent degrade-to-timeout stalls >= kTimeoutMs, while the real fast-fail
+   * path (a couple of in-process P-256 handshakes) is far below it. */
+  const unsigned int kTimeoutMs = 5000;
+  ASSERT_TRUE(BuildChannel(true, "strict", kMockDoTHostname, kTimeoutMs));
 
   DNSPacket rsp;
   rsp.set_response()
@@ -483,28 +527,36 @@ TEST_F(MockDoTServerTest, TamperedRecord)
   EXPECT_GE(server_->TLSFullHandshakes(), 1);
   /* Prove it failed *promptly* rather than degrading to a hang until the query
    * timed out: a silent mishandling of the decrypt failure as WOULDBLOCK would
-   * stall for at least one full timeout period (opts.timeout == 1000ms).  On
-   * localhost the classify-and-fail path is tens of ms even with a retry, so a
-   * bound below a single timeout period cleanly distinguishes the two. */
-  EXPECT_LT(elapsed_ms, 900);
+   * stall for at least one full timeout period.  A bound below a single timeout
+   * cleanly distinguishes the two with margin for slow (valgrind) legs. */
+  EXPECT_LT(elapsed_ms, kTimeoutMs);
 }
 
-/* Server drops the connection mid-handshake: the query must fail cleanly,
- * not hang or fall back to plaintext. */
+/* Server drops the connection mid-handshake: the query must fail cleanly and
+ * *promptly*, not hang or fall back to plaintext.  A regression that
+ * misclassified the EOF as WOULDBLOCK would degrade to a hang-until-timeout
+ * that still ends != SUCCESS, so a promptness bound (large timeout, assert far
+ * below it) is what actually proves the "fail fast" intent. */
 TEST_F(MockDoTServerTest, MidHandshakeClose)
 {
   if (!HasBackend()) {
     GTEST_SKIP() << "no mock DoT server backend for this crypto build";
   }
-  ASSERT_TRUE(BuildChannel(true, "strict", kMockDoTHostname));
+  const unsigned int kTimeoutMs = 5000;
+  ASSERT_TRUE(BuildChannel(true, "strict", kMockDoTHostname, kTimeoutMs));
   server_->SetTLSHandshakeMode(MockServer::kTlsHsCloseDuringHandshake);
 
   HostResult result;
   ares_gethostbyname(channel_, "dot.example.com", AF_INET, HostCallback,
                      &result);
+  auto start = std::chrono::steady_clock::now();
   Process();
+  auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::steady_clock::now() - start)
+                      .count();
   EXPECT_TRUE(result.done_);
   EXPECT_NE(ARES_SUCCESS, result.status_);
+  EXPECT_LT(elapsed_ms, kTimeoutMs);
 }
 
 /* Server accepts but never responds to the ClientHello: the handshake must

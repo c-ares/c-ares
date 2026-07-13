@@ -207,9 +207,9 @@ Schannel connection performs an ordinary 1-RTT handshake instead.
 safe for idempotent requests.  A standard DNS QUERY is idempotent (the same as
 the rationale for [TCP FastOpen](#tcp-fastopen-0-rtt) below), so replay cannot
 change resolver state; a replayed query at worst yields a duplicate answer.
-(`ares_send()` also accepts caller-built messages with other opcodes, e.g. an
-RFC 2136 UPDATE, which are not necessarily idempotent under replay -- but such
-non-QUERY use is outside the stub-resolver path that drives early data.)
+Only the QUERY opcode is sent as early data: a caller-built non-QUERY message
+(e.g. an RFC 2136 UPDATE via `ares_send()`), which is not necessarily
+idempotent, is held back and sent in the normal post-handshake flight.
 
 ### Limitations
 
@@ -221,10 +221,12 @@ non-QUERY use is outside the stub-resolver path that drives early data.)
   can currently fail over to a plaintext server.  For Strict Privacy
   (RFC 8310), configure only `dns+tls://` servers.  A no-silent-downgrade
   server tier is planned.
-- **`verify=opportunistic` never authenticates**, even when a `hostname` is
-  configured (RFC 8310 §6.5 would allow a soft-fail authentication attempt).
-  Verification is an explicit knob: use `verify=strict` (or `default` with a
-  `hostname`) to authenticate the server.
+- **`verify=opportunistic` cannot be combined with a `hostname`.**  The
+  combination is rejected at configuration time (`ARES_EBADSTR`): an
+  authentication name that is never checked provides no security, so the intent
+  must be explicit (RFC 8310 §6.5's soft-fail authentication attempt is not
+  implemented).  Use `verify=strict` (or `default` with a `hostname`) to
+  authenticate the server.
 - **OpenSSL backend uses a private library context.**  c-ares' TLS is isolated
   from the host application's global OpenSSL configuration, so the host's
   `openssl.cnf` and system providers (including **FIPS**) do not apply — DoT is

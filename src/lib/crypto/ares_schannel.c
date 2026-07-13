@@ -101,6 +101,13 @@ struct ares_tls {
   size_t         enc_out_off;
   size_t         enc_out_alloc;
 
+  /* Leading bytes of the current write buffer already encrypted into enc_out
+   * but not yet reported written to the caller (a flush returned WOULDBLOCK).
+   * The caller re-presents the identical buffer on retry, so these must be
+   * skipped rather than re-encrypted -- re-encrypting would duplicate data on
+   * the wire and desync the DoT framing. */
+  size_t         plain_pending;
+
   /* Decrypted plaintext ready to hand to the caller.  Valid bytes are
    * [dec_in_off, dec_in_len). */
   unsigned char *dec_in;
@@ -780,7 +787,14 @@ static ares_conn_err_t schan_handshake(ares_tls_t *tls, ares_bool_t post)
       0, 0, initial ? NULL : &indesc, 0, initial ? &tls->ctxt : NULL, &outdesc,
       &ret_flags, NULL);
 
-    tls->have_ctxt = ARES_TRUE;
+    /* On the *initial* call, a hard ISC error leaves the output context handle
+     * invalid (MSDN), so it must not be handed to DeleteSecurityContext later.
+     * Only mark it valid on a status that actually created/continued it.  On
+     * subsequent calls the context already exists, so have_ctxt stays set. */
+    if (!initial || ss == SEC_E_OK || ss == SEC_I_CONTINUE_NEEDED ||
+        ss == SEC_I_MESSAGE_FRAGMENT || ss == SEC_I_INCOMPLETE_CREDENTIALS) {
+      tls->have_ctxt = ARES_TRUE;
+    }
 
     /* Queue any produced handshake token */
     if (outbuf[0].cbBuffer != 0 && outbuf[0].pvBuffer != NULL) {
@@ -1154,7 +1168,10 @@ ares_conn_err_t ares_tlsimp_write(ares_tls_t *tls, const unsigned char *buf,
 
   tls->flags &= ~((unsigned int)ARES_TLS_SF_WRITE);
 
-  /* Flush any ciphertext left over from a prior partial write first */
+  /* Flush any ciphertext left over from a prior partial write first.  Its
+   * plaintext (tls->plain_pending leading bytes of buf) was already encrypted
+   * on a prior call; only once that ciphertext fully drains are those bytes on
+   * the wire. */
   ferr = schan_flush(tls);
   if (ferr == ARES_CONN_ERR_WOULDBLOCK) {
     tls->flags |= ARES_TLS_SF_WRITE_WANTWRITE;
@@ -1162,8 +1179,13 @@ ares_conn_err_t ares_tlsimp_write(ares_tls_t *tls, const unsigned char *buf,
     return ferr;
   }
   if (ferr != ARES_CONN_ERR_SUCCESS) {
+    *buf_len = 0; /* consistent post-condition with the WOULDBLOCK branch */
     return ferr;
   }
+
+  /* Resume after the already-encrypted-and-now-flushed prefix; the caller
+   * re-presents the identical buffer, so we must not re-encrypt it. */
+  consumed = tls->plain_pending;
 
   while (consumed < *buf_len) {
     size_t          chunk = *buf_len - consumed;
@@ -1217,14 +1239,18 @@ ares_conn_err_t ares_tlsimp_write(ares_tls_t *tls, const unsigned char *buf,
       return ARES_CONN_ERR_NOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
-    /* We own enc_out and will keep flushing it, so the plaintext chunk is
-     * consumed regardless of whether the flush fully drains now */
-    consumed += chunk;
+    /* This chunk's plaintext is now encrypted into enc_out.  Record it so a
+     * WOULDBLOCK retry skips it instead of re-encrypting (which would put a
+     * duplicate copy on the wire). */
+    consumed           += chunk;
+    tls->plain_pending  = consumed;
 
     ferr = schan_flush(tls);
     if (ferr == ARES_CONN_ERR_WOULDBLOCK) {
       tls->flags |= ARES_TLS_SF_WRITE_WANTWRITE;
-      *buf_len    = consumed;
+      /* Report nothing consumed: the caller keeps the full buffer and
+       * re-presents it; plain_pending tracks the already-encrypted prefix. */
+      *buf_len = 0;
       return ferr;
     }
     if (ferr != ARES_CONN_ERR_SUCCESS) {
@@ -1232,7 +1258,9 @@ ares_conn_err_t ares_tlsimp_write(ares_tls_t *tls, const unsigned char *buf,
     }
   }
 
-  *buf_len = consumed;
+  /* Whole buffer encrypted and flushed. */
+  *buf_len           = consumed;
+  tls->plain_pending = 0;
   return ARES_CONN_ERR_SUCCESS;
 }
 

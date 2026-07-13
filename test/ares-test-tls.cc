@@ -824,6 +824,40 @@ TEST_F(LibraryTest, CryptoTLSSessionResumption)
   EXPECT_NE(nullptr, ares_tls_session_get(h.channel_->crypto_ctx, &h.conn_));
 }
 
+/* The session-cache key folds the effective verify mode specifically so an
+ * unauthenticated (opportunistic) session can never be resumed by a strict
+ * connection -- a silent downgrade.  Every other resumption test is
+ * strict->strict, so a regression dropping the verify component from
+ * ares_tls_session_key() would leave the key unique-per-test and every test
+ * still passing.  ares_tls_session_get() is non-consuming, so probe directly:
+ * cache under strict, assert a MISS under opportunistic (different key), then a
+ * HIT again under strict. */
+TEST_F(LibraryTest, CryptoTLSSessionVerifyModeKeyed)
+{
+  TLSHarness h;
+  ASSERT_TRUE(h.Init(true));
+  EXPECT_EQ(ARES_CONN_ERR_SUCCESS, h.PumpHandshake());
+
+  /* Post-handshake ticket populates the cache, keyed under strict. */
+  unsigned char m[] = { 't' };
+  ASSERT_TRUE(h.ServerWrite(m, sizeof(m)));
+  unsigned char rbuf[16];
+  size_t        rlen = sizeof(rbuf);
+  EXPECT_EQ(ARES_CONN_ERR_SUCCESS, h.ClientRead(rbuf, &rlen));
+
+  ASSERT_EQ(ARES_TLS_VERIFY_STRICT, h.server_.tls_verify);
+  EXPECT_NE(nullptr, ares_tls_session_get(h.channel_->crypto_ctx, &h.conn_));
+
+  /* Same ip/port/hostname but opportunistic -> different key -> must miss. */
+  h.server_.tls_verify = ARES_TLS_VERIFY_OPPORTUNISTIC;
+  EXPECT_EQ(nullptr, ares_tls_session_get(h.channel_->crypto_ctx, &h.conn_));
+
+  /* Back to strict -> the cached session is found again (proves the miss was
+   * the key, not eviction). */
+  h.server_.tls_verify = ARES_TLS_VERIFY_STRICT;
+  EXPECT_NE(nullptr, ares_tls_session_get(h.channel_->crypto_ctx, &h.conn_));
+}
+
 TEST_F(LibraryTest, CryptoTLSEarlyDataAccept)
 {
   TLSHarness h;
@@ -1464,6 +1498,86 @@ TEST_F(LibraryTest, CryptoDoTEarlyDataReject)
   EXPECT_EQ(2, srv.accepts_.load());
   EXPECT_EQ(0, srv.early_queries_.load());
   EXPECT_EQ(2, srv.queries_.load());
+
+  ares_destroy(channel);
+  srv.Stop();
+  X509_free(srv_cert);
+  X509_free(ca_cert);
+  EVP_PKEY_free(srv_key);
+  EVP_PKEY_free(ca_key);
+}
+
+/* Only a standard QUERY is replay-safe as 0-RTT early data.  A caller-built
+ * non-QUERY (here a NOTIFY, which still carries a question section so the mock
+ * server answers it) resumes the session but must NOT ride 0-RTT -- the opcode
+ * gate holds it back to the normal post-handshake flight.  Contrast
+ * CryptoDoTEarlyData, where a QUERY in the same position rides 0-RTT
+ * (early_queries_ == 1). */
+TEST_F(LibraryTest, CryptoDoTEarlyDataQueryOpcodeOnly)
+{
+  EVP_PKEY *ca_key  = EVP_EC_gen("P-256");
+  EVP_PKEY *srv_key = EVP_EC_gen("P-256");
+  ASSERT_NE(nullptr, ca_key);
+  ASSERT_NE(nullptr, srv_key);
+  X509 *ca_cert = TlsTestMkCert(ca_key, ca_key, NULL, 1, true);
+  ASSERT_NE(nullptr, ca_cert);
+  X509 *srv_cert = TlsTestMkCert(srv_key, ca_key, ca_cert, 2, false);
+  ASSERT_NE(nullptr, srv_cert);
+
+  DoTTestServer srv;
+  /* Advertise an early-data budget so a QUERY *would* ride 0-RTT on resume;
+   * the NOTIFY must not. */
+  ASSERT_TRUE(srv.Start(srv_cert, srv_key, 16384));
+
+  ares_channel_t *channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  {
+    BIO  *bio = BIO_new(BIO_s_mem());
+    char *pem = NULL;
+    long  len;
+    ASSERT_NE(nullptr, bio);
+    ASSERT_EQ(1, PEM_write_bio_X509(bio, ca_cert));
+    len = BIO_get_mem_data(bio, &pem);
+    ASSERT_EQ(ARES_SUCCESS,
+              ares_tls_set_cadata(channel->crypto_ctx,
+                                  (const unsigned char *)pem, (size_t)len));
+    BIO_free(bio);
+  }
+
+  char csv[128];
+  snprintf(csv, sizeof(csv),
+           "dns+tls://127.0.0.1:%u?hostname=dot.test&verify=strict",
+           (unsigned int)srv.port_);
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel, csv));
+
+  /* First query (QUERY): full handshake, caches a resumable session. */
+  HostResult result1;
+  ares_gethostbyname(channel, "first.test", AF_INET, HostCallback, &result1);
+  ProcessWork(channel, NoExtraFDs, nullptr);
+  EXPECT_TRUE(result1.done_);
+  EXPECT_EQ(ARES_SUCCESS, result1.status_);
+
+  /* Second request is a caller-built NOTIFY (non-QUERY opcode). */
+  ares_dns_record_t *notify = nullptr;
+  ASSERT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&notify, 0x1234, 0, ARES_OPCODE_NOTIFY,
+                                   ARES_RCODE_NOERROR));
+  ASSERT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(notify, "notify.test", ARES_REC_TYPE_A,
+                                      ARES_CLASS_IN));
+
+  SearchResult result2;
+  ares_send_dnsrec(channel, notify, SearchCallbackDnsRec, &result2, nullptr);
+  ares_dns_record_destroy(notify);
+  ProcessWork(channel, NoExtraFDs, nullptr);
+  EXPECT_TRUE(result2.done_);
+
+  /* The NOTIFY opened a second (resuming) connection but did NOT ride 0-RTT:
+   * the opcode gate held it to the normal flight.  (accepts_ == 2 confirms the
+   * resumption actually happened, so early_queries_ == 0 is meaningful.) */
+  EXPECT_EQ(2, srv.accepts_.load());
+  EXPECT_EQ(0, srv.early_queries_.load());
 
   ares_destroy(channel);
   srv.Stop();

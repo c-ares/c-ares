@@ -288,6 +288,22 @@ ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
   return err;
 }
 
+/* Whether a TCP-framed DNS message is a standard QUERY (opcode 0).  DoT is
+ * TCP-framed, so `data` begins with the 2-byte length prefix; the DNS header
+ * flags high byte (QR + 4-bit opcode + ...) is at offset 4 (2 length + 2 ID)
+ * and the opcode is bits 3-6 of it.  A short buffer is treated as not-a-QUERY
+ * (fail safe -- it simply won't ride 0-RTT). */
+static ares_bool_t ares_conn_framed_is_query(const unsigned char *data,
+                                             size_t               len)
+{
+  if (len < 5) {
+    return ARES_FALSE;
+  }
+  return (((data[4] >> 3) & 0x0F) == (unsigned char)ARES_OPCODE_QUERY)
+           ? ARES_TRUE
+           : ARES_FALSE;
+}
+
 ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
                                 size_t *written)
 {
@@ -312,9 +328,15 @@ ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
    *
    * A cache miss (no resumable session) reports an early-data size of 0, so
    * this whole block is skipped and the connection does an ordinary 1-RTT
-   * handshake. */
+   * handshake.
+   *
+   * Only a standard QUERY is replay-safe: a caller-built non-QUERY message
+   * (e.g. an RFC 2136 UPDATE via ares_send_dnsrec()) is not necessarily
+   * idempotent, so it must never ride 0-RTT and is sent in the normal
+   * post-handshake flight instead. */
   state = ares_tlsimp_get_state(conn->tls);
-  if (state == ARES_TLS_STATE_INIT || state == ARES_TLS_STATE_EARLYDATA) {
+  if ((state == ARES_TLS_STATE_INIT || state == ARES_TLS_STATE_EARLYDATA) &&
+      ares_conn_framed_is_query((const unsigned char *)data, len)) {
     size_t budget = ares_tlsimp_get_earlydata_size(conn->tls);
     if (budget > conn->tls_earlydata_sent && len > conn->tls_earlydata_sent) {
       size_t off = conn->tls_earlydata_sent;
@@ -487,6 +509,16 @@ done:
        * buffer). */
       ares_tls_stateflag_t sf = ares_tlsimp_get_stateflag(conn->tls);
       if (sf & (ARES_TLS_SF_READ_WANTWRITE | ARES_TLS_SF_WRITE_WANTWRITE)) {
+        flags |= ARES_CONN_STATE_WRITE;
+      } else if (ares_buf_len(conn->out_buf) > 0 &&
+                 !(sf &
+                   (ARES_TLS_SF_READ_WANTREAD | ARES_TLS_SF_WRITE_WANTREAD))) {
+        /* SSL_MODE_ENABLE_PARTIAL_WRITE lets a write succeed with only part of
+         * the record sent (the socket buffer filled), leaving data in out_buf
+         * but setting no want-flag.  The socket is genuinely full, so arming
+         * WRITE drains the tail without busy-spinning.  Excluded when TLS is
+         * blocked on a *read* (renegotiation), where WRITE must stay disarmed.
+         */
         flags |= ARES_CONN_STATE_WRITE;
       }
     } else if (conn->flags & ARES_CONN_FLAG_TCP &&
