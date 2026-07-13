@@ -291,6 +291,17 @@ static ares_status_t parse_nameserver_uri(ares_buf_t     *buf,
       }
     }
 
+    /* An explicit verify=opportunistic with a hostname is contradictory: the
+     * authentication name would be sent as SNI but never checked (opportunistic
+     * never enforces identity), so the configured name provides no security.
+     * Reject it so the intent is explicit -- use verify=strict/default to
+     * authenticate the name, or drop the name for pure opportunistic. */
+    if (sconfig->tls_verify == ARES_TLS_VERIFY_OPPORTUNISTIC &&
+        ares_strlen(sconfig->tls_hostname) > 0) {
+      status = ARES_EBADSTR;
+      goto done;
+    }
+
     /* Strict verification needs an authentication name to check the peer
      * identity against (RFC 8310 6.6/8.1); without one it would silently
      * degrade to chain-only in the backend.  Reject fail-closed here. */

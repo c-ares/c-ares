@@ -271,6 +271,16 @@ TEST_F(MockDoTServerTest, IPLiteralHostnameRejected)
   EXPECT_FALSE(BuildChannel(true, "strict", "1.1.1.1"));
 }
 
+/* verify=opportunistic with a hostname is contradictory (the name would be
+ * sent as SNI but never authenticated), so it is rejected at config time. */
+TEST_F(MockDoTServerTest, OpportunisticWithHostnameRejected)
+{
+  if (!HasBackend()) {
+    GTEST_SKIP() << "no mock DoT server backend for this crypto build";
+  }
+  EXPECT_FALSE(BuildChannel(true, "opportunistic", "dot.example.com"));
+}
+
 /* Opportunistic mode encrypts without verifying, so an untrusted cert still
  * yields a successful query. */
 TEST_F(MockDoTServerTest, Opportunistic)

@@ -977,12 +977,14 @@ public:
     }
   }
 
-  bool Start(X509 *cert, EVP_PKEY *key, unsigned int max_early = 0)
+  bool Start(X509 *cert, EVP_PKEY *key, unsigned int max_early = 0,
+             bool reject_early = false)
   {
     struct sockaddr_in sin;
     socklen_t          slen = sizeof(sin);
 
-    want_early_ = (max_early > 0);
+    want_early_   = (max_early > 0);
+    reject_early_ = reject_early;
 
     sctx_ = SSL_CTX_new(TLS_server_method());
     if (sctx_ == NULL) {
@@ -1124,6 +1126,14 @@ done:
     std::vector<unsigned char> buf;
     size_t                     early_len = 0;
 
+    /* Reject 0-RTT on the resuming (second and later) connection: the session
+     * still resumes, but max_early_data == 0 refuses the early data so the
+     * client must re-send the query in the normal stream.  Exercises the
+     * ares_conn.c early-data reject reconciliation end-to-end. */
+    if (reject_early_ && want_early_ && accepts_.load() >= 2) {
+      SSL_set_max_early_data(ssl, 0);
+    }
+
     if (want_early_) {
       for (;;) {
         unsigned char eb[512];
@@ -1196,9 +1206,10 @@ done:
     }
   }
 
-  bool        want_early_ = false;
-  SSL_CTX    *sctx_       = nullptr;
-  int         lfd_        = -1;
+  bool        want_early_   = false;
+  bool        reject_early_ = false;
+  SSL_CTX    *sctx_         = nullptr;
+  int         lfd_          = -1;
   std::thread thr_;
 };
 
@@ -1377,6 +1388,81 @@ TEST_F(LibraryTest, CryptoDoTEarlyData)
    * data, and no query lost or duplicated (2 answered total). */
   EXPECT_EQ(2, srv.accepts_.load());
   EXPECT_EQ(1, srv.early_queries_.load());
+  EXPECT_EQ(2, srv.queries_.load());
+
+  ares_destroy(channel);
+  srv.Stop();
+  X509_free(srv_cert);
+  X509_free(ca_cert);
+  EVP_PKEY_free(srv_key);
+  EVP_PKEY_free(ca_key);
+}
+
+/* End-to-end 0-RTT *reject* path (the riskier branch of the early-data
+ * reconciliation in ares_conn.c: the resumed connection optimistically sends
+ * the query as early data, the server refuses 0-RTT, and the client must
+ * re-send the query in the normal stream -- neither dropping nor duplicating
+ * it). */
+TEST_F(LibraryTest, CryptoDoTEarlyDataReject)
+{
+  EVP_PKEY *ca_key  = EVP_EC_gen("P-256");
+  EVP_PKEY *srv_key = EVP_EC_gen("P-256");
+  ASSERT_NE(nullptr, ca_key);
+  ASSERT_NE(nullptr, srv_key);
+  X509 *ca_cert = TlsTestMkCert(ca_key, ca_key, NULL, 1, true);
+  ASSERT_NE(nullptr, ca_cert);
+  X509 *srv_cert = TlsTestMkCert(srv_key, ca_key, ca_cert, 2, false);
+  ASSERT_NE(nullptr, srv_cert);
+
+  DoTTestServer srv;
+  /* Advertise an early-data budget (so the client attempts 0-RTT on resume)
+   * but reject it on the resuming connection. */
+  ASSERT_TRUE(srv.Start(srv_cert, srv_key, 16384, /* reject_early */ true));
+
+  ares_channel_t *channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  {
+    BIO  *bio = BIO_new(BIO_s_mem());
+    char *pem = NULL;
+    long  len;
+    ASSERT_NE(nullptr, bio);
+    ASSERT_EQ(1, PEM_write_bio_X509(bio, ca_cert));
+    len = BIO_get_mem_data(bio, &pem);
+    ASSERT_EQ(ARES_SUCCESS,
+              ares_tls_set_cadata(channel->crypto_ctx,
+                                  (const unsigned char *)pem, (size_t)len));
+    BIO_free(bio);
+  }
+
+  char csv[128];
+  snprintf(csv, sizeof(csv),
+           "dns+tls://127.0.0.1:%u?hostname=dot.test&verify=strict",
+           (unsigned int)srv.port_);
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel, csv));
+
+  /* First query: full handshake, caches a resumable session with a budget */
+  HostResult result1;
+  ares_gethostbyname(channel, "first.test", AF_INET, HostCallback, &result1);
+  ProcessWork(channel, NoExtraFDs, nullptr);
+  EXPECT_TRUE(result1.done_);
+  EXPECT_EQ(ARES_SUCCESS, result1.status_);
+
+  /* Second query: fresh connection, resumes, sends 0-RTT, the server rejects
+   * it, and the client re-sends over the established connection. */
+  HostResult result2;
+  ares_gethostbyname(channel, "second.test", AF_INET, HostCallback, &result2);
+  ProcessWork(channel, NoExtraFDs, nullptr);
+  EXPECT_TRUE(result2.done_);
+  EXPECT_EQ(ARES_SUCCESS, result2.status_);
+  ASSERT_EQ((size_t)1, result2.host_.addrs_.size());
+  EXPECT_EQ("1.2.3.4", result2.host_.addrs_[0]);
+
+  /* 0-RTT was refused (no query arrived as early data) yet both queries were
+   * answered exactly once -- the rejected flight was re-sent, not lost or
+   * duplicated. */
+  EXPECT_EQ(2, srv.accepts_.load());
+  EXPECT_EQ(0, srv.early_queries_.load());
   EXPECT_EQ(2, srv.queries_.load());
 
   ares_destroy(channel);

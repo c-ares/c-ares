@@ -85,7 +85,9 @@ UDP and TCP by default, this option will override the TCP port.
 \fIhostname\fP - Only for \fIdns+tls://\fP. The authority component of a
 \fIdns+tls://\fP URI is always an ip address; this parameter supplies the
 fully qualified domain name of the server, used as the TLS SNI and certificate
-authentication name. Recommended (and required for \fIverify=strict\fP).
+authentication name. Must be a DNS name, not an IP literal. Recommended (and
+required for \fIverify=strict\fP). May not be combined with
+\fIverify=opportunistic\fP, which never authenticates the name.
 
 \fIverify\fP - Only for \fIdns+tls://\fP. Certificate verification mode, per
 RFC 8310. One of \fIstrict\fP (verify the certificate chain, and the

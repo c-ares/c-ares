@@ -540,6 +540,76 @@ done:
   return rv;
 }
 
+/* Some SDKs guard these behind newer feature levels; the values are fixed by
+ * the TLS wire protocol. */
+#  ifndef TLS1_ALERT_FATAL
+#    define TLS1_ALERT_FATAL 2
+#  endif
+#  ifndef TLS1_ALERT_BAD_CERTIFICATE
+#    define TLS1_ALERT_BAD_CERTIFICATE 42
+#  endif
+
+/* Emit a fatal TLS alert to the peer for a locally-detected handshake failure
+ * (notably our manual certificate-verification rejection, which happens after
+ * the Schannel handshake itself has completed).  Purely for diagnosability /
+ * conformance -- the connection is torn down regardless -- so every step is
+ * best-effort and failures are ignored. */
+static void schan_send_alert(ares_tls_t *tls, DWORD alert_number)
+{
+  SCHANNEL_ALERT_TOKEN token;
+  SecBuffer            inbuf[1];
+  SecBufferDesc        indesc;
+  SecBuffer            outbuf[2];
+  SecBufferDesc        outdesc;
+  unsigned long        ret_flags = 0;
+
+  memset(&token, 0, sizeof(token));
+  token.dwTokenType   = SCHANNEL_ALERT;
+  token.dwAlertType   = TLS1_ALERT_FATAL;
+  token.dwAlertNumber = alert_number;
+
+  inbuf[0].BufferType = SECBUFFER_TOKEN;
+  inbuf[0].pvBuffer   = &token;
+  inbuf[0].cbBuffer   = sizeof(token);
+  indesc.ulVersion    = SECBUFFER_VERSION;
+  indesc.cBuffers     = 1;
+  indesc.pBuffers     = inbuf;
+
+  if (ApplyControlToken(&tls->ctxt, &indesc) != SEC_E_OK) {
+    return;
+  }
+
+  outbuf[0].BufferType = SECBUFFER_TOKEN;
+  outbuf[0].pvBuffer   = NULL;
+  outbuf[0].cbBuffer   = 0;
+  outbuf[1].BufferType = SECBUFFER_ALERT;
+  outbuf[1].pvBuffer   = NULL;
+  outbuf[1].cbBuffer   = 0;
+  outdesc.ulVersion    = SECBUFFER_VERSION;
+  outdesc.cBuffers     = 2;
+  outdesc.pBuffers     = outbuf;
+
+  /* One ISC call turns the queued alert into an outbound handshake token. */
+  InitializeSecurityContextA(&tls->ctx->cred, &tls->ctxt,
+                             (SEC_CHAR *)tls->target_name, ARES_SCHAN_ISC_FLAGS,
+                             0, 0, NULL, 0, NULL, &outdesc, &ret_flags, NULL);
+
+  if (outbuf[0].cbBuffer != 0 && outbuf[0].pvBuffer != NULL) {
+    (void)schan_buf_append(&tls->enc_out, &tls->enc_out_len,
+                           &tls->enc_out_alloc, outbuf[0].pvBuffer,
+                           outbuf[0].cbBuffer);
+    FreeContextBuffer(outbuf[0].pvBuffer);
+  }
+  if (outbuf[1].BufferType == SECBUFFER_ALERT && outbuf[1].cbBuffer != 0 &&
+      outbuf[1].pvBuffer != NULL) {
+    (void)schan_buf_append(&tls->enc_out, &tls->enc_out_len,
+                           &tls->enc_out_alloc, outbuf[1].pvBuffer,
+                           outbuf[1].cbBuffer);
+    FreeContextBuffer(outbuf[1].pvBuffer);
+  }
+  (void)schan_flush(tls);
+}
+
 static ares_conn_err_t schan_finish_handshake(ares_tls_t *tls)
 {
   SECURITY_STATUS ss;
@@ -555,6 +625,7 @@ static ares_conn_err_t schan_finish_handshake(ares_tls_t *tls)
   if (tls->verify != ARES_TLS_VERIFY_OPPORTUNISTIC) {
     ares_conn_err_t verr = schan_verify_cert(tls);
     if (verr != ARES_CONN_ERR_SUCCESS) {
+      schan_send_alert(tls, TLS1_ALERT_BAD_CERTIFICATE);
       tls->state = ARES_TLS_STATE_ERROR;
       return verr;
     }
@@ -577,12 +648,13 @@ static ares_conn_err_t schan_reneg_revalidate(ares_tls_t *tls)
   }
   verr = schan_verify_cert(tls);
   if (verr != ARES_CONN_ERR_SUCCESS) {
+    schan_send_alert(tls, TLS1_ALERT_BAD_CERTIFICATE);
     tls->state = ARES_TLS_STATE_ERROR;
   }
   return verr;
 }
 
-/* Older SDKs (the legacy SCHANNEL_CRED path, TLS 1.2 only) don't define this. */
+/* Older SDKs (legacy SCHANNEL_CRED path, TLS 1.2 only) don't define this. */
 #  ifndef SP_PROT_TLS1_3_CLIENT
 #    define SP_PROT_TLS1_3_CLIENT 0x00002000
 #  endif
@@ -644,7 +716,7 @@ static ares_conn_err_t schan_handshake(ares_tls_t *tls, ares_bool_t post)
   for (;;) {
     SecBuffer       inbuf[2];
     SecBufferDesc   indesc;
-    SecBuffer       outbuf[1];
+    SecBuffer       outbuf[2];
     SecBufferDesc   outdesc;
     SECURITY_STATUS ss;
     unsigned long   ret_flags = 0;
@@ -690,8 +762,14 @@ static ares_conn_err_t schan_handshake(ares_tls_t *tls, ares_bool_t post)
     outbuf[0].BufferType = SECBUFFER_TOKEN;
     outbuf[0].pvBuffer   = NULL;
     outbuf[0].cbBuffer   = 0;
+    /* A SECBUFFER_ALERT output buffer lets Schannel hand back a TLS alert it
+     * generated for a handshake-level failure (under ISC_REQ_EXTENDED_ERROR),
+     * so it can be written to the peer instead of silently closing. */
+    outbuf[1].BufferType = SECBUFFER_ALERT;
+    outbuf[1].pvBuffer   = NULL;
+    outbuf[1].cbBuffer   = 0;
     outdesc.ulVersion    = SECBUFFER_VERSION;
-    outdesc.cBuffers     = 1;
+    outdesc.cBuffers     = 2;
     outdesc.pBuffers     = outbuf;
 
     ss = InitializeSecurityContextA(
@@ -713,6 +791,17 @@ static ares_conn_err_t schan_handshake(ares_tls_t *tls, ares_bool_t post)
       if (!ok) {
         return ARES_CONN_ERR_NOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       }
+    }
+
+    /* Queue any generated TLS alert; the fatal branch below flushes it before
+     * surfacing the error.  Best-effort: on a failing handshake we return the
+     * error regardless of whether the alert could be buffered. */
+    if (outbuf[1].BufferType == SECBUFFER_ALERT && outbuf[1].cbBuffer != 0 &&
+        outbuf[1].pvBuffer != NULL) {
+      (void)schan_buf_append(&tls->enc_out, &tls->enc_out_len,
+                             &tls->enc_out_alloc, outbuf[1].pvBuffer,
+                             outbuf[1].cbBuffer);
+      FreeContextBuffer(outbuf[1].pvBuffer);
     }
 
     if (ss == SEC_E_INCOMPLETE_MESSAGE) {
@@ -791,7 +880,9 @@ static ares_conn_err_t schan_handshake(ares_tls_t *tls, ares_bool_t post)
       continue;
     }
 
-    /* Any other status is fatal */
+    /* Any other status is fatal.  Best-effort flush of a queued alert (above)
+     * so the peer sees why we're closing, then surface the error. */
+    (void)schan_flush(tls);
     tls->state = ARES_TLS_STATE_ERROR;
     return schan_map_error(tls, ss);
   }
