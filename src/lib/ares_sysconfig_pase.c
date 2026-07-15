@@ -26,67 +26,16 @@
 
 #include "ares_private.h"
 
-#ifdef __PASE__
-
-#  include <sys/socket.h>
-#  include <netinet/in.h>
-#  include <arpa/inet.h>
-#  include <as400_protos.h>
-#  include <pthread.h>
-#  include <unistd.h>
-
-/* EBCDIC space character (CCSID 37: 0x40 = space) */
-#define EBCDIC_SPACE '\x40'
-
-/* IBM i ILE API structures for QtocRtvTCPA */
-
-typedef struct {
-  int bytes_returned;
-  int bytes_available;
-  int ipv6_status;
-  int additional_info_offset;
-  int additional_info_length;
-  int ipv4_status;
-} tcpa1100_t;
-
-typedef struct {
-  int  dns_list_offset;
-  int  dns_list_count;
-  int  dns_list_entry_size;
-  int  dns_protocol;
-  int  retries;
-  int  time_interval;
-  int  search_order;
-  int  initial_server;
-  int  dns_listening_port;
-  char hostname[64];
-  char domain_name[255];
-  char reserved;
-  char search_list[256];
-  int  request_dnssec;
-} tcpa1400_t;
-
-typedef struct {
-  int  version;
-  char ip_address_string[45];
-  char reserved[3];
-  char ip_address[16];
-} dns_list_item_t;
-
-/* Thread-safe cache for ILE procedure pointer with fork detection */
-static ILEpointer      qtocrtvtcpa_ptr __attribute__((aligned(16)));
-static int             qtocrtvtcpa_initialized = 0;
-static pid_t           cached_pid              = 0;
-static pthread_mutex_t ile_mutex               = PTHREAD_MUTEX_INITIALIZER;
-
 /* EBCDIC to ASCII lookup table (CCSID 37).
- * Only the DNS/hostname charset (letters, digits, hyphen, dot, space, comma)
- * is guaranteed fully correct; other slots map identity or to a safe fallback.
+ * Only the DNS/hostname charset (letters, digits, hyphen, dot, space, comma,
+ * underscore) is guaranteed fully correct; other slots map identity or to a
+ * safe fallback.
  * Key corrections vs a naive identity table:
  *   0x40 -> ' '   (space)
  *   0x4B -> '.'   (period)
  *   0x60 -> '-'   (hyphen)
  *   0x6B -> ','   (comma)   -- delimiter used by ares_strsplit
+ *   0x6D -> '_'   (underscore)
  *   0x81-0x89 -> a-i
  *   0x91-0x99 -> j-r
  *   0xA2-0xA9 -> s-z
@@ -95,7 +44,7 @@ static pthread_mutex_t ile_mutex               = PTHREAD_MUTEX_INITIALIZER;
  *   0xE2-0xE9 -> S-Z
  *   0xF0-0xF9 -> 0-9
  */
-static const unsigned char ebcdic_to_ascii_table[256] = {
+const unsigned char ares__ebcdic_to_ascii_table[256] = {
   /* 0x00-0x0F */
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
   0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
@@ -116,7 +65,7 @@ static const unsigned char ebcdic_to_ascii_table[256] = {
   0x58, 0x59, 0x5A, '$',  0x5C, 0x5D, 0x5E, 0x5F,
   /* 0x60 = EBCDIC hyphen/minus -> ASCII hyphen */
   '-',  0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67,
-  0x68, 0x69, 0x6A, ',',  '%',  0x6D, 0x6E, 0x6F,
+  0x68, 0x69, 0x6A, ',',  '%',  '_',  0x6E, 0x6F,
   /* 0x70-0x7F */
   0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77,
   0x78, 0x79, 0x7A, '#',  0x7C, 0x7D, 0x7E, 0x7F,
@@ -150,21 +99,78 @@ static const unsigned char ebcdic_to_ascii_table[256] = {
  * string in out, which must be at least len+1 bytes.  Stops at the first
  * NUL; trailing EBCDIC blank (0x40) padding becomes ASCII spaces, which
  * ares_strsplit() then drops as empty tokens. */
-static void ebcdic_to_ascii_str(const char *ebcdic, size_t len, char *out)
+void ares__ebcdic_to_ascii_str(const char *ebcdic, size_t len, char *out)
 {
   size_t i;
   for (i = 0; i < len && ebcdic[i] != '\0'; i++) {
-    out[i] = (char)ebcdic_to_ascii_table[(unsigned char)ebcdic[i]];
+    out[i] = (char)ares__ebcdic_to_ascii_table[(unsigned char)ebcdic[i]];
   }
   out[i] = '\0';
 }
 
+#ifdef __PASE__
+
+/* EBCDIC space character (CCSID 37: 0x40 = space) */
+#  define EBCDIC_SPACE '\x40'
+
+#  include <sys/socket.h>
+#  include <netinet/in.h>
+#  include <arpa/inet.h>
+#  include <as400_protos.h>
+#  include <pthread.h>
+#  include <unistd.h>
+
+/* IBM i ILE API structures for QtocRtvTCPA */
+
+typedef struct {
+  int bytes_returned;
+  int bytes_available;
+  int ipv6_status;
+  int additional_info_offset;
+  int additional_info_length;
+  int ipv4_status;
+} tcpa1100_t;
+
+/* Byte-exact overlay of IBM TCPA1400 (QtocRtvTCPA format TCPA1400).
+ * domain_name[255] + reserved[1] = 256 bytes; this lands request_dnssec at
+ * offset 612 (4-byte aligned) with zero compiler padding — do not reorder or
+ * remove any field, including char reserved. */
+typedef struct {
+  int  dns_list_offset;
+  int  dns_list_count;
+  int  dns_list_entry_size;
+  int  dns_protocol;
+  int  retries;
+  int  time_interval;
+  int  search_order;
+  int  initial_server;
+  int  dns_listening_port;
+  char hostname[64];
+  char domain_name[255];
+  char reserved; /* padding: do not remove — required for byte-exact layout */
+  char search_list[256];
+  int  request_dnssec;
+} tcpa1400_t;
+
+typedef struct {
+  int  version;
+  char ip_address_string[45];
+  char reserved[3];
+  char ip_address[16];
+} dns_list_item_t;
+
+/* Thread-safe cache for ILE procedure pointer with fork detection */
+static ILEpointer      qtocrtvtcpa_ptr __attribute__((aligned(16)));
+static int             qtocrtvtcpa_initialized = 0;
+static pid_t           cached_pid              = 0;
+static pthread_mutex_t ile_mutex               = PTHREAD_MUTEX_INITIALIZER;
+
 /* Thread-safe initialization of ILE API with fork detection.
  * ILE pointers are invalidated in a child process after fork(), so we
  * cache the PID and re-initialize whenever it changes. */
-static ares_bool_t load_ile_api(void)
+static ares_bool_t     load_ile_api(void)
 {
-  ares_bool_t        ok          = ARES_TRUE;
+  ares_bool_t        ok = ARES_TRUE;
   unsigned long long actmark;
   pid_t              current_pid = getpid();
 
@@ -196,26 +202,35 @@ cleanup:
   return ok;
 }
 
+/* Upper bound on dns_list_count for buffer sizing.  The IBM docs do not
+ * document a hard cap; in practice dns_list_count is always well below this.
+ * The loop trusts dns_list_count as authoritative and bounds-checks every
+ * offset, so this only affects the initial allocation size. */
+#  define ARES_PASE_MAX_DNS_SERVERS 10
+
 ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
                                        ares_sysconfig_t     *sysconfig)
 {
   /* --- All declarations at top of function (C89/C90 compliance) --- */
   ares_status_t status;
-  unsigned int  buflen;
+  int           buflen;
   char         *buffer = NULL;
   tcpa1100_t   *header;
   tcpa1400_t   *header2;
   int           i, rc;
   size_t        off;
   char          ip_str[INET6_ADDRSTRLEN + 10]; /* extra room for [ip]:port */
+
   struct {
     int  bytes_provided;
     int  bytes_available;
     char msgid[8];
     char data[256];
   } err_code;
+
   const arg_type_t signature[] = { ARG_MEMPTR, ARG_MEMPTR, ARG_MEMPTR,
-                                    ARG_MEMPTR, ARG_END };
+                                   ARG_MEMPTR, ARG_END };
+
   struct {
     ILEarglist_base base;
     ILEpointer      buffer;
@@ -223,6 +238,7 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
     ILEpointer      format;
     ILEpointer      errcode;
   } arglist __attribute__((aligned(16)));
+
   /* Format name "TCPA1400" in EBCDIC */
   char format[9] = "\xe3\xc3\xd7\xc1\xf1\xf4\xf0\xf0";
 
@@ -231,16 +247,20 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
     return ares_init_sysconfig_files(channel, sysconfig, ARES_TRUE);
   }
 
-  /* Allocate buffer for the API response */
-  buflen = sizeof(tcpa1100_t) + sizeof(tcpa1400_t) +
-           sizeof(dns_list_item_t) * 10 + 512;
+  /* Allocate buffer for the API response.
+   * The layout is: tcpa1100_t at offset 0, then tcpa1400_t at
+   * additional_info_offset (API-reported, may be larger than sizeof(tcpa1100_t)
+   * due to alignment or future header growth), then the DNS list entries.
+   * +512 covers any gap between the end of tcpa1100_t and additional_info_offset.
+   * The bounds checks below ensure we never read past buflen regardless. */
+  buflen = (int)(sizeof(tcpa1100_t) + sizeof(tcpa1400_t) +
+                 sizeof(dns_list_item_t) * ARES_PASE_MAX_DNS_SERVERS + 512);
 
-  buffer = ares_malloc(buflen);
+  buffer = ares_malloc_zero((size_t)buflen);
   if (buffer == NULL) {
     return ARES_ENOMEM;
   }
 
-  memset(buffer, 0, buflen);
   memset(&err_code, 0, sizeof(err_code));
   err_code.bytes_provided = sizeof(err_code);
 
@@ -250,7 +270,11 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
   arglist.format.s.addr  = (address64_t)(intptr_t)&format[0];
   arglist.errcode.s.addr = (address64_t)(intptr_t)&err_code;
 
-  /* Call QtocRtvTCPA ILE API */
+  /* Call QtocRtvTCPA ILE API.
+   * Note: qtocrtvtcpa_ptr is read outside ile_mutex here.  This is safe in
+   * practice — the pointer is stable once initialized, and a child process
+   * calling this function is single-threaded post-fork — but is formally an
+   * unsynchronized read of the global. */
   rc = _ILECALL(&qtocrtvtcpa_ptr, &arglist.base, signature, RESULT_VOID);
 
   if (rc != ILECALL_NOERROR || err_code.bytes_available) {
@@ -261,7 +285,8 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
   /* --- Validate outer header offset before use (B5) --- */
   header = (tcpa1100_t *)buffer;
   if (header->additional_info_offset < 0 ||
-      (size_t)header->additional_info_offset + sizeof(tcpa1400_t) > buflen) {
+      (size_t)header->additional_info_offset + sizeof(tcpa1400_t) >
+        (size_t)buflen) {
     ares_free(buffer);
     return ares_init_sysconfig_files(channel, sysconfig, ARES_TRUE);
   }
@@ -280,7 +305,7 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
 
     off = (size_t)header2->dns_list_offset +
           (size_t)i * (size_t)header2->dns_list_entry_size;
-    if (off + sizeof(dns_list_item_t) > buflen) {
+    if (off + sizeof(dns_list_item_t) > (size_t)buflen) {
       break;
     }
     item = (dns_list_item_t *)(buffer + off);
@@ -295,11 +320,11 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
       snprintf(ip_str, sizeof(ip_str), "[%s]:%d", ip,
                header2->dns_listening_port);
     } else {
-      snprintf(ip_str, sizeof(ip_str), "%s", ip);
+      ares_strcpy(ip_str, ip, sizeof(ip_str));
     }
 
-    status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig,
-                                         ip_str, ARES_TRUE);
+    status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig, ip_str,
+                                         ARES_TRUE);
     if (status != ARES_SUCCESS) {
       ares_free(buffer);
       return status;
@@ -313,8 +338,8 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
    * trailing blank padding as empty tokens. */
   {
     char search_ascii[sizeof(header2->search_list) + 1]; /* +1 for NUL (B2) */
-    ebcdic_to_ascii_str(header2->search_list, sizeof(header2->search_list),
-                        search_ascii);
+    ares__ebcdic_to_ascii_str(header2->search_list,
+                              sizeof(header2->search_list), search_ascii);
     sysconfig->domains =
       ares_strsplit(search_ascii, ", ", &sysconfig->ndomains);
     /* NULL with ndomains==0 means the field was empty, not an alloc error */
@@ -330,10 +355,9 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
   if (sysconfig->ndomains == 0 && header2->domain_name[0] != '\0' &&
       header2->domain_name[0] != EBCDIC_SPACE) {
     char domain_ascii[sizeof(header2->domain_name) + 1];
-    ebcdic_to_ascii_str(header2->domain_name, sizeof(header2->domain_name),
-                        domain_ascii);
-    sysconfig->domains =
-      ares_strsplit(domain_ascii, " ", &sysconfig->ndomains);
+    ares__ebcdic_to_ascii_str(header2->domain_name,
+                              sizeof(header2->domain_name), domain_ascii);
+    sysconfig->domains = ares_strsplit(domain_ascii, " ", &sysconfig->ndomains);
     if (sysconfig->domains == NULL && sysconfig->ndomains > 0) {
       ares_free(buffer);
       return ARES_ENOMEM;
@@ -379,7 +403,12 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
 
   ares_free(buffer);
 
-  /* If no DNS servers were found, fall back to file-based config */
+  /* If no DNS servers were found, fall back to file-based config.
+   * Note: any resolver settings already written above (timeout_ms, tries,
+   * rotate, usevc, lookups, domains) remain set and will blend with whatever
+   * ares_init_sysconfig_files() reads; the files parser frees-before-set so
+   * there is no leak.  This is intentional: API-configured settings take
+   * precedence, and the file fills in any gaps. */
   if (ares_llist_len(sysconfig->sconfig) == 0) {
     return ares_init_sysconfig_files(channel, sysconfig, ARES_TRUE);
   }

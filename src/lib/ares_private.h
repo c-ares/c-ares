@@ -403,6 +403,11 @@ ares_status_t ares_init_sysconfig_macos(const ares_channel_t *channel,
 ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
                                        ares_sysconfig_t     *sysconfig);
 #endif
+
+/* EBCDIC <-> ASCII helpers compiled on all platforms (used in unit tests) */
+extern const unsigned char ares__ebcdic_to_ascii_table[256];
+void ares__ebcdic_to_ascii_str(const char *ebcdic, size_t len, char *out);
+
 #ifdef USE_WINSOCK
 ares_status_t ares_init_sysconfig_windows(const ares_channel_t *channel,
                                           ares_sysconfig_t     *sysconfig);
