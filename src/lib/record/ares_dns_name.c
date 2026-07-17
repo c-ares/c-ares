@@ -31,6 +31,11 @@
  * compliant name.  Shared by the read and write paths. */
 #define ARES_MAX_NAME_PRESENTATION_LEN 255
 
+/* The presentation form escapes each octet as up to "\DDD" (4 chars), so a
+ * valid name's escaped string can reach 4x its unescaped length.  Buffers and
+ * limits that hold an already-escaped name must use this, not the 255 above. */
+#define ARES_MAX_NAME_ESCAPED_LEN (ARES_MAX_NAME_PRESENTATION_LEN * 4)
+
 /* A name of <= 255 octets holds at most 128 labels, so it can never
  * legitimately require more than that many compression-pointer jumps.  Bounding
  * the number of indirections stops a name built purely from pointers (which
@@ -61,7 +66,7 @@ static ares_status_t ares_nameoffset_create(ares_llist_t **list,
   ares_nameoffset_t *off = NULL;
 
   if (list == NULL || name == NULL || ares_strlen(name) == 0 ||
-      ares_strlen(name) > ARES_MAX_NAME_PRESENTATION_LEN) {
+      ares_strlen(name) > ARES_MAX_NAME_ESCAPED_LEN) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
@@ -383,11 +388,17 @@ ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
   size_t                   orig_name_len;
   size_t                   pos    = ares_buf_len(buf);
   ares_array_t            *labels = NULL;
-  char                     name_copy[512];
+  char                     name_copy[ARES_MAX_NAME_ESCAPED_LEN + 1];
   ares_status_t            status;
 
   if (buf == NULL || name == NULL) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
+  /* Reject a name that wouldn't fit rather than letting ares_strcpy() silently
+   * truncate it into a different (or malformed) name */
+  if (ares_strlen(name) >= sizeof(name_copy)) {
+    return ARES_EBADNAME;
   }
 
   labels = ares_array_create(sizeof(ares_buf_t *), ares_dns_labels_free_cb);
@@ -395,8 +406,6 @@ ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
     return ARES_ENOMEM;
   }
 
-  /* NOTE: due to possible escaping, name_copy buffer is > 256 to allow for
-   *       this */
   name_len      = ares_strcpy(name_copy, name, sizeof(name_copy));
   orig_name_len = name_len;
 
