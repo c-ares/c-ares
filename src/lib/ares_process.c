@@ -262,6 +262,14 @@ ares_status_t ares_process_fds(ares_channel_t         *channel,
   ares_channel_lock(channel);
   status = ares_process_fds_nolock(channel, events, nevents, flags);
   ares_channel_unlock(channel);
+
+  /* If a callback invoked during processing called ares_destroy(), it was
+   * deferred; complete it now that the callback stack has unwound.  The event
+   * thread completes its own deferred destroy in its run loop (it must detach
+   * rather than join itself), so skip that here. */
+  if (!(channel->optmask & ARES_OPT_EVENT_THREAD)) {
+    ares_destroy_if_deferred(channel);
+  }
   return status;
 }
 
@@ -382,6 +390,12 @@ done:
   ares_free(events);
   ares_free(socketlist);
   ares_channel_unlock(channel);
+
+  /* Complete a deferred ares_destroy() issued from within a callback.  This
+   * legacy entry point is not used with an event thread. */
+  if (!(channel->optmask & ARES_OPT_EVENT_THREAD)) {
+    ares_destroy_if_deferred(channel);
+  }
 }
 
 static ares_status_t process_write(ares_channel_t *channel,
@@ -444,6 +458,13 @@ void ares_process_pending_write(ares_channel_t *channel)
   }
 
   ares_channel_unlock(channel);
+
+  /* A write-flush error can fail a query, whose callback may have called
+   * ares_destroy(); complete a deferred destroy now.  The event thread
+   * completes its own deferred destroy in its run loop. */
+  if (!(channel->optmask & ARES_OPT_EVENT_THREAD)) {
+    ares_destroy_if_deferred(channel);
+  }
 }
 
 static ares_status_t read_conn_packets(ares_conn_t *conn,
@@ -653,8 +674,8 @@ static ares_status_t ares_flush_requeue(ares_channel_t       *channel,
          * find this query still linked in all_queries/queries_by_qid, free it,
          * and the ares_free_query() below would then double-free it. */
         ares_detach_query(query);
-        query->callback(query->arg, entry.status, query->timeouts,
-                        entry.dnsrec);
+        ares_invoke_query_callback(query, entry.status, query->timeouts,
+                                   entry.dnsrec);
         ares_free_query(query);
       }
       ares_dns_record_destroy(entry.dnsrec);
@@ -1603,6 +1624,42 @@ static void ares_detach_query(ares_query_t *query)
   query->node_all_queries = NULL;
 }
 
+void ares_invoke_query_callback(ares_query_t *query, ares_status_t status,
+                                size_t                   timeouts,
+                                const ares_dns_record_t *dnsrec)
+{
+  ares_channel_t *channel = query->channel;
+
+  /* Track that we are executing a user callback so that a reentrant
+   * ares_destroy() from within it can be detected and deferred rather than
+   * tearing the channel down underneath the frames still using it (or, with an
+   * event thread, deadlocking on a self-join). */
+  channel->callback_depth++;
+  query->callback(query->arg, status, timeouts, dnsrec);
+  channel->callback_depth--;
+}
+
+ares_bool_t ares_destroy_if_deferred(ares_channel_t *channel)
+{
+  ares_bool_t do_destroy;
+
+  ares_channel_lock(channel);
+  do_destroy =
+    (ares_bool_t)(channel->destroy_pending && channel->callback_depth == 0);
+  /* Claim the pending destroy so a concurrent completer (another processing
+   * thread or the event thread loop) can't also tear the channel down. */
+  if (do_destroy) {
+    channel->destroy_pending = ARES_FALSE;
+  }
+  ares_channel_unlock(channel);
+
+  if (do_destroy) {
+    ares_destroy_int(channel, ARES_FALSE);
+  }
+
+  return do_destroy;
+}
+
 static void end_query(ares_channel_t *channel, ares_server_t *server,
                       ares_query_t *query, ares_status_t status,
                       ares_dns_record_t *dnsrec, ares_array_t **requeue)
@@ -1622,7 +1679,7 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
   }
 
   /* Invoke the callback. */
-  query->callback(query->arg, status, query->timeouts, dnsrec);
+  ares_invoke_query_callback(query, status, query->timeouts, dnsrec);
   ares_free_query(query);
 
   /* Check and notify if no other queries are enqueued on the channel.  This

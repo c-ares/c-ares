@@ -21,6 +21,14 @@ channel, passing a status of \fIARES_EDESTRUCTION\fP. These calls give the
 callbacks a chance to clean up any state which might have been stored in their
 arguments. A callback must not add new requests to a channel being destroyed.
 
+As of c-ares 1.35.0, \fBares_destroy(3)\fP may be called from within a query
+callback.  In that case the channel cannot be torn down immediately, as the
+callback stack still references it, so the teardown is deferred until the
+callback returns and completes asynchronously.  The channel must not be used
+again after such a call.  Prior versions explicitly did not support this and
+doing so resulted in undefined behavior (including a deadlock when using an
+event thread).
+
 There is no ability to make this function thread-safe.  No additional calls
 using this channel may be made once this function is called.
 .SH SEE ALSO
