@@ -68,7 +68,7 @@ void ares_cancel(ares_channel_t *channel)
       query->node_all_queries = NULL;
 
       /* NOTE: its possible this may enqueue new queries */
-      query->callback(query->arg, ARES_ECANCELLED, 0, NULL);
+      ares_invoke_query_callback(query, ARES_ECANCELLED, 0, NULL);
       ares_free_query(query);
 
       node = next;
@@ -84,4 +84,11 @@ void ares_cancel(ares_channel_t *channel)
 
 done:
   ares_channel_unlock(channel);
+
+  /* If a cancel callback called ares_destroy(), it was deferred; complete it
+   * now that the callback stack has unwound.  The event thread completes its
+   * own deferred destroy in its run loop. */
+  if (!(channel->optmask & ARES_OPT_EVENT_THREAD)) {
+    ares_destroy_if_deferred(channel);
+  }
 }

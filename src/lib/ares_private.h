@@ -307,6 +307,18 @@ struct ares_channeldata {
    * system config changes might get triggered and we need a flag to make
    * sure we don't take action. */
   ares_bool_t                         sys_up;
+
+  /* Depth of user query callbacks currently executing on the stack.  Modified
+   * only while holding the channel lock.  Used to detect reentrant API calls
+   * (e.g. ares_destroy()) issued from within a callback. */
+  size_t                              callback_depth;
+
+  /* TRUE if ares_destroy() was invoked from within a callback and therefore
+   * had to be deferred.  The outermost callback-dispatch frame (ares_process_
+   * fds(), ares_cancel(), or the event thread loop) completes the teardown
+   * once callback_depth returns to zero.  Modified only while holding the
+   * channel lock. */
+  ares_bool_t                         destroy_pending;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
@@ -351,6 +363,24 @@ void ares_dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
                             const ares_dns_record_t *dnsrec);
 
 void ares_free_query(ares_query_t *query);
+
+/*! Invoke a query's user callback, tracking callback recursion depth on the
+ *  channel so reentrant API calls (notably ares_destroy()) can be detected.
+ *  Must be called while holding the channel lock. */
+void ares_invoke_query_callback(ares_query_t *query, ares_status_t status,
+                                size_t                   timeouts,
+                                const ares_dns_record_t *dnsrec);
+
+/*! Perform the actual channel teardown.  from_ethread must be ARES_TRUE only
+ *  when the event thread is completing a deferred destroy on its own thread,
+ *  so the event thread is detached rather than join()'d. */
+void ares_destroy_int(ares_channel_t *channel, ares_bool_t from_ethread);
+
+/*! If an ares_destroy() was deferred (invoked from within a callback) and the
+ *  callback stack has now fully unwound, complete the teardown.  Must be called
+ *  with no locks held from a non-event-thread callback-dispatch frame.  Returns
+ *  ARES_TRUE if the channel was destroyed (and is now invalid). */
+ares_bool_t ares_destroy_if_deferred(ares_channel_t *channel);
 
 unsigned short ares_generate_new_id(ares_rand_state *state);
 ares_status_t ares_expand_name_validated(const unsigned char *encoded,
@@ -638,8 +668,17 @@ void ares_channel_unlock(const ares_channel_t *channel);
 struct ares_event_thread;
 typedef struct ares_event_thread ares_event_thread_t;
 
-void ares_event_thread_destroy(ares_channel_t *channel);
+/*! Destroy the event thread associated with the channel.  from_self must be
+ *  set to ARES_TRUE only when invoked from within the event thread itself
+ *  (i.e. a deferred ares_destroy() being completed by the event thread), in
+ *  which case the thread is detached rather than join()'d to avoid a
+ *  self-join deadlock. */
+void ares_event_thread_destroy(ares_channel_t *channel, ares_bool_t from_self);
 ares_status_t ares_event_thread_init(ares_channel_t *channel);
+
+/*! Wake the channel's event thread, if any, so it promptly re-evaluates its
+ *  state (used to make it observe a deferred destroy request). */
+void ares_event_thread_wake_channel(ares_channel_t *channel);
 
 
 #ifdef _WIN32

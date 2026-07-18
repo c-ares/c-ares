@@ -1946,6 +1946,81 @@ TEST_P(MockUDPChannelTest, CancelInCallbackNoDoubleFree) {
   EXPECT_TRUE(data.done);
 }
 
+// Invoking ares_destroy() from within a query callback is not allowed to run
+// synchronously: frames above the callback still reference the channel and its
+// queries.  Instead the destroy is deferred and completed once the callback
+// stack unwinds back out of the processing entrypoint.  This exercises the
+// non-event-thread path, where completion happens at the end of ares_process().
+struct DestroyInCbData {
+  ares_channel_t *channel;
+  bool            done;
+};
+
+static void DestroyChannelCallback(void *arg, ares_status_t status,
+                                   size_t                    timeouts,
+                                   const ares_dns_record_t  *dnsrec)
+{
+  DestroyInCbData *data = static_cast<DestroyInCbData *>(arg);
+  (void)status;
+  (void)timeouts;
+  (void)dnsrec;
+  data->done = true;
+  /* Reentrant destroy from within the callback.  Must not crash or
+   * use-after-free; the teardown is deferred until the callback returns. */
+  ares_destroy(data->channel);
+}
+
+TEST_P(MockUDPChannelTest, DestroyInCallback) {
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  DestroyInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    DestroyChannelCallback, &data, NULL);
+
+  // Drive processing manually.  We can't use Process() here because the channel
+  // is destroyed from within the callback and Process() would touch the freed
+  // channel on its next loop iteration.  Stop the moment the callback fires.
+  while (!data.done) {
+    fd_set readers, writers;
+    int    nfds;
+    FD_ZERO(&readers);
+    FD_ZERO(&writers);
+    nfds = ares_fds(channel_, &readers, &writers);
+    for (ares_socket_t fd : fds()) {
+      FD_SET(fd, &readers);
+      if (fd >= (ares_socket_t)nfds) {
+        nfds = (int)fd + 1;
+      }
+    }
+    struct timeval tv;
+    tv.tv_sec  = 1;
+    tv.tv_usec = 0;
+    int count = select(nfds, &readers, &writers, nullptr, &tv);
+    ASSERT_GE(count, 0);
+    // Let the mock server reply first, then let c-ares process.  The callback
+    // (and the deferred destroy) fires inside ares_process(); afterwards the
+    // channel is gone, so we must not touch it again this iteration.
+    for (ares_socket_t fd : fds()) {
+      if (FD_ISSET(fd, &readers)) {
+        ProcessFD(fd);
+      }
+    }
+    ares_process(channel_, &readers, &writers);
+  }
+
+  // The channel was destroyed from within the callback; make sure the fixture
+  // does not try to destroy it a second time.
+  channel_ = nullptr;
+  EXPECT_TRUE(data.done);
+}
+
 TEST_P(MockUDPChannelTest, GetSock) {
   DNSPacket reply;
   reply.set_response().set_aa()
