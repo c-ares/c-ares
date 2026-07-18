@@ -351,8 +351,12 @@ struct ares_thread {
   DWORD  id;
 
   void *(*func)(void *arg);
-  void *arg;
-  void *rv;
+  void       *arg;
+  void       *rv;
+  /* Set by ares_thread_detach() when the thread detaches itself.  The struct
+   * cannot be freed by detach in that case because this wrapper still writes
+   * ->rv after func() returns, so the wrapper frees it instead. */
+  ares_bool_t detached;
 };
 
 /* Wrap for pthread compatibility */
@@ -361,6 +365,9 @@ static DWORD WINAPI ares_thread_func(LPVOID lpParameter)
   ares_thread_t *thread = lpParameter;
 
   thread->rv = thread->func(thread->arg);
+  if (thread->detached) {
+    ares_free(thread);
+  }
   return 0;
 }
 
@@ -410,6 +417,20 @@ ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
   ares_free(thread);
 
   return status;
+}
+
+ares_status_t ares_thread_detach(ares_thread_t *thread)
+{
+  if (thread == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  /* Only ever called by the thread on itself.  Release the OS handle now, but
+   * defer freeing the struct to ares_thread_func(), which still writes ->rv
+   * once func() returns. */
+  CloseHandle(thread->thread);
+  thread->detached = ARES_TRUE;
+  return ARES_SUCCESS;
 }
 
 #  else /* !WIN32 == PTHREAD */
@@ -628,6 +649,21 @@ ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
   return status;
 }
 
+ares_status_t ares_thread_detach(ares_thread_t *thread)
+{
+  ares_status_t status = ARES_SUCCESS;
+
+  if (thread == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  if (pthread_detach(thread->thread) != 0) {
+    status = ARES_ENOTFOUND; /* LCOV_EXCL_LINE: UntestablePath */
+  }
+  ares_free(thread);
+  return status;
+}
+
 #  endif
 
 ares_bool_t ares_threadsafety(void)
@@ -709,6 +745,12 @@ ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
 {
   (void)thread;
   (void)rv;
+  return ARES_ENOTIMP;
+}
+
+ares_status_t ares_thread_detach(ares_thread_t *thread)
+{
+  (void)thread;
   return ARES_ENOTIMP;
 }
 
