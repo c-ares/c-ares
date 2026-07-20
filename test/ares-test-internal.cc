@@ -3369,5 +3369,94 @@ const struct ares_socket_functions VirtualizeIO::default_functions = {
 };
 
 
+#ifndef CARES_SYMBOL_HIDING
+/* ---------------------------------------------------------------------------
+ * EBCDIC helpers unit tests (pure logic, no PASE dependency)
+ * -------------------------------------------------------------------------*/
+
+/* Spot-check the DNS/hostname charset slots in the EBCDIC->ASCII table
+ * that are critical for correct parsing of QtocRtvTCPA output. */
+TEST_F(LibraryTest, EbcdicTableDnsCharset) {
+  /* Letters a-z (0x81-0x89, 0x91-0x99, 0xA2-0xA9) */
+  EXPECT_EQ('a', ares__ebcdic_to_ascii_table[0x81]);
+  EXPECT_EQ('i', ares__ebcdic_to_ascii_table[0x89]);
+  EXPECT_EQ('j', ares__ebcdic_to_ascii_table[0x91]);
+  EXPECT_EQ('r', ares__ebcdic_to_ascii_table[0x99]);
+  EXPECT_EQ('s', ares__ebcdic_to_ascii_table[0xA2]);
+  EXPECT_EQ('z', ares__ebcdic_to_ascii_table[0xA9]);
+  /* Letters A-Z */
+  EXPECT_EQ('A', ares__ebcdic_to_ascii_table[0xC1]);
+  EXPECT_EQ('I', ares__ebcdic_to_ascii_table[0xC9]);
+  EXPECT_EQ('J', ares__ebcdic_to_ascii_table[0xD1]);
+  EXPECT_EQ('R', ares__ebcdic_to_ascii_table[0xD9]);
+  EXPECT_EQ('S', ares__ebcdic_to_ascii_table[0xE2]);
+  EXPECT_EQ('Z', ares__ebcdic_to_ascii_table[0xE9]);
+  /* Digits 0-9 */
+  EXPECT_EQ('0', ares__ebcdic_to_ascii_table[0xF0]);
+  EXPECT_EQ('9', ares__ebcdic_to_ascii_table[0xF9]);
+  /* Punctuation used in DNS hostnames and the search-list splitter */
+  EXPECT_EQ(' ', ares__ebcdic_to_ascii_table[0x40]); /* space */
+  EXPECT_EQ('.', ares__ebcdic_to_ascii_table[0x4B]); /* period */
+  EXPECT_EQ('-', ares__ebcdic_to_ascii_table[0x60]); /* hyphen */
+  EXPECT_EQ(',', ares__ebcdic_to_ascii_table[0x6B]); /* comma */
+  EXPECT_EQ('_', ares__ebcdic_to_ascii_table[0x6D]); /* underscore */
+}
+
+/* Test ares__ebcdic_to_ascii_str: single domain, no trailing padding */
+TEST_F(LibraryTest, EbcdicToAsciiStrSingleDomain) {
+  /* "corp.example.com" in CCSID 37 EBCDIC */
+  const char ebcdic[] = {
+    '\x83', '\x96', '\x99', '\x97', '\x4b',  /* c o r p . */
+    '\x85', '\xa7', '\x81', '\x94', '\x97',  /* e x a m p */
+    '\x93', '\x85', '\x4b',                  /* l e .     */
+    '\x83', '\x96', '\x94',                  /* c o m     */
+    '\0'
+  };
+  char out[32];
+  ares__ebcdic_to_ascii_str(ebcdic, sizeof(ebcdic) - 1, out);
+  EXPECT_STREQ("corp.example.com", out);
+}
+
+/* Test ares__ebcdic_to_ascii_str: stops at embedded NUL */
+TEST_F(LibraryTest, EbcdicToAsciiStrStopsAtNul) {
+  /* "ab\0cd" — should produce "ab" */
+  const char ebcdic[] = { '\x81', '\x82', '\0', '\x83', '\x84' };
+  char out[10];
+  ares__ebcdic_to_ascii_str(ebcdic, sizeof(ebcdic), out);
+  EXPECT_STREQ("ab", out);
+}
+
+/* Verify that blank-padded multi-domain search list splits correctly.
+ * The TCPA1400 search_list field is EBCDIC, space-separated, blank-padded.
+ * Converting the whole field then calling ares_strsplit should yield all
+ * domains and discard the trailing blank padding. */
+TEST_F(LibraryTest, EbcdicSearchListSplit) {
+  using std::string;
+  using std::vector;
+
+  /* "corp.example.com eng.example.com" in ASCII, then blank-padded to 32 bytes
+   * We test with a simulated already-converted ASCII string (the whole-field
+   * conversion is exercised by EbcdicToAsciiStrSingleDomain above). */
+  const char ascii_padded[] =
+    "corp.example.com eng.example.com                "; /* 48 chars */
+  size_t n = 0;
+  char **parts = ares_strsplit(ascii_padded, ", ", &n);
+  ASSERT_NE(nullptr, parts);
+  ASSERT_EQ((size_t)2, n);
+  EXPECT_STREQ("corp.example.com", parts[0]);
+  EXPECT_STREQ("eng.example.com",  parts[1]);
+  ares_strsplit_free(parts, n);
+}
+
+/* Verify that an all-blank (empty) search list produces NULL / 0 domains */
+TEST_F(LibraryTest, EbcdicSearchListAllBlanks) {
+  const char blank_field[] = "              "; /* all spaces */
+  size_t n = 99;
+  char **parts = ares_strsplit(blank_field, ", ", &n);
+  EXPECT_EQ(nullptr, parts);
+  EXPECT_EQ((size_t)0, n);
+}
+#endif /* !CARES_SYMBOL_HIDING */
+
 }  // namespace test
 }  // namespace ares
