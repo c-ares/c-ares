@@ -2278,6 +2278,60 @@ TEST_P(MockUDPChannelTest, DNSCookieServerRotate) {
   EXPECT_TRUE(memcmp(client_cookie_1, client_cookie_2, len1) == 0);
 }
 
+TEST_P(MockUDPChannelTest, DNSCookieUnknownSelfIP) {
+  /* The classic ares_set_socket_functions() API installs socket callbacks with
+   * no getsockname, so the connection source IP is unknown (AF_UNSPEC).  Per
+   * the cookie design that is still expected to work.  Both the learned server
+   * cookie and the client cookie must remain stable across queries; a source IP
+   * that never changes must not be treated as having changed. */
+  ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+
+  std::vector<byte> server_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
+
+  DNSPacket reply1;
+  reply1.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, server_cookie, false));
+  /* Second reply requires the client to have echoed back the learned server
+   * cookie, proving the anti-spoofing round-trip still functions. */
+  DNSPacket reply2;
+  reply2.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, server_cookie, true));
+
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &reply1))
+    .WillOnce(SetReply(&server_, &reply2));
+
+  QueryResult result1;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result1, NULL);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  EXPECT_EQ(0, result1.timeouts_);
+
+  QueryResult result2;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A, QueryCallback, &result2, NULL);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  EXPECT_EQ(0, result2.timeouts_);
+
+  /* Client cookie should NOT have rotated */
+  size_t len1;
+  const unsigned char *client_cookie_1 = fetch_client_cookie(result1.dnsrec_.dnsrec_, &len1);
+  size_t len2;
+  const unsigned char *client_cookie_2 = fetch_client_cookie(result2.dnsrec_.dnsrec_, &len2);
+  EXPECT_EQ(len1, 8);
+  EXPECT_EQ(len1, len2);
+  EXPECT_TRUE(client_cookie_1 != nullptr && client_cookie_2 != nullptr);
+  if (client_cookie_1 != nullptr && client_cookie_2 != nullptr) {
+    EXPECT_TRUE(memcmp(client_cookie_1, client_cookie_2, len1) == 0);
+  }
+}
+
 TEST_P(MockUDPChannelTest, DNSCookieSpoof) {
   std::vector<byte> client_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
   std::vector<byte> server_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
