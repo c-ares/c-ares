@@ -127,7 +127,7 @@ ares_socket_t *ares_htable_asvp_keys(const ares_htable_asvp_t *htable,
     return NULL;
   }
 
-  out = ares_malloc_zero(sizeof(*out) * cnt);
+  out = ares_malloc_zero_array(cnt, sizeof(*out));
   if (out == NULL) {
     ares_free(buckets); /* LCOV_EXCL_LINE: OutOfMemory */
     return NULL;        /* LCOV_EXCL_LINE: OutOfMemory */

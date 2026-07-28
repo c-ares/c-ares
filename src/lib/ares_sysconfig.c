@@ -455,7 +455,7 @@ static ares_status_t
   }
 
   if (entries) {
-    sysconfig->domains = ares_malloc_zero(entries * sizeof(char *));
+    sysconfig->domains = ares_malloc_zero_array(entries, sizeof(char *));
     if (sysconfig->domains == NULL) {
       status = ARES_ENOMEM;
       goto done;

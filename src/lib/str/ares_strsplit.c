@@ -39,7 +39,7 @@ char **ares_strsplit_duplicate(char **elms, size_t num_elm)
     return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  out = ares_malloc_zero(sizeof(*elms) * num_elm);
+  out = ares_malloc_zero_array(num_elm, sizeof(*elms));
   if (out == NULL) {
     return NULL; /* LCOV_EXCL_LINE: OutOfMemory */
   }
