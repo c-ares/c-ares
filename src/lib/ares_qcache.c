@@ -273,28 +273,33 @@ static unsigned int ares_qcache_calc_minttl(ares_dns_record_t *dnsrec)
 
 static unsigned int ares_qcache_soa_minimum(ares_dns_record_t *dnsrec)
 {
-  size_t i;
+  size_t sect;
 
-  /* RFC 2308 Section 5 says its the minimum of MINIMUM and the TTL of the
-   * record. */
-  for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_AUTHORITY); i++) {
-    const ares_dns_rr_t *rr =
-      ares_dns_record_rr_get(dnsrec, ARES_SECTION_AUTHORITY, i);
-    ares_dns_rec_type_t type = ares_dns_rr_get_type(rr);
-    unsigned int        ttl;
-    unsigned int        minimum;
+  /* RFC 2308 Section 5: min(MINIMUM, SOA TTL). Prefer authority (NODATA /
+   * NXDOMAIN), but also accept SOA in the answer section (positive SOA
+   * responses) so those remain cacheable when minttl skips SOA RRs. */
+  for (sect = ARES_SECTION_ANSWER; sect <= ARES_SECTION_AUTHORITY; sect++) {
+    size_t i;
+    for (i = 0; i < ares_dns_record_rr_cnt(dnsrec, (ares_dns_section_t)sect);
+         i++) {
+      const ares_dns_rr_t *rr =
+        ares_dns_record_rr_get(dnsrec, (ares_dns_section_t)sect, i);
+      ares_dns_rec_type_t type = ares_dns_rr_get_type(rr);
+      unsigned int        ttl;
+      unsigned int        minimum;
 
-    if (type != ARES_REC_TYPE_SOA) {
-      continue;
+      if (type != ARES_REC_TYPE_SOA) {
+        continue;
+      }
+
+      minimum = ares_dns_rr_get_u32(rr, ARES_RR_SOA_MINIMUM);
+      ttl     = ares_dns_rr_get_ttl(rr);
+
+      if (ttl > minimum) {
+        return minimum;
+      }
+      return ttl;
     }
-
-    minimum = ares_dns_rr_get_u32(rr, ARES_RR_SOA_MINIMUM);
-    ttl     = ares_dns_rr_get_ttl(rr);
-
-    if (ttl > minimum) {
-      return minimum;
-    }
-    return ttl;
   }
 
   return 0;
