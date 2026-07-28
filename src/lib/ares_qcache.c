@@ -330,6 +330,15 @@ static ares_status_t ares_qcache_insert_int(ares_qcache_t           *qcache,
     ttl = ares_qcache_soa_minimum(qresp);
   } else {
     ttl = ares_qcache_calc_minttl(qresp);
+    /* Empty NOERROR with no cacheable RRs yields minttl==0xFFFFFFFF and would
+     * otherwise be clamped to max_ttl (default 1h), caching a forged empty
+     * answer. Only cache NODATA when an authority SOA supplies a TTL. */
+    if (ttl == 0xFFFFFFFF) {
+      ttl = ares_qcache_soa_minimum(qresp);
+      if (ttl == 0) {
+        return ARES_ENOTIMP;
+      }
+    }
   }
 
   if (ttl > qcache->max_ttl) {

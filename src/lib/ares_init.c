@@ -143,9 +143,11 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
   struct ares_addr addr;
   ares_llist_t    *sconfig = NULL;
 
-  /* Enable EDNS by default */
+  /* Enable EDNS and DNS 0x20 by default (extra entropy vs off-path spoofing;
+   * cookies alone do not cover several major public resolvers). Apps may clear
+   * ARES_FLAG_DNS0x20 via ares_init_options() if needed. */
   if (!(channel->optmask & ARES_OPT_FLAGS)) {
-    channel->flags = ARES_FLAG_EDNS;
+    channel->flags = ARES_FLAG_EDNS | ARES_FLAG_DNS0x20;
   }
   if (channel->ednspsz == 0) {
     channel->ednspsz = EDNSPACKETSZ;

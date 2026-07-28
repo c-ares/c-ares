@@ -936,6 +936,16 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     goto cleanup;
   }
 
+  /* Responses must be marked as answers (QR=1) and use the same opcode as the
+   * query. Without this, a reinjected query echo matching QID+question can be
+   * treated as a successful reply and cached. */
+  if (!(ares_dns_record_get_flags(rdnsrec) & ARES_FLAG_QR) ||
+      ares_dns_record_get_opcode(rdnsrec) !=
+        ares_dns_record_get_opcode(query->query)) {
+    status = ARES_SUCCESS;
+    goto cleanup;
+  }
+
   /* Validate DNS cookie in response. This function may need to requeue the
    * query. */
   if (ares_cookie_validate(query, rdnsrec, conn, now, requeue) !=

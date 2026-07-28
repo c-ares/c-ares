@@ -511,6 +511,10 @@ static ares_status_t ares_dns_parse_rr_opt(ares_buf_t *buf, ares_dns_rr_t *rr,
       return status;
     }
 
+    if (len > ares_dns_rr_remaining_len(buf, orig_len, rdlength)) {
+      return ARES_EBADRESP;
+    }
+
     if (len) {
       status = ares_buf_fetch_bytes_dup(buf, len, ARES_TRUE, &val);
       if (status != ARES_SUCCESS) {
@@ -973,6 +977,10 @@ static ares_status_t ares_dns_parse_rr_svcb(ares_buf_t *buf, ares_dns_rr_t *rr,
       return status;
     }
 
+    if (len > ares_dns_rr_remaining_len(buf, orig_len, rdlength)) {
+      return ARES_EBADRESP;
+    }
+
     if (len) {
       status = ares_buf_fetch_bytes_dup(buf, len, ARES_TRUE, &val);
       if (status != ARES_SUCCESS) {
@@ -1023,6 +1031,10 @@ static ares_status_t ares_dns_parse_rr_https(ares_buf_t *buf, ares_dns_rr_t *rr,
     status = ares_buf_fetch_be16(buf, &len);
     if (status != ARES_SUCCESS) {
       return status;
+    }
+
+    if (len > ares_dns_rr_remaining_len(buf, orig_len, rdlength)) {
+      return ARES_EBADRESP;
     }
 
     if (len) {
