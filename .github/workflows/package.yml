@@ -34,7 +34,7 @@ jobs:
           packages: autoconf automake libtool g++ libgmock-dev pkg-config gdb
           version: 1.0
       - name: Checkout c-ares
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Get Tag version
         id: version
         run: |
@@ -57,7 +57,7 @@ jobs:
           overwrite: true
           retention-days: 7
       - name: Upload Release
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: RELEASE-NOTES.md
@@ -102,7 +102,7 @@ jobs:
         with:
           name: ${{needs.provenance.outputs.provenance-name}}
       - name: Upload Provenance to Release
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         if: startsWith(github.ref, 'refs/tags/')
         id: upload-provenance
         with:

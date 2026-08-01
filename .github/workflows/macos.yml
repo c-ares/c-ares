@@ -27,7 +27,7 @@ jobs:
           brew uninstall cmake || true
           brew install cmake googletest llvm autoconf automake libtool make ninja
       - name: Checkout c-ares
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: "Make sure TCP FastOpen is enabled"
         run: sudo sysctl net.inet.tcp.fastopen=3
       - name: "CMake: build and test c-ares"
