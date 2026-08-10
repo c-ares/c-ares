@@ -532,7 +532,7 @@ CARES_EXTERN size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
  *  \param[in] buf                Initialized buffer object
  *  \param[in] seq                sequence of bytes
  *  \param[in] len                length of sequence
- *  \param[in] require_charset    require we find the sequence.
+ *  \param[in] require_seq        require we find the sequence.
  *                                if ARES_FALSE it will simply consume the
  *                                rest of the buffer.  If ARES_TRUE will return
  *                                SIZE_MAX if not found.
