@@ -463,8 +463,13 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
   }
 
   ares_channel_lock(channel);
+  /* Callbacks below may run synchronously; defer a reentrant destroy. */
+  ares_channel_callback_enter(channel);
   ares_search_int(channel, dnsrec, ares_dnsrec_convert_cb, carg);
+  ares_channel_callback_leave(channel);
   ares_channel_unlock(channel);
+  /* Complete a destroy deferred from one of those callbacks. */
+  ares_destroy_if_deferred(channel);
 
   ares_dns_record_destroy(dnsrec);
 }
@@ -481,8 +486,13 @@ ares_status_t ares_search_dnsrec(ares_channel_t          *channel,
   }
 
   ares_channel_lock(channel);
+  /* Callbacks below may run synchronously; defer a reentrant destroy. */
+  ares_channel_callback_enter(channel);
   status = ares_search_int(channel, dnsrec, callback, arg);
+  ares_channel_callback_leave(channel);
   ares_channel_unlock(channel);
+  /* Complete a destroy deferred from one of those callbacks. */
+  ares_destroy_if_deferred(channel);
 
   return status;
 }

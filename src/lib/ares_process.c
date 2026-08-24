@@ -1822,6 +1822,22 @@ void ares_detach_query(ares_query_t *query)
   query->node_all_queries = NULL;
 }
 
+void ares_channel_callback_enter(ares_channel_t *channel)
+{
+  if (channel == NULL) {
+    return; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+  channel->callback_depth++;
+}
+
+void ares_channel_callback_leave(ares_channel_t *channel)
+{
+  if (channel == NULL || channel->callback_depth == 0) {
+    return; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+  channel->callback_depth--;
+}
+
 void ares_invoke_query_callback(ares_query_t *query, ares_status_t status,
                                 size_t                   timeouts,
                                 const ares_dns_record_t *dnsrec)
@@ -1832,9 +1848,9 @@ void ares_invoke_query_callback(ares_query_t *query, ares_status_t status,
    * ares_destroy() from within it can be detected and deferred rather than
    * tearing the channel down underneath the frames still using it (or, with an
    * event thread, deadlocking on a self-join). */
-  channel->callback_depth++;
+  ares_channel_callback_enter(channel);
   query->callback(query->arg, status, timeouts, dnsrec);
-  channel->callback_depth--;
+  ares_channel_callback_leave(channel);
 }
 
 ares_bool_t ares_destroy_if_deferred(ares_channel_t *channel)

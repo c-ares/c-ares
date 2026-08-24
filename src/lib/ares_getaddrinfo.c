@@ -762,8 +762,13 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
     return;
   }
   ares_channel_lock(channel);
+  /* Callbacks below may run synchronously; defer a reentrant destroy. */
+  ares_channel_callback_enter(channel);
   ares_getaddrinfo_int(channel, name, service, hints, callback, arg);
+  ares_channel_callback_leave(channel);
   ares_channel_unlock(channel);
+  /* Complete a destroy deferred from one of those callbacks. */
+  ares_destroy_if_deferred(channel);
 }
 
 static ares_bool_t next_dns_lookup(struct host_query *hquery)

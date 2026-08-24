@@ -422,6 +422,13 @@ void ares_free_query(ares_query_t *query);
 /*! Invoke a query's user callback, tracking callback recursion depth on the
  *  channel so reentrant API calls (notably ares_destroy()) can be detected.
  *  Must be called while holding the channel lock. */
+/*! Mark the start and end of a region in which the library may synchronously
+ *  invoke an application callback while frames above still need the channel.
+ *  A reentrant ares_destroy() inside such a region is deferred rather than
+ *  tearing the channel down underneath those frames.  Nesting is fine. */
+void ares_channel_callback_enter(ares_channel_t *channel);
+void ares_channel_callback_leave(ares_channel_t *channel);
+
 void ares_invoke_query_callback(ares_query_t *query, ares_status_t status,
                                 size_t                   timeouts,
                                 const ares_dns_record_t *dnsrec);

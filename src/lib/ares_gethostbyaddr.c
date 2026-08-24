@@ -112,8 +112,13 @@ void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
     return;
   }
   ares_channel_lock(channel);
+  /* Callbacks below may run synchronously; defer a reentrant destroy. */
+  ares_channel_callback_enter(channel);
   ares_gethostbyaddr_nolock(channel, addr, addrlen, family, callback, arg);
+  ares_channel_callback_leave(channel);
   ares_channel_unlock(channel);
+  /* Complete a destroy deferred from one of those callbacks. */
+  ares_destroy_if_deferred(channel);
 }
 
 static void next_lookup(struct addr_query *aquery)

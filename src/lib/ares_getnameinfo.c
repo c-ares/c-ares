@@ -194,8 +194,13 @@ void ares_getnameinfo(ares_channel_t *channel, const struct sockaddr *sa,
   }
 
   ares_channel_lock(channel);
+  /* Callbacks below may run synchronously; defer a reentrant destroy. */
+  ares_channel_callback_enter(channel);
   ares_getnameinfo_int(channel, sa, salen, flags_int, callback, arg);
+  ares_channel_callback_leave(channel);
   ares_channel_unlock(channel);
+  /* Complete a destroy deferred from one of those callbacks. */
+  ares_destroy_if_deferred(channel);
 }
 
 static void nameinfo_callback(void *arg, int status, int timeouts,

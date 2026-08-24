@@ -3472,6 +3472,40 @@ static void DestroyChannelCallback(void *arg, ares_status_t status,
   ares_destroy(data->channel);
 }
 
+// ares_getaddrinfo() can finish without any DNS at all -- a literal address is
+// answered from inside the call itself.  The callback then runs with the
+// channel lock held and no query callback on the stack, so callback_depth was
+// zero and a reentrant ares_destroy() tore the channel down while
+// ares_getaddrinfo() was still about to unlock it.
+//
+// Only callbacks routed through ares_invoke_query_callback() were counted; the
+// synchronous paths dispatch directly.
+static void DestroyAiCallback(void *arg, int status, int timeouts,
+                              struct ares_addrinfo *result) {
+  DestroyInCbData *data = static_cast<DestroyInCbData *>(arg);
+  (void)status;
+  (void)timeouts;
+  if (result != nullptr) {
+    ares_freeaddrinfo(result);
+  }
+  data->done = true;
+  ares_destroy(data->channel);
+}
+
+TEST_P(MockUDPChannelTest, DestroyInSynchronousCallback) {
+  DestroyInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+
+  /* A literal address never reaches the network, so the callback fires from
+   * inside this call. */
+  ares_getaddrinfo(channel_, "127.0.0.1", NULL, NULL, DestroyAiCallback,
+                   &data);
+
+  EXPECT_TRUE(data.done);
+  channel_ = nullptr; /* destroyed above; don't let the fixture repeat it */
+}
+
 TEST_P(MockUDPChannelTest, DestroyInCallback) {
   DNSPacket reply;
   reply.set_response().set_aa()
