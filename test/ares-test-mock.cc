@@ -228,6 +228,55 @@ TEST_P(MockUDPChannelTest, TruncationRetry) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[1.2.3.4]}", ss.str());
 }
 
+// Callback context for tests that reenter c-ares from within a callback, as
+// an application would on a fatal network error to abort all outstanding
+// lookups.
+struct CancelOnCallback {
+  ares_channel_t *channel;
+  HostResult     *result;
+  int             cb_count;
+};
+
+static void HostCallbackCancel(void *data, int status, int timeouts,
+                               struct hostent *hostent) {
+  CancelOnCallback *ctx = reinterpret_cast<CancelOnCallback *>(data);
+  ctx->cb_count++;
+  ares_cancel(ctx->channel);
+  HostCallback(ctx->result, status, timeouts, hostent);
+}
+
+// The connection-error path (handle_conn_error() -> ares_close_connection()
+// -> ares_requeue_queries() -> ares_requeue_query() with a NULL requeue list)
+// terminates a query through end_query(), which must fully detach the query
+// from all lookup lists before invoking its callback.  Otherwise a reentrant
+// ares_cancel() from within the callback finds the same query still linked in
+// all_queries/queries_by_qid, terminates it a second time, and frees it, and
+// end_query()'s own ares_free_query() then double-frees it.
+TEST_P(MockUDPChannelTest, CancelInConnErrCallbackNoDoubleFree) {
+  // Nothing is listening on loopback:12345, so the connected UDP socket
+  // receives the ICMP port-unreachable as ECONNREFUSED during event
+  // processing (same mechanism as BadLoopbackServerNoTimeouts, issue #819).
+  ares_set_servers_csv(channel_, "127.0.0.1:12345");
+
+  // gethostbyname()/getaddrinfo() queries are created with no_retries, so the
+  // first connection error terminates the query through end_query() rather
+  // than being re-sent on another connection.
+  HostResult     result;
+  CancelOnCallback ctx;
+  ctx.channel   = channel_;
+  ctx.result    = &result;
+  ctx.cb_count  = 0;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET,
+                     HostCallbackCancel, &ctx);
+  Process();
+
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(1, ctx.cb_count);
+# if !defined(__sun) && !defined(_WIN32) && !defined(__NetBSD__)
+  EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
+# endif
+}
+
 TEST_P(MockUDPChannelTest, UTF8BadName) {
   DNSPacket reply;
   reply.set_response().set_aa()

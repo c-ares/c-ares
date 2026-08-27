@@ -1621,6 +1621,13 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
     return;
   }
 
+  /* Detach the query from all lookup lists BEFORE invoking the callback.
+   * Otherwise a reentrant ares_cancel() from within the callback would
+   * find this query still linked in all_queries/queries_by_qid, terminate
+   * it a second time, and free it, and the ares_free_query() below would
+   * then double-free it. */
+  ares_detach_query(query);
+
   /* Invoke the callback. */
   query->callback(query->arg, status, query->timeouts, dnsrec);
   ares_free_query(query);
@@ -1628,7 +1635,7 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
   /* Check and notify if no other queries are enqueued on the channel.  This
    * must come after the callback and freeing the query for 2 reasons.
    *  1) The callback itself may enqueue a new query
-   *  2) Technically the current query isn't detached until it is free()'d.
+   *  2) The current query isn't freed until ares_free_query() is called.
    */
   ares_queue_notify_empty(channel);
 }
