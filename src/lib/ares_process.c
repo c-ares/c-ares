@@ -611,9 +611,9 @@ static ares_status_t ares_append_endqueue(ares_array_t     **requeue,
  *
  * On return the list has been fully processed, an empty-queue notification has
  * been sent if appropriate, and *requeue has been destroyed and set to NULL. */
-static ares_status_t ares_flush_requeue(ares_channel_t       *channel,
-                                        const ares_timeval_t *now,
-                                        ares_array_t        **requeue)
+ares_status_t ares_flush_requeue(ares_channel_t       *channel,
+                                 const ares_timeval_t *now,
+                                 ares_array_t        **requeue)
 {
   ares_status_t status = ARES_SUCCESS;
 
