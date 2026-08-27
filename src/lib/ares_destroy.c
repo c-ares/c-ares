@@ -76,6 +76,13 @@ void ares_destroy(ares_channel_t *channel)
     ares_query_t      *query = ares_llist_node_claim(node);
 
     query->node_all_queries = NULL;
+
+    /* Detach the query from all lookup lists BEFORE invoking the callback,
+     * for the same reentrancy reasons as in ares_cancel(): the callback may
+     * process events reentrantly and must not be able to find and free this
+     * query still linked in queries_by_qid. */
+    ares_detach_query(query);
+
     query->callback(query->arg, ARES_EDESTRUCTION, 0, NULL);
     ares_free_query(query);
 

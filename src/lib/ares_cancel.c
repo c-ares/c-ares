@@ -67,6 +67,14 @@ void ares_cancel(ares_channel_t *channel)
       query                   = ares_llist_node_claim(node);
       query->node_all_queries = NULL;
 
+      /* Detach the query from all lookup lists BEFORE invoking the callback.
+       * Otherwise, reentrant event processing from within the callback (e.g.
+       * an event-driven application pumping its remaining ready events, as
+       * the curl multi interface does) could still find this query in
+       * queries_by_qid via ares_process(), complete and free it, and the
+       * ares_free_query() below would then double-free it. */
+      ares_detach_query(query);
+
       /* NOTE: its possible this may enqueue new queries */
       query->callback(query->arg, ARES_ECANCELLED, 0, NULL);
       ares_free_query(query);
