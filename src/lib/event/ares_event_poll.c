@@ -75,7 +75,7 @@ static size_t ares_evsys_poll_wait(ares_event_thread_t *e,
   size_t         i;
 
   if (fdlist != NULL && num_fds) {
-    pollfd = ares_malloc_zero(sizeof(*pollfd) * num_fds);
+    pollfd = ares_malloc_zero_array(num_fds, sizeof(*pollfd));
     if (pollfd == NULL) {
       goto done; /* LCOV_EXCL_LINE: OutOfMemory */
     }

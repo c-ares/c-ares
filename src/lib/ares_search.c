@@ -221,7 +221,7 @@ ares_status_t ares_search_name_list(const ares_channel_t *channel,
   if (status == ARES_SUCCESS) {
     /* If hostalias succeeds, there is no searching, it is used as-is */
     list_len = 1;
-    list     = ares_malloc_zero(sizeof(*list) * list_len);
+    list     = ares_malloc_zero_array(list_len, sizeof(*list));
     if (list == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
@@ -236,7 +236,7 @@ ares_status_t ares_search_name_list(const ares_channel_t *channel,
   /* See if searching is eligible at all, if not, look up as-is only */
   if (!ares_search_eligible(channel, name)) {
     list_len = 1;
-    list     = ares_malloc_zero(sizeof(*list) * list_len);
+    list     = ares_malloc_zero_array(list_len, sizeof(*list));
     if (list == NULL) {
       status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
@@ -258,7 +258,7 @@ ares_status_t ares_search_name_list(const ares_channel_t *channel,
 
   /* Allocate an entry for each search domain, plus one for as-is */
   list_len = channel->ndomains + 1;
-  list     = ares_malloc_zero(sizeof(*list) * list_len);
+  list     = ares_malloc_zero_array(list_len, sizeof(*list));
   if (list == NULL) {
     status = ARES_ENOMEM;
     goto done;

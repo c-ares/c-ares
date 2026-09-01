@@ -73,7 +73,7 @@ ares_slist_t *ares_slist_create(ares_rand_state        *rand_state,
   list->destruct   = destruct;
 
   list->levels = ARES__SLIST_START_LEVELS;
-  list->head   = ares_malloc_zero(sizeof(*list->head) * list->levels);
+  list->head   = ares_malloc_zero_array(list->levels, sizeof(*list->head));
   if (list->head == NULL) {
     ares_free(list);
     return NULL;
@@ -213,12 +213,12 @@ ares_slist_node_t *ares_slist_insert(ares_slist_t *list, void *val)
   node->levels = ares_slist_calc_level(list);
 
   /* Allocate array of next and prev nodes for linking each level */
-  node->next = ares_malloc_zero(sizeof(*node->next) * node->levels);
+  node->next = ares_malloc_zero_array(node->levels, sizeof(*node->next));
   if (node->next == NULL) {
     goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  node->prev = ares_malloc_zero(sizeof(*node->prev) * node->levels);
+  node->prev = ares_malloc_zero_array(node->levels, sizeof(*node->prev));
   if (node->prev == NULL) {
     goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
   }
@@ -226,9 +226,8 @@ ares_slist_node_t *ares_slist_insert(ares_slist_t *list, void *val)
   /* If the number of levels is greater than we currently support in the slist,
    * increase the count */
   if (list->levels < node->levels) {
-    void *ptr =
-      ares_realloc_zero(list->head, sizeof(*list->head) * list->levels,
-                        sizeof(*list->head) * node->levels);
+    void *ptr = ares_realloc_zero_array(list->head, list->levels,
+                                        node->levels, sizeof(*list->head));
     if (ptr == NULL) {
       goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
     }
