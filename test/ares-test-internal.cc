@@ -3369,5 +3369,107 @@ const struct ares_socket_functions VirtualizeIO::default_functions = {
 };
 
 
+#ifndef CARES_SYMBOL_HIDING
+/* ---------------------------------------------------------------------------
+ * EBCDIC helpers unit tests (pure logic, no PASE dependency)
+ * -------------------------------------------------------------------------*/
+
+/* Spot-check the DNS/hostname charset slots in the EBCDIC->ASCII table
+ * that are critical for correct parsing of QtocRtvTCPA output. */
+TEST_F(LibraryTest, EbcdicTableDnsCharset) {
+  /* Letters a-z (0x81-0x89, 0x91-0x99, 0xA2-0xA9) */
+  EXPECT_EQ('a', ares_ebcdic_to_ascii_table[0x81]);
+  EXPECT_EQ('i', ares_ebcdic_to_ascii_table[0x89]);
+  EXPECT_EQ('j', ares_ebcdic_to_ascii_table[0x91]);
+  EXPECT_EQ('r', ares_ebcdic_to_ascii_table[0x99]);
+  EXPECT_EQ('s', ares_ebcdic_to_ascii_table[0xA2]);
+  EXPECT_EQ('z', ares_ebcdic_to_ascii_table[0xA9]);
+  /* Letters A-Z */
+  EXPECT_EQ('A', ares_ebcdic_to_ascii_table[0xC1]);
+  EXPECT_EQ('I', ares_ebcdic_to_ascii_table[0xC9]);
+  EXPECT_EQ('J', ares_ebcdic_to_ascii_table[0xD1]);
+  EXPECT_EQ('R', ares_ebcdic_to_ascii_table[0xD9]);
+  EXPECT_EQ('S', ares_ebcdic_to_ascii_table[0xE2]);
+  EXPECT_EQ('Z', ares_ebcdic_to_ascii_table[0xE9]);
+  /* Digits 0-9 */
+  EXPECT_EQ('0', ares_ebcdic_to_ascii_table[0xF0]);
+  EXPECT_EQ('9', ares_ebcdic_to_ascii_table[0xF9]);
+  /* Punctuation used in DNS hostnames and the search-list splitter */
+  EXPECT_EQ(' ', ares_ebcdic_to_ascii_table[0x40]); /* space */
+  EXPECT_EQ('.', ares_ebcdic_to_ascii_table[0x4B]); /* period */
+  EXPECT_EQ('-', ares_ebcdic_to_ascii_table[0x60]); /* hyphen */
+  EXPECT_EQ(',', ares_ebcdic_to_ascii_table[0x6B]); /* comma */
+  EXPECT_EQ('_', ares_ebcdic_to_ascii_table[0x6D]); /* underscore */
+}
+
+/* Test ares_ebcdic_to_ascii_str: single domain, no trailing padding */
+TEST_F(LibraryTest, EbcdicToAsciiStrSingleDomain) {
+  /* "corp.example.com" in CCSID 37 EBCDIC */
+  const char ebcdic[] = {
+    '\x83', '\x96', '\x99', '\x97', '\x4b',  /* c o r p . */
+    '\x85', '\xa7', '\x81', '\x94', '\x97',  /* e x a m p */
+    '\x93', '\x85', '\x4b',                  /* l e .     */
+    '\x83', '\x96', '\x94',                  /* c o m     */
+    '\0'
+  };
+  char out[32];
+  ares_ebcdic_to_ascii_str(ebcdic, sizeof(ebcdic) - 1, out);
+  EXPECT_STREQ("corp.example.com", out);
+}
+
+/* Test ares_ebcdic_to_ascii_str: stops at embedded NUL */
+TEST_F(LibraryTest, EbcdicToAsciiStrStopsAtNul) {
+  /* "ab\0cd" -- should produce "ab" */
+  const char ebcdic[] = { '\x81', '\x82', '\0', '\x83', '\x84' };
+  char out[10];
+  ares_ebcdic_to_ascii_str(ebcdic, sizeof(ebcdic), out);
+  EXPECT_STREQ("ab", out);
+}
+
+/* Convert a whole EBCDIC, space-separated, blank-padded search_list field and
+ * split it, exactly as ares_init_sysconfig_pase() does.  Exercises the table's
+ * 0x40 -> ' ' mapping and the whole-field (non-truncating) conversion. */
+TEST_F(LibraryTest, EbcdicSearchListSplit) {
+  /* "corp.example.com eng.example.com" in CCSID 37, blank(0x40)-padded */
+  const char ebcdic_field[48] = {
+    '\x83', '\x96', '\x99', '\x97', '\x4b', '\x85', '\xa7', '\x81',
+    '\x94', '\x97', '\x93', '\x85', '\x4b', '\x83', '\x96', '\x94',
+    '\x40', '\x85', '\x95', '\x87', '\x4b', '\x85', '\xa7', '\x81',
+    '\x94', '\x97', '\x93', '\x85', '\x4b', '\x83', '\x96', '\x94',
+    '\x40', '\x40', '\x40', '\x40', '\x40', '\x40', '\x40', '\x40',
+    '\x40', '\x40', '\x40', '\x40', '\x40', '\x40', '\x40', '\x40'
+  };
+  char   ascii[sizeof(ebcdic_field) + 1];
+  size_t n     = 0;
+  char **parts = nullptr;
+
+  ares_ebcdic_to_ascii_str(ebcdic_field, sizeof(ebcdic_field), ascii);
+  EXPECT_STREQ("corp.example.com eng.example.com                ", ascii);
+
+  parts = ares_strsplit(ascii, ", ", &n);
+  ASSERT_NE(nullptr, parts);
+  ASSERT_EQ((size_t)2, n);
+  EXPECT_STREQ("corp.example.com", parts[0]);
+  EXPECT_STREQ("eng.example.com", parts[1]);
+  ares_strsplit_free(parts, n);
+}
+
+/* An all-blank (EBCDIC 0x40) search_list field must yield no domains. */
+TEST_F(LibraryTest, EbcdicSearchListAllBlanks) {
+  char   ebcdic_field[16];
+  char   ascii[sizeof(ebcdic_field) + 1];
+  size_t n = 99;
+  char **parts;
+
+  memset(ebcdic_field, 0x40, sizeof(ebcdic_field));
+  ares_ebcdic_to_ascii_str(ebcdic_field, sizeof(ebcdic_field), ascii);
+  EXPECT_STREQ("                ", ascii);
+
+  parts = ares_strsplit(ascii, ", ", &n);
+  EXPECT_EQ(nullptr, parts);
+  EXPECT_EQ((size_t)0, n);
+}
+#endif /* !CARES_SYMBOL_HIDING */
+
 }  // namespace test
 }  // namespace ares
