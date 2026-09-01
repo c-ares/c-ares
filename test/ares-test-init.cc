@@ -153,6 +153,47 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   ares_destroy(channel2);
 }
 
+TEST_F(LibraryTest, OptionsTimeoutSecondsOverflow) {
+  /* A seconds value whose milliseconds conversion wraps around in 32-bit
+   * unsigned math (4294968 * 1000 == 704) must never silently shrink the
+   * timeout. */
+  struct ares_options opts;
+  int optmask = 0;
+  memset(&opts, 0, sizeof(opts));
+  opts.timeout = 4294968;
+  optmask |= ARES_OPT_TIMEOUT;
+
+  const size_t expect_ms   = (size_t)4294968 * 1000;
+  const bool   representable = (expect_ms / 1000 == (size_t)4294968);
+
+  ares_channel_t *channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+  EXPECT_NE(nullptr, channel);
+  EXPECT_NE((size_t)704, channel->timeout);
+  if (!representable) {
+    /* Not representable in milliseconds: option must be ignored. */
+    EXPECT_EQ((size_t)0,
+              (channel->optmask & (ARES_OPT_TIMEOUT | ARES_OPT_TIMEOUTMS)));
+  } else {
+    /* Representable: must be honored exactly. */
+    EXPECT_NE((size_t)0, (channel->optmask & ARES_OPT_TIMEOUTMS));
+    EXPECT_EQ(expect_ms, channel->timeout);
+  }
+  ares_destroy(channel);
+
+  /* Sanity check: an in-range value still converts normally. */
+  memset(&opts, 0, sizeof(opts));
+  opts.timeout = 3;
+  optmask = ARES_OPT_TIMEOUT;
+
+  channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+  EXPECT_NE(nullptr, channel);
+  EXPECT_NE((size_t)0, (channel->optmask & ARES_OPT_TIMEOUTMS));
+  EXPECT_EQ((size_t)3000, channel->timeout);
+  ares_destroy(channel);
+}
+
 TEST_F(LibraryTest, ChannelAllocFail) {
   ares_channel_t *channel;
   for (int ii = 1; ii <= 25; ii++) {

@@ -489,8 +489,9 @@ static ares_status_t
 /* Apple does not allow configuration of retrans, so this is a dummy value
  * that is extremely high (5s) */
 #  ifndef __APPLE__
-    if (res.retrans > 0) {
-      sysconfig->timeout_ms = (unsigned int)res.retrans * 1000;
+    size_t timeout_ms = (size_t)res.retrans * 1000;
+    if (timeout_ms / 1000 == (size_t)res.retrans) {
+      sysconfig->timeout_ms = timeout_ms;
     }
 #  endif
   }

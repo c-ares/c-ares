@@ -974,6 +974,38 @@ TEST_F(LibraryTest, SysConfigDomainsIDNA) {
   }
 }
 
+TEST_F(LibraryTest, SysConfigOptionsTimeout) {
+  ares_sysconfig_t sysconfig;
+
+  memset(&sysconfig, 0, sizeof(sysconfig));
+  EXPECT_EQ(ARES_SUCCESS, ares_sysconfig_set_options(&sysconfig, "timeout:5"));
+  EXPECT_EQ((size_t)5000, sysconfig.timeout_ms);
+
+  memset(&sysconfig, 0, sizeof(sysconfig));
+  EXPECT_EQ(ARES_SUCCESS, ares_sysconfig_set_options(&sysconfig, "timeout:0"));
+  EXPECT_EQ((size_t)0, sysconfig.timeout_ms);
+
+  memset(&sysconfig, 0, sizeof(sysconfig));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_sysconfig_set_options(&sysconfig, "timeout:4294968"));
+  EXPECT_NE((size_t)704, sysconfig.timeout_ms);
+  if ((size_t)4294968000 / 1000 != (size_t)4294968) {
+    EXPECT_EQ((size_t)0, sysconfig.timeout_ms);
+  } else {
+    EXPECT_EQ((size_t)4294968000, sysconfig.timeout_ms);
+  }
+
+  memset(&sysconfig, 0, sizeof(sysconfig));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_sysconfig_set_options(&sysconfig, "retrans:4294968"));
+  EXPECT_NE((size_t)704, sysconfig.timeout_ms);
+  if ((size_t)4294968000 / 1000 != (size_t)4294968) {
+    EXPECT_EQ((size_t)0, sysconfig.timeout_ms);
+  } else {
+    EXPECT_EQ((size_t)4294968000, sysconfig.timeout_ms);
+  }
+}
+
 TEST_F(LibraryTest, BufCharset) {
   struct {
     ares_bool_t ascii_ok;

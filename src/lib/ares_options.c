@@ -305,9 +305,14 @@ ares_status_t ares_init_by_options(ares_channel_t            *channel,
     /* Apparently some integrations were passing -1 to tell c-ares to use
      * the default instead of just omitting the optmask */
     if (options->timeout > 0) {
-      /* Convert to milliseconds */
-      optmask          |= ARES_OPT_TIMEOUTMS;
-      channel->timeout  = (unsigned int)options->timeout * 1000;
+      /* Convert to milliseconds. Values that cannot be converted without
+       * wrapping around are ignored, leaving the default timeout in place
+       * instead of silently shrinking it. */
+      size_t timeout_ms = (size_t)options->timeout * 1000;
+      if (timeout_ms / 1000 == (size_t)options->timeout) {
+        optmask          |= ARES_OPT_TIMEOUTMS;
+        channel->timeout  = timeout_ms;
+      }
     }
   }
 

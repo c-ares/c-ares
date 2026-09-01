@@ -430,11 +430,12 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
   if (ares_streq(key, "ndots")) {
     sysconfig->ndots = valint;
   } else if (ares_streq(key, "retrans") || ares_streq(key, "timeout")) {
-    if (valint == 0) {
+    size_t timeout_ms = (size_t)valint * 1000;
+    if (valint == 0 || timeout_ms / 1000 != (size_t)valint) {
       status = ARES_EFORMERR;
       goto done;
     }
-    sysconfig->timeout_ms = valint * 1000;
+    sysconfig->timeout_ms = timeout_ms;
   } else if (ares_streq(key, "retry") || ares_streq(key, "attempts")) {
     if (valint == 0) {
       status = ARES_EFORMERR;
