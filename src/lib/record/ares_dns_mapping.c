@@ -139,6 +139,34 @@ ares_bool_t ares_dns_rec_allow_name_comp(ares_dns_rec_type_t type)
   return ARES_FALSE;
 }
 
+ares_bool_t ares_dns_rec_allow_name_comp_read(ares_dns_rec_type_t type)
+{
+  /* When parsing a response, be more lenient than the write-side policy
+   * above.  RFC 3597 section 4 says a receiver MUST decompress names in
+   * RR types defined in RFC1035, and SHOULD also decompress RP, AFSDB, RT,
+   * SIG, PX, NXT and NAPTR (SRV falls in this same bucket: RFC 2782
+   * prohibits compressing it on write, but plenty of deployed servers,
+   * including Samba's AD DC, still send it compressed and always have).
+   * Rejecting those on read breaks real-world interop for no benefit, since
+   * decompression itself is always safe regardless of which RR type asked
+   * for it. c-ares only implements SIG, SRV and NAPTR from that additional
+   * list; the others (RP, AFSDB, RT, PX, NXT) have no defined record type
+   * here. */
+  if (ares_dns_rec_allow_name_comp(type)) {
+    return ARES_TRUE;
+  }
+
+  switch (type) {
+    case ARES_REC_TYPE_SIG:
+    case ARES_REC_TYPE_SRV:
+    case ARES_REC_TYPE_NAPTR:
+      return ARES_TRUE;
+    default:
+      break;
+  }
+  return ARES_FALSE;
+}
+
 ares_bool_t ares_dns_class_isvalid(ares_dns_class_t    qclass,
                                    ares_dns_rec_type_t type,
                                    ares_bool_t         is_query)

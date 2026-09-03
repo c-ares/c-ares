@@ -60,6 +60,47 @@ TEST_F(LibraryTest, ParseSrvReplyOK) {
   ares_free_data(srv);
 }
 
+// Real-world servers (Samba's AD DC internal DNS in particular) still send
+// SRV replies with the TARGET name compressed via a pointer, even though
+// RFC2782 tells senders not to do that. RFC3597 section 4 tells receivers to
+// decompress it anyway, so this needs to keep parsing rather than bailing out
+// with a bad-name error, or SRV-based service discovery against those servers
+// breaks (this is what SSSD hit against Samba AD).
+TEST_F(LibraryTest, ParseSrvReplyCompressedTarget) {
+  std::vector<byte> data = {
+    0x12, 0x34,  // qid
+    0x81, 0x80,  // response + AA
+    0x00, 0x01,  // num questions
+    0x00, 0x01,  // num answer RRs
+    0x00, 0x00,  // num authority RRs
+    0x00, 0x00,  // num additional RRs
+    // Question: example.com SRV IN
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x21,  // type SRV
+    0x00, 0x01,  // class IN
+    // Answer: name is a pointer back to the question name at offset 12
+    0xc0, 0x0c,
+    0x00, 0x21,  // type SRV
+    0x00, 0x01,  // class IN
+    0x00, 0x00, 0x00, 0x64,  // TTL
+    0x00, 0x08,  // rdlength
+    0x00, 0x0a,  // priority
+    0x00, 0x14,  // weight
+    0x00, 0x1e,  // port
+    0xc0, 0x0c,  // target: also a pointer back to offset 12, i.e. "example.com"
+  };
+  struct ares_srv_reply* srv = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_srv_reply(data.data(), (int)data.size(), &srv));
+  ASSERT_NE(nullptr, srv);
+  EXPECT_EQ("example.com", std::string(srv->host));
+  EXPECT_EQ(10, srv->priority);
+  EXPECT_EQ(20, srv->weight);
+  EXPECT_EQ(30, srv->port);
+  ares_free_data(srv);
+}
+
 TEST_F(LibraryTest, ParseSrvReplySingle) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
@@ -314,7 +355,16 @@ TEST_F(LibraryTest, ParseSrvReplyAllocFail) {
 
 // RFC 2782: the SRV TARGET must not use name compression.  A response whose
 // SRV target is a compression pointer must be rejected rather than followed.
-TEST_F(LibraryTest, ParseSrvRejectsCompressedTarget) {
+// This used to be ParseSrvRejectsCompressedTarget, added alongside the
+// original write-side "don't allow compression in RFC1035-unlisted RR types"
+// change. Rejecting a compressed SRV TARGET on read matches what RFC2782
+// asks senders not to do, but it isn't what RFC3597 section 4 asks receivers
+// to do, and real DNS servers (Samba's AD DC among them) still send it
+// compressed regardless. Once #1287 made that an interop-breaking regression
+// for anyone resolving SRV records against those servers, this test's
+// expectation flipped along with the fix: parsing a compressed SRV TARGET is
+// expected to succeed and decompress correctly now, same as any other name.
+TEST_F(LibraryTest, ParseSrvAcceptsCompressedTarget) {
   const unsigned char data[] = {
     0x12, 0x34,              // qid
     0x84, 0x00,              // response + AA, rcode NOERROR
@@ -337,12 +387,19 @@ TEST_F(LibraryTest, ParseSrvRejectsCompressedTarget) {
     0x00, 0x0a,              // priority
     0x00, 0x14,              // weight
     0x00, 0x1e,              // port
-    0xc0, 0x0c,              // TARGET -> compression pointer (illegal for SRV)
+    0xc0, 0x0c,              // TARGET -> compression pointer, decompresses to example.com
   };
 
   ares_dns_record_t *dnsrec = NULL;
-  EXPECT_EQ(ARES_EBADNAME, ares_dns_parse(data, sizeof(data), 0, &dnsrec));
-  EXPECT_EQ(nullptr, dnsrec);
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(data, sizeof(data), 0, &dnsrec));
+  ASSERT_NE(nullptr, dnsrec);
+
+  const ares_dns_rr_t *rr = ares_dns_record_rr_get_const(dnsrec, ARES_SECTION_ANSWER, 0);
+  ASSERT_NE(nullptr, rr);
+  EXPECT_EQ(std::string("example.com"),
+            std::string(ares_dns_rr_get_str(rr, ARES_RR_SRV_TARGET)));
+
+  ares_dns_record_destroy(dnsrec);
 }
 
 }  // namespace test

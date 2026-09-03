@@ -29,6 +29,12 @@
 ares_status_t ares_dns_record_duplicate_ex(ares_dns_record_t      **dest,
                                            const ares_dns_record_t *src);
 ares_bool_t ares_dns_rec_allow_name_comp(ares_dns_rec_type_t type);
+
+/*! Like ares_dns_rec_allow_name_comp() but for the parse (read) side, which
+ *  per RFC 3597 section 4 is allowed to be more lenient than the write-side
+ *  policy above. See the ares_dns_rec_allow_name_comp_read() definition in
+ *  ares_dns_mapping.c for the rationale. */
+ares_bool_t ares_dns_rec_allow_name_comp_read(ares_dns_rec_type_t type);
 ares_bool_t ares_dns_opcode_isvalid(ares_dns_opcode_t opcode);
 ares_bool_t ares_dns_rcode_isvalid(ares_dns_rcode_t rcode);
 ares_bool_t ares_dns_flags_arevalid(unsigned short flags);
