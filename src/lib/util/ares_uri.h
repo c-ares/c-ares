@@ -224,10 +224,10 @@ ares_status_t ares_uri_parse_buf(ares_uri_t **out, ares_buf_t *buf);
 /*! Parse the provided URI string into a new URI object.
  *
  *  \param[out] out  Returned new URI object. free with ares_uri_destroy().
- *  \param[in]  uri  URI string to parse
+ *  \param[in]  str  URI string to parse
  *  \return ARES_SUCCESS on successful parse
  */
-ares_status_t ares_uri_parse(ares_uri_t **out, const char *uri);
+ares_status_t ares_uri_parse(ares_uri_t **out, const char *str);
 
 /*! Write URI object to a new string buffer.  Requires at least the scheme
  *  and host to be set for this to succeed.

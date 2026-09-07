@@ -436,20 +436,20 @@ ares_bool_t ares_parse_port(const char *str, unsigned short *port,
 
 ares_status_t ares_cat_domain(const char *name, const char *domain, char **s);
 ares_status_t ares_sortaddrinfo(ares_channel_t            *channel,
-                                struct ares_addrinfo_node *ai_node);
+                                struct ares_addrinfo_node *list_sentinel);
 
-void ares_freeaddrinfo_nodes(struct ares_addrinfo_node *ai_node);
+void ares_freeaddrinfo_nodes(struct ares_addrinfo_node *head);
 ares_bool_t ares_is_localhost(const char *name);
 
 struct ares_addrinfo_node *
-  ares_append_addrinfo_node(struct ares_addrinfo_node **ai_node);
+  ares_append_addrinfo_node(struct ares_addrinfo_node **head);
 void ares_addrinfo_cat_nodes(struct ares_addrinfo_node **head,
                              struct ares_addrinfo_node  *tail);
 
-void ares_freeaddrinfo_cnames(struct ares_addrinfo_cname *ai_cname);
+void ares_freeaddrinfo_cnames(struct ares_addrinfo_cname *head);
 
 struct ares_addrinfo_cname *
-  ares_append_addrinfo_cname(struct ares_addrinfo_cname **ai_cname);
+  ares_append_addrinfo_cname(struct ares_addrinfo_cname **head);
 
 ares_status_t ares_append_ai_node(int aftype, unsigned short port,
                                   unsigned int ttl, const void *adata,

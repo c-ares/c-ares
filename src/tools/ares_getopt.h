@@ -43,8 +43,8 @@ typedef struct {
   const char * const *argv;
 } ares_getopt_state_t;
 
-void ares_getopt_init(ares_getopt_state_t *state, int argc,
-                      const char * const *argv);
+void ares_getopt_init(ares_getopt_state_t *state, int nargc,
+                      const char * const *nargv);
 int ares_getopt(ares_getopt_state_t *state, const char *ostr);
 
 #endif /* ARES_GETOPT_H */
