@@ -25,22 +25,36 @@
  */
 #include "ares_private.h"
 #include "ares_buf.h"
+#include "ares_bounds_safety.h"
 #include <limits.h>
 #ifdef HAVE_STDINT_H
 #  include <stdint.h>
 #endif
 
 struct ares_buf {
-  const unsigned char *data;          /*!< pointer to start of data buffer */
-  size_t               data_len;      /*!< total size of data in buffer */
+  /* data_len / alloc_buf_len are capacity companions (bytes).
+   * Field order is preserved (pointer before size); the struct is opaque
+   * so this is not a public ABI concern. Update sites assign capacity
+   * before the pointer so sized-by invariants hold under optional
+   * -fbounds-safety builds. Macros are inert by default.
+   */
+  const unsigned char *ARES_SIZED_BY_OR_NULL(data_len) data; /*!< pointer to
+                                                             *   start of data
+                                                             *   buffer */
+  size_t               data_len; /*!< total size of data in buffer */
 
-  unsigned char       *alloc_buf;     /*!< Pointer to allocated data buffer,
-                                       *   not used for const buffers */
+  unsigned char *ARES_SIZED_BY_OR_NULL(alloc_buf_len) alloc_buf; /*!< Pointer to
+                                                                 *   allocated
+                                                                 *   data
+                                                                 *   buffer, not
+                                                                 *   used for
+                                                                 *   const
+                                                                 *   buffers */
   size_t               alloc_buf_len; /*!< Size of allocated data buffer */
 
-  size_t               offset;        /*!< Current working offset in buffer */
-  size_t               tag_offset;    /*!< Tagged offset in buffer. Uses
-                                       *   SIZE_MAX if not set. */
+  size_t               offset;     /*!< Current working offset in buffer */
+  size_t               tag_offset; /*!< Tagged offset in buffer. Uses
+                                    *   SIZE_MAX if not set. */
 };
 
 ares_buf_t *ares_buf_create(void)
@@ -67,8 +81,10 @@ ares_buf_t *ares_buf_create_const(const unsigned char *data, size_t data_len)
     return NULL;
   }
 
-  buf->data     = data;
+  /* Capacity before pointer so sized_by invariants hold under
+   * -fbounds-safety. */
   buf->data_len = data_len;
+  buf->data     = data;
 
   return buf;
 }
@@ -127,9 +143,11 @@ void ares_buf_reclaim(ares_buf_t *buf)
   data_size = buf->data_len - prefix_size;
 
   memmove(buf->alloc_buf, buf->alloc_buf + prefix_size, data_size);
-  buf->data      = buf->alloc_buf;
-  buf->data_len  = data_size;
-  buf->offset   -= prefix_size;
+  /* Capacity before pointer so sized_by invariants hold under
+   * -fbounds-safety. */
+  buf->data_len = data_size;
+  buf->data     = buf->alloc_buf;
+  buf->offset  -= prefix_size;
   if (buf->tag_offset != SIZE_MAX) {
     buf->tag_offset -= prefix_size;
   }
@@ -200,8 +218,10 @@ static ares_status_t ares_buf_ensure_space(ares_buf_t *buf, size_t needed_size)
     return ARES_ENOMEM;
   }
 
-  buf->alloc_buf     = ptr;
+  /* Capacity before pointer so sized_by invariants hold under
+   * -fbounds-safety. */
   buf->alloc_buf_len = alloc_size;
+  buf->alloc_buf     = ptr;
   buf->data          = ptr;
 
   return ARES_SUCCESS;

@@ -110,6 +110,7 @@ HHEADERS = ares_android.h			\
   event/ares_event_win32.h		\
   include/ares_array.h			\
   include/ares_buf.h			\
+  include/ares_bounds_safety.h		\
   include/ares_htable_asvp.h		\
   include/ares_htable_dict.h		\
   include/ares_htable_strvp.h		\
