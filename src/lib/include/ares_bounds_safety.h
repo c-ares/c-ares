@@ -45,9 +45,9 @@
  * alloc_buf_len and data / data_len). Use *_OR_NULL when the pointer may
  * be NULL while the companion size is zero.
  */
-#  define ARES_SIZED_BY(n) __sized_by(n)
-#  define ARES_SIZED_BY_OR_NULL(n) __sized_by_or_null(n)
-#  define ARES_COUNTED_BY(n) __counted_by(n)
+#  define ARES_SIZED_BY(n)           __sized_by(n)
+#  define ARES_SIZED_BY_OR_NULL(n)   __sized_by_or_null(n)
+#  define ARES_COUNTED_BY(n)         __counted_by(n)
 #  define ARES_COUNTED_BY_OR_NULL(n) __counted_by_or_null(n)
 
 #else /* !CARES_SUPPORT_FBOUNDS_SAFETY */

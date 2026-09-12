@@ -39,22 +39,22 @@ struct ares_buf {
    * -fbounds-safety builds. Macros are inert by default.
    */
   const unsigned char *ARES_SIZED_BY_OR_NULL(data_len) data; /*!< pointer to
-                                                             *   start of data
-                                                             *   buffer */
+                                                              *   start of data
+                                                              *   buffer */
   size_t               data_len; /*!< total size of data in buffer */
 
   unsigned char *ARES_SIZED_BY_OR_NULL(alloc_buf_len) alloc_buf; /*!< Pointer to
-                                                                 *   allocated
-                                                                 *   data
-                                                                 *   buffer, not
-                                                                 *   used for
-                                                                 *   const
-                                                                 *   buffers */
-  size_t               alloc_buf_len; /*!< Size of allocated data buffer */
+                                                                  *   allocated
+                                                                  *   data
+                                                                  *   buffer,
+                                                                  * not used for
+                                                                  *   const
+                                                                  *   buffers */
+  size_t         alloc_buf_len; /*!< Size of allocated data buffer */
 
-  size_t               offset;     /*!< Current working offset in buffer */
-  size_t               tag_offset; /*!< Tagged offset in buffer. Uses
-                                    *   SIZE_MAX if not set. */
+  size_t         offset;        /*!< Current working offset in buffer */
+  size_t         tag_offset;    /*!< Tagged offset in buffer. Uses
+                                 *   SIZE_MAX if not set. */
 };
 
 ares_buf_t *ares_buf_create(void)
@@ -145,9 +145,9 @@ void ares_buf_reclaim(ares_buf_t *buf)
   memmove(buf->alloc_buf, buf->alloc_buf + prefix_size, data_size);
   /* Capacity before pointer so sized_by invariants hold under
    * -fbounds-safety. */
-  buf->data_len = data_size;
-  buf->data     = buf->alloc_buf;
-  buf->offset  -= prefix_size;
+  buf->data_len  = data_size;
+  buf->data      = buf->alloc_buf;
+  buf->offset   -= prefix_size;
   if (buf->tag_offset != SIZE_MAX) {
     buf->tag_offset -= prefix_size;
   }
