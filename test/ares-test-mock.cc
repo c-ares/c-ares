@@ -641,6 +641,44 @@ TEST_P(CacheQueriesTest, GetHostByNameCache) {
   EXPECT_EQ(1, sock_cb_count);
 }
 
+/* Regression: a NODATA answer (NOERROR with no records and no SOA) must not be
+ * held in the query cache under qcache_max_ttl.  RFC 2308 derives the negative
+ * TTL from the SOA; with no SOA there is no basis to cache it.  Before the fix
+ * a NODATA was cached for up to qcache_max_ttl (3600s by default), so once a
+ * name transiently returned NODATA the channel kept returning ARES_ENODATA long
+ * after the authoritative server started answering with data.  Here the server
+ * returns NODATA first and an address second; the second lookup must reach the
+ * wire and succeed. */
+TEST_P(CacheQueriesTest, NoDataNotCachedWithoutSOA)
+{
+  DNSPacket nodata;
+  nodata.set_response().set_aa().add_question(
+    new DNSQuestion("nodata.example.com", T_A));
+  DNSPacket ok;
+  ok.set_response()
+    .set_aa()
+    .add_question(new DNSQuestion("nodata.example.com", T_A))
+    .add_answer(new DNSARR("nodata.example.com", 100, { 2, 3, 4, 5 }));
+  EXPECT_CALL(server_, OnRequest("nodata.example.com", T_A))
+    .WillOnce(SetReply(&server_, &nodata))
+    .WillOnce(SetReply(&server_, &ok));
+
+  HostResult result1;
+  ares_gethostbyname(channel_, "nodata.example.com.", AF_INET, HostCallback,
+                     &result1);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  EXPECT_EQ(ARES_ENODATA, result1.status_);
+
+  /* Must re-query the wire and succeed rather than serve a cached NODATA. */
+  HostResult result2;
+  ares_gethostbyname(channel_, "nodata.example.com.", AF_INET, HostCallback,
+                     &result2);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  EXPECT_EQ(ARES_SUCCESS, result2.status_);
+}
+
 #define TCPPARALLELLOOKUPS 32
 TEST_P(MockTCPChannelTest, GetHostByNameParallelLookups) {
   DNSPacket rsp;

@@ -325,8 +325,22 @@ static ares_status_t ares_qcache_insert_int(ares_qcache_t           *qcache,
     return ARES_ENOTIMP;
   }
 
-  /* Look at SOA for NXDOMAIN for minimum */
-  if (rcode == ARES_RCODE_NXDOMAIN) {
+  /* Determine the TTL to cache under.  For a negative answer -- NXDOMAIN, or a
+   * NOERROR/NODATA response that carries no records answering the question --
+   * RFC 2308 Section 5 says the negative-cache TTL is derived from the SOA
+   * record in the authority section, not from a default.
+   * ares_qcache_soa_minimum() returns 0 when no SOA is present, which (via the
+   * ttl == 0 check below) leaves the negative answer uncached so the next
+   * lookup re-queries the wire.
+   *
+   * Previously only NXDOMAIN took this path; a NODATA answer fell through to
+   * ares_qcache_calc_minttl(), which returns 0xFFFFFFFF for a record-less
+   * response and was then clamped to qcache_max_ttl (3600s by default since the
+   * query cache became enabled by default in 1.31.0).  As a result a transient
+   * empty answer was served from the cache for up to an hour after the server
+   * had recovered. */
+  if (rcode == ARES_RCODE_NXDOMAIN ||
+      ares_dns_record_rr_cnt(qresp, ARES_SECTION_ANSWER) == 0) {
     ttl = ares_qcache_soa_minimum(qresp);
   } else {
     ttl = ares_qcache_calc_minttl(qresp);
