@@ -70,12 +70,12 @@ ares_status_t ares_parse_ptr_reply_dnsrec(const ares_dns_record_t *dnsrec,
 
   memset(hostent, 0, sizeof(*hostent));
 
-  hostent->h_addr_list = ares_malloc(2 * sizeof(*hostent->h_addr_list));
+  hostent->h_addr_list =
+    ares_malloc_zero_array(2, sizeof(*hostent->h_addr_list));
   if (hostent->h_addr_list == NULL) {
     status = ARES_ENOMEM;
     goto done;
   }
-  memset(hostent->h_addr_list, 0, 2 * sizeof(*hostent->h_addr_list));
   if (addr != NULL && addrlen > 0) {
     hostent->h_addr_list[0] = ares_malloc((size_t)addrlen);
     if (hostent->h_addr_list[0] == NULL) {

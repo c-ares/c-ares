@@ -204,10 +204,10 @@ static ares_status_t read_resolver(const ares_channel_t *channel,
 
   /* Append search list */
   if (resolver->n_search > 0) {
-    char **new_domains = ares_realloc_zero(
-      sysconfig->domains, sizeof(*sysconfig->domains) * sysconfig->ndomains,
-      sizeof(*sysconfig->domains) *
-        (sysconfig->ndomains + (size_t)resolver->n_search));
+    char **new_domains =
+      ares_realloc_zero_array(sysconfig->domains, sysconfig->ndomains,
+                              sysconfig->ndomains + (size_t)resolver->n_search,
+                              sizeof(*sysconfig->domains));
     if (new_domains == NULL) {
       return ARES_ENOMEM;
     }

@@ -380,6 +380,15 @@ void LibraryTest::SetAllocSizeFail(size_t size) {
 }
 
 // static
+bool LibraryTest::AllocSizeFailPending(size_t size) {
+  lock_.lock();
+  std::map<size_t, int>::const_iterator it = size_fails_.find(size);
+  bool pending = (it != size_fails_.end() && it->second > 0);
+  lock_.unlock();
+  return pending;
+}
+
+// static
 void LibraryTest::ClearFails() {
   lock_.lock();
   fails_ = 0;

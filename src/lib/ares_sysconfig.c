@@ -602,7 +602,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
 
   if (sysconfig->sortlist && !(channel->optmask & ARES_OPT_SORTLIST)) {
     struct apattern *temp =
-      ares_malloc(sizeof(*channel->sortlist) * sysconfig->nsortlist);
+      ares_malloc_array(sysconfig->nsortlist, sizeof(*channel->sortlist));
     if (temp == NULL) {
       return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }

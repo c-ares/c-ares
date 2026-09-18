@@ -150,7 +150,7 @@ int ares_save_options(const ares_channel_t *channel,
   if (channel->optmask & ARES_OPT_DOMAINS) {
     options->domains = NULL;
     if (channel->ndomains) {
-      options->domains = ares_malloc(channel->ndomains * sizeof(char *));
+      options->domains = ares_malloc_array(channel->ndomains, sizeof(char *));
       if (!options->domains) {
         return ARES_ENOMEM;
       }
@@ -176,7 +176,8 @@ int ares_save_options(const ares_channel_t *channel,
   if (channel->optmask & ARES_OPT_SORTLIST) {
     options->sortlist = NULL;
     if (channel->nsort) {
-      options->sortlist = ares_malloc(channel->nsort * sizeof(struct apattern));
+      options->sortlist =
+        ares_malloc_array(channel->nsort, sizeof(struct apattern));
       if (!options->sortlist) {
         return ARES_ENOMEM;
       }
@@ -385,7 +386,7 @@ ares_status_t ares_init_by_options(ares_channel_t            *channel,
    */
   if (optmask & ARES_OPT_DOMAINS && options->ndomains > 0) {
     channel->domains =
-      ares_malloc_zero((size_t)options->ndomains * sizeof(char *));
+      ares_malloc_zero_array((size_t)options->ndomains, sizeof(char *));
     if (!channel->domains) {
       return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
@@ -414,7 +415,7 @@ ares_status_t ares_init_by_options(ares_channel_t            *channel,
   if (optmask & ARES_OPT_SORTLIST && options->nsort > 0) {
     channel->nsort = (size_t)options->nsort;
     channel->sortlist =
-      ares_malloc((size_t)options->nsort * sizeof(struct apattern));
+      ares_malloc_array((size_t)options->nsort, sizeof(struct apattern));
     if (!channel->sortlist) {
       return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }

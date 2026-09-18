@@ -119,14 +119,20 @@ static void ares_evsys_kqueue_enqueue(ares_evsys_kqueue_t *kq, int fd,
 
   idx = kq->nchanges;
 
-  kq->nchanges++;
-
-  if (kq->nchanges > kq->nchanges_alloc) {
-    kq->nchanges_alloc <<= 1;
-    kq->changelist       = ares_realloc_zero(
-      kq->changelist, (kq->nchanges_alloc >> 1) * sizeof(*kq->changelist),
-      kq->nchanges_alloc * sizeof(*kq->changelist));
+  if (idx >= kq->nchanges_alloc) {
+    size_t         new_alloc = kq->nchanges_alloc << 1;
+    struct kevent *newlist   = ares_realloc_zero_array(
+      kq->changelist, kq->nchanges_alloc, new_alloc, sizeof(*kq->changelist));
+    if (newlist == NULL) {
+      /* Keep the existing change list rather than replacing it with NULL and
+       * then writing through it; this change is dropped. */
+      return; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+    kq->changelist     = newlist;
+    kq->nchanges_alloc = new_alloc;
   }
+
+  kq->nchanges++;
 
   EV_SET(&kq->changelist[idx], fd, filter, flags, 0, 0, 0);
 }
