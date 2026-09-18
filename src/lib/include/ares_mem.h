@@ -34,7 +34,57 @@ CARES_EXTERN void ares_free(void *ptr);
 CARES_EXTERN void *ares_malloc_zero(size_t size);
 CARES_EXTERN void *ares_realloc_zero(void *ptr, size_t orig_size,
                                      size_t new_size);
+
+/* Array allocation functions.
+ *
+ * Any allocation whose size is a count multiplied by an element size must use
+ * one of these rather than open-coding the multiplication, so that a count
+ * large enough to wrap size_t fails the allocation instead of silently
+ * producing a short buffer that the caller then indexes past. */
+
+/*! Allocate an array of elements, checking the size calculation for overflow.
+ *  The returned memory is not initialized.
+ *
+ *  \param[in] num   Number of elements
+ *  \param[in] size  Size of each element in bytes
+ *  \return pointer to the allocated array, or NULL if num * size overflows
+ *          size_t or the allocation fails.
+ */
+CARES_EXTERN void *ares_malloc_array(size_t num, size_t size);
+
+/*! Allocate an array of elements, checking the size calculation for overflow.
+ *  The returned memory is zero-filled.
+ *
+ *  \param[in] num   Number of elements
+ *  \param[in] size  Size of each element in bytes
+ *  \return pointer to the allocated array, or NULL if num * size overflows
+ *          size_t or the allocation fails.
+ */
 CARES_EXTERN void *ares_malloc_zero_array(size_t num, size_t size);
+
+/*! Resize an array of elements, checking the size calculation for overflow.
+ *  Any newly added elements are not initialized.  On failure the original
+ *  array is left untouched and still owned by the caller.
+ *
+ *  \param[in] ptr   Existing array, or NULL to allocate a new one
+ *  \param[in] num   New number of elements
+ *  \param[in] size  Size of each element in bytes
+ *  \return pointer to the resized array, or NULL if num * size overflows
+ *          size_t or the allocation fails.
+ */
+CARES_EXTERN void *ares_realloc_array(void *ptr, size_t num, size_t size);
+
+/*! Resize an array of elements, checking the size calculations for overflow.
+ *  Any newly added elements are zero-filled.  On failure the original array is
+ *  left untouched and still owned by the caller.
+ *
+ *  \param[in] ptr       Existing array, or NULL to allocate a new one
+ *  \param[in] orig_num  Current number of elements in ptr
+ *  \param[in] new_num   New number of elements
+ *  \param[in] size      Size of each element in bytes
+ *  \return pointer to the resized array, or NULL if either orig_num * size or
+ *          new_num * size overflows size_t or the allocation fails.
+ */
 CARES_EXTERN void *ares_realloc_zero_array(void *ptr, size_t orig_num,
                                            size_t new_num, size_t size);
 

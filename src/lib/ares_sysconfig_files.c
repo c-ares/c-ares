@@ -98,7 +98,7 @@ static ares_bool_t sortlist_append(struct apattern **sortlist, size_t *nsort,
 {
   struct apattern *newsort;
 
-  newsort = ares_realloc(*sortlist, (*nsort + 1) * sizeof(*newsort));
+  newsort = ares_realloc_array(*sortlist, *nsort + 1, sizeof(*newsort));
   if (newsort == NULL) {
     return ARES_FALSE; /* LCOV_EXCL_LINE: OutOfMemory */
   }
