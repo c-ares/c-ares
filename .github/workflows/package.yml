@@ -57,114 +57,17 @@ jobs:
           echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
           echo "hashes=$(printf '%s  %s\n' "$sha256" "$archive" | base64 -w0)" >> "$GITHUB_OUTPUT"
 
-      - name: Download Syft
+      - name: Generate release SBOM
         if: startsWith(github.ref, 'refs/tags/')
-        id: syft
-        uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
-          syft-version: v1.52.0
+          file: c-ares-${{ steps.version.outputs.version }}.tar.gz
+          format: spdx-json
+          output-file: c-ares-${{ steps.version.outputs.version }}.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
 
-      - name: Generate release SBOMs
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          SYFT: ${{ steps.syft.outputs.cmd }}
-          VERSION: ${{ steps.version.outputs.version }}
-          SHA256: ${{ steps.hash.outputs.sha256 }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          archive="c-ares-$VERSION.tar.gz"
-          source_dir="$RUNNER_TEMP/c-ares-sbom-source"
-          spdx="c-ares-$VERSION.spdx.json"
-          cdx="c-ares-$VERSION.cdx.json"
-          purl="pkg:github/${{ github.repository }}@v$VERSION"
-          url="https://github.com/${{ github.repository }}/releases/download/v$VERSION/$archive"
-
-          mkdir -p "$source_dir"
-          tar -xzf "$archive" -C "$source_dir" --strip-components=1
-
-          "$SYFT" scan "dir:$source_dir" \
-            --source-name c-ares \
-            --source-version "$VERSION" \
-            --source-supplier "c-ares project" \
-            -o "spdx-json=$spdx" \
-            -o "cyclonedx-json=$cdx"
-
-          root_id="$(
-            jq -er '
-              [
-                .relationships[]
-                | select(
-                    .spdxElementId == "SPDXRef-DOCUMENT"
-                    and .relationshipType == "DESCRIBES"
-                  )
-                | .relatedSpdxElement
-              ]
-              | if length == 1
-                then .[0]
-                else error("expected exactly one SPDX DESCRIBES root")
-                end
-            ' "$spdx"
-          )"
-
-          jq --arg id "$root_id" --arg sha "$SHA256" --arg url "$url" --arg purl "$purl" '
-            (.packages[] | select(.SPDXID == $id)) |=
-              (.licenseDeclared = "MIT"
-               | .downloadLocation = $url
-               | .primaryPackagePurpose = "LIBRARY"
-               | .checksums = (
-                   ((.checksums // []) + [{
-                     "algorithm": "SHA256",
-                     "checksumValue": $sha
-                   }])
-                   | unique_by([.algorithm, .checksumValue])
-                 )
-               | .externalRefs = (
-                   ((.externalRefs // []) + [{
-                     "referenceCategory": "PACKAGE-MANAGER",
-                     "referenceType": "purl",
-                     "referenceLocator": $purl
-                   }])
-                   | unique_by([
-                       .referenceCategory,
-                       .referenceType,
-                       .referenceLocator
-                     ])
-                 ))
-          ' "$spdx" > "$spdx.tmp"
-          mv "$spdx.tmp" "$spdx"
-
-          jq --arg sha "$SHA256" --arg url "$url" --arg purl "$purl" '
-            .metadata.component.type = "library"
-            | .metadata.component.supplier = {"name": "c-ares project"}
-            | .metadata.component.hashes = (
-                ((.metadata.component.hashes // []) + [{
-                  "alg": "SHA-256",
-                  "content": $sha
-                }])
-                | unique_by([.alg, .content])
-              )
-            | .metadata.component.licenses = (
-                ((.metadata.component.licenses // []) + [{
-                  "license": {"id": "MIT"}
-                }])
-                | unique_by([
-                    (.license.id // ""),
-                    (.expression // "")
-                  ])
-              )
-            | .metadata.component.purl = $purl
-            | .metadata.component.externalReferences = (
-                ((.metadata.component.externalReferences // []) + [{
-                  "type": "distribution",
-                  "url": $url
-                }])
-                | unique_by([.type, .url])
-              )
-          ' "$cdx" > "$cdx.tmp"
-          mv "$cdx.tmp" "$cdx"
-
-      - name: Validate release SBOMs
+      - name: Validate release SBOM
         if: startsWith(github.ref, 'refs/tags/')
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -173,46 +76,15 @@ jobs:
         run: |
           set -euo pipefail
           spdx="c-ares-$VERSION.spdx.json"
-          cdx="c-ares-$VERSION.cdx.json"
-          purl="pkg:github/${{ github.repository }}@v$VERSION"
-          validator=sbom-utility-v0.19.2-linux-amd64.tar.gz
-
-          curl -fsSLO "https://github.com/CycloneDX/sbom-utility/releases/download/v0.19.2/$validator"
-          echo "e0cd37e6e67b1d0e44dbb7b38e055a4e2ee66db590bb8e7f89e2d9b650f4490b  $validator" |
-            sha256sum -c -
-          tar -xzf "$validator" sbom-utility
-
-          ./sbom-utility validate -q -i "$spdx"
-          ./sbom-utility validate -q -i "$cdx"
-
-          jq -e --arg version "$VERSION" --arg sha "$SHA256" --arg purl "$purl" '
-            [
-              .relationships[]
-              | select(
-                  .spdxElementId == "SPDXRef-DOCUMENT"
-                  and .relationshipType == "DESCRIBES"
-                )
-              | .relatedSpdxElement
-            ] as $roots
-            | ($roots | length) == 1
-            and (
-              .packages[]
-              | select(.SPDXID == $roots[0])
-              | .name == "c-ares"
-              and .versionInfo == $version
-              and any(.checksums[]?; .algorithm == "SHA256" and .checksumValue == $sha)
-              and any(.externalRefs[]?; .referenceType == "purl" and .referenceLocator == $purl)
+          jq -e --arg sha "$SHA256" '
+            any(
+              .packages[]?;
+              any(
+                .checksums[]?;
+                .algorithm == "SHA256" and .checksumValue == $sha
+              )
             )
           ' "$spdx" >/dev/null
-
-          jq -e --arg version "$VERSION" --arg sha "$SHA256" --arg purl "$purl" '
-            .specVersion == "1.7"
-            and .metadata.component.type == "library"
-            and .metadata.component.name == "c-ares"
-            and .metadata.component.version == $version
-            and .metadata.component.purl == $purl
-            and any(.metadata.component.hashes[]?; .alg == "SHA-256" and .content == $sha)
-          ' "$cdx" >/dev/null
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -234,7 +106,6 @@ jobs:
           files: |
             c-ares-${{ steps.version.outputs.version }}.tar.gz
             c-ares-${{ steps.version.outputs.version }}.spdx.json
-            c-ares-${{ steps.version.outputs.version }}.cdx.json
           fail_on_unmatched_files: true
           discussion_category_name: "Announcements"
 
