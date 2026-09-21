@@ -360,6 +360,30 @@ TEST_F(LibraryTest, ParseAReplyErrors) {
   }
 }
 
+TEST_F(LibraryTest, ParseAReplyNegativeTtlCount) {
+  // Issue #1300: a negative *naddrttls used to wrap to SIZE_MAX, so every
+  // record in the reply was written into the caller's array regardless of
+  // its size.  Up to 1.20.1 a negative count stored nothing; keep it that
+  // way.  The reply carries more A records than info[] can hold so the
+  // pre-fix code overruns the array (caught under ASan).
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_A))
+    .add_answer(new DNSARR("example.com", 100, {0x02, 0x03, 0x04, 0x05}))
+    .add_answer(new DNSARR("example.com", 100, {0x02, 0x03, 0x04, 0x06}))
+    .add_answer(new DNSARR("example.com", 100, {0x02, 0x03, 0x04, 0x07}));
+  std::vector<byte> data = pkt.data();
+
+  struct hostent *host = nullptr;
+  struct ares_addrttl info[2];
+  int count = -1;
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), (int)data.size(),
+                                             &host, info, &count));
+  EXPECT_EQ(0, count);
+  ASSERT_NE(nullptr, host);
+  ares_free_hostent(host);
+}
+
 TEST_F(LibraryTest, ParseAReplyAllocFail) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
