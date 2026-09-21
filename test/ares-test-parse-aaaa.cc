@@ -62,6 +62,26 @@ TEST_F(LibraryTest, ParseAaaaReplyOK) {
                                                 nullptr, info, &count));
 }
 
+TEST_F(LibraryTest, ParseAaaaReplyNegativeCount)
+{
+  DNSPacket pkt;
+  pkt.set_qid(0x1234)
+    .set_response()
+    .set_aa()
+    .add_question(new DNSQuestion("example.com", T_AAAA))
+    .add_answer(
+      new DNSAaaaRR("example.com", 100,
+                    { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+                      0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 }));
+  std::vector<byte>    data = pkt.data();
+  struct ares_addr6ttl info[1];
+  int                  count = -1;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_aaaa_reply(data.data(), (int)data.size(),
+                                                nullptr, info, &count));
+  EXPECT_EQ(0, count);
+}
+
 TEST_F(LibraryTest, ParseAaaaReplyCname) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()
