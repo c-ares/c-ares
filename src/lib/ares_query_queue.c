@@ -331,9 +331,9 @@ ares_status_t ares_query_queue_admit(ares_channel_t          *channel,
   ares_query_group_t *existing;
   ares_status_t       status         = ARES_ENOMEM;
   size_t              logical_handle = 0;
-  size_t              capacity       = queue->max_active == 0
-                                         ? ARES_QUERY_GROUP_LIMIT
-                                         : queue->max_active + queue->max_pending;
+  size_t              capacity = queue->max_active == 0
+                                   ? ARES_QUERY_GROUP_LIMIT
+                                   : queue->max_active + queue->max_pending;
 
   group = ares_malloc_zero(sizeof(*group));
   if (group == NULL) {
