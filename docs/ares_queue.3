@@ -17,7 +17,9 @@ ares_status_t ares_queue_wait_empty(ares_channel_t *channel,
 .fi
 .SH DESCRIPTION
 The \fBares_queue_active_queries(3)\fP function retrieves the total number of
-active queries pending answers from servers. Some c-ares requests may spawn
+outstanding logical queries. When optional scheduling is enabled, this includes
+waiting queries and each caller of a merged transaction, plus ungrouped internal
+queries. Some c-ares requests may spawn
 multiple queries, such as \fIares_getaddrinfo(3)\fP when using \fIAF_UNSPEC\fP,
 which will be reflected in this number. The \fBchannel\fP parameter must be set
 to an initialized channel.
