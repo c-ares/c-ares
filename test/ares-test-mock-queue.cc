@@ -214,7 +214,7 @@ TEST_P(QueryQueueTest, RejectsInvalidConfigurationWithoutChangingOptions)
             ares_set_query_queue_options(channel_, 1, 32768, ARES_FALSE));
   EXPECT_EQ(ARES_EFORMERR,
             ares_set_query_queue_options(
-              channel_, std::numeric_limits<size_t>::max(), 1, ARES_FALSE));
+              channel_, (std::numeric_limits<size_t>::max)(), 1, ARES_FALSE));
   EXPECT_EQ(ARES_EFORMERR, ares_get_query_queue_options(nullptr, &active,
                                                          &pending, &coalesce));
   EXPECT_EQ(ARES_EFORMERR, ares_get_query_queue_options(channel_, nullptr,
