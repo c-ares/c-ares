@@ -664,6 +664,10 @@ static ares_status_t ares_dns_write_rr_opt(ares_buf_t          *buf,
     }
 
     /* BE16 length */
+    if (val_len > 65535) {
+      /* The option value cannot be framed by the 16-bit length prefix. */
+      return ARES_EBADQUERY;
+    }
     status = ares_buf_append_be16(buf, (unsigned short)(val_len & 0xFFFF));
     if (status != ARES_SUCCESS) {
       return status; /* LCOV_EXCL_LINE: OutOfMemory */
@@ -1050,6 +1054,10 @@ static ares_status_t ares_dns_write_rr_svcb(ares_buf_t          *buf,
     }
 
     /* BE16 length */
+    if (val_len > 65535) {
+      /* The option value cannot be framed by the 16-bit length prefix. */
+      return ARES_EBADQUERY;
+    }
     status = ares_buf_append_be16(buf, (unsigned short)(val_len & 0xFFFF));
     if (status != ARES_SUCCESS) {
       return status; /* LCOV_EXCL_LINE: OutOfMemory */
@@ -1101,6 +1109,10 @@ static ares_status_t ares_dns_write_rr_https(ares_buf_t          *buf,
     }
 
     /* BE16 length */
+    if (val_len > 65535) {
+      /* The option value cannot be framed by the 16-bit length prefix. */
+      return ARES_EBADQUERY;
+    }
     status = ares_buf_append_be16(buf, (unsigned short)(val_len & 0xFFFF));
     if (status != ARES_SUCCESS) {
       return status; /* LCOV_EXCL_LINE: OutOfMemory */
@@ -1392,6 +1404,11 @@ static ares_status_t ares_dns_write_rr(const ares_dns_record_t *dnsrec,
      * position */
     end_length = ares_buf_len(buf);
     rdlength   = end_length - pos_len - 2;
+    if (rdlength > 65535) {
+      /* RDATA cannot be framed by the 16-bit rdlength; writing the truncated
+       * length would emit a structurally corrupt message. */
+      return ARES_EBADQUERY;
+    }
 
     status = ares_buf_set_length(buf, pos_len);
     if (status != ARES_SUCCESS) {
