@@ -276,6 +276,25 @@ TEST_F(LibraryTest, EnvInit) {
   ares_destroy(channel);
 }
 
+TEST_F(LibraryTest, EnvInitBogusAttempts)
+{
+  ares_channel_t *channel = nullptr;
+  EnvValue v1("RES_OPTIONS", "options attempts:4294967295");
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  channel->optmask |= ARES_OPT_TRIES;
+
+  struct ares_options opts;
+  memset(&opts, 0, sizeof(opts));
+  int optmask = 0;
+  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel, &opts, &optmask));
+  /* The absurd attempt count must be ignored rather than turned into an
+   * effectively unbounded retry loop. */
+  EXPECT_EQ(3, opts.tries);
+
+  ares_destroy(channel);
+}
+
 TEST_F(LibraryTest, EnvInitModernOptions) {
   ares_channel_t *channel = nullptr;
   EnvValue v1("LOCALDOMAIN", "this.is.local");
