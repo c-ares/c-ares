@@ -1391,7 +1391,7 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
    * it ended, so don't report success to the caller (which would, e.g., cause
    * ares_send_nolock() to write to a now-freed *qid). */
   if (status == ARES_SUCCESS &&
-      ares_htable_szvp_get_direct(channel->queries_by_qid, qid) == NULL) {
+      ares_htable_szvp_get_direct(channel->queries_by_qid, qid) != query) {
     status = ARES_ETIMEOUT;
   }
 
