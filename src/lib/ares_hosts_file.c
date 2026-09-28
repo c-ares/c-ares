@@ -110,6 +110,9 @@
 
 struct ares_hosts_file {
   time_t               ts;
+  /*! mtime of the file as observed when it was parsed, used to detect
+   *  replacement with an older mtime (package rollback, tar -x, cp -p) */
+  time_t               mod_ts;
   /*! cache the filename so we know if the filename changes it automatically
    *  invalidates the cache */
   char                *filename;
@@ -697,6 +700,24 @@ static ares_status_t ares_parse_hosts_ipaddr(ares_buf_t          *buf,
   return ARES_SUCCESS;
 }
 
+static time_t ares_hosts_file_mtime(const char *filename)
+{
+#ifdef HAVE_STAT
+  struct stat st;
+  if (stat(filename, &st) == 0) {
+    return st.st_mtime;
+  }
+#elif defined(_WIN32)
+  struct _stat st;
+  if (_stat(filename, &st) == 0) {
+    return st.st_mtime;
+  }
+#else
+  (void)filename;
+#endif
+  return 0;
+}
+
 static ares_status_t ares_parse_hosts(const char         *filename,
                                       ares_hosts_file_t **out)
 {
@@ -728,6 +749,12 @@ static ares_status_t ares_parse_hosts(const char         *filename,
   if (hf == NULL) {
     status = ARES_ENOMEM;
     goto done;
+  }
+
+  hf->mod_ts = ares_hosts_file_mtime(filename);
+  if (hf->mod_ts == 0) {
+    hf->mod_ts =
+      time(NULL) - 60; /* LCOV_EXCL_LINE: only on systems without stat() */
   }
 
   multi       = ares_htable_strvp_create(ares_hosts_list_destroy_cb);
@@ -814,21 +841,7 @@ done:
 static ares_bool_t ares_hosts_expired(const char              *filename,
                                       const ares_hosts_file_t *hf)
 {
-  time_t mod_ts = 0;
-
-#ifdef HAVE_STAT
-  struct stat st;
-  if (stat(filename, &st) == 0) {
-    mod_ts = st.st_mtime;
-  }
-#elif defined(_WIN32)
-  struct _stat st;
-  if (_stat(filename, &st) == 0) {
-    mod_ts = st.st_mtime;
-  }
-#else
-  (void)filename;
-#endif
+  time_t mod_ts = ares_hosts_file_mtime(filename);
 
   if (hf == NULL) {
     return ARES_TRUE;
@@ -842,6 +855,15 @@ static ares_bool_t ares_hosts_expired(const char              *filename,
 
   /* If filenames are different, its expired */
   if (!ares_strcaseeq(hf->filename, filename)) {
+    return ARES_TRUE;
+  }
+
+  if (hf->mod_ts != mod_ts && mod_ts != time(NULL) - 60) {
+    /* The mtime no longer matches the one observed at parse time.  This
+     * catches the file being replaced with one carrying an *older* mtime
+     * (package rollback, tar -x, cp -p, backup restore), which the
+     * parse-time check below never detects.  The second condition keeps
+     * the time-based heuristic on platforms without a usable mtime. */
     return ARES_TRUE;
   }
 
