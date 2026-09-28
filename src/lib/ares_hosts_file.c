@@ -108,19 +108,36 @@
  *  names. */
 #define ARES_HOSTS_MAX_ALIASES 100
 
+/* File identity snapshot used for cache invalidation.  `valid` is set when
+ * stat() succeeded; when it did not, the identity is not compared and only
+ * the time-based fallback can expire the cache. */
+typedef struct {
+  ares_bool_t  valid;
+  time_t       mtime;
+  ares_int64_t size;
+  ares_int64_t ino;
+  ares_int64_t dev;
+} ares_hosts_file_ident_t;
+
 struct ares_hosts_file {
-  time_t               ts;
+  time_t                  ts;
+  /*! File identity as observed when the file was parsed, used to detect the
+   *  file being replaced: with an older mtime (package rollback, tar -x,
+   *  cp -p, backup restore) or with the same mtime but a different size,
+   *  inode, or device (builds that normalize file times, or a symlink
+   *  retargeted to a different filesystem). */
+  ares_hosts_file_ident_t ident;
   /*! cache the filename so we know if the filename changes it automatically
    *  invalidates the cache */
-  char                *filename;
+  char                   *filename;
   /*! address (normalized str) -> cached reverse entry (ares_hosts_entry_t).
    *  Owns the entry via ares_hosts_entry_destroy_cb (reference counted). */
-  ares_htable_strvp_t *iphash;
+  ares_htable_strvp_t    *iphash;
   /*! hostname (str) -> cached entry to return for a forward lookup of that name
    *  (ares_hosts_entry_t).  May be the same object as an iphash reverse entry
    *  (single-address hostname) or a dedicated forward entry (multi-address).
    *  Owns the entry via ares_hosts_entry_destroy_cb (reference counted). */
-  ares_htable_strvp_t *hosthash;
+  ares_htable_strvp_t    *hosthash;
 };
 
 struct ares_hosts_entry {
@@ -697,21 +714,61 @@ static ares_status_t ares_parse_hosts_ipaddr(ares_buf_t          *buf,
   return ARES_SUCCESS;
 }
 
+static void ares_hosts_file_ident(const char              *filename,
+                                  ares_hosts_file_ident_t *ident)
+{
+  memset(ident, 0, sizeof(*ident));
+
+#ifdef HAVE_STAT
+  {
+    struct stat st;
+    if (stat(filename, &st) == 0) {
+      ident->valid = ARES_TRUE;
+      ident->mtime = st.st_mtime;
+      ident->size  = (ares_int64_t)st.st_size;
+      ident->ino   = (ares_int64_t)st.st_ino;
+      ident->dev   = (ares_int64_t)st.st_dev;
+    }
+  }
+#elif defined(_WIN32)
+  {
+    struct _stat st;
+    if (_stat(filename, &st) == 0) {
+      ident->valid = ARES_TRUE;
+      ident->mtime = st.st_mtime;
+      ident->size  = (ares_int64_t)st.st_size;
+      ident->dev   = (ares_int64_t)st.st_dev;
+      /* st_ino from _stat() is not meaningful on Windows; leave 0, and
+       * comparing 0 to 0 is harmless. */
+    }
+  }
+#else
+  (void)filename;
+#endif
+}
+
 static ares_status_t ares_parse_hosts(const char         *filename,
                                       ares_hosts_file_t **out)
 {
-  ares_buf_t          *buf    = NULL;
-  ares_status_t        status = ARES_EBADRESP;
-  ares_hosts_file_t   *hf     = NULL;
-  ares_hosts_entry_t  *entry  = NULL;
+  ares_buf_t             *buf    = NULL;
+  ares_status_t           status = ARES_EBADRESP;
+  ares_hosts_file_t      *hf     = NULL;
+  ares_hosts_entry_t     *entry  = NULL;
+  ares_hosts_file_ident_t ident;
   /* Small temporaries tracking ONLY multi-address hostnames: their ip lists
    * (multi) and the order they became multi (multi_names, holding references,
    * not owned, to hostname copies that live in the reverse entries).  For a
    * single-address file these stay empty.  Discarded before returning. */
-  ares_htable_strvp_t *multi       = NULL;
-  ares_llist_t        *multi_names = NULL;
+  ares_htable_strvp_t    *multi       = NULL;
+  ares_llist_t           *multi_names = NULL;
 
   *out = NULL;
+
+  /* Capture the file identity BEFORE reading the contents.  If the file is
+   * replaced between the stat and the read, the cached identity describes a
+   * file at least as old as the contents we parsed, so the worst case is an
+   * extra re-read; the cache can never be held past a replacement. */
+  ares_hosts_file_ident(filename, &ident);
 
   buf = ares_buf_create();
   if (buf == NULL) {
@@ -729,6 +786,8 @@ static ares_status_t ares_parse_hosts(const char         *filename,
     status = ARES_ENOMEM;
     goto done;
   }
+
+  hf->ident = ident;
 
   multi       = ares_htable_strvp_create(ares_hosts_list_destroy_cb);
   multi_names = ares_llist_create(NULL);
@@ -814,30 +873,12 @@ done:
 static ares_bool_t ares_hosts_expired(const char              *filename,
                                       const ares_hosts_file_t *hf)
 {
-  time_t mod_ts = 0;
+  ares_hosts_file_ident_t ident;
 
-#ifdef HAVE_STAT
-  struct stat st;
-  if (stat(filename, &st) == 0) {
-    mod_ts = st.st_mtime;
-  }
-#elif defined(_WIN32)
-  struct _stat st;
-  if (_stat(filename, &st) == 0) {
-    mod_ts = st.st_mtime;
-  }
-#else
-  (void)filename;
-#endif
+  ares_hosts_file_ident(filename, &ident);
 
   if (hf == NULL) {
     return ARES_TRUE;
-  }
-
-  /* Expire every 60s if we can't get a time */
-  if (mod_ts == 0) {
-    mod_ts =
-      time(NULL) - 60; /* LCOV_EXCL_LINE: only on systems without stat() */
   }
 
   /* If filenames are different, its expired */
@@ -845,7 +886,25 @@ static ares_bool_t ares_hosts_expired(const char              *filename,
     return ARES_TRUE;
   }
 
-  if (hf->ts <= mod_ts) {
+  /* The file was replaced, possibly with an older mtime (package rollback,
+   * tar -x, cp -p, backup restore) or with the same mtime but a different
+   * size, inode, or device (builds that normalize file times, or a symlink
+   * retargeted to a different filesystem).  Compare the identity only when
+   * it could be read. */
+  if (ident.valid &&
+      (!hf->ident.valid || ident.mtime != hf->ident.mtime ||
+       ident.size != hf->ident.size || ident.ino != hf->ident.ino ||
+       ident.dev != hf->ident.dev)) {
+    return ARES_TRUE;
+  }
+
+  /* Expire every 60s if we can't get a time */
+  if (!ident.valid) {
+    ident.mtime =
+      time(NULL) - 60; /* LCOV_EXCL_LINE: only on systems without stat() */
+  }
+
+  if (hf->ts <= ident.mtime) {
     return ARES_TRUE;
   }
 
