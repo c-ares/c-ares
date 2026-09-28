@@ -145,6 +145,46 @@ TEST_F(LibraryTest, ParseMalformedAReply) {
                                               &host, info, &count));
 }
 
+TEST_F(LibraryTest, ParseAReplyTtlClamp) {
+  std::vector<byte> data = {
+    0x12, 0x34,  // qid
+    0x84,        // response + query + AA
+    0x00,        // rc=NoError
+    0x00, 0x01,  // num questions
+    0x00, 0x01,  // num answer RRs
+    0x00, 0x00,  // num authority RRs
+    0x00, 0x00,  // num additional RRs
+    // Question
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x01,  // type A
+    0x00, 0x01,  // class IN
+    // Answer: TTL 0xFFFFFFFF (server-controlled, high bit set)
+    0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+    0x03, 'c', 'o', 'm',
+    0x00,
+    0x00, 0x01,  // RR type A
+    0x00, 0x01,  // class IN
+    0xFF, 0xFF, 0xFF, 0xFF,  // TTL
+    0x00, 0x04,  // rdlength
+    0x02, 0x03, 0x04, 0x05, // address
+  };
+  struct hostent *host = nullptr;
+  struct ares_addrttl info[2];
+  int count = 2;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_parse_a_reply(data.data(), (int)data.size(),
+                               &host, info, &count));
+  EXPECT_NE(nullptr, host);
+  ares_free_hostent(host);
+  EXPECT_EQ(1, count);
+  // A server-controlled TTL with the high bit set must not surface as a
+  // negative TTL through the public API.
+  EXPECT_LE(0, info[0].ttl);
+  EXPECT_EQ(INT_MAX, info[0].ttl);
+}
+
 TEST_F(LibraryTest, ParseAReplyNoData) {
   DNSPacket pkt;
   pkt.set_qid(0x1234).set_response().set_aa()

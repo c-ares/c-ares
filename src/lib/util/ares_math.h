@@ -50,6 +50,11 @@ size_t ares_count_digits(size_t n);
 size_t ares_count_hexdigits(size_t n);
 unsigned char ares_count_bits_u8(unsigned char x);
 
+/*! Clamp a DNS record TTL (an unsigned 32-bit value, fully controlled by the
+ *  server) into the signed int used by the public API structures without
+ *  wrapping to a negative value. */
+int ares_dns_ttl_as_int(unsigned int ttl);
+
 /*! Multiply two size_t values, checking for overflow.  On success writes the
  *  product to *res and returns ARES_FALSE.  On overflow returns ARES_TRUE and
  *  leaves *res untouched. */
