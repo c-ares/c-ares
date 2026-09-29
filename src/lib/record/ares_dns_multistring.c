@@ -197,11 +197,13 @@ const unsigned char *ares_dns_multistring_combined(ares_dns_multistring_t *strs,
   ares_buf_t *buf = NULL;
   size_t      i;
 
+  if (len != NULL) {
+    *len = 0;
+  }
+
   if (strs == NULL || len == NULL) {
     return NULL;
   }
-
-  *len = 0;
 
   /* Return cache if possible */
   if (!strs->cache_invalidated) {
@@ -243,7 +245,11 @@ ares_status_t ares_dns_multistring_parse_buf(ares_buf_t *buf,
 {
   unsigned char len;
   ares_status_t status   = ARES_EBADRESP;
-  size_t        orig_len = ares_buf_len(buf);
+  size_t        orig_len;
+
+  if (strs != NULL) {
+    *strs = NULL;
+  }
 
   if (buf == NULL) {
     return ARES_EFORMERR;
@@ -252,6 +258,8 @@ ares_status_t ares_dns_multistring_parse_buf(ares_buf_t *buf,
   if (remaining_len == 0) {
     return ARES_EBADRESP;
   }
+
+  orig_len = ares_buf_len(buf);
 
   if (strs != NULL) {
     *strs = ares_dns_multistring_create();

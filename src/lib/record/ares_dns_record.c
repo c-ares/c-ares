@@ -436,14 +436,16 @@ ares_status_t ares_dns_record_rr_add(ares_dns_rr_t    **rr_out,
   ares_status_t  status;
   size_t         idx;
 
+  if (rr_out != NULL) {
+    *rr_out = NULL;
+  }
+
   if (dnsrec == NULL || name == NULL || rr_out == NULL ||
       !ares_dns_section_isvalid(sect) ||
       !ares_dns_rec_type_isvalid(type, ARES_FALSE) ||
       !ares_dns_class_isvalid(rclass, type, ARES_FALSE)) {
     return ARES_EFORMERR;
   }
-
-  *rr_out = NULL;
 
   switch (sect) {
     case ARES_SECTION_ANSWER:

@@ -151,6 +151,10 @@ void *ares_array_finish(ares_array_t *arr, size_t *num_members)
 {
   void *ptr;
 
+  if (num_members != NULL) {
+    *num_members = 0;
+  }
+
   if (arr == NULL || num_members == NULL) {
     return NULL;
   }
@@ -209,6 +213,10 @@ ares_status_t ares_array_insert_at(void **elem_ptr, ares_array_t *arr,
 {
   void         *ptr;
   ares_status_t status;
+
+  if (elem_ptr != NULL) {
+    *elem_ptr = NULL;
+  }
 
   if (arr == NULL) {
     return ARES_EFORMERR;

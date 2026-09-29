@@ -61,11 +61,13 @@ char **ares_strsplit(const char *in, const char *delms, size_t *num_elm)
   ares_buf_t   *buf = NULL;
   char        **out = NULL;
 
+  if (num_elm != NULL) {
+    *num_elm = 0;
+  }
+
   if (in == NULL || delms == NULL || num_elm == NULL) {
     return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
-
-  *num_elm = 0;
 
   buf = ares_buf_create_const((const unsigned char *)in, ares_strlen(in));
   if (buf == NULL) {

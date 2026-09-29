@@ -1309,12 +1309,17 @@ ares_status_t ares_buf_split_str(ares_buf_t *buf, const unsigned char *delims,
   ares_status_t status;
   ares_array_t *arr = NULL;
 
+  if (strs != NULL) {
+    *strs = NULL;
+  }
+
+  if (nstrs != NULL) {
+    *nstrs = 0;
+  }
+
   if (strs == NULL || nstrs == NULL) {
     return ARES_EFORMERR;
   }
-
-  *strs  = NULL;
-  *nstrs = 0;
 
   status = ares_buf_split_str_array(buf, delims, delims_len, flags,
                                     max_sections, &arr);
