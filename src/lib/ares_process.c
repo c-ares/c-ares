@@ -354,7 +354,7 @@ void ares_process(ares_channel_t *channel, fd_set *read_fds, fd_set *write_fds)
   /* Lets create an events array, maximum number is the number of sockets in
    * the list, so we'll use that and just track entries with nevents */
   if (num_sockets) {
-    events = ares_malloc_zero(sizeof(*events) * num_sockets);
+    events = ares_malloc_zero_array(num_sockets, sizeof(*events));
     if (events == NULL) {
       goto done;
     }

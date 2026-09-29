@@ -258,7 +258,7 @@ ares_status_t ares_search_name_list(const ares_channel_t *channel,
 
   /* Allocate an entry for each search domain, plus one for as-is */
   list_len = channel->ndomains + 1;
-  list     = ares_malloc_zero(sizeof(*list) * list_len);
+  list     = ares_malloc_zero_array(list_len, sizeof(*list));
   if (list == NULL) {
     status = ARES_ENOMEM;
     goto done;
