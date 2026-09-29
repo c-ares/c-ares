@@ -178,6 +178,10 @@ const unsigned char *
 {
   const multistring_data_t *data;
 
+  if (len != NULL) {
+    *len = 0;
+  }
+
   if (strs == NULL || len == NULL) {
     return NULL;
   }
