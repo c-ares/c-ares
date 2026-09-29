@@ -568,13 +568,19 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
   unsigned char c;
   ares_status_t status;
   ares_buf_t   *namebuf     = NULL;
-  size_t        label_start = ares_buf_get_position(buf);
+  size_t        label_start;
   size_t        name_len    = 0;
   size_t        indir       = 0;
+
+  if (name != NULL) {
+    *name = NULL;
+  }
 
   if (buf == NULL) {
     return ARES_EFORMERR;
   }
+
+  label_start = ares_buf_get_position(buf);
 
   if (name != NULL) {
     namebuf = ares_buf_create();

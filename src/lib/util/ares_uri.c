@@ -995,11 +995,13 @@ ares_status_t ares_uri_write(char **out, const ares_uri_t *uri)
   ares_buf_t   *buf;
   ares_status_t status;
 
+  if (out != NULL) {
+    *out = NULL;
+  }
+
   if (out == NULL || uri == NULL) {
     return ARES_EFORMERR;
   }
-
-  *out = NULL;
 
   buf = ares_buf_create();
   if (buf == NULL) {
@@ -1548,11 +1550,13 @@ ares_status_t ares_uri_parse_buf(ares_uri_t **out, ares_buf_t *buf)
   ares_uri_t   *uri = NULL;
   size_t        orig_pos;
 
+  if (out != NULL) {
+    *out = NULL;
+  }
+
   if (out == NULL || buf == NULL) {
     return ARES_EFORMERR;
   }
-
-  *out = NULL;
 
   orig_pos = ares_buf_get_position(buf);
 
@@ -1602,11 +1606,13 @@ ares_status_t ares_uri_parse(ares_uri_t **out, const char *str)
   ares_status_t status;
   ares_buf_t   *buf = NULL;
 
+  if (out != NULL) {
+    *out = NULL;
+  }
+
   if (out == NULL || str == NULL) {
     return ARES_EFORMERR;
   }
-
-  *out = NULL;
 
   buf = ares_buf_create();
   if (buf == NULL) {

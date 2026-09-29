@@ -553,9 +553,14 @@ ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf, char **str,
                                         ares_buf_charset_t charset)
 {
   size_t               ptr_len = 0;
-  const unsigned char *ptr     = ares_buf_tag_fetch(buf, &ptr_len);
+  const unsigned char *ptr;
   ares_status_t        status;
 
+  if (str != NULL) {
+    *str = NULL;
+  }
+
+  ptr = ares_buf_tag_fetch(buf, &ptr_len);
   if (ptr == NULL || str == NULL) {
     return ARES_EFORMERR;
   }
@@ -754,8 +759,13 @@ ares_status_t ares_buf_fetch_bytes_dup(ares_buf_t *buf, size_t len,
                                        unsigned char **bytes)
 {
   size_t               remaining_len;
-  const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
+  const unsigned char *ptr;
 
+  if (bytes != NULL) {
+    *bytes = NULL;
+  }
+
+  ptr = ares_buf_fetch(buf, &remaining_len);
   if (buf == NULL || bytes == NULL || len == 0 || remaining_len < len) {
     return ARES_EBADRESP;
   }
@@ -818,8 +828,13 @@ ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str,
 {
   size_t               remaining_len;
   ares_status_t        status;
-  const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
+  const unsigned char *ptr;
 
+  if (str != NULL) {
+    *str = NULL;
+  }
+
+  ptr = ares_buf_fetch(buf, &remaining_len);
   if (buf == NULL || str == NULL || len == 0 || remaining_len < len) {
     return ARES_EBADRESP;
   }
@@ -1506,6 +1521,13 @@ static ares_status_t
   ares_status_t status = ARES_EBADRESP;
   ares_buf_t   *binbuf = NULL;
 
+  if (bin != NULL) {
+    *bin = NULL;
+  }
+  if (bin_len != NULL) {
+    *bin_len = 0;
+  }
+
   if (buf == NULL) {
     return ARES_EFORMERR;
   }
@@ -1556,8 +1578,10 @@ done:
     /* NOTE: we use ares_buf_finish_str() here as we guarantee NULL
      *       Termination even though we are technically returning binary data.
      */
-    *bin     = (unsigned char *)ares_buf_finish_str(binbuf, &mylen);
-    *bin_len = mylen;
+    *bin = (unsigned char *)ares_buf_finish_str(binbuf, &mylen);
+    if (bin_len != NULL) {
+      *bin_len = mylen;
+    }
   } else {
     ares_buf_destroy(binbuf);
   }
