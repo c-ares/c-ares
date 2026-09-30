@@ -1229,13 +1229,6 @@ CARES_EXTERN ares_status_t ares_queue_wait_empty(ares_channel_t *channel,
                                                  int             timeout_ms);
 
 
-/*! Retrieve the total number of active queries pending answers from servers.
- *  Some c-ares requests may spawn multiple queries, such as ares_getaddrinfo()
- *  when using AF_UNSPEC, which will be reflected in this number.
- *
- *  \param[in] channel Initialized ares channel
- *  \return Number of active queries to servers
- */
 /*! Configure optional query scheduling on an idle channel.
  * \param[in] channel Initialized channel.
  * \param[in] max_active Maximum active transactions, or zero for no limit.
@@ -1259,6 +1252,14 @@ CARES_EXTERN ares_status_t ares_get_query_queue_options(
   const ares_channel_t *channel, size_t *max_active, size_t *max_pending,
   ares_bool_t *coalesce);
 
+/*! Retrieve the total number of outstanding logical queries.
+ *  Optional scheduling includes waiting and merged callers, plus ungrouped
+ *  internal queries. Requests such as AF_UNSPEC ares_getaddrinfo() may spawn
+ *  multiple queries, each reflected in this count.
+ *
+ *  \param[in] channel Initialized ares channel
+ *  \return Number of outstanding logical queries
+ */
 CARES_EXTERN size_t ares_queue_active_queries(const ares_channel_t *channel);
 
 #ifdef __cplusplus
