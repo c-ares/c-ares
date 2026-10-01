@@ -421,6 +421,9 @@ TEST_F(LibraryTest, URI) {
     { ARES_TRUE,  "https://user%25:password@www.example.com",                                              NULL },
     { ARES_TRUE,  "https://user:password%25@www.example.com",                                              NULL },
     { ARES_TRUE,  "https://user@www.example.com",                                                          NULL },
+    { ARES_TRUE,  "https://user@www.example.com:8443",                                                     NULL },
+    { ARES_TRUE,  "dns://user@[fe80::1]:53",                                                               NULL },
+    { ARES_FALSE, "https://user@www.example.com:8443@evil.example.com",                                    NULL }, /* ambiguous authority, '@' not valid in host */
     { ARES_TRUE,  "https://www.example.com/path",                                                          NULL },
     { ARES_TRUE,  "https://www.example.com/path/",                                                         NULL },
     { ARES_TRUE,  "https://www.example.com/a/../",                                                         "https://www.example.com/" },
