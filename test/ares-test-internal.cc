@@ -2631,7 +2631,96 @@ TEST_F(LibraryTest, ArrayMisuse) {
   EXPECT_EQ(NULL, ares_malloc_zero_array(SIZE_MAX, 2));
   EXPECT_EQ(NULL, ares_malloc_zero_array(2, SIZE_MAX));
   EXPECT_EQ(NULL, ares_realloc_zero_array(NULL, SIZE_MAX, 1, 2));
+  EXPECT_EQ(NULL, ares_malloc_array(SIZE_MAX, 2));
+  EXPECT_EQ(NULL, ares_malloc_array(2, SIZE_MAX));
+  EXPECT_EQ(NULL, ares_realloc_array(NULL, SIZE_MAX, 2));
+  EXPECT_EQ(NULL, ares_realloc_array(NULL, 2, SIZE_MAX));
 }
+
+TEST_F(LibraryTest, ArrayAlloc) {
+  unsigned int *arr;
+  unsigned int *grown;
+  size_t        i;
+
+  arr = (unsigned int *)ares_malloc_array(4, sizeof(*arr));
+  ASSERT_NE((void *)NULL, arr);
+  for (i = 0; i < 4; i++) {
+    arr[i] = (unsigned int)i;
+  }
+
+  /* A rejected resize must leave the original array intact and owned by the
+   * caller, exactly like a failed realloc() */
+  EXPECT_EQ(NULL, ares_realloc_array(arr, SIZE_MAX, sizeof(*arr)));
+  for (i = 0; i < 4; i++) {
+    EXPECT_EQ((unsigned int)i, arr[i]);
+  }
+
+  grown = (unsigned int *)ares_realloc_array(arr, 8, sizeof(*arr));
+  ASSERT_NE((void *)NULL, grown);
+  arr = grown;
+  for (i = 0; i < 4; i++) {
+    EXPECT_EQ((unsigned int)i, arr[i]);
+  }
+  ares_free(arr);
+
+  /* NULL behaves like a fresh allocation */
+  arr = (unsigned int *)ares_realloc_array(NULL, 2, sizeof(*arr));
+  ASSERT_NE((void *)NULL, arr);
+  ares_free(arr);
+}
+
+/* Choose num so that num * sizeof(char *) wraps to exactly
+ * 2 * sizeof(char *) on any size_t width, then arm an allocation failure for
+ * that wrapped size.  An unchecked multiplication hands the wrapped size to
+ * the allocator and consumes the armed failure (safely returning NULL); a
+ * checked one rejects the request before the allocator is ever called. */
+static const size_t wrapped_array_size = 2 * sizeof(char *);
+static const size_t wrapping_array_num = (SIZE_MAX / sizeof(char *)) + 3;
+
+TEST_F(LibraryTest, ArrayAllocOverflowNeverReachesAllocator) {
+  void *ptr = NULL;
+
+  SetAllocSizeFail(wrapped_array_size);
+  EXPECT_EQ(NULL, ares_malloc_array(wrapping_array_num, sizeof(char *)));
+  EXPECT_EQ(NULL, ares_malloc_zero_array(wrapping_array_num, sizeof(char *)));
+  EXPECT_EQ(NULL, ares_realloc_array(ptr, wrapping_array_num, sizeof(char *)));
+  EXPECT_EQ(NULL, ares_realloc_zero_array(ptr, 0, wrapping_array_num,
+                                          sizeof(char *)));
+  EXPECT_TRUE(AllocSizeFailPending(wrapped_array_size));
+}
+
+#if SIZE_MAX <= 0xFFFFFFFFUL
+/* Same check driven through the public API.  ares_options.nsort is an int
+ * supplied by the application, and on a 32-bit size_t
+ * nsort * sizeof(struct apattern) can wrap while nsort still fits in an int.
+ * Pick nsort so the product wraps to a small, distinctive size and arm a
+ * failure for exactly that size.  Without the overflow check the allocator is
+ * asked for the wrapped size, and the copy loop that follows would write
+ * nsort entries into it; with the check, init fails before allocating. */
+TEST_F(LibraryTest, InitSortlistCountOverflow) {
+  struct ares_options opts;
+  struct apattern     pattern;
+  ares_channel_t     *channel = NULL;
+  size_t              nsort;
+  size_t              wrapped;
+
+  nsort   = (SIZE_MAX / sizeof(struct apattern)) + 1 + 1000;
+  wrapped = nsort * sizeof(struct apattern); /* wraps by construction */
+  ASSERT_LE(nsort, (size_t)INT_MAX);
+  ASSERT_LT(wrapped, nsort);
+
+  memset(&opts, 0, sizeof(opts));
+  memset(&pattern, 0, sizeof(pattern));
+  opts.nsort    = (int)nsort;
+  opts.sortlist = &pattern;
+
+  SetAllocSizeFail(wrapped);
+  EXPECT_EQ(ARES_ENOMEM,
+            ares_init_options(&channel, &opts, ARES_OPT_SORTLIST));
+  EXPECT_EQ(nullptr, channel);
+  EXPECT_TRUE(AllocSizeFailPending(wrapped));
+}
+#endif
 
 TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ(NULL, ares_buf_create_const(NULL, 0));

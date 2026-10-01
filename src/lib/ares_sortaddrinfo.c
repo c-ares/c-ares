@@ -408,8 +408,8 @@ ares_status_t ares_sortaddrinfo(ares_channel_t            *channel,
     return ARES_ENODATA;
   }
 
-  elems = (struct addrinfo_sort_elem *)ares_malloc(
-    nelem * sizeof(struct addrinfo_sort_elem));
+  elems = (struct addrinfo_sort_elem *)ares_malloc_array(
+    nelem, sizeof(struct addrinfo_sort_elem));
   if (!elems) {
     return ARES_ENOMEM;
   }
