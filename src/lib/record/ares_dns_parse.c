@@ -1579,6 +1579,10 @@ static ares_status_t ares_dns_parse_buf(ares_buf_t *buf, unsigned int flags,
   unsigned short arcount;
   unsigned short i;
 
+  if (dnsrec != NULL) {
+    *dnsrec = NULL;
+  }
+
   if (buf == NULL || dnsrec == NULL) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
@@ -1722,6 +1726,10 @@ ares_status_t ares_dns_parse(const unsigned char *buf, size_t buf_len,
 {
   ares_buf_t   *parser = NULL;
   ares_status_t status;
+
+  if (dnsrec != NULL) {
+    *dnsrec = NULL;
+  }
 
   if (buf == NULL || buf_len == 0 || dnsrec == NULL) {
     return ARES_EFORMERR;

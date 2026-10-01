@@ -393,12 +393,15 @@ static char *ares_striendstr(const char *s1, const char *s2)
   const char *c1_begin;
   int         lo1;
   int         lo2;
-  size_t      s1_len = ares_strlen(s1);
-  size_t      s2_len = ares_strlen(s2);
+  size_t      s1_len;
+  size_t      s2_len;
 
   if (s1 == NULL || s2 == NULL) {
     return NULL;
   }
+
+  s1_len = ares_strlen(s1);
+  s2_len = ares_strlen(s2);
 
   /* If the substr is longer than the full str, it can't match */
   if (s2_len > s1_len) {
@@ -425,6 +428,10 @@ static char *ares_striendstr(const char *s1, const char *s2)
 
 ares_bool_t ares_is_onion_domain(const char *name)
 {
+  if (name == NULL) {
+    return ARES_FALSE;
+  }
+
   if (ares_striendstr(name, ".onion")) {
     return ARES_TRUE;
   }

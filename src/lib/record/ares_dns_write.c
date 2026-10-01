@@ -1514,12 +1514,16 @@ ares_status_t ares_dns_write(const ares_dns_record_t *dnsrec,
   ares_buf_t   *b = NULL;
   ares_status_t status;
 
+  if (buf != NULL) {
+    *buf = NULL;
+  }
+  if (buf_len != NULL) {
+    *buf_len = 0;
+  }
+
   if (buf == NULL || buf_len == NULL || dnsrec == NULL) {
     return ARES_EFORMERR;
   }
-
-  *buf     = NULL;
-  *buf_len = 0;
 
   b = ares_buf_create();
   if (b == NULL) {

@@ -509,6 +509,17 @@ TEST_F(LibraryTest, URI) {
   EXPECT_NE(ARES_SUCCESS, ares_uri_write(NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_uri_parse_buf(NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_uri_parse_buf(NULL, NULL));
+  {
+    char       *out_str = (char *)0x1234;
+    ares_uri_t *out_uri = (ares_uri_t *)0x1234;
+    EXPECT_NE(ARES_SUCCESS, ares_uri_write(&out_str, NULL));
+    EXPECT_EQ(nullptr, out_str);
+    EXPECT_NE(ARES_SUCCESS, ares_uri_parse(&out_uri, NULL));
+    EXPECT_EQ(nullptr, out_uri);
+    out_uri = (ares_uri_t *)0x1234;
+    EXPECT_NE(ARES_SUCCESS, ares_uri_parse_buf(&out_uri, NULL));
+    EXPECT_EQ(nullptr, out_uri);
+  }
 }
 
 TEST_F(LibraryTest, PUNYCODE) {
@@ -615,6 +626,17 @@ TEST_F(LibraryTest, PUNYCODE) {
   /* Invalid tests  */
   EXPECT_NE(ARES_SUCCESS, ares_punycode_encode_domain(NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_punycode_encode_domain("www.bücher.com", NULL));
+  {
+    char *out = (char *)0x1234;
+    EXPECT_NE(ARES_SUCCESS, ares_punycode_encode_domain(NULL, &out));
+    EXPECT_EQ(nullptr, out);
+    out = (char *)0x1234;
+    EXPECT_NE(ARES_SUCCESS, ares_punycode_decode_domain(NULL, &out));
+    EXPECT_EQ(nullptr, out);
+    out = (char *)0x1234;
+    EXPECT_NE(ARES_SUCCESS, ares_idna_encode_domain(NULL, &out));
+    EXPECT_EQ(nullptr, out);
+  }
 
   /* Invalid UTF-8 must be rejected, not decoded to garbage */
   struct {
@@ -2291,6 +2313,61 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_EQ(65535, ares_dns_rr_get_opt(NULL, ARES_RR_A_ADDR, 0, NULL, NULL));
   EXPECT_EQ(ARES_FALSE, ares_dns_rr_get_opt_byid(NULL, ARES_RR_OPT_OPTIONS, 1, NULL, NULL));
   EXPECT_EQ(ARES_FALSE, ares_dns_rr_get_opt_byid(NULL, ARES_RR_A_ADDR, 1, NULL, NULL));
+  {
+    ares_dns_record_t   *dnsrec_out = (ares_dns_record_t *)0x1234;
+    EXPECT_NE(ARES_SUCCESS, ares_dns_parse(NULL, 0, 0, &dnsrec_out));
+    EXPECT_EQ(nullptr, dnsrec_out);
+#ifndef CARES_SYMBOL_HIDING
+    EXPECT_NE(ARES_SUCCESS, ares_dns_record_duplicate_ex(&dnsrec_out, NULL));
+    EXPECT_EQ(nullptr, dnsrec_out);
+#endif
+    const char          *qname_out  = (const char *)0x1234;
+    ares_dns_rec_type_t  qtype_out  = (ares_dns_rec_type_t)1234;
+    ares_dns_class_t     qclass_out = (ares_dns_class_t)1234;
+    EXPECT_NE(ARES_SUCCESS,
+              ares_dns_record_query_get(NULL, 0, &qname_out, &qtype_out, &qclass_out));
+    EXPECT_EQ(nullptr, qname_out);
+    EXPECT_EQ(0, (int)qtype_out);
+    EXPECT_EQ(0, (int)qclass_out);
+    unsigned char       *buf_out    = (unsigned char *)0x1234;
+    size_t               len_out    = 1234;
+    EXPECT_NE(ARES_SUCCESS, ares_dns_write(NULL, &buf_out, &len_out));
+    EXPECT_EQ(nullptr, buf_out);
+    EXPECT_EQ(0U, len_out);
+#ifndef CARES_SYMBOL_HIDING
+    char                *name_out   = (char *)0x1234;
+    EXPECT_NE(ARES_SUCCESS,
+              ares_dns_name_parse(NULL, &name_out, ARES_FALSE, ARES_TRUE));
+    EXPECT_EQ(nullptr, name_out);
+#endif
+    len_out = 1234;
+    EXPECT_EQ(nullptr, ares_dns_rr_get_bin(NULL, ARES_RR_TXT_DATA, &len_out));
+    EXPECT_EQ(0U, len_out);
+    len_out = 1234;
+    EXPECT_EQ(nullptr, ares_dns_rr_get_abin(NULL, ARES_RR_TXT_DATA, 0, &len_out));
+    EXPECT_EQ(0U, len_out);
+#ifndef CARES_SYMBOL_HIDING
+    len_out = 1234;
+    EXPECT_EQ(nullptr, ares_dns_multistring_get(NULL, 0, &len_out));
+    EXPECT_EQ(0U, len_out);
+    len_out = 1234;
+    EXPECT_EQ(nullptr, ares_dns_multistring_combined(NULL, &len_out));
+    EXPECT_EQ(0U, len_out);
+#endif
+    int                  buflen_out = 1234;
+    EXPECT_NE(ARES_SUCCESS,
+              ares_create_query(NULL, 1, 1, 0, 1, &buf_out, &buflen_out, 0));
+    EXPECT_EQ(nullptr, buf_out);
+    EXPECT_EQ(0, buflen_out);
+    struct hostent      *host_out   = (struct hostent *)0x1234;
+    EXPECT_EQ(ARES_ENOTFOUND,
+              ares_gethostbyname_file(NULL, "localhost", AF_INET, &host_out));
+    EXPECT_EQ(nullptr, host_out);
+    EXPECT_EQ(ARES_EFORMERR, ares_init_options(NULL, NULL, 0));
+#ifndef CARES_SYMBOL_HIDING
+    EXPECT_EQ(ARES_FALSE, ares_is_onion_domain(NULL));
+#endif
+  }
 }
 
 TEST_F(LibraryTest, DNSNameCompression14Bit) {
@@ -3307,8 +3384,12 @@ TEST_F(DefaultChannelTest, SaveInvalidChannel) {
   ares_slist_t *saved = channel_->servers;
   channel_->servers = NULL;
   struct ares_options opts;
-  int optmask = 0;
+  int optmask = 1234;
   EXPECT_EQ(ARES_ENODATA, ares_save_options(channel_, &opts, &optmask));
+  EXPECT_EQ(0, optmask);
+  optmask = 1234;
+  EXPECT_EQ(ARES_ENODATA, ares_save_options(NULL, NULL, &optmask));
+  EXPECT_EQ(0, optmask);
   channel_->servers = saved;
 }
 

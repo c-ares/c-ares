@@ -85,6 +85,14 @@ int ares_save_options(const ares_channel_t *channel,
 {
   size_t i;
 
+  if (optmask != NULL) {
+    *optmask = 0;
+  }
+
+  if (options == NULL || optmask == NULL) {
+    return ARES_ENODATA;
+  }
+
   /* NOTE: We can't zero the whole thing out, this is because the size of the
    *       struct ares_options changes over time, so if someone compiled
    *       with an older version, their struct size might be smaller and
