@@ -1572,6 +1572,43 @@ TEST_F(FileChannelTest, GetAddrInfoAllocFail) {
   }
 }
 
+TEST_F(LibraryTest, DnsWriteOversizedRdlength)
+{
+  ares_dns_record_t *dnsrec = nullptr;
+  ares_dns_rr_t     *rr     = nullptr;
+  unsigned char     *msg    = nullptr;
+  size_t             msglen = 0;
+
+  // 300 x 255-byte character-strings = rdlength 76500 > 65535.
+  std::vector<std::vector<unsigned char>> strings(
+      300, std::vector<unsigned char>(255, 'x'));
+
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&dnsrec, 0x1234, 0, ARES_OPCODE_QUERY,
+                                   ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(dnsrec, "example.com", ARES_REC_TYPE_TXT,
+                                      ARES_CLASS_IN));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER,
+                                   "example.com", ARES_REC_TYPE_TXT,
+                                   ARES_CLASS_IN, 3600));
+  for (const auto& str : strings) {
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_rr_add_abin(rr, ARES_RR_TXT_DATA, str.data(),
+                                   str.size()));
+  }
+
+  // rdlength does not fit in 16 bits and must not be silently truncated into
+  // a structurally corrupt message reported as ARES_SUCCESS.
+  EXPECT_NE(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+  EXPECT_EQ(nullptr, msg);
+  EXPECT_EQ(0U, msglen);
+
+  ares_dns_record_destroy(dnsrec);
+  ares_free(msg);
+}
+
 TEST_F(LibraryTest, DNSRecord) {
   ares_dns_record_t   *dnsrec = NULL;
   ares_dns_rr_t       *rr     = NULL;
