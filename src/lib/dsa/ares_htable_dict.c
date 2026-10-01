@@ -195,11 +195,13 @@ char **ares_htable_dict_keys(const ares_htable_dict_t *htable, size_t *num)
   char       **out     = NULL;
   size_t       i;
 
+  if (num != NULL) {
+    *num = 0;
+  }
+
   if (htable == NULL || num == NULL) {
     return NULL; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
-
-  *num = 0;
 
   buckets = ares_htable_all_buckets(htable->hash, &cnt);
   if (buckets == NULL || cnt == 0) {

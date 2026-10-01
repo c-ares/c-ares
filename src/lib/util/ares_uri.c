@@ -666,6 +666,10 @@ const char *ares_uri_get_query_key(const ares_uri_t *uri, const char *key)
 
 char **ares_uri_get_query_keys(const ares_uri_t *uri, size_t *num)
 {
+  if (num != NULL) {
+    *num = 0;
+  }
+
   if (uri == NULL || num == NULL) {
     return NULL;
   }

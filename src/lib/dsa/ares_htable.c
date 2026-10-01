@@ -144,11 +144,13 @@ const void **ares_htable_all_buckets(const ares_htable_t *htable, size_t *num)
   size_t       cnt = 0;
   size_t       i;
 
+  if (num != NULL) {
+    *num = 0;
+  }
+
   if (htable == NULL || num == NULL) {
     return NULL; /* LCOV_EXCL_LINE */
   }
-
-  *num = 0;
 
   if (htable->num_keys == 0) {
     return NULL;

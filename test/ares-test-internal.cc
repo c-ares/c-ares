@@ -169,6 +169,11 @@ TEST_F(LibraryTest, Strsplit) {
     }
     ares_strsplit_free(out, n);
   }
+
+  size_t split_n = 123;
+  EXPECT_EQ(nullptr, ares_strsplit(NULL, NULL, NULL));
+  EXPECT_EQ(nullptr, ares_strsplit(NULL, NULL, &split_n));
+  EXPECT_EQ(0, split_n);
 }
 
 TEST_F(LibraryTest, InetNetPtoN) {
@@ -502,7 +507,10 @@ TEST_F(LibraryTest, URI) {
   EXPECT_NE(ARES_SUCCESS, ares_uri_set_query_key(NULL, NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_uri_del_query_key(NULL, NULL));
   EXPECT_EQ(nullptr, ares_uri_get_query_key(NULL, NULL));
+  size_t uri_keys_cnt = 123;
   EXPECT_EQ(nullptr, ares_uri_get_query_keys(NULL, NULL));
+  EXPECT_EQ(nullptr, ares_uri_get_query_keys(NULL, &uri_keys_cnt));
+  EXPECT_EQ(0, uri_keys_cnt);
   EXPECT_NE(ARES_SUCCESS, ares_uri_set_fragment(NULL, NULL));
   EXPECT_EQ(nullptr, ares_uri_get_fragment(NULL));
   EXPECT_NE(ARES_SUCCESS, ares_uri_write_buf(NULL, NULL));
@@ -2258,8 +2266,11 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_NE(ARES_SUCCESS, ares_dns_record_query_set_name(NULL, 0, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_dns_record_query_set_type(NULL, 0, ARES_REC_TYPE_A));
   EXPECT_NE(ARES_SUCCESS, ares_dns_record_query_get(NULL, 0, NULL, NULL, NULL));
-  EXPECT_EQ(0, ares_dns_record_rr_cnt(NULL, ARES_SECTION_ANSWER));
-  EXPECT_NE(ARES_SUCCESS, ares_dns_record_rr_add(NULL, NULL, ARES_SECTION_ANSWER, NULL, ARES_REC_TYPE_A, ARES_CLASS_IN, 0));
+  ares_dns_rr_t *rr_out = (ares_dns_rr_t *)0x1234;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_dns_record_rr_add(&rr_out, NULL, ARES_SECTION_ANSWER, NULL,
+                                   ARES_REC_TYPE_A, ARES_CLASS_IN, 0));
+  EXPECT_EQ(nullptr, rr_out);
   EXPECT_NE(ARES_SUCCESS, ares_dns_record_rr_del(NULL, ARES_SECTION_ANSWER, 0));
   EXPECT_EQ(nullptr, ares_dns_record_rr_get(NULL, ARES_SECTION_ANSWER, 0));
   EXPECT_EQ(nullptr, ares_dns_rr_get_name(NULL));
@@ -2270,6 +2281,9 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_NE(ARES_SUCCESS, ares_dns_write(NULL, NULL, NULL));
 #ifndef CARES_SYMBOL_HIDING
   ares_dns_record_ttl_decrement(NULL, 0);
+  void *thread_rv = (void *)0x1234;
+  EXPECT_NE(ARES_SUCCESS, ares_thread_join(NULL, &thread_rv));
+  EXPECT_EQ(nullptr, thread_rv);
 #endif
   EXPECT_EQ(nullptr, ares_dns_rr_get_addr(NULL, ARES_RR_A_ADDR));
   EXPECT_EQ(nullptr, ares_dns_rr_get_addr(NULL, ARES_RR_NS_NSDNAME));
@@ -2599,11 +2613,17 @@ TEST_F(LibraryTest, DNSParseFlags) {
 }
 
 TEST_F(LibraryTest, ArrayMisuse) {
+  size_t nmembers = 123;
+  void  *elem_ptr = (void *)0x1234;
   EXPECT_EQ(NULL, ares_array_create(0, NULL));
   ares_array_destroy(NULL);
   EXPECT_EQ(NULL, ares_array_finish(NULL, NULL));
+  EXPECT_EQ(NULL, ares_array_finish(NULL, &nmembers));
+  EXPECT_EQ(0, nmembers);
   EXPECT_EQ(0, ares_array_len(NULL));
   EXPECT_NE(ARES_SUCCESS, ares_array_insert_at(NULL, NULL, 0));
+  EXPECT_NE(ARES_SUCCESS, ares_array_insert_at(&elem_ptr, NULL, 0));
+  EXPECT_EQ(NULL, elem_ptr);
   EXPECT_NE(ARES_SUCCESS, ares_array_insertdata_at(NULL, 0, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_array_insert_last(NULL, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_array_insertdata_last(NULL, NULL));
@@ -2670,13 +2690,24 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ((size_t)0, ares_buf_get_position(NULL));
   EXPECT_NE(ARES_SUCCESS, ares_buf_set_position(NULL, 0));
   EXPECT_NE(ARES_SUCCESS, ares_buf_parse_dns_binstr(NULL, 0, NULL, NULL));
+  char **split_strs = (char **)0x1234;
+  size_t split_cnt = 123;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_buf_split_str(NULL, NULL, 0, ARES_BUF_SPLIT_NONE, 0,
+                               &split_strs, &split_cnt));
+  EXPECT_EQ(nullptr, split_strs);
+  EXPECT_EQ(0, split_cnt);
 }
 
 TEST_F(LibraryTest, HtableAsvpMisuse) {
+  size_t nkeys = 123;
   EXPECT_EQ(ARES_FALSE, ares_htable_asvp_insert(NULL, ARES_SOCKET_BAD, NULL));
   EXPECT_EQ(ARES_FALSE, ares_htable_asvp_get(NULL, ARES_SOCKET_BAD, NULL));
   EXPECT_EQ(ARES_FALSE, ares_htable_asvp_remove(NULL, ARES_SOCKET_BAD));
   EXPECT_EQ((size_t)0, ares_htable_asvp_num_keys(NULL));
+  EXPECT_EQ(NULL, ares_htable_asvp_keys(NULL, NULL));
+  EXPECT_EQ(NULL, ares_htable_asvp_keys(NULL, &nkeys));
+  EXPECT_EQ(0, nkeys);
 }
 
 TEST_F(LibraryTest, HtableStrvpMisuse) {
@@ -2694,10 +2725,18 @@ TEST_F(LibraryTest, HtableVpStrMisuse) {
 }
 
 TEST_F(LibraryTest, HtableDictMisuse) {
+  size_t nkeys = 123;
+  size_t nbuckets = 123;
   EXPECT_EQ(ARES_FALSE, ares_htable_dict_insert(NULL, NULL, NULL));
   EXPECT_EQ(ARES_FALSE, ares_htable_dict_get(NULL, NULL, NULL));
   EXPECT_EQ(ARES_FALSE, ares_htable_dict_remove(NULL, NULL));
   EXPECT_EQ((size_t)0, ares_htable_dict_num_keys(NULL));
+  EXPECT_EQ(NULL, ares_htable_dict_keys(NULL, NULL));
+  EXPECT_EQ(NULL, ares_htable_dict_keys(NULL, &nkeys));
+  EXPECT_EQ(0, nkeys);
+  EXPECT_EQ(NULL, ares_htable_all_buckets(NULL, NULL));
+  EXPECT_EQ(NULL, ares_htable_all_buckets(NULL, &nbuckets));
+  EXPECT_EQ(0, nbuckets);
 }
 
 TEST_F(LibraryTest, HtableSzvpMisuse) {

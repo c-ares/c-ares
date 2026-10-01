@@ -394,6 +394,10 @@ ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
 {
   ares_status_t status = ARES_SUCCESS;
 
+  if (rv != NULL) {
+    *rv = NULL;
+  }
+
   if (thread == NULL) {
     return ARES_EFORMERR;
   }
@@ -613,6 +617,10 @@ ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
   void         *ret    = NULL;
   ares_status_t status = ARES_SUCCESS;
 
+  if (rv != NULL) {
+    *rv = NULL;
+  }
+
   if (thread == NULL) {
     return ARES_EFORMERR;
   }
@@ -708,7 +716,9 @@ ares_status_t ares_thread_create(ares_thread_t    **thread,
 ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
 {
   (void)thread;
-  (void)rv;
+  if (rv != NULL) {
+    *rv = NULL;
+  }
   return ARES_ENOTIMP;
 }
 
