@@ -2250,6 +2250,8 @@ TEST_F(LibraryTest, DNSRecord) {
   // Invalid
   EXPECT_NE(ARES_SUCCESS, ares_dns_parse(NULL, 0, 0, NULL));
   EXPECT_NE(ARES_SUCCESS, ares_dns_record_create(NULL, 0, 0, ARES_OPCODE_QUERY, ARES_RCODE_NOERROR));
+  EXPECT_EQ(nullptr, ares_dns_addr_to_ptr(NULL));
+  EXPECT_EQ(nullptr, ares_dns_record_duplicate(NULL));
   EXPECT_EQ(0, ares_dns_record_get_id(NULL));
   EXPECT_EQ(0, ares_dns_record_get_flags(NULL));
   EXPECT_EQ(0, (int)ares_dns_record_get_opcode(NULL));
@@ -2270,6 +2272,8 @@ TEST_F(LibraryTest, DNSRecord) {
   EXPECT_NE(ARES_SUCCESS, ares_dns_write(NULL, NULL, NULL));
 #ifndef CARES_SYMBOL_HIDING
   ares_dns_record_ttl_decrement(NULL, 0);
+  EXPECT_EQ(nullptr, ares_dns_get_opt_rr(NULL));
+  EXPECT_EQ(nullptr, ares_dns_get_opt_rr_const(NULL));
 #endif
   EXPECT_EQ(nullptr, ares_dns_rr_get_addr(NULL, ARES_RR_A_ADDR));
   EXPECT_EQ(nullptr, ares_dns_rr_get_addr(NULL, ARES_RR_NS_NSDNAME));

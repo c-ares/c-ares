@@ -1675,7 +1675,7 @@ char *ares_dns_addr_to_ptr(const struct ares_addr *addr)
   ares_status_t              status;
   static const unsigned char hexbytes[] = "0123456789abcdef";
 
-  if (addr->family != AF_INET && addr->family != AF_INET6) {
+  if (addr == NULL || (addr->family != AF_INET && addr->family != AF_INET6)) {
     goto fail;
   }
 
@@ -1741,6 +1741,11 @@ fail:
 ares_dns_rr_t *ares_dns_get_opt_rr(ares_dns_record_t *rec)
 {
   size_t i;
+
+  if (rec == NULL) {
+    return NULL;
+  }
+
   for (i = 0; i < ares_dns_record_rr_cnt(rec, ARES_SECTION_ADDITIONAL); i++) {
     ares_dns_rr_t *rr = ares_dns_record_rr_get(rec, ARES_SECTION_ADDITIONAL, i);
 
@@ -1754,6 +1759,11 @@ ares_dns_rr_t *ares_dns_get_opt_rr(ares_dns_record_t *rec)
 const ares_dns_rr_t *ares_dns_get_opt_rr_const(const ares_dns_record_t *rec)
 {
   size_t i;
+
+  if (rec == NULL) {
+    return NULL;
+  }
+
   for (i = 0; i < ares_dns_record_rr_cnt(rec, ARES_SECTION_ADDITIONAL); i++) {
     const ares_dns_rr_t *rr =
       ares_dns_record_rr_get_const(rec, ARES_SECTION_ADDITIONAL, i);
