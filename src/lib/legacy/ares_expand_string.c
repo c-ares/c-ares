@@ -47,19 +47,21 @@ ares_status_t ares_expand_string_ex(const unsigned char *encoded,
   size_t        start_len;
   size_t        len = 0;
 
+  if (enclen != NULL) {
+    *enclen = 0;
+  }
+
+  /* NOTE: we allow 's' to be NULL to skip it */
+  if (s != NULL) {
+    *s = NULL;
+  }
+
   if (encoded == NULL || abuf == NULL || alen == 0 || enclen == NULL) {
     return ARES_EBADSTR; /* EFORMERR would be better */
   }
 
   if (encoded < abuf || encoded >= abuf + alen) {
     return ARES_EBADSTR; /* EFORMERR would be better */
-  }
-
-  *enclen = 0;
-
-  /* NOTE: we allow 's' to be NULL to skip it */
-  if (s) {
-    *s = NULL;
   }
 
   buf = ares_buf_create_const(abuf, alen);
@@ -95,6 +97,13 @@ int ares_expand_string(const unsigned char *encoded, const unsigned char *abuf,
 {
   ares_status_t status;
   size_t        temp_enclen = 0;
+
+  if (enclen != NULL) {
+    *enclen = 0;
+  }
+  if (s != NULL) {
+    *s = NULL;
+  }
 
   if (encoded == NULL || abuf == NULL || alen <= 0 || enclen == NULL) {
     return ARES_EBADRESP;

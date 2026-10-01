@@ -299,7 +299,13 @@ static ares_status_t ares_hosts_reverse_entry(ares_hosts_file_t   *hosts,
                                               const char          *ipaddr,
                                               ares_hosts_entry_t **out)
 {
-  ares_hosts_entry_t *rev = ares_htable_strvp_get_direct(hosts->iphash, ipaddr);
+  ares_hosts_entry_t *rev;
+
+  if (out != NULL) {
+    *out = NULL;
+  }
+
+  rev = ares_htable_strvp_get_direct(hosts->iphash, ipaddr);
 
   if (rev != NULL) {
     *out = rev;

@@ -2672,6 +2672,86 @@ TEST_F(LibraryTest, BufMisuse) {
   EXPECT_NE(ARES_SUCCESS, ares_buf_parse_dns_binstr(NULL, 0, NULL, NULL));
 }
 
+TEST_F(LibraryTest, OutputPointerInitOnFailure) {
+#ifndef CARES_SYMBOL_HIDING
+  char *str = (char *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_buf_tag_fetch_strdup(NULL, &str, ARES_BUF_CHARSET_UTF8));
+  EXPECT_EQ(nullptr, str);
+
+  str = (char *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_buf_fetch_str_dup(NULL, 0, &str, ARES_BUF_CHARSET_ASCII));
+  EXPECT_EQ(nullptr, str);
+
+  unsigned char *bytes = (unsigned char *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_buf_fetch_bytes_dup(NULL, 0, ARES_FALSE, &bytes));
+  EXPECT_EQ(nullptr, bytes);
+
+  bytes = (unsigned char *)1;
+  size_t bin_len = 100;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_buf_parse_dns_binstr(NULL, 0, &bytes, &bin_len));
+  EXPECT_EQ(nullptr, bytes);
+  EXPECT_EQ((size_t)0, bin_len);
+
+  str = (char *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_buf_parse_dns_str(NULL, 0, &str));
+  EXPECT_EQ(nullptr, str);
+
+  char *domain_out = (char *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_punycode_encode_domain(NULL, &domain_out));
+  EXPECT_EQ(nullptr, domain_out);
+
+  domain_out = (char *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_punycode_decode_domain(NULL, &domain_out));
+  EXPECT_EQ(nullptr, domain_out);
+
+  domain_out = (char *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_idna_encode_domain(NULL, &domain_out));
+  EXPECT_EQ(nullptr, domain_out);
+
+  char *uri_out = (char *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_uri_write(&uri_out, NULL));
+  EXPECT_EQ(nullptr, uri_out);
+
+  ares_uri_t *uri = (ares_uri_t *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_uri_parse(&uri, NULL));
+  EXPECT_EQ(nullptr, uri);
+
+  uri = (ares_uri_t *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_uri_parse_buf(&uri, NULL));
+  EXPECT_EQ(nullptr, uri);
+
+  char *name = (char *)1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_dns_name_parse(NULL, &name, ARES_FALSE, ARES_FALSE));
+  EXPECT_EQ(nullptr, name);
+#endif
+
+  char *expanded_name = (char *)1;
+  long enclen = -1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_expand_name(NULL, NULL, 0, &expanded_name, &enclen));
+  EXPECT_EQ(nullptr, expanded_name);
+  EXPECT_EQ(0, enclen);
+
+  unsigned char *expanded_str = (unsigned char *)1;
+  enclen = -1;
+  EXPECT_NE(ARES_SUCCESS,
+            ares_expand_string(NULL, NULL, 0, &expanded_str, &enclen));
+  EXPECT_EQ(nullptr, expanded_str);
+  EXPECT_EQ(0, enclen);
+}
+
 TEST_F(LibraryTest, HtableAsvpMisuse) {
   EXPECT_EQ(ARES_FALSE, ares_htable_asvp_insert(NULL, ARES_SOCKET_BAD, NULL));
   EXPECT_EQ(ARES_FALSE, ares_htable_asvp_get(NULL, ARES_SOCKET_BAD, NULL));
