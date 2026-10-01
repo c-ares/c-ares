@@ -68,7 +68,7 @@ static ares_status_t ares_send_query_int(ares_server_t        *requested_server,
                                          ares_query_t         *query,
                                          const ares_timeval_t *now,
                                          ares_array_t        **requeue);
-static void ares_detach_query(ares_query_t *query);
+
 
 static void ares_query_remove_from_conn(ares_query_t *query)
 {
@@ -667,6 +667,7 @@ static ares_status_t ares_flush_requeue(ares_channel_t       *channel,
   }
   ares_array_destroy(*requeue);
   *requeue = NULL;
+  ares_query_queue_pump(channel);
 
   return status;
 }
@@ -1078,6 +1079,8 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
     query->try_count++;
   }
 
+  ares_query_queue_retry(query, dnsrec);
+
   if (query->try_count < max_tries && !query->no_retries) {
     ares_dns_record_destroy(dnsrec);
     if (requeue != NULL) {
@@ -1217,6 +1220,9 @@ static void ares_probe_failed_server(ares_channel_t      *channel,
   /* Enqueue an identical query onto the specified server without honoring
    * the cache or allowing retries.  We want to make sure it only attempts to
    * use the server in question */
+  if (!ares_query_queue_probe_allowed(channel)) {
+    return;
+  }
   probe_server->probe_pending = ARES_TRUE;
   ares_send_nolock(channel, probe_server,
                    ARES_SEND_FLAG_NOCACHE | ARES_SEND_FLAG_NORETRY,
@@ -1594,11 +1600,14 @@ done:
   return rv;
 }
 
-static void ares_detach_query(ares_query_t *query)
+void ares_detach_query(ares_query_t *query)
 {
   /* Remove the query from all the lists in which it is linked */
   ares_query_remove_from_conn(query);
-  ares_htable_szvp_remove(query->channel->queries_by_qid, query->qid);
+  if (ares_htable_szvp_get_direct(query->channel->queries_by_qid, query->qid) ==
+      query) {
+    ares_htable_szvp_remove(query->channel->queries_by_qid, query->qid);
+  }
   ares_llist_node_destroy(query->node_all_queries);
   query->node_all_queries = NULL;
 }
@@ -1621,7 +1630,8 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
     return;
   }
 
-  /* Invoke the callback. */
+  /* Retire transport ownership before any reentrant callback. */
+  ares_detach_query(query);
   query->callback(query->arg, status, query->timeouts, dnsrec);
   ares_free_query(query);
 

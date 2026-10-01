@@ -51,6 +51,7 @@
 #include "ares_htable_strvp.h"
 #include "ares_htable_szvp.h"
 #include "ares_htable_asvp.h"
+#include "ares_htable_binvp.h"
 #include "ares_htable_dict.h"
 #include "ares_htable_vpvp.h"
 #include "ares_htable_vpstr.h"
@@ -139,6 +140,11 @@ W32_FUNC const char *_w32_GetHostsFile(void);
  * servers once it comes back online. */
 #define SERVER_CONSEC_FAILURES_CAP 16
 
+struct ares_query_queue;
+typedef struct ares_query_queue ares_query_queue_t;
+struct ares_query_group;
+typedef struct ares_query_group ares_query_group_t;
+
 struct ares_query;
 typedef struct ares_query ares_query_t;
 
@@ -166,6 +172,8 @@ struct ares_query {
 
   ares_callback_dnsrec callback;
   void                *arg;
+
+  ares_query_group_t  *queue_group;
 
   /* Query status */
   size_t        try_count; /* Number of times we tried this query already. */
@@ -230,6 +238,10 @@ struct ares_channeldata {
   /* random state to use when generating new ids and generating retry penalties
    */
   ares_rand_state     *rand_state;
+
+  /* Optional scheduling state; NULL preserves immediate scheduling. */
+  ares_query_queue_t  *query_queue;
+  size_t               query_queue_holds;
 
   /* All active queries in a single list */
   ares_llist_t        *all_queries;
@@ -527,6 +539,8 @@ typedef enum {
   ARES_SEND_FLAG_NOCACHE = 1 << 0, /*!< Do not query the cache */
   ARES_SEND_FLAG_NORETRY = 1 << 1  /*!< Do not retry this query on error */
 } ares_send_flags_t;
+
+#include "include/ares_query_queue.h"
 
 /* Similar to ares_send_dnsrec() except does not take a channel lock, allows
  * specifying a particular server to use, and also flags controlling behavior.

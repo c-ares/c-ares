@@ -783,6 +783,11 @@ ares_status_t ares_servers_update(ares_channel_t *channel,
    *       real-world people needing support for this for their test harnesses
    */
 
+  /* Removing servers can complete transactions and invoke callbacks. Defer
+   * new queued transmissions until the update, including a partial failure,
+   * has left the routing structures in their final state. */
+  ares_query_queue_config_start(channel);
+
   /* Add new entries */
   for (node = ares_llist_node_first(server_list); node != NULL;
        node = ares_llist_node_next(node)) {
@@ -847,6 +852,7 @@ ares_status_t ares_servers_update(ares_channel_t *channel,
   status = ARES_SUCCESS;
 
 done:
+  ares_query_queue_config_end(channel);
   return status;
 }
 

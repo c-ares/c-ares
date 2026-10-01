@@ -409,6 +409,7 @@ static void *ares_reinit_thread(void *arg)
 
   /* Flush cached queries on reinit */
   if (status == ARES_SUCCESS && channel->qcache) {
+    ares_query_queue_invalidate(channel);
     ares_qcache_flush(channel->qcache);
   }
 
@@ -520,6 +521,13 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
   memcpy((*dest)->local_ip6, src->local_ip6, sizeof(src->local_ip6));
   ares_channel_unlock(src);
 
+  rc = ares_query_queue_dup(*dest, src);
+  if (rc != ARES_SUCCESS) {
+    ares_destroy(*dest);
+    *dest = NULL;
+    goto done;
+  }
+
   /* Servers are a bit unique as ares_init_options() only allows ipv4 servers
    * and not a port per server, but there are other user specified ways, that
    * too will toggle the optmask ARES_OPT_SERVERS to let us know.  If that's
@@ -563,6 +571,7 @@ void ares_set_local_ip4(ares_channel_t *channel, unsigned int local_ip)
     return;
   }
   ares_channel_lock(channel);
+  ares_query_queue_invalidate(channel);
   channel->local_ip4 = local_ip;
   ares_channel_unlock(channel);
 }
@@ -574,6 +583,7 @@ void ares_set_local_ip6(ares_channel_t *channel, const unsigned char *local_ip6)
     return;
   }
   ares_channel_lock(channel);
+  ares_query_queue_invalidate(channel);
   memcpy(&channel->local_ip6, local_ip6, sizeof(channel->local_ip6));
   ares_channel_unlock(channel);
 }
@@ -586,6 +596,7 @@ void ares_set_local_dev(ares_channel_t *channel, const char *local_dev_name)
   }
 
   ares_channel_lock(channel);
+  ares_query_queue_invalidate(channel);
   ares_strcpy(channel->local_dev_name, local_dev_name,
               sizeof(channel->local_dev_name));
   channel->local_dev_name[sizeof(channel->local_dev_name) - 1] = 0;

@@ -32,17 +32,6 @@
 #endif
 #include "ares_nameser.h"
 
-static unsigned short generate_unique_qid(ares_channel_t *channel)
-{
-  unsigned short id;
-
-  do {
-    id = ares_generate_new_id(channel->rand_state);
-  } while (ares_htable_szvp_get(channel->queries_by_qid, id, NULL));
-
-  return id;
-}
-
 /* https://datatracker.ietf.org/doc/html/draft-vixie-dnsext-dns0x20-00 */
 static ares_status_t ares_apply_dns0x20(ares_channel_t    *channel,
                                         ares_dns_record_t *dnsrec)
@@ -105,34 +94,19 @@ done:
   return status;
 }
 
-ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
-                               ares_send_flags_t        flags,
-                               const ares_dns_record_t *dnsrec,
-                               ares_callback_dnsrec callback, void *arg,
-                               unsigned short *qid)
+ares_status_t ares_send_direct_nolock(
+  ares_channel_t *channel, ares_server_t *server, ares_send_flags_t flags,
+  const ares_dns_record_t *dnsrec, ares_callback_dnsrec callback, void *arg,
+  unsigned short id, ares_query_group_t *group)
 {
-  ares_query_t            *query;
-  ares_timeval_t           now;
-  ares_status_t            status;
-  unsigned short           id          = generate_unique_qid(channel);
-  const ares_dns_record_t *dnsrec_resp = NULL;
+  ares_query_t  *query;
+  ares_timeval_t now;
+  ares_status_t  status;
 
   ares_tvnow(&now);
-
   if (ares_slist_len(channel->servers) == 0) {
     callback(arg, ARES_ENOSERVER, 0, NULL);
     return ARES_ENOSERVER;
-  }
-
-  if (!(flags & ARES_SEND_FLAG_NOCACHE)) {
-    /* Check query cache */
-    status = ares_qcache_fetch(channel, &now, dnsrec, &dnsrec_resp);
-    if (status != ARES_ENOTFOUND) {
-      /* ARES_SUCCESS means we retrieved the cache, anything else is a critical
-       * failure, all result in termination */
-      callback(arg, status, 0, dnsrec_resp);
-      return status;
-    }
   }
 
   /* Allocate space for query and allocated fields. */
@@ -169,8 +143,8 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
     status = ares_apply_dns0x20(channel, query->query);
     if (status != ARES_SUCCESS) {
       /* LCOV_EXCL_START: OutOfMemory */
-      callback(arg, status, 0, NULL);
       ares_free_query(query);
+      callback(arg, status, 0, NULL);
       return status;
       /* LCOV_EXCL_STOP */
     }
@@ -198,8 +172,8 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
   query->node_all_queries = ares_llist_insert_last(channel->all_queries, query);
   if (query->node_all_queries == NULL) {
     /* LCOV_EXCL_START: OutOfMemory */
-    callback(arg, ARES_ENOMEM, 0, NULL);
     ares_free_query(query);
+    callback(arg, ARES_ENOMEM, 0, NULL);
     return ARES_ENOMEM;
     /* LCOV_EXCL_STOP */
   }
@@ -209,19 +183,78 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
    */
   if (!ares_htable_szvp_insert(channel->queries_by_qid, query->qid, query)) {
     /* LCOV_EXCL_START: OutOfMemory */
-    callback(arg, ARES_ENOMEM, 0, NULL);
+    /* The query is already in all_queries but has no scheduling owner yet.
+     * Retire it before a reentrant callback can cancel that partial query. */
     ares_free_query(query);
+    callback(arg, ARES_ENOMEM, 0, NULL);
     return ARES_ENOMEM;
     /* LCOV_EXCL_STOP */
   }
 
-  /* Perform the first query action. */
+  query->queue_group = group;
+  ares_query_queue_set_query(group, query);
+  return ares_send_query(server, query, &now);
+}
 
-  status = ares_send_query(server, query, &now);
-  if (status == ARES_SUCCESS && qid) {
+ares_status_t ares_send_nolock_ex(ares_channel_t          *channel,
+                                  ares_server_t           *server,
+                                  ares_send_flags_t        flags,
+                                  const ares_dns_record_t *dnsrec,
+                                  ares_callback_dnsrec callback, void *arg,
+                                  unsigned short *qid, size_t *handle)
+{
+  ares_timeval_t           now;
+  ares_status_t            status;
+  unsigned short           id;
+  const ares_dns_record_t *response = NULL;
+
+  if (handle != NULL) {
+    *handle = 0;
+  }
+  if (ares_slist_len(channel->servers) == 0) {
+    callback(arg, ARES_ENOSERVER, 0, NULL);
+    return ARES_ENOSERVER;
+  }
+  ares_tvnow(&now);
+  if (!(flags & ARES_SEND_FLAG_NOCACHE)) {
+    status = ares_qcache_fetch(channel, &now, dnsrec, &response);
+    if (status != ARES_ENOTFOUND) {
+      callback(arg, status, 0, response);
+      return status;
+    }
+  }
+  if (channel->query_queue != NULL && server == NULL) {
+    return ares_query_queue_admit(channel, flags, dnsrec, callback, arg, qid,
+                                  handle);
+  }
+  /* Explicit-server probes cannot bypass an enabled active limit. */
+  if (!ares_query_queue_has_slot(channel)) {
+    callback(arg, ARES_EQUEUEFULL, 0, NULL);
+    return ARES_EQUEUEFULL;
+  }
+  status = ares_query_queue_new_id(channel, &id);
+  if (status != ARES_SUCCESS) {
+    callback(arg, status, 0, NULL);
+    return status;
+  }
+  status = ares_send_direct_nolock(channel, server, flags, dnsrec, callback,
+                                   arg, id, NULL);
+  /* Preserve the direct-send contract: a synchronous failure leaves the
+   * output untouched. ARES_SUCCESS means the transaction is still tracked. */
+  if (status == ARES_SUCCESS && qid != NULL) {
     *qid = id;
   }
   return status;
+}
+
+ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
+                               ares_send_flags_t        flags,
+                               const ares_dns_record_t *dnsrec,
+                               ares_callback_dnsrec callback, void *arg,
+                               unsigned short *qid)
+{
+  return ares_send_nolock_ex(channel, server, flags, dnsrec, callback, arg, qid,
+                             NULL);
 }
 
 ares_status_t ares_send_dnsrec(ares_channel_t          *channel,
@@ -292,7 +325,7 @@ size_t ares_queue_active_queries(const ares_channel_t *channel)
 
   ares_channel_lock(channel);
 
-  len = ares_llist_len(channel->all_queries);
+  len = ares_query_queue_count(channel);
 
   ares_channel_unlock(channel);
 

@@ -55,7 +55,10 @@ Both functions take an initialized ares channel identified by
 
 The \fIares_send_dnsrec(3)\fP also can be supplied an optional output parameter of
 .IR qid
-to populate the query id as it was placed on the wire.
+to populate the query id as it was placed on the wire. When optional query
+scheduling is enabled with \fIares_set_query_queue_options(3)\fP, this is the
+reserved future wire ID for a waiting transaction. Merged callers share the
+same wire ID. No output pointer is retained for later transmission.
 
 The \fIares_send_dnsrec(3)\fP function returns an \fIares_status_t\fP response
 code.  This may be useful to know that the query was enqueued properly.  The

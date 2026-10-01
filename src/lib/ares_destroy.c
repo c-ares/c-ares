@@ -69,6 +69,10 @@ void ares_destroy(ares_channel_t *channel)
    * callbacks need to hold a channel lock. */
   ares_channel_lock(channel);
 
+  if (channel->query_queue != NULL) {
+    ares_query_queue_cancel(channel, ARES_EDESTRUCTION);
+  }
+
   /* Destroy all queries */
   node = ares_llist_node_first(channel->all_queries);
   while (node != NULL) {
@@ -114,6 +118,7 @@ void ares_destroy(ares_channel_t *channel)
     ares_free(channel->domains);
   }
 
+  ares_query_queue_destroy(channel);
   ares_llist_destroy(channel->all_queries);
   ares_slist_destroy(channel->queries_by_timeout);
   ares_htable_szvp_destroy(channel->queries_by_qid);

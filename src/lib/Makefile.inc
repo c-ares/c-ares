@@ -29,6 +29,7 @@ CSOURCES = ares_addrinfo2hostent.c	\
   ares_query.c				\
   ares_search.c				\
   ares_send.c				\
+  ares_query_queue.c		\
   ares_set_socket_functions.c		\
   ares_socket.c				\
   ares_sortaddrinfo.c			\
@@ -46,6 +47,7 @@ CSOURCES = ares_addrinfo2hostent.c	\
   dsa/ares_array.c			\
   dsa/ares_htable.c			\
   dsa/ares_htable_asvp.c		\
+  dsa/ares_htable_binvp.c		\
   dsa/ares_htable_dict.c		\
   dsa/ares_htable_strvp.c		\
   dsa/ares_htable_szvp.c		\
@@ -111,12 +113,14 @@ HHEADERS = ares_android.h			\
   include/ares_array.h			\
   include/ares_buf.h			\
   include/ares_htable_asvp.h		\
+  include/ares_htable_binvp.h		\
   include/ares_htable_dict.h		\
   include/ares_htable_strvp.h		\
   include/ares_htable_szvp.h		\
   include/ares_htable_vpstr.h		\
   include/ares_htable_vpvp.h		\
   include/ares_llist.h			\
+  include/ares_query_queue.h		\
   include/ares_mem.h			\
   include/ares_punycode.h		\
   include/ares_str.h			\
