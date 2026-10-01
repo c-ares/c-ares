@@ -56,7 +56,13 @@ static void ares_evsys_select_destroy(ares_event_thread_t *e)
 
 static ares_bool_t ares_evsys_select_event_add(ares_event_t *event)
 {
-  (void)event;
+  /* select() cannot monitor descriptors >= FD_SETSIZE; FD_SET() on such a
+   * descriptor writes outside the bounds of the fd_set (e.g. a process with
+   * more than 4096 open descriptors).  Refuse the registration so the
+   * connection fails cleanly rather than corrupting memory. */
+  if (event->fd != ARES_SOCKET_BAD && event->fd >= (ares_socket_t)FD_SETSIZE) {
+    return ARES_FALSE;
+  }
   return ARES_TRUE;
 }
 
