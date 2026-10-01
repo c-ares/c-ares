@@ -44,6 +44,8 @@ OPTION (CARES_SYMBOL_HIDING "Hide private symbols in shared libraries"          
 OPTION (CARES_THREADS       "Build with thread-safety support"                                      ON)
 OPTION (CARES_COVERAGE      "Build for code coverage"                                               OFF)
 OPTION (CARES_WERROR        "Treat compiler warnings on the c-ares library as errors"               OFF)
+# Optional experimental Clang -fbounds-safety (OFF by default; macros inert otherwise)
+OPTION (CARES_ENABLE_FBOUNDS_SAFETY "Enable experimental Clang -fbounds-safety annotations (OFF by default)" OFF)
 SET    (CARES_RANDOM_FILE "/dev/urandom" CACHE STRING "Suitable File / Device Path for entropy, such as /dev/urandom")
 
 # Tests require static to be enabled on Windows to be able to access otherwise hidden symbols

@@ -8,6 +8,20 @@ include(${PROJECT_BINARY_DIR}/src/lib/Makefile.inc.cmake)
 # Write ares_config.h configuration file.  This is used only for the build.
 CONFIGURE_FILE (ares_config.h.cmake ${PROJECT_BINARY_DIR}/ares_config.h)
 
+
+# Optional experimental Clang -fbounds-safety (macros inert unless enabled)
+MACRO (cares_apply_fbounds_safety target)
+	IF (CARES_ENABLE_FBOUNDS_SAFETY)
+		IF (CMAKE_C_COMPILER_ID MATCHES "Clang")
+			MESSAGE (STATUS "c-ares: Enabling -fbounds-safety for ${target}")
+			TARGET_COMPILE_DEFINITIONS (${target} PRIVATE CARES_SUPPORT_FBOUNDS_SAFETY)
+			TARGET_COMPILE_OPTIONS (${target} PRIVATE -fbounds-safety)
+		ELSE ()
+			MESSAGE (WARNING "c-ares: Ignoring CARES_ENABLE_FBOUNDS_SAFETY for ${target}; only Clang is currently supported.")
+		ENDIF ()
+	ENDIF ()
+ENDMACRO ()
+
 # Build the dynamic/shared library
 IF (CARES_SHARED)
 	ADD_LIBRARY (${PROJECT_NAME} SHARED ${CSOURCES})
@@ -67,6 +81,7 @@ IF (CARES_SHARED)
 	TARGET_COMPILE_DEFINITIONS (${PROJECT_NAME} PRIVATE HAVE_CONFIG_H=1 CARES_BUILDING_LIBRARY)
 
 	cares_set_werror (${PROJECT_NAME})
+	cares_apply_fbounds_safety (${PROJECT_NAME})
 
 	TARGET_LINK_LIBRARIES (${PROJECT_NAME}
 		PUBLIC ${CARES_DEPENDENT_LIBS}
@@ -139,6 +154,7 @@ IF (CARES_STATIC)
 	TARGET_COMPILE_DEFINITIONS (${LIBNAME} PRIVATE HAVE_CONFIG_H=1 CARES_BUILDING_LIBRARY)
 
 	cares_set_werror (${LIBNAME})
+	cares_apply_fbounds_safety (${LIBNAME})
 
 	# Only matters on Windows
 	IF (WIN32 OR CYGWIN)
