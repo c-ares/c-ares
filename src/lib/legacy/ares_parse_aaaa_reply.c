@@ -63,7 +63,9 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
   }
 
   if (naddrttls) {
-    req_naddrttls = (size_t)*naddrttls;
+    if (*naddrttls > 0) {
+      req_naddrttls = (size_t)*naddrttls;
+    }
     *naddrttls    = 0;
   }
 

@@ -97,6 +97,23 @@ TEST_F(LibraryTest, ParseAReplyOK) {
   EXPECT_EQ("2.3.4.5", AddressToString(&(info[0].ipaddr), 4));
 }
 
+TEST_F(LibraryTest, ParseAReplyNegativeCount)
+{
+  DNSPacket pkt;
+  pkt.set_qid(0x1234)
+    .set_response()
+    .set_aa()
+    .add_question(new DNSQuestion("example.com", T_A))
+    .add_answer(new DNSARR("example.com", 100, { 2, 3, 4, 5 }));
+  std::vector<byte>   data = pkt.data();
+  struct ares_addrttl info[1];
+  int                 count = -1;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), (int)data.size(),
+                                             nullptr, info, &count));
+  EXPECT_EQ(0, count);
+}
+
 TEST_F(LibraryTest, ParseMalformedAReply) {
   std::vector<byte> data = {
     0x12, 0x34,  // [0:2) qid
