@@ -470,13 +470,15 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
 {
   struct ares_options opts;
   ares_status_t       rc;
-  int                 optmask;
+  int                 optmask = 0;
 
   if (dest == NULL || src == NULL) {
     return ARES_EFORMERR;
   }
 
   *dest = NULL; /* in case of failure return NULL explicitly */
+
+  memset(&opts, 0, sizeof(opts));
 
   /* First get the options supported by the old ares_save_options() function,
      which is most of them */

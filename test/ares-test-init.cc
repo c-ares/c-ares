@@ -254,6 +254,30 @@ TEST_F(LibraryTest, OptionsChannelAllocFail) {
   ares_destroy(channel);
 }
 
+TEST_F(LibraryTest, OptionsNullSafety) {
+  // Test ares_destroy_options with NULL
+  ares_destroy_options(nullptr);
+
+  // Test ares_save_options with NULL parameters
+  ares_channel_t *channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  struct ares_options opts;
+  int optmask = 0;
+
+  EXPECT_EQ(ARES_ENODATA, ares_save_options(nullptr, &opts, &optmask));
+  EXPECT_EQ(ARES_ENODATA, ares_save_options(channel, nullptr, &optmask));
+  EXPECT_EQ(ARES_ENODATA, ares_save_options(channel, &opts, nullptr));
+  EXPECT_EQ(ARES_ENODATA, ares_save_options(nullptr, nullptr, nullptr));
+
+  // Test ares_dup with NULL parameters
+  ares_channel_t *dest = nullptr;
+  EXPECT_EQ(ARES_EFORMERR, ares_dup(nullptr, channel));
+  EXPECT_EQ(ARES_EFORMERR, ares_dup(&dest, nullptr));
+  EXPECT_EQ(ARES_EFORMERR, ares_dup(nullptr, nullptr));
+
+  ares_destroy(channel);
+}
+
 TEST_F(LibraryTest, FailChannelInit) {
   EXPECT_EQ(ARES_SUCCESS,
             ares_library_init_mem(ARES_LIB_INIT_ALL,

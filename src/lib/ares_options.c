@@ -38,17 +38,33 @@ void ares_destroy_options(struct ares_options *options)
 {
   int i;
 
+  if (options == NULL) {
+    return;
+  }
+
   ares_free(options->servers);
+  options->servers = NULL;
 
   for (i = 0; options->domains && i < options->ndomains; i++) {
     ares_free(options->domains[i]);
   }
 
   ares_free(options->domains);
+  options->domains  = NULL;
+  options->ndomains = 0;
+
   ares_free(options->sortlist);
+  options->sortlist = NULL;
+  options->nsort    = 0;
+
   ares_free(options->lookups);
+  options->lookups = NULL;
+
   ares_free(options->resolvconf_path);
+  options->resolvconf_path = NULL;
+
   ares_free(options->hosts_path);
+  options->hosts_path = NULL;
 }
 
 static struct in_addr *ares_save_opt_servers(const ares_channel_t *channel,
@@ -84,6 +100,12 @@ int ares_save_options(const ares_channel_t *channel,
                       struct ares_options *options, int *optmask)
 {
   size_t i;
+
+  if (options == NULL || optmask == NULL) {
+    return ARES_ENODATA;
+  }
+
+  *optmask = 0;
 
   /* NOTE: We can't zero the whole thing out, this is because the size of the
    *       struct ares_options changes over time, so if someone compiled
@@ -143,7 +165,7 @@ int ares_save_options(const ares_channel_t *channel,
   if (channel->optmask & ARES_OPT_SERVERS) {
     options->servers = ares_save_opt_servers(channel, &options->nservers);
     if (options->servers == NULL) {
-      return ARES_ENOMEM;
+      goto fail;
     }
   }
 
@@ -152,14 +174,14 @@ int ares_save_options(const ares_channel_t *channel,
     if (channel->ndomains) {
       options->domains = ares_malloc(channel->ndomains * sizeof(char *));
       if (!options->domains) {
-        return ARES_ENOMEM;
+        goto fail;
       }
 
       for (i = 0; i < channel->ndomains; i++) {
         options->domains[i] = ares_strdup(channel->domains[i]);
         if (!options->domains[i]) {
           options->ndomains = (int)i;
-          return ARES_ENOMEM;
+          goto fail;
         }
       }
     }
@@ -169,7 +191,7 @@ int ares_save_options(const ares_channel_t *channel,
   if (channel->optmask & ARES_OPT_LOOKUPS) {
     options->lookups = ares_strdup(channel->lookups);
     if (!options->lookups && channel->lookups) {
-      return ARES_ENOMEM;
+      goto fail;
     }
   }
 
@@ -178,7 +200,7 @@ int ares_save_options(const ares_channel_t *channel,
     if (channel->nsort) {
       options->sortlist = ares_malloc(channel->nsort * sizeof(struct apattern));
       if (!options->sortlist) {
-        return ARES_ENOMEM;
+        goto fail;
       }
       for (i = 0; i < channel->nsort; i++) {
         options->sortlist[i] = channel->sortlist[i];
@@ -189,15 +211,15 @@ int ares_save_options(const ares_channel_t *channel,
 
   if (channel->optmask & ARES_OPT_RESOLVCONF) {
     options->resolvconf_path = ares_strdup(channel->resolvconf_path);
-    if (!options->resolvconf_path) {
-      return ARES_ENOMEM;
+    if (!options->resolvconf_path && channel->resolvconf_path) {
+      goto fail;
     }
   }
 
   if (channel->optmask & ARES_OPT_HOSTS_FILE) {
     options->hosts_path = ares_strdup(channel->hosts_path);
-    if (!options->hosts_path) {
-      return ARES_ENOMEM;
+    if (!options->hosts_path && channel->hosts_path) {
+      goto fail;
     }
   }
 
@@ -236,6 +258,10 @@ int ares_save_options(const ares_channel_t *channel,
   *optmask = (int)channel->optmask;
 
   return ARES_SUCCESS;
+
+fail:
+  ares_destroy_options(options);
+  return ARES_ENOMEM;
 }
 
 static ares_status_t ares_init_options_servers(ares_channel_t       *channel,
