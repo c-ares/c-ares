@@ -572,6 +572,10 @@ ares_status_t ares_dns_name_parse(ares_buf_t *buf, char **name,
   size_t        name_len    = 0;
   size_t        indir       = 0;
 
+  if (name != NULL) {
+    *name = NULL;
+  }
+
   if (buf == NULL) {
     return ARES_EFORMERR;
   }

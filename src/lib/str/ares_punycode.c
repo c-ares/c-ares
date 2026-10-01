@@ -296,6 +296,10 @@ ares_status_t ares_punycode_encode_domain(const char *domain, char **out)
   ares_buf_t   *outbuf = NULL;
   ares_status_t status;
 
+  if (out != NULL) {
+    *out = NULL;
+  }
+
   if (domain == NULL || out == NULL) {
     return ARES_EFORMERR;
   }
@@ -587,6 +591,10 @@ ares_status_t ares_punycode_decode_domain(const char *domain, char **out)
   ares_buf_t   *outbuf = NULL;
   ares_status_t status;
 
+  if (out != NULL) {
+    *out = NULL;
+  }
+
   if (domain == NULL || out == NULL) {
     return ARES_EFORMERR;
   }
@@ -796,6 +804,10 @@ ares_status_t ares_idna_encode_domain(const char *domain, char **out)
   ares_buf_t   *inbuf  = NULL;
   ares_buf_t   *outbuf = NULL;
   ares_status_t status;
+
+  if (out != NULL) {
+    *out = NULL;
+  }
 
   if (domain == NULL || out == NULL) {
     return ARES_EFORMERR;

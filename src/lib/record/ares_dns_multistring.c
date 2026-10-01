@@ -178,6 +178,10 @@ const unsigned char *
 {
   const multistring_data_t *data;
 
+  if (len != NULL) {
+    *len = 0;
+  }
+
   if (strs == NULL || len == NULL) {
     return NULL;
   }
@@ -197,11 +201,13 @@ const unsigned char *ares_dns_multistring_combined(ares_dns_multistring_t *strs,
   ares_buf_t *buf = NULL;
   size_t      i;
 
+  if (len != NULL) {
+    *len = 0;
+  }
+
   if (strs == NULL || len == NULL) {
     return NULL;
   }
-
-  *len = 0;
 
   /* Return cache if possible */
   if (!strs->cache_invalidated) {

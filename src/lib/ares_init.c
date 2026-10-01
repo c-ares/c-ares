@@ -255,13 +255,18 @@ int ares_init_options(ares_channel_t           **channelptr,
   ares_channel_t *channel;
   ares_status_t   status = ARES_SUCCESS;
 
+  if (channelptr == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  *channelptr = NULL;
+
   if (ares_library_initialized() != ARES_SUCCESS) {
     return ARES_ENOTINITIALIZED; /* LCOV_EXCL_LINE: n/a on non-WinSock */
   }
 
   channel = ares_malloc_zero(sizeof(*channel));
   if (!channel) {
-    *channelptr = NULL;
     return ARES_ENOMEM;
   }
 

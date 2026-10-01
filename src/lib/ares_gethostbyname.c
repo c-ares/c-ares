@@ -340,6 +340,11 @@ int ares_gethostbyname_file(ares_channel_t *channel, const char *name,
                             int family, struct hostent **host)
 {
   ares_status_t status;
+
+  if (host != NULL) {
+    *host = NULL;
+  }
+
   if (channel == NULL) {
     return ARES_ENOTFOUND;
   }

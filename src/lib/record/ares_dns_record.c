@@ -358,6 +358,19 @@ ares_status_t ares_dns_record_query_get(const ares_dns_record_t *dnsrec,
                                         ares_dns_class_t    *qclass)
 {
   const ares_dns_qd_t *qd;
+
+  if (name != NULL) {
+    *name = NULL;
+  }
+
+  if (qtype != NULL) {
+    *qtype = 0;
+  }
+
+  if (qclass != NULL) {
+    *qclass = 0;
+  }
+
   if (dnsrec == NULL || idx >= ares_array_len(dnsrec->qd)) {
     return ARES_EFORMERR;
   }
@@ -1009,6 +1022,10 @@ const unsigned char *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
   unsigned char * const *bin     = NULL;
   size_t const          *bin_len = NULL;
 
+  if (len != NULL) {
+    *len = 0;
+  }
+
   if ((ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN &&
        ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP &&
        ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) ||
@@ -1065,6 +1082,10 @@ const unsigned char *ares_dns_rr_get_abin(const ares_dns_rr_t *dns_rr,
                                           size_t *len)
 {
   ares_dns_multistring_t * const *strs;
+
+  if (len != NULL) {
+    *len = 0;
+  }
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
     return NULL;
@@ -1848,11 +1869,13 @@ ares_status_t ares_dns_record_duplicate_ex(ares_dns_record_t      **dest,
   size_t         data_len = 0;
   ares_status_t  status;
 
+  if (dest != NULL) {
+    *dest = NULL;
+  }
+
   if (dest == NULL || src == NULL) {
     return ARES_EFORMERR;
   }
-
-  *dest = NULL;
 
   status = ares_dns_write(src, &data, &data_len);
   if (status != ARES_SUCCESS) {
