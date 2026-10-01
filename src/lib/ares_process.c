@@ -1391,7 +1391,7 @@ ares_status_t ares_send_query(ares_server_t *requested_server,
    * it ended, so don't report success to the caller (which would, e.g., cause
    * ares_send_nolock() to write to a now-freed *qid). */
   if (status == ARES_SUCCESS &&
-      ares_htable_szvp_get_direct(channel->queries_by_qid, qid) == NULL) {
+      ares_htable_szvp_get_direct(channel->queries_by_qid, qid) != query) {
     status = ARES_ETIMEOUT;
   }
 
@@ -1598,7 +1598,12 @@ static void ares_detach_query(ares_query_t *query)
 {
   /* Remove the query from all the lists in which it is linked */
   ares_query_remove_from_conn(query);
-  ares_htable_szvp_remove(query->channel->queries_by_qid, query->qid);
+  /* A callback may queue a new query that reuses this ID. Only remove the
+   * entry if it still points to this query. */
+  if (ares_htable_szvp_get_direct(query->channel->queries_by_qid, query->qid) ==
+      query) {
+    ares_htable_szvp_remove(query->channel->queries_by_qid, query->qid);
+  }
   ares_llist_node_destroy(query->node_all_queries);
   query->node_all_queries = NULL;
 }
