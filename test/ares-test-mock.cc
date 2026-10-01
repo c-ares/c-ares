@@ -606,6 +606,55 @@ class CacheQueriesTest
   struct ares_options opts_;
 };
 
+// Concurrent identical queries are not merged, so the same cache key can be
+// inserted twice.  The hashtable holds no value destructor -- the expire list
+// owns the entries -- so the second insert used to replace the slot and leave
+// the first entry unreachable but still retained.  Worse, when that orphan
+// later expired it removed the slot by key, evicting the *newer* entry that
+// had replaced it.
+//
+// Two answers with different TTLs make that visible: the short-lived orphan
+// expires first and takes the long-lived entry with it, so a later lookup that
+// should have been a cache hit goes back to the server.
+TEST_P(CacheQueriesTest, DuplicateInsertDoesNotEvictNewerEntry) {
+  DNSPacket shortttl;
+  shortttl.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 1, {2, 3, 4, 5}));
+  DNSPacket longttl;
+  longttl.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+
+  /* Exactly two: the third lookup below must be served from the cache. */
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .Times(2)
+    .WillOnce(SetReply(&server_, &shortttl))
+    .WillOnce(SetReply(&server_, &longttl));
+
+  /* Both issued before either completes, so neither can be served from the
+   * cache and both reach the server -- giving two entries on one key. */
+  QueryResult r1;
+  QueryResult r2;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QueryCallback, &r1, NULL);
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QueryCallback, &r2, NULL);
+  Process();
+  EXPECT_TRUE(r1.done_);
+  EXPECT_TRUE(r2.done_);
+
+  /* Outlive the 1s entry but not the 100s one. */
+  ares_sleep_time(2100);
+
+  QueryResult r3;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QueryCallback, &r3, NULL);
+  Process();
+  EXPECT_TRUE(r3.done_);
+  EXPECT_EQ(ARES_SUCCESS, r3.status_);
+}
+
 TEST_P(CacheQueriesTest, GetHostByNameCache) {
   DNSPacket rsp;
   rsp.set_response().set_aa()

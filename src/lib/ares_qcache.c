@@ -36,6 +36,9 @@ typedef struct {
   ares_dns_record_t *dnsrec;
   time_t             expire_ts;
   time_t             insert_ts;
+  /*! Node owning this entry in ares_qcache_t.expire, so a duplicate insert can
+   *  drop the entry it replaces instead of orphaning it. */
+  ares_slist_node_t *node;
 } ares_qcache_entry_t;
 
 static char *ares_qcache_calc_key(const ares_dns_record_t *dnsrec)
@@ -154,7 +157,12 @@ static void ares_qcache_expire(ares_qcache_t *cache, const ares_timeval_t *now)
       break;
     }
 
-    ares_htable_strvp_remove(cache->cache, entry->key);
+    /* Only drop the hashtable slot if it still refers to this entry.  A
+     * duplicate insert can have replaced it with a newer one under the same
+     * key, and evicting that would throw away a live entry. */
+    if (ares_htable_strvp_get_direct(cache->cache, entry->key) == entry) {
+      ares_htable_strvp_remove(cache->cache, entry->key);
+    }
     ares_slist_node_destroy(node);
   }
 }
@@ -359,11 +367,26 @@ static ares_status_t ares_qcache_insert_int(ares_qcache_t           *qcache,
     goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
+  /* Concurrent identical queries are not merged, so the same key can be
+   * inserted more than once.  The hashtable holds no value destructor -- the
+   * expire list owns the entries -- so replacing a slot used to leave the
+   * previous entry unreachable but still retained until its TTL ran out.
+   * Drop it explicitly instead. */
+  {
+    ares_qcache_entry_t *old_entry =
+      ares_htable_strvp_get_direct(qcache->cache, entry->key);
+
+    if (old_entry != NULL && old_entry->node != NULL) {
+      ares_slist_node_destroy(old_entry->node);
+    }
+  }
+
   if (!ares_htable_strvp_insert(qcache->cache, entry->key, entry)) {
     goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
-  if (ares_slist_insert(qcache->expire, entry) == NULL) {
+  entry->node = ares_slist_insert(qcache->expire, entry);
+  if (entry->node == NULL) {
     goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
