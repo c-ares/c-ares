@@ -284,6 +284,12 @@ static ares_bool_t ares_addr_equal(const struct ares_addr *addr1,
         return ARES_TRUE;
       }
       break;
+    case AF_UNSPEC:
+      /* Both source IPs are unknown, e.g. when there's no getsockname socket
+       * callback to fetch it.  Two unspecified addresses haven't changed
+       * relative to each other, so treat them as equal to keep cookies usable
+       */
+      return ARES_TRUE;
     default:
       break; /* LCOV_EXCL_LINE */
   }
