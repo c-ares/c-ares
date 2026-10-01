@@ -1946,6 +1946,48 @@ TEST_P(MockUDPChannelTest, CancelInCallbackNoDoubleFree) {
   EXPECT_TRUE(data.done);
 }
 
+// Sibling of CancelInCallbackNoDoubleFree for the connection-teardown path.  A
+// malformed response makes process_answer() return EBADRESP, tearing down the
+// connection.  ares_close_connection() requeues its queries synchronously
+// (requeue==NULL), and with tries=1 the query is not retried but ended right
+// there via end_query().  That synchronous branch must detach the query before
+// invoking the callback so a reentrant ares_cancel() cannot find and free it a
+// second time.  The read-path flush was fixed for CVE-2026-33630; this
+// synchronous teardown path was not, so it double-freed the query.
+class MockUDPSingleTryTest : public MockChannelOptsTest,
+                             public ::testing::WithParamInterface<int> {
+ public:
+  MockUDPSingleTryTest()
+    : MockChannelOptsTest(1, GetParam(), false, false, FillOptions(&opts_),
+                          ARES_OPT_TRIES) {}
+  static struct ares_options *FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->tries = 1; /* max_tries==1: first connection error ends the query */
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+TEST_P(MockUDPSingleTryTest, CancelInCallbackConnTeardownNoDoubleFree) {
+  /* A reply too short to be a DNS header fails to parse, so process_answer()
+   * returns EBADRESP and the connection is torn down. */
+  std::vector<byte> malformed = {0x00, 0x00, 0x00, 0x00};
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReplyData(&server_, malformed));
+
+  CancelInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    CancelChannelCallback, &data, NULL);
+  Process();
+  EXPECT_TRUE(data.done);
+}
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPSingleTryTest,
+                         ::testing::ValuesIn(ares::test::families), PrintFamily);
+
 TEST_P(MockUDPChannelTest, GetSock) {
   DNSPacket reply;
   reply.set_response().set_aa()

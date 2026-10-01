@@ -1621,6 +1621,13 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
     return;
   }
 
+  /* Detach from all lookup lists before the callback, otherwise a reentrant
+   * ares_cancel() from within it would find this query still linked, free it,
+   * and the ares_free_query() below would double-free.  Mirrors
+   * ares_flush_requeue() for the synchronous teardown path
+   * (ares_close_connection() requeues with a NULL requeue). */
+  ares_detach_query(query);
+
   /* Invoke the callback. */
   query->callback(query->arg, status, query->timeouts, dnsrec);
   ares_free_query(query);
