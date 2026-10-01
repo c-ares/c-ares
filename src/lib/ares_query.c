@@ -135,7 +135,7 @@ void ares_query(ares_channel_t *channel, const char *name, int dnsclass,
 {
   void *carg = NULL;
 
-  if (channel == NULL) {
+  if (channel == NULL || callback == NULL) {
     return;
   }
 

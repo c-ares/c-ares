@@ -758,7 +758,7 @@ void ares_getaddrinfo(ares_channel_t *channel, const char *name,
                       const struct ares_addrinfo_hints *hints,
                       ares_addrinfo_callback callback, void *arg)
 {
-  if (channel == NULL) {
+  if (channel == NULL || callback == NULL) {
     return;
   }
   ares_channel_lock(channel);

@@ -436,7 +436,7 @@ void ares_search(ares_channel_t *channel, const char *name, int dnsclass,
   size_t             max_udp_size;
   ares_dns_flags_t   rd_flag;
   void              *carg = NULL;
-  if (channel == NULL || name == NULL) {
+  if (channel == NULL || name == NULL || callback == NULL) {
     return;
   }
 

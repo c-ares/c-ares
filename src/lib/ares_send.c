@@ -231,7 +231,7 @@ ares_status_t ares_send_dnsrec(ares_channel_t          *channel,
 {
   ares_status_t status;
 
-  if (channel == NULL) {
+  if (channel == NULL || dnsrec == NULL || callback == NULL) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
@@ -251,7 +251,7 @@ void ares_send(ares_channel_t *channel, const unsigned char *qbuf, int qlen,
   ares_status_t      status;
   void              *carg = NULL;
 
-  if (channel == NULL) {
+  if (channel == NULL || callback == NULL) {
     return;
   }
 

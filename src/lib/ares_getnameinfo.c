@@ -189,7 +189,7 @@ void ares_getnameinfo(ares_channel_t *channel, const struct sockaddr *sa,
                       ares_socklen_t salen, int flags_int,
                       ares_nameinfo_callback callback, void *arg)
 {
-  if (channel == NULL) {
+  if (channel == NULL || callback == NULL) {
     return;
   }
 

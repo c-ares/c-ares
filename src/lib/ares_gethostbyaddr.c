@@ -66,6 +66,10 @@ void ares_gethostbyaddr_nolock(ares_channel_t *channel, const void *addr,
 {
   struct addr_query *aquery;
 
+  if (channel == NULL || callback == NULL) {
+    return;
+  }
+
   if (family != AF_INET && family != AF_INET6) {
     callback(arg, ARES_ENOTIMP, 0, NULL);
     return;
@@ -108,7 +112,7 @@ void ares_gethostbyaddr_nolock(ares_channel_t *channel, const void *addr,
 void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
                         int family, ares_host_callback callback, void *arg)
 {
-  if (channel == NULL) {
+  if (channel == NULL || callback == NULL) {
     return;
   }
   ares_channel_lock(channel);

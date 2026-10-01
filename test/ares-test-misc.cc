@@ -762,6 +762,24 @@ TEST_F(LibraryTest, UsageErrors) {
   ares_set_local_dev(NULL, NULL);
   ares_query_dnsrec(NULL, NULL, ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL, NULL);
   ares_query(NULL, NULL, ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL);
+  ares_search(NULL, NULL, ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL);
+  ares_search_dnsrec(NULL, NULL, NULL, NULL);
+  ares_send(NULL, NULL, 0, NULL, NULL);
+  ares_send_dnsrec(NULL, NULL, NULL, NULL, NULL);
+}
+
+TEST_F(DefaultChannelTest, NullCallback) {
+  ares_getaddrinfo(channel_, "example.com", NULL, NULL, NULL, NULL);
+  ares_getnameinfo(channel_, NULL, 0, 0, NULL, NULL);
+  ares_gethostbyaddr(channel_, NULL, 0, 0, NULL, NULL);
+  ares_gethostbyname(channel_, "example.com", AF_INET, NULL, NULL);
+  ares_send(channel_, NULL, 0, NULL, NULL);
+  EXPECT_EQ(ARES_EFORMERR,
+            ares_send_dnsrec(channel_, NULL, NULL, NULL, NULL));
+  ares_query(channel_, "example.com", ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL);
+  ares_search(channel_, "example.com", ARES_CLASS_IN, ARES_REC_TYPE_A, NULL, NULL);
+  EXPECT_EQ(ARES_EFORMERR,
+            ares_search_dnsrec(channel_, NULL, NULL, NULL));
 }
 
 
