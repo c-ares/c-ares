@@ -358,6 +358,19 @@ ares_status_t ares_dns_record_query_get(const ares_dns_record_t *dnsrec,
                                         ares_dns_class_t    *qclass)
 {
   const ares_dns_qd_t *qd;
+
+  if (name != NULL) {
+    *name = NULL;
+  }
+
+  if (qtype != NULL) {
+    *qtype = 0;
+  }
+
+  if (qclass != NULL) {
+    *qclass = 0;
+  }
+
   if (dnsrec == NULL || idx >= ares_array_len(dnsrec->qd)) {
     return ARES_EFORMERR;
   }
@@ -1009,6 +1022,10 @@ const unsigned char *ares_dns_rr_get_bin(const ares_dns_rr_t *dns_rr,
   unsigned char * const *bin     = NULL;
   size_t const          *bin_len = NULL;
 
+  if (len != NULL) {
+    *len = 0;
+  }
+
   if ((ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BIN &&
        ares_dns_rr_key_datatype(key) != ARES_DATATYPE_BINP &&
        ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) ||
@@ -1066,7 +1083,11 @@ const unsigned char *ares_dns_rr_get_abin(const ares_dns_rr_t *dns_rr,
 {
   ares_dns_multistring_t * const *strs;
 
-  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
+  if (len != NULL) {
+    *len = 0;
+  }
+
+  if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP || len == NULL) {
     return NULL;
   }
 
