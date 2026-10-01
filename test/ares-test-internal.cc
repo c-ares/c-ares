@@ -1248,6 +1248,56 @@ TEST_F(LibraryTest, StrdupFailures) {
   EXPECT_EQ(nullptr, copy);
 }
 
+TEST_F(FileChannelTest, GetAddrInfoHostsReplacedWithOlderMtime)
+{
+  TempFile hostsfile("1.2.3.4 example.com");
+  EnvValue with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+
+  AddrInfoResult result1 = {};
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback,
+                   &result1);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  {
+    std::stringstream ss;
+    ss << result1.ai_;
+    EXPECT_EQ("{addr=[1.2.3.4]}", ss.str());
+  }
+
+  /* Replace the file with new content but an OLDER mtime, as produced by
+   * tar -x, cp -p, package downgrades or backup restores. */
+  {
+    FILE *fp = fopen(hostsfile.filename(), "w");
+    ASSERT_NE(nullptr, fp);
+    fprintf(fp, "9.9.9.9 example.com");
+    fclose(fp);
+#ifndef WIN32
+    struct timeval times[2];
+    gettimeofday(&times[0], NULL);
+    times[0].tv_sec -= 3600;
+    times[1] = times[0];
+    ASSERT_EQ(0, utimes(hostsfile.filename(), times));
+#endif
+  }
+
+  AddrInfoResult result2 = {};
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback,
+                   &result2);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  std::stringstream ss;
+  ss << result2.ai_;
+#ifndef WIN32
+  EXPECT_EQ("{addr=[9.9.9.9]}", ss.str());
+#else
+  /* mtime granularity/semantics differ; just require a completed lookup. */
+  (void)0;
+#endif
+}
+
 TEST_F(FileChannelTest, GetAddrInfoHostsPositive) {
   TempFile hostsfile("1.2.3.4 example.com  \n"
                      "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
