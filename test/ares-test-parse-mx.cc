@@ -147,6 +147,10 @@ TEST_F(LibraryTest, ParseMxReplyErrors) {
 
   // Negative Length
   EXPECT_EQ(ARES_EBADRESP, ares_parse_mx_reply(data.data(), -1, &mx));
+
+  // Null output pointer
+  EXPECT_EQ(ARES_EBADRESP,
+            ares_parse_mx_reply(data.data(), (int)data.size(), nullptr));
 }
 
 TEST_F(LibraryTest, ParseMxReplyAllocFail) {

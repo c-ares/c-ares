@@ -227,6 +227,11 @@ TEST_F(LibraryTest, ParsePtrReplyErrors) {
   // Negative Length
   EXPECT_EQ(ARES_EBADRESP, ares_parse_ptr_reply(data.data(), -1,
                                                 addrv4, sizeof(addrv4), AF_INET, &host));
+
+  // Null output pointer
+  EXPECT_EQ(ARES_EBADRESP,
+            ares_parse_ptr_reply(data.data(), (int)data.size(), addrv4,
+                                 sizeof(addrv4), AF_INET, nullptr));
 }
 
 TEST_F(LibraryTest, ParsePtrReplyAllocFailSome) {

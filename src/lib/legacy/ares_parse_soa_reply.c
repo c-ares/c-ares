@@ -36,6 +36,10 @@ int ares_parse_soa_reply(const unsigned char *abuf, int alen_int,
   ares_dns_record_t     *dnsrec = NULL;
   size_t                 i;
 
+  if (soa_out == NULL) {
+    return ARES_EBADRESP;
+  }
+
   *soa_out = NULL;
 
   if (alen_int < 0) {

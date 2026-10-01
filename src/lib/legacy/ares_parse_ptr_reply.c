@@ -46,6 +46,10 @@ ares_status_t ares_parse_ptr_reply_dnsrec(const ares_dns_record_t *dnsrec,
   size_t          i;
   size_t          ancount;
 
+  if (host == NULL) {
+    return ARES_EBADRESP;
+  }
+
   *host = NULL;
 
   /* Fetch name from query as we will use it to compare later on.  Old code
@@ -190,6 +194,12 @@ int ares_parse_ptr_reply(const unsigned char *abuf, int alen_int,
   size_t             alen;
   ares_dns_record_t *dnsrec = NULL;
   ares_status_t      status;
+
+  if (host == NULL) {
+    return ARES_EBADRESP;
+  }
+
+  *host = NULL;
 
   if (alen_int < 0) {
     return ARES_EBADRESP;

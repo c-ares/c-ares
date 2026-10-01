@@ -38,6 +38,10 @@ int ares_parse_mx_reply(const unsigned char *abuf, int alen_int,
   ares_dns_record_t    *dnsrec = NULL;
   size_t                i;
 
+  if (mx_out == NULL) {
+    return ARES_EBADRESP;
+  }
+
   *mx_out = NULL;
 
   if (alen_int < 0) {

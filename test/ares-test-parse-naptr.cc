@@ -152,6 +152,10 @@ TEST_F(LibraryTest, ParseNaptrReplyTooShort) {
   };
   struct ares_naptr_reply* naptr = nullptr;
   EXPECT_EQ(ARES_EBADRESP, ares_parse_naptr_reply(data.data(), (int)data.size(), &naptr));
+
+  // Null output pointer
+  EXPECT_EQ(ARES_EBADRESP,
+            ares_parse_naptr_reply(data.data(), (int)data.size(), nullptr));
 }
 
 TEST_F(LibraryTest, ParseNaptrReplyAllocFail) {

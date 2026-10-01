@@ -37,6 +37,10 @@ static int ares_parse_txt_reply_int(const unsigned char *abuf, size_t alen,
   ares_dns_record_t   *dnsrec = NULL;
   size_t               i;
 
+  if (txt_out == NULL) {
+    return ARES_EBADRESP;
+  }
+
   *txt_out = NULL;
 
   status = ares_dns_parse(abuf, alen, 0, &dnsrec);
@@ -126,7 +130,7 @@ done:
 int ares_parse_txt_reply(const unsigned char *abuf, int alen,
                          struct ares_txt_reply **txt_out)
 {
-  if (alen < 0) {
+  if (txt_out == NULL || alen < 0) {
     return ARES_EBADRESP;
   }
   return ares_parse_txt_reply_int(abuf, (size_t)alen, ARES_FALSE,
@@ -136,7 +140,7 @@ int ares_parse_txt_reply(const unsigned char *abuf, int alen,
 int ares_parse_txt_reply_ext(const unsigned char *abuf, int alen,
                              struct ares_txt_ext **txt_out)
 {
-  if (alen < 0) {
+  if (txt_out == NULL || alen < 0) {
     return ARES_EBADRESP;
   }
   return ares_parse_txt_reply_int(abuf, (size_t)alen, ARES_TRUE,

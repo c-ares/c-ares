@@ -294,6 +294,10 @@ TEST_F(LibraryTest, ParseSrvReplyErrors) {
 
   // Negative Length
   EXPECT_EQ(ARES_EBADRESP, ares_parse_srv_reply(data.data(), -1, &srv));
+
+  // Null output pointer
+  EXPECT_EQ(ARES_EBADRESP,
+            ares_parse_srv_reply(data.data(), (int)data.size(), nullptr));
 }
 
 TEST_F(LibraryTest, ParseSrvReplyAllocFail) {

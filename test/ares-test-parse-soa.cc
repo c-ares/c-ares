@@ -113,6 +113,10 @@ TEST_F(LibraryTest, ParseSoaReplyErrors) {
 
   // Negative Length
   EXPECT_EQ(ARES_EBADRESP, ares_parse_soa_reply(data.data(), -1, &soa));
+
+  // Null output pointer
+  EXPECT_EQ(ARES_EBADRESP,
+            ares_parse_soa_reply(data.data(), (int)data.size(), nullptr));
 }
 
 TEST_F(LibraryTest, ParseSoaReplyAllocFail) {

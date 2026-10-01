@@ -38,6 +38,10 @@ int ares_parse_uri_reply(const unsigned char *abuf, int alen_int,
   ares_dns_record_t     *dnsrec = NULL;
   size_t                 i;
 
+  if (uri_out == NULL) {
+    return ARES_EBADRESP;
+  }
+
   *uri_out = NULL;
 
   if (alen_int < 0) {

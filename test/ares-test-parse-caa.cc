@@ -147,6 +147,10 @@ TEST_F(LibraryTest, ParseNegativeReply) {
 
   struct ares_caa_reply* caa = nullptr;
   EXPECT_EQ(ARES_EBADRESP, ares_parse_caa_reply(data.data(), -1, &caa));
+
+  // Null output pointer
+  EXPECT_EQ(ARES_EBADRESP,
+            ares_parse_caa_reply(data.data(), (int)data.size(), nullptr));
 }
 
 }  // namespace test

@@ -48,6 +48,10 @@ int ares_parse_ns_reply(const unsigned char *abuf, int alen_int,
   size_t             i;
   size_t             ancount;
 
+  if (host == NULL) {
+    return ARES_EBADRESP;
+  }
+
   *host = NULL;
 
   if (alen_int < 0) {

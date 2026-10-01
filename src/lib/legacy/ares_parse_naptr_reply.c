@@ -37,6 +37,10 @@ int ares_parse_naptr_reply(const unsigned char *abuf, int alen_int,
   ares_dns_record_t       *dnsrec = NULL;
   size_t                   i;
 
+  if (naptr_out == NULL) {
+    return ARES_EBADRESP;
+  }
+
   *naptr_out = NULL;
 
   if (alen_int < 0) {

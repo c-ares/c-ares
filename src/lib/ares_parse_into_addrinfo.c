@@ -60,6 +60,10 @@ ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
   struct ares_addrinfo_cname *cnames    = NULL;
   struct ares_addrinfo_node  *nodes     = NULL;
 
+  if (ai == NULL) {
+    return ARES_EBADRESP;
+  }
+
   /* Save question hostname */
   status = ares_dns_record_query_get(dnsrec, 0, &hostname, NULL, NULL);
   if (status != ARES_SUCCESS) {
