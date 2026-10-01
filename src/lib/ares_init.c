@@ -194,17 +194,21 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
     size_t len        = 256;
     channel->ndomains = 0; /* default to none */
 
-    hostname = ares_malloc(len);
+    hostname = ares_malloc_zero(len);
     if (!hostname) {
       rc = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
       goto error;       /* LCOV_EXCL_LINE: OutOfMemory */
     }
 
+    /* POSIX leaves it unspecified whether gethostname() NUL terminates when the
+     * host name doesn't fit, so force the last byte to a terminator afterwards.
+     */
     if (gethostname(hostname, (GETHOSTNAME_TYPE_ARG2)len) != 0) {
       /* Lets not treat a gethostname failure as critical, since we
        * are ok if gethostname doesn't even exist */
       *hostname = '\0';
     }
+    hostname[len - 1] = '\0';
 
     dot = strchr(hostname, '.');
     if (dot) {
