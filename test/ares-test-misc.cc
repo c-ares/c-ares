@@ -45,11 +45,16 @@ TEST_F(DefaultChannelTest, GetServersFailures) {
   EXPECT_EQ(ARES_SUCCESS,
             ares_set_servers_csv(channel_, "1.2.3.4,2.3.4.5"));
   struct ares_addr_node* servers = nullptr;
+  struct ares_addr_port_node* port_servers = nullptr;
   SetAllocFail(1);
   EXPECT_EQ(ARES_ENOMEM, ares_get_servers(channel_, &servers));
   SetAllocFail(2);
   EXPECT_EQ(ARES_ENOMEM, ares_get_servers(channel_, &servers));
   EXPECT_EQ(ARES_ENODATA, ares_get_servers(nullptr, &servers));
+  EXPECT_EQ(ARES_ENODATA, ares_get_servers(channel_, nullptr));
+  EXPECT_EQ(ARES_ENODATA, ares_get_servers_ports(nullptr, &port_servers));
+  EXPECT_EQ(ARES_ENODATA, ares_get_servers_ports(channel_, nullptr));
+  EXPECT_EQ(nullptr, ares_get_servers_csv(nullptr));
 }
 
 TEST_F(DefaultChannelTest, SetServers) {
@@ -755,6 +760,9 @@ TEST_F(LibraryTest, UsageErrors) {
   ares_getaddrinfo(NULL, NULL, NULL, NULL, NULL, NULL);
   ares_gethostbyaddr(NULL, NULL, 0, 0, NULL, NULL);
   ares_getnameinfo(NULL, NULL, 0, 0, NULL, NULL);
+  ares_get_servers(NULL, NULL);
+  ares_get_servers_ports(NULL, NULL);
+  ares_get_servers_csv(NULL);
   ares_reinit(NULL);
   ares_dup(NULL, NULL);
   ares_set_local_ip4(NULL, 0);

@@ -1133,7 +1133,7 @@ int ares_get_servers(const ares_channel_t   *channel,
   ares_status_t          status = ARES_SUCCESS;
   ares_slist_node_t     *node;
 
-  if (channel == NULL) {
+  if (channel == NULL || servers == NULL) {
     return ARES_ENODATA;
   }
 
@@ -1188,7 +1188,7 @@ int ares_get_servers_ports(const ares_channel_t        *channel,
   ares_status_t               status = ARES_SUCCESS;
   ares_slist_node_t          *node;
 
-  if (channel == NULL) {
+  if (channel == NULL || servers == NULL) {
     return ARES_ENODATA;
   }
 
@@ -1334,6 +1334,10 @@ char *ares_get_servers_csv(const ares_channel_t *channel)
   ares_buf_t        *buf = NULL;
   char              *out = NULL;
   ares_slist_node_t *node;
+
+  if (channel == NULL) {
+    return NULL;
+  }
 
   ares_channel_lock(channel);
 
