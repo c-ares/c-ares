@@ -170,7 +170,8 @@ struct ares_server {
   ares_channel_t       *channel;
 };
 
-void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status);
+void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status,
+                           ares_array_t **requeue);
 void ares_close_sockets(ares_server_t *server);
 void ares_check_cleanup_conns(const ares_channel_t *channel);
 

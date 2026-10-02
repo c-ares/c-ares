@@ -1946,6 +1946,41 @@ TEST_P(MockUDPChannelTest, CancelInCallbackNoDoubleFree) {
   EXPECT_TRUE(data.done);
 }
 
+// Same root cause as CancelInCallbackNoDoubleFree above, but reached via
+// ares_close_sockets.c's ares_requeue_queries() (connection close/error)
+// instead of read_answers().  Every attempt is disconnected so retries are
+// exhausted on a closed connection; the completion callback calls
+// ares_cancel() reentrantly and must fire exactly once.
+struct CancelInCbConnErrorData {
+  ares_channel_t *channel;
+  int             ncalls;
+};
+
+static void CancelChannelConnErrorCallback(void *arg, ares_status_t status,
+                                           size_t timeouts,
+                                           const ares_dns_record_t *dnsrec)
+{
+  CancelInCbConnErrorData *data = static_cast<CancelInCbConnErrorData *>(arg);
+  (void)status;
+  (void)timeouts;
+  (void)dnsrec;
+  data->ncalls++;
+  ares_cancel(data->channel);
+}
+
+TEST_P(MockChannelTest, CancelInCallbackNoDoubleFreeOnConnError) {
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(Disconnect(&server_));
+
+  CancelInCbConnErrorData data;
+  data.channel = channel_;
+  data.ncalls  = 0;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    CancelChannelConnErrorCallback, &data, NULL);
+  Process();
+  EXPECT_EQ(1, data.ncalls);
+}
+
 TEST_P(MockUDPChannelTest, GetSock) {
   DNSPacket reply;
   reply.set_response().set_aa()
