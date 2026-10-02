@@ -328,7 +328,10 @@ static void ares_event_thread_cleanup(ares_event_thread_t *e)
 
 static void *ares_event_thread(void *arg)
 {
-  ares_event_thread_t *e = arg;
+  ares_event_thread_t *e            = arg;
+  ares_channel_t      *channel      = e->channel;
+  ares_bool_t          self_destroy = ARES_FALSE;
+
   ares_thread_mutex_lock(e->mutex);
 
   while (e->isup) {
@@ -368,9 +371,33 @@ static void *ares_event_thread(void *arg)
      * that may not have been performed */
     if (e->isup) {
       ares_thread_mutex_unlock(e->mutex);
-      ares_process_fds(e->channel, NULL, 0, ARES_PROCESS_FLAG_NONE);
+      ares_process_fds(channel, NULL, 0, ARES_PROCESS_FLAG_NONE);
       ares_thread_mutex_lock(e->mutex);
     }
+
+    /* A callback invoked during processing may have called ares_destroy().
+     * That couldn't tear down (or join) this very thread, so it was deferred
+     * to us.  Claim it and break out to complete the teardown ourselves.  We
+     * take the channel lock without holding e->mutex to preserve lock order. */
+    ares_thread_mutex_unlock(e->mutex);
+    ares_channel_lock(channel);
+    if (channel->destroy_pending && channel->callback_depth == 0) {
+      channel->destroy_pending = ARES_FALSE;
+      self_destroy             = ARES_TRUE;
+    }
+    ares_channel_unlock(channel);
+    if (self_destroy) {
+      break; /* NOTE: e->mutex is unlocked here */
+    }
+    ares_thread_mutex_lock(e->mutex);
+  }
+
+  if (self_destroy) {
+    /* e->mutex is not held here (see break above).  Complete the deferred
+     * ares_destroy() on our own thread; ares_destroy_int() will detach rather
+     * than join this thread to avoid a self-join deadlock. */
+    ares_destroy_int(channel, ARES_TRUE);
+    return NULL;
   }
 
   /* Lets cleanup while we're in the thread itself */
@@ -381,26 +408,38 @@ static void *ares_event_thread(void *arg)
   return NULL;
 }
 
-static void ares_event_thread_destroy_int(ares_event_thread_t *e)
+static void ares_event_thread_destroy_int(ares_event_thread_t *e,
+                                          ares_bool_t          from_self)
 {
-  /* Wake thread and tell it to shutdown if it exists */
-  ares_thread_mutex_lock(e->mutex);
-  if (e->isup) {
-    e->isup = ARES_FALSE;
-    ares_event_thread_wake(e);
-  }
-  ares_thread_mutex_unlock(e->mutex);
+  if (from_self) {
+    /* We are running on the event thread itself, completing a deferred
+     * ares_destroy().  The run loop has already exited, so we just clean up
+     * our own resources.  We cannot join ourselves, so detach instead. */
+    ares_event_thread_cleanup(e);
+    if (e->thread) {
+      ares_thread_detach(e->thread);
+      e->thread = NULL;
+    }
+  } else {
+    /* Wake thread and tell it to shutdown if it exists */
+    ares_thread_mutex_lock(e->mutex);
+    if (e->isup) {
+      e->isup = ARES_FALSE;
+      ares_event_thread_wake(e);
+    }
+    ares_thread_mutex_unlock(e->mutex);
 
-  /* Wait for thread to shutdown */
-  if (e->thread) {
-    void *rv = NULL;
-    ares_thread_join(e->thread, &rv);
-    e->thread = NULL;
-  }
+    /* Wait for thread to shutdown */
+    if (e->thread) {
+      void *rv = NULL;
+      ares_thread_join(e->thread, &rv);
+      e->thread = NULL;
+    }
 
-  /* If the event thread ever got to the point of starting, this is a no-op
-   * as it runs this same cleanup when it shuts down */
-  ares_event_thread_cleanup(e);
+    /* If the event thread ever got to the point of starting, this is a no-op
+     * as it runs this same cleanup when it shuts down */
+    ares_event_thread_cleanup(e);
+  }
 
   ares_thread_mutex_destroy(e->mutex);
   e->mutex = NULL;
@@ -408,7 +447,7 @@ static void ares_event_thread_destroy_int(ares_event_thread_t *e)
   ares_free(e);
 }
 
-void ares_event_thread_destroy(ares_channel_t *channel)
+void ares_event_thread_destroy(ares_channel_t *channel, ares_bool_t from_self)
 {
   ares_event_thread_t *e = channel->sock_state_cb_data;
 
@@ -416,12 +455,23 @@ void ares_event_thread_destroy(ares_channel_t *channel)
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
-  ares_event_thread_destroy_int(e);
+  ares_event_thread_destroy_int(e, from_self);
   channel->sock_state_cb_data           = NULL;
   channel->sock_state_cb                = NULL;
   channel->notify_pending_write_cb      = NULL;
   channel->notify_pending_write_cb_data = NULL;
   ares_set_query_enqueue_cb(channel, NULL, NULL);
+}
+
+void ares_event_thread_wake_channel(ares_channel_t *channel)
+{
+  ares_event_thread_t *e = channel->sock_state_cb_data;
+
+  if (e == NULL) {
+    return; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
+  ares_event_thread_wake(e);
 }
 
 static const ares_event_sys_t *ares_event_fetch_sys(ares_evsys_t evsys)
@@ -494,34 +544,39 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
 
   e->mutex = ares_thread_mutex_create();
   if (e->mutex == NULL) {
-    ares_event_thread_destroy_int(e); /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM;               /* LCOV_EXCL_LINE: OutOfMemory */
+    ares_event_thread_destroy_int(e,
+                                  ARES_FALSE); /* LCOV_EXCL_LINE: OutOfMemory */
+    return ARES_ENOMEM;                        /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   e->ev_updates = ares_llist_create(NULL);
   if (e->ev_updates == NULL) {
-    ares_event_thread_destroy_int(e); /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM;               /* LCOV_EXCL_LINE: OutOfMemory */
+    ares_event_thread_destroy_int(e,
+                                  ARES_FALSE); /* LCOV_EXCL_LINE: OutOfMemory */
+    return ARES_ENOMEM;                        /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   e->ev_sock_handles = ares_htable_asvp_create(ares_event_destroy_cb);
   if (e->ev_sock_handles == NULL) {
-    ares_event_thread_destroy_int(e); /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM;               /* LCOV_EXCL_LINE: OutOfMemory */
+    ares_event_thread_destroy_int(e,
+                                  ARES_FALSE); /* LCOV_EXCL_LINE: OutOfMemory */
+    return ARES_ENOMEM;                        /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   e->ev_cust_handles = ares_htable_vpvp_create(NULL, ares_event_destroy_cb);
   if (e->ev_cust_handles == NULL) {
-    ares_event_thread_destroy_int(e); /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM;               /* LCOV_EXCL_LINE: OutOfMemory */
+    ares_event_thread_destroy_int(e,
+                                  ARES_FALSE); /* LCOV_EXCL_LINE: OutOfMemory */
+    return ARES_ENOMEM;                        /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   e->channel = channel;
   e->isup    = ARES_TRUE;
   e->ev_sys  = ares_event_fetch_sys(channel->evsys);
   if (e->ev_sys == NULL) {
-    ares_event_thread_destroy_int(e); /* LCOV_EXCL_LINE: UntestablePath */
-    return ARES_ENOTIMP;              /* LCOV_EXCL_LINE: UntestablePath */
+    ares_event_thread_destroy_int(
+      e, ARES_FALSE);    /* LCOV_EXCL_LINE: UntestablePath */
+    return ARES_ENOTIMP; /* LCOV_EXCL_LINE: UntestablePath */
   }
 
   channel->sock_state_cb                = ares_event_thread_sockstate_cb;
@@ -532,7 +587,7 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
 
   if (!e->ev_sys->init(e)) {
     /* LCOV_EXCL_START: UntestablePath */
-    ares_event_thread_destroy_int(e);
+    ares_event_thread_destroy_int(e, ARES_FALSE);
     channel->sock_state_cb      = NULL;
     channel->sock_state_cb_data = NULL;
     return ARES_ESERVFAIL;
@@ -549,7 +604,7 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
   /* Start thread */
   if (ares_thread_create(&e->thread, ares_event_thread, e) != ARES_SUCCESS) {
     /* LCOV_EXCL_START: UntestablePath */
-    ares_event_thread_destroy_int(e);
+    ares_event_thread_destroy_int(e, ARES_FALSE);
     channel->sock_state_cb      = NULL;
     channel->sock_state_cb_data = NULL;
     return ARES_ESERVFAIL;
@@ -567,7 +622,13 @@ ares_status_t ares_event_thread_init(ares_channel_t *channel)
   return ARES_ENOTIMP;
 }
 
-void ares_event_thread_destroy(ares_channel_t *channel)
+void ares_event_thread_destroy(ares_channel_t *channel, ares_bool_t from_self)
+{
+  (void)channel;
+  (void)from_self;
+}
+
+void ares_event_thread_wake_channel(ares_channel_t *channel)
 {
   (void)channel;
 }

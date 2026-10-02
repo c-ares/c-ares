@@ -31,11 +31,44 @@
 
 void ares_destroy(ares_channel_t *channel)
 {
+  ares_bool_t deferred = ARES_FALSE;
+
+  if (channel == NULL) {
+    return;
+  }
+
+  /* If ares_destroy() is called from within a query callback, we cannot tear
+   * the channel down right now: frames above us on the stack still reference
+   * the channel and its queries, and with an event thread we would be trying
+   * to join our own thread.  Defer the teardown; the outermost callback-
+   * dispatch frame (ares_process_fds(), ares_cancel(), or the event thread
+   * run loop) will complete it once the callback stack unwinds. */
+  ares_channel_lock(channel);
+  if (channel->callback_depth > 0) {
+    channel->destroy_pending = ARES_TRUE;
+    deferred                 = ARES_TRUE;
+  }
+  ares_channel_unlock(channel);
+
+  if (deferred) {
+    /* Nudge the event thread so it observes the pending destroy promptly even
+     * if the deferral originated on another thread. */
+    if (channel->optmask & ARES_OPT_EVENT_THREAD) {
+      ares_event_thread_wake_channel(channel);
+    }
+    return;
+  }
+
+  ares_destroy_int(channel, ARES_FALSE);
+}
+
+void ares_destroy_int(ares_channel_t *channel, ares_bool_t from_ethread)
+{
   size_t             i;
   ares_llist_node_t *node = NULL;
 
   if (channel == NULL) {
-    return;
+    return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
   /* Mark as being shutdown */
@@ -76,7 +109,7 @@ void ares_destroy(ares_channel_t *channel)
     ares_query_t      *query = ares_llist_node_claim(node);
 
     query->node_all_queries = NULL;
-    query->callback(query->arg, ARES_EDESTRUCTION, 0, NULL);
+    ares_invoke_query_callback(query, ARES_EDESTRUCTION, 0, NULL);
     ares_free_query(query);
 
     node = next;
@@ -104,7 +137,7 @@ void ares_destroy(ares_channel_t *channel)
 
   /* Shut down the event thread */
   if (channel->optmask & ARES_OPT_EVENT_THREAD) {
-    ares_event_thread_destroy(channel);
+    ares_event_thread_destroy(channel, from_ethread);
   }
 
   if (channel->domains) {
