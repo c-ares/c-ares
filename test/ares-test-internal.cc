@@ -974,6 +974,41 @@ TEST_F(LibraryTest, SysConfigDomainsIDNA) {
   }
 }
 
+TEST_F(LibraryTest, SysConfigResolvInlineComments)
+{
+  const char resolvconf[] = "nameserver 1.2.3.4 # managed nameserver\n"
+                            "nameserver 2.3.4.5 ; managed nameserver\n"
+                            "search first.com second.com # ignored.example\n"
+                            "lookup bind ; file\n"
+                            "options ndots:5 ; ndots:9\n";
+  ares_sysconfig_t sysconfig;
+  ares_channel_t  *channel = nullptr;
+  ares_buf_t      *buf;
+
+  memset(&sysconfig, 0, sizeof(sysconfig));
+  buf = ares_buf_create_const((const unsigned char *)resolvconf,
+                              sizeof(resolvconf) - 1);
+  ASSERT_NE(nullptr, buf);
+  ASSERT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_sysconfig_process_buf(channel, &sysconfig, buf,
+                                       ares_sysconfig_parse_resolv_line));
+  EXPECT_EQ((size_t)2, ares_llist_len(sysconfig.sconfig));
+  ASSERT_EQ((size_t)2, sysconfig.ndomains);
+  EXPECT_STREQ("first.com", sysconfig.domains[0]);
+  EXPECT_STREQ("second.com", sysconfig.domains[1]);
+  EXPECT_STREQ("b", sysconfig.lookups);
+  EXPECT_EQ((size_t)5, sysconfig.ndots);
+
+  ares_llist_destroy(sysconfig.sconfig);
+  ares_strsplit_free(sysconfig.domains, sysconfig.ndomains);
+  ares_free(sysconfig.sortlist);
+  ares_free(sysconfig.lookups);
+  ares_buf_destroy(buf);
+  ares_destroy(channel);
+}
+
 TEST_F(LibraryTest, BufCharset) {
   struct {
     ares_bool_t ascii_ok;
