@@ -43,21 +43,18 @@ void ares_cancel(ares_channel_t *channel)
     ares_llist_node_t *node = NULL;
     ares_llist_node_t *next = NULL;
 
-    /* Swap list heads, so that only those queries which were present on entry
-     * into this function are cancelled. New queries added by callbacks of
-     * queries being cancelled will not be cancelled themselves.
+    /* Move the current queries to the cancellation list, so that only those
+     * queries which were present on entry into this function are cancelled.
+     * New queries added by callbacks of queries being cancelled will not be
+     * cancelled themselves unless a callback calls ares_cancel() again.
+     *
+     * Nodes moved to queries_being_cancelled intentionally keep each query's
+     * node_all_queries pointer. It remains the removal handle for the query's
+     * channel-owned query list node until the cancel loop claims that node.
      */
-    ares_llist_t      *list_copy = channel->all_queries;
-    channel->all_queries         = ares_llist_create(NULL);
+    node = ares_llist_move_all_last(channel->queries_being_cancelled,
+                                    channel->all_queries);
 
-    /* Out of memory, this function doesn't return a result code though so we
-     * can't report to caller */
-    if (channel->all_queries == NULL) {
-      channel->all_queries = list_copy; /* LCOV_EXCL_LINE: OutOfMemory */
-      goto done;                        /* LCOV_EXCL_LINE: OutOfMemory */
-    }
-
-    node = ares_llist_node_first(list_copy);
     while (node != NULL) {
       ares_query_t *query;
 
@@ -73,15 +70,11 @@ void ares_cancel(ares_channel_t *channel)
 
       node = next;
     }
-
-    ares_llist_destroy(list_copy);
   }
 
   /* See if the connections should be cleaned up */
   ares_check_cleanup_conns(channel);
 
   ares_queue_notify_empty(channel);
-
-done:
   ares_channel_unlock(channel);
 }
