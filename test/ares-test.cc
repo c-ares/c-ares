@@ -668,6 +668,12 @@ void MockServer::ProcessFD(ares_socket_t fd) {
       setsockopt(connfd, SOL_SOCKET, SO_SNDBUF, BYTE_CAST &sndbuf,
                  sizeof(sndbuf));
       connfds_.insert(connfd);
+#ifdef CARES_USE_CRYPTO
+      /* DoT: wrap the connection in server-side TLS */
+      if (tls_ctx_ != nullptr) {
+        tls_conns_[connfd] = tls_ctx_->NewConn();
+      }
+#endif
     }
     return;
   }
@@ -682,38 +688,142 @@ void MockServer::ProcessFD(ares_socket_t fd) {
 
   if (fd != udpfd_) {
     if (len <= 0) {
-      connfds_.erase(std::find(connfds_.begin(), connfds_.end(), fd));
-      sclose(fd);
-      free(tcp_data_);
-      tcp_data_ = NULL;
-      tcp_data_len_ = 0;
+      CloseConn(fd);
       return;
     }
-    tcp_data_ = (unsigned char *)realloc(tcp_data_, tcp_data_len_ + (size_t)len);
-    memcpy(tcp_data_ + tcp_data_len_, buffer, (size_t)len);
-    tcp_data_len_ += (size_t)len;
 
-    /* TCP might aggregate the various requests into a single packet, so we
-     * need to split */
-    while (tcp_data_len_ > 2) {
-      size_t tcplen = ((size_t)tcp_data_[0] << 8) + (size_t)tcp_data_[1];
-      if (tcp_data_len_ - 2 < tcplen)
-        break;
+#ifdef CARES_USE_CRYPTO
+    auto tls_it = tls_conns_.find(fd);
+    if (tls_it != tls_conns_.end()) {
+      test::TlsServerConn *conn = tls_it->second.get();
+      conn->FeedCipher(buffer, (size_t)len);
 
-      ProcessPacket(fd, &addr, addrlen, tcp_data_ + 2, (int)tcplen);
-
-      /* strip off processed data if connection not terminated */
-      if (tcp_data_ != NULL) {
-        memmove(tcp_data_, tcp_data_ + tcplen + 2, tcp_data_len_ - 2 - tcplen);
-        tcp_data_len_ -= 2 + tcplen;
+      /* Test-injected server misbehavior during the handshake */
+      if (!conn->Established()) {
+        if (tls_hs_mode_ == kTlsHsStall) {
+          return; /* accept but never respond: client handshake times out */
+        }
+        if (tls_hs_mode_ == kTlsHsCloseDuringHandshake) {
+          CloseConn(fd); /* drop the connection mid-handshake */
+          return;
+        }
       }
+
+      /* Drive the handshake incrementally; each readable event advances it */
+      if (!conn->Established()) {
+        bool fatal = false;
+        conn->Handshake(&fatal);
+        FlushTLS(fd, conn);
+        if (fatal) {
+          CloseConn(fd);
+          return;
+        }
+        if (!conn->Established()) {
+          return; /* need more handshake data */
+        }
+        /* Handshake just completed: record whether it resumed a session */
+        if (conn->WasResumed()) {
+          tls_resumed_handshakes_++;
+        } else {
+          tls_full_handshakes_++;
+        }
+      }
+
+      /* Established: decrypt any application data (a query may already be
+       * buffered from the same segment that completed the handshake) */
+      std::vector<unsigned char> plain;
+      bool                       closed = false;
+      if (!conn->ReadPlain(&plain, &closed)) {
+        CloseConn(fd);
+        return;
+      }
+      FlushTLS(fd, conn); /* post-handshake records (session tickets) */
+      if (!plain.empty()) {
+        ProcessTCPFrames(fd, &addr, addrlen, plain.data(), plain.size());
+      }
+      if (closed) {
+        CloseConn(fd);
+      }
+      return;
     }
+#endif
+
+    ProcessTCPFrames(fd, &addr, addrlen, buffer, (size_t)len);
   } else {
     /* UDP is always a single packet */
     ProcessPacket(fd, &addr, addrlen, buffer, (int)len);
   }
 
 }
+
+void MockServer::ProcessTCPFrames(ares_socket_t            fd,
+                                  struct sockaddr_storage *addr,
+                                  ares_socklen_t addrlen, const byte *data,
+                                  size_t len)
+{
+  tcp_data_ = (unsigned char *)realloc(tcp_data_, tcp_data_len_ + len);
+  memcpy(tcp_data_ + tcp_data_len_, data, len);
+  tcp_data_len_ += len;
+
+  /* TCP might aggregate the various requests into a single packet, so we
+   * need to split */
+  while (tcp_data_len_ > 2) {
+    size_t tcplen = ((size_t)tcp_data_[0] << 8) + (size_t)tcp_data_[1];
+    if (tcp_data_len_ - 2 < tcplen) {
+      break;
+    }
+
+    ProcessPacket(fd, addr, addrlen, tcp_data_ + 2, (int)tcplen);
+
+    /* strip off processed data if connection not terminated */
+    if (tcp_data_ != NULL) {
+      memmove(tcp_data_, tcp_data_ + tcplen + 2, tcp_data_len_ - 2 - tcplen);
+      tcp_data_len_ -= 2 + tcplen;
+    }
+  }
+}
+
+void MockServer::CloseConn(ares_socket_t fd)
+{
+  if (connfds_.find(fd) == connfds_.end()) {
+    return; /* already closed / not a tracked connection */
+  }
+  connfds_.erase(fd);
+#ifdef CARES_USE_CRYPTO
+  tls_conns_.erase(fd);
+#endif
+  sclose(fd);
+  free(tcp_data_);
+  tcp_data_     = NULL;
+  tcp_data_len_ = 0;
+}
+
+#ifdef CARES_USE_CRYPTO
+void MockServer::FlushTLS(ares_socket_t fd, test::TlsServerConn *conn,
+                          bool corrupt)
+{
+  std::vector<unsigned char> out   = conn->DrainCipher();
+  size_t                     off   = 0;
+  int                        flags = 0;
+  /* Flip a byte to simulate a tampered record; the client must fail the
+   * connection rather than hang or misclassify it. */
+  if (corrupt && !out.empty()) {
+    out[out.size() - 1] ^= 0xFF;
+  }
+#  ifdef MSG_NOSIGNAL
+  flags |= MSG_NOSIGNAL;
+#  endif
+  while (off < out.size()) {
+    ares_ssize_t rc = (ares_ssize_t)sendto(fd, BYTE_CAST(out.data() + off),
+                                           (SEND_TYPE_ARG3)(out.size() - off),
+                                           flags, nullptr, 0);
+    if (rc <= 0) {
+      break;
+    }
+    off += (size_t)rc;
+  }
+}
+#endif
 
 std::set<ares_socket_t> MockServer::fds() const {
   std::set<ares_socket_t> result = connfds_;
@@ -791,19 +901,30 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
   flags |= MSG_NOSIGNAL;
 #endif
 
-  ares_ssize_t rc = (ares_ssize_t)sendto(fd, BYTE_CAST reply.data(), (SEND_TYPE_ARG3)reply.size(), flags,
-                                         (struct sockaddr *)addr, addrlen);
-  if (rc < static_cast<ares_ssize_t>(reply.size())) {
-    std::cerr << "Failed to send full reply, rc=" << rc << std::endl;
+#ifdef CARES_USE_CRYPTO
+  auto tls_it = tls_conns_.find(fd);
+  if (fd != udpfd_ && tls_it != tls_conns_.end()) {
+    /* DoT: encrypt the (already length-prefixed) reply and flush ciphertext.
+     * If corruption was requested, tamper with every app-data record (so it
+     * also fails on retry, not just the first attempt). */
+    if (!tls_it->second->WritePlain(reply.data(), reply.size())) {
+      std::cerr << "Failed to encrypt reply" << std::endl;
+    }
+    FlushTLS(fd, tls_it->second.get(), tls_corrupt_app_);
+  } else
+#endif
+  {
+    ares_ssize_t rc = (ares_ssize_t)sendto(fd, BYTE_CAST reply.data(),
+                                           (SEND_TYPE_ARG3)reply.size(), flags,
+                                           (struct sockaddr *)addr, addrlen);
+    if (rc < static_cast<ares_ssize_t>(reply.size())) {
+      std::cerr << "Failed to send full reply, rc=" << rc << std::endl;
+    }
   }
 
   if (disconnect_after_reply_ && fd != udpfd_) {
     disconnect_after_reply_ = false;
-    connfds_.erase(fd);
-    sclose(fd);
-    free(tcp_data_);
-    tcp_data_     = NULL;
-    tcp_data_len_ = 0;
+    CloseConn(fd);
   }
 
 }

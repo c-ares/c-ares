@@ -373,6 +373,11 @@ static void *ares_event_thread(void *arg)
     }
   }
 
+  /* Release any per-thread crypto (TLS) state this thread accumulated before
+   * it exits, while the channel's crypto context is still alive (see
+   * ares_crypto_thread_cleanup()). */
+  ares_crypto_thread_cleanup(e->channel->crypto_ctx);
+
   /* Lets cleanup while we're in the thread itself */
   ares_event_thread_cleanup(e);
 

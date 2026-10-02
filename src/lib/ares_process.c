@@ -195,12 +195,26 @@ static ares_status_t ares_process_fds_nolock(ares_channel_t         *channel,
                                              const ares_fd_events_t *events,
                                              size_t nevents, unsigned int flags)
 {
-  ares_timeval_t now;
-  size_t         i;
-  ares_status_t  status = ARES_SUCCESS;
+  ares_timeval_t    now;
+  size_t            i;
+  ares_status_t     status = ARES_SUCCESS;
+  ares_fd_events_t *evs    = NULL;
 
   if (channel == NULL || (events == NULL && nevents != 0)) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
+  if (nevents != 0) {
+    /* Remap fd events through TLS want-state.  NULL output with success
+     * means no TLS connections are involved and the events apply as-is.
+     * On allocation failure fall back to the raw events too: a spurious
+     * read/write attempt on a TLS connection is harmless, a dropped event
+     * is not. */
+    status = ares_conn_interpret_events(&evs, channel, events, &nevents);
+    if (status == ARES_SUCCESS && evs != NULL) {
+      events = evs;
+    }
+    status = ARES_SUCCESS;
   }
 
   ares_tvnow(&now);
@@ -243,6 +257,7 @@ static ares_status_t ares_process_fds_nolock(ares_channel_t         *channel,
   }
 
 done:
+  ares_free(evs);
   if (status == ARES_ENOMEM) {
     return ARES_ENOMEM;
   }
@@ -500,7 +515,8 @@ static ares_status_t read_conn_packets(ares_conn_t *conn,
      * or are using TCP and read the maximum buffer size */
     read_again = ARES_FALSE;
     if (channel->sock_funcs.flags & ARES_SOCKFUNC_FLAG_NONBLOCKING &&
-        (!(conn->flags & ARES_CONN_FLAG_TCP) || count == len)) {
+        (!(conn->flags & ARES_CONN_FLAG_TCP) || count == len ||
+         ares_conn_tls_read_pending(conn))) {
       read_again = ARES_TRUE;
     }
 
@@ -748,6 +764,23 @@ static ares_status_t process_read(ares_channel_t       *channel,
 
   if (status != ARES_SUCCESS) {
     return status;
+  }
+
+  /* A read event can complete the TLS handshake.  A query queued behind that
+   * handshake sits in out_buf and is not sent by the read path, and the write
+   * event is intentionally not kept armed across a WANT_READ handshake (that
+   * would busy-spin), so nothing else would drive it out.  Flush here so the
+   * pending query is written as soon as the handshake finishes.  Skipped when
+   * the connection is already flagged for teardown. */
+  if (!conn_error && (conn->flags & ARES_CONN_FLAG_TLS) &&
+      ares_buf_len(conn->out_buf) > 0) {
+    /* A fatal flush error must not be swallowed (deferring it to a later event
+     * or timeout).  ares_conn_flush() does not tear down the connection, so
+     * route it through the conn_error path below -- after read_answers() has
+     * drained anything already decoded -- rather than tearing down here. */
+    if (ares_conn_flush(conn) != ARES_SUCCESS) {
+      conn_error = ARES_TRUE;
+    }
   }
 
   status = read_answers(conn, now);
@@ -1426,6 +1459,11 @@ static ares_status_t ares_send_query_int(ares_server_t        *requested_server,
   if (server == NULL) {
     end_query(channel, server, query, ARES_ENOSERVER /* ? */, NULL, requeue);
     return ARES_ENOSERVER;
+  }
+
+  /* DNS-over-TLS servers only speak TLS over TCP */
+  if (server->use_tls) {
+    query->using_tcp = ARES_TRUE;
   }
 
   /* If a query is directed to a specific server, or the query is being

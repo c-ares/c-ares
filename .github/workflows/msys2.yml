@@ -48,6 +48,7 @@ jobs:
             mingw-w64-${{ matrix.env }}-cmake
             mingw-w64-${{ matrix.env }}-ninja
             mingw-w64-${{ matrix.env }}-gtest
+            mingw-w64-${{ matrix.env }}-openssl
             mingw-w64-${{ matrix.env }}-lldb
             mingw-w64-${{ matrix.env }}-gdb
             ${{ matrix.extra_packages }}
@@ -57,6 +58,33 @@ jobs:
         env:
           BUILD_TYPE: CMAKE
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: ${{ ( matrix.msystem == 'CLANG32' || matrix.msystem == 'CLANG64' ) && 'lldb' || 'gdb' }}
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "CMake: (crypto/DoT) build and test c-ares"
+        env:
+          BUILD_TYPE: CMAKE
+          # Pin to OpenSSL: on Windows the crypto backend auto-selects Schannel,
+          # but this leg (with the mingw OpenSSL package installed) exercises the
+          # OpenSSL backend under GCC/Clang.  Schannel is validated by the MSVC
+          # workflow.
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -DCARES_CRYPTO_BACKEND=openssl -G Ninja"
+          CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
+          TEST_DEBUGGER: ${{ ( matrix.msystem == 'CLANG32' || matrix.msystem == 'CLANG64' ) && 'lldb' || 'gdb' }}
+        run: |
+          ./ci/build.sh
+          ./ci/test.sh
+      - name: "Autotools: (crypto/DoT) build and test c-ares"
+        env:
+          BUILD_TYPE: autotools
+          # Exercises the autotools+OpenSSL *static* crypto link under GCC/Clang
+          # on mingw.  Note: --disable-shared means this does NOT gate the
+          # -no-undefined / .la dependency_libs propagation the libcares_la_LIBADD
+          # fix motivated (arestest_LDADD carries the crypto libs directly, and
+          # only a downstream external static consumer would hit that path).  The
+          # mingw OpenSSL pkg-config files are on the default search path.
+          CONFIG_OPTS: "--disable-shared --enable-cares-crypto"
           TEST_DEBUGGER: ${{ ( matrix.msystem == 'CLANG32' || matrix.msystem == 'CLANG64' ) && 'lldb' || 'gdb' }}
         run: |
           ./ci/build.sh
@@ -73,6 +101,8 @@ jobs:
         if: ${{ matrix.msystem == 'CLANG64' }}
         env:
           BUILD_TYPE: "ubsan"
+          # Enable crypto so the DoT tests run under UBSAN (OpenSSL backend)
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -DCARES_CRYPTO_BACKEND=openssl -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
           CXXFLAGS: "-fsanitize=undefined -fno-sanitize-recover"
@@ -86,6 +116,10 @@ jobs:
         if: ${{ matrix.msystem == 'CLANG64' || matrix.msystem == 'CLANG32' }}
         env:
           BUILD_TYPE: "asan"
+          # Enable crypto so the DoT tests run under ASAN.  Pin to the OpenSSL
+          # backend (as the msys2 CMake crypto leg does); Schannel is validated
+          # by the MSVC workflow.
+          CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -DCARES_CRYPTO=ON -DCARES_CRYPTO_BACKEND=openssl -G Ninja"
           CMAKE_TEST_FLAGS: "-DCARES_BUILD_TESTS=ON"
           CFLAGS: "-fsanitize=address"
           CXXFLAGS: "-fsanitize=address"
@@ -103,7 +137,10 @@ jobs:
           autoreconf -fi
           mkdir build_analyze
           cd build_analyze
-          scan-build --use-cc=clang --use-c++=clang++ -v ../configure --enable-static --disable-shared --disable-tests
+          # --enable-cares-crypto so the analyzer covers the DoT/Schannel backend
+          # (auto-selected on Windows); this is the only clang static-analysis
+          # coverage of the Schannel code (MSVC legs don't run scan-build).
+          scan-build --use-cc=clang --use-c++=clang++ -v ../configure --enable-static --disable-shared --disable-tests --enable-cares-crypto
           scan-build --use-cc=clang --use-c++=clang++ -v make -j3
           ./src/tools/adig.exe www.google.com
           ./src/tools/ahost.exe www.google.com

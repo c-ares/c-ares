@@ -140,8 +140,8 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
 #ifdef HAVE_GETHOSTNAME
   const char *dot;
 #endif
-  struct ares_addr addr;
-  ares_llist_t    *sconfig = NULL;
+  ares_sconfig_t sc;
+  ares_llist_t  *sconfig = NULL;
 
   /* Enable EDNS by default */
   if (!(channel->optmask & ARES_OPT_FLAGS)) {
@@ -168,10 +168,11 @@ static ares_status_t init_by_defaults(ares_channel_t *channel)
       goto error;
     }
 
-    addr.family            = AF_INET;
-    addr.addr.addr4.s_addr = htonl(INADDR_LOOPBACK);
+    memset(&sc, 0, sizeof(sc));
+    sc.addr.family            = AF_INET;
+    sc.addr.addr.addr4.s_addr = htonl(INADDR_LOOPBACK);
 
-    rc = ares_sconfig_append(channel, &sconfig, &addr, 0, 0, NULL);
+    rc = ares_sconfig_append(channel, &sconfig, &sc);
     if (rc != ARES_SUCCESS) {
       goto error; /* LCOV_EXCL_LINE: OutOfMemory */
     }
@@ -272,6 +273,11 @@ int ares_init_options(ares_channel_t           **channelptr,
   channel->ndots = 1;
 
   status = ares_channel_threading_init(channel);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  status = ares_crypto_ctx_init(&channel->crypto_ctx);
   if (status != ARES_SUCCESS) {
     goto done;
   }

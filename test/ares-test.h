@@ -35,6 +35,8 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
+#include "ares-test-tls-server.h"
+
 #if defined(HAVE_USER_NAMESPACE) && defined(HAVE_UTS_NAMESPACE)
 #  define HAVE_CONTAINER
 #endif
@@ -293,6 +295,9 @@ public:
       sclose(fd);
     }
     connfds_.clear();
+#ifdef CARES_USE_CRYPTO
+    tls_conns_.clear();
+#endif
     free(tcp_data_);
     tcp_data_     = NULL;
     tcp_data_len_ = 0;
@@ -320,6 +325,77 @@ public:
     return tcpport_;
   }
 
+#ifdef CARES_USE_CRYPTO
+  // Terminate TLS on accepted TCP connections using the given (backend-
+  // agnostic) server context, turning this into a mock DoT server.  Must be
+  // set before the client connects.
+  void SetTLSCtx(std::shared_ptr<test::TlsServerCtx> ctx)
+  {
+    tls_ctx_ = ctx;
+  }
+
+  // Injected server misbehavior during the TLS handshake, for testing the
+  // client's error/timeout handling.
+  enum TlsHandshakeMode {
+    kTlsHsNormal = 0,
+    kTlsHsCloseDuringHandshake,  // drop the connection after the first flight
+    kTlsHsStall                  // accept but never respond (client times out)
+  };
+
+  void SetTLSHandshakeMode(TlsHandshakeMode mode)
+  {
+    tls_hs_mode_ = mode;
+  }
+
+  // Corrupt (flip a byte of) the next application-data TLS record sent to the
+  // client, to test that a tampered record fails the connection cleanly rather
+  // than hanging or being misclassified as a transient error.
+  void SetTLSCorruptAppData()
+  {
+    tls_corrupt_app_ = true;
+  }
+
+  // Advance any handshake deferred by kTlsHsStall using the client bytes
+  // already buffered, emitting the server's flight.  Lets a test release a
+  // stalled handshake even though the client is blocked waiting on the server
+  // (so no fresh client bytes would arrive to drive ProcessFD).
+  void ResumeStalledHandshakes()
+  {
+    for (auto &it : tls_conns_) {
+      test::TlsServerConn *conn = it.second.get();
+      if (conn->Established()) {
+        continue;
+      }
+      bool fatal = false;
+      conn->Handshake(&fatal);
+      FlushTLS(it.first, conn);
+    }
+  }
+
+  // Number of accepted TLS connections whose handshake hasn't completed.
+  size_t PendingTLSHandshakes() const
+  {
+    size_t n = 0;
+    for (const auto &it : tls_conns_) {
+      if (!it.second->Established()) {
+        n++;
+      }
+    }
+    return n;
+  }
+
+  // Count of completed TLS handshakes that were full vs. resumed sessions.
+  int TLSFullHandshakes() const
+  {
+    return tls_full_handshakes_;
+  }
+
+  int TLSResumedHandshakes() const
+  {
+    return tls_resumed_handshakes_;
+  }
+#endif
+
 private:
   void           ProcessRequest(ares_socket_t fd, struct sockaddr_storage *addr,
                                 ares_socklen_t addrlen, const std::vector<byte> &req,
@@ -327,6 +403,17 @@ private:
                                 int rrtype);
   void           ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr,
                                ares_socklen_t addrlen, byte *data, int len);
+  // Append received TCP bytes to tcp_data_ and dispatch any complete
+  // length-prefixed frames.
+  void ProcessTCPFrames(ares_socket_t fd, struct sockaddr_storage *addr,
+                        ares_socklen_t addrlen, const byte *data, size_t len);
+  // Close and forget a TCP (or TLS) connection fd.
+  void CloseConn(ares_socket_t fd);
+#ifdef CARES_USE_CRYPTO
+  // Write any pending outbound ciphertext for a TLS connection to its socket.
+  void FlushTLS(ares_socket_t fd, test::TlsServerConn *conn,
+                bool corrupt = false);
+#endif
   unsigned short udpport_;
   unsigned short tcpport_;
   ares_socket_t  udpfd_;
@@ -339,6 +426,14 @@ private:
   bool                    disconnect_after_reply_;
   unsigned char          *tcp_data_;
   size_t                  tcp_data_len_;
+#ifdef CARES_USE_CRYPTO
+  std::shared_ptr<test::TlsServerCtx>                           tls_ctx_;
+  std::map<ares_socket_t, std::unique_ptr<test::TlsServerConn>> tls_conns_;
+  TlsHandshakeMode tls_hs_mode_            = kTlsHsNormal;
+  int              tls_full_handshakes_    = 0;
+  int              tls_resumed_handshakes_ = 0;
+  bool             tls_corrupt_app_        = false;
+#endif
 };
 
 // Test fixture that uses a mock DNS server.

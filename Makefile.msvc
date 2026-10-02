@@ -327,6 +327,9 @@ PROG3_OBJS = $(PROG3_OBJS) $(PROG3_OBJDIR)\ahost.obj
 {$(SRCDIR)\src\lib}.c{$(CARES_OBJDIR)}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(CARES_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
+{$(SRCDIR)\src\lib\crypto}.c{$(CARES_OBJDIR)\crypto}.obj:
+    $(CC_CMD) $(CC_CFLAGS) $(CARES_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
+
 {$(SRCDIR)\src\lib\dsa}.c{$(CARES_OBJDIR)\dsa}.obj:
     $(CC_CMD) $(CC_CFLAGS) $(CARES_CFLAGS) /Fo$@ /Fd$(@D)\ /c $<
 
@@ -414,6 +417,7 @@ $(PROG3_OUTDIR): $(PROG3_DIR)
 
 $(CARES_OBJDIR): $(CARES_OUTDIR)
     @if not exist $(CARES_OBJDIR) mkdir $(CARES_OBJDIR)
+    @if not exist $(CARES_OBJDIR)\crypto mkdir $(CARES_OBJDIR)\crypto
     @if not exist $(CARES_OBJDIR)\dsa mkdir $(CARES_OBJDIR)\dsa
     @if not exist $(CARES_OBJDIR)\event mkdir $(CARES_OBJDIR)\event
     @if not exist $(CARES_OBJDIR)\legacy mkdir $(CARES_OBJDIR)\legacy
@@ -430,6 +434,7 @@ $(PROG3_OBJDIR): $(PROG3_OUTDIR)
     @if not exist $(PROG3_OBJDIR)\str mkdir $(PROG3_OBJDIR)\str
 
 clean:
+    @-RMDIR /S /Q $(CARES_OBJDIR)\crypto >NUL 2>&1
     @-RMDIR /S /Q $(CARES_OBJDIR)\dsa >NUL 2>&1
     @-RMDIR /S /Q $(CARES_OBJDIR)\event >NUL 2>&1
     @-RMDIR /S /Q $(CARES_OBJDIR)\legacy >NUL 2>&1

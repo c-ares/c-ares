@@ -98,6 +98,7 @@ all: $(ARESBUILDH) $(OBJ_BASE) $(TARGETS) $(DEMOS) .SYMBOLIC
 $(OBJ_BASE):
 	-$(MD) $^@
 	-$(MD) $^@\stat
+	-$(MD) $^@\stat\crypto
 	-$(MD) $^@\stat\dsa
 	-$(MD) $^@\stat\event
 	-$(MD) $^@\stat\legacy
@@ -105,6 +106,7 @@ $(OBJ_BASE):
 	-$(MD) $^@\stat\str
 	-$(MD) $^@\stat\util
 	-$(MD) $^@\dyn
+	-$(MD) $^@\dyn\crypto
 	-$(MD) $^@\dyn\dsa
 	-$(MD) $^@\dyn\event
 	-$(MD) $^@\dyn\legacy
@@ -142,6 +144,7 @@ vclean realclean: clean .SYMBOLIC
 	-$(RM) $(TARGETS) $(LIBNAME).map
 	-$(RM) $(DEMOS) $(DEMOS:.exe=.map)
 	-$(RD) $(OBJ_BASE)\stat
+	-$(RD) $(OBJ_BASE)\stat\crypto
 	-$(RD) $(OBJ_BASE)\stat\dsa
 	-$(RD) $(OBJ_BASE)\stat\event
 	-$(RD) $(OBJ_BASE)\stat\legacy
@@ -149,6 +152,7 @@ vclean realclean: clean .SYMBOLIC
 	-$(RD) $(OBJ_BASE)\stat\str
 	-$(RD) $(OBJ_BASE)\stat\util
 	-$(RD) $(OBJ_BASE)\dyn
+	-$(RD) $(OBJ_BASE)\dyn\crypto
 	-$(RD) $(OBJ_BASE)\dyn\dsa
 	-$(RD) $(OBJ_BASE)\dyn\event
 	-$(RD) $(OBJ_BASE)\dyn\legacy
@@ -168,6 +172,10 @@ $(RESOURCE): src\lib\cares.rc .AUTODEPEND
 .ERASE
 .c{$(OBJ_BASE)\dyn}.obj:
 	$(CC) $(CFLAGS) -bd .\src\lib\$^& -fo=$^@
+
+.ERASE
+{crypto}.c{$(OBJ_BASE)\dyn\crypto}.obj:
+	$(CC) $(CFLAGS) -bd .\src\lib\crypto\$^& -fo=$^@
 
 .ERASE
 {dsa}.c{$(OBJ_BASE)\dyn\dsa}.obj:
@@ -196,6 +204,10 @@ $(RESOURCE): src\lib\cares.rc .AUTODEPEND
 .ERASE
 .c{$(OBJ_BASE)\stat}.obj:
 	$(CC) $(CFLAGS) -DCARES_STATICLIB .\src\lib\$^& -fo=$^@
+
+.ERASE
+{crypto}.c{$(OBJ_BASE)\stat\crypto}.obj:
+	$(CC) $(CFLAGS) -DCARES_STATICLIB .\src\lib\crypto\$^& -fo=$^@
 
 .ERASE
 {dsa}.c{$(OBJ_BASE)\stat\dsa}.obj:

@@ -58,6 +58,18 @@ ENDIF()
 target_compile_features(arestest PRIVATE cxx_std_14)
 target_compile_definitions(arestest PRIVATE CARES_NO_DEPRECATED)
 
+# The mock DoT server terminates TLS with the same crypto backend c-ares was
+# built against, so the test binary links that backend directly in crypto
+# builds
+IF (CARES_CRYPTO_OPENSSL)
+  target_include_directories(arestest PRIVATE "${OPENSSL_INCLUDE_DIR}")
+  target_link_libraries(arestest PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+ENDIF ()
+
+IF (CARES_CRYPTO_SCHANNEL)
+  target_link_libraries(arestest PRIVATE secur32 crypt32)
+ENDIF ()
+
 IF (CARES_BUILD_CONTAINER_TESTS)
   target_compile_definitions(arestest PRIVATE HAVE_USER_NAMESPACE HAVE_UTS_NAMESPACE)
 ENDIF ()
