@@ -46,6 +46,8 @@ typedef struct {
   struct kevent *changelist;
   size_t         nchanges;
   size_t         nchanges_alloc;
+  /* Same number of items as changelist (i.e. nchanges_alloc) */
+  struct kevent *eventlist;
 } ares_evsys_kqueue_t;
 
 static void ares_evsys_kqueue_destroy(ares_event_thread_t *e)
@@ -66,6 +68,7 @@ static void ares_evsys_kqueue_destroy(ares_event_thread_t *e)
   }
 
   ares_free(kq->changelist);
+  ares_free(kq->eventlist);
   ares_free(kq);
   e->ev_sys_data = NULL;
 }
@@ -99,6 +102,12 @@ static ares_bool_t ares_evsys_kqueue_init(ares_event_thread_t *e)
     return ARES_FALSE;
   }
 
+  kq->eventlist = ares_malloc_zero(kq->nchanges_alloc * sizeof(*kq->eventlist));
+  if (kq->eventlist == NULL) {
+    ares_evsys_kqueue_destroy(e);
+    return ARES_FALSE;
+  }
+
   e->ev_signal = ares_pipeevent_create(e);
   if (e->ev_signal == NULL) {
     ares_evsys_kqueue_destroy(e);
@@ -126,6 +135,12 @@ static void ares_evsys_kqueue_enqueue(ares_evsys_kqueue_t *kq, int fd,
     kq->changelist       = ares_realloc_zero(
       kq->changelist, (kq->nchanges_alloc >> 1) * sizeof(*kq->changelist),
       kq->nchanges_alloc * sizeof(*kq->changelist));
+    /* kevent() reports a failing changelist entry in the eventlist only if
+     * there is enough room. We keep the eventlist the same size as the
+     * changelist so every error has a slot. */
+    kq->eventlist = ares_realloc_zero(
+      kq->eventlist, (kq->nchanges_alloc >> 1) * sizeof(*kq->eventlist),
+      kq->nchanges_alloc * sizeof(*kq->eventlist));
   }
 
   EV_SET(&kq->changelist[idx], fd, filter, flags, 0, 0, 0);
@@ -186,9 +201,8 @@ static void ares_evsys_kqueue_event_mod(ares_event_t      *event,
 static size_t ares_evsys_kqueue_wait(ares_event_thread_t *e,
                                      unsigned long        timeout_ms)
 {
-  struct kevent        events[8];
-  size_t               nevents = sizeof(events) / sizeof(*events);
   ares_evsys_kqueue_t *kq      = e->ev_sys_data;
+  size_t               nevents = kq->nchanges_alloc;
   int                  rv;
   size_t               i;
   struct timespec      ts;
@@ -201,9 +215,7 @@ static size_t ares_evsys_kqueue_wait(ares_event_thread_t *e,
     timeout    = &ts;
   }
 
-  memset(events, 0, sizeof(events));
-
-  rv = kevent(kq->kqueue_fd, kq->changelist, (int)kq->nchanges, events,
+  rv = kevent(kq->kqueue_fd, kq->changelist, (int)kq->nchanges, kq->eventlist,
               (int)nevents, timeout);
   if (rv < 0) {
     return 0;
@@ -218,15 +230,15 @@ static size_t ares_evsys_kqueue_wait(ares_event_thread_t *e,
     ares_event_flags_t flags = 0;
 
     ev = ares_htable_asvp_get_direct(e->ev_sock_handles,
-                                     (ares_socket_t)events[i].ident);
+                                     (ares_socket_t)kq->eventlist[i].ident);
     if (ev == NULL || ev->cb == NULL) {
       continue;
     }
 
     cnt++;
 
-    if (events[i].filter == EVFILT_READ ||
-        events[i].flags & (EV_EOF | EV_ERROR)) {
+    if (kq->eventlist[i].filter == EVFILT_READ ||
+        kq->eventlist[i].flags & (EV_EOF | EV_ERROR)) {
       flags |= ARES_EVENT_FLAG_READ;
     } else {
       flags |= ARES_EVENT_FLAG_WRITE;
