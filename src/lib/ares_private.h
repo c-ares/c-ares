@@ -321,6 +321,13 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
                                  ares_dns_record_t *dnsrec,
                                  ares_array_t     **requeue);
 
+/* Drain a deferred requeue/endqueue list, re-dispatching retries iteratively
+ * and invoking terminal query callbacks.  On return the list has been fully
+ * processed, destroyed, and set to NULL. */
+ares_status_t ares_flush_requeue(ares_channel_t       *channel,
+                                 const ares_timeval_t *now,
+                                 ares_array_t        **requeue);
+
 /*! Count the number of labels (dots+1) in a domain */
 size_t ares_name_label_cnt(const char *name);
 

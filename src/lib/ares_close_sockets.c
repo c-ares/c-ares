@@ -28,16 +28,15 @@
 #include "ares_private.h"
 #include <assert.h>
 
-static void ares_requeue_queries(ares_conn_t  *conn,
-                                 ares_status_t requeue_status)
+static void ares_requeue_queries(ares_conn_t          *conn,
+                                 ares_status_t         requeue_status,
+                                 const ares_timeval_t *now,
+                                 ares_array_t        **requeue)
 {
-  ares_query_t  *query;
-  ares_timeval_t now;
-
-  ares_tvnow(&now);
+  ares_query_t *query;
 
   while ((query = ares_llist_first_val(conn->queries_to_conn)) != NULL) {
-    ares_requeue_query(query, &now, requeue_status, ARES_TRUE, NULL, NULL);
+    ares_requeue_query(query, now, requeue_status, ARES_TRUE, NULL, requeue);
   }
 }
 
@@ -45,6 +44,8 @@ void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status)
 {
   ares_server_t  *server  = conn->server;
   ares_channel_t *channel = server->channel;
+  ares_array_t   *requeue = NULL;
+  ares_timeval_t  now;
 
   /* Unlink */
   ares_llist_node_claim(
@@ -58,8 +59,15 @@ void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status)
   ares_buf_destroy(conn->in_buf);
   ares_buf_destroy(conn->out_buf);
 
-  /* Requeue queries to other connections */
-  ares_requeue_queries(conn, requeue_status);
+  /* Defer the requeue of any attached queries until the connection is fully
+   * torn down.  Requeueing a terminally failed query invokes its callback
+   * synchronously, and a reentrant call from such a callback (e.g.
+   * ares_set_servers_csv() rotating the server list, or ares_cancel()) may
+   * free the server this connection still references, turning the
+   * socket-state notification and socket close below into a use-after-free.
+   * Deferring mirrors what read_answers() and process_timeouts() do. */
+  ares_tvnow(&now);
+  ares_requeue_queries(conn, requeue_status, &now, &requeue);
 
   ares_llist_destroy(conn->queries_to_conn);
 
@@ -68,6 +76,10 @@ void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status)
   ares_socket_close(channel, conn->fd);
 
   ares_free(conn);
+
+  /* Drain the deferred requeues and invoke any terminal callbacks now that
+   * the connection is fully torn down */
+  ares_flush_requeue(channel, &now, &requeue);
 }
 
 void ares_close_sockets(ares_server_t *server)

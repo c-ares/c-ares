@@ -1946,6 +1946,56 @@ TEST_P(MockUDPChannelTest, CancelInCallbackNoDoubleFree) {
   EXPECT_TRUE(data.done);
 }
 
+// A terminal failure callback dispatched from inside ares_close_connection()'s
+// requeue phase runs while the connection is only half torn down: the
+// connection has been unlinked from its server, but ares_close_connection()
+// still dereferences conn->server (to deliver the final socket-state
+// notification) after the callback returns.  An application that rotates its
+// DNS server list from such a callback -- a natural reaction to persistent
+// resolution failures -- replaces the server configuration, which frees the
+// server the dying connection still points at, turning the post-callback
+// notification into a use-after-free.
+struct RotateServersInCbData {
+  ares_channel_t *channel;
+  bool            done;
+  int             status;
+};
+
+static void RotateServersInConnErrorCallback(void *arg, int status,
+                                             int timeouts, struct hostent *host)
+{
+  RotateServersInCbData *data = static_cast<RotateServersInCbData *>(arg);
+  (void)timeouts;
+  (void)host;
+  data->done   = true;
+  data->status = status;
+
+  /* Rotate the server list from within the terminal failure callback, as an
+   * application would when DNS failures persist.  This frees the server the
+   * connection being torn down still references. */
+  ares_set_servers_csv(data->channel, "10.99.99.99");
+}
+
+TEST_P(MockUDPChannelTest, RotateServersInConnErrorCallback)
+{
+  // A malformed response fails the query terminally (gethostbyname() queries
+  // do not retry) with the callback dispatched synchronously from inside
+  // ares_close_connection()'s requeue phase.
+  std::vector<byte> one = { 0x00 };
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReplyData(&server_, one));
+
+  RotateServersInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+  data.status  = 0;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET,
+                     RotateServersInConnErrorCallback, &data);
+  Process();
+  EXPECT_TRUE(data.done);
+  EXPECT_EQ(ARES_EBADRESP, data.status);
+}
+
 TEST_P(MockUDPChannelTest, GetSock) {
   DNSPacket reply;
   reply.set_response().set_aa()
