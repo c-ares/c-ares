@@ -1946,6 +1946,105 @@ TEST_P(MockUDPChannelTest, CancelInCallbackNoDoubleFree) {
   EXPECT_TRUE(data.done);
 }
 
+// Mirror of CancelInCallbackNoDoubleFree with the inverse nesting: the
+// response is already buffered on the channel socket when the application
+// calls ares_cancel().  The ECANCELLED callback runs while the query is still
+// registered in channel->queries_by_qid, and an event-driven application
+// (e.g. the curl multi interface) that processes remaining events from within
+// that callback must not cause the query to be completed and freed a second
+// time by the reentrant ares_process().
+struct ProcessInCancelCbData {
+  ares_channel_t *channel;
+  ares_socket_t   client_fd;
+  int             cb_count;
+};
+
+static void ProcessEventsInCancelCallback(void *arg, ares_status_t status,
+                                          size_t timeouts,
+                                          const ares_dns_record_t *dnsrec)
+{
+  ProcessInCancelCbData *data = static_cast<ProcessInCancelCbData *>(arg);
+  (void)status;
+  (void)timeouts;
+  (void)dnsrec;
+  data->cb_count++;
+
+  /* Reentrant event processing from within the cancel callback: the app's
+   * event loop already knows the channel socket is readable, so it processes
+   * the remaining ready events as usual.  Must not complete or free the
+   * query being cancelled. */
+  if (data->cb_count == 1 && data->client_fd != ARES_SOCKET_BAD) {
+    fd_set readers, writers;
+    FD_ZERO(&readers);
+    FD_ZERO(&writers);
+    FD_SET(data->client_fd, &readers);
+    ares_process(data->channel, &readers, &writers);
+  }
+}
+
+TEST_P(MockUDPChannelTest, ProcessEventsInCancelCallbackNoDoubleFree) {
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  ProcessInCancelCbData data;
+  data.channel   = channel_;
+  data.client_fd = ARES_SOCKET_BAD;
+  data.cb_count  = 0;
+
+  /* Queue the query; UDP writes it to the socket immediately. */
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    ProcessEventsInCancelCallback, &data, NULL);
+
+  /* Drive only the mock server so the response is buffered on the channel
+   * socket, but not yet processed by the library.  Like ProcessWork(), only
+   * process server fds that actually have pending data. */
+  std::set<ares_socket_t> server_fds = fds();
+  fd_set                  readers;
+  ares_socket_t           maxfd = ARES_SOCKET_BAD;
+  FD_ZERO(&readers);
+  for (ares_socket_t fd : server_fds) {
+    FD_SET(fd, &readers);
+    if (fd > maxfd) {
+      maxfd = fd;
+    }
+  }
+  struct timeval tv0;
+  tv0.tv_sec  = 0;
+  tv0.tv_usec = 0;
+  ASSERT_NE(select((int)maxfd + 1, &readers, nullptr, nullptr, &tv0), -1);
+  for (ares_socket_t fd : server_fds) {
+    if (FD_ISSET(fd, &readers)) {
+      ProcessFD(fd);
+    }
+  }
+
+  /* Capture the channel socket while the query is still active; an app's
+   * event loop would know the same fd from its own poll()/select(). */
+  fd_set chan_readers, chan_writers;
+  FD_ZERO(&chan_readers);
+  FD_ZERO(&chan_writers);
+  int chan_nfds = ares_fds(channel_, &chan_readers, &chan_writers);
+  ASSERT_GT(chan_nfds, 0);
+  for (int fd = 0; fd < chan_nfds; fd++) {
+    if (FD_ISSET(fd, &chan_readers) && server_fds.count((ares_socket_t)fd) == 0) {
+      data.client_fd = (ares_socket_t)fd;
+      break;
+    }
+  }
+  ASSERT_NE(data.client_fd, ARES_SOCKET_BAD);
+
+  /* Cancel before the response is processed. */
+  ares_cancel(channel_);
+
+  /* The callback must have run exactly once (ECANCELLED), never a second
+   * time via the reentrant delivery of the buffered response. */
+  EXPECT_EQ(data.cb_count, 1);
+}
+
 TEST_P(MockUDPChannelTest, GetSock) {
   DNSPacket reply;
   reply.set_response().set_aa()

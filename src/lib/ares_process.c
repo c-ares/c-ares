@@ -68,7 +68,6 @@ static ares_status_t ares_send_query_int(ares_server_t        *requested_server,
                                          ares_query_t         *query,
                                          const ares_timeval_t *now,
                                          ares_array_t        **requeue);
-static void ares_detach_query(ares_query_t *query);
 
 static void ares_query_remove_from_conn(ares_query_t *query)
 {
@@ -1594,7 +1593,7 @@ done:
   return rv;
 }
 
-static void ares_detach_query(ares_query_t *query)
+void ares_detach_query(ares_query_t *query)
 {
   /* Remove the query from all the lists in which it is linked */
   ares_query_remove_from_conn(query);

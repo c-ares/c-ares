@@ -350,6 +350,7 @@ void *ares_dnsrec_convert_arg(ares_callback callback, void *arg);
 void ares_dnsrec_convert_cb(void *arg, ares_status_t status, size_t timeouts,
                             const ares_dns_record_t *dnsrec);
 
+void ares_detach_query(ares_query_t *query);
 void ares_free_query(ares_query_t *query);
 
 unsigned short ares_generate_new_id(ares_rand_state *state);
