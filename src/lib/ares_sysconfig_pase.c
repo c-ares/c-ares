@@ -168,7 +168,7 @@ static pthread_mutex_t ile_mutex               = PTHREAD_MUTEX_INITIALIZER;
 /* Thread-safe initialization of ILE API with fork detection.
  * ILE pointers are invalidated in a child process after fork(), so we
  * cache the PID and re-initialize whenever it changes. */
-static ares_bool_t     load_ile_api(void)
+static ares_bool_t load_ile_api(void)
 {
   ares_bool_t        ok = ARES_TRUE;
   unsigned long long actmark;
@@ -339,8 +339,8 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
    * trailing blank padding as empty tokens. */
   {
     char search_ascii[sizeof(header2->search_list) + 1]; /* +1 for NUL (B2) */
-    ares_ebcdic_to_ascii_str(header2->search_list,
-                             sizeof(header2->search_list), search_ascii);
+    ares_ebcdic_to_ascii_str(header2->search_list, sizeof(header2->search_list),
+                             search_ascii);
     sysconfig->domains =
       ares_strsplit(search_ascii, ", ", &sysconfig->ndomains);
     /* NULL with ndomains==0 means the field was empty, not an alloc error */
@@ -356,8 +356,8 @@ ares_status_t ares_init_sysconfig_pase(const ares_channel_t *channel,
   if (sysconfig->ndomains == 0 && header2->domain_name[0] != '\0' &&
       header2->domain_name[0] != EBCDIC_SPACE) {
     char domain_ascii[sizeof(header2->domain_name) + 1];
-    ares_ebcdic_to_ascii_str(header2->domain_name,
-                             sizeof(header2->domain_name), domain_ascii);
+    ares_ebcdic_to_ascii_str(header2->domain_name, sizeof(header2->domain_name),
+                             domain_ascii);
     sysconfig->domains = ares_strsplit(domain_ascii, " ", &sysconfig->ndomains);
     if (sysconfig->domains == NULL && sysconfig->ndomains > 0) {
       ares_free(buffer);
