@@ -613,7 +613,11 @@ parameter, along with the DNS record class in the
 .IR rclass
 parameter, and the Time To Live (TTL) in the
 .IR ttl
-parameter.
+parameter.  The pointer stored in
+.IR rr_out
+is owned by the DNS record, and is only valid until the next call to
+\fIares_dns_record_rr_add(3)\fP or \fIares_dns_record_rr_del(3)\fP for the same
+section, either of which may move or free it.
 
 
 The \fIares_dns_record_rr_get(3)\fP and \fIares_dns_record_rr_get_const(3)\fP
@@ -626,7 +630,9 @@ parameter, for the specified index in the
 .IR idx
 parameter.  The index must be less than \fIares_dns_record_rr_cnt(3)\fP.  The
 former returns a writable pointer to the resource record, while the latter
-returns a read-only pointer to the resource record.
+returns a read-only pointer to the resource record.  Either pointer is only
+valid until the next call to \fIares_dns_record_rr_add(3)\fP or
+\fIares_dns_record_rr_del(3)\fP for the same section.
 
 
 The \fIares_dns_record_rr_del(3)\fP is used to delete a resource record from
@@ -638,7 +644,9 @@ via the
 .IR sect
 parameter, and the index to remove is specified in the
 .IR idx
-parameter.  The index must be less than \fIares_dns_record_rr_cnt(3)\fP.
+parameter.  The index must be less than \fIares_dns_record_rr_cnt(3)\fP.  Any
+resource record pointer previously retrieved for this section is invalidated:
+the removed record is freed and the following records are moved.
 
 
 The \fIares_dns_rr_get_name(3)\fP function is used to retrieve the resource
