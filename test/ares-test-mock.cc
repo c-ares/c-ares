@@ -289,6 +289,51 @@ TEST_P(MockChannelTest, SockFailCallback) {
   EXPECT_EQ(ARES_ECONNREFUSED, result.status_);
 }
 
+#if defined(IP_RECVERR) && defined(IPV6_RECVERR) && defined(SO_DOMAIN)
+static int RecvErrCallback(ares_socket_t fd, int type, void *data)
+{
+  int      *recverr = (int *)data;
+  int       domain  = 0;
+  int       on      = 0;
+  socklen_t len     = sizeof(domain);
+  if (type != SOCK_DGRAM ||
+      getsockopt(fd, SOL_SOCKET, SO_DOMAIN, (void *)&domain, &len) != 0) {
+    return ARES_SUCCESS;
+  }
+  len = sizeof(on);
+  if (domain == AF_INET6) {
+    getsockopt(fd, IPPROTO_IPV6, IPV6_RECVERR, (void *)&on, &len);
+  } else {
+    getsockopt(fd, IPPROTO_IP, IP_RECVERR, (void *)&on, &len);
+  }
+  *recverr = on;
+  return ARES_SUCCESS;
+}
+
+// UDP sockets ask for ICMP errors, so that a server behind an unreachable
+// route fails the read at once instead of after the query timeout.
+TEST_P(MockUDPChannelTest, UDPSocketsGetRecvErr)
+{
+  DNSPacket rsp;
+  rsp.set_response()
+    .set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, { 2, 3, 4, 5 }));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillOnce(SetReply(&server_, &rsp));
+
+  int recverr = -1;
+  ares_set_socket_callback(channel_, RecvErrCallback, &recverr);
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback,
+                     &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(1, recverr);
+}
+#endif
+
 static int sock_config_cb_count = 0;
 static int SocketConfigureCallback(ares_socket_t fd, int type, void *data) {
   int rc = *(int*)data;
