@@ -617,6 +617,24 @@ TEST_P(MockChannelTestAI, FamilyV6) {
   EXPECT_THAT(result.ai_, IncludesV6Address("2121:0000:0000:0000:0000:0000:0000:0303"));
 }
 
+TEST_P(MockChannelTestAI, FamilyV6IgnoresARecords) {
+  DNSPacket rsp6;
+  rsp6.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_AAAA))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", T_AAAA))
+    .WillByDefault(SetReply(&server_, &rsp6));
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_INET6;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
+                   AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENODATA, result.status_);
+}
+
 // Test case for Issue #662
 TEST_P(MockChannelTestAI, PartialQueryCancel) {
   std::vector<byte> nothing;
@@ -660,6 +678,29 @@ TEST_P(MockChannelTestAI, FamilyV4) {
                    AddrInfoCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
+  EXPECT_THAT(result.ai_, IncludesV4Address("2.3.4.5"));
+}
+
+TEST_P(MockChannelTestAI, FamilyV4IgnoresAAAARecords) {
+  DNSPacket rsp4;
+  rsp4.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_A))
+    .add_answer(new DNSAaaaRR("example.com", 100,
+                              {0x21, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03}))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp4));
+  AddrInfoResult result;
+  struct ares_addrinfo_hints hints = {0, 0, 0, 0};
+  hints.ai_family = AF_INET;
+  hints.ai_flags = ARES_AI_NOSORT;
+  ares_getaddrinfo(channel_, "example.com.", NULL, &hints,
+                   AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
   EXPECT_THAT(result.ai_, IncludesNumAddresses(1));
   EXPECT_THAT(result.ai_, IncludesV4Address("2.3.4.5"));
 }
