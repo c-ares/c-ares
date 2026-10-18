@@ -2023,6 +2023,21 @@ TEST_P(MockChannelTest, SortListV6) {
   }
 }
 
+TEST_P(MockChannelTest, GetHostByNameV6IgnoresARecords) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_AAAA))
+    .add_answer(new DNSARR("example.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("example.com", T_AAAA))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "example.com.", AF_INET6, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_ENODATA, result.status_);
+}
+
 // Relies on retries so is UDP-only
 TEST_P(MockUDPChannelTest, SearchDomainsAllocFail) {
   DNSPacket nofirst;

@@ -97,6 +97,42 @@ TEST_F(LibraryTest, ParseAReplyOK) {
   EXPECT_EQ("2.3.4.5", AddressToString(&(info[0].ipaddr), 4));
 }
 
+TEST_F(LibraryTest, ParseAReplyAnyQuestion) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_ANY))
+    .add_answer(new DNSAaaaRR("example.com", 100, {0,0,0,0,0,0,0,0,0,0,0,0,2,3,4,5}))
+    .add_answer(new DNSARR("example.com", 100, {2,3,4,5}));
+  std::vector<byte> data = pkt.data();
+  struct hostent *host = nullptr;
+  struct ares_addrttl info[5];
+  int count = 5;
+  EXPECT_EQ(ARES_SUCCESS, ares_parse_a_reply(data.data(), (int)data.size(),
+                                             &host, info, &count));
+  EXPECT_EQ(1, count);
+  EXPECT_EQ("2.3.4.5", AddressToString(&(info[0].ipaddr), 4));
+  ASSERT_NE(nullptr, host);
+  std::stringstream ss;
+  ss << HostEnt(host);
+  EXPECT_EQ("{'example.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+  ares_free_hostent(host);
+}
+
+TEST_F(LibraryTest, ParseAReplyIgnoresOtherQuestionType) {
+  DNSPacket pkt;
+  pkt.set_qid(0x1234).set_response().set_aa()
+    .add_question(new DNSQuestion("example.com", T_AAAA))
+    .add_answer(new DNSARR("example.com", 100, {2,3,4,5}));
+  std::vector<byte> data = pkt.data();
+  struct hostent *host = nullptr;
+  struct ares_addrttl info[5];
+  int count = 5;
+  EXPECT_EQ(ARES_ENODATA, ares_parse_a_reply(data.data(), (int)data.size(),
+                                             &host, info, &count));
+  EXPECT_EQ(0, count);
+  EXPECT_EQ(nullptr, host);
+}
+
 TEST_F(LibraryTest, ParseMalformedAReply) {
   std::vector<byte> data = {
     0x12, 0x34,  // [0:2) qid
