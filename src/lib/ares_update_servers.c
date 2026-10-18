@@ -207,6 +207,8 @@ static ares_status_t parse_nameserver_uri(ares_buf_t     *buf,
   char          hoststr[256];
   size_t        addrlen;
 
+  memset(sconfig, 0, sizeof(*sconfig));
+
   status = ares_uri_parse_buf(&uri, buf);
   if (status != ARES_SUCCESS) {
     return status;
