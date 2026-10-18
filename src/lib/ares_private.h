@@ -696,6 +696,16 @@ void ares_server_reap(ares_server_t *server);
  *  Nesting is counted; queued notifications are delivered by the outermost
  *  leave.
  *
+ *  The outermost region must be opened by the public entry point itself
+ *  (ares_send_dnsrec(), ares_query_dnsrec(), ares_search(), ares_getaddrinfo(),
+ *  ares_process_fds(), ares_set_servers_*(), ...), with the channel lock
+ *  held, around everything it does.  Internal helpers such as
+ *  ares_send_nolock() open nested regions of their own, but their callers
+ *  often keep using lookup state afterwards -- a host or search query, a
+ *  query id out-pointer -- that a callback reentering the library may end
+ *  and free.  If such a helper were the outermost region, its leave would
+ *  run the callbacks while that state is still in use.
+ *
  *  \param[in] channel  Initialized ares channel.
  */
 void ares_deferred_cb_enter(ares_channel_t *channel);
