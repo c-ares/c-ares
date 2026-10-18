@@ -3842,7 +3842,10 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPTwoServerRetryTest,
 // has its callback run on that thread, so a destroy from it is completed there,
 // detaching the reinit thread rather than joining itself.
 TEST_F(LibraryTest, DestroyInReinitCallback) {
-  TempFile            resolvconf("nameserver 127.0.0.55\n");
+  /* Only 127.0.0.1 is reliably configured on loopback (not on the BSDs or
+   * Solaris, for instance, is the rest of 127/8), so vary the port instead.
+   * Nothing listens on either. */
+  TempFile            resolvconf("nameserver 127.0.0.1:53535\n");
   ares_channel_t     *channel = nullptr;
   struct ares_options opts;
   int                 optmask = 0;
@@ -3859,7 +3862,7 @@ TEST_F(LibraryTest, DestroyInReinitCallback) {
   char       *csv = ares_get_servers_csv(channel);
   std::string servers(csv != nullptr ? csv : "");
   ares_free_string(csv);
-  if (servers.find("127.0.0.55") == std::string::npos) {
+  if (servers.find("127.0.0.1:53535") == std::string::npos) {
     if (verbose) std::cerr << "servers not from resolv.conf, skipping" << std::endl;
     ares_destroy(channel);
     return;
@@ -3868,17 +3871,23 @@ TEST_F(LibraryTest, DestroyInReinitCallback) {
   DestroyInCbData data;
   data.channel = channel;
   data.done    = false;
-  /* Nothing listens there, and nothing processes the channel, so the query
-   * stays pending until the reload removes its server. */
+  LibraryTest::WatchFree(channel);
+  /* Nothing processes the channel, so the query stays pending until the
+   * reload removes its server. */
   ares_query_dnsrec(channel, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
                     DestroyChannelCallback, &data, NULL);
+  /* Had the send failed outright, the callback would already have destroyed
+   * the channel; it must not be touched again. */
+  ASSERT_FALSE(data.done) << "query ended before the reload";
 
   FILE *f = fopen(resolvconf.filename(), "w");
+  if (f == nullptr) {
+    ares_destroy(channel);
+  }
   ASSERT_NE(nullptr, f);
-  fputs("nameserver 127.0.0.56\n", f);
+  fputs("nameserver 127.0.0.1:53536\n", f);
   fclose(f);
 
-  LibraryTest::WatchFree(channel);
   EXPECT_EQ(ARES_SUCCESS, ares_reinit(channel));
 
   /* With thread support the teardown completes on the reinit thread, which
