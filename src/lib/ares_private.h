@@ -152,6 +152,9 @@ struct ares_query {
   ares_timeval_t       ts; /*!< Timestamp query was sent */
   ares_timeval_t       timeout;
   ares_channel_t      *channel;
+  /*! Query cache key, derived from the caller's request before the send path
+   *  can mutate query->query.  NULL when the cache is disabled. */
+  char                *qcache_key;
 
   /*
    * Node object for each list entry the query belongs to in order to
@@ -714,14 +717,47 @@ ares_status_t ares_qcache_create(ares_rand_state *rand_state,
                                  unsigned int     max_ttl,
                                  ares_qcache_t  **cache_out);
 void ares_qcache_flush(ares_qcache_t *cache);
+/*! Derive the query cache key for a request.  Caller owns the result.
+ *
+ *  \param[in] dnsrec  Request to derive the key from.
+ *  \return allocated key, or NULL on failure.
+ */
+char *ares_qcache_calc_key(const ares_dns_record_t *dnsrec);
+
+/*! Insert a response into the query cache.
+ *
+ *  \param[in] channel  Initialized channel object.
+ *  \param[in] now      Current timestamp.
+ *  \param[in] query    Query the response answers.  Its cache key, derived
+ *                      when the query was created, becomes the entry key; a
+ *                      NULL key means caching is switched off.
+ *  \param[in] dnsrec   Response to cache.  Duplicated internally; the caller
+ *                      retains ownership.
+ *  \return ARES_SUCCESS if cached, ARES_ENOTIMP if caching is off or the
+ *          response is not cacheable, otherwise another status.
+ */
 ares_status_t ares_qcache_insert(ares_channel_t          *channel,
                                  const ares_timeval_t    *now,
                                  const ares_query_t      *query,
                                  const ares_dns_record_t *dnsrec);
-ares_status_t ares_qcache_fetch(ares_channel_t           *channel,
-                                const ares_timeval_t     *now,
-                                const ares_dns_record_t  *dnsrec,
-                                const ares_dns_record_t **dnsrec_resp);
+/*! Fetch a cached answer for a request.
+ *
+ *  \param[in]  channel      Initialized channel object.
+ *  \param[in]  now          Current timestamp.
+ *  \param[in]  key          Cache key for the request, as produced by
+ *                           ares_qcache_calc_key().  Owned by the caller.
+ *  \param[out] dnsrec_resp  On ARES_SUCCESS, the cached answer, owned by the
+ *                           caller and destroyed with
+ *                           ares_dns_record_destroy().  Set to NULL on any
+ *                           other status, except ARES_EFORMERR, which is
+ *                           returned by the argument check before this is
+ *                           touched.
+ *  \return ARES_SUCCESS on a hit, ARES_ENOTFOUND on a miss, ARES_EFORMERR on
+ *          invalid arguments.
+ */
+ares_status_t ares_qcache_fetch(ares_channel_t       *channel,
+                                const ares_timeval_t *now, const char *key,
+                                ares_dns_record_t **dnsrec_resp);
 
 void ares_metrics_record(const ares_query_t *query, ares_server_t *server,
                          ares_status_t status, const ares_dns_record_t *dnsrec);

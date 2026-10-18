@@ -1200,6 +1200,59 @@ TEST_F(LibraryTest, BufCodepoint) {
   }
 }
 
+// The cache key must distinguish requests whose answers are not
+// interchangeable.  Two shapes are easy to get wrong because names reach the
+// key unescaped: a request with two questions versus one whose name spells out
+// the second, and two requests with the same question count whose names can be
+// made to run together.  Both are narrow to reach -- they need a hand-built
+// record with more than one question, which real servers reject -- but the key
+// asserts they are distinct, so pin it.
+TEST_F(LibraryTest, QcacheKeyDistinguishesQuestions) {
+  struct qcase {
+    const char *n1;
+    const char *n2; /* nullptr for a single-question record */
+  };
+  const qcase cases[] = {
+    { "one.example.net",                      "two.example.net"                        },
+    { "one.example.net|A|IN|two.example.net", nullptr                                  },
+    { "one.example.net",                      "two.example.net|A|IN|three.example.net" },
+    { "one.example.net|A|IN|two.example.net", "three.example.net"                      },
+  };
+  std::vector<std::string> keys;
+
+  for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+    ares_dns_record_t *req = nullptr;
+    char              *key = nullptr;
+
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_create(&req, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+                                     ARES_RCODE_NOERROR));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_query_add(req, cases[i].n1, ARES_REC_TYPE_A,
+                                        ARES_CLASS_IN));
+    if (cases[i].n2 != nullptr) {
+      EXPECT_EQ(ARES_SUCCESS,
+                ares_dns_record_query_add(req, cases[i].n2, ARES_REC_TYPE_A,
+                                          ARES_CLASS_IN));
+    }
+
+    key = ares_qcache_calc_key(req);
+    ASSERT_NE(nullptr, key);
+    keys.push_back(std::string(key));
+    ares_free_string(key);
+    ares_dns_record_destroy(req);
+  }
+
+  /* Every one of these is a different request, so every key must differ. */
+  for (size_t i = 0; i < keys.size(); i++) {
+    for (size_t j = i + 1; j < keys.size(); j++) {
+      EXPECT_NE(keys[i], keys[j])
+        << "cache key collision between case " << i << " and case " << j
+        << ": " << keys[i];
+    }
+  }
+}
+
 #endif /* !CARES_SYMBOL_HIDING */
 
 TEST_F(LibraryTest, InetPtoN) {

@@ -611,6 +611,424 @@ class CacheQueriesTest
   struct ares_options opts_;
 };
 
+// A cache hit used to hand the callback a pointer to the cache's own record.
+// That is fine only while the callback does nothing else -- but re-entering
+// c-ares from a callback is documented as allowed, and two ordinary things a
+// callback might do destroy the entry underneath it: changing the server list
+// flushes the whole cache, and starting another lookup runs the expiry reaper
+// first.  The record must therefore be the caller's own copy.
+//
+// Here the callback changes the server list, which flushes the cache, and then
+// reads the record it was handed.
+struct QcacheReentrantCbData {
+  ares_channel_t *channel;
+  bool            done;
+  size_t          ancount;
+};
+
+static void QcacheReentrantCallback(void *arg, ares_status_t status,
+                                    size_t timeouts,
+                                    const ares_dns_record_t *dnsrec) {
+  QcacheReentrantCbData *data = static_cast<QcacheReentrantCbData *>(arg);
+  (void)timeouts;
+  data->done = true;
+  if (status != ARES_SUCCESS || dnsrec == NULL) {
+    return;
+  }
+  /* Documented re-entry.  Reconfiguring servers flushes the query cache. */
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(data->channel, "127.0.0.55:53"));
+  /* Still inside the callback, so this record must still be readable. */
+  data->ancount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER);
+}
+
+TEST_P(CacheQueriesTest, ReentrantFlushInCallbackNoUseAfterFree) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  /* Populate the cache. */
+  QueryResult first;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QueryCallback, &first, NULL);
+  Process();
+  EXPECT_TRUE(first.done_);
+
+  /* Served from the cache, so the callback runs synchronously holding the
+   * record the cache handed it. */
+  QcacheReentrantCbData data;
+  data.channel = channel_;
+  data.done    = false;
+  data.ancount = 0;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QcacheReentrantCallback, &data, NULL);
+
+  EXPECT_TRUE(data.done);
+  EXPECT_EQ((size_t)1, data.ancount);
+}
+
+// The cache key covered the question and a couple of header flags but ignored
+// the request's OPT record entirely, so two requests differing only in their
+// EDNS options collided.  An answer obtained under one set of options is not
+// interchangeable with one obtained under another -- most obviously, a request
+// with the DO bit set must not be handed an answer fetched without it.
+//
+// Both requests here ask the identical question; only the EDNS state differs,
+// so the server must see two of them.
+TEST_P(CacheQueriesTest, EdnsOptionsSeparateCacheEntries) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .Times(2)
+    .WillRepeatedly(SetReply(&server_, &rsp));
+
+  /* First: no OPT record at all. */
+  ares_dns_record_t *req1 = nullptr;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&req1, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+                                   ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(req1, "www.google.com", ARES_REC_TYPE_A,
+                                      ARES_CLASS_IN));
+  QueryResult r1;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_send_dnsrec(channel_, req1, QueryCallback, &r1, nullptr));
+  Process();
+  EXPECT_TRUE(r1.done_);
+  EXPECT_EQ(ARES_SUCCESS, r1.status_);
+
+  /* Second: same question, but carrying EDNS with the DO bit set. */
+  ares_dns_record_t *req2 = nullptr;
+  ares_dns_rr_t     *opt  = nullptr;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&req2, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+                                   ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(req2, "www.google.com", ARES_REC_TYPE_A,
+                                      ARES_CLASS_IN));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_rr_add(&opt, req2, ARES_SECTION_ADDITIONAL, "",
+                                   ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_rr_set_u16(opt, ARES_RR_OPT_UDP_SIZE, 1232));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_u8(opt, ARES_RR_OPT_VERSION, 0));
+  /* DO */
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_rr_set_u16(opt, ARES_RR_OPT_FLAGS, 0x8000));
+
+  QueryResult r2;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_send_dnsrec(channel_, req2, QueryCallback, &r2, nullptr));
+  Process();
+  EXPECT_TRUE(r2.done_);
+  EXPECT_EQ(ARES_SUCCESS, r2.status_);
+
+  ares_dns_record_destroy(req1);
+  ares_dns_record_destroy(req2);
+}
+
+// The test above sets the DO bit, which lives in the OPT flags -- it never
+// reaches the loop that keys the individual EDNS options.  That loop is what
+// separates two client subnets, so it needs its own coverage.
+// The mirror image of the tests above: two things are deliberately left out
+// of the cache key, and leaving them out is a security-relevant judgement --
+// it declares that two requests differing only in these still have
+// interchangeable answers.  Without a test, keying on either one later would
+// turn every request from an affected application into a permanent cache miss
+// and nothing would fail.
+
+// A DNS cookie is per-server transport state and says nothing about the
+// content of an answer, so two requests differing only in their cookie share
+// an entry.  The server must therefore be asked exactly once.
+// Two query types with no mnemonic in ares_dns_rec_type_tostr() both render as
+// "UNKNOWN", so keying the mnemonic made every such type share one entry -- a
+// lookup answered with a record of a type it never asked for.  Any 16-bit
+// value reaches here through ares_query_dnsrec(); LOC (29) and DNAME (39) are
+// both real and both outside the table.
+TEST_P(CacheQueriesTest, UnknownQueryTypesDoNotShareCacheEntries) {
+  DNSPacket rsp29;
+  rsp29.set_response().set_aa()
+    .add_question(new DNSQuestion("example.net", static_cast<ns_type>(29)));
+  DNSPacket rsp39;
+  rsp39.set_response().set_aa()
+    .add_question(new DNSQuestion("example.net", static_cast<ns_type>(39)));
+
+  // One call per type: neither may be served the other's answer.
+  EXPECT_CALL(server_, OnRequest("example.net", static_cast<ns_type>(29)))
+    .Times(1)
+    .WillRepeatedly(SetReply(&server_, &rsp29));
+  EXPECT_CALL(server_, OnRequest("example.net", static_cast<ns_type>(39)))
+    .Times(1)
+    .WillRepeatedly(SetReply(&server_, &rsp39));
+
+  QueryResult r1;
+  ares_query_dnsrec(channel_, "example.net", ARES_CLASS_IN,
+                    static_cast<ares_dns_rec_type_t>(29), QueryCallback, &r1,
+                    nullptr);
+  Process();
+  EXPECT_TRUE(r1.done_);
+
+  QueryResult r2;
+  ares_query_dnsrec(channel_, "example.net", ARES_CLASS_IN,
+                    static_cast<ares_dns_rec_type_t>(39), QueryCallback, &r2,
+                    nullptr);
+  Process();
+  EXPECT_TRUE(r2.done_);
+}
+
+// Handing back a duplicate materialises the pending TTL decrement, so a
+// callback that reads the TTL off the record it is given sees the remaining
+// lifetime rather than the value the server sent.  docs/ares_init_options.3
+// states this, so pin it.  Only visible to a caller that does not duplicate
+// first -- QueryResult does, which is why the other cache tests cannot see it.
+static unsigned int g_qcache_hit_ttl = 0;
+
+static void QcacheTtlCallback(void *arg, ares_status_t status, size_t timeouts,
+                              const ares_dns_record_t *dnsrec) {
+  const ares_dns_rr_t *rr;
+  (void)arg;
+  (void)timeouts;
+  if (status != ARES_SUCCESS || dnsrec == NULL) {
+    return;
+  }
+  rr = ares_dns_record_rr_get_const(dnsrec, ARES_SECTION_ANSWER, 0);
+  g_qcache_hit_ttl = rr ? ares_dns_rr_get_ttl(rr) : 0;
+}
+
+TEST_P(CacheQueriesTest, CacheHitReportsRemainingTtl) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .Times(1)
+    .WillRepeatedly(SetReply(&server_, &rsp));
+
+  g_qcache_hit_ttl = 0;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QcacheTtlCallback, nullptr, nullptr);
+  Process();
+  EXPECT_EQ((unsigned int)100, g_qcache_hit_ttl);
+
+  ares_sleep_time(2100);
+
+  g_qcache_hit_ttl = 0;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QcacheTtlCallback, nullptr, nullptr);
+  Process();
+  // Served from the cache, and reporting what is left rather than the
+  // original 100.
+  EXPECT_GT(g_qcache_hit_ttl, (unsigned int)0);
+  EXPECT_LT(g_qcache_hit_ttl, (unsigned int)100);
+}
+
+TEST_P(CacheQueriesTest, CookieDoesNotSplitCacheEntries) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .Times(1)
+    .WillRepeatedly(SetReply(&server_, &rsp));
+
+  const unsigned char  ck1[]   = {1, 2, 3, 4, 5, 6, 7, 8};
+  const unsigned char  ck2[]   = {8, 7, 6, 5, 4, 3, 2, 1};
+  const unsigned char *ck[2]   = {ck1, ck2};
+  QueryResult          r[2];
+
+  for (int i = 0; i < 2; i++) {
+    ares_dns_record_t *req = nullptr;
+    ares_dns_rr_t     *opt = nullptr;
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_create(&req, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+                                     ARES_RCODE_NOERROR));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_query_add(req, "www.google.com", ARES_REC_TYPE_A,
+                                        ARES_CLASS_IN));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_rr_add(&opt, req, ARES_SECTION_ADDITIONAL, "",
+                                     ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_rr_set_u16(opt, ARES_RR_OPT_UDP_SIZE, 1232));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_rr_set_opt(opt, ARES_RR_OPT_OPTIONS,
+                                  ARES_OPT_PARAM_COOKIE, ck[i], sizeof(ck1)));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_send_dnsrec(channel_, req, QueryCallback, &r[i], nullptr));
+    Process();
+    EXPECT_TRUE(r[i].done_);
+    EXPECT_EQ(ARES_SUCCESS, r[i].status_);
+    ares_dns_record_destroy(req);
+  }
+}
+
+// The advertised UDP payload size constrains how a response is transported,
+// not what it says, so it is excluded too.  Same expectation: one request.
+TEST_P(CacheQueriesTest, UdpPayloadSizeDoesNotSplitCacheEntries) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .Times(1)
+    .WillRepeatedly(SetReply(&server_, &rsp));
+
+  const unsigned short sizes[2] = {512, 1232};
+  QueryResult          r[2];
+
+  for (int i = 0; i < 2; i++) {
+    ares_dns_record_t *req = nullptr;
+    ares_dns_rr_t     *opt = nullptr;
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_create(&req, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+                                     ARES_RCODE_NOERROR));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_query_add(req, "www.google.com", ARES_REC_TYPE_A,
+                                        ARES_CLASS_IN));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_rr_add(&opt, req, ARES_SECTION_ADDITIONAL, "",
+                                     ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_rr_set_u16(opt, ARES_RR_OPT_UDP_SIZE, sizes[i]));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_send_dnsrec(channel_, req, QueryCallback, &r[i], nullptr));
+    Process();
+    EXPECT_TRUE(r[i].done_);
+    EXPECT_EQ(ARES_SUCCESS, r[i].status_);
+    ares_dns_record_destroy(req);
+  }
+}
+
+TEST_P(CacheQueriesTest, EdnsClientSubnetSeparateCacheEntries) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .Times(2)
+    .WillRepeatedly(SetReply(&server_, &rsp));
+
+  /* 192.0.2.0/24 and 198.51.100.0/24 */
+  const unsigned char  ecs1[]  = {0x00, 0x01, 0x18, 0x00, 0xc0, 0x00, 0x02};
+  const unsigned char  ecs2[]  = {0x00, 0x01, 0x18, 0x00, 0xc6, 0x33, 0x64};
+  const unsigned char *ecs[2]  = {ecs1, ecs2};
+  QueryResult          r[2];
+
+  for (int i = 0; i < 2; i++) {
+    ares_dns_record_t *req = nullptr;
+    ares_dns_rr_t     *opt = nullptr;
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_create(&req, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+                                     ARES_RCODE_NOERROR));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_query_add(req, "www.google.com", ARES_REC_TYPE_A,
+                                        ARES_CLASS_IN));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_record_rr_add(&opt, req, ARES_SECTION_ADDITIONAL, "",
+                                     ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_rr_set_u16(opt, ARES_RR_OPT_UDP_SIZE, 1232));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_dns_rr_set_opt(opt, ARES_RR_OPT_OPTIONS,
+                                  ARES_OPT_PARAM_EDNS_CLIENT_SUBNET, ecs[i],
+                                  sizeof(ecs1)));
+    EXPECT_EQ(ARES_SUCCESS,
+              ares_send_dnsrec(channel_, req, QueryCallback, &r[i], nullptr));
+    Process();
+    EXPECT_TRUE(r[i].done_);
+    EXPECT_EQ(ARES_SUCCESS, r[i].status_);
+    ares_dns_record_destroy(req);
+  }
+}
+
+// A server answering an EDNS query with FORMERR makes c-ares strip the OPT
+// record from query->query and retry.  The cache key must not be derived from
+// that record afterwards, or the entry is stored under a key no later lookup
+// computes and the cache silently stops working for that name.
+TEST_P(CacheQueriesTest, EdnsFallbackStillCaches) {
+  DNSPacket rspfail;
+  rspfail.set_response().set_aa().set_rcode(FORMERR)
+    .add_question(new DNSQuestion("www.google.com", T_A));
+  DNSPacket rspok;
+  rspok.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {1, 2, 3, 4}));
+  /* Two: the FORMERR and the retry.  The second lookup must be a cache hit. */
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .Times(2)
+    .WillOnce(SetReply(&server_, &rspfail))
+    .WillRepeatedly(SetReply(&server_, &rspok));
+
+  HostResult r1;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &r1);
+  Process();
+  EXPECT_TRUE(r1.done_);
+  EXPECT_EQ(ARES_SUCCESS, r1.status_);
+
+  HostResult r2;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &r2);
+  Process();
+  EXPECT_TRUE(r2.done_);
+  EXPECT_EQ(ARES_SUCCESS, r2.status_);
+}
+
+// The question name is caller-supplied and unescaped, so anything keyed after
+// it could be imitated by a name containing that same text.  A request for
+// "example.net|EDNS|0|8000" with no OPT record must not collide with a request
+// for "example.net" carrying EDNS with the DNSSEC OK bit set.
+TEST_P(CacheQueriesTest, EdnsSectionCannotBeImitatedByName) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("example.net", T_A))
+    .add_answer(new DNSARR("example.net", 100, {5, 6, 7, 8}));
+  ON_CALL(server_, OnRequest("example.net", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  /* Cache an answer for the real name, with EDNS and the DO bit set. */
+  ares_dns_record_t *req = nullptr;
+  ares_dns_rr_t     *opt = nullptr;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&req, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+                                   ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(req, "example.net", ARES_REC_TYPE_A,
+                                      ARES_CLASS_IN));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_rr_add(&opt, req, ARES_SECTION_ADDITIONAL, "",
+                                   ARES_REC_TYPE_OPT, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_rr_set_u16(opt, ARES_RR_OPT_UDP_SIZE, 1232));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_u16(opt, ARES_RR_OPT_FLAGS, 0x8000));
+  QueryResult r1;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_send_dnsrec(channel_, req, QueryCallback, &r1, nullptr));
+  Process();
+  EXPECT_TRUE(r1.done_);
+  EXPECT_EQ(ARES_SUCCESS, r1.status_);
+  ares_dns_record_destroy(req);
+
+  /* A different name that spells out the EDNS suffix, with no OPT record.
+   * It must not be served the entry above; with the cache keyed correctly it
+   * is refused, because '|' is not valid in a hostname. */
+  ares_dns_record_t *req2 = nullptr;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&req2, 0, ARES_FLAG_RD, ARES_OPCODE_QUERY,
+                                   ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(req2, "example.net|EDNS|0|8000",
+                                      ARES_REC_TYPE_A, ARES_CLASS_IN));
+  QueryResult r2;
+  ares_send_dnsrec(channel_, req2, QueryCallback, &r2, nullptr);
+  Process();
+  EXPECT_TRUE(r2.done_);
+  EXPECT_NE(ARES_SUCCESS, r2.status_);
+  ares_dns_record_destroy(req2);
+}
+
 TEST_P(CacheQueriesTest, GetHostByNameCache) {
   DNSPacket rsp;
   rsp.set_response().set_aa()
