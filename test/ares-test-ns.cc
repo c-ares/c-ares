@@ -69,15 +69,18 @@ int EnterContainer(void *data) {
   std::string content = contentss.str();
   int fd = open("/proc/self/uid_map", O_WRONLY);
   if (fd < 0) {
-    std::cerr << "Failed to open /proc/self/uid_map, errno=" << errno << std::endl;
+    std::cerr << "Failed to open /proc/self/uid_map, errno=" << errno
+              << std::endl;
     return -1;
   }
-  ssize_t rc = write(fd, content.c_str(), content.size());
+  ssize_t wrc = write(fd, content.c_str(), content.size());
+  if (wrc != (ssize_t)content.size()) {
+    std::cerr << "Failed to write uid map, rc=" << wrc << ", errno=" << errno
+              << std::endl;
+    close(fd);
+    return -1;
+  }
   close(fd);
-  if (rc != (ssize_t)content.size()) {
-    std::cerr << "Failed to write uid map, errno=" << errno << std::endl;
-    return -1;
-  }
   if (getuid() != 0) {
     std::cerr << "Child in user namespace has uid " << getuid() << std::endl;
     return -1;
@@ -144,7 +147,7 @@ int RunInContainer(ContainerFilesystem* fs, const std::string& hostname,
                    const std::string& domainname, VoidToIntFn fn) {
   const int stack_size = 1024 * 1024;
   std::vector<byte> stack(stack_size, 0);
-  ContainerInfo container = {fs, hostname, domainname, fn, getuid()};
+  ContainerInfo container = {fs, hostname, domainname, fn, geteuid()};
 
   // Start a child process in a new user and UTS namespace.  CLONE_VM shares our
   // memory with the child, so that test failures, mock expectations and
@@ -164,7 +167,8 @@ int RunInContainer(ContainerFilesystem* fs, const std::string& hostname,
   // Reap the child process and retrieve its status.
   int status;
   if (waitpid(child, &status, 0) != child) {
-    std::cerr << "Failed to waitpid(" << child << "), errno=" << errno << std::endl;
+    std::cerr << "Failed to waitpid(" << child << "), errno=" << errno
+              << std::endl;
     return -1;
   }
   if (!WIFEXITED(status)) {
