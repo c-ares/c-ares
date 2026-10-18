@@ -636,7 +636,8 @@ static void QcacheReentrantCallback(void *arg, ares_status_t status,
     return;
   }
   /* Documented re-entry.  Reconfiguring servers flushes the query cache. */
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(data->channel, "127.0.0.55:53"));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_set_servers_csv(data->channel, "127.0.0.1:53055"));
   /* Still inside the callback, so this record must still be readable. */
   data->ancount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER);
 }
@@ -751,17 +752,17 @@ TEST_P(CacheQueriesTest, EdnsOptionsSeparateCacheEntries) {
 // both real and both outside the table.
 TEST_P(CacheQueriesTest, UnknownQueryTypesDoNotShareCacheEntries) {
   DNSPacket rsp29;
-  rsp29.set_response().set_aa()
-    .add_question(new DNSQuestion("example.net", static_cast<ns_type>(29)));
+  rsp29.set_response().set_aa().add_question(
+    new DNSQuestion("example.net", 29));
   DNSPacket rsp39;
-  rsp39.set_response().set_aa()
-    .add_question(new DNSQuestion("example.net", static_cast<ns_type>(39)));
+  rsp39.set_response().set_aa().add_question(
+    new DNSQuestion("example.net", 39));
 
   // One call per type: neither may be served the other's answer.
-  EXPECT_CALL(server_, OnRequest("example.net", static_cast<ns_type>(29)))
+  EXPECT_CALL(server_, OnRequest("example.net", 29))
     .Times(1)
     .WillRepeatedly(SetReply(&server_, &rsp29));
-  EXPECT_CALL(server_, OnRequest("example.net", static_cast<ns_type>(39)))
+  EXPECT_CALL(server_, OnRequest("example.net", 39))
     .Times(1)
     .WillRepeatedly(SetReply(&server_, &rsp39));
 
@@ -2402,7 +2403,7 @@ static void ReconfigureServersCallback(void *arg, ares_status_t status,
   data->cbs++;
   /* Frees every server absent from the new configuration, closing their
    * connections -- which still hold the queries being torn down. */
-  ares_set_servers_csv(data->channel, "127.0.0.55:53");
+  ares_set_servers_csv(data->channel, "127.0.0.1:53055");
 }
 
 // Reconfiguring the server list from a cancellation callback.
@@ -2567,7 +2568,7 @@ TEST_F(LibraryTest, NewQueryInDestroyCallbackIsRefusedAndNotified) {
 
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
   // Nothing listens here; no traffic is needed.
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel, "127.0.0.55:53"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel, "127.0.0.1:53055"));
 
   DestroyReentryData data;
   data.channel            = channel;
@@ -2663,7 +2664,7 @@ TEST_P(MockUDPSingleTryTest, CancelInCallbackServerRemovalNoDoubleFree) {
                     CancelChannelCallback, &data, NULL);
 
   /* Drops the server the in-flight query is attached to. */
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel_, "127.0.0.55:53"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel_, "127.0.0.1:53055"));
   EXPECT_TRUE(data.done);
 }
 
@@ -2751,7 +2752,7 @@ TEST_F(LibraryTest, CancelInSockStateCallbackNoUseAfterFree) {
 
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&chan, &opts, optmask));
   ASSERT_NE(nullptr, chan);
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.55:53"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.1:53055"));
 
   /* Armed only now, so channel setup itself does not cancel. */
   data.channel = chan;
@@ -2816,7 +2817,7 @@ TEST_F(LibraryTest, SockStateCloseIsReportedBeforeDescriptorCloses) {
   EXPECT_EQ(ARES_SUCCESS,
             ares_init_options(&chan, &opts, ARES_OPT_SOCK_STATE_CB));
   ASSERT_NE(nullptr, chan);
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.55:53"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.1:53055"));
 
   QueryResult result;
   ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
@@ -2851,7 +2852,7 @@ static int ReconfigureConfigureCallback(ares_socket_t fd, int type, void *data)
   (void)fd;
   (void)type;
   // Frees the server this connection is being opened for.
-  ares_set_servers_csv(d->channel, "127.0.0.56:53");
+  ares_set_servers_csv(d->channel, "127.0.0.1:53056");
   return 0;
 }
 
@@ -2880,7 +2881,7 @@ TEST_F(LibraryTest, ReconfigureInConfigureHookNoUseAfterFree) {
 
   EXPECT_EQ(ARES_SUCCESS, ares_init_options(&chan, &opts, optmask));
   ASSERT_NE(nullptr, chan);
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.55:53"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.1:53055"));
 
   data.channel = chan;
   data.done    = false;
@@ -2918,7 +2919,7 @@ static void SockStateReconfigureCallback(void *data, ares_socket_t socket_fd,
   d->calls++;
   if (d->channel != nullptr) {
     // Destroys the server, and with it the connection being opened.
-    ares_set_servers_csv(d->channel, "127.0.0.56:53");
+    ares_set_servers_csv(d->channel, "127.0.0.1:53056");
   }
 }
 
@@ -2937,7 +2938,7 @@ TEST_F(LibraryTest, ReconfigureInSockStateCallbackNoUseAfterFree) {
   EXPECT_EQ(ARES_SUCCESS,
             ares_init_options(&chan, &opts, ARES_OPT_SOCK_STATE_CB));
   ASSERT_NE(nullptr, chan);
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.55:53"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.1:53055"));
 
   /* Armed only now, so channel setup itself does not reconfigure. */
   data.channel = chan;
@@ -3222,7 +3223,7 @@ static void ReconfigureChannelCallback(void *arg, ares_status_t status,
   (void)dnsrec;
   data->done = true;
   /* Frees every server absent from the new configuration. */
-  ares_set_servers_csv(data->channel, "127.0.0.55:53");
+  ares_set_servers_csv(data->channel, "127.0.0.1:53055");
 }
 
 TEST_P(MockUDPChannelTest, ReconfigureInCallbackStaleRequeueServer) {
