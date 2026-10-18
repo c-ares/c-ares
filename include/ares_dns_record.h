@@ -868,6 +868,9 @@ CARES_EXTERN size_t ares_dns_record_rr_cnt(const ares_dns_record_t *dnsrec,
  *  \param[out] rr_out   Pointer to created resource record.  This pointer
  *                       is owned by the DNS record itself, this is just made
  *                       available to facilitate adding RR-specific fields.
+ *                       It is only valid until the next call to
+ *                       ares_dns_record_rr_add() or ares_dns_record_rr_del()
+ *                       for the same section, which may move or free it.
  *  \param[in]  dnsrec   Initialized record object
  *  \param[in]  sect     Section to add resource record to
  *  \param[in]  name     Resource Record name/hostname
@@ -886,7 +889,10 @@ CARES_EXTERN ares_status_t ares_dns_record_rr_add(
  *  \param[in]  dnsrec   Initialized record object
  *  \param[in]  sect     Section for resource record
  *  \param[in]  idx      Index of resource record in section
- *  \return NULL on misuse, otherwise a writable pointer to the resource record
+ *  \return NULL on misuse, otherwise a writable pointer to the resource record.
+ *          The pointer is invalidated by the next call to
+ *          ares_dns_record_rr_add() or ares_dns_record_rr_del() for the same
+ *          section.
  */
 CARES_EXTERN ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
                                                    ares_dns_section_t sect,
@@ -897,14 +903,19 @@ CARES_EXTERN ares_dns_rr_t *ares_dns_record_rr_get(ares_dns_record_t *dnsrec,
  *  \param[in]  dnsrec   Initialized record object
  *  \param[in]  sect     Section for resource record
  *  \param[in]  idx      Index of resource record in section
- *  \return NULL on misuse, otherwise a const pointer to the resource record
+ *  \return NULL on misuse, otherwise a const pointer to the resource record.
+ *          The pointer is invalidated by the next call to
+ *          ares_dns_record_rr_add() or ares_dns_record_rr_del() for the same
+ *          section.
  */
 CARES_EXTERN const ares_dns_rr_t *
   ares_dns_record_rr_get_const(const ares_dns_record_t *dnsrec,
                                ares_dns_section_t sect, size_t idx);
 
 
-/*! Remove the resource record based on the section and index
+/*! Remove the resource record based on the section and index.  This
+ *  invalidates any resource record pointer previously retrieved for this
+ *  section: the removed record is freed and the following ones are moved.
  *
  *  \param[in]  dnsrec   Initialized record object
  *  \param[in]  sect     Section for resource record
