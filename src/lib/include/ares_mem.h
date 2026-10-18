@@ -70,7 +70,7 @@ CARES_EXTERN void *ares_malloc_zero_array(size_t num, size_t size);
  *  \param[in] num   New number of elements
  *  \param[in] size  Size of each element in bytes
  *  \return pointer to the resized array, or NULL if num * size overflows
- *          size_t or the allocation fails.
+ *          size_t, is zero, or the allocation fails.
  */
 CARES_EXTERN void *ares_realloc_array(void *ptr, size_t num, size_t size);
 
@@ -83,7 +83,8 @@ CARES_EXTERN void *ares_realloc_array(void *ptr, size_t num, size_t size);
  *  \param[in] new_num   New number of elements
  *  \param[in] size      Size of each element in bytes
  *  \return pointer to the resized array, or NULL if either orig_num * size or
- *          new_num * size overflows size_t or the allocation fails.
+ *          new_num * size overflows size_t, new_num * size is zero, or the
+ *          allocation fails.
  */
 CARES_EXTERN void *ares_realloc_zero_array(void *ptr, size_t orig_num,
                                            size_t new_num, size_t size);

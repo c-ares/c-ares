@@ -145,7 +145,7 @@ public:
   static void  SetAllocSizeFail(size_t size);
   // Whether a failure armed by SetAllocSizeFail(size) is still pending, i.e.
   // no allocation of exactly that size has been requested since.
-  static bool AllocSizeFailPending(size_t size);
+  static bool  AllocSizeFailPending(size_t size);
   // Remove any pending alloc failures.
   static void  ClearFails();
 

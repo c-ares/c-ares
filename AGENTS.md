@@ -47,7 +47,8 @@ ninja -C build
   headers after, in `#ifdef HAVE_*` guards.
 - Memory: `ares_malloc/ares_malloc_zero/ares_realloc_zero/ares_free/
   ares_strdup` only.  Multiplied allocation sizes must be
-  overflow-checked (`ares_malloc_zero_array`, `ares_realloc_zero_array`,
+  overflow-checked (`ares_malloc_array`, `ares_realloc_array`,
+  `ares_malloc_zero_array`, `ares_realloc_zero_array`, or
   `ares_size_t_mul_overflow`).  Never `malloc(0)`.
 - Errors: return `ares_status_t`; single-exit `goto done` cleanup.
 - Strings/ctype: `ares_str.h` helpers (`ares_streq`, `ares_strcaseeq`,
