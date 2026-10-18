@@ -91,7 +91,7 @@ CARES_EXTERN ares_status_t ares_array_set_size(ares_array_t *arr, size_t size);
  *  persistent, any future elements inserted will not maintain this sort.
  *
  *  \param[in]  arr      Initialized array object.
- *  \param[in]  cb       Sort callback
+ *  \param[in]  cmp      Sort callback
  *  \return ARES_SUCCESS on success
  */
 CARES_EXTERN ares_status_t ares_array_sort(ares_array_t    *arr,
@@ -198,35 +198,35 @@ CARES_EXTERN ares_status_t ares_array_insertdata_first(ares_array_t *arr,
                                                        const void   *data_ptr);
 
 /*! Fetch a pointer to the given element in the array
- *  \param[in]  array  Initialized array object
+ *  \param[in]  arr    Initialized array object
  *  \param[in]  idx    Index to fetch
  *  \return pointer on success, NULL on failure */
 CARES_EXTERN void *ares_array_at(ares_array_t *arr, size_t idx);
 
 /*! Fetch a pointer to the first element in the array
- *  \param[in]  array  Initialized array object
+ *  \param[in]  arr    Initialized array object
  *  \return pointer on success, NULL on failure */
 CARES_EXTERN void *ares_array_first(ares_array_t *arr);
 
 /*! Fetch a pointer to the last element in the array
- *  \param[in]  array  Initialized array object
+ *  \param[in]  arr    Initialized array object
  *  \return pointer on success, NULL on failure */
 CARES_EXTERN void *ares_array_last(ares_array_t *arr);
 
 /*! Fetch a constant pointer to the given element in the array
- *  \param[in]  array  Initialized array object
+ *  \param[in]  arr    Initialized array object
  *  \param[in]  idx    Index to fetch
  *  \return pointer on success, NULL on failure */
 CARES_EXTERN const void *ares_array_at_const(const ares_array_t *arr,
                                              size_t              idx);
 
 /*! Fetch a constant pointer to the first element in the array
- *  \param[in]  array  Initialized array object
+ *  \param[in]  arr    Initialized array object
  *  \return pointer on success, NULL on failure */
 CARES_EXTERN const void *ares_array_first_const(const ares_array_t *arr);
 
 /*! Fetch a constant pointer to the last element in the array
- *  \param[in]  array  Initialized array object
+ *  \param[in]  arr    Initialized array object
  *  \return pointer on success, NULL on failure */
 CARES_EXTERN const void *ares_array_last_const(const ares_array_t *arr);
 

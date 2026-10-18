@@ -532,7 +532,7 @@ CARES_EXTERN size_t ares_buf_consume_last_charset(ares_buf_t          *buf,
  *  \param[in] buf                Initialized buffer object
  *  \param[in] seq                sequence of bytes
  *  \param[in] len                length of sequence
- *  \param[in] require_charset    require we find the sequence.
+ *  \param[in] require_seq        require we find the sequence.
  *                                if ARES_FALSE it will simply consume the
  *                                rest of the buffer.  If ARES_TRUE will return
  *                                SIZE_MAX if not found.
@@ -776,14 +776,14 @@ CARES_EXTERN size_t ares_buf_get_position(const ares_buf_t *buf);
  *  \param[in]  remaining_len  maximum length that should be used for parsing
  *                             the string, this is often less than the remaining
  *                             buffer and is based on the RR record length.
- *  \param[out] name           Pointer passed by reference to be filled in with
+ *  \param[out] str            Pointer passed by reference to be filled in with
  *                             allocated string of the parsed that must be
  *                             ares_free()'d by the caller.
  *  \return ARES_SUCCESS on success
  */
 CARES_EXTERN ares_status_t ares_buf_parse_dns_str(ares_buf_t *buf,
                                                   size_t      remaining_len,
-                                                  char      **name);
+                                                  char      **str);
 
 /*! Parse a character-string as defined in RFC1035, as binary, however for
  *  convenience this does guarantee a NULL terminator (that is not included
