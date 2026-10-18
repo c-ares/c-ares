@@ -455,5 +455,15 @@ TEST_F(LibraryTest, ParseSvcbRejectsCompressedTarget) {
   EXPECT_EQ(nullptr, dnsrec);
 }
 
+TEST_F(DefaultChannelTest, ParseNameserverUriLinkLocalUninitialized) {
+  // Issue #1299: parse_nameserver_uri did not zero-initialize sconfig.
+  // When parsing multiple servers in a loop, if a URI server entry has a link-local
+  // interface, subsequent URI server entries without one would retain the previous
+  // entry's interface.
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_set_servers_csv(channel_, "dns://[fe80::1%25iface0],dns://2.3.4.5"));
+  EXPECT_EQ("2.3.4.5:53", GetNameServers(channel_));
+}
+
 }  // namespace test
 }  // namespace ares
