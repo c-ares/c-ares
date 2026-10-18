@@ -553,6 +553,14 @@ dnl https://mailman.videolan.org/pipermail/vlc-devel/2015-March/101802.html
 dnl which would require we check each individually and provide function arguments
 dnl for the test.
 
+dnl On Apple hosts, header availability macros declare functions newer than the
+dnl deployment target.  Ensure -Werror=partial-availability is used during
+dnl declaration checks so too-new symbols are correctly reported as missing.
+AS_IF([test "x$host_vendor" = "xapple"], [
+  cares_save_cflags="$CFLAGS"
+  AX_APPEND_COMPILE_FLAGS([-Werror=partial-availability], [CFLAGS])
+])
+
 AC_CHECK_DECL(strnlen,         [AC_DEFINE([HAVE_STRNLEN],           1, [Define to 1 if you have `strnlen`]        )], [], $cares_all_includes)
 AC_CHECK_DECL(memmem,          [AC_DEFINE([HAVE_MEMMEM],            1, [Define to 1 if you have `memmem`]         )], [], $cares_all_includes)
 AC_CHECK_DECL(recv,            [AC_DEFINE([HAVE_RECV],              1, [Define to 1 if you have `recv`]           )], [], $cares_all_includes)
@@ -607,6 +615,9 @@ AC_CHECK_DECL(RegNotifyChangeKeyValue, [AC_DEFINE([HAVE_REGNOTIFYCHANGEKEYVALUE]
 AC_CHECK_DECL(__system_property_get,       [AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET],       1, [Define to 1 if you have `__system_property_get`]      )], [], $cares_all_includes)
 AC_CHECK_DECL(SetFileCompletionNotificationModes, [AC_DEFINE([HAVE_SETFILECOMPLETIONNOTIFICATIONMODES], 1, [Define to 1 if you have `SetFileCompletionNotificationModes`])], [], $cares_all_includes)
 AC_CHECK_DECL(WSAIoctl, [AC_DEFINE([HAVE_WSAIoctl], 1, [Define to 1 if you have `WSAIoctl`])], [], $cares_all_includes)
+AS_IF([test "x$host_vendor" = "xapple"], [
+  CFLAGS="$cares_save_cflags"
+])
 
 
 dnl ###############################################################################
