@@ -26,18 +26,209 @@
  */
 #include "ares_private.h"
 
+/*! A queued socket-state notification.  Holds the descriptor and the state,
+ *  never the connection, so a queued entry cannot outlive what it refers to.
+ *
+ *  When \c owns_fd is set, this message carries the only remaining reference to
+ *  the descriptor: the connection is gone and the descriptor is deliberately
+ *  left open until after the application has been told to stop watching it.
+ *  Closing first would let the number be reused -- by application code running
+ *  from a deferred query callback, for instance -- before the notification
+ *  naming it is delivered. */
+typedef struct {
+  ares_socket_t fd;
+  ares_bool_t   readable;
+  ares_bool_t   writable;
+  ares_bool_t   owns_fd;
+} ares_sock_state_msg_t;
+
+static ares_bool_t ares_sock_state_queue(ares_channel_t              *channel,
+                                         const ares_sock_state_msg_t *msg)
+{
+  if (channel->sock_state_queue == NULL) {
+    channel->sock_state_queue = ares_array_create(sizeof(*msg), NULL);
+    if (channel->sock_state_queue == NULL) {
+      return ARES_FALSE; /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+  }
+
+  if (ares_array_insertdata_last(channel->sock_state_queue, msg) !=
+      ARES_SUCCESS) {
+    return ARES_FALSE; /* LCOV_EXCL_LINE: OutOfMemory */
+  }
+
+  return ARES_TRUE;
+}
+
+/*! Deliver every socket-state notification the channel has queued.  Loops
+ *  rather than snapshotting: a callback is allowed to re-enter the library and
+ *  queue more, and those belong to this same delivery point. */
+static void ares_sock_state_dispatch(ares_channel_t *channel)
+{
+  while (ares_array_len(channel->sock_state_queue) > 0) {
+    ares_sock_state_msg_t msg;
+
+    if (ares_array_claim_at(&msg, sizeof(msg), channel->sock_state_queue, 0) !=
+        ARES_SUCCESS) {
+      break; /* LCOV_EXCL_LINE: DefensiveCoding */
+    }
+
+    if (channel->sock_state_cb != NULL) {
+      /* The public callback takes ints. */
+      channel->sock_state_cb(channel->sock_state_cb_data, msg.fd,
+                             msg.readable ? 1 : 0, msg.writable ? 1 : 0);
+    }
+
+    /* Told first, closed second -- the ordering the application depends on to
+     * keep its descriptor set honest. */
+    if (msg.owns_fd) {
+      ares_socket_close(channel, msg.fd);
+    }
+  }
+
+  ares_array_destroy(channel->sock_state_queue);
+  channel->sock_state_queue = NULL;
+}
+
+static void ares_deferred_cb_flush(ares_channel_t *channel)
+{
+  /* Only the outermost frame delivers: anything above us on the stack may
+   * still be holding the connection a reentrant call from one of these
+   * callbacks could free.
+   *
+   * The dispatch below counts as a nesting level of its own.  Without that, a
+   * callback that calls back into the library re-enters here through the
+   * enter/leave pair on that call, drains the rest of the queue and destroys
+   * it underneath the loop -- and hands the next notification to the
+   * application from inside the current one.  With the counter held, the
+   * nested leave returns immediately and whatever it queued is picked up by
+   * the loop that is already running. */
+  if (channel->deferred_cb_depth > 0) {
+    return;
+  }
+  channel->deferred_cb_depth++;
+
+  /* Both kinds of deferred notification share this one delivery point.  Loop
+   * rather than calling each once: a socket-state callback may put the library
+   * on a path that queues a server-state notification, and the reverse, and
+   * both belong to this delivery point rather than the next one. */
+  while (ares_array_len(channel->sock_state_queue) > 0 ||
+         ares_array_len(channel->server_state_queue) > 0) {
+    ares_sock_state_dispatch(channel);
+    ares_server_state_dispatch(channel);
+  }
+
+  /* The outermost call is unwinding and the callbacks above have run, so
+   * nothing can still be holding a server or connection that was unlinked
+   * during it.  Now they can be freed. */
+  ares_deferred_reclaim(channel);
+
+  channel->deferred_cb_depth--;
+}
+
+void ares_deferred_reclaim(ares_channel_t *channel)
+{
+  /* Connections first: a pending server's connection list is already empty,
+   * but this keeps the ordering obvious rather than incidental. */
+  while (channel->pending_conns != NULL) {
+    ares_conn_t *conn      = channel->pending_conns;
+    channel->pending_conns = conn->next_pending;
+    conn->next_pending     = NULL;
+    ares_conn_reap(conn);
+  }
+
+  while (channel->pending_servers != NULL) {
+    ares_server_t *server    = channel->pending_servers;
+    channel->pending_servers = server->next_pending;
+    server->next_pending     = NULL;
+    ares_server_reap(server);
+  }
+}
+
+void ares_deferred_cb_enter(ares_channel_t *channel)
+{
+  channel->deferred_cb_depth++;
+}
+
+void ares_deferred_cb_leave(ares_channel_t *channel)
+{
+  if (channel->deferred_cb_depth > 0) {
+    channel->deferred_cb_depth--;
+  }
+  ares_deferred_cb_flush(channel);
+}
+
+ares_bool_t ares_conn_sock_state_cb_close(ares_conn_t *conn)
+{
+  ares_channel_t       *channel = conn->server->channel;
+  ares_sock_state_msg_t msg;
+
+  /* No callback to run, so nothing will ever carry this descriptor: the
+   * caller closes it itself, exactly as before. */
+  if (channel->sock_state_cb == NULL) {
+    return ARES_FALSE;
+  }
+
+  /* Already reported as unwatched, so no notification is due and no message
+   * will be queued to hold the descriptor. */
+  if ((conn->state_flags & ARES_CONN_STATE_CBFLAGS) == ARES_CONN_STATE_NONE) {
+    return ARES_FALSE;
+  }
+
+  msg.fd       = conn->fd;
+  msg.readable = ARES_FALSE;
+  msg.writable = ARES_FALSE;
+  msg.owns_fd  = ARES_TRUE;
+
+  if (!ares_sock_state_queue(channel, &msg)) {
+    return ARES_FALSE; /* LCOV_EXCL_LINE: OutOfMemory */
+  }
+
+  conn->state_flags &= ~((unsigned int)ARES_CONN_STATE_CBFLAGS);
+
+  return ARES_TRUE;
+}
+
 void ares_conn_sock_state_cb_update(ares_conn_t            *conn,
                                     ares_conn_state_flags_t flags)
 {
-  ares_channel_t *channel = conn->server->channel;
+  ares_channel_t       *channel = conn->server->channel;
+  ares_sock_state_msg_t msg;
+  ares_bool_t           changed = ARES_FALSE;
 
-  if ((conn->state_flags & ARES_CONN_STATE_CBFLAGS) != flags &&
-      channel->sock_state_cb) {
-    channel->sock_state_cb(channel->sock_state_cb_data, conn->fd,
-                           flags & ARES_CONN_STATE_READ ? 1 : 0,
-                           flags & ARES_CONN_STATE_WRITE ? 1 : 0);
+  if ((conn->state_flags & ARES_CONN_STATE_CBFLAGS) != flags) {
+    changed = ARES_TRUE;
   }
 
+  msg.fd       = conn->fd;
+  msg.readable = flags & ARES_CONN_STATE_READ ? ARES_TRUE : ARES_FALSE;
+  msg.writable = flags & ARES_CONN_STATE_WRITE ? ARES_TRUE : ARES_FALSE;
+  msg.owns_fd  = ARES_FALSE; /* the connection still owns it */
+
+  if (!changed || channel->sock_state_cb == NULL) {
+    conn->state_flags &= ~((unsigned int)ARES_CONN_STATE_CBFLAGS);
+    conn->state_flags |= flags;
+    return;
+  }
+
+  /* Queue rather than dispatch.  This runs in the middle of opening, writing
+   * to or closing a connection, and every caller keeps using that connection
+   * afterwards.  The callback is application code that may reentrantly call
+   * ares_cancel() or ares_set_servers_csv(), either of which frees the
+   * connection -- the first through the idle-connection sweep, the second by
+   * destroying the server that owns it.  Deliver once no frame still holds
+   * it.
+   *
+   * Only the descriptor and the state are captured, never the connection, and
+   * insertion order is preserved so the application observes the same
+   * sequence it would have seen inline. */
+  if (!ares_sock_state_queue(channel, &msg)) {
+    return; /* LCOV_EXCL_LINE: OutOfMemory */
+  }
+
+  /* Recorded as reported only now: on either failure above the connection
+   * stays eligible to notify again, rather than remembering a state the
+   * application was never told about. */
   conn->state_flags &= ~((unsigned int)ARES_CONN_STATE_CBFLAGS);
   conn->state_flags |= flags;
 }
@@ -433,6 +624,16 @@ ares_status_t ares_open_connection(ares_conn_t   **conn_out,
   /* Let the connection know we haven't written our first packet yet for TFO */
   if (conn->flags & ARES_CONN_FLAG_TFO) {
     conn->flags |= ARES_CONN_FLAG_TFO_INITIAL;
+  }
+
+  /* The socket-configure and socket-create callbacks above are application
+   * code, and either may reconfigure the servers -- which destroys the ones
+   * the new configuration omits, including possibly this one.  Everything
+   * below dereferences it, starting with conn->server in
+   * ares_conn_set_self_ip(). */
+  if (!ares_server_in_channel(channel, server)) {
+    status = ARES_ECONNREFUSED;
+    goto done;
   }
 
   /* Need to store our own ip for DNS cookie support */

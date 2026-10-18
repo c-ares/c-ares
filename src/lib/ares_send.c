@@ -117,6 +117,27 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
   unsigned short           id          = generate_unique_qid(channel);
   const ares_dns_record_t *dnsrec_resp = NULL;
 
+  /* A channel being destroyed accepts no new queries.  ares_destroy(3)
+   * documents that a callback must not add new requests to a channel being
+   * destroyed.  Refuse it, but still notify: ARES_EDESTRUCTION is documented
+   * in ares_query(3), ares_send(3), ares_search(3) and ares_getaddrinfo(3) as
+   * a status delivered to the callback, and every caller frees its own
+   * context from there.
+   *
+   * Not notified if we are already inside such a notification: an application
+   * whose callback starts a replacement lookup on every invocation would
+   * otherwise re-enter here from within the callback without bound and
+   * exhaust the stack.  At that depth it is already past the contract
+   * ares_destroy(3) documents. */
+  if (!channel->sys_up) {
+    if (!channel->in_shutdown_refusal) {
+      channel->in_shutdown_refusal = ARES_TRUE;
+      callback(arg, ARES_EDESTRUCTION, 0, NULL);
+      channel->in_shutdown_refusal = ARES_FALSE;
+    }
+    return ARES_EDESTRUCTION;
+  }
+
   ares_tvnow(&now);
 
   if (ares_slist_len(channel->servers) == 0) {
@@ -145,6 +166,7 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
 
   query->channel      = channel;
   query->qid          = id;
+  query->serial       = ++channel->query_serial;
   query->timeout.sec  = 0;
   query->timeout.usec = 0;
   query->using_tcp =
@@ -209,6 +231,12 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
    */
   if (!ares_htable_szvp_insert(channel->queries_by_qid, query->qid, query)) {
     /* LCOV_EXCL_START: OutOfMemory */
+    /* The query is already chained into all_queries, so a reentrant
+     * ares_cancel() from the callback below would find it, run the
+     * application callback a second time for one lookup, and free it -- and
+     * the ares_free_query() here would then double-free.  Same ordering as
+     * ares_cancel() and ares_destroy(): unlink first, notify second. */
+    ares_detach_query(query);
     callback(arg, ARES_ENOMEM, 0, NULL);
     ares_free_query(query);
     return ARES_ENOMEM;
@@ -217,10 +245,17 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
 
   /* Perform the first query action. */
 
+  /* Sending opens and writes to connections and can mark a server down, both
+   * of which notify.  Deliver those once we are done with the connection and
+   * the server, not part-way through. */
+  ares_deferred_cb_enter(channel);
   status = ares_send_query(server, query, &now);
+  ares_deferred_cb_leave(channel);
+
   if (status == ARES_SUCCESS && qid) {
     *qid = id;
   }
+
   return status;
 }
 
