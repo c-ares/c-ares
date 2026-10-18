@@ -223,9 +223,12 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
      */
 #ifdef HAVE_GETHOSTNAME
     if (niquery->flags & ARES_NI_NOFQDN) {
-      char        buf[255];
+      char        buf[255] = "";
       const char *domain;
-      gethostname(buf, 255);
+      if (gethostname(buf, (GETHOSTNAME_TYPE_ARG2)sizeof(buf)) != 0) {
+        buf[0] = '\0';
+      }
+      buf[sizeof(buf) - 1] = '\0';
       if ((domain = strchr(buf, '.')) != NULL) {
         char *end = ares_striendstr(host->h_name, domain);
         if (end) {
