@@ -256,9 +256,9 @@ ares_bool_t ares_timedout(const ares_timeval_t *now,
            : ARES_FALSE;
 }
 
-static ares_status_t ares_process_fds_nolock(ares_channel_t         *channel,
-                                             const ares_fd_events_t *events,
-                                             size_t nevents, unsigned int flags)
+ares_status_t ares_process_fds_nolock(ares_channel_t         *channel,
+                                      const ares_fd_events_t *events,
+                                      size_t nevents, unsigned int flags)
 {
   ares_timeval_t now;
   size_t         i;
@@ -330,15 +330,8 @@ ares_status_t ares_process_fds(ares_channel_t         *channel,
 
   ares_channel_lock(channel);
   status = ares_process_fds_nolock(channel, events, nevents, flags);
-  ares_channel_unlock(channel);
-
-  /* If a callback invoked during processing called ares_destroy(), it was
-   * deferred; complete it now that the callback stack has unwound.  The event
-   * thread completes its own deferred destroy in its run loop (it must detach
-   * rather than join itself), so skip that here. */
-  if (!(channel->optmask & ARES_OPT_EVENT_THREAD)) {
-    ares_destroy_if_deferred(channel);
-  }
+  /* Releases the lock, and completes a destroy deferred from a callback. */
+  ares_channel_unlock_destroy_if_deferred(channel);
   return status;
 }
 
@@ -458,13 +451,8 @@ done:
   ares_process_fds_nolock(channel, events, nevents, ARES_PROCESS_FLAG_NONE);
   ares_free(events);
   ares_free(socketlist);
-  ares_channel_unlock(channel);
-
-  /* Complete a deferred ares_destroy() issued from within a callback.  This
-   * legacy entry point is not used with an event thread. */
-  if (!(channel->optmask & ARES_OPT_EVENT_THREAD)) {
-    ares_destroy_if_deferred(channel);
-  }
+  /* Releases the lock, and completes a destroy deferred from a callback. */
+  ares_channel_unlock_destroy_if_deferred(channel);
 }
 
 static ares_status_t process_write(ares_channel_t *channel,
@@ -491,15 +479,22 @@ static ares_status_t process_write(ares_channel_t *channel,
 
 void ares_process_pending_write(ares_channel_t *channel)
 {
-  ares_slist_node_t *node;
-
   if (channel == NULL) {
     return;
   }
 
   ares_channel_lock(channel);
+  ares_process_pending_write_nolock(channel);
+  /* A write-flush error can fail a query, whose callback may have called
+   * ares_destroy().  Releases the lock, and completes that destroy. */
+  ares_channel_unlock_destroy_if_deferred(channel);
+}
+
+void ares_process_pending_write_nolock(ares_channel_t *channel)
+{
+  ares_slist_node_t *node;
+
   if (!channel->notify_pending_write) {
-    ares_channel_unlock(channel);
     return;
   }
 
@@ -524,15 +519,6 @@ void ares_process_pending_write(ares_channel_t *channel)
     if (status != ARES_SUCCESS) {
       handle_conn_error(conn, ARES_TRUE, status);
     }
-  }
-
-  ares_channel_unlock(channel);
-
-  /* A write-flush error can fail a query, whose callback may have called
-   * ares_destroy(); complete a deferred destroy now.  The event thread
-   * completes its own deferred destroy in its run loop. */
-  if (!(channel->optmask & ARES_OPT_EVENT_THREAD)) {
-    ares_destroy_if_deferred(channel);
   }
 }
 
@@ -1853,25 +1839,33 @@ void ares_invoke_query_callback(ares_query_t *query, ares_status_t status,
   ares_channel_callback_leave(channel);
 }
 
-ares_bool_t ares_destroy_if_deferred(ares_channel_t *channel)
+ares_bool_t ares_channel_claim_deferred_destroy(ares_channel_t *channel)
 {
-  ares_bool_t do_destroy;
-
-  ares_channel_lock(channel);
-  do_destroy =
-    (ares_bool_t)(channel->destroy_pending && channel->callback_depth == 0);
-  /* Claim the pending destroy so a concurrent completer (another processing
-   * thread or the event thread loop) can't also tear the channel down. */
-  if (do_destroy) {
-    channel->destroy_pending = ARES_FALSE;
+  if (!channel->destroy_pending || channel->callback_depth != 0) {
+    return ARES_FALSE;
   }
+
+  /* Clear it so a second would-be completer (the event thread loop, or the
+   * reinit thread) can't also tear the channel down.  Mark the channel down
+   * under the same lock, so nothing can start a reinit -- whose thread the
+   * teardown would then have to join -- between here and ares_destroy_int(). */
+  channel->destroy_pending = ARES_FALSE;
+  channel->sys_up          = ARES_FALSE;
+  return ARES_TRUE;
+}
+
+void ares_channel_unlock_destroy_if_deferred(ares_channel_t *channel)
+{
+  /* Decide while the lock is still held.  Once it is released, another thread
+   * that also observes the deferral may complete it and free the channel, so
+   * nothing here may read the channel after the unlock. */
+  ares_bool_t do_destroy = ares_channel_claim_deferred_destroy(channel);
+
   ares_channel_unlock(channel);
 
   if (do_destroy) {
-    ares_destroy_int(channel, ARES_FALSE);
+    ares_destroy_int(channel, ARES_DESTROY_FROM_CALLER);
   }
-
-  return do_destroy;
 }
 
 static void end_query(ares_channel_t *channel, ares_server_t *server,

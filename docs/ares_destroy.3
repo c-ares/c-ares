@@ -28,17 +28,35 @@ failure by retrying cannot recurse without bound; its argument is not handed
 back. This applies as of c-ares version 1.35.0, and c-ares version 1.34.9 on
 the 1.34 branch.
 
-As of c-ares 1.35.0, \fBares_destroy(3)\fP may be called from within a query
-callback.  In that case the channel cannot be torn down immediately, as the
-callback stack still references it, so the teardown is deferred until the
-callback returns and completes asynchronously.  The channel must not be used
-again after such a call.  Prior versions explicitly did not support this and
-doing so resulted in undefined behavior (including a deadlock when using an
-event thread).
+As of c-ares 1.35.0, \fBares_destroy(3)\fP may be called from within a
+callback invoked by the channel.  In that case the channel cannot be torn down
+immediately, as the callback stack still references it, so
+\fBares_destroy(3)\fP returns without destroying it and the teardown is
+deferred until the callback returns.  The channel must not be used again after
+such a call.  Prior versions explicitly did not support this and doing so
+resulted in undefined behavior (including a deadlock when using an event
+thread).
+
+Where the deferred teardown completes depends on which thread ran the callback:
+.RS 4
+.IP \(bu 2
+If the callback was invoked from within a c-ares function the application
+called, such as \fBares_process_fds(3)\fP, \fBares_process(3)\fP,
+\fBares_cancel(3)\fP, \fBares_set_servers_csv(3)\fP, or
+\fBares_getaddrinfo(3)\fP answering from the hosts file or a literal address,
+the teardown completes before that function returns.
+.IP \(bu 2
+If the callback was invoked on a thread internal to c-ares, as is the case when
+the channel was created with \fIARES_OPT_EVENT_THREAD\fP, the teardown completes
+on that thread some time after the callback returns.  There is no way to wait
+for it.  The application must not call \fBares_library_cleanup(3)\fP, unload
+the c-ares library, or exit while such a teardown may still be running.
+.RE
 
 There is no ability to make this function thread-safe.  No additional calls
 using this channel may be made once this function is called.
 .SH SEE ALSO
 .BR ares_init (3),
 .BR ares_cancel (3),
+.BR ares_library_cleanup (3),
 .BR ares_threadsafety (3)

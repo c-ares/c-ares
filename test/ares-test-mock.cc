@@ -3497,12 +3497,16 @@ TEST_P(MockUDPChannelTest, DestroyInSynchronousCallback) {
   data.channel = channel_;
   data.done    = false;
 
+  LibraryTest::WatchFree(channel_);
+
   /* A literal address never reaches the network, so the callback fires from
    * inside this call. */
   ares_getaddrinfo(channel_, "127.0.0.1", NULL, NULL, DestroyAiCallback,
                    &data);
 
   EXPECT_TRUE(data.done);
+  /* The deferred teardown completes before ares_getaddrinfo() returns. */
+  EXPECT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::milliseconds(0)));
   channel_ = nullptr; /* destroyed above; don't let the fixture repeat it */
 }
 
@@ -3519,11 +3523,18 @@ TEST_P(MockUDPChannelTest, DestroyInCallback) {
   data.done    = false;
   ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
                     DestroyChannelCallback, &data, NULL);
+  LibraryTest::WatchFree(channel_);
 
   // Drive processing manually.  We can't use Process() here because the channel
   // is destroyed from within the callback and Process() would touch the freed
   // channel on its next loop iteration.  Stop the moment the callback fires.
+  auto tv_begin = std::chrono::high_resolution_clock::now();
   while (!data.done) {
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                     std::chrono::high_resolution_clock::now() - tv_begin)
+                     .count();
+    ASSERT_LT(elapsed, 10) << "callback never fired";
+
     fd_set readers, writers;
     int    nfds;
     FD_ZERO(&readers);
@@ -3551,10 +3562,149 @@ TEST_P(MockUDPChannelTest, DestroyInCallback) {
     ares_process(channel_, &readers, &writers);
   }
 
+  // The deferred teardown completes before ares_process() returns.
+  EXPECT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::milliseconds(0)));
+
   // The channel was destroyed from within the callback; make sure the fixture
   // does not try to destroy it a second time.
   channel_ = nullptr;
   EXPECT_TRUE(data.done);
+}
+
+// ares_cancel() dispatches ARES_ECANCELLED callbacks itself; a destroy from one
+// of them is completed before ares_cancel() returns.
+TEST_P(MockUDPChannelTest, DestroyInCancelCallback) {
+  DestroyInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+
+  /* No reply is configured, so the query stays pending until cancelled. */
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    DestroyChannelCallback, &data, NULL);
+  LibraryTest::WatchFree(channel_);
+
+  ares_cancel(channel_);
+
+  EXPECT_TRUE(data.done);
+  EXPECT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::milliseconds(0)));
+  channel_ = nullptr;
+}
+
+// ares_destroy() from within the ARES_EDESTRUCTION callback that ares_destroy()
+// itself is dispatching: the nested call is deferred, and the outer teardown
+// that is already running frees the channel exactly once.
+TEST_P(MockUDPChannelTest, DestroyInDestructionCallback) {
+  DestroyInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    DestroyChannelCallback, &data, NULL);
+  LibraryTest::WatchFree(channel_);
+
+  ares_destroy(channel_);
+
+  EXPECT_TRUE(data.done);
+  EXPECT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::milliseconds(0)));
+  channel_ = nullptr;
+}
+
+// Changing the server list ends any query left with no server to try, and
+// dispatches its callback from inside ares_set_servers_csv().  A destroy from
+// that callback used to be deferred with nothing left to complete it, leaking
+// the whole channel.
+TEST_P(MockUDPChannelTest, DestroyInServerRemovalCallback) {
+  DestroyInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    DestroyChannelCallback, &data, NULL);
+  LibraryTest::WatchFree(channel_);
+
+  /* Blank the server list; the pending query has nowhere left to go. */
+  ares_set_servers_csv(channel_, "");
+
+  EXPECT_TRUE(data.done);
+  EXPECT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::milliseconds(0)));
+  channel_ = nullptr;
+}
+
+// TCP with a single try and the connection kept open, so a second query is
+// written to an already-connected socket and a write failure ends it outright.
+class MockTCPSingleTryTest : public MockChannelOptsTest,
+                             public ::testing::WithParamInterface<int> {
+public:
+  MockTCPSingleTryTest()
+    : MockChannelOptsTest(1, GetParam(), true, false, FillOptions(&opts_),
+                          ARES_OPT_TRIES | ARES_OPT_FLAGS)
+  {
+  }
+
+  static struct ares_options *FillOptions(struct ares_options *opts)
+  {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->tries = 1;
+    opts->flags = ARES_FLAG_STAYOPEN | ARES_FLAG_EDNS;
+    return opts;
+  }
+
+private:
+  struct ares_options opts_;
+};
+
+static void PendingWriteCallback(void *data)
+{
+  *static_cast<bool *>(data) = true;
+}
+
+// With a pending-write callback registered, the write is deferred to
+// ares_process_pending_write().  If that write fails, the query is ended from
+// inside ares_process_pending_write(), and a destroy from its callback is
+// completed before it returns.
+TEST_P(MockTCPSingleTryTest, DestroyInPendingWriteCallback) {
+  /* ares_set_socket_functions() stores the pointer rather than copying it. */
+  static ares_socket_functions sock_funcs;
+
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  /* First lookup establishes the connection. */
+  QueryResult result;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QueryCallback, &result, NULL);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+
+  /* Second lookup goes to the connected socket, so with a pending-write
+   * callback registered its write is deferred. */
+  bool pending_write = false;
+  ares_set_pending_write_cb(channel_, PendingWriteCallback, &pending_write);
+
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+  sock_funcs.asendv = LibraryTest::ares_sendv_fail;
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+  LibraryTest::SetFailSend();
+
+  DestroyInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    DestroyChannelCallback, &data, NULL);
+  ASSERT_TRUE(pending_write);
+  EXPECT_FALSE(data.done);
+
+  LibraryTest::WatchFree(channel_);
+  ares_process_pending_write(channel_);
+
+  EXPECT_TRUE(data.done);
+  EXPECT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::milliseconds(0)));
+  channel_ = nullptr;
 }
 
 TEST_P(MockUDPChannelTest, GetSock) {
@@ -4745,6 +4895,8 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPMaxQueriesTest, ::testing::Valu
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, CacheQueriesTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPChannelTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPSingleTryTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockExtraOptsTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 

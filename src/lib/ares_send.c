@@ -304,10 +304,9 @@ ares_status_t ares_send_dnsrec(ares_channel_t          *channel,
   ares_channel_callback_enter(channel);
   status = ares_send_nolock(channel, NULL, 0, dnsrec, callback, arg, qid);
   ares_channel_callback_leave(channel);
-
-  ares_channel_unlock(channel);
-  /* Complete a destroy deferred from one of those callbacks. */
-  ares_destroy_if_deferred(channel);
+  /* Releases the lock, and completes a destroy deferred from one of those
+   * callbacks. */
+  ares_channel_unlock_destroy_if_deferred(channel);
 
   return status;
 }

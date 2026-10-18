@@ -37,32 +37,36 @@ void ares_destroy(ares_channel_t *channel)
     return;
   }
 
-  /* If ares_destroy() is called from within a query callback, we cannot tear
-   * the channel down right now: frames above us on the stack still reference
-   * the channel and its queries, and with an event thread we would be trying
-   * to join our own thread.  Defer the teardown; the outermost callback-
-   * dispatch frame (ares_process_fds(), ares_cancel(), or the event thread
-   * run loop) will complete it once the callback stack unwinds. */
+  /* If ares_destroy() is called from within a callback, we cannot tear the
+   * channel down right now: frames above us on the stack still reference the
+   * channel and its queries, and with an event thread we would be trying to
+   * join our own thread.  Defer the teardown; the outermost callback-dispatch
+   * frame (the public entry point that dispatched the callback, the event
+   * thread run loop, or the reinit thread) completes it once the callback
+   * stack unwinds. */
   ares_channel_lock(channel);
   if (channel->callback_depth > 0) {
     channel->destroy_pending = ARES_TRUE;
     deferred                 = ARES_TRUE;
+
+    /* Every dispatch frame completes its own deferral, so this is only a
+     * backstop: should a callback ever be dispatched from a frame without a
+     * completion site, the event thread still observes the deferral and
+     * completes it on its next loop rather than leaking the channel. */
+    if (channel->optmask & ARES_OPT_EVENT_THREAD) {
+      ares_event_thread_wake_channel(channel);
+    }
   }
   ares_channel_unlock(channel);
 
   if (deferred) {
-    /* Nudge the event thread so it observes the pending destroy promptly even
-     * if the deferral originated on another thread. */
-    if (channel->optmask & ARES_OPT_EVENT_THREAD) {
-      ares_event_thread_wake_channel(channel);
-    }
     return;
   }
 
-  ares_destroy_int(channel, ARES_FALSE);
+  ares_destroy_int(channel, ARES_DESTROY_FROM_CALLER);
 }
 
-void ares_destroy_int(ares_channel_t *channel, ares_bool_t from_ethread)
+void ares_destroy_int(ares_channel_t *channel, ares_destroy_from_t from)
 {
   size_t             i;
   ares_llist_node_t *node = NULL;
@@ -91,10 +95,15 @@ void ares_destroy_int(ares_channel_t *channel, ares_bool_t from_ethread)
   }
 
   /* Wait for reinit thread to exit if there was one pending, can't be
-   * holding a lock as the thread may take locks. */
+   * holding a lock as the thread may take locks.  If this teardown is running
+   * on the reinit thread itself it cannot join itself, so detach instead. */
   if (channel->reinit_thread != NULL) {
-    void *rv;
-    ares_thread_join(channel->reinit_thread, &rv);
+    if (from == ARES_DESTROY_FROM_REINIT_THREAD) {
+      ares_thread_detach(channel->reinit_thread);
+    } else {
+      void *rv;
+      ares_thread_join(channel->reinit_thread, &rv);
+    }
     channel->reinit_thread = NULL;
   }
 
@@ -172,7 +181,8 @@ void ares_destroy_int(ares_channel_t *channel, ares_bool_t from_ethread)
 
   /* Shut down the event thread */
   if (channel->optmask & ARES_OPT_EVENT_THREAD) {
-    ares_event_thread_destroy(channel, from_ethread);
+    ares_event_thread_destroy(
+      channel, from == ARES_DESTROY_FROM_EVENT_THREAD ? ARES_TRUE : ARES_FALSE);
   }
 
   if (channel->domains) {

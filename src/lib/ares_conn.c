@@ -111,12 +111,18 @@ static void ares_deferred_cb_flush(ares_channel_t *channel)
   /* Both kinds of deferred notification share this one delivery point.  Loop
    * rather than calling each once: a socket-state callback may put the library
    * on a path that queues a server-state notification, and the reverse, and
-   * both belong to this delivery point rather than the next one. */
+   * both belong to this delivery point rather than the next one.
+   *
+   * These are application callbacks too, so count them like query callbacks:
+   * an ares_destroy() from one has to be deferred, and a server-list change
+   * from one must not complete such a deferral underneath this loop. */
+  ares_channel_callback_enter(channel);
   while (ares_array_len(channel->sock_state_queue) > 0 ||
          ares_array_len(channel->server_state_queue) > 0) {
     ares_sock_state_dispatch(channel);
     ares_server_state_dispatch(channel);
   }
+  ares_channel_callback_leave(channel);
 
   /* The outermost call is unwinding and the callbacks above have run, so
    * nothing can still be holding a server or connection that was unlinked

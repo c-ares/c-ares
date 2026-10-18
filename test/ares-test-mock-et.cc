@@ -1812,6 +1812,7 @@ TEST_P(MockUDPEventThreadTest, DestroyInCallback) {
   DestroyInCbETData data;
   data.channel = channel_;
   data.done    = false;
+  LibraryTest::WatchFree(channel_);
   ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
                     DestroyChannelCallbackET, &data, NULL);
 
@@ -1850,13 +1851,46 @@ TEST_P(MockUDPEventThreadTest, DestroyInCallback) {
   }
 
   // The event thread completes teardown asynchronously after the callback
-  // returns; give it a moment to detach and free the channel.  Under ASAN /
-  // valgrind this validates there is no leak or use-after-free.
-  std::this_thread::sleep_for(std::chrono::milliseconds(250));
+  // returns.  Wait for it to free the channel, which is the last thing the
+  // teardown does, so it cannot still be running into a later test.
+  ASSERT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::seconds(10)))
+    << "event thread never completed the deferred destroy";
 
   // Channel destroyed from within the callback; don't destroy it again.
   channel_ = nullptr;
   EXPECT_TRUE(data.done);
+}
+
+// A literal address is answered from inside ares_getaddrinfo(), so the callback
+// runs on the caller's thread rather than the event thread.  The destroy it
+// issues is completed by ares_getaddrinfo() before it returns -- joining the
+// event thread, which it is not running on.  This used to race the event
+// thread, which also tried to complete it, onto a freed channel.
+static void DestroyAiCallbackET(void *arg, int status, int timeouts,
+                                struct ares_addrinfo *result)
+{
+  DestroyInCbETData *data = static_cast<DestroyInCbETData *>(arg);
+  (void)status;
+  (void)timeouts;
+  if (result != nullptr) {
+    ares_freeaddrinfo(result);
+  }
+  ares_destroy(data->channel);
+  data->done = true;
+}
+
+TEST_P(MockUDPEventThreadTest, DestroyInSynchronousCallback) {
+  DestroyInCbETData data;
+  data.channel = channel_;
+  data.done    = false;
+  LibraryTest::WatchFree(channel_);
+
+  ares_getaddrinfo(channel_, "127.0.0.1", NULL, NULL, DestroyAiCallbackET,
+                   &data);
+
+  EXPECT_TRUE(data.done);
+  EXPECT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::milliseconds(0)));
+  channel_ = nullptr;
 }
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families_modes), ares::test::PrintEvsysFamilyMode);

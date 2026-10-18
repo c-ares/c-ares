@@ -201,7 +201,12 @@ static void ares_event_thread_process_fd(ares_event_thread_t *e,
   if (flags & ARES_EVENT_FLAG_WRITE) {
     event.events |= ARES_FD_EVENT_WRITE;
   }
-  ares_process_fds(e->channel, &event, 1, ARES_PROCESS_FLAG_SKIP_NON_FD);
+  /* Not ares_process_fds(): that completes an ares_destroy() deferred from a
+   * callback, which on this thread must be left to the run loop since the
+   * teardown has to detach rather than join this thread. */
+  ares_channel_lock(e->channel);
+  ares_process_fds_nolock(e->channel, &event, 1, ARES_PROCESS_FLAG_SKIP_NON_FD);
+  ares_channel_unlock(e->channel);
 }
 
 static void ares_event_thread_sockstate_cb(void *data, ares_socket_t socket_fd,
@@ -361,7 +366,9 @@ static void *ares_event_thread(void *arg)
     e->process_pending_write = ARES_FALSE;
     ares_thread_mutex_unlock(e->mutex);
     if (process_pending_write) {
-      ares_process_pending_write(e->channel);
+      ares_channel_lock(channel);
+      ares_process_pending_write_nolock(channel);
+      ares_channel_unlock(channel);
     }
 
     /* Relock before we loop again */
@@ -371,32 +378,28 @@ static void *ares_event_thread(void *arg)
      * that may not have been performed */
     if (e->isup) {
       ares_thread_mutex_unlock(e->mutex);
-      ares_process_fds(channel, NULL, 0, ARES_PROCESS_FLAG_NONE);
+      ares_channel_lock(channel);
+      ares_process_fds_nolock(channel, NULL, 0, ARES_PROCESS_FLAG_NONE);
+
+      /* A callback invoked during processing (or the pending write above) may
+       * have called ares_destroy().  That couldn't tear down (or join) this
+       * very thread, so it was deferred to us.  Claim it under the same lock
+       * hold as the processing, so no other completer can get in between, and
+       * break out to complete the teardown ourselves. */
+      self_destroy = ares_channel_claim_deferred_destroy(channel);
+      ares_channel_unlock(channel);
+      if (self_destroy) {
+        break; /* NOTE: e->mutex is unlocked here */
+      }
       ares_thread_mutex_lock(e->mutex);
     }
-
-    /* A callback invoked during processing may have called ares_destroy().
-     * That couldn't tear down (or join) this very thread, so it was deferred
-     * to us.  Claim it and break out to complete the teardown ourselves.  We
-     * take the channel lock without holding e->mutex to preserve lock order. */
-    ares_thread_mutex_unlock(e->mutex);
-    ares_channel_lock(channel);
-    if (channel->destroy_pending && channel->callback_depth == 0) {
-      channel->destroy_pending = ARES_FALSE;
-      self_destroy             = ARES_TRUE;
-    }
-    ares_channel_unlock(channel);
-    if (self_destroy) {
-      break; /* NOTE: e->mutex is unlocked here */
-    }
-    ares_thread_mutex_lock(e->mutex);
   }
 
   if (self_destroy) {
     /* e->mutex is not held here (see break above).  Complete the deferred
      * ares_destroy() on our own thread; ares_destroy_int() will detach rather
      * than join this thread to avoid a self-join deadlock. */
-    ares_destroy_int(channel, ARES_TRUE);
+    ares_destroy_int(channel, ARES_DESTROY_FROM_EVENT_THREAD);
     return NULL;
   }
 

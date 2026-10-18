@@ -251,6 +251,10 @@ unsigned long long LibraryTest::fails_ = 0;
 std::map<size_t, int> LibraryTest::size_fails_;
 std::mutex            LibraryTest::lock_;
 bool LibraryTest::failsend_ = false;
+std::atomic<const void *> LibraryTest::watched_free_(nullptr);
+bool                      LibraryTest::watched_freed_ = false;
+std::mutex                LibraryTest::watched_lock_;
+std::condition_variable   LibraryTest::watched_cond_;
 
 void ares_sleep_time(unsigned int ms)
 {
@@ -424,6 +428,25 @@ void* LibraryTest::arealloc(void *ptr, size_t size) {
 // static
 void LibraryTest::afree(void *ptr) {
   free(ptr);
+  if (ptr != nullptr && ptr == watched_free_.load()) {
+    std::lock_guard<std::mutex> guard(watched_lock_);
+    watched_free_  = nullptr;
+    watched_freed_ = true;
+    watched_cond_.notify_all();
+  }
+}
+
+// static
+void LibraryTest::WatchFree(const void *ptr) {
+  std::lock_guard<std::mutex> guard(watched_lock_);
+  watched_freed_ = false;
+  watched_free_  = ptr;
+}
+
+// static
+bool LibraryTest::WaitForWatchedFree(std::chrono::milliseconds timeout) {
+  std::unique_lock<std::mutex> guard(watched_lock_);
+  return watched_cond_.wait_for(guard, timeout, [] { return watched_freed_; });
 }
 
 std::set<ares_socket_t> NoExtraFDs() {

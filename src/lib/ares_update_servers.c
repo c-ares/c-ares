@@ -1283,7 +1283,9 @@ int ares_set_servers(ares_channel_t              *channel,
 
   ares_channel_lock(channel);
   status = ares_servers_update(channel, slist, ARES_TRUE);
-  ares_channel_unlock(channel);
+  /* Removing a server can end queries that have nowhere left to go, whose
+   * callbacks may call ares_destroy().  Releases the lock, and completes it. */
+  ares_channel_unlock_destroy_if_deferred(channel);
 
   ares_llist_destroy(slist);
 
@@ -1307,7 +1309,9 @@ int ares_set_servers_ports(ares_channel_t                   *channel,
 
   ares_channel_lock(channel);
   status = ares_servers_update(channel, slist, ARES_TRUE);
-  ares_channel_unlock(channel);
+  /* Removing a server can end queries that have nowhere left to go, whose
+   * callbacks may call ares_destroy().  Releases the lock, and completes it. */
+  ares_channel_unlock_destroy_if_deferred(channel);
 
   ares_llist_destroy(slist);
 
@@ -1329,7 +1333,9 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
     /* blank all servers */
     ares_channel_lock(channel);
     status = ares_servers_update(channel, NULL, ARES_TRUE);
-    ares_channel_unlock(channel);
+    /* Ends every pending query, whose callbacks may call ares_destroy().
+     * Releases the lock, and completes it. */
+    ares_channel_unlock_destroy_if_deferred(channel);
     return status;
   }
 
@@ -1341,7 +1347,9 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
 
   ares_channel_lock(channel);
   status = ares_servers_update(channel, slist, ARES_TRUE);
-  ares_channel_unlock(channel);
+  /* Removing a server can end queries that have nowhere left to go, whose
+   * callbacks may call ares_destroy().  Releases the lock, and completes it. */
+  ares_channel_unlock_destroy_if_deferred(channel);
 
   ares_llist_destroy(slist);
 
