@@ -436,7 +436,9 @@ static ares_status_t process_option(ares_sysconfig_t *sysconfig,
     }
     sysconfig->timeout_ms = valint * 1000;
   } else if (ares_streq(key, "retry") || ares_streq(key, "attempts")) {
-    if (valint == 0) {
+    if (valint == 0 || valint > 255) {
+      /* A bogus attempt count must not become an effectively unbounded
+       * retry loop; ignore it like other invalid options. */
       status = ARES_EFORMERR;
       goto done;
     }
