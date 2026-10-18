@@ -198,6 +198,24 @@ TEST_F(LibraryTest, InetNetPtoN) {
   ares_inet_net_pton(AF_INET, "10/8", &a4, sizeof(a4));
   EXPECT_EQ(htonl(0x0A000000), a4.s_addr);
 
+  // Partially specified IPv6
+  // (ensures remaining octets are properly zeroed)
+  memset(&a6, 0xFF, sizeof(a6));
+  EXPECT_EQ(0, ares_inet_net_pton(AF_INET6, "::1/0", &a6, sizeof(a6)));
+  struct in6_addr zero6;
+  memset(&zero6, 0, sizeof(zero6));
+  EXPECT_EQ(0, memcmp(&a6, &zero6, sizeof(a6)));
+
+  memset(&a6, 0xFF, sizeof(a6));
+  EXPECT_EQ(3 * 8,
+            ares_inet_net_pton(AF_INET6, "1234:5678::/24", &a6, sizeof(a6)));
+  EXPECT_EQ(0x12, ((unsigned char *)&a6)[0]);
+  EXPECT_EQ(0x34, ((unsigned char *)&a6)[1]);
+  EXPECT_EQ(0x56, ((unsigned char *)&a6)[2]);
+  for (size_t i = 3; i < sizeof(a6); i++) {
+    EXPECT_EQ(0, ((unsigned char *)&a6)[i]);
+  }
+
   EXPECT_EQ(16 * 8, ares_inet_net_pton(AF_INET6, "::", &a6, sizeof(a6)));
   EXPECT_EQ(16 * 8, ares_inet_net_pton(AF_INET6, "::1", &a6, sizeof(a6)));
   EXPECT_EQ(16 * 8, ares_inet_net_pton(AF_INET6, "1234:5678::", &a6, sizeof(a6)));
@@ -1266,6 +1284,17 @@ TEST_F(LibraryTest, InetPtoN) {
   EXPECT_EQ(1, ares_inet_pton(AF_INET6, "12:34::ffff:1.2.3.4", &a6));
   EXPECT_EQ(0, ares_inet_pton(AF_INET, "xyzzy", &a4));
   EXPECT_EQ(-1, ares_inet_pton(AF_INET+AF_INET6, "1.2.3.4", &a4));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET6, "::1/0", &a6));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET6, "::1/64", &a6));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET6, "::1/128", &a6));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, "1.2.3.4/0", &a4));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, "1.2.3.4/24", &a4));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, "1.2.3.4/32", &a4));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, "10", &a4));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, "10.0", &a4));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, "10.0.0", &a4));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, NULL, &a4));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET6, NULL, &a6));
 }
 
 TEST_F(LibraryTest, FreeCorruptData) {

@@ -371,6 +371,8 @@ static int ares_inet_net_pton_ipv6(const char *src, unsigned char *dst,
   char                 buf[INET6_ADDRSTRLEN + sizeof("/128")];
   char                *sep;
 
+  memset(dst, 0, size);
+
   if (ares_strlen(src) >= sizeof buf) {
     SET_SOCKERRNO(EMSGSIZE);
     return -1;
@@ -444,9 +446,17 @@ int ares_inet_pton(int af, const char *src, void *dst)
     SET_SOCKERRNO(EAFNOSUPPORT);
     return -1;
   }
+
+  if (src == NULL || strchr(src, '/') != NULL) {
+    return 0;
+  }
+
   result = ares_inet_net_pton(af, src, dst, size);
   if (result == -1 && SOCKERRNO == ENOENT) {
     return 0;
   }
-  return (result > -1) ? 1 : -1;
+  if (result < 0) {
+    return -1;
+  }
+  return (result == (int)(size * 8)) ? 1 : 0;
 }

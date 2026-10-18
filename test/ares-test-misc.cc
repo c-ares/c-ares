@@ -446,6 +446,18 @@ TEST_F(DefaultChannelTest, GetAddrinfoNullNameNullService) {
   EXPECT_EQ(ARES_ENOTFOUND, result.status_);
 }
 
+TEST_F(DefaultChannelTest, GetAddrinfoCidrNotTreatedAsLiteral)
+{
+  AddrInfoResult             result;
+  struct ares_addrinfo_hints hints = { 0, 0, 0, 0 };
+  hints.ai_family                  = AF_UNSPEC;
+  ares_getaddrinfo(channel_, "::1/0", NULL, &hints, AddrInfoCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+  EXPECT_NE(ARES_SUCCESS, result.status_);
+  EXPECT_EQ(nullptr, result.ai_.get());
+}
+
 // Interesting question: should tacking on a search domain let the query
 // through? It seems safer to reject it because "supersecret.onion.search"
 // still leaks information about the query to malicious resolvers.
