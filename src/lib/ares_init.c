@@ -508,15 +508,24 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
   (*dest)->sock_config_cb               = src->sock_config_cb;
   (*dest)->sock_config_cb_data          = src->sock_config_cb_data;
   memcpy(&(*dest)->sock_funcs, &(src->sock_funcs), sizeof((*dest)->sock_funcs));
-  (*dest)->sock_func_cb_data            = src->sock_func_cb_data;
-  (*dest)->legacy_sock_funcs            = src->legacy_sock_funcs;
-  (*dest)->legacy_sock_funcs_cb_data    = src->legacy_sock_funcs_cb_data;
-  (*dest)->server_state_cb              = src->server_state_cb;
-  (*dest)->server_state_cb_data         = src->server_state_cb_data;
-  (*dest)->notify_pending_write_cb      = src->notify_pending_write_cb;
-  (*dest)->notify_pending_write_cb_data = src->notify_pending_write_cb_data;
-  (*dest)->query_enqueue_cb             = src->query_enqueue_cb;
-  (*dest)->query_enqueue_cb_data        = src->query_enqueue_cb_data;
+  (*dest)->sock_func_cb_data = src->sock_func_cb_data;
+  /* Socket callbacks given the channel itself as user data (as the
+   * ares_set_socket_functions() wrappers are) must get the new channel */
+  if (src->sock_func_cb_data == src) {
+    (*dest)->sock_func_cb_data = *dest;
+  }
+  (*dest)->legacy_sock_funcs         = src->legacy_sock_funcs;
+  (*dest)->legacy_sock_funcs_cb_data = src->legacy_sock_funcs_cb_data;
+  (*dest)->server_state_cb           = src->server_state_cb;
+  (*dest)->server_state_cb_data      = src->server_state_cb_data;
+  /* With an event thread these callbacks belong to the source's event
+   * thread; the new channel already has its own */
+  if (!(src->optmask & ARES_OPT_EVENT_THREAD)) {
+    (*dest)->notify_pending_write_cb      = src->notify_pending_write_cb;
+    (*dest)->notify_pending_write_cb_data = src->notify_pending_write_cb_data;
+    (*dest)->query_enqueue_cb             = src->query_enqueue_cb;
+    (*dest)->query_enqueue_cb_data        = src->query_enqueue_cb_data;
+  }
 
   ares_strcpy((*dest)->local_dev_name, src->local_dev_name,
               sizeof((*dest)->local_dev_name));
