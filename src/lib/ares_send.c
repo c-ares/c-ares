@@ -111,11 +111,12 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
                                ares_callback_dnsrec callback, void *arg,
                                unsigned short *qid)
 {
-  ares_query_t            *query;
-  ares_timeval_t           now;
-  ares_status_t            status;
-  unsigned short           id          = generate_unique_qid(channel);
-  const ares_dns_record_t *dnsrec_resp = NULL;
+  ares_query_t      *query;
+  ares_timeval_t     now;
+  ares_status_t      status;
+  unsigned short     id          = generate_unique_qid(channel);
+  ares_dns_record_t *dnsrec_resp = NULL;
+  char              *qcache_key  = NULL;
 
   ares_tvnow(&now);
 
@@ -124,13 +125,28 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
     return ARES_ENOSERVER;
   }
 
-  if (!(flags & ARES_SEND_FLAG_NOCACHE)) {
+  /* Derive the cache key once, from the caller's request, and only when the
+   * cache is actually on.  The send path may mutate query->query afterwards
+   * -- the EDNS fallback strips its OPT record -- and a key derived from it
+   * later would not match.  ares_init_options() always creates the cache
+   * object, so a zero maximum TTL is what "off" means. */
+  if (channel->qcache_max_ttl > 0) {
+    qcache_key = ares_qcache_calc_key(dnsrec);
+    if (qcache_key == NULL) {
+      callback(arg, ARES_ENOMEM, 0, NULL); /* LCOV_EXCL_LINE: OutOfMemory */
+      return ARES_ENOMEM;                  /* LCOV_EXCL_LINE: OutOfMemory */
+    }
+  }
+
+  if (qcache_key != NULL && !(flags & ARES_SEND_FLAG_NOCACHE)) {
     /* Check query cache */
-    status = ares_qcache_fetch(channel, &now, dnsrec, &dnsrec_resp);
+    status = ares_qcache_fetch(channel, &now, qcache_key, &dnsrec_resp);
     if (status != ARES_ENOTFOUND) {
       /* ARES_SUCCESS means we retrieved the cache, anything else is a critical
        * failure, all result in termination */
+      ares_free(qcache_key);
       callback(arg, status, 0, dnsrec_resp);
+      ares_dns_record_destroy(dnsrec_resp);
       return status;
     }
   }
@@ -138,8 +154,11 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
   /* Allocate space for query and allocated fields. */
   query = ares_malloc(sizeof(ares_query_t));
   if (!query) {
-    callback(arg, ARES_ENOMEM, 0, NULL); /* LCOV_EXCL_LINE: OutOfMemory */
-    return ARES_ENOMEM;                  /* LCOV_EXCL_LINE: OutOfMemory */
+    /* LCOV_EXCL_START: OutOfMemory */
+    ares_free(qcache_key);
+    callback(arg, ARES_ENOMEM, 0, NULL);
+    return ARES_ENOMEM;
+    /* LCOV_EXCL_STOP */
   }
   memset(query, 0, sizeof(*query));
 
@@ -151,6 +170,10 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
     (channel->flags & ARES_FLAG_USEVC) ? ARES_TRUE : ARES_FALSE;
 
   /* Duplicate Query */
+  /* The query adopts the key derived above; ares_free_query() releases it. */
+  query->qcache_key = qcache_key;
+  qcache_key        = NULL;
+
   status = ares_dns_record_duplicate_ex(&query->query, dnsrec);
   if (status != ARES_SUCCESS) {
     /* Sometimes we might get a EBADRESP response from duplicate due to
@@ -158,7 +181,11 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
     if (status == ARES_EBADRESP) {
       status = ARES_EBADQUERY;
     }
-    ares_free(query);
+    /* ares_free_query() rather than ares_free(): the query was zeroed above,
+     * so detaching finds every node NULL and the qid not yet registered, and
+     * it also releases qcache_key.  Reachable without memory pressure -- a
+     * name that is not a valid hostname fails the duplicate. */
+    ares_free_query(query);
     callback(arg, status, 0, NULL);
     return status;
   }

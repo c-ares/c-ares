@@ -1644,6 +1644,7 @@ void ares_free_query(ares_query_t *query)
   query->arg      = NULL;
   /* Deallocate the memory associated with the query */
   ares_dns_record_destroy(query->query);
+  ares_free(query->qcache_key);
 
   ares_free(query);
 }
