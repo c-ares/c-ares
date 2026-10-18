@@ -268,6 +268,12 @@ ares_status_t ares_process_fds_nolock(ares_channel_t         *channel,
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
+  /* Application callbacks other than query callbacks run in here too: socket
+   * creation and configure callbacks, custom socket functions, and the
+   * pending-write callback.  Count the whole body so an ares_destroy() from
+   * any of them is deferred, and so a nested public call from one of them
+   * cannot complete such a deferral underneath this frame. */
+  ares_channel_callback_enter(channel);
   ares_deferred_cb_enter(channel);
 
   ares_tvnow(&now);
@@ -311,6 +317,7 @@ ares_status_t ares_process_fds_nolock(ares_channel_t         *channel,
 
 done:
   ares_deferred_cb_leave(channel);
+  ares_channel_callback_leave(channel);
 
   if (status == ARES_ENOMEM) {
     return ARES_ENOMEM;
@@ -504,6 +511,9 @@ void ares_process_pending_write_nolock(ares_channel_t *channel)
    */
   channel->notify_pending_write = ARES_FALSE;
 
+  /* A failed flush requeues its queries, which can open a new connection and
+   * so invoke socket callbacks; count those like query callbacks. */
+  ares_channel_callback_enter(channel);
   for (node = ares_slist_node_first(channel->servers); node != NULL;
        node = ares_slist_node_next(node)) {
     ares_server_t *server = ares_slist_node_val(node);
@@ -520,6 +530,7 @@ void ares_process_pending_write_nolock(ares_channel_t *channel)
       handle_conn_error(conn, ARES_TRUE, status);
     }
   }
+  ares_channel_callback_leave(channel);
 }
 
 static ares_status_t read_conn_packets(ares_conn_t *conn,

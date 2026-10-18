@@ -800,6 +800,11 @@ ares_status_t ares_servers_update(ares_channel_t *channel,
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
+  /* Removing servers ends or requeues their queries, and a requeue can open a
+   * new connection, so query and socket callbacks may run in here.  Count the
+   * whole body so an ares_destroy() from any of them is deferred. */
+  ares_channel_callback_enter(channel);
+
   /* Removing servers closes their connections, which notifies.  Deliver
    * once this call is done rather than from inside the teardown. */
   ares_deferred_cb_enter(channel);
@@ -877,6 +882,7 @@ ares_status_t ares_servers_update(ares_channel_t *channel,
 
 done:
   ares_deferred_cb_leave(channel);
+  ares_channel_callback_leave(channel);
   return status;
 }
 

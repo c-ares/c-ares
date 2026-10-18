@@ -66,7 +66,9 @@ ares_status_t ares_thread_join(ares_thread_t *thread, void **rv);
  *
  *  MUST only ever be called by the thread on itself.  The Win32 implementation
  *  relies on this: it leaves freeing the handle to the thread wrapper, which
- *  still writes the return value after the thread function returns. */
-ares_status_t ares_thread_detach(ares_thread_t *thread);
+ *  still writes the return value after the thread function returns.
+ *  Failure is not reported: a thread detaching itself has no way to recover
+ *  from it. */
+void ares_thread_detach(ares_thread_t *thread);
 
 #endif

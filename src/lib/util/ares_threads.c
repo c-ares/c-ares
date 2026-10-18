@@ -419,10 +419,10 @@ ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
   return status;
 }
 
-ares_status_t ares_thread_detach(ares_thread_t *thread)
+void ares_thread_detach(ares_thread_t *thread)
 {
   if (thread == NULL) {
-    return ARES_EFORMERR;
+    return;
   }
 
   /* Only ever called by the thread on itself.  Release the OS handle now, but
@@ -430,7 +430,6 @@ ares_status_t ares_thread_detach(ares_thread_t *thread)
    * once func() returns. */
   CloseHandle(thread->thread);
   thread->detached = ARES_TRUE;
-  return ARES_SUCCESS;
 }
 
 #  else /* !WIN32 == PTHREAD */
@@ -649,19 +648,16 @@ ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
   return status;
 }
 
-ares_status_t ares_thread_detach(ares_thread_t *thread)
+void ares_thread_detach(ares_thread_t *thread)
 {
-  ares_status_t status = ARES_SUCCESS;
-
   if (thread == NULL) {
-    return ARES_EFORMERR;
+    return;
   }
 
-  if (pthread_detach(thread->thread) != 0) {
-    status = ARES_ENOTFOUND; /* LCOV_EXCL_LINE: UntestablePath */
-  }
+  /* pthread_detach() can only fail for an invalid or already-detached handle,
+   * and there is nothing useful to do about either here. */
+  (void)pthread_detach(thread->thread);
   ares_free(thread);
-  return status;
 }
 
 #  endif
@@ -748,10 +744,9 @@ ares_status_t ares_thread_join(ares_thread_t *thread, void **rv)
   return ARES_ENOTIMP;
 }
 
-ares_status_t ares_thread_detach(ares_thread_t *thread)
+void ares_thread_detach(ares_thread_t *thread)
 {
   (void)thread;
-  return ARES_ENOTIMP;
 }
 
 ares_bool_t ares_threadsafety(void)

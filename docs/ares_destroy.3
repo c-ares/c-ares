@@ -37,6 +37,13 @@ such a call.  Prior versions explicitly did not support this and doing so
 resulted in undefined behavior (including a deadlock when using an event
 thread).
 
+Because the teardown is deferred, the callbacks of other queries still pending
+on the channel are invoked after \fBares_destroy(3)\fP has returned: some may
+complete or fail in the same processing pass, and the rest receive
+\fIARES_EDESTRUCTION\fP when the teardown runs.  Any state those callbacks
+reference through their argument must remain valid until they have been
+invoked.
+
 Where the deferred teardown completes depends on which thread ran the callback:
 .RS 4
 .IP \(bu 2
@@ -46,11 +53,14 @@ called, such as \fBares_process_fds(3)\fP, \fBares_process(3)\fP,
 \fBares_getaddrinfo(3)\fP answering from the hosts file or a literal address,
 the teardown completes before that function returns.
 .IP \(bu 2
-If the callback was invoked on a thread internal to c-ares, as is the case when
-the channel was created with \fIARES_OPT_EVENT_THREAD\fP, the teardown completes
-on that thread some time after the callback returns.  There is no way to wait
-for it.  The application must not call \fBares_library_cleanup(3)\fP, unload
-the c-ares library, or exit while such a teardown may still be running.
+If the callback was invoked on a thread internal to c-ares, either the event
+thread of a channel created with \fIARES_OPT_EVENT_THREAD\fP or the thread
+\fBares_reinit(3)\fP starts to reload the system configuration, the teardown
+completes on that thread some time after the callback returns.  There is no
+way to wait for it; \fBares_queue_wait_empty(3)\fP must not be used for this,
+as it reads the channel being freed.  The application must not call
+\fBares_library_cleanup(3)\fP, unload the c-ares library, or exit while such a
+teardown may still be running.
 .RE
 
 There is no ability to make this function thread-safe.  No additional calls
@@ -59,4 +69,6 @@ using this channel may be made once this function is called.
 .BR ares_init (3),
 .BR ares_cancel (3),
 .BR ares_library_cleanup (3),
+.BR ares_queue_wait_empty (3),
+.BR ares_reinit (3),
 .BR ares_threadsafety (3)
