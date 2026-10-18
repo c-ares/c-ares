@@ -50,6 +50,8 @@
 #include <utility>
 #include <vector>
 #include <chrono>
+#include <atomic>
+#include <condition_variable>
 
 #if defined(HAVE_CLOSESOCKET)
 #  define sclose(x) closesocket(x)
@@ -154,6 +156,13 @@ public:
   static ares_ssize_t ares_sendv_fail(ares_socket_t socket, const struct iovec *vec, int len,
                                       void *user_data);
 
+  // Watch for the library to free the given pointer (e.g. a channel), so a
+  // test can tell when a teardown it cannot otherwise observe has finished.
+  static void WatchFree(const void *ptr);
+  // Wait up to timeout for the watched pointer to be freed.  Returns true if
+  // it was.
+  static bool WaitForWatchedFree(std::chrono::milliseconds timeout);
+
 
 private:
   static bool                  ShouldAllocFail(size_t size);
@@ -161,6 +170,10 @@ private:
   static std::map<size_t, int> size_fails_;
   static std::mutex            lock_;
   static bool                  failsend_;
+  static std::atomic<const void *> watched_free_;
+  static bool                      watched_freed_;
+  static std::mutex                watched_lock_;
+  static std::condition_variable   watched_cond_;
 };
 
 // Test fixture that uses a default channel.

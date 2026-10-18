@@ -800,6 +800,11 @@ ares_status_t ares_servers_update(ares_channel_t *channel,
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
+  /* Removing servers ends or requeues their queries, and a requeue can open a
+   * new connection, so query and socket callbacks may run in here.  Count the
+   * whole body so an ares_destroy() from any of them is deferred. */
+  ares_channel_callback_enter(channel);
+
   /* Removing servers closes their connections, which notifies.  Deliver
    * once this call is done rather than from inside the teardown. */
   ares_deferred_cb_enter(channel);
@@ -877,6 +882,7 @@ ares_status_t ares_servers_update(ares_channel_t *channel,
 
 done:
   ares_deferred_cb_leave(channel);
+  ares_channel_callback_leave(channel);
   return status;
 }
 
@@ -1283,7 +1289,9 @@ int ares_set_servers(ares_channel_t              *channel,
 
   ares_channel_lock(channel);
   status = ares_servers_update(channel, slist, ARES_TRUE);
-  ares_channel_unlock(channel);
+  /* Removing a server can end queries that have nowhere left to go, whose
+   * callbacks may call ares_destroy().  Releases the lock, and completes it. */
+  ares_channel_unlock_destroy_if_deferred(channel);
 
   ares_llist_destroy(slist);
 
@@ -1307,7 +1315,9 @@ int ares_set_servers_ports(ares_channel_t                   *channel,
 
   ares_channel_lock(channel);
   status = ares_servers_update(channel, slist, ARES_TRUE);
-  ares_channel_unlock(channel);
+  /* Removing a server can end queries that have nowhere left to go, whose
+   * callbacks may call ares_destroy().  Releases the lock, and completes it. */
+  ares_channel_unlock_destroy_if_deferred(channel);
 
   ares_llist_destroy(slist);
 
@@ -1329,7 +1339,9 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
     /* blank all servers */
     ares_channel_lock(channel);
     status = ares_servers_update(channel, NULL, ARES_TRUE);
-    ares_channel_unlock(channel);
+    /* Ends every pending query, whose callbacks may call ares_destroy().
+     * Releases the lock, and completes it. */
+    ares_channel_unlock_destroy_if_deferred(channel);
     return status;
   }
 
@@ -1341,7 +1353,9 @@ static ares_status_t set_servers_csv(ares_channel_t *channel, const char *_csv)
 
   ares_channel_lock(channel);
   status = ares_servers_update(channel, slist, ARES_TRUE);
-  ares_channel_unlock(channel);
+  /* Removing a server can end queries that have nowhere left to go, whose
+   * callbacks may call ares_destroy().  Releases the lock, and completes it. */
+  ares_channel_unlock_destroy_if_deferred(channel);
 
   ares_llist_destroy(slist);
 

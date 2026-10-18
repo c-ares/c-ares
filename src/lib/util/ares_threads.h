@@ -59,4 +59,16 @@ ares_status_t ares_thread_create(ares_thread_t    **thread,
                                  ares_thread_func_t func, void *arg);
 ares_status_t ares_thread_join(ares_thread_t *thread, void **rv);
 
+/*! Detach a thread so its resources are released automatically on exit without
+ *  another thread join()'ing it.  Used when a thread must tear itself down and
+ *  therefore cannot be joined (e.g. the event thread destroying its own
+ *  channel from within a callback).  After this call the handle is invalid.
+ *
+ *  MUST only ever be called by the thread on itself.  The Win32 implementation
+ *  relies on this: it leaves freeing the handle to the thread wrapper, which
+ *  still writes the return value after the thread function returns.
+ *  Failure is not reported: a thread detaching itself has no way to recover
+ *  from it. */
+void ares_thread_detach(ares_thread_t *thread);
+
 #endif

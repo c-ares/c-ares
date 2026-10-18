@@ -78,7 +78,7 @@ void ares_cancel(ares_channel_t *channel)
       ares_detach_query(query);
 
       /* NOTE: its possible this may enqueue new queries */
-      query->callback(query->arg, ARES_ECANCELLED, 0, NULL);
+      ares_invoke_query_callback(query, ARES_ECANCELLED, 0, NULL);
       ares_free_query(query);
     }
 
@@ -92,5 +92,7 @@ void ares_cancel(ares_channel_t *channel)
 
 done:
   ares_deferred_cb_leave(channel);
-  ares_channel_unlock(channel);
+  /* Releases the lock, and completes a destroy deferred from one of the
+   * ARES_ECANCELLED callbacks. */
+  ares_channel_unlock_destroy_if_deferred(channel);
 }

@@ -35,6 +35,7 @@
 
 #include <sstream>
 #include <vector>
+#include <atomic>
 
 using testing::InvokeWithoutArgs;
 using testing::DoAll;
@@ -1774,6 +1775,122 @@ static std::string PrintEvsysFamily(const testing::TestParamInfo<std::tuple<ares
   name += "_";
   name += af_tostr(std::get<1>(info.param));
   return name;
+}
+
+// Invoking ares_destroy() from within a query callback that is running on the
+// event thread must not deadlock: the event thread cannot join itself.  The
+// destroy is deferred; once the callback returns, the event thread breaks its
+// run loop and tears the channel down itself (detaching rather than joining).
+// Under ASAN/valgrind this also validates there is no leak or use-after-free.
+struct DestroyInCbETData {
+  ares_channel_t   *channel;
+  std::atomic<bool> done;
+};
+
+static void DestroyChannelCallbackET(void *arg, ares_status_t status,
+                                     size_t                    timeouts,
+                                     const ares_dns_record_t  *dnsrec)
+{
+  DestroyInCbETData *data = static_cast<DestroyInCbETData *>(arg);
+  (void)status;
+  (void)timeouts;
+  (void)dnsrec;
+  /* Reentrant destroy from within a callback on the event thread.  Deferred;
+   * the event thread completes teardown after we return.  Must not deadlock. */
+  ares_destroy(data->channel);
+  data->done = true;
+}
+
+TEST_P(MockUDPEventThreadTest, DestroyInCallback) {
+  DNSPacket reply;
+  reply.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 0x0100, {0x01, 0x02, 0x03, 0x04}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &reply));
+
+  DestroyInCbETData data;
+  data.channel = channel_;
+  data.done    = false;
+  LibraryTest::WatchFree(channel_);
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    DestroyChannelCallbackET, &data, NULL);
+
+  // Service the mock server so the query is answered promptly.  We must not use
+  // Process() (it polls the channel, which the event thread is tearing down),
+  // but servicing the mock server's own fds only ever touches the server, never
+  // the channel, so it is safe.  If the self-join bug were present, the event
+  // thread would deadlock in ares_destroy() and data.done would never be set.
+  auto tv_begin = std::chrono::high_resolution_clock::now();
+  while (!data.done) {
+    std::set<ares_socket_t> serverfds = fds();
+    fd_set                  readers;
+    int                     nfds = 0;
+    FD_ZERO(&readers);
+    for (ares_socket_t fd : serverfds) {
+      FD_SET(fd, &readers);
+      if (fd >= (ares_socket_t)nfds) {
+        nfds = (int)fd + 1;
+      }
+    }
+    struct timeval tv;
+    tv.tv_sec  = 0;
+    tv.tv_usec = 50 * 1000;
+    if (select(nfds, &readers, nullptr, nullptr, &tv) > 0) {
+      for (ares_socket_t fd : serverfds) {
+        if (FD_ISSET(fd, &readers)) {
+          ProcessFD(fd);
+        }
+      }
+    }
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                     std::chrono::high_resolution_clock::now() - tv_begin)
+                     .count();
+    ASSERT_LT(elapsed, 10) << "callback never fired (possible self-join "
+                              "deadlock in ares_destroy())";
+  }
+
+  // The event thread completes teardown asynchronously after the callback
+  // returns.  Wait for it to free the channel, which is the last thing the
+  // teardown does, so it cannot still be running into a later test.
+  ASSERT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::seconds(10)))
+    << "event thread never completed the deferred destroy";
+
+  // Channel destroyed from within the callback; don't destroy it again.
+  channel_ = nullptr;
+  EXPECT_TRUE(data.done);
+}
+
+// A literal address is answered from inside ares_getaddrinfo(), so the callback
+// runs on the caller's thread rather than the event thread.  The destroy it
+// issues is completed by ares_getaddrinfo() before it returns -- joining the
+// event thread, which it is not running on.  This used to race the event
+// thread, which also tried to complete it, onto a freed channel.
+static void DestroyAiCallbackET(void *arg, int status, int timeouts,
+                                struct ares_addrinfo *result)
+{
+  DestroyInCbETData *data = static_cast<DestroyInCbETData *>(arg);
+  (void)status;
+  (void)timeouts;
+  if (result != nullptr) {
+    ares_freeaddrinfo(result);
+  }
+  ares_destroy(data->channel);
+  data->done = true;
+}
+
+TEST_P(MockUDPEventThreadTest, DestroyInSynchronousCallback) {
+  DestroyInCbETData data;
+  data.channel = channel_;
+  data.done    = false;
+  LibraryTest::WatchFree(channel_);
+
+  ares_getaddrinfo(channel_, "127.0.0.1", NULL, NULL, DestroyAiCallbackET,
+                   &data);
+
+  EXPECT_TRUE(data.done);
+  EXPECT_TRUE(LibraryTest::WaitForWatchedFree(std::chrono::milliseconds(0)));
+  channel_ = nullptr;
 }
 
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockEventThreadTest, ::testing::ValuesIn(ares::test::evsys_families_modes), ares::test::PrintEvsysFamilyMode);

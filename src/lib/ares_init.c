@@ -398,8 +398,10 @@ done:
 
 static void *ares_reinit_thread(void *arg)
 {
-  ares_channel_t *channel = arg;
-  ares_status_t   status;
+  ares_channel_t     *channel = arg;
+  ares_status_t       status;
+  ares_bool_t         do_destroy;
+  ares_destroy_from_t from;
 
   /* ares_init_by_sysconfig() will lock when applying the config, but not
    * when retrieving. */
@@ -417,7 +419,18 @@ static void *ares_reinit_thread(void *arg)
   }
 
   channel->reinit_pending = ARES_FALSE;
+
+  /* Applying the new server list can end queries that have nowhere left to
+   * go, and their callbacks may have called ares_destroy().  The teardown
+   * joins the reinit thread, so it has to know when it is running on it. */
+  do_destroy = ares_channel_claim_deferred_destroy(channel);
+  from       = channel->reinit_thread != NULL ? ARES_DESTROY_FROM_REINIT_THREAD
+                                              : ARES_DESTROY_FROM_CALLER;
   ares_channel_unlock(channel);
+
+  if (do_destroy) {
+    ares_destroy_int(channel, from);
+  }
 
   return NULL;
 }
@@ -450,16 +463,16 @@ ares_status_t ares_reinit(ares_channel_t *channel)
       channel->reinit_thread = NULL;
     }
 
-    /* Spawn a new thread */
+    /* Spawn a new thread.  Hold the lock until reinit_thread is published:
+     * the thread reads it, under the lock, to tell whether a teardown it ends
+     * up running is on itself. */
+    ares_channel_lock(channel);
     status =
       ares_thread_create(&channel->reinit_thread, ares_reinit_thread, channel);
     if (status != ARES_SUCCESS) {
-      /* LCOV_EXCL_START: UntestablePath */
-      ares_channel_lock(channel);
-      channel->reinit_pending = ARES_FALSE;
-      ares_channel_unlock(channel);
-      /* LCOV_EXCL_STOP */
+      channel->reinit_pending = ARES_FALSE; /* LCOV_EXCL_LINE: UntestablePath */
     }
+    ares_channel_unlock(channel);
   } else {
     /* Threading support not available, call directly */
     ares_reinit_thread(channel);
