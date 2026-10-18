@@ -93,7 +93,7 @@ static ares_bool_t ares_evsys_kqueue_init(ares_event_thread_t *e)
 
   kq->nchanges_alloc = 8;
   kq->changelist =
-    ares_malloc_zero(kq->nchanges_alloc * sizeof(*kq->changelist));
+    ares_malloc_zero_array(kq->nchanges_alloc, sizeof(*kq->changelist));
   if (kq->changelist == NULL) {
     ares_evsys_kqueue_destroy(e);
     return ARES_FALSE;

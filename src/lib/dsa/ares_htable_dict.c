@@ -206,7 +206,7 @@ char **ares_htable_dict_keys(const ares_htable_dict_t *htable, size_t *num)
     return NULL;
   }
 
-  out = ares_malloc_zero(sizeof(*out) * cnt);
+  out = ares_malloc_zero_array(cnt, sizeof(*out));
   if (out == NULL) {
     goto fail; /* LCOV_EXCL_LINE: OutOfMemory */
   }

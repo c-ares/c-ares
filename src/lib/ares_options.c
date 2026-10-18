@@ -56,7 +56,7 @@ static struct in_addr *ares_save_opt_servers(const ares_channel_t *channel,
 {
   ares_slist_node_t *snode;
   struct in_addr    *out =
-    ares_malloc_zero(ares_slist_len(channel->servers) * sizeof(*out));
+    ares_malloc_zero_array(ares_slist_len(channel->servers), sizeof(*out));
 
   *nservers = 0;
 

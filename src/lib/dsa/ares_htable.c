@@ -125,7 +125,8 @@ ares_htable_t *ares_htable_create(ares_htable_hashfunc_t    hash_func,
   htable->key_eq      = key_eq;
   htable->seed        = ares_htable_generate_seed(htable);
   htable->size        = ARES__HTABLE_MIN_BUCKETS;
-  htable->buckets = ares_malloc_zero(sizeof(*htable->buckets) * htable->size);
+  htable->buckets =
+    ares_malloc_zero_array(htable->size, sizeof(*htable->buckets));
 
   if (htable->buckets == NULL) {
     goto fail;
@@ -154,7 +155,7 @@ const void **ares_htable_all_buckets(const ares_htable_t *htable, size_t *num)
     return NULL;
   }
 
-  out = ares_malloc_zero(sizeof(*out) * htable->num_keys);
+  out = ares_malloc_zero_array(htable->num_keys, sizeof(*out));
   if (out == NULL) {
     return NULL; /* LCOV_EXCL_LINE */
   }
@@ -212,7 +213,7 @@ static ares_bool_t ares_htable_expand(ares_htable_t *htable)
   /* We must pre-allocate all memory we'll need before moving entries to the
    * new hash array.  Otherwise if there's a memory allocation failure in the
    * middle, we wouldn't be able to recover. */
-  buckets = ares_malloc_zero(sizeof(*buckets) * htable->size);
+  buckets = ares_malloc_zero_array(htable->size, sizeof(*buckets));
   if (buckets == NULL) {
     goto done; /* LCOV_EXCL_LINE */
   }
@@ -222,7 +223,7 @@ static ares_bool_t ares_htable_expand(ares_htable_t *htable)
   prealloc_llist_len = htable->num_collisions;
   if (prealloc_llist_len) {
     prealloc_llist =
-      ares_malloc_zero(sizeof(*prealloc_llist) * prealloc_llist_len);
+      ares_malloc_zero_array(prealloc_llist_len, sizeof(*prealloc_llist));
     if (prealloc_llist == NULL) {
       goto done; /* LCOV_EXCL_LINE */
     }
