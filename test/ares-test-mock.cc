@@ -2764,6 +2764,86 @@ INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPSingleTryTest,
                          ::testing::ValuesIn(ares::test::families),
                          PrintFamily);
 
+// ares_process_pending_write() flushes each server's TCP connection.  A flush
+// that fails tears the connection down, which ends a query that is out of
+// retries and runs its callback right there.  A callback that reconfigures the
+// servers removes the one being flushed, and the walk must not go on to use
+// that server, its connection or its place in the list.
+class MockTCPSingleTryStayOpenTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface<int> {
+public:
+  MockTCPSingleTryStayOpenTest()
+    : MockChannelOptsTest(1, GetParam(), true, false, FillOptions(&opts_),
+                          ARES_OPT_TRIES | ARES_OPT_FLAGS)
+  {
+  }
+
+  static struct ares_options *FillOptions(struct ares_options *opts)
+  {
+    memset(opts, 0, sizeof(struct ares_options));
+    opts->tries = 1;
+    /* ARES_OPT_FLAGS replaces the defaults, which include EDNS. */
+    opts->flags = ARES_FLAG_STAYOPEN | ARES_FLAG_EDNS;
+    return opts;
+  }
+
+private:
+  struct ares_options opts_;
+};
+
+static void PendingWriteNotifyCallback(void *data)
+{
+  *static_cast<bool *>(data) = true;
+}
+
+TEST_P(MockTCPSingleTryStayOpenTest, ReconfigureInPendingWriteFailureCallback) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  /* Answered, so the TCP connection is connected; STAYOPEN keeps it. */
+  QueryResult first;
+  ares_query_dnsrec(channel_, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    QueryCallback, &first, NULL);
+  Process();
+  EXPECT_TRUE(first.done_);
+
+  /* From here writes on that connection wait for ares_process_pending_write. */
+  bool pending = false;
+  ares_set_pending_write_cb(channel_, PendingWriteNotifyCallback, &pending);
+
+  CancelInCbData data;
+  data.channel = channel_;
+  data.done    = false;
+  data.cbs     = 0;
+  ares_query_dnsrec(channel_, "www.example.com", ARES_CLASS_IN,
+                    ARES_REC_TYPE_A, ReconfigureServersCallback, &data, NULL);
+  EXPECT_TRUE(pending);
+  EXPECT_FALSE(data.done);
+
+  /* ares_set_socket_functions() stores the pointer rather than copying it. */
+  static ares_socket_functions sock_funcs;
+  memset(&sock_funcs, 0, sizeof(sock_funcs));
+  sock_funcs.asendv = ares_sendv_fail;
+  ares_set_socket_functions(channel_, &sock_funcs, NULL);
+  LibraryTest::SetFailSend();
+
+  ares_process_pending_write(channel_);
+
+  EXPECT_TRUE(data.done);
+  EXPECT_EQ((size_t)1, data.cbs);
+
+  ares_set_pending_write_cb(channel_, NULL, NULL);
+}
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockTCPSingleTryStayOpenTest,
+                         ::testing::ValuesIn(ares::test::families),
+                         PrintFamily);
+
 TEST_P(MockUDPChannelTest, CancelInDestroyCallbackNoUseAfterFree) {
   CancelInCbData data;
   data.channel = channel_;
@@ -3066,6 +3146,768 @@ TEST_F(LibraryTest, ReconfigureInConfigureHookNoUseAfterFree) {
   // either enqueues the query or ends it.
   EXPECT_TRUE(data.done);
   EXPECT_EQ((size_t)0, ares_queue_active_queries(chan));
+  ares_destroy(chan);
+}
+
+// Reconfiguring the servers from the application's own send function.  The
+// write itself goes through: the send function reports every byte sent.  But
+// the reconfiguration has already closed the connection being written to and
+// removed its server, so the query must be moved to the new configuration
+// rather than attached to the closed connection -- where it would sit on a
+// list that is freed once the call unwinds, in flight on no socket.
+struct ReconfigureFromSendData {
+  ares_channel_t *channel;
+  bool            done;
+  int             status;
+};
+
+static ares_ssize_t ReconfigureSendv(ares_socket_t fd, const struct iovec *iov,
+                                     int iovcnt, void *user_data)
+{
+  ReconfigureFromSendData *d =
+    static_cast<ReconfigureFromSendData *>(user_data);
+  ares_ssize_t len = 0;
+  (void)fd;
+  for (int i = 0; i < iovcnt; i++) {
+    len += static_cast<ares_ssize_t>(iov[i].iov_len);
+  }
+  // Frees the server this connection belongs to.  Reconfiguring to the same
+  // list again is a no-op, so the retry is written normally.
+  ares_set_servers_csv(d->channel, "127.0.0.1:53056");
+  return len;
+}
+
+static void ReconfigureFromSendCallback(void *arg, ares_status_t status,
+                                        size_t                   timeouts,
+                                        const ares_dns_record_t *dnsrec)
+{
+  ReconfigureFromSendData *d = static_cast<ReconfigureFromSendData *>(arg);
+  (void)timeouts;
+  (void)dnsrec;
+  d->done   = true;
+  d->status = static_cast<int>(status);
+}
+
+TEST_F(LibraryTest, ReconfigureInSuccessfulSendNoUseAfterFree) {
+  ares_channel_t         *chan = nullptr;
+  struct ares_options     opts;
+  int                     optmask = 0;
+  ares_socket_functions   funcs;
+  ReconfigureFromSendData data;
+  ares_socket_t           socks[ARES_GETSOCK_MAXNUM];
+
+  memset(&opts, 0, sizeof(opts));
+  opts.flags  = ARES_FLAG_NOSEARCH;
+  optmask    |= ARES_OPT_FLAGS;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&chan, &opts, optmask));
+  ASSERT_NE(nullptr, chan);
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.1:53055"));
+
+  data.channel = chan;
+  data.done    = false;
+  data.status  = ARES_SUCCESS;
+  memset(&funcs, 0, sizeof(funcs));
+  funcs.asendv = ReconfigureSendv;
+  ares_set_socket_functions(chan, &funcs, &data);
+
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    ReconfigureFromSendCallback, &data, NULL);
+
+  // Moved to the new server and written there, so it is in flight on a
+  // socket the application can watch.
+  EXPECT_FALSE(data.done);
+  EXPECT_EQ((size_t)1, ares_queue_active_queries(chan));
+  EXPECT_NE(0, ares_getsock(chan, socks, ARES_GETSOCK_MAXNUM));
+
+  ares_cancel(chan);
+  EXPECT_TRUE(data.done);
+  EXPECT_EQ(ARES_ECANCELLED, data.status);
+  EXPECT_EQ((size_t)0, ares_queue_active_queries(chan));
+  ares_destroy(chan);
+}
+
+// The connection the send function tore down has already been reported as
+// closed, and its descriptor closed or handed to that notification.  Nothing
+// after the send may report socket state for it: doing so names
+// ARES_SOCKET_BAD, a descriptor the application was never given.
+struct BadSocketStateData {
+  size_t calls;
+  size_t bad;
+};
+
+static void BadSocketStateCallback(void *data, ares_socket_t socket_fd,
+                                   int readable, int writable)
+{
+  BadSocketStateData *d = static_cast<BadSocketStateData *>(data);
+  (void)readable;
+  (void)writable;
+  d->calls++;
+  if (socket_fd == ARES_SOCKET_BAD) {
+    d->bad++;
+  }
+}
+
+TEST_F(LibraryTest, ReconfigureInSendReportsNoBadSocket) {
+  ares_channel_t         *chan = nullptr;
+  struct ares_options     opts;
+  int                     optmask = 0;
+  ares_socket_functions   funcs;
+  ReconfigureFromSendData data;
+  BadSocketStateData      sock;
+
+  memset(&opts, 0, sizeof(opts));
+  memset(&sock, 0, sizeof(sock));
+  opts.flags               = ARES_FLAG_NOSEARCH;
+  optmask                 |= ARES_OPT_FLAGS;
+  opts.sock_state_cb       = BadSocketStateCallback;
+  opts.sock_state_cb_data  = &sock;
+  optmask                 |= ARES_OPT_SOCK_STATE_CB;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&chan, &opts, optmask));
+  ASSERT_NE(nullptr, chan);
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.1:53055"));
+
+  data.channel = chan;
+  data.done    = false;
+  data.status  = ARES_SUCCESS;
+  memset(&funcs, 0, sizeof(funcs));
+  funcs.asendv = ReconfigureSendv;
+  ares_set_socket_functions(chan, &funcs, &data);
+
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    ReconfigureFromSendCallback, &data, NULL);
+  ares_cancel(chan);
+  EXPECT_TRUE(data.done);
+
+  EXPECT_NE((size_t)0, sock.calls);
+  EXPECT_EQ((size_t)0, sock.bad);
+  ares_destroy(chan);
+}
+
+// The same reconfiguration from the send function, reached through the
+// deferred TCP write: ares_set_pending_write_cb() queues the write and the
+// application later flushes it with ares_process_pending_write().  That flush
+// is its own outermost library call, so the connection and server the
+// reconfiguration closes must stay readable until it returns, and its walk of
+// the server list must not step from a list node the reconfiguration freed.
+// Covers both a send that reports success and one that fails.  A failure
+// on the removed server must not be charged to the server that replaced it.
+struct PendingWriteReconfigureData {
+  ares_channel_t *channel;
+  bool            reconfigure;
+  bool            fail;
+  bool            pending;
+  size_t          done;
+  size_t          server_failures;
+};
+
+static int PendingWriteConnect(ares_socket_t fd, const struct sockaddr *addr,
+                               ares_socklen_t addrlen, void *user_data)
+{
+  (void)fd;
+  (void)addr;
+  (void)addrlen;
+  (void)user_data;
+  // Pretend the connection is in progress; the test signals it writable.
+  return 0;
+}
+
+static ares_ssize_t PendingWriteSendv(ares_socket_t fd, const struct iovec *iov,
+                                      int iovcnt, void *user_data)
+{
+  PendingWriteReconfigureData *d =
+    static_cast<PendingWriteReconfigureData *>(user_data);
+  ares_ssize_t len = 0;
+  (void)fd;
+  for (int i = 0; i < iovcnt; i++) {
+    len += static_cast<ares_ssize_t>(iov[i].iov_len);
+  }
+  if (!d->reconfigure) {
+    return len;
+  }
+  d->reconfigure = false;
+  // Closes this connection and frees its server.
+  ares_set_servers_csv(d->channel, "127.0.0.1:53056");
+  if (d->fail) {
+#ifdef USE_WINSOCK
+    WSASetLastError(WSAECONNREFUSED);
+#else
+    errno = ECONNREFUSED;
+#endif
+    return -1;
+  }
+  return len;
+}
+
+static void PendingWriteNotify(void *user_data)
+{
+  PendingWriteReconfigureData *d =
+    static_cast<PendingWriteReconfigureData *>(user_data);
+  d->pending = true;
+}
+
+static void PendingWriteServerState(const char *server_string,
+                                    ares_bool_t success, int flags,
+                                    void *user_data)
+{
+  PendingWriteReconfigureData *d =
+    static_cast<PendingWriteReconfigureData *>(user_data);
+  (void)server_string;
+  (void)flags;
+  if (!success) {
+    d->server_failures++;
+  }
+}
+
+static void PendingWriteCallback(void *arg, ares_status_t status,
+                                 size_t                   timeouts,
+                                 const ares_dns_record_t *dnsrec)
+{
+  PendingWriteReconfigureData *d =
+    static_cast<PendingWriteReconfigureData *>(arg);
+  (void)timeouts;
+  (void)dnsrec;
+  EXPECT_EQ(ARES_ECANCELLED, status);
+  d->done++;
+}
+
+static void ReconfigureInPendingWrite(bool fail)
+{
+  ares_channel_t             *chan = nullptr;
+  struct ares_options         opts;
+  int                         optmask = 0;
+  ares_socket_functions       funcs;
+  PendingWriteReconfigureData data;
+  ares_socket_t               socks[ARES_GETSOCK_MAXNUM];
+  int                         bitmask;
+
+  memset(&opts, 0, sizeof(opts));
+  opts.flags  = ARES_FLAG_NOSEARCH | ARES_FLAG_USEVC;
+  optmask    |= ARES_OPT_FLAGS;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&chan, &opts, optmask));
+  ASSERT_NE(nullptr, chan);
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.1:53055"));
+
+  data.channel         = chan;
+  data.reconfigure     = false;
+  data.fail            = fail;
+  data.pending         = false;
+  data.done            = 0;
+  data.server_failures = 0;
+  memset(&funcs, 0, sizeof(funcs));
+  funcs.aconnect = PendingWriteConnect;
+  funcs.asendv   = PendingWriteSendv;
+  ares_set_socket_functions(chan, &funcs, &data);
+  ares_set_pending_write_cb(chan, PendingWriteNotify, &data);
+  ares_set_server_state_callback(chan, PendingWriteServerState, &data);
+
+  // The first query opens the connection; its write waits for it to connect.
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    PendingWriteCallback, &data, NULL);
+  bitmask = ares_getsock(chan, socks, ARES_GETSOCK_MAXNUM);
+  ASSERT_NE(0, ARES_GETSOCK_WRITABLE(bitmask, 0));
+
+  // Report it connected, which writes the first query.
+  ares_process_fd(chan, ARES_SOCKET_BAD, socks[0]);
+  EXPECT_FALSE(data.pending);
+
+  // Now connected, so the second query's write is deferred to the
+  // application.
+  ares_query_dnsrec(chan, "www.example.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    PendingWriteCallback, &data, NULL);
+  EXPECT_TRUE(data.pending);
+
+  data.reconfigure = true;
+  ares_process_pending_write(chan);
+  EXPECT_FALSE(data.reconfigure);
+
+  // Both queries were moved to the new server, which has not failed.
+  EXPECT_EQ((size_t)0, data.done);
+  EXPECT_EQ((size_t)0, data.server_failures);
+  EXPECT_EQ((size_t)2, ares_queue_active_queries(chan));
+
+  ares_cancel(chan);
+  EXPECT_EQ((size_t)2, data.done);
+  EXPECT_EQ((size_t)0, ares_queue_active_queries(chan));
+  ares_destroy(chan);
+}
+
+TEST_F(LibraryTest, ReconfigureInSuccessfulPendingWriteNoUseAfterFree) {
+  ReconfigureInPendingWrite(false);
+}
+
+TEST_F(LibraryTest, ReconfigureInFailedPendingWriteNoUseAfterFree) {
+  ReconfigureInPendingWrite(true);
+}
+
+// The pending-write callback is application code too, and runs once the query
+// has been buffered on the connection.  Reconfiguring from it closes that
+// connection, so the query must be requeued rather than attached to it.
+static void PendingWriteReconfigureNotify(void *user_data)
+{
+  PendingWriteReconfigureData *d =
+    static_cast<PendingWriteReconfigureData *>(user_data);
+  d->pending = true;
+  if (d->reconfigure) {
+    d->reconfigure = false;
+    // Closes the connection the query was just buffered on.
+    ares_set_servers_csv(d->channel, "127.0.0.1:53056");
+  }
+}
+
+TEST_F(LibraryTest, ReconfigureInPendingWriteCallbackNoUseAfterFree) {
+  ares_channel_t             *chan = nullptr;
+  struct ares_options         opts;
+  int                         optmask = 0;
+  ares_socket_functions       funcs;
+  PendingWriteReconfigureData data;
+  ares_socket_t               socks[ARES_GETSOCK_MAXNUM];
+  int                         bitmask;
+
+  memset(&opts, 0, sizeof(opts));
+  opts.flags  = ARES_FLAG_NOSEARCH | ARES_FLAG_USEVC;
+  optmask    |= ARES_OPT_FLAGS;
+
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&chan, &opts, optmask));
+  ASSERT_NE(nullptr, chan);
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.1:53055"));
+
+  data.channel         = chan;
+  data.reconfigure     = false;
+  data.fail            = false;
+  data.pending         = false;
+  data.done            = 0;
+  data.server_failures = 0;
+  memset(&funcs, 0, sizeof(funcs));
+  funcs.aconnect = PendingWriteConnect;
+  funcs.asendv   = PendingWriteSendv;
+  ares_set_socket_functions(chan, &funcs, &data);
+  ares_set_pending_write_cb(chan, PendingWriteReconfigureNotify, &data);
+
+  // The first query opens the connection; its write waits for it to connect.
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    PendingWriteCallback, &data, NULL);
+  bitmask = ares_getsock(chan, socks, ARES_GETSOCK_MAXNUM);
+  ASSERT_NE(0, ARES_GETSOCK_WRITABLE(bitmask, 0));
+
+  // Report it connected, which writes the first query.
+  ares_process_fd(chan, ARES_SOCKET_BAD, socks[0]);
+  EXPECT_FALSE(data.pending);
+
+  // Now connected, so the second query is buffered and the pending-write
+  // callback runs, reconfiguring the servers.
+  data.reconfigure = true;
+  ares_query_dnsrec(chan, "www.example.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    PendingWriteCallback, &data, NULL);
+  EXPECT_TRUE(data.pending);
+  EXPECT_FALSE(data.reconfigure);
+
+  // Both queries were moved to the new server.
+  EXPECT_EQ((size_t)0, data.done);
+  EXPECT_EQ((size_t)2, ares_queue_active_queries(chan));
+
+  ares_cancel(chan);
+  EXPECT_EQ((size_t)2, data.done);
+  EXPECT_EQ((size_t)0, ares_queue_active_queries(chan));
+  ares_destroy(chan);
+}
+
+// Fake socket functions, installed with ares_set_socket_functions_ex(), that
+// never touch a real descriptor.  Each test arms one of them to reconfigure
+// the servers part-way through c-ares's use of a connection, and they count
+// every call that names ARES_SOCKET_BAD, which a closed connection must never
+// pass to application code.
+struct FakeSockData {
+  ares_channel_t    *channel;
+  ares_socket_t      next_fd;
+  bool               tfo;
+  bool               getsockname_fail_first;
+  ares_socket_t      getsockname_last_fd;
+  bool               getsockname_reconfigure;
+  bool               recv_reconfigure;
+  bool               recv_answer_then_reconfigure;
+  bool               recv_answered;
+  bool               recv_answer;
+  bool               close_reconfigure;
+  unsigned char      query[512];
+  size_t             query_len;
+  struct sockaddr_in peer;
+  size_t             recv_calls;
+  size_t             bad_fd_calls;
+  size_t             sock_state_bad;
+  bool               done;
+  int                status;
+};
+
+static void FakeSockSetErrno(bool wouldblock)
+{
+#ifdef USE_WINSOCK
+  WSASetLastError(wouldblock ? WSAEWOULDBLOCK : WSAENOTCONN);
+#else
+  errno = wouldblock ? EAGAIN : ENOTCONN;
+#endif
+}
+
+static ares_socket_t FakeSockSocket(int domain, int type, int protocol,
+                                    void *user_data)
+{
+  FakeSockData *d = static_cast<FakeSockData *>(user_data);
+  (void)domain;
+  (void)type;
+  (void)protocol;
+  return d->next_fd++;
+}
+
+static int FakeSockClose(ares_socket_t sock, void *user_data)
+{
+  FakeSockData *d = static_cast<FakeSockData *>(user_data);
+  if (sock == ARES_SOCKET_BAD) {
+    d->bad_fd_calls++;
+  }
+  if (d->close_reconfigure) {
+    d->close_reconfigure = false;
+    // Frees the server this connection belonged to.
+    ares_set_servers_csv(d->channel, "127.0.0.1:53056");
+  }
+  return 0;
+}
+
+static int FakeSockSetsockopt(ares_socket_t sock, ares_socket_opt_t opt,
+                              const void *val, ares_socklen_t val_size,
+                              void *user_data)
+{
+  FakeSockData *d = static_cast<FakeSockData *>(user_data);
+  (void)sock;
+  (void)val;
+  (void)val_size;
+  if (opt == ARES_SOCKET_OPT_TCP_FASTOPEN && !d->tfo) {
+    return -1;
+  }
+  return 0;
+}
+
+static int FakeSockConnect(ares_socket_t sock, const struct sockaddr *address,
+                           ares_socklen_t address_len, unsigned int flags,
+                           void *user_data)
+{
+  FakeSockData *d = static_cast<FakeSockData *>(user_data);
+  (void)sock;
+  (void)flags;
+  if (address->sa_family == AF_INET && address_len >= sizeof(d->peer)) {
+    memcpy(&d->peer, address, sizeof(d->peer));
+  }
+  return 0;
+}
+
+static ares_ssize_t FakeSockRecvfrom(ares_socket_t sock, void *buffer,
+                                     size_t length, int flags,
+                                     struct sockaddr *address,
+                                     ares_socklen_t  *address_len,
+                                     void            *user_data)
+{
+  FakeSockData *d = static_cast<FakeSockData *>(user_data);
+  (void)flags;
+  d->recv_calls++;
+  if (sock == ARES_SOCKET_BAD) {
+    d->bad_fd_calls++;
+  }
+  if (d->query_len < 12 || length < d->query_len) {
+    FakeSockSetErrno(true);
+    return -1;
+  }
+  if (d->recv_answer_then_reconfigure) {
+    // Answer first; reconfigure on the next call, which has nothing to read.
+    if (d->recv_answered) {
+      d->recv_answer_then_reconfigure = false;
+      ares_set_servers_csv(d->channel, "127.0.0.1:53056");
+      FakeSockSetErrno(true);
+      return -1;
+    }
+    d->recv_answered = true;
+  } else if (d->recv_reconfigure) {
+    d->recv_reconfigure = false;
+    // Frees the server this connection belongs to.
+    ares_set_servers_csv(d->channel, "127.0.0.1:53056");
+  } else if (d->recv_answer) {
+    d->recv_answer = false;
+  } else {
+    FakeSockSetErrno(true);
+    return -1;
+  }
+  // Answer the query: the same message with QR set, no records.
+  memcpy(buffer, d->query, d->query_len);
+  static_cast<unsigned char *>(buffer)[2] |= 0x80;
+  if (address != NULL && address_len != NULL &&
+      *address_len >= (ares_socklen_t)sizeof(d->peer)) {
+    memcpy(address, &d->peer, sizeof(d->peer));
+    *address_len = sizeof(d->peer);
+  }
+  return static_cast<ares_ssize_t>(d->query_len);
+}
+
+static ares_ssize_t FakeSockSendto(ares_socket_t sock, const void *buffer,
+                                   size_t length, int flags,
+                                   const struct sockaddr *address,
+                                   ares_socklen_t address_len, void *user_data)
+{
+  FakeSockData *d = static_cast<FakeSockData *>(user_data);
+  (void)flags;
+  (void)address;
+  (void)address_len;
+  if (sock == ARES_SOCKET_BAD) {
+    d->bad_fd_calls++;
+  }
+  if (length <= sizeof(d->query)) {
+    memcpy(d->query, buffer, length);
+    d->query_len = length;
+  }
+  return static_cast<ares_ssize_t>(length);
+}
+
+static int FakeSockGetsockname(ares_socket_t sock, struct sockaddr *address,
+                               ares_socklen_t *address_len, void *user_data)
+{
+  FakeSockData      *d = static_cast<FakeSockData *>(user_data);
+  struct sockaddr_in sin;
+  if (sock == ARES_SOCKET_BAD) {
+    d->bad_fd_calls++;
+  }
+  // As during TCP Fast Open, before the first write has connected.
+  if (d->getsockname_fail_first && sock != d->getsockname_last_fd) {
+    d->getsockname_last_fd = sock;
+    FakeSockSetErrno(false);
+    return -1;
+  }
+  if (d->getsockname_reconfigure) {
+    d->getsockname_reconfigure = false;
+    // Frees the server this connection belongs to.
+    ares_set_servers_csv(d->channel, "127.0.0.1:53056");
+  }
+  if (*address_len < (ares_socklen_t)sizeof(sin)) {
+    FakeSockSetErrno(false);
+    return -1;
+  }
+  memset(&sin, 0, sizeof(sin));
+  sin.sin_family      = AF_INET;
+  sin.sin_port        = htons(40000);
+  sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  memcpy(address, &sin, sizeof(sin));
+  *address_len = sizeof(sin);
+  return 0;
+}
+
+static void FakeSockStateCallback(void *data, ares_socket_t socket_fd,
+                                  int readable, int writable)
+{
+  FakeSockData *d = static_cast<FakeSockData *>(data);
+  (void)readable;
+  (void)writable;
+  if (socket_fd == ARES_SOCKET_BAD) {
+    d->sock_state_bad++;
+  }
+}
+
+static void FakeSockQueryCallback(void *arg, ares_status_t status,
+                                  size_t                   timeouts,
+                                  const ares_dns_record_t *dnsrec)
+{
+  FakeSockData *d = static_cast<FakeSockData *>(arg);
+  (void)timeouts;
+  (void)dnsrec;
+  d->done   = true;
+  d->status = static_cast<int>(status);
+}
+
+static void FakeSockInit(ares_channel_t **chan, FakeSockData *data,
+                         int extra_flags, unsigned int sockfunc_flags,
+                         bool sock_state = true)
+{
+  struct ares_options             opts;
+  int                             optmask = 0;
+  struct ares_socket_functions_ex funcs;
+
+  memset(&opts, 0, sizeof(opts));
+  opts.flags  = ARES_FLAG_NOSEARCH | extra_flags;
+  optmask    |= ARES_OPT_FLAGS;
+  // A socket-state callback defers the close of a connection's descriptor
+  // until the outermost call unwinds; without one it is closed inline.
+  if (sock_state) {
+    opts.sock_state_cb       = FakeSockStateCallback;
+    opts.sock_state_cb_data  = data;
+    optmask                 |= ARES_OPT_SOCK_STATE_CB;
+  }
+  ASSERT_EQ(ARES_SUCCESS, ares_init_options(chan, &opts, optmask));
+  ASSERT_NE(nullptr, *chan);
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(*chan, "127.0.0.1:53055"));
+
+  data->channel             = *chan;
+  data->next_fd             = 100;
+  data->getsockname_last_fd = ARES_SOCKET_BAD;
+
+  memset(&funcs, 0, sizeof(funcs));
+  funcs.version      = 1;
+  funcs.flags        = sockfunc_flags;
+  funcs.asocket      = FakeSockSocket;
+  funcs.aclose       = FakeSockClose;
+  funcs.asetsockopt  = FakeSockSetsockopt;
+  funcs.aconnect     = FakeSockConnect;
+  funcs.arecvfrom    = FakeSockRecvfrom;
+  funcs.asendto      = FakeSockSendto;
+  funcs.agetsockname = FakeSockGetsockname;
+  EXPECT_EQ(ARES_SUCCESS, ares_set_socket_functions_ex(*chan, &funcs, data));
+}
+
+// The getsockname function runs for every new connection, after the checks
+// that follow the socket-configure and socket-create callbacks.  Reconfiguring
+// from it must not leave the connection registered on the removed server.
+TEST_F(LibraryTest, ReconfigureInGetsocknameNoUseAfterFree) {
+  ares_channel_t *chan = nullptr;
+  FakeSockData    data;
+
+  memset(&data, 0, sizeof(data));
+  FakeSockInit(&chan, &data, 0, 0);
+  data.getsockname_reconfigure = true;
+
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    FakeSockQueryCallback, &data, NULL);
+  EXPECT_FALSE(data.getsockname_reconfigure);
+
+  // The first connection's descriptor: no longer known to the channel.
+  ares_process_fd(chan, 100, ARES_SOCKET_BAD);
+
+  // Moved to the new server.
+  EXPECT_FALSE(data.done);
+  EXPECT_EQ((size_t)1, ares_queue_active_queries(chan));
+
+  ares_cancel(chan);
+  EXPECT_TRUE(data.done);
+  EXPECT_EQ(ARES_ECANCELLED, data.status);
+  EXPECT_EQ((size_t)0, data.bad_fd_calls);
+  EXPECT_EQ((size_t)0, data.sock_state_bad);
+  ares_destroy(chan);
+}
+
+// With TCP Fast Open the first getsockname may fail, and is retried after the
+// first write -- from inside ares_conn_write(), after the send function has
+// returned.  Reconfiguring from that retry closes the connection the query was
+// just written on.
+TEST_F(LibraryTest, ReconfigureInFastOpenGetsocknameNoUseAfterFree) {
+  ares_channel_t *chan = nullptr;
+  FakeSockData    data;
+
+  memset(&data, 0, sizeof(data));
+  FakeSockInit(&chan, &data, ARES_FLAG_USEVC, 0);
+  data.tfo                     = true;
+  data.getsockname_fail_first  = true;
+  data.getsockname_reconfigure = true;
+
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    FakeSockQueryCallback, &data, NULL);
+  EXPECT_FALSE(data.getsockname_reconfigure);
+
+  // Moved to the new server.
+  EXPECT_FALSE(data.done);
+  EXPECT_EQ((size_t)1, ares_queue_active_queries(chan));
+  EXPECT_EQ((size_t)0, data.sock_state_bad);
+
+  ares_cancel(chan);
+  EXPECT_TRUE(data.done);
+  EXPECT_EQ(ARES_ECANCELLED, data.status);
+  EXPECT_EQ((size_t)0, data.bad_fd_calls);
+  ares_destroy(chan);
+}
+
+// A non-blocking receive function that reconfigures the servers and returns
+// an answer.  The connection it read from is closed, so the answer must be
+// dropped -- the query has already moved to the new server -- and the
+// receive function must not be called again on the closed connection.
+TEST_F(LibraryTest, ReconfigureInRecvDropsStaleAnswer) {
+  ares_channel_t *chan = nullptr;
+  FakeSockData    data;
+
+  memset(&data, 0, sizeof(data));
+  FakeSockInit(&chan, &data, 0, ARES_SOCKFUNC_FLAG_NONBLOCKING);
+
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    FakeSockQueryCallback, &data, NULL);
+  ASSERT_NE((size_t)0, data.query_len);
+
+  data.recv_reconfigure = true;
+  ares_process_fd(chan, 100, ARES_SOCKET_BAD);
+  EXPECT_FALSE(data.recv_reconfigure);
+
+  EXPECT_EQ((size_t)1, data.recv_calls);
+  EXPECT_EQ((size_t)0, data.bad_fd_calls);
+  // Still in flight on the new server.
+  EXPECT_FALSE(data.done);
+  EXPECT_EQ((size_t)1, ares_queue_active_queries(chan));
+
+  ares_cancel(chan);
+  EXPECT_TRUE(data.done);
+  EXPECT_EQ(ARES_ECANCELLED, data.status);
+  ares_destroy(chan);
+}
+
+// As above, but the answer comes from an earlier receive call, and a later
+// call -- which has nothing more to read -- reconfigures the servers.  The
+// answer is already buffered on the connection that call tore down, and must
+// be dropped with it.
+TEST_F(LibraryTest, ReconfigureInRecvDropsBufferedAnswer) {
+  ares_channel_t *chan = nullptr;
+  FakeSockData    data;
+
+  memset(&data, 0, sizeof(data));
+  FakeSockInit(&chan, &data, 0, ARES_SOCKFUNC_FLAG_NONBLOCKING);
+
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    FakeSockQueryCallback, &data, NULL);
+  ASSERT_NE((size_t)0, data.query_len);
+
+  data.recv_answer_then_reconfigure = true;
+  ares_process_fd(chan, 100, ARES_SOCKET_BAD);
+  EXPECT_FALSE(data.recv_answer_then_reconfigure);
+
+  EXPECT_EQ((size_t)2, data.recv_calls);
+  EXPECT_EQ((size_t)0, data.bad_fd_calls);
+  // Still in flight on the new server.
+  EXPECT_FALSE(data.done);
+  EXPECT_EQ((size_t)1, ares_queue_active_queries(chan));
+
+  ares_cancel(chan);
+  EXPECT_TRUE(data.done);
+  EXPECT_EQ(ARES_ECANCELLED, data.status);
+  ares_destroy(chan);
+}
+
+// The close function is application code too.  With no socket-state callback
+// to carry the descriptor, it runs inline while ares_check_cleanup_conns()
+// walks the server list and each server's connections, closing idle ones.
+// Reconfiguring from it frees the list nodes that walk holds.
+TEST_F(LibraryTest, ReconfigureInCloseNoUseAfterFree) {
+  ares_channel_t *chan = nullptr;
+  FakeSockData    data;
+
+  memset(&data, 0, sizeof(data));
+  FakeSockInit(&chan, &data, 0, 0, false);
+
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    FakeSockQueryCallback, &data, NULL);
+  ASSERT_NE((size_t)0, data.query_len);
+
+  // Answer it; the now idle connection is then closed.
+  data.recv_answer       = true;
+  data.close_reconfigure = true;
+  ares_process_fd(chan, 100, ARES_SOCKET_BAD);
+  EXPECT_FALSE(data.recv_answer);
+  EXPECT_FALSE(data.close_reconfigure);
+
+  EXPECT_TRUE(data.done);
+  // The fake answer carries no records.
+  EXPECT_EQ(ARES_ENODATA, data.status);
+  EXPECT_EQ((size_t)0, ares_queue_active_queries(chan));
+  EXPECT_EQ((size_t)0, data.bad_fd_calls);
   ares_destroy(chan);
 }
 
