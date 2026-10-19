@@ -48,6 +48,7 @@ struct ares_query_group {
   unsigned short     qid;
   ares_send_flags_t  flags;
   ares_dns_record_t *request;
+  char              *qcache_key;
   unsigned char     *key;
   size_t             key_len;
   ares_bool_t        indexed;
@@ -69,7 +70,7 @@ struct ares_query_queue {
   ares_llist_t        *pending;
   ares_llist_t        *waiters;
   ares_llist_t        *ready;
-  ares_llist_t        *destroy_waiters;
+  ares_llist_t        *cancelling;
   ares_htable_szvp_t  *reserved;
   ares_htable_szvp_t  *handles;
   ares_htable_binvp_t *identical;
@@ -82,6 +83,7 @@ static void group_release(ares_query_group_t *group)
     return;
   }
   ares_dns_record_destroy(group->request);
+  ares_free(group->qcache_key);
   ares_free(group->key);
   ares_llist_destroy(group->waiters);
   ares_free(group);
@@ -246,8 +248,11 @@ void ares_query_queue_pump(ares_channel_t *channel)
     /* group_complete owns the group's initial reference. It may run before
      * this returns, so neither group nor caller output pointers are used after
      * dispatch. Retries use the same active transaction. */
+    char *qcache_key  = group->qcache_key;
+    group->qcache_key = NULL;
     ares_send_direct_nolock(channel, NULL, group->flags, group->request,
-                            group_complete, group, group->qid, group);
+                            qcache_key, group_complete, group, group->qid,
+                            group);
   }
   queue->busy--;
   ares_queue_notify_empty(channel);
@@ -326,6 +331,7 @@ static ares_status_t add_waiter(ares_query_group_t  *group,
 ares_status_t ares_query_queue_admit(ares_channel_t          *channel,
                                      ares_send_flags_t        flags,
                                      const ares_dns_record_t *dnsrec,
+                                     char                    *qcache_key,
                                      ares_callback_dnsrec callback, void *arg,
                                      unsigned short *qid, size_t *handle)
 {
@@ -342,10 +348,12 @@ ares_status_t ares_query_queue_admit(ares_channel_t          *channel,
   if (group == NULL) {
     goto fail;
   }
-  group->channel = channel;
-  group->refs    = 1;
-  group->flags   = flags;
-  status         = ares_dns_record_duplicate_ex(&group->request, dnsrec);
+  group->channel    = channel;
+  group->refs       = 1;
+  group->flags      = flags;
+  group->qcache_key = qcache_key;
+  qcache_key        = NULL;
+  status            = ares_dns_record_duplicate_ex(&group->request, dnsrec);
   if (status != ARES_SUCCESS) {
     if (status == ARES_EBADRESP) {
       status = ARES_EBADQUERY;
@@ -420,6 +428,7 @@ fail:
     group_retire(group);
     group_release(group);
   }
+  ares_free(qcache_key);
   callback(arg, status, 0, NULL);
   return status;
 }
@@ -484,25 +493,19 @@ void ares_query_queue_retry(ares_query_t            *query,
 void ares_query_queue_cancel(ares_channel_t *channel, ares_status_t status)
 {
   ares_query_queue_t  *queue = channel->query_queue;
-  ares_llist_t        *snapshot;
-  ares_llist_t        *replacement;
+  ares_llist_node_t   *node;
   ares_query_group_t  *group;
   ares_query_waiter_t *waiter;
 
-  snapshot = queue->waiters;
-  if (status == ARES_EDESTRUCTION) {
-    /* Preallocated at configuration time, so destruction never needs an
-     * allocation and a nested cancel sees its own, separate empty list. */
-    queue->waiters         = queue->destroy_waiters;
-    queue->destroy_waiters = NULL;
-  } else {
-    replacement = ares_llist_create(NULL);
-    if (replacement == NULL) {
-      /* Match ares_cancel's existing allocation-failure contract: no mutation.
-       */
-      return;
-    }
-    queue->waiters = replacement;
+  /* Move the current callers to the preallocated cancellation list. New work
+   * created by callbacks remains on waiters and survives this cancellation
+   * unless a reentrant cancel moves it to the tail of the same list. Store the
+   * status per caller so a nested ares_cancel() during destruction cannot
+   * change ARES_EDESTRUCTION for callers already being drained. */
+  while ((node = ares_llist_node_first(queue->waiters)) != NULL) {
+    waiter               = ares_llist_node_val(node);
+    waiter->ready_status = status;
+    ares_llist_node_mvparent_last(node, queue->cancelling);
   }
   queue->busy++;
   /* Retire every old group before invoking any cancellation callback. New
@@ -524,10 +527,9 @@ void ares_query_queue_cancel(ares_channel_t *channel, ares_status_t status)
     query->callback(query->arg, status, 0, NULL);
     ares_free_query(query);
   }
-  while ((waiter = ares_llist_first_val(snapshot)) != NULL) {
-    waiter_finish(waiter, status, 0, NULL);
+  while ((waiter = ares_llist_first_val(queue->cancelling)) != NULL) {
+    waiter_finish(waiter, waiter->ready_status, 0, NULL);
   }
-  ares_llist_destroy(snapshot);
   queue->busy--;
   ares_query_queue_pump(channel);
 }
@@ -593,7 +595,7 @@ void ares_query_queue_destroy(ares_channel_t *channel)
   ares_llist_destroy(queue->pending);
   ares_llist_destroy(queue->waiters);
   ares_llist_destroy(queue->ready);
-  ares_llist_destroy(queue->destroy_waiters);
+  ares_llist_destroy(queue->cancelling);
   ares_htable_szvp_destroy(queue->reserved);
   ares_htable_szvp_destroy(queue->handles);
   ares_htable_binvp_destroy(queue->identical);
@@ -631,18 +633,18 @@ ares_status_t ares_set_query_queue_options(ares_channel_t *channel,
       status = ARES_ENOMEM;
       goto done;
     }
-    channel->query_queue   = queue;
-    queue->groups          = ares_llist_create(NULL);
-    queue->pending         = ares_llist_create(NULL);
-    queue->waiters         = ares_llist_create(NULL);
-    queue->ready           = ares_llist_create(NULL);
-    queue->destroy_waiters = ares_llist_create(NULL);
-    queue->reserved        = ares_htable_szvp_create(NULL);
-    queue->handles         = ares_htable_szvp_create(NULL);
-    queue->identical       = ares_htable_binvp_create(NULL);
+    channel->query_queue = queue;
+    queue->groups        = ares_llist_create(NULL);
+    queue->pending       = ares_llist_create(NULL);
+    queue->waiters       = ares_llist_create(NULL);
+    queue->ready         = ares_llist_create(NULL);
+    queue->cancelling    = ares_llist_create(NULL);
+    queue->reserved      = ares_htable_szvp_create(NULL);
+    queue->handles       = ares_htable_szvp_create(NULL);
+    queue->identical     = ares_htable_binvp_create(NULL);
     if (queue->groups == NULL || queue->pending == NULL ||
         queue->waiters == NULL || queue->ready == NULL ||
-        queue->destroy_waiters == NULL || queue->reserved == NULL ||
+        queue->cancelling == NULL || queue->reserved == NULL ||
         queue->handles == NULL || queue->identical == NULL) {
       ares_query_queue_destroy(channel);
       status = ARES_ENOMEM;

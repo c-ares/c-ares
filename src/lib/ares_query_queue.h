@@ -30,6 +30,7 @@
  * \param[in] channel Channel with scheduling enabled.
  * \param[in] flags Internal send policy.
  * \param[in] dnsrec Original query.
+ * \param[in] qcache_key Owned completed-response cache key, or NULL.
  * \param[in] callback Completion callback.
  * \param[in] arg Callback argument.
  * \param[out] qid Optional actual reserved wire ID.
@@ -39,6 +40,7 @@
 ares_status_t ares_query_queue_admit(ares_channel_t          *channel,
                                      ares_send_flags_t        flags,
                                      const ares_dns_record_t *dnsrec,
+                                     char                    *qcache_key,
                                      ares_callback_dnsrec callback, void *arg,
                                      unsigned short *qid, size_t *handle);
 
@@ -136,56 +138,5 @@ ares_bool_t ares_query_queue_probe_allowed(const ares_channel_t *channel);
  * \return Outstanding count, including queued and completion-ready callers.
  */
 size_t ares_query_queue_count(const ares_channel_t *channel);
-
-/*! Send directly using an already chosen ID, bypassing cache and scheduler.
- * \param[in] channel Locked channel.
- * \param[in] server Optional explicit server.
- * \param[in] flags Send policy.
- * \param[in] dnsrec Query.
- * \param[in] callback Completion callback.
- * \param[in] arg Callback argument.
- * \param[in] id Actual wire ID.
- * \param[in] group Optional scheduling owner.
- * \return Transport admission status.
- */
-ares_status_t ares_send_direct_nolock(
-  ares_channel_t *channel, ares_server_t *server, ares_send_flags_t flags,
-  const ares_dns_record_t *dnsrec, ares_callback_dnsrec callback, void *arg,
-  unsigned short id, ares_query_group_t *group);
-
-/*! Internal send with optional logical caller handle.
- * \param[in] channel Locked channel.
- * \param[in] server Optional explicit server.
- * \param[in] flags Send policy.
- * \param[in] dnsrec Query.
- * \param[in] callback Completion callback.
- * \param[in] arg Callback argument.
- * \param[out] qid Optional actual wire ID.
- * \param[out] handle Optional logical caller ID.
- * \return Admission status.
- */
-ares_status_t ares_send_nolock_ex(ares_channel_t          *channel,
-                                  ares_server_t           *server,
-                                  ares_send_flags_t        flags,
-                                  const ares_dns_record_t *dnsrec,
-                                  ares_callback_dnsrec callback, void *arg,
-                                  unsigned short *qid, size_t *handle);
-
-/*! Internal query with optional logical caller handle.
- * \param[in] channel Locked channel.
- * \param[in] name Query name.
- * \param[in] dnsclass Query class.
- * \param[in] type Query type.
- * \param[in] callback Completion callback.
- * \param[in] arg Callback argument.
- * \param[out] qid Optional actual wire ID.
- * \param[out] handle Optional logical caller ID.
- * \return Admission status.
- */
-ares_status_t ares_query_nolock_ex(ares_channel_t *channel, const char *name,
-                                   ares_dns_class_t     dnsclass,
-                                   ares_dns_rec_type_t  type,
-                                   ares_callback_dnsrec callback, void *arg,
-                                   unsigned short *qid, size_t *handle);
 
 #endif

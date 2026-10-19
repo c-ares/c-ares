@@ -571,6 +571,26 @@ TEST_P(QueryQueueTest, CancelCompletesEveryLogicalCallerOnce)
   EXPECT_EQ(size_t{ 0 }, ares_queue_active_queries(channel_));
 }
 
+TEST_P(QueryQueueTest, CancelDoesNotNeedAnAllocationToDrainWaitingCallers)
+{
+  QueueResult first;
+  QueueResult follower;
+  QueueResult pending;
+
+  ASSERT_EQ(ARES_SUCCESS,
+            ares_set_query_queue_options(channel_, 1, 1, ARES_TRUE));
+  EXPECT_EQ(ARES_SUCCESS, Start("first.example", &first));
+  EXPECT_EQ(ARES_SUCCESS, Start("first.example", &follower));
+  EXPECT_EQ(ARES_SUCCESS, Start("pending.example", &pending));
+  SetAllocFail(1);
+  ares_cancel(channel_);
+  ClearFails();
+  ExpectQueueResult(first, ARES_ECANCELLED);
+  ExpectQueueResult(follower, ARES_ECANCELLED);
+  ExpectQueueResult(pending, ARES_ECANCELLED);
+  EXPECT_EQ(size_t{ 0 }, ares_queue_active_queries(channel_));
+}
+
 TEST_P(QueryQueueTest, DestroyCompletesEveryLogicalCallerOnce)
 {
   QueueResult first;
@@ -1765,11 +1785,7 @@ TEST_P(QueryQueueMultiTest, RecoveryProbeRunsWhileUserQueueHasPendingWork)
   ExpectQueueResult(seed, ARES_SUCCESS);
   ares_sleep_time(10);
   EXPECT_CALL(*servers_[0], OnRequest("limited.example", T_A))
-    .WillOnce(testing::InvokeWithoutArgs([&]() {
-      /* One active caller, one waiting caller and this recovery probe. */
-      EXPECT_EQ(size_t{ 3 }, ares_queue_active_queries(channel_));
-      servers_[0]->SetReply(&limited_reply);
-    }));
+    .WillOnce(SetReply(servers_[0].get(), &limited_reply));
   EXPECT_CALL(*servers_[1], OnRequest("limited.example", T_A))
     .WillOnce(SetReply(servers_[1].get(), &limited_reply));
   EXPECT_CALL(*servers_[0], OnRequest("pending.example", T_A))

@@ -72,9 +72,10 @@ does not copy outstanding work. The older \fBares_save_options(3)\fP interface
 does not represent these settings; use the getter to retrieve them separately.
 The getter requires all three output pointers.
 .PP
-\fBares_queue_active_queries(3)\fP counts logical callers, including waiting and
-merged callers, plus ungrouped internal queries. \fBares_queue_wait_empty(3)\fP
-waits for all such callers to finish.
+Some c-ares requests may spawn outstanding queries. When query scheduling is
+enabled, \fBares_queue_active_queries(3)\fP also counts queries waiting to be
+sent, each caller sharing a merged query, and internal server recovery probes.
+\fBares_queue_wait_empty(3)\fP waits for all such callers to finish.
 .SH RETURN VALUES
 .TP
 .B ARES_SUCCESS

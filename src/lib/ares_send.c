@@ -96,33 +96,15 @@ done:
 
 ares_status_t ares_send_direct_nolock(
   ares_channel_t *channel, ares_server_t *server, ares_send_flags_t flags,
-  const ares_dns_record_t *dnsrec, ares_callback_dnsrec callback, void *arg,
-  unsigned short id, ares_query_group_t *group)
+  const ares_dns_record_t *dnsrec, char *qcache_key,
+  ares_callback_dnsrec callback, void *arg, unsigned short id,
+  ares_query_group_t *group)
 {
   ares_query_t  *query;
   ares_timeval_t now;
   ares_status_t  status;
-  char          *qcache_key = NULL;
 
   ares_tvnow(&now);
-
-  if (ares_slist_len(channel->servers) == 0) {
-    callback(arg, ARES_ENOSERVER, 0, NULL);
-    return ARES_ENOSERVER;
-  }
-
-  /* Derive the cache key once, from the caller's request, and only when the
-   * cache is actually on.  The send path may mutate query->query afterwards
-   * -- the EDNS fallback strips its OPT record -- and a key derived from it
-   * later would not match.  ares_init_options() always creates the cache
-   * object, so a zero maximum TTL is what "off" means. */
-  if (channel->qcache_max_ttl > 0) {
-    qcache_key = ares_qcache_calc_key(dnsrec);
-    if (qcache_key == NULL) {
-      callback(arg, ARES_ENOMEM, 0, NULL); /* LCOV_EXCL_LINE: OutOfMemory */
-      return ARES_ENOMEM;                  /* LCOV_EXCL_LINE: OutOfMemory */
-    }
-  }
 
   /* Allocate space for query and allocated fields. */
   query = ares_malloc(sizeof(ares_query_t));
@@ -277,6 +259,9 @@ ares_status_t ares_send_nolock_ex(ares_channel_t          *channel,
   }
 
   ares_tvnow(&now);
+  /* Calculate the cache key once from the caller's original request. The send
+   * path can later mutate its private duplicate, such as while falling back
+   * from EDNS, but cache insertion must retain the original lookup key. */
   if (channel->qcache_max_ttl > 0) {
     qcache_key = ares_qcache_calc_key(dnsrec);
     if (qcache_key == NULL) {
@@ -293,22 +278,21 @@ ares_status_t ares_send_nolock_ex(ares_channel_t          *channel,
       return status;
     }
   }
-  ares_free(qcache_key);
-
   if (channel->query_queue != NULL && server == NULL) {
-    return ares_query_queue_admit(channel, flags, dnsrec, callback, arg, qid,
-                                  handle);
+    return ares_query_queue_admit(channel, flags, dnsrec, qcache_key, callback,
+                                  arg, qid, handle);
   }
 
   /* Explicit-server recovery probes use one no-retry transaction outside the
    * user active limit so a saturated queue cannot prevent server recovery. */
   status = ares_query_queue_new_id(channel, &id);
   if (status != ARES_SUCCESS) {
+    ares_free(qcache_key);
     callback(arg, status, 0, NULL);
     return status;
   }
-  status = ares_send_direct_nolock(channel, server, flags, dnsrec, callback,
-                                   arg, id, NULL);
+  status = ares_send_direct_nolock(channel, server, flags, dnsrec, qcache_key,
+                                   callback, arg, id, NULL);
   if (status == ARES_SUCCESS && qid != NULL) {
     *qid = id;
   }

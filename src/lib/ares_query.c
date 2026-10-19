@@ -83,6 +83,14 @@ ares_status_t ares_query_nolock_ex(ares_channel_t *channel, const char *name,
     /* LCOV_EXCL_STOP */
   }
 
+  /* ares_send_nolock_ex() deliberately suppresses a nested destruction
+   * refusal callback to bound callback-started retry recursion. Refuse before
+   * allocating the callback wrapper that only that suppressed callback could
+   * otherwise release. */
+  if (!channel->sys_up && channel->in_shutdown_refusal) {
+    return ARES_EDESTRUCTION;
+  }
+
   if (!(channel->flags & ARES_FLAG_NORECURSE)) {
     flags |= ARES_FLAG_RD;
   }
