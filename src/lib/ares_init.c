@@ -483,7 +483,8 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
   *dest = NULL; /* in case of failure return NULL explicitly */
 
   /* First get the options supported by the old ares_save_options() function,
-     which is most of them */
+   * which is most of them.  ares_save_options() takes the src channel lock
+   * itself.  No lock is held across ares_init_options(). */
   rc = (ares_status_t)ares_save_options(src, &opts, &optmask);
   if (rc != ARES_SUCCESS) {
     ares_destroy_options(&opts);
