@@ -490,6 +490,11 @@ void ares_process_pending_write(ares_channel_t *channel)
     return;
   }
 
+  /* A failed flush closes the connection and fails its queries over, which
+   * notifies.  Deliver once we are done walking the servers, and keep
+   * anything unlinked meanwhile readable until then. */
+  ares_deferred_cb_enter(channel);
+
   /* Set as untriggerd before calling into ares_conn_flush(), this is
    * because its possible ares_conn_flush() might cause additional data to
    * be enqueued if there is some form of exception so it will need to recurse.
@@ -513,6 +518,7 @@ void ares_process_pending_write(ares_channel_t *channel)
     }
   }
 
+  ares_deferred_cb_leave(channel);
   ares_channel_unlock(channel);
 }
 
