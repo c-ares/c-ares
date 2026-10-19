@@ -148,6 +148,7 @@ void ares_check_cleanup_conns(const ares_channel_t *channel)
     return; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
+restart:
   /* Iterate across each server */
   for (snode = ares_slist_node_first(channel->servers); snode != NULL;
        snode = ares_slist_node_next(snode)) {
@@ -190,8 +191,12 @@ void ares_check_cleanup_conns(const ares_channel_t *channel)
         continue;
       }
 
-      /* Clean it up */
+      /* Clean it up.  The close function is application code and may have
+       * reconfigured the servers, freeing the list nodes this walk holds --
+       * the server's, and the next connection's.  Start over; connections
+       * already closed are no longer listed, so this ends. */
       ares_close_connection(conn, ARES_SUCCESS);
+      goto restart;
     }
   }
 }
