@@ -337,6 +337,12 @@ typedef int ares_socket_t;
 typedef void (*ares_sock_state_cb)(void *data, ares_socket_t socket_fd,
                                    int readable, int writable);
 
+/* Called on inititalization, gets called inside event-thread if enabled. 
+This can be useful for languages such as python that rely on interpreters. */
+typedef void (*ares_init_cb)(void* data);
+typedef void (*ares_destroy_cb)(void* data);
+
+
 struct apattern;
 
 /* Options controlling server failover behavior.
@@ -394,6 +400,7 @@ struct ares_options {
   unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
   ares_evsys_t evsys;
   struct ares_server_failover_options server_failover_opts;
+
 };
 
 struct hostent;
