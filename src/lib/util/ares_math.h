@@ -60,7 +60,7 @@ unsigned char ares_count_bits_u8(unsigned char x);
  *  \param[in] ttl  TTL as received on the wire
  *  \return TTL clamped to the range 0 to INT_MAX
  */
-int ares_dns_ttl_as_int(unsigned int ttl);
+int           ares_dns_ttl_as_int(unsigned int ttl);
 
 /*! Multiply two size_t values, checking for overflow.  On success writes the
  *  product to *res and returns ARES_FALSE.  On overflow returns ARES_TRUE and
