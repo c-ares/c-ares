@@ -25,6 +25,8 @@
  */
 #include "ares-test.h"
 
+#include <atomic>
+
 extern "C" {
   #include "ares_private.h"
 }
@@ -294,6 +296,91 @@ TEST_F(LibraryTest, FailChannelInit) {
   EXPECT_EQ(nullptr, channel);
   ares_library_cleanup();
 }
+
+// CARES_THREADS implies ares_threadsafety() is true
+#ifdef CARES_THREADS
+// Build a CSV list of n distinct IPv4 servers.
+static std::string ConfigRaceServerCsv(size_t n)
+{
+  std::string csv;
+  for (size_t i = 0; i < n; i++) {
+    if (i != 0) {
+      csv += ",";
+    }
+    csv += "127.0." + std::to_string((i / 250) + 1) + "." +
+           std::to_string((i % 250) + 1) + ":5353";
+  }
+  return csv;
+}
+
+// Readers snapshot the channel configuration (via ares_dup() or
+// ares_save_options()) while a writer thread keeps swapping the server list
+// between a short and a long one.  The configuration must only be read under
+// the channel lock; otherwise the saved server array is sized from one list
+// and filled from another (heap-buffer-overflow under ASAN).
+static void ConfigRaceRun(bool use_dup, size_t reader_loops)
+{
+  const size_t        nreaders  = 4;
+  const std::string   small_csv = ConfigRaceServerCsv(4);
+  const std::string   large_csv = ConfigRaceServerCsv(400);
+  ares_channel_t     *channel   = nullptr;
+  std::atomic<size_t> readers_done(0);
+
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, nullptr, 0));
+  ASSERT_NE(nullptr, channel);
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel, small_csv.c_str()));
+
+  // Writer runs until every reader finished; readers are bounded so the
+  // whole test is bounded.
+  std::thread              writer([&]() {
+    size_t i = 0;
+    while (readers_done.load() < nreaders) {
+      ares_set_servers_csv(channel,
+                           (i++ & 1) ? large_csv.c_str() : small_csv.c_str());
+    }
+  });
+
+  std::vector<std::thread> readers;
+  for (size_t r = 0; r < nreaders; r++) {
+    readers.emplace_back([&]() {
+      for (size_t i = 0; i < reader_loops; i++) {
+        if (use_dup) {
+          ares_channel_t *dup = nullptr;
+          EXPECT_EQ(ARES_SUCCESS, ares_dup(&dup, channel));
+          if (dup != nullptr) {
+            ares_destroy(dup);
+          }
+        } else {
+          struct ares_options opts;
+          int                 optmask = 0;
+          memset(&opts, 0, sizeof(opts));
+          EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel, &opts, &optmask));
+          EXPECT_NE(0, optmask & ARES_OPT_SERVERS);
+          EXPECT_TRUE(opts.nservers == 4 || opts.nservers == 400);
+          ares_destroy_options(&opts);
+        }
+      }
+      readers_done++;
+    });
+  }
+
+  for (auto &t : readers) {
+    t.join();
+  }
+  writer.join();
+  ares_destroy(channel);
+}
+
+TEST_F(LibraryTest, DupConcurrentSetServers)
+{
+  ConfigRaceRun(true, 20);
+}
+
+TEST_F(LibraryTest, SaveOptionsConcurrentSetServers)
+{
+  ConfigRaceRun(false, 20000);
+}
+#endif
 
 #ifndef WIN32
 TEST_F(LibraryTest, EnvInit) {
