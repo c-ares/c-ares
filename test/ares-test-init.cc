@@ -153,6 +153,34 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   ares_destroy(channel2);
 }
 
+TEST_F(LibraryTest, DefaultQueryCacheNotSaved) {
+  struct ares_options opts;
+  struct ares_options saved_opts;
+  ares_channel_t     *channel       = nullptr;
+  int                 optmask       = ARES_OPT_TIMEOUTMS;
+  int                 saved_optmask = 0;
+
+  memset(&opts, 0, sizeof(opts));
+  opts.timeout = 1000;
+  ASSERT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+  ASSERT_NE(nullptr, channel);
+
+  /* ares_save_options() uses the optmask to avoid writing fields that callers
+   * built against an older, smaller ares_options structure cannot hold.  A
+   * default value therefore must not be represented as a caller-set option. */
+  EXPECT_EQ(3600U, channel->qcache_max_ttl);
+  EXPECT_EQ(0U, channel->optmask & ARES_OPT_QUERY_CACHE);
+
+  memset(&saved_opts, 0, sizeof(saved_opts));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_save_options(channel, &saved_opts, &saved_optmask));
+  EXPECT_EQ(0, saved_optmask & ARES_OPT_QUERY_CACHE);
+  EXPECT_EQ(opts.timeout, saved_opts.timeout);
+
+  ares_destroy_options(&saved_opts);
+  ares_destroy(channel);
+}
+
 TEST_F(LibraryTest, ChannelAllocFail) {
   ares_channel_t *channel;
   for (int ii = 1; ii <= 25; ii++) {
