@@ -154,7 +154,7 @@ static ares_status_t ares_buf_ensure_space(ares_buf_t *buf, size_t needed_size)
    * so we want to ensure the size is always sufficient for this as we don't
    * want an ARES_ENOMEM at that point.
    */
-  if (buf->data_len >= SIZE_MAX - 1) {
+  if (needed_size == SIZE_MAX || buf->data_len >= SIZE_MAX - 1) {
     return ARES_ENOMEM;
   }
 
