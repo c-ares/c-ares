@@ -400,7 +400,10 @@ struct ares_options {
   unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
   ares_evsys_t evsys;
   struct ares_server_failover_options server_failover_opts;
-
+  ares_init_cb      init_cb;
+  void*             init_cb_data;
+  ares_destroy_cb   destory_cb;
+  void*             destory_cb_data;
 };
 
 struct hostent;
