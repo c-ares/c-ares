@@ -1663,6 +1663,95 @@ TEST_F(FileChannelTest, GetAddrInfoAllocFail) {
   }
 }
 
+TEST_F(LibraryTest, DNSWriteOversizedRdlength)
+{
+  ares_dns_record_t         *dnsrec = nullptr;
+  ares_dns_rr_t             *rr     = nullptr;
+  unsigned char             *msg    = nullptr;
+  size_t                     msglen = 0;
+
+  // 300 x 255-byte character-strings = rdlength 76500 > 65535.
+  std::vector<unsigned char> str(255, 'x');
+
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&dnsrec, 0x1234, 0, ARES_OPCODE_QUERY,
+                                   ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(dnsrec, "example.com", ARES_REC_TYPE_TXT,
+                                      ARES_CLASS_IN));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_record_rr_add(
+                            &rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+                            ARES_REC_TYPE_TXT, ARES_CLASS_IN, 3600));
+  for (size_t i = 0; i < 300; i++) {
+    EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_add_abin(rr, ARES_RR_TXT_DATA,
+                                                 str.data(), str.size()));
+  }
+
+  // rdlength does not fit in 16 bits and must not be silently truncated into
+  // a structurally corrupt message reported as ARES_SUCCESS.
+  EXPECT_EQ(ARES_EBADQUERY, ares_dns_write(dnsrec, &msg, &msglen));
+  EXPECT_EQ(nullptr, msg);
+  EXPECT_EQ(0U, msglen);
+
+  ares_dns_record_destroy(dnsrec);
+  ares_free_string(msg);
+}
+
+TEST_F(LibraryTest, DNSWriteMaximumMessageSize)
+{
+  ares_dns_record_t *dnsrec   = nullptr;
+  ares_dns_record_t *parsed   = nullptr;
+  ares_dns_rr_t     *rr       = nullptr;
+  unsigned char     *msg      = nullptr;
+  size_t             msglen   = 0;
+  size_t             overhead = 0;
+  size_t             max_data = 0;
+
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&dnsrec, 0x1234, 0, ARES_OPCODE_QUERY,
+                                   ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(dnsrec, "example.com", ARES_REC_TYPE_A,
+                                      ARES_CLASS_IN));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_rr_add(&rr, dnsrec, ARES_SECTION_ANSWER, "",
+                                   ARES_REC_TYPE_RAW_RR, ARES_CLASS_IN, 0));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_u16(rr, ARES_RR_RAW_RR_TYPE, 65432));
+
+  // Measure the fixed framing with a one-byte raw record, so the exact
+  // per-byte limit can be hit: the largest message that fits must write and
+  // parse back, and a single extra byte must be rejected.
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_bin(
+                            rr, ARES_RR_RAW_RR_DATA,
+                            reinterpret_cast<const unsigned char *>("x"), 1));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+  overhead = msglen - 1; /* framing without the data byte */
+  ares_free_string(msg);
+  msg = nullptr;
+
+  max_data = 65535 - overhead;
+  std::vector<unsigned char> data(max_data, 'x');
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_bin(rr, ARES_RR_RAW_RR_DATA,
+                                              data.data(), data.size()));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+  EXPECT_EQ(65535U, msglen);
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, 0, &parsed));
+  ares_dns_record_destroy(parsed);
+  parsed = nullptr;
+  ares_free_string(msg);
+  msg = nullptr;
+
+  data.push_back('x');
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_bin(rr, ARES_RR_RAW_RR_DATA,
+                                              data.data(), data.size()));
+  EXPECT_EQ(ARES_EBADQUERY, ares_dns_write(dnsrec, &msg, &msglen));
+  EXPECT_EQ(nullptr, msg);
+  EXPECT_EQ(0U, msglen);
+
+  ares_dns_record_destroy(dnsrec);
+  ares_free_string(msg);
+}
+
 TEST_F(LibraryTest, DNSRecord) {
   ares_dns_record_t   *dnsrec = NULL;
   ares_dns_rr_t       *rr     = NULL;
