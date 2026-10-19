@@ -194,7 +194,12 @@ void ares_getnameinfo(ares_channel_t *channel, const struct sockaddr *sa,
   }
 
   ares_channel_lock(channel);
+  /* Notifications raised along the way are delivered once this whole call
+   * has unwound, not from inside the internals it runs.  See
+   * ares_deferred_cb_enter(). */
+  ares_deferred_cb_enter(channel);
   ares_getnameinfo_int(channel, sa, salen, flags_int, callback, arg);
+  ares_deferred_cb_leave(channel);
   ares_channel_unlock(channel);
 }
 

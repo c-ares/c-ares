@@ -2968,6 +2968,112 @@ TEST_F(LibraryTest, ReconfigureInSockStateCallbackNoUseAfterFree) {
   ares_destroy(chan);
 }
 
+// Server-state notifications raised while a public call is issuing its first
+// request must not be delivered until that whole call has unwound.  A
+// failover handler that reconfigures the servers ends the in-flight request,
+// and with it the state the issuing call still has to finish with.  The IPv6
+// server cannot get a socket, so the first send fails over to the IPv4 one
+// and queues a failure notification for the handler below.
+static ares_socket_t FailoverNoIPv6Socket(int af, int type, int protocol,
+                                          void *user_data)
+{
+  (void)user_data;
+  if (af == AF_INET6) {
+    return ARES_SOCKET_BAD;
+  }
+  return socket(af, type, protocol);
+}
+
+static void FailoverOnServerDown(const char *server_string, ares_bool_t success,
+                                 int flags, void *data)
+{
+  (void)server_string;
+  (void)flags;
+  if (!success) {
+    ares_set_servers_csv(static_cast<ares_channel_t *>(data),
+                         "127.0.0.1:53063");
+  }
+}
+
+static ares_channel_t *FailoverChannel(ares_socket_functions *funcs)
+{
+  ares_channel_t     *chan = nullptr;
+  struct ares_options opts;
+
+  memset(&opts, 0, sizeof(opts));
+  opts.tries = 1;
+  opts.flags = ARES_FLAG_NOSEARCH;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_init_options(&chan, &opts, ARES_OPT_TRIES | ARES_OPT_FLAGS));
+  if (chan == nullptr) {
+    return nullptr;
+  }
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_set_servers_csv(chan, "[::1]:53061,127.0.0.1:53062"));
+  ares_set_server_state_callback(chan, FailoverOnServerDown, chan);
+
+  memset(funcs, 0, sizeof(*funcs));
+  funcs->asocket = FailoverNoIPv6Socket;
+  ares_set_socket_functions(chan, funcs, NULL);
+  return chan;
+}
+
+TEST_F(LibraryTest, ServerFailoverDuringGetAddrInfo) {
+  ares_socket_functions      funcs;
+  struct ares_addrinfo_hints hints;
+  AddrInfoResult             result;
+  ares_channel_t            *chan = FailoverChannel(&funcs);
+  ASSERT_NE(nullptr, chan);
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+  ares_getaddrinfo(chan, "www.google.com", NULL, &hints, AddrInfoCallback,
+                   &result);
+
+  ares_cancel(chan);
+  EXPECT_TRUE(result.done_);
+  ares_destroy(chan);
+}
+
+// Same, through ares_query_dnsrec(): the query id must already have been
+// reported to the caller by the time the query can complete.
+struct FailoverQueryData {
+  unsigned short qid;
+  unsigned short qid_at_callback;
+  bool           done;
+};
+
+static void FailoverQueryCallback(void *data, ares_status_t status,
+                                  size_t                   timeouts,
+                                  const ares_dns_record_t *dnsrec)
+{
+  FailoverQueryData *d = static_cast<FailoverQueryData *>(data);
+  (void)status;
+  (void)timeouts;
+  (void)dnsrec;
+  d->qid_at_callback = d->qid;
+  d->done            = true;
+}
+
+TEST_F(LibraryTest, ServerFailoverDuringQuery) {
+  ares_socket_functions funcs;
+  FailoverQueryData     data;
+  ares_channel_t       *chan = FailoverChannel(&funcs);
+  ASSERT_NE(nullptr, chan);
+
+  data.qid             = 0;
+  data.qid_at_callback = 0;
+  data.done            = false;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN,
+                              ARES_REC_TYPE_A, FailoverQueryCallback, &data,
+                              &data.qid));
+
+  EXPECT_TRUE(data.done);
+  EXPECT_EQ(data.qid, data.qid_at_callback);
+  ares_destroy(chan);
+}
+
 // Deferring the notifications must not lose them: every public entry point
 // that closes a socket still has to tell the application about it before it
 // returns, or an event loop is left polling a descriptor that c-ares closed.

@@ -273,8 +273,12 @@ ares_status_t ares_send_nolock(ares_channel_t *channel, ares_server_t *server,
   /* Perform the first query action. */
 
   /* Sending opens and writes to connections and can mark a server down, both
-   * of which notify.  Deliver those once we are done with the connection and
-   * the server, not part-way through. */
+   * of which notify.  This bracket keeps any connection or server unlinked
+   * during the send readable until it returns.  It is never the outermost
+   * one: every public entry point that can get here, and query processing,
+   * holds its own, so delivery waits until the caller -- which may still be
+   * holding its own lookup state, as ares_getaddrinfo() does -- has unwound
+   * too. */
   ares_deferred_cb_enter(channel);
   status = ares_send_query(server, query, &now);
   ares_deferred_cb_leave(channel);
@@ -298,9 +302,14 @@ ares_status_t ares_send_dnsrec(ares_channel_t          *channel,
   }
 
   ares_channel_lock(channel);
+  /* Notifications raised along the way are delivered once this whole call
+   * has unwound, not from inside the internals it runs.  See
+   * ares_deferred_cb_enter(). */
+  ares_deferred_cb_enter(channel);
 
   status = ares_send_nolock(channel, NULL, 0, dnsrec, callback, arg, qid);
 
+  ares_deferred_cb_leave(channel);
   ares_channel_unlock(channel);
 
   return status;
