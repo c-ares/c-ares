@@ -1303,6 +1303,37 @@ TEST_F(LibraryTest, InetPtoN) {
   EXPECT_EQ(-1, ares_inet_pton(AF_INET+AF_INET6, "1.2.3.4", &a4));
 }
 
+// ares_inet_pton() must only succeed for a complete address.  A network in
+// CIDR notation or a classful IPv4 network used to be accepted with only the
+// prefix bytes written, so the rest of the address was left uninitialized and
+// handed back to the caller, for example from ares_getaddrinfo("::1/0").
+TEST_F(LibraryTest, InetPtoNRejectsNetworks)
+{
+  struct in_addr  a4;
+  struct in6_addr a6;
+  const char     *v6[] = { "::1/0", "::1/64", "::1/128", "2001:db8::/32" };
+  const char *v4[] = { "1.2.3.4/32", "1.2.3.4/8", "10", "10.1", "192.168.1" };
+
+  for (size_t i = 0; i < sizeof(v6) / sizeof(v6[0]); i++) {
+    EXPECT_EQ(0, ares_inet_pton(AF_INET6, v6[i], &a6)) << v6[i];
+  }
+  for (size_t i = 0; i < sizeof(v4) / sizeof(v4[0]); i++) {
+    EXPECT_EQ(0, ares_inet_pton(AF_INET, v4[i], &a4)) << v4[i];
+  }
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, nullptr, &a4));
+
+  memset(&a6, 0xAA, sizeof(a6));
+  EXPECT_EQ(1, ares_inet_pton(AF_INET6, "::1", &a6));
+  for (size_t i = 0; i < 15; i++) {
+    EXPECT_EQ(0, a6.s6_addr[i]);
+  }
+  EXPECT_EQ(1, a6.s6_addr[15]);
+
+  memset(&a4, 0xAA, sizeof(a4));
+  EXPECT_EQ(1, ares_inet_pton(AF_INET, "10.0.0.1", &a4));
+  EXPECT_EQ(htonl(0x0A000001), a4.s_addr);
+}
+
 TEST_F(LibraryTest, FreeCorruptData) {
   // ares_free_data(p) expects that there is a type field and a marker
   // field in the memory before p.  Feed it incorrect versions of each.

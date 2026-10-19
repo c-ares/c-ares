@@ -444,8 +444,19 @@ int ares_inet_pton(int af, const char *src, void *dst)
     SET_SOCKERRNO(EAFNOSUPPORT);
     return -1;
   }
+
+  /* Unlike inet_pton(), ares_inet_net_pton() also accepts a network with a
+   * CIDR prefix or a classful IPv4 network, and only writes the bytes covered
+   * by the prefix.  Reject those so that a successful return always means a
+   * complete address was written to dst. */
+  if (src == NULL || strchr(src, '/') != NULL) {
+    return 0;
+  }
   result = ares_inet_net_pton(af, src, dst, size);
   if (result == -1 && SOCKERRNO == ENOENT) {
+    return 0;
+  }
+  if (result > -1 && (size_t)result != size * 8) {
     return 0;
   }
   return (result > -1) ? 1 : -1;
