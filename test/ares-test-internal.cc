@@ -3051,6 +3051,8 @@ TEST_F(LibraryTest, ArrayAlloc) {
   /* A rejected resize must leave the original array intact and owned by the
    * caller, exactly like a failed realloc() */
   EXPECT_EQ(NULL, ares_realloc_array(arr, SIZE_MAX, sizeof(*arr)));
+  EXPECT_EQ(NULL, ares_realloc_array(arr, 0, sizeof(*arr)));
+  EXPECT_EQ(NULL, ares_realloc_zero_array(arr, 4, 0, sizeof(*arr)));
   for (i = 0; i < 4; i++) {
     EXPECT_EQ((unsigned int)i, arr[i]);
   }
