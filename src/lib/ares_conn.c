@@ -277,6 +277,13 @@ ares_status_t ares_conn_flush(ares_conn_t *conn)
     }
 
     err = ares_conn_write(conn, data, data_len, &count);
+    if (err == ARES_CONN_ERR_NOBUFS && !(conn->flags & ARES_CONN_FLAG_TCP)) {
+      /* A queue below the socket dropped the datagram.  Treat it as sent, as
+       * Linux does without IP_RECVERR, so the query's own timeout retries it
+       * instead of the connection and every query on it being torn down. */
+      err   = ARES_CONN_ERR_SUCCESS;
+      count = data_len;
+    }
     if (err != ARES_CONN_ERR_SUCCESS) {
       if (err != ARES_CONN_ERR_WOULDBLOCK) {
         status = ARES_ECONNREFUSED;

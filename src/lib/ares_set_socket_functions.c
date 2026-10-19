@@ -250,12 +250,15 @@ static ares_socket_t default_asocket(int domain, int type, int protocol,
 #endif
   }
 
-#if defined(IP_RECVERR) && defined(IPV6_RECVERR)
+#if defined(__linux__) && defined(IP_RECVERR) && defined(IPV6_RECVERR)
   /* Without IP_RECVERR, Linux passes only some ICMP errors, such as port
    * unreachable, to a connected UDP socket, and drops network and host
    * unreachable.  A query to a server behind an unreachable route then waits
-   * for its timeout.  With it, the next read fails as soon as the ICMP error
-   * arrives, and the query moves on to the next server. */
+   * for its timeout.  With it, the next read or write on the socket fails as
+   * soon as the ICMP error arrives, and the query moves on to the next
+   * server.  It also makes a send fail with ENOBUFS when a queue below the
+   * socket drops the datagram, which Linux otherwise reports as sent;
+   * ares_conn_flush() treats that as a dropped datagram. */
   if (type == SOCK_DGRAM) {
     int on = 1;
     if (domain == PF_INET6) {
