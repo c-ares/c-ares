@@ -94,7 +94,9 @@ static void ares_deferred_cb_flush(ares_channel_t *channel)
 {
   /* Only the outermost frame delivers: anything above us on the stack may
    * still be holding the connection a reentrant call from one of these
-   * callbacks could free.
+   * callbacks could free, or lookup state of its own that a callback could
+   * end.  That is why the outermost frame belongs to the public entry point
+   * and never to an internal helper; see ares_deferred_cb_enter().
    *
    * The dispatch below counts as a nesting level of its own.  Without that, a
    * callback that calls back into the library re-enters here through the
