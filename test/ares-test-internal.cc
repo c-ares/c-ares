@@ -282,6 +282,23 @@ TEST_F(LibraryTest, InetNetPtoN) {
   EXPECT_EQ(-1, ares_inet_net_pton(AF_INET, "253", &a4, sizeof(a4) - 1));
 }
 
+// An IPv6 network with a prefix length only carries (bits+7)/8 bytes; the
+// rest of the destination must be zeroed rather than left as it was.
+TEST_F(LibraryTest, InetNetPtoNPrefixZeroFills) {
+  unsigned char a6[16];
+
+  memset(a6, 0x41, sizeof(a6));
+  EXPECT_EQ(0, ares_inet_net_pton(AF_INET6, "::1/0", a6, sizeof(a6)));
+  EXPECT_EQ("0000:0000:0000:0000:0000:0000:0000:0000",
+            AddressToString(a6, 16));
+
+  memset(a6, 0x41, sizeof(a6));
+  EXPECT_EQ(64, ares_inet_net_pton(AF_INET6, "2001:db8:1:2:3:4:5:6/64", a6,
+                                   sizeof(a6)));
+  EXPECT_EQ("2001:0db8:0001:0002:0000:0000:0000:0000",
+            AddressToString(a6, 16));
+}
+
 TEST_F(LibraryTest, FreeLongChain) {
   struct ares_addr_node *data = nullptr;
   for (int ii = 0; ii < 100000; ii++) {
@@ -1300,7 +1317,44 @@ TEST_F(LibraryTest, InetPtoN) {
   EXPECT_EQ(1, ares_inet_pton(AF_INET6, "12:34::ff", &a6));
   EXPECT_EQ(1, ares_inet_pton(AF_INET6, "12:34::ffff:1.2.3.4", &a6));
   EXPECT_EQ(0, ares_inet_pton(AF_INET, "xyzzy", &a4));
+  // Too many octets is unparseable input, not a system error.
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, "1.2.3.4.5", &a4));
+  EXPECT_EQ(0, ares_inet_pton(AF_INET, "0x0102030405", &a4));
   EXPECT_EQ(-1, ares_inet_pton(AF_INET+AF_INET6, "1.2.3.4", &a4));
+}
+
+// ares_inet_pton() parses addresses, not networks: like inet_pton(3) it must
+// reject a "/bits" prefix length.  It used to accept one and, for IPv6, write
+// only (bits+7)/8 bytes of dst while still returning 1.
+TEST_F(LibraryTest, InetPtoNRejectsPrefixLength) {
+  const char *cases6[] = { "::1/0", "ffff::1/16", "2001:db8::1/64",
+                           "2001:db8::1/128", "::ffff:1.2.3.4/8",
+                           "::ffff:1.2.3.4/32" };
+  const char *cases4[] = { "1.2.3.4/8", "1.2.3.4/0", "1.2.3.4/32", "10/8",
+                           "0x0a000000/8" };
+  unsigned char a4[4];
+  unsigned char a6[16];
+  size_t        i;
+
+  for (i = 0; i < sizeof(cases6) / sizeof(*cases6); i++) {
+    EXPECT_EQ(0, ares_inet_pton(AF_INET6, cases6[i], a6)) << cases6[i];
+  }
+  for (i = 0; i < sizeof(cases4) / sizeof(*cases4); i++) {
+    EXPECT_EQ(0, ares_inet_pton(AF_INET, cases4[i], a4)) << cases4[i];
+  }
+
+  // Without a prefix length, the whole destination is written.
+  memset(a6, 0x41, sizeof(a6));
+  EXPECT_EQ(1, ares_inet_pton(AF_INET6, "ffff::1", a6));
+  EXPECT_EQ("ffff:0000:0000:0000:0000:0000:0000:0001",
+            AddressToString(a6, 16));
+  memset(a6, 0x41, sizeof(a6));
+  EXPECT_EQ(1, ares_inet_pton(AF_INET6, "::ffff:1.2.3.4", a6));
+  EXPECT_EQ("0000:0000:0000:0000:0000:ffff:0102:0304",
+            AddressToString(a6, 16));
+  memset(a4, 0x41, sizeof(a4));
+  EXPECT_EQ(1, ares_inet_pton(AF_INET, "1.2.3.4", a4));
+  EXPECT_EQ("1.2.3.4", AddressToString(a4, 4));
 }
 
 TEST_F(LibraryTest, FreeCorruptData) {
