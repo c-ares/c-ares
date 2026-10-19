@@ -2724,6 +2724,47 @@ TEST_F(LibraryTest, ArrayMisuse) {
   EXPECT_EQ(NULL, ares_realloc_zero_array(NULL, SIZE_MAX, 1, 2));
 }
 
+TEST_F(LibraryTest, BufAppendStartOverflow)
+{
+  const size_t initial_sizes[] = { 0, 1, 31, 32, 100 };
+  const size_t requests[]      = { SIZE_MAX, SIZE_MAX - 1 };
+
+  for (size_t initial_size : initial_sizes) {
+    ares_buf_t *buf = ares_buf_create();
+    std::string expected(initial_size, 'x');
+    ASSERT_NE(nullptr, buf);
+    ASSERT_EQ(ARES_SUCCESS, ares_buf_append_str(buf, expected.c_str()));
+
+    for (size_t request : requests) {
+      size_t         len = request;
+      unsigned char *ptr = ares_buf_append_start(buf, &len);
+      EXPECT_EQ(nullptr, ptr)
+        << "initial_size=" << initial_size << ", request=" << request;
+      /* Close the reservation even when testing the unfixed implementation. */
+      if (ptr != nullptr) {
+        ares_buf_append_finish(buf, 0);
+      }
+      EXPECT_EQ(initial_size, ares_buf_len(buf));
+    }
+
+    /* A rejected reservation must not prevent subsequent ordinary appends. */
+    size_t         len = 3;
+    unsigned char *ptr = ares_buf_append_start(buf, &len);
+    ASSERT_NE(nullptr, ptr);
+    ASSERT_GE(len, static_cast<size_t>(3));
+    memcpy(ptr, "end", 3);
+    ares_buf_append_finish(buf, 3);
+    expected += "end";
+
+    size_t               actual_len = 0;
+    const unsigned char *actual     = ares_buf_peek(buf, &actual_len);
+    ASSERT_NE(nullptr, actual);
+    EXPECT_EQ(expected.size(), actual_len);
+    EXPECT_EQ(0, memcmp(expected.data(), actual, actual_len));
+    ares_buf_destroy(buf);
+  }
+}
+
 TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ(NULL, ares_buf_create_const(NULL, 0));
   ares_buf_reclaim(NULL);
