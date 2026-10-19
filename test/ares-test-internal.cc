@@ -1393,6 +1393,172 @@ TEST_F(LibraryTest, StrdupFailures) {
   EXPECT_EQ(nullptr, copy);
 }
 
+#ifndef WIN32
+TEST_F(FileChannelTest, GetAddrInfoHostsReplacedWithOlderMtime)
+{
+  TempFile                   hostsfile("1.2.3.4 example.com");
+  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = { 0, 0, 0, 0 };
+  hints.ai_family                  = AF_INET;
+  hints.ai_flags                   = ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+
+  AddrInfoResult result1 = {};
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback,
+                   &result1);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  {
+    std::stringstream ss;
+    ss << result1.ai_;
+    EXPECT_EQ("{addr=[1.2.3.4]}", ss.str());
+  }
+
+  /* Replace the file with new content but an OLDER mtime, as produced by
+   * tar -x, cp -p, package downgrades or backup restores. */
+  {
+    FILE          *fp = fopen(hostsfile.filename(), "w");
+    struct timeval times[2];
+    ASSERT_NE(nullptr, fp);
+    fprintf(fp, "9.9.9.9 example.com");
+    fclose(fp);
+    gettimeofday(&times[0], NULL);
+    times[0].tv_sec -= 3600;
+    times[1]         = times[0];
+    ASSERT_EQ(0, utimes(hostsfile.filename(), times));
+  }
+
+  AddrInfoResult result2 = {};
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback,
+                   &result2);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  std::stringstream ss;
+  ss << result2.ai_;
+  EXPECT_EQ("{addr=[9.9.9.9]}", ss.str());
+}
+
+TEST_F(FileChannelTest, GetAddrInfoHostsReplacedWithSameMtime)
+{
+  TempFile                   hostsfile("1.2.3.4 example.com");
+  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = { 0, 0, 0, 0 };
+  hints.ai_family                  = AF_INET;
+  hints.ai_flags                   = ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+
+  /* Pin the mtime a couple of seconds in the past BEFORE the first lookup,
+   * so the parse observes that mtime while the same-second re-parse
+   * heuristic (parse time vs mtime) sees a fresh file and stays out of the
+   * way. */
+  struct timeval pinned[2];
+  gettimeofday(&pinned[0], NULL);
+  pinned[0].tv_sec -= 2;
+  pinned[1]         = pinned[0];
+  ASSERT_EQ(0, utimes(hostsfile.filename(), pinned));
+
+  AddrInfoResult result1 = {};
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback,
+                   &result1);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  {
+    std::stringstream ss;
+    ss << result1.ai_;
+    EXPECT_EQ("{addr=[1.2.3.4]}", ss.str());
+  }
+
+  /* Replace the file with new content of a different length but the SAME
+   * mtime, as produced by builds that normalize file times: on NixOS,
+   * /etc/hosts is a symlink into the package store where every file
+   * carries the same mtime, so pointing the symlink at a new store path
+   * changes nothing an mtime-only check can see.  The mtime is pinned
+   * back to the exact value the cache observed, so only the size/inode
+   * identity can catch the replacement. */
+  {
+    FILE *fp = fopen(hostsfile.filename(), "w");
+    ASSERT_NE(nullptr, fp);
+    fprintf(fp, "10.11.12.13 example.com");
+    fclose(fp);
+    ASSERT_EQ(0, utimes(hostsfile.filename(), pinned));
+  }
+
+  AddrInfoResult result2 = {};
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback,
+                   &result2);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  std::stringstream ss;
+  ss << result2.ai_;
+  EXPECT_EQ("{addr=[10.11.12.13]}", ss.str());
+
+  /* Swap in a different file of the same length and the same mtime, as a
+   * symlink retarget or atomic rename does, so only the inode differs. */
+  {
+    std::string newfile = std::string(hostsfile.filename()) + ".new";
+    FILE       *fp      = fopen(newfile.c_str(), "w");
+    ASSERT_NE(nullptr, fp);
+    fprintf(fp, "10.11.12.14 example.com");
+    fclose(fp);
+    ASSERT_EQ(0, utimes(newfile.c_str(), pinned));
+    ASSERT_EQ(0, rename(newfile.c_str(), hostsfile.filename()));
+  }
+
+  AddrInfoResult result3 = {};
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback,
+                   &result3);
+  Process();
+  EXPECT_TRUE(result3.done_);
+  std::stringstream ss3;
+  ss3 << result3.ai_;
+  EXPECT_EQ("{addr=[10.11.12.14]}", ss3.str());
+}
+
+TEST_F(FileChannelTest, GetAddrInfoHostsEmptiedInPlace)
+{
+  TempFile                   hostsfile("1.2.3.4 example.com");
+  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
+  struct ares_addrinfo_hints hints = { 0, 0, 0, 0 };
+  hints.ai_family                  = AF_INET;
+  hints.ai_flags                   = ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
+
+  /* Pin the mtime a couple of seconds in the past before the first lookup,
+   * so the same-second re-parse heuristic stays out of the way, then empty
+   * the file in place and put the mtime back: only the size can catch it,
+   * and a size of zero must still count as a real value. */
+  struct timeval pinned[2];
+  gettimeofday(&pinned[0], NULL);
+  pinned[0].tv_sec -= 2;
+  pinned[1]         = pinned[0];
+  ASSERT_EQ(0, utimes(hostsfile.filename(), pinned));
+
+  AddrInfoResult result1 = {};
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback,
+                   &result1);
+  Process();
+  EXPECT_TRUE(result1.done_);
+  {
+    std::stringstream ss;
+    ss << result1.ai_;
+    EXPECT_EQ("{addr=[1.2.3.4]}", ss.str());
+  }
+
+  {
+    FILE *fp = fopen(hostsfile.filename(), "w");
+    ASSERT_NE(nullptr, fp);
+    fclose(fp);
+    ASSERT_EQ(0, utimes(hostsfile.filename(), pinned));
+  }
+
+  AddrInfoResult result2 = {};
+  ares_getaddrinfo(channel_, "example.com", NULL, &hints, AddrInfoCallback,
+                   &result2);
+  Process();
+  EXPECT_TRUE(result2.done_);
+  /* The channel is files only and the emptied hosts file no longer holds the
+   * name, so the lookup must fail instead of answering the stale address. */
+  EXPECT_NE(ARES_SUCCESS, result2.status_);
+}
+#endif
+
 TEST_F(FileChannelTest, GetAddrInfoHostsPositive) {
   TempFile hostsfile("1.2.3.4 example.com  \n"
                      "  2.3.4.5\tgoogle.com   www.google.com\twww2.google.com\n"
