@@ -252,9 +252,16 @@ ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
                            (struct sockaddr *)&sa_storage, &salen, read_bytes);
 
 #ifdef HAVE_RECVFROM
+    /* The socket is connect()ed, so the kernel normally drops datagrams from
+     * any other address or port already.  Application-provided socket
+     * functions might not filter on connect, so also check here that the
+     * datagram came from the server's address and UDP port.  RFC 5452
+     * section 9.1 only requires the address to match; matching the port too
+     * keeps one server from answering for another on the same address. */
     if (err == ARES_CONN_ERR_SUCCESS &&
-        !ares_sockaddr_addr_eq((struct sockaddr *)&sa_storage,
-                               &conn->server->addr)) {
+        !ares_sockaddr_addr_port_eq((struct sockaddr *)&sa_storage,
+                                    &conn->server->addr,
+                                    conn->server->udp_port)) {
       err = ARES_CONN_ERR_WOULDBLOCK;
     }
 #endif

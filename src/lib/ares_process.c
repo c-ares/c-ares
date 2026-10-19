@@ -1117,6 +1117,24 @@ static ares_status_t process_answer(ares_channel_t      *channel,
     goto cleanup;
   }
 
+  /* RFC 5452 section 9.1: only accept a response that arrives on the
+   * connection the query was sent on, and so from the server it was sent to.
+   * For UDP, ares_conn_read() also drops a datagram whose source address or
+   * port is not the server's; matching the port is hardening beyond RFC 5452
+   * section 9.1, which only requires the address to match.  Otherwise any
+   * server we hold a connection to could answer, and get cached, a query that
+   * was only ever sent to some other server, and the cookie check below would
+   * run against the wrong server's cookie state.  Treat it like an unknown
+   * query id, before anything acts on it (cookies, server health, the cache).
+   * Our caller has already consumed the message from the connection's buffer,
+   * so TCP framing stays in sync.  A query not attached to any connection
+   * (query->conn == NULL) never matches.  This also drops a late answer from
+   * a server tried before a retry. */
+  if (query->conn != conn) {
+    status = ARES_SUCCESS;
+    goto cleanup;
+  }
+
   /* Validate DNS cookie in response. This function may need to requeue the
    * query. */
   if (ares_cookie_validate(query, rdnsrec, conn, now, requeue)
