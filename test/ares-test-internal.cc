@@ -1317,7 +1317,7 @@ TEST_F(LibraryTest, InetPtoN) {
   EXPECT_EQ(1, ares_inet_pton(AF_INET6, "12:34::ff", &a6));
   EXPECT_EQ(1, ares_inet_pton(AF_INET6, "12:34::ffff:1.2.3.4", &a6));
   EXPECT_EQ(0, ares_inet_pton(AF_INET, "xyzzy", &a4));
-  // Too many octets is unparseable input, not a system error.
+  // Too many octets is unparsable input, not a system error.
   EXPECT_EQ(0, ares_inet_pton(AF_INET, "1.2.3.4.5", &a4));
   EXPECT_EQ(0, ares_inet_pton(AF_INET, "0x0102030405", &a4));
   EXPECT_EQ(-1, ares_inet_pton(AF_INET+AF_INET6, "1.2.3.4", &a4));

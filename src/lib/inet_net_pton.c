@@ -438,7 +438,7 @@ int ares_inet_net_pton(int af, const char *src, void *dst, size_t size)
  *      For a network with a prefix length, use ares_inet_net_pton().
  * return:
  *      1 on success, 0 if src is not a valid address for af (as POSIX
- *      inet_pton() does for any unparseable input), or -1 with errno set to
+ *      inet_pton() does for any unparsable input), or -1 with errno set to
  *      EAFNOSUPPORT if af is not supported.
  */
 int ares_inet_pton(int af, const char *src, void *dst)
