@@ -3534,6 +3534,7 @@ struct FakeSockData {
   unsigned char      query[512];
   size_t             query_len;
   struct sockaddr_in peer;
+  unsigned short     recv_port; /* network order; 0 reports the peer's port */
   size_t             recv_calls;
   size_t             bad_fd_calls;
   size_t             sock_state_bad;
@@ -3642,6 +3643,9 @@ static ares_ssize_t FakeSockRecvfrom(ares_socket_t sock, void *buffer,
   if (address != NULL && address_len != NULL &&
       *address_len >= (ares_socklen_t)sizeof(d->peer)) {
     memcpy(address, &d->peer, sizeof(d->peer));
+    if (d->recv_port != 0) {
+      reinterpret_cast<struct sockaddr_in *>(address)->sin_port = d->recv_port;
+    }
     *address_len = sizeof(d->peer);
   }
   return static_cast<ares_ssize_t>(d->query_len);
@@ -3878,6 +3882,42 @@ TEST_F(LibraryTest, ReconfigureInRecvDropsBufferedAnswer) {
   ares_cancel(chan);
   EXPECT_TRUE(data.done);
   EXPECT_EQ(ARES_ECANCELLED, data.status);
+  ares_destroy(chan);
+}
+
+// Socket functions need not filter on connect(), so ares_conn_read() checks
+// a UDP datagram's source itself.  An answer reported from the server's
+// address but another port (here 127.0.0.1:53 for a server at
+// 127.0.0.1:53055) must be dropped, so that one server cannot answer for
+// another on the same address.  The same answer from the right port is then
+// accepted.
+TEST_F(LibraryTest, UDPAnswerFromWrongPortDropped) {
+  ares_channel_t *chan = nullptr;
+  FakeSockData    data;
+
+  memset(&data, 0, sizeof(data));
+  FakeSockInit(&chan, &data, 0, ARES_SOCKFUNC_FLAG_NONBLOCKING);
+
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    FakeSockQueryCallback, &data, NULL);
+  ASSERT_NE((size_t)0, data.query_len);
+  ASSERT_EQ(htons(53055), data.peer.sin_port);
+
+  data.recv_port   = htons(53);
+  data.recv_answer = true;
+  ares_process_fd(chan, 100, ARES_SOCKET_BAD);
+  EXPECT_FALSE(data.recv_answer);
+  EXPECT_FALSE(data.done);
+  EXPECT_EQ((size_t)1, ares_queue_active_queries(chan));
+
+  data.recv_port   = 0;
+  data.recv_answer = true;
+  ares_process_fd(chan, 100, ARES_SOCKET_BAD);
+  EXPECT_FALSE(data.recv_answer);
+  EXPECT_TRUE(data.done);
+  // The fake answer carries no records.
+  EXPECT_EQ(ARES_ENODATA, data.status);
+  EXPECT_EQ((size_t)0, ares_queue_active_queries(chan));
   ares_destroy(chan);
 }
 
@@ -5754,6 +5794,184 @@ INSTANTIATE_TEST_SUITE_P(TransportModes, ServerFailoverOptsMultiMockTest, ::test
 INSTANTIATE_TEST_SUITE_P(TransportModes, ServerRecoveryMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
 
 INSTANTIATE_TEST_SUITE_P(TransportModes, ServerRecoveryNoProbeMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+
+// An answer is only accepted on the connection its query was sent on
+// (RFC 5452 section 9.1).  Two servers: #0 is demoted by a SERVFAIL so a later
+// query goes only to #1, while #0's connection stays open (STAYOPEN).  Server
+// #0 then answers that query on its own connection.  The answer must be
+// dropped without side effects, and the query must then complete normally.
+class ReplyConnMultiMockTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface< std::pair<int, bool> > {
+ public:
+  ReplyConnMultiMockTest()
+    : MockChannelOptsTest(2, GetParam().first, GetParam().second, false,
+                          FillOptions(&opts_),
+                          ARES_OPT_FLAGS | ARES_OPT_TRIES |
+                          ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+
+  static struct ares_options* FillOptions(struct ares_options *opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    /* Keep the demoted server's connection open; no DNS 0x20 so the replies
+     * built here match the question exactly */
+    opts->flags = ARES_FLAG_STAYOPEN | ARES_FLAG_EDNS;
+    /* One try per server: the query goes to #1, then on timeout to #0 */
+    opts->tries = 1;
+    /* Never probe the demoted server, so the query is sent only to #1 */
+    opts->server_failover_opts.retry_chance = 0;
+    opts->server_failover_opts.retry_delay  = 10000;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+static std::string ReplyConnFirstA(const QueryResult &result)
+{
+  const ares_dns_rr_t *rr;
+  char                 addr[64];
+
+  if (result.dnsrec_.dnsrec_ == nullptr ||
+      ares_dns_record_rr_cnt(result.dnsrec_.dnsrec_, ARES_SECTION_ANSWER) == 0) {
+    return "";
+  }
+  rr = ares_dns_record_rr_get_const(result.dnsrec_.dnsrec_,
+                                    ARES_SECTION_ANSWER, 0);
+  if (ares_dns_rr_get_type(rr) != ARES_REC_TYPE_A ||
+      ares_inet_ntop(AF_INET, ares_dns_rr_get_addr(rr, ARES_RR_A_ADDR), addr,
+                     sizeof(addr)) == nullptr) {
+    return "";
+  }
+  return addr;
+}
+
+TEST_P(ReplyConnMultiMockTest, AnswerOnOtherServerConnectionDropped) {
+  DNSPacket warm_servfail;
+  warm_servfail.set_response().set_aa().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("warmup.example", T_A));
+  DNSPacket warm_ok;
+  warm_ok.set_response().set_aa()
+    .add_question(new DNSQuestion("warmup.example", T_A))
+    .add_answer(new DNSARR("warmup.example", 100, {1, 1, 1, 1}));
+  DNSPacket forged;
+  forged.set_response().set_aa()
+    .add_question(new DNSQuestion("victim.example", T_A))
+    .add_answer(new DNSARR("victim.example", 100, {6, 6, 6, 6}));
+  DNSPacket genuine;
+  genuine.set_response().set_aa()
+    .add_question(new DNSQuestion("victim.example", T_A))
+    .add_answer(new DNSARR("victim.example", 100, {1, 2, 3, 4}));
+  unsigned short qid = 0;
+
+  /* Demote #0, leaving a connection to it open */
+  EXPECT_CALL(*servers_[0], OnRequest("warmup.example", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &warm_servfail));
+  EXPECT_CALL(*servers_[1], OnRequest("warmup.example", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &warm_ok));
+  QueryResult warm;
+  ares_query_dnsrec(channel_, "warmup.example", ARES_CLASS_IN,
+                    ARES_REC_TYPE_A, QueryCallback, &warm, NULL);
+  Process();
+  ASSERT_TRUE(warm.done_);
+  ASSERT_EQ(ARES_SUCCESS, warm.status_);
+
+  /* The query goes only to #1, which does not answer.  Meanwhile #0 answers
+   * it on #0's own connection.  That answer must be dropped, so the query
+   * times out on #1 and is retried on #0, whose genuine answer is accepted on
+   * the same (still in sync, for TCP) connection. */
+  EXPECT_CALL(*servers_[1], OnRequest("victim.example", T_A))
+    .WillOnce(InvokeWithoutArgs([&]() {
+      servers_[0]->SendUnsolicited(&forged, qid);
+      servers_[1]->SetReplyData(std::vector<byte>());
+    }));
+  EXPECT_CALL(*servers_[0], OnRequest("victim.example", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &genuine));
+  QueryResult result;
+  ares_query_dnsrec(channel_, "victim.example", ARES_CLASS_IN,
+                    ARES_REC_TYPE_A, QueryCallback, &result, &qid);
+  Process();
+  ASSERT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ("1.2.3.4", ReplyConnFirstA(result));
+  EXPECT_EQ(1, (int)result.timeouts_);
+}
+
+// DNS cookies (RFC 7873) are per-server state, validated against the server
+// the query was sent to.  #1 supports cookies, #0 does not.  A cookie-less
+// answer arriving on #0's connection for a query sent only to #1 must not be
+// accepted: it would otherwise be checked against #0's cookie state and pass.
+class ReplyConnCookieMultiMockTest
+  : public MockChannelOptsTest,
+    public ::testing::WithParamInterface<int> {
+ public:
+  ReplyConnCookieMultiMockTest()
+    : MockChannelOptsTest(2, GetParam(), false, false,
+                          ReplyConnMultiMockTest::FillOptions(&opts_),
+                          ARES_OPT_FLAGS | ARES_OPT_TRIES |
+                          ARES_OPT_SERVER_FAILOVER | ARES_OPT_NOROTATE) {}
+ private:
+  struct ares_options opts_;
+};
+
+TEST_P(ReplyConnCookieMultiMockTest, CookielessAnswerOnOtherServerDropped) {
+  std::vector<byte> server_cookie = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  DNSPacket warm_servfail;
+  warm_servfail.set_response().set_aa().set_rcode(SERVFAIL)
+    .add_question(new DNSQuestion("warmup.example", T_A));
+  DNSPacket warm_ok;
+  warm_ok.set_response().set_aa()
+    .add_question(new DNSQuestion("warmup.example", T_A))
+    .add_answer(new DNSARR("warmup.example", 100, {1, 1, 1, 1}))
+    .add_additional(new DNSOptRR(0, 0, 0, 1280, { }, server_cookie, false));
+  DNSPacket forged;
+  forged.set_response().set_aa()
+    .add_question(new DNSQuestion("victim.example", T_A))
+    .add_answer(new DNSARR("victim.example", 100, {6, 6, 6, 6}));
+  DNSPacket genuine;
+  genuine.set_response().set_aa()
+    .add_question(new DNSQuestion("victim.example", T_A))
+    .add_answer(new DNSARR("victim.example", 100, {1, 2, 3, 4}));
+  unsigned short qid = 0;
+
+  /* #0 answers without a cookie (and is demoted); #1 answers with one, so
+   * #1's cookie state becomes SUPPORTED */
+  EXPECT_CALL(*servers_[0], OnRequest("warmup.example", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &warm_servfail));
+  EXPECT_CALL(*servers_[1], OnRequest("warmup.example", T_A))
+    .WillOnce(SetReply(servers_[1].get(), &warm_ok));
+  QueryResult warm;
+  ares_query_dnsrec(channel_, "warmup.example", ARES_CLASS_IN,
+                    ARES_REC_TYPE_A, QueryCallback, &warm, NULL);
+  Process();
+  ASSERT_TRUE(warm.done_);
+  ASSERT_EQ(ARES_SUCCESS, warm.status_);
+  size_t cookie_len = 0;
+  fetch_server_cookie(warm.dnsrec_.dnsrec_, &cookie_len);
+  ASSERT_EQ(server_cookie.size(), cookie_len);
+
+  /* The cookie-protected query goes only to #1; a cookie-less answer for it
+   * arrives on #0's connection and must be dropped.  The retry to #0 is then
+   * legitimately answered by #0, which does not use cookies. */
+  EXPECT_CALL(*servers_[1], OnRequest("victim.example", T_A))
+    .WillOnce(InvokeWithoutArgs([&]() {
+      servers_[0]->SendUnsolicited(&forged, qid);
+      servers_[1]->SetReplyData(std::vector<byte>());
+    }));
+  EXPECT_CALL(*servers_[0], OnRequest("victim.example", T_A))
+    .WillOnce(SetReply(servers_[0].get(), &genuine));
+  QueryResult result;
+  ares_query_dnsrec(channel_, "victim.example", ARES_CLASS_IN,
+                    ARES_REC_TYPE_A, QueryCallback, &result, &qid);
+  Process();
+  ASSERT_TRUE(result.done_);
+  EXPECT_EQ(ARES_SUCCESS, result.status_);
+  EXPECT_EQ("1.2.3.4", ReplyConnFirstA(result));
+  EXPECT_EQ(1, (int)result.timeouts_);
+}
+
+INSTANTIATE_TEST_SUITE_P(TransportModes, ReplyConnMultiMockTest, ::testing::ValuesIn(ares::test::families_modes), PrintFamilyMode);
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, ReplyConnCookieMultiMockTest, ::testing::ValuesIn(ares::test::families), PrintFamily);
 
 }  // namespace test
 }  // namespace ares
