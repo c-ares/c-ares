@@ -24,6 +24,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ares_private.h"
+#include <assert.h>
 
 #define ARES_QUERY_GROUP_LIMIT 32768
 
@@ -177,12 +178,14 @@ void ares_query_queue_detach_query(ares_query_t *query)
 ares_bool_t ares_query_queue_has_slot(const ares_channel_t *channel)
 {
   const ares_query_queue_t *queue = channel->query_queue;
+  size_t                    active;
   if (queue == NULL || queue->max_active == 0) {
     return ARES_TRUE;
   }
-  return ares_htable_szvp_num_keys(channel->queries_by_qid) < queue->max_active
-           ? ARES_TRUE
-           : ARES_FALSE;
+  active = ares_htable_szvp_num_keys(channel->queries_by_qid);
+  assert(active >= queue->ungrouped_queries);
+  active -= queue->ungrouped_queries;
+  return active < queue->max_active ? ARES_TRUE : ARES_FALSE;
 }
 
 static ares_bool_t id_used(const ares_channel_t *channel, unsigned short id)
@@ -331,9 +334,9 @@ ares_status_t ares_query_queue_admit(ares_channel_t          *channel,
   ares_query_group_t *existing;
   ares_status_t       status         = ARES_ENOMEM;
   size_t              logical_handle = 0;
-  size_t              capacity = queue->max_active == 0
-                                   ? ARES_QUERY_GROUP_LIMIT
-                                   : queue->max_active + queue->max_pending;
+  size_t              capacity       = queue->max_active == 0
+                                         ? ARES_QUERY_GROUP_LIMIT
+                                         : queue->max_active + queue->max_pending;
 
   group = ares_malloc_zero(sizeof(*group));
   if (group == NULL) {
@@ -372,7 +375,7 @@ ares_status_t ares_query_queue_admit(ares_channel_t          *channel,
       return ARES_SUCCESS;
     }
   }
-  if (ares_llist_len(queue->groups) + queue->ungrouped_queries >= capacity) {
+  if (ares_llist_len(queue->groups) >= capacity) {
     status = ARES_EQUEUEFULL;
     goto fail;
   }

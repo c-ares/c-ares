@@ -50,7 +50,7 @@ ares_status_t ares_query_queue_admit(ares_channel_t          *channel,
 ares_status_t ares_query_queue_new_id(ares_channel_t *channel,
                                       unsigned short *id);
 
-/*! Check active capacity, including internal probes.
+/*! Check user active capacity, excluding internal recovery probes.
  * \param[in] channel Locked channel.
  * \return Whether another transaction can start.
  */
@@ -187,10 +187,5 @@ ares_status_t ares_query_nolock_ex(ares_channel_t *channel, const char *name,
                                    ares_dns_rec_type_t  type,
                                    ares_callback_dnsrec callback, void *arg,
                                    unsigned short *qid, size_t *handle);
-
-/*! Detach a transaction from transport indexes before callbacks.
- * \param[in] query Transaction, which remains allocated.
- */
-void ares_detach_query(ares_query_t *query);
 
 #endif

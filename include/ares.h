@@ -1241,7 +1241,7 @@ CARES_EXTERN ares_status_t ares_queue_wait_empty(ares_channel_t *channel,
  * \param[in] max_active Maximum active transactions, or zero for no limit.
  * \param[in] max_pending Maximum waiting transactions; requires max_active.
  * \param[in] coalesce Merge identical outstanding transactions when true.
- * \return ARES_SUCCESS, ARES_EBADQUERY, ARES_EBUSY or ARES_ENOMEM.
+ * \return ARES_SUCCESS, ARES_EFORMERR, ARES_EBUSY or ARES_ENOMEM.
  */
 CARES_EXTERN ares_status_t ares_set_query_queue_options(ares_channel_t *channel,
                                                         size_t      max_active,
@@ -1253,7 +1253,7 @@ CARES_EXTERN ares_status_t ares_set_query_queue_options(ares_channel_t *channel,
  * \param[out] max_active Active transaction limit.
  * \param[out] max_pending Waiting transaction limit.
  * \param[out] coalesce Whether outstanding transactions are merged.
- * \return ARES_SUCCESS or ARES_EBADQUERY for a NULL argument.
+ * \return ARES_SUCCESS or ARES_EFORMERR for a NULL argument.
  */
 CARES_EXTERN ares_status_t ares_get_query_queue_options(
   const ares_channel_t *channel, size_t *max_active, size_t *max_pending,

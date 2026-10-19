@@ -23,10 +23,12 @@ These functions configure optional transaction scheduling on an initialized
 channel. By default, both limits are zero and merging is disabled, preserving
 immediate query dispatch.
 .PP
-A positive \fImax_active\fP limits simultaneous network transactions, including
-internal server recovery probes. Additional distinct transactions wait in FIFO
-order, up to \fImax_pending\fP. Retries retain the original transaction's active
-slot. A waiting transaction begins its network timeout only when transmitted;
+A positive \fImax_active\fP limits simultaneous user-initiated network
+transactions. Internal server recovery probes may run outside this limit so
+saturation cannot prevent server recovery. Additional distinct transactions
+wait in FIFO order, up to \fImax_pending\fP. Retries retain the original
+transaction's active slot. A waiting transaction begins its network timeout
+only when transmitted;
 these limits do not impose a maximum wall-clock wait in the queue.
 .PP
 The sum of the limits must not exceed 32768. A zero \fImax_active\fP requires a

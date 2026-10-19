@@ -216,11 +216,11 @@ TEST_P(QueryQueueTest, RejectsInvalidConfigurationWithoutChangingOptions)
             ares_set_query_queue_options(
               channel_, (std::numeric_limits<size_t>::max)(), 1, ARES_FALSE));
   EXPECT_EQ(ARES_EFORMERR, ares_get_query_queue_options(nullptr, &active,
-                                                         &pending, &coalesce));
+                                                        &pending, &coalesce));
   EXPECT_EQ(ARES_EFORMERR, ares_get_query_queue_options(channel_, nullptr,
-                                                         &pending, &coalesce));
+                                                        &pending, &coalesce));
   EXPECT_EQ(ARES_EFORMERR, ares_get_query_queue_options(channel_, &active,
-                                                         nullptr, &coalesce));
+                                                        nullptr, &coalesce));
   EXPECT_EQ(ARES_EFORMERR,
             ares_get_query_queue_options(channel_, &active, &pending, nullptr));
   EXPECT_EQ(ARES_SUCCESS, ares_get_query_queue_options(channel_, &active,
@@ -1740,17 +1740,20 @@ TEST_P(QueryQueueMultiTest, RoutingChangeSeparatesPendingMergeGenerations)
   ExpectQueueResult(new_pending, ARES_SUCCESS);
 }
 
-TEST_P(QueryQueueMultiTest, RecoveryProbeRunsWhileUserQueueIsAtCapacity)
+TEST_P(QueryQueueMultiTest, RecoveryProbeRunsWhileUserQueueHasPendingWork)
 {
   DNSPacket   failed;
   DNSPacket   seed_reply;
   DNSPacket   limited_reply;
+  DNSPacket   pending_reply;
   QueueResult seed;
   QueueResult limited;
+  QueueResult pending;
   failed.set_response().set_aa().set_rcode(SERVFAIL).add_question(
     new DNSQuestion("seed.example", T_A));
   QueueAnswer(&seed_reply, "seed.example");
   QueueAnswer(&limited_reply, "limited.example");
+  QueueAnswer(&pending_reply, "pending.example");
   ASSERT_EQ(ARES_SUCCESS,
             ares_set_query_queue_options(channel_, 1, 1, ARES_TRUE));
   EXPECT_CALL(*servers_[0], OnRequest("seed.example", T_A))
@@ -1763,14 +1766,24 @@ TEST_P(QueryQueueMultiTest, RecoveryProbeRunsWhileUserQueueIsAtCapacity)
   ares_sleep_time(10);
   EXPECT_CALL(*servers_[0], OnRequest("limited.example", T_A))
     .WillOnce(testing::InvokeWithoutArgs([&]() {
-      EXPECT_EQ(size_t{ 2 }, ares_queue_active_queries(channel_));
+      /* One active caller, one waiting caller and this recovery probe. */
+      EXPECT_EQ(size_t{ 3 }, ares_queue_active_queries(channel_));
       servers_[0]->SetReply(&limited_reply);
     }));
   EXPECT_CALL(*servers_[1], OnRequest("limited.example", T_A))
     .WillOnce(SetReply(servers_[1].get(), &limited_reply));
+  EXPECT_CALL(*servers_[0], OnRequest("pending.example", T_A))
+    .Times(testing::AtMost(1))
+    .WillRepeatedly(SetReply(servers_[0].get(), &pending_reply));
+  EXPECT_CALL(*servers_[1], OnRequest("pending.example", T_A))
+    .Times(testing::AtMost(1))
+    .WillRepeatedly(SetReply(servers_[1].get(), &pending_reply));
   EXPECT_EQ(ARES_SUCCESS, Start("limited.example", &limited));
+  EXPECT_EQ(ARES_SUCCESS, Start("pending.example", &pending));
+  EXPECT_EQ(size_t{ 3 }, ares_queue_active_queries(channel_));
   Process(2000);
   ExpectQueueResult(limited, ARES_SUCCESS);
+  ExpectQueueResult(pending, ARES_SUCCESS);
   EXPECT_EQ(size_t{ 0 }, ares_queue_active_queries(channel_));
 }
 
