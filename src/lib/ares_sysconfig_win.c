@@ -344,7 +344,7 @@ static ares_bool_t get_DNS_Windows(char **outptr)
    * as we encounter more.
    */
   addressesSize = 4;
-  addresses     = (Address *)ares_malloc(sizeof(Address) * addressesSize);
+  addresses     = (Address *)ares_malloc_array(addressesSize, sizeof(Address));
   if (addresses == NULL) {
     /* We need room for at least some addresses to function. */
     ares_free(ipaa);
@@ -402,7 +402,7 @@ static ares_bool_t get_DNS_Windows(char **outptr)
         if (addressesIndex == addressesSize) {
           const size_t    newSize = addressesSize + 4;
           Address * const newMem =
-            (Address *)ares_realloc(addresses, sizeof(Address) * newSize);
+            (Address *)ares_realloc_array(addresses, newSize, sizeof(Address));
           if (newMem == NULL) {
             continue;
           }
@@ -450,7 +450,7 @@ static ares_bool_t get_DNS_Windows(char **outptr)
         if (addressesIndex == addressesSize) {
           const size_t    newSize = addressesSize + 4;
           Address * const newMem =
-            (Address *)ares_realloc(addresses, sizeof(Address) * newSize);
+            (Address *)ares_realloc_array(addresses, newSize, sizeof(Address));
           if (newMem == NULL) {
             continue;
           }

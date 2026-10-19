@@ -360,13 +360,24 @@ char **ares_get_android_server_list(size_t max_servers, size_t *num_servers)
   }
   *num_servers = (size_t)nserv;
 
-  dns_list = ares_malloc(sizeof(*dns_list) * (*num_servers));
+  dns_list = ares_malloc_zero_array(*num_servers, sizeof(*dns_list));
+  if (dns_list == NULL) {
+    *num_servers = 0; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;        /* LCOV_EXCL_LINE: OutOfMemory */
+  }
   for (i = 0; i < *num_servers; i++) {
-    size_t len = 64;
+    size_t len  = 64;
+    dns_list[i] = ares_malloc_zero(len);
+    if (dns_list[i] == NULL) {
+      /* LCOV_EXCL_START: OutOfMemory */
+      ares_free_array(dns_list, *num_servers, ares_free);
+      dns_list     = NULL;
+      *num_servers = 0;
+      goto done;
+      /* LCOV_EXCL_STOP */
+    }
     server =
       (*env)->CallObjectMethod(env, server_list, android_list_get_mid, (jint)i);
-    dns_list[i]    = ares_malloc(len);
-    dns_list[i][0] = 0;
     if (server == NULL) {
       continue;
     }
