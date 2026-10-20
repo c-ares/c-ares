@@ -151,13 +151,15 @@ ares_bool_t ares_sockaddr_addr_eq(const struct sockaddr  *sa,
                                   const struct ares_addr *aa);
 
 /*! Compare the IP address and port of a socket address with an ares_addr and
- *  port.
+ *  port.  A port of 0 in the socket address means the port is unknown, so it
+ *  matches any port.
  *
  *  \param[in] sa    Socket address (AF_INET or AF_INET6)
  *  \param[in] aa    Address to compare against
  *  \param[in] port  Port to compare against, in host byte order
- *  \return ARES_TRUE if the address families, IP addresses and ports are
- *          equal, ARES_FALSE otherwise
+ *  \return ARES_TRUE if the address families and IP addresses are equal and
+ *          the ports are equal or the socket address port is 0, ARES_FALSE
+ *          otherwise
  */
 ares_bool_t ares_sockaddr_addr_port_eq(const struct sockaddr  *sa,
                                        const struct ares_addr *aa,

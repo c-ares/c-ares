@@ -3535,6 +3535,7 @@ struct FakeSockData {
   size_t             query_len;
   struct sockaddr_in peer;
   unsigned short     recv_port; /* network order; 0 reports the peer's port */
+  bool               recv_no_port; /* report the peer's address with port 0 */
   size_t             recv_calls;
   size_t             bad_fd_calls;
   size_t             sock_state_bad;
@@ -3643,7 +3644,9 @@ static ares_ssize_t FakeSockRecvfrom(ares_socket_t sock, void *buffer,
   if (address != NULL && address_len != NULL &&
       *address_len >= (ares_socklen_t)sizeof(d->peer)) {
     memcpy(address, &d->peer, sizeof(d->peer));
-    if (d->recv_port != 0) {
+    if (d->recv_no_port) {
+      reinterpret_cast<struct sockaddr_in *>(address)->sin_port = 0;
+    } else if (d->recv_port != 0) {
       reinterpret_cast<struct sockaddr_in *>(address)->sin_port = d->recv_port;
     }
     *address_len = sizeof(d->peer);
@@ -3912,6 +3915,32 @@ TEST_F(LibraryTest, UDPAnswerFromWrongPortDropped) {
 
   data.recv_port   = 0;
   data.recv_answer = true;
+  ares_process_fd(chan, 100, ARES_SOCKET_BAD);
+  EXPECT_FALSE(data.recv_answer);
+  EXPECT_TRUE(data.done);
+  // The fake answer carries no records.
+  EXPECT_EQ(ARES_ENODATA, data.status);
+  EXPECT_EQ((size_t)0, ares_queue_active_queries(chan));
+  ares_destroy(chan);
+}
+
+// Socket functions written before the port check may fill in the source
+// address but leave the port 0.  The address is still checked, but the answer
+// must not be dropped for its port.
+TEST_F(LibraryTest, UDPAnswerWithoutPortAccepted) {
+  ares_channel_t *chan = nullptr;
+  FakeSockData    data;
+
+  memset(&data, 0, sizeof(data));
+  FakeSockInit(&chan, &data, 0, ARES_SOCKFUNC_FLAG_NONBLOCKING);
+
+  ares_query_dnsrec(chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
+                    FakeSockQueryCallback, &data, NULL);
+  ASSERT_NE((size_t)0, data.query_len);
+  ASSERT_EQ(htons(53055), data.peer.sin_port);
+
+  data.recv_no_port = true;
+  data.recv_answer  = true;
   ares_process_fd(chan, 100, ARES_SOCKET_BAD);
   EXPECT_FALSE(data.recv_answer);
   EXPECT_TRUE(data.done);
