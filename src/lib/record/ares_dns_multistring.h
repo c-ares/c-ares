@@ -31,9 +31,9 @@
 struct ares_dns_multistring;
 typedef struct ares_dns_multistring ares_dns_multistring_t;
 
-ares_dns_multistring_t             *ares_dns_multistring_create(void);
-void          ares_dns_multistring_clear(ares_dns_multistring_t *strs);
-void          ares_dns_multistring_destroy(ares_dns_multistring_t *strs);
+ares_dns_multistring_t *ares_dns_multistring_create(void);
+void ares_dns_multistring_clear(ares_dns_multistring_t *strs);
+void ares_dns_multistring_destroy(ares_dns_multistring_t *strs);
 ares_status_t ares_dns_multistring_swap_own(ares_dns_multistring_t *strs,
                                             size_t idx, unsigned char *str,
                                             size_t len);
@@ -41,7 +41,7 @@ ares_status_t ares_dns_multistring_del(ares_dns_multistring_t *strs,
                                        size_t                  idx);
 ares_status_t ares_dns_multistring_add_own(ares_dns_multistring_t *strs,
                                            unsigned char *str, size_t len);
-size_t        ares_dns_multistring_cnt(const ares_dns_multistring_t *strs);
+size_t ares_dns_multistring_cnt(const ares_dns_multistring_t *strs);
 const unsigned char *
   ares_dns_multistring_get(const ares_dns_multistring_t *strs, size_t idx,
                            size_t *len);
@@ -64,9 +64,9 @@ const unsigned char *ares_dns_multistring_combined(ares_dns_multistring_t *strs,
  *                                 data.
  *  \return ARES_SUCCESS on success
  */
-ares_status_t        ares_dns_multistring_parse_buf(ares_buf_t *buf,
-                                                    size_t      remaining_len,
-                                                    ares_dns_multistring_t **strs,
-                                                    ares_bool_t validate_printable);
+ares_status_t ares_dns_multistring_parse_buf(ares_buf_t *buf,
+                                             size_t      remaining_len,
+                                             ares_dns_multistring_t **strs,
+                                             ares_bool_t validate_printable);
 
 #endif

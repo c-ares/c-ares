@@ -28,6 +28,8 @@
 #include <string.h>
 
 #include "ares.h"
+#include "include/ares_buf.h"
+#include "include/ares_punycode.h"
 /* Include ares internal file for DNS protocol constants */
 #include "ares_nameser.h"
 
@@ -56,12 +58,41 @@ int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size)
 
 #else
 
+static void fuzz_transform(const unsigned char *data, size_t size,
+                           ares_status_t (*transform)(ares_buf_t *,
+                                                      ares_buf_t *))
+{
+  ares_buf_t *input;
+  ares_buf_t *output;
+
+  if (size == 0) {
+    return;
+  }
+
+  input  = ares_buf_create_const(data, size);
+  output = ares_buf_create();
+  if (input == NULL || output == NULL) {
+    ares_buf_destroy(input);
+    ares_buf_destroy(output);
+    return;
+  }
+
+  (void)transform(input, output);
+  ares_buf_destroy(input);
+  ares_buf_destroy(output);
+}
+
 int LLVMFuzzerTestOneInput(const unsigned char *data, unsigned long size)
 {
   ares_channel_t *channel = NULL;
   char           *csv;
 
   ares_library_init(ARES_LIB_INIT_ALL);
+
+  fuzz_transform(data, size, ares_idna_encode_domain_buf);
+  fuzz_transform(data, size, ares_punycode_encode_domain_buf);
+  fuzz_transform(data, size, ares_punycode_decode_domain_buf);
+
   ares_init(&channel);
 
   /* Need to null-term data */

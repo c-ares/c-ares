@@ -191,6 +191,38 @@ static void ares_dns_rr_free(ares_dns_rr_t *rr)
       ares_array_destroy(rr->r.opt.options);
       break;
 
+    case ARES_REC_TYPE_DS:
+      ares_free(rr->r.ds.digest);
+      break;
+
+    case ARES_REC_TYPE_SSHFP:
+      ares_free(rr->r.sshfp.fingerprint);
+      break;
+
+    case ARES_REC_TYPE_RRSIG:
+      ares_free(rr->r.rrsig.signers_name);
+      ares_free(rr->r.rrsig.signature);
+      break;
+
+    case ARES_REC_TYPE_NSEC:
+      ares_free(rr->r.nsec.next_domain_name);
+      ares_free(rr->r.nsec.type_bit_maps);
+      break;
+
+    case ARES_REC_TYPE_DNSKEY:
+      ares_free(rr->r.dnskey.public_key);
+      break;
+
+    case ARES_REC_TYPE_NSEC3:
+      ares_free(rr->r.nsec3.salt);
+      ares_free(rr->r.nsec3.next_hashed_owner_name);
+      ares_free(rr->r.nsec3.type_bit_maps);
+      break;
+
+    case ARES_REC_TYPE_NSEC3PARAM:
+      ares_free(rr->r.nsec3param.salt);
+      break;
+
     case ARES_REC_TYPE_TLSA:
       ares_free(rr->r.tlsa.data);
       break;
@@ -675,6 +707,138 @@ static void *ares_dns_rr_data_ptr(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
     case ARES_RR_OPT_OPTIONS:
       return &dns_rr->r.opt.options;
 
+    case ARES_RR_DS_KEY_TAG:
+      return &dns_rr->r.ds.key_tag;
+
+    case ARES_RR_DS_ALGORITHM:
+      return &dns_rr->r.ds.algorithm;
+
+    case ARES_RR_DS_DIGEST_TYPE:
+      return &dns_rr->r.ds.digest_type;
+
+    case ARES_RR_DS_DIGEST:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.ds.digest_len;
+      return &dns_rr->r.ds.digest;
+
+    case ARES_RR_SSHFP_ALGORITHM:
+      return &dns_rr->r.sshfp.algorithm;
+
+    case ARES_RR_SSHFP_FP_TYPE:
+      return &dns_rr->r.sshfp.fp_type;
+
+    case ARES_RR_SSHFP_FINGERPRINT:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.sshfp.fingerprint_len;
+      return &dns_rr->r.sshfp.fingerprint;
+
+    case ARES_RR_RRSIG_TYPE_COVERED:
+      return &dns_rr->r.rrsig.type_covered;
+
+    case ARES_RR_RRSIG_ALGORITHM:
+      return &dns_rr->r.rrsig.algorithm;
+
+    case ARES_RR_RRSIG_LABELS:
+      return &dns_rr->r.rrsig.labels;
+
+    case ARES_RR_RRSIG_ORIGINAL_TTL:
+      return &dns_rr->r.rrsig.original_ttl;
+
+    case ARES_RR_RRSIG_EXPIRATION:
+      return &dns_rr->r.rrsig.expiration;
+
+    case ARES_RR_RRSIG_INCEPTION:
+      return &dns_rr->r.rrsig.inception;
+
+    case ARES_RR_RRSIG_KEY_TAG:
+      return &dns_rr->r.rrsig.key_tag;
+
+    case ARES_RR_RRSIG_SIGNERS_NAME:
+      return &dns_rr->r.rrsig.signers_name;
+
+    case ARES_RR_RRSIG_SIGNATURE:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.rrsig.signature_len;
+      return &dns_rr->r.rrsig.signature;
+
+    case ARES_RR_NSEC_NEXT_DOMAIN:
+      return &dns_rr->r.nsec.next_domain_name;
+
+    case ARES_RR_NSEC_TYPE_BIT_MAPS:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.nsec.type_bit_maps_len;
+      return &dns_rr->r.nsec.type_bit_maps;
+
+    case ARES_RR_DNSKEY_FLAGS:
+      return &dns_rr->r.dnskey.flags;
+
+    case ARES_RR_DNSKEY_PROTOCOL:
+      return &dns_rr->r.dnskey.protocol;
+
+    case ARES_RR_DNSKEY_ALGORITHM:
+      return &dns_rr->r.dnskey.algorithm;
+
+    case ARES_RR_DNSKEY_PUBLIC_KEY:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.dnskey.public_key_len;
+      return &dns_rr->r.dnskey.public_key;
+
+    case ARES_RR_NSEC3_HASH_ALGORITHM:
+      return &dns_rr->r.nsec3.hash_algorithm;
+
+    case ARES_RR_NSEC3_FLAGS:
+      return &dns_rr->r.nsec3.flags;
+
+    case ARES_RR_NSEC3_ITERATIONS:
+      return &dns_rr->r.nsec3.iterations;
+
+    case ARES_RR_NSEC3_SALT:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.nsec3.salt_len;
+      return &dns_rr->r.nsec3.salt;
+
+    case ARES_RR_NSEC3_NEXT_HASHED_OWNER:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.nsec3.next_hashed_owner_name_len;
+      return &dns_rr->r.nsec3.next_hashed_owner_name;
+
+    case ARES_RR_NSEC3_TYPE_BIT_MAPS:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.nsec3.type_bit_maps_len;
+      return &dns_rr->r.nsec3.type_bit_maps;
+
+    case ARES_RR_NSEC3PARAM_HASH_ALGORITHM:
+      return &dns_rr->r.nsec3param.hash_algorithm;
+
+    case ARES_RR_NSEC3PARAM_FLAGS:
+      return &dns_rr->r.nsec3param.flags;
+
+    case ARES_RR_NSEC3PARAM_ITERATIONS:
+      return &dns_rr->r.nsec3param.iterations;
+
+    case ARES_RR_NSEC3PARAM_SALT:
+      if (lenptr == NULL) {
+        return NULL;
+      }
+      *lenptr = &dns_rr->r.nsec3param.salt_len;
+      return &dns_rr->r.nsec3param.salt;
+
     case ARES_RR_TLSA_CERT_USAGE:
       return &dns_rr->r.tlsa.cert_usage;
 
@@ -938,13 +1102,22 @@ ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   ares_dns_datatype_t datatype = ares_dns_rr_key_datatype(key);
   ares_bool_t         is_nullterm =
     (datatype == ARES_DATATYPE_ABINP) ? ARES_TRUE : ARES_FALSE;
-  size_t                   alloclen = is_nullterm ? len + 1 : len;
+  size_t                   alloclen;
   unsigned char           *temp;
   ares_dns_multistring_t **strs;
 
   if (ares_dns_rr_key_datatype(key) != ARES_DATATYPE_ABINP) {
     return ARES_EFORMERR;
   }
+
+  if (val == NULL && len != 0) {
+    return ARES_EFORMERR;
+  }
+
+  if (is_nullterm && len == SIZE_MAX) {
+    return ARES_ENOMEM;
+  }
+  alloclen = is_nullterm ? len + 1 : len;
 
   strs = ares_dns_rr_data_ptr(dns_rr, key, NULL);
   if (strs == NULL) {
@@ -963,7 +1136,9 @@ ares_status_t ares_dns_rr_add_abin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
     return ARES_ENOMEM;
   }
 
-  memcpy(temp, val, len);
+  if (len != 0) {
+    memcpy(temp, val, len);
+  }
 
   /* NULL-term ABINP */
   if (is_nullterm) {
@@ -1244,16 +1419,34 @@ ares_status_t ares_dns_rr_set_bin(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   ares_dns_datatype_t datatype = ares_dns_rr_key_datatype(key);
   ares_bool_t         is_nullterm =
     (datatype == ARES_DATATYPE_BINP || datatype == ARES_DATATYPE_ABINP)
-              ? ARES_TRUE
-              : ARES_FALSE;
-  size_t         alloclen = is_nullterm ? len + 1 : len;
-  unsigned char *temp     = ares_malloc(alloclen);
+      ? ARES_TRUE
+      : ARES_FALSE;
+  size_t         alloclen;
+  unsigned char *temp;
+
+  if (datatype != ARES_DATATYPE_BIN && datatype != ARES_DATATYPE_BINP &&
+      datatype != ARES_DATATYPE_ABINP) {
+    return ARES_EFORMERR;
+  }
+
+  if (val == NULL && len != 0) {
+    return ARES_EFORMERR;
+  }
+
+  if (is_nullterm && len == SIZE_MAX) {
+    return ARES_ENOMEM;
+  }
+  alloclen = is_nullterm ? len + 1 : len;
+
+  temp = ares_malloc(alloclen);
 
   if (temp == NULL) {
     return ARES_ENOMEM;
   }
 
-  memcpy(temp, val, len);
+  if (len != 0) {
+    memcpy(temp, val, len);
+  }
 
   /* NULL-term BINP */
   if (is_nullterm) {
@@ -1409,12 +1602,23 @@ ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
   ares_status_t  status;
 
   if (val != NULL) {
-    temp = ares_malloc(val_len + 1);
+    size_t alloclen;
+
+    if (val_len == SIZE_MAX) {
+      return ARES_ENOMEM;
+    }
+    alloclen = val_len + 1;
+
+    temp = ares_malloc(alloclen);
     if (temp == NULL) {
       return ARES_ENOMEM;
     }
-    memcpy(temp, val, val_len);
+    if (val_len != 0) {
+      memcpy(temp, val, val_len);
+    }
     temp[val_len] = 0;
+  } else if (val_len != 0) {
+    return ARES_EFORMERR;
   }
 
   status = ares_dns_rr_set_opt_own(dns_rr, key, opt, temp, val_len);

@@ -1074,7 +1074,8 @@ static ares_status_t ares_uri_parse_scheme(ares_uri_t *uri, ares_buf_t *buf)
     return ARES_EBADSTR;
   }
 
-  status = ares_buf_tag_fetch_string(buf, scheme, sizeof(scheme));
+  status = ares_buf_tag_fetch_string(buf, scheme, sizeof(scheme),
+                                     ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -1119,7 +1120,7 @@ static ares_status_t ares_uri_parse_userinfo(ares_uri_t *uri, ares_buf_t *buf)
                                                 1, ARES_TRUE);
   if (username_len < userinfo_len) {
     has_password = ARES_TRUE;
-    status       = ares_buf_tag_fetch_strdup(buf, &temp);
+    status = ares_buf_tag_fetch_strdup(buf, &temp, ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -1137,11 +1138,16 @@ static ares_status_t ares_uri_parse_userinfo(ares_uri_t *uri, ares_buf_t *buf)
 
     /* Consume : */
     ares_buf_consume(buf, 1);
+  } else {
+    /* The ':' is absent or belongs to the host:port that follows the '@', but
+     * the search above has already consumed up to it, so rewind to the start
+     * of the userinfo */
+    ares_buf_tag_rollback(buf);
   }
 
   ares_buf_tag(buf);
   ares_buf_consume_until_charset(buf, (const unsigned char *)"@", 1, ARES_TRUE);
-  status = ares_buf_tag_fetch_strdup(buf, &temp);
+  status = ares_buf_tag_fetch_strdup(buf, &temp, ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -1171,11 +1177,12 @@ done:
 
 static ares_status_t ares_uri_parse_hostport(ares_uri_t *uri, ares_buf_t *buf)
 {
-  unsigned char b;
-  char          host[256];
-  char          port[6];
-  size_t        len;
-  ares_status_t status;
+  unsigned char  b;
+  char           host[256];
+  char           port[6];
+  unsigned short parsed_port;
+  size_t         len;
+  ares_status_t  status;
 
   status = ares_buf_peek_byte(buf, &b);
   if (status != ARES_SUCCESS) {
@@ -1192,7 +1199,8 @@ static ares_status_t ares_uri_parse_hostport(ares_uri_t *uri, ares_buf_t *buf)
       return ARES_EBADSTR;
     }
 
-    status = ares_buf_tag_fetch_string(buf, host, sizeof(host));
+    status = ares_buf_tag_fetch_string(buf, host, sizeof(host),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -1204,7 +1212,8 @@ static ares_status_t ares_uri_parse_hostport(ares_uri_t *uri, ares_buf_t *buf)
     ares_buf_consume_until_charset(buf, (const unsigned char *)":", 1,
                                    ARES_FALSE);
 
-    status = ares_buf_tag_fetch_string(buf, host, sizeof(host));
+    status = ares_buf_tag_fetch_string(buf, host, sizeof(host),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -1242,11 +1251,11 @@ static ares_status_t ares_uri_parse_hostport(ares_uri_t *uri, ares_buf_t *buf)
   }
   port[len] = 0;
 
-  if (!ares_str_isnum(port)) {
+  if (!ares_parse_port(port, &parsed_port, ARES_TRUE)) {
     return ARES_EBADSTR;
   }
 
-  status = ares_uri_set_port(uri, (unsigned short)atoi(port));
+  status = ares_uri_set_port(uri, parsed_port);
   if (status != ARES_SUCCESS) {
     return status;
   }
@@ -1324,7 +1333,7 @@ static ares_status_t ares_uri_parse_path(ares_uri_t *uri, ares_buf_t *buf)
   ares_buf_tag(buf);
   ares_buf_consume_until_charset(buf, (const unsigned char *)"?#", 2,
                                  ARES_FALSE);
-  status = ares_buf_tag_fetch_strdup(buf, &path);
+  status = ares_buf_tag_fetch_strdup(buf, &path, ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
     goto done;
   }
@@ -1379,7 +1388,7 @@ static ares_status_t ares_uri_parse_query_buf(ares_uri_t *uri, ares_buf_t *buf)
       }
     }
 
-    status = ares_buf_tag_fetch_strdup(buf, &key);
+    status = ares_buf_tag_fetch_strdup(buf, &key, ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       goto done;
     }
@@ -1402,7 +1411,7 @@ static ares_status_t ares_uri_parse_query_buf(ares_uri_t *uri, ares_buf_t *buf)
       len = ares_buf_consume_until_charset(buf, (const unsigned char *)"&", 1,
                                            ARES_FALSE);
       if (len > 0) {
-        status = ares_buf_tag_fetch_strdup(buf, &val);
+        status = ares_buf_tag_fetch_strdup(buf, &val, ARES_BUF_CHARSET_ASCII);
         if (status != ARES_SUCCESS) {
           goto done;
         }
@@ -1511,7 +1520,8 @@ static ares_status_t ares_uri_parse_fragment(ares_uri_t *uri, ares_buf_t *buf)
   }
 
   /* Rest of the buffer is the fragment */
-  status = ares_buf_fetch_str_dup(buf, ares_buf_len(buf), &fragment);
+  status = ares_buf_fetch_str_dup(buf, ares_buf_len(buf), &fragment,
+                                  ARES_BUF_CHARSET_ASCII);
   if (status != ARES_SUCCESS) {
     goto done;
   }

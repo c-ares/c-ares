@@ -43,7 +43,20 @@ typedef enum {
   ARES_CONN_FLAG_TFO = 1 << 1,
   /*! TCP Fast Open has not yet sent its first packet. Gets unset on first
    *  write to a connection */
-  ARES_CONN_FLAG_TFO_INITIAL = 1 << 2
+  ARES_CONN_FLAG_TFO_INITIAL = 1 << 2,
+  /*! Connection has been retired: it must not be handed any NEW queries (e.g.
+   *  it experienced a query timeout, suggesting packets are being dropped on
+   *  it).  Its in-flight queries continue to drain and it is cleaned up once
+   *  idle.  This is a per-connection signal so that a transient failure does
+   *  not evict otherwise-healthy connections to the same server. */
+  ARES_CONN_FLAG_NONEW = 1 << 3,
+  /*! Connection has been torn down: unlinked from every lookup structure, its
+   *  descriptor closed or handed to a pending notification, and its queries
+   *  requeued.  It survives only so that a caller further up the stack which
+   *  captured it before the teardown can still read it; see
+   *  ares_deferred_reclaim().  Teardown is idempotent -- a second
+   *  ares_close_connection() on a dead connection does nothing. */
+  ARES_CONN_FLAG_DEAD = 1 << 4
 } ares_conn_flags_t;
 
 typedef enum {
@@ -78,6 +91,10 @@ struct ares_conn {
 
   /* list of outstanding queries to this connection */
   ares_llist_t           *queries_to_conn;
+
+  /*! Next connection awaiting reclamation.  Set only while this connection is
+   *  on channel->pending_conns; see ares_deferred_reclaim(). */
+  ares_conn_t            *next_pending;
 };
 
 /*! Various buckets for grouping history */
@@ -162,6 +179,10 @@ struct ares_server {
 
   /* Link back to owning channel */
   ares_channel_t       *channel;
+
+  /*! Next server awaiting reclamation.  Set only while this server is on
+   *  channel->pending_servers; see ares_deferred_reclaim(). */
+  ares_server_t        *next_pending;
 };
 
 void ares_close_connection(ares_conn_t *conn, ares_status_t requeue_status);
@@ -169,18 +190,34 @@ void ares_close_sockets(ares_server_t *server);
 void ares_check_cleanup_conns(const ares_channel_t *channel);
 
 void ares_destroy_servers_state(ares_channel_t *channel);
-ares_status_t   ares_open_connection(ares_conn_t   **conn_out,
-                                     ares_channel_t *channel,
-                                     ares_server_t *server, ares_bool_t is_tcp);
+ares_status_t ares_open_connection(ares_conn_t   **conn_out,
+                                   ares_channel_t *channel,
+                                   ares_server_t *server, ares_bool_t is_tcp);
 
 ares_conn_err_t ares_conn_write(ares_conn_t *conn, const void *data, size_t len,
                                 size_t *written);
-ares_status_t   ares_conn_flush(ares_conn_t *conn);
+ares_status_t ares_conn_flush(ares_conn_t *conn);
 ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
                                size_t *read_bytes);
 ares_conn_t *ares_conn_from_fd(const ares_channel_t *channel, ares_socket_t fd);
-void         ares_conn_sock_state_cb_update(ares_conn_t            *conn,
-                                            ares_conn_state_flags_t flags);
+
+/*! Queue the "stop watching this descriptor" notification for a connection
+ *  being torn down, handing the descriptor to that queued message.
+ *
+ *  The application must be told to stop watching a descriptor while it is
+ *  still open -- close first and the number can be handed to something else,
+ *  including by application code running from a deferred query callback,
+ *  before the notification naming it is delivered.
+ *
+ *  \param[in] conn  Connection being closed.
+ *  \return ARES_TRUE if the queued notification took the descriptor, in which
+ *          case the caller must not close it; ARES_FALSE if no notification is
+ *          due, and the caller closes the descriptor itself.
+ */
+ares_bool_t ares_conn_sock_state_cb_close(ares_conn_t *conn);
+
+void ares_conn_sock_state_cb_update(ares_conn_t            *conn,
+                                    ares_conn_state_flags_t flags);
 ares_conn_err_t ares_socket_recv(ares_channel_t *channel, ares_socket_t s,
                                  ares_bool_t is_tcp, void *data,
                                  size_t data_len, size_t *read_bytes);
@@ -191,6 +228,6 @@ ares_conn_err_t ares_socket_recvfrom(ares_channel_t *channel, ares_socket_t s,
                                      ares_socklen_t  *from_len,
                                      size_t          *read_bytes);
 
-void            ares_destroy_server(ares_server_t *server);
+void ares_destroy_server(ares_server_t *server);
 
 #endif

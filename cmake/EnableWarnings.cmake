@@ -199,6 +199,10 @@ function(_int_enable_warnings_set_flags_ex langs_var configs_var)
 	endforeach()
 
 	foreach(lang C CXX)
+		if(NOT lang IN_LIST ${langs_var})
+			# do not touch FLAGS so that enable_language properly populates them
+			continue()
+		endif()
 		foreach (config IN LISTS ${configs_var})
 			string(TOUPPER "${config}" config)
 			if (config STREQUAL "NONE")

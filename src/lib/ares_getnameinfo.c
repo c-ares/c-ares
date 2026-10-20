@@ -74,8 +74,8 @@ struct nameinfo_query {
 #  define IPBUFSIZ (sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"))
 #endif
 
-static void  nameinfo_callback(void *arg, int status, int timeouts,
-                               const struct hostent *host);
+static void nameinfo_callback(void *arg, int status, int timeouts,
+                              struct hostent *host);
 static char *lookup_service(unsigned short port, unsigned int flags, char *buf,
                             size_t buflen);
 #ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID
@@ -84,10 +84,10 @@ static void append_scopeid(const struct sockaddr_in6 *addr6, unsigned int flags,
 #endif
 static char *ares_striendstr(const char *s1, const char *s2);
 
-static void  ares_getnameinfo_int(ares_channel_t        *channel,
-                                  const struct sockaddr *sa,
-                                  ares_socklen_t salen, int flags_int,
-                                  ares_nameinfo_callback callback, void *arg)
+static void ares_getnameinfo_int(ares_channel_t        *channel,
+                                 const struct sockaddr *sa,
+                                 ares_socklen_t salen, int flags_int,
+                                 ares_nameinfo_callback callback, void *arg)
 {
   const struct sockaddr_in  *addr  = NULL;
   const struct sockaddr_in6 *addr6 = NULL;
@@ -194,12 +194,17 @@ void ares_getnameinfo(ares_channel_t *channel, const struct sockaddr *sa,
   }
 
   ares_channel_lock(channel);
+  /* Notifications raised along the way are delivered once this whole call
+   * has unwound, not from inside the internals it runs.  See
+   * ares_deferred_cb_enter(). */
+  ares_deferred_cb_enter(channel);
   ares_getnameinfo_int(channel, sa, salen, flags_int, callback, arg);
+  ares_deferred_cb_leave(channel);
   ares_channel_unlock(channel);
 }
 
 static void nameinfo_callback(void *arg, int status, int timeouts,
-                              const struct hostent *host)
+                              struct hostent *host)
 {
   struct nameinfo_query *niquery = (struct nameinfo_query *)arg;
   char                   srvbuf[33];
@@ -223,9 +228,12 @@ static void nameinfo_callback(void *arg, int status, int timeouts,
      */
 #ifdef HAVE_GETHOSTNAME
     if (niquery->flags & ARES_NI_NOFQDN) {
-      char        buf[255];
+      char        buf[255] = "";
       const char *domain;
-      gethostname(buf, 255);
+      if (gethostname(buf, (GETHOSTNAME_TYPE_ARG2)sizeof(buf)) != 0) {
+        buf[0] = '\0';
+      }
+      buf[sizeof(buf) - 1] = '\0';
       if ((domain = strchr(buf, '.')) != NULL) {
         char *end = ares_striendstr(host->h_name, domain);
         if (end) {

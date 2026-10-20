@@ -43,5 +43,7 @@ Developer Notes
 * Comments must be written in the old-style `/* unnested C-fashion */`
 
 * Try to keep line lengths below 80 columns and formatted as the existing code.
-  There is a `.clang-format` in the repository that can be used to run the
-  automated code formatter as such: `clang-format -i */*.c */*.h */*/*.c */*/*.h`
+  Formatting is defined by the `.clang-format` in the repository root
+  (clang-format >= 20 required) and validated by CI on the lines each pull
+  request changes.  Run `git clang-format` before committing to format only
+  your changed lines.

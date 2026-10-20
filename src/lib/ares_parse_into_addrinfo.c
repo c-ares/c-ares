@@ -54,16 +54,32 @@ ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
   size_t                      i;
   size_t                      ancount;
   const char                 *hostname  = NULL;
+  ares_dns_rec_type_t         qtype     = ARES_REC_TYPE_ANY;
+  ares_bool_t                 want_a    = ARES_FALSE;
+  ares_bool_t                 want_aaaa = ARES_FALSE;
   ares_bool_t                 got_a     = ARES_FALSE;
   ares_bool_t                 got_aaaa  = ARES_FALSE;
   ares_bool_t                 got_cname = ARES_FALSE;
   struct ares_addrinfo_cname *cnames    = NULL;
   struct ares_addrinfo_node  *nodes     = NULL;
 
-  /* Save question hostname */
-  status = ares_dns_record_query_get(dnsrec, 0, &hostname, NULL, NULL);
+  /* Save question hostname and type */
+  status = ares_dns_record_query_get(dnsrec, 0, &hostname, &qtype, NULL);
   if (status != ARES_SUCCESS) {
     goto done; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
+  /* Only take addresses of the type that was asked for.  RFC 1034 section
+   * 4.3.2 puts the RRs that match QTYPE in the answer section (plus any
+   * CNAMEs leading to them), so A records in a reply to an AAAA question, or
+   * the reverse, do not answer it.  Callers of ares_getaddrinfo() and
+   * ares_gethostbyname() rely on getting back only the address family they
+   * requested.  An ANY question takes both. */
+  if (qtype == ARES_REC_TYPE_A || qtype == ARES_REC_TYPE_ANY) {
+    want_a = ARES_TRUE;
+  }
+  if (qtype == ARES_REC_TYPE_AAAA || qtype == ARES_REC_TYPE_ANY) {
+    want_aaaa = ARES_TRUE;
   }
 
   ancount = ares_dns_record_rr_cnt(dnsrec, ARES_SECTION_ANSWER);
@@ -107,7 +123,7 @@ ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
         status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
         goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
       }
-      cname->ttl   = (int)ares_dns_rr_get_ttl(rr);
+      cname->ttl   = ares_dns_ttl_as_int(ares_dns_rr_get_ttl(rr));
       cname->alias = ares_strdup(ares_dns_rr_get_name(rr));
       if (cname->alias == NULL) {
         status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
@@ -118,7 +134,7 @@ ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
         status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
         goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
       }
-    } else if (rtype == ARES_REC_TYPE_A) {
+    } else if (rtype == ARES_REC_TYPE_A && want_a) {
       got_a = ARES_TRUE;
       status =
         ares_append_ai_node(AF_INET, port, ares_dns_rr_get_ttl(rr),
@@ -126,11 +142,11 @@ ares_status_t ares_parse_into_addrinfo(const ares_dns_record_t *dnsrec,
       if (status != ARES_SUCCESS) {
         goto done; /* LCOV_EXCL_LINE: OutOfMemory */
       }
-    } else if (rtype == ARES_REC_TYPE_AAAA) {
+    } else if (rtype == ARES_REC_TYPE_AAAA && want_aaaa) {
       got_aaaa = ARES_TRUE;
-      status   = ares_append_ai_node(AF_INET6, port, ares_dns_rr_get_ttl(rr),
-                                     ares_dns_rr_get_addr6(rr, ARES_RR_AAAA_ADDR),
-                                     &nodes);
+      status = ares_append_ai_node(AF_INET6, port, ares_dns_rr_get_ttl(rr),
+                                   ares_dns_rr_get_addr6(rr, ARES_RR_AAAA_ADDR),
+                                   &nodes);
       if (status != ARES_SUCCESS) {
         goto done; /* LCOV_EXCL_LINE: OutOfMemory */
       }

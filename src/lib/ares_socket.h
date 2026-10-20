@@ -139,23 +139,46 @@ typedef enum {
   ARES_CONN_ERR_FAILURE      = 99  /*!< Generic failure */
 } ares_conn_err_t;
 
-ares_bool_t     ares_sockaddr_addr_eq(const struct sockaddr  *sa,
-                                      const struct ares_addr *aa);
-ares_status_t   ares_socket_configure(ares_channel_t *channel, int family,
-                                      ares_bool_t is_tcp, ares_socket_t fd);
+/*! Compare the IP address of a socket address with an ares_addr.  The port
+ *  in the socket address is ignored.
+ *
+ *  \param[in] sa  Socket address (AF_INET or AF_INET6)
+ *  \param[in] aa  Address to compare against
+ *  \return ARES_TRUE if the address families and IP addresses are equal,
+ *          ARES_FALSE otherwise
+ */
+ares_bool_t ares_sockaddr_addr_eq(const struct sockaddr  *sa,
+                                  const struct ares_addr *aa);
+
+/*! Compare the IP address and port of a socket address with an ares_addr and
+ *  port.  A port of 0 in the socket address means the port is unknown, so it
+ *  matches any port.
+ *
+ *  \param[in] sa    Socket address (AF_INET or AF_INET6)
+ *  \param[in] aa    Address to compare against
+ *  \param[in] port  Port to compare against, in host byte order
+ *  \return ARES_TRUE if the address families and IP addresses are equal and
+ *          the ports are equal or the socket address port is 0, ARES_FALSE
+ *          otherwise
+ */
+ares_bool_t ares_sockaddr_addr_port_eq(const struct sockaddr  *sa,
+                                       const struct ares_addr *aa,
+                                       unsigned short          port);
+ares_status_t ares_socket_configure(ares_channel_t *channel, int family,
+                                    ares_bool_t is_tcp, ares_socket_t fd);
 ares_conn_err_t ares_socket_enable_tfo(const ares_channel_t *channel,
                                        ares_socket_t         fd);
 ares_conn_err_t ares_socket_open(ares_socket_t *sock, ares_channel_t *channel,
                                  int af, int type, int protocol);
-ares_bool_t     ares_socket_try_again(int errnum);
-void            ares_socket_close(ares_channel_t *channel, ares_socket_t s);
+ares_bool_t ares_socket_try_again(int errnum);
+void ares_socket_close(ares_channel_t *channel, ares_socket_t s);
 ares_conn_err_t ares_socket_connect(ares_channel_t *channel,
                                     ares_socket_t sockfd, ares_bool_t is_tfo,
                                     const struct sockaddr *addr,
                                     ares_socklen_t         addrlen);
-ares_bool_t     ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
-                                           unsigned short        *port,
-                                           const struct sockaddr *sockaddr);
+ares_bool_t ares_sockaddr_to_ares_addr(struct ares_addr      *ares_addr,
+                                       unsigned short        *port,
+                                       const struct sockaddr *sockaddr);
 ares_conn_err_t ares_socket_write(ares_channel_t *channel, ares_socket_t fd,
                                   const void *data, size_t len, size_t *written,
                                   const struct sockaddr *sa,

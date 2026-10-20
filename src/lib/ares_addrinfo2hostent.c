@@ -50,7 +50,7 @@
 static size_t hostent_nalias(const struct hostent *host)
 {
   size_t i;
-  for (i=0; host->h_aliases != NULL && host->h_aliases[i] != NULL; i++)
+  for (i = 0; host->h_aliases != NULL && host->h_aliases[i] != NULL; i++)
     ;
 
   return i;
@@ -59,9 +59,9 @@ static size_t hostent_nalias(const struct hostent *host)
 static size_t ai_nalias(const struct ares_addrinfo *ai)
 {
   const struct ares_addrinfo_cname *cname;
-  size_t                            i     = 0;
+  size_t                            i = 0;
 
-  for (cname = ai->cnames; cname != NULL; cname=cname->next) {
+  for (cname = ai->cnames; cname != NULL; cname = cname->next) {
     i++;
   }
 
@@ -71,7 +71,7 @@ static size_t ai_nalias(const struct ares_addrinfo *ai)
 static size_t hostent_naddr(const struct hostent *host)
 {
   size_t i;
-  for (i=0; host->h_addr_list != NULL && host->h_addr_list[i] != NULL; i++)
+  for (i = 0; host->h_addr_list != NULL && host->h_addr_list[i] != NULL; i++)
     ;
 
   return i;
@@ -80,11 +80,12 @@ static size_t hostent_naddr(const struct hostent *host)
 static size_t ai_naddr(const struct ares_addrinfo *ai, int af)
 {
   const struct ares_addrinfo_node *node;
-  size_t                           i     = 0;
+  size_t                           i = 0;
 
-  for (node = ai->nodes; node != NULL; node=node->ai_next) {
-    if (af != AF_UNSPEC && af != node->ai_family)
+  for (node = ai->nodes; node != NULL; node = node->ai_next) {
+    if (af != AF_UNSPEC && af != node->ai_family) {
       continue;
+    }
     i++;
   }
 
@@ -94,14 +95,14 @@ static size_t ai_naddr(const struct ares_addrinfo *ai, int af)
 ares_status_t ares_addrinfo2hostent(const struct ares_addrinfo *ai, int family,
                                     struct hostent **host)
 {
-  struct ares_addrinfo_node  *next;
-  char                      **aliases  = NULL;
-  char                      **addrs    = NULL;
-  size_t                      naliases = 0;
-  size_t                      naddrs   = 0;
-  size_t                      i;
-  size_t                      ealiases = 0;
-  size_t                      eaddrs   = 0;
+  struct ares_addrinfo_node *next;
+  char                     **aliases  = NULL;
+  char                     **addrs    = NULL;
+  size_t                     naliases = 0;
+  size_t                     naddrs   = 0;
+  size_t                     i;
+  size_t                     ealiases = 0;
+  size_t                     eaddrs   = 0;
 
   if (ai == NULL || host == NULL) {
     return ARES_EBADQUERY; /* LCOV_EXCL_LINE: DefensiveCoding */
@@ -153,8 +154,7 @@ ares_status_t ares_addrinfo2hostent(const struct ares_addrinfo *ai, int family,
 
   naliases = ai_nalias(ai);
   ealiases = hostent_nalias(*host);
-  aliases  = ares_realloc_zero((*host)->h_aliases,
-                               ealiases * sizeof(char *),
+  aliases  = ares_realloc_zero((*host)->h_aliases, ealiases * sizeof(char *),
                                (naliases + ealiases + 1) * sizeof(char *));
   if (!aliases) {
     goto enomem; /* LCOV_EXCL_LINE: OutOfMemory */

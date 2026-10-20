@@ -114,8 +114,8 @@ CARES_EXTERN ares_bool_t ares_htable_strvp_remove(ares_htable_strvp_t *htable,
  *  \param[in] key     key to use to search
  *  \return value in hashtable or NULL on error
  */
-CARES_EXTERN void       *ares_htable_strvp_claim(ares_htable_strvp_t *htable,
-                                                 const char          *key);
+CARES_EXTERN void *ares_htable_strvp_claim(ares_htable_strvp_t *htable,
+                                           const char          *key);
 
 /*! Retrieve the number of keys stored in the hash table
  *

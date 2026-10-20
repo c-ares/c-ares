@@ -1,7 +1,7 @@
 # [![c-ares logo](https://c-ares.org/art/c-ares-logo.svg)](https://c-ares.org/)
 
-[![Build Status](https://api.cirrus-ci.com/github/c-ares/c-ares.svg?branch=main)](https://cirrus-ci.com/github/c-ares/c-ares)
-[![Windows Build Status](https://ci.appveyor.com/api/projects/status/aevgc5914tm72pvs/branch/main?svg=true)](https://ci.appveyor.com/project/c-ares/c-ares/branch/main)
+[![Build Status](https://github.com/c-ares/c-ares/actions/workflows/ubuntu-latest.yml/badge.svg?branch=main)](https://github.com/c-ares/c-ares/actions/workflows/ubuntu-latest.yml)
+[![Windows Build Status](https://github.com/c-ares/c-ares/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/c-ares/c-ares/actions/workflows/windows.yml)
 [![Coverage Status](https://coveralls.io/repos/github/c-ares/c-ares/badge.svg?branch=main)](https://coveralls.io/github/c-ares/c-ares?branch=main)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/291/badge)](https://bestpractices.coreinfrastructure.org/projects/291)
 [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/c-ares.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:c-ares)
@@ -159,6 +159,16 @@ See [Features](FEATURES.md)
 - [RFC2535](https://datatracker.ietf.org/doc/html/rfc2535),
   [RFC2931](https://datatracker.ietf.org/doc/html/rfc2931).
   `SIG0` Record. Only basic parser, not full implementation.
+- [RFC4034](https://datatracker.ietf.org/doc/html/rfc4034).
+  Resource Records for the DNS Security Extensions (DNSSEC).
+  `DS`, `DNSKEY`, `RRSIG`, and `NSEC` Records. Parsing and writing only; no
+  DNSSEC validation is performed.
+- [RFC5155](https://datatracker.ietf.org/doc/html/rfc5155).
+  DNS Security (DNSSEC) Hashed Authenticated Denial of Existence.
+  `NSEC3` and `NSEC3PARAM` Records.
+- [RFC4255](https://datatracker.ietf.org/doc/html/rfc4255).
+  Using DNS to Securely Publish Secure Shell (SSH) Key Fingerprints.
+  `SSHFP` Record.
 - [RFC7873](https://datatracker.ietf.org/doc/html/rfc7873),
   [RFC9018](https://datatracker.ietf.org/doc/html/rfc9018).
   DNS Cookie off-path dns poisoning and amplification mitigation.

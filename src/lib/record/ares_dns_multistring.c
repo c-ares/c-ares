@@ -297,7 +297,6 @@ ares_status_t ares_dns_multistring_parse_buf(ares_buf_t *buf,
         break;
       }
     }
-
   }
 
   if (status != ARES_SUCCESS && strs != NULL) {

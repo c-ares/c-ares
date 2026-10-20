@@ -112,7 +112,12 @@ void ares_gethostbyaddr(ares_channel_t *channel, const void *addr, int addrlen,
     return;
   }
   ares_channel_lock(channel);
+  /* Notifications raised along the way are delivered once this whole call
+   * has unwound, not from inside the internals it runs.  See
+   * ares_deferred_cb_enter(). */
+  ares_deferred_cb_enter(channel);
   ares_gethostbyaddr_nolock(channel, addr, addrlen, family, callback, arg);
+  ares_deferred_cb_leave(channel);
   ares_channel_unlock(channel);
 }
 
@@ -197,8 +202,8 @@ static ares_status_t file_lookup(ares_channel_t         *channel,
                                  struct hostent        **host)
 {
   char                      ipaddr[INET6_ADDRSTRLEN];
-  const void               *ptr = NULL;
-  const ares_hosts_entry_t *entry;
+  const void               *ptr   = NULL;
+  const ares_hosts_entry_t *entry = NULL;
   ares_status_t             status;
 
   if (addr->family == AF_INET) {

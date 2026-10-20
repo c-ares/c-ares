@@ -27,6 +27,8 @@
  */
 #include "ares_private.h"
 
+#include <limits.h>
+
 #ifdef HAVE_ARPA_INET_H
 #  include <arpa/inet.h>
 #endif
@@ -205,6 +207,8 @@ static ares_status_t parse_nameserver_uri(ares_buf_t     *buf,
   char          hoststr[256];
   size_t        addrlen;
 
+  memset(sconfig, 0, sizeof(*sconfig));
+
   status = ares_uri_parse_buf(&uri, buf);
   if (status != ARES_SUCCESS) {
     return status;
@@ -234,7 +238,10 @@ static ares_status_t parse_nameserver_uri(ares_buf_t     *buf,
   sconfig->tcp_port = sconfig->udp_port;
   port              = ares_uri_get_query_key(uri, "tcpport");
   if (port != NULL) {
-    sconfig->tcp_port = (unsigned short)atoi(port);
+    if (!ares_parse_port(port, &sconfig->tcp_port, ARES_TRUE)) {
+      status = ARES_EBADSTR;
+      goto done;
+    }
   }
 
 done:
@@ -286,7 +293,8 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
       return ARES_EBADSTR;
     }
 
-    status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr));
+    status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -320,7 +328,8 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
       }
     }
 
-    status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr));
+    status = ares_buf_tag_fetch_string(buf, ipaddr, sizeof(ipaddr),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -347,12 +356,15 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
       return ARES_EBADSTR;
     }
 
-    status = ares_buf_tag_fetch_string(buf, portstr, sizeof(portstr));
+    status = ares_buf_tag_fetch_string(buf, portstr, sizeof(portstr),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
 
-    sconfig->udp_port = (unsigned short)atoi(portstr);
+    if (!ares_parse_port(portstr, &sconfig->udp_port, ARES_TRUE)) {
+      return ARES_EBADSTR;
+    }
     sconfig->tcp_port = sconfig->udp_port;
   }
 
@@ -372,7 +384,8 @@ static ares_status_t parse_nameserver(ares_buf_t *buf, ares_sconfig_t *sconfig)
     }
 
     status = ares_buf_tag_fetch_string(buf, sconfig->ll_iface,
-                                       sizeof(sconfig->ll_iface));
+                                       sizeof(sconfig->ll_iface),
+                                       ARES_BUF_CHARSET_ASCII);
     if (status != ARES_SUCCESS) {
       return status;
     }
@@ -398,7 +411,13 @@ static ares_status_t ares_sconfig_linklocal(const ares_channel_t *channel,
 
   if (ares_str_isnum(ll_iface)) {
     char ifname[IF_NAMESIZE] = "";
-    ll_scope                 = (unsigned int)atoi(ll_iface);
+
+    /* The interface identifier is all digits but may not fit in an
+     * unsigned int; parse with the range-checked helper rather than atoi(),
+     * whose behavior on overflow is undefined. */
+    if (!ares_str_parse_uint(ll_iface, UINT_MAX, &ll_scope)) {
+      return ARES_ENOTFOUND;
+    }
     if (channel->sock_funcs.aif_indextoname == NULL ||
         channel->sock_funcs.aif_indextoname(ll_scope, ifname, sizeof(ifname),
                                             channel->sock_func_cb_data) ==
@@ -727,17 +746,36 @@ static ares_bool_t ares_servers_remove_stale(ares_channel_t *channel,
 {
   ares_bool_t        stale_removed = ARES_FALSE;
   ares_slist_node_t *snode         = ares_slist_node_first(channel->servers);
+  size_t             generation    = channel->servers_generation;
 
+  /* Re-read from the head each pass rather than caching the next node.
+   * ares_slist_node_destroy() below reaches application callbacks, by way of
+   * ares_destroy_server() -> ares_close_sockets() -> ares_requeue_queries(),
+   * and a nested reconfiguration from one of those destroys the remaining
+   * stale servers -- including whichever one a cached pointer referred to. */
   while (snode != NULL) {
-    ares_slist_node_t   *snext  = ares_slist_node_next(snode);
     const ares_server_t *server = ares_slist_node_val(snode);
-    if (!ares_server_in_newconfig(server, srvlist)) {
-      /* This will clean up all server state via the destruction callback and
-       * move any queries to new servers */
-      ares_slist_node_destroy(snode);
-      stale_removed = ARES_TRUE;
+
+    if (ares_server_in_newconfig(server, srvlist)) {
+      snode = ares_slist_node_next(snode);
+      continue;
     }
-    snode = snext;
+
+    /* This will clean up all server state via the destruction callback and
+     * move any queries to new servers */
+    ares_slist_node_destroy(snode);
+    stale_removed = ARES_TRUE;
+
+    /* A callback reached from the destroy above may have reconfigured the
+     * server list against a newer configuration.  That call has already
+     * reconciled the whole list, so whatever remains belongs to it and not to
+     * srvlist -- stop rather than deleting its servers. */
+    if (channel->servers_generation != generation) {
+      break;
+    }
+
+    /* The callbacks above may have removed further servers, so restart. */
+    snode = ares_slist_node_first(channel->servers);
   }
   return stale_removed;
 }
@@ -761,6 +799,14 @@ ares_status_t ares_servers_update(ares_channel_t *channel,
   if (channel == NULL) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
+
+  /* Removing servers closes their connections, which notifies.  Deliver
+   * once this call is done rather than from inside the teardown. */
+  ares_deferred_cb_enter(channel);
+
+  /* Bumped before anything below can reach an application callback, so a
+   * nested reconfiguration is distinguishable from our own work. */
+  channel->servers_generation++;
 
   /* NOTE: a NULL or zero entry server list is considered valid due to
    *       real-world people needing support for this for their test harnesses
@@ -830,6 +876,7 @@ ares_status_t ares_servers_update(ares_channel_t *channel,
   status = ARES_SUCCESS;
 
 done:
+  ares_deferred_cb_leave(channel);
   return status;
 }
 

@@ -1,0 +1,102 @@
+# Copyright (C) The c-ares project and its contributors
+#
+# SPDX-License-Identifier: MIT
+
+name: clang-format
+
+# Validates formatting of lines changed by the PR (via clang-format-diff)
+# against the repository .clang-format rules.  A changed file that is already
+# clang-format clean as a whole is skipped: it is by definition clean on the
+# lines this PR changed too, and the changed-lines check can otherwise emit
+# false positives on such a file (e.g. a bulk reformat, where a reformatted
+# line's alignment column is anchored by a neighboring line the PR did not
+# touch and clang-format-diff cannot see).
+#
+# Always uses the latest stable clang-format from apt.llvm.org, discovered
+# at runtime from the llvm.sh installer script.  Our configuration requires
+# at least clang-format 20 (AlignFunctionDeclarations).
+
+on:
+  pull_request:
+    paths:
+      - '**.c'
+      - '**.h'
+      - '.clang-format'
+      - '.github/workflows/clang-format.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clang-format:
+    name: clang-format
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Depth 2 so the PR merge commit's first parent (the current base
+          # branch tip) is available as the diff base below.
+          fetch-depth: 2
+
+      - name: Install latest stable clang-format from apt.llvm.org
+        run: |
+          wget -q https://apt.llvm.org/llvm.sh
+          LLVM_VER=$(sed -n 's/^CURRENT_LLVM_STABLE=\([0-9]*\).*/\1/p' llvm.sh)
+          echo "Latest stable LLVM version: ${LLVM_VER}"
+          CODENAME=$(. /etc/os-release && echo "${VERSION_CODENAME}")
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | \
+            sudo tee /etc/apt/trusted.gpg.d/apt-llvm-org.asc >/dev/null
+          echo "deb http://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-${LLVM_VER} main" | \
+            sudo tee /etc/apt/sources.list.d/apt-llvm-org.list
+          sudo apt-get update
+          sudo apt-get install -y "clang-format-${LLVM_VER}"
+          "clang-format-${LLVM_VER}" --version
+          echo "LLVM_VER=${LLVM_VER}" >> "${GITHUB_ENV}"
+
+      - name: Check formatting of changed lines
+        run: |
+          # HEAD is the PR merge commit, so HEAD^1 is the current base branch
+          # tip and the diff below is exactly the lines this PR changes.  Do
+          # NOT use github.event.pull_request.base.sha here: it is pinned to
+          # the base tip at the time the PR was opened, so on an older branch
+          # it also sweeps in unrelated base-branch changes and flags lines
+          # the PR never touched (evaluated against the current .clang-format
+          # rather than the rules they were written under).
+          # Only check files that are not already whole-file clang-format clean.
+          # A whole-file-clean file is clean on its changed lines by definition,
+          # and skipping it avoids clang-format-diff false positives where a
+          # changed line's alignment is anchored by an untouched neighbor.
+          dirty=()
+          while IFS= read -r f; do
+            [ -n "${f}" ] || continue
+            if ! "clang-format-${LLVM_VER}" --dry-run -Werror "${f}" \
+                >/dev/null 2>&1; then
+              dirty+=("${f}")
+            fi
+          done < <(git diff --name-only --no-color HEAD^1 HEAD -- \
+              '*.c' '*.h' ':!src/lib/thirdparty')
+
+          if [ "${#dirty[@]}" -eq 0 ]; then
+            echo "All changed .c/.h files are clang-format clean"
+            exit 0
+          fi
+
+          git diff -U0 --no-color HEAD^1 HEAD -- "${dirty[@]}" | \
+            "clang-format-diff-${LLVM_VER}" -p1 \
+              -binary "clang-format-${LLVM_VER}" > clang-format.patch || true
+          if [ -s clang-format.patch ]; then
+            echo "::error::Changed lines are not clang-format clean.  Run 'git clang-format' (clang-format >= 20 required) or apply the patch below."
+            cat clang-format.patch
+            {
+              echo '### clang-format suggested changes'
+              echo '```diff'
+              cat clang-format.patch
+              echo '```'
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 1
+          fi
+          echo "All changed lines are clang-format clean"

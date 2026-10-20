@@ -10,8 +10,8 @@ ares_getnameinfo \- Address-to-nodename translation in protocol-independent mann
 #include <ares.h>
 
 typedef void (*ares_nameinfo_callback)(void *\fIarg\fP, int \fIstatus\fP,
-                                       int \fItimeouts\fP, const char *\fInode\fP,
-                                       const char *\fIservice\fP)
+                                       int \fItimeouts\fP, char *\fInode\fP,
+                                       char *\fIservice\fP)
 
 void ares_getnameinfo(ares_channel_t *\fIchannel\fP, const struct sockaddr *\fIsa\fP,
                       ares_socklen_t \fIsalen\fP, int \fIflags\fP,
@@ -143,5 +143,17 @@ or
 .I service
 will be
 .BR NULL .
+.PP
+The
+.I node
+and
+.I service
+strings are owned by the c-ares library and are only valid for the duration of
+the callback.  The callback
+.B must not
+modify or free them, and must not retain references to them after returning;
+treat them as read-only.  The parameters are intentionally not declared
+.B const
+solely to preserve API/ABI compatibility with existing applications.
 .SH SEE ALSO
 .BR ares_process (3),

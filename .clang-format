@@ -26,7 +26,12 @@ AlignConsecutiveAssignments:
   AlignCompound: true
   PadOperators: true
 AlignConsecutiveBitFields: Consecutive
-AlignConsecutiveDeclarations: AcrossEmptyLinesAndComments
+# AlignFunctionDeclarations requires clang-format >= 20
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignFunctionDeclarations: false
 AlignConsecutiveMacros: Consecutive
 AlignEscapedNewlines: Left
 AlignOperands: Align

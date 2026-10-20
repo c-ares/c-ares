@@ -148,7 +148,7 @@ ares_status_t ares_thread_cond_timedwait(ares_thread_cond_t  *cond,
 #    else
 
 typedef enum {
-  ARES_W32_COND_SIGNAL    = 0,
+  ARES_W32_COND_SIGNAL = 0,
   ARES_W32_COND_BROADCAST,
   ARES_W32_COND_EVMAX,
   ARES_W32_COND_NONE = ARES_W32_COND_EVMAX
@@ -200,8 +200,9 @@ fail:
 
 void ares_thread_cond_destroy(ares_thread_cond_t *cond)
 {
-  if (cond == NULL)
+  if (cond == NULL) {
     return;
+  }
 
   if (cond->events[ARES_W32_COND_SIGNAL]) {
     CloseHandle(cond->events[ARES_W32_COND_SIGNAL]);

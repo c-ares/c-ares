@@ -96,7 +96,7 @@ struct addrinfo {
 #    define IF_MAX_STRING_SIZE 256 /* =256 in <ifdef.h> */
 #  endif
 #  if !defined(NDIS_IF_MAX_STRING_SIZE)
-#    define NDIS_IF_MAX_STRING_SIZE IF_MAX_STRING_SIZE   /* =256 in <ifdef.h> */
+#    define NDIS_IF_MAX_STRING_SIZE IF_MAX_STRING_SIZE /* =256 in <ifdef.h> */
 #  endif
 #endif
 

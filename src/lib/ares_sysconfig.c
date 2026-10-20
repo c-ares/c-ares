@@ -264,9 +264,8 @@ static ares_status_t ares_init_sysconfig_android(const ares_channel_t *channel,
 #endif
 
 #if defined(__QNX__)
-static ares_status_t
-  ares_init_sysconfig_qnx(const ares_channel_t *channel,
-                          ares_sysconfig_t     *sysconfig)
+static ares_status_t ares_init_sysconfig_qnx(const ares_channel_t *channel,
+                                             ares_sysconfig_t     *sysconfig)
 {
   /* QNX:
    *   1. use confstr(_CS_RESOLVE, ...) as primary resolv.conf data, replacing
@@ -503,6 +502,59 @@ done:
 }
 #endif
 
+ares_status_t ares_sysconfig_domains_idna(ares_sysconfig_t *sysconfig)
+{
+  size_t i;
+  size_t cnt = 0;
+
+  for (i = 0; i < sysconfig->ndomains; i++) {
+    char *domain = sysconfig->domains[i];
+
+    sysconfig->domains[i] = NULL;
+
+    if (!ares_str_isprint(domain, ares_strlen(domain))) {
+      char         *encoded = NULL;
+      ares_status_t status  = ares_idna_encode_domain(domain, &encoded);
+
+      ares_free(domain);
+
+      if (status == ARES_ENOMEM) {
+        return status;
+      }
+
+      if (status != ARES_SUCCESS) {
+        /* Skip a domain we can't represent rather than break the rest of
+         * the configuration */
+        continue;
+      }
+
+      /* IDNA encoding leaves ASCII untouched, so an entry that was
+       * unprintable due to embedded control bytes rather than unicode is
+       * still unusable; drop it like any other unrepresentable entry */
+      if (!ares_str_isprint(encoded, ares_strlen(encoded))) {
+        ares_free(encoded);
+        continue;
+      }
+
+      domain = encoded;
+    }
+
+    sysconfig->domains[cnt++] = domain;
+  }
+
+  sysconfig->ndomains = cnt;
+
+  /* If every domain was dropped, the array must be released too:
+   * ares_sysconfig_apply() treats a non-NULL domains as a request to apply,
+   * and ares_strsplit_duplicate() fails on a zero-length list */
+  if (cnt == 0) {
+    ares_free(sysconfig->domains);
+    sysconfig->domains = NULL;
+  }
+
+  return ARES_SUCCESS;
+}
+
 static void ares_sysconfig_free(ares_sysconfig_t *sysconfig)
 {
   ares_llist_destroy(sysconfig->sconfig);
@@ -550,7 +602,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
 
   if (sysconfig->sortlist && !(channel->optmask & ARES_OPT_SORTLIST)) {
     struct apattern *temp =
-      ares_malloc(sizeof(*channel->sortlist) * sysconfig->nsortlist);
+      ares_malloc_array(sysconfig->nsortlist, sizeof(*channel->sortlist));
     if (temp == NULL) {
       return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
@@ -605,6 +657,8 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
   status = ares_init_sysconfig_android(channel, &sysconfig);
 #elif defined(__APPLE__)
   status = ares_init_sysconfig_macos(channel, &sysconfig);
+#elif defined(__PASE__)
+  status = ares_init_sysconfig_pase(channel, &sysconfig);
 #elif defined(CARES_USE_LIBRESOLV)
   status = ares_init_sysconfig_libresolv(channel, &sysconfig);
 #elif defined(__QNX__)
@@ -619,6 +673,13 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
 
   /* Environment is supposed to override sysconfig */
   status = ares_init_by_environment(&sysconfig);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* Search domains from any configuration source (registry, resolv.conf,
+   * environment, ...) may be unicode (IDN); DNS needs the punycode form */
+  status = ares_sysconfig_domains_idna(&sysconfig);
   if (status != ARES_SUCCESS) {
     goto done;
   }

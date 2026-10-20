@@ -36,6 +36,7 @@ CSOURCES = ares_addrinfo2hostent.c	\
   ares_sysconfig.c			\
   ares_sysconfig_files.c		\
   ares_sysconfig_mac.c			\
+  ares_sysconfig_pase.c			\
   ares_sysconfig_win.c			\
   ares_timeout.c			\
   ares_update_servers.c			\
@@ -84,8 +85,10 @@ CSOURCES = ares_addrinfo2hostent.c	\
   record/ares_dns_record.c		\
   record/ares_dns_write.c		\
   str/ares_buf.c			\
+  str/ares_idnamap.c			\
   str/ares_str.c			\
   str/ares_strsplit.c			\
+  str/ares_punycode.c			\
   util/ares_iface_ips.c			\
   util/ares_threads.c			\
   util/ares_timeval.c			\
@@ -116,9 +119,11 @@ HHEADERS = ares_android.h			\
   include/ares_htable_vpvp.h		\
   include/ares_llist.h			\
   include/ares_mem.h			\
+  include/ares_punycode.h		\
   include/ares_str.h			\
   record/ares_dns_multistring.h		\
   record/ares_dns_private.h		\
+  str/ares_idnamap.h			\
   str/ares_strsplit.h			\
   util/ares_iface_ips.h			\
   util/ares_math.h			\

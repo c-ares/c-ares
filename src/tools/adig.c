@@ -114,7 +114,7 @@ static const char   *helpstr[] = {
   "       [name] [type] [class] [queryopt...]",
   "",
   "@server: server ip address.  May specify multiple in comma delimited "
-    "format.",
+  "format.",
   "         may be specified in URI format",
   "name:    name of the resource record that is to be looked up",
   "type:    what type of query is required.  e.g. - A, AAAA, MX, TXT, etc.  If",
@@ -145,14 +145,14 @@ static const char   *helpstr[] = {
   "                  on.",
   "+[no]all:         Toggles all of +[no]cmd, +[no]stats, +[no]question,",
   "                  +[no]answer, +[no]authority, +[no]additional, "
-    "+[no]comments",
+  "+[no]comments",
   "+[no]answer:      Toggles printing the answer. On by default.",
   "+[no]authority:   Toggles printing the authority. On by default.",
   "+bufsize=#:       UDP EDNS 0 packet size allowed. Defaults to 1232.",
   "+[no]cdflag:      Sets the CD (checking disabled) bit in the query. Default",
   "                  is off.",
   "+[no]class:       Display the class when printing the record. On by "
-    "default.",
+  "default.",
   "+[no]cmd:         Toggles printing the command requested. On by default.",
   "+[no]comments:    Toggles printing the comments. On by default",
   "+[no]defname:     Alias for +[no]search",
@@ -163,19 +163,19 @@ static const char   *helpstr[] = {
   "                  specified. Default is to enable EDNS.",
   "+[no]ignore:      Ignore truncation on UDP, by default retried on TCP.",
   "+[no]keepopen:    Whether or not the server connection should be "
-    "persistent.",
+  "persistent.",
   "                  Default is off.",
   "+ndots=#:         Sets the number of dots that must appear before being",
   "                  considered absolute. Defaults to 1.",
   "+[no]primary:     Whether or not to only use a single server if more than "
-    "one",
+  "one",
   "                  server is available.  Defaults to using all servers.",
   "+[no]qr:          Toggles printing the request query. Off by default.",
   "+[no]question:    Toggles printing the question. On by default.",
   "+[no]recurse:     Toggles the RD (Recursion Desired) bit. On by default.",
   "+retry=#:         Same as +tries but does not include the initial attempt.",
   "+[no]search:      To use or not use the search list. Search list is not "
-    "used",
+  "used",
   "                  by default.",
   "+[no]stats:       Toggles printing the statistics. On by default.",
   "+[no]tcp:         Whether to use TCP when querying name servers. Default is",

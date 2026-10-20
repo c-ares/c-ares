@@ -28,9 +28,9 @@
 
 #if defined(HAVE_POLL) && defined(CARES_THREADS)
 
-#ifdef HAVE_POLL_H
-#  include <poll.h>
-#endif
+#  ifdef HAVE_POLL_H
+#    include <poll.h>
+#  endif
 
 static ares_bool_t ares_evsys_poll_init(ares_event_thread_t *e)
 {
