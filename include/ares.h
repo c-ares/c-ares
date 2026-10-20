@@ -344,7 +344,7 @@ typedef void (*ares_sock_state_cb)(void *data, ares_socket_t socket_fd,
 /* Called on event thread initialization */
 typedef void (*ares_thread_init_cb)(void* data);
 
-/* Called after destruction useful indicator for when c-ares event-thread is done. */
+/* Called on event thread destruction */
 typedef void (*ares_thread_destory_cb)(void* data);
 
 
@@ -405,8 +405,6 @@ struct ares_options {
   unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
   ares_evsys_t evsys;
   struct ares_server_failover_options server_failover_opts;
-  ares_destroy_cb   destory_cb;
-  void*             destory_cb_data;
   ares_thread_init_cb init_thread_cb;
   void*               init_thread_cb_data;
   ares_thread_destory_cb destroy_thread_cb;
