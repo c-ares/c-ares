@@ -341,21 +341,10 @@ typedef int ares_socket_t;
 typedef void (*ares_sock_state_cb)(void *data, ares_socket_t socket_fd,
                                    int readable, int writable);
 
-/* Called on inititalization, gets called inside event-thread if enabled or onto
-the main thread if event-threads are disabled.
-This can be useful for languages such as python that rely on interpreters to avoid
-common deadlocks. */
-typedef void (*ares_init_cb)(void* data);
-
-/* Called after destruction useful indicator for when all c-ares related queries have
-been cancelled */
-typedef void (*ares_destroy_cb)(void* data);
-
-
 /* Called on event thread initialization */
 typedef void (*ares_thread_init_cb)(void* data);
 
-/* Called after destruction useful indicator for when c-ares thread is done. */
+/* Called after destruction useful indicator for when c-ares event-thread is done. */
 typedef void (*ares_thread_destory_cb)(void* data);
 
 
