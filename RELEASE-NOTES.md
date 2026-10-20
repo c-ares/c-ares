@@ -42,8 +42,11 @@ Changes:
 * `ares_inet_pton()` rejects a "/bits" prefix length and returns 0, rather
   than -1, for any input it cannot parse.
 * UDP replies must now come from the server's port as well as its address.
-  Applications using `ares_set_socket_functions_ex()` must report the source
-  port from `arecvfrom`.
+  Custom `arecvfrom` socket functions (`ares_set_socket_functions_ex()` or
+  `ares_set_socket_functions()`) must fill in the full source address,
+  including the port. For compatibility, a reported port of 0 checks only the
+  address, but such implementations are insecure and should be fixed.
+  [PR #1370](https://github.com/c-ares/c-ares/pull/1370)
 * Document that socket functions and socket, configure and pending-write
   callbacks must not call c-ares functions on the same channel.
   [PR #1360](https://github.com/c-ares/c-ares/pull/1360)
