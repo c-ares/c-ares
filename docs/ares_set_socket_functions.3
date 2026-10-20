@@ -149,6 +149,20 @@ a socket. Additional flags controlling behavior are in
 address, the callback should fill this in. The \fIflags\fP parameter is
 currently unused. See \fBrecvfrom(2)\fP.
 
+For UDP, the callback must fill in the full source address, including the
+source port, exactly as \fBrecvfrom(2)\fP does. c-ares discards a datagram
+whose source address does not match the server it queried, or whose source
+port does not match that server's port.
+
+\fBSecurity:\fP for compatibility with older callbacks, a reported source port
+of 0 is treated as unknown and only the address is checked. A callback that
+does not fill in the source port is therefore insecure: c-ares will accept
+answers sent from any port on the server's address, for example from another
+DNS server or any other service or user able to send UDP from that host, and
+those answers are cached and returned to the application. Such an
+implementation is non-compliant and should be fixed to report the real source
+port.
+
 .TP 8
 .B ares_ssize_t (*\fIasendto\fP)(ares_socket_t \fIfd\fP, const void * \fIbuffer\fP, size_t \fIlength\fP, int \fIflags\fP, const struct sockaddr * \fIaddress\fP, ares_socklen_t \fIaddress_len\fP, void * \fIuser_data\fP)
 .br
@@ -304,6 +318,12 @@ Initiate a connection to the address indicated by \fIaddr\fP on a socket. See
 Receives data from remote socket endpoint, if available. If the \fIaddr\fP
 parameter is not NULL and the connection protocol provides the source address,
 the callback should fill this in. See \fBrecvfrom(2)\fP
+
+For UDP, the callback must fill in the full source address, including the
+source port, as described above for \fIarecvfrom\fP in
+\fBares_set_socket_functions_ex\fP. \fBSecurity:\fP a callback that
+does not fill in the source port is insecure, and c-ares will accept answers
+sent from any port on the server's address.
 
 .TP 8
 .B ares_ssize_t (*\fIasendv\fP)(ares_socket_t \fIfd\fP, const struct iovec * \fIdata\fP, int \fIlen\fP, void * \fIuser_data\fP)
