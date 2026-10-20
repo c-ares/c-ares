@@ -265,6 +265,10 @@ typedef enum {
 #define ARES_OPT_QUERY_CACHE     (1 << 21)
 #define ARES_OPT_EVENT_THREAD    (1 << 22)
 #define ARES_OPT_SERVER_FAILOVER (1 << 23)
+#define ARES_OPT_THREAD_INIT_CB  (1 << 24)
+#define ARES_OPT_THREAD_DESTORY_CB  (1 << 25)
+
+
 
 /* Nameinfo flag values */
 #define ARES_NI_NOFQDN        (1 << 0)
@@ -337,10 +341,22 @@ typedef int ares_socket_t;
 typedef void (*ares_sock_state_cb)(void *data, ares_socket_t socket_fd,
                                    int readable, int writable);
 
-/* Called on inititalization, gets called inside event-thread if enabled. 
-This can be useful for languages such as python that rely on interpreters. */
+/* Called on inititalization, gets called inside event-thread if enabled or onto
+the main thread if event-threads are disabled.
+This can be useful for languages such as python that rely on interpreters to avoid
+common deadlocks. */
 typedef void (*ares_init_cb)(void* data);
+
+/* Called after destruction useful indicator for when all c-ares related queries have
+been cancelled */
 typedef void (*ares_destroy_cb)(void* data);
+
+
+/* Called on event thread initialization */
+typedef void (*ares_thread_init_cb)(void* data);
+
+/* Called after destruction useful indicator for when c-ares thread is done. */
+typedef void (*ares_thread_destory_cb)(void* data);
 
 
 struct apattern;
@@ -400,10 +416,12 @@ struct ares_options {
   unsigned int qcache_max_ttl;   /* Maximum TTL for query cache, 0=disabled */
   ares_evsys_t evsys;
   struct ares_server_failover_options server_failover_opts;
-  ares_init_cb      init_cb;
-  void*             init_cb_data;
   ares_destroy_cb   destory_cb;
   void*             destory_cb_data;
+  ares_thread_init_cb init_thread_cb;
+  void*               init_thread_cb_data;
+  ares_thread_destory_cb destroy_thread_cb;
+  void*                  destroy_thread_cb_data;
 };
 
 struct hostent;

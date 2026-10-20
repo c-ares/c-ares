@@ -400,7 +400,6 @@ static void *ares_reinit_thread(void *arg)
 
   channel->reinit_pending = ARES_FALSE;
   ares_channel_unlock(channel);
-
   return NULL;
 }
 
@@ -499,6 +498,7 @@ int ares_dup(ares_channel_t **dest, const ares_channel_t *src)
   (*dest)->notify_pending_write_cb_data = src->notify_pending_write_cb_data;
   (*dest)->query_enqueue_cb             = src->query_enqueue_cb;
   (*dest)->query_enqueue_cb_data        = src->query_enqueue_cb_data;
+  (*dest)->destory_cb
 
   ares_strcpy((*dest)->local_dev_name, src->local_dev_name,
               sizeof((*dest)->local_dev_name));

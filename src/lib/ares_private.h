@@ -299,6 +299,12 @@ struct ares_channeldata {
    * system config changes might get triggered and we need a flag to make
    * sure we don't take action. */
   ares_bool_t                         sys_up;
+
+  /* Called Inside the event-thread for user to hook data to the event-thread. */
+  ares_thread_init_cb                       init_thread_cb;
+  void*                                     init_thread_cb_data;
+  ares_thread_destory_cb                    destory_thread_cb;
+  void*                                     destory_thread_cb_data;
 };
 
 /* Does the domain end in ".onion" or ".onion."? Case-insensitive. */
