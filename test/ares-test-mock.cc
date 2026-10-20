@@ -683,29 +683,7 @@ TEST_P(CacheQueriesTest, NoDataNotCachedWithoutSOA)
   DNSPacket nodata;
   nodata.set_response().set_aa().add_question(
     new DNSQuestion("nodata.example.com", T_A));
-  DNSPacket ok;
-  ok.set_response()
-    .set_aa()
-    .add_question(new DNSQuestion("nodata.example.com", T_A))
-    .add_answer(new DNSARR("nodata.example.com", 100, { 2, 3, 4, 5 }));
-  EXPECT_CALL(server_, OnRequest("nodata.example.com", T_A))
-    .WillOnce(SetReply(&server_, &nodata))
-    .WillOnce(SetReply(&server_, &ok));
-
-  HostResult result1;
-  ares_gethostbyname(channel_, "nodata.example.com.", AF_INET, HostCallback,
-                     &result1);
-  Process();
-  EXPECT_TRUE(result1.done_);
-  EXPECT_EQ(ARES_ENODATA, result1.status_);
-
-  /* Must re-query the wire and succeed rather than serve a cached NODATA. */
-  HostResult result2;
-  ares_gethostbyname(channel_, "nodata.example.com.", AF_INET, HostCallback,
-                     &result2);
-  Process();
-  EXPECT_TRUE(result2.done_);
-  EXPECT_EQ(ARES_SUCCESS, result2.status_);
+  CheckNegativeCacheRecovery(&nodata, ARES_ENODATA, 0);
 }
 
 TEST_P(CacheQueriesTest, NoDataWithSOACached)

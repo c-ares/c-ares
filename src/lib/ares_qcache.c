@@ -365,7 +365,8 @@ static ares_status_t ares_qcache_insert_int(ares_qcache_t           *qcache,
     unsigned int minttl = ares_qcache_calc_minttl(qresp);
 
     ttl = ares_qcache_soa_minimum(qresp);
-    /* A CNAME chain leading to a negative answer must not outlive its own
+    /* Also bound it by the TTL of every other record in the response, so a
+     * CNAME chain leading to the negative answer does not outlive its own
      * TTL. */
     if (minttl < ttl) {
       ttl = minttl;
