@@ -144,7 +144,9 @@ ares_bool_t ares_sockaddr_addr_port_eq(const struct sockaddr  *sa,
     sa_port = (CARES_INADDR_CAST(const struct sockaddr_in6 *, sa))->sin6_port;
   }
 
-  if (ntohs(sa_port) != port) {
+  /* A port of 0 means the source port was not reported, so only the address
+   * can be checked. */
+  if (sa_port != 0 && ntohs(sa_port) != port) {
     return ARES_FALSE;
   }
 
