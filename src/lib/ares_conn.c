@@ -259,7 +259,12 @@ ares_conn_err_t ares_conn_read(ares_conn_t *conn, void *data, size_t len,
      * section 9.1 only requires the address to match; matching the port too
      * keeps one server from answering for another on the same address.
      * Socket functions that fill in the source address but leave the port 0
-     * predate the port check, so for those only the address is checked. */
+     * predate the port check, so for those only the address is checked.  A
+     * sender cannot use this to skip the port check: the default socket
+     * functions connect() the socket, so the kernel drops a datagram from
+     * port 0, and an unprivileged process on the server's host cannot send
+     * from port 0, while an off-path attacker able to forge port 0 can forge
+     * the server's real port just as easily. */
     if (err == ARES_CONN_ERR_SUCCESS &&
         !ares_sockaddr_addr_port_eq((struct sockaddr *)&sa_storage,
                                     &conn->server->addr,
