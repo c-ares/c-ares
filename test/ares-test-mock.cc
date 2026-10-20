@@ -3927,7 +3927,8 @@ TEST_F(LibraryTest, UDPAnswerFromWrongPortDropped) {
 // Socket functions written before the port check may fill in the source
 // address but leave the port 0.  The address is still checked, but the answer
 // must not be dropped for its port.
-TEST_F(LibraryTest, UDPAnswerWithoutPortAccepted) {
+TEST_F(LibraryTest, UDPAnswerWithoutPortAccepted)
+{
   ares_channel_t *chan = nullptr;
   FakeSockData    data;
 
