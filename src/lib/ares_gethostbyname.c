@@ -293,9 +293,6 @@ static ares_status_t ares_gethostbyname_file_int(ares_channel_t *channel,
   }
 
   status = ares_hosts_entry_to_addrinfo(entry, name, family, 0, ARES_TRUE, ai);
-  if (status != ARES_SUCCESS) {
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
-  }
 
 done:
   /* RFC6761 section 6.3 #3: keep only loopback hosts entries for localhost,

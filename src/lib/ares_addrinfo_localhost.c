@@ -260,6 +260,15 @@ ares_status_t ares_addrinfo_localhost(const char *name, unsigned short port,
     goto done; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
+  /* RFC6761 section 6.3 #3: hosts-file localhost answers must be loopback. */
+  ares_ai_remove_nonloopback(&ai->nodes);
+
+  /* Discard names from hosts entries with no surviving address. */
+  if (ai->nodes == NULL) {
+    ares_freeaddrinfo_cnames(ai->cnames);
+    ai->cnames = NULL;
+  }
+
   if ((hints->ai_flags & ARES_AI_CANONNAME) && ai->cnames == NULL) {
     struct ares_addrinfo_cname *cname = ares_append_addrinfo_cname(&ai->cnames);
     if (cname == NULL) {
@@ -272,9 +281,6 @@ ares_status_t ares_addrinfo_localhost(const char *name, unsigned short port,
       goto done;            /* LCOV_EXCL_LINE: OutOfMemory */
     }
   }
-
-  /* RFC6761 section 6.3 #3: hosts-file localhost answers must be loopback. */
-  ares_ai_remove_nonloopback(&ai->nodes);
 
   status = ares_system_loopback_addrs(hints->ai_family, port, &ai->nodes);
   if (status != ARES_SUCCESS && status != ARES_ENOTFOUND) {

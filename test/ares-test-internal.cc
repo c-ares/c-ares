@@ -1841,31 +1841,20 @@ TEST_F(LibraryTest, GetHostByNameHostsFile)
   ares_destroy(channel);
 }
 
-TEST_F(FileChannelTest, GetAddrInfoHostsLocalhostIgnoresNonLoopback)
-{
-  TempFile                   hostsfile("192.0.2.10 localhost\n");
-  EnvValue                   with_env("CARES_HOSTS", hostsfile.filename());
-  struct ares_addrinfo_hints hints  = { 0, 0, 0, 0 };
-  AddrInfoResult             result = {};
-  hints.ai_family                   = AF_INET;
-  hints.ai_flags                    = ARES_AI_ENVHOSTS | ARES_AI_NOSORT;
-  ares_getaddrinfo(channel_, "localhost", NULL, &hints, AddrInfoCallback,
-                   &result);
-  Process();
-  EXPECT_TRUE(result.done_);
-  EXPECT_EQ(result.status_, ARES_SUCCESS);
-  std::stringstream ss;
-  ss << result.ai_;
-  EXPECT_EQ("{addr=[127.0.0.1]}", ss.str());
-}
-
 struct LocalhostHostsCase {
   const char              *name;
   const char              *hosts;
   int                      family;
   const char              *canonical;
   std::vector<std::string> addresses;
+  bool                     discarded_names = false;
 };
+
+static void PrintTo(const LocalhostHostsCase &c, std::ostream *os)
+{
+  *os << c.name << " family=" << c.family << " hosts=\""
+      << (c.hosts ? c.hosts : "(missing)") << "\"";
+}
 
 class LocalhostHostsTest
   : public LibraryTest,
@@ -1910,6 +1899,9 @@ public:
   void CheckHost(const HostEnt &host)
   {
     EXPECT_EQ(GetParam().canonical, host.name_);
+    if (GetParam().discarded_names) {
+      EXPECT_TRUE(host.aliases_.empty());
+    }
     if (GetParam().family != AF_UNSPEC) {
       EXPECT_EQ(GetParam().family, host.addrtype_);
     }
@@ -1937,6 +1929,10 @@ TEST_P(LocalhostHostsTest, GetAddrInfo)
   ASSERT_NE(nullptr, result.ai_);
   ASSERT_NE(nullptr, result.ai_->cnames);
   EXPECT_STREQ(GetParam().canonical, result.ai_->cnames->name);
+  if (GetParam().discarded_names) {
+    EXPECT_EQ(nullptr, result.ai_->cnames->alias);
+    EXPECT_EQ(nullptr, result.ai_->cnames->next);
+  }
   std::vector<std::string> addresses;
   for (auto *node = result.ai_->nodes; node; node = node->ai_next) {
     if (node->ai_family == AF_INET) {
@@ -1950,7 +1946,8 @@ TEST_P(LocalhostHostsTest, GetAddrInfo)
       addresses.push_back(AddressToString(&addr->sin6_addr, 16));
     }
   }
-  EXPECT_EQ(ExpectedAddresses(), addresses);
+  EXPECT_THAT(addresses,
+              ::testing::UnorderedElementsAreArray(ExpectedAddresses()));
 }
 
 TEST_P(LocalhostHostsTest, GetHostByName)
@@ -2062,6 +2059,28 @@ INSTANTIATE_TEST_SUITE_P(
                         AF_UNSPEC,
                         "app.localhost",
                         { "127.0.0.2", "::1" } },
+    LocalhostHostsCase{
+      "localhost",
+      "192.0.2.10 attacker.example localhost rejected.example\n",
+      AF_INET,
+      "localhost",
+      { "127.0.0.1" },
+      true },
+    LocalhostHostsCase{
+      "localhost",
+      "2001:db8::10 attacker.example localhost rejected.example\n",
+      AF_INET6,
+      "localhost",
+      { "::1" },
+      true },
+    LocalhostHostsCase{
+      "localhost",
+      "192.0.2.10 attacker.example localhost rejected.example\n"
+      "2001:db8::10 attacker.example localhost rejected.example\n",
+      AF_UNSPEC,
+      "localhost",
+      { "::1", "127.0.0.1" },
+      true },
     LocalhostHostsCase{ "example.com",
                         "192.0.2.10 example.com\n",
                         AF_INET,
