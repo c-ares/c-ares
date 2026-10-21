@@ -80,8 +80,8 @@ struct host_query {
   unsigned short        qid_a;     /* qid for A request */
   unsigned short        qid_aaaa;  /* qid for AAAA request */
 
-  size_t                handle_a;    /* logical caller handle for A request */
-  size_t                handle_aaaa; /* logical caller handle for AAAA request */
+  size_t                handle_a;  /* logical caller handle for A request */
+  size_t handle_aaaa;              /* logical caller handle for AAAA request */
 
   size_t                remaining; /* number of DNS answers waiting for */
 

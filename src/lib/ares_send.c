@@ -94,11 +94,12 @@ done:
   return status;
 }
 
-ares_status_t ares_send_direct_nolock(
-  ares_channel_t *channel, ares_server_t *server, ares_send_flags_t flags,
-  const ares_dns_record_t *dnsrec, char *qcache_key,
-  ares_callback_dnsrec callback, void *arg, unsigned short id,
-  ares_query_group_t *group)
+ares_status_t
+  ares_send_direct_nolock(ares_channel_t *channel, ares_server_t *server,
+                          ares_send_flags_t        flags,
+                          const ares_dns_record_t *dnsrec, char *qcache_key,
+                          ares_callback_dnsrec callback, void *arg,
+                          unsigned short id, ares_query_group_t *group)
 {
   ares_query_t  *query;
   ares_timeval_t now;

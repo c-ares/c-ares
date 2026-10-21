@@ -231,6 +231,7 @@ void ares_query_queue_pump(ares_channel_t *channel)
   for (;;) {
     ares_query_waiter_t *waiter = ares_llist_first_val(queue->ready);
     ares_query_group_t  *group;
+    char                *qcache_key;
     if (waiter != NULL) {
       waiter_finish(waiter, waiter->ready_status, waiter->ready_timeouts,
                     waiter->ready_response);
@@ -248,7 +249,7 @@ void ares_query_queue_pump(ares_channel_t *channel)
     /* group_complete owns the group's initial reference. It may run before
      * this returns, so neither group nor caller output pointers are used after
      * dispatch. Retries use the same active transaction. */
-    char *qcache_key  = group->qcache_key;
+    qcache_key        = group->qcache_key;
     group->qcache_key = NULL;
     ares_send_direct_nolock(channel, NULL, group->flags, group->request,
                             qcache_key, group_complete, group, group->qid,
