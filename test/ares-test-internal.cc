@@ -2760,7 +2760,7 @@ TEST_F(LibraryTest, DNSNameWriteEscapedPresentation) {
   /* A name is at most 255 octets on the wire, but its presentation form
    * escapes each non-printable octet as "\DDD" (4 chars).  A 3x63 octet name
    * of 0xFF (192 wire octets, well under the 255 limit) therefore has a 758
-   * character presentation form, which overflowed the writer's fixed name
+   * character presentation form, which did not fit the writer's fixed name
    * buffer and made ares_dns_write() reject this valid name with
    * ARES_EBADNAME.  It must round-trip. */
   std::string label;
@@ -2786,7 +2786,7 @@ TEST_F(LibraryTest, DNSNameWriteEscapedPresentation) {
 
   unsigned char *msg    = NULL;
   size_t         msglen = 0;
-  EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+  ASSERT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
 
   ares_dns_record_t *parsed = NULL;
   EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, 0, &parsed));
@@ -2798,6 +2798,17 @@ TEST_F(LibraryTest, DNSNameWriteEscapedPresentation) {
 
   ares_dns_record_destroy(parsed);
   ares_free_string(msg);
+
+  /* A name longer than any valid escaped presentation form is rejected rather
+   * than truncated into a different name. */
+  std::string toolong(1100, 'a');
+  EXPECT_EQ(ARES_SUCCESS,
+    ares_dns_rr_set_str(rr, ARES_RR_NS_NSDNAME, toolong.c_str()));
+  msg    = NULL;
+  msglen = 0;
+  EXPECT_EQ(ARES_EBADNAME, ares_dns_write(dnsrec, &msg, &msglen));
+  EXPECT_EQ(nullptr, msg);
+
   ares_dns_record_destroy(dnsrec);
 }
 

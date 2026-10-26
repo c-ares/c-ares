@@ -52,8 +52,8 @@ static ares_status_t ares_apply_dns0x20(ares_channel_t    *channel,
   /* A name is at most 255 octets on the wire, but its presentation form
    * escapes each non-printable/reserved octet as "\DDD" (4 chars), so a valid
    * name can require up to ~4 bytes per octet here. */
-  char          dns0x20name[1024];
-  unsigned char randdata[1024 / 8];
+  char          dns0x20name[ARES_MAX_NAME_ESCAPED_LEN + 1];
+  unsigned char randdata[(ARES_MAX_NAME_ESCAPED_LEN + 8) / 8];
   size_t        len;
   size_t        remaining_bits;
   size_t        total_bits;

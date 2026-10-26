@@ -25,17 +25,6 @@
  */
 #include "ares_private.h"
 
-/* RFC 1035 3.1 limits a name to 255 octets.  We track presentation length
- * (label octets plus one separator before each label after the first), which is
- * up to ~2 octets looser than the strict wire limit and so never rejects a
- * compliant name.  Shared by the read and write paths. */
-#define ARES_MAX_NAME_PRESENTATION_LEN 255
-
-/* The presentation form escapes each octet as up to "\DDD" (4 chars), so a
- * valid name's escaped string can reach 4x its unescaped length.  Buffers and
- * limits that hold an already-escaped name must use this, not the 255 above. */
-#define ARES_MAX_NAME_ESCAPED_LEN (ARES_MAX_NAME_PRESENTATION_LEN * 4)
-
 /* A name of <= 255 octets holds at most 128 labels, so it can never
  * legitimately require more than that many compression-pointer jumps.  Bounding
  * the number of indirections stops a name built purely from pointers (which
