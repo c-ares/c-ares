@@ -20,8 +20,12 @@ include Makefile.inc
 
 TESTS = arestest fuzzcheck.sh
 
+# aresfuzzresponse needs POSIX sockets/poll; skip on native Windows/MinGW.
 noinst_PROGRAMS = arestest aresfuzz aresfuzzname dnsdump ares_queryloop
-EXTRA_DIST = fuzzcheck.sh CMakeLists.txt Makefile.m32 Makefile.msvc README.md $(srcdir)/fuzzinput/* $(srcdir)/fuzznames/*
+if !NATIVE_WINDOWS
+noinst_PROGRAMS += aresfuzzresponse
+endif
+EXTRA_DIST = fuzzcheck.sh CMakeLists.txt Makefile.m32 Makefile.msvc README.md $(srcdir)/fuzzinput/* $(srcdir)/fuzznames/* $(srcdir)/fuzzinput-response/* $(srcdir)/ares-test-fuzz-response.c
 arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 
 # Not interested in coverage of test code, but linking the test binary needs the coverage option
@@ -33,6 +37,11 @@ aresfuzz_LDADD = $(top_builddir)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVE
 
 aresfuzzname_SOURCES = $(FUZZNAMESOURCES)
 aresfuzzname_LDADD = $(top_builddir)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS)
+
+if !NATIVE_WINDOWS
+aresfuzzresponse_SOURCES = $(FUZZRESPONSESOURCES)
+aresfuzzresponse_LDADD = $(top_builddir)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS)
+endif
 
 dnsdump_SOURCES = $(DUMPSOURCES)
 dnsdump_LDADD = $(top_builddir)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS)

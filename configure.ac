@@ -69,6 +69,7 @@ if test "$ax_cv_c_compiler_vendor" = "microsoft" ; then
   ac_cv_windows=yes
 fi
 AC_MSG_RESULT($ac_cv_native_windows)
+AM_CONDITIONAL([NATIVE_WINDOWS], [test "$ac_cv_native_windows" = "yes"])
 
 
 AC_ENABLE_SHARED
