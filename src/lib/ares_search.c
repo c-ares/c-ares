@@ -500,10 +500,22 @@ ares_status_t ares_search_dnsrec(ares_channel_t          *channel,
 /* Concatenate two domains. */
 ares_status_t ares_cat_domain(const char *name, const char *domain, char **s)
 {
-  size_t nlen = ares_strlen(name);
-  size_t dlen = ares_strlen(domain);
+  size_t nlen  = ares_strlen(name);
+  size_t dlen  = ares_strlen(domain);
+  size_t total = 0;
 
-  *s = ares_malloc(nlen + 1 + dlen + 1);
+  /* name + '.' + domain + NUL.  Each length comes from strlen, so neither
+   * addend is a wrapped value, but nlen + dlen + 2 can still wrap size_t
+   * (on 32-bit, two strings of about 2GB).  A wrapped allocation is then
+   * too small for the copies below.
+   */
+  if (ares_size_t_add_overflow(nlen, dlen, &total) ||
+      ares_size_t_add_overflow(total, 2, &total)) {
+    *s = NULL;          /* LCOV_EXCL_LINE: DefensiveCoding */
+    return ARES_ENOMEM; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
+  *s = ares_malloc(total);
   if (!*s) {
     return ARES_ENOMEM;
   }

@@ -552,12 +552,19 @@ ares_status_t ares_buf_tag_fetch_string(const ares_buf_t *buf, char *str,
 ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf, char **str,
                                         ares_buf_charset_t charset)
 {
-  size_t               ptr_len = 0;
-  const unsigned char *ptr     = ares_buf_tag_fetch(buf, &ptr_len);
+  size_t               ptr_len  = 0;
+  size_t               alloclen = 0;
+  const unsigned char *ptr      = ares_buf_tag_fetch(buf, &ptr_len);
   ares_status_t        status;
 
   if (ptr == NULL || str == NULL) {
     return ARES_EFORMERR;
+  }
+
+  /* Room for the NUL.  Check before charset validation, which walks ptr_len
+   * bytes, and before the allocation, which would wrap to zero. */
+  if (ares_size_t_add_overflow(ptr_len, 1, &alloclen)) {
+    return ARES_ENOMEM;
   }
 
   status = ares_buf_validate_charset(ptr, ptr_len, charset);
@@ -565,7 +572,7 @@ ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf, char **str,
     return status;
   }
 
-  *str = ares_malloc(ptr_len + 1);
+  *str = ares_malloc(alloclen);
   if (*str == NULL) {
     return ARES_ENOMEM;
   }
@@ -754,13 +761,21 @@ ares_status_t ares_buf_fetch_bytes_dup(ares_buf_t *buf, size_t len,
                                        unsigned char **bytes)
 {
   size_t               remaining_len;
+  size_t               alloclen;
   const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
 
   if (buf == NULL || bytes == NULL || len == 0 || remaining_len < len) {
     return ARES_EBADRESP;
   }
 
-  *bytes = ares_malloc(null_term ? len + 1 : len);
+  /* A terminating NUL needs one extra byte.  len itself is a legal
+   * allocation size; only the increment can wrap. */
+  alloclen = len;
+  if (null_term && ares_size_t_add_overflow(len, 1, &alloclen)) {
+    return ARES_ENOMEM;
+  }
+
+  *bytes = ares_malloc(alloclen);
   if (*bytes == NULL) {
     return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }
@@ -817,6 +832,7 @@ ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str,
                                      ares_buf_charset_t charset)
 {
   size_t               remaining_len;
+  size_t               alloclen;
   ares_status_t        status;
   const unsigned char *ptr = ares_buf_fetch(buf, &remaining_len);
 
@@ -824,12 +840,18 @@ ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str,
     return ARES_EBADRESP;
   }
 
+  /* Room for the NUL.  Check before charset validation, which walks len
+   * bytes, and before the allocation, which would wrap to zero. */
+  if (ares_size_t_add_overflow(len, 1, &alloclen)) {
+    return ARES_ENOMEM;
+  }
+
   status = ares_buf_validate_charset(ptr, len, charset);
   if (status != ARES_SUCCESS) {
     return status;
   }
 
-  *str = ares_malloc(len + 1);
+  *str = ares_malloc(alloclen);
   if (*str == NULL) {
     return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }

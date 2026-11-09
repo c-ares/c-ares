@@ -327,6 +327,40 @@ TEST(Misc, OnionDomain) {
   EXPECT_EQ(1, ares_is_onion_domain("YES.ONION."));
 }
 
+TEST(Math, SizeTAddOverflow)
+{
+  size_t res = 42;
+
+  EXPECT_EQ(ARES_FALSE, ares_size_t_add_overflow(1, 2, &res));
+  EXPECT_EQ((size_t)3, res);
+
+  EXPECT_EQ(ARES_FALSE, ares_size_t_add_overflow(0, 0, &res));
+  EXPECT_EQ((size_t)0, res);
+
+  EXPECT_EQ(ARES_FALSE, ares_size_t_add_overflow(SIZE_MAX, 0, &res));
+  EXPECT_EQ(SIZE_MAX, res);
+
+  EXPECT_EQ(ARES_FALSE, ares_size_t_add_overflow(SIZE_MAX - 1, 1, &res));
+  EXPECT_EQ(SIZE_MAX, res);
+
+  /* Overflow leaves *res untouched. */
+  res = 42;
+  EXPECT_EQ(ARES_TRUE, ares_size_t_add_overflow(SIZE_MAX, 1, &res));
+  EXPECT_EQ((size_t)42, res);
+
+  res = 7;
+  EXPECT_EQ(ARES_TRUE, ares_size_t_add_overflow(SIZE_MAX - 1, 2, &res));
+  EXPECT_EQ((size_t)7, res);
+
+  /* ares_cat_domain() allocates nlen + dlen + 2.  SIZE_MAX/2 + SIZE_MAX/2
+   * is SIZE_MAX - 1, and adding the two extra bytes wraps. */
+  EXPECT_EQ(ARES_FALSE,
+            ares_size_t_add_overflow(SIZE_MAX / 2, SIZE_MAX / 2, &res));
+  EXPECT_EQ(SIZE_MAX - 1, res);
+  EXPECT_EQ(ARES_TRUE, ares_size_t_add_overflow(res, 2, &res));
+  EXPECT_EQ(SIZE_MAX - 1, res);
+}
+
 TEST_F(LibraryTest, CatDomain) {
   char *s;
 
@@ -3123,6 +3157,77 @@ TEST_F(LibraryTest, InitSortlistCountOverflow) {
   EXPECT_TRUE(AllocSizeFailPending(wrapped));
 }
 #endif
+
+/* Const buffers store the caller's length without copying, so a length of
+ * SIZE_MAX can be set up without allocating that many bytes.  The dup helpers
+ * must reject len + 1 before they allocate or scan.  The wrapped size is 0;
+ * arming a failure for that size shows the allocator was not asked for it.
+ */
+TEST_F(LibraryTest, BufFetchDupNulOverflow)
+{
+  const unsigned char byte = 'A';
+  ares_buf_t         *buf;
+  char               *str   = reinterpret_cast<char *>(1);
+  unsigned char      *raw   = reinterpret_cast<unsigned char *>(1);
+  const unsigned char abc[] = { 'a', 'b', 'c' };
+
+  buf = ares_buf_create_const(&byte, SIZE_MAX);
+  ASSERT_NE(nullptr, buf);
+  SetAllocSizeFail(0);
+  EXPECT_EQ(ARES_ENOMEM, ares_buf_fetch_str_dup(buf, SIZE_MAX, &str,
+                                                ARES_BUF_CHARSET_ASCII));
+  EXPECT_EQ(reinterpret_cast<char *>(1), str);
+  EXPECT_TRUE(AllocSizeFailPending(0));
+  ares_buf_destroy(buf);
+  ClearFails();
+
+  str = reinterpret_cast<char *>(1);
+  buf = ares_buf_create_const(&byte, SIZE_MAX);
+  ASSERT_NE(nullptr, buf);
+  ares_buf_tag(buf);
+  ASSERT_EQ(ARES_SUCCESS, ares_buf_consume(buf, SIZE_MAX));
+  SetAllocSizeFail(0);
+  EXPECT_EQ(ARES_ENOMEM,
+            ares_buf_tag_fetch_strdup(buf, &str, ARES_BUF_CHARSET_ASCII));
+  EXPECT_EQ(reinterpret_cast<char *>(1), str);
+  EXPECT_TRUE(AllocSizeFailPending(0));
+  ares_buf_destroy(buf);
+  ClearFails();
+
+  raw = reinterpret_cast<unsigned char *>(1);
+  buf = ares_buf_create_const(&byte, SIZE_MAX);
+  ASSERT_NE(nullptr, buf);
+  SetAllocSizeFail(0);
+  EXPECT_EQ(ARES_ENOMEM,
+            ares_buf_fetch_bytes_dup(buf, SIZE_MAX, ARES_TRUE, &raw));
+  EXPECT_EQ(reinterpret_cast<unsigned char *>(1), raw);
+  EXPECT_TRUE(AllocSizeFailPending(0));
+  ares_buf_destroy(buf);
+  ClearFails();
+
+  /* Without a NUL, len itself does not wrap, so the allocator is asked for
+   * SIZE_MAX and the out-pointer is cleared by the failed allocation. */
+  raw = reinterpret_cast<unsigned char *>(1);
+  buf = ares_buf_create_const(&byte, SIZE_MAX);
+  ASSERT_NE(nullptr, buf);
+  SetAllocSizeFail(SIZE_MAX);
+  EXPECT_EQ(ARES_ENOMEM,
+            ares_buf_fetch_bytes_dup(buf, SIZE_MAX, ARES_FALSE, &raw));
+  EXPECT_EQ(nullptr, raw);
+  EXPECT_FALSE(AllocSizeFailPending(SIZE_MAX));
+  ares_buf_destroy(buf);
+
+  buf = ares_buf_create_const(abc, sizeof(abc));
+  ASSERT_NE(nullptr, buf);
+  raw = NULL;
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_buf_fetch_bytes_dup(buf, sizeof(abc), ARES_TRUE, &raw));
+  ASSERT_NE(nullptr, raw);
+  EXPECT_EQ(0, memcmp(raw, abc, sizeof(abc)));
+  EXPECT_EQ('\0', raw[sizeof(abc)]);
+  ares_free(raw);
+  ares_buf_destroy(buf);
+}
 
 TEST_F(LibraryTest, BufMisuse) {
   EXPECT_EQ(NULL, ares_buf_create_const(NULL, 0));
