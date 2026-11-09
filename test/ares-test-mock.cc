@@ -4179,9 +4179,9 @@ protected:
     ASSERT_EQ(ARES_SUCCESS,
               ares_init_options(chan, &opts, ARES_OPT_SOCK_STATE_CB));
     ASSERT_NE(nullptr, *chan);
-    /* TEST-NET-1, guaranteed not to answer, so the socket is still open when
-     * the call under test runs. */
-    ASSERT_EQ(ARES_SUCCESS, ares_set_servers_csv(*chan, "192.0.2.1:53"));
+    /* Dead server on loopback, guaranteed not to answer, so the socket is still
+     * open when the call under test runs. */
+    ASSERT_EQ(ARES_SUCCESS, ares_set_servers_csv(*chan, "127.0.0.1:53055"));
 
     ares_query_dnsrec(*chan, "www.google.com", ARES_CLASS_IN, ARES_REC_TYPE_A,
                       QueryCallback, result, NULL);
@@ -4210,7 +4210,7 @@ TEST_F(SockStateDeliveryTest, SetServersReportsSocketClose) {
   QueryResult         result;
 
   OpenConnection(&chan, &data, &result);
-  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "198.51.100.1:53"));
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(chan, "127.0.0.1:53056"));
   EXPECT_TRUE(SawClose(data)) << "ares_set_servers_csv() closed the socket "
                                  "without telling the application";
   ares_destroy(chan);
