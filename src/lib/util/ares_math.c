@@ -167,6 +167,15 @@ ares_bool_t ares_size_t_mul_overflow(size_t a, size_t b, size_t *res)
   return ARES_FALSE;
 }
 
+ares_bool_t ares_size_t_add_overflow(size_t a, size_t b, size_t *res)
+{
+  if (a > SIZE_MAX - b) {
+    return ARES_TRUE;
+  }
+  *res = a + b;
+  return ARES_FALSE;
+}
+
 int ares_dns_ttl_as_int(unsigned int ttl)
 {
   return (ttl > INT_MAX) ? INT_MAX : (int)ttl;

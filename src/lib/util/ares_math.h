@@ -67,4 +67,15 @@ int ares_dns_ttl_as_int(unsigned int ttl);
  *  leaves *res untouched. */
 ares_bool_t ares_size_t_mul_overflow(size_t a, size_t b, size_t *res);
 
+/*! Add two size_t values, checking for overflow.  On success writes the sum
+ *  to *res and returns ARES_FALSE.  On overflow returns ARES_TRUE and leaves
+ *  *res untouched.
+ *
+ *  \param[in]  a    First addend
+ *  \param[in]  b    Second addend
+ *  \param[out] res  Receives a + b on success.  Untouched on overflow.
+ *  \return ARES_TRUE on overflow, ARES_FALSE on success
+ */
+ares_bool_t ares_size_t_add_overflow(size_t a, size_t b, size_t *res);
+
 #endif
