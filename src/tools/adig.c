@@ -1150,7 +1150,7 @@ static const struct {
 };
 
 static ares_bool_t read_cmdline(int argc, const char * const *argv,
-                                int start_idx)
+                                int start_idx, ares_bool_t detect_no_rcfile)
 {
   int    arg;
   size_t opt;
@@ -1211,6 +1211,10 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
       if (dig_options[opt].type != OPT_TYPE_BOOL &&
           dig_options[opt].prefix != 0 && dig_options[opt].separator == 0) {
         if (arg == argc - 1) {
+          if (detect_no_rcfile) {
+            option_handled = ARES_TRUE;
+            break;
+          }
           snprintf(global_config.error, sizeof(global_config.error),
                    "insufficient arguments for %c%s", dig_options[opt].prefix,
                    dig_options[opt].name);
@@ -1218,6 +1222,17 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
         }
         arg++;
         value = argv[arg];
+      }
+
+      /* Use the same option matching and argument consumption when checking
+       * for -r, but leave all other validation and side effects to the full
+       * command-line pass. */
+      if (detect_no_rcfile) {
+        if (dig_options[opt].opt == &global_config.no_rcfile) {
+          global_config.no_rcfile = ARES_TRUE;
+        }
+        option_handled = ARES_TRUE;
+        break;
       }
 
       switch (dig_options[opt].type) {
@@ -1318,6 +1333,9 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
     }
 
     if (!option_handled) {
+      if (detect_no_rcfile) {
+        continue;
+      }
       snprintf(global_config.error, sizeof(global_config.error),
                "unrecognized option %s", argv[arg]);
       return ARES_FALSE;
@@ -1397,7 +1415,7 @@ static ares_bool_t read_rcfile(void)
                                   ARES_BUF_SPLIT_TRIM, 0, &rcargv, &rcargc);
 
     if (rcstatus == ARES_SUCCESS) {
-      read_cmdline((int)rcargc, (const char * const *)rcargv, 0);
+      read_cmdline((int)rcargc, (const char * const *)rcargv, 0, ARES_FALSE);
 
     } else {
       snprintf(global_config.error, sizeof(global_config.error),
@@ -1514,15 +1532,17 @@ int main(int argc, char **argv)
 
   config_defaults();
 
-  if (!read_cmdline(argc, (const char * const *)argv, 1)) {
+  (void)read_cmdline(argc, (const char * const *)argv, 1, ARES_TRUE);
+
+  if (!global_config.no_rcfile && !read_rcfile()) {
+    fprintf(stderr, "\n** ERROR: %s\n", global_config.error);
+  }
+
+  if (!read_cmdline(argc, (const char * const *)argv, 1, ARES_FALSE)) {
     printf("\n** ERROR: %s\n\n", global_config.error);
     print_help();
     final_rv = RV_MISUSE;
     goto done;
-  }
-
-  if (global_config.no_rcfile && !read_rcfile()) {
-    fprintf(stderr, "\n** ERROR: %s\n", global_config.error);
   }
 
   if (global_config.is_help) {
