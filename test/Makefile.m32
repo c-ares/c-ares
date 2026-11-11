@@ -29,7 +29,7 @@ LDLIBS = -lws2_32 -liphlpapi
 # Makefile.inc provides the TESTSOURCES and TESTHEADERS defines
 include Makefile.inc
 
-OBJS := $(patsubst %.cc,%.o,$(strip $(TESTSOURCES)))
+OBJS := $(patsubst %.c,%.o,$(patsubst %.cc,%.o,$(strip $(TESTSOURCES))))
 FUZZOBJS := $(patsubst %.c,%.o,$(strip $(FUZZSOURCES)))
 FUZZNAMEOBJS := $(patsubst %.c,%.o,$(strip $(FUZZNAMESOURCES)))
 DNSDUMPOBJS := $(patsubst %.cc,%.o,$(strip $(DUMPSOURCES)))
