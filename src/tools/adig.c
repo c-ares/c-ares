@@ -34,6 +34,8 @@
 #  include <bsdsocket/socketbasetags.h>
 
 #  define select(A,B,C,D,E) WaitSelect(A,B,C,D,E,NULL)
+
+struct Library *SocketBase = NULL;
 #endif
 
 #ifdef HAVE_NETINET_IN_H
