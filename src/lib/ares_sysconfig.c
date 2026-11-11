@@ -51,7 +51,7 @@
 #  define MAX_DNS_PROPERTIES   8
 #endif
 
-#if defined(__amigaos4__)
+#if defined(__amigaos__) || defined(__amigaos4__)
 #  include <proto/exec.h>
 #  include <exec/lists.h>
 #  include <exec/nodes.h>
@@ -177,7 +177,7 @@ static ares_status_t ares_init_sysconfig_riscos(const ares_channel_t *channel,
 }
 #endif
 
-#if defined (__amigaos4__)
+#if defined(__amigaos__) || defined(__amigaos4__)
 static ares_status_t ares_init_sysconfig_amiga(const ares_channel_t *channel,
                                                 ares_sysconfig_t     *sysconfig)
 {
@@ -714,7 +714,7 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
   status = ares_init_sysconfig_mvs(channel, &sysconfig);
 #elif defined(__riscos__)
   status = ares_init_sysconfig_riscos(channel, &sysconfig);
-#elif defined(__amigaos4__)
+#elif defined(__amigaos__) || defined(__amigaos4__)
   status = ares_init_sysconfig_amiga(channel, &sysconfig);
 #elif defined(WATT32)
   status = ares_init_sysconfig_watt32(channel, &sysconfig);

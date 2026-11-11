@@ -27,7 +27,7 @@
 
 #include "ares_setup.h"
 
-#if defined(__amigaos4__)
+#if defined(__amigaos__) || defined(__amigaos4__)
 #  include <proto/exec.h>
 #  include <exec/lists.h>
 #  include <exec/nodes.h>
@@ -91,12 +91,14 @@ int main(int argc, char **argv)
   WSAStartup(wVersionRequested, &wsaData);
 #endif
 
-#if defined(__amigaos4__)
+#if defined(__amigaos__) || defined(__amigaos4__)
   struct Library *SocketBase = OpenLibrary("bsdsocket.library", 4);
 
   if(!SocketBase) return 0;
+#ifdef __amigaos4__
   ISocket = (struct SocketIFace *)GetInterface(base, "main", 1, NULL);
   if(ISocket) return 0;
+#endif
 #endif
 
   memset(&options, 0, sizeof(options));
@@ -218,9 +220,11 @@ int main(int argc, char **argv)
 
   ares_library_cleanup();
 
-#if defined(__amigaos4__)
+#if defined(__amigaos__) || defined(__amigaos4__)
+#ifdef __amigaos4__
   if(ISocket) DropInterface(ISocket);
   if(SocketBase) CloseLibrary(SocketBase);
+#endif
 #endif
 
 #ifdef USE_WINSOCK
