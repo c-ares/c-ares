@@ -174,7 +174,7 @@ static int setsocknonblock(ares_socket_t sockfd, /* operate on this */
 
   /* Amiga */
   long flags = nonblock ? 1L : 0L;
-  return IoctlSocket(sockfd, FIONBIO, flags);
+  return IoctlSocket(sockfd, FIONBIO, &flags);
 
 #elif defined(HAVE_SETSOCKOPT_SO_NONBLOCK)
 
