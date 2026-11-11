@@ -516,6 +516,7 @@ static char *ares_uri_path_normalize(const char *path)
   ares_ssize_t  i;
   size_t        j;
   size_t        len;
+  ares_bool_t   trailing_slash = ARES_FALSE;
 
   inpath =
     ares_buf_create_const((const unsigned char *)path, ares_strlen(path));
@@ -539,6 +540,12 @@ static char *ares_uri_path_normalize(const char *path)
   for (i = 0; i < (ares_ssize_t)ares_array_len(arr); i++) {
     const char **strptr = ares_array_at(arr, (size_t)i);
     const char  *str    = *strptr;
+
+    /* RFC 3986 section 5.2.4 preserves '/' for terminal '/.' and '/..'. */
+    if ((size_t)i == ares_array_len(arr) - 1 &&
+        (ares_streq(str, ".") || ares_streq(str, ".."))) {
+      trailing_slash = ARES_TRUE;
+    }
 
     if (ares_streq(str, ".")) {
       ares_array_remove_at(arr, (size_t)i);
@@ -569,7 +576,7 @@ static char *ares_uri_path_normalize(const char *path)
 
     /* Path separator, but on the last entry, we need to check if it was
      * originally terminated or not because they have different meanings */
-    if (j != len - 1 || path[ares_strlen(path) - 1] == '/') {
+    if (j != len - 1 || path[ares_strlen(path) - 1] == '/' || trailing_slash) {
       status = ares_buf_append_byte(outpath, '/');
       if (status != ARES_SUCCESS) {
         goto done;

@@ -426,6 +426,32 @@ TEST_F(LibraryTest, HtableMisuse) {
   EXPECT_EQ((size_t)0, ares_htable_num_keys(NULL));
 }
 
+TEST_F(LibraryTest, URITerminalDotSegments)
+{
+  const struct {
+    const char *path;
+    const char *expected;
+  } tests[] = {
+    { "/path/.",             "/path/"        },
+    { "/path/child/..",      "/path/"        },
+    { "/path/child/../.",    "/path/"        },
+    { "/.",                  "/"             },
+    { "/path/..",            "/"             },
+    { "/path/.hidden",       "/path/.hidden" },
+    { "/path/child/../file", "/path/file"    },
+  };
+
+  ares_uri_t *uri = ares_uri_create();
+  ASSERT_NE(nullptr, uri);
+
+  for (const auto &test : tests) {
+    EXPECT_EQ(ARES_SUCCESS, ares_uri_set_path(uri, test.path));
+    EXPECT_STREQ(test.expected, ares_uri_get_path(uri));
+  }
+
+  ares_uri_destroy(uri);
+}
+
 TEST_F(LibraryTest, URI) {
   struct {
     ares_bool_t success;
