@@ -26,6 +26,16 @@
  */
 #include "ares_setup.h"
 
+#if defined(__amigaos4__)
+#  include <proto/exec.h>
+#  include <exec/lists.h>
+#  include <exec/nodes.h>
+#  include <proto/bsdsocket.h>
+#  include <bsdsocket/socketbasetags.h>
+
+#  define select(A,B,C,D,E) WaitSelect(A,B,C,D,E,NULL)
+#endif
+
 #ifdef HAVE_NETINET_IN_H
 #  include <netinet/in.h>
 #endif
@@ -1506,6 +1516,14 @@ int main(int argc, char **argv)
   WSAStartup(wVersionRequested, &wsaData);
 #endif
 
+#if defined(__amigaos4__)
+  struct Library *SocketBase = OpenLibrary("bsdsocket.library", 4);
+
+  if(!SocketBase) return 0;
+  ISocket = (struct SocketIFace *)GetInterface(base, "main", 1, NULL);
+  if(ISocket) return 0;
+#endif
+
   status = (ares_status_t)ares_library_init(ARES_LIB_INIT_ALL);
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "ares_library_init: %s\n", ares_strerror((int)status));
@@ -1583,6 +1601,11 @@ done:
   free_config();
   ares_destroy(channel);
   ares_library_cleanup();
+
+#if defined(__amigaos4__)
+  if(ISocket) DropInterface(ISocket);
+  if(SocketBase) CloseLibrary(SocketBase);
+#endif
 
 #ifdef USE_WINSOCK
   WSACleanup();

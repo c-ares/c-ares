@@ -184,70 +184,48 @@ static ares_status_t ares_init_sysconfig_amiga(const ares_channel_t *channel,
   size_t        i;
   ares_status_t status;
 
-  struct SocketIFace *ISocket;
-  struct ExecIFace *IExec = (struct ExecIFace *)(*(struct ExecBase **)4)->MainInterface;
+  ULONG dnsapi = 0;
 
-  struct Library *base = IExec->OpenLibrary("bsdsocket.library", 4);
+  SocketBaseTags(SBTM_GETREF(SBTC_HAVE_DNS_API), (ULONG)&dnsapi,
+				 TAG_DONE);
 
-  if(base) {
-    ISocket = (struct SocketIFace *)IExec->GetInterface(base, "main", 1, NULL);
-    if(ISocket) {
-      ULONG dnsapi = 0;
+  if(dnsapi) {
+	/* Use the DNS API in bsdsocket.library
+	 * This exists in Roadshow
+	 */
+	
+	struct List *dnslist = ObtainDomainNameServerList();
+	struct DomainNameServerNode *node;
+	struct DomainNameServerNode *nnode;
+			
+	if(dnslist == NULL) {
+	  return ARES_ENOMEM;
+	}
+	
+	if(IsListEmpty(dnslist)) {
+	  /* No DNS entries */
+	  return ARES_SUCCESS;
+	}
+	
+	node = (struct DomainNameServerNode *)GetHead(dnslist);
 
-      ISocket->SocketBaseTags(SBTM_GETREF(SBTC_HAVE_DNS_API), (ULONG)&dnsapi,
-                     TAG_DONE);
+	do {
+	  nnode = (struct DomainNameServerNode *)GetSucc((struct MinNode *)node);
+	  
+	  status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig, node->dnsn_Address,
+									   ARES_TRUE);
 
-      if(dnsapi) {
-        /* Use the DNS API in bsdsocket.library
-         * This exists in Roadshow
-         */
-        
-        struct List *dnslist = ISocket->ObtainDomainNameServerList();
-        struct DomainNameServerNode *node;
-        struct DomainNameServerNode *nnode;
-                
-        if(dnslist == NULL) {
-          IExec->DropInterface(ISocket);
-          IExec->CloseLibrary(base);
-          return ARES_ENOMEM;
-        }
-        
-        if(IsListEmpty(dnslist)) {
-          /* No DNS entries */
-          IExec->DropInterface(ISocket);
-          IExec->CloseLibrary(base);
-          return ARES_SUCCESS;
-        }
-        
-        node = (struct DomainNameServerNode *)IExec->GetHead(dnslist);
+	  if (status != ARES_SUCCESS) {
+		return status;
+	  }
 
-        do {
-          nnode = (struct DomainNameServerNode *)IExec->GetSucc((struct MinNode *)node);
-          
-          status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig, node->dnsn_Address,
-                                           ARES_TRUE);
+	} while((node = nnode));
 
-          if (status != ARES_SUCCESS) {
-            IExec->DropInterface(ISocket);
-            IExec->CloseLibrary(base);
-            return status;
-          }
-    
-        } while((node = nnode));
-
-        ISocket->ReleaseDomainNameServerList(dnslist);
-        
-      } else {
-        /* DNS API does not exist */
-        IExec->DropInterface(ISocket);
-        IExec->CloseLibrary(base);
-        return ARES_ENOMEM;
-      }
-
-      IExec->DropInterface(ISocket);
-    }
-
-    IExec->CloseLibrary(base);
+	ReleaseDomainNameServerList(dnslist);
+	
+  } else {
+	/* DNS API does not exist */
+	return ARES_ENOMEM;
   }
 
   return ARES_SUCCESS;
