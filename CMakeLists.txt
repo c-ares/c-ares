@@ -159,7 +159,7 @@ IF (APPLE)
 return 0;
 	}
 	"
-	IOS)
+	CARES_IOS)
 
 	CHECK_C_SOURCE_COMPILES ("
 #include <stdio.h>
@@ -171,7 +171,7 @@ return 0;
 return 0;
 	}
 	"
-	IOS_V10)
+	CARES_IOS_V10)
 
 	CHECK_C_SOURCE_COMPILES ("
 #include <stdio.h>
@@ -186,7 +186,7 @@ return 0;
 return 0;
 	}
 	"
-	MACOS_V1012)
+	CARES_MACOS_V1012)
 ENDIF ()
 
 IF (ZOS AND HAVE_LIBRESOLV)
@@ -431,7 +431,7 @@ CHECK_SYMBOL_EXISTS (SO_NONBLOCK     "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_SO_NONB
 # say clock_gettime exists, it is a weak symbol that only exists in iOS10/MacOS10.12 and will
 # cause a crash at runtime when running on older versions.  Skip finding CLOCK_MONOTONIC on older
 # OS's.
-IF ((NOT APPLE) OR IOS_V10 OR MACOS_V1012)
+IF ((NOT APPLE) OR CARES_IOS_V10 OR CARES_MACOS_V1012)
 	CHECK_SYMBOL_EXISTS (CLOCK_MONOTONIC "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_CLOCK_GETTIME_MONOTONIC)
 ENDIF ()
 
