@@ -1,6 +1,6 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
-CMAKE_MINIMUM_REQUIRED (VERSION 3.5.0)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.5.0...3.10.0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
@@ -12,7 +12,7 @@ INCLUDE (CheckCSourceCompiles)
 INCLUDE (CheckStructHasMember)
 INCLUDE (CheckLibraryExists)
 
-PROJECT (c-ares LANGUAGES C VERSION "1.33.1" )
+PROJECT (c-ares LANGUAGES C VERSION "1.34.5" )
 
 # Set this version before release
 SET (CARES_VERSION "${PROJECT_VERSION}")
@@ -30,7 +30,7 @@ INCLUDE (GNUInstallDirs) # include this *AFTER* PROJECT(), otherwise paths are w
 # For example, a version of 4:0:2 would generate output such as:
 #    libname.so   -> libname.so.2
 #    libname.so.2 -> libname.so.2.2.0
-SET (CARES_LIB_VERSIONINFO "20:1:18")
+SET (CARES_LIB_VERSIONINFO "21:4:19")
 
 
 OPTION (CARES_STATIC        "Build as a static library"                                             OFF)
@@ -43,16 +43,8 @@ OPTION (CARES_BUILD_TOOLS   "Build tools"                                       
 OPTION (CARES_SYMBOL_HIDING "Hide private symbols in shared libraries"                              OFF)
 OPTION (CARES_THREADS       "Build with thread-safety support"                                      ON)
 OPTION (CARES_COVERAGE      "Build for code coverage"                                               OFF)
+OPTION (CARES_WERROR        "Treat compiler warnings on the c-ares library as errors"               OFF)
 SET    (CARES_RANDOM_FILE "/dev/urandom" CACHE STRING "Suitable File / Device Path for entropy, such as /dev/urandom")
-
-
-# Tests require a C++14 compiler
-IF (CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS)
-	set(CMAKE_CXX_STANDARD 14)
-	set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-	set(CMAKE_CXX_EXTENSIONS FALSE)
-	enable_language(CXX)
-ENDIF ()
 
 # Tests require static to be enabled on Windows to be able to access otherwise hidden symbols
 IF ((CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS) AND (NOT CARES_STATIC) AND WIN32)
@@ -62,6 +54,30 @@ IF ((CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS) AND (NOT CARES_STATIC) AN
 ENDIF ()
 
 INCLUDE (EnableWarnings)
+
+# Optionally treat warnings as errors for the c-ares library itself.  This is
+# applied per-target (see cares_set_werror() usage) rather than globally so it
+# does not affect the test/fuzz harnesses (which carry their own warnings) or
+# CMake's own compiler feature checks.  Enabled in CI only on toolchains known
+# to be free of spurious warnings at our high warning levels.
+FUNCTION (cares_set_werror target)
+	IF (NOT CARES_WERROR)
+		RETURN ()
+	ENDIF ()
+	IF (MSVC)
+		TARGET_COMPILE_OPTIONS (${target} PRIVATE /WX)
+	ELSE ()
+		TARGET_COMPILE_OPTIONS (${target} PRIVATE -Werror)
+		# Modern libc headers (e.g. glibc <string.h>) use the C11 _Generic
+		# keyword for const-correctness of strchr()/memchr()/etc.  Clang flags
+		# that as a C11 extension under our C90 + -Wpedantic build even though it
+		# originates in a system header at our call sites.  It is not something
+		# we can fix in our own code, so warn but do not fail on it.
+		IF (CMAKE_C_COMPILER_ID MATCHES "Clang")
+			TARGET_COMPILE_OPTIONS (${target} PRIVATE -Wno-error=c11-extensions)
+		ENDIF ()
+	ENDIF ()
+ENDFUNCTION ()
 
 IF (MSVC)
 	# allow linking against the static runtime library in msvc
@@ -263,19 +279,23 @@ ENDIF ()
 # Set system-specific compiler flags
 IF (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	LIST (APPEND SYSFLAGS -D_DARWIN_C_SOURCE)
-ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Android")
 	LIST (APPEND SYSFLAGS -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700)
 ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
 	LIST (APPEND SYSFLAGS -D__EXTENSIONS__ -D_REENTRANT -D_XOPEN_SOURCE=600)
 ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "AIX")
 	LIST (APPEND SYSFLAGS -D_ALL_SOURCE -D_XOPEN_SOURCE=700 -D_USE_IRS)
-ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR CMAKE_SYSTEM_NAME STREQUAL "MidnightBSD")
 	# Don't define _XOPEN_SOURCE on FreeBSD, it actually reduces visibility instead of increasing it
+ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "QNX")
+	LIST (APPEND SYSFLAGS -D_QNX_SOURCE)
 ELSEIF (WIN32)
-	LIST (APPEND SYSFLAGS -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_WIN32_WINNT=0x0602)
+	LIST (APPEND SYSFLAGS -DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE)
+	IF (NOT CMAKE_C_FLAGS MATCHES ".*-D_WIN32_WINNT=.*")
+		LIST (APPEND SYSFLAGS -D_WIN32_WINNT=0x0602)
+	ENDIF ()
 ENDIF ()
 ADD_DEFINITIONS(${SYSFLAGS})
-
 
 
 # Tell C-Ares about libraries to depend on
@@ -308,9 +328,20 @@ ENDIF ()
 SET (ORIG_CMAKE_REQUIRED_DEFINITIONS ${CMAKE_REQUIRED_DEEFINITIONS})
 SET (ORIG_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
 SET (ORIG_CMAKE_EXTRA_INCLUDE_FILES ${CMAKE_EXTRA_INCLUDE_FILES})
+SET (ORIG_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 
 SET (CMAKE_REQUIRED_DEFINITIONS ${SYSFLAGS})
 LIST (APPEND CMAKE_REQUIRED_LIBRARIES ${CARES_DEPENDENT_LIBS})
+
+# Apple SDKs declare functions newer than the deployment target.  The build
+# rejects calls to them with -Werror=partial-availability, so the symbol
+# checks must too, or they report functions the build cannot use.
+IF (APPLE)
+	CHECK_C_COMPILER_FLAG (-Werror=partial-availability HAVE_WERROR_PARTIAL_AVAILABILITY)
+	IF (HAVE_WERROR_PARTIAL_AVAILABILITY)
+		SET (CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=partial-availability")
+	ENDIF ()
+ENDIF ()
 
 MACRO (CARES_EXTRAINCLUDE_IFSET var include)
 	IF (${var})
@@ -385,7 +416,7 @@ CARES_TYPE_EXISTS ("struct in6_addr"         HAVE_STRUCT_IN6_ADDR)
 CARES_TYPE_EXISTS ("struct sockaddr_in6"     HAVE_STRUCT_SOCKADDR_IN6)
 CARES_TYPE_EXISTS ("struct sockaddr_storage" HAVE_STRUCT_SOCKADDR_STORAGE)
 CARES_TYPE_EXISTS ("struct timeval"          HAVE_STRUCT_TIMEVAL)
-
+CARES_TYPE_EXISTS ("OVERLAPPED_ENTRY"        HAVE_OVERLAPPED_ENTRY)
 
 # Check for preprocessor defines
 CHECK_SYMBOL_EXISTS (AF_INET6        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_AF_INET6)
@@ -406,6 +437,7 @@ ENDIF ()
 
 CHECK_STRUCT_HAS_MEMBER("struct sockaddr_in6" sin6_scope_id "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID LANGUAGE C)
 
+CHECK_SYMBOL_EXISTS (strnlen         "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_STRNLEN)
 CHECK_SYMBOL_EXISTS (memmem          "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_MEMMEM)
 CHECK_SYMBOL_EXISTS (closesocket     "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_CLOSESOCKET)
 CHECK_SYMBOL_EXISTS (CloseSocket     "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_CLOSESOCKET_CAMEL)
@@ -423,10 +455,15 @@ CHECK_SYMBOL_EXISTS (getservbyname_r "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_GETSERV
 CHECK_SYMBOL_EXISTS (gettimeofday    "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_GETTIMEOFDAY)
 CHECK_SYMBOL_EXISTS (if_indextoname  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_IF_INDEXTONAME)
 CHECK_SYMBOL_EXISTS (if_nametoindex  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_IF_NAMETOINDEX)
+CHECK_SYMBOL_EXISTS (GetBestRoute2   "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_GETBESTROUTE2)
+CHECK_SYMBOL_EXISTS (WSAIoctl        "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_WSAIOCTL)
+CHECK_SYMBOL_EXISTS (GetQueuedCompletionStatusEx  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_GETQUEUEDCOMPLETIONSTATUSEX)
 CHECK_SYMBOL_EXISTS (ConvertInterfaceIndexToLuid  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_CONVERTINTERFACEINDEXTOLUID)
 CHECK_SYMBOL_EXISTS (ConvertInterfaceLuidToNameA  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_CONVERTINTERFACELUIDTONAMEA)
 CHECK_SYMBOL_EXISTS (NotifyIpInterfaceChange      "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_NOTIFYIPINTERFACECHANGE)
 CHECK_SYMBOL_EXISTS (RegisterWaitForSingleObject  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_REGISTERWAITFORSINGLEOBJECT)
+CHECK_SYMBOL_EXISTS (RegNotifyChangeKeyValue  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_REGNOTIFYCHANGEKEYVALUE)
+CHECK_SYMBOL_EXISTS (SetFileCompletionNotificationModes  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_SETFILECOMPLETIONNOTIFICATIONMODES)
 
 
 CHECK_SYMBOL_EXISTS (inet_net_pton   "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_INET_NET_PTON)
@@ -472,6 +509,7 @@ CHECK_FUNCTION_EXISTS (__system_property_get HAVE___SYSTEM_PROPERTY_GET)
 SET (CMAKE_REQUIRED_DEFINITIONS ${ORIG_CMAKE_REQUIRED_DEEFINITIONS})
 SET (CMAKE_REQUIRED_LIBRARIES ${ORIG_CMAKE_REQUIRED_LIBRARIES})
 SET (CMAKE_EXTRA_INCLUDE_FILES ${ORIG_CMAKE_EXTRA_INCLUDE_FILES})
+SET (CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
 
 
 ################################################################################
@@ -500,11 +538,7 @@ IF (CARES_THREADS)
 			CARES_EXTRAINCLUDE_IFSET (HAVE_PTHREAD_H                       pthread.h)
 			CARES_EXTRAINCLUDE_IFSET (HAVE_PTHREAD_NP_H                    pthread_np.h)
 			CHECK_SYMBOL_EXISTS (pthread_init  "${CMAKE_EXTRA_INCLUDE_FILES}" HAVE_PTHREAD_INIT)
-			# Make sure libcares.pc.cmake knows about thread libraries on static builds
-			# The variable set by FIND_PACKAGE(Threads) has a -l prefix on it, we need
-			# to strip that first since CARES_DEPENDENT_LIBS doesn't expect that.
-			STRING (REPLACE "-l" "" CARES_THREAD_LIBRARY "${CMAKE_THREAD_LIBS_INIT}")
-			LIST (APPEND CARES_DEPENDENT_LIBS ${CARES_THREAD_LIBRARY})
+			LIST (APPEND CARES_DEPENDENT_LIBS ${CMAKE_THREAD_LIBS_INIT})
 		ELSE ()
 			MESSAGE (WARNING "Threading support not found, disabling...")
 			SET (CARES_THREADS OFF)
@@ -628,6 +662,7 @@ IF (HAVE_GETADDRINFO)
 		CMAKE_SYSTEM_NAME STREQUAL "NetBSD" OR
 		CMAKE_SYSTEM_NAME STREQUAL "SunOS" OR
 		CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+		CMAKE_SYSTEM_NAME STREQUAL "MidnightBSD" OR
 		CMAKE_SYSTEM_NAME STREQUAL "AIX" OR
 		WIN32)
 			SET (HAVE_GETADDRINFO_THREADSAFE 1)
@@ -774,7 +809,10 @@ IF (CARES_INSTALL)
 
 	# pkgconfig support for static builds
 	FOREACH (LIB ${CARES_DEPENDENT_LIBS})
-		SET (CARES_PRIVATE_LIBS "${CARES_PRIVATE_LIBS} -l${LIB}")
+		IF (NOT LIB MATCHES "^-")
+			SET (LIB "-l${LIB}")
+		ENDIF ()
+		SET (CARES_PRIVATE_LIBS "${CARES_PRIVATE_LIBS} ${LIB}")
 	ENDFOREACH ()
 
 	CONFIGURE_FILE("libcares.pc.cmake" "libcares.pc" @ONLY)

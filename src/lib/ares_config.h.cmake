@@ -145,6 +145,18 @@
 /* Define to 1 if you have the `if_nametoindex' function. */
 #cmakedefine HAVE_IF_NAMETOINDEX 1
 
+/* Define to 1 if you have the `GetBestRoute2' function. */
+#cmakedefine HAVE_GETBESTROUTE2 1
+
+/* Define to 1 if you have the `WSAIoctl' function. */
+#cmakedefine HAVE_WSAIOCTL 1
+
+/* Define to 1 if you have the `OVERLAPPED_ENTRY' data type. */
+#cmakedefine HAVE_OVERLAPPED_ENTRY 1
+
+/* Define to 1 if you have the `GetQueuedCompletionStatusEx' function. */
+#cmakedefine HAVE_GETQUEUEDCOMPLETIONSTATUSEX 1
+
 /* Define to 1 if you have the `ConvertInterfaceIndexToLuid' function. */
 #cmakedefine HAVE_CONVERTINTERFACEINDEXTOLUID 1
 
@@ -156,6 +168,12 @@
 
 /* Define to 1 if you have the `RegisterWaitForSingleObject' function. */
 #cmakedefine HAVE_REGISTERWAITFORSINGLEOBJECT 1
+
+/* Define to 1 if you have the `RegNotifyChangeKeyValue' function. */
+#cmakedefine HAVE_REGNOTIFYCHANGEKEYVALUE 1
+
+/* Define to 1 if you have the `SetFileCompletionNotificationModes' function. */
+#cmakedefine HAVE_SETFILECOMPLETIONNOTIFICATIONMODES 1
 
 /* Define to 1 if you have a IPv6 capable working inet_net_pton function. */
 #cmakedefine HAVE_INET_NET_PTON 1
@@ -256,6 +274,9 @@
 
 /* Define to 1 if you have the <signal.h> header file. */
 #cmakedefine HAVE_SIGNAL_H 1
+
+/* Define to 1 if you have the strnlen function. */
+#cmakedefine HAVE_STRNLEN 1
 
 /* Define to 1 if your struct sockaddr_in6 has sin6_scope_id. */
 #cmakedefine HAVE_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID 1

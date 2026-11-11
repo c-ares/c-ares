@@ -15,6 +15,14 @@ IF (CARES_SHARED)
 	# Include resource file in windows builds for versioned DLLs
 	IF (WIN32)
 		TARGET_SOURCES (${PROJECT_NAME} PRIVATE cares.rc)
+		
+		# Check for use of llvm-rc (implies clang is being used). We need to set the
+		# compile flags to use the correct codepage for the resource compiler.
+		# This is needed for the copyright symbol to be encoded correctly.
+		# The default codepage is 1252 (Windows Latin-1) but llvm-rc defaults to UTF-8.
+		if (CMAKE_RC_COMPILER MATCHES "llvm-rc")
+			set_source_files_properties(cares.rc PROPERTIES COMPILE_FLAGS "/C 1252")
+		endif()
 	ENDIF()
 
 	# Convert CARES_LIB_VERSIONINFO libtool version format into VERSION and SOVERSION
@@ -58,6 +66,8 @@ IF (CARES_SHARED)
 
 	TARGET_COMPILE_DEFINITIONS (${PROJECT_NAME} PRIVATE HAVE_CONFIG_H=1 CARES_BUILDING_LIBRARY)
 
+	cares_set_werror (${PROJECT_NAME})
+
 	TARGET_LINK_LIBRARIES (${PROJECT_NAME}
 		PUBLIC ${CARES_DEPENDENT_LIBS}
 		PRIVATE ${CMAKE_THREAD_LIBS_INIT}
@@ -92,10 +102,22 @@ IF (CARES_STATIC)
 
 	SET_TARGET_PROPERTIES (${LIBNAME} PROPERTIES
 		EXPORT_NAME                  cares${STATIC_SUFFIX}
-		OUTPUT_NAME                  cares${STATIC_SUFFIX}
 		COMPILE_PDB_NAME             cares${STATIC_SUFFIX}
 		C_STANDARD                   90
 	)
+
+	# On Windows, the output name should have a static suffix since otherwise
+	# we would have conflicting output names (libcares.lib) for the link
+	# library.
+	# However on Unix-like systems, we typically have something like
+	# libcares.so  for shared libraries  and libcares.a for static
+	# libraries, so these don't conflict.
+	# This behavior better emulates what happens with autotools builds
+	IF (WIN32)
+		SET_TARGET_PROPERTIES(${LIBNAME} PROPERTIES OUTPUT_NAME cares${STATIC_SUFFIX})
+	ELSE ()
+		SET_TARGET_PROPERTIES(${LIBNAME} PROPERTIES OUTPUT_NAME cares)
+	ENDIF()
 
 	IF (ANDROID)
 		SET_TARGET_PROPERTIES (${LIBNAME} PROPERTIES C_STANDARD 99)
@@ -115,6 +137,8 @@ IF (CARES_STATIC)
 	)
 
 	TARGET_COMPILE_DEFINITIONS (${LIBNAME} PRIVATE HAVE_CONFIG_H=1 CARES_BUILDING_LIBRARY)
+
+	cares_set_werror (${LIBNAME})
 
 	# Only matters on Windows
 	IF (WIN32 OR CYGWIN)

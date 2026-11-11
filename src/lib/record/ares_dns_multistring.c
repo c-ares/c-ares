@@ -146,6 +146,18 @@ ares_status_t ares_dns_multistring_add_own(ares_dns_multistring_t *strs,
     return status;
   }
 
+  /* Issue #921, ares_dns_multistring_get() doesn't have a way to indicate
+   * success or fail on a zero-length string which is actually valid.  So we
+   * are going to allocate a 1-byte buffer to use as a placeholder in this
+   * case */
+  if (str == NULL) {
+    str = ares_malloc_zero(1);
+    if (str == NULL) {
+      ares_array_remove_last(strs->strs);
+      return ARES_ENOMEM;
+    }
+  }
+
   data->data = str;
   data->len  = len;
 
@@ -215,7 +227,9 @@ const unsigned char *ares_dns_multistring_combined(ares_dns_multistring_t *strs,
 
   strs->cache_str =
     (unsigned char *)ares_buf_finish_str(buf, &strs->cache_str_len);
-  if (strs->cache_str != NULL) {
+  if (strs->cache_str == NULL) {
+    ares_buf_destroy(buf);
+  } else {
     strs->cache_invalidated = ARES_FALSE;
   }
   *len = strs->cache_str_len;
@@ -252,34 +266,35 @@ ares_status_t ares_dns_multistring_parse_buf(ares_buf_t *buf,
       break; /* LCOV_EXCL_LINE: DefensiveCoding */
     }
 
-    if (len) {
-      /* When used by the _str() parser, it really needs to be validated to
-       * be a valid printable ascii string.  Do that here */
-      if (validate_printable && ares_buf_len(buf) >= len) {
-        size_t      mylen;
-        const char *data = (const char *)ares_buf_peek(buf, &mylen);
-        if (!ares_str_isprint(data, len)) {
-          status = ARES_EBADSTR;
-          break;
-        }
-      }
 
-      if (strs != NULL) {
-        unsigned char *data = NULL;
+    /* When used by the _str() parser, it really needs to be validated to
+     * be a valid printable ascii string.  Do that here */
+    if (len && validate_printable && ares_buf_len(buf) >= len) {
+      size_t      mylen;
+      const char *data = (const char *)ares_buf_peek(buf, &mylen);
+      if (!ares_str_isprint(data, len)) {
+        status = ARES_EBADSTR;
+        break;
+      }
+    }
+
+    if (strs != NULL) {
+      unsigned char *data = NULL;
+      if (len) {
         status = ares_buf_fetch_bytes_dup(buf, len, ARES_TRUE, &data);
         if (status != ARES_SUCCESS) {
           break;
         }
-        status = ares_dns_multistring_add_own(*strs, data, len);
-        if (status != ARES_SUCCESS) {
-          ares_free(data);
-          break;
-        }
-      } else {
-        status = ares_buf_consume(buf, len);
-        if (status != ARES_SUCCESS) {
-          break;
-        }
+      }
+      status = ares_dns_multistring_add_own(*strs, data, len);
+      if (status != ARES_SUCCESS) {
+        ares_free(data);
+        break;
+      }
+    } else {
+      status = ares_buf_consume(buf, len);
+      if (status != ARES_SUCCESS) {
+        break;
       }
     }
   }

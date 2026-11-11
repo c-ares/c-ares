@@ -1,0 +1,28 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+#
+# c-ares has no external build/runtime dependencies to track, so the only
+# ecosystem Dependabot manages here is our GitHub Actions.  It keeps the
+# SHA-pinned actions (and their "# vX.Y.Z" comments) current.  All bumps are
+# grouped into a single monthly PR; a companion workflow
+# (.github/workflows/dependabot-automerge.yml) enables auto-merge so they land
+# automatically once the required "All Checks" status passes.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    # Don't bump to a release until it has been public for a week.  Since these
+    # PRs auto-merge, this avoids automatically pulling in a just-published
+    # (possibly compromised or quickly-yanked) action version.  github-actions
+    # only supports default-days (not the semver-* granular fields).
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "ci"
+    open-pull-requests-limit: 5

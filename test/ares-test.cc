@@ -250,6 +250,7 @@ std::vector<std::pair<int, bool>> families_modes = both_families_both_modes;
 unsigned long long LibraryTest::fails_ = 0;
 std::map<size_t, int> LibraryTest::size_fails_;
 std::mutex            LibraryTest::lock_;
+bool LibraryTest::failsend_ = false;
 
 void ares_sleep_time(unsigned int ms)
 {
@@ -340,7 +341,29 @@ void ProcessWork(ares_channel_t *channel,
 }
 
 
+void LibraryTest::SetFailSend() {
+  failsend_ = true;
+}
+
 // static
+ares_ssize_t LibraryTest::ares_sendv_fail(ares_socket_t socket, const struct iovec *vec, int len, void *user_data)
+{
+  (void)user_data;
+
+  if (failsend_) {
+#ifdef USE_WINSOCK
+    WSASetLastError(WSAECONNREFUSED);
+#else
+    errno = ECONNREFUSED;
+#endif
+    failsend_ = false;
+    return -1;
+  }
+
+  return send(socket, (const char *)vec[0].iov_base, vec[0].iov_len, 0);
+}
+
+
 void LibraryTest::SetAllocFail(int nth) {
   lock_.lock();
   assert(nth > 0);
@@ -354,6 +377,15 @@ void LibraryTest::SetAllocSizeFail(size_t size) {
   lock_.lock();
   size_fails_[size]++;
   lock_.unlock();
+}
+
+// static
+bool LibraryTest::AllocSizeFailPending(size_t size) {
+  lock_.lock();
+  std::map<size_t, int>::const_iterator it = size_fails_.find(size);
+  bool pending = (it != size_fails_.end() && it->second > 0);
+  lock_.unlock();
+  return pending;
 }
 
 // static
@@ -420,11 +452,14 @@ void DefaultChannelModeTest::Process(unsigned int cancel_ms) {
 }
 
 MockServer::MockServer(int family, unsigned short port)
-  : udpport_(port), tcpport_(port), qid_(-1) {
+  : udpport_(port), tcpport_(port), qid_(-1), disconnect_after_reply_(false) {
   reply_ = nullptr;
   // Create a TCP socket to receive data on.
   tcp_data_ = NULL;
   tcp_data_len_ = 0;
+  last_fd_ = ARES_SOCKET_BAD;
+  memset(&last_addr_, 0, sizeof(last_addr_));
+  last_addrlen_ = 0;
   tcpfd_ = socket(family, SOCK_STREAM, 0);
   EXPECT_NE(ARES_SOCKET_BAD, tcpfd_);
   int optval = 1;
@@ -454,6 +489,18 @@ MockServer::MockServer(int family, unsigned short port)
 #if defined(SO_NOSIGPIPE)
   setsockopt(udpfd_, SOL_SOCKET, SO_NOSIGPIPE, (void *)&optval, sizeof(optval));
 #endif
+  /* This harness is single-threaded and drains one datagram per event-loop
+   * iteration, but a client (e.g. MockUDPMaxQueriesTest) can burst dozens of
+   * query datagrams into this single UDP socket before we read any of them.
+   * On hosts with a small default UDP receive buffer (e.g. QNX under QEMU)
+   * the excess datagrams are silently dropped, so those queries time out and
+   * spawn extra sockets, breaking tests that assert an exact socket count.
+   * Enlarge the receive buffer so the whole burst is buffered until we drain
+   * it (the OS clamps the request to its own maximum). */
+  {
+    int rcvbuf = 1024 * 1024;
+    setsockopt(udpfd_, SOL_SOCKET, SO_RCVBUF, BYTE_CAST &rcvbuf, sizeof(rcvbuf));
+  }
 
   // Bind the sockets to the given port.
   if (family == AF_INET) {
@@ -621,6 +668,17 @@ void MockServer::ProcessFD(ares_socket_t fd) {
     if (connfd == ARES_SOCKET_BAD) {
       std::cerr << "Error accepting connection on fd " << fd << std::endl;
     } else {
+      /* This test harness is single-threaded: the mock server runs in the same
+       * thread as the c-ares client, so the client can only drain a socket
+       * between our (blocking) sends, never during one.  A full-size TCP reply
+       * (MakeMaxReadTcpAReply() is a 65535-octet frame) therefore deadlocks a
+       * blocking send() on platforms whose default socket buffers can't hold
+       * the whole frame -- e.g. OpenBSD's ~16k default -- because send() waits
+       * for a reader that cannot run.  Enlarge the send buffer so the entire
+       * frame fits locally and send() returns without a concurrent reader. */
+      int sndbuf = 128 * 1024;
+      setsockopt(connfd, SOL_SOCKET, SO_SNDBUF, BYTE_CAST &sndbuf,
+                 sizeof(sndbuf));
       connfds_.insert(connfd);
     }
     return;
@@ -676,6 +734,50 @@ std::set<ares_socket_t> MockServer::fds() const {
   return result;
 }
 
+void MockServer::SendData(ares_socket_t fd, struct sockaddr_storage *addr,
+                          ares_socklen_t addrlen, int qid,
+                          std::vector<byte> reply) {
+  int flags = 0;
+
+  if (reply.size() >=  2) {
+    // Overwrite the query ID if space to do so.
+    reply[0] = (byte)((qid >> 8) & 0xff);
+    reply[1] = (byte)(qid & 0xff);
+  }
+  if (verbose) {
+    std::cerr << "sending reply " << PacketToString(reply)
+              << " on port " << ((fd == udpfd_) ? udpport_ : tcpport_)
+              << ":" << getaddrport(addr) << std::endl;
+  }
+
+  // Prefix with 2-byte length if TCP.
+  if (fd != udpfd_) {
+    int len = (int)reply.size();
+    std::vector<byte> vlen = {(byte)((len & 0xFF00) >> 8), (byte)(len & 0xFF)};
+    reply.insert(reply.begin(), vlen.begin(), vlen.end());
+    // Also, don't bother with the destination address.
+    addr = nullptr;
+    addrlen = 0;
+  }
+
+#ifdef MSG_NOSIGNAL
+  flags |= MSG_NOSIGNAL;
+#endif
+
+  ares_ssize_t rc = (ares_ssize_t)sendto(fd, BYTE_CAST reply.data(), (SEND_TYPE_ARG3)reply.size(), flags,
+                                         (struct sockaddr *)addr, addrlen);
+  if (rc < static_cast<ares_ssize_t>(reply.size())) {
+    std::cerr << "Failed to send full reply, rc=" << rc << std::endl;
+  }
+}
+
+void MockServer::SendUnsolicited(const DNSPacket *reply, unsigned short qid) {
+  ASSERT_NE(ARES_SOCKET_BAD, last_fd_);
+  ASSERT_TRUE(last_fd_ == udpfd_ || connfds_.count(last_fd_) != 0)
+    << "the most recent requester's connection has closed";
+  SendData(last_fd_, &last_addr_, last_addrlen_, qid, reply->data());
+}
+
 void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
                                 ares_socklen_t addrlen, const std::vector<byte> &req,
                                 const std::string &reqstr,
@@ -683,8 +785,13 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
 
   /* DNS 0x20 will mix case, do case-insensitive matching of name in request */
   char lower_name[256];
-  int flags = 0;
+
   arestest_strtolower(lower_name, name, sizeof(lower_name));
+
+  // Remember the requester so SendUnsolicited() can reach it.
+  last_fd_ = fd;
+  memcpy(&last_addr_, addr, sizeof(last_addr_));
+  last_addrlen_ = addrlen;
 
   // Before processing, let gMock know the request is happening.
   OnRequest(lower_name, rrtype);
@@ -712,43 +819,22 @@ void MockServer::ProcessRequest(ares_socket_t fd, struct sockaddr_storage* addr,
     return;
   }
 
-  // Make a local copy of the current pending reply.
-  std::vector<byte> reply = exact_reply_;
-
   if (qid_ >= 0) {
     // Use the explicitly specified query ID.
     qid = qid_;
   }
-  if (reply.size() >=  2) {
-    // Overwrite the query ID if space to do so.
-    reply[0] = (byte)((qid >> 8) & 0xff);
-    reply[1] = (byte)(qid & 0xff);
-  }
-  if (verbose) {
-    std::cerr << "sending reply " << PacketToString(reply)
-              << " on port " << ((fd == udpfd_) ? udpport_ : tcpport_)
-              << ":" << getaddrport(addr) << std::endl;
+
+  SendData(fd, addr, addrlen, qid, exact_reply_);
+
+  if (disconnect_after_reply_ && fd != udpfd_) {
+    disconnect_after_reply_ = false;
+    connfds_.erase(fd);
+    sclose(fd);
+    free(tcp_data_);
+    tcp_data_     = NULL;
+    tcp_data_len_ = 0;
   }
 
-  // Prefix with 2-byte length if TCP.
-  if (fd != udpfd_) {
-    int len = (int)reply.size();
-    std::vector<byte> vlen = {(byte)((len & 0xFF00) >> 8), (byte)(len & 0xFF)};
-    reply.insert(reply.begin(), vlen.begin(), vlen.end());
-    // Also, don't bother with the destination address.
-    addr = nullptr;
-    addrlen = 0;
-  }
-
-#ifdef MSG_NOSIGNAL
-  flags |= MSG_NOSIGNAL;
-#endif
-
-  ares_ssize_t rc = (ares_ssize_t)sendto(fd, BYTE_CAST reply.data(), (SEND_TYPE_ARG3)reply.size(), flags,
-                  (struct sockaddr *)addr, addrlen);
-  if (rc < static_cast<ares_ssize_t>(reply.size())) {
-    std::cerr << "Failed to send full reply, rc=" << rc << std::endl;
-  }
 }
 
 // static
@@ -888,12 +974,16 @@ void MockChannelOptsTest::ProcessFD(ares_socket_t fd) {
   }
 }
 
-void MockChannelOptsTest::Process(unsigned int cancel_ms) {
+void MockChannelOptsTest::ProcessAltChannel(ares_channel_t *chan, unsigned int cancel_ms) {
   using namespace std::placeholders;
-  ProcessWork(channel_,
+  ProcessWork(chan,
               std::bind(&MockChannelOptsTest::fds, this),
               std::bind(&MockChannelOptsTest::ProcessFD, this, _1),
               cancel_ms);
+}
+
+void MockChannelOptsTest::Process(unsigned int cancel_ms) {
+  ProcessAltChannel(channel_, cancel_ms);
 }
 
 void MockEventThreadOptsTest::Process(unsigned int cancel_ms) {

@@ -2,10 +2,10 @@ dnl Copyright (C) The c-ares project and its contributors
 dnl SPDX-License-Identifier: MIT
 AC_PREREQ([2.69])
 
-AC_INIT([c-ares], [1.33.1],
+AC_INIT([c-ares], [1.34.5],
   [c-ares mailing list: http://lists.haxx.se/listinfo/c-ares])
 
-CARES_VERSION_INFO="20:1:18"
+CARES_VERSION_INFO="21:4:19"
 dnl This flag accepts an argument of the form current[:revision[:age]]. So,
 dnl passing -version-info 3:12:1 sets current to 3, revision to 12, and age to
 dnl 1.
@@ -40,7 +40,8 @@ AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
-AX_CXX_COMPILE_STDCXX_14([noext],[optional])
+AX_CXX_COMPILE_STDCXX(14,[noext],[optional])
+AX_CXX_COMPILE_STDCXX(17,[noext],[optional])
 AM_INIT_AUTOMAKE([foreign subdir-objects 1.9.6])
 LT_INIT([win32-dll,pic,disable-fast-install,aix-soname=svr4])
 AC_LANG([C])
@@ -245,17 +246,24 @@ AC_SUBST(CARES_SYMBOL_HIDING_CFLAG)
 if test "$enable_warnings" = "yes"; then
   AX_APPEND_COMPILE_FLAGS([-Wall -Wextra -Waggregate-return -Wcast-align -Wcast-qual -Wconversion -Wdeclaration-after-statement -Wdouble-promotion -Wfloat-equal -Wformat-security -Winit-self -Wjump-misses-init -Wlogical-op -Wmissing-braces -Wmissing-declarations -Wmissing-format-attribute -Wmissing-include-dirs -Wmissing-prototypes -Wnested-externs -Wno-coverage-mismatch -Wold-style-definition -Wpacked -Wpedantic -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-conversion -Wstrict-overflow -Wstrict-prototypes -Wtrampolines -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -Wwrite-strings -Werror=implicit-int -Werror=implicit-function-declaration -Werror=partial-availability -Wno-long-long ],
     [AM_CFLAGS], [-Werror])
-
-  dnl Android requires c99, all others should use c90
-  case $host_os in
-    *android*)
-      AX_APPEND_COMPILE_FLAGS([-std=c99], [AM_CFLAGS], [-Werror])
-      ;;
-    *)
-      AX_APPEND_COMPILE_FLAGS([-std=c90], [AM_CFLAGS], [-Werror])
-      ;;
-  esac
 fi
+
+dnl Android and QNX require c99, all others should use c90
+case $host_os in
+  *qnx*|*android*)
+    AX_APPEND_COMPILE_FLAGS([-std=c99], [AM_CFLAGS], [-Werror])
+    ;;
+  *)
+    AX_APPEND_COMPILE_FLAGS([-std=c90], [AM_CFLAGS], [-Werror])
+    ;;
+esac
+
+dnl QNX needs -D_QNX_SOURCE
+case $host_os in
+  *qnx*)
+    AX_APPEND_COMPILE_FLAGS([-D_QNX_SOURCE], [AM_CPPFLAGS], [-Werror])
+  ;;
+esac
 
 if test "$ax_cv_c_compiler_vendor" = "intel"; then
   AX_APPEND_COMPILE_FLAGS([-shared-intel], [AM_CFLAGS])
@@ -373,7 +381,7 @@ AS_HELP_STRING([--enable-libgcc],[use libgcc when linking]),
 dnl check for a few basic system headers we need.  It would be nice if we could
 dnl split these on separate lines, but for some reason autotools on Windows doesn't
 dnl allow this, even tried ending lines with a backslash.
-AC_CHECK_HEADERS([malloc.h memory.h AvailabilityMacros.h sys/types.h sys/time.h sys/select.h sys/socket.h sys/filio.h sys/ioctl.h sys/param.h sys/uio.h sys/random.h sys/event.h sys/epoll.h assert.h iphlpapi.h netioapi.h netdb.h netinet/in.h netinet6/in6.h netinet/tcp.h net/if.h ifaddrs.h fcntl.h errno.h socket.h strings.h stdbool.h time.h poll.h limits.h arpa/nameser.h arpa/nameser_compat.h arpa/inet.h ],
+AC_CHECK_HEADERS([malloc.h memory.h AvailabilityMacros.h sys/types.h sys/time.h sys/select.h sys/socket.h sys/filio.h sys/ioctl.h sys/param.h sys/uio.h sys/random.h sys/event.h sys/epoll.h assert.h iphlpapi.h netioapi.h netdb.h netinet/in.h netinet6/in6.h netinet/tcp.h net/if.h ifaddrs.h fcntl.h errno.h socket.h strings.h stdbool.h time.h poll.h limits.h arpa/nameser.h arpa/nameser_compat.h arpa/inet.h sys/system_properties.h ],
 dnl to do if not found
 [],
 dnl to do if found
@@ -488,6 +496,9 @@ cares_all_includes="
 #ifdef HAVE_RESOLV_H
 #  include <resolv.h>
 #endif
+#ifdef HAVE_SYS_SYSTEM_PROPERTIES_H
+#  include <sys/system_properties.h>
+#endif
 #ifdef HAVE_IPHLPAPI_H
 #  include <iphlpapi.h>
 #endif
@@ -525,6 +536,8 @@ AC_CHECK_TYPE(socklen_t,
 
 AC_CHECK_TYPE(SOCKET, [], [], $cares_all_includes)
 
+AC_CHECK_TYPE(OVERLAPPED_ENTRY, [AC_DEFINE([HAVE_OVERLAPPED_ENTRY], 1, [Define to 1 if you have `OVERLAPPED_ENTRY`] )], [], $cares_all_includes)
+
 dnl ###############################################################################
 
 dnl clock_gettime might require an external library
@@ -540,6 +553,15 @@ dnl https://mailman.videolan.org/pipermail/vlc-devel/2015-March/101802.html
 dnl which would require we check each individually and provide function arguments
 dnl for the test.
 
+dnl On Apple hosts, header availability macros declare functions newer than the
+dnl deployment target.  Ensure -Werror=partial-availability is used during
+dnl declaration checks so too-new symbols are correctly reported as missing.
+AS_IF([test "x$host_vendor" = "xapple"], [
+  cares_save_cflags="$CFLAGS"
+  AX_APPEND_COMPILE_FLAGS([-Werror=partial-availability], [CFLAGS])
+])
+
+AC_CHECK_DECL(strnlen,         [AC_DEFINE([HAVE_STRNLEN],           1, [Define to 1 if you have `strnlen`]        )], [], $cares_all_includes)
 AC_CHECK_DECL(memmem,          [AC_DEFINE([HAVE_MEMMEM],            1, [Define to 1 if you have `memmem`]         )], [], $cares_all_includes)
 AC_CHECK_DECL(recv,            [AC_DEFINE([HAVE_RECV],              1, [Define to 1 if you have `recv`]           )], [], $cares_all_includes)
 AC_CHECK_DECL(recvfrom,        [AC_DEFINE([HAVE_RECVFROM],          1, [Define to 1 if you have `recvfrom`]       )], [], $cares_all_includes)
@@ -583,11 +605,19 @@ AC_CHECK_DECL(pipe,            [AC_DEFINE([HAVE_PIPE],              1, [Define t
 AC_CHECK_DECL(pipe2,           [AC_DEFINE([HAVE_PIPE2],             1, [Define to 1 if you have `pipe2`]          )], [], $cares_all_includes)
 AC_CHECK_DECL(kqueue,          [AC_DEFINE([HAVE_KQUEUE],            1, [Define to 1 if you have `kqueue`]         )], [], $cares_all_includes)
 AC_CHECK_DECL(epoll_create1,   [AC_DEFINE([HAVE_EPOLL],             1, [Define to 1 if you have `epoll_{create1,ctl,wait}`])], [], $cares_all_includes)
+AC_CHECK_DECL(GetBestRoute2,   [AC_DEFINE([HAVE_GETBESTROUTE2],     1, [Define to 1 if you have `GetBestRoute2`]  )], [], $cares_all_includes)
+AC_CHECK_DECL(GetQueuedCompletionStatusEx, [AC_DEFINE([HAVE_GETQUEUEDCOMPLETIONSTATUSEX], 1, [Define to 1 if you have `GetQueuedCompletionStatusEx`])], [], $cares_all_includes)
 AC_CHECK_DECL(ConvertInterfaceIndexToLuid, [AC_DEFINE([HAVE_CONVERTINTERFACEINDEXTOLUID], 1, [Define to 1 if you have `ConvertInterfaceIndexToLuid`])], [], $cares_all_includes)
 AC_CHECK_DECL(ConvertInterfaceLuidToNameA, [AC_DEFINE([HAVE_CONVERTINTERFACELUIDTONAMEA], 1, [Define to 1 if you have `ConvertInterfaceLuidToNameA`])], [], $cares_all_includes)
 AC_CHECK_DECL(NotifyIpInterfaceChange,     [AC_DEFINE([HAVE_NOTIFYIPINTERFACECHANGE],     1, [Define to 1 if you have `NotifyIpInterfaceChange`]    )], [], $cares_all_includes)
 AC_CHECK_DECL(RegisterWaitForSingleObject, [AC_DEFINE([HAVE_REGISTERWAITFORSINGLEOBJECT], 1, [Define to 1 if you have `RegisterWaitForSingleObject`])], [], $cares_all_includes)
+AC_CHECK_DECL(RegNotifyChangeKeyValue, [AC_DEFINE([HAVE_REGNOTIFYCHANGEKEYVALUE], 1, [Define to 1 if you have `RegNotifyChangeKeyValue`])], [], $cares_all_includes)
 AC_CHECK_DECL(__system_property_get,       [AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET],       1, [Define to 1 if you have `__system_property_get`]      )], [], $cares_all_includes)
+AC_CHECK_DECL(SetFileCompletionNotificationModes, [AC_DEFINE([HAVE_SETFILECOMPLETIONNOTIFICATIONMODES], 1, [Define to 1 if you have `SetFileCompletionNotificationModes`])], [], $cares_all_includes)
+AC_CHECK_DECL(WSAIoctl, [AC_DEFINE([HAVE_WSAIoctl], 1, [Define to 1 if you have `WSAIoctl`])], [], $cares_all_includes)
+AS_IF([test "x$host_vendor" = "xapple"], [
+  CFLAGS="$cares_save_cflags"
+])
 
 
 dnl ###############################################################################
@@ -794,14 +824,6 @@ BUILD_SUBDIRS="include src docs"
 
 dnl ******** TESTS *******
 
-if test "x$build_tests" != "xno" -a "x$HAVE_CXX14" = "0" ; then
-  if test "x$build_tests" = "xmaybe" ; then
-    AC_MSG_WARN([cannot build tests without a CXX14 compiler])
-    build_tests=no
-  else
-    AC_MSG_ERROR([*** Building tests requires a CXX14 compiler])
-  fi
-fi
 if test "x$build_tests" != "xno" -a "x$cross_compiling" = "xyes" ; then
   if test "x$build_tests" = "xmaybe" ; then
     AC_MSG_WARN([cannot build tests when cross compiling])
@@ -810,6 +832,13 @@ if test "x$build_tests" != "xno" -a "x$cross_compiling" = "xyes" ; then
     AC_MSG_ERROR([*** Tests not supported when cross compiling])
   fi
 fi
+
+dnl Forces compiling of tests even when cross-compiling.
+AC_ARG_ENABLE(tests-crossbuild,
+  AS_HELP_STRING([--enable-tests-crossbuild], [Enable test building even when cross building]),
+  [build_tests="$enableval"]
+)
+
 if test "x$build_tests" != "xno" ; then
   PKG_CHECK_MODULES([GMOCK], [gmock], [ have_gmock=yes ], [ have_gmock=no ])
   if test "x$have_gmock" = "xno" ; then
@@ -822,15 +851,22 @@ if test "x$build_tests" != "xno" ; then
   else
     PKG_CHECK_MODULES([GMOCK112], [gmock >= 1.12.0], [ have_gmock_v112=yes ], [ have_gmock_v112=no ])
     if test "x$have_gmock_v112" = "xyes" ; then
-      AX_CHECK_USER_NAMESPACE
-      AX_CHECK_UTS_NAMESPACE
+      ARES_CHECK_USER_NAMESPACE
+      ARES_CHECK_UTS_NAMESPACE
+    fi
+    PKG_CHECK_MODULES([GMOCK117], [gmock >= 1.17.0], [ have_gmock_v117=yes ], [ have_gmock_v117=no ])
+    if test "x$have_gmock_v117" = "xyes" ; then
+      dnl GMock v1.17.0 requires C++17 or higher
+      AX_CXX_COMPILE_STDCXX(17,[noext],[mandatory])
+    else
+      dnl older version needed v1.14.0
+      AX_CXX_COMPILE_STDCXX(14,[noext],[mandatory])
     fi
   fi
 fi
 if test "x$build_tests" != "xno" ; then
   build_tests=yes
 
-  AX_CXX_COMPILE_STDCXX_14([noext],[mandatory])
   if test "$ac_cv_native_windows" != "yes" ; then
     AX_PTHREAD([ CARES_TEST_PTHREADS="yes" ], [ AC_MSG_ERROR([threading required for tests]) ])
   fi

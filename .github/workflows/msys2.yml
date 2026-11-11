@@ -3,6 +3,9 @@
 name: MSYS2 (Windows)
 on:
   push:
+    branches:
+      - main
+      - 'v*'
   pull_request:
 
 concurrency:
@@ -11,7 +14,7 @@ concurrency:
 
 env:
   TEST_FILTER: "-4 --gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*:*LiveSearchNS*:*LiveGetLocalhostByAddr*"
-  CMAKE_FLAGS: "-DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -G Ninja"
+  CMAKE_FLAGS: "-DCARES_WERROR=ON -DCMAKE_BUILD_TYPE=DEBUG -DCARES_STATIC=ON -DCMAKE_INSTALL_PREFIX=C:/projects/build-cares/test_install -DCARES_STATIC_PIC=ON -G Ninja"
   CONFIG_OPTS: "--disable-shared"
   MAKE: make
   DIST: Windows
@@ -25,18 +28,14 @@ jobs:
       matrix:
         include:
           - { msystem: CLANG64, env: clang-x86_64, extra_packages: "mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-clang-analyzer" }
-          - { msystem: CLANG32, env: clang-i686,   extra_packages: "mingw-w64-clang-i686-clang mingw-w64-clang-i686-clang-analyzer"     }
           - { msystem: MINGW64, env: x86_64,       extra_packages: "mingw-w64-x86_64-gcc"                                               }
-          - { msystem: MINGW32, env: i686,         extra_packages: "mingw-w64-i686-gcc"                                                 }
-          # No need to test UCRT64 since clang64 uses UCRT
-          # - { msystem: UCRT64,  env: ucrt-x86_64  }
     defaults:
       run:
         shell: msys2 {0}
     name: ${{ matrix.msystem }}
     steps:
       - name: Install MSYS2 and base packages
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
         with:
           msystem: ${{ matrix.msystem }}
           update: true
@@ -53,7 +52,7 @@ jobs:
             mingw-w64-${{ matrix.env }}-gdb
             ${{ matrix.extra_packages }}
       - name: Checkout c-ares
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: "CMake: build and test c-ares"
         env:
           BUILD_TYPE: CMAKE

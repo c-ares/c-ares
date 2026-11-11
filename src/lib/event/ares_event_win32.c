@@ -37,11 +37,13 @@
 #include "ares_private.h"
 #include "ares_event.h"
 #include "ares_event_win32.h"
-#ifdef HAVE_LIMITS_H
-#  include <limits.h>
-#endif
 
-#if defined(USE_WINSOCK)
+
+#if defined(USE_WINSOCK) && defined(CARES_THREADS)
+
+#  ifdef HAVE_LIMITS_H
+#    include <limits.h>
+#  endif
 
 /* IMPLEMENTATION NOTES
  * ====================
@@ -249,7 +251,7 @@ typedef struct {
 static size_t ares_evsys_win32_wait(ares_event_thread_t *e,
                                     unsigned long        timeout_ms);
 
-static void   ares_iocpevent_signal(const ares_event_t *event)
+static void ares_iocpevent_signal(const ares_event_t *event)
 {
   ares_event_thread_t          *e           = event->e;
   ares_evsys_win32_t           *ew          = e->ev_sys_data;
@@ -389,9 +391,9 @@ static ares_slist_node_t *ares_afd_handle_create(ares_evsys_win32_t *ew)
   fill_object_attributes(&afd_attributes, &afd_device_name, 0);
   memset(&iosb, 0, sizeof(iosb));
   iosb.Status = STATUS_PENDING;
-  status      = ew->NtCreateFile(&afd->afd_handle, SYNCHRONIZE, &afd_attributes,
-                                 &iosb, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                 FILE_OPEN, 0, NULL, 0);
+  status = ew->NtCreateFile(&afd->afd_handle, SYNCHRONIZE, &afd_attributes,
+                            &iosb, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                            FILE_OPEN, 0, NULL, 0);
   if (status != STATUS_SUCCESS) {
     CARES_DEBUG_LOG("** Failed to create AFD endpoint\n");
     goto fail;
@@ -402,10 +404,12 @@ static ares_slist_node_t *ares_afd_handle_create(ares_evsys_win32_t *ew)
     goto fail;
   }
 
+#  ifdef HAVE_SETFILECOMPLETIONNOTIFICATIONMODES
   if (!SetFileCompletionNotificationModes(afd->afd_handle,
                                           FILE_SKIP_SET_EVENT_ON_HANDLE)) {
     goto fail;
   }
+#  endif
 
   node = ares_slist_insert(ew->afd_handles, afd);
   if (node == NULL) {
@@ -519,6 +523,11 @@ fail:
 
 static ares_socket_t ares_evsys_win32_basesocket(ares_socket_t socket)
 {
+#  ifndef HAVE_WSAIOCTL
+  /* Assume we don't have an LSP and return the provided socket as the base
+   * socket.  WSAIoctl() isn't supported on Windows XP or below */
+  return socket;
+#  else
   while (1) {
     DWORD         bytes; /* Not used */
     ares_socket_t base_socket = ARES_SOCKET_BAD;
@@ -556,6 +565,7 @@ static ares_socket_t ares_evsys_win32_basesocket(ares_socket_t socket)
   }
 
   return socket;
+#  endif
 }
 
 static ares_bool_t ares_evsys_win32_afd_enqueue(ares_event_t      *event,
@@ -667,7 +677,7 @@ static ares_bool_t ares_evsys_win32_afd_cancel(ares_evsys_win32_eventdata_t *ed)
 
   /* NtCancelIoFileEx() may return STATUS_NOT_FOUND if the operation completed
    * just before calling NtCancelIoFileEx(), but we have not yet received the
-   * notifiction (but it should be queued for the next IOCP event).  */
+   * notification (but it should be queued for the next IOCP event).  */
   if (status == STATUS_SUCCESS || status == STATUS_NOT_FOUND) {
     return ARES_TRUE;
   }
@@ -704,7 +714,10 @@ static ares_bool_t ares_evsys_win32_event_add(ares_event_t *event)
   ares_evsys_win32_eventdata_t *ed;
   ares_bool_t                   rc = ARES_FALSE;
 
-  ed              = ares_malloc_zero(sizeof(*ed));
+  ed = ares_malloc_zero(sizeof(*ed));
+  if (ed == NULL) {
+    return ARES_FALSE; /* LCOV_EXCL_LINE: OutOfMemory */
+  }
   ed->event       = event;
   ed->socket      = event->fd;
   ed->base_socket = ARES_SOCKET_BAD;
@@ -904,6 +917,58 @@ static ares_bool_t ares_evsys_win32_process_socket_event(
   return ARES_TRUE;
 }
 
+static BOOL
+  ares_GetQueuedCompletionStatusEx(HANDLE             CompletionPort,
+                                   LPOVERLAPPED_ENTRY lpCompletionPortEntries,
+                                   ULONG ulCount, PULONG ulNumEntriesRemoved,
+                                   DWORD dwMilliseconds, BOOL fAlertable)
+{
+#  ifdef HAVE_GETQUEUEDCOMPLETIONSTATUSEX
+  return GetQueuedCompletionStatusEx(CompletionPort, lpCompletionPortEntries,
+                                     ulCount, ulNumEntriesRemoved,
+                                     dwMilliseconds, fAlertable);
+#  else
+  ULONG i;
+
+  (void)fAlertable;
+
+  memset(lpCompletionPortEntries, 0,
+         ulCount * sizeof(*lpCompletionPortEntries));
+  (*ulNumEntriesRemoved) = 0;
+
+  for (i = 0; i < ulCount; i++) {
+    BOOL success = GetQueuedCompletionStatus(
+      CompletionPort, &lpCompletionPortEntries[i].dwNumberOfBytesTransferred,
+      &lpCompletionPortEntries[i].lpCompletionKey,
+      &lpCompletionPortEntries[i].lpOverlapped, (i == 0) ? dwMilliseconds : 0);
+
+    /* GetQueuedCompletionStatus() returns FALSE in two very different
+     * situations that we must distinguish, otherwise we silently lose events:
+     *   1. No completion packet was dequeued (timeout, or the port failed).
+     *      In this case lpOverlapped is set to NULL and we should stop.
+     *   2. A completion packet WAS dequeued, but it is for a *failed* I/O
+     *      operation (lpOverlapped is non-NULL).  This is exactly what an
+     *      outstanding AFD POLL request delivers when the underlying socket is
+     *      reset or closed, and it must still be handled so the socket's poll
+     *      state is cleaned up / re-armed -- otherwise that socket's events are
+     *      never delivered again and any query waiting on it hangs forever.
+     * GetQueuedCompletionStatusEx() returns these failed-I/O entries in its
+     * output array, so emulate that behavior here rather than dropping them. */
+    if (!success && lpCompletionPortEntries[i].lpOverlapped == NULL) {
+      break;
+    }
+
+    (*ulNumEntriesRemoved)++;
+  }
+
+  if (*ulNumEntriesRemoved > 0) {
+    return TRUE;
+  }
+
+  return FALSE;
+#  endif
+}
+
 static size_t ares_evsys_win32_wait(ares_event_thread_t *e,
                                     unsigned long        timeout_ms)
 {
@@ -921,8 +986,8 @@ static size_t ares_evsys_win32_wait(ares_event_thread_t *e,
    * on subsequent attempts, ensure the timeout is 0 */
   do {
     nentries = maxentries;
-    status   = GetQueuedCompletionStatusEx(ew->iocp_handle, entries, nentries,
-                                           &nentries, tout, FALSE);
+    status = ares_GetQueuedCompletionStatusEx(ew->iocp_handle, entries,
+                                              nentries, &nentries, tout, FALSE);
 
     /* Next loop around, we want to return instantly if there are no events to
      * be processed */

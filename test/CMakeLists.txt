@@ -1,9 +1,14 @@
 # Copyright (C) The c-ares project and its contributors
 # SPDX-License-Identifier: MIT
 
+enable_language(CXX)
+
 # Get rid of: warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+# /utf-8: test sources contain UTF-8 string literals (punycode/IDNA vectors);
+# without it MSVC interprets them in the system ANSI codepage, mangling them
+# on DBCS locales (e.g. cp932/cp936/cp949).
 IF (MSVC)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /utf-8")
 ENDIF ()
 
 find_package(Threads)
@@ -50,6 +55,7 @@ IF (CMAKE_VERSION VERSION_LESS "3.23.0")
 ELSE ()
   target_link_libraries(arestest PRIVATE caresinternal GTest::gmock)
 ENDIF()
+target_compile_features(arestest PRIVATE cxx_std_14)
 target_compile_definitions(arestest PRIVATE CARES_NO_DEPRECATED)
 
 IF (CARES_BUILD_CONTAINER_TESTS)
@@ -75,6 +81,7 @@ set_target_properties(aresfuzzname PROPERTIES COMPILE_PDB_NAME aresfuzzname.pdb)
 
 add_executable(dnsdump ${DUMPSOURCES})
 target_compile_definitions(dnsdump PRIVATE CARES_NO_DEPRECATED)
+target_compile_features(dnsdump PRIVATE cxx_std_14)
 target_link_libraries(dnsdump PRIVATE caresinternal)
 # Avoid "fatal error C1041: cannot open program database" due to multiple
 # targets trying to use the same PDB.  /FS does NOT resolve this issue.

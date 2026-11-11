@@ -31,19 +31,27 @@
 
 #include "ares_private.h"
 #include "ares_event.h"
-#ifdef HAVE_SYS_SELECT_H
-#  include <sys/select.h>
-#endif
 
 /* All systems have select(), but not all have a way to wake, so we require
  * pipe() to wake the select() */
-#if defined(HAVE_PIPE)
+#if defined(HAVE_PIPE) && defined(CARES_THREADS)
+
+#  ifdef HAVE_SYS_SELECT_H
+#    include <sys/select.h>
+#  endif
 
 static ares_bool_t ares_evsys_select_init(ares_event_thread_t *e)
 {
   e->ev_signal = ares_pipeevent_create(e);
   if (e->ev_signal == NULL) {
     return ARES_FALSE; /* LCOV_EXCL_LINE: UntestablePath */
+  }
+  /* The wake pipe must fit in an fd_set too.  If it does not, the update
+   * that registers it is rejected and freed, leaving e->ev_signal dangling,
+   * so fail initialization instead. */
+  if (e->ev_signal->fd >= (ares_socket_t)FD_SETSIZE) {
+    e->ev_signal = NULL;
+    return ARES_FALSE;
   }
   return ARES_TRUE;
 }
@@ -55,7 +63,13 @@ static void ares_evsys_select_destroy(ares_event_thread_t *e)
 
 static ares_bool_t ares_evsys_select_event_add(ares_event_t *event)
 {
-  (void)event;
+  /* select() can only watch descriptors below FD_SETSIZE; FD_SET() on a
+   * higher descriptor writes past the end of the fd_set.  Refuse the
+   * registration instead.  The socket then never reports activity, so a
+   * query using it waits out its timeout rather than corrupting memory. */
+  if (event->fd != ARES_SOCKET_BAD && event->fd >= (ares_socket_t)FD_SETSIZE) {
+    return ARES_FALSE;
+  }
   return ARES_TRUE;
 }
 

@@ -1,4 +1,4 @@
-.\" Copyright (C) 2023 The c-ares project and its contributors.
+.\" Copyright (C) 2023 The c-ares project and its contributors
 .\" SPDX-License-Identifier: MIT
 .\"
 .TH ARES_DNS_RECORD 3 "12 November 2023"
@@ -107,6 +107,27 @@ on requests, and some may only be valid on responses:
 .B ARES_REC_TYPE_OPT
 - RFC 6891. EDNS0 option (meta-RR). Pseudo Record.
 .br
+.B ARES_REC_TYPE_DS
+- RFC 4034. Delegation Signer
+.br
+.B ARES_REC_TYPE_SSHFP
+- RFC 4255. SSH Key Fingerprint
+.br
+.B ARES_REC_TYPE_RRSIG
+- RFC 4034. Resource Record Signature
+.br
+.B ARES_REC_TYPE_NSEC
+- RFC 4034. Next Secure
+.br
+.B ARES_REC_TYPE_DNSKEY
+- RFC 4034. DNS Public Key
+.br
+.B ARES_REC_TYPE_NSEC3
+- RFC 5155. NSEC3
+.br
+.B ARES_REC_TYPE_NSEC3PARAM
+- RFC 5155. NSEC3 Parameters
+.br
 .B ARES_REC_TYPE_TLSA
 - RFC 6698. DNS-Based Authentication of Named Entities (DANE) Transport Layer Security (TLS) Protocol: TLSA
 .br
@@ -140,7 +161,7 @@ DNS Classes for requests and responses:
 .B ARES_CLASS_CHAOS
 - CHAOS
 .br
-.B ARES_CLASS_HESOID
+.B ARES_CLASS_HESIOD
 - Hesoid [Dyer 87]
 .br
 .B ARES_CLASS_NONE
@@ -339,7 +360,7 @@ from \fIares_send_dnsrec(3)\fP or \fIares_search_dnsrec(3)\fP.  The structure
 to be duplicated is passed in the
 .IR dnsrec
 parameter, and the duplicated copy is returned, or NULL on error such as
-out of memory.
+out of memory, or if argument is NULL.
 
 The \fIares_dns_record_get_id(3)\fP function is used to retrieve the DNS
 message id from the DNS record provided in the
@@ -438,6 +459,9 @@ is returned on success,
 is returned on out of memory,
 .B ARES_EFORMERR
 is returned on misuse.
+\fIares_dns_write(3)\fP also returns
+.B ARES_EBADQUERY
+if the message is too large to encode.
 
 \fIares_dns_record_get_id(3)\fP, \fIares_dns_record_set_id(3)\fP,
 \fIares_dns_record_get_flags(3)\fP, \fIares_dns_record_get_opcode(3)\fP,

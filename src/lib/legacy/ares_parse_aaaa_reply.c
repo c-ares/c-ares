@@ -63,8 +63,11 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
   }
 
   if (naddrttls) {
-    req_naddrttls = (size_t)*naddrttls;
-    *naddrttls    = 0;
+    /* A negative requested count would wrap to SIZE_MAX. */
+    if (*naddrttls > 0) {
+      req_naddrttls = (size_t)*naddrttls;
+    }
+    *naddrttls = 0;
   }
 
   memset(&ai, 0, sizeof(ai));
@@ -80,6 +83,7 @@ int ares_parse_aaaa_reply(const unsigned char *abuf, int alen,
   }
 
   if (host != NULL) {
+    *host  = NULL;
     status = ares_addrinfo2hostent(&ai, AF_INET6, host);
     if (status != ARES_SUCCESS && status != ARES_ENODATA) {
       goto fail; /* LCOV_EXCL_LINE: DefensiveCoding */

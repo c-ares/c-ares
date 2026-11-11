@@ -61,6 +61,16 @@
 #  define sclose(x) close(x)
 #endif
 
+#ifndef HAVE_WRITEV
+extern "C" {
+/* Structure for scatter/gather I/O. */
+struct iovec {
+  void  *iov_base; /* Pointer to data. */
+  size_t iov_len;  /* Length of data.  */
+};
+};
+#endif
+
 namespace ares {
 
 typedef unsigned char byte;
@@ -133,6 +143,9 @@ public:
   static void  SetAllocFail(int nth);
   // Set the next malloc call for the given size to fail.
   static void  SetAllocSizeFail(size_t size);
+  // Whether a failure armed by SetAllocSizeFail(size) is still pending, i.e.
+  // no allocation of exactly that size has been requested since.
+  static bool AllocSizeFailPending(size_t size);
   // Remove any pending alloc failures.
   static void  ClearFails();
 
@@ -140,11 +153,17 @@ public:
   static void *arealloc(void *ptr, size_t size);
   static void  afree(void *ptr);
 
+  static void SetFailSend(void);
+  static ares_ssize_t ares_sendv_fail(ares_socket_t socket, const struct iovec *vec, int len,
+                                      void *user_data);
+
+
 private:
   static bool                  ShouldAllocFail(size_t size);
   static unsigned long long    fails_;
   static std::map<size_t, int> size_fails_;
   static std::mutex            lock_;
+  static bool                  failsend_;
 };
 
 // Test fixture that uses a default channel.
@@ -272,6 +291,7 @@ public:
   {
     reply_ = nullptr;
     exact_reply_.clear();
+    disconnect_after_reply_ = false;
     for (ares_socket_t fd : connfds_) {
       sclose(fd);
     }
@@ -280,6 +300,17 @@ public:
     tcp_data_     = NULL;
     tcp_data_len_ = 0;
   }
+
+  void DisconnectAfterReply()
+  {
+    disconnect_after_reply_ = true;
+  }
+
+  // Send reply, with the given query ID, to the client of the most recent
+  // request this server received, on the socket that request arrived on.  The
+  // client did not send this server a request with that query ID: this models
+  // a server answering a query that was only sent to some other server.
+  void SendUnsolicited(const DNSPacket *reply, unsigned short qid);
 
   // The set of file descriptors that the server handles.
   std::set<ares_socket_t> fds() const;
@@ -305,6 +336,9 @@ private:
                                 int rrtype);
   void           ProcessPacket(ares_socket_t fd, struct sockaddr_storage *addr,
                                ares_socklen_t addrlen, byte *data, int len);
+  void           SendData(ares_socket_t fd, struct sockaddr_storage *addr,
+                          ares_socklen_t addrlen, int qid,
+                          std::vector<byte> reply);
   unsigned short udpport_;
   unsigned short tcpport_;
   ares_socket_t  udpfd_;
@@ -314,8 +348,13 @@ private:
   const DNSPacket        *reply_;
   std::string             expected_request_;
   int                     qid_;
+  bool                    disconnect_after_reply_;
   unsigned char          *tcp_data_;
   size_t                  tcp_data_len_;
+  // Where the most recent request came from, for SendUnsolicited().
+  ares_socket_t           last_fd_;
+  struct sockaddr_storage last_addr_;
+  ares_socklen_t          last_addrlen_;
 };
 
 // Test fixture that uses a mock DNS server.
@@ -328,6 +367,7 @@ public:
 
   // Process all pending work on ares-owned and mock-server-owned file
   // descriptors.
+  void ProcessAltChannel(ares_channel_t *chan, unsigned int cancel_ms = 0);
   void Process(unsigned int cancel_ms = 0);
 
 protected:
@@ -450,6 +490,12 @@ ACTION_P2(SetReplyData, mockserver, data)
   mockserver->SetReplyData(data);
 }
 
+ACTION_P2(SetReplyAndFailSend, mockserver, reply)
+{
+  mockserver->SetReply(reply);
+  LibraryTest::SetFailSend();
+}
+
 ACTION_P2(SetReply, mockserver, reply)
 {
   mockserver->SetReply(reply);
@@ -477,6 +523,11 @@ ACTION_P2(CancelChannel, mockserver, channel)
 ACTION_P(Disconnect, mockserver)
 {
   mockserver->Disconnect();
+}
+
+ACTION_P(DisconnectAfterReply, mockserver)
+{
+  mockserver->DisconnectAfterReply();
 }
 
 // C++ wrapper for struct hostent.
@@ -614,8 +665,8 @@ std::ostream &operator<<(std::ostream &os, const AddrInfoResult &result);
 
 // Standard implementation of ares callbacks that fill out the corresponding
 // structures.
-void          HostCallback(void *data, int status, int timeouts,
-                           struct hostent *hostent);
+void HostCallback(void *data, int status, int timeouts,
+                  struct hostent *hostent);
 void          QueryCallback(void *data, ares_status_t status, size_t timeouts,
                             const ares_dns_record_t *dnsrec);
 void SearchCallback(void *data, int status, int timeouts, unsigned char *abuf,

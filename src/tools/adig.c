@@ -56,6 +56,12 @@
 #  define PATH_MAX 1024
 #endif
 
+#define RV_OK     0 /* Success */
+#define RV_SYSERR 1 /* Internal system failure */
+#define RV_MISUSE 2 /* Misuse (command line) */
+#define RV_FAIL   3 /* Resolution failure */
+static int final_rv = RV_OK;
+
 typedef struct {
   unsigned short port;
   size_t         tries;
@@ -108,7 +114,7 @@ static const char   *helpstr[] = {
   "       [name] [type] [class] [queryopt...]",
   "",
   "@server: server ip address.  May specify multiple in comma delimited "
-    "format.",
+  "format.",
   "         may be specified in URI format",
   "name:    name of the resource record that is to be looked up",
   "type:    what type of query is required.  e.g. - A, AAAA, MX, TXT, etc.  If",
@@ -139,14 +145,14 @@ static const char   *helpstr[] = {
   "                  on.",
   "+[no]all:         Toggles all of +[no]cmd, +[no]stats, +[no]question,",
   "                  +[no]answer, +[no]authority, +[no]additional, "
-    "+[no]comments",
+  "+[no]comments",
   "+[no]answer:      Toggles printing the answer. On by default.",
   "+[no]authority:   Toggles printing the authority. On by default.",
   "+bufsize=#:       UDP EDNS 0 packet size allowed. Defaults to 1232.",
   "+[no]cdflag:      Sets the CD (checking disabled) bit in the query. Default",
   "                  is off.",
   "+[no]class:       Display the class when printing the record. On by "
-    "default.",
+  "default.",
   "+[no]cmd:         Toggles printing the command requested. On by default.",
   "+[no]comments:    Toggles printing the comments. On by default",
   "+[no]defname:     Alias for +[no]search",
@@ -157,19 +163,19 @@ static const char   *helpstr[] = {
   "                  specified. Default is to enable EDNS.",
   "+[no]ignore:      Ignore truncation on UDP, by default retried on TCP.",
   "+[no]keepopen:    Whether or not the server connection should be "
-    "persistent.",
+  "persistent.",
   "                  Default is off.",
   "+ndots=#:         Sets the number of dots that must appear before being",
   "                  considered absolute. Defaults to 1.",
   "+[no]primary:     Whether or not to only use a single server if more than "
-    "one",
+  "one",
   "                  server is available.  Defaults to using all servers.",
   "+[no]qr:          Toggles printing the request query. Off by default.",
   "+[no]question:    Toggles printing the question. On by default.",
   "+[no]recurse:     Toggles the RD (Recursion Desired) bit. On by default.",
   "+retry=#:         Same as +tries but does not include the initial attempt.",
   "+[no]search:      To use or not use the search list. Search list is not "
-    "used",
+  "used",
   "                  by default.",
   "+[no]stats:       Toggles printing the statistics. On by default.",
   "+[no]tcp:         Whether to use TCP when querying name servers. Default is",
@@ -509,6 +515,11 @@ static void print_opts(const ares_dns_rr_t *rr, ares_dns_rr_key_t key)
       case ARES_OPT_DATATYPE_NAME:
         print_opt_name(val, val_len);
         break;
+      case ARES_OPT_DATATYPE_UTF8_STR:
+        /* True UTF8 handling not implemented here, but in practice this is
+         * good enough. */
+        print_opt_binp(val, val_len);
+        break;
     }
   }
 }
@@ -772,6 +783,10 @@ static void callback(void *arg, ares_status_t status, size_t timeouts,
 {
   (void)arg;
   (void)timeouts;
+
+  if (status != ARES_SUCCESS) {
+    final_rv = RV_FAIL;
+  }
 
   if (global_config.opts.display_comments) {
     /* We got a "Server status" */
@@ -1162,12 +1177,12 @@ static ares_bool_t read_cmdline(int argc, const char * const *argv,
       /* skip prefix */
       if (dig_options[opt].prefix != 0) {
         nameptr++;
-      }
-
-      /* Negated option if it has a 'no' prefix */
-      if (ares_streq_max(nameptr, "no", 2)) {
-        is_true  = ARES_FALSE;
-        nameptr += 2;
+        /* Negated option if it has a 'no' prefix */
+        if (dig_options[opt].prefix == '+' &&
+            ares_streq_max(nameptr, "no", 2)) {
+          is_true  = ARES_FALSE;
+          nameptr += 2;
+        }
       }
 
       if (dig_options[opt].separator != 0) {
@@ -1484,7 +1499,6 @@ int main(int argc, char **argv)
 {
   ares_channel_t *channel = NULL;
   ares_status_t   status;
-  int             rv = 0;
 
 #ifdef USE_WINSOCK
   WORD    wVersionRequested = MAKEWORD(USE_WINSOCK, USE_WINSOCK);
@@ -1495,7 +1509,7 @@ int main(int argc, char **argv)
   status = (ares_status_t)ares_library_init(ARES_LIB_INIT_ALL);
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "ares_library_init: %s\n", ares_strerror((int)status));
-    return 1;
+    return RV_SYSERR;
   }
 
   config_defaults();
@@ -1503,7 +1517,7 @@ int main(int argc, char **argv)
   if (!read_cmdline(argc, (const char * const *)argv, 1)) {
     printf("\n** ERROR: %s\n\n", global_config.error);
     print_help();
-    rv = 1;
+    final_rv = RV_MISUSE;
     goto done;
   }
 
@@ -1519,7 +1533,7 @@ int main(int argc, char **argv)
   if (global_config.name == NULL) {
     printf("missing query name\n");
     print_help();
-    rv = 1;
+    final_rv = RV_MISUSE;
     goto done;
   }
 
@@ -1529,7 +1543,7 @@ int main(int argc, char **argv)
                                             global_config.optmask);
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "ares_init_options: %s\n", ares_strerror((int)status));
-    rv = 1;
+    final_rv = RV_SYSERR;
     goto done;
   }
 
@@ -1539,7 +1553,7 @@ int main(int argc, char **argv)
     if (status != ARES_SUCCESS) {
       fprintf(stderr, "ares_set_servers_ports_csv: %s: %s\n",
               ares_strerror((int)status), global_config.servers);
-      rv = 1;
+      final_rv = RV_MISUSE;
       goto done;
     }
   }
@@ -1556,12 +1570,14 @@ int main(int argc, char **argv)
   if (status != ARES_SUCCESS) {
     fprintf(stderr, "Failed to create query for %s: %s\n", global_config.name,
             ares_strerror((int)status));
-    rv = 1;
+    final_rv = RV_MISUSE;
     goto done;
   }
 
   /* Process events */
-  rv = event_loop(channel);
+  if (event_loop(channel) != 0) {
+    final_rv = RV_SYSERR;
+  }
 
 done:
   free_config();
@@ -1571,5 +1587,5 @@ done:
 #ifdef USE_WINSOCK
   WSACleanup();
 #endif
-  return rv;
+  return final_rv;
 }

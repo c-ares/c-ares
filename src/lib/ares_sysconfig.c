@@ -303,13 +303,16 @@ static ares_status_t ares_init_sysconfig_android(const ares_channel_t *channel,
       status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig,
                                            dns_servers[i], ARES_TRUE);
       if (status != ARES_SUCCESS) {
-        return status;
+        break;
       }
     }
     for (i = 0; i < num_servers; i++) {
       ares_free(dns_servers[i]);
     }
     ares_free(dns_servers);
+    if (status != ARES_SUCCESS) {
+      return status;
+    }
   }
 
   domains            = ares_get_android_search_domains_list();
@@ -340,6 +343,93 @@ static ares_status_t ares_init_sysconfig_android(const ares_channel_t *channel,
     }
   }
 #  endif /* HAVE___SYSTEM_PROPERTY_GET */
+
+  return status;
+}
+#endif
+
+#if defined(__QNX__)
+static ares_status_t ares_init_sysconfig_qnx(const ares_channel_t *channel,
+                                             ares_sysconfig_t     *sysconfig)
+{
+  /* QNX:
+   *   1. use confstr(_CS_RESOLVE, ...) as primary resolv.conf data, replacing
+   *      "_" with " ".  If that is empty, then do normal /etc/resolv.conf
+   *      processing.
+   *   2. We want to process /etc/nsswitch.conf as normal.
+   *   3. if confstr(_CS_DOMAIN, ...) this is the domain name.  Use this as
+   *      preference over anything else found.
+   */
+  ares_buf_t    *buf                = NULL;
+  unsigned char *data               = NULL;
+  size_t         data_size          = 0;
+  ares_bool_t    process_resolvconf = ARES_TRUE;
+  ares_status_t  status             = ARES_SUCCESS;
+
+  /* Prefer confstr(_CS_RESOLVE, ...) */
+  buf = ares_buf_create();
+  if (buf == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  data_size = 1024;
+  data      = ares_buf_append_start(buf, &data_size);
+  if (data == NULL) {
+    status = ARES_ENOMEM;
+    goto done;
+  }
+
+  data_size = confstr(_CS_RESOLVE, (char *)data, data_size);
+  if (data_size > 1) {
+    /* confstr returns byte for NULL terminator, strip */
+    data_size--;
+
+    ares_buf_append_finish(buf, data_size);
+    /* Its odd, this uses _ instead of " " between keywords, otherwise the
+     * format is the same as resolv.conf, replace. */
+    ares_buf_replace(buf, (const unsigned char *)"_", 1,
+                     (const unsigned char *)" ", 1);
+
+    status = ares_sysconfig_process_buf(channel, sysconfig, buf,
+                                        ares_sysconfig_parse_resolv_line);
+    if (status != ARES_SUCCESS) {
+      /* ENOMEM is really the only error we'll get here */
+      goto done;
+    }
+
+    /* don't read resolv.conf if we processed *any* nameservers */
+    if (ares_llist_len(sysconfig->sconfig) != 0) {
+      process_resolvconf = ARES_FALSE;
+    }
+  }
+
+  /* Process files */
+  status = ares_init_sysconfig_files(channel, sysconfig, process_resolvconf);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* Read confstr(_CS_DOMAIN, ...), but if we had a search path specified with
+   * more than one domain, lets prefer that instead.  Its not exactly clear
+   * the best way to handle this. */
+  if (sysconfig->ndomains <= 1) {
+    char   domain[256];
+    size_t domain_len;
+
+    domain_len = confstr(_CS_DOMAIN, domain, sizeof(domain));
+    if (domain_len != 0) {
+      ares_strsplit_free(sysconfig->domains, sysconfig->ndomains);
+      sysconfig->domains = ares_strsplit(domain, ", ", &sysconfig->ndomains);
+      if (sysconfig->domains == NULL) {
+        status = ARES_ENOMEM;
+        goto done;
+      }
+    }
+  }
+
+done:
+  ares_buf_destroy(buf);
 
   return status;
 }
@@ -497,6 +587,59 @@ done:
 }
 #endif
 
+ares_status_t ares_sysconfig_domains_idna(ares_sysconfig_t *sysconfig)
+{
+  size_t i;
+  size_t cnt = 0;
+
+  for (i = 0; i < sysconfig->ndomains; i++) {
+    char *domain = sysconfig->domains[i];
+
+    sysconfig->domains[i] = NULL;
+
+    if (!ares_str_isprint(domain, ares_strlen(domain))) {
+      char         *encoded = NULL;
+      ares_status_t status  = ares_idna_encode_domain(domain, &encoded);
+
+      ares_free(domain);
+
+      if (status == ARES_ENOMEM) {
+        return status;
+      }
+
+      if (status != ARES_SUCCESS) {
+        /* Skip a domain we can't represent rather than break the rest of
+         * the configuration */
+        continue;
+      }
+
+      /* IDNA encoding leaves ASCII untouched, so an entry that was
+       * unprintable due to embedded control bytes rather than unicode is
+       * still unusable; drop it like any other unrepresentable entry */
+      if (!ares_str_isprint(encoded, ares_strlen(encoded))) {
+        ares_free(encoded);
+        continue;
+      }
+
+      domain = encoded;
+    }
+
+    sysconfig->domains[cnt++] = domain;
+  }
+
+  sysconfig->ndomains = cnt;
+
+  /* If every domain was dropped, the array must be released too:
+   * ares_sysconfig_apply() treats a non-NULL domains as a request to apply,
+   * and ares_strsplit_duplicate() fails on a zero-length list */
+  if (cnt == 0) {
+    ares_free(sysconfig->domains);
+    sysconfig->domains = NULL;
+  }
+
+  return ARES_SUCCESS;
+}
+
 static void ares_sysconfig_free(ares_sysconfig_t *sysconfig)
 {
   ares_llist_destroy(sysconfig->sconfig);
@@ -544,7 +687,7 @@ static ares_status_t ares_sysconfig_apply(ares_channel_t         *channel,
 
   if (sysconfig->sortlist && !(channel->optmask & ARES_OPT_SORTLIST)) {
     struct apattern *temp =
-      ares_malloc(sizeof(*channel->sortlist) * sysconfig->nsortlist);
+      ares_malloc_array(sysconfig->nsortlist, sizeof(*channel->sortlist));
     if (temp == NULL) {
       return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
     }
@@ -601,10 +744,14 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
   status = ares_init_sysconfig_android(channel, &sysconfig);
 #elif defined(__APPLE__)
   status = ares_init_sysconfig_macos(channel, &sysconfig);
+#elif defined(__PASE__)
+  status = ares_init_sysconfig_pase(channel, &sysconfig);
 #elif defined(CARES_USE_LIBRESOLV)
   status = ares_init_sysconfig_libresolv(channel, &sysconfig);
+#elif defined(__QNX__)
+  status = ares_init_sysconfig_qnx(channel, &sysconfig);
 #else
-  status = ares_init_sysconfig_files(channel, &sysconfig);
+  status = ares_init_sysconfig_files(channel, &sysconfig, ARES_TRUE);
 #endif
 
   if (status != ARES_SUCCESS) {
@@ -613,6 +760,13 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
 
   /* Environment is supposed to override sysconfig */
   status = ares_init_by_environment(&sysconfig);
+  if (status != ARES_SUCCESS) {
+    goto done;
+  }
+
+  /* Search domains from any configuration source (registry, resolv.conf,
+   * environment, ...) may be unicode (IDN); DNS needs the punycode form */
+  status = ares_sysconfig_domains_idna(&sysconfig);
   if (status != ARES_SUCCESS) {
     goto done;
   }

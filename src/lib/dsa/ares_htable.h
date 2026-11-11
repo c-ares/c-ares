@@ -87,7 +87,7 @@ typedef ares_bool_t (*ares_htable_key_eq_t)(const void *key1, const void *key2);
  *
  *  \param[in] htable initialized hashtable
  */
-void           ares_htable_destroy(ares_htable_t *htable);
+void ares_htable_destroy(ares_htable_t *htable);
 
 /*! Create a new hashtable
  *
@@ -107,7 +107,7 @@ ares_htable_t *ares_htable_create(ares_htable_hashfunc_t    hash_func,
  *  \param[in] htable  Initialized hashtable.
  *  \return count of keys
  */
-size_t         ares_htable_num_keys(const ares_htable_t *htable);
+size_t ares_htable_num_keys(const ares_htable_t *htable);
 
 /*! Retrieve an array of buckets from the hashtable.  This is mainly used as
  *  a helper for retrieving an array of keys.
@@ -128,7 +128,7 @@ const void **ares_htable_all_buckets(const ares_htable_t *htable, size_t *num);
  *                     allowed to be NULL.
  *  \return ARES_TRUE on success, ARES_FALSE if out of memory
  */
-ares_bool_t  ares_htable_insert(ares_htable_t *htable, void *bucket);
+ares_bool_t ares_htable_insert(ares_htable_t *htable, void *bucket);
 
 /*! Retrieve bucket from hashtable based on key.
  *
@@ -136,7 +136,7 @@ ares_bool_t  ares_htable_insert(ares_htable_t *htable, void *bucket);
  *  \param[in] key     Pointer to key to use for comparison.
  *  \return matching bucket, or NULL if not found.
  */
-void        *ares_htable_get(const ares_htable_t *htable, const void *key);
+void *ares_htable_get(const ares_htable_t *htable, const void *key);
 
 /*! Remove bucket from hashtable by key
  *
@@ -144,7 +144,7 @@ void        *ares_htable_get(const ares_htable_t *htable, const void *key);
  *  \param[in] key     Pointer to key to use for comparison
  *  \return ARES_TRUE if found, ARES_FALSE if not found
  */
-ares_bool_t  ares_htable_remove(ares_htable_t *htable, const void *key);
+ares_bool_t ares_htable_remove(ares_htable_t *htable, const void *key);
 
 /*! FNV1a hash algorithm.  Can be used as underlying primitive for building
  *  a wrapper hashtable.

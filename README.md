@@ -1,7 +1,7 @@
 # [![c-ares logo](https://c-ares.org/art/c-ares-logo.svg)](https://c-ares.org/)
 
-[![Build Status](https://api.cirrus-ci.com/github/c-ares/c-ares.svg?branch=main)](https://cirrus-ci.com/github/c-ares/c-ares)
-[![Windows Build Status](https://ci.appveyor.com/api/projects/status/aevgc5914tm72pvs/branch/main?svg=true)](https://ci.appveyor.com/project/c-ares/c-ares/branch/main)
+[![Build Status](https://github.com/c-ares/c-ares/actions/workflows/ubuntu-latest.yml/badge.svg?branch=main)](https://github.com/c-ares/c-ares/actions/workflows/ubuntu-latest.yml)
+[![Windows Build Status](https://github.com/c-ares/c-ares/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/c-ares/c-ares/actions/workflows/windows.yml)
 [![Coverage Status](https://coveralls.io/repos/github/c-ares/c-ares/badge.svg?branch=main)](https://coveralls.io/github/c-ares/c-ares?branch=main)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/291/badge)](https://bestpractices.coreinfrastructure.org/projects/291)
 [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/c-ares.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:c-ares)
@@ -108,6 +108,28 @@ Primary key fingerprint: 27ED EAF2 2F3A BCEB 50DB  9A12 5CC9 08FD B71E 12C2
 gpg: binary signature, digest algorithm SHA512, key algorithm rsa2048
 ```
 
+## SLSA Provenance
+This project generates [SLSA](https://slsa.dev/) provenance for its releases! This enables you to
+verify the integrity of the downloaded artifacts and ensure that the release was
+generated from the intended repository.
+
+To verify the provenance of the release, please follow the instructions [here](https://github.com/slsa-framework/slsa-github-generator#verify-provenance).
+
+Example:
+```
+$ curl -sO https://github.com/c-ares/c-ares/releases/download/v1.34.3/c-ares-1.34.3.intoto.jsonl
+$ curl -sO https://github.com/c-ares/c-ares/releases/download/v1.34.3/c-ares-1.34.3.tar.gz
+$ slsa-verifier verify-artifact c-ares-1.34.3.tar.gz \
+    --provenance-path c-ares-1.34.3.intoto.jsonl \
+    --source-uri github.com/c-ares/c-ares \
+    --source-tag v1.34.3
+Verified signature against tlog entry index 147812470 at URL: https://rekor.sigstore.dev/api/v1/log/entries/108e9186e8c5677a9bfd5bc5181d05ada688a805f9a59cfd082dec27cb6d6567f85b7382eea39dc5
+Verified build using builder "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v2.0.0" at commit c29e75d54c3743783d51a609980495cf553b4bca
+Verifying artifact c-ares-1.34.3.tar.gz: PASSED
+
+PASSED: SLSA verification passed
+```
+
 ## Features
 
 See [Features](FEATURES.md)
@@ -137,6 +159,16 @@ See [Features](FEATURES.md)
 - [RFC2535](https://datatracker.ietf.org/doc/html/rfc2535),
   [RFC2931](https://datatracker.ietf.org/doc/html/rfc2931).
   `SIG0` Record. Only basic parser, not full implementation.
+- [RFC4034](https://datatracker.ietf.org/doc/html/rfc4034).
+  Resource Records for the DNS Security Extensions (DNSSEC).
+  `DS`, `DNSKEY`, `RRSIG`, and `NSEC` Records. Parsing and writing only; no
+  DNSSEC validation is performed.
+- [RFC5155](https://datatracker.ietf.org/doc/html/rfc5155).
+  DNS Security (DNSSEC) Hashed Authenticated Denial of Existence.
+  `NSEC3` and `NSEC3PARAM` Records.
+- [RFC4255](https://datatracker.ietf.org/doc/html/rfc4255).
+  Using DNS to Securely Publish Secure Shell (SSH) Key Fingerprints.
+  `SSHFP` Record.
 - [RFC7873](https://datatracker.ietf.org/doc/html/rfc7873),
   [RFC9018](https://datatracker.ietf.org/doc/html/rfc9018).
   DNS Cookie off-path dns poisoning and amplification mitigation.

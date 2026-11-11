@@ -29,8 +29,8 @@
 struct ares_rand_state;
 typedef struct ares_rand_state ares_rand_state;
 
-ares_rand_state               *ares_init_rand_state(void);
-void                           ares_destroy_rand_state(ares_rand_state *state);
+ares_rand_state *ares_init_rand_state(void);
+void ares_destroy_rand_state(ares_rand_state *state);
 void ares_rand_bytes(ares_rand_state *state, unsigned char *buf, size_t len);
 
 #endif

@@ -1,0 +1,112 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+name: Build Release Package
+on:
+  push:
+    branches:
+      - main
+      - 'v*'
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.ref }}-build-release-package
+  cancel-in-progress: true
+
+env:
+  TEST_FILTER: "--gtest_filter=-*LiveSearchTXT*:*LiveSearchANY*"
+  MAKE: make
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      discussions: write
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+      version: ${{ steps.version.outputs.version }}
+    name: "build"
+    steps:
+      - name: Install packages
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
+        with:
+          packages: autoconf automake libtool g++ libgmock-dev pkg-config gdb
+          version: 1.0
+      - name: Checkout c-ares
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Get Tag version
+        id: version
+        run: |
+          version=`echo ${GITHUB_REF} | grep '^refs/tags/v' | sed -e 's|^refs/tags/v\(.*\)|\1|'`
+          if [ "$version" = "" ] ; then
+            version="prerelease"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+      - name: "build c-ares tarball"
+        run: |
+          autoreconf -fi
+          ./configure
+          make dist
+      - name: Upload artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: "c-ares-src-tarball"
+          path: 'c-ares-*.tar.gz'
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+      - name: Upload Release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body_path: RELEASE-NOTES.md
+          draft: true
+          make_latest: true
+          name: ${{ steps.version.outputs.version }}
+          files: c-ares-${{ steps.version.outputs.version }}.tar.gz
+          fail_on_unmatched_files: true
+          discussion_category_name: "Announcements"
+      - name: Generate subject
+        id: hash
+        run: |
+          set -euo pipefail
+          echo "hashes=$(sha256sum c-ares-*.tar.gz | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+  provenance:
+    needs: [build]
+    permissions:
+      actions: read # To read the workflow path.
+      id-token: write # To sign the provenance.
+      contents: write # To add assets to a release.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: "${{ needs.build.outputs.hashes }}"
+      upload-tag-name: "${{ needs.build.outputs.version }}"
+      draft-release: true
+      # NOTE: Due to issue with duplicating a draft, we need to download the provenance and
+      #       upload it ourselves via the "upload-provenance" step.
+      # upload-assets: ${{ startsWith(github.ref, 'refs/tags/') }}
+      upload-assets: false
+      provenance-name: "c-ares-${{ needs.build.outputs.version }}.intoto.jsonl"
+
+  upload-provenance:
+    needs: [provenance]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # To read the workflow path.
+      contents: write # To add assets to a release.
+    steps:
+      - name: Download the provenance
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{needs.provenance.outputs.provenance-name}}
+      - name: Upload Provenance to Release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        if: startsWith(github.ref, 'refs/tags/')
+        id: upload-provenance
+        with:
+          name: ${{ needs.build.outputs.version }}
+          draft: true
+          files: ${{needs.provenance.outputs.provenance-name}}
+          fail_on_unmatched_files: true

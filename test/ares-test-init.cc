@@ -25,6 +25,8 @@
  */
 #include "ares-test.h"
 
+#include <atomic>
+
 extern "C" {
   #include "ares_private.h"
 }
@@ -153,6 +155,34 @@ TEST_F(LibraryTest, OptionsChannelInit) {
   ares_destroy(channel2);
 }
 
+TEST_F(LibraryTest, DefaultQueryCacheNotSaved) {
+  struct ares_options opts;
+  struct ares_options saved_opts;
+  ares_channel_t     *channel       = nullptr;
+  int                 optmask       = ARES_OPT_TIMEOUTMS;
+  int                 saved_optmask = 0;
+
+  memset(&opts, 0, sizeof(opts));
+  opts.timeout = 1000;
+  ASSERT_EQ(ARES_SUCCESS, ares_init_options(&channel, &opts, optmask));
+  ASSERT_NE(nullptr, channel);
+
+  /* ares_save_options() uses the optmask to avoid writing fields that callers
+   * built against an older, smaller ares_options structure cannot hold.  A
+   * default value therefore must not be represented as a caller-set option. */
+  EXPECT_EQ(3600U, channel->qcache_max_ttl);
+  EXPECT_EQ(0U, channel->optmask & ARES_OPT_QUERY_CACHE);
+
+  memset(&saved_opts, 0, sizeof(saved_opts));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_save_options(channel, &saved_opts, &saved_optmask));
+  EXPECT_EQ(0, saved_optmask & ARES_OPT_QUERY_CACHE);
+  EXPECT_EQ(opts.timeout, saved_opts.timeout);
+
+  ares_destroy_options(&saved_opts);
+  ares_destroy(channel);
+}
+
 TEST_F(LibraryTest, ChannelAllocFail) {
   ares_channel_t *channel;
   for (int ii = 1; ii <= 25; ii++) {
@@ -267,12 +297,116 @@ TEST_F(LibraryTest, FailChannelInit) {
   ares_library_cleanup();
 }
 
+// CARES_THREADS implies ares_threadsafety() is true
+#ifdef CARES_THREADS
+// Build a CSV list of n distinct IPv4 servers.
+static std::string ConfigRaceServerCsv(size_t n)
+{
+  std::string csv;
+  for (size_t i = 0; i < n; i++) {
+    if (i != 0) {
+      csv += ",";
+    }
+    csv += "127.0." + std::to_string((i / 250) + 1) + "." +
+           std::to_string((i % 250) + 1) + ":5353";
+  }
+  return csv;
+}
+
+// Readers snapshot the channel configuration (via ares_dup() or
+// ares_save_options()) while a writer thread keeps swapping the server list
+// between a short and a long one.  The configuration must only be read under
+// the channel lock; otherwise the saved server array is sized from one list
+// and filled from another (heap-buffer-overflow under ASAN).
+static void ConfigRaceRun(bool use_dup, size_t reader_loops)
+{
+  const size_t        nreaders  = 4;
+  const std::string   small_csv = ConfigRaceServerCsv(4);
+  const std::string   large_csv = ConfigRaceServerCsv(400);
+  ares_channel_t     *channel   = nullptr;
+  std::atomic<size_t> readers_done(0);
+
+  EXPECT_EQ(ARES_SUCCESS, ares_init_options(&channel, nullptr, 0));
+  ASSERT_NE(nullptr, channel);
+  EXPECT_EQ(ARES_SUCCESS, ares_set_servers_csv(channel, small_csv.c_str()));
+
+  // Writer runs until every reader finished; readers are bounded so the
+  // whole test is bounded.
+  std::thread              writer([&]() {
+    size_t i = 0;
+    while (readers_done.load() < nreaders) {
+      ares_set_servers_csv(channel,
+                           (i++ & 1) ? large_csv.c_str() : small_csv.c_str());
+    }
+  });
+
+  std::vector<std::thread> readers;
+  for (size_t r = 0; r < nreaders; r++) {
+    readers.emplace_back([&]() {
+      for (size_t i = 0; i < reader_loops; i++) {
+        if (use_dup) {
+          ares_channel_t *dup = nullptr;
+          EXPECT_EQ(ARES_SUCCESS, ares_dup(&dup, channel));
+          if (dup != nullptr) {
+            ares_destroy(dup);
+          }
+        } else {
+          struct ares_options opts;
+          int                 optmask = 0;
+          memset(&opts, 0, sizeof(opts));
+          EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel, &opts, &optmask));
+          EXPECT_NE(0, optmask & ARES_OPT_SERVERS);
+          EXPECT_TRUE(opts.nservers == 4 || opts.nservers == 400);
+          ares_destroy_options(&opts);
+        }
+      }
+      readers_done++;
+    });
+  }
+
+  for (auto &t : readers) {
+    t.join();
+  }
+  writer.join();
+  ares_destroy(channel);
+}
+
+TEST_F(LibraryTest, DupConcurrentSetServers)
+{
+  ConfigRaceRun(true, 20);
+}
+
+TEST_F(LibraryTest, SaveOptionsConcurrentSetServers)
+{
+  ConfigRaceRun(false, 20000);
+}
+#endif
+
 #ifndef WIN32
 TEST_F(LibraryTest, EnvInit) {
   ares_channel_t *channel = nullptr;
   EnvValue v1("LOCALDOMAIN", "this.is.local");
   EnvValue v2("RES_OPTIONS", "options debug ndots:3 retry:3 rotate retrans:2");
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  ares_destroy(channel);
+}
+
+TEST_F(LibraryTest, EnvInitBogusAttempts)
+{
+  ares_channel_t *channel = nullptr;
+  EnvValue v1("RES_OPTIONS", "options attempts:4294967295");
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  channel->optmask |= ARES_OPT_TRIES;
+
+  struct ares_options opts;
+  memset(&opts, 0, sizeof(opts));
+  int optmask = 0;
+  EXPECT_EQ(ARES_SUCCESS, ares_save_options(channel, &opts, &optmask));
+  /* The absurd attempt count must be ignored rather than turned into an
+   * effectively unbounded retry loop. */
+  EXPECT_EQ(3, opts.tries);
+
   ares_destroy(channel);
 }
 
@@ -451,6 +585,37 @@ CONTAINED_TEST_F(LibraryTest, ContainerFullResolvInit,
   return HasFailure();
 }
 
+// Unicode (IDN) search domains from resolv.conf are converted to their
+// punycode form; entries that cannot be converted are dropped.
+NameContentList idnresolv = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "search bücher.de first.com \xF0\x9F\x98\x80.com"
+                       " münchen.example\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerIDNResolvInit,
+                 "myhostname", "mydomainname.org", idnresolv) {
+  ares_channel_t *channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+  /* Fail cleanly rather than crash the container child on a regression
+   * (ASSERT_* can't be used in the non-void test body); the nullptr check
+   * must precede any dereference, including the ndomains EXPECT below */
+  if (channel == nullptr) {
+    return true;
+  }
+
+  EXPECT_EQ((size_t)3, channel->ndomains);
+  if (channel->ndomains != 3) {
+    ares_destroy(channel);
+    return true;
+  }
+  EXPECT_EQ(std::string("xn--bcher-kva.de"), std::string(channel->domains[0]));
+  EXPECT_EQ(std::string("first.com"), std::string(channel->domains[1]));
+  EXPECT_EQ(std::string("xn--mnchen-3ya.example"),
+            std::string(channel->domains[2]));
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
 // Allow path for resolv.conf to be configurable
 NameContentList myresolvconf = {
   {"/tmp/myresolv.cnf", " nameserver   1.2.3.4 \n"
@@ -518,6 +683,24 @@ CONTAINED_TEST_F(LibraryTest, ContainerSvcConfInit,
   EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
 
   EXPECT_EQ(std::string("b"), std::string(channel->lookups));
+
+  ares_destroy(channel);
+  return HasFailure();
+}
+
+// AIX /etc/netsvc.conf uses address-family-suffixed tokens (bind4/bind6,
+// local4/local6).  Ensure these are recognized rather than dropped.
+NameContentList netsvcconf = {
+  {"/etc/resolv.conf", "nameserver 1.2.3.4\n"
+                       "search first.com second.com\n"},
+  {"/etc/netsvc.conf", "hosts = bind4, local4\n"}};
+CONTAINED_TEST_F(LibraryTest, ContainerNetsvcConfAIXSuffix,
+                 "myhostname", "mydomainname.org", netsvcconf) {
+  ares_channel_t *channel = nullptr;
+  EXPECT_EQ(ARES_SUCCESS, ares_init(&channel));
+
+  /* "bf" (not the default "fb") proves the bind4/local4 tokens were parsed. */
+  EXPECT_EQ(std::string("bf"), std::string(channel->lookups));
 
   ares_destroy(channel);
   return HasFailure();

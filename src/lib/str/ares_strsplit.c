@@ -72,10 +72,14 @@ char **ares_strsplit(const char *in, const char *delms, size_t *num_elm)
     return NULL;
   }
 
-  status = ares_buf_split_str(
-    buf, (const unsigned char *)delms, ares_strlen(delms),
-    ARES_BUF_SPLIT_NO_DUPLICATES | ARES_BUF_SPLIT_CASE_INSENSITIVE, 0, &out,
-    num_elm);
+  /* UTF8 is permitted since every current consumer splits search domain
+   * lists, which may contain unicode (IDN) entries that are converted to
+   * their punycode form after splitting */
+  status =
+    ares_buf_split_str(buf, (const unsigned char *)delms, ares_strlen(delms),
+                       ARES_BUF_SPLIT_NO_DUPLICATES |
+                         ARES_BUF_SPLIT_CASE_INSENSITIVE | ARES_BUF_SPLIT_UTF8,
+                       0, &out, num_elm);
   if (status != ARES_SUCCESS) {
     goto done;
   }

@@ -1,0 +1,27 @@
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+#
+# Enables GitHub's native auto-merge on Dependabot pull requests.  The PR then
+# merges by itself once the required "All Checks" status passes.  main does not
+# require a review, so no approval step is needed.  Uses only the built-in
+# GITHUB_TOKEN (no external actions, nothing to pin).
+
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    # Only act on PRs opened by Dependabot.
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+    steps:
+      - name: Enable auto-merge
+        run: gh pr merge --auto --squash "${PR_URL}"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

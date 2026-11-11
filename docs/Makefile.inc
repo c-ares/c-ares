@@ -43,6 +43,7 @@ MANPAGES = ares_cancel.3		\
   ares_dns_rr.3				\
   ares_dns_rr_add_abin.3		\
   ares_dns_rr_del_abin.3		\
+  ares_dns_rr_del_opt_byid.3		\
   ares_dns_rr_get_abin.3		\
   ares_dns_rr_get_abin_cnt.3		\
   ares_dns_rr_get_addr.3		\
@@ -132,6 +133,7 @@ MANPAGES = ares_cancel.3		\
   ares_set_local_ip4.3			\
   ares_set_local_ip6.3			\
   ares_set_pending_write_cb.3	\
+  ares_set_query_enqueue_cb.3	\
   ares_set_server_state_callback.3	\
   ares_set_servers.3			\
   ares_set_servers_csv.3		\
@@ -140,6 +142,7 @@ MANPAGES = ares_cancel.3		\
   ares_set_socket_callback.3		\
   ares_set_socket_configure_callback.3	\
   ares_set_socket_functions.3		\
+  ares_set_socket_functions_ex.3	\
   ares_set_sortlist.3			\
   ares_strerror.3			\
   ares_svcb_param_t.3			\

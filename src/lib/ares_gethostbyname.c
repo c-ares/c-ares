@@ -45,10 +45,10 @@
 
 #include "ares_inet_net_pton.h"
 
-static void   sort_addresses(const struct hostent  *host,
-                             const struct apattern *sortlist, size_t nsort);
-static void   sort6_addresses(const struct hostent  *host,
-                              const struct apattern *sortlist, size_t nsort);
+static void sort_addresses(const struct hostent  *host,
+                           const struct apattern *sortlist, size_t nsort);
+static void sort6_addresses(const struct hostent  *host,
+                            const struct apattern *sortlist, size_t nsort);
 static size_t get_address_index(const struct in_addr  *addr,
                                 const struct apattern *sortlist, size_t nsort);
 static size_t get6_address_index(const struct ares_in6_addr *addr,
@@ -102,6 +102,10 @@ void ares_gethostbyname(ares_channel_t *channel, const char *name, int family,
   struct ares_addrinfo_hints hints;
   struct host_query         *ghbn_arg;
 
+  if (channel == NULL) {
+    return;
+  }
+
   if (!callback) {
     return;
   }
@@ -140,6 +144,11 @@ static void sort_addresses(const struct hostent  *host,
    * through the address list, with the loop invariant that everything
    * to the left of i1 is sorted.  In the loop body, the value at i1 is moved
    * back through the list (via i2) until it is in sorted order.
+   *
+   * The IPs are sorted in ascending order of corresponding sortlist
+   * indices, with those that don't match the subnets in the sortlist
+   * coming last.  There is no particular order amongst IPs that tie
+   * in this sorting scheme.
    */
   for (i1 = 0; host->h_addr_list[i1]; i1++) {
     memcpy(&a1, host->h_addr_list[i1], sizeof(struct in_addr));
@@ -196,6 +205,11 @@ static void sort6_addresses(const struct hostent  *host,
    * through the address list, with the loop invariant that everything
    * to the left of i1 is sorted.  In the loop body, the value at i1 is moved
    * back through the list (via i2) until it is in sorted order.
+   *
+   * The IPv6s are sorted in ascending order of corresponding sortlist
+   * indices, with those that don't match the subnets in the sortlist
+   * coming last.  There is no particular order amongst IPs that tie
+   * in this sorting scheme.
    */
   for (i1 = 0; host->h_addr_list[i1]; i1++) {
     memcpy(&a1, host->h_addr_list[i1], sizeof(struct ares_in6_addr));
@@ -274,7 +288,7 @@ static ares_status_t ares_gethostbyname_file_int(ares_channel_t *channel,
                                                  const char *name, int family,
                                                  struct hostent **host)
 {
-  const ares_hosts_entry_t *entry;
+  const ares_hosts_entry_t *entry = NULL;
   ares_status_t             status;
 
   /* We only take the channel to ensure that ares_init() been called. */
@@ -286,6 +300,8 @@ static ares_status_t ares_gethostbyname_file_int(ares_channel_t *channel,
     }
     return ARES_ENOTFOUND;
   }
+
+  *host = NULL;
 
   /* Per RFC 7686, reject queries for ".onion" domain names with NXDOMAIN. */
   if (ares_is_onion_domain(name)) {
@@ -307,9 +323,13 @@ done:
    * SHOULD recognize localhost names as special and SHOULD always return the
    * IP loopback address for address queries".
    * We will also ignore ALL errors when trying to resolve localhost, such
-   * as permissions errors reading /etc/hosts or a malformed /etc/hosts */
-  if (status != ARES_SUCCESS && status != ARES_ENOMEM &&
-      ares_is_localhost(name)) {
+   * as permissions errors reading /etc/hosts or a malformed /etc/hosts.
+   *
+   * Also, just because the query itself returned success from /etc/hosts
+   * lookup doesn't mean it returned everything it needed to for all requested
+   * address families. As long as we're not on a critical out of memory
+   * condition pass it through to fill in any other address classes. */
+  if (status != ARES_ENOMEM && ares_is_localhost(name)) {
     return ares_hostent_localhost(name, family, host);
   }
 

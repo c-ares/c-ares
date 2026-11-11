@@ -74,7 +74,7 @@
 #if defined(_AIX) || defined(__NOVELL_LIBC__) || defined(__NetBSD__) || \
   defined(__minix) || defined(__SYMBIAN32__) || defined(__INTEGRITY) || \
   defined(ANDROID) || defined(__ANDROID__) || defined(__OpenBSD__) ||   \
-  defined(__QNXNTO__) || defined(__MVS__) || defined(__HAIKU__)
+  defined(__QNX__) || defined(__MVS__) || defined(__HAIKU__)
 #  include <sys/select.h>
 #endif
 
@@ -434,6 +434,14 @@ struct ares_addr {
 /* DNS record parser, writer, and helpers */
 #include "ares_dns_record.h"
 
+/* IMPORTANT: the pointer parameters below (abuf, hostent, node, service) are
+ * intentionally NOT const.  Marking them const changes the function-pointer
+ * type and breaks API/ABI compatibility for existing C and (especially) C++
+ * applications that declare their callbacks with the historical non-const
+ * signature.  This was tried in PR #1060 and reverted for that reason.  These
+ * buffers are owned by c-ares and MUST be treated as read-only by the callback
+ * (do not modify or free them); that contract is documented in the man pages,
+ * not enforced via const, to preserve compatibility.  Do not re-add const. */
 typedef void (*ares_callback)(void *arg, int status, int timeouts,
                               unsigned char *abuf, int alen);
 
@@ -462,6 +470,8 @@ typedef void (*ares_server_state_callback)(const char *server_string,
 
 typedef void (*ares_pending_write_cb)(void *data);
 
+typedef void (*ares_query_enqueue_cb)(void *data);
+
 CARES_EXTERN int ares_library_init(int flags);
 
 CARES_EXTERN int ares_library_init_mem(int flags, void *(*amalloc)(size_t size),
@@ -471,74 +481,78 @@ CARES_EXTERN int ares_library_init_mem(int flags, void *(*amalloc)(size_t size),
 
 #if defined(ANDROID) || defined(__ANDROID__)
 CARES_EXTERN void ares_library_init_jvm(JavaVM *jvm);
-CARES_EXTERN int  ares_library_init_android(jobject connectivity_manager);
-CARES_EXTERN int  ares_library_android_initialized(void);
+CARES_EXTERN int ares_library_init_android(jobject connectivity_manager);
+CARES_EXTERN int ares_library_android_initialized(void);
 #endif
 
 #define CARES_HAVE_ARES_LIBRARY_INIT    1
 #define CARES_HAVE_ARES_LIBRARY_CLEANUP 1
 
-CARES_EXTERN int         ares_library_initialized(void);
+CARES_EXTERN int ares_library_initialized(void);
 
-CARES_EXTERN void        ares_library_cleanup(void);
+CARES_EXTERN void ares_library_cleanup(void);
 
 CARES_EXTERN const char *ares_version(int *version);
 
-CARES_EXTERN             CARES_DEPRECATED_FOR(ares_init_options) int ares_init(
+CARES_EXTERN CARES_DEPRECATED_FOR(ares_init_options) int ares_init(
   ares_channel_t **channelptr);
 
-CARES_EXTERN int  ares_init_options(ares_channel_t           **channelptr,
-                                    const struct ares_options *options,
-                                    int                        optmask);
+CARES_EXTERN int ares_init_options(ares_channel_t           **channelptr,
+                                   const struct ares_options *options,
+                                   int                        optmask);
 
-CARES_EXTERN int  ares_save_options(const ares_channel_t *channel,
-                                    struct ares_options *options, int *optmask);
+CARES_EXTERN int ares_save_options(const ares_channel_t *channel,
+                                   struct ares_options *options, int *optmask);
 
 CARES_EXTERN void ares_destroy_options(struct ares_options *options);
 
-CARES_EXTERN int  ares_dup(ares_channel_t **dest, const ares_channel_t *src);
+CARES_EXTERN int ares_dup(ares_channel_t **dest, const ares_channel_t *src);
 
 CARES_EXTERN ares_status_t ares_reinit(ares_channel_t *channel);
 
-CARES_EXTERN void          ares_destroy(ares_channel_t *channel);
+CARES_EXTERN void ares_destroy(ares_channel_t *channel);
 
-CARES_EXTERN void          ares_cancel(ares_channel_t *channel);
+CARES_EXTERN void ares_cancel(ares_channel_t *channel);
 
 /* These next 3 configure local binding for the out-going socket
  * connection.  Use these to specify source IP and/or network device
  * on multi-homed systems.
  */
-CARES_EXTERN void          ares_set_local_ip4(ares_channel_t *channel,
-                                              unsigned int    local_ip);
+CARES_EXTERN void ares_set_local_ip4(ares_channel_t *channel,
+                                     unsigned int    local_ip);
 
 /* local_ip6 should be 16 bytes in length */
-CARES_EXTERN void          ares_set_local_ip6(ares_channel_t      *channel,
-                                              const unsigned char *local_ip6);
+CARES_EXTERN void ares_set_local_ip6(ares_channel_t      *channel,
+                                     const unsigned char *local_ip6);
 
 /* local_dev_name should be null terminated. */
-CARES_EXTERN void          ares_set_local_dev(ares_channel_t *channel,
-                                              const char     *local_dev_name);
+CARES_EXTERN void ares_set_local_dev(ares_channel_t *channel,
+                                     const char     *local_dev_name);
 
-CARES_EXTERN void          ares_set_socket_callback(ares_channel_t           *channel,
-                                                    ares_sock_create_callback callback,
-                                                    void                     *user_data);
+CARES_EXTERN void ares_set_socket_callback(ares_channel_t           *channel,
+                                           ares_sock_create_callback callback,
+                                           void                     *user_data);
 
-CARES_EXTERN void          ares_set_socket_configure_callback(
-           ares_channel_t *channel, ares_sock_config_callback callback, void *user_data);
+CARES_EXTERN void ares_set_socket_configure_callback(
+  ares_channel_t *channel, ares_sock_config_callback callback, void *user_data);
 
 CARES_EXTERN void
-                  ares_set_server_state_callback(ares_channel_t            *channel,
-                                                 ares_server_state_callback callback,
-                                                 void                      *user_data);
+  ares_set_server_state_callback(ares_channel_t            *channel,
+                                 ares_server_state_callback callback,
+                                 void                      *user_data);
 
 CARES_EXTERN void ares_set_pending_write_cb(ares_channel_t       *channel,
                                             ares_pending_write_cb callback,
                                             void                 *user_data);
 
+CARES_EXTERN void ares_set_query_enqueue_cb(ares_channel_t       *channel,
+                                            ares_query_enqueue_cb callback,
+                                            void                 *user_data);
+
 CARES_EXTERN void ares_process_pending_write(ares_channel_t *channel);
 
-CARES_EXTERN int  ares_set_sortlist(ares_channel_t *channel,
-                                    const char     *sortstr);
+CARES_EXTERN int ares_set_sortlist(ares_channel_t *channel,
+                                   const char     *sortstr);
 
 CARES_EXTERN void ares_getaddrinfo(ares_channel_t *channel, const char *node,
                                    const char                       *service,
@@ -880,9 +894,9 @@ CARES_EXTERN CARES_DEPRECATED_FOR(ares_getaddrinfo) void ares_gethostbyname(
   ares_channel_t *channel, const char *name, int family,
   ares_host_callback callback, void *arg);
 
-CARES_EXTERN int  ares_gethostbyname_file(ares_channel_t *channel,
-                                          const char *name, int family,
-                                          struct hostent **host);
+CARES_EXTERN int ares_gethostbyname_file(ares_channel_t *channel,
+                                         const char *name, int family,
+                                         struct hostent **host);
 
 CARES_EXTERN void ares_gethostbyaddr(ares_channel_t *channel, const void *addr,
                                      int addrlen, int family,
@@ -893,10 +907,10 @@ CARES_EXTERN void ares_getnameinfo(ares_channel_t        *channel,
                                    ares_socklen_t salen, int flags,
                                    ares_nameinfo_callback callback, void *arg);
 
-CARES_EXTERN      CARES_DEPRECATED_FOR(
+CARES_EXTERN CARES_DEPRECATED_FOR(
   ARES_OPT_EVENT_THREAD or
   ARES_OPT_SOCK_STATE_CB) int ares_fds(const ares_channel_t *channel,
-                                            fd_set *read_fds, fd_set *write_fds);
+                                       fd_set *read_fds, fd_set *write_fds);
 
 CARES_EXTERN CARES_DEPRECATED_FOR(
   ARES_OPT_EVENT_THREAD or
@@ -950,9 +964,9 @@ CARES_EXTERN ares_status_t ares_process_fds(ares_channel_t         *channel,
                                             const ares_fd_events_t *events,
                                             size_t nevents, unsigned int flags);
 
-CARES_EXTERN void          ares_process_fd(ares_channel_t *channel,
-                                           ares_socket_t   read_fd,
-                                           ares_socket_t   write_fd);
+CARES_EXTERN void ares_process_fd(ares_channel_t *channel,
+                                  ares_socket_t   read_fd,
+                                  ares_socket_t   write_fd);
 
 CARES_EXTERN CARES_DEPRECATED_FOR(ares_dns_record_create) int ares_create_query(
   const char *name, int dnsclass, int type, unsigned short id, int rd,
@@ -1134,11 +1148,11 @@ CARES_EXTERN CARES_DEPRECATED_FOR(ares_dns_parse) int ares_parse_soa_reply(
 CARES_EXTERN CARES_DEPRECATED_FOR(ares_dns_parse) int ares_parse_uri_reply(
   const unsigned char *abuf, int alen, struct ares_uri_reply **uri_out);
 
-CARES_EXTERN void        ares_free_string(void *str);
+CARES_EXTERN void ares_free_string(void *str);
 
-CARES_EXTERN void        ares_free_hostent(struct hostent *host);
+CARES_EXTERN void ares_free_hostent(struct hostent *host);
 
-CARES_EXTERN void        ares_free_data(void *dataptr);
+CARES_EXTERN void ares_free_data(void *dataptr);
 
 CARES_EXTERN const char *ares_strerror(int code);
 
@@ -1170,14 +1184,14 @@ CARES_EXTERN CARES_DEPRECATED_FOR(ares_set_servers_csv) int ares_set_servers(
 
 CARES_EXTERN
 CARES_DEPRECATED_FOR(ares_set_servers_ports_csv)
-int                ares_set_servers_ports(ares_channel_t                   *channel,
-                                          const struct ares_addr_port_node *servers);
+int ares_set_servers_ports(ares_channel_t                   *channel,
+                           const struct ares_addr_port_node *servers);
 
 /* Incoming string format: host[:port][,host[:port]]... */
-CARES_EXTERN int   ares_set_servers_csv(ares_channel_t *channel,
-                                        const char     *servers);
-CARES_EXTERN int   ares_set_servers_ports_csv(ares_channel_t *channel,
-                                              const char     *servers);
+CARES_EXTERN int ares_set_servers_csv(ares_channel_t *channel,
+                                      const char     *servers);
+CARES_EXTERN int ares_set_servers_ports_csv(ares_channel_t *channel,
+                                            const char     *servers);
 CARES_EXTERN char *ares_get_servers_csv(const ares_channel_t *channel);
 
 CARES_EXTERN CARES_DEPRECATED_FOR(ares_get_servers_csv) int ares_get_servers(
@@ -1185,19 +1199,19 @@ CARES_EXTERN CARES_DEPRECATED_FOR(ares_get_servers_csv) int ares_get_servers(
 
 CARES_EXTERN
 CARES_DEPRECATED_FOR(ares_get_servers_csv)
-int                        ares_get_servers_ports(const ares_channel_t        *channel,
-                                                  struct ares_addr_port_node **servers);
+int ares_get_servers_ports(const ares_channel_t        *channel,
+                           struct ares_addr_port_node **servers);
 
-CARES_EXTERN const char   *ares_inet_ntop(int af, const void *src, char *dst,
-                                          ares_socklen_t size);
+CARES_EXTERN const char *ares_inet_ntop(int af, const void *src, char *dst,
+                                        ares_socklen_t size);
 
-CARES_EXTERN int           ares_inet_pton(int af, const char *src, void *dst);
+CARES_EXTERN int ares_inet_pton(int af, const char *src, void *dst);
 
 /*! Whether or not the c-ares library was built with threadsafety
  *
  *  \return ARES_TRUE if built with threadsafety, ARES_FALSE if not
  */
-CARES_EXTERN ares_bool_t   ares_threadsafety(void);
+CARES_EXTERN ares_bool_t ares_threadsafety(void);
 
 
 /*! Block until notified that there are no longer any queries in queue, or
