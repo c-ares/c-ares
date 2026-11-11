@@ -241,6 +241,7 @@ static ares_status_t ares_init_sysconfig_amiga(const ares_channel_t *channel,
 									   ARES_TRUE);
 
 	  if (status != ARES_SUCCESS) {
+		ReleaseDomainNameServerList(dnslist);
 		return status;
 	  }
 
@@ -250,7 +251,7 @@ static ares_status_t ares_init_sysconfig_amiga(const ares_channel_t *channel,
 	
   } else {
 	/* DNS API does not exist */
-	return ARES_ENOMEM;
+	return ARES_SUCCESS;
   }
 
   return ARES_SUCCESS;
