@@ -78,7 +78,7 @@
 #  define TFO_SUPPORTED 0
 #endif
 
-#ifndef HAVE_WRITEV
+#if !defined(HAVE_WRITEV) && !defined(__amigaos__)
 /* Structure for scatter/gather I/O. */
 struct iovec {
   void  *iov_base; /* Pointer to data. */
