@@ -36,6 +36,9 @@
 #  define select(A,B,C,D,E) WaitSelect(A,B,C,D,E,NULL)
 
 struct Library *SocketBase = NULL;
+#    ifdef __amigaos4__
+struct SocketIFace *ISocket = NULL;
+#    endif
 #endif
 
 #ifdef HAVE_NETINET_IN_H
