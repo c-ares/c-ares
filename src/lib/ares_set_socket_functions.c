@@ -217,7 +217,7 @@ static ares_socket_t default_asocket(int domain, int type, int protocol,
     goto fail; /* LCOV_EXCL_LINE */
   }
 
-#if defined(FD_CLOEXEC) && !defined(MSDOS)
+#if defined(FD_CLOEXEC) && !defined(MSDOS) && !defined(__amigaos__)
   /* Configure the socket fd as close-on-exec. */
   if (fcntl(s, F_SETFD, FD_CLOEXEC) != 0) {
     goto fail; /* LCOV_EXCL_LINE */
