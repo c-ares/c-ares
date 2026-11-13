@@ -78,7 +78,7 @@
 #  define TFO_SUPPORTED 0
 #endif
 
-#ifndef HAVE_WRITEV
+#if !defined(HAVE_WRITEV) && !defined(__amigaos__)
 /* Structure for scatter/gather I/O. */
 struct iovec {
   void  *iov_base; /* Pointer to data. */
@@ -174,7 +174,7 @@ static int setsocknonblock(ares_socket_t sockfd, /* operate on this */
 
   /* Amiga */
   long flags = nonblock ? 1L : 0L;
-  return IoctlSocket(sockfd, FIONBIO, flags);
+  return IoctlSocket(sockfd, FIONBIO, &flags);
 
 #elif defined(HAVE_SETSOCKOPT_SO_NONBLOCK)
 
@@ -217,7 +217,7 @@ static ares_socket_t default_asocket(int domain, int type, int protocol,
     goto fail; /* LCOV_EXCL_LINE */
   }
 
-#if defined(FD_CLOEXEC) && !defined(MSDOS)
+#if defined(FD_CLOEXEC) && !defined(MSDOS) && !defined(__amigaos__)
   /* Configure the socket fd as close-on-exec. */
   if (fcntl(s, F_SETFD, FD_CLOEXEC) != 0) {
     goto fail; /* LCOV_EXCL_LINE */

@@ -51,6 +51,14 @@
 #  define MAX_DNS_PROPERTIES   8
 #endif
 
+#if defined(__amigaos__) || defined(__amigaos4__)
+#  include <proto/exec.h>
+#  include <exec/lists.h>
+#  include <exec/nodes.h>
+#  include <proto/bsdsocket.h>
+#  include <bsdsocket/socketbasetags.h>
+#endif
+
 #if defined(CARES_USE_LIBRESOLV)
 #  include <resolv.h>
 #endif
@@ -166,6 +174,89 @@ static ares_status_t ares_init_sysconfig_riscos(const ares_channel_t *channel,
   }
 
   return status;
+}
+#endif
+
+#if defined(__amigaos__) || defined(__amigaos4__)
+#  ifndef __amigaos4__
+static struct Node *GetHead(struct List *list)
+{
+  struct Node *res = NULL;
+
+  if ((NULL != list) && (NULL != list->lh_Head->ln_Succ)) {
+    res = list->lh_Head;
+  }
+  return res;
+}
+
+static struct Node *GetPred(struct Node *node)
+{
+  if (node->ln_Pred->ln_Pred == NULL) {
+    return NULL;
+  }
+  return node->ln_Pred;
+}
+
+static struct Node *GetSucc(struct Node *node)
+{
+  if (node->ln_Succ->ln_Succ == NULL) {
+    return NULL;
+  }
+  return node->ln_Succ;
+}
+#  endif
+
+static ares_status_t ares_init_sysconfig_amiga(const ares_channel_t *channel,
+                                               ares_sysconfig_t     *sysconfig)
+{
+  size_t        i;
+  ares_status_t status;
+
+  ULONG         dnsapi = 0;
+
+  SocketBaseTags(SBTM_GETREF(SBTC_HAVE_DNS_API), (ULONG)&dnsapi, TAG_DONE);
+
+  if (dnsapi) {
+    /* Use the DNS API in bsdsocket.library
+     * This exists in Roadshow
+     */
+
+    struct List                 *dnslist = ObtainDomainNameServerList();
+    struct DomainNameServerNode *node;
+    struct DomainNameServerNode *nnode;
+
+    if (dnslist == NULL) {
+      return ARES_ENOMEM;
+    }
+
+    if (IsListEmpty(dnslist)) {
+      /* No DNS entries */
+      return ARES_SUCCESS;
+    }
+
+    node = (struct DomainNameServerNode *)GetHead(dnslist);
+
+    do {
+      nnode = (struct DomainNameServerNode *)GetSucc((struct MinNode *)node);
+
+      status = ares_sconfig_append_fromstr(channel, &sysconfig->sconfig,
+                                           node->dnsn_Address, ARES_TRUE);
+
+      if (status != ARES_SUCCESS) {
+        ReleaseDomainNameServerList(dnslist);
+        return status;
+      }
+
+    } while ((node = nnode));
+
+    ReleaseDomainNameServerList(dnslist);
+
+  } else {
+    /* DNS API does not exist */
+    return ARES_SUCCESS;
+  }
+
+  return ARES_SUCCESS;
 }
 #endif
 
@@ -651,6 +742,8 @@ ares_status_t ares_init_by_sysconfig(ares_channel_t *channel)
   status = ares_init_sysconfig_mvs(channel, &sysconfig);
 #elif defined(__riscos__)
   status = ares_init_sysconfig_riscos(channel, &sysconfig);
+#elif defined(__amigaos__) || defined(__amigaos4__)
+  status = ares_init_sysconfig_amiga(channel, &sysconfig);
 #elif defined(WATT32)
   status = ares_init_sysconfig_watt32(channel, &sysconfig);
 #elif defined(ANDROID) || defined(__ANDROID__)
