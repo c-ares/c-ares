@@ -34,12 +34,12 @@
 #  include <proto/bsdsocket.h>
 #  include <bsdsocket/socketbasetags.h>
 
-#  define select(A,B,C,D,E) WaitSelect(A,B,C,D,E,NULL)
+#  define select(A, B, C, D, E) WaitSelect(A, B, C, D, E, NULL)
 
 struct Library *SocketBase = NULL;
-#    ifdef __amigaos4__
+#  ifdef __amigaos4__
 struct SocketIFace *ISocket = NULL;
-#    endif
+#  endif
 #endif
 
 #if !defined(_WIN32) || defined(WATT32)
@@ -99,11 +99,15 @@ int main(int argc, char **argv)
 #if defined(__amigaos__) || defined(__amigaos4__)
   struct Library *SocketBase = OpenLibrary("bsdsocket.library", 4);
 
-  if(!SocketBase) return 0;
-#ifdef __amigaos4__
+  if (!SocketBase) {
+    return 0;
+  }
+#  ifdef __amigaos4__
   ISocket = (struct SocketIFace *)GetInterface(SocketBase, "main", 1, NULL);
-  if(!ISocket) return 0;
-#endif
+  if (!ISocket) {
+    return 0;
+  }
+#  endif
 #endif
 
   memset(&options, 0, sizeof(options));
@@ -226,10 +230,14 @@ int main(int argc, char **argv)
   ares_library_cleanup();
 
 #if defined(__amigaos__) || defined(__amigaos4__)
-#ifdef __amigaos4__
-  if(ISocket) DropInterface(ISocket);
-  if(SocketBase) CloseLibrary(SocketBase);
-#endif
+#  ifdef __amigaos4__
+  if (ISocket) {
+    DropInterface(ISocket);
+  }
+  if (SocketBase) {
+    CloseLibrary(SocketBase);
+  }
+#  endif
 #endif
 
 #ifdef USE_WINSOCK
