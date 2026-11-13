@@ -102,7 +102,7 @@ int main(int argc, char **argv)
   if(!SocketBase) return 0;
 #ifdef __amigaos4__
   ISocket = (struct SocketIFace *)GetInterface(SocketBase, "main", 1, NULL);
-  if(ISocket) return 0;
+  if(!ISocket) return 0;
 #endif
 #endif
 
