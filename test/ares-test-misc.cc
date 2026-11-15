@@ -756,6 +756,7 @@ TEST_F(LibraryTest, UsageErrors) {
   ares_gethostbyaddr(NULL, NULL, 0, 0, NULL, NULL);
   ares_getnameinfo(NULL, NULL, 0, 0, NULL, NULL);
   ares_reinit(NULL);
+  ares_reinit_rand(NULL);
   ares_dup(NULL, NULL);
   ares_set_local_ip4(NULL, 0);
   ares_set_local_ip6(NULL, NULL);

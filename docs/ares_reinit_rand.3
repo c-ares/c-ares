@@ -1,0 +1,40 @@
+.\"
+.\" Copyright 2026 by The c-ares project and its contributors
+.\" SPDX-License-Identifier: MIT
+.\"
+.TH ARES_REINIT_RAND 3 "15 November 2026"
+.SH NAME
+ares_reinit_rand \- Discard a channel's cached random bytes and reinitialize
+its random source.
+.SH SYNOPSIS
+.nf
+#include <ares.h>
+
+ares_status_t ares_reinit_rand(ares_channel_t *\fIchannel\fP)
+.fi
+.SH DESCRIPTION
+A channel keeps a cache of random bytes from which DNS query ids, DNS 0x20
+case randomization and DNS cookies are drawn.  A process whose address space is
+cloned without a fork, as when a virtual machine is restored several times from
+one snapshot or a process is restored from a checkpoint, holds the same cache in
+every copy, so every copy sends the same query ids until the cache is used up.
+
+\fBares_reinit_rand(3)\fP discards the cache and reinitializes the channel's
+random source, so that the next query draws fresh bytes.  Call it after the
+process has learned of such a restore, before its next query.  On Linux the
+VMClock page (\fI/dev/vmclock0\fP, \fIlinux/vmclock-abi.h\fP) carries a
+\fIvm_generation_counter\fP that the hypervisor changes on every restore.
+
+The channel is locked for the duration of the call.
+.SH RETURN VALUES
+.TP 14
+.B ARES_SUCCESS
+The cache was discarded.
+.TP 14
+.B ARES_EFORMERR
+\fIchannel\fP was NULL.
+.SH AVAILABILITY
+This function was first introduced in c-ares version 1.35.0.
+.SH SEE ALSO
+.BR ares_reinit (3),
+.BR ares_init_options (3)
