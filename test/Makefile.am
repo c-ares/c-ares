@@ -28,8 +28,9 @@ arestest_SOURCES = $(TESTSOURCES) $(TESTHEADERS)
 arestest_CXXFLAGS = $(AM_CXXFLAGS) $(GMOCK_CFLAGS)
 arestest_LDADD = $(GMOCK_LIBS) $(top_builddir)/src/lib/libcares.la $(PTHREAD_LIBS) $(CODE_COVERAGE_LIBS)
 
+arestest_CPPFLAGS = $(AM_CPPFLAGS)
 if CARES_TEST_WRAP_SOCKET
-arestest_CPPFLAGS = $(AM_CPPFLAGS) -DCARES_TEST_WRAP_SOCKET
+arestest_CPPFLAGS += -DCARES_TEST_WRAP_SOCKET
 arestest_LDFLAGS = -Wl,--wrap=socket
 endif
 
