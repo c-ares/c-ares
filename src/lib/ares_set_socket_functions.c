@@ -208,7 +208,14 @@ static ares_socket_t default_asocket(int domain, int type, int protocol,
   ares_socket_t s;
   (void)user_data;
 
+#if defined(SOCK_CLOEXEC) && !defined(MSDOS)
+  s = socket(domain, type | SOCK_CLOEXEC, protocol);
+  if (s == ARES_SOCKET_BAD && SOCKERRNO == EINVAL) {
+    s = socket(domain, type, protocol);
+  }
+#else
   s = socket(domain, type, protocol);
+#endif
   if (s == ARES_SOCKET_BAD) {
     return s;
   }
