@@ -269,12 +269,23 @@ static void ares_clear_rand_state(ares_rand_state *state)
   }
 }
 
-static void ares_reinit_rand(ares_rand_state *state)
+static void ares_rand_state_reinit(ares_rand_state *state)
 {
-  /* LCOV_EXCL_START: UntestablePath */
   ares_clear_rand_state(state);
   ares_init_rand_engine(state);
-  /* LCOV_EXCL_STOP */
+}
+
+ares_status_t ares_reinit_rand(ares_channel_t *channel)
+{
+  if (channel == NULL) {
+    return ARES_EFORMERR;
+  }
+
+  ares_channel_lock(channel);
+  ares_rand_state_reinit(channel->rand_state);
+  ares_channel_unlock(channel);
+
+  return ARES_SUCCESS;
 }
 
 void ares_destroy_rand_state(ares_rand_state *state)
@@ -354,7 +365,7 @@ static void ares_rand_bytes_fetch(ares_rand_state *state, unsigned char *buf,
 
     /* If we didn't return before we got here, that means we had a critical rand
      * failure and need to reinitialized */
-    ares_reinit_rand(state); /* LCOV_EXCL_LINE: UntestablePath */
+    ares_rand_state_reinit(state); /* LCOV_EXCL_LINE: UntestablePath */
   }
 }
 

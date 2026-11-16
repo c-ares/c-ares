@@ -510,6 +510,16 @@ CARES_EXTERN int ares_dup(ares_channel_t **dest, const ares_channel_t *src);
 
 CARES_EXTERN ares_status_t ares_reinit(ares_channel_t *channel);
 
+/*! Discard the channel's cached random bytes and reinitialize its random
+ *  source.  Call after the address space has been cloned without a fork (a VM
+ *  restored from a snapshot, a checkpoint restore): every copy otherwise draws
+ *  the same DNS query ids from the cloned cache.
+ *
+ *  \param[in] channel  Initialized resolver channel
+ *  \return ARES_SUCCESS, or ARES_EFORMERR if channel is NULL
+ */
+CARES_EXTERN ares_status_t ares_reinit_rand(ares_channel_t *channel);
+
 CARES_EXTERN void ares_destroy(ares_channel_t *channel);
 
 CARES_EXTERN void ares_cancel(ares_channel_t *channel);

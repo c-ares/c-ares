@@ -513,6 +513,33 @@ TEST_P(MockChannelTest, ReInit) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
 }
 
+// ares_reinit_rand() drops the channel's cached random bytes; queries keep
+// working afterwards.
+TEST_P(MockChannelTest, ReInitRand) {
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  EXPECT_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillRepeatedly(SetReply(&server_, &rsp));
+
+  HostResult result;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
+  Process();
+  EXPECT_TRUE(result.done_);
+
+  EXPECT_EQ(ARES_SUCCESS, ares_reinit_rand(channel_));
+  EXPECT_EQ(ARES_EFORMERR, ares_reinit_rand(NULL));
+
+  HostResult again;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &again);
+  Process();
+  EXPECT_TRUE(again.done_);
+  std::stringstream ss;
+  ss << again.host_;
+  EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss.str());
+}
+
 #define MAXUDPQUERIES_TOTAL 32
 #define MAXUDPQUERIES_LIMIT 8
 

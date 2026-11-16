@@ -124,6 +124,7 @@ MANPAGES = ares_cancel.3		\
   ares_queue_active_queries.3		\
   ares_queue_wait_empty.3		\
   ares_reinit.3				\
+  ares_reinit_rand.3			\
   ares_save_options.3			\
   ares_search.3				\
   ares_search_dnsrec.3			\
