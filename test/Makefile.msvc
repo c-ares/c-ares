@@ -243,6 +243,7 @@ RC_CMD       = $(RC_CMD_DBG)
 !ERROR Problem generating PROG_OBJS list.
 !ENDIF
 PROG_OBJS = $(PROG_OBJS:.cc=.obj)
+PROG_OBJS = $(PROG_OBJS:.c=.obj)
 
 !IF [ECHO FUZZ_OBJS=^$(PROG_OBJDIR)\$(FUZZSOURCES: = $(PROG_OBJDIR^)\) > .\fuzz_objs.inc] == 0
 !INCLUDE .\fuzz_objs.inc

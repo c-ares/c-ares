@@ -77,27 +77,33 @@ static ares_pipeevent_t *ares_pipeevent_init(void)
     return NULL;
   }
 
-#    ifdef O_NONBLOCK
   {
-    int val;
-    val = fcntl(p->filedes[0], F_GETFL, 0);
-    if (val >= 0) {
-      val |= O_NONBLOCK;
-    }
-    fcntl(p->filedes[0], F_SETFL, val);
+    int i;
 
-    val = fcntl(p->filedes[1], F_GETFL, 0);
-    if (val >= 0) {
+    for (i = 0; i < 2; i++) {
+#    ifdef O_NONBLOCK
+      int val;
+
+      val = fcntl(p->filedes[i], F_GETFL, 0);
+      if (val < 0) {
+        ares_pipeevent_destroy(p);
+        return NULL;
+      }
       val |= O_NONBLOCK;
-    }
-    fcntl(p->filedes[1], F_SETFL, val);
-  }
+      if (fcntl(p->filedes[i], F_SETFL, val) != 0) {
+        ares_pipeevent_destroy(p);
+        return NULL;
+      }
 #    endif
 
 #    ifdef FD_CLOEXEC
-  fcntl(p->filedes[0], F_SETFD, FD_CLOEXEC);
-  fcntl(p->filedes[1], F_SETFD, FD_CLOEXEC);
+      if (fcntl(p->filedes[i], F_SETFD, FD_CLOEXEC) != 0) {
+        ares_pipeevent_destroy(p);
+        return NULL;
+      }
 #    endif
+    }
+  }
 #  endif
 
 #  ifdef F_SETNOSIGPIPE
