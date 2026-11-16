@@ -58,6 +58,11 @@ ENDIF()
 target_compile_features(arestest PRIVATE cxx_std_14)
 target_compile_definitions(arestest PRIVATE CARES_NO_DEPRECATED)
 
+IF (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CARES_STATIC)
+  target_compile_definitions(arestest PRIVATE CARES_TEST_WRAP_SOCKET)
+  set_property(TARGET arestest APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--wrap=socket")
+ENDIF ()
+
 IF (CARES_BUILD_CONTAINER_TESTS)
   target_compile_definitions(arestest PRIVATE HAVE_USER_NAMESPACE HAVE_UTS_NAMESPACE)
 ENDIF ()

@@ -878,6 +878,18 @@ AC_MSG_RESULT([$build_tests])
 
 AM_CONDITIONAL(BUILD_TESTS, test "x$build_tests" = "xyes")
 
+cares_test_wrap_socket=no
+case $host_os in
+  linux*)
+    if test "x$enable_shared" = "xno" ; then
+      cares_test_wrap_socket=yes
+    fi
+    ;;
+  *)
+    ;;
+esac
+AM_CONDITIONAL([CARES_TEST_WRAP_SOCKET], [test "x$cares_test_wrap_socket" = "xyes"])
+
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(PKGCONFIG_CFLAGS)

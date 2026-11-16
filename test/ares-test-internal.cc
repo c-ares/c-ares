@@ -26,6 +26,7 @@
 #include "ares-test.h"
 #include "dns-proto.h"
 
+#include <cerrno>
 #include <climits>
 #include <cstdint>
 #include <stdio.h>
@@ -60,8 +61,62 @@ extern "C" {
 #endif
 }
 
+#ifdef HAVE_NETINET_TCP_H
+#  include <netinet/tcp.h>
+#endif
+
 #include <string>
 #include <vector>
+
+#ifdef CARES_TEST_WRAP_SOCKET
+extern "C" int __real_socket(int domain, int type, int protocol);
+
+struct WrapSocketState {
+  bool enabled;
+  int  inject_errno;
+  bool inject_on_cloexec;
+  bool injected;
+  int  calls;
+  int  last_type;
+  bool last_initial_cloexec;
+
+  WrapSocketState()
+    : enabled(false), inject_errno(0), inject_on_cloexec(false),
+      injected(false), calls(0), last_type(0), last_initial_cloexec(false)
+  {
+  }
+};
+
+static thread_local WrapSocketState wrap_socket_state;
+
+extern "C" int __wrap_socket(int domain, int type, int protocol)
+{
+  int fd;
+  int flags;
+
+  if (!wrap_socket_state.enabled) {
+    return __real_socket(domain, type, protocol);
+  }
+
+  wrap_socket_state.calls++;
+  wrap_socket_state.last_type = type;
+
+  if (wrap_socket_state.inject_errno != 0 && !wrap_socket_state.injected &&
+      (!wrap_socket_state.inject_on_cloexec || (type & SOCK_CLOEXEC) != 0)) {
+    wrap_socket_state.injected = true;
+    errno                      = wrap_socket_state.inject_errno;
+    return -1;
+  }
+
+  fd = __real_socket(domain, type, protocol);
+  if (fd >= 0) {
+    flags = fcntl(fd, F_GETFD);
+    wrap_socket_state.last_initial_cloexec =
+      (flags != -1 && (flags & FD_CLOEXEC) != 0);
+  }
+  return fd;
+}
+#endif
 
 namespace ares {
 namespace test {
@@ -3802,6 +3857,108 @@ TEST_F(DefaultChannelTest, SaveInvalidChannel) {
   EXPECT_EQ(ARES_ENODATA, ares_save_options(channel_, &opts, &optmask));
   channel_->servers = saved;
 }
+
+#ifdef CARES_TEST_WRAP_SOCKET
+TEST_F(DefaultChannelTest, SocketCloexecAtomic)
+{
+#  ifdef SOCK_CLOEXEC
+  ares_socket_t s;
+  int           flags;
+
+  wrap_socket_state         = WrapSocketState();
+  wrap_socket_state.enabled = true;
+  s = channel_->sock_funcs.asocket(AF_INET, SOCK_DGRAM, 0, nullptr);
+  wrap_socket_state.enabled = false;
+
+  ASSERT_NE(ARES_SOCKET_BAD, s);
+  EXPECT_EQ(1, wrap_socket_state.calls);
+  EXPECT_NE(0, wrap_socket_state.last_type & SOCK_CLOEXEC);
+  EXPECT_TRUE(wrap_socket_state.last_initial_cloexec);
+
+  flags = fcntl(s, F_GETFD);
+  EXPECT_NE(-1, flags);
+  EXPECT_NE(0, flags & FD_CLOEXEC);
+  close(s);
+#  else
+  GTEST_SKIP() << "SOCK_CLOEXEC not available";
+#  endif
+}
+
+TEST_F(DefaultChannelTest, SocketCloexecEINVALRetry)
+{
+#  ifdef SOCK_CLOEXEC
+  ares_socket_t s;
+  int           flags;
+
+  wrap_socket_state                   = WrapSocketState();
+  wrap_socket_state.enabled           = true;
+  wrap_socket_state.inject_errno      = EINVAL;
+  wrap_socket_state.inject_on_cloexec = true;
+  s = channel_->sock_funcs.asocket(AF_INET, SOCK_DGRAM, 0, nullptr);
+  wrap_socket_state.enabled = false;
+
+  ASSERT_NE(ARES_SOCKET_BAD, s);
+  EXPECT_EQ(2, wrap_socket_state.calls);
+
+  flags = fcntl(s, F_GETFD);
+  EXPECT_NE(-1, flags);
+  EXPECT_NE(0, flags & FD_CLOEXEC);
+
+  flags = fcntl(s, F_GETFL);
+  EXPECT_NE(-1, flags);
+  EXPECT_NE(0, flags & O_NONBLOCK);
+  close(s);
+#  else
+  GTEST_SKIP() << "SOCK_CLOEXEC not available";
+#  endif
+}
+
+TEST_F(DefaultChannelTest, SocketCloexecOtherErrorNoRetry)
+{
+#  ifdef SOCK_CLOEXEC
+  ares_socket_t s;
+  int           error;
+
+  wrap_socket_state                   = WrapSocketState();
+  wrap_socket_state.enabled           = true;
+  wrap_socket_state.inject_errno      = EACCES;
+  wrap_socket_state.inject_on_cloexec = true;
+  s     = channel_->sock_funcs.asocket(AF_INET, SOCK_DGRAM, 0, nullptr);
+  error = errno;
+  wrap_socket_state.enabled = false;
+
+  EXPECT_EQ(ARES_SOCKET_BAD, s);
+  EXPECT_EQ(1, wrap_socket_state.calls);
+  EXPECT_EQ(EACCES, error);
+  if (s != ARES_SOCKET_BAD) {
+    close(s);
+  }
+#  else
+  GTEST_SKIP() << "SOCK_CLOEXEC not available";
+#  endif
+}
+
+TEST_F(DefaultChannelTest, SocketStreamNodelay)
+{
+#  ifdef TCP_NODELAY
+  ares_socket_t s;
+  int           opt    = 0;
+  socklen_t     optlen = sizeof(opt);
+
+  wrap_socket_state         = WrapSocketState();
+  wrap_socket_state.enabled = true;
+  s = channel_->sock_funcs.asocket(AF_INET, SOCK_STREAM, 0, nullptr);
+  wrap_socket_state.enabled = false;
+
+  ASSERT_NE(ARES_SOCKET_BAD, s);
+  EXPECT_EQ(0, getsockopt(s, IPPROTO_TCP, TCP_NODELAY, &opt, &optlen));
+  EXPECT_NE(0, opt);
+  close(s);
+#  else
+  GTEST_SKIP() << "TCP_NODELAY not available";
+#  endif
+}
+#endif
 
 // Need to put this in own function due to nested lambda bug
 // in VS2013. (C2888)
