@@ -1607,6 +1607,13 @@ ares_status_t ares_dns_rr_set_opt(ares_dns_rr_t *dns_rr, ares_dns_rr_key_t key,
     if (val_len == SIZE_MAX) {
       return ARES_ENOMEM;
     }
+
+    /* DNS wire format encodes option value lengths as 16-bit.  Reject values
+     * that would be silently truncated by the writer. */
+    if (val_len > 65535) {
+      return ARES_EFORMERR;
+    }
+
     alloclen = val_len + 1;
 
     temp = ares_malloc(alloclen);
