@@ -565,6 +565,11 @@ ares_status_t ares_buf_tag_fetch_strdup(const ares_buf_t *buf, char **str,
     return status;
   }
 
+  /* Prevent ptr_len + 1 wrapping to 0 on a SIZE_MAX length */
+  if (ptr_len == SIZE_MAX) {
+    return ARES_ENOMEM;
+  }
+
   *str = ares_malloc(ptr_len + 1);
   if (*str == NULL) {
     return ARES_ENOMEM;
@@ -760,6 +765,12 @@ ares_status_t ares_buf_fetch_bytes_dup(ares_buf_t *buf, size_t len,
     return ARES_EBADRESP;
   }
 
+  /* Prevent len + 1 wrapping to 0 on a SIZE_MAX length.  Matches the check
+   * added in commit 560c216 for ares_dns_rr_set_bin / ares_dns_rr_add_abin. */
+  if (null_term && len == SIZE_MAX) {
+    return ARES_ENOMEM;
+  }
+
   *bytes = ares_malloc(null_term ? len + 1 : len);
   if (*bytes == NULL) {
     return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
@@ -827,6 +838,11 @@ ares_status_t ares_buf_fetch_str_dup(ares_buf_t *buf, size_t len, char **str,
   status = ares_buf_validate_charset(ptr, len, charset);
   if (status != ARES_SUCCESS) {
     return status;
+  }
+
+  /* Prevent len + 1 wrapping to 0 on a SIZE_MAX length */
+  if (len == SIZE_MAX) {
+    return ARES_ENOMEM;
   }
 
   *str = ares_malloc(len + 1);
