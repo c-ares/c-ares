@@ -445,7 +445,7 @@ ares_status_t ares_reinit(ares_channel_t *channel)
     return ARES_SUCCESS;
   }
   channel->reinit_pending = ARES_TRUE;
-  
+
   if (ares_threadsafety()) {
   /* Hold the channel lock across the join/create/store so
    * channel->reinit_thread cannot be observed or overwritten
@@ -456,8 +456,8 @@ ares_status_t ares_reinit(ares_channel_t *channel)
    * afterwards), so it will not contend for the lock while being
    * joined. The new thread blocks on the lock when applying its
    * config until we unlock. */
-    /* clean up the prior reinit process's thread.  We know the thread isn't
-     * running since reinit_pending was false */
+      /* clean up the prior reinit process's thread.  We know the thread isn't
+       * running since reinit_pending was false */
     if (channel->reinit_thread != NULL) {
       void *rv;
       ares_thread_join(channel->reinit_thread, &rv);
