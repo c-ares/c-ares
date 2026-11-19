@@ -409,6 +409,75 @@ TEST_P(MockUDPEventThreadSingleQueryPerConnTest, LotsOfConnections) {
 }
 #endif
 
+/* This tests a batch of connections being closed simultaneously.
+ *
+ * When using `kqueue` (on macOS/BSD), closing many connections in a single
+ * ares_check_cleanup_conns() pass (e.g. because their queries timed out or were
+ * cancelled together) results in queueing a batch of EV_DELETEs for sockets
+ * that have already been closed. That results in those changelist entries
+ * erroring with ENOENT. However, kevent() only reports a failing changelist
+ * entry in the eventlist if there is room for it. Otherwise, kevent() returns
+ * -1. In that case, we consider the changelist unconsumed and submit it again
+ * on the next iteration. Our eventlist used to be fixed at 8 entries, so more
+ * than 8 failures made this loop forever: the event thread spun at 100% CPU
+ * and no further socket could be registered. This checks we handle this
+ * scenario correctly. */
+class MockUDPEventThreadBatchTeardownTest
+    : public MockEventThreadOptsTest,
+      public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
+ public:
+  MockUDPEventThreadBatchTeardownTest()
+    : MockEventThreadOptsTest(1, std::get<0>(GetParam()), std::get<1>(GetParam()), false,
+                          FillOptions(&opts_),
+                          ARES_OPT_UDP_MAX_QUERIES | ARES_OPT_TIMEOUTMS | ARES_OPT_TRIES) {}
+  static struct ares_options* FillOptions(struct ares_options * opts) {
+    memset(opts, 0, sizeof(struct ares_options));
+    /* One query per connection, so N queries leave N connections to reap */
+    opts->udp_max_queries = 1;
+    /* Long enough that the queries are still pending when ares_cancel() closes
+     * them, and don't retry */
+    opts->timeout         = 1000;
+    opts->tries           = 1;
+    return opts;
+  }
+ private:
+  struct ares_options opts_;
+};
+
+#define BATCHTEARDOWN_CNT 32
+TEST_P(MockUDPEventThreadBatchTeardownTest, ChannelUsableAfterBatchClose) {
+  /* The server accepts the queries but never answers.  Give the event thread
+   * time to register every socket with the kernel, then close all the
+   * connections at once so they are reaped in a single
+   * ares_check_cleanup_conns() pass. */
+  HostResult result[BATCHTEARDOWN_CNT];
+  for (size_t i=0; i<BATCHTEARDOWN_CNT; i++) {
+    ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result[i]);
+  }
+  ares_sleep_time(100);
+  ares_cancel(channel_);
+  Process();
+  for (size_t i=0; i<BATCHTEARDOWN_CNT; i++) {
+    EXPECT_TRUE(result[i].done_);
+    EXPECT_EQ(ARES_ECANCELLED, result[i].status_);
+  }
+
+  /* Let the server answer. If the event thread is broken, this query's socket is
+   * never registered, so it won't succeed no matter how long we wait. */
+  DNSPacket rsp;
+  rsp.set_response().set_aa()
+    .add_question(new DNSQuestion("www.google.com", T_A))
+    .add_answer(new DNSARR("www.google.com", 100, {2, 3, 4, 5}));
+  ON_CALL(server_, OnRequest("www.google.com", T_A))
+    .WillByDefault(SetReply(&server_, &rsp));
+
+  HostResult after;
+  ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &after);
+  Process();
+  EXPECT_TRUE(after.done_);
+  EXPECT_EQ(ARES_SUCCESS, after.status_);
+}
+
 class CacheQueriesEventThreadTest
     : public MockEventThreadOptsTest,
       public ::testing::WithParamInterface<std::tuple<ares_evsys_t,int>> {
@@ -1801,6 +1870,8 @@ INSTANTIATE_TEST_SUITE_P(TransportModes, ServerFailoverOptsMockEventThreadTest, 
 #if 0
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPEventThreadSingleQueryPerConnTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
 #endif
+
+INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPEventThreadBatchTeardownTest, ::testing::ValuesIn(ares::test::evsys_families), ares::test::PrintEvsysFamily);
 
 }  // namespace test
 }  // namespace ares
