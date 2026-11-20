@@ -34,3 +34,7 @@ License: LGPL-2.1-or-later
 Files: src/lib/thirdparty/apple/dnsinfo.h
 Copyright: see file
 License: APSL-2.0
+
+Files: test/ares-test-wake-pipe-helper.c test/ares-test-wake-pipe.cc
+Copyright: The c-ares project and its contributors
+License: MIT
