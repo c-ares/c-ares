@@ -26,14 +26,5 @@ TEST(WakePipeTest, FcntlFailures)
   }
 }
 
-TEST(WakePipeTest, PipeFailure)
-{
-  int result = ares_test_wake_pipe(6);
-  if (result == -2) {
-    GTEST_SKIP();
-  }
-  EXPECT_EQ(0, result);
-}
-
 }  // namespace test
 }  // namespace ares

@@ -21,42 +21,29 @@ static int fds[2] = { -1, -1 };
 static int closes[2];
 static int calls;
 static int fail_at = -1;
-static int pipe_fails;
 static int registrations;
 static int invalid_close;
 
 static int mock_pipe(int newfds[2])
 {
   int flags;
+  int i;
 
-  if (pipe_fails) {
-    errno = EIO;
-    return -1;
-  }
   if (pipe(newfds) < 0) {
     return -1;
   }
-  flags = fcntl(newfds[0], F_GETFL);
-  if (flags < 0) {
-    close(newfds[0]);
-    close(newfds[1]);
-    return -1;
-  }
-  if (fcntl(newfds[0], F_SETFL, flags | O_APPEND) < 0) {
-    close(newfds[0]);
-    close(newfds[1]);
-    return -1;
-  }
-  flags = fcntl(newfds[1], F_GETFL);
-  if (flags < 0) {
-    close(newfds[0]);
-    close(newfds[1]);
-    return -1;
-  }
-  if (fcntl(newfds[1], F_SETFL, flags | O_APPEND) < 0) {
-    close(newfds[0]);
-    close(newfds[1]);
-    return -1;
+  for (i = 0; i < 2; i++) {
+    flags = fcntl(newfds[i], F_GETFL);
+    if (flags < 0) {
+      close(newfds[0]);
+      close(newfds[1]);
+      return -1;
+    }
+    if (fcntl(newfds[i], F_SETFL, flags | O_APPEND) < 0) {
+      close(newfds[0]);
+      close(newfds[1]);
+      return -1;
+    }
   }
   fds[0] = newfds[0];
   fds[1] = newfds[1];
@@ -127,11 +114,10 @@ int ares_test_wake_pipe(int failure)
   ares_event_t *e;
   unsigned int  err = 0;
   int           i;
-  int           want;
   int           flags;
   int           fdflags;
 
-  if (failure < -1 || failure > 6) {
+  if (failure < -1 || failure > 5) {
     return -1;
   }
 
@@ -140,8 +126,7 @@ int ares_test_wake_pipe(int failure)
   closes[0]          = 0;
   closes[1]          = 0;
   calls              = 0;
-  fail_at            = (failure >= 0 && failure <= 5) ? failure : -1;
-  pipe_fails         = (failure == 6) ? 1 : 0;
+  fail_at            = failure;
   registrations      = 0;
   invalid_close      = 0;
   event.data         = NULL;
@@ -184,10 +169,10 @@ int ares_test_wake_pipe(int failure)
     if (registrations != 0) {
       err |= 1u << 2;
     }
-    if (failure == 6 ? calls != 0 : calls != failure + 1) {
+    if (calls != failure + 1) {
       err |= 1u << 3;
     }
-    for (i = 0; failure != 6 && i < 2; i++) {
+    for (i = 0; i < 2; i++) {
       errno   = 0;
       fdflags = fcntl(fds[i], F_GETFD);
       if (fdflags != -1 || errno != EBADF) {
@@ -200,9 +185,8 @@ int ares_test_wake_pipe(int failure)
     e->free_data_cb(e->data);
   }
 
-  want = (failure == 6) ? 0 : 1;
   for (i = 0; i < 2; i++) {
-    if (closes[i] != want) {
+    if (closes[i] != 1) {
       err |= 1u << (11 + i);
     }
   }

@@ -12,5 +12,3 @@ bre
 ba
 fo
 gost
-servent
-thirdparty
