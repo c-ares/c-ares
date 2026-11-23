@@ -79,6 +79,14 @@ target_link_libraries(aresfuzzname PRIVATE caresinternal)
 # targets trying to use the same PDB.  /FS does NOT resolve this issue.
 set_target_properties(aresfuzzname PROPERTIES COMPILE_PDB_NAME aresfuzzname.pdb)
 
+# Loopback UDP/TCP response fuzzer needs POSIX sockets/poll; OSS-Fuzz is Linux.
+IF (NOT WIN32)
+  add_executable(aresfuzzresponse ${FUZZRESPONSESOURCES})
+  target_compile_definitions(aresfuzzresponse PRIVATE CARES_NO_DEPRECATED)
+  target_link_libraries(aresfuzzresponse PRIVATE caresinternal)
+  set_target_properties(aresfuzzresponse PROPERTIES COMPILE_PDB_NAME aresfuzzresponse.pdb)
+ENDIF ()
+
 add_executable(dnsdump ${DUMPSOURCES})
 target_compile_definitions(dnsdump PRIVATE CARES_NO_DEPRECATED)
 target_compile_features(dnsdump PRIVATE cxx_std_14)
@@ -114,3 +122,12 @@ add_test(
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/fuzznames"
   COMMAND $<TARGET_FILE:aresfuzzname> ${FUZZNAMES_FILES}
 )
+
+IF (NOT WIN32)
+  file(GLOB_RECURSE FUZZRESPONSE_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/fuzzinput-response" "fuzzinput-response/*")
+  add_test(
+    NAME aresfuzzresponse
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/fuzzinput-response"
+    COMMAND $<TARGET_FILE:aresfuzzresponse> ${FUZZRESPONSE_FILES}
+  )
+ENDIF ()
