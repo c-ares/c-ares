@@ -140,8 +140,13 @@ ares_status_t ares_addrinfo2hostent(const struct ares_addrinfo *ai, int family,
 
   if ((*host)->h_name == NULL) {
     if (ai->cnames) {
-      (*host)->h_name = ares_strdup(ai->cnames->name);
-      if ((*host)->h_name == NULL && ai->cnames->name) {
+      const struct ares_addrinfo_cname *cname = ai->cnames;
+
+      while (cname->next != NULL) {
+        cname = cname->next;
+      }
+      (*host)->h_name = ares_strdup(cname->name);
+      if ((*host)->h_name == NULL && cname->name) {
         goto enomem; /* LCOV_EXCL_LINE: OutOfMemory */
       }
     } else {

@@ -341,6 +341,11 @@ TEST_F(LibraryTest, ParseAReplyVariantCnameChain) {
   EXPECT_EQ(1, count);
   EXPECT_EQ("8.8.8.8", AddressToString(&(info[0].ipaddr), 4));
   EXPECT_EQ(604800, info[0].ttl);
+  ASSERT_NE(nullptr, host);
+  std::stringstream ss;
+  ss << HostEnt(host);
+  EXPECT_EQ("{'c4.localhost' aliases=[c1.localhost, c2.localhost, "
+            "c3.localhost] addrs=[8.8.8.8]}", ss.str());
   ares_free_hostent(host);
 }
 
