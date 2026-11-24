@@ -2757,6 +2757,66 @@ TEST_F(LibraryTest, DNSNameCompression14Bit) {
 }
 
 #ifndef CARES_SYMBOL_HIDING
+/* ares_dns_write_buf_tcp() must emit compression pointers relative to the
+ * start of the DNS message, not relative to the start of the buffer it is
+ * handed: that buffer already holds the 2 byte TCP length prefix, and may
+ * hold earlier frames still queued on the same connection.  Writing the
+ * message directly into such a buffer used to skew every pointer (here
+ * the additional A record owned by "1.2.3.4.5.6" was received as owned by
+ * "2.3.4.5.6"). */
+TEST_F(LibraryTest, DNSWriteBufTcpCompressionPointers)
+{
+  ares_dns_record_t   *dnsrec = NULL;
+  ares_dns_record_t   *parsed = NULL;
+  ares_dns_rr_t       *rr     = NULL;
+  ares_buf_t          *buf    = NULL;
+  struct in_addr       addr;
+  const unsigned char  junk[]   = { 0xDE, 0xAD, 0xBE, 0xEF, 0x42 };
+  size_t               framelen = 0;
+  const unsigned char *frame    = NULL;
+  size_t               msglen   = 0;
+  const ares_dns_rr_t *prr      = NULL;
+
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&dnsrec, 0x1234, ARES_FLAG_RD,
+                                   ARES_OPCODE_QUERY, ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(dnsrec, "1.2.3.4.5.6", ARES_REC_TYPE_A,
+                                      ARES_CLASS_IN));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_record_rr_add(
+                            &rr, dnsrec, ARES_SECTION_ADDITIONAL, "1.2.3.4.5.6",
+                            ARES_REC_TYPE_A, ARES_CLASS_IN, 0));
+  EXPECT_EQ(1, ares_inet_pton(AF_INET, "2.3.4.5", &addr));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_addr(rr, ARES_RR_A_ADDR, &addr));
+
+  buf = ares_buf_create();
+  ASSERT_NE(nullptr, buf);
+  /* Simulate an earlier frame still queued in the connection buffer. */
+  EXPECT_EQ(ARES_SUCCESS, ares_buf_append(buf, junk, sizeof(junk)));
+
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_write_buf_tcp(dnsrec, buf));
+
+  frame = ares_buf_peek(buf, &framelen);
+  ASSERT_NE(nullptr, frame);
+  ASSERT_GT(framelen, sizeof(junk) + 2U);
+  msglen = (size_t)((frame[sizeof(junk)] << 8) | frame[sizeof(junk) + 1]);
+  EXPECT_EQ(framelen - sizeof(junk) - 2, msglen);
+
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_parse(frame + sizeof(junk) + 2, msglen, 0, &parsed));
+  ASSERT_NE(nullptr, parsed);
+  EXPECT_EQ(1U, ares_dns_record_rr_cnt(parsed, ARES_SECTION_ADDITIONAL));
+  prr = ares_dns_record_rr_get_const(parsed, ARES_SECTION_ADDITIONAL, 0);
+  ASSERT_NE(nullptr, prr);
+  EXPECT_STREQ("1.2.3.4.5.6", ares_dns_rr_get_name(prr));
+
+  ares_dns_record_destroy(parsed);
+  ares_buf_destroy(buf);
+  ares_dns_record_destroy(dnsrec);
+}
+#endif /* !CARES_SYMBOL_HIDING */
+
+#ifndef CARES_SYMBOL_HIDING
 /* Regression coverage for the zero-length salt/type-bitmap code paths in
 * NSEC3 and NSEC3PARAM (empty non-terminal / opt-out per RFC 5155 7.1),
 * which the parser represents via ares_dns_rr_set_bin_own(..., NULL, 0).

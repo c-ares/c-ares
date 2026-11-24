@@ -1474,10 +1474,11 @@ done:
 ares_status_t ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
                                      ares_buf_t              *buf)
 {
-  ares_status_t status;
-  size_t        orig_len;
-  size_t        msg_len;
-  size_t        len;
+  ares_status_t        status;
+  size_t               orig_len;
+  size_t               msg_len = 0;
+  ares_buf_t          *msg     = NULL;
+  const unsigned char *ptr     = NULL;
 
   if (dnsrec == NULL || buf == NULL) {
     return ARES_EFORMERR;
@@ -1485,34 +1486,41 @@ ares_status_t ares_dns_write_buf_tcp(const ares_dns_record_t *dnsrec,
 
   orig_len = ares_buf_len(buf);
 
-  /* Write placeholder for length */
-  status = ares_buf_append_be16(buf, 0);
-  if (status != ARES_SUCCESS) {
-    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+  /* Serialize the message into a temporary buffer first.  Name compression
+   * offsets are recorded as positions within the buffer being written, but
+   * on the wire they count from the start of the DNS message (RFC 1035
+   * 4.1.4).  Writing directly into the target buffer would skew every
+   * emitted compression pointer by the 2 byte length prefix, plus the
+   * length of any earlier frames still queued in the same buffer. */
+  msg = ares_buf_create();
+  if (msg == NULL) {
+    return ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
   }
 
   /* Write message */
-  status = ares_dns_write_buf(dnsrec, buf);
+  status = ares_dns_write_buf(dnsrec, msg);
   if (status != ARES_SUCCESS) {
     goto done;
   }
 
-  len     = ares_buf_len(buf);
-  msg_len = len - orig_len - 2;
+  ptr = ares_buf_peek(msg, &msg_len);
 
-  /* Now we need to overwrite the length, so we jump back to the original
-   * message length, overwrite the section and jump back */
-  ares_buf_set_length(buf, orig_len);
+  /* Write length prefix, then the message itself */
   status = ares_buf_append_be16(buf, (unsigned short)(msg_len & 0xFFFF));
   if (status != ARES_SUCCESS) {
-    goto done; /* LCOV_EXCL_LINE: UntestablePath */
+    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
   }
-  ares_buf_set_length(buf, len);
+
+  status = ares_buf_append(buf, ptr, msg_len);
+  if (status != ARES_SUCCESS) {
+    goto done; /* LCOV_EXCL_LINE: OutOfMemory */
+  }
 
 done:
   if (status != ARES_SUCCESS) {
     ares_buf_set_length(buf, orig_len);
   }
+  ares_buf_destroy(msg);
   return status;
 }
 
