@@ -2760,6 +2760,39 @@ TEST_F(LibraryTest, NewQueryInDestroyCallbackIsRefusedAndNotified) {
   EXPECT_EQ(ARES_EDESTRUCTION, data.replacement_status);
 }
 
+// Failing the allocation that grows the deferred requeue/endqueue array
+// used to strand a query: the append detached the query from its
+// connection and timeout entry before the insert that could fail, and
+// end_query() ignored the failure, so the query stayed in the channel's
+// lookup lists with nothing left to complete it and its callback never
+// ran (ares_queue_active_queries() never returned to zero).  The server
+// never replies, so the single try times out and the query completes
+// through that deferred path; every allocation failure point must still
+// complete it.
+TEST_P(MockUDPSingleTryTest, AllocFailEndQueueDoesNotStrandQuery)
+{
+  std::vector<byte> nothing;
+  EXPECT_CALL(server_, OnRequest("www.example.com", T_A))
+    .WillRepeatedly(SetReplyData(&server_, nothing));
+
+  for (int ii = 1; ii <= 32; ii++) {
+    HostResult result;
+    ClearFails();
+    SetAllocFail(ii);
+    ares_gethostbyname(channel_, "www.example.com", AF_INET, HostCallback,
+                       &result);
+    Process();
+    EXPECT_TRUE(result.done_) << "failed alloc #" << ii;
+    EXPECT_NE(ARES_SUCCESS, result.status_);
+    ClearFails();
+  }
+
+  // Explicitly destroy the channel now, so that the HostResult objects
+  // are still valid (in case any pending work refers to them).
+  ares_destroy(channel_);
+  channel_ = nullptr;
+}
+
 INSTANTIATE_TEST_SUITE_P(AddressFamilies, MockUDPSingleTryTest,
                          ::testing::ValuesIn(ares::test::families),
                          PrintFamily);

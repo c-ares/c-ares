@@ -1160,6 +1160,12 @@ static ares_status_t process_answer(ares_channel_t      *channel,
 
     /* Requeue to same server */
     status = ares_append_requeue(requeue, query, server);
+    if (status != ARES_SUCCESS) {
+      /* The requeue could not be deferred (memory exhaustion).  The
+       * query has already been detached from the connection's queue, so
+       * end it rather than stranding it. */
+      end_query(channel, server, query, status, NULL, NULL);
+    }
     goto cleanup;
   }
 
@@ -1172,8 +1178,13 @@ static ares_status_t process_answer(ares_channel_t      *channel,
       !(channel->flags & ARES_FLAG_IGNTC)) {
     query->using_tcp = ARES_TRUE;
     status           = ares_append_requeue(requeue, query, NULL);
-    /* Status will reflect success except on memory error, which is good since
-     * requeuing to TCP is ok */
+    if (status != ARES_SUCCESS) {
+      /* The requeue could not be deferred (memory exhaustion).  The
+       * query has already been detached from the connection's queue, so
+       * end it rather than stranding it.  Status still reflects the
+       * memory error. */
+      end_query(channel, server, query, status, NULL, NULL);
+    }
     goto cleanup;
   }
 
@@ -1286,7 +1297,18 @@ ares_status_t ares_requeue_query(ares_query_t *query, const ares_timeval_t *now,
   if (query->try_count < max_tries && !query->no_retries) {
     ares_dns_record_destroy(dnsrec);
     if (requeue != NULL) {
-      return ares_append_requeue(requeue, query, NULL);
+      if (ares_append_requeue(requeue, query, NULL) == ARES_SUCCESS) {
+        return ARES_SUCCESS;
+      }
+      /* The retry could not be deferred (memory exhaustion).  The query
+       * has already been detached from its connection and timeout entry,
+       * so returning the failure would strand it in the channel's lookup
+       * lists with nothing left to complete it; end it instead. */
+      if (query->error_status == ARES_SUCCESS) {
+        query->error_status = ARES_ENOMEM;
+      }
+      end_query(channel, server, query, query->error_status, NULL, NULL);
+      return ARES_ENOMEM;
     }
     return ares_send_query(NULL, query, now);
   }
@@ -1888,9 +1910,14 @@ static void end_query(ares_channel_t *channel, ares_server_t *server,
 
   ares_metrics_record(query, server, status, dnsrec);
 
-  /* Delay calling the query callback */
-  if (requeue != NULL) {
-    ares_append_endqueue(requeue, query, status, dnsrec);
+  /* Delay calling the query callback.  If the entry cannot be queued
+   * (only possible on memory exhaustion), fall through and complete the
+   * query synchronously instead: the append already detached the query
+   * from its connection and timeout entry, so dropping it here would
+   * leave it in the channel's lookup lists with nothing left that could
+   * ever complete it. */
+  if (requeue != NULL &&
+      ares_append_endqueue(requeue, query, status, dnsrec) == ARES_SUCCESS) {
     return;
   }
 
