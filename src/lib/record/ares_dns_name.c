@@ -54,14 +54,62 @@ static void ares_nameoffset_free(void *arg)
   ares_free(off);
 }
 
+/*! Length of the wire form of a name given in presentation form.  Every
+ *  escaped byte (\DDD or \c) counts as a single octet, every label adds
+ *  its length octet, and the root terminator adds one more octet.
+ *  Malformed escapes are counted conservatively; validating the name
+ *  itself is ares_split_dns_name()'s job, not this helper's. */
+static size_t ares_dns_name_wire_len(const char *name)
+{
+  size_t      wire_len  = 1; /* root terminator */
+  size_t      label_len = 0;
+  ares_bool_t ended_dot = ARES_FALSE;
+  const char *p;
+
+  for (p = name; *p != '\0'; p++) {
+    ended_dot = ARES_FALSE;
+    if (*p == '\\') {
+      p++;
+      if (ares_isdigit(p[0]) && ares_isdigit(p[1]) && ares_isdigit(p[2])) {
+        p += 2;
+      }
+      if (*p == '\0') {
+        break;
+      }
+      label_len++;
+    } else if (*p == '.') {
+      wire_len  += label_len + 1;
+      label_len  = 0;
+      ended_dot  = ARES_TRUE;
+    } else {
+      label_len++;
+    }
+  }
+
+  if (!ended_dot) {
+    wire_len += label_len + 1;
+  }
+
+  return wire_len;
+}
+
 static ares_status_t ares_nameoffset_create(ares_llist_t **list,
                                             const char *name, size_t idx)
 {
   ares_status_t      status;
   ares_nameoffset_t *off = NULL;
 
-  if (list == NULL || name == NULL || ares_strlen(name) == 0 ||
-      ares_strlen(name) > ARES_MAX_NAME_PRESENTATION_LEN) {
+  if (list == NULL || name == NULL || ares_strlen(name) == 0) {
+    return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
+  }
+
+  /* The presentation length limit is measured in presentation characters,
+   * but escaping inflates the presentation form of a name to up to ~4x its
+   * wire length, so a wire-legal name can exceed it.  Accept any name
+   * whose wire form fits the RFC 1035 limit as well; reject only names
+   * that exceed both measures. */
+  if (ares_strlen(name) > ARES_MAX_NAME_PRESENTATION_LEN &&
+      ares_dns_name_wire_len(name) > 255) {
     return ARES_EFORMERR; /* LCOV_EXCL_LINE: DefensiveCoding */
   }
 
@@ -383,7 +431,7 @@ ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
   size_t                   orig_name_len;
   size_t                   pos    = ares_buf_len(buf);
   ares_array_t            *labels = NULL;
-  char                     name_copy[512];
+  char                    *name_copy = NULL;
   ares_status_t            status;
 
   if (buf == NULL || name == NULL) {
@@ -395,9 +443,17 @@ ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
     return ARES_ENOMEM;
   }
 
-  /* NOTE: due to possible escaping, name_copy buffer is > 256 to allow for
-   *       this */
-  name_len      = ares_strcpy(name_copy, name, sizeof(name_copy));
+  /* NOTE: due to escaping, the presentation form of a wire-legal name can
+   *       reach ~4x its wire length (every byte escaped as \DDD), which no
+   *       fixed buffer can hold.  Copy dynamically: a fixed buffer silently
+   *       truncates such a name, and the truncated prefix can itself be a
+   *       valid -- but different -- name. */
+  name_copy = ares_strdup(name);
+  if (name_copy == NULL) {
+    status = ARES_ENOMEM; /* LCOV_EXCL_LINE: OutOfMemory */
+    goto done;
+  }
+  name_len      = ares_strlen(name_copy);
   orig_name_len = name_len;
 
   /* Find longest match */
@@ -471,6 +527,7 @@ ares_status_t ares_dns_name_write(ares_buf_t *buf, ares_llist_t **list,
 
 done:
   ares_array_destroy(labels);
+  ares_free(name_copy);
   return status;
 }
 
