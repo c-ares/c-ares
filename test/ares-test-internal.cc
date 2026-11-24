@@ -2756,6 +2756,79 @@ TEST_F(LibraryTest, DNSNameCompression14Bit) {
   ares_dns_record_destroy(dnsrec);
 }
 
+/* A wire-legal name whose escaped presentation form exceeds 511 characters
+ * used to be silently truncated by the name writer's fixed-size copy
+ * buffer: for record types that forbid compression (here the SVCB
+ * TargetName) the write reported ARES_SUCCESS while emitting a different,
+ * shorter name, and for compressible types (here CNAME) the write failed
+ * outright with ARES_EFORMERR. */
+TEST_F(LibraryTest, DNSWriteLongEscapedName)
+{
+  /* Labels of 50, 50, 27 and 63 bytes of 0xAA: 195 wire octets, well
+   * inside the RFC 1035 limit, but a presentation form of
+   * 4 * 190 + 3 = 763 characters. */
+  const size_t       labels[4] = { 50, 50, 27, 63 };
+  std::string        target;
+  ares_dns_record_t *dnsrec = NULL;
+  ares_dns_record_t *parsed = NULL;
+  ares_dns_rr_t     *rr     = NULL;
+  unsigned char     *msg    = NULL;
+  size_t             msglen = 0;
+
+  for (size_t i = 0; i < 4; i++) {
+    if (i != 0) {
+      target += '.';
+    }
+    for (size_t j = 0; j < labels[i]; j++) {
+      target += "\\170";
+    }
+  }
+  ASSERT_EQ(763U, target.size());
+
+  /* SVCB: compression is forbidden for the TargetName. */
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&dnsrec, 0x1234, ARES_FLAG_QR | ARES_FLAG_AA,
+                                   ARES_OPCODE_QUERY, ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(dnsrec, "example.com", ARES_REC_TYPE_SVCB,
+                                      ARES_CLASS_IN));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_record_rr_add(
+                            &rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+                            ARES_REC_TYPE_SVCB, ARES_CLASS_IN, 60));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_rr_set_u16(rr, ARES_RR_SVCB_PRIORITY, 1));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_rr_set_str(rr, ARES_RR_SVCB_TARGET, target.c_str()));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_parse(msg, msglen, 0, &parsed));
+  ASSERT_NE(nullptr, parsed);
+  rr = (ares_dns_rr_t *)ares_dns_record_rr_get_const(parsed,
+                                                     ARES_SECTION_ANSWER, 0);
+  ASSERT_NE(nullptr, rr);
+  EXPECT_STREQ(target.c_str(), ares_dns_rr_get_str(rr, ARES_RR_SVCB_TARGET));
+  ares_dns_record_destroy(parsed);
+  parsed = NULL;
+  ares_free_string(msg);
+  msg = NULL;
+  ares_dns_record_destroy(dnsrec);
+  dnsrec = NULL;
+
+  /* CNAME: the target name is compressible. */
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_create(&dnsrec, 0x1234, ARES_FLAG_QR | ARES_FLAG_AA,
+                                   ARES_OPCODE_QUERY, ARES_RCODE_NOERROR));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_record_query_add(dnsrec, "example.com",
+                                      ARES_REC_TYPE_CNAME, ARES_CLASS_IN));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_record_rr_add(
+                            &rr, dnsrec, ARES_SECTION_ANSWER, "example.com",
+                            ARES_REC_TYPE_CNAME, ARES_CLASS_IN, 60));
+  EXPECT_EQ(ARES_SUCCESS,
+            ares_dns_rr_set_str(rr, ARES_RR_CNAME_CNAME, target.c_str()));
+  EXPECT_EQ(ARES_SUCCESS, ares_dns_write(dnsrec, &msg, &msglen));
+  ares_free_string(msg);
+  ares_dns_record_destroy(dnsrec);
+}
+
 #ifndef CARES_SYMBOL_HIDING
 /* Regression coverage for the zero-length salt/type-bitmap code paths in
 * NSEC3 and NSEC3PARAM (empty non-terminal / opt-out per RFC 5155 7.1),
