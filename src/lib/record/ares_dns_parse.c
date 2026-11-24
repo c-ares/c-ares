@@ -1517,6 +1517,19 @@ static ares_status_t ares_dns_parse_rr(ares_buf_t *buf, unsigned int flags,
     type = ARES_REC_TYPE_RAW_RR;
   }
 
+  /* RFC 6891 6.1.1: an OPT RR MUST NOT appear outside the additional
+   * section.  The writer only looks for OPT there, so accepting one in
+   * the answer or authority section would apply its extended RCODE bits
+   * on parse but drop them on write, silently changing the record's
+   * RCODE across a write/parse round trip (as ares_dns_record_duplicate()
+   * performs).  Reject it, like the multiple-OPT case below.  Records
+   * demoted to RAW_RR by the flags above are exempt: they carry no OPT
+   * semantics. */
+  if (type == ARES_REC_TYPE_OPT && sect != ARES_SECTION_ADDITIONAL) {
+    status = ARES_EBADRESP;
+    goto done;
+  }
+
   /* Pull into another buffer for safety */
   if (rdlength > ares_buf_len(buf)) {
     status = ARES_EBADRESP;
