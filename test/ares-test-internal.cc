@@ -2756,6 +2756,25 @@ TEST_F(LibraryTest, DNSNameCompression14Bit) {
   ares_dns_record_destroy(dnsrec);
 }
 
+/* RFC 6891 6.1.1 places the OPT RR in the additional section only.  The
+ * parser used to accept one in the answer section and apply its extended
+ * RCODE bits, while the writer only looks for OPT in the additional
+ * section, so a write/parse round trip (as ares_dns_record_duplicate()
+ * performs) silently changed the record's RCODE: 16 became 18 for this
+ * input. */
+TEST_F(LibraryTest, DNSParseRejectsOptOutsideAdditional)
+{
+  const unsigned char pkt[]  = { 0x3e, 0xa7, 0x84, 0x00, 0x00, 0x01, 0x00, 0x01,
+                                 0x00, 0x00, 0x00, 0x00, 0x03, 0x77, 0x77, 0x2f,
+                                 0x00, 0x00, 0x01, 0x00, 0x01, 0x03, 0x77, 0x77,
+                                 0x77, 0x00, 0x00, 0x29, 0x08, 0x00, 0x01, 0x00,
+                                 0x00, 0x08, 0x00, 0x00 };
+  ares_dns_record_t  *dnsrec = NULL;
+
+  EXPECT_EQ(ARES_EBADRESP, ares_dns_parse(pkt, sizeof(pkt), 0, &dnsrec));
+  ares_dns_record_destroy(dnsrec);
+}
+
 #ifndef CARES_SYMBOL_HIDING
 /* Regression coverage for the zero-length salt/type-bitmap code paths in
 * NSEC3 and NSEC3PARAM (empty non-terminal / opt-out per RFC 5155 7.1),
