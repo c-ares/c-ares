@@ -21,8 +21,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      discussions: write
+      contents: read
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
       version: ${{ steps.version.outputs.version }}
@@ -35,6 +34,8 @@ jobs:
           version: 1.0
       - name: Checkout c-ares
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Get Tag version
         id: version
         run: |
@@ -56,17 +57,6 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 7
-      - name: Upload Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          body_path: RELEASE-NOTES.md
-          draft: true
-          make_latest: true
-          name: ${{ steps.version.outputs.version }}
-          files: c-ares-${{ steps.version.outputs.version }}.tar.gz
-          fail_on_unmatched_files: true
-          discussion_category_name: "Announcements"
       - name: Generate subject
         id: hash
         run: |
@@ -84,29 +74,45 @@ jobs:
       base64-subjects: "${{ needs.build.outputs.hashes }}"
       upload-tag-name: "${{ needs.build.outputs.version }}"
       draft-release: true
-      # NOTE: Due to issue with duplicating a draft, we need to download the provenance and
-      #       upload it ourselves via the "upload-provenance" step.
-      # upload-assets: ${{ startsWith(github.ref, 'refs/tags/') }}
+      # Publish the tarball and provenance together in one draft release.
       upload-assets: false
       provenance-name: "c-ares-${{ needs.build.outputs.version }}.intoto.jsonl"
 
-  upload-provenance:
-    needs: [provenance]
+  publish-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build, provenance]
     runs-on: ubuntu-latest
     permissions:
-      actions: read # To read the workflow path.
-      contents: write # To add assets to a release.
+      contents: write # Create the draft and upload both release assets.
+      discussions: write # Set the release discussion category.
     steps:
+      - name: Checkout release notes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download the source archive
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: c-ares-src-tarball
       - name: Download the provenance
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: ${{needs.provenance.outputs.provenance-name}}
-      - name: Upload Provenance to Release
+          name: ${{ needs.provenance.outputs.provenance-name }}
+      - name: Check the archive against the provenance subject
+        env:
+          SUBJECTS: ${{ needs.build.outputs.hashes }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$SUBJECTS" | base64 --decode | sha256sum --check --strict
+      - name: Upload Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-        if: startsWith(github.ref, 'refs/tags/')
-        id: upload-provenance
         with:
-          name: ${{ needs.build.outputs.version }}
+          body_path: RELEASE-NOTES.md
           draft: true
-          files: ${{needs.provenance.outputs.provenance-name}}
+          make_latest: true
+          name: ${{ needs.build.outputs.version }}
+          files: |
+            c-ares-${{ needs.build.outputs.version }}.tar.gz
+            ${{ needs.provenance.outputs.provenance-name }}
           fail_on_unmatched_files: true
+          discussion_category_name: "Announcements"
